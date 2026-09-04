@@ -1216,6 +1216,12 @@ public final class HTTPServer: @unchecked Sendable {
                 "\(key): \(value)\r\n"
         }
 
+        // HTTP/1.1 客户端默认 keep-alive：服务器主动关闭连接前必须显式告知，
+        // 否则持久连接客户端的下一请求会撞上已被取消的 socket（竞态错误）。
+        if close {
+            head += "Connection: close\r\n"
+        }
+
         head += "\r\n"
 
         var packet =
@@ -1692,16 +1698,33 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         if let expect =
-            headers["expect"],
-           !expect
-                .trimmingCharacters(
-                    in:
-                        .whitespacesAndNewlines
-                )
-                .isEmpty {
+            headers["expect"] {
 
-            throw HTTPServerError
-                .expectationFailed
+            let normalizedExpect =
+                expect
+                    .trimmingCharacters(
+                        in:
+                            .whitespacesAndNewlines
+                    )
+                    .lowercased()
+
+            if normalizedExpect.isEmpty {
+                // 无 Expect，继续
+            } else if normalizedExpect == "100-continue" {
+                // HTTP/1.1 规范行为：告知客户端继续发送请求体。
+                // （curl 对 >1KB 请求体自动附带此头；拒绝会让部分 LAN 客户端超时）
+                connection.send(
+                    content:
+                        Data(
+                            "HTTP/1.1 100 Continue\r\n\r\n".utf8
+                        ),
+                    completion:
+                        .contentProcessed { _ in }
+                )
+            } else {
+                throw HTTPServerError
+                    .expectationFailed
+            }
         }
 
         let bodyStart =
