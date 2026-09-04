@@ -39,6 +39,13 @@ enum RuntimeTuning {
     /// 逻辑会话 TTL
     static let sessionMaxIdleSeconds: TimeInterval = 1800
 
+    // MARK: Responses Store（§47：Responses State ≠ Physical KV）
+
+    /// Responses 存储池上限
+    static let responsesStoreMaxCount = 64
+    /// Responses 存储池 TTL
+    static let responsesStoreTTLSeconds: TimeInterval = 1800
+
     // MARK: Prefill（§40）
 
     /// §40：Prefill chunk 基线，不得未经 Benchmark 固化新值
