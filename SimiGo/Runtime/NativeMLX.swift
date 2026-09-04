@@ -129,10 +129,15 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
 
             guard let data = header.data(using: .utf8) else { return }
 
-            do {
-                try data.write(to: self.logFileURL, options: .atomic)
-            } catch {
-                return
+            // ponytail: 必须原地截断保持同一 inode。.atomic 会替换文件，
+            // 掐断 tail -f（含应用内置日志查看器 EnvManager），表现为"日志不再实时记录"。
+            if let handle = try? FileHandle(forWritingTo: self.logFileURL) {
+                handle.truncateFile(atOffset: 0)
+                try? handle.write(contentsOf: data)
+                try? handle.close()
+            } else {
+                // 首次创建，尚无 tail 跟随者，原子写入即可
+                try? data.write(to: self.logFileURL, options: .atomic)
             }
 
             self.isClosed = false
