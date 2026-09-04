@@ -1591,6 +1591,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private static let prefillStepSize = 1024
 
     /// 量取模型权重文件体积，用于权重感知的 KV 预算（铁律 63：参数须有实测依据）。
+    /// HF hub 的 snapshot 内是指向 blobs 的符号链接：必须 resolve 后量取，
+    /// 否则量到的是链接本身（~几十字节），实测 weights=0.0GB（日志 2026-09-05 02:04）。
     private static func measureWeightsBytes(atPath path: String) -> UInt64 {
         let fileManager = FileManager.default
         var totalBytes: UInt64 = 0
@@ -1607,11 +1609,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             guard isWeightFile else { continue }
 
-            let attributes = try? fileManager.attributesOfItem(
-                atPath: path + "/" + file
-            )
+            let resolvedPath = URL(fileURLWithPath: path)
+                .appendingPathComponent(file)
+                .resolvingSymlinksInPath()
+                .path
 
-            totalBytes += (attributes?[.size] as? UInt64) ?? 0
+            let attributes = try? fileManager.attributesOfItem(atPath: resolvedPath)
+
+            totalBytes += (attributes?[.size] as? NSNumber)?.uint64Value ?? 0
         }
 
         return totalBytes
