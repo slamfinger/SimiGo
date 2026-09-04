@@ -834,6 +834,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var sawUsableBranch = false
         var sawToolFingerprintMismatch = false
         var activeKVCacheFromPrefix: [any KVCache]?
+        // LAN 深度优化：同分支源 revision 深拷贝后立即无损释放（锁内标记、锁外执行）
+        var kvTrimReleases: [(caches: [any KVCache], tokens: Int, id: String)] = []
 
         state.withLock { state in
             for (index, revision) in state.physicalRevisions.enumerated() {
@@ -889,7 +891,39 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                        selectedIndex < state.physicalRevisions.count {
                         state.physicalRevisions[selectedIndex].lastActive = touched.lastActive
                     }
+
+                    // 白皮书 §35 lossless：同分支源 revision 被本轮深拷贝取代，
+                    // 串行链路下一轮只复用最新 revision —— 立即释放物理层（账本保留，
+                    // 再命中走 why=evicted Cold）。跨会话全局复用源不释放（对端链路仍需要它）。
+                    // 常驻从"父+子"减半为"仅子"，8.3G 预算可容 2 路 30K 会话。
+                    if revision.logicalBranchId == targetLogicalBranchId,
+                       selectedIndex >= 0,
+                       selectedIndex < state.physicalRevisions.count {
+                        kvTrimReleases.append(
+                            (revision.kvCache, revision.physicalTokens.count, revision.id)
+                        )
+                        state.physicalRevisions[selectedIndex].kvCache = []
+                    }
                 }
+            }
+        }
+
+        if !kvTrimReleases.isEmpty {
+            await MainActor.run {
+                for release in kvTrimReleases {
+                    for cache in release.caches {
+                        _ = cache.trim(release.tokens)
+                    }
+                }
+
+                Memory.clearCache()
+            }
+
+            for release in kvTrimReleases {
+                traceLogger.trace(
+                    "[KVTRIM] rev=\(release.id) est_freed=\(release.tokens * 128 / 1024)M why=superseded",
+                    session: traceSession
+                )
             }
         }
 
