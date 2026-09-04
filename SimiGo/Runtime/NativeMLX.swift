@@ -1583,10 +1583,39 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private static let gibibyte = 1024 * 1024 * 1024
     private static let inferenceMemoryLimit = 22 * gibibyte
     private static let inferenceCacheLimit = 4 * gibibyte
+    /// 权重感知预算下的 OS + App 基线预留（白皮书 §30，铁律 63 校准项）。
+    private static let osReserveBytes = 4 * gibibyte
     private static let maxPhysicalKVRevisions = 16
     private static let longContextThreshold = 16384
     private static let sessionMaxIdleTime: TimeInterval = 1800
     private static let prefillStepSize = 1024
+
+    /// 量取模型权重文件体积，用于权重感知的 KV 预算（铁律 63：参数须有实测依据）。
+    private static func measureWeightsBytes(atPath path: String) -> UInt64 {
+        let fileManager = FileManager.default
+        var totalBytes: UInt64 = 0
+
+        guard let enumerator = fileManager.enumerator(atPath: path) else {
+            return 0
+        }
+
+        for case let file as String in enumerator {
+            let isWeightFile =
+                file.hasSuffix(".safetensors") ||
+                file.hasSuffix(".npz") ||
+                file.hasSuffix(".gguf")
+
+            guard isWeightFile else { continue }
+
+            let attributes = try? fileManager.attributesOfItem(
+                atPath: path + "/" + file
+            )
+
+            totalBytes += (attributes?[.size] as? UInt64) ?? 0
+        }
+
+        return totalBytes
+    }
 
     private struct State {
         var modelContainer: ModelContainer?
@@ -1606,6 +1635,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     private let state = Mutex(State())
     private let modelPath: String
+    private let modelWeightsBytes: UInt64
     private let baseConfig: ModelConfig
     private let lifecycleGate = RuntimeLifecycleGate()
     private let gateHolder = Mutex(SessionGenerationGate())
@@ -1764,13 +1794,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     public init(info: ModelInfo, config: ModelConfig) {
         self.modelPath = info.path
+        self.modelWeightsBytes = Self.measureWeightsBytes(atPath: info.path)
         self.baseConfig = config
 
         Memory.memoryLimit = Self.inferenceMemoryLimit
         Memory.cacheLimit = Self.inferenceCacheLimit
 
+        let weightsGB = Double(modelWeightsBytes) / Double(Self.gibibyte)
         traceLogger.trace(
-            "Init NativeMLX Runtime: memoryLimit=22GB, cacheLimit=4GB, prefillStepSize=\(Self.prefillStepSize), " +
+            "Init NativeMLX Runtime: memoryLimit=22GB, cacheLimit=4GB, weights=\(String(format: "%.1f", weightsGB))GB, prefillStepSize=\(Self.prefillStepSize), " +
             "maxPhysicalKVRevisions=\(Self.maxPhysicalKVRevisions), logicalSessionEviction=TTL(\(Int(Self.sessionMaxIdleTime))s), modelPath=\(info.path)"
         )
     }
@@ -2551,7 +2583,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let projectedKVBytes = UInt64(deltaTokenCount) * estimatedBytesPerToken
         let executionWorkingSetBytes: UInt64 = 3 * 1024 * 1024 * 1024
         let safetyMarginBytes: UInt64 = 1 * 1024 * 1024 * 1024
-        let admissionLimit = UInt64(Self.inferenceMemoryLimit)
+
+        // 白皮书 §30 + 铁律 63：Admission 预算必须与物理内存对账。
+        // 权重不计入预算的旧口径在 20G 权重模型 + 32G 机器上超订 ~9G，
+        // macOS 被迫页出权重，实测 decode 33→12.7 tok/s（日志 2026-09-05）。
+        // limit = min(22G, RAM − weights − OS 基线)，下限 4G 防御。
+        let physicalRAMBytes = ProcessInfo.processInfo.physicalMemory
+        let reservedBytes = modelWeightsBytes &+ UInt64(Self.osReserveBytes)
+        let weightAwareLimit: UInt64 = physicalRAMBytes > reservedBytes
+            ? physicalRAMBytes &- reservedBytes
+            : 4 * 1024 * 1024 * 1024
+        let admissionLimit = min(
+            UInt64(Self.inferenceMemoryLimit),
+            weightAwareLimit
+        )
 
         let currentResidentKVBytes: UInt64 = state.withLock { state in
             state.physicalRevisions
@@ -2562,9 +2607,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let admissionMemorySnapshot = RuntimeMemoryProbe.snapshot()
         let internalKVGB = Double(currentResidentKVBytes) / Double(Self.gibibyte)
         let rssGB = admissionMemorySnapshot.residentGB
+        let weightsGB = Double(modelWeightsBytes) / Double(Self.gibibyte)
+        let budgetGB = Double(admissionLimit) / Double(Self.gibibyte)
 
         traceLogger.trace(
-            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: "%.2f", internalKVGB))G rss=\(String(format: "%.2f", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: "%.2f", $0) } ?? "?")G",
+            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: "%.2f", internalKVGB))G rss=\(String(format: "%.2f", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: "%.2f", $0) } ?? "?")G weights=\(String(format: "%.1f", weightsGB))G budget=\(String(format: "%.1f", budgetGB))G",
             session: traceSession
         )
 
