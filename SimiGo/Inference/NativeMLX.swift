@@ -139,6 +139,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var activeGenerationTasks: [String: Task<Void, Never>] = [:]
         var peakActiveRequests = 0
         var peakActiveGenerationTasks = 0
+        var activeDecodeStreams = 0
+        var peakDecodeStreams = 0
         var peakResidentBytes: UInt64 = 0
         var peakSwapUsedBytes: UInt64 = 0
     }
@@ -1301,10 +1303,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 state.peakActiveGenerationTasks,
                 state.activeGenerationTasks.count
             )
+            state.activeDecodeStreams += 1
+            state.peakDecodeStreams = max(
+                state.peakDecodeStreams,
+                state.activeDecodeStreams
+            )
         }
 
+        let decodeStreams = state.withLock { $0.activeDecodeStreams }
+
         traceLogger.trace(
-            "[GENERATION START] request=\(requestId), agent=\(executionKey.agentId), session=\(executionKey.sessionId), prefillQueueWait=\(String(format: "%.1f", prefillPermit.waited * 1000))ms",
+            "[GENERATION START] request=\(requestId), agent=\(executionKey.agentId), session=\(executionKey.sessionId), prefillQueueWait=\(String(format: "%.1f", prefillPermit.waited * 1000))ms, decodeStreams=\(decodeStreams)",
             session: traceSession
         )
 
@@ -1315,8 +1324,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         )
 
         defer {
-            _ = state.withLock {
+            state.withLock {
                 $0.activeGenerationTasks.removeValue(forKey: requestId)
+                $0.activeDecodeStreams = max($0.activeDecodeStreams - 1, 0)
             }
 
             emitRuntimeObservation(
