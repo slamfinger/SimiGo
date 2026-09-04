@@ -36,12 +36,42 @@
 | 阶段 | 内容 | 准出标准 |
 |---|---|---|
 | **Phase 1（✅ 本次）** | 并发观测基建：`[GENERATION START] decodeStreams=N`、State 计数、峰值统计 | 三流实测 `decodeStreams=3` 可见 |
-| **Phase 2** | `BatchedKVCache` 原型：K=2 等长构造，绕过 generate 的最小 eval loop | K=2 输出与单流**逐 token 一致**（贪心采样） |
-| **Phase 3** | pad-to-align + 逐序列 RoPE + 流进出（join/leave） | K=2/3 聚合 tok/s **≥1.5× 单流**；Tool Benchmark A–F 全绿 |
-| **Phase 4** | LAN 双客户端 Stress（2×Agent 会话） | 生命周期全收敛、无 ADMISSION WARN、内存平稳 |
-| **决策** | Benchmark + Invariant Audit + Stress 全过 → 提案进稳定基线；否则回退 | 铁律 35/36 |
+| **Phase 2（⛔ NO-GO 门）** | `BatchedKVCache` 原型 | 见 §6 侦查结论：混合架构阻断 |
+| **Phase 3** | pad-to-align + 逐序列 RoPE + 流进出（join/leave） | 随 Phase 2 阻断 |
+| **Phase 4** | LAN 双客户端 Stress | 随 Phase 2 阻断 |
+| **决策** | 依赖升级/上游合入后重开 Phase 2；否则维持现状 | 铁律 35/36 |
 
 **回退**：Phase 2 起全部代码置于 `RuntimeTuning.batchedDecodeEnabled`（默认 false）之后，删除即回退；不改 Logical State Model（铁律 50）。
+
+## 6. Phase 2 NO-GO 门（2026-09-05 侦查结论）
+
+对 mlx-swift-lm 3.31.4 包源码逐层核查后确认：
+
+```text
+1. Nail-Qwen3.6 / Tiel-Coder 均为 Qwen3_5MoeForConditionalGeneration
+   = Mamba(线性注意力) + FullAttention 混合架构（Qwen35MoEModel: Qwen35Model）
+2. FullAttention 层消费 cache.ropeOffset（Qwen35.swift:363，
+   applyRotaryPosition 支持 .batch(MLXArray) 逐序列位置 ✓）
+3. 线性注意力层使用 MambaCache（递归状态），无 batch 语义，
+   自定义 BatchedKVCache 无法覆盖 Mamba 层（状态语义在包内部）
+4. 模型侧不消费 LMInput.Text.mask（左填充掩码无注入点）
+5. 结论：不等长批处理需要上游（mlx-swift-lm）为混合架构提供
+   batch 语义的 MambaCache + 逐序列 RoPE 管线 —— 属上游工程
+```
+
+按铁律 82（正确性优先）与 §54（先证明再固化）：**在依赖提供 batch 语义前，不实施批处理解码**。带病上线（静默输出污染）的代价高于收益。
+
+## 7. 修订后的 LAN 容量路线
+
+```text
+现状（KVTRIM + weight-aware budget 已落地）：
+    1–2 路 30K Agent 并发 + 轻用户，每路 25–33 tok/s
+扩容杠杆（按可行性排序）：
+    1. 多节点：第二台 Mac 同构部署 + 客户端路由（线性扩容，零代码）
+    2. 换 KV 更轻模型（dense 7–14B 4bit，KV/token 降 3×，并发 ×3）
+    3. 上游依赖升级（mlx-swift-lm 混合架构 batch 支持）后重开本实验轨 Phase 2
+```
+
 
 ## 5. 已确认的非目标
 
