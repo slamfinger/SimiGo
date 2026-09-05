@@ -9,6 +9,31 @@ import MLXHuggingFace
 import Tokenizers
 import Darwin
 
+// MARK: - NativeMLX Lifecycle
+
+/// NativeMLX 空闲生命周期状态机（Phase 1）。
+/// isRunning 代表“服务是否存活”，modelContainer 代表“模型权重是否驻留”，
+/// 两者解耦：SUSPENDED 时服务仍健康（httpServer 仍在监听）但权重已卸载。
+private enum NativeMLXLifecycle: Sendable, Equatable, Hashable {
+    case stopped
+    case loading
+    case running
+    case suspended
+    case resuming
+
+    /// 跨 actor 比较两个 lifecycle，避免在 nonisolated 闭包里直接使用合成 Equatable
+    /// （在 Swift 6 mode 下会报 main actor-isolated 警告）。
+    nonisolated static func isSame(_ a: NativeMLXLifecycle, _ b: NativeMLXLifecycle) -> Bool {
+        switch (a, b) {
+        case (.running, .running), (.suspended, .suspended),
+             (.loading, .loading), (.resuming, .resuming), (.stopped, .stopped):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 // (The rest of the file is unchanged)
 
 private nonisolated struct RuntimeMemorySnapshot: Sendable {
@@ -132,6 +157,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var isRunning = false
         var isGenerating = false
         var generatingSessions: Set<String> = []
+
+        // Idle lifecycle (Phase 1): 服务存活（isRunning）与模型是否驻留（modelContainer）解耦。
+        // SUSPENDED 时 modelContainer == nil 但服务仍健康（httpServer != nil）。
+        var lifecycle: NativeMLXLifecycle = .stopped
+        var lastActivity = Date()
+        var suspendCount = 0
+        var resumeCount = 0
+
         var httpServer: HTTPServer?
         var sessionCaches: [String: SessionLogicalState] = [:]
         var physicalRevisions: [PhysicalKVRevision] = []
@@ -196,7 +229,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             "shutdown-begin",
             "shutdown-after-drain",
             "shutdown-after-kv-release",
-            "shutdown-after-memory-clear"
+            "shutdown-after-memory-clear",
+            "idle-suspend-begin",
+            "idle-suspend-done",
+            "resume-begin",
+            "resume-done"
         ]
 
         guard visible.contains(label) else { return }
@@ -211,7 +248,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             "shutdown-begin": "stop",
             "shutdown-after-drain": "drain",
             "shutdown-after-kv-release": "kvfree",
-            "shutdown-after-memory-clear": "memfree"
+            "shutdown-after-memory-clear": "memfree",
+            "idle-suspend-begin": "susp-begin",
+            "idle-suspend-done": "susp-done",
+            "resume-begin": "resume-begin",
+            "resume-done": "resume-done"
         ]
 
         let phase = labelMap[label] ?? label
@@ -321,6 +362,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     // MARK: Lifecycle
 
+    private func loadModelContainer(_ path: String) async throws -> ModelContainer {
+        let modelURL = URL(fileURLWithPath: path)
+
+        return try await LLMModelFactory.shared.loadContainer(
+            from: modelURL,
+            using: #huggingFaceTokenizerLoader()
+        )
+    }
+
     public func start(_ info: ModelInfo, port: Int) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else {
@@ -330,6 +380,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             guard !self.state.withLock({ $0.isRunning }) else {
                 return
             }
+
+            self.state.withLock { $0.lifecycle = .loading }
 
             let oldRevisions = self.state.withLock { state -> [PhysicalKVRevision] in
                 let revisions = state.physicalRevisions
@@ -358,13 +410,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             self.traceLogger.trace("Loading model container from \(info.path)")
 
             do {
-                let modelURL = URL(fileURLWithPath: info.path)
-
-                let container = try await LLMModelFactory.shared.loadContainer(
-                    from: modelURL,
-                    using: #huggingFaceTokenizerLoader()
-                )
-
+                let container = try await self.loadModelContainer(info.path)
                 let modelId = modelName(from: info.path)
 
                 let nodeConfiguration = await MainActor.run {
@@ -422,6 +468,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     $0.modelContainer = container
                     $0.isRunning = true
                     $0.isGenerating = false
+                    $0.lifecycle = .running
+                    $0.lastActivity = Date()
                     $0.httpServer = server
                     $0.sessionCaches.removeAll()
                     $0.physicalRevisions.removeAll()
@@ -522,7 +570,180 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     public func checkHealth() async -> Bool {
-        state.withLock { $0.isRunning && $0.modelContainer != nil }
+        // 服务健康 = NativeMLX 存活且 HTTPServer 仍在监听。
+        // SUSPENDED（modelContainer == nil）是合法健康态，不应触发 restart。
+        state.withLock { $0.isRunning && $0.httpServer != nil }
+    }
+
+    // MARK: Idle Lifecycle (Phase 1)
+
+    /// 懒加载：若服务存活但模型未驻留（SUSPENDED），则重新加载模型。
+    /// generate() 入口必须调用此函数，确保 suspend 后首个请求能正确 resume。
+    private func ensureLoaded() async throws {
+        let needsResume = state.withLock { state in
+            state.isRunning && state.modelContainer == nil
+        }
+
+        guard needsResume else {
+            return
+        }
+
+        try await lifecycleGate.withLock { [weak self] in
+            guard let self else {
+                throw RuntError.notLoaded
+            }
+
+            let alreadyLoaded = self.state.withLock { state in
+                state.modelContainer != nil
+            }
+
+            if alreadyLoaded {
+                return
+            }
+
+            let canResume = self.state.withLock { state in
+                state.isRunning &&
+                NativeMLXLifecycle.isSame(state.lifecycle, .suspended)
+            }
+
+            guard canResume else {
+                throw RuntError.notLoaded
+            }
+
+            self.state.withLock {
+                $0.lifecycle = .resuming
+                $0.lastActivity = Date()
+            }
+
+            let resumeStart = Date()
+
+            Service.log("♻ [NativeMLX] 空闲模型重新加载中...")
+
+            do {
+                let container = try await self.loadModelContainer(self.modelPath)
+
+                self.state.withLock {
+                    $0.modelContainer = container
+                    $0.lifecycle = .running
+                    $0.resumeCount += 1
+                    $0.lastActivity = Date()
+                }
+
+                Memory.clearCache()
+
+                let elapsed = Date().timeIntervalSince(resumeStart)
+
+                self.traceLogger.trace(
+                    "[LIFECYCLE] resume_done elapsed=\(String(format: "%.3f", elapsed))s"
+                )
+
+                Service.log("✅ [NativeMLX] 模型懒加载完成 (\(String(format: "%.2f", elapsed))s)")
+            } catch {
+                self.state.withLock {
+                    $0.lifecycle = .suspended
+                    $0.modelContainer = nil
+                }
+
+                self.traceLogger.trace(
+                    "[LIFECYCLE] resume_failed error=\(error.localizedDescription)"
+                )
+
+                throw RuntError.loadFailed(error.localizedDescription)
+            }
+        }
+    }
+
+    /// 空闲超时挂起：释放模型驻留内存但保留 HTTPServer。
+    /// 与 stop() 语义独立——suspend 后服务仍健康，不触发 restart。
+    /// 第一版直接释放 Physical KV（保留 logical session），resume 后首请求走 Cold Prefill。
+    public func suspendIfIdle(
+        idleTimeout: TimeInterval = 300
+    ) async -> Bool {
+        let eligible = state.withLock { state -> Bool in
+            guard state.isRunning else { return false }
+            guard state.modelContainer != nil else { return false }
+            guard NativeMLXLifecycle.isSame(state.lifecycle, .running) else { return false }
+            guard state.activeRequestTasks.isEmpty else { return false }
+            guard state.activeGenerationTasks.isEmpty else { return false }
+            guard state.generatingSessions.isEmpty else { return false }
+
+            return Date().timeIntervalSince(state.lastActivity) >= idleTimeout
+        }
+
+        guard eligible else {
+            return false
+        }
+
+        do {
+            return try await lifecycleGate.withLock { [weak self] in
+                guard let self else { return false }
+
+                let stillEligible = self.state.withLock { state -> Bool in
+                    guard state.isRunning else { return false }
+                    guard state.modelContainer != nil else { return false }
+                    guard NativeMLXLifecycle.isSame(state.lifecycle, .running) else { return false }
+                    guard state.activeRequestTasks.isEmpty else { return false }
+                    guard state.activeGenerationTasks.isEmpty else { return false }
+                    guard state.generatingSessions.isEmpty else { return false }
+
+                    return Date().timeIntervalSince(state.lastActivity) >= idleTimeout
+                }
+
+                guard stillEligible else {
+                    return false
+                }
+
+                self.state.withLock {
+                    $0.lifecycle = .suspended
+                }
+
+                self.traceLogger.trace(
+                    "[LIFECYCLE] suspend_begin idle=\(String(format: "%.1f", Date().timeIntervalSince(self.state.withLock { $0.lastActivity })))s"
+                )
+
+                Service.log("💤 [NativeMLX] 空闲超时，开始释放模型驻留内存...")
+
+                let revisions = self.state.withLock { state -> [PhysicalKVRevision] in
+                    let revisions = state.physicalRevisions
+
+                    state.physicalRevisions.removeAll()
+                    state.modelContainer = nil
+                    state.isGenerating = false
+                    state.generatingSessions.removeAll()
+
+                    return revisions
+                }
+
+                if !revisions.isEmpty {
+                    await MainActor.run {
+                        for var revision in revisions {
+                            revision.releasePhysicalMemory()
+                        }
+                    }
+                }
+
+                Memory.clearCache()
+                malloc_zone_pressure_relief(nil, 0)
+
+                self.state.withLock {
+                    $0.suspendCount += 1
+                }
+
+                let memory = RuntimeMemoryProbe.snapshot()
+
+                self.traceLogger.trace(
+                    "[LIFECYCLE] suspend_done rss=\(String(format: "%.2f", memory.residentGB))G " +
+                    "sw=\(memory.swapUsedGB.map { String(format: "%.2f", $0) } ?? "?")G " +
+                    "revisionsReleased=\(revisions.count)"
+                )
+
+                Service.log("💤 [NativeMLX] 模型已挂起，HTTP 服务保持运行，释放 \(revisions.count) 个 Physical KV Revision")
+
+                return true
+            }
+        } catch {
+            return false
+        }
     }
 
     // MARK: Inference Entry
@@ -538,6 +759,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         onChunk: @escaping @Sendable (String) -> Void,
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void = { _ in }
     ) async throws -> String {
+        state.withLock {
+            $0.lastActivity = Date()
+        }
+
+        // MARK: Idle Lifecycle (Phase 1) — suspend 后首个请求必须确保模型已重新加载
+        try await ensureLoaded()
+
         let executionKey = try AgentExecutionKey.resolve(
             agentId: agentId,
             sessionId: sessionId,
@@ -598,8 +826,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         defer {
-            _ = state.withLock {
+            state.withLock {
                 $0.activeRequestTasks.removeValue(forKey: requestId)
+                $0.lastActivity = Date()
             }
 
             emitRuntimeObservation(
@@ -1327,6 +1556,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             state.withLock {
                 $0.activeGenerationTasks.removeValue(forKey: requestId)
                 $0.activeDecodeStreams = max($0.activeDecodeStreams - 1, 0)
+                $0.lastActivity = Date()
             }
 
             emitRuntimeObservation(

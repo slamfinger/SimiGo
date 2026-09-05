@@ -972,9 +972,20 @@ public final class Service: ObservableObject {
                         continue
                     }
 
+                    // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
+                    // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
+                    // GGUF 的 Swap/restart 机制与 NativeMLX 空闲挂起完全独立，互不干扰。
+                    if self.backendKind == .mlx,
+                       let nativeMLX = runtime as? NativeMLX {
+                        // 健康循环只需“尝试挂起”，返回值用于静默处理。
+                        let _ = await nativeMLX.suspendIfIdle(
+                            idleTimeout: Self.idleSuspendTimeout
+                        )
+                    }
+
                     if !runtime.isInProcess && self.backendKind == .gguf {
                         if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸️ llama.cpp 当前存在活动 slot，跳过健康/Swap检查。", level: .debug)
+                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康/Swap检查。", level: .debug)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue
                         }
@@ -982,7 +993,7 @@ public final class Service: ObservableObject {
                         let fetchedSwap = getSwapUsedMegabytes()
 
                         if let swapMB = fetchedSwap, swapMB > 2048 {
-                            Self.log("⚠️ [外部子进程] Swap 过高 (\(swapMB) MB)，触发重启...", level: .warning)
+                            Self.log("⚠ [外部子进程] Swap 过高 (\(swapMB) MB)，触发重启...", level: .warning)
 
                             Task { @MainActor [weak self] in
                                 guard let self else { return }
@@ -999,13 +1010,13 @@ public final class Service: ObservableObject {
                 if !healthy {
                     if self.backendKind == .gguf {
                         if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸️ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
+                            Self.log("⏸ Health 检查失败但 llama.cpp 仍有活动 slot，暂不重启。", level: .warning)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue
                         }
                     }
 
-                    Self.log("⚠️ 模型服务无响应，触发解耦重启...", level: .warning)
+                    Self.log("⚠ 模型服务无响应，触发解耦重启...", level: .warning)
 
                     Task { @MainActor [weak self] in
                         await self?.forceRestart()
@@ -1014,10 +1025,16 @@ public final class Service: ObservableObject {
                     return
                 }
 
-                try? await Task.sleep(nanoseconds: 120_000_000_000)
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
             }
         }
     }
+
+    // MARK: - Health Check Tuning
+
+    /// Phase 1 实验用的空闲挂起超时（秒）。验证成功后改为 300。
+    /// 健康检查循环周期 30s，使挂起延迟收敛到 idleTimeout～idleTimeout+30s。
+    private static let idleSuspendTimeout: TimeInterval = 120
 
     private func stopHealthCheck() {
         healthTask?.cancel()
