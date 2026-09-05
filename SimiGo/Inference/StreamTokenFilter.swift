@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Synchronization
 import MLXLMCommon
 
 // MARK: - Raw <tool_call> Stream Fallback Parser
@@ -383,20 +384,22 @@ nonisolated final class StreamTokenFilter: @unchecked Sendable {
 // MARK: - Physical Token Recorder & Iterator
 
 nonisolated final class PhysicalTokenRecorder: @unchecked Sendable {
-    private var tokens: [Int] = []
+    /// append 在 MLX eval 上下文（container.perform 内 decode 循环）执行，
+    /// snapshot 在请求任务上下文执行；取消路径上两者无时序保证，必须真同步。
+    private let lock = Mutex<[Int]>([])
 
     nonisolated init() {}
 
     nonisolated func append(_ token: Int) {
-        tokens.append(token)
+        lock.withLock { $0.append(token) }
     }
 
     nonisolated func discardLastIfPresent() {
-        _ = tokens.popLast()
+        lock.withLock { _ = $0.popLast() }
     }
 
     nonisolated func snapshot() -> [Int] {
-        tokens
+        lock.withLock { $0 }
     }
 }
 
