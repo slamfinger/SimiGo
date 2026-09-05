@@ -66,7 +66,14 @@ struct PhysicalKVRevision: @unchecked Sendable {
 
     var cacheTokenCount: Int { physicalTokens.count }
     var resident: Bool { !kvCache.isEmpty }
-    var estimatedResidentBytes: UInt64 { resident ? UInt64(physicalTokens.count) * 128 * 1024 : 0 }
+
+    /// Admission/accounting must use the same calibrated estimate as RuntimeTuning.
+    /// This keeps Physical KV residency accounting and projected Delta KV on one byte/token basis.
+    var estimatedResidentBytes: UInt64 {
+        resident
+            ? UInt64(physicalTokens.count) * RuntimeTuning.estimatedKVBytesPerToken
+            : 0
+    }
 
     mutating func releasePhysicalMemory() {
         for kv in kvCache {
