@@ -28,6 +28,11 @@ enum RuntimeTuning {
     /// Delta KV 投影（35B-A3B 实测 ≈122KB/token）
     static let estimatedKVBytesPerToken: UInt64 = 128 * 1024
 
+    // MARK: Generation（协议默认值集中管理）
+
+    /// Generation 默认上限；避免运行时散落硬编码。
+    static let maxGenerationTokens = 4096
+
     // MARK: Physical KV / Session（§9/§33/§36，铁律 83-90）
 
     /// §9：Revision 历史上限（非内存预算，铁律 83/89）
