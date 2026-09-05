@@ -219,6 +219,33 @@ LogicalBranchId
 
 > **Runtime 不得从 sessionId 猜测 Branch。**
 
+## 3.2.1 双 Key 粒度不变量（v4.5.1 审计补记）
+
+AgentExecutionKey 派生两个粒度不同的 Key，语义差是架构不变量：
+
+```text
+storageKey = AgentId / SessionId                  → Session state 与 KV 归属粒度
+gateKey    = AgentId / SessionId / LogicalBranchId → Generation 串行化粒度
+```
+
+推论：
+
+```text
+同 Session 的不同 Logical Branch 可以并发运行（gateKey 不同），
+但它们共享同一份 Session state（storageKey 相同）。
+```
+
+因此约束：
+
+1. **任何修改 `sessionCaches[storageKey]` 的代码，必须假设同 Session 的其他 branch
+   正在并发读写同一结构**——Mutex 只保证数据结构不撕裂，不保证业务语义的
+   branch isolation（如 DegenerationState、Tool Semantic Progress 的跨 branch 可见性）。
+2. 未来引入真正的 branch 并行（Batched Decode / 多 branch 并发生成）前，
+   必须先为 SessionLogicalState 定义逐字段的并发契约，否则该字段必须收敛为
+   branch 私有。
+3. 该不变量已由 `SimiGoTests/AgentExecutionKeyTests.swift` 以契约测试锚定
+   （`testKeysDifferOnlyByBranch` 验证 storageKey 相同 / gateKey 不同）。
+
 ---
 
 # 3.3 Logical State Layer
