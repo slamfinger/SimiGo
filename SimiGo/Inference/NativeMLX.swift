@@ -119,6 +119,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private static let longContextThreshold = RuntimeTuning.longContextThreshold
     private static let sessionMaxIdleTime = RuntimeTuning.sessionMaxIdleSeconds
     private static let prefillStepSize = RuntimeTuning.prefillChunkSize
+    private static let maxGenerationTokens = RuntimeTuning.maxGenerationTokens
 
     /// 量取模型权重文件体积，用于权重感知的 KV 预算（铁律 63：参数须有实测依据）。
     /// HF hub 的 snapshot 内是指向 blobs 的符号链接：必须 resolve 后量取，
@@ -966,8 +967,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // MARK: Parameters
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
-        let requestedMaxTokens = config.maxTokens > 0 ? config.maxTokens : (baseConfig.maxTokens > 0 ? baseConfig.maxTokens : 4096)
-        let maxTokens = min(requestedMaxTokens, 4096)
+        let requestedMaxTokens = config.maxTokens > 0 ? config.maxTokens : (baseConfig.maxTokens > 0 ? baseConfig.maxTokens : Self.maxGenerationTokens)
+        let maxTokens = min(requestedMaxTokens, Self.maxGenerationTokens)
         let temperature = config.temperature != 0.0 ? config.temperature : baseConfig.temperature
         let topP = config.topP != 0.0 ? config.topP : (baseConfig.topP != 0.0 ? baseConfig.topP : 1.0)
         let topK = config.topK != 0 ? config.topK : baseConfig.topK
@@ -979,7 +980,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             maxTokens: maxTokens,
             maxKVSize: nil,
             temperature: Float(temperature),
-            topP: topK > 0 ? 1.0 : Float(topP),
+            topP: Float(topP),
             topK: topK,
             minP: minP,
             repetitionPenalty: repeatPenalty,
@@ -1373,10 +1374,40 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             weightAwareLimit
         )
 
+        // 已驻留 revision 的 KV 占用（不含本轮新分配的 copied KV，见下）。
         let currentResidentKVBytes: UInt64 = state.withLock { state in
             state.physicalRevisions
                 .map(\.estimatedResidentBytes)
                 .reduce(0, +)
+        }
+
+        // 分支命中时，activeKVCache 是源 revision 前 selectedCommonLen token 的深拷贝，
+        // 这是本轮新占用的物理内存。但源 revision 若仍 resident（未被 kvTrimReleases 释放），
+        // 其 estimatedResidentBytes 已含在 currentResidentKVBytes 中，
+        // 故只对“源仍 resident”时计入差额（copied − 源占用），避免重复计算；
+        // 源已被释放时计入完整 copied KV（纯新增占用）。
+        var copiedKVExtraBytes: UInt64 = 0
+
+        if selectedCommonLen > 0 {
+            let copiedBytes = UInt64(selectedCommonLen) * estimatedBytesPerToken
+
+            var sourceSnapshot: (id: String, resident: Bool, bytes: UInt64)?
+
+            if let branch = selectedBranch {
+                sourceSnapshot = state.withLock { state in
+                    guard state.physicalRevisions.contains(where: { $0.id == branch.id }) else {
+                        return nil
+                    }
+
+                    return (branch.id, branch.resident, branch.estimatedResidentBytes)
+                }
+            }
+
+            let sourceResidentBytes = sourceSnapshot?.resident == true ? sourceSnapshot!.bytes : 0
+
+            copiedKVExtraBytes = sourceResidentBytes > 0
+                ? (copiedBytes > sourceResidentBytes ? copiedBytes - sourceResidentBytes : 0)
+                : copiedBytes
         }
 
         let admissionMemorySnapshot = RuntimeMemoryProbe.snapshot()
@@ -1386,13 +1417,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let budgetGB = Double(admissionLimit) / Double(Self.gibibyte)
 
         traceLogger.trace(
-            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: "%.2f", internalKVGB))G rss=\(String(format: "%.2f", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: "%.2f", $0) } ?? "?")G weights=\(String(format: "%.1f", weightsGB))G budget=\(String(format: "%.1f", budgetGB))G",
+            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: "%.2f", internalKVGB))G copied_extra=\(String(format: "%.2f", Double(copiedKVExtraBytes) / Double(Self.gibibyte)))G rss=\(String(format: "%.2f", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: "%.2f", $0) } ?? "?")G weights=\(String(format: "%.1f", weightsGB))G budget=\(String(format: "%.1f", budgetGB))G",
             session: traceSession
         )
 
         var projectedMemory =
             currentResidentKVBytes +
             projectedKVBytes +
+            copiedKVExtraBytes +
             executionWorkingSetBytes +
             safetyMarginBytes
 
@@ -1441,8 +1473,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 projectedMemory =
                     (currentResidentKVBytes - freedBytes) +
                     projectedKVBytes +
+                    copiedKVExtraBytes +
                     executionWorkingSetBytes +
                     safetyMarginBytes
+
+                // Eviction 后仍超预算：副本 KV 已分配、generation 即将真跑，
+                // 继续只会触发 OOM/页出导致 decode 掉速。硬拒绝，止住请求。
+                if projectedMemory > admissionLimit {
+                    Memory.clearCache()
+
+                    traceLogger.trace(
+                        "[ADMISSION BLOCK] r=\(requestId) still_exceeding_after_eviction projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M",
+                        session: traceSession
+                    )
+
+                    throw RuntError.admissionExceeded(projectedMemory, admissionLimit)
+                }
             }
 
             if projectedMemory > admissionLimit {

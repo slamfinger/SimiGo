@@ -20,6 +20,7 @@ public enum RuntError: LocalizedError, Sendable {
     case generationFailed(String)
     case invalidModelDirectory(String)
     case modelNotSupported(String)
+    case admissionExceeded(UInt64, UInt64)
 
     public var errorDescription: String? {
         switch self {
@@ -28,6 +29,8 @@ public enum RuntError: LocalizedError, Sendable {
         case .generationFailed(let r): return "生成失败: \(r)"
         case .invalidModelDirectory(let p): return "无效的模型目录: \(p)"
         case .modelNotSupported(let r): return "不支持的模型: \(r)"
+        case .admissionExceeded(let projected, let limit):
+            return "内存超额拒绝: 投影 \(projected / 1024 / 1024)M > 上限 \(limit / 1024 / 1024)M（eviction 后仍超预算）"
         }
     }
 }
