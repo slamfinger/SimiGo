@@ -19,12 +19,18 @@
 
 /* Begin PBXFileReference section */
 		C138807D2FB37213009F04D2 /* SimiGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimiGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimiGoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C138807F2FB37213009F04D2 /* SimiGo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = SimiGo;
+			sourceTree = "<group>";
+		};
+		C1632B002FB4000000D1EF95 /* SimiGoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SimiGoTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -45,6 +51,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1632B032FB4000000D1EF95 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -52,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				C138807F2FB37213009F04D2 /* SimiGo */,
+				C1632B002FB4000000D1EF95 /* SimiGoTests */,
 				C1632AE53028D60C00D1EF95 /* Frameworks */,
 				C138807E2FB37213009F04D2 /* Products */,
 			);
@@ -61,6 +75,7 @@
 			isa = PBXGroup;
 			children = (
 				C138807D2FB37213009F04D2 /* SimiGo.app */,
+				C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -105,6 +120,28 @@
 			productReference = C138807D2FB37213009F04D2 /* SimiGo.app */;
 			productType = "com.apple.product-type.application";
 		};
+		C1632B092FB4000000D1EF95 /* SimiGoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1632B062FB4000000D1EF95 /* Build configuration list for PBXNativeTarget "SimiGoTests" */;
+			buildPhases = (
+				C1632B022FB4000000D1EF95 /* Sources */,
+				C1632B032FB4000000D1EF95 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C1632B082FB4000000D1EF95 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				C1632B002FB4000000D1EF95 /* SimiGoTests */,
+			);
+			name = SimiGoTests;
+			packageProductDependencies = (
+			);
+			productName = SimiGoTests;
+			productReference = C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -117,6 +154,10 @@
 				TargetAttributes = {
 					C138807C2FB37213009F04D2 = {
 						CreatedOnToolsVersion = 26.5;
+					};
+					C1632B092FB4000000D1EF95 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = C138807C2FB37213009F04D2;
 					};
 				};
 			};
@@ -140,9 +181,28 @@
 			projectRoot = "";
 			targets = (
 				C138807C2FB37213009F04D2 /* SimiGo */,
+				C1632B092FB4000000D1EF95 /* SimiGoTests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXContainerItemProxy section */
+		C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C13880752FB37212009F04D2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C138807C2FB37213009F04D2;
+			remoteInfo = SimiGo;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		C1632B082FB4000000D1EF95 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C138807C2FB37213009F04D2 /* SimiGo */;
+			targetProxy = C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C138807B2FB37213009F04D2 /* Resources */ = {
@@ -156,6 +216,13 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		C13880792FB37213009F04D2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1632B022FB4000000D1EF95 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -353,8 +420,44 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 			};
-			name = Release;
-		};
+				name = Release;
+			};
+			C1632B042FB4000000D1EF95 /* Debug */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					BUNDLE_LOADER = "$(TEST_HOST)";
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 1;
+					DEAD_CODE_STRIPPING = YES;
+					DEVELOPMENT_TEAM = YPXU8M53F9;
+					GENERATE_INFOPLIST_FILE = YES;
+					MARKETING_VERSION = 1.0;
+					PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+					PRODUCT_NAME = "$(TARGET_NAME)";
+					SWIFT_EMIT_LOC_STRINGS = NO;
+					SWIFT_VERSION = 5.0;
+					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
+				};
+				name = Debug;
+			};
+			C1632B052FB4000000D1EF95 /* Release */ = {
+				isa = XCBuildConfiguration;
+				buildSettings = {
+					BUNDLE_LOADER = "$(TEST_HOST)";
+					CODE_SIGN_STYLE = Automatic;
+					CURRENT_PROJECT_VERSION = 1;
+					DEAD_CODE_STRIPPING = YES;
+					DEVELOPMENT_TEAM = YPXU8M53F9;
+					GENERATE_INFOPLIST_FILE = YES;
+					MARKETING_VERSION = 1.0;
+					PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+					PRODUCT_NAME = "$(TARGET_NAME)";
+					SWIFT_EMIT_LOC_STRINGS = NO;
+					SWIFT_VERSION = 5.0;
+					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
+				};
+				name = Release;
+			};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -372,6 +475,15 @@
 			buildConfigurations = (
 				C13880892FB37213009F04D2 /* Debug */,
 				C138808A2FB37213009F04D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C1632B062FB4000000D1EF95 /* Build configuration list for PBXNativeTarget "SimiGoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1632B042FB4000000D1EF95 /* Debug */,
+				C1632B052FB4000000D1EF95 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
