@@ -847,8 +847,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let registrationError {
             task.cancel()
 
+            // 审计 P2#8：registrationError 有两种来源，日志必须如实区分，
+            // 否则 stop() 后 notLoaded 被误报为 duplicateRequestId，
+            // 污染下游依赖该 why= 字段做路由的 trace 解析。
+            let reason: String
+            switch registrationError {
+            case .notLoaded:
+                reason = "notLoaded"
+            case .duplicateRequestId:
+                reason = "duplicateRequestId"
+            default:
+                reason = "registration"
+            }
+
             traceLogger.trace(
-                "[REQ REJECT] request=\(requestId) why=duplicateRequestId",
+                "[REQ REJECT] request=\(requestId) why=\(reason)",
                 session: executionKey.traceKey
             )
 

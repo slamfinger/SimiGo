@@ -64,21 +64,42 @@ final class NativeMLXIntegrationTests: XCTestCase {
         XCTAssertEqual(snap.activeGenerations, 0)
         XCTAssertEqual(snap.generatingSessions, 0)
 
-        // ② 竞态轮：generate 与 stop 并发——请求先进入生命周期，stop 再启动
+        // ② 竞态轮：generate 与 stop 并发——请求先进入生命周期，stop 再启动。
+        //
+        // 审计 ①：固定 sleep（300ms/500ms/1s）锁不住竞态——stop 到来时请求可能尚未注册、
+        // 也可能已经跑完，测到的只是「未注册 → stop」或「完成 → stop」。
+        //
+        // 改用确定性同步点：第一个 onChunk 只会在请求通过 generation gate 并真正产出
+        // token 之后触发，因此「信号已 fire」==「请求已进入 generate 生命周期」。
+        //
+        // 同时把 maxTokens 抬到 256：首个 chunk 之后还需大量 decode 才可能自然完成，
+        // stop() 到来时请求必然仍在执行中；④ 再断言竞态请求以错误收场（被取消）
+        // 而非正常完成——把「stop 打断正在执行的 generate 并完整收敛」这条语义锁死。
+        let enteredGeneration = TestSignal()
+        var raceConfig = config
+        raceConfig.maxTokens = 256
+
         let raceTask = Task {
-            try? await runtime.generate(
-                requestId: "itest-race",
-                agentId: "itest",
-                sessionId: "s2",
-                logicalBranchId: "main",
-                messages: messages,
-                tools: nil,
-                config: config,
-                onChunk: { _ in }
-            )
+            do {
+                _ = try await runtime.generate(
+                    requestId: "itest-race",
+                    agentId: "itest",
+                    sessionId: "s2",
+                    logicalBranchId: "main",
+                    messages: messages,
+                    tools: nil,
+                    config: raceConfig,
+                    onChunk: { _ in enteredGeneration.fire() }
+                )
+                return "" // 正常完成（不该发生）
+            } catch {
+                return String(describing: error)
+            }
         }
 
-        try await Task.sleep(nanoseconds: 300_000_000) // 让请求完成注册并进入 gate
+        try await withTestTimeout(seconds: 30) {
+            await enteredGeneration.wait()
+        }
 
         try await withTestTimeout(seconds: 120) {
             await runtime.stop()
@@ -94,10 +115,15 @@ final class NativeMLXIntegrationTests: XCTestCase {
         XCTAssertFalse(runtime.isRunning)
         XCTAssertFalse(runtime.isGenerating)
 
-        // ④ 竞态请求必须在有限时间内收敛（不悬挂、无僵尸 task）
-        _ = try await withTestTimeout(seconds: 60) {
+        // ④ 竞态请求必须在有限时间内收敛（不悬挂、无僵尸 task），且必须是被 stop 取消
+        // 而非抢在 stop 之前自然完成——空字符串意味着 generate 正常返回，竞态语义失效
+        let raceErrorDescription = try await withTestTimeout(seconds: 60) {
             await raceTask.value
         }
+        XCTAssertFalse(
+            raceErrorDescription.isEmpty,
+            "竞态请求应被 stop() 取消而错误收场，实际却正常完成: \(raceErrorDescription)"
+        )
         XCTAssertEqual(runtime.integrationSnapshot().activeRequests, 0)
 
         // ⑤ stop 后新请求必须被拒绝（isRunning 门禁 → notLoaded）
