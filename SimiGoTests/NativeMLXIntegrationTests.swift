@@ -663,4 +663,114 @@ final class NativeMLXIntegrationTests: XCTestCase {
             throw error
         }
     }
+
+    /// Decode Batch Size Sweep（Batched Decode 实验轨 P0 基准，生产代码零改动）：
+    /// dense 模型上并发 decode 流数吞吐扫描——1/2/3/4/6/8 路。
+    ///
+    /// 设计：同长度 prompt（计数指令保证 decode 全长跑满 maxTokens=128）、
+    /// 不同 execution key（互不 supersede）、单次模型加载 + warm-up 后
+    /// 逐批并发发起。每批打印 [BENCH] 墙钟；每路 decode TPS/TTFT/dur
+    /// 经 [PERF] trace 留痕，聚合吞吐 = Σtok / 批墙钟（离线计算）。
+    ///
+    /// 目标：测出本机（32GB/Apple Silicon）当前「交错单流 decode」架构下
+    /// 聚合吞吐随流数的真实曲线与甜点位，为最小 Batched KVCache 实现提供
+    /// go/no-go 依据——已知先验：单流 28-33 tok/s，3 流聚合 ~25 tok/s
+    /// （README 实验数据），预期聚合不随流数扩展（每路争同一内存带宽）。
+    func testDecodeBatchSizeSweepBenchmark() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（decode 批扫描基准，数分钟）")
+        }
+
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: ModelConfig())
+        let port = 47_000 + Int.random(in: 0..<2_000)
+
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtime.start(info, port: port)
+            }
+
+            // warm-up（不计入测量）：模型加载后的首次推理预热
+            var warmConfig = ModelConfig()
+            warmConfig.maxTokens = 8
+            _ = try await withTestTimeout(seconds: 120) {
+                try await runtime.generate(
+                    requestId: "sweep-warm",
+                    agentId: "bench",
+                    sessionId: "bench-warm",
+                    logicalBranchId: "main",
+                    messages: [
+                        .object([
+                            "role": .string("user"),
+                            "content": .string("回复 ok"),
+                        ])
+                    ],
+                    tools: nil,
+                    config: warmConfig,
+                    onChunk: { _ in }
+                )
+            }
+
+            var decodeConfig = ModelConfig()
+            decodeConfig.maxTokens = 128
+
+            // 批请求：计数指令保证 decode 全长；尾部路号标记使内容互异
+            // （避免 commit 内容去重），长度差异 ≤ 数 token。
+            func benchPrompt(_ index: Int) -> [JSONValue] {
+                [
+                    .object([
+                        "role": .string("user"),
+                        "content": .string(
+                            "用阿拉伯数字从1数到500，每行一个数字，不要输出任何其他内容（第 \(index) 路）"
+                        ),
+                    ])
+                ]
+            }
+
+            for batch in [1, 2, 3, 4, 6, 8] {
+                let start = Date()
+                var texts: [String] = []
+                texts.reserveCapacity(batch)
+
+                try await withThrowingTaskGroup(of: String.self) { group in
+                    for index in 1...batch {
+                        group.addTask {
+                            try await withTestTimeout(seconds: 300) {
+                                try await runtime.generate(
+                                    requestId: "sw\(batch)-i\(index)",
+                                    agentId: "bench",
+                                    sessionId: "sw\(batch)-s\(index)",
+                                    logicalBranchId: "main",
+                                    messages: benchPrompt(index),
+                                    tools: nil,
+                                    config: decodeConfig,
+                                    onChunk: { _ in }
+                                )
+                            }
+                        }
+                    }
+
+                    for try await text in group {
+                        texts.append(text)
+                    }
+                }
+
+                let wall = Date().timeIntervalSince(start)
+
+                XCTAssertEqual(texts.count, batch, "batch=\(batch) 应全部完成")
+                for text in texts {
+                    XCTAssertFalse(text.isEmpty, "batch=\(batch) 每路应产出非空生成")
+                }
+
+                print(
+                    "[BENCH] batch=\(batch) wall=\(String(format: "%.2f", wall))s streams=\(batch) maxTokens=128"
+                )
+            }
+
+            await runtime.stop()
+        } catch {
+            await runtime.stop()
+            throw error
+        }
+    }
 }
