@@ -1,5 +1,13 @@
 import XCTest
+import MLX
+import MLXLMCommon
+import MLXLLM
+import MLXHuggingFace
+import Tokenizers
 @testable import SimiGo
+
+// MLXLMCommon 与 SimiGo 均定义 JSONValue——本文件的 messages 语义用 SimiGo 的
+private typealias JSONValue = SimiGo.JSONValue
 
 /// P1 集成测试（审计 2026-09-06 第 6 节）：stop() 收敛不变量——
 /// 「stop() 返回以后，任何在 stop 开始之前已经进入 generate 生命周期的
@@ -772,5 +780,135 @@ final class NativeMLXIntegrationTests: XCTestCase {
             await runtime.stop()
             throw error
         }
+    }
+
+    // MARK: - Dense Batched Decode 原型（实验轨 P0，Batched Decode 审计立项）
+
+    /// 原型运行结果（值类型，自动 Sendable）。
+    struct BatchedRunResult {
+        var batch: Int
+        var decodeWallSeconds: Double
+        var totalGeneratedTokens: Int
+        var aggregateTokensPerSecond: Double
+        var stream0Tokens: [Int]
+    }
+
+    /// Dense-only Batched Decode 原型（Batched Decode 审计立项 P0）：
+    /// 等长同步 batch（N 条相同 prompt）+ 贪心 argmax，直接驱动
+    /// `LanguageModel.callAsFunction(_ inputs: MLXArray, cache:)` raw 入口。
+    ///
+    /// 机制（已按 mlx-swift-lm 3.31.4 源码核实全部 batch 无关）：
+    /// - Qwen3MoEAttention 显式读取 (B, L) 并按 B reshape，RoPE 用共享 offset；
+    /// - StandardKVCache.update 的 kShape 以 B = keys.dim(0) 分配、offset += keys.dim(2)
+    ///   共享推进、`keys[.ellipsis, previous..<offset, 0...] = keys` 批量沿 seq 轴写入；
+    /// - decode 单步 n=1 时 mask = .none；MoE SwitchGLU/argPartition/takeAlong 均为末轴算子。
+    ///
+    /// 贪心 argmax：batch 安全且确定性——可断言「batch=4 的序列 0 与 batch=1 的
+    /// 序列 0 输出逐 token 相等」，数值等价校验批化 forward。
+    ///
+    /// 验收（审计立项硬指标）：batch=4 聚合 > 43 tok/s（交错单流基线）；> 50 才算
+    /// 真正兑现 weight-read 摊销；< 43 = batch overhead 吃掉收益，立即止损。
+    func testBatchedDecodePrototype() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（Batched Decode 原型）")
+        }
+
+        // 实验轨门控（审计裁决：Hybrid Batch Decode = NO-GO，Dense-only 实验轨）：
+        // 原型仅针对全注意力 dense 模型（Qwen3-Coder-30B-A3B）验证，
+        // 混合模型（MambaCache batch 语义未定义）须显式 opt-in 才允许进入本路径。
+        let batchedEnabled = ProcessInfo.processInfo.environment["SIMIGO_TEST_BATCHED"] == "1"
+            || UserDefaults.standard.string(forKey: "SIMIGO_TEST_BATCHED") == "1"
+        guard batchedEnabled else {
+            throw XCTSkip("Batched Decode 实验轨：设置 SIMIGO_TEST_BATCHED=1 后运行（Dense-only）")
+        }
+
+        // 与 SimiGo loadModelContainer 相同的加载路径与 tokenizer loader
+        Memory.memoryLimit = 22 * 1024 * 1024 * 1024
+        let container = try await LLMModelFactory.shared.loadContainer(
+            from: URL(fileURLWithPath: modelPath),
+            using: #huggingFaceTokenizerLoader()
+        )
+
+        let decodeSteps = 128
+
+        func runBatch(_ batch: Int) async throws -> BatchedRunResult {
+            try await container.perform { context -> BatchedRunResult in
+                let model = context.model
+                let tokenizer = context.tokenizer
+
+                let promptText = "用阿拉伯数字从1数到500，每行一个数字，不要输出任何其他内容"
+                let promptTokens = tokenizer.encode(text: promptText)
+                let promptLength = promptTokens.count
+
+                // 等长同步 batch：[batch, L]（相同 prompt → 位置完全同步）
+                let flat = Array(repeating: promptTokens, count: batch).flatMap { $0 }
+                let input = MLXArray(flat.map { Int32($0) }, [batch, promptLength])
+
+                let caches = model.newCache(parameters: nil)
+
+                // Prefill（等长同步 batch）→ logits [batch, L, V]
+                // 标量索引 -1 移除轴：[0..., -1, 0...] → [batch, V]（2-D），
+                // argMax → [batch]（1-D）——库语义正确，decode 输入用
+                // expandedDimensions 恢复 [batch, 1]。
+                let logits = model(input, cache: caches) // [batch, L, V]
+                var next = logits[0..., -1, 0...].argMax(axis: -1) // [batch]
+                eval(next)
+
+                var stream0Tokens = [next[0].item(Int.self)]
+                var generated = batch
+                let decodeStart = Date()
+
+                for step in 1..<decodeSteps {
+                    let stepInput = next.expandedDimensions(axis: 1) // [batch, 1]
+                    let out = model(stepInput, cache: caches) // [batch, 1, V]
+                    next = out[0..., -1, 0...].argMax(axis: -1) // [batch]
+                    eval(next)
+
+                    generated += batch
+                    stream0Tokens.append(next[0].item(Int.self))
+                }
+
+                let decodeWall = Date().timeIntervalSince(decodeStart)
+
+                return BatchedRunResult(
+                    batch: batch,
+                    decodeWallSeconds: decodeWall,
+                    totalGeneratedTokens: generated,
+                    aggregateTokensPerSecond: Double(generated) / decodeWall,
+                    stream0Tokens: stream0Tokens
+                )
+            }
+        }
+
+        let single = try await runBatch(1)
+        let batched = try await runBatch(4)
+
+        print(
+            "[BATCHED-PROTOTYPE] batch=1 wall=\(String(format: "%.3f", single.decodeWallSeconds))s " +
+                "agg=\(String(format: "%.1f", single.aggregateTokensPerSecond)) tok/s"
+        )
+        print(
+            "[BATCHED-PROTOTYPE] batch=4 wall=\(String(format: "%.3f", batched.decodeWallSeconds))s " +
+                "agg=\(String(format: "%.1f", batched.aggregateTokensPerSecond)) tok/s"
+        )
+
+        // 数值等价：贪心确定性下批化 forward 与单流在前缀上逐 token 一致——
+        // 实测前 ~60 token 完全相同后，因 B=1 vs B=4 的 GEMM 求和顺序差异在
+        // 贪心近平局处分叉（批化推理固有数值现象，非 forward 缺陷）。
+        // 契约取前缀阈值：前 32 token 必须一致（足以验证批化分布正确性）。
+        let prefixMatch = zip(batched.stream0Tokens, single.stream0Tokens)
+            .prefix(32)
+            .filter { $0 == $1 }
+            .count
+        XCTAssertEqual(
+            prefixMatch, 32,
+            "batch=4 与 batch=1 的前 32 token 必须逐 token 一致（批化 forward 数值等价）"
+        )
+
+        // 审计立项硬指标：batch=4 聚合 > 43 tok/s（交错单流基线）
+        XCTAssertGreaterThan(
+            batched.aggregateTokensPerSecond, 43,
+            "Batched Decode 原型必须突破交错单流基线 43 tok/s；未突破 = overhead 吃掉收益，止损"
+        )
     }
 }
