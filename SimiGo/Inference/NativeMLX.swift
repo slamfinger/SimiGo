@@ -177,6 +177,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var peakDecodeStreams = 0
         var peakResidentBytes: UInt64 = 0
         var peakSwapUsedBytes: UInt64 = 0
+
+        // 审计 P2-1（性能审计轮）测试 seam：最近一次请求的复用决策留痕。
+        // lastReuseSourceTokens = 命中源的账本长度；lastReuseCommonLen = 实际复用前缀；
+        // 无复用（冷启动或门禁拦截）均为 -1。并发请求下会相互覆盖，仅供 @testable 契约断言。
+        var lastReuseSourceTokens = -1
+        var lastReuseCommonLen = -1
     }
 
     private let state = Mutex(State())
@@ -1152,6 +1158,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "[KVS] br=\(targetLogicalBranchId) i=\(selection.index) rawcp=\(selection.rawCommonLen) cp=\(selection.commonLen)",
                 session: traceSession
             )
+        }
+
+        // 审计 P2-1（性能审计轮）：复用决策留痕到测试 seam（State.lastReuse*），
+        // 使 warm hit 成为 XCTest 硬契约而非仅 trace 人工分析。
+        state.withLock { state in
+            if let branch = selection.branch,
+               selection.commonLen > 0,
+               selection.cachesForReuse != nil {
+                state.lastReuseSourceTokens = branch.physicalTokens.count
+                state.lastReuseCommonLen = selection.commonLen
+            } else {
+                state.lastReuseSourceTokens = -1
+                state.lastReuseCommonLen = -1
+            }
         }
 
         // MARK: Prefill Scheduler
@@ -2340,13 +2360,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// revisionsLedgerSynced：KV 全链路对账 seam——每个 revision 的账本长度必须与
     /// MLX 物理 KV offset 逐层一致（2026-09-06 审计 P1：EOS discard 曾使
     /// ledger == KV − 1 且全库无对账观测，错位 entry 沿复用链静默延续）。
+    /// revisionTokenCounts：池内各 revision 账本长度（commit 后按 lastActive 降序，最新在前）。
+    /// lastReuse*：最近一次请求的复用决策（源账本长度 / 实际复用前缀；无复用为 -1）——
+    /// warm hit 硬契约的断言锚点（审计 P2-1）。
     func integrationSnapshot() -> (
         activeRequests: Int,
         activeGenerations: Int,
         revisions: Int,
         sessions: Int,
         generatingSessions: Int,
-        revisionsLedgerSynced: Bool
+        revisionsLedgerSynced: Bool,
+        revisionTokenCounts: [Int],
+        lastReuseSourceTokens: Int,
+        lastReuseCommonLen: Int
     ) {
         state.withLock { state in
             let ledgerSynced = state.physicalRevisions.allSatisfy { revision in
@@ -2362,7 +2388,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 state.physicalRevisions.count,
                 state.sessionCaches.count,
                 state.generatingSessions.count,
-                ledgerSynced
+                ledgerSynced,
+                state.physicalRevisions.map { $0.physicalTokens.count },
+                state.lastReuseSourceTokens,
+                state.lastReuseCommonLen
             )
         }
     }

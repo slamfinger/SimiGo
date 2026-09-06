@@ -223,11 +223,19 @@ final class NativeMLXIntegrationTests: XCTestCase {
     // MARK: - 性能审计（KV 全链路第四轮）：多轮 warm hit 衰减 + 长上下文 + eviction 压力
 
     /// 多轮会话 warm hit 衰减实测（模型无关，需要 SIMIGO_TEST_MODEL_PATH）：
-    /// turn-1 冷启动后，每轮注入一段代码压力块使 prompt 逐步增长至 ~16K，
-    /// 断言每轮提交后账本逐层对齐（不变量）；命中率/TTFT/prefill/decode TPS/
-    /// admission 驱逐全部经 [KVR]/[PERF]/[ADMISSION] trace 留痕供离线分析。
-    /// 12 轮 ≈ 16K token：32GB 机器上 32K/64K 的 KV 驻留（~3GB/6GB/revision）
-    /// 会持续触发 admissionExceeded，待更大内存环境再扩展。
+    /// turn-1 冷启动后，每轮注入一段代码压力块使 prompt 逐步增长至 ~20K。
+    ///
+    /// 硬契约（审计 P2-1：warm hit 不得只靠 trace 人工分析）：
+    /// - turn 1：池空必须冷启动（lastReuse == -1）；
+    /// - turn 2 探测复用模式，turn 3+ 硬强制——
+    ///   dense：每轮必须命中上一 revision 且吃满其全部前缀
+    ///   （lastReuseSourceTokens == lastReuseCommonLen == 上一 revision 账本长度，
+    ///   即 cp == 源全长、零漂移）；
+    ///   gated（混合模型）：每轮都必须无复用（lastReuse == -1）；
+    ///   模式漂移（有时复用有时不复用）= 前缀/模板/选源回归，直接红灯。
+    /// 命中率/TTFT/prefill/decode TPS/admission 驱逐仍经 trace 留痕供衰减曲线分析。
+    /// 12 轮 ≈ 20K token：32GB 机器上 32K/64K 的 decode 已实测塌方（性能审计第四轮），
+    /// 更长上下文留待大内存环境。
     private func perfPaddingBlock(_ turn: Int) -> String {
         let header = "// === turn \(turn) 长上下文压力块 ===\n"
         let line = "let metric\(turn) = evaluateStep(\(turn), payload: \"pad-\(turn)-sample-payload\")\n"
@@ -260,6 +268,10 @@ final class NativeMLXIntegrationTests: XCTestCase {
         ]
 
         let turnBudget = 12
+
+        var reuseModeEnforced = false
+        var expectReuse = false
+        var prevRevisionTokens = -1
 
         for turn in 1...turnBudget {
             if turn > 1 {
@@ -298,6 +310,43 @@ final class NativeMLXIntegrationTests: XCTestCase {
                 snap.revisionsLedgerSynced,
                 "turn \(turn) 提交后账本必须与 KV offset 逐层对齐"
             )
+
+            if turn == 1 {
+                XCTAssertEqual(
+                    snap.lastReuseCommonLen, -1,
+                    "turn 1 池空必须冷启动"
+                )
+            } else if !reuseModeEnforced {
+                expectReuse = snap.lastReuseCommonLen >= 0
+                reuseModeEnforced = true
+
+                if expectReuse {
+                    XCTAssertEqual(
+                        snap.lastReuseSourceTokens, prevRevisionTokens,
+                        "turn \(turn) 复用源必须是上一 revision"
+                    )
+                    XCTAssertEqual(
+                        snap.lastReuseCommonLen, prevRevisionTokens,
+                        "turn \(turn) 复用必须吃满源全部前缀（零漂移）"
+                    )
+                }
+            } else if expectReuse {
+                XCTAssertEqual(
+                    snap.lastReuseSourceTokens, prevRevisionTokens,
+                    "turn \(turn) 复用源必须是上一 revision"
+                )
+                XCTAssertEqual(
+                    snap.lastReuseCommonLen, prevRevisionTokens,
+                    "turn \(turn) 复用必须吃满源全部前缀（零漂移）"
+                )
+            } else {
+                XCTAssertEqual(
+                    snap.lastReuseCommonLen, -1,
+                    "turn \(turn) gated 模式必须始终无复用"
+                )
+            }
+
+            prevRevisionTokens = snap.revisionTokenCounts.first ?? -1
         }
 
         let finalSnap = runtime.integrationSnapshot()
