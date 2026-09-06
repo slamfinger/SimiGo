@@ -1035,7 +1035,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let toolFingerprint = makeToolFingerprint(toolsAny)
         let semanticProgressHash = computeSemanticProgressHash(messagesAny)
 
-        let logicalStateReleases = state.withLock { state -> [PhysicalKVRevision] in
+        state.withLock { state in
             var session = state.sessionCaches[sessionKey] ?? SessionLogicalState()
 
             if session.logicalBranches[targetLogicalBranchId] == nil {
@@ -1053,96 +1053,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             session.lastActive = Date()
             state.sessionCaches[sessionKey] = session
-
-            return []
         }
 
-        _ = logicalStateReleases
-
-        var selectedBranch: PhysicalKVRevision?
-        var selectedIndex = -1
-        var selectedCommonLen = 0
-        var selectedRawCommonLen = 0
-        var sawUsableBranch = false
-        var sawToolFingerprintMismatch = false
-        var activeKVCacheFromPrefix: [any KVCache]?
-        // LAN 深度优化：同分支源 revision 深拷贝后立即无损释放（锁内标记、锁外执行）
-        var kvTrimReleases: [(caches: [any KVCache], tokens: Int, id: String)] = []
-
-        state.withLock { state in
-            for (index, revision) in state.physicalRevisions.enumerated() {
-                guard !revision.physicalTokens.isEmpty else { continue }
-
-                sawUsableBranch = true
-
-                guard revision.toolFingerprint == toolFingerprint else {
-                    sawToolFingerprintMismatch = true
-                    continue
-                }
-
-                let rawCommon = computeCommonPrefix(
-                    revision.physicalTokens,
-                    allPromptTokens
-                )
-
-                let boundedCommon = min(
-                    rawCommon,
-                    revision.physicalTokens.count,
-                    allPromptTokens.count
-                )
-
-                if boundedCommon > selectedCommonLen ||
-                    (boundedCommon == selectedCommonLen &&
-                     boundedCommon > 0 &&
-                     revision.lastActive > (selectedBranch?.lastActive ?? .distantPast)) {
-                    selectedCommonLen = boundedCommon
-                    selectedRawCommonLen = rawCommon
-                    selectedBranch = revision
-                    selectedIndex = index
-                }
-            }
-
-            if let revision = selectedBranch, selectedCommonLen > 0 {
-                if !revision.resident {
-                    selectedCommonLen = 0
-                    activeKVCacheFromPrefix = nil
-
-                    traceLogger.trace(
-                        "[KVD] br=\(targetLogicalBranchId) why=evicted rev=\(revision.id)",
-                        session: traceSession
-                    )
-                } else {
-                    activeKVCacheFromPrefix = revision.kvCache.map {
-                        $0.copy()
-                    }
-
-                    var touched = revision
-                    touched.lastActive = Date()
-
-                    if selectedIndex >= 0,
-                       selectedIndex < state.physicalRevisions.count {
-                        state.physicalRevisions[selectedIndex].lastActive = touched.lastActive
-                    }
-
-                    // 白皮书 §35 lossless：同分支源 revision 被本轮深拷贝取代，
-                    // 串行链路下一轮只复用最新 revision —— 立即释放物理层（账本保留，
-                    // 再命中走 why=evicted Cold）。跨会话全局复用源不释放（对端链路仍需要它）。
-                    // 常驻从"父+子"减半为"仅子"，8.3G 预算可容 2 路 30K 会话。
-                    if revision.logicalBranchId == targetLogicalBranchId,
-                       selectedIndex >= 0,
-                       selectedIndex < state.physicalRevisions.count {
-                        kvTrimReleases.append(
-                            (revision.kvCache, revision.physicalTokens.count, revision.id)
-                        )
-                        state.physicalRevisions[selectedIndex].kvCache = []
-                    }
-                }
-            }
+        let selection = state.withLock { state in
+            Self.selectKVSourceLocked(
+                revisions: &state.physicalRevisions,
+                promptTokens: allPromptTokens,
+                toolFingerprint: toolFingerprint,
+                targetStorageKey: sessionKey,
+                targetBranchId: targetLogicalBranchId
+            )
         }
 
-        if !kvTrimReleases.isEmpty {
+        var selectedCommonLen = selection.commonLen
+
+        if !selection.trimReleases.isEmpty {
             await MainActor.run {
-                for release in kvTrimReleases {
+                for release in selection.trimReleases {
                     for cache in release.caches {
                         _ = cache.trim(release.tokens)
                     }
@@ -1151,7 +1078,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 Memory.clearCache()
             }
 
-            for release in kvTrimReleases {
+            for release in selection.trimReleases {
                 traceLogger.trace(
                     "[KVTRIM] rev=\(release.id) est_freed=\(release.tokens * 128 / 1024)M why=superseded",
                     session: traceSession
@@ -1159,16 +1086,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
-        if sawToolFingerprintMismatch {
+        if selection.sawToolFingerprintMismatch {
             traceLogger.trace(
                 "[KVD] br=\(targetLogicalBranchId) why=toolFP reuse=0",
                 session: traceSession
             )
         }
 
-        if selectedBranch != nil {
+        if selection.branch != nil, selection.commonLen == 0 {
             traceLogger.trace(
-                "[KVS] br=\(targetLogicalBranchId) i=\(selectedIndex) rawcp=\(selectedRawCommonLen) cp=\(selectedCommonLen)",
+                "[KVD] br=\(targetLogicalBranchId) why=evicted rev=\(selection.branch?.id ?? "-")",
+                session: traceSession
+            )
+        }
+
+        if selection.branch != nil {
+            traceLogger.trace(
+                "[KVS] br=\(targetLogicalBranchId) i=\(selection.index) rawcp=\(selection.rawCommonLen) cp=\(selection.commonLen)",
                 session: traceSession
             )
         }
@@ -1210,9 +1144,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var deltaTokenCount = allPromptTokens.count
         var hasReusableCache = false
 
-        if let branch = selectedBranch,
+        if let branch = selection.branch,
            selectedCommonLen > 0,
-           let copiedKV = activeKVCacheFromPrefix {
+           let copiedKV = selection.cachesForReuse {
             activeKVCache = copiedKV
 
             traceLogger.trace(
@@ -1265,7 +1199,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
 
                 traceLogger.trace(
-                    "[KVR] src=G i=\(selectedIndex) rev=\(branch.id) cache=\(branch.physicalTokens.count) cp=\(selectedCommonLen) d=\(deltaCount) hit=\(skippedPercent)%",
+                    "[KVR] src=G i=\(selection.index) rev=\(branch.id) cache=\(branch.physicalTokens.count) cp=\(selectedCommonLen) d=\(deltaCount) hit=\(skippedPercent)%",
                     session: traceSession
                 )
             } else if selectedCommonLen > 1 {
@@ -1293,7 +1227,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
 
                 traceLogger.trace(
-                    "[EXACT MATCH REPRIME] source=global, index=\(selectedIndex), branch=\(branch.id), reused=\(selectedCommonLen), delta=1, reuse=\(skippedPercent)%",
+                    "[EXACT MATCH REPRIME] source=global, index=\(selection.index), branch=\(branch.id), reused=\(selectedCommonLen), delta=1, reuse=\(skippedPercent)%",
                     session: traceSession
                 )
             } else {
@@ -1328,11 +1262,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             if revisionCount == 0 {
                 missReason = "noGlobalRevision"
-            } else if sawToolFingerprintMismatch {
+            } else if selection.sawToolFingerprintMismatch {
                 missReason = "toolFingerprintMismatch"
-            } else if selectedBranch != nil && !(selectedBranch!.resident) {
+            } else if selection.branch != nil && !(selection.branch!.resident) {
                 missReason = "evictedPhysicalKV"
-            } else if sawUsableBranch {
+            } else if selection.sawUsableBranch {
                 missReason = "noCommonPrefix"
             } else {
                 missReason = "noUsableLineage"
@@ -1382,33 +1316,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         // 分支命中时，activeKVCache 是源 revision 前 selectedCommonLen token 的深拷贝，
-        // 这是本轮新占用的物理内存。但源 revision 若仍 resident（未被 kvTrimReleases 释放），
-        // 其 estimatedResidentBytes 已含在 currentResidentKVBytes 中，
-        // 故只对“源仍 resident”时计入差额（copied − 源占用），避免重复计算；
-        // 源已被释放时计入完整 copied KV（纯新增占用）。
-        var copiedKVExtraBytes: UInt64 = 0
-
-        if selectedCommonLen > 0 {
-            let copiedBytes = UInt64(selectedCommonLen) * estimatedBytesPerToken
-
-            var sourceSnapshot: (id: String, resident: Bool, bytes: UInt64)?
-
-            if let branch = selectedBranch {
-                sourceSnapshot = state.withLock { state in
-                    guard state.physicalRevisions.contains(where: { $0.id == branch.id }) else {
-                        return nil
-                    }
-
-                    return (branch.id, branch.resident, branch.estimatedResidentBytes)
-                }
-            }
-
-            let sourceResidentBytes = sourceSnapshot?.resident == true ? sourceSnapshot!.bytes : 0
-
-            copiedKVExtraBytes = sourceResidentBytes > 0
-                ? (copiedBytes > sourceResidentBytes ? copiedBytes - sourceResidentBytes : 0)
-                : copiedBytes
-        }
+        // 属于本轮新增的物理内存，必须全额计入投影：currentResidentKVBytes 已完整计入
+        // 仍驻留的源 revision（跨会话复用源），而同 owner 源的物理层已被 kvTrimReleases
+        // 提前释放（live state 计 0）——两种情形下副本都不与既有账本重复。
+        // 794f943 曾实现"源驻留时计差额"，但 resident/bytes 读自选源时的本地结构体副本
+        // （stale，恒 resident）且 copied ≤ 源恒成立，导致该项恒为 0；2026-09-06 审计修正。
+        let copiedKVExtraBytes: UInt64 = selectedCommonLen > 0
+            ? UInt64(selectedCommonLen) * estimatedBytesPerToken
+            : 0
 
         let admissionMemorySnapshot = RuntimeMemoryProbe.snapshot()
         let internalKVGB = Double(currentResidentKVBytes) / Double(Self.gibibyte)
@@ -1903,6 +1818,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             let revision = PhysicalKVRevision(
                 id: branchId,
+                ownerStorageKey: sessionKey,
                 logicalBranchId: targetLogicalBranchId,
                 toolFingerprint: toolFingerprint,
                 physicalTokens: physicalTokens,
@@ -2029,7 +1945,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             " d=\(String(format: "%.1f", decodeTPS))/s" +
             " p=\(allPromptTokens.count)" +
             " cp=\(selectedCommonLen)" +
-            " cache=\(selectedBranch?.physicalTokens.count ?? 0)" +
+            " cache=\(selection.branch?.physicalTokens.count ?? 0)" +
             " tok=\(actualGeneratedTokenIDs.count)" +
             " tool=\(toolCallDetected ? 1 : 0)" +
             " fwd=\(forwardedToolCount)" +
@@ -2153,6 +2069,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         _ a: [Int],
         _ b: [Int]
     ) -> Int {
+        Self.commonPrefixLength(a, b)
+    }
+
+    private nonisolated static func commonPrefixLength(
+        _ a: [Int],
+        _ b: [Int]
+    ) -> Int {
         let limit = min(a.count, b.count)
         var count = 0
 
@@ -2161,6 +2084,90 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         return count
+    }
+
+    // MARK: - KV Source Selection（纯函数，供契约测试）
+
+    struct KVSourceSelection {
+        var branch: PhysicalKVRevision?
+        var index = -1
+        var commonLen = 0
+        var rawCommonLen = 0
+        var sawUsableBranch = false
+        var sawToolFingerprintMismatch = false
+        var cachesForReuse: [any KVCache]?
+        /// 同 owner 同分支的源被深拷贝取代后需无损释放的物理层（锁内标记、锁外 trim）
+        var trimReleases: [(caches: [any KVCache], tokens: Int, id: String)] = []
+    }
+
+    /// 全局 Physical KV 池选源（铁律 42/43/7）：最长前缀胜出、同长按 lastActive 破平、
+    /// Tool Fingerprint 过滤。必须在 state 锁内调用（revisions 为 inout）。
+    /// 归属裁决（架构指引 §2.1 双 Key 不变量）：仅同 ownerStorageKey 且同分支的源
+    /// 才允许在本轮深拷贝后无损释放物理层；跨会话同名分支源必须保留。
+    static func selectKVSourceLocked(
+        revisions: inout [PhysicalKVRevision],
+        promptTokens: [Int],
+        toolFingerprint: String,
+        targetStorageKey: String,
+        targetBranchId: String
+    ) -> KVSourceSelection {
+        var selection = KVSourceSelection()
+
+        for (index, revision) in revisions.enumerated() {
+            guard !revision.physicalTokens.isEmpty else { continue }
+
+            selection.sawUsableBranch = true
+
+            guard revision.toolFingerprint == toolFingerprint else {
+                selection.sawToolFingerprintMismatch = true
+                continue
+            }
+
+            let rawCommon = commonPrefixLength(revision.physicalTokens, promptTokens)
+
+            let boundedCommon = min(
+                rawCommon,
+                revision.physicalTokens.count,
+                promptTokens.count
+            )
+
+            if boundedCommon > selection.commonLen ||
+                (boundedCommon == selection.commonLen &&
+                 boundedCommon > 0 &&
+                 revision.lastActive > (selection.branch?.lastActive ?? .distantPast)) {
+                selection.commonLen = boundedCommon
+                selection.rawCommonLen = rawCommon
+                selection.branch = revision
+                selection.index = index
+            }
+        }
+
+        if let revision = selection.branch, selection.commonLen > 0 {
+            if !revision.resident {
+                selection.commonLen = 0
+                selection.cachesForReuse = nil
+            } else {
+                selection.cachesForReuse = revision.kvCache.map {
+                    $0.copy()
+                }
+
+                if selection.index >= 0, selection.index < revisions.count {
+                    revisions[selection.index].lastActive = Date()
+                }
+
+                if revision.ownerStorageKey == targetStorageKey,
+                   revision.logicalBranchId == targetBranchId,
+                   selection.index >= 0,
+                   selection.index < revisions.count {
+                    selection.trimReleases.append(
+                        (revision.kvCache, revision.physicalTokens.count, revision.id)
+                    )
+                    revisions[selection.index].kvCache = []
+                }
+            }
+        }
+
+        return selection
     }
 
     // MARK: - Cancellation

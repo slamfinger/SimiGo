@@ -58,6 +58,10 @@ struct LogicalBranchState: Sendable {
 
 struct PhysicalKVRevision: @unchecked Sendable {
     var id: String
+    /// 归属 storageKey（agent/session，AgentExecutionKey 双 Key 契约，架构指引 §2.1）。
+    /// Revision 全局复用（铁律 42/43），但同 owner 同分支的源被深拷贝取代后可无损释放；
+    /// 缺少归属维度时无法区分"本会话同分支"与"别会话同名分支"，会造成跨会话驱逐乒乓。
+    var ownerStorageKey: String
     var logicalBranchId: String
     var toolFingerprint: String
     var physicalTokens: [Int]

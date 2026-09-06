@@ -214,12 +214,14 @@ Prompt Tokens + Actual Generated Tokens → Physical Token Sequence ↔ Physical
 
 | 层 | 属性 |
 |---|---|
-| Semantic Layer | `logicalBranchId` · `toolFingerprint` · `physicalTokens` |
+| Semantic Layer | `ownerStorageKey`（agent/session 归属）· `logicalBranchId` · `toolFingerprint` · `physicalTokens` |
 | Physical Layer | `kvCache` · `resident` · `estimatedResidentBytes` |
 
 > **Physical KV Revision 是可复用的计算结果（Reusable Compute Result），不是 Session 所有权**（铁律 15）。
 
 资源不足触发驱逐时只释放 Physical Layer（`releasePhysicalMemory()`，`resident = false`），**逻辑账本 `physicalTokens` 必须保留**。被驱逐的 Revision 仍是逻辑上有效的 Revision Record，未来命中时走 Cold Prefill 并记录 `why=evicted`——这就是 **Lossless Eviction**（铁律 45/88）：Eviction = 释放 Physical Residency，不是 Delete Semantic Revision。
+
+**同 owner 无损替换**（2026-09-06 审计裁决）：全局池选源命中时仅当源 revision 与请求**同 ownerStorageKey 且同分支**，才允许在深拷贝取代后立即释放源的物理层（串行链路下一轮只复用最新 revision）；跨会话同名分支源必须保留——`PhysicalKVRevision` 自此携带 `ownerStorageKey`，禁止凭同名分支号误判归属（否则 LAN 多用户默认分支同为 `main` 时发生跨会话驱逐乒乓）。选源与归属裁决由 `NativeMLX.selectKVSourceLocked`（纯函数）承担，契约测试见 `KVSourceSelectionTests`。
 
 ## 2.6 Revision Count 与 Memory Budget 正交
 
