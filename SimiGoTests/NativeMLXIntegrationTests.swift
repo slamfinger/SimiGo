@@ -225,14 +225,15 @@ final class NativeMLXIntegrationTests: XCTestCase {
     /// 多轮会话 warm hit 衰减实测（模型无关，需要 SIMIGO_TEST_MODEL_PATH）：
     /// turn-1 冷启动后，每轮注入一段代码压力块使 prompt 逐步增长至 ~20K。
     ///
-    /// 硬契约（审计 P2-1：warm hit 不得只靠 trace 人工分析）：
-    /// - turn 1：池空必须冷启动（lastReuse == -1）；
-    /// - turn 2 探测复用模式，turn 3+ 硬强制——
-    ///   dense：每轮必须命中上一 revision 且吃满其全部前缀
+    /// 硬契约（审计 P2-1：warm hit 不得只靠 trace 人工分析；模式由 topology 定义）：
+    /// - 复用模式由 cache topology 决定——池内全部 revision 可裁剪（dense）→ 必须复用；
+    ///   含不可裁剪 cache（hybrid/Mamba）→ 必须无复用。
+    ///   不得由「turn 2 是否命中」反向推断模式：否则 dense 的 warm hit 回归会被
+    ///   测试自身误判成 gated 模式，全绿假阴性。
+    /// - turn 1：池空必须冷启动（lastReuse == -1），同时锁定 topology 模式；
+    /// - turn 2+：dense 模式每轮必须命中上一 revision 且吃满其全部前缀
     ///   （lastReuseSourceTokens == lastReuseCommonLen == 上一 revision 账本长度，
-    ///   即 cp == 源全长、零漂移）；
-    ///   gated（混合模型）：每轮都必须无复用（lastReuse == -1）；
-    ///   模式漂移（有时复用有时不复用）= 前缀/模板/选源回归，直接红灯。
+    ///   cp == 源全长、零漂移）；gated 模式每轮必须无复用。
     /// 命中率/TTFT/prefill/decode TPS/admission 驱逐仍经 trace 留痕供衰减曲线分析。
     /// 12 轮 ≈ 20K token：32GB 机器上 32K/64K 的 decode 已实测塌方（性能审计第四轮），
     /// 更长上下文留待大内存环境。
@@ -251,76 +252,74 @@ final class NativeMLXIntegrationTests: XCTestCase {
         let runtime = NativeMLX(info: info, config: ModelConfig())
         let port = 47_000 + Int.random(in: 0..<2_000)
 
-        try await withTestTimeout(seconds: 600) {
-            try await runtime.start(info, port: port)
-        }
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtime.start(info, port: port)
+            }
 
-        var config = ModelConfig()
-        config.maxTokens = 16
+            var config = ModelConfig()
+            config.maxTokens = 16
 
-        var conversation: [JSONValue] = [
-            .object([
-                "role": .string("user"),
-                "content": .string(
-                    "我们进行多轮代码推演。每轮我给一段代码，你只回复 ok。第一段：func add(_ a: Int, _ b: Int) -> Int { a + b }"
-                ),
-            ])
-        ]
+            var conversation: [JSONValue] = [
+                .object([
+                    "role": .string("user"),
+                    "content": .string(
+                        "我们进行多轮代码推演。每轮我给一段代码，你只回复 ok。第一段：func add(_ a: Int, _ b: Int) -> Int { a + b }"
+                    ),
+                ])
+            ]
 
-        let turnBudget = 12
+            let turnBudget = 12
 
-        var reuseModeEnforced = false
-        var expectReuse = false
-        var prevRevisionTokens = -1
+            var expectReuse: Bool? = nil
+            var prevRevisionTokens = -1
 
-        for turn in 1...turnBudget {
-            if turn > 1 {
+            for turn in 1...turnBudget {
+                if turn > 1 {
+                    conversation.append(
+                        .object([
+                            "role": .string("user"),
+                            "content": .string(perfPaddingBlock(turn)),
+                        ])
+                    )
+                }
+
+                let text = try await withTestTimeout(seconds: 180) {
+                    try await runtime.generate(
+                        requestId: "perf-t\(turn)",
+                        agentId: "perf",
+                        sessionId: "perf-s",
+                        logicalBranchId: "main",
+                        messages: conversation,
+                        tools: nil,
+                        config: config,
+                        onChunk: { _ in }
+                    )
+                }
+
+                XCTAssertFalse(text.isEmpty, "turn \(turn) 应产出非空生成")
+
                 conversation.append(
                     .object([
-                        "role": .string("user"),
-                        "content": .string(perfPaddingBlock(turn)),
+                        "role": .string("assistant"),
+                        "content": .string(text),
                     ])
                 )
-            }
 
-            let text = try await withTestTimeout(seconds: 180) {
-                try await runtime.generate(
-                    requestId: "perf-t\(turn)",
-                    agentId: "perf",
-                    sessionId: "perf-s",
-                    logicalBranchId: "main",
-                    messages: conversation,
-                    tools: nil,
-                    config: config,
-                    onChunk: { _ in }
+                let snap = runtime.integrationSnapshot()
+                XCTAssertTrue(
+                    snap.revisionsLedgerSynced,
+                    "turn \(turn) 提交后账本必须与 KV offset 逐层对齐"
                 )
-            }
 
-            XCTAssertFalse(text.isEmpty, "turn \(turn) 应产出非空生成")
-
-            conversation.append(
-                .object([
-                    "role": .string("assistant"),
-                    "content": .string(text),
-                ])
-            )
-
-            let snap = runtime.integrationSnapshot()
-            XCTAssertTrue(
-                snap.revisionsLedgerSynced,
-                "turn \(turn) 提交后账本必须与 KV offset 逐层对齐"
-            )
-
-            if turn == 1 {
-                XCTAssertEqual(
-                    snap.lastReuseCommonLen, -1,
-                    "turn 1 池空必须冷启动"
-                )
-            } else if !reuseModeEnforced {
-                expectReuse = snap.lastReuseCommonLen >= 0
-                reuseModeEnforced = true
-
-                if expectReuse {
+                if turn == 1 {
+                    XCTAssertEqual(
+                        snap.lastReuseCommonLen, -1,
+                        "turn 1 池空必须冷启动"
+                    )
+                    // 模式由 topology 定义，不由命中结果反向推断（P2-1 假阴性修复）
+                    expectReuse = snap.poolTrimmable
+                } else if expectReuse == true {
                     XCTAssertEqual(
                         snap.lastReuseSourceTokens, prevRevisionTokens,
                         "turn \(turn) 复用源必须是上一 revision"
@@ -329,30 +328,213 @@ final class NativeMLXIntegrationTests: XCTestCase {
                         snap.lastReuseCommonLen, prevRevisionTokens,
                         "turn \(turn) 复用必须吃满源全部前缀（零漂移）"
                     )
+                } else {
+                    XCTAssertEqual(
+                        snap.lastReuseCommonLen, -1,
+                        "turn \(turn) 不可裁剪池必须始终无复用"
+                    )
                 }
-            } else if expectReuse {
-                XCTAssertEqual(
-                    snap.lastReuseSourceTokens, prevRevisionTokens,
-                    "turn \(turn) 复用源必须是上一 revision"
-                )
-                XCTAssertEqual(
-                    snap.lastReuseCommonLen, prevRevisionTokens,
-                    "turn \(turn) 复用必须吃满源全部前缀（零漂移）"
-                )
-            } else {
-                XCTAssertEqual(
-                    snap.lastReuseCommonLen, -1,
-                    "turn \(turn) gated 模式必须始终无复用"
-                )
+
+                prevRevisionTokens = snap.revisionTokenCounts.first ?? -1
             }
 
-            prevRevisionTokens = snap.revisionTokenCounts.first ?? -1
+            let finalSnap = runtime.integrationSnapshot()
+            XCTAssertTrue(finalSnap.revisionsLedgerSynced)
+            XCTAssertGreaterThanOrEqual(finalSnap.revisions, 1)
+            XCTAssertEqual(finalSnap.activeRequests, 0)
+            XCTAssertEqual(finalSnap.generatingSessions, 0)
+
+            // 审计 P2-2：显式生命周期收尾——stop() 负责 server/task/gate/KV/memory
+            // 全套收敛，不得依赖对象析构；否则污染同进程后续测试。
+            await runtime.stop()
+        } catch {
+            // 异常路径同样收敛全套生命周期
+            await runtime.stop()
+            throw error
+        }
+    }
+
+    /// Admission P1 回归（审计第四轮）：冷启动无任何可驱逐 revision，projected KV
+    /// 超过 admission 上限 → 必须 admissionExceeded 拒绝，不得走 [ADMISSION WARN]
+    /// 放行 generation（P1 缺口：WARN 后继续生成会 OOM/页出）。
+    ///
+    /// prompt ≈ 598K chars：实测该文本形态分词效率 ≥5.08 chars/token（首测 320K chars
+    /// 仅得 ≤63K token、projected 11.4GB < 12GB 被放行，注入量不足的教训），
+    /// 598K → 92K-118K token 区间：
+    /// - demand = tokens + 16 恒 < ctxSize 131072 → 不会被 context 安全检查拒绝；
+    /// - projected = tokens × 128KB + working set 3GB + margin 1GB ≥ 14.7GB > 12GB 预算
+    ///   → 恒超预算；冷启动池空 → pendingReleases 必为空 → 走 P1 修复的统一硬拒绝。
+    /// 「全池已 non-resident」与冷启动在代码上同路径（候选过滤后 candidates 为空），
+    /// 由本测试结构性覆盖。
+    func testAdmissionRejectsOverBudgetWithoutEvictableRevision() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（admission 回归）")
         }
 
-        let finalSnap = runtime.integrationSnapshot()
-        XCTAssertTrue(finalSnap.revisionsLedgerSynced)
-        XCTAssertGreaterThanOrEqual(finalSnap.revisions, 1)
-        XCTAssertEqual(finalSnap.activeRequests, 0)
-        XCTAssertEqual(finalSnap.generatingSessions, 0)
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: ModelConfig())
+        let port = 47_000 + Int.random(in: 0..<2_000)
+
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtime.start(info, port: port)
+            }
+
+            var config = ModelConfig()
+            config.maxTokens = 16
+
+            let pad = String(
+                repeating: "let metric = evaluateStep(payload: \"admission-pressure-sample\")\n",
+                count: 8_800
+            )
+
+            do {
+                _ = try await withTestTimeout(seconds: 120) {
+                    try await runtime.generate(
+                        requestId: "admit-over",
+                        agentId: "perf",
+                        sessionId: "admit-s",
+                        logicalBranchId: "main",
+                        messages: [
+                            .object([
+                                "role": .string("user"),
+                                "content": .string(pad),
+                            ])
+                        ],
+                        tools: nil,
+                        config: config,
+                        onChunk: { _ in }
+                    )
+                }
+                XCTFail("超预算且无可驱逐 revision 必须被 admissionExceeded 拒绝（P1 缺口回归）")
+            } catch let error as RuntError {
+                guard case .admissionExceeded = error else {
+                    XCTFail("预期 admissionExceeded，实际: \(error)")
+                    return
+                }
+                // 预期路径
+            } catch is TestTimeout {
+                XCTFail("admission 拒绝不得悬挂")
+            }
+
+            await runtime.stop()
+        } catch {
+            await runtime.stop()
+            throw error
+        }
+    }
+
+    /// 256K token 极限压测（KV 审计第五轮，ctxSize=262144）：验证超长 prompt 在正确的
+    /// 防护层被拒绝、机器不死。两层防线各守其位：
+    ///
+    /// Phase A（默认 baseConfig，ctxSize=131072）：~234K token prompt 的
+    /// demand ≈ 234K ≫ 131072 → context 门禁拒绝（contextDemandExceeded）。
+    ///
+    /// Phase B（base 与 request ctxSize 均抬至 262144——注意 min(request, base) 双侧
+    /// 必须同时放行，首轮实测 request 侧漏抬导致 ctx 层误拒）：prompt 穿过 context
+    /// 门禁，projected = ~234K × 128KB ≈ 29GB ≫ admissionLimit ~12GB
+    /// → admission 硬拒绝（admissionExceeded，evicted=0）。修复前该路径是
+    /// [ADMISSION WARN] 后继续生成 —— 29GB KV 分配尝试足以杀死整机。
+    ///
+    /// 注入量 ≈ 884K chars（实测分词效率 3.78 chars/token：首测 1.36M chars = 360,024
+    /// token → ~234K token，Phase A 恒 > 131072；Phase B demand 恒 < 262144 且
+    /// projected 恒 > 12GB）。
+    func testExtreme256KPromptRejectedAtCorrectLayer() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（256K 极限压测）")
+        }
+
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        var config = ModelConfig()
+        config.maxTokens = 16
+        config.ctxSize = 262_144
+
+        let pad = String(
+            repeating: "let metric = evaluateStep(payload: \"extreme-256k-pressure-sample\")\n",
+            count: 13_000
+        )
+        let extremeMessages: [JSONValue] = [
+            .object(["role": .string("user"), "content": .string(pad)])
+        ]
+
+        // ── Phase A：默认 ctxSize → context 门禁拒绝 ──
+        let runtimeA = NativeMLX(info: info, config: ModelConfig())
+        let portA = 47_000 + Int.random(in: 0..<2_000)
+
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtimeA.start(info, port: portA)
+            }
+
+            do {
+                _ = try await withTestTimeout(seconds: 180) {
+                    try await runtimeA.generate(
+                        requestId: "extreme-256k-a",
+                        agentId: "perf",
+                        sessionId: "extreme-s",
+                        logicalBranchId: "main",
+                        messages: extremeMessages,
+                        tools: nil,
+                        config: config,
+                        onChunk: { _ in }
+                    )
+                }
+                XCTFail("256K token prompt 必须被 context 门禁拒绝（ctxSize=131072）")
+            } catch let error as NativeMLXValidationError {
+                guard case .contextDemandExceeded = error else {
+                    XCTFail("预期 contextDemandExceeded，实际: \(error)")
+                    return
+                }
+                // 预期路径
+            } catch is TestTimeout {
+                XCTFail("context 门禁拒绝不得悬挂")
+            }
+
+            await runtimeA.stop()
+        } catch {
+            await runtimeA.stop()
+            throw error
+        }
+
+        // ── Phase B：base 与 request ctxSize 均为 262144 → admission 硬拒绝 ──
+        var wideBase = ModelConfig()
+        wideBase.ctxSize = 262_144
+        let runtimeB = NativeMLX(info: info, config: wideBase)
+        let portB = 47_000 + Int.random(in: 0..<2_000)
+
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtimeB.start(info, port: portB)
+            }
+
+            do {
+                _ = try await withTestTimeout(seconds: 180) {
+                    try await runtimeB.generate(
+                        requestId: "extreme-256k-b",
+                        agentId: "perf",
+                        sessionId: "extreme-s",
+                        logicalBranchId: "main",
+                        messages: extremeMessages,
+                        tools: nil,
+                        config: config,
+                        onChunk: { _ in }
+                    )
+                }
+                XCTFail("projected ~32GB KV 必须被 admissionExceeded 拒绝（P1 修复回归）")
+            } catch let error as RuntError {
+                guard case .admissionExceeded = error else {
+                    XCTFail("预期 admissionExceeded，实际: \(error)")
+                    return
+                }
+                // 预期路径
+            } catch is TestTimeout {
+                XCTFail("admission 拒绝不得悬挂")
+            }
+
+            await runtimeB.stop()
+        } catch {
+            await runtimeB.stop()
+            throw error
+        }
     }
 }

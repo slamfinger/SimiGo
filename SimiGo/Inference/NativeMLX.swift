@@ -1476,28 +1476,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     copiedKVExtraBytes +
                     executionWorkingSetBytes +
                     safetyMarginBytes
-
-                // Eviction 后仍超预算：副本 KV 已分配、generation 即将真跑，
-                // 继续只会触发 OOM/页出导致 decode 掉速。硬拒绝，止住请求。
-                if projectedMemory > admissionLimit {
-                    Memory.clearCache()
-
-                    traceLogger.trace(
-                        "[ADMISSION BLOCK] r=\(requestId) still_exceeding_after_eviction projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M",
-                        session: traceSession
-                    )
-
-                    throw RuntError.admissionExceeded(projectedMemory, admissionLimit)
-                }
             }
 
+            // 审计 P1（2026-09-06 第四轮）：无可驱逐 ≠ 预算可忽略。pendingReleases 为空
+            // （冷启动无 revision、或全池已 non-resident）时，旧逻辑走 [ADMISSION WARN]
+            // 直接放行 generation，绕过 admissionExceeded 硬拒绝——ctxSize 默认 131072 下
+            // 超长 prompt 的 projected KV（131072×128KB ≈ 16GB）足以击穿任何
+            // weight-aware 上限，进入 generation 只会 OOM/页出。统一收敛：
+            // eviction 尽力而为（可能零驱逐）后仍超预算 → 一律硬拒绝，宁拒请求不 OOM。
             if projectedMemory > admissionLimit {
                 Memory.clearCache()
 
                 traceLogger.trace(
-                    "[ADMISSION WARN] Still exceeding limit after eviction. Projected: \(projectedMemory / 1024 / 1024)M",
+                    "[ADMISSION BLOCK] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M evicted=\(pendingReleases.count) action=reject",
                     session: traceSession
                 )
+
+                throw RuntError.admissionExceeded(projectedMemory, admissionLimit)
             }
         }
 
@@ -2363,6 +2358,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// revisionTokenCounts：池内各 revision 账本长度（commit 后按 lastActive 降序，最新在前）。
     /// lastReuse*：最近一次请求的复用决策（源账本长度 / 实际复用前缀；无复用为 -1）——
     /// warm hit 硬契约的断言锚点（审计 P2-1）。
+    /// poolTrimmable：池内全部 revision 的 cache 是否可裁剪——复用模式的 topology 定义
+    /// （审计 P2-1 假阴性修复：模式由 cache 可裁剪性决定，不得由「是否命中」反向推断）。
     func integrationSnapshot() -> (
         activeRequests: Int,
         activeGenerations: Int,
@@ -2372,7 +2369,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         revisionsLedgerSynced: Bool,
         revisionTokenCounts: [Int],
         lastReuseSourceTokens: Int,
-        lastReuseCommonLen: Int
+        lastReuseCommonLen: Int,
+        poolTrimmable: Bool
     ) {
         state.withLock { state in
             let ledgerSynced = state.physicalRevisions.allSatisfy { revision in
@@ -2380,6 +2378,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvOffsets: revision.kvCache.map { $0.offset },
                     ledgerTokenCount: revision.physicalTokens.count
                 )
+            }
+
+            let poolTrimmable = state.physicalRevisions.allSatisfy { revision in
+                revision.kvCache.allSatisfy { $0.isTrimmable }
             }
 
             return (
@@ -2391,7 +2393,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 ledgerSynced,
                 state.physicalRevisions.map { $0.physicalTokens.count },
                 state.lastReuseSourceTokens,
-                state.lastReuseCommonLen
+                state.lastReuseCommonLen,
+                poolTrimmable
             )
         }
     }
