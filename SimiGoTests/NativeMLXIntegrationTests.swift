@@ -785,12 +785,33 @@ final class NativeMLXIntegrationTests: XCTestCase {
     // MARK: - Dense Batched Decode 原型（实验轨 P0，Batched Decode 审计立项）
 
     /// 原型运行结果（值类型，自动 Sendable）。
+    /// routeTokens：每路采样的 token 序列（取消路由截至取消点）。
     struct BatchedRunResult {
         var batch: Int
         var decodeWallSeconds: Double
         var totalGeneratedTokens: Int
         var aggregateTokensPerSecond: Double
-        var stream0Tokens: [Int]
+        var routeTokens: [[Int]]
+    }
+
+    /// Batched Decode 能力契约（审计立项：Model Capability Adapter 雏形）。
+    /// 由 cache topology 推导——全可裁剪（标准注意力）→ 批化支持；
+    /// 含 recurrent cache（Mamba 等）→ 不支持。
+    /// 生产化时本契约移入 Execution Plane，作为 BatchedDecodeScheduler 的
+    /// 准入判据（不绑定 Qwen3MoE；Gemma 4 等后续模型按同一契约接入）。
+    enum BatchDecodeCapability {
+        case supported
+        case unsupported(reason: String)
+
+        static func evaluate(caches: [any KVCache]) -> BatchDecodeCapability {
+            if caches.isEmpty {
+                return .unsupported(reason: "noCache")
+            }
+            if caches.allSatisfy({ $0.isTrimmable }) {
+                return .supported
+            }
+            return .unsupported(reason: "recurrentCacheNotTrimable")
+        }
     }
 
     /// Dense-only Batched Decode 原型（Batched Decode 审计立项 P0）：
@@ -831,57 +852,23 @@ final class NativeMLXIntegrationTests: XCTestCase {
 
         let decodeSteps = 128
 
-        func runBatch(_ batch: Int) async throws -> BatchedRunResult {
-            try await container.perform { context -> BatchedRunResult in
-                let model = context.model
-                let tokenizer = context.tokenizer
-
-                let promptText = "用阿拉伯数字从1数到500，每行一个数字，不要输出任何其他内容"
-                let promptTokens = tokenizer.encode(text: promptText)
-                let promptLength = promptTokens.count
-
-                // 等长同步 batch：[batch, L]（相同 prompt → 位置完全同步）
-                let flat = Array(repeating: promptTokens, count: batch).flatMap { $0 }
-                let input = MLXArray(flat.map { Int32($0) }, [batch, promptLength])
-
-                let caches = model.newCache(parameters: nil)
-
-                // Prefill（等长同步 batch）→ logits [batch, L, V]
-                // 标量索引 -1 移除轴：[0..., -1, 0...] → [batch, V]（2-D），
-                // argMax → [batch]（1-D）——库语义正确，decode 输入用
-                // expandedDimensions 恢复 [batch, 1]。
-                let logits = model(input, cache: caches) // [batch, L, V]
-                var next = logits[0..., -1, 0...].argMax(axis: -1) // [batch]
-                eval(next)
-
-                var stream0Tokens = [next[0].item(Int.self)]
-                var generated = batch
-                let decodeStart = Date()
-
-                for step in 1..<decodeSteps {
-                    let stepInput = next.expandedDimensions(axis: 1) // [batch, 1]
-                    let out = model(stepInput, cache: caches) // [batch, 1, V]
-                    next = out[0..., -1, 0...].argMax(axis: -1) // [batch]
-                    eval(next)
-
-                    generated += batch
-                    stream0Tokens.append(next[0].item(Int.self))
-                }
-
-                let decodeWall = Date().timeIntervalSince(decodeStart)
-
-                return BatchedRunResult(
-                    batch: batch,
-                    decodeWallSeconds: decodeWall,
-                    totalGeneratedTokens: generated,
-                    aggregateTokensPerSecond: Double(generated) / decodeWall,
-                    stream0Tokens: stream0Tokens
-                )
-            }
+        // 同 prompt 吞吐基准（row 隔离由 testBatchedDecodeDistinctPromptIsolation 锁定）
+        let promptTokens = try await container.perform { context -> [Int] in
+            context.tokenizer.encode(
+                text: "用阿拉伯数字从1数到500，每行一个数字，不要输出任何其他内容"
+            )
         }
 
-        let single = try await runBatch(1)
-        let batched = try await runBatch(4)
+        let single = try await runBatched(
+            container: container,
+            routes: [promptTokens],
+            decodeSteps: decodeSteps
+        )
+        let batched = try await runBatched(
+            container: container,
+            routes: Array(repeating: promptTokens, count: 4),
+            decodeSteps: decodeSteps
+        )
 
         print(
             "[BATCHED-PROTOTYPE] batch=1 wall=\(String(format: "%.3f", single.decodeWallSeconds))s " +
@@ -896,7 +883,7 @@ final class NativeMLXIntegrationTests: XCTestCase {
         // 实测前 ~60 token 完全相同后，因 B=1 vs B=4 的 GEMM 求和顺序差异在
         // 贪心近平局处分叉（批化推理固有数值现象，非 forward 缺陷）。
         // 契约取前缀阈值：前 32 token 必须一致（足以验证批化分布正确性）。
-        let prefixMatch = zip(batched.stream0Tokens, single.stream0Tokens)
+        let prefixMatch = zip(batched.routeTokens[0], single.routeTokens[0])
             .prefix(32)
             .filter { $0 == $1 }
             .count
@@ -910,5 +897,382 @@ final class NativeMLXIntegrationTests: XCTestCase {
             batched.aggregateTokensPerSecond, 43,
             "Batched Decode 原型必须突破交错单流基线 43 tok/s；未突破 = overhead 吃掉收益，止损"
         )
+    }
+
+    /// 批化运行：等长同步 batch（routes 全部等长）+ 贪心 argmax，直接驱动
+    /// `LanguageModel.callAsFunction(_ inputs: MLXArray, cache:)` raw 入口。
+    ///
+    /// cancelledAfter[i] 非 nil = 模拟 batch 成员 i 在该 step 停止消费输出
+    /// （Phase 0 取消语义：批行继续计算、其余路由不受影响；ragged 缩批属 Phase B）。
+    func runBatched(
+        container: ModelContainer,
+        routes: [[Int]],
+        decodeSteps: Int,
+        cancelledAfter: [Int?] = []
+    ) async throws -> BatchedRunResult {
+        try await container.perform { context -> BatchedRunResult in
+            let model = context.model
+
+            let batch = routes.count
+            let promptLength = routes[0].count
+            precondition(
+                routes.allSatisfy { $0.count == promptLength },
+                "等长同步 batch 要求全部序列等长"
+            )
+
+            let flat = routes.flatMap { $0 }
+            let input = MLXArray(flat.map { Int32($0) }, [batch, promptLength])
+
+            let caches = model.newCache(parameters: nil)
+
+            // Prefill → logits [batch, L, V]；标量索引 -1 移除轴 → 末位 [batch, V]，
+            // argMax → [batch]（1-D）——decode 输入用 expandedDimensions 恢复 [batch, 1]。
+            let logits = model(input, cache: caches)
+            var next = logits[0..., -1, 0...].argMax(axis: -1)
+            eval(next)
+
+            var routeTokens = Array(repeating: [Int](), count: batch)
+            func record(_ step: Int) {
+                for i in 0..<batch {
+                    let limit = i < cancelledAfter.count
+                        ? (cancelledAfter[i] ?? Int.max)
+                        : Int.max
+                    if step < limit {
+                        routeTokens[i].append(next[i].item(Int.self))
+                    }
+                }
+            }
+            record(0)
+
+            var generated = batch
+            let decodeStart = Date()
+
+            for step in 1..<decodeSteps {
+                let stepInput = next.expandedDimensions(axis: 1) // [batch, 1]
+                let out = model(stepInput, cache: caches) // [batch, 1, V]
+                next = out[0..., -1, 0...].argMax(axis: -1) // [batch]
+                eval(next)
+
+                generated += batch
+                record(step)
+            }
+
+            let decodeWall = Date().timeIntervalSince(decodeStart)
+
+            return BatchedRunResult(
+                batch: batch,
+                decodeWallSeconds: decodeWall,
+                totalGeneratedTokens: generated,
+                aggregateTokensPerSecond: Double(generated) / decodeWall,
+                routeTokens: routeTokens
+            )
+        }
+    }
+
+    // MARK: - Batched Decode Phase 0：distinct-prompt 隔离 + 取消模拟（审计 Phase 0）
+
+    /// Batch 成员隔离契约（审计 Phase 0）→ 实测结论：**Batched Decode NO-GO 实证**。
+    ///
+    /// 设计：4 条语义互异、等长化后的 prompt；逐一单流跑出基准序列，再批化跑一遍，
+    /// 逐路对比前缀与语义首行。
+    ///
+    /// 实测结论（本测试即 NO-GO 证据，逐轮可复跑监控上游修复）：
+    /// - batch 行 0 与单流 decode 逐 token BIT-EXACT（7 步 max|Δ| 全 0.0）；
+    /// - batch 行 1/2/3 从第一个 decode step 起与单流系统性偏离
+    ///   （logits max|Δ| 9.5→17.75，且各路输出仍带自己 prompt 的语义——
+    ///   非 KV 跨行串写，而是 T=1 batched forward 对行 > 0 的计算缺陷，
+    ///   mlx-swift-lm 3.31.4 / MLX 0.31.6 已实证）。
+    ///
+    /// 断言仅锁行 0（当前唯一可信行）+ 池不变量；rows>0 的分叉作为
+    /// NO-GO 证据打印记录——上游修复后本测试的失败行会自动消失。
+    func testBatchedDecodeDistinctPromptIsolation() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（批化隔离契约）")
+        }
+        let batchedEnabled = ProcessInfo.processInfo.environment["SIMIGO_TEST_BATCHED"] == "1"
+            || UserDefaults.standard.string(forKey: "SIMIGO_TEST_BATCHED") == "1"
+        guard batchedEnabled else {
+            throw XCTSkip("Batched Decode 实验轨：设置 SIMIGO_TEST_BATCHED=1 后运行（Dense-only）")
+        }
+
+        Memory.memoryLimit = 22 * 1024 * 1024 * 1024
+        let container = try await LLMModelFactory.shared.loadContainer(
+            from: URL(fileURLWithPath: modelPath),
+            using: #huggingFaceTokenizerLoader()
+        )
+
+        let decodeSteps = 128
+        let starts = [100, 300, 500, 700]
+
+        // ① 能力契约（cache topology → capability；Hybrid NO-GO 门禁）
+        let capability = try await container.perform { context -> BatchDecodeCapability in
+            BatchDecodeCapability.evaluate(caches: context.model.newCache(parameters: nil))
+        }
+        guard case .supported = capability else {
+            throw XCTSkip("Batch Decode 不支持：\(capability) cache topology 非 standard-KV")
+        }
+
+        // ② 语义互异 prompt + 确定性等长化：
+        // 实测原始长度 [23,23,23,24]——BPE 对 "400" 的数字分组与上下文合并存在 ±1
+        // 波动，词面构造不可靠；改为尾部补换行 token 至等长（语义中性）。
+        let routesRaw: [[Int]] = try await container.perform { context -> [[Int]] in
+            let tokenizer = context.tokenizer
+            return starts.map { start in
+                tokenizer.encode(
+                    text: "用阿拉伯数字从\(start)数到\(start + 300)，每行一个数字，不要输出任何其他内容"
+                )
+            }
+        }
+        print("[BATCHED-ISO] 原始长度 \(routesRaw.map { $0.count })")
+
+        let maxLen = routesRaw.map { $0.count }.max()!
+        let padTokens: [Int] = try await container.perform { context -> [Int] in
+            context.tokenizer.encode(text: "\n")
+        }
+        precondition(!padTokens.isEmpty, "换行必须可分词")
+        let routes: [[Int]] = routesRaw.map { tokens in
+            let deficit = maxLen - tokens.count
+            guard deficit > 0 else { return tokens }
+            return tokens + (0..<deficit).map { padTokens[$0 % padTokens.count] }
+        }
+        XCTAssertEqual(
+            Set(routes.map { $0.count }).count, 1,
+            "等长化后必须全部一致（实测 \(routes.map { $0.count })）——同步 batch 前提"
+        )
+
+        // ③ 单流基准 ×4
+        var singleTokens: [[Int]] = []
+        for tokens in routes {
+            let run = try await runBatched(
+                container: container,
+                routes: [tokens],
+                decodeSteps: decodeSteps
+            )
+            singleTokens.append(run.routeTokens[0])
+        }
+
+        // ④ 批化 ×1（distinct prompts）
+        let batched = try await runBatched(
+            container: container,
+            routes: routes,
+            decodeSteps: decodeSteps
+        )
+
+        // ⑤ 逐行前缀对比（前 24 token）：行 0 硬断言；rows 1-3 打印 NO-GO 证据
+        for i in 0..<routes.count {
+            let match = zip(batched.routeTokens[i], singleTokens[i])
+                .prefix(24)
+                .filter { $0 == $1 }
+                .count
+            if i == 0 {
+                XCTAssertGreaterThanOrEqual(
+                    match, 20,
+                    "batch 行 0 与单流的输出前缀必须基本一致（行 0 是当前唯一可信行）"
+                )
+            } else {
+                print(
+                    "[BATCHED-ISO] NO-GO 证据 row \(i) 前缀匹配 \(match)/24 " +
+                        "(rows>0 decode 分叉已实证)"
+                )
+            }
+        }
+
+        // ⑥ 语义隔离：行 0 首行硬断言；rows 1-3 打印首行（分叉证据）
+        for i in 0..<routes.count {
+            let text = try await container.perform { context -> String in
+                context.tokenizer.decode(tokenIds: batched.routeTokens[i])
+            }
+            let firstLine = text.split(separator: "\n").first.map(String.init) ?? ""
+            if i == 0 {
+                XCTAssertEqual(
+                    firstLine, String(starts[i]),
+                    "batch 行 0 的首行必须为 \(starts[i])"
+                )
+            } else {
+                print(
+                    "[BATCHED-ISO] NO-GO 证据 row \(i) 首行=\(firstLine)（预期 \(starts[i])）"
+                )
+            }
+        }
+
+        // ⑦ 取消模拟：route 1 于 step 32 停止消费输出——断言仅行 0 与取消路由自身
+        // （rows>0 分叉下他路对比无意义，取消隔离的完整契约待 ragged 批阶段）
+        let cancelledAfter: [Int?] = [nil, 32, nil, nil]
+        let cancelledRun = try await runBatched(
+            container: container,
+            routes: routes,
+            decodeSteps: decodeSteps,
+            cancelledAfter: cancelledAfter
+        )
+
+        XCTAssertEqual(
+            cancelledRun.routeTokens[1].count, 32,
+            "取消路由应停止于取消点"
+        )
+        let route0Match = zip(cancelledRun.routeTokens[0], singleTokens[0])
+            .prefix(24)
+            .filter { $0 == $1 }
+            .count
+        XCTAssertGreaterThanOrEqual(
+            route0Match, 20,
+            "取消模拟不得影响行 0（当前唯一可信行）"
+        )
+    }
+
+    /// 【诊断】batch 维数值一致性：单流 forward vs batch 行 0/行 1 的末位 logits
+    /// 与 KV cache state 逐元素对比——定位 batch 行污染发生在 cache 写入层还是
+    /// model forward 层（Batched Decode 原型 rows>0 崩坏的分型依据）。
+    func testBatchedNumericalDiagnostic() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（batch 数值诊断）")
+        }
+        let batchedEnabled = ProcessInfo.processInfo.environment["SIMIGO_TEST_BATCHED"] == "1"
+            || UserDefaults.standard.string(forKey: "SIMIGO_TEST_BATCHED") == "1"
+        guard batchedEnabled else {
+            throw XCTSkip("Batched Decode 实验轨：设置 SIMIGO_TEST_BATCHED=1 后运行")
+        }
+
+        Memory.memoryLimit = 22 * 1024 * 1024 * 1024
+        let container = try await LLMModelFactory.shared.loadContainer(
+            from: URL(fileURLWithPath: modelPath),
+            using: #huggingFaceTokenizerLoader()
+        )
+
+            struct Diag: @unchecked Sendable {
+                var singleLastLogits: [Float]
+                var batchRow0LastLogits: [Float]
+                var batchRow1LastLogits: [Float]
+                var batchRow0Row1KVMaxDiff: Float
+                var singleKVShape: [Int]
+                var batchKVShape: [Int]
+                var decodeStepMaxDiffRow1: [Float]   // 单流 vs batch 行 1
+                var decodeStepMaxDiffRow0: [Float]   // 单流 vs batch 行 0
+                var decodeTokensSingle: [Int]
+                var decodeTokensBatchRow1: [Int]
+            }
+
+        let diag = try await container.perform { context -> Diag in
+            let model = context.model
+            let promptTokens = context.tokenizer.encode(
+                text: "用阿拉伯数字从1数到500，每行一个数字，不要输出任何其他内容"
+            )
+            let L = promptTokens.count
+            let decodeSteps = 8
+
+            func sampleToken(_ logits: MLXArray) -> MLXArray {
+                logits[0..., -1, 0...].argMax(axis: -1) // [B]（标量索引移除轴）
+            }
+
+            // ── 单流（[1, L] 2-D；1-D 输入会因 attention (B, L)=(21, 2048) reshape 崩溃）──
+            let singleCaches = model.newCache(parameters: nil)
+            var singleLogits = model(
+                MLXArray(promptTokens.map { Int32($0) }, [1, L]),
+                cache: singleCaches
+            )
+            var singleNext = sampleToken(singleLogits) // [1]
+            eval(singleNext)
+            var singleTokensSingle = [singleNext[0].item(Int.self)]
+            var decodeStepMaxDiffRow1: [Float] = []
+            var decodeStepMaxDiffRow0: [Float] = []
+
+            // ── batch=2（同文 ×2）──
+            let batchCaches = model.newCache(parameters: nil)
+            let batchInput = MLXArray(
+                (0..<2).flatMap { _ in promptTokens }.map { Int32($0) },
+                [2, L]
+            )
+            var batchLogits = model(batchInput, cache: batchCaches)
+            var batchNext = sampleToken(batchLogits) // [2]
+            eval(batchNext)
+            var batchTokensRow1 = [batchNext[1].item(Int.self)]
+
+            // prefill 末位 logits（单流 vs batch 行对拍的基准）
+            let singleLastPrefill = singleLogits[0..., -1, 0...]
+            let batchLastPrefill = batchLogits[0..., -1, 0...]
+
+            // ── decode 逐步对拍：单流 [1,1] vs batch [2,1] ──
+            for _ in 1..<decodeSteps {
+                let singleOut = model(
+                    singleNext.expandedDimensions(axis: 1), cache: singleCaches
+                ) // [1, 1, V]
+                let batchOut = model(
+                    batchNext.expandedDimensions(axis: 1), cache: batchCaches
+                ) // [2, 1, V]
+
+                let singleLast = singleOut[0..., -1, 0...] // [1, V]
+                let batchLast = batchOut[0..., -1, 0...] // [2, V]
+                let singleVec = singleLast[0] // [V]
+                decodeStepMaxDiffRow1.append(
+                    MLX.abs(singleVec - batchLast[1]).max().item(Float.self)
+                )
+                decodeStepMaxDiffRow0.append(
+                    MLX.abs(singleVec - batchLast[0]).max().item(Float.self)
+                )
+
+                singleNext = singleLast.argMax(axis: -1) // [1]
+                batchNext = batchLast.argMax(axis: -1) // [2]
+                eval(singleNext)
+                eval(batchNext)
+
+                singleTokensSingle.append(singleNext[0].item(Int.self))
+                batchTokensRow1.append(batchNext[1].item(Int.self))
+            }
+
+            // KV state 第一层：keys [B, kvh, L, d]
+            let singleState = singleCaches[0].state
+            let batchState = batchCaches[0].state
+            let singleKeys = singleState.isEmpty ? MLXArray(0) : singleState[0]
+            let batchKeys = batchState.isEmpty ? MLXArray(0) : batchState[0]
+
+            let kvDiff = MLX.abs(batchKeys[1] - batchKeys[0]).max().item(Float.self)
+
+            let batchRow0Last = batchLastPrefill[0].asArray(Float.self)
+            let batchRow1Last = batchLastPrefill[1].asArray(Float.self)
+            let singleLastArray = singleLastPrefill[0].asArray(Float.self)
+
+            return Diag(
+                singleLastLogits: singleLastArray,
+                batchRow0LastLogits: batchRow0Last,
+                batchRow1LastLogits: batchRow1Last,
+                batchRow0Row1KVMaxDiff: kvDiff,
+                singleKVShape: singleKeys.shape,
+                batchKVShape: batchKeys.shape,
+                decodeStepMaxDiffRow1: decodeStepMaxDiffRow1,
+                decodeStepMaxDiffRow0: decodeStepMaxDiffRow0,
+                decodeTokensSingle: singleTokensSingle,
+                decodeTokensBatchRow1: batchTokensRow1
+            )
+        }
+
+        // 逐元素偏差
+        func maxAbsDiff(_ a: [Float], _ b: [Float]) -> Float {
+            precondition(a.count == b.count && !a.isEmpty)
+            return zip(a, b).map { abs($0 - $1) }.max() ?? 0
+        }
+
+        let singleVsRow0 = maxAbsDiff(diag.singleLastLogits, diag.batchRow0LastLogits)
+        let singleVsRow1 = maxAbsDiff(diag.singleLastLogits, diag.batchRow1LastLogits)
+        let row0VsRow1 = maxAbsDiff(diag.batchRow0LastLogits, diag.batchRow1LastLogits)
+
+        print("[DIAG] batch KV rows 0 vs 1 max|Δ| = \(diag.batchRow0Row1KVMaxDiff)")
+        print("[DIAG] KV shape single=\(diag.singleKVShape) batch=\(diag.batchKVShape)")
+        print("[DIAG] last-logits max|Δ| single↔row0 = \(singleVsRow0)")
+        print("[DIAG] last-logits max|Δ| single↔row1 = \(singleVsRow1)")
+        print("[DIAG] last-logits max|Δ| row0↔row1   = \(row0VsRow1)")
+        print("[DIAG] decode step max|Δ| 单流vs行1 = \(diag.decodeStepMaxDiffRow1)")
+        print("[DIAG] decode step max|Δ| 单流vs行0 = \(diag.decodeStepMaxDiffRow0)")
+        print("[DIAG] decode tokens single   = \(diag.decodeTokensSingle)")
+        print("[DIAG] decode tokens batchRow1 = \(diag.decodeTokensBatchRow1)")
+
+        // 判定：prefill bit-exact 是硬契约（已实测 0.0）
+        XCTAssertLessThan(singleVsRow0, 1e-3, "prefill 末位 logits：单流 vs batch 行 0 必须一致")
+        XCTAssertLessThan(singleVsRow1, 1e-3, "prefill 末位 logits：单流 vs batch 行 1 必须一致")
+        // decode 逐步偏差作为测量数据记录——分叉机理（MLX batched T=1 前向 vs 单流）
+        // 是 Batched Decode 生产化的核心阻断项，结论见提交说明与本测试注释。
+        for (step, diffRow1) in diag.decodeStepMaxDiffRow1.enumerated() {
+            print(
+                "[DIAG] decode step \(step + 1): 单流vs行1 max|Δ|=\(diffRow1) 单流vs行0 max|Δ|=\(diag.decodeStepMaxDiffRow0[step])"
+            )
+        }
     }
 }
