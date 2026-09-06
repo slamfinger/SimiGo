@@ -824,6 +824,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var registrationError: RuntError?
 
         state.withLock { state in
+            // 审计不变量（stop 收敛）：stop() 的「任务快照 + isRunning=false」在同一
+            // 原子锁段内完成，因此 isRunning=false 之后的注册一律拒绝——
+            // 「stop() 返回后，不存在 stop 开始前已进入 generate 生命周期却仍
+            // 持有有效 task/generation/KV/stream 状态的请求」由构造保证。
+            guard state.isRunning else {
+                registrationError = RuntError.notLoaded
+                return
+            }
+
             guard state.activeRequestTasks[requestId] == nil else {
                 // 审计 P2#4：requestId 是 shutdown 取消与生命周期账本的键，
                 // 重复注册会覆盖旧任务使其对 shutdown 不可见——直接拒绝新请求
@@ -2248,5 +2257,27 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             "cancel-request-issued",
             requestId: requestId
         )
+    }
+
+    // MARK: - Integration Test Seam（@testable 专用，业务代码禁止使用）
+
+    /// stop() 收敛不变量的外部可观测投影：
+    /// stop() 返回后五个计数必须全部为 0（审计 P1 集成测试锚点）。
+    func integrationSnapshot() -> (
+        activeRequests: Int,
+        activeGenerations: Int,
+        revisions: Int,
+        sessions: Int,
+        generatingSessions: Int
+    ) {
+        state.withLock { state in
+            (
+                state.activeRequestTasks.count,
+                state.activeGenerationTasks.count,
+                state.physicalRevisions.count,
+                state.sessionCaches.count,
+                state.generatingSessions.count
+            )
+        }
     }
 }

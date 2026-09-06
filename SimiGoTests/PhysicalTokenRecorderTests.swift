@@ -24,6 +24,21 @@ final class PhysicalTokenRecorderTests: XCTestCase {
         XCTAssertEqual(recorder.snapshot(), [])
     }
 
+    /// 审计建议（顺序语义）：discard 必须精确移除最后一次 append，
+    /// 保留顺序——该序列正是 Physical Token Ledger 的追加/回退语义。
+    func testDiscardRemovesLastAppendPreservingOrder() {
+        let recorder = PhysicalTokenRecorder()
+
+        recorder.append(11)
+        recorder.append(22)
+        recorder.append(33)
+        recorder.discardLastIfPresent()
+        XCTAssertEqual(recorder.snapshot(), [11, 22])
+
+        recorder.append(44)
+        XCTAssertEqual(recorder.snapshot(), [11, 22, 44])
+    }
+
     func testSnapshotIsIndependentCopy() {
         let recorder = PhysicalTokenRecorder()
         recorder.append(7)
