@@ -279,4 +279,48 @@ final class KVSourceSelectionTests: XCTestCase {
         XCTAssertEqual(selection.commonLen, 2)
         XCTAssertNotNil(selection.cachesForReuse)
     }
+
+    // MARK: - KV Ledger 对账谓词（KV 全链路审计 2026-09-06 P1 防回归）
+
+    func testLedgerSyncedHybridLayoutTracksOnlyFullAttentionLayers() {
+        // Tiel-Coder-35B-A3B 实测布局：线性注意力层 offset 恒 0，全注意力层推进——
+        // [0,0,0,198]×10，账本 198 → 对齐
+        let offsets = Array(repeating: [0, 0, 0, 198], count: 10).flatMap { $0 }
+        XCTAssertTrue(
+            NativeMLX.ledgerSynced(kvOffsets: offsets, ledgerTokenCount: 198),
+            "混合架构下只有全注意力层参与对账"
+        )
+    }
+
+    func testLedgerSyncedDetectsEOSOffByOne() {
+        // P1 原始缺陷形态：EOS 被 ledger discard 而 KV 保留 → 跟踪层 offset 比账本多 1
+        XCTAssertFalse(
+            NativeMLX.ledgerSynced(kvOffsets: [0, 0, 198], ledgerTokenCount: 197)
+        )
+        // 反向偏移同样必须拒绝
+        XCTAssertFalse(
+            NativeMLX.ledgerSynced(kvOffsets: [0, 0, 197], ledgerTokenCount: 198)
+        )
+    }
+
+    func testLedgerSyncedAllZeroIsVacuouslyInSync() {
+        // 纯线性注意力模型：无 per-token KV，全零 vacuous 通过
+        XCTAssertTrue(
+            NativeMLX.ledgerSynced(kvOffsets: [0, 0, 0, 0], ledgerTokenCount: 42)
+        )
+        XCTAssertTrue(
+            NativeMLX.ledgerSynced(kvOffsets: [], ledgerTokenCount: 42)
+        )
+    }
+
+    func testLedgerSyncedUniformLayoutMustMatchExactly() {
+        // 标准（非混合）布局：所有层都推进且必须与账本严格一致
+        XCTAssertTrue(
+            NativeMLX.ledgerSynced(kvOffsets: [198, 198, 198], ledgerTokenCount: 198)
+        )
+        XCTAssertFalse(
+            NativeMLX.ledgerSynced(kvOffsets: [198, 198, 197], ledgerTokenCount: 198),
+            "层间不一致即账本分叉，必须拒绝"
+        )
+    }
 }

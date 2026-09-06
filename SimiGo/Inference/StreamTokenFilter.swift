@@ -418,8 +418,15 @@ nonisolated struct PhysicalLedgerTokenIterator: TokenIteratorProtocol, @unchecke
     nonisolated var speculativeDecodingTelemetry: SpeculativeDecodingTelemetry? { base.speculativeDecodingTelemetry }
 
     nonisolated mutating func discardGeneratedToken() {
-        recorder.discardLastIfPresent()
-        base.discardGeneratedToken()
+        // KV 全链路审计 P1（2026-09-06）：EOS/unknown 终止时 generateLoopTask 调用本方法。
+        // 标准 TokenIterator 的 base 实现是协议默认空操作，而 next() 返回 token 前已把
+        // 它同步求值进 KV——此前这里 recorder.discardLastIfPresent() 把 EOS 弹出 ledger，
+        // 导致 commit 的 physicalTokens.count == KV offset − 1：revision 账本比物理 KV
+        // 少一个 entry，复用副本 trim 后多出一个错位 entry，≥commonLen 的全部位置
+        // 右移一位并沿复用链自我延续，warm 复用边界被静默注入幻影 token。
+        // 修复：ledger 与 KV 同进同退，EOS 保留在账本中（文本流不受影响，EOS 从未
+        // 进入 onChunk）；base 亦不转发——双侧都不回退，保住 ledger == KV 不变量。
+        // commit 侧另有 [KVC] 逐层对账兜底（generateAfterGate Physical KV Commit）。
     }
 
     nonisolated mutating func next() -> Int? {

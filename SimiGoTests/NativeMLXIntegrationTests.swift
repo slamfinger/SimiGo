@@ -60,6 +60,11 @@ final class NativeMLXIntegrationTests: XCTestCase {
 
         var snap = runtime.integrationSnapshot()
         XCTAssertGreaterThanOrEqual(snap.revisions, 1, "成功生成必须提交 Physical KV Revision")
+        XCTAssertTrue(
+            snap.revisionsLedgerSynced,
+            "四账本不变量：revision 账本长度必须与 MLX 物理 KV offset 逐层一致" +
+                "（EOS 终止路径曾偏移 1，见 KV 全链路审计 2026-09-06 P1）"
+        )
         XCTAssertEqual(snap.activeRequests, 0, "请求完成后 task 登记必须清空")
         XCTAssertEqual(snap.activeGenerations, 0)
         XCTAssertEqual(snap.generatingSessions, 0)

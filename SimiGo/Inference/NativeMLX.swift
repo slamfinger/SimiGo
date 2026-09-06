@@ -1856,22 +1856,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         // MARK: Physical KV Commit
 
+        var physicalTokens: [Int] = []
+
+        physicalTokens.reserveCapacity(
+            allPromptTokens.count +
+            actualGeneratedTokenIDs.count
+        )
+
+        physicalTokens.append(contentsOf: allPromptTokens)
+        physicalTokens.append(contentsOf: actualGeneratedTokenIDs)
+
+        // KV 全链路对账（2026-09-06 审计 P1 防回归）：四账本的最后一环——revision
+        // 账本长度必须与 MLX 物理 KV offset 逐层一致。EOS discard 曾使 ledger 比
+        // KV 少 1（错位 entry 沿复用链自我延续）。对账失败即拒绝 commit：
+        // 宁可下轮冷启动，也不让错位 revision 毒化复用池。
+        // 口径为 Standard/Quantized cache 的 offset 语义；未来启用 windowed/Rotating
+        // cache 时需重新校准。
+        let kvOffsets = generationKVCache.map { $0.offset }
+        let ledgerInSync = Self.ledgerSynced(
+            kvOffsets: kvOffsets,
+            ledgerTokenCount: physicalTokens.count
+        )
+        let trackingOffsets = kvOffsets.filter { $0 > 0 }
+
         if !degenerationBlocked &&
             !isInterrupted &&
             !Task.isCancelled &&
             forwardedToolCount == turnToolCalls.count &&
             !allPromptTokens.isEmpty &&
-            !generationKVCache.isEmpty {
-
-            var physicalTokens: [Int] = []
-
-            physicalTokens.reserveCapacity(
-                allPromptTokens.count +
-                actualGeneratedTokenIDs.count
-            )
-
-            physicalTokens.append(contentsOf: allPromptTokens)
-            physicalTokens.append(contentsOf: actualGeneratedTokenIDs)
+            !generationKVCache.isEmpty &&
+            ledgerInSync {
 
             let branchId = makeBranchID(
                 logicalBranchId: targetLogicalBranchId,
@@ -1954,8 +1968,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             kvCommittedSuccessfully = true
 
+            let committedOffset = trackingOffsets.max() ?? -1
+
             traceLogger.trace(
-                "[KVC] src=G rev=\(branchId) br=\(targetLogicalBranchId) p=\(allPromptTokens.count) g=\(actualGeneratedTokenIDs.count) ktok=\(physicalTokens.count) revs=\(state.withLock { $0.physicalRevisions.count }) ok",
+                "[KVC] src=G rev=\(branchId) br=\(targetLogicalBranchId) p=\(allPromptTokens.count) g=\(actualGeneratedTokenIDs.count) ktok=\(physicalTokens.count) kvoff=\(committedOffset) revs=\(state.withLock { $0.physicalRevisions.count }) ok",
                 session: traceSession
             )
 
@@ -1978,6 +1994,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "cancelled",
                 requestId: requestId,
                 executionKey: executionKey
+            )
+        } else if !ledgerInSync {
+            // 对账失败但非取消：revision 账本与物理 KV 已经分叉，commit 会把错位
+            // entry 带进复用池（P1 的危害模式）。跳过 commit = 下轮冷启动，质量
+            // 损失有界且可见；毒化复用链的损失无界且不可见。
+            Service.log(
+                "🛑 [NativeMLX] KV Ledger 对账失败，拒绝 commit（宁冷启不毒化）: ktok=\(physicalTokens.count) kvoff=\(kvOffsets)"
+            )
+
+            traceLogger.trace(
+                "[KVC REJECT] r=\(requestId) br=\(targetLogicalBranchId) ktok=\(physicalTokens.count) kvoff=\(kvOffsets) action=skip_commit why=ledger_kv_mismatch",
+                session: traceSession
             )
         }
 
@@ -2241,6 +2269,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return selection
     }
 
+    /// KV 全链路对账谓词（纯函数，供契约测试）：跟踪 token 位置的层（offset > 0）
+    /// 必须与账本长度一致。混合注意力架构（线性注意力层 + 全注意力层混布，如
+    /// Tiel-Coder-35B-A3B 的 40 cache [0,0,0,N]×10 布局）中，线性注意力层持有
+    /// recurrent state、不走 per-token KV，offset 恒 0，不参与对账；全零 vacuous
+    /// 通过（纯线性模型）。EOS off-by-one 类缺陷会体现在全注意力层 offset 上。
+    static func ledgerSynced(kvOffsets: [Int], ledgerTokenCount: Int) -> Bool {
+        kvOffsets.filter { $0 > 0 }.allSatisfy { $0 == ledgerTokenCount }
+    }
+
     // MARK: - Cancellation
 
     public func cancelGeneration(requestId: String) {
@@ -2276,20 +2313,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     /// stop() 收敛不变量的外部可观测投影：
     /// stop() 返回后五个计数必须全部为 0（审计 P1 集成测试锚点）。
+    /// revisionsLedgerSynced：KV 全链路对账 seam——每个 revision 的账本长度必须与
+    /// MLX 物理 KV offset 逐层一致（2026-09-06 审计 P1：EOS discard 曾使
+    /// ledger == KV − 1 且全库无对账观测，错位 entry 沿复用链静默延续）。
     func integrationSnapshot() -> (
         activeRequests: Int,
         activeGenerations: Int,
         revisions: Int,
         sessions: Int,
-        generatingSessions: Int
+        generatingSessions: Int,
+        revisionsLedgerSynced: Bool
     ) {
         state.withLock { state in
-            (
+            let ledgerSynced = state.physicalRevisions.allSatisfy { revision in
+                Self.ledgerSynced(
+                    kvOffsets: revision.kvCache.map { $0.offset },
+                    ledgerTokenCount: revision.physicalTokens.count
+                )
+            }
+
+            return (
                 state.activeRequestTasks.count,
                 state.activeGenerationTasks.count,
                 state.physicalRevisions.count,
                 state.sessionCaches.count,
-                state.generatingSessions.count
+                state.generatingSessions.count,
+                ledgerSynced
             )
         }
     }
