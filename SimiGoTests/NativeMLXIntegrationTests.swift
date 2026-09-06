@@ -537,4 +537,129 @@ final class NativeMLXIntegrationTests: XCTestCase {
             throw error
         }
     }
+
+    /// 多 execution-key 并发记账实测（审计下一阶段专项：全局 admission reservation）。
+    ///
+    /// 已知缺口（审计第五轮观察项）：admission 检查位于 prefillScheduler.acquire 之前，
+    /// 跨 execution key 完全并行——N 个并发请求各自读到同一份 resident 快照、各自
+    /// 通过 admission，「预算」实际是单请求瞬时估算而非全局并发预算。
+    ///
+    /// 本测试把缺口变成可量化数据：5 个不同 session（互不 supersede）各 ~16K token
+    /// 并发生成。单请求 projected ≈ 16K×128KB + 4GB ≈ 6GB < 12GB（各自应通过）；
+    /// 并发总和 ≈ 5×16K×128KB + 4GB ≈ 14GB > 12GB（若 admission 具备全局预算语义
+    /// 则应有请求被拒/驱逐）。同时 [PWAIT] 会实测 prefill 串行化排队时长。
+    ///
+    /// 断言只锁定正确性不变量（账本对齐、池与成功数一致、机器存活）；
+    /// 「全部通过 admission」本身作为测量结果记录，不作为断言——
+    /// 未来引入 reservation 语义后本测试应原样可用。
+    func testConcurrentMultiOwnerAdmissionAccounting() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（多 owner 并发压测，数分钟）")
+        }
+
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: ModelConfig())
+        let port = 47_000 + Int.random(in: 0..<2_000)
+
+        do {
+            try await withTestTimeout(seconds: 600) {
+                try await runtime.start(info, port: port)
+            }
+
+            var config = ModelConfig()
+            config.maxTokens = 16
+            config.ctxSize = 32_768
+
+            // 每个 owner 内容互异（带 owner 标记）：commit 侧按内容去重
+            // （branch+fp+physicalTokens 相等即替换）——若五者同文，池会合法地
+            // 合并为 1 个 revision（铁律 42 全局计算共享池的设计行为，首轮实测验证）。
+            // ~66K chars ≈ 17.6K token（实测效率 3.78 chars/token）
+            let owners = ["sess-a", "sess-b", "sess-c", "sess-d", "sess-e"]
+
+            var results: [(owner: String, outcome: Result<String, Error>)] = []
+            results.reserveCapacity(owners.count)
+
+            await withTaskGroup(
+                of: (String, Result<String, Error>).self
+            ) { group in
+                for owner in owners {
+                    group.addTask {
+                        do {
+                            let ownerPrompt = String(
+                                repeating: "// \(owner)\nlet metric\(owner) = evaluateStep(payload: \"sample-\(owner)\")\n",
+                                count: 890
+                            )
+                            let text = try await withTestTimeout(seconds: 600) {
+                                try await runtime.generate(
+                                    requestId: "cc-\(owner.suffix(1))",
+                                    agentId: "perf",
+                                    sessionId: owner,
+                                    logicalBranchId: "main",
+                                    messages: [
+                                        .object([
+                                            "role": .string("user"),
+                                            "content": .string(ownerPrompt),
+                                        ])
+                                    ],
+                                    tools: nil,
+                                    config: config,
+                                    onChunk: { _ in }
+                                )
+                            }
+                            return (owner, .success(text))
+                        } catch {
+                            return (owner, .failure(error))
+                        }
+                    }
+                }
+
+                for await pair in group {
+                    results.append(pair)
+                }
+            }
+
+            let successes = results.filter {
+                if case .success = $0.outcome { return true }
+                return false
+            }
+            let rejections = results.filter {
+                if case .failure(let error) = $0.outcome,
+                   case RuntError.admissionExceeded = error { return true }
+                return false
+            }
+            let otherFailures = results.count - successes.count - rejections.count
+
+            XCTAssertFalse(results.isEmpty, "并发请求必须全部返回结果")
+            XCTAssertGreaterThan(
+                successes.count, 0,
+                "至少部分请求应完成（测量记录：成功 \(successes.count)/admission 拒绝 \(rejections.count)/其他失败 \(otherFailures)）"
+            )
+            XCTAssertEqual(
+                otherFailures, 0,
+                "不允许出现 admission 拒绝以外的失败（OOM/悬挂/内部错误都算治理缺口）"
+            )
+
+            let snap = runtime.integrationSnapshot()
+            // 池中 revision 数 ∈ [1, 成功数]：跨 owner 不 supersede，但 admission
+            // 驱逐会随驻留增长削减旧 revision（第 4-5 个请求预计触发）——
+            // 具体数量是测量数据，正确性由 ledgerSynced 与下界锁定。
+            XCTAssertGreaterThanOrEqual(
+                snap.revisions, 1,
+                "至少最新 revision 应驻留"
+            )
+            XCTAssertLessThanOrEqual(
+                snap.revisions, successes.count,
+                "池中 revision 不得多于成功请求（去重后上界）"
+            )
+            XCTAssertTrue(
+                snap.revisionsLedgerSynced,
+                "并发提交后每个 revision 的账本仍必须与 KV offset 逐层对齐"
+            )
+
+            await runtime.stop()
+        } catch {
+            await runtime.stop()
+            throw error
+        }
+    }
 }

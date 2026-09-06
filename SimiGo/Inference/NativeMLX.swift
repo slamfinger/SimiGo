@@ -2358,8 +2358,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// revisionTokenCounts：池内各 revision 账本长度（commit 后按 lastActive 降序，最新在前）。
     /// lastReuse*：最近一次请求的复用决策（源账本长度 / 实际复用前缀；无复用为 -1）——
     /// warm hit 硬契约的断言锚点（审计 P2-1）。
-    /// poolTrimmable：池内全部 revision 的 cache 是否可裁剪——复用模式的 topology 定义
-    /// （审计 P2-1 假阴性修复：模式由 cache 可裁剪性决定，不得由「是否命中」反向推断）。
+    /// poolTrimmable：池内全部 revision 可裁剪且驻留——复用模式的 topology 定义
+    /// （审计 P2-1 假阴性修复：模式由 cache 可裁剪性决定，不得由「是否命中」反向推断；
+    /// 空池/含 evicted revision 时为 false，规避 allSatisfy 的 vacuous truth）。
     func integrationSnapshot() -> (
         activeRequests: Int,
         activeGenerations: Int,
@@ -2380,9 +2381,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
             }
 
-            let poolTrimmable = state.physicalRevisions.allSatisfy { revision in
-                revision.kvCache.allSatisfy { $0.isTrimmable }
-            }
+            let poolTrimmable = !state.physicalRevisions.isEmpty &&
+                state.physicalRevisions.allSatisfy { revision in
+                    revision.resident &&
+                    revision.kvCache.allSatisfy { $0.isTrimmable }
+                }
 
             return (
                 state.activeRequestTasks.count,
