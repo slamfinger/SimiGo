@@ -21,6 +21,7 @@ public enum RuntError: LocalizedError, Sendable {
     case invalidModelDirectory(String)
     case modelNotSupported(String)
     case admissionExceeded(UInt64, UInt64)
+    case duplicateRequestId(String)
 
     public var errorDescription: String? {
         switch self {
@@ -31,6 +32,8 @@ public enum RuntError: LocalizedError, Sendable {
         case .modelNotSupported(let r): return "不支持的模型: \(r)"
         case .admissionExceeded(let projected, let limit):
             return "内存超额拒绝: 投影 \(projected / 1024 / 1024)M > 上限 \(limit / 1024 / 1024)M（eviction 后仍超预算）"
+        case .duplicateRequestId(let id):
+            return "重复的 requestId: \(id)（前一请求仍在处理中，未完成前不得复用）"
         }
     }
 }

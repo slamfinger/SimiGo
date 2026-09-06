@@ -821,9 +821,29 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
+        var registrationError: RuntError?
+
         state.withLock { state in
+            guard state.activeRequestTasks[requestId] == nil else {
+                // 审计 P2#4：requestId 是 shutdown 取消与生命周期账本的键，
+                // 重复注册会覆盖旧任务使其对 shutdown 不可见——直接拒绝新请求
+                registrationError = RuntError.duplicateRequestId(requestId)
+                return
+            }
+
             state.activeRequestTasks[requestId] = task
             state.peakActiveRequests = max(state.peakActiveRequests, state.activeRequestTasks.count)
+        }
+
+        if let registrationError {
+            task.cancel()
+
+            traceLogger.trace(
+                "[REQ REJECT] request=\(requestId) why=duplicateRequestId",
+                session: executionKey.traceKey
+            )
+
+            throw registrationError
         }
 
         defer {
@@ -1012,7 +1032,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         let effectiveContextDemand = allPromptTokens.count + maxTokens
-        let runtimeSafetyContextBudget = max(1024, config.ctxSize)
+        // 审计 P2#5：客户端可声明更小的 ctx 收紧自身预算，
+        // 但不得越过运营侧 baseConfig 上限——请求侧声明不是信任边界。
+        let runtimeSafetyContextBudget = max(
+            1024,
+            min(config.ctxSize, baseConfig.ctxSize)
+        )
 
         guard effectiveContextDemand <= runtimeSafetyContextBudget else {
             traceLogger.trace(
@@ -1348,7 +1373,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             let targetEvictionBytes = projectedMemory - admissionLimit
 
             var freedBytes: UInt64 = 0
-            var evictedCount = 0
+            var pendingReleases: [(caches: [any KVCache], tokens: Int)] = []
 
             state.withLock { state in
                 var evictCandidates = state.physicalRevisions.indices.filter {
@@ -1364,11 +1389,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         break
                     }
 
-                    let bytes = state.physicalRevisions[index].estimatedResidentBytes
+                    let revision = state.physicalRevisions[index]
+                    let bytes = revision.estimatedResidentBytes
 
-                    state.physicalRevisions[index].releasePhysicalMemory()
+                    // 审计 P2#3：锁内只摘除物理层引用——resident 即时转 false
+                    // （全局会计即时生效，与其他请求的选源/驱逐在锁上互斥）；
+                    // MLX trim 统一走锁外 MainActor，与 kvTrimReleases / commit 释放同纪律。
+                    pendingReleases.append(
+                        (caches: revision.kvCache, tokens: revision.physicalTokens.count)
+                    )
+                    state.physicalRevisions[index].kvCache = []
                     freedBytes += bytes
-                    evictedCount += 1
 
                     if isLongContext &&
                         freedBytes >= targetEvictionBytes + 2 * 1024 * 1024 * 1024 {
@@ -1377,8 +1408,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
             }
 
-            if evictedCount > 0 {
-                Memory.clearCache()
+            if !pendingReleases.isEmpty {
+                let evictedCount = pendingReleases.count
+
+                await MainActor.run {
+                    for release in pendingReleases {
+                        for cache in release.caches {
+                            _ = cache.trim(release.tokens)
+                        }
+                    }
+
+                    Memory.clearCache()
+                }
 
                 traceLogger.trace(
                     "[ADMISSION] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M evicted=\(evictedCount) est_freed=\(freedBytes / 1024 / 1024)M",
@@ -2131,6 +2172,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 promptTokens.count
             )
 
+            // 审计 P2：单 token 公共前缀无可复用价值——复用收益趋零，却要付出
+            // 源拷贝/trim 开销，且 exact-match 场景会在 Build 阶段丢弃整个副本。
+            // ≤1 一律视为无前缀，降级 Cold（KVM why=noCommonPrefix）。
+            guard boundedCommon > 1 else { continue }
+
             if boundedCommon > selection.commonLen ||
                 (boundedCommon == selection.commonLen &&
                  boundedCommon > 0 &&
@@ -2147,6 +2193,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 selection.commonLen = 0
                 selection.cachesForReuse = nil
             } else {
+                // copy() 是惰性切片（mlx：$0[.ellipsis] 仅建图不拷缓冲区），锁内成本可忽略；
+                // 实际物化发生在 generation 期首次 eval 且在 trim 之后——因此不存在
+                // "全源尺寸瞬时双倍驻留"（审计 P2#6 结论：无未计量峰值，勿再"优化"此点）。
                 selection.cachesForReuse = revision.kvCache.map {
                     $0.copy()
                 }

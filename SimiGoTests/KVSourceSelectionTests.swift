@@ -223,4 +223,60 @@ final class KVSourceSelectionTests: XCTestCase {
         XCTAssertNil(selection.cachesForReuse)
         XCTAssertEqual(selection.sawUsableBranch, true)
     }
+
+    // MARK: - 平凡前缀（审计 P2：单 token 前缀不复用）
+
+    func testSingleTokenPrefixIsNotReused() {
+        // 仅共享 1 个 token：复用收益趋零且 exact-match 场景会丢弃整个副本，
+        // 选源必须直接拒绝，降级 Cold（KVM why=noCommonPrefix）
+        var revisions = [
+            makeRevision(
+                id: "trivial",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [7, 1, 2],
+                resident: true
+            )
+        ]
+
+        let selection = NativeMLX.selectKVSourceLocked(
+            revisions: &revisions,
+            promptTokens: [7, 9, 9],
+            toolFingerprint: toolFP,
+            targetStorageKey: "agent/s1",
+            targetBranchId: "main"
+        )
+
+        XCTAssertNil(selection.branch, "单 token 公共前缀不得成为复用源")
+        XCTAssertEqual(selection.commonLen, 0)
+        XCTAssertNil(selection.cachesForReuse)
+        XCTAssertTrue(selection.trimReleases.isEmpty, "拒绝复用 ≠ 释放：源保持原状")
+        XCTAssertFalse(revisions[0].kvCache.isEmpty)
+        XCTAssertEqual(selection.sawUsableBranch, true)
+    }
+
+    func testTwoTokenPrefixStillReused() {
+        // 边界：恰好 2 个 token 公共前缀仍走复用路径
+        var revisions = [
+            makeRevision(
+                id: "minimal",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [7, 8],
+                resident: true
+            )
+        ]
+
+        let selection = NativeMLX.selectKVSourceLocked(
+            revisions: &revisions,
+            promptTokens: [7, 8, 9],
+            toolFingerprint: toolFP,
+            targetStorageKey: "agent/s1",
+            targetBranchId: "main"
+        )
+
+        XCTAssertEqual(selection.branch?.id, "minimal")
+        XCTAssertEqual(selection.commonLen, 2)
+        XCTAssertNotNil(selection.cachesForReuse)
+    }
 }
