@@ -540,18 +540,19 @@ final class NativeMLXIntegrationTests: XCTestCase {
 
     /// 多 execution-key 并发记账实测（审计下一阶段专项：全局 admission reservation）。
     ///
-    /// 已知缺口（审计第五轮观察项）：admission 检查位于 prefillScheduler.acquire 之前，
-    /// 跨 execution key 完全并行——N 个并发请求各自读到同一份 resident 快照、各自
-    /// 通过 admission，「预算」实际是单请求瞬时估算而非全局并发预算。
+    /// 已确认缺口（审计第五轮修正后语义）：admission 已被 PrefillScheduler 串行化
+    /// （[PWAIT] → [ADMISSION OBS] 实证），每个请求增量可见此前提交的 resident；
+    /// 但 admission PASS 到自身 KV 物化/commit 之间无显式预留——
+    /// accounting 只计 currentResidentKVBytes + 本请求 projected，
+    /// 缺 inFlightReservedBytes（其他已 PASS 未 commit 请求的增量）。
     ///
-    /// 本测试把缺口变成可量化数据：5 个不同 session（互不 supersede）各 ~16K token
-    /// 并发生成。单请求 projected ≈ 16K×128KB + 4GB ≈ 6GB < 12GB（各自应通过）；
-    /// 并发总和 ≈ 5×16K×128KB + 4GB ≈ 14GB > 12GB（若 admission 具备全局预算语义
-    /// 则应有请求被拒/驱逐）。同时 [PWAIT] 会实测 prefill 串行化排队时长。
+    /// 本轮 5 → 10 owner 扩容（每 owner ~12K token，总 ~120K）：测量
+    /// in-flight 深度、admission projected 序列、resident KV 增长、RSS/swap 峰值、
+    /// 驱逐次数与分布——回答「驱逐式自我修正的安全余量还有多大、
+    /// 何时才真的需要显式 reservation」。
     ///
-    /// 断言只锁定正确性不变量（账本对齐、池与成功数一致、机器存活）；
-    /// 「全部通过 admission」本身作为测量结果记录，不作为断言——
-    /// 未来引入 reservation 语义后本测试应原样可用。
+    /// 断言只锁正确性不变量（无 admission 以外失败、账本对齐、池数上界）；
+    /// 成功/拒绝分布作为测量结果记录，未来引入 reservation 语义后本测试应原样可用。
     func testConcurrentMultiOwnerAdmissionAccounting() async throws {
         guard let modelPath = Self.modelPath else {
             throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（多 owner 并发压测，数分钟）")
@@ -571,10 +572,10 @@ final class NativeMLXIntegrationTests: XCTestCase {
             config.ctxSize = 32_768
 
             // 每个 owner 内容互异（带 owner 标记）：commit 侧按内容去重
-            // （branch+fp+physicalTokens 相等即替换）——若五者同文，池会合法地
-            // 合并为 1 个 revision（铁律 42 全局计算共享池的设计行为，首轮实测验证）。
-            // ~66K chars ≈ 17.6K token（实测效率 3.78 chars/token）
-            let owners = ["sess-a", "sess-b", "sess-c", "sess-d", "sess-e"]
+            // （branch+fp+physicalTokens 相等即替换）——同文会被合法合并（铁律 42）。
+            // ~45K chars ≈ 12K token（实测效率 3.78 chars/token）
+            let ownerCount = 10
+            let owners = (1...ownerCount).map { "o\($0)" }
 
             var results: [(owner: String, outcome: Result<String, Error>)] = []
             results.reserveCapacity(owners.count)
@@ -587,11 +588,11 @@ final class NativeMLXIntegrationTests: XCTestCase {
                         do {
                             let ownerPrompt = String(
                                 repeating: "// \(owner)\nlet metric\(owner) = evaluateStep(payload: \"sample-\(owner)\")\n",
-                                count: 890
+                                count: 600
                             )
                             let text = try await withTestTimeout(seconds: 600) {
                                 try await runtime.generate(
-                                    requestId: "cc-\(owner.suffix(1))",
+                                    requestId: "cc-\(owner)",
                                     agentId: "perf",
                                     sessionId: owner,
                                     logicalBranchId: "main",
@@ -636,13 +637,13 @@ final class NativeMLXIntegrationTests: XCTestCase {
             )
             XCTAssertEqual(
                 otherFailures, 0,
-                "不允许出现 admission 拒绝以外的失败（OOM/悬挂/内部错误都算治理缺口）"
+                "不允许出现 admission 拒绝以外的失败（OOM/悬挂/内部错误都算治理缺口——若在 10 owner 压力下出现，即为 reservation 需要引入的实测信号）"
             )
 
             let snap = runtime.integrationSnapshot()
             // 池中 revision 数 ∈ [1, 成功数]：跨 owner 不 supersede，但 admission
-            // 驱逐会随驻留增长削减旧 revision（第 4-5 个请求预计触发）——
-            // 具体数量是测量数据，正确性由 ledgerSynced 与下界锁定。
+            // 驱逐会随驻留增长削减旧 revision——具体数量是测量数据，
+            // 正确性由 ledgerSynced 与上下界锁定。
             XCTAssertGreaterThanOrEqual(
                 snap.revisions, 1,
                 "至少最新 revision 应驻留"
