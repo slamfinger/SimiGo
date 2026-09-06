@@ -1309,6 +1309,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             if revisionCount == 0 {
                 missReason = "noGlobalRevision"
+            } else if selection.sawNonTrimmableCache {
+                missReason = "nonTrimmableCache"
             } else if selection.sawToolFingerprintMismatch {
                 missReason = "toolFingerprintMismatch"
             } else if selection.branch != nil && !(selection.branch!.resident) {
@@ -2186,6 +2188,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var rawCommonLen = 0
         var sawUsableBranch = false
         var sawToolFingerprintMismatch = false
+        var sawNonTrimmableCache = false
         var cachesForReuse: [any KVCache]?
         /// 同 owner 同分支的源被深拷贝取代后需无损释放的物理层（锁内标记、锁外 trim）
         var trimReleases: [(caches: [any KVCache], tokens: Int, id: String)] = []
@@ -2206,6 +2209,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         for (index, revision) in revisions.enumerated() {
             guard !revision.physicalTokens.isEmpty else { continue }
+
+            // KV 全链路审计 P1（2026-09-06 第二轮）：混合注意力架构（qwen3_5_moe 类，
+            // 线性注意力层持 MambaCache recurrent state）的 state 不可前缀截断——
+            // copy 携带全量 state、trim 为 no-op，部分前缀复用会让 delta 续灌在
+            // 包含源后缀的线性状态上进行，静默污染多数层且长度对账不可见
+            // （实测 [KVR] cp=181 对 198 token 源，hit=82.3%）。
+            // 非全可裁剪的 revision 直接不作候选（mlx 自身 canTrimPromptCache 同款
+            // 谓词）；同一池中更短的 可裁剪源仍可胜出，冷启动以外的正确复用不损失。
+            guard revision.kvCache.allSatisfy({ $0.isTrimmable }) else {
+                selection.sawNonTrimmableCache = true
+                continue
+            }
 
             selection.sawUsableBranch = true
 

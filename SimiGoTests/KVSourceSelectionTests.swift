@@ -17,7 +17,8 @@ final class KVSourceSelectionTests: XCTestCase {
         tokens: [Int],
         resident: Bool,
         fingerprint: String = "fp-test",
-        lastActive: Date = Date()
+        lastActive: Date = Date(),
+        caches: [any KVCache]? = nil
     ) -> PhysicalKVRevision {
         PhysicalKVRevision(
             id: id,
@@ -25,7 +26,7 @@ final class KVSourceSelectionTests: XCTestCase {
             logicalBranchId: branch,
             toolFingerprint: fingerprint,
             physicalTokens: tokens,
-            kvCache: resident ? [KVCacheSimple()] : [],
+            kvCache: caches ?? (resident ? [KVCacheSimple()] : []),
             lastActive: lastActive
         )
     }
@@ -322,5 +323,73 @@ final class KVSourceSelectionTests: XCTestCase {
             NativeMLX.ledgerSynced(kvOffsets: [198, 198, 197], ledgerTokenCount: 198),
             "层间不一致即账本分叉，必须拒绝"
         )
+    }
+
+    // MARK: - 可裁剪门禁（KV 全链路审计第二轮 P1 防回归）
+
+    func testNonTrimmableSourceIsNotCandidate() {
+        // 混合架构形态：MambaCache（线性注意力 recurrent state）不可前缀截断——
+        // copy 携带全量 state、trim 为 no-op，部分前缀复用会静默污染线性层。
+        // 即使 token 前缀完全匹配也不得进入复用候选。
+        var revisions = [
+            makeRevision(
+                id: "mamba",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [1, 2, 3, 4, 5],
+                resident: true,
+                caches: [MambaCache(), KVCacheSimple()]
+            )
+        ]
+
+        let selection = NativeMLX.selectKVSourceLocked(
+            revisions: &revisions,
+            promptTokens: [1, 2, 3, 4, 5, 6],
+            toolFingerprint: toolFP,
+            targetStorageKey: "agent/s1",
+            targetBranchId: "main"
+        )
+
+        XCTAssertNil(selection.branch, "不可裁剪源不得成为复用候选")
+        XCTAssertEqual(selection.commonLen, 0)
+        XCTAssertNil(selection.cachesForReuse)
+        XCTAssertTrue(selection.sawNonTrimmableCache)
+        XCTAssertTrue(selection.trimReleases.isEmpty, "拒绝复用 ≠ 释放：源保持原状")
+        XCTAssertFalse(revisions[0].kvCache.isEmpty, "源物理层保持原状")
+    }
+
+    func testNonTrimmableLongPrefixYieldsToTrimmableShorterPrefix() {
+        // 门禁在候选阶段过滤：更短但可裁剪的源必须胜出，而不是被非可裁剪源
+        // 挤成冷启动
+        var revisions = [
+            makeRevision(
+                id: "mamba-long",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                resident: true,
+                caches: [MambaCache(), KVCacheSimple()]
+            ),
+            makeRevision(
+                id: "trimmable-short",
+                owner: "agent/s2",
+                branch: "main",
+                tokens: [1, 2, 3, 4],
+                resident: true
+            )
+        ]
+
+        let selection = NativeMLX.selectKVSourceLocked(
+            revisions: &revisions,
+            promptTokens: [1, 2, 3, 4, 5, 6, 7, 8],
+            toolFingerprint: toolFP,
+            targetStorageKey: "agent/s1",
+            targetBranchId: "main"
+        )
+
+        XCTAssertEqual(selection.branch?.id, "trimmable-short", "更短但可裁剪的源必须胜出")
+        XCTAssertEqual(selection.commonLen, 4)
+        XCTAssertNotNil(selection.cachesForReuse)
+        XCTAssertTrue(selection.sawNonTrimmableCache, "被跳过的非可裁剪源必须留痕")
     }
 }

@@ -380,7 +380,9 @@ Commit 内容 = Prompt Tokens + Actual Generated Tokens → Physical Token Seque
 
 ## 4.7 KV Selection 与 Global Pool
 
-Candidate Search 顺序：`Global Pool → Tool Fingerprint Filter → Physical Token Prefix Compare → Longest Common Prefix → Resident Check`。**不使用** Session ID / Request ID / Response ID / Tool Name / Message Count 作为 Physical KV 地址（铁律 7）。
+Candidate Search 顺序：`Global Pool → Trimmable Cache Filter → Tool Fingerprint Filter → Physical Token Prefix Compare → Longest Common Prefix → Resident Check`。**不使用** Session ID / Request ID / Response ID / Tool Name / Message Count 作为 Physical KV 地址（铁律 7）。
+
+> **Trimmable Cache 门禁**：混合注意力架构（如 qwen3_5_moe 的线性注意力层持 `MambaCache` recurrent state）的 cache 不可按前缀截断——copy 携带全量 state、trim 为 no-op，部分前缀复用会让线性层在包含源后缀的状态上续算，静默污染生成且长度对账不可见。非全可裁剪（`isTrimmable`，同 mlx `canTrimPromptCache` 谓词）的 revision 不作复用候选（宁可冷启，不毒化）；其 revision 仍正常提交/驱逐，受 Memory Governance 约束。
 
 > **Global Physical KV Pool 是计算结果共享池，不是 Conversation Memory / Session Store / Response Store / Agent Memory**（铁律 42）。可跨 Agent / Session / Logical Branch 复用，只要 Model + Tool Fingerprint + Token Prefix + Residency + Memory Governance 全部满足（铁律 43）。Global Selection 可以共享；Resource Budget、Residency 与 Eviction 独立进行（铁律 53）。
 
