@@ -380,7 +380,7 @@ Commit 内容 = Prompt Tokens + Actual Generated Tokens → Physical Token Seque
 
 ## 4.7 KV Selection 与 Global Pool
 
-Candidate Search 顺序：`Global Pool → Trimmable Cache Filter → Tool Fingerprint Filter → Physical Token Prefix Compare → Longest Common Prefix → Resident Check`。**不使用** Session ID / Request ID / Response ID / Tool Name / Message Count 作为 Physical KV 地址（铁律 7）。
+Candidate Search 顺序：`Global Pool → Trimmable Cache Filter → Resident Filter → Tool Fingerprint Filter → Physical Token Prefix Compare → Longest Common Prefix`。**不使用** Session ID / Request ID / Response ID / Tool Name / Message Count 作为 Physical KV 地址（铁律 7）。Trimmable 与 Resident 过滤均在候选阶段前置淘汰（铁律 8：非驻留源降级 Cold）——evicted revision 的长前缀不得挤掉本可安全复用的较短 resident 源。
 
 > **Trimmable Cache 门禁**：混合注意力架构（如 qwen3_5_moe 的线性注意力层持 `MambaCache` recurrent state）的 cache 不可按前缀截断——copy 携带全量 state、trim 为 no-op，部分前缀复用会让线性层在包含源后缀的状态上续算，静默污染生成且长度对账不可见。非全可裁剪（`isTrimmable`，同 mlx `canTrimPromptCache` 谓词）的 revision 不作复用候选（宁可冷启，不毒化）；其 revision 仍正常提交/驱逐，受 Memory Governance 约束。
 

@@ -1313,7 +1313,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 missReason = "nonTrimmableCache"
             } else if selection.sawToolFingerprintMismatch {
                 missReason = "toolFingerprintMismatch"
-            } else if selection.branch != nil && !(selection.branch!.resident) {
+            } else if selection.sawEvictedCache {
                 missReason = "evictedPhysicalKV"
             } else if selection.sawUsableBranch {
                 missReason = "noCommonPrefix"
@@ -2189,6 +2189,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var sawUsableBranch = false
         var sawToolFingerprintMismatch = false
         var sawNonTrimmableCache = false
+        var sawEvictedCache = false
         var cachesForReuse: [any KVCache]?
         /// 同 owner 同分支的源被深拷贝取代后需无损释放的物理层（锁内标记、锁外 trim）
         var trimReleases: [(caches: [any KVCache], tokens: Int, id: String)] = []
@@ -2196,8 +2197,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     /// 全局 Physical KV 池选源（铁律 42/43/7）：最长前缀胜出、同长按 lastActive 破平、
     /// Tool Fingerprint 过滤。必须在 state 锁内调用（revisions 为 inout）。
-    /// 归属裁决（架构指引 §2.1 双 Key 不变量）：仅同 ownerStorageKey 且同分支的源
-    /// 才允许在本轮深拷贝后无损释放物理层；跨会话同名分支源必须保留。
+    /// 候选过滤前置（审计 P2-1）：Trimmable（混合架构线性层 state 不可截断）与
+    /// Resident（evicted revision 无物理层可复用）都在候选阶段淘汰——否则长前缀的
+    /// evicted revision 会赢得选择后被 resident 检查重置成冷启动，挤掉本可安全
+    /// 复用的较短 resident 源。归属裁决（架构指引 §2.1 双 Key 不变量）：仅同
+    /// ownerStorageKey 且同分支的源才允许在本轮深拷贝后无损释放物理层；跨会话
+    /// 同名分支源必须保留。
     static func selectKVSourceLocked(
         revisions: inout [PhysicalKVRevision],
         promptTokens: [Int],
@@ -2219,6 +2224,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 谓词）；同一池中更短的 可裁剪源仍可胜出，冷启动以外的正确复用不损失。
             guard revision.kvCache.allSatisfy({ $0.isTrimmable }) else {
                 selection.sawNonTrimmableCache = true
+                continue
+            }
+
+            // 审计 P2-1（dense 模型上线前性能修复）：evicted revision 的物理层已被
+            // 摘除，唯一归宿是选中后被 resident 检查重置为冷启动——前置淘汰，
+            // 避免其长前缀挤掉本可安全复用的较短 resident 源（铁律 8）。
+            guard revision.resident else {
+                selection.sawEvictedCache = true
                 continue
             }
 
@@ -2254,30 +2267,26 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         if let revision = selection.branch, selection.commonLen > 0 {
-            if !revision.resident {
-                selection.commonLen = 0
-                selection.cachesForReuse = nil
-            } else {
-                // copy() 是惰性切片（mlx：$0[.ellipsis] 仅建图不拷缓冲区），锁内成本可忽略；
-                // 实际物化发生在 generation 期首次 eval 且在 trim 之后——因此不存在
-                // "全源尺寸瞬时双倍驻留"（审计 P2#6 结论：无未计量峰值，勿再"优化"此点）。
-                selection.cachesForReuse = revision.kvCache.map {
-                    $0.copy()
-                }
+            // 候选阶段已完成 Trimmable/Resident 过滤，此处 revision 必为 resident。
+            // copy() 是惰性切片（mlx：$0[.ellipsis] 仅建图不拷缓冲区），锁内成本可忽略；
+            // 实际物化发生在 generation 期首次 eval 且在 trim 之后——因此不存在
+            // "全源尺寸瞬时双倍驻留"（审计 P2#6 结论：无未计量峰值，勿再"优化"此点）。
+            selection.cachesForReuse = revision.kvCache.map {
+                $0.copy()
+            }
 
-                if selection.index >= 0, selection.index < revisions.count {
-                    revisions[selection.index].lastActive = Date()
-                }
+            if selection.index >= 0, selection.index < revisions.count {
+                revisions[selection.index].lastActive = Date()
+            }
 
-                if revision.ownerStorageKey == targetStorageKey,
-                   revision.logicalBranchId == targetBranchId,
-                   selection.index >= 0,
-                   selection.index < revisions.count {
-                    selection.trimReleases.append(
-                        (revision.kvCache, revision.physicalTokens.count, revision.id)
-                    )
-                    revisions[selection.index].kvCache = []
-                }
+            if revision.ownerStorageKey == targetStorageKey,
+               revision.logicalBranchId == targetBranchId,
+               selection.index >= 0,
+               selection.index < revisions.count {
+                selection.trimReleases.append(
+                    (revision.kvCache, revision.physicalTokens.count, revision.id)
+                )
+                revisions[selection.index].kvCache = []
             }
         }
 

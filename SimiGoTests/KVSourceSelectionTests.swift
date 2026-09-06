@@ -200,7 +200,10 @@ final class KVSourceSelectionTests: XCTestCase {
         XCTAssertTrue(selection.trimReleases.isEmpty, "过滤 ≠ 释放：语义不兼容只影响本轮选择")
     }
 
-    func testEvictedSourceResetsCommonLen() {
+    func testEvictedSourceIsNotCandidate() {
+        // 审计 P2-1（语义前移）：evicted revision 的物理层已被摘除，唯一归宿是
+        // 选中后被重置为冷启动（铁律 8）——现在在候选阶段直接淘汰并留痕，
+        // 避免其长前缀挤掉本可安全复用的较短 resident 源。
         var revisions = [
             makeRevision(
                 id: "evicted",
@@ -219,10 +222,47 @@ final class KVSourceSelectionTests: XCTestCase {
             targetBranchId: "main"
         )
 
-        XCTAssertNotNil(selection.branch, "命中但非驻留的 revision 应被识别")
-        XCTAssertEqual(selection.commonLen, 0, "非驻留源必须重置复用长度，降级 Cold Prefill（铁律 8）")
+        XCTAssertNil(selection.branch, "非驻留 revision 不得成为复用候选")
+        XCTAssertEqual(selection.commonLen, 0)
         XCTAssertNil(selection.cachesForReuse)
-        XCTAssertEqual(selection.sawUsableBranch, true)
+        XCTAssertTrue(selection.sawEvictedCache, "evicted 必须留痕（[KVM] evictedPhysicalKV）")
+        XCTAssertEqual(selection.sawUsableBranch, false)
+    }
+
+    func testEvictedLongPrefixDoesNotBlockResidentShorterPrefix() {
+        // evicted 长前缀不得挤掉 resident 短前缀——后者本可安全复用
+        var revisions = [
+            makeRevision(
+                id: "evicted-long",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [1, 2, 3, 4, 5, 6, 7, 8],
+                resident: false
+            ),
+            makeRevision(
+                id: "resident-short",
+                owner: "agent/s1",
+                branch: "main",
+                tokens: [1, 2, 3, 4],
+                resident: true
+            )
+        ]
+
+        let selection = NativeMLX.selectKVSourceLocked(
+            revisions: &revisions,
+            promptTokens: [1, 2, 3, 4, 5, 6, 7, 8],
+            toolFingerprint: toolFP,
+            targetStorageKey: "agent/s1",
+            targetBranchId: "main"
+        )
+
+        XCTAssertEqual(
+            selection.branch?.id, "resident-short",
+            "evicted 长前缀不得阻止 resident 源命中"
+        )
+        XCTAssertEqual(selection.commonLen, 4)
+        XCTAssertNotNil(selection.cachesForReuse)
+        XCTAssertTrue(selection.sawEvictedCache)
     }
 
     // MARK: - 平凡前缀（审计 P2：单 token 前缀不复用）
