@@ -219,4 +219,91 @@ final class NativeMLXIntegrationTests: XCTestCase {
 
         XCTAssertFalse(runtime.isRunning)
     }
+
+    // MARK: - 性能审计（KV 全链路第四轮）：多轮 warm hit 衰减 + 长上下文 + eviction 压力
+
+    /// 多轮会话 warm hit 衰减实测（模型无关，需要 SIMIGO_TEST_MODEL_PATH）：
+    /// turn-1 冷启动后，每轮注入一段代码压力块使 prompt 逐步增长至 ~16K，
+    /// 断言每轮提交后账本逐层对齐（不变量）；命中率/TTFT/prefill/decode TPS/
+    /// admission 驱逐全部经 [KVR]/[PERF]/[ADMISSION] trace 留痕供离线分析。
+    /// 12 轮 ≈ 16K token：32GB 机器上 32K/64K 的 KV 驻留（~3GB/6GB/revision）
+    /// 会持续触发 admissionExceeded，待更大内存环境再扩展。
+    private func perfPaddingBlock(_ turn: Int) -> String {
+        let header = "// === turn \(turn) 长上下文压力块 ===\n"
+        let line = "let metric\(turn) = evaluateStep(\(turn), payload: \"pad-\(turn)-sample-payload\")\n"
+        return header + String(repeating: line, count: 90)
+    }
+
+    func testPerformanceMultiTurnWarmHitDecay() async throws {
+        guard let modelPath = Self.modelPath else {
+            throw XCTSkip("设置 SIMIGO_TEST_MODEL_PATH 后运行（多轮长上下文压测，数分钟）")
+        }
+
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: ModelConfig())
+        let port = 47_000 + Int.random(in: 0..<2_000)
+
+        try await withTestTimeout(seconds: 600) {
+            try await runtime.start(info, port: port)
+        }
+
+        var config = ModelConfig()
+        config.maxTokens = 16
+
+        var conversation: [JSONValue] = [
+            .object([
+                "role": .string("user"),
+                "content": .string(
+                    "我们进行多轮代码推演。每轮我给一段代码，你只回复 ok。第一段：func add(_ a: Int, _ b: Int) -> Int { a + b }"
+                ),
+            ])
+        ]
+
+        let turnBudget = 12
+
+        for turn in 1...turnBudget {
+            if turn > 1 {
+                conversation.append(
+                    .object([
+                        "role": .string("user"),
+                        "content": .string(perfPaddingBlock(turn)),
+                    ])
+                )
+            }
+
+            let text = try await withTestTimeout(seconds: 180) {
+                try await runtime.generate(
+                    requestId: "perf-t\(turn)",
+                    agentId: "perf",
+                    sessionId: "perf-s",
+                    logicalBranchId: "main",
+                    messages: conversation,
+                    tools: nil,
+                    config: config,
+                    onChunk: { _ in }
+                )
+            }
+
+            XCTAssertFalse(text.isEmpty, "turn \(turn) 应产出非空生成")
+
+            conversation.append(
+                .object([
+                    "role": .string("assistant"),
+                    "content": .string(text),
+                ])
+            )
+
+            let snap = runtime.integrationSnapshot()
+            XCTAssertTrue(
+                snap.revisionsLedgerSynced,
+                "turn \(turn) 提交后账本必须与 KV offset 逐层对齐"
+            )
+        }
+
+        let finalSnap = runtime.integrationSnapshot()
+        XCTAssertTrue(finalSnap.revisionsLedgerSynced)
+        XCTAssertGreaterThanOrEqual(finalSnap.revisions, 1)
+        XCTAssertEqual(finalSnap.activeRequests, 0)
+        XCTAssertEqual(finalSnap.generatingSessions, 0)
+    }
 }
