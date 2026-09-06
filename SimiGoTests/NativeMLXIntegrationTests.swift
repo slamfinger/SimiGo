@@ -69,6 +69,56 @@ final class NativeMLXIntegrationTests: XCTestCase {
         XCTAssertEqual(snap.activeGenerations, 0)
         XCTAssertEqual(snap.generatingSessions, 0)
 
+        // ①.5 warm 轮（多轮一致性与复用全链锚点，模型无关）：
+        // 以 ① 的真实回复构造 turn-2 形态 prompt（user → assistant(text) → user2），
+        // 与 ① 的 revision 共享模板+对话前缀。
+        // - 纯全注意力模型：应命中 warm 复用（trace [KVR] cp>0），copy→trim→delta
+        //   prefill→generate→commit 全链在真实复用缓存上跑通——dense 模型到位后，
+        //   此处即「复用→commit→对账」的实机回归锚点；
+        // - 混合模型（MambaCache）：门禁正确拦截（trace [KVM] nonTrimmableCache），走冷启动。
+        // 两种路径都等价新增一个 revision，且账本必须保持逐层对齐。
+        let warmMessages: [JSONValue] = [
+            messages[0],
+            .object([
+                "role": .string("assistant"),
+                "content": .string(text),
+            ]),
+            .object([
+                "role": .string("user"),
+                "content": .string("再回复两个字母: hi"),
+            ]),
+        ]
+
+        var warmConfig = config
+        warmConfig.maxTokens = 16
+
+        let warmText = try await withTestTimeout(seconds: 300) {
+            try await runtime.generate(
+                requestId: "itest-warm",
+                agentId: "itest",
+                sessionId: "s1",
+                logicalBranchId: "main",
+                messages: warmMessages,
+                tools: nil,
+                config: warmConfig,
+                onChunk: { _ in }
+            )
+        }
+
+        XCTAssertFalse(warmText.isEmpty, "warm 轮应产出非空生成")
+
+        snap = runtime.integrationSnapshot()
+        XCTAssertEqual(
+            snap.revisions, 2,
+            "warm 轮应等价新增一个 revision（token 序列不同，同 prompt 去重不适用）"
+        )
+        XCTAssertTrue(
+            snap.revisionsLedgerSynced,
+            "warm commit 后账本仍须与 KV offset 逐层对齐"
+        )
+        XCTAssertEqual(snap.activeRequests, 0)
+        XCTAssertEqual(snap.generatingSessions, 0)
+
         // ② 竞态轮：generate 与 stop 并发——请求先进入生命周期，stop 再启动。
         //
         // 审计 ①：固定 sleep（300ms/500ms/1s）锁不住竞态——stop 到来时请求可能尚未注册、
