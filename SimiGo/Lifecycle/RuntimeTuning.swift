@@ -19,8 +19,11 @@ enum RuntimeTuning {
     /// §30：Safety Margin
     static let safetyMarginBytes: UInt64 = 1 * 1024 * 1024 * 1024
 
-    /// 权重感知预算的 OS + App 基线预留（铁律 63，2026-09-05 实机校准）
-    static let osReserveBytes = 4 * gibibyte
+    /// 权重感知预算的 OS + App 基线预留。
+    /// 2026-09-08 调整为 3.5 GiB：此前 4 GiB 在低实际 RSS 压力场景下造成
+    /// 200~500 MiB 级 false rejection。保留独立 1 GiB Safety Margin，
+    /// 因此不会通过放宽上限来取消 Predictive Admission Control。
+    static let osReserveBytes = Int64(3.5 * Double(gibibyte))
 
     /// Admission 预算下限防御
     static let admissionFloorBytes: UInt64 = 4 * 1024 * 1024 * 1024
