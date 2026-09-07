@@ -149,26 +149,58 @@ Multi-owner Safety        STABLE
 当前已经得到实机支持的新增能力：
 
 ```text
-Standard-KV Batched Decode Feasibility
-        ↓
-batch=4 ≈ 75.1 tok/s
-        ↓
-实验轨成立
+Standard-KV Batched Decode
+Architecture feasibility:   PROVEN
+    batch=4 ≈ 75.1 tok/s
+    （性能实验结果——不代表正确性通过）
+Current dependency:         BLOCKED
+    T=1 batched decode 行 > 0 缺陷
+    （mlx-swift-lm 3.31.4 / MLX 0.31.6）
+Production:                 NO-GO
+Qualification:              ACTIVE
+    S1-R.1 取证完成
+    Conformance Matrix 待依赖演进
+```
+
+S1 状态（审计第五轮定义）：
+
+```text
+S1-R  Dependency Qualification
+      ✅ Forensics complete
+      ❌ Current backend batch decode correctness REJECTED
+
+S1-A  Execution Architecture
+      ✅ skeleton complete（Capability 两层三态 + fixed-slot 调度骨架）
+      ⏸ production integration blocked（等 S1-R 通过）
+
+S1-B  Validated Batch Runtime
+      等待 S1-R 通过后立项
 ```
 
 最新测试仍保持：
 
 ```text
 Standard-KV / Qwen3-Coder
-57 / 57
+73 / 73
+（含 Batched 实验轨 EXPECTED-FAIL 固化：
+ BatchDecodeDependencyConformanceTests——上游回归工件）
 
 Hybrid / Tiel-Coder
-57 tests
+73 tests
 3 skip（Batched 实验轨门控）
 0 failure
 ```
 
-当前 Batch 原型仍属于实验轨，不属于 Core Runtime。
+CI 报告分组口径：
+
+```text
+Foundation:     68/68 PASS
+Experimental:   EXPECTED-FAIL（上游回归工件）
+Hybrid:         3 SKIPPED
+```
+
+当前 Batch 仍属于实验轨，不属于 Core Runtime；生产 decode 路径保持
+Single / interleaved（交错基线 ≈ 43 tok/s aggregate）。
 
 ---
 
