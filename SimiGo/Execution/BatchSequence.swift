@@ -8,8 +8,8 @@ import Foundation
 ///
 /// tokenState/cacheState 的完整形态（per-sequence KV、position 等）在 S1.2
 /// 接入真实 Batched Forward 时填充；本骨架只携带计数与相位。
-struct BatchSequence: Sendable, Equatable {
-    enum Phase: Sendable, Equatable {
+nonisolated struct BatchSequence: Sendable, Equatable {
+    nonisolated enum Phase: Sendable, Equatable {
         case waiting
         case active
         case cancelled

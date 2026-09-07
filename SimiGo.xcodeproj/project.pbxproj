@@ -17,6 +17,16 @@
 		C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C13880752FB37212009F04D2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C138807C2FB37213009F04D2;
+			remoteInfo = SimiGo;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		C138807D2FB37213009F04D2 /* SimiGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimiGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimiGoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -186,24 +196,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXContainerItemProxy section */
-		C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C13880752FB37212009F04D2 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C138807C2FB37213009F04D2;
-			remoteInfo = SimiGo;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXTargetDependency section */
-		C1632B082FB4000000D1EF95 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C138807C2FB37213009F04D2 /* SimiGo */;
-			targetProxy = C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXResourcesBuildPhase section */
 		C138807B2FB37213009F04D2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
@@ -230,6 +222,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C1632B082FB4000000D1EF95 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C138807C2FB37213009F04D2 /* SimiGo */;
+			targetProxy = C1632B072FB4000000D1EF95 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C13880862FB37213009F04D2 /* Debug */ = {
@@ -420,44 +420,44 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 			};
-				name = Release;
+			name = Release;
+		};
+		C1632B042FB4000000D1EF95 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = YPXU8M53F9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
 			};
-			C1632B042FB4000000D1EF95 /* Debug */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					BUNDLE_LOADER = "$(TEST_HOST)";
-					CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 1;
-					DEAD_CODE_STRIPPING = YES;
-					DEVELOPMENT_TEAM = YPXU8M53F9;
-					GENERATE_INFOPLIST_FILE = YES;
-					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
-					SWIFT_EMIT_LOC_STRINGS = NO;
-					SWIFT_VERSION = 5.0;
-					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
-				};
-				name = Debug;
+			name = Debug;
+		};
+		C1632B052FB4000000D1EF95 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = YPXU8M53F9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
 			};
-			C1632B052FB4000000D1EF95 /* Release */ = {
-				isa = XCBuildConfiguration;
-				buildSettings = {
-					BUNDLE_LOADER = "$(TEST_HOST)";
-					CODE_SIGN_STYLE = Automatic;
-					CURRENT_PROJECT_VERSION = 1;
-					DEAD_CODE_STRIPPING = YES;
-					DEVELOPMENT_TEAM = YPXU8M53F9;
-					GENERATE_INFOPLIST_FILE = YES;
-					MARKETING_VERSION = 1.0;
-					PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGoTests;
-					PRODUCT_NAME = "$(TARGET_NAME)";
-					SWIFT_EMIT_LOC_STRINGS = NO;
-					SWIFT_VERSION = 5.0;
-					TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SimiGo.app/Contents/MacOS/SimiGo";
-				};
-				name = Release;
-			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */

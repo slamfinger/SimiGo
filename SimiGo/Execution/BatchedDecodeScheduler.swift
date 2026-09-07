@@ -1,5 +1,3 @@
-import Foundation
-
 /// S1（白皮书第六/九章，审计第五轮 slot/cancel 语义修正）：
 /// Execution Plane 的批化调度骨架。
 ///
@@ -56,7 +54,6 @@ actor BatchedDecodeScheduler {
     /// Execution Gate 选择 Single / interleaved fallback。
     private var batchDecodeAllowed: Bool {
         capabilities.effectiveSupportsBatchDecode
-            && capabilities.executionProfile.batchDecodeT1 == .verified
     }
 
     /// 提交请求进入等待队列。
@@ -90,10 +87,10 @@ actor BatchedDecodeScheduler {
 
         var formed: [BatchSequence] = []
         while formed.count < fixedBatchSize, !waiting.isEmpty {
-            var member = waiting.removeFirst()
-            member.phase = .active
-            formed.append(member)
-            roster.append(member)
+            var sequence = waiting.removeFirst()
+            sequence.phase = .active
+            formed.append(sequence)
+            roster.append(sequence)
         }
 
         return formed
@@ -108,12 +105,14 @@ actor BatchedDecodeScheduler {
     /// 再次引入 compaction 语义）。
     func executionFrame() -> BatchExecutionFrame {
         let slots = roster
-            .sorted { $0.slotId < $1.slotId }
-            .map {
+            .sorted { lhs, rhs in
+                lhs.slotId < rhs.slotId
+            }
+            .map { member in
                 BatchExecutionFrame.Slot(
-                    slotId: $0.slotId,
-                    requestId: $0.requestId,
-                    isActive: $0.phase == .active
+                    slotId: member.slotId,
+                    requestId: member.requestId,
+                    isActive: member.phase == .active
                 )
             }
         return BatchExecutionFrame(slots: slots)
@@ -123,10 +122,12 @@ actor BatchedDecodeScheduler {
     /// 标记 phase = .cancelled 并保留 execution slot 至 quantum 边界；
     /// 非 active 行由 forward 侧跳过。不影响其余成员。
     func cancel(requestId: String) {
-        if let index = waiting.firstIndex(where: { $0.requestId == requestId }) {
-            var member = waiting.remove(at: index)
-            member.phase = .cancelled
-            finished.append(member)
+        if let index = waiting.firstIndex(where: { member in
+            member.requestId == requestId
+        }) {
+            var sequence = waiting.remove(at: index)
+            sequence.phase = .cancelled
+            finished.append(sequence)
         }
 
         if let index = roster.firstIndex(where: { $0.requestId == requestId }) {
@@ -139,24 +140,30 @@ actor BatchedDecodeScheduler {
     /// （同阶段内不复用已回收的 slotId，避免身份混淆）。
     func reclaimCancelledSlots() -> Int {
         let before = roster.count
-        roster.removeAll { $0.phase == .cancelled }
+        roster.removeAll { member in
+            member.phase == .cancelled
+        }
         return before - roster.count
     }
 
     /// decode step 完成后推进成员计数。
     /// 仅 active 成员计数；cancelled 成员不再 decode（forward 侧跳过）。
     func stepCompleted(requestId: String) {
-        if let index = roster.firstIndex(where: { $0.requestId == requestId && $0.phase == .active }) {
+        if let index = roster.firstIndex(where: { member in
+            member.requestId == requestId && member.phase == .active
+        }) {
             roster[index].generatedTokens += 1
         }
     }
 
     /// 成员完成：离开 active 名册，进入 finished（phase = .finished）。
     func finish(requestId: String) {
-        if let index = roster.firstIndex(where: { $0.requestId == requestId }) {
-            var member = roster.remove(at: index)
-            member.phase = .finished
-            finished.append(member)
+        if let index = roster.firstIndex(where: { member in
+            member.requestId == requestId
+        }) {
+            var sequence = roster.remove(at: index)
+            sequence.phase = .finished
+            finished.append(sequence)
         }
     }
 
@@ -164,12 +171,20 @@ actor BatchedDecodeScheduler {
     /// 注意：这是 **compact 投影**——不得用于 forward 输入构造；
     /// forward 布局必须使用 `executionFrame()`。
     func activeMembers() -> [BatchSequence] {
-        roster.filter { $0.phase == .active }.sorted { $0.slotId < $1.slotId }
+        roster
+            .filter { member in
+                member.phase == .active
+            }
+            .sorted { lhs, rhs in
+                lhs.slotId < rhs.slotId
+            }
     }
 
     /// slot 名册（含 cancelled 未回收成员——fixed-slot 语义的可观测投影）。
     func rosterMembers() -> [BatchSequence] {
-        roster.sorted { $0.slotId < $1.slotId }
+        roster.sorted { lhs, rhs in
+            lhs.slotId < rhs.slotId
+        }
     }
 
     func finishedMembers() -> [BatchSequence] {
@@ -189,9 +204,20 @@ struct BatchExecutionFrame: Sendable, Equatable {
 
     let slots: [Slot]
 
-    var activeMask: [Bool] { slots.map(\.isActive) }
+    var activeMask: [Bool] {
+        slots.map { slot in
+            slot.isActive
+        }
+    }
+
     var activeRequestIds: [String] {
-        slots.filter(\.isActive).map(\.requestId)
+        slots
+            .filter { slot in
+                slot.isActive
+            }
+            .map { slot in
+                slot.requestId
+            }
     }
 }
 
