@@ -97,12 +97,13 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
 }
 
 /// 解析后的工具调用结构
-public struct ParsedToolCall: Codable, Equatable, Sendable {
+/// nonisolated：decode 流解析器（RawToolCallStreamParser）在非主 actor 上构造与比较。
+public nonisolated struct ParsedToolCall: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let arguments: [String: JSONValue]
 
-    public nonisolated init(id: String, name: String, arguments: [String: JSONValue]) {
+    public init(id: String, name: String, arguments: [String: JSONValue]) {
         self.id = id
         self.name = name
         self.arguments = arguments

@@ -812,68 +812,76 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let gateWaitStart = Date()
 
-        let task: Task<String, Error> = Task { [weak self] in
-            guard let self else {
-                throw RuntError.notLoaded
-            }
+        // 审计 P1（2026-09-07）：Task 创建与登记必须在同一原子锁段内完成。
+        // Task {} 创建即调度，旧序「先创建后登记」存在「Task 已运行（可能已
+        // 进入 gate 队列甚至持有 executionKey）但 activeRequestTasks 尚无句柄」
+        // 的窗口——期间 cancelGeneration(requestId) 读不到句柄，取消信号丢失，
+        // 旧请求持 key 不放，同 key 后续请求表现为「前端已发请求、后台推理
+        // 未进入」。改为锁内创建+登记后，cancelGeneration 的句柄读取与 stop()
+        // 的任务快照都在同一把 state 锁上互斥：任何时刻任务要么已可被取消
+        // 找到，要么根本尚未创建——「任务存在 ⟺ 已登记」由构造保证。
+        let task: Task<String, Error>
 
-            return try await gate.withExclusive(executionKey) {
-                let gateWait = max(Date().timeIntervalSince(gateWaitStart), 0)
-
-                self.traceLogger.trace(
-                    "[GATE] request=\(requestId) wait=\(String(format: "%.1f", gateWait * 1000))ms",
-                    session: executionKey.traceKey
-                )
-
-                await MainActor.run {
-                    self.emitRuntimeObservation(
-                        "generation-gate-granted",
-                        requestId: requestId,
-                        executionKey: executionKey
-                    )
+        do {
+            task = try state.withLock { state -> Task<String, Error> in
+                // 审计不变量（stop 收敛）：stop() 的「任务快照 + isRunning=false」在同一
+                // 原子锁段内完成，因此 isRunning=false 之后的注册一律拒绝——
+                // 「stop() 返回后，不存在 stop 开始前已进入 generate 生命周期却仍
+                // 持有有效 task/generation/KV/stream 状态的请求」由构造保证。
+                guard state.isRunning else {
+                    throw RuntError.notLoaded
                 }
 
-                return try await self.generateAfterGate(
-                    requestId: requestId,
-                    executionKey: executionKey,
-                    messages: messages,
-                    tools: tools,
-                    config: config,
-                    onChunk: onChunk,
-                    onToolCall: onToolCall
-                )
+                guard state.activeRequestTasks[requestId] == nil else {
+                    // 审计 P2#4：requestId 是 shutdown 取消与生命周期账本的键，
+                    // 重复注册会覆盖旧任务使其对 shutdown 不可见——直接拒绝新请求
+                    throw RuntError.duplicateRequestId(requestId)
+                }
+
+                let created: Task<String, Error> = Task { [weak self] in
+                    guard let self else {
+                        throw RuntError.notLoaded
+                    }
+
+                    return try await gate.withExclusive(executionKey) {
+                        let gateWait = max(Date().timeIntervalSince(gateWaitStart), 0)
+
+                        self.traceLogger.trace(
+                            "[GATE] request=\(requestId) wait=\(String(format: "%.1f", gateWait * 1000))ms",
+                            session: executionKey.traceKey
+                        )
+
+                        await MainActor.run {
+                            self.emitRuntimeObservation(
+                                "generation-gate-granted",
+                                requestId: requestId,
+                                executionKey: executionKey
+                            )
+                        }
+
+                        return try await self.generateAfterGate(
+                            requestId: requestId,
+                            executionKey: executionKey,
+                            messages: messages,
+                            tools: tools,
+                            config: config,
+                            onChunk: onChunk,
+                            onToolCall: onToolCall
+                        )
+                    }
+                }
+
+                state.activeRequestTasks[requestId] = created
+                state.peakActiveRequests = max(state.peakActiveRequests, state.activeRequestTasks.count)
+
+                return created
             }
-        }
-
-        var registrationError: RuntError?
-
-        state.withLock { state in
-            // 审计不变量（stop 收敛）：stop() 的「任务快照 + isRunning=false」在同一
-            // 原子锁段内完成，因此 isRunning=false 之后的注册一律拒绝——
-            // 「stop() 返回后，不存在 stop 开始前已进入 generate 生命周期却仍
-            // 持有有效 task/generation/KV/stream 状态的请求」由构造保证。
-            guard state.isRunning else {
-                registrationError = RuntError.notLoaded
-                return
-            }
-
-            guard state.activeRequestTasks[requestId] == nil else {
-                // 审计 P2#4：requestId 是 shutdown 取消与生命周期账本的键，
-                // 重复注册会覆盖旧任务使其对 shutdown 不可见——直接拒绝新请求
-                registrationError = RuntError.duplicateRequestId(requestId)
-                return
-            }
-
-            state.activeRequestTasks[requestId] = task
-            state.peakActiveRequests = max(state.peakActiveRequests, state.activeRequestTasks.count)
-        }
-
-        if let registrationError {
-            task.cancel()
-
+        } catch let registrationError as RuntError {
             // 审计 P2#8：registrationError 有两种来源，日志必须如实区分，
             // 否则 stop() 后 notLoaded 被误报为 duplicateRequestId，
             // 污染下游依赖该 why= 字段做路由的 trace 解析。
+            // 拒绝路径无需 task.cancel()：任务仅在登记成功分支创建，
+            // 不存在「已创建但未登记」的孤儿任务。
             let reason: String
             switch registrationError {
             case .notLoaded:
