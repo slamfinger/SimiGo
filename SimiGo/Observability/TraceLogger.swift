@@ -2,6 +2,60 @@ import Foundation
 import CryptoKit
 import MLXLMCommon
 
+// MARK: - Runtime Trace Policy
+
+/// Default runtime trace policy: keep only events that materially help diagnose
+/// admission, lifecycle, protocol, tool, cancellation and end-to-end performance.
+///
+/// The previous logger compacted every message through many String replacements
+/// before writing it. That work happened even for noisy per-request KV/gate events.
+/// Filtering first avoids both the formatting cost and the async queue traffic.
+nonisolated enum RuntimeTracePolicy {
+    private static let retainedPrefixes: [String] = [
+        "[ADMISSION BLOCK]",
+        "[ADMISSION]",
+        "[CONTEXT SAFETY REJECT]",
+        "[REQ ERROR]",
+        "[REQ CANCEL]",
+        "[REQ REJECT]",
+        "[CANCEL REQUEST]",
+        "[CANCELLED]",
+        "[CXL]",
+        "[TOOL FORWARD]",
+        "[TOOL]",
+        "[TPFAIL]",
+        "[KVC REJECT]",
+        "[KVC]",
+        "[DEGEN-BLOCK]",
+        "[PERF]",
+        "[LIFECYCLE]",
+        "[MEM]"
+    ]
+
+    static func shouldPersist(_ message: String) -> Bool {
+        retainedPrefixes.contains { message.hasPrefix($0) }
+    }
+
+    static func compactTag(_ input: String) -> String {
+        switch true {
+        case input.hasPrefix("[CONTEXT SAFETY REJECT]"):
+            return input.replacingOccurrences(of: "[CONTEXT SAFETY REJECT]", with: "[CTX-REJ]")
+        case input.hasPrefix("[CANCEL REQUEST]"):
+            return input.replacingOccurrences(of: "[CANCEL REQUEST]", with: "[CANCEL]")
+        case input.hasPrefix("[CANCELLED]"):
+            return input.replacingOccurrences(of: "[CANCELLED]", with: "[CXL]")
+        case input.hasPrefix("[TOOL FORWARD]"):
+            return input.replacingOccurrences(of: "[TOOL FORWARD]", with: "[TOOL]")
+        case input.hasPrefix("[BRANCH DEGENERATION BLOCKED]"):
+            return input.replacingOccurrences(of: "[BRANCH DEGENERATION BLOCKED]", with: "[DEGEN-BLOCK]")
+        case input.hasPrefix("[PERFORMANCE]"):
+            return input.replacingOccurrences(of: "[PERFORMANCE]", with: "[PERF]")
+        default:
+            return input
+        }
+    }
+}
+
 // MARK: - Dedicated File Trace Logger (~/.simigo/logs)
 
 nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
@@ -48,14 +102,12 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
 
             guard let data = header.data(using: .utf8) else { return }
 
-            // ponytail: 必须原地截断保持同一 inode。.atomic 会替换文件，
-            // 掐断 tail -f（含应用内置日志查看器 EnvManager），表现为"日志不再实时记录"。
+            // 保持同一 inode；避免 tail -f 丢失跟踪目标。
             if let handle = try? FileHandle(forWritingTo: self.logFileURL) {
                 handle.truncateFile(atOffset: 0)
                 try? handle.write(contentsOf: data)
                 try? handle.close()
             } else {
-                // 首次创建，尚无 tail 跟随者，原子写入即可
                 try? data.write(to: self.logFileURL, options: .atomic)
             }
 
@@ -65,12 +117,17 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
     }
 
     func trace(_ message: String, session: String? = nil) {
+        // 关键优化：先过滤，再创建异步写任务、时间戳和 Data。
+        guard RuntimeTracePolicy.shouldPersist(message) else { return }
+
         queue.async { [weak self] in
             guard let self else { return }
 
             let ts = self.timestampLocked()
-            let compacted = self.compactTraceMessage(message)
-            let prefix = (session != nil && !session!.isEmpty) ? "[\(ts)][s=\(Self.compactSession(session!))]" : "[\(ts)]"
+            let compacted = RuntimeTracePolicy.compactTag(message)
+            let prefix = (session != nil && !session!.isEmpty)
+                ? "[\(ts)][s=\(Self.compactSession(session!))]"
+                : "[\(ts)]"
 
             let line = "\(prefix) \(compacted)\n"
             guard let data = line.data(using: .utf8) else { return }
@@ -78,7 +135,7 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
         }
     }
 
-    // 原始日志通道：不经过 compactTraceMessage。用于外部进程（llama.cpp）的 stdout/stderr。
+    // 原始日志通道：不经过 RuntimeTracePolicy；用于外部进程 stdout/stderr。
     func raw(_ message: String, prefix: String = "") {
         queue.async { [weak self] in
             guard let self else { return }
@@ -100,7 +157,6 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
         }
     }
 
-    // Process Pipe 专用接口。
     func rawProcessOutput(_ data: Data, prefix: String = "[llama.cpp] ") {
         guard !data.isEmpty else { return }
         guard let text = String(data: data, encoding: .utf8), !text.isEmpty else { return }
@@ -124,182 +180,6 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
             return String(session[anonRange.upperBound...].prefix(6))
         }
         return String(session.suffix(6))
-    }
-
-    private func compactTraceMessage(_ input: String) -> String {
-        var text = input
-
-        let tags: [(String, String)] = [
-            ("[MEMORY SNAPSHOT]", "[MEM]"),
-            ("[OBSERVATION SUMMARY]", "[SUM]"),
-            ("[GENERATION GATE GRANTED]", "[GATE]"),
-            ("[GENERATION START]", "[GEN]"),
-            ("[TOOL COMPLETED]", "[TOOL]"),
-            ("[TOOL DEDUP]", "[TDUP]"),
-            ("[TOOL DROP]", "[TDROP]"),
-            ("[RAW TOOL XML]", "[RAWTOOL]"),
-            ("[STRUCTURED TOOL]", "[STOOL]"),
-            ("[TOOL PARSE FAIL]", "[TPFAIL]"),
-            ("[KV DIAGNOSTIC]", "[KVD]"),
-            ("[KV SELECTED]", "[KVS]"),
-            ("[KV COPY]", "[KCP]"),
-            ("[KV SELECT]", "[KVR]"),
-            ("[KV MISS]", "[KVM]"),
-            ("[KV COMMIT]", "[KVC]"),
-            ("[COLD PREFILL]", "[COLD]"),
-            ("[PREFILL WAIT]", "[PWAIT]"),
-            ("[BRANCH DEGENERATION BLOCKED]", "[DEGEN-BLOCK]"),
-            ("[DEGEN]", "[DEG]"),
-            ("[PERFORMANCE]", "[PERF]"),
-            ("[CANCEL REQUEST]", "[CANCEL]"),
-            ("[CANCELLED]", "[CXL]"),
-            ("[REQUEST]", "[REQ]"),
-            ("[CONTEXT SAFETY REJECT]", "[CTX-REJ]")
-        ]
-
-        for (from, to) in tags {
-            text = text.replacingOccurrences(of: from, with: to)
-        }
-
-        let fields: [(String, String)] = [
-            ("logicalBranch=", "br="),
-            ("logicalBranchId=", "br="),
-            ("request=", "r="),
-            ("requestId=", "r="),
-            ("agent=", "a="),
-            ("session=", "s="),
-            ("branch=", "br="),
-            ("selectedIndex=", "i="),
-            ("rawCommonPrefix=", "rawcp="),
-            ("commonPrefix=", "cp="),
-            ("cachedTokens=", "cache="),
-            ("tokensGenerated=", "tok="),
-            ("physicalTokens=", "ktok="),
-            ("promptTokens=", "p="),
-            ("generated=", "g="),
-            ("globalRevisions=", "revs="),
-            ("toolFingerprint=", "tf="),
-            ("prefillQueueWait=", "qw="),
-            ("ToolCallDetected=", "tool="),
-            ("ToolCallsForwarded=", "fwd="),
-            ("rawToolCallDetected=", "raw="),
-            ("structuredToolCalls=", "stool="),
-            ("SelectedCachedTokens=", "cache="),
-            ("SelectedCommonPrefix=", "cp="),
-            ("PromptTokens=", "p="),
-            ("Branches=", "revs="),
-            ("TTFT(Prefill)=", "ttft="),
-            ("Prefill=", "pre="),
-            ("Decode=", "dec="),
-            ("Total=", "dur="),
-            ("Delta=", "d="),
-            ("Tokens=", "tok="),
-            ("time=", "t=")
-        ]
-
-        for (from, to) in fields {
-            text = text.replacingOccurrences(of: from, with: to)
-        }
-
-        text = compactRequestFields(text)
-        text = compactSessionFields(text)
-        text = compactHexFields(text)
-        text = text.replacingOccurrences(of: "disableThinking=", with: "thinkOff=")
-        text = text.replacingOccurrences(of: "messagesCount=", with: "m=")
-        text = text.replacingOccurrences(of: "toolsCount=", with: "tools=")
-        text = text.replacingOccurrences(of: "maxTokens=", with: "max=")
-        text = text.replacingOccurrences(of: "activeRequests=", with: "q=")
-        text = text.replacingOccurrences(of: "activeGenerations=", with: "gen=")
-        text = text.replacingOccurrences(of: "generatingSessions=", with: "gs=")
-        text = text.replacingOccurrences(of: "physicalRevisions=", with: "rev=")
-        text = text.replacingOccurrences(of: "physicalTokens=", with: "ktok=")
-        text = text.replacingOccurrences(of: "sessions=", with: "sess=")
-        text = text.replacingOccurrences(of: "source=runtime-global", with: "src=G")
-        text = text.replacingOccurrences(of: "source=global", with: "src=G")
-        text = text.replacingOccurrences(of: "invariant=OK", with: "ok")
-        text = text.replacingOccurrences(of: "action=drop_duplicate", with: "act=dup")
-        text = text.replacingOccurrences(of: "reason=noGlobalRevision", with: "why=noRev")
-        text = text.replacingOccurrences(of: "reason=toolFingerprintMismatch", with: "why=toolFP")
-        text = text.replacingOccurrences(of: "reason=noCommonPrefix", with: "why=noCP")
-        text = text.replacingOccurrences(of: "reason=evictedPhysicalKV", with: "why=evicted")
-        text = text.replacingOccurrences(of: "reason=noUsableLineage", with: "why=noLineage")
-        text = text.replacingOccurrences(of: "reason=empty_tool_name", with: "why=noName")
-        text = text.replacingOccurrences(of: "prefillQueueWait", with: "qw")
-
-        return text
-    }
-
-    private func compactSessionFields(_ input: String) -> String {
-        var result = input
-        var searchStart = result.startIndex
-
-        while let range = result.range(of: "s=", range: searchStart..<result.endIndex) {
-            let valueStart = range.upperBound
-            let valueEnd = result[valueStart...].firstIndex(where: { $0 == " " || $0 == "," || $0 == "|" }) ?? result.endIndex
-            let raw = String(result[valueStart..<valueEnd])
-
-            if raw.count > 8 {
-                let short: String
-                if let anon = raw.range(of: "anon_") {
-                    short = String(raw[anon.upperBound...].prefix(6))
-                } else {
-                    short = String(raw.suffix(6))
-                }
-                result.replaceSubrange(valueStart..<valueEnd, with: short)
-                searchStart = result.index(valueStart, offsetBy: min(short.count, result.distance(from: valueStart, to: result.endIndex)))
-            } else {
-                searchStart = valueEnd
-            }
-        }
-        return result
-    }
-
-    private func compactHexFields(_ input: String) -> String {
-        var result = input
-
-        for key in ["rev=", "tf=", "revision=", "progressHash="] {
-            var searchStart = result.startIndex
-
-            while let range = result.range(of: key, range: searchStart..<result.endIndex) {
-                let valueStart = range.upperBound
-                let valueEnd = result[valueStart...].firstIndex(where: { $0 == " " || $0 == "," || $0 == "|" || $0 == "]" }) ?? result.endIndex
-                let raw = String(result[valueStart..<valueEnd])
-                let isHex = raw.count >= 12 && raw.allSatisfy { $0.isHexDigit }
-
-                if isHex {
-                    result.replaceSubrange(valueStart..<valueEnd, with: String(raw.prefix(6)))
-                    searchStart = result.index(valueStart, offsetBy: min(6, result.distance(from: valueStart, to: result.endIndex)))
-                } else {
-                    searchStart = valueEnd
-                }
-            }
-        }
-        return result
-    }
-
-    private func compactRequestFields(_ input: String) -> String {
-        var result = input
-        let keys = ["r=", "request="]
-
-        for key in keys {
-            var searchStart = result.startIndex
-
-            while let range = result.range(of: key, range: searchStart..<result.endIndex) {
-                let valueStart = range.upperBound
-                let valueEnd = result[valueStart...].firstIndex(where: { $0 == " " || $0 == "," || $0 == "|" }) ?? result.endIndex
-                let raw = String(result[valueStart..<valueEnd])
-
-                if raw.count > 8 {
-                    let cleaned = raw.replacingOccurrences(of: "req-", with: "")
-                    let short = String(cleaned.prefix(6))
-                    result.replaceSubrange(valueStart..<valueEnd, with: short)
-                    searchStart = result.index(valueStart, offsetBy: min(short.count, result.distance(from: valueStart, to: result.endIndex)))
-                } else {
-                    searchStart = valueEnd
-                }
-            }
-        }
-        return result
     }
 
     private func timestampLocked() -> String {
