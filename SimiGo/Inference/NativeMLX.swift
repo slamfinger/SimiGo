@@ -34,6 +34,18 @@ private enum NativeMLXLifecycle: Sendable, Equatable, Hashable {
     }
 }
 
+extension NativeMLXLifecycle: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .stopped: return "stopped"
+        case .loading: return "loading"
+        case .running: return "running"
+        case .suspended: return "suspended"
+        case .resuming: return "resuming"
+        }
+    }
+}
+
 // (The rest of the file is unchanged)
 
 private nonisolated struct RuntimeMemorySnapshot: Sendable {
@@ -513,6 +525,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 state.isRunning = false
                 state.isGenerating = false
                 state.generatingSessions.removeAll()
+                state.lifecycle = .stopped
 
                 return (server, requestTasks, generationTasks, gate)
             }
@@ -608,12 +621,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return
             }
 
-            let canResume = self.state.withLock { state in
-                state.isRunning &&
-                NativeMLXLifecycle.isSame(state.lifecycle, .suspended)
+            let (isRunning, currentLifecycle) = self.state.withLock { state in
+                (state.isRunning, state.lifecycle)
             }
 
-            guard canResume else {
+            guard isRunning else {
+                self.traceLogger.trace(
+                    "[LIFECYCLE] resume_rejected why=notRunning lifecycle=\(currentLifecycle)"
+                )
                 throw RuntError.notLoaded
             }
 
@@ -624,7 +639,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             let resumeStart = Date()
 
-            Service.log("♻ [NativeMLX] 空闲模型重新加载中...")
+            self.traceLogger.trace(
+                "[LIFECYCLE] resume_begin from=\(currentLifecycle)"
+            )
+            Service.log("♻ [NativeMLX] 空闲模型重新加载中 (from=\(currentLifecycle))...")
 
             do {
                 let container = try await self.loadModelContainer(self.modelPath)
@@ -894,14 +912,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
-        return try await withTaskCancellationHandler(
-            operation: {
-                try await task.value
-            },
-            onCancel: {
-                task.cancel()
-            }
-        )
+        do {
+            return try await withTaskCancellationHandler(
+                operation: {
+                    try await task.value
+                },
+                onCancel: {
+                    task.cancel()
+                }
+            )
+        } catch is CancellationError {
+            traceLogger.trace(
+                "[REQ CANCEL] request=\(requestId) why=cancelled",
+                session: executionKey.traceKey
+            )
+            throw CancellationError()
+        } catch {
+            traceLogger.trace(
+                "[REQ ERROR] request=\(requestId) error=\(error.localizedDescription)",
+                session: executionKey.traceKey
+            )
+            throw error
+        }
     }
 
     // MARK: Generation Core
@@ -936,6 +968,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         guard proceed else {
+            let (running, hasContainer) = state.withLock { ($0.isRunning, $0.modelContainer != nil) }
+            traceLogger.trace(
+                "[REQ REJECT] request=\(requestId) why=notLoaded_after_gate isRunning=\(running) hasContainer=\(hasContainer)",
+                session: traceSession
+            )
             throw RuntError.notLoaded
         }
 
