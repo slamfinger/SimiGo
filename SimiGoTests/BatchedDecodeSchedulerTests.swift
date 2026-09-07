@@ -10,47 +10,80 @@ import MLXLMCommon
 ///   Scheduler 看 Effective——当前锁定依赖 batchDecodeT1 = rejected → 拒绝组批走单路
 /// - 取消语义：fixed-slot / non-compaction——cancel 标记不缩批，quantum 边界回收
 final class BatchedDecodeSchedulerTests: XCTestCase {
-    /// 构造两层 Capability：execution profile 按测试场景指定
+    /// 构造两层三态 Capability：资格键固定为测试环境键；
+    /// batchDecodeT1 按场景指定；effectiveSupportsBatchDecode 按键匹配 + 状态判定。
     private func makeCapabilities(
-        batchDecodeT1: CapabilityStatus
+        batchDecodeT1: CapabilityStatus,
+        keyMatches: Bool = true
     ) -> InferenceModelCapabilities {
-        InferenceModelCapabilities(
+        let profileKey = ExecutionQualificationKey(
+            backendVersion: "mlx-swift test",
+            runtimeVersion: "mlx-swift-lm test",
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "test-model",
+            hardwareFamily: "test-hw",
+            memoryClass: "test-mem",
+            executionBatchSize: 4,
+            decodeShape: "T=1-fixed-quantum",
+            precision: "float16"
+        )
+        let environmentKey = keyMatches
+            ? profileKey
+            : ExecutionQualificationKey(
+                backendVersion: "mlx-swift test",
+                runtimeVersion: "mlx-swift-lm test",
+                modelFamily: "qwen3_moe",
+                modelFingerprint: "test-model",
+                hardwareFamily: "test-hw",
+                memoryClass: "test-mem",
+                executionBatchSize: 4,
+                decodeShape: "T=1-fixed-quantum",
+                precision: "float16"
+            )
+
+        return InferenceModelCapabilities(
             model: ModelCapabilities(
                 hasStandardKV: true,
                 hasRecurrentState: false,
-                supportsPerSequenceRoPE: true,
-                supportsCacheTrim: true
+                hasCacheTopologyCompatibleWithTrim: true
             ),
-            execution: ValidatedExecutionProfile(
-                backendIdentifier: "test-backend",
+            executionProfile: ValidatedExecutionProfile(
+                key: profileKey,
                 batchPrefill: .verified,
                 batchDecodeT1: batchDecodeT1,
+                perSequenceRoPE: .verified,
                 raggedBatch: .unknown,
                 batchCancellation: .unknown
-            )
+            ),
+            // evaluate 时的判定语义：键匹配 + 验证状态全 verified → gate 开
+            effectiveSupportsBatchDecode: keyMatches && batchDecodeT1 == .verified
         )
     }
 
     private func makeScheduler(
         batchDecodeT1: CapabilityStatus = .verified,
+        keyMatches: Bool = true,
         fixedBatchSize: Int = 4
     ) -> BatchedDecodeScheduler {
         BatchedDecodeScheduler(
-            capabilities: makeCapabilities(batchDecodeT1: batchDecodeT1),
+            capabilities: makeCapabilities(
+                batchDecodeT1: batchDecodeT1,
+                keyMatches: keyMatches
+            ),
             fixedBatchSize: fixedBatchSize
         )
     }
 
-    // MARK: - Capability 两层三态（审计第五轮修正）
+    // MARK: - Capability 两层三态 + 资格键（审计第五/六轮）
 
-    func testRejectedBatchDecodeT1BlocksSubmit_SingleFallback() async {
-        // 当前锁定依赖实况：batchDecodeT1 = rejected → 拒绝组批
-        // → BatchedDecodeScheduler 自动走 Single / interleaved fallback
+    func testRejectedBatchDecodeT1BlocksSubmit_GateChoosesSingleFallback() async {
+        // 当前锁定依赖实况：batchDecodeT1 = rejected → Effective gate 关闭
+        // → Scheduler 拒绝组批；Single / interleaved fallback 由 Execution Gate 选择
         let scheduler = makeScheduler(batchDecodeT1: .rejected)
 
         do {
             _ = try await scheduler.submit(("r1", "agent/s1"))
-            XCTFail("batchDecodeT1 = rejected 时必须拒绝提交（Single fallback）")
+            XCTFail("batchDecodeT1 = rejected 时必须拒绝提交（Execution Gate 选择单路）")
         } catch let error as BatchSchedulerError {
             XCTAssertEqual(error, .capabilityUnsupported)
         } catch {
@@ -69,36 +102,147 @@ final class BatchedDecodeSchedulerTests: XCTestCase {
         }
     }
 
+    func testQualificationKeyMatchOpensGate() {
+        // 合成「上游已修复」的全 verified profile（键 = 当前执行环境）：
+        // 键匹配 + 状态全 verified → Effective gate 开
+        // （当前现实是 qwen3CoderRecord 的 batchDecodeT1 = rejected → gate 关——见下一测试）
+        let passingProfile = ValidatedExecutionProfile(
+            key: ExecutionQualificationKey.currentEnvironment(
+                modelFamily: "qwen3_moe",
+                modelFingerprint: "Qwen3-Coder-30B-A3B-Instruct-4bit (mlx-community)",
+                batchSize: 4,
+                precision: "float16"
+            ),
+            batchPrefill: .verified,
+            batchDecodeT1: .verified,
+            perSequenceRoPE: .verified,
+            raggedBatch: .verified,
+            batchCancellation: .verified
+        )
+        let capabilities = InferenceModelCapabilities.evaluate(
+            caches: [KVCacheSimple()],
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "Qwen3-Coder-30B-A3B-Instruct-4bit (mlx-community)",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: passingProfile
+        )
+        XCTAssertTrue(
+            capabilities.effectiveSupportsBatchDecode,
+            "键匹配 + 状态全 verified → gate 开"
+        )
+    }
+
+    func testQualificationKeyMismatchClosesGate() {
+        // 审计 P1 修复核心：资格键失配 ⇒ 验证状态失效（verified 不可读取）⇒ gate 关
+        // ——防止 static verified profile 退化成无视环境的全局许可证。
+        // 同样的全 verified 状态，但键来自不同内存档位的环境 → gate 关。
+        let foreignProfile = ValidatedExecutionProfile(
+            key: ExecutionQualificationKey(
+                backendVersion: "mlx-swift 0.31.6",
+                runtimeVersion: "mlx-swift-lm 3.31.4",
+                modelFamily: "qwen3_moe",
+                modelFingerprint: "Qwen3-Coder-30B-A3B-Instruct-4bit (mlx-community)",
+                hardwareFamily: "arm64-darwin",
+                memoryClass: "999GB",
+                executionBatchSize: 4,
+                decodeShape: "T=1-fixed-quantum",
+                precision: "float16"
+            ),
+            batchPrefill: .verified,
+            batchDecodeT1: .verified,
+            perSequenceRoPE: .verified,
+            raggedBatch: .verified,
+            batchCancellation: .verified
+        )
+        let mismatched = InferenceModelCapabilities.evaluate(
+            caches: [KVCacheSimple()],
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "Qwen3-Coder-30B-A3B-Instruct-4bit (mlx-community)",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: foreignProfile
+        )
+        XCTAssertFalse(
+            mismatched.effectiveSupportsBatchDecode,
+            "资格键失配 ⇒ verified 状态不可读取（防止全局许可证）"
+        )
+    }
+
+    func testCurrentQwen3CoderRecordKeepsGateClosed() {
+        // 当前实况：qwen3CoderRecord 的 batchDecodeT1 = rejected（实机 NO-GO 证据）→
+        // 键匹配但状态 rejected → gate 关 → Single / interleaved fallback
+        let capabilities = InferenceModelCapabilities.evaluate(
+            caches: [KVCacheSimple()],
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "Qwen3-Coder-30B-A3B-Instruct-4bit (mlx-community)",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: .qwen3CoderRecord
+        )
+        XCTAssertEqual(capabilities.executionProfile.batchDecodeT1, .rejected)
+        XCTAssertFalse(
+            capabilities.effectiveSupportsBatchDecode,
+            "当前依赖缺陷未修复 → gate 必须保持关闭"
+        )
+    }
+
     func testStaticTopologyAloneDoesNotGrantBatch() {
         // 审计核心原则：Cache topology 是必要条件不是充分条件——
-        // hasStandardKV = true 但 execution.batchDecodeT1 = rejected → effective = false
-        let capabilities = InferenceModelCapabilities.evaluate(caches: [KVCacheSimple()])
-        XCTAssertTrue(capabilities.model.hasStandardKV, "topology 层：Standard-KV 成立")
-        XCTAssertEqual(
-            capabilities.execution.batchDecodeT1, .rejected,
-            "验证层：当前锁定依赖 batchDecodeT1 = rejected"
+        // 即使键匹配，execution 状态 rejected 也使 gate 关闭
+        let capabilities = InferenceModelCapabilities.evaluate(
+            caches: [KVCacheSimple()],
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "test-model",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: ValidatedExecutionProfile(
+                key: ExecutionQualificationKey.currentEnvironment(
+                    modelFamily: "qwen3_moe",
+                    modelFingerprint: "test-model",
+                    batchSize: 4,
+                    precision: "float16"
+                ),
+                batchPrefill: .verified,
+                batchDecodeT1: .rejected,
+                perSequenceRoPE: .verified,
+                raggedBatch: .unknown,
+                batchCancellation: .unknown
+            )
         )
+        XCTAssertTrue(capabilities.model.hasStandardKV, "topology 层：Standard-KV 成立")
         XCTAssertFalse(
             capabilities.effectiveSupportsBatchDecode,
             "Effective gate 必须被验证层拒绝——trimmable ≠ batch"
         )
     }
 
-    func testCapabilityEvaluateStandardKVSupportsModelLayer() {
-        let capabilities = InferenceModelCapabilities.evaluate(caches: [KVCacheSimple()])
+    func testModelLayerStructureFacts() {
+        let capabilities = InferenceModelCapabilities.evaluate(
+            caches: [KVCacheSimple()],
+            modelFamily: "qwen3_moe",
+            modelFingerprint: "test-model",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: .qwen3CoderRecord
+        )
         XCTAssertTrue(capabilities.model.hasStandardKV)
-        XCTAssertTrue(capabilities.model.supportsPerSequenceRoPE)
-        XCTAssertTrue(capabilities.model.supportsCacheTrim)
+        XCTAssertTrue(capabilities.model.hasCacheTopologyCompatibleWithTrim)
+        XCTAssertFalse(capabilities.model.hasRecurrentState)
     }
 
-    func testCapabilityEvaluateRecurrentCacheModelLayer() {
+    func testModelLayerRecurrentTopology() {
         // 混合架构（qwen3_5_moe）形态：MambaCache + KVCacheSimple
         let capabilities = InferenceModelCapabilities.evaluate(
-            caches: [MambaCache(), KVCacheSimple()]
+            caches: [MambaCache(), KVCacheSimple()],
+            modelFamily: "qwen3_5_moe",
+            modelFingerprint: "hybrid-model",
+            precision: "float16",
+            batchSize: 4,
+            executionProfile: .qwen3CoderRecord
         )
         XCTAssertFalse(capabilities.model.hasStandardKV)
         XCTAssertTrue(capabilities.model.hasRecurrentState)
-        XCTAssertFalse(capabilities.model.supportsCacheTrim)
     }
 
     // MARK: - Batch Formation（固定 batch 2/4）
@@ -220,6 +364,60 @@ final class BatchedDecodeSchedulerTests: XCTestCase {
 
         let formed = await scheduler.formBatch()
         XCTAssertTrue(formed.isEmpty, "等待中的取消成员不得进入 batch")
+    }
+
+    // MARK: - Forward 执行布局（审计第六轮 P1-2：executionFrame 契约）
+
+    func testExecutionFrameKeepsInactiveRowPlaceholder() async {
+        // Forward 接线契约：Scheduler 便利投影 ≠ Forward 执行布局——
+        // executionFrame 必须按 slot 顺序保留 inactive 占位行（non-compaction），
+        // 不得把 [A, B✗, C, D] 压缩成 [A, C, D]（compact 语义由 activeMembers 承担）。
+        let scheduler = makeScheduler()
+
+        for i in 1...4 {
+            _ = try? await scheduler.submit(("r\(i)", "agent/s\(i)"))
+        }
+        _ = await scheduler.formBatch()
+        await scheduler.cancel(requestId: "r2")
+
+        let frame = await scheduler.executionFrame()
+
+        XCTAssertEqual(frame.slots.count, 4, "inactive 行必须占位——不得压缩成 3 行")
+        XCTAssertEqual(frame.slots.map(\.slotId), [0, 1, 2, 3], "行顺序 = slot 顺序")
+        XCTAssertEqual(frame.slots.map(\.requestId), ["r1", "r2", "r3", "r4"])
+        XCTAssertEqual(frame.activeMask, [true, false, true, true])
+        XCTAssertEqual(frame.activeRequestIds, ["r1", "r3", "r4"])
+
+        // 同一状态下 compact 便利投影只有 3 行——两种投影语义不同，契约由此钉住
+        let activeMembers = await scheduler.activeMembers()
+        XCTAssertEqual(activeMembers.map(\.requestId), ["r1", "r3", "r4"])
+        let rosterCount = await scheduler.rosterCount
+        XCTAssertEqual(
+            frame.slots.count, rosterCount,
+            "frame 行数 = roster slot 数，而非活跃成员数"
+        )
+    }
+
+    func testExecutionFrameAfterReclaimKeepsMonotonicSlotOrder() async {
+        let scheduler = makeScheduler(fixedBatchSize: 2)
+
+        _ = try? await scheduler.submit(("r1", "agent/s1"))
+        _ = try? await scheduler.submit(("r2", "agent/s2"))
+        _ = await scheduler.formBatch()
+        await scheduler.cancel(requestId: "r1")
+        let reclaimed = await scheduler.reclaimCancelledSlots()
+        XCTAssertEqual(reclaimed, 1)
+
+        _ = try? await scheduler.submit(("r3", "agent/s3"))
+        let formed = await scheduler.formBatch()
+
+        let frame = await scheduler.executionFrame()
+        XCTAssertEqual(
+            frame.slots.map(\.slotId), [1, 2],
+            "回收后 frame 只含现存 slot，新 slotId 单调分配不复用"
+        )
+        XCTAssertEqual(frame.activeMask, [true, true])
+        XCTAssertEqual(formed.map(\.slotId), [2])
     }
 
     // MARK: - step / finish 计数

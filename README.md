@@ -181,12 +181,12 @@ S1-B  Validated Batch Runtime
 
 ```text
 Standard-KV / Qwen3-Coder
-73 / 73
+79 / 79
 （含 Batched 实验轨 EXPECTED-FAIL 固化：
  BatchDecodeDependencyConformanceTests——上游回归工件）
 
 Hybrid / Tiel-Coder
-73 tests
+79 tests
 3 skip（Batched 实验轨门控）
 0 failure
 ```

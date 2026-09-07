@@ -9,13 +9,22 @@ import Foundation
 /// - Logical Safety Filter / KV Admission / Latency Budget 属于 S1 后续阶段的
 ///   注入式钩子（本骨架预留 formation 管线位，不做实现）
 ///
-/// 取消语义（审计第五轮修正：fixed-slot / non-compaction）：
-/// - cancel → 标记 phase = .cancelled 并**保留 execution slot**（成员留在 active 名册）
+/// 取消语义（审计第五轮修正 + 第六轮 executionFrame 补强：fixed-slot / non-compaction）：
+/// - cancel → 标记 phase = .cancelled 并**保留 execution slot**（成员留在 roster）
 /// - decode quantum 边界调用 `reclaimCancelledSlots()` 后才回收槽位
 /// - 白皮书第九章语义：A ✓ / B ✗ / C ✓ / D ✓ —— batch 宽度不变，
 ///   非 active 行由 forward 侧跳过（future seq-id / fixed slot 兼容）
 /// - 注意：这是 **non-compaction** 语义；「发送 [B=3] 的 compaction」是另一种可选
 ///   演进，两者不得混用（审计判定当前代码 compaction 与白皮书 non-compaction 冲突）
+///
+/// Forward 接线契约（审计第六轮 P1-2）：
+/// **Scheduler 便利投影 ≠ Forward 执行布局**。未来接 MLX 时必须使用
+/// `executionFrame()`（fixed slot + active mask），不得依赖
+/// `activeMembers()`（业务层便利视图，天然是 compacted 投影）。
+///
+/// fallback 语义（审计第六轮 P2 措辞修正）：本调度器只做 **拒绝**；
+/// 「Batch reject → Execution Gate 选择 Single / interleaved fallback」——
+/// fallback 由调用方（Execution Gate）选择，本组件内不存在 fallback 实现。
 ///
 /// 第一版固定 batch（2/4，白皮书第七章）：same model、standard-KV、greedy、
 /// 固定 decode quantum；禁止 continuous/ragged/hybrid/跨模型批。
@@ -42,17 +51,19 @@ actor BatchedDecodeScheduler {
     /// decode quantum 的活跃成员数（phase == .active）
     var activeCount: Int { roster.filter { $0.phase == .active }.count }
 
-    /// Effective gate（白皮书 §6.3 演进）：batchDecodeT1 必须 verified 才允许组批。
-    /// 当前锁定依赖 = rejected → 拒绝组批，走 Single / interleaved fallback。
+    /// Effective gate（两层三态，evaluate 时按资格键判定固化）。
+    /// 当前锁定依赖 = rejected → false → 拒绝组批，
+    /// Execution Gate 选择 Single / interleaved fallback。
     private var batchDecodeAllowed: Bool {
         capabilities.effectiveSupportsBatchDecode
-            && capabilities.execution.batchDecodeT1 == .verified
+            && capabilities.executionProfile.batchDecodeT1 == .verified
     }
 
     /// 提交请求进入等待队列。
     /// Capability Filter（白皮书 formation 管线第一级，两层三态）：
-    /// Static 必要条件 + Validated Execution 状态同时满足才接受；
-    /// 否则拒绝——调用方（未来的 Execution Gate）负责映射为 Single / interleaved fallback。
+    /// Static 必要条件 + 资格键匹配 + Validated 状态同时满足才接受；
+    /// 拒绝 = Batch reject → Execution Gate 选择 Single / interleaved fallback
+    /// （fallback 由调用方实现，本组件内不存在 fallback 路径）。
     func submit(_ request: (requestId: String, executionKey: String)) throws -> BatchSequence {
         guard batchDecodeAllowed else {
             throw BatchSchedulerError.capabilityUnsupported
@@ -88,10 +99,29 @@ actor BatchedDecodeScheduler {
         return formed
     }
 
-    /// 批内成员取消（审计第五轮修正：fixed-slot / non-compaction）：
+    /// Forward 执行布局（fixed slot + active mask）。
+    ///
+    /// 契约：**Scheduler 便利投影 ≠ Forward 执行布局**——
+    /// 未来接 MLX 时 forward 的 batch 输入必须按本 frame 的 slot 顺序与
+    /// activeMask 构造（inactive 行占位跳过），不得使用 `activeMembers()`
+    /// （compact 便利投影会把 [A, B✗, C, D] 变成 [A, C, D]，
+    /// 再次引入 compaction 语义）。
+    func executionFrame() -> BatchExecutionFrame {
+        let slots = roster
+            .sorted { $0.slotId < $1.slotId }
+            .map {
+                BatchExecutionFrame.Slot(
+                    slotId: $0.slotId,
+                    requestId: $0.requestId,
+                    isActive: $0.phase == .active
+                )
+            }
+        return BatchExecutionFrame(slots: slots)
+    }
+
+    /// 批内成员取消（fixed-slot / non-compaction）：
     /// 标记 phase = .cancelled 并保留 execution slot 至 quantum 边界；
-    /// 非 active 行由 forward 侧跳过（白皮书第九章：A ✓ / B ✗ / C ✓ / D ✓）。
-    /// 不影响其余成员。
+    /// 非 active 行由 forward 侧跳过。不影响其余成员。
     func cancel(requestId: String) {
         if let index = waiting.firstIndex(where: { $0.requestId == requestId }) {
             var member = waiting.remove(at: index)
@@ -130,7 +160,9 @@ actor BatchedDecodeScheduler {
         }
     }
 
-    /// 当前 decode quantum 的活跃成员（phase == .active，slotId 顺序）。
+    /// 业务层便利视图（phase == .active，slotId 顺序）。
+    /// 注意：这是 **compact 投影**——不得用于 forward 输入构造；
+    /// forward 布局必须使用 `executionFrame()`。
     func activeMembers() -> [BatchSequence] {
         roster.filter { $0.phase == .active }.sorted { $0.slotId < $1.slotId }
     }
@@ -142,6 +174,24 @@ actor BatchedDecodeScheduler {
 
     func finishedMembers() -> [BatchSequence] {
         finished
+    }
+}
+
+/// Forward 执行布局（fixed slot + active mask）。
+/// 顺序 = slot 顺序 = 未来 batched forward 的行顺序；
+/// inactive 行占位、由 forward 侧跳过（S1 交错路径下整批禁用，见 Capability gate）。
+struct BatchExecutionFrame: Sendable, Equatable {
+    struct Slot: Sendable, Equatable {
+        let slotId: Int
+        let requestId: String
+        let isActive: Bool
+    }
+
+    let slots: [Slot]
+
+    var activeMask: [Bool] { slots.map(\.isActive) }
+    var activeRequestIds: [String] {
+        slots.filter(\.isActive).map(\.requestId)
     }
 }
 
