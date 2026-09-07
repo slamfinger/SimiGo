@@ -23,7 +23,7 @@ enum RuntimeTuning {
     /// 2026-09-08：从 4 GiB 调整为 3.5 GiB。此前固定 4 GiB 会在低实际内存压力下
     /// 产生数百 MiB 级的预测性误拒绝；本项仅回收过度保守的基线，不取消 1 GiB Safety Margin，
     /// 也不改变 22 GiB hard cap。
-    static let osReserveBytes = 3.5 * Double(gibibyte)
+    static let osReserveBytes: UInt64 = 7 * 1024 * 1024 * 1024 / 2
 
     /// Admission 预算下限防御
     static let admissionFloorBytes: UInt64 = 4 * 1024 * 1024 * 1024
