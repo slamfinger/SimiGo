@@ -26,6 +26,7 @@ nonisolated enum RuntimeTracePolicy {
         "[TPFAIL]",
         "[KVC REJECT]",
         "[KVC]",
+        "[BRANCH DEGENERATION BLOCKED]",
         "[DEGEN-BLOCK]",
         "[PERF]",
         "[LIFECYCLE]",
