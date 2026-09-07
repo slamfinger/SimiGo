@@ -2368,14 +2368,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             "[CANCEL REQUEST] request=\(requestId), hasRequestTask=\(handles.request != nil), hasGenerationTask=\(handles.generation != nil)"
         )
 
-        // 统一终止入口（收敛文档 §5）：账本进入取消释放序列；真实 task 取消仍在下方执行。
-        Task {
-            await RuntimeLifecycleCoordinator.shared.finish(
-                requestID: requestId,
-                success: false,
-                reason: "cancel_generation"
-            )
-        }
+        // 只发取消信号，不推进账本状态。
+        // 生命周期终止的唯一合法入口是：HTTP handler defer → finishLifecycle(success:) →
+        // RuntimeLifecycleCoordinator.shared.finish()。
+        // 在物理 task 真正结束前调用 finish() 会导致账本提前进入 RELEASED，
+        // 后续 noteRequestTaskEnded() 触发 INVARIANT_TASK_ENDED_AFTER_RELEASE，
+        // 且 HTTP handler defer 再次调用 finish() 触发 FINISH_DUPLICATE（已观测 P1）。
         handles.request?.cancel()
         handles.generation?.cancel()
 
