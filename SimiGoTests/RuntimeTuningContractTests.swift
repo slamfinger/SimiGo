@@ -25,4 +25,57 @@ final class RuntimeTuningContractTests: XCTestCase {
             "准入下限防御不得低于 4GB"
         )
     }
+
+    func testRuntimeTracePolicyKeepsActionableEvents() {
+        let retained = [
+            "[ADMISSION BLOCK] projected=9000M limit=8500M action=reject",
+            "[REQ ERROR] error=test",
+            "[REQ CANCEL] why=cancelled",
+            "[TOOL FORWARD] name=foo action=stop",
+            "[TPFAIL] error=malformed",
+            "[KVC REJECT] why=ledger_kv_mismatch",
+            "[DEGEN-BLOCK] action=circuit_break",
+            "[PERF] tok=32 dur=1.2s",
+            "[LIFECYCLE] resume_done elapsed=1.0s"
+        ]
+
+        for message in retained {
+            XCTAssertTrue(
+                RuntimeTracePolicy.shouldPersist(message),
+                "关键运行事件不得被默认日志策略过滤: \(message)"
+            )
+        }
+    }
+
+    func testRuntimeTracePolicyDropsHotPathNoise() {
+        let dropped = [
+            "[REQ] request=req-123",
+            "[GATE] request=req-123 wait=0.3ms",
+            "[KVD] br=main why=noCommonPrefix",
+            "[KVS] br=main cp=181",
+            "[KCP] src=G rev=abc cache=200",
+            "[KVR] src=G cp=181 hit=82.3%",
+            "[KVM] why=noGlobalRevision",
+            "[COLD] p=1024",
+            "[PWAIT] request=req-123 wait=1.2ms",
+            "[TDUP] request=req-123 act=dup",
+            "[DEG] br=main round=2 rep=1 cand=1 fwd=1 kv=1"
+        ]
+
+        for message in dropped {
+            XCTAssertFalse(
+                RuntimeTracePolicy.shouldPersist(message),
+                "热路径噪声不应进入默认日志: \(message)"
+            )
+        }
+    }
+
+    func testRuntimeTracePolicyDoesNotRewriteSemanticFields() {
+        let message = "[PERF] r=abc123 ttft=0.300s pre=900.0/s d=5.2/s tok=150 dur=28.87s"
+        XCTAssertEqual(
+            RuntimeTracePolicy.compactTag(message),
+            message,
+            "已是紧凑格式的性能日志不得再做昂贵的全字符串重写"
+        )
+    }
 }
