@@ -61,11 +61,18 @@ nonisolated final class RawToolCallStreamParser: @unchecked Sendable {
             }
 
             if insideToolCall, let template = activeTemplate, let openRange = activeOpenTagRange {
-                if let closeRange = template.findCloseTag(in: buffer) {
+                // 铁律 82：闭合标签只认 open 之后的首个匹配，
+                // 杂散的提前闭合不得毒化解析窗口。
+                if let closeRange = template.findCloseTag(in: buffer),
+                   closeRange.lowerBound >= openRange.upperBound {
                     let fullTextForParsing = String(buffer[..<closeRange.upperBound])
                     guard let call = template.parse(fullText: fullTextForParsing, openTagRange: openRange, closeTagRange: closeRange) else {
                         failure = RawToolCallParserFailure(message: "Malformed tool call for template: \(template.name)")
-                        buffer = ""; insideToolCall = false; return
+                        buffer = ""
+                        insideToolCall = false
+                        activeTemplate = nil
+                        activeOpenTagRange = nil
+                        return
                     }
                     onToolCall(call)
                     buffer = String(buffer[closeRange.upperBound...])
@@ -80,13 +87,20 @@ nonisolated final class RawToolCallStreamParser: @unchecked Sendable {
 
     nonisolated func flush(onText: (String) -> Void) {
         guard failure == nil else { return }
-        if insideToolCall, let template = activeTemplate, let openRange = activeOpenTagRange {
-            if template.parse(fullText: buffer, openTagRange: openRange, closeTagRange: nil) == nil {
-                failure = RawToolCallParserFailure(message: "Incomplete tool call at end of stream")
-            }
-            buffer = ""; insideToolCall = false; activeTemplate = nil; activeOpenTagRange = nil
+
+        if insideToolCall {
+            // 铁律 79：Generation EOS 时未闭合的 Raw Tool Call 必须视为
+            // Protocol Failure——不得尝试解析半成品，更不得泄漏为
+            // Assistant Text（铁律 68/70/73）；failure 将在 generateAfterGate
+            // 抛出并阻止本轮 Physical KV Commit（铁律 71/75）。
+            failure = RawToolCallParserFailure(message: "Incomplete tool call at end of stream")
+            buffer = ""
+            insideToolCall = false
+            activeTemplate = nil
+            activeOpenTagRange = nil
             return
         }
+
         if !buffer.isEmpty { onText(buffer) }
         buffer = ""
     }

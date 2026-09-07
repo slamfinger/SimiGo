@@ -1166,6 +1166,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var selectedCommonLen = selection.commonLen
 
         if !selection.trimReleases.isEmpty {
+            // 审计 P1（2026-09-08）：MainActor 上的 MLX trim/clear 是潜在 UI 卡顿
+            // 放大器，先计时观测再决定是否移出 MainActor（不粗暴改动隔离边界）。
+            let trimStart = Date()
+
             await MainActor.run {
                 for release in selection.trimReleases {
                     for cache in release.caches {
@@ -1175,6 +1179,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
                 Memory.clearCache()
             }
+
+            traceLogger.trace(
+                "[KVTRIM TIME] request=\(requestId) ms=\(String(format: "%.1f", Date().timeIntervalSince(trimStart) * 1000)) why=superseded",
+                session: traceSession
+            )
 
             for release in selection.trimReleases {
                 traceLogger.trace(
@@ -1500,6 +1509,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if !pendingReleases.isEmpty {
                 let evictedCount = pendingReleases.count
 
+                let evictStart = Date()
+
                 await MainActor.run {
                     for release in pendingReleases {
                         for cache in release.caches {
@@ -1509,6 +1520,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
                     Memory.clearCache()
                 }
+
+                traceLogger.trace(
+                    "[KVTRIM TIME] request=\(requestId) ms=\(String(format: "%.1f", Date().timeIntervalSince(evictStart) * 1000)) why=admission_evict",
+                    session: traceSession
+                )
 
                 traceLogger.trace(
                     "[ADMISSION] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M evicted=\(evictedCount) est_freed=\(freedBytes / 1024 / 1024)M",
@@ -1666,7 +1682,26 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var turnToolCalls: [ParsedToolCall] = []
         var attemptedToolSignatures = Set<String>()
 
-        func appendToolCallCandidate(_ call: ParsedToolCall) {
+        // Tool Call Early-Stop（审计 P0，2026-09-08）：Tool Call 一旦完整识别并转发，
+        // 立即把控制权交还 Agent——cancel generation → break decode 循环 →
+        // await task settle → 照常走 Degeneration 账本与 KV Commit →
+        // 释放 SessionGenerationGate 迎接下一轮 tool result 请求。
+        // 早停不设置 isInterrupted：它是「本轮语义完成」而非客户端取消，
+        // 不得按取消语义跳过账本确认与 KV Commit（铁律 24 只约束真取消路径）。
+        var stopAfterToolCall = false
+        var forwardedToolSignatures = Set<String>()
+
+        func toolSignature(_ call: ParsedToolCall) -> String {
+            let normalizedName = call.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let canonicalArguments = canonicalValue(
+                call.arguments.mapValues(toolValueToSendable)
+            )
+
+            return "\(normalizedName)\u{001F}\(canonicalArguments)"
+        }
+
+        func appendToolCallCandidate(_ call: ParsedToolCall, source: String) {
             let normalizedName = call.name.trimmingCharacters(in: .whitespacesAndNewlines)
 
             guard !normalizedName.isEmpty else {
@@ -1678,11 +1713,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return
             }
 
-            let canonicalArguments = canonicalValue(
-                call.arguments.mapValues(toolValueToSendable)
-            )
-
-            let signature = "\(normalizedName)\u{001F}\(canonicalArguments)"
+            let signature = toolSignature(call)
 
             guard attemptedToolSignatures.insert(signature).inserted else {
                 traceLogger.trace(
@@ -1695,6 +1726,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             toolCallDetected = true
 
+            traceLogger.trace(
+                "[TOOL DETECTED] request=\(requestId) name=\(normalizedName) src=\(source)",
+                session: traceSession
+            )
+
             turnToolCalls.append(
                 ParsedToolCall(
                     id: call.id,
@@ -1702,6 +1738,48 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     arguments: call.arguments
                 )
             )
+        }
+
+        /// 实时转发 = 真正执行工具；后置 Degeneration State Machine 只做账本确认，
+        /// 凭 forwardedToolSignatures 防止二次 onToolCall（重复执行工具）。
+        func forwardToolCallImmediately(_ call: ParsedToolCall) {
+            let normalizedName = call.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !normalizedName.isEmpty else {
+                traceLogger.trace(
+                    "[TDROP] request=\(requestId) why=noName",
+                    session: traceSession
+                )
+
+                return
+            }
+
+            let signature = toolSignature(call)
+
+            guard forwardedToolSignatures.insert(signature).inserted else {
+                traceLogger.trace(
+                    "[TDUP] request=\(requestId) name=\(normalizedName) act=dup_forward",
+                    session: traceSession
+                )
+
+                return
+            }
+
+            onToolCall(
+                ParsedToolCall(
+                    id: call.id,
+                    name: normalizedName,
+                    arguments: call.arguments
+                )
+            )
+
+            traceLogger.trace(
+                "[TOOL FORWARD] request=\(requestId) name=\(normalizedName) action=stop",
+                session: traceSession
+            )
+
+            generationTask.cancel()
+            stopAfterToolCall = true
         }
 
         emitRuntimeObservation(
@@ -1712,7 +1790,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let decodeStartTime = Date()
 
-        for await generation in stream {
+        streamLoop: for await generation in stream {
             if Task.isCancelled || !state.withLock({ $0.isRunning }) {
                 isInterrupted = true
                 generationTask.cancel()
@@ -1738,9 +1816,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     onToolCall: { call in
                         rawToolCallDetected = true
-                        appendToolCallCandidate(call)
+                        appendToolCallCandidate(call, source: "raw")
+
+                        // 只有真正进入本轮账本的候选（非 TDUP）才实时转发
+                        if !stopAfterToolCall,
+                           turnToolCalls.contains(where: { toolSignature($0) == toolSignature(call) }) {
+                            forwardToolCallImmediately(call)
+                        }
                     }
                 )
+
+                // Swift 陷阱：case 内裸 break 只退出 switch，必须 labeled break 才能退出 decode 循环
+                if stopAfterToolCall {
+                    break streamLoop
+                }
 
             case .toolCall(let toolCall):
                 let argumentObject = toolCall.function.arguments.reduce(
@@ -1749,17 +1838,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     result[item.key] = mlxJSONToSimiGo(item.value)
                 }
 
-                appendToolCallCandidate(
-                    ParsedToolCall(
-                        id: toolCall.id ?? UUID().uuidString,
-                        name: toolCall.function.name,
-                        arguments: argumentObject
-                    )
+                let call = ParsedToolCall(
+                    id: toolCall.id ?? UUID().uuidString,
+                    name: toolCall.function.name,
+                    arguments: argumentObject
                 )
+
+                appendToolCallCandidate(call, source: "structured")
+
+                if !stopAfterToolCall,
+                   turnToolCalls.contains(where: { toolSignature($0) == toolSignature(call) }) {
+                    forwardToolCallImmediately(call)
+                }
+
+                if stopAfterToolCall {
+                    break streamLoop
+                }
 
             case .info:
                 break
             }
+        }
+
+        if stopAfterToolCall {
+            traceLogger.trace(
+                "[GENERATION CANCEL] request=\(requestId) why=tool_call_early_stop",
+                session: traceSession
+            )
         }
 
         if isInterrupted {
@@ -1871,13 +1976,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             break
                         }
 
+                        let signature = toolSignature(tool)
+
+                        // Tool Call Early-Stop：实时已转发的调用在此只做账本确认
+                        // （forwardedToolCount / actualForwardedSignatures），
+                        // 不得再次 onToolCall——否则同一工具被 Agent 重复执行。
+                        if forwardedToolSignatures.contains(signature) {
+                            forwardedToolCount += 1
+                            actualForwardedSignatures.append(signature)
+                            continue
+                        }
+
                         onToolCall(tool)
                         forwardedToolCount += 1
-
-                        actualForwardedSignatures.append(
-                            "\(tool.name)\u{001F}" +
-                            canonicalValue(tool.arguments.mapValues(toolValueToSendable))
-                        )
+                        actualForwardedSignatures.append(signature)
                     }
 
                     actualForwardedSignatures.sort()
@@ -2019,6 +2131,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
 
             if !revisionsToRelease.isEmpty {
+                let commitReleaseStart = Date()
+
                 await MainActor.run {
                     for var oldRevision in revisionsToRelease {
                         oldRevision.releasePhysicalMemory()
@@ -2026,6 +2140,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
 
                 Memory.clearCache()
+
+                traceLogger.trace(
+                    "[KVTRIM TIME] request=\(requestId) ms=\(String(format: "%.1f", Date().timeIntervalSince(commitReleaseStart) * 1000)) why=commit_release",
+                    session: traceSession
+                )
             }
 
             kvCommittedSuccessfully = true
