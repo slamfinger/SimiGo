@@ -1034,7 +1034,7 @@ public final class Service: ObservableObject {
 
     /// Phase 1 实验用的空闲挂起超时（秒）。验证成功后改为 300。
     /// 健康检查循环周期 30s，使挂起延迟收敛到 idleTimeout～idleTimeout+30s。
-    private static let idleSuspendTimeout: TimeInterval = 120
+    private static let idleSuspendTimeout: TimeInterval = 300
 
     private func stopHealthCheck() {
         healthTask?.cancel()
