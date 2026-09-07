@@ -35,7 +35,7 @@ private enum NativeMLXLifecycle: Sendable, Equatable, Hashable {
 }
 
 extension NativeMLXLifecycle: CustomStringConvertible {
-    var description: String {
+    nonisolated var description: String {
         switch self {
         case .stopped: return "stopped"
         case .loading: return "loading"
