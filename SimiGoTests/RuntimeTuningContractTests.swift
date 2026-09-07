@@ -25,4 +25,31 @@ final class RuntimeTuningContractTests: XCTestCase {
             "准入下限防御不得低于 4GB"
         )
     }
+
+    func testAdmissionReserveCalibrationContract() {
+        XCTAssertEqual(
+            RuntimeTuning.osReserveBytes,
+            3_584 * 1024 * 1024,
+            "OS + App 基线预留当前校准为 3.5GiB，避免低压力场景出现数百 MiB 级误拒绝"
+        )
+    }
+
+    func testExecutionWorkingSetAndSafetyMarginRemainSeparate() {
+        let protectedBytes =
+            RuntimeTuning.executionWorkingSetBytes + RuntimeTuning.safetyMarginBytes
+
+        XCTAssertEqual(
+            protectedBytes,
+            4 * 1024 * 1024 * 1024,
+            "Execution Working Set 与独立 Safety Margin 必须继续保留，不得通过修改 reserve 抵消"
+        )
+    }
+
+    func testAdmissionHardCapRemainsUnchanged() {
+        XCTAssertEqual(
+            RuntimeTuning.admissionMemoryLimitBytes,
+            22 * 1024 * 1024 * 1024,
+            "本次校准只调整 OS reserve，不应放宽 22GiB hard cap"
+        )
+    }
 }
