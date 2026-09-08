@@ -1,0 +1,112 @@
+--- a/SimiGo/Inference/NativeMLX.swift
++++ b/SimiGo/Inference/NativeMLX.swift
+@@ -364,18 +364,31 @@
+         activeGenerations: Int,
+         memorySnapshot: RuntimeMemorySnapshot
+     ) -> Bool {
+-        if let swapUsed = memorySnapshot.swapUsedBytes, swapUsed > 1 * 1024 * 1024 * 1024 {
++        // Soft admission is experimental and must stop at genuine system
++        // pressure. Swap utilization is measured as a ratio rather than an
++        // absolute byte threshold so the policy scales with the machine.
++        if let swapUsed = memorySnapshot.swapUsedBytes,
++           let swapTotal = memorySnapshot.swapTotalBytes,
++           swapTotal > 0,
++           Double(swapUsed) / Double(swapTotal) >= 0.90 {
+             return true
+         }
+-        if activeGenerations >= 3 {
++
++        // NativeMLX generation shares unified memory; multiple active
++        // generations make the soft path materially less predictable.
++        if activeGenerations >= 2 {
+             return true
+         }
+-        if memorySnapshot.residentGB > 28.0 {
++
++        // Avoid entering the soft path when process RSS is already close to
++        // the physical ceiling on the target 32 GiB-class development system.
++        if memorySnapshot.residentGB >= 29.5 {
+             return true
+         }
++
+         return false
+     }
+-    
++
+     public var isInProcess: Bool { true }
+@@ -1447,6 +1460,20 @@
+             weightAwareLimit
+         )
+ 
++        // Experimental soft ceiling: allow a bounded amount above the normal
++        // predictive budget only when the current machine is not under severe
++        // pressure. Keep a separate emergency reserve so this path cannot
++        // simply consume all remaining physical-memory headroom.
++        let emergencyReserveBytes = RuntimeTuning.admissionEmergencyReserveBytes
++        let emergencyReservedTotal = modelWeightsBytes &+ emergencyReserveBytes
++        let emergencyAwareLimit: UInt64 = physicalRAMBytes > emergencyReservedTotal
++            ? physicalRAMBytes &- emergencyReservedTotal
++            : RuntimeTuning.admissionFloorBytes
++        let softAdmissionLimit = min(
++            admissionLimit &+ RuntimeTuning.admissionSoftAllowanceBytes,
++            emergencyAwareLimit
++        )
++
+         // 已驻留 revision 的 KV 占用（不含本轮新分配的 copied KV，见下）。
+@@ -1469,9 +1496,10 @@
+         let rssGB = admissionMemorySnapshot.residentGB
+         let weightsGB = Double(modelWeightsBytes) / Double(Self.gibibyte)
+         let budgetGB = Double(admissionLimit) / Double(Self.gibibyte)
++        let softBudgetGB = Double(softAdmissionLimit) / Double(Self.gibibyte)
+ 
+         traceLogger.trace(
+-            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: \"%.2f\", internalKVGB))G copied_extra=\(String(format: \"%.2f\", Double(copiedKVExtraBytes) / Double(Self.gibibyte)))G rss=\(String(format: \"%.2f\", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: \"%.2f\", $0) } ?? \"?\")G weights=\(String(format: \"%.1f\", weightsGB))G budget=\(String(format: \"%.1f\", budgetGB))G",
++            "[ADMISSION OBS] r=\(requestId) kv=\(String(format: \"%.2f\", internalKVGB))G copied_extra=\(String(format: \"%.2f\", Double(copiedKVExtraBytes) / Double(Self.gibibyte)))G rss=\(String(format: \"%.2f\", rssGB))G sw=\(admissionMemorySnapshot.swapUsedGB.map { String(format: \"%.2f\", $0) } ?? \"?\")G weights=\(String(format: \"%.1f\", weightsGB))G budget=\(String(format: \"%.1f\", budgetGB))G soft=\(String(format: \"%.1f\", softBudgetGB))G",
+             session: traceSession
+         )
+@@ -1555,21 +1583,32 @@
+                     safetyMarginBytes
+             }
+ 
+-            // 审计 P1（2026-09-06 第四轮）：无可驱逐 ≠ 预算可忽略。pendingReleases 为空
+-            // （冷启动无 revision、或全池已 non-resident）时，旧逻辑走 [ADMISSION WARN]
+-            // 直接放行 generation，绕过 admissionExceeded 硬拒绝——ctxSize 默认 131072 下
+-            // 超长 prompt 的 projected KV（131072×128KB ≈ 16GB）足以击穿任何
+-            // weight-aware 上限，进入 generation 只会 OOM/页出。统一收敛：
+-            // eviction 尽力而为（可能零驱逐）后仍超预算 → 一律硬拒绝，宁拒请求不 OOM。
++            // 正常预算仍然是第一安全线。实验路径只允许在 hard limit 之上
++            // 的有限窗口内继续，而且必须再次检查当前系统压力；超过 soft ceiling
++            // 或机器已经处于严重压力时，仍然硬拒绝。
+             if projectedMemory > admissionLimit {
+-                Memory.clearCache()
+-
+-                traceLogger.trace(
+-                    "[ADMISSION BLOCK] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M limit=\(admissionLimit / 1024 / 1024)M evicted=\(pendingReleases.count) action=reject",
+-                    session: traceSession
+-                )
+-
+-                throw RuntError.admissionExceeded(projectedMemory, admissionLimit)
++                let activeGenerations = state.withLock { $0.activeGenerationTasks.count }
++                let severePressure = evaluateSystemPressure(
++                    activeGenerations: activeGenerations,
++                    memorySnapshot: admissionMemorySnapshot
++                )
++
++                if projectedMemory <= softAdmissionLimit, !severePressure {
++                    traceLogger.trace(
++                        "[ADMISSION SOFT] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M hard=\(admissionLimit / 1024 / 1024)M soft=\(softAdmissionLimit / 1024 / 1024)M evicted=\(pendingReleases.count) pressure=ok action=allow",
++                        session: traceSession
++                    )
++                } else {
++                    Memory.clearCache()
++
++                    let reason = severePressure ? "pressure" : "soft_limit"
++                    traceLogger.trace(
++                        "[ADMISSION BLOCK] r=\(requestId) projected=\(projectedMemory / 1024 / 1024)M hard=\(admissionLimit / 1024 / 1024)M soft=\(softAdmissionLimit / 1024 / 1024)M evicted=\(pendingReleases.count) reason=\(reason) action=reject",
++                        session: traceSession
++                    )
++
++                    throw RuntError.admissionExceeded(projectedMemory, admissionLimit)
++                }
+             }
+*** End Patch
