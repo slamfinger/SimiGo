@@ -10,6 +10,11 @@ enum RuntimeTuning {
     /// §29/§30：Admission 上限（KV 口径；权重感知部分见 NativeMLX）
     static let admissionMemoryLimitBytes = 22 * gibibyte
 
+    /// 实验性 soft allowance：允许在 hard admission 预算以上、但仍受独立
+    /// pressure gate 约束的有限窗口内继续运行。当前值仅作为实验旋钮；
+    /// 核心实现不得把它当作新的硬上限。
+    static let admissionSoftAllowanceBytes: UInt64 = 2 * UInt64(gibibyte)
+
     /// §29：MLX 运行时 cache 上限
     static let mlxCacheLimitBytes = 4 * gibibyte
 
