@@ -37,6 +37,11 @@ final class RuntimeTuningContractTests: XCTestCase {
             2 * UInt64(RuntimeTuning.gibibyte),
             "当前实验窗口固定为 2GiB，正式合入前须以实机压力测试重新校准"
         )
+        XCTAssertEqual(
+            RuntimeTuning.admissionEmergencyReserveBytes,
+            UInt64(RuntimeTuning.gibibyte),
+            "soft path 必须保留独立 1GiB emergency reserve"
+        )
         XCTAssertLessThanOrEqual(
             RuntimeTuning.admissionSoftAllowanceBytes,
             UInt64(RuntimeTuning.admissionMemoryLimitBytes),
