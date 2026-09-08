@@ -15,6 +15,11 @@ enum RuntimeTuning {
     /// 核心实现不得把它当作新的硬上限。
     static let admissionSoftAllowanceBytes: UInt64 = 2 * UInt64(gibibyte)
 
+    /// 实验性 soft path 的独立最低 OS + App emergency reserve。
+    /// 与正常 3.5 GiB 基线预留分离，用于防止 soft allowance 将机器直接推到
+    /// 物理内存边界；该值只约束 experimental soft ceiling，不改变 hard ceiling。
+    static let admissionEmergencyReserveBytes: UInt64 = 1 * UInt64(gibibyte)
+
     /// §29：MLX 运行时 cache 上限
     static let mlxCacheLimitBytes = 4 * gibibyte
 
