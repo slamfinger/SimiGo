@@ -25,4 +25,22 @@ final class RuntimeTuningContractTests: XCTestCase {
             "准入下限防御不得低于 4GB"
         )
     }
+
+    func testAdmissionHardCeilingRemainsIndependent() {
+        XCTAssertEqual(
+            RuntimeTuning.admissionMemoryLimitBytes,
+            22 * RuntimeTuning.gibibyte,
+            "实验性 soft allowance 不得直接改变 22GiB hard ceiling"
+        )
+        XCTAssertEqual(
+            RuntimeTuning.admissionSoftAllowanceBytes,
+            2 * UInt64(RuntimeTuning.gibibyte),
+            "当前实验窗口固定为 2GiB，正式合入前须以实机压力测试重新校准"
+        )
+        XCTAssertLessThanOrEqual(
+            RuntimeTuning.admissionSoftAllowanceBytes,
+            UInt64(RuntimeTuning.admissionMemoryLimitBytes),
+            "soft allowance 不能大于 hard ceiling"
+        )
+    }
 }
