@@ -210,8 +210,7 @@ public actor RuntimeLifecycleCoordinator {
         }
 
         RuntimeTraceLogger.shared.trace(
-            parts.joined(separator: " "),
-            session: identity?.sessionID
+            parts.joined(separator: " ")
         )
     }
 
