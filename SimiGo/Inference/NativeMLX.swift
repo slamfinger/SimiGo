@@ -52,20 +52,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         self.baseConfig = config
     }
 
-    private func loadModelContainer(_ path: String) async throws -> ModelContainer {
-        try await LLMModelFactory.shared.loadContainer(
-            from: URL(fileURLWithPath: path),
-            using: #huggingFaceTokenizerLoader()
-        )
-    }
-
     public func start(_ info: ModelInfo, port: Int) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else { throw RuntError.notLoaded }
             guard !self.state.withLock({ $0.isRunning }) else { return }
 
             self.state.withLock { $0.lifecycle = .loading }
-            let container = try await self.loadModelContainer(info.path)
+            let container = try await LLMModelFactory.shared.loadContainer(
+                from: URL(fileURLWithPath: info.path),
+                using: #huggingFaceTokenizerLoader()
+            )
             let modelId = modelName(from: info.path)
             let nodeConfiguration = await MainActor.run {
                 let current = InferenceNodeConfiguration.shared.snapshot()
@@ -170,7 +166,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             self.state.withLock { $0.lifecycle = .resuming }
             do {
-                let container = try await self.loadModelContainer(self.modelPath)
+                let container = try await LLMModelFactory.shared.loadContainer(
+                    from: URL(fileURLWithPath: self.modelPath),
+                    using: #huggingFaceTokenizerLoader()
+                )
                 self.state.withLock {
                     $0.modelContainer = container
                     $0.lifecycle = .running
