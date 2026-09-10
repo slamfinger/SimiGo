@@ -3,9 +3,6 @@ import AppKit
 
 @main
 struct MenuApp: App {
-    init() {
-        RuntimeLifecycleCoordinator.demoSelfCheck()
-    }
     @Environment(\.openWindow) private var openWindow
     @StateObject private var svc = Service()
     @State private var networkModeIsLAN = false
