@@ -131,32 +131,27 @@ extension HTTPServer {
         responseHeaders["X-Accel-Buffering"] =
             "no"
 
+        responseHeaders["Connection"] =
+            "keep-alive"
+
         responseHeaders["X-Request-Id"] =
             context.requestId
 
-        guard sendResponse(
+        guard sendImmediateCompletionsHeaders(
             status: 200,
             headers: responseHeaders,
-            body: Data(),
-            on: context.connection,
-            context: context,
-            close: false
+            context: context
         ) else {
             return
         }
 
         do {
-            try await context.transitionToQueued()
-
             guard
                 !context.closed,
                 !Task.isCancelled
             else {
                 return
             }
-
-            // 4. Transition to RUNNING right before generation
-            try await context.transitionToRunning()
 
             _ = try await generateHandler(
                 context.requestId,
@@ -177,7 +172,7 @@ extension HTTPServer {
                         return
                     }
 
-                    self.sendSSEChunk(
+                    self.sendImmediateCompletionsChunk(
                         [
                             "id": responseId,
                             "object": "text_completion",
@@ -204,7 +199,7 @@ extension HTTPServer {
                 return
             }
 
-            sendSSEChunk(
+            sendImmediateCompletionsChunk(
                 [
                     "id": responseId,
                     "object": "text_completion",
@@ -220,7 +215,7 @@ extension HTTPServer {
                 context: context
             )
 
-            sendRaw(
+            sendImmediateCompletionsRaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
@@ -236,7 +231,7 @@ extension HTTPServer {
                 return
             }
 
-            sendSSEChunk(
+            sendImmediateCompletionsChunk(
                 [
                     "error": [
                         "message":
@@ -248,12 +243,103 @@ extension HTTPServer {
                 context: context
             )
 
-            sendRaw(
+            sendImmediateCompletionsRaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
             )
         }
+    }
+
+    // MARK: - Direct SSE Transport
+
+    private func sendImmediateCompletionsHeaders(
+        status: Int,
+        headers: [String: String],
+        context: ConnectionContext
+    ) -> Bool {
+        guard !context.closed else {
+            return false
+        }
+
+        var head =
+            "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
+
+        for (key, value) in headers {
+            head +=
+                "\(key): \(value)\r\n"
+        }
+
+        head += "\r\n"
+
+        context.connection.send(
+            content: Data(head.utf8),
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context, error != nil else { return }
+                self.terminate(context, cancelGeneration: true)
+            }
+        )
+
+        return true
+    }
+
+    @discardableResult
+    private func sendImmediateCompletionsChunk(
+        _ object: [String: Any],
+        context: ConnectionContext
+    ) -> Bool {
+        guard
+            !context.closed,
+            let data =
+                try? JSONSerialization.data(
+                    withJSONObject: object
+                )
+        else {
+            return false
+        }
+
+        var payload =
+            Data("data: ".utf8)
+
+        payload.append(data)
+        payload.append(contentsOf: "\n\n".utf8)
+
+        context.connection.send(
+            content: payload,
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context, error != nil else { return }
+                self.terminate(context, cancelGeneration: true)
+            }
+        )
+
+        return true
+    }
+
+    private func sendImmediateCompletionsRaw(
+        _ data: Data,
+        context: ConnectionContext,
+        close: Bool
+    ) {
+        guard !context.closed else {
+            return
+        }
+
+        context.connection.send(
+            content: data,
+            isComplete: close,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context else { return }
+
+                if error != nil {
+                    self.terminate(context, cancelGeneration: true)
+                } else if close {
+                    self.finish(context)
+                    context.connection.cancel()
+                }
+            }
+        )
     }
 
     // MARK: - Text Completions / Non-Streaming
@@ -327,7 +413,6 @@ extension HTTPServer {
                 return
             }
 
-            // 4. Transition to RUNNING right before generation
             try await context.transitionToRunning()
 
             _ = try await generateHandler(
@@ -465,7 +550,6 @@ extension HTTPServer {
             return nil
         }
 
-        // 同样不从 messages 推导 Session。
         let identity =
             resolveExecutionIdentity(
                 from: json,
