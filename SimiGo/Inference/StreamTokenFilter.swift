@@ -459,8 +459,7 @@ nonisolated struct AgentExecutionKey: Hashable, Sendable {
     }
 
     var storageKey: String { "\(agentId)/\(sessionId)" }
-    var gateKey: String { "\(agentId)/\(sessionId)/\(logicalBranchId)" }
-    var traceKey: String { gateKey }
+    var traceKey: String { "\(agentId)/\(sessionId)/\(logicalBranchId)" }
 
     private static func normalize(_ value: String?) -> String? {
         guard let value else { return nil }
