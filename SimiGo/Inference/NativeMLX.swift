@@ -320,9 +320,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
         let managed: ManagedSession
+        let reusedSession: Bool
 
         if let existing, incoming.count > existing.history.count {
             managed = existing
+            reusedSession = true
         } else {
             let history = Array(incoming.dropLast())
             let session = ChatSession(
@@ -333,6 +335,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 tools: toolSpecs
             )
             managed = ManagedSession(session: session, history: history)
+            reusedSession = false
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
         }
 
@@ -341,7 +344,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         managed.session.additionalContext = additionalContext
 
         let delta: [Chat.Message]
-        if existing === managed, incoming.count > managed.history.count {
+        if reusedSession {
             delta = Array(incoming.dropFirst(managed.history.count))
         } else {
             delta = incoming.last.map { [$0] } ?? []
@@ -352,6 +355,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var completedText = ""
         var toolCalls: [ToolCall] = []
         let filter = StreamTokenFilter(disableThinking: thinkingDisabled)
+        var tokensPerSecond: Double?
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -361,9 +365,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     onChunk(chunk)
                 }
             case .toolCall(let call):
-                toolCalls.append(call)
+                let normalizedCall = ToolCall(
+                    function: call.function,
+                    id: call.id ?? UUID().uuidString
+                )
+                toolCalls.append(normalizedCall)
+
                 let arguments: [String: JSONValue]
-                if let data = try? JSONEncoder().encode(call.function.arguments),
+                if let data = try? JSONEncoder().encode(normalizedCall.function.arguments),
                    let decoded = try? JSONDecoder().decode([String: JSONValue].self, from: data) {
                     arguments = decoded
                 } else {
@@ -371,13 +380,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 onToolCall(
                     ParsedToolCall(
-                        id: call.id ?? UUID().uuidString,
-                        name: call.function.name,
+                        id: normalizedCall.id ?? "",
+                        name: normalizedCall.function.name,
                         arguments: arguments
                     )
                 )
-            case .info:
-                break
+            case .info(let info):
+                tokensPerSecond = info.tokensPerSecond
             }
         }
 
@@ -398,15 +407,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             $0.lastActivity = Date()
         }
 
-        traceLogger.trace(
-            "[MLX] request=\(requestId) session=\(executionKey.traceKey) messages=\(incoming.count) tools=\(toolCalls.count)"
-        )
+        var log = "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count) reuse=\(reusedSession)"
+        if let tokensPerSecond {
+            log += String(format: " tps=%.1f", tokensPerSecond)
+        }
+        if !toolCalls.isEmpty {
+            log += " toolCalls=\(toolCalls.count)"
+        }
+        traceLogger.trace(log)
         return completedText
     }
 
     public func cancelGeneration(requestId: String) {
         state.withLock { $0.activeRequestTasks[requestId] }?.cancel()
-        traceLogger.trace("[CANCEL] request=\(requestId)")
+        traceLogger.trace("[CANCEL] r=\(requestId)")
     }
 
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
