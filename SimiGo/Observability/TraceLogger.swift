@@ -4,9 +4,8 @@ import Foundation
 
 /// Small serialized file logger used by NativeMLX diagnostics.
 ///
-/// The logger deliberately does not own log formatting, KV diagnostics,
-/// process output, or protocol state. Callers write the diagnostic message
-/// they need; this type only adds a timestamp and persists it safely.
+/// The logger deliberately does not own log formatting, KV diagnostics, or protocol state.
+/// External process output keeps a tiny compatibility path for the legacy llama.cpp pipe.
 nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
     static let shared = RuntimeTraceLogger()
 
@@ -51,6 +50,25 @@ nonisolated final class RuntimeTraceLogger: @unchecked Sendable {
             guard let data = line.data(using: .utf8) else { return }
 
             self.writeLocked(data)
+        }
+    }
+
+    /// Compatibility path for the external llama.cpp stdout/stderr pipe.
+    /// Keeps the raw stream outside the normal diagnostic formatter.
+    func rawProcessOutput(_ data: Data, prefix: String = "[llama.cpp] ") {
+        guard !data.isEmpty else { return }
+        guard let text = String(data: data, encoding: .utf8), !text.isEmpty else { return }
+
+        queue.async { [weak self] in
+            guard let self else { return }
+            let normalized = text
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .replacingOccurrences(of: "\r", with: "\n")
+            for line in normalized.split(separator: "\n", omittingEmptySubsequences: true) {
+                let output = "[\(Self.timestampFormatter.string(from: Date()))] \(prefix)\(line)\n"
+                guard let encoded = output.data(using: .utf8) else { continue }
+                self.writeLocked(encoded)
+            }
         }
     }
 
