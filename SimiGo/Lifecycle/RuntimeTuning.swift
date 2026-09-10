@@ -1,7 +1,7 @@
 import Foundation
 
 /// Minimal runtime limits that delegate memory governance to MLX.
-enum RuntimeTuning {
+nonisolated enum RuntimeTuning {
     static let gibibyte = 1024 * 1024 * 1024
 
     /// MLX overall allocation limit.
