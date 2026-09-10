@@ -330,6 +330,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             managed = existing
             reusedSession = true
         } else {
+            if let existing,
+               incoming.count > existing.history.count,
+               let mismatch = Self.firstPrefixMismatch(existing.history, of: incoming) {
+                let historyMessage = existing.history[mismatch]
+                let incomingMessage = incoming[mismatch]
+                traceLogger.trace(
+                    "[MLX] prefixMismatch index=\(mismatch) role=\(incomingMessage.role.rawValue)" +
+                    " historyTool=\(historyMessage.tool != nil) incomingTool=\(incomingMessage.tool != nil)" +
+                    " history=\(existing.history.count) incoming=\(incoming.count)"
+                )
+            }
             let history = Array(incoming.dropLast())
             let session = ChatSession(
                 container,
@@ -365,6 +376,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var toolCalls: [ToolCall] = []
         let filter = StreamTokenFilter(disableThinking: thinkingDisabled)
         var tokensPerSecond: Double?
+        var promptTokens: Int?
+        var promptSeconds: Double?
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -398,6 +411,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
             case .info(let info):
                 tokensPerSecond = info.tokensPerSecond
+                promptTokens = info.promptTokenCount
+                promptSeconds = info.promptTime
             }
         }
 
@@ -423,6 +438,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
         if let ttft {
             log += String(format: " ttft=%dms", Int(ttft * 1000))
+        }
+        if let promptTokens {
+            log += " promptTokens=\(promptTokens)"
+        }
+        if let promptSeconds {
+            log += String(format: " promptTime=%.1fs", promptSeconds)
         }
         if let tokensPerSecond {
             log += String(format: " tps=%.1f", tokensPerSecond)
@@ -511,8 +532,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         _ prefix: [Chat.Message],
         of full: [Chat.Message]
     ) -> Bool {
-        guard prefix.count <= full.count else { return false }
-        return zip(prefix, full).allSatisfy { signature($0) == signature($1) }
+        firstPrefixMismatch(prefix, of: full) == nil
+    }
+
+    /// Returns the first index where the histories diverge, or nil when
+    /// `prefix` is a true prefix of `full`. An out-of-range index means
+    /// `prefix` itself is longer than `full`.
+    private static nonisolated func firstPrefixMismatch(
+        _ prefix: [Chat.Message],
+        of full: [Chat.Message]
+    ) -> Int? {
+        guard prefix.count <= full.count else { return prefix.count }
+        for (index, pair) in zip(prefix, full).enumerated()
+        where signature(pair.0) != signature(pair.1) {
+            return index
+        }
+        return nil
     }
 
     private static nonisolated func signature(_ message: Chat.Message) -> String {
