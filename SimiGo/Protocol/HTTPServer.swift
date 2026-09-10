@@ -1380,7 +1380,7 @@ public final class HTTPServer: @unchecked Sendable {
         )
     }
 
-    private func reasonPhrase(
+    func reasonPhrase(
         _ status: Int
     ) -> String {
 
