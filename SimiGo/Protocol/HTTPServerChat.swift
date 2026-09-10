@@ -90,7 +90,6 @@ extension HTTPServer {
             return
         }
 
-        // 2. Use defer to ensure lifecycle completion (success or failure)
         var isSuccess = false
         defer {
             context.markGenerationFinished()
@@ -113,7 +112,6 @@ extension HTTPServer {
             context: context
         )
 
-        // 1. Register lifecycle after identity is known, before any transition
         await context.registerLifecycle()
 
         let responseId =
@@ -140,6 +138,9 @@ extension HTTPServer {
         responseHeaders["X-Accel-Buffering"] =
             "no"
 
+        responseHeaders["Connection"] =
+            "keep-alive"
+
         responseHeaders["X-Request-Id"] =
             context.requestId
 
@@ -149,29 +150,21 @@ extension HTTPServer {
                 clientRequestId
         }
 
-        guard sendResponse(
+        guard sendImmediateStreamingHeaders(
             status: 200,
             headers: responseHeaders,
-            body: Data(),
-            on: context.connection,
-            context: context,
-            close: false
+            context: context
         ) else {
             return
         }
 
         do {
-            try await context.transitionToQueued()
-
             guard
                 !context.closed,
                 !Task.isCancelled
             else {
                 return
             }
-
-            // 4. Transition to RUNNING right before generation
-            try await context.transitionToRunning()
 
             _ = try await generateHandler(
                 context.requestId,
@@ -192,7 +185,7 @@ extension HTTPServer {
                         return
                     }
 
-                    self.sendSSEChunk(
+                    self.sendImmediateSSEChunk(
                         [
                             "id": responseId,
                             "object":
@@ -230,7 +223,7 @@ extension HTTPServer {
                                 return current
                             }
 
-                    self.sendSSEChunk(
+                    self.sendImmediateSSEChunk(
                         [
                             "id": responseId,
                             "object":
@@ -267,7 +260,7 @@ extension HTTPServer {
                 return
             }
 
-            sendSSEChunk(
+            sendImmediateSSEChunk(
                 [
                     "id": responseId,
                     "object":
@@ -286,7 +279,7 @@ extension HTTPServer {
                 context: context
             )
 
-            sendRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
@@ -302,7 +295,7 @@ extension HTTPServer {
                 return
             }
 
-            sendSSEChunk(
+            sendImmediateSSEChunk(
                 [
                     "error": [
                         "message":
@@ -314,12 +307,106 @@ extension HTTPServer {
                 context: context
             )
 
-            sendRaw(
+            sendImmediateSSERaw(
                 Data("data: [DONE]\n\n".utf8),
                 context: context,
                 close: true
             )
         }
+    }
+
+    // MARK: - Direct SSE Transport
+
+    private func sendImmediateStreamingHeaders(
+        status: Int,
+        headers: [String: String],
+        context: ConnectionContext
+    ) -> Bool {
+        guard !context.closed else {
+            return false
+        }
+
+        var head =
+            "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
+
+        for (key, value) in headers {
+            head +=
+                "\(key): \(value)\r\n"
+        }
+
+        head += "\r\n"
+
+        context.connection.send(
+            content: Data(head.utf8),
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context, let error else { return }
+                self.terminate(context, cancelGeneration: true)
+                _ = error
+            }
+        )
+
+        return true
+    }
+
+    @discardableResult
+    private func sendImmediateSSEChunk(
+        _ object: [String: Any],
+        context: ConnectionContext
+    ) -> Bool {
+        guard
+            !context.closed,
+            let data =
+                try? JSONSerialization.data(
+                    withJSONObject: object
+                )
+        else {
+            return false
+        }
+
+        var payload =
+            Data("data: ".utf8)
+
+        payload.append(data)
+        payload.append(contentsOf: "\n\n".utf8)
+
+        context.connection.send(
+            content: payload,
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context else { return }
+                if error != nil {
+                    self.terminate(context, cancelGeneration: true)
+                }
+            }
+        )
+
+        return true
+    }
+
+    private func sendImmediateSSERaw(
+        _ data: Data,
+        context: ConnectionContext,
+        close: Bool
+    ) {
+        guard !context.closed else {
+            return
+        }
+
+        context.connection.send(
+            content: data,
+            isComplete: close,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context else { return }
+
+                if error != nil {
+                    self.terminate(context, cancelGeneration: true)
+                } else if close {
+                    self.finish(context)
+                    context.connection.cancel()
+                }
+            }
+        )
     }
 
     // MARK: - Chat Completions / Non-Streaming
@@ -357,7 +444,6 @@ extension HTTPServer {
             return
         }
 
-        // 2. Use defer to ensure lifecycle completion (success or failure)
         var isSuccess = false
         defer {
             context.markGenerationFinished()
@@ -380,7 +466,6 @@ extension HTTPServer {
             context: context
         )
 
-        // 1. Register lifecycle after identity is known, before any transition
         await context.registerLifecycle()
 
         let fullContent =
@@ -399,7 +484,6 @@ extension HTTPServer {
                 return
             }
 
-            // 4. Transition to RUNNING right before generation
             try await context.transitionToRunning()
 
             _ = try await generateHandler(
@@ -560,9 +644,6 @@ extension HTTPServer {
                     )
         }
 
-        // 注意：
-        // 不再把 messages 传入 Identity Resolver。
-        // Session 与 KV prefix matching 已彻底解耦。
         let identity =
             resolveExecutionIdentity(
                 from: json,
