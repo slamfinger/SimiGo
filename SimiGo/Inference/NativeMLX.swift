@@ -51,6 +51,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     public init(info: ModelInfo, config: ModelConfig) {
         self.modelPath = info.path
         self.baseConfig = config
+        Memory.memoryLimit = RuntimeTuning.mlxMemoryLimitBytes
+        Memory.cacheLimit = RuntimeTuning.mlxCacheLimitBytes
     }
 
     public func start(_ info: ModelInfo, port: Int) async throws {
