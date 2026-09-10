@@ -264,7 +264,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return
             }
             guard state.activeRequestTasks[requestId] == nil else {
-                registrationError = .duplicateRequestId(requestId)
+                registrationError = .generationFailed("Duplicate request ID: \(requestId)")
                 return
             }
             state.activeRequestTasks[requestId] = task
