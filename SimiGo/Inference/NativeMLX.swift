@@ -4,6 +4,7 @@ import MLX
 import MLXLMCommon
 import MLXLLM
 import MLXHuggingFace
+import Tokenizers
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
