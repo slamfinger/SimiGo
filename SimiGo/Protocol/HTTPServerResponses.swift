@@ -623,6 +623,10 @@ extension HTTPServer {
             return
         }
 
+        guard context.markGenerationStarted() else {
+            return
+        }
+
         // 2. Use defer to ensure lifecycle completion (success or failure)
         var isSuccess = false
         defer {
