@@ -5,12 +5,13 @@ import Foundation
 nonisolated public func modelName(from path: String) -> String {
     let comps = path.split(separator: "/")
     if let i = comps.firstIndex(of: "snapshots"), i > 0 {
-        return comps[i - 1]
-            .description
+        let repositoryName = comps[i - 1].description
+        return repositoryName
             .replacingOccurrences(of: "models--", with: "")
             .replacingOccurrences(of: "--", with: "/")
     }
-    return URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+    let url = URL(fileURLWithPath: path)
+    return url.deletingPathExtension().lastPathComponent
 }
 
 // MARK: - Error
@@ -21,7 +22,6 @@ public enum RuntError: LocalizedError, Sendable {
     case generationFailed(String)
     case invalidModelDirectory(String)
     case modelNotSupported(String)
-    case duplicateRequestId(String)
 
     public var errorDescription: String? {
         switch self {
@@ -30,8 +30,6 @@ public enum RuntError: LocalizedError, Sendable {
         case .generationFailed(let r): return "生成失败: \(r)"
         case .invalidModelDirectory(let p): return "无效的模型目录: \(p)"
         case .modelNotSupported(let r): return "不支持的模型: \(r)"
-        case .duplicateRequestId(let id):
-            return "重复的 requestId: \(id)（前一请求仍在处理中，未完成前不得复用）"
         }
     }
 }
