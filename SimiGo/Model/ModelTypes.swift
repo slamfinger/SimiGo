@@ -5,7 +5,8 @@ import Foundation
 nonisolated public func modelName(from path: String) -> String {
     let comps = path.split(separator: "/")
     if let i = comps.firstIndex(of: "snapshots"), i > 0 {
-        return String(comps[i - 1])
+        return comps[i - 1]
+            .description
             .replacingOccurrences(of: "models--", with: "")
             .replacingOccurrences(of: "--", with: "/")
     }
