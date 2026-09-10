@@ -43,8 +43,8 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
     public nonisolated var description: String {
         switch self {
         case .string(let v): return v
-        case .number(let v): return String(v)
-        case .bool(let v): return String(v)
+        case .number(let v): return v.description
+        case .bool(let v): return v.description
         case .object(let v): return v.description
         case .array(let v): return v.description
         case .null: return "null"
