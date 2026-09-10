@@ -195,8 +195,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         guard eligible else { return false }
 
-        return (try? await lifecycleGate.withLock {
-            [weak self] () -> Bool in
+        return await lifecycleGate.withLockResult { [weak self] in
             guard let self else { return false }
             let stillEligible = self.state.withLock { state in
                 state.isRunning &&
@@ -215,7 +214,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             Memory.clearCache()
             self.traceLogger.trace("[LIFECYCLE] suspend_done")
             return true
-        }) ?? false
+        }
     }
 
     public func generate(
@@ -361,11 +360,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
             case .toolCall(let call):
                 toolCalls.append(call)
+                var arguments: [String: JSONValue] = [:]
+                arguments.reserveCapacity(call.function.arguments.count)
+                for (key, value) in call.function.arguments {
+                    arguments[key] = Self.toSimiJSON(value)
+                }
                 onToolCall(
                     ParsedToolCall(
                         id: call.id ?? UUID().uuidString,
                         name: call.function.name,
-                        arguments: call.function.arguments.mapValues(Self.toSimiJSON)
+                        arguments: arguments
                     )
                 )
             case .info:
@@ -384,7 +388,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         )
         managed.history = incoming + [assistant]
         state.withLock {
-            if let current = $0.sessions[executionKey.storageKey], current === managed {
+            if let current = state.sessions[executionKey.storageKey], current === managed {
                 current.history = managed.history
             }
             $0.lastActivity = Date()
@@ -407,7 +411,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private nonisolated static func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
+    private static nonisolated func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
         messages.compactMap { value in
             guard case .object(let object) = value else { return nil }
             let role = (object["role"]?.string ?? "user").lowercased()
@@ -427,7 +431,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private nonisolated static func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
+    private static nonisolated func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
         guard case .array(let items) = value else { return [] }
         return items.compactMap { item in
             guard case .object(let object) = item,
@@ -454,39 +458,47 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private nonisolated static func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
+    private static nonisolated func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
         guard let tools, !tools.isEmpty else { return nil }
         return tools.compactMap { value in
             guard case .object(let object) = value else { return nil }
-            return object.reduce(into: [String: any Sendable]()) { result, pair in
-                result[pair.key] = toSendable(pair.value)
+            var converted: [String: any Sendable] = [:]
+            converted.reserveCapacity(object.count)
+            for (key, value) in object {
+                converted[key] = Self.toSendable(value)
             }
+            return converted
         }
     }
 
-    private nonisolated static func toSendable(_ value: JSONValue) -> any Sendable {
+    private static nonisolated func toSendable(_ value: JSONValue) -> any Sendable {
         switch value {
         case .string(let value): return value
         case .number(let value): return value
         case .bool(let value): return value
         case .null: return Optional<String>.none
-        case .object(let object): return object.reduce(into: [String: any Sendable]()) { result, pair in
-            result[pair.key] = toSendable(pair.value)
-        }
-        case .array(let array): return array.map { toSendable($0) }
+        case .object(let object):
+            var converted: [String: any Sendable] = [:]
+            converted.reserveCapacity(object.count)
+            for (key, value) in object {
+                converted[key] = Self.toSendable(value)
+            }
+            return converted
+        case .array(let array):
+            return array.map { Self.toSendable($0) }
         }
     }
 
-    private nonisolated static func toSimiJSON(_ value: JSONValue) -> JSONValue {
+    private static nonisolated func toSimiJSON(_ value: JSONValue) -> JSONValue {
         value
     }
 
-    private nonisolated static func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
+    private static nonisolated func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
         guard prefix.count <= full.count else { return false }
         return zip(prefix, full).allSatisfy { signature($0) == signature($1) }
     }
 
-    private nonisolated static func signature(_ message: Chat.Message) -> String {
+    private static nonisolated func signature(_ message: Chat.Message) -> String {
         let raw = DefaultMessageGenerator().generate(message: message)
         guard JSONSerialization.isValidJSONObject(raw),
               let data = try? JSONSerialization.data(withJSONObject: raw, options: [.sortedKeys]) else {
@@ -495,7 +507,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return data.base64EncodedString()
     }
 
-    private nonisolated static func coerceContent(_ value: JSONValue) -> String {
+    private static nonisolated func coerceContent(_ value: JSONValue) -> String {
         switch value {
         case .string(let value): return value
         case .number(let value): return String(value)
