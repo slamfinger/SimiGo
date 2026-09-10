@@ -2,6 +2,7 @@ import Foundation
 import Synchronization
 import MLX
 import MLXLMCommon
+import MLXLLM
 import MLXHuggingFace
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
@@ -194,16 +195,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         guard eligible else { return false }
 
-        var didSuspend = false
-        await lifecycleGate.withLockVoid { [weak self] in
-            guard let self else { return }
+        return await lifecycleGate.withLock {
+            [weak self] () -> Bool in
+            guard let self else { return false }
             let stillEligible = self.state.withLock { state in
                 state.isRunning &&
                 state.modelContainer != nil &&
                 state.activeRequestTasks.isEmpty &&
                 Date().timeIntervalSince(state.lastActivity) >= idleTimeout
             }
-            guard stillEligible else { return }
+            guard stillEligible else { return false }
 
             self.state.withLock {
                 $0.lifecycle = .suspended
@@ -212,10 +213,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 $0.lastActivity = Date()
             }
             Memory.clearCache()
-            didSuspend = true
             self.traceLogger.trace("[LIFECYCLE] suspend_done")
+            return true
         }
-        return didSuspend
     }
 
     public func generate(
@@ -384,7 +384,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         )
         managed.history = incoming + [assistant]
         state.withLock {
-            if let current = state.sessions[executionKey.storageKey], current === managed {
+            if let current = $0.sessions[executionKey.storageKey], current === managed {
                 current.history = managed.history
             }
             $0.lastActivity = Date()
@@ -407,7 +407,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
+    private nonisolated static func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
         messages.compactMap { value in
             guard case .object(let object) = value else { return nil }
             let role = (object["role"]?.string ?? "user").lowercased()
@@ -427,7 +427,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
+    private nonisolated static func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
         guard case .array(let items) = value else { return [] }
         return items.compactMap { item in
             guard case .object(let object) = item,
@@ -454,35 +454,39 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
+    private nonisolated static func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
         guard let tools, !tools.isEmpty else { return nil }
         return tools.compactMap { value in
             guard case .object(let object) = value else { return nil }
-            return object.mapValues(Self.toSendable)
+            return object.reduce(into: [String: any Sendable]()) { result, pair in
+                result[pair.key] = toSendable(pair.value)
+            }
         }
     }
 
-    private static func toSendable(_ value: JSONValue) -> any Sendable {
+    private nonisolated static func toSendable(_ value: JSONValue) -> any Sendable {
         switch value {
         case .string(let value): return value
         case .number(let value): return value
         case .bool(let value): return value
         case .null: return Optional<String>.none
-        case .object(let object): return object.mapValues(Self.toSendable)
-        case .array(let array): return array.map(Self.toSendable)
+        case .object(let object): return object.reduce(into: [String: any Sendable]()) { result, pair in
+            result[pair.key] = toSendable(pair.value)
+        }
+        case .array(let array): return array.map { toSendable($0) }
         }
     }
 
-    private static func toSimiJSON(_ value: JSONValue) -> JSONValue {
+    private nonisolated static func toSimiJSON(_ value: JSONValue) -> JSONValue {
         value
     }
 
-    private static func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
+    private nonisolated static func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
         guard prefix.count <= full.count else { return false }
         return zip(prefix, full).allSatisfy { signature($0) == signature($1) }
     }
 
-    private static func signature(_ message: Chat.Message) -> String {
+    private nonisolated static func signature(_ message: Chat.Message) -> String {
         let raw = DefaultMessageGenerator().generate(message: message)
         guard JSONSerialization.isValidJSONObject(raw),
               let data = try? JSONSerialization.data(withJSONObject: raw, options: [.sortedKeys]) else {
@@ -491,7 +495,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return data.base64EncodedString()
     }
 
-    private static func coerceContent(_ value: JSONValue) -> String {
+    private nonisolated static func coerceContent(_ value: JSONValue) -> String {
         switch value {
         case .string(let value): return value
         case .number(let value): return String(value)
