@@ -1144,7 +1144,7 @@ public final class HTTPServer: @unchecked Sendable {
         return config
     }
 
-    // MARK: - Parameter Parsing
+    // MARK: - Response Helpers
 
     func sendJSON(
         _ object: [String: Any],
@@ -1216,8 +1216,6 @@ public final class HTTPServer: @unchecked Sendable {
                 "\(key): \(value)\r\n"
         }
 
-        // HTTP/1.1 客户端默认 keep-alive：服务器主动关闭连接前必须显式告知，
-        // 否则持久连接客户端的下一请求会撞上已被取消的 socket（竞态错误）。
         if close {
             head += "Connection: close\r\n"
         }
@@ -1847,7 +1845,7 @@ public final class HTTPServer: @unchecked Sendable {
 
 // MARK: - Thread-Safe Value
 
-final class Locked<T>: @unchecked Sendable {
+nonisolated final class Locked<T>: @unchecked Sendable {
     private let lock = NSLock()
     private var _value: T
 
