@@ -1,7 +1,7 @@
 import Foundation
 
 /// 极简 JSON 值类型定义
-public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
+nonisolated public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
     case string(String)
     case number(Double)
     case bool(Bool)
@@ -40,7 +40,7 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
         }
     }
 
-    public nonisolated var description: String {
+    public var description: String {
         switch self {
         case .string(let v): return v
         case .number(let v): return v.description
@@ -51,18 +51,18 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
         }
     }
 
-    public nonisolated var object: [String: JSONValue]? {
+    public var object: [String: JSONValue]? {
         guard case .object(let dict) = self else { return nil }
         return dict
     }
 
-    public nonisolated var string: String? {
+    public var string: String? {
         guard case .string(let s) = self else { return nil }
         return s
     }
 
     /// 将 Foundation Any（来自 JSON 反序列化）规整为 JSONValue
-    public nonisolated static func any(_ value: Any?) -> JSONValue {
+    public static func any(_ value: Any?) -> JSONValue {
         guard let value else { return .null }
         switch value {
         case let s as String:
@@ -84,7 +84,7 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
         }
     }
 
-    public nonisolated func toAny() -> Any {
+    public func toAny() -> Any {
         switch self {
         case .string(let s): return s
         case .number(let n): return n
@@ -97,12 +97,12 @@ public enum JSONValue: Codable, Equatable, Sendable, CustomStringConvertible {
 }
 
 /// 解析后的工具调用结构
-public struct ParsedToolCall: Codable, Equatable, Sendable {
+nonisolated public struct ParsedToolCall: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let arguments: [String: JSONValue]
 
-    public nonisolated init(id: String, name: String, arguments: [String: JSONValue]) {
+    public init(id: String, name: String, arguments: [String: JSONValue]) {
         self.id = id
         self.name = name
         self.arguments = arguments
@@ -120,8 +120,8 @@ public struct ParsedToolCall: Codable, Equatable, Sendable {
 }
 
 /// GFTokenizer 兼容命名空间
-public enum GFTokenizer {
-    public struct FunctionDefinition: Codable, Equatable, Sendable {
+nonisolated public enum GFTokenizer {
+    nonisolated public struct FunctionDefinition: Codable, Equatable, Sendable {
         public let name: String
         public let description: String
         public let parameters: [String: JSONValue]
