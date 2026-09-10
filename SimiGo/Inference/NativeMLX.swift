@@ -195,7 +195,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         guard eligible else { return false }
 
-        return await lifecycleGate.withLock {
+        return (try? await lifecycleGate.withLock {
             [weak self] () -> Bool in
             guard let self else { return false }
             let stillEligible = self.state.withLock { state in
@@ -215,7 +215,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             Memory.clearCache()
             self.traceLogger.trace("[LIFECYCLE] suspend_done")
             return true
-        }
+        }) ?? false
     }
 
     public func generate(
