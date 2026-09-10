@@ -140,7 +140,7 @@ nonisolated final class StreamTokenFilter: @unchecked Sendable {
             .min { $0.lowerBound < $1.lowerBound }
     }
 
-    private nonisolated func sanitize(_ text: String) -> String {
+    private static nonisolated func sanitize(_ text: String) -> String {
         var result = text
         for tag in Self.tags {
             result = result.replacingOccurrences(of: tag, with: "")
