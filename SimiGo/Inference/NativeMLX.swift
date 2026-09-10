@@ -324,7 +324,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let managed: ManagedSession
         let reusedSession: Bool
 
-        if let existing, incoming.count > existing.history.count {
+        if let existing,
+           incoming.count > existing.history.count,
+           Self.isPrefix(existing.history, of: incoming) {
             managed = existing
             reusedSession = true
         } else {
@@ -354,6 +356,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         guard !delta.isEmpty else { return "" }
 
+        let historyCount = managed.history.count
+        let deltaCount = delta.count
+        let streamStart = Date()
+        var ttft: TimeInterval?
+
         var completedText = ""
         var toolCalls: [ToolCall] = []
         let filter = StreamTokenFilter(disableThinking: thinkingDisabled)
@@ -362,11 +369,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
             case .chunk(let text):
+                ttft = ttft ?? Date().timeIntervalSince(streamStart)
                 filter.feed(text) { chunk in
                     completedText.append(chunk)
                     onChunk(chunk)
                 }
             case .toolCall(let call):
+                ttft = ttft ?? Date().timeIntervalSince(streamStart)
                 let normalizedCall = ToolCall(
                     function: call.function,
                     id: call.id ?? UUID().uuidString
@@ -409,7 +418,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             $0.lastActivity = Date()
         }
 
-        var log = "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count) reuse=\(reusedSession)"
+        var log =
+            "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
+            " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
+        if let ttft {
+            log += String(format: " ttft=%dms", Int(ttft * 1000))
+        }
         if let tokensPerSecond {
             log += String(format: " tps=%.1f", tokensPerSecond)
         }
@@ -489,6 +503,25 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .array(let array):
             return array.map { Self.toSendable($0) }
         }
+    }
+
+    /// Chat.Message is not Equatable (Tool storage is fileprivate to mlx-swift-lm),
+    /// so prefix identity is decided by serialized message signatures.
+    private static nonisolated func isPrefix(
+        _ prefix: [Chat.Message],
+        of full: [Chat.Message]
+    ) -> Bool {
+        guard prefix.count <= full.count else { return false }
+        return zip(prefix, full).allSatisfy { signature($0) == signature($1) }
+    }
+
+    private static nonisolated func signature(_ message: Chat.Message) -> String {
+        let raw = DefaultMessageGenerator().generate(message: message)
+        guard JSONSerialization.isValidJSONObject(raw),
+              let data = try? JSONSerialization.data(withJSONObject: raw, options: [.sortedKeys]) else {
+            return "\(message.role.rawValue)\u{1f}\(message.content)"
+        }
+        return data.base64EncodedString()
     }
 
     private static nonisolated func coerceContent(_ value: JSONValue) -> String {
