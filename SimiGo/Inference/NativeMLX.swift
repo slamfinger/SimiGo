@@ -1,5 +1,6 @@
 import Foundation
 import Synchronization
+import MLX
 import MLXLMCommon
 import MLXHuggingFace
 
@@ -297,7 +298,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             throw RuntError.notLoaded
         }
 
-        let incoming = try Self.makeChatMessages(messages)
+        let incoming = Self.makeChatMessages(messages)
         guard !incoming.isEmpty else { return "" }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
@@ -314,8 +315,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let toolSpecs = Self.makeToolSpecs(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
-        let managed: ManagedSession
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
+        let managed: ManagedSession
 
         if let existing, Self.isPrefix(existing.history, of: incoming), incoming.count > existing.history.count {
             managed = existing
@@ -337,7 +338,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         managed.session.additionalContext = additionalContext
 
         let delta: [Chat.Message]
-        if let existing, existing === managed, Self.isPrefix(managed.history, of: incoming), incoming.count > managed.history.count {
+        if existing === managed,
+           Self.isPrefix(managed.history, of: incoming),
+           incoming.count > managed.history.count {
             delta = Array(incoming.dropFirst(managed.history.count))
         } else {
             delta = incoming.last.map { [$0] } ?? []
@@ -404,7 +407,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static func makeChatMessages(_ messages: [JSONValue]) throws -> [Chat.Message] {
+    private static func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
         messages.compactMap { value in
             guard case .object(let object) = value else { return nil }
             let role = (object["role"]?.string ?? "user").lowercased()
@@ -470,15 +473,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static func toSimiJSON(_ value: MLXLMCommon.JSONValue) -> JSONValue {
-        switch value {
-        case .string(let value): return .string(value)
-        case .number(let value): return .number(value)
-        case .bool(let value): return .bool(value)
-        case .null: return .null
-        case .object(let object): return .object(object.mapValues(toSimiJSON))
-        case .array(let array): return .array(array.map(toSimiJSON))
-        }
+    private static func toSimiJSON(_ value: JSONValue) -> JSONValue {
+        value
     }
 
     private static func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
