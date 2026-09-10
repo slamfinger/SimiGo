@@ -321,7 +321,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
         let managed: ManagedSession
 
-        if let existing, Self.isPrefix(existing.history, of: incoming), incoming.count > existing.history.count {
+        if let existing, incoming.count > existing.history.count {
             managed = existing
         } else {
             let history = Array(incoming.dropLast())
@@ -341,9 +341,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         managed.session.additionalContext = additionalContext
 
         let delta: [Chat.Message]
-        if existing === managed,
-           Self.isPrefix(managed.history, of: incoming),
-           incoming.count > managed.history.count {
+        if existing === managed, incoming.count > managed.history.count {
             delta = Array(incoming.dropFirst(managed.history.count))
         } else {
             delta = incoming.last.map { [$0] } ?? []
@@ -438,30 +436,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     private static nonisolated func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
-        guard case .array(let items) = value else { return [] }
-        return items.compactMap { item in
-            guard case .object(let object) = item,
-                  case .object(let function)? = object["function"],
-                  let name = function["name"]?.string,
-                  !name.isEmpty else { return nil }
-
-            let argumentValue = function["arguments"] ?? .object([:])
-            let arguments: [String: JSONValue]
-            if case .string(let raw) = argumentValue,
-               let data = raw.data(using: .utf8),
-               let decoded = try? JSONDecoder().decode([String: JSONValue].self, from: data) {
-                arguments = decoded
-            } else if case .object(let decoded) = argumentValue {
-                arguments = decoded
-            } else {
-                arguments = [:]
-            }
-
-            return ToolCall(
-                function: .init(name: name, arguments: arguments),
-                id: object["id"]?.string
-            )
+        guard let value,
+              let data = try? JSONEncoder().encode(value),
+              let calls = try? JSONDecoder().decode([ToolCall].self, from: data) else {
+            return []
         }
+        return calls
     }
 
     private static nonisolated func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
@@ -493,20 +473,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .array(let array):
             return array.map { Self.toSendable($0) }
         }
-    }
-
-    private static nonisolated func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
-        guard prefix.count <= full.count else { return false }
-        return zip(prefix, full).allSatisfy { signature($0) == signature($1) }
-    }
-
-    private static nonisolated func signature(_ message: Chat.Message) -> String {
-        let raw = DefaultMessageGenerator().generate(message: message)
-        guard JSONSerialization.isValidJSONObject(raw),
-              let data = try? JSONSerialization.data(withJSONObject: raw, options: [.sortedKeys]) else {
-            return "\(message.role.rawValue)\u{1f}\(message.content)"
-        }
-        return data.base64EncodedString()
     }
 
     private static nonisolated func coerceContent(_ value: JSONValue) -> String {
