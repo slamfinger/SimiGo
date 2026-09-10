@@ -364,10 +364,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
             case .toolCall(let call):
                 toolCalls.append(call)
-                var arguments: [String: JSONValue] = [:]
-                arguments.reserveCapacity(call.function.arguments.count)
-                for (key, value) in call.function.arguments {
-                    arguments[key] = Self.toSimiJSON(value)
+                let arguments: [String: JSONValue]
+                if let data = try? JSONEncoder().encode(call.function.arguments),
+                   let decoded = try? JSONDecoder().decode([String: JSONValue].self, from: data) {
+                    arguments = decoded
+                } else {
+                    arguments = [:]
                 }
                 onToolCall(
                     ParsedToolCall(
@@ -490,24 +492,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return converted
         case .array(let array):
             return array.map { Self.toSendable($0) }
-        }
-    }
-
-    private static nonisolated func toSimiJSON(_ value: MLXLMCommon.JSONValue) -> JSONValue {
-        switch value {
-        case .string(let value): return .string(value)
-        case .number(let value): return .number(value)
-        case .bool(let value): return .bool(value)
-        case .null: return .null
-        case .object(let object):
-            var converted: [String: JSONValue] = [:]
-            converted.reserveCapacity(object.count)
-            for (key, value) in object {
-                converted[key] = toSimiJSON(value)
-            }
-            return .object(converted)
-        case .array(let array):
-            return .array(array.map { toSimiJSON($0) })
         }
     }
 
