@@ -195,25 +195,29 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         guard eligible else { return false }
 
-        return await lifecycleGate.withLockResult { [weak self] in
-            guard let self else { return false }
-            let stillEligible = self.state.withLock { state in
-                state.isRunning &&
-                state.modelContainer != nil &&
-                state.activeRequestTasks.isEmpty &&
-                Date().timeIntervalSince(state.lastActivity) >= idleTimeout
-            }
-            guard stillEligible else { return false }
+        do {
+            return try await lifecycleGate.withLock { [weak self] in
+                guard let self else { return false }
+                let stillEligible = self.state.withLock { state in
+                    state.isRunning &&
+                    state.modelContainer != nil &&
+                    state.activeRequestTasks.isEmpty &&
+                    Date().timeIntervalSince(state.lastActivity) >= idleTimeout
+                }
+                guard stillEligible else { return false }
 
-            self.state.withLock {
-                $0.lifecycle = .suspended
-                $0.modelContainer = nil
-                $0.sessions.removeAll()
-                $0.lastActivity = Date()
+                self.state.withLock {
+                    $0.lifecycle = .suspended
+                    $0.modelContainer = nil
+                    $0.sessions.removeAll()
+                    $0.lastActivity = Date()
+                }
+                Memory.clearCache()
+                self.traceLogger.trace("[LIFECYCLE] suspend_done")
+                return true
             }
-            Memory.clearCache()
-            self.traceLogger.trace("[LIFECYCLE] suspend_done")
-            return true
+        } catch {
+            return false
         }
     }
 
@@ -388,7 +392,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         )
         managed.history = incoming + [assistant]
         state.withLock {
-            if let current = state.sessions[executionKey.storageKey], current === managed {
+            if let current = $0.sessions[executionKey.storageKey], current === managed {
                 current.history = managed.history
             }
             $0.lastActivity = Date()
@@ -489,8 +493,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    private static nonisolated func toSimiJSON(_ value: JSONValue) -> JSONValue {
-        value
+    private static nonisolated func toSimiJSON(_ value: MLXLMCommon.JSONValue) -> JSONValue {
+        switch value {
+        case .string(let value): return .string(value)
+        case .number(let value): return .number(value)
+        case .bool(let value): return .bool(value)
+        case .null: return .null
+        case .object(let object):
+            var converted: [String: JSONValue] = [:]
+            converted.reserveCapacity(object.count)
+            for (key, value) in object {
+                converted[key] = toSimiJSON(value)
+            }
+            return .object(converted)
+        case .array(let array):
+            return .array(array.map { toSimiJSON($0) })
+        }
     }
 
     private static nonisolated func isPrefix(_ prefix: [Chat.Message], of full: [Chat.Message]) -> Bool {
