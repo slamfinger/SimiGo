@@ -45,7 +45,6 @@ actor PrefillScheduler {
                     )
                 )
 
-                // 注册后即时检查，关闭取消注册竞争窗口
                 if Task.isCancelled, let index = waiters.firstIndex(where: { $0.id == waiterId }) {
                     let waiter = waiters.remove(at: index)
                     waiter.continuation.resume(returning: false)
@@ -94,9 +93,5 @@ actor PrefillScheduler {
         }
 
         activeRequestId = nil
-    }
-
-    func snapshot() -> (activeRequestId: String?, queued: Int) {
-        (activeRequestId, waiters.count)
     }
 }
