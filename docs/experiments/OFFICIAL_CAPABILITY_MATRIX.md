@@ -22,25 +22,50 @@
 | rejectedToolCall | `Generation.rejectedToolCall`（留痕+忽略） | Core |
 | Prompt cache reuse（token 账本） | `PromptCacheReusePolicy`（appendSuffix / trimToCommonPrefix / rebuild） | Core |
 | Cache telemetry | `cacheStatus()` + `GenerateCompletionInfo.cacheEfficiency/cachedPromptTokenCount` | Core |
+| KV Cache Configuration / Quantization | `GenerateParameters.kvCache` ← `ModelConfig.kvCache`（P0-A，`02587d1`；SDK 兼容修正 `f89e4bc`） | **Core** |
 
-## P0 —— 建议优先补
+## P0 —— 已完成（P0-A CLOSED，2026-09-12）
 
-### KV Cache Configuration / Quantization
+### KV Cache Configuration / Quantization ✅（`02587d1`，SDK 兼容修正 `f89e4bc`）
 
-- 官方入口已核实：`public struct KVCacheConfiguration`（`KVCacheConfiguration.swift`），
-  Strategy 含 `.affine(AffineKVCacheConfiguration)` 与 `.turboQuant(TurboQuantKVCacheConfiguration)`。
-- **接线点**：`GenerateParameters.kvCachePlan()`——KV 配置经由 GenerateParameters 流入
-  ChatSession，SimiGo 只需在 `ModelConfig → GenerateParameters` 映射链上增加字段，无需改调用面。
-- **必须透传的语义**：cache plan 变更会使官方 token 账本失效（`cachedTokens.removeAll()` → 重建），
-  即切换 KV 策略的代价是下一轮全量 prefill——SimiGo 配置面应明示这一点。
+- 官方入口：`public struct KVCacheConfiguration`（Strategy：fullPrecision / affine / turboQuant /
+  varianceNormalized；Capacity：maxTokens + preservedPrefixTokens；CompatibilityPolicy）。
+- **接线点**：`GenerateParameters.kvCache`——SimiGo 侧 `ModelConfig.kvCache: KVCacheSettings?`
+  （策略名与官方预设一一对应：affine4 / affine8 / turboQuality / turboBalanced / turboMemory）
+  经 `NativeMLX.makeKVCacheConfiguration` 映射后注入；`maxKVSize: nil` 保证不触发
+  legacy 冲突守卫（`hasLegacyKVCacheOverrides == false`）。
+- **已透传的语义**：cache plan 变更使官方 token 账本失效（`cachedTokens.removeAll()`），
+  下一轮全量 prefill——配置切换的代价，不是 cache regression。
+- `compatibility: .allowPartial`：混合注意力模型（Mamba 层不支持量化）受支持层生效、其余原样。
+- 非法 strategy fail-fast（`RuntError.generationFailed`），不静默忽略。
+- 契约测试 8 项（`KVCacheSettingsTests`）：预设映射 / capacity 默认 / fail-fast / Codable 往返。
+- `f89e4bc` 说明：`deletingLastPathComponent` 属性形式是**本地 SDK 编译兼容性修正**——
+  Foundation API 表达形式不属于 Runtime contract；当前以本地实际编译 SDK 为准，
+  不记录为"与上游方向相反、需要重新同步"。
 
-### Raw Token Generation
+## P0-B —— Raw Token Generation：能力边界审计结论（2026-09-12）
 
-- 官方入口已核实：`generateTokens`（4 个重载）/ `generateTokensTask` / `generateTokenTask` /
-  `TokenGeneration` 枚举（Evaluate.swift）。
-- 定位：**Runtime/Batch 层的内部能力边界**，不必然暴露为 HTTP API。
-  Batch（S1）、Paged KV（S2）、token 级对账、投机解码都比字符串层更贴近 token 层。
-- 不意味着现在实现 Token Runtime；只要求能力盘点时承认这条官方路径存在。
+官方入口已核实（Evaluate.swift）：`generateTokens` 4 个重载 +
+`generateTokensTask` / `generateTokenTask`，统一返回 `AsyncStream<TokenGeneration>`
+（`.token(Int)` / `.info(GenerateCompletionInfo)`——与解码路径共用同一 info 类型）。
+
+**边界事实**：
+
+```text
+Raw 路径入参：LMInput（已 token 化）+ [KVCache]（裸 cache 数组）+ ModelContext/Container
+             + 可选 wiredMemoryTicket
+ChatSession 路径 = Raw 路径 + conversation/模板渲染/token 账本/telemetry 的官方封装
+```
+
+**冻结的边界声明**：
+
+1. Raw Token API 属于**未来 Execution Plane 内部能力**（S1 Batch、Paged KV、token 级对账），
+   不用于 HTTP 请求路径——用它做请求生成等于绕过 ChatSession 账本，
+   重新制造已被消除的"第二套事实来源"。
+2. 当前不写 Token Runtime、不改 ChatSession 主路径；
+   本节仅确立能力边界与官方入口清单，供未来 S1/S2 设计时引用。
+3. 值得留意的官方细节：raw 路径暴露 `wiredMemoryTicket` 参数——
+   与本机已观测的 wired-memory 页出现象相关，未来资源治理设计时可引用。
 
 ## P1
 
@@ -61,7 +86,7 @@
 ### Generation Parameters 补齐
 
 - 已映射：maxTokens/temperature/topP/topK/minP/repetitionPenalty/presencePenalty。
-- 待研究：logits processors、sampling 配置、stop conditions、KV config（见 P0）。
+- 待研究：logits processors、sampling 配置、stop conditions（KV config 已落地，见 P0-A）。
 - 纪律：先建立「SimiGo API → 官方参数」一一映射表，能映射才开放，不批量堆参数。
 
 ## P2
@@ -94,7 +119,8 @@
         ↓
 Official Capability Audit（本文）
         ↓
-P0：KVCacheConfiguration 透传 → Raw Token 能力边界
+P0-A：KVCacheConfiguration 透传 ✅（02587d1）
+P0-B：Raw Token 能力边界审计 ✅（本文，冻结边界声明）
         ↓
 P1：Prompt Cache Save/Load → Guided Generation → 参数补齐
         ↓
