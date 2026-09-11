@@ -65,12 +65,16 @@ session gate 释放路径复用现有 DRAINING/RELEASING。
 效果：全局串行化下，排队请求的 LC 保持 QUEUED 直至真正拿到 gate；
 被取消的排队请求直接走取消路径（不再产生虚假 RUNNING）。
 
-### P0-4 Cancellation → drain → release 强保证
+### P0-4 Cancellation → drain → release 强保证 ✅（回归断言已入仓）
 
 现状已有 CANCELLING → DRAINING → RELEASING 骨架与 session gate
 按 task 完成释放的语义。补强：官方明确 stream 提前停止必须取消底层
 generation task，否则 cache lock 可能被一直持有。验收标准：
 取消后同 session 下一请求必须能立即获得 gate（回归断言）。
+
+✅ 已实现并实机验证：回归骨架收编入仓 `tools/harness/`
+（场景 cancel_requeue 断言"取消后 B 15s 内 response.completed"，
+实测 elapsed=0s；官方 ChatSession onTermination 自动取消内部 task）。
 
 ### P0-5 KV cache / token ledger 一致性 ✅（已实现）
 
