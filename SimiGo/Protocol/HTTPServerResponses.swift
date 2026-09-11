@@ -585,8 +585,18 @@ extension HTTPServer {
             isSuccess = true
 
         } catch is CancellationError {
-            // Silent cancellation.
+            // 取消契约：非流式尚未发出任何字节，
+            // 客户端仍连接时必须给出 HTTP 终态，否则将无限等待。
+            guard !context.closed else {
+                return
+            }
 
+            sendError(
+                "Generation cancelled",
+                status: 503,
+                on: context.connection,
+                context: context
+            )
         } catch {
             guard !context.closed else {
                 return
@@ -867,7 +877,38 @@ extension HTTPServer {
             )
 
         } catch is CancellationError {
-            // Silent cancellation.
+            // 取消契约：
+            // 客户端已断连（closed）→ 静默；客户端仍连接 →
+            // 必须送达 terminal event 并关闭流，
+            // 否则客户端会永远等待本轮 response。
+            guard !context.closed else {
+                return
+            }
+
+            let cancelledResponse: [String: Any] = [
+                "id": parsed.responseId,
+                "object": "response",
+                "status": "failed",
+                "error": [
+                    "message":
+                        "Generation cancelled",
+                    "type":
+                        "cancelled"
+                ]
+            ]
+
+            let event: [String: Any] = [
+                "type": "response.failed",
+                "sequence_number":
+                    streamState.nextSequence(),
+                "response": cancelledResponse
+            ]
+
+            enqueueResponsesEvents(
+                context: context,
+                events: [event],
+                close: true
+            )
         } catch {
             guard !context.closed else {
                 return
