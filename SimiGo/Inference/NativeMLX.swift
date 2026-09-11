@@ -371,6 +371,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let deltaCount = delta.count
         let streamStart = Date()
         var ttft: TimeInterval?
+        let cacheTokensBefore = (try? await managed.session.cacheStatus())?
+            .processedTokenCount
 
         var completedText = ""
         var toolCalls: [ToolCall] = []
@@ -378,6 +380,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var tokensPerSecond: Double?
         var promptTokens: Int?
         var promptSeconds: Double?
+        var cachedPromptTokens: Int?
+        var cacheEfficiency: Double?
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
@@ -409,10 +413,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         arguments: arguments
                     )
                 )
+            case .rejectedToolCall(let rejection):
+                traceLogger.trace(
+                    "[MLX] rejectedToolCall reason=\(rejection.reason.rawValue) tool=\(rejection.toolName ?? "-")"
+                )
             case .info(let info):
                 tokensPerSecond = info.tokensPerSecond
                 promptTokens = info.promptTokenCount
                 promptSeconds = info.promptTime
+                cachedPromptTokens = info.cachedPromptTokenCount
+                cacheEfficiency = info.cacheEfficiency
             }
         }
 
@@ -438,6 +448,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
         if let ttft {
             log += String(format: " ttft=%dms", Int(ttft * 1000))
+        }
+        if let cacheTokensBefore {
+            log += " cacheTokens=\(cacheTokensBefore)"
+        }
+        if let cachedPromptTokens {
+            log += " cacheHitTokens=\(cachedPromptTokens)"
+        }
+        if let cacheEfficiency {
+            log += String(format: " cacheEff=%.2f", cacheEfficiency)
         }
         if let promptTokens {
             log += " promptTokens=\(promptTokens)"
@@ -550,13 +569,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return nil
     }
 
+    /// Semantic continuity signature: role + content + tool presence.
+    ///
+    /// Chat.Message.Tool keeps its payload fileprivate to mlx-swift-lm, so a
+    /// deeper comparison is impossible from here — and unnecessary: the client
+    /// echoes back what this runtime streamed, and the official token ledger
+    /// inside the session reconciles rendered-vs-generated drift. This
+    /// signature only decides which session a request continues; any real
+    /// divergence surfaces at the first differing text content and is logged
+    /// by the prefixMismatch diagnostic.
     private static nonisolated func signature(_ message: Chat.Message) -> String {
-        let raw = DefaultMessageGenerator().generate(message: message)
-        guard JSONSerialization.isValidJSONObject(raw),
-              let data = try? JSONSerialization.data(withJSONObject: raw, options: [.sortedKeys]) else {
-            return "\(message.role.rawValue)\u{1f}\(message.content)"
-        }
-        return data.base64EncodedString()
+        let toolFlag = message.tool == nil ? "-" : "tool"
+        return "\(message.role.rawValue)\u{1f}\(message.content)\u{1f}\(toolFlag)"
     }
 
     private static nonisolated func coerceContent(_ value: JSONValue) -> String {
