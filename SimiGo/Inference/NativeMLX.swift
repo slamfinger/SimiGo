@@ -17,15 +17,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// reloaded session continues the delta contract; NOT a token ledger.
         var historyJSON: [JSONValue]
         var lastActivity = Date()
+        /// P0-5：创建时会话的 KV 配置指纹。配置变更 → 禁止复用旧缓存。
+        let kvFingerprint: String?
 
         init(
             session: ChatSession,
             history: [Chat.Message],
-            historyJSON: [JSONValue] = []
+            historyJSON: [JSONValue] = [],
+            kvFingerprint: String? = nil
         ) {
             self.session = session
             self.history = history
             self.historyJSON = historyJSON
+            self.kvFingerprint = kvFingerprint
         }
     }
 
@@ -376,8 +380,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let managed: ManagedSession
         let reusedSession: Bool
 
+        let kvFingerprint = kvSettings.map { String(describing: $0) }
+
         if let existing,
            incoming.count > existing.history.count,
+           existing.kvFingerprint == kvFingerprint,
            Self.isPrefix(existing.history, of: incoming) {
             managed = existing
             managed.lastActivity = Date()
@@ -405,7 +412,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             managed = ManagedSession(
                 session: session,
                 history: history,
-                historyJSON: Array(messages.dropLast())
+                historyJSON: Array(messages.dropLast()),
+                kvFingerprint: kvFingerprint
             )
             reusedSession = false
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
