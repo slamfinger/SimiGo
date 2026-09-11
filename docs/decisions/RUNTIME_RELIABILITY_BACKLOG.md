@@ -109,9 +109,14 @@ generation task，否则 cache lock 可能被一直持有。验收标准：
 
 ## P1 —— 能力与可观测
 
-- **Model Capability Matrix 正式化**：`ModelCapabilities`（responses/tools/
-  kvCache/speculative/…）挂到 ModelInfo 与 `GET /models`，
-  上层 Agent 无需试错。"模型加载成功 ≠ 支持所有协议能力"。
+- **Model Capability Matrix 正式化 ✅（P1-1 v1 已实现）**：
+  `ModelCapabilityContract`（backend/architecture/contextLength +
+  capabilities/runtime/protocolEndpoints 三段）挂到 `GET /v1/models`。
+  三态 `CapabilityStatus`（supported/unsupported/unverified）——
+  未实测保持 unverified，不以无证据推断 unsupported；
+  运行约束（concurrency/cacheInvalidation/constraints）独立于能力段，
+  不反向驱动 Runtime。已实测族：qwen3_5_moe / qwen3_moe
+  （兼容矩阵 2026-09-11/12），其余架构族 unverified。"模型加载成功 ≠ 支持所有协议能力"。
 - **Responses 协议完善**：P2 字段（created schema 子集、usage 实测值、
   reasoning 事件）按官方定义补齐。
 - **Tool governance 结构化**：`TOOL_REQUESTED/VALIDATED/REJECTED/
