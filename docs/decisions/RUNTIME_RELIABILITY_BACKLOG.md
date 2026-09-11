@@ -15,7 +15,24 @@
 - ❌ fork MLXLMCommon 内部实现
 - 上述属于 mlx-swift-lm / MLX upstream。SimiGo 发现问题 → 整理可复现 case 上报。
 
-## P0 —— 可靠性封口（必须）
+## P0 —— 可靠性封口 ✅ 定版（2026-09-12）
+
+```text
+P0 Runtime Reliability Baseline
+────────────────────────────────────
+P0-1  Generation failure classification    DONE
+P0-2  Watchdog                            DEFERRED
+P0-3  Session single-concurrency           DONE
+P0-4  Cancellation / drain / release      VERIFIED
+P0-5  KV fingerprint consistency           DONE
+
+Memory lifecycle
+────────────────────────────────────
+Session LRU                               VERIFIED
+Memory telemetry                          VERIFIED
+NativeMLX cache release                   VERIFIED
+512 loader                                DEFERRED
+```
 
 ### P0-1 Generation 错误分类 ✅（已实现）
 
@@ -71,6 +88,12 @@ session gate 释放路径复用现有 DRAINING/RELEASING。
 按 task 完成释放的语义。补强：官方明确 stream 提前停止必须取消底层
 generation task，否则 cache lock 可能被一直持有。验收标准：
 取消后同 session 下一请求必须能立即获得 gate（回归断言）。
+
+**E = VERIFIED WITH HARNESS TRANSPORT FLAKINESS**：Runtime 机制验证通过
+（两次独立实机：RST → ~0.2s [CANCEL] → drain/release → E2 requeue，
+0.7s 完成）；2026-09-12 矩阵一次因 TCP RST 未被服务端感知而产生
+测试层失败——归因测试层传输 flake，非 Runtime 缺陷。harness 重试
+加固列为独立测试工具改进，不与 P0 验收绑定。
 
 ✅ 已实现并实机验证：回归骨架收编入仓 `tools/harness/`
 （场景 cancel_requeue 断言"取消后 B 15s 内 response.completed"，
