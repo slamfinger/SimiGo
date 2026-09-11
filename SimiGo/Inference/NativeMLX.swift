@@ -506,8 +506,26 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     private static nonisolated func parseToolCalls(_ value: JSONValue?) -> [ToolCall] {
-        guard let value,
-              let data = try? JSONEncoder().encode(value),
+        guard case .array(let items) = value else { return [] }
+
+        // The OpenAI wire format stringifies `function.arguments`, while the
+        // official ToolCall decodes it as an object. Normalize the string form
+        // (the object form passes through untouched) before decoding, so
+        // client-echoed assistant turns keep their tool calls.
+        let normalized = items.map { item -> JSONValue in
+            guard case .object(var object) = item,
+                  case .object(var function)? = object["function"],
+                  case .string(let rawArguments) = function["arguments"],
+                  let data = rawArguments.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode(JSONValue.self, from: data) else {
+                return item
+            }
+            function["arguments"] = decoded
+            object["function"] = .object(function)
+            return .object(object)
+        }
+
+        guard let data = try? JSONEncoder().encode(normalized),
               let calls = try? JSONDecoder().decode([ToolCall].self, from: data) else {
             return []
         }
