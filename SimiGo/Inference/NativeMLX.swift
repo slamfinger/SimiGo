@@ -259,6 +259,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     $0.lifecycle = .running
                     $0.lastActivity = Date()
                 }
+                traceLogger.trace("[LIFECYCLE] resume_done")
             } catch {
                 self.state.withLock {
                     $0.lifecycle = .suspended
