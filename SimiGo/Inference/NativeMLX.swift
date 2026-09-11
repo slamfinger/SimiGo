@@ -16,6 +16,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// assistant turns). Persisted next to an official cache snapshot so a
         /// reloaded session continues the delta contract; NOT a token ledger.
         var historyJSON: [JSONValue]
+        var lastActivity = Date()
 
         init(
             session: ChatSession,
@@ -69,6 +70,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             guard let self else { throw RuntError.notLoaded }
             guard !self.state.withLock({ $0.isRunning }) else { return }
 
+            logMemory("beforeLoad")
             self.state.withLock { $0.lifecycle = .loading }
             let container = try await LLMModelFactory.shared.loadContainer(
                 from: URL(fileURLWithPath: info.path),
@@ -129,12 +131,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
 
             self.traceLogger.trace("NativeMLX ready: model=\(modelId) port=\(nodeConfiguration.port)")
+            logMemory("afterLoad")
         }
     }
 
     public func stop() async {
         await lifecycleGate.withLockVoid { [weak self] in
             guard let self else { return }
+
+            logMemory("beforeUnload")
 
             let (server, tasks, gate) = self.state.withLock { state in
                 let server = state.httpServer
@@ -159,6 +164,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             await gate.awaitDrain()
 
             Memory.clearCache()
+
+            // P1 memory settle：等待 footprint/MLX 计数回稳（观测，不强制）。
+            let settleDeadline = Date().addingTimeInterval(RuntimeTuning.memorySettleTimeoutSeconds)
+            var lastFootprint = RuntimeTuning.footprintBytes()
+            var stableRounds = 0
+            while Date() < settleDeadline, stableRounds < 4 {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                let fp = RuntimeTuning.footprintBytes()
+                stableRounds = fp == lastFootprint ? stableRounds + 1 : 0
+                lastFootprint = fp
+            }
+            logMemory("settled")
+
             self.traceLogger.trace("NativeMLX stopped")
             self.traceLogger.flush()
         }
@@ -252,10 +270,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             logicalBranchId: logicalBranchId
         )
 
+        // P0-3 强化：全局生成串行化。gate key 常量化使所有生成跨 session 单飞，
+        // 规避 qwen3_5_moe 动态编译架构在并发首次编译时的 mlx 锁互堵
+        // （sessions 存储仍用真实 executionKey，仅互斥令牌常量化）。
+        let gateExecutionKey = try RuntimeTuning.serializeGeneration
+            ? AgentExecutionKey(
+                agentId: executionKey.agentId,
+                sessionId: "__global_generation__",
+                logicalBranchId: executionKey.logicalBranchId
+            )
+            : executionKey
+
         let gate = gateHolder.withLock { $0 }
         let task = Task<String, Error> { [weak self] in
             guard let self else { throw RuntError.notLoaded }
-            return try await gate.withExclusive(executionKey) {
+            return try await gate.withExclusive(gateExecutionKey) {
                 try await self.generateUsingChatSession(
                     requestId: requestId,
                     executionKey: executionKey,
@@ -320,7 +349,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let kvConfiguration = try Self.makeKVCacheConfiguration(kvSettings)
         var params = GenerateParameters(
             maxTokens: config.maxTokens > 0 ? config.maxTokens : baseConfig.maxTokens,
-            maxKVSize: nil,
+            maxKVSize: RuntimeTuning.maxKVSize,
             temperature: config.temperature,
             topP: config.topP,
             topK: config.topK,
@@ -340,6 +369,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
            incoming.count > existing.history.count,
            Self.isPrefix(existing.history, of: incoming) {
             managed = existing
+            managed.lastActivity = Date()
             reusedSession = true
         } else {
             if let existing,
@@ -369,6 +399,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             reusedSession = false
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
         }
+
+        // P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行）。
+        await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
         managed.session.generateParameters = params
         managed.session.tools = toolSpecs
@@ -459,9 +492,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let current = $0.sessions[executionKey.storageKey], current === managed {
                 current.history = managed.history
                 current.historyJSON = managed.historyJSON
+                current.lastActivity = Date()
             }
             $0.lastActivity = Date()
         }
+
+        // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
+        await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
@@ -495,6 +532,44 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         traceLogger.trace(log)
         return completedText
+    }
+
+    /// P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行），再回收缓冲。
+    private func evictSessionsIfNeeded(keeping currentKey: String) async {
+        let victims: [(key: String, session: ChatSession)] = state.withLock { state in
+            guard state.sessions.count > RuntimeTuning.sessionLimit else { return [] }
+            let removeCount = state.sessions.count - RuntimeTuning.sessionLimit
+            guard removeCount > 0 else { return [] }
+            let sorted = state.sessions
+                .filter { $0.key != currentKey }
+                .sorted { $0.value.lastActivity < $1.value.lastActivity }
+            let victims = sorted.prefix(removeCount).map { (key: $0.key, session: $0.value.session) }
+            for (key, _) in victims { state.sessions.removeValue(forKey: key) }
+            return victims
+        }
+        guard !victims.isEmpty else { return }
+
+        for (_, session) in victims { await session.clear() }
+        Memory.clearCache()
+        traceLogger.trace(
+            "[MEM] session LRU evicted=\(victims.count)" +
+            " keys=" + victims.map { String($0.key.suffix(6)) }.joined(separator: ",") +
+            " limit=\(RuntimeTuning.sessionLimit)"
+        )
+        logMemory("afterEvict")
+    }
+
+    /// P1 Unified Memory 遥测：MLX 计数器 + footprint + swap。
+    private nonisolated func logMemory(_ phase: String) {
+        let active = max(0, Memory.activeMemory)
+        let cache = max(0, Memory.cacheMemory)
+        let peak = max(0, Memory.peakMemory)
+        let line = RuntimeTuning.memorySnapshotLine(
+            activeBytes: active,
+            cacheBytes: cache,
+            peakBytes: peak
+        )
+        traceLogger.trace("[MEM] \(phase) " + line)
     }
 
     public func cancelGeneration(requestId: String) {
@@ -604,7 +679,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let sessionParams: GenerateParameters = try {
             var params = GenerateParameters(
                 maxTokens: effective.maxTokens > 0 ? effective.maxTokens : baseConfig.maxTokens,
-                maxKVSize: nil,
+                maxKVSize: RuntimeTuning.maxKVSize,
                 temperature: effective.temperature,
                 topP: effective.topP,
                 topK: effective.topK,
