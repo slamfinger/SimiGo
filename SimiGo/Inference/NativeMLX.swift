@@ -12,10 +12,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private final class ManagedSession: @unchecked Sendable {
         let session: ChatSession
         var history: [Chat.Message]
+        /// Message-level transcript in SimiGo JSON form (client echo form for
+        /// assistant turns). Persisted next to an official cache snapshot so a
+        /// reloaded session continues the delta contract; NOT a token ledger.
+        var historyJSON: [JSONValue]
 
-        init(session: ChatSession, history: [Chat.Message]) {
+        init(
+            session: ChatSession,
+            history: [Chat.Message],
+            historyJSON: [JSONValue] = []
+        ) {
             self.session = session
             self.history = history
+            self.historyJSON = historyJSON
         }
     }
 
@@ -352,7 +361,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 additionalContext: additionalContext,
                 tools: toolSpecs
             )
-            managed = ManagedSession(session: session, history: history)
+            managed = ManagedSession(
+                session: session,
+                history: history,
+                historyJSON: Array(messages.dropLast())
+            )
             reusedSession = false
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
         }
@@ -439,9 +452,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             toolCalls: toolCalls.isEmpty ? nil : toolCalls
         )
         managed.history = incoming + [assistant]
+        managed.historyJSON = messages + [
+            Self.assistantToJSON(content: completedText, toolCalls: toolCalls)
+        ]
         state.withLock {
             if let current = $0.sessions[executionKey.storageKey], current === managed {
                 current.history = managed.history
+                current.historyJSON = managed.historyJSON
             }
             $0.lastActivity = Date()
         }
@@ -485,13 +502,154 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         traceLogger.trace("[CANCEL] r=\(requestId)")
     }
 
+    // MARK: - Session KV Cache Persistence（官方 saveCache / loadPromptCacheSnapshot 透传）
+
+    /// 把某逻辑分支当前会话的官方 KV cache 快照保存到磁盘，
+    /// 并写入消息级 transcript sidecar（`<name>.meta.json`）。
+    /// cache 文件格式由官方 saveCache 定义，SimiGo 不自定义。
+    ///
+    /// 与 gate 互斥：保存期间同 Key 的生成请求串行等待。
+    /// 返回 cache 文件 URL；transcript sidecar 与其同目录同名（.meta.json）。
+    @discardableResult
+    public func saveSessionCache(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String = "main",
+        to directory: URL
+    ) async throws -> URL {
+        let key = try AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        )
+        guard let container = state.withLock({ $0.modelContainer }) else {
+            throw RuntError.notLoaded
+        }
+        _ = container
+
+        let gate = gateHolder.withLock { $0 }
+        return try await gate.withExclusive(key) {
+            guard let managed = state.withLock({ $0.sessions[key.storageKey] }) else {
+                throw RuntError.generationFailed(
+                    "no live session for \(key.storageKey); nothing to save"
+                )
+            }
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true)
+
+            let baseName = Self.cacheFileName(for: key.storageKey)
+            let cacheURL = directory.appendingPathComponent(baseName + ".cachesnapshot")
+            let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
+
+            // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
+            try await managed.session.saveCache(to: cacheURL)
+
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            let metadata = SessionCacheMetadata(
+                storageKey: key.storageKey,
+                modelId: modelName(from: modelPath),
+                savedAt: Date(),
+                history: managed.historyJSON
+            )
+            try encoder.encode(metadata).write(to: metaURL, options: .atomic)
+
+            traceLogger.trace(
+                "[MLX] cacheSave session=\(key.traceKey) history=\(managed.historyJSON.count)"
+            )
+            return cacheURL
+        }
+    }
+
+    /// 从磁盘恢复官方 KV cache 快照 + transcript sidecar，并注册为该逻辑分支的当前会话
+    ///（覆盖同名现存会话）。恢复后的会话处于官方 fragment-continuation 语义：
+    /// 客户端下一轮仍传全量对话，SimiGo 按 delta 契约只传新增消息，首 token 即 warm。
+    ///
+    /// 模型不匹配时拒绝加载（cache 与权重必须同源）。
+    public func loadSessionCache(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String = "main",
+        config: ModelConfig? = nil,
+        from directory: URL
+    ) async throws -> SessionCacheMetadata {
+        let key = try AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        )
+        guard let container = state.withLock({ $0.modelContainer }) else {
+            throw RuntError.notLoaded
+        }
+
+        let baseName = Self.cacheFileName(for: key.storageKey)
+        let cacheURL = directory.appendingPathComponent(baseName + ".cachesnapshot")
+        let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let metadata = try decoder.decode(
+            SessionCacheMetadata.self, from: try Data(contentsOf: metaURL))
+
+        let currentModelId = modelName(from: modelPath)
+        guard metadata.modelId == currentModelId else {
+            throw RuntError.generationFailed(
+                "session cache model mismatch: saved=\(metadata.modelId) current=\(currentModelId)"
+            )
+        }
+
+        let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
+
+        let effective = config ?? baseConfig
+        let thinkingDisabled = effective.disableThinking || baseConfig.disableThinking
+        var params = GenerateParameters(
+            maxTokens: effective.maxTokens > 0 ? effective.maxTokens : baseConfig.maxTokens,
+            maxKVSize: nil,
+            temperature: effective.temperature,
+            topP: effective.topP,
+            topK: effective.topK,
+            minP: effective.minP,
+            repetitionPenalty: effective.repeatPenalty,
+            presencePenalty: effective.presencePenalty
+        )
+        params.kvCache = try Self.makeKVCacheConfiguration(effective.kvCache)
+
+        let gate = gateHolder.withLock { $0 }
+        let loadedMetadata = metadata
+        try await gate.withExclusive(key) { [weak self] in
+            guard let self else { throw RuntError.notLoaded }
+            let session = ChatSession(
+                container,
+                instructions: nil,
+                cache: snapshot.cache,
+                state: snapshot.state,
+                generateParameters: params,
+                additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
+            )
+            let restored = ManagedSession(
+                session: session,
+                history: Self.makeChatMessages(metadata.history),
+                historyJSON: metadata.history
+            )
+            state.withLock {
+                $0.sessions[key.storageKey] = restored
+                $0.lastActivity = Date()
+            }
+            traceLogger.trace(
+                "[MLX] cacheLoad session=\(key.traceKey) history=\(metadata.history.count)"
+            )
+        }
+        return loadedMetadata
+    }
+
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
         state.withLock {
             ($0.activeRequestTasks.count, $0.activeRequestTasks.count, $0.sessions.count)
         }
     }
 
-    private static nonisolated func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
+    static nonisolated func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {
         messages.compactMap { value in
             guard case .object(let object) = value else { return nil }
             let role = (object["role"]?.string ?? "user").lowercased()
@@ -645,6 +803,44 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             compatibility: .allowPartial)
     }
 
+    /// 把 assistant 回复转成客户端回显形态的 JSON 消息（与 makeChatMessages 互逆），
+    /// 用于 transcript sidecar 的持久化与恢复。
+    static nonisolated func assistantToJSON(
+        content: String,
+        toolCalls: [ToolCall]
+    ) -> JSONValue {
+        var object: [String: JSONValue] = [
+            "role": .string("assistant"),
+            "content": .string(content)
+        ]
+        if !toolCalls.isEmpty {
+            let encoder = JSONEncoder()
+            let calls: [JSONValue] = toolCalls.map { call in
+                let arguments: JSONValue = (try? encoder.encode(call.function.arguments))
+                    .flatMap { try? JSONDecoder().decode(JSONValue.self, from: $0) }
+                    ?? .object([:])
+                var callObject: [String: JSONValue] = [
+                    "type": .string("function"),
+                    "function": .object([
+                        "name": .string(call.function.name),
+                        "arguments": arguments
+                    ])
+                ]
+                if let id = call.id {
+                    callObject["id"] = .string(id)
+                }
+                return .object(callObject)
+            }
+            object["tool_calls"] = .array(calls)
+        }
+        return .object(object)
+    }
+
+    /// storageKey 含 `/`，作为文件名前先扁平化。
+    static nonisolated func cacheFileName(for storageKey: String) -> String {
+        storageKey.replacingOccurrences(of: "/", with: "_")
+    }
+
     /// Semantic continuity signature: role + content + tool presence.
     ///
     /// Chat.Message.Tool keeps its payload fileprivate to mlx-swift-lm, so a
@@ -673,5 +869,27 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         case .object(let object):
             return object["text"]?.string ?? object.description
         }
+    }
+}
+
+/// KV cache 快照的 transcript sidecar 元数据。
+/// cache 文件本身由官方 `saveCache` 定义；本结构只记录 SimiGo 恢复 delta 契约
+/// 所需的会话连续性元数据（消息级 transcript），不是 token ledger。
+nonisolated public struct SessionCacheMetadata: Codable, Sendable {
+    public var storageKey: String
+    public var modelId: String
+    public var savedAt: Date
+    public var history: [JSONValue]
+
+    public init(
+        storageKey: String,
+        modelId: String,
+        savedAt: Date,
+        history: [JSONValue]
+    ) {
+        self.storageKey = storageKey
+        self.modelId = modelId
+        self.savedAt = savedAt
+        self.history = history
     }
 }
