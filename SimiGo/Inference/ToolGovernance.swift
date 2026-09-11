@@ -93,7 +93,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 requestId: requestId, generationId: generationId,
                 toolCallId: toolCallId, tool: tool,
                 state: nil, code: nil,
-                anomaly: "duplicate_tool_call_id"
+                anomaly: "dup_tc"
             )
             return
         }
@@ -160,7 +160,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 requestId: requestId, generationId: requestId,
                 toolCallId: toolCallId, tool: "-",
                 state: nil, code: nil,
-                anomaly: "unknown_tool_call_id"
+                anomaly: "unknown_tc"
             )
             return
         }
@@ -212,7 +212,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 requestId: requestId, generationId: generationId,
                 toolCallId: toolCallId, tool: "-",
                 state: nil, code: code,
-                anomaly: "unknown_tool_call_id"
+                anomaly: "unknown_tc"
             )
             return
         }
@@ -242,7 +242,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 requestId: requestId, generationId: requestId,
                 toolCallId: "-", tool: invocation.tool,
                 state: invocation.state, code: nil,
-                anomaly: "orphan_invocation_state=\(invocation.state.rawValue)"
+                anomaly: "orphan(state=\(invocation.state.rawValue))"
             )
         }
     }
@@ -258,6 +258,15 @@ public final class ToolGovernance: @unchecked Sendable {
     }
 
     // MARK: - 内部
+
+    /// 人类扫读用紧凑 id：去常见前缀、保留尾部 6 位（完整 id 见关联请求）。
+    private nonisolated static func short(_ id: String) -> String {
+        if id.isEmpty { return "-" }
+        if id.hasPrefix("req-") { return String(id.dropFirst(4).suffix(6)) }
+        if id.hasPrefix("call_") { return String(id.dropFirst(5).suffix(6)) }
+        if id.hasPrefix("rtc-rejected-") { return String(id.dropFirst(13).suffix(6)) }
+        return String(id.suffix(6))
+    }
 
     private func transition(
         requestId: String,
@@ -276,7 +285,7 @@ public final class ToolGovernance: @unchecked Sendable {
                 requestId: requestId, generationId: generationId,
                 toolCallId: toolCallId, tool: "-",
                 state: nil, code: code,
-                anomaly: "unknown_tool_call_id"
+                anomaly: "unknown_tc"
             )
             return
         }
@@ -313,9 +322,11 @@ public final class ToolGovernance: @unchecked Sendable {
         code: ToolGovernanceCode?,
         anomaly: String?
     ) {
+        let toolShort = tool.count > 32 ? String(tool.prefix(32)) + "…" : tool
         var line = "[TOOL]"
         if let event { line += " event=\(event.rawValue)" }
-        line += " r=\(requestId) gen=\(generationId) tc=\(toolCallId) tool=\(tool)"
+        line += " r=\(Self.short(requestId)) gen=\(Self.short(generationId))"
+        line += " tc=\(Self.short(toolCallId)) tool=\(toolShort)"
         if let state { line += " state=\(state.rawValue)" }
         if let code { line += " code=\(code.rawValue)" }
         if let anomaly { line += " anomaly=\(anomaly)" }
