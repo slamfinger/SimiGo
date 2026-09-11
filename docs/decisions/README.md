@@ -36,3 +36,7 @@ ADR
 ```
 
 只有已经有充分证据、并且需要长期约束后续实现的选择，才进入这里。
+
+## 已归档决策
+
+- [V4_5_STABLE_FOUNDATION_BASELINE.md](V4_5_STABLE_FOUNDATION_BASELINE.md) —— v4.5 Stable Foundation 唯一权威架构指引全文（原 README.md，铁律 1–99 + 三平面模型 + 工具协议规范 + 生命周期收敛 + BatchedDecode 实验轨章程）。**已被 v5.0《核心架构白皮书》（README_base.md）取代**：99 条铁律收敛为 12 条核心不变量，Physical KV 与资源边界移交官方 ChatSession。保留作历史架构记录与设计依据溯源。
