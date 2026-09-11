@@ -25,7 +25,8 @@ public enum RuntimeState: String, Sendable, CaseIterable {
 public struct RuntimeTransitionRule {
     /// 合法迁移表 —— SimiGo架构收敛.md §3。表外一律 INVALID。
     /// ponytail: RUNNING→COMPLETING 是文档表格外的补充边（非流式请求没有 STREAMING 阶段）；
-    /// NativeMLX 接入流式细分状态后，生产路径应走 RUNNING→STREAMING→COMPLETING。
+    /// CREATED→COMPLETING 同理：SSE 直发收口后协议层不再执行 QUEUED/RUNNING 迁移，
+    /// 请求从 CREATED 直接进入完成路径，表必须承认这一现实，否则每次正常完成都触发 FORCE_RELEASED。
     public nonisolated static func isValid(
         from: RuntimeState,
         to: RuntimeState
@@ -37,6 +38,7 @@ public struct RuntimeTransitionRule {
 
         switch (from, to) {
         case (.created, .queued),
+             (.created, .completing),
              (.queued, .running),
              (.running, .streaming),
              (.running, .completing),
