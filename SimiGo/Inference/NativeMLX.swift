@@ -250,6 +250,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             self.state.withLock { $0.lifecycle = .resuming }
             traceLogger.trace("[LIFECYCLE] resume_started")
+            let resumeBegan = Date()
             do {
                 let container = try await LLMModelFactory.shared.loadContainer(
                     from: URL(fileURLWithPath: self.modelPath),
@@ -260,12 +261,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     $0.lifecycle = .running
                     $0.lastActivity = Date()
                 }
-                traceLogger.trace("[LIFECYCLE] resume_done")
+                let elapsedMs = Int(Date().timeIntervalSince(resumeBegan) * 1000)
+                traceLogger.trace("[LIFECYCLE] resume_done ms=\(elapsedMs)")
             } catch {
                 self.state.withLock {
                     $0.lifecycle = .suspended
                     $0.modelContainer = nil
                 }
+                traceLogger.trace("[LIFECYCLE] resume_failed err=\(error.localizedDescription)")
                 throw RuntError.loadFailed(error.localizedDescription)
             }
         }
