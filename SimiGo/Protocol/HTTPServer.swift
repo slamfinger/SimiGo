@@ -333,6 +333,7 @@ public final class HTTPServer: @unchecked Sendable {
     let generateHandler: GenerateHandler
     private let checkHealthHandler: CheckHealthHandler
     private let cancelGenerationHandler: CancelGenerationHandler?
+    private let capabilitiesProvider: (() -> ModelCapabilityContract?)?
 
     private let queue = DispatchQueue(
         label: "com.simigo.httpserver.connections",
@@ -355,7 +356,8 @@ public final class HTTPServer: @unchecked Sendable {
         bonjourEnabled: Bool = true,
         generateHandler: @escaping GenerateHandler,
         checkHealthHandler: @escaping CheckHealthHandler,
-        cancelGenerationHandler: CancelGenerationHandler? = nil
+        cancelGenerationHandler: CancelGenerationHandler? = nil,
+        capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -380,6 +382,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.generateHandler = generateHandler
         self.checkHealthHandler = checkHealthHandler
         self.cancelGenerationHandler = cancelGenerationHandler
+        self.capabilitiesProvider = capabilitiesProvider
     }
 
     // MARK: - Lifecycle
@@ -689,19 +692,33 @@ public final class HTTPServer: @unchecked Sendable {
         case ("GET", "/v1/models"),
              ("GET", "/models"):
 
+            var entry: [String: Any] = [
+                "id": modelId,
+                "object": "model",
+                "created":
+                    Int(
+                        Date()
+                            .timeIntervalSince1970
+                    ),
+                "owned_by": "simigo"
+            ]
+
+            // P1-1 能力契约：声明 + 实测 + 配置约束的三态透出
+            //（未实测保持 unverified，不以无证据推断）。
+            if let caps = capabilitiesProvider?(),
+               let data = try? JSONEncoder().encode(caps),
+               let obj = try? JSONSerialization.jsonObject(with: data)
+                   as? [String: Any] {
+                for key in ["backend", "architecture", "contextLength",
+                            "capabilities", "runtime", "protocolEndpoints"] {
+                    if let value = obj[key] { entry[key] = value }
+                }
+            }
+
             sendJSON(
                 [
                     "object": "list",
-                    "data": [[
-                        "id": modelId,
-                        "object": "model",
-                        "created":
-                            Int(
-                                Date()
-                                    .timeIntervalSince1970
-                            ),
-                        "owned_by": "simigo"
-                    ]]
+                    "data": [entry]
                 ],
                 status: 200,
                 on: context.connection,

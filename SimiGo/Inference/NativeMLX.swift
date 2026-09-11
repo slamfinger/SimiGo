@@ -40,6 +40,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var lifecycle: Lifecycle = .stopped
         var lastActivity = Date()
         var sessions: [String: ManagedSession] = [:]
+        var modelCapabilityContract: ModelCapabilityContract?
         var activeRequestTasks: [String: Task<String, Error>] = [:]
     }
 
@@ -65,8 +66,51 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     public init(info: ModelInfo, config: ModelConfig) {
         self.modelPath = info.path
         self.baseConfig = config
+        state.withLock {
+            $0.modelCapabilityContract = Self.buildCapabilityContract(
+                modelPath: info.path
+            )
+        }
         Memory.memoryLimit = RuntimeTuning.mlxMemoryLimitBytes
         Memory.cacheLimit = RuntimeTuning.mlxCacheLimitBytes
+    }
+
+    /// P1-1：从模型仓库 config.json 读声明层（model_type / 上下文长度）。
+    private nonisolated static func readDeclaredCapabilities(
+        modelPath: String
+    ) -> (modelType: String?, contextLength: Int?) {
+        guard
+            let data = try? Data(
+                contentsOf: URL(fileURLWithPath: modelPath)
+                    .appendingPathComponent("config.json")
+            ),
+            let obj = try? JSONSerialization.jsonObject(with: data)
+                as? [String: Any]
+        else { return (nil, nil) }
+        let modelType = obj["model_type"] as? String
+        let contextLength = (obj["max_position_embeddings"] as? Int)
+            ?? (obj["ctxSize"] as? Int)
+        return (modelType, contextLength)
+    }
+
+    /// P1-1：来源分离解析器——声明 + 实测 + 配置汇成三态契约；
+    /// 未实测架构保持 unverified，不反向驱动 Runtime 行为。
+    private nonisolated static func buildCapabilityContract(
+        modelPath: String
+    ) -> ModelCapabilityContract {
+        let declared = readDeclaredCapabilities(modelPath: modelPath)
+        return ModelCapabilityContract.resolve(
+            backend: "NativeMLX",
+            modelType: declared.modelType,
+            contextLength: declared.contextLength,
+            serializeGeneration: RuntimeTuning.serializeGeneration,
+            maxKVSize: RuntimeTuning.maxKVSize
+        )
+    }
+
+    /// P0-3/4/5 后的对外查询入口（HTTPServer capabilitiesProvider 消费）。
+    public func capabilityContract() -> ModelCapabilityContract? {
+        state.withLock { $0.modelCapabilityContract }
     }
 
     public func start(_ info: ModelInfo, port: Int) async throws {
@@ -119,6 +163,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     cancelGenerationHandler: { [weak self] requestId in
                         self?.cancelGeneration(requestId: requestId)
+                    },
+                    capabilitiesProvider: { [weak self] in
+                        self?.capabilityContract()
                     }
                 )
             }
