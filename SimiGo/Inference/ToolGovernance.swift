@@ -197,6 +197,7 @@ public final class ToolGovernance: @unchecked Sendable {
     }
 
     /// Runtime 内部执行器失败（预留；v1 无内部执行器）。
+    /// 执行阶段失败（DISPATCHED → FAILED）。治理阶段拒绝走 rejected()。
     public func failed(
         requestId: String,
         generationId: String,
@@ -204,27 +205,9 @@ public final class ToolGovernance: @unchecked Sendable {
         code: ToolGovernanceCode,
         message: String
     ) {
-        lock.lock()
-        guard var invocation = invocations[toolCallId] else {
-            lock.unlock()
-            emitLine(
-                event: .failed,
-                requestId: requestId, generationId: generationId,
-                toolCallId: toolCallId, tool: "-",
-                state: nil, code: code,
-                anomaly: "unknown_tc"
-            )
-            return
-        }
-        invocation.state = .failed
-        invocations[toolCallId] = invocation
-        lock.unlock()
-        emitLine(
-            event: .failed,
-            requestId: requestId, generationId: generationId,
-            toolCallId: toolCallId, tool: invocation.tool,
-            state: .failed, code: code,
-            anomaly: nil
+        transition(
+            requestId: requestId, generationId: generationId, toolCallId: toolCallId,
+            to: .failed, event: .failed, code: code, message: message
         )
     }
 
@@ -292,11 +275,11 @@ public final class ToolGovernance: @unchecked Sendable {
         guard isLegalTransition(from: invocation.state, to: target) else {
             lock.unlock()
             emitLine(
-                event: event,
+                event: nil,
                 requestId: requestId, generationId: generationId,
                 toolCallId: toolCallId, tool: invocation.tool,
                 state: invocation.state, code: code,
-                anomaly: "illegal_transition_from=\(invocation.state.rawValue)"
+                anomaly: "illegal_transition from=\(invocation.state.rawValue) to=\(target.rawValue)"
             )
             return
         }
