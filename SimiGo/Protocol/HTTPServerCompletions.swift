@@ -150,6 +150,10 @@ extension HTTPServer {
         }
 
         do {
+            // P0-3 补位：RUNNING 由推理 gate 闭包置位，协议层必须先完成
+            // CREATED→QUEUED，否则 gate 闭包撞非法迁移、请求被当作取消静默丢弃。
+            try await context.transitionToQueued()
+
             guard
                 !context.closed,
                 !Task.isCancelled
@@ -228,8 +232,26 @@ extension HTTPServer {
             isSuccess = true
 
         } catch is CancellationError {
-            // 静默取消（客户端断连/runtime shutdown），分类交由 finishLifecycle。
+            // 取消契约：SSE 头已发出且客户端仍在连接时必须给出终态
+            // （error chunk + [DONE] + close），否则客户端将无限等待。
             failureReason = context.cancellationFailureReason()
+            guard !context.closed else { return }
+
+            sendImmediateCompletionsChunk(
+                [
+                    "error": [
+                        "message": "Generation cancelled",
+                        "type": "cancelled"
+                    ]
+                ],
+                context: context
+            )
+
+            sendImmediateCompletionsRaw(
+                Data("data: [DONE]\n\n".utf8),
+                context: context,
+                close: true
+            )
 
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
@@ -480,8 +502,16 @@ extension HTTPServer {
             isSuccess = true
 
         } catch is CancellationError {
-            // 静默取消（客户端断连/runtime shutdown），分类交由 finishLifecycle。
+            // 取消契约：非流式尚未发出任何字节，客户端仍连接时必须给出 HTTP 终态。
             failureReason = context.cancellationFailureReason()
+            guard !context.closed else { return }
+
+            sendError(
+                "Generation cancelled",
+                status: 503,
+                on: context.connection,
+                context: context
+            )
 
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"

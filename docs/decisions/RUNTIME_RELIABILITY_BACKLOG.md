@@ -82,6 +82,19 @@ session gate 释放路径复用现有 DRAINING/RELEASING。
 效果：全局串行化下，排队请求的 LC 保持 QUEUED 直至真正拿到 gate；
 被取消的排队请求直接走取消路径（不再产生虚假 RUNNING）。
 
+**回归记录（2026-09-12 实测发现，已修复）**：P0-3 改造只给 6 个
+handler 中的 4 个补了 `CREATED→QUEUED`（Chat 非流式、Completions
+非流式、Responses 两条）。**Chat 流式与 Completions 流式漏补**——
+注册后直接进 `generate`，gate 闭包从 CREATED 撞 `→RUNNING`
+（表外迁移）→ INVALID → 转 CancellationError → 旧代码静默吞掉，
+SSE 已发头、无 error chunk、无 `[DONE]`，客户端无限等待
+（表象：3 分钟无响应/永远 Thinking，与 suspend 无关——失败节奏
+即客户端轮次节奏）。修复：两处补 `transitionToQueued()`；
+四处 `catch is CancellationError`（Chat/Completions × 流式/非流式）
+按取消契约给终态——流式发 error chunk + `[DONE]` + close
+（客户端仍连接时），非流式发 503。教训：把状态迁移挪进共享层时
+必须枚举全部调用方；静默 catch 会把协议层缺陷变成客户端挂死。
+
 ### P0-4 Cancellation → drain → release 强保证 ✅（回归断言已入仓）
 
 现状已有 CANCELLING → DRAINING → RELEASING 骨架与 session gate
