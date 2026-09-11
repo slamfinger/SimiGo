@@ -190,14 +190,26 @@ public actor RuntimeLifecycleCoordinator {
         to: String? = nil,
         reason: String? = nil
     ) {
+        // The success/cancel ladder always ends RELEASING→RELEASED and RELEASED
+        // carries the reason; the intermediate hops are per-request noise.
+        if event == "STATE_TRANSITION",
+           from == "COMPLETING", to == "COMPLETED" {
+            return
+        }
+        if event == "STATE_TRANSITION",
+           from == "COMPLETED", to == "RELEASING" {
+            return
+        }
+        if event == "STATE_TRANSITION",
+           from == "RELEASING", to == "RELEASED" {
+            return
+        }
+
         let identity = identities[requestID]
 
-        var parts = ["[LIFECYCLE]", "event=\(event)", "request=\(requestID)"]
-        if let agent = identity?.agentID {
-            parts.append("agent=\(agent)")
-        }
+        var parts = ["[LC]", event, "r=\(Self.shortID(requestID))"]
         if let session = identity?.sessionID {
-            parts.append("session=\(session)")
+            parts.append("s=\(Self.shortID(session))")
         }
         if let from {
             parts.append("from=\(from)")
@@ -212,6 +224,14 @@ public actor RuntimeLifecycleCoordinator {
         RuntimeTraceLogger.shared.trace(
             parts.joined(separator: " ")
         )
+    }
+
+    private static func shortID(_ id: String) -> String {
+        var value = id
+        if value.hasPrefix("req-") {
+            value.removeFirst(4)
+        }
+        return String(value.prefix(6))
     }
 
     /// 启动自检（收敛文档 §10 最小矩阵）。不使用 assert，Release 构建下同样生效。

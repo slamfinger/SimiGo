@@ -615,48 +615,30 @@ public final class Service: ObservableObject {
 
     private nonisolated func resolveConfig(for path: String) -> ModelConfig {
         if let saved = AppConfig.savedConfig(for: path) {
-            Self.log("💾 使用模型已保存配置: \(modelName(from: path))")
+            Self.log("[CFG] source=saved model=\(modelName(from: path))")
             return saved
         }
 
         if let recommended = AppConfig.recommendedConfig(for: path) {
-            Self.log("⭐ 使用 SimiGo 推荐配置: \(modelName(from: path))")
+            Self.log("[CFG] source=recommended model=\(modelName(from: path))")
             return recommended
         }
 
         let modelDefault = ModelConfig.fromModel(path)
-        Self.log("📄 使用模型 generation_config.json / ModelConfig 默认配置: \(modelName(from: path))")
+        Self.log("[CFG] source=default model=\(modelName(from: path))")
         return modelDefault
     }
 
     // MARK: Config Logging
 
     private func logResolvedConfig(_ config: ModelConfig, path: String) {
-        let environment = ProcessInfo.processInfo.environment
-
-        Self.log("""
-        ⚙️ 最终模型配置:
-          model=\(modelName(from: path))
-          ctx=\(config.ctxSize)
-          gpuLayers=\(config.gpuLayers)
-          temp=\(config.temperature)
-          topP=\(config.topP)
-          topK=\(config.topK)
-          minP=\(config.minP)
-          repeatPenalty=\(config.repeatPenalty)
-          presencePenalty=\(config.presencePenalty)
-          flashAttention=\(config.flashAttention)
-          jinja=\(config.jinja)
-          codexMode=\(config.codexMode)
-          useMTP=\(config.useMTP)
-          specDraftNMax=\(config.specDraftNMax)
-          disableThinking=\(config.disableThinking)
-        🔧 llama.cpp Runtime Overrides:
-          parallel=\(environment["SIMIGO_LLAMA_PARALLEL"] ?? "1")
-          ngl=\(environment["SIMIGO_LLAMA_NGL"] ?? "\(config.gpuLayers)")
-          flashAttn=\(environment["SIMIGO_LLAMA_FLASH_ATTN"] ?? "on")
-          specNMax=\(environment["SIMIGO_LLAMA_SPEC_NMAX"] ?? "\(max(1, config.specDraftNMax))")
-        """)
+        Self.log(
+            "[CFG] ctx=\(config.ctxSize) gpu=\(config.gpuLayers)" +
+            " temp=\(config.temperature) topP=\(config.topP) topK=\(config.topK) minP=\(config.minP)" +
+            " rep=\(config.repeatPenalty) pres=\(config.presencePenalty) flash=\(config.flashAttention)" +
+            " jinja=\(config.jinja) codex=\(config.codexMode) mtp=\(config.useMTP)" +
+            " draftN=\(config.specDraftNMax) thinkOff=\(config.disableThinking)"
+        )
     }
 
     // MARK: Node Configuration
@@ -750,14 +732,12 @@ public final class Service: ObservableObject {
 
         let node = inferenceNode
 
-        Self.log("🌐 SimiGo Node: bind=\(node.bindHost):\(node.port), advertised=\(node.advertisedHost):\(node.port), LAN=\(node.isLANEnabled)")
-        Self.log("📊 运行时后端: \(info.backendName)")
+        Self.log("[NODE] backend=\(info.backendName) bind=\(node.bindHost):\(node.port) advertised=\(node.advertisedHost):\(node.port) lan=\(node.isLANEnabled)")
 
         let runtime: Runtime
 
         switch info.kind {
         case .mlx:
-            Self.log("🚀 启动 NativeMLX 原生 Metal 运行时")
             runtime = NativeMLX(info: info, config: currentConfig)
 
         case .gguf:
@@ -788,7 +768,7 @@ public final class Service: ObservableObject {
             isRunning = true
             status = "● 运行中 (\(statusLabel))"
 
-            Self.log("✅ SimiGo 节点已就绪: \(node.apiBaseURLString)")
+            Self.log("[READY] \(node.apiBaseURLString)")
 
             if info.kind == .gguf {
                 let environment = ProcessInfo.processInfo.environment

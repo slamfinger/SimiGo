@@ -168,7 +168,15 @@ nonisolated struct AgentExecutionKey: Hashable, Sendable {
 
     /// A ChatSession owns KV for exactly one logical branch.
     var storageKey: String { "\(agentId)/\(sessionId)/\(logicalBranchId)" }
-    var traceKey: String { storageKey }
+
+    /// Compact trace label: the default agent is omitted and long session ids
+    /// collapse to their last block, e.g. `9dc810/main`.
+    var traceKey: String {
+        let agent = agentId == "default" ? "" : "\(agentId)/"
+        let suffix = sessionId.split(separator: "-").last.map(String.init) ?? sessionId
+        let session = suffix.count > 6 ? String(suffix.suffix(6)) : suffix
+        return "\(agent)\(session)/\(logicalBranchId)"
+    }
 
     private static func normalize(_ value: String?) -> String? {
         guard let value else { return nil }

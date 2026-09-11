@@ -29,7 +29,23 @@ final class AgentExecutionKeyTests: XCTestCase {
     func testStorageKeyIncludesBranchBecauseChatSessionOwnsKV() throws {
         let key = try AgentExecutionKey(agentId: "agent", sessionId: "session", logicalBranchId: "branch")
         XCTAssertEqual(key.storageKey, "agent/session/branch")
-        XCTAssertEqual(key.traceKey, key.storageKey)
+    }
+
+    func testTraceKeyIsCompactAndKeepsBranch() throws {
+        let key = try AgentExecutionKey(
+            agentId: "default",
+            sessionId: "9dc81004-675e-44f1-939d-2c93f1662007",
+            logicalBranchId: "main")
+        XCTAssertEqual(key.traceKey, "662007/main")
+
+        let short = try AgentExecutionKey(agentId: "agent", sessionId: "s1", logicalBranchId: "b1")
+        XCTAssertEqual(short.traceKey, "agent/s1/b1")
+
+        let otherBranch = try AgentExecutionKey(
+            agentId: "default",
+            sessionId: "9dc81004-675e-44f1-939d-2c93f1662007",
+            logicalBranchId: "side")
+        XCTAssertNotEqual(key.traceKey, otherBranch.traceKey)
     }
 
     func testKeysWithSameFieldsAreEqualAndHashAlike() throws {
