@@ -73,7 +73,7 @@ final class ToolGovernanceTests: XCTestCase {
         governance.requested(requestId: "r1", generationId: "r1", toolCallId: "c1", tool: "shell", argumentsRaw: "{}")
         governance.resultObserved(requestId: "r1", generationId: "r1", toolCallId: "c1", sizeBytes: nil)
 
-        XCTAssertTrue(recorder.contains("anomaly=illegal_transition"))
+        XCTAssertTrue(recorder.contains("anomaly=unexpected_state"))
         // 状态未被伪造：后续合法 validated 仍可走通
         governance.validated(requestId: "r1", generationId: "r1", toolCallId: "c1")
         XCTAssertTrue(recorder.contains("event=TOOL_VALIDATED"))
@@ -92,7 +92,7 @@ final class ToolGovernanceTests: XCTestCase {
         governance.rejected(requestId: "r1", generationId: "r1", toolCallId: "c1", code: .unknownTool, message: "undeclared")
         governance.dispatched(requestId: "r1", generationId: "r1", toolCallId: "c1")
 
-        XCTAssertTrue(recorder.contains("anomaly=illegal_transition_from=rejected"))
+        XCTAssertTrue(recorder.contains("anomaly=illegal_transition from=rejected"))
         // 终态未被推翻
         XCTAssertTrue(recorder.contains("event=TOOL_REJECTED"))
         XCTAssertFalse(recorder.contains("event=TOOL_DISPATCHED"))
@@ -106,7 +106,7 @@ final class ToolGovernanceTests: XCTestCase {
         governance.validated(requestId: "r1", generationId: "r1", toolCallId: "c1")
         governance.resultObserved(requestId: "r1", generationId: "r1", toolCallId: "c1", sizeBytes: nil)
 
-        XCTAssertTrue(recorder.contains("anomaly=illegal_transition_from=rejected"))
+        XCTAssertTrue(recorder.contains("anomaly=illegal_transition from=rejected"))
     }
 
     // MARK: - 幂等
