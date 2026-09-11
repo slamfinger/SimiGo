@@ -51,6 +51,29 @@ mlx-swift-lm `main@238ad74`（Package.resolved 钉定），ctx=131072，
 
 33.2s → 0.69s：session-aware prefix cache 价值的直接实测。
 
+## 多轮 usage / cache ledger 对齐观测（2026-09-12，Nail 受控三轮）
+
+受控条件：session `usage-obs2`，累积对话（assistant 真实回显），
+Nail-Qwen3.6，draftN=0。
+
+| 轮 | usage.input | [MLX] promptTokens | usage.cached | [MLX] cacheHit/cacheTokens | usage.output | total | reuse | ttft |
+|---|---:|---:|---:|---:|---:|---:|---|---:|
+| T1 | 206 | 206 | 0 | 0 | 89 | 295 | false | 552ms |
+| T2 | 19 | 19 | 296 | 296 | 72 | 91 | true | 141ms |
+| T3 | 20 | 20 | 388 | 388 | 23 | 43 | true | 141ms |
+
+判定：`usage` 与真实 token ledger 逐轮对齐；`cached_tokens` 直通官方
+`info.cachedPromptTokenCount`，无估算。**P1-2 usage projection VERIFIED。**
+
+### 已定性行为（非缺陷，防误报）
+
+- **suspend → resume 后 cached_tokens=0**：`suspend_done` 清空 sessions，
+  恢复后首轮全量 prefill 属预期生命周期策略，非 KV cache regression。
+- **prefixMismatch 假阳性**：合成测试回显空 assistant 内容导致
+  `prefixMismatch index=1 role=assistant` → 假性 reuse=false；
+  真实客户端（Codex）回显正确文本后 prefix match、reuse=true。
+  测试脚本问题，Runtime 无需修复。
+
 ## 遗留未测格
 
 - Tiel：Responses 单请求串行、tool calling、KV reuse（仅测了并发场景）

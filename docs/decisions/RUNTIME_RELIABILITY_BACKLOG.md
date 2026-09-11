@@ -110,6 +110,14 @@ generation task，否则 cache lock 可能被一直持有。验收标准：
 ## P1 —— 能力与可观测
 
 - **Model Capability Matrix 正式化 ✅（P1-1 v1 已实现）**：
+  下一站 **P1-2 Responses Contract**：usage projection / ledger /
+  cached_tokens 已受控实测 VERIFIED（2026-09-12 三轮观测，
+  见 experiments/MODEL_COMPATIBILITY_MATRIX.md），
+  剩真实 Codex client-level acceptance 终验；
+  Responses 层消费 Runtime 真实状态（GenerationResult/ledger），
+  不自建事实。随后 **P1-3 Tool Governance Contract**：
+  Contract 先行（TOOL_REQUESTED/VALIDATED/REJECTED/DISPATCHED/RESULT/FAILED
+  + 结构化 reason），Runtime 层能力，NativeMLX 与 Llama.cpp 共享。
   `ModelCapabilityContract`（backend/architecture/contextLength +
   capabilities/runtime/protocolEndpoints 三段）挂到 `GET /v1/models`。
   三态 `CapabilityStatus`（supported/unsupported/unverified）——
