@@ -164,6 +164,12 @@ public final class ToolGovernance: @unchecked Sendable {
             )
             return
         }
+        // P1-3 idempotency (contract invariant 6): the accumulated conversation resends the historical function_call_output,
+        // and repeated observation of the same invocation is a no-op, without generating anomaly noise.
+        if invocation.state == .result {
+            lock.unlock()
+            return
+        }
         guard invocation.state == .validated || invocation.state == .dispatched else {
             lock.unlock()
             emitLine(

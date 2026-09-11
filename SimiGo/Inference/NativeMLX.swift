@@ -675,7 +675,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if !toolCalls.isEmpty {
             log += " toolCalls=\(toolCalls.count)"
         }
-        toolGovernance.reportOrphans(requestId: requestId)
         traceLogger.trace(log)
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(
