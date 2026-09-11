@@ -138,6 +138,7 @@ public final class HTTPServer: @unchecked Sendable {
         private var _generationStarted = false
         private var _cancellationSignalled = false
         private var _closed = false
+        private var _cancelledByRuntime = false
 
         init(connection: NWConnection) {
             self.connection = connection
@@ -228,13 +229,33 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         /// 统一终止入口：defer 中无法 await，以独立 Task 汇入协调器（幂等）。
-        func finishLifecycle(success: Bool) {
+        /// 失败路径必须给出 P0-1 分类 reason；未显式分类时按连接状态回落。
+        func finishLifecycle(success: Bool, failureReason: String? = nil) {
             Task {
+                let reason = success
+                    ? "completed"
+                    : (failureReason ?? cancellationFailureReason())
                 await RuntimeLifecycleCoordinator.shared.finish(
                     requestID: requestId,
                     success: success,
-                    reason: success ? "completed" : "cancelled_or_failed"
+                    reason: reason
                 )
+            }
+        }
+
+        /// P0-1 失败分类：runtime shutdown > 客户端断连 > 引擎内部取消。
+        func cancellationFailureReason() -> String {
+            stateLock.withLock {
+                if _cancelledByRuntime { return "cancelled_by_runtime" }
+                if _closed { return "cancelled_by_client" }
+                return "cancelled_internally"
+            }
+        }
+
+        /// Runtime shutdown / 配置重载时标记：取消责任在 Runtime 而非客户端。
+        func markCancelledByRuntime() {
+            stateLock.withLock {
+                _cancelledByRuntime = true
             }
         }
 
@@ -461,6 +482,7 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         for context in contexts {
+            context.markCancelledByRuntime()
             terminate(
                 context,
                 cancelGeneration: true

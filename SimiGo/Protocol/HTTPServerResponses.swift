@@ -463,9 +463,13 @@ extension HTTPServer {
         }
 
         var isSuccess = false
+        var failureReason: String?
         defer {
             context.markGenerationFinished()
-            context.finishLifecycle(success: isSuccess)
+            context.finishLifecycle(
+                success: isSuccess,
+                failureReason: failureReason
+            )
         }
 
         context.setIdentity(
@@ -598,6 +602,7 @@ extension HTTPServer {
         } catch is CancellationError {
             // 取消契约：非流式尚未发出任何字节，
             // 客户端仍连接时必须给出 HTTP 终态，否则将无限等待。
+            failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
             }
@@ -609,6 +614,7 @@ extension HTTPServer {
                 context: context
             )
         } catch {
+            failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }
@@ -650,9 +656,13 @@ extension HTTPServer {
 
         // 2. Use defer to ensure lifecycle completion (success or failure)
         var isSuccess = false
+        var failureReason: String?
         defer {
             context.markGenerationFinished()
-            context.finishLifecycle(success: isSuccess)
+            context.finishLifecycle(
+                success: isSuccess,
+                failureReason: failureReason
+            )
         }
 
         context.setIdentity(
@@ -892,6 +902,7 @@ extension HTTPServer {
             // 客户端已断连（closed）→ 静默；客户端仍连接 →
             // 必须送达 terminal event 并关闭流，
             // 否则客户端会永远等待本轮 response。
+            failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
             }
@@ -921,6 +932,7 @@ extension HTTPServer {
                 close: true
             )
         } catch {
+            failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }

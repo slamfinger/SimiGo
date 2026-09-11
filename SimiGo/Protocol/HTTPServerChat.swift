@@ -91,9 +91,13 @@ extension HTTPServer {
         }
 
         var isSuccess = false
+        var failureReason: String?
         defer {
             context.markGenerationFinished()
-            context.finishLifecycle(success: isSuccess)
+            context.finishLifecycle(
+                success: isSuccess,
+                failureReason: failureReason
+            )
         }
 
         context.setIdentity(
@@ -288,9 +292,11 @@ extension HTTPServer {
             isSuccess = true
 
         } catch is CancellationError {
-            // Silent cancellation.
+            // 静默取消（客户端断连/runtime shutdown），分类交由 finishLifecycle。
+            failureReason = context.cancellationFailureReason()
 
         } catch {
+            failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }
@@ -445,9 +451,13 @@ extension HTTPServer {
         }
 
         var isSuccess = false
+        var failureReason: String?
         defer {
             context.markGenerationFinished()
-            context.finishLifecycle(success: isSuccess)
+            context.finishLifecycle(
+                success: isSuccess,
+                failureReason: failureReason
+            )
         }
 
         context.setIdentity(
@@ -575,9 +585,11 @@ extension HTTPServer {
             isSuccess = true
 
         } catch is CancellationError {
-            // Silent cancellation.
+            // 静默取消（客户端断连/runtime shutdown），分类交由 finishLifecycle。
+            failureReason = context.cancellationFailureReason()
 
         } catch {
+            failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }
