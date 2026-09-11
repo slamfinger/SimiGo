@@ -339,6 +339,17 @@ final class ResponsesStreamState: @unchecked Sendable {
         var events: [[String: Any]] = []
 
         if messageContentStarted {
+            // 官方事件层级：文本 finalized 必须先于 part finalized，
+            // output_text.done 不能被 response.completed 替代。
+            events.append([
+                "type": "response.output_text.done",
+                "sequence_number": nextSequenceLocked(),
+                "item_id": itemId,
+                "output_index": outputIndex,
+                "content_index": 0,
+                "text": messageText
+            ])
+
             events.append([
                 "type": "response.content_part.done",
                 "sequence_number": nextSequenceLocked(),
