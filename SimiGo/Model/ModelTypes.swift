@@ -93,6 +93,7 @@ nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
     public var sleepIdleSeconds: Int = 600
     public var isMoE: Bool = false
     public var moeMaxSlots: Int = 256
+    public var kvCache: KVCacheSettings?
 
     nonisolated public static func fromModel(_ path: String) -> ModelConfig {
         let fm = FileManager.default
@@ -111,5 +112,27 @@ nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
 
     nonisolated public func merging(_ other: ModelConfig?) -> ModelConfig {
         other ?? self
+    }
+}
+
+/// 官方 `KVCacheConfiguration` 的最小映射（nil = 官方默认 fullPrecision、不限容量）。
+///
+/// 策略名与官方预设一一对应：`affine4` / `affine8`（Affine 量化）、
+/// `turboQuality` / `turboBalanced` / `turboMemory`（TurboQuant 官方预设）、
+/// `fullPrecision`。注意：切换 KV 策略或容量会使官方 token 账本失效，
+/// 下一轮请求将全量 prefill（README_base §5.1.1）。
+nonisolated public struct KVCacheSettings: Codable, Equatable, Sendable {
+    public var strategy: String?
+    public var maxTokens: Int?
+    public var preservedPrefixTokens: Int?
+
+    public init(
+        strategy: String? = nil,
+        maxTokens: Int? = nil,
+        preservedPrefixTokens: Int? = nil
+    ) {
+        self.strategy = strategy
+        self.maxTokens = maxTokens
+        self.preservedPrefixTokens = preservedPrefixTokens
     }
 }

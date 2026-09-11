@@ -307,7 +307,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard !incoming.isEmpty else { return "" }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
-        let params = GenerateParameters(
+        let kvSettings = config.kvCache ?? baseConfig.kvCache
+        let kvConfiguration = try Self.makeKVCacheConfiguration(kvSettings)
+        var params = GenerateParameters(
             maxTokens: config.maxTokens > 0 ? config.maxTokens : baseConfig.maxTokens,
             maxKVSize: nil,
             temperature: config.temperature,
@@ -317,6 +319,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             repetitionPenalty: config.repeatPenalty,
             presencePenalty: config.presencePenalty
         )
+        params.kvCache = kvConfiguration
         let toolSpecs = Self.makeToolSpecs(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -446,6 +449,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
             " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
+        if let kvSettings {
+            log += " kv=\(kvSettings.strategy ?? "fullPrecision")"
+        }
         if let ttft {
             log += String(format: " ttft=%dms", Int(ttft * 1000))
         }
@@ -585,6 +591,58 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return index
         }
         return nil
+    }
+
+    /// Maps `KVCacheSettings` onto the official `KVCacheConfiguration`.
+    ///
+    /// Strategy names map 1:1 to official presets; capacity maps to
+    /// `KVCacheConfiguration.Capacity`. Invalid values fail fast — a silently
+    /// ignored KV setting would misrepresent what the session will actually do.
+    /// Plan changes invalidate the official token ledger, so switching strategy
+    /// or capacity costs one full prefill on the next request.
+    static nonisolated func makeKVCacheConfiguration(
+        _ settings: KVCacheSettings?
+    ) throws -> KVCacheConfiguration? {
+        guard let settings else { return nil }
+
+        var capacity: KVCacheConfiguration.Capacity?
+        if let maxTokens = settings.maxTokens {
+            capacity = try KVCacheConfiguration.Capacity(
+                maxTokens: maxTokens,
+                preservedPrefixTokens: settings.preservedPrefixTokens ?? 4)
+        } else if settings.preservedPrefixTokens != nil {
+            throw RuntError.generationFailed(
+                "kvCache.preservedPrefixTokens requires kvCache.maxTokens"
+            )
+        }
+
+        let strategy: KVCacheConfiguration.Strategy
+        switch settings.strategy ?? "fullPrecision" {
+        case "fullPrecision":
+            strategy = .fullPrecision
+        case "affine4":
+            strategy = .affine(.fourBit)
+        case "affine8":
+            strategy = .affine(.eightBit)
+        case "turboQuality":
+            strategy = .turboQuant(.qualityFirst)
+        case "turboBalanced":
+            strategy = .turboQuant(.balanced)
+        case "turboMemory":
+            strategy = .turboQuant(.memoryFirst)
+        default:
+            throw RuntError.generationFailed(
+                "unknown kvCache.strategy: \(settings.strategy ?? "")" +
+                " (supported: fullPrecision, affine4, affine8, turboQuality, turboBalanced, turboMemory)"
+            )
+        }
+
+        return KVCacheConfiguration(
+            capacity: capacity,
+            strategy: strategy,
+            // 混合注意力模型（如 qwen3_5_moe 的 Mamba 层）不支持量化策略，
+            // allowPartial 让受支持的注意力层生效、其余层保持原样，模型仍可用。
+            compatibility: .allowPartial)
     }
 
     /// Semantic continuity signature: role + content + tool presence.
