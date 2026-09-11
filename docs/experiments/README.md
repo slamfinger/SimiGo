@@ -31,3 +31,4 @@ Batch、Paged KV、连续服务、推测解码等能力，在没有完成正确�
 ## 演进路线图
 
 - [EVOLUTION_TRACK.md](EVOLUTION_TRACK.md) —— S1 Controlled Batched Execution → S2 Paged/Block KV + Radix Prefix Cache → S3 Continuous Serving + Speculative 的完整路线（已归档）。含：总体演进原则（守正/精简）、演进纪律管道、各阶段准出标准、Hybrid/Mamba NO-GO 结论、**第二十章 对优秀开源实现的借鉴边界**（mlx-lm / llama.cpp / vLLM / SGLang 各自借鉴什么）、**第二十一章 明确"不照搬"**（不复制 CUDA kernel / Python runtime / C++ 内存架构，把成熟 Serving 思想重映射到 Apple Silicon + MLX + Swift）、**第二十二章 稳定 DMG 发布纪律**。
+- [OFFICIAL_CAPABILITY_MATRIX.md](OFFICIAL_CAPABILITY_MATRIX.md) —— 官方 MLX 能力覆盖矩阵（对照 mlx-swift-lm main@238ad74 逐 API 核实）：P0 = KVCacheConfiguration 透传（GenerateParameters.kvCachePlan 入口）与 Raw Token Generation 能力边界；P1 = Prompt Cache Save/Load、Guided Generation、参数补齐；含 SpeculativeDecodingConfig 已内置 ChatSession 的事实修正与明确排除项（LoRA/Fine-tuning/Batch）。
