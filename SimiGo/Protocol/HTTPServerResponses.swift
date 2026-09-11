@@ -509,9 +509,6 @@ extension HTTPServer {
                 return
             }
 
-            // 4. Transition to RUNNING right before generation
-            try await context.transitionToRunning()
-
             _ = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
@@ -763,9 +760,6 @@ extension HTTPServer {
             else {
                 return
             }
-
-            // 4. Transition to RUNNING right before generation
-            try await context.transitionToRunning()
 
             _ = try await generateHandler(
                 context.requestId,

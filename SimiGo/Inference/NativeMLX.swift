@@ -285,7 +285,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let task = Task<String, Error> { [weak self] in
             guard let self else { throw RuntError.notLoaded }
             return try await gate.withExclusive(gateExecutionKey) {
-                try await self.generateUsingChatSession(
+                // P0-3：QUEUED→RUNNING 由推理层在真正拿到 generation gate 后置位，
+                // LC 状态与实际执行一致——排队中的请求保持 QUEUED。
+                do {
+                    try await RuntimeLifecycleCoordinator.shared.transition(
+                        requestID: requestId,
+                        to: .running
+                    )
+                } catch {
+                    // 排队期间已被取消：转换非法，按取消处理。
+                    throw CancellationError()
+                }
+                return try await self.generateUsingChatSession(
                     requestId: requestId,
                     executionKey: executionKey,
                     messages: messages,

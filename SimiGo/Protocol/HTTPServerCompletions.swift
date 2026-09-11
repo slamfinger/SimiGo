@@ -423,8 +423,6 @@ extension HTTPServer {
                 return
             }
 
-            try await context.transitionToRunning()
-
             _ = try await generateHandler(
                 context.requestId,
                 agentId,

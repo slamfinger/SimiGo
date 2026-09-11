@@ -220,10 +220,6 @@ public final class HTTPServer: @unchecked Sendable {
             )
         }
 
-        func transitionToRunning() async throws {
-            try await RuntimeLifecycleCoordinator.shared.transition(requestID: requestId, to: .running)
-        }
-
         func transitionToQueued() async throws {
             try await RuntimeLifecycleCoordinator.shared.transition(requestID: requestId, to: .queued)
         }
