@@ -58,6 +58,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let lifecycleGate = RuntimeLifecycleGate()
     private let gateHolder = Mutex(SessionGenerationGate())
     private let traceLogger = RuntimeTraceLogger.shared
+    private let toolGovernance = ToolGovernance { line in
+        RuntimeTraceLogger.shared.trace(line)
+    }
 
     public var isInProcess: Bool { true }
     public var isGenerating: Bool { state.withLock { !$0.activeRequestTasks.isEmpty } }
@@ -404,7 +407,25 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         let incoming = Self.makeChatMessages(messages)
-        guard !incoming.isEmpty else { return GenerationResult(text: "", usage: nil) }
+        guard !incoming.isEmpty else {
+            return GenerationResult(text: "", usage: nil)
+        }
+
+        // P1-3 ③：function_call_output ingestion——tool_call_id 命中已派发
+        // 的 invocation → TOOL_RESULT（observed result，外部执行回传）；
+        // 未命中/重复/非法状态 → anomaly（不伪造成功）。
+        for value in messages {
+            guard case .object(let obj) = value,
+                  (obj["role"]?.string ?? "").lowercased() == "tool",
+                  let toolCallId = obj["tool_call_id"]?.string else { continue }
+            let size = obj["content"]?.string?.utf8.count
+            toolGovernance.resultObserved(
+                requestId: requestId,
+                generationId: requestId,
+                toolCallId: toolCallId,
+                sizeBytes: size
+            )
+        }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
         let kvSettings = config.kvCache ?? baseConfig.kvCache
@@ -515,6 +536,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
                 toolCalls.append(normalizedCall)
 
+                let callId = normalizedCall.id ?? ""
+                let argumentsRaw = (try? JSONEncoder().encode(normalizedCall.function.arguments))
+                    .flatMap { String(data: $0, encoding: .utf8) }
                 let arguments: [String: JSONValue]
                 if let data = try? JSONEncoder().encode(normalizedCall.function.arguments),
                    let decoded = try? JSONDecoder().decode([String: JSONValue].self, from: data) {
@@ -522,14 +546,67 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 } else {
                     arguments = [:]
                 }
-                onToolCall(
-                    ParsedToolCall(
-                        id: normalizedCall.id ?? "",
-                        name: normalizedCall.function.name,
-                        arguments: arguments
-                    )
+
+                // P1-3 ①：REQUESTED → VALIDATED；invalid → REJECTED(invalid_arguments)。
+                // 失败分支不进入 onToolCall。
+                toolGovernance.requested(
+                    requestId: requestId,
+                    generationId: requestId,
+                    toolCallId: callId,
+                    tool: normalizedCall.function.name,
+                    argumentsRaw: argumentsRaw
                 )
+                let argumentsValid = !arguments.isEmpty
+                if argumentsValid {
+                    toolGovernance.validated(
+                        requestId: requestId,
+                        generationId: requestId,
+                        toolCallId: callId
+                    )
+                } else {
+                    toolGovernance.rejected(
+                        requestId: requestId,
+                        generationId: requestId,
+                        toolCallId: callId,
+                        code: .invalidArguments,
+                        message: "arguments is not a JSON object"
+                    )
+                }
+
+                if argumentsValid {
+                    onToolCall(
+                        ParsedToolCall(
+                            id: normalizedCall.id ?? "",
+                            name: normalizedCall.function.name,
+                            arguments: arguments
+                        )
+                    )
+                }
             case .rejectedToolCall(let rejection):
+                // P1-3 ②：backend observation（undeclared_tool）→ Runtime 映射
+                // → REJECTED(unknown_tool)。官方拒绝无 tool_call identity，
+                // tool_call_id 由 Runtime 生成（契约允许）。
+                let rejectedCallId = "rtc-rejected-\(UUID().uuidString.lowercased())"
+                let rejectedTool = rejection.toolName ?? "-"
+                toolGovernance.requested(
+                    requestId: requestId,
+                    generationId: requestId,
+                    toolCallId: rejectedCallId,
+                    tool: rejectedTool,
+                    argumentsRaw: nil
+                )
+                toolGovernance.validated(
+                    requestId: requestId,
+                    generationId: requestId,
+                    toolCallId: rejectedCallId
+                )
+                toolGovernance.rejected(
+                    requestId: requestId,
+                    generationId: requestId,
+                    toolCallId: rejectedCallId,
+                    code: .unknownTool,
+                    message: "upstream rejectedToolCall reason=\(rejection.reason.rawValue)"
+                )
                 traceLogger.trace(
                     "[MLX] rejectedToolCall reason=\(rejection.reason.rawValue) tool=\(rejection.toolName ?? "-")"
                 )
@@ -598,6 +675,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if !toolCalls.isEmpty {
             log += " toolCalls=\(toolCalls.count)"
         }
+        toolGovernance.reportOrphans(requestId: requestId)
         traceLogger.trace(log)
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(
