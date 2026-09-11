@@ -147,6 +147,7 @@
 			);
 			name = SimiGoTests;
 			packageProductDependencies = (
+				C1632AED3028D78A00D1EF95 /* MLXLMCommon */,
 			);
 			productName = SimiGoTests;
 			productReference = C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */;
