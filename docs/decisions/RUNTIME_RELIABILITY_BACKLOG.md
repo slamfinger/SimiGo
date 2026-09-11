@@ -54,15 +54,16 @@
 超时 → 取消任务 → 按 P0-1 分类上报 `generation_timeout:<phase>`，
 session gate 释放路径复用现有 DRAINING/RELEASING。
 
-### P0-3 Session 单并发契约
+### P0-3 Session 单并发契约 ✅（已实现）
 
 官方 ChatSession 非 thread-safe（单 task/thread 使用）。
-现状：session gate 已串行化实际生成，但 LC 的 RUNNING 在 gate 获取之前
-就置位（HTTP handler 层），同一 session 双请求会显示双 RUNNING——观测失真。
+改造已落地：`QUEUED→RUNNING` 的所有权移交给推理层——
+`RuntimeLifecycleCoordinator.transition(to:.running)` 移入
+`NativeMLX.generate` 的 gate 获取闭包内（转换失败按取消处理），
+6 个协议 handler 不再自行置位 RUNNING。
 
-改造：`transitionToRunning` 推迟到 gate 获取之后
-（NativeMLX 暴露 gate 获取回调），使 LC 状态与真实执行一致：
-同 session 第二请求停在 QUEUED 直至前者释放。
+效果：全局串行化下，排队请求的 LC 保持 QUEUED 直至真正拿到 gate；
+被取消的排队请求直接走取消路径（不再产生虚假 RUNNING）。
 
 ### P0-4 Cancellation → drain → release 强保证
 
@@ -71,13 +72,13 @@ session gate 释放路径复用现有 DRAINING/RELEASING。
 generation task，否则 cache lock 可能被一直持有。验收标准：
 取消后同 session 下一请求必须能立即获得 gate（回归断言）。
 
-### P0-5 KV cache / token ledger 一致性
+### P0-5 KV cache / token ledger 一致性 ✅（已实现）
 
-方向已正确（PromptCacheReusePolicy + processedTokenCount 账本）。
-封口项：KV 策略（kvCache 配置）变更时必须
-`invalidate cache → 重置账本 → 下次全量 prefill`，
-不得复用旧 cache。检查点：ManagedSession 复用判定加入
-kvSettings 比对。
+封口已落地：`ManagedSession` 增加 `kvFingerprint`（KVCacheSettings
+的 String(describing:) 指纹，类型为 Equatable）；复用判定加入
+`existing.kvFingerprint == kvFingerprint`——KV 配置变更时旧缓存
+一律失效，新 ChatSession 按新配置全量 prefill，杜绝
+"旧 KV cache + 新 KV 配置继续复用"。
 
 ## P1 —— 能力与可观测
 
