@@ -1,0 +1,99 @@
+# Runtime 可靠性封口 Backlog（Runtime Reliability Backlog）
+
+日期：2026-09-11
+状态：生效（P0 立即执行）
+背景：三模型对照排查（docs/experiments/MODEL_COMPATIBILITY_MATRIX.md）结束后的
+优先级重排。本阶段目标不是"支持更多模型"，而是：
+
+> 任何模型出了问题，SimiGo 都能准确告诉你：是协议、session、cache、tool、
+> 资源、取消、模型本身，还是底层 MLX。
+
+## 边界纪律（❌ 永不做）
+
+- ❌ 自己实现 Qwen35 decode / prefill / speculative decoding / 段编译
+- ❌ 为 3D shape 写 SimiGo workaround
+- ❌ fork MLXLMCommon 内部实现
+- 上述属于 mlx-swift-lm / MLX upstream。SimiGo 发现问题 → 整理可复现 case 上报。
+
+## P0 —— 可靠性封口（必须）
+
+### P0-1 Generation 错误分类 ✅（已实现）
+
+现状缺陷：所有失败路径在 LC 里都是 `reason=cancelled_or_failed`，
+无法区分是谁出了问题。
+
+分类词表：
+
+| reason | 语义 |
+|---|---|
+| `completed` | 正常完成 |
+| `cancelled_by_client` | 客户端断连/取消（context 已 closed） |
+| `cancelled_by_runtime` | Runtime shutdown / 配置重载触发停止 |
+| `cancelled_internally` | 推理引擎内部取消（连接仍存活，含 tool 早停） |
+| `model_execution_error: …` | generateHandler 抛出的非取消异常 |
+| `generation_timeout:<phase>` | watchdog 超时（P0-2 暂缓；词表保留为未来接入位） |
+
+实现锚点：
+- `ConnectionContext.finishLifecycle(success:failureReason:)`；
+  失败且未显式分类时回落 `cancellationFailureReason()`
+  （`cancelledByRuntime` > `closed` > 内部取消）。
+- `HTTPServer.stop()` 对全部 context `markCancelledByRuntime()`。
+- 6 个 generation handler 的 catch 块写入 `failureReason`。
+
+### P0-2 Generation watchdog / 分阶段超时（❌ 暂不实施——用户决定 2026-09-11）
+
+不做粗糙的 request timeout（Qwen3-Coder 冷启动 TTFT 25–33s 属正常）。
+分阶段 deadline，全部经 RuntimeTuning 可配：
+
+| deadline | 语义 | 建议默认 |
+|---|---|---|
+| first_event | stream 进入到首个 Generation 事件 | 180s（冷启动含 kernel JIT） |
+| decode_stall | 相邻 token 间最大间隔 | 30s |
+| tool | 保留位（工具执行在客户端） | — |
+
+超时 → 取消任务 → 按 P0-1 分类上报 `generation_timeout:<phase>`，
+session gate 释放路径复用现有 DRAINING/RELEASING。
+
+### P0-3 Session 单并发契约
+
+官方 ChatSession 非 thread-safe（单 task/thread 使用）。
+现状：session gate 已串行化实际生成，但 LC 的 RUNNING 在 gate 获取之前
+就置位（HTTP handler 层），同一 session 双请求会显示双 RUNNING——观测失真。
+
+改造：`transitionToRunning` 推迟到 gate 获取之后
+（NativeMLX 暴露 gate 获取回调），使 LC 状态与真实执行一致：
+同 session 第二请求停在 QUEUED 直至前者释放。
+
+### P0-4 Cancellation → drain → release 强保证
+
+现状已有 CANCELLING → DRAINING → RELEASING 骨架与 session gate
+按 task 完成释放的语义。补强：官方明确 stream 提前停止必须取消底层
+generation task，否则 cache lock 可能被一直持有。验收标准：
+取消后同 session 下一请求必须能立即获得 gate（回归断言）。
+
+### P0-5 KV cache / token ledger 一致性
+
+方向已正确（PromptCacheReusePolicy + processedTokenCount 账本）。
+封口项：KV 策略（kvCache 配置）变更时必须
+`invalidate cache → 重置账本 → 下次全量 prefill`，
+不得复用旧 cache。检查点：ManagedSession 复用判定加入
+kvSettings 比对。
+
+## P1 —— 能力与可观测
+
+- **Model Capability Matrix 正式化**：`ModelCapabilities`（responses/tools/
+  kvCache/speculative/…）挂到 ModelInfo 与 `GET /models`，
+  上层 Agent 无需试错。"模型加载成功 ≠ 支持所有协议能力"。
+- **Responses 协议完善**：P2 字段（created schema 子集、usage 实测值、
+  reasoning 事件）按官方定义补齐。
+- **Tool governance 结构化**：`TOOL_REQUESTED/VALIDATED/REJECTED/
+  DISPATCHED/RESULT` 事件 + 结构化拒绝原因（undeclared_tool /
+  invalid_arguments / schema_mismatch / tool_disabled / timeout）。
+- **Unified Memory telemetry**：model weights / KV cache / draft /
+  runtime allocations / swap pressure；不使用 CUDA 式 GPU/CPU 二分。
+
+## P2 —— 已完成/外部
+
+- 兼容性回归矩阵：docs/experiments/MODEL_COMPATIBILITY_MATRIX.md ✅
+- MLX upstream issue：外部（素材：19:44 sample 栈 + 三模型对照 + draftN 对照
+  + S1 B>1/T=1 差异记录）
