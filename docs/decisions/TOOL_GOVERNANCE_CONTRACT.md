@@ -1,8 +1,7 @@
 # Tool Governance Contract（P1-3 定义稿）
 
 日期：2026-09-12
-状态：**定义稿（待审）**——审过事件、状态转移、reason code、关联键与
-backend 边界后再进入实现。本文件只定义契约，不含实现。
+状态：**v1 定版（2026-09-12 四项裁决收紧）**——契约定稿，进入实现。本文件只定义契约，不含实现。
 
 ## 定位与边界
 
@@ -33,7 +32,7 @@ Tool Governance 是 **SimiGo Runtime 层能力**，不属于任何 backend：
 |---|---|---|
 | `request_id` | HTTP 请求标识（现有 requestId） | 稳定 |
 | `session_id` | 会话标识（execution session） | 稳定 |
-| `generation_id` | Runtime 内**一次模型生成**的标识 | 稳定；当前等于 request_id，预留一请求多代演进的演进空间 |
+| `generation_id` | Runtime 内**一次模型生成**的标识 | **v1 定版：恒等于 request_id**；不定义派生规则；一请求多代（`parent_generation_id`）留待 v2 |
 | `tool_call_id` | **一次工具调用**的标识（模型输出 id；缺失时 Runtime 生成） | 稳定，贯穿验证→派发→结果全链 |
 | `timestamp` | 事件时间 | — |
 | `event` | 事件类型（下表） | 封闭枚举 |
@@ -46,21 +45,20 @@ Tool Governance 是 **SimiGo Runtime 层能力**，不属于任何 backend：
 六个 Runtime 事实事件：
 
 ```text
-TOOL_REQUESTED
-      │
-      ▼
-TOOL_VALIDATED
-      │
- ┌────┴──────────────┐
- ▼                   ▼
-TOOL_REJECTED     TOOL_DISPATCHED
-（终态）                │
-                       ▼
-                 TOOL_RESULT（终态·成功）
-                       │
-                  ┌────┴────┐
-                  ▼         ▼
-           continuation  TOOL_FAILED（终态·失败）
+REQUESTED
+   ↓
+VALIDATED
+   ↓
+ ┌───────────────┐
+ │               │
+REJECTED      DISPATCHED
+（终态）           ↓
+            ┌──────┴──────┐
+            ↓             ↓
+         RESULT         FAILED
+       （终态·成功）   （终态·失败）
+            ↓
+      continuation
 ```
 
 ### 转移规则
@@ -71,9 +69,18 @@ TOOL_REJECTED     TOOL_DISPATCHED
 2. **VALIDATED 不可跳过**。模型输出了 tool call ≠ 工具被执行；
    拒绝也必须先经过验证阶段（验证后才有依据给出拒绝 code）。
 3. **DISPATCHED 前必须 VALIDATED**；RESULT/FAILED 前必须 DISPATCHED。
-4. **取消**：任意非终态被取消 → 以 `TOOL_FAILED(reason.code = cancelled)`
-   收口（不设独立 TOOL_CANCELLED 事件，保持事件集最小；
-   取消原因由 code 表达）。
+4. **取消归属由取消时所处生命周期决定**，实现不得随意选择：
+   - 工具**尚未 dispatch** → `TOOL_REJECTED(code=cancelled)`
+     （governance rejection）；
+   - 工具**已经 dispatch** → `TOOL_FAILED(code=cancelled)`
+     （execution failure）。
+   不设独立 TOOL_CANCELLED 事件，保持事件集最小。
+5. **核心不变量**：`1 REQUESTED → 1 VALIDATED → exactly 1 终态`。
+   任何没有终态的 TOOL_REQUESTED 都是 Runtime 可诊断的异常。
+6. **工具事件必须幂等可识别**：`(request_id, generation_id, tool_call_id,
+   event)` 唯一标识一次事件；`tool_call_id` 是一次模型 tool call 的稳定
+   身份——Runtime 不得因事件重放而生成新的 tool call identity
+   （为未来 exactly-once dispatch 留出基础；v1 不解决重复执行）。
 5. **TOOL_FAILED ≠ model_execution_error**：前者表示"Runtime 正确执行了
    治理，但工具本身执行失败"；后者是模型生成层的失败。两者永不相邻
    混用，LC 分类与工具事件分类相互独立。
@@ -88,10 +95,28 @@ reason
 └── message   人类诊断信息（可自由表述，不参与程序判定）
 ```
 
-| 事件 | 允许的 reason.code |
+**REJECTED 与 FAILED 的 code 集合互不重叠**：REJECTED 是治理阶段
+决定"不允许/不能执行"；FAILED 是已派发后的执行失败。
+
+**TOOL_REJECTED 允许的 reason.code**（治理阶段）：
+
+| code | 语义 |
 |---|---|
-| TOOL_REJECTED | `unknown_tool` / `invalid_arguments` / `capability_not_allowed` / `policy_denied` |
-| TOOL_FAILED | `execution_error`（提案，见开放问题）/ `timeout` / `cancelled` / `runtime_busy` |
+| `unknown_tool` | 模型调用了未声明的工具（官方 `undeclared_tool` 映射目标） |
+| `invalid_arguments` | 参数不符合声明 schema |
+| `capability_not_allowed` | 工具已声明，但当前模型/会话不具备调用资格 |
+| `policy_denied` | 策略层拒绝（扩展位） |
+| `runtime_busy` | Runtime 过载/排队上限拒绝 |
+| `cancelled` | dispatch 前被取消（governance rejection） |
+| `timeout` | 治理/验证阶段超时 |
+
+**TOOL_FAILED 允许的 reason.code**（执行阶段）：
+
+| code | 语义 |
+|---|---|
+| `execution_error` | 工具执行器本身失败 |
+| `cancelled` | dispatch 后被取消（execution failure） |
+| `timeout` | 执行超时 |
 
 语义边界：
 
@@ -103,7 +128,8 @@ reason
 - `timeout`：工具执行超时。
 - `cancelled`：生成或会话在工具生命周期内被取消。
 - `runtime_busy`：Runtime 过载/排队上限拒绝。
-- `execution_error`（提案）：工具执行器本身失败——与治理拒绝严格区分。
+- `execution_error`：**仅属 TOOL_FAILED**——工具执行器本身失败，
+  不入 REJECTED code 表；与治理拒绝严格区分。
 
 ## 事件载荷 schema
 
@@ -121,8 +147,20 @@ event, timestamp, request_id, session_id, generation_id, tool_call_id
 | TOOL_VALIDATED | `arguments`（归一化后）、`schema_ref` |
 | TOOL_REJECTED | `reason{code,message}` |
 | TOOL_DISPATCHED | `executor`、`timeout_policy` |
-| TOOL_RESULT | `duration_ms`、`result_ref`（大 payload 引用/截断，不内联） |
+| TOOL_RESULT | `duration_ms`、`result`（`inline` 或 `reference` 形态，语义见下） |
 | TOOL_FAILED | `reason{code,message}`、`duration_ms` |
+
+**TOOL_RESULT.result 形态语义**（契约只定两种形态，不定阈值）：
+
+```text
+result
+├── inline      结果内联于事件
+└── reference   结果由引用定位
+```
+
+若采用 `reference`，契约规定**语义**：引用必须能唯一定位该 tool result，
+且 Runtime 在生命周期内能解析它，或明确报告 `reference unavailable`。
+内联阈值、reference backend、存储位置、TTL、序列化格式 → 全部留给实现。
 
 ## 观测出口（v1）
 
@@ -157,11 +195,12 @@ HTTP/SSE 层是否透出治理事件 → 非目标（Responses 层的 tool 事�
 3. reason.code 为封闭枚举，全部拒绝/失败路径携带稳定 code；
 4. 契约接口与 backend 解耦（NativeMLX 之外可有第二实现编译通过）。
 
-## 开放问题（待审裁决）
+## 开放问题 → 已裁决（2026-09-12）
 
-1. `execution_error` 是否入 code 表（工具执行器失败 vs 治理拒绝的区分）。
-2. 取消终态：`TOOL_FAILED(code=cancelled)` vs 独立 `TOOL_CANCELLED` 事件
-   ——本文选择前者（事件集最小），如需对外语义更明确可改后者。
-3. `generation_id` 演进：当前等于 request_id；一请求多代（服务端 agent
-   循环内多轮生成）时如何派生子 id。
-4. TOOL_RESULT 大 payload 的内联阈值与引用格式。
+1. `execution_error` → **仅属 TOOL_FAILED**，不入 REJECTED code 表。
+2. 取消终态 → 保留 `TOOL_FAILED(code=cancelled)`，不设独立事件；
+   归属由生命周期位置决定（见转移规则 4）。
+3. `generation_id` → v1 恒等于 request_id，不定义派生规则；
+   多代派生留待 v2。
+4. TOOL_RESULT payload → 契约只定 inline/reference 语义，
+   阈值/后端/序列化留给实现。
