@@ -509,7 +509,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
@@ -555,7 +555,8 @@ extension HTTPServer {
                     responseId: parsed.responseId,
                     created: created,
                     json: json,
-                    output: output
+                    output: output,
+                    usage: result.usage
                 )
 
             let currentHistory =
@@ -761,7 +762,7 @@ extension HTTPServer {
                 return
             }
 
-            _ = try await generateHandler(
+            let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
@@ -867,7 +868,8 @@ extension HTTPServer {
                         responseId: parsed.responseId,
                         created: created,
                         json: json,
-                        output: finalOutput
+                        output: finalOutput,
+                        usage: result.usage
                     )
                 )
             }
@@ -880,7 +882,8 @@ extension HTTPServer {
                     responseId: parsed.responseId,
                     created: created,
                     json: json,
-                    output: finalOutput
+                    output: finalOutput,
+                    usage: result.usage
                 )
             ])
 
@@ -2062,10 +2065,24 @@ extension HTTPServer {
         responseId: String,
         created: Int,
         json: [String: Any],
-        output: [[String: Any]]
+        output: [[String: Any]],
+        usage: GenerationUsageReport? = nil
     ) -> [String: Any] {
+        // P1-2：usage 来自真实 token ledger（GenerateCompletionInfo 透传）；
+        // 无报告时回退全 0（向后兼容）。
+        let usagePayload: [String: Any] = [
+            "input_tokens": usage?.inputTokens ?? 0,
+            "input_tokens_details": [
+                "cached_tokens": usage?.cachedPromptTokens ?? 0
+            ],
+            "output_tokens": usage?.outputTokens ?? 0,
+            "output_tokens_details": [
+                "reasoning_tokens": 0
+            ],
+            "total_tokens": usage.map { $0.totalTokens } ?? 0
+        ]
 
-        [
+        return [
             "id": responseId,
             "object": "response",
             "created_at": created,
@@ -2098,14 +2115,7 @@ extension HTTPServer {
                 json["top_p"] ?? 1,
             "truncation":
                 json["truncation"] ?? "disabled",
-            "usage": [
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "output_tokens_details": [
-                    "reasoning_tokens": 0
-                ],
-                "total_tokens": 0
-            ],
+            "usage": usagePayload,
             "user":
                 json["user"] ?? NSNull(),
             "metadata":

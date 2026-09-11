@@ -41,7 +41,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var lastActivity = Date()
         var sessions: [String: ManagedSession] = [:]
         var modelCapabilityContract: ModelCapabilityContract?
-        var activeRequestTasks: [String: Task<String, Error>] = [:]
+        var activeRequestTasks: [String: Task<GenerationResult, Error>] = [:]
     }
 
     private enum Lifecycle {
@@ -311,7 +311,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         config: ModelConfig,
         onChunk: @escaping @Sendable (String) -> Void,
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void = { _ in }
-    ) async throws -> String {
+    ) async throws -> GenerationResult {
         state.withLock { $0.lastActivity = Date() }
         try await ensureLoaded()
 
@@ -333,7 +333,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             : executionKey
 
         let gate = gateHolder.withLock { $0 }
-        let task = Task<String, Error> { [weak self] in
+        let task = Task<GenerationResult, Error> { [weak self] in
             guard let self else { throw RuntError.notLoaded }
             return try await gate.withExclusive(gateExecutionKey) {
                 // P0-3：QUEUED→RUNNING 由推理层在真正拿到 generation gate 后置位，
@@ -398,13 +398,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         config: ModelConfig,
         onChunk: @escaping @Sendable (String) -> Void,
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void
-    ) async throws -> String {
+    ) async throws -> GenerationResult {
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
 
         let incoming = Self.makeChatMessages(messages)
-        guard !incoming.isEmpty else { return "" }
+        guard !incoming.isEmpty else { return GenerationResult(text: "", usage: nil) }
 
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
         let kvSettings = config.kvCache ?? baseConfig.kvCache
@@ -480,7 +480,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             delta = incoming.last.map { [$0] } ?? []
         }
 
-        guard !delta.isEmpty else { return "" }
+        guard !delta.isEmpty else { return GenerationResult(text: "", usage: nil) }
 
         let historyCount = managed.history.count
         let deltaCount = delta.count
@@ -494,6 +494,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let filter = StreamTokenFilter(disableThinking: thinkingDisabled)
         var tokensPerSecond: Double?
         var promptTokens: Int?
+        var generationTokens: Int?
         var promptSeconds: Double?
         var cachedPromptTokens: Int?
         var cacheEfficiency: Double?
@@ -536,6 +537,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 tokensPerSecond = info.tokensPerSecond
                 promptTokens = info.promptTokenCount
                 promptSeconds = info.promptTime
+                generationTokens = info.generationTokenCount
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
             }
@@ -597,7 +599,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             log += " toolCalls=\(toolCalls.count)"
         }
         traceLogger.trace(log)
-        return completedText
+        let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
+            ? GenerationUsageReport(
+                promptTokens: promptTokens!,
+                generationTokens: generationTokens!,
+                cachedPromptTokens: cachedPromptTokens,
+                cacheEfficiency: cacheEfficiency,
+                ttftSeconds: ttft,
+                tokensPerSecond: tokensPerSecond
+            )
+            : nil
+        return GenerationResult(text: completedText, usage: usage)
     }
 
     /// P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行），再回收缓冲。

@@ -67,7 +67,7 @@ public final class HTTPServer: @unchecked Sendable {
         _ config: ModelConfig,
         _ onChunk: @escaping @Sendable (String) -> Void,
         _ onToolCall: @escaping @Sendable (ParsedToolCall) -> Void
-    ) async throws -> String
+    ) async throws -> GenerationResult
 
     public typealias CheckHealthHandler = @Sendable () async -> Bool
 

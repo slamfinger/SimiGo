@@ -264,3 +264,48 @@ nonisolated public extension ModelCapabilityContract {
         )
     }
 }
+
+// MARK: - Generation Usage Report（P1-2）
+
+/// 真实 token ledger 报告——NativeMLX 从官方 GenerateCompletionInfo 透出，
+/// Responses/Chat 的 usage 字段消费此结构，不做估算。
+/// 生成结果：文本 + 真实 usage（GenerateCompletionInfo 透传）。
+nonisolated public struct GenerationResult: Sendable {
+    public var text: String
+    public var usage: GenerationUsageReport?
+
+    public init(text: String, usage: GenerationUsageReport?) {
+        self.text = text
+        self.usage = usage
+    }
+}
+
+nonisolated public struct GenerationUsageReport: Codable, Equatable, Sendable {
+    public var promptTokens: Int
+    public var generationTokens: Int
+    public var cachedPromptTokens: Int?
+    public var cacheEfficiency: Double?
+    public var ttftSeconds: TimeInterval?
+    public var tokensPerSecond: Double?
+
+    public init(
+        promptTokens: Int,
+        generationTokens: Int,
+        cachedPromptTokens: Int? = nil,
+        cacheEfficiency: Double? = nil,
+        ttftSeconds: TimeInterval? = nil,
+        tokensPerSecond: Double? = nil
+    ) {
+        self.promptTokens = promptTokens
+        self.generationTokens = generationTokens
+        self.cachedPromptTokens = cachedPromptTokens
+        self.cacheEfficiency = cacheEfficiency
+        self.ttftSeconds = ttftSeconds
+        self.tokensPerSecond = tokensPerSecond
+    }
+
+    /// OpenAI usage 语义映射。
+    public var inputTokens: Int { promptTokens }
+    public var outputTokens: Int { generationTokens }
+    public var totalTokens: Int { promptTokens + generationTokens }
+}
