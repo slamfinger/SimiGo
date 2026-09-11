@@ -9,7 +9,7 @@ import Tokenizers
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
 public final class NativeMLX: Runtime, @unchecked Sendable {
-    private final class ManagedSession: @unchecked Sendable {
+    private nonisolated final class ManagedSession: @unchecked Sendable {
         let session: ChatSession
         var history: [Chat.Message]
         /// Message-level transcript in SimiGo JSON form (client echo form for
@@ -599,32 +599,34 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             )
         }
 
-        let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
-
         let effective = config ?? baseConfig
         let thinkingDisabled = effective.disableThinking || baseConfig.disableThinking
-        var params = GenerateParameters(
-            maxTokens: effective.maxTokens > 0 ? effective.maxTokens : baseConfig.maxTokens,
-            maxKVSize: nil,
-            temperature: effective.temperature,
-            topP: effective.topP,
-            topK: effective.topK,
-            minP: effective.minP,
-            repetitionPenalty: effective.repeatPenalty,
-            presencePenalty: effective.presencePenalty
-        )
-        params.kvCache = try Self.makeKVCacheConfiguration(effective.kvCache)
+        let sessionParams: GenerateParameters = try {
+            var params = GenerateParameters(
+                maxTokens: effective.maxTokens > 0 ? effective.maxTokens : baseConfig.maxTokens,
+                maxKVSize: nil,
+                temperature: effective.temperature,
+                topP: effective.topP,
+                topK: effective.topK,
+                minP: effective.minP,
+                repetitionPenalty: effective.repeatPenalty,
+                presencePenalty: effective.presencePenalty
+            )
+            params.kvCache = try Self.makeKVCacheConfiguration(effective.kvCache)
+            return params
+        }()
 
         let gate = gateHolder.withLock { $0 }
         let loadedMetadata = metadata
         try await gate.withExclusive(key) { [weak self] in
             guard let self else { throw RuntError.notLoaded }
+            let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
             let session = ChatSession(
                 container,
                 instructions: nil,
                 cache: snapshot.cache,
                 state: snapshot.state,
-                generateParameters: params,
+                generateParameters: sessionParams,
                 additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
             )
             let restored = ManagedSession(
