@@ -99,7 +99,7 @@ nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
         let fm = FileManager.default
         let paths = [
             path + "/generation_config.json",
-            (path as NSString).deletingLastPathComponent() + "/generation_config.json"
+            (path as NSString).deletingLastPathComponent + "/generation_config.json"
         ]
         for p in paths where fm.fileExists(atPath: p) {
             if let data = try? Data(contentsOf: URL(fileURLWithPath: p)),
