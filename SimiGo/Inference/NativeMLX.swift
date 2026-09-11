@@ -249,6 +249,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             guard self.state.withLock({ $0.isRunning && $0.modelContainer == nil }) else { return }
 
             self.state.withLock { $0.lifecycle = .resuming }
+            traceLogger.trace("[LIFECYCLE] resume_started")
             do {
                 let container = try await LLMModelFactory.shared.loadContainer(
                     from: URL(fileURLWithPath: self.modelPath),
