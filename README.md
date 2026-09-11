@@ -9,13 +9,53 @@ SimiGo 的定位很简单：**外部 Agent 决定做什么，SimiGo 负责把模
 ## 核心能力
 
 - 基于 MLX / `mlx-swift-lm` 执行本地模型推理
-- 提供 OpenAI-compatible API
+- 提供 OpenAI-compatible API（Chat Completions / Text Completions / Responses）
 - 支持流式与非流式生成
 - 支持请求取消与生命周期安全收敛
 - 支持多 Session / 多 Branch 的逻辑隔离
 - 支持 Physical KV 与 Prefix Reuse
 - 支持资源准入、物理缓存淘汰与运行状态观测
 - 支持官方 Tool Calling，并将 Tool Call 转交外部 Agent
+- 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
+- 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
+
+## Runtime 三层契约
+
+SimiGo 的核心不是一个 API 转发层，而是一个可靠的 Agent Runtime。
+三层契约共同构成 Runtime 的能力边界：
+
+```text
+             SimiGo Agent Runtime
+                      │
+      ┌───────────────┼───────────────┐
+      ↓               ↓               ↓
+ Capability      Generation       Tool Governance
+   Contract         Truth          Contract
+   （P1-1）         （P1-2）        （P1-3）
+      │               │               │
+      │            ┌──┴──┐            │
+      │            ↓     ↓            │
+      │        usage    cache        │
+      │        ledger   reuse        │
+      │                              │
+      └──────────────────────────────┘
+                    ↓
+         可靠的本地 Agent Runtime
+```
+
+| 契约 | 保证 | 实测 |
+|---|---|---|
+| **Capability** | Runtime 明确知道模型能做什么、不能做什么、哪些未验证 | `/v1/models` 透出三态能力声明 |
+| **Generation Truth** | usage 来自真实 token ledger，不是估算 | input/output/total/cached 与 [MLX] 逐轮吻合 |
+| **Tool Governance** | 每个工具调用有完整生命周期事件链 | REQUESTED→VALIDATED→RESULT(observed) |
+
+可靠性保证：
+
+- **失败分类**：每次失败都有明确的 reason（`cancelled_by_client` / `cancelled_by_runtime` / `model_execution_error` / …），不再笼统 `cancelled_or_failed`
+- **取消→释放强保证**：客户端断连 → 生成取消 → gate 释放 → 下一请求接棒（实测 2ms）
+- **状态真实性**：排队中的请求 LC 保持 QUEUED，不虚假 RUNNING
+- **KV 配置指纹**：KV 配置变更时旧缓存自动失效，全量 prefill
+- **Session LRU**：超出上限自动驱逐最久未用会话，释放 KV 后 `Memory.clearCache()`
 
 ## 核心架构
 
