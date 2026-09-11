@@ -824,17 +824,19 @@ extension HTTPServer {
 
             isSuccess = true // <--- Mark success before final events
 
-            let finalContent =
-                extractAssistantText(
-                    from:
-                        streamState.snapshotOutputItems()
-                )
-
-            let finalCalls =
-                toolCalls.value
+            // 先关闭消息（output_item.done + 填充 content），再取快照——
+            // 否则 response.completed 的 output 携带 in_progress/content=[] 的过期状态。
+            var completionEvents =
+                streamState.closeAssistantMessage()
 
             let finalOutput =
                 streamState.snapshotOutputItems()
+
+            let finalContent =
+                extractAssistantText(from: finalOutput)
+
+            let finalCalls =
+                toolCalls.value
 
             let currentHistory =
                 appendResponsesAssistantOutput(
@@ -869,9 +871,6 @@ extension HTTPServer {
                     )
                 )
             }
-
-            var completionEvents =
-                streamState.closeAssistantMessage()
 
             completionEvents.append([
                 "type": "response.completed",

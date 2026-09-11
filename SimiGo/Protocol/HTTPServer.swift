@@ -1159,6 +1159,21 @@ public final class HTTPServer: @unchecked Sendable {
                 !enableThinking
         }
 
+        // P0-5 验收入口：请求级 KV 配置（kvFingerprint 变更 → 旧缓存失效）。
+        if let kvObj = json["kvCache"] as? [String: Any] {
+            var settings = KVCacheSettings()
+            if let strategy = kvObj["strategy"] as? String {
+                settings.strategy = strategy
+            }
+            if let maxTokens = kvObj["maxTokens"] as? Int {
+                settings.maxTokens = maxTokens
+            }
+            if let preserved = kvObj["preservedPrefixTokens"] as? Int {
+                settings.preservedPrefixTokens = preserved
+            }
+            config.kvCache = settings
+        }
+
         return config
     }
 
