@@ -349,6 +349,9 @@ public final class HTTPServer: @unchecked Sendable {
     private let checkHealthHandler: CheckHealthHandler
     private let cancelGenerationHandler: CancelGenerationHandler?
     private let capabilitiesProvider: (() -> ModelCapabilityContract?)?
+    /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
+    /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
+    private let baseConfigProvider: () -> ModelConfig
 
     private let queue = DispatchQueue(
         label: "com.simigo.httpserver.connections",
@@ -372,7 +375,8 @@ public final class HTTPServer: @unchecked Sendable {
         generateHandler: @escaping GenerateHandler,
         checkHealthHandler: @escaping CheckHealthHandler,
         cancelGenerationHandler: CancelGenerationHandler? = nil,
-        capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil
+        capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
+        baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() }
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -398,6 +402,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.checkHealthHandler = checkHealthHandler
         self.cancelGenerationHandler = cancelGenerationHandler
         self.capabilitiesProvider = capabilitiesProvider
+        self.baseConfigProvider = baseConfigProvider
     }
 
     // MARK: - Lifecycle
@@ -1202,8 +1207,10 @@ public final class HTTPServer: @unchecked Sendable {
         from json: [String: Any]
     ) -> ModelConfig {
 
-        var config =
-            ModelConfig()
+        // UI 模型设置为兜底（2026-09-13）：请求未显式指定的字段落 UI 值，
+        // 显式字段仍覆盖 UI——模型页采样参数此前只落 ModelConfig 硬编码
+        // 默认（1.0/0.9/20），对协议请求完全不生效。
+        var config = baseConfigProvider()
 
         if let maxTokens =
             json["max_completion_tokens"] as? Int

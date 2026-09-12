@@ -72,6 +72,9 @@ nonisolated public struct ModelInfo: Equatable, Sendable {
 // MARK: - Model Configuration
 
 nonisolated public struct ModelConfig: Codable, Equatable, Sendable {
+    /// 出厂默认（合成 init 为 internal，无法用于 public API 默认参数）。
+    public init() {}
+
     public var temperature: Float = 1.0
     public var topP: Float = 0.9
     public var topK: Int = 20
