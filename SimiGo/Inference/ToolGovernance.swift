@@ -242,13 +242,14 @@ public final class ToolGovernance: @unchecked Sendable {
 
     // MARK: - 内部
 
-    /// 人类扫读用紧凑 id：去常见前缀、保留尾部 6 位（完整 id 见关联请求）。
+    /// 人类扫读用紧凑 id：去常见前缀、保留头部 6 位（与 [LC] trace 同向，
+    /// 与 [CANCEL] 行的全量 id 头部可直接对照；完整 id 见关联请求）。
     private nonisolated static func short(_ id: String) -> String {
         if id.isEmpty { return "-" }
-        if id.hasPrefix("req-") { return String(id.dropFirst(4).suffix(6)) }
-        if id.hasPrefix("call_") { return String(id.dropFirst(5).suffix(6)) }
-        if id.hasPrefix("rtc-rejected-") { return String(id.dropFirst(13).suffix(6)) }
-        return String(id.suffix(6))
+        if id.hasPrefix("req-") { return String(id.dropFirst(4).prefix(6)) }
+        if id.hasPrefix("call_") { return String(id.dropFirst(5).prefix(6)) }
+        if id.hasPrefix("rtc-rejected-") { return String(id.dropFirst(13).prefix(6)) }
+        return String(id.prefix(6))
     }
 
     private func transition(

@@ -169,6 +169,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     capabilitiesProvider: { [weak self] in
                         self?.capabilityContract()
+                    },
+                    baseConfigProvider: { [weak self] in
+                        self?.baseConfig ?? ModelConfig()
                     }
                 )
             }
@@ -416,22 +419,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return GenerationResult(text: "", usage: nil)
         }
 
-        // P1-3 ③：function_call_output ingestion——tool_call_id 命中已派发
-        // 的 invocation → TOOL_RESULT（observed result，外部执行回传）；
-        // 未命中/重复/非法状态 → anomaly（不伪造成功）。
-        for value in messages {
-            guard case .object(let obj) = value,
-                  (obj["role"]?.string ?? "").lowercased() == "tool",
-                  let toolCallId = obj["tool_call_id"]?.string else { continue }
-            let size = obj["content"]?.string?.utf8.count
-            toolGovernance.resultObserved(
-                requestId: requestId,
-                generationId: requestId,
-                toolCallId: toolCallId,
-                sizeBytes: size
-            )
-        }
-
         let thinkingDisabled = config.disableThinking || baseConfig.disableThinking
         let kvSettings = config.kvCache ?? baseConfig.kvCache
         let kvConfiguration = try Self.makeKVCacheConfiguration(kvSettings)
@@ -463,6 +450,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             managed.lastActivity = Date()
             reusedSession = true
         } else {
+            // 复用失败判据（2026-09-13 排查「重试全量冷预填死循环」加）：
+            // prefix=false 时上方 prefixMismatch 有细节；count/fp 失败此前完全静默，
+            // 而重试冷预填 ~600s 恰好卡死在客户端重连阈值上方，必须可见。
+            if let existing {
+                let countOk = incoming.count > existing.history.count
+                let fpOk = existing.kvFingerprint == kvFingerprint
+                let prefixOk = Self.isPrefix(existing.history, of: incoming)
+                if !countOk || !fpOk || !prefixOk {
+                    traceLogger.trace(
+                        "[MLX] reuseMiss count=\(countOk) fp=\(fpOk) prefix=\(prefixOk)" +
+                        " history=\(existing.history.count) incoming=\(incoming.count)" +
+                        " fpHistory=\(existing.kvFingerprint ?? "-") fpIncoming=\(kvFingerprint ?? "-")"
+                    )
+                }
+            }
             if let existing,
                incoming.count > existing.history.count,
                let mismatch = Self.firstPrefixMismatch(existing.history, of: incoming) {
@@ -508,6 +510,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         guard !delta.isEmpty else { return GenerationResult(text: "", usage: nil) }
 
+        // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
+        // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
+        // （2026-09-13 实测 110k 会话每轮 52-60 条，淹没 trace）。新增 tool 消息
+        // 命中已派发 invocation → TOOL_RESULT（observed result，外部执行回传）；
+        // 未命中/重复/非法状态 → anomaly（不伪造成功）。
+        let newMessageStart = reusedSession
+            ? managed.historyJSON.count
+            : max(messages.count - 1, 0)
+
+        for value in messages.dropFirst(newMessageStart) {
+            guard case .object(let obj) = value,
+                  (obj["role"]?.string ?? "").lowercased() == "tool",
+                  let toolCallId = obj["tool_call_id"]?.string else { continue }
+            let size = obj["content"]?.string?.utf8.count
+            toolGovernance.resultObserved(
+                requestId: requestId,
+                generationId: requestId,
+                toolCallId: toolCallId,
+                sizeBytes: size
+            )
+        }
+
         let historyCount = managed.history.count
         let deltaCount = delta.count
         let streamStart = Date()
@@ -524,16 +548,26 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var promptSeconds: Double?
         var cachedPromptTokens: Int?
         var cacheEfficiency: Double?
+        // 解码可见性诊断（2026-09-13）：流实际产出 vs filter 放行。
+        // rawB 大而 emitB=0 ⇒ 模型在长思考、输出被整段吞掉——客户端看到
+        // 的就是数百秒零事件静默（e155f1 实测 601s）。
+        var rawEventCount = 0
+        var rawChunkBytes = 0
+        var emittedChunkBytes = 0
 
         for try await generation in managed.session.streamDetails(to: delta) {
             switch generation {
             case .chunk(let text):
+                rawEventCount += 1
+                rawChunkBytes += text.utf8.count
                 ttft = ttft ?? Date().timeIntervalSince(streamStart)
                 filter.feed(text) { chunk in
+                    emittedChunkBytes += chunk.utf8.count
                     completedText.append(chunk)
                     onChunk(chunk)
                 }
             case .toolCall(let call):
+                rawEventCount += 1
                 ttft = ttft ?? Date().timeIntervalSince(streamStart)
                 let normalizedCall = ToolCall(
                     function: call.function,
@@ -588,6 +622,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     )
                 }
             case .rejectedToolCall(let rejection):
+                rawEventCount += 1
                 // P1-3 ②：backend observation（undeclared_tool）→ Runtime 映射
                 // → REJECTED(unknown_tool)。官方拒绝无 tool_call identity，
                 // tool_call_id 由 Runtime 生成（契约允许）。
@@ -628,6 +663,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         filter.flush { chunk in
             completedText.append(chunk)
             onChunk(chunk)
+        }
+
+        // 铁律 10：取消不得产生有效提交。mlx-swift-lm 的流在所属 task 被取消时
+        // 正常结束而非抛 CancellationError（2026-09-13 01:18 实测）：若照常提交，
+        // incoming + 空 assistant 会写入 managed.history，此后同一会话的每个重试
+        // 请求 count=false → 复用失败 → 每次多付 ~625s 全量冷预填。
+        // 残余竞态窗口：流在 cancel 落地前瞬间自然结束——无法在会话层根除，已收窄。
+        if Task.isCancelled {
+            traceLogger.trace(
+                "[MLX] cancelCommitSkip session=\(executionKey.traceKey)" +
+                " history=\(managed.history.count)" +
+                " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
+            )
+            throw CancellationError()
         }
 
         let assistant = Chat.Message.assistant(
@@ -680,6 +729,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if !toolCalls.isEmpty {
             log += " toolCalls=\(toolCalls.count)"
         }
+        log += " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
         traceLogger.trace(log)
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(
