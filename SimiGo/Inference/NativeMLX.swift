@@ -522,10 +522,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行）。
         await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
-        managed.session.generateParameters = params
-        managed.session.tools = toolSpecs
-        managed.session.additionalContext = additionalContext
-
         let delta: [Chat.Message]
         if reusedSession {
             delta = Array(incoming.dropFirst(managed.history.count))
@@ -544,6 +540,38 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             ? managed.historyJSON.count
             : max(messages.count - 1, 0)
 
+        let cacheTokensBefore = (try? await managed.session.cacheStatus())?
+            .processedTokenCount
+
+        // 预填步长按本轮最终上下文规模选档（阶梯实测见 RuntimeTuning）。
+        // 顺序关键：GenerateParameters 是值类型，stepSize 必须在赋给
+        // managed.session 之前选定，否则选档永远不生效（9d2c521 回归）。
+        // 复用会话规模 = 既有缓存 + delta 字节/4；全新会话 = 全量字节/4
+        // （只按 delta 估会让全新 121k 会话误选 2048 档，正是换页抖动配置）。
+        var deltaBytes = 0
+        for value in messages.dropFirst(newMessageStart) {
+            guard case .object(let obj) = value else { continue }
+            deltaBytes += obj["content"]?.string?.utf8.count ?? 0
+        }
+        let contextEstimate: Int
+        if reusedSession {
+            contextEstimate = (cacheTokensBefore ?? 0) + deltaBytes / 4
+        } else {
+            var incomingBytes = 0
+            for value in messages {
+                guard case .object(let obj) = value else { continue }
+                incomingBytes += obj["content"]?.string?.utf8.count ?? 0
+            }
+            contextEstimate = incomingBytes / 4
+        }
+        params.prefill.stepSize = RuntimeTuning.prefillStepSize(
+            contextTokens: contextEstimate
+        )
+
+        managed.session.generateParameters = params
+        managed.session.tools = toolSpecs
+        managed.session.additionalContext = additionalContext
+
         for value in messages.dropFirst(newMessageStart) {
             guard case .object(let obj) = value,
                   (obj["role"]?.string ?? "").lowercased() == "tool",
@@ -561,19 +589,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let deltaCount = delta.count
         let streamStart = Date()
         var ttft: TimeInterval?
-        let cacheTokensBefore = (try? await managed.session.cacheStatus())?
-            .processedTokenCount
-
-        // 预填步长按上下文规模选档（阶梯实测见 RuntimeTuning）。
-        // 规模估算：既有缓存 token + 新增消息内容字节/4（粗估足矣，档位阈值有宽裕）。
-        var deltaBytes = 0
-        for value in messages.dropFirst(newMessageStart) {
-            guard case .object(let obj) = value else { continue }
-            deltaBytes += obj["content"]?.string?.utf8.count ?? 0
-        }
-        params.prefill.stepSize = RuntimeTuning.prefillStepSize(
-            contextTokens: (cacheTokensBefore ?? 0) + deltaBytes / 4
-        )
 
         var completedText = ""
         var toolCalls: [ToolCall] = []
