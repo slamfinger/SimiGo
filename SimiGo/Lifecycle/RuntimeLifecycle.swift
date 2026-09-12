@@ -27,6 +27,10 @@ public struct RuntimeTransitionRule {
     /// ponytail: RUNNING→COMPLETING 是文档表格外的补充边（非流式请求没有 STREAMING 阶段）；
     /// CREATED→COMPLETING 同理：SSE 直发收口后协议层不再执行 QUEUED/RUNNING 迁移，
     /// 请求从 CREATED 直接进入完成路径，表必须承认这一现实，否则每次正常完成都触发 FORCE_RELEASED。
+    /// CREATED→RUNNING 同理：协议层 QUEUED 补位缺失的入口（2026-09-12 实测 OpenAI 协议
+    /// 请求全部死于 INVALID_TRANSITION CREATED→RUNNING → cancelled_internally），
+    /// 请求既已持有 generation gate，事实状态即 RUNNING；trace 线 from=CREATED to=RUNNING
+    /// 即漏补位入口的定位标记。
     public nonisolated static func isValid(
         from: RuntimeState,
         to: RuntimeState
@@ -38,6 +42,7 @@ public struct RuntimeTransitionRule {
 
         switch (from, to) {
         case (.created, .queued),
+             (.created, .running),
              (.created, .completing),
              (.queued, .running),
              (.running, .streaming),
