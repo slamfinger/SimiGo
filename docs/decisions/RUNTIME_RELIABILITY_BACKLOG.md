@@ -145,6 +145,27 @@ generation task，否则 cache lock 可能被一直持有。验收标准：
   invalid_arguments / schema_mismatch / tool_disabled / timeout）。
 - **Unified Memory telemetry**：model weights / KV cache / draft /
   runtime allocations / swap pressure；不使用 CUDA 式 GPU/CPU 二分。
+- **Remote Runtime Observability（Queue Visibility）**：
+  5.1 候选首项，观察窗口（2026-09-13→09-19/20）后实施；
+  窗口内 LAN 排队痛点实锤则提级。
+  事实基础：全局生成串行（`serializeGeneration=true` → `__global_generation__`）；
+  排队请求 LC 保持 QUEUED 不虚假 RUNNING（P0-3）；
+  `SessionGenerationGate.waiters` 真实 FIFO（`LifecycleGates.swift`）；
+  `X-Request-Id` 已随响应头下发；SSE 心跳（801cb89）已解决连接存活。
+  缺口：LAN 客户端只见「连接活着但无 token」，无法区分正常排队与卡住——
+  QUEUED 事实只存在于本机 trace，Runtime Truth 缺 Remote Observability。
+  方案（不改 OpenAI 主协议 / 不复制 queue / HTTPServer 不自建队列防双事实源）：
+  Gate 增只读快照（不动 acquire/release）→ Lifecycle 提供 request state
+  （`state(of:)` 已有）→ HTTPServer 增只读 `GET /v1/runtime/requests/{id}`。
+  一期仅 state（CREATED/QUEUED/RUNNING/terminal）；二期 position/ahead——
+  前置条件是 `Waiter` 目前无 requestId 关联（仅 id:UUID+continuation），
+  需把 requestID 传入 `withExclusive`（小接口扩展），position 计算须容忍
+  排队中取消（`cancel(id:key:)` 移除）。`phase: PREFILL`、ETA、Web UI、
+  SSE 私有 runtime comment、OpenAI chunk 私有字段全部暂缓。
+  适用边界（诚实声明）：只服务 SimiGo-aware 客户端（自研 LAN 客户端 /
+  运维查询 / 面板）；标准 OpenAI Agent（Codex / Claude Code）既不轮询
+  私有端点也不解析 SSE 注释语义，只能得到心跳级活性——设计内行为，
+  不对其承诺排队可见性。
 
 ## P2 —— 已完成/外部
 
