@@ -941,12 +941,11 @@ public final class Service: ObservableObject {
 
                     // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
                     // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
+                    // 超时为自适应：max(600s, 最贵会话重建时长估算+60s 容错)。
                     if self.backendKind == .mlx,
                        let nativeMLX = runtime as? NativeMLX {
                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
-                        let _ = await nativeMLX.suspendIfIdle(
-                            idleTimeout: Self.idleSuspendTimeout
-                        )
+                        let _ = await nativeMLX.suspendIfIdle()
                     }
 
                     // GGUF：外部进程无 isGenerating 信号（恒 false），slot 忙时
@@ -987,10 +986,11 @@ public final class Service: ObservableObject {
 
     // MARK: - Health Check Tuning
 
-    /// 空闲挂起超时（秒）。agent 会话 16K 级 prompt 冷启动重预填实测 ≈56s，
-    /// 短超时会把工具执行/思考间隙变成反复缴纳冷启动税；600s 内的工作间隙不重复挂起。
-    /// 健康检查循环周期 30s，挂起延迟收敛到 idleTimeout～idleTimeout+30s。
-    private static let idleSuspendTimeout: TimeInterval = 600
+    // 空闲挂起超时已改为自适应（NativeMLX.adaptiveIdleTimeout）：
+    // max(600s 基线, 最贵会话重建时长估算 + 60s 容错)。保留 600s 下限的
+    // 依据不变：agent 会话工具执行/思考间隙不应反复缴纳冷启动税；
+    // 大上下文会话（如 121k，重建 ≈11 分钟）按估算自动延长闲置容忍。
+    // 健康检查循环周期 30s，挂起延迟收敛到 idleTimeout～idleTimeout+30s。
 
     private func stopHealthCheck() {
         healthTask?.cancel()

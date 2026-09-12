@@ -277,7 +277,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    public func suspendIfIdle(idleTimeout: TimeInterval = 300) async -> Bool {
+    /// 自适应闲置超时（2026-09-13，替代固定 600s）：max(600s 基线, 最贵会话
+    /// 重建时长估算 + 60s 容错)。重建时长按 512 档实测吞吐取保守 150 tok/s
+    /// 估算（121k 会话闲置 ~14.5 分钟才允许卸载）；小会话维持 600s 基线。
+    /// 避免大会话刚闲置满固定阈值即被卸载、下轮再缴全额冷启动税。
+    private func adaptiveIdleTimeout() async -> TimeInterval {
+        let sessions = state.withLock { Array($0.sessions.values) }
+        var maxTokens = 0
+        for managed in sessions {
+            let tokens = (try? await managed.session.cacheStatus())?.processedTokenCount ?? 0
+            maxTokens = max(maxTokens, tokens)
+        }
+        return max(600, Double(maxTokens) / RuntimeTuning.prefillThroughputFloor + 60)
+    }
+
+    public func suspendIfIdle() async -> Bool {
+        let idleTimeout = await adaptiveIdleTimeout()
         let eligible = state.withLock { state in
             state.isRunning &&
             state.modelContainer != nil &&
@@ -289,11 +304,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         do {
             return try await lifecycleGate.withLock { [weak self] in
                 guard let self else { return false }
+                let timeout = await self.adaptiveIdleTimeout()
                 let stillEligible = self.state.withLock { state in
                     state.isRunning &&
                     state.modelContainer != nil &&
                     state.activeRequestTasks.isEmpty &&
-                    Date().timeIntervalSince(state.lastActivity) >= idleTimeout
+                    Date().timeIntervalSince(state.lastActivity) >= timeout
                 }
                 guard stillEligible else { return false }
 

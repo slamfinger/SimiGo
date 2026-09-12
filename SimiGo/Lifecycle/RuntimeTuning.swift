@@ -45,6 +45,9 @@ nonisolated enum RuntimeTuning {
         return nil // 512：超大上下文换页保护
     }
 
+    /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
+    static let prefillThroughputFloor = 150.0
+
     /// P1 卸载后 memory settle 等待上限。
     static var memorySettleTimeoutSeconds: TimeInterval = 10
 
