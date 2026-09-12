@@ -1012,9 +1012,10 @@ public final class Service: ObservableObject {
 
     // MARK: - Health Check Tuning
 
-    /// Phase 1 实验用的空闲挂起超时（秒）。验证成功后改为 300。
-    /// 健康检查循环周期 30s，使挂起延迟收敛到 idleTimeout～idleTimeout+30s。
-    private static let idleSuspendTimeout: TimeInterval = 120
+    /// 空闲挂起超时（秒）。agent 会话 16K 级 prompt 冷启动重预填实测 ≈56s，
+    /// 短超时会把工具执行/思考间隙变成反复缴纳冷启动税；600s 内的工作间隙不重复挂起。
+    /// 健康检查循环周期 30s，挂起延迟收敛到 idleTimeout～idleTimeout+30s。
+    private static let idleSuspendTimeout: TimeInterval = 600
 
     private func stopHealthCheck() {
         healthTask?.cancel()
