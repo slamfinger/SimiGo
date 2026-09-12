@@ -310,7 +310,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     public func generate(
-        requestId: String = "internal-\(UUID().uuidString.lowercased())",
+        requestId: String = "internal-\(UUID().uuidString.prefix(8).lowercased())",
         agentId: String? = nil,
         sessionId: String = "default",
         logicalBranchId: String = "main",

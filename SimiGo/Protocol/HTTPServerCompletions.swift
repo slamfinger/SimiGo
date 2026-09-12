@@ -149,6 +149,10 @@ extension HTTPServer {
             return
         }
 
+        // 冷预填充静默窗口保活；handler 收口时取消。
+        let heartbeat = startSSEHeartbeat(for: context)
+        defer { heartbeat.cancel() }
+
         do {
             // P0-3 补位：RUNNING 由推理 gate 闭包置位，协议层必须先完成
             // CREATED→QUEUED，否则 gate 闭包撞非法迁移、请求被当作取消静默丢弃。
@@ -290,6 +294,8 @@ extension HTTPServer {
             return false
         }
 
+        context.touchOutboundActivity()
+
         var head =
             "HTTP/1.1 \(status) \(reasonPhrase(status))\r\n"
 
@@ -327,6 +333,8 @@ extension HTTPServer {
             return false
         }
 
+        context.touchOutboundActivity()
+
         var payload =
             Data("data: ".utf8)
 
@@ -353,6 +361,8 @@ extension HTTPServer {
         guard !context.closed else {
             return
         }
+
+        context.touchOutboundActivity()
 
         context.connection.send(
             content: data,

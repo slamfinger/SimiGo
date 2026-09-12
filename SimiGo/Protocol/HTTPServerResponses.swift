@@ -722,6 +722,10 @@ extension HTTPServer {
             return
         }
 
+        // 冷预填充静默窗口保活；handler 收口时取消。
+        let heartbeat = startSSEHeartbeat(for: context)
+        defer { heartbeat.cancel() }
+
         let initialResponse =
             makeInProgressResponse(
                 responseId: parsed.responseId,
@@ -2182,6 +2186,8 @@ extension HTTPServer {
             else {
                 return
             }
+
+            context.touchOutboundActivity()
 
             for (index, event)
                 in events.enumerated() {

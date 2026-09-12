@@ -140,10 +140,17 @@ public final class HTTPServer: @unchecked Sendable {
         private var _closed = false
         private var _cancelledByRuntime = false
 
+        /// 出站真实数据（headers / chunk / 事件）最后一次发送的时刻。
+        /// SSE 心跳据此判断当前是否处于静默窗口。
+        private let outboundActivity = Locked(Date())
+
         init(connection: NWConnection) {
             self.connection = connection
             self.key = ObjectIdentifier(connection)
-            self.requestId = "req-\(UUID().uuidString.lowercased())"
+            // 短字节串 ID（8 hex）：仅作取消映射字典键 / X-Request-Id / trace
+            // 展示，本机单用户量级下碰撞可忽略，紧凑 trace 不再拖全量 UUID。
+            self.requestId =
+                "req-\(UUID().uuidString.prefix(8).lowercased())"
             self.sendQueue = DispatchQueue(
                 label: "com.simigo.httpserver.send.\(UUID().uuidString)",
                 qos: .userInitiated
@@ -311,6 +318,14 @@ public final class HTTPServer: @unchecked Sendable {
             stateLock.withLock {
                 !_closed
             }
+        }
+
+        func touchOutboundActivity() {
+            outboundActivity.set(Date())
+        }
+
+        var secondsSinceOutboundActivity: TimeInterval {
+            Date().timeIntervalSince(outboundActivity.value)
         }
     }
 
@@ -621,6 +636,88 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         context.connection.cancel()
+    }
+
+    // MARK: - SSE Heartbeat
+
+    /// 长上下文静默窗口保活（2026-09-12）。
+    ///
+    /// 流式响应从 headers/首事件到第一个 token 之间没有出站字节
+    /// （16k token 冷预填充可达 50s+），客户端流闲置看门狗会判死连接重连；
+    /// 孤儿推理又因静默期没有 send 失败而无法被感知，占住全局 generation
+    /// gate，重试请求全部排队——表现为「重新连接 N/10、后台推理进行中」。
+    ///
+    /// 心跳在静默窗口注入 SSE 注释行（": ..."，规范要求解析器忽略），
+    /// 同时让死连接在下一个心跳浮出 send 错误 → terminate → 取消生成、
+    /// 释放 gate。有真实数据出站时不注入。仅流式 handler 使用，
+    /// handler 返回时必须 cancel 返回的 Task。
+    func startSSEHeartbeat(
+        for context: ConnectionContext,
+        interval: TimeInterval = 5
+    ) -> Task<Void, Never> {
+
+        let quietThreshold = interval * 0.9
+
+        return Task { [weak self, weak context] in
+            while !Task.isCancelled {
+                try? await Task.sleep(
+                    nanoseconds: UInt64(interval * 1_000_000_000)
+                )
+
+                guard !Task.isCancelled else { return }
+
+                guard
+                    let self,
+                    let context,
+                    !context.closed
+                else {
+                    return
+                }
+
+                guard
+                    context.secondsSinceOutboundActivity
+                        >= quietThreshold
+                else {
+                    continue
+                }
+
+                context.sendQueue.async {
+                    [weak self, weak context] in
+
+                    guard
+                        let self,
+                        let context,
+                        context.canSend()
+                    else {
+                        return
+                    }
+
+                    // 心跳不 touchOutboundActivity：它不是数据，
+                    // 下一个 interval 的静默判定不应被自己抹平。
+                    context.connection.send(
+                        content: Data(": keepalive\n\n".utf8),
+                        isComplete: false,
+                        completion: .contentProcessed {
+                            [weak self, weak context] error in
+
+                            guard
+                                let self,
+                                let context
+                            else {
+                                return
+                            }
+
+                            if error != nil {
+                                self.terminate(
+                                    context,
+                                    cancelGeneration: true
+                                )
+                            }
+                        }
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - Routing
@@ -1338,6 +1435,8 @@ public final class HTTPServer: @unchecked Sendable {
         guard context.canSend() else {
             return false
         }
+
+        context.touchOutboundActivity()
 
         context.sendQueue.async {
             [weak self, weak context] in
