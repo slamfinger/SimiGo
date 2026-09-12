@@ -76,13 +76,6 @@ nonisolated private func cleanupOwnedProcessesOnPort(_ port: Int, executable: St
     return (await processIDsOnPort(port)).isEmpty
 }
 
-nonisolated private func getSwapUsedMegabytes() -> Int? {
-    var usage = xsw_usage()
-    var size = MemoryLayout<xsw_usage>.size
-    guard sysctlbyname("vm.swapusage", &usage, &size, nil, 0) == 0 else { return nil }
-    return Int(usage.xsu_used / 1024 / 1024)
-}
-
 // MARK: - Backend Configuration
 
 public struct BackendConfig: Sendable {
@@ -102,12 +95,6 @@ public struct BackendConfig: Sendable {
     public let healthEndpoint: String
     public let startupTimeout: TimeInterval
     public let kind: ModelKind
-
-    nonisolated public static let dynamicMetalMemoryLimitMB: String = {
-        let totalMemory = ProcessInfo.processInfo.physicalMemory
-        let limitMB = Int(Double(totalMemory) * 0.85 / (1024 * 1024))
-        return "\(max(4096, limitMB))"
-    }()
 
     public init(name: String, customExecutable: String? = nil, args: @escaping @Sendable (ModelInfo, ModelConfig, Int) -> [String], healthEndpoint: String, startupTimeout: TimeInterval, kind: ModelKind) {
         self.name = name
@@ -954,7 +941,6 @@ public final class Service: ObservableObject {
 
                     // NativeMLX: 空闲超时挂起模型（Phase 1 实验）。
                     // 仅释放模型驻留内存，HTTPServer 保持运行——不触发 restart。
-                    // GGUF 的 Swap/restart 机制与 NativeMLX 空闲挂起完全独立，互不干扰。
                     if self.backendKind == .mlx,
                        let nativeMLX = runtime as? NativeMLX {
                         // 健康循环只需“尝试挂起”，返回值用于静默处理。
@@ -963,24 +949,13 @@ public final class Service: ObservableObject {
                         )
                     }
 
+                    // GGUF：外部进程无 isGenerating 信号（恒 false），slot 忙时
+                    // /health 可能 503——先跳过本轮，防止生成中途误判无响应触发重启。
                     if !runtime.isInProcess && self.backendKind == .gguf {
                         if let slotsIdle = await self.areSlotsIdle(), !slotsIdle {
-                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康/Swap检查。", level: .debug)
+                            Self.log("⏸ llama.cpp 当前存在活动 slot，跳过健康检查。", level: .debug)
                             try? await Task.sleep(nanoseconds: 30_000_000_000)
                             continue
-                        }
-
-                        let fetchedSwap = getSwapUsedMegabytes()
-
-                        if let swapMB = fetchedSwap, swapMB > 2048 {
-                            Self.log("⚠ [外部子进程] Swap 过高 (\(swapMB) MB)，触发重启...", level: .warning)
-
-                            Task { @MainActor [weak self] in
-                                guard let self else { return }
-                                await self.forceRestart()
-                            }
-
-                            return
                         }
                     }
                 }
