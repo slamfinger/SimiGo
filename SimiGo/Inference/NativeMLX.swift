@@ -433,6 +433,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             presencePenalty: config.presencePenalty
         )
         params.kvCache = kvConfiguration
+        // 预填进度可见化：每 ≥16k token 一行 trace（引擎按 asyncEval 流水，
+        // 数值略超前于 GPU 完成）。
+        let prefillLogged = Locked(0)
+        params.prefill.progress = { processed, total in
+            if processed == total || processed - prefillLogged.value >= 16384 {
+                prefillLogged.set(processed)
+                RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
+            }
+        }
         let toolSpecs = Self.makeToolSpecs(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
@@ -538,6 +547,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var ttft: TimeInterval?
         let cacheTokensBefore = (try? await managed.session.cacheStatus())?
             .processedTokenCount
+
+        // 预填步长按上下文规模选档（阶梯实测见 RuntimeTuning）。
+        // 规模估算：既有缓存 token + 新增消息内容字节/4（粗估足矣，档位阈值有宽裕）。
+        var deltaBytes = 0
+        for value in messages.dropFirst(newMessageStart) {
+            guard case .object(let obj) = value else { continue }
+            deltaBytes += obj["content"]?.string?.utf8.count ?? 0
+        }
+        params.prefill.stepSize = RuntimeTuning.prefillStepSize(
+            contextTokens: (cacheTokensBefore ?? 0) + deltaBytes / 4
+        )
 
         var completedText = ""
         var toolCalls: [ToolCall] = []

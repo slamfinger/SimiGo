@@ -32,6 +32,19 @@ nonisolated enum RuntimeTuning {
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。
     static var maxKVSize: Int? = nil
 
+    /// 预填步长按上下文规模选档（2026-09-13 阶梯实测定档）。
+    /// 实测（121k 冷预填、32GB 工作机、权重 19.3GB 驻留）：
+    /// 512 = 188 tok/s；1024 = 早段 399 / 中段 221（健康）；2048 = 无并发
+    /// 早段 510、并发日常任务后 <48（换页抖动，swap 6G+）；4096 = 94（淘汰）。
+    /// 瓶颈是内存容量而非批次：小上下文用大步长吃满带宽，大上下文降档保内存。
+    /// 官方 API 无运行中换挡（stepSize 固定、分块计划预先生成），此为按会话
+    /// 规模的请求级阶梯；运行中自适应列 upstream feature request 素材。
+    static func prefillStepSize(contextTokens: Int) -> Int? {
+        if contextTokens < 65536 { return 2048 }
+        if contextTokens < 98304 { return 1024 }
+        return nil // 512：超大上下文换页保护
+    }
+
     /// P1 卸载后 memory settle 等待上限。
     static var memorySettleTimeoutSeconds: TimeInterval = 10
 
