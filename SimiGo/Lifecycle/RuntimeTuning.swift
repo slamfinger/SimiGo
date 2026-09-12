@@ -50,21 +50,27 @@ nonisolated enum RuntimeTuning {
         return info.phys_footprint
     }
 
-    /// 系统 swap 已用量（vm.swapusage 的 used 字段）。
-    static func swapUsedBytes() -> UInt64 {
-        var size = 0
-        sysctlbyname("vm.swapusage", nil, &size, nil, 0)
-        guard size > 0 else { return 0 }
-        var buffer = [CChar](repeating: 0, count: size)
-        sysctlbyname("vm.swapusage", &buffer, &size, nil, 0)
-        guard let text = String(cString: buffer, encoding: .utf8),
-              let usedRange = text.range(of: "used = ") else { return 0 }
-        let remainder = text[usedRange.upperBound...]
-        let number = remainder.prefix(while: { $0.isNumber || $0 == "." })
-        guard let value = Double(number) else { return 0 }
-        let unit = remainder.drop { !$0.isLetter }.first
-        let bytes = unit == "G" ? value * 1024 * 1024 * 1024 : value * 1024 * 1024
-        return UInt64(bytes)
+    /// vm.swapusage 的 sysctl 返回二进制 `xsw_usage`（sys/sysctl.h），
+    /// 不是字符串——终端看到的文本是 sysctl(8) 工具格式化的。
+    /// 旧实现按 C 字符串解析，首字节 0x00 → 空串 → 永远返回 0
+    /// （2026-09-13 实测修正；镜像结构体与 sysctl(8) 同帧对拍一致）。
+    private struct XswUsage {
+        var total: UInt64 = 0
+        var avail: UInt64 = 0
+        var used: UInt64 = 0
+        var pageSize: UInt32 = 0
+        var encrypted: Int32 = 0
+    }
+
+    /// 系统 swap 已用量（xsu_used 字段）。读不到返回 nil：未知不冒充 0。
+    static func swapUsedBytes() -> UInt64? {
+        var usage = XswUsage()
+        var size = MemoryLayout<XswUsage>.size
+        guard sysctlbyname("vm.swapusage", &usage, &size, nil, 0) == 0,
+              size == MemoryLayout<XswUsage>.size else {
+            return nil
+        }
+        return usage.used
     }
 
     /// Unified Memory 快照行（MLX 计数器由调用方注入，保持本文件无 MLX 依赖）。
@@ -74,7 +80,7 @@ nonisolated enum RuntimeTuning {
         func mb(_ bytes: Int) -> String { String(format: "%.0fMB", Double(bytes) / 1048576.0) }
         let mlx = "active=\(mb(activeBytes)) cache=\(mb(cacheBytes)) peak=\(mb(peakBytes))"
         let footprint = "footprint=\(mb(Int(footprintBytes())))"
-        let swap = "swapUsed=\(mb(Int(swapUsedBytes())))"
+        let swap = swapUsedBytes().map { "swapUsed=\(mb(Int($0)))" } ?? "swapUsed=n/a"
         return mlx + " " + footprint + " " + swap
     }
 }
