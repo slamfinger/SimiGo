@@ -604,6 +604,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var promptSeconds: Double?
         var cachedPromptTokens: Int?
         var cacheEfficiency: Double?
+        // 引擎本轮实际走的物理复用路径（extend / extend-main / exact-n1 /
+        // rewind / fork-no-rewind / rebuild / cold），连续命中率语义由
+        // cacheHitTokens/promptTokens 分子分母 + mode 共同表达。
+        var cacheReuseMode: String?
         // 解码可见性诊断（2026-09-13）：流实际产出 vs filter 放行。
         // rawB 大而 emitB=0 ⇒ 模型在长思考、输出被整段吞掉——客户端看到
         // 的就是数百秒零事件静默（e155f1 实测 601s）。
@@ -713,6 +717,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 generationTokens = info.generationTokenCount
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
+                cacheReuseMode = info.cacheReuseMode
             }
         }
 
@@ -772,6 +777,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         if let cacheEfficiency {
             log += String(format: " cacheEff=%.2f", cacheEfficiency)
+        }
+        if let cacheReuseMode {
+            log += " mode=\(cacheReuseMode)"
         }
         if let promptTokens {
             log += " promptTokens=\(promptTokens)"
