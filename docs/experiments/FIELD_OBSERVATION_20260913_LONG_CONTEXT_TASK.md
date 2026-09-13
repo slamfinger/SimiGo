@@ -54,3 +54,15 @@
 ## 6. 观测基建状态
 
 本轮全部结论来自已入库的可观测设施：`[MLX] prefill X/Y` 进度行、`rawEv/rawB/emitB`、`reuseMiss` 三判据、`cancelCommitSkip`、xsw_usage swap 遥测。无新增机制需求。
+
+## 7. 附录：cacheEff=0.00 的代码级根因（上游报告基础，2026-09-13 补）
+
+对 `mlx-swift-lm@238ad74` 源码逐行核对，根因链完整闭合：
+
+1. **复用决策**（`PromptCacheReusePolicy.swift`）：规则序 = 协议规则 + `ExtendCachedPrefixRule`（严格扩展→`appendSuffix`）+ `RewindToCommonPrefixRule`（分叉→回卷复用，终局规则）。
+2. **回卷门槛**（`RewindToCommonPrefixRule.canRewind`）：要求 `commonPrefix>0 && trimCount>0 && mainCacheIsAligned && draftCacheIsAligned && isTrimmable && 无 media/attentionMask/modelState`。任一不满足 → `.rebuild`（全量重预填，零命中）。
+3. **qwen3.5 混合架构命中死穴**：`KVCache.swift:233` 基类 `isTrimmable` 默认 `false`，仅 KVCacheSimple/Quantized/Rotating 等标准 KV 子类覆写 true；GDN（GatedDeltaNet）递归状态层不可回卷 → 会话复合缓存 `isTrimmable=false` → **任何与已缓存 token 前缀的分叉都必然 rebuild**。
+4. **分叉来源**：上一轮生成的 token 账本（含响应协议私有 token）与下一轮冷模板重渲染不可能逐 token 复现——assistant 回显/工具结果边界必然分叉。工具结果内容形态决定分叉幅度。
+5. **观测-代码对应**：cacheEff=0.99 轮 = 严格扩展（`appendSuffix` 无 isTrimmable 门槛，GDN 状态自然前滚）✓；cacheEff=0.00 轮 = 渲染分叉 → 回卷被拒 → rebuild ✓；60-token delta 也 miss ✓（分叉与 delta 大小无关）；TodoWrite 轮倾向命中（其回显重渲染逐 token 稳定）✓；自愈 = 分叉消失后恢复严格扩展 ✓。与上游 mlx-lm #980（混合架构 prefix reuse 退化）同类，Swift 侧等价现象。
+
+**结论**：SimiGo 侧无缺陷、无可安全本地修复项（回卷 GDN 状态会产生错误输出，引擎拒绝回卷是正确行为）。修复方向在上游：GDN 状态检查点回卷、或 qwen3.5 协议拼接规则（`isToolResultContinuation` 拼接）。SimiGo 侧唯一有效缓解 = 控制会话上下文规模（分叉 rebuild 的代价与上下文线性相关）。
