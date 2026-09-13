@@ -1,5 +1,5 @@
 {
-  "originHash" : "a7819fc8bf04425ae8ca5234311a255b4474b1da56f3a9b693e5aecf9a0da76a",
+  "originHash" : "12eea5d6ca83edcbc992763ab95bd105ef2bf3c386dfb68ef1b45054fe5c5e37",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -21,11 +21,10 @@
     },
     {
       "identity" : "mlx-swift-lm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ml-explore/mlx-swift-lm",
+      "kind" : "localSourceControl",
+      "location" : "/Users/mr.simi/Documents/mlx-swift-lm",
       "state" : {
-        "branch" : "main",
-        "revision" : "238ad74b8a56e9ddc78c08d9ebffa07cebdf7842"
+        "revision" : "da6b7dd0bc19dba5b5d1d5edcaa6d710e314b724"
       }
     },
     {

@@ -510,10 +510,10 @@
 		};
 		C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			repositoryURL = "file:///Users/mr.simi/Documents/mlx-swift-lm";
 			requirement = {
-				kind = branch;
-				branch = main;
+				kind = revision;
+				revision = "da6b7dd0bc19dba5b5d1d5edcaa6d710e314b724";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
