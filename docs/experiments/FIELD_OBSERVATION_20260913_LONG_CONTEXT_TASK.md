@@ -84,6 +84,25 @@
 - 上游修复方向补充：ToolCall arguments 的 round-trip 保序（有序存储或规范化渲染）。
 - 排障口诀：**rebuild streak 的起点 = 第一次出现「多键参数工具调用」的轮次**。
 
+## 11. 附录五：Qwen35ToolRestartRule 设计规格（Harmony 移植映射，2026-09-13 深夜）
+
+**锚点实测（本机 Nail-Qwen3.6-35B-A3B-MLX tokenizer.json）**：`<tool_call>`=248058、`</tool_call>`=248059、`<tool_response>`=248066、`</tool_response>`=248067 均为**原子特殊 token**——规则锚点存在，与 Harmony 的 `<|call|>` 同构。
+
+**Harmony → Qwen3.5 映射**：
+
+| Harmony | Qwen3.5 |
+|---|---|
+| callToken = `<\|call\|>`（生成结束提交锚）| endToken = `</tool_call>`(248059) |
+| 分叉源：analysis frames 冷渲染不可复现 | 分叉源：①参数字母序重渲染（swift-jinja 排序）②工具结果内容反应式注记（错误启发式/ns2.consecutive_failures，模板 L412-421）③reasoning 重包裹 |
+| splice：suffixStart = lastIndex(callToken)+1，representedTokens = cached+suffix | 同构：suffixStart = 末个 endToken 之后的工具结果消息起始 |
+| guards：isToolResultContinuation + aligned + 非空账本 + 结构化计数校验 | 同 |
+
+**规则语义**：`isToolResultContinuation` 且账本尾=生成的工具调用块时，跳过该块的重新预填，直接把工具结果续接 onto 缓存（模型看到自己生成的调用+结果，语义正确）；消除每轮 2-4 分钟的全量重预填。**已知边界**：账本中的模型序参数 vs 后续全量重渲染的字母序参数仍会分叉——规则消除 per-round 重预填，不消除渲染分叉本身（后者需上游参数保序）。
+
+**前置待实测**：qwen3.5 生成尾部 commit 语义（TokenIterator 是否提交完整 `</tool_call>`）——需一次带 cacheStatus 的工具调用轮实测确认。
+
+**regression test 矩阵**：① parse→history append→rerender 的 token 序列==原始生成序列（多键嵌套 TodoWrite 形态）；② Bash/AskUserQuestion/TodoWrite/Skill 四形态 × 命中/重建对照矩阵；③ isToolResultContinuation 拼接后账本/缓存对齐断言。
+
 ## 10. 附录四：真实事件心跳的生产证伪 + 渲染层确定性排序（2026-09-13 深夜补）
 
 **7da320e（makeEvent 真实事件心跳）生产证伪**：16:34 实例（用户自移 16:25 构建入 /Applications，含 makeEvent）运行下，前端照样放弃 4 轮：17:07:52（601s，rawEv=14 rawB=60——解码已有产出仍被弃）、17:18:25（660s，rawEv=0）、17:33:05（676s，rawEv=0）、17:44:08（600s，rawEv=0）。**结论：前端放弃触发既不看字节、也不看协议内事件——只认真实内容产出或任务完成；阈值机制在前端 agent 层，非用户可配置，机制未明（需前端侧日志/源码定位）。** 7da320e 保留（对字节/代理级看门狗仍有效），但对本前端无效。
