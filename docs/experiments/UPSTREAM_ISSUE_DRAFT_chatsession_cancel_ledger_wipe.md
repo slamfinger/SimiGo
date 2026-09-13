@@ -34,9 +34,10 @@ guard assistant.shouldRecord else {
 }
 ```
 
-This discards the **entire token ledger**. The KV cache physically still holds the prompt and
-(often) a large fully-computed partial prefill, but with the ledger gone the next request takes
-the `prefillAll` path and re-prefills everything from token 0.
+This discards the **entire token ledger**. The KV cache may still contain already-computed
+prefix state (the partial prefill was genuinely evaluated), but the token ledger is
+unconditionally invalidated, and the next request therefore takes the `prefillAll` path and
+re-prefills from the ledger boundary.
 
 **Why this matters**
 
@@ -46,7 +47,7 @@ budget, the loop becomes non-convergent:
 
 ```text
 cancel (client patience)
-  → ledger wiped
+  → ledger invalidated
   → next attempt: full re-prefill of the whole context
   → exceeds patience again
   → cancel → ...
@@ -59,7 +60,8 @@ and (for the prompt prefix) still resident in the KV cache.
 
 28-round agent task at 43→90K context: 13 rounds reported `cacheEfficiency == 0.0` (full
 re-prefill, including one whose new-token delta was a ~60-token tool result); 6 client
-cancellations; every post-cancellation round started from token 0.
+cancellations; **in the observed trace, every round immediately following a client cancellation
+entered the full-prefill path** (re-processing the full context, including unchanged history).
 
 **Expected**
 
