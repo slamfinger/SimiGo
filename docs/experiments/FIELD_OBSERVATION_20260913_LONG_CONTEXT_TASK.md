@@ -66,3 +66,20 @@
 5. **观测-代码对应**：cacheEff=0.99 轮 = 严格扩展（`appendSuffix` 无 isTrimmable 门槛，GDN 状态自然前滚）✓；cacheEff=0.00 轮 = 渲染分叉 → 回卷被拒 → rebuild ✓；60-token delta 也 miss ✓（分叉与 delta 大小无关）；TodoWrite 轮倾向命中（其回显重渲染逐 token 稳定）✓；自愈 = 分叉消失后恢复严格扩展 ✓。与上游 mlx-lm #980（混合架构 prefix reuse 退化）同类，Swift 侧等价现象。
 
 **结论**：SimiGo 侧无缺陷、无可安全本地修复项（回卷 GDN 状态会产生错误输出，引擎拒绝回卷是正确行为）。修复方向在上游：GDN 状态检查点回卷、或 qwen3.5 协议拼接规则（`isToolResultContinuation` 拼接）。SimiGo 侧唯一有效缓解 = 控制会话上下文规模（分叉 rebuild 的代价与上下文线性相关）。
+
+## 8. 附录二：rebuild 触发时点与工具类型的相关性（2026-09-13 补，生产数据）
+
+任务会话 ddc444（16:37-17:26，22 轮）的「上一轮工具 → 下一轮 cacheEff」对齐：
+
+| 上一轮工具 | 下一轮 cacheEff | 样本 |
+|---|---|---|
+| Bash | 0.93/0.93/0.99/0.85/0.94/0.89/0.96/0.96 | 8/8 命中 |
+| AskUserQuestion（3KB 中文）| 0.99 | 1/1 命中 |
+| **TodoWrite** | **0.00 / 0.00** | **2/2 全量 rebuild** |
+
+**机制链（代码级）**：`JSONValue.object` 存储为 `[String: JSONValue]` **无序字典**（Value.swift:14）→ 工具调用参数 round-trip（生成 JSON → 解析 → 模板重渲染再编码）**多键对象键序不稳定** → token 前缀在该 assistant 消息处分叉 → GDN 不可回卷 → 全量 rebuild。单键对象（Bash 的 `command`）键序平凡稳定 → 严格扩展命中。
+
+- 与 GDN 根因（§7）复合：分叉不可避免（键序）× 不可回卷（GDN）= rebuild。
+- TodoWrite 参数为嵌套多键对象数组（计划列表），命中概率最低；Bash 单键参数最稳。
+- 上游修复方向补充：ToolCall arguments 的 round-trip 保序（有序存储或规范化渲染）。
+- 排障口诀：**rebuild streak 的起点 = 第一次出现「多键参数工具调用」的轮次**。
