@@ -130,7 +130,7 @@ struct Settings: View {
                 }
                 .padding(.horizontal)
 
-                Text("SimiGo v1.2")
+                Text("SimiGo v1.3")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)

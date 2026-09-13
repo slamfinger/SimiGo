@@ -1,7 +1,7 @@
 # 官方 MLX 能力覆盖矩阵（Official Capability Matrix）
 
 日期：2026-09-12
-核对基准：mlx-swift-lm `main@238ad74`（当前 Package.resolved 钉定 commit），全部 API 名以该 commit 源码为准。
+核对基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（当前 Package.resolved 钉定 commit；fork 备份 `slamfinger/mlx-swift-lm`），全部 API 名以该 commit 源码为准。
 
 ## 定位
 
@@ -20,8 +20,8 @@
 | ChatSession / conversation / streaming | `ChatSession.streamDetails(to:)` | Core |
 | Tool Calling | `Generation.toolCall` → `ParsedToolCall` | Core |
 | rejectedToolCall | `Generation.rejectedToolCall`（留痕+忽略） | Core |
-| Prompt cache reuse（token 账本） | `PromptCacheReusePolicy`（appendSuffix / trimToCommonPrefix / rebuild） | Core |
-| Cache telemetry | `cacheStatus()` + `GenerateCompletionInfo.cacheEfficiency/cachedPromptTokenCount` | Core |
+| Prompt cache reuse（token 账本） | `PromptCacheReusePolicy`（appendSuffix / appendSuffixToMain / trimToCommonPrefix / exactMatchRefresh / rebuild） | Core |
+| Cache telemetry | `cacheStatus()` + `GenerateCompletionInfo.cacheEfficiency/cachedPromptTokenCount/cacheReuseMode` | Core |
 | KV Cache Configuration / Quantization | `GenerateParameters.kvCache` ← `ModelConfig.kvCache`（P0-A，`02587d1`；SDK 兼容修正 `f89e4bc`） | **Core** |
 
 ## P0 —— 已完成（P0-A CLOSED，2026-09-12）
