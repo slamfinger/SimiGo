@@ -1084,7 +1084,36 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         _ prefix: [Chat.Message],
         of full: [Chat.Message]
     ) -> Bool {
-        firstPrefixMismatch(prefix, of: full) == nil
+        guard prefix.count <= full.count else { return false }
+        for (index, pair) in zip(prefix, full).enumerated() {
+            if signature(pair.0) != signature(pair.1) {
+                if isAssistantToolEchoLoss(pair.0, pair.1) {
+                    RuntimeTraceLogger.shared.trace(
+                        "[MLX] assistantToolEchoLoss index=\(index)" +
+                        " storedTool=1 echoedTool=0 tolerated"
+                    )
+                    continue
+                }
+                return false
+            }
+        }
+        return true
+    }
+
+    /// 助手消息的工具字段回传缺失：runtime 存储侧带工具调用，客户端回传
+    /// 同文本但剥离了 tool_calls（2026-09-14 实测某 LC 客户端每工具轮必现，
+    /// 旧逻辑因此每轮全量冷预填）。被复用 session 的内部会话保存着权威的
+    /// 工具调用记录——客户端对历史消息的回传从不进入渲染——续接该会话
+    /// 才是正确语义。内容不同仍是真分叉，不容错。
+    private static nonisolated func isAssistantToolEchoLoss(
+        _ stored: Chat.Message,
+        _ incoming: Chat.Message
+    ) -> Bool {
+        stored.role == .assistant
+            && incoming.role == .assistant
+            && stored.tool != nil
+            && incoming.tool == nil
+            && stored.content == incoming.content
     }
 
     /// Returns the first index where the histories diverge, or nil when
