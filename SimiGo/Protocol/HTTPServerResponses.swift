@@ -732,9 +732,8 @@ extension HTTPServer {
                 json: json
             )
         )
-        let heartbeat = startSSEHeartbeat(for: context, makeEvent: { [weak self] in
+        let heartbeat = startSSEHeartbeat(for: context, makeEvent: {
             guard
-                let self,
                 let responseData = progressResponseData,
                 !responseData.isEmpty
             else {
