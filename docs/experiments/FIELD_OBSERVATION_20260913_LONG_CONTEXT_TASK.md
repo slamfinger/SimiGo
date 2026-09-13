@@ -83,3 +83,18 @@
 - TodoWrite 参数为嵌套多键对象数组（计划列表），命中概率最低；Bash 单键参数最稳。
 - 上游修复方向补充：ToolCall arguments 的 round-trip 保序（有序存储或规范化渲染）。
 - 排障口诀：**rebuild streak 的起点 = 第一次出现「多键参数工具调用」的轮次**。
+
+## 9. 附录三：官方 hit 定义、实现与 qwen35 协议规则缺口（2026-09-13 补，上游 issue 核心）
+
+对 `mlx-swift-lm@238ad74` 三层源码核对：
+
+**hit 定义（PromptCacheReusePolicy.swift）**：本轮全模板渲染 `promptTokens` 对账本 `cachedTokens` **逐 token、按序**比较——
+- `ExtendCachedPrefixRule`：严格有序前缀 **且** prompt 严格更长 → `appendSuffix`（只喂后缀）；
+- `RewindToCommonPrefixRule`：有序公共前缀 > 0、**缓存严格长于公共前缀（trimCount>0）**、对齐且 isTrimmable → 裁尾后喂余量；
+- **数量相同（等长）→ 两规则皆不适用 → rebuild**；数量相同顺序不同 → 公共前缀截断 → 同上。
+
+**实现（ChatSession.swift cache.update）**：`promptTokens = input.text.tokens`（本轮全渲染）、`cachedTokens = conversation.cachedTokens`（账本=渲染+**生成 token**——源码注释明言 "a response protocol may keep generated tokens that a cold template render cannot reproduce, by design"）；判定应用：appendSuffix 只喂 `promptTokens[suffixStart...]`、trim 先 `kvCache.trim` 且对齐校验失败降级 rebuild、rebuild 换新缓存并重置账本。`cacheEfficiency = cached/(cached+prompt)`（Evaluate.swift:2555）——SimiGo 透传一致。
+
+**SimiGo 一致性**：消息级 reuse 门（count/fp/prefix）为粗粒度准入，官方 token 级判定为精确真值——门过、引擎判 rebuild 不是不一致，是两层职责正确分工。
+
+**qwen35 协议规则缺口（上游修复的精确落点）**：`ToolCallFormat.swift:217-231` 的 `promptCacheReuseRules`——gptOSS（HarmonyToolRestartRule）、atem（OnyxToolRestartRule）有协议拼接规则，**`.qwen35` 与其他 9 个格式返回 `[]`**。qwen3.5 的生成 token 账本含 `<tool_call>`/`</tool_call>` 等协议私有 token（冷渲染不可复现），工具结果续跑时无拼接规则 → 落标准规则 → 分叉 × GDN 不可回卷 → rebuild。**上游提案：为 qwen3_5 实现 Qwen35ToolRestartRule**——参考现成 HarmonyToolRestartRule（仅 87 行，解析器 token `<tool_call>`/`</tool_call>` 已存在），纯规则代码可直接单测；随附生产数据集（本文档 + trace）与 issue 链（mlx-lm #980）。
