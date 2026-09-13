@@ -98,3 +98,20 @@
 **SimiGo 一致性**：消息级 reuse 门（count/fp/prefix）为粗粒度准入，官方 token 级判定为精确真值——门过、引擎判 rebuild 不是不一致，是两层职责正确分工。
 
 **qwen35 协议规则缺口（上游修复的精确落点）**：`ToolCallFormat.swift:217-231` 的 `promptCacheReuseRules`——gptOSS（HarmonyToolRestartRule）、atem（OnyxToolRestartRule）有协议拼接规则，**`.qwen35` 与其他 9 个格式返回 `[]`**。qwen3.5 的生成 token 账本含 `<tool_call>`/`</tool_call>` 等协议私有 token（冷渲染不可复现），工具结果续跑时无拼接规则 → 落标准规则 → 分叉 × GDN 不可回卷 → rebuild。**上游提案：为 qwen3_5 实现 Qwen35ToolRestartRule**——参考现成 HarmonyToolRestartRule（仅 87 行，解析器 token `<tool_call>`/`</tool_call>` 已存在），纯规则代码可直接单测；随附生产数据集（本文档 + trace）与 issue 链（mlx-lm #980）。
+
+**五层链闭合（2026-09-13 深夜补，全部 file:line 级）**：
+
+```text
+L1 协议层  Qwen3.5 官方 chat_template：{% for args_name, args_value in tool_call.arguments|items %}
+           → 工具调用以 <parameter=键>值</parameter> 有序参数流重放（顺序承载语义）
+L2 存储层  ToolCall.swift:12  arguments: [String: JSONValue]  ← 无序字典，原始生成串解析即弃
+L3 重渲染  Chat.swift:161  "arguments": toolCall.function.argumentsObject
+           → 消息字典 → Jinja arguments|items 按【字典哈希序】遍历 ≠ 模型生成序
+L4 缓存层  渲染 prompt 与账本在工具参数处 token 分叉
+           × KVCache.swift:233 GDN 层 isTrimmable=false → rewind 被拒 → .rebuild 全量重预填
+L5 观测层  NativeMLX:714-715 官方计数器纯透传 → cacheEff=0.00（SimiGo 零计算，无缺陷）
+```
+
+- round-trip 实验（jsonvalue-roundtrip-repro.swift，1139bf1）：`id,content,status,deps` → `id,deps,status,content`，字符串不相等——键序改变决定性证实。
+- **自愈机制同理闭合**：rebuild 后账本=哈希序渲染；模型上下文中看到的即哈希序形态 → 后续生成模仿哈希序 → 命中恢复；TodoWrite 内容更新（模型重新自由排序）→ 再次分叉 → miss。Bash 单键参数免疫。
+- 上游修复两选项：(a) `ToolCall.Function.arguments` 保序存储（含原始串回退）；(b) Qwen35ToolRestartRule 拼接规则（参考 87 行现成实现）。(b) 改动最小、可单测、不动公共结构。
