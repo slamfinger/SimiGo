@@ -658,7 +658,8 @@ public final class HTTPServer: @unchecked Sendable {
     /// handler 返回时必须 cancel 返回的 Task。
     func startSSEHeartbeat(
         for context: ConnectionContext,
-        interval: TimeInterval = 5
+        interval: TimeInterval = 5,
+        makeEvent: (@Sendable () -> Data?)? = nil
     ) -> Task<Void, Never> {
 
         let quietThreshold = interval * 0.9
@@ -699,27 +700,54 @@ public final class HTTPServer: @unchecked Sendable {
 
                     // 心跳不 touchOutboundActivity：它不是数据，
                     // 下一个 interval 的静默判定不应被自己抹平。
-                    context.connection.send(
-                        content: Data(": keepalive\n\n".utf8),
-                        isComplete: false,
-                        completion: .contentProcessed {
-                            [weak self, weak context] error in
+                    // makeEvent 提供协议内真实事件时优先发事件——
+                    // 前端看门狗按「事件静默」计数，注释行满足不了它
+                    // （2026-09-13 dense/MoE 长预填双双 ~605-671s 被断实测）。
+                    if let makeEvent, let event = makeEvent() {
+                        context.connection.send(
+                            content: event,
+                            isComplete: false,
+                            completion: .contentProcessed {
+                                [weak self, weak context] error in
 
-                            guard
-                                let self,
-                                let context
-                            else {
-                                return
-                            }
+                                guard
+                                    let self,
+                                    let context
+                                else {
+                                    return
+                                }
 
-                            if error != nil {
-                                self.terminate(
-                                    context,
-                                    cancelGeneration: true
-                                )
+                                if error != nil {
+                                    self.terminate(
+                                        context,
+                                        cancelGeneration: true
+                                    )
+                                }
                             }
-                        }
-                    )
+                        )
+                    } else {
+                        context.connection.send(
+                            content: Data(": keepalive\n\n".utf8),
+                            isComplete: false,
+                            completion: .contentProcessed {
+                                [weak self, weak context] error in
+
+                                guard
+                                    let self,
+                                    let context
+                                else {
+                                    return
+                                }
+
+                                if error != nil {
+                                    self.terminate(
+                                        context,
+                                        cancelGeneration: true
+                                    )
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }

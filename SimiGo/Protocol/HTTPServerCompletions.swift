@@ -150,7 +150,30 @@ extension HTTPServer {
         }
 
         // 冷预填充静默窗口保活；handler 收口时取消。
-        let heartbeat = startSSEHeartbeat(for: context)
+        // makeEvent：静默期发协议内真实事件（空 text delta）。
+        let heartbeat = startSSEHeartbeat(for: context, makeEvent: { [weak self] in
+            guard let self else { return nil }
+            let chunk: [String: Any] = [
+                "id": responseId,
+                "object": "text_completion",
+                "created": created,
+                "model": modelId,
+                "choices": [[
+                    "text": "",
+                    "index": 0,
+                    "logprobs": NSNull(),
+                    "finish_reason": NSNull()
+                ]]
+            ]
+            guard
+                let data = try? JSONSerialization.data(
+                    withJSONObject: chunk
+                )
+            else {
+                return nil
+            }
+            return Data("data: ".utf8) + data + Data("\n\n".utf8)
+        })
         defer { heartbeat.cancel() }
 
         do {

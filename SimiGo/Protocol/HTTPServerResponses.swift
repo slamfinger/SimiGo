@@ -723,7 +723,31 @@ extension HTTPServer {
         }
 
         // 冷预填充静默窗口保活；handler 收口时取消。
-        let heartbeat = startSSEHeartbeat(for: context)
+        // makeEvent：静默期重发 response.in_progress（协议内真实事件，
+        // sequence 单调递增，快照固定为请求态）——前端看门狗按事件静默计数。
+        let progressResponseData = try? JSONSerialization.data(
+            withJSONObject: makeInProgressResponse(
+                responseId: parsed.responseId,
+                created: created,
+                json: json
+            )
+        )
+        let heartbeat = startSSEHeartbeat(for: context, makeEvent: { [weak self] in
+            guard
+                let self,
+                let responseData = progressResponseData,
+                !responseData.isEmpty
+            else {
+                return nil
+            }
+            let event =
+                "{\"type\":\"response.in_progress\",\"sequence_number\":"
+                + String(streamState.nextSequence())
+                + ",\"response\":"
+                + String(decoding: responseData, as: UTF8.self)
+                + "}"
+            return Data("data: ".utf8) + Data(event.utf8) + Data("\n\n".utf8)
+        })
         defer { heartbeat.cancel() }
 
         let initialResponse =
