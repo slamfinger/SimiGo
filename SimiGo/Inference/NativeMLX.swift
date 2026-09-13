@@ -567,6 +567,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         params.prefill.stepSize = RuntimeTuning.prefillStepSize(
             contextTokens: contextEstimate
         )
+        // rebuild 可见性（外部审核 P0-2）：选档即宣告本轮预期——
+        // 配合轮末 cacheEff=0.00 即「渲染分叉 rebuild」完整证据链。
+        traceLogger.trace(
+            "[MLX] prefillStep=\(params.prefill.stepSize.map(String.init) ?? "512") est=\(contextEstimate) reuse=\(reusedSession)"
+        )
 
         managed.session.generateParameters = params
         managed.session.tools = toolSpecs

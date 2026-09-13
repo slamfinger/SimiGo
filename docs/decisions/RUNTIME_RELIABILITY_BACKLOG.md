@@ -172,3 +172,23 @@ generation task，否则 cache lock 可能被一直持有。验收标准：
 - 兼容性回归矩阵：docs/experiments/MODEL_COMPATIBILITY_MATRIX.md ✅
 - MLX upstream issue：外部（素材：19:44 sample 栈 + 三模型对照 + draftN 对照
   + S1 B>1/T=1 差异记录）
+
+## 观察窗口补充计划（2026-09-13 外部审核对表后定级）
+
+- **P1 API 协议回归冻结矩阵**：Chat/Completions/Responses × stream/non-stream/cancel/tool/long-prefill
+  全组合一遍过（含 HTTP disconnect、Task cancellation、CancellationError、lifecycle 终态、session commit
+  交叉断言）。目的：把已修复的取消/复用行为用测试锁死，防止核心路径回归。挂靠 tools/harness 扩展。
+- **P1 Session/Physical KV 生命周期极限测试**：A→A-cancel→A-retry→A-tool→branch→B→A→idle→resume→A
+  交错矩阵，断言 history/cache/lifecycle/memory/gate/response-state 五层无互相污染。
+  依据：白皮书五层分离原则的验证（非新设计）。
+- **P1 模型加载失败可诊断性**：UI 侧失败原因（路径/文件不完整/tokenizer 不兼容/Metal 分配失败/内存不足）
+  → 具体原因 + 当前模型 + 建议动作，替代笼统失败提示。
+- **P2 Runtime 状态 UI（观察态）**：model/context/running/prefill 进度/cache 复用率/memory/swap 只读展示。
+  红线：UI 只观察不控制推理状态机。
+- **P2 上游报告**：FIELD_OBSERVATION §7（GDN 不可回卷 → 分叉 rebuild）+ 生产数据集（28 轮 cacheEff 序列）
+  整理为 mlx-swift-lm issue；关联 upstream two-pack（GDN 状态检查点回卷 / qwen3.5 协议拼接规则）。
+- **P3 冻结**：预填步长阶梯已定档（<64k→2048 / 64-96k→1024 / >96k→512），停止细粒度继续调参；
+  后续证据走 upstream/runtime evidence 阶段。
+
+已知结论（98423cb）：cacheEff=0.00 = qwen3.5 混合缓存不可回卷 + 渲染分叉 → 合法 rebuild，
+SimiGo 侧无缺陷、禁止本地硬修（禁止清单：自存 GDN state/自 rewind/伪造命中/改官方判定/私有 KV 实现）。
