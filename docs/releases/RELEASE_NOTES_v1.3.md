@@ -1,7 +1,7 @@
 # SimiGo v1.3 发布说明
 
 日期：2026-09-14
-依赖基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（本地 checkout `/Users/mr.simi/Documents/mlx-swift-lm`，fork 备份 `slamfinger/mlx-swift-lm`）
+依赖基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（本地 checkout `/Users/mr.simi/Documents/mlx-swift-lm`；远端快照分支 `vendor/mlx-swift-lm-45ccd57`——本仓库内两提交孤儿快照（上游基点 238ad74 → 45ccd57，已剥离 .github/），其 diff 即本地实验改动。fork 创建被推送凭据的 PAT scope 拒绝，gh auth login 后可升级为完整 fork。）
 
 ## 本版主题：接回 Exact Match 复用语义 + 连续命中率遥测
 
