@@ -608,6 +608,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // rewind / fork-no-rewind / rebuild / cold），连续命中率语义由
         // cacheHitTokens/promptTokens 分子分母 + mode 共同表达。
         var cacheReuseMode: String?
+        // fork-no-rewind 时的分叉点：渲染 prompt 与账本的最长公共前缀 /
+        // 账本长度（引擎 token 空间），用于把 GDN 重建定位到具体位置。
+        var cacheForkCommon: Int?
+        var cacheForkLedger: Int?
         // 解码可见性诊断（2026-09-13）：流实际产出 vs filter 放行。
         // rawB 大而 emitB=0 ⇒ 模型在长思考、输出被整段吞掉——客户端看到
         // 的就是数百秒零事件静默（e155f1 实测 601s）。
@@ -718,6 +722,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
                 cacheReuseMode = info.cacheReuseMode
+                cacheForkCommon = info.cacheForkCommonTokens
+                cacheForkLedger = info.cacheForkLedgerTokens
             }
         }
 
@@ -780,6 +786,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         if let cacheReuseMode {
             log += " mode=\(cacheReuseMode)"
+        }
+        if let c = cacheForkCommon, let l = cacheForkLedger {
+            log += " fork@common=\(c)/\(l)"
         }
         if let promptTokens {
             log += " promptTokens=\(promptTokens)"
