@@ -21,11 +21,11 @@
 | cold prefill / cacheEff 0.00 | 12 次（`mode=cold`）|
 | fork-no-rewind telemetry | 34 次（`fork@common=X/Y`）|
 
-引擎层 **零崩溃、零吞没错误**。458 次生成全部正常完成，生命周期序列在多个会话中反复复用同一 `s=`（无会话污染）。
+引擎层 **零崩溃、零吞没错误**。458 次生成（`[MLX] session=`，即 generation completion）全部正常完成；另有 468 个完整生命周期闭环（468 REGISTER / 468 RELEASED：completed 458 + cancelled_by_client 8 + cancelled_by_runtime 2 + malformed_syntax 1，后者自包含回落后正常完成）。生命周期序列在多个会话中反复复用同一 `s=`（无会话污染）。
 
 ## 证据
 
-- `[MEM] afterLoad`：active≈19.3GB、cache=3124MB、**peak 31.34GB / swapUsed 峰值约 5.2GB**。swap 未随会话单调增长，无内存泄漏。
+- `[MEM] afterLoad`：active≈19.3GB、cache=3124MB、**peak 31.34GB / swapUsed 峰值约 5.2GB**。swap 未随会话单调增长，当前约 19.5h 长跑样本未观察到明显的内存泄漏迹象（swapUsed 峰值约 5.2GB，但未累积）。
 - **精确缓存命中路径**：12 次 cold（`cacheEff=0.00`）后全部转入 `mode=extend, reuse=true, cacheEff 0.80–1.00`，后续多轮工具调用维持高位复用。
 - **byte 不吞没**：所有生成线 `emitB == rawB`；`rawEv=1`（single-turn 单 assistant message）稳定，未见"漏传 assistant tool_calls"退化。
 - **工具链闭环**：requested(420) → validated(421) → result(421)，生命周期完整。
@@ -61,7 +61,7 @@ N/A（无工程变更；当前缓解手段为控上下文规模，与 README_bas
 
 ## 长期结论
 
-引擎健康度达标：458/460 请求正常完成，取消仅 10 次（8 client / 2 runtime），零崩溃/零吞没。
+引擎健康度达标：468 个生命周期中，458 次 generation（`[MLX] session=`）正常完成 + malformed_syntax 1 次自包含回落，无崩溃、零吞没；cancelled_by_client 8 / cancelled_by_runtime 2 为独立于 generation completion 的另一层统计口径。
 冷预填 TTFT = Qwen3.5 MoE rebuild + 128k 上下行的结构性开销，**非代码回归**。
 杠杆在上下文规模而非引擎。
 
