@@ -1,7 +1,7 @@
 # 官方 MLX 能力覆盖矩阵（Official Capability Matrix）
 
 日期：2026-09-12
-核对基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（当前 Package.resolved 钉定 commit；远端快照分支 `vendor/mlx-swift-lm-45ccd57`），全部 API 名以该 commit 源码为准。
+核对基准：mlx-swift-lm `exp/cancel-retained-prefix@45ccd57`（v1.3 时点 Package.resolved 钉定 commit，2026-09-14 起 Pin 升至 5ba0bc1；快照 `11d5531` 存于 `vendor/mlx-swift-lm-5ba0bc1` 谱系合并提交第二父），全部 API 名以该 commit 源码为准。
 
 ## 定位
 
