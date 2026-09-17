@@ -895,8 +895,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。
     @discardableResult
     private func evictSessionsIfNeeded(keeping currentKey: String) async -> SessionEvictionReport {
-        // 锁内只做快照；token 统计与 clear() 全部锁外执行（生成全局串行，
-        // gate 持有期间无并发变更）。
+        // 锁内只做快照；token 统计锁外执行。快照与移除之间字典可能被
+        // deleteSessionBranch（不走 gate）/loadSessionCache 变更，故最终
+        // 移除在锁内做身份确认（见下方原子移除段）。
         let snapshot: [(key: String, session: ChatSession)] = state.withLock { state in
             state.sessions
                 .filter { $0.key != currentKey }
@@ -939,16 +940,46 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         report.warmTokens = warmTokens
         guard !victims.isEmpty else { return report }
 
-        let freedTokens = victims.reduce(0) { $0 + $1.tokens }
-        for (_, session, _) in victims { await session.clear() }
+        // 原子移除：锁内逐个身份确认（?.session === victim.session）后从池中
+        // 移除，只有成功移除的才允许进入 clear() 阶段。快照到移除之间字典可能
+        // 被 deleteSessionBranch/loadSessionCache 变更——只 clear 不移除会让
+        // 已清空 KV 的 session 留池被复用，且数量维度每请求重复选中同一批
+        // victim 形成清除抖动（21f04de 回归，2026-09-18 修正）。
+        var removed: [(key: String, session: ChatSession, tokens: Int)] = []
+        state.withLock { state in
+            for victim in victims {
+                if state.sessions[victim.key]?.session === victim.session {
+                    state.sessions.removeValue(forKey: victim.key)
+                    removed.append(victim)
+                }
+            }
+        }
+        if removed.count < victims.count {
+            traceLogger.trace(
+                "[MLX] evictSkipReplaced n=\(victims.count - removed.count)" +
+                " (session replaced concurrently)"
+            )
+        }
+        guard !removed.isEmpty else {
+            report.warmSessions = state.withLock { $0.sessions.count }
+            return report
+        }
+
+        let freedTokens = removed.reduce(0) { $0 + $1.tokens }
+        for (_, session, _) in removed { await session.clear() }
         Memory.clearCache()
-        report.evicted = victims.count
+        report.evicted = removed.count
         report.evictedTokens = freedTokens
+        report.warmSessions = state.withLock { $0.sessions.count }
+        // token 总和为治理估算：身份确认失败（已被替换）的会话不再计入，
+        // 其替身的 token 未进快照，严格上限语义不成立（审核边界 三.2）。
+        report.warmTokens = warmTokens - freedTokens
         traceLogger.trace(
-            "[MEM] session LRU evicted=\(victims.count)" +
-            " keys=" + victims.map { String($0.key.suffix(6)) }.joined(separator: ",") +
+            "[MEM] session LRU evicted=\(removed.count)" +
+            " keys=" + removed.map { String($0.key.suffix(6)) }.joined(separator: ",") +
             " limit=\(RuntimeTuning.sessionLimit) budget=\(RuntimeTuning.warmTokenBudget)" +
             " freedTokens=\(freedTokens) warmTokensNow=\(report.warmTokens)" +
+            " overBudget=\(max(0, report.warmTokens - RuntimeTuning.warmTokenBudget))" +
             " swap=" + (swap.map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a")
         )
         logMemory("afterEvict")
