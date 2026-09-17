@@ -73,6 +73,24 @@ public final class HTTPServer: @unchecked Sendable {
 
     public typealias CancelGenerationHandler = @Sendable (_ requestId: String) -> Void
 
+    public typealias ForkBranchHandler = @Sendable (
+        _ agentId: String?,
+        _ sessionId: String,
+        _ sourceBranch: String,
+        _ targetBranch: String
+    ) async throws -> SessionCacheMetadata
+
+    public typealias DeleteBranchHandler = @Sendable (
+        _ agentId: String?,
+        _ sessionId: String,
+        _ logicalBranchId: String
+    ) async throws -> Void
+
+    public typealias ListBranchesHandler = @Sendable (
+        _ agentId: String?,
+        _ sessionId: String
+    ) -> (live: [String], checkpoints: [String])
+
     // MARK: - Limits
 
     private static let maxHeaderBytes = 64 * 1024
@@ -346,6 +364,9 @@ public final class HTTPServer: @unchecked Sendable {
     private let bonjourEnabled: Bool
 
     let generateHandler: GenerateHandler
+    let forkBranchHandler: ForkBranchHandler
+    private let deleteBranchHandler: DeleteBranchHandler
+    private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
     private let cancelGenerationHandler: CancelGenerationHandler?
     private let capabilitiesProvider: (() -> ModelCapabilityContract?)?
@@ -373,6 +394,9 @@ public final class HTTPServer: @unchecked Sendable {
         bindHost: String = "127.0.0.1",
         bonjourEnabled: Bool = true,
         generateHandler: @escaping GenerateHandler,
+        forkBranchHandler: @escaping ForkBranchHandler,
+        deleteBranchHandler: @escaping DeleteBranchHandler,
+        listBranchesHandler: @escaping ListBranchesHandler,
         checkHealthHandler: @escaping CheckHealthHandler,
         cancelGenerationHandler: CancelGenerationHandler? = nil,
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
@@ -399,6 +423,9 @@ public final class HTTPServer: @unchecked Sendable {
 
         self.bonjourEnabled = bonjourEnabled
         self.generateHandler = generateHandler
+        self.forkBranchHandler = forkBranchHandler
+        self.deleteBranchHandler = deleteBranchHandler
+        self.listBranchesHandler = listBranchesHandler
         self.checkHealthHandler = checkHealthHandler
         self.cancelGenerationHandler = cancelGenerationHandler
         self.capabilitiesProvider = capabilitiesProvider
@@ -867,6 +894,148 @@ public final class HTTPServer: @unchecked Sendable {
                                 .timeIntervalSince1970
                         ),
                     "owned_by": "simigo"
+                ],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+
+        case ("POST", "/v1/branches/fork"):
+
+            let json =
+                try decodeJSONObject(
+                    request.body
+                )
+
+            guard
+                let sessionId =
+                    normalizeIdentifier(
+                        json["session_id"] as? String
+                    ),
+                let sourceBranch =
+                    normalizeIdentifier(
+                        json["fork_from_branch"] as? String
+                    ),
+                let targetBranch =
+                    normalizeIdentifier(
+                        json["branch_id"] as? String
+                    )
+            else {
+                sendError(
+                    "branches/fork requires session_id, fork_from_branch, branch_id",
+                    status: 400,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
+
+            let metadata =
+                try await forkBranchHandler(
+                    resolveExplicitAgentId(
+                        from: json,
+                        headers: request.headers
+                    ),
+                    sessionId,
+                    sourceBranch,
+                    targetBranch
+                )
+
+            sendJSON(
+                [
+                    "ok": true,
+                    "session_id": sessionId,
+                    "fork_from_branch": sourceBranch,
+                    "branch_id": targetBranch,
+                    "history_messages": metadata.history.count,
+                ],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+
+        case ("POST", "/v1/branches/delete"):
+
+            let json =
+                try decodeJSONObject(
+                    request.body
+                )
+
+            guard
+                let sessionId =
+                    normalizeIdentifier(
+                        json["session_id"] as? String
+                    ),
+                let branchId =
+                    normalizeIdentifier(
+                        json["branch_id"] as? String
+                    )
+            else {
+                sendError(
+                    "branches/delete requires session_id, branch_id",
+                    status: 400,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
+
+            try await deleteBranchHandler(
+                resolveExplicitAgentId(
+                    from: json,
+                    headers: request.headers
+                ),
+                sessionId,
+                branchId
+            )
+
+            sendJSON(
+                [
+                    "ok": true,
+                    "session_id": sessionId,
+                    "deleted_branch": branchId,
+                ],
+                status: 200,
+                on: context.connection,
+                context: context
+            )
+
+        case ("POST", "/v1/branches/list"):
+
+            let json =
+                try decodeJSONObject(
+                    request.body
+                )
+
+            guard
+                let sessionId =
+                    normalizeIdentifier(
+                        json["session_id"] as? String
+                    )
+            else {
+                sendError(
+                    "branches/list requires session_id",
+                    status: 400,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
+
+            let branches = listBranchesHandler(
+                resolveExplicitAgentId(
+                    from: json,
+                    headers: request.headers
+                ),
+                sessionId
+            )
+
+            sendJSON(
+                [
+                    "ok": true,
+                    "session_id": sessionId,
+                    "live_branches": branches.live,
+                    "checkpoint_branches": branches.checkpoints,
                 ],
                 status: 200,
                 on: context.connection,

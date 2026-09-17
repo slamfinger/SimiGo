@@ -3,7 +3,7 @@
 **日期：** 2026-09-17
 **模型：** peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX（`model_type: qwen3_5_moe`，快照 31a0106）
 **依赖：** mlx-swift-lm `5ba0bc1`（vendor 快照谱系，Package.resolved 钉扎）
-**载体：** `SimiGoTests/KVBranchForkExperimentTests.swift`（`SIMIGO_FORK_EXP=1` 触发，宿主式 Release 测试，37s 全绿）
+**载体：** `SimiGoTests/BranchFork/BranchForkCapabilityTests.swift`（`SIMIGO_FORK_EXP=1` 触发，宿主式 Release 测试；v1.4 起转正为能力回归）
 
 ## 背景
 

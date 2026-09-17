@@ -1,6 +1,10 @@
 # DRAFT：Branch-Fork 生产协议设计登记（2026-09-17）
 
-**状态：DRAFT —— 5.1 观察窗口内只登记不实现；窗口期满后按本稿评审动工。**
+**状态：v1 已实现并随 v1.4 发布（用户 2026-09-17 明确下令转正，覆盖窗口纪律）——
+Runtime：`forkSessionBranch` / `deleteSessionBranch` / `listSessionBranches` +
+默认存储 `~/.simigo/branch-checkpoints/`；协议：`POST /v1/branches/{fork,delete,list}` +
+chat 请求 `fork_from_branch` 内联触发。回归：`SimiGo/BranchFork/BranchForkTests.swift`（app 树内、仅入测试 target）。
+v2（内存版后端）与剩余决策点仍待窗口期满评审。**
 **证据基础：** `docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md`（fe766a1→8e82fd8）。
 **能力边界已实证：** 磁盘 checkpoint fork（GDN 混合 + all-attention 双架构）、内存版
 `KVCache.copy()` fork 双向隔离、fork 增量 prefill、fork/cold greedy 逐字一致、长程记忆保持。

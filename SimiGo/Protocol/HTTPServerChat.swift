@@ -86,6 +86,29 @@ extension HTTPServer {
             config
         ) = parsed
 
+        if let forkFrom =
+            normalizeIdentifier(
+                json["fork_from_branch"] as? String
+            )
+        {
+            do {
+                _ = try await forkBranchHandler(
+                    agentId,
+                    sessionId,
+                    forkFrom,
+                    logicalBranchId
+                )
+            } catch {
+                sendError(
+                    "fork_from_branch failed: \(error.localizedDescription)",
+                    status: 400,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
+        }
+
         guard context.markGenerationStarted() else {
             return
         }
@@ -500,6 +523,29 @@ extension HTTPServer {
             tools,
             config
         ) = parsed
+
+        if let forkFrom =
+            normalizeIdentifier(
+                json["fork_from_branch"] as? String
+            )
+        {
+            do {
+                _ = try await forkBranchHandler(
+                    agentId,
+                    sessionId,
+                    forkFrom,
+                    logicalBranchId
+                )
+            } catch {
+                sendError(
+                    "fork_from_branch failed: \(error.localizedDescription)",
+                    status: 400,
+                    on: context.connection,
+                    context: context
+                )
+                return
+            }
+        }
 
         guard context.markGenerationStarted() else {
             return

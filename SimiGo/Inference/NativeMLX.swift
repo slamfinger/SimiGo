@@ -161,6 +161,31 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             onToolCall: onToolCall
                         )
                     },
+                    forkBranchHandler: { [weak self] agentId, sessionId, sourceBranch, targetBranch in
+                        guard let self else { throw RuntError.notLoaded }
+                        return try await self.forkSessionBranch(
+                            agentId: agentId,
+                            sessionId: sessionId,
+                            sourceBranch: sourceBranch,
+                            targetBranch: targetBranch
+                        )
+                    },
+                    deleteBranchHandler: { [weak self] agentId, sessionId, branchId in
+                        guard let self else { throw RuntError.notLoaded }
+                        try await self.deleteSessionBranch(
+                            agentId: agentId,
+                            sessionId: sessionId,
+                            logicalBranchId: branchId
+                        )
+                    },
+                    listBranchesHandler: { [weak self] agentId, sessionId in
+                        guard let self else { return (live: [], checkpoints: []) }
+                        let branches = self.listSessionBranches(
+                            agentId: agentId,
+                            sessionId: sessionId
+                        )
+                        return (live: branches.liveBranches, checkpoints: branches.checkpointFiles)
+                    },
                     checkHealthHandler: { [weak self] in
                         await self?.checkHealth() ?? false
                     },
@@ -1009,6 +1034,126 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         state.withLock {
             ($0.activeRequestTasks.count, $0.activeRequestTasks.count, $0.sessions.count)
         }
+    }
+
+    // MARK: - Branch Fork（生产分支协议 v1；证据链与设计见 docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md）
+
+    /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；
+    /// suspend 会清空内存会话，落盘 checkpoint 是分支唯一的 durable 存活物）。
+    public static func defaultBranchCheckpointStore() -> URL {
+        let directory = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/branch-checkpoints", isDirectory: true)
+        try? FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    /// 把 source 逻辑分支的当前 checkpoint 复制注册为 target 逻辑分支。
+    ///
+    /// v1 走磁盘 round-trip（官方 saveCache → 独立反序列化实例）：官方 ChatSession
+    /// 公开面没有 in-process 快照导出，磁盘路径已双架构实证（GDN 混合 + all-attention，
+    /// 见 lessons 2026-09-17）；上游公开 snapshot API 后可切内存版 copy() 路径，
+    /// 隔离性已由 testInMemoryForkCopyOwnership 预先封口。
+    ///
+    /// 覆盖语义：target 已存在时被覆盖（与 loadSessionCache 一致）——这正是
+    /// 「选边提升」流程（客户端选定胜者 → fork 回 main → 其余分支 DELETE）。
+    @discardableResult
+    public func forkSessionBranch(
+        agentId: String? = nil,
+        sessionId: String,
+        sourceBranch: String,
+        targetBranch: String,
+        in storeDirectory: URL? = nil
+    ) async throws -> SessionCacheMetadata {
+        guard sourceBranch != targetBranch else {
+            throw RuntError.generationFailed(
+                "fork source and target branch are identical: \(sourceBranch)")
+        }
+        let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
+        _ = try await saveSessionCache(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: sourceBranch,
+            to: store
+        )
+
+        let sourceKey = try AgentExecutionKey(
+            agentId: agentId, sessionId: sessionId, logicalBranchId: sourceBranch)
+        let targetKey = try AgentExecutionKey(
+            agentId: agentId, sessionId: sessionId, logicalBranchId: targetBranch)
+        for suffix in [".safetensors", ".meta.json"] {
+            let source = store.appendingPathComponent(
+                Self.cacheFileName(for: sourceKey.storageKey) + suffix)
+            let target = store.appendingPathComponent(
+                Self.cacheFileName(for: targetKey.storageKey) + suffix)
+            if FileManager.default.fileExists(atPath: target.path) {
+                try FileManager.default.removeItem(at: target)
+            }
+            try FileManager.default.copyItem(at: source, to: target)
+        }
+
+        let metadata = try await loadSessionCache(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: targetBranch,
+            from: store
+        )
+        traceLogger.trace(
+            "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)" +
+            " history=\(metadata.history.count)")
+        return metadata
+    }
+
+    /// 删除分支：释放 KV（官方 clear()）+ 移除会话 + 清理 checkpoint 文件。
+    /// 分支不可 merge：客户端选边胜者后，其余分支走本方法回收。
+    public func deleteSessionBranch(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String,
+        in storeDirectory: URL? = nil
+    ) async throws {
+        let key = try AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        )
+        let session: ChatSession? = state.withLock { state in
+            state.sessions.removeValue(forKey: key.storageKey)?.session
+        }
+        if let session {
+            await session.clear()
+        }
+        let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
+        let baseName = Self.cacheFileName(for: key.storageKey)
+        for suffix in [".safetensors", ".meta.json"] {
+            try? FileManager.default.removeItem(
+                at: store.appendingPathComponent(baseName + suffix))
+        }
+        traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
+    }
+
+    /// 列出某会话的存活分支：live = 内存中的会话分支；checkpoints = 落盘 checkpoint 文件。
+    public func listSessionBranches(
+        agentId: String? = nil,
+        sessionId: String,
+        in storeDirectory: URL? = nil
+    ) -> (liveBranches: [String], checkpointFiles: [String]) {
+        let key = (try? AgentExecutionKey(
+            agentId: agentId, sessionId: sessionId, logicalBranchId: "list"))?
+            .storageKey ?? ""
+        let prefix = key.isEmpty ? "" : String(key.dropLast("list".count))
+        let live = state.withLock { state in
+            state.sessions.keys.filter { $0.hasPrefix(prefix) }
+                .map { String($0.dropFirst(prefix.count)) }
+                .sorted()
+        }
+        let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
+        let filePrefix = Self.cacheFileName(for: prefix)
+        let checkpoints = ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
+            .filter { $0.hasPrefix(filePrefix) && $0.hasSuffix(".safetensors") }
+            .map { String($0.dropFirst(filePrefix.count).dropLast(".safetensors".count)) }
+            .sorted()
+        return (live, checkpoints)
     }
 
     static nonisolated func makeChatMessages(_ messages: [JSONValue]) -> [Chat.Message] {

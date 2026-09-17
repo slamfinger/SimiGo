@@ -6,29 +6,24 @@ import MLXHuggingFace
 import Tokenizers
 @testable import SimiGo
 
-/// KV 分叉实验（2026-09-17）：把「qwen3_5_moe（GDN 混合架构）不可 rewind 但可 fork」
-/// 从代码推论变成实机证据。
+/// Branch-Fork 能力回归（v1.4 转正）。
 ///
-/// 全部走现有公开 API，零生产改动：
-///   generate()（SimiGo 会话复用闸门 + 官方 PromptCacheReusePolicy）
-///   saveSessionCache() / loadSessionCache()（官方 saveCache / loadPromptCacheSnapshot 透传）
-/// 分叉 = 测试侧把 checkpoint 文件按目标分支 storageKey 复制后分别加载。
-/// 磁盘反序列化天然产生独立可变 cache 实例，等价于官方文档红线
-/// 「copy the caches before constructing multiple sessions from it」。
+/// 证据链：GDN 不可 rewind 但可 fork——磁盘 checkpoint 双架构（GDN 混合 +
+/// all-attention）、内存 `KVCache.copy()` 双向隔离、增量 prefill、与冷路径
+/// greedy 逐字一致、长程记忆保持。结论与边界见
+/// `docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md` 与
+/// `docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md`。
 ///
-/// 验收：
-///  A1 快照携带 GDN 状态：safetensors 头解析出 MambaCache 类（+ attention KVCache 类）。
-///  A2 checkpoint → 双分支续问零重算：恢复分支走官方 fragment-continuation
-///     （raw-cache 无账本 → 官方不发 mode、cacheHit=0），物理证据 =
-///     cacheTokens=checkpoint 账本长度、promptTokens≈delta、ttft 远小于冷路径。
-///  A3 分支输出与同 prompt 独立冷预填逐字一致（greedy）。
-///  A4 同 prompt 冷路径（retr=生产「重试分叉」的当前代价）mode=cold、cacheHit=0、
-///     TTFT 高一个数量级——GDN 不可 rewind 的结构性反证：SimiGo 只能整会话重建。
-/// 对照：SIMIGO_FORK_MODEL 指向标准注意力模型（如 qwen3_moe）可跑 Dense cache
-/// 对照组——fork 语义与模型无关，预期仅快照组成（无 MambaCache）不同。
-final class KVBranchForkExperimentTests: XCTestCase {
+/// 三个用例：磁盘 fork 全链路（Runtime API + 官方遥测）、内存版 ownership、
+/// 生产分支协议（forkSessionBranch/delete/list + HTTP 端点 e2e）。
+/// 环境门控：`SIMIGO_FORK_EXP=1` 启用；`SIMIGO_FORK_MODEL` 覆盖模型
+/// （默认真机 qwen3_5_moe，指向标准注意力模型即跑 all-attention 对照）。
+final class BranchForkTests: XCTestCase {
 
     private static let recallNumber = "4711"
+    private static let systemContent =
+        "You are a precise assistant. Follow instructions exactly. " +
+        "Answer in English without extra words."
 
     /// 真机生产同款模型；环境变量 SIMIGO_FORK_MODEL 可覆盖。
     private static let defaultModelPath =
@@ -37,9 +32,7 @@ final class KVBranchForkExperimentTests: XCTestCase {
 
     private static let systemMsg = SimiGo.JSONValue.object([
         "role": .string("system"),
-        "content": .string(
-            "You are a precise assistant. Follow instructions exactly. " +
-            "Answer in English without extra words.")
+        "content": .string(systemContent),
     ])
 
     private static func user(_ text: String) -> SimiGo.JSONValue {
@@ -50,7 +43,8 @@ final class KVBranchForkExperimentTests: XCTestCase {
         .object(["role": .string("assistant"), "content": .string(text)])
     }
 
-    /// ~100 行确定性档案文本，渲染后 ≈3k tokens：让冷/分叉的 prefill 差可测。
+    /// ~100 行确定性档案文本，渲染后 ≈3k tokens：让冷/分叉的 prefill 差可测；
+    /// 内嵌 recallNumber 供长程记忆探针。
     private static func baseCorpus() -> String {
         var lines: [String] = []
         for i in 0 ..< 100 {
@@ -67,35 +61,42 @@ final class KVBranchForkExperimentTests: XCTestCase {
         """
     }
 
-    // MARK: - 实验
-
-    func testCheckpointForkOnQwen35MoE() async throws {
+    /// 环境门控 + 模型路径（缺失即 skip，不污染常规测试跑）。
+    private static func requireModel() throws -> String {
         guard ProcessInfo.processInfo.environment["SIMIGO_FORK_EXP"] == "1" else {
-            throw XCTSkip("实机 KV 分叉实验：需 SIMIGO_FORK_EXP=1 且本机存在 qwen3_5_moe 权重")
+            throw XCTSkip("Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重")
         }
-        let modelPath = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? Self.defaultModelPath
-        guard FileManager.default.fileExists(atPath: modelPath + "/config.json") else {
-            throw XCTSkip("模型不存在：\(modelPath)")
+        let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
+            ?? defaultModelPath
+        guard FileManager.default.fileExists(atPath: path + "/config.json") else {
+            throw XCTSkip("模型不存在：\(path)")
         }
+        return path
+    }
 
-        let traceOffset = Self.traceLogByteLength()
-        let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("kvfork-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-
+    private static func greedyConfig() -> ModelConfig {
         var cfg = ModelConfig()
         cfg.temperature = 0 // greedy：跨会话输出逐字可比
         cfg.maxTokens = 24
         cfg.disableThinking = true
         cfg.useMTP = false
+        return cfg
+    }
+
+    // MARK: - 磁盘 fork 全链路（Runtime API + 官方遥测）
+
+    func testCheckpointForkRoundTrip() async throws {
+        let modelPath = try Self.requireModel()
+        let traceOffset = Self.traceLogByteLength()
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("kvfork-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 
         let info = ModelInfo(path: modelPath, kind: .mlx)
-        let runtime = NativeMLX(info: info, config: cfg)
+        let runtime = NativeMLX(info: info, config: Self.greedyConfig())
 
         func gen(_ branch: String, _ messages: [SimiGo.JSONValue]) async throws -> GenerationResult {
-            // UUID 与生产默认同款；时间戳形态在长期回归里存在同毫秒碰撞理论窗口
-            let requestId = "exp-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
+            let requestId = "fork-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
             await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
             return try await runtime.generate(
                 requestId: requestId,
@@ -104,11 +105,11 @@ final class KVBranchForkExperimentTests: XCTestCase {
                 logicalBranchId: branch,
                 messages: messages,
                 tools: nil,
-                config: cfg
+                config: Self.greedyConfig()
             ) { _ in }
         }
 
-        // phase 1：base 冷生成 → 会话 default/s/base（ledger = 渲染 prompt + a0）
+        // base 冷生成 → 会话 default/s/base（ledger = 渲染 prompt + a0）
         try await runtime.start(info, port: 18773)
         let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
         let base = try await gen("base", baseMessages)
@@ -118,15 +119,14 @@ final class KVBranchForkExperimentTests: XCTestCase {
             base.usage?.promptTokens ?? 0, 2000,
             "base 语料应 ≥2k tokens，实际 \(base.usage?.promptTokens ?? 0)")
 
-        // phase 2：checkpoint @ D = base 轮结束的消息边界
+        // checkpoint：base 轮结束的消息边界
         let snapshotURL = try await runtime.saveSessionCache(
             sessionId: "s", logicalBranchId: "base", to: dir)
-        let snapAttributes = (try? FileManager.default.attributesOfItem(atPath: snapshotURL.path)) ?? [:]
-        let snapSize = (snapAttributes[.size] as? NSNumber)?.intValue ?? 0
+        let snapSize = ((try? FileManager.default.attributesOfItem(
+            atPath: snapshotURL.path))?[.size] as? NSNumber)?.intValue ?? 0
         XCTAssertGreaterThan(snapSize, 1_000_000, "checkpoint 应为 MB 级，实际 \(snapSize)B")
 
-        // A1：快照 cache 组成必须与架构一致——混合 GDN 模型携带 MambaCache，
-        // 标准注意力模型（Dense cache 对照，SIMIGO_FORK_MODEL 覆盖）全为 KVCache。
+        // 快照 cache 组成与架构一致：混合 GDN 带 MambaCache；all-attention 全 KVCache
         let configData = try? Data(contentsOf: URL(fileURLWithPath: modelPath + "/config.json"))
         let configObject = (try? JSONSerialization.jsonObject(with: configData ?? Data()))
             as? [String: Any]
@@ -135,8 +135,7 @@ final class KVBranchForkExperimentTests: XCTestCase {
         let classes = try Self.snapshotCacheClasses(at: snapshotURL)
         let mambaCount = classes.filter { $0 == "MambaCache" }.count
         let attnCount = classes.filter { $0 == "KVCache" || $0 == "RotatingKVCache" }.count
-        print("[fork-exp] model_type=\(modelType) hybridGDN=\(isHybridGDN)")
-        print("[fork-exp] snapshot caches: MambaCache=\(mambaCount) attn=\(attnCount) total=\(classes.count)")
+        print("[fork-cap] model_type=\(modelType) MambaCache=\(mambaCount) attn=\(attnCount) total=\(classes.count)")
         if isHybridGDN {
             XCTAssertGreaterThanOrEqual(mambaCount, 8, "快照应携带 GDN(MambaCache) 状态，实际 \(mambaCount)")
             XCTAssertGreaterThanOrEqual(attnCount, 2, "快照应携带 attention KV，实际 \(attnCount)")
@@ -145,7 +144,7 @@ final class KVBranchForkExperimentTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(attnCount, 8, "快照应携带全部 attention KV，实际 \(attnCount)")
         }
 
-        // phase 3：checkpoint 复制到两个分支 storageKey 名下（各自独立可变实例）
+        // 分支：checkpoint 复制到两个分支 storageKey 名下（磁盘反序列化 = 独立可变实例）
         let baseKey = "default/s/base"
         for branch in ["forkA", "forkB"] {
             let branchKey = "default/s/\(branch)"
@@ -156,26 +155,23 @@ final class KVBranchForkExperimentTests: XCTestCase {
             }
         }
 
-        // phase 4：forkA 从 checkpoint 恢复（官方 fragment-continuation 语义）
+        // forkA：恢复 + 两轮续问
         let metaA = try await runtime.loadSessionCache(
             sessionId: "s", logicalBranchId: "forkA", from: dir)
         XCTAssertEqual(metaA.history.count, 3, "恢复的 history 应为 [system, corpus, a0]")
 
-        // phase 5：forkA 续问——应 extend，只预填新增问句
         let withReply = baseMessages + [Self.assistant(a0)]
         let questionA =
             "Rewrite exactly this sentence and nothing else: The fork carries the prefix state."
         let forkA1 = try await gen("forkA", withReply + [Self.user(questionA)])
         XCTAssertFalse(forkA1.text.isEmpty, "forkA 首轮生成不应为空")
-
-        // phase 6：forkA 再续一轮——恢复后的会话必须还能继续 extend
         let forkA2 = try await gen(
             "forkA", withReply + [Self.user(questionA), Self.assistant(forkA1.text),
                 Self.user("Append the word DONE to your previous answer.")]
         )
         XCTAssertFalse(forkA2.text.isEmpty, "forkA 二轮生成不应为空")
 
-        // phase 7：forkB 从同一 checkpoint 恢复并问召回问题（GDN 长程记忆探针）
+        // forkB：同一 checkpoint + 长程记忆探针
         _ = try await runtime.loadSessionCache(sessionId: "s", logicalBranchId: "forkB", from: dir)
         let questionB = "What number did I ask you to remember? Reply with only that number."
         let forkB = try await gen("forkB", withReply + [Self.user(questionB)])
@@ -183,16 +179,13 @@ final class KVBranchForkExperimentTests: XCTestCase {
             forkB.text.contains(Self.recallNumber),
             "forkB 应召回 \(Self.recallNumber)，实际：\(forkB.text)")
 
-        // phase 8：coldA = 同 prompt 独立冷预填（forkA 的正确性参照）
+        // 冷参照与冷重试（同 prompt 双路径）
         let coldA = try await gen("coldA", withReply + [Self.user(questionA)])
-
-        // phase 9/A4：retr = 完全相同的 forkB prompt 走冷路径
-        //（生产「分叉后重试」的当前代价；GDN 不可 rewind → 只能整会话重建）
         let retr = try await gen("retr", withReply + [Self.user(questionB)])
 
         await runtime.stop()
 
-        // —— 验收断言（trace 窗口内按分支读取官方 mode）——
+        // —— 验收（trace 窗口内按分支读取官方遥测）——
         let lines = try Self.traceLines(after: traceOffset)
 
         func modes(_ branch: String) -> [String] {
@@ -207,18 +200,14 @@ final class KVBranchForkExperimentTests: XCTestCase {
 
         XCTAssertEqual(modes("base"), ["cold"], "base 首生成应为 cold")
         XCTAssertEqual(modes("coldA"), ["cold"], "coldA 应 cold")
-        XCTAssertEqual(modes("retr"), ["cold"], "retr 应 cold（A4）")
-
-        // 官方语义（2026-09-17 实机校准）：checkpoint 恢复的会话是 raw-cache
-        //（无 token 账本），复用判定没有可对照的 ledger → 官方不发 mode 字符串，
-        // cacheHit/cacheEff 报 0（SimiGo 透传官方值，不估算）。
-        // 分叉零重算的物理证据由三项承担：cacheTokens=5413（checkpoint 账本
-        // 逐位在列）、promptTokens≈delta（只预填新增问句）、ttft 远小于冷路径。
+        XCTAssertEqual(modes("retr"), ["cold"], "retr 应 cold")
+        // 恢复分支走 fragment-continuation（raw-cache 无账本）：官方不发 mode、
+        // cacheHit=0（透传官方值，不估算）。零重算证据 = cacheTokens/promptTokens/TTFT。
         XCTAssertEqual(modes("forkA"), [], "恢复分支走 fragment-continuation，官方不发 mode")
         XCTAssertEqual(modes("forkB"), [])
-        // checkpoint 账本 = base prompt + 生成尾部。官方 generationTokens 口径
-        // 可能不含结束 token（dense 实测报告 +1、账本 +2），故取 ±2 容差；
-        // 真正的截断/丢失会是千级差距，±2 足以证明逐位在列。
+
+        // checkpoint 账本 = base prompt + 生成尾部；官方 generationTokens 口径
+        // 可能不含结束 token（±2 容差，真正的截断是千级差距）。
         let baseLedger = (base.usage?.promptTokens ?? -1) + (base.usage?.generationTokens ?? -1)
         let forkALedger = Int(
             Self.field(in: lines, sessionKey: "s/forkA", "cacheTokens").first ?? "") ?? -1
@@ -239,110 +228,64 @@ final class KVBranchForkExperimentTests: XCTestCase {
 
         XCTAssertFalse(
             lines.contains { $0.contains("reuseMiss") },
-            "不应出现 SimiGo 复用闸门 miss：\n" +
-                lines.filter { $0.contains("reuseMiss") }.joined(separator: "\n"))
+            "不应出现 SimiGo 复用闸门 miss")
         XCTAssertFalse(
             lines.contains { $0.contains("fork@common") },
             "不应出现活会话渲染分叉（fork-no-rewind）")
 
-        // A3：greedy 下分支与冷预填逐字一致
+        // 输出：greedy 下分支与冷路径逐字一致；同 prompt 冷重试代价高 3 倍以上
         XCTAssertEqual(
             forkA1.text, coldA.text,
             "forkA 与 coldA 输出应逐字一致\nforkA: \(forkA1.text)\ncoldA: \(coldA.text)")
         XCTAssertEqual(
             forkB.text, retr.text,
             "forkB 与 retr 输出应逐字一致\nforkB: \(forkB.text)\nretr: \(retr.text)")
-
-        // A4：同 prompt 双路径的代价对比
+        XCTAssertEqual(retr.usage?.cachedPromptTokens ?? 0, 0, "冷路径 cacheHit 应为 0")
         let ttftFork = forkB.usage?.ttftSeconds ?? -1
         let ttftCold = retr.usage?.ttftSeconds ?? .greatestFiniteMagnitude
-        let cachedCold = retr.usage?.cachedPromptTokens ?? 0
-        XCTAssertEqual(cachedCold, 0, "冷路径 cacheHit 应为 0，实际 \(cachedCold)")
         XCTAssertGreaterThan(
             ttftCold, ttftFork * 3,
             String(format: "fork TTFT 应比 cold 低 3 倍以上：fork=%.3fs cold=%.3fs", ttftFork, ttftCold))
-
-        // —— 汇总报告 ——
-        func row(_ label: String, _ mode: String, _ r: GenerationResult) -> String {
-            let u = r.usage
-            let ttft = u?.ttftSeconds.map { String(format: "%.3fs", $0) } ?? "-"
-            return "\(label.padding(toLength: 6, withPad: " ", startingAt: 0)) mode=\(mode.padding(toLength: 8, withPad: " ", startingAt: 0)) " +
-                "prompt=\(u?.promptTokens ?? -1) cached=\(u?.cachedPromptTokens ?? -1) " +
-                "cacheEff=\(u?.cacheEfficiency.map { String(format: "%.3f", $0) } ?? "-") ttft=\(ttft)"
-        }
-        print("[fork-exp] ===== 结果汇总 =====")
-        print("[fork-exp] " + row("base", modes("base").last ?? "-", base))
-        print("[fork-exp] " + row("forkA1", "fragment", forkA1))
-        print("[fork-exp] " + row("forkA2", "fragment", forkA2))
-        print("[fork-exp] " + row("forkB", modes("forkB").last ?? "-", forkB))
-        print("[fork-exp] " + row("coldA", modes("coldA").last ?? "-", coldA))
-        print("[fork-exp] " + row("retr", modes("retr").last ?? "-", retr))
-        print("[fork-exp] snapshot: \(snapSize)B, MambaCache=\(mambaCount), attn=\(attnCount)")
-        print("[fork-exp] forkA1 text: \(forkA1.text)")
-        print("[fork-exp] forkA2 text: \(forkA2.text)")
-        print("[fork-exp] forkB  text: \(forkB.text)")
-        print("[fork-exp] coldA  text: \(coldA.text)")
-        print("[fork-exp] retr   text: \(retr.text)")
     }
 
-    /// 内存版 fork 专测：闭合「同一内存快照 → KVCache.copy() → 多个 ChatSession
-    /// 是否安全」这一未验证边界。直接打官方层（自建 ModelContainer，不经 NativeMLX），
-    /// 32GB 机器只允许单容器加载。
-    ///
-    /// 与磁盘 fork 的差异：省去序列化往返，各分支 cache 是同一组内存对象的 copy()。
-    /// 官方红线：cache 是可变引用类型，多 session 前必须 copy——本测试验证的正是
-    /// 「copy() 是否足以隔离」。state（LMOutput.State）是 struct 值语义，按生产 fork
-    /// 形态直接共享传入，由行为断言背书。
-    ///
-    /// 交错顺序覆盖双向污染探测：A1 → A2 → B（B 在 A 变异后载入运行）→ A3
-    /// （A 在 B 运行后再续一轮）。每轮记录官方 promptTokenCount 证明只算增量。
-    func testInMemoryForkCopyOwnership() async throws {
-        guard ProcessInfo.processInfo.environment["SIMIGO_FORK_EXP"] == "1" else {
-            throw XCTSkip("实机 KV 分叉实验：需 SIMIGO_FORK_EXP=1 且本机存在 qwen3_5_moe 权重")
-        }
-        let modelPath = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? Self.defaultModelPath
-        guard FileManager.default.fileExists(atPath: modelPath + "/config.json") else {
-            throw XCTSkip("模型不存在：\(modelPath)")
-        }
+    // MARK: - 内存版 ownership（KVCache.copy() 双向隔离）
 
+    /// 直接打官方层（自建 ModelContainer；32GB 机器单容器）：同一内存快照 →
+    /// 每 cache copy()（官方红线；state 为 struct 值语义直接共享）→ 两个 ChatSession。
+    /// 交错 A1 → A2 → B → A3 双向污染探测；官方 promptTokenCount 直证增量。
+    func testInMemoryForkCopyOwnership() async throws {
+        let modelPath = try Self.requireModel()
         let container = try await LLMModelFactory.shared.loadContainer(
             from: URL(fileURLWithPath: modelPath),
             using: #huggingFaceTokenizerLoader())
 
-        let params = GenerateParameters(maxTokens: 24, temperature: 0) // greedy
+        let params = GenerateParameters(maxTokens: 24, temperature: 0)
         let extra: [String: any Sendable] = ["enable_thinking": false]
 
         func drain(
             _ session: ChatSession, _ messages: [Chat.Message]
-        ) async throws -> (text: String, promptTokens: Int, promptTime: Double?) {
+        ) async throws -> (text: String, promptTokens: Int) {
             var text = ""
             var promptTokens = -1
-            var promptTime: Double?
             for try await g in session.streamDetails(to: messages) {
                 switch g {
                 case .chunk(let t): text += t
-                case .info(let i):
-                    promptTokens = i.promptTokenCount
-                    promptTime = i.promptTime
+                case .info(let i): promptTokens = i.promptTokenCount
                 default: break
                 }
             }
-            return (text, promptTokens, promptTime)
+            return (text, promptTokens)
         }
 
-        // base：官方会话直接生成（等价磁盘实验 phase 1，但走 ChatSession 原生 API）
         let base = ChatSession(
             container, history: [], generateParameters: params, additionalContext: extra)
-        let (a0, basePrompt, _) = try await drain(base, [
-            .system("You are a precise assistant. Follow instructions exactly. " +
-                "Answer in English without extra words."),
+        let (a0, basePrompt) = try await drain(base, [
+            .system(Self.systemContent),
             .user(Self.baseCorpus()),
         ])
         XCTAssertFalse(a0.isEmpty, "base 生成不应为空")
         XCTAssertGreaterThan(basePrompt, 2000, "base 语料应 ≥2k tokens，实际 \(basePrompt)")
 
-        // checkpoint → 内存快照
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("kvfork-mem-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -350,67 +293,170 @@ final class KVBranchForkExperimentTests: XCTestCase {
         try await base.saveCache(to: snapshotURL)
         let shared = try loadPromptCacheSnapshot(url: snapshotURL)
 
-        // 分支：同一快照，各 cache copy()（官方红线）；state 按值共享
-        let cachesA = shared.cache.map { $0.copy() }
-        let cachesB = shared.cache.map { $0.copy() }
+        // 同一快照：cache 各自 copy()，state 按值共享
         let forkA = ChatSession(
             container, instructions: nil,
-            promptCache: PromptCacheSnapshot(cache: cachesA, state: shared.state),
+            promptCache: PromptCacheSnapshot(
+                cache: shared.cache.map { $0.copy() }, state: shared.state),
             generateParameters: params, additionalContext: extra)
         let forkB = ChatSession(
             container, instructions: nil,
-            promptCache: PromptCacheSnapshot(cache: cachesB, state: shared.state),
+            promptCache: PromptCacheSnapshot(
+                cache: shared.cache.map { $0.copy() }, state: shared.state),
             generateParameters: params, additionalContext: extra)
 
         let questionA =
             "Rewrite exactly this sentence and nothing else: The fork carries the prefix state."
-        let followupA = "Append the word DONE to your previous answer."
         let questionB = "What number did I ask you to remember? Reply with only that number."
 
-        // 交错：A1 → A2（A 已变异自身副本）→ B（此时才首次运行）→ A3（B 运行后 A 再续）
-        let (a1, pA1, _) = try await drain(forkA, [.user(questionA)])
-        let (a2, pA2, _) = try await drain(forkA, [.user(followupA)])
-        let (b1, pB1, _) = try await drain(forkB, [.user(questionB)])
-        let (a3, pA3, _) = try await drain(forkA, [.user(questionB)])
+        // 交错：A1 → A2（A 变异自身副本）→ B → A3（B 运行后 A 再续，反向探针）
+        let (a1, pA1) = try await drain(forkA, [.user(questionA)])
+        let (a2, pA2) = try await drain(forkA, [.user("Append the word DONE to your previous answer.")])
+        let (b1, pB1) = try await drain(forkB, [.user(questionB)])
+        let (a3, pA3) = try await drain(forkA, [.user(questionB)])
 
-        // 冷参照：history 初始化器全量渲染（logical history = base + a0 + 新问句）
+        // 冷参照：history 初始化器全量渲染
         let logicalHistory: [Chat.Message] = [
-            .system("You are a precise assistant. Follow instructions exactly. " +
-                "Answer in English without extra words."),
+            .system(Self.systemContent),
             .user(Self.baseCorpus()),
             .assistant(a0),
         ]
         let coldA = ChatSession(
             container, history: logicalHistory, generateParameters: params,
             additionalContext: extra)
-        let (ca, pCA, _) = try await drain(coldA, [.user(questionA)])
+        let (ca, pCA) = try await drain(coldA, [.user(questionA)])
         let coldB = ChatSession(
             container, history: logicalHistory, generateParameters: params,
             additionalContext: extra)
-        let (cb, pCB, _) = try await drain(coldB, [.user(questionB)])
+        let (cb, pCB) = try await drain(coldB, [.user(questionB)])
 
-        // —— 验收 ——
-        // 输出：逐字一致（greedy）
-        XCTAssertEqual(
-            a1, ca, "内存 forkA 与冷参照应逐字一致\nforkA: \(a1)\ncoldA: \(ca)")
-        XCTAssertEqual(
-            b1, cb, "内存 forkB 与冷参照应逐字一致\nforkB: \(b1)\ncoldB: \(cb)")
+        // 验收：逐字一致、双向隔离、增量、长程记忆
+        XCTAssertEqual(a1, ca, "内存 forkA 与冷参照应逐字一致\nforkA: \(a1)\ncoldA: \(ca)")
+        XCTAssertEqual(b1, cb, "内存 forkB 与冷参照应逐字一致\nforkB: \(b1)\ncoldB: \(cb)")
         XCTAssertTrue(a2.contains("DONE"), "A2 应延续 A 的回答，实际：\(a2)")
         XCTAssertTrue(a3.contains(Self.recallNumber), "A3（B 运行后）应仍召回，实际：\(a3)")
-
-        // 只算增量：分支每轮官方报告的 promptTokenCount 必须是 fragment 量级
         for (label, tokens) in [("forkA1", pA1), ("forkA2", pA2), ("forkB1", pB1), ("forkA3", pA3)] {
-            XCTAssertLessThan(
-                tokens, 400, "\(label) 只应预填增量（<400 tok），实际 \(tokens)")
+            XCTAssertLessThan(tokens, 400, "\(label) 只应预填增量（<400 tok），实际 \(tokens)")
         }
         XCTAssertGreaterThan(pCA, 2000, "冷参照应为全量预填，实际 \(pCA)")
         XCTAssertGreaterThan(pCB, 2000, "冷参照应为全量预填，实际 \(pCB)")
+        print("[fork-cap][mem] promptTokens: forkA1=\(pA1) forkA2=\(pA2) forkB1=\(pB1) forkA3=\(pA3) coldA=\(pCA) coldB=\(pCB)")
+    }
 
-        print("[fork-exp][mem] promptTokens: forkA1=\(pA1) forkA2=\(pA2) forkB1=\(pB1) forkA3=\(pA3) coldA=\(pCA) coldB=\(pCB)")
-        print("[fork-exp][mem] a1: \(a1)")
-        print("[fork-exp][mem] a2: \(a2)")
-        print("[fork-exp][mem] b1: \(b1)")
-        print("[fork-exp][mem] a3: \(a3)")
+    // MARK: - 生产分支协议（Runtime API + HTTP 端点 e2e）
+
+    /// forkSessionBranch / deleteSessionBranch / listSessionBranches +
+    /// /v1/branches/fork、/v1/branches/list、/v1/branches/delete 与 chat
+    /// `fork_from_branch` 内联触发的端到端。
+    func testForkSessionBranchProductionAPI() async throws {
+        let modelPath = try Self.requireModel()
+        let cfg = Self.greedyConfig()
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: cfg)
+        let port = 18775
+        try await runtime.start(info, port: port)
+        defer { Task { await runtime.stop() } }
+
+        func gen(_ branch: String, _ messages: [SimiGo.JSONValue]) async throws -> GenerationResult {
+            let requestId = "prod-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
+            await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
+            return try await runtime.generate(
+                requestId: requestId,
+                agentId: nil,
+                sessionId: "s",
+                logicalBranchId: branch,
+                messages: messages,
+                tools: nil,
+                config: cfg
+            ) { _ in }
+        }
+
+        // 源分支 main 正常生成（logical history = [system, corpus, a0]）
+        let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
+        let base = try await gen("main", baseMessages)
+        XCTAssertFalse(base.text.isEmpty, "base 生成不应为空")
+        let withReply = baseMessages + [Self.assistant(base.text)]
+
+        // Runtime API：main → alt fork
+        let store = NativeMLX.defaultBranchCheckpointStore()
+        let forkMeta = try await runtime.forkSessionBranch(
+            sessionId: "s", sourceBranch: "main", targetBranch: "alt")
+        XCTAssertEqual(forkMeta.history.count, 3, "fork 元数据应携带源分支 history")
+
+        // alt 分支续问：只算增量 + 记忆召回
+        let questionB = "What number did I ask you to remember? Reply with only that number."
+        let alt = try await gen("alt", withReply + [Self.user(questionB)])
+        XCTAssertTrue(
+            alt.text.contains(Self.recallNumber),
+            "alt 分支应召回 \(Self.recallNumber)，实际：\(alt.text)")
+        XCTAssertLessThan(
+            alt.usage?.promptTokens ?? .max, 400,
+            "alt 只应预填增量，实际 \(alt.usage?.promptTokens ?? -1)")
+
+        // list：live 同时含 main 与 alt
+        let listing = runtime.listSessionBranches(sessionId: "s")
+        XCTAssertTrue(listing.liveBranches.contains("main"), "live 应含 main：\(listing.liveBranches)")
+        XCTAssertTrue(listing.liveBranches.contains("alt"), "live 应含 alt：\(listing.liveBranches)")
+
+        // delete：回收 alt（KV 释放 + checkpoint 清理）
+        try await runtime.deleteSessionBranch(sessionId: "s", logicalBranchId: "alt")
+        let altPrefix = NativeMLX.cacheFileName(for: "default/s/alt")
+        let residue = ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
+            .filter { $0.hasPrefix(altPrefix) }
+        XCTAssertTrue(residue.isEmpty, "delete 后不应有 checkpoint 残留：\(residue)")
+        XCTAssertFalse(
+            runtime.listSessionBranches(sessionId: "s").liveBranches.contains("alt"),
+            "delete 后 live 不应含 alt")
+
+        // HTTP e2e：fork 端点 → chat on 新分支 → list → delete 端点
+        let baseURL = "http://127.0.0.1:\(port)"
+        func post(_ path: String, _ body: [String: Any]) async throws -> (Int, Data) {
+            var request = URLRequest(url: URL(string: baseURL + path)!)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            return ((response as? HTTPURLResponse)?.statusCode ?? -1, data)
+        }
+
+        let (forkStatus, _) = try await post("/v1/branches/fork", [
+            "session_id": "s", "fork_from_branch": "main", "branch_id": "e2e",
+        ])
+        XCTAssertEqual(forkStatus, 200, "HTTP fork 应成功")
+
+        let (chatStatus, chatBody) = try await post("/v1/chat/completions", [
+            "session_id": "s",
+            "branch_id": "e2e",
+            "messages": [
+                ["role": "system", "content": Self.systemContent],
+                ["role": "user", "content": Self.baseCorpus()],
+                ["role": "assistant", "content": base.text],
+                ["role": "user", "content": questionB],
+            ],
+        ])
+        XCTAssertEqual(chatStatus, 200, "chat on fork 分支应成功")
+        XCTAssertTrue(
+            String(decoding: chatBody, as: UTF8.self).contains(Self.recallNumber),
+            "e2e chat 应召回 \(Self.recallNumber)")
+
+        let (listStatus, listBody) = try await post("/v1/branches/list", ["session_id": "s"])
+        XCTAssertEqual(listStatus, 200)
+        XCTAssertTrue(
+            String(decoding: listBody, as: UTF8.self).contains("e2e"),
+            "list 应含 e2e 分支")
+
+        let (deleteStatus, _) = try await post("/v1/branches/delete", [
+            "session_id": "s", "branch_id": "e2e",
+        ])
+        XCTAssertEqual(deleteStatus, 200, "HTTP delete 应成功")
+
+        // e2e checkpoint 在默认 store，删除端点应已清理
+        let e2ePrefix = NativeMLX.cacheFileName(for: "default/s/e2e")
+        let e2eResidue = ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
+            .filter { $0.hasPrefix(e2ePrefix) }
+        XCTAssertTrue(e2eResidue.isEmpty, "e2e 分支删除后不应有残留：\(e2eResidue)")
+
+        await runtime.stop()
     }
 
     // MARK: - 辅助
@@ -473,7 +519,7 @@ final class KVBranchForkExperimentTests: XCTestCase {
     }
 }
 
-/// 快照格式异常（官方 savePromptCache 约定被破坏时中断实验并给出上下文）。
+/// 快照格式异常（官方 savePromptCache 约定被破坏时中断并给出上下文）。
 private struct SnapshotFormatError: LocalizedError, CustomStringConvertible {
     let message: String
     init(_ message: String) { self.message = message }
