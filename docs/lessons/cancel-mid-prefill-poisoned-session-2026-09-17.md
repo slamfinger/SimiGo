@@ -92,27 +92,24 @@ REGISTERED（预填前）→ CANCEL → REGISTERED + 内部状态被打断 → �
 另：下午 17:54 r=513d15（s=06f438）同样在冷预填中被取消，但后续请求换了
 session key，毒 session 未被命中——与「毒只在同 key 复用时显形」一致。
 
-## 处理方式（窗口期内）
+## 处理方式
 
-- 不改码。引擎经 idleSuspend 自愈（sessions.removeAll 清场）。
-- 客户端侧避免对着楔死会话无退避重试——每次重试都在为毒 session 续命。
+- 事故当晚引擎经 idleSuspend 自愈（sessions.removeAll 清场）；客户端侧避免对着
+  楔死会话无退避重试——每次重试都在为毒 session 续命。
+- 同晚用户批准提前动工（窗口纪律让位于结构性 P0）：cancelCommitSkip 路径补
+  第二条取消不变量——本轮新建（`reusedSession=false`）且零流事件（`rawEv=0`）
+  即被取消的 session，从池中逐出并 `clear()`（trace `poisonedSessionEvict`）。
+  逐出后下一请求新建 session 走健康路径，毒链闭环被斩断。
+- 边界记录：`rawEv=0` 是当前版本的诊断辅助判据，显式 readiness 状态
+  （ABSENT/READY/RUNNING/INVALID）留待 session 生命周期协议；复用路径
+  （`reusedSession=true`）中途取消是否同样致毒**未观测到**，按最小切口暂不逐出，
+  若未来出现复用路径挂死样本再收紧条件。
 
-## 修复候选（窗口期满后，最小切口）
+## 长期方向（未动工）
 
-近期最小修复（诊断条件辅助）：
-
-```swift
-// cancelCommitSkip 分支内：
-// 本轮新建（reusedSession=false）+ 零流事件 → 逐出，斩断复用毒链
-if !reusedSession, rawEventCount == 0 {
-    state.withLock { $0.sessions.removeValue(forKey: executionKey.storageKey) }
-    await managed.session.clear()
-}
-```
-
-长期不变量（不被 telemetry 完整性绑架）：`rawEv == 0` 只是当前版本的诊断辅助，
-正式形态应为显式 session readiness——`sessions[key]` 隐含 READY 语义，
-新注册 session 在首个成功流事件（或 prefill 完成）前不进入可复用池：
+`rawEv == 0` 不应长期充当「session 无效」的唯一依据（telemetry 自身可能不完备）。
+正式形态是显式 session readiness——`sessions[key]` 隐含 READY 语义，新注册
+session 在首个成功流事件（或 prefill 完成）前不进入可复用池：
 
 ```text
 ABSENT / READY / RUNNING / INVALID
@@ -132,5 +129,6 @@ ABSENT / READY / RUNNING / INVALID
 
 ## 是否需要 ADR
 
-需要。session validity invariant（READY 门禁）应作为 cancel 清理协议的第二条
-不变量入 ADR，与 39ff354 的「取消不提交」并列；窗口期满、复现确认后动工。
+需要。最小修复已落地（当晚，用户批准提前动工）；session validity invariant
+（READY 门禁）作为 cancel 清理协议的第二条不变量、与 39ff354「取消不提交」
+并列的正式 ADR，待窗口期满评审后入册。

@@ -775,6 +775,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 " history=\(managed.history.count)" +
                 " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
             )
+            // 取消清理第二不变量（2026-09-17 毒 session 事故，lessons 同名文档）：
+            // 本轮新建、未产出任何流事件即被取消的 session，内部执行状态已被
+            // cancel 打断；留在池中时，后续 prefix 命中它的请求将零输出挂死
+            // （真机实证连续 10 次无自愈）。逐出后下一请求新建 session 走健康
+            // 路径。rawEv=0 是当前版本的诊断辅助判据；显式 readiness 状态
+            // 留待 session 生命周期协议，复用路径中途取消是否同毒未观测到。
+            if !reusedSession, rawEventCount == 0 {
+                let poisoned: ChatSession? = state.withLock { state in
+                    guard state.sessions[executionKey.storageKey] === managed else {
+                        return nil
+                    }
+                    state.sessions.removeValue(forKey: executionKey.storageKey)
+                    return managed.session
+                }
+                if let poisoned {
+                    await poisoned.clear()
+                    traceLogger.trace(
+                        "[MLX] poisonedSessionEvict session=\(executionKey.traceKey)" +
+                        " history=\(managed.history.count)"
+                    )
+                }
+            }
             throw CancellationError()
         }
 
