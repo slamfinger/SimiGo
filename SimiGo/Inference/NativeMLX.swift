@@ -896,7 +896,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 at: directory, withIntermediateDirectories: true)
 
             let baseName = Self.cacheFileName(for: key.storageKey)
-            let cacheURL = directory.appendingPathComponent(baseName + ".cachesnapshot")
+            // 后缀必须是 .safetensors：官方 mlx IO 按 pathExtension 分派
+            // （2026-09-17 实验实测，.cachesnapshot 抛 unknownExtension）。
+            let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
             let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
 
             // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
@@ -942,7 +944,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         let baseName = Self.cacheFileName(for: key.storageKey)
-        let cacheURL = directory.appendingPathComponent(baseName + ".cachesnapshot")
+        let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
 
         let decoder = JSONDecoder()
