@@ -104,6 +104,16 @@ session key，毒 session 未被命中——与「毒只在同 key 复用时显�
   （ABSENT/READY/RUNNING/INVALID）留待 session 生命周期协议；复用路径
   （`reusedSession=true`）中途取消是否同样致毒**未观测到**，按最小切口暂不逐出，
   若未来出现复用路径挂死样本再收紧条件。
+- **真机验证通过（2026-09-17 21:52 新二进制上线后，自然实验）**：当晚两次
+  cancel-mid-prefill（`rawEv=0`）均正确触发逐出，且毒 session 未再入池：
+  - 21:55 `cancelCommitSkip session=ee23b8/main history=77 rawEv=0` →
+    `poisonedSessionEvict`；
+  - 21:56 `cancelCommitSkip session=033a22/main history=15 rawEv=0` →
+    `poisonedSessionEvict` → 同 key 下一请求 **`reuse=false`** 新建 session →
+    69.2s 冷预填后**正常完成**（`rawEv=85 emitB=343`）。
+  与事故夜同型触发（baba09 式预填中取消）形成前后对照：修复前下一请求
+  `reuse=true` 挂死×10（50 分钟），修复后逐出 + 健康重建。代价侧：逐出后
+  下一请求重付全量冷预填（本例 69s），是正确的代价，替代项是无限挂死。
 
 ## 长期方向（未动工）
 
