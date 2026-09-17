@@ -70,6 +70,19 @@ fork-no-rewind 遥测已证明：qwen3_5_moe 的 GDN 层（MambaCache，30 层�
 
 三个概念继续保持分离：**分支语义已验证 ≠ 生产级内存 fork 已完成 ≠ 增量计量协议闭合**。
 
+## 内存版 fork（KVCache.copy()）专测（2026-09-17 追加）
+
+`testInMemoryForkCopyOwnership`：直接打官方层（自建 ModelContainer），从**同一个内存快照**
+构造两个分支——每 cache `copy()`（官方红线）、`LMOutput.State` 为 struct 值语义直接共享——
+交错顺序 A1 → A2 → B → A3 覆盖双向污染探测：
+
+- 分支每轮官方 `promptTokenCount`：209 / 202 / 208 / 208 tok，冷参照 5442 / 5441（fragment 量级直证）
+- A、B 输出与各自全量渲染冷参照**逐字一致**；4711 双向召回（含 B 运行后 A 再续）
+- 结论：**`copy()` 足以隔离**——「低成本内存内 fork」从未验证升级为实机建立
+
+边界注记：本测试是单线程顺序交错；并发分支执行仍不在证据内（生产 `__global_generation__`
+本就串行）。跨分支共享的 `state` 是 struct，行为断言背书了值语义成立。
+
 ## 结论适用范围
 
 - 分叉点是**会话边界**（某次生成完成后），不是任意 token 位置；覆盖生产主要分叉场景
