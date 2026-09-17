@@ -90,7 +90,8 @@ final class KVBranchForkExperimentTests: XCTestCase {
         let runtime = NativeMLX(info: info, config: cfg)
 
         func gen(_ branch: String, _ messages: [JSONValue]) async throws -> GenerationResult {
-            let requestId = "exp-\(branch)-\(Int(Date().timeIntervalSince1970 * 1000))"
+            // UUID 与生产默认同款；时间戳形态在长期回归里存在同毫秒碰撞理论窗口
+            let requestId = "exp-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
             await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
             return try await runtime.generate(
                 requestId: requestId,
