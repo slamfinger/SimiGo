@@ -1,0 +1,483 @@
+[2026-09-18 04:28:11.039] NativeMLX ready: model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e port=8000
+[2026-09-18 04:28:11.042] [MEM] afterLoad active=19274MB cache=878MB peak=20126MB footprint=20341MB swapUsed=4742MB
+[2026-09-18 04:28:11.042] ℹ️ [READY] http://127.0.0.1:8000/v1
+[2026-09-18 04:29:26.359] [LC] REGISTER r=f62a6f s=c1627c to=CREATED
+[2026-09-18 04:29:26.360] [LC] STATE_TRANSITION r=f62a6f s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:29:26.360] [LC] STATE_TRANSITION r=f62a6f s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:29:26.360] [MLX] admission warmSessions=1 warmTokens=0 swap=5.3GB evicted=0 freedTokens=0
+[2026-09-18 04:29:26.360] [MLX] prefillStep=2048 est=5652 reuse=false
+[2026-09-18 04:29:59.657] [MLX] prefill 17662/17663
+[2026-09-18 04:29:59.976] [MLX] prefill 17663/17663
+[2026-09-18 04:30:05.030] [MLX] session=442fbf/main messages=4 history=3 delta=1 reuse=false ttft=35631ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=17663 promptTime=35.4s tps=33.3 rawEv=101 rawB=372 emitB=372
+[2026-09-18 04:30:05.030] [LC] STATE_TRANSITION r=f62a6f s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:30:05.030] [LC] RELEASED r=f62a6f s=c1627c reason=completed
+[2026-09-18 04:30:38.701] [LC] REGISTER r=8841b6 s=c1627c to=CREATED
+[2026-09-18 04:30:38.701] [LC] STATE_TRANSITION r=8841b6 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:30:38.701] [LC] STATE_TRANSITION r=8841b6 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:30:38.702] [MLX] admission warmSessions=1 warmTokens=17765 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 04:30:38.702] [MLX] prefillStep=2048 est=17768 reuse=true
+[2026-09-18 04:30:39.061] [MLX] prefill 16/16
+[2026-09-18 04:30:41.340] [TOOL] event=TOOL_REQUESTED r=8841b6 gen=8841b6 tc=784e9e tool=Read state=requested
+[2026-09-18 04:30:41.340] [TOOL] event=TOOL_VALIDATED r=8841b6 gen=8841b6 tc=784e9e tool=Read state=validated
+[2026-09-18 04:30:41.381] [MLX] session=442fbf/main messages=6 history=5 delta=1 reuse=true ttft=402ms cacheTokens=17765 cacheHitTokens=17765 cacheEff=1.00 mode=extend promptTokens=16 promptTime=0.3s tps=33.5 toolCalls=1 rawEv=16 rawB=64 emitB=64
+[2026-09-18 04:30:41.381] [LC] STATE_TRANSITION r=8841b6 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:30:41.381] [LC] RELEASED r=8841b6 s=c1627c reason=completed
+[2026-09-18 04:30:41.426] [LC] REGISTER r=c3b621 s=c1627c to=CREATED
+[2026-09-18 04:30:41.426] [LC] STATE_TRANSITION r=c3b621 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:30:41.426] [LC] STATE_TRANSITION r=c3b621 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:30:41.427] [MLX] admission warmSessions=1 warmTokens=17858 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:30:41.427] [MLX] prefillStep=2048 est=18349 reuse=true
+[2026-09-18 04:30:41.427] [TOOL] event=TOOL_RESULT r=c3b621 gen=8841b6 tc=784e9e tool=Read state=result
+[2026-09-18 04:30:43.626] [MLX] prefill 661/661
+[2026-09-18 04:30:46.846] [TOOL] event=TOOL_REQUESTED r=c3b621 gen=c3b621 tc=796967 tool=Bash state=requested
+[2026-09-18 04:30:46.846] [TOOL] event=TOOL_VALIDATED r=c3b621 gen=c3b621 tc=796967 tool=Bash state=validated
+[2026-09-18 04:30:46.883] [MLX] session=442fbf/main messages=8 history=7 delta=1 reuse=true ttft=2508ms cacheTokens=17858 cacheHitTokens=17858 cacheEff=0.96 mode=extend promptTokens=661 promptTime=2.4s tps=32.0 toolCalls=1 rawEv=15 rawB=63 emitB=63
+[2026-09-18 04:30:46.883] [LC] STATE_TRANSITION r=c3b621 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:30:46.883] [LC] RELEASED r=c3b621 s=c1627c reason=completed
+[2026-09-18 04:30:47.011] [LC] REGISTER r=7d61ee s=c1627c to=CREATED
+[2026-09-18 04:30:47.011] [LC] STATE_TRANSITION r=7d61ee s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:30:47.011] [LC] STATE_TRANSITION r=7d61ee s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:30:47.012] [MLX] admission warmSessions=1 warmTokens=18614 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:30:47.012] [MLX] prefillStep=2048 est=18824 reuse=true
+[2026-09-18 04:30:47.013] [TOOL] event=TOOL_RESULT r=7d61ee gen=c3b621 tc=796967 tool=Bash state=result
+[2026-09-18 04:30:48.478] [MLX] prefill 454/454
+[2026-09-18 04:30:51.034] [TOOL] event=TOOL_REQUESTED r=7d61ee gen=7d61ee tc=ed69a3 tool=Bash state=requested
+[2026-09-18 04:30:51.034] [TOOL] event=TOOL_VALIDATED r=7d61ee gen=7d61ee tc=ed69a3 tool=Bash state=validated
+[2026-09-18 04:30:51.073] [MLX] session=442fbf/main messages=10 history=9 delta=1 reuse=true ttft=4021ms cacheTokens=18614 cacheHitTokens=18614 cacheEff=0.98 mode=extend promptTokens=454 promptTime=1.5s tps=34.1 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 04:30:51.073] [LC] STATE_TRANSITION r=7d61ee s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:30:51.073] [LC] RELEASED r=7d61ee s=c1627c reason=completed
+[2026-09-18 04:30:51.125] [LC] REGISTER r=a3683a s=c1627c to=CREATED
+[2026-09-18 04:30:51.125] [LC] STATE_TRANSITION r=a3683a s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:30:51.125] [LC] STATE_TRANSITION r=a3683a s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:30:51.126] [MLX] admission warmSessions=1 warmTokens=19151 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:30:51.126] [MLX] prefillStep=2048 est=19498 reuse=true
+[2026-09-18 04:30:51.126] [TOOL] event=TOOL_RESULT r=a3683a gen=7d61ee tc=ed69a3 tool=Bash state=result
+[2026-09-18 04:30:53.086] [MLX] prefill 641/641
+[2026-09-18 04:30:56.047] [TOOL] event=TOOL_REQUESTED r=a3683a gen=a3683a tc=661da2 tool=Bash state=requested
+[2026-09-18 04:30:56.047] [TOOL] event=TOOL_VALIDATED r=a3683a gen=a3683a tc=661da2 tool=Bash state=validated
+[2026-09-18 04:30:56.086] [MLX] session=442fbf/main messages=12 history=11 delta=1 reuse=true ttft=2281ms cacheTokens=19151 cacheHitTokens=19151 cacheEff=0.97 mode=extend promptTokens=641 promptTime=2.2s tps=33.7 toolCalls=1 rawEv=20 rawB=87 emitB=87
+[2026-09-18 04:30:56.086] [LC] STATE_TRANSITION r=a3683a s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:30:56.086] [LC] RELEASED r=a3683a s=c1627c reason=completed
+[2026-09-18 04:30:56.136] [LC] REGISTER r=45fae5 s=c1627c to=CREATED
+[2026-09-18 04:30:56.136] [LC] STATE_TRANSITION r=45fae5 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:30:56.136] [LC] STATE_TRANSITION r=45fae5 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:30:56.137] [MLX] admission warmSessions=1 warmTokens=19883 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:30:56.137] [MLX] prefillStep=2048 est=22068 reuse=true
+[2026-09-18 04:30:56.137] [TOOL] event=TOOL_RESULT r=45fae5 gen=a3683a tc=661da2 tool=Bash state=result
+[2026-09-18 04:31:02.498] [MLX] prefill 2503/2503
+[2026-09-18 04:31:05.344] [TOOL] event=TOOL_REQUESTED r=45fae5 gen=45fae5 tc=417c40 tool=Bash state=requested
+[2026-09-18 04:31:05.344] [TOOL] event=TOOL_VALIDATED r=45fae5 gen=45fae5 tc=417c40 tool=Bash state=validated
+[2026-09-18 04:31:05.384] [MLX] session=442fbf/main messages=14 history=13 delta=1 reuse=true ttft=6406ms cacheTokens=19883 cacheHitTokens=19883 cacheEff=0.89 mode=extend promptTokens=2503 promptTime=6.3s tps=32.5 toolCalls=1 rawEv=16 rawB=60 emitB=60
+[2026-09-18 04:31:05.384] [LC] STATE_TRANSITION r=45fae5 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:31:05.384] [LC] RELEASED r=45fae5 s=c1627c reason=completed
+[2026-09-18 04:31:05.437] [LC] REGISTER r=b71206 s=c1627c to=CREATED
+[2026-09-18 04:31:05.437] [LC] STATE_TRANSITION r=b71206 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:31:05.437] [LC] STATE_TRANSITION r=b71206 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:31:05.438] [MLX] admission warmSessions=1 warmTokens=22479 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:31:05.438] [MLX] prefillStep=2048 est=28648 reuse=true
+[2026-09-18 04:31:05.438] [TOOL] event=TOOL_RESULT r=b71206 gen=45fae5 tc=417c40 tool=Bash state=result
+[2026-09-18 04:31:21.760] [MLX] prefill 6075/6075
+[2026-09-18 04:31:26.160] [TOOL] event=TOOL_REQUESTED r=b71206 gen=b71206 tc=36d8c2 tool=Bash state=requested
+[2026-09-18 04:31:26.160] [TOOL] event=TOOL_VALIDATED r=b71206 gen=b71206 tc=36d8c2 tool=Bash state=validated
+[2026-09-18 04:31:26.206] [MLX] session=442fbf/main messages=16 history=15 delta=1 reuse=true ttft=16373ms cacheTokens=22479 cacheHitTokens=22479 cacheEff=0.79 mode=extend promptTokens=6075 promptTime=16.2s tps=26.9 toolCalls=1 rawEv=17 rawB=76 emitB=76
+[2026-09-18 04:31:26.207] [LC] STATE_TRANSITION r=b71206 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:31:26.207] [LC] RELEASED r=b71206 s=c1627c reason=completed
+[2026-09-18 04:31:26.267] [LC] REGISTER r=96d8fb s=c1627c to=CREATED
+[2026-09-18 04:31:26.267] [LC] STATE_TRANSITION r=96d8fb s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:31:26.267] [LC] STATE_TRANSITION r=96d8fb s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:31:26.267] [MLX] admission warmSessions=1 warmTokens=28673 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:31:26.268] [MLX] prefillStep=2048 est=29500 reuse=true
+[2026-09-18 04:31:26.268] [TOOL] event=TOOL_RESULT r=96d8fb gen=b71206 tc=36d8c2 tool=Bash state=result
+[2026-09-18 04:31:30.133] [MLX] prefill 1196/1196
+[2026-09-18 04:31:33.847] [TOOL] event=TOOL_REQUESTED r=96d8fb gen=96d8fb tc=e5cadd tool=Bash state=requested
+[2026-09-18 04:31:33.847] [TOOL] event=TOOL_VALIDATED r=96d8fb gen=96d8fb tc=e5cadd tool=Bash state=validated
+[2026-09-18 04:31:33.898] [MLX] session=442fbf/main messages=18 history=17 delta=1 reuse=true ttft=4425ms cacheTokens=28673 cacheHitTokens=28673 cacheEff=0.96 mode=extend promptTokens=1196 promptTime=4.3s tps=26.9 toolCalls=1 rawEv=19 rawB=77 emitB=77
+[2026-09-18 04:31:33.899] [LC] STATE_TRANSITION r=96d8fb s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:31:33.899] [LC] RELEASED r=96d8fb s=c1627c reason=completed
+[2026-09-18 04:31:33.958] [LC] REGISTER r=e0d0e3 s=c1627c to=CREATED
+[2026-09-18 04:31:33.958] [LC] STATE_TRANSITION r=e0d0e3 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:31:33.958] [LC] STATE_TRANSITION r=e0d0e3 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:31:33.959] [MLX] admission warmSessions=1 warmTokens=29956 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:31:33.959] [MLX] prefillStep=2048 est=31666 reuse=true
+[2026-09-18 04:31:33.959] [TOOL] event=TOOL_RESULT r=e0d0e3 gen=96d8fb tc=e5cadd tool=Bash state=result
+[2026-09-18 04:31:39.849] [MLX] prefill 1699/1699
+[2026-09-18 04:31:44.746] [TOOL] event=TOOL_REQUESTED r=e0d0e3 gen=e0d0e3 tc=ad91b7 tool=Bash state=requested
+[2026-09-18 04:31:44.746] [TOOL] event=TOOL_VALIDATED r=e0d0e3 gen=e0d0e3 tc=ad91b7 tool=Bash state=validated
+[2026-09-18 04:31:44.795] [MLX] session=442fbf/main messages=20 history=19 delta=1 reuse=true ttft=6379ms cacheTokens=29956 cacheHitTokens=29956 cacheEff=0.95 mode=extend promptTokens=1699 promptTime=6.2s tps=24.5 toolCalls=1 rawEv=18 rawB=75 emitB=75
+[2026-09-18 04:31:44.795] [LC] STATE_TRANSITION r=e0d0e3 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:31:44.795] [LC] RELEASED r=e0d0e3 s=c1627c reason=completed
+[2026-09-18 04:31:44.861] [LC] REGISTER r=4e4b41 s=c1627c to=CREATED
+[2026-09-18 04:31:44.861] [LC] STATE_TRANSITION r=4e4b41 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:31:44.861] [LC] STATE_TRANSITION r=4e4b41 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:31:44.861] [MLX] admission warmSessions=1 warmTokens=31765 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 04:31:44.861] [MLX] prefillStep=2048 est=32371 reuse=true
+[2026-09-18 04:31:44.861] [TOOL] event=TOOL_RESULT r=4e4b41 gen=e0d0e3 tc=ad91b7 tool=Bash state=result
+[2026-09-18 04:31:48.590] [MLX] prefill 958/958
+[2026-09-18 04:32:04.879] [MLX] session=442fbf/main messages=22 history=21 delta=1 reuse=true ttft=4268ms cacheTokens=31765 cacheHitTokens=31765 cacheEff=0.97 mode=extend promptTokens=958 promptTime=4.1s tps=22.4 rawEv=353 rawB=1412 emitB=1412
+[2026-09-18 04:32:04.879] [LC] STATE_TRANSITION r=4e4b41 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:32:04.879] [LC] RELEASED r=4e4b41 s=c1627c reason=completed
+[2026-09-18 04:33:55.268] [LC] REGISTER r=15cefc s=c1627c to=CREATED
+[2026-09-18 04:33:55.268] [LC] STATE_TRANSITION r=15cefc s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:33:55.268] [LC] STATE_TRANSITION r=15cefc s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:33:55.269] [MLX] admission warmSessions=1 warmTokens=33077 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 04:33:55.269] [MLX] prefillStep=2048 est=33183 reuse=true
+[2026-09-18 04:33:56.304] [MLX] prefill 109/109
+[2026-09-18 04:33:59.243] [TOOL] event=TOOL_REQUESTED r=15cefc gen=15cefc tc=464301 tool=Read state=requested
+[2026-09-18 04:33:59.243] [TOOL] event=TOOL_VALIDATED r=15cefc gen=15cefc tc=464301 tool=Read state=validated
+[2026-09-18 04:33:59.293] [MLX] session=442fbf/main messages=25 history=23 delta=2 reuse=true ttft=1191ms cacheTokens=33077 cacheHitTokens=33077 cacheEff=1.00 mode=extend promptTokens=109 promptTime=1.1s tps=23.7 toolCalls=1 rawEv=19 rawB=102 emitB=102
+[2026-09-18 04:33:59.293] [LC] STATE_TRANSITION r=15cefc s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:33:59.294] [LC] RELEASED r=15cefc s=c1627c reason=completed
+[2026-09-18 04:33:59.340] [LC] REGISTER r=1689e6 s=c1627c to=CREATED
+[2026-09-18 04:33:59.340] [LC] STATE_TRANSITION r=1689e6 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:33:59.340] [LC] STATE_TRANSITION r=1689e6 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:33:59.341] [MLX] admission warmSessions=1 warmTokens=33254 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 04:33:59.341] [MLX] prefillStep=2048 est=35938 reuse=true
+[2026-09-18 04:33:59.341] [TOOL] event=TOOL_RESULT r=1689e6 gen=15cefc tc=464301 tool=Read state=result
+[2026-09-18 04:34:12.342] [MLX] prefill 2926/2926
+[2026-09-18 04:34:15.959] [TOOL] event=TOOL_REQUESTED r=1689e6 gen=1689e6 tc=2c2801 tool=Read state=requested
+[2026-09-18 04:34:15.959] [TOOL] event=TOOL_VALIDATED r=1689e6 gen=1689e6 tc=2c2801 tool=Read state=validated
+[2026-09-18 04:34:16.011] [MLX] session=442fbf/main messages=27 history=26 delta=1 reuse=true ttft=13060ms cacheTokens=33254 cacheHitTokens=33254 cacheEff=0.92 mode=extend promptTokens=2926 promptTime=12.9s tps=22.5 toolCalls=1 rawEv=34 rawB=141 emitB=141
+[2026-09-18 04:34:16.011] [LC] STATE_TRANSITION r=1689e6 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:34:16.011] [LC] RELEASED r=1689e6 s=c1627c reason=completed
+[2026-09-18 04:34:16.050] [LC] REGISTER r=b965a0 s=c1627c to=CREATED
+[2026-09-18 04:34:16.050] [LC] STATE_TRANSITION r=b965a0 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:34:16.051] [LC] STATE_TRANSITION r=b965a0 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:34:16.051] [MLX] admission warmSessions=1 warmTokens=36262 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 04:34:16.051] [MLX] prefillStep=2048 est=38373 reuse=true
+[2026-09-18 04:34:16.051] [TOOL] event=TOOL_RESULT r=b965a0 gen=1689e6 tc=2c2801 tool=Read state=result
+[2026-09-18 04:34:25.668] [MLX] prefill 2166/2166
+[2026-09-18 04:34:30.472] [TOOL] event=TOOL_REQUESTED r=b965a0 gen=b965a0 tc=b93761 tool=Read state=requested
+[2026-09-18 04:34:30.472] [TOOL] event=TOOL_VALIDATED r=b965a0 gen=b965a0 tc=b93761 tool=Read state=validated
+[2026-09-18 04:34:30.531] [MLX] session=442fbf/main messages=29 history=28 delta=1 reuse=true ttft=9666ms cacheTokens=36262 cacheHitTokens=36262 cacheEff=0.94 mode=extend promptTokens=2166 promptTime=9.5s tps=21.0 toolCalls=1 rawEv=54 rawB=203 emitB=203
+[2026-09-18 04:34:30.531] [LC] STATE_TRANSITION r=b965a0 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:34:30.531] [LC] RELEASED r=b965a0 s=c1627c reason=completed
+[2026-09-18 04:34:30.568] [LC] REGISTER r=b9d893 s=c1627c to=CREATED
+[2026-09-18 04:34:30.568] [LC] STATE_TRANSITION r=b9d893 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:34:30.568] [LC] STATE_TRANSITION r=b9d893 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:34:30.569] [MLX] admission warmSessions=1 warmTokens=38530 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 04:34:30.569] [MLX] prefillStep=2048 est=40450 reuse=true
+[2026-09-18 04:34:30.569] [TOOL] event=TOOL_RESULT r=b9d893 gen=b965a0 tc=b93761 tool=Read state=result
+[2026-09-18 04:34:40.799] [MLX] prefill 1956/1956
+[2026-09-18 04:35:14.227] [TOOL] event=TOOL_REQUESTED r=b9d893 gen=b9d893 tc=ab2101 tool=Write state=requested
+[2026-09-18 04:35:14.227] [TOOL] event=TOOL_VALIDATED r=b9d893 gen=b9d893 tc=ab2101 tool=Write state=validated
+[2026-09-18 04:35:14.292] [MLX] session=442fbf/main messages=31 history=30 delta=1 reuse=true ttft=12264ms cacheTokens=38530 cacheHitTokens=38530 cacheEff=0.95 mode=extend promptTokens=1956 promptTime=12.1s tps=18.8 toolCalls=1 rawEv=49 rawB=216 emitB=216
+[2026-09-18 04:35:14.292] [LC] STATE_TRANSITION r=b9d893 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:35:14.292] [LC] RELEASED r=b9d893 s=c1627c reason=completed
+[2026-09-18 04:35:14.373] [LC] REGISTER r=2504ba s=c1627c to=CREATED
+[2026-09-18 04:35:14.373] [LC] STATE_TRANSITION r=2504ba s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:35:14.373] [LC] STATE_TRANSITION r=2504ba s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:35:14.375] [MLX] admission warmSessions=1 warmTokens=41078 swap=4.1GB evicted=0 freedTokens=0
+[2026-09-18 04:35:14.375] [MLX] prefillStep=2048 est=41128 reuse=true
+[2026-09-18 04:35:14.375] [TOOL] event=TOOL_RESULT r=2504ba gen=b9d893 tc=ab2101 tool=Write state=result
+[2026-09-18 04:36:08.743] [MLX] prefill 17640/41155
+[2026-09-18 04:37:27.096] [MLX] prefill 35280/41155
+[2026-09-18 04:38:05.655] [MLX] prefill 41155/41155
+[2026-09-18 04:38:32.916] [MLX] session=442fbf/main messages=33 history=32 delta=1 reuse=true ttft=174740ms cacheTokens=41078 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=40909/41078 promptTokens=41155 promptTime=174.5s tps=16.7 rawEv=397 rawB=1581 emitB=1581
+[2026-09-18 04:38:32.917] [LC] STATE_TRANSITION r=2504ba s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:38:32.917] [LC] RELEASED r=2504ba s=c1627c reason=completed
+[2026-09-18 04:41:14.485] [LC] REGISTER r=6e059e s=c1627c to=CREATED
+[2026-09-18 04:41:14.485] [LC] STATE_TRANSITION r=6e059e s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:41:14.485] [LC] STATE_TRANSITION r=6e059e s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:41:14.488] [MLX] admission warmSessions=1 warmTokens=41553 swap=6.1GB evicted=0 freedTokens=0
+[2026-09-18 04:41:14.488] [MLX] prefillStep=2048 est=41584 reuse=true
+[2026-09-18 04:41:19.390] [MLX] prefill 44/44
+[2026-09-18 04:41:27.222] [TOOL] event=TOOL_REQUESTED r=6e059e gen=6e059e tc=13b05b tool=Read state=requested
+[2026-09-18 04:41:27.222] [TOOL] event=TOOL_VALIDATED r=6e059e gen=6e059e tc=13b05b tool=Read state=validated
+[2026-09-18 04:41:27.288] [MLX] session=442fbf/main messages=35 history=34 delta=1 reuse=true ttft=9133ms cacheTokens=41553 cacheHitTokens=41553 cacheEff=1.00 mode=extend promptTokens=44 promptTime=8.9s tps=20.8 toolCalls=1 rawEv=35 rawB=142 emitB=142
+[2026-09-18 04:41:27.289] [LC] STATE_TRANSITION r=6e059e s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:41:27.289] [LC] RELEASED r=6e059e s=c1627c reason=completed
+[2026-09-18 04:41:27.353] [LC] REGISTER r=6cc4ac s=c1627c to=CREATED
+[2026-09-18 04:41:27.353] [LC] STATE_TRANSITION r=6cc4ac s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:41:27.353] [LC] STATE_TRANSITION r=6cc4ac s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:41:27.354] [MLX] admission warmSessions=1 warmTokens=41674 swap=4.9GB evicted=0 freedTokens=0
+[2026-09-18 04:41:27.354] [MLX] prefillStep=2048 est=63767 reuse=true
+[2026-09-18 04:41:27.354] [TOOL] event=TOOL_RESULT r=6cc4ac gen=6e059e tc=13b05b tool=Read state=result
+[2026-09-18 04:44:46.787] [MLX] prefill 17451/23268
+[2026-09-18 04:47:45.615] [MLX] prefill 23268/23268
+[2026-09-18 04:48:37.325] [TOOL] event=TOOL_REQUESTED r=6cc4ac gen=6cc4ac tc=f90686 tool=Write state=requested
+[2026-09-18 04:48:37.325] [TOOL] event=TOOL_VALIDATED r=6cc4ac gen=6cc4ac tc=f90686 tool=Write state=validated
+[2026-09-18 04:48:37.415] [MLX] session=442fbf/main messages=37 history=36 delta=1 reuse=true ttft=381372ms cacheTokens=41674 cacheHitTokens=41674 cacheEff=0.64 mode=extend promptTokens=23268 promptTime=381.1s tps=11.8 toolCalls=1 rawEv=122 rawB=479 emitB=479
+[2026-09-18 04:48:37.417] [LC] STATE_TRANSITION r=6cc4ac s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:48:37.417] [LC] RELEASED r=6cc4ac s=c1627c reason=completed
+[2026-09-18 04:48:37.513] [LC] REGISTER r=811a84 s=c1627c to=CREATED
+[2026-09-18 04:48:37.513] [LC] STATE_TRANSITION r=811a84 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:48:37.513] [LC] STATE_TRANSITION r=811a84 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:48:37.516] [MLX] admission warmSessions=1 warmTokens=65516 swap=3.7GB evicted=0 freedTokens=0
+[2026-09-18 04:48:37.516] [MLX] prefillStep=1024 est=65566 reuse=true
+[2026-09-18 04:48:37.516] [TOOL] event=TOOL_RESULT r=811a84 gen=6cc4ac tc=f90686 tool=Write state=result
+[2026-09-18 04:49:19.293] [MLX] prefill 17170/65593
+[2026-09-18 04:50:20.091] [MLX] prefill 34340/65593
+[2026-09-18 04:51:58.890] [MLX] prefill 51510/65593
+[2026-09-18 04:53:34.050] [MLX] prefill 65593/65593
+[2026-09-18 04:53:42.590] [TOOL] event=TOOL_REQUESTED r=811a84 gen=811a84 tc=cc7ee5 tool=Bash state=requested
+[2026-09-18 04:53:42.590] [TOOL] event=TOOL_VALIDATED r=811a84 gen=811a84 tc=cc7ee5 tool=Bash state=validated
+[2026-09-18 04:53:42.653] [MLX] session=442fbf/main messages=39 history=38 delta=1 reuse=true ttft=305073ms cacheTokens=65516 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=65092/65516 promptTokens=65593 promptTime=299.2s tps=20.7 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 04:53:42.653] [LC] STATE_TRANSITION r=811a84 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:53:42.654] [LC] RELEASED r=811a84 s=c1627c reason=completed
+[2026-09-18 04:53:42.743] [LC] REGISTER r=b5f404 s=c1627c to=CREATED
+[2026-09-18 04:53:42.743] [LC] STATE_TRANSITION r=b5f404 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:53:42.743] [LC] STATE_TRANSITION r=b5f404 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:53:42.746] [MLX] admission warmSessions=1 warmTokens=65711 swap=4.7GB evicted=0 freedTokens=0
+[2026-09-18 04:53:42.746] [MLX] prefillStep=1024 est=65727 reuse=true
+[2026-09-18 04:53:42.746] [TOOL] event=TOOL_RESULT r=b5f404 gen=811a84 tc=cc7ee5 tool=Bash state=result
+[2026-09-18 04:53:43.365] [MLX] prefill 35/35
+[2026-09-18 04:53:59.360] [TOOL] event=TOOL_REQUESTED r=b5f404 gen=b5f404 tc=d3acd5 tool=AskUserQuestion state=requested
+[2026-09-18 04:53:59.360] [TOOL] event=TOOL_VALIDATED r=b5f404 gen=b5f404 tc=d3acd5 tool=AskUserQuestion state=validated
+[2026-09-18 04:53:59.421] [MLX] session=442fbf/main messages=41 history=40 delta=1 reuse=true ttft=701ms cacheTokens=65711 cacheHitTokens=65711 cacheEff=1.00 mode=extend promptTokens=35 promptTime=0.5s tps=18.3 toolCalls=1 rawEv=150 rawB=649 emitB=649
+[2026-09-18 04:53:59.422] [LC] STATE_TRANSITION r=b5f404 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:53:59.422] [LC] RELEASED r=b5f404 s=c1627c reason=completed
+[2026-09-18 04:54:15.299] [LC] REGISTER r=a4363b s=c1627c to=CREATED
+[2026-09-18 04:54:15.299] [LC] STATE_TRANSITION r=a4363b s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:54:15.299] [LC] STATE_TRANSITION r=a4363b s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:54:15.301] [MLX] admission warmSessions=1 warmTokens=66039 swap=3.2GB evicted=0 freedTokens=0
+[2026-09-18 04:54:15.301] [MLX] prefillStep=1024 est=66097 reuse=true
+[2026-09-18 04:54:15.301] [TOOL] event=TOOL_RESULT r=a4363b gen=b5f404 tc=d3acd5 tool=AskUserQuestion state=result
+[2026-09-18 04:54:51.556] [MLX] prefill 16384/66530
+[2026-09-18 04:55:47.129] [MLX] prefill 32768/66530
+[2026-09-18 04:56:48.023] [MLX] prefill 49152/66530
+[2026-09-18 04:58:17.981] [MLX] prefill 65536/66530
+[2026-09-18 04:58:24.116] [MLX] prefill 66530/66530
+[2026-09-18 04:58:36.244] [TOOL] event=TOOL_REQUESTED r=a4363b gen=a4363b tc=0ed7de tool=Bash state=requested
+[2026-09-18 04:58:36.244] [TOOL] event=TOOL_VALIDATED r=a4363b gen=a4363b tc=0ed7de tool=Bash state=validated
+[2026-09-18 04:58:36.315] [MLX] session=442fbf/main messages=43 history=42 delta=1 reuse=true ttft=251721ms cacheTokens=66039 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=65895/66039 promptTokens=66530 promptTime=251.5s tps=20.4 toolCalls=1 rawEv=44 rawB=197 emitB=197
+[2026-09-18 04:58:36.317] [LC] STATE_TRANSITION r=a4363b s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:58:36.317] [LC] RELEASED r=a4363b s=c1627c reason=completed
+[2026-09-18 04:58:36.470] [LC] REGISTER r=6964ed s=c1627c to=CREATED
+[2026-09-18 04:58:36.470] [LC] STATE_TRANSITION r=6964ed s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:58:36.470] [LC] STATE_TRANSITION r=6964ed s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:58:36.472] [MLX] admission warmSessions=1 warmTokens=66720 swap=4.6GB evicted=0 freedTokens=0
+[2026-09-18 04:58:36.472] [MLX] prefillStep=1024 est=67267 reuse=true
+[2026-09-18 04:58:36.472] [TOOL] event=TOOL_RESULT r=6964ed gen=a4363b tc=0ed7de tool=Bash state=result
+[2026-09-18 04:58:43.410] [MLX] prefill 967/967
+[2026-09-18 04:59:22.435] [TOOL] event=TOOL_REQUESTED r=6964ed gen=6964ed tc=0cb8b5 tool=Edit state=requested
+[2026-09-18 04:59:22.435] [TOOL] event=TOOL_VALIDATED r=6964ed gen=6964ed tc=0cb8b5 tool=Edit state=validated
+[2026-09-18 04:59:22.499] [MLX] session=442fbf/main messages=46 history=44 delta=2 reuse=true ttft=7571ms cacheTokens=66720 cacheHitTokens=66720 cacheEff=0.99 mode=extend promptTokens=967 promptTime=7.3s tps=18.5 toolCalls=1 rawEv=25 rawB=90 emitB=90
+[2026-09-18 04:59:22.499] [LC] STATE_TRANSITION r=6964ed s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 04:59:22.500] [LC] RELEASED r=6964ed s=c1627c reason=completed
+[2026-09-18 04:59:22.592] [LC] REGISTER r=d71e91 s=c1627c to=CREATED
+[2026-09-18 04:59:22.592] [LC] STATE_TRANSITION r=d71e91 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 04:59:22.592] [LC] STATE_TRANSITION r=d71e91 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 04:59:22.595] [MLX] admission warmSessions=1 warmTokens=68400 swap=3.1GB evicted=0 freedTokens=0
+[2026-09-18 04:59:22.595] [MLX] prefillStep=1024 est=68445 reuse=true
+[2026-09-18 04:59:22.595] [TOOL] event=TOOL_RESULT r=d71e91 gen=6964ed tc=0cb8b5 tool=Edit state=result
+[2026-09-18 04:59:57.792] [MLX] prefill 17374/68459
+[2026-09-18 05:00:49.131] [MLX] prefill 34748/68459
+[2026-09-18 05:02:15.466] [MLX] prefill 52122/68459
+[2026-09-18 05:04:06.354] [MLX] prefill 68459/68459
+[2026-09-18 05:05:10.065] [TOOL] event=TOOL_REQUESTED r=d71e91 gen=d71e91 tc=e0c639 tool=Edit state=requested
+[2026-09-18 05:05:10.066] [TOOL] event=TOOL_VALIDATED r=d71e91 gen=d71e91 tc=e0c639 tool=Edit state=validated
+[2026-09-18 05:05:10.129] [MLX] session=442fbf/main messages=48 history=47 delta=1 reuse=true ttft=347469ms cacheTokens=68400 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=67750/68400 promptTokens=68459 promptTime=285.9s tps=18.3 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:05:10.130] [LC] STATE_TRANSITION r=d71e91 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:05:10.130] [LC] RELEASED r=d71e91 s=c1627c reason=completed
+[2026-09-18 05:05:10.231] [LC] REGISTER r=78736b s=c1627c to=CREATED
+[2026-09-18 05:05:10.231] [LC] STATE_TRANSITION r=78736b s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:05:10.231] [LC] STATE_TRANSITION r=78736b s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:05:10.234] [MLX] admission warmSessions=1 warmTokens=69587 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 05:05:10.234] [MLX] prefillStep=1024 est=70104 reuse=true
+[2026-09-18 05:05:10.234] [TOOL] event=TOOL_RESULT r=78736b gen=d71e91 tc=e0c639 tool=Edit state=result
+[2026-09-18 05:05:45.418] [MLX] prefill 17289/70113
+[2026-09-18 05:06:36.361] [MLX] prefill 34578/70113
+[2026-09-18 05:07:59.518] [MLX] prefill 51867/70113
+[2026-09-18 05:09:54.735] [MLX] prefill 69156/70113
+[2026-09-18 05:10:00.932] [MLX] prefill 70113/70113
+[2026-09-18 05:11:14.707] [TOOL] event=TOOL_REQUESTED r=78736b gen=78736b tc=48e017 tool=Edit state=requested
+[2026-09-18 05:11:14.712] [TOOL] event=TOOL_VALIDATED r=78736b gen=78736b tc=48e017 tool=Edit state=validated
+[2026-09-18 05:11:14.771] [MLX] session=442fbf/main messages=50 history=49 delta=1 reuse=true ttft=293447ms cacheTokens=69587 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=69575/69587 promptTokens=70113 promptTime=293.2s tps=16.1 toolCalls=1 rawEv=24 rawB=90 emitB=90
+[2026-09-18 05:11:14.772] [LC] STATE_TRANSITION r=78736b s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:11:14.772] [LC] RELEASED r=78736b s=c1627c reason=completed
+[2026-09-18 05:11:14.865] [LC] REGISTER r=a9bf0f s=c1627c to=CREATED
+[2026-09-18 05:11:14.865] [LC] STATE_TRANSITION r=a9bf0f s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:11:14.865] [LC] STATE_TRANSITION r=a9bf0f s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:11:14.868] [MLX] admission warmSessions=1 warmTokens=71261 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:11:14.868] [MLX] prefillStep=1024 est=71778 reuse=true
+[2026-09-18 05:11:14.868] [TOOL] event=TOOL_RESULT r=a9bf0f gen=78736b tc=48e017 tool=Edit state=result
+[2026-09-18 05:11:18.602] [MLX] prefill 526/526
+[2026-09-18 05:11:23.358] [TOOL] event=TOOL_REQUESTED r=a9bf0f gen=a9bf0f tc=e4148a tool=Read state=requested
+[2026-09-18 05:11:23.358] [TOOL] event=TOOL_VALIDATED r=a9bf0f gen=a9bf0f tc=e4148a tool=Read state=validated
+[2026-09-18 05:11:23.433] [MLX] session=442fbf/main messages=52 history=51 delta=1 reuse=true ttft=8490ms cacheTokens=71261 cacheHitTokens=71261 cacheEff=0.99 mode=extend promptTokens=526 promptTime=4.1s tps=15.9 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:11:23.433] [LC] STATE_TRANSITION r=a9bf0f s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:11:23.433] [LC] RELEASED r=a9bf0f s=c1627c reason=completed
+[2026-09-18 05:11:23.505] [LC] REGISTER r=7be60b s=c1627c to=CREATED
+[2026-09-18 05:11:23.505] [LC] STATE_TRANSITION r=7be60b s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:11:23.505] [LC] STATE_TRANSITION r=7be60b s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:11:23.506] [MLX] admission warmSessions=1 warmTokens=71856 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:11:23.506] [MLX] prefillStep=1024 est=72993 reuse=true
+[2026-09-18 05:11:23.506] [TOOL] event=TOOL_RESULT r=7be60b gen=a9bf0f tc=e4148a tool=Read state=result
+[2026-09-18 05:11:31.319] [MLX] prefill 1156/1156
+[2026-09-18 05:11:35.846] [TOOL] event=TOOL_REQUESTED r=7be60b gen=7be60b tc=22b124 tool=Read state=requested
+[2026-09-18 05:11:35.846] [TOOL] event=TOOL_VALIDATED r=7be60b gen=7be60b tc=22b124 tool=Read state=validated
+[2026-09-18 05:11:35.918] [MLX] session=442fbf/main messages=54 history=53 delta=1 reuse=true ttft=12339ms cacheTokens=71856 cacheHitTokens=71856 cacheEff=0.98 mode=extend promptTokens=1156 promptTime=7.6s tps=14.8 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:11:35.918] [LC] STATE_TRANSITION r=7be60b s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:11:35.918] [LC] RELEASED r=7be60b s=c1627c reason=completed
+[2026-09-18 05:11:36.010] [LC] REGISTER r=314853 s=c1627c to=CREATED
+[2026-09-18 05:11:36.010] [LC] STATE_TRANSITION r=314853 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:11:36.010] [LC] STATE_TRANSITION r=314853 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:11:36.011] [MLX] admission warmSessions=1 warmTokens=73080 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:11:36.011] [MLX] prefillStep=1024 est=74280 reuse=true
+[2026-09-18 05:11:36.011] [TOOL] event=TOOL_RESULT r=314853 gen=7be60b tc=22b124 tool=Read state=result
+[2026-09-18 05:11:43.934] [MLX] prefill 1201/1201
+[2026-09-18 05:11:52.908] [TOOL] event=TOOL_REQUESTED r=314853 gen=314853 tc=14a815 tool=Bash state=requested
+[2026-09-18 05:11:52.908] [TOOL] event=TOOL_VALIDATED r=314853 gen=314853 tc=14a815 tool=Bash state=validated
+[2026-09-18 05:11:52.989] [MLX] session=442fbf/main messages=56 history=55 delta=1 reuse=true ttft=7984ms cacheTokens=73080 cacheHitTokens=73080 cacheEff=0.98 mode=extend promptTokens=1201 promptTime=7.7s tps=15.8 toolCalls=1 rawEv=69 rawB=278 emitB=278
+[2026-09-18 05:11:52.989] [LC] STATE_TRANSITION r=314853 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:11:52.989] [LC] RELEASED r=314853 s=c1627c reason=completed
+[2026-09-18 05:11:53.080] [LC] REGISTER r=0f7c7d s=c1627c to=CREATED
+[2026-09-18 05:11:53.080] [LC] STATE_TRANSITION r=0f7c7d s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:11:53.080] [LC] STATE_TRANSITION r=0f7c7d s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:11:53.082] [MLX] admission warmSessions=1 warmTokens=74424 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:11:53.082] [MLX] prefillStep=1024 est=77312 reuse=true
+[2026-09-18 05:11:53.082] [TOOL] event=TOOL_RESULT r=0f7c7d gen=314853 tc=14a815 tool=Bash state=result
+[2026-09-18 05:12:16.530] [MLX] prefill 3336/3336
+[2026-09-18 05:12:58.101] [TOOL] event=TOOL_REQUESTED r=0f7c7d gen=0f7c7d tc=8c2de6 tool=Edit state=requested
+[2026-09-18 05:12:58.101] [TOOL] event=TOOL_VALIDATED r=0f7c7d gen=0f7c7d tc=8c2de6 tool=Edit state=validated
+[2026-09-18 05:12:58.170] [MLX] session=442fbf/main messages=58 history=57 delta=1 reuse=true ttft=23513ms cacheTokens=74424 cacheHitTokens=74424 cacheEff=0.96 mode=extend promptTokens=3336 promptTime=23.3s tps=15.8 toolCalls=1 rawEv=221 rawB=554 emitB=554
+[2026-09-18 05:12:58.171] [LC] STATE_TRANSITION r=0f7c7d s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:12:58.171] [LC] RELEASED r=0f7c7d s=c1627c reason=completed
+[2026-09-18 05:12:58.266] [LC] REGISTER r=8354ac s=c1627c to=CREATED
+[2026-09-18 05:12:58.266] [LC] STATE_TRANSITION r=8354ac s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:12:58.266] [LC] STATE_TRANSITION r=8354ac s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:12:58.269] [MLX] admission warmSessions=1 warmTokens=78417 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:12:58.269] [MLX] prefillStep=1024 est=78462 reuse=true
+[2026-09-18 05:12:58.269] [TOOL] event=TOOL_RESULT r=8354ac gen=0f7c7d tc=8c2de6 tool=Edit state=result
+[2026-09-18 05:12:59.117] [MLX] prefill 59/59
+[2026-09-18 05:13:22.967] [TOOL] event=TOOL_REQUESTED r=8354ac gen=8354ac tc=cd8995 tool=Edit state=requested
+[2026-09-18 05:13:22.967] [TOOL] event=TOOL_VALIDATED r=8354ac gen=8354ac tc=cd8995 tool=Edit state=validated
+[2026-09-18 05:13:23.038] [MLX] session=442fbf/main messages=60 history=59 delta=1 reuse=true ttft=24697ms cacheTokens=78417 cacheHitTokens=78417 cacheEff=1.00 mode=extend promptTokens=59 promptTime=0.7s tps=15.2 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:13:23.039] [LC] STATE_TRANSITION r=8354ac s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:13:23.039] [LC] RELEASED r=8354ac s=c1627c reason=completed
+[2026-09-18 05:13:23.115] [LC] REGISTER r=e99b3a s=c1627c to=CREATED
+[2026-09-18 05:13:23.115] [LC] STATE_TRANSITION r=e99b3a s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:13:23.115] [LC] STATE_TRANSITION r=e99b3a s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:13:23.118] [MLX] admission warmSessions=1 warmTokens=78839 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:13:23.118] [MLX] prefillStep=1024 est=79000 reuse=true
+[2026-09-18 05:13:23.118] [TOOL] event=TOOL_RESULT r=e99b3a gen=8354ac tc=cd8995 tool=Edit state=result
+[2026-09-18 05:13:24.987] [MLX] prefill 181/181
+[2026-09-18 05:13:30.800] [TOOL] event=TOOL_REQUESTED r=e99b3a gen=e99b3a tc=8acdf8 tool=Read state=requested
+[2026-09-18 05:13:30.800] [TOOL] event=TOOL_VALIDATED r=e99b3a gen=e99b3a tc=8acdf8 tool=Read state=validated
+[2026-09-18 05:13:30.879] [MLX] session=442fbf/main messages=62 history=61 delta=1 reuse=true ttft=2171ms cacheTokens=78839 cacheHitTokens=78839 cacheEff=1.00 mode=extend promptTokens=181 promptTime=1.9s tps=15.1 toolCalls=1 rawEv=17 rawB=70 emitB=70
+[2026-09-18 05:13:30.879] [LC] STATE_TRANSITION r=e99b3a s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:13:30.879] [LC] RELEASED r=e99b3a s=c1627c reason=completed
+[2026-09-18 05:13:30.953] [LC] REGISTER r=116829 s=c1627c to=CREATED
+[2026-09-18 05:13:30.953] [LC] STATE_TRANSITION r=116829 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:13:30.953] [LC] STATE_TRANSITION r=116829 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:13:30.956] [MLX] admission warmSessions=1 warmTokens=79105 swap=3.9GB evicted=0 freedTokens=0
+[2026-09-18 05:13:30.956] [MLX] prefillStep=1024 est=79585 reuse=true
+[2026-09-18 05:13:30.956] [TOOL] event=TOOL_RESULT r=116829 gen=e99b3a tc=8acdf8 tool=Read state=result
+[2026-09-18 05:13:34.580] [MLX] prefill 512/512
+[2026-09-18 05:14:45.989] [TOOL] event=TOOL_REQUESTED r=116829 gen=116829 tc=054df2 tool=Edit state=requested
+[2026-09-18 05:14:45.989] [TOOL] event=TOOL_VALIDATED r=116829 gen=116829 tc=054df2 tool=Edit state=validated
+[2026-09-18 05:14:46.076] [MLX] session=442fbf/main messages=64 history=63 delta=1 reuse=true ttft=75032ms cacheTokens=79105 cacheHitTokens=79105 cacheEff=0.99 mode=extend promptTokens=512 promptTime=3.7s tps=13.3 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:14:46.076] [LC] STATE_TRANSITION r=116829 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:14:46.076] [LC] RELEASED r=116829 s=c1627c reason=completed
+[2026-09-18 05:14:46.148] [LC] REGISTER r=7ca748 s=c1627c to=CREATED
+[2026-09-18 05:14:46.148] [LC] STATE_TRANSITION r=7ca748 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:14:46.148] [LC] STATE_TRANSITION r=7ca748 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:14:46.151] [MLX] admission warmSessions=1 warmTokens=80562 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 05:14:46.151] [MLX] prefillStep=1024 est=81132 reuse=true
+[2026-09-18 05:14:46.151] [TOOL] event=TOOL_RESULT r=7ca748 gen=116829 tc=054df2 tool=Edit state=result
+[2026-09-18 05:14:51.785] [MLX] prefill 568/568
+[2026-09-18 05:14:58.685] [TOOL] event=TOOL_REQUESTED r=7ca748 gen=7ca748 tc=4130d2 tool=Read state=requested
+[2026-09-18 05:14:58.685] [TOOL] event=TOOL_VALIDATED r=7ca748 gen=7ca748 tc=4130d2 tool=Read state=validated
+[2026-09-18 05:14:58.760] [MLX] session=442fbf/main messages=67 history=65 delta=2 reuse=true ttft=6044ms cacheTokens=80562 cacheHitTokens=80562 cacheEff=0.99 mode=extend promptTokens=568 promptTime=5.7s tps=13.9 toolCalls=1 rawEv=24 rawB=76 emitB=76
+[2026-09-18 05:14:58.760] [LC] STATE_TRANSITION r=7ca748 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:14:58.760] [LC] RELEASED r=7ca748 s=c1627c reason=completed
+[2026-09-18 05:14:58.820] [LC] REGISTER r=93b48d s=c1627c to=CREATED
+[2026-09-18 05:14:58.820] [LC] STATE_TRANSITION r=93b48d s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:14:58.820] [LC] STATE_TRANSITION r=93b48d s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:14:58.821] [MLX] admission warmSessions=1 warmTokens=81222 swap=3.8GB evicted=0 freedTokens=0
+[2026-09-18 05:14:58.821] [MLX] prefillStep=1024 est=82112 reuse=true
+[2026-09-18 05:14:58.821] [TOOL] event=TOOL_RESULT r=93b48d gen=7ca748 tc=4130d2 tool=Read state=result
+[2026-09-18 05:15:07.113] [MLX] prefill 939/939
+[2026-09-18 05:15:45.228] [TOOL] event=TOOL_REQUESTED r=93b48d gen=93b48d tc=4053d1 tool=Edit state=requested
+[2026-09-18 05:15:45.228] [TOOL] event=TOOL_VALIDATED r=93b48d gen=93b48d tc=4053d1 tool=Edit state=validated
+[2026-09-18 05:15:45.306] [MLX] session=442fbf/main messages=69 history=68 delta=1 reuse=true ttft=9876ms cacheTokens=81222 cacheHitTokens=81222 cacheEff=0.99 mode=extend promptTokens=939 promptTime=9.6s tps=12.6 toolCalls=1 rawEv=33 rawB=129 emitB=129
+[2026-09-18 05:15:45.306] [LC] STATE_TRANSITION r=93b48d s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:15:45.306] [LC] RELEASED r=93b48d s=c1627c reason=completed
+[2026-09-18 05:15:45.406] [LC] REGISTER r=064373 s=c1627c to=CREATED
+[2026-09-18 05:15:45.406] [LC] STATE_TRANSITION r=064373 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:15:45.406] [LC] STATE_TRANSITION r=064373 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:15:45.409] [MLX] admission warmSessions=1 warmTokens=82623 swap=3.7GB evicted=0 freedTokens=0
+[2026-09-18 05:15:45.409] [MLX] prefillStep=1024 est=82668 reuse=true
+[2026-09-18 05:15:45.409] [TOOL] event=TOOL_RESULT r=064373 gen=93b48d tc=4053d1 tool=Edit state=result
+[2026-09-18 05:15:46.346] [MLX] prefill 59/59
+[2026-09-18 05:16:05.877] [TOOL] event=TOOL_REQUESTED r=064373 gen=064373 tc=61ba12 tool=TodoWrite state=requested
+[2026-09-18 05:16:05.877] [TOOL] event=TOOL_VALIDATED r=064373 gen=064373 tc=61ba12 tool=TodoWrite state=validated
+[2026-09-18 05:16:05.991] [MLX] session=442fbf/main messages=71 history=70 delta=1 reuse=true ttft=1076ms cacheTokens=82623 cacheHitTokens=82623 cacheEff=1.00 mode=extend promptTokens=59 promptTime=0.8s tps=12.1 toolCalls=1 rawEv=17 rawB=67 emitB=67
+[2026-09-18 05:16:05.992] [LC] STATE_TRANSITION r=064373 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:16:05.992] [LC] RELEASED r=064373 s=c1627c reason=completed
+[2026-09-18 05:16:06.043] [LC] REGISTER r=026142 s=c1627c to=CREATED
+[2026-09-18 05:16:06.043] [LC] STATE_TRANSITION r=026142 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:16:06.043] [LC] STATE_TRANSITION r=026142 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:16:06.047] [MLX] admission warmSessions=1 warmTokens=82919 swap=3.7GB evicted=0 freedTokens=0
+[2026-09-18 05:16:06.047] [MLX] prefillStep=1024 est=83098 reuse=true
+[2026-09-18 05:16:06.047] [TOOL] event=TOOL_RESULT r=026142 gen=064373 tc=61ba12 tool=TodoWrite state=result
+[2026-09-18 05:16:49.217] [MLX] prefill 17323/83539
+[2026-09-18 05:17:59.844] [MLX] prefill 34646/83539
+[2026-09-18 05:19:30.542] [MLX] prefill 51969/83539
+[2026-09-18 05:21:46.517] [MLX] prefill 69292/83539
+[2026-09-18 05:24:13.546] [MLX] prefill 83539/83539
+[2026-09-18 05:24:28.428] [TOOL] event=TOOL_REQUESTED r=026142 gen=026142 tc=6c23aa tool=Read state=requested
+[2026-09-18 05:24:28.428] [TOOL] event=TOOL_VALIDATED r=026142 gen=026142 tc=6c23aa tool=Read state=validated
+[2026-09-18 05:24:28.578] [MLX] session=442fbf/main messages=73 history=72 delta=1 reuse=true ttft=487864ms cacheTokens=82919 cacheHitTokens=0 cacheEff=0.00 mode=fork-no-rewind fork@common=82716/82919 promptTokens=83539 promptTime=487.6s tps=6.7 toolCalls=1 rawEv=31 rawB=101 emitB=101
+[2026-09-18 05:24:28.578] [LC] STATE_TRANSITION r=026142 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:24:28.578] [LC] RELEASED r=026142 s=c1627c reason=completed
+[2026-09-18 05:24:28.637] [LC] REGISTER r=ee6dcf s=c1627c to=CREATED
+[2026-09-18 05:24:28.637] [LC] STATE_TRANSITION r=ee6dcf s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:24:28.637] [LC] STATE_TRANSITION r=ee6dcf s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:24:28.638] [MLX] admission warmSessions=1 warmTokens=83638 swap=5.7GB evicted=0 freedTokens=0
+[2026-09-18 05:24:28.638] [MLX] prefillStep=1024 est=83995 reuse=true
+[2026-09-18 05:24:28.638] [TOOL] event=TOOL_RESULT r=ee6dcf gen=026142 tc=6c23aa tool=Read state=result
+[2026-09-18 05:24:32.722] [MLX] prefill 393/393
+[2026-09-18 05:25:35.548] [TOOL] event=TOOL_REQUESTED r=ee6dcf gen=ee6dcf tc=5e7a70 tool=Edit state=requested
+[2026-09-18 05:25:35.548] [TOOL] event=TOOL_VALIDATED r=ee6dcf gen=ee6dcf tc=5e7a70 tool=Edit state=validated
+[2026-09-18 05:25:35.677] [MLX] session=442fbf/main messages=75 history=74 delta=1 reuse=true ttft=66909ms cacheTokens=83638 cacheHitTokens=83638 cacheEff=1.00 mode=extend promptTokens=393 promptTime=4.4s tps=11.4 toolCalls=1 rawEv=1 rawB=0 emitB=0
+[2026-09-18 05:25:35.678] [LC] STATE_TRANSITION r=ee6dcf s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:25:35.678] [LC] RELEASED r=ee6dcf s=c1627c reason=completed
+[2026-09-18 05:25:35.739] [LC] REGISTER r=41a9a4 s=c1627c to=CREATED
+[2026-09-18 05:25:35.740] [LC] STATE_TRANSITION r=41a9a4 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:25:35.740] [LC] STATE_TRANSITION r=41a9a4 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:25:35.743] [MLX] admission warmSessions=1 warmTokens=84743 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 05:25:35.743] [MLX] prefillStep=1024 est=85092 reuse=true
+[2026-09-18 05:25:35.743] [TOOL] event=TOOL_RESULT r=41a9a4 gen=ee6dcf tc=5e7a70 tool=Edit state=result
+[2026-09-18 05:25:39.279] [MLX] prefill 356/356
+[2026-09-18 05:26:32.733] [TOOL] event=TOOL_REQUESTED r=41a9a4 gen=41a9a4 tc=d230e3 tool=Edit state=requested
+[2026-09-18 05:26:32.733] [TOOL] event=TOOL_VALIDATED r=41a9a4 gen=41a9a4 tc=d230e3 tool=Edit state=validated
+[2026-09-18 05:26:32.827] [MLX] session=442fbf/main messages=77 history=76 delta=1 reuse=true ttft=4021ms cacheTokens=84743 cacheHitTokens=84743 cacheEff=1.00 mode=extend promptTokens=356 promptTime=3.8s tps=11.5 toolCalls=1 rawEv=27 rawB=90 emitB=90
+[2026-09-18 05:26:32.827] [LC] STATE_TRANSITION r=41a9a4 s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:26:32.828] [LC] RELEASED r=41a9a4 s=c1627c reason=completed
+[2026-09-18 05:26:32.886] [LC] REGISTER r=c0b46c s=c1627c to=CREATED
+[2026-09-18 05:26:32.886] [LC] STATE_TRANSITION r=c0b46c s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:26:32.886] [LC] STATE_TRANSITION r=c0b46c s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:26:32.889] [MLX] admission warmSessions=1 warmTokens=85708 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 05:26:32.889] [MLX] prefillStep=1024 est=85915 reuse=true
+[2026-09-18 05:26:32.889] [TOOL] event=TOOL_RESULT r=c0b46c gen=41a9a4 tc=d230e3 tool=Edit state=result
+[2026-09-18 05:26:35.978] [MLX] prefill 226/226
+[2026-09-18 05:27:17.759] [TOOL] event=TOOL_REQUESTED r=c0b46c gen=c0b46c tc=6414d0 tool=Edit state=requested
+[2026-09-18 05:27:17.760] [TOOL] event=TOOL_VALIDATED r=c0b46c gen=c0b46c tc=6414d0 tool=Edit state=validated
+[2026-09-18 05:27:17.864] [MLX] session=442fbf/main messages=79 history=78 delta=1 reuse=true ttft=3496ms cacheTokens=85708 cacheHitTokens=85708 cacheEff=1.00 mode=extend promptTokens=226 promptTime=3.2s tps=11.8 toolCalls=1 rawEv=40 rawB=162 emitB=162
+[2026-09-18 05:27:17.864] [LC] STATE_TRANSITION r=c0b46c s=c1627c from=RUNNING to=COMPLETING
+[2026-09-18 05:27:17.864] [LC] RELEASED r=c0b46c s=c1627c reason=completed
+[2026-09-18 05:27:17.923] [LC] REGISTER r=37f608 s=c1627c to=CREATED
+[2026-09-18 05:27:17.923] [LC] STATE_TRANSITION r=37f608 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:27:17.923] [LC] STATE_TRANSITION r=37f608 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:27:17.926] [MLX] admission warmSessions=1 warmTokens=86424 swap=3.6GB evicted=0 freedTokens=0
+[2026-09-18 05:27:17.926] [MLX] prefillStep=1024 est=86631 reuse=true
+[2026-09-18 05:27:17.926] [TOOL] event=TOOL_RESULT r=37f608 gen=c0b46c tc=6414d0 tool=Edit state=result
+[2026-09-18 05:28:04.264] [MLX] prefill 17340/86650
+[2026-09-18 05:29:18.219] [MLX] prefill 34680/86650
+[2026-09-18 05:30:59.007] [MLX] prefill 52020/86650
+[2026-09-18 05:33:08.086] [MLX] prefill 69360/86650
+[2026-09-18 05:37:24.911] [LC] REGISTER r=399a42 s=c1627c to=CREATED
+[2026-09-18 05:37:24.951] [LC] STATE_TRANSITION r=399a42 s=c1627c from=CREATED to=QUEUED
+[2026-09-18 05:37:26.905] [CANCEL] r=req-37f608a1
+[2026-09-18 05:37:26.906] [MLX] cancelCommitSkip session=442fbf/main history=80 rawEv=0 rawB=0 emitB=0
+[2026-09-18 05:37:26.906] [LC] STATE_TRANSITION r=399a42 s=c1627c from=QUEUED to=RUNNING
+[2026-09-18 05:37:26.912] [LC] STATE_TRANSITION r=37f608 s=c1627c from=RUNNING to=CANCELLING
+[2026-09-18 05:37:26.912] [LC] STATE_TRANSITION r=37f608 s=c1627c from=CANCELLING to=DRAINING
+[2026-09-18 05:37:26.912] [LC] STATE_TRANSITION r=37f608 s=c1627c from=DRAINING to=RELEASING
+[2026-09-18 05:37:26.912] [LC] RELEASED r=37f608 s=c1627c reason=cancelled_by_client
+[2026-09-18 05:38:06.369] [MLX] admission warmSessions=1 warmTokens=86424 swap=6.0GB evicted=0 freedTokens=0
+[2026-09-18 05:38:06.369] [MLX] prefillStep=1024 est=86631 reuse=true
+[2026-09-18 05:38:47.308] [MLX] prefill 17340/86650
+[2026-09-18 05:39:50.233] [MLX] prefill 34680/86650
+[2026-09-18 05:41:18.221] [MLX] prefill 52020/86650
