@@ -20,6 +20,8 @@ import Foundation
 ///  A3 分支输出与同 prompt 独立冷预填逐字一致（greedy）。
 ///  A4 同 prompt 冷路径（retr=生产「重试分叉」的当前代价）mode=cold、cacheHit=0、
 ///     TTFT 高一个数量级——GDN 不可 rewind 的结构性反证：SimiGo 只能整会话重建。
+/// 对照：SIMIGO_FORK_MODEL 指向标准注意力模型（如 qwen3_moe）可跑 Dense cache
+/// 对照组——fork 语义与模型无关，预期仅快照组成（无 MambaCache）不同。
 final class KVBranchForkExperimentTests: XCTestCase {
 
     private static let recallNumber = "4711"
@@ -118,13 +120,25 @@ final class KVBranchForkExperimentTests: XCTestCase {
         let snapSize = (snapAttributes[.size] as? NSNumber)?.intValue ?? 0
         XCTAssertGreaterThan(snapSize, 1_000_000, "checkpoint 应为 MB 级，实际 \(snapSize)B")
 
-        // A1：快照必须携带 GDN（MambaCache）与 attention KV 状态
+        // A1：快照 cache 组成必须与架构一致——混合 GDN 模型携带 MambaCache，
+        // 标准注意力模型（Dense cache 对照，SIMIGO_FORK_MODEL 覆盖）全为 KVCache。
+        let configData = try? Data(contentsOf: URL(fileURLWithPath: modelPath + "/config.json"))
+        let configObject = (try? JSONSerialization.jsonObject(with: configData ?? Data()))
+            as? [String: Any]
+        let modelType = configObject?["model_type"] as? String ?? "unknown"
+        let isHybridGDN = modelType == "qwen3_5_moe" || modelType == "qwen3_next"
         let classes = try Self.snapshotCacheClasses(at: snapshotURL)
         let mambaCount = classes.filter { $0 == "MambaCache" }.count
         let attnCount = classes.filter { $0 == "KVCache" || $0 == "RotatingKVCache" }.count
+        print("[fork-exp] model_type=\(modelType) hybridGDN=\(isHybridGDN)")
         print("[fork-exp] snapshot caches: MambaCache=\(mambaCount) attn=\(attnCount) total=\(classes.count)")
-        XCTAssertGreaterThanOrEqual(mambaCount, 8, "快照应携带 GDN(MambaCache) 状态，实际 \(mambaCount)")
-        XCTAssertGreaterThanOrEqual(attnCount, 2, "快照应携带 attention KV，实际 \(attnCount)")
+        if isHybridGDN {
+            XCTAssertGreaterThanOrEqual(mambaCount, 8, "快照应携带 GDN(MambaCache) 状态，实际 \(mambaCount)")
+            XCTAssertGreaterThanOrEqual(attnCount, 2, "快照应携带 attention KV，实际 \(attnCount)")
+        } else {
+            XCTAssertEqual(mambaCount, 0, "标准注意力模型不应有 MambaCache，实际 \(mambaCount)")
+            XCTAssertGreaterThanOrEqual(attnCount, 8, "快照应携带全部 attention KV，实际 \(attnCount)")
+        }
 
         // phase 3：checkpoint 复制到两个分支 storageKey 名下（各自独立可变实例）
         let baseKey = "default/s/base"
@@ -197,12 +211,18 @@ final class KVBranchForkExperimentTests: XCTestCase {
         // 逐位在列）、promptTokens≈delta（只预填新增问句）、ttft 远小于冷路径。
         XCTAssertEqual(modes("forkA"), [], "恢复分支走 fragment-continuation，官方不发 mode")
         XCTAssertEqual(modes("forkB"), [])
-        XCTAssertEqual(
-            Self.field(in: lines, sessionKey: "s/forkA", "cacheTokens").first, "5413",
-            "checkpoint 账本长度应逐位在列（5411 prompt + a0）")
-        XCTAssertEqual(
-            Self.field(in: lines, sessionKey: "s/forkB", "cacheTokens"), ["5413"],
-            "forkB 载入的是同一 checkpoint")
+        // checkpoint 账本 = base prompt + 生成尾部。官方 generationTokens 口径
+        // 可能不含结束 token（dense 实测报告 +1、账本 +2），故取 ±2 容差；
+        // 真正的截断/丢失会是千级差距，±2 足以证明逐位在列。
+        let baseLedger = (base.usage?.promptTokens ?? -1) + (base.usage?.generationTokens ?? -1)
+        let forkALedger = Int(
+            Self.field(in: lines, sessionKey: "s/forkA", "cacheTokens").first ?? "") ?? -1
+        let forkBLedger = Int(
+            Self.field(in: lines, sessionKey: "s/forkB", "cacheTokens").first ?? "") ?? -1
+        XCTAssertTrue(
+            abs(forkALedger - baseLedger) <= 2,
+            "checkpoint 账本应≈base prompt+生成（±2 口径差），实际 \(forkALedger) vs \(baseLedger)")
+        XCTAssertEqual(forkBLedger, forkALedger, "forkB 载入的是同一 checkpoint")
         for (branch, turns) in [("forkA", 2), ("forkB", 1)] {
             let prompts = Self.field(in: lines, sessionKey: "s/\(branch)", "promptTokens")
                 .compactMap(Int.init)

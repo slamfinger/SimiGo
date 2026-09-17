@@ -36,6 +36,30 @@ fork-no-rewind 遥测已证明：qwen3_5_moe 的 GDN 层（MambaCache，30 层�
 `cacheTokens`（载入后账本长度）、`promptTokens`（本轮实际预填 delta）、TTFT 三项承担。
 若未来要让恢复路径进入命中率统计，需官方在 fragment 路径补账本语义——升级候选，非本地可修。
 
+## Dense cache 对照组（2026-09-17 追加）
+
+模型：`mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit`（`model_type: qwen3_moe`，48 层
+全标准 attention、全层 `isTrimmable=true`——FFN 是 MoE，cache 语义即审查语境的「Dense」侧）。
+同一测试二进制，`SIMIGO_FORK_MODEL` 覆盖即可切换，断言按 config `model_type` 参数化。
+
+| 指标 | GDN 混合（qwen3_5_moe） | Dense cache（qwen3_moe） |
+|---|---|---|
+| 快照 cache 组成 | MambaCache=30 + attn=10 | MambaCache=0 + attn=48 |
+| 快照体积（≈5.5k tok） | 175MB | **544MB**（每 token KV 只落 10 层 vs 48 层） |
+| 分支每轮预填 | 209 / 202 / 208 tok | **24 / 17 / 23 tok** |
+| 分支 TTFT | 0.55–0.74s | **0.17–0.24s** |
+| 冷路径 TTFT（同 prompt） | 6.1s | 5.8s |
+| 输出一致性 / 记忆召回 | 逐字一致 / 4711 召回 | 逐字一致 / 4711 召回 |
+
+结论：
+
+1. **checkpoint fork 语义与 cache 架构无关**——同一套 save/load/分支路径在两种架构下
+   全部成立；审查建议的「Dense 先行」作为方法学已无必要，直接实测补齐。
+2. GDN 混合模型的 fork **内存经济学反而更好**（KV 只落 10 层，快照 1/3 大小）；
+   Dense 模型的 checkpoint 成本随层数线性增长，生产化时按模型选择性启用。
+3. 官方 `generationTokens` 口径不含结束 token 而快照账本含（dense 实测报告 +1、
+   账本 +2；hybrid 两者恰同为 +2）——跨模型对账需留 ±2 口径差，测试已按此校准。
+
 ## 结论适用范围
 
 - 分叉点是**会话边界**（某次生成完成后），不是任意 token 位置；覆盖生产主要分叉场景
