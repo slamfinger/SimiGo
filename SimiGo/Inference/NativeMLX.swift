@@ -33,6 +33,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// evictSessionsIfNeeded 的驱逐报告：admission 观测行消费。
+    private struct SessionEvictionReport {
+        var evicted = 0
+        var evictedTokens = 0
+        var warmSessions = 0
+        var warmTokens = 0
+    }
+
     private struct State {
         var modelContainer: ModelContainer?
         var httpServer: HTTPServer?
@@ -551,8 +559,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
         }
 
-        // P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行）。
-        await evictSessionsIfNeeded(keeping: executionKey.storageKey)
+        // P1 会话 LRU + P2 Admission：数量/内存双维度驱逐，随后记录暖会话态势
+        // （warmTokenBudget 的校准观测行）。
+        let admission = await evictSessionsIfNeeded(keeping: executionKey.storageKey)
+        traceLogger.trace(
+            "[MLX] admission warmSessions=\(admission.warmSessions)" +
+            " warmTokens=\(admission.warmTokens)" +
+            " swap=" + (RuntimeTuning.swapUsedBytes()
+                .map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a") +
+            " evicted=\(admission.evicted) freedTokens=\(admission.evictedTokens)"
+        )
 
         let delta: [Chat.Message]
         if reusedSession {
@@ -871,29 +887,79 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return GenerationResult(text: completedText, usage: usage)
     }
 
-    /// P1 会话 LRU：上限外最久未用会话先经官方 clear() 释放 KV（锁外执行），再回收缓冲。
-    private func evictSessionsIfNeeded(keeping currentKey: String) async {
-        let victims: [(key: String, session: ChatSession)] = state.withLock { state in
-            guard state.sessions.count > RuntimeTuning.sessionLimit else { return [] }
-            let removeCount = state.sessions.count - RuntimeTuning.sessionLimit
-            guard removeCount > 0 else { return [] }
-            let sorted = state.sessions
+    /// P1 会话 LRU（数量维度）+ P2 Admission（内存维度，2026-09-18）：
+    /// 数量超限或 swap 压力下，最久未用会话先经官方 clear() 释放 KV
+    /// （锁外执行），再回收缓冲。内存维度把暖会话 KV token 总和压回
+    /// warmTokenBudget——并行多会话把预填顶进 swap 爬速区是「重建×超时」
+    /// 循环的直接乘数（09-17 深夜实证，lessons 同名文档深夜段）。
+    /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。
+    @discardableResult
+    private func evictSessionsIfNeeded(keeping currentKey: String) async -> SessionEvictionReport {
+        // 锁内只做快照；token 统计与 clear() 全部锁外执行（生成全局串行，
+        // gate 持有期间无并发变更）。
+        let snapshot: [(key: String, session: ChatSession)] = state.withLock { state in
+            state.sessions
                 .filter { $0.key != currentKey }
                 .sorted { $0.value.lastActivity < $1.value.lastActivity }
-            let victims = sorted.prefix(removeCount).map { (key: $0.key, session: $0.value.session) }
-            for (key, _) in victims { state.sessions.removeValue(forKey: key) }
-            return victims
+                .map { (key: $0.key, session: $0.value.session) }
         }
-        guard !victims.isEmpty else { return }
+        let totalCount = state.withLock { $0.sessions.count }
+        let currentSession = state.withLock { $0.sessions[currentKey]?.session }
+        let swap = RuntimeTuning.swapUsedBytes()
+        let swapPressure = (swap ?? 0) > RuntimeTuning.swapPressureThresholdBytes
 
-        for (_, session) in victims { await session.clear() }
+        let currentTokens = await sessionTokens(currentSession)
+        var lru: [(key: String, session: ChatSession, tokens: Int)] = []
+        lru.reserveCapacity(snapshot.count)
+        for candidate in snapshot {
+            lru.append((candidate.key, candidate.session, await sessionTokens(candidate.session)))
+        }
+        var warmTokens = currentTokens + lru.reduce(0) { $0 + $1.tokens }
+
+        var victims: [(key: String, session: ChatSession, tokens: Int)] = []
+        // 数量维度（P1 原语义）：总数超 sessionLimit 的溢出部分。
+        var overflow = max(0, totalCount - RuntimeTuning.sessionLimit)
+        while overflow > 0, let victim = lru.first {
+            lru.removeFirst()
+            overflow -= 1
+            warmTokens -= victim.tokens
+            victims.append(victim)
+        }
+        // 内存维度（P2 新增）：swap 压力下把暖 token 总和压回预算。
+        if swapPressure {
+            while warmTokens > RuntimeTuning.warmTokenBudget, let victim = lru.first {
+                lru.removeFirst()
+                warmTokens -= victim.tokens
+                victims.append(victim)
+            }
+        }
+
+        var report = SessionEvictionReport()
+        report.warmSessions = 1 + lru.count
+        report.warmTokens = warmTokens
+        guard !victims.isEmpty else { return report }
+
+        let freedTokens = victims.reduce(0) { $0 + $1.tokens }
+        for (_, session, _) in victims { await session.clear() }
         Memory.clearCache()
+        report.evicted = victims.count
+        report.evictedTokens = freedTokens
         traceLogger.trace(
             "[MEM] session LRU evicted=\(victims.count)" +
             " keys=" + victims.map { String($0.key.suffix(6)) }.joined(separator: ",") +
-            " limit=\(RuntimeTuning.sessionLimit)"
+            " limit=\(RuntimeTuning.sessionLimit) budget=\(RuntimeTuning.warmTokenBudget)" +
+            " freedTokens=\(freedTokens) warmTokensNow=\(report.warmTokens)" +
+            " swap=" + (swap.map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a")
         )
         logMemory("afterEvict")
+        return report
+    }
+
+    /// 会话官方账本 token 数；无会话或读取失败记 0——预算是治理估算，
+    /// 不因单次读失败放弃整轮驱逐。
+    private func sessionTokens(_ session: ChatSession?) async -> Int {
+        guard let session else { return 0 }
+        return (try? await session.cacheStatus())?.processedTokenCount ?? 0
     }
 
     /// P1 Unified Memory 遥测：MLX 计数器 + footprint + swap。

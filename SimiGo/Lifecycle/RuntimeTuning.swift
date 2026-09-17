@@ -29,6 +29,20 @@ nonisolated enum RuntimeTuning {
     /// P1 会话 LRU：托管 ChatSession 数上限（超出驱逐最久未用，官方 clear() 释放 KV）。
     static let sessionLimit = 8
 
+    /// P2 Admission（2026-09-18）：暖会话 KV token 总预算——全部存活会话
+    /// processedTokenCount 之和的上限，swap 压力下按 LRU 逐出（官方 clear()）。
+    /// 背景：并行多会话负载下 5+ 个 18-65k 暖会话把内存顶进 swap 爬速区
+    /// （40-110 tok/s），39613 tok 重建跑不赢客户端 ~10.5 min 超时，形成
+    /// 「重建×超时」无进展循环（09-17 深夜 2h22m 实证，lessons 同名文档深夜段）。
+    /// 初值按当晚边界定：3 会话 ≈88k tok 可完成（尾段已退化）。校准常数，
+    /// 随 [MLX] admission 观测行调整。
+    static let warmTokenBudget = 100_000
+
+    /// swap 压力触发阈值：全机信号（其他进程占用也计入），作触发偏保守正确。
+    /// 逐出循环的出口用进程内可立即复测的暖 token 总和，不用 swap（回落滞后）。
+    /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。
+    static let swapPressureThresholdBytes: UInt64 = 2 * UInt64(gibibyte)
+
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。
     static var maxKVSize: Int? = nil
 
