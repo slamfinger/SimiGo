@@ -106,10 +106,41 @@ roll-forward 对上游修复前的一切分叉形态（含客户端重写、账�
   fork-no-rewind 计数应 → 0，新增 fragment 轮（restore 秒级 + delta）。
 - 基准 fixture 追加 after 段落，形成 before/after 对账。
 
-## 5. 建议动工切片（窗口期满评审后）
+## 5. 建议动工切片（修订：验证先行——2026-09-18 外审加闸）
 
-1. `RuntimeTuning.rollforwardEnabled` + 节流常数（默认关，灰度开）
-2. saveSessionCache 每成功轮后调用（节流：K 轮或 ≥4k delta）
-3. 风险检测器：自产 tool_calls 参数键序检查（纯函数，可单测）
-4. 高风险轮 loadSessionCache(key) 覆盖 + trace `action=rollforward`
-5. 长程免疫性验证（§3.1）作为切片验收条件，不通过则回退默认关
+原版 §5 直接列生产切片；按外审加闸修订为两段。**20–100× 是期望收益估算，
+不是已兑现数字**——兑现前必须先测。
+
+### Phase A：测量实验（先做，产出 = 数字而非行为）
+
+宿主式实验（`SIMIGO_ROLLFWD_EXP=1` 门控，沿 BranchForkTests 惯例）：
+
+- 合成长程工具密集会话：多键嵌套 tool_calls（TodoWrite 形态）× 50 轮，
+  上下文爬坡 10k→80k
+- 每轮测量：`saveSessionCache` 耗时、`loadSessionCache` 耗时、
+  fragment token 数、TTFT、内存峰值、swap
+- 连续 roll-forward 10 / 20 / 50 轮三档
+- **验收观测量（免疫性证伪点）**：fork-no-rewind 恒 0、fragment 持续低
+  token、TTFT 稳定；若任一轮内部进入全模板渲染，免疫性理论重审
+- **隐藏成本核查**：saveCache 是否随上下文线性劣化为新瓶颈（I/O、内存复制、
+  cache serialization）
+- 产出：真实经济账（替换本档 20–100× 估算）+ 与 442fbf fixture 的
+  before/after 对照
+
+### Phase B：生产切片（仅当 Phase A 经济性成立）
+
+原 §5 五项：`RuntimeTuning.rollforwardEnabled`（默认关灰度开）+ 节流常数、
+saveSessionCache 每成功轮后调用（节流）、风险检测器（自产参数键序，纯函数
+可单测）、高风险轮 loadSessionCache(key) 覆盖 + trace `action=rollforward`、
+长程免疫性验证作为验收条件。
+
+## 6. 定谱（外审认可，2026-09-18）
+
+> Branch-Fork 的下一阶段不是"优化 fork"，而是**验证 checkpoint-recovery
+> 能否作为一种分歧隔离执行模式**。
+
+三层定位：Qwen35ToolRestartRule 治分歧源（让 risk 少发生）；roll-forward
+是运行时保险（risk 发生也不进活账本→rewind→重渲）；GDN checkpoint/rewind
+是引擎层长期可回卷能力。正常走 extend，高风险前 roll-forward 到最近健康
+checkpoint，从恢复态续 fragment——直接减少**需要进入 cold prefill 的
+工作量**，而非给 cold prefill 排队。
