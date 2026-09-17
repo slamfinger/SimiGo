@@ -525,6 +525,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     " historyTool=\(historyMessage.tool != nil) incomingTool=\(incomingMessage.tool != nil)" +
                     " history=\(existing.history.count) incoming=\(incoming.count)"
                 )
+                traceLogger.trace(
+                    Self.prefixDiffLine(
+                        index: mismatch,
+                        stored: historyMessage,
+                        incoming: incomingMessage
+                    )
+                )
             }
             let history = Array(incoming.dropLast())
             let session = ChatSession(
@@ -1389,6 +1396,49 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private static nonisolated func signature(_ message: Chat.Message) -> String {
         let toolFlag = message.tool == nil ? "-" : "tool"
         return "\(message.role.rawValue)\u{1f}\(message.content)\u{1f}\(toolFlag)"
+    }
+
+    /// prefixMismatch 的内容级 diff（纯诊断，2026-09-17 index=13/46 家族）：
+    /// 回答「同一语义不同表示 vs 真历史分叉」——两侧 role/toolFlag、内容长度、
+    /// 字符级公共前缀长度、首个分叉点两侧摘录、内容指纹。只写 trace，
+    /// 不参与任何行为判定；token 级 LCP 待接入 tokenizer 后作为后续档位。
+    private static nonisolated func prefixDiffLine(
+        index: Int,
+        stored: Chat.Message,
+        incoming: Chat.Message
+    ) -> String {
+        let a = stored.content
+        let b = incoming.content
+        var common = 0
+        for (x, y) in zip(a, b) {
+            if x != y { break }
+            common += 1
+        }
+        return "[MLX] prefixDiff index=\(index)" +
+            " stored(role=\(stored.role.rawValue),tool=\(stored.tool != nil ? 1 : 0),len=\(a.count),fp=\(fingerprint(a)))" +
+            " incoming(role=\(incoming.role.rawValue),tool=\(incoming.tool != nil ? 1 : 0),len=\(b.count),fp=\(fingerprint(b)))" +
+            " commonPrefix=\(common)" +
+            " stored='\(excerpt(a, at: common))'" +
+            " incoming='\(excerpt(b, at: common))'"
+    }
+
+    /// 分叉点前后各 ~24 字符的摘录，控制字符折叠为空格。
+    private static nonisolated func excerpt(_ s: String, at offset: Int) -> String {
+        let radius = 24
+        let start = max(0, offset - radius / 2)
+        let end = min(s.count, start + radius)
+        guard start < end else { return "" }
+        let chars = s.suffix(s.count - start).prefix(end - start)
+        return String(chars.map { ($0.isNewline || $0 == "\t") ? " " : $0 })
+    }
+
+    /// FNV-1a 64-bit 内容指纹，取前 8 hex——诊断对账用，非安全哈希。
+    private static nonisolated func fingerprint(_ s: String) -> String {
+        var hash: UInt64 = 0xcbf2_6482_366b_2a85
+        for byte in s.utf8 {
+            hash = (hash ^ UInt64(byte)) &* 0x0000_0100_0000_01b3
+        }
+        return String(format: "%08x", UInt32(truncatingIfNeeded: hash >> 32))
     }
 
     private static nonisolated func coerceContent(_ value: JSONValue) -> String {
