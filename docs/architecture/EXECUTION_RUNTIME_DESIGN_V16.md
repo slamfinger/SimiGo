@@ -58,8 +58,11 @@ Executor              执行：现有 generateUsingChatSession 路径
 `[EXEC]` 遥测行规格（Slice 1）：
 
 ```text
-[EXEC] begin exec=<id8> key=<traceKey> parent=- req=<requestId> incoming=<n>
-[MLX] session=... exec=<id8> ...          ← 完成行追加 exec 字段
+[EXEC] begin exec=<uuid> key=<traceKey> parent=- req=<requestId> incoming=<n>
+[MLX] session=... exec=<uuid> ...          ← 完成行追加 exec 字段
+[EXEC] end exec=<uuid> status=<completed|failed|cancelled>
+[EXEC] checkpoint exec=<uuid> checkpoint=<storageKey>
+[EXEC] fork parent=<storageKey> child=<storageKey>   ← 分支级 provenance
 ```
 
 后续分片补：`status=completed/failed/cancelled`、`parent` 真值（fork）、
@@ -73,7 +76,7 @@ Executor              执行：现有 generateUsingChatSession 路径
 | **S2（已完成 2026-09-19）** | ExecutionFacts / ExecutionDecision 类型声明 + 判定纯函数簇（rollforwardRisk/conditionalRestoreGate/estimates/compat/diff/render 对账族，17 函数）搬家至 `ExecutionPolicy.swift`，函数体逐字节不变；NativeMLX 调用点与单测引用改指 ExecutionPolicy | 零 | SimiGoTests 60 执行 0 失败（含 RiskDetector/Compatible/RenderCompatible 测试族）；bench 冒烟随下次 app 部署补 |
 | **S3（已完成 2026-09-19）** | ConditionalRestoreConfiguration 配置面（三 flag 合并，`current()` 唯一读取入口，generate 每请求一次性快照，决策与 checkpoint save 门全程只消费快照） | 零（默认值=现值，路径逐条等价） | ExecutionPolicyGateTests：默认等价 + 4 路径 A/B 一致 + 快照冻结隔离，全绿 |
 | **S4（已完成 2026-09-19）** | ExecutionControlling 协议面落地为薄封装（fork 复用 BranchFork v1） | 零 | 五动作映射表写入文件头（红线=零新语义）；headless 委托证明（未加载实例各动作错误透传）；fork/restore 端到端回归走 BranchFork 既有测试族 |
-| **S5（已完成 2026-09-19）** | ExecutionLineage 有界血统日志（128 FIFO）+ ExecutionStatus/ExecutionRecord/ForkEvent 模型；[EXEC] end（status=completed/failed/cancelled）+ [EXEC] checkpoint + [EXEC] fork（parent/child 真值=storageKey）；五身份分离红线遵守 | 零（log-only+内存记录） | ExecutionLineageTests 4/4（失败捕获/容量淘汰/checkpoint 关联/fork 真值）+ headless generate-failure 回归 |
+| **S5（已完成 2026-09-19）** | ExecutionLineage 有界血统日志（128 FIFO）+ ExecutionStatus/ExecutionRecord/BranchForkEvent 模型；[EXEC] end（status=completed/failed/cancelled）+ [EXEC] checkpoint + [EXEC] fork（parent/child 真值=storageKey）；五身份分离红线遵守 | 零（log-only+内存记录） | ExecutionLineageTests 5/5（失败链 begin→running→failed→completedAt/容量淘汰/checkpoint 关联/fork 真值）+ headless generate-failure 回归 |
 
 > S1 追加（四轮外审测试质量收紧，2026-09-19 已落实）：测试缝隙
 > `#if DEBUG` 隔离、竞态结果语义分层（RACE_WINDOW_HIT vs

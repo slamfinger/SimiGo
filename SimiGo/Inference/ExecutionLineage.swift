@@ -25,7 +25,11 @@ public struct ExecutionRecord: Sendable {
     public var checkpointKey: String?
 }
 
-public struct ForkEvent: Sendable {
+/// 分支派生事件（BranchFork v1 provenance）——parent/child 均为
+/// **storageKey 级**分支寻址，语义是"checkpoint 从哪个分支复制而来"，
+/// **不是** execution→execution lineage（当前 fork 不产生执行级父子）。
+/// （外审十一轮 P2-2：语义钉死，防误读为执行血统。）
+public struct BranchForkEvent: Sendable {
     public let parent: String
     public let child: String
     public let at: Date
@@ -35,7 +39,7 @@ public struct ForkEvent: Sendable {
 public final class ExecutionLineage: @unchecked Sendable {
     private struct Storage {
         var records: [ExecutionRecord] = []
-        var forks: [ForkEvent] = []
+        var forks: [BranchForkEvent] = []
     }
 
     private let capacity: Int
@@ -71,18 +75,19 @@ public final class ExecutionLineage: @unchecked Sendable {
         }
     }
 
-    /// fork 事件：分支级派生真值记录（parent/child 均为 storageKey）。
+    /// 分支派生事件：仅在整个 fork（save→copy→load）成功后记录——
+    /// 失败的 fork 不留 parent→child 假 provenance。
     public func recordFork(parent: String, child: String) {
         lock.withLock { storage in
             storage.forks.append(
-                ForkEvent(parent: parent, child: child, at: Date()))
+                BranchForkEvent(parent: parent, child: child, at: Date()))
             if storage.forks.count > capacity {
                 storage.forks.removeFirst(storage.forks.count - capacity)
             }
         }
     }
 
-    public var snapshot: (records: [ExecutionRecord], forks: [ForkEvent]) {
+    public var snapshot: (records: [ExecutionRecord], forks: [BranchForkEvent]) {
         lock.withLock { storage in
             (records: storage.records, forks: storage.forks)
         }

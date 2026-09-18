@@ -128,3 +128,17 @@ merge/BranchManager）。
 
 S5 价值定位：第一次让 executionID / parent / branch / checkpoint /
 status / trace 形成**可回放的执行血统模型**——下一道真正的架构关。
+
+## 九轮（043fe3b S4）+ 十轮（e13dbeb S4 封版）+ 十一轮（107979c S5）登记摘要
+
+- 九轮：S4 通过，P2×2+增强（typed error/existential dispatch/
+  CheckpointID 方案 A）——已修（e13dbeb），S4 封版
+- 十轮：S4 封版确认，P0/P1/P2=0；S5 红线登记（五身份不揉一对象）
+- 十一轮（S5，107979c）：架构通过 P0=0/P1=0，P2×2 收口：
+  1. P2-1 executionId 唯一性契约——采纳方案 B（完整 UUID 替代 8 位
+     hex），Lineage firstIndex 语义的唯一性假设契约化
+  2. P2-2 ForkEvent 语义钉死——更名 BranchForkEvent，注释明确
+     "storageKey 级分支 provenance，非 execution→execution lineage"
+  3. 失败链证明强化——新增 testBeginRunningToEndFailedChain
+     （begin→running→failed→completedAt 直接断言）+
+     generate-failure 集成断言补 startedAt<=completedAt/身份透传

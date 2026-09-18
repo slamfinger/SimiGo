@@ -394,7 +394,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // V1.6 S1：executionID 血统遥测（log-only，零行为变更）——
         // 规格见 docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md §4。
         // parent 占位"-"，fork 真值由 S5 接入。
-        let executionId = UUID().uuidString.prefix(8).lowercased()
+        // S5 P2-1（外审十一轮采纳方案 B）：完整 UUID——Lineage 的
+        // firstIndex 语义假设 executionId 全程唯一，8 位 hex(32bit)
+        // 契约上未表达该唯一性；全 UUID 消除隐患。
+        let executionId = UUID().uuidString.lowercased()
         traceLogger.trace(
             "[EXEC] begin exec=\(executionId) key=\(executionKey.traceKey)"
             + " parent=- req=\(requestId) incoming=\(messages.count)")

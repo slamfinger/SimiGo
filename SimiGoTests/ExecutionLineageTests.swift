@@ -31,6 +31,12 @@ final class ExecutionLineageTests: XCTestCase {
         XCTAssertEqual(snapshot.records.count, 1)
         XCTAssertEqual(snapshot.records.first?.status, .failed)
         XCTAssertNotNil(snapshot.records.first?.completedAt)
+        // 失败链证明（外审十一轮）：begin→running→failed→completedAt
+        // 全链可观测——时间序一致且身份字段透传一致
+        let rec = snapshot.records.first!
+        XCTAssertLessThanOrEqual(rec.startedAt, rec.completedAt!)
+        XCTAssertFalse(rec.executionId.isEmpty)
+        XCTAssertEqual(rec.logicalBranchId, "main")
     }
 
     /// 容量淘汰：超过上限后 FIFO 丢弃最旧记录。
@@ -58,6 +64,18 @@ final class ExecutionLineageTests: XCTestCase {
     }
 
     /// fork 派生真值：parent/child 均为 storageKey，事件有界。
+    /// 失败链直接证明：begin(running) → end(.failed) → 终态与时间戳。
+    func testBeginRunningToEndFailedChain() {
+        let lineage = ExecutionLineage()
+        lineage.begin(record("exec-f"))
+        XCTAssertEqual(lineage.snapshot.records.first?.status, .running)
+        lineage.end(executionId: "exec-f", status: .failed)
+        let rec = lineage.snapshot.records.first
+        XCTAssertEqual(rec?.status, .failed)
+        XCTAssertNotNil(rec?.completedAt)
+        XCTAssertLessThanOrEqual(rec!.startedAt, rec!.completedAt!)
+    }
+
     func testForkRecording() {
         let lineage = ExecutionLineage(capacity: 2)
         lineage.recordFork(parent: "a/main", child: "a/fork1")
