@@ -41,6 +41,7 @@ ACTION_RE = re.compile(
     r"\[MLX\] action=(?P<action>rollforward|rollforwardSkip|rollforwardFailed|"
     r"checkpointFailed) key=(?P<key>\S+)(?: reason=(?P<reason>\S+))?"
 )
+TS_RE = re.compile(r"^\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2})")
 
 
 def p95(values):
@@ -74,9 +75,13 @@ def main():
     last_rf = False
     with open(args.logfile, encoding="utf-8", errors="replace") as f:
         for line in f:
-            if args.since and args.since not in line and not rows:
-                # --since 语义：跳过首次命中之前的所有行
-                continue
+            if args.since:
+                # --since 语义：分钟粒度时间戳比较（2026-09-18 修复：原子串
+                # 匹配要求日志恰好含该串，实际时刻几乎必失配——after 统计
+                # 因此空窗）。
+                tm = TS_RE.match(line)
+                if tm and tm.group("ts") < args.since:
+                    continue
             am = ACTION_RE.search(line)
             if am:
                 key = am.group("key")
