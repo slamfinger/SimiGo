@@ -16,3 +16,6 @@ xcuserdata/
 # 回归骨架编译产物
 tools/harness/.build/
 __pycache__/
+
+# 发布物走 GitHub Release 附件，不入 git 树
+*.dmg
