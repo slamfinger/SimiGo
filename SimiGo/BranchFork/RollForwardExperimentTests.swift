@@ -438,4 +438,73 @@ final class RollForwardExperimentTests: XCTestCase {
                                      from: Data(legacy.utf8))
         XCTAssertNil(old.kvFingerprint)
     }
+
+    func testMessageRenderCompatibleDistinguishesNullFromStringNull() {
+        // P1-1 回归（2026-09-18）：.description 比较会把 .string("null") 与
+        // .null 判为相等（类型折叠假阳性 → 放行 → 渲染分叉）；结构相等必须区分。
+        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+            .object(["role": .string("user"), "content": .null]),
+            .object(["role": .string("user"), "content": .string("null")])))
+    }
+
+    func testRollforwardDiffLinePointsAtDivergentField() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        func tool(_ id: String) -> SimiGo.JSONValue {
+            .object(["role": .string("tool"), "tool_call_id": .string(id),
+                     "content": .string("ok")])
+        }
+        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+            incoming: [user("a"), tool("call_2"), user("c")],
+            restoredHistory: [user("a"), tool("call_X")])
+        XCTAssertTrue(line.contains("index=1"), line)
+        XCTAssertTrue(line.contains("field=tool_call_id"), line)
+        XCTAssertTrue(line.contains("call_X") && line.contains("call_2"), line)
+    }
+
+    func testRollforwardDiffLineReportsMissingField() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        // incoming 缺 content（isPrefix 容错方向）→ diff 标 field=content，
+        // ckpt 侧为值、incoming 侧为 null——74 连 stale 归因的关键形态。
+        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+            incoming: [.object(["role": .string("user")]), user("b"), user("c")],
+            restoredHistory: [user("a"), user("b")])
+        XCTAssertTrue(line.contains("index=0 field=content"), line)
+    }
+
+    func testRollforwardDiffLineHistoryCount() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+            incoming: [user("a")],
+            restoredHistory: [user("a"), user("b")])
+        XCTAssertTrue(line.contains("reason=historyCount"), line)
+    }
+
+    func testRollforwardDiffLineAgreesWithCompatibilityVerdict() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        // 行为判定 false 的样本（非 count 分支），diff 必须给出具体分歧而非 none
+        func asst(_ args: SimiGo.JSONValue) -> SimiGo.JSONValue {
+            .object(["role": .string("assistant"), "content": .string(""),
+                     "tool_calls": .array([.object([
+                        "type": .string("function"),
+                        "id": .string("call_1"),
+                        "function": .object(["name": .string("t"), "arguments": args]),
+                     ])])])
+        }
+        let incoming = [user("a"), asst(.object(["a": .number(1)])), user("c")]
+        let restored = [user("a"), asst(.object(["a": .number(2)]))]
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: incoming, restoredHistory: restored))
+        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+            incoming: incoming, restoredHistory: restored)
+        XCTAssertTrue(line.contains("field="), line)
+        XCTAssertFalse(line.contains("reason=none"), line)
+    }
 }

@@ -585,6 +585,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     traceLogger.trace(
                         "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
                         + " reason=checkpointStale")
+                    traceLogger.trace(
+                        Self.rollforwardDiffLine(
+                            incoming: messages, restoredHistory: meta.history))
                     break rollforward
                 }
                 // 原子替换 + 身份守卫：只有恢复态真正进入 sessions 池才允许
@@ -1300,12 +1303,77 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return true
     }
 
+    /// checkpointStale 的字段级 diff（纯诊断，log-only；2026-09-18 真机 74 连
+    /// checkpointStale 无法归因，prefixDiff 8ee83a5 同型判别）：定位首个不一致
+    /// 消息与分歧字段，两侧 compact-JSON 后做字符级公共前缀 + 分叉摘录 + 指纹。
+    /// 只写 trace，不参与任何行为判定。
+    static func rollforwardDiffLine(
+        incoming: [JSONValue], restoredHistory: [JSONValue]
+    ) -> String {
+        guard restoredHistory.count < incoming.count else {
+            return "[MLX] rollforwardDiff reason=historyCount" +
+                " ckpt=\(restoredHistory.count) incoming=\(incoming.count)"
+        }
+        for (i, m) in restoredHistory.enumerated() {
+            let n = incoming[i]
+            guard case .object(let a) = m, case .object(let b) = n else {
+                return "[MLX] rollforwardDiff index=\(i) field=shape" +
+                    " ckpt=\(shapeTag(m)) incoming=\(shapeTag(n))"
+            }
+            for field in ["role", "content", "tool_call_id", "tool_calls"] {
+                let av = a[field] ?? .null
+                let bv = b[field] ?? .null
+                if av != bv {
+                    return "[MLX] rollforwardDiff index=\(i) field=\(field)" +
+                        valueDiff(av, bv)
+                }
+            }
+        }
+        return "[MLX] rollforwardDiff reason=none"
+    }
+
+    /// 两侧值 compact-JSON 后的 len/commonPrefix/fp/分叉摘录。
+    private static nonisolated func valueDiff(_ a: JSONValue, _ b: JSONValue) -> String {
+        guard let sa = compactJSON(a), let sb = compactJSON(b) else {
+            return " ckpt=\(shapeTag(a)) incoming=\(shapeTag(b))"
+        }
+        var common = 0
+        for (x, y) in zip(sa, sb) {
+            if x != y { break }
+            common += 1
+        }
+        return " len=\(sa.count)/\(sb.count) commonPrefix=\(common)" +
+            " fp=\(fingerprint(sa))/\(fingerprint(sb))" +
+            " ckpt='\(excerpt(sa, at: common))'" +
+            " incoming='\(excerpt(sb, at: common))'"
+    }
+
+    private static nonisolated func compactJSON(_ v: JSONValue) -> String? {
+        guard let data = try? JSONEncoder().encode(v) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    private static nonisolated func shapeTag(_ v: JSONValue) -> String {
+        switch v {
+        case .null: return "null"
+        case .bool: return "bool"
+        case .number: return "num"
+        case .string(let s): return "str(\(s.count))"
+        case .object(let o):
+            return "obj{\(o.keys.sorted().prefix(4).joined(separator: ","))}"
+        case .array(let a): return "arr[\(a.count)]"
+        }
+    }
+
     /// 单条消息渲染路径字段对账。
     static func messageRenderCompatible(_ checkpoint: JSONValue, _ incoming: JSONValue) -> Bool {
         guard case .object(let a) = checkpoint,
               case .object(let b) = incoming else { return checkpoint == incoming }
-        if (a["role"] ?? .null).description != (b["role"] ?? .null).description { return false }
-        if (a["content"] ?? .null).description != (b["content"] ?? .null).description { return false }
+        // 结构相等（键序无关）而非 .description——后者键序敏感，且类型折叠
+        // （.string("null") 与 .null 同为 "null"）会把不等判为相等（外审 P1，
+        // 2026-09-18）。
+        if (a["role"] ?? .null) != (b["role"] ?? .null) { return false }
+        if (a["content"] ?? .null) != (b["content"] ?? .null) { return false }
         if (a["tool_call_id"] ?? .null) != (b["tool_call_id"] ?? .null) { return false }
         if (a["tool_calls"] ?? .null) != (b["tool_calls"] ?? .null) { return false }
         return true
