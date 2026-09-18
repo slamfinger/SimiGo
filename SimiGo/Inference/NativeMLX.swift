@@ -567,28 +567,48 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var rolledForward = false
         if RuntimeTuning.rollforwardEnabled, reusedSession,
            Self.rollforwardRisk(lastJSON: managed.historyJSON.last) {
-            do {
+            rollforward: do {
                 let (restored, meta) = try await performLoad(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, config: config, baseConfig: baseConfig,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
-                if Self.rollforwardCompatible(incoming: messages, restoredHistory: meta.history) {
-                    state.withLock {
-                        if let live = $0.sessions[executionKey.storageKey], live === managed {
-                            $0.sessions[executionKey.storageKey] = restored
-                            $0.lastActivity = Date()
-                        }
-                    }
-                    managed = restored
-                    rolledForward = true
+                // KV 配置指纹对账：checkpoint 的 KV 状态属于保存时的配置；
+                // 指纹不一致 → 恢复态对当前配置是陈旧物，放弃滚前。
+                guard restored.kvFingerprint == kvFingerprint else {
                     traceLogger.trace(
-                        "[MLX] action=rollforward key=\(executionKey.traceKey)"
-                        + " history=\(meta.history.count)")
-                } else {
+                        "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
+                        + " reason=kvFingerprintMismatch")
+                    break rollforward
+                }
+                guard Self.rollforwardCompatible(incoming: messages,
+                                                 restoredHistory: meta.history) else {
                     traceLogger.trace(
                         "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
                         + " reason=checkpointStale")
+                    break rollforward
                 }
+                // 原子替换 + 身份守卫：只有恢复态真正进入 sessions 池才允许
+                // 继续使用；守卫失败（池中已换成其他对象）必须放弃恢复态——
+                // 否则本轮生成运行在 detached session 上，收尾回写与 checkpoint
+                // 都会落到池外对象（外审 P1，2026-09-18）。
+                var replaced = false
+                state.withLock {
+                    if let live = $0.sessions[executionKey.storageKey], live === managed {
+                        $0.sessions[executionKey.storageKey] = restored
+                        replaced = true
+                    }
+                }
+                guard replaced else {
+                    traceLogger.trace(
+                        "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
+                        + " reason=sessionReplaced")
+                    break rollforward
+                }
+                managed = restored
+                rolledForward = true
+                traceLogger.trace(
+                    "[MLX] action=rollforward key=\(executionKey.traceKey)"
+                    + " history=\(meta.history.count)")
             } catch {
                 traceLogger.trace(
                     "[MLX] action=rollforwardFailed key=\(executionKey.traceKey)"
@@ -1127,7 +1147,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             storageKey: key,
             modelId: modelName(from: modelPath),
             savedAt: Date(),
-            history: managed.historyJSON
+            history: managed.historyJSON,
+            kvFingerprint: managed.kvFingerprint
         )
         try encoder.encode(metadata).write(to: metaURL, options: .atomic)
 
@@ -1223,10 +1244,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             generateParameters: sessionParams,
             additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
         )
+        // Phase B 补齐（外审 P0-1）：恢复会话必须携带 checkpoint 的 KV 指纹，
+        // 否则下一轮复用检查 nil ≠ 当前指纹 → reuseMiss → 全量重建清零收益。
         let restored = ManagedSession(
             session: session,
             history: Self.makeChatMessages(metadata.history),
-            historyJSON: metadata.history
+            historyJSON: metadata.history,
+            kvFingerprint: metadata.kvFingerprint
         )
         traceLogger.trace(
             "[MLX] cacheLoad session=\(traceKey) history=\(metadata.history.count)"
@@ -1263,19 +1287,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     /// roll-forward 兼容守卫：checkpoint 的 transcript 必须是本轮 incoming 的
-    /// 真前缀（逐条 content 对账），否则视为陈旧 checkpoint，放弃恢复。
+    /// 真前缀，且逐条消息在**渲染路径字段**上语义一致（role / content /
+    /// tool_call_id / tool_calls 结构——这些字段决定重渲染 token；其余字段
+    /// 缺失或差异按 isPrefix 容错守门规则不阻断）。仅比 content 会把 role/
+    /// id/tool_calls 结构变化误判为兼容（外审 P0-2，2026-09-18）。
     static func rollforwardCompatible(incoming: [JSONValue], restoredHistory: [JSONValue]) -> Bool {
         guard restoredHistory.count < incoming.count else { return false }
         for (i, m) in restoredHistory.enumerated() {
             guard i < incoming.count else { return false }
-            if Self.jsonContentString(m) != Self.jsonContentString(incoming[i]) { return false }
+            if !Self.messageRenderCompatible(m, incoming[i]) { return false }
         }
         return true
     }
 
-    private static func jsonContentString(_ value: JSONValue) -> String {
-        guard case .object(let o) = value else { return "" }
-        return o["content"]?.description ?? ""
+    /// 单条消息渲染路径字段对账。
+    static func messageRenderCompatible(_ checkpoint: JSONValue, _ incoming: JSONValue) -> Bool {
+        guard case .object(let a) = checkpoint,
+              case .object(let b) = incoming else { return checkpoint == incoming }
+        if (a["role"] ?? .null).description != (b["role"] ?? .null).description { return false }
+        if (a["content"] ?? .null).description != (b["content"] ?? .null).description { return false }
+        if (a["tool_call_id"] ?? .null) != (b["tool_call_id"] ?? .null) { return false }
+        if (a["tool_calls"] ?? .null) != (b["tool_calls"] ?? .null) { return false }
+        return true
     }
 
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
@@ -1707,16 +1740,23 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
     public var modelId: String
     public var savedAt: Date
     public var history: [JSONValue]
+    /// 保存时会话的 KV 配置指纹（2026-09-18 Phase B 补齐）：恢复会话必须
+    /// 携带指纹，否则下一轮复用检查 nil ≠ 当前指纹 → reuseMiss → 全量重建，
+    /// roll-forward 连续收益被清零。可选 + decodeIfPresent：旧格式文件
+    /// （无此键）解码为 nil，向后兼容。
+    public var kvFingerprint: String?
 
     public init(
         storageKey: String,
         modelId: String,
         savedAt: Date,
-        history: [JSONValue]
+        history: [JSONValue],
+        kvFingerprint: String? = nil
     ) {
         self.storageKey = storageKey
         self.modelId = modelId
         self.savedAt = savedAt
         self.history = history
+        self.kvFingerprint = kvFingerprint
     }
 }

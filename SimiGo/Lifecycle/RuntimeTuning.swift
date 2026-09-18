@@ -48,6 +48,9 @@ nonisolated enum RuntimeTuning {
     /// fragment-continuation（raw-cache 无账本 → 无比较 → 无分歧税）。
     /// Phase A 实测开销 0.16s/轮 vs 分歧税 300-490s（≈2000×）。
     /// 灰度开关：置 false 即回退纯活会话行为。
+    /// 状态（2026-09-18 外审定级）：Phase B implemented / production hypothesis
+    /// under validation——真实客户端回放验收（fork-no-rewind 恒 0、恢复后
+    /// 指纹连续复用、无 detached session）通过前不得视为生产已验证。
     static var rollforwardEnabled = true
 
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。

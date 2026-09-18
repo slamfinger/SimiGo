@@ -385,5 +385,57 @@ final class RollForwardExperimentTests: XCTestCase {
         XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
             incoming: [user("a"), user("changed")],
             restoredHistory: [user("a"), user("b")]))
+        // role 改变（content 相同）→ 不兼容（外审 P0-2：渲染路径字段对账）
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [.object(["role": .string("user"), "content": .string("a")]),
+                       user("b")],
+            restoredHistory: [.object(["role": .string("assistant"), "content": .string("a")]),
+                              user("b")]))
+        // tool_call_id 改变 → 不兼容
+        func tool(_ id: String) -> SimiGo.JSONValue {
+            .object(["role": .string("tool"), "tool_call_id": .string(id),
+                     "content": .string("ok")])
+        }
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a"), tool("call_2")],
+            restoredHistory: [user("a"), tool("call_X")]))
+        // tool_calls 结构改变（arguments 键集不同）→ 不兼容
+        func asst(_ args: SimiGo.JSONValue) -> SimiGo.JSONValue {
+            .object(["role": .string("assistant"), "content": .string(""),
+                     "tool_calls": .array([.object([
+                        "type": .string("function"),
+                        "id": .string("call_1"),
+                        "function": .object(["name": .string("t"), "arguments": args]),
+                     ])])])
+        }
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a"), asst(.object(["b": .number(1), "a": .number(2)])), user("c")],
+            restoredHistory: [user("a"), asst(.object(["a": .number(2), "b": .number(9)]))]))
+        // arguments 键集与值相同（仅构造插入序不同）→ 兼容（dict 相等与序无关）
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a"), asst(.object(["a": .number(1), "b": .number(2)])), user("c")],
+            restoredHistory: [user("a"), asst(.object(["b": .number(2), "a": .number(1)]))]))
+    }
+
+    func testCheckpointMetadataFingerprintRoundTrip() throws {
+        // 新格式：kvFingerprint 编解码往返
+        let meta = SimiGo.SessionCacheMetadata(
+            storageKey: "s", modelId: "m", savedAt: Date(),
+            history: [.object(["role": .string("user"), "content": .string("x")])],
+            kvFingerprint: "fullPrecision-fp")
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(meta)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let back = try decoder.decode(SimiGo.SessionCacheMetadata.self, from: data)
+        XCTAssertEqual(back.kvFingerprint, "fullPrecision-fp")
+        // 旧格式：无 kvFingerprint 键 → 解码为 nil（向后兼容）
+        let legacy = """
+        {"history":[],"modelId":"m","savedAt":"2026-01-01T00:00:00Z","storageKey":"s"}
+        """
+        let old = try decoder.decode(SimiGo.SessionCacheMetadata.self,
+                                     from: Data(legacy.utf8))
+        XCTAssertNil(old.kvFingerprint)
     }
 }
