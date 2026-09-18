@@ -853,3 +853,150 @@ SimiGo baseline
 最终目标不是减少代码量，而是：
 
 > **让 SimiGo 少造轮子，把工程精力集中在 mlx-lm 没有替 SimiGo 解决的 Runtime 问题；同时让每一次借鉴都留下可量测、可实验、可复核的证据链。**
+
+
+---
+
+# 16. 多项目同题异解：SimiGo 的优选矩阵
+
+此前演进路线已经研究过 `mlx-lm / llama.cpp / vLLM / SGLang`。本节把它们从“分别借鉴”提升为“同一个问题横向比较后再选择”。
+
+| 问题 | mlx-lm | llama.cpp | vLLM | SGLang | SimiGo 当前优选 |
+|---|---|---|---|---|---|
+| MLX 原生生成 | **最近邻、MLX 原生** | 非 MLX | 非 MLX | 非 MLX | **首选 mlx-lm / 官方 MLX** |
+| Chunked Prefill | `prefill_step_size` | batch/context execution | token budget + scheduler | serving/scheduler 联动 | **先 mlx-lm，Admission 参考 vLLM** |
+| KV Cache 基础语义 | KVCache / prompt cache | sequence memory | block KV | prefix/radix + blocks | **官方 MLX 真值，不重造** |
+| Session / Sequence | generation/session | **sequence / slot 思想清晰** | request/sequence/block 分层 | request/prefix 分层 | **llama.cpp + vLLM 思想，保留 SimiGo 三平面** |
+| LRU / cache reuse | **简单直接** | context/sequence 管理 | block/resource 管理 | prefix cache | **基础复用 mlx-lm；资源治理 vLLM** |
+| Admission | 相对轻量 | execution capacity | **token/block budget 最成熟** | prefix-aware serving | **vLLM 为主，SGLang 为补充** |
+| Block KV | 非主轴 | memory/context | **BlockPool / KV blocks** | KV + radix | **S2 主要参考 vLLM** |
+| Prefix / Radix Cache | prompt cache | 非主轴 | prefix cache + blocks | **Radix Cache 是强项** | **S2 后半主要参考 SGLang** |
+| Fixed Batch | **MLX 原生** | **sequence/batch 语义成熟** | serving batch | serving batch | **mlx-lm 执行 + llama.cpp sequence isolation** |
+| Continuous Batching | 有 batch generation | 有 sequence/batch 基础 | **核心强项** | **核心强项** | **S3 主要参考 vLLM，SGLang 辅助** |
+| Speculative Decode | **MLX 路径最近邻** | 有相关能力 | serving 级成熟 | serving 级能力 | **先 mlx-lm，后 vLLM** |
+| Tool Call Parser | **模型/格式适配最近邻** | backend-oriented | serving-oriented | serving-oriented | **parser 参考 mlx-lm，治理保留 SimiGo** |
+| Cancellation / Recovery | cache/generation API 可参考 | sequence execution 可参考 | scheduler cancellation 可参考 | serving cancellation 可参考 | **以 SimiGo 真机 fixture 为最高真值** |
+| Cache Save/Load | **直接参考** | state/context 思想 | block state / prefix | prefix state | **优先官方 MLX/mlx-lm，Roll-forward 在其上构建** |
+| Observability | generation/server 日志 | runtime diagnostics | metrics/tracing | serving metrics | **SimiGo 自己保持实验证据链** |
+
+## 16.1 选择原则
+
+这里的“首选”不是对开源项目整体排名，而是针对**某一个具体工程问题**选择最接近 SimiGo 当前约束的参考实现。
+
+1. **MLX 原生问题 → mlx-lm / 官方 MLX。** 不跨生态复制实现。
+2. **Execution identity / sequence → llama.cpp。** 借鉴 sequence 与 physical execution 解耦思想。
+3. **Resource / token budget / Block KV / scheduler → vLLM。** 借鉴资源模型，不复制 CUDA/Python runtime。
+4. **Prefix / Radix / shared-prefix serving → SGLang。** 只在 workload 证明需要时进入 S2。
+5. **SimiGo lifecycle、Agent governance、Recovery、Observability → SimiGo 自己的实机证据优先。**
+
+## 16.2 同题不同解，避免“四套 Runtime 拼装”
+
+Batch 的参考关系：
+
+```text
+mlx-lm       → MLX batch execution
+llama.cpp    → sequence isolation
+vLLM         → scheduler / token budget
+SGLang       → prefix-aware serving
+                    ↓
+SimiGo        → 一个 Batch Execution Contract
+```
+
+KV 的参考关系：
+
+```text
+mlx-lm       → cache semantics
+vLLM         → block/resource semantics
+SGLang       → radix/prefix semantics
+                    ↓
+SimiGo        → 一个 Physical KV 真值
+```
+
+绝不形成：
+
+```text
+mlx cache + vLLM cache + SGLang cache + SimiGo cache
+```
+
+## 16.3 当前问题与未来问题的对应关系
+
+### 已经发生
+
+**poisoned session**：以 SimiGo 真实 failure fixture 为最高真值；外部项目只提供 cleanup/lifecycle 思想。
+
+**fork-no-rewind / 分歧税**：主要属于上游 GDN / prompt rendering 边界，不应通过复制其他项目的 cache 实现来修复。当前本地实验路线仍是 `last-known-good → save → risk detect → load → fragment continuation`。
+
+**cold prefill 内存压力**：第一实验采用 mlx-lm 风格 chunked prefill；第二层才是 vLLM 风格 token-budget / predictive admission。
+
+### 预计发生
+
+**多 Session / 多 Agent 的 KV 内存碎片与重复前缀**：`session-level cache → block KV → prefix index/radix`；首选 vLLM 的 block/resource 思想，再用 SGLang 的 prefix/radix 思想。
+
+**并发请求增加后的调度**：`fixed batch → latency arbitration → continuous batching`；先参考 llama.cpp sequence execution，再参考 vLLM scheduler/token budget。
+
+**Decode 成为主要瓶颈**：先用 MLX-native batch 建立 correctness baseline，再考虑 vLLM/SGLang serving scheduler。
+
+**长期推理中的状态恢复成本**：优先利用官方 cache save/load；SimiGo 只新增 recovery policy，不新增第二种 Physical KV 格式。
+
+## 16.4 每项参考必须留下“来源—选择—实验”三联单
+
+```text
+Reference
+    ↓
+Problem it solves
+    ↓
+Alternative implementations considered
+    ↓
+Why SimiGo selected this approach
+    ↓
+SimiGo baseline
+    ↓
+Controlled experiment
+    ↓
+Real hardware result
+    ↓
+Invariant audit
+    ↓
+Promote / Reject
+```
+
+这样以后回看代码，可以追溯“为什么从多个优秀实现中选了这一种思想”，而不是只知道“代码怎么写”。
+
+## 16.5 当前推荐参考组合
+
+```text
+                  SimiGo
+                     │
+       ┌─────────────┼─────────────┐
+       │             │             │
+    MLX基础        Execution      Resource
+       │             │             │
+    mlx-lm       llama.cpp       vLLM
+       │             │             │
+       └─────────────┼─────────────┘
+                     │
+                Prefix reuse
+                     │
+                  SGLang
+```
+
+这不是四套 Runtime 的拼装，而是四个局部问题的参考坐标系。
+
+---
+
+# 17. 量测纪律升级为架构组成部分
+
+“可量测、可实验、可复核”不再只是实验章节的要求，而是未来架构演进的组成部分。
+
+任何新模块至少要同时具备：
+
+```text
+baseline metric
+change metric
+correctness invariant
+failure threshold
+rollback switch
+trace identifier
+```
+
+如果一个优化无法回答“比哪个基准快、快在哪里、付出了什么内存/延迟代价、正确性怎么证明、失败后如何回退”，则只能停留在 Exploration，不得进入 Core。
