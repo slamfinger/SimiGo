@@ -1,6 +1,8 @@
 # Execution Fork F0：MLX prefix 共享能力探针（2026-09-18）
 
-**性质**：设计登记（未动工）
+**性质**：已执行（2026-09-19，结果见
+`EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md`——判定矩阵命中第一行：
+数据级 fork 封顶，公开面无 sequence identity；上游 issue 草稿已产出）
 **定位**：第一性问题研究方向的第一个可判定实验——回答
 「MLX 是否允许一个正在运行的 execution state，不重算共同 prefix 就派生
 独立、可验证、可继续执行的 child state？」

@@ -732,6 +732,13 @@ prefill statistics
 identity 最小切片（F1）；否 → 上游 issue + 停止应用层 workaround。
 Roll-forward / 阶梯恢复 / risk 修复均为该主线下的一次性过程修补。
 
+> **状态同步（2026-09-19）**：F0 已执行，答案 = **否（当前公开面）**。
+> 磁盘 fork 1.53GB 往返 / 内存 copy() 惰性全拷贝双路封顶，
+> MLXLMCommon 无 sequence identity（grep 零命中）。上游能力请求草稿
+> 已产出；终局决策见
+> `docs/decisions/V15_ENDGAME_DECISION_20260919.md`
+> （Conditional Restore 定版，Fork 转上游依赖研究轨）。
+
 ---
 
 ## P1：Roll-forward（Phase A ✅ 已执行 → Phase B ⏳ 生产切片）
