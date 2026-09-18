@@ -447,6 +447,34 @@ final class RollForwardExperimentTests: XCTestCase {
             .object(["role": .string("user"), "content": .string("null")])))
     }
 
+    func testMessageRenderCompatibleNormalizesArgumentsStringVsObject() {
+        // 根因修复回归（2026-09-18 真机 74 连 checkpointStale）：引擎账本
+        // arguments=dict，OpenAI 回显 arguments=string——同值必须判兼容。
+        func asst(_ args: SimiGo.JSONValue) -> SimiGo.JSONValue {
+            .object(["role": .string("assistant"), "content": .string(""),
+                     "tool_calls": .array([.object([
+                        "type": .string("function"),
+                        "id": .string("call_1"),
+                        "function": .object(["name": .string("t"), "arguments": args]),
+                     ])])])
+        }
+        XCTAssertTrue(SimiGo.NativeMLX.messageRenderCompatible(
+            asst(.object(["title": .string("diag"), "priority": .number(3)])),
+            asst(.string("{\"title\": \"diag\", \"priority\": 3}"))))
+        // 值不同（3 vs 9）→ 仍不兼容
+        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+            asst(.object(["priority": .number(3)])),
+            asst(.string("{\"priority\": 9}"))))
+        // 非法 JSON 字符串按原样比较 → 与 dict 不兼容
+        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+            asst(.object(["priority": .number(3)])),
+            asst(.string("not-json"))))
+        // 标量字符串不折叠（"3" ≠ 3）
+        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+            asst(.object(["v": .number(3)])),
+            asst(.object(["v": .string("3")]))))
+    }
+
     func testRollforwardDiffLinePointsAtDivergentField() {
         func user(_ text: String) -> SimiGo.JSONValue {
             .object(["role": .string("user"), "content": .string(text)])
