@@ -33,7 +33,7 @@ import urllib.request
 from pathlib import Path
 
 BASE = "http://127.0.0.1:8000/v1/chat/completions"
-MODEL = "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
+MODEL = "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e"
 SESSION = "ecbench"
 TRACE = Path.home() / ".simigo/logs/native_mlx_trace.log"
 BENCH_KEY = None  # 运行时发现:traceKey 会被收短(ecbench→cbench/main)
