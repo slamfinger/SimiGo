@@ -70,3 +70,25 @@ ExecutionPolicy.swift 头部"留待 S3"陈旧注释顺手清。
 **七轮外审 S3 审查重点已入册**（S4 期间重点盯）：
 ExecutionControlling 薄协议面是否只是"命名抽象"，还是悄悄产生第二套
 运行语义。
+
+## 八轮外审（51e13d6，2026-09-19）：P0/P1/P2 三清零，放行 S4
+
+外审确认：P2（恢复值写死）已正确关闭；S3 快照纪律未破（gate 与
+checkpoint save 同快照）；ExecutionPolicy 未偷回运行权；ExecutionFacts
+不提前接线正确。S4 审查红线升级：五动作必须直映射既有路径，P0/P1
+风险 = "产生第二套执行语义"。
+
+## S4 执行记录（2026-09-19）
+
+**落地**：`SimiGo/Inference/ExecutionControlling.swift`——协议面五动作
+（execute/continue/checkpoint/restore/fork）全部直映射既有路径：
+execute/continue → generate；checkpoint → saveSessionCache；restore →
+loadSessionCache；fork → forkSessionBranch（BranchFork v1）。映射表
+写入文件头作为唯一事实源。
+
+**红线遵守**：零新执行语义、零新状态、continue 与 execute 当前同映射
+（lineage 区分留 S5，注释明示）；ExecutionID = AgentExecutionKey 三元组
+直映射（不升级 S1 遥测 id8）。
+
+**验收**：headless 委托证明 3/3（未加载实例五动作错误透传 =
+纯委托证明）；全量 66 执行 0 失败。

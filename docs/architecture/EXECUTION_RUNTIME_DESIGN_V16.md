@@ -72,7 +72,7 @@ Executor              执行：现有 generateUsingChatSession 路径
 | **S1（本轮）** | executionID 生成 + `[EXEC] begin` + 完成行 `exec=` 字段 | 零（log-only） | 单测全绿；trace 出现配对 begin/exec |
 | **S2（已完成 2026-09-19）** | ExecutionFacts / ExecutionDecision 类型声明 + 判定纯函数簇（rollforwardRisk/conditionalRestoreGate/estimates/compat/diff/render 对账族，17 函数）搬家至 `ExecutionPolicy.swift`，函数体逐字节不变；NativeMLX 调用点与单测引用改指 ExecutionPolicy | 零 | SimiGoTests 60 执行 0 失败（含 RiskDetector/Compatible/RenderCompatible 测试族）；bench 冒烟随下次 app 部署补 |
 | **S3（已完成 2026-09-19）** | ConditionalRestoreConfiguration 配置面（三 flag 合并，`current()` 唯一读取入口，generate 每请求一次性快照，决策与 checkpoint save 门全程只消费快照） | 零（默认值=现值，路径逐条等价） | ExecutionPolicyGateTests：默认等价 + 4 路径 A/B 一致 + 快照冻结隔离，全绿 |
-| S4 | ExecutionControlling 协议面落地为薄封装（fork 复用 BranchFork v1） | 零 | fork/restore 端到端回归 |
+| **S4（已完成 2026-09-19）** | ExecutionControlling 协议面落地为薄封装（fork 复用 BranchFork v1） | 零 | 五动作映射表写入文件头（红线=零新语义）；headless 委托证明（未加载实例各动作错误透传）；fork/restore 端到端回归走 BranchFork 既有测试族 |
 | S5 | lineage 补全：parent 真值、status、checkpointID 关联、`[EXEC]` 汇总 | 零 | fork 链 trace 可回放 |
 
 > S1 追加（四轮外审测试质量收紧，2026-09-19 已落实）：测试缝隙
