@@ -44,7 +44,37 @@
 | flag 收敛 | 登记：`rollforwardEnabled`（旧 rf 无条件路径）与
   `conditionalRestoreEnabled` 并存，V1.5 冻结期不动，V1.6 去 flag 化时
   合并为 ExecutionPolicy |
-| 错误传播链 / 并发边界 / Instruments 内存审查 | 待排期（需更大范围专项） |
+
+## P1 三专项审查（2026-09-19 续轮执行）
+
+### 错误传播链 — ✅ 一处真实问题已修
+
+- Protocol 层分类完备：`CancellationError` → 取消契约（SSE error chunk
+  + [DONE]），其余 → `model_execution_error` + HTTP/SSE 终态；
+  resume 失败重抛 `loadFailed`
+- NativeMLX 内 recoverable 路径（checkpointFailed / rollforwardFailed /
+  rollforwardSkip 家族）全部有 log + 回退语义
+- **已修**：`suspendIfIdle()` catch 静默 `return false`——suspend 失败
+  在 trace 上不可见（"空闲未挂起"无解释）；补
+  `[LIFECYCLE] suspend_failed` 日志（唯一改动，零行为变化）
+
+### 并发边界静态审查 — ✅ 单执行假设结构性受保护
+
+- `SessionGenerationGate.withExclusive(key)` 按 executionKey 串行化——
+  官方 ChatSession 非线程安全的假设被 gate 结构性封口（P0-3 单并发
+  DONE 的延续）
+- 共享状态三类：`state` 全局池（Mutex）、`gateHolder`（Mutex）、
+  checkpoint performSave 在持 gate 期间调用（防重入，注释在案）
+- 登记：真正多 Execution 并发出现前，"哪些对象假定单 execution"清单
+  = ManagedSession/ChatSession + historyJSON 尾部变异 + lastJSON；
+  V1.6 Execution lineage 设计时必须逐个过 gate 语义
+
+### Instruments 级内存审查 — ⏳ 需交互会话
+
+- 静态部分：suspend 走 `Memory.clearCache()`、LRU 驱逐 + afterEvict
+  footprint 采样、checkpoint 固定名覆盖——生命周期骨架在位
+- 动态部分（retain cycle / 延迟释放 / 重复物化）需 Instruments 模板
+  交互跑（63.6k≈1.53GB 规模），列入 V1.6 开工前专项
 
 ## P2 登记项
 

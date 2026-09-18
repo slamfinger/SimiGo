@@ -357,6 +357,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return true
             }
         } catch {
+            // 外审 P1 错误传播链（2026-09-19）：suspend 失败静默 false 会让
+            // "空闲未挂起"在 trace 上不可见；其余生命周期路径均有日志。
+            traceLogger.trace(
+                "[LIFECYCLE] suspend_failed err=\(error.localizedDescription)")
             return false
         }
     }
