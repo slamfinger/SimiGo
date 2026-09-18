@@ -1,0 +1,290 @@
+{"app_name":"SimiGo","timestamp":"2026-09-19 03:39:26.00 +0800","app_version":"1.6","slice_uuid":"e7ada79c-6707-3a40-92bc-39a01cb0c22a","build_version":"2","platform":1,"bundleID":"SwiftUI.SimiGo","share_with_app_devs":0,"is_first_party":0,"bug_type":"309","os_version":"macOS 26.6.2 (25G83)","roots_installed":0,"name":"SimiGo","incident_id":"45820B65-C9CB-466A-B272-CA406F95811C"}
+{
+  "uptime" : 140000,
+  "procRole" : "Foreground",
+  "version" : 2,
+  "userID" : 501,
+  "deployVersion" : 210,
+  "modelCode" : "Mac17,4",
+  "coalitionID" : 15999,
+  "osVersion" : {
+    "train" : "macOS 26.6.2",
+    "build" : "25G83",
+    "releaseType" : "User"
+  },
+  "captureTime" : "2026-09-19 03:39:20.5082 +0800",
+  "codeSigningMonitor" : 2,
+  "incident" : "45820B65-C9CB-466A-B272-CA406F95811C",
+  "pid" : 44952,
+  "translated" : false,
+  "cpuType" : "ARM-64",
+  "procLaunch" : "2026-09-19 03:15:13.2857 +0800",
+  "procStartAbsTime" : 3469858172509,
+  "procExitAbsTime" : 3504591773140,
+  "procName" : "SimiGo",
+  "procPath" : "\/Applications\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+  "bundleInfo" : {"CFBundleShortVersionString":"1.6","CFBundleVersion":"2","CFBundleIdentifier":"SwiftUI.SimiGo"},
+  "storeInfo" : {"deviceIdentifierForVendor":"7A836946-AE1F-5FE5-BFE2-885D55FD36FC","thirdParty":true},
+  "parentProc" : "launchd",
+  "parentPid" : 1,
+  "coalitionName" : "SwiftUI.SimiGo",
+  "crashReporterKey" : "A93F48CA-21BD-D127-1603-A108FF1ACB41",
+  "appleIntelligenceStatus" : {"reasons":["regionIneligible"],"state":"unavailable"},
+  "developerMode" : 1,
+  "codeSigningID" : "SwiftUI.SimiGo",
+  "codeSigningTeamID" : "YPXU8M53F9",
+  "codeSigningFlags" : 1644245781,
+  "codeSigningValidationCategory" : 3,
+  "codeSigningTrustLevel" : 4294967295,
+  "codeSigningAuxiliaryInfo" : 0,
+  "instructionByteStream" : {"beforePC":"fyMD1f17v6n9AwCRwM7\/l78DAJH9e8Go\/w9f1sADX9YwQYDSARAA1A==","atPC":"AwEAVH8jA9X9e7+p\/QMAkbXO\/5e\/AwCR\/XvBqP8PX9bAA1\/WkDKA0g=="},
+  "bootSessionUUID" : "5AB1F098-BDF0-4F40-A945-8497AA423B5C",
+  "wakeTime" : 23694,
+  "sleepWakeUUID" : "94346C3A-FD38-44EA-A4B9-BF239FDF971C",
+  "sip" : "enabled",
+  "exception" : {"codes":"0x0000000000000000, 0x0000000000000000","rawCodes":[0,0],"type":"EXC_CRASH","signal":"SIGABRT"},
+  "termination" : {"namespace":"OBJC","flags":646,"code":1},
+  "extMods" : {"caller":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"system":{"thread_create":0,"thread_set_state":0,"task_for_pid":112},"targeted":{"thread_create":0,"thread_set_state":0,"task_for_pid":0},"warnings":0},
+  "faultingThread" : 0,
+  "threads" : [{"triggered":true,"id":2419548,"threadState":{"x":[{"value":8},{"value":1},{"value":0},{"value":0},{"value":53351552640},{"value":128},{"value":0},{"value":18446726482597246976},{"value":32},{"value":259},{"value":1024},{"value":256},{"value":4780263},{"value":564744780425413449},{"value":4456780944},{"value":32096337920},{"value":521},{"value":8396600416},{"value":0},{"value":128},{"value":53351552640},{"value":0},{"value":0},{"value":1},{"value":8},{"value":11268716360,"symbolLocation":0,"symbol":"type metadata for MainActor"},{"value":11},{"value":8373247296,"symbolLocation":0,"symbol":"runtimeLock"},{"value":8373264992,"symbolLocation":224,"symbol":"_main_thread"}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550520088},"cpsr":{"value":1073741824},"fp":{"value":6095444272},"sp":{"value":6095444208},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550358800,"matchesCrashFrame":1},"far":{"value":0}},"queue":"com.apple.main-thread","frames":[{"imageOffset":56080,"symbol":"__abort_with_payload","symbolLocation":8,"imageIndex":3},{"imageOffset":217368,"symbol":"abort_with_payload_wrapper_internal","symbolLocation":104,"imageIndex":3},{"imageOffset":217264,"symbol":"abort_with_reason","symbolLocation":32,"imageIndex":3},{"imageOffset":263660,"symbol":"_objc_fatalv(unsigned long long, unsigned long long, char const*, char*)","symbolLocation":128,"imageIndex":4},{"imageOffset":263532,"symbol":"_objc_fatal(char const*, ...)","symbolLocation":44,"imageIndex":4},{"imageOffset":41372,"symbol":"lookUpImpOrForward","symbolLocation":816,"imageIndex":4},{"imageOffset":39812,"symbol":"_objc_msgSend_uncached","symbolLocation":68,"imageIndex":4},{"imageOffset":35628,"symbol":"swift_getObjectType","symbolLocation":204,"imageIndex":5},{"imageOffset":37280,"symbol":"swift_task_isMainExecutorImpl","symbolLocation":36,"imageIndex":6},{"imageOffset":37968,"symbol":"swift::SerialExecutorRef::isMainExecutor() const","symbolLocation":24,"imageIndex":6},{"imageOffset":20480,"symbol":"swift_task_isCurrentExecutorWithFlagsImpl(swift::SerialExecutorRef, swift::swift_task_is_current_executor_flag)","symbolLocation":72,"imageIndex":6},{"imageOffset":20341744,"symbol":"specialized static MainActor.assumeIsolated<A>(_:file:line:)","symbolLocation":88,"imageIndex":7},{"imageOffset":19533876,"symbol":"closure #1 in closure #1 in closure #1 in _ButtonGesture.internalBody.getter","symbolLocation":120,"imageIndex":7},{"imageOffset":19567384,"symbol":"partial apply for closure #2 in PrimitiveButtonGestureCallbacks.dispatch(phase:state:)","symbolLocation":116,"imageIndex":7},{"imageOffset":2239516,"symbol":"<deduplicated_symbol>","symbolLocation":28,"imageIndex":8},{"imageOffset":7349504,"symbol":"<deduplicated_symbol>","symbolLocation":28,"imageIndex":8},{"imageOffset":2704120,"symbol":"<deduplicated_symbol>","symbolLocation":28,"imageIndex":7},{"imageOffset":7960316,"symbol":"<deduplicated_symbol>","symbolLocation":52,"imageIndex":7},{"imageOffset":5545284,"symbol":"static Update.dispatchActions()","symbolLocation":1660,"imageIndex":8},{"imageOffset":5540712,"symbol":"static Update.end()","symbolLocation":72,"imageIndex":8},{"imageOffset":5539992,"symbol":"static Update.enqueueAction(reason:_:)","symbolLocation":204,"imageIndex":8},{"imageOffset":12835484,"symbol":"AppKitEventBindingBridge.flushActions()","symbolLocation":516,"imageIndex":7},{"imageOffset":12835568,"symbol":"@objc AppKitEventBindingBridge.flushActions()","symbolLocation":28,"imageIndex":7},{"imageOffset":2553828,"symbol":"_NSGestureRecognizerSendActions","symbolLocation":428,"imageIndex":9},{"imageOffset":16233284,"symbol":"-[NSGestureRecognizer _updateGesture]","symbolLocation":444,"imageIndex":9},{"imageOffset":69316,"imageIndex":10},{"imageOffset":205620,"imageIndex":10},{"imageOffset":408172,"imageIndex":10},{"imageOffset":599188,"imageIndex":10},{"imageOffset":15388932,"symbol":"-[_NSGFGestureEnvironment _routeMouseEventToActiveGestureRecognizers:]","symbolLocation":312,"imageIndex":9},{"imageOffset":8206472,"symbol":"-[_NSGestureEnvironmentBase _sendMouseEventToGestureRecognizers:requireAcceptsFirstMouse:]","symbolLocation":376,"imageIndex":9},{"imageOffset":8211500,"symbol":"-[_NSGestureEnvironmentBase sendEventToGestureRecognizers:requireAcceptsFirstMouse:]","symbolLocation":92,"imageIndex":9},{"imageOffset":1429076,"symbol":"-[NSWindow(NSEventRouting) sendEvent:]","symbolLocation":316,"imageIndex":9},{"imageOffset":12375240,"symbol":"-[NSApplication(NSEventRouting) sendEvent:]","symbolLocation":1276,"imageIndex":9},{"imageOffset":8496856,"symbol":"-[NSApplication _handleEvent:]","symbolLocation":60,"imageIndex":9},{"imageOffset":180580,"symbol":"-[NSApplication run]","symbolLocation":408,"imageIndex":9},{"imageOffset":18352,"symbol":"NSApplicationMain","symbolLocation":880,"imageIndex":9},{"imageOffset":1096440,"symbol":"specialized runApp(_:)","symbolLocation":140,"imageIndex":7},{"imageOffset":5007576,"symbol":"runApp<A>(_:)","symbolLocation":104,"imageIndex":7},{"imageOffset":7939960,"symbol":"static App.main()","symbolLocation":224,"imageIndex":7},{"imageOffset":65876,"sourceFile":"MenuApp.swift","symbol":"static MenuApp.$main()","imageIndex":0,"symbolLocation":52,"inline":true},{"imageOffset":65876,"sourceFile":"MenuApp.swift","symbol":"main","symbolLocation":64,"imageIndex":0},{"imageOffset":132324,"symbol":"start","symbolLocation":6992,"imageIndex":11}]},{"id":2419627,"name":"com.apple.NSEventThread","threadState":{"x":[{"value":268451845},{"value":21592279046},{"value":8589934592},{"value":130854768607232},{"value":0},{"value":130854768607232},{"value":2},{"value":4294967295},{"value":0},{"value":17179869184},{"value":0},{"value":2},{"value":0},{"value":0},{"value":30467},{"value":0},{"value":18446744073709551569},{"value":8396601960},{"value":0},{"value":4294967295},{"value":2},{"value":130854768607232},{"value":0},{"value":130854768607232},{"value":21592279046},{"value":6098296968},{"value":8589934592},{"value":18446744073709550527},{"value":4412409862}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550381988},"cpsr":{"value":0},"fp":{"value":6098296816},"sp":{"value":6098296736},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550305844},"far":{"value":0}},"frames":[{"imageOffset":3124,"symbol":"mach_msg2_trap","symbolLocation":8,"imageIndex":3},{"imageOffset":79268,"symbol":"mach_msg2_internal","symbolLocation":76,"imageIndex":3},{"imageOffset":39360,"symbol":"mach_msg_overwrite","symbolLocation":480,"imageIndex":3},{"imageOffset":4032,"symbol":"mach_msg","symbolLocation":24,"imageIndex":3},{"imageOffset":516360,"symbol":"__CFRunLoopServiceMachPort","symbolLocation":160,"imageIndex":13},{"imageOffset":510452,"symbol":"__CFRunLoopRun","symbolLocation":1188,"imageIndex":13},{"imageOffset":1372772,"symbol":"_CFRunLoopRunSpecificWithOptions","symbolLocation":532,"imageIndex":13},{"imageOffset":1420460,"symbol":"_NSEventThread","symbolLocation":184,"imageIndex":9},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}]},{"id":2420121,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":13222960,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<mlx::core::scheduler::StreamThread::thread_fn()::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, mlx::core::scheduler::StreamThread::thread_fn()::'lambda'())","imageIndex":0,"symbolLocation":116},{"imageOffset":13222476,"sourceLine":41,"sourceFile":"scheduler.h","symbol":"mlx::core::scheduler::StreamThread::thread_fn()","imageIndex":0,"symbolLocation":136},{"imageOffset":13223276,"sourceFile":"invoke.h","symbol":"std::__1::__invoke_result_impl<void, void (mlx::core::scheduler::StreamThread::*)(), mlx::core::scheduler::StreamThread*>::type std::__1::__invoke[abi:nqe220106]<void (mlx::core::scheduler::StreamThread::*)(), mlx::core::scheduler::StreamThread*>(void (mlx::core::scheduler::StreamThread::*&&)(), mlx::core::scheduler::StreamThread*&&)","imageIndex":0,"symbolLocation":28,"inline":true},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (mlx::core::scheduler::StreamThread::*)(), mlx::core::scheduler::StreamThread*, 0ul, 1ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (mlx::core::scheduler::StreamThread::*)(), mlx::core::scheduler::StreamThread*>&, std::__1::__integer_sequence<unsigned long, 0ul, 1ul>)","inline":true,"imageIndex":0,"imageOffset":13223276,"symbolLocation":28,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":13223276,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, void (mlx::core::scheduler::StreamThread::*)(), mlx::core::scheduler::StreamThread*>>(void*)","imageIndex":0,"symbolLocation":72},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":260},{"value":0},{"value":2560},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6097727032},{"value":0},{"value":0},{"value":2},{"value":2},{"value":0},{"value":0},{"value":0},{"value":305},{"value":8396600080},{"value":0},{"value":32101268480},{"value":32101268592},{"value":6097727712},{"value":0},{"value":0},{"value":2560},{"value":2561},{"value":2816},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6097727152},"sp":{"value":6097727008},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420129,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":13056},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6102887992},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414232,"symbolLocation":72,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":4404414296,"symbolLocation":136,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":6102888672},{"value":0},{"value":0},{"value":13056},{"value":13056},{"value":13568},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6102888112},"sp":{"value":6102887968},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420130,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":13056},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6103461432},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414232,"symbolLocation":72,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":4404414296,"symbolLocation":136,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":6103462112},{"value":0},{"value":0},{"value":13056},{"value":13056},{"value":14080},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6103461552},"sp":{"value":6103461408},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420131,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":13056},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6104034872},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414232,"symbolLocation":72,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":4404414296,"symbolLocation":136,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":6104035552},{"value":0},{"value":0},{"value":13056},{"value":13057},{"value":13312},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6104034992},"sp":{"value":6104034848},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420132,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":260},{"value":0},{"value":13056},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6104608312},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414232,"symbolLocation":72,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":4404414296,"symbolLocation":136,"symbol":"mlx::core::io::thread_pool()::pool_"},{"value":6104608992},{"value":0},{"value":0},{"value":13056},{"value":13056},{"value":13824},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6104608432},"sp":{"value":6104608288},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420133,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":12544},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6105181752},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414432,"symbolLocation":72,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":4404414496,"symbolLocation":136,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":6105182432},{"value":0},{"value":0},{"value":12544},{"value":12544},{"value":13568},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6105181872},"sp":{"value":6105181728},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420134,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":12544},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6105755192},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414432,"symbolLocation":72,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":4404414496,"symbolLocation":136,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":6105755872},{"value":0},{"value":0},{"value":12544},{"value":12544},{"value":13312},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6105755312},"sp":{"value":6105755168},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420135,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":4},{"value":0},{"value":12544},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6106328632},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414432,"symbolLocation":72,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":4404414496,"symbolLocation":136,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":6106329312},{"value":0},{"value":0},{"value":12544},{"value":12545},{"value":12800},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6106328752},"sp":{"value":6106328608},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2420136,"frames":[{"imageOffset":17676,"symbol":"__psynch_cvwait","symbolLocation":8,"imageIndex":3},{"imageOffset":28968,"symbol":"_pthread_cond_wait","symbolLocation":980,"imageIndex":14},{"imageOffset":26712,"symbol":"std::__1::condition_variable::wait(std::__1::unique_lock<std::__1::mutex>&)","symbolLocation":32,"imageIndex":15},{"imageOffset":12549836,"sourceLine":112,"sourceFile":"condition_variable.h","symbol":"void std::__1::condition_variable::wait[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'()>(std::__1::unique_lock<std::__1::mutex>&, ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const::'lambda'())","imageIndex":0,"symbolLocation":112},{"imageOffset":12549352,"sourceLine":121,"sourceFile":"threadpool.h","symbol":"ThreadPool::start_threads(unsigned long)::'lambda'()::operator()() const","imageIndex":0,"symbolLocation":140},{"symbol":"std::__1::__invoke_result_impl<void, ThreadPool::start_threads(unsigned long)::'lambda'()>::type std::__1::__invoke[abi:nqe220106]<ThreadPool::start_threads(unsigned long)::'lambda'()>(ThreadPool::start_threads(unsigned long)::'lambda'()&&)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":4,"sourceLine":90,"sourceFile":"invoke.h"},{"symbol":"void std::__1::__thread_execute[abi:nqe220106]<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'(), 0ul>(std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>&, std::__1::__integer_sequence<unsigned long, 0ul>)","inline":true,"imageIndex":0,"imageOffset":12549148,"symbolLocation":8,"sourceLine":161,"sourceFile":"thread.h"},{"imageOffset":12549148,"sourceLine":169,"sourceFile":"thread.h","symbol":"void* std::__1::__thread_proxy[abi:nqe220106]<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct>>, ThreadPool::start_threads(unsigned long)::'lambda'()>>(void*)","imageIndex":0,"symbolLocation":52},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}],"threadState":{"x":[{"value":260},{"value":0},{"value":12544},{"value":0},{"value":0},{"value":160},{"value":0},{"value":0},{"value":6106902072},{"value":0},{"value":1280},{"value":5497558140162},{"value":5497558140162},{"value":1280},{"value":0},{"value":5497558140160},{"value":305},{"value":8396600080},{"value":0},{"value":4404414432,"symbolLocation":72,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":4404414496,"symbolLocation":136,"symbol":"mlx::core::io::ParallelFileReader::thread_pool()::thread_pool"},{"value":6106902752},{"value":0},{"value":0},{"value":12544},{"value":12544},{"value":13056},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550585640},"cpsr":{"value":1610612736},"fp":{"value":6106902192},"sp":{"value":6106902048},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550320396},"far":{"value":0}}},{"id":2431248,"threadState":{"x":[{"value":18446744073709551612},{"value":0},{"value":257},{"value":0},{"value":335007449088},{"value":0},{"value":2},{"value":0},{"value":1},{"value":3},{"value":19},{"value":2},{"value":78},{"value":0},{"value":0},{"value":0},{"value":515},{"value":8396600312},{"value":0},{"value":53350492000},{"value":1},{"value":17409},{"value":53350494432},{"value":53350491952},{"value":32085853504},{"value":6674997248},{"value":0},{"value":32096051256},{"value":9223372036864090516}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6548772440},"cpsr":{"value":1073741824},"fp":{"value":53350491824},"sp":{"value":53350491792},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550313720},"far":{"value":0}},"queue":"com.apple.libtrace.state.block-list","frames":[{"imageOffset":11000,"symbol":"__ulock_wait","symbolLocation":8,"imageIndex":3},{"imageOffset":13912,"symbol":"_dispatch_thread_main_event_wait_slow","symbolLocation":76,"imageIndex":16},{"imageOffset":71372,"symbol":"__DISPATCH_WAIT_FOR_QUEUE__","symbolLocation":464,"imageIndex":16},{"imageOffset":70136,"symbol":"_dispatch_sync_f_slow","symbolLocation":140,"imageIndex":16},{"imageOffset":49616,"symbol":"___os_state_request_for_self_block_invoke","symbolLocation":372,"imageIndex":17},{"imageOffset":6696,"symbol":"_dispatch_call_block_and_release","symbolLocation":32,"imageIndex":16},{"imageOffset":111792,"symbol":"_dispatch_client_callout","symbolLocation":16,"imageIndex":16},{"imageOffset":41008,"symbol":"_dispatch_lane_serial_drain","symbolLocation":740,"imageIndex":16},{"imageOffset":43876,"symbol":"_dispatch_lane_invoke","symbolLocation":448,"imageIndex":16},{"imageOffset":85556,"symbol":"_dispatch_root_queue_drain_deferred_wlh","symbolLocation":284,"imageIndex":16},{"imageOffset":83764,"symbol":"_dispatch_workloop_worker_thread","symbolLocation":720,"imageIndex":16},{"imageOffset":11968,"symbol":"_pthread_wqthread","symbolLocation":292,"imageIndex":14},{"imageOffset":7184,"symbol":"start_wqthread","symbolLocation":8,"imageIndex":14}]},{"id":2434472,"frames":[],"threadState":{"x":[{"value":53344137216},{"value":52251},{"value":53343600640},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":53344137216},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550563848},"far":{"value":0}}},{"id":2435835,"name":"HIE: M_ 5a078da835849cf4 2026-09-19 03:31:31.754","threadState":{"x":[{"value":0},{"value":8589934595},{"value":103079220499},{"value":221289600052519},{"value":15483357102080},{"value":221289599991808},{"value":44},{"value":0},{"value":6550519808,"symbolLocation":564,"symbol":"mach_voucher_debug_info"},{"value":1},{"value":19518106536},{"value":7},{"value":2},{"value":32086647440},{"value":8373271560,"symbolLocation":0,"symbol":"_NSConcreteMallocBlock"},{"value":8373271560,"symbolLocation":0,"symbol":"_NSConcreteMallocBlock"},{"value":18446744073709551569},{"value":8396605168},{"value":0},{"value":0},{"value":44},{"value":221289599991808},{"value":15483357102080},{"value":221289600052519},{"value":8589934595},{"value":54037949712},{"value":103079220499},{"value":18446744073709550527},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":6550381988},"cpsr":{"value":2147483648},"fp":{"value":54037949696},"sp":{"value":54037949616},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550305844},"far":{"value":0}},"frames":[{"imageOffset":3124,"symbol":"mach_msg2_trap","symbolLocation":8,"imageIndex":3},{"imageOffset":79268,"symbol":"mach_msg2_internal","symbolLocation":76,"imageIndex":3},{"imageOffset":201028,"symbol":"thread_suspend","symbolLocation":108,"imageIndex":3},{"imageOffset":222236,"symbol":"SOME_OTHER_THREAD_SWALLOWED_AT_LEAST_ONE_EXCEPTION","symbolLocation":20,"imageIndex":18},{"imageOffset":342908,"symbol":"__NSThread__start__","symbolLocation":732,"imageIndex":19},{"imageOffset":27736,"symbol":"_pthread_start","symbolLocation":136,"imageIndex":14},{"imageOffset":7196,"symbol":"thread_start","symbolLocation":8,"imageIndex":14}]},{"id":2438995,"frames":[],"threadState":{"x":[{"value":54671683584},{"value":51811},{"value":54671147008},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":54671683584},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550563848},"far":{"value":0}}},{"id":2447021,"frames":[],"threadState":{"x":[{"value":53421305856},{"value":55371},{"value":53420769280},{"value":0},{"value":409604},{"value":18446744073709551615},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0},{"value":0}],"flavor":"ARM_THREAD_STATE64","lr":{"value":0},"cpsr":{"value":0},"fp":{"value":0},"sp":{"value":53421305856},"esr":{"value":1442840704,"description":"(Syscall)"},"pc":{"value":6550563848},"far":{"value":0}}}],
+  "usedImages" : [
+  {
+    "source" : "P",
+    "arch" : "arm64",
+    "base" : 4371431424,
+    "CFBundleShortVersionString" : "1.6",
+    "CFBundleIdentifier" : "SwiftUI.SimiGo",
+    "size" : 25296896,
+    "uuid" : "e7ada79c-6707-3a40-92bc-39a01cb0c22a",
+    "path" : "\/Applications\/SimiGo.app\/Contents\/MacOS\/SimiGo",
+    "name" : "SimiGo",
+    "CFBundleVersion" : "2"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 4453941248,
+    "size" : 49152,
+    "uuid" : "690edff1-56be-3018-bec2-9f63287ceb2d",
+    "path" : "\/usr\/lib\/libobjc-trampolines.dylib",
+    "name" : "libobjc-trampolines.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 4890492928,
+    "CFBundleShortVersionString" : "353.14",
+    "CFBundleIdentifier" : "com.apple.AGXMetalG17G",
+    "size" : 10207232,
+    "uuid" : "f14a06e5-32d7-31f1-85d4-587f20b4579b",
+    "path" : "\/System\/Library\/Extensions\/AGXMetalG17G.bundle\/Contents\/MacOS\/AGXMetalG17G",
+    "name" : "AGXMetalG17G",
+    "CFBundleVersion" : "353.14"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6550302720,
+    "size" : 250600,
+    "uuid" : "c6a4a4cb-92e6-3baf-aae0-e8306259209a",
+    "path" : "\/usr\/lib\/system\/libsystem_kernel.dylib",
+    "name" : "libsystem_kernel.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6545915904,
+    "size" : 338764,
+    "uuid" : "03bd9e32-cf0a-37b0-898a-3ce8de06d842",
+    "path" : "\/usr\/lib\/libobjc.A.dylib",
+    "name" : "libobjc.A.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6877016064,
+    "size" : 5908480,
+    "uuid" : "83794fb3-de9b-3d23-ab5e-2c1d5d30f134",
+    "path" : "\/usr\/lib\/swift\/libswiftCore.dylib",
+    "name" : "libswiftCore.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 10936840192,
+    "size" : 569494,
+    "uuid" : "8e168857-47f4-349f-a718-a18db144fcb0",
+    "path" : "\/usr\/lib\/swift\/libswift_Concurrency.dylib",
+    "name" : "libswift_Concurrency.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 7444258816,
+    "CFBundleShortVersionString" : "7.6.1",
+    "CFBundleIdentifier" : "com.apple.SwiftUI",
+    "size" : 24440928,
+    "uuid" : "53e79875-60e4-3b8d-ba48-02f6a4cbc429",
+    "path" : "\/System\/Library\/Frameworks\/SwiftUI.framework\/Versions\/A\/SwiftUI",
+    "name" : "SwiftUI",
+    "CFBundleVersion" : "7.6.1"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 9457659904,
+    "CFBundleShortVersionString" : "7.6.1",
+    "CFBundleIdentifier" : "com.apple.SwiftUICore",
+    "size" : 16107808,
+    "uuid" : "9eb0840f-b045-3529-9467-1470a3c6ca02",
+    "path" : "\/System\/Library\/Frameworks\/SwiftUICore.framework\/Versions\/A\/SwiftUICore",
+    "name" : "SwiftUICore",
+    "CFBundleVersion" : "7.6.1"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6622646272,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.AppKit",
+    "size" : 24261792,
+    "uuid" : "b6b4bdad-6428-3e64-8747-275700109b46",
+    "path" : "\/System\/Library\/Frameworks\/AppKit.framework\/Versions\/C\/AppKit",
+    "name" : "AppKit",
+    "CFBundleVersion" : "2685.70.101"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 9972318208,
+    "CFBundleShortVersionString" : "9126.1.5",
+    "CFBundleIdentifier" : "com.apple.Gestures",
+    "size" : 802464,
+    "uuid" : "bd114f61-bb5f-3e43-aa0d-674df9e0ba17",
+    "path" : "\/System\/Library\/PrivateFrameworks\/Gestures.framework\/Versions\/A\/Gestures",
+    "name" : "Gestures",
+    "CFBundleVersion" : "9126.1.5"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6546472960,
+    "size" : 734464,
+    "uuid" : "74e52480-c2bd-3c8d-812d-95fe2b74a096",
+    "path" : "\/usr\/lib\/dyld",
+    "name" : "dyld"
+  },
+  {
+    "size" : 0,
+    "source" : "A",
+    "base" : 0,
+    "uuid" : "00000000-0000-0000-0000-000000000000"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6550843392,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.CoreFoundation",
+    "size" : 5629376,
+    "uuid" : "9b672762-7b1f-30bc-96de-f176b372d66d",
+    "path" : "\/System\/Library\/Frameworks\/CoreFoundation.framework\/Versions\/A\/CoreFoundation",
+    "name" : "CoreFoundation",
+    "CFBundleVersion" : "5026.6.7"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6550556672,
+    "size" : 52028,
+    "uuid" : "a373f0b0-9880-326a-88b4-dd8be4e33072",
+    "path" : "\/usr\/lib\/system\/libsystem_pthread.dylib",
+    "name" : "libsystem_pthread.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6549598208,
+    "size" : 592616,
+    "uuid" : "f0fd393c-15bc-3c75-a19d-897f7b225c78",
+    "path" : "\/usr\/lib\/libc++.1.dylib",
+    "name" : "libc++.1.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6548758528,
+    "size" : 291392,
+    "uuid" : "b2000cd5-f580-314a-a141-e036719d854e",
+    "path" : "\/usr\/lib\/system\/libdispatch.dylib",
+    "name" : "libdispatch.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6547574784,
+    "size" : 133632,
+    "uuid" : "93f1dd8c-6cd9-32b9-b222-d23da5d161b4",
+    "path" : "\/usr\/lib\/system\/libsystem_trace.dylib",
+    "name" : "libsystem_trace.dylib"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6674997248,
+    "CFBundleShortVersionString" : "1.22",
+    "CFBundleIdentifier" : "com.apple.HIServices",
+    "size" : 439200,
+    "uuid" : "cd16c3fb-d2a0-3f68-98dc-ce67fcbfdff2",
+    "path" : "\/System\/Library\/Frameworks\/ApplicationServices.framework\/Versions\/A\/Frameworks\/HIServices.framework\/Versions\/A\/HIServices",
+    "name" : "HIServices"
+  },
+  {
+    "source" : "P",
+    "arch" : "arm64e",
+    "base" : 6576463872,
+    "CFBundleShortVersionString" : "6.9",
+    "CFBundleIdentifier" : "com.apple.Foundation",
+    "size" : 16661152,
+    "uuid" : "91dace39-fa28-3191-818d-1fcc6a0e615a",
+    "path" : "\/System\/Library\/Frameworks\/Foundation.framework\/Versions\/C\/Foundation",
+    "name" : "Foundation",
+    "CFBundleVersion" : "5026.6.7"
+  }
+],
+  "sharedCache" : {
+  "base" : 6545342464,
+  "size" : 6010847232,
+  "uuid" : "f2e86c53-6052-388b-ba71-5a0c9b569413"
+},
+  "legacyInfo" : {
+  "threadTriggered" : {
+    "queue" : "com.apple.main-thread"
+  }
+},
+  "logWritingSignature" : "7fab336d9a8bffc1d5d34acc847bbcc9073cfbee",
+  "bug_type" : "309",
+  "roots_installed" : 0,
+  "trmStatus" : 2048,
+  "trialInfo" : {
+  "rollouts" : [
+    {
+      "rolloutId" : "6425c75e4327780c10cc4252",
+      "factorPackIds" : [
+        "642600a457e7664b1698eb32"
+      ],
+      "deploymentId" : 240000004
+    },
+    {
+      "rolloutId" : "67d07cd6a7affa169ae21f45",
+      "factorPackIds" : [
+
+      ],
+      "deploymentId" : 240000002
+    }
+  ],
+  "experiments" : [
+
+  ]
+}
+}
