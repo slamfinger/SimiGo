@@ -39,3 +39,22 @@
 
 - V1.7-0 harness 冒烟：`docs/experiments/V17_RUNTIME_MATRIX/`
 - 事件期间 harness/样本均已保全，无数据丢失
+
+## 复现确认（2026-09-19 06:07，2/2 同签名）
+
+事件 B 在校准 harness 复跑中**再次复现**——签名完全一致：
+
+```text
+r1（cold，9.4k tok）→ r2（rebuild，cacheEff=0）→ 第 3 个请求
+    ↓
+TCP ESTABLISHED 但零响应，trace 全静默，无 [EXEC] begin
+    ↓
+服务全局挂起（/v1/models 同挂）
+```
+
+- 第 1 次：04:03 r2 后 warm-setup 挂（sample_0418 已保全）
+- 第 2 次：05:55 r2 后 warm-setup 挂（sample_2nd 已保全）
+- 两次均在 S1–S5 代码在场的二进制上——**V1.6.1 确认级 P1**：
+  "rebuild 轮完成后的下一请求使 HTTPServer 全局冻结"
+- 复现配方已固化（runtime_matrix.py 10K 档即可稳定触发），后续修复
+  PR 以此为回归验收
