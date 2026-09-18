@@ -535,4 +535,30 @@ final class RollForwardExperimentTests: XCTestCase {
         XCTAssertTrue(line.contains("field="), line)
         XCTAssertFalse(line.contains("reason=none"), line)
     }
+
+    func testRollforwardDiffLineUnifiesNormalizationWithVerdict() {
+        // 外审 P1 回归（2026-09-18）：diff 诊断必须与行为判定同规则——前缀里
+        // arguments string≡object 同值的良性轮次不得拦路，否则真分歧（后轮
+        // content 变更）会被误报成 tool_calls 首分歧。
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        func asst(_ args: SimiGo.JSONValue) -> SimiGo.JSONValue {
+            .object(["role": .string("assistant"), "content": .string(""),
+                     "tool_calls": .array([.object([
+                        "type": .string("function"),
+                        "id": .string("call_1"),
+                        "function": .object(["name": .string("t"), "arguments": args]),
+                     ])])])
+        }
+        // restored 须为 incoming 真前缀且更短（diff 的 historyCount 守卫）。
+        let incoming = [user("a"), asst(.string("{\"a\": 1}")), user("b-new"), user("c")]
+        let restored = [user("a"), asst(.object(["a": .number(1)])), user("b-old")]
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: incoming, restoredHistory: restored))
+        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+            incoming: incoming, restoredHistory: restored)
+        XCTAssertTrue(line.contains("index=2 field=content"), line)
+        XCTAssertFalse(line.contains("tool_calls"), line)
+    }
 }

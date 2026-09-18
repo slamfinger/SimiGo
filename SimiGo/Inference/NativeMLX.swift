@@ -1322,10 +1322,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return "[MLX] rollforwardDiff index=\(i) field=shape" +
                     " ckpt=\(shapeTag(m)) incoming=\(shapeTag(n))"
             }
-            for field in ["role", "content", "tool_call_id", "tool_calls"] {
+            for field in Self.renderReconcileFields {
                 let av = a[field] ?? .null
                 let bv = b[field] ?? .null
-                if av != bv {
+                // 与行为判定同规则（renderFieldCompatible，外审 P1：裸比较会把
+                // arguments string≡object 同值轮误报为 tool_calls 首分歧）；摘录
+                // 保留原始值——协议形状差本身是诊断信息，能走到这里的必是归一化
+                // 后仍异的真分歧。
+                if !Self.renderFieldCompatible(field, av, bv) {
                     return "[MLX] rollforwardDiff index=\(i) field=\(field)" +
                         valueDiff(av, bv)
                 }
@@ -1367,22 +1371,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// 渲染路径对账字段表——行为判定与 diff 诊断共用同一张表，防两套规则
+    /// 漂移（外审 P1，2026-09-18）。
+    static var renderReconcileFields: [String] {
+        ["role", "content", "tool_call_id", "tool_calls"]
+    }
+
+    /// 单字段比较规则：tool_calls 先过 normalizeJSONStrings（arguments 归一化，
+    /// 真机 12:50 rollforwardDiff 实锤：OpenAI 协议回显的 function.arguments 是
+    /// JSON 字符串，引擎账本 commit 存的是结构化 object——.object ≠ .string 使
+    /// 凡尾部带工具调用的轮次必然 stale，2026-09-18 真机 74 连 skip 根因）；
+    /// 其余字段 JSONValue 结构相等（键序无关）而非 .description——后者键序敏感，
+    /// 且类型折叠（.string("null") 与 .null 同为 "null"）会把不等判为相等
+    /// （外审 P1，2026-09-18）。
+    static func renderFieldCompatible(_ field: String, _ a: JSONValue, _ b: JSONValue) -> Bool {
+        if field == "tool_calls" {
+            return Self.normalizeJSONStrings(a) == Self.normalizeJSONStrings(b)
+        }
+        return a == b
+    }
+
     /// 单条消息渲染路径字段对账。
     static func messageRenderCompatible(_ checkpoint: JSONValue, _ incoming: JSONValue) -> Bool {
         guard case .object(let a) = checkpoint,
               case .object(let b) = incoming else { return checkpoint == incoming }
-        // 结构相等（键序无关）而非 .description——后者键序敏感，且类型折叠
-        // （.string("null") 与 .null 同为 "null"）会把不等判为相等（外审 P1，
-        // 2026-09-18）。
-        if (a["role"] ?? .null) != (b["role"] ?? .null) { return false }
-        if (a["content"] ?? .null) != (b["content"] ?? .null) { return false }
-        if (a["tool_call_id"] ?? .null) != (b["tool_call_id"] ?? .null) { return false }
-        // arguments 归一化（真机 12:50 rollforwardDiff 实锤）：OpenAI 协议回显
-        // 的 function.arguments 是 JSON 字符串，引擎账本 commit 存的是结构化
-        // object——.object ≠ .string 使凡尾部带工具调用的轮次必然 stale
-        // （2026-09-18 真机 74 连 skip 根因）。
-        if Self.normalizeJSONStrings(a["tool_calls"] ?? .null)
-            != Self.normalizeJSONStrings(b["tool_calls"] ?? .null) { return false }
+        for field in Self.renderReconcileFields {
+            if !Self.renderFieldCompatible(field, a[field] ?? .null, b[field] ?? .null) {
+                return false
+            }
+        }
         return true
     }
 
