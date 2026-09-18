@@ -625,9 +625,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 managed = restored
                 rolledForward = true
+                // 双估算入 trace(log-only,门校准数据):chars÷4 对 CJK
+                // 低估 ~4×(2026-09-18 生产 12k 级回填全过 8192 门),CJK
+                // 感知口径并行记录,攒够真实样本后一并重校准门与阈值。
+                let estAscii = Self.estimateDeltaTokens(
+                    incoming: messages, ledgerCount: managed.historyJSON.count)
+                let estCJK = Self.estimateDeltaTokensCJK(
+                    incoming: messages, ledgerCount: managed.historyJSON.count)
                 traceLogger.trace(
                     "[MLX] action=rollforward key=\(executionKey.traceKey)"
-                    + " history=\(meta.history.count)")
+                    + " history=\(meta.history.count)"
+                    + " deltaTokensEst=\(estAscii) deltaTokensCJK=\(estCJK)")
             } catch {
                 traceLogger.trace(
                     "[MLX] action=rollforwardFailed key=\(executionKey.traceKey)"
@@ -1347,6 +1355,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if let serialized = compactJSON(message) { chars += serialized.count }
         }
         return chars / 4
+    }
+
+    /// CJK 感知口径（log-only 校准对照，不参与门判定）：CJK 字符 ≈1 token、
+    /// 其余 ÷4。chars÷4 对中文低估 ~4×（2026-09-18 生产 12k 级回填全过
+    /// 8192 门），双口径并行记录攒真实样本后重校准。
+    static nonisolated func estimateDeltaTokensCJK(
+        incoming: [JSONValue], ledgerCount: Int
+    ) -> Int {
+        guard incoming.count > ledgerCount else { return 0 }
+        var cjk = 0
+        var other = 0
+        for scalar in compactDeltaText(incoming: incoming, ledgerCount: ledgerCount).unicodeScalars {
+            if scalar.properties.isIdeographic || (0x3000...0x30FF).contains(scalar.value) {
+                cjk += 1
+            } else {
+                other += 1
+            }
+        }
+        return cjk + other / 4
+    }
+
+    private static nonisolated func compactDeltaText(
+        incoming: [JSONValue], ledgerCount: Int
+    ) -> String {
+        var text = ""
+        for message in incoming.dropFirst(max(0, ledgerCount)) {
+            if let serialized = compactJSON(message) { text += serialized }
+        }
+        return text
     }
 
     /// roll-forward 兼容守卫：checkpoint 的 transcript 必须是本轮 incoming 的

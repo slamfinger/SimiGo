@@ -612,4 +612,22 @@ final class RollForwardExperimentTests: XCTestCase {
             SimiGo.NativeMLX.estimateDeltaTokens(
                 incoming: [user("a"), user("bbbb")], ledgerCount: 1), 8)
     }
+
+    func testEstimateDeltaTokensCJK() {
+        // CJK 感知口径（log-only 校准对照）：CJK 字符 ≈1 token、其余 ÷4。
+        // 400 个中文字 ≈ 400 tok——chars÷4 口径只给 ~100（低估 ~4×），
+        // 即 2026-09-18 生产 12k 级回填全过 8192 门的成因。
+        let cjk = String(repeating: "小说", count: 200)
+        let message: SimiGo.JSONValue = .object([
+            "role": .string("tool"), "content": .string(cjk)])
+        let est = SimiGo.NativeMLX.estimateDeltaTokensCJK(
+            incoming: [message], ledgerCount: 0)
+        XCTAssertGreaterThanOrEqual(est, 400)
+        XCTAssertLessThan(est, 430)  // 包装层 ASCII ÷4
+        // 对照：chars÷4 口径同输入仅 ~1/4——门的失真量级
+        let asciiEst = SimiGo.NativeMLX.estimateDeltaTokens(
+            incoming: [message], ledgerCount: 0)
+        XCTAssertGreaterThan(asciiEst, 0)
+        XCTAssertLessThan(asciiEst * 3, est)
+    }
 }

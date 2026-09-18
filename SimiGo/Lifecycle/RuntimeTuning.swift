@@ -103,8 +103,20 @@ nonisolated enum RuntimeTuning {
     /// 阶梯暂停、全档统一 2048，实测大上下文 delta 段 2048 vs 1024（96k 段
     /// 历史基准 59-93 tok/s）的 unit 速度差异；内存压力绿色（swap 4.8G 无
     /// 饥荒）的前提与 09-13 的 <48 场景不同。数据回填后决定保留或恢复阶梯。
+    ///
+    /// 2026-09-18 深夜数据回填完成，阶梯恢复（BENCH_EXEC_CONTINUITY 首轮
+    /// + 生产灰度）：①bench 同深度对照 derived/cold 比 0.76→0.13（9k→66k），
+    /// 2048 档恢复态 66k 处仅 54 tok/s；②生产 95-108k fragment 26-46 tok/s，
+    /// 对 09-13 同段 1024 基准（59-93）呈 ~2× 劣势；③两环境一致指向深档
+    /// 2048 的内存/访问模式代价。恢复 09-13 阶梯（<64k→2048/64-96k→1024/
+    /// >96k→512）；2048-vs-1024 的受控对比由 BENCH_EXEC_CONTINUITY 复跑
+    /// （同 harness 同预算）闭环。
     static func prefillStepSize(contextTokens: Int) -> Int? {
-        return 2048
+        switch contextTokens {
+        case ..<64_000: return 2048
+        case ..<96_000: return 1024
+        default: return 512
+        }
     }
 
     /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
