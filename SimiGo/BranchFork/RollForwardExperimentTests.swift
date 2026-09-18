@@ -327,4 +327,63 @@ final class RollForwardExperimentTests: XCTestCase {
                       "分歧免疫性被证伪：\(armR.immunityViolations)")
         XCTAssertTrue(armR.loadFailures.isEmpty, "loadSessionCache 失败：\(armR.loadFailures)")
     }
+
+    // MARK: - 纯函数单测（无需模型，常规测试跑常驻）
+
+    func testRollforwardRiskDetector() {
+        func assistant(_ toolCalls: [SimiGo.JSONValue]?) -> SimiGo.JSONValue {
+            var o: [String: SimiGo.JSONValue] = [
+                "role": .string("assistant"), "content": .string("")
+            ]
+            if let toolCalls { o["tool_calls"] = .array(toolCalls) }
+            return .object(o)
+        }
+        func call(_ args: SimiGo.JSONValue) -> SimiGo.JSONValue {
+            .object(["type": .string("function"),
+                     "function": .object(["name": .string("t"), "arguments": args])])
+        }
+        // 多键参数 → risky（TodoWrite 形态）
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+            call(.object(["b": .number(1), "a": .number(2)])),
+        ])))
+        // 单键纯量 → safe（Bash command 形态）
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+            call(.object(["command": .string("ls")])),
+        ])))
+        // 单键但嵌套多键对象 → risky
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+            call(.object(["cmd": .object(["x": .number(1), "y": .number(2)])])),
+        ])))
+        // 多键对象数组元素多键 → risky（notes 数组形态）
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+            call(.object(["notes": .array([
+                .object(["k": .number(1), "j": .number(2)]),
+            ])])),
+        ])))
+        // 无 tool_calls / 无尾消息 → safe
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant(nil)))
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: nil))
+    }
+
+    func testRollforwardCompatible() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        // checkpoint 历史 = incoming 真前缀 → 兼容
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a"), user("b"), user("c")],
+            restoredHistory: [user("a"), user("b")]))
+        // 历史更长（陈旧/超前）→ 不兼容
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a")],
+            restoredHistory: [user("a"), user("b")]))
+        // 同长（无 delta）→ 不兼容
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a")],
+            restoredHistory: [user("a")]))
+        // 前缀内容漂移 → 不兼容
+        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+            incoming: [user("a"), user("changed")],
+            restoredHistory: [user("a"), user("b")]))
+    }
 }

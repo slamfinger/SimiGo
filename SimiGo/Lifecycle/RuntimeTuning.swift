@@ -43,6 +43,13 @@ nonisolated enum RuntimeTuning {
     /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。
     static let swapPressureThresholdBytes: UInt64 = 2 * UInt64(gibibyte)
 
+    /// Phase B roll-forward（2026-09-18，探索文档 §5/§6）：账本尾部 assistant
+    /// 含多键 tool_calls 时，下轮前同 key 恢复 checkpoint 进入
+    /// fragment-continuation（raw-cache 无账本 → 无比较 → 无分歧税）。
+    /// Phase A 实测开销 0.16s/轮 vs 分歧税 300-490s（≈2000×）。
+    /// 灰度开关：置 false 即回退纯活会话行为。
+    static var rollforwardEnabled = true
+
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。
     static var maxKVSize: Int? = nil
 

@@ -495,8 +495,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
 
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
-        let managed: ManagedSession
-        let reusedSession: Bool
+        var managed: ManagedSession
+        var reusedSession = false
 
         let kvFingerprint = kvSettings.map { String(describing: $0) }
 
@@ -559,6 +559,43 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             state.withLock { $0.sessions[executionKey.storageKey] = managed }
         }
 
+        // Phase B roll-forward（2026-09-18，探索文档 §5/§6）：账本尾部 assistant
+        // 含多键 tool_calls ⇒ 下一轮全模板重渲染可能键序分叉（TodoWrite 家族）
+        // → 同 key 恢复 checkpoint 进入 fragment-continuation（raw-cache 无账本
+        // → 无比较 → 无分歧）。误报代价 = loadSessionCache 0.01s（Phase A 实测），
+        // 漏报代价 = 分歧税 300-490s。恢复失败/不兼容 → 回退活会话继续。
+        var rolledForward = false
+        if RuntimeTuning.rollforwardEnabled, reusedSession,
+           Self.rollforwardRisk(lastJSON: managed.historyJSON.last) {
+            do {
+                let (restored, meta) = try await performLoad(
+                    key: executionKey.storageKey, traceKey: executionKey.traceKey,
+                    container: container, config: config, baseConfig: baseConfig,
+                    directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                if Self.rollforwardCompatible(incoming: messages, restoredHistory: meta.history) {
+                    state.withLock {
+                        if let live = $0.sessions[executionKey.storageKey], live === managed {
+                            $0.sessions[executionKey.storageKey] = restored
+                            $0.lastActivity = Date()
+                        }
+                    }
+                    managed = restored
+                    rolledForward = true
+                    traceLogger.trace(
+                        "[MLX] action=rollforward key=\(executionKey.traceKey)"
+                        + " history=\(meta.history.count)")
+                } else {
+                    traceLogger.trace(
+                        "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
+                        + " reason=checkpointStale")
+                }
+            } catch {
+                traceLogger.trace(
+                    "[MLX] action=rollforwardFailed key=\(executionKey.traceKey)"
+                    + " err=\(error.localizedDescription)")
+            }
+        }
+
         // P1 会话 LRU + P2 Admission：数量/内存双维度驱逐，随后记录暖会话态势
         // （warmTokenBudget 的校准观测行）。
         let admission = await evictSessionsIfNeeded(keeping: executionKey.storageKey)
@@ -568,6 +605,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             " swap=" + (RuntimeTuning.swapUsedBytes()
                 .map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a") +
             " evicted=\(admission.evicted) freedTokens=\(admission.evictedTokens)"
+            + " rf=\(rolledForward ? 1 : 0)"
         )
 
         let delta: [Chat.Message]
@@ -833,6 +871,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             $0.lastActivity = Date()
         }
 
+        // Phase B：每成功轮落 checkpoint（roll-forward 的 last known good；
+        // Phase A 实测 0.15s@58k，计入轮延迟可忽略）。
+        if RuntimeTuning.rollforwardEnabled {
+            do {
+                try await performSave(
+                    key: executionKey.storageKey, traceKey: executionKey.traceKey,
+                    container: container, managed: managed,
+                    directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+            } catch {
+                traceLogger.trace(
+                    "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
+                    + " err=\(error.localizedDescription)")
+            }
+        }
+
         // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
         await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
@@ -1043,34 +1096,45 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     "no live session for \(key.storageKey); nothing to save"
                 )
             }
-            try FileManager.default.createDirectory(
-                at: directory, withIntermediateDirectories: true)
-
-            let baseName = Self.cacheFileName(for: key.storageKey)
-            // 后缀必须是 .safetensors：官方 mlx IO 按 pathExtension 分派
-            // （2026-09-17 实验实测，.cachesnapshot 抛 unknownExtension）。
-            let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
-            let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
-
-            // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
-            try await managed.session.saveCache(to: cacheURL)
-
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            encoder.dateEncodingStrategy = .iso8601
-            let metadata = SessionCacheMetadata(
-                storageKey: key.storageKey,
-                modelId: modelName(from: modelPath),
-                savedAt: Date(),
-                history: managed.historyJSON
-            )
-            try encoder.encode(metadata).write(to: metaURL, options: .atomic)
-
-            traceLogger.trace(
-                "[MLX] cacheSave session=\(key.traceKey) history=\(managed.historyJSON.count)"
-            )
-            return cacheURL
+            return try await performSave(
+                key: key.storageKey, traceKey: key.traceKey, container: container,
+                managed: managed, directory: directory, modelPath: modelPath)
         }
+    }
+
+    /// checkpoint 落盘内核（无 gate）——公开 saveSessionCache 包 gate 使用；
+    /// roll-forward 路径在 generate 持 gate 期间直接调用，避免 gate 重入死锁。
+    private func performSave(
+        key: String, traceKey: String, container: ModelContainer,
+        managed: ManagedSession, directory: URL, modelPath: String
+    ) async throws -> URL {
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true)
+
+        let baseName = Self.cacheFileName(for: key)
+        // 后缀必须是 .safetensors：官方 mlx IO 按 pathExtension 分派
+        // （2026-09-17 实验实测，.cachesnapshot 抛 unknownExtension）。
+        let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
+        let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
+
+        // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
+        try await managed.session.saveCache(to: cacheURL)
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let metadata = SessionCacheMetadata(
+            storageKey: key,
+            modelId: modelName(from: modelPath),
+            savedAt: Date(),
+            history: managed.historyJSON
+        )
+        try encoder.encode(metadata).write(to: metaURL, options: .atomic)
+
+        traceLogger.trace(
+            "[MLX] cacheSave session=\(traceKey) history=\(managed.historyJSON.count)"
+        )
+        return cacheURL
     }
 
     /// 从磁盘恢复官方 KV cache 快照 + transcript sidecar，并注册为该逻辑分支的当前会话
@@ -1094,7 +1158,30 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             throw RuntError.notLoaded
         }
 
-        let baseName = Self.cacheFileName(for: key.storageKey)
+        let gate = gateHolder.withLock { $0 }
+        let output = try await gate.withExclusive(key) {
+            try await performLoad(
+                key: key.storageKey, traceKey: key.traceKey, container: container,
+                config: config, baseConfig: baseConfig, directory: directory,
+                modelPath: modelPath)
+        }
+        state.withLock {
+            $0.sessions[key.storageKey] = output.managed
+            $0.lastActivity = Date()
+        }
+        return output.metadata
+    }
+
+    /// checkpoint 恢复内核（无 gate）——公开 loadSessionCache 包 gate 使用；
+    /// roll-forward 路径在 generate 持 gate 期间直接调用。不写 sessions 池，
+    /// 由调用方决定是否替换（roll-forward 带身份守卫的原子替换见
+    /// generateUsingChatSession）。
+    private func performLoad(
+        key: String, traceKey: String, container: ModelContainer,
+        config: ModelConfig?, baseConfig: ModelConfig, directory: URL,
+        modelPath: String
+    ) async throws -> (managed: ManagedSession, metadata: SessionCacheMetadata) {
+        let baseName = Self.cacheFileName(for: key)
         let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
 
@@ -1127,33 +1214,68 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return params
         }()
 
-        let gate = gateHolder.withLock { $0 }
-        let loadedMetadata = metadata
-        try await gate.withExclusive(key) { [weak self] in
-            guard let self else { throw RuntError.notLoaded }
-            let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
-            let session = ChatSession(
-                container,
-                instructions: nil,
-                cache: snapshot.cache,
-                state: snapshot.state,
-                generateParameters: sessionParams,
-                additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
-            )
-            let restored = ManagedSession(
-                session: session,
-                history: Self.makeChatMessages(metadata.history),
-                historyJSON: metadata.history
-            )
-            state.withLock {
-                $0.sessions[key.storageKey] = restored
-                $0.lastActivity = Date()
+        let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
+        let session = ChatSession(
+            container,
+            instructions: nil,
+            cache: snapshot.cache,
+            state: snapshot.state,
+            generateParameters: sessionParams,
+            additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
+        )
+        let restored = ManagedSession(
+            session: session,
+            history: Self.makeChatMessages(metadata.history),
+            historyJSON: metadata.history
+        )
+        traceLogger.trace(
+            "[MLX] cacheLoad session=\(traceKey) history=\(metadata.history.count)"
+        )
+        return (restored, metadata)
+    }
+
+    /// Phase B 风险检测：账本尾部 assistant 回显含多键（含嵌套 ≥2 键）
+    /// tool_calls ⇒ 下一轮全模板重渲染可能键序分叉（TodoWrite 家族，
+    /// FIELD_OBSERVATION §7）。保守形状判定：误报代价 = 一次 loadSessionCache
+    /// （Phase A 实测 0.01s），漏报代价 = 分歧税 300-490s。
+    static func rollforwardRisk(lastJSON: JSONValue?) -> Bool {
+        guard case .object(let obj)? = lastJSON,
+              case .array(let calls)? = obj["tool_calls"] else { return false }
+        func risky(_ value: JSONValue) -> Bool {
+            switch value {
+            case .object(let o):
+                if o.count >= 2 { return true }
+                return o.values.contains(where: risky)
+            case .array(let a):
+                return a.contains(where: risky)
+            default:
+                return false
             }
-            traceLogger.trace(
-                "[MLX] cacheLoad session=\(key.traceKey) history=\(metadata.history.count)"
-            )
         }
-        return loadedMetadata
+        for call in calls {
+            guard case .object(let c) = call,
+                  case .object(let fn)? = c["function"],
+                  case .object(let args)? = fn["arguments"] else { continue }
+            if args.count >= 2 { return true }
+            if args.values.contains(where: risky) { return true }
+        }
+        return false
+    }
+
+    /// roll-forward 兼容守卫：checkpoint 的 transcript 必须是本轮 incoming 的
+    /// 真前缀（逐条 content 对账），否则视为陈旧 checkpoint，放弃恢复。
+    static func rollforwardCompatible(incoming: [JSONValue], restoredHistory: [JSONValue]) -> Bool {
+        guard restoredHistory.count < incoming.count else { return false }
+        for (i, m) in restoredHistory.enumerated() {
+            guard i < incoming.count else { return false }
+            if Self.jsonContentString(m) != Self.jsonContentString(incoming[i]) { return false }
+        }
+        return true
+    }
+
+    private static func jsonContentString(_ value: JSONValue) -> String {
+        guard case .object(let o) = value else { return "" }
+        return o["content"]?.description ?? ""
     }
 
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
