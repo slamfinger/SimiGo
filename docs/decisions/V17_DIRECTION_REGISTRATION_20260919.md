@@ -20,6 +20,11 @@
 复用既有 harness（execution_bench.py / prefill_stats.py）扩展成
 systematic runner；先 harness 后实验。
 
+**状态（2026-09-19）**：Harness v0 已交付并 10K 冒烟
+（`tools/runtime_matrix.py` + `docs/experiments/V17_RUNTIME_MATRIX/`）。
+冒烟暴露校准项：客户端回显形状分歧（cdd0272 类）致 WARM/RESTORE 路径
+失真——矩阵测量前置校准见 V17_RUNTIME_MATRIX/README.md。
+
 ### V1.7-A：Runtime Efficiency
 
 Reuse/Restore 收益曲线：delta = 1k/4k/8k/16k/32k 真实成本 →
