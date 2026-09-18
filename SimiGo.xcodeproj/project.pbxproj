@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C1632BB22FB4000000D1EF95 /* BranchForkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1632BB32FB4000000D1EF95 /* BranchForkTests.swift */; };
+		C1632BC42FB4000000D1EF95 /* RollForwardExperimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1632BC52FB4000000D1EF95 /* RollForwardExperimentTests.swift */; };
 		C1632AE03028D4EB00D1EF95 /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = C1632ADF3028D4EB00D1EF95 /* Hub */; };
 		C1632AE23028D4EB00D1EF95 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE13028D4EB00D1EF95 /* Tokenizers */; };
 		C1632AE43028D4EB00D1EF95 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE33028D4EB00D1EF95 /* Transformers */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		C1632BB32FB4000000D1EF95 /* BranchForkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BranchForkTests.swift; path = SimiGo/BranchFork/BranchForkTests.swift; sourceTree = "<group>"; };
+		C1632BC52FB4000000D1EF95 /* RollForwardExperimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RollForwardExperimentTests.swift; path = SimiGo/BranchFork/RollForwardExperimentTests.swift; sourceTree = "<group>"; };
 		C138807D2FB37213009F04D2 /* SimiGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimiGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimiGoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -39,6 +41,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"BranchFork/BranchForkTests.swift",
+				"BranchFork/RollForwardExperimentTests.swift",
 			);
 			target = C138807C2FB37213009F04D2 /* SimiGo */;
 		};
@@ -235,6 +238,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C1632BB22FB4000000D1EF95 /* BranchForkTests.swift in Sources */,
+				C1632BC42FB4000000D1EF95 /* RollForwardExperimentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

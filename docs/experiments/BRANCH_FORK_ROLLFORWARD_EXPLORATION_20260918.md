@@ -111,28 +111,27 @@ roll-forward 对上游修复前的一切分叉形态（含客户端重写、账�
 原版 §5 直接列生产切片；按外审加闸修订为两段。**20–100× 是期望收益估算，
 不是已兑现数字**——兑现前必须先测。
 
-### Phase A：测量实验（先做，产出 = 数字而非行为）
+### Phase A：测量实验（✅ 已执行，2026-09-18，结果见
+### `BENCH_ROLLFORWARD_PHASE_A_20260918/`）
 
-宿主式实验（`SIMIGO_ROLLFWD_EXP=1` 门控，沿 BranchForkTests 惯例）：
+| 指标 | 实测 | 原估算 |
+|---|---|---|
+| saveCache（58k 上下文） | **0.15s 均值 / 0.40s 最差** | 1–3s（乐观 10× 偏差） |
+| loadSessionCache | **0.01s** | — |
+| 每轮 roll-forward 开销 | **≈0.16s** | — |
+| fragment 恒定性 | 40 轮 1,701 ± 9 tok，上下文至 58k，零全量重渲 | 待证伪点 ✓ 通过 |
+| 对比分歧税（442fbf fixture） | 300–490s/次 | — |
 
-- 合成长程工具密集会话：多键嵌套 tool_calls（TodoWrite 形态）× 50 轮，
-  上下文爬坡 10k→80k
-- 每轮测量：`saveSessionCache` 耗时、`loadSessionCache` 耗时、
-  fragment token 数、TTFT、内存峰值、swap
-- 连续 roll-forward 10 / 20 / 50 轮三档
-- **验收观测量（免疫性证伪点）**：fork-no-rewind 恒 0、fragment 持续低
-  token、TTFT 稳定；若任一轮内部进入全模板渲染，免疫性理论重审
-- **隐藏成本核查**：saveCache 是否随上下文线性劣化为新瓶颈（I/O、内存复制、
-  cache serialization）
-- 产出：真实经济账（替换本档 20–100× 估算）+ 与 442fbf fixture 的
-  before/after 对照
+**免疫性未被证伪**；经济性裕量远超估算（开销/税 ≈ 2000×）。
+唯一违例记录为轮 2 探针校准伪影（delta 与既有上下文同量级，50% 启发式
+数学性误报）。TTFT 随上下文 4→11s 增长为残余代价（仍 30–45× 低于税）。
 
-### Phase B：生产切片（仅当 Phase A 经济性成立）
+### Phase B：生产切片（Phase A 经济性成立，阻塞解除）
 
 原 §5 五项：`RuntimeTuning.rollforwardEnabled`（默认关灰度开）+ 节流常数、
 saveSessionCache 每成功轮后调用（节流）、风险检测器（自产参数键序，纯函数
 可单测）、高风险轮 loadSessionCache(key) 覆盖 + trace `action=rollforward`、
-长程免疫性验证作为验收条件。
+长程免疫性在真实客户端回显流上的复认（灰度观察项）。
 
 ## 6. 定谱（外审认可，2026-09-18）
 
