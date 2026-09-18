@@ -24,6 +24,21 @@
 - 门控竞态测试：`outcome=RACE_WINDOW_HIT suspendWins=1`，27.4s 全过
 - headless 回归：typed error 断言 + 状态断言通过
 
+## 六轮外审追补：测试开关显式恢复（2026-09-19，已修复）
+
+**发现**：竞态测试置 `suspendIdleTimeoutOverrideSeconds = 0` 后未在清理
+路径显式恢复 nil——同进程后续测试可能继承残留值（P2/测试间状态污染）。
+
+**修复**：统一清理路径新增 `resetTestSeam()`（#if DEBUG、幂等），与
+`stopRuntime()`/`restoreConfig()` 同序执行：异常 → reset → stop →
+restore → rethrow；正常 → stop → reset → restore。
+
+**复跑**：门控竞态测试 `RACE_WINDOW_HIT suspendWins=1`（33.8s）+
+headless 回归全绿。
+
+**S3 准入确认**：外审建议顺序第 1、2 步完成；ExecutionFacts 的 var/
+构造入口/快照时点审查留待 S3 接线时一并做（外审 §四登记）。
+
 ## 五轮外审追补：测试资源生命周期（2026-09-19，已修复）
 
 **发现**：竞态测试成功/异常路径均未调用 `runtime.stop()`——

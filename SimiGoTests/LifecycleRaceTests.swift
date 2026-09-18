@@ -118,6 +118,18 @@ final class LifecycleRaceTests: XCTestCase {
             runtimeStopped = true
             await runtime.stop()
         }
+        // 测试开关显式恢复（外审六轮 P2 采纳）：防止 DEBUG 静态配置在
+        // 同进程后续测试中残留 0 值——与 stop/restore 同入统一清理路径。
+        #if DEBUG
+        var seamReset = false
+        func resetTestSeam() {
+            guard !seamReset else { return }
+            seamReset = true
+            RuntimeTuning.suspendIdleTimeoutOverrideSeconds = nil
+        }
+        #else
+        func resetTestSeam() {}
+        #endif
 
         // 竞态锤击：3 轮生成，每轮期间并行快打 suspendIfIdle。
         // 不变量：无论挂起在窗口内命中多少次，generate 必须成功完成。
@@ -169,10 +181,12 @@ final class LifecycleRaceTests: XCTestCase {
             let outcome = suspendWins > 0 ? "RACE_WINDOW_HIT" : "PROTECTION_PASS_NO_HIT"
             print("[race] outcome=\(outcome) suspendWins=\(suspendWins) generate 全部存活")
         } catch {
+            resetTestSeam()
             await stopRuntime()
             await restoreConfig()
             throw error
         }
+        resetTestSeam()
         await stopRuntime()
         await restoreConfig()
     }
