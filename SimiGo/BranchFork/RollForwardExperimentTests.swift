@@ -561,4 +561,55 @@ final class RollForwardExperimentTests: XCTestCase {
         XCTAssertTrue(line.contains("index=2 field=content"), line)
         XCTAssertFalse(line.contains("tool_calls"), line)
     }
+
+    func testConditionalRestoreGate() {
+        // 旧 rf 开启 → 无条件放行（不设 delta 门，保持 a210155 前语义可 A/B）
+        XCTAssertEqual(
+            SimiGo.NativeMLX.conditionalRestoreGate(
+                rollforwardEnabled: true, conditionalRestoreEnabled: false,
+                incoming: [], ledgerCount: 0),
+            .allowed)
+        // 都关 → 禁用（纯 extend）
+        XCTAssertEqual(
+            SimiGo.NativeMLX.conditionalRestoreGate(
+                rollforwardEnabled: false, conditionalRestoreEnabled: false,
+                incoming: [], ledgerCount: 0),
+            .skipDisabled)
+        // conditional 开 + 小 delta（400 字符 ≈ 107 tok 粗估）→ 放行
+        let small = SimiGo.JSONValue.object([
+            "role": .string("tool"),
+            "content": .string(String(repeating: "x", count: 400))])
+        XCTAssertEqual(
+            SimiGo.NativeMLX.conditionalRestoreGate(
+                rollforwardEnabled: false, conditionalRestoreEnabled: true,
+                incoming: [small], ledgerCount: 0),
+            .allowed)
+        // conditional 开 + 大 delta（40k 字符 ≈ 10k tok 粗估 > 8192 门）→ 拒，
+        // 且带回估算值供 trace
+        let big = SimiGo.JSONValue.object([
+            "role": .string("tool"),
+            "content": .string(String(repeating: "x", count: 40_000))])
+        let decision = SimiGo.NativeMLX.conditionalRestoreGate(
+            rollforwardEnabled: false, conditionalRestoreEnabled: true,
+            incoming: [big], ledgerCount: 0)
+        guard case .skipDeltaTooLarge(let estimate) = decision else {
+            return XCTFail("expected skipDeltaTooLarge, got \(decision)")
+        }
+        XCTAssertGreaterThan(estimate, 8192)
+    }
+
+    func testEstimateDeltaTokens() {
+        func user(_ text: String) -> SimiGo.JSONValue {
+            .object(["role": .string("user"), "content": .string(text)])
+        }
+        // 账本全覆盖 → 0
+        XCTAssertEqual(
+            SimiGo.NativeMLX.estimateDeltaTokens(
+                incoming: [user("a")], ledgerCount: 1), 0)
+        // 新增消息 = compact-JSON 字符数 ÷ 4（{"role":"user","content":"bbbb"}
+        // 两种键序下字符数同为 32 → 32/4 = 8，长度与键序无关）
+        XCTAssertEqual(
+            SimiGo.NativeMLX.estimateDeltaTokens(
+                incoming: [user("a"), user("bbbb")], ledgerCount: 1), 8)
+    }
 }

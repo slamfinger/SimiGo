@@ -566,10 +566,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // → 同 key 恢复 checkpoint 进入 fragment-continuation（raw-cache 无账本
         // → 无比较 → 无分歧）。误报代价 = loadSessionCache 0.01s（Phase A 实测），
         // 漏报代价 = 分歧税 300-490s。恢复失败/不兼容 → 回退活会话继续。
+        // Conditional Restore（V1.5 主轨道）：触发前再过 delta 规模门——只吃
+        // 小 delta 轮（162 fork 样本实测：分歧全在尾段、rebuild 170-248 vs
+        // 恢复态 94-139 tok/s ⇒ delta<0.8×full 恒赢；大 delta 交回 extend）。
         var rolledForward = false
-        if RuntimeTuning.rollforwardEnabled, reusedSession,
-           Self.rollforwardRisk(lastJSON: managed.historyJSON.last) {
-            rollforward: do {
+        if reusedSession, Self.rollforwardRisk(lastJSON: managed.historyJSON.last) {
+            switch Self.conditionalRestoreGate(
+                rollforwardEnabled: RuntimeTuning.rollforwardEnabled,
+                conditionalRestoreEnabled: RuntimeTuning.conditionalRestoreEnabled,
+                incoming: messages,
+                ledgerCount: managed.historyJSON.count) {
+            case .skipDisabled:
+                break
+            case .skipDeltaTooLarge(let estimate):
+                traceLogger.trace(
+                    "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
+                    + " reason=deltaTooLarge deltaTokensEst=\(estimate)")
+            case .allowed:
+                rollforward: do {
                 let (restored, meta) = try await performLoad(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, config: config, baseConfig: baseConfig,
@@ -618,6 +632,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 traceLogger.trace(
                     "[MLX] action=rollforwardFailed key=\(executionKey.traceKey)"
                     + " err=\(error.localizedDescription)")
+            }
             }
         }
 
@@ -897,8 +912,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         // Phase B：每成功轮落 checkpoint（roll-forward 的 last known good；
-        // Phase A 实测 0.15s@58k，计入轮延迟可忽略）。
-        if RuntimeTuning.rollforwardEnabled {
+        // Phase A 实测 0.15s@58k，计入轮延迟可忽略）。Conditional Restore
+        // 依赖 ledger-end 新鲜 checkpoint——陈旧 checkpoint 曾致 +10k 重渲
+        // （a210155 对照：checkpoint 覆盖 31k vs 活 41k），是旧 rf 负收益
+        // 的第一来源，故两 flag 任一开启都落盘。
+        if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
             do {
                 try await performSave(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
@@ -1289,6 +1307,46 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             if args.values.contains(where: risky) { return true }
         }
         return false
+    }
+
+    /// Conditional Restore 触发门决策（纯函数，单测覆盖）。
+    enum ConditionalRestoreGateDecision: Equatable {
+        case allowed
+        case skipDisabled
+        case skipDeltaTooLarge(Int)
+    }
+
+    /// 触发门：旧 rf（rollforwardEnabled）开启 ⇒ 无条件放行（保持 a210155
+    /// 前的全量预判语义，可与条件路径 A/B）；否则 conditionalRestoreEnabled
+    /// 时按 delta 规模门放行，都关 ⇒ 禁用（纯 extend）。本门只做规模判定，
+    /// 不做行为判定——逻辑兼容性仍由 rollforwardCompatible 在恢复路径内
+    /// 守卫（内容真分叉 → checkpointStale → 回退 extend，无回归）。
+    static func conditionalRestoreGate(
+        rollforwardEnabled: Bool,
+        conditionalRestoreEnabled: Bool,
+        incoming: [JSONValue],
+        ledgerCount: Int
+    ) -> ConditionalRestoreGateDecision {
+        if rollforwardEnabled { return .allowed }
+        guard conditionalRestoreEnabled else { return .skipDisabled }
+        let estimate = Self.estimateDeltaTokens(incoming: incoming, ledgerCount: ledgerCount)
+        if estimate > RuntimeTuning.conditionalRestoreMaxDeltaTokens {
+            return .skipDeltaTooLarge(estimate)
+        }
+        return .allowed
+    }
+
+    /// 新增消息 token 粗估（compact-JSON 字符数 ÷ 4）。只用于规模门，不进
+    /// 任何渲染/行为路径；账本全覆盖时为 0。
+    static nonisolated func estimateDeltaTokens(
+        incoming: [JSONValue], ledgerCount: Int
+    ) -> Int {
+        guard incoming.count > ledgerCount else { return 0 }
+        var chars = 0
+        for message in incoming.dropFirst(max(0, ledgerCount)) {
+            if let serialized = compactJSON(message) { chars += serialized.count }
+        }
+        return chars / 4
     }
 
     /// roll-forward 兼容守卫：checkpoint 的 transcript 必须是本轮 incoming 的

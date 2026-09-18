@@ -71,6 +71,23 @@ nonisolated enum RuntimeTuning {
     /// 0.2 tok/s），不可回退。
     static var rollforwardEnabled = false
 
+    /// Conditional Restore（V1.5 主轨道，2026-09-18 用户批准提前启动）：
+    /// 保留 rollforwardRisk 形状门，按 delta 规模门触发恢复路径——只吃小
+    /// delta 轮。依据（162 fork 样本实测）：分歧全在最后一段（>40k 上下文
+    /// 公共前缀 ≥96.3%，尾 1.2-1.9k），checkpoint@ledgerEnd 即 state-at-P；
+    /// rebuild 全量 170-248 tok/s vs 恢复态 94-139 tok/s ⇒ delta < 0.8×full
+    /// 恢复必赢；extend-hit 轮误触发代价 bounded（~2-4s），漏触发代价
+    /// 100-500s。与 rollforwardEnabled 的关系：旧 rf 开启时无条件放行
+    /// （不设 delta 门，保持 a210155 前语义可 A/B）；本 flag 独立控制
+    /// checkpoint 落盘与条件触发。置 false 即回退纯 extend 行为。灰度验证中。
+    static var conditionalRestoreEnabled = true
+
+    /// Conditional Restore 的 delta 规模门（token 粗估 = 新增消息 compact-JSON
+    /// 字符数 ÷ 4）：超过则交回 extend。大 delta 轮上恢复态的每 token 劣化
+    /// （94-139 tok/s vs extend-hit 389-476）开始压过 rebuild 规避收益；
+    /// 8192 对应 extend 命中率 0.5-0.8 区间的期望成本交叉点，按真机数据调。
+    static var conditionalRestoreMaxDeltaTokens = 8192
+
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。
     static var maxKVSize: Int? = nil
 
