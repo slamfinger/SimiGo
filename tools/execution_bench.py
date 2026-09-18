@@ -36,6 +36,7 @@ BASE = "http://127.0.0.1:8000/v1/chat/completions"
 MODEL = "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e"
 SESSION = "ecbench"
 TRACE = Path.home() / ".simigo/logs/native_mlx_trace.log"
+BENCH_KEY = None  # 运行时发现:traceKey 会被收短(ecbench→cbench/main)
 
 TOOLS = [{
     "type": "function",
@@ -75,9 +76,9 @@ def preflight():
     print("preflight ✓ app 运行中,无进行中生成")
 
 
-def chat_round(messages, max_tokens=512, timeout=900):
+def chat_round(messages, max_tokens=512, timeout=900, session=SESSION):
     body = {
-        "model": MODEL, "session_id": SESSION, "messages": messages,
+        "model": MODEL, "session_id": session, "messages": messages,
         "tools": TOOLS, "max_tokens": max_tokens, "temperature": 0.0,
     }
     req = urllib.request.Request(
@@ -93,15 +94,23 @@ def trace_tail_lines(n=400):
     return TRACE.read_text(errors="replace").splitlines()[-n:]
 
 
-def last_completion(timeout=30):
-    """等待并返回本 session 最新完成行的解析字段。
+def discover_key():
+    """首轮完成后从 trace 尾部发现本 session 的真实 traceKey(短串规则
+    不可预测,ecbench→cbench/main),后续轮用它精确匹配。"""
+    for line in reversed(trace_tail_lines(300)):
+        m = re.search(r"\[MLX\] session=(\S+) messages=\d+", line)
+        if m and "promptTokens=" in line:
+            return m.group(1)
+    return None
 
-    traceKey 会被运行时收短(「ecbench」→「cbench/main」,trace 短字节串
-    规则),故判别用稳定中缀「bench/main」而非完整 session_id。"""
+
+def last_completion(timeout=30):
+    """等待并返回本 session 最新完成行的解析字段。"""
+    key = BENCH_KEY or "bench/main"
     deadline = time.time() + timeout
     while time.time() < deadline:
         for line in reversed(trace_tail_lines()):
-            if "session=" in line and "bench/main" in line and "promptTokens=" in line:
+            if f"session={key} " in line and "promptTokens=" in line:
                 def g(pat):
                     m = re.search(pat, line)
                     return m.group(1) if m else None
@@ -147,14 +156,68 @@ def build_plan(max_depth):
     return plan
 
 
+def run_live(args):
+    """live-extend 对照臂:无工具纯对话,40k 填充 user 消息逐轮推深——账本
+    无 assistant tool_calls ⇒ 无渲染分叉源 ⇒ 每轮应 extend 命中
+    (cacheEff≈1)。这是 derived 曲线缺失的状态形态对照(灰度首夜与
+    bench 首轮均缺)。独立 session,不触碰 restore 链。"""
+    global BENCH_KEY
+    preflight()
+    results, notes = [], []
+
+    def filler(n, tag):
+        unit = f"[{tag}] live control execution continuity benchmark block. "
+        return (unit * (n // len(unit) + 1))[:n]
+
+    msgs = [{"role": "user", "content": "请回复收到。"}]
+    print("[live warmup] …", flush=True)
+    asst, wall = chat_round(msgs, session="ecblive")
+    msgs.append(asst)
+    BENCH_KEY = discover_key()
+    print(f"[live warmup] wall={wall:.1f}s key={BENCH_KEY}")
+
+    i, depth = 0, 500
+    while depth < args.max_depth:
+        i += 1
+        msgs.append({"role": "user",
+                     "content": filler(40_000, f"L{i}") + " 请用一句话回复收到。"})
+        asst, wall = chat_round(msgs, session="ecblive")
+        msgs.append(asst)
+        comp = last_completion()
+        results.append({"round": i, "arm": "LIVE", "fillerChars": 40_000,
+                        "wallS": round(wall, 1), "trace": comp})
+        c = comp or {}
+        pt = c.get("promptTokens") or 0
+        print(f"[L{i} LIVE] wall={wall:.1f}s mode={c.get('mode')} "
+              f"promptTokens={pt:,} promptTime={c.get('promptTimeS')}s "
+              f"ttft={c.get('ttftS')}s "
+              f"depth={(c.get('cacheTokens') or 0):,} "
+              f"cacheEff={c.get('cacheEff')}", flush=True)
+        if c.get("mode") not in ("extend",) and i > 0:
+            notes.append(f"L{i}: mode={c.get('mode')}(预期 extend)——live 链形态异常")
+        depth += 10_000
+
+    out = {"session": "ecblive", "model": MODEL, "arm": "LIVE",
+           "results": results, "notes": notes}
+    dest = args.json_out or "docs/experiments/BENCH_EXEC_CONTINUITY_20260918/results_live.json"
+    Path(dest).write_text(json.dumps(out, ensure_ascii=False, indent=1))
+    print(f"\n结果已写 {dest}")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Execution Continuity harness")
     ap.add_argument("--plan", action="store_true", help="只打印轮次计划")
     ap.add_argument("--execute", action="store_true")
+    ap.add_argument("--live", action="store_true",
+                    help="live-extend 对照臂:无工具纯对话,轮轮 extend 命中")
     ap.add_argument("--max-depth", type=int, default=90_000,
                     help="cacheTokens 深度预算(默认 90k)")
     ap.add_argument("--json-out", default=None)
     args = ap.parse_args()
+
+    if args.live:
+        run_live(args)
+        return
 
     plan = build_plan(args.max_depth)
     print(f"轮次计划:{len(plan) + 1} 轮(cold 预热 1 轮 + E/R 交替)")
