@@ -342,19 +342,20 @@ final class RollForwardExperimentTests: XCTestCase {
             .object(["type": .string("function"),
                      "function": .object(["name": .string("t"), "arguments": args])])
         }
-        // 多键参数 → risky（TodoWrite 形态）
+        // 任意 tool_calls 形态 → risky（分歧源=渲染本身,与参数复杂度无关;
+        // 2026-09-18 82bfa0 生产实证:单键形状旧判据漏报,22k rebuild 逃逸）
         XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
             call(.object(["b": .number(1), "a": .number(2)])),
         ])))
-        // 单键纯量 → safe（Bash command 形态）
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+        // 单键纯量 → risky（旧多键判据漏报形态,82bfa0 实证）
+        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
             call(.object(["command": .string("ls")])),
         ])))
         // 单键但嵌套多键对象 → risky
         XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
             call(.object(["cmd": .object(["x": .number(1), "y": .number(2)])])),
         ])))
-        // 多键对象数组元素多键 → risky（notes 数组形态）
+        // 多键对象数组元素多键 → risky
         XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
             call(.object(["notes": .array([
                 .object(["k": .number(1), "j": .number(2)]),

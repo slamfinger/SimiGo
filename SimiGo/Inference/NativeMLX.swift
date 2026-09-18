@@ -1289,32 +1289,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return (restored, metadata)
     }
 
-    /// Phase B 风险检测：账本尾部 assistant 回显含多键（含嵌套 ≥2 键）
-    /// tool_calls ⇒ 下一轮全模板重渲染可能键序分叉（TodoWrite 家族，
-    /// FIELD_OBSERVATION §7）。保守形状判定：误报代价 = 一次 loadSessionCache
-    /// （Phase A 实测 0.01s），漏报代价 = 分歧税 300-490s。
+    /// Conditional Restore 风险检测：账本尾部 assistant 含 tool_calls（任意
+    /// 参数形状）⇒ 下一轮全模板重渲染可能键序/转义分叉。分歧源是 tool_calls
+    /// 的渲染本身（真机 74 连 stale、rollforwardDiff 归因），与参数复杂度
+    /// 无关——2026-09-18 深夜生产实证（82bfa0 前端）：单键参数形状在旧
+    /// 多键/嵌套判据下全程 risk=false，分歧照发（22,094 tok/36.3s rebuild
+    /// 逃逸）。误报代价由 delta 规模门兜底（小 delta 才恢复，extend-hit 轮
+    /// 误触发 ~1-2s）；漏报代价 = 分歧税 36-490s。形状细化判据退役。
     static func rollforwardRisk(lastJSON: JSONValue?) -> Bool {
         guard case .object(let obj)? = lastJSON,
               case .array(let calls)? = obj["tool_calls"] else { return false }
-        func risky(_ value: JSONValue) -> Bool {
-            switch value {
-            case .object(let o):
-                if o.count >= 2 { return true }
-                return o.values.contains(where: risky)
-            case .array(let a):
-                return a.contains(where: risky)
-            default:
-                return false
-            }
-        }
-        for call in calls {
-            guard case .object(let c) = call,
-                  case .object(let fn)? = c["function"],
-                  case .object(let args)? = fn["arguments"] else { continue }
-            if args.count >= 2 { return true }
-            if args.values.contains(where: risky) { return true }
-        }
-        return false
+        return !calls.isEmpty
     }
 
     /// Conditional Restore 触发门决策（纯函数，单测覆盖）。
