@@ -69,12 +69,17 @@
   = ManagedSession/ChatSession + historyJSON 尾部变异 + lastJSON；
   V1.6 Execution lineage 设计时必须逐个过 gate 语义
 
-### Instruments 级内存审查 — ⏳ 需交互会话
+### Instruments 级内存审查 — ✅ 动态部分已完成（leaks/vmmap 无头执行）
 
-- 静态部分：suspend 走 `Memory.clearCache()`、LRU 驱逐 + afterEvict
-  footprint 采样、checkpoint 固定名覆盖——生命周期骨架在位
-- 动态部分（retain cycle / 延迟释放 / 重复物化）需 Instruments 模板
-  交互跑（63.6k≈1.53GB 规模），列入 V1.6 开工前专项
+- **泄漏扫描**（`leaks`，模型已加载 20.8GB 状态）：29,972 nodes /
+  **5.6MB leaked（占进程 0.027%）**——框架级噪音量级，无应用级泄漏
+  模式；malloc 区仅 116MB（Swift/ObjC 堆极小），MLX 缓冲走 vm 区
+  与设计一致
+- **footprint 轨迹**（vmmap + trace）：404MB（挂起）→ 20.8G（加载+
+  会话，= 权重 19.3G + KV）稳定，3 轮生成零异常膨胀，峰值 25.5G
+  与 bench 夜记录一致
+- 保留项：xctrace Allocations 模板的逐分配归因仅在未来怀疑某条
+  分配路径时按需执行，不作为常规定期项
 
 ## P2 登记项
 
