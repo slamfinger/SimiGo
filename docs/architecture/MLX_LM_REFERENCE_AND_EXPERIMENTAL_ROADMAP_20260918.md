@@ -720,32 +720,49 @@ prefill statistics
 
 ---
 
-## P1：Roll-forward 第一实验切片
+## P1：Roll-forward（Phase A ✅ 已执行 → Phase B ⏳ 生产切片）
 
-目标：
+> **状态同步（2026-09-18）**：Phase A 测量实验已完成
+> （`RollForwardExperimentTests`，SIMIGO_ROLLFWD_EXP=1 宿主测试；
+> 结果与原始数据：`docs/experiments/BENCH_ROLLFORWARD_PHASE_A_20260918/`）。
+> 本节从"待做"改为"Phase A 已完成 / Phase B 未实现"。
 
-> 验证 checkpoint recovery 是否真的构成一种“分歧隔离执行模式”。
+Phase A 已证（实测，545s，40 轮 roll-forward + 15 轮对照）：
 
-只做：
+- **经济性**：save 0.15s 均值 / 0.40s 最差，load 0.01s，单轮开销 ≈0.16s；
+  历史分歧税 300–490s——数量级差异约 10³（单点均值 vs 历史 fixture
+  单事件，非统一 workload 长期倍率）
+- **fragment 稳定性**：40 轮实际 prompt/eval 工作量保持 1,701 ± 9 tokens
+  （上下文 1.7k→58k），**未观察到 full-context prefill 模态**
 
+Phase A 证据边界（必须随结果一起引用）：
+
+- 上述数字证明的是 **eval 工作量层级**；当前 fixture 尚不能单独证明
+  上游模板渲染阶段不存在完整 messages reconstruction——
+  message rendering 与 model prefill/eval 是两层
+- `cachedPromptTokens=0` 是 usage telemetry 语义，不等价于
+  "内部不存在 token ledger"——证据层次保持分离
+- 合成历史无法复现真实「模型自产 token 序 vs 重渲染键序」不稳定；
+  分歧税 before 曲线以 BENCH_442FBF fixture（真实流量）为准
+
+Phase B（⏳ 未实现）——生产切片 + 核心正确性验收：
+
+- feature flag（已入 `RuntimeTuning.rollforwardEnabled`）
+- risk detector（已入，纯函数+单测）
+- production save policy（已入：每成功轮 checkpoint）
+- **真实客户端回显流复认 = 核心正确性验收项**（非普通观察项）：
+  真实 Agent/tool echo × 真实键序变化 × cancel × admission ×
+  suspend/resume × long-run 下 fork-no-rewind 恒 0
+- Phase B 通过前，roll-forward 不得进入 Core
+
+## 层次排序（2026-09-18 修订：按"减少 full prefill 机会"优先）
+
+```text
+第一层  减少产生 full prefill 的机会     Roll-forward / 上游分歧源治理（Qwen35ToolRestartRule）
+第二层  不得不 full prefill 时降成本     Chunked Prefill（保持独立实验）
+第三层  full prefill + 内存压力控资源    Admission（P2 已落地；预测式预驱逐先量测再升级）
+第四层  资源利用率提升                   Batch / continuous batching（继续冻结）
 ```
-save last-known-good
-+
-risk detection
-+
-load checkpoint
-+
-fragment continuation
-```
-
-必须带：
-
-- feature flag
-- rollback
-- save/load timing
-- fragment token telemetry
-- fork-no-rewind telemetry
-- 10/20/50+ 长程工具会话
 
 ---
 

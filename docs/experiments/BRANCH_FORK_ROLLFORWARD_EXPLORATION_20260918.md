@@ -119,19 +119,27 @@ roll-forward 对上游修复前的一切分叉形态（含客户端重写、账�
 | saveCache（58k 上下文） | **0.15s 均值 / 0.40s 最差** | 1–3s（乐观 10× 偏差） |
 | loadSessionCache | **0.01s** | — |
 | 每轮 roll-forward 开销 | **≈0.16s** | — |
-| fragment 恒定性 | 40 轮 1,701 ± 9 tok，上下文至 58k，零全量重渲 | 待证伪点 ✓ 通过 |
+| fragment 稳定性 | 40 轮实际 prompt/eval 工作量 1,701 ± 9 tok，上下文至 58k，未观察到 full-context prefill 模态 | 证伪点未触发 ✓ |
 | 对比分歧税（442fbf fixture） | 300–490s/次 | — |
 
-**免疫性未被证伪**；经济性裕量远超估算（开销/税 ≈ 2000×）。
+**免疫性未被证伪**（证据边界：本轮 fixture 证明的是 eval 工作量层级；
+message rendering 与 model prefill/eval 是两层，尚不能单独证明上游模板
+渲染阶段不存在完整 messages reconstruction——`cachedPromptTokens=0` 是
+usage telemetry 语义，不等价于内部无账本）。经济性结论保留：单轮
+save/load 成本 0.16s vs 历史分歧税 300–490s，**数量级差异约 10³**
+（单点均值 vs 历史 fixture 单事件，非统一 workload 长期倍率）。
 唯一违例记录为轮 2 探针校准伪影（delta 与既有上下文同量级，50% 启发式
-数学性误报）。TTFT 随上下文 4→11s 增长为残余代价（仍 30–45× 低于税）。
+数学性误报）。TTFT 随上下文 4→11s 增长为残余代价。
 
 ### Phase B：生产切片（Phase A 经济性成立，阻塞解除）
 
-原 §5 五项：`RuntimeTuning.rollforwardEnabled`（默认关灰度开）+ 节流常数、
-saveSessionCache 每成功轮后调用（节流）、风险检测器（自产参数键序，纯函数
-可单测）、高风险轮 loadSessionCache(key) 覆盖 + trace `action=rollforward`、
-长程免疫性在真实客户端回显流上的复认（灰度观察项）。
+原 §5 五项：`RuntimeTuning.rollforwardEnabled`（灰度开关）+ 节流常数、
+saveSessionCache 每成功轮后调用、风险检测器（自产参数键序，纯函数可单测）、
+高风险轮 loadSessionCache(key) 覆盖 + trace `action=rollforward`。
+**核心正确性验收项（不可降级为普通观察）**：真实客户端回显流复认——
+真实 Agent/tool echo × 真实键序变化 × cancel × admission × suspend/resume
+× long-run 下 fork-no-rewind 恒 0。Phase A 合成回显无法复现真实键序
+不稳定，故该项是 Phase B 的存在理由。
 
 ## 6. 定谱（外审认可，2026-09-18）
 
