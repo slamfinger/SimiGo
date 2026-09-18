@@ -315,6 +315,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 估算（121k 会话闲置 ~14.5 分钟才允许卸载）；小会话维持 600s 基线。
     /// 避免大会话刚闲置满固定阈值即被卸载、下轮再缴全额冷启动税。
     private func adaptiveIdleTimeout() async -> TimeInterval {
+        if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
+            return override
+        }
         let sessions = state.withLock { Array($0.sessions.values) }
         var maxTokens = 0
         for managed in sessions {
@@ -384,6 +387,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         )
+        // V1.6 S1：executionID 血统遥测（log-only，零行为变更）——
+        // 规格见 docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md §4。
+        // parent 占位"-"，fork 真值由 S5 接入。
+        let executionId = UUID().uuidString.prefix(8).lowercased()
+        traceLogger.trace(
+            "[EXEC] begin exec=\(executionId) key=\(executionKey.traceKey)"
+            + " parent=- req=\(requestId) incoming=\(messages.count)")
 
         // P0-3 强化：全局生成串行化。gate key 常量化使所有生成跨 session 单飞，
         // 规避 qwen3_5_moe 动态编译架构在并发首次编译时的 mlx 锁互堵
@@ -414,6 +424,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 return try await self.generateUsingChatSession(
                     requestId: requestId,
                     executionKey: executionKey,
+                    executionId: executionId,
                     messages: messages,
                     tools: tools,
                     config: config,
@@ -457,6 +468,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private func generateUsingChatSession(
         requestId: String,
         executionKey: AgentExecutionKey,
+        executionId: String,
         messages: [JSONValue],
         tools: [JSONValue]?,
         config: ModelConfig,
@@ -946,6 +958,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
+            " exec=\(executionId)" +
             " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
         if let kvSettings {
             log += " kv=\(kvSettings.strategy ?? "fullPrecision")"
