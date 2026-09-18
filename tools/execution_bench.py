@@ -93,12 +93,15 @@ def trace_tail_lines(n=400):
     return TRACE.read_text(errors="replace").splitlines()[-n:]
 
 
-def last_completion(timeout=15):
-    """等待并返回本 session 最新完成行的解析字段。"""
+def last_completion(timeout=30):
+    """等待并返回本 session 最新完成行的解析字段。
+
+    traceKey 会被运行时收短(「ecbench」→「cbench/main」,trace 短字节串
+    规则),故判别用稳定中缀「bench/main」而非完整 session_id。"""
     deadline = time.time() + timeout
     while time.time() < deadline:
         for line in reversed(trace_tail_lines()):
-            if "session=" in line and SESSION in line and "promptTokens=" in line:
+            if "session=" in line and "bench/main" in line and "promptTokens=" in line:
                 def g(pat):
                     m = re.search(pat, line)
                     return m.group(1) if m else None
@@ -109,6 +112,7 @@ def last_completion(timeout=15):
                     "ttftS": round(int(g(r"ttft=(\d+)ms") or 0) / 1000, 1),
                     "cacheTokens": int(g(r"cacheTokens=(\d+)") or 0),
                     "cacheEff": g(r"cacheEff=([\d.]+)"),
+                    "reuse": g(r"reuse=(\w+)"),
                 }
         time.sleep(2)
     return None
@@ -183,6 +187,9 @@ def main():
         before_lines = len(trace_tail_lines(2000))
         mem0 = mem_snapshot()
         asst, wall = chat_round(msgs)
+        # OpenAI 会话闭环:assistant 回复必须入史——缺失则下一轮 incoming
+        # 在中段缺 assistant ⇒ isPrefix 失败 ⇒ 之后每轮全 cold(首跑踩坑)。
+        msgs.append(asst)
         comp = last_completion()
         mem1 = mem_snapshot()
         row = {"round": i + 1, "arm": arm, "fillerChars": size,
@@ -191,11 +198,16 @@ def main():
                "toolCalls": "yes" if asst.get("tool_calls") else "no"}
         results.append(row)
         c = comp or {}
+        pt = c.get("promptTokens") or 0
         print(f"[R{i + 1} {arm}] wall={wall:.1f}s mode={c.get('mode')} "
-              f"promptTokens={c.get('promptTokens'):,} "
+              f"promptTokens={pt:,} "
               f"promptTime={c.get('promptTimeS')}s ttft={c.get('ttftS')}s "
-              f"depth(cacheTokens)={c.get('cacheTokens'):,} "
+              f"depth(cacheTokens)={(c.get('cacheTokens') or 0):,} "
               f"cacheEff={c.get('cacheEff')} swap1={mem1['swap']}", flush=True)
+        if i > 0 and c.get("reuse") == "false":
+            notes.append(f"R{i + 1}:reuse=false(会话连续性断裂),数据作废,提前终止")
+            print(f"[R{i + 1}] !! reuse=false,连续性断裂,终止以保数据有效", flush=True)
+            break
         if not asst.get("tool_calls"):
             notes.append(f"R{i + 1}:模型未再调用工具,任务视为完成,提前收尾")
             break
