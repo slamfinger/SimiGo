@@ -33,7 +33,7 @@ import urllib.request
 from pathlib import Path
 
 BASE = "http://127.0.0.1:8000/v1/chat/completions"
-MODEL = "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e"
+MODEL = "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"
 SESSION = "ecbench"
 TRACE = Path.home() / ".simigo/logs/native_mlx_trace.log"
 BENCH_KEY = None  # 运行时发现:traceKey 会被收短(ecbench→cbench/main)
@@ -72,7 +72,12 @@ def preflight():
     tail = TRACE.read_text(errors="replace").splitlines()[-40:]
     lc = [ln for ln in tail if "[LC]" in ln]
     if lc and (" to=RUNNING" in lc[-1] or "CANCELLING" in lc[-1]):
-        sys.exit(f"preflight 失败:有进行中的生成:{lc[-1][:100]}")
+        # 旧实例被重启时在途请求的 RUNNING 行会永久残留在 trace 里;
+        # ready 行晚于最后 LC 行 ⇒ 当前进程尚未服务过请求,无在途生成。
+        ready_after = any("NativeMLX ready" in ln
+                          for ln in tail[tail.index(lc[-1]) + 1:])
+        if not ready_after:
+            sys.exit(f"preflight 失败:有进行中的生成:{lc[-1][:100]}")
     print("preflight ✓ app 运行中,无进行中生成")
 
 
@@ -205,6 +210,7 @@ def run_live(args):
 
 
 def main():
+    global BENCH_KEY
     ap = argparse.ArgumentParser(description="Execution Continuity harness")
     ap.add_argument("--plan", action="store_true", help="只打印轮次计划")
     ap.add_argument("--execute", action="store_true")
@@ -237,6 +243,8 @@ def main():
     asst, wall = chat_round(msgs)
     msgs.append(asst)
     print(f"[cold] wall={wall:.1f}s tool_calls={'yes' if asst.get('tool_calls') else 'no'}")
+    BENCH_KEY = discover_key()
+    print(f"[cold] traceKey={BENCH_KEY}")
 
     for i, step in enumerate(plan):
         arm, size = step["arm"], step["fillerChars"]
