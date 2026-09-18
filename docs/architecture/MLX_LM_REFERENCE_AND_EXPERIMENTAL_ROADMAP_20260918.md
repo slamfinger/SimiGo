@@ -1000,3 +1000,227 @@ trace identifier
 ```
 
 如果一个优化无法回答“比哪个基准快、快在哪里、付出了什么内存/延迟代价、正确性怎么证明、失败后如何回退”，则只能停留在 Exploration，不得进入 Core。
+
+
+---
+
+# 18. 架构纯粹性闸门：参考可以很多，核心真相只能有一套
+
+随着参考项目增加，SimiGo 的主要风险不再只是“造轮子”，而是**吸收过多以后形成 Runtime 臃肿与边界漂移**。
+
+因此本节优先级高于任何具体能力清单。
+
+## 18.1 基本原则
+
+> **参考实现可以很多，SimiGo 的核心机制只能越来越少。**
+
+外部项目负责提供问题的参考坐标，不负责决定 SimiGo 的架构。
+
+不得采用：
+
+```
+别人有
+  ↓
+SimiGo 也应该有
+  ↓
+直接移植
+```
+
+必须采用：
+
+```
+外部参考
+  ↓
+SimiGo 是否已有实证问题？
+  ↓
+最小实验
+  ↓
+是否改善？
+  ↓
+是否破坏现有核心边界？
+  ↓
+仅必要部分进入 Core
+```
+
+## 18.2 五个核心真相不得复制
+
+SimiGo 应长期保持以下单一真相：
+
+1. **一个 Physical KV 真相**
+2. **一个 Session identity 真相**
+3. **一个 lifecycle 真相**
+4. **一个 Agent / Tool Governance 真相**
+5. **一个 telemetry / evidence 真相**
+
+外部项目可以优化这些真相周围的实现，但不应制造第二套并行状态。
+
+特别禁止：
+
+```
+Official KV
++ SimiGo Physical KV ledger
++ 外部项目式第二 cache protocol
+```
+
+或：
+
+```
+SimiGo Session lifecycle
++ serving framework lifecycle
++ 另一套 recovery state machine
+```
+
+除非实验数据证明现有边界本身已经不足，否则不得引入第二套真相。
+
+## 18.3 四个执行层的边界
+
+### Physical Execution
+
+保持：
+
+```
+MLX
+ ↓
+NativeMLX
+ ↓
+Official Session / KV
+ ↓
+SimiGo execution governance
+```
+
+mlx-lm、llama.cpp、vLLM、SGLang 的执行模型只能作为参考，不能在 SimiGo 内部叠加成四套执行抽象。
+
+### Session / Lifecycle
+
+Session identity、reuse、cancel、poisoned-session eviction、recovery 属于 SimiGo 已经通过真机事故建立的核心能力。
+
+外部项目的 sequence / request / slot / scheduler 可以帮助理解问题，但不替代 SimiGo 的 lifecycle 真值。
+
+### Agent / Tool Governance
+
+Tool parser、formatter、structured output 可以参考成熟项目；Agent identity、tool governance、trace 与 recovery policy 保持 SimiGo 自己的边界。
+
+不要因为 serving framework 有 parser，就让 serving framework 的状态模型反向定义 Agent。
+
+### Observability
+
+SimiGo 的：
+
+```
+实验
+ ↓
+日志
+ ↓
+telemetry
+ ↓
+offline analysis
+ ↓
+证据包
+ ↓
+结论
+ ↓
+代码
+```
+
+继续作为最高优先级的证据闭环。
+
+外部项目的 metrics 可以借鉴，但不能替代 SimiGo 自己的实验真值。
+
+## 18.4 “有效但不纯粹”也可以 Reject
+
+一个外部方案即使能够改善某个性能指标，如果引入：
+
+- 第二套状态；
+- 第二套 cache truth；
+- 第二套 lifecycle；
+- 大量新抽象；
+- 无法独立关闭的复杂 scheduler；
+- 与现有 Runtime 边界重叠的长期维护负担；
+
+也不能仅凭性能收益进入 Core。
+
+判断顺序必须是：
+
+```
+Correctness
+  ↓
+Architecture boundary
+  ↓
+Measurable benefit
+  ↓
+Complexity cost
+  ↓
+Maintainability
+```
+
+而不是：
+
+```
+Benchmark ↑
+  ↓
+Merge
+```
+
+## 18.5 四个参考项目的正确定位
+
+```
+mlx-lm
+llama.cpp
+vLLM
+SGLang
+     │
+     ▼
+问题参考坐标系
+     │
+     ▼
+SimiGo 自己判断
+     │
+ ┌───┴────┐
+ ▼        ▼
+吸收思想   Reject
+ │
+ ▼
+最小实验
+ │
+ ▼
+必要才进入 Core
+```
+
+因此 SimiGo 不应该变成：
+
+```
+mlx-lm + llama.cpp + vLLM + SGLang
+```
+
+而应该保持：
+
+```
+MLX / 官方能力
+      +
+SimiGo 自己的 Runtime 治理
+      +
+必要时吸收经过实验证明有价值的局部思想
+```
+
+## 18.6 新功能进入 Core 的额外闸门
+
+除原有“来源—选择—实验”三联单外，新功能必须回答：
+
+- 是否已经有 SimiGo 现有能力可以解决？
+- 是否会增加第二套核心真相？
+- 是否会增加新的长期状态？
+- 是否可以独立 feature flag / rollback？
+- 删除该能力后，原有 Runtime 是否仍保持完整？
+- 该能力是否解决已经测量出的实际瓶颈，而不是“优秀项目已经拥有的功能”？
+
+如果无法回答，停留在 Exploration。
+
+## 18.7 架构目标
+
+SimiGo 下一阶段不以“功能更多”为目标，而以：
+
+> **能力越来越强，核心越来越清楚，新增复杂度越来越少。**
+
+最终评价标准不是代码量，也不是参考项目数量，而是：
+
+> **在不破坏既有 Runtime 基础的前提下，SimiGo 能否用更少、更清晰的核心机制覆盖更多真实工作负载。**
