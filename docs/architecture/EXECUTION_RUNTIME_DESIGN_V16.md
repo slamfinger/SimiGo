@@ -75,6 +75,11 @@ Executor              执行：现有 generateUsingChatSession 路径
 | S4 | ExecutionControlling 协议面落地为薄封装（fork 复用 BranchFork v1） | 零 | fork/restore 端到端回归 |
 | S5 | lineage 补全：parent 真值、status、checkpointID 关联、`[EXEC]` 汇总 | 零 | fork 链 trace 可回放 |
 
+> S1 追加（四轮外审测试质量收紧，2026-09-19 已落实）：测试缝隙
+> `#if DEBUG` 隔离、竞态结果语义分层（RACE_WINDOW_HIT vs
+> PROTECTION_PASS_NO_HIT）、可等待配置恢复 + port 0、typed error 断言。
+> 详见 `docs/audit/EXECID_TEST_QUALITY_REVIEW_2026-09-19.md`。
+
 ## 6. Gate 语义清单（多 Execution 并发前置条件，V1.6 内只登记不实现）
 
 单执行假设对象：ManagedSession/ChatSession、historyJSON 尾部变异、

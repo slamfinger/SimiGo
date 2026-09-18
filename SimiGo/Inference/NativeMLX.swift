@@ -315,9 +315,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// 估算（121k 会话闲置 ~14.5 分钟才允许卸载）；小会话维持 600s 基线。
     /// 避免大会话刚闲置满固定阈值即被卸载、下轮再缴全额冷启动税。
     private func adaptiveIdleTimeout() async -> TimeInterval {
+        #if DEBUG
         if let override = RuntimeTuning.suspendIdleTimeoutOverrideSeconds {
             return override
         }
+        #endif
         let sessions = state.withLock { Array($0.sessions.values) }
         var maxTokens = 0
         for managed in sessions {

@@ -119,10 +119,13 @@ nonisolated enum RuntimeTuning {
         }
     }
 
+    #if DEBUG
     /// 测试缝隙（默认 nil = 生产语义不变）：生命周期竞态测试用它把挂起
     /// 判定的空闲阈值压到 0，使「任务空 ⇒ 可挂起」可被确定性锤击。
-    /// 生产代码任何路径都不得写入非 nil（外审三轮 P1 候选 1，2026-09-19）。
+    /// #if DEBUG 隔离（外审四轮 P2 采纳）：Release 构建符号不存在，
+    /// 生产代码路径写入从治理约束升级为编译期强制。
     static var suspendIdleTimeoutOverrideSeconds: TimeInterval? = nil
+    #endif
 
     /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。
     static let prefillThroughputFloor = 150.0
