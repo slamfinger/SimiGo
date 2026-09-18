@@ -15,7 +15,8 @@
 2. **Execution Fork 真共享不进入 Core**：F0 判定「MLX 公开面只有数据级
    fork（磁盘 1.53GB 往返 / 内存惰性全拷贝）」，无 sequence identity——
    换代前提不成立。转研究轨并产出上游能力请求草稿
-   （`UPSTREAM_ISSUE_DRAFT_kv_prefix_sharing_cow.md`）
+   （**已提交上游 2026-09-19：mlx-swift-lm#629**
+   https://github.com/ml-explore/mlx-swift-lm/issues/629 ，RFC 定位）
 3. **应用层纪律**：停止为「真 prefix 共享」堆 workaround；分支工作流
    沿用磁盘 fork v1（v1.4 已发布语义）；不建 KV Tree / BranchManager /
    ExecutionState 抽象，直至上游提供 sequence 共享原语

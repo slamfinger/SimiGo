@@ -5,7 +5,8 @@
 Possible designs；标题采用 RFC: Branchable KV cache with shared-prefix /
 copy-on-write semantics）
 **提交状态**：提交就绪包见 `UPSTREAM_ISSUE_SUBMISSION_READY.md`
-（连接器 403、gh 未登录，待用户提交或 gh auth login 后代提）
+（**已提交 2026-09-19：mlx-swift-lm#629**
+https://github.com/ml-explore/mlx-swift-lm/issues/629 ，gh CLI 代提）
 **目标仓库**：ml-explore/mlx-swift-lm（或 mlx-swift 分层讨论）
 **动机数据**：`EXECUTION_FORK_F0_PROBE_RESULTS_20260919.md`（F0 探针）+
 `docs/lessons/kv-fork-checkpoint-experiment-2026-09-17.md`

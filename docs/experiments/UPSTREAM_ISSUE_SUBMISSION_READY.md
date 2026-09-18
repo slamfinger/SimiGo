@@ -1,8 +1,8 @@
 # 提交就绪包：mlx-swift-lm RFC issue（2026-09-19）
 
-**提交入口**：https://github.com/ml-explore/mlx-swift-lm/issues/new
-**状态**：连接器无上游写权限（403）、gh 未登录——以下内容可直接粘贴
-提交；或 `gh auth login` 后由助手代提。
+**已提交**：https://github.com/ml-explore/mlx-swift-lm/issues/629
+（2026-09-19，gh CLI 代提，作者 slamfinger，状态 OPEN；本文件以下为
+提交内容存档）
 
 ---
 
