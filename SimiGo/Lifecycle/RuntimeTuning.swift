@@ -51,7 +51,15 @@ nonisolated enum RuntimeTuning {
     /// 状态（2026-09-18 外审定级）：Phase B implemented / production hypothesis
     /// under validation——真实客户端回放验收（fork-no-rewind 恒 0、恢复后
     /// 指纹连续复用、无 detached session）通过前不得视为生产已验证。
-    static var rollforwardEnabled = true
+    ///
+    /// 2026-09-18 真机数据下线（用户指令）：归一化修复消除回显形状差后，
+    /// extend 路径在 tool 轮可达 cacheEff=0.99（15:57 轮 441tok/2.8s），而
+    /// rf 恢复态同位置 12,141tok/128.8s——恢复 KV 的 eval 层每步读路径成本
+    /// 高 4-6 倍（渲染 delta ✓ / eval 恒定 ✗，Phase A「渲染与 eval 两层边界」
+    /// 的后半句被真机补上）。有活会话时 rf 为负收益；其跨重启价值当前实现
+    /// 下本就不生效（gate 在 reusedSession 之后）。默认关闭，保留代码与
+    /// checkpoint 落盘供跨重启恢复方案的后续设计。
+    static var rollforwardEnabled = false
 
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。
     static var maxKVSize: Int? = nil
@@ -63,10 +71,13 @@ nonisolated enum RuntimeTuning {
     /// 瓶颈是内存容量而非批次：小上下文用大步长吃满带宽，大上下文降档保内存。
     /// 官方 API 无运行中换挡（stepSize 固定、分块计划预先生成），此为按会话
     /// 规模的请求级阶梯；运行中自适应列 upstream feature request 素材。
+    ///
+    /// 2026-09-18 校验实验（用户指令，roll-forward delta 预填 ~12.5k 量小）：
+    /// 阶梯暂停、全档统一 2048，实测大上下文 delta 段 2048 vs 1024（96k 段
+    /// 历史基准 59-93 tok/s）的 unit 速度差异；内存压力绿色（swap 4.8G 无
+    /// 饥荒）的前提与 09-13 的 <48 场景不同。数据回填后决定保留或恢复阶梯。
     static func prefillStepSize(contextTokens: Int) -> Int? {
-        if contextTokens < 65536 { return 2048 }
-        if contextTokens < 98304 { return 1024 }
-        return nil // 512：超大上下文换页保护
+        return 2048
     }
 
     /// 预填吞吐保守下限（tok/s）——512 档实测 188，取 150 估算闲置会话重建时长。

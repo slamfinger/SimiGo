@@ -485,8 +485,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 预填进度可见化：每 ≥16k token 一行 trace（引擎按 asyncEval 流水，
         // 数值略超前于 GPU 完成）。
         let prefillLogged = Locked(0)
-        params.prefill.progress = { processed, total in
-            if processed == total || processed - prefillLogged.value >= 16384 {
+            params.prefill.progress = { processed, total in
+                // 4096（原 16384）：roll-forward delta ~12k 时中途零心跳被
+                // 误读为挂起（2026-09-18 真机），阈值须低于单轮 delta 量级。
+                if processed == total || processed - prefillLogged.value >= 4096 {
                 prefillLogged.set(processed)
                 RuntimeTraceLogger.shared.trace("[MLX] prefill \(processed)/\(total)")
             }
@@ -1375,8 +1377,31 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if (a["role"] ?? .null) != (b["role"] ?? .null) { return false }
         if (a["content"] ?? .null) != (b["content"] ?? .null) { return false }
         if (a["tool_call_id"] ?? .null) != (b["tool_call_id"] ?? .null) { return false }
-        if (a["tool_calls"] ?? .null) != (b["tool_calls"] ?? .null) { return false }
+        // arguments 归一化（真机 12:50 rollforwardDiff 实锤）：OpenAI 协议回显
+        // 的 function.arguments 是 JSON 字符串，引擎账本 commit 存的是结构化
+        // object——.object ≠ .string 使凡尾部带工具调用的轮次必然 stale
+        // （2026-09-18 真机 74 连 skip 根因）。
+        if Self.normalizeJSONStrings(a["tool_calls"] ?? .null)
+            != Self.normalizeJSONStrings(b["tool_calls"] ?? .null) { return false }
         return true
+    }
+
+    /// 把子树中 parse 成 object/array 的 string 归一化为结构；parse 失败或
+    /// 结果为标量按原样保留，避免制造新的类型折叠（"3" 不等价 3）。
+    static nonisolated func normalizeJSONStrings(_ v: JSONValue) -> JSONValue {
+        switch v {
+        case .string(let s):
+            guard let data = s.data(using: .utf8),
+                  let parsed = try? JSONDecoder().decode(JSONValue.self, from: data)
+            else { return v }
+            switch parsed {
+            case .object, .array: return parsed
+            default: return v
+            }
+        case .object(let o): return .object(o.mapValues(normalizeJSONStrings))
+        case .array(let a): return .array(a.map(normalizeJSONStrings))
+        default: return v
+        }
     }
 
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
