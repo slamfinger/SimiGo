@@ -15,3 +15,4 @@ xcuserdata/
 
 # 回归骨架编译产物
 tools/harness/.build/
+__pycache__/
