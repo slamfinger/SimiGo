@@ -19,3 +19,6 @@ __pycache__/
 
 # 发布物走 GitHub Release 附件，不入 git 树
 *.dmg
+
+# 发布物走 GitHub Release 附件，app 二进制不入 git 树
+SimiGo.app/
