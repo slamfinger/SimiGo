@@ -99,22 +99,35 @@ def trace_tail_lines(n=400):
     return TRACE.read_text(errors="replace").splitlines()[-n:]
 
 
-def discover_key():
-    """首轮完成后从 trace 尾部发现本 session 的真实 traceKey(短串规则
-    不可预测,ecbench→cbench/main),后续轮用它精确匹配。"""
-    for line in reversed(trace_tail_lines(300)):
+def trace_line_count():
+    return len(TRACE.read_text(errors="replace").splitlines())
+
+
+def discover_key(after_line=0):
+    """从 after_line 之后的新完成行发现本 session 的真实 traceKey(短串
+    规则不可预测,ecbench→cbench/main)。严格绑定:只接受预热请求之后的
+    窗口;窗口内出现多个 session 完成行视为歧义,拒绝猜测(防误抓并发
+    会话)。调用方保证 after_line=预热请求发出前的行数。"""
+    keys = set()
+    for line in TRACE.read_text(errors="replace").splitlines()[after_line:]:
         m = re.search(r"\[MLX\] session=(\S+) messages=\d+", line)
         if m and "promptTokens=" in line:
-            return m.group(1)
+            keys.add(m.group(1))
+    if len(keys) == 1:
+        return keys.pop()
+    if len(keys) > 1:
+        sys.exit(f"discover_key 歧义:窗口内多个 session 完成行 {sorted(keys)},拒绝猜测")
     return None
 
 
-def last_completion(timeout=30):
-    """等待并返回本 session 最新完成行的解析字段。"""
+def last_completion(timeout=30, after_line=0):
+    """等待并返回本 session 最新完成行的解析字段。只接受 after_line
+    之后的新完成行——否则 HTTP 返回后 trace 未 flush 时会读到上一轮
+    completion,把跨轮指标拼成一行(P1 时序竞争,外审 2026-09-19)。"""
     key = BENCH_KEY or "bench/main"
     deadline = time.time() + timeout
     while time.time() < deadline:
-        for line in reversed(trace_tail_lines()):
+        for line in reversed(TRACE.read_text(errors="replace").splitlines()[after_line:]):
             if f"session={key} " in line and "promptTokens=" in line:
                 def g(pat):
                     m = re.search(pat, line)
@@ -176,9 +189,10 @@ def run_live(args):
 
     msgs = [{"role": "user", "content": "请回复收到。"}]
     print("[live warmup] …", flush=True)
+    warm_pos = trace_line_count()
     asst, wall = chat_round(msgs, session="ecblive")
     msgs.append(asst)
-    BENCH_KEY = discover_key()
+    BENCH_KEY = discover_key(after_line=warm_pos)
     print(f"[live warmup] wall={wall:.1f}s key={BENCH_KEY}")
 
     i, depth = 0, 500
@@ -186,9 +200,10 @@ def run_live(args):
         i += 1
         msgs.append({"role": "user",
                      "content": filler(40_000, f"L{i}") + " 请用一句话回复收到。"})
+        pos0 = trace_line_count()
         asst, wall = chat_round(msgs, session="ecblive")
         msgs.append(asst)
-        comp = last_completion()
+        comp = last_completion(after_line=pos0)
         results.append({"round": i, "arm": "LIVE", "fillerChars": 40_000,
                         "wallS": round(wall, 1), "trace": comp})
         c = comp or {}
@@ -240,10 +255,11 @@ def main():
     user0 = "请调用 record_note 工具记录一条笔记,标题为 bench-start,priority 1,tag cold。"
     msgs = [{"role": "user", "content": user0}]
     print("\n[cold] 预热轮(可能含模型加载)…", flush=True)
+    cold_pos = trace_line_count()
     asst, wall = chat_round(msgs)
     msgs.append(asst)
     print(f"[cold] wall={wall:.1f}s tool_calls={'yes' if asst.get('tool_calls') else 'no'}")
-    BENCH_KEY = discover_key()
+    BENCH_KEY = discover_key(after_line=cold_pos)
     print(f"[cold] traceKey={BENCH_KEY}")
 
     for i, step in enumerate(plan):
@@ -255,13 +271,13 @@ def main():
         msgs.append(tool_msg)
         msgs.append({"role": "user",
                      "content": "已收到工具结果,请再次调用 record_note 记录一条新笔记继续任务。"})
-        before_lines = len(trace_tail_lines(2000))
+        before_lines = trace_line_count()
         mem0 = mem_snapshot()
         asst, wall = chat_round(msgs)
         # OpenAI 会话闭环:assistant 回复必须入史——缺失则下一轮 incoming
         # 在中段缺 assistant ⇒ isPrefix 失败 ⇒ 之后每轮全 cold(首跑踩坑)。
         msgs.append(asst)
-        comp = last_completion()
+        comp = last_completion(after_line=before_lines)
         mem1 = mem_snapshot()
         row = {"round": i + 1, "arm": arm, "fillerChars": size,
                "wallS": round(wall, 1), "trace": comp,

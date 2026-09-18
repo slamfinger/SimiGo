@@ -8,6 +8,8 @@
 1. **V1.5 停在 Conditional Restore 定版**：delta 门 + fragment-continuation
    + prefill 阶梯为生产分歧对策终态。依据：
    - residual overhead ≈0.8–1.2×（中位 1.0×，两夜双样本，`512b32e`）
+     ——措辞纪律：此为当前受控 benchmark 的**状态形态对照**结论，
+     不作为 universal restore overhead 承诺（外审 2026-09-19 §七）
    - 2048 悬崖死亡跨夜复认（66.2k：187/173 vs 旧 54 tok/s）
    - 15/15 + 9/9 全通，promote 后连续性检查过
 2. **Execution Fork 真共享不进入 Core**：F0 判定「MLX 公开面只有数据级

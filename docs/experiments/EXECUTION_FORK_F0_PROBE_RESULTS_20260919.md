@@ -17,10 +17,10 @@ mlx-swift `0.31.6`
 | 磁盘 fork（生产 v1） | 63.6k 深度实测：checkpoint safetensors
   **1,527,836,839 B（≈1.53GB，≈24KB/token）**；save→file copy→load
   全程 **1.94s**（trace 在册） | 1.53GB 磁盘往返 |
-| 内存 `KVCache.copy()`（仅测试轨） | `KVCache.swift` L206/502/1241：
-  `s.map { $0[.ellipsis] }`——逐层全量 MLXArray 切片，**惰性全拷贝**
-  （copy() 调用本身廉价，首次 eval 时物化整份新 buffer；无缓冲共享） | 1×KV memcpy
-  + fork 后 2×KV 常驻 |
+| 内存 `KVCache.copy()`（仅测试轨） | 官方协议语义 = independent deep
+  copy（**已证实**）；`KVCache.swift` L502 `s.map { $0[.ellipsis] }`
+  为惰性 MLXArray 操作（**源码推断**）；首次 eval 的实际物化成本
+  **未独立计时**（见 §5） | 推断 1×KV memcpy + 2×KV 常驻（未实测） |
 
 **卡点定位**：不在 MLX eval 层（MLX 惰性图本可承载 COW 式物化），而在
 **MLXLMCommon 公开 API 无 sequence identity 概念**——KV 归属与执行历史
