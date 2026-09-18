@@ -1240,7 +1240,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return params
         }()
 
-        let snapshot = try loadPromptCacheSnapshot(url: cacheURL)
+        let snapshot = try loadPromptCacheSnapshot(url: cacheURL, materializeArrays: true)
         let session = ChatSession(
             container,
             instructions: nil,

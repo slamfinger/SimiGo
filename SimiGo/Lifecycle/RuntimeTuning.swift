@@ -59,6 +59,12 @@ nonisolated enum RuntimeTuning {
     /// 的后半句被真机补上）。有活会话时 rf 为负收益；其跨重启价值当前实现
     /// 下本就不生效（gate 在 reusedSession 之后）。默认关闭，保留代码与
     /// checkpoint 落盘供跨重启恢复方案的后续设计。
+    /// 2026-09-18 晚物化实验定案（vendor exp/materialize-snapshot 4e62fdd）：
+    /// 物化（脱离 mmap）仅 +48% 且被上下文深度淹没——489f5b 真实负载实测
+    /// rf 恢复路径 48-139 tok/s（深度主导），仍远差于 extend 389-476；大 delta
+    /// 任务形态下 rf「只渲增量」优势本身缩水。最终定案：rf 下线维持，tool 轮
+    /// 回归 extend/fork（归一化已使其稳定命中 cacheEff 0.69-0.99）。物化 API
+    /// 保留在实验分支供跨重启方案复用；正式 main 与生产 pin 5ba0bc14 未动。
     static var rollforwardEnabled = false
 
     /// P1 per-generation KV token 上限（官方 maxKVSize 透传）；nil = 仅受 ctx 约束。

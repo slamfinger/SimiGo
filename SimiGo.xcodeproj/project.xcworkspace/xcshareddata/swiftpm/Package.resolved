@@ -24,7 +24,8 @@
       "kind" : "localSourceControl",
       "location" : "/Users/mr.simi/Documents/mlx-swift-lm",
       "state" : {
-        "revision" : "5ba0bc14d5ff65e828b1f5b1151b875dd55550cb"
+        "branch" : "exp/materialize-snapshot",
+        "revision" : "4e62fddd8069953d20e61b7664051039c588f0c0"
       }
     },
     {

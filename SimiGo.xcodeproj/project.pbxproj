@@ -532,8 +532,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "file:///Users/mr.simi/Documents/mlx-swift-lm";
 			requirement = {
-				kind = revision;
-				revision = "5ba0bc14d5ff65e828b1f5b1151b875dd55550cb";
+				kind = branch;
+				branch = "exp/materialize-snapshot";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
