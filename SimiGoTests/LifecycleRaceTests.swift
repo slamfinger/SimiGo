@@ -109,6 +109,15 @@ final class LifecycleRaceTests: XCTestCase {
                     bonjourEnabled: configSnapshot.bonjourEnabled)
             }
         }
+        // 资源清理（外审五轮 P1 采纳）：start() 持有 ModelContainer/
+        // HTTPServer/会话 KV——测试结束必须 stop() 释放，否则模型驻留
+        // 污染后续测试。幂等；stop 非 throwing，不会掩盖原始测试错误。
+        var runtimeStopped = false
+        func stopRuntime() async {
+            guard !runtimeStopped else { return }
+            runtimeStopped = true
+            await runtime.stop()
+        }
 
         // 竞态锤击：3 轮生成，每轮期间并行快打 suspendIfIdle。
         // 不变量：无论挂起在窗口内命中多少次，generate 必须成功完成。
@@ -160,9 +169,11 @@ final class LifecycleRaceTests: XCTestCase {
             let outcome = suspendWins > 0 ? "RACE_WINDOW_HIT" : "PROTECTION_PASS_NO_HIT"
             print("[race] outcome=\(outcome) suspendWins=\(suspendWins) generate 全部存活")
         } catch {
+            await stopRuntime()
             await restoreConfig()
             throw error
         }
+        await stopRuntime()
         await restoreConfig()
     }
 }

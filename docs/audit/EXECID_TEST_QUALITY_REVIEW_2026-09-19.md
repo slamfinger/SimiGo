@@ -24,6 +24,18 @@
 - 门控竞态测试：`outcome=RACE_WINDOW_HIT suspendWins=1`，27.4s 全过
 - headless 回归：typed error 断言 + 状态断言通过
 
+## 五轮外审追补：测试资源生命周期（2026-09-19，已修复）
+
+**发现**：竞态测试成功/异常路径均未调用 `runtime.stop()`——
+`start()` 持有的 ModelContainer/HTTPServer/会话 KV 在测试结束后驻留，
+污染后续测试的内存与 MLX cache（P1 候选/测试隔离）。
+
+**修复**：统一可等待清理路径 `stopRuntime()`（幂等 flag + 非 throwing
+`stop()` 不会掩盖原始错误），do/catch 双路与 `restoreConfig()` 同序
+执行：异常 → stop → restore → rethrow；正常 → stop → restore。
+
+**复跑**：门控竞态测试 + headless 回归全绿（75s，含 stop 卸载）。
+
 ## 外审认可（登记）
 
 - S1 边界诚实：`parent=-` 占位，不虚构 fork 血统；ExecutionID 当前
