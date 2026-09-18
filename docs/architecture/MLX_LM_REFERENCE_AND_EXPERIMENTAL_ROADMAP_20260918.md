@@ -738,6 +738,10 @@ Roll-forward / 阶梯恢复 / risk 修复均为该主线下的一次性过程修
 > 已产出；终局决策见
 > `docs/decisions/V15_ENDGAME_DECISION_20260919.md`
 > （Conditional Restore 定版，Fork 转上游依赖研究轨）。
+> V1.5 冻结后路线：V1.6 = Execution 抽象架构定型版（少做），
+> 方向登记见 `docs/decisions/V16_DIRECTION_REGISTRATION_20260919.md`；
+> 冻结后首轮代码体检（P0 三项全过）见
+> `docs/audit/POST_FREEZE_CODE_AUDIT_2026-09-19.md`。
 
 ---
 
