@@ -480,6 +480,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
+        // S3：配置面一次性快照（外审七轮 P1 关注点——单请求单快照，
+        // 门判定与 checkpoint save 门全程只消费快照，防跨时刻拼凑）。
+        let restorePolicy = ExecutionPolicy.ConditionalRestoreConfiguration.current()
 
         let incoming = Self.makeChatMessages(messages)
         guard !incoming.isEmpty else {
@@ -590,8 +593,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var rolledForward = false
         if reusedSession, ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last) {
             switch ExecutionPolicy.conditionalRestoreGate(
-                rollforwardEnabled: RuntimeTuning.rollforwardEnabled,
-                conditionalRestoreEnabled: RuntimeTuning.conditionalRestoreEnabled,
+                configuration: restorePolicy,
                 incoming: messages,
                 ledgerCount: managed.historyJSON.count) {
             case .skipDisabled:
@@ -942,7 +944,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 依赖 ledger-end 新鲜 checkpoint——陈旧 checkpoint 曾致 +10k 重渲
         // （a210155 对照：checkpoint 覆盖 31k vs 活 41k），是旧 rf 负收益
         // 的第一来源，故两 flag 任一开启都落盘。
-        if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
+        if restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled {
             do {
                 try await performSave(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,

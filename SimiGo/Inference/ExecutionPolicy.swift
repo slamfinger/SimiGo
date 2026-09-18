@@ -30,6 +30,29 @@ import Foundation
 ///
 /// 证据链：docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md §3/§4。
 enum ExecutionPolicy {
+
+    /// S3：Conditional Restore 配置面——三 flag 合并的单一载体
+    /// （rollforwardEnabled / conditionalRestoreEnabled /
+    /// conditionalRestoreMaxDeltaTokens）。默认值 = v1.5 生产现值；
+    /// `current()` 是从 RuntimeTuning 读值的唯一入口，generate 每请求
+    /// 构造一次快照，决策全程只消费快照（外审七轮 P1 关注点：
+    /// 配置一次性冻结，防跨时刻拼凑）。
+    struct ConditionalRestoreConfiguration: Equatable, Sendable {
+        /// 旧 rf 无条件放行路径（a210155 前 A/B 基准；生产默认 false）
+        var legacyRollforwardEnabled: Bool = false
+        /// Conditional Restore 总开关（生产默认 true）
+        var conditionalRestoreEnabled: Bool = true
+        /// delta 规模门（tok 估算上限；生产默认 8192）
+        var restoreDeltaLimitTokens: Int = 8192
+
+        /// 从 RuntimeTuning 构造当前生效配置。
+        static func current() -> Self {
+            .init(
+                legacyRollforwardEnabled: RuntimeTuning.rollforwardEnabled,
+                conditionalRestoreEnabled: RuntimeTuning.conditionalRestoreEnabled,
+                restoreDeltaLimitTokens: RuntimeTuning.conditionalRestoreMaxDeltaTokens)
+        }
+    }
     /// Conditional Restore 风险检测：账本尾部 assistant 含 tool_calls（任意
     /// 参数形状）⇒ 下一轮全模板重渲染可能键序/转义分叉。分歧源是 tool_calls
     /// 的渲染本身（真机 74 连 stale、rollforwardDiff 归因），与参数复杂度
@@ -56,15 +79,14 @@ enum ExecutionPolicy {
     /// 不做行为判定——逻辑兼容性仍由 rollforwardCompatible 在恢复路径内
     /// 守卫（内容真分叉 → checkpointStale → 回退 extend，无回归）。
     static func conditionalRestoreGate(
-        rollforwardEnabled: Bool,
-        conditionalRestoreEnabled: Bool,
+        configuration: ConditionalRestoreConfiguration,
         incoming: [JSONValue],
         ledgerCount: Int
     ) -> ConditionalRestoreGateDecision {
-        if rollforwardEnabled { return .allowed }
-        guard conditionalRestoreEnabled else { return .skipDisabled }
+        if configuration.legacyRollforwardEnabled { return .allowed }
+        guard configuration.conditionalRestoreEnabled else { return .skipDisabled }
         let estimate = Self.estimateDeltaTokens(incoming: incoming, ledgerCount: ledgerCount)
-        if estimate > RuntimeTuning.conditionalRestoreMaxDeltaTokens {
+        if estimate > configuration.restoreDeltaLimitTokens {
             return .skipDeltaTooLarge(estimate)
         }
         return .allowed

@@ -567,13 +567,17 @@ final class RollForwardExperimentTests: XCTestCase {
         // 旧 rf 开启 → 无条件放行（不设 delta 门，保持 a210155 前语义可 A/B）
         XCTAssertEqual(
             SimiGo.ExecutionPolicy.conditionalRestoreGate(
-                rollforwardEnabled: true, conditionalRestoreEnabled: false,
+                configuration: .init(legacyRollforwardEnabled: true,
+                                     conditionalRestoreEnabled: false,
+                                     restoreDeltaLimitTokens: 8192),
                 incoming: [], ledgerCount: 0),
             .allowed)
         // 都关 → 禁用（纯 extend）
         XCTAssertEqual(
             SimiGo.ExecutionPolicy.conditionalRestoreGate(
-                rollforwardEnabled: false, conditionalRestoreEnabled: false,
+                configuration: .init(legacyRollforwardEnabled: false,
+                                     conditionalRestoreEnabled: false,
+                                     restoreDeltaLimitTokens: 8192),
                 incoming: [], ledgerCount: 0),
             .skipDisabled)
         // conditional 开 + 小 delta（400 字符 ≈ 107 tok 粗估）→ 放行
@@ -582,7 +586,9 @@ final class RollForwardExperimentTests: XCTestCase {
             "content": .string(String(repeating: "x", count: 400))])
         XCTAssertEqual(
             SimiGo.ExecutionPolicy.conditionalRestoreGate(
-                rollforwardEnabled: false, conditionalRestoreEnabled: true,
+                configuration: .init(legacyRollforwardEnabled: false,
+                                     conditionalRestoreEnabled: true,
+                                     restoreDeltaLimitTokens: 8192),
                 incoming: [small], ledgerCount: 0),
             .allowed)
         // conditional 开 + 大 delta（40k 字符 ≈ 10k tok 粗估 > 8192 门）→ 拒，
@@ -591,7 +597,9 @@ final class RollForwardExperimentTests: XCTestCase {
             "role": .string("tool"),
             "content": .string(String(repeating: "x", count: 40_000))])
         let decision = SimiGo.ExecutionPolicy.conditionalRestoreGate(
-            rollforwardEnabled: false, conditionalRestoreEnabled: true,
+            configuration: .init(legacyRollforwardEnabled: false,
+                                 conditionalRestoreEnabled: true,
+                                 restoreDeltaLimitTokens: 8192),
             incoming: [big], ledgerCount: 0)
         guard case .skipDeltaTooLarge(let estimate) = decision else {
             return XCTFail("expected skipDeltaTooLarge, got \(decision)")
