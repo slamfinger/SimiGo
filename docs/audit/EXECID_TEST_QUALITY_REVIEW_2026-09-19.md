@@ -111,3 +111,20 @@ loadSessionCache；fork → forkSessionBranch（BranchFork v1）。映射表
 
 **复跑**：ExecutionControllingTests 4/4 全绿；全量 SimiGoTests 通过。
 **S4 正式封版**，下一道架构关 = S5 lineage。
+
+## 十轮外审（e13dbeb，2026-09-19）：S4 正式封版确认
+
+**结论**：P0=0 / P1=0 / P2=0。三项收尾（typed error 断言、existential
+dispatch、CheckpointID 方案 A）逐一验证关闭——封版依据是证明缺口被实际
+补掉，而非 commit message 宣称。
+
+**复核确认**：五动作映射零变化、零第二套执行语义、零新增 runtime
+state、S3 单快照纪律未被 S4 绕开、fork 未偷升级（无 COW/KV Tree/
+merge/BranchManager）。
+
+**S5 审查红线（外审明示，登记在先）**：
+> 不能把 Session、Execution、Branch、Checkpoint、Trace 这几个本来不同
+> 的身份重新揉成一个对象。
+
+S5 价值定位：第一次让 executionID / parent / branch / checkpoint /
+status / trace 形成**可回放的执行血统模型**——下一道真正的架构关。
