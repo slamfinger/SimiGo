@@ -22,8 +22,14 @@ final class ExecutionControllingTests: XCTestCase {
                                     "content": .string("x")])],
                 config: ModelConfig()))
             XCTFail("未加载模型时 execute 应抛错")
+        } catch let error as RuntError {
+            if case .notLoaded = error {
+                // 预期：底层 notLoaded 透传
+            } else {
+                XCTFail("意外 RuntError: \(error)")
+            }
         } catch {
-            // 委托证明：错误来自底层 generate 路径
+            XCTFail("意外错误类型: \(error)")
         }
         XCTAssertFalse(runtime.isGenerating)
     }
@@ -37,30 +43,66 @@ final class ExecutionControllingTests: XCTestCase {
                                     "content": .string("x")])],
                 config: ModelConfig()))
             XCTFail("未加载模型时 continue 应抛错")
+        } catch let error as RuntError {
+            if case .notLoaded = error {
+                // 预期：底层 notLoaded 透传
+            } else {
+                XCTFail("意外 RuntError: \(error)")
+            }
         } catch {
-            // 预期底层 notLoaded
+            XCTFail("意外错误类型: \(error)")
         }
     }
 
     func testCheckpointRestoreForkDelegationWithoutModel() async {
         let runtime = freshRuntime()
-        await XCTAssertThrowsErrorAsync(try await runtime.checkpoint(
+        await XCTAssertThrowsNotLoadedAsync(try await runtime.checkpoint(
             identity, to: nil))
-        await XCTAssertThrowsErrorAsync(try await runtime.restore(
+        await XCTAssertThrowsNotLoadedAsync(try await runtime.restore(
             identity, from: nil))
-        await XCTAssertThrowsErrorAsync(try await runtime.fork(
+        await XCTAssertThrowsNotLoadedAsync(try await runtime.fork(
             identity, sourceBranch: "main", targetBranch: "s4fork", in: nil))
+    }
+
+    /// 协议面调度验证：经 `any ExecutionControlling` existential 调用，
+    /// 证明 协议定义→conformance→existential→调用 全链可用（外审九轮
+    /// P2 测试增强：静态类型 NativeMLX 直调只证明了 extension 存在）。
+    func testProtocolExistentialDispatch() async {
+        let controller: any ExecutionControlling = freshRuntime()
+        do {
+            _ = try await controller.execute(ExecutionRequest(
+                requestId: "s4-existential", identity: identity,
+                messages: [.object(["role": .string("user"),
+                                    "content": .string("x")])],
+                config: ModelConfig()))
+            XCTFail("未加载模型时协议面 execute 应抛错")
+        } catch let error as RuntError {
+            if case .notLoaded = error {
+                // 预期：底层 notLoaded 透传
+            } else {
+                XCTFail("意外 RuntError: \(error)")
+            }
+        } catch {
+            XCTFail("意外错误类型: \(error)")
+        }
     }
 }
 
-/// XCTest 的 XCTAssertThrowsError 尚无 async 重载（该 toolchain），自备助手。
-func XCTAssertThrowsErrorAsync(
+/// S4 P2-1 收紧（外审九轮）：异步路径的"底层错误透传证明"必须断言
+/// 精确错误类型——任意 error 即过无法区分委托透传与实现错误。
+func XCTAssertThrowsNotLoadedAsync(
     _ expression: @autoclosure () async throws -> some Any
 ) async {
     do {
         _ = try await expression()
-        XCTFail("预期抛错，实际成功返回")
+        XCTFail("预期抛 RuntError.notLoaded，实际成功返回")
+    } catch let error as RuntError {
+        if case .notLoaded = error {
+            // 预期
+        } else {
+            XCTFail("意外 RuntError: \(error)")
+        }
     } catch {
-        // 预期路径
+        XCTFail("意外错误类型: \(error)")
     }
 }

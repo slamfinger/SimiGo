@@ -30,6 +30,10 @@ public struct ExecutionID: Equatable, Sendable {
 }
 
 /// checkpoint 身份 = Execution 身份 + 存储目录（BranchFork v1 语义）。
+/// 注意（外审九轮 P2-2 方案 A）：S4 协议面 checkpoint/restore 以
+/// ExecutionID + 显式 store URL 为参数——不改动已稳定的
+/// save/loadSessionCache API；CheckpointID 作为 S5 lineage 的
+/// checkpoint 关联模型预留，当前非协议参数类型。
 public struct CheckpointID: Equatable, Sendable {
     public var identity: ExecutionID
     public var store: URL

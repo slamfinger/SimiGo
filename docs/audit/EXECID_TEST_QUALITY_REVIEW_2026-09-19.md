@@ -92,3 +92,22 @@ loadSessionCache；fork → forkSessionBranch（BranchFork v1）。映射表
 
 **验收**：headless 委托证明 3/3（未加载实例五动作错误透传 =
 纯委托证明）；全量 66 执行 0 失败。
+
+## 九轮外审（043fe3b，2026-09-19）：S4 通过 + 三项收尾已修
+
+**结论**：S4 五动作映射全 ✅、无新增运行状态、无第二套执行语义、S3 单
+快照纪律未被绕开——P0=0 / P1=0；S4 不返工。
+
+**收尾三项（本轮已修）**：
+1. P2-1 委托证明收紧：execute/continue/checkpoint/restore/fork 测试
+   从"任意 error 即过"收紧为 `RuntError.notLoaded` 精确匹配 + 意外类型
+   XCTFail——真正证明"底层错误透传"而非仅"失败行为"
+2. P2-2 CheckpointID 契约漂移：按外审方案 A 处理——不改动已稳定的
+   checkpoint API；CheckpointID 注明为 S5 lineage 关联模型预留，当前
+   非协议参数类型
+3. P2 增强 协议面调度验证：新增 `testProtocolExistentialDispatch`——
+   经 `any ExecutionControlling` existential 调用，证明
+   协议定义→conformance→existential→调用 全链
+
+**复跑**：ExecutionControllingTests 4/4 全绿；全量 SimiGoTests 通过。
+**S4 正式封版**，下一道架构关 = S5 lineage。
