@@ -50,7 +50,7 @@ Executor              执行：现有 generateUsingChatSession 路径
 |---|---|---|---|
 | sessionID | 用户会话身份 | 协议入参 | 已有 |
 | **executionID** | 单次执行身份（新建） | `[EXEC]` 行 | **Slice 1** |
-| parentExecutionID | 派生来源（fork 时） | `[EXEC]` 行 | Slice 1 占位 `-` |
+| parentExecutionID | 派生来源（fork 时） | `[EXEC]` 行 | S5：分支级派生真值已入 BranchForkEvent（storageKey 级）；执行级 parent 留待 F1/上游原语 |
 | kvFingerprint | KV 配置指纹 | checkpoint meta | 已有 |
 | checkpointID | checkpoint 文件身份 | meta sidecar | 已有（文件名+meta） |
 | traceKey | 日志短串 | trace 行 | 已有（不可预测短串） |
