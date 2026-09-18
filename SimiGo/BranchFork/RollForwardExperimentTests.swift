@@ -344,26 +344,26 @@ final class RollForwardExperimentTests: XCTestCase {
         }
         // 任意 tool_calls 形态 → risky（分歧源=渲染本身,与参数复杂度无关;
         // 2026-09-18 82bfa0 生产实证:单键形状旧判据漏报,22k rebuild 逃逸）
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: assistant([
             call(.object(["b": .number(1), "a": .number(2)])),
         ])))
         // 单键纯量 → risky（旧多键判据漏报形态,82bfa0 实证）
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: assistant([
             call(.object(["command": .string("ls")])),
         ])))
         // 单键但嵌套多键对象 → risky
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: assistant([
             call(.object(["cmd": .object(["x": .number(1), "y": .number(2)])])),
         ])))
         // 多键对象数组元素多键 → risky
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant([
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: assistant([
             call(.object(["notes": .array([
                 .object(["k": .number(1), "j": .number(2)]),
             ])])),
         ])))
         // 无 tool_calls / 无尾消息 → safe
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: assistant(nil)))
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardRisk(lastJSON: nil))
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: assistant(nil)))
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardRisk(lastJSON: nil))
     }
 
     func testRollforwardCompatible() {
@@ -371,23 +371,23 @@ final class RollForwardExperimentTests: XCTestCase {
             .object(["role": .string("user"), "content": .string(text)])
         }
         // checkpoint 历史 = incoming 真前缀 → 兼容
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a"), user("b"), user("c")],
             restoredHistory: [user("a"), user("b")]))
         // 历史更长（陈旧/超前）→ 不兼容
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a")],
             restoredHistory: [user("a"), user("b")]))
         // 同长（无 delta）→ 不兼容
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a")],
             restoredHistory: [user("a")]))
         // 前缀内容漂移 → 不兼容
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a"), user("changed")],
             restoredHistory: [user("a"), user("b")]))
         // role 改变（content 相同）→ 不兼容（外审 P0-2：渲染路径字段对账）
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [.object(["role": .string("user"), "content": .string("a")]),
                        user("b")],
             restoredHistory: [.object(["role": .string("assistant"), "content": .string("a")]),
@@ -397,7 +397,7 @@ final class RollForwardExperimentTests: XCTestCase {
             .object(["role": .string("tool"), "tool_call_id": .string(id),
                      "content": .string("ok")])
         }
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a"), tool("call_2")],
             restoredHistory: [user("a"), tool("call_X")]))
         // tool_calls 结构改变（arguments 键集不同）→ 不兼容
@@ -409,11 +409,11 @@ final class RollForwardExperimentTests: XCTestCase {
                         "function": .object(["name": .string("t"), "arguments": args]),
                      ])])])
         }
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a"), asst(.object(["b": .number(1), "a": .number(2)])), user("c")],
             restoredHistory: [user("a"), asst(.object(["a": .number(2), "b": .number(9)]))]))
         // arguments 键集与值相同（仅构造插入序不同）→ 兼容（dict 相等与序无关）
-        XCTAssertTrue(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertTrue(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: [user("a"), asst(.object(["a": .number(1), "b": .number(2)])), user("c")],
             restoredHistory: [user("a"), asst(.object(["b": .number(2), "a": .number(1)]))]))
     }
@@ -443,7 +443,7 @@ final class RollForwardExperimentTests: XCTestCase {
     func testMessageRenderCompatibleDistinguishesNullFromStringNull() {
         // P1-1 回归（2026-09-18）：.description 比较会把 .string("null") 与
         // .null 判为相等（类型折叠假阳性 → 放行 → 渲染分叉）；结构相等必须区分。
-        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.messageRenderCompatible(
             .object(["role": .string("user"), "content": .null]),
             .object(["role": .string("user"), "content": .string("null")])))
     }
@@ -459,19 +459,19 @@ final class RollForwardExperimentTests: XCTestCase {
                         "function": .object(["name": .string("t"), "arguments": args]),
                      ])])])
         }
-        XCTAssertTrue(SimiGo.NativeMLX.messageRenderCompatible(
+        XCTAssertTrue(SimiGo.ExecutionPolicy.messageRenderCompatible(
             asst(.object(["title": .string("diag"), "priority": .number(3)])),
             asst(.string("{\"title\": \"diag\", \"priority\": 3}"))))
         // 值不同（3 vs 9）→ 仍不兼容
-        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.messageRenderCompatible(
             asst(.object(["priority": .number(3)])),
             asst(.string("{\"priority\": 9}"))))
         // 非法 JSON 字符串按原样比较 → 与 dict 不兼容
-        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.messageRenderCompatible(
             asst(.object(["priority": .number(3)])),
             asst(.string("not-json"))))
         // 标量字符串不折叠（"3" ≠ 3）
-        XCTAssertFalse(SimiGo.NativeMLX.messageRenderCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.messageRenderCompatible(
             asst(.object(["v": .number(3)])),
             asst(.object(["v": .string("3")]))))
     }
@@ -484,7 +484,7 @@ final class RollForwardExperimentTests: XCTestCase {
             .object(["role": .string("tool"), "tool_call_id": .string(id),
                      "content": .string("ok")])
         }
-        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+        let line = SimiGo.ExecutionPolicy.rollforwardDiffLine(
             incoming: [user("a"), tool("call_2"), user("c")],
             restoredHistory: [user("a"), tool("call_X")])
         XCTAssertTrue(line.contains("index=1"), line)
@@ -498,7 +498,7 @@ final class RollForwardExperimentTests: XCTestCase {
         }
         // incoming 缺 content（isPrefix 容错方向）→ diff 标 field=content，
         // ckpt 侧为值、incoming 侧为 null——74 连 stale 归因的关键形态。
-        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+        let line = SimiGo.ExecutionPolicy.rollforwardDiffLine(
             incoming: [.object(["role": .string("user")]), user("b"), user("c")],
             restoredHistory: [user("a"), user("b")])
         XCTAssertTrue(line.contains("index=0 field=content"), line)
@@ -508,7 +508,7 @@ final class RollForwardExperimentTests: XCTestCase {
         func user(_ text: String) -> SimiGo.JSONValue {
             .object(["role": .string("user"), "content": .string(text)])
         }
-        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+        let line = SimiGo.ExecutionPolicy.rollforwardDiffLine(
             incoming: [user("a")],
             restoredHistory: [user("a"), user("b")])
         XCTAssertTrue(line.contains("reason=historyCount"), line)
@@ -529,9 +529,9 @@ final class RollForwardExperimentTests: XCTestCase {
         }
         let incoming = [user("a"), asst(.object(["a": .number(1)])), user("c")]
         let restored = [user("a"), asst(.object(["a": .number(2)]))]
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: incoming, restoredHistory: restored))
-        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+        let line = SimiGo.ExecutionPolicy.rollforwardDiffLine(
             incoming: incoming, restoredHistory: restored)
         XCTAssertTrue(line.contains("field="), line)
         XCTAssertFalse(line.contains("reason=none"), line)
@@ -555,9 +555,9 @@ final class RollForwardExperimentTests: XCTestCase {
         // restored 须为 incoming 真前缀且更短（diff 的 historyCount 守卫）。
         let incoming = [user("a"), asst(.string("{\"a\": 1}")), user("b-new"), user("c")]
         let restored = [user("a"), asst(.object(["a": .number(1)])), user("b-old")]
-        XCTAssertFalse(SimiGo.NativeMLX.rollforwardCompatible(
+        XCTAssertFalse(SimiGo.ExecutionPolicy.rollforwardCompatible(
             incoming: incoming, restoredHistory: restored))
-        let line = SimiGo.NativeMLX.rollforwardDiffLine(
+        let line = SimiGo.ExecutionPolicy.rollforwardDiffLine(
             incoming: incoming, restoredHistory: restored)
         XCTAssertTrue(line.contains("index=2 field=content"), line)
         XCTAssertFalse(line.contains("tool_calls"), line)
@@ -566,13 +566,13 @@ final class RollForwardExperimentTests: XCTestCase {
     func testConditionalRestoreGate() {
         // 旧 rf 开启 → 无条件放行（不设 delta 门，保持 a210155 前语义可 A/B）
         XCTAssertEqual(
-            SimiGo.NativeMLX.conditionalRestoreGate(
+            SimiGo.ExecutionPolicy.conditionalRestoreGate(
                 rollforwardEnabled: true, conditionalRestoreEnabled: false,
                 incoming: [], ledgerCount: 0),
             .allowed)
         // 都关 → 禁用（纯 extend）
         XCTAssertEqual(
-            SimiGo.NativeMLX.conditionalRestoreGate(
+            SimiGo.ExecutionPolicy.conditionalRestoreGate(
                 rollforwardEnabled: false, conditionalRestoreEnabled: false,
                 incoming: [], ledgerCount: 0),
             .skipDisabled)
@@ -581,7 +581,7 @@ final class RollForwardExperimentTests: XCTestCase {
             "role": .string("tool"),
             "content": .string(String(repeating: "x", count: 400))])
         XCTAssertEqual(
-            SimiGo.NativeMLX.conditionalRestoreGate(
+            SimiGo.ExecutionPolicy.conditionalRestoreGate(
                 rollforwardEnabled: false, conditionalRestoreEnabled: true,
                 incoming: [small], ledgerCount: 0),
             .allowed)
@@ -590,7 +590,7 @@ final class RollForwardExperimentTests: XCTestCase {
         let big = SimiGo.JSONValue.object([
             "role": .string("tool"),
             "content": .string(String(repeating: "x", count: 40_000))])
-        let decision = SimiGo.NativeMLX.conditionalRestoreGate(
+        let decision = SimiGo.ExecutionPolicy.conditionalRestoreGate(
             rollforwardEnabled: false, conditionalRestoreEnabled: true,
             incoming: [big], ledgerCount: 0)
         guard case .skipDeltaTooLarge(let estimate) = decision else {
@@ -605,12 +605,12 @@ final class RollForwardExperimentTests: XCTestCase {
         }
         // 账本全覆盖 → 0
         XCTAssertEqual(
-            SimiGo.NativeMLX.estimateDeltaTokens(
+            SimiGo.ExecutionPolicy.estimateDeltaTokens(
                 incoming: [user("a")], ledgerCount: 1), 0)
         // 新增消息 = compact-JSON 字符数 ÷ 4（{"role":"user","content":"bbbb"}
         // 两种键序下字符数同为 32 → 32/4 = 8，长度与键序无关）
         XCTAssertEqual(
-            SimiGo.NativeMLX.estimateDeltaTokens(
+            SimiGo.ExecutionPolicy.estimateDeltaTokens(
                 incoming: [user("a"), user("bbbb")], ledgerCount: 1), 8)
     }
 
@@ -621,12 +621,12 @@ final class RollForwardExperimentTests: XCTestCase {
         let cjk = String(repeating: "小说", count: 200)
         let message: SimiGo.JSONValue = .object([
             "role": .string("tool"), "content": .string(cjk)])
-        let est = SimiGo.NativeMLX.estimateDeltaTokensCJK(
+        let est = SimiGo.ExecutionPolicy.estimateDeltaTokensCJK(
             incoming: [message], ledgerCount: 0)
         XCTAssertGreaterThanOrEqual(est, 400)
         XCTAssertLessThan(est, 430)  // 包装层 ASCII ÷4
         // 对照：chars÷4 口径同输入仅 ~1/4——门的失真量级
-        let asciiEst = SimiGo.NativeMLX.estimateDeltaTokens(
+        let asciiEst = SimiGo.ExecutionPolicy.estimateDeltaTokens(
             incoming: [message], ledgerCount: 0)
         XCTAssertGreaterThan(asciiEst, 0)
         XCTAssertLessThan(asciiEst * 3, est)
