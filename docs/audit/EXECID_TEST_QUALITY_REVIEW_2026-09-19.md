@@ -56,3 +56,17 @@ headless 回归全绿。
 - S1 边界诚实：`parent=-` 占位，不虚构 fork 血统；ExecutionID 当前
   回答"日志属于哪次生成"，lineage 归属留后续分片——目标一致不扩圈
 - V1.6 无"架构先行、实现过度"回潮
+
+## 七轮外审（S3 复核，2026-09-19）：通过 + P2 已修
+
+**结论**：S3 核心实现通过——配置面合并 ✅ / 单请求快照 ✅ / Decision gate
+与 checkpoint save 同快照 ✅ / 默认行为等价 ✅ / ExecutionPolicy 纯函数
+边界保持（不偷读 RuntimeTuning）✅ / ExecutionFacts 不提前接线 ✅。
+
+**P2 已修**：ExecutionPolicyGateTests 快照隔离测试的恢复值写死 8192 →
+改为恢复进入前原值（`original`），与五轮 seam 污染同类问题关闭；
+ExecutionPolicy.swift 头部"留待 S3"陈旧注释顺手清。
+
+**七轮外审 S3 审查重点已入册**（S4 期间重点盯）：
+ExecutionControlling 薄协议面是否只是"命名抽象"，还是悄悄产生第二套
+运行语义。

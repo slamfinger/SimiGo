@@ -49,11 +49,14 @@ final class ExecutionPolicyGateTests: XCTestCase {
 
     func testSnapshotIsolationFromRuntimeTuningMutation() {
         // 快照一次性冻结：构造后变更 RuntimeTuning，已冻结配置不受影响
+        // 恢复值 = 进入前原值而非写死 8192（外审七轮 P2：全局状态还原
+        // 必须还原到测试前真实值，防默认值调整/他测先改时留下污染）
+        let original = RuntimeTuning.conditionalRestoreMaxDeltaTokens
         RuntimeTuning.conditionalRestoreMaxDeltaTokens = 1
-        defer { RuntimeTuning.conditionalRestoreMaxDeltaTokens = 8192 }
+        defer { RuntimeTuning.conditionalRestoreMaxDeltaTokens = original }
         let frozen = ExecutionPolicy.ConditionalRestoreConfiguration.current()
         XCTAssertEqual(frozen.restoreDeltaLimitTokens, 1)
-        RuntimeTuning.conditionalRestoreMaxDeltaTokens = 8192
+        RuntimeTuning.conditionalRestoreMaxDeltaTokens = original
         // frozen 仍持 limit=1：小 delta 估算 >1 → 拒（若读活值则应为 allowed）
         if case .skipDeltaTooLarge = ExecutionPolicy.conditionalRestoreGate(
             configuration: frozen,

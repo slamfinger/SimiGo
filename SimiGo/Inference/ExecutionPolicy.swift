@@ -25,8 +25,8 @@ import Foundation
 
 /// V1.6 S2（外审四轮指定分层边界）：事实→决策→执行三层中的「事实 + 决策」层。
 /// 本文件只承载既有判定纯函数（自 NativeMLX 逐字节搬家，2026-09-19），
-/// 语义不变；flag 合并（conditionalRestore/rollforward → ExecutionPolicy
-/// 配置面）留待 S3。
+/// 语义不变；flag 合并已于 S3 完成（ConditionalRestoreConfiguration +
+/// 单请求快照，见 ba62891）。
 ///
 /// 证据链：docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md §3/§4。
 enum ExecutionPolicy {
