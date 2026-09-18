@@ -720,6 +720,20 @@ prefill statistics
 
 ---
 
+## P1：Execution Fork F0 能力探针（第一性问题，2026-09-18 提级）
+
+> **第一性问题**：MLX 是否允许一个正在运行的 execution state，
+> 不重算共同 prefix 就派生独立、可验证、可继续执行的 child state？
+> （llama.cpp sequence 模型给出的能力边界参照：
+> `seq_cp` 同 stream 仅改元数据零数据复制。）
+
+实验登记：`docs/experiments/EXECUTION_FORK_F0_PROBE_20260918.md`。
+答案无论「是 / 否」都可判定下一步：是 → ExecutionState / sequence
+identity 最小切片（F1）；否 → 上游 issue + 停止应用层 workaround。
+Roll-forward / 阶梯恢复 / risk 修复均为该主线下的一次性过程修补。
+
+---
+
 ## P1：Roll-forward（Phase A ✅ 已执行 → Phase B ⏳ 生产切片）
 
 > **状态同步（2026-09-18）**：Phase A 测量实验已完成
