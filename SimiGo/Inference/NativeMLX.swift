@@ -65,6 +65,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     private let baseConfig: ModelConfig
     private let lifecycleGate = RuntimeLifecycleGate()
     private let gateHolder = Mutex(SessionGenerationGate())
+    /// V1.6 S5：执行血统日志（有界 128 条；只记录查询，不参与决策）。
+    let lineage = ExecutionLineage()
     private let traceLogger = RuntimeTraceLogger.shared
     private let toolGovernance = ToolGovernance { line in
         RuntimeTraceLogger.shared.trace(line)
@@ -396,7 +398,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         traceLogger.trace(
             "[EXEC] begin exec=\(executionId) key=\(executionKey.traceKey)"
             + " parent=- req=\(requestId) incoming=\(messages.count)")
+        lineage.begin(ExecutionRecord(
+            executionId: String(executionId), requestId: requestId,
+            agentId: agentId, sessionId: sessionId,
+            logicalBranchId: logicalBranchId, status: .running,
+            startedAt: Date()))
 
+        do {
         // P0-3 强化：全局生成串行化。gate key 常量化使所有生成跨 session 单飞，
         // 规避 qwen3_5_moe 动态编译架构在并发首次编译时的 mlx 锁互堵
         // （sessions 存储仍用真实 executionKey，仅互斥令牌常量化）。
@@ -461,10 +469,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
-        return try await withTaskCancellationHandler(
+        let result = try await withTaskCancellationHandler(
             operation: { try await task.value },
             onCancel: { task.cancel() }
         )
+            lineage.end(executionId: String(executionId), status: .completed)
+            traceLogger.trace(
+                "[EXEC] end exec=\(executionId) status=completed")
+            return result
+        } catch {
+            let status: ExecutionStatus = error is CancellationError
+                ? .cancelled : .failed
+            lineage.end(executionId: String(executionId), status: status)
+            traceLogger.trace(
+                "[EXEC] end exec=\(executionId) status=\(status.rawValue)")
+            throw error
+        }
     }
 
     private func generateUsingChatSession(
@@ -950,6 +970,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                lineage.attachCheckpoint(
+                    executionId: String(executionId),
+                    checkpointKey: executionKey.storageKey)
+                traceLogger.trace(
+                    "[EXEC] checkpoint exec=\(executionId)"
+                    + " checkpoint=\(executionKey.storageKey)")
             } catch {
                 traceLogger.trace(
                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
@@ -1381,6 +1407,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         traceLogger.trace(
             "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)" +
             " history=\(metadata.history.count)")
+        lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
+        traceLogger.trace(
+            "[EXEC] fork parent=\(sourceKey.storageKey)"
+            + " child=\(targetKey.storageKey)")
         return metadata
     }
 
