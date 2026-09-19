@@ -131,3 +131,22 @@ rebuild 后 **warm-setup 请求再次冻结**，探针 12 连 http=000（11:25:0
 重跑 10K 档验证。若通过：矩阵实验期间以该环境变量运行；正式修复
 需定位触发 os_log 的具体调用点（系统框架内部亦可触发，非我方代码
 直接调用）。
+
+## 第六轮（2026-09-19 11:45）：OS_ACTIVITY_MODE=disable 未阻断 + 关键新事实
+
+- **4/4 复现**：disable 模式下仍在同一位置冻结（r1 cold 完成 → r2 请求
+  挂起），os_log 抑制假设排除
+- 本轮**全程零 UI 自动化**——AX 干扰假设亦排除
+- CPU 0%（阻塞非自旋）；/v1/models 与矩阵请求同挂 → 全局阻塞点存在
+- **frozen sample 关键事实：16 线程中不存在卡死请求的 Swift 处理
+  线程**——第 3 请求的 handler 任务从未启动（或已消失）；sample 中
+  wedge 的 libtrace 状态线程疑为 sample 命令自身的受害者
+- **未解之谜收窄**：第 3 请求在 HTTPServer 层（generate 之前）消失，
+  且新连接的 /v1/models 也无人处理——accept/派发层停摆
+
+## 下一步诊断（登记）
+
+1. 冻结发生瞬间（r2 完成后 ~5s 内）立即 sample——抢在污染前捕获
+2. HTTPServer.readRequest/route 入口加 trace 行（第 3 请求走到哪一步）
+3. 排查 r2 rebuild 路径是否遗留未释放的锁/任务
+  （LifecycleGates acquire/release 配平、ConnectionContext 生命周期）
