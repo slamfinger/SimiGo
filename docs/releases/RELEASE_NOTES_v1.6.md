@@ -69,3 +69,28 @@ v1.5 回答了"Conditional Restore 能否成为稳定的 Runtime 行为"；v1.6 
 - 外审多轮复核：S1–S5 逐片通过，Post-Freeze Audit P0×3 + P1×4 闭环，
   终局决策与上游 RFC 均在册
 - DMG `hdiutil verify` VALID；内嵌 app 版本 1.6、codesign 校验通过
+
+## v1.6 稳定替换（Build 3，2026-09-19）
+
+### 修复
+
+- 修复 OpenAI 客户端发送 `"tools": null` 时的全局冻结：`NSNull` 不再进入
+  `JSONSerialization` 写出路径；只有非空 `[[String: Any]]` 会按 tools 编码。
+- 保留 checkpoint 落盘、Lineage 状态与 checkpoint 失败日志；取消成功路径的
+  `[EXEC] begin/checkpoint/end` 与 `[MLX] session=` 噪音埋点。
+- `BranchForkTests` 与 `RollForwardExperimentTests` 移入 `SimiGoTests/BranchFork/`，
+  保持测试代码与生产 target 分离。
+
+### 验收
+
+- 全量 `SimiGoTests`：73 执行 / 0 失败 / 5 模型门控跳过
+- Release 10K 完整矩阵通过；`tools=null` warm-setup 正常完成，回归后
+  `/health=200`
+- 成功路径新增日志中 `[EXEC] checkpoint`、`[MLX] session=`、`[EXEC] end`
+  均为 0 条
+- 证据：
+  `docs/experiments/V17_RUNTIME_MATRIX/results_release_minimal_rootfix_regression.json`
+
+### 发布物
+
+- `SimiGo-v1.6.dmg` 替换为 Build 3；内嵌 app 版本仍为 1.6

@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C1632BB22FB4000000D1EF95 /* BranchForkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1632BB32FB4000000D1EF95 /* BranchForkTests.swift */; };
-		C1632BC42FB4000000D1EF95 /* RollForwardExperimentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1632BC52FB4000000D1EF95 /* RollForwardExperimentTests.swift */; };
 		C1632AE03028D4EB00D1EF95 /* Hub in Frameworks */ = {isa = PBXBuildFile; productRef = C1632ADF3028D4EB00D1EF95 /* Hub */; };
 		C1632AE23028D4EB00D1EF95 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE13028D4EB00D1EF95 /* Tokenizers */; };
 		C1632AE43028D4EB00D1EF95 /* Transformers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE33028D4EB00D1EF95 /* Transformers */; };
@@ -30,29 +28,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		C1632BB32FB4000000D1EF95 /* BranchForkTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BranchForkTests.swift; path = SimiGo/BranchFork/BranchForkTests.swift; sourceTree = "<group>"; };
-		C1632BC52FB4000000D1EF95 /* RollForwardExperimentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = RollForwardExperimentTests.swift; path = SimiGo/BranchFork/RollForwardExperimentTests.swift; sourceTree = "<group>"; };
 		C138807D2FB37213009F04D2 /* SimiGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SimiGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SimiGoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		C1632BB12FB4000000D1EF95 /* Exceptions for "SimiGo" folder in "SimiGo" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"BranchFork/BranchForkTests.swift",
-				"BranchFork/RollForwardExperimentTests.swift",
-			);
-			target = C138807C2FB37213009F04D2 /* SimiGo */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C138807F2FB37213009F04D2 /* SimiGo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				C1632BB12FB4000000D1EF95 /* Exceptions for "SimiGo" folder in "SimiGo" target */,
-			);
 			path = SimiGo;
 			sourceTree = "<group>";
 		};
@@ -237,8 +219,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1632BB22FB4000000D1EF95 /* BranchForkTests.swift in Sources */,
-				C1632BC42FB4000000D1EF95 /* RollForwardExperimentTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -384,7 +364,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = YPXU8M53F9;
 				ENABLE_APP_SANDBOX = NO;
@@ -417,7 +397,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = YPXU8M53F9;
 				ENABLE_APP_SANDBOX = NO;
@@ -448,7 +428,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = YPXU8M53F9;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -466,7 +446,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = YPXU8M53F9;
 				GENERATE_INFOPLIST_FILE = YES;

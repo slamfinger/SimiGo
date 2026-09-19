@@ -173,3 +173,100 @@ os_state for-self dispatch_sync 等主事件永挂——该队列属系统统一
 
 **一致性**：4/4 复现全部死在同一点（r2 rebuild 完成后的下一请求），
 与队列隔离修复、OS_ACTIVITY_MODE、UI 自动化均无关。
+
+## 二次隔离 + watchdog（2026-09-19 12:41）
+
+- `newConnectionHandler` 不再在 listener 回调队列内直接执行 `accept()`；
+  新连接先转入并发 `acceptQueue`。这样 `NWConnection.start` / 系统
+  状态捕获路径被挂起时，listener 状态回调仍可继续收到事件。
+- `HTTPServer.start()` 建立连接 watchdog；`stop()` 显式取消，避免重启后
+  旧 watchdog 堆积。已 recv 但未进入 generation 的连接 60s 终止；
+  已进入 generation 且超长无终态的连接 30min 兜底终止。
+- 回归：`xcodebuild test` 73 项通过、5 项模型门控跳过。生产验收仍需
+  用 `runtime_matrix --depths 10000` 复跑至 r2 后第 3 请求。
+
+## Release 回归：Task watchdog 未触发（2026-09-19 12:49）
+
+- Release 构建 + 10K 档复跑：r1 cold ✅、r2 rebuild ✅、第 3 请求
+  `chat-nonstream enter` 后再次全局冻结。
+- 冻结 90s+ 后无 watchdog trace；`/health` 超时。sample 显示主线程与
+  MLX 线程均空闲，但没有任何 Swift 并发/NW 处理线程在工作。
+- 结论：挂起再次发生在 Swift 并发任务层；**watchdog 本身不能再用
+  `Task.sleep`**，否则会被同一故障面吞掉。
+- 修复改为专用 `DispatchSourceTimer`（独立 queue，30s 周期），不依赖
+  Swift cooperative pool。
+- 证据：`evidence/simigo_hang_sample_release_taskwatchdog.txt`、
+  `evidence/release_taskwatchdog_regression.log`。
+
+## Dispatch watchdog 首轮结果（2026-09-19 13:01）
+
+- Release 回归再次冻结在第 3 请求 `chat-nonstream enter` 后。
+- **独立 queue watchdog 正常触发**：13:01:27 记录
+  `watchdog terminate conn pre-generate stale`，冻结请求客户端收到
+  connection closed。
+- 但 `/health` 仍超时——证明冻结面不止单个请求，`NWListener` 自身已
+  停止派发；杀掉 stale connection 不足以恢复 accept。
+- 第三轮修复：watchdog 终止 stale connection 后立即
+  `cancel` 旧 `NWListener` 并重建 listener。
+- 回归证据：`evidence/release_dispatch_watchdog_regression.log`、
+  `evidence/simigo_sample_after_dispatch_watchdog.txt`。
+
+## Listener 立即重建结果（2026-09-19 13:10）
+
+- 第三轮 Release 回归仍触发同一冻结签名；watchdog 正常终止 stale
+  connection。
+- listener 立即重建日志出现，但随后 `/health` 变为 connection refused；
+  判读为旧 `NWListener` 异步释放端口期间，新 listener 未能稳定接管。
+- 第四轮修复：listener 重建延后 3 秒，先等待端口释放。
+- 已将最新 Release 构建同步部署到 `/Applications/SimiGo.app`；生产回归
+  待第四轮复跑。
+
+## 根因精确定位（2026-09-19 13:32）
+
+细粒度埋点显示第 3 请求（warm setup）已经完成 body decode、handler
+进入、messages 解析，并成功进入 generation gate：
+
+```text
+chat parse messages-ok count=8
+（此后无 parse done / EXEC begin）
+```
+
+卡点收窄到 `parseChatParams` 的 tools 编码段。该请求是首个
+`"tools": null` 请求；旧代码执行：
+
+```swift
+try? JSONSerialization.data(withJSONObject: json["tools"]!)
+```
+
+`NSNull` 不是 JSON write 的合法 top-level type。`JSONSerialization`
+抛出的是 **ObjC exception**，Swift 的 `try?` 不能捕获，进入 ObjC
+异常/系统状态路径后表现为全局冻结。最小复现脚本确认 `NSNull` 传入
+`JSONSerialization.data` 直接 `NSInvalidArgumentException`。
+
+**根因修复**：只有 `json["tools"]` 成功 cast 为非空
+`[[String: Any]]` 时才编码；`null` 直接视为无 tools。
+
+证据：`evidence/release_stage_trace_regression.log`、
+`evidence/release_stage_trace_frozen_trace_tail.txt`。
+
+## 最终回归通过（2026-09-19 13:40）
+
+- Release 构建 + `/Applications/SimiGo.app` 生产路径复跑 10K 档完整矩阵。
+- 关键的 `tools=null` warm-setup 请求不再冻结，正常完成并进入后续测量。
+- 全流程通过：`build r1/r2 → warm setup → warm → restore → rebuild →
+  cold`，结束后 `/health` 仍为 200。
+- 指标：warm cacheEff=1.00 / promptTime=0.1s；restore=27.4s；
+  rebuild=23.2s；cold=24.7s；footprint=21.9G。
+- 结果：`results_release_rootfix_regression.json`；
+  日志：`evidence/release_rootfix_regression.log`。
+
+## 最小补丁确认（2026-09-19 13:54）
+
+- 撤除临时 accept 队列隔离、watchdog、listener 重建；仅保留
+  `tools=null` 的类型守卫与回归测试。
+- Release 构建 + `/Applications/SimiGo.app` 复跑 10K 档完整矩阵通过。
+- `tools=null` warm-setup 正常完成；warm cacheEff=1.00 / promptTime=0.2s；
+  restore=24.6s；rebuild=24.4s；cold=25.4s；footprint=22.0G。
+- 回归后 `/health` 保持 200。
+- 结果：`results_release_minimal_rootfix_regression.json`；
+  日志：`evidence/release_minimal_rootfix_regression.log`。

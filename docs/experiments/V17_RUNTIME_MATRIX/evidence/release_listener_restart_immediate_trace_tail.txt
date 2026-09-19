@@ -1,0 +1,12 @@
+[2026-09-19 13:10:34.424] [HTTP] watchdog terminate conn pre-generate stale
+[2026-09-19 13:10:34.424] [HTTP] watchdog listener restarted
+[2026-09-19 13:14:21.157] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:14:48.808] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:14:48.991] [EXEC] begin exec=7dc5a7a4-2619-4315-a346-43eb16bb4211 key=s4/main parent=- req=s4-continue incoming=1
+[2026-09-19 13:14:48.992] [EXEC] end exec=7dc5a7a4-2619-4315-a346-43eb16bb4211 status=failed
+[2026-09-19 13:14:48.993] [EXEC] begin exec=bc51cfe1-9452-4292-afb1-105a9684ed7c key=s4/main parent=- req=s4-execute incoming=1
+[2026-09-19 13:14:48.993] [EXEC] end exec=bc51cfe1-9452-4292-afb1-105a9684ed7c status=failed
+[2026-09-19 13:14:48.993] [EXEC] begin exec=4867f400-021c-4797-91c8-24c85de3dbd7 key=s4/main parent=- req=s4-existential incoming=1
+[2026-09-19 13:14:48.993] [EXEC] end exec=4867f400-021c-4797-91c8-24c85de3dbd7 status=failed
+[2026-09-19 13:14:48.995] [EXEC] begin exec=0f72510c-a430-4057-901d-30270511ba8f key=lin/main parent=- req=internal-f3b3cd56 incoming=1
+[2026-09-19 13:14:48.995] [EXEC] end exec=0f72510c-a430-4057-901d-30270511ba8f status=failed

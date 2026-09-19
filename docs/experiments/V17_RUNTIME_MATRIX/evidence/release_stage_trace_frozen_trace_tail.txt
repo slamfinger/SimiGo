@@ -1,0 +1,30 @@
+[2026-09-19 13:32:03.763] [LC] STATE_TRANSITION r=ad5179 s=rm1000 from=RUNNING to=COMPLETING
+[2026-09-19 13:32:03.763] [LC] RELEASED r=ad5179 s=rm1000 reason=completed
+[2026-09-19 13:32:03.805] [HTTP] recv POST /v1/chat/completions conn=ObjectIdentifier(0x0000000937695960)
+[2026-09-19 13:32:03.805] [HTTP] chat decode-begin
+[2026-09-19 13:32:03.805] [HTTP] chat decode-ok
+[2026-09-19 13:32:03.805] [HTTP] chat-nonstream enter
+[2026-09-19 13:32:03.805] [HTTP] chat-nonstream parse-begin
+[2026-09-19 13:32:03.805] [HTTP] chat parse messages-begin
+[2026-09-19 13:32:03.805] [HTTP] chat parse messages-ok count=8
+[2026-09-19 13:33:31.258] [HTTP] watchdog terminate conn pre-generate stale
+[2026-09-19 13:33:31.259] [HTTP] watchdog listener restart scheduled
+[2026-09-19 13:33:34.458] [HTTP] watchdog listener restarted
+[2026-09-19 13:36:27.529] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:36:27.694] [HTTP] chat parse messages-begin
+[2026-09-19 13:36:27.694] [HTTP] chat parse messages-ok count=1
+[2026-09-19 13:36:27.694] [HTTP] chat parse done
+[2026-09-19 13:37:03.173] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:37:03.277] [HTTP] chat parse messages-begin
+[2026-09-19 13:37:03.277] [HTTP] chat parse messages-ok count=1
+[2026-09-19 13:37:03.277] [HTTP] chat parse done
+[2026-09-19 13:38:23.076] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:38:23.294] [EXEC] begin exec=6a20471e-e154-4084-9336-205ad9a4c120 key=s4/main parent=- req=s4-continue incoming=1
+[2026-09-19 13:38:23.294] [EXEC] end exec=6a20471e-e154-4084-9336-205ad9a4c120 status=failed
+[2026-09-19 13:38:23.296] [EXEC] begin exec=420b2ece-8df4-446a-a8fb-9a7fcb063d50 key=s4/main parent=- req=s4-execute incoming=1
+[2026-09-19 13:38:23.296] [EXEC] end exec=420b2ece-8df4-446a-a8fb-9a7fcb063d50 status=failed
+[2026-09-19 13:38:23.296] [EXEC] begin exec=42434340-5299-462b-851f-23ed5557355e key=s4/main parent=- req=s4-existential incoming=1
+[2026-09-19 13:38:23.296] [EXEC] end exec=42434340-5299-462b-851f-23ed5557355e status=failed
+[2026-09-19 13:38:23.299] [EXEC] begin exec=67a55400-bb3e-4452-9928-872dd2550651 key=lin/main parent=- req=internal-2c4d6cd2 incoming=1
+[2026-09-19 13:38:23.299] [EXEC] end exec=67a55400-bb3e-4452-9928-872dd2550651 status=failed
+[2026-09-19 13:40:05.675] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e

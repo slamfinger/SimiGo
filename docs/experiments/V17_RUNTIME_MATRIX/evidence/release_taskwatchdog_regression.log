@@ -1,0 +1,4 @@
+
+===== 深度档 10000 tokens =====
+  [build r1] wall=17.4s promptTokens=9,447 promptTime=16.8s mode=cold
+  [build r2] wall=23.4s promptTokens=18,340 promptTime=22.9s mode=rebuild

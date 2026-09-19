@@ -721,7 +721,6 @@ extension HTTPServer {
         [JSONValue]?,
         ModelConfig
     )? {
-
         guard
             let rawMessages =
                 json["messages"],
@@ -747,8 +746,11 @@ extension HTTPServer {
         var tools:
             [JSONValue]?
 
+        // OpenAI clients commonly send `"tools": null`. JSONSerialization
+        // throws an ObjC exception for that Any, which `try?` cannot catch.
         if let rawTools =
-            json["tools"],
+            json["tools"] as? [[String: Any]],
+           !rawTools.isEmpty,
            let toolData =
             try? JSONSerialization.data(
                 withJSONObject:

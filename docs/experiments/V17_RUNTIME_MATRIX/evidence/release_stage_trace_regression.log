@@ -1,0 +1,32 @@
+
+===== 深度档 10000 tokens =====
+  [build r1] wall=12.9s promptTokens=9,447 promptTime=12.3s mode=cold
+  [build r2] wall=23.9s promptTokens=18,340 promptTime=23.3s mode=rebuild
+Traceback (most recent call last):
+  File "/Users/mr.simi/Documents/SimiGo/tools/runtime_matrix.py", line 336, in <module>
+    main()
+  File "/Users/mr.simi/Documents/SimiGo/tools/runtime_matrix.py", line 326, in main
+    measure_tier(d, store)
+  File "/Users/mr.simi/Documents/SimiGo/tools/runtime_matrix.py", line 225, in measure_tier
+    msg, wall, pos0 = chat(session, m_plain, max_tokens=8)
+  File "/Users/mr.simi/Documents/SimiGo/tools/runtime_matrix.py", line 166, in chat
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 214, in urlopen
+    return opener.open(url, data, timeout)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 517, in open
+    response = self._open(req, data)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 534, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 494, in _call_chain
+    result = func(*args)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 1375, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 1350, in do_open
+    r = h.getresponse()
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/client.py", line 1349, in getresponse
+    response.begin()
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/client.py", line 316, in begin
+    version, status, reason = self._read_status()
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/http/client.py", line 285, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response

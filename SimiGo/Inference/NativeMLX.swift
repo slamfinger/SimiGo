@@ -391,16 +391,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         )
-        // V1.6 S1：executionID 血统遥测（log-only，零行为变更）——
-        // 规格见 docs/architecture/EXECUTION_RUNTIME_DESIGN_V16.md §4。
-        // parent 占位"-"，fork 真值由 S5 接入。
-        // S5 P2-1（外审十一轮采纳方案 B）：完整 UUID——Lineage 的
-        // firstIndex 语义假设 executionId 全程唯一，8 位 hex(32bit)
-        // 契约上未表达该唯一性；全 UUID 消除隐患。
+        // executionId 仍供 Lineage / 生命周期终态使用，但不再输出
+        // [EXEC] begin 埋点。
         let executionId = UUID().uuidString.lowercased()
-        traceLogger.trace(
-            "[EXEC] begin exec=\(executionId) key=\(executionKey.traceKey)"
-            + " parent=- req=\(requestId) incoming=\(messages.count)")
         lineage.begin(ExecutionRecord(
             executionId: String(executionId), requestId: requestId,
             agentId: agentId, sessionId: sessionId,
@@ -476,16 +469,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             operation: { try await task.value },
             onCancel: { task.cancel() }
         )
-            lineage.end(executionId: String(executionId), status: .completed)
-            traceLogger.trace(
-                "[EXEC] end exec=\(executionId) status=completed")
-            return result
+        lineage.end(executionId: String(executionId), status: .completed)
+        return result
         } catch {
             let status: ExecutionStatus = error is CancellationError
                 ? .cancelled : .failed
             lineage.end(executionId: String(executionId), status: status)
-            traceLogger.trace(
-                "[EXEC] end exec=\(executionId) status=\(status.rawValue)")
             throw error
         }
     }
@@ -767,8 +756,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             )
         }
 
-        let historyCount = managed.history.count
-        let deltaCount = delta.count
         let streamStart = Date()
         var ttft: TimeInterval?
 
@@ -781,14 +768,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var promptSeconds: Double?
         var cachedPromptTokens: Int?
         var cacheEfficiency: Double?
-        // 引擎本轮实际走的物理复用路径（extend / extend-main / exact-n1 /
-        // rewind / fork-no-rewind / rebuild / cold），连续命中率语义由
-        // cacheHitTokens/promptTokens 分子分母 + mode 共同表达。
-        var cacheReuseMode: String?
-        // fork-no-rewind 时的分叉点：渲染 prompt 与账本的最长公共前缀 /
-        // 账本长度（引擎 token 空间），用于把 GDN 重建定位到具体位置。
-        var cacheForkCommon: Int?
-        var cacheForkLedger: Int?
         // 解码可见性诊断（2026-09-13）：流实际产出 vs filter 放行。
         // rawB 大而 emitB=0 ⇒ 模型在长思考、输出被整段吞掉——客户端看到
         // 的就是数百秒零事件静默（e155f1 实测 601s）。
@@ -898,9 +877,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 generationTokens = info.generationTokenCount
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
-                cacheReuseMode = info.cacheReuseMode
-                cacheForkCommon = info.cacheForkCommonTokens
-                cacheForkLedger = info.cacheForkLedgerTokens
             }
         }
 
@@ -976,9 +952,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
-                traceLogger.trace(
-                    "[EXEC] checkpoint exec=\(executionId)"
-                    + " checkpoint=\(executionKey.storageKey)")
             } catch {
                 traceLogger.trace(
                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
@@ -989,45 +962,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
         await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
-        var log =
-            "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
-            " exec=\(executionId)" +
-            " history=\(historyCount) delta=\(deltaCount) reuse=\(reusedSession)"
-        if let kvSettings {
-            log += " kv=\(kvSettings.strategy ?? "fullPrecision")"
-        }
-        if let ttft {
-            log += String(format: " ttft=%dms", Int(ttft * 1000))
-        }
-        if let cacheTokensBefore {
-            log += " cacheTokens=\(cacheTokensBefore)"
-        }
-        if let cachedPromptTokens {
-            log += " cacheHitTokens=\(cachedPromptTokens)"
-        }
-        if let cacheEfficiency {
-            log += String(format: " cacheEff=%.2f", cacheEfficiency)
-        }
-        if let cacheReuseMode {
-            log += " mode=\(cacheReuseMode)"
-        }
-        if let c = cacheForkCommon, let l = cacheForkLedger {
-            log += " fork@common=\(c)/\(l)"
-        }
-        if let promptTokens {
-            log += " promptTokens=\(promptTokens)"
-        }
-        if let promptSeconds {
-            log += String(format: " promptTime=%.1fs", promptSeconds)
-        }
-        if let tokensPerSecond {
-            log += String(format: " tps=%.1f", tokensPerSecond)
-        }
-        if !toolCalls.isEmpty {
-            log += " toolCalls=\(toolCalls.count)"
-        }
-        log += " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
-        traceLogger.trace(log)
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(
                 promptTokens: promptTokens!,

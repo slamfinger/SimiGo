@@ -1,0 +1,20 @@
+[2026-09-19 13:00:05.149] [MLX] rejectedToolCall reason=incomplete_output tool=-
+[2026-09-19 13:00:05.213] [MLX] cacheSave session=m10000/main history=7
+[2026-09-19 13:00:05.213] [EXEC] checkpoint exec=0dd7d6e6-9867-4897-ab89-df5fd6ad24b9 checkpoint=default/rm10000/main
+[2026-09-19 13:00:05.213] [MLX] session=m10000/main messages=6 exec=0dd7d6e6-9867-4897-ab89-df5fd6ad24b9 history=4 delta=2 reuse=true cacheTokens=9463 cacheHitTokens=0 cacheEff=0.00 mode=rebuild promptTokens=18340 promptTime=23.4s tps=38.8 rawEv=1 rawB=0 emitB=0
+[2026-09-19 13:00:05.213] [EXEC] end exec=0dd7d6e6-9867-4897-ab89-df5fd6ad24b9 status=completed
+[2026-09-19 13:00:05.213] [LC] STATE_TRANSITION r=1bf55c s=rm1000 from=RUNNING to=COMPLETING
+[2026-09-19 13:00:05.213] [LC] RELEASED r=1bf55c s=rm1000 reason=completed
+[2026-09-19 13:00:05.251] [HTTP] recv POST /v1/chat/completions conn=ObjectIdentifier(0x000000077380e3e0)
+[2026-09-19 13:00:05.251] [HTTP] chat-nonstream enter
+[2026-09-19 13:01:27.107] [HTTP] watchdog terminate conn pre-generate stale
+[2026-09-19 13:05:21.408] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:05:52.034] ℹ️ [CFG] source=saved model=peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e
+[2026-09-19 13:05:52.215] [EXEC] begin exec=70427fec-5a51-406e-92a6-8c00afbfde34 key=s4/main parent=- req=s4-continue incoming=1
+[2026-09-19 13:05:52.215] [EXEC] end exec=70427fec-5a51-406e-92a6-8c00afbfde34 status=failed
+[2026-09-19 13:05:52.215] [EXEC] begin exec=878a371f-f74e-47ee-b07f-52d9981b396e key=s4/main parent=- req=s4-execute incoming=1
+[2026-09-19 13:05:52.215] [EXEC] end exec=878a371f-f74e-47ee-b07f-52d9981b396e status=failed
+[2026-09-19 13:05:52.216] [EXEC] begin exec=815ff256-a19d-4a70-ab6a-59f8045009b2 key=s4/main parent=- req=s4-existential incoming=1
+[2026-09-19 13:05:52.216] [EXEC] end exec=815ff256-a19d-4a70-ab6a-59f8045009b2 status=failed
+[2026-09-19 13:05:52.222] [EXEC] begin exec=dd694036-1cf8-40a3-a517-1015ccdad051 key=lin/main parent=- req=internal-4102b113 incoming=1
+[2026-09-19 13:05:52.222] [EXEC] end exec=dd694036-1cf8-40a3-a517-1015ccdad051 status=failed
