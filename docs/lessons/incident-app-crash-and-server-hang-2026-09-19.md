@@ -58,3 +58,29 @@ TCP ESTABLISHED 但零响应，trace 全静默，无 [EXEC] begin
   "rebuild 轮完成后的下一请求使 HTTPServer 全局冻结"
 - 复现配方已固化（runtime_matrix.py 10K 档即可稳定触发），后续修复
   PR 以此为回归验收
+
+## 诊断突破（2026-09-19 11:02，sample #3 / 第三次复现）
+
+第 3 次复现（同配方）+ sample #3 拿到**卡死线程的完整签名**：
+
+```text
+卡死线程（4276/4276 满采样）：
+_dispatch_call_block_and_release
+  → ___os_state_request_for_self_block_invoke (libsystem_trace)
+  → _dispatch_sync_f_slow
+  → __DISPATCH_WAIT_FOR_QUEUE__
+  → _dispatch_thread_main_event_wait_slow
+  → __ulock_wait
+```
+
+同时**主线程健康**：正常 AppKit 事件循环（mach_msg 待事件，非阻塞）。
+
+**判读**：卡死点在系统级 os_state/logd 子系统——处理请求的线程进入
+os_state "for self" 请求并 `dispatch_sync` 等待主队列/主事件，而主
+runloop 处于不投递该事件的模式/状态 → 同步等待永挂。该路径与 SimiGo
+业务代码的直接关系待查（疑点：请求处理线程上的某个 os_log/trace 调用
+触发 logd 状态捕获），但**机制本身是系统框架交互**，非业务逻辑死锁。
+
+**V1.6.1 缓解方向不受影响且更加确立**：请求级 watchdog 超时 + 存活
+探针 + 卡死请求主动 abort——即使系统级同步挂起，服务也能自愈而非
+全局冻结。
