@@ -978,7 +978,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 真值。纯遥测，零行为变更；逐轮一行，量级与 v1.5/v1.6 相同。
         var log =
             "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
-            " exec=\(executionId)" +
+            " exec=\(executionId.prefix(6))" +
             " history=\(managed.history.count) delta=\(delta.count) reuse=\(reusedSession)"
         if let kvSettings {
             log += " kv=\(kvSettings.strategy ?? "fullPrecision")"
