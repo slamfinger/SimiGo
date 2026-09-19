@@ -100,3 +100,34 @@ runloop 处于不投递该事件的模式/状态 → 同步等待永挂。该路
 
 **回归验收**：修复后二进制重跑 runtime_matrix 10K 档——若不再复现
 全局挂起即为通过（卡死单连接场景由客户端超时兜底）。
+
+## 回归结果：队列隔离修复未通过（2026-09-19 11:24-11:31）
+
+修复后二进制（每连接独立队列）重跑 10K 档：build r1 cold ✅ → r2
+rebuild 后 **warm-setup 请求再次冻结**，探针 12 连 http=000（11:25:04
+→11:29:40），/v1/models 同挂——**全局冻结与 I/O 队列无关**。
+
+## 根因锁定（2026-09-19 11:4x，frozen sample + 三 sample 交叉验证）
+
+卡死线程位于 **`com.apple.libtrace.state.block-list`**（os_log 统一日志
+的状态捕获串行队列）：
+
+```text
+某请求路径上的 os_log 调用
+  → libtrace 状态捕获 ___os_state_request_for_self
+  → dispatch_sync 等待主事件（主 runloop 不投递该事件）
+  → __ulock_wait 永挂
+```
+
+该 **block-list 是 libtrace 全局串行队列**——其后所有经过 os_log 的
+请求路径（含 NWFoundation 内部日志）全部排队冻死 → 全局无响应。
+**三份 sample（0418/2nd/3rd）100% 一致**；队列隔离无效的原因由此
+解释（冻结不在我们的 I/O 队列层）。
+
+## 缓解实验（进行中）
+
+`launchctl setenv OS_ACTIVITY_MODE=disable` + 重启 App（PID 54415）：
+抑制 os_log → 状态捕获不发生 → 预期不再冻结。等待用户开启服务后
+重跑 10K 档验证。若通过：矩阵实验期间以该环境变量运行；正式修复
+需定位触发 os_log 的具体调用点（系统框架内部亦可触发，非我方代码
+直接调用）。
