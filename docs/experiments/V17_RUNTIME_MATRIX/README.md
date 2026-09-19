@@ -37,6 +37,21 @@ HTTP 响应的 assistant 消息（tool_calls.function.arguments 为 string）
 3. WARM-extend 需账本尾无 tool_calls 的前置轮（"不调用工具"指令轮）
 4. swap 采样正则兼容 M/G 两种单位
 
+## 分相计时验收项（V1.7-0 追加，2026-09-19）
+
+正式矩阵每行除 wall/promptTime/ttft/cacheEff 外，落五相计时：
+**tokenization / prefill / KV restore·materialization / MLX
+compile-setup / generation**。其中 prefill≈promptTimeS、
+generation≈wall−promptTime 可推导，新探针仅前三相。
+
+- **前置条件**：上述四项校准先关闭。rootfix 最终回归 restore=24.6s
+  实测 mode=cold/reuse=false——restore 未触发时该格只是第四个 cold，
+  分相计时跑在失真路径上等于把 cold 精确测四遍。
+- **已有数据注脚（10K）**：四条 cold 路 ~710–775 tok/s 线性
+  （9.4K tok=13.3s；18K tok=23.7–25.4s），固定成本（tokenize/
+  compile-setup）已被压得很小。分相计时的主战场是校准后的 restore
+  真值格与 40K–120K 非线性拐点（10K 档 swap 已 3.5G / footprint 22G）。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据

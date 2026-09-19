@@ -25,6 +25,20 @@ systematic runner；先 harness 后实验。
 冒烟暴露校准项：客户端回显形状分歧（cdd0272 类）致 WARM/RESTORE 路径
 失真——矩阵测量前置校准见 V17_RUNTIME_MATRIX/README.md。
 
+**研究问题收敛（2026-09-19 修订，方向与顺序不变）**：V1.7-0 回答的不是
+"把 cold prefill 优化掉"（预设答案），而是两个实验问题——
+① restore 校准修好后的真实独立成本（rootfix 最终回归 restore=24.6s
+实测 mode=cold/reuse=false，是第四个 cold，restore 格子至今无真值）；
+② 40K–120K 档吞吐何处偏离线性（10K 四条 cold 路 ~710–775 tok/s 线性，
+25s ≈ 随 token 伸缩的 prefill 计算；swap 3.5G / footprint 22G 是
+拐点候选区）。
+
+**V1.7-0 追加验收项：分相计时**——tokenization / prefill /
+KV restore·materialization / MLX compile-setup / generation 五相落表。
+prefill≈promptTimeS、generation≈wall−promptTime 已可推导，新探针仅
+前三相。校准未关闭前不填 restore 格：失真路径上的分相计时只是把 cold
+精确测四遍。
+
 ### V1.7-A：Runtime Efficiency
 
 Reuse/Restore 收益曲线：delta = 1k/4k/8k/16k/32k 真实成本 →
