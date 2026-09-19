@@ -1,0 +1,114 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "depths": [
+  10000
+ ],
+ "results": {
+  "depth10000": {
+   "depthTokensTarget": 10000,
+   "build": [
+    {
+     "round": 1,
+     "wallS": 17.3,
+     "session": "m10000/main",
+     "mode": "cold",
+     "promptTokens": 9447,
+     "promptTimeS": 15.9,
+     "ttftS": 17.2,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "provenance": "measured"
+    },
+    {
+     "round": 2,
+     "wallS": 25.6,
+     "session": "m10000/main",
+     "mode": "fork-no-rewind",
+     "promptTokens": 18423,
+     "promptTimeS": 24.0,
+     "ttftS": 25.5,
+     "cacheTokens": 9498,
+     "cacheEff": "0.00",
+     "reuse": "true",
+     "provenance": "measured"
+    }
+   ],
+   "restore": {
+    "wallS": 1.8,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "(fragment)",
+     "promptTokens": 611,
+     "promptTimeS": 1.5,
+     "ttftS": 1.5,
+     "cacheTokens": 18474,
+     "cacheEff": "0.00",
+     "reuse": "true",
+     "provenance": "measured"
+    },
+    "toolCallId": "call_683dbd69dcc34e1281436dc0a0f29350"
+   },
+   "warm_setup": {
+    "wallS": 0.9,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "(fragment)",
+     "promptTokens": 199,
+     "promptTimeS": 0.7,
+     "ttftS": 0.8,
+     "cacheTokens": 19087,
+     "cacheEff": "0.00",
+     "reuse": "true",
+     "provenance": "measured"
+    }
+   },
+   "warm": {
+    "wallS": 0.9,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "(fragment)",
+     "promptTokens": 195,
+     "promptTimeS": 0.7,
+     "ttftS": 0.7,
+     "cacheTokens": 19288,
+     "cacheEff": "0.00",
+     "reuse": "true",
+     "provenance": "measured"
+    }
+   },
+   "rebuild": {
+    "wallS": 25.1,
+    "trace": {
+     "session": "m10000/main",
+     "mode": "cold",
+     "promptTokens": 18166,
+     "promptTimeS": 24.7,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "provenance": "measured"
+    }
+   },
+   "cold": {
+    "wallS": 26.7,
+    "trace": {
+     "session": "00cold/main",
+     "mode": "cold",
+     "promptTokens": 18162,
+     "promptTimeS": 26.3,
+     "ttftS": 0.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "provenance": "measured"
+    }
+   },
+   "memory": {
+    "footprintGB": 22.0,
+    "swapGB": 4.689697265625
+   }
+  }
+ }
+}

@@ -768,6 +768,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var promptSeconds: Double?
         var cachedPromptTokens: Int?
         var cacheEfficiency: Double?
+        // 引擎本轮实际走的物理复用路径（extend / extend-main / exact-n1 /
+        // rewind / fork-no-rewind / rebuild / cold），连续命中率语义由
+        // cacheHitTokens/promptTokens 分子分母 + mode 共同表达。
+        var cacheReuseMode: String?
+        // fork-no-rewind 时的分叉点：渲染 prompt 与账本的最长公共前缀 /
+        // 账本长度（引擎 token 空间），用于把 GDN 重建定位到具体位置。
+        var cacheForkCommon: Int?
+        var cacheForkLedger: Int?
         // 解码可见性诊断（2026-09-13）：流实际产出 vs filter 放行。
         // rawB 大而 emitB=0 ⇒ 模型在长思考、输出被整段吞掉——客户端看到
         // 的就是数百秒零事件静默（e155f1 实测 601s）。
@@ -877,6 +885,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 generationTokens = info.generationTokenCount
                 cachedPromptTokens = info.cachedPromptTokenCount
                 cacheEfficiency = info.cacheEfficiency
+                cacheReuseMode = info.cacheReuseMode
+                cacheForkCommon = info.cacheForkCommonTokens
+                cacheForkLedger = info.cacheForkLedgerTokens
             }
         }
 
@@ -961,6 +972,49 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
         await evictSessionsIfNeeded(keeping: executionKey.storageKey)
+
+        // 轮末完成行（build 4 恢复，211aa59 trim 曾删）：V1.7-0 矩阵
+        // 位置法捕获的唯一认证级来源——mode/reuse/cacheEff/ttft 逐轮
+        // 真值。纯遥测，零行为变更；逐轮一行，量级与 v1.5/v1.6 相同。
+        var log =
+            "[MLX] session=\(executionKey.traceKey) messages=\(incoming.count)" +
+            " exec=\(executionId)" +
+            " history=\(managed.history.count) delta=\(delta.count) reuse=\(reusedSession)"
+        if let kvSettings {
+            log += " kv=\(kvSettings.strategy ?? "fullPrecision")"
+        }
+        if let ttft {
+            log += String(format: " ttft=%dms", Int(ttft * 1000))
+        }
+        if let cacheTokensBefore {
+            log += " cacheTokens=\(cacheTokensBefore)"
+        }
+        if let cachedPromptTokens {
+            log += " cacheHitTokens=\(cachedPromptTokens)"
+        }
+        if let cacheEfficiency {
+            log += String(format: " cacheEff=%.2f", cacheEfficiency)
+        }
+        if let cacheReuseMode {
+            log += " mode=\(cacheReuseMode)"
+        }
+        if let c = cacheForkCommon, let l = cacheForkLedger {
+            log += " fork@common=\(c)/\(l)"
+        }
+        if let promptTokens {
+            log += " promptTokens=\(promptTokens)"
+        }
+        if let promptSeconds {
+            log += String(format: " promptTime=%.1fs", promptSeconds)
+        }
+        if let tokensPerSecond {
+            log += String(format: " tps=%.1f", tokensPerSecond)
+        }
+        if !toolCalls.isEmpty {
+            log += " toolCalls=\(toolCalls.count)"
+        }
+        log += " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
+        traceLogger.trace(log)
 
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(

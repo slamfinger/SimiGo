@@ -62,15 +62,32 @@ HTTP 响应的 assistant 消息（tool_calls.function.arguments 为 string）
 
 **restore:cold ≈ 1:15（10K 档）**。10K 阶段 restore 真值格首次有值。
 
-## 测量通道缺口（build 3 trim 副作用，待决策）
+## 测量通道缺口（build 3 trim 副作用）→ 已关闭（build 4）
 
-`211aa59`"trim success traces"把成功路径 `[MLX] session=` 完成行整行
-删除（末次出现 14:04:30，emit 点已从源码移除）；HTTP 响应无 usage
-字段。位置法捕获在 build 3 上退化为 prefill 行推导（行级
-`provenance=derived-prefill`；mode/promptTime/ttft/cacheEff =
-not-observed，不伪装实测）。restore 命中仍可凭 rf=1+小 delta+wall
-自证。恢复认证级字段需二选一：① 维护版最小恢复该行（纯遥测零行为
-变更，出 build 4）；② 矩阵跑在 pre-trim 二进制（v1.6 tag 7aced19）。
+`211aa59`"trim success traces"把成功路径 `[MLX] session=` 完成行整行删除，
+HTTP 响应无 usage，位置法捕获在 build 3 上曾退化 prefill 行推导。**build 4
+（维护版，纯遥测零行为）恢复该行**：模式声明/赋值/日志三段原样回归
+（`cacheReuseMode`/`cacheFork*` 字段源在 vendor pin 内未动），CFBundleVersion
+3→4，SimiGoTests 73 tests / 0 failures（72 基线 +1 = tools=null 回归）。
+
+## Build 4 认证级 10K 行（results_build4_measured_10k.json，全部 measured）
+
+| 路 | wall | promptTime | tok | mode | reuse | ttft |
+|---|---|---|---|---|---|---|
+| build r1 | 17.3s | 15.9s | 9,447 | cold | false | — |
+| build r2 | 25.6s | 24.0s | 18,423 | **fork-no-rewind** | true | — |
+| **restore** | **1.8s** | **1.5s** | **611** | (mode 缺省=fragment 族) | **true** | 1.5s |
+| warm_setup | 0.9s | 0.7s | 199 | (缺省) | true | 0.8s |
+| warm | 0.9s | 0.7s | 195 | (缺省) | true | 0.7s |
+| rebuild | 25.1s | 24.7s | 18,166 | cold | false | — |
+| cold | 26.7s | 26.3s | 18,162 | cold | false | — |
+
+- **restore:cold ≈ 1:15 在认证字段下复现**（与 C5/C6 降级捕获一致）。
+- mode 缺省行的语义注意：引擎在 fragment/plain-extend 路径均不上报
+  cacheReuseMode，harness 以 `(fragment)` 标注 mode 缺省行；路语义由
+  请求构造（risk 尾）+ reuse=true + 小 promptTime 共同认证。
+- build r2 首次拿到真实 mode 名 `fork-no-rewind`（此前只能从 mode 缺省
+  推断）；分叉位置字段 fork@common/ledger 已同线恢复，待 40K+ 观测。
 
 ## 分相计时验收项（V1.7-0 追加，2026-09-19）
 
