@@ -1,0 +1,38 @@
+C5/C6 restore 双阻塞根因实证记录（2026-09-19 晚，真机 Cyber-Tiel 35B @ build 3）
+================================================================================
+
+【探针 1】max_tokens=64，提示词"请调用 record_note 记录笔记:标题 bench-start,priority 1,tag cold。"（新会话）
+message keys: ['content', 'role', 'tool_calls']
+tool_calls: [{"id": "call_76fbf6d2d3a54563b779829a9bb28236", "type": "function",
+  "function": {"name": "record_note", "arguments": "{\"priority\":1,\"tag\":\"cold\",\"title\":\"bench-start\"}"}}]
+
+【探针 2】同款，max_tokens=16
+message keys: ['content', 'role']   ← tool_calls 整个消失，content 为空
+trace 同刻: [MLX] rejectedToolCall reason=incomplete_output tool=-
+→ C5 实锤：16 tok 截断的 tool_calls 被引擎整体丢弃；build 轮默认 16 ⇒ 历史
+   零 tool_calls ⇒ C2 扫空（rootfix 回归 JSON toolCallId=null 的成因）。
+
+【rmc5w 双向实证】同一 restore 形状请求（build 后真实 call_id + tool(400chars)+user）：
+  顺序 A（restore 紧跟 build，风险尾未洗）:
+    restore wall=2.1s
+    [MLX] admission ... rf=1
+    [MLX] prefillStep=2048 est=18588 reuse=true
+    [MLX] prefill 617/617            ← 只重渲 delta
+  顺序 B（warm_setup 洗尾后再 restore）:
+    restore wall=26.8s
+    [MLX] prefillStep=2048 est=20173 reuse=false
+    [MLX] prefill 18616/18616        ← 全量重渲，rf=0
+→ C6 实锤：rollforwardRisk 只认账本尾 assistant(tool_calls)；C1 warm_setup
+   的 normal 尾洗掉风险尾后，Conditional Restore 永不进入考虑。
+
+【C5+C6 修复后 harness 端到端 10K 档】（results_c5c6_10k.json，行 provenance=derived-prefill）
+  [build r1] wall=13.3s promptTokens=9,447
+  [build r2] wall=31.2s promptTokens=18,423   last_tool_call_id=call_cd7306…（真实 id）
+  [10000] warm=0.9s restore=1.7s rebuild=29.0s cold=25.8s ram=22.2G swap=3.47G
+  restore 行: reuse=true rf=1 tok=611（命中三重证据）
+  warm_setup 行: wall=0.8s tok=199（C1 前置轮不再吃 10.7s rebuild 税）
+
+第一个真实 restore 数据点：10K 档 restore:cold ≈ 1.7:25.8 ≈ 1:15。
+
+环境备注：验证中途服务曾短暂拒连（~30s），无新 SimiGo .ips（最新仍为
+04:00 已知空闲崩溃家族），判定为人工/自动重启非崩溃。

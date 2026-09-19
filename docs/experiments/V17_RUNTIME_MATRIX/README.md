@@ -28,21 +28,58 @@ HTTP 响应的 assistant 消息（tool_calls.function.arguments 为 string）
 "轮间 assistant 回执入库缺失致全 cold"同族——**回显流的账本形状归一化
 是矩阵测量的前置校准项**。
 
-## 校准项（进入正式矩阵前必须关闭）
+## 校准关闭状态（2026-09-19 晚，全部关闭）
 
-1. 回显归一化：harness 侧按引擎账本形状回放 assistant（或复用
-   execution_bench 既定 recipe 逐字段核对）
-2. RESTORE 触发路径回归 execution_bench recipe（n=1/n=2 已验证可稳定
-   命中 fragment）
-3. WARM-extend 需账本尾无 tool_calls 的前置轮（"不调用工具"指令轮）
-4. swap 采样正则兼容 M/G 两种单位
+1. ~~回显归一化~~ 关闭（C3 `normalize_assistant`，string→object 对齐账本）
+2. ~~RESTORE 触发路径~~ 关闭（C5+C6 双根因修复，见下节）
+3. ~~WARM 前置轮~~ 关闭（C1 assistant(normal) 尾制造）
+4. ~~swap 采样单位~~ 关闭（正则 M/G 双单位兼容）
+
+## C5/C6：restore 双阻塞根因（全部真机实证）
+
+- **C5 max_tokens 截断**：build 轮默认 16 tok，record_note 调用
+  arguments ≈30+ tok，截断的 tool_calls 被引擎整体丢弃（trace:
+  `rejectedToolCall reason=incomplete_output`；实测 16→无 tool_calls、
+  64→完整）→ 历史零 tool_calls → C2 扫空。rootfix 回归 JSON 的
+  `toolCallId=null` 即此因。修复：build 轮 max_tokens=64。
+- **C6 时序洗尾**：`rollforwardRisk` 只认账本尾 assistant(tool_calls)
+  （ExecutionPolicy），C1 warm_setup 的 normal 尾洗掉风险尾，排在
+  warm 之后的 restore 恒退化 cold。真机双向实证（同形状请求）：
+  未洗尾 2.1s/617tok/rf=1 命中，洗尾后 26.8s/18616tok 全量。修复：
+  restore 测量提前到 warm_setup 之前（C5 后 build 尾恰带完整
+  tool_calls，是唯一合法测点）；restore 轮回复提示词不索要工具调用
+  （16 tok 下截断 call 自造畸异尾会把 warm_setup 打成全量 rebuild）。
+  证据：evidence/c5_c6_restore_hit_20260919.log。
+
+## 第一个真实 restore 数据点（10K 档，results_c5c6_10k.json）
+
+| 路 | wall | prefill tok | reuse | rf |
+|---|---|---|---|---|
+| warm | 0.9s | 195 | true | - |
+| **restore** | **1.7s** | **611** | **true** | **1** |
+| rebuild | 29.0s | 18,166 | false | - |
+| cold | 25.8s | 18,162 | false | - |
+
+**restore:cold ≈ 1:15（10K 档）**。10K 阶段 restore 真值格首次有值。
+
+## 测量通道缺口（build 3 trim 副作用，待决策）
+
+`211aa59`"trim success traces"把成功路径 `[MLX] session=` 完成行整行
+删除（末次出现 14:04:30，emit 点已从源码移除）；HTTP 响应无 usage
+字段。位置法捕获在 build 3 上退化为 prefill 行推导（行级
+`provenance=derived-prefill`；mode/promptTime/ttft/cacheEff =
+not-observed，不伪装实测）。restore 命中仍可凭 rf=1+小 delta+wall
+自证。恢复认证级字段需二选一：① 维护版最小恢复该行（纯遥测零行为
+变更，出 build 4）；② 矩阵跑在 pre-trim 二进制（v1.6 tag 7aced19）。
 
 ## 分相计时验收项（V1.7-0 追加，2026-09-19）
 
 正式矩阵每行除 wall/promptTime/ttft/cacheEff 外，落五相计时：
 **tokenization / prefill / KV restore·materialization / MLX
 compile-setup / generation**。其中 prefill≈promptTimeS、
-generation≈wall−promptTime 可推导，新探针仅前三相。
+generation≈wall−promptTime 可推导，新探针仅前三相。行级
+`provenance`（measured / derived-prefill）已落表：降级行的分相计时
+一律 not-observed，不伪装实测。
 
 - **前置条件**：上述四项校准先关闭。rootfix 最终回归 restore=24.6s
   实测 mode=cold/reuse=false——restore 未触发时该格只是第四个 cold，

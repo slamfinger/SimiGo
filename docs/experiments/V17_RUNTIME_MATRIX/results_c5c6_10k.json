@@ -1,0 +1,115 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "depths": [
+  10000
+ ],
+ "results": {
+  "depth10000": {
+   "depthTokensTarget": 10000,
+   "build": [
+    {
+     "round": 1,
+     "wallS": 13.3,
+     "session": null,
+     "mode": null,
+     "promptTokens": 9447,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "false",
+     "provenance": "derived-prefill"
+    },
+    {
+     "round": 2,
+     "wallS": 31.2,
+     "session": null,
+     "mode": null,
+     "promptTokens": 18423,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "true",
+     "provenance": "derived-prefill"
+    }
+   ],
+   "restore": {
+    "wallS": 1.7,
+    "trace": {
+     "session": null,
+     "mode": null,
+     "promptTokens": 611,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "true",
+     "provenance": "derived-prefill",
+     "rf": 1
+    },
+    "toolCallId": "call_cd7306fcc7a74c3a99705d30be15d951"
+   },
+   "warm_setup": {
+    "wallS": 0.8,
+    "trace": {
+     "session": null,
+     "mode": null,
+     "promptTokens": 199,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "true",
+     "provenance": "derived-prefill"
+    }
+   },
+   "warm": {
+    "wallS": 0.9,
+    "trace": {
+     "session": null,
+     "mode": null,
+     "promptTokens": 195,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "true",
+     "provenance": "derived-prefill"
+    }
+   },
+   "rebuild": {
+    "wallS": 29.0,
+    "trace": {
+     "session": null,
+     "mode": null,
+     "promptTokens": 18166,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "false",
+     "provenance": "derived-prefill"
+    }
+   },
+   "cold": {
+    "wallS": 25.8,
+    "trace": {
+     "session": null,
+     "mode": null,
+     "promptTokens": 18162,
+     "promptTimeS": null,
+     "ttftS": null,
+     "cacheTokens": null,
+     "cacheEff": null,
+     "reuse": "false",
+     "provenance": "derived-prefill"
+    }
+   },
+   "memory": {
+    "footprintGB": 22.2,
+    "swapGB": 3.47119140625
+   }
+  }
+ }
+}

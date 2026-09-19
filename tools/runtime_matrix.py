@@ -104,12 +104,34 @@ def parse_completion(line):
         "cacheTokens": int(g(r"cacheTokens=(\d+)") or 0),
         "cacheEff": g(r"cacheEff=([\d.]+)"),
         "reuse": g(r"reuse=(\w+)"),
+        "provenance": "measured",
     }
+
+
+def derive_completion_degraded(pos0):
+    """build 3 起 success-path 完成行被 trim（211aa59），从仍存在的
+    [MLX] prefill N/N（N==N 即完成）与 prefillStep 行退化推导。
+    mode/promptTime/ttft/cacheEff 不可得 ⇒ None（not-observed，不伪装）；
+    restore 命中可用 admission rf=1 + 小 delta prefill 判别。"""
+    row = {"session": None, "mode": None, "promptTokens": None,
+           "promptTimeS": None, "ttftS": None, "cacheTokens": None,
+           "cacheEff": None, "reuse": None, "provenance": "derived-prefill"}
+    for line in reversed(lines_since(pos0)):
+        m = re.search(r"\[MLX\] prefill (\d+)/(\1)\s*$", line.rstrip())
+        if m and row["promptTokens"] is None:
+            row["promptTokens"] = int(m.group(1))
+        if "prefillStep=" in line and row["reuse"] is None:
+            row["reuse"] = re.search(r"reuse=(\w+)", line)
+            row["reuse"] = row["reuse"].group(1) if row["reuse"] else None
+        if "admission" in line and "rf=1" in line:
+            row["rf"] = 1
+    return row if row["promptTokens"] is not None else None
 
 
 def wait_completion(pos0, session_key=None, timeout=180):
     """C4：只接受 pos0 之后、且 session 绑定的新完成行。session_key
-    未发现前接受首个完成行并同时返回其 session（供后续绑定）。"""
+    未发现前接受首个完成行并同时返回其 session（供后续绑定）。
+    build 3 无完成行时退化到 prefill 行推导（derived-prefill）。"""
     deadline = time.time() + timeout
     while time.time() < deadline:
         for line in reversed(lines_since(pos0)):
@@ -119,6 +141,9 @@ def wait_completion(pos0, session_key=None, timeout=180):
             if session_key and comp["session"] != session_key:
                 continue
             return comp
+        degraded = derive_completion_degraded(pos0)
+        if degraded:
+            return degraded
         time.sleep(0.5)
     return None
 
@@ -197,15 +222,20 @@ def build_to_depth(session_id, depth_tokens):
         messages.append({"role": "tool", "tool_call_id": call_id,
                          "content": filler(f"B{i}", 40_000)})
         messages.append(user("已收到,请再次调用 record_note 记一条新笔记继续。"))
-        msg, wall, pos0 = chat(session_id, messages, tools=tools)
+        # C5：build 轮 max_tokens 须容得下完整 tool_calls（record_note
+        # arguments ≈30+ tok）；16 会截断且引擎丢弃不完整 tool_calls，
+        # 历史零 tool_calls → C2 扫空 → restore 退化为第四个 cold
+        msg, wall, pos0 = chat(session_id, messages, tools=tools, max_tokens=64)
         messages.append(normalize_assistant(msg))
         comp = wait_completion(pos0, session_key=session_key)
         session_key = session_key or discover_session_key(pos0)
         comp = comp or {}
         samples.append({"round": i, "wallS": wall, **comp})
         depth += comp.get("promptTokens") or 0
+        ti = comp.get("promptTimeS")
+        ti = "?" if ti is None else f"{ti}s"
         print(f"  [build r{i}] wall={wall}s promptTokens={comp.get('promptTokens'):,} "
-              f"promptTime={comp.get('promptTimeS')}s mode={comp.get('mode')}", flush=True)
+              f"promptTime={ti} mode={comp.get('mode') or '?'}", flush=True)
     return messages, tools, samples, session_key
 
 
@@ -218,16 +248,37 @@ def measure_tier(depth, store):
     messages, tools, build, session_key = build_to_depth(session, depth)
     tier["build"] = build
 
-    # 2) C1：Warm 前置轮——制造 assistant(normal) 尾（此后账本尾无
+    # 2) RESTORE 测量（C6：必须先于 warm_setup——rollforwardRisk 只认
+    #    账本尾 assistant(tool_calls)（ExecutionPolicy），warm_setup 的
+    #    normal 尾会洗掉风险尾使 restore 恒退化 cold（rmc5v/rmc5w 双向
+    #    实证：先测 2.1s/617tok/rf=1，洗尾后 26.8s/18616tok 全量）。
+    #    C5 后 build 尾 assistant 恰带完整 tool_calls，此刻是唯一合法
+    #    测点。回复提示词不索要工具调用：16 tok 下截断的 tool_calls 会
+    #    自造畸异尾，把下一轮 warm_setup 打成全量 rebuild。
+    call_id = last_tool_call_id(messages)
+    m3 = list(messages)
+    m3.append({"role": "tool", "tool_call_id": call_id or "call_bench",
+               "content": filler("R", 400)})
+    m3.append(user("已收到。请只回复:OK"))
+    restore_msg, restore_wall, restore_pos = chat(session, m3,
+                                                  tools=[NOTE_TOOL],
+                                                  max_tokens=16)
+    restore_c = wait_completion(restore_pos, session_key)
+    tier["restore"] = {"wallS": restore_wall, "trace": restore_c,
+                       "toolCallId": call_id}
+    m_ledger = list(m3)
+    m_ledger.append(normalize_assistant(restore_msg))
+
+    # 3) C1：Warm 前置轮——制造 assistant(normal) 尾（此后账本尾无
     #    tool_calls，下一条小 delta 才是合法 extend 基线）
-    m_plain = list(messages)
+    m_plain = list(m_ledger)
     m_plain.append(user("不要调用工具,只回复:OK"))
     msg, wall, pos0 = chat(session, m_plain, max_tokens=8)
     m_plain.append(normalize_assistant(msg))
     plain_c = wait_completion(pos0, session_key)
     tier["warm_setup"] = {"wallS": wall, "trace": plain_c}
 
-    # 3) WARM 测量：assistant(normal) 尾 + 小 delta → extend
+    # 4) WARM 测量：assistant(normal) 尾 + 小 delta → extend
     pos0 = trace_pos()
     m2 = list(m_plain)
     m2.append(user("只回复:OK"))
@@ -241,29 +292,6 @@ def measure_tier(depth, store):
         json.loads(r.read())
     warm_c = wait_completion(pos0, session_key)
     tier["warm"] = {"wallS": round(time.time() - t0, 1), "trace": warm_c}
-
-    # 4) RESTORE 测量（C2：真实 tool_call_id，execution_bench recipe）：
-    #    assistant(normal) 尾不含 pending tool_call——按 execution_bench
-    #    语义，restore 轮 = tool(小) + user 触发风险；call_id 取历史
-    #    最后 tool_calls（账本允许跨轮 tool 回执容错，与 bench 同款）
-    call_id = last_tool_call_id(m_plain) or last_tool_call_id(messages)
-    m3 = list(m_plain)
-    m3.append({"role": "tool", "tool_call_id": call_id or "call_bench",
-               "content": filler("R", 400)})
-    m3.append(user("已收到,请调用 record_note 记一条:tag restore。"))
-    pos0 = trace_pos()
-    t0 = time.time()
-    with urllib.request.urlopen(urllib.request.Request(
-            BASE, data=json.dumps({"model": MODEL, "session_id": session,
-                                   "messages": m3, "tools": [NOTE_TOOL],
-                                   "max_tokens": 16,
-                                   "temperature": 0}).encode(),
-            headers={"Content-Type": "application/json"}),
-            timeout=1800) as r:
-        json.loads(r.read())
-    restore_c = wait_completion(pos0, session_key)
-    tier["restore"] = {"wallS": round(time.time() - t0, 1), "trace": restore_c,
-                       "toolCallId": call_id}
 
     # 5) REBUILD：首条 user 变异 → 账本失配 → 全量重渲
     m4 = [dict(messages[0])]
@@ -299,7 +327,11 @@ def measure_tier(depth, store):
     store[f"depth{depth}"] = tier
 
     def pt(key):
-        return (tier[key]["trace"] or {}).get("promptTimeS")
+        t = tier[key].get("trace") or {}
+        v = t.get("promptTimeS")
+        if v is None:
+            v = tier[key].get("wallS")
+        return v
     print(f"  [{depth}] warm={pt('warm')}s restore={pt('restore')}s "
           f"rebuild={pt('rebuild')}s cold={pt('cold')}s "
           f"ram={tier['memory']['footprintGB']}G swap={tier['memory']['swapGB']}G",
@@ -317,8 +349,8 @@ def main():
 
     if args.plan or not args.execute:
         for d in depths:
-            print(f"档位 {d}: build → warm 前置(normal 尾) → warm(extend) → "
-                  f"restore(fragment) → rebuild → cold")
+            print(f"档位 {d}: build → restore(风险尾未洗) → warm 前置(normal 尾) → "
+                  f"warm(extend) → rebuild → cold")
         return
 
     store = {}
