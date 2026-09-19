@@ -209,8 +209,9 @@ depth+passIdx+attempt）。9/9 pass 完整，全行 measured，meta 证 stepFile
    与 cold 是同族全量成本，比值差异由会话/内存状态主导（rebuild 行内
    swap 2.3–4.1G vs cold 行 1.6–2.2G 同 pass 内即可见），不构成独立
    优化目标；交错复核中干净状态两者相等（630.8 vs 622.7s）。
-4. **逐出大幅减少**：9 pass 全程仅 4 次 evict（首矩阵单次 rebuild 即
-   触发）——每 pass 全新会话设计天然避免跨档会话堆积；
+4. **逐出大幅减少**：9 pass 全程仅 5 次 evict（120K cold 三 pass 各
+   1、40K cold/rebuild 各 1；首矩阵单次 rebuild 即触发）——每 pass
+   全新会话设计天然避免跨档会话堆积；
    warmTokenBudget×深会话交互仍留作 V1.7-A 政策实验（多会话真实负载
    形状）。
 5. warm 全谱 0.9/1.8/3.1s：delta-only 路径近乎平坦，复用态续跑成本
