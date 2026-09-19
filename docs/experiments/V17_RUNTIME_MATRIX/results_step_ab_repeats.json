@@ -1,0 +1,312 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-19T18:48:53",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist"
+ },
+ "design": "interleaved 512/1024 x3, cold then rebuild, 120K",
+ "runs": [
+  {
+   "scenario": "cold",
+   "side": "512",
+   "iter": 1,
+   "session": "stepab_c512_1",
+   "wallS": 601.1,
+   "trace": {
+    "session": "c512_1/main",
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 599.4,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 14.7,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.42767578125
+   }
+  },
+  {
+   "scenario": "cold",
+   "side": "1024",
+   "iter": 1,
+   "session": "stepab_c1024_1",
+   "wallS": 1072.4,
+   "trace": {
+    "session": "1024_1/main",
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 1070.8,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 14.5,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.3550390625
+   }
+  },
+  {
+   "scenario": "cold",
+   "side": "512",
+   "iter": 2,
+   "session": "stepab_c512_2",
+   "wallS": 637.1,
+   "trace": {
+    "session": "c512_2/main",
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 635.5,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 15.0,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.4715625
+   }
+  },
+  {
+   "scenario": "cold",
+   "side": "1024",
+   "iter": 2,
+   "session": "stepab_c1024_2",
+   "wallS": 1114.7,
+   "trace": {
+    "session": "1024_2/main",
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 1113.0,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 14.1,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.450986328125
+   }
+  },
+  {
+   "scenario": "cold",
+   "side": "512",
+   "iter": 3,
+   "session": "stepab_c512_3",
+   "wallS": 634.8,
+   "trace": {
+    "session": "c512_3/main",
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 633.2,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 15.0,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.463564453125
+   }
+  },
+  {
+   "scenario": "cold",
+   "side": "1024",
+   "iter": 3,
+   "session": "stepab_c1024_3",
+   "wallS": 1124.6,
+   "trace": {
+    "session": null,
+    "mode": "cold",
+    "promptTokens": 119610,
+    "promptTimeS": 1123.0,
+    "ttftS": null,
+    "cacheTokens": null,
+    "cacheEff": null,
+    "reuse": "false",
+    "provenance": "measured",
+    "tps": 14.5,
+    "corrected": "backfilled-from-trace-2026-09-19T20:25:33.718 (harness poll race; script checkpoint overwrote earlier fix)"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.48736328125
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "512",
+   "iter": 1,
+   "session": "stepab",
+   "wallS": 632.5,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119620,
+    "promptTimeS": 630.8,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 15.1,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 23.6,
+    "swapGB": 2.490966796875
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "1024",
+   "iter": 1,
+   "session": "stepab",
+   "wallS": 1343.3,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119621,
+    "promptTimeS": 1341.1,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 8.1,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 25.4,
+    "swapGB": 4.67322265625
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "512",
+   "iter": 2,
+   "session": "stepab",
+   "wallS": 824.9,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119620,
+    "promptTimeS": 822.8,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 10.2,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 25.4,
+    "swapGB": 4.7484765625
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "1024",
+   "iter": 2,
+   "session": "stepab",
+   "wallS": 1239.9,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119621,
+    "promptTimeS": 1237.3,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 6.2,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 25.4,
+    "swapGB": 4.7836328125
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "512",
+   "iter": 3,
+   "session": "stepab",
+   "wallS": 784.6,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119620,
+    "promptTimeS": 782.3,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 9.4,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 25.4,
+    "swapGB": 4.74615234375
+   }
+  },
+  {
+   "scenario": "rebuild",
+   "side": "1024",
+   "iter": 3,
+   "session": "stepab",
+   "wallS": 870.9,
+   "trace": {
+    "session": "stepab/main",
+    "mode": "cold",
+    "promptTokens": 119621,
+    "promptTimeS": 868.8,
+    "ttftS": 0.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 10.6,
+    "fork": null,
+    "provenance": "measured"
+   },
+   "memAfter": {
+    "footprintGB": 25.4,
+    "swapGB": 4.955869140625
+   }
+  }
+ ]
+}

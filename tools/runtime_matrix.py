@@ -25,6 +25,7 @@ Calibration（外审十三轮 C1-C4 全落实）：
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import time
@@ -137,6 +138,7 @@ def wait_completion(pos0, session_key=None, timeout=180):
     未发现前接受首个完成行并同时返回其 session（供后续绑定）。
     build 3 无完成行时退化到 prefill 行推导（derived-prefill）。"""
     deadline = time.time() + timeout
+    polls = 0
     while time.time() < deadline:
         for line in reversed(lines_since(pos0)):
             if "[MLX] session=" not in line or "promptTokens=" not in line:
@@ -145,9 +147,13 @@ def wait_completion(pos0, session_key=None, timeout=180):
             if session_key and comp["session"] != session_key:
                 continue
             return comp
-        degraded = derive_completion_degraded(pos0)
-        if degraded:
-            return degraded
+        # 完成行落盘竞态宽限（3 轮 ≈1.5s）：响应返回时完成行可能尚未
+        # flush，立即走降级会抓到 prefill 行丢 promptTime/mode。
+        polls += 1
+        if polls > 3:
+            degraded = derive_completion_degraded(pos0)
+            if degraded:
+                return degraded
         time.sleep(0.5)
     return None
 
@@ -342,6 +348,28 @@ def measure_tier(depth, store):
           flush=True)
 
 
+def experiment_meta():
+    """P2 可复现性：每份结果 JSON 记录 step policy 与构建身份。"""
+    meta = {"stepOverrideEnv": os.environ.get("SIMIGO_PREFILL_STEP_EXP"),
+            "stepFile": None, "binaryBuild": None, "generatedAt":
+            time.strftime("%Y-%m-%dT%H:%M:%S")}
+    exp_file = Path.home() / ".simigo/prefill_step_exp"
+    if exp_file.exists():
+        meta["stepFile"] = exp_file.read_text().strip()
+    for app in (Path("build/SimiGo.app/Contents/Info.plist"),
+                Path("/Applications/SimiGo.app/Contents/Info.plist")):
+        if app.exists():
+            try:
+                import plistlib
+                meta["binaryBuild"] = plistlib.load(
+                    open(app, "rb")).get("CFBundleVersion")
+                meta["binaryPath"] = str(app)
+                break
+            except Exception:
+                pass
+    return meta
+
+
 def main():
     ap = argparse.ArgumentParser(description="V1.7-0 runtime benchmark matrix")
     ap.add_argument("--plan", action="store_true")
@@ -363,7 +391,8 @@ def main():
         out = args.json_out or "docs/experiments/V17_RUNTIME_MATRIX/results_v2.json"
         Path(out).parent.mkdir(parents=True, exist_ok=True)
         Path(out).write_text(json.dumps(
-            {"model": MODEL, "depths": depths, "results": store},
+            {"model": MODEL, "depths": depths, "meta": experiment_meta(),
+             "results": store},
             ensure_ascii=False, indent=1))
         print(f"[checkpoint] 已写 {out}", flush=True)
 

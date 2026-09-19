@@ -125,6 +125,31 @@ HTTP 响应无 usage，位置法捕获在 build 3 上曾退化 prefill 行推导
 绿灯 + 曲线平缓"不足以构成拆护栏的证据——这正是先实验再改 policy
 的意义。
 
+### 交错 ×3 复核（外审 P1 闭环，results_step_ab_repeats.json，2026-09-19 深夜）
+
+审核 P1 要求单次观测升级为受控重复：同 120K seed 会话，512↔1024 交错
+（step 文件运行中切换，App 无重启），cold/rebuild 各 ×3，逐轮记 swap。
+
+| 场景 | 512 mean (min–max) | 1024 mean (min–max) | ratio | 区间重叠 |
+|---|---|---|---|---|
+| **cold** | **622.7s (599.4–635.5)** | **1102.3s (1070.8–1123.0)** | **1.77×** | **无** |
+| rebuild | 745.3s (630.8–822.8) | 1149.1s (868.8–1341.1) | 1.54× | 无 |
+
+- **cold 侧信号最强**：干净状态 + 交错 + 区间零重叠，512 档优势从
+  单次 65% 升级为稳定 ~77%（n=3 全分离）。
+- **rebuild 侧高方差但同向**：方差来源已定位——12 轮 swap 轨迹
+  2.4→2.5G（cold 侧，平坦）→4.7–5.0G（rebuild 侧，7 个 ~120K 暖会话
+  挤压），#1–#3 波动与内存堆积同步。
+- **附带裁定（审核第四节猜想证实）**：rebuild 512 #1=630.8s ≈ cold
+  mean 622.7s——干净状态下 rebuild≈cold；正式矩阵 rebuild=882.6s vs
+  cold=674.5s 的 31% 差距是 LRU 逐出+内存状态污染，**非 rebuild 固有
+  成本**。rebuild-vs-cold 不再单列，V1.7-A 记为同族成本。
+- 捕获竞态一例（cold 1024 #3 完成行晚于 HTTP 响应落盘）已修
+  （wait_completion 3 轮宽限），真值自 trace 回填并标注 corrected。
+
+**最终判定（证据升级后维持）：512 档保留。** 结论适用范围注明：本机
+32GB、Cyber-Tiel 35B oQ4e、当前 vendor pin；非普适 MLX 规律。
+
 ## Build 4 认证级 10K 行（results_build4_measured_10k.json，全部 measured）
 
 | 路 | wall | promptTime | tok | mode | reuse | ttft |

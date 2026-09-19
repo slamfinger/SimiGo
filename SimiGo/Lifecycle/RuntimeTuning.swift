@@ -122,15 +122,28 @@ nonisolated enum RuntimeTuning {
         case ..<64_000: return 2048
         case ..<96_000: return 1024
         default:
-            // V1.7-A 实验门（2026-09-19）：>96K 档步长受控覆盖，供 512-vs-1024
-            // 同深度 A/B（矩阵 120K 基线 674.5s@512 已入库）。默认不设 =
-            // 生产语义 512 不变；取值非法时同样回落 512。
-            if let exp = ProcessInfo.processInfo.environment["SIMIGO_PREFILL_STEP_EXP"],
-               let step = Int(exp), step > 0 {
-                return step
-            }
+            // V1.7-A 实验门（2026-09-19）：>96K 档步长受控覆盖。优先级：
+            // 文件 ~/.simigo/prefill_step_exp（每次生成读取，支持运行中
+            // 切换——受控交错 A/B 用）> 启动环境变量 SIMIGO_PREFILL_STEP_EXP
+            // > 生产语义 512。取值非法一律回落 512。
+            if let step = expStepOverride() { return step }
             return 512
         }
+    }
+
+    /// 实验门取值：文件 > 环境变量 > nil（生产语义）。文件每次生成读取，
+    /// 删除即恢复生产语义，无需重启。
+    static func expStepOverride() -> Int? {
+        let url = URL(fileURLWithPath: NSString(string: "~/.simigo/prefill_step_exp").expandingTildeInPath)
+        if let s = try? String(contentsOf: url, encoding: .utf8),
+           let v = Int(s.trimmingCharacters(in: .whitespacesAndNewlines)), v > 0 {
+            return v
+        }
+        if let exp = ProcessInfo.processInfo.environment["SIMIGO_PREFILL_STEP_EXP"],
+           let step = Int(exp), step > 0 {
+            return step
+        }
+        return nil
     }
 
     #if DEBUG
