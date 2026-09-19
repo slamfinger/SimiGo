@@ -111,11 +111,25 @@ nonisolated enum RuntimeTuning {
     /// 2048 的内存/访问模式代价。恢复 09-13 阶梯（<64k→2048/64-96k→1024/
     /// >96k→512）；2048-vs-1024 的受控对比由 BENCH_EXEC_CONTINUITY 复跑
     /// （同 harness 同预算）闭环。
+    ///
+    /// 2026-09-19 晚 512-vs-1024 深档受控 A/B 闭环（V1.7-A 首题，
+    /// SIMIGO_PREFILL_STEP_EXP 门 + runtime_matrix 同 harness）：120K cold
+    /// 1115.4s@1024 vs 674.5s@512（+65%），实验侧内存全程干净（swap
+    /// 2.2-4.1G 零逐出）排除漂移；rebuild 同带、restore 略劣。512 档
+    /// 保留——"swap 绿灯"不构成拆深档护栏的证据，与 09-18 教训单调一致。
     static func prefillStepSize(contextTokens: Int) -> Int? {
         switch contextTokens {
         case ..<64_000: return 2048
         case ..<96_000: return 1024
-        default: return 512
+        default:
+            // V1.7-A 实验门（2026-09-19）：>96K 档步长受控覆盖，供 512-vs-1024
+            // 同深度 A/B（矩阵 120K 基线 674.5s@512 已入库）。默认不设 =
+            // 生产语义 512 不变；取值非法时同样回落 512。
+            if let exp = ProcessInfo.processInfo.environment["SIMIGO_PREFILL_STEP_EXP"],
+               let step = Int(exp), step > 0 {
+                return step
+            }
+            return 512
         }
     }
 
