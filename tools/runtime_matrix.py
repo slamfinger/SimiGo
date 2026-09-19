@@ -110,6 +110,7 @@ def parse_completion(line):
         "fork": (lambda m: f"{m.group(1)}/{m.group(2)}" if m else None)(
             re.search(r"fork@common=(\d+)/(\d+)", line)),
         "provenance": "measured",
+        "captureStatus": "primary",
     }
 
 
@@ -120,7 +121,8 @@ def derive_completion_degraded(pos0):
     restore 命中可用 admission rf=1 + 小 delta prefill 判别。"""
     row = {"session": None, "mode": None, "promptTokens": None,
            "promptTimeS": None, "ttftS": None, "cacheTokens": None,
-           "cacheEff": None, "reuse": None, "provenance": "derived-prefill"}
+           "cacheEff": None, "reuse": None, "provenance": "derived-prefill",
+           "captureStatus": "degraded-prefill-derived"}
     for line in reversed(lines_since(pos0)):
         m = re.search(r"\[MLX\] prefill (\d+)/(\1)\s*$", line.rstrip())
         if m and row["promptTokens"] is None:
@@ -146,6 +148,7 @@ def wait_completion(pos0, session_key=None, timeout=180):
             comp = parse_completion(line)
             if session_key and comp["session"] != session_key:
                 continue
+            comp["stepUsed"] = step_used_since(pos0)
             return comp
         # 完成行落盘竞态宽限（3 轮 ≈1.5s）：响应返回时完成行可能尚未
         # flush，立即走降级会抓到 prefill 行丢 promptTime/mode。
@@ -153,8 +156,18 @@ def wait_completion(pos0, session_key=None, timeout=180):
         if polls > 3:
             degraded = derive_completion_degraded(pos0)
             if degraded:
+                degraded["stepUsed"] = step_used_since(pos0)
                 return degraded
         time.sleep(0.5)
+    return None
+
+
+def step_used_since(pos0):
+    """本请求实际生效的 prefillStep（trace prefillStep= 行，pos0 后最近一条）。"""
+    for line in reversed(lines_since(pos0)):
+        m = re.search(r"prefillStep=(\d+)", line)
+        if m:
+            return int(m.group(1))
     return None
 
 

@@ -82,6 +82,16 @@ def main():
     ap.add_argument("--colds-only", action="store_true")
     args = ap.parse_args()
 
+    # P2（外审 2026-09-19）：实验门文件必须保证清理——异常/中断也不得
+    # 遗留 ~/.simigo/prefill_step_exp 影响后续生产运行。
+    try:
+        run(args)
+    finally:
+        clear_step()
+        print("=== 实验门已清除（finally）===", flush=True)
+
+
+def run(args):
     store = json.loads(OUT.read_text()) if OUT.exists() else {
         "model": rm.MODEL, "meta": rm.experiment_meta(),
         "design": "interleaved 512/1024 x3, cold then rebuild, 120K", "runs": []}
@@ -104,8 +114,7 @@ def main():
             record(store, "cold", side, i, f"stepab_c{side}_{i}", pos0, wall)
 
     if args.colds_only:
-        clear_step()
-        print("=== colds-only 完成，实验门已清除 ===", flush=True)
+        print("=== colds-only 完成 ===", flush=True)
         return
 
     print("=== rebuild 交错 ×3（512↔1024，逐轮不同变异）===", flush=True)
@@ -121,8 +130,7 @@ def main():
             pos0, wall = post("stepab", m)
             record(store, "rebuild", side, i, "stepab", pos0, wall)
 
-    clear_step()
-    print("=== 全部完成，实验门已清除 ===", flush=True)
+    print("=== 全部完成 ===", flush=True)
 
 
 if __name__ == "__main__":

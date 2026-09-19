@@ -149,9 +149,11 @@
     "cacheTokens": null,
     "cacheEff": null,
     "reuse": "false",
-    "provenance": "measured",
+    "provenance": "corrected-from-trace",
     "tps": 14.5,
-    "corrected": "backfilled-from-trace-2026-09-19T20:25:33.718 (harness poll race; script checkpoint overwrote earlier fix)"
+    "corrected": "backfilled-from-trace-2026-09-19T20:25:33.718 (harness poll race; script checkpoint overwrote earlier fix)",
+    "captureStatus": "late-completion",
+    "traceBackfilled": true
    },
    "memAfter": {
     "footprintGB": 23.6,
