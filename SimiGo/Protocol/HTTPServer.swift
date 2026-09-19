@@ -568,7 +568,13 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
 
-        connection.start(queue: queue)
+        // V1.6.1（事件 B 修复，2026-09-19）：每连接独立串行队列——
+        // 原实现全部连接共享一条串行队列，单个连接回调卡死（os_state
+        // dispatch_sync 等主事件，事件 B 3/3 复现）即冻结全部连接 I/O
+        // 与监听回调 → 服务全局无响应。隔离后卡死仅影响该连接自身，
+        // 其余连接与监听不受牵连。
+        connection.start(queue: DispatchQueue(
+            label: "com.simigo.httpserver.conn.\(context.key)"))
 
         let task = Task {
             [weak self, weak context] in
