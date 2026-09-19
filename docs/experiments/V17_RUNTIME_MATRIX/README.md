@@ -70,6 +70,39 @@ HTTP 响应无 usage，位置法捕获在 build 3 上曾退化 prefill 行推导
 （`cacheReuseMode`/`cacheFork*` 字段源在 vendor pin 内未动），CFBundleVersion
 3→4，SimiGoTests 73 tests / 0 failures（72 基线 +1 = tools=null 回归）。
 
+## 正式矩阵（build 4，2026-09-19，results_build4_formal_matrix.json，全行 measured）
+
+| 档（累计处理 tok） | 上下文≈ | warm | restore | rebuild | cold | RAM/swap |
+|---|---|---|---|---|---|---|
+| 10K | 18K | 0.7s | 1.4s | 24.2s | 25.7s | 22.0G/3.9G |
+| 40K | 36K | 1.1s | 3.0s | 109.8s | 103.3s | 20.9G/4.2G |
+| 80K | 72K | 2.0s | 6.0s | 310.5s | 306.0s | 20.4G/3.3G |
+| 120K | 120K | 2.9s | **20.1s** | 882.6s | 674.5s | 23.6G/2.7G |
+
+四项审核指标读数：
+
+1. **Cold 吞吐拐点**：707 → 351 → 235 → 177 tok/s（18K→36K→72K→120K）。
+   2× token 时间比：×4.02 / ×2.96 / ×2.20（幂指数 ~2.0→~1.55；步长阶梯
+   2048/1024/512 换档是混杂变量）。**非线性从 36K 档即已确立**。
+2. **Restore scaling**：1.4 → 3.0 → 6.0 → 20.1s，**delta 恒为 611 tok**，
+   四档全部命中（reuse=true，cacheTokens=全账本 18.5K/36.4K/72.3K/
+   119.9K）。restore tps 36.9→27.4→18.7→6.3——fork 拷贝成本随上下文
+   上涨，120K 档超线性跳升（swap 压力嫌疑）。restore:cold = 1:18 →
+   1:34 → 1:51 → 1:34，**120K 深处 restore 仍省 34×**。
+3. **Fork 深度**：restore 的 fork 覆盖**全账本**（120K 处 =119,922 tok）
+   ——复用深度=完整上下文，无深度天花板。build r2 的 fork@common 恒
+   9,458 = r1 checkpoint 是当时唯一严格前缀（checkpoint 粒度问题，
+   非能力上限）。注：日志为单字段 `fork@common=X/Y`，harness 已修为
+   双值捕获。
+4. **内存压力**：swap 全程有界（2.7–4.9G）；120K 档 footprint 23.6G。
+   机制交互一例：rebuild 请求到达时 LRU 以 budget=100K 逐出 119.6K
+   warm 会话（MEM 行 evicted=1），rebuild=882.6s vs cold=674.5s 的
+   差距部分来自逐出抖动（rebuild 先跑、swap 4.9G；cold 后跑状态较
+   新）——warmTokenBudget×深会话是 V1.7-A 的第一个政策实验候选。
+
+附：extend delta 预填同样随上下文变贵（120K build 内 tps 16.7→9.9，
+54K→110K context）——超线性是全局形状，不只 cold。
+
 ## Build 4 认证级 10K 行（results_build4_measured_10k.json，全部 measured）
 
 | 路 | wall | promptTime | tok | mode | reuse | ttft |

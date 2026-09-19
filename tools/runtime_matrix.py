@@ -104,6 +104,10 @@ def parse_completion(line):
         "cacheTokens": int(g(r"cacheTokens=(\d+)") or 0),
         "cacheEff": g(r"cacheEff=([\d.]+)"),
         "reuse": g(r"reuse=(\w+)"),
+        "cacheHitTokens": int(g(r"cacheHitTokens=(\d+)") or 0),
+        "tps": (lambda v: float(v) if v else None)(g(r"tps=([\d.]+)")),
+        "fork": (lambda m: f"{m.group(1)}/{m.group(2)}" if m else None)(
+            re.search(r"fork@common=(\d+)/(\d+)", line)),
         "provenance": "measured",
     }
 
