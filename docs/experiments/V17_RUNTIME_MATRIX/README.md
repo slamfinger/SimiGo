@@ -186,6 +186,44 @@ generation≈wall−promptTime 可推导，新探针仅前三相。行级
   compile-setup）已被压得很小。分相计时的主战场是校准后的 restore
   真值格与 40K–120K 非线性拐点（10K 档 swap 已 3.5G / footprint 22G）。
 
+## V1.7-1 长上下文真实运行实验（results_v17_1_longctx.json，2026-09-20 凌晨收官）
+
+40K/80K/120K × (restore/warm/rebuild/cold) × 3 passes（每 pass 全新会话，
+生产阶梯零覆盖，runner `tools/v17_1_longctx.py`，有效性单位
+depth+passIdx+attempt）。9/9 pass 完整，全行 measured，meta 证 stepFile/env
+均无覆盖，逐行 stepUsed 与生产阶梯逐档吻合（2048/1024/512）。
+
+| 档 | restore | warm | rebuild | cold | rebuild/cold |
+|---|---|---|---|---|---|
+| 40K | 2.9s [2.0–3.4] | 0.9s | 90.9s [66.5–103.3] | 75.6s [63.9–83.6] | 1.20× |
+| 80K | 6.6s [5.6–8.5] | 1.8s | 278.4s [276.6–281.2] | 295.5s [282.7–306.0] | 0.94× |
+| 120K | 18.2s [14.0–21.4] | 3.1s | 830.6s [796.4–886.1] | 624.3s [616.0–630.8] | 1.33× |
+
+核心读数：
+
+1. **Restore 9/9 全命中**（reuse=true，delta 恒 611 tok）：2.9/6.6/18.2s，
+   对 cold 省比 1:26 → 1:45 → 1:34——复用收益随深度保持，深档无衰减证据。
+2. **Cold 曲线（n=3）**：478 → 244 → 192 tok/s，超线性随重复实验复核
+   依然成立；80K 档三 pass 冷值 282.7–306.0s 离散 <8%。
+3. **rebuild/cold 比值不稳定（1.20×/0.94×/1.33×）**——正式定论：rebuild
+   与 cold 是同族全量成本，比值差异由会话/内存状态主导（rebuild 行内
+   swap 2.3–4.1G vs cold 行 1.6–2.2G 同 pass 内即可见），不构成独立
+   优化目标；交错复核中干净状态两者相等（630.8 vs 622.7s）。
+4. **逐出大幅减少**：9 pass 全程仅 4 次 evict（首矩阵单次 rebuild 即
+   触发）——每 pass 全新会话设计天然避免跨档会话堆积；
+   warmTokenBudget×深会话交互仍留作 V1.7-A 政策实验（多会话真实负载
+   形状）。
+5. warm 全谱 0.9/1.8/3.1s：delta-only 路径近乎平坦，复用态续跑成本
+   与深度弱相关。
+
+**V1.7-1 结论**：四路成本曲线在受控重复下闭合；restore 收益确证；
+rebuild-vs-cold 并案；下一步按序进入 V1.7-2 Concurrency Probe
+（先测边界，不改 serializeGeneration）。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
+- `results_build4_formal_matrix.json` —— 正式矩阵（10K–120K 单轮）
+- `results_step1024_120k_ab.json` —— 步长 A/B 单轮（1024 侧）
+- `results_step_ab_repeats.json` —— 步长交错 ×3 复核
+- `results_v17_1_longctx.json` —— V1.7-1 长上下文 3 passes 全量
