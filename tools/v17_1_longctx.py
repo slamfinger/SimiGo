@@ -65,7 +65,7 @@ def complete_attempt(store, depth, p):
     attempts = {r.get("attempt") for r in store["runs"]
                 if r["depth"] == depth and r["passIdx"] == p}
     for a in sorted(attempts, reverse=True):
-        if a is not None and SCENARIOS <= attempt_scenarios(store, depth, p, a):
+        if a is not None and set(SCENARIOS) <= attempt_scenarios(store, depth, p, a):
             return a
     return None
 
