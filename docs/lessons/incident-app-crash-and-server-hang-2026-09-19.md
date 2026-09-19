@@ -150,3 +150,26 @@ rebuild 后 **warm-setup 请求再次冻结**，探针 12 连 http=000（11:25:0
 2. HTTPServer.readRequest/route 入口加 trace 行（第 3 请求走到哪一步）
 3. 排查 r2 rebuild 路径是否遗留未释放的锁/任务
   （LifecycleGates acquire/release 配平、ConnectionContext 生命周期）
+
+## 决定性证据（2026-09-19 12:08 冻结现场，带埋点二进制）
+
+新埋点（[HTTP] recv / handler enter）下的冻结现场：
+
+```text
+12:08:20.630  [EXEC] end status=completed          ← r2（rebuild 轮）正常完成
+12:08:20.663  [HTTP] recv POST /v1/chat/completions ← REBUILD 轮已进入 route()
+              （此后全进程零 trace 输出；handler enter 从未出现；
+                accept/派发层死亡——新连接 TCP 可建但永不处理）
+```
+
+**消失点钉死**：route() 入口之后、handleNonStreaming 入口之前
+（即 route switch 内的 body decode / 分派段）。
+
+**冻结形态**：该请求消失的同时，accept/派发层整体停摆（新连接
+TCP ESTABLISHED 但永不产生 recv）→ 非单请求挂起，是**处理管线级死亡**。
+sample 显示唯一异常线程 = libtrace state block-list 队列上的
+os_state for-self dispatch_sync 等主事件永挂——该队列属系统统一日志，
+其死亡会冻结一切经过 os_log 的路径（含 NW/Foundation 内部日志）。
+
+**一致性**：4/4 复现全部死在同一点（r2 rebuild 完成后的下一请求），
+与队列隔离修复、OS_ACTIVITY_MODE、UI 自动化均无关。
