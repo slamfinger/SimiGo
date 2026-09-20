@@ -272,7 +272,7 @@
     }
    },
    "queueWaitS": {
-    "a": 2.0,
+    "a": 2.039,
     "b": 0.0
    },
    "lc": {
@@ -336,7 +336,8 @@
    "anomalyCount": 0,
    "verdict": "pass",
    "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3b11', 'verdict': 'pass'} queueWait {'a': 2.0, 'b': 0.0}",
-   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)"
+   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)",
+   "tsRecomputed": "2026-09-20 _ts() 修复重算（外审 P1-1:time.strptime 丢微秒→秒级截断）;原始 ts 字符串未动,datetime 精确解析"
   },
   {
    "probe": "p3",
@@ -380,7 +381,7 @@
     }
    },
    "queueWaitS": {
-    "a": 2.0,
+    "a": 2.066,
     "b": 0.0
    },
    "lc": {
@@ -444,7 +445,8 @@
    "anomalyCount": 0,
    "verdict": "pass",
    "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3b12', 'verdict': 'pass'} queueWait {'a': 2.0, 'b': 0.0}",
-   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)"
+   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)",
+   "tsRecomputed": "2026-09-20 _ts() 修复重算（外审 P1-1:time.strptime 丢微秒→秒级截断）;原始 ts 字符串未动,datetime 精确解析"
   },
   {
    "probe": "p4",
@@ -604,7 +606,8 @@
    "anomalyCount": 0,
    "verdict": "pass",
    "evidence": "modes=[('extend', 'true', 1421), ('cold', 'false', 1508)]（先到 extend / 后到 fork 全量重预填）",
-   "verdictRecomputed": "2026-09-20 criterion fix: fork=全量重预填(v17_1 rebuild 同族 mode=cold),旧 small<300 判据错误"
+   "verdictRecomputed": "2026-09-20 criterion fix: fork=全量重预填(v17_1 rebuild 同族 mode=cold),旧 small<300 判据错误",
+   "tsRecomputed": "2026-09-20 _ts() 修复重算（外审 P1-1:time.strptime 丢微秒→秒级截断）;原始 ts 字符串未动,datetime 精确解析"
   },
   {
    "probe": "p4",
@@ -985,6 +988,220 @@
    },
    "verdict": "pass",
    "evidence": "48 polls, max=0.013s, bad=0"
+  },
+  {
+   "probe": "p3",
+   "scenario": "round1",
+   "attempt": 2,
+   "session": "q3a21+q3b21",
+   "wallS": 4.9,
+   "status": "both",
+   "trace": {
+    "a": {
+     "session": "q3a21/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 2.5,
+     "ttftS": 2.6,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 41.6,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 08:13:09.373"
+    },
+    "b": {
+     "session": "q3b21/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 2.1,
+     "ttftS": 2.1,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 39.7,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 08:13:11.572"
+    }
+   },
+   "queueWaitS": {
+    "a": 0.001,
+    "b": 2.657
+   },
+   "lc": {
+    "a": [
+     {
+      "ts": "2026-09-20 08:13:06.717",
+      "r": "b5d232",
+      "s": "q3a21",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 08:13:06.718",
+      "r": "b5d232",
+      "s": "q3a21",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 08:13:09.374",
+      "r": "b5d232",
+      "s": "q3a21",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ],
+    "b": [
+     {
+      "ts": "2026-09-20 08:13:06.717",
+      "r": "a4b0fb",
+      "s": "q3b21",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 08:13:09.374",
+      "r": "a4b0fb",
+      "s": "q3b21",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 08:13:11.572",
+      "r": "a4b0fb",
+      "s": "q3b21",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ]
+   },
+   "serializeEvidence": {
+    "secondRunningMinusFirstCompletingS": 0.0,
+    "first": "q3a21",
+    "verdict": "pass"
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 20.8,
+    "swapGB": 1.452451171875
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3a21', 'verdict': 'pass'} queueWait a=0.001s b=2.657s"
+  },
+  {
+   "probe": "p3",
+   "scenario": "round2",
+   "attempt": 2,
+   "session": "q3a22+q3b22",
+   "wallS": 4.3,
+   "status": "both",
+   "trace": {
+    "a": {
+     "session": "q3a22/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 2.1,
+     "ttftS": 2.1,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 42.1,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 08:13:15.719"
+    },
+    "b": {
+     "session": "q3b22/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 2.0,
+     "ttftS": 2.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 44.7,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 08:13:17.777"
+    }
+   },
+   "queueWaitS": {
+    "a": 0.0,
+    "b": 2.212
+   },
+   "lc": {
+    "a": [
+     {
+      "ts": "2026-09-20 08:13:13.507",
+      "r": "226ae6",
+      "s": "q3a22",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 08:13:13.507",
+      "r": "226ae6",
+      "s": "q3a22",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 08:13:15.719",
+      "r": "226ae6",
+      "s": "q3a22",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ],
+    "b": [
+     {
+      "ts": "2026-09-20 08:13:13.507",
+      "r": "a627dc",
+      "s": "q3b22",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 08:13:15.719",
+      "r": "a627dc",
+      "s": "q3b22",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 08:13:17.777",
+      "r": "a627dc",
+      "s": "q3b22",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ]
+   },
+   "serializeEvidence": {
+    "secondRunningMinusFirstCompletingS": 0.0,
+    "first": "q3a22",
+    "verdict": "pass"
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.8,
+    "swapGB": 1.452451171875
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3a22', 'verdict': 'pass'} queueWait a=0.0s b=2.212s"
   }
  ],
  "superseded_runs": [

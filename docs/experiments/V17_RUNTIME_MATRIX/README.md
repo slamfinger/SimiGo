@@ -230,15 +230,15 @@ rebuild-vs-cold 并案；下一步按序进入 V1.7-2 Concurrency Probe
 `[MLX]` 取末 6 字符、`[LC] s=` 取前 6 字符——长 id 标签塌缩仅碰撞标签，
 storageKey 含完整 id 故 KV 隔离无损，V1.7-1 cold cacheTokens=0 反证）。
 
-**结果：26/26 pass，0 fail，0 unverified**（runner 首轮两个判据缺陷经
-存档重算修正，见"判据修正"）。verdict 三值 pass/fail/unverified，
-证据缺失不伪装。
+**结果：28/28 行 pass，0 fail，0 unverified**（26 场景 + P3 修复补跑
+attempt-2 ×2 行；runner 首轮两个判据缺陷经存档重算修正，见"判据修正"）。
+verdict 三值 pass/fail/unverified，证据缺失不伪装。
 
 | 探针 | 关注点 | 结果 |
 |---|---|---|
 | P1 顺序隔离 | A build → B build → A delta | A 账本无损：extend 0.4s, cacheEff 覆盖自身历史 |
 | P2 交错一致性 | A,B 交替两轮 | 双方 r2 均 reuse=true/extend |
-| P3 并发串行化 | 跨 session 并发 ×2 轮 | **LC 时间线证串行**：B 先拿门时 A 的 RUNNING 与 B 的 COMPLETING 同毫秒交接（gap=0.0s 两轮）；queueWait=0/2.0s |
+| P3 并发串行化 | 跨 session 并发 ×4 轮（attempt1×2 + 修复后 attempt2×2） | **LC 时间线证串行**：门交接同毫秒（gap=0.000s ×4 轮）；先拿门者非确定（B,B,A,A），queueWait 0.000–2.657s |
 | P4 同 session 并发 | 两请求争抢一 session | 先到 extend（1421 tok reuse=true），后到 fork 全量重预填（1508 tok cold）——串行无 crash，fork 语义如 rebuild 同族 |
 | P5a decode 中途断连 | 同 session 立即重试 | 重试成功（2.2s）但 **mode=cold**：见"边界发现①" |
 | P5b ~30K prefill 中途断连 | 毒 session P0 病灶回归 | **15s 处断连，同 session 立即重试 66.9s 全量预填（25,969 tok cold）成功完成，其后 extend 0.6s 健康**——c81d130 修复实机回归通过 |
@@ -262,9 +262,9 @@ storageKey 含完整 id 故 KV 隔离无损，V1.7-1 cold cacheTokens=0 反证�
 
 ### 判据修正（runner 首轮两缺陷，存档重算非数据改造）
 
-- P3 首版判据硬编码"A 先拿门"——实际谁先拿门非确定（两轮均 B 先）。
-  修为顺序无关：后跑者 RUNNING ≥ 先跑者 COMPLETING（存档 LC 时间戳
-  重算 gap=0.0s 两轮 pass）。
+- P3 首版判据硬编码"A 先拿门"——实际谁先拿门非确定（attempt1 两轮均
+  B 先，attempt2 两轮均 A 先）。修为顺序无关：后跑者 RUNNING ≥ 先跑者
+  COMPLETING。
 - P4 首版 small/big 阈值误设——fork=全量重预填（与 rebuild 同族
   mode=cold），非"重渲后缀"。修为 mode 集合判据（extend+cold 存档
   重算 pass）。
@@ -274,6 +274,31 @@ storageKey 含完整 id 故 KV 隔离无损，V1.7-1 cold cacheTokens=0 反证�
   attempt-2 改抛弃 session。superseded 数据保留在
   `superseded_runs` 带 note。
 
+### 时间戳精度与范围边界（外审 P1-1/P1-2/P2-1 落实）
+
+- **计时精度**：trace 时间戳格式 `yyyy-MM-dd HH:mm:ss.SSS`（TraceLogger
+  单 formatter，`.SSS`=毫秒精度）。runner 首版 `_ts()` 用
+  `time.strptime→mktime`，struct_time 无微秒字段导致 **截断到秒级**
+  （实测 `14.649 → 14.000`）——已修为 `datetime.strptime().timestamp()`
+  保留毫秒。**所有时间差结论以日志精度 1ms 为下限，不宣称更高精度**。
+- **存档重算**：P3 attempt-1 与 P4 的 `queueWaitS/gap` 均已从存档原始
+  ts 字符串按修复解析器重算（行标 `tsRecomputed`，原始字符串未动）：
+  gap 两轮精确 0.000s（A 的 RUNNING 与 B 的 COMPLETING 为同一毫秒
+  字符串），queueWait 2.039/2.066s（原截断显示 2.0）。
+- **补跑**：P3 以修复后代码实跑 attempt-2 两轮（`--redo` 机制）：
+  gap=0.000s ×2、A 先拿门（queueWait 0.001/0.0s vs 2.657/2.212s）——
+  门获取顺序非确定、交接同毫秒，两个方向均验证。判据容差 -0.005s
+  （容许同毫秒内日志落笔顺序抖动）。
+- **时钟同源性**：`[LC]` 与 `[MLX]` 行并非异源——同一进程的
+  TraceLogger 在写入时用同一 `DateFormatter` 统一打戳（源码核验），
+  跨子系统时间线可比。
+- **范围边界**：本探针结论限定为——本机、本模型 pin、并发=2、
+  ~1.5K delta、serializeGeneration=true 生产策略下的低并发边界通过；
+  不外推到任意并发数、长上下文并发、多客户端压力吞吐、其他 HTTP
+  客户端的取消行为。P5a 盲重试税的协议选项（客户端回填 partial
+  assistant / 服务端可恢复标记 / 重试携带 execution id / API 文档化
+  非空取消提交）留作 V1.7-3 输入，不动 KV/fork 架构。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
@@ -282,4 +307,5 @@ storageKey 含完整 id 故 KV 隔离无损，V1.7-1 cold cacheTokens=0 反证�
 - `results_step_ab_repeats.json` —— 步长交错 ×3 复核
 - `results_v17_1_longctx.json` —— V1.7-1 长上下文 3 passes 全量
 - `results_v17_2_concurrency.json` —— V1.7-2 并发探针 8 探针 26 场景
-  （含 superseded_runs：p6/p7 首轮设计缺陷数据带 note 保留）
+  （28 verdict 行=P3 修复补跑×2；含 superseded_runs：p6/p7 首轮设计
+  缺陷数据带 note 保留）

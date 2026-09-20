@@ -120,7 +120,12 @@ def comp_lines(pos0):
 
 
 def _ts(sec):
-    return time.mktime(time.strptime(sec, "%Y-%m-%d %H:%M:%S.%f"))
+    # 日志时间戳精度=毫秒（TraceLogger.dateFormat="yyyy-MM-dd HH:mm:ss.SSS"，
+    # 全部 [LC]/[MLX] 行同一进程同一 formatter 打戳=同一时钟）。须用
+    # datetime 保留小数部分——旧 time.strptime→struct_time 无微秒字段会
+    # 截断到秒级（外审 P1-1）。同侧本地时间戳做差不受时区/DST 影响。
+    from datetime import datetime
+    return datetime.strptime(sec, "%Y-%m-%d %H:%M:%S.%f").timestamp()
 
 
 def queue_wait_s(lc_rows, s_short):
@@ -130,7 +135,7 @@ def queue_wait_s(lc_rows, s_short):
     qr = next((x for x in lc_rows if x["s"] == s_short
                and x["to"] == "RUNNING" and x["from"] == "QUEUED"), None)
     if cq and qr:
-        return round(_ts(qr["ts"]) - _ts(cq["ts"]), 2)
+        return round(_ts(qr["ts"]) - _ts(cq["ts"]), 3)
     return None
 
 
@@ -376,7 +381,9 @@ def p3(store, attempt, cfg):
             if first.get("completingTs") and second.get("runningTs"):
                 gap = round(_ts(second["runningTs"])
                             - _ts(first["completingTs"]), 3)
-                sv = "pass" if gap >= 0 else "fail"
+                # 容差 -0.005s：日志精度 1ms，写入顺序可致同毫秒内
+                # RUNNING 先于 COMPLETING 落笔（外审 P1-1 修复配套）
+                sv = "pass" if gap >= -0.005 else "fail"
                 serial = {"secondRunningMinusFirstCompletingS": gap,
                           "first": order[0][0], "verdict": sv}
         ok = (ra["status"] == 200 and rb["status"] == 200
@@ -622,6 +629,9 @@ def main():
                     help="P5b prefill 体量（~30K tok）")
     ap.add_argument("--cancel-delay", type=float, default=15.0,
                     help="P5b 断连延迟（须落在 prefill 窗口内）")
+    ap.add_argument("--redo", default="",
+                    help="强制重跑为新 attempt（逗号分隔），供判据修复后重测"
+                         "——已完成 probe 默认跳过，此旗标覆盖")
     args = ap.parse_args()
     cfg = argparse.Namespace(p3_rounds=args.p3_rounds, chars=args.chars,
                              p5b_chars=args.p5b_chars,
@@ -649,8 +659,10 @@ def main():
     for pid in pids:
         attempts = {r.get("attempt") for r in store["runs"]
                     if r.get("probe") == pid}
-        done = next((a for a in sorted(attempts, reverse=True)
-                     if a is not None and probe_complete(store, pid, a)), None)
+        redo = pid in {x.strip() for x in args.redo.split(",") if x.strip()}
+        done = None if redo else next(
+            (a for a in sorted(attempts, reverse=True)
+             if a is not None and probe_complete(store, pid, a)), None)
         if done is not None:
             print(f"--- {pid}: attempt {done} 完整，跳过 ---", flush=True)
             continue
