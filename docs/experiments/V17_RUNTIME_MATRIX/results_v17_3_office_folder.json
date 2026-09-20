@@ -1,0 +1,227 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T08:55:26",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (生产常量)",
+  "smoke": false,
+  "seed": 20260920
+ },
+ "design": "V1.7-3c: organize (10 mixed files -> 4 folders, model decides, harness copies) + merge (3 team docx reports -> extract 6 + integrate 2, exact scored); per-task attempt unit",
+ "runs": [
+  {
+   "task": "organize",
+   "scenario": "organize_t1",
+   "attempt": 1,
+   "session": "g1o",
+   "wallS": 4.7,
+   "trace": {
+    "session": "g1o/main",
+    "mode": "cold",
+    "promptTokens": 1257,
+    "promptTimeS": 1.9,
+    "ttftS": 4.6,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 40.9,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.95501953125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"F1|01_会议纪要\\nF2|01_会议纪要\\nF3|01_会议纪要\\nF4|02_项目汇报\\nF5|02_项目汇报\\nF6|03_财务发票\\nF7|03_财务发票\\nF8|03_财务发票\\nF9|04_数据表格\\nF10|04_数据表格\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "organize",
+   "scenario": "organize_t2",
+   "attempt": 1,
+   "session": "g1o",
+   "wallS": 2.4,
+   "trace": {
+    "session": "g1o/main",
+    "mode": "(fragment)",
+    "promptTokens": 786,
+    "promptTimeS": 1.4,
+    "ttftS": 2.2,
+    "cacheTokens": 1370,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.4,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.90814453125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t1",
+   "attempt": 1,
+   "session": "g1m",
+   "wallS": 3.3,
+   "trace": {
+    "session": "g1m/main",
+    "mode": "cold",
+    "promptTokens": 1006,
+    "promptTimeS": 1.6,
+    "ttftS": 3.2,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 40.9,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.90814453125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"mobile_status|正常\\nmobile_risks|1\\nbackend_status|滞后\\nbackend_risks|2\\ndata_status|正常\\ndata_risks|0\\nlagging_teams|backend\\nrisk_total|3\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "merge",
+   "scenario": "merge_t2",
+   "attempt": 1,
+   "session": "g1m",
+   "wallS": 3.8,
+   "trace": {
+    "session": "g1m/main",
+    "mode": "(fragment)",
+    "promptTokens": 787,
+    "promptTimeS": 1.4,
+    "ttftS": 3.7,
+    "cacheTokens": 1075,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 40.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.90814453125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"逐队提取与原文一致：mobile 正常\\/1条风险；backend 滞后\\/2条风险；data 正常\\/0条风险。跨队整合：lagging_teams=backend，risk_total=3（1+2+0）。全部与周报原文吻合。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  }
+ ],
+ "task_summaries": [
+  {
+   "task": "organize",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "placed": "10/10",
+   "payloadOk": true,
+   "verifyOk": true,
+   "placements": {
+    "F1": "01_会议纪要",
+    "F2": "01_会议纪要",
+    "F3": "01_会议纪要",
+    "F4": "02_项目汇报",
+    "F5": "02_项目汇报",
+    "F6": "03_财务发票",
+    "F7": "03_财务发票",
+    "F8": "03_财务发票",
+    "F9": "04_数据表格",
+    "F10": "04_数据表格"
+   }
+  },
+  {
+   "task": "merge",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "checks": {
+    "mobile": {
+     "status": true,
+     "risks": true
+    },
+    "backend": {
+     "status": true,
+     "risks": true
+    },
+    "data": {
+     "status": true,
+     "risks": true
+    },
+    "lagging": true,
+    "risk_total": true
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "mobile_status": "正常",
+    "mobile_risks": "1",
+    "backend_status": "滞后",
+    "backend_risks": "2",
+    "data_status": "正常",
+    "data_risks": "0",
+    "lagging_teams": "backend",
+    "risk_total": "3"
+   }
+  }
+ ]
+}

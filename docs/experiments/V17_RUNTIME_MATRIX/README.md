@@ -367,6 +367,27 @@ pypdf 6.19.0（pip --user 安装）。
 **范围边界**：本扩展覆盖"文本型文档生成→解析→理解→核对→输出"闭环；
 扫描件/图片型 PDF、复杂版式（嵌套表格/批注/页眉页脚）不在首版范围。
 
+## V1.7-3c 文件整理与多文档整合（2026-09-20）
+
+承接 V1.7-3/3b：新增两类办公能力。runner=`tools/v17_3_office_folder.py`
+（纪律与前一致；会话前缀 g*/h* 避开前序 runner 的 o*/d*/x*）。
+
+| 任务 | 输入 | 评分 | 结果 |
+|---|---|---|---|
+| organize 文件整理 | 10 个混合格式/混合命名文件（3 纪要 docx+2 汇报 pptx+3 发票 pdf+2 数据 xlsx，含 untitled_3.pptx 等不可读名）→ 归入 4 文件夹 | 正确归位 | **10/10**——模型按文件名+内容摘要判断，harness 真实复制归档（`office_out/folder/organize_a1/` 四夹齐全） |
+| merge 多文档整合 | 3×.docx 团队周报（移动端/后端服务/数据组） | 逐队提取 6 项+跨队整合 2 项 | **8/8**——各队状态/风险数全对，滞后名单+风险总数正确；整合版周报 docx 由提交汇编 |
+
+Runtime 侧：4 请求 cold=2+fragment/restore=2（t2 2/2 reuse=true），
+14.2s，anomaly=0。
+
+**过程发现（smoke 暴露即修）**：①滞后团队答 key（backend）与答中文名
+（后端服务）语义等价——评分器统一经 key→名称映射归一；②提示词硬编码
+三队对照导致 smoke 模型脑补缺失队——对照行改为按实际文件动态生成。
+
+**能力矩阵累计（V1.7-3 系）**：Excel（分类/提取/汇总）+ Word/PPT/PDF
+（生成/解析/理解/核对）+ 文件夹整理 + 多文档提取整合，全格式全任务
+满分或近满分（最低 0.90），restore 复用在全部任务形状下自发命中。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
@@ -383,3 +404,6 @@ pypdf 6.19.0（pip --user 安装）。
 - `results_v17_3_office_docs.json` —— V1.7-3b 文档扩展 word/ppt/pdf
   （`office_out/docs/`=docx/pptx/pdf 输入+周报 docx 产物+ground truth；
   smoke 另存 `results_v17_3_office_docs_smoke.json`）
+- `results_v17_3_office_folder.json` —— V1.7-3c 文件整理+多文档整合
+  （`office_out/folder/`=归档产物+整合周报 docx+ground truth；smoke
+  另存 `results_v17_3_office_folder_smoke.json`）
