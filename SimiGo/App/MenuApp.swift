@@ -7,7 +7,6 @@ struct MenuApp: App {
     @StateObject private var svc = Service()
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
-    @GestureState private var networkDragOffset: CGFloat = 0
 
     var body: some Scene {
         MenuBarExtra {
@@ -140,13 +139,8 @@ struct MenuApp: App {
                 .fill(Color.accentColor)
                 .frame(width: thumbWidth - 4, height: 24)
                 .padding(.horizontal, 2)
-                .offset(x: min(max(targetOffset + networkDragOffset, 0), thumbWidth))
-                .animation(
-                    networkDragOffset == 0
-                    ? .spring(response: 0.25, dampingFraction: 0.8)
-                    : nil,
-                    value: networkModeIsLAN
-                )
+                .offset(x: targetOffset)
+                .animation(.spring(response: 0.25, dampingFraction: 0.8), value: networkModeIsLAN)
 
             HStack(spacing: 0) {
                 Text("本机")
@@ -162,22 +156,10 @@ struct MenuApp: App {
         }
         .frame(width: containerWidth, height: 28)
         .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .updating($networkDragOffset) { value, state, _ in
-                    state = value.translation.width
-                }
-                .onEnded { value in
-                    let dragDistance = value.translation.width
-                    let threshold = thumbWidth / 2
-
-                    if dragDistance > threshold && !networkModeIsLAN {
-                        Task { @MainActor in await switchNetworkMode(toLAN: true) }
-                    } else if dragDistance < -threshold && networkModeIsLAN {
-                        Task { @MainActor in await switchNetworkMode(toLAN: false) }
-                    }
-                }
-        )
+        .onTapGesture(count: 1, coordinateSpace: .local) { location in
+            let wantsLAN = location.x >= thumbWidth
+            Task { @MainActor in await switchNetworkMode(toLAN: wantsLAN) }
+        }
         .opacity(isChangingNetworkMode ? 0.6 : 1.0)
     }
 

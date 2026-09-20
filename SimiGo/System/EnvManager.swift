@@ -16,7 +16,8 @@ public final class EnvManager: ObservableObject {
     @Published public var downloadProgress: Double = 0
 
     // MARK: - Shared Command Console
-    @Published public var commandInput = "hf download "
+    public static let defaultCommandInput = "hf download "
+    @Published public var commandInput = EnvManager.defaultCommandInput
     @Published public var commandLog = ""
     @Published public var isRecording = false
     @Published public var commandStatus = "就绪"
@@ -78,6 +79,7 @@ public final class EnvManager: ObservableObject {
                 self.appendCommandLog(output)
             }
             commandStatus = "执行完成"
+            commandInput = Self.defaultCommandInput
         } catch {
             commandStatus = "执行失败"
             appendCommandLog("❌ 执行失败：\(error.localizedDescription)")
@@ -306,6 +308,7 @@ public final class EnvManager: ObservableObject {
 
             appendCommandLog("🎉 llama-server 就绪。Native MLX 无需安装外部运行时。")
             commandStatus = "构建完成"
+            commandInput = Self.defaultCommandInput
             checkStatus()
         } catch {
             appendCommandLog("❌ 构建中断：\(error.localizedDescription)")
@@ -529,6 +532,7 @@ public final class EnvManager: ObservableObject {
 
             downloadProgress = 1.0
             commandStatus = "下载完成"
+            commandInput = Self.defaultCommandInput
         } catch {
             let message = "\n❌ 执行失败：\(error.localizedDescription)\n"
             downloadLog += message

@@ -19,17 +19,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var lastActivity = Date()
         /// P0-5：创建时会话的 KV 配置指纹。配置变更 → 禁止复用旧缓存。
         let kvFingerprint: String?
+        /// 由 checkpoint 快照恢复（performLoad）：vendor 侧无 conversation
+        /// 账本（ChatSession "raw cache without transcript" 模式），走
+        /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
+        /// cacheTokensBefore 补回 cacheHit 归因，消除 cacheEff=0.00 歧义。
+        let isRestoredSnapshot: Bool
 
         init(
             session: ChatSession,
             history: [Chat.Message],
             historyJSON: [JSONValue] = [],
-            kvFingerprint: String? = nil
+            kvFingerprint: String? = nil,
+            isRestoredSnapshot: Bool = false
         ) {
             self.session = session
             self.history = history
             self.historyJSON = historyJSON
             self.kvFingerprint = kvFingerprint
+            self.isRestoredSnapshot = isRestoredSnapshot
         }
     }
 
@@ -973,6 +980,22 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
         await evictSessionsIfNeeded(keeping: executionKey.storageKey)
 
+        // Restore 路径归因补全（2026-09-20）：checkpoint 恢复的会话在 vendor
+        // 侧无 conversation 账本，归因块整体跳过，info 恒为 cacheHit=0/无
+        // mode——而物理上是「N=cacheTokens 前缀全复用 + 仅预填 d=promptTokens」
+        // 的最优路径，0.00 与冷启/重建同形，歧义极大。N、d 均为实测计数
+        // （官方 cacheStatus + info 透传），cacheEff=N/(N+d) 是可证明值，
+        // 不写死 1（delta 确实预填了）。vendor 给出 mode 时以 vendor 为准。
+        var reportedCacheHit = cachedPromptTokens
+        var reportedCacheEff = cacheEfficiency
+        var reportedMode = cacheReuseMode
+        if cacheReuseMode == nil, managed.isRestoredSnapshot,
+           let n = cacheTokensBefore, n > 0, let d = promptTokens {
+            reportedCacheHit = n
+            reportedCacheEff = Double(n) / Double(n + d)
+            reportedMode = "restore"
+        }
+
         // 轮末完成行（build 4 恢复，211aa59 trim 曾删）：V1.7-0 矩阵
         // 位置法捕获的唯一认证级来源——mode/reuse/cacheEff/ttft 逐轮
         // 真值。纯遥测，零行为变更；逐轮一行，量级与 v1.5/v1.6 相同。
@@ -989,14 +1012,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let cacheTokensBefore {
             log += " cacheTokens=\(cacheTokensBefore)"
         }
-        if let cachedPromptTokens {
-            log += " cacheHitTokens=\(cachedPromptTokens)"
+        if let reportedCacheHit {
+            log += " cacheHitTokens=\(reportedCacheHit)"
         }
-        if let cacheEfficiency {
-            log += String(format: " cacheEff=%.2f", cacheEfficiency)
+        if let reportedCacheEff {
+            log += String(format: " cacheEff=%.2f", reportedCacheEff)
         }
-        if let cacheReuseMode {
-            log += " mode=\(cacheReuseMode)"
+        if let reportedMode {
+            log += " mode=\(reportedMode)"
         }
         if let c = cacheForkCommon, let l = cacheForkLedger {
             log += " fork@common=\(c)/\(l)"
@@ -1016,6 +1039,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         log += " rawEv=\(rawEventCount) rawB=\(rawChunkBytes) emitB=\(emittedChunkBytes)"
         traceLogger.trace(log)
 
+        // usage 保持 vendor 原值透传（含 restore 路径的归因缺口）：P1-2 契约
+        // 是官方计数不做估算；restore 归因补全只属于上方 Runtime 遥测行。
         let usage: GenerationUsageReport? = (promptTokens != nil && generationTokens != nil)
             ? GenerationUsageReport(
                 promptTokens: promptTokens!,
@@ -1319,7 +1344,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             session: session,
             history: Self.makeChatMessages(metadata.history),
             historyJSON: metadata.history,
-            kvFingerprint: metadata.kvFingerprint
+            kvFingerprint: metadata.kvFingerprint,
+            isRestoredSnapshot: true
         )
         traceLogger.trace(
             "[MLX] cacheLoad session=\(traceKey) history=\(metadata.history.count)"
