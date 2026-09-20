@@ -42,12 +42,12 @@ F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**受约束工程化验证中**——语义层全过(F1–F4 + 解冻门);
-**F4-E 性能门触发:F3a 重新激活**(多段 concat decode 税随深度稳定
-超标:32K 1.137× / 64K 1.256×,已归因 = 每 token 2×depth 字节物化
-往返,token 门全对);F4-F 归因完成(不可达页可复用无泄漏;单点
-不降 = 惰性图父引用保持)。**F5 第一优先 = 段合并(reattach)原型**
-(一次性 O(depth) 换零稳态税;@64K 合并 ~17–50ms,decode >10–15
-token 回本)。F4-D 骨架已更新至可补给状态(#629 follow-up)。
-记录:F1/F2/F3/F4/F4-EF 五份 + 外部对照 + F4-D 骨架;代码:vendor
-分支 `exp/execution-state-fork`(基于 8f37dbc)。
+**状态**：**F5-1 Reattach 通过(2026-09-20 深夜,表示形态迁移成立)**——
+64K@4 段:合并前税 1.219× → **reattach 85.2ms(1.25GiB 单拷)→ 合并后
+1.006×**(≤1.05× 验收线),逐元素一致 + token 门 48/48,**实测
+break-even ≈5 token**(优于设计期假设 10–15)。F5-2 = break-even
+矩阵(18/32/64/128K);F5-3 = 自动 transition policy;其后按审核预排
+做 Track B 阶段收束(研究问题已升级为"执行状态在 Shared/Segmented/
+Continuous 三表示间如何迁移")。F3a = 活动中的性能研究项(税已归因,
+消解路径已验证)。记录:F1/F2/F3/F4/F4-EF/F5-1 六份 + 外部对照 +
+F4-D 骨架;代码:vendor 分支 `exp/execution-state-fork`(基于 8f37dbc)。
