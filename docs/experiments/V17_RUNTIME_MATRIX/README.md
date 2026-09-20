@@ -299,6 +299,46 @@ verdict 三值 pass/fail/unverified，证据缺失不伪装。
   assistant / 服务端可恢复标记 / 重试携带 execution id / API 文档化
   非空取消提交）留作 V1.7-3 输入，不动 KV/fork 架构。
 
+## V1.7-3 Local Office Prototype（2026-09-20，方向登记 V1.7-C）
+
+规格原文："SimiGo 双翼定位：Runtime + Office。从文件任务起步（多 Excel
+分类/提取/汇总：读文件 → 本地模型理解 → 执行脚本 → 生成 → 模型检查 →
+输出）——Runtime 第一次承载真实办公生产任务。"
+
+**设计裁决（红线内）**：固定工作流脚本，非 Agent Framework（2 个固定
+工具 submit_result/verify，无 Planner/记忆/编排）；**模型出决策、
+harness 出确定性执行**（pandas 变换由 runner 执行，不 exec 模型代码
+——首版风险裁决，理解→执行→生成→检查→输出闭环语义等价保留）；数据=
+固定 seed 合成办公数据，ground truth 同源生成→**结果可精确评分**；
+真实用户文件接入留作后续。runner=`tools/v17_3_office.py`，产物落
+`office_out/`（xlsx 产物+日报+ground_truth 审计档）。
+
+**任务与评分（temperature=0，attempt 间完全复现）**：
+
+| 任务 | 输入 | 评分 | 结果 |
+|---|---|---|---|
+| expenses 分类 | 40 行报销流水 → 餐饮/交通/办公/其他 | vs 生成器真值 | **36/40（0.90）**，抽查 3/3 |
+| inventory 提取 | 30 行库存 → 数量<20 补货行 | hit/误报 | **10/11，误报 0** |
+| invoices 汇总 | 16 行发票 → 未付总额+笔数 | 数值容差 0.01 | **精确命中（89,657.65 / 6 笔）** |
+| summary KPI | 跨文件日报 ×3 | vs 上游提交 | **3/3** |
+
+**Runtime 侧指标（19 请求，3 attempts+smoke 另计）**：cold=9（各任务
+build）、**fragment/restore 族=10 且 reuse=true 10/10**——每个 tool 尾
+后继轮（t2）全部自然命中 Conditional Restore 路径，V1.7-1 确证的复用
+收益在真实工作流形状下自发出现；总模型耗时 85.7s（mean 4.5s）；
+anomaly=0；eviction=2（LRU 100K 预算内多会话堆积，正常）。
+
+**过程发现（harness 层）**：verify 轮 max_tokens=128 会截断模型的
+逐行重算式复核（截在半句、tool call 无法发出）——512 后 verify 全部
+正常提交。修复轮提示须按目标工具定制（首版误引导回 submit_result）。
+均已在 runner 修复，attempt-1 数据诚实保留。
+
+**结论**：Runtime 第一次端到端承载真实办公生产任务成功——工具循环、
+账本镜像、restore 复用、多会话、产物落盘全链可用；35B 本地模型在
+结构化提交格式下分类/提取/汇总质量可用（0.90/0.91/精确/3-3）。
+V1.7 三阶段（Harness/长上下文/并发/Office 原型）实验收官，
+**实验结果定 V1.8 方向**。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
@@ -309,3 +349,6 @@ verdict 三值 pass/fail/unverified，证据缺失不伪装。
 - `results_v17_2_concurrency.json` —— V1.7-2 并发探针 8 探针 26 场景
   （28 verdict 行=P3 修复补跑×2；含 superseded_runs：p6/p7 首轮设计
   缺陷数据带 note 保留）
+- `results_v17_3_office.json` —— V1.7-3 办公原型 4 任务 3 attempts
+  （`office_out/`=xlsx 产物+日报+ground truth；smoke 另存
+  `results_v17_3_office_smoke.json`）
