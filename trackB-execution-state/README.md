@@ -19,6 +19,10 @@ Cache，是 Execution State 抽象**。
 
 **依赖**：`~/Documents/mlx-swift-lm` fork 实验分支（branch requirement；
 远端备份推 `slamfinger/mlx-swift-lm` fork，待建）。
+**上游同步**：**mlx-swift-lm #629**(本方 RFC,2026-09-18 提交,open
+无回复,2026-09-20 验真登记——见
+`EXTERNAL_REVIEW_RECONCILIATION_20260920.md`)+ mlx-lm #1849(提案中)。
+F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
 
 **验收（三数 + 一门）**：
 1. **Fork Cost**：fork 操作亚秒级（元数据 O(1)）；物理增长 ∝ 分叉后缀
