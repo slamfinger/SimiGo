@@ -25,17 +25,19 @@ P = 解冻续写补至全深的 fresh 1 段对照)。
   增长拼接——KVCacheSimple 常态行为,一次性,不入稳态);
 - 合并后 active 22.9GiB(叶 COW 段表引用释放)。
 
-## 实测 break-even(取代设计期假设)
+## 实测 break-even(**performance-tax break-even**,取代设计期假设)
 
 ```
 reattach 85.2 ms(一次性)
-÷ 合并前税 16.7 ms/token(P 76.1 vs 叶 92.8)
-= **≈ 5.1 token 回本**
+÷ 可避免的多段表示额外税 16.7 ms/token(叶COW 92.8 − P 76.1;
+  不是总 token latency)
+= **稳态口径 ≈ 5.1 token 回本**
 ```
 
-设计期假设是 10–15 token;实测 **≈5 token**,优于假设。含首 token
-增长拼接的总回本 < 8 token。**表述纪律:此为 64K@4 段单点实测,
-深度/段数轴的 break-even 矩阵由 F5-2 给出。**
+设计期假设是 10–15 token;实测稳态口径 **≈5 token**,优于假设。
+首 token 口径(含 step 增长拼接 158.6ms)单列:**<8 token 回本**,
+不与稳态数混同。**表述纪律:此为 64K@4 段单点实测,深度/段数轴的
+performance-tax break-even 矩阵由 F5-2 给出。**
 
 ## 首轮 harness bug(如实记录)
 
@@ -47,6 +49,13 @@ state 的一部分**,换表示/换对象时必须随迁——这本身就是 F0 
 "execution identity"问题在实验层的再现。
 
 ## 决策
+
+0. **新验收规则(自 F5-2 起系统化,源于本轮 bug)**:表示迁移验证 =
+   State Representation Transition(逐元素一致)**与** Execution
+   Continuation(迁移后从同一 execution identity 继续,得到同一条
+   continuation)分开测试、都过才算过。execution state 清单:KV
+   表示 + 当前位置 + **next-input token** + 模型侧递归态 + 分支标识
+   + 生成状态。
 
 1. **F5-1 通过:表示形态迁移成立**——Shared/Segmented(共享/多段)
    → Continuous(连续)的主动切换把 1.22–1.26× 长深度税消到 1.006×,

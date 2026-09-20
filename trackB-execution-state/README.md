@@ -42,12 +42,13 @@ F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**F5-1 Reattach 通过(2026-09-20 深夜,表示形态迁移成立)**——
-64K@4 段:合并前税 1.219× → **reattach 85.2ms(1.25GiB 单拷)→ 合并后
-1.006×**(≤1.05× 验收线),逐元素一致 + token 门 48/48,**实测
-break-even ≈5 token**(优于设计期假设 10–15)。F5-2 = break-even
-矩阵(18/32/64/128K);F5-3 = 自动 transition policy;其后按审核预排
-做 Track B 阶段收束(研究问题已升级为"执行状态在 Shared/Segmented/
-Continuous 三表示间如何迁移")。F3a = 活动中的性能研究项(税已归因,
-消解路径已验证)。记录:F1/F2/F3/F4/F4-EF/F5-1 六份 + 外部对照 +
-F4-D 骨架;代码:vendor 分支 `exp/execution-state-fork`(基于 8f37dbc)。
+**状态**：**F5-2 矩阵全过(2026-09-20 深夜)**——Tier A 九格(18/32/64K ×
+2/4/8 段)两道门(元素一致 + Execution Continuation)全绿,post 税
+0.95–1.13×(8/9 ≤1.05),**perf-tax BE 稳态中位 ~4 token**;Tier B
+(128K)按纪律记 N/A(峰值估算 27GiB 超线,不硬挤)。**关键意外:
+pre 税跨 run 方差 ±0.1–0.5 ⇒ 静态阈值表不可靠,F5-3 必须在线估计税**
+(`E[remaining]×tax_online > reattach_cost`)。F5-1 已过(64K@4:
+1.219×→85ms→1.006×)。F5-3 后按审核预排做**阶段收束**(表示迁移
+完整模型 → 架构 2.0 设计输入)。记录:F1/F2/F3/F4/F4-EF/F5-1/F5-2
+七份 + 外部对照 + F4-D 骨架;代码:vendor 分支
+`exp/execution-state-fork`(基于 8f37dbc)。
