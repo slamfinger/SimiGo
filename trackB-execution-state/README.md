@@ -48,13 +48,13 @@ continuation**——迁移不仅要求 KV element-exact,还要求 execution
 identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
-**状态**:**F5-3 Step 1(policy simulator)通过(2026-09-21)**——四策略
-对照(含 oracle hindsight):adaptive **-21.4% vs always-COW,regret
-+1.5% vs oracle,budget 不敏感**;v1 固定预算致短分支滥迁 → v2 滚动
-E[rem]=n 修正(短分支 reatt 2–6% 贴 oracle)。运行时参数已定
-(observe_k=4 / 滑窗 τ̂ / E[rem]=n / budget cap)。**Step 2/3(下一
-会话)**:live 四策略真机对照 + 在线估计接入 runtime → 然后 **Track B
-阶段收束**(三问收束,见 F5-3 记录)。F5-1/F5-2 已过;统一不变式
-"migration must preserve execution identity and continuation" 已立。
-记录:F1→F5-3S1 八份 + 模拟器脚本 + 外部对照 + F4-D 骨架;代码:vendor
-分支 `exp/execution-state-fork`(基于 8f37dbc)。
+**状态**:**F5-3 Step 2/3 真机通过(2026-09-21)——Track B 只差 closure
+实验**。四策略真机(64K@S4,12 试次,token 门 36/36):**AD vs COW
+−17.5%,vs always-R +0.9%,regret +0.9%**;xlong 出现 regret −1.0%
+(AD 优于两纯策略——中途切换的操作点存在)。Step 3 k 扫描推翻 k=4:
+**k=8 误差 8.1% / 决策一致 9/12(k=4 为 22%/4/12)→ observe_k 默认 8**
+(τ̂ 高估源 = 首步物化 cache-miss)。运行时参数定稿。**下一步 =
+Track B closure experiment**(全生命周期串联,一次证明完整命题;
+过则三问闭环 → Track C Model-State Residency 同构展开)。
+记录:F1→F5-3S23 九份 + 模拟器脚本 + 外部对照 + F4-D 骨架;代码:
+vendor 分支 `exp/execution-state-fork`(基于 8f37dbc)。
