@@ -221,6 +221,59 @@ depth+passIdx+attempt）。9/9 pass 完整，全行 measured，meta 证 stepFile
 rebuild-vs-cold 并案；下一步按序进入 V1.7-2 Concurrency Probe
 （先测边界，不改 serializeGeneration）。
 
+## V1.7-2 Concurrency Probe（2026-09-20，serializeGeneration=true 未动）
+
+生产常量 `RuntimeTuning.serializeGeneration=true`（全局单飞门
+`__global_generation__`，排队请求保持 QUEUED，拿到门才 RUNNING）。
+探针 runner `tools/v17_2_concurrency.py`：短上下文（~1.5K delta）、低并发
+（=2）、8 探针 26 场景；session 一律 ≤6 字符短 id（traceKey 塌缩规则：
+`[MLX]` 取末 6 字符、`[LC] s=` 取前 6 字符——长 id 标签塌缩仅碰撞标签，
+storageKey 含完整 id 故 KV 隔离无损，V1.7-1 cold cacheTokens=0 反证）。
+
+**结果：26/26 pass，0 fail，0 unverified**（runner 首轮两个判据缺陷经
+存档重算修正，见"判据修正"）。verdict 三值 pass/fail/unverified，
+证据缺失不伪装。
+
+| 探针 | 关注点 | 结果 |
+|---|---|---|
+| P1 顺序隔离 | A build → B build → A delta | A 账本无损：extend 0.4s, cacheEff 覆盖自身历史 |
+| P2 交错一致性 | A,B 交替两轮 | 双方 r2 均 reuse=true/extend |
+| P3 并发串行化 | 跨 session 并发 ×2 轮 | **LC 时间线证串行**：B 先拿门时 A 的 RUNNING 与 B 的 COMPLETING 同毫秒交接（gap=0.0s 两轮）；queueWait=0/2.0s |
+| P4 同 session 并发 | 两请求争抢一 session | 先到 extend（1421 tok reuse=true），后到 fork 全量重预填（1508 tok cold）——串行无 crash，fork 语义如 rebuild 同族 |
+| P5a decode 中途断连 | 同 session 立即重试 | 重试成功（2.2s）但 **mode=cold**：见"边界发现①" |
+| P5b ~30K prefill 中途断连 | 毒 session P0 病灶回归 | **15s 处断连，同 session 立即重试 66.9s 全量预填（25,969 tok cold）成功完成，其后 extend 0.6s 健康**——c81d130 修复实机回归通过 |
+| P6 生成期间 /health | 0.5s 轮询可用性 | 24s 生成 48 polls 全 ok（max 13ms, mean 1ms）——服务面与推理完全解耦 |
+| P7 失败注入+重试 | 坏 JSON/缺 messages/未知模型 | 4xx 0.0s 快速返回；账本无损（warm extend） |
+
+### 边界发现（本探针新增机制事实）
+
+1. **取消的非空提交 + 盲重试税（P5a）**：decode 中途客户端断连后，
+   已生成的部分内容**非空提交入账本**（trace `cancelCommitSkip` 未触发，
+   history 含 partial assistant，emitB=359）——39ff354 只拦空提交。
+   盲重试重发不含该 partial assistant 的历史 → isPrefix 失配 → cold
+   全量。短上下文代价 2.2s；**按 V1.7-1 曲线外推，120K 档同型操作
+   ≈ 624s**。客户端重试协议须回填 partial assistant 才能走 extend。
+2. **model 字段被忽略（P7）**：未知模型名返回 200 并由已加载模型
+   真实生成（非 OpenAI 语义的 404）——失败注入必须走抛弃型 session，
+   否则污染目标账本（attempt-1 实证）。
+3. **同 session 并发的后到者付全量（P4）**：先到者 extend 后，后到
+   请求的账本尾已失配 → fork 全量重预填。serializeGeneration 保证的
+   是互斥与不 crash，不保证后到者复用。
+
+### 判据修正（runner 首轮两缺陷，存档重算非数据改造）
+
+- P3 首版判据硬编码"A 先拿门"——实际谁先拿门非确定（两轮均 B 先）。
+  修为顺序无关：后跑者 RUNNING ≥ 先跑者 COMPLETING（存档 LC 时间戳
+  重算 gap=0.0s 两轮 pass）。
+- P4 首版 small/big 阈值误设——fork=全量重预填（与 rebuild 同族
+  mode=cold），非"重渲后缀"。修为 mode 集合判据（extend+cold 存档
+  重算 pass）。
+- P6 attempt-1 提示词太短（<1s EOS，health 窗口无效）→ superseded，
+  attempt-2 改计数任务（48 polls）。
+- P7 attempt-1 注入污染 probe session（边界发现②）→ superseded，
+  attempt-2 改抛弃 session。superseded 数据保留在
+  `superseded_runs` 带 note。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
@@ -228,3 +281,5 @@ rebuild-vs-cold 并案；下一步按序进入 V1.7-2 Concurrency Probe
 - `results_step1024_120k_ab.json` —— 步长 A/B 单轮（1024 侧）
 - `results_step_ab_repeats.json` —— 步长交错 ×3 复核
 - `results_v17_1_longctx.json` —— V1.7-1 长上下文 3 passes 全量
+- `results_v17_2_concurrency.json` —— V1.7-2 并发探针 8 探针 26 场景
+  （含 superseded_runs：p6/p7 首轮设计缺陷数据带 note 保留）

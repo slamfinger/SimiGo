@@ -1,0 +1,1151 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T07:52:40",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (RuntimeTuning.swift:27, 生产常量)"
+ },
+ "design": "V1.7-2: concurrency probe, serializeGeneration=true untouched; short-context (~1.5K) low-concurrency(=2); session ids <=6 chars with attempt (traceKey collapse rule); valid unit = probe+attempt (complete only)",
+ "runs": [
+  {
+   "probe": "p1",
+   "scenario": "a_build",
+   "attempt": 1,
+   "session": "q1a1",
+   "wallS": 6.4,
+   "status": 200,
+   "trace": {
+    "session": "q1a1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 2.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 44.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.775087890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p1",
+   "scenario": "b_build",
+   "attempt": 1,
+   "session": "q1b1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q1b1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 45.4,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.775087890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p1",
+   "scenario": "a_warm",
+   "attempt": 1,
+   "session": "q1a1",
+   "wallS": 0.4,
+   "status": 200,
+   "trace": {
+    "session": "q1a1/main",
+    "mode": "extend",
+    "promptTokens": 18,
+    "promptTimeS": 0.3,
+    "ttftS": 0.3,
+    "cacheTokens": 1488,
+    "cacheEff": "0.99",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 44.8,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.775087890625
+   },
+   "verdict": "pass",
+   "evidence": "reuse=true extend cache≥自身历史",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p2",
+   "scenario": "a_build",
+   "attempt": 1,
+   "session": "q2a1",
+   "wallS": 1.9,
+   "status": 200,
+   "trace": {
+    "session": "q2a1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.8,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.759462890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p2",
+   "scenario": "b_build",
+   "attempt": 1,
+   "session": "q2b1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q2b1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 42.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.759462890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p2",
+   "scenario": "a_r2",
+   "attempt": 1,
+   "session": "q2a1",
+   "wallS": 0.4,
+   "status": 200,
+   "trace": {
+    "session": "q2a1/main",
+    "mode": "extend",
+    "promptTokens": 23,
+    "promptTimeS": 0.3,
+    "ttftS": 0.3,
+    "cacheTokens": 1488,
+    "cacheEff": "0.98",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 43.4,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.759462890625
+   },
+   "verdict": "pass",
+   "evidence": "reuse=true extend cache≥自身历史",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p2",
+   "scenario": "b_r2",
+   "attempt": 1,
+   "session": "q2b1",
+   "wallS": 0.4,
+   "status": 200,
+   "trace": {
+    "session": "q2b1/main",
+    "mode": "extend",
+    "promptTokens": 23,
+    "promptTimeS": 0.3,
+    "ttftS": 0.3,
+    "cacheTokens": 1488,
+    "cacheEff": "0.98",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 43.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.759462890625
+   },
+   "verdict": "pass",
+   "evidence": "reuse=true extend cache≥自身历史",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p3",
+   "scenario": "round1",
+   "attempt": 1,
+   "session": "q3a11+q3b11",
+   "wallS": 4.1,
+   "status": "both",
+   "trace": {
+    "a": {
+     "session": "q3a11/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 1.9,
+     "ttftS": 1.9,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 44.8,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 07:53:16.649"
+    },
+    "b": {
+     "session": "q3b11/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 1.9,
+     "ttftS": 2.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 43.8,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 07:53:14.649"
+    }
+   },
+   "queueWaitS": {
+    "a": 2.0,
+    "b": 0.0
+   },
+   "lc": {
+    "a": [
+     {
+      "ts": "2026-09-20 07:53:12.610",
+      "r": "f2e036",
+      "s": "q3a11",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 07:53:14.649",
+      "r": "f2e036",
+      "s": "q3a11",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 07:53:16.649",
+      "r": "f2e036",
+      "s": "q3a11",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ],
+    "b": [
+     {
+      "ts": "2026-09-20 07:53:12.610",
+      "r": "7d0afc",
+      "s": "q3b11",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 07:53:12.610",
+      "r": "7d0afc",
+      "s": "q3b11",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 07:53:14.649",
+      "r": "7d0afc",
+      "s": "q3b11",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ]
+   },
+   "serializeEvidence": {
+    "secondRunningMinusFirstCompletingS": 0.0,
+    "first": "q3b11",
+    "verdict": "pass"
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.751650390625
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3b11', 'verdict': 'pass'} queueWait {'a': 2.0, 'b': 0.0}",
+   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)"
+  },
+  {
+   "probe": "p3",
+   "scenario": "round2",
+   "attempt": 1,
+   "session": "q3a12+q3b12",
+   "wallS": 4.1,
+   "status": "both",
+   "trace": {
+    "a": {
+     "session": "q3a12/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 1.9,
+     "ttftS": 1.9,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 44.2,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 07:53:22.215"
+    },
+    "b": {
+     "session": "q3b12/main",
+     "mode": "cold",
+     "promptTokens": 1600,
+     "promptTimeS": 1.9,
+     "ttftS": 2.0,
+     "cacheTokens": 0,
+     "cacheEff": "0.00",
+     "reuse": "false",
+     "cacheHitTokens": 0,
+     "tps": 43.5,
+     "fork": null,
+     "provenance": "measured",
+     "captureStatus": "primary",
+     "ts": "2026-09-20 07:53:20.196"
+    }
+   },
+   "queueWaitS": {
+    "a": 2.0,
+    "b": 0.0
+   },
+   "lc": {
+    "a": [
+     {
+      "ts": "2026-09-20 07:53:18.130",
+      "r": "35b23b",
+      "s": "q3a12",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 07:53:20.196",
+      "r": "35b23b",
+      "s": "q3a12",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 07:53:22.215",
+      "r": "35b23b",
+      "s": "q3a12",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ],
+    "b": [
+     {
+      "ts": "2026-09-20 07:53:18.130",
+      "r": "b9b057",
+      "s": "q3b12",
+      "from": "CREATED",
+      "to": "QUEUED"
+     },
+     {
+      "ts": "2026-09-20 07:53:18.130",
+      "r": "b9b057",
+      "s": "q3b12",
+      "from": "QUEUED",
+      "to": "RUNNING"
+     },
+     {
+      "ts": "2026-09-20 07:53:20.196",
+      "r": "b9b057",
+      "s": "q3b12",
+      "from": "RUNNING",
+      "to": "COMPLETING"
+     }
+    ]
+   },
+   "serializeEvidence": {
+    "secondRunningMinusFirstCompletingS": 0.0,
+    "first": "q3b12",
+    "verdict": "pass"
+   },
+   "evictions": 2,
+   "memAfter": {
+    "footprintGB": 22.1,
+    "swapGB": 1.751650390625
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "evidence": "serial={'secondRunningMinusFirstCompletingS': 0.0, 'first': 'q3b12', 'verdict': 'pass'} queueWait {'a': 2.0, 'b': 0.0}",
+   "verdictRecomputed": "2026-09-20 criterion fix: order-agnostic (B won gate in both rounds; old criterion hardcoded A-first)"
+  },
+  {
+   "probe": "p4",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q4d1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q4d1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 1.743837890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p4",
+   "scenario": "build",
+   "attempt": 2,
+   "session": "q4d2",
+   "wallS": 1.9,
+   "status": 200,
+   "trace": {
+    "session": "q4d2/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.8,
+    "ttftS": 1.8,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 46.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 1.689150390625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p4",
+   "scenario": "pair",
+   "attempt": 2,
+   "session": "q4d2",
+   "wallS": 3.8,
+   "status": "both",
+   "trace": {
+    "comps": [
+     {
+      "session": "q4d2/main",
+      "mode": "extend",
+      "promptTokens": 1421,
+      "promptTimeS": 1.8,
+      "ttftS": 1.8,
+      "cacheTokens": 1488,
+      "cacheEff": "0.51",
+      "reuse": "true",
+      "cacheHitTokens": 1488,
+      "tps": 42.5,
+      "fork": null,
+      "provenance": "measured",
+      "captureStatus": "primary",
+      "ts": "2026-09-20 07:54:23.481"
+     },
+     {
+      "session": "q4d2/main",
+      "mode": "cold",
+      "promptTokens": 1508,
+      "promptTimeS": 1.9,
+      "ttftS": 1.9,
+      "cacheTokens": 0,
+      "cacheEff": "0.00",
+      "reuse": "false",
+      "cacheHitTokens": 0,
+      "tps": 46.1,
+      "fork": null,
+      "provenance": "measured",
+      "captureStatus": "primary",
+      "ts": "2026-09-20 07:54:25.405"
+     }
+    ]
+   },
+   "queueWaitS": 0.0,
+   "lc": [
+    {
+     "ts": "2026-09-20 07:54:21.619",
+     "r": "ee1651",
+     "s": "q4d2",
+     "from": "CREATED",
+     "to": "QUEUED"
+    },
+    {
+     "ts": "2026-09-20 07:54:21.619",
+     "r": "09ce1d",
+     "s": "q4d2",
+     "from": "CREATED",
+     "to": "QUEUED"
+    },
+    {
+     "ts": "2026-09-20 07:54:21.619",
+     "r": "ee1651",
+     "s": "q4d2",
+     "from": "QUEUED",
+     "to": "RUNNING"
+    },
+    {
+     "ts": "2026-09-20 07:54:23.481",
+     "r": "09ce1d",
+     "s": "q4d2",
+     "from": "QUEUED",
+     "to": "RUNNING"
+    },
+    {
+     "ts": "2026-09-20 07:54:23.481",
+     "r": "ee1651",
+     "s": "q4d2",
+     "from": "RUNNING",
+     "to": "COMPLETING"
+    },
+    {
+     "ts": "2026-09-20 07:54:25.405",
+     "r": "09ce1d",
+     "s": "q4d2",
+     "from": "RUNNING",
+     "to": "COMPLETING"
+    }
+   ],
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.689150390625
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "evidence": "modes=[('extend', 'true', 1421), ('cold', 'false', 1508)]（先到 extend / 后到 fork 全量重预填）",
+   "verdictRecomputed": "2026-09-20 criterion fix: fork=全量重预填(v17_1 rebuild 同族 mode=cold),旧 small<300 判据错误"
+  },
+  {
+   "probe": "p4",
+   "scenario": "warm_after",
+   "attempt": 2,
+   "session": "q4d2",
+   "wallS": 1.9,
+   "status": 200,
+   "trace": {
+    "session": "q4d2/main",
+    "mode": "cold",
+    "promptTokens": 1507,
+    "promptTimeS": 1.8,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 45.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.673525390625
+   },
+   "verdict": "pass",
+   "evidence": "mode=cold reuse=false",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p5a",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q5e1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q5e1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 1.673525390625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p5a",
+   "scenario": "cancel",
+   "attempt": 1,
+   "session": "q5e1",
+   "abortAtS": 8.0,
+   "outcome": "aborted",
+   "status": "aborted-client",
+   "lc": [
+    {
+     "ts": "2026-09-20 07:54:33.625",
+     "r": "537cee",
+     "s": "q5e1",
+     "from": "CREATED",
+     "to": "QUEUED"
+    },
+    {
+     "ts": "2026-09-20 07:54:33.625",
+     "r": "537cee",
+     "s": "q5e1",
+     "from": "QUEUED",
+     "to": "RUNNING"
+    }
+   ],
+   "memAfter": {
+    "footprintGB": 19.9,
+    "swapGB": 1.665712890625
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "notes": "decode 中途客户端断连；LC 行供取消语义核对"
+  },
+  {
+   "probe": "p5a",
+   "scenario": "retry",
+   "attempt": 1,
+   "session": "q5e1",
+   "wallS": 2.2,
+   "status": 200,
+   "trace": {
+    "session": "q5e1/main",
+    "mode": "cold",
+    "promptTokens": 1522,
+    "promptTimeS": 2.0,
+    "ttftS": 2.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 47.9,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.665712890625
+   },
+   "verdict": "pass",
+   "evidence": "mode=cold reuse=false; anomalies=0",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p7",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 3.3,
+   "status": 200,
+   "trace": {
+    "session": "q7h1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 3.2,
+    "ttftS": 3.2,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 2.396787109375
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p7",
+   "scenario": "bad_json",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.0,
+   "status": 400,
+   "verdict": "pass"
+  },
+  {
+   "probe": "p7",
+   "scenario": "no_messages",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.0,
+   "status": 400,
+   "verdict": "pass"
+  },
+  {
+   "probe": "p7",
+   "scenario": "bogus_model",
+   "attempt": 1,
+   "session": "q7z1",
+   "wallS": 0.73,
+   "status": 200,
+   "verdict": "pass",
+   "notes": "model 字段被忽略恒 200 由已加载模型服务（实测发现），注入走抛弃 session q7z 不触 h"
+  },
+  {
+   "probe": "p7",
+   "scenario": "warm_after",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.2,
+   "status": 200,
+   "trace": {
+    "session": "q7h1/main",
+    "mode": "extend",
+    "promptTokens": 21,
+    "promptTimeS": 0.1,
+    "ttftS": 0.1,
+    "cacheTokens": 1488,
+    "cacheEff": "0.99",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 45.9,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 20.2,
+    "swapGB": 2.396787109375
+   },
+   "verdict": "pass",
+   "evidence": "reuse=true extend cache≥自身历史",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p5b",
+   "scenario": "cancel",
+   "attempt": 1,
+   "session": "q5f1",
+   "abortAtS": 15.0,
+   "outcome": "aborted",
+   "status": "aborted-client",
+   "lc": [
+    {
+     "ts": "2026-09-20 07:57:09.191",
+     "r": "a27514",
+     "s": "q5f1",
+     "from": "CREATED",
+     "to": "QUEUED"
+    },
+    {
+     "ts": "2026-09-20 07:57:09.191",
+     "r": "a27514",
+     "s": "q5f1",
+     "from": "QUEUED",
+     "to": "RUNNING"
+    }
+   ],
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 2.295224609375
+   },
+   "anomalyCount": 0,
+   "verdict": "pass",
+   "notes": "~31500tok prefill 中途断连（c81d130 毒 session 病灶路径）"
+  },
+  {
+   "probe": "p5b",
+   "scenario": "retry",
+   "attempt": 1,
+   "session": "q5f1",
+   "wallS": 66.9,
+   "status": 200,
+   "trace": {
+    "session": "q5f1/main",
+    "mode": "cold",
+    "promptTokens": 25969,
+    "promptTimeS": 41.7,
+    "ttftS": 41.8,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 33.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 3.156923828125
+   },
+   "verdict": "pass",
+   "evidence": "mode=cold reuse=false; 预期≈全量预填",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p5b",
+   "scenario": "warm_after",
+   "attempt": 1,
+   "session": "q5f1",
+   "wallS": 0.6,
+   "status": 200,
+   "trace": {
+    "session": "q5f1/main",
+    "mode": "extend",
+    "promptTokens": 19,
+    "promptTimeS": 0.3,
+    "ttftS": 0.4,
+    "cacheTokens": 25971,
+    "cacheEff": "1.00",
+    "reuse": "true",
+    "cacheHitTokens": 25971,
+    "tps": 33.8,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 3.149111328125
+   },
+   "verdict": "pass",
+   "evidence": "mode=extend reuse=true"
+  },
+  {
+   "probe": "p6",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q6g1",
+   "wallS": 1.9,
+   "status": 200,
+   "trace": {
+    "session": "q6g1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.8,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 42.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 2.844423828125
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p6",
+   "scenario": "gen_health",
+   "attempt": 1,
+   "session": "q6g1",
+   "status": 200,
+   "trace": {
+    "session": "q6g1/main",
+    "mode": "extend",
+    "promptTokens": 35,
+    "promptTimeS": 0.4,
+    "ttftS": 0.5,
+    "cacheTokens": 1488,
+    "cacheEff": "0.98",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 44.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "healthPolls": {
+    "count": 48,
+    "latencyMaxS": 0.013,
+    "latencyMeanS": 0.001,
+    "bad": []
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 20.3,
+    "swapGB": 2.742861328125
+   },
+   "verdict": "pass",
+   "evidence": "48 polls, max=0.013s, bad=0"
+  }
+ ],
+ "superseded_runs": [
+  {
+   "probe": "p7",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q7h1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 1.9,
+    "ttftS": 1.9,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 39.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 1.626650390625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p7",
+   "scenario": "bad_json",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.0,
+   "status": 400,
+   "verdict": "pass"
+  },
+  {
+   "probe": "p7",
+   "scenario": "no_messages",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.0,
+   "status": 400,
+   "verdict": "pass"
+  },
+  {
+   "probe": "p7",
+   "scenario": "bogus_model",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 0.77,
+   "status": 200,
+   "verdict": "pass",
+   "notes": "未知模型名只要求非 5xx 快速返回"
+  },
+  {
+   "probe": "p7",
+   "scenario": "warm_after",
+   "attempt": 1,
+   "session": "q7h1",
+   "wallS": 2.0,
+   "status": 200,
+   "trace": {
+    "session": "q7h1/main",
+    "mode": "cold",
+    "promptTokens": 1509,
+    "promptTimeS": 2.0,
+    "ttftS": 2.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 40.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 1.603212890625
+   },
+   "verdict": "fail",
+   "evidence": "reuse=false",
+   "anomalyCount": 0
+  },
+  {
+   "probe": "p6",
+   "scenario": "build",
+   "attempt": 1,
+   "session": "q6g1",
+   "wallS": 2.1,
+   "status": 200,
+   "trace": {
+    "session": "q6g1/main",
+    "mode": "cold",
+    "promptTokens": 1486,
+    "promptTimeS": 2.0,
+    "ttftS": 2.0,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 40.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 1.650087890625
+   },
+   "verdict": "pass",
+   "notes": "promptTokens=1486"
+  },
+  {
+   "probe": "p6",
+   "scenario": "gen_health",
+   "attempt": 1,
+   "session": "q6g1",
+   "status": 200,
+   "trace": {
+    "session": "q6g1/main",
+    "mode": "extend",
+    "promptTokens": 24,
+    "promptTimeS": 0.3,
+    "ttftS": 0.3,
+    "cacheTokens": 1488,
+    "cacheEff": "0.98",
+    "reuse": "true",
+    "cacheHitTokens": 1488,
+    "tps": 39.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "healthPolls": {
+    "count": 1,
+    "latencyMaxS": 0.015,
+    "latencyMeanS": 0.015,
+    "bad": []
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.1,
+    "swapGB": 1.642275390625
+   },
+   "verdict": "pass",
+   "evidence": "1 polls, max=0.015s, bad=0"
+  }
+ ],
+ "supersededNote": "p7 attempt-1: bogus_model 返回 200 真实生成污染 h 账本(model 字段被忽略),warm_after 冷——设计缺陷非产品缺陷,attempt-2 改抛弃 session q7z 注入 | p6 attempt-1: 写短文提示 <1s EOS,health 仅 1 poll 窗口无效,attempt-2 改计数任务 max_tokens=1024"
+}
