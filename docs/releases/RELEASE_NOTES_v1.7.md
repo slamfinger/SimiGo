@@ -54,3 +54,24 @@ cached 不估算、anomaly 不伪造）：
 - 扫描件 attempt-3 真 OCR 满分实跑记录在案
   （results_v17_3_office_docs_smoke.json，meta.provenanceNote 区分
   build 4 文本层与 1.7(5) 真 OCR 两代证据）
+
+## build 6 更新（2026-09-20 同日替换包，CFBundleVersion 5→6）
+
+首发 build 5 后同日三项生产修正，替换 DMG 分发（tag v1.7 附件 --clobber）：
+
+- 菜单栏「本机/局域网」拖曳切换改为点击切换：点目标侧即切换、点当前侧
+  不动作，视觉样式零改动（移除全仓唯一 DragGesture）
+- 设置视窗统一命令控制台：命令成功完成后输入框自动恢复初始原样
+  （`hf download ` 预填），状态行保留「下载完成」等终态作提示；失败路径
+  保留输入便于修改重试；「记录」tail 流程不属命令完成语义，未动
+- 轮末遥测 restore 归因补全：checkpoint 恢复会话在 vendor 侧无
+  conversation 账本，归因块整体跳过，恒报 cacheHitTokens=0/
+  cacheEff=0.00/无 mode，与冷启/重建同形歧义；现按实测补全为
+  mode=restore、cacheHitTokens=N（cacheTokens 官方计数）、
+  cacheEff=N/(N+d)，不写死 1（delta 确实预填）。usage 上报保持
+  vendor 原值透传（P1-2 契约不做估算）不变
+
+验收：单测 73/5 skipped/0 failures 与基线一致（Debug 配置）；vendor
+检出对齐 pin dc3ca61 增量 Release 构建通过；codesign TeamIdentifier
+YPXU8M53F9 strict verify 通过；DMG hdiutil verify VALID，内嵌 app
+版本 1.7(6)。
