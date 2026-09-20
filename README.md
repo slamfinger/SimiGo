@@ -3,9 +3,10 @@
 **性质**：预研实验仓（research lab）。装的是**未验证的实验与探针**，
 不是产品代码，不构成任何版本承诺。
 **产品仓**：`github.com/slamfinger/SimiGo`（1.x 线；1.7 build 5 已封版）。
-**方向真源**：主仓
+**方向真源**：本仓
 `docs/architecture/ARCHITECTURE_2.0_PRERESEARCH_20260920.md`（v1.2）——
-各实验的研究问题、开关判据、验收标准以该报告为准，本仓不重复维护。
+各实验的研究问题、开关判据、验收标准以该报告为准，track 目录内
+不重复维护。
 
 ## 边界规则（不可协商）
 
@@ -14,8 +15,9 @@
 2. **主仓 vendor pin（dc3ca61）不出现在本仓任何工作流中。** 本仓依赖
    统一走 `~/Documents/mlx-swift-lm` 实验分支（branch / file:// 引用）；
    换 vendor 检出须 fresh derivedDataPath。
-3. 实验记录沿用 F0 三段式：**探针 → 结果 → 决策**；过程留本仓各
-   track 目录，终稿归档主仓 `docs/experiments/`。
+3. 实验记录沿用 F0 三段式：**探针 → 结果 → 决策**；2.0 材料（文档 +
+   代码 + 记录）全部归档本仓。主仓 `docs/experiments/` 保留 1.x 史料
+   （F0 探针、V17_RUNTIME_MATRIX），仅作跨仓基线引用。
 4. 止损入档：任一实验结构性失败立即记录并关闭对应 track，不恋战。
 
 ## 结构（对应报告 §5/§6）
@@ -30,5 +32,4 @@
 
 ## 远端
 
-2026-09-20 本地建仓。推送 GitHub（建议私有仓 `slamfinger/SimiGo-Lab`）
-待用户指令。
+2026-09-20 建仓并推送私有仓 `slamfinger/SimiGo-Lab`（main）。
