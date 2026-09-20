@@ -38,4 +38,10 @@ Cache，是 Execution State 抽象**。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：未开工。与 exp06-roofline 并行为第一优先。
+**状态**：**F1 探针已过（2026-09-20）**——page-split fork O(1)（0.020ms）、
+物理增长精确 ∝ 后缀（1.00×）、shared ratio 0.97、数组级正确性门 ✓；
+GDN 引用 fork 零拷贝双向隔离 ✓；止损条件①解除，Track B 继续。
+已知代价：朴素 concat 视图 decode 2.36×（实现的税，非语义的税）。
+记录：`EXECUTION_FORK_F1_PROBE_RESULTS_20260920.md`；代码：vendor 分支
+`exp/execution-state-fork`（基于 8f37dbc）。F2：视图物化税消解、真模型
+逐 token 一致门、Restore Depth 曲线、多级 fork 树。

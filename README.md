@@ -26,7 +26,7 @@
 |---|---|---|---|
 | `exp06-roofline/` | 实验 06 剖析 | 未开工（第一优先，与 trackB 并行） | 实测/地板 ≤1.5× 关 A；≥3× 开 A |
 | `trackA-kernel/` | Track A Kernel | 条件启动（06 开关） | Metal 原型成对对比 |
-| `trackB-execution-state/` | Track B Execution State | 未开工（第一优先） | Fork Cost / Restore Depth / Shared Page Ratio + 逐 token 一致性门 |
+| `trackB-execution-state/` | Track B Execution State | **F1 探针已过**(2026-09-20,fork O(1)/增长∝后缀/正确性门✓) | Fork Cost / Restore Depth / Shared Page Ratio + 逐 token 一致性门 |
 | `trackD-memory/` | Track D Adaptive Memory | 未开工（独立推进） | 预算放宽不引入 swap 劣化 |
 | `runtime2-skeleton/` | Runtime2 接口占位 | 笔记态，`[future]` 不实现 | — |
 
