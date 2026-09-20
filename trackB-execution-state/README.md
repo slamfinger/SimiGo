@@ -38,14 +38,13 @@ Cache，是 Execution State 抽象**。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**F3 完成(2026-09-20)——报告 §5.1 四项验收指标探针级全部闭合**：
-①Fork Cost 0.019–0.061ms;②Restore Depth 亚线性(页恢复平坦度 1.22,
-逐元素正确);③Shared Ratio 0.889–0.97 + 增长精确 1.00×;④逐 token
-一致 16/16 + 32/32。**模型级 decode 税实测 1.01×(零税),F3a 降级为
-远期。**段表(page table)v2 支持 COW→COW 多级 fork 与页恢复;4 叉树
-32× 内存节省。Track B 探针阶段收官,转 F4 工程化(#1849 合流、
-ExecutionState 抽象成文、长深度压测)。
-记录:`EXECUTION_FORK_F1_PROBE_RESULTS_20260920.md` /
-`EXECUTION_FORK_F2_GATE_RESULTS_20260920.md` /
-`EXECUTION_FORK_F3_RESTORE_RESULTS_20260920.md`;代码:vendor 分支
-`exp/execution-state-fork`(基于 8f37dbc)。
+**状态**：**F4 工程化压测第一轮全过(2026-09-20,受约束验证阶段)**——
+A 矩阵 72 格零失败(物理增长精确 ∝ 结构,fork 不随深度退化);B 主干
+迁移:Promote 零拷贝(0.0003ms)/ Rollback O(1) / 历史树不变 / 60 轮
+循环零漂移;C 多分支:16 分支交错全对,半数丢弃可回收且幸存者正确;
+**B-model root 解冻续写门 16/16+16/16(生产 rollback 语义解锁)**。
+回归项:单层多段 concat decode 税 1.90×(上界口径)记警,**模型级
+长深度+多段税 = F4 续项第一优先**;⚠ Discard 单点不降待归因。
+记录:F1/F2/F3/F4 四份 `EXECUTION_FORK_*_RESULTS_20260920.md`;代码:
+vendor 分支 `exp/execution-state-fork`(基于 8f37dbc)。F4-D(上游
+RFC 升级素材)待整理。
