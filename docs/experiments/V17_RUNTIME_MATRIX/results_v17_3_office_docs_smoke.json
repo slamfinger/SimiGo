@@ -1,0 +1,311 @@
+{
+ "model": "peculiar-ragdoll/Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e",
+ "meta": {
+  "stepOverrideEnv": null,
+  "stepFile": null,
+  "binaryBuild": "4",
+  "generatedAt": "2026-09-20T08:39:24",
+  "binaryPath": "build/SimiGo.app/Contents/Info.plist",
+  "serializeGeneration": "true (生产常量)",
+  "smoke": true,
+  "seed": 20260920,
+  "libs": {
+   "python-docx": "1.2.0",
+   "python-pptx": "1.0.2",
+   "reportlab": "5.0.1",
+   "pypdf": "6.19.0"
+  }
+ },
+ "design": "V1.7-3b docs extension: word_minutes/ppt_outline/pdf_invoices; harness parses files (python-docx/python-pptx/pypdf), model extracts, ground-truth scored; per-task attempt unit",
+ "runs": [
+  {
+   "task": "word",
+   "scenario": "word_t1",
+   "attempt": 1,
+   "session": "x1w",
+   "wallS": 2.6,
+   "trace": {
+    "session": "x1w/main",
+    "mode": "cold",
+    "promptTokens": 1012,
+    "promptTimeS": 1.4,
+    "ttftS": 2.5,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 43.7,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.5,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"m1_type|周例会\\nm1_actions|1\\nm2_type|评审会\\nm2_actions|1\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "word",
+   "scenario": "word_t2",
+   "attempt": 1,
+   "session": "x1w",
+   "wallS": 3.8,
+   "trace": {
+    "session": "x1w/main",
+    "mode": "(fragment)",
+    "promptTokens": 775,
+    "promptTimeS": 1.2,
+    "ttftS": 3.7,
+    "cacheTokens": 1063,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 43.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.8,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"m1 为\\\"移动端 v2.1 周例会纪要\\\"，类型=周例会；行动项仅第1条（张伟），共1条。m2 为\\\"搜索服务设计评审会纪要\\\"，类型=评审会；行动项仅第1条（王强），共1条。提取与纪要内容一致。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "ppt",
+   "scenario": "ppt_t1",
+   "attempt": 1,
+   "session": "x1t",
+   "wallS": 2.4,
+   "trace": {
+    "session": "x1t/main",
+    "mode": "cold",
+    "promptTokens": 920,
+    "promptTimeS": 1.3,
+    "ttftS": 2.3,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 44.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.3,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"total_slides|5\\nrisk_slides|3\\nproject_code|PHX7\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "ppt",
+   "scenario": "ppt_t2",
+   "attempt": 1,
+   "session": "x1t",
+   "wallS": 3.0,
+   "trace": {
+    "session": "x1t/main",
+    "mode": "(fragment)",
+    "promptTokens": 778,
+    "promptTimeS": 1.2,
+    "ttftS": 2.9,
+    "cacheTokens": 964,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 43.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"提取与 PPT 内容一致：共 5 页；含「风险」的页面为第 3 页（进度风险与应对）；项目代号为 PHX7。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "pdf",
+   "scenario": "pdf_t1",
+   "attempt": 1,
+   "session": "x1f",
+   "wallS": 2.4,
+   "trace": {
+    "session": "x1f/main",
+    "mode": "cold",
+    "promptTokens": 878,
+    "promptTimeS": 1.3,
+    "ttftS": 2.3,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 44.1,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 21.3,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"unpaid_total|5602.13 元\\nunpaid_count|1 笔\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "pdf",
+   "scenario": "pdf_t2",
+   "attempt": 1,
+   "session": "x1f",
+   "wallS": 3.1,
+   "trace": {
+    "session": "x1f/main",
+    "mode": "(fragment)",
+    "promptTokens": 784,
+    "promptTimeS": 1.2,
+    "ttftS": 3.0,
+    "cacheTokens": 925,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 43.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 0.914736328125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"issues\":\"invoice_102 状态为未付，金额 5602.13 元；invoice_101 已付，不计入。汇总金额与笔数均正确一致。\",\"ok\":true}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  }
+ ],
+ "task_summaries": [
+  {
+   "task": "word",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "checks": {
+    "m1": {
+     "type": true,
+     "actions": true
+    },
+    "m2": {
+     "type": true,
+     "actions": true
+    }
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "m1_type": "周例会",
+    "m1_actions": "1",
+    "m2_type": "评审会",
+    "m2_actions": "1"
+   }
+  },
+  {
+   "task": "ppt",
+   "attempt": 1,
+   "accuracy": 1.0,
+   "checks": {
+    "total": true,
+    "risk": true,
+    "code": true
+   },
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "total_slides": "5",
+    "risk_slides": "3",
+    "project_code": "PHX7"
+   }
+  },
+  {
+   "task": "pdf",
+   "attempt": 1,
+   "accuracy": 0,
+   "submitted": {
+    "unpaid_total": null,
+    "unpaid_count": null
+   },
+   "truthTotal": 5602.13,
+   "truthCount": 1,
+   "payloadOk": true,
+   "verifyOk": true
+  }
+ ]
+}

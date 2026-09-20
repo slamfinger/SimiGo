@@ -339,6 +339,34 @@ anomaly=0；eviction=2（LRU 100K 预算内多会话堆积，正常）。
 V1.7 三阶段（Harness/长上下文/并发/Office 原型）实验收官，
 **实验结果定 V1.8 方向**。
 
+## V1.7-3b 文档格式扩展（Word/PPT/PDF，2026-09-20）
+
+承接 V1.7-3：办公文件支持测试从 Excel 扩展到三种文档格式。runner=
+`tools/v17_3_office_docs.py`，纪律与前完全一致（固定工作流、模型决策+
+harness 确定性执行、ground truth 同源精确评分、payload='key|值'、
+per-task attempt、reply 摘录审计）。输入解析走对应格式库（模型只见
+提取后的文本）：python-docx 1.2.0 / python-pptx 1.0.2 / reportlab
+5.0.1（UnicodeCIDFont STSong-Light，**中文 PDF round-trip 已验证**）/
+pypdf 6.19.0（pip --user 安装）。
+
+**评分（全部满分）**：
+
+| 任务 | 输入 | 评分 | 结果 |
+|---|---|---|---|
+| word_minutes | 2×.docx 会议纪要 | 类型（闭集）+行动项条数 ×2 | **4/4**（周例会/评审会、4 条/3 条全对） |
+| ppt_outline | 1×.pptx 9 页项目汇报 | 总页数/风险页码/项目代号 | **3/3**（9 页、3+7 页、PHOENIX） |
+| pdf_invoices | 4×.pdf 中文发票 | 未付总额+笔数 | **精确命中（19,920.03 / 2 笔）** |
+
+输出侧同步覆盖：`docs_weekly_report_a1.docx`（python-docx 写出）由
+三任务模型提交汇编。Runtime 侧：6 请求 cold=3 + fragment/restore 族=3
+（t2 3/3 reuse=true），总耗时 19.5s，anomaly=0。
+
+**过程发现（harness 层）**：模型提交数值常带单位（"5602.13 元"/"1 笔"）
+——解析器须剥非数值字符（首版 smoke 精确暴露并修复）。
+
+**范围边界**：本扩展覆盖"文本型文档生成→解析→理解→核对→输出"闭环；
+扫描件/图片型 PDF、复杂版式（嵌套表格/批注/页眉页脚）不在首版范围。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
@@ -352,3 +380,6 @@ V1.7 三阶段（Harness/长上下文/并发/Office 原型）实验收官，
 - `results_v17_3_office.json` —— V1.7-3 办公原型 4 任务 3 attempts
   （`office_out/`=xlsx 产物+日报+ground truth；smoke 另存
   `results_v17_3_office_smoke.json`）
+- `results_v17_3_office_docs.json` —— V1.7-3b 文档扩展 word/ppt/pdf
+  （`office_out/docs/`=docx/pptx/pdf 输入+周报 docx 产物+ground truth；
+  smoke 另存 `results_v17_3_office_docs_smoke.json`）
