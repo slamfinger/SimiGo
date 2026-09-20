@@ -42,13 +42,19 @@ F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**F5-2 矩阵全过(2026-09-20 深夜)**——Tier A 九格(18/32/64K ×
-2/4/8 段)两道门(元素一致 + Execution Continuation)全绿,post 税
-0.95–1.13×(8/9 ≤1.05),**perf-tax BE 稳态中位 ~4 token**;Tier B
-(128K)按纪律记 N/A(峰值估算 27GiB 超线,不硬挤)。**关键意外:
-pre 税跨 run 方差 ±0.1–0.5 ⇒ 静态阈值表不可靠,F5-3 必须在线估计税**
-(`E[remaining]×tax_online > reattach_cost`)。F5-1 已过(64K@4:
-1.219×→85ms→1.006×)。F5-3 后按审核预排做**阶段收束**(表示迁移
-完整模型 → 架构 2.0 设计输入)。记录:F1/F2/F3/F4/F4-EF/F5-1/F5-2
-七份 + 外部对照 + F4-D 骨架;代码:vendor 分支
-`exp/execution-state-fork`(基于 8f37dbc)。
+**统一正确性不变式(Track B 全程,自 F5 起)**:
+**Representation migration must preserve execution identity and
+continuation**——迁移不仅要求 KV element-exact,还要求 execution
+identity 一致、next-input 状态一致、continuation token 一致、**后续
+KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
+
+**状态**:**F5-3 Step 1(policy simulator)通过(2026-09-21)**——四策略
+对照(含 oracle hindsight):adaptive **-21.4% vs always-COW,regret
++1.5% vs oracle,budget 不敏感**;v1 固定预算致短分支滥迁 → v2 滚动
+E[rem]=n 修正(短分支 reatt 2–6% 贴 oracle)。运行时参数已定
+(observe_k=4 / 滑窗 τ̂ / E[rem]=n / budget cap)。**Step 2/3(下一
+会话)**:live 四策略真机对照 + 在线估计接入 runtime → 然后 **Track B
+阶段收束**(三问收束,见 F5-3 记录)。F5-1/F5-2 已过;统一不变式
+"migration must preserve execution identity and continuation" 已立。
+记录:F1→F5-3S1 八份 + 模拟器脚本 + 外部对照 + F4-D 骨架;代码:vendor
+分支 `exp/execution-state-fork`(基于 8f37dbc)。
