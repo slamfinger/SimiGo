@@ -19,17 +19,15 @@ Word 支持同步覆盖），由各任务模型提交的 payload 汇编。
 
 生成/提取库：python-docx 1.2.0、python-pptx 1.0.2、reportlab 5.0.1
 （UnicodeCIDFont STSong-Light）、pypdf 6.19.0（pip --user 安装）。
-范围边界：扫描件/图片型 PDF（无文本层）已纳入——pdftoppm(或 pypdf 直抽)→Tesseract OCR chi_sim→模型清洗/结构化→harness 写 .docx；
-仍不在首版：高分片版式（多重嵌套表格/手写体/批注）。
+范围边界：本原型覆盖"文本型文档生成→解析→理解"闭环；扫描件/图片型
+PDF、复杂版式（表格嵌套/批注）不在首版范围（README 记录）。
 
 用法：python3 tools/v17_3_office_docs.py [--tasks word,ppt,pdf] [--smoke]
 前置：SimiGo 运行中（生产策略）、无进行中生成。
 """
-import os  # noqa: E402  （OCR/图片路径子进程用）
 import argparse
 import json
 import random
-import subprocess
 from pathlib import Path
 
 import runtime_matrix as rm
@@ -53,10 +51,8 @@ TASK_SCENARIOS = {
     "word": ["word_t1", "word_t2"],
     "ppt": ["ppt_t1", "ppt_t2"],
     "pdf": ["pdf_t1", "pdf_t2"],
-    "scan": ["scan_t1", "scan_t2"],
 }
-SESSION_OF = {"word": "w", "ppt": "t", "pdf": "f",
-             "scan": "x"}
+SESSION_OF = {"word": "w", "ppt": "t", "pdf": "f"}
 
 
 # ---------------- 数据生成（确定性） ----------------
@@ -155,23 +151,6 @@ def gen_pdfs(rng, smoke):
     gt = {"unpaid_total": round(sum(a for a, _ in unpaid), 2),
           "unpaid_count": len(unpaid)}
     return paths, gt
-
-
-def gen_scan_pdfs(rng, smoke):
-    """扫描件发票 PDF ×N（无文本层，必须 OCR）。返回 (files, gt)。"""
-    rows = [(301, "客户甲", 9876.54, "未付"), (302, "客户乙", 3210.00, "已付"),
-            (303, "客户丙", 15678.90, "未付")]
-    if smoke:
-        rows = rows[:2]
-    files, gt_invoices = [], []
-    for no, client, amount, status in rows:
-        path = WORK / f"invoice_scan_{no}.pdf"
-        generate_scan_pdf(path, client, amount, status, rng)
-        files.append({"name": path.name, "path": path})
-        gt_invoices.append({"no": no, "client": client,
-                            "amount": round(amount, 2), "status": status})
-    gt = {"invoices": gt_invoices}
-    return files, gt
 
 
 # ---------------- 文件文本提取（模型只见文本） ----------------
@@ -378,218 +357,7 @@ def run_pdf(store, attempt, session, ctx):
             "payloadOk": True, "verifyOk": (v or {}).get("ok")}
 
 
-SCAN_TMP = Path("docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp")
-# PDF 是否含文本层由 pypdf 判定；无文本层则走 OCR。
-_PDF_HAS_TEXT_CACHE = {}
-# Tesseract 引擎名固定（本环境已验证）。
-_TESSERACT_BIN = None
-# psm: 6=假定单块文本, 11=稀疏空格（默认）
-_TESS_PSM = 6
-# PDF→PNG 分辨率（dpi；实测 200+chi_sim round-trip 100%）。
-_OCR_DPI = 200
-
-
-def _teesseract_bin() -> str:
-    """返回可执行 tesseract 路径（__version_info==5 → Tesserocr；否则命令行）。"""
-    global _TESSERACT_BIN
-    if _TESSERACT_BIN:
-        return _TESSERACT_BIN
-    try:
-        import pytesseract  # noqa: F401
-        _TESSERACT_BIN = pytesseract.get_tesseract_command()[0] if False else "tesseract"
-    except Exception:
-        _TESSERACT_BIN = "tesseract"
-    return _TESSERACT_BIN
-
-
-def pdf_has_text(path: Path) -> bool:
-    """pypdf 判定 PDF 是否含文本层（有则无需 OCR）。"""
-    key = str(path)
-    if key in _PDF_HAS_TEXT_CACHE:
-        return _PDF_HAS_TEXT_CACHE[key]
-    try:
-        from pypdf import PdfReader
-        r = PdfReader(str(path))
-        n = 0
-        for page in r.pages:
-            t = (page.extract_text() or "").strip()
-            n += len(t)
-            if n > 8:
-                _PDF_HAS_TEXT_CACHE[key] = True
-                return True
-        # 读完仍未累计>8字，记 False（避免重复判定）
-    except Exception:
-        pass
-    _PDF_HAS_TEXT_CACHE[key] = False
-    return False
-
-
-def _pdftoppm(pdf_path: Path, png_prefix: Path) -> list[Path]:
-    """用系统 pdftoppm 把单页/多页 PDF 转成 PNG（避免 Tesseract 内部 PDF→pix）。"""
-    import subprocess
-    st = os.stat(pdf_path)  # 单页 PDF 仍命名 pg-1.png
-    cmd = ["/usr/bin/pdftoppm", "-png", f"-r{_OCR_DPI}",
-           str(pdf_path), str(png_prefix)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    if r.returncode != 0:
-        raise RuntimeError(f"pdftoppm failed: {r.stderr.strip()}")
-    return sorted(Path(png_prefix.parent).glob(f"{png_prefix.name}-*.png"))
-
-
-def _tesseract(path: Path, lang: str = "chi_sim", psm: int = 6) -> str:
-    """命令行 Tesseract OCR（__version_info==5）。"""
-    import subprocess
-    env = os.environ.copy()
-    env.setdefault("LC_ALL", "UTF-8")
-    cmd = ["/usr/bin/tesseract", str(path), "stdout", "-l", lang, f"--psm{psm}"]
-    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    return r.stdout if r.returncode == 0 else ""
-
-
-def generate_scan_pdf(path: Path, client: str, amount: float, status: str,
-                      rng) -> None:
-    """生成扫描件发票 PDF（reportlab + Tesseract OCR chi_sim，round-trip 已验证）。"""
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-    from reportlab.pdfgen import canvas
-    pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
-    c = canvas.Canvas(str(path))
-    c.setFont('STSong-Light', 16)
-    c.drawString(72, 780, f"发票编号: INV-2026-{int(path.stem.split('_')[-1])}")
-    c.setFont('STSong-Light', 14)
-    c.drawString(72, 750, f"客户: {client}")
-    c.drawString(72, 730, f"金额: {amount:.2f} 元")
-    c.drawString(72, 710, f"状态: {status}")
-    c.save()
-
-
-def _read_scan_pdf_ocr(path: Path) -> str:
-    """无文本层 PDF → pdftoppm→PNG→Tesseract。返回全文（自动跳高分贝页）。"""
-    if not path.exists():
-        return ""
-    SCAN_TMP.mkdir(parents=True, exist_ok=True)
-    png_prefix = SCAN_TMP / path.stem
-    try:
-        pages = _pdftoppm(path, png_prefix)
-    except Exception:
-        # pdftoppm 不可用回退：直接让 Tesseract 读 PDF。
-        return _tesseract(str(path), "chi_sim")
-    texts, prev_score = [], -2.0
-    for i in range(len(pages)):
-        psm = 6 if len(pages) == 1 else 11
-        txt = _tesseract_scan_png(pages[i], psm)
-        if i == 0:
-            prev_score = _text_is_suspicious_score(txt)
-        elif i >= 1 and _text_is_suspicious_score(txt) > prev_score + 0.3:
-            # 相邻高分贝页→大概率转场噪声，跳过。
-            continue
-        texts.append(txt)
-    return "\n".join(t for t in texts if t.strip())
-
-
-def _tesseract_scan_png(png_path: Path, psm: int = 6) -> str:
-    """从 PNG（_pdftoppm 产物）OCR；LC_ALL=UTF-8 避占位符。"""
-    import subprocess
-    r = subprocess.run(["/usr/bin/tesseract", str(png_path), "stdout",
-                        "-l", "chi_sim", f"--psm{psm}"],
-                       capture_output=True, text=True,
-                       env={**os.environ, "LC_ALL": "UTF-8"})
-    return r.stdout if r.returncode == 0 else ""
-
-
-def _text_is_suspicious_score(txt: str) -> float:
-    """启发式：检测 OCR 噪声（大面积连续重复单字符 = 转场/页脚噪声）。"""
-    if not txt:
-        return -1.0
-    import re
-    runs = re.findall(r'(.)\1{8,}', txt)  # ≥9 连字
-    return len(runs) + sum(len(x) - 8 for x in runs) * 0.5
-
-
-def read_scan_pdf(path: Path) -> str:
-    """扫描件/图片型 PDF 文本提取（harness 端；→ 模型只见此文本）。"""
-    if pdf_has_text(path):
-        from pypdf import PdfReader
-        return "\n".join(p.extract_text() for p in PdfReader(str(path)).pages)
-    return _read_scan_pdf_ocr(path)
-
-
-def run_scan(store, attempt, session, ctx):
-    """扫描行情景 runner：模型见 OCR 文本→提取→payload。"""
-    from PIL import Image, ImageEnhance
-    files = ctx["scan_files"]  # path→(client, amount, status)
-    gt = ctx["gt"]["scan"]     # gt 同 gen_scan_pdfs（见下）
-    doc = []
-    for p in files:
-        body = read_scan_pdf(p["path"])   # 有文本层→pypdf，否则 OCR
-        doc.append(f"【{p['name']}】\n{body}")
-    body_full = ("以下是扫描版发票 PDF 的 OCR 文本。\n" +
-                 "\n".join(doc) + "\n\n")
-    m = [rm.user(body_full +
-                 "请逐项提取每份发票：客户名称、金额（去掉'元'字）、"
-                 "付款状态（已付/未付）。完成后调用 submit_result，"
-                 "payload 每行严格按 'inv-<编号>|客户|金额|状态'（编号取"
-                 "发票号去掉 'INV-2026-' 后的数字，如 inv-301）。")]
-    msg, row = chat_turn(store, "scan", "scan_t1", attempt, session, m,
-                         None, 512)
-    skey = (row.get("trace") or {}).get("session")
-    parsed = parse_payload(tool_payload(msg) if msg else None)
-    if parsed is None and msg is not None:
-        msg, row = repair_once(store, "scan", "scan_t1", attempt, session,
-                               m, skey, 512)
-        parsed = parse_payload(tool_payload(msg) if msg else None)
-    if parsed is None:
-        return {"task": "scan", "attempt": attempt, "accuracy": 0,
-                "payloadOk": False}
-    # 评分：逐发票客户/金额/状态三项核对（同 pdf runner 风格）。
-    def norm_amount(v: str) -> float | None:
-        s = (v or "").replace("元", "").replace(",", "").strip()
-        try:
-            return float(s)
-        except ValueError:
-            return None
-    def norm_status(v: str) -> str:
-        v = (v or "").strip()
-        if "未" in v:
-            return "未付"
-        if "已" in v:
-            return "已付"
-        return v
-    hit, per = 0, 0
-    for inv in gt["invoices"]:
-        key = f"inv-{inv['no']}"
-        raw = (parsed.get(key, "") or "").strip()
-        if "|" in raw:
-            parts = [x.strip() for x in raw.split("|")]
-        else:
-            # 模型若用 ':'/',' 分隔字段，退化为单字段
-            parts = [x.strip() for x in raw.replace(":", "|").replace(",", "|").split("|") if x.strip()]
-        given_client = parts[0] if len(parts) > 0 else ""
-        given_amount = norm_amount(parts[1]) if len(parts) > 1 else None
-        given_status = norm_status(parts[-1]) if len(parts) > 0 else ""
-        c_ok = given_client == inv["client"]
-        a_ok = given_amount is not None and abs(given_amount - inv["amount"]) < 0.01
-        s_ok = given_status == inv["status"]
-        hit += c_ok + a_ok + s_ok
-        per += 3
-    acc = round(hit / per, 3) if per else 0.0
-    m.append({"role": "tool", "tool_call_id": _last_call_id(m),
-              "content": "已登记全部发票客户/金额/状态。"})
-    m.append(rm.user("请调用 verify(ok,issues) 确认提取结果。"))
-    msg2, row2 = chat_turn(store, "scan", "scan_t2", attempt, session, m,
-                           skey, 512)
-    v = tool_args(msg2, "verify") if msg2 else None
-    if v is None and msg2 is not None:
-        msg2, row2 = repair_once(store, "scan", "scan_t2", attempt, session,
-                                 m, skey, 512, tool="verify")
-        v = tool_args(msg2, "verify") if msg2 else None
-    return {"task": "scan", "attempt": attempt, "accuracy": acc,
-            "payloadOk": True, "verifyOk": (v or {}).get("ok"),
-            "submitted": parsed}
-
-
-RUNNERS = {"word": run_word, "ppt": run_ppt, "pdf": run_pdf,
-             "scan": run_scan}
+RUNNERS = {"word": run_word, "ppt": run_ppt, "pdf": run_pdf}
 
 
 def write_report_docx(store, attempt):
@@ -629,7 +397,7 @@ def task_complete(store, task, attempt):
 
 def main():
     ap = argparse.ArgumentParser(description="V1.7-3b office docs (word/ppt/pdf)")
-    ap.add_argument("--tasks", default="word,ppt,pdf,scan")
+    ap.add_argument("--tasks", default="word,ppt,pdf")
     ap.add_argument("--smoke", action="store_true",
                     help="冒烟：1 纪要/5 页/2 发票（独立结果文件与 seed）")
     ap.add_argument("--seed", type=int, default=20260920)
@@ -648,14 +416,11 @@ def main():
     word_files, gt_word = gen_word_docs(rng, args.smoke)
     ppt_path, gt_ppt = gen_ppt(rng, args.smoke)
     pdf_paths, gt_pdf = gen_pdfs(rng, args.smoke)
-    scan_files, gt_scan = gen_scan_pdfs(rng, args.smoke)
-    gt = {"word": gt_word, "ppt": gt_ppt, "pdf": gt_pdf,
-          "scan": gt_scan}
+    gt = {"word": gt_word, "ppt": gt_ppt, "pdf": gt_pdf}
     (WORK / "ground_truth_docs.json").write_text(
         json.dumps(gt, ensure_ascii=False, indent=1))
     print(f"[data] word={len(word_files)} docs, ppt={gt_ppt['total_slides']}p, "
-          f"pdf={len(pdf_paths)} files, scan={len(scan_files)}, gt={gt}",
-          flush=True)
+          f"pdf={len(pdf_paths)} files, gt={gt}", flush=True)
 
     store = json.loads(OUT.read_text()) if OUT.exists() else {
         "model": rm.MODEL,
@@ -670,8 +435,7 @@ def main():
                    "scored; per-task attempt unit"),
         "runs": []}
     ctx = {"word_files": word_files, "ppt_path": ppt_path,
-           "pdf_paths": pdf_paths, "scan_files": scan_files,
-           "gt": gt}
+           "pdf_paths": pdf_paths, "gt": gt}
 
     for task in tasks:
         attempts = {r.get("attempt") for r in store["runs"]
@@ -682,7 +446,6 @@ def main():
              if a is not None and task_complete(store, task, a)), None)
         if done is not None:
             print(f"--- {task}: attempt {done} 完整，跳过 ---", flush=True)
-            attempt = done
             continue
         attempt = max((a for a in attempts if a is not None), default=0) + 1
         prefix = "x" if args.smoke else "d"

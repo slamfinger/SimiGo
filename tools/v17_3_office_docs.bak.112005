@@ -528,8 +528,7 @@ def run_scan(store, attempt, session, ctx):
     m = [rm.user(body_full +
                  "请逐项提取每份发票：客户名称、金额（去掉'元'字）、"
                  "付款状态（已付/未付）。完成后调用 submit_result，"
-                 "payload 每行严格按 'inv-<编号>|客户|金额|状态'（编号取"
-                 "发票号去掉 'INV-2026-' 后的数字，如 inv-301）。")]
+                 "payload 每行 'inv-<编号>|客户|金额|状态'。")]
     msg, row = chat_turn(store, "scan", "scan_t1", attempt, session, m,
                          None, 512)
     skey = (row.get("trace") or {}).get("session")
@@ -558,16 +557,14 @@ def run_scan(store, attempt, session, ctx):
     hit, per = 0, 0
     for inv in gt["invoices"]:
         key = f"inv-{inv['no']}"
-        raw = (parsed.get(key, "") or "").strip()
-        if "|" in raw:
-            parts = [x.strip() for x in raw.split("|")]
-        else:
-            # 模型若用 ':'/',' 分隔字段，退化为单字段
-            parts = [x.strip() for x in raw.replace(":", "|").replace(",", "|").split("|") if x.strip()]
-        given_client = parts[0] if len(parts) > 0 else ""
-        given_amount = norm_amount(parts[1]) if len(parts) > 1 else None
-        given_status = norm_status(parts[-1]) if len(parts) > 0 else ""
-        c_ok = given_client == inv["client"]
+        given_client = (parsed.get(key, "") or "").split("|")[0].strip()
+        given_amount = norm_amount((parsed.get(key, "") or "").split("|")[1]
+                                   if "|" in (parsed.get(key, "") or "")
+                                   else parsed.get(key, ""))
+        given_status = norm_status(
+            (parsed.get(key, "") or "").split("|")[-1] if "|" in
+            (parsed.get(key, "") or "") else parsed.get(key, ""))
+        c_ok = given_client.strip() == inv["client"]
         a_ok = given_amount is not None and abs(given_amount - inv["amount"]) < 0.01
         s_ok = given_status == inv["status"]
         hit += c_ok + a_ok + s_ok
@@ -682,7 +679,6 @@ def main():
              if a is not None and task_complete(store, task, a)), None)
         if done is not None:
             print(f"--- {task}: attempt {done} 完整，跳过 ---", flush=True)
-            attempt = done
             continue
         attempt = max((a for a in attempts if a is not None), default=0) + 1
         prefix = "x" if args.smoke else "d"

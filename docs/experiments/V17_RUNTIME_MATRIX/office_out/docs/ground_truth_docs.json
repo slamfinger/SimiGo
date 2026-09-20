@@ -2,23 +2,38 @@
  "word": {
   "m1": {
    "type": "周例会",
-   "actions": 4
+   "actions": 1
   },
   "m2": {
    "type": "评审会",
-   "actions": 3
+   "actions": 1
   }
  },
  "ppt": {
-  "total_slides": 9,
+  "total_slides": 5,
   "risk_slides": [
-   3,
-   7
+   3
   ],
-  "project_code": "PHOENIX"
+  "project_code": "PHX7"
  },
  "pdf": {
-  "unpaid_total": 19920.03,
-  "unpaid_count": 2
+  "unpaid_total": 5602.13,
+  "unpaid_count": 1
+ },
+ "scan": {
+  "invoices": [
+   {
+    "no": 301,
+    "client": "客户甲",
+    "amount": 9876.54,
+    "status": "未付"
+   },
+   {
+    "no": 302,
+    "client": "客户乙",
+    "amount": 3210.0,
+    "status": "已付"
+   }
+  ]
  }
 }

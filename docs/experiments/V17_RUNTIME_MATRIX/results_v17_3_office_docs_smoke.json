@@ -251,6 +251,162 @@
     ]
    },
    "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t1",
+   "attempt": 1,
+   "session": "x1x",
+   "wallS": 16.8,
+   "trace": {
+    "session": "x1x/main",
+    "mode": "cold",
+    "promptTokens": 894,
+    "promptTimeS": 12.9,
+    "ttftS": 14.6,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 45.0,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 20.6,
+    "swapGB": 2.5537109375
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"INV-2026-301|客户甲|9876.54|未付\\nINV-2026-302|客户乙|3210.00|已付\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t2",
+   "attempt": 1,
+   "session": "x1x",
+   "wallS": 2.5,
+   "trace": {
+    "session": "x1x/main",
+    "mode": "(fragment)",
+    "promptTokens": 766,
+    "promptTimeS": 1.1,
+    "ttftS": 2.4,
+    "cacheTokens": 969,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 42.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.9,
+    "swapGB": 2.5380859375
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"两份发票客户、金额（已去'元'）、状态均正确提取并提交。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t1",
+   "attempt": 2,
+   "session": "x2x",
+   "wallS": 3.9,
+   "trace": {
+    "session": "x2x/main",
+    "mode": "cold",
+    "promptTokens": 919,
+    "promptTimeS": 2.2,
+    "ttftS": 3.7,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 40.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 1,
+   "memAfter": {
+    "footprintGB": 20.6,
+    "swapGB": 2.344970703125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"inv-301|客户甲|9876.54|未付\\ninv-302|客户乙|3210.00|已付\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t2",
+   "attempt": 2,
+   "session": "x2x",
+   "wallS": 4.2,
+   "trace": {
+    "session": "x2x/main",
+    "mode": "(fragment)",
+    "promptTokens": 766,
+    "promptTimeS": 1.4,
+    "ttftS": 4.0,
+    "cacheTokens": 984,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 36.3,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.0,
+    "swapGB": 2.344970703125
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"ok\":true,\"issues\":\"无。两份发票均已正确提取：inv-301|客户甲|9876.54|未付，inv-302|客户乙|3210.00|已付。格式、编号、金额去'元'、状态均符合要求。\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
   }
  ],
  "task_summaries": [
@@ -306,6 +462,28 @@
    "truthCount": 1,
    "payloadOk": true,
    "verifyOk": true
+  },
+  {
+   "task": "scan",
+   "attempt": 1,
+   "accuracy": 0.0,
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "INV-2026-301": "客户甲|9876.54|未付",
+    "INV-2026-302": "客户乙|3210.00|已付"
+   }
+  },
+  {
+   "task": "scan",
+   "attempt": 2,
+   "accuracy": 1.0,
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "inv-301": "客户甲|9876.54|未付",
+    "inv-302": "客户乙|3210.00|已付"
+   }
   }
  ]
 }
