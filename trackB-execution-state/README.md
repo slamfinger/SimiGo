@@ -42,13 +42,12 @@ F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**F4 工程化压测第一轮全过(2026-09-20,受约束验证阶段)**——
-A 矩阵 72 格零失败(物理增长精确 ∝ 结构,fork 不随深度退化);B 主干
-迁移:Promote 零拷贝(0.0003ms)/ Rollback O(1) / 历史树不变 / 60 轮
-循环零漂移;C 多分支:16 分支交错全对,半数丢弃可回收且幸存者正确;
-**B-model root 解冻续写门 16/16+16/16(生产 rollback 语义解锁)**。
-回归项:单层多段 concat decode 税 1.90×(上界口径)记警,**模型级
-长深度+多段税 = F4 续项第一优先**;⚠ Discard 单点不降待归因。
-记录:F1/F2/F3/F4 四份 `EXECUTION_FORK_*_RESULTS_20260920.md`;代码:
-vendor 分支 `exp/execution-state-fork`(基于 8f37dbc)。F4-D(上游
-RFC 升级素材)待整理。
+**状态**：**受约束工程化验证中**——语义层全过(F1–F4 + 解冻门);
+**F4-E 性能门触发:F3a 重新激活**(多段 concat decode 税随深度稳定
+超标:32K 1.137× / 64K 1.256×,已归因 = 每 token 2×depth 字节物化
+往返,token 门全对);F4-F 归因完成(不可达页可复用无泄漏;单点
+不降 = 惰性图父引用保持)。**F5 第一优先 = 段合并(reattach)原型**
+(一次性 O(depth) 换零稳态税;@64K 合并 ~17–50ms,decode >10–15
+token 回本)。F4-D 骨架已更新至可补给状态(#629 follow-up)。
+记录:F1/F2/F3/F4/F4-EF 五份 + 外部对照 + F4-D 骨架;代码:vendor
+分支 `exp/execution-state-fork`(基于 8f37dbc)。
