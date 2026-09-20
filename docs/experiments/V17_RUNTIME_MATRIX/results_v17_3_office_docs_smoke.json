@@ -3,8 +3,8 @@
  "meta": {
   "stepOverrideEnv": null,
   "stepFile": null,
-  "binaryBuild": "4",
-  "generatedAt": "2026-09-20T08:39:24",
+  "binaryBuild": 5,
+  "generatedAt": "2026-09-20T13:11:33",
   "binaryPath": "build/SimiGo.app/Contents/Info.plist",
   "serializeGeneration": "true (生产常量)",
   "smoke": true,
@@ -14,7 +14,9 @@
    "python-pptx": "1.0.2",
    "reportlab": "5.0.1",
    "pypdf": "6.19.0"
-  }
+  },
+  "binaryVersion": "1.7",
+  "provenanceNote": "attempt 1-2 rows recorded 2026-09-20T08:39 on build 4 (v1.6), 文本层 PDF + pypdf 路径；attempt 3 rows recorded on 1.7(5) after 4fdd4ed OCR fixes——真栅格化图片型 PDF(pdftoppm 300dpi) + tesseract-ocr，genMode/extractMode 见各 task_summaries"
  },
  "design": "V1.7-3b docs extension: word_minutes/ppt_outline/pdf_invoices; harness parses files (python-docx/python-pptx/pypdf), model extracts, ground-truth scored; per-task attempt unit",
  "runs": [
@@ -407,6 +409,84 @@
     ]
    },
    "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t1",
+   "attempt": 3,
+   "session": "x3x",
+   "wallS": 3.7,
+   "trace": {
+    "session": "x3x/main",
+    "mode": "cold",
+    "promptTokens": 919,
+    "promptTimeS": 2.0,
+    "ttftS": 3.6,
+    "cacheTokens": 0,
+    "cacheEff": "0.00",
+    "reuse": "false",
+    "cacheHitTokens": 0,
+    "tps": 41.6,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 21.4,
+    "swapGB": 2.117978515625
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "submit_result",
+      "args": "{\"payload\":\"inv-301|客户甲|9876.54|未付\\ninv-302|客户乙|3210.00|已付\"}"
+     }
+    ]
+   },
+   "verdict": "pass"
+  },
+  {
+   "task": "scan",
+   "scenario": "scan_t2",
+   "attempt": 3,
+   "session": "x3x",
+   "wallS": 15.0,
+   "trace": {
+    "session": "x3x/main",
+    "mode": "(fragment)",
+    "promptTokens": 766,
+    "promptTimeS": 10.7,
+    "ttftS": 14.8,
+    "cacheTokens": 984,
+    "cacheEff": "0.00",
+    "reuse": "true",
+    "cacheHitTokens": 0,
+    "tps": 25.5,
+    "fork": null,
+    "provenance": "measured",
+    "captureStatus": "primary",
+    "stepUsed": 2048
+   },
+   "evictions": 0,
+   "memAfter": {
+    "footprintGB": 22.2,
+    "swapGB": 3.33166015625
+   },
+   "anomalyCount": 0,
+   "reply": {
+    "content": "",
+    "tool_calls": [
+     {
+      "name": "verify",
+      "args": "{\"issues\":\"无。两份发票均正确提取：INV-2026-301 客户甲 9876.54 未付；INV-2026-302 客户乙 3210.00 已付。编号、金额（去'元'）、状态均符合要求。\",\"ok\":true}"
+     }
+    ]
+   },
+   "verdict": "pass"
   }
  ],
  "task_summaries": [
@@ -484,6 +564,23 @@
     "inv-301": "客户甲|9876.54|未付",
     "inv-302": "客户乙|3210.00|已付"
    }
+  },
+  {
+   "task": "scan",
+   "attempt": 3,
+   "accuracy": 1.0,
+   "payloadOk": true,
+   "verifyOk": true,
+   "submitted": {
+    "inv-301": "客户甲|9876.54|未付",
+    "inv-302": "客户乙|3210.00|已付"
+   },
+   "genMode": [
+    "rasterized-imageonly(pdftoppm 300dpi)"
+   ],
+   "extractMode": [
+    "tesseract-ocr"
+   ]
   }
  ]
 }

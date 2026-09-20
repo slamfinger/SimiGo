@@ -388,6 +388,41 @@ Runtime 侧：4 请求 cold=2+fragment/restore=2（t2 2/2 reuse=true），
 （生成/解析/理解/核对）+ 文件夹整理 + 多文档提取整合，全格式全任务
 满分或近满分（最低 0.90），restore 复用在全部任务形状下自发命中。
 
+## V1.7-3d 扫描件与外审对证修正（2026-09-20）
+
+承接 3b/3c：scan 任务（扫描样式发票 PDF→结构化提取），runner 同
+`tools/v17_3_office_docs.py`（24238b0 首版；4fdd4ed 外审修正）。
+
+**外审核验定性（能力口径以此为准）**：24238b0 的 attempt-1/2 实为文本层
+变体、pypdf 直抽（模型见干净文本，非 OCR 输出）；OCR 分支存在三处独立
+潜伏 bug（/usr/bin 硬编码、pdftoppm `-r200` 合并写法被 poppler 26 拒绝、
+tesseract `--psm6` 合并写法被拒且失败静默吞空），在本机从未可能走通——
+即 24238b0 的"扫描件"运行没有 OCR 证据。外审 P2-1 指出的 attempt-1
+"语义正确 accuracy=0"是评分 key 契约违约的如实记录（提示词明示
+`inv-<编号>` 格式，模型提交了文档原样的 INV-2026-301），非评分器意外
+误杀；4fdd4ed 按外审建议做最小归一（`_inv_canon` 尾部数字段）+ 回归
+测试 11/11，原始提交键仍留 summary.submitted 审计，未放宽字符串比较。
+
+| 尝试 | 输入实际形态 | 提取路径 | accuracy |
+|---|---|---|---|
+| attempt-1（24238b0） | 文本层 PDF | pypdf-textlayer | 0.0（key 违约，字段全对） |
+| attempt-2（24238b0） | 文本层 PDF | pypdf-textlayer | 1.0 |
+| attempt-3（4fdd4ed 后，build 1.7(5)） | **真栅格化图片型 PDF** | **tesseract-ocr** | **1.0（真 OCR 文本全字段正确）** |
+
+DPI 定档对照（chi_sim psm6，本版式实测）：150=四行全读但客户甲→客户四；
+200=客户正确但末行"状态"行常丢；300=双页四行字段值全对（标签偶有噪声：
+发亚/全人额，不影响模型语义提取）。生成/提取走向以
+genMode/extractMode 字段随 task_summaries 入 results，pypdf-textlayer
+与 tesseract-ocr 分开计证据。
+
+**范围边界**：固定合成扫描件（无旋转/倾斜/印章遮挡/多栏/手写/跨页关联）
+的定向 OCR 闭环验证，非通用发票 OCR 质量保证；attempt-1/2 文本层记录
+按原样保留（attempt-1 数据诚实保留纪律）。
+
+**工具备份注记**：`tools/v17_3_office_docs.bak.112005` 与
+`tools/v17_3_office_scan_scanbackups.bak` 为 24238b0 提交前的脚本快照
+（备份纪律，防撞还原用），非入口；入口=`tools/v17_3_office_docs.py`。
+
 ## 结果文件
 
 - `results_partial.json` —— 10K 冒烟原始数据
