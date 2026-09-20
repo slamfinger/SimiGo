@@ -19,13 +19,18 @@ Word 支持同步覆盖），由各任务模型提交的 payload 汇编。
 
 生成/提取库：python-docx 1.2.0、python-pptx 1.0.2、reportlab 5.0.1
 （UnicodeCIDFont STSong-Light）、pypdf 6.19.0（pip --user 安装）。
-范围边界：扫描件/图片型 PDF（无文本层）已纳入——pdftoppm(或 pypdf 直抽)→Tesseract OCR chi_sim→模型清洗/结构化→harness 写 .docx；
-仍不在首版：高分片版式（多重嵌套表格/手写体/批注）。
+范围边界（能力声明以记录在案的运行为准；2026-09-20 外审核验修正）：
+  scan 任务=扫描样式发票 PDF。24238b0 的 attempt-1/2 实为文本层变体、
+  pypdf 直抽（模型见干净文本，非 OCR 输出）；attempt-3 起生成真栅格化
+  图片型 PDF（pdftoppm 200dpi→Tesseract chi_sim OCR），证据以 results
+  JSON 的 genMode/extractMode 为准。仍不在范围：旋转/倾斜/印章遮挡/
+  多栏排版/手写体/跨页关联。
 
 用法：python3 tools/v17_3_office_docs.py [--tasks word,ppt,pdf] [--smoke]
 前置：SimiGo 运行中（生产策略）、无进行中生成。
 """
 import os  # noqa: E402  （OCR/图片路径子进程用）
+import shutil  # noqa: E402  （OCR 二进制 PATH 解析）
 import argparse
 import json
 import random
@@ -158,7 +163,8 @@ def gen_pdfs(rng, smoke):
 
 
 def gen_scan_pdfs(rng, smoke):
-    """扫描件发票 PDF ×N（无文本层，必须 OCR）。返回 (files, gt)。"""
+    """扫描件发票 PDF ×N（栅格化图片型：无文本层必走 OCR；pdftoppm 缺失时
+    回退文本层并在 _GEN_MODE 标注）。返回 (files, gt)。"""
     rows = [(301, "客户甲", 9876.54, "未付"), (302, "客户乙", 3210.00, "已付"),
             (303, "客户丙", 15678.90, "未付")]
     if smoke:
@@ -379,27 +385,27 @@ def run_pdf(store, attempt, session, ctx):
 
 
 SCAN_TMP = Path("docs/experiments/V17_RUNTIME_MATRIX/office_out/scanstmp")
+# provenance：每文件生成/提取走向，随 task_summaries 入 results（外审修正）。
+_GEN_MODE = {}
+_EXTRACT_MODE = {}
 # PDF 是否含文本层由 pypdf 判定；无文本层则走 OCR。
 _PDF_HAS_TEXT_CACHE = {}
-# Tesseract 引擎名固定（本环境已验证）。
-_TESSERACT_BIN = None
 # psm: 6=假定单块文本, 11=稀疏空格（默认）
 _TESS_PSM = 6
-# PDF→PNG 分辨率（dpi；实测 200+chi_sim round-trip 100%）。
-_OCR_DPI = 200
+# PDF→PNG 分辨率（dpi）。2026-09-20 实测对照（chi_sim psm6，本版式）：
+# 150dpi=四行全读但客户甲→客户四；200dpi=客户正确但末行状态常丢；
+# 300dpi=双页四行字段值全对（标签偶有噪声：发标/人金额）。定档 300。
+_OCR_DPI = 300
 
 
-def _teesseract_bin() -> str:
-    """返回可执行 tesseract 路径（__version_info==5 → Tesserocr；否则命令行）。"""
-    global _TESSERACT_BIN
-    if _TESSERACT_BIN:
-        return _TESSERACT_BIN
-    try:
-        import pytesseract  # noqa: F401
-        _TESSERACT_BIN = pytesseract.get_tesseract_command()[0] if False else "tesseract"
-    except Exception:
-        _TESSERACT_BIN = "tesseract"
-    return _TESSERACT_BIN
+def _resolve_bin(name: str) -> str:
+    """OCR 外部工具 PATH 解析（v1.7-3d 修正：/usr/bin 硬编码在本机不存在）。"""
+    p = shutil.which(name)
+    if not p:
+        raise RuntimeError(
+            f"{name} 不在 PATH（brew install tesseract poppler）——"
+            "生成侧回退文本层并在 genMode 标注；提取侧图片型 PDF 无文本层不可虚读")
+    return p
 
 
 def pdf_has_text(path: Path) -> bool:
@@ -428,7 +434,7 @@ def _pdftoppm(pdf_path: Path, png_prefix: Path) -> list[Path]:
     """用系统 pdftoppm 把单页/多页 PDF 转成 PNG（避免 Tesseract 内部 PDF→pix）。"""
     import subprocess
     st = os.stat(pdf_path)  # 单页 PDF 仍命名 pg-1.png
-    cmd = ["/usr/bin/pdftoppm", "-png", f"-r{_OCR_DPI}",
+    cmd = [_resolve_bin("pdftoppm"), "-png", "-r", str(_OCR_DPI),
            str(pdf_path), str(png_prefix)]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
@@ -441,19 +447,31 @@ def _tesseract(path: Path, lang: str = "chi_sim", psm: int = 6) -> str:
     import subprocess
     env = os.environ.copy()
     env.setdefault("LC_ALL", "UTF-8")
-    cmd = ["/usr/bin/tesseract", str(path), "stdout", "-l", lang, f"--psm{psm}"]
+    cmd = [_resolve_bin("tesseract"), str(path), "stdout", "-l", lang,
+           "--psm", str(psm)]
     r = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    return r.stdout if r.returncode == 0 else ""
+    if r.returncode != 0:
+        raise RuntimeError(f"tesseract failed: {r.stderr.strip()[:300]}")
+    return r.stdout
 
 
 def generate_scan_pdf(path: Path, client: str, amount: float, status: str,
                       rng) -> None:
-    """生成扫描件发票 PDF（reportlab + Tesseract OCR chi_sim，round-trip 已验证）。"""
+    """生成扫描件发票 PDF：reportlab 绘制→pdftoppm 200dpi 栅格化→图片型
+    （无文本层，read_scan_pdf 必走 Tesseract OCR）。
+
+    pdftoppm 不可用时回退文本层 PDF 并在 _GEN_MODE 标注——名义扫描件、
+    实为文本层提取，provenance 如实入 results（v1.7-3d 外审修正：
+    24238b0 版本名为扫描件、实产带文本层，OCR 分支未被记录运行走到）。
+    """
+    from reportlab.lib.pagesizes import letter
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
     from reportlab.pdfgen import canvas
     pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
-    c = canvas.Canvas(str(path))
+    SCAN_TMP.mkdir(parents=True, exist_ok=True)
+    src = SCAN_TMP / f"{path.stem}_src.pdf"
+    c = canvas.Canvas(str(src))
     c.setFont('STSong-Light', 16)
     c.drawString(72, 780, f"发票编号: INV-2026-{int(path.stem.split('_')[-1])}")
     c.setFont('STSong-Light', 14)
@@ -461,6 +479,16 @@ def generate_scan_pdf(path: Path, client: str, amount: float, status: str,
     c.drawString(72, 730, f"金额: {amount:.2f} 元")
     c.drawString(72, 710, f"状态: {status}")
     c.save()
+    try:
+        pages = _pdftoppm(src, SCAN_TMP / path.stem)
+        c2 = canvas.Canvas(str(path), pagesize=letter)
+        c2.drawImage(str(pages[0]), 0, 0, letter[0], letter[1])
+        c2.showPage()
+        c2.save()
+        _GEN_MODE[path.name] = f"rasterized-imageonly(pdftoppm {_OCR_DPI}dpi)"
+    except Exception as e:
+        os.replace(src, path)
+        _GEN_MODE[path.name] = f"textlayer-fallback({type(e).__name__})"
 
 
 def _read_scan_pdf_ocr(path: Path) -> str:
@@ -488,13 +516,19 @@ def _read_scan_pdf_ocr(path: Path) -> str:
 
 
 def _tesseract_scan_png(png_path: Path, psm: int = 6) -> str:
-    """从 PNG（_pdftoppm 产物）OCR；LC_ALL=UTF-8 避占位符。"""
+    """从 PNG（_pdftoppm 产物）OCR；LC_ALL=UTF-8 避占位符。
+
+    v1.7-3d 修正：--psm 须分离传参（--psm6 合并写法被 tesseract 拒绝、
+    returncode≠0 曾被静默吞成空串）；失败显式抛错，不产垃圾运行。
+    """
     import subprocess
-    r = subprocess.run(["/usr/bin/tesseract", str(png_path), "stdout",
-                        "-l", "chi_sim", f"--psm{psm}"],
+    r = subprocess.run([_resolve_bin("tesseract"), str(png_path), "stdout",
+                        "-l", "chi_sim", "--psm", str(psm)],
                        capture_output=True, text=True,
                        env={**os.environ, "LC_ALL": "UTF-8"})
-    return r.stdout if r.returncode == 0 else ""
+    if r.returncode != 0:
+        raise RuntimeError(f"tesseract failed: {r.stderr.strip()[:300]}")
+    return r.stdout
 
 
 def _text_is_suspicious_score(txt: str) -> float:
@@ -507,11 +541,72 @@ def _text_is_suspicious_score(txt: str) -> float:
 
 
 def read_scan_pdf(path: Path) -> str:
-    """扫描件/图片型 PDF 文本提取（harness 端；→ 模型只见此文本）。"""
+    """扫描件/图片型 PDF 文本提取（harness 端；→ 模型只见此文本）。
+
+    走向由 pdf_has_text 决定并记入 _EXTRACT_MODE——pypdf-textlayer 与
+    tesseract-ocr 是两种证据等级，results 如实区分（v1.7-3d 外审修正）。
+    """
     if pdf_has_text(path):
         from pypdf import PdfReader
+        _EXTRACT_MODE[path.name] = "pypdf-textlayer"
         return "\n".join(p.extract_text() for p in PdfReader(str(path)).pages)
+    _EXTRACT_MODE[path.name] = "tesseract-ocr"
     return _read_scan_pdf_ocr(path)
+
+
+def _inv_canon(key: str) -> str:
+    """发票 key 归一：取尾部数字段。INV-2026-301/inv-301/301 → '301'。
+
+    外审 P2-1（24238b0 attempt-1 文档原样 key 被精确匹配判 0）：评分归一
+    到业务编号；原始提交键仍在 summary.submitted 留审计；不做全字符串放宽。
+    """
+    import re
+    m = re.search(r'(\d+)\D*$', (key or "").strip())
+    return m.group(1) if m else (key or "").strip().lower()
+
+
+def score_scan_payload(parsed, gt):
+    """逐发票客户/金额/状态三项核对（同 pdf runner 风格）；key 归一后匹配。
+
+    回归测试：tools/test_v17_3_scan_scoring.py（无需 SimiGo 运行）。
+    """
+    def norm_amount(v: str) -> float | None:
+        s = (v or "").replace("元", "").replace(",", "").strip()
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    def norm_status(v: str) -> str:
+        v = (v or "").strip()
+        if "未" in v:
+            return "未付"
+        if "已" in v:
+            return "已付"
+        return v
+
+    canon = {}
+    for k, v in (parsed or {}).items():
+        ck = _inv_canon(k)
+        if ck and ck not in canon:
+            canon[ck] = v
+    hit, per = 0, 0
+    for inv in gt["invoices"]:
+        raw = (canon.get(str(inv['no']), "") or "").strip()
+        if "|" in raw:
+            parts = [x.strip() for x in raw.split("|")]
+        else:
+            # 模型若用 ':'/',' 分隔字段，退化为单字段
+            parts = [x.strip() for x in raw.replace(":", "|").replace(",", "|").split("|") if x.strip()]
+        given_client = parts[0] if len(parts) > 0 else ""
+        given_amount = norm_amount(parts[1]) if len(parts) > 1 else None
+        given_status = norm_status(parts[-1]) if len(parts) > 0 else ""
+        c_ok = given_client == inv["client"]
+        a_ok = given_amount is not None and abs(given_amount - inv["amount"]) < 0.01
+        s_ok = given_status == inv["status"]
+        hit += c_ok + a_ok + s_ok
+        per += 3
+    return round(hit / per, 3) if per else 0.0
 
 
 def run_scan(store, attempt, session, ctx):
@@ -541,38 +636,7 @@ def run_scan(store, attempt, session, ctx):
     if parsed is None:
         return {"task": "scan", "attempt": attempt, "accuracy": 0,
                 "payloadOk": False}
-    # 评分：逐发票客户/金额/状态三项核对（同 pdf runner 风格）。
-    def norm_amount(v: str) -> float | None:
-        s = (v or "").replace("元", "").replace(",", "").strip()
-        try:
-            return float(s)
-        except ValueError:
-            return None
-    def norm_status(v: str) -> str:
-        v = (v or "").strip()
-        if "未" in v:
-            return "未付"
-        if "已" in v:
-            return "已付"
-        return v
-    hit, per = 0, 0
-    for inv in gt["invoices"]:
-        key = f"inv-{inv['no']}"
-        raw = (parsed.get(key, "") or "").strip()
-        if "|" in raw:
-            parts = [x.strip() for x in raw.split("|")]
-        else:
-            # 模型若用 ':'/',' 分隔字段，退化为单字段
-            parts = [x.strip() for x in raw.replace(":", "|").replace(",", "|").split("|") if x.strip()]
-        given_client = parts[0] if len(parts) > 0 else ""
-        given_amount = norm_amount(parts[1]) if len(parts) > 1 else None
-        given_status = norm_status(parts[-1]) if len(parts) > 0 else ""
-        c_ok = given_client == inv["client"]
-        a_ok = given_amount is not None and abs(given_amount - inv["amount"]) < 0.01
-        s_ok = given_status == inv["status"]
-        hit += c_ok + a_ok + s_ok
-        per += 3
-    acc = round(hit / per, 3) if per else 0.0
+    acc = score_scan_payload(parsed, gt)
     m.append({"role": "tool", "tool_call_id": _last_call_id(m),
               "content": "已登记全部发票客户/金额/状态。"})
     m.append(rm.user("请调用 verify(ok,issues) 确认提取结果。"))
@@ -585,7 +649,9 @@ def run_scan(store, attempt, session, ctx):
         v = tool_args(msg2, "verify") if msg2 else None
     return {"task": "scan", "attempt": attempt, "accuracy": acc,
             "payloadOk": True, "verifyOk": (v or {}).get("ok"),
-            "submitted": parsed}
+            "submitted": parsed,
+            "genMode": sorted(set(_GEN_MODE.values())),
+            "extractMode": sorted(set(_EXTRACT_MODE.values()))}
 
 
 RUNNERS = {"word": run_word, "ppt": run_ppt, "pdf": run_pdf,
