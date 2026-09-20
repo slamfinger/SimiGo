@@ -18,4 +18,9 @@ long-context shape）的 prefill 实测时间，离理论带宽地板还有多�
 2. 512/1024/2048 三档机制复核——对"512 档更快 = 内存压力"假说证实或
    证伪（既有结果：`V17_RUNTIME_MATRIX/README.md:115`，机制未归档）。
 
-**状态**：未开工。第一优先，与 trackB-execution-state 并行。
+**状态**：**测量计划已预注册(2026-09-20)**——
+`MEASUREMENT_PLAN_20260920.md`:参数表(M5 带宽 153GB/s 已核实)、
+公式集(含**权重重读补项**:chunked prefill 每 chunk 全量重读 ~20GiB
+权重,小 chunk 下占主导,忽略会把"贴顶"误判成"kernel opportunity")、
+M1–M5 测量清单、执行顺序。下一步:M1 本机基线(基线产自生产机,
+跨机比值无效)。
