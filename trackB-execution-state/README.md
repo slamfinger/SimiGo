@@ -38,13 +38,14 @@ Cache，是 Execution State 抽象**。
 attention KV（append-only，天然分页）；GDN 态 O(1) 尺寸（fork = 固定
 memcpy）。"GDN 不可 trim/rewind"在 fork/COW 语境不构成障碍。
 
-**状态**：**F2 一票否决门已过(2026-09-20)**——真模型(Cyber-Tiel
-35B oQ4e,10 attention + 30 GDN 层)fork ×2 双分叉,逐 token greedy
-一致 **16/16 全对**;模型级 fork 0.061ms,物理增长精确 1.00× 后缀;
-三档形态定论:单未来 slack fork 零税 / 多未来 page-split(税 1.1–2.4×,
-F3 消解)/ 增长拼接与 baseline 同型。**四项验收指标探针级证据链闭合,
-唯 Restore Depth(指标 2)仍缺。**
+**状态**：**F3 完成(2026-09-20)——报告 §5.1 四项验收指标探针级全部闭合**：
+①Fork Cost 0.019–0.061ms;②Restore Depth 亚线性(页恢复平坦度 1.22,
+逐元素正确);③Shared Ratio 0.889–0.97 + 增长精确 1.00×;④逐 token
+一致 16/16 + 32/32。**模型级 decode 税实测 1.01×(零税),F3a 降级为
+远期。**段表(page table)v2 支持 COW→COW 多级 fork 与页恢复;4 叉树
+32× 内存节省。Track B 探针阶段收官,转 F4 工程化(#1849 合流、
+ExecutionState 抽象成文、长深度压测)。
 记录:`EXECUTION_FORK_F1_PROBE_RESULTS_20260920.md` /
-`EXECUTION_FORK_F2_GATE_RESULTS_20260920.md`;代码:vendor 分支
-`exp/execution-state-fork`(基于 8f37dbc)。F3:concat 税消解(#1849
-合流)、Restore Depth 曲线、长深度记账、N>2 fork 树。
+`EXECUTION_FORK_F2_GATE_RESULTS_20260920.md` /
+`EXECUTION_FORK_F3_RESTORE_RESULTS_20260920.md`;代码:vendor 分支
+`exp/execution-state-fork`(基于 8f37dbc)。
