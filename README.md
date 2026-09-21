@@ -28,7 +28,7 @@
 | `trackA-kernel/` | Track A Kernel | 条件启动（06 开关） | Metal 原型成对对比 |
 | `trackB-execution-state/` | Track B Execution State | **CLOSED / FROZEN**（2026-09-21 Closure v4 终审 PASS/FREEZE；仅证所测执行位置下的生命周期语义正确性，不证性能优越性/估计器鲁棒性/Residency 行为，Residency ≠ Closure；代码冻结于 `exp/execution-state-fork` @ acbcb54；#629 follow-up 技术报告已发布：issuecomment-5754644625） | Fork Cost / Restore Depth / Shared Page Ratio + 逐 token 一致性门 |
 | `trackD-memory/` | Track D Adaptive Memory | 未开工（独立推进） | 预算放宽不引入 swap 劣化 |
-| `trackE-residency/` | Track E Residency（命名待真源定夺，与真源 §5.3 Track C=Multi-device 冲突） | **M1 开题**（2026-09-21，探针未跑） | 首门（一票否决）：ExecutionId(before)==ExecutionId(after) |
+| `trackE-residency/` | Track E Residency（命名待真源定夺，与真源 §5.3 Track C=Multi-device 冲突） | **M1 终判 PASS**（2026-09-21，五门全绿；Claim=Execution Identity preserved，状态接地表述，非 literal ID 字段）；**M2 进行中**（深位置/段表外化/多节点） | State Exactness（M2 门） |
 | `runtime2-skeleton/` | Runtime2 接口占位 | 笔记态，`[future]` 不实现 | — |
 
 ## 远端
