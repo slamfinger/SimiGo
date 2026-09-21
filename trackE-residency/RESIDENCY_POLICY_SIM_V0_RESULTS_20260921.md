@@ -12,14 +12,17 @@
 32 节点 × 等大小(size=1,合计 32),trace 2000 步,四种 locality
 (short/medium/long/very-long),预算 = 20%–100%。四策略:always
 (永不外化,violation 逐 step 记)/ pressure(≥90% 预算主动外化)/
-lru(被动)/ **oracle(等大小下 = 标准 Belady,严格 reference
-bound;C_ext 占比 ~4%,最优性为惯例近似)**。
+lru(被动)/ **oracle(等大小、固定容量下,针对 rehydrate/page-fault
+数的标准 **Belady reference bound**;total boundary cost(C_ext×ext+
+C_rehy×rehy)的比较为**描述性**,非 total-cost 全局最优——cost-aware
+oracle 属 P0/P3 后续工作)**。
 
 ## 核心结果(v2 数字)
 
-**1. 决策空间在全部 24 个非退化组合可观测**:lru/oracle =
-**1.33–3.05**,无一低于 1.10(budget=1.00 时 oracle 边界成本为 0,
-比值无定义,共 28 组合中 24 个非退化)。
+**1. 决策空间在全部 24 个非退化组合可观测**:lru / future-aware
+Belady reference 的 **boundary-cost 描述性差距 = 1.33–3.05**,无一
+低于 1.10(口径:28 组合中 budget=1.00 时 reference 边界成本为 0、
+比值无定义,故 24 个非退化)。
 
 **2. 差异随预算升高扩大**:0.20 → 1.33–1.64(低预算全域 thrash,
 策略趋同的"策略无关区");0.80 → 2.69–3.05。
@@ -70,6 +73,8 @@ bound;C_ext 占比 ~4%,最优性为惯例近似)**。
 2. **P0 = Cost model closure**(C_resident 计价)排期首位;simulator
    本轮定位 = P1(baseline sanity)/ P2(sensitivity)exploratory
    probe;
-3. P3:new policy(可实现 future-reuse 启发式)对 LRU;树依赖增量
-   (H-P1 强形式)需结构化 workload,其后;
+3. P3:new policy(可实现 future-reuse 启发式)对 LRU;**cost-aware
+   oracle/reference 构造**(把 C_ext×ext+C_rehy×rehy 联合纳入最优化
+   目标,补齐 Belady 只证 fault 数最优的缺口);树依赖增量(H-P1 强
+   形式)需结构化 workload,其后;
 4. Track E 正式命名待真源定夺。

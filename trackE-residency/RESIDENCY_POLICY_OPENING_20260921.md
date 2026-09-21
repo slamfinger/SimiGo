@@ -1,6 +1,6 @@
 # Track E(命名待定)Residency Policy 开题 v2(2026-09-21)
 
-**状态**:开题 v2(按审计收紧修订;simulator v0 已开写,数字未出)。
+**状态**:开题 v2;simulator v0 已完成 P1/P2 exploratory probe(等大小 v2 数字见 RESIDENCY_POLICY_SIM_V0_RESULTS_20260921.md),正式终判待审核。
 **修订记录**:v1 → v2 三处收紧(审计)+ 一项升格——
 ① 四决策统一为**单一 Residency Decision**(两方向 action + 访问外部
 节点的二次决策),不做四动作 MDP;② LRU/Pressure 明确降为
