@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 PASS(v0.1 Policy Objective Definition)→ P3 解锁。P3 首跑 CONDITIONAL PASS;P3 后续轮首跑完成(2026-09-21,待审核终判)**:①cost-aware reference 闭合(缩减实例级)——子集 DP 精确最优 vs belady_greedy **0.0% 差距**(两实例),等大小设定下 Belady reference 即实际可达 cost-aware 下界(非证明,限定如实);②H-P1 首个正式检验**阴性**:tree_lru(树邻活跃度保留)全面差于 lru(+13%~+50%),该structure signal 形态被杀;H-P1 整体未验证(lru→belady 差距 tree8 65.4% 仍在,正确形态为开放问题,含'可能无可实现形态'的诚实可能)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P3/P3R2_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 PASS(v0.1 Policy Objective Definition);P3 首跑 CONDITIONAL PASS;P3 后续轮 CONDITIONAL PASS(2026-09-21,待 FINAL 前两处文字清理已落)**——cost-aware reference = CONDITIONAL CLOSED(缩减模型边界内 Belady=DP 精确最优 0.0%,模型级解释:容量满后 #ext 与 miss 数直接对应);H-P1 首检阴性正式记录 = naive tree-neighbor retention FALSIFIED(H-P1 整体 OPEN,三可能 A/B/C 全开放不预设);残差升级 = 缩减模型边界内 LFU→Belady 即 LFU→exact optimum 实测残差。源码清理两处已落(stale print/RNG 消耗注记仅注释不改行为)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P3/P3R2_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首

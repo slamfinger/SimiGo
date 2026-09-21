@@ -79,6 +79,9 @@ def gen_tree_trace(rng, parent, n_nodes, length):
                 cur = parent.get(cur, rng.choice(roots))
         else:
             trace.append(rng.choice(nodes))
+    # 注:parent.get(cur, rng.choice(roots)) 的 fallback 每次迭代都消耗
+    # 一个随机数(即使 cur 在 parent 中)——本版本保持原样以维持
+    # seed=42 可复现;后续 generator 采用 if/else 形式避免 RNG 漂移。
     return trace[:length]
 
 
@@ -244,8 +247,8 @@ def main():
         print(f"-- {wname} -- DP_opt={opt:.1f}")
         print(f"   {cells}")
     print()
-    print("注:DP=精确全局最小(全预建语义);belady_greedy 与 DP 的差距 = ")
-    print("fault 数最优 ≠ total boundary cost 最优的直接实测。regret 描述性。")
+    print("注:DP=精确全局最小(全预建语义);Belady 与 DP 差距 = 当前缩减")
+    print("实例下的 cost-aware regret;本轮两实例均为 0.0%。regret 描述性。")
 
 
 if __name__ == "__main__":
