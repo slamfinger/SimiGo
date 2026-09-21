@@ -17,12 +17,16 @@ Cache，是 Execution State 抽象**。
 - 研究其上一层：COW KV + COW 递归态（GDN）+ 可恢复 execution identity
   + fork/restore/branch 语义 + 单用户策略层。
 
-**依赖**：`~/Documents/mlx-swift-lm` fork 实验分支（branch requirement；
-远端备份推 `slamfinger/mlx-swift-lm` fork，待建）。
+**依赖**：`~/Documents/mlx-swift-lm` fork 实验分支（branch requirement）。
+**远端备份**：`slamfinger/mlx-swift-lm` fork 已建，
+`exp/execution-state-fork` 已推（2026-09-21 用户确认"推分支到远端
+备份,但不是推上游";与本地 5e39800 同步;**上游 ml-explore 永不推**)。
 **上游同步**：**mlx-swift-lm #629**(本方 RFC,2026-09-18 提交,open
 无回复,2026-09-20 验真登记——见
 `EXTERNAL_REVIEW_RECONCILIATION_20260920.md`)+ mlx-lm #1849(提案中)。
-F4-D 素材优先对接 #629,补给等 F4 续项出数后一并提交。
+F4-D 素材已整理为技术报告草稿
+(`TRACK_B_TECH_REPORT_629_FOLLOWUP_DRAFT_20260921.md`),待审定后由
+维护者发布。
 
 **验收（三数 + 一门）**：
 1. **Fork Cost**：fork 操作亚秒级（元数据 O(1)）；物理增长 ∝ 分叉后缀
