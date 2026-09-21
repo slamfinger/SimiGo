@@ -1,9 +1,12 @@
 # #629 Follow-up Draft — Technical Report(2026-09-21)
 
-**性质**:Track B 收官技术报告 = mlx-swift-lm **#629**(本方 RFC)的
-follow-up 评论**草稿**。正文英文(上游语境),可直接粘贴;**发布前
-须经维护者(你)审定**——对外动作不代行。素材源:trackB 目录十份
-实验记录 + Closure。#1849(mlx-lm)在 §7 对齐。
+**性质**：Track B 收官技术报告 = mlx-swift-lm **#629**（本方 RFC）的
+follow-up 评论。**状态：REVIEWED / RELEASE CANDIDATE（2026-09-21
+五项终审全过：#629 诉求对位 / 冻结证据一致性 / F5 因果链 / 性能解释
+纪律 / Residency 边界）**。正文英文（上游语境），可直接粘贴；**发布
+由维护者（你）定夺**——对外动作不代行。素材源：trackB 目录十份
+实验记录 + Closure v4 冻结档。#1849（mlx-lm）在 §7 对齐。文件名中
+DRAFT 字样仅为路径稳定，状态以本段及文末状态行为准。
 
 ---
 
@@ -62,7 +65,7 @@ token gates green). A first-order bandwidth model
 attribution model, not a microarchitectural proof.
 
 **Reattach** (materialize segments into one contiguous buffer via
-`state = view; eval()`) removes the tax entirely: 1.22–1.26× → **1.006×**
+`state = view; eval()`) largely removes the steady-state tax: 1.22–1.26× → **1.006×**
 post-merge @64K/4-seg, one-time cost 65–105 ms across 18–64K.
 Performance-tax break-even (one-time merge cost ÷ avoidable per-token
 tax) median ≈ 4 tokens steady-state across the 18/32/64K × 2/4/8-seg
@@ -147,9 +150,8 @@ request.
 
 ---
 
-*(草稿状态:2026-09-21 预审修订——按终审后五项清单对齐冻结记录:
-§5 生命周期语义改为 v4 冻结表述(discard≠adopt、父代从 fork 前自身
-next-input 继续、四轮外部审计入文、parentInputsAgree 可证伪条件);
-§7 置顶范围纪律句并补 τ̂ 热敏感/估计器鲁棒性未闭合/热节流混淆/
-Residency 边界句;§2 Discard 行消歧;§4 τ̂ 交叉引用。待维护者按五项
-清单终审;发布属对外动作,审定后发布时删除本行及文首中文说明。)*
+*（状态：REVIEWED / RELEASE CANDIDATE——2026-09-21 五项终审 PASS
+（审计方以 live #629 原文 + cc7dcb8 实际 diff + Track B 冻结档三方
+核对）。本版含终审后唯一措辞微调：§3 "removes the tax entirely" →
+"largely removes the steady-state tax"（审计方非阻塞建议，已采纳）。
+发布属对外动作，由维护者定夺；发布时删除本行及文首中文说明。）*

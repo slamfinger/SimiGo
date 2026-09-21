@@ -69,11 +69,17 @@ parent remains intact，非 adopt；gate3 只证发生过中途决策；gate4 =
 入档：τ̂ 热敏感、热节流下性能方差、估计器鲁棒性未闭合、Residency
 未测。审计链 v1→v4 完整保存为史料（不删错），收敛模型 =
 **Execution State = KV + Identity + Position + Next Input +
-Continuation Semantics**。**下一步（终审定序）**：① #629 技术报告
-审定 → ② Residency M1（resident→externalized→rehydrated→continue；
-Track 命名待真源定夺，见真源 §5.3 命名冲突记录）→ ③ exp06 M1 并行
-→ ④ Residency M2–M4 → ⑤ Residency Policy → ⑥ Execution+Residency
-双 Policy → ⑦ Future 2.0 架构。记录：F1→Closure 十份（+v3/v4 审计
-响应增补 + 终审判定）+ 技术报告 + 外部对照；代码：
+Continuation Semantics**。**下一步（终审定序；① 已完成）**：① #629 技术报告审定 **完成**——
+五项终审全过，**REVIEWED / RELEASE CANDIDATE**（cc7dcb8 + 终审后
+唯一措辞微调 "largely removes the steady-state tax"）→ ② 对外发布
+follow-up（维护者对外动作，待用户）→ ③ Track B 完整归档 →
+④ Residency M1 开题（克制：Resident→Externalized→Rehydrated→
+Continue；**首门仅问 ExecutionId(before)==ExecutionId(after)**；其后
+M2 状态精确、M3 continuation、M4 rehydration 税；Track 命名待真源
+定夺，见真源 §5.3 命名冲突记录）→ ⑤ exp06 M1 并行 → ⑥ Residency
+M2–M4 → ⑦ Residency Policy → ⑧ Execution+Residency 双 Policy →
+⑨ Future 2.0 架构。终审纪律：不重跑 Closure、不改 4184aa6、不改
+v1–v3 史料、不为报告补 benchmark、不把 Residency 提前塞进报告。记录：F1→Closure 十份（+v3/v4 审计
+响应增补 + 终审判定）+ 技术报告（REVIEWED / RC）+ 外部对照；代码：
 `exp/execution-state-fork` @ acbcb54（本地 + slamfinger fork 同步，
 上游永不推）。
