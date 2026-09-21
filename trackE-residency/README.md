@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1 终判 PASS(2026-09-21;Claim 已按审核收紧 = Execution Identity preserved,状态接地表述,非 literal ID 字段;157MiB=观察量非门);M2 已开(三轴:16K/64K 深位置/段表形式外化不强制物化/多节点隔离)**——
+**状态**:**M1 终判 PASS(2026-09-21;Claim 已按审核收紧 = Execution Identity preserved,状态接地表述,非 literal ID 字段;157MiB=观察量非门)。**M2 三轴首跑全 PASS(2026-09-21,待审核终判)**:16K/64K 深位置五门全过;段表形式直接外化成立(重建子代仍为 COW 段表,未物化,父代完好)——residency 不要求表示转换的架构线索;多节点(P→A,B→A1/B1)各自外化/回来,互异+谱系保持——Execution Tree 第一步。记录:RESIDENCY_M2_RESULTS_20260921.md。M2 失败教训入档:树的隔离检查须语义分层(同深度互异/跨深度谱系前缀+延伸)。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
