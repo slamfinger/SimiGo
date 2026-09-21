@@ -96,15 +96,21 @@ Sensitivity 三重 sweep:budget(20%–100%)× reuse distance
 "谁赢了",而是:**residency decision 在什么参数区域开始产生可观测
 差异**。
 
-## 阶段阶梯
+## 阶段阶梯(v2 修订:消除 P0 命名冲突)
 
 ```
-P0 Decision Space(本开题 + v0 simulator)
-P1 Baselines(本 v0 内)
-P2 Sensitivity(本 v0 内)
-P3 Policy discrimination(new policy 登场)
-P4 Live validation(仅当模拟差异 > 噪声;正确性门沿用 M3 主门)
+P0 — Cost model closure(C_resident 计价;policy 不等式左边补齐)
+P1 — Baseline / reference sanity(LRU/Pressure 健全性;Oracle 须过
+     健全性检查 ≤ 一切 baseline,含模型假设检:equal-size?weighted?)
+P2 — Sensitivity(budget / locality / C_rehydrate)
+P3 — New policy discrimination(可实现 future-reuse 策略 vs LRU;
+     H-P0 正式检验;树依赖增量 = H-P1 强形式)
+P4 — Live validation(仅当模拟差异 > 噪声;正确性门沿用 M3 主门)
 ```
+
+**simulator v0 的定位 = P1/P2 exploratory probe**(P0 与 P3 之前的
+探索性证据),不占用 P0 命名。v0 已完成:P1(oracle 健全性检查通过)、
+P2(三重 sweep);P3 待 new policy 设计。
 
 ## 边界
 

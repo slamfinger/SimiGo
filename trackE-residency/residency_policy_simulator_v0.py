@@ -10,7 +10,8 @@
 #   always   —— 永不外化;预算不足时逐 step 记 violation
 #   pressure —— 用量 ≥ 90% 预算即按 LRU 序主动外化至阈值下
 #   lru      —— 被动:准入需空间时外化最久未用(刚访问者除外)
-#   oracle   —— 预知 next_access,外化最远者(reference bound)
+#   oracle   —— 预知 next_access,外化最远者(reference bound;
+#               等大小下 = 标准 Belady;C_ext 占比 ~4%,最优性为惯例近似)
 #
 # 成本:C_ext / C_rehy 为 token-equivalent 参数(默认 0.69 / 0.72,
 # M4 拆分参考);C_resident=0 未建模(P0 prerequisite)。
@@ -23,8 +24,9 @@ from statistics import median
 SEED = 42
 N_NODES = 32
 TRACE_LEN = 2000
-NODE_SIZE_RANGE = (1, 10)  # 以"页单位"计,相对大小
-TOTAL_SIZE = None  # 运行时 = sum(sizes)
+NODE_SIZE = 1  # v0 等大小(审计:variable-size 下 farthest-next-use 不是严格
+               # Belady,只是启发式;size 轴属 H-P1 sensitivity,后续版本)
+TOTAL_SIZE = None  # 运行时 = N_NODES * NODE_SIZE
 LOCALITIES = ["short", "medium", "long", "very-long"]
 LOCALITY_PARAMS = {  # (p_hot, hot_frac)
     "short": (0.90, 0.15),
@@ -39,7 +41,7 @@ C_REHY_DEFAULT = 0.72
 
 
 def gen_sizes(rng):
-    return [rng.randint(*NODE_SIZE_RANGE) for _ in range(N_NODES)]
+    return [NODE_SIZE for _ in range(N_NODES)]
 
 
 def gen_trace(rng, locality):
