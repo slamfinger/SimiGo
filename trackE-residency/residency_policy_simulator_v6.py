@@ -113,8 +113,14 @@ def run_policy_hp1(policy, trace, budget, c_ext, c_rehy, record_seq=False,
         while window and window[0][0] <= step - sim3.W_WINDOW:
             window.pop(0)
         while len(resident) > budget:
-            if audit and window and window[-1][0] > step:
-                audit_max_window_step_ok = False
+            if audit:
+                # L2 运行时审计:窗口内**全部**时间坐标 ≤ t(v0.1.2);
+                # 累积式——任一次违反即保持 False(修复审核方 f1eb28d
+                # BLOCKER:原 window[-1][0]>step 为永真假检查)。
+                audit_max_window_step_ok = (
+                    audit_max_window_step_ok
+                    and (not window or max(s for s, _ in window) <= step)
+                )
             candidates = [n for n in resident if n != node]   # NORM③
             if not candidates:
                 break
