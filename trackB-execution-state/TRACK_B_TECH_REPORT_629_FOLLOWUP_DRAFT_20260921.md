@@ -150,8 +150,10 @@ request.
 
 ---
 
-*（状态：REVIEWED / RELEASE CANDIDATE——2026-09-21 五项终审 PASS
-（审计方以 live #629 原文 + cc7dcb8 实际 diff + Track B 冻结档三方
-核对）。本版含终审后唯一措辞微调：§3 "removes the tax entirely" →
-"largely removes the steady-state tax"（审计方非阻塞建议，已采纳）。
-发布属对外动作，由维护者定夺；发布时删除本行及文首中文说明。）*
+*（状态：RELEASED——2026-09-21 维护者授权代行发布至 #629：
+https://github.com/ml-explore/mlx-swift-lm/issues/629#issuecomment-5754644625
+（slamfinger，2026-09-21T02:32:37Z；API 回读与载荷逐字节一致，8323
+bytes）。正文 = 本文件英文部分（be0df10 RC + 终审后措辞微调）；发布
+载荷存档 = PUBLISH_PAYLOAD_629_FOLLOWUP_20260921.md。发布纪律：技术
+证据补充，非"已解决 #629"；不做第二轮实验，upstream 技术反馈另开
+新分支。）*

@@ -53,7 +53,8 @@ identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
 **状态**：**CLOSED / FROZEN（2026-09-21 终审 PASS/FREEZE；v4 为
-Track B 正式终点，无 v4.1）**。终审按 v4 实际提交（acbcb54）三层复审
+Track B 正式终点，无 v4.1）**。技术报告 = #629 follow-up **已发布**（2026-09-21
+维护者授权代行：issuecomment-5754644625）。终审按 v4 实际提交（acbcb54）三层复审
 （语义/可证伪性/结果一致性）全过：G5 discard 语义闭环——父代从
 fork 前自身 next-input 继续（discard ≠ adopt），v3 的 "parent state +
 childNext" 非法组合消失；parentInputsAgree 被接受为真可证伪条件
@@ -71,15 +72,17 @@ parent remains intact，非 adopt；gate3 只证发生过中途决策；gate4 =
 **Execution State = KV + Identity + Position + Next Input +
 Continuation Semantics**。**下一步（终审定序；① 已完成）**：① #629 技术报告审定 **完成**——
 五项终审全过，**REVIEWED / RELEASE CANDIDATE**（cc7dcb8 + 终审后
-唯一措辞微调 "largely removes the steady-state tax"）→ ② 对外发布
-follow-up（维护者对外动作，待用户）→ ③ Track B 完整归档 →
-④ Residency M1 开题（克制：Resident→Externalized→Rehydrated→
+唯一措辞微调 "largely removes the steady-state tax"）→ ② 对外发布 follow-up **完成**（2026-09-21 维护者授权
+代行：issuecomment-5754644625，API 回读逐字节验证）→ ③ Track B
+完整归档 **完成**（RELEASED 定档，本次提交）→
+④ Residency M1 开题 **完成**（`trackE-residency/README.md` 已建，克制：Resident→Externalized→Rehydrated→
 Continue；**首门仅问 ExecutionId(before)==ExecutionId(after)**；其后
 M2 状态精确、M3 continuation、M4 rehydration 税；Track 命名待真源
 定夺，见真源 §5.3 命名冲突记录）→ ⑤ exp06 M1 并行 → ⑥ Residency
 M2–M4 → ⑦ Residency Policy → ⑧ Execution+Residency 双 Policy →
 ⑨ Future 2.0 架构。终审纪律：不重跑 Closure、不改 4184aa6、不改
 v1–v3 史料、不为报告补 benchmark、不把 Residency 提前塞进报告。记录：F1→Closure 十份（+v3/v4 审计
-响应增补 + 终审判定）+ 技术报告（REVIEWED / RC）+ 外部对照；代码：
+响应增补 + 终审判定）+ 技术报告（RELEASED：#629 issuecomment-5754644625）+
+发布载荷 + 外部对照；代码：
 `exp/execution-state-fork` @ acbcb54（本地 + slamfinger fork 同步，
 上游永不推）。
