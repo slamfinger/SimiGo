@@ -1,6 +1,51 @@
 # Track E(命名待定)Residency P3 结果(2026-09-21)
 
-> **状态:P3 前置探针 + simulator v1 首跑完成,待审核方终判。**
+> **终审判定(2026-09-21):P3 首跑——CONDITIONAL PASS。**
+>
+> | 项 | 状态 |
+> |---|---|
+> | Depth footprint probe | **PASS** |
+> | P0 审计④ closure | **PASS / 已闭合** |
+> | Simulator v1:事件时序 / tie-break / 容量强制 / LFU-aging 实现 / hot / tree 探针 | PASS |
+> | Oracle 模型 | **CONDITIONAL** |
+> | Objective/reference match | **PENDING** |
+> | Formal H-P1 discrimination | **PENDING** |
+>
+> 不回滚 `ef21e4c`,不否定 hot/tree 首跑数字;已完成有价值的第一轮
+> discrimination(LRU → LFU-aging → 仍落后 future-aware reference →
+> 存在进一步 policy information 空间)。
+>
+> **三处收紧(原样入档,不补跑)**:
+> 1. **active working-set 隐含约束(非阻断审计注记)**:simulator 的
+>    `evict_one` 排除当前访问节点——正式模型实为"current execution
+>    node must be resident + other residents ≤ remaining budget",
+>    而非裸 `resident_bytes ≤ budget`。当前 budget ≥ 1 节点故未造成
+>    violation,数字不受影响。冻结句:*The currently accessed node is
+>    treated as an active working-set item and is not eligible for
+>    eviction within the same step.*
+> 2. **reference 语义降级**:等大小 farthest-next-use(Belady)只对
+>    rehydrate/page-fault 数严格;正式 objective 第二层含 C_ext×#ext,
+>    故 Belady = **future-aware Belady reference**,不得称"字典序
+>    objective 下的 oracle"(与 v0 主动降级 total-cost oracle 的纪律
+>    一致;源码本就诚实地写 reference bound,未伪造结论)。
+> 3. **"残差 = structure-aware policy 空间"表述过一步**:准确表述 =
+>    **LFU-aging → future-aware Belady reference 的描述性残差
+>    32–69%**,提示 frequency-only 与 future-aware reference 间仍存在
+>    可观测差距;该差距是否对应 structure-aware policy 的可实现收益,
+>    需下一轮正式实验验证。
+>
+> **Tree workload 语义注记(observability mismatch,不作废)**:生成
+> 逻辑实为 **child → parent 向祖先方向回溯**的相关访问序列(注释误写
+> parent→child);作为"树边上的相关访问"性质成立。若研究 parent→child
+> dependency 需改生成器(下一轮候选)。
+>
+> **下一轮(审核定序)**:① 把 Belady reference 与字典序
+> boundary-cost reference 彻底分离(cost-aware reference 构造);
+> ② structure-aware policy 正式实验检验 H-P1。
+
+> **首跑记录(史料)**:v1 数字(hot:−7.6%~−45.1%/+7.1%;tree:
+> −13.7%~−25.2%;残差 32–69%)为容量侧事实,经终审确认有效;初版
+> "残差=structure-aware policy 的量化空间"表述按终审收紧。
 > 代码:`ResidencyP3DepthFootprint.swift` + `residency_policy_simulator_v1.py`
 > (exp 分支 / lab 仓)。定位:P0.1 PASS(v0.1 Policy Objective
 > Definition)解锁;两条实现规范注记已实现(事件计数时序 + tie-break
@@ -27,9 +72,10 @@
 事件时序(touch → REHYDRATE → 容量检查 → 逐个 EXTERNALIZE,同步
 多事件逐一计数)+ tie-break 最低 id(P0.1 终判两条注记闭合)。
 等大小 32 节点,trace 2000,seed 42;双 workload:hot(热集,H-P0 域)
-/ tree(8 树×4 节点,0.7 概率沿树边行走,H-P1 setup);策略:lru
+/ tree(8 树×4 节点,0.7 概率沿树边**向祖先方向回溯**的
+相关访问序列,H-P1 setup);策略:lru
 (baseline)/ **lfu_aging(NEW,可实现:计数 + 每 200 步减半 aging)**/
-oracle(Belady reference);C_ext=0.69,C_rehy=0.72。
+**future-aware Belady reference**(针对 rehydrate/page-fault 数;非当前字典序 objective 的 cost-aware oracle);C_ext=0.69,C_rehy=0.72。
 
 ### H-P0 域(hot):可实现 reuse 信号 vs 纯 recency
 
@@ -48,10 +94,11 @@ oracle 残差 **32–69%** 未被频率信号捕获。
    (0.80)LFU 反而更差:**reuse 信号的收益是预算依赖的,不是无条件的**
    ——这本身就是"residency decision 依赖 workload 结构"的第一个
    判读性证据。
-2. **H-P1 候选空间已量化(未检验)**:lfu→oracle 残差 32–69%,且
-   tree 域 LFU 优势全域稳定而 hot 域翻转——两域行为形态不同,提示
-   结构信息(父子相关访问)有频率之外的增量。**正式 H-P1 检验需要
-   structure-aware policy**(下一轮),本 v1 只建立空间。
+2. **future-aware reference 残差(描述性)**:LFU-aging → Belady
+   reference 的残差 32–69%,提示 frequency-only 与 future-aware
+   reference 之间仍存在可观测差距;**该差距是否对应 structure-aware
+   policy 的可实现收益,需下一轮正式实验验证**(H-P1 尚未正式检验;
+   本 v1 只建立空间)。
 3. 前置 sweep 给 policy 的输入:state-size 信号 = 深度代理(浅=
    GDN 底价 43% 主导,深=attention 95% 主导),同一节点在不同深度
    的驻留成本结构不同。
