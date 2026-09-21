@@ -1,5 +1,5 @@
 # Track E(命名待定)Residency P3-C 结果:F2 Counter-Basis 拆解
-(2026-09-21)——**DRAFT 待审核终判;R-W 达成,实验零改动**
+(2026-09-21)——**终审 PASS / R-W CLOSED;P3-C SEALED**
 
 > **状态**:数字与判别入档,待审核终判。执行顺序符合审核冻结:设计
 > v0.3 PASS(69c4fc0 终审)→ **Regression Gate 三封锁(A ≡ V4 /
@@ -9,6 +9,26 @@
 > `residency_policy_simulator_v5.py`。全部读数 = **cost/effect
 > decomposition,非 causal proof**;符号纪律:signed delta
 > (+ = J 增加)≠ effect direction(有利/adverse)。
+>
+> **终审盖章(2026-09-21,审核方复核 9bc7790):P3-C Results——
+> PASS / R-W CLOSED;P3-C SEALED。** 回归门确认为**程序级门位**
+> (A/D 序列逐位 dd=0、C 与诊断精确一致、FAIL→exit(1) 在 B 之前);
+> R-W = 70.0%(49.35/70.5),R-D NOT TRIGGERED(+1.41 J ≈ 2.0%,
+> cost-increasing);恒等式经整数级(69×ext+72×rehy)精确检查。
+> **冻结结论**:在本实验域、预注册判据及当前 cost/effect
+> decomposition 下,P3-B 中的 F2 底座差距主要由有限窗口与
+> cumulative temporal-memory basis 的差异解释;decay 对该差距的
+> 独立分解贡献很小(tree +1.41 J,约占原始 70.5 J gap 的 2.0%),
+> 且方向为 cost-increasing。
+> **终审注记(入档边界)**:①"衰减贡献约等于零"始终理解为本轮
+> F2 decomposition 下的结果(seed=42/trace 2000/B=12/H=8/W=200/
+> 当前 workload/cost model/B、D 两种 decay operator),**不是对
+> decay mechanism 本身的普遍判断**;② C 格措辞收窄 = "在本轮测试
+> 的频率策略格中,C 为最低 J 的频率基线"(非"最强",未做广泛
+> 策略搜索);③ 审核裁定**不需要 P3-D 继续拆 F2**(收益已明显
+> 下降)。**下一步分叉待定夺**:① C 格脱离描述性观察成为新
+> Strategy Design(须重新立项/设计/审查,不得因 1084.5 直接升级
+> target);② P3-C 封存 → 回 H-P1 / nodes-out → P4 proper。
 
 ## Regression Gate(先于 B;PASS)
 
@@ -82,11 +102,11 @@ tie_rate(纯辅助):tree 上 C=0.060 显著低于 A=0.183/D=0.143
 
 ## 结构观察(描述性,非采纳建议)
 
-1. **C 格 = 无衰减 cumulative LFU 是本域最强频率格**(tree 1084.5,
-   优于 lfu_aging 1085.9):"aging"在语义上轻微有害,最优简单频率
-   策略是**纯 cumulative + recency tie**。此为域内描述性观察——
-   任何策略采纳 = 新设计/新审查,**V0 target 与 P3-A/P3-B 冻结
-   全部不动**;
+1. **C 格 = 无衰减 cumulative LFU,在本轮测试的频率策略格中为
+   最低 J 的频率基线**(tree 1084.5,低于 lfu_aging 1085.9):
+   "aging"在语义上轻微有害。此为域内描述性观察——**未做广泛策略
+   搜索,不构成采纳依据**;任何策略采纳 = 重新立项/新设计/新审查,
+   **V0 target 与 P3-A/P3-B 冻结全部不动**;
 2. B 格(窗口 + 条目级半衰)双 workload 均劣于 A(+5.6/+11.2):
    窗口截断之上叠加渐近衰减只有扭曲、没有增益,与 F2-b 的 adverse
    方向互证(描述性)。
@@ -103,15 +123,19 @@ tie_rate(纯辅助):tree 上 C=0.060 显著低于 A=0.183/D=0.143
 5. 回归门三封锁在 B 采集之前完成,顺序合规;所有哨兵无实现错误
    信号;
 6. 不反推 Track B / M 链 / P0 系列;P0.2 经济闭合状态不变;
-   belady 差距仍属 H-P1/nodes-out 域。
+   belady 差距仍属 H-P1/nodes-out 域;
+7. **(终审注记)"衰减贡献约等于零"= 本轮 F2 decomposition 口径下
+   的结果**(seed/trace/B/H/W/workload/cost model/B、D 两种 decay
+   operator),不是对 decay mechanism 本身的普遍判断。
 
-## 决策(待审核定夺)
+## 决策
 
-1. **P3-C 判读入档 → 待审核终判**;预期出口 = **R-W CLOSED**
-   (底座差距 = 有限记忆窗口主导,衰减 adverse 次要);
-2. **F2 拆解线到本轮为止**:R-W 达成即回答设计问题,不自动开
+1. **已终判:PASS / R-W CLOSED,P3-C SEALED**(审核方复核
+   9bc7790;**不需要 P3-D 继续拆 F2**——收益已明显下降);
+2. **F2 拆解线封存**:R-W 达成即回答设计问题,不自动开
    "窗口 vs cumulative"下一轮;
-3. **后续候选(待审核定夺,不预设)**:① 策略层讨论——C 格
-   (纯 cumulative LFU)是否值得作为新 target 候选进入设计流程
-   (当前 V0 冻结不动);② F2 线封存,回主链 H-P1 → nodes-out →
-   P4 proper;③ Track E 命名继续待定。
+3. **下一步分叉(待定夺,不预设)**:① 策略层讨论——C 格
+   (纯 cumulative LFU)是否脱离描述性观察、作为**全新 Strategy
+   Design** 重新立项(重新设计/重新审查;不得因 1084.5 直接升级
+   target,当前 V0 冻结不动);② P3-C 封存,回主链 H-P1 →
+   nodes-out → P4 proper;③ Track E 命名继续待定。
