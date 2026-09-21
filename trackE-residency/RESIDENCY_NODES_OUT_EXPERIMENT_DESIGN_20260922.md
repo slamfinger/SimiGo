@@ -1,5 +1,5 @@
-# Track E nodes-out 正式实验设计 DRAFT v0.1(2026-09-22)
-**DRAFT 待审核;PASS 前零实现零采数(Implementation / Data LOCKED)**
+# Track E nodes-out 正式实验设计 DRAFT v0.2(2026-09-22)
+**DRAFT 待复审;PASS 前零实现零采数(Implementation / Data LOCKED)**
 
 > 基线:开题 c3fe842(PASS / SEALED AS OPENING BASELINE)+ Definition
 > Lock e5bca86。本设计 = 远端核定的下一阶段三预注册:**granularity
@@ -18,14 +18,21 @@
 实验变量唯一 = residency granularity(node 基线 vs Candidate A);
 其余全部固定(§4)。
 
-## 2. 什么叫正确:correctness protocol(预注册)
+## 2. 什么叫正确:correctness protocol(预注册;v0.2 操作化补锁)
 
 - **correctness invariant = Track B 五元组**(Identity / Position /
   Next Input / Continuation Semantics)——KV 是被操作对象,五元组是
   不变量,两层严禁混同;
-- **判定**:每个实验组在全部 migration / externalization /
-  rehydration 操作序列前后,五元组与基线执行(未移除 node 外化
-  通道)**逐项等价**;
+- **判定(三层全部锁定,缺一不可)**:
+  1. **event-level correctness**:每一次 migration /
+     externalization / rehydration 事件前后,五元组逐项等价;
+  2. **step-level continuation correctness**:每一个 decode step
+     的 continuation 语义(next input 与后续 KV 演化)与基线执行
+     逐项等价;
+  3. **terminal-state equivalence**:完整 operation sequence 结束
+     时,终态五元组与基线执行逐项等价。
+  三层比较对象均为基线执行(未移除 node 外化通道);任何一层
+  不等价即该组 correctness violation;
 - **断言实现**:正式实验 runner 内置逐操作五元组断言(继承 v6
   L2 运行时审计模式:窗口时间界 + 无 oracle 入路径);
 - **violation 处理**:组内 violation = 实验结果如实入档(不是门
@@ -37,8 +44,11 @@
 |---|---|---|
 | 兼容披露(非主判据) | J = C_ext×#ext + C_rehy×#rehy | 与 H-P1/P3 可比,仅披露 |
 | 新通道 1:migration / re-encoding cost | 粒度变体下每次 state 转换的建模成本 | v1 = 恒等映射假设下 0 成本上界 + ±敏感性报告;token-equivalent 折算细则留测量轮(P0.1 Deferred 口径延续) |
-| 新通道 2:correctness violation / correction cost | violation 计数如实报告;correction 成本 v1 不货币化 | 与 P0.1 Deferred 一致 |
+| 新通道 2:correctness violation / correction cost | violation 计数如实报告;**v1 correction cost 不货币化**(只报计数与位置) | 与 P0.1 Deferred 一致 |
 | 新通道 3:granularity→byte accounting | 78,246 KiB/node 适用性重验证 = **实验输出之一** | 可映射 → 给出 node-equivalent 映射表;不可映射 → 报告"不可映射"并停用该换算;禁止预判 |
+
+**报告纪律(锁定)**:新通道 1/2/3 **全部独立报告**,不并入任何
+既有 J,不相互合并;每通道给出 n(事件数)/读数/口径三要素。
 
 主判据说明:nodes-out 是机制问题非优化问题——本设计**不设性能
 PASS/FAIL**;全部结果 = 机制知识如实入档。
