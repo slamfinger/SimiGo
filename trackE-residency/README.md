@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS,M 链封口;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量探针 PASS/经济成本闭合 Pending)。P0.1 定义草案 v1 CONDITIONAL PASS → v2 五处收紧已落(2026-09-21,待审核确认)**:①定位声明(字典序模型=容量约束下的边界事件成本优化,非完整经济成本函数;'Resident capacity = hard feasibility constraint; opportunity cost not monetized in v0.1');②'Keep 免费'删除(M4 口径限定);③external storage 零价格≠零资源占用(monetary=0/capacity excluded/device-memory separately constrained);④T 拆三语义(T_next_access/T_remaining/T̂_remaining);⑤0.69/0.03 配置范围声明;byte-steps/λ 降 descriptive only,opportunity-cost 货币化 Deferred。确认后=PASS(v0.1 Policy Objective Definition),仅解锁字典序 P3。记录:RESIDENCY_*_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量探针 PASS/经济闭合 Pending,P0.1 定义待确认);P0.1 终判 PASS(v0.1 Policy Objective Definition)→ P3 解锁。**P3 首跑完成(2026-09-21,待审核终判)**:前置 depth sweep 闭合 P0 审计④(attention 线性增长实测,GDN 61.4 MiB 固定,占比 43%→4.6%,交叉点 ≈3.1K 行);simulator v1(NORMS 落地:事件时序+tie-break 最低 id)双 workload:**H-P0 域 lfu_aging vs lru = 中压力 −45.1% 但低压力 +7.1%(reuse 信号收益预算依赖)**;H-P1 setup tree 域 lfu 全域稳定 −13.7%~−25.2%,lfu→oracle 残差 32–69% = 结构策略量化空间(H-P1 正式检验需 structure-aware policy,下一轮)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P3 + SIM_V0_RESULTS + POLICY_OPENING_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
