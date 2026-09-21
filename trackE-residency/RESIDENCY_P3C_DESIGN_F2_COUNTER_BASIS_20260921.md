@@ -1,5 +1,5 @@
 # Track E(命名待定)Residency P3-C 设计:F2 Counter-Basis 拆解
-(2026-09-21)——**DRAFT v0.3 待审核;Implementation LOCKED**
+(2026-09-21)——**终审 PASS / Implementation UNLOCKED(2026-09-21)**
 
 > **状态**:DRAFT v0.3,待审核;设计 PASS 前不得实现、不得采数。
 > **v0.2 审 = CONDITIONAL PASS**(2026-09-21,审核方复核 3efd6e9:
@@ -11,6 +11,16 @@
 > factorial interaction,只作描述性 cross-basis contrast 报告。
 > (v0.1 审 = CONDITIONAL PASS,ff64f8e 复核:研究问题/拆解/恒等式
 > 等全 PASS。)
+>
+> **终审盖章(2026-09-21,审核方复核 69c4fc0):P3-C Design v0.3——
+> PASS / Implementation UNLOCKED。** interaction 术语边界修正逐项
+> 确认;实验/数据提前启动 = 未发生。**核心边界冻结**:A/C/D 回答
+> "F2 底座差异究竟如何分解";B 增加一个 cross-basis 对照维度,
+> **不参与 F2-a/F2-b 主效应归因**;所有分解 = cost/effect
+> decomposition,**不升级为 causal proof**。**下一门:v5 实现 →
+> Regression Gate(A ≡ V4 / D ≡ lfu_aging / C ≡ prior diagnostic
+> 逐项封锁确认,任何一项失败不得进入 B 采集)→ PASS → UNLOCK B。
+> Regression Gate 不是形式手续。**
 > 前置:P3-B Results 终审 **PASS / R3 CLOSED**(072fc2f)。边界继承:
 > P3-A/P3-B 封存;**V0(min(1,n/H), W=200, id tie)= 冻结 baseline,
 > 永不修改**;target 定义本轮不涉。
