@@ -1,0 +1,52 @@
+=== Residency Policy Simulator v6(H-P1 引擎 + 全冻结回归门)===
+seed=42;nodes=32;trace=2000;B=12;H=8;C_ext=0.69;C_rehy=0.72;W=200
+门位:v0.1.2 设计 PASS → 本门全 PASS 才 UNLOCK H-P1 采数;结构策略读数 = 门禁自检,禁止判读
+
+-- P3-A:lru/lfu_aging/V0(cag)/belady 主表 + H 敏感性 + pressure --
+  P3-A hot/lru: J=973.1 (696/684) -> OK
+  P3-A hot/lfu_aging: J=544.4 (392/380) -> OK
+  P3-A hot/cost_aware_greedy: J=547.3 (394/382) -> OK
+  P3-A hot/belady_greedy: J=475.3 (343/331) -> OK
+  P3-A tree/lru: J=1422.9 (1015/1003) -> OK
+  P3-A tree/lfu_aging: J=1085.9 (776/764) -> OK
+  P3-A tree/cost_aware_greedy: J=1156.4 (826/814) -> OK
+  P3-A tree/belady_greedy: J=740.4 (531/519) -> OK
+  P3-A hot/V0 H=4: J=815.2 (584) -> OK
+  P3-A hot/V0 H=16: J=547.3 (394) -> OK
+  P3-A pressure hot/k_c=9: [1990, 1990, 1990] -> OK
+  P3-A pressure hot/k_c=10: [1984, 1984, 1984] -> OK
+  P3-A pressure hot/k_c=11: [1983, 1983, 1983] -> OK
+  P3-A pressure tree/k_c=9: [1991, 1991, 1991] -> OK
+  P3-A pressure tree/k_c=10: [1990, 1990, 1990] -> OK
+  P3-A pressure tree/k_c=11: [1989, 1989, 1989] -> OK
+  P3-A v4 引擎 ≡ v3(主表+H+pressure 全配置;FAIL x0) -> OK
+-- P3-B:V0 冻结数字 + 序列逐位(V4≡V3;hot V2≡V0)--
+  P3-B hot/V0: J=547.3 (394/382) -> OK
+  P3-B hot: V4≡V3 序列逐位 dd=0 -> OK
+  P3-B hot: V2≡V0 序列逐位 dd=0(sat=0 结构产物) -> OK
+  P3-B tree/V0: J=1156.4 (826/814) -> OK
+  P3-B tree: V4≡V3 序列逐位 dd=0 -> OK
+-- P3-C:A≡V4 / D≡lfu_aging 序列逐位;C 诊断;B 采数定格 --
+  P3-C hot/A≡V4: J=548.7 frozen=(548.7, 395, 383) -> OK
+  P3-C hot/D≡lfu_aging: J=544.4 frozen=(544.4, 392, 380) -> OK
+  P3-C hot/C≡诊断: J=544.4 frozen=(544.4, 392, 380) -> OK
+  P3-C hot/B 定格: J=554.3 (399/387) frozen=(554.3, 399, 387) -> OK
+  P3-C tree/A≡V4: J=1133.8 frozen=(1133.8, 810, 798) -> OK
+  P3-C tree/D≡lfu_aging: J=1085.9 frozen=(1085.9, 776, 764) -> OK
+  P3-C tree/C≡诊断: J=1084.5 frozen=(1084.5, 775, 763) -> OK
+  P3-C tree/B 定格: J=1145.1 (818/806) frozen=(1145.1, 818, 806) -> OK
+-- H-P1 结构策略:确定性/L2 审计/一致性下界 dd≥|Δrehy| --
+  H-P1 hot/P_S1: J=1400.3 (999/987) det=True L2audit=True dd=1657≥|Δrehy|=303 -> OK
+  H-P1 hot/P_S1s: J=1517.3 (1082/1070) det=True L2audit=True dd=1750≥|Δrehy|=386 -> OK
+  H-P1 hot/P_S2: J=1424.3 (1016/1004) det=True L2audit=True dd=1686≥|Δrehy|=320 -> OK
+  H-P1 hot/P_S2s: J=1697.8 (1210/1198) det=True L2audit=True dd=1880≥|Δrehy|=514 -> OK
+  H-P1 hot/P_S3: J=1857.1 (1323/1311) det=True L2audit=True dd=1993≥|Δrehy|=627 -> OK
+  H-P1 hot/P_S3s: J=1325.6 (946/934) det=True L2audit=True dd=1610≥|Δrehy|=250 -> OK
+  H-P1 tree/P_S1: J=1073.2 (767/755) det=True L2audit=True dd=1706≥|Δrehy|=248 -> OK
+  H-P1 tree/P_S1s: J=2178.6 (1551/1539) det=True L2audit=True dd=2524≥|Δrehy|=536 -> OK
+  H-P1 tree/P_S2: J=1087.3 (777/765) det=True L2audit=True dd=1756≥|Δrehy|=238 -> OK
+  H-P1 tree/P_S2s: J=2132.1 (1518/1506) det=True L2audit=True dd=2499≥|Δrehy|=503 -> OK
+  H-P1 tree/P_S3: J=1951.6 (1390/1378) det=True L2audit=True dd=2375≥|Δrehy|=375 -> OK
+  H-P1 tree/P_S3s: J=1264.9 (903/891) det=True L2audit=True dd=1878≥|Δrehy|=112 -> OK
+
+*** v6 Regression Gate PASS:P3-A/B/C 冻结逐位复现 + 结构策略自检全过 → H-P1 Implementation 采数 UNLOCK(Tier-1 按 §3/§4 预注册执行;结构策略本轮读数仍禁止判读)***
