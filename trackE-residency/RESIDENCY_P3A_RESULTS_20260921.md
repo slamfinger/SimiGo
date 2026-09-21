@@ -1,7 +1,39 @@
 # Track E(命名待定)Residency P3-A 模型验证 + 首轮判别结果(2026-09-21)
 
-> **状态:simulator v3(P3-A 模型验证 + 首轮判别数据)完成,待审核方
-> 终判。** 代码:`residency_policy_simulator_v3.py`(lab 仓;seed=42)。
+> **终审判定(2026-09-21):P3-A——CONDITIONAL PASS;机制框架 PASS、
+> 首轮结果 PASS(provisional / implementation-under-test evidence)、
+> 正式模型判别 CONDITIONAL PASS。** 两个实现层问题(非设计问题):
+> ① **W=200 滑动窗口未实现**(window 从未剪枝,n_i = 全历史计数而非
+> 最近 200 步计数)——**必须修复后重跑**的阻断项;② P_pressure 实为
+> **raw excess-steps proxy**(ms 校准 NOT YET),文档不得混写为已校准
+> ms 通道;③ lfu_aging 实为 **cumulative-frequency LFU variant**
+> (decay 定义未执行),或补真 aging 或正名。
+>
+> **v2 重跑(修复后,本节数字为准;v1 数字降为 provisional)**:
+> **cost_aware_greedy(H=8)= 547.3,vs lru −43.8%(hot)/ −18.7%
+> (tree)**——外审预判证实:此前"+20.8%/+14.3% 劣于 lru"与"H 强主导"
+> 是 **W-bug 伪象**;修复后 H≥8 收敛(H=4 仍 +15.8% 较差),"饱和层 +
+> id tie-break 病态"假设部分证伪(H≥8 无病态)。H 敏感性仍存在但
+> 有界且收敛。**待复现假设的复验结果**:机制观察保留,H 方向修正。
+>
+> **重跑后判别表(B=12;hot/tree)**:
+>
+> | 策略 | hot J | vs lru | tree J | vs lru |
+> |---|---|---|---|---|
+> | lru(baseline) | 973.1 | — | 1422.9 | — |
+> | lfu_aging(cumulative-freq variant) | 544.4 | −44.0% | 1084.5 | −23.8% |
+> | cost_aware_greedy(H=8,W=200) | 547.3 | **−43.8%** | 1156.4 | **−18.7%** |
+> | belady_greedy(reference) | 475.3 | −51.2% | 740.4 | −48.0% |
+>
+> H sensitivity(hot):H=4 → 815.2(+? 较差)/ H=8 与 H=16 均收敛于
+> 547.3——H 影响存在但有界收敛。P_pressure 通道保持 **raw excess-
+> steps** 口径(全策略 ≈1990/2000,结构性饱和,与 P0.2 容量内平坦
+> 互证;ms 校准 NOT YET)。
+
+> **v1 记录(史料,W-bug 数字降为 provisional)**:下文 v1 数字
+> (H=8 +20.8%/H=16 −20.7% 等)为全历史计数 bug 下的产物,不可作为
+> 冻结公式正式数字引用;"饱和层 + id tie-break 病态"假设已由 v2 重跑
+> 部分证伪。 代码:`residency_policy_simulator_v3.py`(lab 仓;seed=42)。
 > 冻结规范严格执行:W=200、reuse_score=min(1,n/H)、argmin Score、
 > tie 最低 id、H∈{1,4,8,16} 主轮 8、双情景同 trace/seed/策略/预算。
 

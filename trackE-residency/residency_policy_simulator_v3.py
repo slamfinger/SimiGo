@@ -67,8 +67,9 @@ def gen_tree_trace(rng, parent, n_nodes, length):
 def simulate_v3(policy, trace, budget, c_ext, c_rehy, H=8, W=W_WINDOW,
                 k_c=None):
     """单策略单轮执行;返回五通道 dict。
-    k_c=None → 情景一(仅硬可行性);k_c 给定 → 情景二(附加
-    P_pressure 通道:|R|>k_c 的超限步计数;λ_p 在报告层施加)。"""
+    k_c=None → 情景一(仅硬可行性);k_c 给定 → 情景二附加
+    P_pressure raw-steps 通道(|R|>k_c 的超限步计数——pressure
+    duration proxy;ms 校准 NOT YET IMPLEMENTED,λ_p 仅报告层施加)。"""
     resident = set()
     externalized = set()
     last_access = {}
@@ -104,7 +105,11 @@ def simulate_v3(policy, trace, budget, c_ext, c_rehy, H=8, W=W_WINDOW,
         return min(candidates, key=key)
 
     for step, node in enumerate(trace):
-        # NORM①:touch(非驻留 → REHYDRATE)
+        # LFU aging (audit fix: v1 defined a decay interval but never executed it)
+        if policy == "lfu_aging" and step > 0 and step % LFU_DECAY_INTERVAL == 0:
+            for k in list(freq):
+                freq[k] //= 2
+        # NORM①:touch(non-resident → REHYDRATE)
         if node not in resident:
             rehy_count += 1
             externalized.discard(node)
@@ -112,6 +117,9 @@ def simulate_v3(policy, trace, budget, c_ext, c_rehy, H=8, W=W_WINDOW,
         last_access[node] = step
         freq[node] = freq.get(node, 0) + 1
         window.append((step, node))
+        # W=200 sliding window pruning (audit fix: v1 lacked pruning, so n_i was the all-history count)
+        while window and window[0][0] <= step - W_WINDOW:
+            window.popleft()
         counts = Counter(node for _, node in window)
         if policy == "belady_greedy":
             node_next_use[node] = next_use_at[step]
@@ -184,7 +192,7 @@ def main():
             lfu = simulate_v3("lfu_aging", trace, B, C_EXT, C_REHY, k_c=k_c)
             cag = simulate_v3("cost_aware_greedy", trace, B, C_EXT, C_REHY,
                               k_c=k_c, H=8)
-            print(f"  {wname}/k_c={k_c}: steps_excess lru={lru['steps_excess']:>4} "
+            print(f"  {wname}/k_c={k_c}: pressure_raw lru={lru['steps_excess']:>4} "
                   f"lfu={lfu['steps_excess']:>4} cag={cag['steps_excess']:>4}"
                   f"(λ_p 报告层倍乘,不入 J)")
     print()
