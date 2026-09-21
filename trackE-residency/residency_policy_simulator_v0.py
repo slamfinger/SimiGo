@@ -10,8 +10,10 @@
 #   always   —— 永不外化;预算不足时逐 step 记 violation
 #   pressure —— 用量 ≥ 90% 预算即按 LRU 序主动外化至阈值下
 #   lru      —— 被动:准入需空间时外化最久未用(刚访问者除外)
-#   oracle   —— 预知 next_access,外化最远者(reference bound;
-#               等大小下 = 标准 Belady;C_ext 占比 ~4%,最优性为惯例近似)
+#   oracle   —— 预知 next_access,外化最远者;等大小、固定容量下 =
+#               标准 Belady,针对 rehydrate/page-fault 数的 reference
+#               bound;total boundary cost 比较为描述性,cost-aware
+#               oracle 属后续 P0/P3 工作
 #
 # 成本:C_ext / C_rehy 为 token-equivalent 参数(默认 0.69 / 0.72,
 # M4 拆分参考);C_resident=0 未建模(P0 prerequisite)。
