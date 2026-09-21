@@ -12,6 +12,37 @@
 > cost 货币化。v1 主问题已解决:bytes 与 token-equivalent 不再进入
 > 同一未定义换算率的不等式。
 >
+> **P0.1 冻结的正式口径(审核表格,原文入档)**:
+>
+> | 层级 | 正式定义 |
+> |---|---|
+> | 第一层 | `resident_bytes ≤ budget`,硬可行性约束 |
+> | 第二层 | 最小化 `C_ext × #ext + C_rehy × #rehy` |
+> | 描述层 | byte-steps、Resident footprint、λ/ρ 敏感性 |
+> | Deferred | Resident opportunity cost 货币化、nodes-out 反事实计价 |
+>
+> **P3 依据与边界**:成本单位依据已具备(token-equivalent boundary
+> event cost 可用),但不得扩展解释为完整 Resident 经济成本;
+> `C_ext=0.69`/`C_rehy=0.72` 已限定为当前 35B 模型、当前设备、当前
+> COW segmented representation 和当前 in-memory 实现下的配置相关
+> 参考值,不是跨设备、跨模型的架构常数。
+>
+> **对当前阶段的正式判定(审核表格)**:P0.1 v2 五收紧 PASS /
+> P0.1 Policy Objective Definition 正式确认 PASS / 完整经济成本理论
+> Pending-Deferred / P0.2 Resident Pressure Curve CONDITIONAL PASS /
+> P3 双情景模型设计解锁 / 将 `58 节点 + 2.4×` 固化为统一经济参数:
+> **禁止**。
+>
+> **P3 现在可以采用的正式框架(审核给出)**:
+> 情景一:硬边界 feasibility-first(`resident_bytes > budget` 即
+> 不可行;可行域内最小化边界事件成本);
+> 情景二:压力惩罚扩展(保留硬边界模型作为基准;超边界后的压力
+> 惩罚作为独立、暂定的实验参数;`2.4×` 只能标记为当前 k=56 附近
+> 的首轮观测,不得视为全超限区间常数)。
+>
+> **并行纪律**:P0.2 后续(梯度细扫/重复测量/Instruments 机制观测)
+> 继续作为并行验证,不反向修改 P0.1 的正式状态。
+>
 > **两项非阻断 P3 实现规范注记(带入 simulator 设计,已实现)**:
 > 1. 事件计数时序统一:每访问步 = touch(外部节点触发 REHYDRATE,
 >    支付 C_rehy)→ 容量检查 → 逐个 EXTERNALIZE(各计 C_ext);边界步
