@@ -28,7 +28,7 @@
 | `trackA-kernel/` | Track A Kernel | 条件启动（06 开关） | Metal 原型成对对比 |
 | `trackB-execution-state/` | Track B Execution State | **CLOSED / FROZEN**（2026-09-21 Closure v4 终审 PASS/FREEZE；仅证所测执行位置下的生命周期语义正确性，不证性能优越性/估计器鲁棒性/Residency 行为，Residency ≠ Closure；代码冻结于 `exp/execution-state-fork` @ acbcb54；#629 follow-up 技术报告已发布：issuecomment-5754644625） | Fork Cost / Restore Depth / Shared Page Ratio + 逐 token 一致性门 |
 | `trackD-memory/` | Track D Adaptive Memory | 未开工（独立推进） | 预算放宽不引入 swap 劣化 |
-| `trackE-residency/` | Track E Residency(命名待真源定夺,与真源 §5.3 Track C=Multi-device 冲突) | **M1–M4 全部 FINAL PASS,M 链封口**;simulator v0 FINAL PASS;P0 CONDITIONAL PASS;P0.1 PASS;P0.2 CONDITIONAL PASS;**P3 设计 v0.2 correction 已落待确认**(五处修改:量纲分离/pressure-relaxed 定性/k_c 证据降级/greedy 公式冻结/ratio 改名;确认后 Implementation UNLOCKED) | 字典序:约束+boundary cost(P3 门) |
+| `trackE-residency/` | Track E Residency(命名待真源定夺,与真源 §5.3 Track C=Multi-device 冲突) | **M1–M4 全部 FINAL PASS,M 链封口**;simulator v0 FINAL PASS;P0 CONDITIONAL PASS;P0.1 PASS;P0.2 CONDITIONAL PASS;**P3-A 模型验证+首轮判别完成**(lfu_aging 优于 lru;cost_aware_greedy H 强主导,待审核终判) | 字典序:约束+boundary cost(P3 门) |
 | `runtime2-skeleton/` | Runtime2 接口占位 | 笔记态，`[future]` 不实现 | — |
 
 ## 远端
