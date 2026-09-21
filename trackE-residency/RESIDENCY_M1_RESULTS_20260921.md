@@ -1,7 +1,41 @@
 # Track E(命名待定)Residency M1 结果(2026-09-21)
 
-> **状态:M1 首跑 PASS(五门全绿),待审核方终判。** 本文档只回答
-> 一件事:Execution State 跨物理驻留边界后,ExecutionId 是否保持。
+> **终审判定(2026-09-21):PASS——不需要重跑 M1。**
+>
+> **Claim(采用审核表述,语义已按审核要求收紧)**:Execution
+> Identity can be preserved across the tested physical residency
+> boundary。**表述纪律:本实验的 ExecutionId 是状态接地的逻辑身份
+> (KV + GDN + position + next-input + State 全部保持 ⇒ identity
+> 保持),不是证明存在一个独立的、跨 externalize/rehydrate 持久化的
+> literal ID 字段**;严格说法 = "Execution Identity preserved across
+> the residency boundary",不得解释为"一个 ID 字段被序列化并恢复"。
+>
+> Evidence:5/5 semantic gates PASS。
+> Scope:single tested execution configuration(35B / position 4616 /
+> 单节点 / 连续表示重建)。
+> Not established:continuation correctness(M3);general residency
+> behavior;deep-position robustness(M2);multi-node isolation(M2);
+> rehydration performance/tax(M4);residency policy。
+>
+> **157MiB 驻留下降 = 观察量,不是门**:说明外化后确有驻留占用下降
+> 且量级与 KV+GDN 态相符,但**不升级为"完整 eviction 已证明"**
+> (精确 residency accounting 属后续 resource semantics 工作)。
+>
+> 边界纪律审核确认:M1 PASS 不构成对 Track B Closure 的进一步证明;
+> M1 FAIL 也不回头修改 Track B。
+>
+> **M1 PASS → OPEN M2(State Exactness,三轴)**:① 深位置
+> (16K/64K,打掉"浅位置偶然成立"解释);② 段表形式直接外化
+> (COW segmented → page/segment-preserving externalization →
+> rehydrate,**不先强制物化成连续表示**——residency 不要求表示
+> 转换的潜在架构线索);③ 多节点(P→A,B→A1/B1,各自外化/回来,
+> 验证 A≠B、A1≠B1、A1≠A 且各自 identity 保持——Execution Tree 的
+> 第一步)。M2 的靶子 = "不是只在这个 35B、这个 4616 position、这个
+> 单节点配置下成立"。
+
+> **首跑记录(v1 失败如实保留,史料)**:本文档初版记录了五门全绿
+> 的首跑与 position 锚点修正;初版状态行"待审核方终判"已被上方
+> 终审判定取代。
 
 **性质**:Track E 第一实验,极小化——不碰性能,只问 identity。
 **代码**:`Tests/MLXLMTests/ResidencyM1Identity.swift`(exp 分支,
