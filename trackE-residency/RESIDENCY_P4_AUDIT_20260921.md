@@ -75,6 +75,38 @@ P4 live policy verifier 成立;真实 MLX/Swift residency 行为;任何
 跨设备/跨模型泛化。P4 proper 仍 LOCKED,最终裁决 = true-source
 Swift test。**待外部复审。**
 
+## v3.1 外审复审确认(2026-09-21,审核方核 fb29ac0 代码)
+
+**三项遗留复核:全部"已修复"**——逐步 SEM 不变式(含 `current ∈
+resident` 正向检查)/ 双实现对称 hook 覆盖 / tie-break 独立重推
+(断言侧重新扫描 trace,未复用 batch 的 `scan_next` 或 stream 的
+`next_use_at`/`node_next_use`)。判定:**通过,独立性边界仍需保留**
+(hook 机制对称,但两实现仍共享 SEM 解释/输入生成器/测试框架——
+证明的是"两套实现都通过相同的外部检查",非完全独立的规格证明)。
+
+**证据边界(保留)**:① `violations` 字段在 stream 中已非主要保障
+(step_hook 每步统一查容量)——标记为历史兼容字段,未来可删;
+② T1 150/150 = 有限节点/预算/轨迹/成本模型/SEM 规则内的交叉验证,
+不证明 Belady 在所有规格下正确;③ 随机测试共享 SEM 规则/候选定义/
+working-set 假设/成本口径/轨迹生成——**实现一致性证据 ≠ 规格正确性
+证明;模型级 PASS ≠ Swift/MLX 真源 PASS**;④ 审核方基于 GitHub 提交
+静态外审,未本地复跑——"5916/2346/150/150 全绿"应表述为"代码与
+提交记录所声明的执行结果一致",非独立复跑确认。
+
+**代码质量确认**:approx 已恢复 / make_hooks 参数修正 / DP 解包正确
+/ 空 trace 跳过正常 / budget≥1 避免空候选 / hooks 参数结构一致——
+无上一版类问题。
+
+**路线确认(P4-B v3.1 复审)**:
+```
+P0 / C_resident
+    ↓
+P3 正式策略比较
+    ↓
+P4 proper:true-source Swift test
+```
+`exp06 M1` 可并行,但其模型级结果不得作为 P4 proper 的替代证据。
+
 ## v3.1 结果(2026-09-21 运行;P4-B 复审三条遗留全部落地,待外部复审)
 
 **修复(复审三条遗留)**:

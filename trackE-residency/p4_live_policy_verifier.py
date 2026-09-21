@@ -103,6 +103,8 @@ class LiveBeladyStream:
         self.cost = 0.0
         self.misses = 0
         self.evictions = []
+        # 历史兼容字段(v3.1 外审注记):容量检查已由 step_hook 每步
+        # 统一断言,violations 仅保留供旧调用方对照,非主要保障。
         self.violations = 0
         self.pos = 0
 
