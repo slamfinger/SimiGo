@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1/M2/M3 均 FINAL PASS;M3-A 成对表示对照首跑 PASS(2026-09-21,待审核终判)**。M3-A = 同父代三臂(ctrl/treatSeg/treatCont),两条重表示路径(段表重挂 73MiB 私有页/物化连续 155MiB 全视图)均沿 ctrl 未来 96/96 逐 token继续——表示无关性的 config 级证据(架构结论仍不下)。记录:RESIDENCY_M1/M2/M3/M3A_RESULTS_20260921.md。**下一步(审核定序)**:M3-B 深位置 continuation → M3-C 多节点 continuation → M4 rehydration tax。**——
+**状态**:**M1/M2/M3/M3-A 均 FINAL PASS(2026-09-21)**。M3-A 冻结结论 = rehydration 后段表表示或连续物化表示均保持与 resident control 相同 continuation → continuation 对表示形态具有 config-level independence(不构成架构结论);47%=结构性字节数非性能;工程审计限制正式关闭(源码已在 fork 逐行核验)。**M3-B 进行中(设计收紧:只走段表路径,depth 轴单变量,16K/64K 各与驻留 control 逐 token 对照)**——靶子:continuation 是否只是浅位置偶然。轴分离:M3-A=representation / M3-B=depth / M3-C=topology / M4=cost。记录:RESIDENCY_M1/M2/M3/M3A_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首

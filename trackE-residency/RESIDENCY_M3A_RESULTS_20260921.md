@@ -1,7 +1,42 @@
 # Track E(命名待定)Residency M3-A 结果(2026-09-21)
 
-> **状态:M3-A 成对表示 continuation 对照首跑 PASS(一次通过,
-> 34.5s),待审核方终判。** 代码:`ResidencyM3AContinuationPair.swift`
+> **终审判定(2026-09-21):M3-A——FINAL PASS。**
+>
+> **正式研究结论(审核冻结句,原文入档)**:在本实验配置下,
+> rehydration 后采用段表表示或连续物化表示,均保持与 resident
+> control 相同的 continuation;因此,当前证据支持 continuation 对
+> 表示形态具有 **config-level independence**。**该结果不构成
+> residency architecture 应采用某一种 representation 的架构结论。**
+>
+> **47% 表述冻结**:73 MiB / 155 MiB ≈ 47% 仅为结构性载荷字节数;
+> 不得写成"更高效/节省成本/更快/更优/bandwidth advantage"——效率
+> 归 M4。
+>
+> **M3-A 的真正价值(审核表述)**:M3 后残留解释"也许只是当前
+> runtime 的 continuation 恰好依赖 COW segment semantics"被直接
+> 攻击——现在至少可以说 **continuation correctness 并未表现出对这
+> 两种 representation form 的依赖**(config 级)。
+>
+> **实验链状态(审核判定表)**:M1 FINAL PASS / M2 FINAL PASS /
+> M3 FINAL PASS / M3-A FINAL PASS;M3-B(OPEN)→ M3-C(OPEN)→
+> M4(OPEN)。M3 冻结语句不变;M3-A 作为下一层证据:*Representation
+> form → Continuation independence(config-level evidence)*。
+>
+> **工程审计限制正式关闭(审核方完成源码逐行核验)**:68daa06 在
+> `slamfinger/mlx-swift-lm@exp/execution-state-fork` 上核验通过,
+> 源码实验契约与 M3 结果文档一致(twin child/前置门/私有页外化/
+> release/段表重挂/sharedRows==parent offset/96-step/offset+96/
+> parent intact)。M3-A 源码(`ResidencyM3AContinuationPair.swift`)
+> 亦经审核方远端核对。
+>
+> **M3-B 设计收紧(审核定序)**:不再三臂重复 M3-A——**只走段表
+> rehydrate → continuation**,16K 与 64K 两个深度,各与驻留 control
+> 逐 token 对照。轴分离:M3-A=representation 轴 / M3-B=depth 轴 /
+> M3-C=topology 轴 / M4=cost 轴。M3-B 靶子 = "continuation
+> correctness 是否只是浅位置 @4616 的偶然现象"。
+
+> **首跑记录(史料)**:本文档初版记录三臂设计与两臂 96/96 结果;
+> 初版状态行"待审核方终判"已被上方终审取代。 代码:`ResidencyM3AContinuationPair.swift`
 > (exp 分支)。独立成对实验,不修改已 FINAL PASS 的 M3。
 
 ## 攻击的架构分叉(M3 终判定序)
