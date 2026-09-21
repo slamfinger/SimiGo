@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS,M 链封口;simulator v0 FINAL PASS(P1/P2 封口);P0 终判 CONDITIONAL PASS(2026-09-21)**——容量计量探针 PASS/经济成本闭合 Pending(四收紧:单位未定义、容量≠机会成本、GDN'不可压缩'降级为当前配置主要固定占用项、attention 深度增长=结构推断需 depth sweep)。**P0.1 Cost Unit Definition 草案已建(待审核)**:六定义项提案 + 双目标字典序 objective(硬约束 resident_bytes≤budget + 最小化 boundary cost;byte-steps 为描述层,回避 bytes↔token 伪换算);确认后 P3 解锁。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS,M 链封口;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量探针 PASS/经济成本闭合 Pending)。P0.1 定义草案 v1 CONDITIONAL PASS → v2 五处收紧已落(2026-09-21,待审核确认)**:①定位声明(字典序模型=容量约束下的边界事件成本优化,非完整经济成本函数;'Resident capacity = hard feasibility constraint; opportunity cost not monetized in v0.1');②'Keep 免费'删除(M4 口径限定);③external storage 零价格≠零资源占用(monetary=0/capacity excluded/device-memory separately constrained);④T 拆三语义(T_next_access/T_remaining/T̂_remaining);⑤0.69/0.03 配置范围声明;byte-steps/λ 降 descriptive only,opportunity-cost 货币化 Deferred。确认后=PASS(v0.1 Policy Objective Definition),仅解锁字典序 P3。记录:RESIDENCY_*_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
