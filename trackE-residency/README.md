@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1/M2/M3/M3-A/M3-B/M3-C 均 FINAL PASS(M3 系冻结于 30b61e6);M4 Rehydration Tax 首跑完成(2026-09-21,待审核终判)**——@4616 与 @16904 双 config:一次性边界成本 27.7+1.2 / 33.4+1.5 ms(载荷均 73,292 KiB,深度无关)≈ **1 decode-token 等价**;交替稳态税 −0.7% / −1.5%(轮间噪声同量级,**未测得超出噪声的稳态税**,不称零也不称有);token 守卫全程 ✓。限定:内存语义,不外推跨设备。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4_RESULTS_20260921.md。**M 链在测试配置内全部完成;下一步建议 Residency Policy 开题(消费 M4 数字)**。**——
+**状态**:**M1–M4 全部 FINAL PASS,M 链正式封口(2026-09-21)**——七问七答:是谁/状态是不是它/还能继续吗/换表示/深一点/树状/付出多少 = 一次性 ≈0.72 token 等价 + 稳态无超噪声税(measurement-scope 注记:State 对象重建未入计时区间)。**Residency Policy 已开题(2026-09-21,探针未跑)**:研究问题 = 什么时候 Externalize/Keep Resident/Rehydrate/不召回;纪律 = M4 证明 cost 可接受性边界,不证明'应该什么时候外化';第一探针候选 = policy simulator(F5-3 Step1 同型,M4 数字为回流成本输入);首补课项 = resident memory cost 未实测。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4_RESULTS + RESIDENCY_POLICY_OPENING_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
