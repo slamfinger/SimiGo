@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 PASS(v0.1 Policy Objective Definition);P3 首跑 CONDITIONAL PASS;P3 后续轮 CONDITIONAL PASS(2026-09-21,待 FINAL 前两处文字清理已落)**——cost-aware reference = CONDITIONAL CLOSED(缩减模型边界内 Belady=DP 精确最优 0.0%,模型级解释:容量满后 #ext 与 miss 数直接对应);H-P1 首检阴性正式记录 = naive tree-neighbor retention FALSIFIED(H-P1 整体 OPEN,三可能 A/B/C 全开放不预设);残差升级 = 缩减模型边界内 LFU→Belady 即 LFU→exact optimum 实测残差。源码清理两处已落(stale print/RNG 消耗注记仅注释不改行为)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P3/P3R2_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 PASS(v0.1 Policy Objective Definition);P3 首跑+后续轮 CONDITIONAL PASS。**P0.2 Resident Pressure Curve 首跑完成(2026-09-21,待审核终判)**:decode 延迟 vs 驻留节点曲线 = **平坦区(k≤40,漂移 +6.7% 热量级)+ 悬崖(k=56,active 越 24GB memoryLimit,2.4×)**——C_resident 实证形态 = 阶跃函数非渐进税,字典序 feasibility-first 获实证支撑;悬崖位置(=budget)是 policy 唯一决策相关量;天花板 k=64 未 crash(MLX 超限=缓存逐出惩罚非硬失败)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P02/P3/P3R2_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
