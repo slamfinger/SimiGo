@@ -48,6 +48,19 @@
 > 与"cumulative-freq variant"旧注记的冲突。H=4 口径修正:vs lru
 > −16.2%(优),vs H=8 +49.0%(差);"较差"仅在相对 H=8 时成立。
 > P3-A 提升 PASS / UNLOCK 与否,待审核方对本套产物终判。
+>
+> **终审盖章(2026-09-21,审核方二次 commit-level 复核 ff52943):
+> P3-A——PASS;首轮机制验证 PASS;v2 provenance PASS;结果口径
+> PASS;Cost-aware 形态决策 UNLOCKED。** 审核确认:provenance 审计
+> 抓获真实错误(stale 格)并完成 ON/OFF 对照闭环修正,审计链成立;
+> stale 数字已钉死(1084.5=decay-OFF 语义,rehy775/ext763;差
+> 1.41=恰一对 rehy+ext)。**边界保留**:仅证 P3-A 固定实验域内机制
+> 有效性,非 frequency-only 最终策略性;P_pressure 仍 raw
+> excess-steps proxy(ms NOT YET);P0.2 经济闭合状态不变;
+> structure-aware/H-P1/nodes-out/P4 proper 均后续,不倒灌。
+> **下一刀=P3-B 形态决策实验设计(先设计不改基线;动机禁止引用
+> H=8 失败——W-bug 伪象)**:DRAFT 见
+> `RESIDENCY_P3B_DESIGN_CAG_SHAPE_20260921.md`。
 
 > **v1 记录(史料,W-bug 数字降为 provisional)**:下文 v1 数字
 > (H=8 +20.8%/H=16 −20.7% 等)为全历史计数 bug 下的产物,不可作为
