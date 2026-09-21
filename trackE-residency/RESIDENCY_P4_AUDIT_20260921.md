@@ -75,6 +75,39 @@ P4 live policy verifier 成立;真实 MLX/Swift residency 行为;任何
 跨设备/跨模型泛化。P4 proper 仍 LOCKED,最终裁决 = true-source
 Swift test。**待外部复审。**
 
+## v3 重写结果(2026-09-21 运行;T2 独立性修复版,待外部复审)
+
+**修复(审计核心缺陷)**:`live` 参数删除,改为**两套互不共享函数
+的独立实现**——`offline_belady_batch`(批处理:驱逐时向未来线性扫描
+求 next-use,无逐点表)+ `LiveBeladyStream`(流式类:预计算
+per-position 表,step() 逐推进);规格共享 = 形式化 SEM-1..5(含
+SEM-1 修正:初始 resident=∅、**全体节点初始 ∈ externalized**,
+消除"prebuilt 但 resident=∅"歧义;externalized 升格为模型状态,
+不变式 resident∪externalized=全体且互斥,property test 逐迹断言)。
+
+| 验证 | 实例 | 结果 |
+|---|---|---|
+| T3-M1 基础([0,1,2,0]/budget2) | 微例 | 三层 = 2.85,ev=[(2,1)] ✓ |
+| T3-M2 tie-break([0,1,2,3]/budget2) | 微例 | 三层 = 4.26,ev=[(2,0),(3,1)] ✓ |
+| T3-M3 budget=1 thrash([0,1,0,1]) | 微例 | 三层 = 4.95,ev=[(1,0),(2,1),(3,0)] ✓ |
+| T1 cost_DP == offline_batch | hot8 / tree8 | 33.18 ✓ / 74.07 ✓ |
+| T2 stream == batch + 驱逐序列逐对相等 | hot8 / tree8 | 22 对 ✓ / 51 对 ✓ |
+| Property test(150 随机小迹) | n∈{4,6,8},budget 1–3,len 0–40 | **150/150:DP==batch==stream 且 SEM 不变式成立** |
+
+**事件累积:T3 机制三抓作者错误(跨三个不同子案例)**——
+① M1:手算把 step3 命中误计为 miss(4×0.72,正确 3×0.72+0.69=2.85);
+② M2:tie-break 期望错(step2 时 0/1 的 next_use 同为 ∞,SEM-4 应逐
+最低 id=0,作者误写 1);
+③ M3:驱逐序列违反 SEM-3(step1 时 current=1 不可驱逐,唯一候选=0,
+作者误写 victim=1)。
+三次全部由断言拦截、未产生虚假 PASS;独立重推后修正。**断言机制
+连作者也拦,三连实证。**
+
+**独立性的诚实边界**:两实现由同一作者依同一 SEM 规格编写——"实现
+独立"指代码路径/数据结构无共享,不指认知独立;交叉验证的证明力 =
+规格忠实性的回归保障,非规格本身的正确性证明(规格正确性由 SEM
+形式化 + 外部审计把守)。
+
 ## v2 重写结果(2026-09-21 运行,待外部复审)
 
 | 验证 | 实例 | 结果 |
