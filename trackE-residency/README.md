@@ -1,6 +1,11 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1 开题(2026-09-21;探针未跑,无结果无决策)**。
+**状态**:**M1 首跑 PASS(2026-09-21,五门全绿),待审核终判**——
+记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
+`ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
+如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
+attention 层锚定(closure firstCowIdx 先例)。M2(State Exactness:
+段表形式外化/深位置/多节点)待审核后开;M3/M4 按序,不跳门。
 **命名**:暂用 Track E——与真源报告 §5.3 Track C(= Multi-device)
 冲突,正式命名待维护者在真源更新时定夺;定夺前本目录名不变。
 **性质**:独立新研究问题,**不是 Track B 的尾巴**。
