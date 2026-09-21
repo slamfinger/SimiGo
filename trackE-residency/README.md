@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1/M2/M3/M3-A/M3-B 均 FINAL PASS(2026-09-21)**。M3-B 冻结范围 = 测试配置(35B/单节点/COW 段表/16K+64K/suffix512/decode8/horizon96)下 rehydrated state 与 resident control continuation 相同;不泛化任意 depth/horizon/topology。工程审计注记(不阻断):GDN/Mamba offset 未作独立恢复门,'offset+96'=attention 侧结论;前向修正 = M3-C 起显式恢复+独立门。实验链:M3=能不能继续/M3-A=representation coincidence 已打掉/M3-B=shallow-position coincidence 已打掉(测试深度上)。**M3-C 进行中(topology 轴:三层 invariant 一起设计——sibling isolation + parent→child lineage + 各节点独立 residency/continuation)**→ M4。记录:RESIDENCY_M1/M2/M3/M3A/M3B_RESULTS_20260921.md。**——
+**状态**:**M1/M2/M3/M3-A/M3-B 均 FINAL PASS;M3-C 多节点树 continuation 首跑 PASS(2026-09-21,待审核终判)**——四节点(P→A,B→A1/B1)各自独立外化/按树序重挂(A1 挂到重挂后的 A)/与各自驻留 control 96/96 逐 token;三层 invariant(兄弟隔离/谱系/历史不可变)在 continuation 级成立;GDN offset 显式恢复+独立门(前向修正落地);第二条架构观察入档:树序重挂 = residency 依赖顺序即树的拓扑序。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C_RESULTS_20260921.md。**下一步:M4 rehydration tax(交替对照)——M3 系 continuation 语义在测试配置内闭环。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
