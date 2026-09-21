@@ -175,7 +175,7 @@ def main():
     print("=== Residency Policy Simulator v1(P3:New Policy Discrimination)===")
     print(f"nodes={N_NODES}(等大小) trace={TRACE_LEN} seed={SEED} "
           f"C_ext={C_EXT} C_rehy={C_REHY};objective=字典序(v0.1 定义)")
-    print("policies: lru(baseline) / lfu_aging(NEW 可实现) / oracle(reference)")
+    print("policies: lru(baseline) / lfu_aging(NEW 可实现) / future-aware Belady reference")
     print()
 
     results = []
@@ -188,7 +188,7 @@ def main():
     print("### 表:budget × workload(格式: policy=rehy/cost)")
     for wname in ["hot", "tree"]:
         print(f"-- workload={wname} --")
-        print("budget | " + " | ".join(f"{p:>16}" for p in ["lru", "lfu_aging", "oracle"]))
+        print("budget | " + " | ".join(f"{p:>16}" for p in ["lru", "lfu_aging", "belady_ref"]))
         for budget in BUDGETS:
             cells = []
             for policy in ["lru", "lfu_aging", "oracle"]:
@@ -214,7 +214,7 @@ def main():
         print(f"  budget={budget:.2f}: lru={lru['cost']:.1f} lfu={lfu['cost']:.1f} → lfu 相对 lru {delta:+.1f}%")
 
     print()
-    print("### 残差(lfu 相对 oracle 的未捕获差距;结构策略的潜在空间)")
+    print("### 描述性残差(lfu_aging 相对 future-aware Belady reference 的差距)")
     for wname in ["hot", "tree"]:
         for budget in [0.30, 0.40, 0.50]:
             lfu = next(r[3] for r in results if r[0] == wname and r[1] == budget and r[2] == "lfu_aging")
