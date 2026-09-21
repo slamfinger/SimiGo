@@ -1,7 +1,29 @@
 # Track E(命名待定)Residency Policy Simulator v0 结果 v2(2026-09-21)
 
-> **状态:v0 等大小重跑完成(合成 workload,纯 Python;待审核方正式
-> 终判)。** 代码:`residency_policy_simulator_v0.py`(seed=42,可再生)。
+> **终审判定(2026-09-21):Simulator v0——FINAL PASS(审核方核对
+> `a40bb34` 实际 diff:仅注释变化,无算法/参数/数字/结果修改,按
+> 前轮约定条件免补跑)。正式封口:P1 Baseline/Reference Sanity ✓、
+> P2 Sensitivity ✓、oracle 模型假设审计 ✓、oracle 定义审计 ✓、结果
+> 措辞审计 ✓、源码/结果/开题三处同步 ✓。**
+>
+> **epistemic boundary(冻结)**:v0 证明 = 在合成 workload、等大小、
+> boundary-cost 视角下,future-aware Belady reference 与 LRU 之间存在
+> 可观测的决策空间。**未证明**:LRU 应被替换;H-P0 成立;H-P1 成立;
+> New Policy 更好;total-cost 存在已证明的全局 oracle;C_resident 已
+> 纳入完整成本模型——全部留给后续实验。
+>
+> **Track E 命名:继续不命名(审核决定)**——研究对象已从 Residency
+> 扩展到 Residency → Residency Policy → Execution-aware Residency
+> Policy 的可能区间,提前定名会锁死研究边界;等 P0/P3 证据说明研究
+> 对象实际是什么之后,再按证据定名。当前记 = "Track E(命名待定)"。
+>
+> **下一站:P0 Cost Model Closure(C_resident 计价),先于 P3。**
+> 理由:当前决策只有 Externalize 侧(C_ext + E[C_rehy]),Keep
+> Resident 侧(C_resident)为空——直接做 New Policy = 在成本模型未
+> 闭合的目标上做优化。
+
+> **首跑记录(史料)**:v1(两次 oracle 修正)与 v2(等大小化)过程
+> 见下方 v1 史料节;初版状态行"待审核方正式终判"已被上方终审取代。 代码:`residency_policy_simulator_v0.py`(seed=42,可再生)。
 > **v2 修订(审计)**:node size 固定为等大小——可变 size 下
 > farthest-next-use 只是启发式,不构成严格 reference bound;size 轴
 > 归入 H-P1 sensitivity(后续版本)。口径修正:全部 **24 个非退化**
