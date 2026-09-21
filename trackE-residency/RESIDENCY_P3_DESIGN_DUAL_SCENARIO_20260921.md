@@ -99,27 +99,35 @@ Online implementable:
 
 **触发**:每次容量强制驱逐时(语义同 SEM-3)。
 
-**决策公式(冻结,可实现——无任何未来 trace 信息)**:
+**决策公式(冻结 v0.2.1;可实现——无任何未来 trace 信息)**:
 
 ```
 对每个候选节点 i(≠ 当前访问节点):
 
-    n_i      = 节点 i 在最近 W = 200 步窗口内的访问次数
-    P_re(i)  = min(1, n_i / H)
-               (窗口内频率对 horizon H 的重访问概率估计)
-    Score(i) = C_ext + C_rehy × P_re(i)
-               (驱逐 i 的估计增量未来边界成本:
-                立即付 C_ext;若 H 内被再次访问,估计付 C_rehy)
+    n_i            = 节点 i 在最近 W = 200 步窗口内的访问次数
+    reuse_score(i) = min(1, n_i / H)
+                     (频率启发式分数——非概率估计,无概率模型)
+    Score(i)       = C_rehy × reuse_score(i)
+                     (C_ext 各候选相同,不影响 argmin——驱逐成本项
+                      计入以保持目标完整性,排序实际由 reuse_score
+                      驱动)
 
 驱逐:argmin Score(i)
 tie-break:最低 node id
 ```
 
-- **预测窗口 H ∈ {1, 4, 8, 16}**(sensitivity;主轮 H=8)——实现
-  不得自行选择;
-- 诚实注记:C_ext 对所有候选相同,不影响 argmin(驱逐成本项计入
-  Score 以保持目标完整性,排序实际由 Ĉ_rehy 项驱动);
-- H=1 极限 ⇒ P_re=0 ⇒ 退化为 LRU(H 参数即"结构/频率信号的用武
+- **H 为 scoring saturation scale(频率分数的饱和尺度),不是
+  prediction horizon**——n_i 是过去 200 步的历史计数,H 只作归一化
+  尺度;真实未来访问概率预测(P(next_access ≤ H | history))属
+  另立模型,不在本定义内;
+- **H=1 不退化为 LRU(v0.2 数学错误修正)**:H=1 时 reuse_score
+  为二值(n_i=0 → 0;n_i≥1 → 1),策略实为**二值 recent-use
+  policy**(优先驱逐窗口内零访问节点),非严格 LRU;
+- **命名纪律(审计)**:本策略实为 **frequency-based greedy**;
+  P3 target 名称保留 **cost-aware greedy(frequency-only
+  instantiation)**——明确标注这是 cost-aware framework 的第一个、
+  最小可实现实例,**不是已建成未来成本模型**;
+- H ∈ {1, 4, 8, 16}(sensitivity;主轮 H=8)——实现不得自行选择。
   之地"旋钮)。
 
 ## 6. 双情景执行协议(审计:同 trace、分模式、严格并行)
