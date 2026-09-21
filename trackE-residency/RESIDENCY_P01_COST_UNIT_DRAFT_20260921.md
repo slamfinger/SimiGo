@@ -1,6 +1,26 @@
 # Track E(命名待定)P0.1 Cost Unit Definition——定义探针草案 v2(2026-09-21)
 
-**状态**:v1 CONDITIONAL PASS → **v2 按审计五处收紧修订,待审核确认**。
+> **终审判定(2026-09-21):PASS — v0.1 Policy Objective Definition。**
+> 审核方核对 `cb66671` commit/diff:五收紧纯文档落实,无实验数字或
+> 算法变化。七项审核全 PASS(模型定位 / "Keep 免费"删除 / 三层资源
+> 语义 / T 三语义拆分 / C_ext/C_rehy 配置范围声明 / byte-steps·λ·
+> 机会成本货币化降级 / 字典序边界明确)。
+>
+> **正式边界(冻结)**:第一层 `resident_bytes ≤ budget` = 硬可行性
+> 约束;第二层 minimize `C_ext×#ext + C_rehy×#rehy` = token-equivalent
+> boundary cost;描述层 byte-steps/λ sensitivity;延后 opportunity-
+> cost 货币化。v1 主问题已解决:bytes 与 token-equivalent 不再进入
+> 同一未定义换算率的不等式。
+>
+> **两项非阻断 P3 实现规范注记(带入 simulator 设计,已实现)**:
+> 1. 事件计数时序统一:每访问步 = touch(外部节点触发 REHYDRATE,
+>    支付 C_rehy)→ 容量检查 → 逐个 EXTERNALIZE(各计 C_ext);边界步
+>    与同步多事件逐一计数。
+> 2. 字典序 reference tie-break:同优先级并列(victim 选择并列)时
+>    固定按最低 node id 打破,保证 oracle 结果不依赖实现顺序。
+
+**状态(封口)**:v1 CONDITIONAL PASS → v2 五收紧 → **审核确认
+PASS — v0.1 Policy Objective Definition**。
 确认后标记 = **PASS(v0.1 Policy Objective Definition)**——**仅解锁按
 该字典序目标进行的 P3 实验,不代表完整经济成本理论已经闭合**。
 **修订记录**:v1 → v2 五处收紧(审计原样入档):
