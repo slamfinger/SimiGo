@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 正式确认 PASS(v0.1 Policy Objective Definition);P0.2 CONDITIONAL PASS(悬崖首轮证据);P3 首跑+后续轮 CONDITIONAL PASS。**P3-A 模型验证 + 首轮判别完成(2026-09-21,待审核终判)**:机制验证 PASS(五通道/双情景/确定性);判别数据——lfu_aging(修复后)vs lru = hot −44.0%/tree −23.8%(频率信号有效);**cost_aware_greedy(H=8)劣于 lru(+20.8%/+14.3%)且 H 强主导(H=16 反超 −20.7%)——frequency-only instantiation 调参强依赖,非稳健 cost-aware 政策**;P_pressure 通道结构性饱和(全策略填满至 B,超限步只度量 trace 长度——与 P0.2 容量内平坦互证,ms 悬崖不建模于抽象模拟器)。v1 首版 lfu 漏递增 bug 如实入档。记录:RESIDENCY_P3A_RESULTS + 前序各文档。**——
+**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 正式确认 PASS(v0.1 Policy Objective Definition);P0.2 CONDITIONAL PASS(悬崖首轮证据);P3 首跑+后续轮 CONDITIONAL PASS。**P3-A v2 重跑完成 + provenance 闭合(2026-09-21,W=200 修复后;终判 CONDITIONAL PASS 待审核提升)**:机制验证 PASS(五通道/双情景/确定性);判别数据(v2 实跑入档)——cost_aware_greedy(H=8)= 547.3,vs lru −43.8%(hot)/ −18.7%(tree),逼近 lfu_aging(hot −44.0%/tree −23.7%)与 belady reference(−51.2%/−48.0%)——v1 "+20.8%/+14.3% 劣于 lru"与"H 强主导"系 W-bug 伪象;H≥8 收敛(H=4=815.2 有界收敛);P_pressure 通道结构性饱和(raw excess-steps 口径,ms 校准 NOT YET)。v1 lfu 漏递增 bug 与 v2 表 tree/lfu_aging stale 格(provenance 审计捕获:pre-decay 残留 1084.5,实跑修正 1085.9)均如实入档。记录:RESIDENCY_P3A_RESULTS + runs/P3A_V2_RERUN_PROVENANCE_20260921 + 前序各文档。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首

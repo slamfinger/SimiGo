@@ -12,7 +12,8 @@
 > **v2 重跑(修复后,本节数字为准;v1 数字降为 provisional)**:
 > **cost_aware_greedy(H=8)= 547.3,vs lru −43.8%(hot)/ −18.7%
 > (tree)**——外审预判证实:此前"+20.8%/+14.3% 劣于 lru"与"H 强主导"
-> 是 **W-bug 伪象**;修复后 H≥8 收敛(H=4 仍 +15.8% 较差),"饱和层 +
+> 是 **W-bug 伪象**;修复后 H≥8 收敛(H=4=815.2,较 H=8 差 +49.0%,
+> 但仍优于 lru −16.2%),"饱和层 +
 > id tie-break 病态"假设部分证伪(H≥8 无病态)。H 敏感性仍存在但
 > 有界且收敛。**待复现假设的复验结果**:机制观察保留,H 方向修正。
 >
@@ -21,14 +22,32 @@
 > | 策略 | hot J | vs lru | tree J | vs lru |
 > |---|---|---|---|---|
 > | lru(baseline) | 973.1 | — | 1422.9 | — |
-> | lfu_aging(cumulative-freq variant) | 544.4 | −44.0% | 1084.5 | −23.8% |
+> | lfu_aging(cumulative-freq + 每200步半衰 aging) | 544.4 | −44.0% | 1085.9 | −23.7% |
 > | cost_aware_greedy(H=8,W=200) | 547.3 | **−43.8%** | 1156.4 | **−18.7%** |
 > | belady_greedy(reference) | 475.3 | −51.2% | 740.4 | −48.0% |
 >
-> H sensitivity(hot):H=4 → 815.2(+? 较差)/ H=8 与 H=16 均收敛于
+> H sensitivity(hot):H=4 → 815.2(vs lru −16.2%;vs H=8 +49.0%
+> 较差)/ H=8 与 H=16 均收敛于
 > 547.3——H 影响存在但有界收敛。P_pressure 通道保持 **raw excess-
 > steps** 口径(全策略 ≈1990/2000,结构性饱和,与 P0.2 容量内平坦
 > 互证;ms 校准 NOT YET)。
+>
+> **v2 复跑 provenance 闭合(2026-09-21,外审两审计项证据落盘)**:
+> 在 301e3f1 代码原样(HEAD 一致、tree clean、simulator sha256
+> 5dbc8cc0…、Python 3.14.5)上实际执行全矩阵,产物入档
+> `runs/P3A_V2_RERUN_PROVENANCE_20260921/`。**发现并修正一处 stale
+> 数字**:上表 tree/lfu_aging 原记 1084.5(−23.8%)为 pre-decay 语义
+> 残留——对照实验(仅运行时 patch LFU_DECAY_INTERVAL→∞,即 301e3f1
+> 前语义)精确复现 1084.5=rehy 775/ext 763,decay-ON 实际值 =
+> **1085.9**(rehy 776/ext 764,恰一对 rehy+ext 之差;−23.7% vs
+> lru);hot 上 decay 决策中性(两种语义均 544.4),故 v1→v2 未暴露。
+> **其余全部数字(主表 7 格 + H 敏感性 + pressure 全通道)经实跑
+> 逐位一致**;排序与结论不翻转(lfu 仍优于 cag,频率信号结论保留)。
+> lfu_aging 标签同步澄清:语义 = cumulative-frequency 计数 + 每 200
+> 步半衰 aging(驱逐 key=(freq,last_access,id)),标签改写消除
+> 与"cumulative-freq variant"旧注记的冲突。H=4 口径修正:vs lru
+> −16.2%(优),vs H=8 +49.0%(差);"较差"仅在相对 H=8 时成立。
+> P3-A 提升 PASS / UNLOCK 与否,待审核方对本套产物终判。
 
 > **v1 记录(史料,W-bug 数字降为 provisional)**:下文 v1 数字
 > (H=8 +20.8%/H=16 −20.7% 等)为全历史计数 bug 下的产物,不可作为

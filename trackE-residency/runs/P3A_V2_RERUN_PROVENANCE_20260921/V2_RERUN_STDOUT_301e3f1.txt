@@ -1,0 +1,32 @@
+=== Residency Policy Simulator v3(cost_aware_greedy freq-only + 双情景五通道)===
+seed=42;nodes=32;trace=2000;C_ext=0.69;C_rehy=0.72
+冻结规范:W=200;reuse_score=min(1,n/H);argmin Score;tie 最低 id;H∈{1,4,8,16} 主轮 8;双情景同 trace/seed/策略/预算
+
+-- 情景一/二共用执行(B=12,H=8 主轮;P3-A 模型验证)--
+    hot/               lru: J=  973.1 (rehy= 696 ext=684) viol=0 resident_final=12
+    hot/         lfu_aging: J=  544.4 (rehy= 392 ext=380) viol=0 resident_final=12
+    hot/ cost_aware_greedy: J=  547.3 (rehy= 394 ext=382) viol=0 resident_final=12
+    hot/     belady_greedy: J=  475.3 (rehy= 343 ext=331) viol=0 resident_final=12
+   tree/               lru: J= 1422.9 (rehy=1015 ext=1003) viol=0 resident_final=12
+   tree/         lfu_aging: J= 1085.9 (rehy= 776 ext=764) viol=0 resident_final=12
+   tree/ cost_aware_greedy: J= 1156.4 (rehy= 826 ext=814) viol=0 resident_final=12
+   tree/     belady_greedy: J=  740.4 (rehy= 531 ext=519) viol=0 resident_final=12
+
+-- cost_aware_greedy H sensitivity(J;hot 域)--
+  H= 4: J=  815.2 (rehy=584)
+  H= 8: J=  547.3 (rehy=394)
+  H=16: J=  547.3 (rehy=394)
+
+-- 情景二 P_pressure 通道(k_c 模拟器单位机制验证;λ_p 报告层)--
+  hot/k_c=9: pressure_raw lru=1990 lfu=1990 cag=1990(λ_p 报告层倍乘,不入 J)
+  hot/k_c=10: pressure_raw lru=1984 lfu=1984 cag=1984(λ_p 报告层倍乘,不入 J)
+  hot/k_c=11: pressure_raw lru=1983 lfu=1983 cag=1983(λ_p 报告层倍乘,不入 J)
+  tree/k_c=9: pressure_raw lru=1991 lfu=1991 cag=1991(λ_p 报告层倍乘,不入 J)
+  tree/k_c=10: pressure_raw lru=1990 lfu=1990 cag=1990(λ_p 报告层倍乘,不入 J)
+  tree/k_c=11: pressure_raw lru=1989 lfu=1989 cag=1989(λ_p 报告层倍乘,不入 J)
+
+确定性自检(同配置重跑): PASS
+
+*** P3-A 模型验证完成:五通道输出、双情景通道、cost_aware_greedy
+*** (frequency-only instantiation)机制如上;正式策略比较
+*** (真实 k_c 网格映射 + dp 缩减参照)待下一轮。***
