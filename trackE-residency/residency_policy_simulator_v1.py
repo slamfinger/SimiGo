@@ -21,13 +21,16 @@
 #   lfu_aging  —— NEW,可实现 future-reuse 启发式(计数 + 周期减半
 #                 aging,防陈旧高频独占;victim = min(count, tie→低 id),
 #                 count 相同再按 last_access)
-#   oracle     —— reference bound(等大小标准 Belady;tie→低 id)
+#   oracle     —— future-aware Belady reference(针对 rehydrate/
+#                 page-fault 数;等大小 farthest-next-use;tie→低 id;
+#                 非当前字典序 objective 的 cost-aware oracle)
 #
 # Workload 两域(H-P0 / H-P1 setup):
 #   hot  —— 热集(与 v0 同构;H-P0 域:pressure + reuse 信息)
-#   tree —— 8 树 × 4 节点,访问以 0.7 概率沿树边连续行走(parent→child
-#           相关访问)、0.3 均匀(H-P1 setup:结构是否携带 recency 之外
-#           的可利用信息)
+#   tree —— 8 树 × 4 节点,访问以 0.7 概率沿树边连续行走(**child→
+#           parent 向祖先方向回溯**的相关访问序列)、0.3 均匀(H-P1
+#           setup:结构是否携带 recency 之外的可利用信息;方向为
+#           child→ancestor,非 parent→child——语义注记见结果文档)
 #
 # 边界:等大小;C_resident 未入模(P0 capacity 视角);SKIP 未建模;
 # 合成 workload 单 seed;regret 描述性;不预设 H-P0/H-P1 结果。
