@@ -75,6 +75,32 @@ P4 live policy verifier 成立;真实 MLX/Swift residency 行为;任何
 跨设备/跨模型泛化。P4 proper 仍 LOCKED,最终裁决 = true-source
 Swift test。**待外部复审。**
 
+## v3.1 结果(2026-09-21 运行;P4-B 复审三条遗留全部落地,待外部复审)
+
+**修复(复审三条遗留)**:
+① SEM 不变式升级为**每步断言**——`step_hook(step, resident,
+   externalized, current)` 在两个实现的每一步后调用,断言:互斥/
+   并集覆盖/容量 ≤budget/**working-set 正向(current ∈ resident)**;
+② offline 与 stream **对称覆盖**——同一套 hooks 挂到两个实现;
+③ **tie-break 独立重推断言**——`evict_hook(step, current, victim,
+   candidates)` 中,victim 必须等于"候选中最大 next_use 的最小 id"
+   (next-use 由断言侧独立重推,非复用实现内部状态)。
+
+| 验证 | 实例 | 结果 |
+|---|---|---|
+| T3 三微例(回归锚点) | M1/M2/M3 | 三层一致 ✓✓✓ |
+| T1 cost_DP == offline | hot8 / tree8 | 33.18 / 74.07 ✓ |
+| T2 stream == batch + 序列逐对相等 | hot8 / tree8 | 22 对 / 51 对 ✓ |
+| **逐步不变式(step_hook)** | 150 迹 × 2 实现 | **5916 次断言,失败 0** |
+| **tie-break 独立重推(evict_hook)** | 150 迹 | **2346 次断言,失败 0** |
+| DP 成本交叉 | 150 迹 | 150/150 一致 ✓ |
+
+**证据等级变化(P4-B 复审对照)**:"SEM 不变式主要查最终状态" →
+**每步断言(5916 次,双实现对称)**;"offline 覆盖不对称" → 对称
+hook 覆盖;"tie-break 仅人工微例" → 随机测试独立重推 2346 次零失败。
+声明范围冻结不变:模型级证据;规格正确性由 SEM 形式化+外部审计
+把守;P4 proper = true-source Swift test(LOCKED)。
+
 ## v3 重写结果(2026-09-21 运行;T2 独立性修复版,待外部复审)
 
 **修复(审计核心缺陷)**:`live` 参数删除,改为**两套互不共享函数

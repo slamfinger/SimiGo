@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
-"""P4 live verifier v3——P4-A→P4-B 过渡版(审计:T2 独立性修复)。
+"""P4 live verifier v3.1——P4-B 复审落地(逐步不变式 + tie-break 随机断言)。
 
-审计背景:v2(5916acb)七项确认 + 一个实质缺陷——`live` 参数无实效,
-T2 = 同一函数调用两次,不构成 offline/live 独立实现等价验证。
-v3 修复原则:**实现独立(两套互不共享函数的 Belady)+ 规格共享
-(SEM-1..5 即策略定义)+ 三实现交叉(DP/offline/live)+ property
-test(随机小迹断言)+ 手算微例扩到三个(含 tie-break/budget=1/thrash)。
+审计背景:v3(d5a7c5f)CONDITIONAL PASS(模型级过渡验证器),三条遗留
+全部本轮落地:
+  ① SEM 不变式升级为**每步断言**(不再只查最终状态);
+  ② offline 实现与 stream 实现**对称覆盖**(同为 hook 逐步检查);
+  ③ tie-break 规则在随机测试中**独立重推断言**(不依赖人工微例):
+     若候选节点的 next_use 相同,实际 victim 必须等于候选集合中
+     具有最大 next_use 的最小 id 节点。
+不变式同时升级为正向形式:每步完成后 current ∈ resident
+(working-set 的正向检查,而非仅"不被驱逐")。
 
-形式化语义(SEM,审计问题④的正式规则):
-  SEM-1 初始状态:resident = ∅;**所有节点初始 ∈ externalized**
-        (全预建 = 全外化起点;首触访问即 REHYDRATE,收费——
-        消除 v2"prebuilt 但 resident=∅"的歧义)
-  SEM-2 访问非驻留节点 → REHYDRATE 事件,付 C_rehy
-  SEM-3 |resident| > budget 时必须 EXTERNALIZE(付 C_ext/次)至合规;
-        当前访问节点本步不可驱逐(working-set)
+形式化语义(SEM-1..5,延续):
+  SEM-1 初始:resident=∅;全体节点初始 ∈ externalized
+  SEM-2 访问非驻留节点 → REHYDRATE,付 C_rehy
+  SEM-3 |resident| > budget → EXTERNALIZE 至合规;当前节点本步不可驱逐
   SEM-4 victim 并列 → 最低 node id
-  SEM-5 成本口径:三层同一 C_ext/C_rehy 常量
-  externalized = **模型状态的一部分**(SEM-1 起):不变式
-        resident ∪ externalized = 全体节点 且 互斥——property test 逐迹断言。
+  SEM-5 三层同一 C_ext/C_rehy
+  externalized = 模型状态:resident ∪ externalized = 全体 且 互斥
+  (不变式在两个实现的每一步后断言——P4-B 复审要求)
 
-声明范围(v2 收窄延续):模型级证据;P4 proper = true-source
-Swift test(LOCKED)。"""
+声明范围(冻结):模型级证据(缩减模型/参数/随机轨迹内三实现一致);
+不证明规格本身正确(规格正确性由 SEM 形式化+外部审计把守);不证明
+Swift/MLX 真源一致。P4 proper = true-source Swift test(LOCKED)。"""
 
 import random
 from itertools import combinations
@@ -38,12 +40,14 @@ def approx(a, b):
 
 
 # ---------- 独立实现 1:offline_belady_batch(批处理式) ----------
-# 特点:不维护逐点 next-use 表;每次驱逐时**向未来线性扫描**求
-# next-use;并列取最低 id。与实现 2 无共享函数。
-def offline_belady_batch(trace, n_nodes, budget, c_ext, c_rehy):
+def offline_belady_batch(trace, n_nodes, budget, c_ext, c_rehy,
+                         step_hook=None, evict_hook=None):
+    """批处理实现(驱逐时向未来线性扫描;无逐点表)。
+    step_hook(step, resident, externalized, current) 每步后调用;
+    evict_hook(step, current, victim, candidates) 每次驱逐前调用。"""
     n_total = len(trace)
     resident = set()
-    externalized = set(range(n_nodes))  # SEM-1:全体初始外化
+    externalized = set(range(n_nodes))  # SEM-1
     cost = 0.0
     misses = 0
     evictions = []
@@ -55,35 +59,37 @@ def offline_belady_batch(trace, n_nodes, budget, c_ext, c_rehy):
         return n_total
 
     for t, node in enumerate(trace):
-        if node in resident:
-            continue
-        # SEM-2:REHYDRATE
-        cost += c_rehy
-        misses += 1
-        externalized.discard(node)
-        resident.add(node)
-        # SEM-3:容量强制(working-set:node 不可驱逐)
-        while len(resident) > budget:
-            # max(scan_next, -id):并列 scan_next 时 id 最小者优先
-            victim = max((n for n in resident if n != node),
-                         key=lambda n: (scan_next(t, n), -n))
-            resident.discard(victim)
-            externalized.add(victim)
-            cost += c_ext
-            evictions.append((t, victim))
+        if node not in resident:
+            cost += c_rehy            # SEM-2
+            misses += 1
+            externalized.discard(node)
+            resident.add(node)
+            while len(resident) > budget:                 # SEM-3
+                candidates = frozenset(n for n in resident if n != node)
+                victim = max(candidates,
+                             key=lambda n: (scan_next(t, n), -n))  # SEM-4
+                if evict_hook:
+                    evict_hook(t, node, victim, candidates)
+                resident.discard(victim)
+                externalized.add(victim)
+                cost += c_ext
+                evictions.append((t, victim))
+        if step_hook:
+            step_hook(t, frozenset(resident), frozenset(externalized), node)
     return cost, misses, evictions
 
 
 # ---------- 独立实现 2:live_belady_stream(流式类) ----------
-# 特点:类封装 step() 逐推进;使用**预计算 per-position 表**(policy
-# 输入);victim = max next-use,tie→最低 id。与实现 1 无共享函数。
 class LiveBeladyStream:
-    def __init__(self, trace, n_nodes, budget, c_ext, c_rehy):
+    def __init__(self, trace, n_nodes, budget, c_ext, c_rehy,
+                 step_hook=None, evict_hook=None):
         self.trace = trace
         self.n_nodes = n_nodes
         self.budget = budget
         self.c_ext = c_ext
         self.c_rehy = c_rehy
+        self.step_hook = step_hook
+        self.evict_hook = evict_hook
         n_total = len(trace)
         self.next_use_at = [n_total] * n_total
         last_pos = {}
@@ -92,7 +98,7 @@ class LiveBeladyStream:
             self.next_use_at[idx] = last_pos.get(node, n_total)
             last_pos[node] = idx
         self.resident = set()
-        self.externalized = set(range(self.n_nodes))  # SEM-1
+        self.externalized = set(range(n_nodes))  # SEM-1
         self.node_next_use = {}
         self.cost = 0.0
         self.misses = 0
@@ -108,16 +114,21 @@ class LiveBeladyStream:
             self.externalized.discard(node)
             self.resident.add(node)
             if len(self.resident) > self.budget:         # SEM-3
-                candidates = [n for n in self.resident if n != node]
+                candidates = frozenset(n for n in self.resident if n != node)
                 victim = min(candidates,
                              key=lambda n: (-self.node_next_use.get(
                                  n, len(self.trace)), n))  # SEM-4
+                if self.evict_hook:
+                    self.evict_hook(self.pos, node, victim, candidates)
                 self.resident.discard(victim)
                 self.externalized.add(victim)
                 self.cost += self.c_ext
                 self.evictions.append((self.pos, victim))
             if len(self.resident) > self.budget:
-                self.violations += 1                     # 可行性(第一层)
+                self.violations += 1
+        if self.step_hook:
+            self.step_hook(self.pos, frozenset(self.resident),
+                           frozenset(self.externalized), node)
         self.node_next_use[node] = self.next_use_at[self.pos]
         self.pos += 1
 
@@ -193,23 +204,14 @@ def gen_tree_trace(rng, parent, n_nodes, length):
 def main():
     rng = random.Random(SEED)
     parent8 = gen_topology(N_NODES, 2)
-    print("=== P4 live verifier v3(P4-A→P4-B 过渡;T2 独立性修复)===")
+    print("=== P4 live verifier v3.1(P4-B 复审落地:逐步不变式 + tie-break 随机断言)===")
     print(f"seed={SEED};nodes={N_NODES};budget={BUDGET};len={TRACE_LEN};"
-          f"C_ext={C_EXT};C_rehy={C_REHY};SEM-1..5 形式化;NORMS 已实现")
-    print("实现独立性:offline_belady_batch(扫描式)与 "
-          "LiveBeladyStream(表格流式)无共享函数;规格共享 = SEM-1..5\n")
+          f"C_ext={C_EXT};C_rehy={C_REHY};SEM-1..5;不变式=每步断言(双实现对称)\n")
 
-    # ---- T3 扩展:三个手算微例(不可偷换的常量断言)
-    print("T3 手算微例(三例):")
-    # 微例 1(基础;step3 命中):
+    # ---- T3 扩展:三个手算微例(v3 保留,回归锚点)
+    print("T3 手算微例(三例;回归锚点):")
     m1 = ([0, 1, 2, 0], 2, 3 * 0.72 + 0.69, 3, [(2, 1)])
-    # 微例 2(tie-break:v2 次抓作者错误——step2 时 0/1 的 next_use 同为
-    #   ∞,SEM-4 应逐最低 id=0(非 1);step3 同理逐 1。正确序列:
-    #   [(2,0),(3,1)]):
     m2 = ([0, 1, 2, 3], 2, 4 * 0.72 + 2 * 0.69, 4, [(2, 0), (3, 1)])
-    # 微例 3(budget=1 thrash;v3 三抓作者错误——曾写 victim=[1,0,1],
-    #   违反 SEM-3:step1 时 current=1 不可驱逐,唯一候选=0。正确:
-    #   [0,1,0,1]/budget1 → 4 miss + 3 evict = 4×0.72+3×0.69 = 4.95):
     m3 = ([0, 1, 0, 1], 1, 4 * 0.72 + 3 * 0.69, 4, [(1, 0), (2, 1), (3, 0)])
     for name, (tr, bd, ec, em, ee) in [("M1 基础", m1), ("M2 tie-break", m2),
                                        ("M3 budget=1 thrash", m3)]:
@@ -244,10 +246,23 @@ def main():
               f"({len(off_e)} 次驱逐) → {'PASS' if t2 else 'FAIL'}")
         assert t1 and t2, f"T1/T2 failed on {wname}"
 
-    # ---- Property test:随机小迹三实现交叉(DP/batch/stream)
-    print("Property test(随机小迹;三实现交叉 + SEM 不变式):")
+    # ---- Property test v3.1:随机小迹;逐步不变式(双实现对称)+
+    #      tie-break 独立重推断言
+    print("Property test v3.1(随机小迹;逐步 SEM 不变式 × 双实现 + "
+          "tie-break 独立重推):")
+
+    def next_use_after(trace, pos, node):
+        """独立重推:trace 中 pos 之后 node 的下一次出现(无则 len)。"""
+        for j in range(pos + 1, len(trace)):
+            if trace[j] == node:
+                return j
+        return len(trace)
+
     n_tr = 150
     fails = 0
+    hook_steps_total = 0
+    hook_evicts_total = 0
+    dp_fails = 0
     for pt in range(n_tr):
         r = random.Random(SEED * 100003 + pt)
         n = r.choice([4, 6, 8])
@@ -257,27 +272,70 @@ def main():
         par = gen_topology(n, max(1, n // 4))
         tr = (gen_tree_trace(r, par, n, length) if use_tree
               else gen_hot_trace(r, n, length))
+
+        def make_hooks():
+            st = {"steps": 0, "evicts": 0, "errors": []}
+
+            def step_hook(step, resident, externalized, current):
+                st["steps"] += 1
+                if resident & externalized:
+                    st["errors"].append(f"step{step}: resident∩externalized 非空")
+                if len(resident) + len(externalized) != n:
+                    st["errors"].append(f"step{step}: 并集未覆盖全体节点")
+                if len(resident) > budget:
+                    st["errors"].append(f"step{step}: 容量超限")
+                if current not in resident:
+                    st["errors"].append(f"step{step}: working-set 正向违反")
+
+            def evict_hook(step, current, victim, candidates):
+                st["evicts"] += 1
+                if victim == current:
+                    st["errors"].append(f"step{step}: working-set(驱逐 current)")
+                if victim not in candidates:
+                    st["errors"].append(f"step{step}: victim ∉ candidates")
+                # SEM-4 独立重推:victim = 最大 next_use 中最小 id
+                best = max(next_use_after(tr, step, n2) for n2 in candidates)
+                expected = min(n2 for n2 in candidates
+                               if next_use_after(tr, step, n2) == best)
+                if victim != expected:
+                    st["errors"].append(
+                        f"step{step}: tie-break 违反(victim={victim}, 期望={expected})")
+
+            return step_hook, evict_hook, st
+
+        for impl in ["batch", "stream"]:
+            sh, eh, st = make_hooks()
+            if impl == "batch":
+                offline_belady_batch(tr, n, budget, C_EXT, C_REHY,
+                                     step_hook=sh, evict_hook=eh)
+            else:
+                eng = LiveBeladyStream(tr, n, budget, C_EXT, C_REHY,
+                                       step_hook=sh, evict_hook=eh)
+                eng.run_all()
+            if st["errors"]:
+                fails += 1
+                print(f"  FAIL @pt{pt}/{impl}: {st['errors'][:3]}")
+            hook_steps_total += st["steps"]
+            hook_evicts_total += st["evicts"]
+
+        # DP 成本交叉
         dp_c = dp_optimal(tr, n, budget, C_EXT, C_REHY)
-        off_c, off_m, off_e = offline_belady_batch(tr, n, budget, C_EXT, C_REHY)
-        eng = LiveBeladyStream(tr, n, budget, C_EXT, C_REHY)
-        liv_c, liv_m, liv_e, viol = eng.run_all()
-        # SEM 不变式:resident ∪ externalized = 全体 且互斥
-        union_ok = (eng.resident & eng.externalized == set()
-                    and len(eng.resident) + len(eng.externalized) == n)
-        ok = (approx(off_c, dp_c) and approx(liv_c, dp_c)
-              and off_e == liv_e and off_m == liv_m and viol == 0 and union_ok)
-        if not ok:
-            fails += 1
-            print(f"  FAIL @pt{pt}(n={n},budget={budget},len={length}):"
-                  f"dp={dp_c:.2f} off={off_c:.2f} live={liv_c:.2f} union={union_ok}")
-    print(f"  {n_tr - fails}/{n_tr} 随机小迹:DP == batch == stream 且 SEM 不变式成立"
-          + ("" if fails == 0 else f"({fails} FAIL)"))
-    assert fails == 0, "property test failed"
+        off_c = offline_belady_batch(tr, n, budget, C_EXT, C_REHY)[0]
+        eng2 = LiveBeladyStream(tr, n, budget, C_EXT, C_REHY)
+        liv_c = eng2.run_all()[0]
+        if not (approx(off_c, dp_c) and approx(liv_c, dp_c)):
+            dp_fails += 1
+
+    print(f"  逐步不变式:{n_tr} 迹 × 2 实现,step_hook 共 {hook_steps_total} 次/"
+          f"evict_hook 共 {hook_evicts_total} 次,失败 {fails}")
+    print(f"  DP 成本交叉:{n_tr - dp_fails}/{n_tr} 迹一致")
+    assert fails == 0 and dp_fails == 0, "property test v3.1 failed"
 
     print()
-    print("声明范围(v2 延续):模型级证据;P4 proper = true-source Swift")
-    print("test(LOCKED)。v3 证明:两套独立实现在全部随机小迹与标准实例")
-    print("上成本与驱逐序列一致,且与 DP 最优成本一致(T1 交叉一致性)。")
+    print("声明范围(冻结):所测试缩减模型/参数/随机轨迹内,三实现逐步")
+    print("SEM 不变式 + 成本/序列一致性成立(模型级证据);不证明规格本身")
+    print("正确;不证明 Swift/MLX 真源一致;P4 proper = true-source Swift")
+    print("test(LOCKED)。")
 
 
 if __name__ == "__main__":
