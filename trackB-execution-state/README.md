@@ -52,14 +52,28 @@ continuation**——迁移不仅要求 KV element-exact,还要求 execution
 identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
-**状态**：**Closure v4(discard 语义修正)5/5 过(2026-09-21),冻结
-候选待审核终判**——v3 的 G5 被审计揭出第三种形态错位(discard 后
-父代用了 child 的 next-input = adopt 语义混入 discard);最小修复 =
-父代从 fork 前自身 next-input 继续 + 可证伪 parentInputsAgree 断言;
-v4 重跑全绿(acbcb54 已推 fork)。G2 迁移单元契约被审核正式接受。
-表述纪律:discard = parent remains intact,非 adopt;gate3 只证发生过
-中途决策;gate4 = 预注册门;regret 仅描述性;τ̂ 热敏感为估计器已知
-特性。技术报告草稿待审定(#629);Track E 开题待命名定夺;exp06 M1
-待跑。记录:F1→Closure 十份(+v3/v4 审计响应增补)+ 技术报告 +
-外部对照;代码:`exp/execution-state-fork` @ acbcb54(本地 + slamfinger
-fork 同步,上游永不推)。
+**状态**：**CLOSED / FROZEN（2026-09-21 终审 PASS/FREEZE；v4 为
+Track B 正式终点，无 v4.1）**。终审按 v4 实际提交（acbcb54）三层复审
+（语义/可证伪性/结果一致性）全过：G5 discard 语义闭环——父代从
+fork 前自身 next-input 继续（discard ≠ adopt），v3 的 "parent state +
+childNext" 非法组合消失；parentInputsAgree 被接受为真可证伪条件
+（双侧独立产生 + 相等断言，非装饰性 assert）；5/5 由此具有 Closure
+意义（⑤ = 完整 discard lifecycle 语义链）。G2 迁移单元契约此前已获
+审核正式接受。**冻结范围纪律（钉死）**：*Closure v4 proves lifecycle
+semantic correctness under the tested execution position; it does
+not prove performance superiority, estimator robustness, or general
+residency behavior*——不证性能优越性、不证估计器鲁棒性、不证
+Residency 行为（**Residency ≠ Closure**）。表述纪律沿用：discard =
+parent remains intact，非 adopt；gate3 只证发生过中途决策；gate4 =
+预注册门；regret 仅描述性；τ̂ 热敏感为估计器已知特性。已知边界如实
+入档：τ̂ 热敏感、热节流下性能方差、估计器鲁棒性未闭合、Residency
+未测。审计链 v1→v4 完整保存为史料（不删错），收敛模型 =
+**Execution State = KV + Identity + Position + Next Input +
+Continuation Semantics**。**下一步（终审定序）**：① #629 技术报告
+审定 → ② Residency M1（resident→externalized→rehydrated→continue；
+Track 命名待真源定夺，见真源 §5.3 命名冲突记录）→ ③ exp06 M1 并行
+→ ④ Residency M2–M4 → ⑤ Residency Policy → ⑥ Execution+Residency
+双 Policy → ⑦ Future 2.0 架构。记录：F1→Closure 十份（+v3/v4 审计
+响应增补 + 终审判定）+ 技术报告 + 外部对照；代码：
+`exp/execution-state-fork` @ acbcb54（本地 + slamfinger fork 同步，
+上游永不推）。

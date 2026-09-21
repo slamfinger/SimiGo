@@ -1,6 +1,74 @@
 # Track B Closure Experiment 结果(2026-09-21)
 
-> **审计响应增补 v4(2026-09-21,冻结候选)**:审核正式接受 v3 的
+> **终审判定(2026-09-21):PASS / FREEZE——Track B 正式关门。**
+>
+> 审核按 v4 实际提交内容(acbcb54)三层复审,**语义、可证伪性、结果
+> 与语义一致性全部成立**:
+>
+> 1. **G5 discard 语义闭环**:v3 的 "parent state @P + childNext"
+>    非法组合(State(position=P) + Input(position=C) 不构成合法
+>    execution state)已真正消失;v4 = parent @P +
+>    parentInputBeforeFork,严格满足 discard = child 的执行结果全部
+>    丢弃、parent 保持 fork 前状态继续(discard ≠ adopt),且该语义
+>    已写入实验记录而非只改代码。
+> 2. **parentInputsAgree 是真可证伪条件**:双侧父代 next-input 各自
+>    独立产生后再断言相等,使"两个 parent continuation 本就处于同一
+>    execution position"成为**可失败的实验条件**,能真实拦下
+>    position/input 错位,非装饰性 assert。
+> 3. **5/5 由此才有 Closure 意义**:⑤ 验证的不再是"child 做过工作
+>    parent 后来也能继续",而是完整 discard lifecycle 语义链
+>    (fork → child speculative work → discard → parent state
+>    unchanged → parent uses own pre-fork next-input → parent
+>    continues → continuation boundary remains correct)。热节流
+>    (τ̂=7.8)只影响性能观察;G1/2/3/5 为 correctness/semantic 门,
+>    与策略解耦——正确性证据未被污染。
+>
+> **范围纪律(冻结表述钉死,阻止未来把 5/5 再解释为性能验证):**
+>
+> Closure v4 proves lifecycle semantic correctness under the tested
+> execution position; it does not prove performance superiority,
+> estimator robustness, or general residency behavior.
+>
+> Closure v4 证明的是所测试执行位置下的生命周期语义正确性;不证明
+> 性能优越性、不证明估计器鲁棒性,也不证明 Residency 行为。
+>
+> **冻结状态:**
+>
+> ```
+> Track B — Execution State Lifecycle
+> Status: CLOSED / FROZEN
+>
+> Verified:
+>   Fork / COW / Continuation / Multi-branch lifecycle / Reattach /
+>   Migration / Migration tax / Adaptive decision /
+>   Discard semantics / Parent continuation preservation
+>
+> Known limitations:
+>   τ̂ thermal sensitivity
+>   performance variance under thermal throttling
+>   estimator robustness not closed
+>   Residency not tested
+> ```
+>
+> 其中 **Residency ≠ Closure**。
+>
+> **审计链(v1→v4,完整史料,不删错)**:v1 cache position 错位 →
+> v2 state/position 对照错位 → v3 parent state + child input(adopt
+> 混入 discard)→ v4 parent state + parent input(真 discard
+> semantics)。审计逐轮逼近的最终模型:**Execution State = KV +
+> Execution Identity + Execution Position + Next Input +
+> Continuation Semantics**(与 F5-1 mInput 前后呼应)。v4 为 Track B
+> 正式终点,不再有 v4.1。
+>
+> **研究问题正式切换**:从"Execution State 是否成立"(已答:**在已
+> 测试边界内,是**)切换到"Execution State 如何跨 Residency 边界而
+> 不丢失 Identity / State / Continuation"。下一步定序:① 本冻结 →
+> ② #629 技术报告审定 → ③ Residency M1(resident → externalized →
+> rehydrated → continue;Track 命名待真源定夺)→ ④ exp06 M1 并行 →
+> ⑤ Residency M2–M4 → ⑥ Residency Policy → ⑦ Execution + Residency
+> 双 Policy → ⑧ Future 2.0 Architecture。
+
+> **审计响应增补 v4(2026-09-21,已被终审判定取代,史料)**:审核正式接受 v3 的
 > G2(迁移单元契约),但推翻 G5——v3 discard 了 child 却把
 > `childNext` 喂给父代:"旧 parent state @64K+96 + input 产生自
 > @64K+96+64+8" 不是合法 execution state;那是 **adopt 语义**,代码
