@@ -1,7 +1,47 @@
 # Track E(命名待定)Residency M4 结果(2026-09-21)
 
-> **状态:M4 Rehydration Tax 首跑完成(68.7s,数字即结果,待审核方
-> 终判)。** 代码:`ResidencyM4RehydrationTax.swift`(exp 分支)。
+> **终审判定(2026-09-21):M4 Rehydration Tax——FINAL PASS。**
+> 审核方实读实验源码 `16972cb` 与结果文档 `6f7f902`。
+>
+> **计量精确化(审核修正,冻结)**:一次性边界成本按入档数字重算 =
+> 28.9/40.36 ≈ 0.716 与 34.9/48.42 ≈ 0.721 → **冻结表述 =
+> ≈0.72 resident decode-token equivalent(约 1 token 数量级)**;
+> "≈1"仅作数量级描述保留。
+>
+> **measurement-scope 注记(本次审核最重要一条,不阻断,不补跑)**:
+> 本次 rehydrate 计时覆盖 serialized-array load、KV/GDN cache 重建及
+> 段表重挂(含 GDN offset 恢复);**`LMOutput.State` 对象重建发生于
+> 计时区间之外**——因此"一次性成本"结论不等同于完整 Execution
+> State object reconstruction cost。continuation/steady-state 结论
+> 不受影响(state 实际重建后参与 decode)。
+>
+> **冻结范围(审核原文)**:在当前 35B 模型、单节点、COW segmented
+> representation、in-memory residency boundary、@4616 与 @16904 两个
+> 测试位置、相同 execution state 与 continuation workload 的配置下,
+> 外化 + rehydrate/re-attach 的一次性测量成本约为 0.72 个 resident
+> decode-token(约 1 token 数量级);在 8-step warmup 后的交替
+> 6×16-step continuation 测量中,未观察到超出轮间噪声的稳态 decode
+> tax。
+>
+> **边界**:结果仅适用于当前模型、设备、in-memory implementation、
+> representation、两个测试 depth 与 workload;不外推到磁盘 residency、
+> 跨设备迁移、不同硬件或其他 serialization format。稳态表述冻结 =
+> "No steady-state decode tax was measured above round-to-round
+> noise"。载荷深度无关 = observed structural property,不升级为
+> general residency property。
+>
+> **M 链正式封口(七问七答)**:是谁(M1)/ 状态是不是它(M2)/
+> 还能继续吗(M3)/ 换表示还能吗(M3-A)/ 深一点呢(M3-B)/ 树状
+> execution 呢(M3-C)/ 付出多少(M4)= **0.72 token 等价 + 稳态无
+> 超噪声税**。
+>
+> **下一阶段(审核开题):Residency Policy。** 研究纪律:M4 证明的是
+> "外化/召回的 cost 可接受性边界",**不证明"应该什么时候外化"**;
+> M4 数字(0.72 token 边界成本 + 无稳态税)自此成为 policy 的输入。
+
+> **首跑记录(史料)**:本文档初版记录双 config 交替对照数字与设计;
+> 初版状态行"待审核方终判"已被上方终审取代;初版"≈1 decode-token
+> 等价"按终审精确化为 0.72。 代码:`ResidencyM4RehydrationTax.swift`(exp 分支)。
 > 纪律:M3-C 终判定序——交替对照、同 execution state、同 continuation
 > workload、热节流感知;不混冷模型/不同 prefill/cache temperature。
 
