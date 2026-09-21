@@ -1,7 +1,49 @@
 # Track E(命名待定)Residency M3-C 结果(2026-09-21)
 
-> **状态:M3-C 多节点树 continuation 首跑语义 PASS(61.8s,待审核方
-> 终判)。** 代码:`ResidencyM3CTopologyContinuation.swift`(exp 分支)。
+> **终审判定(2026-09-21):M3-C Topology Continuation——FINAL PASS。**
+> 审计范围如实分开:本次判定基于实验契约、结果逻辑与修正描述;审核方
+> 未重新读取 fork 源码,不声称源码已核验(诚实申报保留)。
+>
+> **冻结结论(审核原文)**:在当前 35B 模型、单节点、COW segmented
+> representation、给定 execution tree topology、各节点独立 residency
+> cycle、suffix512、decode8、continuation horizon 96 的实验配置下,
+> A/B/A1/B1 四个 execution node 在 externalize → release → tree-order
+> reattach 后,均保持与各自 resident control 相同的 continuation;同时
+> sibling isolation、parent→child lineage 与 parent history
+> immutability 均成立。
+>
+> **边界继续保留**:该结果证明的是当前测试 topology 与 continuation
+> horizon 下的 correctness,不泛化为任意 execution-tree 深度、任意
+> 拓扑、任意 residency ordering、跨设备迁移或性能结论。
+>
+> **树序重挂 = 架构观察(非普遍命题,审核措辞冻结)**:对于当前这种
+> COW segmented representation,descendant rehydration 可以依赖已
+> rehydrated ancestor 的 segment state;因此 residency reattachment
+> order 在该实现中遵循 execution-tree 的拓扑依赖顺序。**暂不升级为**
+> "residency 本质上必须按 execution tree 拓扑序恢复"——未来可能存在
+> child 自带 dependency descriptor / remote parent 等实现。
+>
+> **GDN offset 分离 = M3-C 正式实验 invariant**:attention offset 与
+> GDN/Mamba offset 分开验证(KV temporal position vs GDN temporal
+> position 不被笼统 offset 门掩盖);M3-C 相对 M3-B 不只是 topology
+> 增加,也完成了 correctness observability 修正。
+>
+> **M3 系列终局(冻结)**:M3 PASS(能不能继续)/ M3-A PASS(
+> representation)/ M3-B PASS(depth)/ M3-C PASS(topology)。实现
+> 冻结点 = `30b61e6`;后续若无直接反证,不再回头修改 M3 系列。
+> M3 回答的四个问题:迁移后还能继续吗 YES / 段表碰巧能继续吗 否(
+> 两表示均可)/ 只有浅 context 吗 否(16K/64K)/ 只有单节点简单
+> topology 吗 否(两代树)。
+>
+> **下一步:M4——Rehydration Tax。** 纪律:alternating control /
+> treatment;same execution state;same continuation workload;
+> hot-throttling awareness;不把 rehydration 与冷模型/不同 prefill/
+> 不同 cache temperature 混在一起。核心问题 = 相同 execution state、
+> 相同 continuation workload 下,rehydration 相对 resident
+> continuation 的额外成本。
+
+> **首跑记录(史料)**:本文档初版记录四节点 96/96×4 与三层 invariant;
+> 初版状态行"待审核方终判"已被上方终审取代。 代码:`ResidencyM3CTopologyContinuation.swift`(exp 分支)。
 > topology 轴单变量;三层 invariant 按 M3-B 终判开题方向一起设计;
 > **前向修正落地**:GDN/Mamba offset 显式恢复 + 独立恢复门(承 M3-B
 > 审计注记)。
