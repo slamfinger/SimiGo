@@ -1,5 +1,23 @@
 # Track B Closure Experiment 结果(2026-09-21)
 
+> **审计响应增补(2026-09-21,v3 = 冻结候选)**:外部审核对 5e39800
+> (v2)判定"未最终封口",两处成立——**G2 伪断言**(reattach 不修改
+> inputL,`inputL == inputBefore` 为变量自比恒真)与 **G5 对照位置
+> 错位**(discard 后 lifecycle@64K+96+64+8 vs twinP@64K+96,且 child
+> 门本身 child@232 vs twinQ@136 亦错位)。修复:**A** 迁移做成可测
+> 单元 `migrate(caches, state, nextInput)` 三元组整体搬运,边界断言
+> 针对迁移单元契约(mInput 丢失 bug 类别的回归拦截),下游消费迁移
+> 单元带回的 input;**B** 双分支同位对照——twinP 同形 fork twinChild,
+> 双侧 suffix+8→discard→父代从各自 child 的 next-input 续跑,每处
+> 对照位置/输入对齐,分支边界输入独立产生并断言相等(可证伪)。
+> **v3 重跑(9a5d91b,已推 fork):5/5 全过**——①四路 96/96;②KV
+> 逐元素 + 边界输入携带;③decision@8;④预注册门过(−26.6% 再次
+> 热顺序偏差,不作性能结论);⑤child 门/边界一致/discard 后父代
+> 续跑/offset+4 全绿。**诚实观察**:本轮全局热节流更重(cFresh
+> 106.7 vs 上轮 84,观察窗步均 403ms),τ̂ 高估至 2.78 → 窗口末即
+> 触发;正确性与策略解耦仍全过,**τ̂ 热敏感入档为估计器已知特性**
+> (中位数鲁棒窗口 = 后续工作)。待审核方对 v3 日志作最终冻结判定。
+
 **性质**:2.0 Track B 收官实验——不发现新东西,把已分别验证的机制
 串成**一次完整生命周期**(承审核定序:"少做一点",不加新变量)。
 **代码**:`Tests/MLXLMTests/TrackBClosure.swift`(通过,463s;

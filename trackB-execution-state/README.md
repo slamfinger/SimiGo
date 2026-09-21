@@ -52,15 +52,13 @@ continuation**——迁移不仅要求 KV element-exact,还要求 execution
 identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
-**状态**：**Track B 闭环收官(2026-09-21)**——Closure 5/5 过 +
-**#629 follow-up 技术报告草稿完成**
-(`TRACK_B_TECH_REPORT_629_FOLLOWUP_DRAFT_20260921.md`,英文待审定,
-发布属对外动作由维护者定夺;F4-D 骨架退役为史料)。
-结论(审核批准表述):execution state 可以在执行生命周期内进行共享、
-表示迁移与自适应选择,并在表示变化过程中保持 execution identity 与
-continuation 不变。完整记录:F1→Closure 十份 + 技术报告 + 外部对照 +
-F4-D 骨架(退役)+ 模拟器脚本;代码:vendor 分支
-`exp/execution-state-fork`(基于 8f37dbc,永不进 1.7 发布路径)。
-**待办**:①报告审定后发布 #629;②Track C(Model-State Residency)
-开题——注意与真源报告 §5.3 Track C(Multi-device)命名冲突,新轨
-建议命名 Track E 待真源更新定夺;③exp06 M1 本机基线(Track A 开关)。
+**状态**：**Closure v3(审计修复轮)5/5 过(2026-09-21),冻结候选待
+审核方终判**——外部审核推翻 v2 封口(G2 伪断言 + G5 位置错位,均
+成立);修复 A(迁移=可测单元,含 next-input 契约)+ B(双分支同位
+对照,含 child 门错位顺带修正)后重跑全绿(9a5d91b 已推 fork)。
+**τ̂ 热敏感入档为估计器已知特性**(本轮观察窗 403ms 步 → τ̂=2.78,
+正确性与策略解耦仍全过;中位鲁棒窗口=后续工作)。技术报告草稿待
+审定(#629);Track E residency 开题待命名定夺;exp06 M1 待跑。
+记录:F1→Closure 十份(+审计响应增补)+ 技术报告 + 外部对照;代码:
+`exp/execution-state-fork` @ 9a5d91b(本地 + slamfinger fork 同步,
+上游永不推)。
