@@ -48,17 +48,15 @@ continuation**——迁移不仅要求 KV element-exact,还要求 execution
 identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
-**状态**：**Track B 核心架构命题闭环(2026-09-21,Closure 5/5 过)——
-实验阶段收官。** 生命周期一次串联(Fork→COW→tax→estimate→
-decision@13→Reattach→Continuous→四路 continuation 96/96→迁移后再
-fork/discard/续跑)五验收全过;v1 P-twin 位置错位失败如实入档。
-**结论(审核批准表述):execution state 可以在执行生命周期内进行
-共享、表示迁移与自适应选择,并在表示变化过程中保持 execution
-identity 与 continuation 不变。** ④ 的 −44.9% 为顺序热偏差,不作
-性能结论(公正数字 = S2/S3 交替对照 regret +0.9%)。**下一步:
-RFC/技术报告(#629 follow-up)→ Track C Model-State Residency
-(同构:表示税↔传输税、reattach↔prefetch、discard↔evict;
-TurboFieldfare/DeepSpeed/FlexGen 为 prior art)。**
-记录:F1→Closure 十份 + 模拟器脚本 + 外部对照 + F4-D 骨架;代码:
-vendor 分支 `exp/execution-state-fork`(基于 8f37dbc,永不进 1.7
-发布路径)。
+**状态**：**Track B 闭环收官(2026-09-21)**——Closure 5/5 过 +
+**#629 follow-up 技术报告草稿完成**
+(`TRACK_B_TECH_REPORT_629_FOLLOWUP_DRAFT_20260921.md`,英文待审定,
+发布属对外动作由维护者定夺;F4-D 骨架退役为史料)。
+结论(审核批准表述):execution state 可以在执行生命周期内进行共享、
+表示迁移与自适应选择,并在表示变化过程中保持 execution identity 与
+continuation 不变。完整记录:F1→Closure 十份 + 技术报告 + 外部对照 +
+F4-D 骨架(退役)+ 模拟器脚本;代码:vendor 分支
+`exp/execution-state-fork`(基于 8f37dbc,永不进 1.7 发布路径)。
+**待办**:①报告审定后发布 #629;②Track C(Model-State Residency)
+开题——注意与真源报告 §5.3 Track C(Multi-device)命名冲突,新轨
+建议命名 Track E 待真源更新定夺;③exp06 M1 本机基线(Track A 开关)。
