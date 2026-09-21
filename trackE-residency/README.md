@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS,M 链封口(一次性 ≈0.72 token 等价+稳态无超噪声税)**。**Residency Policy v2(审计三条收紧已落)→ simulator v0 首跑完成(2026-09-21,待审核终判)**:决策空间在全部 24 个 (budget×locality) 组合可观测(lru/oracle = 1.35–3.05,差异随预算升高扩大);H-P0/H-P1 初判=未来复用信息含 decision-relevant 信号,但可实现策略能否捕获+树依赖增量属 P3。v1 如实入档:oracle 用静态 last-occurrence 冒充逐步 next-use 致上界低于基线(物理不自洽),修正=标准 Belady+稳定种子——**教训:reference bound 的 bug 会伪装成'策略无差异'或'基线更好',上界须先过健全性检查**。P0 prerequisite:resident memory cost 未实测(全部结论=boundary-cost 视角)。**——
+**状态**:**M1–M4 全部 FINAL PASS,M 链封口;simulator v0 FINAL PASS(P1/P2 封口,三处定义同步)。P0 Cost Model Closure 首跑完成(2026-09-21,待审核终判)**——C_resident 计价闭合:每节点驻留 78,246 KiB(nbytes 精计;GDN recurrence fp32 占 80% = 固定驻留底价,attention 19%;padding 披露 7680 分配行/5200 逻辑行),真实预算 4,449 MiB ≈ 58 节点,activeMemory 尾部拟合交叉验证差 <1%。policy 不等式两边首次都有数:**Keep = 字节机会成本×T + 0 计算 / Leave = 0.72 token + 逻辑行外部存储**。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0_RESULTS + POLICY_OPENING+SIM_V0_RESULTS_20260921.md。**下一步:P3 New Policy discrimination(消费 GDN 主体发现 + cost-aware oracle)→ H-P0/H-P1 判读 → P4 live。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
