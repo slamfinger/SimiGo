@@ -49,7 +49,7 @@ layers, 30 GDN/linear layers, KV ≈ 20 KiB/token).
 | Restore (page-level) | private-pages round-trip + segment re-attach is flat over a 16K/24K/32K chain (flatness 1.22, element-exact); full-view disk round-trip stays linear (baseline shape) |
 | Correctness | token-exact greedy gates: 16/16, 32/32, 36/36, 96×4-way — fork/merged/mid-flight-switch continuations all match same-chunking from-scratch controls |
 | Root unfreeze | parent continues writing rows ≥ forkDepth after being forked; re-fork afterwards still token-exact (rollback→continue→re-branch semantics) |
-| Discard | unreachable private pages are reusable (20-round × 8 MiB churn: 0 KiB drift); single-point RSS not guaranteed to drop (MLX lazy-graph parent retention); combined-drop returns memory |
+| Discard (memory reuse — distinct from the §5 lifecycle branch-discard) | unreachable private pages are reusable (20-round × 8 MiB churn: 0 KiB drift); single-point RSS not guaranteed to drop (MLX lazy-graph parent retention); combined-drop returns memory |
 
 ### 3. The multi-segment decode tax (and its removal)
 
@@ -86,14 +86,22 @@ regret +0.9%**; one long continuation finished **−1.0% below both pure
 policies** (mid-flight switch is an operating point outside the
 pure-strategy simplex). Observation window is a calibratable parameter:
 k=8 beat k=4 (estimation error 8.1% vs 22%; k=4 is polluted by the
-first-step view-materialization cache miss).
+first-step view-materialization cache miss). τ̂ itself proved thermally
+sensitive across sessions (see §7).
 
 ### 5. Lifecycle closure
 
 One full run chained: fork → COW generation → tax observed → online
 estimate → mid-flight reattach → continuous generation → four-way
 continuation gate 96/96 → post-migration fork/branch/discard/continue on
-the merged parent, semantics intact. Unified invariant throughout:
+the merged parent. The final gate survived a four-round external audit
+(three distinct misalignment bug families were caught and fixed before
+freeze); its frozen semantics are exact: discard drops the child's
+results entirely and the parent continues from **its own pre-fork
+next-input** — discard ≠ adopt, because a parent state and a child
+input do not compose into a legal execution state — pinned by a
+falsifiable condition (both parents' next-inputs are produced
+independently on opposite branches, then asserted equal). Unified invariant throughout:
 **representation migration must preserve execution identity and
 continuation** (KV element-exact + identity + next-input + continuation
 + subsequent KV evolution — strictly stronger than KV equality; our own
@@ -114,13 +122,24 @@ those hooks rather than a competing storage design.
 
 ### 7. Known limitations (stated plainly)
 
+**Scope discipline**: the lifecycle closure proves semantic correctness
+of the fork → COW → migrate → discard → continue chain under the tested
+execution position; it does not establish performance superiority,
+estimator robustness, or residency behavior.
+
 Single machine, single model, single-digit trial counts for policy
 numbers (all variance/scoping notes inline in the records); absolute
-latencies are M5-Air-specific; view materialization is consumer-side
-and O(depth) on first attention after fork; Discard guarantees reuse,
-not immediate RSS drop; 128K multi-segment cells unmeasured here
-(memory ceiling); the adaptive policy numbers are exploratory, not a
-tuned production policy.
+latencies are M5-Air-specific and cross-run comparisons are confounded
+by thermal throttling (fanless machine); the online tax-rate estimator
+τ̂ is itself thermally sensitive — window-level estimates shifted
+severalfold across thermal states — so estimator robustness is
+explicitly not closed; view materialization is consumer-side and
+O(depth) on first attention after fork; Discard guarantees reuse, not
+immediate RSS drop; 128K multi-segment cells unmeasured here (memory
+ceiling); the adaptive policy numbers are exploratory, not a tuned
+production policy; residency — externalizing and rehydrating execution
+state across physical locations — is untested and is the declared next
+research question, not a claim of this report.
 
 Full experiment records (10 documents, probe→result→decision format)
 are maintained in the SimiGo-Lab research repository and available on
@@ -128,4 +147,9 @@ request.
 
 ---
 
-*(草稿状态:待维护者审定后发布;发布时删除本行及文首中文说明。)*
+*(草稿状态:2026-09-21 预审修订——按终审后五项清单对齐冻结记录:
+§5 生命周期语义改为 v4 冻结表述(discard≠adopt、父代从 fork 前自身
+next-input 继续、四轮外部审计入文、parentInputsAgree 可证伪条件);
+§7 置顶范围纪律句并补 τ̂ 热敏感/估计器鲁棒性未闭合/热节流混淆/
+Residency 边界句;§2 Discard 行消歧;§4 τ̂ 交叉引用。待维护者按五项
+清单终审;发布属对外动作,审定后发布时删除本行及文首中文说明。)*
