@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1/M2/M3/M3-A 均 FINAL PASS;M3-B 深位置段表 continuation 首跑 PASS(2026-09-21,待审核终判)**——16K@16904 与 64K@66056 均 96/96 逐 token,'浅位置偶然'解释在测试深度上不成立;私有页载荷深度无关(两深度均 73,292 KiB,承 F3 R2 平坦性)。记录:RESIDENCY_M1/M2/M3/M3A/M3B_RESULTS_20260921.md。**下一步**:M3-C 多节点 continuation(topology 轴)→ M4 rehydration tax。**——
+**状态**:**M1/M2/M3/M3-A/M3-B 均 FINAL PASS(2026-09-21)**。M3-B 冻结范围 = 测试配置(35B/单节点/COW 段表/16K+64K/suffix512/decode8/horizon96)下 rehydrated state 与 resident control continuation 相同;不泛化任意 depth/horizon/topology。工程审计注记(不阻断):GDN/Mamba offset 未作独立恢复门,'offset+96'=attention 侧结论;前向修正 = M3-C 起显式恢复+独立门。实验链:M3=能不能继续/M3-A=representation coincidence 已打掉/M3-B=shallow-position coincidence 已打掉(测试深度上)。**M3-C 进行中(topology 轴:三层 invariant 一起设计——sibling isolation + parent→child lineage + 各节点独立 residency/continuation)**→ M4。记录:RESIDENCY_M1/M2/M3/M3A/M3B_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首

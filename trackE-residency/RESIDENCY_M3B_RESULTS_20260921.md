@@ -1,7 +1,38 @@
 # Track E(命名待定)Residency M3-B 结果(2026-09-21)
 
-> **状态:M3-B 深位置段表 continuation 首跑 PASS(一次通过,
-> 458s,待审核方终判)。** 代码:`ResidencyM3BDeepContinuation.swift`
+> **终审判定(2026-09-21):M3-B Deep Position Continuation——FINAL PASS。**
+> 审核方完成双端核验(fork 上 1a142b5 实验源码 + lab 仓结果文档)。
+>
+> **冻结范围(审核原文)**:在当前 35B 模型、单节点、COW 段表路径、
+> 16K 与 64K 两个测试深度、suffix 512、decode 8、continuation horizon
+> 96 的配置下,rehydrated Execution State 均保持与 resident control
+> 相同的 continuation。**边界继续保留**:这证明的是测试深度上的
+> continuation correctness,不泛化为任意 context depth、任意 horizon
+> 或任意 topology。
+>
+> **工程审计注记(不阻断 PASS,如实入档,不补跑)**:M3-B 重建
+> GDN/Mamba cache 时未显式恢复 `m.offset`(attention COW cache 有),
+> 且 offset 辅门只检查 `attnIdx`——故"offset +96"严格来说是
+> **attention KV cache offset +96**,不是"所有 cache 类型"。不构成
+> FAIL:主判定目标是 continuation,GDN state 重建后实际参与 96-step
+> forward 且与 control 96/96 全等,若 GDN metadata 缺失实际影响
+> continuation,主门应已暴露。处理 = 记录注记、不扩大当前结论、
+> **不为注记补跑 M3-B**(否则破坏 axis isolation)。**前向修正:
+> M3-C 起 GDN/Mamba offset 显式恢复并设独立门。**
+>
+> **实验链(审核判定表)**:M3 PASS(能不能继续)/ M3-A PASS(是否
+> 只是 COW 段表碰巧能继续)/ M3-B PASS(是否只是浅位置碰巧能继续,
+> 16K/64K)/ M3-C OPEN(topology:execution tree/多节点还能不能
+> 继续)/ M4 OPEN(为此付出多少成本)。M3-A 打掉 representation
+> coincidence,M3-B 打掉 shallow-position coincidence——M3-C 攻击
+> topology coincidence 是自然推进,非重复实验。
+>
+> **M3-C 开题方向(审核建议,正式入档)**:开题时把三层 invariant
+> 一起设计清楚——**sibling isolation + parent→child lineage + 各节点
+> 独立 residency/continuation**;比单纯复制 M3 几份更有价值。
+
+> **首跑记录(史料)**:本文档初版记录两深度 96/96 与设计;初版
+> 状态行"待审核方终判"已被上方终审取代。 代码:`ResidencyM3BDeepContinuation.swift`
 > (exp 分支)。设计按 M3-A 终判收紧:**只走段表路径**,depth 轴
 > 单变量,轴分离 = M3-A representation / M3-B depth / M3-C topology /
 > M4 cost。
