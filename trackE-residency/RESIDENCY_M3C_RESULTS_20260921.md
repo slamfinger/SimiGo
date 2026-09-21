@@ -1,8 +1,26 @@
 # Track E(命名待定)Residency M3-C 结果(2026-09-21)
 
-> **终审判定(2026-09-21):M3-C Topology Continuation——FINAL PASS。**
-> 审计范围如实分开:本次判定基于实验契约、结果逻辑与修正描述;审核方
-> 未重新读取 fork 源码,不声称源码已核验(诚实申报保留)。
+> **终审判定(2026-09-21):M3-C Topology Continuation——FINAL PASS
+> (源码级)。** 审核方实际读取 `30b61e6` 的 commit/diff/完整实验文件
+> `ResidencyM3CTopologyContinuation.swift`,确认:GDN offset 修正
+> 全链路落实(捕获→外化→恢复→独立 gate,四节点全 GDN layer 进入);
+> 树序重挂为源码实现而非文字描述(A1/B1 重挂到已重挂的 A/B);主
+> continuation gate 无结构性问题(control 全程未外化,treat 消费
+> 单元元数据 next-input)。
+>
+> **三条审计收紧注记(不阻断 PASS,不补跑,原样入档)**:
+> 1. **post-continuation lineage/history gate 不对称**:当前显式覆盖
+>    A/A1 分支,B/B1 未建立完全对称的独立历史 gate;B/B1 仍受主
+>    continuation、前置 lineage、结构门、sibling isolation 约束。
+>    属 observability completeness 问题,非实验路径错误。前向纪律:
+>    后续 topology 实验采用双分支对称 gate。
+> 2. **parent integrity 表述收窄**:该 gate 实际验证的是 parent
+>    attention KV cache(`KVCacheSimple`),不应扩大为"整个 parent
+>    Execution State bit-intact"(parent GDN/LMOutput.State 未纳入)。
+>    冻结表述 = "parent attention cache remained element-exact"。
+> 3. **"pairwise distinct"措辞过强**:代码检查 A≠B、A1≠B1、A≠A1,
+>    未检查全部六对;准确表述 = "sibling trajectories distinct,
+>    with A and A1 additionally distinguished"。
 >
 > **冻结结论(审核原文)**:在当前 35B 模型、单节点、COW segmented
 > representation、给定 execution tree topology、各节点独立 residency

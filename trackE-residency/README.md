@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1/M2/M3/M3-A/M3-B/M3-C 均 FINAL PASS(2026-09-21);M3 系列冻结于实现点 30b61e6,无直接反证不再回头修改**。M3 回答四问:能继续 YES/非段表碰巧/非浅位置(16K/64K)/非单节点简单 topology(两代树)。树序重挂=架构观察(实现级,冻结审核措辞),非普遍命题;GDN/attention offset 分离=正式 invariant。**M4 Rehydration Tax 进行中**(交替对照;同状态同负载;热节流感知;不混冷模型/不同 prefill/cache temperature 变量)——核心问题:相同状态相同负载下,跨越 residency 边界的额外成本。**——
+**状态**:**M1/M2/M3/M3-A/M3-B/M3-C 均 FINAL PASS;M3-C 为源码级终判(审核方实读 30b61e6 commit/diff/完整实验文件)**,附三条审计收紧注记(不阻断/不补跑/原样入档):①post-continuation lineage gate 覆盖 A/A1,B/B1 未完全对称(前向:对称双分支 gate);②parent integrity=attention KV 侧,不扩大为整 state bit-intact;③'pairwise distinct'→'sibling trajectories distinct'。M3 系列冻结于 30b61e6。**M4 Rehydration Tax 进行中**(交替对照;同状态同负载;热节流感知)。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
