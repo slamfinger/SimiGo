@@ -1,6 +1,46 @@
 # Track E(命名待定)Residency M2 结果(2026-09-21)
 
-> **状态:M2 三轴首跑全 PASS(套件 3 tests,507.4s),待审核方终判。**
+> **终审判定(2026-09-21):PASS——不需要补跑 M2。**
+>
+> **措辞纪律(审核"降温"要求,正式入档)**:本实验结论 = "三个预设
+> 泛化轴**在当前测试配置下**均通过",不是"泛化性普遍成立";m2a =
+> "在测试的 16K/64K 深度上成立",不外推为"深位置普遍成立"。未证明:
+> 所有深度 / 所有 segment topology / 任意 execution tree(任意
+> DAG / 大规模树)/ 任意 residency pattern。
+>
+> **架构观察(正式入档,与架构结论分开)**:*Residency representation
+> need not equal the resident execution representation's materialized
+> form*。**不得**前进一步说"residency architecture 应采用
+> segment-preserving externalization"——该架构结论需 M3 证明段表
+> 表示可完整继续执行之后才可能成立。
+>
+> **Execution Tree invariant 抽象(正式入档)**——从测试断言的失败
+> 方式自然长出,非画图:同层兄弟 → isolation invariant(逐元素互异);
+> parent→child → prefix + extension invariant(前缀逐元素相等 + 严格
+> 延伸);externalization → identity/state preservation invariant。
+> 树不是"所有节点可互相比较"的集合;不同关系类型用不同 invariant。
+>
+> Scope ✓:16K/64K 深度;COW segmented externalization;private-page-
+> only externalization;shared prefix retained;rehydrated state remains
+> segmented;multiple execution nodes;sibling isolation;parent-child
+> lineage;parent preservation;five state gates。
+> Not established ✗:continuation correctness(M3);arbitrary tree
+> topology;cross-device residency(真源 Track C 问题域);rehydration
+> performance(M4);residency policy。
+>
+> **M2 PASS → OPEN M3(Continuation)**:问题从"回来以后看起来还是
+> 原来的 Execution State"升级为"回来以后**是不是还能成为原来的
+> Execution**"——从 snapshot comparison 跨到 behavioral continuation。
+> 主门 = Continuation(Control) == Continuation(Rehydrated) 逐 token;
+> 主配置 = m2b 段表路径(COW 子代私有页外化→重挂→继续);第一轮不加
+> 多节点/64K/大规模树/性能/policy(单变量纪律)。
+>
+> 附:a988b8a 执行瑕疵处理经审核通过(不 force rewrite、不删历史、
+> 如实记录;脆弱文本锚点匹配弃用,改行号/结构化编辑,已入档)。
+
+> **首跑记录(v1 检查错误如实保留,史料)**:本文档初版记录三轴
+> PASS 与 m2c 互异检查修正;初版状态行"待审核方终判"已被上方终审
+> 取代;初版"泛化性三轴全部成立"表述按终判降温要求收缩。
 > 靶子 = 泛化性:打掉"M1 只在这个 35B、这个 4616 position、这个单节点
 > 配置下成立"的解释。代码:`ResidencyM2StateExactness.swift`(exp
 > 分支,基于 M1 探针之后;措辞沿用 M1 终判收紧:Execution Identity
