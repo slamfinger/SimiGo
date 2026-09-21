@@ -1,6 +1,25 @@
 # Track B Closure Experiment 结果(2026-09-21)
 
-> **审计响应增补(2026-09-21,v3 = 冻结候选)**:外部审核对 5e39800
+> **审计响应增补 v4(2026-09-21,冻结候选)**:审核正式接受 v3 的
+> G2(迁移单元契约),但推翻 G5——v3 discard 了 child 却把
+> `childNext` 喂给父代:"旧 parent state @64K+96 + input 产生自
+> @64K+96+64+8" 不是合法 execution state;那是 **adopt 语义**,代码
+> 只做了 discard(v1/v2/v3 同一错误族第三种形态;commit message 里
+> "continue from their own child's next-input" 一句即自证)。**修复
+> (审核最小方案)**:fork 前保存父代自身 next-input
+> (`parentInputBeforeFork = inputL` / `twinParentInputBeforeFork =
+> pCtrl`),child 的 next-input 只在 child 分支内使用;discard 后双侧
+> 父代各自从 **fork 前自身 next-input** 续 4 步;新增可证伪断言两侧
+> parent next-input 独立产生且相等。叙事同步修正:discard =
+> "parent remains intact",非 commit/adopt。**v4 重跑(acbcb54,已推
+> fork):5/5 全过**——①四路 96/96;②KV 逐元素 + 边界输入携带;
+> ③decision@8;④预注册门过(regret +2.9% 描述性;本轮重热节流:
+> cFresh 125.6ms、观察窗步均 ~1106ms、τ̂=7.8 窗口末触发,正确性与
+> 策略解耦);⑤child 门/边界一致/父代 next-input 一致/discard 后从
+> 自身 next-input 续跑/offset+4 全绿。**待审核方对 v4 作冻结终判;
+> 9a5d91b 保持为审计修复中间版本。**
+
+> **审计响应增补 v3(已被 v4 取代,史料)**:外部审核对 5e39800
 > (v2)判定"未最终封口",两处成立——**G2 伪断言**(reattach 不修改
 > inputL,`inputL == inputBefore` 为变量自比恒真)与 **G5 对照位置
 > 错位**(discard 后 lifecycle@64K+96+64+8 vs twinP@64K+96,且 child
@@ -10,13 +29,9 @@
 > 单元带回的 input;**B** 双分支同位对照——twinP 同形 fork twinChild,
 > 双侧 suffix+8→discard→父代从各自 child 的 next-input 续跑,每处
 > 对照位置/输入对齐,分支边界输入独立产生并断言相等(可证伪)。
-> **v3 重跑(9a5d91b,已推 fork):5/5 全过**——①四路 96/96;②KV
-> 逐元素 + 边界输入携带;③decision@8;④预注册门过(−26.6% 再次
-> 热顺序偏差,不作性能结论);⑤child 门/边界一致/discard 后父代
-> 续跑/offset+4 全绿。**诚实观察**:本轮全局热节流更重(cFresh
-> 106.7 vs 上轮 84,观察窗步均 403ms),τ̂ 高估至 2.78 → 窗口末即
-> 触发;正确性与策略解耦仍全过,**τ̂ 热敏感入档为估计器已知特性**
-> (中位数鲁棒窗口 = 后续工作)。待审核方对 v3 日志作最终冻结判定。
+> **v3 重跑(9a5d91b):5/5 通过但 G5 语义错误被 v4 审计揭出**——
+> 热节流观察(cFresh 106.7、窗步均 403ms、τ̂=2.78)已并入 v4 的
+> τ̂ 热敏感记录(中位数鲁棒窗口 = 后续工作)。
 
 **性质**:2.0 Track B 收官实验——不发现新东西,把已分别验证的机制
 串成**一次完整生命周期**(承审核定序:"少做一点",不加新变量)。

@@ -52,13 +52,14 @@ continuation**——迁移不仅要求 KV element-exact,还要求 execution
 identity 一致、next-input 状态一致、continuation token 一致、**后续
 KV 演化一致**(比 KV equality 严格;F5-1 的 mInput bug 即为其反例证明)。
 
-**状态**：**Closure v3(审计修复轮)5/5 过(2026-09-21),冻结候选待
-审核方终判**——外部审核推翻 v2 封口(G2 伪断言 + G5 位置错位,均
-成立);修复 A(迁移=可测单元,含 next-input 契约)+ B(双分支同位
-对照,含 child 门错位顺带修正)后重跑全绿(9a5d91b 已推 fork)。
-**τ̂ 热敏感入档为估计器已知特性**(本轮观察窗 403ms 步 → τ̂=2.78,
-正确性与策略解耦仍全过;中位鲁棒窗口=后续工作)。技术报告草稿待
-审定(#629);Track E residency 开题待命名定夺;exp06 M1 待跑。
-记录:F1→Closure 十份(+审计响应增补)+ 技术报告 + 外部对照;代码:
-`exp/execution-state-fork` @ 9a5d91b(本地 + slamfinger fork 同步,
-上游永不推)。
+**状态**：**Closure v4(discard 语义修正)5/5 过(2026-09-21),冻结
+候选待审核终判**——v3 的 G5 被审计揭出第三种形态错位(discard 后
+父代用了 child 的 next-input = adopt 语义混入 discard);最小修复 =
+父代从 fork 前自身 next-input 继续 + 可证伪 parentInputsAgree 断言;
+v4 重跑全绿(acbcb54 已推 fork)。G2 迁移单元契约被审核正式接受。
+表述纪律:discard = parent remains intact,非 adopt;gate3 只证发生过
+中途决策;gate4 = 预注册门;regret 仅描述性;τ̂ 热敏感为估计器已知
+特性。技术报告草稿待审定(#629);Track E 开题待命名定夺;exp06 M1
+待跑。记录:F1→Closure 十份(+v3/v4 审计响应增补)+ 技术报告 +
+外部对照;代码:`exp/execution-state-fork` @ acbcb54(本地 + slamfinger
+fork 同步,上游永不推)。
