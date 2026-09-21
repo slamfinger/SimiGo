@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1 终判 PASS + M2 终判 PASS + M3 主门首跑 PASS(2026-09-21,待审核终判)**。M3 = behavioral continuation:同父代同形双子代(treat/ctrl),外化前置门逐元素相等;treat 私有页外化→释放→重挂回驻留父代(仍为 COW 段表);**主门 Continuation(treat)==Continuation(ctrl) 96/96 逐 token 全等**;offset +96 精确,父代完好。记录:RESIDENCY_M1/M2/M3_RESULTS_20260921.md。架构观察(入档):residency 不要求表示转换,且段表表示可继续执行(单配置)——架构结论仍待更多配置。**——
+**状态**:**M1 FINAL PASS + M2 FINAL PASS + M3 FINAL PASS(2026-09-21)**。M3 冻结表述 = Identity → Exactness → Continuation 在本实验配置下形成闭环(behavioral continuation 96/96 逐 token);段表表示已获 continuation-level evidence,架构结论仍不下(1 config/1 depth/1 node/1 round)。代码 68daa06 在实验 fork `slamfinger/mlx-swift-lm@exp/execution-state-fork`(远端可见性已双验并入档)。**M3-A 进行中**(连续表示 continuation 成对对照,攻击架构分叉:residency 是否本身不需要 representation conversion)→ M3-B 深位置 → M3-C 多节点 → M4 tax。记录:RESIDENCY_M1/M2/M3_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首

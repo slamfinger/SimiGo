@@ -1,6 +1,59 @@
 # Track E(命名待定)Residency M3 结果(2026-09-21)
 
-> **状态:M3 主门首跑 PASS(一次通过),待审核方终判。** 代码:
+> **终审判定(2026-09-21):M3 Continuation——FINAL PASS,无需补跑。**
+>
+> **冻结表述(采用审核推荐句)**:**Identity → Exactness →
+> Continuation 在本实验配置下形成闭环**;即 *Execution State 的
+> Continuation Semantics 在当前 residency 配置下得到行为级验证*。
+> 不使用"Execution State 定义的行为维度闭合"这类可能被脱离上下文
+> 读成普遍证明的表述。
+>
+> **三层问题链(审核确认,不是一个问题)**:M1 = 回来之后还是谁;
+> M2 = 回来之后状态是不是一样;M3 = 回来之后还能不能继续成为那个
+> Execution。当前配置下三层闭合。
+>
+> **架构线索升级(审核批准表述)**:段表表示已获得
+> **continuation-level evidence**(COW segmented → externalize →
+> release → rehydrate 仍 segmented → continue 96 → 与 resident
+> control 完全一致)。**架构结论仍未成立**:1 configuration /
+> 1 depth / 1 node / 1 round / N=96——不得写"未来架构应采用
+> segment-preserving externalization"。
+>
+> **Control = twin child(审核确认:保留,不修改)**:同父代同fork
+> 同后缀同 decode 同 position 同 next-input,唯一变量 = residency
+> boundary;从零 prefill control 已由 Track B 四路门承担,不重复。
+>
+> **Scope(冻结)**:已证明 = 当前测试配置(35B / depth≈4.6K /
+> single node / same-parent twin / COW segmented child / private
+> pages externalized / release / rehydrate without materializing /
+> 96-step continuation)下,State(before) == State(ctrl),经
+> residency boundary 后 Continuation(treat) == Continuation(control)
+> 96/96,offset +96,parent intact,COW segmentation preserved。
+> 尚未证明:深位置 continuation;多节点/Execution Tree continuation;
+> 连续物化表示 continuation 与段表表示比较(M3-A);多次
+> externalize→rehydrate→continue 循环;长期 residency;cross-device
+> residency;rehydration performance/tax(M4);residency policy;
+> segment-preserving externalization 是最终架构方案。
+>
+> **工程审计限制(审核方如实申报)及解析**:审核方在 SimiGo-Lab 仓
+> 未找到 M3 代码提交 68daa06(代码实际在实验 fork 上,非 lab 仓)。
+> 解析(2026-09-21 验证):`68daa06b7e3623f5ed22fe9a93167a866a8d0acc`
+> = `slamfinger/mlx-swift-lm` 分支 `exp/execution-state-fork` HEAD
+> (ls-remote + GitHub API 双验;文件清单恰为
+> `Tests/MLXLMTests/ResidencyM3Continuation.swift` 一文件),
+> https://github.com/slamfinger/mlx-swift-lm/commit/68daa06 。
+> 审核方据此保持"未逐行复审代码"的诚实申报——判定基于结果文档的
+> 实验契约,有效。
+>
+> **下一步(审核定序,不立刻冲 M4)**:M3-A 连续表示 continuation
+> 对照(独立、成对实验,不修改已 PASS 的 M3;直接攻击架构分叉:
+> "段表只是当前实现碰巧能跑"vs"residency 本身不需要 representation
+> conversion")→ M3-B 深位置 continuation → M3-C 多节点
+> continuation → M4 Rehydration Tax。
+
+> **首跑记录(史料)**:本文档初版记录主门 96/96 一次通过与设计;
+> 初版状态行"待审核方终判"已被上方终审取代;初版"Execution State
+> 定义的行为维度闭合"表述按终判要求收紧为配置限定句。 代码:
 > `ResidencyM3Continuation.swift`(exp 分支,通过,30.1s)。设计 =
 > M2 终判块的第一轮单变量纪律:无多节点/64K/大树/性能/policy。
 
