@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS,M 链正式封口(2026-09-21)**——七问七答:是谁/状态是不是它/还能继续吗/换表示/深一点/树状/付出多少 = 一次性 ≈0.72 token 等价 + 稳态无超噪声税(measurement-scope 注记:State 对象重建未入计时区间)。**Residency Policy 已开题(2026-09-21,探针未跑)**:研究问题 = 什么时候 Externalize/Keep Resident/Rehydrate/不召回;纪律 = M4 证明 cost 可接受性边界,不证明'应该什么时候外化';第一探针候选 = policy simulator(F5-3 Step1 同型,M4 数字为回流成本输入);首补课项 = resident memory cost 未实测。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4_RESULTS + RESIDENCY_POLICY_OPENING_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS,M 链封口(一次性 ≈0.72 token 等价+稳态无超噪声税)**。**Residency Policy v2(审计三条收紧已落)→ simulator v0 首跑完成(2026-09-21,待审核终判)**:决策空间在全部 24 个 (budget×locality) 组合可观测(lru/oracle = 1.35–3.05,差异随预算升高扩大);H-P0/H-P1 初判=未来复用信息含 decision-relevant 信号,但可实现策略能否捕获+树依赖增量属 P3。v1 如实入档:oracle 用静态 last-occurrence 冒充逐步 next-use 致上界低于基线(物理不自洽),修正=标准 Belady+稳定种子——**教训:reference bound 的 bug 会伪装成'策略无差异'或'基线更好',上界须先过健全性检查**。P0 prerequisite:resident memory cost 未实测(全部结论=boundary-cost 视角)。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
