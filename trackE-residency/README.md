@@ -1,6 +1,6 @@
 # Track E(命名待定)— Execution State Residency
 
-**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 PASS(v0.1 Policy Objective Definition);P3 首跑+后续轮 CONDITIONAL PASS。P0.2 终判 CONDITIONAL PASS(2026-09-21,待 C_resident 完全闭合)**——k=56 悬崖与 24GB 边界重合=相关性证据(机制推断未确认);阶跃=首轮证据(无边界细扫/重复);2.4× 双口径(vs k=40 ≈2.38×,vs k=0 ≈2.54×);**C_resident 分段模型待测:k_cliff 与 C_pressure(k) 不固化**;P3 双情景推进(硬边界/压力惩罚首轮参数);0.72 token 与 2.4× 不同经济单位待 P3 明确;depth sweep 文件入库已单独确认(已执行/已记录/未改 P0.2 环境)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P02/P3/P3R2_RESULTS + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
+**状态**:**M1–M4 全部 FINAL PASS;simulator v0 FINAL PASS(P1/P2 封口);P0 CONDITIONAL PASS(容量 PASS/经济闭合 Pending);P0.1 正式确认 PASS(v0.1 Policy Objective Definition,正式规范);P0.2 CONDITIONAL PASS(悬崖首轮证据,k_c/C_pressure 待测);P3 首跑+后续轮 CONDITIONAL PASS。**P3 双情景正式模型设计草案已建(2026-09-21,DRAFT 待审核)**:七项审核焦点逐项落实(情景一硬边界严格数学定义/情景二压力惩罚引入位置与观测参数纪律/成本单位三分/策略集与比较边界/指标五通道分离/判读纪律/P0.2 隔离);确认后实现 simulator v3 扩展(cost-aware greedy+penalty 模式)。记录:RESIDENCY_M1/M2/M3/M3A/M3B/M3C/M4/P0/P01/P02/P3/P3R2_RESULTS + P3_DESIGN_DUAL_SCENARIO + P01_COST_UNIT_DRAFT + POLICY_OPENING + SIM_V0_RESULTS_20260921.md。**——
 记录:`RESIDENCY_M1_RESULTS_20260921.md`;代码:
 `ResidencyM1Identity.swift`(exp 分支,基于 acbcb54)。M1 失败教训
 如实入档:position 锚点误取第 0 层(GDN,offset 恒 0),修正 = 首
