@@ -1,0 +1,90 @@
+=== Residency Policy Simulator v4(P3-B 三因子消融;设计 v0.3 PASS)===
+seed=42;nodes=32;trace=2000;B=12;H 主轮=8;C_ext=0.69;C_rehy=0.72;W=200;LFU_DECAY=200
+变体:V0=min(1,n/H)+id tie;V1=同 V0+recency tie;V2=S_cont=n/(n+H)+id tie;V3=S_cont+recency tie;V4=窗口原始计数+recency tie(底座控制组)
+
+-- V0 回归门:v3 全格逐位复现 P3-A 冻结数字 + v4 引擎与 v3 全配置等价 --
+  v3   hot/               lru: J=  973.1 (rehy= 696 ext=684) frozen=973.1 -> OK
+  v3   hot/         lfu_aging: J=  544.4 (rehy= 392 ext=380) frozen=544.4 -> OK
+  v3   hot/ cost_aware_greedy: J=  547.3 (rehy= 394 ext=382) frozen=547.3 -> OK
+  v3   hot/     belady_greedy: J=  475.3 (rehy= 343 ext=331) frozen=475.3 -> OK
+  v3  tree/               lru: J= 1422.9 (rehy=1015 ext=1003) frozen=1422.9 -> OK
+  v3  tree/         lfu_aging: J= 1085.9 (rehy= 776 ext=764) frozen=1085.9 -> OK
+  v3  tree/ cost_aware_greedy: J= 1156.4 (rehy= 826 ext=814) frozen=1156.4 -> OK
+  v3  tree/     belady_greedy: J=  740.4 (rehy= 531 ext=519) frozen=740.4 -> OK
+  v3 hot /cost_aware_greedy H= 4: J=  815.2 frozen=815.2 -> OK
+  v3 hot /cost_aware_greedy H=16: J=  547.3 frozen=547.3 -> OK
+  v3   hot/k_c=9: pressure_raw=1990 frozen=1990 -> OK(三策略同断言)
+  v3   hot/k_c=10: pressure_raw=1984 frozen=1984 -> OK(三策略同断言)
+  v3   hot/k_c=11: pressure_raw=1983 frozen=1983 -> OK(三策略同断言)
+  v3  tree/k_c=9: pressure_raw=1991 frozen=1991 -> OK(三策略同断言)
+  v3  tree/k_c=10: pressure_raw=1990 frozen=1990 -> OK(三策略同断言)
+  v3  tree/k_c=11: pressure_raw=1989 frozen=1989 -> OK(三策略同断言)
+  v4 引擎 ≡ v3:主表 8 格 + H 敏感性 + pressure 18 配置核心字段全部相等
+*** V0 回归门 PASS(逐位复现 P3-A 冻结数字)***
+
+-- 消融组(分区呈现:V0–V3 = 消融;lfu_aging/V4 = 参照与控制,§2.2)--
+    hot/V0(H=8): J=  547.3 (rehy= 394 ext=382) [instrumented;≡v3 已由回归门断言]
+    hot/V1(H=8): J=  548.7 (rehy= 395 ext=383)
+    hot/V2(H=8): J=  547.3 (rehy= 394 ext=382)
+    hot/V3(H=8): J=  548.7 (rehy= 395 ext=383)
+    hot/lfu_aging(参照): J=  544.4 (rehy= 392 ext=380) [≡P3-A 冻结]
+    hot/V4(控制组): J=  548.7 (rehy= 395 ext=383)
+    hot/lru(baseline): J=  973.1 [≡P3-A 冻结]
+   tree/V0(H=8): J= 1156.4 (rehy= 826 ext=814) [instrumented;≡v3 已由回归门断言]
+   tree/V1(H=8): J= 1136.6 (rehy= 812 ext=800)
+   tree/V2(H=8): J= 1143.7 (rehy= 817 ext=805)
+   tree/V3(H=8): J= 1133.8 (rehy= 810 ext=798)
+   tree/lfu_aging(参照): J= 1085.9 (rehy= 776 ext=764) [≡P3-A 冻结]
+   tree/V4(控制组): J= 1133.8 (rehy= 810 ext=798)
+   tree/lru(baseline): J= 1422.9 [≡P3-A 冻结]
+
+-- V2/V3 H sensitivity(H=half-saturation scale;主轮 8)--
+    hot/V2 H= 4: J=  547.3 (rehy=394)
+    hot/V2 H=16: J=  547.3 (rehy=394)
+    hot/V3 H= 4: J=  548.7 (rehy=395)
+    hot/V3 H=16: J=  548.7 (rehy=395)
+   tree/V2 H= 4: J= 1143.7 (rehy=817)
+   tree/V2 H=16: J= 1143.7 (rehy=817)
+   tree/V3 H= 4: J= 1133.8 (rehy=810)
+   tree/V3 H=16: J= 1133.8 (rehy=810)
+
+-- 机制通道(V0 轨迹内单跑反事实;tie_rate=纯辅助禁归因)--
+  hot: evict_events=382 tie_events=14 (tie_rate=0.037)
+       F3 cf_tie_disagree=7 (占 tie 事件 0.500)
+       F1 sat_collision=0 (事件率 0.000) sat_flip=0
+       V1 自报 tie_rate=0.037(描述,禁归因)
+       V2 自报 tie_rate=0.037(描述,禁归因)
+       V3 自报 tie_rate=0.037(描述,禁归因)
+       V4 自报 tie_rate=0.037(描述,禁归因)
+  tree: evict_events=814 tie_events=157 (tie_rate=0.193)
+       F3 cf_tie_disagree=115 (占 tie 事件 0.732)
+       F1 sat_collision=17 (事件率 0.021) sat_flip=15(flip 率 0.882)
+       V1 自报 tie_rate=0.188(描述,禁归因)
+       V2 自报 tie_rate=0.190(描述,禁归因)
+       V3 自报 tie_rate=0.183(描述,禁归因)
+       V4 自报 tie_rate=0.183(描述,禁归因)
+
+-- F2 控制对(V4 ↔ lfu_aging,唯一合法;首分歧位=主信息)--
+  hot: V4 驱逐 383 次 / lfu_aging 380 次; 位置对齐 agreement=261/380=0.687
+       首分歧 step=1397;不一致驱逐决策 dd=21;|Δrehy|=3 -> 下界 PASS
+  tree: V4 驱逐 798 次 / lfu_aging 764 次; 位置对齐 agreement=120/764=0.157
+       首分歧 step=200;不一致驱逐决策 dd=536;|Δrehy|=34 -> 下界 PASS
+
+-- 行为一致性下界(定理形式;任意消融对;违反=实现错误)--
+    hot V1 vs V0: dd=  21 |Δrehy|=  1 -> PASS
+    hot V2 vs V0: dd=   0 |Δrehy|=  0 -> PASS
+    hot V3 vs V0: dd=  21 |Δrehy|=  1 -> PASS
+   tree V1 vs V0: dd= 374 |Δrehy|= 14 -> PASS
+   tree V2 vs V0: dd=  91 |Δrehy|=  9 -> PASS
+   tree V3 vs V0: dd= 378 |Δrehy|= 16 -> PASS
+
+-- 预注册反事实量级界(设计 §4 条件 2 原文;级联效应如实披露)--
+    hot F3: cf_tie_disagree=7 vs |Δrehy(V1,V0)|=1 -> PASS
+    hot F1: sat_flip=0 vs |Δrehy(V2,V0)|=0 -> PASS
+   tree F3: cf_tie_disagree=115 vs |Δrehy(V1,V0)|=14 -> PASS
+   tree F1: sat_flip=15 vs |Δrehy(V2,V0)|=9 -> PASS
+
+确定性自检(V3 同配置重跑): PASS
+
+*** P3-B 消融执行完成(回归门 PASS 后采数;变体=诊断工具非 target)。***
+*** 判读按设计 §4 预注册规则 R1–R5,结果文档待审核终判。***
