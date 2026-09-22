@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-22（STEP④ Estimand PASS；正式进入 STEP⑤ Existence Criterion）
+**Last updated**: 2026-09-22（STEP⑤ Existence Criterion 已提出 EC5 候选，待反向攻击）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP⑤ Existence Criterion
-Next action: 定义 Achievable Static Frontier 的最小、可证伪、非循环 existence criterion；不得预设非空、非退化、低码率、跨架构共性或 Runtime value
+Next action: 对 EC5 严格双点见证做反向攻击；不得将其视为 STEP⑤ PASS，也不得预设低码率、跨架构共性或 Runtime value
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed; STEP⑤ active
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4_ESTIMAND_PASS_STEP5_OPEN_20260922.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP5_EXISTENCE_CRITERION_CANDIDATE_20260922.md
 
 ## 2. 状态词汇表
 
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN | 只允许定义与对抗 existence criterion，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 candidate | 只允许继续定义与对抗 EC5，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -109,7 +109,7 @@ STEP④ 已将 estimand 固定为 frame-indexed Achievable Static Frontier。关
 - 跨架构比较仅在公共可达 rate domain 上进行；不可评估或不可达区间记录为 applicability boundary；
 - Target ≠ Estimator ≠ Observed frontier；STEP④ 不证明 finite-sample identifiability。
 
-STEP⑤ 的唯一当前问题是：什么最小、可证伪、非循环的观察条件，才使该 frontier 在给定 frame/scope 内获得“存在”资格，而不偷渡价值、优越性或泛化结论。
+STEP⑤ 当前候选是 EC5：在同一 frame/scope 内，存在两个不可被 strict-dominate 的 `S_det` 策略 `P0,P1`，且 `Rate(P0)<Rate(P1)`、`Loss(P1)<Loss(P0)`。该候选只处理 target-level 非平凡已实现存在，不涉及 estimator、distinguishing power、value、跨架构共性或实验授权。
 
 ## 11. Governance
 
