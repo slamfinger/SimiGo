@@ -773,3 +773,20 @@ physical persistence ≠ semantic necessity。
 若只能观察 Architecture A/B 的输出差异而无法建立 continuation scope、重复性、反事实干预及跨-probe稳定性，则不得升格为 Execution State Difference。
 
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-050 — P4-A 不再重复证明 Track B 的 State 可操作性
+
+Track B 已在限定范围内验证 Execution State 的 fork / continue / reattach / discard 生命周期。因此 P4-A 不应重新研究 State existence、forkability 或 continuation correctness。
+
+P4-A 若继续，其新增研究对象必须是：**在明确计算上下文下，由计算架构差异诱导的 continuation dependency / State characteristic。**
+
+边界：
+Track B = State lifecycle semantics；
+P4-A = Architecture-induced State dependency。
+
+错误入口已关闭：通过重新操作 State 来“发现 State”。
+
+新的关键待证伪问题：Continuation Dependency 是否只是 computation dependency / computation graph dependency 的另一种命名？若不能找到最小不可约差异，P4-A 应关闭或并回已有计算架构研究。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
