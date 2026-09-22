@@ -845,3 +845,22 @@ P4-A 将“低复杂度”候选进一步收缩为固定 Runtime-side descriptio
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
 
 Provenance: Architecture 2.0 P4-A description-language / rate-distortion attack, 2026-09-22.
+
+
+### RM-055 — Analytic Encodability 必须先于 Rate-Distortion 独立过门
+
+P4-A 在固定 Description Language、Two-part MDL / 成本会计与 L₀ byte-dump 基线之后，发现新的关键混淆变量：Encoder_X 从哪里获得其规则。
+
+若 Encoder_X 的构造依赖目标 Runtime resource behavior、profiling、decision labels 或其他目标数据，则所谓跨架构 projection 可能只是把信息获取从 O(D) 决策侧搬到 O(A) 架构适配侧。此时即使后续 rate-distortion 结果成立，也无法区分 projection 的信息价值与 codec 构造阶段的数据污染。
+
+因此新增独立概念门：**Analytic Encodability**。其候选定义为：Encoder_X 的构造规则可由 architecture / computation-structure description 与允许的先验知识确定，而不依赖目标 Runtime resource-decision outcome 或 profiling data。
+
+允许架构结构、计算依赖、可由架构推出的 continuation-relevant properties；禁止用目标资源行为、迁移成本、驻留收益、reuse/cache outcome、memory-pressure trace、decision label 等反向选择或拟合编码字段。
+
+该门不要求 encoder 没有 architecture-specific knowledge；恰恰允许 `Architecture X → Encoder_X`。约束的是知识来源：architecture knowledge 可进入 Encoder，target resource outcome 不得反向进入 Encoder。
+
+若 analytic encodability 失败，projection 仍可能作为 data-assisted engineering codec 有价值，但不能把该结果直接解释为跨架构 information-acquisition saving。若通过，才有资格继续检验 fixed language 下的 rate/distortion 与 information value。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+Provenance: Architecture 2.0 P4-A analytic encodability attack, 2026-09-22.
