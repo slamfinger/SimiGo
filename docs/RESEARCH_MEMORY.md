@@ -747,3 +747,14 @@ P4-A 对“Continuation Requirement”进行对抗性收缩后，当前更稳的
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
 
 Provenance: Architecture 2.0 P4-A adversarial research, 2026-09-22.
+### RM-048 — P4-A 不需要 Universal Probe Set，而需要 scope-bounded sufficient probes
+
+有限 continuation probes 无法证明全空间 continuation equivalence；随机 probe 也可能遗漏低频但关键的分叉。因此 P4-A 应采用 scope-bounded、adversarial、sufficient probe set，而非 Universal Probe Set。
+
+当前三级证伪结构：存在性 → 稳定性 → 区分度。只有架构差异在限定 continuation scope 内产生可重复、可区分的行为差异，才有资格进入更高层 State characterization。
+
+进一步收缩为：Architecture Feature → Computation Dependency → Future-Continuation Distinguishability → Observable Behavior。Execution State 是解释这一关系的中间概念，不要求首先以物理对象直接被观察。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+Provenance: Architecture 2.0 P4-A probe-set adversarial research, 2026-09-22.
