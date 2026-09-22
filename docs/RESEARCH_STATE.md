@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（P4 重新定义：Architecture-induced Execution State）
+**Last updated**: 2026-09-22（P4 路线落盘；P4-A STEP① 开始）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -24,7 +24,7 @@
 
 ```
 Phase:        Architecture 2.0 / P4 Redefinition / Pre-definition
-Next action:  P4 / RQ-P4-01 从 STEP①继续定义；当前仍不启动实验
+Next action:  完成 P4-A STEP① 研究对象逐项审查；通过后再进入 STEP②
 Gate status:  CLOSED — 旧 Source/Runtime 定义链停止；P4 尚未完成 RQ 定义
 RQ ID:        未分配
 当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
@@ -90,7 +90,7 @@ Track B、Track E、P3、H-P1、nodes-out 均保持原有 CLOSED / SEALED / FROZ
 
 ```
 P4 / RQ-P4-01
-  STEP① 研究对象：已完成重新定义准备
+  STEP① 研究对象：WORKING DEFINITION / 审查中
   STEP② Research Question：未开始
   STEP③ Independence：未开始
   STEP④ Estimand：未开始
@@ -104,7 +104,7 @@ P4 / RQ-P4-01
 ### Allowed
 
 - 继续 P4 的概念定义；
-- 对 P4 开始正式 STEP①，并形成独立定义记录；
+- 完成 P4-A STEP① 研究对象逐项审查并形成 closure 记录；
 - 读取历史 Track B / Track E 资产作为背景约束；
 - 继续历史资产盘点；
 - 继续 Architecture 2.0 概念复盘。
