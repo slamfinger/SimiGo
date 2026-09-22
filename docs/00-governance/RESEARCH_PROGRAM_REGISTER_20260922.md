@@ -34,3 +34,28 @@ STEP⑤ is **existence criterion definition**, not runtime implementation or mea
 ## 4. Historical planning sources
 
 The detailed 2.0 pre-research roadmap remains in `docs/architecture/ARCHITECTURE_2.0_PRERESEARCH_20260920.md`. This register is the navigation/control layer; it does not rewrite that historical planning document.
+
+
+## 5. 2026-09-22 Architecture 2.0 direction reset
+
+After re-examining the research from its origin, the program boundary is narrowed to **computational-architecture regularity**. Model-content regularity (knowledge, rules, semantics, probabilities, and their compression) is not the Architecture 2.0 core research object.
+
+| Line | Revised state | Treatment |
+|---|---|---|
+| Track B — Execution State | CLOSED / FROZEN | **Terminal / archived.** Core lifecycle is complete within scope; do not reopen. |
+| Track E — Residency / nodes-out | CLOSED / SEALED / archived | **Terminal / archived.** Historical questions complete; do not reopen. |
+| P3 / H-P1 | CLOSED / SEALED | **Terminal / archived.** Historical supporting lines complete. |
+| Source/Runtime / RQ-F-01 candidate | NOT DEFINED | **Retired as current direction.** Do not enter STEP⑤; its boundary/unit route is a pruned branch. |
+| P4 / RQ-P4-01 | NOT STARTED | **Retained as the next candidate line.** Directly addresses Execution State → Residency / Loading; must begin with a fresh Definition gate. |
+| Track A — Kernel/Bandwidth | NOT STARTED / conditional | **Dormant / non-core.** Retain only as a separate workload-specific performance line. |
+| Track D — Adaptive Memory | NOT STARTED / independent | **Future independent line.** Do not auto-open from this reset. |
+| Track C — Multi-device | FUTURE | **Long-horizon line.** Do not auto-open. |
+| Boundary / Object / Identity / Invariant / Equivalence | Conceptual exploration | **Pruned from 2.0 mainline; preserved as intellectual history.** |
+
+**Current core candidate chain:**
+
+`Execution State → Residency / Loading → Layering / Working Set → Migration / Resource placement`
+
+This is a direction map, not RQ registration.
+
+**Important:** P4 remains NOT STARTED. No RQ is opened by this review.
