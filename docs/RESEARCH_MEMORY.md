@@ -911,3 +911,14 @@ STEP② 首轮拆出四个隐藏命题：Analytic、Representational、Informati
 首个 STEP② adversarial attack 已固定：frontier 是否只是研究者选择的 Description Language L 与 Decision Problem Family 所人为定义出来的数学对象？需要分别攻击 Rate 对语言选择的依赖，以及 D 对 decision family / workload prior / cost model 的依赖。当前不假设 robustness 已成立。
 
 **Status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ NOT REGISTERED / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-059 — P4-A STEP② accepted, STEP③ opened
+
+2026-09-22，人类研究者明确授权 P4-A 从 STEP② 进入 STEP③。STEP② 的前置条件与 RQ definition gate 被视为通过；此处是治理转移，不是经验性证据，也不授权实验。
+
+STEP② 携带进入 STEP③ 的对象是 Achievable Static Frontier：由预声明的静态派生策略族 S 实际可达、带 certificate 的 encoder 所形成的 frontier，而非无限 encoder 家族的理想 infimum。L、D、S 均显式化；D 层非退化性已由属性隔离任务证明；per-(L,X) expressibility 属于下游 applicability boundary。
+
+STEP③ 的核心攻击转向 independence：对象是否只是已声明 decision problem + compression rate 的重述；L/D/S 是构成性输入还是隐藏旋钮；跨架构变化是否仍保持对象意义；是否与已 CLOSED 的 Track B 执行状态生命周期研究重复；是否依赖特定 Runtime / MLX-LM / 物理状态布局。
+
+**Status:** STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / NO EXPERIMENT AUTHORIZATION
