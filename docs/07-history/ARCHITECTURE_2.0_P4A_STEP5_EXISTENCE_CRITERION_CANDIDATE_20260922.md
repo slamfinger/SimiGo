@@ -1,10 +1,13 @@
 # Architecture 2.0 — P4-A STEP⑤ Existence Criterion Candidate
 
-**Date:** 2026-09-22  
-**Status:** STEP⑤ OPEN / EC5 CANDIDATE UNDER ATTACK  
+**Date:** 2026-09-22\
+**Status:** STEP⑤ OPEN / EC5 REJECTED / SUPERSEDED BY EC_T REVISION\
 **RQ:** 尚未分配；本文不构成 RQ 注册
 
 ## 1. 第一刀
+
+**2026-09-22 裁定：本文件的 EC5 不通过。** 它把 target-level existence、有限观察证据、Pareto 点集与 STEP④ 的函数型下包络混在一起。修订见
+`docs/07-history/ARCHITECTURE_2.0_P4A_STEP5_EC_T_REVISION_20260922.md`。以下内容仅作历史候选记录。
 
 STEP⑤ 先把两个对象分开：
 
