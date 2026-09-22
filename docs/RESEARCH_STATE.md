@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-22（STEP④ infinity-loss entitlement ruling：现有 frame 未赋予 +infinity ordered loss-value 资格；candidate 2 rejected）
+**Last updated**: 2026-09-22（STEP④ finite completeness 未建立；no-finite-loss boundary status unresolved）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④ Typed-Codomain Review（STEP⑤ NECT mode blocked）
-Next action: 审查 finite completeness 与 typed-split necessity；在候选 1/3 未冻结前不得裁定 NECT mode
+Next action: 裁定 finite-loss domain restriction 是否合法，或证明 envelope finite completeness；在 boundary status resolved 前不得裁定 NECT mode
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4_INFINITY_LOSS_ENTITLEMENT_RULING_20260922.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4_FINITE_COMPLETENESS_AND_BOUNDARY_STATUS_AUDIT_20260922.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / CANDIDATE 2 REJECTED / STEP⑤ IPR UNDECLARED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / CANDIDATE 2 REJECTED / FC NOT ESTABLISHED / BOUNDARY UNRESOLVED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / IPR UNDECLARED / CANDIDATE 2 REJECTED / NECT MODE BLOCKED | 只允许审查 finite completeness 与 typed-split necessity，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / FC NOT ESTABLISHED / BOUNDARY UNRESOLVED / NECT MODE BLOCKED | 只允许裁定 finite completeness 或 finite-loss domain restriction，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -75,6 +75,7 @@ P4 / RQ-P4-01 candidate
 - 声明并审查 Infinity Provenance Rule；若 loss value 与 boundary encoding 混合，先定义 typed envelope；
 - 审查 finite-loss codomain、ordered extended-loss codomain 或 typed/tagged envelope 三类最小声明；
 - 审查 finite completeness 与 no-finite-loss member 是否必须作为独立 typed 对象；
+- 审查 envelope finite completeness、`R_s^fin` 与 `B_s=R_s\R_s^fin` 的 boundary status；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -95,6 +96,7 @@ P4 / RQ-P4-01 candidate
 - 把 `+infinity` 的 loss-value / boundary-encoding 混用当作同一 NECT 对象，或在 IPR 未声明时裁定 NECT mode；
 - 把 `IPR_VALUE=UNDECLARED` 等同于 `IPR=NA`，或凭实验/估计结果反推 codomain；
 - 把 STEP⑤ 引入的 `[0,+infinity]` 回溯解释为已有 `+infinity` ordered loss-value 承诺，或因 typed envelope 更安全而直接选择 typed split；
+- 把 “finite completeness 未证明” 等同于 `B_s` 非空，或把 no-finite-loss region 静默当作 applicability boundary；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
 
@@ -126,9 +128,11 @@ STEP⑤ 当前候选是 NECT（原 EC_T），但存在两个未裁决 mode：`NE
 
 `SAT_INF_FIN` 已定义，用于在 mode 裁定前检查 `+infinity -> finite` 的 domain identity、order identity、substantive identity 和 degeneracy annotation。当前进一步要求 Infinity Provenance Rule：`+infinity` 必须声明为 ordered loss value、no-finite-loss-member boundary encoding、mixed 或 evaluation NA。`MIXED` 必须先 typed split；`NA` 不属于 target envelope；finite-loss realizability onset 不得静默并入 NECT。
 
-Envelope contract 已固定为：`R_s` 上可行集非空，loss codomain 为 `[0,+infinity]`；infimum existence 不要求 attainment，但该 codomain 的 `+infinity` provenance 未声明。`NDAC(s): |R_s^tau|>=2` 已接受为 domain admission condition，不是 NECT 谓词本体。STEP⑤ target output 只有 `DOMAIN_INSUFFICIENT / NECT_TRUE / NECT_FALSE`；`EVIDENCE_INSUFFICIENT` 属于正交 evidence layer，不得由 STEP⑤ 输出。
+STEP⑤ 曾临时使用 envelope contract：`R_s` 上可行集非空，loss codomain 为 `[0,+infinity]`；但 Candidate 2 已被拒绝，因此当前 loss codomain unresolved。infimum existence 不要求 attainment。`NDAC(s): |R_s^tau|>=2` 已接受为 domain admission condition，不是 NECT 谓词本体。STEP⑤ target output 只有 `DOMAIN_INSUFFICIENT / NECT_TRUE / NECT_FALSE`；`EVIDENCE_INSUFFICIENT` 属于正交 evidence layer，不得由 STEP⑤ 输出。
 
-IPR declaration audit 结果为 `UNDECLARED / FAILED`：当前原始 frame 只声明 Bayes risk 与 oracle excess loss，未声明成本/风险/loss codomain，也未声明 `+infinity` 是 ordered loss value、no-finite-loss sentinel 还是 evaluation NA。STEP④ infinity-loss entitlement ruling 进一步判定 `CANDIDATE_2 [0,+infinity] = REJECTED`，因为 STEP⑤ 引入的 extended-real codomain 不能回溯为既有 `+infinity` loss-value 承诺。Candidate 1 需先声明 finite completeness 或显式 finite-loss restriction；Candidate 3 需先证明必须同时表示 actual infinity loss 与 no-finite-loss member。二者未冻结前 NECT mode 被 blocking。
+IPR declaration audit 结果为 `UNDECLARED / FAILED`：当前原始 frame 只声明 Bayes risk 与 oracle excess loss，未声明成本/风险/loss codomain，也未声明 `+infinity` 是 ordered loss value、no-finite-loss sentinel 还是 evaluation NA。STEP④ infinity-loss entitlement ruling 进一步判定 `CANDIDATE_2 [0,+infinity] = REJECTED`，因为 STEP⑤ 引入的 extended-real codomain 不能回溯为既有 `+infinity` loss-value 承诺。
+
+Finite completeness audit 结果为 `NOT ESTABLISHED`：现有 frame 未声明 cost finiteness、integrability、oracle finiteness 或每个 reachable rate 存在 finite-loss policy。定义 `R_s^fin` 与 `B_s=R_s\R_s^fin` 后，`B_s` 的 existence 与 status 均 unresolved。若 `B_s` 非空，不得静默缩小 STEP④ 的 `R_X`；必须显式裁定其为 applicability boundary、representation gap，或进入 typed-codomain justification。Candidate 1/3 未冻结，NECT mode 被 blocking。
 
 ## 11. Governance
 
