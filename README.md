@@ -14,9 +14,11 @@
 
 - Phase: **Definition / Opening**
 - STEP ③: **PASS**
-- STEP ④ estimand: **NOT STARTED**
+- STEP ④ estimand: **PASS**（外审+登记 2026-09-22）
 - RQ ID: **未分配**
-- 当前允许动作：STEP ④ estimand 定义、历史资产只读盘点
+- STEP ⑤ existence criterion: **NOT STARTED**
+- 当前允许动作：STEP ⑤ existence criterion 定义、引用 STEP ②–④ 外审意见
+  作为自查约束、历史资产只读盘点
 - 当前禁止动作：runtime implementation / harness construction /
   data collection / performance measurement
 
@@ -44,6 +46,8 @@
 
 ```
 Question
+  → Hypothesis
+  → Design
   → Evidence
   → Finding
   → Decision
