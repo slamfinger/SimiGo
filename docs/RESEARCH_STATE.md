@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（记录 Execution-State-oriented Post-Training 假设；P4-A STEP① 继续）
+**Last updated**: 2026-09-22（记录 P4-A Analytic Encodability Attack；STEP① 继续）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -168,7 +168,13 @@ P4 后续研究采用“先证伪、后扩展”的门控原则，而不是以�
 
 当前仍为 P4-A STEP① WORKING DEFINITION / 审查中，RQ 未分配，实验未授权。
 
-下一概念攻击：Description Language Attack。检查固定 Runtime-side description language 是否真正独立于被测 architecture / projection；是否把复杂度藏进 decoder / ontology / external knowledge；encoder 是否可利用 architecture-specific prior；rate 降低是否真正代表 decision-relevant information compression，而非语义搬运。当前 Rate-Distortion 仅为 STEP① 候选框架，不注册具体 estimand / threshold / experiment。
+Description Language Attack 已进一步收缩为可审计的成本会计与证伪协议：采用 Codebook / Rate / Decoder 三项成本分账；decoder 冻结并公开为 artifact，runtime 只能使用冻结 decoder + 码流；decoder spec 不得携带被测架构专属实现事实；L₀ 定义为 byte-level direct dump 的零失真 reference language。上述内容仍属于 STEP① 候选定义，不构成 Runtime API。
+
+下一概念攻击固定为 **Analytic Encodability Attack**。核心问题：Encoder_X 能否仅由 architecture / computation-structure description 与允许的先验知识解析确定，而不依赖目标 Runtime resource behavior、profiling 或 decision outcome。重点攻击 profiling dependence、workload dependence、decision leakage、hidden architecture-family prior、non-derivable key fields、codec instability。
+
+Analytic Encodability 是 Rate-Distortion 之前的独立 gate。若 encoder 依赖目标资源数据，后续 projection utility 结果可能只是把信息获取从 O(D) 搬到 O(A)，不能直接解释为跨架构 information-acquisition saving。允许 Architecture-specific knowledge 进入 Encoder；禁止 target resource outcome 反向进入 Encoder。该 gate 仍处 STEP①，不创建 RQ、不授权 implementation、harness、data collection 或 measurement。
+
+若该攻击通过，下一步才是进一步收缩 fixed-language / fixed-decoder / L₀ / A:D regime 下的信息价值问题；若失败，则应根据反例把 projection 收缩为 data-assisted codec、局部适用域或关闭，而非自动进入实现。
 
 ## 14. 状态维护规则
 
