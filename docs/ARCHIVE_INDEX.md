@@ -14,6 +14,7 @@
 | 查已经关闭/否决/未决的问题 | 00-governance/NEGATIVE_AND_OPEN_QUESTIONS_REGISTER_20260922.md |
 | 了解 Agent 行为约束 | AGENT_CONTEXT.md |
 | 查看长期思想与候选假设 | RESEARCH_MEMORY.md |
+| 理解思想与实验的连续性纽带 | 00-governance/IDEA_TO_EXPERIMENT_CONTINUITY_MODEL_20260922.md |
 | 恢复跨 Agent 记忆协议 | 08-research-memory/AGENT_MEMORY_PROTOCOL_20260922.md |
 | 了解现有资产如何映射到新档案体系 | 07-history/LEGACY_ASSET_MAPPING_20260922.md |
 | 恢复 Architecture 2.0 思想总览 | 07-history/ARCHITECTURE_2.0_SESSION_KNOWLEDGE_20260922.md |
@@ -33,11 +34,13 @@
 
 治理层控制面登记：Program → Dependency → Question → Experiment → Finding → Decision → Architecture → Closure。
 
+思想层与验证层通过 `Idea / Structure → Question → Testable Claim → Design → Experiment → Evidence → Finding → Decision → Architecture → revised Idea` 连接。实验是高层思想下的局部检验，不等于思想本身；证据只在其定义范围内更新思想。具体规则见 `00-governance/IDEA_TO_EXPERIMENT_CONTINUITY_MODEL_20260922.md`。
+
 具体原文、数据、脚本和历史资产仍保留在各自原路径。控制面不复制全文，也不改变 provenance。
 
 ## 4. 多 Agent 记忆模型
 
-Authoritative State → Research Memory → Agent Dialogue
+Authoritative State ↔ Research Memory ↔ Research Questions / Evidence / Decisions ↔ Agent Dialogue
 
 Git 仓库是跨 Agent 的持久化事实与记忆载体；对话只是输入来源。具体规则见 08-research-memory/AGENT_MEMORY_PROTOCOL_20260922.md。
 
