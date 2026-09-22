@@ -790,3 +790,18 @@ P4-A = Architecture-induced State dependency。
 新的关键待证伪问题：Continuation Dependency 是否只是 computation dependency / computation graph dependency 的另一种命名？若不能找到最小不可约差异，P4-A 应关闭或并回已有计算架构研究。
 
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-051 — Continuation Dependency 的最小不可约候选
+
+P4-A 直接攻击了“Continuation Dependency 是否只是 Computation Dependency 的换名”。
+
+若完整未来计算图已经固定，二者可以退化为同一关系；若 continuation 只有单一路径、普通程序状态已完全表达该关系，Continuation Dependency 不具独立性。
+
+当前唯一保留下来的最小候选是：在未来 continuation 尚未完全确定、但允许 continuation domain 可以被明确描述时，研究“为支持一组可能未来延续而必须保持的区分关系”。其潜在独立性来自 future-not-fully-fixed，而非来自“State”这个名字。
+
+LLM 并不因此获得特殊地位；真正可能有价值的是跨架构比较共同 continuation semantics，同时允许不同物理 representation。
+
+若后续不能证明该关系产生普通 computation dependency / program state 之外的新解释力，P4-A 应关闭或并回普通计算架构研究。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
