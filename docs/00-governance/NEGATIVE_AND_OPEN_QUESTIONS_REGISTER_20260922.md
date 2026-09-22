@@ -1,84 +1,45 @@
 # Negative / Open Questions Register
 
-**Purpose:** 保存已经走过的死路、主动关闭的方向以及尚未达到 RQ 资格的开放问题，防止不同 Agent 重复劳动或误把未知当已知。
+**Purpose:** 保存已经走过的死路、主动关闭的方向以及尚未达到 RQ 资格的开放问题，防止重复劳动或误把未知当已知。
 
-## 1. Negative / closed directions
+## 1. Closed / pruned directions
 
-| Item | State | Meaning |
-|---|---|---|
-| nodes-out runtime effect sampling in Track E | BLOCKED / separately scoped | DV1 discriminating power failed; future runtime study requires a new RQ |
-| Track E production / real-model generalization | NOT IN SCOPE | not answered by Track E |
-| partial-demand generalization | NOT IN SCOPE | Track E observed domain had partial=0; no generalization |
-| Track E automatic Track F opening | FORBIDDEN | Track F must be independently defined |
-| Swift implementation of Track E Candidate A | NO BASIS | closure did not authorize implementation |
-| Track B reopening | FORBIDDEN | CLOSED / FROZEN |
-| Track E reopening | FORBIDDEN | CLOSED / SEALED |
-| exp06 middle-band interpretation | UNRESOLVED | historical planning item; no result yet |
-| Track B page granularity as universal rule | UNRESOLVED | prototype-dependent, not globally settled |
+- Track B reopening — FORBIDDEN
+- Track E reopening — FORBIDDEN
+- exhaustive model-content boundary identification — OUT OF CURRENT ARCHITECTURE 2.0 SCOPE
+- exhaustive model knowledge/rule/semantic/probability reconstruction — OUT OF CURRENT SCOPE
+- Universal Model Unit as a required premise — PRUNED
+- Boundary → Object → Actionability → Unit as mandatory next path — PRUNED
+- RQ-F-01 Source/Runtime boundary/unit existence candidate — RETIRED
 
-## 2. Open questions that are not automatically RQs
+这些方向并非被宣布为科学上错误，而是超出当前 Architecture 2.0 的计算架构研究边界。
 
-- What is the real runtime counterpart of a Model Unit?
-- Can runtime-observable behavior establish a unit without upstream semantic dependence?
-- Which boundary properties are independently observable in Swift/MLX?
-- Which observations are sufficient to support existence?
-- Which observations are insufficient?
-- Can a proposed observation discriminate competing explanations?
-- Is the information gain worth runtime instrumentation cost?
+## 2. Current P4 open questions
 
-These are currently governed by the STEP⑤–⑧ sequence; they are not permission to implement or measure.
+P4 当前尚未注册正式 RQ，因此以下仅为 Definition Gate 中的候选问题：
 
-## 3. Dormant architecture directions
+- 哪些计算架构特征真正改变 Execution State？
+- 哪些 State 属性具有稳定的资源行为后果？
+- 哪些 State 特征决定 loading / residency / layering / working-set behavior？
+- 不同计算架构之间是否存在共享的 Execution-State semantics？
+- 哪些 State 差异会产生可区分的 Runtime resource behavior？
 
-- Track A kernel opportunity;
-- Track D adaptive memory;
-- Track C multi-device;
-- RM-002 through RM-008 architecture hypotheses.
+这些问题不得直接进入实验。
 
-Dormant does not mean rejected. Reopening requires the appropriate definition gate.
+## 3. Future independent directions
 
-## 4. Agent anti-loop rule
+- Track D — Adaptive Memory
+- Track C — Multi-device
+- Track A — Kernel/Bandwidth（条件性、workload-specific）
 
-If an Agent proposes an experiment, first search this register and the Experiment Register. If the same question or an equivalent closed path exists, explain the prior endpoint and determine whether the proposal is genuinely a new question before doing any work.
+## 4. Anti-loop checks
 
+新的 Architecture 2.0 proposal 必须先检查：
 
-## 5. 2026-09-22 Architecture 2.0 direction-pruning knowledge
+1. 研究的是 model-content regularity 还是 computational-architecture regularity？
+2. 是否需要穷举模型知识、语义、概率或内部表示？
+3. 是否直接连接稳定的 Execution State 抽象？
+4. 是否只是旧 Boundary/Unit 分支的变体？
+5. 是否需要预设 Universal Model Unit 或 Universal Physical Representation？
 
-The following are now explicitly treated as pruned from the Architecture 2.0 mainline:
-
-- exhaustive identification of model-content boundaries;
-- exhaustive reconstruction of model knowledge/rule/semantic/probability regularities;
-- universal Model Unit as a required architecture premise;
-- Boundary → Object → Actionability → Unit as the mandatory next research path;
-- RQ-F-01 Source/Runtime existence candidate as the current continuation of Architecture 2.0.
-
-Meaning:
-
-> Continuing these branches would increasingly study the content and knowledge organization of individual models rather than the stable computational-architecture regularities that Architecture 2.0 is intended to study.
-
-These branches are not declared scientifically false. They are **out of the current Architecture 2.0 research boundary**.
-
-## 6. Revised open directions
-
-The principal retained downstream candidate is:
-
-- **P4 / RQ-P4-01:** what structural/state mechanisms constitute the core residency/loading mechanism around Execution State.
-
-Future independent directions remain:
-
-- Track D — Adaptive Memory;
-- Track C — Multi-device;
-- Track A — Kernel/Bandwidth (conditional, workload-specific).
-
-P4 is still NOT STARTED. No item in this section authorizes implementation or measurement.
-
-## 7. Anti-loop rule after direction reset
-
-When proposing a new Architecture 2.0 question, first ask:
-
-1. Does it study model content/knowledge regularity, or computational-architecture regularity?
-2. Can the question be stated without requiring exhaustive understanding of model knowledge?
-3. Does it directly connect to the stable Execution State abstraction?
-4. Is it genuinely new, or merely continuation of a pruned Boundary/Unit branch?
-
-Only after these checks should a candidate enter the normal Definition gate.
+只有通过后，才可进入正式 Definition Gate。
