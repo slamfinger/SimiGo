@@ -168,7 +168,7 @@ P4 后续研究采用“先证伪、后扩展”的门控原则，而不是以�
 
 当前仍为 P4-A STEP① WORKING DEFINITION / 审查中，RQ 未分配，实验未授权。
 
-下一概念攻击：定义“低复杂度/低维”时，检查 complexity notion 是否真正与 Runtime decision utility 相关，避免把“字段少”误当成研究对象的有效复杂度。
+下一概念攻击：Description Language Attack。检查固定 Runtime-side description language 是否真正独立于被测 architecture / projection；是否把复杂度藏进 decoder / ontology / external knowledge；encoder 是否可利用 architecture-specific prior；rate 降低是否真正代表 decision-relevant information compression，而非语义搬运。当前 Rate-Distortion 仅为 STEP① 候选框架，不注册具体 estimand / threshold / experiment。
 
 ## 14. 状态维护规则
 
