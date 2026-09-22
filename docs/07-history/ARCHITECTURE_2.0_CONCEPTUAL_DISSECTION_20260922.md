@@ -1506,3 +1506,482 @@ Current state unchanged:
 - 无 measurement authorization。
 
 **Research-gate effect: NONE.**
+
+
+## 19. Further checkpoint: identity is a discrimination problem before it is an object problem
+
+这一轮继续停留在概念层。前面的链条已经从 Objecthood 进一步退到了 Invariant。现在再向下追问：
+
+> 如果我们说“这些观察属于同一个结构”，究竟凭什么排除“它们只是不同结构碰巧共享这些特征”？
+
+因此，identity 的核心可能首先不是“找到对象”，而是**进行区分（discrimination）**。
+
+### 19.1 Identity 判断至少包含两个方向
+
+一个“同一结构”的判断同时隐含：
+
+- **continuity**：S0 中的 x 可以延续到 S1 中的 x；
+- **discrimination**：x 可以与 y 区分开。
+
+因此：
+
+`identity ≈ continuity + discrimination`
+
+这仍是概念压缩，不是正式定义。
+
+只有 continuity，没有 discrimination：
+
+`x@S0 → ?@S1`
+
+可能无法排除多个候选对象。
+
+只有 discrimination，没有 continuity：
+
+`x ≠ y`
+
+只能说明它们不同，却不能说明 x 在状态变化后仍是 x。
+
+### 19.2 “同一性”其实是一个匹配问题
+
+面对两个观察集合：
+
+`O_t`
+
+与：
+
+`O_{t+1}`
+
+我们实际上在问：
+
+> 哪些元素之间存在足够强的关系，使得把它们匹配为同一个结构，比其他匹配解释更有依据？
+
+于是 identity 可以暂时表示成：
+
+`Match(O_t, O_{t+1})`
+
+但 Match 不是简单的 shape matching。
+
+它可能同时依赖：
+
+- invariant preservation；
+- relational continuity；
+- transition consistency；
+- history / lineage；
+- contextual constraints。
+
+因此：
+
+`same appearance ≠ same identity`
+
+而：
+
+`same identity`
+
+也不要求：
+
+`same appearance`
+
+### 19.3 这解释了为什么 identity 不能只看 snapshot
+
+如果：
+
+`Snapshot(A)=Snapshot(B)`
+
+那么 snapshot 本身无法保证：
+
+`A=B`
+
+因为可能存在两个不同 lineage。
+
+所以 identity 可能需要：
+
+`snapshot + context + history + transition constraints`
+
+这进一步强化了前面：
+
+> **identity 可能是 path-dependent interpretation。**
+
+但仍不能推出所有 runtime objects 都必须拥有完整历史。
+
+### 19.4 Identity 的真正作用可能是“减少解释歧义”
+
+假设有多个观察：
+
+`O1,O2,O3`
+
+存在两种解释：
+
+**解释 A：**
+
+`O1 → X`
+`O2 → X`
+`O3 → X`
+
+**解释 B：**
+
+`O1 → X1`
+`O2 → X2`
+`O3 → X3`
+
+如果 A 可以用更少的额外假设解释全部观察，同时不违反已知 transition / relational constraints，那么我们可能倾向于 A。
+
+这里出现一个非常重要的思想：
+
+> **Identity 可能不仅是发现出来的，也可能是模型压缩中的最小解释之一。**
+
+但必须注意：
+
+**“更简单”不是“更真实”。**
+
+Occam-style compression 可以帮助形成模型，却不能单独证明 ontology。
+
+### 19.5 于是“对象”可能是一个最小解释，而非直接观察量
+
+可以暂时写成：
+
+`observations + invariants + constraints`
+→ `candidate identity partition`
+→ `object interpretation`
+
+也就是说，人类看到的不是“对象本身”，而是：
+
+> 一组观察，在某种划分方式下可以被稳定解释。
+
+这使“对象”具有明显的模型性。
+
+但这并不否认现实中存在对象；只是强调：
+
+> **我们获得 objecthood 的方式，是通过可区分、可连续、可解释的观察关系，而不是直接读取 ontology。**
+
+### 19.6 一个重要概念：identity partition
+
+如果观察集合中有：
+
+`O={o1,o2,o3,o4,o5}`
+
+我们可能提出：
+
+`{o1,o3,o5} = X`
+`{o2,o4} = Y`
+
+也可能提出完全不同的 partition。
+
+所以 object identification 可以看作：
+
+> 在观察数据上寻找一个满足 continuity / invariant / relational constraints 的 partition。
+
+这意味着：
+
+**对象化本身就是一种分类。**
+
+而分类又可能有多个层次：
+
+- instance；
+- class；
+- process；
+- relation；
+- rule。
+
+因此“找到对象”并不是唯一的结构发现方式。
+
+### 19.7 这会让“边界”变成 partition 的结果之一
+
+Boundary 可以看作：
+
+> 在某个 observation domain 中，使一个 partition 得以稳定区分的结构变化位置。
+
+因此：
+
+`Boundary ≈ partition-supporting structural discontinuity`
+
+但这只是一个候选解释。
+
+它意味着：
+
+- 如果 partition 改变；
+- 或 observation resolution 改变；
+- 或 invariants 增加；
+
+boundary 也可能改变。
+
+所以 boundary 不应被当作绝对 ontology。
+
+### 19.8 从这里可以重新理解“最小对象”
+
+过去我们说：
+
+> 最小对象不是最小 page / segment / tensor。
+
+现在可以更严格地说：
+
+> **最小对象是使 identity partition、transition semantics 与 action semantics 同时保持闭包的最小解释单元。**
+
+但即使这样，也仍不能假设一定存在唯一的最小单元。
+
+可能出现：
+
+- multiple valid partitions；
+- overlapping objects；
+- hierarchical objects；
+- context-dependent objects。
+
+例如：
+
+`Object X = {A,B,C}`
+
+在某一操作域成立，而：
+
+`Object Y = {B,C}`
+
+在另一操作域成立。
+
+因此：
+
+> **对象边界可能是 domain-relative 的。**
+
+### 19.9 这又解释了为什么不同系统层可以拥有不同 Unit
+
+如果 identity / partition 依赖 observation domain，那么：
+
+`execution domain`
+
+可能形成一种对象划分；
+
+`residency domain`
+
+形成另一种；
+
+`sharding domain`
+
+又形成另一种。
+
+于是：
+
+`one universal unit`
+
+并不是必然存在。
+
+这给 Architecture 2.0 一个非常重要的开放可能：
+
+> **runtime 不一定需要一个唯一的基本 Unit；不同语义域可能存在不同、相互映射但不等价的单位。**
+
+这比寻找“万能 Model Unit”更符合前面的概念链。
+
+### 19.10 Object identity 与 resource identity 可以彻底分开
+
+如果不同 observation domain 可以产生不同 partition，那么：
+
+`logical identity`
+
+与：
+
+`resource ownership identity`
+
+就天然可以分离。
+
+一个逻辑对象可以：
+
+- 改变 residency；
+- 改变 representation；
+- 被重新组织；
+- 跨设备迁移；
+
+而不改变其逻辑 identity。
+
+反过来，一个 resource allocation region 也可以被多个逻辑对象先后使用，而不因此成为一个 persistent logical object。
+
+所以：
+
+`resource identity ≠ logical identity`
+
+这是 Track B “state identity ≠ representation” 向 Architecture 2.0 更一般方向延伸时最值得保护的边界之一。
+
+### 19.11 进一步：identity 可能是关系网络中的位置
+
+如果单独看对象状态不够，那么对象 identity 可能更多来自：
+
+`relations to other structures`
+
+即：
+
+`Identity(x) ≈ position of x in relational structure`
+
+这并不是说 identity 完全没有 intrinsic property，而是指出：
+
+> 对复杂系统而言，关系位置可能是身份判断的重要组成部分。
+
+这意味着两个结构即使内部状态非常相似，只要它们在系统关系网络中的位置不同，也可能是不同对象。
+
+反过来，如果结构内部 representation 改变，但关键关系位置保持，那么仍可能被视为同一对象。
+
+### 19.12 一个更深的分叉：identity 可以是 intrinsic，也可以是 relational
+
+因此当前至少存在两种解释：
+
+**Intrinsic identity**
+- 对象自身具有足够区分特征。
+
+**Relational identity**
+- 对象由其与其他结构的关系位置来识别。
+
+现实系统可能同时包含二者。
+
+这意味着未来不应默认：
+
+`identity = internal state signature`
+
+也不应默认：
+
+`identity = relational signature`
+
+而应允许：
+
+`identity = sufficient combination`
+
+### 19.13 由此，Invariant 也应该分层
+
+前面已经出现 semantic / relational / continuation / resource invariants。
+
+现在可以进一步区分：
+
+- **Intrinsic invariants**：对象自身保持的结构性质；
+- **Relational invariants**：对象与其他结构之间保持的关系；
+- **Temporal / lineage invariants**：状态演化中的连续关系；
+- **Contextual invariants**：只有在特定 observation domain 中才稳定；
+- **Resource invariants**：资源归属或物理关系保持，但不默认属于 identity 核心。
+
+于是 identity 的候选证据可能不是一个 invariant，而是：
+
+`I = I_{intrinsic} ∪ I_{relational} ∪ I_{lineage} ∪ I_{context}`
+
+再从中寻找足够的区分能力。
+
+### 19.14 “足够”是这里真正困难的词
+
+现在我们已经多次说：
+
+> sufficient invariants
+
+但真正的问题恰恰是：
+
+> 什么叫 sufficient？
+
+至少存在三个不同标准：
+
+1. **Descriptive sufficiency**
+   - 足够描述当前观察。
+
+2. **Predictive sufficiency**
+   - 足够预测允许的未来 transition。
+
+3. **Operational sufficiency**
+   - 足够确定独立 action 的 target 与 effect closure。
+
+这三个 sufficiency 完全不同。
+
+因此：
+
+`descriptive sufficiency ≠ predictive sufficiency ≠ operational sufficiency`
+
+这和之前：
+
+`observability ≠ controllability ≠ usefulness`
+
+形成了非常强的平行结构。
+
+### 19.15 可能出现一个非常一般的层次
+
+现在可以得到：
+
+`Observation sufficiency`
+→ `Identity sufficiency`
+→ `Transition sufficiency`
+→ `Action sufficiency`
+→ `Resource-management sufficiency`
+
+越往后，要求越强。
+
+这意味着：
+
+> **一个结构可能已经足够被认识，却仍然不足以被操作；已经足够被操作，却仍然不足以成为独立资源管理单位。**
+
+这可能正是 Architecture 2.0 各种 Unit 容易混淆的根源。
+
+### 19.16 当前最深的概念压缩
+
+到这里，我认为目前最稳健的链已经变成：
+
+`Reality`
+→ `Observation`
+→ `Relation`
+→ `Invariant`
+→ `Discrimination`
+→ `Identity / Continuity`
+→ `Structure / Partition`
+→ `Object interpretation`
+→ `Actionability / Target closure`
+→ `Resource semantics`
+→ `Domain-specific units`
+
+其中：
+
+- Relation 解释“为什么不同观察可能有关”；
+- Invariant 解释“这种关系为什么能在变化中保持”；
+- Discrimination 解释“为什么它不是另一个结构”；
+- Identity/Continuity 解释“为什么不同状态仍可指向同一个东西”；
+- Partition/Structure 解释“如何把观察组织成稳定结构”；
+- Object interpretation 是一种可能的结构解释；
+- Actionability 解释“这种解释是否能成为独立动作目标”；
+- Resource semantics 决定它是否进一步成为 residency / sharding / management 等资源单位。
+
+这已经比“寻找 Model Unit”深了至少两层。
+
+## 20. Current conceptual checkpoint
+
+目前最值得保留的一句话：
+
+> **“同一个结构”的判断，本质上不是发现一个名字，而是在有限观察下寻找一组具有足够区分力、连续性和稳定性的关系/不变量，使多个离散观察能够被压缩成一个可持续解释。**
+
+同时必须保留其反面：
+
+> **这种压缩解释不自动等于世界本体。**
+
+因此当前 Architecture 2.0 的核心未知可以继续向下表达为：
+
+> **在有限观察能力下，什么样的不变量组合，足以支持 identity interpretation；又在什么条件下，这种 identity 才进一步获得独立 action semantics？**
+
+这仍然是概念分析，不是正式 RQ。
+
+## 21. Negative knowledge
+
+本 checkpoint 新增：
+
+- identity ≠ snapshot equality；
+- continuity ≠ discrimination；
+- discrimination ≠ continuity；
+- same invariant set ≠ same object；
+- object identification ≠ direct ontology observation；
+- simplest explanation ≠ ontological truth；
+- one partition ≠ unique partition；
+- one domain's object ≠ universal object；
+- logical identity ≠ resource identity；
+- descriptive sufficiency ≠ predictive sufficiency；
+- predictive sufficiency ≠ operational sufficiency；
+- operational sufficiency ≠ management sufficiency。
+
+## 22. Governance
+
+本 checkpoint 不改变：
+
+- Track B = CLOSED / FROZEN；
+- Track E = CLOSED / SEALED；
+- P4 = NOT STARTED；
+- RQ-F-01 = NOT DEFINED；
+- STEP④ = PASS；
+- STEP⑤ = UNSTARTED；
+- 无新 RQ；
+- 无实验；
+- 无 implementation authorization；
+- 无 measurement authorization。
+
+**Research-gate effect: NONE.**
