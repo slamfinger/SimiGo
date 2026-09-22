@@ -816,3 +816,17 @@ P4-A 最后攻击“未来尚未确定”这一独立性依据。显式分支状
 最终生死条件：共同语义维度是否自然出现、是否非人工硬编码、是否具有可验证的信息价值、是否能解释/预测 Runtime resource behavior；若不能，Execution State 主线应关闭或重新定义。
 
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-053 — Execution State 的候选价值转向 task-relative information/cost，而非本体论存在
+
+“不同架构自然收敛到共同语义维度”存在研究者先验污染，只能作为辅助证据。更强的候选判据是：在预先定义的 Runtime resource-decision task 下，semantic projection 相对于 architecture-specific state 是否保留足够决策信息，同时显著降低 instrumentation / adaptation cost。
+
+注意：projection 预测性能接近专用 state 不等于全局充分统计量；最多证明 task/workload scope 内的 task-sufficiency。资源有限提供“有限可描述性”的研究动机，但不能推出低维、稳定、跨架构 projection 必然存在。低维 projection、task-specific representation、high-dimensional dependence 都必须允许成为结果。
+
+当前候选身份：
+Execution State = 面向继续计算与 Runtime resource decisions 的、可被压缩/投影/比较的计算状态描述层候选，而非 universal state object。
+
+下一关键问题：低复杂度/低维到底如何定义，且 complexity notion 是否与 Runtime decision utility 真正相关。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
