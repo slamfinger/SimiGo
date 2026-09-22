@@ -2,35 +2,73 @@
 
 **性质**：预研实验仓（research lab）。装的是**未验证的实验与探针**，
 不是产品代码，不构成任何版本承诺。
-**产品仓**：`github.com/slamfinger/SimiGo`（1.x 线；1.7 build 5 已封版）。
-**方向真源**：本仓
-`docs/architecture/ARCHITECTURE_2.0_PRERESEARCH_20260920.md`（v1.2）——
-各实验的研究问题、开关判据、验收标准以该报告为准，track 目录内
-不重复维护。
 
-## 边界规则（不可协商）
+**产品仓**：`github.com/slamfinger/SimiGo`（1.x 线；与本仓严格分离）。
 
-1. **实验室代码永不经过 1.7 发布路径。** 迁回生产的唯一通道：对应
-   Level 门通过后迁入主仓另立版本；本仓使命完成后归档。
-2. **主仓 vendor pin（dc3ca61）不出现在本仓任何工作流中。** 本仓依赖
-   统一走 `~/Documents/mlx-swift-lm` 实验分支（branch / file:// 引用）；
-   换 vendor 检出须 fresh derivedDataPath。
-3. 实验记录沿用 F0 三段式：**探针 → 结果 → 决策**；2.0 材料（文档 +
-   代码 + 记录）全部归档本仓。主仓 `docs/experiments/` 保留 1.x 史料
-   （F0 探针、V17_RUNTIME_MATRIX），仅作跨仓基线引用。
-4. 止损入档：任一实验结构性失败立即记录并关闭对应 track，不恋战。
+**当前状态真源**：`docs/RESEARCH_STATE.md`。本 README 仅提供工作区导览，
+不得替代当前状态、endpoint 或 closure 文档。
 
-## 结构（对应报告 §5/§6）
+## 当前研究门
 
-| 目录 | Track | 状态 | 开关/验收 |
-|---|---|---|---|
-| `exp06-roofline/` | 实验 06 剖析 | 未开工（第一优先，与 trackB 并行） | 实测/地板 ≤1.5× 关 A；≥3× 开 A |
-| `trackA-kernel/` | Track A Kernel | 条件启动（06 开关） | Metal 原型成对对比 |
-| `trackB-execution-state/` | Track B Execution State | **CLOSED / FROZEN**（2026-09-21 Closure v4 终审 PASS/FREEZE；仅证所测执行位置下的生命周期语义正确性，不证性能优越性/估计器鲁棒性/Residency 行为，Residency ≠ Closure；代码冻结于 `exp/execution-state-fork` @ acbcb54；#629 follow-up 技术报告已发布：issuecomment-5754644625） | Fork Cost / Restore Depth / Shared Page Ratio + 逐 token 一致性门 |
-| `trackD-memory/` | Track D Adaptive Memory | 未开工（独立推进） | 预算放宽不引入 swap 劣化 |
-| `trackE-residency/` | Track E Residency(命名待真源定夺,与真源 §5.3 Track C=Multi-device 冲突) | **M1–M4 全部 FINAL PASS,M 链封口**;simulator v0 FINAL PASS;P0 CONDITIONAL PASS;P0.1 PASS;P0.2 CONDITIONAL PASS;**P3-A 模型验证+首轮判别完成**(lfu_aging 优于 lru;cost_aware_greedy H 强主导,待审核终判) | 字典序:约束+boundary cost(P3 门) |
-| `runtime2-skeleton/` | Runtime2 接口占位 | 笔记态，`[future]` 不实现 | — |
+截至 2026-09-22：
 
-## 远端
+- Phase: **Definition / Opening**
+- STEP ③: **PASS**
+- STEP ④ estimand: **NOT STARTED**
+- RQ ID: **未分配**
+- 当前允许动作：STEP ④ estimand 定义、历史资产只读盘点
+- 当前禁止动作：runtime implementation / harness construction /
+  data collection / performance measurement
 
-2026-09-20 建仓并推送私有仓 `slamfinger/SimiGo-Lab`（main）。
+因此，目录中仍存在的实验计划、历史结果和未来占位，不代表当前已经获准
+执行。
+
+## 已完成 / 已封存研究线
+
+| 目录 / 资产 | 状态 | 说明 |
+|---|---|---|
+| `trackB-execution-state/` | **CLOSED / FROZEN** | Track B Closure v4；仅在原测试边界内建立生命周期语义证据，不证明通用性能、估计器鲁棒性或 Residency |
+| `trackE-residency/` | **CLOSED / 归档** | Track E / nodes-out 已完成其注册研究链；后续问题必须重新定义，不由旧记录自动开启 |
+| `trackD-memory/` | NOT STARTED | 独立研究方向，未因架构文档存在而获准启动 |
+| `exp06-roofline/` | 已预注册、**未执行** | 计划资产保留；实际测量须等待当前门合法解锁 |
+| `trackA-kernel/` | 条件 / 未启动 | 受 exp06 开关判据约束 |
+| `runtime2-skeleton/` | NOTE-ONLY / FUTURE | 多设备执行层占位，不实现、不立项 |
+
+## 档案体系
+
+完整档案入口：
+
+`docs/ARCHIVE_INDEX.md`
+
+当前链：
+
+```
+Question
+  → Evidence
+  → Finding
+  → Decision
+  → Architecture
+  → Closure
+  → History / Provenance
+  → Research Memory
+```
+
+其中：
+
+- `docs/03-findings/`：已登记的限定性发现；
+- `docs/04-decisions/`：已登记裁定；
+- `docs/05-architecture/`：研究约束形成的架构后果与不变量；
+- `docs/06-closure/`：关闭、封存、冻结及合法出口；
+- `docs/07-history/`：历史资产与 provenance；
+- `docs/08-research-memory/`：候选思想和长期研究记忆。
+
+## 边界规则
+
+1. 实验室代码永不直接进入 1.x 发布路径。
+2. 历史 FROZEN / SEALED / CLOSED 资产不得因归档重构而被重新解释。
+3. 预测、计划、观察、Finding、Decision 和 Closure 必须保持语义分离。
+4. 目录结构不能替代研究门禁。
+5. SimiGo-Lab 2.0 research line 与 SimiGo 1.x product line 严格分离。
+
+历史实验目录继续保留其原始位置；档案重构采用索引和映射优先，不进行
+破坏性迁移。
