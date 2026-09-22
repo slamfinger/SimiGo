@@ -400,6 +400,52 @@ This upward movement is not scope creep by itself. It can be the correct respons
 
 **Status:** DURABLE RESEARCH-DIRECTION INSIGHT
 
+### RM-024 — Execution State should ideally be semantically light
+
+A long-horizon Architecture 2.0 hypothesis is that the core Execution State mechanism should not require upstream model semantics to function. Semantic metadata may assist optimization, but the mechanism should ideally derive essential control from observable runtime behavior such as access, co-access, residency, migration, reuse, and continuation.
+
+**Provenance:** Architecture 2.0 future-mechanism discussion, curated 2026-09-22.
+
+**Forbidden inference:** semantic-independent runtime control has not been demonstrated in current Swift/MLX.
+
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-025 — Operational sharding unit may differ from model semantic unit
+
+Future SimiGo sharding should not assume layer/block/tensor is automatically the correct unit. A candidate unit should have meaningful access, residency, migration, continuation, and cost identity. Unit discovery therefore precedes sharding implementation.
+
+**Provenance:** Architecture 2.0 model-decomposition discussion, curated 2026-09-22.
+
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-026 — Physical residency should be separated from logical intelligence state
+
+A long-term mechanism candidate is to let the logical model / Execution State exceed the simultaneously resident physical representation, with execution-aware materialization, migration, eviction, and restoration. The target is not ordinary swap; it is preservation of execution identity and useful capability while minimizing the active physical working set.
+
+**Provenance:** Architecture 2.0 future-mechanism discussion, curated 2026-09-22.
+
+**Forbidden inference:** this does not establish that arbitrary model slices can currently be made non-resident and resumed safely or efficiently.
+
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-027 — Execution State can be the bridge between sharding and residency
+
+A stronger future architecture would treat Execution State as the logical object that survives physical movement. Thus load/unload is not sufficient: a unit should remain semantically associated with an ongoing execution while its physical residency changes.
+
+**Provenance:** Architecture 2.0 future-mechanism discussion, curated 2026-09-22.
+
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-028 — “Intelligence virtualization” is a candidate long-horizon direction
+
+The combined hypothesis is: logical model / Execution State → operational units → residency manager → physical-memory working set → compute/continue. The aim is to make the logical amount of usable model intelligence potentially exceed the simultaneously resident physical representation, subject to correctness and migration-cost constraints.
+
+This is a conceptual direction, not a named implementation architecture.
+
+**Provenance:** Architecture 2.0 future-mechanism discussion, curated 2026-09-22.
+
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
 ## 3. Promotion rule
 
 A memory item does not change project state.
