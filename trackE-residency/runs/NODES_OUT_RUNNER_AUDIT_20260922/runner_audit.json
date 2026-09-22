@@ -19,7 +19,9 @@
         "decode_touch_mapping": "the current node must be resident in the frozen baseline state; after all Candidate unit events at that decode step, both (GDN,current)/(ATT,current) units must be decode-ready. Intra-pair intermediate states are not independent node events",
         "logical_state": "each event completion at step t uses the frozen simulate_v3 five_tuple at the same decode step",
         "policy_difference_boundary": "non-current unit residency may differ from node-level frozen residency; this is the allowed granularity-policy difference, not an L1 violation",
-        "transition_shape": "rehydrate requires prior externalized -> now resident; externalize requires prior resident -> now externalized"
+        "state_model": "Candidate A has one unit state bit, res: resident/non-resident; it does not maintain a separate externalized state bit",
+        "terminology_boundary": "externalized is baseline historical vocabulary: a once-resident unit later capacity-evicted; cold-load is first acquisition of a never-resident unit; the runner rehydrate event is the umbrella for both acquisitions",
+        "transition_shape": "rehydrate requires prior non-resident -> now resident; externalize requires prior resident -> now non-resident"
       },
       "pass": true,
       "violation_count": 0
@@ -140,6 +142,6 @@
   },
   "runner": {
     "path": "trackE-residency/nodes_out_experiment_runner.py",
-    "sha256": "f5e6d811d61804b83c58ad477a237f0089866384501cf207e03e985d6577e2e3"
+    "sha256": "ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17"
   }
 }

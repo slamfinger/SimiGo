@@ -145,7 +145,12 @@ def run_baseline(trace):
 
 
 class CandidateA:
-    """KV units are the minimum residency objects; logical KV is never lost."""
+    """KV units are the minimum residency objects; logical KV is never lost.
+
+    Candidate A L1 uses one state bit: ``res`` (resident/non-resident).
+    The ``rehydrate`` event name is an acquisition umbrella for both
+    cold-load and historical rehydration; no separate externalized bit exists.
+    """
 
     def __init__(self, trace):
         self.trace = trace
@@ -231,7 +236,7 @@ def event_checks(run, baseline_states, baseline_rows):
                         "msg": "current node unit externalized"})
     # A node touch consists of two unit operations. Check its baseline mapping
     # only after all events at that decode step, not at intra-pair intermediate
-    # states (for example, GDN resident but ATT still externalized).
+    # states (for example, GDN resident but ATT still non-resident).
     for step in sorted({event[1] for event in run.events}):
         current = run.trace[step]
         if current not in baseline_states[step]["resident"]:
@@ -377,9 +382,18 @@ def main():
     audit["assertions"]["L1"]["contract"] = {
         "logical_state": ("each event completion at step t uses the frozen "
                           "simulate_v3 five_tuple at the same decode step"),
-        "transition_shape": ("rehydrate requires prior externalized -> now "
+        "transition_shape": ("rehydrate requires prior non-resident -> now "
                              "resident; externalize requires prior resident "
-                             "-> now externalized"),
+                             "-> now non-resident"),
+        "state_model": ("Candidate A has one unit state bit, res: "
+                        "resident/non-resident; it does not maintain a "
+                        "separate externalized state bit"),
+        "terminology_boundary": ("externalized is baseline historical "
+                                 "vocabulary: a once-resident unit later "
+                                 "capacity-evicted; cold-load is first "
+                                 "acquisition of a never-resident unit; the "
+                                 "runner rehydrate event is the umbrella for "
+                                 "both acquisitions"),
         "decode_touch_mapping": ("the current node must be resident in the "
                                  "frozen baseline state; after all Candidate "
                                  "unit events at that decode step, both "
