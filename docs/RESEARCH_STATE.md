@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（Execution State intellectual closure 后进入 Architecture 2.0 Research Direction Review）
+**Last updated**: 2026-09-22（Architecture 2.0 方向重审：Execution State 重新确认为核心主干）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,11 +23,11 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        Definition / Opening（STEP ④ PASS；第⑤步解锁未启动；当前活动：Architecture 2.0 Research Direction Review）
-Next action:  Architecture 2.0 Research Direction Review；STEP ⑤ existence criterion 定义保持 NOT STARTED
-Gate status:  OPEN — STEP ④ PASS（外审+登记 2026-09-22）→ STEP ⑤ 已解锁但 intentionally not entered
-RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完成）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_RESEARCH_DIRECTION_REVIEW_20260922.md
+Phase:        Architecture 2.0 Direction Reset / Pre-definition
+Next action:  对保留的 P4 / RQ-P4-01 从 STEP①重新定义；当前不启动
+Gate status:  CLOSED — 旧 Source/Runtime 定义链停止；STEP④ PASS 仅属于已撤回的 RQ-F-01 候选，不向 P4 转移
+RQ ID:        未分配
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_RESEARCH_PROGRAM_RECLASSIFICATION_20260922.md
 定义链文档:   docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
               （§8.1 STEP ② PASS）
               docs/SOURCE_RUNTIME_INDEPENDENCE_ARGUMENT_v0.1.md
@@ -61,14 +61,17 @@ RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完�
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED | `edc4dad` |
 | RQ-NO-01 | 取消 node 粒度外化通道：粒度 / correctness / 边界成本 | CLOSED | `2cf244e` + `b6ad7c0` |
 | RQ-P4-01 | 哪些结构/状态机制构成核心驻留机制 | NOT STARTED（独立立项） | — |
-| RQ-F-01 | Source/Runtime 机制可实现·可验证性 | NOT DEFINED（连问题尚未立项） | — |
+| RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED | 方向重审 2026-09-22 |
 
 ## 4. Mainline
 
 ```text
-Execution State → Residency → P3 → H-P1 → nodes-out → Track E CLOSED
-        ↓
-[未定义] Source/Runtime 机制存在性（RQ-F-01 候选，未立项）
+历史主线：Execution State → Residency → P3 → H-P1 → nodes-out → Track E CLOSED
+
+当前 Architecture 2.0 主线：
+Execution State → Residency / Loading → Layering / Working Set → Migration / Resource placement
+
+[已撤回] Source/Runtime boundary/unit existence（RQ-F-01 candidate）
 ```
 
 ## 5. Sealed / Closed 清单
@@ -88,7 +91,7 @@ Execution State → Residency → P3 → H-P1 → nodes-out → Track E CLOSED
 | 项 | 状态 | 约束 |
 |---|---|---|
 | P4（RQ-P4-01） | NOT STARTED | 串行链独立环节，须独立立项 |
-| Track F（RQ-F-01） | NOT DEFINED | 无立项依据；`mlx-swift-lm` 无实验分支；立项价值须独立成立，不得表述为 Track E effect verdict 的延续 |
+| Source/Runtime / RQ-F-01 candidate | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前 STEP④ 状态不向新课题转移 |
 | Swift implementation | NOT STARTED / NO BASIS | — |
 
 ## 7. Registered prediction（登记态，非结论）
@@ -97,12 +100,12 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 
 约束：本预测处于登记态，不得当作已证结论引用；任何检验必须先过独立 Design Revision + 外审门。
 
-## 8. Current gate（版本化的"下一步"）
+## 8. Current gate（方向重审后的状态）
 
 ```text
 RQ:           TBD（未分配）
-Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — STEP ④ PASS（estimand）→ STEP ⑤ 解锁未启动
+Phase:        Architecture 2.0 Direction Reset / Pre-definition
+Status:       CLOSED — Source/Runtime 定义链停止；P4 尚未启动
 
 外审保留意见（对第②–④步有约束力）:
 - C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
@@ -122,13 +125,16 @@ STEP ④ 外审结论:
 - STEP ⑤ existence criterion 尚未定义。
 
 Allowed:
-- Architecture 2.0 Research Direction Review（方向复盘；不启动新 RQ）
-- 若继续当前 Source/Runtime 线，才进入第⑤步：existence criterion 定义（目前 NOT STARTED）
+- 对 P4 / RQ-P4-01 开始独立 STEP① Definition（仅在明确启动时）
+- 继续历史资产盘点（只读取，FROZEN 身份不变）
+- 继续 Architecture 2.0 概念复盘，但不得把概念讨论自动转为 RQ
 - 引用 STEP ②–④ 外审意见作为自查约束
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
-- 把 Q2.1 裁定当成 RQ ID 分配，或宣称 RQ 定义已完成
+- 继续 RQ-F-01 Source/Runtime boundary/unit 路线或进入其 STEP⑤
+- 把旧 Source/Runtime STEP④ PASS 转移给 P4
+- 把 Q2.1 裁定当成 RQ ID 分配，或宣称 P4 定义已完成
 - 把四道 RQ 资格门当成第③–⑧步已完成的证明
 - 把 STEP ④ PASS 当作第⑤–⑨步已完成
 - 把 STEP ③ 负向出口表述成"runtime 不存在自然粒度"的全局结论
