@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-22（STEP⑤ 已定义 SAT_INF_FIN；+infinity→finite 的 substantive identity 与 NECT mode 未裁定）
+**Last updated**: 2026-09-22（STEP⑤ 已定义 Infinity Provenance Rule；mixed +infinity 语义必须 typed split，NECT mode 未裁定）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP⑤ Nontrivial Phenomenon Existence Criterion
-Next action: 完成 SAT_INF_FIN 四项 identity check，尤其裁定 +infinity 的 provenance 与 finite-loss realizability onset 是否属于 NECT；mode 冻结前不得进入 STEP⑥
+Next action: 为当前 frame 声明 Infinity Provenance Rule；若 +infinity 混合 loss value 与 boundary encoding，必须先 typed split 才能裁定 NECT mode
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed; STEP⑤ active as NECT candidate
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP5_INFINITY_TO_FINITE_SEMANTIC_ADMISSIBILITY_20260922.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP5_INFINITY_PROVENANCE_AND_TYPED_ENVELOPE_20260922.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / STEP⑤ OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / NECT MODE OPEN / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / STEP⑤ OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / IPR REQUIRED / NECT MODE OPEN / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / SAT_INF_FIN DEFINED / NECT MODE OPEN | 只允许完成 +infinity→finite semantic admissibility check，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / SAT_INF_FIN DEFINED / IPR REQUIRED / NECT MODE OPEN | 只允许声明/审查 Infinity Provenance Rule 与 typed envelope，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -64,7 +64,7 @@ P4 / RQ-P4-01 candidate
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
 - STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME
-- STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / NECT MODE UNRESOLVED
+- STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / IPR REQUIRED / NECT MODE UNRESOLVED
 - STEP⑥–⑨：未开始
 
 ### Allowed
@@ -72,6 +72,7 @@ P4 / RQ-P4-01 candidate
 - 继续定义与对抗 STEP⑤ existence criterion；
 - 使用 NDAC 作为 NECT domain admission condition，并裁定 extended-real vs finite-finite descent mode；
 - 使用 SAT_INF_FIN 审查 `+infinity -> finite` 的 domain / order / substantive / degeneracy identity；
+- 声明并审查 Infinity Provenance Rule；若 loss value 与 boundary encoding 混合，先定义 typed envelope；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -89,6 +90,7 @@ P4 / RQ-P4-01 candidate
 - 把 `EVIDENCE_INSUFFICIENT` 当作 STEP⑤ target output，或在 mode 未裁定时宣布 NECT true/false；
 - 把 `+infinity -> finite` 是否属于 NECT 当作已决定；
 - 把 evaluation failure / missing-data 的 `+infinity` 当作合法 loss value，或把 degeneracy risk 当作价值判断依据；
+- 把 `+infinity` 的 loss-value / boundary-encoding 混用当作同一 NECT 对象，或在 IPR 未声明时裁定 NECT mode；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
 
@@ -118,7 +120,7 @@ STEP④ 已将 estimand 固定为 frame-indexed Achievable Static Frontier。关
 
 STEP⑤ 当前候选是 NECT（原 EC_T），但存在两个未裁决 mode：`NECT_E` 检测整个 extended-real envelope 的 strict descent，允许 `+infinity -> finite`；`NECT_F` 只检测 finite-loss region 内部的 descent。semantic 与 deployment-economic 分轨判定。NECT 是 target-level nontrivial phenomenon existence，不是 frontier object existence，不要求 infimum 被实际策略达到，也不是 finite-sample observation criterion。
 
-`SAT_INF_FIN` 已定义，用于在 mode 裁定前检查 `+infinity -> finite` 的 domain identity、order identity、substantive identity 和 degeneracy annotation。`+infinity` 必须区分 actual extended loss value、finite-realizability boundary 与 evaluation failure marker；前两类的对象身份仍未裁定。
+`SAT_INF_FIN` 已定义，用于在 mode 裁定前检查 `+infinity -> finite` 的 domain identity、order identity、substantive identity 和 degeneracy annotation。当前进一步要求 Infinity Provenance Rule：`+infinity` 必须声明为 ordered loss value、no-finite-loss-member boundary encoding、mixed 或 evaluation NA。`MIXED` 必须先 typed split；`NA` 不属于 target envelope；finite-loss realizability onset 不得静默并入 NECT。
 
 Envelope contract 已固定为：`R_s` 上可行集非空，loss codomain 为 `[0,+infinity]`；infimum existence 不要求 attainment。`NDAC(s): |R_s^tau|>=2` 已接受为 domain admission condition，不是 NECT 谓词本体。STEP⑤ target output 只有 `DOMAIN_INSUFFICIENT / NECT_TRUE / NECT_FALSE`；`EVIDENCE_INSUFFICIENT` 属于正交 evidence layer，不得由 STEP⑤ 输出。
 
