@@ -12,6 +12,7 @@ Current canonical semantic state remains:
 
 ```
 SourceStatus     = NEW_DECLARATION
+DG_4A_01         = RESULT_FORM_DETERMINING
 VType            = UNDECLARED
 OutputDiscipline = UNDECLARED
 Binding_C        = UNDECLARED
@@ -130,17 +131,19 @@ Whether missingness/partiality belongs inside the eventual OutputDiscipline decl
 
 ### Binding_C orthogonality audit
 
-The current Binding_C candidate list contains both aggregation-style relations (for example, sum or max) and composition/result-form possibilities (for example, tuple or record).
+The former Binding_C candidate list mixed aggregation-style relations (for example, sum or max) with composition/result-form possibilities (for example, tuple or record).
 
-This is recorded as a **potential internal orthogonality issue**, not as a new decision axis.
+`DG-4A-01` has now been resolved by explicit human-researcher declaration:
 
 ```
-aggregation relation
-        ?
-composition / result form
+DG_4A_01_RESOLUTION = RESULT_FORM_DETERMINING
+LOCAL_RELATION_ROLE = DERIVED
+RESULT_FORM_ROLE    = PRIMARY_AND_DETERMINING
+ROLE_COUPLING       = FORM_DETERMINES_RELATION
+C_FORM_STATUS       = DETERMINED_BY_BINDING_C
 ```
 
-No automatic split into separate semantic variables is authorized. Such a split would itself require explicit researcher instantiation.
+Thus a future concrete `Binding_C` candidate must first declare the semantic form of the composed result `C`; the local-to-global relation is derived from that form. The resolution does not instantiate sum, weighted sum, mean/max/min, tuple, vector, record, product, or any other concrete binding form.
 
 ### Observation-frame boundary audit
 
@@ -201,7 +204,7 @@ remains unchanged. Historical STEP⑤ notation does not instantiate STEP④ outp
 | Tuple | Overall output preserves multiple local values as ordered components | Component identity and multiplicity | Forced scalar compression | Cases where component identity/order matters | Ordering and membership semantics must be explicit |
 | Vector composition | Overall output is a homogeneous multi-coordinate object | Multiple coordinates | Heterogeneous field semantics | Cases where coordinates are jointly interpreted as one homogeneous object | Dimension semantics must be explicit |
 | Record composition | Overall output preserves named heterogeneous components | Field identity and types | Anonymous coordinate treatment | Cases where field identity/type changes interpretation | Field schema and field-level discipline must be explicit |
-| Other binding | A separately defined local-to-global relation | Relation-specific structure | Any default aggregation assumption | Architecture counterexample specific to competing bindings | Full relation must be explicitly defined |
+| Other binding | A separately defined composed-result form with its derived local-to-global relation | Relation-specific structure | Any default aggregation assumption | Architecture counterexample specific to competing bindings | Full result-form semantics and the relation derived from it must be explicit |
 
 ### Binding_C boundary
 
@@ -222,6 +225,8 @@ Binding_C = sum
 ```
 
 Likewise, preservation of multiple values does not by itself establish tuple, vector, or record semantics.
+
+Under `DG_4A_01=RESULT_FORM_DETERMINING`, a future `Binding_C` declaration is valid only when the semantic form of `C` is explicit and the local-to-global relation is derivable from that form. A relation claim alone, numerical agreement alone, or runtime representation alone is insufficient.
 
 ## 7. Cross-semantic interaction matrix
 
@@ -326,6 +331,7 @@ This document must not be used to:
 
 ```
 SEMANTIC IDENTIFIABILITY ANALYSIS = DEFINED AS DECISION-SUPPORT FRAME
+DG_4A_01_RESOLUTION           = RESULT_FORM_DETERMINING
 VType                        = UNDECLARED
 OutputDiscipline             = UNDECLARED
 Binding_C                    = UNDECLARED

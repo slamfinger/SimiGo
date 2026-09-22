@@ -3,12 +3,12 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A 收敛：MCVSD validity audit complete；进入 canonical semantic instantiation decision surface）
+**Last updated**: 2026-09-23（STEP④-A：DG-4A-01 已由 human researcher 采用 RESULT_FORM_DETERMINING；VType / OutputDiscipline / Binding_C 仍未实例化）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Canonical Decision Surface（STEP⑤ NECT mode blocked）
-Next action: Resolve explicit definition-layer gap `DG-4A-01` (Local-value / global-binding semantic boundary), then human researcher may explicitly instantiate MCVSD `VType/OutputDiscipline` and separately decide `Binding_C`; agent must not select semantic values
+Next action: Human researcher must explicitly instantiate MCVSD `VType/OutputDiscipline` and separately decide concrete `Binding_C` under `DG_4A_01=RESULT_FORM_DETERMINING`; agent must not select semantic values
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / BINDING_C UNDECLARED / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD VALID / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED | 只允许 human researcher 显式实例化 MCVSD，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED | 只允许 human researcher 显式实例化 MCVSD，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -72,6 +72,7 @@ P4 / RQ-P4-01 candidate
 - 阅读并维护 `docs/STEP4A_CANONICAL_DECISIONS.md`；
 - 由 human researcher 显式实例化 MCVSD：`SourceStatus=NEW_DECLARATION`、`VType`、`OutputDiscipline`；
 - 单独决定 `Binding_C`，不默认任何聚合形式；
+- 遵守 `DG_4A_01=RESULT_FORM_DETERMINING`：未来具体 `Binding_C` 决定 `C` 的 semantic form，local-to-global relation 由该 form 派生；
 - 对新的 semantic instantiation 做一次必要的下游一致性审查；
 - 其余既有 STEP④/⑤ 定义资产仅在发生具体语义矛盾时重新审查；
 - 保持 `A/W/W_D` 为 carrier symbols only，保持 `J` 为 abstract index carrier；
