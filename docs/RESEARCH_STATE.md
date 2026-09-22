@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP② 首轮 RQ candidate 已形成；正在攻击 Rate–Decision-Loss frontier 的定义独立性）
+**Last updated**: 2026-09-22（STEP② 已接受；正式进入 STEP③ Independence）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -13,7 +13,7 @@
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP② Research Question
-Next action: 攻击 Rate–Decision-Loss frontier 对 Description Language 与 Decision Problem Family 选择的依赖；通过 STEP② acceptance gate 后再进入 STEP③
+Next action: 攻击 Achievable Static Frontier 的对象独立性、参数独立性、跨架构独立性、Track B 边界与 Runtime 实现独立性；完成 STEP③ 后再进入 STEP④
 Gate status: OPEN — STEP① contract accepted by human researcher; STEP② active
 RQ ID: 尚未分配（STEP② 定义中）
 当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
@@ -214,7 +214,7 @@ STEP② 当前只负责：
 
 若未来预定义 decision-problem family 被证明无法解析评估，才可单独开启 definition-stage executable artifact mini-gate；该 artifact 只能检验定义自洽性，不产生研究证据。STEP⑨ research harness 仍需注册 RQ 与后续设计门。
 
-**Current status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+**Current status:** STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
 
 **Next formal checkpoint:** STEP② Research Question definition/acceptance gate。
 
@@ -240,3 +240,16 @@ Cross-architecture extension 暂不作为核心 RQ 前提，而是后续比较�
 当前没有任何 robustness 结论；该问题仍处于概念攻击阶段。
 
 **Current status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+
+## 13.3 P4-A STEP② 接受、STEP③ 开放（2026-09-22）
+
+人类研究者明确授权进入 STEP③。STEP② 的 RQ definition gate 视为通过。当前不分配 RQ ID，不授权实验。
+
+STEP③ 的核心问题是 Independence：
+- Achievable Static Frontier 是否只是 decision problem + compression rate 的重述；
+- L、D、S 是构成性输入还是可任意调节的隐藏旋钮；
+- 跨架构变化是否仍保持对象意义；
+- 是否与 Track B 已封存的 execution-state lifecycle 研究重复；
+- 是否依赖特定 Runtime、MLX-LM 或物理状态布局。
+
+当前状态：**STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION**
