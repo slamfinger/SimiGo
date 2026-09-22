@@ -66,14 +66,13 @@ The old STEP⑤ `[0,+infinity]` notation does not acquire STEP④ meaning throug
 
 `Binding_C` remains a separate open semantic choice. This document does not select sum, tuple, vector, record, product, or any other aggregation.
 
-
-## 5. Explicit definition-layer gap
+## 6. Explicit definition-layer gap
 
 A concrete definition-layer gap is now explicitly declared. This does **not** instantiate any open semantic value.
 
 **DG-4A-01 — Local-value / global-binding semantic boundary**
 
-The current MCVSD declaration contract identifies (V_j) and (Binding_C), but it does not yet specify, at the semantic level, the exact role of (Binding_C) relative to an already-typed local value (V_j): specifically, whether (Binding_C) is only a relation among local values, also determines the semantic form of the composed result, or requires both aspects as one contract.
+The current MCVSD declaration contract identifies (V_j) and `Binding_C`, but it does not yet specify, at the semantic level, the exact role of `Binding_C` relative to an already-typed local value (V_j): specifically, whether `Binding_C` is only a relation among local values, also determines the semantic form of the composed result, or requires both aspects as one contract.
 
 The gap is therefore:
 
@@ -88,6 +87,82 @@ C semantics
 ```
 
 This is a **definition gap**, not an experiment request. It does not authorize choosing sum, weighted sum, tuple, vector, record, or any other binding form.
+
+### 6.1 Minimum resolution questions
+
+DG-4A-01 can be reduced to three definition questions. These questions are decision-surface questions only; none is answered here.
+
+**Q1 — What is the semantic status of the local value before binding?**
+
+Does `VType` completely determine the semantic type of each (V_j) before `Binding_C) is declared, or is some part of the local-value semantic contract intentionally coupled to the binding declaration?
+
+```
+V_j
+ ↓
+[VType]
+ ↓
+already semantically typed?
+```
+
+**Q2 — What is the semantic role of `Binding_C`?**
+
+Among the possible declaration contracts, is `Binding_C):
+
+- only a relation/operator over already-typed local values;
+- a relation/operator that also declares the semantic form of the resulting (C);
+- or a single coupled contract that declares both the binding relation and the result semantics?
+
+No one of these alternatives is selected by the agent.
+
+**Q3 — Where does the semantic type of (C) live?**
+
+If (C) has a semantic type distinct from the local (V_j), is that type:
+
+- determined by the declared `Binding_C`;
+- declared independently;
+- or intentionally left abstract at STEP④-A?
+
+Again, no alternative is selected here.
+
+### 6.2 Boundary test
+
+The minimum test for resolving DG-4A-01 is:
+
+```
+Local semantic contract
+        ↓
+      V_j
+        ↓
+   Binding_C
+        ↓
+      C
+```
+
+A valid resolution must make the semantic dependency at this interface explicit:
+
+1. (V_j) must have a declared semantic status sufficient for whatever `Binding_C` is declared to act upon;
+2. `Binding_C` must have an explicitly declared semantic role;
+3. the semantic status of (C) must not be silently inferred from notation, runtime representation, observed values, loss/cost terminology, or engineering convention.
+
+This test does **not** require choosing a particular type, operator, aggregation, or result representation.
+
+### 6.3 Resolution classification
+
+DG-4A-01 is currently classified as a **coupled definition-layer gap** in the narrow sense that its subject is the interface between two already-open semantic declarations (`VType` and `Binding_C`) and the semantic status of (C). This classification does not choose either declaration.
+
+The next legitimate human action is therefore:
+
+```
+resolve DG-4A-01 boundary
+        ↓
+explicitly declare how V_j / Binding_C / C semantics are related
+        ↓
+instantiate VType / OutputDiscipline / Binding_C
+        ↓
+perform one necessary downstream consistency review
+```
+
+No experiment is needed to establish this boundary itself, and no experiment is authorized by resolving it.
 
 ### Resolution constraint
 
@@ -104,7 +179,7 @@ STEP5            = BLOCKED
 EXPERIMENT AUTH  = NONE
 ```
 
-## 6. Downstream gate
+## 7. Downstream gate
 
 Until the current decision targets are explicitly instantiated and subsequently reviewed:
 
@@ -119,7 +194,7 @@ RQ                   = NOT ASSIGNED
 EXPERIMENT AUTH      = NONE
 ```
 
-## 7. Anti-regression rule
+## 8. Anti-regression rule
 
 Only unresolved semantic choices necessary to instantiate STEP④-A are decision targets.
 
