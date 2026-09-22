@@ -2,13 +2,13 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
-> Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
+> Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（Architecture 2.0 方向重审：Execution State 重新确认为核心主干）
+**Last updated**: 2026-09-22（P4 重新定义：Architecture-induced Execution State）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
-```text
+```
 ① 读取本文件（RESEARCH_STATE）
         ↓
 ② 读取当前阶段的 endpoint / closure 文档
@@ -22,35 +22,25 @@
 
 ## 1. 当前阶段
 
-```text
-Phase:        Architecture 2.0 Direction Reset / Pre-definition
-Next action:  对保留的 P4 / RQ-P4-01 从 STEP①重新定义；当前不启动
-Gate status:  CLOSED — 旧 Source/Runtime 定义链停止；STEP④ PASS 仅属于已撤回的 RQ-F-01 候选，不向 P4 转移
+```
+Phase:        Architecture 2.0 / P4 Redefinition / Pre-definition
+Next action:  P4 / RQ-P4-01 从 STEP①继续定义；当前仍不启动实验
+Gate status:  CLOSED — 旧 Source/Runtime 定义链停止；P4 尚未完成 RQ 定义
 RQ ID:        未分配
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_RESEARCH_PROGRAM_RECLASSIFICATION_20260922.md
-定义链文档:   docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
-              （§8.1 STEP ② PASS）
-              docs/SOURCE_RUNTIME_INDEPENDENCE_ARGUMENT_v0.1.md
-              （§8.1 STEP ③ PASS；论证落档 d79a82f，外审 PASS 登记 a6924c1）
-              docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md（STEP ① PASS）
-              docs/SOURCE_RUNTIME_ESTIMAND_DEFINITION_v0.1.md（STEP ④ PASS；
-              外审记录 docs/SOURCE_RUNTIME_ESTIMAND_REVIEW_20260922.md）
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
 ```
 
 ## 2. 状态词汇表（禁止跨阶段推理）
 
 | 状态 | 含义 | 推理约束 |
 |---|---|---|
-| SEALED | 结论冻结 | 禁止"继续优化该结论"类推理 |
-| CLOSED | 研究问题已完成合法出口 | 禁止据此推导"立即开始下一实验" |
+| SEALED | 结论冻结 | 禁止“继续优化该结论”类推理 |
+| CLOSED | 研究问题已完成合法出口 | 禁止据此推导“立即开始下一实验” |
 | OPEN | 当前在册研究问题 | 仅此状态的问题构成当前任务 |
 | DEFINED | 已定义但尚未开始 | 仅允许其预注册 Allowed 动作 |
 | NOT DEFINED | 连问题都尚未正式立项 | 禁止一切实现/采数/测量动作 |
 | FROZEN | 基础设施可复用，但身份不可变 | 复用必须建立新 provenance 锚点 |
 | SEPARATELY SCOPED | 有关联，但不得并入当前研究 | 禁止跨线引用结论 |
-
-规则：看到任何旧阶段结果，先查其状态，再判断它与当前任务是否相关。
-旧结论 + 新问题 ≠ 当前任务。
 
 ## 3. 研究问题唯一 ID
 
@@ -60,106 +50,86 @@ RQ ID:        未分配
 | RQ-P3-01 | Residency policy 频率机制 | P3-A 终判 PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED | `ff52943` / `072fc2f` / `ac71e34` |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED | `edc4dad` |
 | RQ-NO-01 | 取消 node 粒度外化通道：粒度 / correctness / 边界成本 | CLOSED | `2cf244e` + `b6ad7c0` |
-| RQ-P4-01 | 哪些结构/状态机制构成核心驻留机制 | NOT STARTED（独立立项） | — |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | NOT STARTED / NOT DEFINED | — |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED | 方向重审 2026-09-22 |
 
 ## 4. Mainline
 
-```text
-历史主线：Execution State → Residency → P3 → H-P1 → nodes-out → Track E CLOSED
-
-当前 Architecture 2.0 主线：
-Execution State → Residency / Loading → Layering / Working Set → Migration / Resource placement
-
-[已撤回] Source/Runtime boundary/unit existence（RQ-F-01 candidate）
 ```
+当前 Architecture 2.0 主线：
+Model Architecture Features
+        ↓
+Computation
+        ↓
+Execution State
+        ↓
+State Characteristics
+        ↓
+Resource Behavior
+        ↓
+Loading / Residency / Layering / Working Set / Migration
+        ↓
+Runtime Architecture
+```
+
+历史主线与已关闭路线保留在历史文档中，不自动重开。
 
 ## 5. Sealed / Closed 清单
 
-| 线 | 状态 | 证据 |
-|---|---|---|
-| Track B | CLOSED / FROZEN | `4184aa6`（Closure v4 终审 PASS/FREEZE） |
-| Residency M1–M4 | FINAL PASS 封口 | 仓内 M1–M4 结果文档 |
-| P3-A | 终判 PASS 盖章 | `ff52943` |
-| P3-B | R3 CLOSED（底座内部归因未封，属另线） | `072fc2f` |
-| P3-C | R-W CLOSED / SEALED | `ac71e34` |
-| H-P1 | CLOSED / SEALED | `edc4dad` |
-| nodes-out / Track E | CLOSED / 归档 | endpoint `trackE-residency/NODES_OUT_RESEARCH_ENDPOINT_DECISION_v0.1.md` + closure record `trackE-residency/TRACK_E_CLOSED_RECORD_20260922.md` |
+Track B、Track E、P3、H-P1、nodes-out 均保持原有 CLOSED / SEALED / FROZEN 状态。
 
 ## 6. Not started / Not defined
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4（RQ-P4-01） | NOT STARTED | 串行链独立环节，须独立立项 |
-| Source/Runtime / RQ-F-01 candidate | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前 STEP④ 状态不向新课题转移 |
-| Swift implementation | NOT STARTED / NO BASIS | — |
+| P4（RQ-P4-01） | NOT STARTED / NOT DEFINED | 重新定义后仍须独立完成 Definition Gate |
+| Source/Runtime / RQ-F-01 candidate | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
+| Swift implementation | NOT STARTED / NO BASIS | 不因 P4 重定义而获得授权 |
 
-## 7. Registered prediction（登记态，非结论）
+## 7. Current gate
 
-nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nodes-out 新增事件路径预期不产生系统级正向收益；方向与量级留待未来 runtime 实验验证。
-
-约束：本预测处于登记态，不得当作已证结论引用；任何检验必须先过独立 Design Revision + 外审门。
-
-## 8. Current gate（方向重审后的状态）
-
-```text
-RQ:           TBD（未分配）
-Phase:        Architecture 2.0 Direction Reset / Pre-definition
-Status:       CLOSED — Source/Runtime 定义链停止；P4 尚未启动
-
-外审保留意见（对第②–④步有约束力）:
-- C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
-- 不得反向变成"runtime 能表达 → 合理研究对象"的 implementation-first 预设。
-
-STEP ③ 外审收紧（对后续各步有约束力）:
-- "未暴露"结论只能登记为"预注册模型、workload 与观察边界内未获得
-  足以支持存在性的证据"；禁止升级为"runtime 不存在自然粒度"；
-- RM-005 / 访问模式原则的未来状态不得提前判定；若真实 runtime 暴露
-  unit，只能进入"支持 / 限定 / 否定"的后续评价，不得预设"验证成功"。
-
-STEP ④ 外审结论:
-- 首版 estimand 因将 existence property 嵌入目标集合而 RETURN FOR REVISION；
-- 修订后以 `B(M,W,O)` 表示 runtime boundary structure，不再按"已满足
-  Model Unit 存在条件"筛选候选边界；
-- 外审 PASS，仅表示 STEP ④ 定义充分，不表示任何 Model Unit 已存在；
-- STEP ⑤ existence criterion 尚未定义。
-
-Allowed:
-- 对 P4 / RQ-P4-01 开始独立 STEP① Definition（仅在明确启动时）
-- 继续历史资产盘点（只读取，FROZEN 身份不变）
-- 继续 Architecture 2.0 概念复盘，但不得把概念讨论自动转为 RQ
-- 引用 STEP ②–④ 外审意见作为自查约束
-- 历史资产盘点（只读取，FROZEN 身份不变）
-
-Forbidden:
-- 继续 RQ-F-01 Source/Runtime boundary/unit 路线或进入其 STEP⑤
-- 把旧 Source/Runtime STEP④ PASS 转移给 P4
-- 把 Q2.1 裁定当成 RQ ID 分配，或宣称 P4 定义已完成
-- 把四道 RQ 资格门当成第③–⑧步已完成的证明
-- 把 STEP ④ PASS 当作第⑤–⑨步已完成
-- 把 STEP ③ 负向出口表述成"runtime 不存在自然粒度"的全局结论
-- 预设 RM-005 / 访问模式原则的未来验证结果
-- 把 Opening 对象边界当作研究问题答案，或预选任何候选族
-- STEP ⑤ existence criterion 定义尚未启动前进入第⑥步及以后
-- runtime implementation / harness construction
-- data collection / performance measurement
-- 因 Architecture 2.0 方向复盘而自动选择或注册下一 RQ
-- 修改任何 FROZEN 资产身份
-- 以旧阶段结论推导新实验
-- STEP ⑤外审通过前进入第⑥步及以后
+```
+P4 / RQ-P4-01
+  STEP① 研究对象：已完成重新定义准备
+  STEP② Research Question：未开始
+  STEP③ Independence：未开始
+  STEP④ Estimand：未开始
+  STEP⑤ Existence Criterion：未开始
+  STEP⑥ Negative Criterion：未开始
+  STEP⑦ Discriminating Power：未开始
+  STEP⑧ Information Value / Cost：未开始
+  STEP⑨ Path / Harness / Experiment：未开始
 ```
 
-### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
+### Allowed
 
-本门被正式打开后，定义工作必须按序通过以下检查点，每步落档后方可进入下一步：
+- 继续 P4 的概念定义；
+- 对 P4 开始正式 STEP①，并形成独立定义记录；
+- 读取历史 Track B / Track E 资产作为背景约束；
+- 继续历史资产盘点；
+- 继续 Architecture 2.0 概念复盘。
 
-```text
+### Forbidden
+
+- 把 P4 当前定义直接当作已注册 RQ；
+- 把 Track B / Track E 的证据直接转移为 P4 结论；
+- 直接进入 STEP⑤–⑨；
+- runtime implementation / harness construction；
+- data collection / performance measurement；
+- 预设 Universal Model Unit；
+- 预设 Universal Physical State Representation；
+- 把“模型架构”扩张为研究全部模型内部知识、语义、概率与表示；
+- 继续 RQ-F-01 Source/Runtime boundary/unit 路线。
+
+## 8. Definition Gate
+
+```
 ① 研究对象是什么
 ② 研究问题是什么
 ③ 为什么它是一个独立问题
 ④ estimand 是什么
-⑤ 什么观察结果构成"存在"
-⑥ 什么结果构成"不足以支持存在"
+⑤ 什么观察结果构成“存在”
+⑥ 什么结果构成“不足以支持存在”
 ⑦ discriminating power 是否成立
 ⑧ 值得测吗（成本-信息量比）
 ⑨ 通过后才决定 Path / Harness / Experiment
@@ -169,17 +139,10 @@ Forbidden:
 
 SimiGo 1.x product line ≠ SimiGo-Lab 2.0 research line。
 
-伴生文档（非状态权威）：
-
-- `docs/AGENT_CONTEXT.md` —— 行为层：Agent 操作规则与行为约束；
-- `docs/RESEARCH_MEMORY.md` —— 思想层：RM-001~009 思想分支登记（条目均为
-  CANDIDATE / HYPOTHESIS 态，禁止静默转为事实或 RQ）。
-
 事实源优先级：Git 仓库（本文件 + endpoint 文档 + ledger + git log）> 一切对话记忆。
-冲突时以 git log 与 endpoint 文档为准，回修本文件。
 
 ## 10. 状态维护规则
 
-1. 任何状态变更（新门开启、门关闭、状态词汇变化）必须更新本文件并独立 commit；
-2. 本文件只记"当前状态"；历史与论证进 endpoint 文档与 git log，不在本文件展开；
+1. 任何状态变更必须更新本文件并独立 commit；
+2. 本文件只记当前状态；
 3. RQ ID 一经分配永久占用，废弃用 CLOSED/NOT DEFINED 标注，不复用编号。
