@@ -16,6 +16,9 @@
 | 查看长期思想与候选假设 | RESEARCH_MEMORY.md |
 | 恢复跨 Agent 记忆协议 | 08-research-memory/AGENT_MEMORY_PROTOCOL_20260922.md |
 | 了解现有资产如何映射到新档案体系 | 07-history/LEGACY_ASSET_MAPPING_20260922.md |
+| 恢复 Architecture 2.0 思想总览 | 07-history/ARCHITECTURE_2.0_SESSION_KNOWLEDGE_20260922.md |
+| 恢复 Architecture 2.0 概念起源 | 07-history/ARCHITECTURE_2.0_ORIGIN_RECONSTRUCTION_20260922.md |
+| 检查 Architecture 2.0 思想血缘完整性 | 07-history/ARCHITECTURE_2.0_INTELLECTUAL_LINEAGE_AUDIT_20260922.md |
 | 了解方向性架构文档 | architecture/ |
 
 ## 2. 档案分层
@@ -35,6 +38,11 @@
 Authoritative State → Research Memory → Agent Dialogue
 
 Git 仓库是跨 Agent 的持久化事实与记忆载体；对话只是输入来源。具体规则见 08-research-memory/AGENT_MEMORY_PROTOCOL_20260922.md。
+
+Architecture 2.0 历史采用三层保存：
+- SESSION_KNOWLEDGE：较完整的概念、转折和边界重建；
+- ORIGIN_RECONSTRUCTION：从长上下文问题到 Execution State 的最早可恢复思想链；
+- RESEARCH_MEMORY：只保留会影响未来研究判断的 durable insights。
 
 ## 5. 当前阶段约束
 
