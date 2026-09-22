@@ -898,3 +898,16 @@ STEP② 的唯一新增权限是：正式定义、压缩和对抗 Research Quest
 **Status:** STEP② OPEN / RQ DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
 
 **Provenance:** Architecture 2.0 P4-A Decision-Loss Well-Definedness discussion and explicit human acceptance, 2026-09-22.
+
+
+### RM-058 — STEP② 第一轮 RQ 压缩与 Rate–Decision-Loss Frontier 攻击
+
+2026-09-22，P4-A 正式进入 STEP② 后，首个 RQ candidate 被压缩为：在固定 Description Language 与预定义 Decision Problem Family 下，由架构静态信息导出的 State Projection，是否能以有限描述成本保持所需决策信息。
+
+STEP② 首轮拆出四个隐藏命题：Analytic、Representational、Informational、Economic；其中 Runtime adoption value 不应进入核心 RQ。信息充分性若不受 Rate 约束会被 L₀/完整 State 平凡满足，因此进一步压缩为 Rate–Decision-Loss frontier 候选：D*(R)=min over P with Rate(P)≤R of D(P)。
+
+当前 core candidate：固定 Description Language 与 Decision Problem Family 下，State representation 的描述成本与 Runtime Decision Loss 之间是否存在可重复、可区分的 frontier；cross-architecture 共性及其边界作为后续 extension，而非前提。
+
+首个 STEP② adversarial attack 已固定：frontier 是否只是研究者选择的 Description Language L 与 Decision Problem Family 所人为定义出来的数学对象？需要分别攻击 Rate 对语言选择的依赖，以及 D 对 decision family / workload prior / cost model 的依赖。当前不假设 robustness 已成立。
+
+**Status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ NOT REGISTERED / NO EXPERIMENT AUTHORIZATION
