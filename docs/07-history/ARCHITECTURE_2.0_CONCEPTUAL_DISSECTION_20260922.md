@@ -658,3 +658,267 @@ Track B 已经给出：
 - 无 implementation / measurement authorization。
 
 **Research-gate effect: NONE.**
+
+## 15. Further analysis: where can referential continuity come from?
+
+本轮不进入 STEP⑤，而继续沿 Boundary → Objecthood 深挖。核心问题从“是否有 identity”进一步变成：
+
+> **一个 runtime boundary 的 identity 究竟由什么机制提供？是 runtime 内在产生的，还是观察者在多个观测之间构造出来的？**
+
+### 15.1 三种 identity 来源必须分开
+
+暂时区分三种可能来源：
+
+1. **Intrinsic identity**
+   - runtime 本身存在某种可观察机制，使该结构在状态变化前后具有连续指称；
+   - identity 不是分析者事后命名出来的。
+
+2. **Derived identity**
+   - runtime 不直接提供 identity，但多个可观察关系共同足以重建“同一个对象”的连续性；
+   - identity 是由 observation history 推导出的。
+
+3. **Assigned identity**
+   - 系统显式给某个对象分配 handle / token / identifier；
+   - 这种 identifier 可以帮助追踪对象，但“有 identifier”本身不证明它对应一个有独立语义的 runtime object。
+
+因此：
+
+`identifier ≠ identity ≠ objecthood`
+
+尤其不能因为未来在 Swift / MLX 中找到某个 class、pointer、handle 或 ID，就直接把它注册为研究对象。
+
+### 15.2 Referential continuity 更像关系，而不是属性标签
+
+“同一个对象”可能不是某个对象静态拥有的属性，而是跨状态之间的一种关系：
+
+`x@S0 ≈ x@S1`
+
+这里的 `≈` 暂时表示：存在足够的证据，把两个不同状态中的 observed structure 指认为同一逻辑实体。
+
+这意味着 objecthood 的一个潜在基础不是：
+
+> “对象在任何时候都有一个固定外形。”
+
+而是：
+
+> “对象即使改变 representation / residency / internal organization，仍能维持可解释的 referential continuity。”
+
+这与 Track B 的：
+
+`state identity ≠ physical representation`
+
+在逻辑结构上形成对应，但不等于已经证明 boundary 也具备这种性质。
+
+### 15.3 如何区分“同一个对象”与“两个巧合相似对象”？
+
+仅凭：
+- 相同 shape；
+- 相似 access pattern；
+- 相同 residency behavior；
+- 相同 continuation position；
+- 相同 representation；
+
+都可能只能得到 similarity，而不是 identity。
+
+真正需要的是某种 **identity-preserving relation**：
+
+> 当对象发生合法 transition 时，哪些关系必须保持，才足以支持“same object”的解释？
+
+因此可以暂时把 candidate invariants 分成：
+- **semantic invariants**：对象承担的执行语义没有改变；
+- **relational invariants**：与其他执行结构的关键关系持续存在；
+- **continuation invariants**：对象仍对应同一 continuation / execution history；
+- **resource invariants**：对象可能保持某些资源 ownership 关系，但这一项不应预设为必要条件。
+
+这里尤其重要的是：resource identity 不应反过来定义 logical identity。
+
+### 15.4 Objecthood 可能是“关系闭包”，而不是单一特征
+
+当前可以形成一个更谨慎的假设：
+
+> objecthood 可能不是由某一个 observable feature 单独决定，而是由一组跨状态、跨关系的约束共同形成。
+
+可以抽象成：
+
+`Structure`
+→ distinguishability
+→ referential continuity
+→ semantic continuity
+→ interpretability
+→ **objecthood candidate**
+
+这意味着未来即使发现某一个强信号，也不能自动把它当作充分条件。
+
+### 15.5 一个重要反例：一次性对象
+
+如果一个 runtime structure 只存在于一个瞬间，并且生命周期结束后永远不再需要被引用，那么它是否必须具有 cross-state continuity 才能成为对象？
+
+未必。
+
+这说明：
+
+> cross-state referential continuity 可能是某类 lifecycle-bearing object 的强证据，但未必是所有 objecthood 的逻辑必要条件。
+
+因此当前不能把“跨状态连续性”提前写成 universal existence criterion。
+
+更精确的方向是：
+
+`persistent objecthood`
+
+可能需要比：
+
+`ephemeral objecthood`
+
+更强的 referential continuity。
+
+这一区分避免把 Execution State 的 lifecycle 特征机械地外推到所有 runtime structures。
+
+### 15.6 Objecthood 与 actionability 的真正分界
+
+现在可以进一步问：
+
+> 如果一个结构能够被持续识别，但 runtime 无法对它施加独立且语义明确的动作，它是不是 object？
+
+可能是。
+
+例如它可能只是一个：
+- observable logical entity；
+- diagnostic entity；
+- accounting entity；
+- trace entity。
+
+因此：
+
+`objecthood ≠ operationality`
+
+只有当 runtime action 的目标域可以明确指向该对象，并且动作语义不会退化为“其实操作的是更大对象的内部细节”，才开始出现 operational object。
+
+### 15.7 “独立动作”还需要一个新的限定：target closure
+
+“动作可以作用于对象”仍然太弱。
+
+需要问：
+
+> **对对象施加动作后，动作影响的语义范围是否仍然闭合在该对象或其明确的组合关系内？**
+
+暂时称之为 **target closure**。
+
+例如：
+
+`Action(x)`
+
+如果实际必须同时改变：
+
+`x + hidden dependency set D`
+
+才能保持 continuation correctness，那么 x 是否真的是独立 operational target 就值得怀疑。
+
+因此：
+
+`actionability ≠ mere addressability`
+
+更接近：
+
+`actionability ≈ targetability + semantic effect closure`
+
+但这只是概念分析，不是正式定义。
+
+### 15.8 由此出现一个比“最小 Unit”更严格的问题
+
+过去的“最小充分对象”可以进一步修正为：
+
+> **一个结构在被切分或合并后，是否仍保持同样的 referential continuity、semantic continuity 与 target-closure？**
+
+如果切分导致：
+- identity 无法维持；
+- continuation 语义被破坏；
+- action effect 必须跨越切分边界；
+
+那么这个切分可能只是物理 partition，而不是新的 operational object。
+
+反之，如果两个结构必须永远联合行动，甚至没有独立的 transition semantics，那么它们可能更适合作为一个组合对象。
+
+因此“granularity”真正值得研究的不是大小，而是：
+
+> **在哪个边界上，identity、transition semantics 与 action semantics 同时获得稳定闭包。**
+
+### 15.9 一个可能出现的更一般结构：object ≠ fixed boundary
+
+到这里，Architecture 2.0 的抽象可能需要进一步松绑：
+
+`Object`
+
+不一定对应一个固定的：
+
+`Boundary`
+
+甚至可能存在：
+
+`Object → Boundary_t1 → Boundary_t2 → Boundary_t3`
+
+即对象 identity 持续，而 runtime boundary 随 representation、residency、execution phase 改变。
+
+也可能存在：
+
+`Object → {Boundary_A, Boundary_B}`
+
+即一个逻辑对象在不同资源域中具有不同 projection。
+
+这会使下面这种等式越来越危险：
+
+`one object = one memory region = one boundary = one shard`
+
+当前更稳健的表达是：
+
+> **对象是跨状态的逻辑指称；boundary 是对象在某一 observation / action domain 中呈现出的结构边界。**
+
+这仍是候选解释，不是已证明 architecture。
+
+### 15.10 当前概念链进一步收缩
+
+本轮之后，可以把核心链压缩为：
+
+`Runtime behavior`
+→ `Observed structure`
+→ `Boundary`
+→ `Distinguishability`
+→ `Referential continuity?`
+→ `Semantic continuity?`
+→ `Objecthood?`
+→ `Targetability`
+→ `Effect closure?`
+→ `Actionability?`
+→ `Resource semantics`
+→ `Residency / Sharding / Compute / Management`
+
+其中问号明确表示：这些仍是待验证的概念跃迁，而不是当前存在性判据。
+
+### 15.11 本轮新增 negative knowledge
+
+暂时排除以下推论：
+- 有 handle / ID → 有 runtime object；
+- 可追踪 → 必然有 operational semantics；
+- 跨状态可追踪 → 必然是 universal unit；
+- 同形 / 同 pattern → 同一对象；
+- identity → actionability；
+- addressability → actionability；
+- cross-state continuity → universal objecthood necessity；
+- 一个 object → 一个固定 boundary；
+- 一个 boundary → 一个 object；
+- 一个 object → 一个 shard / residency unit；
+- resource ownership → logical identity。
+
+### 15.12 Governance
+
+本轮仍不改变：
+- Track B = CLOSED / FROZEN；
+- Track E = CLOSED / SEALED；
+- P4 = NOT STARTED；
+- RQ-F-01 = NOT DEFINED；
+- STEP④ = PASS；
+- STEP⑤ = UNSTARTED；
+- 无新 RQ；
+- 无实验；
+- 无 implementation / measurement authorization。
+
+**Research-gate effect: NONE.**
