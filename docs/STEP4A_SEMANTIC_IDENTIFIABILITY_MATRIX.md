@@ -89,6 +89,71 @@ No experiment is authorized by this definition.
 | Typed record | (V_j) is a structured record with named/typed fields | Heterogeneous field semantics | Prevents treating semantically different fields as anonymous coordinates | Architecture case where field identity/type is necessary to preserve meaning | Record may collapse observationally to a scalar/vector projection |
 | Other structure | A separately defined value object | Structure specific to the phenomenon | Requires its own semantic contract | Any architecture counterexample targeting simpler candidates | Remains an undeclared alternative until explicitly instantiated |
 
+
+### VType boundary audit
+
+For STEP④-A purposes, `VType` denotes the **semantic value type of (V_j)**. It must not be inferred from:
+
+- the number of numerical fields observed;
+- a scalar projection of a richer object;
+- serialization or storage format;
+- runtime data structures;
+- tensor/array representation.
+
+Accordingly:
+
+```
+semantic value type
+    !=
+representation format
+    !=
+runtime data structure
+```
+
+The candidate list is therefore a decision-support partition, not an assertion that every listed representation is a distinct ontology.
+
+### OutputDiscipline boundary audit
+
+The candidate space currently contains several kinds of admissibility considerations. This is intentional as a provisional decision-support frame, but it must not silently expand into additional canonical decision targets.
+
+`OutputDiscipline` concerns admissibility restrictions on (V_j). It does not, by itself, instantiate:
+
+```
+Order
+Measurability
+Binding_C
+Observation frame
+Runtime representation
+```
+
+Whether missingness/partiality belongs inside the eventual OutputDiscipline declaration remains UNDECLARED.
+
+### Binding_C orthogonality audit
+
+The current Binding_C candidate list contains both aggregation-style relations (for example, sum or max) and composition/result-form possibilities (for example, tuple or record).
+
+This is recorded as a **potential internal orthogonality issue**, not as a new decision axis.
+
+```
+aggregation relation
+        ?
+composition / result form
+```
+
+No automatic split into separate semantic variables is authorized. Such a split would itself require explicit researcher instantiation.
+
+### Observation-frame boundary audit
+
+The symbol (O) in the identifiability relation denotes only an **abstract observation frame used to define potential observational distinguishability**.
+
+```
+O = abstract discrimination frame
+O != declared experimental observable
+O != authorized measurement protocol
+```
+
+Therefore the existence of (O) in this matrix does not authorize experiment, data collection, profiling, or measurement.
+
 ### VType discipline
 
 Observation of multiple numbers does not establish vector semantics.
