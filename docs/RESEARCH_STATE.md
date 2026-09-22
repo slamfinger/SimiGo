@@ -8,7 +8,7 @@
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Canonical Decision Surface（STEP⑤ NECT mode blocked）
-Next action: Human researcher must explicitly instantiate MCVSD `SourceStatus/VType/OutputDiscipline` and separately decide `Binding_C`; agent must not select semantic values
+Next action: Resolve explicit definition-layer gap `DG-4A-01` (Local-value / global-binding semantic boundary), then human researcher may explicitly instantiate MCVSD `VType/OutputDiscipline` and separately decide `Binding_C`; agent must not select semantic values
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
