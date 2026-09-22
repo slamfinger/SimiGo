@@ -261,6 +261,145 @@ This is an **architecture hypothesis / workflow idea only**. It does not authori
 
 **Status:** CANDIDATE / ARCHITECTURE HYPOTHESIS / NOT AN RQ
 
+### RM-018 — Compute-once / multiple-futures is the conceptual origin of Execution State
+
+The central Architecture 2.0 insight was not simply “make long-context prefill faster”.
+
+The stronger objective was:
+
+> **Compute once, multiple futures.**
+
+An expensive long-context computation should become a reusable, branchable, recoverable state from which multiple continuations can be derived.
+
+This is the conceptual reason Execution State became a research object above raw KV storage. The durable distinction is:
+
+```
+one expensive computation
+        ↓
+reusable execution state
+        ↓
+fork / branch / continue / restore
+        ↓
+multiple futures
+```
+
+The idea predates the formal Track B evidence chain and should be treated as an architectural origin, not as evidence that the full runtime mechanism exists.
+
+**Provenance:** curated from Architecture 2.0 session reconstruction, 2026-09-22; see `docs/07-history/ARCHITECTURE_2.0_SESSION_KNOWLEDGE_20260922.md`.
+
+**Forbidden inference:** RM-018 does not prove that an equivalent mechanism is exposed by current Swift/MLX runtime APIs.
+
+**Status:** DURABLE ARCHITECTURE ORIGIN / HYPOTHESIS
+
+### RM-019 — Execution State is a semantic layer above raw KV storage
+
+The early 2.0 reasoning deliberately separated:
+
+```
+KV bytes / storage representation
+        ≠
+execution identity + continuation semantics
+```
+
+Existing mechanisms such as checkpoint/restore, prefix reuse, and chunked prefill can manipulate state without necessarily exposing a first-class forkable execution identity.
+
+Therefore future research should not use “we can copy or serialize the state” as a substitute for the stronger Execution State question.
+
+**Provenance:** Architecture 2.0 session reconstruction, 2026-09-22.
+
+**Forbidden inference:** this is not a claim that KV storage mechanisms are insufficient for every practical workload; it defines the stronger research abstraction being investigated.
+
+**Status:** DURABLE CONCEPTUAL BOUNDARY
+
+### RM-020 — Deduplicate before inventing
+
+Architecture 2.0 deliberately moved upward in abstraction after comparing candidate work against existing open-source mechanisms.
+
+The durable research rule is:
+
+> Before treating a mechanism as a new SimiGo research contribution, establish whether the relevant lower layer is already solved or supplied upstream.
+
+The intended boundary was approximately:
+
+```
+existing KV / attention / distributed primitives
+        ↓
+reuse rather than duplicate
+        ↓
+SimiGo research space
+Execution State / residency / policy / planner
+```
+
+This is a research-efficiency principle, not a claim that upstream mechanisms are complete or optimal.
+
+**Provenance:** Architecture 2.0 session reconstruction, 2026-09-22.
+
+**Status:** DURABLE METHOD INSIGHT
+
+### RM-021 — Architecture decomposition must respect physical resource boundaries
+
+The early “split one large GPU computation into several application tasks” idea was retained as a useful negative lesson.
+
+Creating more application tasks on a saturated single GPU does not by itself create additional hardware execution resources. Consequently, a decomposition proposal must identify the actual resource boundary it exploits:
+
+- kernel-level decomposition → hardware execution / bandwidth question;
+- multi-device decomposition → additional device resources;
+- application-level splitting on the same saturated device → not automatically a new parallelism mechanism.
+
+**Provenance:** Architecture 2.0 session reconstruction, 2026-09-22.
+
+**Forbidden inference:** this does not prove every application-level decomposition is useless; it rejects the premise that task multiplication alone creates free parallel hardware.
+
+**Status:** DURABLE METHOD / NEGATIVE KNOWLEDGE
+
+### RM-022 — Mechanism existence must precede implementation authority
+
+A recurring Architecture 2.0 correction was that an appealing implementation should not silently become a research commitment.
+
+The intended order is:
+
+```
+mechanism hypothesis
+        ↓
+independence
+        ↓
+estimand / existence criterion
+        ↓
+discriminating observation
+        ↓
+evidence
+        ↓
+decision
+        ↓
+implementation authority
+```
+
+This is stronger than merely “do experiments before coding”: it protects the research program from turning an unverified architectural hypothesis into an implementation specification.
+
+**Provenance:** Architecture 2.0 methodological evolution, curated 2026-09-22.
+
+**Status:** DURABLE GOVERNANCE / METHOD INSIGHT
+
+### RM-023 — The research object can move upward when lower-layer mechanisms are already available
+
+The 2.0 discussions repeatedly shifted the question upward:
+
+```
+storage optimization
+      ↓
+execution-state semantics
+      ↓
+residency / observable boundaries
+      ↓
+runtime mechanism
+```
+
+This upward movement is not scope creep by itself. It can be the correct response when lower layers are already available and the unresolved systems question lies at a higher abstraction boundary.
+
+**Provenance:** Architecture 2.0 session reconstruction, 2026-09-22.
+
+**Status:** DURABLE RESEARCH-DIRECTION INSIGHT
+
 ## 3. Promotion rule
 
 A memory item does not change project state.
