@@ -922,3 +922,16 @@ STEP② 携带进入 STEP③ 的对象是 Achievable Static Frontier：由预声
 STEP③ 的核心攻击转向 independence：对象是否只是已声明 decision problem + compression rate 的重述；L/D/S 是构成性输入还是隐藏旋钮；跨架构变化是否仍保持对象意义；是否与已 CLOSED 的 Track B 执行状态生命周期研究重复；是否依赖特定 Runtime / MLX-LM / 物理状态布局。
 
 **Status:** STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-060 — P4-A STEP③ Object Independence PASS
+
+2026-09-22，STEP③ 第一刀将 Restatement 与 Redundancy 两种攻击分开。结论：Achievable Static Frontier 作为无框架对象 FAIL，但作为 frame-indexed measurement object PASS。
+
+对象三层：① `(L,D,S,X)` 决定的仪器/规定层；② 给定 X 后实际 frontier shape、analytic gap、phase transition 等后验读数；③ 跨 X 的结构共性。经验内容位于②③，①是测量仪器。
+
+三项独立性检验均 PASS：非循环、非空洞、非还原。STEP② 的 D-level non-degeneracy 进一步被识别为 STEP③ object non-vacuity 的承重前置条件，而非平行 gate。
+
+新增强制条件：对象只能以 frame-relative 方式表述，不存在无索引的“the frontier”。必须遵守 Declare first → derive second → measure third；框架族在观察结果后不得收缩或重构。Git provenance 因而成为 robustness claim 的审计构成条件。
+
+下一刀：Parameter Independence，重点攻击 L/D/S 是构成性 frame coordinates 还是可操纵结果的 hidden knobs。
