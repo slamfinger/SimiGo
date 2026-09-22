@@ -1985,3 +1985,263 @@ boundary 也可能改变。
 - 无 measurement authorization。
 
 **Research-gate effect: NONE.**
+
+## 23. Further checkpoint: from similarity to equivalence
+
+上一轮把 identity 进一步压缩为 discrimination + continuity。本轮继续向下追问：如果多个观察“很像”，什么时候这种相似性足以成为稳定的结构关系？
+
+这里首先必须拆开三个经常被混用的概念：
+
+Similarity → Equivalence → Identity
+
+它们不是同一个强度的判断。
+
+### 23.1 Similarity：相似只是关系强度，不是同一性
+
+Similarity 可以理解为：
+
+> 在给定特征空间或观察尺度下，两个现象具有一定程度的共同特征。
+
+它天然允许程度不同、多维度加权、观察尺度变化、特征选择变化。因此 similarity 通常不是一个天然的二值关系。
+
+所以：
+
+similarity ≠ equivalence
+
+similarity ≠ identity
+
+两个不同对象可以高度相似；同一个对象在状态变化后也可以变得不再高度相似。
+
+因此“看起来像”最多提供 identity 的候选证据，不能直接提供 identity。
+
+### 23.2 Equivalence：相似性被规则化之后，才可能形成等价关系
+
+Equivalence 比 similarity 多了一层：
+
+> 在明确指定的 transformation、observation domain、tolerance 或判定规则下，两个结构被视为具有相同的某种行为或性质。
+
+如果定义 x ~ y，并使其在指定域内满足 reflexivity、symmetry、transitivity，才真正接近数学意义上的 equivalence relation。
+
+这里出现一个重要区别：
+
+> **Equivalence 不是“更像一点”，而是“在某个定义下可以互换而不改变所关心的性质”。**
+
+因此 similarity → equivalence 不是自然发生的连续滑坡，而需要引入判定关系。
+
+### 23.3 Equivalence 一定是 domain-relative 的
+
+如果 x ~_O y 表示“在 observation domain O 中等价”，那么换一个 observation domain O'，完全可能出现 x ~_O y，但 x ≁_O' y。
+
+这不是矛盾。它意味着：
+
+> 两个结构在有限观察下不可区分，并不意味着它们在更高分辨率或不同语义域下就是同一个东西。
+
+因此：
+
+observational equivalence ≠ universal identity
+
+这与前面的 underdetermination 完全一致。
+
+### 23.4 Equivalence 的核心不是“相同”，而是“可替代性范围”
+
+一个更稳健的理解是：
+
+> 如果在某个任务/观察域内，把 x 替换成 y，不会改变该域关心的结果，那么 x 与 y 在该域内具有某种 operational equivalence。
+
+于是 equivalence 本身带有 scope：
+
+x ~_{D,T} y
+
+其中 D = observation / semantic domain；T = transformation / task set。
+
+这比单纯写 x = y 安全得多，因为它明确承认：
+
+> 等价关系描述的是“在哪些问题上可以视为一样”，而不是宣布本体上的完全相同。
+
+### 23.5 Equivalence 可以产生 category，但仍不能产生 object identity
+
+如果一组结构满足 x_i ~ y_i，那么我们很自然可以形成一个 equivalence class。
+
+但：
+
+same equivalence class ≠ same object
+
+一个 class 可以包含大量不同实例。
+
+因此从 invariant → Class 到 equivalence class 是自然的；而 equivalence → Object 仍然不是必然的。
+
+这再次说明：
+
+> **统一可以发生在 category / behavior / rule 层，而不必发生在 object 层。**
+
+### 23.6 Identity 比 equivalence 更强，也可能沿另一条轴建立
+
+这里尤其容易出现一个错误：
+
+> “如果 x 和 y 在所有观察上等价，那么 x=y。”
+
+这个推论只有在 observation domain 足够强，并且 identity criterion 被定义为该等价关系时才成立。
+
+一般情况下 x ~ y 只表示：在当前判定域中无法或无需区分 x 与 y。
+
+而 identity 则要求：
+
+> 把不同观察指认为同一持续实体具有足够依据。
+
+因此当前可以暂时保留：
+
+equivalence ≠ identity
+
+以及：
+
+indistinguishable-in-domain ≠ ontologically identical
+
+### 23.7 Equivalence 可以服务于 identity，但不是 identity 本身
+
+如果跨时间状态 x@t0 ~ x'@t1，并且这种等价关系在允许的 transition 下稳定，同时又有 lineage / relational continuity，那么它可能成为 identity matching 的重要依据。
+
+于是可以得到：
+
+Equivalence + continuity constraints → identity candidate
+
+但不能反过来写成：
+
+Equivalence → identity
+
+因为两个独立对象也可能在某一域内完全等价。
+
+### 23.8 由此可以重新理解 discrimination
+
+如果两个对象在当前 observation domain 中满足 x ~_O y，那么这个 observation domain 对它们的 discrimination power 就不足以区分它们。
+
+因此：
+
+equivalence class size ↑ → discrimination difficulty ↑
+
+而增加观察维度可能把一个大 class 拆成多个更小的 class：
+
+O → O'
+
+equivalence classes under O → finer partition under O'
+
+这提供了一个很干净的概念桥：
+
+Observation capability → equivalence partition → discrimination power → identity ambiguity
+
+### 23.9 但更细 partition 不自动更真实
+
+即使 O' 产生了更细的 partition，也只能说明：
+
+> 在 O' 中出现了更多可区分结构。
+
+不能直接推出 O' 恢复了更真实的 ontology。
+
+因为新观察可能只是新的 projection；更高维特征也可能只是另一种描述；identity criterion 本身仍然可能有多个合法解释。
+
+因此：
+
+finer partition ≠ ontological truth
+
+这条 negative knowledge 应与 simplest explanation ≠ ontological truth 并列保留。
+
+### 23.10 Similarity、Equivalence、Identity 三者的层次关系
+
+Similarity：有多少共同特征？
+
+Equivalence：在指定规则/域中，哪些差异可以忽略？
+
+Identity：是否有足够依据把不同观察指认为同一个持续实体/结构？
+
+因此：
+
+Similarity → Equivalence 需要规则化；
+
+Equivalence → Identity 需要 continuity、discrimination、lineage/context 等额外条件。
+
+所以当前更稳健的链是：
+
+Observation → Similarity → Equivalence / Partition → Discrimination → Identity interpretation → Objecthood
+
+而不是：
+
+Similarity → Same Object
+
+### 23.11 一个更深的认识：identity 可能是“不可替代性”与“可持续性”的交点
+
+Equivalence 强调：在某个域里，可以把 x 换成 y 而不影响关心的结果。
+
+Identity 则更接近：不能仅因为两个东西可替代，就把它们当成同一个；还需要它们在允许的状态变化中保持持续指称。
+
+因此可以暂时提出：
+
+Identity ≈ non-arbitrary discrimination + cross-state continuity
+
+而 equivalence 更接近：
+
+Equivalence ≈ invariance of relevant consequences under a defined substitution relation
+
+这两个概念有交集，但用途不同。
+
+### 23.12 这对 Architecture 2.0 有一个直接启示
+
+如果未来 runtime 出现两个结构：它们在 execution behavior 上等价，但在 residency 或 ownership 上不同，那么 execution-equivalent 并不意味着 residency-identical。
+
+同样，residency-equivalent 也不意味着 execution-identical。
+
+这说明不同语义域可以定义不同 equivalence relations：
+
+~_execution
+
+~_residency
+
+~_sharding
+
+~_management
+
+它们可能一致、部分重叠、互相包含，或完全不同。
+
+因此未来甚至可能不是寻找一个 universal identity relation，而是寻找：
+
+> **不同语义域之间的 identity / equivalence mapping。**
+
+这可能比“统一 Unit”更接近 Architecture 2.0 的真实结构问题。
+
+### 23.13 当前新的概念压缩
+
+目前可以把整个下游链进一步写成：
+
+Reality / runtime behavior → Observation → Similarity → Equivalence / Partition → Discrimination → Identity / Continuity → Object interpretation → Actionability / Target closure → Resource semantics → Domain-specific units
+
+这里有一个很重要的顺序关系：
+
+> **Similarity 提供候选关系；Equivalence 提供规则化的可替代性；Discrimination 决定当前观察能否把候选拆开；Identity 则在 continuity 与 context 中建立持续指称。**
+
+### 23.14 Negative knowledge added
+
+本 checkpoint 进一步排除：
+
+- similarity ≠ equivalence；
+- similarity ≠ identity；
+- equivalence ≠ identity；
+- observational equivalence ≠ universal identity；
+- same equivalence class ≠ same object；
+- indistinguishable in one domain ≠ ontologically identical；
+- equivalence → identity 不成立；
+- finer partition ≠ ontological truth；
+- behavioral equivalence ≠ residency identity；
+- residency equivalence ≠ execution identity；
+- substitutability ≠ persistent identity。
+
+### 23.15 Governance
+
+本 checkpoint 仍然：
+
+- 不启动 STEP⑤；
+- 不注册 RQ；
+- 不执行实验；
+- 不实现 runtime；
+- 不采集 measurement；
+- 不修改 Track B / Track E / P3 / H-P1 / nodes-out / P4 状态；
+- 不把 Similarity / Equivalence / Identity 正式注册为 Research Object。
+
+**Research-gate effect: NONE.**
