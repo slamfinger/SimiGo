@@ -1,0 +1,101 @@
+{
+  "FINAL": {
+    "PASS": true,
+    "violation_count": 0
+  },
+  "assertions": {
+    "L1": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L2": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    },
+    "L3": {
+      "by_workload": {
+        "hot": {
+          "pass": true,
+          "violation_count": 0
+        },
+        "tree": {
+          "pass": true,
+          "violation_count": 0
+        }
+      },
+      "pass": true,
+      "violation_count": 0
+    }
+  },
+  "baseline": {
+    "blob": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
+    "commit": "17bde28",
+    "regression": {
+      "pass": true,
+      "violation_count": 0
+    },
+    "source": "git show 17bde28:trackE-residency/residency_policy_simulator_v3.py; temp-file import",
+    "version": "v6-regression-snapshot"
+  },
+  "deterministic": {
+    "dd": 0,
+    "run_1": [
+      {
+        "ext_count": 1368,
+        "rehy_count": 1392,
+        "workload": "hot"
+      },
+      {
+        "ext_count": 2006,
+        "rehy_count": 2030,
+        "workload": "tree"
+      }
+    ],
+    "run_2": [
+      {
+        "ext_count": 1368,
+        "rehy_count": 1392,
+        "workload": "hot"
+      },
+      {
+        "ext_count": 2006,
+        "rehy_count": 2030,
+        "workload": "tree"
+      }
+    ],
+    "violation_count": 0
+  },
+  "input": {
+    "ATT": 16806,
+    "GDN": 61440,
+    "budget_nodes": 12,
+    "budget_units": 24,
+    "nodes": 32,
+    "seed": 42,
+    "trace_len": 2000
+  },
+  "runner": {
+    "path": "trackE-residency/nodes_out_experiment_runner.py",
+    "sha256": "edfbbdd13f9300a7f214cc5fb870060771d11e919153cfbdc8986d49f6b5b651"
+  }
+}

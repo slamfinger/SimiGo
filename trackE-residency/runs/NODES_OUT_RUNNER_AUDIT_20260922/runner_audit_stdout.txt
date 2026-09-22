@@ -1,0 +1,21 @@
+baseline hot/lru: J=973.1 rehy=696 ext=684 regression=OK
+baseline tree/lru: J=1422.9 rehy=1015 ext=1003 regression=OK
+hot L1: violations=0
+hot L2: violations=0
+hot L3: violations=0
+tree L1: violations=0
+tree L2: violations=0
+tree L3: violations=0
+hot deterministic: dd=0
+tree deterministic: dd=0
+
+RUNNER AUDIT
+├── baseline: v6-regression-snapshot@17bde28 blob=ff6d4e21df40
+│   └── regression=True violations=0
+├── input: GDN=61440 KiB, ATT=16806 KiB
+├── L1: pass=True violations=0
+├── L2: pass=True violations=0
+├── L3: pass=True violations=0
+├── deterministic: dd=0 violations=0
+└── FINAL: PASS=True violations=0
+artifact: /Users/mr.simi/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_RUNNER_AUDIT_20260922/runner_audit.json
