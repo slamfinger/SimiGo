@@ -4,65 +4,78 @@
 **Review role:** external methodological review  
 **Scope:** STEP ④ only
 
-## Review result
+## Review history
 
-**RETURN FOR REVISION**
+### Review 1 — RETURN FOR REVISION
 
-The draft correctly avoids performance-first framing and keeps candidate unit
-families open, but its proposed estimand is not yet sufficiently identified.
+The first draft embedded the future existence property in `U*(M,W,O)`
+and allowed `B(u)` to function as a hidden validation criterion.
 
-## Findings
+Required correction was to separate the target estimand from the future
+existence criterion.
 
-### E-01 — RUBS currently embeds the existence property
+### Review 2 — PASS WITH SCOPE LIMIT
 
-The definition of `U*(M,W,O)` says it is the set of candidates "having the
-target structural properties". Those properties include independent residency
-and migration semantics.
+The revised draft changes the target to:
 
-That wording is already close to the criterion that STEP ⑤ is supposed to
-define.
+[
+mathcal{B}(M,W,O)
+]
 
-**Required revision:** define the estimand as the runtime-observable boundary
-structure itself, without filtering candidates by whether they already satisfy
-the future existence criterion.
+the runtime boundary structure conditional on the model, workload, and
+observation domains.
 
-### E-02 — B(u) mixes target quantity and validation relations
+A boundary (b) is no longer defined as an object that already satisfies
+independent residency / migration semantics. Those properties are retained
+as structural dimensions to be described and are explicitly excluded from
+being pass/fail criteria at STEP ④.
 
-`B(u)=<A_u,R_u,C_u,I_u>` contains semantic relations whose observability and
-qualification have not yet been established.
+The revised draft also explicitly separates:
 
-In particular, `R_u`, `C_u`, and `I_u` risk becoming hidden existence
-criteria.
+[
+	ext{Estimand} ightarrow 	ext{Existence Criterion}
+]
 
-**Required revision:** separate the estimand's target representation from the
-future predicates used to judge whether that representation constitutes a
-Model Unit.
+and prohibits treating the mere observation of a boundary as proof that a
+Model Unit exists.
 
-### E-03 — "stable", "independent", and "distinguishable" are latent criteria
+## Review checks
 
-The prose uses "稳定", "独立", and "可区分" as descriptive properties. These
-are legitimate research concepts, but at STEP ④ they must not silently acquire
-thresholds or pass/fail meaning.
+| Check | Result |
+|---|---|
+| Estimand distinct from STEP ⑤ existence criterion | PASS |
+| No implicit positive/negative existence threshold | PASS |
+| Candidate unit family remains open | PASS |
+| Performance metric not substituted for C1 target | PASS |
+| Population/domain claims remain conditional | PASS |
+| Implementation/API/harness not embedded in estimand | PASS |
+| Historical Track B/E results not promoted to runtime observations | PASS |
+| Measurement authorization created | NO |
+| STEP ⑤ authorization created | NO |
 
-**Required revision:** explicitly mark them as target concepts whose operational
-definitions belong to STEP ⑤–⑦.
+## Scope limitation
 
-### E-04 — Population is still intentionally open, which is acceptable
+This PASS means only that the revised artifact is acceptable as a **STEP ④
+estimand definition**.
 
-The model/workload/observation domains are not yet numerically or concretely
-registered.
+It does not establish:
 
-This is not a failure of STEP ④ itself, provided the estimand remains
-conditional on those domains and does not pretend to support a broader
-population.
+- that any Model Unit exists;
+- an existence criterion;
+- an insufficiency criterion;
+- discriminating power;
+- measurement worth;
+- a valid harness or experiment;
+- an RQ registration;
+- any runtime result.
 
-## Review conclusion
+## Gate disposition
 
-The draft has the correct direction but should be revised before STEP ④ can
-receive PASS.
+**STEP ④ estimand definition: PASS — pending explicit repository registration.**
 
-No STEP ⑤ work is authorized by this review.
+The authoritative research state remains unchanged until registration is
+explicitly performed.
 
-No state-file update is warranted.
+**No STEP ⑤ work is authorized by this review.**
 
-No measurement or implementation is authorized.
+**No measurement or implementation is authorized.**
