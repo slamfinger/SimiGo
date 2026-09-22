@@ -199,6 +199,68 @@ Thus this file is intentionally **curated**, not a transcript archive.
 
 **Status:** PROCESS PRINCIPLE
 
+### RM-010 — GitHub as an asynchronous multi-agent research bus
+
+A useful architecture idea emerged from discussion between the local Agent and ChatGPT:
+
+> GitHub can serve as a shared, versioned research dialogue bus between agents, rather than merely as a source-code repository.
+
+The intended separation is:
+
+```
+Local Agent
+  runtime / filesystem / Swift / MLX / experiments
+        ↓
+   Git commit / push
+        ↓
+GitHub research dialogue
+        ↓
+ChatGPT Agent
+  research decomposition / review / boundary challenge
+        ↓
+   Git commit / push
+        ↓
+Local Agent
+```
+
+The important design principle is **not** to turn GitHub into an unstructured chat transcript. The dialogue should remain provenance-bearing and subordinate to project state:
+
+```
+dialogue
+   ↓
+review / decision
+   ↓
+explicit registration
+   ↓
+RESEARCH_STATE / endpoint
+```
+
+In particular:
+
+- dialogue must never silently become project state;
+- an Agent's proposal must not automatically become an RQ;
+- a review must be distinguishable from a registered decision;
+- Git history provides provenance, ordering, and recoverability;
+- the shared bus can reduce manual copy/paste between local Agent and ChatGPT;
+- the two Agents can retain different capability boundaries while collaborating through the same research tree.
+
+Potential future layout:
+
+```
+docs/research_bus/
+├── INDEX.md
+├── inbox/
+├── dialogue/
+├── decisions/
+└── archive/
+```
+
+This is an **architecture hypothesis / workflow idea only**. It does not authorize creation of the bus, creation of branches, runtime changes, or any research experiment. A future implementation should be justified independently and should preserve the existing distinction between conversation, decision, and authoritative state.
+
+**Origin:** 2026-09-22 brainstorming between project owner, local Agent, and ChatGPT.
+
+**Status:** CANDIDATE / ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
 ## 3. Promotion rule
 
 A memory item does not change project state.
