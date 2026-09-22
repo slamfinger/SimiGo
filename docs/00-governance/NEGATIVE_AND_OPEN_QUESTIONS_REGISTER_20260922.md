@@ -40,3 +40,45 @@ Dormant does not mean rejected. Reopening requires the appropriate definition ga
 ## 4. Agent anti-loop rule
 
 If an Agent proposes an experiment, first search this register and the Experiment Register. If the same question or an equivalent closed path exists, explain the prior endpoint and determine whether the proposal is genuinely a new question before doing any work.
+
+
+## 5. 2026-09-22 Architecture 2.0 direction-pruning knowledge
+
+The following are now explicitly treated as pruned from the Architecture 2.0 mainline:
+
+- exhaustive identification of model-content boundaries;
+- exhaustive reconstruction of model knowledge/rule/semantic/probability regularities;
+- universal Model Unit as a required architecture premise;
+- Boundary → Object → Actionability → Unit as the mandatory next research path;
+- RQ-F-01 Source/Runtime existence candidate as the current continuation of Architecture 2.0.
+
+Meaning:
+
+> Continuing these branches would increasingly study the content and knowledge organization of individual models rather than the stable computational-architecture regularities that Architecture 2.0 is intended to study.
+
+These branches are not declared scientifically false. They are **out of the current Architecture 2.0 research boundary**.
+
+## 6. Revised open directions
+
+The principal retained downstream candidate is:
+
+- **P4 / RQ-P4-01:** what structural/state mechanisms constitute the core residency/loading mechanism around Execution State.
+
+Future independent directions remain:
+
+- Track D — Adaptive Memory;
+- Track C — Multi-device;
+- Track A — Kernel/Bandwidth (conditional, workload-specific).
+
+P4 is still NOT STARTED. No item in this section authorizes implementation or measurement.
+
+## 7. Anti-loop rule after direction reset
+
+When proposing a new Architecture 2.0 question, first ask:
+
+1. Does it study model content/knowledge regularity, or computational-architecture regularity?
+2. Can the question be stated without requiring exhaustive understanding of model knowledge?
+3. Does it directly connect to the stable Execution State abstraction?
+4. Is it genuinely new, or merely continuation of a pruned Boundary/Unit branch?
+
+Only after these checks should a candidate enter the normal Definition gate.
