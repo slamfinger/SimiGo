@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④ domain/codomain orthogonality ruling：采用 `R_s^fin/R_s^nofin` partition；Candidate 1 reformulated，residual status unresolved）
+**Last updated**: 2026-09-23（STEP④ Review-1 complete：`FinLoss` not uniquely determined；loss object definition incomplete，Review-2 blocked）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④ Domain/Codomain Orthogonality Review（STEP⑤ NECT mode blocked）
-Next action: 完成 Review-1/2：裁定 `FinLoss` 与 `R_s^nofin` residual status；完成前不得裁定 NECT domain 或 mode
+Phase: Architecture 2.0 / P4 Redefinition / STEP④ Loss Object Completion（STEP⑤ NECT mode blocked）
+Next action: 在 STEP④ 声明 `C/R/D_loss` codomain 与 expectation/inf well-definedness conditions，然后重审 `FinLoss` determinacy；Review-2 被 blocking
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4_DOMAIN_CODEDOMAIN_ORTHOGONALITY_RULING_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4_FINLOSS_DETERMINACY_REVIEW_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / CANDIDATE 2 REJECTED / DOMAIN PARTITION ADOPTED / CANDIDATE 1 REFORMULATED / RESIDUAL UNRESOLVED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / LOSS OBJECT INCOMPLETE / FINLOSS NOT UNIQUELY DETERMINED / REVIEW-2 BLOCKED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / CANDIDATE 1 REFORMULATED / NECT MODE BLOCKED | 只允许裁定 FinLoss definition 与 residual-domain status，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / FINLOSS NOT DETERMINED / NECT MODE BLOCKED | 只允许完成 STEP④ loss object completion，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,8 +63,8 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / DOMAIN-CODEDOMAIN REVIEW OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED / CANDIDATE 3 NOT NECESSARY FOR RESIDUAL
-- STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / IPR UNDECLARED / NECT MODE BLOCKED / NECT_E-F CONCEPTUALLY OPEN
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / LOSS OBJECT COMPLETION OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
 ### Allowed
@@ -78,6 +78,7 @@ P4 / RQ-P4-01 candidate
 - 审查 envelope finite completeness、`R_s^fin` 与 `B_s=R_s\R_s^fin` 的 boundary status；
 - 采用并攻击 `R_s^fin/R_s^nofin` domain partition 与 `F_s^fin:R_s^fin->[0,+infinity)`；
 - 裁定 `FinLoss(P,theta)` definition 与 `R_s^nofin` residual status；
+- 完成 STEP④ loss object completion：声明 `C/R/D_loss` codomain、expectation/inf conditions、oracle value discipline 与 excess-loss value discipline；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -100,6 +101,7 @@ P4 / RQ-P4-01 candidate
 - 把 STEP⑤ 引入的 `[0,+infinity]` 回溯解释为已有 `+infinity` ordered loss-value 承诺，或因 typed envelope 更安全而直接选择 typed split；
 - 把 “finite completeness 未证明” 等同于 `B_s` 非空，或把 no-finite-loss region 静默当作 applicability boundary；
 - 为进入 `R_s^nofin` 而重新引入 `+infinity` loss value，或在 Review-3 前宣布 NECT 只能定义于 `R_s^fin`；
+- 在 `FinLoss` 未被 STEP④ 唯一确定前裁定 Review-2、Candidate 1/3 或 NECT mode；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
 
@@ -136,6 +138,8 @@ STEP⑤ 曾临时使用 envelope contract：`R_s` 上可行集非空，loss codo
 IPR declaration audit 结果为 `UNDECLARED / FAILED`：当前原始 frame 只声明 Bayes risk 与 oracle excess loss，未声明成本/风险/loss codomain，也未声明 `+infinity` 是 ordered loss value、no-finite-loss sentinel 还是 evaluation NA。STEP④ infinity-loss entitlement ruling 进一步判定 `CANDIDATE_2 [0,+infinity] = REJECTED`，因为 STEP⑤ 引入的 extended-real codomain 不能回溯为既有 `+infinity` loss-value 承诺。
 
 Domain/codomain orthogonality ruling 已取代 “证明 finite completeness over `R_s`” 的路线。当前采用 partition：`R_s=R_s^fin ⊔ R_s^nofin`，并定义 Candidate 1 reformulated 为 `F_s^fin:R_s^fin->[0,+infinity)`。`R_s^nofin` 不编码为 `+infinity`，也不参与 loss order。`FinLoss(P,theta)` definition 与 residual status 仍待裁定；完成前不得裁定 NECT domain 或 mode。
+
+Review-1 已完成并裁定 `FinLoss` not uniquely determined。policy-level `FinLoss(P,theta)` 与 rate-level admission set `R_s^FL` 分层；冻结 frame 未声明 `C` codomain/finiteness、expectation existence、`Delta(I_P)` nonemptiness/inf convention、oracle finiteness 或 `D_loss` codomain。因此 STEP④ loss object definition incomplete，Review-2、Candidate 1 reformulated 与 NECT mode 均 blocked。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
