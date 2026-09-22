@@ -2710,3 +2710,176 @@ Equivalence 可以理解为把观察空间压缩成若干 classes：
 - 不把 Equivalence、Partition 或 Mapping 正式注册为 Research Object。
 
 **Research-gate effect: NONE.**
+
+
+## 25. Further checkpoint: scale, macro-stability, probability, and finite generative structure
+
+本轮继续停留在概念层，不进入 STEP⑤。上一轮已经把链条推进到：
+
+`Reality → Observation → Similarity → Invariant / Transformation → Equivalence → Partition → Discrimination → Identity / Continuity → Object interpretation → Actionability → Domain-specific resource semantics`
+
+本轮出现了一个更上层的问题：为什么一个微观高度变化、局部不可知、无法穷尽观察的世界，仍然能够形成稳定、可知、可预测的宏观结构？
+
+### 25.1 微观不稳定，不意味着宏观不可靠
+
+“每片叶子都不相同，但每片叶子的脉络左右分明”可以作为一个很好的概念例子：微观细节存在大量差异，但某些关系在允许变化下仍然稳定；稳定关系形成宏观结构。因此宏观可靠性未必来自微观完全一致，也可能来自系统允许大量微观变化，而这些变化被更稳定的关系、约束或统计结构包住。
+
+这使“尺度（scale）”成为当前概念链中值得保留的中间概念：
+
+`Observation → Scale → Relevant variation → Stability / Invariant → Equivalence → Stable structure`
+
+Scale 不只是空间大小，也可以是时间、语义、任务、统计聚合或资源观察尺度。
+
+### 25.2 “不是所有变化都需要解释”可能是抽象形成的关键
+
+如果试图保留微观层面的全部差异，任何宏观概念都会迅速失去稳定性。宏观概念的形成可能依赖于决定哪些变化与当前问题相关、哪些变化可以被忽略。这与 Equivalence 的“允许忽略哪些差异”直接连接：
+
+`Scale → relevant variation → tolerated variation → equivalence`
+
+因此 Equivalence 不只是分类工具，也可能是尺度选择之后的信息压缩规则。
+
+### 25.3 从“不可知”到“可知”，中间可能不是确定性，而是概率结构
+
+“不可知需要研究及探索，而可知却成为了概率”可以进一步压缩为：
+
+`Unknown → Observation → recurrence / regularity → probability structure → prediction`
+
+知识不一定意味着把世界变成确定规则。更现实的形式可能是：在给定观察尺度、条件和模型下，某些结果具有稳定的概率结构。可知不必消除不确定性，而可能是把不确定性本身变成可描述的结构。
+
+暂时可保留：
+
+`knowledge ≈ stable predictive structure under bounded observation`
+
+这不是知识的正式定义，只是当前概念压缩。
+
+### 25.4 概率稳定性可能是“微观变化 → 宏观规律”的桥
+
+如果单次观察高度不稳定，但重复观察显示稳定分布，那么：
+
+`micro variation → aggregation → statistical stability → macro regularity`
+
+宏观规律不一定对应一个每次运行都保持不变的微观对象；它可能对应聚合尺度上稳定的关系。因此规律的统一不必意味着对象的统一。
+
+### 25.5 Scale 因而可能先于某些“对象”解释
+
+此前的路径是：
+
+`Observation → Invariant → Equivalence → Identity → Object`
+
+现在还可以看到：
+
+`Observation → Scale → aggregation → statistical regularity → macro structure`
+
+两条路径可能汇合，也可能不汇合。也就是说，`regularity → concept / law` 并不必然经过 `object identification`。规律的发现可能先于统一对象的发现。
+
+在 Architecture 2.0 中，这意味着不能因为最终希望得到 runtime Unit，就假设 runtime 中首先必须存在对象化 Unit；稳定关系本身可能先出现。
+
+### 25.6 叶子的例子：对象可以依赖允许变化后的稳定结构
+
+如果把每片叶子的全部微观状态都视为 identity criterion，不同叶子几乎无法统一；如果保留组织层次、脉络关系、左右分布等跨实例稳定关系，就可能形成“叶子”这一宏观类别。
+
+这里发生的不是：
+
+`micro equality → leaf object`
+
+而更像：
+
+`many varying observations → stable relational structure → category / concept`
+
+因此 objecthood 可能建立在“允许变化之后仍稳定”的结构之上，而不是微观完全一致之上。
+
+### 25.7 大模型与语言：需要分层表述
+
+可以把大模型作为认知研究视角：它可以被看作对大规模人类语言材料、知识表达、概念关联与生成模式进行统计性压缩和再生成的系统。但“语言的组合是有穷尽的”需要区分：有限词汇、有限长度和有限上下文下，可生成集合有限；自然语言具有递归和组合机制，可以构造任意更长的新表达；实际使用又受到记忆、上下文窗口、计算资源和任务约束限制。
+
+因此更稳健的表述是：
+
+> **语言依赖有限的符号、词汇和组合规则，却可以产生理论上极其巨大、并在递归条件下可无界扩展的表达空间；实际可观察和可处理的空间又受到资源与上下文约束。**
+
+这与“有限规则下产生巨大组合空间”形成有价值的认知类比，但必须保留：
+
+`language structure ≠ runtime structure`
+
+`LLM behavior ≠ proof of human cognition`
+
+`finite vocabulary ≠ finite language`
+
+### 25.8 三个观察汇聚成一个更大的方法论框架
+
+**微观—宏观：** `micro variation → stable relations → macro regularity`
+
+**不可知—可知：** `unknown → observation → regularity → probability → prediction`
+
+**有限规则—巨大组合：** `finite symbols / rules → large combinatorial space → reusable patterns / concepts`
+
+它们共同指向：
+
+> **稳定、可压缩、可预测的宏观结构，如何从一个高度变化且不可穷尽观察的底层世界中出现？**
+
+### 25.9 对 Architecture 2.0 的方法论镜像
+
+如果暂时镜像到 runtime：
+
+`micro runtime events → local variation → repeated relation / co-access / transition → stable pattern → boundary → equivalence → identity interpretation → operational abstraction → resource semantics`
+
+但必须明确：这只是方法论镜像，不是 runtime 机制证据。其价值是提醒我们，研究对象未必一开始就以 Unit 形式存在；它可能首先表现为稳定关系，然后才被解释为 boundary、object 或 operational abstraction。
+
+### 25.10 两条互补方向
+
+**Downward：** `Object → Identity → Equivalence → Invariant → Observation → Reality`
+
+**Upward：** `Micro variation → repeated observations → stable relations → macro regularity → concept → knowledge → prediction`
+
+两条路径可能在稳定结构 / invariant 附近相遇，但不应假定最终一定汇合为单一本体理论。
+
+### 25.11 “不可知”不等于研究失败
+
+研究不一定从 `unknown → known → complete`，更可能是：
+
+`unknown → bounded knowledge → explicit uncertainty → refined unknown`
+
+因此，明确“不知道什么”本身就是研究资产。这与当前 Architecture 2.0 的 negative knowledge discipline 一致。
+
+### 25.12 当前更完整的概念链
+
+暂时保留两个互补链：
+
+`Reality / runtime behavior → Observations → Scale → Relevant variation → Invariants / regularities → Equivalence → Partition → Discrimination → Identity / Continuity → Object interpretation → Actionability → Resource semantics`
+
+以及：
+
+`Micro variation → aggregation → statistical stability → macro regularity → concept → knowledge → probability / prediction`
+
+它们之间尚不应强行合并。
+
+### 25.13 当前新的核心问题
+
+> **在一个微观高度变化、局部不可知、无法穷尽观察的世界里，什么样的稳定性足以让我们形成一个可靠的宏观概念？**
+
+以及：
+
+> **这个宏观概念什么时候只是统计规律，什么时候成为对象解释，什么时候进一步成为可以独立行动的对象？**
+
+这两个问题仍属于概念分析，不是正式 Research Question。
+
+### 25.14 Negative knowledge added
+
+- 微观不稳定 ≠ 宏观不可靠；
+- 微观稳定 ≠ 宏观规律的唯一来源；
+- 宏观规律 ≠ 微观对象统一；
+- 统计稳定性 ≠ 确定性规律；
+- probability structure ≠ ontology；
+- knowledge ≠ complete observability；
+- 未观测 ≠ 不存在；
+- 未观测 ≠ 必然存在隐藏结构；
+- finite vocabulary ≠ finite language；
+- finite rules ≠ finite expression space；
+- language structure ≠ runtime structure；
+- LLM behavior ≠ proof of human cognition；
+- methodology analogy ≠ runtime evidence。
+
+### 25.15 Governance
+
+本 checkpoint 不改变：Track B = CLOSED / FROZEN；Track E = CLOSED / SEALED；P3 / H-P1 / nodes-out 状态不变；P4 = NOT STARTED；RQ-F-01 = NOT DEFINED；STEP④ = PASS；STEP⑤ = UNSTARTED；无新 RQ；无实验；无 implementation / measurement authorization。
+
+**Research-gate effect: NONE.**
