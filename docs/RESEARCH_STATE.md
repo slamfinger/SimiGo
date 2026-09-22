@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（记录 P4-A Analytic Encodability Attack；STEP① 继续）
+**Last updated**: 2026-09-22（记录 P4-A Static Derivability / Decision-Loss Gate；STEP① 继续）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -170,11 +170,17 @@ P4 后续研究采用“先证伪、后扩展”的门控原则，而不是以�
 
 Description Language Attack 已进一步收缩为可审计的成本会计与证伪协议：采用 Codebook / Rate / Decoder 三项成本分账；decoder 冻结并公开为 artifact，runtime 只能使用冻结 decoder + 码流；decoder spec 不得携带被测架构专属实现事实；L₀ 定义为 byte-level direct dump 的零失真 reference language。上述内容仍属于 STEP① 候选定义，不构成 Runtime API。
 
-下一概念攻击固定为 **Analytic Encodability Attack**。核心问题：Encoder_X 能否仅由 architecture / computation-structure description 与允许的先验知识解析确定，而不依赖目标 Runtime resource behavior、profiling 或 decision outcome。重点攻击 profiling dependence、workload dependence、decision leakage、hidden architecture-family prior、non-derivable key fields、codec instability。
+Analytic Encodability Attack 已进一步收缩为 **Static Derivability** 标准：一个从未运行过目标模型的 agent，应仅凭允许的静态 architecture / computation-structure description 导出 Encoder_X。允许 architecture spec、声明式结构、计算语义、依赖/type/shape 信息及静态阅读源码；禁止执行后通过 trace、benchmark、memory behavior、migration/materialization behavior、decision labels 或 workload trace 发现/调整编码字段。约束的是知识来源，而非禁止 Architecture X → Encoder_X。
 
-Analytic Encodability 是 Rate-Distortion 之前的独立 gate。若 encoder 依赖目标资源数据，后续 projection utility 结果可能只是把信息获取从 O(D) 搬到 O(A)，不能直接解释为跨架构 information-acquisition saving。允许 Architecture-specific knowledge 进入 Encoder；禁止 target resource outcome 反向进入 Encoder。该 gate 仍处 STEP①，不创建 RQ、不授权 implementation、harness、data collection 或 measurement。
+下一步记录一个未来的 **Novel-Architecture Probe**：未来评估应包含熟悉架构家族、结构不同的已知家族，以及至少一个编码者既有经验之外的架构或 purpose-built variant。若 analytic encoding 仅在熟悉家族成立而新结构需要大量人工修改，则应记录为 applicability boundary，而非 universal validity。该项属于未来 STEP②–⑨ 设计约束，当前不授权实验。
 
-若该攻击通过，下一步才是进一步收缩 fixed-language / fixed-decoder / L₀ / A:D regime 下的信息价值问题；若失败，则应根据反例把 projection 收缩为 data-assisted codec、局部适用域或关闭，而非自动进入实现。
+同时保留非二元候选：Architecture → analytic structural skeleton → minimal measured coefficients → projection → Runtime decision。状态结构字段可能可静态解析，而 migration granularity、reconstruction order、reattach feasibility 等 transition/materialization 字段可能需要少量实测。后续可将问题收缩为“完成 analytic skeleton 所需的最小经验信息量”，但当前没有 measurement authorization。
+
+为防止 STEP① 把研究对象与完整实验协议混为一体，现明确区分 **Definition Layer** 与 **Evaluation-Constraint Layer**。Definition Layer 保留固定 language L、frozen decoder、L₀、A:D regime、analytic provenance requirement；未来 Evaluation-Constraint Layer 才承载 two-part accounting 的 operationalization、decoder-in-the-loop、六项攻击目标的具体测试、novel-architecture sampling、rate/distortion estimand、measurement budget/threshold。后者当前只保留 provenance，不构成实验授权。
+
+**下一概念攻击固定为 Decision-Loss Well-Definedness Attack。** 核心问题：在不引入 Runtime implementation 的情况下，Decision Loss D 能否被定义为不依赖研究者任意选择、且足以区分 projection 的量。若可以由形式化 decision model 定义，则继续 STEP①/后续定义；若必须引入 decision process、simulation 或 executable harness，则必须显式开启 Harness Authorization Gate，禁止因 D 难定义而隐式进入实现。
+
+上述内容仍处 STEP①，不创建 RQ，不授权 implementation、harness、data collection 或 measurement。
 
 ## 14. 状态维护规则
 
