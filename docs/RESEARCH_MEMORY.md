@@ -690,3 +690,48 @@ docs/research_memory/
 ```
 
 Stable RM IDs must survive any split so future Agents can reconstruct the intellectual tree.
+
+
+### RM-044 — Architecture 2.0 should study computational-architecture regularity, not model-content regularity
+
+A key direction correction on 2026-09-22:
+
+> Architecture 2.0 should study the stable regularities of a large model as a computational system, not attempt to enumerate the regularities of the knowledge, rules, semantics, probabilities, or compressed content carried by the model.
+
+The latter can approach an effectively unbounded study of machine knowledge/intelligence formation. It is a different research tree.
+
+The Architecture 2.0 mainline is instead:
+
+`expensive computation → reusable Execution State → continuation / fork / lifecycle → representation transition → runtime carrying / reuse → residency / loading / layering / migration`
+
+This correction explains why the earlier “all boundaries → universal object → universal unit” branch should be pruned rather than extended.
+
+**Status:** DURABLE ARCHITECTURE-DIRECTION INSIGHT
+
+### RM-045 — Execution State is the current architecture abstraction boundary
+
+Execution State is valuable because it can abstract continuation-relevant computation without requiring Runtime to understand the model's entire knowledge content.
+
+The intended separation is:
+
+`model implementation` → how to compute  
+`Execution State` → what continuation-relevant state exists  
+`runtime` → how to carry, reuse, load, reside, and migrate that state
+
+“General Execution State” means shared execution semantics, not identical internal state layout across model families.
+
+**Status:** DURABLE ARCHITECTURE HYPOTHESIS / CORE DIRECTION
+
+### RM-046 — Research maturity is accumulation of invariants, not accumulation of branches
+
+The Architecture 2.0 research path is better represented as local continuation with fork, failure, rollback, and renewed development:
+
+`a→b→c→d`  
+`a→b→c→e→f`  
+`a→b→c→d→f→g`
+
+The mature result is not that every branch survives. It is that repeated development leaves more stable, reusable structure behind while uncertain branches are pruned.
+
+This is a durable research-history interpretation, not an empirical finding about model behavior.
+
+**Status:** DURABLE RESEARCH-METHOD INSIGHT
