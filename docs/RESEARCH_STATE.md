@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（MCVSD validity audit complete：`MCVSD_VALID` as declaration contract；semantic instantiation still requires explicit researcher declaration）
+**Last updated**: 2026-09-23（STEP④-A 收敛：MCVSD validity audit complete；进入 canonical semantic instantiation decision surface）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A MCVSD Validity Audit Complete（STEP⑤ NECT mode blocked）
-Next action: Human researcher must explicitly instantiate MCVSD `SourceStatus/VType/OutputDiscipline`；agent must not select a value space
-Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Canonical Decision Surface（STEP⑤ NECT mode blocked）
+Next action: Human researcher must explicitly instantiate MCVSD `SourceStatus/VType/OutputDiscipline` and separately decide `Binding_C`; agent must not select semantic values
+Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_MCVSD_VALIDITY_AUDIT_20260923.md
+当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
 
 ## 2. 状态词汇表
 
@@ -69,60 +69,26 @@ P4 / RQ-P4-01 candidate
 
 ### Allowed
 
-- 继续定义与对抗 STEP⑤ existence criterion；
-- 使用 NDAC 作为 NECT domain admission condition，并裁定 extended-real vs finite-finite descent mode；
-- 使用 SAT_INF_FIN 审查 `+infinity -> finite` 的 domain / order / substantive / degeneracy identity；
-- 声明并审查 Infinity Provenance Rule；若 loss value 与 boundary encoding 混合，先定义 typed envelope；
-- 审查 finite-loss codomain、ordered extended-loss codomain 或 typed/tagged envelope 三类最小声明；
-- 审查 finite completeness 与 no-finite-loss member 是否必须作为独立 typed 对象；
-- 审查 envelope finite completeness、`R_s^fin` 与 `B_s=R_s\R_s^fin` 的 boundary status；
-- 采用并攻击 `R_s^fin/R_s^nofin` domain partition 与 `F_s^fin:R_s^fin->[0,+infinity)`；
-- 裁定 `FinLoss(P,theta)` definition 与 `R_s^nofin` residual status；
-- 完成 STEP④ loss object completion：声明 `C/R/D_loss` codomain、expectation/inf conditions、oracle value discipline 与 excess-loss value discipline；
-- 审查并冻结 MCSC abstract field schema 的 product-position semantics 与 arrow semantics；
-- 建立全局 P4-A formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；
-- 使用已冻结 `B_min={Pair Formation,Function Slot,Application,Typed Equality}`；
-- 审查 Cost Value-Space Determinacy：STEP①–④ 是否唯一确定 `V_j`；
-- 审查并分离 `V_j` 的 carrier/type、admissible-value discipline、order、measurability、definedness 与 finiteness；
-- 进行 Cost Value-Semantics Evidence Recovery Review，只定位 STEP①–④ 原始冻结材料中可能遗漏的明确证据；
-- 建立 Minimal Cost Value-Semantics Declaration contract，只定义 `SourceStatus/VType/OutputDiscipline` 等必答字段；
-- 由 human researcher 显式实例化 MCVSD 的 `VType` 与 `OutputDiscipline`，并攻击该 declaration 的下游影响；
-- 在 MCVSD semantic instantiation 时将 `SourceStatus` 更新为 `NEW_DECLARATION`；
-- 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
-- 设计最低成本的概念反例；
-- 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
-- 读取 Track B / Track E 历史资产作为背景约束，但不得转移其证据为 P4 结论。
+- 阅读并维护 `docs/STEP4A_CANONICAL_DECISIONS.md`；
+- 由 human researcher 显式实例化 MCVSD：`SourceStatus=NEW_DECLARATION`、`VType`、`OutputDiscipline`；
+- 单独决定 `Binding_C`，不默认任何聚合形式；
+- 对新的 semantic instantiation 做一次必要的下游一致性审查；
+- 其余既有 STEP④/⑤ 定义资产仅在发生具体语义矛盾时重新审查；
+- 保持 `A/W/W_D` 为 carrier symbols only，保持 `J` 为 abstract index carrier；
+- 继续保留既有 NDAC、SAT_INF_FIN、IPR 与 domain-partition 约束；
+- 在语义实例化完成并合法通过后，再进入 Value Discipline / STEP④-B。
 
 ### Forbidden
 
-- 自动把 P4 candidate 升级为注册 RQ；
-- 进入 STEP⑥–⑨；
+- agent 自动选择 `VType`、`OutputDiscipline` 或 `Binding_C`；
+- 新增 formal-basis、metadata 或 contract 审计层而没有具体语义矛盾；
+- 从自然语言 “cost”、Risk、oracle、`D_loss`、STEP⑤ notation 或工程常识反向确定 `V_j`；
+- 把 MCVSD_VALID 解释为 `V_j` 已声明或 Cost Value Semantics 已完成；
+- 自动把 `V_j` 选择为 finite scalar、extended scalar、vector、typed record 或其他具体 carrier；
+- 重新引入 `+infty` loss-value semantics；
+- 进入 Value Discipline、Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，直到 semantic instantiation 完成并通过必要审查；
 - Runtime implementation / research harness / data collection / profiling / performance measurement；
-- 预设 frontier 非空、非退化、低码率、共同形状或 Runtime usefulness；
-- 把 NECT 叙述为 “frontier existence”，或把 strict descent 等同于 tradeoff / value / stable shape；
-- 把 envelope object defined、`P_AS` 非空、单个 endpoint、L₀ trivial encoder、有限候选观察或未经证明的 infimum 断言自动视为 EC_T 通过；
-- 把 `failure to establish EC_T` 等同于 `EC_T` 为假，或把 domain insufficient / flat negative / evidence insufficiency 合并为同一种 negative；
-- 把 `EVIDENCE_INSUFFICIENT` 当作 STEP⑤ target output，或在 mode 未裁定时宣布 NECT true/false；
-- 把 `+infinity -> finite` 是否属于 NECT 当作已决定；
-- 把 evaluation failure / missing-data 的 `+infinity` 当作合法 loss value，或把 degeneracy risk 当作价值判断依据；
-- 把 `+infinity` 的 loss-value / boundary-encoding 混用当作同一 NECT 对象，或在 IPR 未声明时裁定 NECT mode；
-- 把 `IPR_VALUE=UNDECLARED` 等同于 `IPR=NA`，或凭实验/估计结果反推 codomain；
-- 把 STEP⑤ 引入的 `[0,+infinity]` 回溯解释为已有 `+infinity` ordered loss-value 承诺，或因 typed envelope 更安全而直接选择 typed split；
-- 把 “finite completeness 未证明” 等同于 `B_s` 非空，或把 no-finite-loss region 静默当作 applicability boundary；
-- 为进入 `R_s^nofin` 而重新引入 `+infinity` loss value，或在 Review-3 前宣布 NECT 只能定义于 `R_s^fin`；
-- 在 `FinLoss` 未被 STEP④ 唯一确定前裁定 Review-2、Candidate 1/3 或 NECT mode；
-- 在 cost signature 未冻结前选择 `V_j` 的 finite/extended/vector/typed discipline、measurability，或用 natural-language cost terms 直接充当 `J`；
-- 在 product/arrow semantics 未声明前假定 total function、set-theoretic product、`W_D=W`、shared `V_j` 或具体 component cardinality；
-- 用 cost-local `×/->` patch替代全局 formal basis，或在 placeholder reading 外隐含选择 set/type/product/total/partial semantics；
-- 把 minimal formal interface 的 placeholder application/equality/substitution 当作真实数学语义，或声称它已支持 MCSC semantic instantiation；
-- 把 Projection 或 Substitution 重新偷渡进 `B_min`，或在 minimal interface 下宣称 total/measurable/finite-valued function；
-- 在 Cost Value-Space Determinacy Review 前选择 `V_j` 的 finite scalar、extended scalar、vector、typed record 或具体 cost aggregation；
-- 从自然语言 “cost” 或后续 `D_loss>=0` 反向确定 `V_j`；
-- 把 carrier declaration、admissible-value discipline、order structure、measurability、definedness 或 finiteness 压缩成同一声明；
-- 在 Evidence Recovery Review 完成前选择具体 `V_j`，把 contextual “cost/nonnegative” 升级为 DERIVABLE，或把 `[0,+∞]` 的旧 notation 反向补入 STEP④；
-- 使用 Risk、oracle、`D_loss`、STEP⑤ notation、工程常识或 agent 偏好反向补写 cost value semantics；
-- 让 agent 自动选择 `VType` 或 `OutputDiscipline`，或在 MCVSD semantic instantiation 完成前进入 STEP④-B / `FinLoss` / residual status / NECT；
-- 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
+- 自动注册 RQ-P4-01；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
 
@@ -136,62 +102,38 @@ Architecture 2.0 采用：当前代表性架构 → 最小抽象 → 新架构�
 
 通用性由真实架构反例推动，而不是由想象中的未来模型推动。没有反例，不增加抽象层；“不能泛化”本身是合法研究结果。
 
-## 10. 当前 STEP⑤ 入口约束
+## 10. Current semantic boundary
 
-STEP④ 已将 estimand 固定为 frame-indexed Achievable Static Frontier。关键定义资产包括：
+STEP④-A 当前不再新增 formal-basis 或 metadata 审计层。历史审计文档全部保留在 `docs/07-history/` 作为 evidence；canonical decision surface 由 `docs/STEP4A_CANONICAL_DECISIONS.md` 承载。
 
-- S_det：确定性、预注册静态派生策略族；
-- 固定 Rate counting convention；
-- D=(A,C,sigma_D,Pi_W)；
-- sigma_D：冻结成本族的最小因子化见证；
-- Eval=(budget, estimator, sampling)；
-- theta_tilde：联合决策相关层的 workload-regime 分布 / pushforward；
-- semantic 与 deployment-economic frontier 分轨，后者显式带 N 或更一般 mu_D；
-- 跨架构比较仅在公共可达 rate domain 上进行；不可评估或不可达区间记录为 applicability boundary；
-- Target ≠ Estimator ≠ Observed frontier；STEP④ 不证明 finite-sample identifiability。
+当前唯一的 STEP④-A 语义决策面：
 
-STEP⑤ 当前候选是 NECT（原 EC_T），但存在两个未裁决 mode：`NECT_E` 检测整个 extended-real envelope 的 strict descent，允许 `+infinity -> finite`；`NECT_F` 只检测 finite-loss region 内部的 descent。semantic 与 deployment-economic 分轨判定。NECT 是 target-level nontrivial phenomenon existence，不是 frontier object existence，不要求 infimum 被实际策略达到，也不是 finite-sample observation criterion。
+```
+SourceStatus     = NEW_DECLARATION
+VType            = UNDECLARED
+OutputDiscipline = UNDECLARED
+Binding_C        = UNDECLARED
 
-`SAT_INF_FIN` 已定义，用于在 mode 裁定前检查 `+infinity -> finite` 的 domain identity、order identity、substantive identity 和 degeneracy annotation。当前进一步要求 Infinity Provenance Rule：`+infinity` 必须声明为 ordered loss value、no-finite-loss-member boundary encoding、mixed 或 evaluation NA。`MIXED` 必须先 typed split；`NA` 不属于 target envelope；finite-loss realizability onset 不得静默并入 NECT。
+J   = ABSTRACT INDEX CARRIER; MEMBERSHIP/COMPONENT SET UNDECLARED
+A   = CARRIER SYMBOL ONLY
+W   = CARRIER SYMBOL ONLY
+W_D = CARRIER SYMBOL ONLY
 
-STEP⑤ 曾临时使用 envelope contract：`R_s` 上可行集非空，loss codomain 为 `[0,+infinity]`；但 Candidate 2 已被拒绝，因此当前 loss codomain unresolved。infimum existence 不要求 attainment。`NDAC(s): |R_s^tau|>=2` 已接受为 domain admission condition，不是 NECT 谓词本体。STEP⑤ target output 只有 `DOMAIN_INSUFFICIENT / NECT_TRUE / NECT_FALSE`；`EVIDENCE_INSUFFICIENT` 属于正交 evidence layer，不得由 STEP⑤ 输出。
+Order         = DEFERRED
+Measurability = DEFERRED
+```
 
-IPR declaration audit 结果为 `UNDECLARED / FAILED`：当前原始 frame 只声明 Bayes risk 与 oracle excess loss，未声明成本/风险/loss codomain，也未声明 `+infinity` 是 ordered loss value、no-finite-loss sentinel 还是 evaluation NA。STEP④ infinity-loss entitlement ruling 进一步判定 `CANDIDATE_2 [0,+infinity] = REJECTED`，因为 STEP⑤ 引入的 extended-real codomain 不能回溯为既有 `+infinity` loss-value 承诺。
+`Scalarity`、`finiteness`、`nonnegativity`、special-value admissibility 等输出限制，属于未来 `OutputDiscipline` 的实例化内容，不在 canonical layer 预选。
 
-Domain/codomain orthogonality ruling 已取代 “证明 finite completeness over `R_s`” 的路线。当前采用 partition：`R_s=R_s^fin ⊔ R_s^nofin`，并定义 Candidate 1 reformulated 为 `F_s^fin:R_s^fin->[0,+infinity)`。`R_s^nofin` 不编码为 `+infinity`，也不参与 loss order。`FinLoss(P,theta)` definition 与 residual status 仍待裁定；完成前不得裁定 NECT domain 或 mode。
+Infinity semantics remain:
 
-Review-1 已完成并裁定 `FinLoss` not uniquely determined。policy-level `FinLoss(P,theta)` 与 rate-level admission set `R_s^FL` 分层；冻结 frame 未声明 `C` codomain/finiteness、expectation existence、`Delta(I_P)` nonemptiness/inf convention、oracle finiteness 或 `D_loss` codomain。因此 STEP④ loss object definition incomplete，Review-2、Candidate 1 reformulated 与 NECT mode 均 blocked。
+```
+LOSS_INFINITY_PREDEFINED = FALSE
+IPR_VALUE                = UNDECLARED
+```
 
-STEP④-A Cost Object audit 已完成：`C_OBJECT_COMPLETE=FALSE`。现有 frame 只有 declared cost function 与 factorization identity `C_j(a,w)=C'_j(a,sigma_D(w))`，未声明 `J`、exact domain、codomain、measurable spaces、measurability 或 pointwise value discipline。factorization equality 的 value space 仅是隐含的。STEP④-B Risk Well-definedness 被 blocking；不得为 NECT 便利倒推 `C` 的 finiteness 或 scalar codomain。
-
-Cost Signature audit 进一步判定 `COST_SIGNATURE_UNIQUELY_DETERMINED=FALSE`。自然语言 hints `recomputation/migration/capacity` 不能直接当作 `J`；`A/W` 仅为符号，`W_D` 缺失，`V_j` 未声明，`C_j/sigma_D/C'_j` 仅为 symbol-level，equality space 与 `C` binding 未声明。下一步只能冻结最小 signature contract；value discipline 与 measurability 继续 deferred。
-
-Minimal Cost Signature Contract skeleton 已采纳。它只冻结 formal positions：`J/A/W/W_D/(V_j)/(C_j)/sigma_D/(C'_j)/(=_{V_j})/Binding_C`，并给出 typed signatures `C_j:A×W→V_j`、`sigma_D:W→W_D`、`C'_j:A×W_D→V_j`。这不选择 `J` 成员、value discipline、measurability 或 `Binding_C` 的组合形式；semantic instantiation 仍 open，STEP④-B blocked。
-
-Abstract Field Declaration Audit 已裁定 MCSC 可作为 well-formed placeholder schema，但不添加 substantive structural constraints。`J` 的 cardinality/nonemptiness、component uniqueness、carrier instantiation、`V_j` discipline、equality notion 与 `Binding_C` kind 均 deferred。新发现的 formal gaps 是 `PRODUCT_POSITION_SEMANTICS=UNDERDECLARED` 与 `ARROW_SEMANTICS=UNDERDECLARED`；完成二者前不得进入 value discipline 或 Risk review。
-
-Product/Arrow formal basis audit 进一步判定：P4-A 没有统一可追溯的 `×/->` 数学语义；MCSC 只能读作 signature placeholders。该缺口是全局 formal basis 问题，不是 Cost Object 局部问题。下一步必须建立全局 formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；完成后才可回到 value discipline。
-
-Minimal Formal Interface Sufficiency Review 进一步裁定路径为 split：MFI conditionally sufficient。它足以支撑 notation governance 和 MCSC placeholder positions，包括 pair formation、function slot、application placeholder、typed equality placeholder 与 substitution placeholder；但不足以实例化 cost semantics、判定 application definedness、断言 equality truth 或证明 substitution rule。因此不需要立即选择完整 foundation，也不得触发 M2 停摆；MCSC semantic instantiation 在 MFI interpretation 完成前保持 blocked。
-
-MFB-SR 已按更窄裁定收口：`MINIMAL_FORMAL_BASIS_SUFFICIENT=TRUE`，但 `B_min` 仅包含 Pair Formation、Function Slot、Application 与 Typed Equality。Projection 与 Substitution 均 `NOT_REQUIRED`。这 supersede 前版将 substitution 作为 placeholder 的做法。全局 formal basis 仍只是 minimal interface，完整 foundation 未声明；product/arrow mathematical semantics 未声明。
-
-Semantic Instantiation Audit 已完成：MCSC formally well-formed，但 not semantically instantiated。字段裁定为 `J/A/W/W_D/C_j/C'_j/Binding_C=UNDERDECLARED`、`V_j=UNDECLARED`、`σ_D=STRUCTURALLY PLACED / SEMANTICALLY UNDERDECLARED`、`=_{V_j}=MINIMALLY DETERMINED`。`Binding_C` 不得被默认为求和；合法顺序必须从 value space 到 binding、semantic definition、definedness、finiteness、measurability、Risk。下一步是 Cost Value-Space Determinacy Review。
-
-Cost Value-Space Determinacy Review 已完成：`VSPACE_UNIQUELY_DETERMINED=FALSE`。自然语言 “cost”、cost-component hints 与 factorization equality 都只能确定 cost-related role 或 typed comparison position，不能确定 scalarity、order、finiteness、extendedness 或具体 carrier。后续 Risk 结构也不得反向补写 `V_j`。候选 finite scalar、extended scalar、vector、typed record 仅登记，不选择。下一步是 Minimal Value-Space Declaration Review。
-
-Minimal Value-Space Declaration Review 已完成：使 `V_j` determinate 的最小要求是声明 carrier/type family `(V_j)_{j∈J}`。Value discipline、order structure、measurability、definedness 与 finiteness 均为 separate layers。若未来选择 `V_j=[0,+∞)`，必须记录为新的 Value-Space Instantiation；若选择 extended scalar `[0,+∞]`，必须重新面对 IPR review。当前没有任何具体 `V_j` 被选择。下一步是 Value-Space Candidate Audit。
-
-VSCA 已完成：finite scalar `[0,+∞)` 为 `NOT_DERIVABLE / OPEN`，因 scalar、finite、nonnegative 均未冻结；extended scalar `[0,+∞]` 为 `REJECTED_IN_CURRENT_FRAME`，因 `+∞` 没有既有 loss-value semantics；vector、typed record 与 other 均 OPEN；candidate exhaustiveness 未建立。FSAR 已完成：`SCALAR/FINITE/NONNEGATIVE` 均 `UNDERDECLARED`，因此 finite scalar admissibility not established，`[0,+∞)` not frozen。CVSR 已完成证据归类：scalar 与 nonnegative 仅 `CONTEXTUAL_ONLY`；finite、extended、infinity、vector、record 与 order 均 `ABSENT`。因此 COST VALUE SEMANTICS NOT ESTABLISHED。
-
-Cost Value-Semantics Evidence Recovery Review 已完成：`COST_VALUE_SEMANTICS_EVIDENCE=NOT_FOUND`，`EVIDENCE_RECOVERY=FAILED`。`C_j` definition 与 factorization identity 只提供 role/structural evidence；Risk、oracle、`D_loss` 是下游依赖；“excess loss” 名称不证明非负性；STEP⑤ extended-real notation 与 `+∞` 不得回溯。因此 STEP④-A 需要新的 explicit semantic declaration。
-
-Minimal Cost Value-Semantics Declaration contract 已采纳：`MCVSD=(SourceStatus,VType,OutputDiscipline)`。当前 `SourceStatus=NEW_DECLARATION_REQUIRED`，`VType=UNDECLARED`，`OutputDiscipline=UNDECLARED`。`Order` 不在 MCVSD 内，若后续需要必须单独声明；measurability、finite-valuedness、Risk 也保持 separate/blocked。`Binding_C` 仍是 separate open field，不得默认为求和。下一步必须由 human researcher 显式实例化 `VType` 与 `OutputDiscipline`。
-
-MCVSD Validity Audit 已完成：`MCVSD_RULING=MCVSD_VALID`。该裁决仅表示 MCVSD 可作为 declaration contract 合法承载未来 `VType/OutputDiscipline` 声明；不存在 infinity、scalar/finite/nonnegative、order 或 `Binding_C` 语义偷渡。它不表示 `V_j` 已声明。下一步必须由 human researcher 将 `SourceStatus` 更新为 `NEW_DECLARATION`，并显式填写 `VType` 与 `OutputDiscipline`。
-
-在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
+STEP④-B / FinLoss / residual / NECT remain blocked.
 
 ## 11. Governance
 
-本次 STEP④→STEP⑤ 是研究治理状态转换。没有新增实验、harness、implementation 或 measurement authorization。
+本次 STEP④-A 收敛没有新增实验、harness、implementation 或 measurement authorization。
