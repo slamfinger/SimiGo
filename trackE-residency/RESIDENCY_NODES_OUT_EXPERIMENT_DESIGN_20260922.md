@@ -1,4 +1,4 @@
-# Track E nodes-out 正式实验设计 DRAFT v0.2(2026-09-22)
+# Track E nodes-out 正式实验设计 DRAFT v0.3(2026-09-22)
 **DRAFT 待复审;PASS 前零实现零采数(Implementation / Data LOCKED)**
 
 > 基线:开题 c3fe842(PASS / SEALED AS OPENING BASELINE)+ Definition
@@ -24,8 +24,12 @@
   Next Input / Continuation Semantics)——KV 是被操作对象,五元组是
   不变量,两层严禁混同;
 - **判定(三层全部锁定,缺一不可)**:
-  1. **event-level correctness**:每一次 migration /
-     externalization / rehydration 事件前后,五元组逐项等价;
+  1. **event-level correctness(对齐基准已锁)**:两种粒度的
+     事件序列不同构,不做事件一一对应;对齐锚点 = **decode step
+     边界**——Candidate A 每个外化/迁回事件完成时所在的 decode
+     step t,取基线执行在同一 step t 的五元组为对齐基准,逐项
+     等价(与 step-level 锚点统一,区别仅在采样时机=事件完成
+     时刻);
   2. **step-level continuation correctness**:每一个 decode step
      的 continuation 语义(next input 与后续 KV 演化)与基线执行
      逐项等价;
@@ -43,11 +47,11 @@
 | 通道 | 定义 | 数值口径 |
 |---|---|---|
 | 兼容披露(非主判据) | J = C_ext×#ext + C_rehy×#rehy | 与 H-P1/P3 可比,仅披露 |
-| 新通道 1:migration / re-encoding cost | 粒度变体下每次 state 转换的建模成本 | v1 = 恒等映射假设下 0 成本上界 + ±敏感性报告;token-equivalent 折算细则留测量轮(P0.1 Deferred 口径延续) |
+| 新通道 1:migration / re-encoding cost | 粒度变体下每次 state 转换的建模成本 | **方案 A 锁定**:报告 migration/re-encoding event count + bytes moved/read + timing;v1 modeling assumption = identity mapping, 0 modeled conversion cost;**不建立 token-equivalent cost,不做 ±敏感性**;token-equivalent measurement deferred to later measurement round |
 | 新通道 2:correctness violation / correction cost | violation 计数如实报告;**v1 correction cost 不货币化**(只报计数与位置) | 与 P0.1 Deferred 一致 |
 | 新通道 3:granularity→byte accounting | 78,246 KiB/node 适用性重验证 = **实验输出之一** | 可映射 → 给出 node-equivalent 映射表;不可映射 → 报告"不可映射"并停用该换算;禁止预判 |
 
-**报告纪律(锁定)**:新通道 1/2/3 **全部独立报告**,不并入任何
+**报告纪律(锁定)**:**新通道 1/2/3 全部报告**,不并入任何
 既有 J,不相互合并;每通道给出 n(事件数)/读数/口径三要素。
 
 主判据说明:nodes-out 是机制问题非优化问题——本设计**不设性能
@@ -69,7 +73,7 @@ PASS/FAIL**;全部结果 = 机制知识如实入档。
   "correctness violation" 如实入档(不删除、不停机,除非基线自身
   violation);
 - **E2(成本机制知识)**:correctness PASS 下,兼容披露通道 J 与
-  基线差异 + 新通道 1/3 读数全部如实报告——**无性能 PASS/FAIL**,
+  基线差异 + **新通道 1/2/3** 读数全部如实报告——**无性能 PASS/FAIL**,
   结果 = 边界成本机制知识;
 - **E3(计账单位)**:78,246 KiB/node 适用性判定(可映射/不可映射)
   如实入档;
