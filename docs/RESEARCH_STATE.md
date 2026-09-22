@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（MFB-SR complete：`MFB-S=TRUE`；minimal interface only，projection/substitution not required）
+**Last updated**: 2026-09-23（STEP④-A SIA complete：MCSC formally well-formed but not semantically instantiated；value-space determinacy next）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Minimal Formal Basis Interface（STEP⑤ NECT mode blocked）
-Next action: 在 `B_min={Pair,FunctionSlot,Application,TypedEquality}` 下进入 semantic instantiation audit；不选择完整 foundation 或 value discipline
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Semantic Instantiation Audit Complete（STEP⑤ NECT mode blocked）
+Next action: Cost Value-Space Determinacy Review：裁定 STEP①–④ 是否唯一确定 `V_j`；不得直接选择 finite scalar、extended scalar、vector 或 typed record
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_MFB_SR_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_SEMANTIC_INSTANTIATION_AUDIT_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MFB-S TRUE / MINIMAL INTERFACE ONLY / PROJECTION-SUBSTITUTION NOT REQUIRED / MCSC SEMANTIC INSTANTIATION OPEN / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MFB-S TRUE / SIA COMPLETE / MCSC NOT SEMANTICALLY INSTANTIATED / VSPACE DETERMINACY NEXT / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MFB-S TRUE / NECT MODE BLOCKED | 只允许在 minimal formal interface 下做 MCSC semantic instantiation audit，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MFB-S TRUE / SIA COMPLETE / NECT MODE BLOCKED | 只允许审查 Cost Value-Space Determinacy，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / MFB-S TRUE / MINIMAL INTERFACE ONLY / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / MCSC NOT SEMANTICALLY INSTANTIATED / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -82,6 +82,7 @@ P4 / RQ-P4-01 candidate
 - 审查并冻结 MCSC abstract field schema 的 product-position semantics 与 arrow semantics；
 - 建立全局 P4-A formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；
 - 使用已冻结 `B_min={Pair Formation,Function Slot,Application,Typed Equality}`；
+- 审查 Cost Value-Space Determinacy：STEP①–④ 是否唯一确定 `V_j`；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -110,6 +111,7 @@ P4 / RQ-P4-01 candidate
 - 用 cost-local `×/->` patch替代全局 formal basis，或在 placeholder reading 外隐含选择 set/type/product/total/partial semantics；
 - 把 minimal formal interface 的 placeholder application/equality/substitution 当作真实数学语义，或声称它已支持 MCSC semantic instantiation；
 - 把 Projection 或 Substitution 重新偷渡进 `B_min`，或在 minimal interface 下宣称 total/measurable/finite-valued function；
+- 在 Cost Value-Space Determinacy Review 前选择 `V_j` 的 finite scalar、extended scalar、vector、typed record 或具体 cost aggregation；
 - 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
@@ -163,6 +165,8 @@ Product/Arrow formal basis audit 进一步判定：P4-A 没有统一可追溯的
 Minimal Formal Interface Sufficiency Review 进一步裁定路径为 split：MFI conditionally sufficient。它足以支撑 notation governance 和 MCSC placeholder positions，包括 pair formation、function slot、application placeholder、typed equality placeholder 与 substitution placeholder；但不足以实例化 cost semantics、判定 application definedness、断言 equality truth 或证明 substitution rule。因此不需要立即选择完整 foundation，也不得触发 M2 停摆；MCSC semantic instantiation 在 MFI interpretation 完成前保持 blocked。
 
 MFB-SR 已按更窄裁定收口：`MINIMAL_FORMAL_BASIS_SUFFICIENT=TRUE`，但 `B_min` 仅包含 Pair Formation、Function Slot、Application 与 Typed Equality。Projection 与 Substitution 均 `NOT_REQUIRED`。这 supersede 前版将 substitution 作为 placeholder 的做法。全局 formal basis 仍只是 minimal interface，完整 foundation 未声明；product/arrow mathematical semantics 未声明。
+
+Semantic Instantiation Audit 已完成：MCSC formally well-formed，但 not semantically instantiated。字段裁定为 `J/A/W/W_D/C_j/C'_j/Binding_C=UNDERDECLARED`、`V_j=UNDECLARED`、`σ_D=STRUCTURALLY PLACED / SEMANTICALLY UNDERDECLARED`、`=_{V_j}=MINIMALLY DETERMINED`。`Binding_C` 不得被默认为求和；合法顺序必须从 value space 到 binding、semantic definition、definedness、finiteness、measurability、Risk。下一步是 Cost Value-Space Determinacy Review。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
