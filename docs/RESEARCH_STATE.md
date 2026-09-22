@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（CVS-ERR complete：no recoverable cost value-semantics evidence；new declaration required）
+**Last updated**: 2026-09-23（MCVSD adopted：cost value-semantics declaration contract frozen；`VType/OutputDiscipline` await explicit researcher declaration）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Cost Value-Semantics Evidence Recovery Complete（STEP⑤ NECT mode blocked）
-Next action: 建立 Minimal Cost Value-Semantics Declaration contract；不得由既有 notation 或 agent 选择具体 `V_j`
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Minimal Cost Value-Semantics Declaration Adopted（STEP⑤ NECT mode blocked）
+Next action: Human researcher must explicitly instantiate MCVSD `VType` and `OutputDiscipline`；agent must not select a value space
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_COST_VALUE_SEMANTICS_EVIDENCE_RECOVERY_REVIEW_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_MINIMAL_COST_VALUE_SEMANTICS_DECLARATION_CONTRACT_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / CVS-ERR COMPLETE / NO RECOVERABLE COST VALUE-SEMANTICS EVIDENCE / NEW DECLARATION REQUIRED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD ADOPTED / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / EVIDENCE RECOVERY FAILED / NEW DECLARATION REQUIRED / NECT MODE BLOCKED | 只允许建立 Minimal Cost Value-Semantics Declaration contract，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD ADOPTED / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED | 只允许 human researcher 显式实例化 MCVSD，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / EVIDENCE RECOVERY FAILED / NEW DECLARATION REQUIRED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD ADOPTED / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -86,6 +86,7 @@ P4 / RQ-P4-01 candidate
 - 审查并分离 `V_j` 的 carrier/type、admissible-value discipline、order、measurability、definedness 与 finiteness；
 - 进行 Cost Value-Semantics Evidence Recovery Review，只定位 STEP①–④ 原始冻结材料中可能遗漏的明确证据；
 - 建立 Minimal Cost Value-Semantics Declaration contract，只定义 `SourceStatus/VType/OutputDiscipline` 等必答字段；
+- 由 human researcher 显式实例化 MCVSD 的 `VType` 与 `OutputDiscipline`，并攻击该 declaration 的下游影响；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -119,6 +120,7 @@ P4 / RQ-P4-01 candidate
 - 把 carrier declaration、admissible-value discipline、order structure、measurability、definedness 或 finiteness 压缩成同一声明；
 - 在 Evidence Recovery Review 完成前选择具体 `V_j`，把 contextual “cost/nonnegative” 升级为 DERIVABLE，或把 `[0,+∞]` 的旧 notation 反向补入 STEP④；
 - 使用 Risk、oracle、`D_loss`、STEP⑤ notation、工程常识或 agent 偏好反向补写 cost value semantics；
+- 让 agent 自动选择 `VType` 或 `OutputDiscipline`，或在 MCVSD semantic instantiation 完成前进入 STEP④-B / `FinLoss` / residual status / NECT；
 - 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
@@ -182,6 +184,8 @@ Minimal Value-Space Declaration Review 已完成：使 `V_j` determinate 的最�
 VSCA 已完成：finite scalar `[0,+∞)` 为 `NOT_DERIVABLE / OPEN`，因 scalar、finite、nonnegative 均未冻结；extended scalar `[0,+∞]` 为 `REJECTED_IN_CURRENT_FRAME`，因 `+∞` 没有既有 loss-value semantics；vector、typed record 与 other 均 OPEN；candidate exhaustiveness 未建立。FSAR 已完成：`SCALAR/FINITE/NONNEGATIVE` 均 `UNDERDECLARED`，因此 finite scalar admissibility not established，`[0,+∞)` not frozen。CVSR 已完成证据归类：scalar 与 nonnegative 仅 `CONTEXTUAL_ONLY`；finite、extended、infinity、vector、record 与 order 均 `ABSENT`。因此 COST VALUE SEMANTICS NOT ESTABLISHED。
 
 Cost Value-Semantics Evidence Recovery Review 已完成：`COST_VALUE_SEMANTICS_EVIDENCE=NOT_FOUND`，`EVIDENCE_RECOVERY=FAILED`。`C_j` definition 与 factorization identity 只提供 role/structural evidence；Risk、oracle、`D_loss` 是下游依赖；“excess loss” 名称不证明非负性；STEP⑤ extended-real notation 与 `+∞` 不得回溯。因此 STEP④-A 需要新的 explicit semantic declaration。
+
+Minimal Cost Value-Semantics Declaration contract 已采纳：`MCVSD=(SourceStatus,VType,OutputDiscipline)`。当前 `SourceStatus=NEW_DECLARATION_REQUIRED`，`VType=UNDECLARED`，`OutputDiscipline=UNDECLARED`。`Order` 不在 MCVSD 内，若后续需要必须单独声明；measurability、finite-valuedness、Risk 也保持 separate/blocked。`Binding_C` 仍是 separate open field，不得默认为求和。下一步必须由 human researcher 显式实例化 `VType` 与 `OutputDiscipline`。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
