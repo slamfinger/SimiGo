@@ -108,6 +108,22 @@ Forbidden:
 - 以旧阶段结论推导新实验
 ```
 
+### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
+
+本门被正式打开后，定义工作必须按序通过以下检查点，每步落档后方可进入下一步：
+
+```text
+① 研究对象是什么
+② 研究问题是什么
+③ 为什么它是一个独立问题
+④ estimand 是什么
+⑤ 什么观察结果构成"存在"
+⑥ 什么结果构成"不足以支持存在"
+⑦ discriminating power 是否成立
+⑧ 值得测吗（成本-信息量比）
+⑨ 通过后才决定 Path / Harness / Experiment
+```
+
 ## 9. 重要边界
 
 SimiGo 1.x product line ≠ SimiGo-Lab 2.0 research line。
