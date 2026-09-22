@@ -15,6 +15,12 @@
           "violation_count": 0
         }
       },
+      "contract": {
+        "decode_touch_mapping": "the current node must be resident in the frozen baseline state; after all Candidate unit events at that decode step, both (GDN,current)/(ATT,current) units must be decode-ready. Intra-pair intermediate states are not independent node events",
+        "logical_state": "each event completion at step t uses the frozen simulate_v3 five_tuple at the same decode step",
+        "policy_difference_boundary": "non-current unit residency may differ from node-level frozen residency; this is the allowed granularity-policy difference, not an L1 violation",
+        "transition_shape": "rehydrate requires prior externalized -> now resident; externalize requires prior resident -> now externalized"
+      },
       "pass": true,
       "violation_count": 0
     },
@@ -123,8 +129,17 @@
     "seed": 42,
     "trace_len": 2000
   },
+  "negative_tests": {
+    "L1": {
+      "expected_detection": true,
+      "fault": "externalize event marked was_resident=False; logical five_tuple unchanged",
+      "pass": true,
+      "propagation": "if detection fails, FINAL fails; the synthetic fault itself is not counted as an experiment violation",
+      "violation_count": 1
+    }
+  },
   "runner": {
     "path": "trackE-residency/nodes_out_experiment_runner.py",
-    "sha256": "84ba8cde43e1679ae8f09c4eaca448d5fa7bef7d1bbcdaf3b17b7993a2024c67"
+    "sha256": "f5e6d811d61804b83c58ad477a237f0089866384501cf207e03e985d6577e2e3"
   }
 }

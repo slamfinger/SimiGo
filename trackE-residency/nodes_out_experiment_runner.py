@@ -10,6 +10,7 @@ import random
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE_COMMIT = "17bde28"
@@ -154,6 +155,7 @@ class CandidateA:
         self.logical_last_access = [-1] * N_NODES
         self.events = []
         self.steps = []
+        self.decode_ready = []
         self.violations = []
 
     def fail(self, step, msg):
@@ -166,9 +168,10 @@ class CandidateA:
             for kind in ("GDN", "ATT"):
                 unit = (kind, node)
                 state = self.units[unit]
+                was_resident = state["res"]
                 if not state["res"]:
                     state["res"] = True
-                    self.events.append(("rehydrate", step, unit))
+                    self.events.append(("rehydrate", step, unit, was_resident))
                 state["last"] = step
                 state["ver"] += 1
 
@@ -185,11 +188,14 @@ class CandidateA:
                     break
                 victim = min(candidates,
                              key=lambda u: (self.units[u]["last"], u))
+                was_resident = self.units[victim]["res"]
                 self.units[victim]["res"] = False
-                self.events.append(("externalize", step, victim))
+                self.events.append(("externalize", step, victim, was_resident))
 
             if sum(state["res"] for state in self.units.values()) > B_UNITS:
                 self.fail(step, "resident units exceed budget")
+            self.decode_ready.append(all(
+                self.units[(kind, node)]["res"] for kind in ("GDN", "ATT")))
             self.steps.append(five_tuple(step, self.trace, self.logical_versions,
                                          self.logical_last_access))
         return self
@@ -197,22 +203,60 @@ class CandidateA:
     def final(self):
         return {
             "five_tuple": self.steps[-1] if self.steps else None,
-            "ext_count": sum(op == "externalize" for op, _, _ in self.events),
-            "rehy_count": sum(op == "rehydrate" for op, _, _ in self.events),
+            "ext_count": sum(op == "externalize" for op, _, _, _ in self.events),
+            "rehy_count": sum(op == "rehydrate" for op, _, _, _ in self.events),
             "resident_units": sum(s["res"] for s in self.units.values()),
         }
 
 
-def event_checks(run, baseline_steps):
+def event_checks(run, baseline_states, baseline_rows):
     bad = list(run.violations)
-    for op, step, unit in run.events:
-        if run.steps[step] != baseline_steps[step]:
+    for op, step, unit, was_resident in run.events:
+        node = unit[1]
+        current = run.trace[step]
+        if op not in ("rehydrate", "externalize"):
+            bad.append({"step": step, "op": op, "unit": unit,
+                        "msg": "unknown residency operation"})
+        if was_resident != (op == "externalize"):
+            bad.append({"step": step, "op": op, "unit": unit,
+                        "msg": "invalid residency transition shape"})
+        if op == "rehydrate" and node != current:
+            bad.append({"step": step, "op": op, "unit": unit,
+                        "msg": "rehydrate outside decode touch"})
+        if run.steps[step] != baseline_rows[step]:
             bad.append({"step": step, "op": op, "unit": unit,
                         "msg": "event five_tuple != baseline"})
-        if op == "externalize" and unit[1] == run.trace[step]:
+        if op == "externalize" and node == current:
             bad.append({"step": step, "op": op, "unit": unit,
                         "msg": "current node unit externalized"})
+    # A node touch consists of two unit operations. Check its baseline mapping
+    # only after all events at that decode step, not at intra-pair intermediate
+    # states (for example, GDN resident but ATT still externalized).
+    for step in sorted({event[1] for event in run.events}):
+        current = run.trace[step]
+        if current not in baseline_states[step]["resident"]:
+            bad.append({"step": step,
+                        "msg": "current node not resident in frozen baseline"})
+        if not run.decode_ready[step]:
+            bad.append({"step": step,
+                        "msg": "current node not GDN+ATT decode-ready"})
     return bad
+
+
+def l1_negative_check(run, baseline_states, baseline_rows):
+    """A pure event-shape fault must fail L1 even if five_tuple is intact."""
+    try:
+        index = next(i for i, event in enumerate(run.events)
+                     if event[0] == "externalize")
+    except StopIteration:
+        return [{"msg": "L1 negative test found no externalize event"}]
+    faulty_events = list(run.events)
+    op, step, unit, _ = faulty_events[index]
+    faulty_events[index] = (op, step, unit, False)
+    faulty = SimpleNamespace(trace=run.trace, events=faulty_events,
+                             steps=run.steps, violations=[],
+                             units=run.units, decode_ready=run.decode_ready)
+    return event_checks(faulty, baseline_states, baseline_rows)
 
 
 def step_checks(run, baseline_steps):
@@ -270,6 +314,18 @@ def main():
             layer: {"pass": True, "violation_count": 0, "by_workload": {}}
             for layer in ("L1", "L2", "L3")
         },
+        "negative_tests": {
+            "L1": {
+                "pass": False,
+                "violation_count": 0,
+                "expected_detection": True,
+                "fault": ("externalize event marked was_resident=False; "
+                          "logical five_tuple unchanged"),
+                "propagation": ("if detection fails, FINAL fails; the "
+                                "synthetic fault itself is not counted as an "
+                                "experiment violation"),
+            }
+        },
         "deterministic": {"run_1": [], "run_2": [], "dd": 0,
                           "violation_count": 0},
     }
@@ -318,6 +374,23 @@ def main():
         "regression": {"pass": not baseline_fail,
                        "violation_count": baseline_fail},
     }
+    audit["assertions"]["L1"]["contract"] = {
+        "logical_state": ("each event completion at step t uses the frozen "
+                          "simulate_v3 five_tuple at the same decode step"),
+        "transition_shape": ("rehydrate requires prior externalized -> now "
+                             "resident; externalize requires prior resident "
+                             "-> now externalized"),
+        "decode_touch_mapping": ("the current node must be resident in the "
+                                 "frozen baseline state; after all Candidate "
+                                 "unit events at that decode step, both "
+                                 "(GDN,current)/(ATT,current) units must be "
+                                 "decode-ready. Intra-pair intermediate states "
+                                 "are not independent node events"),
+        "policy_difference_boundary": ("non-current unit residency may differ "
+                                       "from node-level frozen residency; this "
+                                       "is the allowed granularity-policy "
+                                       "difference, not an L1 violation"),
+    }
 
     for name, item in runs.items():
         baseline_rows = item["baseline_rows"]
@@ -326,6 +399,9 @@ def main():
             if layer == "L3":
                 bad = check(item["candidate_1"], item["baseline_states"],
                             item["baseline_metrics"])
+            elif layer == "L1":
+                bad = check(item["candidate_1"], item["baseline_states"],
+                            baseline_rows)
             else:
                 bad = check(item["candidate_1"], baseline_rows)
             audit["assertions"][layer]["violation_count"] += len(bad)
@@ -334,6 +410,14 @@ def main():
             if bad:
                 audit["assertions"][layer]["pass"] = False
             print(f"{name} {layer}: violations={len(bad)}")
+
+    l1_faults = l1_negative_check(runs["tree"]["candidate_1"],
+                                  runs["tree"]["baseline_states"],
+                                  runs["tree"]["baseline_rows"])
+    audit["negative_tests"]["L1"]["violation_count"] = len(l1_faults)
+    audit["negative_tests"]["L1"]["pass"] = bool(l1_faults)
+    print(f"L1 negative test: detected={bool(l1_faults)} "
+          f"violations={len(l1_faults)}")
 
     for name, item in runs.items():
         candidate_1, candidate_2 = item["candidate_1"], item["candidate_2"]
@@ -351,6 +435,8 @@ def main():
              + sum(audit["assertions"][x]["violation_count"]
                    for x in ("L1", "L2", "L3"))
              + audit["deterministic"]["violation_count"])
+    if not audit["negative_tests"]["L1"]["pass"]:
+        total += 1
     audit["FINAL"] = {"PASS": total == 0, "violation_count": total}
 
     out_dir = os.path.join(HERE, "runs", "NODES_OUT_RUNNER_AUDIT_20260922")
@@ -370,6 +456,9 @@ def main():
         item = audit["assertions"][layer]
         print(f"├── {layer}: pass={item['pass']} "
               f"violations={item['violation_count']}")
+    l1n = audit["negative_tests"]["L1"]
+    print(f"├── L1 negative test: pass={l1n['pass']} "
+          f"violations={l1n['violation_count']}")
     print(f"├── deterministic: dd={det['dd']} "
           f"violations={det['violation_count']}")
     print(f"└── FINAL: PASS={audit['FINAL']['PASS']} "
