@@ -2883,3 +2883,168 @@ Scale 不只是空间大小，也可以是时间、语义、任务、统计聚�
 本 checkpoint 不改变：Track B = CLOSED / FROZEN；Track E = CLOSED / SEALED；P3 / H-P1 / nodes-out 状态不变；P4 = NOT STARTED；RQ-F-01 = NOT DEFINED；STEP④ = PASS；STEP⑤ = UNSTARTED；无新 RQ；无实验；无 implementation / measurement authorization。
 
 **Research-gate effect: NONE.**
+
+
+## 26. Further analysis: transformation, allowed change, and identity persistence
+
+本轮沿 §25 的新问题继续向下：如果稳定性必须相对于 transformation 定义，那么“什么变化仍算同一个东西”就成为 Identity 的更深层问题。本文仍为概念分析，不进入 STEP⑤。
+
+### 26.1 变化不是 identity 的反面，而可能是 identity 的检验条件
+
+如果一个对象完全不允许变化，那么 identity continuity 其实没有被真正检验，因为没有 transition。更有信息量的问题是：在发生哪些变化之后，我们仍然能够合理地保持同一指称？
+
+因此可以暂时压缩为：
+
+Identity = continuity across allowed transformations
+
+这不是正式定义，但比“identity = 不变”更准确。
+
+### 26.2 必须区分三种变化
+
+1. Representational change：表示方式改变，但所关心的语义关系保持；
+2. State transition：对象内部状态发生合法变化；
+3. Identity-changing transformation：变化已经破坏当前 identity criterion，使原来的对象解释不再成立。
+
+因此：
+
+representation change ≠ identity change
+state change ≠ identity change
+
+但也不能反过来说 any state change → same identity。真正需要的是 transition criterion。
+
+### 26.3 “同一个东西”可能由允许变化的闭包定义
+
+若对象经历 S0 → S1 → S2 → …，并把一组 transformation 视为不破坏 identity，那么对象可以暂时理解为这些合法状态之间的 continuity class。关键不是每个 snapshot 都一样，而是每次 transition 都满足允许的 continuity constraints。
+
+这意味着 object identity 更接近一个跨状态关系，而不是静态属性。
+
+### 26.4 “允许变化”从哪里来？
+
+至少有三种可能来源：
+
+- Structural criterion：某些结构关系保持不变；
+- Functional / behavioral criterion：对相关操作仍保持预期行为连续性；
+- Historical / lineage criterion：存在明确因果、生命周期或 lineage，使后继状态成为合法延续。
+
+现实中三者可能共同参与：current structure + behavior + history。
+
+### 26.5 snapshot matching 为什么不够
+
+两个 snapshot 完全一样，仍不能保证它们是同一个对象；两个 snapshot 不一样，也不能说明它们不是同一个对象。
+
+因此：
+
+snapshot equality ≠ identity
+snapshot inequality ≠ different identity
+
+更合理的候选是：
+
+identity matching = current invariants + relational context + history + transition constraints
+
+### 26.6 一个更深的概念：transition semantics
+
+Transition semantics 描述一个结构从一个状态进入另一个状态时，哪些性质必须保持、哪些性质可以变化、哪些变化会产生新的对象解释。
+
+于是一个对象不只是 state，而可能是：
+
+state + allowed transitions + continuity constraints
+
+这与 Track B 已冻结的 bounded lifecycle 在概念上高度呼应，但不能把这个概念分析重新计入 Track B evidence。
+
+### 26.7 Representation independence 的重新解释
+
+Track B 在其测试 scope 内已经证明 logical state identity 可以与 physical representation 分离。从更一般的概念角度，这意味着强对象模型不应要求 identity = fixed representation，而可以允许 identity → representation_t1 → representation_t2 → representation_t3，只要 transition semantics 保持所要求的 continuity properties。
+
+这是对 Track B 的概念解释，不是新的 Track B finding。
+
+### 26.8 Object 与 Boundary 为什么不能完全等同
+
+如果一个对象能够跨越 Boundary_1 → Boundary_2 → Boundary_3，那么对象可能不是某个固定 boundary，而是一个跨 boundary transition 保持连续性的逻辑指称。
+
+因此：
+
+Object ≠ fixed boundary
+
+更可能是 Object → boundary_t，或者 Object → {boundary variants under context}。
+
+这使 Boundary 成为观察层结构，而 Object 成为跨观察/transition 的解释层结构。
+
+### 26.9 identity-changing transformation 可能比 identity 本身更可操作
+
+与其直接问“它们是不是同一个”，可能更容易问：从 S0 到 S1 发生了什么？哪些变化被允许？哪些连续性条件被破坏？
+
+即：
+
+S0 --T--> S1
+
+然后判断 T 是否属于允许的 transformation set。如果是，则保留 identity candidate；如果不是，则产生 identity split / new-object interpretation candidate。
+
+因此 identity 判断可能天然是一个 transition classification problem。
+
+### 26.10 Object boundary 可能是 transition semantics 的边界
+
+Boundary 不一定只是静态空间分界，也可以是 transition semantics 的分界：当某种变化跨过临界条件，原有 continuity constraints 不再成立，于是原来的 object interpretation 需要 split、merge 或重新解释。
+
+因此可以区分：
+
+boundary of state
+boundary of identity continuity
+
+二者可以重合，也可以不重合。
+
+### 26.11 Merge / Split 是 identity theory 的另一面
+
+one → many 发生时，需要判断一个对象是否分裂为多个对象、产生多个 lineage，或原对象结束而多个新对象开始。
+
+many → one 时，则可能是多对象合并、形成新的复合对象，或多个逻辑对象仅共享一个管理结构。
+
+因此 split / merge 不只是资源操作，也可能是 identity semantics 的基本问题。但不能因此假设 runtime 必须实现 object split/merge API；这里仍是概念层。
+
+### 26.12 与 Architecture 2.0 的方法论连接
+
+若未来 runtime 出现 stable relation → boundary → identity continuity → actionability，那么 operational abstraction 的形成可能不是 boundary exists → Unit exists，而是：
+
+boundary + transition semantics + identity continuity + action closure → operational object candidate
+
+进一步才可能出现 operational object → resource-specific semantics。
+
+因此 Unit 更像是具有特定 action semantics 的 identity-bearing abstraction，而不是物理内存粒度。
+
+### 26.13 当前更深的核心压缩
+
+Variation → Transformation → Allowed / tolerated change → Invariant / continuity constraints → Transition semantics → Identity continuity → Object interpretation → Action closure → Resource semantics
+
+这与此前的 Observation → Scale → Relevant variation → Invariant → Equivalence → Partition → Identity 并不是互相替代，而是两个视角：前者从变化出发，后者从观察与分类出发。
+
+### 26.14 更底层的问题
+
+现在问题进一步收缩为：
+
+> “允许变化”的边界究竟由什么决定？
+
+如果没有这个边界，所有变化都可能被认为是同一个对象，或者任何变化都可能产生新对象。因此 identity 不能只靠 invariant，可能还需要：
+
+Invariant + transformation model + continuity constraints + context
+
+这意味着 identity 本身可能是一个模型内部的判定关系，而不是直接可观察的 primitive。
+
+### 26.15 Negative knowledge added
+
+- no change ≠ identity；
+- state change ≠ identity change；
+- representation change ≠ identity change；
+- snapshot equality ≠ identity；
+- snapshot inequality ≠ different identity；
+- identity continuity ≠ static invariance；
+- boundary ≠ identity boundary；
+- fixed representation ≠ necessary identity condition；
+- split/merge operation ≠ necessarily object split/merge semantics；
+- observed transition ≠ implemented transition manager；
+- continuity candidate ≠ established objecthood；
+- Track B lifecycle evidence ≠ general transition theory proof。
+
+### 26.16 Governance
+
+本 checkpoint 不改变任何研究状态：Track B CLOSED/FROZEN；Track E CLOSED/SEALED；P4 NOT STARTED；RQ-F-01 NOT DEFINED；STEP④ PASS；STEP⑤ UNSTARTED；无新 RQ、无实验、无 implementation / measurement authorization。
+
+**Research-gate effect: NONE.**
