@@ -1,8 +1,28 @@
 # Research Dependency Map
 
-**Purpose:** 明确“哪些研究依赖哪些前置问题/知识”，防止关闭一个问题后自动推导出另一个问题已被回答。
+**Purpose:** 明确哪些研究依赖哪些前置问题/知识，防止关闭一个问题后自动推导另一个问题已被回答。
 
-## 1. Main research chain
+## 1. Current Architecture 2.0 dependency map
+
+```
+Model Architecture Features
+        ↓
+Computation
+        ↓
+Execution State
+        ↓
+State Characteristics
+        ↓
+Resource Behavior
+        ↓
+Loading / Residency / Layering / Working Set / Migration
+        ↓
+Runtime Architecture
+```
+
+这是一条当前研究方向链，不表示任何下游 RQ 已经注册或继承上游证据。
+
+## 2. Historical dependency
 
 ```
 Execution State (Track B)
@@ -16,106 +36,42 @@ H-P1
 nodes-out
         ↓
 Track E CLOSED
-        ↓
-P4 (independent future question)
 ```
 
-该链表达历史研究顺序与知识承接，不表示下游问题自动继承上游结论。
+该链仅用于 provenance 与知识承接。
 
-## 2. Current definition chain
+## 3. P4 dependency principle
 
-```
-Research Object
-   ↓
-Research Question
-   ↓
-Independence
-   ↓
-Estimand
-   ↓
-Existence Criterion
-   ↓
-Insufficiency / Negative Criterion
-   ↓
-Discriminating Power
-   ↓
-Information Value / Cost
-   ↓
-Path / Harness / Experiment
-```
+P4 的逻辑关系是：
 
-当前已通过 STEP④；STEP⑤尚未开始。
+`Architecture feature → Computation dependency → Execution State property → Resource behavior`
 
-## 3. Independent branches
+不是：
 
-```
-Track A  Kernel/Bandwidth
-   └── exp06 roofline gate
+`Architecture feature → Runtime unit`
 
-Track D  Adaptive Memory
-   └── independent definition / validation
+因此 P4 不需要预设 Model Unit，也不需要假设所有模型拥有统一物理 State layout。
 
-Track C  Multi-device
-   └── hardware + independent definition
+## 4. P4 Definition Gate
 
-Source/Runtime
-   └── current Definition / Opening gate
-```
+P4 必须独立经过：
 
-这些分支不能因为共享硬件、模型、工具或历史结果而自动合并。
+`Research Object → RQ → Independence → Estimand → Existence → Negative → Discriminating Power → Information Value → Experiment`
 
-## 4. Agent rule
+Track B 的历史结论可以作为约束或先验背景，但不能转移为 P4 结果。
 
-当 Agent 发现一个“看起来已经被以前研究回答”的问题时，必须先检查：
+## 5. Independent branches
+
+Track A、Track D、Track C 仍为独立未来/休眠分支；RQ-F-01 已退休；Boundary/Object/Identity 等概念线保留为历史资产。
+
+## 6. Agent rule
+
+当 Agent 发现一个“看起来已经被以前研究回答”的问题时，必须核对：
 
 - 是否为同一个 RQ；
 - 是否使用同一 estimand；
 - 是否处于同一 observation domain；
 - 是否有合法 provenance；
-- 是否存在 endpoint 对下游引用的明确授权。
+- 是否有 endpoint 明确授权。
 
-否则按“相关历史证据”处理，而不是“当前问题已回答”。
-
-
-## 5. 2026-09-22 revised dependency map
-
-The previous chain
-
-`Execution State → Residency / policy → P3 → H-P1 → nodes-out → Track E`
-
-is now treated as **historical provenance**, not the mandatory future route.
-
-The current Architecture 2.0 conceptual mainline is:
-
-`Execution State`
-→ `Residency / Loading`
-→ `Layering / Working Set`
-→ `Migration / Resource placement`
-
-with these governance boundaries:
-
-- Track B provides historical Execution State evidence but is CLOSED/FROZEN.
-- Track E and its sub-lines provide historical residency/policy evidence but are CLOSED/SEALED.
-- P4 / RQ-P4-01 is an independent future question, not an automatic continuation of Track E.
-- RQ-F-01 Source/Runtime boundary/unit existence candidate is retired as the current route; its prior STEP④ state does not transfer to P4.
-- Boundary/Object/Identity/Equivalence exploration is preserved as conceptual history and does not sit on the current dependency chain.
-- Track A, D, and C remain independent future/dormant branches.
-
-### 5.1 Dependency principle after the reset
-
-Historical evidence may constrain what is already known, but it does not force the next abstraction.
-
-The next question should be chosen from the **current stable architectural core**, not from the deepest branch previously explored.
-
-Thus:
-
-`stable Execution State abstraction`
-→ **candidate downstream architecture question**
-→ `independent Definition gate`
-
-rather than:
-
-`previous unfinished branch`
-→ `automatic continuation`
-
-**Research-gate effect:** none; P4 remains NOT STARTED.
+否则只能作为相关历史证据处理。
