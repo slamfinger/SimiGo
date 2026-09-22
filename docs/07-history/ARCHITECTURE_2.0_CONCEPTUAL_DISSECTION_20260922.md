@@ -424,3 +424,237 @@ runtime 可以观察到稳定结构，但没有独立控制能力。
 ## 13. Recovery sentence
 
 > “Track B 已证明 bounded Execution State lifecycle，但没有证明任何 universal Unit。当前应把 Execution State、Runtime Boundary、Operational Unit、Residency Unit、Sharding Unit、Management Unit 分层剖析，先研究 boundary 如何获得 objecthood 与 actionability，再讨论资源管理单位；STEP⑤ 尚未启动。”
+
+
+## 14. Further checkpoint: from boundary to objecthood
+
+上一轮分析进一步把当前问题压缩为：
+
+`runtime behavior → observed structure → boundary → objecthood → actionability → resource semantics → management abstraction`
+
+这里出现了一个比“Model Unit existence”更基础的未知：**Boundary 与 Objecthood 之间的逻辑跃迁是什么？**
+
+### 14.1 Boundary 仍然只是结构解释
+
+一个 boundary 可以表现为：
+
+- access/co-access 的结构分界；
+- residency transition 的结构分界；
+- migration/continuation 行为的分界；
+- execution identity/continuation association 的分界。
+
+但这些都只能说明：
+
+> “这里存在可区分的 runtime structure。”
+
+不能自动说明：
+
+> “这里存在一个独立对象。”
+
+### 14.2 Objecthood 的核心不是“有名字”，而是可独立指认
+
+暂时把 objecthood 理解为一个待定义的逻辑属性：
+
+> 在给定 observation domain 内，某个 boundary 所指向的结构是否能够被持续地指认为“同一个东西”，而不是仅仅在某次运行中出现的一组相关行为。
+
+这引入了一个关键区别：
+
+`pattern recurrence ≠ object identity`
+
+一次实验中反复出现某种结构，并不自动意味着存在稳定对象。
+
+因此未来必须区分：
+
+- **结构可重复**：类似结构在不同观察中出现；
+- **对象可追踪**：可以把某一实例在状态变化前后识别为同一个逻辑对象；
+- **对象可区分**：可以与相邻/其他对象区分；
+- **对象可解释**：其边界不是仅由分析者任意切出来的描述区域。
+
+这些目前都是概念候选，不是 STEP⑤ criterion。
+
+### 14.3 一个新的关键问题：identity 从哪里来？
+
+Track B 已经证明 Execution State 可以具有 identity，并且 representation 可以变化而不改变 state identity。
+
+但这并不证明：
+
+> runtime boundary 自己拥有 identity。
+
+因此需要严格区分：
+
+`Execution-State identity`
+
+与：
+
+`Boundary identity`
+
+与：
+
+`Operational-object identity`
+
+三者可能相同，也可能不同。
+
+尤其存在一种可能：
+
+`one Execution State → multiple runtime boundaries`
+
+以及：
+
+`multiple runtime structures → one operational object`
+
+因此不能从 Track B 的 identity 直接外推 boundary identity。
+
+### 14.4 Boundary → Objecthood 可能需要“跨状态保持”的能力
+
+如果一个所谓 boundary 只在：
+
+`state S0`
+
+中存在，而到了：
+
+`state S1`
+
+representation、residency 或 continuation 改变后完全无法对应，那么它更像一个 observation pattern，而不是对象。
+
+这提示一个重要的候选概念：
+
+> **objecthood may require cross-state referential continuity**
+
+也就是：
+
+> 在对象发生合法 runtime transition 后，仍然能够判断“这是同一个对象”。
+
+但这仍然只是概念候选，不能提前升级成 existence criterion。
+
+### 14.5 这与 Track B 的 representation/state identity separation 形成真正连接
+
+Track B 已经给出：
+
+`state identity ≠ physical representation`
+
+现在 Architecture 2.0 要继续问的可能是：
+
+`boundary identity ≠ physical representation ?`
+
+以及进一步：
+
+`operational-object identity ≠ physical representation ?`
+
+如果未来能够建立这种分离，那么 Architecture 2.0 的抽象层会出现一个非常重要的结构：
+
+`logical identity → changing runtime boundary / representation`
+
+而不是：
+
+`object = fixed memory region`
+
+这可能比“Model Unit”本身更基础。
+
+### 14.6 但 identity 仍不足以产生 actionability
+
+即使某个 boundary 可以跨状态被识别为同一个对象：
+
+`identity`
+
+仍然不意味着：
+
+`actionability`
+
+因为还需要问：
+
+> runtime 是否有语义上独立的动作可以作用于这个对象？
+
+因此暂时保留：
+
+`identity → objecthood`
+
+只是候选关系，而不是充分条件。
+
+更准确的结构仍是：
+
+`structure → boundary interpretation → objecthood? → actionability?`
+
+### 14.7 一个潜在的“最小对象”问题
+
+现在可以提出一个更尖锐的问题：
+
+> **如果把一个 runtime structure 切得更细或更粗，什么时候它仍然保持同样的 identity、transition semantics 与 action semantics？**
+
+这可能引出“最小充分对象”问题。
+
+但必须注意，它不能直接等同于：
+
+- 最小 tensor；
+- 最小 page；
+- 最小 segment；
+- 最小 layer；
+- 最小 memory block。
+
+“最小”必须是语义最小，而不是物理尺寸最小。
+
+因此暂时可以区分：
+
+`physical granularity`
+
+与：
+
+`semantic granularity`
+
+与：
+
+`operational granularity`
+
+三者不应默认相同。
+
+### 14.8 当前新的核心压缩
+
+本轮分析后，当前最值得保留的概念链是：
+
+`Observed Structure`
+→ `Boundary`
+→ **Does the boundary denote a persistent distinguishable identity?**
+→ `Objecthood`
+→ **Can independent semantically meaningful actions target it?**
+→ `Actionability`
+→ `Residency / Sharding / Compute semantics`
+→ `Management abstraction`
+
+因此当前未知已经从：
+
+> “Model Unit 是否存在？”
+
+进一步收缩为：
+
+> **runtime 中被观察到的 boundary，何时不再只是一个分析上的分区，而成为一个能够跨合法状态变化持续被指认、并可能承载独立动作语义的对象？**
+
+这仍然不是正式 Research Question。
+
+### 14.9 Negative knowledge added by this checkpoint
+
+本轮明确排除：
+
+- recurrence 不等于 identity；
+- identity 不等于 actionability；
+- boundary 不等于 object；
+- object 不等于 management unit；
+- physical granularity 不等于 semantic granularity；
+- semantic granularity 不等于 operational granularity；
+- Execution State identity 不等于 boundary identity；
+- representation stability 不是 objecthood 的必要前提，因为 Track B 已证明 identity 与 representation 可以分离。
+
+### 14.10 Governance
+
+本 checkpoint 不改变：
+
+- Track B = CLOSED / FROZEN；
+- Track E = CLOSED / SEALED；
+- P3 / H-P1 / nodes-out 状态不变；
+- P4 = NOT STARTED；
+- RQ-F-01 = NOT DEFINED；
+- STEP④ = PASS；
+- STEP⑤ = UNSTARTED；
+- 无新 RQ；
+- 无实验；
+- 无 implementation / measurement authorization。
+
+**Research-gate effect: NONE.**
