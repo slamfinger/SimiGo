@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP ② 外审 PASS，第③步解锁未启动）
+**Last updated**: 2026-09-22（STEP ③ 外审 PASS，待登记）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,9 +23,9 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        Definition / Opening（STEP ② PASS；第③步解锁未启动）
-Next action:  第③步：独立性论证（NOT STARTED；沿四问框架展开，见 §8）
-Gate status:  OPEN — STEP ② PASS（外审 2026-09-22）→ STEP ③ 解锁
+Phase:        Definition / Opening（STEP ③ 外审 PASS；待登记）
+Next action:  STEP ③ 登记；登记后方可解锁第④步
+Gate status:  OPEN — STEP ② PASS → STEP ③ 外审 PASS（待登记）
 RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完成）
 活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
               （§8.1 STEP ② PASS）
@@ -97,14 +97,14 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — STEP ② PASS（Q2.1 裁定 + C1 正式问句）→ STEP ③ 解锁
+Status:       OPEN — STEP ③ 外审 PASS（独立性论证完成；待登记）
 
 外审保留意见（对第②–④步有约束力）:
 - C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
 - 不得反向变成"runtime 能表达 → 合理研究对象"的 implementation-first 预设。
 
 Allowed:
-- 第③步：独立性论证（NOT STARTED），必须沿四问框架展开：
+- STEP ③ 登记：已完成四问独立性论证，外审 PASS，待仓库登记；
   ① 已有研究（Track B / P3 / H-P1 / nodes-out）各自知道了什么；
   ② 哪些已知推不出"真实 runtime 暴露 Model Unit 边界"；
   ③ 缺失的未知量究竟是什么；
@@ -122,7 +122,7 @@ Forbidden:
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
-- 第③步外审通过前进入第④步及以后
+- STEP ③ 登记前进入第④步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
