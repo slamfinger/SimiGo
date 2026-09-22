@@ -1033,3 +1033,476 @@ Boundary 不一定是世界最终边界。它首先可以理解为：**在当前
 本轮仍不改变：Track B = CLOSED / FROZEN；Track E = CLOSED / SEALED；P4 = NOT STARTED；RQ-F-01 = NOT DEFINED；STEP④ = PASS；STEP⑤ = UNSTARTED；无新 RQ；无实验；无 implementation / measurement authorization。
 
 **Research-gate effect: NONE.**
+
+## 17. Further checkpoint: invariant as the possible bridge between observation and identity
+
+这一轮继续只做概念分析，不进入 STEP⑤。前一轮把认知过程压缩为：
+
+`phenomenon → relation → invariant → structure → object → action`
+
+现在可以进一步追问：**为什么“规律”能够把原本离散的观察连接起来？**
+
+一个可能的答案不是“因为我们找到了同一个对象”，而是：
+
+> **因为我们发现了某种在不同观察之间保持稳定的关系或性质。**
+
+因此当前出现一个比 Objecthood 更基础、但又比单次 Relation 更强的候选概念：**Invariant（不变量 / 稳定关系）**。
+
+### 17.1 Invariant 不是“永远不变的东西”
+
+这里的 invariant 不应理解成物理世界中绝对静止的属性。
+
+更合适的抽象是：
+
+> 在给定 transformation、observation domain 与允许状态变化的条件下，某个关系、性质或约束保持足够稳定，使不同观察可以被解释为属于同一结构模式。
+
+因此：
+
+`invariant = stability under specified transformation`
+
+这一定义强调两个东西：
+
+1. **under what transformation**；
+2. **within what observation domain**。
+
+没有这两个限定，“不变量”很容易被说成世界本体。
+
+### 17.2 为什么 invariant 可能比 object 更基础
+
+考虑几个离散观察：
+
+`O1, O2, O3, O4`
+
+它们表面上可能完全不同。
+
+如果发现：
+
+`R(O1) ≈ R(O2) ≈ R(O3) ≈ R(O4)`
+
+那么首先得到的可能是：
+
+> “这里存在一个稳定关系。”
+
+之后才可能提出：
+
+> “也许这些观察都是同一个对象在不同状态下的表现。”
+
+所以：
+
+`observations → invariant → object interpretation`
+
+在逻辑上可能比：
+
+`observations → object`
+
+更少预设。
+
+这并不证明 invariant 必然先于 object，只说明它提供了一条更弱、也更开放的解释路径。
+
+### 17.3 同一个 invariant 可以跨不同对象
+
+这是非常关键的一点。
+
+假设两个对象：
+
+`A` 和 `B`
+
+完全不是同一个对象，但都满足某种关系：
+
+`I(A)=I(B)`
+
+那么 invariant 连接的是：
+
+> “它们具有同一结构规律”
+
+而不是：
+
+> “它们是同一个对象”。
+
+因此：
+
+`same invariant ≠ same object`
+
+这正好解释了为什么人类能够从大量不同现象中发现统一规律，而不需要把所有现象归并成一个对象。
+
+### 17.4 同一个对象也可能有多个 invariants
+
+反过来，一个对象可能同时表现出：
+
+- semantic invariant；
+- relational invariant；
+- continuation invariant；
+- resource invariant；
+- temporal invariant。
+
+因此：
+
+`one object → multiple invariants`
+
+这意味着 Objecthood 可能不是由单一 invariant 定义，而可能由一个 invariant set 共同支持。
+
+于是可以形成：
+
+`Object candidate ≈ closure of sufficient invariants`
+
+但“sufficient”目前仍未定义。
+
+### 17.5 Invariant 也可能只是观察尺度下的稳定性
+
+一个关系在当前分辨率下稳定，不代表在更高分辨率下仍然稳定。
+
+因此必须区分：
+
+`local / observational invariant`
+
+与：
+
+`global / ontological invariant`
+
+前者是当前研究可以谈的；后者通常需要远超当前 observation domain 的证据。
+
+这和前面“boundary ≠ ontology boundary”完全同构：
+
+`observed invariant ≠ universal invariant`
+
+### 17.6 Invariant 与 identity 的关系可能是“证据”，不是“定义”
+
+如果一个结构在合法状态变化中保持一组关键 invariants，那么这些 invariants 可以成为：
+
+> “这是同一个对象”的证据。
+
+但不能反过来说：
+
+> “只要 invariants 相同，就是同一个对象。”
+
+因为两个不同对象可能共享同样的 invariants。
+
+所以：
+
+`invariant similarity → identity evidence`
+
+而不是：
+
+`invariant similarity = identity`
+
+这一区别非常重要。
+
+### 17.7 一个更深的结构：identity 可能来自 invariant + history
+
+如果两个对象在某一时刻完全相同，仅凭当前状态无法区分：
+
+`A@S = B@S`
+
+但如果知道它们不同的历史：
+
+`History(A) ≠ History(B)`
+
+那么 identity 仍然可能不同。
+
+这说明 identity 可能依赖：
+
+`current invariants + relational context + history`
+
+而不是当前 snapshot 的属性集合。
+
+于是可以得到：
+
+> **对象身份可能不是 snapshot property，而是 path-dependent interpretation。**
+
+这对 Execution State 尤其有意义，因为 continuation 本身就是一种历史/路径信息。
+
+但同样必须避免反向外推：
+
+`has history → universal objecthood`
+
+并不成立。
+
+### 17.8 “同一性”可能是压缩后的解释
+
+人类面对：
+
+`O1, O2, O3, O4...`
+
+如果发现它们共享大量稳定关系，就可能用一个概念 X 来压缩：
+
+`O1,O2,O3,O4 → X`
+
+此时 X 可以被理解为：
+
+- 一个对象；
+- 一个类别；
+- 一个规律；
+- 一个过程；
+- 一个生成规则；
+- 一个约束集合。
+
+也就是说：
+
+> **压缩结果本身并不决定 ontology。**
+
+这可能是人类形成“对象”的一个重要认知机制：对象概念是对稳定关系集合的高效指称，而不一定是世界最底层实体的直接复制。
+
+### 17.9 由此重新理解 Boundary
+
+如果 invariant 是跨观察稳定的，那么 boundary 也可以被重新理解：
+
+> boundary 是使某组 invariants 在 observation domain 中发生可辨识变化的位置。
+
+因此：
+
+`Boundary ≈ change in observable invariant structure`
+
+这比“内存区域边界”或“tensor 边界”更一般。
+
+同时它解释了为什么 boundary 可能随观察能力改变：
+
+`observation capability ↑ → detectable invariant set ↑ → boundary interpretation may change`
+
+旧 boundary 并不一定“错误”，可能只是低维 observation 下的有效投影。
+
+### 17.10 Objecthood 可能是“足够不变量的闭包”
+
+沿这个方向，当前概念链可以进一步写成：
+
+`Phenomenon`
+→ `Observation`
+→ `Relation`
+→ `Invariant`
+→ `Stable Structure`
+→ `Boundary`
+→ `Identity interpretation`
+→ `Objecthood`
+→ `Actionability`
+
+其中：
+
+- Relation 连接观察；
+- Invariant 使连接在 transformation 下稳定；
+- Stable Structure 让多个观察可以被组织；
+- Boundary 标记结构发生可辨识变化的位置；
+- Identity interpretation 判断跨状态是否可视为“同一个”；
+- Objecthood 是一种更强的逻辑解释；
+- Actionability 才开始要求独立动作语义。
+
+这条链比：
+
+`Execution State → Model Unit`
+
+弱很多，但也因此更不容易把最终架构倒灌到基础概念。
+
+### 17.11 一个重要分叉：invariant 可以产生“类”，不一定产生“对象”
+
+如果很多现象共享 invariant，最自然的结果可能是：
+
+`Class / Category`
+
+而不是：
+
+`Object`
+
+例如“都满足关系 I”的一组结构，可以形成一个类别，但彼此仍然是不同对象。
+
+因此：
+
+`Invariant → Class`
+
+与：
+
+`Invariant → Object`
+
+是两条不同路径。
+
+这意味着 Architecture 2.0 未来甚至可能需要区分：
+
+- object identity；
+- structural class；
+- operational target。
+
+三者不能互相替代。
+
+### 17.12 再一个分叉：invariant 可以产生“规则”，而不是对象
+
+同一组观察还可能被解释成：
+
+`Rule`
+
+例如：
+
+`if A then B`
+
+这时统一发生在 transformation / causality / constraint 层，而不是 object 层。
+
+因此：
+
+`Invariant → Rule / Constraint`
+
+也可能比：
+
+`Invariant → Object`
+
+更基础。
+
+这进一步支持一个原则：
+
+> **不要为了得到 Unit，而强迫所有稳定结构都对象化。**
+
+有些结构最终可能只是：
+
+- relation；
+- invariant；
+- transformation rule；
+- constraint；
+- class；
+
+而根本没有必要成为 runtime object。
+
+### 17.13 当前最深的认识之一：对象化是一种解释选择
+
+如果从上述路径继续：
+
+`observations → relations → invariants → structure`
+
+到达这里时，人类可以有多个解释：
+
+A. 这是一个对象；
+B. 这是多个对象共享一个规律；
+C. 这是一个规则；
+D. 这是一个类别；
+E. 这是更高层结构的 projection。
+
+因此：
+
+> **Objecthood 不是观察之后唯一可能的认知结论。**
+
+它是多个可能解释中的一种，而且只有当后续行动需要“把它当作一个对象”时，object interpretation 才会获得更强的实用意义。
+
+### 17.14 这使 Actionability 获得新的位置
+
+如果 objecthood 是一种解释，那么 actionability 不是“证明对象存在”的最后一步，而更像：
+
+> **决定某种解释是否能够成为 runtime 中的独立操作目标。**
+
+于是：
+
+`object interpretation`
+
+和：
+
+`operational target`
+
+可以明确分开。
+
+一个东西可以被认知成对象，但如果任何语义动作都必须通过另一个更大的对象才能完成，它就未必是独立 operational unit。
+
+### 17.15 对 Architecture 2.0 的最深方法论提醒
+
+目前可以把整个认识压缩成：
+
+`Observation`
+→ **find relations**
+→ **find stable invariants**
+→ **construct structure**
+→ **interpret object / class / rule / constraint**
+→ **test actionability**
+→ **only then derive resource semantics**
+
+这条路径意味着：
+
+> **研究不应从“需要什么 Unit”开始，而应从“哪些稳定结构真实存在于观察中”开始。**
+
+这不是说最终一定没有 Unit，而是把 Unit 放回它应有的位置：**它是观察与解释之后可能出现的操作抽象，而不是观察之前的本体前提。**
+
+### 17.16 Negative knowledge added
+
+本轮进一步排除：
+
+- invariant ≠ object；
+- same invariant ≠ same object；
+- invariant similarity ≠ identity；
+- observed invariant ≠ universal invariant；
+- invariant ≠ ontology；
+- invariant set ≠ automatically sufficient identity criterion；
+- shared invariant ≠ shared lifecycle identity；
+- object interpretation ≠ operational target；
+- stable structure ≠ management unit；
+- relation unification ≠ object unification；
+- rule/constraint unification ≠ object unification；
+- compression/concept formation ≠ proof of underlying ontology；
+- history dependence ≠ universal objecthood。
+
+### 17.17 Governance
+
+本 checkpoint 仍然：
+
+- 不启动 STEP⑤；
+- 不注册 RQ；
+- 不执行实验；
+- 不实现 runtime；
+- 不采集 measurement；
+- 不修改 Track B / Track E / P3 / H-P1 / nodes-out / P4 状态；
+- 不把 invariant 正式注册为 Research Object。
+
+**Research-gate effect: NONE.**
+
+## 18. Current conceptual compression
+
+截至本 checkpoint，当前最稳健的概念链可压缩为：
+
+`Reality / runtime behavior`
+→ `Observations`
+→ `Relations`
+→ `Invariants`
+→ `Stable / observed structure`
+→ `Boundary`
+→ `Identity interpretation?`
+→ `Objecthood?`
+→ `Actionability?`
+→ `Resource semantics`
+→ `Residency / Sharding / Compute / Management`
+
+其中最重要的不是把每一层都证明成立，而是保持层与层之间的**非等价性**。
+
+特别是：
+
+`observation ≠ reality`
+
+`relation ≠ object`
+
+`invariant ≠ identity`
+
+`boundary ≠ ontology boundary`
+
+`objecthood ≠ actionability`
+
+`actionability ≠ resource usefulness`
+
+`resource usefulness ≠ universal architecture`
+
+当前因此不应问：
+
+> “我们已经找到了最终 Unit 吗？”
+
+而更适合问：
+
+> **“在有限观察能力下，我们凭什么认为一组离散现象属于同一个可持续结构？其中哪些不变量支持这种判断，哪些只是观察者的压缩与解释？”**
+
+这是当前概念分析最值得继续向下挖掘的地方。
+
+## Governance
+
+本文件仍是 conceptual / research-memory checkpoint，不是 Finding、Decision、RQ 或 implementation authority。
+
+Current state unchanged:
+
+- Track B = CLOSED / FROZEN；
+- Track E = CLOSED / SEALED；
+- P4 = NOT STARTED；
+- RQ-F-01 = NOT DEFINED；
+- STEP④ = PASS；
+- STEP⑤ = UNSTARTED；
+- 无新 RQ；
+- 无实验；
+- 无 implementation authorization；
+- 无 measurement authorization。
+
+**Research-gate effect: NONE.**
