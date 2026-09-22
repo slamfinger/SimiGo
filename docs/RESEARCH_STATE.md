@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP① 契约已接受；正式进入 STEP② Research Question 定义）
+**Last updated**: 2026-09-22（STEP② 首轮 RQ candidate 已形成；正在攻击 Rate–Decision-Loss frontier 的定义独立性）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -13,7 +13,7 @@
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP② Research Question
-Next action: 定义、压缩并对抗 P4-A Research Question；通过 STEP② acceptance gate 后再进入 STEP③
+Next action: 攻击 Rate–Decision-Loss frontier 对 Description Language 与 Decision Problem Family 选择的依赖；通过 STEP② acceptance gate 后再进入 STEP③
 Gate status: OPEN — STEP① contract accepted by human researcher; STEP② active
 RQ ID: 尚未分配（STEP② 定义中）
 当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
@@ -214,6 +214,29 @@ STEP② 当前只负责：
 
 若未来预定义 decision-problem family 被证明无法解析评估，才可单独开启 definition-stage executable artifact mini-gate；该 artifact 只能检验定义自洽性，不产生研究证据。STEP⑨ research harness 仍需注册 RQ 与后续设计门。
 
-**Current status:** STEP② OPEN / RQ DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+**Current status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
 
 **Next formal checkpoint:** STEP② Research Question definition/acceptance gate。
+
+## 13.2 P4-A STEP② 首轮 RQ candidate 与 Frontier 独立性攻击（2026-09-22）
+
+STEP① 契约已接受后，正式进入 STEP②。首轮 RQ candidate 被压缩为：
+
+> 在固定 Description Language 与预定义 Decision Problem Family 下，State representation 的描述成本与 Runtime Decision Loss 之间是否存在可重复、可区分的 Rate–Decision-Loss frontier？
+
+信息充分性必须受 Rate 约束，否则完整 State / L₀ 可平凡保留全部信息。当前采用候选形式 D*(R)=min over P with Rate(P)≤R of D(P)，以避免人为指定固定 K。
+
+Cross-architecture extension 暂不作为核心 RQ 前提，而是后续比较：frontier 是否具有可比较共性，以及其适用边界由 architecture、workload、resource regime 如何决定。
+
+### 当前 STEP② 首个攻击
+
+必须攻击：Rate–Decision-Loss frontier 是否只是由研究者选择的 Description Language L 与 Decision Problem Family 人为定义出来的数学对象，而不是 Architecture-induced phenomenon？
+
+其中分别检查：
+- Rate(P) 对 Description Language / primitive vocabulary 的依赖；
+- D(P) 对 decision family、workload prior、cost model 的依赖；
+- 所谓 frontier 的定性结构是否在预先允许的选择族中保持稳定。
+
+当前没有任何 robustness 结论；该问题仍处于概念攻击阶段。
+
+**Current status:** STEP② OPEN / RQ CANDIDATE UNDER ATTACK / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
