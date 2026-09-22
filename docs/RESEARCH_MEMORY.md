@@ -758,3 +758,18 @@ Provenance: Architecture 2.0 P4-A adversarial research, 2026-09-22.
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
 
 Provenance: Architecture 2.0 P4-A probe-set adversarial research, 2026-09-22.
+
+### RM-049 — Behavior Difference 不足以证明 Execution State Difference
+
+P4-A 当前不得从不同输出直接反推 State。行为应视为受 State、Continuation 与受控 Environment 共同影响；single-probe equality 不能证明 State equality，single-output difference 也不能证明 State difference。
+
+Execution State 获得研究资格至少需要更强的结构：在受控 continuation environment 中，存在可干预的 continuation-relevant information，改变该信息关系能够稳定改变一类未来 continuation behavior，并可与其他计算因素区分。
+
+边界保持：
+semantic continuation information ≠ physical representation ≠ physical resource；
+semantic existence ≠ physical persistence；
+physical persistence ≠ semantic necessity。
+
+若只能观察 Architecture A/B 的输出差异而无法建立 continuation scope、重复性、反事实干预及跨-probe稳定性，则不得升格为 Execution State Difference。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
