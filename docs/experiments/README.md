@@ -4,29 +4,51 @@
 
 实验的目的不是证明方案一定正确，而是用最小成本回答具体问题。
 
-## 推荐流程
+## 标准证据链
 
-```text
-假设
- ↓
-最小原型
- ↓
-真实硬件验证
- ↓
-正确性测试
- ↓
-性能测量
- ↓
-结论
+```
+Research Question / Problem
+        ↓
+Hypothesis
+        ↓
+Protocol
+        ↓
+Observation
+        ↓
+Evidence
+        ↓
+Result
+        ↓
+Conclusion
+        ↓
+Decision / Architecture
 ```
 
 实验成功也不意味着自动进入 Core。
 
 必须经过架构评审，并在需要时形成架构决策。
 
+## Experiment 最低要求
+
+每个重要实验至少应能够回答：
+
+- 它要验证什么？
+- 如何验证？
+- 观察到了什么？
+- 原始证据在哪里？
+- 结论的边界是什么？
+- 是否产生新的 Finding / Lesson？
+- 是否触发 Decision / Architecture 变化？
+
 ## 特别说明
 
 Batch、Paged KV、连续服务、推测解码等能力，在没有完成正确性与性能验证之前，应保持在实验层，不得反向污染核心架构。
+
+## 与 Research / Knowledge 的关系
+
+- [Research](../research/README.md) —— 研究问题与综合分析
+- [Knowledge](../knowledge/README.md) —— 从证据中沉淀的知识
+- [Decisions](../decisions/README.md) —— 需要长期约束的架构选择
 
 ## 演进路线图
 
