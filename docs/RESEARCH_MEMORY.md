@@ -864,3 +864,20 @@ P4-A 在固定 Description Language、Two-part MDL / 成本会计与 L₀ byte-d
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
 
 Provenance: Architecture 2.0 P4-A analytic encodability attack, 2026-09-22.
+
+
+### RM-056 — Static Derivability、架构边界探针与 Decision-Loss Gate
+
+P4-A 对 Analytic Encodability 进一步收缩为可机械审查的静态来源标准：一个从未运行过目标模型的 agent，应仅凭允许的静态架构/计算结构描述导出 Encoder_X。允许架构规格、声明式结构、计算语义、依赖/类型/shape 信息以及静态阅读源码；禁止执行后通过 trace、benchmark、memory behavior、migration/materialization behavior、decision labels 或 workload trace 发现/调整编码字段。核心约束是知识来源，而不是禁止 Architecture X → Encoder_X 的架构特异性。
+
+隐藏 architecture-family prior 应通过未来的架构多样性采样暴露：熟悉家族、结构不同的已知家族，以及至少一个编码者既有经验之外的架构或 purpose-built variant。若只在熟悉家族成立、面对新结构需大量人工修改，则应视为 applicability boundary，而不是 universal validity。该探针属于未来 STEP②–⑨ 设计约束，当前不授权实验。
+
+同时保留一个非二元候选：Architecture → analytic structural skeleton → minimal measured coefficients → projection → Runtime decision。状态结构字段可能较易静态解析，而 migration granularity、reconstruction order、reattach feasibility 等 transition/materialization 字段可能需要少量实测。若该模式成立，后续问题可从“是否完全 analytic”改写为“完成 analytic skeleton 所需的最小经验信息量”。成本层次保持 A_analytic + A_measurement 与 D_decision 分离。
+
+为避免 STEP① 把研究对象与完整实验协议混为一体，正式区分 Definition Layer 与 Evaluation-Constraint Layer。L、frozen decoder、L₀、A:D regime、analytic provenance requirement 属于对象定义；two-part accounting 的具体执行、decoder-in-the-loop、六项攻击目标的 operationalization、novel-architecture sampling、rate/distortion estimand、measurement budget/threshold 属于未来 STEP④–⑨ 的设计约束，当前仅保留 provenance。
+
+下一概念门固定为 **Decision-Loss Well-Definedness Attack**：在不引入 Runtime implementation 的前提下，Decision Loss D 是否能够被定义为非任意且足以区分 projection 的量。若可由形式化 decision model 给出，则继续定义；若必须引入 decision process / simulation / executable harness，则必须显式开启 Harness Authorization Gate，禁止因 D 难定义而隐式进入实现。
+
+**Status:** P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+**Provenance:** Architecture 2.0 P4-A static derivability / analytic skeleton / Decision-Loss Gate discussion, 2026-09-22.
