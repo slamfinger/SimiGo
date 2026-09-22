@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（增量泛化规划落盘；P4-A STEP① 继续）
+**Last updated**: 2026-09-22（记录 Execution-State-oriented Post-Training 假设；P4-A STEP① 继续）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -45,6 +45,10 @@ RQ ID: 未分配
 
 Model Architecture Features → Computation → Execution State → State Characteristics → Resource Behavior → Loading / Residency / Layering / Working Set / Migration → Runtime Architecture
 
+潜在反向研究路径（尚未验证）：
+
+Post-Training → Computation / Execution-State Behavior
+
 ## 5. Sealed / Closed
 
 Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 状态。历史路线不自动重开。
@@ -56,6 +60,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 | P4（RQ-P4-01） | NOT STARTED / NOT DEFINED | 仍须独立完成 Definition Gate |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 P4 重定义获得授权 |
+| Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 仅为概念资产；不创建新 RQ，不授权实验/实现/测量 |
 
 ## 7. Current gate
 
@@ -72,7 +77,8 @@ P4 / RQ-P4-01
 - 完成 P4-A STEP① 研究对象审查并形成 closure；
 - 读取历史 Track B / Track E 资产作为背景约束；
 - 历史资产盘点与 Architecture 2.0 概念复盘；
-- 研究“短周期、增量式、反例驱动”的跨模型泛化方法，但不把它注册为新 RQ。
+- 研究“短周期、增量式、反例驱动”的跨模型泛化方法，但不把它注册为新 RQ；
+- 保存新的、尚未注册的 Architecture 2.0 概念假设。
 
 ### Forbidden
 
@@ -83,7 +89,8 @@ P4 / RQ-P4-01
 - 预设 Universal Model Unit / Universal Physical State Representation；
 - 扩张为研究全部模型内部知识、语义、概率与表示；
 - 继续 RQ-F-01 Source/Runtime boundary/unit 路线；
-- 为了“通用”而预先加入未经真实架构反例迫使的抽象层。
+- 为了“通用”而预先加入未经真实架构反例迫使的抽象层；
+- 将 Execution-State-oriented Post-Training 假设直接视为成立的后训练方法或既定架构。
 
 ## 8. Definition Gate
 
@@ -99,13 +106,35 @@ Architecture 2.0 采用：
 
 详细规划：docs/07-history/ARCHITECTURE_2.0_INCREMENTAL_GENERALIZATION_PLAN_20260922.md
 
-## 10. 重要边界
+## 10. 新增概念假设：Execution-State-oriented Post-Training
+
+当前提出一条潜在反向路径：
+
+Post-Training → Computation / Execution-State Behavior → Resource Behavior → Runtime
+
+核心问题不是直接改变模型参数中的全部知识，而是：
+
+> 受控后训练数据/任务分布，是否能够稳定改变模型在目标任务分布下形成、使用、复用和终止 Execution State 的特征，并进一步改变资源行为？
+
+暂不注册为 RQ。重点约束：
+
+- 不把“高频/低频知识”直接等同于 State Frequency；
+- 区分 workload frequency、state activation frequency、state reuse frequency、state lifetime、resource occupancy；
+- 不假设 State 与知识类别一一对应；
+- 不声称受控数据能够唯一反推出完整模型架构；
+- 不声称后训练必然改善长上下文或多轮能力；
+- 先验证 repeatability → discriminability → directionality → resource effect → capability preservation → runtime leverage → cross-architecture generalization。
+
+详细记录：
+docs/07-history/ARCHITECTURE_2.0_EXECUTION_STATE_ORIENTED_POST_TRAINING_HYPOTHESIS_20260922.md
+
+## 11. 重要边界
 
 SimiGo 1.x product line ≠ SimiGo-Lab 2.0 research line。
 
 事实源优先级：Git 仓库（本文件 + endpoint 文档 + ledger + git log）> 对话记忆。
 
-## 11. 状态维护规则
+## 12. 状态维护规则
 
 1. 任何状态变更必须更新本文件并独立 commit；
 2. 本文件只记当前状态；
