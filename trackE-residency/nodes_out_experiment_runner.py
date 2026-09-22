@@ -45,16 +45,22 @@ def load_frozen_sim3():
     """Import simulator v3 from the audited commit, not the working tree."""
     blob = git("rev-parse", f"{BASELINE_COMMIT}:{BASELINE_REL}")
     text = git("show", f"{BASELINE_COMMIT}:{BASELINE_REL}")
+    lines = text.splitlines()
+    capture_lines = [i for i, line in enumerate(lines, 1)
+                     if line.strip() == "if len(resident) > budget:"]
+    if len(capture_lines) != 1:
+        raise RuntimeError(f"ambiguous baseline capture line: {capture_lines}")
+    capture_line = capture_lines[0]
     path = os.path.join(tempfile.mkdtemp(prefix="nodes-out-frozen-"), "sim3.py")
     with open(path, "w", encoding="utf-8") as f:
         f.write(text + "\n")
     spec = importlib.util.spec_from_file_location("frozen_sim3", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod, blob
+    return mod, blob, capture_line
 
 
-sim3, BASELINE_BLOB = load_frozen_sim3()
+sim3, BASELINE_BLOB, BASELINE_CAPTURE_LINE = load_frozen_sim3()
 C_EXT, C_REHY = sim3.C_EXT, sim3.C_REHY
 TRACE_NAME = {}
 
@@ -70,33 +76,71 @@ def make_traces():
     return traces
 
 
-def five_tuple(step, trace, kv_versions):
+def five_tuple(step, trace, kv_versions, last_access):
     nxt = trace[step + 1] if step + 1 < len(trace) else None
     versions = tuple(kv_versions)
+    access = tuple(last_access.get(n, -1) if hasattr(last_access, "get")
+                   else last_access[n] for n in range(N_NODES))
     return {
         "identity": RUN_IDENTITY,
         "position": step,
         "next_input": nxt,
         "kv_versions": versions,
-        "continuation": ("advance", trace[step], nxt, versions),
+        "continuation": ("advance", trace[step], nxt, versions, access),
     }
 
 
-def baseline_logical_steps(trace):
-    versions = [0] * N_NODES
-    rows = []
-    for step, node in enumerate(trace):
-        versions[node] += 1
-        rows.append(five_tuple(step, trace, versions))
-    return rows
+def frozen_state_row(frame, trace):
+    """Capture the frozen simulate_v3 locals after capacity enforcement."""
+    local = frame.f_locals
+    step = local["step"]
+    last_access = dict(local["last_access"])
+    freq = dict(local["freq"])
+    return {
+        "step": step,
+        "resident": tuple(sorted(local["resident"])),
+        "externalized": tuple(sorted(local["externalized"])),
+        "last_access": last_access,
+        "kv_versions": tuple(freq.get(n, 0) for n in range(N_NODES)),
+        "ext_count": local["ext_count"],
+        "rehy_count": local["rehy_count"],
+        "violations": local["violations"],
+    }
+
+
+def frozen_five_tuple(trace, state):
+    return five_tuple(state["step"], trace, state["kv_versions"],
+                      state["last_access"])
 
 
 def run_baseline(trace):
-    m = sim3.simulate_v3("lru", trace, B_NODES, C_EXT, C_REHY, H=8)
+    states = []
+
+    def tracer(frame, event, arg):
+        if (event == "line" and frame.f_code.co_name == "simulate_v3"
+                and frame.f_lineno == BASELINE_CAPTURE_LINE):
+            states.append(frozen_state_row(frame, trace))
+        return tracer
+
+    previous_tracer = sys.gettrace()
+    sys.settrace(tracer)
+    try:
+        m = sim3.simulate_v3("lru", trace, B_NODES, C_EXT, C_REHY, H=8)
+    finally:
+        sys.settrace(previous_tracer)
+
+    state_ok = len(states) == len(trace)
+    if state_ok:
+        state_ok = all(row["step"] == step for step, row in enumerate(states))
+        last = states[-1]
+        state_ok = state_ok and (
+            m["ext"] == last["ext_count"] and m["rehy"] == last["rehy_count"]
+            and m["violations"] == last["violations"]
+            and m["resident_final"] == len(last["resident"]))
     j, rehy, ext = FROZEN_LRU[TRACE_NAME[id(trace)]]
-    ok = (m["violations"] == 0 and round(m["J"], 1) == j
+    ok = (state_ok and m["violations"] == 0 and round(m["J"], 1) == j
           and m["rehy"] == rehy and m["ext"] == ext)
-    return m, ok
+    return m, states, ok
 
 
 class CandidateA:
@@ -107,6 +151,7 @@ class CandidateA:
         self.units = {(kind, n): {"res": False, "last": -1, "ver": 0}
                       for n in range(N_NODES) for kind in ("GDN", "ATT")}
         self.logical_versions = [0] * N_NODES
+        self.logical_last_access = [-1] * N_NODES
         self.events = []
         self.steps = []
         self.violations = []
@@ -117,6 +162,7 @@ class CandidateA:
     def run(self):
         for step, node in enumerate(self.trace):
             self.logical_versions[node] += 1
+            self.logical_last_access[node] = step
             for kind in ("GDN", "ATT"):
                 unit = (kind, node)
                 state = self.units[unit]
@@ -144,7 +190,8 @@ class CandidateA:
 
             if sum(state["res"] for state in self.units.values()) > B_UNITS:
                 self.fail(step, "resident units exceed budget")
-            self.steps.append(five_tuple(step, self.trace, self.logical_versions))
+            self.steps.append(five_tuple(step, self.trace, self.logical_versions,
+                                         self.logical_last_access))
         return self
 
     def final(self):
@@ -175,9 +222,16 @@ def step_checks(run, baseline_steps):
             if candidate != baseline]
 
 
-def terminal_checks(run, baseline_steps):
-    bad = [] if run.steps[-1] == baseline_steps[-1] else [
+def terminal_checks(run, baseline_states, baseline_metrics):
+    baseline = frozen_five_tuple(run.trace, baseline_states[-1])
+    bad = [] if run.steps[-1] == baseline else [
         {"msg": "terminal five_tuple != baseline"}]
+    last = baseline_states[-1]
+    if (last["ext_count"] != baseline_metrics["ext"]
+            or last["rehy_count"] != baseline_metrics["rehy"]
+            or last["violations"] != baseline_metrics["violations"]
+            or len(last["resident"]) != baseline_metrics["resident_final"]):
+        bad.append({"msg": "terminal frozen state != frozen aggregate"})
     if run.final()["resident_units"] > B_UNITS:
         bad.append({"msg": "terminal resident units > budget"})
     return bad
@@ -210,6 +264,7 @@ def main():
             "GDN": GDN_KIB, "ATT": ATT_KIB, "seed": SEED,
             "nodes": N_NODES, "trace_len": TRACE_LEN,
             "budget_nodes": B_NODES, "budget_units": B_UNITS,
+            "capacity_model": "equal unit slots; KiB disclosed, not weighted",
         },
         "assertions": {
             layer: {"pass": True, "violation_count": 0, "by_workload": {}}
@@ -221,13 +276,16 @@ def main():
     baseline_fail = 0
 
     for name, trace in traces.items():
-        baseline, ok = run_baseline(trace)
+        baseline, baseline_states, ok = run_baseline(trace)
         baseline_fail += not ok
         print(f"baseline {name}/lru: J={baseline['J']:.1f} "
               f"rehy={baseline['rehy']} ext={baseline['ext']} "
               f"regression={'OK' if ok else 'FAIL'}")
         runs[name] = {
-            "baseline_logical": baseline_logical_steps(trace),
+            "baseline_metrics": baseline,
+            "baseline_states": baseline_states,
+            "baseline_rows": [frozen_five_tuple(trace, state)
+                              for state in baseline_states],
             "candidate_1": CandidateA(trace).run(),
             "candidate_2": CandidateA(trace).run(),
         }
@@ -237,14 +295,39 @@ def main():
         "commit": BASELINE_COMMIT,
         "blob": BASELINE_BLOB,
         "source": f"git show {BASELINE_COMMIT}:{BASELINE_REL}; temp-file import",
+        "execution_state": {
+            "method": ("sys.settrace direct runtime capture of frozen "
+                       "simulate_v3 locals after capacity enforcement"),
+            "capture_line": BASELINE_CAPTURE_LINE,
+            "capture_line_text": "if len(resident) > budget:",
+            "reimplementation_used": False,
+            "by_workload": {
+                name: {
+                    "captured_steps": len(item["baseline_states"]),
+                    "terminal": {
+                        "resident_count": len(item["baseline_states"][-1]["resident"]),
+                        "externalized_count": len(item["baseline_states"][-1]["externalized"]),
+                        "ext_count": item["baseline_states"][-1]["ext_count"],
+                        "rehy_count": item["baseline_states"][-1]["rehy_count"],
+                        "violations": item["baseline_states"][-1]["violations"],
+                    },
+                }
+                for name, item in runs.items()
+            },
+        },
         "regression": {"pass": not baseline_fail,
                        "violation_count": baseline_fail},
     }
 
     for name, item in runs.items():
+        baseline_rows = item["baseline_rows"]
         for layer, check in (("L1", event_checks), ("L2", step_checks),
                              ("L3", terminal_checks)):
-            bad = check(item["candidate_1"], item["baseline_logical"])
+            if layer == "L3":
+                bad = check(item["candidate_1"], item["baseline_states"],
+                            item["baseline_metrics"])
+            else:
+                bad = check(item["candidate_1"], baseline_rows)
             audit["assertions"][layer]["violation_count"] += len(bad)
             audit["assertions"][layer]["by_workload"][name] = {
                 "pass": not bad, "violation_count": len(bad)}

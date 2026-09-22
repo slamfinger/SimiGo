@@ -50,6 +50,34 @@
   "baseline": {
     "blob": "ff6d4e21df40db800e64bd5c949c39b3d77d22aa",
     "commit": "17bde28",
+    "execution_state": {
+      "by_workload": {
+        "hot": {
+          "captured_steps": 2000,
+          "terminal": {
+            "ext_count": 684,
+            "externalized_count": 20,
+            "rehy_count": 696,
+            "resident_count": 12,
+            "violations": 0
+          }
+        },
+        "tree": {
+          "captured_steps": 2000,
+          "terminal": {
+            "ext_count": 1003,
+            "externalized_count": 20,
+            "rehy_count": 1015,
+            "resident_count": 12,
+            "violations": 0
+          }
+        }
+      },
+      "capture_line": 135,
+      "capture_line_text": "if len(resident) > budget:",
+      "method": "sys.settrace direct runtime capture of frozen simulate_v3 locals after capacity enforcement",
+      "reimplementation_used": false
+    },
     "regression": {
       "pass": true,
       "violation_count": 0
@@ -90,12 +118,13 @@
     "GDN": 61440,
     "budget_nodes": 12,
     "budget_units": 24,
+    "capacity_model": "equal unit slots; KiB disclosed, not weighted",
     "nodes": 32,
     "seed": 42,
     "trace_len": 2000
   },
   "runner": {
     "path": "trackE-residency/nodes_out_experiment_runner.py",
-    "sha256": "edfbbdd13f9300a7f214cc5fb870060771d11e919153cfbdc8986d49f6b5b651"
+    "sha256": "84ba8cde43e1679ae8f09c4eaca448d5fa7bef7d1bbcdaf3b17b7993a2024c67"
   }
 }
