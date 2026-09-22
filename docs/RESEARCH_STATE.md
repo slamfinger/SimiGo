@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP ③ 外审 PASS 登记，第④步解锁未启动）
+**Last updated**: 2026-09-22（STEP ④ estimand 外审 PASS 登记）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,15 +23,17 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        Definition / Opening（STEP ③ PASS；第④步解锁未启动）
-Next action:  第④步：estimand 定义（NOT STARTED）
-Gate status:  OPEN — STEP ③ PASS（外审+登记 2026-09-22）→ STEP ④ 解锁未启动
+Phase:        Definition / Opening（STEP ④ PASS；第⑤步解锁未启动）
+Next action:  第⑤步：existence criterion 定义（NOT STARTED）
+Gate status:  OPEN — STEP ④ PASS（外审+登记 2026-09-22）→ STEP ⑤ 解锁未启动
 RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完成）
 活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
               （§8.1 STEP ② PASS）
               docs/SOURCE_RUNTIME_INDEPENDENCE_ARGUMENT_v0.1.md
               （§8.1 STEP ③ PASS；论证落档 d79a82f，外审 PASS 登记 a6924c1）
               docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md（STEP ① PASS）
+              docs/SOURCE_RUNTIME_ESTIMAND_DEFINITION_v0.1.md（STEP ④ PASS；
+              外审记录 docs/SOURCE_RUNTIME_ESTIMAND_REVIEW_20260922.md）
 ```
 
 ## 2. 状态词汇表（禁止跨阶段推理）
@@ -99,7 +101,7 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — STEP ③ PASS（独立性论证）→ STEP ④ 解锁未启动
+Status:       OPEN — STEP ④ PASS（estimand）→ STEP ⑤ 解锁未启动
 
 外审保留意见（对第②–④步有约束力）:
 - C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
@@ -111,17 +113,22 @@ STEP ③ 外审收紧（对后续各步有约束力）:
 - RM-005 / 访问模式原则的未来状态不得提前判定；若真实 runtime 暴露
   unit，只能进入"支持 / 限定 / 否定"的后续评价，不得预设"验证成功"。
 
+STEP ④ 外审结论:
+- 首版 estimand 因将 existence property 嵌入目标集合而 RETURN FOR REVISION；
+- 修订后以 `B(M,W,O)` 表示 runtime boundary structure，不再按"已满足
+  Model Unit 存在条件"筛选候选边界；
+- 外审 PASS，仅表示 STEP ④ 定义充分，不表示任何 Model Unit 已存在；
+- STEP ⑤ existence criterion 尚未定义。
+
 Allowed:
-- 第④步：estimand 定义（NOT STARTED）。
-- 引用 STEP ② / STEP ③ 外审保留意见作为自查约束
+- 第⑤步：existence criterion 定义（NOT STARTED）。
+- 引用 STEP ②–④ 外审意见作为自查约束
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
 - 把 Q2.1 裁定当成 RQ ID 分配，或宣称 RQ 定义已完成
 - 把四道 RQ 资格门当成第③–⑧步已完成的证明
-- 以重复 Q2.1 四道门充当第③步独立性论证
-  （Q2.1 证明的是候选资格与最小性；第③步要证明的是研究独立性——两事不可混同）
-- 把 STEP ③ PASS 当作第④–⑨步已完成，或宣称 RQ 定义已完成
+- 把 STEP ④ PASS 当作第⑤–⑨步已完成
 - 把 STEP ③ 负向出口表述成"runtime 不存在自然粒度"的全局结论
 - 预设 RM-005 / 访问模式原则的未来验证结果
 - 把 Opening 对象边界当作研究问题答案，或预选任何候选族
@@ -129,7 +136,7 @@ Forbidden:
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
-- 第④步外审通过前进入第⑤步及以后
+- STEP ⑤外审通过前进入第⑥步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
