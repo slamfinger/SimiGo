@@ -830,3 +830,18 @@ Execution State = 面向继续计算与 Runtime resource decisions 的、可被�
 下一关键问题：低复杂度/低维到底如何定义，且 complexity notion 是否与 Runtime decision utility 真正相关。
 
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-054 — Rate-Distortion 只能在预固定 Description Language 下成立
+
+P4-A 将“低复杂度”候选进一步收缩为固定 Runtime-side description language 下的 code length（rate），并以 Runtime resource-decision loss 作为 distortion 的 task-relative rate-distortion 候选。Description language 必须先于观察架构-specific projection 而固定，否则复杂度定义可能被 projection 反向优化。
+
+但固定语言本身仍需继续攻击：opaque primitive 可能把复杂度藏进 decoder / ontology / external knowledge；language expressivity 会改变码长；encoder 可能利用 architecture-specific prior；短码可能只是语义搬运而非 decision-relevant information compression。
+
+同时确认 projection utility 受 deployment regime 影响：architecture adaptation cost 近似 O(A)，per-decision instrumentation/inference/translation cost 近似 O(D)，因此价值依赖 A:D。若最终 B（局部成立），应把 task × architecture family × workload × resource regime 的 applicability boundary 作为主要发现，而不是只报告局部成立。
+
+当前下一攻击固定为 Description Language Attack；仍处 STEP①，不创建 RQ、不授权实验。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+Provenance: Architecture 2.0 P4-A description-language / rate-distortion attack, 2026-09-22.
