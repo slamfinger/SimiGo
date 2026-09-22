@@ -10,6 +10,22 @@
 
 > **为什么 SimiGo 最终决定这样设计？**
 
+## 证据链
+
+```
+Research / Observation
+        ↓
+Experiment / Evidence
+        ↓
+Finding / Lesson
+        ↓
+ADR / Decision
+        ↓
+Architecture / Invariant
+```
+
+决策可以来自工程事故、实验，也可以来自 SimiGo-Lab 的研究结论；但必须能够回溯依据。
+
 ## 建议格式
 
 ```text
@@ -20,15 +36,16 @@
 候选方案
 最终决定
 理由
+证据
 代价
 影响范围
-关联经验 / 实验 / 基准
+关联研究 / 经验 / 实验 / 基准
 ```
 
 ## 晋升规则
 
-```text
-Lesson
+```
+Lesson / Finding
   ↓
 Evidence
   ↓
@@ -36,6 +53,12 @@ ADR
 ```
 
 只有已经有充分证据、并且需要长期约束后续实现的选择，才进入这里。
+
+## 与 Research / Knowledge 的关系
+
+- [Research](../research/README.md) —— 为什么我们知道
+- [Knowledge](../knowledge/README.md) —— 已沉淀的知识层级
+- [Architecture](../architecture/README.md) —— 当前系统是什么
 
 ## 已归档决策
 
