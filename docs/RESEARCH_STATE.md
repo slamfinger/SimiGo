@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP ② Q2.1 裁定：C1 = 最小研究对象；文档 DRAFT 待外审）
+**Last updated**: 2026-09-22（STEP ② 外审 PASS，第③步解锁未启动）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,12 +23,12 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        Definition / Opening（STEP ② 进行中：Q2.1 已裁定）
-Next action:  STEP ② 文档外审（Q2.1 裁定 + C1 问句；PASS 后方进入第③步）
-Gate status:  OPEN — STEP ② Q2.1 裁定 C1 = 最小研究对象（C2 / C1×C2 DORMANT）
+Phase:        Definition / Opening（STEP ② PASS；第③步解锁未启动）
+Next action:  第③步：独立性论证（NOT STARTED；沿四问框架展开，见 §8）
+Gate status:  OPEN — STEP ② PASS（外审 2026-09-22）→ STEP ③ 解锁
 RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完成）
 活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
-              （DRAFT / EXTERNAL QUESTION-DEFINITION REVIEW REQUIRED）
+              （§8.1 STEP ② PASS）
               docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md（STEP ① PASS）
 ```
 
@@ -97,28 +97,32 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — STEP ② Q2.1 裁定落档（C1 = 最小研究对象）→ 文档外审中
+Status:       OPEN — STEP ② PASS（Q2.1 裁定 + C1 正式问句）→ STEP ③ 解锁
 
 外审保留意见（对第②–④步有约束力）:
 - C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
 - 不得反向变成"runtime 能表达 → 合理研究对象"的 implementation-first 预设。
 
 Allowed:
-- STEP ② 文档外审（Q2.1 裁定 + C1 正式问句）
-- （STEP ② 外审 PASS 后）第③步：独立性论证——在 C1 对象空间内
-  论证所选问题为何独立，不得引用 Opening 当答案
-- 引用外审保留意见作为第②步自查约束
+- 第③步：独立性论证（NOT STARTED），必须沿四问框架展开：
+  ① 已有研究（Track B / P3 / H-P1 / nodes-out）各自知道了什么；
+  ② 哪些已知推不出"真实 runtime 暴露 Model Unit 边界"；
+  ③ 缺失的未知量究竟是什么；
+  ④ 解决该未知量为什么形成新的知识状态。
+- 引用外审保留意见作为自查约束
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
 - 把 Q2.1 裁定当成 RQ ID 分配，或宣称 RQ 定义已完成
 - 把四道 RQ 资格门当成第③–⑧步已完成的证明
+- 以重复 Q2.1 四道门充当第③步独立性论证
+  （Q2.1 证明的是候选资格与最小性；第③步要证明的是研究独立性——两事不可混同）
 - 把 Opening 对象边界当作研究问题答案，或预选任何候选族
 - runtime implementation / harness construction
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
-- STEP ② 外审通过前进入第③步及以后
+- 第③步外审通过前进入第④步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
