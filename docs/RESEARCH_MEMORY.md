@@ -805,3 +805,14 @@ LLM 并不因此获得特殊地位；真正可能有价值的是跨架构比较�
 若后续不能证明该关系产生普通 computation dependency / program state 之外的新解释力，P4-A 应关闭或并回普通计算架构研究。
 
 Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+
+### RM-052 — Future Not Fully Fixed 不能单独证明 Continuation Dependency 独立性
+
+P4-A 最后攻击“未来尚未确定”这一独立性依据。显式分支状态机、外部输入、概率转移、LLM token continuation 都可由普通 State + Transition Relation 表达，因此 future-not-fixed、多分支、概率未来均不足以证明新的基础计算抽象。
+
+因此 Execution State 不应再主张为新的基础计算对象。保留的合理形式是：**跨计算架构的共同语义投影候选**。其价值不是理论新颖性，而是是否能跨物理 representation 比较 lifecycle/resource properties，并降低 Runtime 对具体模型实现的耦合。
+
+最终生死条件：共同语义维度是否自然出现、是否非人工硬编码、是否具有可验证的信息价值、是否能解释/预测 Runtime resource behavior；若不能，Execution State 主线应关闭或重新定义。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
