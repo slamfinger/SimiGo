@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP② 已接受；正式进入 STEP③ Independence）
+**Last updated**: 2026-09-22（STEP③ Independence PASS；正式进入 STEP④ Estimand）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -12,10 +12,10 @@
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP② Research Question
-Next action: 攻击 Achievable Static Frontier 的对象独立性、参数独立性、跨架构独立性、Track B 边界与 Runtime 实现独立性；完成 STEP③ 后再进入 STEP④
-Gate status: OPEN — STEP① contract accepted by human researcher; STEP② active
-RQ ID: 尚未分配（STEP② 定义中）
+Phase: Architecture 2.0 / P4 Redefinition / STEP④ Estimand
+Next action: 定义 Achievable Static Frontier 的精确、可识别、非任意 estimand，并明确 scope、parameterization、robustness/uncertainty 与 negative criteria；完成 STEP④ 后再进入后续 existence / discriminating-power gates
+Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ independence passed; STEP④ active
+RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
 
 ## 2. 状态词汇表
@@ -64,11 +64,11 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 ## 7. Current gate
 
-P4 / RQ-P4-01
+P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
-- STEP② Research Question：OPEN / DEFINITION IN PROGRESS
-- STEP③ Independence：未开始
-- STEP④ Estimand：未开始
+- STEP② Research Question：ACCEPTED / GATE PASSED
+- STEP③ Independence：PASS
+- STEP④ Estimand：OPEN / DEFINITION IN PROGRESS
 - STEP⑤–⑨：未开始
 
 ### Allowed
@@ -214,9 +214,9 @@ STEP② 当前只负责：
 
 若未来预定义 decision-problem family 被证明无法解析评估，才可单独开启 definition-stage executable artifact mini-gate；该 artifact 只能检验定义自洽性，不产生研究证据。STEP⑨ research harness 仍需注册 RQ 与后续设计门。
 
-**Current status:** STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+**Current status:** STEP④ OPEN / ESTIMAND DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
 
-**Next formal checkpoint:** STEP② Research Question definition/acceptance gate。
+**Next formal checkpoint:** STEP④ estimand definition/acceptance gate。
 
 ## 13.2 P4-A STEP② 首轮 RQ candidate 与 Frontier 独立性攻击（2026-09-22）
 
@@ -253,3 +253,22 @@ STEP③ 的核心问题是 Independence：
 - 是否依赖特定 Runtime、MLX-LM 或物理状态布局。
 
 当前状态：**STEP③ OPEN / INDEPENDENCE ANALYSIS IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION**
+
+
+## 16. P4-A STEP③ Architecture Independence PASS 与 STEP④ 开放（2026-09-22）
+
+STEP③ Architecture Independence 经攻击后正式通过。测量管线采用 slot separation：L、D、S、normalization、Pi_W 为固定 rule slots；architecture static description、encoder output、R_oracle,X 与 model instance 为 input slots；per-X task redefinition 为 forbidden slot，必须为空。
+
+形成硬规则：架构差异只能通过输入值进入，不得通过重新定义任务语义进入。若冻结 L/D 无法在某架构上实例化，合法出口为 **task not evaluable at this granularity**，不得 per-X 修改任务语义。可评估性劣后于跨架构可比性。
+
+原强 X-discrimination lemma 被否决为过强。当前采用 X anti-vacuity witness：只要求存在一个不依赖 frontier 结果、在定义层可构造的架构输入差异，使共享 measurement functional 在 admissible description space 上非常数；不要求所有不同 X 都产生不同 frontier。组件结构化 X1 与单体描述 X2 的 toy witness 已完成三禁审计：不偷结果、不改框架、不依赖测量。
+
+STEP③ PASS 不证明跨架构 transfer、共同 frontier 形状、低码率 projection 或 Runtime 价值，只证明 X 可作为共享、frame-indexed measurement functional 的真实输入索引。
+
+### STEP④ 开放
+
+STEP④ 仅负责：把接受的 RQ candidate 压缩为精确、可识别、非任意的 estimand，并明确 scope、parameterization、robustness/uncertainty treatment 与 negative criteria。当前不授权 STEP⑤–⑨、Runtime、harness、profiling、data collection 或 measurement。
+
+**Current status:** STEP④ OPEN / ESTIMAND DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+
+**Next formal checkpoint:** STEP④ estimand definition/acceptance gate。
