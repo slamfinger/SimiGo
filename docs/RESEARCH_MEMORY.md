@@ -1,162 +1,140 @@
 # SimiGo-Lab Research Memory Layer
 
-> Purpose: preserve high-value research insights, architectural hypotheses, forks, and long-horizon questions that emerge during discussion before they become formal research questions or conclusions.
+> High-value memory from long-term discussion, especially informal “题外话”, that may influence future SimiGo 2.0 architecture or research direction.
 >
-> This document is not an authority for current research state. RESEARCH_STATE.md remains authoritative for state, RQ status, gates, and legal next actions.
+> This file is **not** the source of current project state. `RESEARCH_STATE.md` remains authoritative.
 
-## 1. Why this layer exists
+## 1. Purpose
 
-Long-term research does not grow as a linear sequence of experiments. Important architectural directions can emerge in informal discussion, including “题外话”, then later become research questions, design constraints, or architecture principles.
+Research is not only a sequence of experiments. Important architecture ideas can appear before a formal RQ exists.
 
-The memory layer preserves the origin and evolution of those ideas without prematurely promoting them to facts.
+This layer preserves only ideas with durable value:
 
-Core lifecycle:
-
-discussion / 题外话
+```
+题外话 / discussion
         ↓
-insight
+important insight
         ↓
-fork / candidate direction
+fork / hypothesis
         ↓
-research definition
+future definition
         ↓
-registered RQ
-        ↓
-evidence
-        ↓
-architecture knowledge
+RQ / evidence / architecture knowledge
+```
 
-Most ideas should terminate before reaching an RQ. Termination is a valid research outcome.
+Most conversation is intentionally excluded. A memory item belongs here only if losing it could make a future researcher misunderstand why SimiGo took a particular direction.
 
-## 2. Memory types
+## 2. High-value memories
 
-### 2.1 Insight
+### RM-001 — Research is a branching tree
 
-A useful observation or conceptual connection that may matter later.
+SimiGo-Lab should be understood as a research tree, not a linear roadmap.
 
-Status:
-- HISTORICAL
-- CANDIDATE
-- PROMOTED
-- SUPERSEDED
+A discussion can create several plausible branches. Some become experiments, some become dead ends, and some remain dormant.
 
-An insight is not a conclusion merely because it is recorded here.
-
-### 2.2 Fork
-
-A point where one research line produced multiple plausible directions.
-
-A fork records:
-- parent question/context;
-- trigger;
+The research tree therefore needs to preserve:
+- the parent idea;
+- the point of divergence;
 - candidate branches;
-- why each branch was considered;
-- later disposition.
+- why a branch continued or stopped.
 
-A branch may become an RQ, remain dormant, or become a dead end.
+Git preserves the implementation/evidence history; this layer preserves the intellectual branching history.
 
-### 2.3 Architecture hypothesis
+**Status:** CANDIDATE / METHOD INSIGHT
 
-A hypothesis about how SimiGo 2.0 could be structured.
+### RM-002 — Model decomposition and sharding are first-class research objects
 
-Examples include:
-- model decomposition / layering;
-- model sharding and residency boundaries;
-- whether useful residency units can be defined from access patterns rather than upstream semantic labels;
-- whether a mechanism can operate without depending on upstream semantic information;
-- whether the current architecture theory remains valid when translated from the abstract model into a real runtime.
+For a real large model, the unit used by SimiGo does not necessarily have to equal the model's semantic unit.
 
-These are hypotheses until independently defined and evidenced.
+Potential boundaries include:
+- layer/block;
+- tensor/tensor slice;
+- execution-state-associated object;
+- independently resident/migrated object;
+- group of objects with tightly coupled access behavior.
 
-### 2.4 Dead end
+The important future question is not “which unit is convenient to instrument?”, but:
 
-A direction that was investigated or considered and later rejected, closed, or rendered unnecessary.
+> What object has an independently meaningful residency, migration, execution-state, and cost identity?
 
-Dead ends are retained because they explain why later architecture does not follow an apparently obvious route.
+This may determine how a model should be layered and sharded for SimiGo.
 
-## 3. Initial high-value memory candidates
+**Status:** CANDIDATE / NOT AN RQ
 
-### RM-001 — Research itself is a branching system
+### RM-003 — Semantic hierarchy may differ from residency hierarchy
 
-The SimiGo-Lab research process should be understood as a tree rather than a linear roadmap.
+A model can have a semantic hierarchy such as:
 
-Execution-state fork/branch semantics provide a useful conceptual analogy: a research discussion can fork into multiple possible futures, while only some branches become formal research.
+```
+model → layer → block → attention / MLP → tensor
+```
 
-Implication:
-- Git commits preserve evidence and implementation history.
-- The research-memory layer preserves the intellectual branching history.
-- Closed/dead branches should remain discoverable rather than silently disappearing.
+SimiGo may need a different operational hierarchy:
 
-Status: CANDIDATE / ARCHITECTURE-METHOD INSIGHT
+```
+model
+  → residency unit
+      → migration unit
+          → execution-state unit
+```
 
-### RM-002 — Model decomposition and sharding are themselves research objects
+These two hierarchies may overlap, but they should not be assumed identical.
 
-A future SimiGo 2.0 investigation may need to ask how a large model is divided into meaningful residency / migration / execution units.
+**Architectural significance:** if true, SimiGo can define its mechanism around runtime behavior rather than hard-coding the upstream model's conceptual decomposition.
 
-Candidate dimensions include:
-- layer/block-level decomposition;
-- tensor or tensor-slice decomposition;
-- groups of objects sharing an access pattern;
-- units induced by runtime residency rather than by upstream model semantics;
-- sharding boundaries and their effect on migration/cost.
+**Status:** CANDIDATE / ARCHITECTURE HYPOTHESIS
 
-This is deliberately not a proposed implementation.
+### RM-004 — Can SimiGo work without upstream semantic dependency?
 
-The research question must first establish what constitutes an independently meaningful unit in the target runtime.
+A particularly important long-horizon question:
 
-Status: CANDIDATE / NOT AN RQ
+> If the current residency / execution-state theory is correct, does SimiGo actually need upstream semantic knowledge?
 
-### RM-003 — Can the architecture operate without upstream semantic dependency?
+Distinguish:
 
-A long-horizon architectural hypothesis:
-
-If the current residency / execution-state theory is correct, can the mechanism derive the information it needs from observable execution/access behavior rather than requiring semantic knowledge supplied by the upstream model/runtime?
-
-Potential distinction:
-
-Upstream semantic dependency
-    ↓
-“this object is layer X / attention / MLP / expert ...”
+```
+semantic-assisted
+    “this is layer X / attention / MLP / expert”
 
 versus
 
-Runtime-observable dependency
-    ↓
-“this unit was accessed / resident / migrated / reused ...”
+semantic-dependent
+    “the mechanism cannot work without knowing that”
+```
 
-The important question is not whether upstream semantics are useful. They may be.
+The stronger architecture would derive essential information from observable runtime behavior where possible:
 
-The question is whether they are architecturally necessary.
+```
+access
+residency
+migration
+reuse
+execution continuity
+```
 
-If the mechanism can remain effective without upstream semantic labels, that would materially affect:
-- portability;
-- coupling between model/runtime and residency system;
-- support for different model families;
-- abstraction boundaries;
-- feasibility of independent runtime integration.
+Upstream semantics may remain useful, but they would not be architecturally mandatory.
 
-This is a hypothesis only. No conclusion is registered.
+If this hypothesis survives future validation, it would materially affect portability, model-family coupling, abstraction boundaries, and runtime integration.
 
-Status: CANDIDATE / NOT AN RQ
+**Status:** CANDIDATE / NOT AN RQ
 
-### RM-004 — Access pattern may be a more fundamental boundary than semantic identity
+### RM-005 — Access pattern may determine the useful unit
 
-Existing research established an important methodological principle in the current abstract model:
+A key principle emerging from the abstract research is:
 
-useful granularity is determined by access pattern, not by strategy freedom.
+> useful granularity is determined by access pattern, not by strategy freedom.
 
-This memory item records the broader architectural possibility that the same principle may define model decomposition and sharding boundaries in a real runtime.
+The broader architectural hypothesis is that access/co-access behavior may be a more fundamental basis for residency and sharding boundaries than semantic labels.
 
-It must not be treated as a proven real-runtime result.
+This is not yet established for a real Swift/MLX runtime.
 
-Status: HISTORICAL PRINCIPLE → FUTURE VALIDATION CANDIDATE
+**Status:** HISTORICAL PRINCIPLE → FUTURE VALIDATION CANDIDATE
 
-### RM-005 — Abstract theory versus runtime embodiment
+### RM-006 — Abstract theory must be separated from runtime embodiment
 
-The current abstract research has established mechanisms in a controlled model. A separate future question is whether those mechanisms have observable counterparts in real Swift/MLX execution.
+There is a distinct chain between an abstract mechanism and a real runtime mechanism:
 
-This creates an explicit distinction:
-
+```
 abstract mechanism
       ↓
 runtime representation
@@ -166,55 +144,111 @@ runtime-observable state
 controllable mechanism
       ↓
 measurable effect
+```
 
-Failure at any transition is informative and does not automatically invalidate the upstream abstract result.
+A failure at one transition does not automatically invalidate the previous layer.
 
-Status: CANDIDATE / FUTURE RESEARCH DIRECTION
+This prevents a common research error: treating “we can model it” and “the runtime exposes it in a controllable form” as the same claim.
 
-## 4. Promotion rules
+**Status:** CANDIDATE / FUTURE RESEARCH DIRECTION
 
-A memory item may be promoted only when the appropriate research gate is opened.
+### RM-007 — “Unit discovery” precedes implementation choice
 
-Promotion must preserve provenance:
+Before building a Swift/MLX implementation, the research should establish what the real counterpart of the abstract unit is.
 
+Candidate real units may include:
+- layer/block;
+- tensor;
+- tensor slice;
+- allocator/memory region;
+- execution-state-associated object;
+- dynamically co-accessed group.
+
+The unit should be selected because it has the relevant mechanism semantics, not because it gives the easiest instrumentation.
+
+**Status:** CANDIDATE / PRE-DEFINITION
+
+### RM-008 — Semantic independence is stronger than semantic availability
+
+Upstream semantic information may be available and useful without being architecturally necessary.
+
+The meaningful architectural distinction is:
+
+```
+semantic-assisted
+        vs.
+semantic-dependent
+```
+
+This distinction should remain visible in future architecture discussions.
+
+**Status:** CANDIDATE / ARCHITECTURE HYPOTHESIS
+
+### RM-009 — “题外话” can be an architecture-origin event
+
+A casual discussion should normally disappear.
+
+It should enter this memory layer only when it:
+- changes a system boundary;
+- reveals a hidden variable;
+- proposes a fundamentally different decomposition;
+- explains a possible dead end;
+- creates a durable architecture hypothesis.
+
+Thus this file is intentionally **curated**, not a transcript archive.
+
+**Status:** PROCESS PRINCIPLE
+
+## 3. Promotion rule
+
+A memory item does not change project state.
+
+If it later becomes important enough to study:
+
+```
 Memory ID
    ↓
 Definition document
    ↓
 RQ ID
    ↓
-experiment / evidence
+Evidence
    ↓
-endpoint / closure
+Endpoint / Closure
+```
 
 Never silently convert:
 - hypothesis → fact;
-- registered prediction → result;
 - discussion → RQ;
+- registered prediction → result;
 - historical insight → current task.
 
-## 5. Relationship to current research state
+## 4. Authority boundary
 
-Current state remains governed exclusively by:
+Current research state is determined by:
 
-1. docs/RESEARCH_STATE.md
-2. current endpoint / closure documents
+1. `docs/RESEARCH_STATE.md`
+2. endpoint / closure documents
 3. experiment ledgers and evidence
-4. git history
+4. Git history
 
-This memory layer may suggest future questions, but it cannot open a research branch by itself.
+This file answers a different question:
 
-Current gate remains the Definition / Opening gate described by RESEARCH_STATE.md.
+> **What important ideas have emerged that may explain or shape the future architecture?**
 
-## 6. Future extension
+It may inform future research-question definition, but it cannot open a research branch by itself.
 
-When the volume grows, split this file into:
+## 5. Future structure
 
+If this layer becomes large, split it into:
+
+```
 docs/research_memory/
 ├── INDEX.md
 ├── insights/
 ├── forks/
 ├── architecture_hypotheses/
 └── dead_ends/
+```
 
-The index should preserve stable IDs and links so that an Agent can reconstruct not only where the project is, but also which intellectual branches produced that state.
+Stable RM IDs must survive any split so future Agents can reconstruct the intellectual tree.
