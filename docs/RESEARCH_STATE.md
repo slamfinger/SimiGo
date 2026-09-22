@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（CVSDR complete：`VSPACE_UNIQUELY_DETERMINED=FALSE`；minimal value-space declaration next）
+**Last updated**: 2026-09-23（MVSD complete：minimal required declaration is carrier/type family；no specific `V_j` selected）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Cost Value-Space Determinacy Complete（STEP⑤ NECT mode blocked）
-Next action: Minimal Value-Space Declaration Review：裁定使 `V_j` determinate 的最小声明；不得直接选择具体值空间
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Minimal Value-Space Declaration Complete（STEP⑤ NECT mode blocked）
+Next action: Value-Space Candidate Audit：逐一审查 finite scalar、extended scalar、vector、typed record 等候选是否有冻结证据支持或排除；不得直接选择
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_COST_VALUE_SPACE_DETERMINACY_REVIEW_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_MINIMAL_VALUE_SPACE_DECLARATION_REVIEW_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MFB-S TRUE / SIA COMPLETE / VSPACE NOT UNIQUELY DETERMINED / MINIMAL DECLARATION NEXT / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MFB-S TRUE / SIA COMPLETE / VSPACE NOT UNIQUELY DETERMINED / MVSD COMPLETE / CANDIDATE AUDIT NEXT / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / VSPACE NOT UNIQUELY DETERMINED / NECT MODE BLOCKED | 只允许审查 Minimal Value-Space Declaration，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MVSD COMPLETE / NO SPECIFIC V_J SELECTED / NECT MODE BLOCKED | 只允许进行 Value-Space Candidate Audit，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / VSPACE NOT UNIQUELY DETERMINED / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / NO SPECIFIC V_J SELECTED / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -83,6 +83,7 @@ P4 / RQ-P4-01 candidate
 - 建立全局 P4-A formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；
 - 使用已冻结 `B_min={Pair Formation,Function Slot,Application,Typed Equality}`；
 - 审查 Cost Value-Space Determinacy：STEP①–④ 是否唯一确定 `V_j`；
+- 审查并分离 `V_j` 的 carrier/type、admissible-value discipline、order、measurability、definedness 与 finiteness；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -113,6 +114,7 @@ P4 / RQ-P4-01 candidate
 - 把 Projection 或 Substitution 重新偷渡进 `B_min`，或在 minimal interface 下宣称 total/measurable/finite-valued function；
 - 在 Cost Value-Space Determinacy Review 前选择 `V_j` 的 finite scalar、extended scalar、vector、typed record 或具体 cost aggregation；
 - 从自然语言 “cost” 或后续 `D_loss>=0` 反向确定 `V_j`；
+- 把 carrier declaration、admissible-value discipline、order structure、measurability、definedness 或 finiteness 压缩成同一声明；
 - 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
@@ -170,6 +172,8 @@ MFB-SR 已按更窄裁定收口：`MINIMAL_FORMAL_BASIS_SUFFICIENT=TRUE`，但 `
 Semantic Instantiation Audit 已完成：MCSC formally well-formed，但 not semantically instantiated。字段裁定为 `J/A/W/W_D/C_j/C'_j/Binding_C=UNDERDECLARED`、`V_j=UNDECLARED`、`σ_D=STRUCTURALLY PLACED / SEMANTICALLY UNDERDECLARED`、`=_{V_j}=MINIMALLY DETERMINED`。`Binding_C` 不得被默认为求和；合法顺序必须从 value space 到 binding、semantic definition、definedness、finiteness、measurability、Risk。下一步是 Cost Value-Space Determinacy Review。
 
 Cost Value-Space Determinacy Review 已完成：`VSPACE_UNIQUELY_DETERMINED=FALSE`。自然语言 “cost”、cost-component hints 与 factorization equality 都只能确定 cost-related role 或 typed comparison position，不能确定 scalarity、order、finiteness、extendedness 或具体 carrier。后续 Risk 结构也不得反向补写 `V_j`。候选 finite scalar、extended scalar、vector、typed record 仅登记，不选择。下一步是 Minimal Value-Space Declaration Review。
+
+Minimal Value-Space Declaration Review 已完成：使 `V_j` determinate 的最小要求是声明 carrier/type family `(V_j)_{j∈J}`。Value discipline、order structure、measurability、definedness 与 finiteness 均为 separate layers。若未来选择 `V_j=[0,+∞)`，必须记录为新的 Value-Space Instantiation；若选择 extended scalar `[0,+∞]`，必须重新面对 IPR review。当前没有任何具体 `V_j` 被选择。下一步是 Value-Space Candidate Audit。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
