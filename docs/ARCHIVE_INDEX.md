@@ -10,6 +10,7 @@
 | 了解 Agent 行为约束 | [`AGENT_CONTEXT.md`](./AGENT_CONTEXT.md) |
 | 查看长期思想与候选假设 | [`RESEARCH_MEMORY.md`](./RESEARCH_MEMORY.md) |
 | 了解档案体系设计来源 | [`00-governance/ARCHIVE_ARCHITECTURE_INSPIRATIONS.md`](./00-governance/ARCHIVE_ARCHITECTURE_INSPIRATIONS.md) |
+| 了解现有资产如何映射到新档案体系 | [`07-history/LEGACY_ASSET_MAPPING_20260922.md`](./07-history/LEGACY_ASSET_MAPPING_20260922.md) |
 | 了解方向性架构文档 | [`architecture/`](./architecture/) |
 
 ## 2. 档案分层
@@ -29,7 +30,11 @@ docs/
 
 第一阶段只建立索引和分类入口，不要求立即搬迁已有文件。`track-*`、`exp-*` 与 `runtime2-skeleton/` 继续作为实验工作区保留。
 
-## 3. 证据链
+## 3. 现有资产映射
+
+`07-history/LEGACY_ASSET_MAPPING_20260922.md` 是当前逐项资产盘点入口。它只建立“原路径 → 档案层 → 当前状态 → provenance 约束”的映射，不执行文件移动，也不改变研究状态。
+
+## 4. 证据链
 
 ```text
 Question → Hypothesis → Design → Evidence → Finding → Decision → Architecture → Invariant / Closure
@@ -37,7 +42,7 @@ Question → Hypothesis → Design → Evidence → Finding → Decision → Arc
 
 所有链接应尽量指向具体文档、章节、Git commit 或其他可复核锚点；预测、计划、观察和结论不得混写。
 
-## 4. 当前阶段约束
+## 5. 当前阶段约束
 
 当前阶段与下一步动作以 [`RESEARCH_STATE.md`](./RESEARCH_STATE.md) 为准。档案重构不得：
 
