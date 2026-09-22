@@ -2245,3 +2245,468 @@ Reality / runtime behavior → Observation → Similarity → Equivalence / Part
 - 不把 Similarity / Equivalence / Identity 正式注册为 Research Object。
 
 **Research-gate effect: NONE.**
+
+
+## 24. Further checkpoint: what turns similarity into equivalence?
+
+本轮继续停留在概念层，不进入 STEP⑤。上一轮已经区分 Similarity、Equivalence、Identity。现在进一步追问：
+
+> **Similarity 到 Equivalence 之间究竟缺少什么？**
+
+初步判断，缺少的不是“更多相似度”，而是**判定结构**。
+
+### 24.1 Similarity 是描述，Equivalence 是关系规则
+
+Similarity 可以描述：
+
+> x 与 y 在当前特征空间中有多少共同性质。
+
+但它通常没有回答：
+
+> 哪些差异可以忽略？
+
+因此从 similarity 到 equivalence，至少需要加入：
+
+- observation domain；
+- task / purpose；
+- transformation set；
+- tolerated differences；
+- relevant consequences；
+- invariants。
+
+可以暂时压缩为：
+
+`Similarity + scope + invariance criterion + substitution rule → Equivalence`
+
+这里最重要的是 **scope** 与 **criterion**。
+
+所以不是：
+
+`similarity ↑ → equivalence`
+
+而更像：
+
+`similarity → candidate relation → rule specification → equivalence`
+
+### 24.2 “忽略差异”可能比“寻找共同点”更基础
+
+Similarity 关注共同点。
+
+Equivalence 却必须同时规定：
+
+> 哪些不同不影响当前问题。
+
+因此 equivalence 实际上包含一个“差异预算”或“差异屏蔽规则”。
+
+例如：
+
+`x = (a,b,c)`
+`y = (a,b,d)`
+
+如果任务只关心 a,b，则：
+
+`x ~ y`
+
+如果任务关心 c，则：
+
+`x ≁ y`
+
+所以同一个 pair 并不存在脱离 domain 的绝对 equivalence。
+
+这进一步支持：
+
+`equivalence = domain-relative substitutability`
+
+而不是：
+
+`equivalence = high similarity`
+
+### 24.3 Equivalence 的真正桥梁可能是“invariance under transformation”
+
+如果定义一组允许变化：
+
+`T`
+
+并要求某个关心性质 `P` 在这些变化下保持：
+
+`P(T(x)) = P(x)`
+
+那么我们实际上已经从“像不像”走向了：
+
+> **什么变化发生以后，我们仍然认为它没有改变所关心的结构？**
+
+这就是 invariant 的真正作用。
+
+因此一个更深的链可能是：
+
+`Observation → Similarity → Candidate invariants → Allowed transformations → Equivalence`
+
+而不是直接：
+
+`Similarity → Equivalence`
+
+### 24.4 这意味着 invariant 可能是 equivalence 的生成材料之一
+
+前面我们把 invariant 放在 identity 之前。
+
+现在可以进一步看到：
+
+> invariant 不只是 identity evidence，也可能是 equivalence relation 的构造基础。
+
+如果两个结构共享某组在允许 transformation 下保持的性质，那么可以定义：
+
+`x ~ y iff I(x)=I(y)`
+
+这里的 I 不是一定唯一，也不一定足够。
+
+因此必须保留：
+
+`same invariant signature ≠ same object`
+
+但同时：
+
+`invariant signature → equivalence candidate`
+
+可能是成立的概念路径。
+
+### 24.5 Equivalence 需要“什么结果算相同”
+
+另一条可能路径不是直接比较内部结构，而是比较结果：
+
+`Outcome(x,T) = Outcome(y,T)`
+
+如果对给定任务集合 `T`，替换 x 与 y 不改变关心的 outcome，那么：
+
+`x ~_T y`
+
+这是一种 behavioral / observational equivalence。
+
+于是 equivalence 的核心可以进一步抽象成：
+
+> **在指定变换与任务集合下，替换对象是否保持所有被关注的结果不变？**
+
+这会自然引出：
+
+`Substitutability`
+
+但必须小心：
+
+`substitutability ≠ identity`
+
+两个不同对象完全可以在某个任务域内互相替代。
+
+### 24.6 因此 Equivalence 有两个方向
+
+目前至少可以看到两类 equivalence：
+
+**Property-based equivalence**
+
+`I(x)=I(y)`
+
+即关心性质相同。
+
+**Behavior-based equivalence**
+
+`Outcome(x,T)=Outcome(y,T)`
+
+即关心行为/结果相同。
+
+二者可能一致，也可能不同。
+
+这意味着 runtime 里未来可能出现：
+
+`structural equivalence`
+`behavioral equivalence`
+`execution equivalence`
+`residency equivalence`
+`sharding equivalence`
+
+它们并不天然相同。
+
+### 24.7 更深一层：Equivalence 实际上在定义“观察的分辨率”
+
+如果我们规定：
+
+`x ~ y`
+
+意味着当前问题不要求区分 x 与 y，那么 equivalence relation 实际上就决定了：
+
+> **当前 observation domain 的有效 resolution 到哪里。**
+
+因此：
+
+`fine observation → finer partition`
+
+`coarse observation → coarser partition`
+
+Equivalence 可以理解为把观察空间压缩成若干 classes：
+
+`O → O / ~`
+
+这一步非常关键。
+
+它说明：
+
+> **Equivalence 是一种压缩操作。**
+
+但它不是任意压缩，而是保留当前任务所需性质的压缩。
+
+### 24.8 于是“概念形成”可以被重新理解
+
+人类从大量观察形成概念，可能经历：
+
+`many observations`
+→ `similarity detection`
+→ `invariant extraction`
+→ `equivalence grouping`
+→ `class / category`
+→ `object interpretation`
+
+这比简单的：
+
+`many observations → one concept`
+
+更精确。
+
+其中 equivalence grouping 做的是：
+
+> 把对于当前问题而言可以忽略的差异压缩掉。
+
+所以“概念”可能不是把很多东西简单命名成一个词，而是：
+
+> **建立一个允许替换、归并、预测或操作的等价结构。**
+
+### 24.9 但这里存在一个危险：压缩可能制造虚假的统一
+
+如果我们选择的 equivalence criterion 太粗：
+
+`x ~ y`
+
+可能把原本不同的结构错误合并。
+
+如果 criterion 太细：
+
+`x ≁ y`
+
+又可能把本来具有共同结构的现象拆散。
+
+因此存在：
+
+`under-grouping`
+与
+`over-grouping`
+
+两个方向。
+
+这意味着一个有效 equivalence relation 不只是“能够分类”，还必须回答：
+
+> **它为了当前任务保留了哪些信息，又丢弃了哪些信息？**
+
+这与 sufficiency 直接连接。
+
+### 24.10 Equivalence 与 sufficiency 的真正连接
+
+如果一个 equivalence class 中的所有成员，对于任务集合 T 都具有相同相关 outcome，那么这个 equivalence class 至少在 T 上具有某种：
+
+**behavioral sufficiency**
+
+即：
+
+> 不需要知道 class 内究竟是哪一个实例，也足以完成当前任务。
+
+于是：
+
+`Equivalence class → sufficient abstraction`
+
+但只在指定 domain/task 下成立。
+
+因此：
+
+`equivalence ≠ universal sufficiency`
+
+同一个 abstraction 可以：
+
+- 对 execution 足够；
+- 对 residency 不足；
+- 对 sharding 不足；
+- 对 management 更不足。
+
+这正好连接回 Architecture 2.0。
+
+### 24.11 这可能解释为什么不存在 universal Unit
+
+假设：
+
+`C_1 = O / ~_{execution}`
+
+形成 execution equivalence classes；
+
+`C_2 = O / ~_{residency}`
+
+形成 residency equivalence classes；
+
+`C_3 = O / ~_{sharding}`
+
+形成 sharding equivalence classes。
+
+如果：
+
+`C_1 ≠ C_2 ≠ C_3`
+
+那么要求一个 universal Unit 同时成为三个 domain 的最自然基本单位，本身就可能是错误的抽象要求。
+
+更合理的架构可能是：
+
+`Logical structures`
+↕
+`cross-domain mappings`
+↕
+`domain-specific operational abstractions`
+
+而不是一个 Unit 统治所有语义域。
+
+### 24.12 进一步出现“抽象之间如何映射”的问题
+
+如果不同 domain 有不同 equivalence partitions，那么下一问题就不再是：
+
+> “哪个 partition 才是真的？”
+
+而是：
+
+> **不同 partition 之间如何保持映射？**
+
+例如：
+
+`P_execution`
+与
+`P_residency`
+
+可能出现：
+
+- one-to-one；
+- one-to-many；
+- many-to-one；
+- many-to-many；
+- time-varying mapping。
+
+这非常有意思，因为它与 Track B 的 representation transition 有结构上的呼应：
+
+`one logical identity → changing representation`
+
+现在可能推广成：
+
+`one logical structure → different domain representations / partitions`
+
+但这只是概念类比，不是 Track B 的新证据。
+
+### 24.13 这里可能出现比 Unit 更基础的东西：Mapping
+
+如果 Architecture 2.0 最终不是一个 universal unit architecture，那么核心抽象可能不是：
+
+`Unit`
+
+而是：
+
+`Mapping`
+
+即：
+
+> **同一 runtime reality 在不同 observation / action / resource domains 中如何被映射成不同的结构划分。**
+
+可以暂时写成：
+
+`Reality`
+→ `P_execution`
+→ `P_residency`
+→ `P_sharding`
+→ `P_management`
+
+以及它们之间：
+
+`Mapping_{execution→residency}`
+`Mapping_{execution→sharding}`
+`Mapping_{residency→management}`
+
+这比 universal Model Unit 假设更弱，也更有容错性。
+
+### 24.14 但 Mapping 也不能过早对象化
+
+需要立即加入一个反向约束：
+
+> 发现 mapping ≠ runtime 已经拥有一个 mapping component。
+
+观察到两个 domain 的结构存在稳定对应，只能说明：
+
+> **存在可描述的关系。**
+
+它不意味着 runtime 中必须有：
+
+- mapper；
+- registry；
+- planner；
+- object table；
+- explicit handle。
+
+因此：
+
+`observed mapping ≠ implemented mapping mechanism`
+
+这与此前：
+
+`boundary observable ≠ controllable`
+
+属于同一层 governance discipline。
+
+### 24.15 当前新的核心压缩
+
+本轮可以把链条进一步压缩成：
+
+`Reality`
+→ `Observation`
+→ `Similarity`
+→ `Invariant / Transformation`
+→ `Equivalence`
+→ `Partition`
+→ `Discrimination`
+→ `Identity / Continuity`
+→ `Object interpretation`
+→ `Actionability`
+→ `Domain-specific resource semantics`
+
+而 Architecture 2.0 可能真正需要解决的是：
+
+> **同一 runtime reality 如何在不同 semantic domains 中形成不同但可映射的 equivalence partitions，以及这些 partitions 在什么条件下能够获得独立 action semantics。**
+
+这仍然是概念分析，不是正式 RQ。
+
+### 24.16 Negative knowledge added
+
+本 checkpoint 新增：
+
+- similarity ≠ high similarity threshold = equivalence；
+- equivalence ≠ universal sameness；
+- equivalence ≠ identity；
+- same invariant signature ≠ same object；
+- property equivalence ≠ behavioral equivalence；
+- behavioral equivalence ≠ logical identity；
+- equivalence class ≠ object；
+- coarse partition ≠ false；
+- fine partition ≠ true ontology；
+- equivalence ≠ universal sufficiency；
+- observed mapping ≠ implemented mapping mechanism；
+- different semantic partitions ≠ necessarily conflicting models；
+- one domain's abstraction ≠ universal runtime abstraction。
+
+### 24.17 Governance
+
+本 checkpoint 仍然：
+
+- 不启动 STEP⑤；
+- 不注册 RQ；
+- 不执行实验；
+- 不实现 runtime；
+- 不采集 measurement；
+- 不修改 Track B / Track E / P3 / H-P1 / nodes-out / P4 状态；
+- 不把 Equivalence、Partition 或 Mapping 正式注册为 Research Object。
+
+**Research-gate effect: NONE.**
