@@ -1,0 +1,17 @@
+=== Nodes-out Tier-1 mechanism accounting (/Users/mr.simi/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_TIER1_MECHANISM_20260922) ===
+-- hot --
+baseline regression=True candidate violations=0 deterministic_diff=0
+M08 rehy baseline=696 candidate=1392 (no cross-granularity comparison)
+M11 ext baseline=684 candidate=1368 (no cross-granularity comparison)
+M09 rehy KiB baseline=54459216 candidate=54459216
+M12 ext KiB baseline=53520264 candidate=53520264
+-- tree --
+baseline regression=True candidate violations=0 deterministic_diff=0
+M08 rehy baseline=1015 candidate=2030 (no cross-granularity comparison)
+M11 ext baseline=1003 candidate=2006 (no cross-granularity comparison)
+M09 rehy KiB baseline=79419690 candidate=79419690
+M12 ext KiB baseline=78480738 candidate=78480738
+binding={'runner_commit': 'f4d880efd4cac21e60a55688dd686b801f3b7044', 'contract_commit': '0918260c722a98a2c9b6ccaa94efb0ca9668d9ec', 'runner_sha256': 'ace241fc6ca22bd1dd40d2e6036662ae0b1e2e1564f49fe3a140900e26495f17', 'official_artifact_sha256': '556ab61f2fe39fdf0db0a392d2bc99496d6ba83b09fc9e427f481aac68216521', 'baseline_blob': 'ff6d4e21df40db800e64bd5c949c39b3d77d22aa', 'runner_sha_matches_official': True, 'baseline_blob_matches_official': True, 'hot_baseline_matches_official': True, 'hot_candidate_counts_match_official': True, 'tree_baseline_matches_official': True, 'tree_candidate_counts_match_official': True, 'all_source_and_artifact_checks_pass': True}
+FINAL={'mechanism_extraction_complete': True, 'effect_verdict': 'LOCKED', 'tier1_data_collection': 'COMPLETE_FOR_THIS_FROZEN_FACE'}
+artifact=/Users/mr.simi/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_TIER1_MECHANISM_20260922/tier1_mechanism_accounting.json
+report=/Users/mr.simi/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_TIER1_MECHANISM_20260922/TIER1_MECHANISM_ACCOUNTING_20260922.md
