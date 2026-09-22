@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A MCSC skeleton adopted：formal cost-signature positions frozen；semantic instantiation and value discipline open）
+**Last updated**: 2026-09-23（STEP④-A abstract field schema adopted；product/arrow formal semantics open，value discipline deferred）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Minimal Cost Signature Contract（STEP⑤ NECT mode blocked）
-Next action: 攻击并逐项填充 MCSC skeleton 的 abstract field declarations；不选择 value discipline、measurability 或 `C` binding form
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Abstract Field Declaration Audit（STEP⑤ NECT mode blocked）
+Next action: 裁定 MCSC 的 product-position semantics 与 arrow semantics；完成前不得进入 value discipline、Risk review 或 NECT
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_MINIMAL_COST_SIGNATURE_CONTRACT_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_ABSTRACT_FIELD_DECLARATION_AUDIT_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCSC SKELETON ADOPTED / COST SIGNATURE INSTANTIATION OPEN / FINLOSS NOT UNIQUELY DETERMINED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCSC SKELETON ADOPTED / ABSTRACT FIELD SCHEMA ADOPTED / PRODUCT-ARROW SEMANTICS OPEN / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCSC SKELETON ADOPTED / NECT MODE BLOCKED | 只允许完成 MCSC field declarations，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / ABSTRACT FIELD SCHEMA ADOPTED / NECT MODE BLOCKED | 只允许完成 MCSC product/arrow formal semantics，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / STEP④-A MCSC SKELETON ADOPTED / COST SIGNATURE INSTANTIATION OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / STEP④-A ABSTRACT FIELD SCHEMA ADOPTED / PRODUCT-ARROW SEMANTICS OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -79,7 +79,7 @@ P4 / RQ-P4-01 candidate
 - 采用并攻击 `R_s^fin/R_s^nofin` domain partition 与 `F_s^fin:R_s^fin->[0,+infinity)`；
 - 裁定 `FinLoss(P,theta)` definition 与 `R_s^nofin` residual status；
 - 完成 STEP④ loss object completion：声明 `C/R/D_loss` codomain、expectation/inf conditions、oracle value discipline 与 excess-loss value discipline；
-- 填充并攻击 MCSC skeleton：`J`、`A/W/W_D` carrier symbols、`V_j` symbols、`C_j/sigma_D/C'_j` signatures、typed equality 与 reserved `Binding_C` field；
+- 审查并冻结 MCSC abstract field schema 的 product-position semantics 与 arrow semantics；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -104,6 +104,7 @@ P4 / RQ-P4-01 candidate
 - 为进入 `R_s^nofin` 而重新引入 `+infinity` loss value，或在 Review-3 前宣布 NECT 只能定义于 `R_s^fin`；
 - 在 `FinLoss` 未被 STEP④ 唯一确定前裁定 Review-2、Candidate 1/3 或 NECT mode；
 - 在 cost signature 未冻结前选择 `V_j` 的 finite/extended/vector/typed discipline、measurability，或用 natural-language cost terms 直接充当 `J`；
+- 在 product/arrow semantics 未声明前假定 total function、set-theoretic product、`W_D=W`、shared `V_j` 或具体 component cardinality；
 - 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
@@ -149,6 +150,8 @@ STEP④-A Cost Object audit 已完成：`C_OBJECT_COMPLETE=FALSE`。现有 frame
 Cost Signature audit 进一步判定 `COST_SIGNATURE_UNIQUELY_DETERMINED=FALSE`。自然语言 hints `recomputation/migration/capacity` 不能直接当作 `J`；`A/W` 仅为符号，`W_D` 缺失，`V_j` 未声明，`C_j/sigma_D/C'_j` 仅为 symbol-level，equality space 与 `C` binding 未声明。下一步只能冻结最小 signature contract；value discipline 与 measurability 继续 deferred。
 
 Minimal Cost Signature Contract skeleton 已采纳。它只冻结 formal positions：`J/A/W/W_D/(V_j)/(C_j)/sigma_D/(C'_j)/(=_{V_j})/Binding_C`，并给出 typed signatures `C_j:A×W→V_j`、`sigma_D:W→W_D`、`C'_j:A×W_D→V_j`。这不选择 `J` 成员、value discipline、measurability 或 `Binding_C` 的组合形式；semantic instantiation 仍 open，STEP④-B blocked。
+
+Abstract Field Declaration Audit 已裁定 MCSC 可作为 well-formed placeholder schema，但不添加 substantive structural constraints。`J` 的 cardinality/nonemptiness、component uniqueness、carrier instantiation、`V_j` discipline、equality notion 与 `Binding_C` kind 均 deferred。新发现的 formal gaps 是 `PRODUCT_POSITION_SEMANTICS=UNDERDECLARED` 与 `ARROW_SEMANTICS=UNDERDECLARED`；完成二者前不得进入 value discipline 或 Risk review。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
