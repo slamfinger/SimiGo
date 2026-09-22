@@ -446,6 +446,119 @@ This is a conceptual direction, not a named implementation architecture.
 
 **Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
 
+
+### RM-029 — Intelligence is not identical to its physical carrier
+
+A long-horizon abstraction separates:
+
+model semantics ≠ logical executable state ≠ physical resident representation.
+
+Physical memory is a temporary computational carrier, not intelligence itself. This distinction allows future research to ask what must be resident for a given execution frontier rather than treating the entire logical model as permanently resident.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Forbidden inference:** this does not prove arbitrary model state can be non-resident while preserving execution.
+**Status:** DURABLE ARCHITECTURE HYPOTHESIS
+
+### RM-030 — Memory Manager may need to become Execution Manager
+
+A future runtime may need to manage not only bytes and ownership, but execution state, residency, migration, reuse, continuation, and lifecycle.
+
+The conceptual shift is: memory management → execution-aware resource management.
+
+The significance is a possible change in the control boundary, not a requirement to create a class named ExecutionManager.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-031 — Residency is a state, not merely an operation
+
+load/unload is too weak as a long-horizon abstraction. An execution unit may be non-resident, materializing, resident, shared/partial, migrating, evicting, or recoverable while retaining logical identity.
+
+Therefore residency may need state-machine semantics rather than isolated memory operations.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-032 — Residency should ideally be predictive
+
+A stronger future mechanism is: execution frontier → future access/co-access estimate → working-set prediction → residency planning → materialize/migrate/evict.
+
+The objective is to prepare physical residency for upcoming execution rather than reacting only after memory pressure occurs.
+
+**Forbidden inference:** prediction quality, instrumentation cost, and migration economics remain unvalidated.
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-033 — Planner may unify Execution State, Residency, and Compute
+
+A long-horizon Architecture 2.0 architecture may place a Planner above three coupled concerns: Execution State, Residency/Memory, and Compute.
+
+The Planner would reason about what execution units are needed, what should be resident, what can be reused/forked, and what computation should occur or be deferred.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Forbidden inference:** this is not authorization for the current Runtime2 skeleton to implement a Planner.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-034 — Runtime Sharding can be behavior-derived
+
+Traditional sharding often starts from deployment-time semantic structure. A future runtime may instead derive operational groups from access/co-access behavior: access graph → co-access groups → operational units → dynamic residency/migration groups.
+
+Thus sharding may be a runtime consequence of execution behavior rather than only a static model-deployment decision.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-035 — Execution-State Sharding may be more fundamental than Model Sharding
+
+The object worth independently managing may be a decomposable part of Execution State rather than a model tensor or layer.
+
+Candidate boundaries include continuation, access, residency, migration, sharing/COW, and recomputation dependencies.
+
+This extends the earlier unit-discovery principle from model structure to execution structure.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-036 — A computation result can be a reusable execution asset
+
+An expensive computation can be treated as producing an asset with a lifecycle: Create → Reuse → Fork → Continue → Migrate → Materialize → Evict → Restore → Discard.
+
+This reframes execution state from passive cache data into a managed resource whose future value can be preserved or discarded.
+
+**Forbidden inference:** Track B only establishes a bounded tested lifecycle; it does not validate every operation in this long-horizon chain for production runtimes.
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS
+
+### RM-037 — Fork is one lifecycle operation, not the final abstraction
+
+The durable abstraction should not terminate at state → fork. A reusable Execution State may need create, continue, fork, share, migrate, materialize, evict, restore, and discard semantics.
+
+The deeper research question is lifecycle preservation of identity, continuation, mobility, and resource manageability.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-038 — Optimize for minimum sufficient working set, not minimum memory
+
+The long-horizon target is not simply min(memory), but a working set sufficient for correctness and useful execution while accounting for latency, migration, recomputation, safety, and concurrency costs.
+
+Conceptually: minimum sufficient working set.
+
+This turns residency from a memory-saving trick into an execution-planning problem.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision, 2026-09-22.
+**Status:** FUTURE ARCHITECTURE HYPOTHESIS / NOT AN RQ
+
+### RM-039 — The research object must not be defined by the current upstream API
+
+The absence of a concept from a current MLX/Swift API does not establish that the concept does not exist at the system level.
+
+The intended order remains: theoretical object → runtime-observable boundary → existence criterion → independent observation → implementation path.
+
+This prevents current API boundaries from silently becoming the definition of the research object.
+
+**Provenance:** Architecture 2.0 Long-Horizon Vision and prior source/runtime boundary work, 2026-09-22.
+**Status:** DURABLE RESEARCH-METHOD INSIGHT
 ## 3. Promotion rule
 
 A memory item does not change project state.
