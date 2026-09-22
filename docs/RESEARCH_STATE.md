@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何“项目到哪了”的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（记录 P4-A Static Derivability / Decision-Loss Gate；STEP① 继续）
+**Last updated**: 2026-09-22（STEP① 契约已接受；正式进入 STEP② Research Question 定义）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -12,10 +12,10 @@
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / Pre-definition
-Next action: 完成 P4-A STEP① 研究对象逐项审查；通过后再进入 STEP②
-Gate status: CLOSED — 旧 Source/Runtime 定义链停止；P4 尚未完成 RQ 定义
-RQ ID: 未分配
+Phase: Architecture 2.0 / P4 Redefinition / STEP② Research Question
+Next action: 定义、压缩并对抗 P4-A Research Question；通过 STEP② acceptance gate 后再进入 STEP③
+Gate status: OPEN — STEP① contract accepted by human researcher; STEP② active
+RQ ID: 尚未分配（STEP② 定义中）
 当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4_REDEFINITION_20260922.md
 
 ## 2. 状态词汇表
@@ -38,7 +38,7 @@ RQ ID: 未分配
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | NOT STARTED / NOT DEFINED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP② DEFINITION IN PROGRESS / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -65,8 +65,8 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 ## 7. Current gate
 
 P4 / RQ-P4-01
-- STEP① 研究对象：WORKING DEFINITION / 审查中
-- STEP② Research Question：未开始
+- STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
+- STEP② Research Question：OPEN / DEFINITION IN PROGRESS
 - STEP③ Independence：未开始
 - STEP④ Estimand：未开始
 - STEP⑤–⑨：未开始
@@ -74,7 +74,8 @@ P4 / RQ-P4-01
 ### Allowed
 
 - 继续 P4 概念定义；
-- 完成 P4-A STEP① 研究对象审查并形成 closure；
+- 正式定义、压缩并对抗 P4-A Research Question；
+- 完成 STEP② acceptance gate；
 - 读取历史 Track B / Track E 资产作为背景约束；
 - 历史资产盘点与 Architecture 2.0 概念复盘；
 - 研究“短周期、增量式、反例驱动”的跨模型泛化方法，但不把它注册为新 RQ；
@@ -82,7 +83,7 @@ P4 / RQ-P4-01
 
 ### Forbidden
 
-- 把 P4 当前定义直接当作已注册 RQ；
+- 把 STEP② 草案直接当作已注册 RQ；
 - 转移 Track B / Track E 证据为 P4 结论；
 - 直接进入 STEP⑤–⑨；
 - Runtime implementation / harness construction / data collection / performance measurement；
@@ -187,3 +188,32 @@ Analytic Encodability Attack 已进一步收缩为 **Static Derivability** 标�
 1. 任何状态变更必须更新本文件并独立 commit；
 2. 本文件只记当前状态；
 3. RQ ID 一经分配永久占用，废弃用 CLOSED/NOT DEFINED 标注，不复用编号。
+
+## 15. P4-A STEP① 契约接受与 STEP② 开放（2026-09-22）
+
+研究者明确接受 P4-A STEP① candidate contract，并正式授权进入 STEP② Research Question。
+
+STEP① 已接受的契约包括：固定 Description Language、frozen decoder、L₀、O(A)/O(D) regime、Static Derivability、analytic skeleton + minimal measured coefficients 候选，以及 Bayesian decision problem / Blackwell framework 下的 Decision Loss 定义。决策问题写为 `𝓓=(𝓐,𝓒,Π_W)`，projection 的损失以相对 full-information/oracle 的 Bayes risk excess cost 表示；参数族内 dominance 发生反转时，边界本身可成为 applicability finding。
+
+Decision-Loss 的形式化闭合了 STEP① 的定义问题，但不证明跨架构 projection 已存在、低码率、低维度或具有 Runtime 实用价值。
+
+### STEP② 的合法范围
+
+STEP② 当前只负责：
+- 将接受的契约压缩为 precise、independent、falsifiable Research Question；
+- 继续进行必要的概念反例与范围收缩；
+- 明确 RQ 的对象边界、比较范围与不可推断项；
+- 完成 STEP② acceptance gate。
+
+禁止：
+- 自动把草案升级为注册 RQ；
+- 自动进入 STEP③–⑨；
+- Runtime / harness / profiling / data collection / measurement；
+- 重新研究 Track B 已闭合的 lifecycle semantics；
+- 将 Decision-Loss 形式化误读为 projection 已被验证。
+
+若未来预定义 decision-problem family 被证明无法解析评估，才可单独开启 definition-stage executable artifact mini-gate；该 artifact 只能检验定义自洽性，不产生研究证据。STEP⑨ research harness 仍需注册 RQ 与后续设计门。
+
+**Current status:** STEP② OPEN / RQ DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+
+**Next formal checkpoint:** STEP② Research Question definition/acceptance gate。
