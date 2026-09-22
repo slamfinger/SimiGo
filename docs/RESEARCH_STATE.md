@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（Track E closure record `b6ad7c0` 之后）
+**Last updated**: 2026-09-22（Definition/Opening Gate 开启，限 §8.1 第①步）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -25,8 +25,10 @@
 ```text
 Phase:        阶段间隙（Track E 已 CLOSED，下一阶段研究问题尚未立项）
 Next action:  新研究问题定义门（Definition / Opening Draft）
-Gate status:  NOT STARTED
+Gate status:  OPEN — 限 §8.1 第①步（研究对象）
 RQ ID:        未分配（候选 RQ-F-01 / RQ-P4-01，正式定义后占用）
+活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md
+              （DRAFT / EXTERNAL DEFINITION REVIEW REQUIRED；第②步以后未启动）
 ```
 
 ## 2. 状态词汇表（禁止跨阶段推理）
@@ -94,11 +96,12 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       NOT STARTED
+Status:       OPEN — 限第①步（研究对象候选边界 + 明确排除项）
 
 Allowed:
-- 候选研究问题征集与定义（含从访问模式推导 model unit）
-- 范围 / estimand / evidence boundary 预注册
+- 第①步：候选研究对象边界定义与明确排除
+  （活跃文档 docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md；
+   外审通过后方进入第②步）
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
@@ -106,6 +109,7 @@ Forbidden:
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
+- 第①步外审通过前进入第②步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
