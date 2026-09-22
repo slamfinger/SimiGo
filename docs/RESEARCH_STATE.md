@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（Definition/Opening Gate 开启，限 §8.1 第①步）
+**Last updated**: 2026-09-22（STEP ① 外审 PASS，STEP ② 解锁）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,12 +23,12 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        阶段间隙（Track E 已 CLOSED，下一阶段研究问题尚未立项）
-Next action:  新研究问题定义门（Definition / Opening Draft）
-Gate status:  OPEN — 限 §8.1 第①步（研究对象）
+Phase:        Definition / Opening（逐步推进中；第②步及以后未启动）
+Next action:  第②步：研究问题是什么（双方共同定义；Opening v0.1 = 对象空间，不是答案）
+Gate status:  OPEN — STEP ① PASS（外审 2026-09-22）→ STEP ② 解锁
 RQ ID:        未分配（候选 RQ-F-01 / RQ-P4-01，正式定义后占用）
 活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md
-              （DRAFT / EXTERNAL DEFINITION REVIEW REQUIRED；第②步以后未启动）
+              （§8.1 STEP ① PASS；STEP ② 文档未创建）
 ```
 
 ## 2. 状态词汇表（禁止跨阶段推理）
@@ -96,20 +96,25 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — 限第①步（研究对象候选边界 + 明确排除项）
+Status:       OPEN — STEP ① PASS（研究对象边界）→ STEP ② 解锁
+
+外审保留意见（对第②–④步有约束力）:
+- C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
+- 不得反向变成"runtime 能表达 → 合理研究对象"的 implementation-first 预设。
 
 Allowed:
-- 第①步：候选研究对象边界定义与明确排除
-  （活跃文档 docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md；
-   外审通过后方进入第②步）
+- 第②步：研究问题定义（在 Opening C1/C2 对象空间内工作；
+  Opening v0.1 是对象空间，不是答案，不得预选候选族）
+- 引用外审保留意见作为第②步自查约束
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
+- 把 Opening 对象边界当作研究问题答案，或预选任何候选族
 - runtime implementation / harness construction
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
-- 第①步外审通过前进入第②步及以后
+- 第②步外审通过前进入第③步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
@@ -131,6 +136,12 @@ Forbidden:
 ## 9. 重要边界
 
 SimiGo 1.x product line ≠ SimiGo-Lab 2.0 research line。
+
+伴生文档（非状态权威）：
+
+- `docs/AGENT_CONTEXT.md` —— 行为层：Agent 操作规则与行为约束；
+- `docs/RESEARCH_MEMORY.md` —— 思想层：RM-001~009 思想分支登记（条目均为
+  CANDIDATE / HYPOTHESIS 态，禁止静默转为事实或 RQ）。
 
 事实源优先级：Git 仓库（本文件 + endpoint 文档 + ledger + git log）> 一切对话记忆。
 冲突时以 git log 与 endpoint 文档为准，回修本文件。
