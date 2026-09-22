@@ -935,3 +935,24 @@ STEP③ 的核心攻击转向 independence：对象是否只是已声明 decisio
 新增强制条件：对象只能以 frame-relative 方式表述，不存在无索引的“the frontier”。必须遵守 Declare first → derive second → measure third；框架族在观察结果后不得收缩或重构。Git provenance 因而成为 robustness claim 的审计构成条件。
 
 下一刀：Parameter Independence，重点攻击 L/D/S 是构成性 frame coordinates 还是可操纵结果的 hidden knobs。
+
+
+### RM-061 — P4-A STEP③ Architecture Independence PASS / STEP④ opened
+
+2026-09-22，STEP③ Architecture Independence 完成收口并通过。核心判据是测量管线的槽位分离：L、D、S、normalization、Pi_W 为跨架构共享的 rule slots；architecture static description、encoder output、X-specific oracle normalization factor 与 model instance 为 input slots；per-X task redefinition 为 forbidden slot，必须为空。
+
+形成硬规则：架构差异只能通过输入值进入，不得通过重新定义任务语义进入。若冻结的 L/D 在某架构上无法实例化，合法出口是 **task not evaluable at this granularity**，不得为了提高可评估性而 per-X 修改 D。可评估性严格劣后于跨架构可比性。
+
+归一化采用统一规则 D_tilde_X = D_X / R_oracle,X；规则不随 X 变，分母数值可随 X 变。语义比较与绝对资源经济学保持 dual-track，不用归一化结果替代绝对成本解释。
+
+原强形式 X-discrimination lemma（所有不同 X 必须产生不同 frontier）被正式否决为过强。保留的 X anti-vacuity 条件是：存在一个不依赖任何 frontier 结果的、定义层可构造的 witness，使冻结 measurement functional 对 admissible architecture description inputs 非常数；不要求所有 X 都可分辨。
+
+当前 witness：组件结构化 X1 与单体描述 X2，在相同冻结 L/D/S 下，由描述语法与任务语义的符号推演得到不同的可达 encoder 集；X1 可有非平凡 rate/loss 内部点，X2 可退化为粗粒度端点集合。该 witness 只证明仪器具有 X-sensitivity 的可能性，不声称真实架构 frontier 已被测得。
+
+STEP③ 最终 PASS 依赖四项：slot separation；禁止 per-X task redefinition 且 non-evaluability 优先；存在不依赖结果的 X anti-vacuity witness；Pi_W 与 normalization rule 固定。
+
+本次通过仍不证明跨架构 frontier 共性、transfer、低码率 projection 或 Runtime 价值。治理状态正式进入 STEP④ Estimand；RQ ID 仍未分配，无实验授权。
+
+**Status:** STEP④ OPEN / ESTIMAND DEFINITION / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+
+**Provenance:** Architecture 2.0 P4-A STEP③ Architecture Independence adversarial closure, 2026-09-22.
