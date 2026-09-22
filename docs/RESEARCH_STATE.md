@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（P4-A formal basis audit：product/arrow mathematical semantics undeclared；global formal basis declaration required）
+**Last updated**: 2026-09-23（P4-A minimal formal interface conditionally sufficient：notation governance supported；cost semantic instantiation blocked）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / P4-A Global Formal Basis Declaration（STEP⑤ NECT mode blocked）
-Next action: 建立全局 P4-A formal basis declaration，显式声明 foundational universe、product/arrow semantics、application/equality/substitution rules；完成前不得进入 value discipline 或 Risk review
+Phase: Architecture 2.0 / P4 Redefinition / P4-A Minimal Formal Interface Completion（STEP⑤ NECT mode blocked）
+Next action: 将 MFI placeholder fields 声明为显式 formal interface rules；不选择完整 foundation，不让 MFI 冒充 cost semantics
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_PRODUCT_ARROW_FORMAL_BASIS_AUDIT_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_MINIMAL_FORMAL_INTERFACE_SUFFICIENCY_REVIEW_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / GLOBAL FORMAL BASIS UNDECLARED / PRODUCT-ARROW SEMANTICS UNDECLARED / MCSC SIGNATURE PLACEHOLDER ONLY / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / GLOBAL FOUNDATION UNDERDETERMINED / MINIMAL FORMAL INTERFACE CONDITIONALLY SUFFICIENT / MCSC SEMANTIC INSTANTIATION BLOCKED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / GLOBAL FORMAL BASIS UNDECLARED / NECT MODE BLOCKED | 只允许建立全局 formal basis declaration，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MINIMAL FORMAL INTERFACE REQUIRED / NECT MODE BLOCKED | 只允许显式完成 minimal formal interface declaration，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / GLOBAL FORMAL BASIS REVIEW OPEN / PRODUCT-ARROW SEMANTICS UNDECLARED / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MINIMAL FORMAL INTERFACE REVIEW OPEN / GLOBAL FOUNDATION UNDERDETERMINED / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -81,6 +81,7 @@ P4 / RQ-P4-01 candidate
 - 完成 STEP④ loss object completion：声明 `C/R/D_loss` codomain、expectation/inf conditions、oracle value discipline 与 excess-loss value discipline；
 - 审查并冻结 MCSC abstract field schema 的 product-position semantics 与 arrow semantics；
 - 建立全局 P4-A formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；
+- 建立并攻击 minimal formal interface：pair formation/function slot/application placeholder/typed equality placeholder/substitution placeholder；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -107,6 +108,7 @@ P4 / RQ-P4-01 candidate
 - 在 cost signature 未冻结前选择 `V_j` 的 finite/extended/vector/typed discipline、measurability，或用 natural-language cost terms 直接充当 `J`；
 - 在 product/arrow semantics 未声明前假定 total function、set-theoretic product、`W_D=W`、shared `V_j` 或具体 component cardinality；
 - 用 cost-local `×/->` patch替代全局 formal basis，或在 placeholder reading 外隐含选择 set/type/product/total/partial semantics；
+- 把 minimal formal interface 的 placeholder application/equality/substitution 当作真实数学语义，或声称它已支持 MCSC semantic instantiation；
 - 把 MCSC skeleton 的 carrier/value symbols 解释为具体 finite scalar、extended scalar、vector 或 typed record，或把 `Binding_C` 直接选为 sum/tuple/product/aggregation；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
@@ -156,6 +158,8 @@ Minimal Cost Signature Contract skeleton 已采纳。它只冻结 formal positio
 Abstract Field Declaration Audit 已裁定 MCSC 可作为 well-formed placeholder schema，但不添加 substantive structural constraints。`J` 的 cardinality/nonemptiness、component uniqueness、carrier instantiation、`V_j` discipline、equality notion 与 `Binding_C` kind 均 deferred。新发现的 formal gaps 是 `PRODUCT_POSITION_SEMANTICS=UNDERDECLARED` 与 `ARROW_SEMANTICS=UNDERDECLARED`；完成二者前不得进入 value discipline 或 Risk review。
 
 Product/Arrow formal basis audit 进一步判定：P4-A 没有统一可追溯的 `×/->` 数学语义；MCSC 只能读作 signature placeholders。该缺口是全局 formal basis 问题，不是 Cost Object 局部问题。下一步必须建立全局 formal basis declaration，覆盖 foundational universe、product/arrow semantics、application/equality/substitution rules；完成后才可回到 value discipline。
+
+Minimal Formal Interface Sufficiency Review 进一步裁定路径为 split：MFI conditionally sufficient。它足以支撑 notation governance 和 MCSC placeholder positions，包括 pair formation、function slot、application placeholder、typed equality placeholder 与 substitution placeholder；但不足以实例化 cost semantics、判定 application definedness、断言 equality truth 或证明 substitution rule。因此不需要立即选择完整 foundation，也不得触发 M2 停摆；MCSC semantic instantiation 在 MFI interpretation 完成前保持 blocked。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
