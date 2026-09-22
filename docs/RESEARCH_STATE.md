@@ -3,15 +3,15 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A Cost Object audit complete：`C` codomain/measurability/finiteness underdeclared；Risk review blocked）
+**Last updated**: 2026-09-23（STEP④-A Cost Signature audit complete：signature not uniquely determined；value discipline and measurability deferred）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Cost Object Completion（STEP⑤ NECT mode blocked）
-Next action: 声明 `C/C_j/C'_j` 的 signature、codomain、measurable spaces、measurability 与 value discipline；完成后才可进入 STEP④-B Risk Well-definedness
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Cost Signature Completion（STEP⑤ NECT mode blocked）
+Next action: 冻结 `J/A/W/W_D/V_j/C_j/sigma_D/C'_j/equality/C-binding` 的最小 signature contract；完成前不得进入 value discipline 或 Risk review
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with typed-codomain review open; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
-当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_COST_OBJECT_AUDIT_20260923.md
+当前活动文档: docs/07-history/ARCHITECTURE_2.0_P4A_STEP4A_COST_SIGNATURE_DETERMINACY_AUDIT_20260923.md
 
 ## 2. 状态词汇表
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / COST OBJECT INCOMPLETE / FINLOSS NOT UNIQUELY DETERMINED / REVIEW-2 BLOCKED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / COST SIGNATURE NOT DETERMINED / FINLOSS NOT UNIQUELY DETERMINED / REVIEW-2 BLOCKED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / COST OBJECT INCOMPLETE / NECT MODE BLOCKED | 只允许完成 STEP④-A cost object declaration，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / COST SIGNATURE NOT DETERMINED / NECT MODE BLOCKED | 只允许完成 STEP④-A cost signature declaration，不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,7 +63,7 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / STEP④-A COST OBJECT OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / STEP④-A COST SIGNATURE OPEN / CANDIDATE 2 REJECTED / CANDIDATE 1 REFORMULATED BLOCKED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -79,7 +79,7 @@ P4 / RQ-P4-01 candidate
 - 采用并攻击 `R_s^fin/R_s^nofin` domain partition 与 `F_s^fin:R_s^fin->[0,+infinity)`；
 - 裁定 `FinLoss(P,theta)` definition 与 `R_s^nofin` residual status；
 - 完成 STEP④ loss object completion：声明 `C/R/D_loss` codomain、expectation/inf conditions、oracle value discipline 与 excess-loss value discipline；
-- 完成 STEP④-A cost object declaration：`J`、signature、codomain、measurable spaces、measurability 与 value discipline；
+- 完成 STEP④-A cost signature declaration：`J`、`A/W/W_D` carriers、`V_j` symbols、`C_j/sigma_D/C'_j`、equality space 与 `C` binding；
 - 使用已冻结的 L、D、sigma_D、S_det、rate convention、oracle normalization 与 scope；
 - 设计最低成本的概念反例；
 - 如确有必要，可要求本地 agent 执行已获授权的研究动作，并由 ChatGPT 获取、审查、分析结果；当前 STEP⑤ 尚未授予此类实验权限；
@@ -103,6 +103,7 @@ P4 / RQ-P4-01 candidate
 - 把 “finite completeness 未证明” 等同于 `B_s` 非空，或把 no-finite-loss region 静默当作 applicability boundary；
 - 为进入 `R_s^nofin` 而重新引入 `+infinity` loss value，或在 Review-3 前宣布 NECT 只能定义于 `R_s^fin`；
 - 在 `FinLoss` 未被 STEP④ 唯一确定前裁定 Review-2、Candidate 1/3 或 NECT mode；
+- 在 cost signature 未冻结前选择 `V_j` 的 finite/extended/vector/typed discipline、measurability，或用 natural-language cost terms 直接充当 `J`；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
 - 将 Execution-State-oriented Post-Training 假设视为已成立。
 
@@ -143,6 +144,8 @@ Domain/codomain orthogonality ruling 已取代 “证明 finite completeness ove
 Review-1 已完成并裁定 `FinLoss` not uniquely determined。policy-level `FinLoss(P,theta)` 与 rate-level admission set `R_s^FL` 分层；冻结 frame 未声明 `C` codomain/finiteness、expectation existence、`Delta(I_P)` nonemptiness/inf convention、oracle finiteness 或 `D_loss` codomain。因此 STEP④ loss object definition incomplete，Review-2、Candidate 1 reformulated 与 NECT mode 均 blocked。
 
 STEP④-A Cost Object audit 已完成：`C_OBJECT_COMPLETE=FALSE`。现有 frame 只有 declared cost function 与 factorization identity `C_j(a,w)=C'_j(a,sigma_D(w))`，未声明 `J`、exact domain、codomain、measurable spaces、measurability 或 pointwise value discipline。factorization equality 的 value space 仅是隐含的。STEP④-B Risk Well-definedness 被 blocking；不得为 NECT 便利倒推 `C` 的 finiteness 或 scalar codomain。
+
+Cost Signature audit 进一步判定 `COST_SIGNATURE_UNIQUELY_DETERMINED=FALSE`。自然语言 hints `recomputation/migration/capacity` 不能直接当作 `J`；`A/W` 仅为符号，`W_D` 缺失，`V_j` 未声明，`C_j/sigma_D/C'_j` 仅为 symbol-level，equality space 与 `C` binding 未声明。下一步只能冻结最小 signature contract；value discipline 与 measurability 继续 deferred。
 
 在 Candidate 1 reformulated 中，`IPR_VALUE` 仍记录为 `UNDECLARED`；但 `R_s^nofin` 不再需要 infinity sentinel。若未来出现 actual infinity loss 的既有语义证据，必须重新进入 typed-codomain review，不得通过 residual domain 静默引入。
 
