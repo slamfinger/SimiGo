@@ -4,7 +4,7 @@
 > Conversation memory must not override it.**
 > Git 保存事实，会话负责推理：任何"项目到哪了"的问题，先读本文件与所引 endpoint 文档，再回答。
 
-**Last updated**: 2026-09-22（STEP ① 外审 PASS，STEP ② 解锁）
+**Last updated**: 2026-09-22（STEP ② Q2.1 裁定：C1 = 最小研究对象；文档 DRAFT 待外审）
 
 ## 0. 状态恢复流程（重进项目时固定执行，不得跳过）
 
@@ -23,12 +23,13 @@
 ## 1. 当前阶段
 
 ```text
-Phase:        Definition / Opening（逐步推进中；第②步及以后未启动）
-Next action:  第②步：研究问题是什么（双方共同定义；Opening v0.1 = 对象空间，不是答案）
-Gate status:  OPEN — STEP ① PASS（外审 2026-09-22）→ STEP ② 解锁
-RQ ID:        未分配（候选 RQ-F-01 / RQ-P4-01，正式定义后占用）
-活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md
-              （§8.1 STEP ① PASS；STEP ② 文档未创建）
+Phase:        Definition / Opening（STEP ② 进行中：Q2.1 已裁定）
+Next action:  STEP ② 文档外审（Q2.1 裁定 + C1 问句；PASS 后方进入第③步）
+Gate status:  OPEN — STEP ② Q2.1 裁定 C1 = 最小研究对象（C2 / C1×C2 DORMANT）
+RQ ID:        未分配（Q2.1 裁定 ≠ ID 分配；ID 待整条 RQ 定义完成）
+活跃文档:     docs/SOURCE_RUNTIME_RESEARCH_QUESTION_DEFINITION_v0.1.md
+              （DRAFT / EXTERNAL QUESTION-DEFINITION REVIEW REQUIRED）
+              docs/SOURCE_RUNTIME_RESEARCH_DEFINITION_OPENING_v0.1.md（STEP ① PASS）
 ```
 
 ## 2. 状态词汇表（禁止跨阶段推理）
@@ -96,25 +97,28 @@ nodes-out endpoint §4.2：相同硬件、runtime 与工作负载条件下，nod
 ```text
 RQ:           TBD（未分配）
 Phase:        新研究问题定义（Definition / Opening Draft）
-Status:       OPEN — STEP ① PASS（研究对象边界）→ STEP ② 解锁
+Status:       OPEN — STEP ② Q2.1 裁定落档（C1 = 最小研究对象）→ 文档外审中
 
 外审保留意见（对第②–④步有约束力）:
 - C1 第三条（Swift/MLX 可表达独立驻留状态）只能作为可检验边界；
 - 不得反向变成"runtime 能表达 → 合理研究对象"的 implementation-first 预设。
 
 Allowed:
-- 第②步：研究问题定义（在 Opening C1/C2 对象空间内工作；
-  Opening v0.1 是对象空间，不是答案，不得预选候选族）
+- STEP ② 文档外审（Q2.1 裁定 + C1 正式问句）
+- （STEP ② 外审 PASS 后）第③步：独立性论证——在 C1 对象空间内
+  论证所选问题为何独立，不得引用 Opening 当答案
 - 引用外审保留意见作为第②步自查约束
 - 历史资产盘点（只读取，FROZEN 身份不变）
 
 Forbidden:
+- 把 Q2.1 裁定当成 RQ ID 分配，或宣称 RQ 定义已完成
+- 把四道 RQ 资格门当成第③–⑧步已完成的证明
 - 把 Opening 对象边界当作研究问题答案，或预选任何候选族
 - runtime implementation / harness construction
 - data collection / performance measurement
 - 修改任何 FROZEN 资产身份
 - 以旧阶段结论推导新实验
-- 第②步外审通过前进入第③步及以后
+- STEP ② 外审通过前进入第③步及以后
 ```
 
 ### 8.1 Gate opening protocol（门开启后的必经序列；跳步无效）
