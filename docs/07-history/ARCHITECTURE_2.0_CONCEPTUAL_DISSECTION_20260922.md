@@ -3048,3 +3048,37 @@ Invariant + transformation model + continuity constraints + context
 本 checkpoint 不改变任何研究状态：Track B CLOSED/FROZEN；Track E CLOSED/SEALED；P4 NOT STARTED；RQ-F-01 NOT DEFINED；STEP④ PASS；STEP⑤ UNSTARTED；无新 RQ、无实验、无 implementation / measurement authorization。
 
 **Research-gate effect: NONE.**
+
+
+## 27. 回到 Architecture 2.0 起点：Execution State 重新成为主干
+
+本节记录 2026-09-22 方向复盘后的收敛：Architecture 2.0 的成长不是一条直线，而是 `a→b→c→d`、fork、失败、回退、再从已确认节点继续发展的过程。研究成熟后，不变部分越来越多，变化集中在尚未确定的后继路径。
+
+### 27.1 研究对象边界重新收缩
+此前 Boundary → Object → Identity → Equivalence → Invariant 的概念探索非常深，但若继续追求“识别所有边界”，研究对象会逐渐进入模型承载的知识、规则、语义、概念关系、概率结构及其压缩规律。这不是错误研究，而是另一条接近机器智慧生成/知识组织的路线，不应成为 Architecture 2.0 主线。
+
+### 27.2 Architecture 2.0 的核心是计算架构规律
+必须区分：`Model-content regularity`：模型知道什么、如何压缩和表达知识；`Computational-architecture regularity`：模型如何计算、如何形成可延续状态、如何继续、复用、迁移和承载计算。Architecture 2.0 研究后者，不要求理解或穷尽大模型承载的全部知识。
+
+### 27.3 Execution State 重新成为最稳定主干
+Track B 已在限定 scope 内建立：`compute → state → continue / fork / transition / discard`。因此当前主干重新收敛为：`Expensive computation → Reusable Execution State → Continuation / Fork / Lifecycle → Representation transition → Runtime carrying and reusing execution state`。而不是继续发展为：`Execution State → all boundaries → universal object → universal unit`。后者作为历史探索枝条保留，不再自动成为主线。
+
+### 27.4 “通用 Execution State”是语义通用
+不同模型可以拥有不同内部状态结构 `State_A / State_B / State_C`，但共享更高层的执行语义：identity/continuation、continue、fork、representation transition、lifecycle、reuse。因此“通用”不是要求所有模型使用相同 State 数据布局，而是允许 Runtime 面对共同的执行语义。
+
+### 27.5 模型实现与 Runtime 的职责分离
+`Model implementation / MLX-LM / specific architecture` → **how to compute**；`Execution State` → **what continuation-relevant state exists**；`Runtime` → **how to carry / reuse / load / reside / migrate that state**。解耦不是完全无模型依赖，而是把依赖尽可能收缩到计算语义，避免 Runtime 必须理解模型承载的全部知识和内部语义。
+
+### 27.6 加载、分层、驻留成为自然下游问题
+Execution State 稳定后，加载问题可由“理解模型内部所有数据”转化为“当前执行为了继续，需要哪些状态以什么表示驻留”。长期方向自然形成：`Execution State → Residency → Materialization / Migration → Layering / Working Set → Resource placement`。这里的分层首先围绕执行状态生命周期和资源需求，而不是穷举模型知识结构。
+
+### 27.7 Boundary / Object 路径的正式处理
+Boundary、Object、Identity、Invariant、Equivalence 等概念作为历史研究资产和方向判断保留，用于记录曾经的 fork、失败与修剪原因；当前不继续将其扩展为 Architecture 2.0 核心研究线，不注册新 RQ。这属于研究方向修剪，不是对这些概念本身的否定。
+
+### 27.8 核心压缩
+> **不研究大模型承载的全部知识规律，而研究大模型计算本身的稳定规律；以通用语义的 Execution State 作为模型实现与 Runtime 之间的中间抽象，从而进一步研究计算复用、加载、驻留、分层、迁移与资源承载。**
+
+### 27.9 Governance
+本节不改变 Track B CLOSED/FROZEN、Track E CLOSED/SEALED、P4 NOT STARTED、RQ-F-01 NOT DEFINED、STEP④ PASS、STEP⑤ NOT STARTED；无新 RQ、无实验、无 runtime implementation / measurement authorization。
+
+**Research-gate effect: NONE.**
