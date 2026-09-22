@@ -881,3 +881,20 @@ P4-A 对 Analytic Encodability 进一步收缩为可机械审查的静态来源�
 **Status:** P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
 
 **Provenance:** Architecture 2.0 P4-A static derivability / analytic skeleton / Decision-Loss Gate discussion, 2026-09-22.
+
+
+### RM-057 — STEP① 契约接受，正式进入 STEP②
+
+2026-09-22，研究者正式接受 P4-A STEP① candidate contract，并授权进入 STEP② Research Question。
+
+STEP① 契约已形成以下闭环：固定 Description Language、frozen decoder、L₀ byte-dump reference、O(A)/O(D) 成本分账、Static Derivability、analytic skeleton + minimal measured coefficients 候选，以及基于 Bayesian decision problem / Blackwell ordering 的 Decision Loss 定义。Decision problem 采用 `(𝓐, 𝓒, Π_W)`，projection 的风险以 Bayes risk 与 full-information/oracle reference 的 excess cost 表示；参数族内的 dominance boundary 可作为 applicability boundary。
+
+这一步只是**研究治理状态转换**，不是跨架构 projection 存在、低码率、低维度或 Runtime 价值已经成立的证据。
+
+STEP② 的唯一新增权限是：正式定义、压缩和对抗 Research Question。不得因进入 STEP② 自动授权 Runtime、harness、profiling、data collection 或 measurement；STEP⑨ harness 仍需等待注册 RQ 与后续设计门。
+
+如果未来证明预定义 decision-problem family 无法进行解析评估，才可开启 definition-stage executable artifact 的独立 mini-gate；当前 Bayesian / Blackwell / caching formal path 不触发该出口。
+
+**Status:** STEP② OPEN / RQ DEFINITION IN PROGRESS / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
+
+**Provenance:** Architecture 2.0 P4-A Decision-Loss Well-Definedness discussion and explicit human acceptance, 2026-09-22.
