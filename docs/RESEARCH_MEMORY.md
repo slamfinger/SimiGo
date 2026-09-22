@@ -735,3 +735,15 @@ The mature result is not that every branch survives. It is that repeated develop
 This is a durable research-history interpretation, not an empirical finding about model behavior.
 
 **Status:** DURABLE RESEARCH-METHOD INSIGHT
+
+### RM-047 — Continuation Requirement 应定义为未来延续的区分能力，而非物理保存对象
+
+P4-A 对“Continuation Requirement”进行对抗性收缩后，当前更稳的语义候选是：在限定计算环境与 admissible continuation 范围内，当前状态为了保持未来延续语义而必须保留的区分信息关系。
+
+候选关系可表示为 Behavior(s, c)；若两个状态对研究范围内所有 continuation probes 不可区分，则暂记为 s1 ≈C s2；存在 probe 使行为可区分，则在该范围内不等价。
+
+重要边界：语义必要性 ≠ 物理保存；语义必要性 ≠ 重算成本；语义必要性 ≠ 资源价值；单次输出相同 ≠ continuation-equivalent。有限 probe 只能支持有限范围结论，不能推出全空间等价。
+
+Status: P4-A CONCEPTUAL CANDIDATE / NOT AN RQ / NO EXPERIMENT AUTHORIZATION
+
+Provenance: Architecture 2.0 P4-A adversarial research, 2026-09-22.
