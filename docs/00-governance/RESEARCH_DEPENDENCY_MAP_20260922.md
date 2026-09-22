@@ -75,3 +75,47 @@ Source/Runtime
 - 是否存在 endpoint 对下游引用的明确授权。
 
 否则按“相关历史证据”处理，而不是“当前问题已回答”。
+
+
+## 5. 2026-09-22 revised dependency map
+
+The previous chain
+
+`Execution State → Residency / policy → P3 → H-P1 → nodes-out → Track E`
+
+is now treated as **historical provenance**, not the mandatory future route.
+
+The current Architecture 2.0 conceptual mainline is:
+
+`Execution State`
+→ `Residency / Loading`
+→ `Layering / Working Set`
+→ `Migration / Resource placement`
+
+with these governance boundaries:
+
+- Track B provides historical Execution State evidence but is CLOSED/FROZEN.
+- Track E and its sub-lines provide historical residency/policy evidence but are CLOSED/SEALED.
+- P4 / RQ-P4-01 is an independent future question, not an automatic continuation of Track E.
+- RQ-F-01 Source/Runtime boundary/unit existence candidate is retired as the current route; its prior STEP④ state does not transfer to P4.
+- Boundary/Object/Identity/Equivalence exploration is preserved as conceptual history and does not sit on the current dependency chain.
+- Track A, D, and C remain independent future/dormant branches.
+
+### 5.1 Dependency principle after the reset
+
+Historical evidence may constrain what is already known, but it does not force the next abstraction.
+
+The next question should be chosen from the **current stable architectural core**, not from the deepest branch previously explored.
+
+Thus:
+
+`stable Execution State abstraction`
+→ **candidate downstream architecture question**
+→ `independent Definition gate`
+
+rather than:
+
+`previous unfinished branch`
+→ `automatic continuation`
+
+**Research-gate effect:** none; P4 remains NOT STARTED.
