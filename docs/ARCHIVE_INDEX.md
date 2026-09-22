@@ -24,6 +24,7 @@
 | 查看 Architecture 2.0 最重要的长期思想资产 | 05-architecture/ARCHITECTURE_2.0_LONG_HORIZON_VISION_20260922.md |
 | 检查 Architecture 2.0 思想血缘完整性 | 07-history/ARCHITECTURE_2.0_INTELLECTUAL_LINEAGE_AUDIT_20260922.md |
 | 复盘 Architecture 2.0 下一研究方向的候选成熟度与合法动作 | 07-history/ARCHITECTURE_2.0_RESEARCH_DIRECTION_REVIEW_20260922.md |
+| 概念剖析：Execution State / Boundary / Operational Unit / Residency Unit / Sharding Unit / Management Unit | 07-history/ARCHITECTURE_2.0_CONCEPTUAL_DISSECTION_20260922.md |
 | 了解方向性架构文档 | architecture/ |
 
 ## 2. 档案分层
