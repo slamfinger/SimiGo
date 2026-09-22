@@ -154,6 +154,22 @@ P4 后续研究采用“先证伪、后扩展”的门控原则，而不是以�
 
 详细记录：docs/07-history/ARCHITECTURE_2.0_P4_FALSIFICATION_AND_RESOURCE_GATE_20260922.md
 
+## 13. P4-A 语义投影价值收缩（2026-09-22）
+
+本轮完成 P4-A 对“共同语义投影”的进一步对抗。当前不再把“自然收敛”作为强 existence criterion；研究者先验污染使其只能作为辅助证据。
+
+当前候选价值判据被收缩为 task-relative / cost-relative 形式：在明确 Runtime resource-decision task、workload scope 与有限观测/计算预算下，是否存在低复杂度 State representation，使决策损失相对 architecture-specific state 保持在允许范围，同时显著降低 instrumentation / adaptation cost。
+
+重要边界：
+- prediction(b) ≈ prediction(a) 不等于 global sufficient statistic；
+- resource constraints 提供有限可描述性的研究动机，不证明低维 projection 存在；
+- low-dimensional / task-specific / high-dimensional architecture-specific dependence 均为合法结果；
+- STEP① 可以讨论潜在 information value / cost，但尚未注册 STEP④–⑨ 的具体 estimand、threshold 或实验。
+
+当前仍为 P4-A STEP① WORKING DEFINITION / 审查中，RQ 未分配，实验未授权。
+
+下一概念攻击：定义“低复杂度/低维”时，检查 complexity notion 是否真正与 Runtime decision utility 相关，避免把“字段少”误当成研究对象的有效复杂度。
+
 ## 13. 状态维护规则
 
 1. 任何状态变更必须更新本文件并独立 commit；
