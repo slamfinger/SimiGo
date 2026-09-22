@@ -66,6 +66,44 @@ The old STEP⑤ `[0,+infinity]` notation does not acquire STEP④ meaning throug
 
 `Binding_C` remains a separate open semantic choice. This document does not select sum, tuple, vector, record, product, or any other aggregation.
 
+
+## 5. Explicit definition-layer gap
+
+A concrete definition-layer gap is now explicitly declared. This does **not** instantiate any open semantic value.
+
+**DG-4A-01 — Local-value / global-binding semantic boundary**
+
+The current MCVSD declaration contract identifies (V_j) and (Binding_C), but it does not yet specify, at the semantic level, the exact role of (Binding_C) relative to an already-typed local value (V_j): specifically, whether (Binding_C) is only a relation among local values, also determines the semantic form of the composed result, or requires both aspects as one contract.
+
+The gap is therefore:
+
+```
+V_j semantics
+    ↓
+[UNRESOLVED BOUNDARY]
+    ↓
+Binding_C semantics
+    ↓
+C semantics
+```
+
+This is a **definition gap**, not an experiment request. It does not authorize choosing sum, weighted sum, tuple, vector, record, or any other binding form.
+
+### Resolution constraint
+
+The gap may be resolved only by an explicit researcher semantic declaration or by a concrete semantic contradiction showing that the present contract is insufficient. No runtime representation, observed numerical agreement, cost/loss terminology, STEP⑤ notation, or engineering convention may resolve it implicitly.
+
+Until resolved:
+
+```
+VType            = UNDECLARED
+OutputDiscipline = UNDECLARED
+Binding_C        = UNDECLARED
+STEP4-B          = BLOCKED
+STEP5            = BLOCKED
+EXPERIMENT AUTH  = NONE
+```
+
 ## 6. Downstream gate
 
 Until the current decision targets are explicitly instantiated and subsequently reviewed:
