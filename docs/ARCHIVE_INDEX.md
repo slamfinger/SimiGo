@@ -19,6 +19,7 @@
 | 了解现有资产如何映射到新档案体系 | 07-history/LEGACY_ASSET_MAPPING_20260922.md |
 | 恢复 Architecture 2.0 思想总览 | 07-history/ARCHITECTURE_2.0_SESSION_KNOWLEDGE_20260922.md |
 | 恢复 Architecture 2.0 概念起源 | 07-history/ARCHITECTURE_2.0_ORIGIN_RECONSTRUCTION_20260922.md |
+| 快速恢复 Execution State“为什么做、每个实验验证什么、思想如何变化” | 07-history/EXECUTION_STATE_RESEARCH_STORY_20260922.md |
 | 查看未来 Execution State 机制候选 | 05-architecture/EXECUTION_STATE_FUTURE_MECHANISMS.md |
 | 查看 Architecture 2.0 最重要的长期思想资产 | 05-architecture/ARCHITECTURE_2.0_LONG_HORIZON_VISION_20260922.md |
 | 检查 Architecture 2.0 思想血缘完整性 | 07-history/ARCHITECTURE_2.0_INTELLECTUAL_LINEAGE_AUDIT_20260922.md |
