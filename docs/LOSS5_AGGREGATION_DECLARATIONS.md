@@ -21,11 +21,12 @@ LOSS-5-K  EVALUATION_MULTIPLICITY = NOT_SELECTED
 LOSS-5-L  EVALUATION_ORDER = NOT_SELECTED
 LOSS-5-M  EVALUATION_DETERMINACY = NOT_SELECTED
 LOSS-5-N  EVALUATION_RESULT_STATUS = NOT_SELECTED
+LOSS-5-O  EVALUATION_DEPENDENCE = NOT_SELECTED
 ```
 
 ## Consequence
 
-No aggregation object is currently selected. No evaluation input, evaluation object, evaluation domain, evaluation scope, evaluation multiplicity, evaluation order, evaluation determinacy, or evaluation result status is currently selected. The aggregation/evaluation rule is undeclared.
+No aggregation object is currently selected. No evaluation input, evaluation object, evaluation domain, evaluation scope, evaluation multiplicity, evaluation order, evaluation determinacy, evaluation result status, or evaluation dependence is currently selected. The aggregation/evaluation rule is undeclared.
 
 The role of `θ` is undeclared. No probability-space, workload-regime, parameter, distribution, or other mathematical semantics for `θ` is introduced by this record.
 
@@ -63,6 +64,7 @@ LOSS-5-K = NOT_SELECTED
 LOSS-5-L = NOT_SELECTED
 LOSS-5-M = NOT_SELECTED
 LOSS-5-N = NOT_SELECTED
+LOSS-5-O = NOT_SELECTED
 
 R        = BLOCKED
 R_oracle = BLOCKED
