@@ -4,8 +4,9 @@
 
 **Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
-Concrete Instance Post-Audit 已将 |Argmin|=4 限定为 realized action-sequence 基数，
-rule-level 精确基数暂为 OPEN）
+Concrete Instance Post-Audit 已将 |Argmin|=4 限定为 realized action-sequence 基数；
+Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE，
+rule-level 精确基数保持 OPEN）
 
 ## Current research state
 
@@ -358,9 +359,9 @@ Post-gate computational facts derived from the registered instance (no new seman
 
 R(P0,θ0′) = 5376.
 
-att(P0,θ0′) = true; Argmin(P0,θ0′) ≠ ∅ with |Argmin(P0,θ0′)| = 4; uniq(P0,θ0′) = false.
+att(P0,θ0′) = true; Argmin(P0,θ0′) ≠ ∅; realized optimal action-sequence count = 4; uniq(P0,θ0′) = false.
 
-Derivation: the admissible action-sequence space is finite (3^8 = 6561) and the point-mass regime makes V(P0,θ0′) a finite non-empty set of reals, so inf V ∈ V (K4-A); Argmin ≠ ∅ follows by the K4-B bridge; exhaustive enumeration cross-verified by an independent per-round DP gives min = 5376; the minimizer family has the closed form "single residency switch to B at the k-th B-round, k ∈ {2,4,6,8}", cost 512 + 1024 + 3×1280 independent of k, hence |Argmin| = 4 and uniq = false (K4-C).
+Derivation: the admissible action-sequence space is finite (3^8 = 6561) and the point-mass regime makes V(P0,θ0′) a finite non-empty set of reals, so inf V ∈ V (K4-A); Argmin ≠ ∅ follows by the K4-B bridge; exhaustive enumeration cross-verified by an independent per-round DP gives min = 5376; the realized minimizer family has the closed form "single residency switch to B at the k-th B-round, k ∈ {2,4,6,8}", cost 512 + 1024 + 3×1280 independent of k, hence the realized action-sequence minimizer count is 4 and uniq = false (K4-C). The post-audit scopes that count to the realized layer; rule-level exact cardinality remains OPEN.
 
 Boundary: no selector, canonical optimizer, or g* (uniq = false independently blocks canonical selection); R_ORACLE remains NOT_DEFINED; Δ/gap remain blocked; STEP⑤/STEP⑥ remain NOT ENTERED; no implementation, harness, measurement, or experiment authorization.
 
@@ -385,8 +386,28 @@ uniq(P0,θ0′) = false
 rule-level |Argmin(P0,θ0′)| = OPEN
 ```
 
-`D_opt(P0,θ0′)` remains non-empty and `(P0,θ0′)∈Dom(R)`. The candidate-representation
-decision surface remains open: realization quotient, realized-history restriction, or
-full visible-history rule space with only the lower bound. No option is selected.
+`D_opt(P0,θ0′)` remains non-empty and `(P0,θ0′)∈Dom(R)`.
 
-Audit history: docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.
+### Concrete Representation Decision — 2026-09-23
+
+For `(P0,θ0′)`, the researcher selected:
+
+```
+Concrete representation = 3 / FULL_VISIBLE_HISTORY_RULE_SPACE
+```
+
+Accordingly, no realization quotient and no realized-history restriction are
+introduced. The existing rule-level `Argmin / att / uniq` interfaces remain
+unchanged. The four optimal realized action sequences imply only the lower
+bound `|Argmin(P0,θ0′)|≥4`; exact rule-level cardinality remains OPEN.
+
+The next concrete surface is to determine whether the full visible-history rule
+representation and current declarations determine `|Argmin(P0,θ0′)|`, or formally
+show underdetermination from unconstrained rule behavior on unrealized visible
+histories.
+
+Decision history:
+docs/07-history/R_CONCRETE_REPRESENTATION_DECISION_20260923.md.
+
+Prior audit history:
+docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.
