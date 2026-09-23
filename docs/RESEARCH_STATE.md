@@ -28,8 +28,9 @@ SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_P
 SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后；
 SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成；
 SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成；
-SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试）
-；SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过）
+SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试；
+SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过；
+SimiGo 2.0 MLX Gate 3 parameter swap / semantic restore 已通过，但 group-residency inference 仍未验证）
 
 ## Current research state
 
@@ -1105,3 +1106,25 @@ inference.
 
 Gate history:
 docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md.
+
+### SimiGo 2.0 MLX Gate 3 Parameter-Swap Results — 2026-09-24
+
+Gate 3 passed at parameter-swap and semantic-restore level for
+`model.layers.0.mlp.switch_mlp.gate_proj.weight`:
+
+```text
+baselineOutput                   = pong
+perturbedOutput                  = ping / newline / three backticks
+restoredOutput                   = pong
+perturbedDiffers                 = true
+restoredParameterMatchesBaseline = true
+baselineEqualsRestored           = true
+```
+
+This proves a selected fused MoE parameter reaches real inference, is load-bearing
+under the deterministic prompt, and can be restored exactly. It still does not
+prove whole-group residency, release, rematerialization, or execution-state-driven
+layer loading during inference.
+
+Gate history:
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE3_RESULTS_20260924.md.

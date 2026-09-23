@@ -498,6 +498,21 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Pending: real model parameter swap and inference semantic consistency.
 - Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md.
 
+## SimiGo 2.0 MLX Gate 3 Parameter-Swap Results — 2026-09-24
+
+- Gate 3 parameter swap and semantic restore: PASS for
+  `model.layers.0.mlp.switch_mlp.gate_proj.weight`.
+- Deterministic prompt: baseline/restored output `pong`; zeroed-parameter output
+  changed to `ping` followed by a newline and three backticks.
+- Both the target-parameter fingerprint and output returned exactly to baseline.
+- A router-gate control did not alter this narrow prompt; this does not establish
+  global router inertness.
+- Root-cause finding: MLX parameter update mutates the `MLXArray` wrapper in
+  place, so the restore value must be snapshotted before perturbation.
+- Pending: whole-group release/rematerialization around real inference with
+  execution-state control, output identity, peak memory, reload cost, and latency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE3_RESULTS_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

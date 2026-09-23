@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -120,6 +120,14 @@ struct Simigo2CTL {
         modelDirectory: modelDirectory,
         inventory: inventory,
         groupID: groupID
+      )
+      print(try toJSON(report))
+    case "mlx-gate3":
+      let prompt = "Return exactly one word: ping"
+      let report = try await MLXParameterSwapGate.run(
+        modelDirectory: modelDirectory,
+        prompt: prompt,
+        maxTokens: 24
       )
       print(try toJSON(report))
     default:
