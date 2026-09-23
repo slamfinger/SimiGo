@@ -151,7 +151,7 @@ selector / tie-breaking
 ## 尚未声明/仍被阻断
 
 - R_OBJECT：DECLARED（R : Dom(R) → ℝ）
-- R_ASSEMBLY：OPEN
+- R_ASSEMBLY：CLOSED (M4 DEFERRAL SATISFIED)
 - R_ORACLE：NOT_DEFINED
 - Δ：BLOCKED
 - FinLoss：NOT LEGALLY AVAILABLE
@@ -248,3 +248,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Δ / gap requires a comparison problem plus explicit legality argument; STEP⑤/⑥ require program-level decisions.
 - gap, ε-argmin, cardinality refinements, and R sectional properties are retained only as anti-drift non-declarations because no registered consumer exists.
 - No chain continuation is authorized merely to maintain momentum. Any future gate must arise from: (a) program-level problem, (b) consumer-driven structural declaration, or (c) concrete instantiation.
+
+
+## R-ASSEMBLY Transition Audit — 2026-09-23
+
+- The OPEN state originated in R-ASSEMBLY-10 / M4, which deferred the final R_OBJECT input hierarchy until the internal interfaces were resolved.
+- M4 waiting conditions are now satisfied by P4 / δ3 / θ2, G4-4, L5-3 + E6-4/E7-B/E8-C, and the RO-1 object signature.
+- RO-1 resolves the final hierarchy as (P,θ): R_OBJECT := R : Dom(R) → ℝ.
+- The historical/deferred alternative ((P,δ),θ) is closed; δ remains only at the decision-generation layer Γ(P,δ)=g.
+- Review of R-ASSEMBLY-1A through R-ASSEMBLY-10 found no other outstanding final-object input-hierarchy deferral.
+- Decision: R_ASSEMBLY = CLOSED (M4 DEFERRAL SATISFIED).
+- This audit declares no new semantic object and does not reopen R-INTERNAL; R-INTERNAL chain remains IDLE.
+- Leading future surface: concrete instantiation. Structural declaration remains consumer-driven; program-level STEP⑤ remains separate and not entered.

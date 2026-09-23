@@ -133,7 +133,7 @@ R-ASSEMBLY-9  = DECLARED (L3)
 R-ASSEMBLY-10 = DECLARED (M4)
 
 R_OBJECT     = DECLARED (R : Dom(R) → ℝ)
-R_ASSEMBLY   = OPEN
+R_ASSEMBLY   = CLOSED (M4 DEFERRAL SATISFIED)
 R_ORACLE     = NOT_DEFINED
 Δ            = BLOCKED
 FinLoss      = NOT LEGALLY AVAILABLE
@@ -276,3 +276,49 @@ HARNESS AUTH = NONE
 Argmin / att / uniq remain auxiliary under RO-1.
 Historical δ(I_P), any new δ optimization domain, A(P,θ), and θ-level optimization remain excluded.
 No implementation, harness, data collection, profiling, measurement, or experiment authorization follows from this audit.
+
+
+### R-ASSEMBLY Transition Audit — 2026-09-23
+
+The R-ASSEMBLY OPEN state originated in R-ASSEMBLY-10 / M4 (Parameter Domain Hierarchy Declaration), whose declared semantics explicitly deferred the final R_OBJECT input hierarchy until the internal interfaces were resolved.
+
+Audit of the M4 waiting conditions:
+
+1. P / δ / θ types resolved: R-INTERNAL-1 / P4, R-INTERNAL-2 / δ3, R-INTERNAL-3 / θ2.
+2. 𝒢_adm(P) structure resolved: R-INTERNAL-4 / G4-4.
+3. L domain resolved: R-INTERNAL-5 / L5-3, R-INTERNAL-6 / E6-4, R-INTERNAL-7 / E7-B, R-INTERNAL-8 / E8-C.
+4. E_θ legality / existence conditions resolved: R-INTERNAL-6 / E6-4.
+5. Final R_OBJECT input hierarchy resolved: R-INTERNAL-17 / RO-1 declares R_OBJECT := R : Dom(R) → ℝ, with input hierarchy (P,θ).
+
+Hierarchy branch closure:
+- The previously deferred ((P,δ),θ) alternative is closed by RO-1 and is not a live branch.
+- δ remains a decision-generation parameter in Γ(P,δ)=g; it is not an additional input level of the declared R_OBJECT.
+
+R-ASSEMBLY-1A through R-ASSEMBLY-10 were reviewed for unresolved final-object deferrals. No other explicit final-object input-hierarchy deferral remains outstanding; the identified OPEN state is the M4 deferral audited here.
+
+Decision:
+- The M4 waiting conditions are satisfied.
+- The reason for R_ASSEMBLY = OPEN has expired.
+- R_ASSEMBLY is therefore CLOSED at the current declared object hierarchy:
+  R_OBJECT = R : Dom(R) → ℝ, with input (P,θ).
+
+This audit does not introduce a new semantic object, does not reopen R-INTERNAL, and does not enter STEP⑤/STEP⑥.
+
+Post-audit routing:
+- R-INTERNAL chain remains IDLE.
+- Concrete instantiation is the leading candidate for the next research surface.
+- Consumer-driven structural declaration remains conditional on a concrete consumer need.
+- Program-level questions (including STEP⑤) remain a separate route and are not entered by this audit.
+
+The following remain unchanged:
+R_OBJECT = DECLARED
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+STEP⑥ = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH = NONE
+
+No gap/D, oracle interface, historical δ(I_P), new δ optimization domain, A(P,θ), θ-level optimization, selector/tie-breaking, topology, compactness, continuity, measurability, or implementation/harness/data/measurement/experiment authorization is introduced.
