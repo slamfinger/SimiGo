@@ -3,7 +3,7 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A 完成；STEP④-B / Value Discipline 完成：VD-01～VD-05 已由 human researcher 显式声明；下游一致性审查通过）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / VALUE DISCIPLINE COMPLETE / DOWNSTREAM REVIEW PASSED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / NECT MODE BLOCKED | 语义实例化已完成；下一步为 Value Discipline / STEP④-B，仍不授权实验 |
+| P4-A existence criterion | STEP⑤ HISTORICAL FORMULATION RETAINED / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT NOT DECLARED / R、R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED | 不把历史 STEP⑤ downstream 对象当作当前实例化对象；不得自动重开 R layer |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -64,14 +64,19 @@ P4 / RQ-P4-01 candidate
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
 - STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE VD-01～VD-05 COMPLETE / DOWNSTREAM DEPENDENCY REVIEW PASSED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
-- STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
+- LOSS-3 Cost Object：CLOSED / C_LOSS = NEW_INDEPENDENT_C_LOSS / COST_DOMAIN=FINITE_REAL / INFINITE_COST=NOT_PRESENT / C_DEFINEDNESS=TOTAL_ON_DECLARED_DOMAIN
+- LOSS-4 Cost Evaluation Interface：CLOSED / C_LOSS : D_C → ℝ / D_C=A×W / D_C CURRENTLY MFI PLACEHOLDER / NO PROBABILISTIC SEMANTICS
+- LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT
+- STEP⑤ Nontrivial Phenomenon Existence Criterion：HISTORICAL FORMULATION RETAINED / NDAC AND SAT_INF_FIN RETAINED AS HISTORICAL GATE LOGIC / R NOT_DEFINED_BY_CURRENT_FRAMEWORK / R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED
 - STEP⑥–⑨：未开始
 
 ### Allowed
 
 - 阅读并维护 `docs/STEP4A_CANONICAL_DECISIONS.md`；
 - 维护已完成的 STEP④-B / Value Discipline（VD-01～VD-05）；
-- 对 STEP④-B 完成后的下游依赖进行一致性审查；
+- 维护 LOSS-3 / LOSS-4 / LOSS-5 的已声明边界；
+- 对 P4-A 主链进行 dependency review，识别在当前 Loss boundary 下仍可独立成立的对象或研究问题；
+- 保留历史 STEP⑤、IPR、domain-partition、NDAC、SAT_INF_FIN 文档及 provenance，不进行静默重写；
 - 继续遵守 `DG_4A_01=RESULT_FORM_DETERMINING` 与已实例化的 `Binding_C=VECTOR_COMPOSITION`：`C` 的 semantic form 为向量组合对象，local-to-global relation 由该 form 派生；
 - 其余既有 STEP④/⑤ 定义资产仅在发生具体语义矛盾时重新审查；
 - 保持 `A/W/W_D` 为 carrier symbols only，保持 `J` 为 abstract index carrier；
@@ -85,7 +90,10 @@ P4 / RQ-P4-01 candidate
 - 新增 formal-basis、metadata 或 contract 审计层而没有具体语义矛盾；
 - 从自然语言 “cost”、Risk、oracle、`D_loss`、STEP⑤ notation 或工程常识反向修改 `V_j` 的已声明语义；
 - 重新引入 `+infty` loss-value semantics 或向 `V_j` 坐标引入 `±∞` / `NaN` / 缺失值；
-- 进入 Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，除非其自身门禁被独立满足；STEP④-B 完成不自动越过这些门禁；
+- 将 LOSS-5 schema A 改写成任何隐含的 R / Risk / aggregate object；
+- 把历史 STEP⑤ 的 FinLoss、R_s^fin、R_s^nofin、F_s^fin 当作当前正式实例；
+- 从自然语言 “cost”、Risk、oracle、D_loss、STEP⑤ notation 或工程常识反向补齐未声明语义；
+- 进入 Risk、FinLoss、residual status、NECT mode 或 STEP⑥，除非其自身门禁被独立满足；
 - Runtime implementation / research harness / data collection / profiling / performance measurement；
 - 自动注册 RQ-P4-01；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
@@ -231,6 +239,70 @@ VALUE ↔ LOSS/RISK CHANNEL = CLOSED
 ```
 
 Completion of STEP④-B does not authorize Residual, FinLoss, NECT, STEP⑤, Runtime implementation, harness, data collection, profiling, performance measurement, or experiment.
+
+## 10.1 Loss-layer boundary
+
+LOSS-3 and LOSS-4 are closed at the following current interface:
+
+```
+C_LOSS : D_C → ℝ
+D_C = A × W
+```
+
+No probability-space, random-variable, measurability, distribution, expectation, optimization, or experimental semantics are present.
+
+LOSS-5 is complete at its current resolution level:
+
+```
+R_OBJECT_SCHEMA = A
+R_OBJECT = NOT_DECLARED
+R = NOT_DEFINED_BY_CURRENT_FRAMEWORK
+R_oracle = NOT_DEFINED_BY_CURRENT_FRAMEWORK
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+```
+
+## 10.2 STEP⑤ current status after LOSS-5
+
+The historical STEP⑤ formulation is preserved but is not instantiated as the current downstream formal object.
+
+```
+historical STEP⑤ formulation
+        ↓
+LOSS-5 resolution
+        ↓
+R_OBJECT_SCHEMA = A
+        ↓
+R layer not instantiated
+        ↓
+R_s^fin / R_s^nofin / F_s^fin remain conditional / historical
+        ↓
+NECT remains BLOCKED
+        ↓
+STEP⑥ not entered
+```
+
+NDAC and SAT_INF_FIN remain historical STEP⑤ gate logic. This update does not declare them mathematically invalid; it prevents their downstream execution from being treated as currently authorized when their required loss objects are absent.
+
+## 10.3 Research boundary after LOSS-5
+
+The current formal loss chain stops at C_LOSS. No current framework object connects C_LOSS to R.
+
+Therefore the next review is not “complete STEP⑤ by filling missing formulas”. It is a dependency review of the P4-A research proposition itself:
+
+```
+P4-A
+ ↓
+STEP④ semantic/value objects
+ ↓
+C_LOSS
+ ↓
+[no current R layer]
+ ↓
+STEP⑤ downstream blocked
+```
+
+Any future continuation must first determine, by explicit researcher declaration, whether a research object above C_LOSS is required at all. No such object is selected by this state file.
 
 ## 11. Governance
 
