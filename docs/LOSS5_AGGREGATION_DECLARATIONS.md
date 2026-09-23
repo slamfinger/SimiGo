@@ -15,11 +15,12 @@ LOSS-5-E  θ_ROLE = UNDECLARED
 LOSS-5-F  R_OBJECT = NOT_DECLARED
 LOSS-5-G  R_CODOMAIN = UNDECLARED
 LOSS-5-H  OPTIMIZATION_ROLE = BLOCKED
+LOSS-5-I  EVALUATION_DOMAIN = NOT_SELECTED
 ```
 
 ## Consequence
 
-No aggregation object is currently selected. No evaluation input or evaluation object is currently selected. The aggregation/evaluation rule is undeclared.
+No aggregation object is currently selected. No evaluation input, evaluation object, or evaluation domain is currently selected. The aggregation/evaluation rule is undeclared.
 
 The role of `θ` is undeclared. No probability-space, workload-regime, parameter, distribution, or other mathematical semantics for `θ` is introduced by this record.
 
@@ -51,6 +52,7 @@ LOSS-5-E = UNDECLARED
 LOSS-5-F = NOT_DECLARED
 LOSS-5-G = UNDECLARED
 LOSS-5-H = BLOCKED
+LOSS-5-I = NOT_SELECTED
 
 R        = BLOCKED
 R_oracle = BLOCKED
