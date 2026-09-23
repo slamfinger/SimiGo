@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-7 = E7-B 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-8 = E8-C 已声明）
 
 ## Current research state
 
@@ -15,6 +15,7 @@ R-INTERNAL-4 = G4-4
 R-INTERNAL-5 = L5-3
 R-INTERNAL-6 = E6-4
 R-INTERNAL-7 = E7-B
+R-INTERNAL-8 = E8-C
 
 ### Current internal interfaces
 
@@ -33,9 +34,16 @@ L : Dom(L) → ℝ
 E_θ[C_LOSS(g(W),W)] 合法且为有限实数
 
 (g,P,θ) ∈ Dom(L) ⇒ g ∈ 𝒢_adm(P)
+
+R-INTERNAL-8 / E8-C:
+(g,P,θ) ∈ Dom(L)
+    ⇔
+g ∈ 𝒢_adm(P)
+    ∧
+E_θ[C_LOSS(g(W),W)] 合法且为有限实数
 ```
 
-E7-B declares a necessary admissibility condition on the loss-evaluation domain: any triple admitted to Dom(L) must use a rule in the P-dependent admissible decision-rule family. The implication is one-way; admissibility is not declared sufficient for membership in Dom(L).
+E8-C closes the current loss-evaluation domain at the declared resolution level: membership in Dom(L) is equivalent to joint satisfaction of P-dependent rule admissibility and legality/finite-real status of the expectation. The word “合法” remains unexpanded; no separate declaration of measurability, integrability, or a specific expectation-existence theorem is added.
 
 ### Assembly state
 
@@ -83,8 +91,8 @@ OPT remains abstract. No min / inf / argmin / optimizer existence or attainment 
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-7.
+R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-8.
 
-E7-B does not instantiate a concrete admissible-rule family, a concrete probability space or parameter domain, integrability, a concrete optimization construction, optimizer existence/attainment, exact Dom(R), R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
+E8-C does not instantiate a concrete admissible-rule family, a concrete probability space or parameter domain, separate integrability/measurability conditions, a concrete optimization construction, optimizer existence/attainment, exact Dom(R), R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
 
 Historical δ(I_P) is not restored and no new δ optimization domain is introduced.
