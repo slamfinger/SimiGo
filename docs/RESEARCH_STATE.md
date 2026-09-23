@@ -35,6 +35,7 @@ SimiGo 2.0 MLX Gate 4 single-state whole-group inference residency 已通过；
 SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过，
 对 naive on-demand 减少 reload 10.87 GiB，但 latency advantage 未建立；
 SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 real-device proof）
+；Nail-Qwen3.6-35B-A3B-MLX 已在 Apple M5 完成 Gate 4 与 Gate 5 real-device validation）
 
 ## Current research state
 
@@ -1203,3 +1204,21 @@ Artifact:
 
 Result history:
 docs/00-governance/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.md.
+
+### Nail-Qwen3.6 Real-Device Validation — 2026-09-24
+
+Validated `peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX` on Apple M5:
+
+```text
+checkpoint size                  = 21,634,738,912 bytes
+switch group tensors             = 360
+Gate 4 single-group residency    = PASS / outputEquals=true
+Gate 5 app self-test             = PASS / exit code=0
+outputIdentityPass               = true
+maximum idle reduction           = 10,871,635,392 bytes
+reload reduction vs naive        = 18,119,393,280 bytes
+latency advantage                = NOT ESTABLISHED
+```
+
+Validation history:
+docs/00-governance/SIMIGO2_NAIL_QWEN36_REAL_DEVICE_VALIDATION_20260924.md.

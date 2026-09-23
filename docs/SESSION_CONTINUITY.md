@@ -545,8 +545,6 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
   governed idle retention only.
 - Gate history: docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md.
 
-## Execution-State Information Boundary Hypothesis — 2026-09-23
-
 ## SimiGo 2.0 App Real-Device Proof — 2026-09-24
 
 - Added `SimiGo2App` SwiftUI target and `scripts/build-app.sh`; local bundle:
@@ -560,6 +558,24 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This remains a local feasibility proof, not a release or latency-optimization claim.
 - Proof history: docs/00-governance/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.md.
 - Raw evidence: docs/02-evidence/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.json.
+
+## Nail-Qwen3.6 Real-Device Validation — 2026-09-24
+
+- Validated `Nail-Qwen3.6-35B-A3B-MLX` snapshot
+  `31a0106483c94e9fbb0a6d3360ff122d47377058` on Apple M5.
+- Inventory: 1,930 tensors / 21,634,738,912 bytes; 360 switch-MLP tensors grouped
+  into three whole-group ranges.
+- Gate 4: PASS for `STATE_A → SWITCH_MLP_L00_15`; 144/144 tensors released and
+  rematerialized; output restored exactly.
+- App Gate 5 self-test: PASS; 15 generations had identical outputs.
+- Maximum idle reduction: 10,871,635,392 bytes; reload reduction versus naive:
+  18,119,393,280 bytes.
+- Latency advantage remains NOT ESTABLISHED; complete inference still traverses
+  all required groups.
+- Validation history:
+  docs/00-governance/SIMIGO2_NAIL_QWEN36_REAL_DEVICE_VALIDATION_20260924.md.
+
+## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
 - Separates execution state, capability demand, model representation/compression metadata, and loading/residency policy.
