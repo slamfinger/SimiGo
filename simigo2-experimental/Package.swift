@@ -9,7 +9,8 @@ let package = Package(
     ],
     products: [
         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
-        .executable(name: "simigo2ctl", targets: ["simigo2ctl"])
+        .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
+        .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
         .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.6")),
@@ -29,7 +30,7 @@ let package = Package(
                 .product(name: "MLXNN", package: "mlx-swift")
             ]
         ),
-        .executableTarget(
+    .executableTarget(
             name: "simigo2ctl",
             dependencies: [
                 "SimiGo2Experimental",
@@ -40,6 +41,10 @@ let package = Package(
                 .product(name: "Tokenizers", package: "swift-transformers"),
                 .product(name: "MLXNN", package: "mlx-swift")
             ]
+        ),
+        .executableTarget(
+            name: "SimiGo2App",
+            dependencies: ["SimiGo2Experimental"]
         ),
         .testTarget(
             name: "SimiGo2ExperimentalTests",

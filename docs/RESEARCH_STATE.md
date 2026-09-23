@@ -32,8 +32,9 @@ SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH
 SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过；
 SimiGo 2.0 MLX Gate 3 parameter swap / semantic restore 已通过；
 SimiGo 2.0 MLX Gate 4 single-state whole-group inference residency 已通过；
-SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过；
-Gate 5 对 naive on-demand 减少 reload 10.87 GiB，但 latency advantage 未建立）
+SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过，
+对 naive on-demand 减少 reload 10.87 GiB，但 latency advantage 未建立；
+SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 real-device proof）
 
 ## Current research state
 
@@ -1180,3 +1181,25 @@ semantic layer skipping.
 
 Gate history:
 docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md.
+
+### SimiGo 2.0 App Real-Device Proof — 2026-09-24
+
+Added a minimal SwiftUI app target and `.app` bundle script. The app was built on
+the local machine and ran Gate 5 in self-test mode:
+
+```text
+device                  = Apple M5 / arm64 / macOS 26.6.2
+exit code               = 0
+self-test               = PASS
+outputIdentityPass      = true
+idleReductionObserved   = true
+maximum idle reduction  = 10,871,635,200 bytes
+reload reduction naive  = 10,871,635,968 bytes
+all generation outputs  = pong
+```
+
+Artifact:
+`simigo2-experimental/build/SimiGo2Experimental.app`.
+
+Result history:
+docs/00-governance/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.md.

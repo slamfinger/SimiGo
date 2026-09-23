@@ -547,6 +547,20 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
+## SimiGo 2.0 App Real-Device Proof — 2026-09-24
+
+- Added `SimiGo2App` SwiftUI target and `scripts/build-app.sh`; local bundle:
+  `simigo2-experimental/build/SimiGo2Experimental.app`.
+- Real-device proof: Apple M5 / arm64 / macOS 26.6.2 / 34,359,738,368 bytes RAM.
+- Ran Gate 5 self-test on Qwen3-Coder with
+  `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- Exit code `0`; all 15 generations returned `pong`; self-test `PASS`.
+- `outputIdentityPass=true`; maximum idle reduction 10,871,635,200 bytes.
+- Execution-state reload bytes: 54,358,179,840 versus naive 65,229,815,808.
+- This remains a local feasibility proof, not a release or latency-optimization claim.
+- Proof history: docs/00-governance/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.md.
+- Raw evidence: docs/02-evidence/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.json.
+
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
 - Separates execution state, capability demand, model representation/compression metadata, and loading/residency policy.
 - Core question: can `execution state → capability demand` be computed without model internals?

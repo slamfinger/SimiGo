@@ -1,7 +1,7 @@
 # SimiGo 2.0 Experimental Route and MVP Plan
 
 **Date**: 2026-09-23  
-**Status**: ROUTE_REGISTERED / PHASE_0_COMPLETE / PHASE_1_COMPLETE / MLX_RUNTIME_GATES_1_5_PASS / PHASE_3_FEASIBILITY_PASS / LATENCY_ADVANTAGE_NOT_ESTABLISHED
+**Status**: ROUTE_REGISTERED / PHASE_0_COMPLETE / PHASE_1_COMPLETE / MLX_RUNTIME_GATES_1_5_PASS / PHASE_3_FEASIBILITY_PASS / APP_REAL_DEVICE_PROOF_PASS / LATENCY_ADVANTAGE_NOT_ESTABLISHED
 **Nature**: engineering experiment registration; not an A2.0 reopening, new formal theory, product release, or performance claim
 
 ## 1. Decision

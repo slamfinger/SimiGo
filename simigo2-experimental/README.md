@@ -1,8 +1,10 @@
 # SimiGo 2.0 Experimental Scaffold
 
-This is a Phase 1 engineering scaffold for **execution-state-driven layer-group
-residency**. It intentionally does **not** implement model inference or modify MLX
-internals.
+This is an experimental harness for **execution-state-driven layer-group
+residency**. MLX runtime gates now cover selective tensor materialization,
+whole-group lifecycle, parameter restore, single-group inference residency, and a
+multi-state real-runtime benchmark. It does not modify MLX internals or skip
+layers during complete inference.
 
 ## Current goal
 
@@ -48,6 +50,15 @@ swift run simigo2ctl materialize \
 swift run simigo2ctl mlx-gate1 \
   /path/to/model-snapshot \
   --group SWITCH_MLP_L00_15
+
+# Build the local SwiftUI app bundle
+./scripts/build-app.sh debug
+
+# Run the real-device Gate 5 self-test from the app bundle
+./build/SimiGo2Experimental.app/Contents/MacOS/SimiGo2App \
+  --self-test \
+  --model /path/to/model-snapshot \
+  --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
 ```
 
 ## MVP policy
