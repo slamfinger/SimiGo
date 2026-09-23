@@ -15,7 +15,8 @@ A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED；
 Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL；
 Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY；
 Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK；
-Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN）
+Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN；
+Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE）
 
 ## Current research state
 
@@ -730,3 +731,28 @@ theory or a disciplined generic optimization schema.
 
 Audit history:
 docs/07-history/A2_CORE_DEGENERACY_DISTINCTIVENESS_AUDIT_20260923.md.
+
+### A2.0 Projection–Evaluation Distinctiveness Attack — 2026-09-23
+
+The candidate distinctiveness of separating `P` and `θ` was adversarially tested
+against a generic optimization schema.
+
+Result:
+
+```
+SEMANTIC_COLLAPSE          = NOT ESTABLISHED
+RECOVERABLE                = YES at current formal level
+STRUCTURAL_DISTINCTIVENESS = NOT ESTABLISHED
+```
+
+A generic schema can preserve the two-dimensional dependency by using the product
+object `O=(P,θ)`: one component indexes the admissible behavior interface and the
+other indexes the evaluation regime. The names and interpretation may disappear,
+but the formal distinction is recoverable.
+
+Richer projection properties—direction, domain/codomain, and information
+loss—are not currently load-bearing in the abstract value-level formulas. Therefore
+they do not yet establish structural distinctiveness.
+
+Attack history:
+docs/07-history/A2_PROJECTION_EVALUATION_DISTINCTIVENESS_ATTACK_20260923.md.

@@ -411,3 +411,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - `COLLAPSE` is not proven, but `DISTINCTIVE` is also not proven.
 - No new object, route, implementation, experiment, or formal separation is authorized.
 - Audit history: docs/07-history/A2_CORE_DEGENERACY_DISTINCTIVENESS_AUDIT_20260923.md.
+
+## A2.0 Projection–Evaluation Distinctiveness Attack — 2026-09-23
+
+- Result: `RECOVERABLE` at the current formal level.
+- A generic schema using `O=(P,θ)` can preserve same-`P`/different-`θ` and different-`P`/same-`θ` distinctions.
+- `SEMANTIC_COLLAPSE` is therefore not established.
+- `STRUCTURAL_DISTINCTIVENESS` is also not established.
+- Richer projection semantics—direction, domain/codomain, and information loss—are not currently load-bearing in the abstract value-level formulas.
+- No new object, route, implementation, experiment, or formal separation is authorized.
+- Attack history: docs/07-history/A2_PROJECTION_EVALUATION_DISTINCTIVENESS_ATTACK_20260923.md.
