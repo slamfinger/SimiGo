@@ -1,7 +1,7 @@
 # SimiGo-Lab — STEP④-A Canonical Decisions
 
 **Date:** 2026-09-23
-**Status:** ACTIVE / DG-4A-01 RESOLVED / SEMANTIC INSTANTIATION REQUIRED
+**Status:** ACTIVE / DG-4A-01 RESOLVED / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED
 **Authority:** This file is the canonical decision surface for unresolved STEP④-A semantic choices. Historical audit documents remain evidence and are not re-opened unless a concrete semantic contradiction is identified.
 
 ## 1. Governance compression
@@ -20,16 +20,16 @@ No further formal-basis or metadata audit layer is created unless a concrete sem
 
 ## 2. Current decision targets
 
-Only the following STEP④-A semantic choices are currently open for explicit researcher instantiation:
+The STEP④-A semantic choices have been explicitly instantiated by the human researcher:
 
 ```
 SourceStatus     = NEW_DECLARATION
-VType            = UNDECLARED
-OutputDiscipline = UNDECLARED
-Binding_C        = UNDECLARED
+VType            = VECTOR
+OutputDiscipline = FINITE_REAL_COORDINATEWISE
+Binding_C        = VECTOR_COMPOSITION
 ```
 
-The agent SHALL NOT select these values.
+These values were declared by the human researcher on 2026-09-23. The agent did not select them.
 
 The DG-4A-01 boundary has been resolved separately:
 
@@ -57,7 +57,7 @@ Order           = DEFERRED
 Measurability   = DEFERRED
 ```
 
-Scalarity, finiteness, nonnegativity, special-value admissibility, and related output restrictions belong to the eventual `OutputDiscipline` instantiation and are not separately preselected here.
+Scalarity, finiteness, nonnegativity, and special-value admissibility are now governed by the declared `OutputDiscipline = FINITE_REAL_COORDINATEWISE`. `Measurability` remains deferred. Positional order is intrinsic to the declared vector structures and is not a separate measurement-order claim.
 
 Infinity semantics remain undeclared:
 
@@ -70,9 +70,40 @@ The old STEP⑤ `[0,+infinity]` notation does not acquire STEP④ meaning throug
 
 ## 5. Binding boundary
 
-`Binding_C` remains a separate open semantic choice. This document does not select sum, tuple, vector, record, product, or any other aggregation.
+`Binding_C` has now been instantiated by the human researcher as `VECTOR_COMPOSITION`.
 
-Because `DG_4A_01 = RESULT_FORM_DETERMINING`, any future concrete `Binding_C` declaration must determine the semantic form of the composed result `C`. The local-to-global relation is then derived from that semantic form. A future `Binding_C` declaration SHALL NOT rely on runtime representation, observed numerical agreement, cost/loss terminology, STEP⑤ notation, or engineering convention to determine `C` implicitly.
+Because `DG_4A_01 = RESULT_FORM_DETERMINING`, this declaration determines the semantic form of the composed result `C`, and the local-to-global relation is derived from that form. It does not rely on runtime representation, observed numerical agreement, cost/loss terminology, STEP⑤ notation, or engineering convention.
+
+## 5.1 Researcher semantic instantiation (2026-09-23)
+
+Declared by the human researcher:
+
+**VType = VECTOR**
+
+```
+V_j ∈ ℝ^k,  V_j = (v_{j,1}, ..., v_{j,k})
+```
+
+- Expresses: each local value is a homogeneous multi-coordinate object; multi-dimensional structure is preserved.
+- Excludes: scalar compression (`SCALAR`), extended-real values, and typed-record semantics at this layer.
+
+**OutputDiscipline = FINITE_REAL_COORDINATEWISE**
+
+```
+every coordinate v_{j,i} ∈ ℝ with |v_{j,i}| < ∞
+```
+
+- Expresses: admissible values are ordinary finite reals, applied to every coordinate of every `V_j` (the researcher's `V_j ∈ ℝ`, `|V_j| < ∞` is applied coordinate-wise so that it is consistent with `VType = VECTOR`).
+- Excludes: `+∞` / `−∞`, `NaN`, missing or undefined coordinates. Sign and nonnegativity are not constrained by this declaration.
+
+**Binding_C = VECTOR_COMPOSITION**
+
+```
+C = [V_1, V_2, V_3, ...]  (the composed result C is itself a vector object)
+```
+
+- Expresses: under `DG_4A_01 = RESULT_FORM_DETERMINING`, the semantic form of `C` is a vector whose entries are the declared local values; component identity and multiplicity are preserved; the local-to-global relation follows from this form.
+- Excludes: additive aggregation (sum, weighted sum, mean/max/min), tuple-as-distinct-contract, record/field semantics, and any aggregation that compresses local values into a single scalar.
 
 ## 6. Explicit definition-layer gap resolution
 
@@ -196,29 +227,44 @@ Future concrete `Binding_C` candidates are valid only if they:
 
 The gap may be resolved only by an explicit researcher semantic declaration or by a concrete semantic contradiction showing that the present contract is insufficient. No runtime representation, observed numerical agreement, cost/loss terminology, STEP⑤ notation, or engineering convention may resolve it implicitly.
 
-The definition-layer gap is resolved. The following semantic instantiation targets remain open:
+The definition-layer gap is resolved. The semantic instantiation targets are now closed:
 
 ```
-VType            = UNDECLARED
-OutputDiscipline = UNDECLARED
-Binding_C        = UNDECLARED
+VType            = VECTOR
+OutputDiscipline = FINITE_REAL_COORDINATEWISE
+Binding_C        = VECTOR_COMPOSITION
 ```
 
-The downstream gate remains unchanged:
+The downstream gate is updated:
 
 ```
-STEP4-B          = BLOCKED
+STEP4-B          = UNBLOCKED (NEXT: after Value Discipline)
 STEP5            = BLOCKED
 EXPERIMENT AUTH  = NONE
 ```
 
+## 6.4 Downstream consistency review (single required review)
+
+Performed after instantiation, per the allowed action "对新的 semantic instantiation 做一次必要的下游一致性审查". Result: **PASSED — no semantic contradiction found.**
+
+| Check | Result | Notes |
+|---|---|---|
+| NDAC | NO CONFLICT | NDAC status unchanged |
+| SAT_INF_FIN | NO CONFLICT | STEP⑤ target-layer definition untouched |
+| Domain partition | NO CONFLICT | Adopted partition stands |
+| IPR | NO CONFLICT | `+∞` excluded at the `V_j` layer by OutputDiscipline; envelope-layer `IPR_VALUE` remains UNDECLARED; `LOSS_INFINITY_PREDEFINED = FALSE` stands |
+| `A / W / W_D` | NO CONFLICT | Remain carrier symbols only |
+| `J` | NO CONFLICT | `J` remains an abstract index carrier; recorded constraint: vector dimension `k` and `C`'s coordinate structure SHALL NOT be silently identified with `J` membership or cardinality; no ordering of `J` is invented by the vector form |
+| STEP⑤ boundary | NO CONFLICT | NECT mode remains blocked; no experiment authorization |
+| DG-4A-01 validity conditions | SATISFIED | (1) explicit semantic form of `C` given; (2) local-to-global relation derivable from that form; (3) no implicit definition of `J` membership/ordering/cardinality; (4) no shape or numeric semantics added to `A`, `W`, `W_D` |
+
 ## 7. Downstream gate
 
-Until the current decision targets are explicitly instantiated and subsequently reviewed:
+The current decision targets are instantiated and have passed the required review. Therefore:
 
 ```
-VALUE DISCIPLINE     = BLOCKED
-STEP4-B RISK         = BLOCKED
+VALUE DISCIPLINE     = OPEN (NEXT ACTION)
+STEP4-B RISK         = OPEN (AFTER VALUE DISCIPLINE)
 FinLoss              = BLOCKED
 RESIDUAL STATUS      = BLOCKED
 NECT MODE            = BLOCKED

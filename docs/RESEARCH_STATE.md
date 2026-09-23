@@ -3,13 +3,13 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A：DG-4A-01 已由 human researcher 采用 RESULT_FORM_DETERMINING；VType / OutputDiscipline / Binding_C 仍未实例化）
+**Last updated**: 2026-09-23（STEP④-A 完成：human researcher 已显式实例化 VType=VECTOR / OutputDiscipline=FINITE_REAL_COORDINATEWISE / Binding_C=VECTOR_COMPOSITION；下游一致性审查通过）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A Canonical Decision Surface（STEP⑤ NECT mode blocked）
-Next action: Human researcher must explicitly instantiate MCVSD `VType/OutputDiscipline` and separately decide concrete `Binding_C` under `DG_4A_01=RESULT_FORM_DETERMINING`; agent must not select semantic values
-Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation open; STEP⑤ NECT mode blocked
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B / Value Discipline（STEP⑤ NECT mode blocked）
+Next action: Enter Value Discipline / STEP④-B（semantic instantiation 已完成并通过必要的一致性审查）；进入与否由 human researcher 决定
+Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation COMPLETE and consistency review PASSED; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / BINDING_C UNDECLARED / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / VALUE DISCIPLINE OPEN / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / SEMANTIC INSTANTIATION REQUIRED / NECT MODE BLOCKED | 只允许 human researcher 显式实例化 MCVSD，不授权实验 |
+| P4-A existence criterion | STEP⑤ OPEN / EC5 REJECTED / NDAC ACCEPTED / DOMAIN PARTITION ADOPTED / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / NECT MODE BLOCKED | 语义实例化已完成；下一步为 Value Discipline / STEP④-B，仍不授权实验 |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -63,31 +63,28 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE UNDECLARED / OUTPUT DISCIPLINE UNDECLARED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
 ### Allowed
 
 - 阅读并维护 `docs/STEP4A_CANONICAL_DECISIONS.md`；
-- 由 human researcher 显式实例化 MCVSD：`SourceStatus=NEW_DECLARATION`、`VType`、`OutputDiscipline`；
-- 单独决定 `Binding_C`，不默认任何聚合形式；
-- 遵守 `DG_4A_01=RESULT_FORM_DETERMINING`：未来具体 `Binding_C` 决定 `C` 的 semantic form，local-to-global relation 由该 form 派生；
-- 对新的 semantic instantiation 做一次必要的下游一致性审查；
+- 进入 Value Discipline / STEP④-B（semantic instantiation 已完成并通过必要审查）；
+- 继续遵守 `DG_4A_01=RESULT_FORM_DETERMINING` 与已实例化的 `Binding_C=VECTOR_COMPOSITION`：`C` 的 semantic form 为向量组合对象，local-to-global relation 由该 form 派生；
 - 其余既有 STEP④/⑤ 定义资产仅在发生具体语义矛盾时重新审查；
 - 保持 `A/W/W_D` 为 carrier symbols only，保持 `J` 为 abstract index carrier；
 - 继续保留既有 NDAC、SAT_INF_FIN、IPR 与 domain-partition 约束；
-- 在语义实例化完成并合法通过后，再进入 Value Discipline / STEP④-B。
+- 禁止把 `V_j` 的向量维度 `k` 或 `C` 的坐标结构默认等同于 `J` 的 membership/cardinality；
+- `V_j` 的所有坐标均为普通有限实数（排除 `±∞`、`NaN`、缺失值）。
 
 ### Forbidden
 
-- agent 自动选择 `VType`、`OutputDiscipline` 或 `Binding_C`；
+- 重新打开已完成的 `VType`、`OutputDiscipline`、`Binding_C` 实例化，除非出现具体语义矛盾；
 - 新增 formal-basis、metadata 或 contract 审计层而没有具体语义矛盾；
-- 从自然语言 “cost”、Risk、oracle、`D_loss`、STEP⑤ notation 或工程常识反向确定 `V_j`；
-- 把 MCVSD_VALID 解释为 `V_j` 已声明或 Cost Value Semantics 已完成；
-- 自动把 `V_j` 选择为 finite scalar、extended scalar、vector、typed record 或其他具体 carrier；
-- 重新引入 `+infty` loss-value semantics；
-- 进入 Value Discipline、Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，直到 semantic instantiation 完成并通过必要审查；
+- 从自然语言 “cost”、Risk、oracle、`D_loss`、STEP⑤ notation 或工程常识反向修改 `V_j` 的已声明语义；
+- 重新引入 `+infty` loss-value semantics 或向 `V_j` 坐标引入 `±∞` / `NaN` / 缺失值；
+- 进入 Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，Value Discipline / STEP④-B 完成前不得越过其自身门禁；
 - Runtime implementation / research harness / data collection / profiling / performance measurement；
 - 自动注册 RQ-P4-01；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
@@ -111,20 +108,20 @@ STEP④-A 当前不再新增 formal-basis 或 metadata 审计层。历史审计�
 
 ```
 SourceStatus     = NEW_DECLARATION
-VType            = UNDECLARED
-OutputDiscipline = UNDECLARED
-Binding_C        = UNDECLARED
+VType            = VECTOR (V_j ∈ ℝ^k)
+OutputDiscipline = FINITE_REAL_COORDINATEWISE (all coordinates finite reals)
+Binding_C        = VECTOR_COMPOSITION (C = [V_1, V_2, ...], vector result form)
 
 J   = ABSTRACT INDEX CARRIER; MEMBERSHIP/COMPONENT SET UNDECLARED
 A   = CARRIER SYMBOL ONLY
 W   = CARRIER SYMBOL ONLY
 W_D = CARRIER SYMBOL ONLY
 
-Order         = DEFERRED
+Order         = VECTOR_POSITIONAL (intrinsic to declared vector forms)
 Measurability = DEFERRED
 ```
 
-`Scalarity`、`finiteness`、`nonnegativity`、special-value admissibility 等输出限制，属于未来 `OutputDiscipline` 的实例化内容，不在 canonical layer 预选。
+`Scalarity`、`finiteness`、special-value admissibility 已由 `OutputDiscipline = FINITE_REAL_COORDINATEWISE` 治理。`nonnegativity` 未被声明（有限实数可正可负）。`Measurability` 继续 DEFERRED。
 
 Infinity semantics remain:
 
