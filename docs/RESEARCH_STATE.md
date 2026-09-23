@@ -6,7 +6,8 @@
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
-ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW）
+ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
+Research Road Space 已登记，SELECTED_ROUTE=NONE）
 
 ## Current research state
 
@@ -466,3 +467,31 @@ docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_POLICY_20260923.md.
 
 Prior audit history:
 docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.
+
+### Research Road Space — 2026-09-23
+
+After accepting the concrete argmin-cardinality underdetermination, five legal
+research roads are registered, but no route is selected:
+
+```
+SELECTED_ROUTE = NONE
+```
+
+1. `RULE_DOMAIN_COMPLETION` — complete the visible-history/rule object; direct
+   route to exact rule-level `|Argmin|`, but deliberately not entered.
+2. `INSTANCE_FAMILY` — declare a family `(P,θ)` and study variation, landscape,
+   or sensitivity properties of `R`; no family is declared.
+3. `SINGLE_INSTANCE_IDENTIFIABILITY` — declare observation semantics and
+   behavioral equivalence before asking what one instance identifies; not
+   entered.
+4. `MULTI_INSTANCE_IDENTIFICATION` — study when an instance family separates
+   rules; depends on prior observation/equivalence and family-index decisions;
+   not entered.
+5. `COMPUTATIONAL_SEMANTICS` — connect stable formal objects to executable
+   semantics; deferred and non-implementative.
+
+This is a navigation record only. It declares no semantic object, no quotient,
+no family, no observation semantics, no software interface, and no experiment.
+
+Road-space history:
+docs/07-history/RESEARCH_ROAD_SPACE_AFTER_CONCRETE_UNDERDETERMINATION_20260923.md.

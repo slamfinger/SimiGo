@@ -317,3 +317,18 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - No visible-history domain completion, realization quotient, selector, canonical optimizer, or tie-breaking rule is introduced.
 - Future exact-cardinality work requires a concrete consumer and a separate visible-history domain/off-trajectory admissibility declaration.
 - Policy history: docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_POLICY_20260923.md.
+
+## Research Road Space — 2026-09-23
+
+- Status: `ROAD_SPACE_REGISTERED / NO_ROUTE_SELECTED`.
+- Registered roads:
+  1. `RULE_DOMAIN_COMPLETION`
+  2. `INSTANCE_FAMILY`
+  3. `SINGLE_INSTANCE_IDENTIFIABILITY`
+  4. `MULTI_INSTANCE_IDENTIFICATION`
+  5. `COMPUTATIONAL_SEMANTICS`
+- No route is selected; registering a road opens no gate and declares no new object.
+- Roads 1, 3, and 4 form the immediate post-underdetermination tree: complete the rule domain, study single-instance identifiability, or study multi-instance identification. They must not be silently substituted for one another.
+- Road 5 remains deferred until the relevant formal objects are stable.
+- Current chain state: `R-INTERNAL=IDLE`, `R_ASSEMBLY=CLOSED`, `STEP⑤/⑥=NOT ENTERED`.
+- Road-space history: docs/07-history/RESEARCH_ROAD_SPACE_AFTER_CONCRETE_UNDERDETERMINATION_20260923.md.
