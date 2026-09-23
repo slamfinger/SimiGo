@@ -215,7 +215,7 @@ R-INTERNAL-18 不引入：
 
 Argmin / att / uniq 维持 RO-1 下辅助对象地位，不因本面变动。
 
-R_ASSEMBLY = OPEN
+R_ASSEMBLY = OPEN（门时点记录；已由 R-ASSEMBLY Transition Audit 关闭为 CLOSED）
 R_OBJECT = DECLARED (R : Dom(R) → ℝ)
 R_ORACLE = NOT_DEFINED
 Δ = BLOCKED
@@ -263,7 +263,7 @@ c) a concrete instantiation surface.
 
 All existing boundaries remain unchanged:
 R_OBJECT = DECLARED (R : Dom(R) → ℝ)
-R_ASSEMBLY = OPEN
+R_ASSEMBLY = OPEN（门时点记录；已由 R-ASSEMBLY Transition Audit 关闭为 CLOSED）
 R_ORACLE = NOT_DEFINED
 Δ = BLOCKED
 FinLoss = NOT LEGALLY AVAILABLE
