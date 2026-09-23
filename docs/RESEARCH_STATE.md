@@ -14,7 +14,8 @@ Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATIO
 A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED；
 Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL；
 Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY；
-Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK）
+Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK；
+Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN）
 
 ## Current research state
 
@@ -701,3 +702,31 @@ first destructive audit found no immediately redundant component.
 
 Audit history:
 docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.
+
+### A2.0 Core Degeneracy / Distinctiveness Audit — 2026-09-23
+
+The value-level candidate core was tested against a generic optimization schema:
+
+```
+object + admissible behaviors + evaluation regime + partial cost + infimum
+```
+
+Result:
+
+```
+COLLAPSE     = NOT PROVEN
+DISTINCTIVE  = NOT PROVEN
+OVERALL      = OPEN / PARTIAL DISTINCTIVE
+```
+
+The core can be embedded into a generic constrained-infimum schema, so formal
+collapse cannot be denied. However, A2.0 foregrounds projection-oriented
+semantics, regime-separated evaluation, value-only discipline, and legal partial
+evaluation. These are candidate distinctions, not yet certified formal separation
+from every generic schema.
+
+The unresolved question is whether A2.0 is a distinctive projection-evaluation
+theory or a disciplined generic optimization schema.
+
+Audit history:
+docs/07-history/A2_CORE_DEGENERACY_DISTINCTIVENESS_AUDIT_20260923.md.

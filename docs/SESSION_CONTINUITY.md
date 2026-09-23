@@ -401,3 +401,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Cross-method invariance passes at the abstraction level under black-boxing, but empirical scope remains OPEN.
 - This does not prove minimality, final sufficiency, or route selection.
 - Audit history: docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.
+
+## A2.0 Core Degeneracy / Distinctiveness Audit — 2026-09-23
+
+- Status: `DISTINCTIVENESS_OPEN / PARTIAL_DISTINCTIVE`.
+- The value core can be embedded into a generic `object + admissible behaviors + regime + partial cost + infimum` schema.
+- Therefore formal collapse into generic optimization cannot be denied.
+- Candidate distinctive content: projection-oriented `P`, regime-separated `θ`, value-only discipline without selector commitments, and legal partial evaluation through `Dom(L)`.
+- `COLLAPSE` is not proven, but `DISTINCTIVE` is also not proven.
+- No new object, route, implementation, experiment, or formal separation is authorized.
+- Audit history: docs/07-history/A2_CORE_DEGENERACY_DISTINCTIVENESS_AUDIT_20260923.md.
