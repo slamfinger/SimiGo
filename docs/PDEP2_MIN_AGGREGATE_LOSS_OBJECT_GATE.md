@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R-ASM-E DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -330,7 +330,7 @@ R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
 R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
 R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
 R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
-R-ASM-E  ADMISSION_PREDICATE / Dom(R)
+R-ASM-E  ADMISSION_PREDICATE / Dom(R) = COMPOSITE_ADMISSION_PREDICATE
 R-ASM-F  FINAL_OBJECT_SIGNATURE
 ```
 
@@ -340,14 +340,64 @@ Current declaration status:
 R-ASM-A = DECLARED
 R-ASM-B = DECLARED
 R-ASM-C = DECLARED
-R-ASM-D = NOT_DECLARED
-R-ASM-E = NOT_DECLARED
+R-ASM-D = DECLARED
+R-ASM-E = DECLARED
 R-ASM-F = NOT_DECLARED
 ```
 
 Candidate values are not selected by the agent. In particular, no historical `δ(I_P)`, optimization over `Δ(I_P)`, probability measure, fixed action map, or final signature is silently adopted.
 
-### 12.3 Minimal placeholder only
+### 12.3 R-ASM-E declaration record
+
+The researcher has explicitly declared:
+
+```text
+R-ASM-E  ADMISSION_PREDICATE / Dom(R)
+        = COMPOSITE_ADMISSION_PREDICATE
+```
+
+This declares that the admissible domain of the aggregate decision-loss object is governed by a composite admission predicate rather than by a single isolated condition.
+
+The declaration is intentionally **predicate-family level** and does not silently instantiate the component predicates or their exact logical form. In particular, it does not by itself select or define:
+
+```text
+projection / regime admissibility predicate
+measurability predicate
+integrability predicate
+expectation-existence predicate
+finite-real-result predicate
+logical conjunction / disjunction structure
+parameter-domain conditions
+decision-rule admissibility conditions
+```
+
+The declaration therefore establishes the following semantic direction only:
+
+```text
+candidate aggregate input
+        ↓
+COMPOSITE_ADMISSION_PREDICATE
+        ↓
+if admitted: aggregate decision-loss object may be defined
+if not admitted: R has no value at that input
+```
+
+It does not itself prove that any concrete candidate satisfies the predicate, nor does it instantiate `Dom(R)` as a concrete set.
+
+Accordingly:
+
+```text
+R-ASM-E = DECLARED
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_oracle = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+```
+
+No STEP⑤, harness, implementation, measurement, or experiment authorization is created by this declaration.
+
+### 12.4 Minimal placeholder only
 
 Before the remaining ASM fields are resolved, the strongest current statement is only:
 
