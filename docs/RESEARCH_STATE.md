@@ -593,3 +593,68 @@ EXPERIMENT AUTH = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-5 — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-5 = H2**.
+
+```text
+Γ(P, δ) = g
+        ↓
+check:
+    g ∈ 𝒢_adm(P) ?
+        ↓
+only an admitted g enters optimization
+```
+
+H2 declares conditional admission: generation and admissibility are separate stages. The generated rule g is not automatically admitted by virtue of being generated; membership in the P-specific family 𝒢_adm(P) is an independent condition for optimization entry.
+
+The current chain is:
+
+```text
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+independent admission check
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+if admitted → optimization
+if not admitted → no optimization entry for g
+```
+
+H2 does not instantiate the concrete rule family, admission predicate, optimization domain/operator, minimum versus infimum, optimizer existence, parameterization, exact Dom(R), or any additional dependence on δ or θ. It does not restore historical δ(I_P) or δ ∈ Δ(I_P).
+
+Current state:
+
+```text
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = DECLARED (C3)
+R-ASSEMBLY-2  = DECLARED (D2)
+R-ASSEMBLY-3  = DECLARED (F2)
+R-ASSEMBLY-4  = DECLARED (G2)
+R-ASSEMBLY-5  = DECLARED (H2)
+
+DECISION_RULE_FAMILY_DEPENDENCE = PROJECTION_CANDIDATE
+DECISION_RULE_ADMISSION = CONDITIONAL_ADMISSION
+𝒢_adm(P) ⊆ { g | g : W → A }
+Γ(P, δ) = g
+[g ∈ 𝒢_adm(P)] = INDEPENDENT_ADMISSION_CONDITION
+
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+HARNESS AUTH = NONE
+EXPERIMENT AUTH = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
