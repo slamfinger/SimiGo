@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-17 = RO-1 / R_OBJECT_VALUE_FUNCTIONAL 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED 已登记）
 
 ## Current research state
 
@@ -25,6 +25,7 @@ R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE
 R-INTERNAL-15 = K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE
 R-INTERNAL-16 = K4-C / UNRESOLVED + UNIQUENESS_PREDICATE
 R-INTERNAL-17 = RO-1 / R_OBJECT_VALUE_FUNCTIONAL
+R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 
 ### Current internal interfaces
 
@@ -184,3 +185,42 @@ Historical `δ(I_P)` is not restored and no new δ optimization domain is introd
 R-INTERNAL-17 / RO-1 explicitly keeps `δ(I_P)` BLOCKED and does not introduce any new δ optimization domain. `Δ` remains BLOCKED; `FinLoss` remains NOT LEGALLY AVAILABLE; `NECT` remains BLOCKED. θ-level optimization and `A(P,θ)` remain excluded. No approximation/gap object is introduced.
 
 R-INTERNAL-16 does not declare `Dom_uniq ≠ ∅`, does not assert `uniq` is true at any point, and does not create a selector from uniqueness. The observation that `uniq(P,θ)` is false whenever `Argmin(P,θ)=∅` is a direct consequence of the registered definitions, not a separate assertion.
+
+
+### R-INTERNAL-18 / ROr-4 — R_ORACLE deferred
+
+R-INTERNAL-18 = ROr-4 / DEFERRED
+
+R_ORACLE : NOT_DEFINED
+
+暂缓理由：
+1. 无已登记消费者：Δ = BLOCKED，gap/D 未声明，STEP⑤ = NOT ENTERED。
+2. 来源形态未决：P-free 可容许类 / 理论基准均未声明。
+3. 历史公式 D(P;θ) = R(P;θ) − R_oracle(θ) 仅为历史内容，不被本面恢复。
+
+合法重开条件（二选一，各自独立开面）：
+- A. 出现已登记的参照值消费问题——且该比较面必须先论证其对 Δ BLOCKED 的合法绕行路径。
+- B. 结构面声明 oracle 来源（P-free 类 / 理论基准及其定义域）。
+
+本面产出是“暂缓”边界记录本身，不声明 R_ORACLE 对象接口。
+
+R-INTERNAL-18 不引入：
+- gap / D / suboptimality 的任何形式（含定义性占位）；
+- 历史 δ(I_P)、新的 δ 优化域、A(P,θ)、θ 层优化；
+- Δ、FinLoss、NECT；
+- 任何 selector、tie-breaking、canonical optimizer、g*；
+- topology、compactness、continuity、measurability、finiteness/cardinality assumptions；
+- implementation、harness、data collection、profiling、measurement、experiment authorization。
+
+Argmin / att / uniq 维持 RO-1 下辅助对象地位，不因本面变动。
+
+R_ASSEMBLY = OPEN
+R_OBJECT = DECLARED (R : Dom(R) → ℝ)
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+STEP⑥ = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH = NONE

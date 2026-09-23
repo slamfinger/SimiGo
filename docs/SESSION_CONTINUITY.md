@@ -57,6 +57,7 @@
 - R-INTERNAL-15：K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE
 - R-INTERNAL-16：K4-C / UNRESOLVED + UNIQUENESS_PREDICATE
 - R-INTERNAL-17：RO-1 / R_OBJECT_VALUE_FUNCTIONAL
+- R-INTERNAL-18：ROr-4 / R_ORACLE_DEFERRED
 
 ## 当前已声明的内部接口
 
@@ -135,6 +136,16 @@ selector / tie-breaking
 当前已选择 `inf` 作为 OPT 的值层构造；K3-B 已限定其有限值适用域。当前已声明 att、Argmin 及 Argmin ≠ ∅ ⇔ att；仍未声明任何点上的 attainment / argmin 非空性、optimizer uniqueness 或 selector/tie-breaking。
 
 `Dom(R) ≠ ∅` 也未声明。
+
+## R-INTERNAL-18 / ROr-4
+
+- R_ORACLE：继续 NOT_DEFINED；本面仅登记暂缓及合法重开条件。
+- 无已登记消费者：Δ BLOCKED，gap/D 未声明，STEP⑤ NOT ENTERED。
+- oracle 来源形态未决：P-free 可容许类 / 理论基准均未声明。
+- 历史 `D(P;θ) = R(P;θ) - R_oracle(θ)` 不恢复。
+- 合法重开条件：A. 出现已登记的参照值消费问题且先论证对 Δ BLOCKED 的合法绕行路径；或 B. 结构面声明 oracle 来源及其定义域。
+- 不引入 gap/D/suboptimality（含定义性占位）、历史 δ(I_P)、新的 δ 优化域、A(P,θ)、θ 层优化。
+- Argmin / att / uniq 继续作为 RO-1 下辅助对象。
 
 ## 尚未声明/仍被阻断
 
