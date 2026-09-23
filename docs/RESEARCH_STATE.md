@@ -10,7 +10,8 @@ ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
 Research Road Space 已登记，SELECTED_ROUTE=NONE；
 Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
 Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL；
-Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN）
+Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN；
+A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED）
 
 ## Current research state
 
@@ -575,3 +576,40 @@ OPEN.
 
 Schema history:
 docs/07-history/COMPUTATIONAL_SEMANTICS_OBSERVATION_SCHEMA_CANDIDATE_20260923.md.
+
+### A2.0 Boundary Audit — Theta Deletion Test — 2026-09-23
+
+An exploratory dependency audit replaced all model-internal methods with a black
+box and asked which A2.0 concepts survive. The audit corrects one premise: `θ`
+is the registered `REGIME_PARAMETER`, not model-internal parameters. In the
+concrete instance it denotes the exogenous evaluation regime/workload measure.
+
+Black-box audit result:
+
+```
+P, 𝒢_adm(P), Dom(L), V, R, and C0–C5
+  = common-core candidates
+
+att, Argmin, uniq, rule identity
+  = instance/family diagnostics, not core candidates
+
+δ and internal model mechanisms
+  = not restored into the core
+```
+
+Theta deletion test:
+
+```
+delete internal model parameters = no-op for θ
+delete external evaluation regime = breaks Dom(L), V, R, Dom(R), and the concrete instance
+freeze θ at θ0′ = preserves the single-instance loop, but loses regime comparison
+```
+
+Therefore `θ` should not be deleted wholesale. The candidate reduction is to
+keep the existence of an external evaluation regime, while treating the variable
+regime family and concrete parameterization as separate boundary questions.
+
+This is exploratory only; no A2.0 definition is rewritten.
+
+Audit history:
+docs/07-history/A2_BOUNDARY_AUDIT_THETA_DELETION_20260923.md.

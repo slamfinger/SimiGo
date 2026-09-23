@@ -359,3 +359,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - `Declaration` must not be used as a single undifferentiated layer in future probe records.
 - The layers are observational fields only; formal promotion into Architecture 2.0 remains OPEN.
 - Schema history: docs/07-history/COMPUTATIONAL_SEMANTICS_OBSERVATION_SCHEMA_CANDIDATE_20260923.md.
+
+## A2.0 Boundary Audit — Theta Deletion Test — 2026-09-23
+
+- Status: `EXPLORATORY_AUDIT_REGISTERED / FORMALIZATION_NOT_AUTHORIZED`.
+- Audit criterion: dependency on black-boxed model-internal methods, not subjective usefulness.
+- Correction: registered `θ` is `REGIME_PARAMETER`, an external evaluation regime, not model-internal parameters.
+- Result: internal model methods are not needed by the candidate core; external evaluation regime is needed if evaluation remains in scope.
+- Candidate core survivors: `P`, `𝒢_adm(P)`, `Dom(L)`, `V`, `R`, and `C0–C5`.
+- Diagnostic/non-core candidates: `att`, `Argmin`, `uniq`, rule identity, and `δ`.
+- Freezing `θ0′` preserves the single-instance loop; deleting the external regime breaks it.
+- No formal definition, route, R-INTERNAL gate, implementation, or experiment authorization follows.
+- Audit history: docs/07-history/A2_BOUNDARY_AUDIT_THETA_DELETION_20260923.md.
