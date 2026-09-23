@@ -53,6 +53,8 @@
 - R-INTERNAL-11：E11-B
 - R-INTERNAL-12：K3-A / VALUE_INFIMUM
 - R-INTERNAL-13：K3-B / OPT_FINITE_VALUE_DOMAIN
+- R-INTERNAL-14：K4-A / UNRESOLVED + ATTAINMENT_PREDICATE
+- R-INTERNAL-15：K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE
 
 ## 当前已声明的内部接口
 
@@ -90,6 +92,12 @@ Dom(R)
 {(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}
 
 R(P,θ) = inf V(P,θ) ∈ ℝ,  ((P,θ) ∈ Dom(R))
+
+Argmin(P,θ) = {g ∈ D_opt(P,θ) | L(g;P,θ) = inf V(P,θ)},  ((P,θ) ∈ Dom(R))
+
+Argmin(P,θ) ≠ ∅ ⇔ att(P,θ)
+
+Dom_att = {(P,θ) ∈ Dom(R) | Argmin(P,θ) ≠ ∅}
 ```
 
 其中：
@@ -101,6 +109,8 @@ R(P,θ) = inf V(P,θ) ∈ ℝ,  ((P,θ) ∈ Dom(R))
 - E11-B：aggregate optimization output `R(P,θ)` 为有限实数。
 - K3-A：选择值层 `inf` 作为 OPT 的构造。
 - K3-B：将 E11-B 的有限值适用域限定为 `Dom(R)`，其中要求 `inf V(P,θ) ∈ ℝ`。
+- K4-A：定义 att 及 Dom_att，不声明 attainment。
+- K4-B：在 Dom(R) 上定义 Argmin，并正式登记 Argmin ≠ ∅ ⇔ att；不声明任何实例的非空性。
 
 ## 必须保持的语义区分
 
@@ -116,7 +126,7 @@ argmin semantics
 selector / tie-breaking
 ```
 
-当前已选择 `inf` 作为 OPT 的值层构造；K3-B 已限定其有限值适用域。当前仍未声明 optimizer existence、attainment、argmin 或 selector/tie-breaking。
+当前已选择 `inf` 作为 OPT 的值层构造；K3-B 已限定其有限值适用域。当前已声明 att、Argmin 及 Argmin ≠ ∅ ⇔ att；仍未声明任何点上的 attainment / argmin 非空性、optimizer uniqueness 或 selector/tie-breaking。
 
 `Dom(R) ≠ ∅` 也未声明。
 
@@ -176,8 +186,18 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 5. GitHub 仓库是连续性与权威状态的可恢复来源；不要声称账户级 ChatGPT Memory 已被写入。
 6. 研究者保留最终 semantic authority；助手负责检查一致性、列出决策面、记录与验证。
 
+## K4-A / K4-B 连续性
+
+- K4-A：定义 att : Dom(R) → {true,false}，att ⇔ inf V ∈ V。
+- K4-B：Argmin 定义在 Dom(R) 上，并登记 Argmin ≠ ∅ ⇔ att。
+- 未声明任何点上的 attainment 或 argmin 非空性。
+- min、selector、tie-breaking、uniqueness 均未引入。
+
 ## 最近关键提交
 
+- R-INTERNAL-15 历史：docs/07-history/R_INTERNAL_15_K4B_ARGMIN_SET_SEMANTICS_20260923.md
+- R-INTERNAL-14 state：e4cba74be0dba9e9e2b41959f9f5c3e12e9f349a
+- R-INTERNAL-15：与本次 K4-B 登记同次提交
 - R-INTERNAL-13 历史：由当前提交记录
 - R-INTERNAL-12 历史：由当前提交记录
 - R-INTERNAL-11 历史：`dec4c22a91290eb96c0e791ded8e5a27e5680550`

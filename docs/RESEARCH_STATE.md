@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-15 = K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE 已声明）
 
 ## Current research state
 
@@ -22,6 +22,7 @@ R-INTERNAL-11 = E11-B
 R-INTERNAL-12 = K3-A / VALUE_INFIMUM
 R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN
 R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE
+R-INTERNAL-15 = K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE
 
 ### Current internal interfaces
 
@@ -84,9 +85,23 @@ att(P,θ) ⇔ inf V(P,θ) ∈ V(P,θ)
 Dom_att
 =
 {(P,θ) ∈ Dom(R) | att(P,θ)}
+
+R-INTERNAL-15 / K4-B:
+Argmin(P,θ)
+=
+{g ∈ D_opt(P,θ) | L(g;P,θ) = inf V(P,θ)}
+\quad ((P,θ) ∈ Dom(R))
+
+Argmin(P,θ) ≠ ∅
+⇔
+att(P,θ)
+
+Dom_att
+=
+{(P,θ) ∈ Dom(R) | Argmin(P,θ) ≠ ∅}
 ```
 
-R-INTERNAL-14 leaves attainment unresolved. It defines only the attainment predicate and its truth domain; it does not assert that the predicate is true anywhere.
+R-INTERNAL-14 defines the attainment predicate without asserting attainment. R-INTERNAL-15 defines the argmin set on Dom(R) and formally registers the pointwise equivalence between argmin non-emptiness and att. Neither gate asserts that attainment or argmin non-emptiness holds at any particular point.
 
 ### Assembly state
 
@@ -136,16 +151,18 @@ OPT is concretized as a value-level infimum by R-INTERNAL-12. R-INTERNAL-13 esta
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-14.
+R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-15.
 
-R-INTERNAL-14 does not introduce topology or any structural condition, and does not pre-authorize future sufficient-condition families. It does not declare optimizer existence, attainment at any point, minimum attainment, `min` reformulation, argmin, selector/tie-breaking, uniqueness, compactness, continuity, measurability, finiteness/cardinality assumptions, any θ-level optimization, `A(P,θ)`, historical `δ(I_P)`, R_OBJECT, R_ORACLE, Δ, FinLoss, or NECT.
+R-INTERNAL-15 does not introduce topology or any structural condition, and does not pre-authorize future sufficient-condition families. It does not declare optimizer existence at any point, attainment at any point, minimum attainment, `min` reformulation, selector/tie-breaking, uniqueness, compactness, continuity, measurability, finiteness/cardinality assumptions, any θ-level optimization, `A(P,θ)`, historical `δ(I_P)`, R_OBJECT, R_ORACLE, Δ, FinLoss, or NECT.
 
-The authorized forward interface on this gate is only:
+The authorized forward interface after R-INTERNAL-15 is:
 ```
 att : Dom(R) → {true,false}
-Dom_att = {(P,θ) ∈ Dom(R) | att(P,θ)}
+Argmin(P,θ) = {g ∈ D_opt(P,θ) | L(g;P,θ) = inf V(P,θ)}
+Argmin(P,θ) ≠ ∅ ⇔ att(P,θ)
+Dom_att = {(P,θ) ∈ Dom(R) | Argmin(P,θ) ≠ ∅}
 ```
 
-A future argmin gate may independently define argmin semantics and any equivalence with `att`; that equivalence is not declared here. Selector/tie-breaking remains a separate layer.
+The equivalence is registered as the formal bridge between attainment and argmin non-emptiness. Selector/tie-breaking remains a separate layer.
 
 Historical `δ(I_P)` is not restored and no new δ optimization domain is introduced.
