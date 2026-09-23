@@ -1,0 +1,43 @@
+{
+  "model": "OpensourceWTF/Muse-Glimmer-30B-MLX-q4",
+  "snapshot": "e1c987b60874388e68621c71b680643b1cb0ce03",
+  "config": {
+    "modelType": "muse_glimmer_text",
+    "architectures": null,
+    "numHiddenLayers": 52,
+    "hiddenSize": 6656,
+    "quantizationBits": 4
+  },
+  "checkpoint": {
+    "bytes": 17603109888,
+    "parameters": 27854780928,
+    "tensors": 1463,
+    "switchMLPTensors": 0,
+    "visionTensors": 0
+  },
+  "simigoInventory": {
+    "coreNonSwitch": {"tensors": 1463, "bytes": 17603109888},
+    "switchMLP_L00_15": {"tensors": 0, "bytes": 0},
+    "switchMLP_L16_31": {"tensors": 0, "bytes": 0},
+    "switchMLP_L32_47": {"tensors": 0, "bytes": 0}
+  },
+  "runtime": {
+    "requestedFactory": "MLXLLM.LLMModelFactory.shared",
+    "loadResult": "UNSUPPORTED",
+    "error": "Unsupported model type: muse_glimmer_text",
+    "gate4": "NOT_RUN_AFTER_LOAD_FAILURE",
+    "gate5": "NOT_RUN_AFTER_LOAD_FAILURE"
+  },
+  "mlxSwiftLMRegistryObservation": {
+    "commit": "59e9abd",
+    "llmFactoryRegistration": false,
+    "vlmFactoryRegistration": "muse_glimmer only",
+    "textOnlyFactoryRegistration": false,
+    "note": "The local VLM implementation registers the full muse_glimmer VLM, not the text-only muse_glimmer_text checkpoint."
+  },
+  "conclusion": {
+    "runtimeTextInference": "UNSUPPORTED",
+    "simigoWholeGroupResidency": "NOT_APPLICABLE",
+    "reason": "Unsupported model type and no switch_mlp groups"
+  }
+}
