@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-9 = E9-B 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-10 = E10-B 已声明）
 
 ## Current research state
 
@@ -17,6 +17,7 @@ R-INTERNAL-6 = E6-4
 R-INTERNAL-7 = E7-B
 R-INTERNAL-8 = E8-C
 R-INTERNAL-9 = E9-B
+R-INTERNAL-10 = E10-B
 
 ### Current internal interfaces
 
@@ -30,10 +31,6 @@ P : PROJECTION_CANDIDATE
 
 L : Dom(L) → ℝ
 
-(g,P,θ) ∈ Dom(L)
-    ⇔
-E_θ[C_LOSS(g(W),W)] 合法且为有限实数
-
 R-INTERNAL-8 / E8-C:
 (g,P,θ) ∈ Dom(L)
     ⇔
@@ -46,9 +43,18 @@ R(P,θ)
 =
 OPT_{g ∈ 𝒢_adm(P),\,(g,P,θ)∈Dom(L)}
 L(g;P,θ)
+
+R-INTERNAL-10 / E10-B:
+∃g :
+g ∈ 𝒢_adm(P)
+∧
+(g,P,θ) ∈ Dom(L)
+
+等价地：
+{g ∈ 𝒢_adm(P) | (g,P,θ) ∈ Dom(L)} ≠ ∅
 ```
 
-E9-B makes the Dom(L) restriction explicit at the optimization-domain interface. The effective optimization candidates must satisfy both P-dependent rule admissibility and membership in the loss-evaluation domain.
+E10-B declares that the effective optimization domain is non-empty: at least one decision rule is both P-admissible and admitted to Dom(L). This establishes existence of a legal optimization candidate only; it does not establish optimizer existence, attainment, or any min/inf/argmin construction.
 
 ### Assembly state
 
@@ -92,12 +98,12 @@ OPT_{g ∈ 𝒢_adm(P),\,(g,P,θ)∈Dom(L)}
 L(g;P,θ)
 ```
 
-OPT remains an abstract scalar optimization operator. No min / inf / argmin / optimizer existence or attainment is declared.
+The effective optimization domain is declared non-empty by R-INTERNAL-10. OPT remains an abstract scalar optimization operator. No min / inf / argmin / optimizer existence or attainment is declared.
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-9.
+R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-10.
 
-E9-B does not instantiate a concrete admissible-rule family, a concrete probability space or parameter domain, separate integrability/measurability conditions, a concrete optimization construction, optimizer existence/attainment, exact Dom(R), R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
+E10-B does not instantiate a concrete admissible-rule family, a concrete probability space or parameter domain, separate integrability/measurability conditions, a concrete optimization construction, optimizer existence/attainment, exact Dom(R), R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
 
 Historical δ(I_P) is not restored and no new δ optimization domain is introduced.
