@@ -1108,3 +1108,34 @@ HARNESS AUTH = NONE
 ```
 
 No implementation, harness, measurement, experiment, or downstream STEP⑤/STEP⑥ authorization is created by this declaration.
+
+
+## R-ASSEMBLY-8 declaration — 2026-09-23
+
+The researcher explicitly declared R-ASSEMBLY-8 = K3.
+
+K3 keeps OPT as an abstract scalar optimization operator:
+
+OPT : (𝒢_adm(P), L) → ℝ
+after indexing: R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+
+No concrete choice of min, inf, argmin, or another named optimization construction is made. Consequently, optimizer existence, attainment, and minimizing-rule existence are not declared. The exact admissible rule family, optimization domain, parameter domain, expectation prerequisites, and exact Dom(R) remain open.
+
+R-ASSEMBLY-8 therefore closes the current OPT construction decision surface at the abstract-operator level but does not by itself declare R_OBJECT.
+
+Current status:
+
+R-ASSEMBLY-7 = DECLARED (J1)
+R-ASSEMBLY-8 = DECLARED (K3)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤        = NOT ENTERED
+STEP⑥        = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
