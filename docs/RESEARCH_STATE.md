@@ -4,9 +4,9 @@
 
 **Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
-Concrete Instance Post-Audit 已将 |Argmin|=4 限定为 realized action-sequence 基数；
-Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE，
-rule-level 精确基数保持 OPEN）
+Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
+Concrete Argmin Cardinality Audit 判定 rule-level 精确基数
+UNDERDETERMINED_BY_CURRENT_DECLARATIONS）
 
 ## Current research state
 
@@ -408,6 +408,33 @@ histories.
 
 Decision history:
 docs/07-history/R_CONCRETE_REPRESENTATION_DECISION_20260923.md.
+
+### Concrete Argmin Cardinality Audit — 2026-09-23
+
+Under `FULL_VISIBLE_HISTORY_RULE_SPACE`, the point-mass instance does not
+uniquely determine `|Argmin(P0,θ0′)|`. The key extension lemma is: if two
+visible-history rules agree on the realized trace under `W0`, then they have
+the same loss and the same fixed-instance admissibility; therefore distinct
+assignments on unrealized visible histories can produce distinct rule-level
+minimizers without changing realized action sequences.
+
+Current audit result:
+
+```
+R(P0,θ0′) = 5376
+att(P0,θ0′) = true
+uniq(P0,θ0′) = false
+realized optimal action-sequence count = 4
+|Argmin(P0,θ0′)| ≥ 4
+exact |Argmin(P0,θ0′)| = UNDERDETERMINED_BY_CURRENT_DECLARATIONS
+```
+
+The value `4` remains exact only for realized optimal action sequences. An
+exact rule-level value would require a separate visible-history domain and
+off-trajectory admissibility declaration.
+
+Audit history:
+docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_AUDIT_20260923.md.
 
 Prior audit history:
 docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.

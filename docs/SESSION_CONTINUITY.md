@@ -296,6 +296,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Decision: `3 / FULL_VISIBLE_HISTORY_RULE_SPACE`.
 - No realization quotient; no realized-history restriction of `𝒢_adm(P0)` or `D_opt(P0,θ0′)`.
 - Existing rule-level `Argmin / att / uniq` semantics remain unchanged.
-- The four optimal realized action sequences establish only `|Argmin(P0,θ0′)|≥4`; exact rule-level cardinality remains OPEN.
+- The four optimal realized action sequences establish only `|Argmin(P0,θ0′)|≥4`; exact rule-level cardinality was left OPEN and is classified as UNDERDETERMINED by the following audit.
 - Next concrete surface: determine whether current declarations determine rule-level `|Argmin|`, or formally register underdetermination from unconstrained behavior on unrealized visible histories.
 - Decision history: docs/07-history/R_CONCRETE_REPRESENTATION_DECISION_20260923.md.
+
+## Concrete Argmin Cardinality Audit — 2026-09-23
+
+- Result: `RULE_LEVEL_CARDINALITY_UNDERDETERMINED`.
+- Two rules agreeing on the realized trace under the point-mass workload have the same loss and fixed-instance admissibility.
+- Distinct assignments on unrealized visible histories can therefore produce distinct rule-level minimizers without changing realized action sequences.
+- Current facts: `R=5376`, `att=true`, `uniq=false`, realized optimal sequence count `4`, `|Argmin|≥4`.
+- Exact rule-level `|Argmin|` is `UNDERDETERMINED_BY_CURRENT_DECLARATIONS`; it is not derivable as `4`.
+- Audit history: docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_AUDIT_20260923.md.
