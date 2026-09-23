@@ -451,3 +451,14 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Model internals remain black-boxed; value/optimization remains frozen as generic reducible.
 - No route is selected and no new semantic object is declared.
 - Retrospective history: docs/07-history/A2_HISTORICAL_SCOPE_DECOMPOSITION_RETROSPECTIVE_20260923.md.
+
+## Execution-State Extension Design Hypothesis — 2026-09-23
+
+- Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
+- Candidate separation:
+  `state fork → landing / extension point → required capability → layering/residency/loading → implementation`.
+- Execution-state owns fork, reachable landing, and extension-point classification when determined by declared transition semantics.
+- Layering, resident-core policy, dynamic loading, prefetch, and loader/runtime choice are downstream extension design.
+- Open-source code is implementation leverage, not theoretical evidence.
+- The key open question is whether `landing/branch → required capability` is derivable from execution-state or is an additional design mapping.
+- Hypothesis history: docs/07-history/EXECUTION_STATE_EXTENSION_DESIGN_HYPOTHESIS_20260923.md.

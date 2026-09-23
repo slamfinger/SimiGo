@@ -19,7 +19,8 @@ Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN；
 Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE；
 Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION；
 A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED；
-A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED）
+A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED；
+Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
 
 ## Current research state
 
@@ -857,3 +858,32 @@ latter remains only a future observation candidate; no route is selected.
 
 Retrospective history:
 docs/07-history/A2_HISTORICAL_SCOPE_DECOMPOSITION_RETROSPECTIVE_20260923.md.
+
+### Execution-State Extension Design Hypothesis — 2026-09-23
+
+An exploratory hypothesis was registered for the separated execution-state direction:
+
+```
+execution-state fork
+  → reachable landing / extension point
+  → required capability
+  → layering / residency / loading policy
+  → implementation selection
+```
+
+The hypothesis separates:
+
+```
+state semantics
+capability mapping
+loading/residency policy
+open-source implementation choice
+```
+
+A resident core can remain fixed while conditional layers are selected downstream.
+However, the mapping from landing/branch to required capability is not yet formalized.
+It must be tested against generic state machines, workflows, planning, dynamic
+programming, and stochastic forks before any theory route is considered.
+
+Hypothesis history:
+docs/07-history/EXECUTION_STATE_EXTENSION_DESIGN_HYPOTHESIS_20260923.md.
