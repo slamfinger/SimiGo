@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A / R-B DECLARED / R-C–R-F OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A / R-B / R-C DECLARED / R-D–R-F OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -26,7 +26,7 @@ aggregate decision-loss layer
         ↓
 R-A = PROJECTION_CANDIDATE
 R-B = WORKLOAD_DISTRIBUTION
-R-C = OPEN
+R-C = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
 R-D = OPEN
 R-E = OPEN
 R-F = CONDITIONAL / OPEN
@@ -50,7 +50,7 @@ R_OBJECT                    = NOT_DECLARED
 
 R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
 R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
-R-C  AGGREGATION_RULE       = OPEN
+R-C  AGGREGATION_RULE       = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
 R-D  RESULT CODOMAIN        = OPEN
 R-E  DEFINEDNESS / TOTALITY = OPEN
 R-F  PARAMETER / REGIME     = CONDITIONAL / OPEN
@@ -61,7 +61,7 @@ C_LOSS ↔ R BRIDGE           = NOT DECLARED
 W measurable structure     = UNDECLARED
 μ_W formal object          = NOT INSTANTIATED
 C_LOSS measurability       = UNDECLARED
-expectation                 = NOT DECLARED
+expectation                 = SELECTED AS AGGREGATION RULE, NOT YET INSTANTIATED
 ```
 
 These are researcher-level declarations. No remaining open value is inferred from R-A or R-B.
@@ -127,17 +127,39 @@ expectation declaration
 
 R-B also does not determine the aggregation rule. The future R-C gate must independently state how the workload-distribution input participates in aggregate loss.
 
-## 6. Remaining Decision Surface
+## 6. R-C Declaration
+
+```text
+R-C AGGREGATION_RULE = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
+```
+
+This is a researcher-level semantic declaration. It establishes that the aggregate decision-loss layer is to aggregate pointwise loss through an expectation taken with respect to the declared workload-distribution input.
+
+It does **not** yet legally instantiate a probability space or measurable space on `W`, a particular measure/probability measure `μ_W`, measurability of the workload-dependent loss mapping, integrability, finiteness of the resulting expectation, the result codomain, aggregate totality/definedness, any parameter `θ`, or an oracle/residual comparison.
+
+Therefore:
+
+```text
+R-C = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
+    ≠
+μ_W already instantiated
+    ≠
+expectation already mathematically defined
+    ≠
+finite aggregate loss already established
+```
+
+The expectation operator is now selected, but its mathematical prerequisites remain separate gates.
+
+## 7. Remaining Decision Surface
 
 ### R-C — Aggregation Rule
 
 ```text
-R-C = OPEN
+R-C = DECLARED
 ```
 
-No relation or operator has been selected for constructing aggregate loss from pointwise costs and the declared workload-distribution input.
-
-In particular, none of expectation, averaging, summation, weighting, supremum, worst-case, empirical aggregation, or another operator is implied by R-B.
+Expectation over the declared workload distribution is now the selected aggregation rule. Its underlying measure/measurable structure and expectation-definedness remain separate gates.
 
 ### R-D — Result Codomain
 
@@ -167,7 +189,29 @@ Parameter/regime semantics are only required if the eventual aggregate object re
 
 No `θ` semantics are currently declared.
 
-## 7. C_LOSS Boundary
+## 8. Expectation-Specific Dependencies
+
+Because R-C selects expectation, the following dependencies are now explicit research gates rather than background assumptions:
+
+```text
+WORKLOAD_DISTRIBUTION
+        ↓
+? measurable structure on W
+        ↓
+? μ_W
+        ↓
+? loss mapping induced by projection candidate
+        ↓
+? measurability
+        ↓
+? integrability / expectation existence
+        ↓
+aggregate expectation
+```
+
+R-C does not resolve these prerequisites automatically.
+
+## 9. C_LOSS Boundary
 
 The current pointwise interface remains:
 
@@ -190,7 +234,7 @@ A future bridge must explicitly state how a projection candidate and a workload-
 
 No measurability or expectation semantics are imported by this bridge requirement.
 
-## 8. Critical Separation
+## 10. Critical Separation
 
 The following remain distinct:
 
@@ -214,12 +258,12 @@ FinLoss
 
 Selecting R-B does not legally imply any of the subsequent objects.
 
-## 9. Gate Status
+## 11. Gate Status
 
 ```text
 R-A = DECLARED
 R-B = DECLARED
-R-C = OPEN
+R-C = DECLARED
 R-D = OPEN
 R-E = OPEN
 R-F = CONDITIONAL / OPEN
@@ -234,4 +278,4 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
 
-The next gate is R-C/R-D/R-E/R-F resolution. No automatic R-object construction follows from R-B alone.
+The next gate is R-D / R-E resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
