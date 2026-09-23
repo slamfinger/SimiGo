@@ -260,3 +260,18 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Decision: R_ASSEMBLY = CLOSED (M4 DEFERRAL SATISFIED).
 - This audit declares no new semantic object and does not reopen R-INTERNAL; R-INTERNAL chain remains IDLE.
 - Leading future surface: concrete instantiation. Structural declaration remains consumer-driven; program-level STEP⑤ remains separate and not entered.
+
+
+## Concrete Instantiation — P0 / θ0′ — 2026-09-23
+
+- Gate: REGISTERED.
+- Concrete instance: (P0,θ0′)∈Dom(R) as an instance fact derived from the declared constraints.
+- P0 := π0 : S → B0; I_P0=σ(π0). θ0′ is the point measure on the deterministic K=8 A/B-alternating exogenous workload.
+- Parameters: κ=128 KiB/token, L_A=512, D_A=256, L_B=1024, D_B=128, K=8, B=192 MiB, λ=1280.
+- Contention: 144≤192<240; both directions have forced eviction at the stated maxima.
+- A={serve,defer,reject}; evict-LRU remains an execution mechanism under serve.
+- C_LOSS uses the ratified terminal settlement v2(K)=𝟙[a_K=reject]+|Q_{K+1}|; settlement is accounting only, with no K+1 runtime event.
+- 0≤C_LOSS≤18432; V(P0,θ0′)⊆[0,18432] and inf V(P0,θ0′)∈R.
+- att, Argmin≠∅, and uniq remain explicitly unasserted and are post-gate fact-check surfaces.
+- No R-INTERNAL / R-ASSEMBLY reopening; no STEP⑤/⑥; no implementation, harness, data collection, profiling, measurement, or experiment authorization.
+- History: docs/07-history/R_CONCRETE_INSTANTIATION_P0_THETA0_20260923.md.
