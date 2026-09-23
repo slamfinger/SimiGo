@@ -51,6 +51,8 @@
 - R-INTERNAL-9：E9-B
 - R-INTERNAL-10：E10-B
 - R-INTERNAL-11：E11-B
+- R-INTERNAL-12：K3-A / VALUE_INFIMUM
+- R-INTERNAL-13：K3-B / OPT_FINITE_VALUE_DOMAIN
 
 ## 当前已声明的内部接口
 
@@ -160,6 +162,8 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 
 ## 最近关键提交
 
+- R-INTERNAL-13 历史：由当前提交记录
+- R-INTERNAL-12 历史：由当前提交记录
 - R-INTERNAL-11 历史：`dec4c22a91290eb96c0e791ded8e5a27e5680550`
 - R-INTERNAL-11 state：`bad597bd954e7c7dbb3e584f0e2869a75ff392fb`
 - R-INTERNAL-10 state：`3efc91ddab3df236ca1655c1b19e029913efe5e4`
