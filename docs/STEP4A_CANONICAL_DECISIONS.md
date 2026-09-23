@@ -1,7 +1,7 @@
 # SimiGo-Lab — STEP④-A Canonical Decisions
 
 **Date:** 2026-09-23
-**Status:** ACTIVE / DG-4A-01 RESOLVED / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED
+**Status:** ACTIVE / DG-4A-01 RESOLVED / STEP④-A COMPLETE / STEP④-B VALUE DISCIPLINE COMPLETE / DOWNSTREAM DEPENDENCY REVIEW PASSED
 **Authority:** This file is the canonical decision surface for unresolved STEP④-A semantic choices. Historical audit documents remain evidence and are not re-opened unless a concrete semantic contradiction is identified.
 
 ## 1. Governance compression
@@ -238,7 +238,7 @@ Binding_C        = VECTOR_COMPOSITION
 The downstream gate is updated:
 
 ```
-STEP4-B          = UNBLOCKED (NEXT: after Value Discipline)
+STEP4-B          = COMPLETE
 STEP5            = BLOCKED
 EXPERIMENT AUTH  = NONE
 ```
@@ -272,6 +272,85 @@ STEP⑥                = NOT ENTERED
 RQ                   = NOT ASSIGNED
 EXPERIMENT AUTH      = NONE
 ```
+
+## 7.1 STEP④-B / Value Discipline — canonical researcher declarations
+
+The following declarations were explicitly made by the human researcher on 2026-09-23. They complete the Value Discipline decision surface without opening Loss, Risk, Residual, NECT, or experiment semantics.
+
+### VD-01 · Legal Value Operations
+
+```
+VD-01-A  Vector Equality                    = DECLARED
+VD-01-B  Coordinate-wise Arithmetic        = DEFERRED
+VD-01-C  Vector Difference as Research Value = DEFERRED
+VD-01-D  Scalar Functional                 = EXCLUDED
+```
+
+`V_a = V_b ⇔ ∀i, v_{a,i} = v_{b,i}`. Only vector equality is declared. Coordinate arithmetic and vector difference remain deferred; scalar functionals `f : ℝ^k → ℝ` are excluded at the Value layer.
+
+### VD-02 · Coordinate Comparability
+
+```
+VD-02-A  Cross-Vector Coordinate Identity       = DEFERRED
+VD-02-B  Cross-Vector Coordinate Comparability  = DEFERRED
+VD-02-C  Coordinate Homogeneity                 = DEFERRED
+```
+
+`(j,i)` is only a positional address inside `V_j`. Same-index coordinates across different `V_j` are not declared to share semantic identity, comparability, or homogeneity.
+
+### VD-03 · Order Relation
+
+```
+VD-03-A  Intra-Vector Positional Order       = DECLARED
+VD-03-B  Positional Addressing / Projection  = DECLARED
+VD-03-C  Equality-only Same-Index Pairing    = DECLARED
+VD-03-D  Value / Magnitude / Preference Order = DEFERRED
+VD-03-E  Cross-Vector Positional Semantics    = DEFERRED
+VD-03-F  Composition-Induced J Order          = DEFERRED
+```
+
+`VECTOR_POSITIONAL = STRUCTURAL_POSITION_ONLY`. It does not introduce magnitude order, preference order, loss order, cross-vector coordinate semantics, or ordering of `J`.
+
+### VD-04 · Sign / Zero Discipline
+
+```
+VD-04-A  Zero Membership / Zero Admissibility       = DECLARED
+VD-04-B  Positive / Negative Sign Admissibility     = DECLARED
+VD-04-C  Zero as Semantic Value                     = DEFERRED
+VD-04-D  Sign as Semantic Attribute                 = DEFERRED
+VD-04-E  Non-Negativity / Positivity Constraint     = DEFERRED
+VD-04-F  Sign-Based Comparison / Ordering           = DEFERRED
+```
+
+`0`, positive values, and negative values are admissible finite-real coordinate states. No special zero semantics, sign semantics, non-negativity/positivity constraint, or sign-based ordering is declared.
+
+### VD-05 · Value ↔ Loss / Risk Boundary
+
+```
+VD-05-A  Value → Loss Mapping                = DEFERRED
+VD-05-B  Value → Risk Mapping                = DEFERRED
+VD-05-C  Loss Domain / Finiteness            = DEFERRED
+VD-05-D  Loss Sign / Non-Negativity          = DEFERRED
+VD-05-E  Loss Order / Minimization Semantics = DEFERRED
+VD-05-F  Value-to-Loss Functionalization     = DEFERRED
+```
+
+The Value → Loss / Risk channel remains closed. Value finiteness does not imply Loss finiteness. `LOSS_INFINITY_PREDEFINED = FALSE` remains unchanged. Value-level scalarization is excluded; an independent Loss functional remains deferred and unauthorized.
+
+### STEP④-B closure
+
+```
+VALUE DISCIPLINE = COMPLETE
+VALUE ↔ LOSS/RISK CHANNEL = CLOSED
+
+RESIDUAL STATUS = BLOCKED
+FinLoss         = BLOCKED
+NECT MODE       = BLOCKED
+STEP⑤           = BLOCKED
+EXPERIMENT AUTH = NONE
+```
+
+Completion of STEP④-B does not authorize Runtime implementation, research harness, data collection, profiling, performance measurement, or experiment.
 
 ## 8. Anti-regression rule
 
