@@ -52,7 +52,7 @@ R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
 R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
 R-C  AGGREGATION_RULE       = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
 R-D  RESULT CODOMAIN        = FINITE_REAL
-R-E  DEFINEDNESS / TOTALITY = OPEN
+R-E  DEFINEDNESS / TOTALITY = PARTIAL_DEFINEDNESS
 R-F  PARAMETER / REGIME     = CONDITIONAL / OPEN
 
 C_LOSS : A × W → ℝ          = CLOSED
@@ -174,10 +174,10 @@ The fact that `C_LOSS` has finite-real codomain does not by itself determine the
 ### R-E — Definedness / Totality
 
 ```text
-R-E = OPEN
+R-E = PARTIAL_DEFINEDNESS
 ```
 
-The domain on which aggregate loss is defined, and whether the resulting object is total on that domain, remain undeclared.
+The aggregate decision-loss object is declared as partial: it is defined only on an explicitly declared subset of otherwise candidate inputs. Inputs outside that declared definition domain are not assigned an aggregate decision-loss value. This declaration does not yet specify the definition-domain conditions, and does not by itself instantiate measure, measurability, integrability, or expectation existence.
 
 ### R-F — Parameter / Regime
 
@@ -265,7 +265,7 @@ R-A = DECLARED
 R-B = DECLARED
 R-C = DECLARED
 R-D = DECLARED
-R-E = OPEN
+R-E = DECLARED
 R-F = CONDITIONAL / OPEN
 
 R_OBJECT = NOT_DECLARED
@@ -278,4 +278,4 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
 
-The next gate is R-E / R-F resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
+The next gate is R-F resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
