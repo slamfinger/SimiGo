@@ -43,6 +43,11 @@ swift run simigo2ctl benchmark \
 swift run simigo2ctl materialize \
   /path/to/model-snapshot \
   --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
+
+# Gate 1: materialize one group as real MLX arrays
+swift run simigo2ctl mlx-gate1 \
+  /path/to/model-snapshot \
+  --group SWITCH_MLP_L00_15
 ```
 
 ## MVP policy
