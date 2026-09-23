@@ -471,3 +471,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Loading may form a feedback loop: resource policy influences the next reachable execution state.
 - This is outside frozen A2.0: no stochastic transition, `g:S→Δ(A)`, trajectory distribution, resource policy, or risk functional is registered.
 - Hypothesis history: docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.
+
+## Execution-State Information Boundary Hypothesis — 2026-09-23
+
+- Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
+- Separates execution state, capability demand, model representation/compression metadata, and loading/residency policy.
+- Core question: can `execution state → capability demand` be computed without model internals?
+- Three possible demand-information sources: external observable state, static model structure/metadata, and runtime internal signals.
+- If runtime internal signals are required, execution-state is no longer independent and must be re-audited.
+- Layer homogeneity/compression is a representation/layout question, not an execution-state assumption.
+- Hypothesis history: docs/07-history/EXECUTION_STATE_INFORMATION_BOUNDARY_HYPOTHESIS_20260923.md.

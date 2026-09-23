@@ -21,7 +21,8 @@ Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRAC
 A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED；
 A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED；
 Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
-Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
+Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
+Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
 
 ## Current research state
 
@@ -914,3 +915,32 @@ Therefore this remains an exploratory hypothesis outside A2.0.
 
 Hypothesis history:
 docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.
+
+### Execution-State Information Boundary Hypothesis — 2026-09-23
+
+A further exploratory boundary was registered for the execution-state direction:
+
+```
+execution state
+  → capability demand
+  → model representation / compression / metadata
+  → loading / residency
+```
+
+The key question is whether execution-state can determine required capabilities or
+compressed layer groups without reading model-internal semantics.
+
+Three information sources must not be mixed:
+
+```
+external observable state;
+static model structure/metadata;
+runtime internal signals such as hidden state, attention, activation, or routing.
+```
+
+If external observations suffice, execution-state can remain independent. If runtime
+internal signals are required, execution-state is coupled to model internals and its
+independence must be re-audited.
+
+Hypothesis history:
+docs/07-history/EXECUTION_STATE_INFORMATION_BOUNDARY_HYPOTHESIS_20260923.md.
