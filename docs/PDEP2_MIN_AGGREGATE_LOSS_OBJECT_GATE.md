@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R-ASM-E DECLARED / R-ASM-F DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R-ASM-E DECLARED / R-ASM-F DECLARED / R-ASSEMBLY-1A DECLARED / R-ASSEMBLY-1B DECLARED / R-ASSEMBLY-1C DECLARED / R-ASSEMBLY-2 DECLARED / R-ASSEMBLY-3 DECLARED / R-ASSEMBLY-4 DECLARED (G2) / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -804,5 +804,67 @@ Current consequence:
     STEP⑤ = NOT ENTERED
     HARNESS AUTH = NONE
     EXPERIMENT AUTH = NONE
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+## R-ASSEMBLY-4 declaration — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-4 = G2**.
+
+The admissible decision-rule family is projection-candidate dependent:
+
+```text
+𝒢_adm(P) ⊆ { g | g : W → A }
+g ∈ 𝒢_adm(P)
+```
+
+This preserves R-ASSEMBLY-3 = F2: the rule family remains an independent admissible family, while its family-level identity is allowed to vary with the projection candidate (P).
+
+The prior assembly chain remains:
+
+```text
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+g ∈ 𝒢_adm(P)
+    ↓
+optimization
+```
+
+G2 is a dependency declaration only. It does not instantiate the concrete family, its parameterization, a rule-admission predicate, a guarantee that Γ(P,δ) belongs to 𝒢_adm(P), the optimization domain/operator, minimum versus infimum, optimizer existence, or the exact `Dom(R)`.
+
+G2 does not declare a direct dependence of 𝒢_adm on δ or θ. No such dependence is imported by this declaration.
+
+The R-ASM-E composite admission predicate remains distinct from rule-family membership:
+
+```text
+g ∈ 𝒢_adm(P)
+        ≠
+COMPOSITE_ADMISSION_PREDICATE
+```
+
+Historical `δ(I_P)` is not restored, and no statement `δ ∈ Δ(I_P)` is introduced.
+
+Current consequence:
+
+```text
+R-ASSEMBLY-4 = DECLARED (G2)
+DECISION_RULE_FAMILY_DEPENDENCE = PROJECTION_CANDIDATE
+𝒢_adm(P) ⊆ {g | g : W → A}
+g ∈ 𝒢_adm(P)
+
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+HARNESS AUTH = NONE
+EXPERIMENT AUTH = NONE
+```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
