@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE 已声明）
 
 ## Current research state
 
@@ -21,6 +21,7 @@ R-INTERNAL-10 = E10-B
 R-INTERNAL-11 = E11-B
 R-INTERNAL-12 = K3-A / VALUE_INFIMUM
 R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN
+R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE
 
 ### Current internal interfaces
 
@@ -74,9 +75,18 @@ Dom(R)
 {(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}
 
 R(P,θ) = inf V(P,θ) ∈ ℝ,  ((P,θ) ∈ Dom(R))
+
+R-INTERNAL-14 / K4-A:
+att : Dom(R) → {true, false}
+
+att(P,θ) ⇔ inf V(P,θ) ∈ V(P,θ)
+
+Dom_att
+=
+{(P,θ) ∈ Dom(R) | att(P,θ)}
 ```
 
-E10-B establishes a non-empty effective optimization domain. E11-B originally declared the resulting aggregate optimization output to be finite real-valued without an exact Dom(R). R-INTERNAL-12 selects the value-level infimum. R-INTERNAL-13 refines the applicability scope of E11-B to the finite-infimum domain defined below. None of these gates establishes optimizer existence or attainment, minimum attainment, argmin, selector/tie-breaking, or any θ-level optimization.
+R-INTERNAL-14 leaves attainment unresolved. It defines only the attainment predicate and its truth domain; it does not assert that the predicate is true anywhere.
 
 ### Assembly state
 
@@ -122,12 +132,20 @@ L(g;P,θ)
 R(P,θ) ∈ ℝ
 ```
 
-OPT is concretized as a value-level infimum by R-INTERNAL-12. R-INTERNAL-13 establishes the finite-value applicability domain for that construction: `Dom(R) = {(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}`. The non-emptiness of `Dom(R)` itself is not declared.
+OPT is concretized as a value-level infimum by R-INTERNAL-12. R-INTERNAL-13 establishes the finite-value applicability domain for that construction. R-INTERNAL-14 defines the attainment predicate without asserting attainment. The non-emptiness of `Dom(R)` and `Dom_att` itself is not declared.
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-13.
+R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-14.
 
-R-INTERNAL-13 is an explicit scope precization of E11-B: E11-B’s finite-value claim is henceforth applicable only on `Dom(R)`. The prior unconditional reading of E11-B is superseded from R-INTERNAL-13 onward. E10-B’s non-empty effective optimization domain is a necessary condition for R evaluation, not a sufficient condition for finite-valued R. R-INTERNAL-13 does not declare `Dom(R) ≠ ∅` and does not instantiate a concrete admissible-rule family, probability space or parameter domain, separate integrability/measurability conditions, optimizer existence/attainment, R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
+R-INTERNAL-14 does not introduce topology or any structural condition, and does not pre-authorize future sufficient-condition families. It does not declare optimizer existence, attainment at any point, minimum attainment, `min` reformulation, argmin, selector/tie-breaking, uniqueness, compactness, continuity, measurability, finiteness/cardinality assumptions, any θ-level optimization, `A(P,θ)`, historical `δ(I_P)`, R_OBJECT, R_ORACLE, Δ, FinLoss, or NECT.
 
-Historical δ(I_P) is not restored and no new δ optimization domain is introduced.
+The authorized forward interface on this gate is only:
+```
+att : Dom(R) → {true,false}
+Dom_att = {(P,θ) ∈ Dom(R) | att(P,θ)}
+```
+
+A future argmin gate may independently define argmin semantics and any equivalence with `att`; that equivalence is not declared here. Selector/tie-breaking remains a separate layer.
+
+Historical `δ(I_P)` is not restored and no new δ optimization domain is introduced.
