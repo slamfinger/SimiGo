@@ -3,12 +3,12 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B COMPLETE / Value Discipline（STEP⑤ NECT mode blocked）
-Next action: Downstream dependency review after STEP④-B; no automatic entry into STEP⑤ or experiment
+Next action: Define the minimum aggregate decision-loss object schema required above C_LOSS; no automatic entry into STEP⑤ or experiment
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation COMPLETE and consistency review PASSED; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | STEP⑤ HISTORICAL FORMULATION RETAINED / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT NOT DECLARED / R、R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED | 不把历史 STEP⑤ downstream 对象当作当前实例化对象；不得自动重开 R layer |
+| P4-A existence criterion | AGGREGATE DECISION-LOSS ROUTE SELECTED / R_OBJECT NOT DECLARED / STEP⑤ HISTORICAL FORMULATION RETAINED / R、R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED | 路线已选择；下一步仅定义实现该路线所需的最小 aggregate decision-loss object，不自动进入 STEP⑤ |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -66,7 +66,7 @@ P4 / RQ-P4-01 candidate
 - STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE VD-01～VD-05 COMPLETE / DOWNSTREAM DEPENDENCY REVIEW PASSED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
 - LOSS-3 Cost Object：CLOSED / C_LOSS = NEW_INDEPENDENT_C_LOSS / COST_DOMAIN=FINITE_REAL / INFINITE_COST=NOT_PRESENT / C_DEFINEDNESS=TOTAL_ON_DECLARED_DOMAIN
 - LOSS-4 Cost Evaluation Interface：CLOSED / C_LOSS : D_C → ℝ / D_C=A×W / D_C CURRENTLY MFI PLACEHOLDER / NO PROBABILISTIC SEMANTICS
-- LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT
+- LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT\n- PDEP-2 Route：AGGREGATE_DECISION_LOSS / route selected; implementation object not yet declared
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：HISTORICAL FORMULATION RETAINED / NDAC AND SAT_INF_FIN RETAINED AS HISTORICAL GATE LOGIC / R NOT_DEFINED_BY_CURRENT_FRAMEWORK / R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -302,8 +302,8 @@ C_LOSS
 STEP⑤ downstream blocked
 ```
 
-Any future continuation must first determine, by explicit researcher declaration, whether a research object above C_LOSS is required at all. No such object is selected by this state file.
+The proposition-level route has now been selected explicitly:\n\n```\nPDEP-2 ROUTE = AGGREGATE_DECISION_LOSS\n```\n\nThe route selection does not define the required R object. The next semantic gate is to determine the minimum aggregate decision-loss object schema above C_LOSS. Until that object is explicitly declared, R, R_oracle, Δ, and FinLoss remain unavailable.
 
 ## 11. Governance
 
-本次 STEP④-A 收敛没有新增实验、harness、implementation 或 measurement authorization。
+本次路线选择没有新增实验、harness、implementation 或 measurement authorization。
