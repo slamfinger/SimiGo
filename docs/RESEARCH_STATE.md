@@ -3,7 +3,7 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R-ASM-E 已声明为 COMPOSITE_ADMISSION_PREDICATE；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D=FINITE_REAL / R-E=PARTIAL_DEFINEDNESS / R-F=PARAMETERIZED_REGIME / R-ASM-A=C_LOSS / R-ASM-B=REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY / R-ASM-C=DECISION_RULE_FAMILY_WITH_OPTIMIZATION / R-ASM-D=PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT / R_OBJECT NOT DECLARED / R_ASSEMBLY OPEN / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D=FINITE_REAL / R-E=PARTIAL_DEFINEDNESS / R-F=PARAMETERIZED_REGIME / R-ASM-A=C_LOSS / R-ASM-B=REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY / R-ASM-C=DECISION_RULE_FAMILY_WITH_OPTIMIZATION / R-ASM-D=PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT / R-ASM-E=COMPOSITE_ADMISSION_PREDICATE / R_OBJECT NOT DECLARED / R_ASSEMBLY OPEN / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -311,11 +311,11 @@ The proposition-level route has now been selected explicitly:
 PDEP-2 ROUTE = AGGREGATE_DECISION_LOSS
 ```
 
-The route selection does not define the required R object. R-A has now been declared as PROJECTION_CANDIDATE; R-B has now been declared as WORKLOAD_DISTRIBUTION; R-C/R-D/R-E/R-F are declared. The C_LOSS↔R assembly remains incomplete; R-ASM-C now declares the bridge kind as DECISION_RULE_FAMILY_WITH_OPTIMIZATION, but the concrete decision-rule family, admissibility, rule signature, optimization domain/operator, and projection-to-action bridge remain undeclared. R-ASM-D now declares a parameter-indexed probability-measure family together with a measurability requirement, but does not instantiate a concrete parameter set, concrete measure notation, measurable loss function, integrability conditions, or expectation values. Until the aggregate object is explicitly declared, R, R_oracle, Δ, and FinLoss remain unavailable.
+The route selection does not define the required R object. R-A has now been declared as PROJECTION_CANDIDATE; R-B has now been declared as WORKLOAD_DISTRIBUTION; R-C/R-D/R-E/R-F are declared. The C_LOSS↔R assembly remains incomplete; R-ASM-C now declares the bridge kind as DECISION_RULE_FAMILY_WITH_OPTIMIZATION, but the concrete decision-rule family, admissibility, rule signature, optimization domain/operator, and projection-to-action bridge remain undeclared. R-ASM-D now declares a parameter-indexed probability-measure family together with a measurability requirement, but does not instantiate a concrete parameter set, concrete measure notation, measurable loss function, integrability conditions, or expectation values. R-ASM-E now declares a composite admission predicate for Dom(R), but does not instantiate its component predicates or logical form. Until the aggregate object is explicitly declared, R, R_oracle, Δ, and FinLoss remain unavailable.
 
 ## 11. Governance
 
-The R-B workload-distribution declaration adds no probability-space, measure, expectation, experiment, harness, implementation, or measurement authorization. R-ASM-C likewise adds only the decision-bridge kind; it does not instantiate a decision-rule family, optimization domain/operator, optimizer existence, or final R_OBJECT.
+The R-B workload-distribution declaration adds no probability-space, measure, expectation, experiment, harness, implementation, or measurement authorization. R-ASM-C adds only the decision-bridge kind; it does not instantiate a decision-rule family, optimization domain/operator, optimizer existence, or final R_OBJECT. R-ASM-E adds only the composite-admission predicate level; it does not instantiate concrete predicate components or logical form.
 
 
 ## 10.4 R-ASM-D declaration — measure / measurability
@@ -332,6 +332,30 @@ Current consequence:
 
 ```text
 R-ASM-D = DECLARED
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_oracle = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+STEP⑤ = NOT ENTERED
+EXPERIMENT AUTH = NONE
+```
+
+
+## 10.5 R-ASM-E declaration — admission predicate / Dom(R)
+
+The researcher explicitly declared:
+
+```text
+R-ASM-E = COMPOSITE_ADMISSION_PREDICATE
+```
+
+This establishes that the admissible domain of the aggregate decision-loss object is governed by a composite admission predicate. The declaration remains at predicate-family level and does not silently instantiate the component predicates, their logical conjunction/disjunction structure, parameter-domain conditions, decision-rule admissibility, measurability, integrability, expectation existence, or finite-real-result conditions.
+
+Current consequence:
+
+```text
+R-ASM-E = DECLARED
 R_OBJECT = NOT_DECLARED
 R_ASSEMBLY = OPEN
 R_oracle = NOT_DEFINED
