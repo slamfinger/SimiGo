@@ -9,7 +9,8 @@ Concrete Argmin Cardinality Policy 确认
 ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
 Research Road Space 已登记，SELECTED_ROUTE=NONE；
 Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
-Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL）
+Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL；
+Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN）
 
 ## Current research state
 
@@ -543,3 +544,34 @@ SemanticConsistency = OPEN
 
 Correction history:
 docs/07-history/QWEN3_CODER_SIMIGO17_RUNTIME_POSITIVE_CONTROL_20260923.md.
+
+### Computational Semantics Observation Schema Candidate — 2026-09-23
+
+The three external probes motivate separating the former `Declaration` layer
+into:
+
+```
+C0 Checkpoint Declaration
+C1 Runtime Family Declaration
+C2 Runtime Type-Routing
+C3 Instantiation
+C4 Execution
+C5 Semantic Consistency
+```
+
+The schema is registered only as an empirical observation candidate. It is not
+an Architecture 2.0 formal definition or new semantic object.
+
+Minimal fracture coverage:
+
+```
+Qwen3-Coder / SimiGo 1.7 = positive control
+Gemma 4                  = post-routing executable boundary
+Muse-Glimmer text tower  = pre-instantiation routing boundary
+```
+
+Whether C0-C5 should later become formal Architecture 2.0 semantic layers remains
+OPEN.
+
+Schema history:
+docs/07-history/COMPUTATIONAL_SEMANTICS_OBSERVATION_SCHEMA_CANDIDATE_20260923.md.

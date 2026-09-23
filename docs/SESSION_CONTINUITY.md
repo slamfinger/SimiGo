@@ -350,3 +350,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Corrected layers under SimiGo 1.7: Declaration PASS, Instantiation PASS, Execution PASS, SemanticConsistency OPEN.
 - Qwen3-Coder is therefore a positive runtime control for the computational-semantics comparison; Gemma 4 remains a boundary candidate.
 - Correction history: docs/07-history/QWEN3_CODER_SIMIGO17_RUNTIME_POSITIVE_CONTROL_20260923.md.
+
+## Computational Semantics Observation Schema Candidate — 2026-09-23
+
+- Status: `OBSERVATION_SCHEMA_CANDIDATE_REGISTERED / FORMALIZATION_OPEN`.
+- Candidate layers: `C0 Checkpoint Declaration`, `C1 Runtime Family Declaration`, `C2 Runtime Type-Routing`, `C3 Instantiation`, `C4 Execution`, `C5 Semantic Consistency`.
+- The three probes give minimal fracture coverage: Qwen3-Coder positive control, Gemma 4 post-routing execution boundary, Muse-Glimmer pre-instantiation routing boundary.
+- `Declaration` must not be used as a single undifferentiated layer in future probe records.
+- The layers are observational fields only; formal promotion into Architecture 2.0 remains OPEN.
+- Schema history: docs/07-history/COMPUTATIONAL_SEMANTICS_OBSERVATION_SCHEMA_CANDIDATE_20260923.md.
