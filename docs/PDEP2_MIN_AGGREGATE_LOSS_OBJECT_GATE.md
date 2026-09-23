@@ -1139,3 +1139,27 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH    = NONE
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-9 — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-9 = L3**.
+
+The composite evaluation object remains `(P, δ)`, and the bridge from the evaluation object to the decision-rule level is recorded as:
+
+```text
+(P,δ) ↦ g
+Γ(P,δ) = g
+```
+
+The optimization component continues to act on the admissible rule family rather than on `(P,δ)` directly:
+
+```text
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+Therefore `(P,δ)` is the evaluation object and generation input, but is **not** declared to be the optimization variable. No new optimization domain for `δ` is introduced.
+
+L3 preserves the existing R-ASSEMBLY-6 / 7 / 8 hierarchy: rule-level aggregate evaluation followed by an abstract scalar-valued optimization operator. It does not instantiate `δ`, `𝒢_adm(P)`, an optimization parameter domain, a concrete `OPT` construction, optimizer existence/attainment, `Dom(R)`, or `R_OBJECT`.
+
+No historical `δ(I_P)` or `δ ∈ Δ(I_P)` is restored. No `R_oracle`, `Δ`, `FinLoss`, NECT, STEP⑤, implementation, harness, measurement, or experiment authorization is created by this declaration.
