@@ -36,6 +36,7 @@ SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过，
 对 naive on-demand 减少 reload 10.87 GiB，但 latency advantage 未建立；
 SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 real-device proof）
 ；Nail-Qwen3.6-35B-A3B-MLX 已在 Apple M5 完成 Gate 4 与 Gate 5 real-device validation）
+；Gemma4 Unified 已完成 Apple M5 text inference probe，但当前 whole-group residency support 为 NOT_APPLICABLE / INCOMPLETE）
 
 ## Current research state
 
@@ -1222,3 +1223,24 @@ latency advantage                = NOT ESTABLISHED
 
 Validation history:
 docs/00-governance/SIMIGO2_NAIL_QWEN36_REAL_DEVICE_VALIDATION_20260924.md.
+
+### Gemma4 Residency Compatibility Boundary — 2026-09-24
+
+Probed `mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit` on Apple M5:
+
+```text
+runtime text inference             = PASS / baseline and restored output = ping
+switch_mlp tensors                 = 0
+evictable whole groups             = 0
+Gate 4 groupInferenceResidencyPass = false
+Gate 5 benchmarkPass               = false
+outputIdentityPass                 = true
+idle / reload reduction            = 0 bytes
+```
+
+The checkpoint is executable through the local `mlx-swift-lm` text path, but it is
+not eligible for the current switch-MLP whole-group residency abstraction. This
+registers a compatibility boundary, not a runtime loading failure.
+
+Boundary history:
+docs/00-governance/SIMIGO2_GEMMA4_RESIDENCY_COMPATIBILITY_BOUNDARY_20260924.md.

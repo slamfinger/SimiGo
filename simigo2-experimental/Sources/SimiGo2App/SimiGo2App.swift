@@ -12,9 +12,14 @@ enum SimiGo2App {
         }
 
         do {
-            let output = try await RealDeviceSelfTest.run(configuration)
+            let (output, residencyPass) = try await RealDeviceSelfTest.run(configuration)
             FileHandle.standardOutput.write(output)
-            FileHandle.standardError.write(Data("self-test: PASS\n".utf8))
+            FileHandle.standardError.write(
+                Data(
+                    (residencyPass ? "self-test: PASS\n" : "self-test: RESIDENCY_COMPATIBILITY_BOUNDARY; benchmarkPass=false\n"
+                ).utf8
+              )
+            )
         } catch {
             FileHandle.standardError.write(Data("self-test error: \(error.localizedDescription)\n".utf8))
             exit(1)
@@ -82,8 +87,11 @@ private struct ContentView: View {
                     modelDirectory: URL(fileURLWithPath: modelPath, isDirectory: true),
                     states: parsedStates
                 )
-                let data = try await RealDeviceSelfTest.run(configuration)
+                let (data, residencyPass) = try await RealDeviceSelfTest.run(configuration)
                 output = String(decoding: data, as: UTF8.self)
+                if !residencyPass {
+                    output += "\n\nRESULT: RESIDENCY_COMPATIBILITY_BOUNDARY (benchmarkPass=false)"
+                }
             } catch {
                 output = "ERROR: \(error.localizedDescription)"
             }
@@ -133,10 +141,11 @@ private struct SelfTestReport: Codable {
     let modelDirectory: String
     let states: [String]
     let report: MLXGroupResidencyBenchmarkReport
+    let residencyBenchmarkPass: Bool
 }
 
 enum RealDeviceSelfTest {
-    static func run(_ configuration: SelfTestConfiguration) async throws -> Data {
+    static func run(_ configuration: SelfTestConfiguration) async throws -> (Data, Bool) {
         let report = try await MLXGroupResidencyBenchmark.run(
             modelDirectory: configuration.modelDirectory,
             states: configuration.states
@@ -151,12 +160,13 @@ enum RealDeviceSelfTest {
             ),
             modelDirectory: configuration.modelDirectory.path,
             states: configuration.states.map(\.rawValue),
-            report: report
+            report: report,
+            residencyBenchmarkPass: report.benchmarkPass
         )
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(proof)
+        return (try encoder.encode(proof), report.benchmarkPass)
     }
 
     private static func sysctlString(_ name: String) -> String? {

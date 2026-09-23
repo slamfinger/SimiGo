@@ -575,6 +575,24 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Validation history:
   docs/00-governance/SIMIGO2_NAIL_QWEN36_REAL_DEVICE_VALIDATION_20260924.md.
 
+## Gemma4 Residency Compatibility Boundary — 2026-09-24
+
+- Probed `mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit`
+  snapshot `6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff` on Apple M5.
+- MLX Swift LM text inference loaded successfully; baseline/restored output was
+  `ping` and `outputIdentityPass=true`.
+- Inventory found 0 `switch_mlp` tensors; all 1,324 tensors / 6,698,991,200 bytes
+  fell into `CORE_NON_SWITCH`.
+- Gate 4 released/rematerialized 0 tensors and `groupInferenceResidencyPass=false`.
+- Gate 5 completed but `benchmarkPass=false`; idle and reload reduction were 0 bytes.
+- App self-test verdict was corrected to report
+  `RESIDENCY_COMPATIBILITY_BOUNDARY; benchmarkPass=false`; it no longer reports a
+  generic PASS when residency benefit is absent.
+- Boundary: runtime text execution is viable, but SimiGo's current switch-MLP
+  whole-group residency abstraction is not applicable to this Gemma4 checkpoint.
+- Boundary history:
+  docs/00-governance/SIMIGO2_GEMMA4_RESIDENCY_COMPATIBILITY_BOUNDARY_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
