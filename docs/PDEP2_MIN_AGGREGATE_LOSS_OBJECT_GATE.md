@@ -51,7 +51,7 @@ R_OBJECT                    = NOT_DECLARED
 R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
 R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
 R-C  AGGREGATION_RULE       = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
-R-D  RESULT CODOMAIN        = OPEN
+R-D  RESULT CODOMAIN        = FINITE_REAL
 R-E  DEFINEDNESS / TOTALITY = OPEN
 R-F  PARAMETER / REGIME     = CONDITIONAL / OPEN
 
@@ -164,10 +164,10 @@ Expectation over the declared workload distribution is now the selected aggregat
 ### R-D — Result Codomain
 
 ```text
-R-D = OPEN
+R-D = FINITE_REAL
 ```
 
-The aggregate result codomain remains independently undeclared.
+The aggregate decision-loss result is declared to have finite-real codomain. This is a researcher-level declaration for the aggregate object; it does not by itself establish that the expectation exists, is finite, or is total on any domain. Those questions remain governed by R-E.
 
 The fact that `C_LOSS` has finite-real codomain does not by itself determine the aggregate codomain.
 
@@ -264,7 +264,7 @@ Selecting R-B does not legally imply any of the subsequent objects.
 R-A = DECLARED
 R-B = DECLARED
 R-C = DECLARED
-R-D = OPEN
+R-D = DECLARED
 R-E = OPEN
 R-F = CONDITIONAL / OPEN
 
@@ -278,4 +278,4 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
 
-The next gate is R-D / R-E resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
+The next gate is R-E / R-F resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
