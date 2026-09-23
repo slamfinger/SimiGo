@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -60,10 +60,10 @@ R-F  PARAMETER / REGIME     = PARAMETERIZED_REGIME
 C_LOSS : A × W → ℝ          = CLOSED
 C_LOSS ↔ R BRIDGE           = NOT DECLARED
 
-W measurable structure     = UNDECLARED
-μ_W formal object          = NOT INSTANTIATED
-C_LOSS measurability       = UNDECLARED
-expectation                 = SELECTED AS AGGREGATION RULE, NOT YET INSTANTIATED
+W measurable structure     = DECLARED AT FAMILY INTERFACE LEVEL
+μ_W formal object          = PARAMETER-INDEXED PROBABILITY-MEASURE FAMILY DECLARED
+C_LOSS measurability       = REQUIREMENT DECLARED
+expectation                 = SELECTED AS AGGREGATION RULE; MATHEMATICAL INSTANTIATION STILL REQUIRES THE DECLARED MEASURABILITY / DEFINEDNESS CONDITIONS
 ```
 
 These are researcher-level declarations. No remaining open value is inferred from R-A or R-B.
@@ -327,7 +327,9 @@ R-ASM-A, R-ASM-B, and R-ASM-C have now been explicitly selected by the researche
 R-ASM-A  POINTWISE_LOSS_CARRIER = C_LOSS
 R-ASM-B  REGIME_DISTRIBUTION_INTERFACE = REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY
 R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
-R-ASM-D  MEASURE / MEASURABILITY
+R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
+R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
+R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
 R-ASM-E  ADMISSION_PREDICATE / Dom(R)
 R-ASM-F  FINAL_OBJECT_SIGNATURE
 ```
@@ -430,6 +432,33 @@ Accordingly:
 
 ```
 R-ASM-C = DECLARED
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_oracle = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+```
+
+No STEP⑤, harness, implementation, measurement, or experiment authorization is created by this declaration.
+
+
+## 15. R-ASM-D declaration record
+
+The researcher has explicitly declared:
+
+```text
+R-ASM-D  MEASURE / MEASURABILITY
+        = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
+```
+
+This establishes the workload-distribution side of the aggregate-loss assembly as a parameter-indexed family of probability measures, together with a measurability requirement for the workload-dependent loss mapping used by the expectation.
+
+The declaration advances the expectation boundary beyond the previous placeholder state. It does not silently instantiate a concrete parameter set, a concrete measurable-space notation, a particular probability measure, a particular measurable loss function, integrability conditions, or expectation values. Measurability is a requirement of the aggregate construction; it is not a claim that the current `C_LOSS` interface has already been proved measurable under a concrete structure.
+
+Accordingly:
+
+```text
+R-ASM-D = DECLARED
 R_OBJECT = NOT_DECLARED
 R_ASSEMBLY = OPEN
 R_oracle = NOT_DEFINED
