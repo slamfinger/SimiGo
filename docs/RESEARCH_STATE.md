@@ -16,7 +16,8 @@ Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL；
 Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY；
 Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK；
 Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN；
-Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE）
+Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE；
+Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION）
 
 ## Current research state
 
@@ -756,3 +757,39 @@ they do not yet establish structural distinctiveness.
 
 Attack history:
 docs/07-history/A2_PROJECTION_EVALUATION_DISTINCTIVENESS_ATTACK_20260923.md.
+
+### A2.0 Terminal Distinctiveness Audit — 2026-09-23
+
+The whole current value-level core was tested for lossless encoding into a
+generic constrained-optimization schema.
+
+Encoding:
+
+```
+z      = (P,θ)
+G(z)   = 𝒢_adm(P)
+D(z)   = Dom(L)
+c(z,g) = L(g;P,θ)
+C(z)   = V(P,θ)
+r(z)   = R(P,θ)
+```
+
+All currently registered value-level dependencies are preserved.
+
+Result:
+
+```
+GENERIC_REDUCIBILITY          = REDUCIBLE_AT_CURRENT_ABSTRACTION
+INDEPENDENT_RESEARCH_QUESTION = NONE_CURRENTLY_REGISTERED
+STRUCTURAL_DISTINCTIVENESS    = NOT_ESTABLISHED
+TERMINAL_DISTINCTIVENESS      = NOT_ESTABLISHED
+OVERALL                       = DISCIPLINED GENERIC OPTIMIZATION SCHEMA CANDIDATE
+```
+
+`D_opt`, finite evaluation, `V`, `R`, attainment, `Argmin`, uniqueness, and the
+concrete value `R(P0,θ0′)=5376` all have generic constrained-optimization
+analogues. They remain useful, but are not currently non-generic A2.0 research
+questions.
+
+Audit history:
+docs/07-history/A2_TERMINAL_DISTINCTIVENESS_AUDIT_20260923.md.

@@ -421,3 +421,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Richer projection semantics—direction, domain/codomain, and information loss—are not currently load-bearing in the abstract value-level formulas.
 - No new object, route, implementation, experiment, or formal separation is authorized.
 - Attack history: docs/07-history/A2_PROJECTION_EVALUATION_DISTINCTIVENESS_ATTACK_20260923.md.
+
+## A2.0 Terminal Distinctiveness Audit — 2026-09-23
+
+- Result: `GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION`.
+- The entire value core maps to a generic constrained-optimization schema with `z=(P,θ)`, admissibility `𝒢_adm(P)`, evaluable domain `Dom(L)`, partial cost `L`, value image `V`, and infimum `R`.
+- Current nontrivial questions—nonempty domain, finite evaluation, attainment, Argmin, uniqueness, and `R(P0,θ0′)=5376`—survive only as generic optimization questions or encoded instance facts.
+- `INDEPENDENT_RESEARCH_QUESTION = NONE_CURRENTLY_REGISTERED`.
+- `STRUCTURAL_DISTINCTIVENESS` and `TERMINAL_DISTINCTIVENESS` remain `NOT_ESTABLISHED`.
+- Current honest status: disciplined generic optimization schema candidate; methodological value remains, but independent projection-evaluation distinctiveness is not established.
+- Audit history: docs/07-history/A2_TERMINAL_DISTINCTIVENESS_AUDIT_20260923.md.
