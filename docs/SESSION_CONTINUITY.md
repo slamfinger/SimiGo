@@ -481,6 +481,14 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This is outside frozen A2.0: no stochastic transition, `g:S→Δ(A)`, trajectory distribution, resource policy, or risk functional is registered.
 - Hypothesis history: docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.
 
+## SimiGo 2.0 MLX Gate 1 Results — 2026-09-24
+
+- Gate 1 selective tensor materialization: PASS.
+- `CORE_NON_SWITCH`: 919 tensors, 873,459,712 bytes, 167.01 ms.
+- `SWITCH_MLP_L00_15`: 144 tensors, 5,435,817,984 bytes, 782.72 ms.
+- Pending: independent group lifecycle, parameter replacement/release, and inference semantic consistency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

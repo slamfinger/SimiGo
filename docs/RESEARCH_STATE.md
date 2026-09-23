@@ -26,8 +26,9 @@ Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FO
 SimiGo 2.0 Experimental 工程路线已登记为 ROUTE_REGISTERED / PHASE_0_AUTHORIZED；
 SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING；
 SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后；
-SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成）
-；SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成）
+SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成；
+SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成；
+SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试）
 
 ## Current research state
 
@@ -1068,3 +1069,19 @@ inference.
 
 Experiment history:
 docs/00-governance/SIMIGO2_PHASE1_QWEN3_MATERIALIZATION_RESULTS_20260924.md.
+
+### SimiGo 2.0 MLX Gate 1 Results — 2026-09-24
+
+Gate 1 passed for both core and fused MoE groups:
+
+```
+CORE_NON_SWITCH    = 919 tensors / 873,459,712 bytes / 167.01 ms
+SWITCH_MLP_L00_15  = 144 tensors / 5,435,817,984 bytes / 782.72 ms
+```
+
+MLX lazy Safetensors loading materialized only selected tensor ranges. This passes
+selective tensor materialization, but group lifecycle and inference semantic
+consistency remain pending.
+
+Gate history:
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md.
