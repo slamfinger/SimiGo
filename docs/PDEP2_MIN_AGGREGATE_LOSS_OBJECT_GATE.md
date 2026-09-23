@@ -1211,3 +1211,43 @@ HARNESS AUTH    = NONE
 ```
 
 No implementation, harness, measurement, data collection, profiling, or experiment authorization is created by this declaration.
+
+
+## R-INTERNAL-2 declaration — 2026-09-23
+
+The researcher explicitly declared **R-INTERNAL-2 = δ3**.
+
+δ is declared as an abstract decision-generation parameter:
+
+```text
+δ : DECISION_GENERATION_PARAMETER
+```
+
+δ participates with P as input to the declared generation mechanism:
+
+```text
+(P, δ) ↦ g
+Γ(P, δ) = g
+g : W → A
+```
+
+This does not identify δ with g, does not make δ a function `W → A`, and does not restore historical `δ(I_P)` or introduce a δ optimization domain.
+
+R-INTERNAL-2 closes only the carrier/type level. The internal structure of δ, its parameter space, and its relation to θ or admissibility remain undeclared.
+
+Current state:
+
+```text
+R-INTERNAL-1 = DECLARED (P4)
+R-INTERNAL-2 = DECLARED (δ3)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT          = BLOCKED
+STEP⑤       = NOT ENTERED
+STEP⑥       = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
