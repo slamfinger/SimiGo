@@ -666,3 +666,103 @@ EXPERIMENT AUTH = NONE
 ~~~
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## 12.6 R-ASSEMBLY-2 declaration — decision rule representation
+
+The researcher explicitly declared:
+
+```text
+R-ASSEMBLY-2 = D2
+```
+
+Therefore:
+
+```text
+DECISION_RULE_REPRESENTATION = GENERATED_RULE
+
+Γ(P, δ) = g
+g : W → A
+
+a = g(w)
+```
+
+Under D2, the composite evaluation object `(P, δ)` does not itself become the final decision rule by identity. Instead, `(P, δ)` participates in generating a decision rule `g : W → A` through the already declared joint output mechanism.
+
+This is a minimum-level semantic declaration only. It does not instantiate the generation map, the concrete signatures of `P) or `δ`, the admissible rule family, or the conditions under which the generated `g` is admitted.
+
+The previously declared R-ASSEMBLY-1C = C3 is preserved:
+
+```text
+Γ(P, δ) : W → A
+a = Γ(P, δ)(w)
+```
+
+D2 gives this the interpretation:
+
+```text
+Γ(P, δ) = g
+g : W → A
+a = g(w)
+```
+
+and therefore the pointwise loss carrier is reached as:
+
+```text
+C_LOSS(g(w), w)
+```
+
+D2 is distinct from D1:
+
+```text
+D1:
+δ : W → A
+Γ(P,δ) = δ
+
+D2:
+Γ(P,δ) = g
+g : W → A
+```
+
+No identity `g = δ` is declared.
+
+D2 does not declare a concrete generation operator `Γ`, signatures of `P) or `δ`, an admissible rule family, a rule-admission predicate, a concrete projection-to-rule mapping, a parameter domain, a concrete measurable structure, a concrete probability-measure family, measurability or integrability proofs, an optimization domain/operator, minimum versus infimum, optimizer existence, the exact composite `Dom(R)`, `R_OBJECT`, `R_oracle`, residual `Δ`, `FinLoss`, `NECT`, or STEP⑤/implementation/harness/measurement/experiment authorization. Historical `δ(I_P)` is not restored.
+
+The resulting dependency skeleton is:
+
+```text
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓  applied to w
+a = g(w)
+    ↓
+C_LOSS(g(w), w)
+    ↓
+expectation over the declared workload-distribution family
+    ↓
+rule-level aggregate evaluation
+    ↓
+optimization component
+    ↓
+P-level aggregate decision-loss object
+```
+
+Accordingly:
+
+```text
+R-ASSEMBLY-2 = DECLARED (D2)
+R_OBJECT      = NOT_DECLARED
+R_ASSEMBLY    = OPEN
+R_oracle      = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss       = NOT LEGALLY AVAILABLE
+NECT          = BLOCKED
+STEP⑤         = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by R-ASSEMBLY-2.
