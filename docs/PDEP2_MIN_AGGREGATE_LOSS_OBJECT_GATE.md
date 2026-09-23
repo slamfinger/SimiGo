@@ -1163,3 +1163,18 @@ Therefore `(P,δ)` is the evaluation object and generation input, but is **not**
 L3 preserves the existing R-ASSEMBLY-6 / 7 / 8 hierarchy: rule-level aggregate evaluation followed by an abstract scalar-valued optimization operator. It does not instantiate `δ`, `𝒢_adm(P)`, an optimization parameter domain, a concrete `OPT` construction, optimizer existence/attainment, `Dom(R)`, or `R_OBJECT`.
 
 No historical `δ(I_P)` or `δ ∈ Δ(I_P)` is restored. No `R_oracle`, `Δ`, `FinLoss`, NECT, STEP⑤, implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-10 — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-10 = M4**.
+
+M4 defers declaration of the final R_OBJECT input hierarchy. No choice among direct `(P, θ)`, explicit `((P, δ), θ)`, or another concrete hierarchy is made at this gate.
+
+Before R_OBJECT is declared, the following internal interfaces are to be resolved: P type; δ type; θ type; structure of `𝒢_adm(P)`; domain of L; legality/existence conditions for E_θ.
+
+R-ASSEMBLY-1A through R-ASSEMBLY-9 remain in force. This declaration does not instantiate any new parameter domain, optimization construction, admissibility family, expectation legality condition, or concrete final object signature.
+
+Current state remains: `R_OBJECT = NOT_DECLARED`; `R_ASSEMBLY = OPEN`; `R_ORACLE = NOT_DEFINED`; `Δ = BLOCKED`; `FinLoss = NOT LEGALLY AVAILABLE`; `NECT = BLOCKED`; `STEP⑤ = NOT ENTERED`; `STEP⑥ = NOT ENTERED`.
+
+No implementation, harness, measurement, experiment, or downstream STEP authorization is created by this declaration.
