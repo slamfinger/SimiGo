@@ -25,7 +25,8 @@ Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FOR
 Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
 SimiGo 2.0 Experimental 工程路线已登记为 ROUTE_REGISTERED / PHASE_0_AUTHORIZED；
 SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING；
-SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后）
+SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后；
+SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成）
 
 ## Current research state
 
@@ -1009,3 +1010,32 @@ to GGUF, or introduce a universal runtime abstraction.
 
 Selection history:
 docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md.
+
+### SimiGo 2.0 Phase 1 Swift Scaffold — 2026-09-24
+
+Implemented the pure-Swift execution-state residency scaffold:
+
+```
+ExecutionStateLabel
+→ Qwen3CoderStatePolicy
+→ LayerResidencyEngine
+→ TransitionReport / Metrics
+```
+
+It parses local Safetensors metadata, partitions Qwen3-Coder fused MoE tensors by
+decoder-layer range, and benchmarks all-resident, reactive, and llama.cpp-inspired
+lazy policies.
+
+Status:
+
+```
+swift build = PASS
+swift test  = PASS / 5 tests
+policy benchmark = COMPLETE
+```
+
+This remains a control-plane simulator; no model inference or MLX internals are
+modified.
+
+Scaffold history:
+docs/00-governance/SIMIGO2_PHASE1_SCAFFOLD_20260924.md.

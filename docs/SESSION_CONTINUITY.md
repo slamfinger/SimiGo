@@ -504,6 +504,16 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Phase 0 remains partial: Qwen3-Coder tensor inventory is complete; MLX partial-load feasibility and llama.cpp reference audit are pending.
 - Selection history: docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md.
 
+## SimiGo 2.0 Phase 1 Swift Scaffold — 2026-09-24
+
+- Location: `simigo2-experimental/`.
+- Status: `SCAFFOLD_IMPLEMENTED / POLICY_BENCHMARK_COMPLETE`.
+- Pure Swift components: Safetensors metadata reader, Qwen3-Coder group catalog, execution-state policy, residency engine, policy benchmark, and `simigo2ctl`.
+- Validation: `swift build` PASS and 5 Swift tests PASS.
+- Benchmark states: `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- Result: full-resident minimizes reloads; reactive/lazy lower some intermediate residency but increase reload traffic; this is still control-plane measurement only.
+- Scaffold history: docs/00-governance/SIMIGO2_PHASE1_SCAFFOLD_20260924.md.
+
 ## SimiGo 2.0 Phase 0 Qwen3-Coder Inventory — 2026-09-23
 
 - Status: `PHASE_0_PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING`.
