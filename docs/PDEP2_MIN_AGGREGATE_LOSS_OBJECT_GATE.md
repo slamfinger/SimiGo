@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A DECLARED / R-B–R-F OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A / R-B DECLARED / R-C–R-F OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -13,7 +13,7 @@ PDEP-2 ROUTE = AGGREGATE_DECISION_LOSS
 
 The purpose of this gate is to determine the minimum semantic components required before an aggregate decision-loss object can legally exist above the current pointwise cost object.
 
-The researcher has now declared the evaluation target only. The remaining aggregate-object components remain open.
+The researcher has now declared the evaluation target and evaluation input. The remaining aggregate-object components remain open.
 
 ## 2. Current Boundary
 
@@ -25,7 +25,7 @@ PDEP-2
 aggregate decision-loss layer
         ↓
 R-A = PROJECTION_CANDIDATE
-R-B = OPEN
+R-B = WORKLOAD_DISTRIBUTION
 R-C = OPEN
 R-D = OPEN
 R-E = OPEN
@@ -49,7 +49,7 @@ No aggregate construction has yet been declared.
 R_OBJECT                    = NOT_DECLARED
 
 R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
-R-B  EVALUATION_INPUT       = OPEN
+R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
 R-C  AGGREGATION_RULE       = OPEN
 R-D  RESULT CODOMAIN        = OPEN
 R-E  DEFINEDNESS / TOTALITY = OPEN
@@ -57,9 +57,14 @@ R-F  PARAMETER / REGIME     = CONDITIONAL / OPEN
 
 C_LOSS : A × W → ℝ          = CLOSED
 C_LOSS ↔ R BRIDGE           = NOT DECLARED
+
+W measurable structure     = UNDECLARED
+μ_W formal object          = NOT INSTANTIATED
+C_LOSS measurability       = UNDECLARED
+expectation                 = NOT DECLARED
 ```
 
-These are researcher-level declarations. No remaining open value is inferred from the selected target.
+These are researcher-level declarations. No remaining open value is inferred from R-A or R-B.
 
 ## 4. Meaning of R-A
 
@@ -89,17 +94,40 @@ R-A declaration
 R_OBJECT definition
 ```
 
-## 5. Remaining Decision Surface
-
-### R-B — Evaluation Input
+## 5. Meaning of R-B
 
 ```text
-R-B = OPEN
+EVALUATION_INPUT = WORKLOAD_DISTRIBUTION
 ```
 
-The collection/structure supplying pointwise `C_LOSS` evaluations remains unspecified.
+This declares that the evaluation input to the future aggregate decision-loss layer is a workload-distribution object.
 
-No finite collection, indexed workload set, probability model, distribution, empirical sample, or other input structure is selected.
+The declaration is intentionally limited to the role of the evaluation input. It does **not** instantiate a particular mathematical probability or measure-theoretic structure.
+
+In particular, the following remain undeclared or uninstantiated:
+
+```text
+W measurable structure = UNDECLARED
+μ_W formal object     = NOT INSTANTIATED
+C_LOSS measurability  = UNDECLARED
+expectation           = NOT DECLARED
+```
+
+Therefore:
+
+```text
+WORKLOAD_DISTRIBUTION
+    ≠
+probability space declaration
+    ≠
+μ_W instantiation
+    ≠
+expectation declaration
+```
+
+R-B also does not determine the aggregation rule. The future R-C gate must independently state how the workload-distribution input participates in aggregate loss.
+
+## 6. Remaining Decision Surface
 
 ### R-C — Aggregation Rule
 
@@ -107,9 +135,9 @@ No finite collection, indexed workload set, probability model, distribution, emp
 R-C = OPEN
 ```
 
-No relation or operator has been selected for constructing aggregate loss from pointwise costs.
+No relation or operator has been selected for constructing aggregate loss from pointwise costs and the declared workload-distribution input.
 
-In particular, none of expectation, averaging, summation, weighting, supremum, worst-case, empirical aggregation, or another operator is implied.
+In particular, none of expectation, averaging, summation, weighting, supremum, worst-case, empirical aggregation, or another operator is implied by R-B.
 
 ### R-D — Result Codomain
 
@@ -139,7 +167,7 @@ Parameter/regime semantics are only required if the eventual aggregate object re
 
 No `θ` semantics are currently declared.
 
-## 6. C_LOSS Boundary
+## 7. C_LOSS Boundary
 
 The current pointwise interface remains:
 
@@ -150,7 +178,7 @@ D_C = A × W
 
 with the current LOSS-4 status that `D_C=A×W` is an MFI placeholder.
 
-The declaration of R-A does not bridge this interface to an aggregate object.
+R-B does not bridge this interface to an aggregate object.
 
 Therefore:
 
@@ -158,14 +186,18 @@ Therefore:
 C_LOSS ↔ R BRIDGE = NOT DECLARED
 ```
 
-A future bridge must explicitly state how a projection candidate and an evaluation input produce the arguments of `C_LOSS`, and how those pointwise evaluations enter the aggregate object.
+A future bridge must explicitly state how a projection candidate and a workload-distribution input induce the arguments of `C_LOSS`, and how those pointwise evaluations enter the aggregate object.
 
-## 7. Critical Separation
+No measurability or expectation semantics are imported by this bridge requirement.
+
+## 8. Critical Separation
 
 The following remain distinct:
 
 ```text
 projection candidate
+        ≠
+workload distribution
         ≠
 C_LOSS pointwise evaluation
         ≠
@@ -180,13 +212,13 @@ residual Δ
 FinLoss
 ```
 
-Selecting the evaluation target does not legally imply any of the subsequent objects.
+Selecting R-B does not legally imply any of the subsequent objects.
 
-## 8. Gate Status
+## 9. Gate Status
 
 ```text
 R-A = DECLARED
-R-B = OPEN
+R-B = DECLARED
 R-C = OPEN
 R-D = OPEN
 R-E = OPEN
@@ -202,4 +234,4 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
 
-The next gate is therefore R-B/R-C/R-D/R-E/R-F resolution. No automatic R-object construction follows from R-A alone.
+The next gate is R-C/R-D/R-E/R-F resolution. No automatic R-object construction follows from R-B alone.
