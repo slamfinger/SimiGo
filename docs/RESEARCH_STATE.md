@@ -20,7 +20,8 @@ Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE�
 Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION；
 A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED；
 A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED；
-Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
+Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
+Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
 
 ## Current research state
 
@@ -887,3 +888,29 @@ programming, and stochastic forks before any theory route is considered.
 
 Hypothesis history:
 docs/07-history/EXECUTION_STATE_EXTENSION_DESIGN_HYPOTHESIS_20260923.md.
+
+### Execution-State Predictive Resource Hypothesis — 2026-09-23
+
+An additional exploratory hypothesis separates reactive loading from predictive
+resource policy:
+
+```
+reactive: current unused/used ⇒ load/unload
+
+predictive:
+current state/history
+→ future-state distribution
+→ future layer-demand probabilities
+→ residency/load/prefetch/release decision
+```
+
+This may turn a resident core into a principled case when future-use probability is
+high and reload cost is large. It may also form a feedback loop because loading
+changes reachable future execution states.
+
+Boundary: the frozen A2.0 core has no stochastic execution-state semantics, no
+`g:S→Δ(A)`, no trajectory distribution, and no resource-policy or risk functional.
+Therefore this remains an exploratory hypothesis outside A2.0.
+
+Hypothesis history:
+docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.

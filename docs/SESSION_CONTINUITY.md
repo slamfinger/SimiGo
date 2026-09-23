@@ -462,3 +462,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Open-source code is implementation leverage, not theoretical evidence.
 - The key open question is whether `landing/branch → required capability` is derivable from execution-state or is an additional design mapping.
 - Hypothesis history: docs/07-history/EXECUTION_STATE_EXTENSION_DESIGN_HYPOTHESIS_20260923.md.
+
+## Execution-State Predictive Resource Hypothesis — 2026-09-23
+
+- Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
+- Reactive loading uses current use/non-use; predictive loading uses `S_t,H_t → future-state distribution → future layer-demand probability → present resource decision`.
+- Load, residency, prefetch, and release decisions would need constraints/costs such as memory, latency, load/reload cost, and prediction confidence.
+- Loading may form a feedback loop: resource policy influences the next reachable execution state.
+- This is outside frozen A2.0: no stochastic transition, `g:S→Δ(A)`, trajectory distribution, resource policy, or risk functional is registered.
+- Hypothesis history: docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.
