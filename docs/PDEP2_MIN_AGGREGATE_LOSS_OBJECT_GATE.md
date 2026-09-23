@@ -868,3 +868,86 @@ EXPERIMENT AUTH = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-5 declaration — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-5 = H2**.
+
+H2 establishes conditional admission: generation of a rule and admissibility of that rule are separate stages.
+
+```text
+Γ(P, δ) = g
+        ↓
+check:
+    g ∈ 𝒢_adm(P) ?
+        ↓
+only an admitted g enters optimization
+```
+
+The generated rule is not declared admissible merely because it was generated. Membership in the projection-candidate-dependent admissible family 𝒢_adm(P) is an independent condition for entering the optimization stage.
+
+This preserves the preceding declarations:
+
+```text
+R-ASSEMBLY-1C = C3
+Γ(P, δ) : W → A
+a = Γ(P, δ)(w)
+
+R-ASSEMBLY-2 = D2
+Γ(P, δ) = g
+g : W → A
+a = g(w)
+
+R-ASSEMBLY-3 = F2
+𝒢_adm ⊆ { g | g : W → A }
+g ∈ 𝒢_adm
+
+R-ASSEMBLY-4 = G2
+𝒢_adm(P) ⊆ { g | g : W → A }
+g ∈ 𝒢_adm(P)
+```
+
+The legal relationship is now:
+
+```text
+Γ(P, δ) = g
+AND
+[g ∈ 𝒢_adm(P)] is an independent admission condition
+```
+
+H2 does not declare that generation guarantees admissibility, nor that feasibility is built into Γ. It also does not instantiate the concrete rule family, admission predicate, optimization domain/operator, minimum versus infimum, optimizer existence, parameterization, or exact Dom(R). Historical δ(I_P) and δ ∈ Δ(I_P) remain unreinstated.
+
+Current assembly chain:
+
+```text
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+independent admission check
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+if admitted → optimization
+if not admitted → no optimization entry for g
+```
+
+Accordingly:
+
+```text
+R-ASSEMBLY-5 = DECLARED (H2)
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+HARNESS AUTH = NONE
+EXPERIMENT AUTH = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
