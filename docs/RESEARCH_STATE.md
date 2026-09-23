@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-12 = K3-A / VALUE_INFIMUM 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN 已声明）
 
 ## Current research state
 
@@ -20,6 +20,7 @@ R-INTERNAL-9 = E9-B
 R-INTERNAL-10 = E10-B
 R-INTERNAL-11 = E11-B
 R-INTERNAL-12 = K3-A / VALUE_INFIMUM
+R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN
 
 ### Current internal interfaces
 
@@ -64,9 +65,18 @@ V(P,θ)
 {L(g;P,θ) | g ∈ 𝒢_adm(P), (g,P,θ) ∈ Dom(L)}
 
 OPT(P,θ) = inf V(P,θ)
+
+R-INTERNAL-13 / K3-B:
+V(P,θ) ≠ ∅ and V(P,θ) ⊆ ℝ.
+
+Dom(R)
+=
+{(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}
+
+R(P,θ) = inf V(P,θ) ∈ ℝ,  ((P,θ) ∈ Dom(R))
 ```
 
-E10-B establishes a non-empty effective optimization domain. E11-B declares the resulting aggregate optimization output to be finite real-valued. This does not establish optimizer existence or attainment, minimum attainment, argmin, selector/tie-breaking, or any θ-level optimization.
+E10-B establishes a non-empty effective optimization domain. E11-B originally declared the resulting aggregate optimization output to be finite real-valued without an exact Dom(R). R-INTERNAL-12 selects the value-level infimum. R-INTERNAL-13 refines the applicability scope of E11-B to the finite-infimum domain defined below. None of these gates establishes optimizer existence or attainment, minimum attainment, argmin, selector/tie-breaking, or any θ-level optimization.
 
 ### Assembly state
 
@@ -112,12 +122,12 @@ L(g;P,θ)
 R(P,θ) ∈ ℝ
 ```
 
-OPT is now concretized as a value-level infimum by R-INTERNAL-12. Finiteness of `inf V(P,θ)` is not asserted for every previously established E10-B context; its applicability scope is the subject of the next gate.
+OPT is concretized as a value-level infimum by R-INTERNAL-12. R-INTERNAL-13 establishes the finite-value applicability domain for that construction: `Dom(R) = {(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}`. The non-emptiness of `Dom(R)` itself is not declared.
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-12.
+R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-13.
 
-E11-B and R-INTERNAL-12 do not instantiate a concrete admissible-rule family, a concrete probability space or parameter domain, separate integrability/measurability conditions, optimizer existence/attainment, exact Dom(R), R_OBJECT, R_oracle, Δ, FinLoss, or NECT. R-INTERNAL-12 does not yet define an exact finite-valued Dom(R).
+R-INTERNAL-13 is an explicit scope precization of E11-B: E11-B’s finite-value claim is henceforth applicable only on `Dom(R)`. The prior unconditional reading of E11-B is superseded from R-INTERNAL-13 onward. E10-B’s non-empty effective optimization domain is a necessary condition for R evaluation, not a sufficient condition for finite-valued R. R-INTERNAL-13 does not declare `Dom(R) ≠ ∅` and does not instantiate a concrete admissible-rule family, probability space or parameter domain, separate integrability/measurability conditions, optimizer existence/attainment, R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
 
 Historical δ(I_P) is not restored and no new δ optimization domain is introduced.
