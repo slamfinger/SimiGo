@@ -805,3 +805,46 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH    = NONE
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-9 declaration — 2026-09-23
+
+```text
+R-ASSEMBLY-9 = L3
+
+(P,δ) ↦ g
+Γ(P,δ) = g
+
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+L3 declares `(P,δ)` as the composite evaluation object and generation input, while optimization remains at the admissible decision-rule level. `(P,δ)` is not thereby declared the optimization variable, and no new `δ` optimization domain is introduced.
+
+Current consequence:
+
+```text
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = DECLARED (C3)
+R-ASSEMBLY-2  = DECLARED (D2)
+R-ASSEMBLY-3  = DECLARED (F2)
+R-ASSEMBLY-4  = DECLARED (G2)
+R-ASSEMBLY-5  = DECLARED (H2)
+R-ASSEMBLY-6  = DECLARED (I2)
+R-ASSEMBLY-7  = DECLARED (J1)
+R-ASSEMBLY-8  = DECLARED (K3)
+R-ASSEMBLY-9  = DECLARED (L3)
+
+R_OBJECT      = NOT_DECLARED
+R_ASSEMBLY    = OPEN
+R_ORACLE      = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss       = NOT LEGALLY AVAILABLE
+NECT          = BLOCKED
+STEP⑤        = NOT ENTERED
+STEP⑥        = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
