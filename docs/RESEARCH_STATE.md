@@ -917,3 +917,39 @@ STEP⑥       = NOT ENTERED
 EXPERIMENT AUTH = NONE
 HARNESS AUTH    = NONE
 ```
+
+
+## R-INTERNAL-3 — θ TYPE
+
+The researcher explicitly declared:
+
+```text
+R-INTERNAL-3 = θ2
+θ : REGIME_PARAMETER
+```
+
+θ is therefore declared as the regime-parameter carrier corresponding to the already declared `R-F = PARAMETERIZED_REGIME`. This closes θ only at the declared type/semantic level. It does not instantiate a concrete parameter set, topology, dimension, coordinate representation, or a one-to-one identification with any particular probability-measure parameterization.
+
+The declaration is consistent with R-ASM-B and R-ASM-D, which require a regime-indexed workload-distribution / probability-measure family, but it does not by itself instantiate `μ_θ`, measurability, integrability, expectation existence, or a concrete domain for θ.
+
+Current state:
+
+```text
+R-INTERNAL-1 = DECLARED (P4)
+R-INTERNAL-2 = DECLARED (δ3)
+R-INTERNAL-3 = DECLARED (θ2)
+θ            : REGIME_PARAMETER
+
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤       = NOT ENTERED
+STEP⑥       = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
