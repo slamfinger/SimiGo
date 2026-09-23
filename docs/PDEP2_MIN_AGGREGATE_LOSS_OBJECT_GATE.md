@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -48,6 +48,7 @@ No aggregate construction has yet been declared.
 ```text
 R_OBJECT                    = NOT_DECLARED
 R_ASM-A POINTWISE_LOSS_CARRIER = C_LOSS
+R_ASM-B REGIME_DISTRIBUTION_INTERFACE = REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY
 
 R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
 R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
@@ -103,7 +104,7 @@ EVALUATION_INPUT = WORKLOAD_DISTRIBUTION
 
 This declares that the evaluation input to the future aggregate decision-loss layer is a workload-distribution object.
 
-The declaration is intentionally limited to the role of the evaluation input. It does **not** instantiate a particular mathematical probability or measure-theoretic structure.
+The declaration is intentionally limited to the role of the evaluation input. R-ASM-B further declares that this input is exposed as a family indexed by the regime/parameter dimension. It does **not** instantiate a particular mathematical probability or measure-theoretic structure.
 
 In particular, the following remain undeclared or uninstantiated:
 
@@ -320,7 +321,7 @@ The following interfaces remain independently unresolved:
 
 ### 12.2 R-ASM declaration surface
 
-R-ASM-A has now been explicitly selected by the researcher. The remaining ASM semantic values remain researcher-decision fields:
+R-ASM-A and R-ASM-B have now been explicitly selected by the researcher. The remaining ASM semantic values remain researcher-decision fields:
 
 ```
 R-ASM-A  POINTWISE_LOSS_CARRIER = C_LOSS
