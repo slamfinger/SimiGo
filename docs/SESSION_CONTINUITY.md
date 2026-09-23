@@ -58,6 +58,7 @@
 - R-INTERNAL-16：K4-C / UNRESOLVED + UNIQUENESS_PREDICATE
 - R-INTERNAL-17：RO-1 / R_OBJECT_VALUE_FUNCTIONAL
 - R-INTERNAL-18：ROr-4 / R_ORACLE_DEFERRED
+- R-INTERNAL-19：A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT
 
 ## 当前已声明的内部接口
 
@@ -233,3 +234,17 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 读取 docs/RESEARCH_STATE.md 和 docs/SESSION_CONTINUITY.md。
 以仓库状态为唯一权威，继续下一道尚未声明的 R-INTERNAL gate。
 ```
+
+
+## R-INTERNAL-19 / A — Abstraction Layer Completeness Audit
+
+- R-INTERNAL-19 is a boundary audit; it declares no new semantic object.
+- Finding: the current abstraction layer has no remaining purposeful, consumer-driven interface that can be legally registered without structural declaration, concrete instantiation, or a program-level problem surface.
+- R-INTERNAL chain status: IDLE (deliberate decision-resting / suspension, not mathematical deadlock or semantic failure).
+- Open predicates remain att and uniq, with no asserted truth instances.
+- selector / tie-breaking and attainment sufficient conditions require a structural declaration first.
+- Dom(R) / Dom_att / Dom_uniq non-empty instances require concrete instantiation.
+- R_ORACLE remains governed by ROr-4 reopening conditions.
+- Δ / gap requires a comparison problem plus explicit legality argument; STEP⑤/⑥ require program-level decisions.
+- gap, ε-argmin, cardinality refinements, and R sectional properties are retained only as anti-drift non-declarations because no registered consumer exists.
+- No chain continuation is authorized merely to maintain momentum. Any future gate must arise from: (a) program-level problem, (b) consumer-driven structural declaration, or (c) concrete instantiation.
