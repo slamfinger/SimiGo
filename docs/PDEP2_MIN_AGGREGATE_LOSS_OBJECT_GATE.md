@@ -766,3 +766,43 @@ HARNESS AUTH    = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by R-ASSEMBLY-2.
+
+## R-ASSEMBLY-3 declaration — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-3 = F2**.
+
+Decision-rule family:
+
+    𝒢_adm ⊆ { g | g : W → A }
+    g ∈ 𝒢_adm
+
+This makes the rule family an independent admissible family. Not every mapping W→A is automatically eligible for the optimization component.
+
+The prior D2 representation is preserved:
+
+    Γ(P, δ) = g
+    g : W → A
+    a = g(w)
+
+with the additional condition g ∈ 𝒢_adm.
+
+F2 does not instantiate the concrete rule family, its parameterization, the exact optimization domain/operator, min versus inf, optimizer existence, or the exact Dom(R). It does not identify 𝒢_adm with the R-ASM-E composite admission predicate, restore historical δ(I_P), or instantiate R_OBJECT, R_oracle, Δ, FinLoss, or NECT.
+
+Current consequence:
+
+    R-ASSEMBLY-3 = DECLARED (F2)
+    DECISION_RULE_FAMILY = INDEPENDENT_ADMISSIBLE_FAMILY
+    𝒢_adm ⊆ {g | g : W → A}
+    g ∈ 𝒢_adm
+
+    R_OBJECT = NOT_DECLARED
+    R_ASSEMBLY = OPEN
+    R_ORACLE = NOT_DEFINED
+    Δ = BLOCKED
+    FinLoss = NOT LEGALLY AVAILABLE
+    NECT = BLOCKED
+    STEP⑤ = NOT ENTERED
+    HARNESS AUTH = NONE
+    EXPERIMENT AUTH = NONE
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
