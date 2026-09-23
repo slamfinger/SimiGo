@@ -3,12 +3,12 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A target 已声明；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B 已声明；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B COMPLETE / Value Discipline（STEP⑤ NECT mode blocked）
-Next action: Resolve the remaining PDEP-2 aggregate decision-loss object gates R-B/R-C/R-D/R-E/R-F; no automatic R-object construction, STEP⑤ entry, or experiment
+Next action: Resolve the remaining PDEP-2 aggregate decision-loss object gates R-C/R-D/R-E/R-F; no automatic R-object construction, STEP⑤ entry, or experiment
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation COMPLETE and consistency review PASSED; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/PDEP2_MIN_AGGREGATE_LOSS_OBJECT_GATE.md
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -52,7 +52,7 @@ Track B、Track E、P3、H-P1、nodes-out 保持原有 CLOSED / SEALED / FROZEN 
 
 | 项 | 状态 | 约束 |
 |---|---|---|
-| P4-A existence criterion | AGGREGATE DECISION-LOSS ROUTE SELECTED / R-A=PROJECTION_CANDIDATE / R-B–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ HISTORICAL FORMULATION RETAINED / R、R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED | 路线已选择；下一步仅定义实现该路线所需的最小 aggregate decision-loss object，不自动进入 STEP⑤ |
+| P4-A existence criterion | AGGREGATE DECISION-LOSS ROUTE SELECTED / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ HISTORICAL FORMULATION RETAINED / R、R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED | 路线已选择；下一步仅定义实现该路线所需的最小 aggregate decision-loss object，不自动进入 STEP⑤ |
 | Source/Runtime / RQ-F-01 | RETIRED / NOT DEFINED | 不进入 STEP⑤；此前状态不向 P4 转移 |
 | Swift implementation | NOT STARTED / NO BASIS | 不因 STEP⑤ 获得授权 |
 | Execution-State-oriented Post-Training | HYPOTHESIS / NOT REGISTERED | 不创建新 RQ，不授权实验/实现/测量 |
@@ -66,8 +66,10 @@ P4 / RQ-P4-01 candidate
 - STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE VD-01～VD-05 COMPLETE / DOWNSTREAM DEPENDENCY REVIEW PASSED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
 - LOSS-3 Cost Object：CLOSED / C_LOSS = NEW_INDEPENDENT_C_LOSS / COST_DOMAIN=FINITE_REAL / INFINITE_COST=NOT_PRESENT / C_DEFINEDNESS=TOTAL_ON_DECLARED_DOMAIN
 - LOSS-4 Cost Evaluation Interface：CLOSED / C_LOSS : D_C → ℝ / D_C=A×W / D_C CURRENTLY MFI PLACEHOLDER / NO PROBABILISTIC SEMANTICS
-- LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT\n- PDEP-2 Route：AGGREGATE_DECISION_LOSS / route selected; implementation object not yet declared
-- PDEP-2 R-object gate：R-A=PROJECTION_CANDIDATE / R-B=OPEN / R-C=OPEN / R-D=OPEN / R-E=OPEN / R-F=CONDITIONAL·OPEN / R_OBJECT=NOT_DECLARED / C_LOSS↔R BRIDGE=NOT DECLARED
+- LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT
+- PDEP-2 Route：AGGREGATE_DECISION_LOSS / route selected; implementation object not yet declared
+- PDEP-2 R-object gate：R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=OPEN / R-D=OPEN / R-E=OPEN / R-F=CONDITIONAL·OPEN / R_OBJECT=NOT_DECLARED / C_LOSS↔R BRIDGE=NOT DECLARED
+- PDEP-2 input boundary：W measurable structure=UNDECLARED / μ_W formal object=NOT INSTANTIATED / C_LOSS measurability=UNDECLARED / expectation=NOT DECLARED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：HISTORICAL FORMULATION RETAINED / NDAC AND SAT_INF_FIN RETAINED AS HISTORICAL GATE LOGIC / R NOT_DEFINED_BY_CURRENT_FRAMEWORK / R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED
 - STEP⑥–⑨：未开始
 
@@ -102,7 +104,7 @@ P4 / RQ-P4-01 candidate
 
 ## 8. Definition Gate
 
-① 研究对象 → ② Research Question → ③ 独立性 → ④ estimand / envelope object definition → ⑤ nontrivial phenomenon existence criterion → ⑥ negative / insufficiency criterion → ⑦ discriminating power → ⑧ information value / cost → ⑨ Path / Harness / Experiment。
+① 研究对象 → ② Research Question → ③ 独立性 → ④ estimand / envelope object definition → ⑤ nontrivial phenomenon existence criterion → ⑥ negative / insufficiency → ⑦ discriminating power → ⑧ information value / cost → ⑨ Path / Harness / Experiment。
 
 ## 9. P4 方法原则
 
@@ -131,7 +133,7 @@ Order         = VECTOR_POSITIONAL (intrinsic to declared vector forms)
 Measurability = DEFERRED
 ```
 
-`Scalarity`、`finiteness`、special-value admissibility 已由 `OutputDiscipline = FINITE_REAL_COORDINATEWISE` 治理。`nonnegativity` 未被声明（有限实数可正可负）。`Measurability` 继续 DEFERRED。
+`Scalarity`、`finiteness`、special-value admissibility 已由 `OutputDiscipline = FINITE_REAL_COORDINATEWISE` 治理。\n`nonnegativity` 未被声明（有限实数可正可负）。`Measurability` 继续 DEFERRED。
 
 Infinity semantics remain:
 
@@ -197,11 +199,11 @@ VD-04-F  Sign-Based Comparison / Ordering           = DEFERRED
 
 ```
 VD-05-A  Value → Loss Mapping                = DEFERRED
-VD-05-B  Value → Risk Mapping                = DEFERRED
-VD-05-C  Loss Domain / Finiteness            = DEFERRED
-VD-05-D  Loss Sign / Non-Negativity          = DEFERRED
-VD-05-E  Loss Order / Minimization Semantics = DEFERRED
-VD-05-F  Value-to-Loss Functionalization     = DEFERRED
+VD-05-B  Value → Risk Mapping                 = DEFERRED
+VD-05-C  Loss Domain / Finiteness              = DEFERRED
+VD-05-D  Loss Sign / Non-Negativity            = DEFERRED
+VD-05-E  Loss Order / Minimization Semantics   = DEFERRED
+VD-05-F  Value-to-Loss Functionalization      = DEFERRED
 ```
 
 No Value → Loss / Risk semantic channel is open. `OutputDiscipline = FINITE_REAL_COORDINATEWISE` constrains Value coordinates only; it does not constrain Loss. `LOSS_INFINITY_PREDEFINED = FALSE` remains unchanged. Value-level scalarization remains excluded; an independent Loss functional is only deferred and is not currently authorized.
@@ -303,8 +305,14 @@ C_LOSS
 STEP⑤ downstream blocked
 ```
 
-The proposition-level route has now been selected explicitly:\n\n```\nPDEP-2 ROUTE = AGGREGATE_DECISION_LOSS\n```\n\nThe route selection does not define the required R object. R-A has now been declared as PROJECTION_CANDIDATE; R-B/R-C/R-D/R-E/R-F remain open. The C_LOSS↔R bridge remains undeclared. Until the aggregate object is explicitly declared, R, R_oracle, Δ, and FinLoss remain unavailable.
+The proposition-level route has now been selected explicitly:
+
+```
+PDEP-2 ROUTE = AGGREGATE_DECISION_LOSS
+```
+
+The route selection does not define the required R object. R-A has now been declared as PROJECTION_CANDIDATE; R-B has now been declared as WORKLOAD_DISTRIBUTION; R-C/R-D/R-E/R-F remain open. The C_LOSS↔R bridge remains undeclared. The workload-distribution declaration does not instantiate W measurability, μ_W, C_LOSS measurability, or expectation. Until the aggregate object is explicitly declared, R, R_oracle, Δ, and FinLoss remain unavailable.
 
 ## 11. Governance
 
-本次 R-A target declaration 没有新增实验、harness、implementation 或 measurement authorization。
+The R-B workload-distribution declaration adds no probability-space, measure, expectation, experiment, harness, implementation, or measurement authorization.
