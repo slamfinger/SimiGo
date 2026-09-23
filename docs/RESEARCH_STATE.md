@@ -3,12 +3,12 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A 完成：human researcher 已显式实例化 VType=VECTOR / OutputDiscipline=FINITE_REAL_COORDINATEWISE / Binding_C=VECTOR_COMPOSITION；下游一致性审查通过）
+**Last updated**: 2026-09-23（STEP④-A 完成；STEP④-B / Value Discipline 完成：VD-01～VD-05 已由 human researcher 显式声明；下游一致性审查通过）
 
 ## 1. 当前阶段
 
-Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B / Value Discipline（STEP⑤ NECT mode blocked）
-Next action: Enter Value Discipline / STEP④-B（semantic instantiation 已完成并通过必要的一致性审查）；进入与否由 human researcher 决定
+Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B COMPLETE / Value Discipline（STEP⑤ NECT mode blocked）
+Next action: Downstream dependency review after STEP④-B; no automatic entry into STEP⑤ or experiment
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation COMPLETE and consistency review PASSED; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/STEP4A_CANONICAL_DECISIONS.md
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / VALUE DISCIPLINE OPEN / NECT MODE BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CONSISTENCY REVIEW PASSED / VALUE DISCIPLINE COMPLETE / DOWNSTREAM REVIEW PASSED / NECT MODE BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -63,14 +63,15 @@ P4 / RQ-P4-01 candidate
 - STEP① 研究对象：ACCEPTED BY HUMAN RESEARCHER
 - STEP② Research Question：ACCEPTED / GATE PASSED
 - STEP③ Independence：PASS
-- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
+- STEP④ Estimand：PASS / CLOSED FOR CURRENT FRAME / MFB-SR COMPLETE / SIA COMPLETE / CVSDR COMPLETE / MVSD COMPLETE / VSCA COMPLETE / FSAR COMPLETE / CVSR COMPLETE / CVS-ERR COMPLETE / MCVSD VALID / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE VD-01～VD-05 COMPLETE / DOWNSTREAM DEPENDENCY REVIEW PASSED / CANDIDATE 2 REJECTED / CANDIDATE 1 NOT FROZEN
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：OPEN / NDAC ACCEPTED / SAT_INF_FIN DEFINED / DOMAIN PARTITION STRUCTURAL / IPR UNDECLARED / REVIEW-2 BLOCKED / NECT MODE BLOCKED
 - STEP⑥–⑨：未开始
 
 ### Allowed
 
 - 阅读并维护 `docs/STEP4A_CANONICAL_DECISIONS.md`；
-- 进入 Value Discipline / STEP④-B（semantic instantiation 已完成并通过必要审查）；
+- 维护已完成的 STEP④-B / Value Discipline（VD-01～VD-05）；
+- 对 STEP④-B 完成后的下游依赖进行一致性审查；
 - 继续遵守 `DG_4A_01=RESULT_FORM_DETERMINING` 与已实例化的 `Binding_C=VECTOR_COMPOSITION`：`C` 的 semantic form 为向量组合对象，local-to-global relation 由该 form 派生；
 - 其余既有 STEP④/⑤ 定义资产仅在发生具体语义矛盾时重新审查；
 - 保持 `A/W/W_D` 为 carrier symbols only，保持 `J` 为 abstract index carrier；
@@ -84,7 +85,7 @@ P4 / RQ-P4-01 candidate
 - 新增 formal-basis、metadata 或 contract 审计层而没有具体语义矛盾；
 - 从自然语言 “cost”、Risk、oracle、`D_loss`、STEP⑤ notation 或工程常识反向修改 `V_j` 的已声明语义；
 - 重新引入 `+infty` loss-value semantics 或向 `V_j` 坐标引入 `±∞` / `NaN` / 缺失值；
-- 进入 Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，Value Discipline / STEP④-B 完成前不得越过其自身门禁；
+- 进入 Risk、`FinLoss`、residual status、NECT mode 或 STEP⑥，除非其自身门禁被独立满足；STEP④-B 完成不自动越过这些门禁；
 - Runtime implementation / research harness / data collection / profiling / performance measurement；
 - 自动注册 RQ-P4-01；
 - 重新研究 Track B 已闭合的 State lifecycle semantics；
@@ -130,7 +131,106 @@ LOSS_INFINITY_PREDEFINED = FALSE
 IPR_VALUE                = UNDECLARED
 ```
 
-STEP④-B / FinLoss / residual / NECT remain blocked.
+STEP④-B is COMPLETE. FinLoss / residual / NECT remain blocked.
+
+## 10.1 STEP④-B / Value Discipline — canonical researcher declarations
+
+STEP④-B / Value Discipline was explicitly declared by the human researcher on 2026-09-23. The agent did not select the semantic values.
+
+### VD-01 · Legal Value Operations
+
+```
+VD-01-A  Vector Equality                    = DECLARED
+VD-01-B  Coordinate-wise Arithmetic        = DEFERRED
+VD-01-C  Vector Difference as Research Value = DEFERRED
+VD-01-D  Scalar Functional                 = EXCLUDED
+```
+
+`V_a = V_b ⇔ ∀i, v_{a,i} = v_{b,i}`. Equality is declared only; coordinate arithmetic and vector difference are not currently Value-level research operations; scalar functionals `f : ℝ^k → ℝ` are excluded at the Value layer.
+
+### VD-02 · Coordinate Comparability
+
+```
+VD-02-A  Cross-Vector Coordinate Identity       = DEFERRED
+VD-02-B  Cross-Vector Coordinate Comparability  = DEFERRED
+VD-02-C  Coordinate Homogeneity                 = DEFERRED
+```
+
+`(j,i)` is only an internal positional address. Same-index coordinates across different `V_j` are not declared to have shared semantic identity, comparability, or homogeneity.
+
+### VD-03 · Order Relation
+
+```
+VD-03-A  Intra-Vector Positional Order       = DECLARED
+VD-03-B  Positional Addressing / Projection  = DECLARED
+VD-03-C  Equality-only Same-Index Pairing    = DECLARED
+VD-03-D  Value / Magnitude / Preference Order = DEFERRED
+VD-03-E  Cross-Vector Positional Semantics    = DEFERRED
+VD-03-F  Composition-Induced J Order          = DEFERRED
+```
+
+`Order = VECTOR_POSITIONAL` is structural position only. It does not introduce magnitude order, preference order, loss order, cross-vector coordinate semantics, or any ordering of `J`.
+
+### VD-04 · Sign / Zero Discipline
+
+```
+VD-04-A  Zero Membership / Zero Admissibility       = DECLARED
+VD-04-B  Positive / Negative Sign Admissibility     = DECLARED
+VD-04-C  Zero as Semantic Value                     = DEFERRED
+VD-04-D  Sign as Semantic Attribute                 = DEFERRED
+VD-04-E  Non-Negativity / Positivity Constraint     = DEFERRED
+VD-04-F  Sign-Based Comparison / Ordering           = DEFERRED
+```
+
+`0`, positive values, and negative values are admissible finite-real coordinate states. No zero semantics, sign semantics, non-negativity/positivity constraint, or sign-based ordering is declared.
+
+### VD-05 · Value ↔ Loss / Risk Boundary
+
+```
+VD-05-A  Value → Loss Mapping                = DEFERRED
+VD-05-B  Value → Risk Mapping                = DEFERRED
+VD-05-C  Loss Domain / Finiteness            = DEFERRED
+VD-05-D  Loss Sign / Non-Negativity          = DEFERRED
+VD-05-E  Loss Order / Minimization Semantics = DEFERRED
+VD-05-F  Value-to-Loss Functionalization     = DEFERRED
+```
+
+No Value → Loss / Risk semantic channel is open. `OutputDiscipline = FINITE_REAL_COORDINATEWISE` constrains Value coordinates only; it does not constrain Loss. `LOSS_INFINITY_PREDEFINED = FALSE` remains unchanged. Value-level scalarization remains excluded; an independent Loss functional is only deferred and is not currently authorized.
+
+### STEP④-B semantic boundary
+
+```
+Legal:
+  finite-real coordinatewise Vector
+  coordinate position / addressing
+  coordinatewise Vector Equality
+  Vector Composition
+  zero admissibility
+  positive / negative coordinate admissibility
+
+Not currently authorized:
+  coordinate arithmetic
+  vector difference / residual
+  cross-vector coordinate semantics
+  coordinate comparability / homogeneity
+  magnitude / preference / loss ordering
+  J ordering
+  zero/sign semantic interpretation
+  non-negativity / positivity constraint
+  Value → Loss
+  Value → Risk
+  Loss finiteness / sign / minimization
+  scalarization
+```
+
+Therefore:
+
+```
+VALUE DISCIPLINE = COMPLETE
+VALUE ↔ LOSS/RISK CHANNEL = CLOSED
+```
+
+Completion of STEP④-B does not authorize Residual, FinLoss, NECT, STEP⑤, Runtime implementation, harness, data collection, profiling, performance measurement, or experiment.
 
 ## 11. Governance
 
