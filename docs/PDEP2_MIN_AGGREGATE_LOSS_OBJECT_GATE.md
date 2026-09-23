@@ -1041,3 +1041,70 @@ STEP⑥ = NOT ENTERED
 EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
+
+
+## R-ASSEMBLY-7 declaration — 2026-09-23
+
+The researcher explicitly declared:
+
+```
+R-ASSEMBLY-7 = J1
+```
+
+`OPT` is declared as a scalar-value optimization operator:
+
+```
+OPT : (𝒢_adm(P), L) → ℝ
+
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+J1 fixes the semantic output type of `OPT` as a scalar finite-real aggregate result. It does not declare `OPT` to return an optimizing rule `g*`, and therefore does not introduce an optimizer-existence or attainment commitment.
+
+The current assembly chain is:
+
+```
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+admitted g
+    ↓
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+    ↓
+OPT : (𝒢_adm(P), L) → ℝ
+    ↓
+R(P,θ) ∈ ℝ
+```
+
+The concrete optimization operator remains undeclared. In particular:
+
+```
+min vs inf                   = UNDECLARED
+argmin / optimizer existence = UNDECLARED
+optimization attainment      = UNDECLARED
+```
+
+The exact rule family, exact definition domain, parameter domain, expectation existence/finiteness, and concrete `OPT` construction remain open.
+
+Current consequence:
+
+```
+R-ASSEMBLY-7 = DECLARED (J1)
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+STEP⑥ = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH = NONE
+```
+
+No implementation, harness, measurement, experiment, or downstream STEP⑤/STEP⑥ authorization is created by this declaration.
