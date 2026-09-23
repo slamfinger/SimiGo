@@ -848,3 +848,12 @@ HARNESS AUTH    = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-10 declaration — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-10 = M4**: defer R_OBJECT and close internal interfaces first.
+
+The final R_OBJECT input hierarchy is not yet declared. Resolve P type, δ type, θ type, structure of `𝒢_adm(P)`, domain of L, and legality/existence conditions for E_θ before selecting a concrete input hierarchy.
+
+Current state: `R_OBJECT = NOT_DECLARED`; `R_ASSEMBLY = OPEN`; `R_ORACLE = NOT_DEFINED`; `Δ = BLOCKED`; `FinLoss = NOT LEGALLY AVAILABLE`; `NECT = BLOCKED`; `STEP⑤ = NOT ENTERED`; `STEP⑥ = NOT ENTERED`.
