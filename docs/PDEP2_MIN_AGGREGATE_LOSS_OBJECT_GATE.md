@@ -580,7 +580,7 @@ Accordingly:
 ```text
 R-ASSEMBLY-1A = DECLARED
 R-ASSEMBLY-1B = DECLARED
-R-ASSEMBLY-1C = OPEN
+R-ASSEMBLY-1C = DECLARED (C3)
 R_OBJECT      = NOT_DECLARED
 R_ASSEMBLY    = OPEN
 R_oracle      = NOT_DEFINED
@@ -589,5 +589,80 @@ FinLoss       = NOT LEGALLY AVAILABLE
 STEP⑤         = NOT ENTERED
 EXPERIMENT AUTH = NONE
 ```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+## 12.5 R-ASSEMBLY-1C declaration record
+
+The researcher explicitly declared:
+
+~~~text
+R-ASSEMBLY-1C  DECISION_OUTPUT_DEPENDENCE = C3
+
+JOINT_OUTPUT_MECHANISM:
+    Γ(P, δ) : W → A
+
+POINTWISE_OUTPUT:
+    a = Γ(P, δ)(w)
+~~~
+
+C3 establishes that (P, δ) produces a decision mapping whose input is a workload instance w. The resulting action is:
+
+~~~text
+a = Γ(P, δ)(w) ∈ A
+~~~
+
+and the pointwise loss carrier is therefore invoked as:
+
+~~~text
+C_LOSS(Γ(P, δ)(w), w)
+~~~
+
+This is distinct from:
+
+~~~text
+C1: a = Γ(P, δ)
+
+C2: a = Γ(P, δ, w)
+~~~
+
+In C3, the workload instance w is the argument of the decision mapping produced by (P, δ). The workload distribution is not declared to be a direct input to Γ; its role remains on the aggregation side through R-B / R-C and R-ASM-B / R-ASM-D.
+
+The declaration does not instantiate Γ's concrete functional form, P or δ signatures, a concrete W measurable-space representation, A structure, decision-rule admissibility, parameter domain, probability measure notation, measurability proof, integrability, expectation existence, optimization domain/operator, min vs inf, optimizer existence, R_OBJECT, R_oracle, Δ, FinLoss, or NECT. It also does not restore historical δ(I_P).
+
+The resulting dependency skeleton is:
+
+~~~text
+(P, δ)
+    ↓
+Γ(P, δ) : W → A
+    ↓  applied to w
+a = Γ(P, δ)(w)
+    ↓
+C_LOSS(a, w)
+    ↓
+expectation over the declared workload-distribution family
+    ↓
+rule-level aggregate evaluation
+    ↓
+optimization component
+    ↓
+P-level aggregate decision-loss object
+~~~
+
+Accordingly:
+
+~~~text
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = DECLARED (C3)
+R_OBJECT      = NOT_DECLARED
+R_ASSEMBLY    = OPEN
+R_oracle      = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss       = NOT LEGALLY AVAILABLE
+STEP⑤         = NOT ENTERED
+EXPERIMENT AUTH = NONE
+~~~
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
