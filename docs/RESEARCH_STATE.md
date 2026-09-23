@@ -3,7 +3,7 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R-ASM-E 已声明为 COMPOSITE_ADMISSION_PREDICATE；R-ASM-F 已声明为 COMPOSITE_SIGNATURE；R-ASSEMBLY-1A 已声明为 COMPOSITE_PROJECTION_RULE_PAIR；R-ASSEMBLY-1B 已声明为 JOINT_COMPOSITE_OUTPUT_MECHANISM；R-ASSEMBLY-1C 已声明为 C3；R-ASSEMBLY-2 已声明为 D2；R-ASSEMBLY-3 已声明为 F2；R-ASSEMBLY-4 已声明为 G2；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R-ASM-E 已声明为 COMPOSITE_ADMISSION_PREDICATE；R-ASM-F 已声明为 COMPOSITE_SIGNATURE；R-ASSEMBLY-1A 已声明为 COMPOSITE_PROJECTION_RULE_PAIR；R-ASSEMBLY-1B 已声明为 JOINT_COMPOSITE_OUTPUT_MECHANISM；R-ASSEMBLY-1C 已声明为 C3；R-ASSEMBLY-2 已声明为 D2；R-ASSEMBLY-3 已声明为 F2；R-ASSEMBLY-4 已声明为 G2；R-ASSEMBLY-5 已声明为 H2；R-ASSEMBLY-6 已声明为 I2；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
@@ -658,3 +658,62 @@ EXPERIMENT AUTH = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-6 declaration — 2026-09-23
+
+The researcher explicitly declared:
+
+```
+R-ASSEMBLY-6 = I2
+```
+
+Optimization semantics are separated into a rule-level aggregate evaluation followed by an abstract optimization operator:
+
+```
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+I2 keeps `OPT` abstract. No choice among `min`, `inf`, `argmin`, or another concrete optimization operator is imported.
+
+Current assembly chain:
+
+```
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+admitted g
+    ↓
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+    ↓
+OPT over g ∈ 𝒢_adm(P)
+    ↓
+P-level aggregate decision-loss result
+```
+
+The declaration does not instantiate the concrete rule family, exact `Dom(R)`, parameter domain, measure family, measurability, integrability, expectation existence, optimization attainment, optimizer existence, or exact optimization operator.
+
+```
+R-ASSEMBLY-6 = DECLARED (I2)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤        = NOT ENTERED
+STEP⑥        = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+Historical `δ(I_P)` and `δ ∈ Δ(I_P)` are not restored. No `R_oracle`, residual `Δ`, `FinLoss`, or `NECT` is defined by this declaration.
+
+No implementation, harness, data collection, profiling, measurement, experiment, or STEP⑤/STEP⑥ authorization is created by this declaration.
