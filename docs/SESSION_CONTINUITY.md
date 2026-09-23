@@ -381,3 +381,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Overall black-box sufficiency is therefore PARTIAL.
 - Open decision: classify the execution/trajectory surface as missing Layer-A candidate, concrete-instance-only detail, or derivable from `W`, `A`, and `C_LOSS`. No option is selected.
 - Audit history: docs/07-history/A2_INTERFACE_SUFFICIENCY_AUDIT_20260923.md.
+
+## Trajectory / Execution Necessity Audit — 2026-09-23
+
+- Result relative to the current value-level core: `CONCRETE_ONLY`.
+- Not `PRIMITIVE`: no abstract trajectory/execution interface is declared in the value-level core.
+- Not `DERIVED` at abstract-core level: `P`, `θ`, `g:W→A`, and `C_LOSS` do not declare initial state, transition, action realization, termination, or trajectory carrier.
+- `CONCRETE_ONLY`: `P0/θ0′` locally declares enough runtime semantics to derive its local trajectory from `P0+θ0′+g`.
+- Current stochastic interface does not include `g:S→Δ(A)`; randomized behavior is therefore outside the audited core and would require reopening if introduced.
+- Consequence: A2.0 remains, for now, a value-level theory; no execution interface is added.
+- Audit history: docs/07-history/TRAJECTORY_EXECUTION_NECESSITY_AUDIT_20260923.md.

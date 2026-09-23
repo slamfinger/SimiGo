@@ -12,7 +12,8 @@ Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
 Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL；
 Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN；
 A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED；
-Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL）
+Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL；
+Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY）
 
 ## Current research state
 
@@ -647,3 +648,26 @@ No option is selected.
 
 Audit history:
 docs/07-history/A2_INTERFACE_SUFFICIENCY_AUDIT_20260923.md.
+
+### Trajectory / Execution Necessity Audit — 2026-09-23
+
+For the current value-level core, trajectory/execution is classified as:
+
+```
+CONCRETE-ONLY
+```
+
+It is not a declared abstract-core primitive. It is also not derivable from the
+abstract declarations `P,θ,g:W→A,C_LOSS` alone, because no initial state,
+transition map, action-realization semantics, termination, or trajectory carrier
+is declared there.
+
+In the concrete instance `P0/θ0′`, however, enough local runtime semantics were
+registered to derive the local trajectory from `P0+θ0′+g`.
+
+Therefore the current result supports A2.0, for now, as a value-level theory.
+This does not permanently exclude a future execution interface; it only records
+that such an interface is not necessary for the registered value-level object.
+
+Audit history:
+docs/07-history/TRAJECTORY_EXECUTION_NECESSITY_AUDIT_20260923.md.
