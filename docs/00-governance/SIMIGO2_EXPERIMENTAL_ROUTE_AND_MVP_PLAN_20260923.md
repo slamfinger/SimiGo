@@ -69,13 +69,13 @@ production SimiGo 1.7 behavior changes.
 
 ## 4. Runtime strategy
 
-Prefer mature open-source components:
+Use mature open-source components, but implement only one primary runtime path in
+the MVP:
 
 ```text
-MLX / Metal;
-mlx-swift-lm or another proven MLX runtime;
-Safetensors / Hugging Face layout;
-existing tokenizer and model-loading code.
+PRIMARY   = MLX Swift LM + MLX/Metal;
+REFERENCE = llama.cpp residency/offload design;
+DEFERRED  = vLLM serving/resource-management ideas.
 ```
 
 The initial positive-control model is:
@@ -88,6 +88,19 @@ because it is already known to load and run in SimiGo 1.7.
 
 The experimental implementation should use a separate branch/harness. It must not
 modify SimiGo 1.7 production behavior or the frozen research docs.
+
+### Runtime reference rule
+
+SimiGo 2.0 does not initially fork runtime internals. It wraps the selected runtime
+and treats llama.cpp as prior art for layer/device residency, offload, mmap/lazy
+tensor access, and buffer placement. vLLM is deferred until multi-request and KV
+resource scheduling become relevant.
+
+Runtime-selection record:
+
+```text
+docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md
+```
 
 ## 5. Layer residency state machine
 
@@ -128,6 +141,13 @@ Initial inventory report:
 
 ```text
 docs/00-governance/SIMIGO2_PHASE0_QWEN3_CODER_INVENTORY_20260923.md
+```
+
+Pending Phase 0 audits:
+
+```text
+MLX Swift LM partial-load feasibility;
+llama.cpp residency/offload reference audit.
 ```
 
 ### Phase 1 — Residency-manager harness

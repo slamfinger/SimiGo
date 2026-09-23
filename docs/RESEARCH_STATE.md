@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
+**Last updated**: 2026-09-24（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
@@ -24,7 +24,8 @@ Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMAL
 Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
 Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
 SimiGo 2.0 Experimental 工程路线已登记为 ROUTE_REGISTERED / PHASE_0_AUTHORIZED；
-SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING）
+SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING；
+SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后）
 
 ## Current research state
 
@@ -995,3 +996,16 @@ independence must be re-audited.
 
 Hypothesis history:
 docs/07-history/EXECUTION_STATE_INFORMATION_BOUNDARY_HYPOTHESIS_20260923.md.
+
+### SimiGo 2.0 Runtime Reference Selection — 2026-09-24
+
+For the engineering experiment, `MLX Swift LM + MLX/Metal` is the primary MVP
+runtime. `llama.cpp` is a reference implementation for layer residency, device/offload
+split, mmap/lazy tensor access, and buffer placement concepts. `vLLM` is deferred for
+later serving-side topics such as paged KV memory, batching, and scheduling.
+
+The MVP does not combine runtimes, fork runtime internals, translate MLX checkpoints
+to GGUF, or introduce a universal runtime abstraction.
+
+Selection history:
+docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md.

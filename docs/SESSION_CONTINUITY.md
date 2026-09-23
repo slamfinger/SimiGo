@@ -494,6 +494,16 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - No hidden-state analysis, prediction, compression, production modification, or theory claim is authorized.
 - Route history: docs/00-governance/SIMIGO2_EXPERIMENTAL_ROUTE_AND_MVP_PLAN_20260923.md.
 
+## SimiGo 2.0 Runtime Reference Selection — 2026-09-24
+
+- Primary MVP runtime: `MLX Swift LM + MLX/Metal`.
+- Primary checkpoint family: MLX Safetensors; first positive control is Qwen3-Coder-30B-A3B-Instruct-4bit.
+- Reference runtime: `llama.cpp`, studied for layer residency, device/offload split, mmap/lazy tensor access, and buffer placement concepts.
+- Deferred runtime: `vLLM`, revisited later for paged KV memory, batching, scheduling, and multi-request resource management.
+- Do not combine MLX and llama.cpp in the MVP or introduce a universal runtime abstraction yet.
+- Phase 0 remains partial: Qwen3-Coder tensor inventory is complete; MLX partial-load feasibility and llama.cpp reference audit are pending.
+- Selection history: docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md.
+
 ## SimiGo 2.0 Phase 0 Qwen3-Coder Inventory — 2026-09-23
 
 - Status: `PHASE_0_PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING`.
