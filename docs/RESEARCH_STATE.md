@@ -8,7 +8,8 @@ Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
 ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
 Research Road Space 已登记，SELECTED_ROUTE=NONE；
-Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY）
+Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
+Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL）
 
 ## Current research state
 
@@ -521,3 +522,24 @@ This is an observation only. Route 5 remains registered but not selected.
 
 Probe history:
 docs/07-history/GEMMA4_COMPUTATIONAL_SEMANTICS_EXTERNAL_PROBE_20260923.md.
+
+### Qwen3-Coder Runtime Positive Control — 2026-09-23
+
+The researcher confirms that the local Qwen3-Coder checkpoint loads and runs in
+SimiGo 1.7. This is consistent with the SimiGo compatibility matrix: standard
+`qwen3_moe`, OpenAI path PASS, Responses PASS, concurrent Responses PASS, tool
+calling PASS, KV/session cache PASS, and draftN=2 under concurrency PASS.
+
+Therefore, the earlier isolated mlx-swift-lm probe failure is scoped only to that
+probe harness and local working-tree state; it is not a general Qwen3-Coder
+runtime failure. Under SimiGo 1.7:
+
+```
+Declaration = PASS
+Instantiation = PASS
+Execution = PASS
+SemanticConsistency = OPEN
+```
+
+Correction history:
+docs/07-history/QWEN3_CODER_SIMIGO17_RUNTIME_POSITIVE_CONTROL_20260923.md.

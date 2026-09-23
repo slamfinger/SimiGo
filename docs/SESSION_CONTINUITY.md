@@ -341,3 +341,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Distinction registered: `Declared(M) ≠ Loaded(M) ≠ Executable(M) ≠ SemanticallyConsistent(M)`.
 - No new semantic object, instance, family, implementation authorization, R-INTERNAL gate, STEP⑤/⑥ entry, or route selection follows.
 - Probe history: docs/07-history/GEMMA4_COMPUTATIONAL_SEMANTICS_EXTERNAL_PROBE_20260923.md.
+
+## Qwen3-Coder Runtime Positive Control — 2026-09-23
+
+- Correction: Qwen3-Coder loads and runs in SimiGo 1.7; do not generalize the earlier isolated probe failure.
+- SimiGo 1.7 vendor pin: `mlx-swift-lm dc3ca61`; isolated probe used `59e9abd`.
+- Existing compatibility evidence: OpenAI PASS; Responses single/concurrent PASS; tool calling PASS; KV/session cache PASS; draftN=2 concurrency PASS.
+- Corrected layers under SimiGo 1.7: Declaration PASS, Instantiation PASS, Execution PASS, SemanticConsistency OPEN.
+- Qwen3-Coder is therefore a positive runtime control for the computational-semantics comparison; Gemma 4 remains a boundary candidate.
+- Correction history: docs/07-history/QWEN3_CODER_SIMIGO17_RUNTIME_POSITIVE_CONTROL_20260923.md.
