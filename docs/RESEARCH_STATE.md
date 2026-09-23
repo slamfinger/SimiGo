@@ -7,7 +7,7 @@ R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
 ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
-Research Road Space 已登记，SELECTED_ROUTE=NONE；
+Research Road Space 已登记，A2.0 research roads remain unselected；
 Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
 Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL；
 Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN；
@@ -22,7 +22,9 @@ A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT
 A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED；
 Execution-State Extension Design Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
 Execution-State Predictive Resource Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
-Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED）
+Execution-State Information Boundary Hypothesis 已登记为 HYPOTHESIS / NOT_FORMALIZED / ROUTE_UNSELECTED；
+SimiGo 2.0 Experimental 工程路线已登记为 ROUTE_REGISTERED / PHASE_0_AUTHORIZED；
+SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING）
 
 ## Current research state
 
@@ -485,11 +487,12 @@ docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.
 
 ### Research Road Space — 2026-09-23
 
-After accepting the concrete argmin-cardinality underdetermination, five legal
-research roads are registered, but no route is selected:
+After accepting the concrete argmin-cardinality underdetermination, five A2.0
+research roads are registered. No A2.0 research road is selected:
 
 ```
 SELECTED_ROUTE = NONE
+SELECTED_ENGINEERING_ROUTE = SIMIGO2_EXPERIMENTAL
 ```
 
 1. `RULE_DOMAIN_COMPLETION` — complete the visible-history/rule object; direct
@@ -505,8 +508,9 @@ SELECTED_ROUTE = NONE
 5. `COMPUTATIONAL_SEMANTICS` — connect stable formal objects to executable
    semantics; deferred and non-implementative.
 
-This is a navigation record only. It declares no semantic object, no quotient,
-no family, no observation semantics, no software interface, and no experiment.
+These remain navigation records for the A2.0 research path. The separately
+registered SimiGo 2.0 engineering route does not select, reopen, or validate any
+of them.
 
 Road-space history:
 docs/07-history/RESEARCH_ROAD_SPACE_AFTER_CONCRETE_UNDERDETERMINATION_20260923.md.
@@ -860,6 +864,53 @@ latter remains only a future observation candidate; no route is selected.
 
 Retrospective history:
 docs/07-history/A2_HISTORICAL_SCOPE_DECOMPOSITION_RETROSPECTIVE_20260923.md.
+
+### SimiGo 2.0 Experimental Route — 2026-09-23
+
+A separate engineering route was registered:
+
+```
+SIMIGO2_EXPERIMENTAL
+PHASE_0_AUTHORIZED
+IMPLEMENTATION_NOT_STARTED
+```
+
+It is not an A2.0 reopening or independent-theory claim. The MVP tests whether
+externally observable execution-state can drive model layer-group residency and
+loading through a mature MLX runtime.
+
+First positive-control model:
+
+```
+Qwen3-Coder-30B-A3B-Instruct-4bit
+```
+
+Phase 0 is limited to tensor/group inventory, residency-size estimates, and
+partial-load feasibility. Product changes, prediction, compression, hidden-state
+analysis, and production release are not authorized.
+
+Route history:
+docs/00-governance/SIMIGO2_EXPERIMENTAL_ROUTE_AND_MVP_PLAN_20260923.md.
+
+### SimiGo 2.0 Phase 0 Qwen3-Coder Inventory — 2026-09-23
+
+Read-only Phase 0 inventory found:
+
+```
+1351 tensors / 16385 MiB
+CORE_NON_SWITCH    = 919 tensors / 833 MiB
+SWITCH_MLP_L00_15  = 144 tensors / 5184 MiB
+SWITCH_MLP_L16_31  = 144 tensors / 5184 MiB
+SWITCH_MLP_L32_47  = 144 tensors / 5184 MiB
+```
+
+The checkpoint fuses each layer's MoE experts into `switch_mlp` tensors, so the
+first legal MVP partition is by decoder-layer range, not individual expert index.
+Normal inference still traverses all decoder layers; group residency only means the
+required tensors must be available when needed.
+
+Inventory history:
+docs/00-governance/SIMIGO2_PHASE0_QWEN3_CODER_INVENTORY_20260923.md.
 
 ### Execution-State Extension Design Hypothesis — 2026-09-23
 

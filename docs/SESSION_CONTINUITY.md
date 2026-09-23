@@ -481,3 +481,25 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - If runtime internal signals are required, execution-state is no longer independent and must be re-audited.
 - Layer homogeneity/compression is a representation/layout question, not an execution-state assumption.
 - Hypothesis history: docs/07-history/EXECUTION_STATE_INFORMATION_BOUNDARY_HYPOTHESIS_20260923.md.
+
+## SimiGo 2.0 Experimental Route — 2026-09-23
+
+- Status: `ROUTE_REGISTERED / PHASE_0_AUTHORIZED / IMPLEMENTATION_NOT_STARTED`.
+- Goal: test whether externally observable execution-state can drive model layer-group residency/loading.
+- This is an engineering experiment; it does not reopen or rescue frozen A2.0.
+- MVP components: `ExecutionStateObserver`, `LayerPolicy`, `LayerManager`, `RuntimeAdapter`, `MetricsCollector`, `BenchmarkRunner`.
+- First model: Qwen3-Coder-30B-A3B-Instruct-4bit, the known SimiGo 1.7 positive control.
+- Phase 0 only: tensor/group inventory, residency-size estimates, and partial-load feasibility.
+- Baselines: full resident, naive on-demand, execution-state-driven.
+- No hidden-state analysis, prediction, compression, production modification, or theory claim is authorized.
+- Route history: docs/00-governance/SIMIGO2_EXPERIMENTAL_ROUTE_AND_MVP_PLAN_20260923.md.
+
+## SimiGo 2.0 Phase 0 Qwen3-Coder Inventory — 2026-09-23
+
+- Status: `PHASE_0_PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING`.
+- Qwen3-Coder checkpoint: 1351 tensors / 16385 MiB.
+- Candidate MVP partition: `CORE_NON_SWITCH` 833 MiB plus three fused `switch_mlp` groups of 5184 MiB each (`layers 0–15`, `16–31`, `32–47`).
+- Fused MoE storage prevents expert-index granularity without repacking.
+- Normal inference traverses all decoder layers; residency groups do not authorize semantic layer skipping.
+- Next gate: prove the selected runtime can load/release/lazily materialize switch groups without invasive model-internal changes.
+- Inventory history: docs/00-governance/SIMIGO2_PHASE0_QWEN3_CODER_INVENTORY_20260923.md.
