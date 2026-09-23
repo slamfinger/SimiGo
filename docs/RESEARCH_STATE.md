@@ -3,7 +3,7 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R-ASM-E 已声明为 COMPOSITE_ADMISSION_PREDICATE；R-ASM-F 已声明为 COMPOSITE_SIGNATURE；R-ASSEMBLY-1A 已声明为 COMPOSITE_PROJECTION_RULE_PAIR；R-ASSEMBLY-1B 已声明为 JOINT_COMPOSITE_OUTPUT_MECHANISM；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C / R-D / R-E / R-F 已声明；R-ASM-A 已声明为 C_LOSS；R-ASM-B 已声明为 REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY；R-ASM-C 已声明为 DECISION_RULE_FAMILY_WITH_OPTIMIZATION；R-ASM-D 已声明为 PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT；R-ASM-E 已声明为 COMPOSITE_ADMISSION_PREDICATE；R-ASM-F 已声明为 COMPOSITE_SIGNATURE；R-ASSEMBLY-1A 已声明为 COMPOSITE_PROJECTION_RULE_PAIR；R-ASSEMBLY-1B 已声明为 JOINT_COMPOSITE_OUTPUT_MECHANISM；R-ASSEMBLY-1C 已声明为 C3；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D=FINITE_REAL / R-E=PARTIAL_DEFINEDNESS / R-F=PARAMETERIZED_REGIME / R-ASM-A=C_LOSS / R-ASM-B=REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY / R-ASM-C=DECISION_RULE_FAMILY_WITH_OPTIMIZATION / R-ASM-D=PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT / R-ASM-E=COMPOSITE_ADMISSION_PREDICATE / R-ASM-F=COMPOSITE_SIGNATURE / R-ASSEMBLY-1A=COMPOSITE_PROJECTION_RULE_PAIR / R-ASSEMBLY-1B=JOINT_COMPOSITE_OUTPUT_MECHANISM / R_OBJECT NOT DECLARED / R_ASSEMBLY OPEN / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D=FINITE_REAL / R-E=PARTIAL_DEFINEDNESS / R-F=PARAMETERIZED_REGIME / R-ASM-A=C_LOSS / R-ASM-B=REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY / R-ASM-C=DECISION_RULE_FAMILY_WITH_OPTIMIZATION / R-ASM-D=PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT / R-ASM-E=COMPOSITE_ADMISSION_PREDICATE / R-ASM-F=COMPOSITE_SIGNATURE / R-ASSEMBLY-1A=COMPOSITE_PROJECTION_RULE_PAIR / R-ASSEMBLY-1B=JOINT_COMPOSITE_OUTPUT_MECHANISM / R-ASSEMBLY-1C=C3 / R_OBJECT NOT DECLARED / R_ASSEMBLY OPEN / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -404,5 +404,54 @@ FinLoss       = NOT LEGALLY AVAILABLE
 STEP⑤        = NOT ENTERED
 EXPERIMENT AUTH = NONE
 ```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+## 10.6 R-ASSEMBLY-1C declaration — decision output dependence
+
+The researcher explicitly declared:
+
+~~~text
+R-ASSEMBLY-1C
+DECISION_OUTPUT_DEPENDENCE = C3
+
+JOINT_OUTPUT_MECHANISM:
+    Γ(P, δ) : W → A
+
+POINTWISE_OUTPUT:
+    a = Γ(P, δ)(w)
+~~~
+
+C3 means that the composite evaluation object (P, δ) produces a decision mapping over W, and the workload instance w is supplied to that mapping to obtain the pointwise action:
+
+~~~text
+a = Γ(P, δ)(w) ∈ A
+~~~
+
+The pointwise loss carrier is consequently reached as:
+
+~~~text
+C_LOSS(Γ(P, δ)(w), w)
+~~~
+
+This is distinct from C1, where a is produced directly from (P, δ), and C2, where w is a direct third argument of the joint mechanism. Under C3, the workload instance is the argument of the mapping produced by (P, δ); the workload distribution remains on the aggregation side and is not declared to be a direct input to Γ.
+
+The declaration does not instantiate Γ's functional form, P/δ signatures, concrete W measurable-space representation, A structure, decision-rule admissibility, parameter domain, probability measure notation, measurability proof, integrability, expectation existence, optimization domain/operator, min versus inf, optimizer existence, R_OBJECT, R_oracle, Δ, FinLoss, or NECT. Historical δ(I_P) is not restored.
+
+Current state:
+
+~~~text
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = DECLARED (C3)
+
+R_OBJECT      = NOT_DECLARED
+R_ASSEMBLY    = OPEN
+R_oracle      = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss       = NOT LEGALLY AVAILABLE
+STEP⑤         = NOT ENTERED
+EXPERIMENT AUTH = NONE
+~~~
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
