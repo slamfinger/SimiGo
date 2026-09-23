@@ -13,7 +13,7 @@ PDEP-2 ROUTE = AGGREGATE_DECISION_LOSS
 
 The purpose of this gate is to determine the minimum semantic components required before an aggregate decision-loss object can legally exist above the current pointwise cost object.
 
-The researcher has now declared all six minimum aggregate-object semantic axes. R-ASM-F is declared as COMPOSITE_SIGNATURE. The remaining task is to determine whether, and exactly how, these declarations can be assembled into a legally defined minimum R_OBJECT without importing undeclared semantics.
+The researcher has now declared all six minimum aggregate-object semantic axes. R-ASM-F is declared as COMPOSITE_SIGNATURE. R-ASSEMBLY-1A has declared the evaluation object level as (P, δ), and R-ASSEMBLY-1B has now declared the decision-output bridge as a joint (P, δ) output mechanism. The remaining task is to determine whether, and exactly how, these declarations can be assembled into a legally defined minimum R_OBJECT without importing undeclared semantics.
 
 ## 2. Current Boundary
 
@@ -38,7 +38,7 @@ The pointwise loss interface remains closed:
 
 ```text
 C_LOSS : A × W → ℝ = CLOSED
-C_LOSS ↔ R BRIDGE = NOT DECLARED
+C_LOSS ↔ R BRIDGE = STRUCTURALLY CONSTRAINED / NOT FULLY INSTANTIATED
 ```
 
 No aggregate construction has yet been declared.
@@ -58,7 +58,7 @@ R-E  DEFINEDNESS / TOTALITY = PARTIAL_DEFINEDNESS
 R-F  PARAMETER / REGIME     = PARAMETERIZED_REGIME
 
 C_LOSS : A × W → ℝ          = CLOSED
-C_LOSS ↔ R BRIDGE           = NOT DECLARED
+C_LOSS ↔ R BRIDGE = STRUCTURALLY CONSTRAINED / NOT FULLY INSTANTIATED
 
 W measurable structure     = DECLARED AT FAMILY INTERFACE LEVEL
 μ_W formal object          = PARAMETER-INDEXED PROBABILITY-MEASURE FAMILY DECLARED
@@ -227,7 +227,7 @@ R-B does not bridge this interface to an aggregate object.
 Therefore:
 
 ```text
-C_LOSS ↔ R BRIDGE = NOT DECLARED
+C_LOSS ↔ R BRIDGE = STRUCTURALLY CONSTRAINED / NOT FULLY INSTANTIATED
 ```
 
 A future bridge must explicitly state how a projection candidate and a workload-distribution input induce the arguments of `C_LOSS`, and how those pointwise evaluations enter the aggregate object.
@@ -539,3 +539,55 @@ Accordingly:
     EXPERIMENT AUTH = NONE
 
 No automatic formula, oracle, residual, FinLoss, NECT, STEP⑤, implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## 17. R-ASSEMBLY-1B declaration record
+
+The researcher explicitly declared:
+
+```text
+R-ASSEMBLY-1B  DECISION_OUTPUT_BRIDGE = JOINT_COMPOSITE_OUTPUT_MECHANISM
+EVALUATION_OBJECT = (P, δ)
+OUTPUT_TARGET = a ∈ A
+```
+
+This establishes that the composite evaluation object `(P, δ)` reaches the pointwise decision space `A` through a joint output mechanism. It does not instantiate a concrete action map, restore `δ(I_P)`, define `I_P`, or otherwise import the historical decision-rule construction.
+
+The resulting structural path is:
+
+```text
+(P, δ)
+    ↓
+joint output mechanism
+    ↓
+a ∈ A
+    ↓
+C_LOSS(a, w)
+    ↓
+expectation over declared workload-distribution family
+    ↓
+rule-level aggregate evaluation
+    ↓
+optimization component
+    ↓
+P-level aggregate decision-loss object
+```
+
+This is a dependency skeleton, not a complete formula or a declaration of `R_OBJECT`.
+
+Accordingly:
+
+```text
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = OPEN
+R_OBJECT      = NOT_DECLARED
+R_ASSEMBLY    = OPEN
+R_oracle      = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss       = NOT LEGALLY AVAILABLE
+STEP⑤         = NOT ENTERED
+EXPERIMENT AUTH = NONE
+```
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
