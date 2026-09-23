@@ -957,6 +957,63 @@ No implementation, harness, measurement, or experiment authorization is created 
 
 
 
+
+## R-INTERNAL-6 — Expectation Legality / Definition Conditions
+
+The researcher explicitly declared:
+
+```
+R-INTERNAL-6 = E6-4
+
+(g,P,θ) ∈ Dom(L)
+    ⇔
+E_θ[C_LOSS(g(W),W)] 合法且为有限实数
+```
+
+E6-4 conditions the domain of the already-declared loss evaluation function directly on the legality and finite-real status of its expectation. It does not expand “合法” into separate declarations of measurability, integrability, or a particular existence theorem. The already declared parameter-indexed probability-measure family and measurability requirement remain in force.
+
+This closes the expectation legality boundary at the domain-condition level while preserving:
+
+```
+L : Dom(L) → ℝ
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+E6-4 does not declare a concrete meaning of “合法”, a concrete probability space or parameter set, integrability as a separately named condition, a concrete optimization construction, optimizer existence/attainment, R_OBJECT, R_oracle, Δ, FinLoss, NECT, STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization.
+
+Current state:
+
+```
+R-INTERNAL-1 = DECLARED (P4)
+R-INTERNAL-2 = DECLARED (δ3)
+R-INTERNAL-3 = DECLARED (θ2)
+R-INTERNAL-4 = DECLARED (G4-4)
+R-INTERNAL-5 = DECLARED (L5-3)
+R-INTERNAL-6 = DECLARED (E6-4)
+
+P : PROJECTION_CANDIDATE
+δ : DECISION_GENERATION_PARAMETER
+θ : REGIME_PARAMETER
+𝒢_adm(P) = ADMISSIBLE_DECISION_RULE_FAMILY
+𝒢_adm(P) ⊆ {g | g : W → A}
+L : Dom(L) → ℝ
+(g,P,θ) ∈ Dom(L) ⇔ E_θ[C_LOSS(g(W),W)] 合法且为有限实数
+
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤       = NOT ENTERED
+STEP⑥       = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, data collection, profiling, or experiment authorization is created by this declaration.
+
 ## R-INTERNAL-5 — L(g;P,θ) 定义域 / 函数类型声明
 
 研究者明确声明：
