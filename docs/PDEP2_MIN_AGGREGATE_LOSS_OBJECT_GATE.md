@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -47,6 +47,7 @@ No aggregate construction has yet been declared.
 
 ```text
 R_OBJECT                    = NOT_DECLARED
+R_ASM-A POINTWISE_LOSS_CARRIER = C_LOSS
 
 R-A  EVALUATION_TARGET      = PROJECTION_CANDIDATE
 R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
@@ -295,11 +296,11 @@ C_LOSS ↔ R BRIDGE   = NOT_DECLARED
 
 The following interfaces remain independently unresolved:
 
-1. **Pointwise loss carrier adoption**
+1. **Pointwise loss carrier adoption — RESOLVED**
    ```
-   R_POINTWISE_LOSS_CARRIER = NOT_DECLARED
+   R-ASM-A  POINTWISE_LOSS_CARRIER = C_LOSS
    ```
-   Although `C_LOSS : A × W → ℝ` is closed, it is a new independent loss object and does not automatically become the pointwise carrier of R.
+   The researcher has explicitly declared that the existing closed `C_LOSS : A × W → ℝ` is the pointwise loss carrier used by the PDEP-2 aggregate decision-loss layer. This does not alter the LOSS-3 / LOSS-4 definition or retroactively identify `C_LOSS` with any historical cost slot, Value object, Risk object, or R object. It establishes only the carrier role within the future R assembly.
 
 2. **Decision bridge**
    Historical `δ(I_P)` cannot be treated as a current action-producing construction. The current framework has not declared `I_P`, `P ↦ I_P`, `Δ(I_P)`, `δ)'s signature, or `δ(I_P) ∈ A`.
@@ -319,10 +320,10 @@ The following interfaces remain independently unresolved:
 
 ### 12.2 R-ASM declaration surface
 
-No ASM semantic value is selected by this gate. The following remain researcher-decision fields:
+R-ASM-A has now been explicitly selected by the researcher. The remaining ASM semantic values remain researcher-decision fields:
 
 ```
-R-ASM-A  POINTWISE_LOSS_CARRIER
+R-ASM-A  POINTWISE_LOSS_CARRIER = C_LOSS
 R-ASM-B  REGIME_DISTRIBUTION_INTERFACE
 R-ASM-C  DECISION_BRIDGE_KIND
 R-ASM-D  MEASURE / MEASURABILITY
@@ -330,17 +331,22 @@ R-ASM-E  ADMISSION_PREDICATE / Dom(R)
 R-ASM-F  FINAL_OBJECT_SIGNATURE
 ```
 
-All six are currently:
+Current declaration status:
 
 ```
-NOT_DECLARED
+R-ASM-A = DECLARED
+R-ASM-B = NOT_DECLARED
+R-ASM-C = NOT_DECLARED
+R-ASM-D = NOT_DECLARED
+R-ASM-E = NOT_DECLARED
+R-ASM-F = NOT_DECLARED
 ```
 
 Candidate values are not selected by the agent. In particular, no historical `δ(I_P)`, optimization over `Δ(I_P)`, probability measure, fixed action map, or final signature is silently adopted.
 
 ### 12.3 Minimal placeholder only
 
-Before the ASM fields are resolved, the strongest current statement is only:
+Before the remaining ASM fields are resolved, the strongest current statement is only:
 
 ```
 Dom(R) = UNDECLARED
@@ -354,6 +360,7 @@ Therefore:
 ```
 R_OBJECT = NOT_DECLARED
 R_ASSEMBLY = OPEN
+R-ASM-A = DECLARED (C_LOSS)
 ```
 
 Completion of R-ASM does not automatically authorize `R_oracle`, residual `Δ`, FinLoss, NECT, STEP⑤, implementation, harness, or experiment.
