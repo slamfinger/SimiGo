@@ -442,3 +442,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Standing rule: new structure requires removal to cause loss of expression or semantic fidelity.
 - No further A2.0 rescue/extension is authorized without a concrete external consumer.
 - Freeze history: docs/07-history/A2_VALUE_CORE_FREEZE_POINT_20260923.md.
+
+## A2.0 Historical Scope Decomposition Retrospective — 2026-09-23
+
+- Diagnosis: A2.0 likely overextended because model lifecycle/residency, execution-state evolution, and behavior evaluation were mixed into one architecture.
+- Loading/residency remain valuable as computational-semantics / implementation-boundary observations, not as A2.0 behavioral-theory core.
+- Execution-state remains a separate future observation candidate: `state → action → next state → evaluation`.
+- Model internals remain black-boxed; value/optimization remains frozen as generic reducible.
+- No route is selected and no new semantic object is declared.
+- Retrospective history: docs/07-history/A2_HISTORICAL_SCOPE_DECOMPOSITION_RETROSPECTIVE_20260923.md.

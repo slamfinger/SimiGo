@@ -18,7 +18,8 @@ Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK；
 Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN；
 Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE；
 Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION；
-A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED）
+A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED；
+A2.0 Historical Scope Decomposition 已登记为 RETROSPECTIVE / NO_ROUTE_SELECTED）
 
 ## Current research state
 
@@ -826,3 +827,33 @@ or semantic fidelity.
 
 Freeze history:
 docs/07-history/A2_VALUE_CORE_FREEZE_POINT_20260923.md.
+
+### A2.0 Historical Scope Decomposition Retrospective — 2026-09-23
+
+Retrospective diagnosis: the frozen A2.0 path likely failed because of scope mixing,
+not because loading/residency/execution-state/evaluation were individually
+meaningless.
+
+Decomposition:
+
+```
+Model lifecycle / residency
+  = computational-object lifecycle and implementation boundary
+
+Execution-state
+  = behavioral structure candidate:
+    state → action → next state → evaluation
+
+Value / optimization
+  = frozen as generic reducible
+
+Model internals
+  = remain black-boxed
+```
+
+Loading and residency have value as computational-semantics observation boundaries,
+but should not be forced into the same theoretical core as execution-state. The
+latter remains only a future observation candidate; no route is selected.
+
+Retrospective history:
+docs/07-history/A2_HISTORICAL_SCOPE_DECOMPOSITION_RETROSPECTIVE_20260923.md.
