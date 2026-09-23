@@ -53,7 +53,7 @@ R-B  EVALUATION_INPUT       = WORKLOAD_DISTRIBUTION
 R-C  AGGREGATION_RULE       = EXPECTATION_OVER_WORKLOAD_DISTRIBUTION
 R-D  RESULT CODOMAIN        = FINITE_REAL
 R-E  DEFINEDNESS / TOTALITY = PARTIAL_DEFINEDNESS
-R-F  PARAMETER / REGIME     = CONDITIONAL / OPEN
+R-F  PARAMETER / REGIME     = PARAMETERIZED_REGIME
 
 C_LOSS : A × W → ℝ          = CLOSED
 C_LOSS ↔ R BRIDGE           = NOT DECLARED
@@ -182,12 +182,10 @@ The aggregate decision-loss object is declared as partial: it is defined only on
 ### R-F — Parameter / Regime
 
 ```text
-R-F = CONDITIONAL / OPEN
+R-F = PARAMETERIZED_REGIME
 ```
 
-Parameter/regime semantics are only required if the eventual aggregate object retains a parameterized form analogous to historical `R(P;θ)`.
-
-No `θ` semantics are currently declared.
+The aggregate decision-loss object is declared to retain a parameter/regime dimension. The aggregate object therefore remains parameterized rather than being reduced to an unparameterized object. This declaration does not yet define the parameter `θ`, its domain, its components, its semantics, or how it enters the workload distribution, projection candidate, pointwise loss, or expectation.
 
 ## 8. Expectation-Specific Dependencies
 
@@ -266,7 +264,7 @@ R-B = DECLARED
 R-C = DECLARED
 R-D = DECLARED
 R-E = DECLARED
-R-F = CONDITIONAL / OPEN
+R-F = DECLARED
 
 R_OBJECT = NOT_DECLARED
 R_ORACLE = NOT_DEFINED
@@ -278,4 +276,4 @@ EXPERIMENT AUTH = NONE
 HARNESS AUTH = NONE
 ```
 
-The next gate is R-F resolution, with expectation-specific prerequisites now explicit. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated by R-C alone.
+R-A through R-F have now received researcher-level declarations. These declarations define the remaining semantic axes of the minimum aggregate-loss object gate, but they do not by themselves instantiate R_OBJECT. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated.
