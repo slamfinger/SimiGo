@@ -776,3 +776,32 @@ NECT
 ```
 
 No historical `δ(I_P)` or `δ ∈ Δ(I_P)` is restored. No implementation, harness, measurement, experiment, STEP⑤, or STEP⑥ authorization is created.
+
+
+## R-ASSEMBLY-8 — 2026-09-23
+
+The researcher explicitly declared R-ASSEMBLY-8 = K3.
+
+The concrete mathematical construction of OPT remains an abstract scalar optimization operator:
+
+OPT : (𝒢_adm(P), L) → ℝ
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+
+K3 does not select min, inf, argmin, or another named optimization construction. It therefore does not declare optimizer existence, attainment, or a minimizing rule. The already declared J1 scalar-valued type remains in force.
+
+Current consequence:
+
+R-ASSEMBLY-7 = DECLARED (J1)
+R-ASSEMBLY-8 = DECLARED (K3)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ             = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤        = NOT ENTERED
+STEP⑥        = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+
+No implementation, harness, measurement, or experiment authorization is created by this declaration.
