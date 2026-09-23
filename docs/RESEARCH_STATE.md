@@ -3,12 +3,12 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state.
 > Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B 已声明；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
+**Last updated**: 2026-09-23（STEP④-A / STEP④-B 完成；LOSS-3 / LOSS-4 完成；LOSS-5 在当前 resolution level 完成并选择 R_OBJECT_SCHEMA=A；PDEP-2 路线选择 AGGREGATE_DECISION_LOSS；R-A / R-B / R-C 已声明；R_OBJECT 仍未声明；STEP⑤ downstream blocked）
 
 ## 1. 当前阶段
 
 Phase: Architecture 2.0 / P4 Redefinition / STEP④-A COMPLETE → STEP④-B COMPLETE / Value Discipline（STEP⑤ NECT mode blocked）
-Next action: Resolve the remaining PDEP-2 aggregate decision-loss object gates R-C/R-D/R-E/R-F; no automatic R-object construction, STEP⑤ entry, or experiment
+Next action: Resolve the remaining PDEP-2 aggregate decision-loss object gates R-D/R-E/R-F; expectation-specific prerequisites are now explicit; no automatic R-object construction, STEP⑤ entry, or experiment
 Gate status: OPEN — STEP① accepted; STEP② accepted; STEP③ passed; STEP④ passed with STEP④-A semantic instantiation COMPLETE and consistency review PASSED; STEP⑤ NECT mode blocked
 RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 当前活动文档: docs/PDEP2_MIN_AGGREGATE_LOSS_OBJECT_GATE.md
@@ -33,7 +33,7 @@ RQ ID: 尚未分配（正式 RQ registration 尚未发生）
 | RQ-P3-01 | Residency policy 频率机制 | P3-A PASS / P3-B R3 CLOSED / P3-C R-W CLOSED·SEALED |
 | RQ-H-01 | 结构信号存在性 | CLOSED / SEALED |
 | RQ-NO-01 | 取消 node 粒度外化通道 | CLOSED |
-| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
+| RQ-P4-01 | Architecture-induced Execution State 及其资源生命周期特征 | STEP④ PASS / MCVSD VALID / DG-4A-01 RESOLVED AS RESULT_FORM_DETERMINING / VTYPE=VECTOR / OUTPUT DISCIPLINE=FINITE_REAL_COORDINATEWISE / BINDING_C=VECTOR_COMPOSITION / SEMANTIC INSTANTIATION COMPLETE / VALUE DISCIPLINE COMPLETE / LOSS-3 CLOSED / LOSS-4 CLOSED / LOSS-5 RESOLVED AT CURRENT RESOLUTION LEVEL / PDEP-2 ROUTE=AGGREGATE_DECISION_LOSS / R_OBJECT_SCHEMA=A / R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D–R-F OPEN / R_OBJECT NOT DECLARED / STEP⑤ DOWNSTREAM BLOCKED / NOT REGISTERED |
 | RQ-F-01 | Source/Runtime 机制可实现·可验证性 | RETIRED CANDIDATE / NOT DEFINED |
 
 ## 4. Mainline
@@ -68,8 +68,8 @@ P4 / RQ-P4-01 candidate
 - LOSS-4 Cost Evaluation Interface：CLOSED / C_LOSS : D_C → ℝ / D_C=A×W / D_C CURRENTLY MFI PLACEHOLDER / NO PROBABILISTIC SEMANTICS
 - LOSS-5 Aggregation：RESOLVED AT CURRENT RESOLUTION LEVEL / R_OBJECT_SCHEMA=A / R_OBJECT=NOT_DECLARED / NO RISK OR AGGREGATE EVALUATION OBJECT
 - PDEP-2 Route：AGGREGATE_DECISION_LOSS / route selected; implementation object not yet declared
-- PDEP-2 R-object gate：R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=OPEN / R-D=OPEN / R-E=OPEN / R-F=CONDITIONAL·OPEN / R_OBJECT=NOT_DECLARED / C_LOSS↔R BRIDGE=NOT DECLARED
-- PDEP-2 input boundary：W measurable structure=UNDECLARED / μ_W formal object=NOT INSTANTIATED / C_LOSS measurability=UNDECLARED / expectation=NOT DECLARED
+- PDEP-2 R-object gate：R-A=PROJECTION_CANDIDATE / R-B=WORKLOAD_DISTRIBUTION / R-C=EXPECTATION_OVER_WORKLOAD_DISTRIBUTION / R-D=OPEN / R-E=OPEN / R-F=CONDITIONAL·OPEN / R_OBJECT=NOT_DECLARED / C_LOSS↔R BRIDGE=NOT DECLARED
+- PDEP-2 input boundary：W measurable structure=UNDECLARED / μ_W formal object=NOT INSTANTIATED / C_LOSS measurability=UNDECLARED / expectation=SELECTED_AS_AGGREGATION_RULE_NOT_YET_INSTANTIATED
 - STEP⑤ Nontrivial Phenomenon Existence Criterion：HISTORICAL FORMULATION RETAINED / NDAC AND SAT_INF_FIN RETAINED AS HISTORICAL GATE LOGIC / R NOT_DEFINED_BY_CURRENT_FRAMEWORK / R_oracle NOT_DEFINED_BY_CURRENT_FRAMEWORK / Δ BLOCKED / FinLoss NOT LEGALLY AVAILABLE / NECT BLOCKED
 - STEP⑥–⑨：未开始
 
