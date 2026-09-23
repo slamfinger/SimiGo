@@ -8,15 +8,23 @@ LOSS-5 is opened as a semantic declaration gate for the aggregation/evaluation l
 
 ```text
 LOSS-5-A  AGGREGATION_OBJECT = NOT_SELECTED
+LOSS-5-B  EVALUATION_INPUT = NOT_SELECTED
 ```
 
 ## Consequence
 
 No aggregation object is currently declared for combining or evaluating values of `C_LOSS`.
 
+No evaluation input object is currently selected. In particular, the research record does not currently select:
+
+- a single cost input as the evaluation input;
+- a collection/family of cost values;
+- a decision-policy/outcome object;
+- a randomized or distributional object.
+
 Therefore the following remain undeclared and blocked:
 
-- evaluation input object;
+- evaluation input semantics;
 - aggregation/evaluation rule;
 - `R(P;θ)` existence;
 - `R(P;θ)` codomain;
@@ -41,6 +49,7 @@ No `R`, `R_oracle`, `Δ`, `FinLoss`, NECT, experiment, or harness authorization 
 LOSS-3 = CLOSED
 LOSS-4 = CLOSED
 LOSS-5-A = NOT_SELECTED
+LOSS-5-B = NOT_SELECTED
 
 R        = BLOCKED
 R_oracle = BLOCKED
