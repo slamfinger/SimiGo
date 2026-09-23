@@ -1,7 +1,7 @@
 # PDEP-2 Minimum Aggregate Decision-Loss Object Gate
 
 **Date:** 2026-09-23  
-**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R-ASM-E DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
+**Status:** R-A–R-F DECLARED / R-ASM-A DECLARED / R-ASM-B DECLARED / R-ASM-C DECLARED / R-ASM-D DECLARED / R-ASM-E DECLARED / R-ASM-F DECLARED / R_OBJECT ASSEMBLY GATE OPEN / R_OBJECT NOT DECLARED
 
 ## 1. Gate Purpose
 
@@ -13,7 +13,7 @@ PDEP-2 ROUTE = AGGREGATE_DECISION_LOSS
 
 The purpose of this gate is to determine the minimum semantic components required before an aggregate decision-loss object can legally exist above the current pointwise cost object.
 
-The researcher has now declared all six minimum aggregate-object semantic axes. The remaining task is to determine whether, and exactly how, these declarations can be assembled into a legally defined minimum R_OBJECT without importing undeclared semantics.
+The researcher has now declared all six minimum aggregate-object semantic axes. R-ASM-F is declared as COMPOSITE_SIGNATURE. The remaining task is to determine whether, and exactly how, these declarations can be assembled into a legally defined minimum R_OBJECT without importing undeclared semantics.
 
 ## 2. Current Boundary
 
@@ -331,7 +331,7 @@ R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_
 R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
 R-ASM-D  MEASURE / MEASURABILITY = PARAMETER_INDEXED_PROBABILITY_MEASURE_FAMILY_WITH_MEASURABILITY_REQUIREMENT
 R-ASM-E  ADMISSION_PREDICATE / Dom(R) = COMPOSITE_ADMISSION_PREDICATE
-R-ASM-F  FINAL_OBJECT_SIGNATURE
+R-ASM-F  FINAL_OBJECT_SIGNATURE = COMPOSITE_SIGNATURE
 ```
 
 Current declaration status:
@@ -517,3 +517,25 @@ FinLoss = NOT LEGALLY AVAILABLE
 ```
 
 No STEP⑤, harness, implementation, measurement, or experiment authorization is created by this declaration.
+
+
+## 16. R-ASM-F declaration record
+
+The researcher has explicitly declared:
+
+    R-ASM-F  FINAL_OBJECT_SIGNATURE = COMPOSITE_SIGNATURE
+
+This establishes that the final signature of the aggregate decision-loss object is to be represented at a composite-signature level, combining the already declared semantic axes rather than selecting a single-axis minimal signature. The declaration is structural and does not itself instantiate the exact domain/codomain notation, parameter domain, decision-rule signature, optimization operator, measure-family notation, component admission predicates, or a concrete mathematical formula for R.
+
+Accordingly:
+
+    R-ASM-F = DECLARED
+    R_OBJECT = NOT_DECLARED
+    R_ASSEMBLY = OPEN
+    R_oracle = NOT_DEFINED
+    Δ = BLOCKED
+    FinLoss = NOT LEGALLY AVAILABLE
+    STEP⑤ = NOT ENTERED
+    EXPERIMENT AUTH = NONE
+
+No automatic formula, oracle, residual, FinLoss, NECT, STEP⑤, implementation, harness, measurement, or experiment authorization is created by this declaration.
