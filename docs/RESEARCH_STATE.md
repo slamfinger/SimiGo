@@ -27,6 +27,7 @@ SimiGo 2.0 Experimental 工程路线已登记为 ROUTE_REGISTERED / PHASE_0_AUTH
 SimiGo 2.0 Phase 0 Qwen3-Coder inventory 已登记为 PARTIAL_REPORT / RUNTIME_PARTIAL_LOAD_TEST_PENDING；
 SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考，vLLM 延后；
 SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成）
+；SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成）
 
 ## Current research state
 
@@ -1039,3 +1040,31 @@ modified.
 
 Scaffold history:
 docs/00-governance/SIMIGO2_PHASE1_SCAFFOLD_20260924.md.
+
+### SimiGo 2.0 Phase 1 Qwen3-Coder Materialization Experiment — 2026-09-24
+
+The pure-Swift scaffold was extended from state/policy simulation to actual
+selective Safetensors materialization. For each execution-state transition, only
+newly required layer groups were read by absolute tensor offset. No MLX internals
+were modified and no model inference was executed.
+
+Experiment:
+
+```
+STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL
+```
+
+Result:
+
+```
+loaded bytes       = 28,052,549,632
+elapsed            = 6,905.28 ms
+average throughput = 3,874.28 MiB/s
+```
+
+This proves selective group reads work on the actual Qwen3-Coder checkpoint. It does
+not prove MLX model modules can be independently released/materialized during
+inference.
+
+Experiment history:
+docs/00-governance/SIMIGO2_PHASE1_QWEN3_MATERIALIZATION_RESULTS_20260924.md.

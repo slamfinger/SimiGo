@@ -38,6 +38,11 @@ swift run simigo2ctl simulate \
 swift run simigo2ctl benchmark \
   /path/to/model-snapshot \
   --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
+
+# Read only newly required layer groups for each execution state
+swift run simigo2ctl materialize \
+  /path/to/model-snapshot \
+  --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
 ```
 
 ## MVP policy

@@ -57,9 +57,13 @@ public enum SafetensorsInventoryReader {
 
         let shape = shapeObject.compactMap(numberOfInt)
 
+        let absoluteOffset = Int64(8 + length) + Int64(start)
+
         return TensorEntry(
             id: name,
             file: fileURL.lastPathComponent,
+            fileURL: fileURL,
+            absoluteDataOffset: absoluteOffset,
             dtype: dtype,
             shape: shape,
             byteCount: Int64(end - start)

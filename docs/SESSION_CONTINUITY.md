@@ -402,6 +402,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This does not prove minimality, final sufficiency, or route selection.
 - Audit history: docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.
 
+## SimiGo 2.0 Phase 1 Qwen3-Coder Materialization Experiment — 2026-09-24
+
+- Status: `EXPERIMENT_COMPLETE / CONTROL_PLANE_ONLY`.
+- Added pure-Swift `SafetensorsGroupMaterializer` and `ExecutionStateMaterializationExperiment`.
+- For each state transition, the materializer reads only newly required layer groups by absolute Safetensors offsets.
+- Actual Qwen3-Coder run: 28,052,549,632 bytes in 6,905.28 ms, average 3,874.28 MiB/s.
+- No MLX internals were modified and no inference was run; this does not prove runtime layer swappability.
+- Result history: docs/00-governance/SIMIGO2_PHASE1_QWEN3_MATERIALIZATION_RESULTS_20260924.md.
+
 ## A2.0 Core Degeneracy / Distinctiveness Audit — 2026-09-23
 
 - Status: `DISTINCTIVENESS_OPEN / PARTIAL_DISTINCTIVE`.

@@ -19,7 +19,7 @@ struct Simigo2CTL {
 
     static func run(_ arguments: [String]) async throws {
         guard let command = arguments.first else {
-            throw OutputError(message: "usage: simigo2ctl <inventory|simulate|benchmark> MODEL_DIRECTORY [options]")
+            throw OutputError(message: "usage: simigo2ctl <inventory|simulate|benchmark|materialize> MODEL_DIRECTORY [options]")
         }
 
         let rest = Array(arguments.dropFirst())
@@ -57,6 +57,18 @@ struct Simigo2CTL {
                 cumulativeEvictedBytes: engine.cumulativeEvictedBytes
             )
             print(try toJSON(output))
+
+        case "materialize":
+            let states = try parseStates(from: rest)
+            let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(modelDirectory: modelDirectory)
+            let policy = Qwen3CoderStatePolicy(inventory: inventory)
+            let experiment = ExecutionStateMaterializationExperiment(
+                modelDirectory: modelDirectory,
+                inventory: inventory,
+                policy: policy
+            )
+            let report = try experiment.run(states: states)
+            print(try toJSON(report))
 
         case "benchmark":
             let states = try parseStates(from: rest)

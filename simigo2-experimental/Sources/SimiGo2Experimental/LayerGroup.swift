@@ -3,9 +3,15 @@ import Foundation
 public struct TensorEntry: Identifiable, Hashable, Sendable {
     public let id: String
     public let file: String
+    public let fileURL: URL
+    public let absoluteDataOffset: Int64
     public let dtype: String
     public let shape: [Int]
     public let byteCount: Int64
+
+    public var absoluteByteRange: Range<Int64> {
+        absoluteDataOffset..<(absoluteDataOffset + byteCount)
+    }
 
     public var components: [String] {
         id.split(separator: ".").map(String.init)
@@ -22,6 +28,24 @@ public struct TensorEntry: Identifiable, Hashable, Sendable {
 
     public var isSwitchMLP: Bool {
         components.contains("switch_mlp")
+    }
+
+    public init(
+        id: String,
+        file: String,
+        fileURL: URL = URL(fileURLWithPath: "/dev/null"),
+        absoluteDataOffset: Int64 = 0,
+        dtype: String,
+        shape: [Int],
+        byteCount: Int64
+    ) {
+        self.id = id
+        self.file = file
+        self.fileURL = fileURL
+        self.absoluteDataOffset = absoluteDataOffset
+        self.dtype = dtype
+        self.shape = shape
+        self.byteCount = byteCount
     }
 }
 
