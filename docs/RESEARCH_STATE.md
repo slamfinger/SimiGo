@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-23（R-INTERNAL-16 = K4-C / UNRESOLVED + UNIQUENESS_PREDICATE 已声明）
+**Last updated**: 2026-09-23（R-INTERNAL-17 = RO-1 / R_OBJECT_VALUE_FUNCTIONAL 已声明）
 
 ## Current research state
 
@@ -24,6 +24,7 @@ R-INTERNAL-13 = K3-B / OPT_FINITE_VALUE_DOMAIN
 R-INTERNAL-14 = K4-A / UNRESOLVED + ATTAINMENT_PREDICATE
 R-INTERNAL-15 = K4-B / DEFINE_ARGMIN_SET + ATTAINMENT_EQUIVALENCE
 R-INTERNAL-16 = K4-C / UNRESOLVED + UNIQUENESS_PREDICATE
+R-INTERNAL-17 = RO-1 / R_OBJECT_VALUE_FUNCTIONAL
 
 ### Current internal interfaces
 
@@ -129,7 +130,7 @@ R-ASSEMBLY-8  = DECLARED (K3)
 R-ASSEMBLY-9  = DECLARED (L3)
 R-ASSEMBLY-10 = DECLARED (M4)
 
-R_OBJECT     = NOT_DECLARED
+R_OBJECT     = DECLARED (R : Dom(R) → ℝ)
 R_ASSEMBLY   = OPEN
 R_ORACLE     = NOT_DEFINED
 Δ            = BLOCKED
@@ -161,7 +162,7 @@ OPT is concretized as a value-level infimum by R-INTERNAL-12. R-INTERNAL-13 esta
 
 ### Research boundaries
 
-R_OBJECT remains undeclared. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-15.
+R_OBJECT is declared as the value functional R : Dom(R) → ℝ; under RO-1, the research object is the optimal value, while Argmin / att / uniq and their domains remain auxiliary diagnostic/semantic objects and are not deleted. R_ORACLE remains undefined by the current framework. Δ remains blocked. FinLoss and NECT remain unavailable. Historical STEP⑤ formulation remains historical/conditional only. No STEP⑤/STEP⑥ entry, implementation, harness, data collection, profiling, measurement, or experiment authorization follows from R-INTERNAL-15.
 
 R-INTERNAL-16 does not introduce topology or any structural condition, and does not pre-authorize future sufficient-condition families. It does not declare optimizer existence at any point, attainment at any point, minimum attainment, `min` reformulation, selector/tie-breaking, canonical choice, uniqueness at any particular point, compactness, continuity, measurability, finiteness/cardinality assumptions, any θ-level optimization, `A(P,θ)`, historical `δ(I_P)`, R_OBJECT, R_ORACLE, Δ, FinLoss, or NECT. The uniqueness predicate itself is defined, but no instance is asserted to satisfy it.
 
@@ -179,5 +180,7 @@ Dom_uniq = {(P,θ) ∈ Dom(R) | uniq(P,θ)}
 The equivalence is registered as the formal bridge between attainment and argmin non-emptiness. R-INTERNAL-16 defines only the uniqueness predicate and its truth domain; it does not assert uniqueness anywhere. Selector/tie-breaking remains a separate layer.
 
 Historical `δ(I_P)` is not restored and no new δ optimization domain is introduced.
+
+R-INTERNAL-17 / RO-1 explicitly keeps `δ(I_P)` BLOCKED and does not introduce any new δ optimization domain. `Δ` remains BLOCKED; `FinLoss` remains NOT LEGALLY AVAILABLE; `NECT` remains BLOCKED. θ-level optimization and `A(P,θ)` remain excluded. No approximation/gap object is introduced.
 
 R-INTERNAL-16 does not declare `Dom_uniq ≠ ∅`, does not assert `uniq` is true at any point, and does not create a selector from uniqueness. The observation that `uniq(P,θ)` is false whenever `Argmin(P,θ)=∅` is a direct consequence of the registered definitions, not a separate assertion.
