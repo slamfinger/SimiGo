@@ -79,7 +79,17 @@ L(g;P,θ)
 
 {g ∈ 𝒢_adm(P) | (g,P,θ) ∈ Dom(L)} ≠ ∅
 
-R(P,θ) ∈ ℝ
+V(P,θ)
+=
+{L(g;P,θ) | g ∈ 𝒢_adm(P), (g,P,θ)∈Dom(L)}
+
+OPT(P,θ) = inf V(P,θ)
+
+Dom(R)
+=
+{(P,θ) | D_opt(P,θ) ≠ ∅ ∧ inf V(P,θ) ∈ ℝ}
+
+R(P,θ) = inf V(P,θ) ∈ ℝ,  ((P,θ) ∈ Dom(R))
 ```
 
 其中：
@@ -89,6 +99,8 @@ R(P,θ) ∈ ℝ
 - E9-B：有效优化域同时受 `𝒢_adm(P)` 与 Dom(L) 约束。
 - E10-B：有效优化域非空。
 - E11-B：aggregate optimization output `R(P,θ)` 为有限实数。
+- K3-A：选择值层 `inf` 作为 OPT 的构造。
+- K3-B：将 E11-B 的有限值适用域限定为 `Dom(R)`，其中要求 `inf V(P,θ) ∈ ℝ`。
 
 ## 必须保持的语义区分
 
@@ -99,10 +111,14 @@ optimizer exists
 ≠
 optimum attained
 ≠
-OPT = min / inf / argmin
+argmin semantics
+≠
+selector / tie-breaking
 ```
 
-当前没有声明 optimizer existence、attainment，也没有选择 `min`、`inf`、`argmin` 或其他具体 OPT construction。
+当前已选择 `inf` 作为 OPT 的值层构造；K3-B 已限定其有限值适用域。当前仍未声明 optimizer existence、attainment、argmin 或 selector/tie-breaking。
+
+`Dom(R) ≠ ∅` 也未声明。
 
 ## 尚未声明/仍被阻断
 
