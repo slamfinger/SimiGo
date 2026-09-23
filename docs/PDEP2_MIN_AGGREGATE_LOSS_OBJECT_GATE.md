@@ -277,3 +277,83 @@ HARNESS AUTH = NONE
 ```
 
 R-A through R-F have now received researcher-level declarations. These declarations define the remaining semantic axes of the minimum aggregate-loss object gate, but they do not by themselves instantiate R_OBJECT. No automatic measure, expectation evaluation, aggregate object, oracle, or residual is instantiated.
+
+
+## 12. R-ASM · R_OBJECT Minimal Assembly Gate
+
+R-A through R-F define six semantic axes but do not by themselves compose a complete, evaluable, type-consistent mathematical object.
+
+Current assembly status:
+
+```
+R_OBJECT            = NOT_DECLARED
+R_ASSEMBLY          = OPEN
+C_LOSS ↔ R BRIDGE   = NOT_DECLARED
+```
+
+### 12.1 Assembly gaps
+
+The following interfaces remain independently unresolved:
+
+1. **Pointwise loss carrier adoption**
+   ```
+   R_POINTWISE_LOSS_CARRIER = NOT_DECLARED
+   ```
+   Although `C_LOSS : A × W → ℝ` is closed, it is a new independent loss object and does not automatically become the pointwise carrier of R.
+
+2. **Decision bridge**
+   Historical `δ(I_P)` cannot be treated as a current action-producing construction. The current framework has not declared `I_P`, `P ↦ I_P`, `Δ(I_P)`, `δ)'s signature, or `δ(I_P) ∈ A`.
+
+3. **Workload-distribution / measure interface**
+   `R-B` and `R-C` do not instantiate a measurable structure on `W`, a measure `μ_W), a parameter-to-distribution mapping, or expectation prerequisites.
+
+4. **Measurability and integrability**
+   `C_LOSS)'s finite-real codomain does not establish measurability or integrability. `R-D=FINITE_REAL` constrains the aggregate result but does not establish existence or finiteness of the expectation.
+
+5. **P-level versus decision-rule-level result**
+   A construction of the form
+   ```
+   R_δ(P,θ) = E[C_LOSS(δ(I_P),w)]
+   ```
+   would be a decision-rule-level aggregate evaluation. It does not by itself yield historical `R(P;θ)`. An explicit rule is required for eliminating or retaining `δ`.
+
+### 12.2 R-ASM declaration surface
+
+No ASM semantic value is selected by this gate. The following remain researcher-decision fields:
+
+```
+R-ASM-A  POINTWISE_LOSS_CARRIER
+R-ASM-B  REGIME_DISTRIBUTION_INTERFACE
+R-ASM-C  DECISION_BRIDGE_KIND
+R-ASM-D  MEASURE / MEASURABILITY
+R-ASM-E  ADMISSION_PREDICATE / Dom(R)
+R-ASM-F  FINAL_OBJECT_SIGNATURE
+```
+
+All six are currently:
+
+```
+NOT_DECLARED
+```
+
+Candidate values are not selected by the agent. In particular, no historical `δ(I_P)`, optimization over `Δ(I_P)`, probability measure, fixed action map, or final signature is silently adopted.
+
+### 12.3 Minimal placeholder only
+
+Before the ASM fields are resolved, the strongest current statement is only:
+
+```
+Dom(R) = UNDECLARED
+R : Dom(R) → ℝ
+```
+
+where even this is a typed placeholder expressing R-D/R-E, not a declared R object.
+
+Therefore:
+
+```
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+```
+
+Completion of R-ASM does not automatically authorize `R_oracle`, residual `Δ`, FinLoss, NECT, STEP⑤, implementation, harness, or experiment.
