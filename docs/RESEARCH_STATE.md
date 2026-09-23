@@ -11,7 +11,8 @@ Research Road Space 已登记，SELECTED_ROUTE=NONE；
 Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY；
 Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTROL；
 Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN；
-A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED）
+A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED；
+Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL）
 
 ## Current research state
 
@@ -613,3 +614,36 @@ This is exploratory only; no A2.0 definition is rewritten.
 
 Audit history:
 docs/07-history/A2_BOUNDARY_AUDIT_THETA_DELETION_20260923.md.
+
+### A2.0 Interface Sufficiency Audit — 2026-09-23
+
+The black-box candidate core was tested for sufficiency as an evaluated behavior
+system. At the value layer, `P + θ + 𝒢_adm(P) + Dom(L) + L/V/R` is closed: it can
+express admissible behavior, legal evaluation, attainable values, and infimum.
+
+At the executable-semantics layer, closure is only partial. The current registered
+interface has `g:W→A` and `C_LOSS(g(W),W)`, but no architecture-independent
+observable execution/trajectory interface as a first-class core component.
+Concrete trajectory semantics exist only locally in `P0/θ0′`; `C0–C5` remains an
+observation schema rather than a formal execution interface.
+
+Therefore:
+
+```
+Value-level closure       = CLOSED at candidate level
+Executable-level closure  = OPEN / PARTIAL
+Overall sufficiency       = PARTIAL
+```
+
+The open decision is whether the execution/trajectory surface is:
+
+```
+missing Layer-A candidate
+concrete-instance-only detail
+or derivable from W, A, and C_LOSS
+```
+
+No option is selected.
+
+Audit history:
+docs/07-history/A2_INTERFACE_SUFFICIENCY_AUDIT_20260923.md.

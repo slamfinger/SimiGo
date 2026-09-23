@@ -371,3 +371,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Freezing `θ0′` preserves the single-instance loop; deleting the external regime breaks it.
 - No formal definition, route, R-INTERNAL gate, implementation, or experiment authorization follows.
 - Audit history: docs/07-history/A2_BOUNDARY_AUDIT_THETA_DELETION_20260923.md.
+
+## A2.0 Interface Sufficiency Audit — 2026-09-23
+
+- Status: `EXPLORATORY_AUDIT_REGISTERED / CORE_CLOSURE_PARTIAL`.
+- Value closure: `P`, `θ`, `𝒢_adm(P)`, `Dom(L)`, and `L/V/R` are sufficient as a method-independent evaluated behavior system.
+- Execution closure: OPEN/PARTIAL; no architecture-independent observable execution/trajectory interface is currently registered as core.
+- Concrete trajectory semantics exist locally in `P0/θ0′`; `C0–C5` remains an observation schema, not a formal execution interface.
+- Overall black-box sufficiency is therefore PARTIAL.
+- Open decision: classify the execution/trajectory surface as missing Layer-A candidate, concrete-instance-only detail, or derivable from `W`, `A`, and `C_LOSS`. No option is selected.
+- Audit history: docs/07-history/A2_INTERFACE_SUFFICIENCY_AUDIT_20260923.md.
