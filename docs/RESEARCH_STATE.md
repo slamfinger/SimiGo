@@ -953,3 +953,49 @@ HARNESS AUTH    = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-INTERNAL-4 — 𝒢_adm(P) STRUCTURE / TYPE DECLARATION
+
+The researcher explicitly declared:
+
+```text
+R-INTERNAL-4 = G4-4
+
+𝒢_adm(P) = ADMISSIBLE_DECISION_RULE_FAMILY
+𝒢_adm(P) ⊆ {g | g : W → A}
+```
+
+This closes the structure/type level of the P-dependent admissible decision-rule family without introducing a separate candidate-rule space, a rule-parameter space, or an additional parameter such as η.
+
+The declaration preserves R-ASSEMBLY-3 = F2 and R-ASSEMBLY-4 = G2. It does not identify δ with a rule parameter, does not make δ a function W → A, and does not introduce θ-dependence into 𝒢_adm(P).
+
+It also does not instantiate the concrete family, its membership predicate, topology, measurability structure, parameterization, optimization operator, optimizer existence, or exact Dom(R).
+
+Current state:
+
+```text
+R-INTERNAL-1 = DECLARED (P4)
+R-INTERNAL-2 = DECLARED (δ3)
+R-INTERNAL-3 = DECLARED (θ2)
+R-INTERNAL-4 = DECLARED (G4-4)
+
+P : PROJECTION_CANDIDATE
+δ : DECISION_GENERATION_PARAMETER
+θ : REGIME_PARAMETER
+𝒢_adm(P) = ADMISSIBLE_DECISION_RULE_FAMILY
+𝒢_adm(P) ⊆ {g | g : W → A}
+
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤       = NOT ENTERED
+STEP⑥       = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, data collection, profiling, or experiment authorization is created by this declaration.
