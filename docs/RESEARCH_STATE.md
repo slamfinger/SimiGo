@@ -17,7 +17,8 @@ Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY；
 Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK；
 Core Degeneracy/Distinctiveness Audit 已登记为 DISTINCTIVENESS_OPEN；
 Projection–Evaluation Distinctiveness Attack 已登记为 RESULT_RECOVERABLE；
-Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION）
+Terminal Distinctiveness Audit 已登记为 GENERIC_REDUCIBLE_AT_CURRENT_ABSTRACTION；
+A2.0 Value Core 已冻结为 FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED）
 
 ## Current research state
 
@@ -793,3 +794,35 @@ questions.
 
 Audit history:
 docs/07-history/A2_TERMINAL_DISTINCTIVENESS_AUDIT_20260923.md.
+
+### A2.0 Value Core Freeze Point — 2026-09-23
+
+The current A2.0 value-core construction path is frozen at the terminal result:
+
+```
+GENERIC_REDUCIBILITY       = ESTABLISHED
+INDEPENDENT_THEORY         = NOT ESTABLISHED
+STRUCTURAL_DISTINCTIVENESS = NOT ESTABLISHED
+METHODOLOGICAL_VALUE       = DEMONSTRATED
+OVERALL                    = DISCIPLINED GENERIC OPTIMIZATION SCHEMA CANDIDATE
+```
+
+This closes the path:
+
+```
+hypothesis → formalization → concrete validation → boundary audits
+→ adversarial reduction → terminal distinctiveness result
+```
+
+The freeze preserves concrete results and computational-semantics observations. It
+does not delete A2.0, but stops further value-core rescue, repair, or extension.
+
+Standing anti-proliferation rule:
+
+```
+New structure is justified only if its removal causes loss of expression
+or semantic fidelity.
+```
+
+Freeze history:
+docs/07-history/A2_VALUE_CORE_FREEZE_POINT_20260923.md.

@@ -431,3 +431,14 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - `STRUCTURAL_DISTINCTIVENESS` and `TERMINAL_DISTINCTIVENESS` remain `NOT_ESTABLISHED`.
 - Current honest status: disciplined generic optimization schema candidate; methodological value remains, but independent projection-evaluation distinctiveness is not established.
 - Audit history: docs/07-history/A2_TERMINAL_DISTINCTIVENESS_AUDIT_20260923.md.
+
+## A2.0 Value Core Freeze Point — 2026-09-23
+
+- Status: `A2_VALUE_CORE_FROZEN / GENERIC_REDUCIBLE / INDEPENDENT_THEORY_NOT_ESTABLISHED`.
+- Freeze commit basis: terminal distinctiveness audit registered at `3878a10`.
+- The construction path is closed: hypothesis → formalization → concrete validation → boundary audits → adversarial reduction → terminal result.
+- Preserved facts include `R(P0,θ0′)=5376`, `att=true`, `uniq=false`, four realized optimal sequences, and underdetermined rule-level cardinality.
+- Preserved observations include the separation among declaration, runtime routing, instantiation, execution, and semantic consistency.
+- Standing rule: new structure requires removal to cause loss of expression or semantic fidelity.
+- No further A2.0 rescue/extension is authorized without a concrete external consumer.
+- Freeze history: docs/07-history/A2_VALUE_CORE_FREEZE_POINT_20260923.md.
