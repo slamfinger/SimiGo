@@ -497,3 +497,36 @@ EXPERIMENT AUTH = NONE
 D2 does not instantiate the concrete generation operator `Γ`, signatures of `P) or `δ`, admissible rule family, rule-admission predicate, parameter domain, concrete measure family, measurability/integrability, optimization domain/operator, min versus inf, optimizer existence, exact `Dom(R)`, `R_OBJECT`, `R_oracle`, `Δ`, `FinLoss`, or `NECT`. Historical `δ(I_P)` is not restored.
 
 No STEP⑤, implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+### R-ASSEMBLY-3 — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-3 = F2**.
+
+    DECISION_RULE_FAMILY = INDEPENDENT_ADMISSIBLE_FAMILY
+    𝒢_adm ⊆ { g | g : W → A }
+    g ∈ 𝒢_adm
+
+F2 declares a separate admissible decision-rule family. It does not make every mapping W→A eligible and does not identify rule-family admissibility with the R-ASM-E composite admission predicate.
+
+Prior D2 remains:
+
+    Γ(P, δ) = g
+    g : W → A
+    a = g(w)
+
+with the added family membership condition g ∈ 𝒢_adm.
+
+The concrete rule family, its parameterization, optimization domain/operator, min versus inf, optimizer existence, exact Dom(R), and R_OBJECT remain undeclared. Historical δ(I_P) is not restored.
+
+Current state:
+
+    R-ASSEMBLY-3 = DECLARED (F2)
+    R_OBJECT = NOT_DECLARED
+    R_ASSEMBLY = OPEN
+    R_ORACLE = NOT_DEFINED
+    Δ = BLOCKED
+    FinLoss = NOT LEGALLY AVAILABLE
+    NECT = BLOCKED
+    STEP⑤ = NOT ENTERED
+    HARNESS AUTH = NONE
+    EXPERIMENT AUTH = NONE
