@@ -13,7 +13,8 @@ Qwen3-Coder 已按 SimiGo 1.7 生产运行证据登记为 RUNTIME_POSITIVE_CONTR
 Computational-Semantics Observation Schema 已登记为 CANDIDATE / FORMALIZATION_OPEN；
 A2.0 Boundary Audit 已登记为 EXPLORATORY / FORMALIZATION_NOT_AUTHORIZED；
 Interface Sufficiency Audit 已登记为 EXPLORATORY / CORE_CLOSURE_PARTIAL；
-Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY）
+Trajectory/Execution Necessity Audit 已登记为 RESULT_CONCRETE_ONLY；
+Core Nontriviality Audit 已登记为 CORE_CANDIDATE_SURVIVES_FIRST_ATTACK）
 
 ## Current research state
 
@@ -671,3 +672,32 @@ that such an interface is not necessary for the registered value-level object.
 
 Audit history:
 docs/07-history/TRAJECTORY_EXECUTION_NECESSITY_AUDIT_20260923.md.
+
+### A2.0 Core Nontriviality Audit — 2026-09-23
+
+The surviving value-level candidate core was attacked for nontriviality,
+irreducibility, and black-box cross-method invariance.
+
+Result:
+
+```
+NONTRIVIALITY             = PARTIAL PASS
+IRREDUCIBILITY            = NO_IMMEDIATE_REDUNDANCY_FOUND
+CROSS_METHOD_INVARIANCE   = PASS_AT_ABSTRACTION_LEVEL
+EMPIRICAL_SCOPE           = OPEN
+OVERALL                   = CORE_CANDIDATE_SURVIVES_FIRST_ATTACK
+```
+
+Role split:
+
+```
+P, θ, 𝒢_adm(P), Dom(L), L = core candidates
+V                         = derived named bridge
+R                         = derived research target
+```
+
+The audit does not prove minimality or final sufficiency. It records only that the
+first destructive audit found no immediately redundant component.
+
+Audit history:
+docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.

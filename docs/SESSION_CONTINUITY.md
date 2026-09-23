@@ -391,3 +391,13 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Current stochastic interface does not include `g:S→Δ(A)`; randomized behavior is therefore outside the audited core and would require reopening if introduced.
 - Consequence: A2.0 remains, for now, a value-level theory; no execution interface is added.
 - Audit history: docs/07-history/TRAJECTORY_EXECUTION_NECESSITY_AUDIT_20260923.md.
+
+## A2.0 Core Nontriviality Audit — 2026-09-23
+
+- Status: `CORE_CANDIDATE_SURVIVES_FIRST_ATTACK`.
+- Nontriviality: PARTIAL PASS. The framework has generated real distinctions, but many strongest facts are instance-scoped.
+- Irreducibility: no immediate redundancy found among `P`, `θ`, `𝒢_adm(P)`, `Dom(L)`, and `L`.
+- `V` is a derived named bridge; `R` is a derived research target, not an independent primitive.
+- Cross-method invariance passes at the abstraction level under black-boxing, but empirical scope remains OPEN.
+- This does not prove minimality, final sufficiency, or route selection.
+- Audit history: docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.
