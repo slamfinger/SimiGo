@@ -29,6 +29,7 @@ SimiGo 2.0 Runtime Reference 已选定 MLX Swift LM 为主，llama.cpp 为参考
 SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchmark 完成；
 SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成；
 SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试）
+；SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过）
 
 ## Current research state
 
@@ -1085,3 +1086,22 @@ consistency remain pending.
 
 Gate history:
 docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md.
+
+### SimiGo 2.0 MLX Gate 2 Results — 2026-09-24
+
+Gate 2 passed for `SWITCH_MLP_L00_15` at MLX-array lifecycle level:
+
+```
+initial load               = 5,435,817,984 bytes / 177.78 ms
+release                    = active/cache 0 bytes
+rematerialization          = 5,435,817,984 bytes / 166.49 ms
+semantic fingerprint check = 144/144 equal
+lifecyclePass              = true
+```
+
+This validates release/rematerialization of the independent MLX group storage. It
+does not yet prove that a real model object can externally swap these modules during
+inference.
+
+Gate history:
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md.

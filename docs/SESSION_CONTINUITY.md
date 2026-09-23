@@ -489,6 +489,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Pending: independent group lifecycle, parameter replacement/release, and inference semantic consistency.
 - Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md.
 
+## SimiGo 2.0 MLX Gate 2 Results — 2026-09-24
+
+- Gate 2 group lifecycle: PASS at fingerprint level for `SWITCH_MLP_L00_15`.
+- Initial load: 5,435,817,984 bytes in 177.78 ms; release dropped active/cache to zero.
+- Rematerialization: 5,435,817,984 bytes in 166.49 ms.
+- Fingerprint check: 144/144 tensors matched dtype/shape/sum/min/max.
+- Pending: real model parameter swap and inference semantic consistency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

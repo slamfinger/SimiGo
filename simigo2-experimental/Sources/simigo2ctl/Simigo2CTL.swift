@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -102,6 +102,21 @@ struct Simigo2CTL {
       let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
         modelDirectory: modelDirectory)
       let report = try await MLXGroupGate.materialize(
+        modelDirectory: modelDirectory,
+        inventory: inventory,
+        groupID: groupID
+      )
+      print(try toJSON(report))
+    case "mlx-gate2":
+      guard let groupIndex = rest.firstIndex(of: "--group"),
+        groupIndex + 1 < rest.count
+      else {
+        throw OutputError(message: "missing --group GROUP_ID")
+      }
+      let groupID = rest[groupIndex + 1]
+      let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+        modelDirectory: modelDirectory)
+      let report = try await MLXGroupLifecycleExperiment.run(
         modelDirectory: modelDirectory,
         inventory: inventory,
         groupID: groupID
