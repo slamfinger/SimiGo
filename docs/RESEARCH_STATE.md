@@ -5,8 +5,8 @@
 **Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
-Concrete Argmin Cardinality Audit 判定 rule-level 精确基数
-UNDERDETERMINED_BY_CURRENT_DECLARATIONS）
+Concrete Argmin Cardinality Policy 确认
+ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW）
 
 ## Current research state
 
@@ -435,6 +435,34 @@ off-trajectory admissibility declaration.
 
 Audit history:
 docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_AUDIT_20260923.md.
+
+### Concrete Argmin Cardinality Policy — 2026-09-23
+
+The researcher selected:
+
+```
+Concrete Argmin Cardinality Policy
+  = ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW
+```
+
+The exact rule-level cardinality remains underdetermined and is not treated as a
+defect requiring immediate repair. The registered facts remain:
+
+```
+R(P0,θ0′) = 5376
+att(P0,θ0′) = true
+uniq(P0,θ0′) = false
+realized optimal action-sequence count = 4
+|Argmin(P0,θ0′)| ≥ 4
+exact |Argmin(P0,θ0′)| = UNDERDETERMINED_BY_CURRENT_DECLARATIONS
+```
+
+No visible-history domain completion, realization quotient, selector, canonical
+optimizer, or tie-breaking rule is introduced. R-INTERNAL remains IDLE,
+R_ASSEMBLY remains CLOSED, and STEP⑤/STEP⑥ remain NOT ENTERED.
+
+Policy history:
+docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_POLICY_20260923.md.
 
 Prior audit history:
 docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.

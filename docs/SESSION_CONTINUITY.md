@@ -308,3 +308,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Current facts: `R=5376`, `att=true`, `uniq=false`, realized optimal sequence count `4`, `|Argmin|≥4`.
 - Exact rule-level `|Argmin|` is `UNDERDETERMINED_BY_CURRENT_DECLARATIONS`; it is not derivable as `4`.
 - Audit history: docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_AUDIT_20260923.md.
+
+## Concrete Argmin Cardinality Policy — 2026-09-23
+
+- Decision: `ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW`.
+- Registered facts: `R=5376`, `att=true`, `uniq=false`, realized optimal sequence count `4`, and `|Argmin|≥4`.
+- Exact rule-level `|Argmin|` remains `UNDERDETERMINED_BY_CURRENT_DECLARATIONS`.
+- No visible-history domain completion, realization quotient, selector, canonical optimizer, or tie-breaking rule is introduced.
+- Future exact-cardinality work requires a concrete consumer and a separate visible-history domain/off-trajectory admissibility declaration.
+- Policy history: docs/07-history/R_CONCRETE_ARGMIN_CARDINALITY_POLICY_20260923.md.
