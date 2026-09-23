@@ -3,7 +3,9 @@
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
 **Last updated**: 2026-09-23（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
-R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记）
+R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
+Concrete Instance Post-Audit 已将 |Argmin|=4 限定为 realized action-sequence 基数，
+rule-level 精确基数暂为 OPEN）
 
 ## Current research state
 
@@ -363,3 +365,28 @@ Derivation: the admissible action-sequence space is finite (3^8 = 6561) and the 
 Boundary: no selector, canonical optimizer, or g* (uniq = false independently blocks canonical selection); R_ORACLE remains NOT_DEFINED; Δ/gap remain blocked; STEP⑤/STEP⑥ remain NOT ENTERED; no implementation, harness, measurement, or experiment authorization.
 
 Gate history: docs/07-history/R_CONCRETE_INSTANCE_FACTS_20260923.md.
+
+### Concrete Instance Post-Audit — 2026-09-23
+
+Post-audit scope correction: exhaustive enumeration and independent DP reconfirm
+`R(P0,θ0′)=5376`, `att(P0,θ0′)=true`, and `uniq(P0,θ0′)=false`. The value `4` is
+exact for realized optimal action sequences, but is not yet established as the
+exact abstract rule-level cardinality because no quotient or restriction equating
+visible-history rule extensions that agree on the point-mass workload has been
+registered.
+
+Current rigorous rule-level facts are:
+
+```
+R(P0,θ0′) = 5376
+att(P0,θ0′) = true
+uniq(P0,θ0′) = false
+|Argmin(P0,θ0′)| ≥ 4
+rule-level |Argmin(P0,θ0′)| = OPEN
+```
+
+`D_opt(P0,θ0′)` remains non-empty and `(P0,θ0′)∈Dom(R)`. The candidate-representation
+decision surface remains open: realization quotient, realized-history restriction, or
+full visible-history rule space with only the lower bound. No option is selected.
+
+Audit history: docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.

@@ -279,6 +279,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 ## Concrete Instance Facts — P0 / θ0′ — 2026-09-23
 
 - Post-gate computational facts: R(P0,θ0′)=5376; att(P0,θ0′)=true; |Argmin(P0,θ0′)|=4; uniq(P0,θ0′)=false.
-- Derived from the registered instance (finite action-sequence space + point-mass regime); minimizer family closed form: single residency switch to B at the k-th B-round, k∈{2,4,6,8}.
+- Post-audit scoping: `4` is exact for realized optimal action sequences; abstract rule-level exact cardinality is OPEN pending a D_opt representation convention.
+- Derived from the registered instance (finite realized action-sequence space + point-mass regime); realized minimizer family closed form: single residency switch to B at the k-th B-round, k∈{2,4,6,8}.
 - Boundary: no selector/g* (uniq=false blocks canonical selection); R_ORACLE/Δ/STEP⑤/⑥ unchanged; R-INTERNAL IDLE; R_ASSEMBLY CLOSED.
 - History: docs/07-history/R_CONCRETE_INSTANCE_FACTS_20260923.md.
+
+## Concrete Instance Post-Audit — 2026-09-23
+
+- Independent enumeration and DP reconfirm `R(P0,θ0′)=5376`.
+- `(P0,θ0′)∈Dom(R)`: `D_opt(P0,θ0′)≠∅`, `V(P0,θ0′)≠∅`, and `inf V(P0,θ0′)∈ℝ`.
+- Rule-level facts: `att=true`, `uniq=false`, and `|Argmin|≥4`; exact rule-level cardinality remains OPEN.
+- Open candidate-representation options: realization quotient, realized-history restriction, or full visible-history rule space with only the lower bound. No option is selected.
+- Audit history: docs/07-history/R_CONCRETE_INSTANCE_POST_AUDIT_20260923.md.
