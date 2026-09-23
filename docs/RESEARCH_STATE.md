@@ -349,3 +349,17 @@ Explicitly not asserted: att, Argmin≠∅, uniq, selector/tie-breaking/canonica
 R-INTERNAL chain remains IDLE; R-ASSEMBLY remains CLOSED; STEP⑤/STEP⑥ remain NOT ENTERED.
 
 Gate history: docs/07-history/R_CONCRETE_INSTANTIATION_P0_THETA0_20260923.md.
+
+### Concrete Instance Facts — P0 / θ0′ — 2026-09-23
+
+Post-gate computational facts derived from the registered instance (no new semantic object; R-INTERNAL remains IDLE; R_ASSEMBLY remains CLOSED):
+
+R(P0,θ0′) = 5376.
+
+att(P0,θ0′) = true; Argmin(P0,θ0′) ≠ ∅ with |Argmin(P0,θ0′)| = 4; uniq(P0,θ0′) = false.
+
+Derivation: the admissible action-sequence space is finite (3^8 = 6561) and the point-mass regime makes V(P0,θ0′) a finite non-empty set of reals, so inf V ∈ V (K4-A); Argmin ≠ ∅ follows by the K4-B bridge; exhaustive enumeration cross-verified by an independent per-round DP gives min = 5376; the minimizer family has the closed form "single residency switch to B at the k-th B-round, k ∈ {2,4,6,8}", cost 512 + 1024 + 3×1280 independent of k, hence |Argmin| = 4 and uniq = false (K4-C).
+
+Boundary: no selector, canonical optimizer, or g* (uniq = false independently blocks canonical selection); R_ORACLE remains NOT_DEFINED; Δ/gap remain blocked; STEP⑤/STEP⑥ remain NOT ENTERED; no implementation, harness, measurement, or experiment authorization.
+
+Gate history: docs/07-history/R_CONCRETE_INSTANCE_FACTS_20260923.md.

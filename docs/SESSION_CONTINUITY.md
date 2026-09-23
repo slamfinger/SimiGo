@@ -275,3 +275,10 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - att, Argmin≠∅, and uniq remain explicitly unasserted and are post-gate fact-check surfaces.
 - No R-INTERNAL / R-ASSEMBLY reopening; no STEP⑤/⑥; no implementation, harness, data collection, profiling, measurement, or experiment authorization.
 - History: docs/07-history/R_CONCRETE_INSTANTIATION_P0_THETA0_20260923.md.
+
+## Concrete Instance Facts — P0 / θ0′ — 2026-09-23
+
+- Post-gate computational facts: R(P0,θ0′)=5376; att(P0,θ0′)=true; |Argmin(P0,θ0′)|=4; uniq(P0,θ0′)=false.
+- Derived from the registered instance (finite action-sequence space + point-mass regime); minimizer family closed form: single residency switch to B at the k-th B-round, k∈{2,4,6,8}.
+- Boundary: no selector/g* (uniq=false blocks canonical selection); R_ORACLE/Δ/STEP⑤/⑥ unchanged; R-INTERNAL IDLE; R_ASSEMBLY CLOSED.
+- History: docs/07-history/R_CONCRETE_INSTANCE_FACTS_20260923.md.
