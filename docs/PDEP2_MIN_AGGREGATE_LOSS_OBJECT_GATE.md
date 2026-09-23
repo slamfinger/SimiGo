@@ -321,12 +321,12 @@ The following interfaces remain independently unresolved:
 
 ### 12.2 R-ASM declaration surface
 
-R-ASM-A and R-ASM-B have now been explicitly selected by the researcher. The remaining ASM semantic values remain researcher-decision fields:
+R-ASM-A, R-ASM-B, and R-ASM-C have now been explicitly selected by the researcher. The remaining ASM semantic values remain researcher-decision fields:
 
 ```
 R-ASM-A  POINTWISE_LOSS_CARRIER = C_LOSS
-R-ASM-B  REGIME_DISTRIBUTION_INTERFACE
-R-ASM-C  DECISION_BRIDGE_KIND
+R-ASM-B  REGIME_DISTRIBUTION_INTERFACE = REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY
+R-ASM-C  DECISION_BRIDGE_KIND = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
 R-ASM-D  MEASURE / MEASURABILITY
 R-ASM-E  ADMISSION_PREDICATE / Dom(R)
 R-ASM-F  FINAL_OBJECT_SIGNATURE
@@ -336,8 +336,8 @@ Current declaration status:
 
 ```
 R-ASM-A = DECLARED
-R-ASM-B = NOT_DECLARED
-R-ASM-C = NOT_DECLARED
+R-ASM-B = DECLARED
+R-ASM-C = DECLARED
 R-ASM-D = NOT_DECLARED
 R-ASM-E = NOT_DECLARED
 R-ASM-F = NOT_DECLARED
@@ -365,3 +365,76 @@ R-ASM-A = DECLARED (C_LOSS)
 ```
 
 Completion of R-ASM does not automatically authorize `R_oracle`, residual `Δ`, FinLoss, NECT, STEP⑤, implementation, harness, or experiment.
+
+
+## 13. R-ASM-B declaration record
+
+The researcher has explicitly declared:
+
+```
+R-ASM-B  REGIME_DISTRIBUTION_INTERFACE
+        = REGIME_INDEXED_WORKLOAD_DISTRIBUTION_FAMILY
+```
+
+This records the regime/parameter-indexed family role of the workload-distribution input. It does not instantiate a concrete parameter domain, measurable structure, measure family, or probability-space semantics.
+
+## 14. R-ASM-C declaration record
+
+The researcher has explicitly declared:
+
+```
+R-ASM-C  DECISION_BRIDGE_KIND
+        = DECISION_RULE_FAMILY_WITH_OPTIMIZATION
+```
+
+This establishes the decision bridge as a family of decision rules together with an optimization operation that maps the rule-level aggregate evaluation toward the P-level aggregate decision-loss object.
+
+The declaration is intentionally **structural but not yet fully instantiated**. It does not silently restore the historical `δ(I_P)`, `Δ(I_P)`, or any particular optimization expression. In particular, the following remain independently undeclared:
+
+```
+I_P representation                    = UNDECLARED
+P ↦ I_P                               = UNDECLARED
+decision-rule family / admissibility  = NOT INSTANTIATED
+decision-rule signature               = UNDECLARED
+optimization domain                   = UNDECLARED
+optimization operator                 = UNDECLARED
+minimum vs infimum                     = UNDECLARED
+attainment / optimizer existence      = UNDECLARED
+projection candidate → rule family    = UNDECLARED
+rule output → A bridge                 = UNDECLARED
+```
+
+The selected bridge therefore opens the semantic route:
+
+```
+PROJECTION_CANDIDATE
+        ↓
+decision-rule family
+        ↓
+pointwise decision output in A
+        ↓
+C_LOSS
+        ↓
+expectation over workload distribution
+        ↓
+rule-level aggregate evaluation
+        ↓
+optimization over the declared rule family
+        ↓
+P-level aggregate decision-loss object
+```
+
+The arrow chain above is a dependency skeleton, not a declared formula. No particular rule family, admissibility predicate, optimization criterion, infimum/minimum convention, or optimizer is legally instantiated by R-ASM-C alone.
+
+Accordingly:
+
+```
+R-ASM-C = DECLARED
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_oracle = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+```
+
+No STEP⑤, harness, implementation, measurement, or experiment authorization is created by this declaration.
