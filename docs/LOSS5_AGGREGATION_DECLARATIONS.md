@@ -2,7 +2,14 @@
 
 ## Status
 
-LOSS-5 is opened as a semantic declaration gate for the aggregation/evaluation layer above the independent finite-real cost object.
+LOSS-5 is suspended at the current resolution level. The atomic declaration pass has reached the point at which no further atomic sub-gates are required before the researcher declares whether and how an independent `R` evaluation object exists.
+
+```text
+LOSS-5_STATUS = SUSPENDED_AT_CURRENT_RESOLUTION_LEVEL
+LOSS-5_COMPLETENESS = REACHED
+LOSS-5_FURTHER_ATOMIC_SUBGATES = NOT_REQUIRED
+LOSS-5_REOPEN_CONDITION = RESEARCHER DECLARES R_OBJECT_SCHEMA
+```
 
 ## Researcher Declaration
 
@@ -24,15 +31,52 @@ LOSS-5-N  EVALUATION_RESULT_STATUS = NOT_SELECTED
 LOSS-5-O  EVALUATION_DEPENDENCE = NOT_SELECTED
 ```
 
+## Resolution Boundary
+
+The declarations A-O are retained as the completed current-resolution atomic declaration set. The later fields are not treated as independent unresolved research questions at this stage.
+
+Their semantic availability is controlled by the parent question:
+
+```text
+R_OBJECT = NOT_DECLARED
+```
+
+Therefore the currently unselected/undeclared/blocked downstream fields remain in force without further atomic subdivision.
+
+The unresolved core question is:
+
+```text
+Does the research framework require an R evaluation object?
+If so, what is the declared R_OBJECT_SCHEMA?
+```
+
+Possible future researcher-level directions remain open:
+
+```text
+A. R_OBJECT = NOT_DECLARED
+   No Risk / aggregate evaluation object is currently defined.
+
+B. R_OBJECT = NEW_INDEPENDENT_RISK_OBJECT
+   A new independent Risk/evaluation layer is explicitly declared.
+
+C. R_OBJECT = DERIVED_FROM_C_LOSS
+   R is explicitly derived from C_LOSS by a future declared aggregation rule.
+
+D. R_OBJECT = OTHER
+   Requires an explicit researcher declaration.
+```
+
+These are not selected by this record.
+
 ## Consequence
 
-No aggregation object is currently selected. No evaluation input, evaluation object, evaluation domain, evaluation scope, evaluation multiplicity, evaluation order, evaluation determinacy, evaluation result status, or evaluation dependence is currently selected. The aggregation/evaluation rule is undeclared.
+No aggregation object is currently selected. No evaluation input, evaluation object, evaluation domain, evaluation scope, evaluation multiplicity, evaluation order, evaluation determinacy, evaluation result status, or evaluation dependence is currently selected. The aggregation/evaluation rule remains undeclared.
 
-The role of `θ` is undeclared. No probability-space, workload-regime, parameter, distribution, or other mathematical semantics for `θ` is introduced by this record.
+The role of `θ` remains undeclared. No probability-space, workload-regime, parameter, distribution, or other mathematical semantics for `θ` is introduced by this record.
 
 No `R` object has been declared, and no codomain for `R` has been declared.
 
-Optimization semantics are explicitly blocked. In particular, this declaration does not introduce an infimum, minimum, argmin, admissible decision-family optimization, or any other optimization rule.
+Optimization semantics remain explicitly blocked. In particular, this declaration does not introduce an infimum, minimum, argmin, admissible decision-family optimization, or any other optimization rule.
 
 The existing declaration remains unchanged:
 
@@ -50,6 +94,11 @@ No `R`, `R_oracle`, `Δ`, `FinLoss`, NECT, experiment, or harness authorization 
 ```text
 LOSS-3 = CLOSED
 LOSS-4 = CLOSED
+LOSS-5 = SUSPENDED_AT_CURRENT_RESOLUTION_LEVEL
+LOSS-5_COMPLETENESS = REACHED
+LOSS-5_FURTHER_ATOMIC_SUBGATES = NOT_REQUIRED
+LOSS-5_REOPEN_CONDITION = RESEARCHER DECLARES R_OBJECT_SCHEMA
+
 LOSS-5-A = NOT_SELECTED
 LOSS-5-B = NOT_SELECTED
 LOSS-5-C = NOT_SELECTED
