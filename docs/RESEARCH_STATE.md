@@ -717,3 +717,62 @@ HARNESS AUTH    = NONE
 Historical `δ(I_P)` and `δ ∈ Δ(I_P)` are not restored. No `R_oracle`, residual `Δ`, `FinLoss`, or `NECT` is defined by this declaration.
 
 No implementation, harness, data collection, profiling, measurement, experiment, or STEP⑤/STEP⑥ authorization is created by this declaration.
+
+
+## R-ASSEMBLY-7 — 2026-09-23
+
+The researcher explicitly declared:
+
+```
+R-ASSEMBLY-7 = J1
+```
+
+`OPT` is a scalar-value optimization operator:
+
+```
+OPT : (𝒢_adm(P), L) → ℝ
+
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+J1 fixes the semantic type of the optimization result as a scalar finite-real result. It does not make `OPT` return a rule and does not declare optimizer existence or attainment.
+
+Current assembly:
+
+```
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+admitted g
+    ↓
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+    ↓
+OPT : (𝒢_adm(P), L) → ℝ
+    ↓
+R(P,θ) ∈ ℝ
+```
+
+Still undeclared:
+
+```
+concrete OPT operator
+min vs inf
+argmin / optimizer existence
+optimization attainment
+exact 𝒢_adm(P)
+exact Dom(R)
+exact parameter domain
+expectation existence/finiteness
+R_OBJECT exact signature
+R_ORACLE
+Δ
+FinLoss
+NECT
+```
+
+No historical `δ(I_P)` or `δ ∈ Δ(I_P)` is restored. No implementation, harness, measurement, experiment, STEP⑤, or STEP⑥ authorization is created.
