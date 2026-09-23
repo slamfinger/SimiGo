@@ -332,3 +332,12 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Road 5 remains deferred until the relevant formal objects are stable.
 - Current chain state: `R-INTERNAL=IDLE`, `R_ASSEMBLY=CLOSED`, `STEP⑤/⑥=NOT ENTERED`.
 - Road-space history: docs/07-history/RESEARCH_ROAD_SPACE_AFTER_CONCRETE_UNDERDETERMINATION_20260923.md.
+
+## Gemma 4 External Probe — 2026-09-23
+
+- Status: `EXTERNAL_OBSERVATION_ONLY`; not `(P1,θ1)` and not a theory instance.
+- Candidate road: `COMPUTATIONAL_SEMANTICS`; route remains registered but not selected.
+- Four-layer finding: declaration succeeded, full unified instantiation failed, text-only loading succeeded, high-level execution failed; semantic consistency is OPEN.
+- Distinction registered: `Declared(M) ≠ Loaded(M) ≠ Executable(M) ≠ SemanticallyConsistent(M)`.
+- No new semantic object, instance, family, implementation authorization, R-INTERNAL gate, STEP⑤/⑥ entry, or route selection follows.
+- Probe history: docs/07-history/GEMMA4_COMPUTATIONAL_SEMANTICS_EXTERNAL_PROBE_20260923.md.

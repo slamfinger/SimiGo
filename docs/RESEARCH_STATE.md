@@ -7,7 +7,8 @@ R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
 ACCEPT_UNDERDETERMINATION / NO_RULE_DOMAIN_COMPLETION_NOW；
-Research Road Space 已登记，SELECTED_ROUTE=NONE）
+Research Road Space 已登记，SELECTED_ROUTE=NONE；
+Gemma 4 Computational-Semantics Probe 已登记为 EXTERNAL_OBSERVATION_ONLY）
 
 ## Current research state
 
@@ -495,3 +496,28 @@ no family, no observation semantics, no software interface, and no experiment.
 
 Road-space history:
 docs/07-history/RESEARCH_ROAD_SPACE_AFTER_CONCRETE_UNDERDETERMINATION_20260923.md.
+
+### Gemma 4 External Probe — 2026-09-23
+
+The local Gemma 4 checkpoint is registered as an external candidate observation
+for the deferred `COMPUTATIONAL_SEMANTICS` road. It is not `(P1,θ1)` and not a
+theory instance.
+
+Observed boundary:
+
+```
+Declared unified model
+  ≠ full loaded unified model
+  ≠ text-only loaded model
+  ≠ executable generation model
+```
+
+The VLM/unified path fails because the checkpoint declares audio but lacks
+audio weights. The LLM path loads the text backbone as `Gemma4Model`, but
+high-level generation hits a prefill/decode mismatch. Python `mlx-lm==0.31.3`
+does not support `gemma4_unified`.
+
+This is an observation only. Route 5 remains registered but not selected.
+
+Probe history:
+docs/07-history/GEMMA4_COMPUTATIONAL_SEMANTICS_EXTERNAL_PROBE_20260923.md.
