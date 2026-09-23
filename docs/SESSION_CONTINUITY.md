@@ -513,6 +513,19 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
   execution-state control, output identity, peak memory, reload cost, and latency.
 - Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE3_RESULTS_20260924.md.
 
+## SimiGo 2.0 MLX Gate 4 Whole-Group Inference Results — 2026-09-24
+
+- Gate 4 whole-group runtime residency: PASS for `STATE_A → SWITCH_MLP_L00_15`.
+- Released and rematerialized 144/144 group tensors on the real MLX model object.
+- Deterministic inference: baseline/restored output `pong`; `outputEquals=true`.
+- Active memory: 17,180,952,624 bytes after baseline, 11,745,135,024 after release,
+  and 17,180,952,624 after rematerialization.
+- Timing: 16.85 ms release, 606.10 ms rematerialization, 1,060.46 ms cold baseline,
+  and 368.58 ms warm restored generation.
+- The release occurred only between generations; no semantic layer skipping was used.
+- This proves single-group feasibility, not a multi-state residency or reload-cost win.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE4_RESULTS_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

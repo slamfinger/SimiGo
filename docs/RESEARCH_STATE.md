@@ -30,7 +30,8 @@ SimiGo 2.0 Phase 1 Swift scaffold 已实现并通过 5 项测试，policy benchm
 SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成；
 SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试；
 SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过；
-SimiGo 2.0 MLX Gate 3 parameter swap / semantic restore 已通过，但 group-residency inference 仍未验证）
+SimiGo 2.0 MLX Gate 3 parameter swap / semantic restore 已通过；
+SimiGo 2.0 MLX Gate 4 single-state whole-group inference residency 已通过，multi-state benchmark 仍未验证）
 
 ## Current research state
 
@@ -1128,3 +1129,27 @@ layer loading during inference.
 
 Gate history:
 docs/00-governance/SIMIGO2_PHASE0_MLX_GATE3_RESULTS_20260924.md.
+
+### SimiGo 2.0 MLX Gate 4 Whole-Group Inference Results — 2026-09-24
+
+Gate 4 passed for `STATE_A → SWITCH_MLP_L00_15` with a real MLX model:
+
+```text
+released tensors             = 144 / 144
+rematerialized tensors       = 144 / 144
+baseline output              = pong
+restored output              = pong
+release time                 = 16.85 ms
+rematerialization time       = 606.10 ms
+active memory after baseline = 17,180,952,624 bytes
+active memory after release  = 11,745,135,024 bytes
+active memory after remat    = 17,180,952,624 bytes
+```
+
+The whole group was detached only between generations and fully restored before
+inference. Identical deterministic output proves semantic restore. This crosses
+the single-group runtime residency boundary, but does not yet establish a
+multi-state residency or reload-cost win.
+
+Gate history:
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE4_RESULTS_20260924.md.

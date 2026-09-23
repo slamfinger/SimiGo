@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -130,6 +130,10 @@ struct Simigo2CTL {
         maxTokens: 24
       )
       print(try toJSON(report))
+    case "mlx-gate4":
+      let state = try ExecutionStateLabel(parsing: try optionValue("--state", rest))
+      let report = try await MLXGroupInferenceGate.run(modelDirectory: modelDirectory, state: state)
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }
@@ -145,6 +149,13 @@ struct Simigo2CTL {
     return try arguments[statesIndex + 1]
       .split(separator: ",")
       .map { try ExecutionStateLabel(parsing: String($0)) }
+  }
+
+  static func optionValue(_ name: String, _ arguments: [String]) throws -> String {
+    guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count else {
+      throw OutputError(message: "missing \(name) VALUE")
+    }
+    return arguments[index + 1]
   }
 
   static func toJSON<T: Encodable>(_ value: T) throws -> String {
