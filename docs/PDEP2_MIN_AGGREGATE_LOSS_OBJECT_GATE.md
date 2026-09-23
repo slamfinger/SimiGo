@@ -1178,3 +1178,36 @@ R-ASSEMBLY-1A through R-ASSEMBLY-9 remain in force. This declaration does not in
 Current state remains: `R_OBJECT = NOT_DECLARED`; `R_ASSEMBLY = OPEN`; `R_ORACLE = NOT_DEFINED`; `Δ = BLOCKED`; `FinLoss = NOT LEGALLY AVAILABLE`; `NECT = BLOCKED`; `STEP⑤ = NOT ENTERED`; `STEP⑥ = NOT ENTERED`.
 
 No implementation, harness, measurement, experiment, or downstream STEP authorization is created by this declaration.
+
+
+## R-INTERNAL-1 declaration — 2026-09-23
+
+The researcher explicitly declared **R-INTERNAL-1 = P4**.
+
+The projection candidate is typed only at the carrier/type level:
+
+```text
+P : PROJECTION_CANDIDATE
+```
+
+This does not instantiate P as a function, tuple, structured object, or concrete projection space. No domain/codomain, projection operator, or relation to X, Y, I_P, A, W, or W_D is imported.
+
+P4 is compatible with the existing assembly because `𝒢_adm(P)` may depend on P without requiring P to have a particular internal mathematical representation.
+
+Current state:
+
+```text
+R-INTERNAL-1 = DECLARED (P4)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT          = BLOCKED
+STEP⑤        = NOT ENTERED
+STEP⑥        = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
+
+No implementation, harness, measurement, data collection, profiling, or experiment authorization is created by this declaration.
