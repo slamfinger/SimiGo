@@ -951,3 +951,93 @@ EXPERIMENT AUTH = NONE
 ```
 
 No implementation, harness, measurement, or experiment authorization is created by this declaration.
+
+
+## R-ASSEMBLY-6 declaration — 2026-09-23
+
+The researcher explicitly declared **R-ASSEMBLY-6 = I2**.
+
+The optimization semantics are separated into two stages:
+
+```
+L(g;P,θ)
+    =
+E_θ[C_LOSS(g(W),W)]
+
+R(P,θ)
+    =
+OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+The first stage is the **rule-level aggregate evaluation**. The second stage applies an **abstract optimization operator** over the projection-candidate-dependent admissible rule family.
+
+I2 deliberately keeps `OPT` abstract. It does not select `min`, `inf`, `argmin`, or another concrete optimization operator.
+
+The resulting dependency chain is:
+
+```
+(P, δ)
+    ↓
+Γ(P, δ) = g
+    ↓
+g : W → A
+    ↓
+independent admission check
+    ↓
+g ∈ 𝒢_adm(P) ?
+    ↓
+admitted g
+    ↓
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+    ↓
+OPT over g ∈ 𝒢_adm(P)
+    ↓
+P-level aggregate decision-loss result
+```
+
+This declaration establishes the separation between rule-level evaluation and optimization. It does not instantiate the exact optimization operator, optimizer existence/attainment, concrete `𝒢_adm(P)`, exact `Dom(R)`, parameter domain, measure family, measurability, integrability, or expectation existence.
+
+Current unresolved fields:
+
+```
+OPT operator                     = UNDECLARED
+min vs inf                       = UNDECLARED
+argmin / optimizer existence     = UNDECLARED
+optimization attainment          = UNDECLARED
+exact 𝒢_adm(P)                   = UNDECLARED
+exact Dom(R)                     = UNDECLARED
+exact parameter domain           = UNDECLARED
+R_OBJECT exact signature         = OPEN
+R_ORACLE                         = NOT_DEFINED
+Δ                                = BLOCKED
+FinLoss                          = NOT LEGALLY AVAILABLE
+NECT                             = BLOCKED
+```
+
+I2 does not restore historical `δ(I_P)` or `δ ∈ Δ(I_P)`. No `R_oracle`, residual `Δ`, `FinLoss`, or `NECT` is defined by this declaration.
+
+No implementation, harness, data collection, profiling, measurement, experiment, or STEP⑤/STEP⑥ authorization is created by this declaration.
+
+Current assembly status:
+
+```
+R-ASSEMBLY-1A = DECLARED
+R-ASSEMBLY-1B = DECLARED
+R-ASSEMBLY-1C = DECLARED (C3)
+R-ASSEMBLY-2  = DECLARED (D2)
+R-ASSEMBLY-3  = DECLARED (F2)
+R-ASSEMBLY-4  = DECLARED (G2)
+R-ASSEMBLY-5  = DECLARED (H2)
+R-ASSEMBLY-6  = DECLARED (I2)
+
+R_OBJECT = NOT_DECLARED
+R_ASSEMBLY = OPEN
+R_ORACLE = NOT_DEFINED
+Δ = BLOCKED
+FinLoss = NOT LEGALLY AVAILABLE
+NECT = BLOCKED
+STEP⑤ = NOT ENTERED
+STEP⑥ = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH = NONE
+```
