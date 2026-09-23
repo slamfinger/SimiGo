@@ -880,3 +880,40 @@ R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
 ```
 
 R_OBJECT remains NOT_DECLARED and R_ASSEMBLY remains OPEN. R_ORACLE remains NOT_DEFINED; Δ remains BLOCKED; FinLoss remains NOT LEGALLY AVAILABLE; NECT remains BLOCKED. No STEP⑤/STEP⑥ or implementation/experiment authorization follows.
+
+
+## R-INTERNAL-2 — δ TYPE
+
+```text
+R-INTERNAL-2 = δ3
+δ : DECISION_GENERATION_PARAMETER
+```
+
+δ is an abstract decision-generation parameter participating with P in the declared generation mechanism:
+
+```text
+(P,δ) ↦ g
+Γ(P,δ) = g
+g : W → A
+```
+
+δ is not thereby the final rule g and is not declared as a function `W → A`. Historical `δ(I_P)` is not restored and no new δ optimization domain is introduced.
+
+The internal structure of δ, its parameter space, and any relation to θ or admissibility remain undeclared.
+
+Current state remains:
+
+```text
+R-INTERNAL-1 = DECLARED (P4)
+R-INTERNAL-2 = DECLARED (δ3)
+R_OBJECT     = NOT_DECLARED
+R_ASSEMBLY   = OPEN
+R_ORACLE     = NOT_DEFINED
+Δ            = BLOCKED
+FinLoss      = NOT LEGALLY AVAILABLE
+NECT         = BLOCKED
+STEP⑤       = NOT ENTERED
+STEP⑥       = NOT ENTERED
+EXPERIMENT AUTH = NONE
+HARNESS AUTH    = NONE
+```
