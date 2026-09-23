@@ -857,3 +857,26 @@ The researcher explicitly declared **R-ASSEMBLY-10 = M4**: defer R_OBJECT and cl
 The final R_OBJECT input hierarchy is not yet declared. Resolve P type, δ type, θ type, structure of `𝒢_adm(P)`, domain of L, and legality/existence conditions for E_θ before selecting a concrete input hierarchy.
 
 Current state: `R_OBJECT = NOT_DECLARED`; `R_ASSEMBLY = OPEN`; `R_ORACLE = NOT_DEFINED`; `Δ = BLOCKED`; `FinLoss = NOT LEGALLY AVAILABLE`; `NECT = BLOCKED`; `STEP⑤ = NOT ENTERED`; `STEP⑥ = NOT ENTERED`.
+
+
+## R-INTERNAL-1 — P TYPE
+
+```text
+R-INTERNAL-1 = P4
+P : PROJECTION_CANDIDATE
+```
+
+P is closed only at the carrier/type level. No internal functional, set-theoretic, or composite structure is declared. No domain/codomain or projection operator is instantiated.
+
+Current assembly remains:
+
+```text
+(P,δ) ↦ g
+Γ(P,δ) = g
+g : W → A
+g ∈ 𝒢_adm(P)
+L(g;P,θ) = E_θ[C_LOSS(g(W),W)]
+R(P,θ) = OPT_{g ∈ 𝒢_adm(P)} L(g;P,θ)
+```
+
+R_OBJECT remains NOT_DECLARED and R_ASSEMBLY remains OPEN. R_ORACLE remains NOT_DEFINED; Δ remains BLOCKED; FinLoss remains NOT LEGALLY AVAILABLE; NECT remains BLOCKED. No STEP⑤/STEP⑥ or implementation/experiment authorization follows.
