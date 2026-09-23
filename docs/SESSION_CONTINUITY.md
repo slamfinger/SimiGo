@@ -526,6 +526,25 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This proves single-group feasibility, not a multi-state residency or reload-cost win.
 - Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE4_RESULTS_20260924.md.
 
+## SimiGo 2.0 MLX Gate 5 Multi-State Runtime Results — 2026-09-24
+
+## SimiGo 2.0 MLX Gate 5 Multi-State Runtime Results — 2026-09-24
+
+- Gate 5 multi-state runtime residency: PASS for feasibility, output identity,
+  and reload reduction versus naive on-demand; latency advantage NOT ESTABLISHED.
+- Compared `ALL_RESIDENT`, `NAIVE_ON_DEMAND`, and `EXECUTION_STATE` across
+  `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- All fifteen real generations returned `pong`; `outputIdentityPass=true`.
+- Maximum idle active-memory reduction versus all-resident: 10,871,635,200 bytes.
+- Reload bytes: 0 all-resident, 65,229,815,808 naive, 54,358,179,840 state-driven;
+  state-driven uses 10,871,635,968 fewer reload bytes than naive.
+- Generation totals: 1,513.55 ms all-resident, 3,469.65 ms naive,
+  3,918.20 ms state-driven.
+- State-driven reload/release time: 7,734.08 ms plus 98.67 ms.
+- Complete generations still required all decoder-layer groups; the state policy
+  governed idle retention only.
+- Gate history: docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

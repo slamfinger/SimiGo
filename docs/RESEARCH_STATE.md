@@ -31,7 +31,9 @@ SimiGo 2.0 Phase 1 selective Safetensors materialization 已实际运行完成�
 SimiGo 2.0 MLX Gate 1 selective tensor materialization 已通过 CORE 与 SWITCH_MLP 测试；
 SimiGo 2.0 MLX Gate 2 group lifecycle 已在 fingerprint 层通过；
 SimiGo 2.0 MLX Gate 3 parameter swap / semantic restore 已通过；
-SimiGo 2.0 MLX Gate 4 single-state whole-group inference residency 已通过，multi-state benchmark 仍未验证）
+SimiGo 2.0 MLX Gate 4 single-state whole-group inference residency 已通过；
+SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过；
+Gate 5 对 naive on-demand 减少 reload 10.87 GiB，但 latency advantage 未建立）
 
 ## Current research state
 
@@ -1153,3 +1155,28 @@ multi-state residency or reload-cost win.
 
 Gate history:
 docs/00-governance/SIMIGO2_PHASE0_MLX_GATE4_RESULTS_20260924.md.
+
+### SimiGo 2.0 MLX Gate 5 Multi-State Runtime Results — 2026-09-24
+
+Gate 5 compared `ALL_RESIDENT`, `NAIVE_ON_DEMAND`, and `EXECUTION_STATE` across
+`STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL` on the real model:
+
+```text
+outputIdentityPass       = true
+maximum idle reduction   = 10,871,635,200 bytes
+reload vs naive          = -10,871,635,968 bytes
+generation totals        = 1,513.55 / 3,469.65 / 3,918.20 ms
+state reload traffic     = 54,358,179,840 bytes
+naive reload traffic     = 65,229,815,808 bytes
+state reload time        = 7,734.08 ms
+state release time       = 98.67 ms
+```
+
+All generations returned `pong`. State-driven residency reduced reload bytes
+versus naive on-demand and reduced idle memory versus all-resident, but did not
+establish latency or total-cost advantage. Every complete generation still
+required all decoder-layer groups; the policy controlled idle retention, not
+semantic layer skipping.
+
+Gate history:
+docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md.

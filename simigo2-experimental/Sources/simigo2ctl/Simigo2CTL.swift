@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -133,6 +133,13 @@ struct Simigo2CTL {
     case "mlx-gate4":
       let state = try ExecutionStateLabel(parsing: try optionValue("--state", rest))
       let report = try await MLXGroupInferenceGate.run(modelDirectory: modelDirectory, state: state)
+      print(try toJSON(report))
+    case "mlx-gate5":
+      let states = try parseStates(from: rest)
+      let report = try await MLXGroupResidencyBenchmark.run(
+        modelDirectory: modelDirectory,
+        states: states
+      )
       print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
