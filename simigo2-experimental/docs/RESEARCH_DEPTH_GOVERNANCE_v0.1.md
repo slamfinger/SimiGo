@@ -156,3 +156,56 @@ Curiosity generates candidate questions.
 Evidence determines whether a candidate becomes the next experiment.
 
 The smallest sufficient resolution determines where the experiment stops.
+
+## 11. Engineering Corollary — Execution-Centric Runtime Design
+
+The study of antirez/ds4 provides a mature engineering reference for the current residency problem. It does not justify a new theory object.
+
+The reusable lesson is to separate:
+
+    parameter universe
+        ↓
+    actual required execution set
+        ↓
+    resident set
+        ↓
+    materialization / eviction
+        ↓
+    compute
+
+This prevents a common category error:
+
+    "a parameter exists"
+        ≠
+    "the current execution needs it"
+        ≠
+    "the parameter should remain resident"
+
+A bounded cache, explicit memory budget, optional preload, and eviction priority are therefore valid engineering mechanisms to introduce before any deeper Router/Expert research.
+
+The corresponding SimiGo route is:
+
+    execution context
+        → required execution set
+        → bounded residency planning
+        → materialization
+        → execution
+        → observation
+
+This is a horizontal engineering refinement. It does not increase research resolution.
+
+The deeper execution-observation route remains subject to the same three gates above.
+
+## 12. Guiding Implementation Boundary
+
+The new execution residency planner may consume externally measured or declared demand hints. Such hints are not probabilities and do not establish predictive demand.
+
+The planner must remain independent from:
+
+- model-internal representation capture;
+- Router/Expert observation;
+- MLX internal modification;
+- materialization I/O implementation;
+- predictive loading claims.
+
+Only local evidence can promote any of these from an optional future branch to an active experimental requirement.
