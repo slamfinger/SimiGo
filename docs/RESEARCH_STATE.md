@@ -42,7 +42,10 @@ SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 
 ；Checkpoint 自带 chat template 已可应用，Gemma4 dense Gate 5 在模板化输入下 PASS；
 Representation Capture API audit 已在 Qwen3-Coder 实际容器上完成，
 G1.9-A infrastructure = COMPLETE，direct public-API capture = REJECTED，
-recommended route = ISOLATED_INSTRUMENTATION）
+recommended route = ISOLATED_INSTRUMENTATION；
+Representation Capture multi-model audit 已覆盖 Qwen3-Coder、Nail-Qwen3.6、
+Gemma4 与本地 Muse-Glimmer q4，四者均为 MODULE_INVENTORY_ONLY，
+stable observation contract = false，route = ISOLATED_INSTRUMENTATION）
 
 ## Current research state
 
