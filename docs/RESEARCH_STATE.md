@@ -46,6 +46,10 @@ recommended route = ISOLATED_INSTRUMENTATION；
 Representation Capture multi-model audit 已覆盖 Qwen3-Coder、Nail-Qwen3.6、
 Gemma4 与本地 Muse-Glimmer q4，四者均为 MODULE_INVENTORY_ONLY，
 stable observation contract = false，route = ISOLATED_INSTRUMENTATION）
+；G1.9-B Instrumentation Identity Probe 首个 Qwen3-Coder proxy point 已 PASS：
+baseline 与 instrumented logits checksum 逐位一致且 Δ=0，
+capture point = layer 0 fused MoE switch down_proj output，
+该结果仅为 identity probe，不定义 H_i(x)、layer/expert demand 或 predictor）
 
 ## Current research state
 

@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -155,6 +155,14 @@ struct Simigo2CTL {
     case "rep-audit":
       let report = try await RepresentationCaptureAudit.audit(modelDirectory: modelDirectory)
       print(try toJSON(report))
+    case "instrument-audit":
+      let prompt = optionalOption("--prompt", rest) ?? "Return exactly one word: ping"
+      let report = try await InstrumentationIdentityProbe.run(
+        modelDirectory: modelDirectory,
+        prompt: prompt,
+        layerIndices: try parseLayerIndices(from: rest)
+      )
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }
@@ -177,6 +185,23 @@ struct Simigo2CTL {
     return try arguments[statesIndex + 1]
       .split(separator: ",")
       .map { try ExecutionStateLabel(parsing: String($0)) }
+  }
+
+  static func parseLayerIndices(from arguments: [String]) throws -> [Int] {
+    guard let index = arguments.firstIndex(of: "--layers"),
+      index + 1 < arguments.count
+    else {
+      throw OutputError(message: "missing --layers INDEX,INDEX,...")
+    }
+
+    return try arguments[index + 1]
+      .split(separator: ",")
+      .map { raw in
+        guard let value = Int(raw) else {
+          throw OutputError(message: "invalid layer index: \(raw)")
+        }
+        return value
+      }
   }
 
   static func optionValue(_ name: String, _ arguments: [String]) throws -> String {
