@@ -123,6 +123,42 @@ final class LayerResidencyTests: XCTestCase {
         XCTAssertTrue(policy.desiredGroupIDs(for: .stateAB).contains("SWITCH_MLP_L16_31"))
     }
 
+    func testExecutionPlannerMatchesLegacyReactivePolicy() throws {
+        let states: [ExecutionStateLabel] = ExecutionStateLabel.allCases
+        let inventory = inventory()
+
+        var legacy = LayerResidencyEngine(
+            inventory: inventory,
+            policy: AnyLayerResidencyPolicy(kind: .reactive, inventory: inventory)
+        )
+        var planner = LayerResidencyEngine(
+            inventory: inventory,
+            policy: AnyLayerResidencyPolicy(kind: .executionPlanner, inventory: inventory)
+        )
+
+        for state in states {
+            let expected = try legacy.transition(to: state)
+            let actual = try planner.transition(to: state)
+
+            XCTAssertEqual(actual.executionState, expected.executionState)
+            XCTAssertEqual(actual.desiredGroupIDs, expected.desiredGroupIDs)
+            XCTAssertEqual(actual.loadedGroupIDs, expected.loadedGroupIDs)
+            XCTAssertEqual(actual.keptGroupIDs, expected.keptGroupIDs)
+            XCTAssertEqual(actual.evictedGroupIDs, expected.evictedGroupIDs)
+            XCTAssertEqual(actual.residentGroupIDs, expected.residentGroupIDs)
+            XCTAssertEqual(actual.loadedBytes, expected.loadedBytes)
+            XCTAssertEqual(actual.evictedBytes, expected.evictedBytes)
+            XCTAssertEqual(actual.residentBytes, expected.residentBytes)
+            XCTAssertEqual(actual.peakResidentBytes, expected.peakResidentBytes)
+            XCTAssertEqual(actual.cumulativeLoadedBytes, expected.cumulativeLoadedBytes)
+            XCTAssertEqual(actual.cumulativeEvictedBytes, expected.cumulativeEvictedBytes)
+            XCTAssertEqual(
+                actual.events.map { "\($0.groupID):\($0.action.rawValue):\($0.byteCount)" },
+                expected.events.map { "\($0.groupID):\($0.action.rawValue):\($0.byteCount)" }
+            )
+        }
+    }
+
     func testResidencyBenchmarkReportsAllPolicies() throws {
         let reports = try ResidencyBenchmark.run(
             kinds: ResidencyPolicyKind.allCases,
@@ -132,5 +168,13 @@ final class LayerResidencyTests: XCTestCase {
 
         XCTAssertEqual(reports.count, ResidencyPolicyKind.allCases.count)
         XCTAssertEqual(Set(reports.map(\.policy)), Set(ResidencyPolicyKind.allCases))
+
+        let byPolicy = Dictionary(uniqueKeysWithValues: reports.map { ($0.policy, $0) })
+        let reactive = try XCTUnwrap(byPolicy[.reactive])
+        let planner = try XCTUnwrap(byPolicy[.executionPlanner])
+        XCTAssertEqual(planner.cumulativeLoadedBytes, reactive.cumulativeLoadedBytes)
+        XCTAssertEqual(planner.cumulativeEvictedBytes, reactive.cumulativeEvictedBytes)
+        XCTAssertEqual(planner.peakResidentBytes, reactive.peakResidentBytes)
+        XCTAssertEqual(planner.controlDecisionCount, reactive.controlDecisionCount)
     }
 }

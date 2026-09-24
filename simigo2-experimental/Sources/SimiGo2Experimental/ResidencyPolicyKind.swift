@@ -4,13 +4,58 @@ public enum ResidencyPolicyKind: String, Codable, Sendable, CaseIterable {
     case allResident
     case reactive
     case llamaCppLazy
+    case executionPlanner
 
     public var displayName: String {
         switch self {
         case .allResident: return "All groups resident"
         case .reactive: return "External-state reactive"
         case .llamaCppLazy: return "llama.cpp-inspired lazy residency"
+        case .executionPlanner: return "Execution residency planner"
         }
+    }
+}
+
+public struct ExecutionPlannerPolicy: LayerResidencyPolicy {
+    private let inventory: LayerInventory
+    private let planner: ExecutionResidencyPlanner
+    private let requiredPolicy: Qwen3CoderStatePolicy
+    private let budgetOverride: ResidencyBudgetPolicy?
+
+    public init(
+        inventory: LayerInventory,
+        requiredPolicy: Qwen3CoderStatePolicy = Qwen3CoderStatePolicy(
+            alwaysResidentGroupIDs: []
+        ),
+        budget: ResidencyBudgetPolicy? = nil
+    ) {
+        self.inventory = inventory
+        self.planner = ExecutionResidencyPlanner(inventory: inventory)
+        self.requiredPolicy = requiredPolicy
+        self.budgetOverride = budget
+    }
+
+    public func desiredGroupIDs(for state: ExecutionStateLabel) -> Set<String> {
+        let required = requiredPolicy.desiredGroupIDs(for: state)
+        let budget = budgetOverride ?? strictBudget(for: required)
+
+        guard let plan = try? planner.plan(
+            currentResidentGroupIDs: [],
+            requiredGroupIDs: required,
+            demandHints: [],
+            budget: budget,
+            recommendedBytes: inventory.totalByteCount
+        ) else {
+            return requiredPolicy.desiredGroupIDs(for: state)
+        }
+        return plan.residentGroupIDs
+    }
+
+    private func strictBudget(for required: Set<String>) -> ResidencyBudgetPolicy {
+        let requiredBytes = inventory.groups
+            .filter { required.contains($0.id) }
+            .reduce(Int64(0)) { $0 + $1.byteCount }
+        return ResidencyBudgetPolicy(fixedBytes: requiredBytes)
     }
 }
 
@@ -82,6 +127,15 @@ public struct AnyLayerResidencyPolicy: LayerResidencyPolicy {
                 }
 
                 return coreGroupIDs.union(admitted)
+            }
+
+        case .executionPlanner:
+            let plannerPolicy = ExecutionPlannerPolicy(
+                inventory: inventory,
+                requiredPolicy: basePolicy
+            )
+            handler = { state in
+                plannerPolicy.desiredGroupIDs(for: state)
             }
         }
     }

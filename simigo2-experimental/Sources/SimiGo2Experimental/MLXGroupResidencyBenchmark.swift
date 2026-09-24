@@ -72,8 +72,12 @@ public enum MLXGroupResidencyBenchmark {
       modelDirectory: modelDirectory
     )
     let policy = ContiguousLayerStatePolicy(inventory: inventory)
+    let planner = ExecutionResidencyPlanner(inventory: inventory)
     let optionalGroupIDs = Set(
       inventory.groups.filter { !$0.alwaysResident }.map(\.id)
+    )
+    let coreGroupIDs = Set(
+      inventory.groups.filter(\.alwaysResident).map(\.id)
     )
 
     let container = try await LLMModelFactory.shared.loadContainer(
@@ -119,11 +123,20 @@ public enum MLXGroupResidencyBenchmark {
 
     func stateDrivenPass() async throws -> MLXPolicyRuntimeReport {
       var transitions: [MLXPolicyRuntimeTransition] = []
-      var resident: Set<String> = []
+      var resident = coreGroupIDs
+
+      let allGroupBytes = inventory.totalByteCount
+      let executionRequired = coreGroupIDs.union(optionalGroupIDs)
 
       for state in states {
-        let desired = policy.desiredGroupIDs(for: state)
-        let missing = optionalGroupIDs.subtracting(resident)
+        let loadPlan = try planner.plan(
+          currentResidentGroupIDs: resident,
+          requiredGroupIDs: executionRequired,
+          demandHints: [],
+          budget: ResidencyBudgetPolicy(fixedBytes: allGroupBytes),
+          recommendedBytes: allGroupBytes
+        )
+        let missing = loadPlan.loadGroupIDs.intersection(optionalGroupIDs)
         let reload = try await loadGroups(
           container: container,
           inventory: inventory,
@@ -138,7 +151,18 @@ public enum MLXGroupResidencyBenchmark {
         let generationMs = milliseconds(start: start)
         Memory.clearCache()
         let generatedMemory = Memory.snapshot()
-        let releaseIDs = optionalGroupIDs.subtracting(desired)
+        let retentionRequired = policy.desiredGroupIDs(for: state)
+        let retentionBytes = inventory.groups
+          .filter { retentionRequired.contains($0.id) }
+          .reduce(Int64(0)) { $0 + $1.byteCount }
+        let retentionPlan = try planner.plan(
+          currentResidentGroupIDs: resident,
+          requiredGroupIDs: retentionRequired,
+          demandHints: [],
+          budget: ResidencyBudgetPolicy(fixedBytes: retentionBytes),
+          recommendedBytes: allGroupBytes
+        )
+        let releaseIDs = retentionPlan.evictGroupIDs.intersection(optionalGroupIDs)
         let release = try await releaseGroups(
           container: container,
           inventory: inventory,
@@ -163,7 +187,7 @@ public enum MLXGroupResidencyBenchmark {
         )
       }
 
-      return report(policy: "EXECUTION_STATE", transitions: transitions)
+      return report(policy: "EXECUTION_STATE_PLANNER", transitions: transitions)
     }
 
     func naiveOnDemandPass() async throws -> MLXPolicyRuntimeReport {

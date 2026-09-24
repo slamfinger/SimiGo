@@ -50,10 +50,16 @@ stable observation contract = false，route = ISOLATED_INSTRUMENTATION）
 baseline 与 instrumented logits checksum 逐位一致且 Δ=0，
 capture point = layer 0 fused MoE switch down_proj output，
 该结果仅为 identity probe，不定义 H_i(x)、layer/expert demand 或 predictor）
+；Phase R0 Planner Runtime Integration 已通过：simulator 中 executionPlanner
+与 legacy reactive 逐状态等价，真实 MLX Gate R0 的 15 次生成 output identity
+PASS，reload 较 naive 减少 10.87 GiB；latency advantage 未建立，
+Predictor / Expert demand / async I/O 仍为未授权后续）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
+
+Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3

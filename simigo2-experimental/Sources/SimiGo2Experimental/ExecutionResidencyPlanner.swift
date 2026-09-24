@@ -81,7 +81,7 @@ public struct ExecutionResidencyPlanner: Sendable {
         recommendedBytes: Int64
     ) throws -> ResidencyPlan {
         let lookup = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0) })
-        let knownIDs = Set(inventory.groups.map(\\.id))
+        let knownIDs = Set(inventory.groups.map(\.id))
 
         guard requiredGroupIDs.isSubset(of: knownIDs) else {
             throw PlannerError.unknownRequiredGroup
@@ -99,7 +99,7 @@ public struct ExecutionResidencyPlanner: Sendable {
         }
 
         let budgetBytes = budget.resolve(recommendedBytes: recommendedBytes)
-        let core = Set(inventory.groups.filter(\\.alwaysResident).map(\\.id))
+        let core = Set(inventory.groups.filter(\.alwaysResident).map(\.id))
 
         var desired = core.union(requiredGroupIDs)
         var residentBytes = desired.reduce(Int64(0)) {
