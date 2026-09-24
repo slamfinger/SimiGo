@@ -38,7 +38,7 @@ SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 
 ；Nail-Qwen3.6-35B-A3B-MLX 已在 Apple M5 完成 Gate 4 与 Gate 5 real-device validation）
 ；Gemma4 Unified 已完成 Apple M5 text inference probe，但当前 whole-group residency support 为 NOT_APPLICABLE / INCOMPLETE）
 ；Muse-Glimmer text-only 已通过本地 mlx-swift-lm fork 增加 RUNTIME_FORWARD 支持，RESIDENCY 仍为 NOT_APPLICABLE）
-；Dense MLP residency extension 已开始，Gemma4 Gate 4 PASS，multi-state idle-memory 仍未解决）
+；Dense MLP residency extension 已实现，Gemma4 与 Muse-Glimmer Gate 5 均 PASS，但 semantic quality 仍未解决）
 
 ## Current research state
 
@@ -1271,8 +1271,8 @@ docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.
 
 ### Dense MLP Residency Extension — 2026-09-24
 
-Added model-aware inventory, dense MLP partitioning, and a contiguous state
-policy. Gemma4 now partitions into:
+Implemented model-aware inventory, dense MLP partitioning, contiguous state
+policy, and direct low-cache generation for memory sampling. Gemma4 partitions into:
 
 ```text
 CORE_NON_SWITCH     = 892 tensors / 1,921,416,800 bytes
@@ -1290,10 +1290,16 @@ active memory after release       = 5,108,112,522 bytes
 groupInferenceResidencyPass       = true
 ```
 
-The dense multi-state benchmark produced identical outputs and lower reload bytes
-versus naive on-demand, but idle-memory reduction was not observed, so the dense
-Gate 5 benchmark is not yet a pass. The memory-measurement discrepancy is the next
-blocking gate.
+The idle-memory discrepancy was caused by hard-coded switch-MLP matching in the
+benchmark: dense groups matched zero tensors, making release metadata-only. After
+dense-range matching and direct low-cache generation, Gemma4 Gate 5 passes with
+3,186,621,696 bytes idle reduction and 3,185,049,600 bytes reload reduction versus
+naive on-demand.
+
+Muse-Glimmer also passes dense Gate 5 after adding its text runtime support:
+8,472,820,944 bytes idle reduction and 9,469,624,320 bytes reload reduction versus
+naive on-demand. Both models emit repeated-token sequences under the
+no-chat-template probe, so semantic quality remains unresolved.
 
 Extension history:
 docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.

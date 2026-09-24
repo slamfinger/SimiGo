@@ -1,77 +1,106 @@
 # SimiGo 2.0 Dense MLP Residency Extension
 
-**Date**: 2026-09-24  
-**Status**: EXTENSION_STARTED / DENSE_GATE4_PASS / MULTI_STATE_IDLE_MEMORY_UNRESOLVED  
-**Models probed**:  
-- `mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit`  
-- `OpensourceWTF/Muse-Glimmer-30B-MLX-q4` (runtime support prerequisite completed separately)
+**Date**: 2026-09-24
+**Status**: EXTENSION_IMPLEMENTED / GEMMA4_GATE4_PASS / GEMMA4_GATE5_PASS / MUSE_GLIMMER_GATE4_PASS / SEMANTIC_QUALITY_UNRESOLVED
+**Device**: Apple M5, arm64, macOS 26.6.2 (25G83), 34,359,738,368 bytes physical memory
 
 ## 1. Extension
 
-Extend execution-state residency beyond fused `switch_mlp` by adding a dense-MLP
-group catalog:
+Extend execution-state residency beyond fused `switch_mlp` with a dense-MLP group
+catalog:
 
 ```text
 CORE_NON_SWITCH      = embeddings, attention, norms, non-MLP tensors
-DENSE_MLP_L00_15     = dense mlp.* tensors in layer range
-DENSE_MLP_L16_31     = dense mlp.* tensors in layer range
-DENSE_MLP_L32_47     = dense mlp.* tensors in layer range
+DENSE_MLP_L00_15     = dense mlp.* tensors in contiguous layer range
+DENSE_MLP_L16_31     = dense mlp.* tensors in contiguous layer range
+DENSE_MLP_L32_47     = dense mlp.* tensors in contiguous layer range
 ```
 
-The catalog derives layer ranges from `model_type` and `num_hidden_layers`. It now
-recognizes `gemma4_unified` and `muse_glimmer_text` as dense candidates. A
-`ContiguousLayerStatePolicy` maps the six execution-state labels onto available
-contiguous groups.
+The inventory now recognizes `gemma4_unified` and `muse_glimmer_text`, reads the
+text layer count, and dynamically creates three contiguous dense-MLP groups. A
+`ContiguousLayerStatePolicy` maps execution states to the ordered groups.
 
-## 2. Gemma4 inventory
+The idle-memory discrepancy was traced to the dense Gate 5 using hard-coded
+switch-MLP group matching. The benchmark matched zero dense tensors, so release
+was metadata-only. The fix adds dense-range matching and uses a direct model
+generation path so ChatSession prompt-cache lifetime cannot be confused with
+model-parameter residency.
+
+## 2. Gemma4 dense validation
+
+Inventory:
 
 ```text
 CORE_NON_SWITCH     = 892 tensors / 1,921,416,800 bytes
 DENSE_MLP_L00_15    = 144 tensors / 1,592,524,800 bytes
 DENSE_MLP_L16_31    = 144 tensors / 1,592,524,800 bytes
 DENSE_MLP_L32_47    = 144 tensors / 1,592,524,800 bytes
-total               = 1,324 tensors / 6,698,991,200 bytes
 ```
 
-## 3. Gemma4 Gate 4
-
-`STATE_A → DENSE_MLP_L00_15`:
+Gate 4:
 
 ```text
 released / rematerialized tensors = 144 / 144
-baseline output                   = ping
-restored output                   = ping
 outputEquals                      = true
-groupInferenceResidencyPass       = true
 active memory after baseline      = 6,701,423,370 bytes
 active memory after release       = 5,108,112,522 bytes
 active memory after rematerialize = 6,701,423,370 bytes
-release time                      = 11.84 ms
-rematerialization time            = 74.34 ms
+groupInferenceResidencyPass       = true
 ```
 
-This is the first successful dense-model Gate 4. It proves dense MLP tensors can
-be externally detached and rematerialized around real MLX inference.
-
-## 4. Multi-state benchmark observation
-
-The dense Gate 5 run produced identical outputs across all policies and showed a
-reload-byte reduction for execution-state retention versus naive on-demand:
+Gate 5:
 
 ```text
-outputIdentityPass              = true
-reloadReductionVsNaiveObserved  = true
-reloadReductionVsNaiveBytes     = 3,185,049,600
-idleReductionObserved           = false
-benchmarkPass                   = false
+benchmarkPass                    = true
+outputIdentityPass               = true
+idleReductionObserved            = true
+maximum idle reduction           = 3,186,621,696 bytes
+reloadReductionVsNaiveObserved   = true
+reload reduction vs naive        = 3,185,049,600 bytes
 ```
 
-The first Gate 4 proves physical group detachment, but the benchmark's idle-memory
-measurement did not yet show the expected drop after release. This is now the
-blocking issue for declaring dense multi-state success. It should not be
-reinterpretated as a performance win.
+This establishes dense-model residency feasibility.
 
-## 5. Next hard gate
+## 3. Muse-Glimmer dense validation
 
-Fix or explain the idle-memory measurement discrepancy, then rerun the full dense
-Gate 5. Only then register dense-model residency as benchmark-pass.
+After adding text runtime support, inventory partitions into:
+
+```text
+CORE_NON_SWITCH     = 995 tensors / 4,644,676,608 bytes
+DENSE_MLP_L00_17    = 162 tensors / 4,485,611,520 bytes
+DENSE_MLP_L18_35    = 162 tensors / 4,485,611,520 bytes
+DENSE_MLP_L36_51    = 144 tensors / 3,987,210,240 bytes
+```
+
+Gate 4:
+
+```text
+released / rematerialized tensors = 162 / 162
+outputEquals                      = true
+active memory after baseline      = 17,604,890,160 bytes
+active memory after release       = 13,119,279,072 bytes
+active memory after rematerialize = 17,604,890,160 bytes
+groupInferenceResidencyPass       = true
+```
+
+Gate 5:
+
+```text
+benchmarkPass                    = true
+outputIdentityPass               = true
+idleReductionObserved            = true
+maximum idle reduction           = 8,472,820,944 bytes
+reloadReductionVsNaiveObserved   = true
+reload reduction vs naive        = 9,469,624,320 bytes
+```
+
+## 4. Boundary
+
+The model outputs under the no-chat-template deterministic probe are repeated
+token sequences, so this is not a semantic-quality or product-readiness claim.
+The extension proves physical dense-group residency mechanics and multi-state
+execution-state feasibility only.
+
+Raw evidence:
+- docs/02-evidence/SIMIGO2_DENSE_MLP_GEMMA4_GATE5_20260924.json
+- docs/02-evidence/SIMIGO2_DENSE_MLP_MUSE_GATE5_20260924.json

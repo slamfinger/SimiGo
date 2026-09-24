@@ -611,16 +611,24 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 
 ## Dense MLP Residency Extension — 2026-09-24
 
-- Status: `EXTENSION_STARTED / DENSE_GATE4_PASS / MULTI_STATE_IDLE_MEMORY_UNRESOLVED`.
+- Status: `EXTENSION_IMPLEMENTED / GEMMA4_GATE5_PASS / MUSE_GLIMMER_GATE4_PASS / SEMANTIC_QUALITY_UNRESOLVED`.
 - Added model-aware inventory for `gemma4_unified` and `muse_glimmer_text`, dense
   MLP partitioning, and `ContiguousLayerStatePolicy`.
 - Gemma4 partition: core 892 tensors plus three dense MLP groups of 144 tensors each.
 - Gemma4 Gate 4: PASS; 144/144 tensors released/rematerialized and output restored.
 - Gate 4 memory: 6,701,423,370 bytes resident, 5,108,112,522 after release, then
   restored to 6,701,423,370 bytes.
-- Dense Gate 5: output identity PASS and reload reduction versus naive PASS, but
-  idle-memory reduction was not observed; benchmark remains unresolved.
-- Next: fix or explain the idle-memory discrepancy before claiming dense success.
+- Root cause of Gate 5 discrepancy: hard-coded switch-MLP matching selected zero
+  dense tensors, making release metadata-only. Dense-range matching now fixes it.
+- Benchmark now uses direct low-cache generation so ChatSession prompt-cache
+  lifetime is not confused with model-parameter residency.
+- Gemma4 Gate 5: PASS; 3,186,621,696 bytes idle reduction and 3,185,049,600 bytes
+  reload reduction versus naive on-demand.
+- Muse-Glimmer Gate 4: PASS; 162/162 dense tensors released/rematerialized.
+- Muse-Glimmer Gate 5: PASS; 8,472,820,944 bytes idle reduction and
+  9,469,624,320 bytes reload reduction versus naive on-demand.
+- Both models still emit repeated-token sequences under the no-chat-template
+  probe; semantic quality remains unresolved.
 - Extension history: docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.
 
 ## Execution-State Information Boundary Hypothesis — 2026-09-23

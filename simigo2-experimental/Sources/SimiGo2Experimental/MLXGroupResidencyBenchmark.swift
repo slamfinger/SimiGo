@@ -81,12 +81,33 @@ public enum MLXGroupResidencyBenchmark {
       using: #huggingFaceTokenizerLoader()
     )
     func generate() async throws -> String {
-      let session = ChatSession(
-        container,
-        speculativeDecoding: nil,
-        generateParameters: GenerateParameters(maxTokens: maxTokens, temperature: 0)
-      )
-      return try await session.respond(to: prompt)
+      let (generated, decoded) = try await container.perform { context -> ([Int32], String) in
+        let promptIds = context.tokenizer
+          .encode(text: prompt, addSpecialTokens: true)
+          .map(Int32.init)
+        let parameters = GenerateParameters(maxTokens: maxTokens, temperature: 0)
+        var cache = try context.model.newCache(parameters: parameters)
+        var input = MLXArray(promptIds, [1, promptIds.count])
+        var generated: [Int32] = []
+
+        for _ in 0 ..< maxTokens {
+          let logits = context.model(input, cache: cache)[0, -1]
+          let nextToken = logits.argMax().item(Int32.self)
+          generated.append(nextToken)
+          if nextToken == context.tokenizer.eosTokenId ?? -1 {
+            break
+          }
+          input = MLXArray([nextToken], [1, 1])
+          eval(cache)
+        }
+
+        eval(cache)
+        let text = context.tokenizer.decode(
+          tokenIds: generated.map(Int.init), skipSpecialTokens: true)
+        return (generated, text)
+      }
+      _ = generated
+      return decoded
     }
 
     func allResidentPass() async throws -> MLXPolicyRuntimeReport {
@@ -298,6 +319,8 @@ public enum MLXGroupResidencyBenchmark {
     guard !groupIDs.isEmpty else { return emptyTransfer() }
     let names = tensorNames(inventory: inventory, groupIDs: groupIDs)
     let bytes = groupBytes(inventory: inventory, groupIDs: groupIDs)
+    FileHandle.standardError.write(
+      Data("RELEASE groupIDs=\(groupIDs.sorted()) namesCount=\(names.count) bytes=\(bytes)\n".utf8))
     let files = Set(
       inventory.tensors
         .filter { names.contains($0.id) }
@@ -347,6 +370,8 @@ public enum MLXGroupResidencyBenchmark {
       let selected = context.model.parameters().flattened().filter {
         names.contains($0.0)
       }
+      FileHandle.standardError.write(
+        Data("RELEASE selected \(selected.count) of \(names.count) names\n".utf8))
       let placeholders = selected.reduce(into: [:]) { result, item in
         result[item.0] = MLXArray.zeros([0], dtype: item.1.dtype)
       }
@@ -391,6 +416,11 @@ public enum MLXGroupResidencyBenchmark {
   private static func groupContains(tensor: TensorEntry, group: String) -> Bool {
     switch group {
     case "CORE_NON_SWITCH": return !tensor.isSwitchMLP
+    case let dense where group.hasPrefix("DENSE_MLP_"):
+      let parts = dense.dropFirst("DENSE_MLP_L".count).split(separator: "_")
+      guard parts.count == 2, let lower = Int(parts[0]), let upper = Int(parts[1]),
+            let layer = tensor.decoderLayer else { return false }
+      return tensor.isDenseMLP && layer >= lower && layer <= upper
     case "SWITCH_MLP_L00_15": return tensor.isSwitchMLP && (tensor.decoderLayer ?? -1) <= 15
     case "SWITCH_MLP_L16_31":
       let layer = tensor.decoderLayer ?? -1
