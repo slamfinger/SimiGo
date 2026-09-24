@@ -99,13 +99,27 @@ QuantizedLinear 的静默语义破坏→专用分支按 quantizedMM 克隆；观
 overhead 处于噪声内、峰值内存开销 0 MB；Phase-1 STOP 条件满足；
 measured-locality 分析（recurrence/transition locality/temporal
 stability）与 Predictor 重开决定 = PENDING，Predictor 仍未授权）
+；G1.9-A pilot 已按设计审计执行（协议 G1.9-A.PILOT.V1 = 固定 3 prompt ×
+3 重复，观测契约收窄为 event.kind=layerEntered 最小字段，observed 与
+derived 分离，observer passive，naming = MeasuredExecutionTrace）；
+**四门判定：A.1 Baseline Identity = PASS（15/15：token 序列一致 +
+logits SHA-256 逐位一致，max_abs_diff=0）；A.2 Trace Stability = PASS
+（15/15：三次重复事件流逐项一致；稳定 ≠ 可预测）；A.3 Overhead =
+ACCEPTABLE（描述性记录，比值 0.72–7.95 方向不一致非系统性成本，峰值
+内存 ≤8.5 MB，无阈值声明；Qwen3-Coder 比值 >1.9 已标记待采数阶段专项
+计时）；A.4 Cross-model = PASS（5/5：Qwen3-Coder/Nail/Cyber-Tiel 主力
++ Gemma4/Muse 兼容扩展；module-paths 发现命令登记两类前缀命名变体，
+shared_expert 排除）**；pilot v0 三缺陷登记（token 类别错比/box 未清/
+路径前缀盲区）并修复后重跑；下一步 = Measured Execution Trace
+Collection，届时 declared 与 measured 两线并列重算 locality 量并重审
+G4；Predictor 仍未授权）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19A_GROUP_TRACE_FIRST_CAPTURE_PASS / MEASURED_LOCALITY_ANALYSIS_PENDING
+Engineering subphase: G19A_PILOT_PASS / TRACE_COLLECTION_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1510,3 +1524,35 @@ Phase history:
 docs/00-governance/SIMIGO2_G19A_GROUP_TRACE_DESIGN_PRERUN_AUDIT_20260925.md.
 Authorization history:
 docs/00-governance/SIMIGO2_G19A_ISOLATED_INSTRUMENTATION_AUTHORIZATION_20260925.md.
+
+### G1.9-A Instrumentation Pilot — 2026-09-25
+
+The design-audit pilot (protocol G1.9-A.PILOT.V1: fixed prompt set × 3
+repetitions) ran on all five local checkpoints after the observation
+contract was narrowed to the minimal `layerEntered` event (no shapes, no
+per-event timing; step IDs and group joins are derived bookkeeping; no
+demand quantity exists in the data model).
+
+```text
+G1.9-A.1 Baseline Identity = PASS (15/15: token sequences identical,
+                                   logits bitwise identical, max_abs_diff = 0)
+G1.9-A.2 Trace Stability   = PASS (15/15: three repetitions produce
+                                   identical event streams; 稳定 ≠ 可预测)
+G1.9-A.3 Overhead          = ACCEPTABLE (descriptive ratios 0.72–7.95,
+                                   direction inconsistent across models,
+                                   peak memory ≤ 8.5 MB, no threshold)
+G1.9-A.4 Cross-model       = PASS (5/5 incl. compatibility extension;
+                                   module-path discovery registered the
+                                   language_model.model.layers.* variant;
+                                   shared_expert excluded by pattern)
+```
+
+Pilot v0 defects registered and fixed before accepting results: token
+category mismatch (prompt vs generated), box not cleared after the identity
+forward, and module-path prefix blindness that had silently instrumented
+zero modules on three model classes. Verdict: the instrumentation is
+qualified for Measured Execution Trace Collection. This is not a locality
+result; the Predictor question remains closed.
+
+Phase history:
+docs/00-governance/SIMIGO2_G19A_PILOT_RESULTS_20260925.md.

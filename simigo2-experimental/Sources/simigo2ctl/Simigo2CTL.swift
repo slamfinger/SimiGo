@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -207,6 +207,23 @@ struct Simigo2CTL {
         modelDirectory: modelDirectory,
         prompt: prompt,
         maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "g19a-pilot":
+      let repetitions = optionalOption("--repetitions", rest).flatMap(Int.init)
+        ?? ExecutionTracePilot.defaultRepetitions
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 24
+      let report = try await ExecutionTracePilot.run(
+        modelDirectory: modelDirectory,
+        repetitions: repetitions,
+        maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "module-paths":
+      let filter = optionalOption("--filter", rest) ?? "down_proj"
+      let report = try await GroupExecutionTraceProbe.leafModulePathAudit(
+        modelDirectory: modelDirectory,
+        filterSubstring: filter
       )
       print(try toJSON(report))
     default:

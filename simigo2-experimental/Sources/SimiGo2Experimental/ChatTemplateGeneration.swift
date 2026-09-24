@@ -6,6 +6,11 @@ import Tokenizers
 /// Builds generation prompts using the checkpoint's own chat template when one is
 /// available. Supports both `tokenizer_config.json` templates and the newer
 /// standalone `chat_template.jinja` file.
+public struct GenerationOutcome: Sendable {
+    public let tokenIDs: [Int]
+    public let text: String
+}
+
 public enum ChatTemplateGeneration {
     public static func promptTokenIDs(
         tokenizer: MLXLMCommon.Tokenizer,
@@ -52,7 +57,21 @@ public enum ChatTemplateGeneration {
         prompt: String,
         maxTokens: Int
     ) async throws -> String {
-        try await container.perform { context -> String in
+        try await generateWithTokens(
+            container: container,
+            modelDirectory: modelDirectory,
+            prompt: prompt,
+            maxTokens: maxTokens
+        ).text
+    }
+
+    public static func generateWithTokens(
+        container: ModelContainer,
+        modelDirectory: URL,
+        prompt: String,
+        maxTokens: Int
+    ) async throws -> GenerationOutcome {
+        try await container.perform { context -> GenerationOutcome in
             let promptTokenIDs = try await promptTokenIDs(
                 tokenizer: context.tokenizer,
                 modelDirectory: modelDirectory,
@@ -75,10 +94,11 @@ public enum ChatTemplateGeneration {
                 )
                 eval(logits)
             }
-            return context.tokenizer.decode(
+            let text = context.tokenizer.decode(
                 tokenIds: generated,
                 skipSpecialTokens: true
             )
+            return GenerationOutcome(tokenIDs: generated, text: text)
         }
     }
 }

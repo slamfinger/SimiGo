@@ -6,48 +6,39 @@ import MLXLLM
 import MLXNN
 import Tokenizers
 
-/// One measured execution event from the isolated instrumentation path.
-/// Event-only capture: no MLXArray is retained, so tracing does not hold
-/// activations alive.
+/// One observed execution event from the isolated instrumentation path.
+/// Minimal observation contract (G1.9-A pilot): the event asserts only that a
+/// layer was entered — `layerEntered` is an observation, never a demand
+/// claim. No activations, no shapes, no per-event timing are retained.
+public enum ExecutionTraceEventKind: String, Codable, Sendable {
+    case layerEntered
+}
+
 public struct ExecutionTraceEvent: Codable, Equatable, Sendable {
+    public let kind: ExecutionTraceEventKind
     public let sequence: Int
     public let modulePath: String
     public let decoderLayer: Int
-    public let outputShape: [Int]
-    public let millisecondsSinceStart: Double
 }
 
 public final class ExecutionTraceEventBox: @unchecked Sendable {
     private let lock = NSLock()
     private var events: [ExecutionTraceEvent] = []
-    private let start = ContinuousClock.now
+    private var counter = 0
 
     public init() {}
 
-    func append(modulePath: String, decoderLayer: Int, outputShape: [Int]) {
-        let event = ExecutionTraceEvent(
-            sequence: nextSequence(),
-            modulePath: modulePath,
-            decoderLayer: decoderLayer,
-            outputShape: outputShape,
-            millisecondsSinceStart: millisecondsSinceStart()
-        )
+    func append(modulePath: String, decoderLayer: Int) {
         lock.lock()
+        counter += 1
+        let event = ExecutionTraceEvent(
+            kind: .layerEntered,
+            sequence: counter,
+            modulePath: modulePath,
+            decoderLayer: decoderLayer
+        )
         events.append(event)
         lock.unlock()
-    }
-
-    private var counter = 0
-
-    private func nextSequence() -> Int {
-        lock.lock()
-        defer { lock.unlock() }
-        counter += 1
-        return counter
-    }
-
-    private func millisecondsSinceStart() -> Double {
-        Double(start.duration(to: .now).components.attoseconds) / 1e18 * 1000
     }
 
     public func snapshot() -> [ExecutionTraceEvent] {
@@ -78,7 +69,7 @@ final class TracedLinear: Linear {
 
     override func callAsFunction(_ x: MLXArray) -> MLXArray {
         let output = super.callAsFunction(x)
-        box.append(modulePath: path, decoderLayer: layer, outputShape: output.shape)
+        box.append(modulePath: path, decoderLayer: layer)
         return output
     }
 }
@@ -136,7 +127,7 @@ final class TracedQuantizedLinear: Linear {
         if let clonedBias {
             output = output + clonedBias
         }
-        box.append(modulePath: path, decoderLayer: layer, outputShape: output.shape)
+        box.append(modulePath: path, decoderLayer: layer)
         return output
     }
 }
@@ -166,7 +157,7 @@ final class TracedSwitchLinear: SwitchLinear {
         sortedIndices: Bool = false
     ) -> MLXArray {
         let output = super.callAsFunction(x, indices, sortedIndices: sortedIndices)
-        box.append(modulePath: path, decoderLayer: layer, outputShape: output.shape)
+        box.append(modulePath: path, decoderLayer: layer)
         return output
     }
 }
@@ -240,7 +231,7 @@ final class TracedQuantizedSwitchLinear: SwitchLinear {
         if let clonedBias {
             output = output + MLX.expandedDimensions(clonedBias[indices], axis: -2)
         }
-        box.append(modulePath: path, decoderLayer: layer, outputShape: output.shape)
+        box.append(modulePath: path, decoderLayer: layer)
         return output
     }
 }
@@ -251,7 +242,7 @@ final class TracedQuantizedSwitchLinear: SwitchLinear {
 public enum GroupExecutionTraceProbe {
     public static func decoderLayer(fromPath path: String) -> Int {
         guard
-            let range = path.range(of: #"model\.layers\.(\d+)\."#, options: .regularExpression)
+            let range = path.range(of: #"layers\.(\d+)\."#, options: .regularExpression)
         else {
             return -1
         }
@@ -261,14 +252,15 @@ public enum GroupExecutionTraceProbe {
 
     /// All MLP down-projection observation paths across decoder layers — both
     /// fused-MoE (`mlp.switch_mlp.down_proj`) and dense (`mlp.down_proj`)
-    /// variants. These are the same capture points the identity probe
-    /// validated; the trace probe installs one event source per decoder layer.
+    /// variants, under any model-specific prefix (`model.layers.*`,
+    /// `language_model.model.layers.*`). Shared-expert projections are
+    /// excluded by construction: their paths end `.shared_expert.down_proj`,
+    /// so every captured event maps to exactly one declared optional group.
     public static func allObservationPaths(model: some MLXNN.Module) -> [String] {
         model.leafModules().flattened()
             .map(\.0)
             .filter { path in
-                guard path.hasPrefix("model.layers.") else { return false }
-                return path.hasSuffix(".mlp.down_proj")
+                path.hasSuffix(".mlp.down_proj")
                     || path.hasSuffix(".mlp.switch_mlp.down_proj")
             }
             .sorted()
@@ -282,14 +274,43 @@ public enum GroupExecutionTraceProbe {
         return events.filter { $0.modulePath == firstPath }.count
     }
 
-    /// Stability comparison ignores timestamps and sequence numbers: two
-    /// traces are stable when their (module, layer, shape) streams are equal.
+    /// Stability comparison: two traces are stable when their observed
+    /// (module, layer) event streams are identical. Stability is an
+    /// instrumentation property — it does not imply predictability.
     public static func tracesStable(_ a: [ExecutionTraceEvent], _ b: [ExecutionTraceEvent]) -> Bool {
         guard a.count == b.count else { return false }
-        return zip(a, b).allSatisfy { lhs, rhs in
-            lhs.modulePath == rhs.modulePath
-                && lhs.decoderLayer == rhs.decoderLayer
-                && lhs.outputShape == rhs.outputShape
+        for (lhs, rhs) in zip(a, b) {
+            let sameModule = lhs.modulePath == rhs.modulePath
+            let sameLayer = lhs.decoderLayer == rhs.decoderLayer
+            if !(sameModule && sameLayer) {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Discovery helper: lists leaf module paths of the loaded model that
+    /// contain the filter substring. Used to register the actual module
+    /// naming per model class before installing observation points.
+    public static func leafModulePathAudit(
+        modelDirectory: URL,
+        filterSubstring: String
+    ) async throws -> LeafModulePathAuditReport {
+        let container = try await LLMModelFactory.shared.loadContainer(
+            from: modelDirectory,
+            using: #huggingFaceTokenizerLoader()
+        )
+        return try await container.perform { (context: ModelContext) -> LeafModulePathAuditReport in
+            let paths = context.model.leafModules().flattened().map(\.0).sorted()
+            let matching = paths.filter { $0.contains(filterSubstring) }
+            return LeafModulePathAuditReport(
+                modelType: String(describing: type(of: context.model)),
+                leafModuleCount: paths.count,
+                matchingCount: matching.count,
+                sampleMatchingPaths: Array(matching.prefix(80)),
+                matchingLayers: Set(matching.compactMap { decoderLayer(fromPath: $0) })
+                    .sorted()
+            )
         }
     }
 
@@ -538,6 +559,14 @@ public enum GroupExecutionTraceProbe {
         Double(start.duration(to: .now).components.attoseconds) / 1e18 * 1000
     }
 }
+public struct LeafModulePathAuditReport: Codable, Sendable {
+    public let modelType: String
+    public let leafModuleCount: Int
+    public let matchingCount: Int
+    public let sampleMatchingPaths: [String]
+    public let matchingLayers: [Int]
+}
+
 public struct GroupExecutionTraceReport: Codable, Sendable {
     public let status: String
     public let modelType: String
