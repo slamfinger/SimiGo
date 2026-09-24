@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-24（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
+**Last updated**: 2026-09-25（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
@@ -58,13 +58,24 @@ Predictor / Expert demand / async I/O 仍为未授权后续）
 CYCLE_ABC 最低 no-overflow budget = 40%，ALTERNATE_A_AB = 70%，
 BASELINE_ABA / FULL_PARTIAL = 100%；该结果仅描述 planner trade-off，
 descriptive recency hints 不是 prediction，也不建立真实 demand）
+；Workload Trace 已登记 T1–T4 四条可复现 trace（declared
+operation→state mapping，非 measured demand）；simulator trace replay
+已完成（Qwen3-Coder inventory；70% budget 下 T1/T2/T3 required-hit ratio
+= 0.888/0.872/0.871，T4 需 100% 才无 overflow；hint 仍为 strictly-prior
+descriptive recency）
+；真实 MLX runtime 已按四条 trace 的 state 序列跑 Gate 5 三策略对照，
+全部 PASS（output identity PASS；reload 较 naive 分别 −20.25 / −10.12 /
+−40.50 / −30.38 GiB；T4 相对降幅 −50%；latency advantage 仍未建立；
+generation 仍需全部 decoder-layer groups，policy 只控 idle retention）
+；demand predictor 仍受 STOP GATE 约束，下一门 = ⑦ locality / reload /
+residency 分析）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: BUDGET_SWEEP_SIMULATOR_PASS / WORKLOAD_TRACE_PENDING
+Engineering subphase: WORKLOAD_TRACE_PASS / LOCALITY_ANALYSIS_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1349,3 +1360,47 @@ still has no bundled template and remains in raw-fallback mode.
 
 Application history:
 docs/00-governance/SIMIGO2_CHAT_TEMPLATE_APPLICATION_20260924.md.
+
+### SimiGo 2.0 Workload Trace Registration and Replay — 2026-09-25
+
+Four replayable workload traces were registered, replacing synthetic state
+sequences only at the trace level. Each step declares an operation label, an
+execution-state label, and the mapping rationale:
+
+```text
+T1_DOCUMENT_SESSION      open → summarize → search → edit → recheck → save
+T2_COMPUTER_OPERATION    file inspect → tool call → result → next op → tool call
+T3_AGENTIC_MULTI_TURN    3 × (user turn → tool call → result) → final answer (STATE_ALL)
+T4_LONG_CONTEXT          context load (STATE_ALL) → extract AB → BC → AB → summary (STATE_ALL)
+```
+
+The operation→state mapping is a DECLARED scenario-level choice registered with
+the trace catalog. It is not measured demand and does not establish demand.
+
+Simulator trace replay (planner + strictly-prior descriptive recency hints,
+Qwen3-Coder inventory) at 70% budget reached required-hit ratios 0.888 / 0.872
+/ 0.871 for T1 / T2 / T3; T4 requires 100% budget before overflow disappears.
+Below 70%, every STATE_AB step overflows (core + two switch groups = 68.4% of
+inventory), consistent with the budget-sweep thresholds.
+
+The real MLX runtime (planner-integrated Gate 5 harness, Apple M5) ran each
+trace's state sequence under ALL_RESIDENT / NAIVE_ON_DEMAND /
+EXECUTION_STATE_PLANNER. All four traces:
+
+```text
+outputIdentityPass = true (all passes, "pong")
+benchmarkPass      = true
+reload vs naive    = −20.25 / −10.12 / −40.50 / −30.38 GiB (T1/T2/T3/T4)
+idle reduction     = 10.12 / 10.12 / 10.12 / 5.06 GiB
+latency advantage  = NOT ESTABLISHED
+```
+
+Boundary: DECLARED_TRACE_STATE_MAPPING / DESCRIPTIVE_RECENCY_HINTS /
+NOT_PREDICTION / NOT_DEMAND_CLAIM. Generation still requires all
+decoder-layer groups; the policy controls idle retention between generations.
+Predictor / Expert demand / Token × Expert demand / async I/O remain
+unauthorized. Next gate: locality / reload / residency analysis, then the
+demand-signal STOP GATE decision.
+
+Phase history:
+docs/00-governance/SIMIGO2_WORKLOAD_TRACE_REPLAY_20260925.md.

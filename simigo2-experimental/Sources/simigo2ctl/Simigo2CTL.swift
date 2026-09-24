@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -103,6 +103,27 @@ struct Simigo2CTL {
       let report = try PlannerBudgetSweep.run(
         inventory: inventory,
         sequenceIDs: sequenceIDs,
+        budgetPercents: budgetPercents
+      )
+      print(try toJSON(report))
+
+    case "trace-replay":
+      let traceIDOption = optionalOption("--traces", rest)
+      let traces: [WorkloadTrace]?
+      if let traceIDOption {
+        traces = try traceIDOption.split(separator: ",").map {
+          try WorkloadTraceCatalog.named(String($0))
+        }
+      } else {
+        traces = nil
+      }
+      let budgetPercents = try parseBudgetPercents(from: rest)
+      let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+        modelDirectory: modelDirectory
+      )
+      let report = try WorkloadTraceReplay.run(
+        inventory: inventory,
+        traces: traces,
         budgetPercents: budgetPercents
       )
       print(try toJSON(report))
