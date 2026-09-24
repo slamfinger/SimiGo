@@ -156,6 +156,28 @@ final class WorkloadTraceTests: XCTestCase {
         XCTAssertEqual(t3.map(\.overflowStepCount), [9, 0])
     }
 
+    func testExplicitPolicyMatchesDefaultOnQwenGeometry() throws {
+        // The contiguous policy must reproduce the default Qwen3CoderStatePolicy
+        // mapping on the Qwen group geometry, so model-aware replay is a
+        // non-regression for the registered simulator results.
+        let defaultReport = try WorkloadTraceReplay.run(
+            inventory: inventory(),
+            traces: nil,
+            budgetPercents: [70]
+        )
+        let contiguousReport = try WorkloadTraceReplay.run(
+            inventory: inventory(),
+            traces: nil,
+            budgetPercents: [70],
+            policy: ContiguousLayerStatePolicy(inventory: inventory())
+        )
+
+        XCTAssertEqual(defaultReport.runs.count, contiguousReport.runs.count)
+        for (a, b) in zip(defaultReport.runs, contiguousReport.runs) {
+            XCTAssertEqual(a, b)
+        }
+    }
+
     func testHintsAreBuiltFromPriorStepsOnly() {
         let policy = Qwen3CoderStatePolicy(inventory: inventory())
         let optional = Set(["SWITCH_MLP_L00_15", "SWITCH_MLP_L16_31", "SWITCH_MLP_L32_47"])

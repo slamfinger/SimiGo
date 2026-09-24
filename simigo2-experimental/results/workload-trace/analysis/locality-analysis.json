@@ -1,0 +1,2685 @@
+{
+  "boundary": "DECLARED_TRACE_STATE_MAPPING / DESCRIPTIVE_RECENCY_HINTS / NOT_PREDICTION / NOT_DEMAND_CLAIM / PER_MODEL_PER_TRACE_NO_POOLING",
+  "models": {
+    "cyber-tiel-35b": {
+      "real": {
+        "T1": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 84.38,
+          "naiveReloadSeconds": 14.77,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 30.38,
+          "reloadReductionRatio": 0.36,
+          "stateIdleGiB": 8.7,
+          "stateReloadGiB": 54.0,
+          "stateReloadSeconds": 9.92
+        },
+        "T2": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.22,
+          "naiveReloadGiB": 67.5,
+          "naiveReloadSeconds": 11.51,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 16.88,
+          "reloadReductionRatio": 0.25,
+          "stateIdleGiB": 8.7,
+          "stateReloadGiB": 50.62,
+          "stateReloadSeconds": 8.91
+        },
+        "T3": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 135.0,
+          "naiveReloadSeconds": 22.86,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 57.38,
+          "reloadReductionRatio": 0.425,
+          "stateIdleGiB": 8.7,
+          "stateReloadGiB": 77.62,
+          "stateReloadSeconds": 15.48
+        },
+        "T4": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 6.75,
+          "naiveReloadGiB": 67.5,
+          "naiveReloadSeconds": 12.19,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 37.12,
+          "reloadReductionRatio": 0.55,
+          "stateIdleGiB": 12.07,
+          "stateReloadGiB": 30.38,
+          "stateReloadSeconds": 4.99
+        }
+      },
+      "traces": {
+        "T1": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.904,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.904,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.904,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.904,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "25": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 6,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "40": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 6,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "50": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "60": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "70": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 37.12,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "80": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 37.12,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.618,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 13.5,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.809,
+              "zeroRetentionMissGiB": 54.0
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.4,
+          "optionalTransitionOverlapMean": 0.4,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              2,
+              1
+            ]
+          },
+          "steps": 6
+        },
+        "T2": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.89,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.89,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.89,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.89,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "25": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 5,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "40": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 5,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "50": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "60": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "70": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 33.75,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "80": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 33.75,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.558,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 13.5,
+              "reloadSavedVsZeroRetentionGiB": 33.75,
+              "requiredHitRatio": 0.779,
+              "zeroRetentionMissGiB": 47.25
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.375,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2
+            ]
+          },
+          "steps": 5
+        },
+        "T3": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.942,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.942,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.942,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.942,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "25": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 9,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "40": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 9,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "50": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "60": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "70": {
+              "evictedGiB": 37.12,
+              "loadedGiB": 54.0,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "80": {
+              "evictedGiB": 37.12,
+              "loadedGiB": 54.0,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.622,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 20.25,
+              "overflowSteps": 1,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 74.25,
+              "requiredHitRatio": 0.855,
+              "zeroRetentionMissGiB": 91.12
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.396,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1,
+              2,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L32_47": []
+          },
+          "steps": 9
+        },
+        "T4": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.801,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.801,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.801,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.801,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "25": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "40": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "50": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "60": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "70": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "80": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "90": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 2,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.642,
+              "zeroRetentionMissGiB": 70.88
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.5,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L32_47": [
+              2,
+              2
+            ]
+          },
+          "steps": 5
+        }
+      }
+    },
+    "gemma4-12b-coder": {
+      "real": {
+        "T1": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 2.97,
+          "naiveReloadGiB": 22.25,
+          "naiveReloadSeconds": 0.88,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 5.93,
+          "reloadReductionRatio": 0.267,
+          "stateIdleGiB": 3.27,
+          "stateReloadGiB": 16.31,
+          "stateReloadSeconds": 0.68
+        },
+        "T2": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 2.97,
+          "naiveReloadGiB": 17.8,
+          "naiveReloadSeconds": 0.71,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 2.97,
+          "reloadReductionRatio": 0.167,
+          "stateIdleGiB": 3.27,
+          "stateReloadGiB": 14.83,
+          "stateReloadSeconds": 0.62
+        },
+        "T3": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 2.97,
+          "naiveReloadGiB": 35.6,
+          "naiveReloadSeconds": 1.4,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 11.87,
+          "reloadReductionRatio": 0.333,
+          "stateIdleGiB": 3.27,
+          "stateReloadGiB": 23.73,
+          "stateReloadSeconds": 1.0
+        },
+        "T4": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 1.48,
+          "naiveReloadGiB": 17.8,
+          "naiveReloadSeconds": 0.7,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 8.9,
+          "reloadReductionRatio": 0.5,
+          "stateIdleGiB": 4.76,
+          "stateReloadGiB": 8.9,
+          "stateReloadSeconds": 0.39
+        }
+      },
+      "traces": {
+        "T1": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "25": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 5.93,
+              "overflowSteps": 6,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 5.93,
+              "requiredHitRatio": 0.738,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "40": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 5.93,
+              "overflowSteps": 6,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 5.93,
+              "requiredHitRatio": 0.738,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "50": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 5.93,
+              "overflowSteps": 6,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 5.93,
+              "requiredHitRatio": 0.738,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "60": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 5.93,
+              "overflowSteps": 2,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 5.93,
+              "requiredHitRatio": 0.738,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "70": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 5.93,
+              "overflowSteps": 2,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 5.93,
+              "requiredHitRatio": 0.738,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 2.97,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 2.97,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.934,
+              "zeroRetentionMissGiB": 11.87
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.4,
+          "optionalTransitionOverlapMean": 0.4,
+          "reuseGaps": {
+            "DENSE_MLP_L00_15": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L16_31": [
+              2,
+              1
+            ]
+          },
+          "steps": 6
+        },
+        "T2": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "25": {
+              "evictedGiB": 2.97,
+              "loadedGiB": 5.93,
+              "overflowSteps": 5,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 4.45,
+              "requiredHitRatio": 0.693,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "40": {
+              "evictedGiB": 2.97,
+              "loadedGiB": 5.93,
+              "overflowSteps": 5,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 4.45,
+              "requiredHitRatio": 0.693,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "50": {
+              "evictedGiB": 2.97,
+              "loadedGiB": 5.93,
+              "overflowSteps": 5,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 4.45,
+              "requiredHitRatio": 0.693,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "60": {
+              "evictedGiB": 2.97,
+              "loadedGiB": 5.93,
+              "overflowSteps": 2,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 4.45,
+              "requiredHitRatio": 0.693,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "70": {
+              "evictedGiB": 2.97,
+              "loadedGiB": 5.93,
+              "overflowSteps": 2,
+              "plannerMissGiB": 5.93,
+              "reloadSavedVsZeroRetentionGiB": 4.45,
+              "requiredHitRatio": 0.693,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 2.97,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 2.97,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.923,
+              "zeroRetentionMissGiB": 10.38
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.375,
+          "reuseGaps": {
+            "DENSE_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L16_31": [
+              1,
+              2
+            ]
+          },
+          "steps": 5
+        },
+        "T3": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 19.28,
+              "requiredHitRatio": 0.96,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 19.28,
+              "requiredHitRatio": 0.96,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 19.28,
+              "requiredHitRatio": 0.96,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 1.48,
+              "reloadSavedVsZeroRetentionGiB": 19.28,
+              "requiredHitRatio": 0.96,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "25": {
+              "evictedGiB": 5.93,
+              "loadedGiB": 10.38,
+              "overflowSteps": 9,
+              "plannerMissGiB": 10.38,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.718,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "40": {
+              "evictedGiB": 5.93,
+              "loadedGiB": 10.38,
+              "overflowSteps": 9,
+              "plannerMissGiB": 10.38,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.718,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "50": {
+              "evictedGiB": 5.93,
+              "loadedGiB": 10.38,
+              "overflowSteps": 9,
+              "plannerMissGiB": 10.38,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.718,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "60": {
+              "evictedGiB": 5.93,
+              "loadedGiB": 10.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 10.38,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.718,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "70": {
+              "evictedGiB": 5.93,
+              "loadedGiB": 10.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 10.38,
+              "reloadSavedVsZeroRetentionGiB": 10.38,
+              "requiredHitRatio": 0.718,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 1,
+              "plannerMissGiB": 2.97,
+              "reloadSavedVsZeroRetentionGiB": 17.8,
+              "requiredHitRatio": 0.92,
+              "zeroRetentionMissGiB": 20.76
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 1,
+              "plannerMissGiB": 2.97,
+              "reloadSavedVsZeroRetentionGiB": 17.8,
+              "requiredHitRatio": 0.92,
+              "zeroRetentionMissGiB": 20.76
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.396,
+          "reuseGaps": {
+            "DENSE_MLP_L00_15": [
+              1,
+              2,
+              1,
+              2,
+              1,
+              1
+            ],
+            "DENSE_MLP_L16_31": [
+              1,
+              2,
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L32_47": []
+          },
+          "steps": 9
+        },
+        "T4": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 4.45,
+              "reloadSavedVsZeroRetentionGiB": 13.35,
+              "requiredHitRatio": 0.834,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 4.45,
+              "reloadSavedVsZeroRetentionGiB": 13.35,
+              "requiredHitRatio": 0.834,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 4.45,
+              "reloadSavedVsZeroRetentionGiB": 13.35,
+              "requiredHitRatio": 0.834,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 4.45,
+              "overflowSteps": 0,
+              "plannerMissGiB": 4.45,
+              "reloadSavedVsZeroRetentionGiB": 13.35,
+              "requiredHitRatio": 0.834,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "25": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 5,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "40": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 5,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "50": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 5,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "60": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 5,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "70": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 5,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "80": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 2,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            },
+            "90": {
+              "evictedGiB": 4.45,
+              "loadedGiB": 8.9,
+              "overflowSteps": 2,
+              "plannerMissGiB": 8.9,
+              "reloadSavedVsZeroRetentionGiB": 8.9,
+              "requiredHitRatio": 0.667,
+              "zeroRetentionMissGiB": 17.8
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.5,
+          "reuseGaps": {
+            "DENSE_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L16_31": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "DENSE_MLP_L32_47": [
+              2,
+              2
+            ]
+          },
+          "steps": 5
+        }
+      }
+    },
+    "muse-glimmer-30b": {
+      "real": {
+        "T1": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 7.1,
+          "naiveReloadGiB": 54.31,
+          "naiveReloadSeconds": 4.99,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 15.46,
+          "reloadReductionRatio": 0.285,
+          "stateIdleGiB": 7.5,
+          "stateReloadGiB": 38.85,
+          "stateReloadSeconds": 2.92
+        },
+        "T2": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 7.1,
+          "naiveReloadGiB": 43.45,
+          "naiveReloadSeconds": 4.26,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 7.94,
+          "reloadReductionRatio": 0.183,
+          "stateIdleGiB": 7.5,
+          "stateReloadGiB": 35.51,
+          "stateReloadSeconds": 2.95
+        },
+        "T3": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 7.1,
+          "naiveReloadGiB": 86.89,
+          "naiveReloadSeconds": 8.55,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 30.5,
+          "reloadReductionRatio": 0.351,
+          "stateIdleGiB": 7.5,
+          "stateReloadGiB": 56.4,
+          "stateReloadSeconds": 4.33
+        },
+        "T4": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 3.76,
+          "naiveReloadGiB": 43.45,
+          "naiveReloadSeconds": 4.79,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 22.14,
+          "reloadReductionRatio": 0.51,
+          "stateIdleGiB": 10.84,
+          "stateReloadGiB": 21.31,
+          "stateReloadSeconds": 2.47
+        }
+      },
+      "traces": {
+        "T1": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.928,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.928,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.928,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.928,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "25": {
+              "evictedGiB": 11.28,
+              "loadedGiB": 15.04,
+              "overflowSteps": 6,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 15.04,
+              "requiredHitRatio": 0.713,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "40": {
+              "evictedGiB": 11.28,
+              "loadedGiB": 15.04,
+              "overflowSteps": 6,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 15.04,
+              "requiredHitRatio": 0.713,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "50": {
+              "evictedGiB": 11.28,
+              "loadedGiB": 15.04,
+              "overflowSteps": 6,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 15.04,
+              "requiredHitRatio": 0.713,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "60": {
+              "evictedGiB": 11.28,
+              "loadedGiB": 15.04,
+              "overflowSteps": 2,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 15.04,
+              "requiredHitRatio": 0.713,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "70": {
+              "evictedGiB": 11.28,
+              "loadedGiB": 15.04,
+              "overflowSteps": 2,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 15.04,
+              "requiredHitRatio": 0.713,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "80": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 7.52,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.857,
+              "zeroRetentionMissGiB": 30.08
+            },
+            "90": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 7.52,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.857,
+              "zeroRetentionMissGiB": 30.08
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.4,
+          "optionalTransitionOverlapMean": 0.4,
+          "reuseGaps": {
+            "DENSE_MLP_L00_17": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L18_35": [
+              2,
+              1
+            ]
+          },
+          "steps": 6
+        },
+        "T2": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.916,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.916,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.916,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.916,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "25": {
+              "evictedGiB": 7.52,
+              "loadedGiB": 15.04,
+              "overflowSteps": 5,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 11.28,
+              "requiredHitRatio": 0.666,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "40": {
+              "evictedGiB": 7.52,
+              "loadedGiB": 15.04,
+              "overflowSteps": 5,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 11.28,
+              "requiredHitRatio": 0.666,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "50": {
+              "evictedGiB": 7.52,
+              "loadedGiB": 15.04,
+              "overflowSteps": 5,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 11.28,
+              "requiredHitRatio": 0.666,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "60": {
+              "evictedGiB": 7.52,
+              "loadedGiB": 15.04,
+              "overflowSteps": 2,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 11.28,
+              "requiredHitRatio": 0.666,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "70": {
+              "evictedGiB": 7.52,
+              "loadedGiB": 15.04,
+              "overflowSteps": 2,
+              "plannerMissGiB": 15.04,
+              "reloadSavedVsZeroRetentionGiB": 11.28,
+              "requiredHitRatio": 0.666,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "80": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 7.52,
+              "reloadSavedVsZeroRetentionGiB": 18.8,
+              "requiredHitRatio": 0.833,
+              "zeroRetentionMissGiB": 26.32
+            },
+            "90": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 7.52,
+              "reloadSavedVsZeroRetentionGiB": 18.8,
+              "requiredHitRatio": 0.833,
+              "zeroRetentionMissGiB": 26.32
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.375,
+          "reuseGaps": {
+            "DENSE_MLP_L00_17": [
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L18_35": [
+              1,
+              2
+            ]
+          },
+          "steps": 5
+        },
+        "T3": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 48.46,
+              "requiredHitRatio": 0.956,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 48.46,
+              "requiredHitRatio": 0.956,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 48.46,
+              "requiredHitRatio": 0.956,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 3.76,
+              "reloadSavedVsZeroRetentionGiB": 48.46,
+              "requiredHitRatio": 0.956,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "25": {
+              "evictedGiB": 15.04,
+              "loadedGiB": 25.9,
+              "overflowSteps": 9,
+              "plannerMissGiB": 25.9,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.698,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "40": {
+              "evictedGiB": 15.04,
+              "loadedGiB": 25.9,
+              "overflowSteps": 9,
+              "plannerMissGiB": 25.9,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.698,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "50": {
+              "evictedGiB": 15.04,
+              "loadedGiB": 25.9,
+              "overflowSteps": 9,
+              "plannerMissGiB": 25.9,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.698,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "60": {
+              "evictedGiB": 15.04,
+              "loadedGiB": 25.9,
+              "overflowSteps": 4,
+              "plannerMissGiB": 25.9,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.698,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "70": {
+              "evictedGiB": 15.04,
+              "loadedGiB": 25.9,
+              "overflowSteps": 4,
+              "plannerMissGiB": 25.9,
+              "reloadSavedVsZeroRetentionGiB": 26.32,
+              "requiredHitRatio": 0.698,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "80": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 14.2,
+              "overflowSteps": 1,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 41.36,
+              "requiredHitRatio": 0.873,
+              "zeroRetentionMissGiB": 52.22
+            },
+            "90": {
+              "evictedGiB": 3.34,
+              "loadedGiB": 14.2,
+              "overflowSteps": 1,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 41.36,
+              "requiredHitRatio": 0.873,
+              "zeroRetentionMissGiB": 52.22
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.396,
+          "reuseGaps": {
+            "DENSE_MLP_L00_17": [
+              1,
+              2,
+              1,
+              2,
+              1,
+              1
+            ],
+            "DENSE_MLP_L18_35": [
+              1,
+              2,
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L36_51": []
+          },
+          "steps": 9
+        },
+        "T4": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 33.0,
+              "requiredHitRatio": 0.826,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 33.0,
+              "requiredHitRatio": 0.826,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 33.0,
+              "requiredHitRatio": 0.826,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.86,
+              "overflowSteps": 0,
+              "plannerMissGiB": 10.86,
+              "reloadSavedVsZeroRetentionGiB": 33.0,
+              "requiredHitRatio": 0.826,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "25": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 5,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "40": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 5,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "50": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 5,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "60": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 5,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "70": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 5,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "80": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 2,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            },
+            "90": {
+              "evictedGiB": 10.44,
+              "loadedGiB": 21.31,
+              "overflowSteps": 2,
+              "plannerMissGiB": 21.31,
+              "reloadSavedVsZeroRetentionGiB": 22.56,
+              "requiredHitRatio": 0.659,
+              "zeroRetentionMissGiB": 43.86
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.5,
+          "reuseGaps": {
+            "DENSE_MLP_L00_17": [
+              1,
+              2,
+              1
+            ],
+            "DENSE_MLP_L18_35": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "DENSE_MLP_L36_51": [
+              2,
+              2
+            ]
+          },
+          "steps": 5
+        }
+      }
+    },
+    "nail-qwen36-35b": {
+      "real": {
+        "T1": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 84.38,
+          "naiveReloadSeconds": 15.0,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 30.38,
+          "reloadReductionRatio": 0.36,
+          "stateIdleGiB": 9.19,
+          "stateReloadGiB": 54.0,
+          "stateReloadSeconds": 10.62
+        },
+        "T2": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 67.5,
+          "naiveReloadSeconds": 11.28,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 16.88,
+          "reloadReductionRatio": 0.25,
+          "stateIdleGiB": 9.19,
+          "stateReloadGiB": 50.62,
+          "stateReloadSeconds": 9.78
+        },
+        "T3": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 135.0,
+          "naiveReloadSeconds": 22.39,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 57.38,
+          "reloadReductionRatio": 0.425,
+          "stateIdleGiB": 9.19,
+          "stateReloadGiB": 77.62,
+          "stateReloadSeconds": 15.6
+        },
+        "T4": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 6.75,
+          "naiveReloadGiB": 67.5,
+          "naiveReloadSeconds": 11.38,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 37.12,
+          "reloadReductionRatio": 0.55,
+          "stateIdleGiB": 12.57,
+          "stateReloadGiB": 30.38,
+          "stateReloadSeconds": 5.99
+        }
+      },
+      "traces": {
+        "T1": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.908,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.908,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.908,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.908,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "25": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 6,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "40": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 6,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "50": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "60": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "70": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 37.12,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "80": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 37.12,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 27.0,
+              "requiredHitRatio": 0.633,
+              "zeroRetentionMissGiB": 54.0
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 13.5,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.817,
+              "zeroRetentionMissGiB": 54.0
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.4,
+          "optionalTransitionOverlapMean": 0.4,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              2,
+              1
+            ]
+          },
+          "steps": 6
+        },
+        "T2": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.894,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.894,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.894,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.894,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "25": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 5,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "40": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 5,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "50": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "60": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 27.0,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "70": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 33.75,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "80": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 33.75,
+              "overflowSteps": 2,
+              "plannerMissGiB": 27.0,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.576,
+              "zeroRetentionMissGiB": 47.25
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 13.5,
+              "reloadSavedVsZeroRetentionGiB": 33.75,
+              "requiredHitRatio": 0.788,
+              "zeroRetentionMissGiB": 47.25
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.375,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2
+            ]
+          },
+          "steps": 5
+        },
+        "T3": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.944,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.944,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.944,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 6.75,
+              "reloadSavedVsZeroRetentionGiB": 84.38,
+              "requiredHitRatio": 0.944,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "25": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 9,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "40": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 9,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "50": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "60": {
+              "evictedGiB": 27.0,
+              "loadedGiB": 43.88,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "70": {
+              "evictedGiB": 37.12,
+              "loadedGiB": 54.0,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "80": {
+              "evictedGiB": 37.12,
+              "loadedGiB": 54.0,
+              "overflowSteps": 4,
+              "plannerMissGiB": 43.88,
+              "reloadSavedVsZeroRetentionGiB": 47.25,
+              "requiredHitRatio": 0.636,
+              "zeroRetentionMissGiB": 91.12
+            },
+            "90": {
+              "evictedGiB": 3.38,
+              "loadedGiB": 20.25,
+              "overflowSteps": 1,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 74.25,
+              "requiredHitRatio": 0.86,
+              "zeroRetentionMissGiB": 91.12
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.396,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1,
+              2,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L32_47": []
+          },
+          "steps": 9
+        },
+        "T4": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.807,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.807,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.807,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 16.88,
+              "overflowSteps": 0,
+              "plannerMissGiB": 16.88,
+              "reloadSavedVsZeroRetentionGiB": 54.0,
+              "requiredHitRatio": 0.807,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "25": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "40": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "50": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "60": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "70": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "80": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 4,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "90": {
+              "evictedGiB": 13.5,
+              "loadedGiB": 30.38,
+              "overflowSteps": 2,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 40.5,
+              "requiredHitRatio": 0.652,
+              "zeroRetentionMissGiB": 70.88
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.5,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L32_47": [
+              2,
+              2
+            ]
+          },
+          "steps": 5
+        }
+      }
+    },
+    "qwen3-coder-30b": {
+      "real": {
+        "T1": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 75.94,
+          "naiveReloadSeconds": 11.78,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 20.25,
+          "reloadReductionRatio": 0.267,
+          "stateIdleGiB": 5.88,
+          "stateReloadGiB": 55.69,
+          "stateReloadSeconds": 7.58
+        },
+        "T2": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 60.75,
+          "naiveReloadSeconds": 8.99,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 10.12,
+          "reloadReductionRatio": 0.167,
+          "stateIdleGiB": 5.88,
+          "stateReloadGiB": 50.62,
+          "stateReloadSeconds": 7.58
+        },
+        "T3": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 10.12,
+          "naiveReloadGiB": 121.5,
+          "naiveReloadSeconds": 18.26,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 40.5,
+          "reloadReductionRatio": 0.333,
+          "stateIdleGiB": 5.88,
+          "stateReloadGiB": 81.0,
+          "stateReloadSeconds": 11.33
+        },
+        "T4": {
+          "benchmarkPass": true,
+          "idleReductionGiB": 5.06,
+          "naiveReloadGiB": 60.75,
+          "naiveReloadSeconds": 7.84,
+          "outputIdentityPass": true,
+          "reloadReductionGiB": 30.38,
+          "reloadReductionRatio": 0.5,
+          "stateIdleGiB": 10.94,
+          "stateReloadGiB": 30.38,
+          "stateReloadSeconds": 4.0
+        }
+      },
+      "traces": {
+        "T1": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "25": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 20.25,
+              "overflowSteps": 6,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.554,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "40": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.554,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "50": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.554,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "60": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 20.25,
+              "requiredHitRatio": 0.554,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "70": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.888,
+              "zeroRetentionMissGiB": 40.5
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.4,
+          "optionalTransitionOverlapMean": 0.4,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              2,
+              1
+            ]
+          },
+          "steps": 6
+        },
+        "T2": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "25": {
+              "evictedGiB": 10.12,
+              "loadedGiB": 20.25,
+              "overflowSteps": 5,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 15.19,
+              "requiredHitRatio": 0.487,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "40": {
+              "evictedGiB": 10.12,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 15.19,
+              "requiredHitRatio": 0.487,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "50": {
+              "evictedGiB": 10.12,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 15.19,
+              "requiredHitRatio": 0.487,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "60": {
+              "evictedGiB": 10.12,
+              "loadedGiB": 20.25,
+              "overflowSteps": 2,
+              "plannerMissGiB": 20.25,
+              "reloadSavedVsZeroRetentionGiB": 15.19,
+              "requiredHitRatio": 0.487,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "70": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 10.12,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.872,
+              "zeroRetentionMissGiB": 35.44
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.375,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2
+            ]
+          },
+          "steps": 5
+        },
+        "T3": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 65.81,
+              "requiredHitRatio": 0.935,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 65.81,
+              "requiredHitRatio": 0.935,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 65.81,
+              "requiredHitRatio": 0.935,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 5.06,
+              "reloadSavedVsZeroRetentionGiB": 65.81,
+              "requiredHitRatio": 0.935,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "25": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 35.44,
+              "overflowSteps": 9,
+              "plannerMissGiB": 35.44,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.547,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "40": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 35.44,
+              "overflowSteps": 4,
+              "plannerMissGiB": 35.44,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.547,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "50": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 35.44,
+              "overflowSteps": 4,
+              "plannerMissGiB": 35.44,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.547,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "60": {
+              "evictedGiB": 20.25,
+              "loadedGiB": 35.44,
+              "overflowSteps": 4,
+              "plannerMissGiB": 35.44,
+              "reloadSavedVsZeroRetentionGiB": 35.44,
+              "requiredHitRatio": 0.547,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "70": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 1,
+              "plannerMissGiB": 10.12,
+              "reloadSavedVsZeroRetentionGiB": 60.75,
+              "requiredHitRatio": 0.871,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "80": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 1,
+              "plannerMissGiB": 10.12,
+              "reloadSavedVsZeroRetentionGiB": 60.75,
+              "requiredHitRatio": 0.871,
+              "zeroRetentionMissGiB": 70.88
+            },
+            "90": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 1,
+              "plannerMissGiB": 10.12,
+              "reloadSavedVsZeroRetentionGiB": 60.75,
+              "requiredHitRatio": 0.871,
+              "zeroRetentionMissGiB": 70.88
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.396,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1,
+              2,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              2,
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L32_47": []
+          },
+          "steps": 9
+        },
+        "T4": {
+          "budgets": {
+            "100": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 15.19,
+              "reloadSavedVsZeroRetentionGiB": 45.56,
+              "requiredHitRatio": 0.766,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "110": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 15.19,
+              "reloadSavedVsZeroRetentionGiB": 45.56,
+              "requiredHitRatio": 0.766,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "120": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 15.19,
+              "reloadSavedVsZeroRetentionGiB": 45.56,
+              "requiredHitRatio": 0.766,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "150": {
+              "evictedGiB": 0.0,
+              "loadedGiB": 15.19,
+              "overflowSteps": 0,
+              "plannerMissGiB": 15.19,
+              "reloadSavedVsZeroRetentionGiB": 45.56,
+              "requiredHitRatio": 0.766,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "25": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "40": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "50": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "60": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 5,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "70": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 2,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "80": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 2,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            },
+            "90": {
+              "evictedGiB": 15.19,
+              "loadedGiB": 30.38,
+              "overflowSteps": 2,
+              "plannerMissGiB": 30.38,
+              "reloadSavedVsZeroRetentionGiB": 30.38,
+              "requiredHitRatio": 0.531,
+              "zeroRetentionMissGiB": 60.75
+            }
+          },
+          "optionalNextSubsetPrevRatio": 0.25,
+          "optionalTransitionOverlapMean": 0.5,
+          "reuseGaps": {
+            "SWITCH_MLP_L00_15": [
+              1,
+              2,
+              1
+            ],
+            "SWITCH_MLP_L16_31": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "SWITCH_MLP_L32_47": [
+              2,
+              2
+            ]
+          },
+          "steps": 5
+        }
+      }
+    }
+  }
+}

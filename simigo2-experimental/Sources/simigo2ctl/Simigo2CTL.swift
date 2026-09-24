@@ -118,13 +118,14 @@ struct Simigo2CTL {
         traces = nil
       }
       let budgetPercents = try parseBudgetPercents(from: rest)
-      let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+      let inventory = try SafetensorsInventoryReader.readModelGroups(
         modelDirectory: modelDirectory
       )
       let report = try WorkloadTraceReplay.run(
         inventory: inventory,
         traces: traces,
-        budgetPercents: budgetPercents
+        budgetPercents: budgetPercents,
+        policy: ContiguousLayerStatePolicy(inventory: inventory)
       )
       print(try toJSON(report))
 

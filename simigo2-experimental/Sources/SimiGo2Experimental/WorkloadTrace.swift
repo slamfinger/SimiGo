@@ -250,7 +250,8 @@ public enum WorkloadTraceReplay {
     public static func run(
         inventory: LayerInventory,
         traces: [WorkloadTrace]? = nil,
-        budgetPercents: [Double] = defaultBudgetPercents
+        budgetPercents: [Double] = defaultBudgetPercents,
+        policy: LayerResidencyPolicy? = nil
     ) throws -> WorkloadTraceReplayReport {
         guard !budgetPercents.isEmpty else {
             throw WorkloadTraceReplayError.noBudgets
@@ -260,8 +261,8 @@ public enum WorkloadTraceReplay {
         }
 
         let selectedTraces = traces ?? WorkloadTraceCatalog.traces
+        let resolvedPolicy = policy ?? Qwen3CoderStatePolicy(inventory: inventory)
         let planner = ExecutionResidencyPlanner(inventory: inventory)
-        let policy = Qwen3CoderStatePolicy(inventory: inventory)
         let groupLookup = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0) })
         let coreGroupIDs = Set(inventory.groups.filter(\.alwaysResident).map(\.id))
         let optionalGroupIDs = Set(inventory.groups.filter { !$0.alwaysResident }.map(\.id))
@@ -294,11 +295,11 @@ public enum WorkloadTraceReplay {
                 var optionalGroupRequiredStepIndices: [String: [Int]] = [:]
 
                 for (index, step) in trace.steps.enumerated() {
-                    let required = policy.desiredGroupIDs(for: step.executionState)
+                    let required = resolvedPolicy.desiredGroupIDs(for: step.executionState)
                     let priorStates = trace.steps.prefix(index).map(\.executionState)
                     let hints = recencyHints(
                         priorStates: priorStates,
-                        policy: policy,
+                        policy: resolvedPolicy,
                         optionalGroupIDs: optionalGroupIDs
                     )
 
@@ -395,7 +396,7 @@ public enum WorkloadTraceReplay {
     /// by construction; no future step is read.
     static func recencyHints(
         priorStates: [ExecutionStateLabel],
-        policy: Qwen3CoderStatePolicy,
+        policy: LayerResidencyPolicy,
         optionalGroupIDs: Set<String>
     ) -> [ResidencyDemandHint] {
         let history = priorStates.suffix(3).map { policy.desiredGroupIDs(for: $0) }

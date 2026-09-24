@@ -69,13 +69,23 @@ descriptive recency）
 generation 仍需全部 decoder-layer groups，policy 只控 idle retention）
 ；demand predictor 仍受 STOP GATE 约束，下一门 = ⑦ locality / reload /
 residency 分析）
+；⑦ 多模型 locality 分析已完成并扩展至五个本地 checkpoint
+（Qwen3-Coder / Nail-Qwen3.6 / Cyber-Tiel / Gemma4 / Muse-Glimmer；
+20/20 真实 Gate 5 trace 运行 output identity PASS；state retention 对
+naive 的 reload 节益 16.7–55%，逐 trace 比例跨模型稳定；latency
+advantage 仍未建立）；required-hit 排序 T3>T1>T2>T4 跨模型不变
+（declared mapping 属性），T4-ALL 登记为 working-set-breadth 边界
+workload；**Predictor STOP GATE 判定 = NO_GO**（G1–G3 在 declared 层
+成立，G4 source legitimacy 因无 measured execution trace 而不满足——
+STOP 为本阶段完整研究结论；重开仅可经已登记的 ISOLATED_INSTRUMENTATION
+路线上独立定义门，NOT STARTED））
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: WORKLOAD_TRACE_PASS / LOCALITY_ANALYSIS_PENDING
+Engineering subphase: LOCALITY_ANALYSIS_PASS / PREDICTOR_STOP_GATE_NO_GO
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1404,3 +1414,46 @@ demand-signal STOP GATE decision.
 
 Phase history:
 docs/00-governance/SIMIGO2_WORKLOAD_TRACE_REPLAY_20260925.md.
+
+### SimiGo 2.0 Multi-Model Locality Analysis & Predictor Stop Gate — 2026-09-25
+
+The locality analysis extended the trace evidence to five local checkpoints
+(Qwen3-Coder-30B switch, Nail-Qwen3.6-35B switch, Cyber-Tiel-Coder-35B
+switch — first residency validation, Gemma4-12B dense, Muse-Glimmer-30B
+dense). The `trace-replay` command is model-aware (policy parameterized;
+Qwen3-Coder results verified non-regression); 20/20 real Gate 5 trace runs
+passed output identity.
+
+Registered findings:
+
+```text
+transition overlap (optional sets)      = 0.375–0.5, next ⊆ prev 0.25–0.4
+required-hit ordering across 5 models   = T3 > T1 > T2 > T4 (mapping property, geometry-invariant)
+real reload reduction vs naive          = 20/20 pairs, 16.7–55%, per-trace ratios stable
+T4-ALL                                  = working-set-breadth boundary workload (lowest hit everywhere)
+latency advantage                       = NOT ESTABLISHED (Nail/Cyber-Tiel T3/T4 state gen slightly slower)
+```
+
+The inverse ordering between declarative hit ratio (T4 lowest) and real
+reload-reduction ratio (T4 highest) is registered: the reduction measures
+naive waste avoided, not trace locality; the two must not be conflated.
+
+Stop gate assessment (criteria registered before the verdict):
+G1 recurrence = OBSERVED (declared level), G2 transition locality = MODERATE,
+G3 intervention value = PASS, G4 source legitimacy = NOT SATISFIABLE (no
+measured execution trace exists; all locality is a property of the declared
+mappings and the recency hints reacting to them).
+
+```text
+PREDICTOR_STOP_GATE = NO_GO
+```
+
+STOP is the complete registered research conclusion of this phase: the
+machinery is validated end-to-end on five models, and the reload reductions
+are an engineering response to declared workloads, not evidence of
+predictable demand. Reopening the locality question requires measured
+execution traces via the already-registered ISOLATED_INSTRUMENTATION route;
+that gate is NOT STARTED and requires explicit authorization.
+
+Phase history:
+docs/00-governance/SIMIGO2_MULTI_MODEL_LOCALITY_ANALYSIS_STOP_GATE_20260925.md.
