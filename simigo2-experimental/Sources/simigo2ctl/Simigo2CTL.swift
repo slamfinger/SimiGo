@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -145,9 +145,23 @@ struct Simigo2CTL {
         states: states
       )
       print(try toJSON(report))
+    case "mlx-sequence-sweep":
+      let sequenceIDs = try parseSequenceIDs(from: rest)
+      let report = try await StateSequenceSweep.run(
+        modelDirectory: modelDirectory,
+        sequenceIDs: sequenceIDs
+      )
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }
+  }
+
+  static func parseSequenceIDs(from arguments: [String]) throws -> [String] {
+    guard let index = arguments.firstIndex(of: "--sequences"), index + 1 < arguments.count else {
+      throw OutputError(message: "missing --sequences ID,ID,...")
+    }
+    return arguments[index + 1].split(separator: ",").map(String.init)
   }
 
   static func parseStates(from arguments: [String]) throws -> [ExecutionStateLabel] {
