@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -151,6 +151,9 @@ struct Simigo2CTL {
         modelDirectory: modelDirectory,
         sequenceIDs: sequenceIDs
       )
+      print(try toJSON(report))
+    case "rep-audit":
+      let report = try await RepresentationCaptureAudit.audit(modelDirectory: modelDirectory)
       print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")

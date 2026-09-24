@@ -94,4 +94,29 @@ G1.9 = BLOCKED_PENDING_LOCAL_API_AUDIT
 
 Do not implement a fake representation collector from parameter tensors, final logits, or ablation scores.
 
-The next local task is to determine whether the installed MLX Swift version exposes a safe intermediate-layer observation point. If not, create a deliberately isolated instrumentation experiment rather than modifying the existing residency harness.
+The local API audit is implemented as a read-only module-tree inspection:
+
+```text
+simigo2ctl rep-audit MODEL_DIRECTORY
+```
+
+It enumerates candidate layer boundaries and records the boundary as
+`MODULE_INVENTORY_ONLY / NOT_ACTIVATION_CAPTURE`. It does not execute forward
+and does not claim that a module path is an activation. Its current output is
+expected to select `isolatedInstrumentation`, because the installed public
+`LanguageModel` contract still has no generic layer-indexed forward observation
+API.
+
+## G1.9-A result
+
+G1.9-A local API audit infrastructure = COMPLETE.
+G1.9 direct public-API representation capture = REJECTED for the installed API.
+G1.9 next route = a separate, explicitly experimental instrumentation probe.
+
+The instrumentation probe must first prove identity preservation: run the
+unmodified path and instrumented path on the same prompt, compare generated
+token IDs/logits or output identity, and record overhead. It must not alter the
+residency benchmark or be reused as causal-ablation evidence.
+
+The local Qwen3-Coder API audit result is registered in
+`docs/00-governance/SIMIGO2_REPRESENTATION_CAPTURE_API_AUDIT_20260924.md`.
