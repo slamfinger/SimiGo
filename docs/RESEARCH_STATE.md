@@ -39,6 +39,7 @@ SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 
 ；Gemma4 Unified 已完成 Apple M5 text inference probe，但当前 whole-group residency support 为 NOT_APPLICABLE / INCOMPLETE）
 ；Muse-Glimmer text-only 已通过本地 mlx-swift-lm fork 增加 RUNTIME_FORWARD 支持，RESIDENCY 仍为 NOT_APPLICABLE）
 ；Dense MLP residency extension 已实现，Gemma4 与 Muse-Glimmer Gate 5 均 PASS，但 semantic quality 仍未解决）
+；Checkpoint 自带 chat template 已可应用，Gemma4 dense Gate 5 在模板化输入下 PASS）
 
 ## Current research state
 
@@ -1303,3 +1304,27 @@ no-chat-template probe, so semantic quality remains unresolved.
 
 Extension history:
 docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.
+
+### Checkpoint Chat Template Application — 2026-09-24
+
+Runtime benchmarks now use the checkpoint's own chat template when available.
+Lookup order is `chat_template.jinja`, configured tokenizer template, then raw
+fallback. Templates receive the user prompt, add the assistant generation prompt,
+and pass `enable_thinking=false` when supported.
+
+Gemma4's bundled `chat_template.jinja` was validated with dense Gate 5:
+
+```text
+benchmarkPass                 = true
+outputIdentityPass            = true
+idleReductionObserved         = true
+maximum idle reduction        = 3,186,621,696 bytes
+reload reduction vs naive     = 3,185,049,600 bytes
+all generated outputs         = ping
+```
+
+This separates prompt-format errors from residency errors. Muse-Glimmer text-only
+still has no bundled template and remains in raw-fallback mode.
+
+Application history:
+docs/00-governance/SIMIGO2_CHAT_TEMPLATE_APPLICATION_20260924.md.

@@ -81,33 +81,12 @@ public enum MLXGroupResidencyBenchmark {
       using: #huggingFaceTokenizerLoader()
     )
     func generate() async throws -> String {
-      let (generated, decoded) = try await container.perform { context -> ([Int32], String) in
-        let promptIds = context.tokenizer
-          .encode(text: prompt, addSpecialTokens: true)
-          .map(Int32.init)
-        let parameters = GenerateParameters(maxTokens: maxTokens, temperature: 0)
-        var cache = try context.model.newCache(parameters: parameters)
-        var input = MLXArray(promptIds, [1, promptIds.count])
-        var generated: [Int32] = []
-
-        for _ in 0 ..< maxTokens {
-          let logits = context.model(input, cache: cache)[0, -1]
-          let nextToken = logits.argMax().item(Int32.self)
-          generated.append(nextToken)
-          if nextToken == context.tokenizer.eosTokenId ?? -1 {
-            break
-          }
-          input = MLXArray([nextToken], [1, 1])
-          eval(cache)
-        }
-
-        eval(cache)
-        let text = context.tokenizer.decode(
-          tokenIds: generated.map(Int.init), skipSpecialTokens: true)
-        return (generated, text)
-      }
-      _ = generated
-      return decoded
+      try await ChatTemplateGeneration.generate(
+        container: container,
+        modelDirectory: modelDirectory,
+        prompt: prompt,
+        maxTokens: maxTokens
+      )
     }
 
     func allResidentPass() async throws -> MLXPolicyRuntimeReport {

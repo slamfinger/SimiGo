@@ -631,6 +631,18 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
   probe; semantic quality remains unresolved.
 - Extension history: docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.
 
+## Checkpoint Chat Template Application — 2026-09-24
+
+- Runtime generation now applies the checkpoint chat template when present.
+- Lookup order: standalone `chat_template.jinja`, configured tokenizer template,
+  then raw encode fallback.
+- Adds the assistant generation prompt and passes `enable_thinking=false` when
+  supported.
+- Validated with Gemma4 dense Gate 5: all 15 outputs were `ping`,
+  `benchmarkPass=true`, idle reduction 3,186,621,696 bytes, and reload reduction
+  versus naive 3,185,049,600 bytes.
+- Application history: docs/00-governance/SIMIGO2_CHAT_TEMPLATE_APPLICATION_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

@@ -67,12 +67,12 @@ public enum MLXGroupInferenceGate {
       using: #huggingFaceTokenizerLoader()
     )
     func generate() async throws -> String {
-      let session = ChatSession(
-        container,
-        speculativeDecoding: nil,
-        generateParameters: GenerateParameters(maxTokens: maxTokens, temperature: 0)
+      try await ChatTemplateGeneration.generate(
+        container: container,
+        modelDirectory: modelDirectory,
+        prompt: prompt,
+        maxTokens: maxTokens
       )
-      return try await session.respond(to: prompt)
     }
     func sample() -> MLXLifecycleMemorySample {
       MLXLifecycleMemorySample(snapshot: Memory.snapshot())
