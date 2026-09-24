@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -198,6 +198,15 @@ struct Simigo2CTL {
         modelDirectory: modelDirectory,
         prompt: prompt,
         layerIndices: try parseLayerIndices(from: rest)
+      )
+      print(try toJSON(report))
+    case "group-trace-audit":
+      let prompt = optionalOption("--prompt", rest) ?? "Return exactly one word: ping"
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 8
+      let report = try await GroupExecutionTraceProbe.run(
+        modelDirectory: modelDirectory,
+        prompt: prompt,
+        maxTokens: maxTokens
       )
       print(try toJSON(report))
     default:

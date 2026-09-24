@@ -89,13 +89,23 @@ Expert/Token×Expert demand、production MLX 修改、async I/O、通用架构
 宣称；第一阶段 STOP 条件固定 = instrumented≈baseline + trace stable +
 overhead acceptable 三者同时成立才进 measured-locality 分析，否则在
 第一阶段 STOP）
+；G1.9-A group execution trace design / pre-run audit 已完成并修复三项
+缺陷（嵌套 perform 死锁隐患→非嵌套协议；identity probe 对
+QuantizedLinear 的静默语义破坏→专用分支按 quantizedMM 克隆；观测路径
+过滤器漏 fused MoE→双变体）；
+**Qwen3-Coder 首个 measured execution trace 采集 PASS**：48/48 层模块
+替换，logits SHA-256 逐位一致，生成文本逐字一致，两次 instrumented
+事件流逐项稳定（1536 事件 = 32 pass × 48 层，event-only 不持有激活），
+overhead 处于噪声内、峰值内存开销 0 MB；Phase-1 STOP 条件满足；
+measured-locality 分析（recurrence/transition locality/temporal
+stability）与 Predictor 重开决定 = PENDING，Predictor 仍未授权）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19A_ISOLATED_INSTRUMENTATION_AUTHORIZED / GROUP_TRACE_DESIGN_PENDING
+Engineering subphase: G19A_GROUP_TRACE_FIRST_CAPTURE_PASS / MEASURED_LOCALITY_ANALYSIS_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1467,3 +1477,36 @@ that gate is NOT STARTED and requires explicit authorization.
 
 Phase history:
 docs/00-governance/SIMIGO2_MULTI_MODEL_LOCALITY_ANALYSIS_STOP_GATE_20260925.md.
+
+### G1.9-A Group Execution Trace — Design, Pre-Run Audit, First Capture — 2026-09-25
+
+Following the explicit user authorization, the isolated instrumentation was
+extended from the single G1.9-B proxy point to a full group/layer execution
+trace. Pre-run audit found and fixed three defects before trusting traces:
+(a) nested `container.perform` deadlock hazard (non-nested protocol adopted),
+(b) a latent `QuantizedLinear` semantics break in the identity probe's plain
+Linear branch (dedicated quantized branch added; registered G1.9-B results
+unaffected), (c) an observation-path filter missing fused MoE paths (both
+variants accepted; instrumented module count now reported).
+
+First capture on Qwen3-Coder-30B-A3B-Instruct-4bit (positive control):
+
+```text
+status = PASS
+V1 logits identity        = PASS (SHA-256 bitwise, Δ = 0)
+V2 execution unchanged    = PASS (generation text exact-equal)
+V3 trace stability        = PASS (1536 events = 32 passes × 48 layers,
+                                 two instrumented runs identical)
+V4 overhead               = within noise, peak memory overhead 0 MB
+```
+
+Every forward pass executes all 48 switch-MLP layer groups; the trace is
+event-only (no activations retained) and the router is not instrumented
+(EXPERT_DEMAND_NOT_INSTRUMENTED). The Phase-1 STOP condition is satisfied for
+this configuration; measured-locality analysis and any Predictor reopening
+decision remain PENDING and unauthorized respectively.
+
+Phase history:
+docs/00-governance/SIMIGO2_G19A_GROUP_TRACE_DESIGN_PRERUN_AUDIT_20260925.md.
+Authorization history:
+docs/00-governance/SIMIGO2_G19A_ISOLATED_INSTRUMENTATION_AUTHORIZATION_20260925.md.

@@ -115,6 +115,53 @@ final class InstrumentedLinear: Linear {
     }
 }
 
+final class InstrumentedQuantizedLinear: Linear {
+    let captureBox: InstrumentationCaptureBox
+    let clonedWeight: MLXArray
+    let clonedBias: MLXArray?
+    let clonedScales: MLXArray
+    let clonedBiases: MLXArray?
+    let clonedGroupSize: Int
+    let clonedBits: Int
+    let clonedMode: QuantizationMode
+
+    init(cloning source: QuantizedLinear, captureBox: InstrumentationCaptureBox) {
+        self.captureBox = captureBox
+        let values = Dictionary(
+            uniqueKeysWithValues: source.parameters().flattened()
+        )
+        guard let weight = values["weight"] else {
+            fatalError("QuantizedLinear without weight parameter")
+        }
+        self.clonedWeight = weight
+        self.clonedScales = source.scales
+        self.clonedBiases = source.biases
+        self.clonedBias = values["bias"]
+        self.clonedGroupSize = source.groupSize
+        self.clonedBits = source.bits
+        self.clonedMode = source.mode
+        super.init(weight: clonedWeight, bias: clonedBias)
+    }
+
+    override func callAsFunction(_ x: MLXArray) -> MLXArray {
+        var output = MLX.quantizedMM(
+            x,
+            clonedWeight,
+            scales: clonedScales,
+            biases: clonedBiases,
+            transpose: true,
+            groupSize: clonedGroupSize,
+            bits: clonedBits,
+            mode: clonedMode
+        )
+        if let clonedBias {
+            output = output + clonedBias
+        }
+        captureBox.append(output)
+        return output
+    }
+}
+
 final class InstrumentedSwitchLinear: SwitchLinear {
     let captureBox: InstrumentationCaptureBox
 
@@ -303,6 +350,27 @@ public struct InstrumentationIdentityProbe {
                         originalType: String(describing: type(of: module)),
                         replacementType: String(describing: InstrumentedSwitchLinear.self),
                         quantized: module is QuantizedSwitchLinear
+                    )
+                )
+            } else if let source = module as? QuantizedLinear {
+                // QuantizedLinear is a Linear subclass; it must be cloned with
+                // its quantized parameters, otherwise the plain-Linear path
+                // would silently change semantics.
+                replacements.append(
+                    (
+                        path,
+                        InstrumentedQuantizedLinear(
+                            cloning: source,
+                            captureBox: captureBox
+                        )
+                    )
+                )
+                modules.append(
+                    InstrumentationProbeModule(
+                        path: path,
+                        originalType: String(describing: type(of: module)),
+                        replacementType: String(describing: InstrumentedQuantizedLinear.self),
+                        quantized: true
                     )
                 )
             } else if let source = module as? Linear {
