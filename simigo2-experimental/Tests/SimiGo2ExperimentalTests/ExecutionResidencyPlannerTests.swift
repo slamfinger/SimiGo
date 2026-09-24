@@ -15,6 +15,19 @@ final class ExecutionResidencyPlannerTests: XCTestCase {
         )
     }
 
+    private func qwenSequenceInventory() -> LayerInventory {
+        LayerInventory(
+            groups: [
+                LayerGroup(id: "CORE_NON_SWITCH", title: "Core", layerRangeDescription: "core", tensorCount: 1, byteCount: 100, alwaysResident: true),
+                LayerGroup(id: "SWITCH_MLP_L00_15", title: "A", layerRangeDescription: "0-15", tensorCount: 1, byteCount: 100),
+                LayerGroup(id: "SWITCH_MLP_L16_31", title: "B", layerRangeDescription: "16-31", tensorCount: 1, byteCount: 100),
+                LayerGroup(id: "SWITCH_MLP_L32_47", title: "C", layerRangeDescription: "32-47", tensorCount: 1, byteCount: 100)
+            ],
+            tensors: [],
+            totalByteCount: 400
+        )
+    }
+
     func testCoreAndRequiredGroupsArePreserved() throws {
         let planner = ExecutionResidencyPlanner(inventory: inventory())
         let plan = try planner.plan(
@@ -85,5 +98,31 @@ final class ExecutionResidencyPlannerTests: XCTestCase {
                 recommendedBytes: 400
             )
         )
+    }
+
+    func testBudgetSweepRejectsInvalidBudgets() {
+        let inventory = inventory()
+
+        XCTAssertThrowsError(
+            try PlannerBudgetSweep.run(inventory: inventory, budgetPercents: [])
+        )
+        XCTAssertThrowsError(
+            try PlannerBudgetSweep.run(inventory: inventory, budgetPercents: [0, 50])
+        )
+    }
+
+    func testBudgetSweepProducesOneEntryPerSequenceAndBudget() throws {
+        let report = try PlannerBudgetSweep.run(
+            inventory: qwenSequenceInventory(),
+            sequenceIDs: ["LOCALITY_A", "ALTERNATE_AB"],
+            budgetPercents: [25, 100]
+        )
+
+        XCTAssertEqual(report.entries.count, 4)
+        XCTAssertTrue(report.boundary.contains("NOT_PREDICTION"))
+
+        let locality = report.entries.filter { $0.sequenceID == "LOCALITY_A" }
+        XCTAssertEqual(locality.map(\.budgetPercent), [25, 100])
+        XCTAssertEqual(locality.map(\.overflowTransitionCount), [5, 0])
     }
 }

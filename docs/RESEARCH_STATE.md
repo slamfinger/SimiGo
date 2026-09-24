@@ -54,12 +54,17 @@ capture point = layer 0 fused MoE switch down_proj output，
 与 legacy reactive 逐状态等价，真实 MLX Gate R0 的 15 次生成 output identity
 PASS，reload 较 naive 减少 10.87 GiB；latency advantage 未建立，
 Predictor / Expert demand / async I/O 仍为未授权后续）
+；Planner budget sweep 已在 simulator 完成：LOCALITY_A / ALTERNATE_AB /
+CYCLE_ABC 最低 no-overflow budget = 40%，ALTERNATE_A_AB = 70%，
+BASELINE_ABA / FULL_PARTIAL = 100%；该结果仅描述 planner trade-off，
+descriptive recency hints 不是 prediction，也不建立真实 demand）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
+Engineering subphase: BUDGET_SWEEP_SIMULATOR_PASS / WORKLOAD_TRACE_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3

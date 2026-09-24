@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -91,6 +91,21 @@ struct Simigo2CTL {
         reports: reports
       )
       print(try toJSON(output))
+
+    case "budget-sweep":
+      let sequenceIDs = optionalOption("--sequences", rest).map {
+        $0.split(separator: ",").map(String.init)
+      }
+      let budgetPercents = try parseBudgetPercents(from: rest)
+      let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+        modelDirectory: modelDirectory
+      )
+      let report = try PlannerBudgetSweep.run(
+        inventory: inventory,
+        sequenceIDs: sequenceIDs,
+        budgetPercents: budgetPercents
+      )
+      print(try toJSON(report))
 
     case "mlx-gate1":
       guard let groupIndex = rest.firstIndex(of: "--group"),
@@ -173,6 +188,24 @@ struct Simigo2CTL {
       throw OutputError(message: "missing --sequences ID,ID,...")
     }
     return arguments[index + 1].split(separator: ",").map(String.init)
+  }
+
+  static func parseBudgetPercents(from arguments: [String]) throws -> [Double] {
+    guard let index = arguments.firstIndex(of: "--budgets") else {
+      return PlannerBudgetSweep.defaultBudgetPercents
+    }
+    guard index + 1 < arguments.count else {
+      throw OutputError(message: "missing --budgets PERCENT,PERCENT,...")
+    }
+
+    return try arguments[index + 1]
+      .split(separator: ",")
+      .map { raw in
+        guard let value = Double(raw), value > 0, value.isFinite else {
+          throw OutputError(message: "invalid budget percent: \(raw)")
+        }
+        return value
+      }
   }
 
   static func parseStates(from arguments: [String]) throws -> [ExecutionStateLabel] {
