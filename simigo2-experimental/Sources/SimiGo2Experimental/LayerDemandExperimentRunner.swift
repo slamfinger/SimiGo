@@ -65,7 +65,7 @@ public struct LayerDemandExperimentRunner: Sendable {
 
     public func encodeJSONL(_ record: LayerDemandRunRecord) throws -> (manifest: Data, samples: Data, observations: Data) {
         try validate(manifest: record.manifest, samples: record.samples)
-        let sampleIDs = Set(record.samples.map(.sampleID))
+        let sampleIDs = Set(record.samples.map { $0.sampleID })
         for observation in record.observations {
             try validateObservation(observation, manifest: record.manifest, sampleIDs: sampleIDs)
         }

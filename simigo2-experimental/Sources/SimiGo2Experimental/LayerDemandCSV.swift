@@ -69,10 +69,10 @@ public enum LayerDemandCSV {
     }
 
     private static func field(_ value: String) -> String {
-        guard value.contains(",") || value.contains(""") || value.contains("\n") || value.contains("\r") else {
+        guard value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r") else {
             return value
         }
-        return """ + value.replacingOccurrences(of: """, with: """") + """
+        return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
     private static func number(_ value: Double?) -> String {
