@@ -71,6 +71,11 @@ swift run simigo2ctl mlx-gate1 \
   /path/to/model-snapshot \
   --group SWITCH_MLP_L00_15
 
+# Sweep controlled state-sequence patterns with the real MLX residency benchmark
+swift run simigo2ctl mlx-sequence-sweep \\
+  /path/to/model-snapshot \\
+  --sequences BASELINE_ABA,LOCALITY_A,ALTERNATE_AB,CYCLE_ABC,ALTERNATE_A_AB,FULL_PARTIAL
+
 # Build the local SwiftUI app bundle
 ./scripts/build-app.sh debug
 
@@ -124,4 +129,4 @@ Current evidence does **not** establish:
 - predictive loading from future-state probabilities
 - a general SimiGo architecture
 
-The next useful experiment is to vary and repeat **state sequences/locality** on stable model targets rather than expanding the model list indiscriminately.
+The next useful experiment is to run the controlled sequence catalog above repeatedly on stable model targets, then compare locality, reload bytes, idle residency, and release/reload timing. The catalog is an experimental probe set, not a new theory object.
