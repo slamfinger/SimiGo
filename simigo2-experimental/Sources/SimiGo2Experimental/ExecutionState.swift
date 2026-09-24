@@ -25,6 +25,7 @@ public enum LayerResidencyError: Error, LocalizedError, Sendable {
     case invalidSafetensorsHeader(String)
     case invalidTensorEntry(String)
     case unknownLayerGroup(String)
+    case unknownSequence(String)
     case shortTensorRead(String, expected: Int, actual: Int)
 
     public var errorDescription: String? {
@@ -39,6 +40,8 @@ public enum LayerResidencyError: Error, LocalizedError, Sendable {
             return "Invalid Safetensors tensor entry: \(name)"
         case .unknownLayerGroup(let id):
             return "Unknown layer group: \(id)"
+        case .unknownSequence(let id):
+            return "Unknown state sequence: \(id)"
         case .shortTensorRead(let name, let expected, let actual):
             return "Short tensor read for \(name): expected \(expected), got \(actual)"
         }
