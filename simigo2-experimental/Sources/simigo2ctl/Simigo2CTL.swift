@@ -37,7 +37,7 @@ struct Simigo2CTL {
 
     switch command {
     case "inventory":
-      let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+      let inventory = try SafetensorsInventoryReader.readModelGroups(
         modelDirectory: modelDirectory)
       print(try toJSON(InventoryOutput(inventory: inventory)))
 

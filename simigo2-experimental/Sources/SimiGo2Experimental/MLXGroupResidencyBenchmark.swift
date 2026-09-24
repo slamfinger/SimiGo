@@ -68,10 +68,10 @@ public enum MLXGroupResidencyBenchmark {
     prompt: String = "Return exactly one word: ping",
     maxTokens: Int = 24
   ) async throws -> MLXGroupResidencyBenchmarkReport {
-    let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+    let inventory = try SafetensorsInventoryReader.readModelGroups(
       modelDirectory: modelDirectory
     )
-    let policy = Qwen3CoderStatePolicy(inventory: inventory)
+    let policy = ContiguousLayerStatePolicy(inventory: inventory)
     let optionalGroupIDs = Set(
       inventory.groups.filter { !$0.alwaysResident }.map(\.id)
     )
@@ -147,6 +147,7 @@ public enum MLXGroupResidencyBenchmark {
         )
         resident.subtract(releaseIDs)
         Memory.clearCache()
+        try? await Task.sleep(for: .milliseconds(25))
         let idleMemory = Memory.snapshot()
 
         transitions.append(
@@ -194,6 +195,7 @@ public enum MLXGroupResidencyBenchmark {
         )
         resident = []
         Memory.clearCache()
+        try? await Task.sleep(for: .milliseconds(25))
         let idleMemory = Memory.snapshot()
 
         transitions.append(

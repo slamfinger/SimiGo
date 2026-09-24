@@ -609,6 +609,20 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Support history:
   docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.md.
 
+## Dense MLP Residency Extension — 2026-09-24
+
+- Status: `EXTENSION_STARTED / DENSE_GATE4_PASS / MULTI_STATE_IDLE_MEMORY_UNRESOLVED`.
+- Added model-aware inventory for `gemma4_unified` and `muse_glimmer_text`, dense
+  MLP partitioning, and `ContiguousLayerStatePolicy`.
+- Gemma4 partition: core 892 tensors plus three dense MLP groups of 144 tensors each.
+- Gemma4 Gate 4: PASS; 144/144 tensors released/rematerialized and output restored.
+- Gate 4 memory: 6,701,423,370 bytes resident, 5,108,112,522 after release, then
+  restored to 6,701,423,370 bytes.
+- Dense Gate 5: output identity PASS and reload reduction versus naive PASS, but
+  idle-memory reduction was not observed; benchmark remains unresolved.
+- Next: fix or explain the idle-memory discrepancy before claiming dense success.
+- Extension history: docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.

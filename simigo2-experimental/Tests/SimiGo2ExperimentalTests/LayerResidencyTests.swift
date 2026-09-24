@@ -28,6 +28,53 @@ final class LayerResidencyTests: XCTestCase {
         XCTAssertEqual(groups["SWITCH_MLP_L32_47"]?.tensorCount, 1)
     }
 
+    func testDenseMLPPartitionGroupsContiguousLayerRanges() {
+        func tensor(_ name: String, bytes: Int64) -> TensorEntry {
+            TensorEntry(id: name, file: "test.safetensors", dtype: "U32", shape: [1], byteCount: bytes)
+        }
+
+        let inventory = LayerGroupCatalog.denseMLPGroups(
+            from: (0..<48).map { layer in
+                tensor("model.layers.\(layer).mlp.down_proj.weight", bytes: 10)
+            } + [
+                tensor("model.embed_tokens.weight", bytes: 100),
+                tensor("model.layers.0.self_attn.q_proj.weight", bytes: 50),
+            ],
+            layerCount: 48
+        )
+        let groups = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0) })
+
+        XCTAssertEqual(groups["CORE_NON_SWITCH"]?.tensorCount, 2)
+        XCTAssertEqual(groups["DENSE_MLP_L00_15"]?.tensorCount, 16)
+        XCTAssertEqual(groups["DENSE_MLP_L16_31"]?.tensorCount, 16)
+        XCTAssertEqual(groups["DENSE_MLP_L32_47"]?.tensorCount, 16)
+    }
+
+    func testContiguousPolicyMapsDenseGroups() {
+        func tensor(_ name: String, bytes: Int64) -> TensorEntry {
+            TensorEntry(id: name, file: "test.safetensors", dtype: "U32", shape: [1], byteCount: bytes)
+        }
+        let inventory = LayerGroupCatalog.denseMLPGroups(
+            from: [
+                tensor("model.embed_tokens.weight", bytes: 100),
+                tensor("model.layers.0.mlp.down_proj.weight", bytes: 10),
+                tensor("model.layers.20.mlp.down_proj.weight", bytes: 20),
+                tensor("model.layers.40.mlp.down_proj.weight", bytes: 30),
+            ],
+            layerCount: 48
+        )
+        let policy = ContiguousLayerStatePolicy(inventory: inventory)
+
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateA),
+            ["CORE_NON_SWITCH", "DENSE_MLP_L00_15"]
+        )
+        XCTAssertEqual(
+            policy.desiredGroupIDs(for: .stateBC),
+            ["CORE_NON_SWITCH", "DENSE_MLP_L16_31", "DENSE_MLP_L32_47"]
+        )
+    }
+
     func testPolicyAlwaysKeepsCoreAndMapsStateGroups() throws {
         let inventory = inventory()
         let policy = Qwen3CoderStatePolicy(inventory: inventory)

@@ -30,6 +30,10 @@ public struct TensorEntry: Identifiable, Hashable, Sendable {
         components.contains("switch_mlp")
     }
 
+    public var isDenseMLP: Bool {
+        components.contains("mlp") && !isSwitchMLP
+    }
+
     public init(
         id: String,
         file: String,

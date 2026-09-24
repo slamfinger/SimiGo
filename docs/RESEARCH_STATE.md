@@ -38,6 +38,7 @@ SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 
 ；Nail-Qwen3.6-35B-A3B-MLX 已在 Apple M5 完成 Gate 4 与 Gate 5 real-device validation）
 ；Gemma4 Unified 已完成 Apple M5 text inference probe，但当前 whole-group residency support 为 NOT_APPLICABLE / INCOMPLETE）
 ；Muse-Glimmer text-only 已通过本地 mlx-swift-lm fork 增加 RUNTIME_FORWARD 支持，RESIDENCY 仍为 NOT_APPLICABLE）
+；Dense MLP residency extension 已开始，Gemma4 Gate 4 PASS，multi-state idle-memory 仍未解决）
 
 ## Current research state
 
@@ -1267,3 +1268,32 @@ prompt produces a repeated-token sequence; semantic quality remains unresolved.
 
 Support history:
 docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.md.
+
+### Dense MLP Residency Extension — 2026-09-24
+
+Added model-aware inventory, dense MLP partitioning, and a contiguous state
+policy. Gemma4 now partitions into:
+
+```text
+CORE_NON_SWITCH     = 892 tensors / 1,921,416,800 bytes
+DENSE_MLP_L00_15    = 144 tensors / 1,592,524,800 bytes
+DENSE_MLP_L16_31    = 144 tensors / 1,592,524,800 bytes
+DENSE_MLP_L32_47    = 144 tensors / 1,592,524,800 bytes
+```
+
+Gemma4 dense Gate 4 passed:
+
+```text
+released / rematerialized tensors = 144 / 144
+outputEquals                      = true
+active memory after release       = 5,108,112,522 bytes
+groupInferenceResidencyPass       = true
+```
+
+The dense multi-state benchmark produced identical outputs and lower reload bytes
+versus naive on-demand, but idle-memory reduction was not observed, so the dense
+Gate 5 benchmark is not yet a pass. The memory-measurement discrepancy is the next
+blocking gate.
+
+Extension history:
+docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.

@@ -1,8 +1,38 @@
 import Foundation
 
 public enum SafetensorsInventoryReader {
+    public static func readModelGroups(modelDirectory: URL) throws -> LayerInventory {
+      let configURL = modelDirectory.appendingPathComponent("config.json")
+      let config = try JSONSerialization.jsonObject(with: Data(contentsOf: configURL)) as? [String: Any]
+      let modelType = config?["model_type"] as? String
+
+      if modelType == "gemma4_unified" {
+        let textConfig = config?["text_config"] as? [String: Any]
+        let layerCount = (textConfig?["num_hidden_layers"] as? NSNumber)?.intValue ?? 0
+        return try readIndex(modelDirectory: modelDirectory) {
+          LayerGroupCatalog.denseMLPGroups(from: $0, layerCount: layerCount)
+        }
+      }
+      if modelType == "muse_glimmer_text" {
+        let layerCount = (config?["num_hidden_layers"] as? NSNumber)?.intValue ?? 0
+        return try readIndex(modelDirectory: modelDirectory) {
+          LayerGroupCatalog.denseMLPGroups(from: $0, layerCount: layerCount)
+        }
+      }
+      return try readQwen3CoderGroups(modelDirectory: modelDirectory)
+    }
+
     public static func readQwen3CoderGroups(modelDirectory: URL) throws -> LayerInventory {
-        let indexURL = modelDirectory.appendingPathComponent("model.safetensors.index.json")
+      return try readIndex(modelDirectory: modelDirectory) {
+        LayerGroupCatalog.qwen3CoderGroups(from: $0)
+      }
+    }
+
+    private static func readIndex(
+      modelDirectory: URL,
+      catalog: ([TensorEntry]) throws -> LayerInventory
+    ) throws -> LayerInventory {
+      let indexURL = modelDirectory.appendingPathComponent("model.safetensors.index.json")
         guard FileManager.default.fileExists(atPath: indexURL.path) else {
             throw LayerResidencyError.missingModelIndexOfFile(indexURL.path)
         }
@@ -22,7 +52,7 @@ public enum SafetensorsInventoryReader {
             tensors.append(entry)
         }
 
-        return LayerGroupCatalog.qwen3CoderGroups(from: tensors.sorted { $0.id < $1.id })
+        return try catalog(tensors.sorted { $0.id < $1.id })
     }
 
     private static func readTensorEntry(name: String, fileURL: URL) throws -> TensorEntry {
@@ -82,6 +112,51 @@ public enum SafetensorsInventoryReader {
 }
 
 public enum LayerGroupCatalog {
+    public static func denseMLPGroups(
+        from tensors: [TensorEntry],
+        layerCount: Int
+    ) -> LayerInventory {
+        let core = tensors.filter { !$0.isDenseMLP }
+        let mlpTensors = tensors.filter { $0.isDenseMLP }
+        let groupSize = Int(ceil(Double(layerCount) / 3))
+
+        func selectedTensors(_ lower: Int, _ upper: Int) -> [TensorEntry] {
+            mlpTensors.filter { tensor in
+                guard let layer = tensor.decoderLayer else { return false }
+                return layer >= lower && layer <= upper
+            }
+        }
+
+        func makeDenseGroup(_ lower: Int, _ upper: Int) -> LayerGroup {
+            makeGroup(
+                id: "DENSE_MLP_L\(String(format: "%02d", lower))_\(String(format: "%02d", upper))",
+                title: "Dense MLP layers \(lower)-\(upper)",
+                range: "\(lower)-\(upper)",
+                tensors: selectedTensors(lower, upper)
+            )
+        }
+
+        let upper = layerCount - 1
+        let groups = [
+            makeGroup(
+                id: "CORE_NON_SWITCH",
+                title: "Non-MLP tensors",
+                range: "all",
+                tensors: core,
+                alwaysResident: true
+            ),
+            makeDenseGroup(0, min(groupSize - 1, upper)),
+            makeDenseGroup(groupSize, min(2 * groupSize - 1, upper)),
+            makeDenseGroup(2 * groupSize, upper),
+        ]
+
+        return LayerInventory(
+            groups: groups,
+            tensors: tensors,
+            totalByteCount: tensors.reduce(0) { $0 + $1.byteCount }
+        )
+    }
+
     public static func qwen3CoderGroups(from tensors: [TensorEntry]) -> LayerInventory {
         let core = tensors.filter { !$0.isSwitchMLP }
         let switchTensors = tensors.filter { $0.isSwitchMLP }

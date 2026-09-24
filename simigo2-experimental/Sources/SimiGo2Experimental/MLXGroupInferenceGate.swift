@@ -38,10 +38,10 @@ public enum MLXGroupInferenceGate {
     prompt: String = "Return exactly one word: ping",
     maxTokens: Int = 24
   ) async throws -> MLXGroupInferenceReport {
-    let inventory = try SafetensorsInventoryReader.readQwen3CoderGroups(
+    let inventory = try SafetensorsInventoryReader.readModelGroups(
       modelDirectory: modelDirectory
     )
-    let policy = Qwen3CoderStatePolicy(inventory: inventory)
+    let policy = ContiguousLayerStatePolicy(inventory: inventory)
     let optionalGroupIDs = policy
       .desiredGroupIDs(for: state)
       .subtracting(policy.alwaysResidentGroupIDs)
@@ -169,7 +169,13 @@ public enum MLXGroupInferenceGate {
 
   private static func groupContains(tensor: TensorEntry, group: String) -> Bool {
     switch group {
-    case "CORE_NON_SWITCH": return !tensor.isSwitchMLP
+    case "CORE_NON_SWITCH":
+      return group.hasPrefix("DENSE_MLP") ? !tensor.isDenseMLP : !tensor.isSwitchMLP
+    case let dense where group.hasPrefix("DENSE_MLP_"):
+      let parts = dense.dropFirst("DENSE_MLP_L".count).split(separator: "_")
+      guard parts.count == 2, let lower = Int(parts[0]), let upper = Int(parts[1]),
+            let layer = tensor.decoderLayer else { return false }
+      return tensor.isDenseMLP && layer >= lower && layer <= upper
     case "SWITCH_MLP_L00_15": return tensor.isSwitchMLP && (tensor.decoderLayer ?? -1) <= 15
     case "SWITCH_MLP_L16_31":
       let layer = tensor.decoderLayer ?? -1
