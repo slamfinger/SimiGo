@@ -400,3 +400,26 @@ input
 ```
 
 This is an extension of the experimental route, not a modification of the frozen A2.0 theory.
+
+
+## 18. Workload-context extension recorded 2026-09-24
+
+The research scope is broadened by `docs/WORKLOAD_CONTEXT_RESIDENCY_PLAN_v0.1.md`.
+
+The existing input-dependent pilot remains valid, but it is no longer treated as the sole representative workload. A second experimental branch covers DOCUMENT, COMPUTER_OPERATION, and AGENTIC_MULTI_TURN workloads, with execution-context metadata and temporal-locality measurements.
+
+The existing `CORE_NON_SWITCH` grouping is not promoted to a scientifically established Core Resident Set. Core/Working-Set/Cold classifications remain empirical residency hypotheses.
+
+The intended chain is now:
+
+```
+workload/input + execution context
+→ group demand
+→ temporal locality
+→ predictability
+→ residency intervention
+→ runtime trade-off
+→ architecture decision only if evidence warrants it
+```
+
+No predictive loader, probability model, new formal state object, or architecture is introduced by this extension.
