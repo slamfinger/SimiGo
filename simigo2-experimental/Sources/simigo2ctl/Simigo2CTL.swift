@@ -131,8 +131,12 @@ struct Simigo2CTL {
       )
       print(try toJSON(report))
     case "mlx-gate4":
+      let prompt = optionalOption("--prompt", rest) ?? "Return exactly one word: ping"
       let state = try ExecutionStateLabel(parsing: try optionValue("--state", rest))
-      let report = try await MLXGroupInferenceGate.run(modelDirectory: modelDirectory, state: state)
+      let report = try await MLXGroupInferenceGate.run(
+        modelDirectory: modelDirectory,
+        state: state,
+        prompt: prompt)
       print(try toJSON(report))
     case "mlx-gate5":
       let states = try parseStates(from: rest)
@@ -161,6 +165,13 @@ struct Simigo2CTL {
   static func optionValue(_ name: String, _ arguments: [String]) throws -> String {
     guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count else {
       throw OutputError(message: "missing \(name) VALUE")
+    }
+    return arguments[index + 1]
+  }
+
+  static func optionalOption(_ name: String, _ arguments: [String]) -> String? {
+    guard let index = arguments.firstIndex(of: name), index + 1 < arguments.count else {
+      return nil
     }
     return arguments[index + 1]
   }

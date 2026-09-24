@@ -593,19 +593,20 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Boundary history:
   docs/00-governance/SIMIGO2_GEMMA4_RESIDENCY_COMPATIBILITY_BOUNDARY_20260924.md.
 
-## Muse-Glimmer Runtime Compatibility Boundary — 2026-09-24
+## Muse-Glimmer Runtime Support — 2026-09-24
 
 - Probed `OpensourceWTF/Muse-Glimmer-30B-MLX-q4` snapshot
   `e1c987b60874388e68621c71b680643b1cb0ce03`.
 - Config model type is `muse_glimmer_text`; checkpoint has 1,463 tensors,
   17,603,109,888 bytes, and 0 `switch_mlp` tensors.
-- Current inventory therefore has no evictable switch-MLP group.
-- MLX Swift LM text loading failed before inference:
-  `Unsupported model type: muse_glimmer_text`.
-- Local `mlx-swift-lm` registers full `muse_glimmer` under VLM, but not this
-  text-only checkpoint under LLM.
-- Gate 4 / Gate 5 inference and residency claims are NOT APPLICABLE.
-- Boundary history:
+- Borrowed the Python `mlx-lm` language-tower design into the local Swift fork
+  and registered `muse_glimmer_text` with `LLMModelFactory`.
+- MLX runtime load/forward now passes; Gate 4 baseline/restored outputs match.
+- The no-chat-template prompt emits a repeated-token sequence, so semantic
+  quality remains unresolved.
+- Whole-group residency is NOT APPLICABLE because the checkpoint has no
+  `switch_mlp` tensors.
+- Support history:
   docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.md.
 
 ## Execution-State Information Boundary Hypothesis — 2026-09-23

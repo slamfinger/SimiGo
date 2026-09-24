@@ -37,7 +37,7 @@ SimiGo 2.0 MLX Gate 5 multi-state runtime residency feasibility 已通过，
 SimiGo 2.0 SwiftUI App 已完成本机构建，并在 Apple M5 上完成 Gate 5 real-device proof）
 ；Nail-Qwen3.6-35B-A3B-MLX 已在 Apple M5 完成 Gate 4 与 Gate 5 real-device validation）
 ；Gemma4 Unified 已完成 Apple M5 text inference probe，但当前 whole-group residency support 为 NOT_APPLICABLE / INCOMPLETE）
-；Muse-Glimmer text-only checkpoint 已被登记为 RUNTIME_LOAD_UNSUPPORTED / RESIDENCY_NOT_APPLICABLE）
+；Muse-Glimmer text-only 已通过本地 mlx-swift-lm fork 增加 RUNTIME_FORWARD 支持，RESIDENCY 仍为 NOT_APPLICABLE）
 
 ## Current research state
 
@@ -1246,7 +1246,7 @@ registers a compatibility boundary, not a runtime loading failure.
 Boundary history:
 docs/00-governance/SIMIGO2_GEMMA4_RESIDENCY_COMPATIBILITY_BOUNDARY_20260924.md.
 
-### Muse-Glimmer Runtime Compatibility Boundary — 2026-09-24
+### Muse-Glimmer Runtime Support — 2026-09-24
 
 Probed `OpensourceWTF/Muse-Glimmer-30B-MLX-q4`:
 
@@ -1254,15 +1254,16 @@ Probed `OpensourceWTF/Muse-Glimmer-30B-MLX-q4`:
 model type                    = muse_glimmer_text
 checkpoint size               = 17,603,109,888 bytes
 switch_mlp tensors            = 0
-LLM runtime load              = UNSUPPORTED
-runtime error                 = Unsupported model type: muse_glimmer_text
-Gate 4 / Gate 5 inference     = NOT_RUN_AFTER_LOAD_FAILURE
+MLX runtime load / forward    = PASS after local Swift support
+Gate 4 output identity        = true
+semantic quality              = UNRESOLVED
 whole-group residency         = NOT_APPLICABLE
 ```
 
-The local `mlx-swift-lm` VLM registry contains `muse_glimmer`, but not the
-text-only `muse_glimmer_text` checkpoint. This is a runtime compatibility
-boundary, not a residency benchmark result.
+The upstream Python `mlx-lm` language-tower implementation was borrowed into the
+local Swift fork and `muse_glimmer_text` is now registered with
+`LLMModelFactory`. The checkpoint executes, but the no-chat-template Gate 4
+prompt produces a repeated-token sequence; semantic quality remains unresolved.
 
-Boundary history:
+Support history:
 docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.md.

@@ -21,23 +21,28 @@
     "switchMLP_L16_31": {"tensors": 0, "bytes": 0},
     "switchMLP_L32_47": {"tensors": 0, "bytes": 0}
   },
-  "runtime": {
-    "requestedFactory": "MLXLLM.LLMModelFactory.shared",
-    "loadResult": "UNSUPPORTED",
-    "error": "Unsupported model type: muse_glimmer_text",
-    "gate4": "NOT_RUN_AFTER_LOAD_FAILURE",
-    "gate5": "NOT_RUN_AFTER_LOAD_FAILURE"
+  "supportChange": {
+    "repository": "/Users/mr.simi/Documents/mlx-swift-lm",
+    "branch": "exp/execution-state-fork",
+    "commit": "4ff8c19",
+    "registeredModelType": "muse_glimmer_text",
+    "sourceReference": "mlx-lm upstream muse_glimmer.py language tower"
   },
-  "mlxSwiftLMRegistryObservation": {
-    "commit": "59e9abd",
-    "llmFactoryRegistration": false,
-    "vlmFactoryRegistration": "muse_glimmer only",
-    "textOnlyFactoryRegistration": false,
-    "note": "The local VLM implementation registers the full muse_glimmer VLM, not the text-only muse_glimmer_text checkpoint."
+  "runtime": {
+    "factory": "MLXLLM.LLMModelFactory.shared",
+    "loadResult": "PASS",
+    "forwardResult": "PASS",
+    "baselineOutput": "uk repeated for 24 tokens",
+    "restoredOutput": "same as baseline",
+    "outputEquals": true,
+    "activeMemoryBytes": 17604890160,
+    "peakMemoryBytes": 17634220738,
+    "chatTemplate": null
   },
   "conclusion": {
-    "runtimeTextInference": "UNSUPPORTED",
+    "runtimeLoadAndForward": "PASS",
+    "semanticQuality": "UNRESOLVED",
     "simigoWholeGroupResidency": "NOT_APPLICABLE",
-    "reason": "Unsupported model type and no switch_mlp groups"
+    "reason": "no switch_mlp groups"
   }
 }
