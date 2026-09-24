@@ -138,7 +138,6 @@ public enum MLXGroupResidencyBenchmark {
         let generationMs = milliseconds(start: start)
         Memory.clearCache()
         let generatedMemory = Memory.snapshot()
-
         let releaseIDs = optionalGroupIDs.subtracting(desired)
         let release = try await releaseGroups(
           container: container,

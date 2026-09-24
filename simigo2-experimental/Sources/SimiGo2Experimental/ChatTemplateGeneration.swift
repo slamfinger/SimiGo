@@ -11,7 +11,7 @@ public enum ChatTemplateGeneration {
         tokenizer: MLXLMCommon.Tokenizer,
         modelDirectory: URL,
         prompt: String
-    ) throws -> [Int] {
+    ) async throws -> [Int] {
         let messages: [[String: any Sendable]] = [
             ["role": "user", "content": prompt]
         ]
@@ -19,15 +19,19 @@ public enum ChatTemplateGeneration {
         let externalTemplate = modelDirectory.appendingPathComponent("chat_template.jinja")
         if FileManager.default.fileExists(atPath: externalTemplate.path) {
             let template = try String(contentsOf: externalTemplate, encoding: .utf8)
-            if let pretrained = tokenizer as? Tokenizers.PreTrainedTokenizer {
-                return try pretrained.applyChatTemplate(
-                    messages: messages,
-                    chatTemplate: .literal(template),
-                    addGenerationPrompt: true,
-                    tools: nil,
-                    additionalContext: ["enable_thinking": false]
-                )
-            }
+            let checkpointTokenizer = try await Tokenizers.AutoTokenizer.from(
+                modelFolder: modelDirectory
+            )
+            let ids = try checkpointTokenizer.applyChatTemplate(
+                messages: messages,
+                chatTemplate: .literal(template),
+                addGenerationPrompt: true,
+                truncation: false,
+                maxLength: nil,
+                tools: nil,
+                additionalContext: ["enable_thinking": false]
+            )
+            return ids
         }
 
         if let configured = tokenizer as? Tokenizers.PreTrainedTokenizer,
@@ -49,29 +53,28 @@ public enum ChatTemplateGeneration {
         maxTokens: Int
     ) async throws -> String {
         try await container.perform { context -> String in
-            let promptTokenIDs = try promptTokenIDs(
+            let promptTokenIDs = try await promptTokenIDs(
                 tokenizer: context.tokenizer,
                 modelDirectory: modelDirectory,
                 prompt: prompt
             )
 
-            let parameters = GenerateParameters(maxTokens: maxTokens, temperature: 0)
-            var cache = try context.model.newCache(parameters: parameters)
-            var input = MLXArray(promptTokenIDs, [1, promptTokenIDs.count])
             var generated: [Int] = []
+            var input = MLXArray(promptTokenIDs, [1, promptTokenIDs.count])
 
             for _ in 0 ..< maxTokens {
-                let logits = context.model(input, cache: cache)[0, -1]
+                let logits = context.model(input, cache: nil)[0, -1]
                 let nextToken = logits.argMax().item(Int.self)
                 generated.append(nextToken)
                 if nextToken == context.tokenizer.eosTokenId ?? -1 {
                     break
                 }
-                input = MLXArray([nextToken], [1, 1])
-                eval(cache)
+                input = MLXArray(
+                    promptTokenIDs + generated,
+                    [1, promptTokenIDs.count + generated.count]
+                )
+                eval(logits)
             }
-
-            eval(cache)
             return context.tokenizer.decode(
                 tokenIds: generated,
                 skipSpecialTokens: true

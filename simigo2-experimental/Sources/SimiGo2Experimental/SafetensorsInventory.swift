@@ -13,7 +13,7 @@ public enum SafetensorsInventoryReader {
           LayerGroupCatalog.denseMLPGroups(from: $0, layerCount: layerCount)
         }
       }
-      if modelType == "muse_glimmer_text" {
+      if modelType == "muse_glimmer_text" || modelType == "muse_glimmer" {
         let layerCount = (config?["num_hidden_layers"] as? NSNumber)?.intValue ?? 0
         return try readIndex(modelDirectory: modelDirectory) {
           LayerGroupCatalog.denseMLPGroups(from: $0, layerCount: layerCount)
