@@ -79,13 +79,23 @@ workload；**Predictor STOP GATE 判定 = NO_GO**（G1–G3 在 declared 层
 成立，G4 source legitimacy 因无 measured execution trace 而不满足——
 STOP 为本阶段完整研究结论；重开仅可经已登记的 ISOLATED_INSTRUMENTATION
 路线上独立定义门，NOT STARTED））
+；**G1.9-A ISOLATED_INSTRUMENTATION 已获用户明确授权（2026-09-25，
+authorization commit = Git 层面开启）**：授权范围 = 隔离路径内修改/扩展
+instrumentation、捕获真实 forward execution 的 layer/group 事件、先验证
+identity/logits/token 一致性/execution 不变/时间与内存开销、形成
+measured execution trace 并重审 recurrence/transition locality/temporal
+stability；仍未授权 = Predictor、probability、speculative loading、
+Expert/Token×Expert demand、production MLX 修改、async I/O、通用架构
+宣称；第一阶段 STOP 条件固定 = instrumented≈baseline + trace stable +
+overhead acceptable 三者同时成立才进 measured-locality 分析，否则在
+第一阶段 STOP）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: LOCALITY_ANALYSIS_PASS / PREDICTOR_STOP_GATE_NO_GO
+Engineering subphase: G19A_ISOLATED_INSTRUMENTATION_AUTHORIZED / GROUP_TRACE_DESIGN_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
