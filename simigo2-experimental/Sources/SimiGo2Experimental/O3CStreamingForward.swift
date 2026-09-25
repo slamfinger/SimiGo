@@ -97,11 +97,6 @@ public enum O3CStreamingForward {
         )
     }
 
-    /// The layer→group mapping for the 3-segment partition.
-    private static func segmentIndex(forLayer layer: Int, segmentLayers: Int) -> Int {
-        min(layer / segmentLayers, 2)
-    }
-
     public static func run(
         modelDirectory: URL,
         prompt: String = "def add(a, b): return a + b",
@@ -125,7 +120,8 @@ public enum O3CStreamingForward {
 
         // Skeleton quantize (per-layer params from the checkpoint dict).
         let quantizedModules: Set<String> = Set(
-            weightMap.keys.filter { $0.hasSuffix(".scales") }.map { String($0.dropLast(".scales".count)) }
+            weightMap.keys.filter { $0.hasSuffix(".scales") }
+                .map { String($0.dropLast(".scales".count)) }
         )
         quantize(model: model, filter: { path, _ in
             guard quantizedModules.contains(path) else { return nil }
@@ -141,81 +137,66 @@ public enum O3CStreamingForward {
         })
         trace("skeleton + quantize done")
 
-        // Shard tensor index: name → (file, payload bytes).
-        var tensorLocations: [String: (file: String, nbytes: Int64)] = [:]
-        for file in Set(weightMap.values) {
-            let url = modelDirectory.appendingPathComponent(file)
-            let handle = try FileHandle(forReadingFrom: url)
-            defer { try? handle.close() }
-            let n = try handle.read(upToCount: 8).map { Data($0) } ?? Data()
-            let headerLength = n.withUnsafeBytes { $0.load(as: UInt64.self) }
-            let headerData = try handle.read(upToCount: Int(headerLength)) ?? Data()
-            let header = try JSONSerialization.jsonObject(with: headerData) as? [String: Any] ?? [:]
-            for (name, value) in header {
-                guard name != "__metadata__",
-                    let entry = value as? [String: Any],
-                    let offsets = entry["data_offsets"] as? [Int],
-                    offsets.count == 2
-                else { continue }
-                tensorLocations[name] = (file, Int64(offsets[1] - offsets[0]))
-            }
-        }
-        trace("tensor location index: \(tensorLocations.count) tensors")
+        // O3-C″ tensor-level reader: keep shard headers indexed, but read only
+        // the selected tensor payload. This replaces the C′ shard-level
+        // loadArraysAndMetadata probe and removes its first-array ambiguity.
+        let tensorReader = try PerTensorSafetensorsReader(
+            modelDirectory: modelDirectory,
+            weightMap: weightMap
+        )
+        trace("tensor location index: \(tensorReader.locations.count) tensors")
 
-        // Segment plan: 3 × 16-layer switch_mlp segments.
         let segmentLayers = 16
         let segments: [[Int]] = (0..<3).map { s in
             Array((s * segmentLayers)..<(s * segmentLayers + segmentLayers))
         }
 
-        /// Load one segment's tensors (only its layers' switch_mlp tensors are
-        /// NOT already resident; core tensors load once and stay).
-        func materializeSegment(_ segment: Int, coreLoaded: inout Bool) -> Double {
+        /// Load one segment's tensors. Core tensors remain resident; only the
+        /// current switch_mlp segment is loaded into the model.
+        func materializeSegment(
+            _ segment: Int,
+            coreLoaded: inout Bool
+        ) throws -> Double {
             let mStart = ContinuousClock.now
             var arrays: [String: MLXArray] = [:]
-            for (name, location) in tensorLocations {
+
+            for location in tensorReader.locations.values {
+                let name = location.name
+
                 if !coreLoaded {
-                    // core phase: everything except switch_mlp
                     if !name.contains(".switch_mlp.") {
-                        arrays[name] = try! loadTensor(modelDirectory: modelDirectory, location: location)
+                        arrays[name] = try tensorReader.loadTensor(named: name)
                     }
                 } else {
-                    // switch phase: only this segment's switch_mlp tensors
                     guard name.contains(".switch_mlp.") else { continue }
-                    if let range = name.range(of: #"layers\.(\d+)\."#, options: .regularExpression) {
-                        let digits = name[range].split(separator: ".").compactMap { Int($0) }
-                        if let layer = digits.first, segments[segment].contains(layer) {
-                            arrays[name] = try! loadTensor(modelDirectory: modelDirectory, location: location)
-                        }
-                    }
+                    guard let layer = location.name.components
+                        .split(separator: ".")
+                        .first(where: { $0 == "layers" })
+                        .flatMap({ _ in
+                            let components = location.name.split(separator: ".")
+                            guard let index = components.firstIndex(of: "layers"),
+                                  index + 1 < components.count
+                            else { return nil }
+                            return Int(components[index + 1])
+                        }),
+                        segments[segment].contains(layer)
+                    else { continue }
+
+                    arrays[name] = try tensorReader.loadTensor(named: name)
                 }
             }
+
             eval(arrays.values.map { $0 })
             let parameters = ModuleParameters.unflattened(arrays)
-            try! model.update(parameters: parameters, verify: [])
-            return Double(mStart.duration(to: .now).components.attoseconds) / 1e18
-        }
+            model.update(parameters: parameters, verify: [])
 
-        func loadTensor(modelDirectory: URL, location: (file: String, nbytes: Int64)) throws -> MLXArray {
-            let url = modelDirectory.appendingPathComponent(location.file)
-            let (arrays, _) = try MLX.loadArraysAndMetadata(url: url)
-            guard let first = arrays.values.first else {
-                throw O3CError.invalidTensorIndex
-            }
-            _ = location
-            // loadArrays reads the whole shard; this probe accepts the
-            // read-amplification for the C′ feasibility run and records it
-            // as a cost note.
-            let candidate = arrays.sorted(by: { $0.key < $1.key })
-            _ = candidate
-            return first
+            return Double(mStart.duration(to: .now).components.attoseconds) / 1e18
         }
 
         var segmentRecords: [O3CSegmentRecord] = []
         var capacityHeld = true
         var coreLoaded = false
 
-        // Prefill prompt token IDs via chat template.
         let messages: [[String: any Sendable]] = [["role": "user", "content": prompt]]
         let promptTokenIDs = try tokenizer.applyChatTemplate(
             messages: messages,
@@ -237,9 +218,7 @@ public enum O3CStreamingForward {
             var logitsChecksumFinal = ""
 
             for step in 0..<maxTokens {
-                // Segment 0 materialization (core on the first segment of the
-                // first step of each pass).
-                let m0 = materializeSegment(0, coreLoaded: &coreLoaded)
+                let m0 = try materializeSegment(0, coreLoaded: &coreLoaded)
                 coreLoaded = true
                 segmentRecords.append(
                     O3CSegmentRecord(
@@ -252,9 +231,8 @@ public enum O3CStreamingForward {
                 )
                 if footprintGiB() > capacityGiB { capacityHeld = false }
 
-                // Segments 1..2 materialize per step.
                 for segment in 1...2 {
-                    let m = materializeSegment(segment, coreLoaded: &coreLoaded)
+                    let m = try materializeSegment(segment, coreLoaded: &coreLoaded)
                     segmentRecords.append(
                         O3CSegmentRecord(
                             pass: streamingPass, segment: segment,
@@ -268,7 +246,9 @@ public enum O3CStreamingForward {
                     if footprintGiB() > capacityGiB { capacityHeld = false }
                 }
 
-                // Full forward (all segments' weights are now bound).
+                // C′ deliberately retained the naive whole-graph call here.
+                // C″ must replace this with the fork's layer-range execution
+                // API; without that API MLX lazy evaluation touches all layers.
                 let logits = model(running, cache: nil)[0, -1]
                 let nextToken = logits.argMax().item(Int.self)
                 generated.append(nextToken)
@@ -283,6 +263,7 @@ public enum O3CStreamingForward {
                 running = MLXArray(all, [1, all.count])
                 eval(logits)
             }
+
             passResults.append(generated)
             passLogitChecksums.append(logitsChecksumFinal)
             trace("pass \(streamingPass): \(generated.count) tokens, checksum \(logitsChecksumFinal.prefix(16))…")
@@ -292,7 +273,6 @@ public enum O3CStreamingForward {
             && passResults[0] == passResults[1]
         let logitsIdentical = passLogitChecksums.count == 2
             && passLogitChecksums[0] == passLogitChecksums[1]
-
         let overallPass = determinismIdentical && logitsIdentical && capacityHeld
 
         return O3CStreamingReport(
