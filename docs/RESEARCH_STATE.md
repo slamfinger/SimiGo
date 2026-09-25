@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O4_OVERSIZED_REAL_GENERATION_PASS / CORE_PLUS_ONE_SEGMENT_ZERO_SWAP / O5_O6_DECISION_PENDING
+Engineering subphase: O5_SEGMENT_SIZE_SWEEP_V1_MEASURED / FOOTPRINT_HALVED_LATENCY_NEUTRAL / PENDING_54G_MODEL_AND_O6
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3196,3 +3196,35 @@ O5/O6         : NOT STARTED
 
 Gate history: `docs/00-governance/SIMIGO2_O4_OVERSIZED_REAL_GENERATION_20260926.md`;
 artifact `results/o4-generation/qwen3-coder-next-4bit-oversized-gen.json`.
+
+### O5 Segment-Size Sweep v1 — Footprint Halved, Latency Neutral — 2026-09-26
+
+User question (re-partition to core+segment ≈ 8 GiB) folded into O5's first
+sweep item. On the 41.76 GiB model, `--segment-size 8` (6 segments) versus
+the 16-layer baseline:
+
+```text
+seg 16 (3 seg)  peak footprint 13,883 MiB  ~11.0 s/token (read 8.6 / fwd 2.2)
+seg 8  (6 seg)  peak footprint  6,745 MiB  ~11.5 s/token (read 9.1 / fwd 2.3)
+both            swap 0, double-pass tokens identical
+```
+
+Verified: the 8 GiB-class partition is correct, stable, and halves peak
+residency — but re-partitioning trades footprint, not latency (total
+re-read bytes unchanged). In this zero-swap regime a memory cap has no
+latency to recover; the verified secondary report behind the "8 GiB
+improves latency" claim is Apple's LLM-in-a-Flash (2024, windowing +
+proactive loading on 8 GB-class devices), not a Google result, and its
+mechanism is prefetch/pipelining — registered as a later O5 lever
+(upper bound here: hide the ~2.2 s forward → ~8.6-9 s/token).
+
+```text
+Current gate  : O5 → SEGMENT_SIZE_SWEEP_V1_MEASURED / O5_SWEEP_CONTINUES
+Next          : prefetch pipelining item; 54.3 GB user-downloaded model
+                (Qwen3.8-Flash-Next, iQ 3.3bpw) after config/quantization
+                compatibility check; O6 Execution State × oversized per plan
+O6            : NOT STARTED
+```
+
+Gate history: `docs/00-governance/SIMIGO2_O5_SEGMENT_SIZE_SWEEP_V1_20260926.md`;
+artifact `results/o4-generation/qwen3-coder-next-4bit-seg8-sweep.json`.
