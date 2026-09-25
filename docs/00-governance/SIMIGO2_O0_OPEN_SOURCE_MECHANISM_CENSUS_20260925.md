@@ -176,7 +176,70 @@ however bounded by the fused `switch_mlp` tensor granularity (13.5 GiB per
 materialization than the current fused format exposes — a registered
 tension for O3.
 
-## 7. Next gates
+## 7. Mechanism reuse qualification principle
+
+The census is a **mechanism-space inventory, not a code-reuse shortlist**.
+
+An implementation being mature, elegant, performant, or successful does not
+by itself qualify its mechanism for SimiGo. Open-source research first
+establishes **what mechanism exists and what problem it solves**; reuse is a
+separate engineering judgment subject to SimiGo's actual constraints.
+
+The following rule is registered for all subsequent oversized-model work:
+
+```text
+discover mechanism
+    → separate mechanism from project-specific implementation
+    → verify mechanism in its original implementation
+    → test compatibility with SimiGo / MLX / Apple Silicon constraints
+    → preserve SimiGo semantic authority
+    → adopt the minimum reusable mechanism
+    → validate on the real model / real machine
+    → retain or reject based on measured result
+```
+
+### Reuse qualification levels
+
+```text
+L0  Concept
+    The mechanism addresses the same class of problem.
+    No implementation or integration claim follows.
+
+L1  Mechanism feasibility
+    The mechanism can be implemented in SimiGo's actual technology stack.
+    Still no claim that it can participate in MLX execution.
+
+L2  Semantic compatibility
+    The mechanism can be integrated without violating frozen SimiGo
+    semantic boundaries:
+      Execution Identity
+      Lineage
+      Position
+      Continuation
+      Representation / Residency separation
+    It must not create a second authority for Execution State semantics.
+
+L3  Runtime viability
+    The mechanism works on the real target model / machine and its
+    capacity, stability, and performance cost are measured.
+    Only this level can justify retaining it as an engineering mechanism.
+```
+
+Therefore:
+
+> **Can implement ≠ can integrate ≠ can execute correctly ≠ worth adopting.**
+
+In particular, the presence of mmap, lazy loading, SSD streaming, expert
+caching, paging, or another mechanism in an external implementation must
+never be converted into a SimiGo design requirement merely because the
+reference implementation is strong.
+
+The census may produce **candidate mechanisms**. It does not select a
+winner, rank projects, or authorize adoption. O2/O3/O4/O5 provide the
+evidence required to move a mechanism from census knowledge toward SimiGo
+implementation.
+
+## 8. Next gates
 
 ```text
 O1  Mechanism taxonomy finalization (after DS4 code-level follow-up,
