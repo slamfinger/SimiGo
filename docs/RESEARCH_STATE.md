@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E5_V2_REPRESENTATION_CONSUMING_IDENTITY_PASS / EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
+Engineering subphase: OVERSIZED_MODEL_INVESTIGATION_O0_O1_COMPLETE / O2_MLX_BASELINE_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2098,6 +2098,55 @@ Current gate  : E5 v2 → COMPLETE
 Status        : EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
 Validation history: `E5ExecutionStateScenario.swift` (v2) probe +
                 `results/e5-execution-state/*.json` (3 models)
+```
+
+### Oversized Model Execution Investigation — O0/O1 Complete — 2026-09-25
+
+New phase registered (working title: Oversized Model Execution
+Investigation; final gate naming deferred until O1–O5 evidence exists).
+Core question: when Model Representation > Physical Memory, can SimiGo
+establish executable Model Residency and sustain real inference — and where
+is the performance boundary? Plan: O0 prior art → O1 mechanism matrix and
+inventory → O2 minimal physical experiments (mapping footprint, selective
+touch, real forward) → O3 SimiGo model-residency boundary → O4 44.9 GB real
+execution → O5 capacity/stability/performance boundary sweep → O6
+Execution State × oversized model. Known-good prior art (llama.cpp
+load-mode mmap / lazy mode; per-tensor buffer placement) is treated as
+mechanism reference, never as evidence that SimiGo + MLX can do the same.
+
+**O1 inventory (measured, Qwen3-Coder-Next-4bit, `qwen3_next` /
+Qwen3NextForCausalLM)**: 9 shards, 1891 tensors, 41.76 GiB weights (37.12
+GiB packed U32 4-bit + 4.64 GiB BF16), on-disk 42 GiB; architecture = 12
+full-attention + 36 GatedDeltaNet linear-attention layers, SparseMoE 512
+experts / 10 active + shared expert. **Decisive fact: the 512 experts are
+FUSED into `switch_mlp` tensors split EVENLY 13.50 + 13.50 + 13.50 GiB
+across the existing SimiGo 3-group partition** — the validated group
+materializer applies directly. Oversize arithmetic: core ≈ 1.26 GiB;
+core+1 group ≈ 14.8 GiB; core+2 groups ≈ 28.3 GiB (fits 32 GiB physical);
+all three = 41.76 GiB > 32 GiB — oversized only when all three switch
+groups are resident. Physical memory verified 32.0 GiB.
+
+**Load-chain audit**: `qwen3_next` is REGISTERED in the local mlx-swift-lm
+fork (LLMModelFactory.swift:75 → Qwen3NextModel); the current load path is
+SINGLE-SHOT FULL-MODEL (`loadWeights` → `model.update(verify: .all)` over
+all 9 shards) with mmap-backed lazy MLXArrays at read; whether weights stay
+page-backed or eagerly materialize at first forward is (H-mmap vs H-eager)
+— to be distinguished empirically in O2 by process-footprint measurement.
+The SimiGo intervention point is a skeleton-load path (construct the model
+without loading all weights, then per-group materialize) — the validated
+L4-A/B per-group materializer is reusable as-is beyond that point.
+
+No runtime changes; E5v2 and the frozen research line untouched.
+
+```text
+Current gate  : O0/O1 → COMPLETE
+Next          : O2 native MLX baseline (load, footprint, forward,
+                1/5/10 generations) — no SimiGo involvement
+O2–O6         : NOT STARTED
+```
+
+O0/O1 history:
+docs/00-governance/SIMIGO2_O0_O1_OVERSIZED_MODEL_INVENTORY_AND_MECHANISM_MATRIX_20260925.md.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
