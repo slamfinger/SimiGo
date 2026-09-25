@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: OVERSIZED_MODEL_INVESTIGATION_O0_O1_COMPLETE / O2_MLX_BASELINE_NEXT
+Engineering subphase: O0_MECHANISM_CENSUS_REGISTERED / O1_TAXONOMY_AND_O2_EXPERIMENTS_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2147,6 +2147,53 @@ O2–O6         : NOT STARTED
 
 O0/O1 history:
 docs/00-governance/SIMIGO2_O0_O1_OVERSIZED_MODEL_INVENTORY_AND_MECHANISM_MATRIX_20260925.md.
+
+### O0 Redefined — Open-Source Mechanism Census Registered — 2026-09-25
+
+Per review, the O-phase survey was upgraded from "prior-art survey" to an
+**Open-Source Mechanism Census**: reference implementations (llama.cpp,
+DS4, MLX/mlx-swift-lm, SimiGo-current) are profiled against NINE census
+questions (representation, storage, materialization timing, residency
+granularity, execution trigger, eviction ownership, restore, over-physical
+behavior, cost) — project names are never substituted for mechanisms. The
+route taxonomy (A virtual-memory mapping / B runtime paging / C device
+offload / D layer-block materialization / E MoE selective residency) is
+provisional and must be finalized from code audits, not preset.
+
+Census highlights:
+
+```text
+llama.cpp   load-mode mmap (MMAP/MLOCK/AUTO), no_alloc tensor indexing,
+            deferred set_tensor_data materialization, per-tensor buffer
+            suitability — Route A+D (source-verified)
+DS4         registered audits retain the ABSTRACTION (parameter universe →
+            required set → resident set → materialization → execution);
+            internal mechanism profile NOT retained — code-level census is
+            a registered O0 follow-up
+MLX/mlx-lm  single-shot full-model load; mmap-backed lazy arrays at read;
+            no runtime eviction; H-mmap vs H-eager undecided (O2)
+SimiGo      group materialization/eviction/restoration VALIDATED (L3/L4);
+            oversized case untested
+```
+
+Key analysis: for Qwen3-Coder-Next, Model Representation (41.76 GiB) vs
+per-token Execution Working Set (≈2.1 GiB: 10/512 active experts + core)
+differ ≈20× — making **Route E (MoE selective residency)** structurally
+most relevant, while the fused `switch_mlp` format bounds
+expert-granularity materialization at 13.5 GiB group granularity. This
+tension is registered for O3.
+
+```text
+Current gate  : O0 CENSUS → REGISTERED
+Next          : O1 taxonomy finalization (DS4 code-level follow-up,
+                llama.cpp lazy-mode source verification) → O2 mechanism
+                experiments (mapping footprint, selective touch, real
+                forward) — no runtime changes before O2 evidence
+O1/O2         : NOT STARTED
+```
+
+O0 history:
+docs/00-governance/SIMIGO2_O0_OPEN_SOURCE_MECHANISM_CENSUS_20260925.md.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
