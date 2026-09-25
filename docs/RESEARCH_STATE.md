@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: L4B_INV3_RECONCILIATION_PASS_FIVE_MODELS / L4C_IDENTITY_NEXT
+Engineering subphase: L4C_IDENTITY_PASS_THREE_MODELS / RUNTIME_ENGINEERING_VALIDATION_COMPLETE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2215,3 +2215,36 @@ L4-C          : NOT STARTED
 
 L4-B history: `L4Reconciliation.swift` probe +
 `results/l4b-reconciliation/*.json` (5 models).
+
+### L4-C Computational Identity Through the Controller Path — Three Models PASS — 2026-09-25
+
+The `l4c-identity` probe (protocol G1.9-L4C.IDENTITY.V1) compared Baseline
+MLX generation against Controller + MLXResidencyBackend generation on the
+same prompts, with real residency transitions (retention rotation
+A → AB → ALL) between generations and one injected release failure → DIRTY
+→ recovery cycle mid-sequence.
+
+Results (3 prompts per model):
+
+```text
+Qwen3-Coder-30B   token sequence identical, logits SHA-256 identical,
+Nail-Qwen3.6-35B  max_abs_diff = 0.0 on every prompt;
+Gemma4-12B        retention rotation executed real evictions
+                  (resident 5.88 → 10.94 → 16.00 GiB on Qwen), the DIRTY/
+                  recovery cycle executed and recovered (dirtyCycleExecuted
+                  = true), transfer log = 6 entries per run
+status            = PASS on all three models
+```
+
+This closes L4: the controller manages resource state without changing what
+the model computes — resource-state correctness (L4-B) and computational
+semantics preservation (L4-C) hold together on real MLX runtimes. Not a
+performance test; no latency/throughput/improvement claims.
+
+```text
+Current gate  : L4-C → COMPLETE
+Runtime Engineering chain: Requirements → Verification Design → L1/L2 →
+                Controller → L3 → L4-A/B/C → VALIDATION COMPLETE
+L4-C history  : `L4Identity.swift` probe + `results/l4c-identity/*.json`
+                (3 models)
+```
