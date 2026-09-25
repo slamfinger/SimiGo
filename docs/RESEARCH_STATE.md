@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_DIAGNOSIS_BOUNDARY_LOCATED / SEG1_AFTER_READ_BATCH_MATERIALIZATION
+Engineering subphase: O3C_PER_TENSOR_FIX_MEASURED_PEAK_UNRESOLVED / WHOLE_GRAPH_TOPOLOGY_IS_RETENTION_SOURCE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2391,6 +2391,42 @@ tensor. The fork's forwardLayerRange API (landed, builds clean) then
 serves the segment-segmented execution on top of the corrected
 materialization.
 
+### O3-C″ Fix Verification — Per-Tensor Update Measured, Peak NOT Resolved — 2026-09-25
+
+The per-tensor streaming-update fix (3dea7ee: READ → EVAL → UPDATE → NEXT,
+batch dictionary removed) was compiled and run through the full double-pass
++ capacity protocol. 14 gauges captured; run killed in pass 2 at 57 GiB swap.
+
+Measured verdict — the fix changed the materialization SHAPE but not the
+peak:
+
+```text
+SEG1_AFTER_READ   active 15118 MiB — IDENTICAL to the batch run
+                  (footprint 30384 vs 30616 MiB — 0.2 GiB dictionary only)
+SEG2_AFTER_MAT.   active 28942 / footprint 58049 MiB
+WHOLE-GRAPH FWD   active 44313 / peak 49808 / footprint 73466 MiB
+pass 2 start      baseline 44302 MiB active — nothing released between passes
+max swap          57 GiB (killed)
+```
+
+Elevated diagnosis (now data-proven, not inferred): the retention source is
+NOT the materialization batching. The model itself retains every updated
+parameter array — because the WHOLE-GRAPH forward (`model(running,
+cache: nil)`) requires all 48 layers resident at eval time. Any
+materialization strategy therefore accumulates to the full 41.76 GiB. The
+batch-vs-per-tensor distinction moved the dictionary transient (0.2 GiB)
+and nothing else.
+
+Required fix (registered): segment-wise execution via the fork's
+already-landed `forwardLayerRange` API — embed → layerRange(0..16) → eval →
+release segment 0 → layerRange(16..32) → eval → release → … → projectOutput.
+Capacity becomes core + ONE segment (≈14.8 GiB). The API is built and
+uncommitted in the local fork; the SimiGo-side probe rewrite to consume it
+is the next implementation step.
+
+Comparison artifact:
+simigo2-experimental/results/o3c-streaming/qwen3-coder-next-4bit-v3-fixed.json.
+
 ### O3-C″ Implementation In Progress — Memory Retention Defect Found — 2026-09-25
 
 Component 1 (PerTensorSafetensorsReader) landed and verified: header-only
@@ -2459,6 +2495,42 @@ single) → drop the reference; peak becomes core + previous segments + ONE
 tensor. The fork's forwardLayerRange API (landed, builds clean) then
 serves the segment-segmented execution on top of the corrected
 materialization.
+
+### O3-C″ Fix Verification — Per-Tensor Update Measured, Peak NOT Resolved — 2026-09-25
+
+The per-tensor streaming-update fix (3dea7ee: READ → EVAL → UPDATE → NEXT,
+batch dictionary removed) was compiled and run through the full double-pass
++ capacity protocol. 14 gauges captured; run killed in pass 2 at 57 GiB swap.
+
+Measured verdict — the fix changed the materialization SHAPE but not the
+peak:
+
+```text
+SEG1_AFTER_READ   active 15118 MiB — IDENTICAL to the batch run
+                  (footprint 30384 vs 30616 MiB — 0.2 GiB dictionary only)
+SEG2_AFTER_MAT.   active 28942 / footprint 58049 MiB
+WHOLE-GRAPH FWD   active 44313 / peak 49808 / footprint 73466 MiB
+pass 2 start      baseline 44302 MiB active — nothing released between passes
+max swap          57 GiB (killed)
+```
+
+Elevated diagnosis (now data-proven, not inferred): the retention source is
+NOT the materialization batching. The model itself retains every updated
+parameter array — because the WHOLE-GRAPH forward (`model(running,
+cache: nil)`) requires all 48 layers resident at eval time. Any
+materialization strategy therefore accumulates to the full 41.76 GiB. The
+batch-vs-per-tensor distinction moved the dictionary transient (0.2 GiB)
+and nothing else.
+
+Required fix (registered): segment-wise execution via the fork's
+already-landed `forwardLayerRange` API — embed → layerRange(0..16) → eval →
+release segment 0 → layerRange(16..32) → eval → release → … → projectOutput.
+Capacity becomes core + ONE segment (≈14.8 GiB). The API is built and
+uncommitted in the local fork; the SimiGo-side probe rewrite to consume it
+is the next implementation step.
+
+Comparison artifact:
+simigo2-experimental/results/o3c-streaming/qwen3-coder-next-4bit-v3-fixed.json.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
