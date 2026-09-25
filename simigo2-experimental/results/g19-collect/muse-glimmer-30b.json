@@ -1,0 +1,692 @@
+{
+  "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
+  "instrumentedModuleCount" : 52,
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--RadixArk--Muse-Glimmer-q4-MLX\/snapshots\/4a4f54af27b7bc3f25351588a25335b28585cc49",
+  "modelType" : "MuseGlimmerTextLLMModel",
+  "preamble" : {
+    "baselineText" : "ukukukukukukukukukukukukukukukuk",
+    "baselineTokenIDs" : [
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036
+    ],
+    "controlPrompt" : "Return exactly one word: ping",
+    "identityPass" : true,
+    "instrumentedText" : "ukukukukukukukukukukukukukukukuk",
+    "instrumentedTokenIDs" : [
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036,
+      1036
+    ]
+  },
+  "protocolVersion" : "G1.9-C.COLLECT.V1",
+  "status" : "COLLECTED",
+  "workloads" : [
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 652.199834,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "OPEN_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Open the project report and read the first section.",
+          "stepIndex" : 0,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 392.898625,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "SUMMARIZE_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Summarize the report you just opened in two sentences.",
+          "stepIndex" : 1,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 534.518791,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "SEARCH_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Find every mention of the delivery date in the report.",
+          "stepIndex" : 2,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 226.881959,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "EDIT_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Rewrite the second paragraph of the report more concisely.",
+          "stepIndex" : 3,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 723.969125,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "RECHECK_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Check the edited paragraph against the rest of the report.",
+          "stepIndex" : 4,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 807.9180419999999,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "SAVE_DOCUMENT",
+          "passCount" : 16,
+          "prompt" : "Confirm the changes and save the report.",
+          "stepIndex" : 5,
+          "traceID" : "T1_DOCUMENT_SESSION"
+        }
+      ],
+      "summary" : "open → summarize → search → edit → recheck → save on one document",
+      "traceID" : "T1_DOCUMENT_SESSION"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 447.701958,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "FILE_INSPECT",
+          "passCount" : 16,
+          "prompt" : "List the files in the current project folder.",
+          "stepIndex" : 0,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 202.27379100000002,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_CALL_1",
+          "passCount" : 16,
+          "prompt" : "Run the test suite for this project and report failures.",
+          "stepIndex" : 1,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 632.52625,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_RESULT_1",
+          "passCount" : 16,
+          "prompt" : "The test run returned three failures. Which module do they belong to?",
+          "stepIndex" : 2,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 842.224958,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "NEXT_OPERATION",
+          "passCount" : 16,
+          "prompt" : "Inspect the failing module's main file.",
+          "stepIndex" : 3,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 518.835792,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_CALL_2",
+          "passCount" : 16,
+          "prompt" : "Run the failing module's tests again with verbose output.",
+          "stepIndex" : 4,
+          "traceID" : "T2_COMPUTER_OPERATION"
+        }
+      ],
+      "summary" : "file inspect → tool call → tool result → next operation → tool call again",
+      "traceID" : "T2_COMPUTER_OPERATION"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 838.1485829999999,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "USER_TURN_1",
+          "passCount" : 16,
+          "prompt" : "Find the largest file in this repository.",
+          "stepIndex" : 0,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 496.012667,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_CALL_1",
+          "passCount" : 16,
+          "prompt" : "Search the repository for files larger than ten megabytes.",
+          "stepIndex" : 1,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 240.944667,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_RESULT_1",
+          "passCount" : 16,
+          "prompt" : "The search found one large asset file. Continue.",
+          "stepIndex" : 2,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 553.5856249999999,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "USER_TURN_2",
+          "passCount" : 16,
+          "prompt" : "Now check when that file was last modified.",
+          "stepIndex" : 3,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 393.237208,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_CALL_2",
+          "passCount" : 16,
+          "prompt" : "Look up the modification history of that asset file.",
+          "stepIndex" : 4,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_B",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 663.1635,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_RESULT_2",
+          "passCount" : 16,
+          "prompt" : "The file was modified two weeks ago. Continue.",
+          "stepIndex" : 5,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_A",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 389.9145,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "USER_TURN_3",
+          "passCount" : 16,
+          "prompt" : "Summarize what we found about this file.",
+          "stepIndex" : 6,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 747.5398749999999,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "TOOL_CALL_3",
+          "passCount" : 16,
+          "prompt" : "Collect the file size and modification date into one line.",
+          "stepIndex" : 7,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 478.86458300000004,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "FINAL_ANSWER",
+          "passCount" : 16,
+          "prompt" : "Write the final one-paragraph answer about the asset file.",
+          "stepIndex" : 8,
+          "traceID" : "T3_AGENTIC_MULTI_TURN"
+        }
+      ],
+      "summary" : "three user turns interleaved with tool calls and results, then a final answer",
+      "traceID" : "T3_AGENTIC_MULTI_TURN"
+    },
+    {
+      "steps" : [
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 681.968125,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "CONTEXT_LOAD",
+          "passCount" : 16,
+          "prompt" : "Read the whole conversation above as one context.",
+          "stepIndex" : 0,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 409.472709,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "EXTRACT_1",
+          "passCount" : 16,
+          "prompt" : "Extract the first question asked in this context.",
+          "stepIndex" : 1,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_BC",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 764.869625,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "EXTRACT_2",
+          "passCount" : 16,
+          "prompt" : "Extract the last answer given in this context.",
+          "stepIndex" : 2,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_AB",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 614.311833,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "EXTRACT_3",
+          "passCount" : 16,
+          "prompt" : "Extract the first question again and compare it with the last answer.",
+          "stepIndex" : 3,
+          "traceID" : "T4_LONG_CONTEXT"
+        },
+        {
+          "declaredOptionalGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "eventCount" : 832,
+          "executionState" : "STATE_ALL",
+          "generatedTokenCount" : 16,
+          "generationMilliseconds" : 708.910416,
+          "measuredGroupEventCounts" : {
+            "DENSE_MLP_L00_17" : 288,
+            "DENSE_MLP_L18_35" : 288,
+            "DENSE_MLP_L36_51" : 256
+          },
+          "measuredGroupIDs" : [
+            "DENSE_MLP_L00_17",
+            "DENSE_MLP_L18_35",
+            "DENSE_MLP_L36_51"
+          ],
+          "operation" : "CONTEXT_SUMMARY",
+          "passCount" : 16,
+          "prompt" : "Summarize the entire context in three sentences.",
+          "stepIndex" : 4,
+          "traceID" : "T4_LONG_CONTEXT"
+        }
+      ],
+      "summary" : "one loaded context, repeated executions over different regions, then a summary",
+      "traceID" : "T4_LONG_CONTEXT"
+    }
+  ]
+}

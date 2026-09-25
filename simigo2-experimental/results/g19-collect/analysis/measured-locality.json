@@ -1,0 +1,645 @@
+{
+  "boundary": "MEASURED_LAYER_ENTERED_ONLY / NOT_DEMAND / NOT_PREDICTION / DECLARED_LINE_IS_SCENARIO / PER_MODEL_PER_WORKLOAD_NO_POOLING",
+  "models": {
+    "cyber-tiel-35b": {
+      "instrumentedModuleCount": 40,
+      "modelType": "Qwen35MoEModel",
+      "preambleIdentityPass": true,
+      "workloads": {
+        "T1_DOCUMENT_SESSION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 6
+          },
+          "stepCount": 6
+        },
+        "T2_COMPUTER_OPERATION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 5
+          },
+          "stepCount": 5
+        },
+        "T3_AGENTIC_MULTI_TURN": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 8
+          },
+          "stepCount": 9
+        },
+        "T4_LONG_CONTEXT": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [],
+            "stepsWithMeasuredExcess": 3
+          },
+          "stepCount": 5
+        }
+      }
+    },
+    "gemma4-12b-coder": {
+      "instrumentedModuleCount": 48,
+      "modelType": "Gemma4Model",
+      "preambleIdentityPass": true,
+      "workloads": {
+        "T1_DOCUMENT_SESSION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L16_31",
+              "DENSE_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 6
+          },
+          "stepCount": 6
+        },
+        "T2_COMPUTER_OPERATION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L16_31",
+              "DENSE_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 5
+          },
+          "stepCount": 5
+        },
+        "T3_AGENTIC_MULTI_TURN": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L16_31",
+              "DENSE_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 8
+          },
+          "stepCount": 9
+        },
+        "T4_LONG_CONTEXT": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [],
+            "stepsWithMeasuredExcess": 3
+          },
+          "stepCount": 5
+        }
+      }
+    },
+    "muse-glimmer-30b": {
+      "instrumentedModuleCount": 52,
+      "modelType": "MuseGlimmerTextLLMModel",
+      "preambleIdentityPass": true,
+      "workloads": {
+        "T1_DOCUMENT_SESSION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L18_35",
+              "DENSE_MLP_L36_51"
+            ],
+            "stepsWithMeasuredExcess": 6
+          },
+          "stepCount": 6
+        },
+        "T2_COMPUTER_OPERATION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L18_35",
+              "DENSE_MLP_L36_51"
+            ],
+            "stepsWithMeasuredExcess": 5
+          },
+          "stepCount": 5
+        },
+        "T3_AGENTIC_MULTI_TURN": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "DENSE_MLP_L18_35",
+              "DENSE_MLP_L36_51"
+            ],
+            "stepsWithMeasuredExcess": 8
+          },
+          "stepCount": 9
+        },
+        "T4_LONG_CONTEXT": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [],
+            "stepsWithMeasuredExcess": 3
+          },
+          "stepCount": 5
+        }
+      }
+    },
+    "nail-qwen36-35b": {
+      "instrumentedModuleCount": 40,
+      "modelType": "Qwen35MoEModel",
+      "preambleIdentityPass": true,
+      "workloads": {
+        "T1_DOCUMENT_SESSION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 6
+          },
+          "stepCount": 6
+        },
+        "T2_COMPUTER_OPERATION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 5
+          },
+          "stepCount": 5
+        },
+        "T3_AGENTIC_MULTI_TURN": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 8
+          },
+          "stepCount": 9
+        },
+        "T4_LONG_CONTEXT": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [],
+            "stepsWithMeasuredExcess": 3
+          },
+          "stepCount": 5
+        }
+      }
+    },
+    "qwen3-coder-30b": {
+      "instrumentedModuleCount": 48,
+      "modelType": "Qwen3MoEModel",
+      "preambleIdentityPass": true,
+      "workloads": {
+        "T1_DOCUMENT_SESSION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 6
+          },
+          "stepCount": 6
+        },
+        "T2_COMPUTER_OPERATION": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 5
+          },
+          "stepCount": 5
+        },
+        "T3_AGENTIC_MULTI_TURN": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [
+              "SWITCH_MLP_L16_31",
+              "SWITCH_MLP_L32_47"
+            ],
+            "stepsWithMeasuredExcess": 8
+          },
+          "stepCount": 9
+        },
+        "T4_LONG_CONTEXT": {
+          "C1_recurrence": {
+            "allTransitionsNonEmpty": true,
+            "meanIntersectionSize": 3.0
+          },
+          "C2_transitionLocality": {
+            "maxRatio": 1.0,
+            "meanRatio": 1.0,
+            "minRatio": 1.0
+          },
+          "C3_temporalStability": {
+            "lag1_meanOverlapRatio": 1.0,
+            "lag2_meanOverlapRatio": 1.0,
+            "lag3_meanOverlapRatio": 1.0
+          },
+          "C4_workingSetBreadth": {
+            "fractionAtMax": 1.0,
+            "max": 3,
+            "mean": 3.0,
+            "min": 3
+          },
+          "declaredVsMeasured": {
+            "declaredAlwaysSubsetOfMeasured": true,
+            "sampleExcess": [],
+            "stepsWithMeasuredExcess": 3
+          },
+          "stepCount": 5
+        }
+      }
+    }
+  }
+}

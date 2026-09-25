@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -224,6 +224,13 @@ struct Simigo2CTL {
       let report = try await GroupExecutionTraceProbe.leafModulePathAudit(
         modelDirectory: modelDirectory,
         filterSubstring: filter
+      )
+      print(try toJSON(report))
+    case "g19-collect":
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 16
+      let report = try await MeasuredTraceCollection.run(
+        modelDirectory: modelDirectory,
+        maxTokens: maxTokens
       )
       print(try toJSON(report))
     default:

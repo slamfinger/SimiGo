@@ -113,13 +113,27 @@ shared_expert 排除）**；pilot v0 三缺陷登记（token 类别错比/box �
 路径前缀盲区）并修复后重跑；下一步 = Measured Execution Trace
 Collection，届时 declared 与 measured 两线并列重算 locality 量并重审
 G4；Predictor 仍未授权）
+；**G1.9-C Measured Execution Trace Collection 已完成**（登记为 G1.9-C
+因 G1.9-B 已被 identity probe 占用；协议 G1.9-C.COLLECT.V1 = 已注册
+workload trace 的 25 个 operation 各配 scenario prompt，preamble 身份
+哨兵 5/5 PASS；两线分立：declared = scenario 声明，measured = 观测，
+字段分立且无 demand 字段）；**测量结论：Layer/Group 分辨率下 measured
+execution 无差分局部性**——5 模型 × 4 workload × 125 操作，measured
+working set 每步恒为全集（C1 全非空但退化、C2 = 1.0、C3 lag1/2/3 =
+1.0、C4 breadth 恒 3/atMax=1.0）；declared ⊆ measured 125/125 恒成立，
+measured 超出 declared 恰出现在 22/25 个非 ALL 声明步；Gate 5「generation
+需全部 decoder-layer groups，policy 只控 idle retention」由假设转为五模
+型实测事实；**PREDICTOR_STOP_GATE_NO_GO 获得实测确认**（本分辨率下无可
+预测的差分信号）；reload 节益维持为 declared 情景下的 idle-retention
+经济学结果；差分执行若存在只可能在更细分辨率（Router/Expert），观测之
+= 未授权的新决定）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19A_PILOT_PASS / TRACE_COLLECTION_PENDING
+Engineering subphase: G19C_COLLECTION_PASS / GROUP_RESOLUTION_LOCALITY_DEGENERATE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1556,3 +1570,35 @@ result; the Predictor question remains closed.
 
 Phase history:
 docs/00-governance/SIMIGO2_G19A_PILOT_RESULTS_20260925.md.
+
+### G1.9-C Measured Execution Trace Collection — 2026-09-25
+
+The pilot-validated observer was connected to the registered workload
+traces (protocol G1.9-C.COLLECT.V1; registered as G1.9-C because G1.9-B is
+occupied by the identity probe). Declared and measured lines are separate
+fields; each collection run opens with a control-prompt identity sentinel
+(5/5 PASS).
+
+Measured result over five models × four workloads (125 operations):
+
+```text
+C1 recurrence            all transitions non-empty (degenerate)
+C2 transition locality   1.0 at every transition (degenerate)
+C3 temporal stability    lag-1/2/3 overlap = 1.0 (degenerate)
+C4 working-set breadth   full optional set at 100% of steps
+declared ⊆ measured      125/125; measured excess exactly on the 22
+                         non-STATE_ALL declared steps per model
+```
+
+Measured conclusion: at Layer/Group resolution measured execution has no
+differential locality — the working set is always the full group set. The
+declared differential demand structure has no measured execution
+counterpart; Gate 5's "generation requires all decoder-layer groups" is now
+a measured fact; PREDICTOR_STOP_GATE_NO_GO is measurement-confirmed at this
+resolution; earlier reload reductions stand as idle-retention economics
+under declared scenarios. Differential execution, if any, could only live
+below group resolution (Router/Expert), whose observation is an
+unauthorized new decision.
+
+Phase history:
+docs/00-governance/SIMIGO2_G19C_MEASURED_TRACE_COLLECTION_20260925.md.
