@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_QWEN35MOE_BOUNDARY_CONFIRMED / CAPACITY_EXCEEDED / SEALED_AS_MECHANISM_EVIDENCE
+Engineering subphase: O3C_SEGMENTWISE_PLACEHOLDER_FIRST_PASS / CAPACITY_ATTRIBUTION_CORRECTED / O4_DECISION_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3062,3 +3062,63 @@ O4            : NOT REACHED
 Gate history:
 `docs/00-governance/SIMIGO2_O3C_QWEN35MOE_BOUNDARY_RESULT_20260925.md`;
 probe `O3CSegmentWiseProbe.swift`; fork `Qwen35ForwardLayerRangeTests`.
+
+### O3-C″ Fix Verification — Placeholder-First PASS; Capacity Attribution Corrected — 2026-09-26
+
+The 2026-09-25 seal was reopened on explicit user instruction plus new
+evidence: the run's capacity attribution traced to probe defects. Six
+defects were located, fixed, and verified (full ledger in the gate doc):
+
+```text
+D-P1 probe   loadContainer full native load (+30.28 GiB resident, kept for
+             the whole run) — this alone produced the sealed run's
+             "core load = 32.7 GiB" reading (30.28 container + ~2.4 core)
+D-P2 probe   no placeholder-first update — lazy-random tree materialized at
+             the release-path eval (+22 GiB → peak 78,373 MiB)
+D-P3 probe   per-segment arrays dict pinned released weights until the next
+             iteration — release freed nothing at the boundary; footprint
+             ratcheted 22 → 29 GiB per segment
+D-R1 reader  element-mapped intermediate Swift Array per tensor — a second
+             full copy of every tensor (~7 GiB churn per segment)
+D-R2 reader  BF16 branch numerically converted uint16 instead of
+             reinterpreting bits — every BF16 scale/bias read through this
+             reader was wrong (2.9 GiB on this model); no prior
+             output-identity claim depended on the path
+D-G1 gate    capacity check compared raw BYTES against capacityMiB —
+             capacityHeldThroughout was false in every run (units bug)
+```
+
+Post-fix measured verification (double-pass, 4×10-layer segments, 32 GiB
+physical): core load 3,356 MiB active / 4,022 MiB footprint; segment
+materialize peak 10,237 MiB active; every release returns active exactly to
+the 3,357 MiB core baseline; footprint flat ~11.3-11.8 GiB across 4 segments
+× 2 passes (zero ratchet); swap 0 MiB at all 39 boundaries; determinism
+pass1 == pass2 == [71093] (meaningful only after D-R2);
+
+```text
+overallPass = true (capacityHeld + residentSetBoundaryObserved +
+             determinismIdentical all true)
+max footprint 11,768 MiB vs sealed-run 78,373 MiB; max swap 0 MiB
+```
+
+Corrections to the registered 2026-09-25 findings: (1) the observable
+release boundary STANDS with stronger evidence (true return-to-core-baseline);
+(2) "capacity is exceeded by core load alone" is RETRACTED as a probe-defect
+artifact — true core residency is 3.3 GiB and the segment-wise loop holds
+peak residency at core + one segment ≈ 10.2 GiB active on this 30.28 GiB
+model. Not a performance claim; no frozen-line changes; fork segment API
+remains uncommitted pending E2E.
+
+```text
+Current gate  : O3-C″ → PASS / PLACEHOLDER_FIRST_VERIFIED /
+                CAPACITY_ATTRIBUTION_CORRECTED
+Next          : O4 oversized real-execution decision (user) — the
+                registered single blocker (no path constructs a quantized
+                oversized model without materializing lazy random weights)
+                is RESOLVED by placeholder-first + single-copy reader
+O4/O5/O6      : awaiting user decision
+```
+
+Gate history:
+`docs/00-governance/SIMIGO2_O3C_SEGMENTWISE_FIX_VERIFICATION_20260926.md`;
+artifact `results/o3c-streaming/nail-qwen36-35b-6bit-placeholder-first.json`.
