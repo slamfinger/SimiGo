@@ -169,17 +169,11 @@ public enum O3CStreamingForward {
                     }
                 } else {
                     guard name.contains(".switch_mlp.") else { continue }
-                    guard let layer = location.name.components
-                        .split(separator: ".")
-                        .first(where: { $0 == "layers" })
-                        .flatMap({ _ in
-                            let components = location.name.split(separator: ".")
-                            guard let index = components.firstIndex(of: "layers"),
-                                  index + 1 < components.count
-                            else { return nil }
-                            return Int(components[index + 1])
-                        }),
-                        segments[segment].contains(layer)
+                    let components = name.split(separator: ".")
+                    guard let index = components.firstIndex(of: "layers"),
+                          index + 1 < components.count,
+                          let layer = Int(components[index + 1]),
+                          segments[segment].contains(layer)
                     else { continue }
 
                     arrays[name] = try tensorReader.loadTensor(named: name)
