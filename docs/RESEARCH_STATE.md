@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3A_SKELETON_PASS_O3B_SELECTIVE_PASS_O3C_STREAMING_FORWARD_REQUIRED
+Engineering subphase: O3C_V1_TWO_BLOCKERS_IDENTIFIED / O3C_V2_PER_TENSOR_READER_AND_SEGMENT_API_REGISTERED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2285,6 +2285,43 @@ O4/O5/O6      : NOT STARTED
 
 O3 history: `O3SkeletonProbe.swift`;
 docs/00-governance/SIMIGO2_O3_SKELETON_SELECTIVE_RESIDENCY_RESULT_20260925.md.
+
+### O3-C′ Streaming Forward v1 — Two Hard Blockers Identified — 2026-09-25
+
+The streaming probe (G1.9-O3C.STREAMING.V1) reached first execution and
+identified the two blockers between the current toolchain and true
+oversized streaming:
+
+```text
+Blocker 1  no per-tensor safetensors reader: loadArraysAndMetadata is
+           shard-granular (4.9 GiB); naive per-tensor extraction loaded a
+           packed-U32 metadata array ([dequantize] fatal). Required:
+           PerTensorSafetensorsReader (header parse + seek + dtype
+           construction + packed-quantized handling) — also the missing
+           tool for the O2-B selective-touch experiment.
+Blocker 2  whole-graph lazy eval defeats capacity discipline:
+           model(running) + eval(logits) touches ALL 48 layers, forcing
+           every segment resident simultaneously (peak = full model)
+           regardless of materialize/release ordering. True streaming
+           requires SEGMENT-WISE graph decomposition (embed → layers 0-15
+           → eval → 16-31 → eval → …); the fork's Qwen3NextModelInner
+           layer stack is fileprivate — decomposition needs a Backend API
+           surface (E3-pattern extension of the local fork's Qwen3Next;
+           no Apple mlx-swift modifications).
+```
+
+Both are engineering components, not research unknowns. O3-C″ next gate
+registered: PerTensorSafetensorsReader + Backend segment-execution surface
++ two-pass determinism/capacity re-run.
+
+```text
+Current gate  : O3-C′ v1 → BLOCKERS IDENTIFIED
+Next          : O3-C″ (per-tensor reader + Backend segment API) — NOT
+                STARTED
+```
+
+O3-C′ history: `O3CStreamingForward.swift` probe;
+docs/00-governance/SIMIGO2_O3C_STREAMING_V1_RESULT_20260925.md.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.

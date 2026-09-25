@@ -1,37 +1,49 @@
 {
-  "status": "O3A_PASS / O3B_PASS / O3C_BLOCKED",
-  "protocolVersion": "G1.9-O3.SKELETON.V1",
-  "boundary": "SKELETON_LOAD / SELECTIVE_RESIDENCY / REAL_FORWARD_CONSUMES_RESIDENCY / ZERO_FULL_WEIGHT_LOAD / NOT_A_PERFORMANCE_CLAIM",
-  "modelID": "mlx-community/Qwen3-Coder-Next-4bit (snapshot 7b9321ea)",
-  "note": "Report reconstructed from in-probe stderr stage traces: the probe was killed during stage C (naive forward hung over-physical), so no in-probe JSON exists. Stages A1/A2/B completed and are measured; stage C is blocked with mechanism identified.",
-  "stages": [
+  "boundary" : "SKELETON_LOAD \/ SELECTIVE_RESIDENCY \/ REAL_FORWARD_CONSUMES_RESIDENCY \/ ZERO_FULL_WEIGHT_LOAD \/ NOT_A_PERFORMANCE_CLAIM",
+  "forwardMilliseconds" : 876.327625,
+  "generatedTokens" : 16,
+  "materializeSeconds" : 0.442817583,
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "overallPass" : true,
+  "protocolVersion" : "G1.9-O3.SKELETON.V1",
+  "stages" : [
     {
-      "stage": "A1_SKELETON_CONSTRUCT",
-      "pass": true,
-      "physFootprintGiB": 0.08,
-      "swapGiB": 0.0,
-      "detail": "Qwen3NextModel constructed via typeRegistry.createModel; NO weights loaded; lazy random init"
+      "detail" : "Qwen3NextModel constructed; lazy random init (no weights loaded)",
+      "pass" : true,
+      "physFootprintBytes" : 89146160,
+      "stage" : "A1_SKELETON_CONSTRUCT",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 0
     },
     {
-      "stage": "A2_QUANTIZE_IN_PLACE",
-      "pass": true,
-      "physFootprintGiB": 0.09,
-      "swapGiB": 0.0,
-      "detail": "542 modules quantized in place from the checkpoint's interleaved quantization dict (base 64/4 + per-module 8-bit overrides via perLayerQuantization)"
+      "detail" : "quantized 542 modules from checkpoint .scales names",
+      "pass" : true,
+      "physFootprintBytes" : 91980592,
+      "stage" : "A2_QUANTIZE",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 51
     },
     {
-      "stage": "B_SELECTIVE_RESIDENCY",
-      "pass": true,
-      "physFootprintGiB": 28.33,
-      "swapGiB": 0.0,
-      "detail": "1747 tensors / 28.26 GiB materialized (core + switch groups 0-15, 32-47) in 0.3-0.4 s; skipped 13.50 GiB evicted group (16-31)"
+      "detail" : "materialized 1747 tensors \/ 28.26 GiB; skipped (evicted group) 13.50 GiB in 0.4s",
+      "pass" : true,
+      "physFootprintBytes" : 30424078248,
+      "stage" : "B_SELECTIVE_RESIDENCY",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 533
     },
     {
-      "stage": "C_REAL_FORWARD",
-      "pass": false,
-      "physFootprintGiB": null,
-      "swapGiB": 24.5,
-      "detail": "naive full-graph forward touches every layer, lazily materializing the evicted group's 13.50 GiB random weights during the pass (footprint ~41.8 GiB -> over-physical thrash); hung, killed at 29 min"
+      "detail" : "prompt 18 tokens → 16 tokens in 876.3ms; evicted-group weights were NOT resident during this forward",
+      "pass" : true,
+      "physFootprintBytes" : 46653921408,
+      "stage" : "C_REAL_FORWARD",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 501
+    }
+  ],
+  "status" : "PASS"
+}
+d group's 13.50 GiB random weights during the pass (footprint ~41.8 GiB -> over-physical thrash); hung, killed at 29 min"
     }
   ],
   "verdict": {
