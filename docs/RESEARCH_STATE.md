@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O5_LONGGEN_STABLE_AND_CONTEXT_LINEAR / O5_SWEEP_COMPLETE / O6_THEN_APP_PER_PLAN
+Engineering subphase: O6_EXECSTATE_OVERSIZED_PASS / SEVEN_OF_SEVEN / APP_BUILD_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3320,3 +3320,36 @@ O6            : NOT STARTED
 
 Gate history: `docs/00-governance/SIMIGO2_O5_LONGGEN_CONTEXT_SCALING_20260926.md`;
 artifacts `results/o5-sweep/qwen3-next-{longgen32,ctx1,ctx25,ctx100}.json`.
+
+### O6 Execution State × Oversized Model — PASS 7/7 — 2026-09-26
+
+Layering registered (coordinator = identity sovereignty; oversized backend
+= prefix payload whose release IS the segment eviction; segmented core =
+verified physical machinery; executor = representation-consuming E5-v2
+semantics). Scenario on the 41.76 GiB model (seg8): fork → divergent child
+continue → full segment eviction (all switch_mlp released) → logical
+restore to fork point → identical re-run; parent non-interference.
+
+```text
+7/7 checks PASS — incl. CHILD_DETERMINISM_THROUGH_SEGMENT_EVICT_RESTORE
+peak footprint 8,111 MiB / swap 0 / 121 segment transitions executed
+```
+
+The E4 invariant holds at oversized scale: an Execution State whose
+segments were all evicted IS still the same Execution State, resuming
+bit-identically from the restored fork-point representation. First-run
+scenario defect (checkpoint captured post-run-1) found and corrected to
+the E5 authoritative shape before accepting results. Registered
+follow-up: ResidencyController composition (transfer log/INV-1 over
+segments).
+
+```text
+Current gate  : O6 → EXECSTATE_OVERSIZED_PASS / SEVEN_OF_SEVEN_CHECKS
+Next          : SimiGo-1.7-inspired 2.0 app (oversized segmented engine +
+                chat UI + residency panel + oversized self-test) and
+                real-device verification — build was ordered last by the
+                user
+```
+
+Gate history: `docs/00-governance/SIMIGO2_O6_EXECUTION_STATE_OVERSIZED_20260926.md`;
+artifact `results/o5-sweep/qwen3-next-o6-execstate.json`.

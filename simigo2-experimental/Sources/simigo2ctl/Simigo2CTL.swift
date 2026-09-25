@@ -323,6 +323,15 @@ struct Simigo2CTL {
         prefetch: prefetch
       )
       print(try toJSON(report))
+    case "o6-execstate":
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 4
+      let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 8
+      let report = try await O6ExecutionStateScenario.run(
+        modelDirectory: modelDirectory,
+        maxTokens: tokens,
+        segmentSize: segmentSize
+      )
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }
