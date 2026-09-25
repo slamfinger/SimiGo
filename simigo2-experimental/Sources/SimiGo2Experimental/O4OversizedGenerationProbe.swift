@@ -95,6 +95,7 @@ public enum O4OversizedGenerationProbe {
     public static func run(
         modelDirectory: URL,
         prompt: String = "Write a Python function that merges two sorted lists.",
+        promptRepeat: Int = 1,
         maxNewTokens: Int = 8,
         passes: Int = 2,
         segmentSize: Int = 16,
@@ -114,8 +115,10 @@ public enum O4OversizedGenerationProbe {
         let reader = try PerTensorSafetensorsReader(
             modelDirectory: modelDirectory, weightMap: weightMap
         )
+        let effectivePrompt =
+            Array(repeating: prompt, count: max(1, promptRepeat)).joined(separator: "\n\n")
         let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
-        let messages: [[String: any Sendable]] = [["role": "user", "content": prompt]]
+        let messages: [[String: any Sendable]] = [["role": "user", "content": effectivePrompt]]
         let promptTokenIDs = try tokenizer.applyChatTemplate(
             messages: messages,
             chatTemplate: nil,

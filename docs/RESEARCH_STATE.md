@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O5_PREFETCH_MEASURED_NEGATIVE_AT_SCALE / SEG8_SEQUENTIAL_PARETO_BEST / O6_NEXT_PER_PLAN
+Engineering subphase: O5_LONGGEN_STABLE_AND_CONTEXT_LINEAR / O5_SWEEP_COMPLETE / O6_THEN_APP_PER_PLAN
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3294,3 +3294,29 @@ O6            : NOT STARTED
 ```
 
 Gate history: `docs/00-governance/SIMIGO2_O5_PREFETCH_PIPELINING_20260926.md`.
+
+### O5 Long-Generation + Context Scaling — Stable; Crossover at ~650 tokens — 2026-09-26
+
+O5 items 3-4 (seg8, clean I/O). Long generation (32 tokens × 2 passes):
+determinism PASS, peak footprint flat at 8,952 MiB (no creep), swap 0;
+pass-1 latency drift +1.5%; pass-2 tail inflation fully accounted for by
+prefix growth (cacheless re-forward processes 219+k positions at step k);
+pass-2 overall +12% registered as undetermined system variance.
+Context scaling (ctx 18/258/1,008): read constant (8.2-8.8 s, weights
+only); forward LINEAR (≈ 0.38 s + 12.2 ms × context); memory
+context-independent and weights-bound. **Crossover at context ≈ 600-700
+tokens**: beyond it, cacheless forward cost exceeds the re-materialization
+read cost — the quantitative motivation for O6 (prefix/KV-level Execution
+State strategies dominate beyond the crossover; below it, seg8 sequential
+stays optimal).
+
+```text
+Current gate  : O5 → LONGGEN_STABLE_AND_CONTEXT_LINEAR / O5_SWEEP_COMPLETE
+Next          : O6 Execution State × oversized (design gate first); then
+                SimiGo-1.7-inspired 2.0 app + real-device verification
+                (user ordering: experiments first, build last)
+O6            : NOT STARTED
+```
+
+Gate history: `docs/00-governance/SIMIGO2_O5_LONGGEN_CONTEXT_SCALING_20260926.md`;
+artifacts `results/o5-sweep/qwen3-next-{longgen32,ctx1,ctx25,ctx100}.json`.

@@ -310,9 +310,13 @@ struct Simigo2CTL {
       let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 8
       let passes = optionalOption("--passes", rest).flatMap(Int.init) ?? 2
       let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 16
+      let promptRepeat = optionalOption("--prompt-repeat", rest).flatMap(Int.init) ?? 1
+      let prompt = optionalOption("--prompt", rest) ?? "Write a Python function that merges two sorted lists."
       let prefetch = rest.contains("--prefetch")
       let report = try await O4OversizedGenerationProbe.run(
         modelDirectory: modelDirectory,
+        prompt: prompt,
+        promptRepeat: promptRepeat,
         maxNewTokens: tokens,
         passes: passes,
         segmentSize: segmentSize,
