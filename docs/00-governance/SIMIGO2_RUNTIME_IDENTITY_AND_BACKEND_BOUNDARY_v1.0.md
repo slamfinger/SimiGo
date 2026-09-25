@@ -1,14 +1,14 @@
 # SimiGo 2.0 — Runtime Identity, Backend Boundary & Current Engineering State v1.0
 
-Status: ARCHITECTURAL_POSITION_REGISTERED / ENGINEERING_L1_L2_PASS
+Status: ARCHITECTURAL_POSITION_REGISTERED / TRACK_B_FOUNDATIONAL / L4B_RECONCILIATION_PASS
 Date: 2026-09-25
 Branch: `exp/simigo2-experimental`
 
 ## 0. Purpose
 
-This document records a key architectural conclusion reached after the
-SimiGo 2.0 experimental research line was frozen and the runtime-residency
-engineering line entered implementation.
+This document records the SimiGo 2.0 Runtime identity and Backend boundary.
+It also records the architectural correction that Track B — Execution Continuity
+is a foundational Runtime capability alongside Resource Lifecycle.
 
 It is a design/engineering position, not a new research result. It exists to
 prevent later implementation from accidentally coupling SimiGo's identity to
@@ -167,24 +167,56 @@ SimiGo Runtime compatibility
 Verified end-to-end support
 ```
 
-## 6. Current engineering implementation state
+## 6. Execution Continuity is a first-class Runtime capability
+
+The resource-oriented Runtime description is incomplete without Track B.
+SimiGo Runtime has two primary dimensions:
+
+    Execution Continuity
+        Execution Identity / Lineage / Position / Continuation
+        Fork / Branch / Restore / Reattach / Discard
+
+    Resource Lifecycle
+        Residency / Budget / Materialization / Eviction / Pressure
+
+These dimensions are intentionally separate. Execution State is not KV Cache,
+not Residency State, and not a residency window.
+
+Track B is classified as:
+
+    Research:       CLOSED / FROZEN
+    Architecture:   FOUNDATIONAL / PRESERVED
+    Product:        FIRST-CLASS RUNTIME CAPABILITY
+    Engineering:    IMPLEMENTATION PATH DEFINED
+
+The detailed architecture and implementation sequence are registered in
+SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE_v1.0.md.
+
+The critical ownership boundary is unchanged: SimiGo owns logical execution
+identity and lifecycle semantics, while the Backend owns physical KV/state
+representation and actual model computation. SimiGo MUST NOT create a second
+physical-KV authority.
+
+## 7. Current engineering implementation state
 
 The research line remains:
 
-```text
-CLOSED / FROZEN
-```
+    CLOSED / FROZEN
 
-The engineering line is now:
+The residency engineering line has progressed through L4-B:
 
-```text
-Requirements                    COMPLETE
-Verification Design             COMPLETE
-Implementation L1/L2            PASS
-Controller production body      NEXT
-L3 Fault Injection              NOT STARTED
-L4 Real Runtime Verification    NOT STARTED
-```
+    Requirements                    COMPLETE
+    Verification Design             COMPLETE
+    Implementation L1/L2            PASS
+    Controller                      PASS
+    L3 Fault Injection              PASS
+    L4-A MLX Backend Adapter        PASS
+    L4-B Real Reconciliation        PASS / FIVE MODELS
+    L4-C Real Generation Identity   NEXT
+
+Execution Continuity is now registered as a foundational product architecture
+line. Its pure-Swift contract and contract tests should be designed before
+connecting the semantic layer to a real MLX execution-state adapter.
 
 ### L1/L2 implementation gate
 
@@ -234,7 +266,7 @@ Commit:
 254638b
 ```
 
-## 7. Development boundary that must remain stable
+## 8. Development boundary that must remain stable
 
 Future implementation MUST preserve the following separation:
 
@@ -265,7 +297,7 @@ In particular:
 - Backend neutrality must not be claimed as verified until a second backend
   actually passes the required integration/identity battery.
 
-## 8. Relation to the frozen research line
+## 9. Relation to the frozen research line
 
 Nothing in this document reopens:
 
@@ -282,11 +314,11 @@ Nothing in this document reopens:
 The Backend boundary is an engineering architecture decision derived from the
 existing evidence. It is not a new research object.
 
-## 9. One-sentence identity
+## 10. One-sentence identity
 
 For future design reviews, the shortest stable statement is:
 
-> **SimiGo is a Runtime that manages model lifecycle and runtime resources;
-> the Backend manages how the model computes.**
+> **SimiGo Runtime manages Execution Continuity and Resource Lifecycle;
+> the Backend manages physical model execution and computation semantics.**
 
 This sentence is the architectural anchor for subsequent SimiGo 2.0 engineering.
