@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E3_EXECUTION_STATE_ADAPTER_VERIFIED / E4_CONTINUITY_RESIDENCY_INTEGRATION_NEXT
+Engineering subphase: E4_CONTINUITY_RESIDENCY_INTEGRATION_VERIFIED / E5_END_TO_END_IDENTITY_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2019,9 +2019,46 @@ Next          : E4 Continuity + Residency integration (eviction must not
 E4 / E5       : NOT STARTED
 ```
 
-E3 history: `ExecutionStateBackendContract.swift` (contract target),
-`MLXExecutionStateBackend.swift`, `ExecutionContinuityCoordinator.swift`,
-`ExecutionContinuityCoordinatorTests.swift`.
+### E4 Continuity + Residency Integration — Verified — 2026-09-25
+
+The two validated capabilities were composed (ExecutionContinuityCoordinator
++ MLXExecutionStateBackend × ResidencyController + mock materializer) and
+the full cycle was executed: Create → Generate → Resident → Evict
+(pressure to the core floor AND release of the execution's live
+representation) → Re-materialize → Restore from the pre-eviction
+checkpoint → Reattach → Continue.
+
+Engineering answer to the integration question — **an Execution State that
+was evicted IS still the same Execution State**:
+
+```text
+Identity / Lineage      unchanged across eviction, re-materialization,
+                        restore, reattach, and continue
+Position / Continuation semantically preserved (restore to the checkpoint
+                        position; continue advances on the execution's own
+                        timeline)
+Representation          CHANGED (live representation released; re-bound
+                        from the pre-eviction checkpoint)
+Residency               CHANGED (full → core floor → full; 6 loads, 3
+                        releases through the mock materializer)
+```
+
+Both record systems verified independent: residency transitions create no
+continuity lifecycle records and vice versa; residency INV-1 holds at every
+step. Suite: **87/87 XCTest PASS** (106 test cases total incl. the contract
+target).
+
+```text
+Current gate  : E4 → VERIFIED
+Next          : E5 end-to-end product scenario on real MLX (Create →
+                Generate → Fork → Parent/Child Continue → Child Evict →
+                Re-materialize → Restore → Continue → Discard → Parent
+                Continue; compare identity/lineage/position/next
+                input/continuation/tokens/logits)
+E5            : NOT STARTED
+```
+
+E4 history: `ExecutionResidencyIntegrationTests.swift`.
 
 E2 history: `FakeExecutionContinuityRuntime.swift` +
 `ExecutionContinuityLifecycleTreeTests.swift`.
