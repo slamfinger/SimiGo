@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O4_PERFORMANCE_DIFFERENTIAL_MEASURED / SEGMENTED_2X_FULL_AT_20GIB / OVERSIZED_DIRECT_RUN_PENDING_USER_PULL
+Engineering subphase: O4_OVERSIZED_REAL_GENERATION_PASS / CORE_PLUS_ONE_SEGMENT_ZERO_SWAP / O5_O6_DECISION_PENDING
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3163,3 +3163,36 @@ O5/O6         : NOT STARTED
 Gate history:
 `docs/00-governance/SIMIGO2_O4_FULL_VS_SEGMENTED_PERFORMANCE_DIFFERENTIAL_20260926.md`;
 artifact `results/o4-generation/nail-qwen36-35b-4bit-full-vs-segmented.json`.
+
+### O4 Oversized Real Generation — PASS — 2026-09-26
+
+Direct measurement on the re-downloaded Qwen3-Coder-Next-4bit (41.76 GiB >
+32 GiB physical; 3×16-layer segments; segmented-only — the full path does
+not exist at this scale). The O4 question is answered YES by measurement:
+
+```text
+core resident            1,294 MiB (O1-registered core confirmed)
+peak footprint           13,883 MiB — the model executes in < 14 GiB
+max swap                 0 MiB at all 16 token boundaries
+generation               16 tokens (8 × 2 passes), greedy, chat template
+token latency            ~11.0 s/token = read 8.6 s (40.5 GiB/token
+                         re-materialization ≈ 4.7 GB/s) + forward 2.2 s
+double-pass determinism  PASS (identical token sequences)
+```
+
+The A/B extrapolation (6–14 s/token) is confirmed (~11 s); the cost is
+throughput-bound re-materialization I/O, exactly as the 20.15 GiB
+differential predicted. Harness-level physical layer only; Execution State
+composition remains O6.
+
+```text
+Current gate  : O4 → OVERSIZED_REAL_GENERATION_PASS /
+                CORE_PLUS_ONE_SEGMENT_ZERO_SWAP
+Next          : O5 boundary sweep (generation length/stability/throughput
+                vs I/O) and/or O6 Execution State × oversized model —
+                user decision
+O5/O6         : NOT STARTED
+```
+
+Gate history: `docs/00-governance/SIMIGO2_O4_OVERSIZED_REAL_GENERATION_20260926.md`;
+artifact `results/o4-generation/qwen3-coder-next-4bit-oversized-gen.json`.
