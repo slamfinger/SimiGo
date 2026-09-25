@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -254,6 +254,15 @@ struct Simigo2CTL {
       let report = try await E5ExecutionStateScenario.run(
         modelDirectory: modelDirectory,
         maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "o2-baseline":
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 48
+      let generations = optionalOption("--generations", rest).flatMap(Int.init) ?? 10
+      let report = try await O2BaselineProbe.run(
+        modelDirectory: modelDirectory,
+        maxTokens: maxTokens,
+        generations: generations
       )
       print(try toJSON(report))
     default:

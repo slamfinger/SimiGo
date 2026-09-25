@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O0_MECHANISM_CENSUS_REGISTERED / O1_TAXONOMY_AND_O2_EXPERIMENTS_NEXT
+Engineering subphase: O2_BASELINE_MEASURED_H_EAGER_LOAD_INCOMPLETE / O3_SKELETON_LOAD_REQUIRED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2194,6 +2194,49 @@ O1/O2         : NOT STARTED
 
 O0 history:
 docs/00-governance/SIMIGO2_O0_OPEN_SOURCE_MECHANISM_CENSUS_20260925.md.
+
+### O2 Native MLX Baseline — Measured: H-Eager, Load Incomplete — 2026-09-25
+
+The native MLX baseline was run against Qwen3-Coder-Next-4bit (41.76 GiB
+weights) on the 32 GiB machine with ZERO SimiGo intervention
+(`simigo2ctl o2-baseline`, the fork's native loadContainer path).
+
+Measured outcome: **the full-model load did NOT complete**. During the
+9-minute watchdog window the process sustained 100–115% CPU with
+process-visible RSS of only 40–98 MB, while system-wide swap climbed from
+≈0 to a pinned 22.7–23.5 GiB within the first two minutes and stayed there.
+The probe never reached first forward — no generations ran. Post-kill, swap
+drained slowly (23 → 2.2 GiB). Watchdog termination was by design: the
+stability boundary was already violated on a shared machine.
+
+Verdict: **H-EAGER** for the native path — the mmap-backed lazy arrays at
+read time do not survive `loadWeights` → `model.update(verify: .all)`, which
+binds all weights into device buffers eagerly, overflows to swap, and never
+completes. Three-boundary classification: Capacity = native path cannot
+deliver an executable model (outcome C for the native path); Stability =
+violated during load; Performance boundary = unreachable.
+
+Registered caveats: the watchdog bound is not an impossibility bound
+(non-completion within 9 min at 23 GiB swap is what is measured); RSS is
+not authoritative for GPU-wired memory (swap curve + CPU signature are the
+evidence); an in-probe periodic snapshot flush is registered as a probe
+improvement for any re-run.
+
+Direct consequences: O2-B selective-touch moves INTO O3 (does skeleton-load
+preserve non-residency?); **O3's skeleton-load path is now REQUIRED** (the
+native path cannot be the oversized baseline — full-load = FAIL, measured);
+O3's first target residency levels remain core+1 group ≈ 14.8 GiB and
+core+2 groups ≈ 28.3 GiB, both below the wired limit.
+
+```text
+Current gate  : O2 → MEASURED (native path: outcome C)
+Next          : O3 skeleton-load path + group materialize + forward at
+                core+1 / core+2 residency levels
+O3–O6         : NOT STARTED
+```
+
+O2 history:
+docs/00-governance/SIMIGO2_O2_NATIVE_BASELINE_RESULT_20260925.md.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
