@@ -20,8 +20,12 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "SimiGoRuntimeContract"
+        ),
+        .target(
             name: "SimiGo2Experimental",
             dependencies: [
+                "SimiGoRuntimeContract",
                 .product(name: "MLX", package: "mlx-swift"),
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
                 .product(name: "MLXLLM", package: "mlx-swift-lm"),
@@ -47,8 +51,12 @@ let package = Package(
             dependencies: ["SimiGo2Experimental"]
         ),
         .testTarget(
+            name: "SimiGoRuntimeContractTests",
+            dependencies: ["SimiGoRuntimeContract"]
+        ),
+        .testTarget(
             name: "SimiGo2ExperimentalTests",
-            dependencies: ["SimiGo2Experimental"]
+            dependencies: ["SimiGo2Experimental", "SimiGoRuntimeContract"]
         )
     ]
 )

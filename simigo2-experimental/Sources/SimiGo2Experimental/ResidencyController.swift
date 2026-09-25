@@ -1,13 +1,10 @@
 import Foundation
+import SimiGoRuntimeContract
 
-/// The Controller/Materializer boundary. The materializer is the only
-/// component allowed to touch tensors; implementations wrap the validated
-/// MLX load/release patterns. A group transfer is all-or-nothing: either
-/// `materialize`/`release` returns or the group's residency is unchanged.
-public protocol ResidencyMaterializer: Sendable {
-    func materialize(groupID: String) throws
-    func release(groupID: String) throws
-}
+/// The Controller/Materializer boundary is the `ResidencyMaterializer`
+/// contract (SimiGoRuntimeContract target). This file MUST stay free of
+/// MLX imports: the Controller depends on the Runtime Contract, and MLX
+/// enters only behind the concrete Backend implementation (B3).
 
 /// Cooperative cancellation checked at group boundaries (R3.15: a group is
 /// either fully transferred or not started; cancellation never splits one).

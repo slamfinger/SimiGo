@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: CONTROLLER_IMPLEMENTED_CONTRACT_TESTS_PASS / L3_FAULT_INJECTION_NEXT
+Engineering subphase: B1_B2_CONTRACT_TARGET_REGISTERED / B3_MLX_BACKEND_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2035,3 +2035,53 @@ L3 / L4       : NOT STARTED
 
 Implementation history: `ResidencyController.swift` +
 `ResidencyControllerTests.swift`.
+
+### Backend Boundary Gate — B1/B2 Complete — 2026-09-25
+
+Per the registered Backend Boundary / Runtime Contract engineering gate
+(`SIMIGO2_BACKEND_BOUNDARY_RUNTIME_CONTRACT_ENGINEERING_GATE_v1.0.md`,
+2d5e9a4): **B1** created the pure-Swift target `SimiGoRuntimeContract`
+— the package graph gives it NO MLX dependency, so the contract's MLX-free
+status is enforced by the build system, not by discipline. Registered
+surface:
+
+```text
+ResidencyMaterializer      materialize(groupID:) / release(groupID:)
+                           — per-group all-or-nothing residency ops; the
+                           Controller depends on exactly this surface
+RuntimeResidencyBackend    extends ResidencyMaterializer with
+                           memoryObservation() -> BackendMemoryObservation
+                           (INV-3 audit boundary) and
+                           purgeTransientCaches() (transition hygiene)
+BackendMemoryObservation   {activeBytes, cacheBytes, peakBytes} value type
+```
+
+The contract expresses WHAT resource state the Runtime needs; it does not
+express HOW a model computes (no tokenization/generation/architecture types
+— gate §3/§4).
+
+**B2** added the dedicated `SimiGoRuntimeContractTests` test target — also
+MLX-free in its package graph — with 4 tests covering observation
+propagation, materialize/release success-and-failure propagation, the
+controller-facing narrowing (full backend usable as ResidencyMaterializer),
+and explicit purge semantics: **4/4 PASS**.
+
+Dependency direction after B1/B2:
+
+```text
+SimiGoRuntimeContract (no MLX)
+        ↑                ↑
+SimiGo2Experimental   SimiGoRuntimeContractTests (no MLX)
+(Controller; MLX stays behind the concrete Backend at B3)
+```
+
+```text
+Current gate  : B1/B2 → COMPLETE; B5 first half done (L1/L2 regression
+                67/67 unchanged)
+Next          : B3 MLX Backend adapter → B4 Controller integration check →
+                B5 full regression → L3 → L4
+B3/B4/B5/L3/L4: NOT STARTED
+```
+
+B1/B2 history: `SimiGoRuntimeContract` target +
+`RuntimeBackendContractTests.swift`.

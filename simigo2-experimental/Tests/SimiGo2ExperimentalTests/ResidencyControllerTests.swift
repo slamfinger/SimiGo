@@ -1,4 +1,5 @@
 import XCTest
+import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class ResidencyControllerTests: XCTestCase {
