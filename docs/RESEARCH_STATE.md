@@ -186,13 +186,30 @@ IMPROVEMENT**：改进空间只存在于保持结构-经济学的前治面上（
 为代价改善，E3 预算定义决定可行点，E4 correctness 对全部候选结构性
 成立；下一门 = 用户决定（声明 cost weighting 的 candidate analysis 门 /
 或 STOP——前治面已完整刻画 + 无免费改进本身即完整工程结论））
+；**用户裁定（2026-09-25）：G1.9-E0 STOP——GROUP_RESOLUTION_POLICY_
+TRADEOFF_CLOSED，group 分辨率 Experimental 研究线正式封端**（锁定 =
+不进入 Candidate Analysis、不定义 cost weighting/optimizer/optimal
+policy、不开 Router/Expert、不加 runtime instrumentation、不做生产
+MLX 修改；重开只能由新问题或新证据触发——如真实部署的峰值内存 ≤X GiB
++ reload latency ≤Y ms 双约束、workload SLA、长会话内存压力、
+materialization/计算重叠实测代价、或某分辨率/模型类下 execution 非全集
+的观测——绝不因「还有优化空间」自动恢复）；**两条线终态**：
+Execution 对象 = measured FULL ⇒ locality degenerate ⇒ no predictive
+target（RESOLUTION-DEGENERATE）；Residency 对象 = policy-derived ⇒
+byte-validated ⇒ D1–D4 characterized ⇒ exact reload identity
+（ReloadTotal = n·OptionalTotal − ΣRetainedBytes，20/20 精确）⇒
+trade-off frontier ⇒ no free improvement（Reload reduction ⟺ additional
+retention integral）；**留下的是负结果 + 工程正结果的组合**：当前分辨
+率不存在可供 Predictor 利用的 execution locality；即使如此，policy-level
+residency retention 仍可严格测量、字节级验证、其 reload economics 精确
+分解为无免费改进的线性 trade-off——完整阶段封存）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19E0_FEASIBILITY_TRADEOFF_ONLY / NEXT_GATE_USER_DECISION
+Engineering subphase: G19E0_STOP / GROUP_RESOLUTION_POLICY_TRADEOFF_CLOSED / AWAITING_NEW_PROBLEM_OR_EVIDENCE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1771,3 +1788,36 @@ engineering conclusion.
 
 Phase history:
 docs/00-governance/SIMIGO2_G19E0_RETENTION_FEASIBILITY_AUDIT_20260925.md.
+
+### Group-Resolution Experimental Line Closure — 2026-09-25
+
+The user ruled option (b): G1.9-E0 STOP. The group-resolution Experimental
+line is formally closed with the status
+`G19E0_STOP / GROUP_RESOLUTION_POLICY_TRADEOFF_CLOSED`.
+
+Terminal results:
+
+```text
+EXECUTION:  MeasuredExecution = FULL ⇒ locality degenerate ⇒ no
+            predictive target (RESOLUTION-DEGENERATE / NO PREDICTIVE TARGET)
+RESIDENCY:  PolicyResidency → byte-validated → retention structure
+            characterized → exact reload identity (ReloadTotal =
+            n·OptionalTotal − ΣRetainedBytes, 20/20 exact) → trade-off
+            frontier → no free improvement
+```
+
+Final formulation: a residency/reload trade-off exists; a free improvement
+does not — reload reduction ⟺ additional retention integral, exactly, under
+the current model/trace/harness conditions. The line leaves a negative-plus-
+positive pair: no exploitable execution locality at this resolution, and a
+strictly measurable, byte-validated, exactly-decomposable policy retention
+economics.
+
+Locked until reopened by new problems or new evidence: no candidate
+analysis, no cost weighting, no optimizer, no optimal policy, no
+Router/Expert, no additional runtime instrumentation, no production MLX
+modifications. Reopening triggers are concrete deployment constraints or new
+measurements — never "remaining optimization space".
+
+Closure history:
+docs/00-governance/SIMIGO2_GROUP_RESOLUTION_LINE_CLOSED_20260925.md.
