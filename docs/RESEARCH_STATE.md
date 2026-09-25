@@ -127,13 +127,35 @@ measured 超出 declared 恰出现在 22/25 个非 ALL 声明步；Gate 5「gene
 预测的差分信号）；reload 节益维持为 declared 情景下的 idle-retention
 经济学结果；差分执行若存在只可能在更细分辨率（Router/Expert），观测之
 = 未授权的新决定）
+；**G1.9-C Post-Audit 已锁死三结论并封线**：①覆盖域内 ∀(m,w,t)
+M=G_all（125 操作 × 5 模型逐步成立，非「多数」），ΔM_t=∅；②Predictor
+语义关闭而非性能不足——P(M_{t+1}=G_all|H_t)=1 且无 H_t→不同
+execution set 的可学映射，PREDICTOR_STOP_GATE_NO_GO 升级为
+**RESOLUTION-DEGENERATE / NO PREDICTIVE TARGET**（layer/group 分辨率
+终态）；③Residency 研究不受影响——RequiredExecutionSet_t ≠
+ResidentSet_t，reload 节益 16.7–55% 回答的是「执行后保留什么以减少下次
+重物化」而非「哪些层下次不执行」，Execution/Residency 两对象正式分离；
+Router/Expert 不得因退化结果「为延续研究」而开启）
+；**Residency Observability Audit 已完成**：四问裁定——transfer log 与
+MLX 聚合内存 = OBSERVED（执行+计时/独立快照）；组级 resident set =
+POLICY BOOKKEEPING（derived）；独立 per-group 运行时观测 = 不存在且
+非扰动式探针在公共 API 不可行（触碰即物化，与 G1.9-A API audit
+REJECTED 一致；runtime 侧机制 = 未授权的 production MLX 修改）；
+**字节级验证（新证据）**：75 转移 × 3 策略 × 5 模型，Qwen3-Coder
+maxRel=4.6e-5、Gemma4/Muse ≤6.6e-4；Nail/Cyber-Tiel 存在精确恒定偏移
+−851.1/−851.5 MiB，对账闭合 = index 内 vision_tower（333 张量
+851.8 MiB）未被文本路径模型类加载（残差 <0.8 MiB），系 inventory 对账
+项而非驻留跟踪误差；分支判定 = 字节级观测充分、组级仅 PolicyResidency；
+命名纪律：只允许「PolicyResidency retention structure (byte-validated)」，
+禁称 natural residency demand / observed residency locality；下一门 =
+用户决定（residency locality 分析 / 最小 per-group 观测机制 / STOP））
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19C_COLLECTION_PASS / GROUP_RESOLUTION_LOCALITY_DEGENERATE
+Engineering subphase: GROUP_RESOLUTION_CLOSED / RESIDENCY_OBSERVABILITY_AUDITED / NEXT_GATE_USER_DECISION
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1602,3 +1624,47 @@ unauthorized new decision.
 
 Phase history:
 docs/00-governance/SIMIGO2_G19C_MEASURED_TRACE_COLLECTION_20260925.md.
+
+### G1.9-C Post-Audit — Layer/Group Execution Line Closed — 2026-09-25
+
+Three conclusions locked: (1) the measured execution set equals the full
+group set at every covered step (125 × 5), ΔM_t = ∅; (2) the predictor
+question at this resolution is semantically closed —
+P(M_{t+1}=G_all|H_t)=1 with no learnable H_t→different-execution-set
+mapping — so PREDICTOR_STOP_GATE_NO_GO is upgraded to
+RESOLUTION-DEGENERATE / NO PREDICTIVE TARGET; (3) residency research is
+unaffected — RequiredExecutionSet_t ≠ ResidentSet_t and the 16.7–55% reload
+savings answer retention economics, not execution demand. Router/Expert
+observation must not be opened to "keep the research going".
+
+Post-audit history:
+docs/00-governance/SIMIGO2_G19C_POST_AUDIT_20260925.md.
+
+### Residency Observability Audit — 2026-09-25
+
+Four-question verdict: the executed transfer log and MLX aggregate memory
+snapshots are OBSERVED quantities; the per-transition group resident set is
+POLICY BOOKKEEPING (derived); an independent per-group runtime observation
+does not exist and a non-perturbing probe is not feasible at the public API
+(touching a group materializes it; a runtime-side mechanism would be an
+unauthorized production MLX modification).
+
+New byte-level validation over the 20 real trace artifacts (225 transitions
+across three policies on the offset models; 75 per model): bookkeeping and
+the independent byte observation agree exactly after a model-class constant
+offset — Qwen3-Coder max relative deviation 4.6e-5, Gemma4/Muse ≤ 6.6e-4;
+Nail/Cyber-Tiel carry an exactly constant −851.1/−851.5 MiB offset,
+reconciled to the un-loaded vision tower in their multimodal-family
+checkpoints (333 tensors, 851.8 MiB in the index; residual < 0.8 MiB) — an
+inventory reconciliation item, not a residency error.
+
+Branch decision: byte-level observation is sufficient; group-level
+residency is PolicyResidency only. Any following analysis must use the
+label "PolicyResidency retention structure (byte-validated)" and is
+forbidden from claiming natural residency demand or observed residency
+locality. Next gate options (user decision): residency-locality analysis
+under these labels; a minimal per-group observation mechanism (perturbing
+probes or runtime support — both new authorizations); or STOP.
+
+Audit history:
+docs/00-governance/SIMIGO2_RESIDENCY_OBSERVABILITY_AUDIT_20260925.md.
