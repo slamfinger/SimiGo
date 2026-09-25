@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O5_SEGMENT_SIZE_SWEEP_V1_MEASURED / FOOTPRINT_HALVED_LATENCY_NEUTRAL / PENDING_54G_MODEL_AND_O6
+Engineering subphase: O5_PREFETCH_MEASURED_NEGATIVE_AT_SCALE / SEG8_SEQUENTIAL_PARETO_BEST / O6_NEXT_PER_PLAN
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3262,3 +3262,35 @@ and a candidate engineering gate; user decision required before opening.
 Current gate  : O5 → QWEN4EXP_COMPATIBILITY_BOUNDARY_REGISTERED /
                 O5_SWEEP_CONTINUES
 ```
+
+### O5 Prefetch Pipelining + Clean Matrix — Negative at Scale; seg8 Pareto Best — 2026-09-26
+
+O5 item 2 measured under clean I/O (download complete). Full matrix
+(8 tokens × 2 passes, all bit-identical tokens, swap 0):
+
+```text
+seg16 sequential  11.3-11.4 s/token / 15,722 MiB peak
+seg16 prefetch    12.4-13.2 s/token  — prefetch NEGATIVE (+10-16%)
+seg8  sequential   7.7 s/token       /  8,821 MiB peak  ← Pareto best
+seg8  prefetch     7.5 s/token       /  9,575 MiB       (only ~2.3% gain)
+```
+
+The naive "hide forward behind read" model fails on unified memory: disk
+DMA + buffer copies share the bandwidth the GPU forward needs — contention
+taxes the hidden phase and grows with segment size. Clean-condition rerun
+also exposed that the earlier seg8 sweep number (11.5 s) was
+download-contaminated (~50%); clean seg8 sequential is the Pareto best
+measured operating point (7.7 s/token at 8.8 GiB peak — smaller segments
+re-read at higher effective throughput). Hygiene rule registered: I/O-bound
+probes require idle network/disk. Probe pipeline-state defect (nil unwrap
+on token 2) fixed in-flight before accepting numbers.
+
+```text
+Current gate  : O5 → PREFETCH_MEASURED / SEG8_SEQUENTIAL_IS_PARETO_BEST /
+                O5_SWEEP_CONTINUES
+Next          : remaining O5 items (long-generation stability, context
+                scaling) → O6 Execution State × oversized per plan
+O6            : NOT STARTED
+```
+
+Gate history: `docs/00-governance/SIMIGO2_O5_PREFETCH_PIPELINING_20260926.md`.
