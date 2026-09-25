@@ -203,13 +203,14 @@ retention integral）；**留下的是负结果 + 工程正结果的组合**：�
 率不存在可供 Predictor 利用的 execution locality；即使如此，policy-level
 residency retention 仍可严格测量、字节级验证、其 reload economics 精确
 分解为无免费改进的线性 trade-off——完整阶段封存）
+；**Final Consolidation 完成并登记 `SIMIGO2_EXPERIMENTAL_FINAL_RESEARCH_AUDIT_v1.0.md`**（总审计非实验：七问全答——①实测证明七项（identity 45+125 采 anchors、execution=FULL 125×5、字节验证 375 行、D4/E0 恒等式 20/20+80 replay 等，全部带 commit/artifact 锚）；②policy-derived 清单（resident set 记账、retention 结构常数、declared 映射、simulator 层结果）；③工程事实（planner 端到端可用、load-before-generation 语义、latency NOT ESTABLISHED、pre-run audit 三缺陷、C_model 对账项）；④被证伪前提五条（group 级差分局部性/declared≈measured demand/节益=locality 利用/观测必扰动/存在免费优化空间）；⑤已关闭问题七项（Predictor 语义关闭等）；⑥未授权清单（Router/Expert、Predictor/probability、新 instrumentation、生产 MLX、async I/O、cost weighting/optimizer、architecture declaration、冻结词汇）；⑦可重开问题+具体触发（部署双约束/SLA、reload latency 瓶颈、execution≠FULL 观测、C0–C5 formalization 延后、工程尾巴）；**账本勘误：字节验证总行数 375（非 225），旧文档已同步修正**；核心发现一句话登记：「完整 Transformer generation 在 Layer/Group 分辨率下没有 execution locality,但 residency retention 仍存在独立且可量化的工程结构;其收益本质上是内存驻留与重物化之间的 trade-off,而不是 computation skipping」；**研究线 FROZEN;接续工程路线 `SimiGo 2.0 Runtime Residency Engineering` = DECLARED NOT STARTED**——与已封研究线分离,无理论对象无 demand 词汇,第一步=需求定义（budget/resident state 来源、load/evict 执行者、failure/overflow/cancellation 语义、多请求并发、长上下文、memory pressure）,planner 契约不变且永不预测；八项排序工作表登记（1 审计✅ 2 冻结✅ 3 需求定义 NEXT 4 Controller 验证 5 长会话 6 memory pressure 条件 7 async 条件 8 Router/Expert 不进入））
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19E0_STOP / GROUP_RESOLUTION_POLICY_TRADEOFF_CLOSED / AWAITING_NEW_PROBLEM_OR_EVIDENCE
+Engineering subphase: RESEARCH_LINE_FROZEN / FINAL_AUDIT_v1.0_REGISTERED / RUNTIME_RESIDENCY_ENGINEERING_DECLARED_NOT_STARTED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1821,3 +1822,39 @@ measurements — never "remaining optimization space".
 
 Closure history:
 docs/00-governance/SIMIGO2_GROUP_RESOLUTION_LINE_CLOSED_20260925.md.
+
+### Final Research Audit v1.0 — Research Line Frozen; Engineering Route Declared — 2026-09-25
+
+`SIMIGO2_EXPERIMENTAL_FINAL_RESEARCH_AUDIT_v1.0.md` registered the terminal
+ledger of the whole Experimental line (A2.0 → G1.9-E0), answering the seven
+audit questions with commit/artifact anchors: measured-proven items,
+policy-derived items, engineering facts, five falsified premises, seven
+closed questions, the standing NOT-authorized list, and reopenable
+questions with concrete triggers. One ledger correction: the byte-level
+validation total is 375 rows (75 per model × 5 models), superseding the
+earlier "225" misstatement.
+
+Core finding, registered verbatim: a complete Transformer generation has no
+execution locality at layer/group resolution, but residency retention still
+has an independent, strictly measurable engineering structure; its benefit
+is exactly a trade-off between memory residency and re-materialization —
+not computation skipping.
+
+Status after the audit:
+
+```text
+SimiGo 2.0 Experimental research line      CLOSED / FROZEN
+SimiGo 2.0 Runtime Residency Engineering   DECLARED, NOT STARTED
+```
+
+The successor engineering route is separate from the closed research line
+(no theory objects, no demand vocabulary). Its first step is requirements
+definition — budget provenance, resident-state provenance, load/evict
+executor, failure/overflow/cancellation semantics, multi-request
+serialization/concurrency, long-context handling, memory-pressure behavior —
+with no code. The planner keeps its verified contract (required set,
+resident set, budget → load/keep/evict/overflow) and never predicts.
+Sequenced work items 1–8 registered in the audit document.
+
+Audit history:
+docs/00-governance/SIMIGO2_EXPERIMENTAL_FINAL_RESEARCH_AUDIT_v1.0.md.

@@ -76,8 +76,10 @@ reconciliation item, not a residency-tracking error.
 
 ```text
 VERDICT: after the model-class constant offset, the policy bookkeeping and
-the independent MLX byte observation agree exactly (≤ 0.1 MiB over 225
-transitions on the offset models; ≤ 5 MiB elsewhere).
+the independent MLX byte observation agree exactly (≤ 0.1 MiB over the 150
+transitions on the offset models; ≤ 5 MiB elsewhere). Total validation
+scope = 375 rows (75 per model × 5 models; count corrected by the Final
+Research Audit v1.0).
 ```
 
 ## Audit verdict (branch decision)
