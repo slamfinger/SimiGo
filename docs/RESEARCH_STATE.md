@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: RUNTIME_ENGINEERING_VALIDATION_COMPLETE / EXECUTION_STATE_ENGINEERING_GATE_OPEN_E1_CONTRACT_NEXT
+Engineering subphase: E1_CONTRACT_IMPLEMENTED_AND_VERIFIED / E2_FAKE_BACKEND_LIFECYCLE_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1904,9 +1904,43 @@ Subsequent State Evolution.
 Research lines                            all CLOSED / FROZEN
 Runtime Engineering validation (Gate A)   COMPLETE
 Execution State Engineering (Gate B)      OPEN
-E1 contract                               NEXT (tests-first)
+E1 contract                               IMPLEMENTED AND VERIFIED
 E2–E5                                     NOT STARTED
 ```
+
+### E1 Execution Continuity Contract — Implemented and Verified — 2026-09-25
+
+E1 landed tests-first via GitHub flow (8ad9075 tests, 8c5836e contract,
+7f64015 gate status), then executed in the real Swift toolchain: **86/86
+test cases PASS** (76 regression + 10 contract-target, including 6 new E1
+semantic tests). No fixes required; no contract clause amended.
+
+Registered surface (all in the MLX-free `SimiGoRuntimeContract` target;
+`ExecutionStateHandle` carries LOGICAL state only — identity, lineage,
+position, continuation, lifecycle; no residency/materialization/eviction
+types):
+
+```text
+ExecutionID / ExecutionLineage / ExecutionPosition / ExecutionContinuation
+ExecutionStateHandle / ExecutionForkRequest / ExecutionRestoreRequest
+ExecutionBranchLifecycle (attached / active / restored / discarded)
+ExecutionContinuityRuntime protocol: create/attach, continue, fork,
+    restore, reattach, discard — async, backend-neutral
+```
+
+The Execution State ≠ Residency State boundary is now enforced at the type
+level: physical representation types cannot enter the handle.
+
+```text
+Current gate  : E1 → VERIFIED
+Next          : E2 FakeExecutionBackend lifecycle-tree verification
+                (fork/continue/restore/reattach/discard; parent identity,
+                child lineage, continuation independence, discard, restore)
+E2–E5         : NOT STARTED
+```
+
+E1 history: `ExecutionContinuityContract.swift` +
+`ExecutionContinuityContractTests.swift` (8ad9075 / 8c5836e / 7f64015).
 
 ### Runtime Residency Engineering — Requirements & Contract v1.0 — 2026-09-25
 
