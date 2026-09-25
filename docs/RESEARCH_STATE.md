@@ -3022,3 +3022,43 @@ Runtime Engineering chain: Requirements → Verification Design → L1/L2 →
 L4-C history  : `L4Identity.swift` probe + `results/l4c-identity/*.json`
                 (3 models)
 ```
+
+### O3-C″ Qwen35MoE Segment-wise Boundary Evidence — CAPACITY_EXCEEDED — 2026-09-25
+
+Model switched to Nail-Qwen3.6-35B-A3B-MLX-6bit (35B total / 3.39B active
+/token, 256 experts × 8 active + shared, ~30 GiB disk, model_type
+`qwen3_5_moe`). Probe migrated from `Qwen3NextModel` to `Qwen35MoEModel`
+(minimal 5-change migration); mlx-swift-lm fork gained
+`Qwen35TextModelInner.forwardLayerRange` with `applyFinalNorm` default
+`false` and `Qwen35Model` public `embedInputs` / `forwardLayerRange` /
+`projectOutput`; math equivalence validated 3/3 (bit-exact, `max_abs_diff
+= 0.0`) including uneven segments crossing linear/full attention
+boundaries.
+
+Single-pass, 4×10-layer segments, 32 GiB physical. Core (non-switch_mlp)
+load = 32.7 GiB — already at physical capacity. SEG0 release
+`eval(model.parameters())` forced full lazy tree materialization → +22
+GiB, peak footprint 78,373 MiB (76.5 GiB = 2.4× physical). SEG1→SEG2→SEG3
+→PROJECT each shed ~7.3 GiB, returning to core baseline. Determinism not
+evaluated (single pass); double-pass not attempted.
+
+**Two independent structural findings**: (1) segment-wise execution
+produces a stable, observable residency release boundary — first direct
+measurement of this property; (2) capacity is exceeded by core load alone,
+independent of segment policy. Both findings stand; neither depends on the
+other. Not claimed: that Qwen35MoE has been proven to run segmented on a
+32 GiB machine.
+
+This experiment is sealed as mechanism evidence; Qwen35MoE on 32 GiB
+hardware will not be re-run.
+
+```text
+Current gate  : O3-C″ → PARTIAL / BOUNDARY_CONFIRMED / CAPACITY_EXCEEDED
+Next          : capacity-feasible smaller MoE for combined
+                boundary + capacity + determinism evidence
+O4            : NOT REACHED
+```
+
+Gate history:
+`docs/00-governance/SIMIGO2_O3C_QWEN35MOE_BOUNDARY_RESULT_20260925.md`;
+probe `O3CSegmentWiseProbe.swift`; fork `Qwen35ForwardLayerRangeTests`.
