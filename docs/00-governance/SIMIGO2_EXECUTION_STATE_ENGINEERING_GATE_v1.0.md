@@ -1,177 +1,126 @@
 # SimiGo 2.0 — Execution State Engineering Gate v1.0 (Gate B)
 
-Status: EXECUTION_STATE_ENGINEERING_GATE_OPEN / E1_IMPLEMENTED_VERIFICATION_PENDING
-Date: 2026-09-25
-Anchor: repository `slamfinger/SimiGo-Lab`, branch `exp/simigo2-experimental`
-Semantic source: `SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE_v1.0.md` (E0) —
-the frozen Track B Execution State semantics registered as the foundational
-architecture; Track B research remains CLOSED / FROZEN.
-Predecessor: `SIMIGO2_RUNTIME_ENGINEERING_VALIDATION_COMPLETE_v1.0.md`
-(Gate A).
+Status: **EXECUTION_STATE_ENGINEERING_GATE_OPEN / E3_VERIFIED / E4_NEXT**  
+Date: 2026-09-25  
+Anchor: repository `slamfinger/SimiGo-Lab`, branch `exp/simigo2-experimental`  
+Semantic source: `SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE_v1.0.md` (E0) — frozen Track B Execution State semantics registered as the source of the Runtime experiment; Track B research remains CLOSED / FROZEN.  
+Predecessor: `SIMIGO2_RUNTIME_ENGINEERING_VALIDATION_COMPLETE_v1.0.md` (Gate A).
 
 ## 0. Decision
 
 The Runtime Residency Engineering validation line is complete (Gate A).
-SimiGo 2.0 now enters its core engineering line: **Execution State
-Engineering** — making the frozen Track B Execution State semantics a
-first-class Runtime object for the first time.
 
-This is an engineering gate, not research. It does not reopen Track B
-research, F1–F5, A2.0, or any frozen line.
+SimiGo 2.0 now runs a focused **Execution-State-oriented Runtime experiment**: test whether Execution State can form a stable semantic boundary between execution continuity and physical resource management on top of an existing Backend.
 
-## 1. Core invariant (registered as the 2.0 engineering invariant)
+This is an engineering experiment, not a claim of a new general inference architecture. It does not reimplement MLX/Llama and does not reopen Track B research.
 
-> **Representation migration MUST preserve: Execution Identity, Position,
-> Next Input, Continuation Semantics, and Subsequent State Evolution.**
+## 1. Core invariant
+
+> **Representation migration MUST preserve: Execution Identity, Position, Next Input, Continuation Semantics, and Subsequent State Evolution.**
 
 Consequently:
 
-```text
+```
 Resident / Evicted / Materialized / Checkpointed / Restored / Migrated
         = Representation State        (physical, Backend-managed)
         ≠ Execution State Identity    (logical, Runtime-owned)
 ```
 
-A group being evicted does not destroy an Execution State. A checkpoint
-does not create a new one. Identity lives on the logical side.
+## 2. Work order and acceptance
 
-## 2. Work order and per-gate acceptance
+### E1 — Execution Continuity Contract
 
-### E1 — Execution Continuity Contract (pure Swift, in `SimiGoRuntimeContract`)
+**VERIFIED.**
 
-Smallest backend-neutral contract, placed in the MLX-free contract target
-(enforced by the package graph). Semantic objects:
+Pure Swift, MLX-free contract in `SimiGoRuntimeContract`. It defines the smallest logical surface for identity, lineage, position, continuation, lifecycle, fork and restore.
 
-```text
-ExecutionID              stable logical identity of one execution state
-ExecutionLineage         parent linkage and branch ancestry
-ExecutionPosition        where the execution is in its own timeline
-ExecutionContinuation    what a valid continuation is (next input/state)
-ExecutionStateHandle     runtime handle binding logical state to lifecycle
-ExecutionForkRequest     fork parameters (child derivation)
-ExecutionRestoreRequest  restore parameters (logical position target)
-ExecutionBranchLifecycle create/attach, continue, fork, restore,
-                         reattach, discard
+### E2 — Fake Runtime lifecycle verification
+
+**VERIFIED.**
+
+Commit: `f4e279a`  
+Result: **95/95 PASS**.
+
+The eight registered constraints all passed, including parent/child independence, logical restore, reattach continuity, representation/lifecycle orthogonality, and one authoritative lifecycle record per transition.
+
+### E3 — MLX Execution-State Adapter
+
+**VERIFIED.**
+
+Commit: `646bc098`  
+Result: **84/84 PASS**.
+
+E3 introduces:
+
 ```
-
-Exact type names are implementation decisions; the semantic fields MUST
-remain traceable to the frozen Track B invariant. Lifecycle operations are
-limited to the Track B set: create/attach, continue, fork, restore,
-reattach, discard. No merge, no speculative decoding, no predictor.
-
-Acceptance: contract compiles in the MLX-free target; semantics traceable
-to Track B; no physical-representation types.
-
-### E2 — Pure-Swift verification with `FakeExecutionBackend`
-
-State-machine verification of the full lifecycle tree:
-
-```text
-A
- ├── continue
- ├── fork → B
- │          ├── continue
- │          ├── restore
- │          ├── reattach
- │          └── discard
- └── continue
-```
-
-Minimum assertions (from the E0 architecture registration):
-
-```text
-V1  fork(A)→B: A.identity == original A.identity        (parent stable)
-V2  B.identity != A.identity; B.lineage.parent == A     (child distinct)
-V3  child continuation changes do not pollute the parent (independence)
-V4  discard(B); continue(A) uses A's OWN continuation    (no cross-flow)
-V5  restore(B, position) restores the LOGICAL execution
-    state (identity/position), not a tensor copy
-V6  reattach preserves the registered continuation contract
-V7  a representation change cannot silently change identity
-    or continuation
-V8  exactly one authoritative lifecycle record per transition
-```
-
-Acceptance: all assertions pass exhaustively over the reachable lifecycle
-state space (depth-bounded enumeration, the L2 method).
-
-### E3 — MLX Execution-State adapter
-
-Extend the existing Backend boundary (B3 pattern) with execution-state
-operations:
-
-```text
 ExecutionContinuityRuntime
         ↓
-ExecutionStateBackend Contract
+ExecutionStateBackend
         ↓
-MLX Execution-State Adapter
+MLXExecutionStateBackend
         ↓
-MLX physical KV / recurrent state (checkpoint, KV representation,
-KVCache.copy(), future shared-prefix primitives)
+Backend Representation
 ```
 
-The adapter owns translation between the semantic contract and MLX physical
-state. Checkpoint/KV/copy strategies are **Backend Representation Strategy**
-— not SimiGo core semantics. SimiGo MUST NOT become a second KV authority.
+The current representation strategy is an implementation strategy, not the semantic definition of Execution State. The adapter operates through opaque representation payloads and explicitly preserves Runtime sovereignty over Execution Identity, Lineage, Position and Continuation.
 
-Acceptance: adapter passes the E2 contract assertions against real MLX
-state on one model; no MLX imports in the Controller or contract targets.
+The current implementation also records representation binding/history separately from lifecycle transitions. Representation bindings are not themselves lifecycle transitions.
+
+SimiGo remains prohibited from becoming a second KV authority.
 
 ### E4 — Continuity + Residency integration
 
-First integration of the two validated capabilities:
+**NEXT.**
 
-```text
-ExecutionState
-  ├── Logical:    identity / lineage / position / continuation
-  └── Physical:   backend state / residency / materialization /
-                  eviction / budget
+Acceptance target:
+
+> An Execution State survives physical eviction → re-materialization → restore without changing logical identity or invalidating continuation.
+
+E4 must reuse the existing validated Residency machinery. It must not introduce a competing resource authority.
+
+### E5 — End-to-end scenario
+
+**NOT STARTED.**
+
+Target:
+
 ```
-
-Core integration invariant: **changing the physical resource state must not
-silently create a new Execution Identity or invalidate the logical
-continuation** — an evicted Execution State IS still the same Execution
-State. The combined state matrix is derived from actual requirements, not
-invented prematurely.
-
-Acceptance: an execution state survives eviction → re-materialization →
-restore with identity/continuation unchanged, verified by the E2 assertion
-set against the real backend.
-
-### E5 — End-to-end product scenario
-
-```text
 Create → Generate → Fork
    ├─ Parent: Continue
-   └─ Child:  Continue → Evict → Re-materialize → Restore → Continue
-→ Discard child → Parent Continue
+   └─ Child: Continue → Evict → Re-materialize → Restore → Continue
+→ Discard Child → Parent Continue
 ```
 
-Final comparison across the whole scenario: Execution Identity, Lineage,
-Position, Next Input, Continuation, Token Sequence, Logits.
+Final acceptance compares logical Execution State fields and real execution outputs.
 
-Acceptance: full-scenario identity PASS on real models; this completes the
-Execution State Runtime loop (Execution Semantics + Execution Continuity +
-Resource Lifecycle + Backend).
+## 3. Boundary discipline
 
-## 3. Boundary discipline (inherited, unchanged)
+- No new Track B research.
+- No second KV authority.
+- No parallel physical-state implementation.
+- No branch merge.
+- No speculative execution or predictor.
+- No Router/Expert research.
+- No MLX upstream modifications.
+- No async I/O research.
+- No performance superiority claims without separate measurement.
+- No universal model-architecture claim.
 
-- No new research; Track B experiments are not rerun; no F1–F5 reopening.
-- No second KV authority; no parallel physical-state implementation.
-- No merge of execution branches; no speculative execution; no predictor.
-- No Router/Expert; no MLX upstream modifications; no async I/O research.
-- No performance claims from frozen Track B evidence.
-- Any future requirement for these enters through the normal
-  authorization boundary.
+## 4. Current status
 
-## 4. Status
-
-```text
+```
 Gate A (Runtime Engineering Validation) : COMPLETE
 Gate B (Execution State Engineering)    : OPEN
-E1 contract                             : IMPLEMENTED / VERIFICATION PENDING
-E1 tests-first evidence                 : 8ad9075 → 8c5836e
-E2 / E3 / E4 / E5                       : NOT STARTED
-Research lines                          : all CLOSED / FROZEN
+
+E1 Contract                         : VERIFIED
+E2 Fake Runtime                    : VERIFIED — 95/95
+E3 MLX Adapter                     : VERIFIED — 84/84
+E4 Continuity + Residency          : NEXT
+E5 End-to-End                      : NOT STARTED
+
+Track B research                   : CLOSED / FROZEN
 ```
+
+The project description remains deliberately narrow:
+
+> **SimiGo is an Execution-State-oriented Runtime experiment exploring whether Execution State is the missing semantic boundary between execution semantics and physical resource management.**
