@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: RESEARCH_LINE_FROZEN / FINAL_AUDIT_v1.0_REGISTERED / RUNTIME_RESIDENCY_ENGINEERING_DECLARED_NOT_STARTED
+Engineering subphase: RUNTIME_RESIDENCY_ENGINEERING_REQUIREMENTS_v1.0_REGISTERED / IMPLEMENTATION_NOT_STARTED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1858,3 +1858,50 @@ Sequenced work items 1–8 registered in the audit document.
 
 Audit history:
 docs/00-governance/SIMIGO2_EXPERIMENTAL_FINAL_RESEARCH_AUDIT_v1.0.md.
+
+### Runtime Residency Engineering — Requirements & Contract v1.0 — 2026-09-25
+
+The requirements definition gate completed with **no code**: the
+engineering contract `SIMIGO2_RUNTIME_RESIDENCY_ENGINEERING_REQUIREMENTS_
+v1.0.md` is registered, covering the seven boundary domains (Budget /
+Resident State / Load-Evict Executor / Failure-Overflow / Cancellation /
+Concurrency / Memory Pressure), the two run conditions (long context as a
+budget mechanic, never demand prediction; planner-never-sees-the-future as
+a standalone invariant), and the 14-point acceptance mapping. Normative
+highlights, each grounded in the frozen research line's measured facts:
+
+```text
+- planner contract FROZEN: pure, stateless, overflow reported never
+  decided, no hints by default, never sees the future (Planner ≠
+  Predictor ≠ Executor ≠ Materializer ≠ Model Execution);
+- resident state: single owner (controller), single writer, bookkeeping =
+  operational truth, reconciled per transition against MLX aggregate bytes
+  with registered C_model constants and ε; DIRTY semantics on
+  reconciliation/evict failure (per-group runtime truth beyond executed
+  transfers is not claimable — observability audit);
+- overflow: required-set overflow = fail-fast (grounded in measured
+  execution = ALL); optional-group overflow = normal non-error outcome;
+  silently exceeding budget FORBIDDEN;
+- cancellation/concurrency: transfer-log is the audit trail, per-group
+  atomicity, single serialized mutation stream, no speculative
+  re-materialization;
+- long context: budget mechanic only (KV accounting is a new implementation
+  requirement — research harness had no KV cache).
+```
+
+Explicit non-goals restated (prediction, probability, Router/Expert,
+production MLX modification, async I/O, computation skipping, multi-tier
+placement). Implementation decision points (eviction timing, victim order,
+retries, reconciliation frequency, envelope reserve) registered with
+defaults — engineering choices, no research gate. Verification path:
+contract-checkable via transfer-log replay, C_model/ε reconciliation
+fixtures, and scenario tests.
+
+```text
+Current gate  : REQUIREMENTS DEFINITION → COMPLETE
+Next gate     : contract verification design → implementation
+Implementation: NOT STARTED
+```
+
+Contract history:
+docs/00-governance/SIMIGO2_RUNTIME_RESIDENCY_ENGINEERING_REQUIREMENTS_v1.0.md.
