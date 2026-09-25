@@ -286,6 +286,13 @@ struct Simigo2CTL {
         maxTokens: maxTokens
       )
       print(try toJSON(report))
+    case "o3c-segmentwise":
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 1
+      let report = try await O3CSegmentWiseProbe.run(
+        modelDirectory: modelDirectory,
+        maxTokens: maxTokens
+      )
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }

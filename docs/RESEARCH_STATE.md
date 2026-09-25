@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_PER_TENSOR_FIX_MEASURED_PEAK_UNRESOLVED / WHOLE_GRAPH_TOPOLOGY_IS_RETENTION_SOURCE
+Engineering subphase: O3C_PER_TENSOR_MEASURED_PEAK_UNRESOLVED / PARAMETER_AND_EXECUTION_RESIDENCY_BOTH_CONFIRMED / SEGMENT_WISE_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2323,6 +2323,38 @@ Next          : O3-C″ (per-tensor reader + Backend segment API) — NOT
 O3-C′ history: `O3CStreamingForward.swift` probe;
 docs/00-governance/SIMIGO2_O3C_STREAMING_V1_RESULT_20260925.md.
 
+### O3-C″ Segment-wise Probe v1 — Lazy-Random Materialization Cliff Found — 2026-09-25
+
+The segment-wise probe (G1.9-O3C.SEGMENTWISE.V1, using the fork's
+embedInputs / forwardLayerRange / projectOutput API) was OOM-killed by the
+system at the FIRST core update:
+
+```text
+AFTER_CORE_LOAD        active 44061 MiB (43.0 GiB — should be ~1.26 GiB)
+AFTER_SEG0_MATERIALIZE active 57885 MiB / footprint 73438 MiB
+[system OOM kill]      exit 137
+```
+
+Root cause identified: the skeleton sequence (createModel -> quantize)
+leaves ~40 GiB of LAZY random quantized arrays in the model (random init ->
+quantize schedules; nothing evaluated — the "0.09 GiB skeleton" was an
+illusion of laziness). The FIRST model.update with real tensors forces the
+entire lazy parameter tree to materialize at once, including skipped
+segments' random quantized weights. This single mechanism explains O3-A's
+0.09 GiB reading, O3-B's masked residency, and O3-C's mid-pass thrash.
+
+Registered fix direction: placeholder-first full-parameter update —
+immediately after quantize, ONE model.update replacing core params with
+real checkpoint tensors and segment params with zero-size placeholders,
+before any parameter evaluation; the lazy random arrays are then discarded
+without materializing. Open question: if quantize(model:) itself forces
+per-module evaluation, the fork's Qwen3Next model must construct
+QuantizedLinear modules directly from checkpoint tensors (Backend-side,
+E3 pattern). This single blocker underlies ALL oversized paths measured.
+
+O3-C″ segment-wise history: `O3CSegmentWiseProbe.swift`;
+docs/00-governance/SIMIGO2_O3C_SEGMENTWISE_V1_RESULT_20260925.md.
+
 ### O3-C″ Implementation In Progress — Memory Retention Defect Found — 2026-09-25
 
 Component 1 (PerTensorSafetensorsReader) landed and verified: header-only
@@ -2423,6 +2455,36 @@ release segment 0 → layerRange(16..32) → eval → release → … → projec
 Capacity becomes core + ONE segment (≈14.8 GiB). The API is built and
 uncommitted in the local fork; the SimiGo-side probe rewrite to consume it
 is the next implementation step.
+
+### O3-C″ Audit Correction (reviewer) — Attribution Precised — 2026-09-25
+
+The `2a5bd15` conclusion header ("WHOLE_GRAPH_TOPOLOGY_IS_RETENTION_SOURCE")
+overreaches the data. What is strictly measured:
+
+```text
+A. parameter materialization / model.update
+   → sustained residency, active ≈ 28.9 GiB        CONFIRMED
+B. whole-graph execution on top
+   → additional residency, active ≈ 44.3 GiB,
+     peak ≈ 49.8 GiB, footprint 73.5 GiB           CONFIRMED (additional)
+C. whole-graph topology as THE retention source    NOT YET ESTABLISHED —
+   requires the segment-wise execution experiment
+```
+
+Status taxonomy per the audit:
+
+```text
+batch materialization defect   CLOSED / disproven as primary peak source
+per-tensor streaming           MEASURED / peak unresolved
+model parameter residency      CONFIRMED
+whole-graph execution residency CONFIRMED as ADDITIONAL residency
+segment-wise execution         NEXT EXPERIMENT / NOT YET VALIDATED
+```
+
+Not PASS O3-C″; not entering O4. The segment-wise probe answers one
+question: does resident memory shift from "full-model accumulation" to a
+controlled "core + current segment" shape, with observable resident-set
+boundaries at each release?
 
 Comparison artifact:
 simigo2-experimental/results/o3c-streaming/qwen3-coder-next-4bit-v3-fixed.json.
@@ -2528,6 +2590,36 @@ release segment 0 → layerRange(16..32) → eval → release → … → projec
 Capacity becomes core + ONE segment (≈14.8 GiB). The API is built and
 uncommitted in the local fork; the SimiGo-side probe rewrite to consume it
 is the next implementation step.
+
+### O3-C″ Audit Correction (reviewer) — Attribution Precised — 2026-09-25
+
+The `2a5bd15` conclusion header ("WHOLE_GRAPH_TOPOLOGY_IS_RETENTION_SOURCE")
+overreaches the data. What is strictly measured:
+
+```text
+A. parameter materialization / model.update
+   → sustained residency, active ≈ 28.9 GiB        CONFIRMED
+B. whole-graph execution on top
+   → additional residency, active ≈ 44.3 GiB,
+     peak ≈ 49.8 GiB, footprint 73.5 GiB           CONFIRMED (additional)
+C. whole-graph topology as THE retention source    NOT YET ESTABLISHED —
+   requires the segment-wise execution experiment
+```
+
+Status taxonomy per the audit:
+
+```text
+batch materialization defect   CLOSED / disproven as primary peak source
+per-tensor streaming           MEASURED / peak unresolved
+model parameter residency      CONFIRMED
+whole-graph execution residency CONFIRMED as ADDITIONAL residency
+segment-wise execution         NEXT EXPERIMENT / NOT YET VALIDATED
+```
+
+Not PASS O3-C″; not entering O4. The segment-wise probe answers one
+question: does resident memory shift from "full-model accumulation" to a
+controlled "core + current segment" shape, with observable resident-set
+boundaries at each release?
 
 Comparison artifact:
 simigo2-experimental/results/o3c-streaming/qwen3-coder-next-4bit-v3-fixed.json.
