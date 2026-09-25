@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E2_FAKE_BACKEND_LIFECYCLE_VERIFIED / E3_MLX_EXECUTION_STATE_ADAPTER_NEXT
+Engineering subphase: E3_EXECUTION_STATE_ADAPTER_VERIFIED / E4_CONTINUITY_RESIDENCY_INTEGRATION_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1979,6 +1979,49 @@ Next          : E3 MLX Execution-State adapter (extend the Backend boundary;
                 Strategy; SimiGo remains no second KV authority)
 E3–E5         : NOT STARTED
 ```
+
+### E3 Execution-State Adapter — Implemented and Verified — 2026-09-25
+
+Three pieces landed:
+
+```text
+1. Contract (SimiGoRuntimeContract, MLX-free):
+   ExecutionStateBackend protocol — captureRepresentation / 
+   deriveRepresentation (fork) / restoreRepresentation /
+   releaseRepresentation over opaque ExecutionRepresentation payloads
+   (ExecutionRepresentationPayload). Sovereignty boundary enforced by the
+   contract: implementations MUST NOT create/assign/alter Execution
+   Identity, Lineage, Position semantics, or Continuation.
+2. MLXExecutionStateBackend: the first concrete representation strategy —
+   prefix-recompute (an execution's physical state is its token prefix;
+   fork copies the prefix; restore rebinds it; position-mismatch and
+   foreign-payload guards). Future KVCache.copy / shared-prefix strategies
+   replace THIS strategy only.
+3. ExecutionContinuityCoordinator: production ExecutionContinuityRuntime —
+   E1 lifecycle semantics + one authoritative lifecycle record per
+   transition + representation binding/history; restore REQUIRES a
+   captured representation at the target position (logical restores cannot
+   promise states without physical capture); discard releases the
+   representation while the logical record survives.
+```
+
+8 coordinator tests PASS (84/84 total): bind/capture round trip,
+position-mismatch rejection, fork derivation with sovereignty assertions,
+lazy fork without parent binding, restore rebinds the captured
+representation, restore without capture fails, discard releases the
+representation, and one authoritative record per transition (bindings are
+not lifecycle transitions).
+
+```text
+Current gate  : E3 → VERIFIED
+Next          : E4 Continuity + Residency integration (eviction must not
+                change Execution Identity; combined logical/physical state)
+E4 / E5       : NOT STARTED
+```
+
+E3 history: `ExecutionStateBackendContract.swift` (contract target),
+`MLXExecutionStateBackend.swift`, `ExecutionContinuityCoordinator.swift`,
+`ExecutionContinuityCoordinatorTests.swift`.
 
 E2 history: `FakeExecutionContinuityRuntime.swift` +
 `ExecutionContinuityLifecycleTreeTests.swift`.
