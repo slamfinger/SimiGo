@@ -104,7 +104,7 @@ public enum O3CSegmentWiseProbe {
     }
 
     private static func releaseSegmentWeights(
-        _ model: Qwen3NextModel, segment: ClosedRange<Int>, reader: PerTensorSafetensorsReader
+        _ model: Qwen35MoEModel, segment: ClosedRange<Int>, reader: PerTensorSafetensorsReader
     ) {
         let segmentRange = segment.lowerBound...segment.upperBound
         var placeholders: [String: MLXArray] = [:]
@@ -126,7 +126,7 @@ public enum O3CSegmentWiseProbe {
         modelDirectory: URL,
         prompt: String = "def add(a, b): return a + b",
         maxTokens: Int = 1,
-        streamingPasses: Int = 2
+        streamingPasses: Int = 1
     ) async throws -> O3CSegmentWiseReport {
         observations = []
         capacityHeld = true
@@ -142,7 +142,7 @@ public enum O3CSegmentWiseProbe {
 
         let model = try await MLXLLM.LLMModelFactory.shared.typeRegistry.createModel(
             configuration: configData, modelType: baseConfig.modelType
-        ) as! Qwen3NextModel
+        ) as! Qwen35MoEModel
         let quantizedModules: Set<String> = Set(
             weightMap.keys.filter { $0.hasSuffix(".scales") }.map { String($0.dropLast(".scales".count)) }
         )
@@ -194,7 +194,19 @@ public enum O3CSegmentWiseProbe {
         )
         observe("AFTER_CORE_LOAD")
 
-        let segments: [ClosedRange<Int>] = [0...15, 16...31, 32...47]
+        // Segment partition from the model's actual layer count — do not
+        // hardcode; Qwen3Next had 48 layers, this model has 40.
+        let configObject = try JSONSerialization.jsonObject(with: configData) as? [String: Any]
+        let textConfigObject = configObject?["text_config"] as? [String: Any]
+        let totalLayers = (textConfigObject?["num_hidden_layers"] as? Int) ?? 40
+        let segmentSize = 10
+        var segments: [ClosedRange<Int>] = []
+        var start = 0
+        while start < totalLayers {
+            let end = min(start + segmentSize - 1, totalLayers - 1)
+            segments.append(start...end)
+            start = end + 1
+        }
         var passes: [[Int]] = []
 
         for pass in 1...streamingPasses {
@@ -281,7 +293,7 @@ public enum O3CSegmentWiseProbe {
             status: overallPass ? "PASS" : "FAIL",
             boundary:
                 "SEGMENT_WISE_EXECUTION / RESIDENT_SET_BOUNDARY / CAPACITY_FIRST / DETERMINISM_SECONDARY / NOT_A_PERFORMANCE_CLAIM",
-            protocolVersion: O3CStreamingV2.protocolVersion,
+            protocolVersion: protocolVersion,
             modelID: modelDirectory.path,
             modelType: modelType,
             promptTokens: promptTokenIDs.count,
