@@ -295,6 +295,17 @@ struct Simigo2CTL {
         streamingPasses: passes
       )
       print(try toJSON(report))
+    case "o4-gen-compare":
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 8
+      let passes = optionalOption("--passes", rest).flatMap(Int.init) ?? 2
+      let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 10
+      let report = try await O4GenerationProbe.run(
+        modelDirectory: modelDirectory,
+        maxNewTokens: tokens,
+        passes: passes,
+        segmentSize: segmentSize
+      )
+      print(try toJSON(report))
     default:
       throw OutputError(message: "unknown command: \(command)")
     }
