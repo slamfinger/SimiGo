@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_V1_TWO_BLOCKERS_IDENTIFIED / O3C_V2_PER_TENSOR_READER_AND_SEGMENT_API_REGISTERED
+Engineering subphase: O3C_V2_IMPLEMENTATION_IN_PROGRESS / MEMORY_RETENTION_DEFECT_FOUND
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2322,6 +2322,41 @@ Next          : O3-C″ (per-tensor reader + Backend segment API) — NOT
 
 O3-C′ history: `O3CStreamingForward.swift` probe;
 docs/00-governance/SIMIGO2_O3C_STREAMING_V1_RESULT_20260925.md.
+
+### O3-C″ Implementation In Progress — Memory Retention Defect Found — 2026-09-25
+
+Component 1 (PerTensorSafetensorsReader) landed and verified: header-only
+indexing, per-tensor seek+read with correct dtype construction (F32/F16/
+BF16-via-u16/U32/I32/I64/U8/I8/U64), synthetic-safetensors tests integrated
+into the local toolchain run (87/87 regression PASS; contract-target tests
+run separately).
+
+Component 2 (fork segment-execution API) landed in the LOCAL fork
+`../../mlx-swift-lm`: `Qwen3NextModelInner.forwardLayerRange(_:layerRange:
+cache:)` plus a public surface on `Qwen3NextModel` — `embedInputs` /
+`forwardLayerRange` / `projectOutput` (E3 pattern: physical execution slice
+only; identity/lineage/continuation stay in the Runtime). Fork builds
+clean; NOT yet committed to the fork repository (pending SimiGo-side E2E
+verification).
+
+O3-C″ streaming run v2 on Qwen3-Coder-Next-4bit: the streaming loop
+EXECUTES — core materialization, per-segment materialize → forwardLayerRange
+→ eval → release both passes — but a MEMORY RETENTION DEFECT was exposed:
+system swap climbs continuously during pass 1 (≈3 GiB → 37+ GiB over 12
+min) even with per-segment zero-placeholder release + `Memory.clearCache()`,
+and the process was killed by watchdog. The defect is inside the streaming
+loop (in-loop phys_footprint instrumentation missing — boundary snapshots
+alone cannot localize which step retains); candidates: MLX buffer-cache
+retention of per-tensor GPU arrays, graph retention through the lazy
+`forwardLayerRange` chain, or update-copy semantics. Run killed to protect
+the machine; both passes had executed their segments before the kill
+(streaming execution itself works — the defect is unbounded retention, not
+execution failure).
+
+Registered next steps (NOT STARTED): in-loop footprint instrumentation per
+materialize/exec/release; diagnose retention (buffer cache vs graph
+retention vs update-copy); fix; re-run the two-pass determinism +
+capacity protocol. No frozen-line changes.
 
 ### O3-C″ Implementation In Progress — Memory Retention Defect Found — 2026-09-25
 
