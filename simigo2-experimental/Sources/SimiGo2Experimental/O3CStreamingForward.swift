@@ -227,17 +227,14 @@ public enum O3CStreamingV2 {
             pass: Int
         ) async throws -> Double {
             let mStart = ContinuousClock.now
-            var arrays: [String: MLXArray] = [:]
+            var tensorCount = 0
             var readBytes: Int64 = 0
 
             for location in tensorReader.locations.values {
                 let name = location.name
 
                 if !coreLoaded {
-                    if !name.contains(".switch_mlp.") {
-                        arrays[name] = try tensorReader.loadTensor(named: name)
-                        readBytes += location.byteCount
-                    }
+                    guard !name.contains(".switch_mlp.") else { continue }
                 } else {
                     guard name.contains(".switch_mlp.") else { continue }
                     let components = name.split(separator: ".")
@@ -246,17 +243,20 @@ public enum O3CStreamingV2 {
                           let layer = Int(components[index + 1]),
                           segments[segment].contains(layer)
                     else { continue }
-
-                    arrays[name] = try tensorReader.loadTensor(named: name)
-                    readBytes += location.byteCount
                 }
+
+                // C2 minimal materialization-shape fix: stream one tensor at a
+                // time instead of retaining the whole segment.
+                let tensor = try tensorReader.loadTensor(named: name)
+                readBytes += location.byteCount
+                tensorCount += 1
+                eval(tensor)
+                let parameters = ModuleParameters.unflattened([name: tensor])
+                try model.update(parameters: parameters, verify: [])
             }
 
-            gauge("SEG\(segment)_AFTER_READ(\(arrays.count) tensors, \(readBytes / 1048576)MiB payload)", pass: pass, step: -1, to: &gauges)
-            eval(arrays.values.map { $0 })
+            gauge("SEG\(segment)_AFTER_READ(\(tensorCount) tensors, \(readBytes / 1048576)MiB streamed)", pass: pass, step: -1, to: &gauges)
             gauge("SEG\(segment)_AFTER_EVAL", pass: pass, step: -1, to: &gauges)
-            let parameters = ModuleParameters.unflattened(arrays)
-            try model.update(parameters: parameters, verify: [])
             gauge("SEG\(segment)_AFTER_MATERIALIZE", pass: pass, step: -1, to: &gauges)
 
             return Double(mStart.duration(to: .now).components.attoseconds) / 1e18
