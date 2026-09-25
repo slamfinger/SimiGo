@@ -89,17 +89,19 @@ final class RuntimeBackendContractTests: XCTestCase {
         XCTAssertEqual(backend.releaseCalls, ["B", "A"])
     }
 
-    func testBackendSatisfiesTheControllerFacingMaterializerSurface() {
+    func testBackendSatisfiesTheControllerFacingMaterializerSurface() async throws {
         // The Controller depends only on ResidencyMaterializer; a full
         // RuntimeResidencyBackend must be usable wherever that surface is
         // required — the boundary holds without narrowing.
-        let backend: RuntimeResidencyBackend = MockBackend(
+        let mock = MockBackend(
             observation: BackendMemoryObservation(activeBytes: 1, cacheBytes: 2, peakBytes: 3)
         )
-        let materializer: any ResidencyMaterializer = backend
+        let materializer: any ResidencyMaterializer = mock
 
-        XCTAssertNoThrow(try materializer.materialize(groupID: "G"))
-        XCTAssertNoThrow(try materializer.release(groupID: "G"))
+        try await materializer.materialize(groupID: "G")
+        try await materializer.release(groupID: "G")
+        XCTAssertEqual(mock.materializeCalls, ["G"])
+        XCTAssertEqual(mock.releaseCalls, ["G"])
     }
 
     func testPurgeIsAnExplicitRuntimeOperation() throws {

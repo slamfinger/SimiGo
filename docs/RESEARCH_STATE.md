@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: L3_FAULT_INJECTION_PASS / L4_REAL_RUNTIME_NEXT
+Engineering subphase: L4A_MLX_BACKEND_ADAPTER_REGISTERED / L4B_INV3_RECONCILIATION_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2132,3 +2132,45 @@ Next          : L4 real materializer (MLX behind the contract) + INV-3
                 reconciliation + output identity on real models
 L4            : NOT STARTED
 ```
+
+### L4-A MLX Materializer Adapter — 2026-09-25
+
+The first concrete Backend was registered: `MLXResidencyBackend` implements
+the full `RuntimeResidencyBackend` contract — async
+`materialize`/`release` delegate to the ALREADY-VALIDATED MLX helpers (made
+internal in `MLXGroupResidencyBenchmark`, zero duplication, zero semantic
+drift), `memoryObservation()` maps `Memory.snapshot()` into
+`BackendMemoryObservation`, and `purgeTransientCaches()` mirrors the
+validated `Memory.clearCache()` hygiene. The Controller still holds no MLX
+import — it sees the backend only through the contract surface.
+
+Contract signature amendment (conflict protocol, judged contract-signature
+defect — semantics unchanged): the validated MLX load/release path is
+inherently async (`container.perform` serialization; there is no synchronous
+path), so `materialize`/`release` became `async throws`. A synchronous
+contract would have forced thread-blocking adapters with deadlock risk.
+Corresponding controller refactor:
+
+```text
+admit / respondToMemoryPressure → async, serialized through a FIFO
+             AsyncLock (R3.18 admission order preserved; an admission holds
+             the lock across await points — R2.2 atomicity intact)
+reconcile / recover → remain synchronous, now throwing
+             .admissionInFlight rather than observing intermediate state
+new error    = .admissionInFlight
+```
+
+Regression: **80/80 test cases PASS** (76 XCTest incl. all L1/L2/L3 suites
++ 4 contract-target tests). No research artifact touched.
+
+```text
+Current gate  : L4-A → COMPLETE
+Next          : L4-B INV-3 real byte reconciliation (load/release committed,
+                failures/DIRTY, recovery, multi-transition, pressure; on
+                Qwen3-Coder with C_model=0 and Nail with the audited offset)
+Then          : L4-C end-to-end identity (baseline vs controller path)
+L4-B / L4-C   : NOT STARTED
+```
+
+L4-A history: `MLXResidencyBackend.swift`, `AsyncLock.swift`, contract
+async signatures.

@@ -30,11 +30,11 @@ final class ResidencyControllerTests: XCTestCase {
         )
     }
 
-    func testAdmitLoadsMissingGroupsInDeterministicOrder() throws {
+    func testAdmitLoadsMissingGroupsInDeterministicOrder() async throws {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
-        let outcome = try controller.admit(
+        let outcome = try await controller.admit(
             requiredGroupIDs: ["CORE", "A", "B"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )
@@ -46,18 +46,19 @@ final class ResidencyControllerTests: XCTestCase {
         assertInvariants(controller)
     }
 
-    func testFailFastOnRequiredOverflowBeforeAnyTransfer() {
+    func testFailFastOnRequiredOverflowBeforeAnyTransfer() async {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
-        XCTAssertThrowsError(
-            try controller.admit(
+        do {
+            _ = try await controller.admit(
                 requiredGroupIDs: ["CORE", "A", "B"],
                 budget: ResidencyBudgetPolicy(fixedBytes: 200)
             )
-        ) { error in
+            XCTFail("expected requiredOverflow")
+        } catch {
             guard case ResidencyControllerError.requiredOverflow(let plan) = error else {
-                return XCTFail("expected requiredOverflow")
+                return XCTFail("expected requiredOverflow, got \(error)")
             }
             XCTAssertFalse(plan.fitsBudget)
             XCTAssertEqual(plan.overflowGroupIDs, ["CORE", "A", "B"])
@@ -71,17 +72,18 @@ final class ResidencyControllerTests: XCTestCase {
         assertInvariants(controller)
     }
 
-    func testLoadFailureCommitsPriorGroupsOnlyAndStaysClean() {
+    func testLoadFailureCommitsPriorGroupsOnlyAndStaysClean() async {
         let mock = MockResidencyMaterializer()
         mock.failLoadsOf = ["B"]
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
-        XCTAssertThrowsError(
-            try controller.admit(
+        do {
+            _ = try await controller.admit(
                 requiredGroupIDs: ["CORE", "A", "B"],
                 budget: ResidencyBudgetPolicy(fixedBytes: 400)
             )
-        ) { error in
+            XCTFail("expected loadFailed")
+        } catch {
             XCTAssertEqual(error as? ResidencyControllerError, .loadFailed(groupID: "B"))
         }
 
@@ -91,11 +93,11 @@ final class ResidencyControllerTests: XCTestCase {
         assertInvariants(controller)
     }
 
-    func testEvictFailureEntersDirtyAndRejectsFurtherAdmission() throws {
+    func testEvictFailureEntersDirtyAndRejectsFurtherAdmission() async throws {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
-        _ = try controller.admit(
+        _ = try await controller.admit(
             requiredGroupIDs: ["CORE", "A"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )
@@ -103,12 +105,13 @@ final class ResidencyControllerTests: XCTestCase {
         // A release failure means the group is STILL resident — the
         // bookkeeping must keep it and the controller must go DIRTY (R3.13).
         mock.failReleasesOf = ["A"]
-        XCTAssertThrowsError(
-            try controller.admit(
+        do {
+            _ = try await controller.admit(
                 requiredGroupIDs: ["CORE"],
                 budget: ResidencyBudgetPolicy(fixedBytes: 400)
             )
-        ) { error in
+            XCTFail("expected evictFailed")
+        } catch {
             XCTAssertEqual(error as? ResidencyControllerError, .evictFailed(groupID: "A"))
         }
 
@@ -116,24 +119,25 @@ final class ResidencyControllerTests: XCTestCase {
         XCTAssertEqual(controller.residentGroupIDs, ["CORE", "A"])
         assertInvariants(controller)
 
-        XCTAssertThrowsError(
-            try controller.admit(
+        do {
+            _ = try await controller.admit(
                 requiredGroupIDs: ["CORE", "A"],
                 budget: ResidencyBudgetPolicy(fixedBytes: 400)
             )
-        ) { error in
+            XCTFail("expected dirty rejection")
+        } catch {
             XCTAssertEqual(error as? ResidencyControllerError, .dirty)
         }
     }
 
-    func testCancellationCommitsCompletedGroupsOnly() throws {
+    func testCancellationCommitsCompletedGroupsOnly() async throws {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         let counter = CheckCounter()
         let token = ResidencyCancellationToken { counter.increment() > 1 }
 
-        let outcome = try controller.admit(
+        let outcome = try await controller.admit(
             requiredGroupIDs: ["CORE", "A", "B"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400),
             cancellationToken: token
@@ -146,37 +150,38 @@ final class ResidencyControllerTests: XCTestCase {
         assertInvariants(controller)
     }
 
-    func testReconcileMismatchEntersDirtyAndRecoveryRestores() throws {
+    func testReconcileMismatchEntersDirtyAndRecoveryRestores() async throws {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
-        _ = try controller.admit(
+        _ = try await controller.admit(
             requiredGroupIDs: ["CORE", "A"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )
 
         // residentBytes = 200; a 10 MiB deviation is far beyond ε.
-        let matched = controller.reconcile(
+        let matched = try controller.reconcile(
             observedIdleBytes: controller.residentBytes + 10 * 1024 * 1024,
             epsilonBytes: 5 * 1024 * 1024
         )
         XCTAssertFalse(matched)
         XCTAssertEqual(controller.state, .dirty)
 
-        XCTAssertThrowsError(
-            try controller.admit(
+        do {
+            _ = try await controller.admit(
                 requiredGroupIDs: ["CORE", "A"],
                 budget: ResidencyBudgetPolicy(fixedBytes: 400)
             )
-        ) { error in
+            XCTFail("expected dirty rejection")
+        } catch {
             XCTAssertEqual(error as? ResidencyControllerError, .dirty)
         }
 
-        controller.recover()
+        try controller.recover()
         XCTAssertEqual(controller.state, .clean)
         XCTAssertEqual(controller.residentGroupIDs, ["CORE", "A"])
         assertInvariants(controller)
 
-        let matchedAgain = controller.reconcile(
+        let matchedAgain = try controller.reconcile(
             observedIdleBytes: controller.residentBytes,
             epsilonBytes: 5 * 1024 * 1024
         )
@@ -184,17 +189,17 @@ final class ResidencyControllerTests: XCTestCase {
         XCTAssertEqual(controller.state, .clean)
     }
 
-    func testLogReplayEquivalenceHoldsAcrossMixedOperationSequence() throws {
+    func testLogReplayEquivalenceHoldsAcrossMixedOperationSequence() async throws {
         let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
-        _ = try controller.admit(
+        _ = try await controller.admit(
             requiredGroupIDs: ["CORE", "A", "B"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )
         assertInvariants(controller)
 
-        _ = try controller.admit(
+        _ = try await controller.admit(
             requiredGroupIDs: ["CORE"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )
@@ -204,7 +209,7 @@ final class ResidencyControllerTests: XCTestCase {
         XCTAssertEqual(controller.residentGroupIDs, ["CORE"])
         XCTAssertEqual(controller.transferLog.count, 4) // 2 loads + 2 evicts
 
-        _ = try controller.admit(
+        _ = try await controller.admit(
             requiredGroupIDs: ["CORE", "C"],
             budget: ResidencyBudgetPolicy(fixedBytes: 400)
         )

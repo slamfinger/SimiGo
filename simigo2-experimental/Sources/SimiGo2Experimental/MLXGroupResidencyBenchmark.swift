@@ -313,7 +313,7 @@ public enum MLXGroupResidencyBenchmark {
     )
   }
 
-  private static func loadGroups(
+  static func loadGroups(
     container: ModelContainer,
     inventory: LayerInventory,
     groupIDs: Set<String>
@@ -358,7 +358,7 @@ public enum MLXGroupResidencyBenchmark {
     )
   }
 
-  private static func releaseGroups(
+  static func releaseGroups(
     container: ModelContainer,
     inventory: LayerInventory,
     groupIDs: Set<String>
@@ -443,7 +443,7 @@ public enum MLXGroupResidencyBenchmark {
   }
 }
 
-private struct GroupTransfer {
+struct GroupTransfer {
   let groupIDs: Set<String>
   let bytes: Int64
   let milliseconds: Double

@@ -36,14 +36,17 @@ public struct BackendMemoryObservation: Equatable, Hashable, Sendable {
 /// Implementations wrap the validated load/release behavior of one concrete
 /// compute backend. A group transfer is atomic at the contract level: the
 /// method either returns (the group changed residency state) or throws
-/// (residency state is unchanged for that group).
+/// (residency state is unchanged for that group). The operations are async:
+/// backend materialization is inherently serialized I/O plus compute-state
+/// mutation (e.g. MLX `container.perform`), and the contract MUST NOT force
+/// implementations to block threads.
 public protocol ResidencyMaterializer: Sendable {
     /// Bring `groupID` into resident (materialized) state.
-    func materialize(groupID: String) throws
+    func materialize(groupID: String) async throws
 
     /// Take `groupID` out of resident state. A thrown error means the group
     /// MUST be treated as still resident (contract R3.13).
-    func release(groupID: String) throws
+    func release(groupID: String) async throws
 }
 
 /// Full backend surface: materialization plus the memory-accounting and
