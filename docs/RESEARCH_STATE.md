@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: RUNTIME_RESIDENCY_ENGINEERING_REQUIREMENTS_v1.0_REGISTERED / IMPLEMENTATION_NOT_STARTED
+Engineering subphase: CONTRACT_VERIFICATION_DESIGN_v1.0_REGISTERED / IMPLEMENTATION_NOT_STARTED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1905,3 +1905,42 @@ Implementation: NOT STARTED
 
 Contract history:
 docs/00-governance/SIMIGO2_RUNTIME_RESIDENCY_ENGINEERING_REQUIREMENTS_v1.0.md.
+
+### Contract Verification Design v1.0 — 2026-09-25
+
+The frozen contract's 35 RFC-2119 requirements (R1.1–R4.3) were converted
+into executable verification objects — design only, no production code:
+
+```text
+central invariants
+  INV-1 log-replay equivalence: residentBookkeeping == replay(transferLog)
+        after every step (the research byte-reconciliation result promoted
+        to the contract's spine)
+  INV-2 frontier oracle: E0 identity demoted to a test oracle
+  INV-3 C_model + ε byte reconciliation against a real runtime
+four verification layers
+  L1 planner purity/contract unit tests (pure Swift, symbolic fixture)
+  L2 controller state-machine verification (CLEAN|DIRTY, exhaustive
+     enumeration to depth 8 with fault injections, INV-1 everywhere)
+  L3 fault injection catalog F1–F8 (load/evict failure, cancel, reconcile
+     mismatch, budget shrink, pressure, concurrent admission)
+  L4 real-runtime reconciliation (Qwen3-Coder + Nail required fixtures;
+     V-ID output identity through the controller path)
+requirement traceability matrix: 35/35 requirements mapped to V-items;
+acceptance points 1–14 covered via the contract mapping; tests-first
+ordering mandatory — a requirement is done only when its verification
+items pass.
+```
+
+Research-line fixtures formally handed off: C_model constants, ε, transfer
+-log format, inventory geometries, T1–T4 state sequences, frontier identity
+as oracle, naive/all-resident anchors. Non-goals unchanged.
+
+```text
+Current gate  : CONTRACT VERIFICATION DESIGN → COMPLETE
+Next gate     : implementation, tests-first (L1 → L2 → L3 → L4)
+Implementation: NOT STARTED
+```
+
+Design history:
+docs/00-governance/SIMIGO2_RUNTIME_RESIDENCY_VERIFICATION_DESIGN_v1.0.md.
