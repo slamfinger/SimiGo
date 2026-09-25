@@ -274,7 +274,14 @@ struct Simigo2CTL {
       print(try toJSON(report))
     case "o3c-streaming":
       let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 2
-      let report = try await O3CStreamingForward.run(
+      let report = try await O3CStreamingV2.run(
+        modelDirectory: modelDirectory,
+        maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "o3c-streaming-v2":
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 1
+      let report = try await O3CStreamingV2.run(
         modelDirectory: modelDirectory,
         maxTokens: maxTokens
       )

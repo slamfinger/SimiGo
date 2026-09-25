@@ -53,7 +53,7 @@ public enum O3CError: Error, Equatable, Sendable {
     case invalidTensorIndex
 }
 
-public enum O3CStreamingForward {
+public enum O3CStreamingV2 {
     public static let protocolVersion = "G1.9-O3C.STREAMING.V1"
 
     private static let start = ContinuousClock.now
@@ -156,7 +156,7 @@ public enum O3CStreamingForward {
         func materializeSegment(
             _ segment: Int,
             coreLoaded: inout Bool
-        ) throws -> Double {
+        ) async throws -> Double {
             let mStart = ContinuousClock.now
             var arrays: [String: MLXArray] = [:]
 
@@ -182,7 +182,7 @@ public enum O3CStreamingForward {
 
             eval(arrays.values.map { $0 })
             let parameters = ModuleParameters.unflattened(arrays)
-            model.update(parameters: parameters, verify: [])
+            try model.update(parameters: parameters, verify: [])
 
             return Double(mStart.duration(to: .now).components.attoseconds) / 1e18
         }
@@ -212,7 +212,7 @@ public enum O3CStreamingForward {
             var logitsChecksumFinal = ""
 
             for step in 0..<maxTokens {
-                let m0 = try materializeSegment(0, coreLoaded: &coreLoaded)
+                let m0 = try await materializeSegment(0, coreLoaded: &coreLoaded)
                 coreLoaded = true
                 segmentRecords.append(
                     O3CSegmentRecord(
@@ -226,7 +226,7 @@ public enum O3CStreamingForward {
                 if footprintGiB() > capacityGiB { capacityHeld = false }
 
                 for segment in 1...2 {
-                    let m = try materializeSegment(segment, coreLoaded: &coreLoaded)
+                    let m = try await materializeSegment(segment, coreLoaded: &coreLoaded)
                     segmentRecords.append(
                         O3CSegmentRecord(
                             pass: streamingPass, segment: segment,
