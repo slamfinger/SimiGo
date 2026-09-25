@@ -1,325 +1,213 @@
-# SimiGo 2.0 — Execution Continuity Architecture & Engineering Path v1.0
+# SimiGo 2.0 — Execution Continuity Runtime Experiment & Engineering Path v1.1
 
-Status: ARCHITECTURAL_POSITION_REGISTERED / TRACK_B_FOUNDATIONAL / ENGINEERING_PATH_DEFINED
-Date: 2026-09-25
-Branch: exp/simigo2-experimental
+Status: **RUNTIME_EXPERIMENT_POSITION_REGISTERED / TRACK_B_FOUNDATIONAL / E3_VERIFIED / E4_NEXT**  
+Date: 2026-09-25  
+Branch: `exp/simigo2-experimental`
 
 ## 0. Purpose
 
-This document registers Track B — Execution State Fork as a foundational SimiGo Runtime architecture source and defines how its frozen research results are carried into product engineering.
+This document registers the frozen Track B Execution State semantics as the semantic source for a **SimiGo Runtime experiment**.
 
-This is not a reopening of Track B research. Track B remains CLOSED / FROZEN.
+The project does **not** claim a new general model-execution architecture. SimiGo does not reimplement MLX, Llama, or another model backend. The experiment asks:
 
-The purpose is to prevent the execution-continuity capability proved and defined by Track B from being lost while the 2.0 engineering line implements Residency, Controller, Materializer, and Backend boundaries.
+> **Is Execution State the missing semantic boundary between model execution semantics and physical resource management?**
 
-The product architecture therefore treats Execution Continuity and Resource Lifecycle as two first-class Runtime capabilities.
+Track B remains CLOSED / FROZEN. The current work is engineering verification of whether that boundary can be made concrete on top of an existing Backend.
 
-## 1. Architectural decision
+## 1. Experimental position
 
-The existing SimiGo 2.0 anchor remains valid:
+The central Runtime proposition is:
 
-> SimiGo manages model lifecycle and runtime resources; Backend manages how the model computes.
+> **SimiGo Runtime manages Execution Continuity and Resource Lifecycle; Backend manages physical model execution and computation semantics.**
 
-The expanded architecture anchor is:
+This is an experimental integration boundary, not a claim that SimiGo has replaced or superseded existing inference runtimes.
 
-> SimiGo does not decide what the model computes. SimiGo maintains which execution state is active, how that state continues or branches, and how that state is represented and managed as a runtime resource; the Backend owns the model's physical execution and computation semantics.
+The Runtime separates two dimensions:
 
-The Runtime therefore has two primary dimensions:
+```
+SimiGo Runtime
+├── Execution Continuity
+│   ├── Execution Identity
+│   ├── Lineage
+│   ├── Position
+│   ├── Continuation
+│   ├── Fork
+│   ├── Restore
+│   ├── Reattach
+│   └── Discard
+│
+└── Resource Lifecycle
+    ├── Residency
+    ├── Materialization
+    ├── Eviction
+    ├── Budget
+    └── Resource Accounting
+```
 
-    SimiGo Runtime
-    ├── Execution Continuity
-    │   ├── Execution Identity
-    │   ├── Lineage
-    │   ├── Position
-    │   ├── Next Input
-    │   ├── Continuation
-    │   ├── Fork
-    │   ├── Branch
-    │   ├── Restore
-    │   ├── Reattach
-    │   └── Discard
-    │
-    └── Resource Lifecycle
-        ├── Residency
-        ├── Budget
-        ├── Materialization
-        ├── Eviction
-        ├── Memory Pressure
-        └── Resource Accounting
+The distinction is:
 
-These dimensions are distinct:
+```
+Execution State ≠ Residency State
+Execution State ≠ KV Cache
+Execution Continuity ≠ Computation Semantics
+```
 
-    Execution State ≠ Residency State
-    Execution State ≠ KV Cache
-    Execution Continuity ≠ Resource Residency
+## 2. Frozen semantic source
 
-They must not be collapsed into a single controller abstraction.
+Track B established the invariant:
 
-## 2. Track B is a foundational architecture source
+> **Representation migration must preserve execution identity and continuation.**
 
-Track B established the following semantic convergence:
-
-    Execution State
-        = KV / physical execution state
-        + Identity
-        + Position
-        + Next Input
-        + Continuation Semantics
-
-The physical state component is backend/model dependent. The semantic Execution State contract is a Runtime-level concern.
-
-The frozen Track B invariant is:
-
-> Representation migration must preserve execution identity and continuation.
-
-This is stronger than preserving KV elements alone. A valid representation migration must preserve, as applicable:
+For the current Runtime experiment, preservation includes:
 
 - execution identity;
 - lineage;
 - execution position;
 - next-input state;
-- continuation token/state;
+- continuation semantics;
 - subsequent execution-state evolution.
 
-Track B explicitly does not establish a general residency policy and does not replace the Residency line. Its frozen closure also records that Residency and Closure are separate concerns.
+Physical state is Backend/model dependent. The Runtime contract carries logical execution semantics and lifecycle; it does not become a second physical-state authority.
 
-## 3. Product importance
-
-Track B must occupy a significant position in the SimiGo product architecture.
-
-    SimiGo 2.0 Runtime
-             │
-    ┌────────┴────────┐
-    │                 │
-Execution Continuity  Resource Lifecycle
-    │                 │
- Fork / Branch /      Residency / Budget /
- Restore / Reattach   Materialize / Eviction
-    │                 │
-    └────────┬────────┘
-             │
-      Execution State
-             │
-      Backend Boundary
-             │
-            MLX
-
-The two sides answer different questions:
-
-- Execution Continuity: which execution state exists, where it is in its lineage/position, and what continuation is valid?
-- Resource Lifecycle: where the physical state is resident, what budget it consumes, and how it is materialized or released?
-
-A fork is therefore not a residency window. A residency window protects resources during an execution interval; a fork derives a new execution state.
-
-## 4. Critical ownership boundary
+## 3. Backend sovereignty
 
 SimiGo MUST NOT become a second KV/state implementation.
 
-    SimiGo Runtime owns:
-        Execution State semantic identity
-        lineage
-        position / continuation contract
-        fork / branch / restore lifecycle
-        representation policy
-        resource lifecycle
+```
+SimiGo Runtime
+    logical Execution State
+    identity / lineage / position / continuation
+    lifecycle and representation binding
+            │
+            ▼
+    Backend Representation Strategy
+            │
+            ▼
+    MLX physical state / model execution
+```
 
-    Backend owns:
-        physical KV / recurrent state representation
-        model-specific state tensors
-        actual state mutation
-        forward / generation semantics
-        architecture-specific computation
+KV, Tensor, checkpoint, cache, materialization and other physical representations remain Backend concerns.
 
-The Runtime may hold handles, metadata, lineage, and lifecycle state, but it must not establish a parallel physical-KV authority competing with the Backend.
+The Runtime may hold opaque handles and metadata needed to preserve continuity, but the Backend remains authoritative for physical model state and computation semantics.
 
-## 5. Engineering path
+## 4. Engineering experiment path
 
-### E0 — Architecture registration
+### E0 — Semantic position registration
 
-Completed by this document:
+Completed.
 
-- Track B formally registered as foundational architecture;
-- Execution Continuity separated from Residency;
-- Execution State semantic boundary recorded;
-- no-second-KV-authority boundary recorded;
-- Track B research remains CLOSED/FROZEN.
+Track B semantics are preserved as the source of the current experiment without reopening the research line.
 
-### E1 — Pure Swift Execution Continuity contract
+### E1 — Pure Swift Execution Continuity Contract
 
-Create the smallest backend-neutral contract for Runtime use.
+**VERIFIED.**
 
-Candidate semantic values/operations include:
+The contract is MLX-free and expresses logical values for identity, lineage, position, continuation, lifecycle, fork and restore.
 
-    ExecutionID
-    ExecutionLineage
-    ExecutionPosition
-    ExecutionContinuation
-    ExecutionStateHandle
-    ExecutionForkRequest
-    ExecutionRestoreRequest
-    ExecutionBranchLifecycle
+### E2 — Fake Runtime lifecycle verification
 
-The exact type names are implementation decisions; the semantic fields must remain traceable to the frozen Track B invariant.
+**VERIFIED.**
 
-The contract MUST NOT import MLX, MLXLMCommon, model architecture types, or physical KV implementations.
+The Fake Runtime exercised the lifecycle tree and eight registered constraints. Representation migration was tested as orthogonal to lifecycle transitions.
 
-Initial lifecycle operations should be limited to those established by Track B:
+### E3 — Real Backend representation adapter
 
-    create / attach
-    continue
-    fork
-    restore
-    reattach
-    discard
+**VERIFIED.**
 
-Do not add merge, speculative decoding, predictor logic, or new execution research merely because the abstraction exists.
+Latest registered result: `646bc098`, **84/84 PASS**.
 
-### E2 — Contract tests without MLX
+E3 introduces:
 
-Before connecting a real backend, test the semantic state machine using a pure Swift fake backend.
+- `ExecutionStateBackend` over opaque `ExecutionRepresentation`;
+- MLX-backed representation strategy;
+- execution-state coordinator implementing the E1 lifecycle;
+- explicit representation binding/history;
+- sovereignty checks preventing the representation layer from creating or mutating Execution Identity, Lineage, Position or Continuation;
+- representation bindings kept separate from lifecycle records.
 
-Minimum engineering assertions:
+The current concrete representation strategy is an implementation strategy only. It does not redefine Execution State.
 
-1. parent identity remains stable after fork;
-2. child identity/lineage is distinct and traceable;
-3. child continuation is independently represented;
-4. discard leaves the parent at its own valid continuation;
-5. restore returns the same logical execution identity/position;
-6. reattach preserves the registered continuation contract;
-7. representation changes cannot silently change identity or continuation;
-8. lifecycle transitions have one authoritative state record.
+### E4 — Continuity + Residency integration
 
-This is an engineering contract test, not a new scientific experiment.
+**NEXT.**
 
-### E3 — Backend adapter boundary
+The next experiment combines the two already validated dimensions:
 
-Extend the existing Backend boundary with execution-state operations without moving physical state ownership into SimiGo.
+```
+Execution State
+    ├── logical identity / lineage / continuation
+    │
+    └── physical representation
+             ├── resident
+             ├── evicted
+             └── re-materialized
+```
 
-    ExecutionContinuityRuntime
-            ↓
-    ExecutionStateBackend Contract
-            ↓
-    MLX Execution-State Adapter
-            ↓
-    MLX physical KV / recurrent state
+The critical test is:
 
-The MLX adapter owns translation between the semantic contract and actual MLX state representation. The Runtime owns the logical lifecycle and identity.
+> Changing physical resource state must not silently create a new Execution Identity or invalidate the logical continuation.
 
-### E4 — Connect Execution Continuity to Residency
+E4 must use the existing Residency machinery rather than create a competing resource authority.
 
-Only after the semantic contract is stable should execution state and residency be integrated.
+### E5 — End-to-end execution-state scenario
 
-    Execution State
-          │
-          ├── logical identity / continuation
-          │
-          └── physical representation
-                    │
-                    ├── resident
-                    ├── evicted
-                    └── re-materialized
+Target scenario:
 
-The critical invariant is:
+```
+Create → Generate → Fork
+   ├─ Parent: Continue
+   └─ Child: Continue → Evict → Re-materialize → Restore → Continue
+→ Discard Child → Parent Continue
+```
 
-> Changing the physical resource state must not silently create a new Execution Identity or invalidate the logical continuation.
+The final gate compares logical identity/lineage/position/continuation and real execution outputs. Performance superiority is not the initial acceptance criterion.
 
-The exact combined state matrix should be derived from actual product requirements rather than invented prematurely.
+## 5. Explicit boundaries
 
-### E5 — Real MLX integration and identity verification
+This experiment does not authorize:
 
-The real integration gate should verify semantic preservation through the existing identity battery.
-
-Initial target: semantic preservation, not performance superiority.
-
-Performance, memory cost, and fork latency are separate engineering measurements and must not be presented as Track B research conclusions.
-
-## 6. Relationship to current 2.0 engineering
-
-The current Residency engineering line remains valid.
-
-The immediate L4-C gate remains the real-generation identity check for the Controller + Backend path.
-
-Track B registration does not invalidate or restart L1/L2/L3/L4-A/L4-B.
-
-The intended sequence is:
-
-    L4-B reconciliation PASS
-          ↓
-    L4-C generation identity
-          ↓
-    stabilize Backend Runtime contract
-          ↓
-    Execution Continuity pure-Swift contract
-          ↓
-    Execution Continuity contract tests
-          ↓
-    MLX Execution-State adapter
-          ↓
-    Continuity + Residency integration
-
-This avoids two mistakes:
-
-1. allowing Residency work to erase Execution Continuity from the product architecture;
-2. interrupting the validated Residency engineering line by reopening Track B research.
-
-## 7. Explicitly not being done
-
-This architecture registration does not authorize:
-
-- rerunning Track B Closure experiments;
-- reopening F1/F2/F3/F4/F5 research;
-- creating a new KV engine;
-- implementing a parallel KV authority;
+- re-running Track B research;
+- a new KV engine;
+- a parallel KV authority;
 - Router/Expert research;
-- execution-demand prediction;
-- speculative execution;
 - predictor/probability models;
-- performance claims derived from frozen Track B evidence;
-- merging execution branches;
+- speculative execution;
+- branch merge;
 - new MLX upstream modifications;
 - async I/O research;
-- any previously frozen research line.
+- universal model-architecture claims;
+- performance claims not independently measured.
 
-A future requirement for any of these must enter through the normal engineering/research authorization boundary.
+A future requirement enters through a separate engineering or research decision.
 
-## 8. Product-level capability
+## 6. Why the experiment matters
 
-The long-term product capability is not merely KV fork.
+The intended contribution is deliberately narrow:
 
-> A long-lived Execution State can be continued, forked, restored, reattached, and discarded while its physical representation can be managed independently by the Runtime, without changing its execution identity or continuation semantics.
+> **to test whether Execution State can serve as a concrete Runtime boundary that remains independent of physical representation while integrating with an existing high-quality model Backend.**
 
-This creates a distinct SimiGo Runtime capability for long-lived agent sessions, multi-turn continuation, branchable execution, checkpoint/restore, resource-constrained execution, execution-state migration, and future multi-branch or multi-agent workflows.
+The project therefore should not be described as “a new inference architecture” unless later evidence justifies such a stronger claim.
 
-These are product architecture targets, not claims that all are already implemented or verified.
+The current and preferred description is:
 
-## 9. Frozen boundaries
+> **SimiGo — an Execution-State-oriented Runtime experiment.**
 
-    Execution State ≠ KV Cache ≠ Residency State
-    Fork ≠ Residency Window
-    Logical Execution Identity ≠ Physical Tensor Location
-    Execution Continuity ≠ Computation Semantics
-    SimiGo Runtime ≠ Backend
+## 7. Final position
 
-These boundaries are architectural invariants.
+Current research status:
 
-## 10. Final position
+```
+Track B research       CLOSED / FROZEN
+Runtime experiment     ACTIVE
+E1                     VERIFIED
+E2                     VERIFIED
+E3                     VERIFIED
+E4                     NEXT
+E5                     NOT STARTED
+```
 
-Track B is now formally classified as:
+The working question remains open:
 
-    Research status:
-        CLOSED / FROZEN
+> **Is Execution State the missing boundary?**
 
-    Architectural status:
-        FOUNDATIONAL / PRESERVED
-
-    Product status:
-        FIRST-CLASS RUNTIME CAPABILITY
-
-    Engineering status:
-        ARCHITECTURE REGISTERED / IMPLEMENTATION PATH DEFINED
-
-The central architectural principle is:
-
-> SimiGo Runtime manages Execution Continuity and Resource Lifecycle; Backend manages physical model execution and computation semantics.
-
-Track B is therefore not a discarded predecessor of the Residency runtime. It is the Execution Continuity foundation on which the broader SimiGo 2.0 Runtime should be built.
+The experiment proceeds by making that boundary concrete and testing it against the existing implementation, rather than assuming the answer in advance.
