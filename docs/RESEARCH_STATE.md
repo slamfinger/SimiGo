@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: L4A_MLX_BACKEND_ADAPTER_REGISTERED / L4B_INV3_RECONCILIATION_NEXT
+Engineering subphase: L4B_INV3_RECONCILIATION_PASS_FIVE_MODELS / L4C_IDENTITY_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2174,3 +2174,44 @@ L4-B / L4-C   : NOT STARTED
 
 L4-A history: `MLXResidencyBackend.swift`, `AsyncLock.swift`, contract
 async signatures.
+
+### L4-B INV-3 Real Byte Reconciliation — Five Models PASS — 2026-09-25
+
+The `l4b-reconcile` probe (protocol G1.9-L4B.RECONCILIATION.V1) connected
+the production `ResidencyController` + `MLXResidencyBackend` to real models
+and verified INV-3,
+`|idleBytes − (residentBookkeepingBytes + C_model)| ≤ ε`,
+across the seven registered paths: load committed, release committed, load
+failure (contract-level injected throw before delegation — real state stays
+consistent), release failure → DIRTY, recovery, multi-group continuous
+transfers, and pressure response. Key correctness detail: the controller's
+initial bookkeeping is set to the FULL group set, matching the backend's
+full-load state (T0 calibration sample).
+
+Results (10 transitions per model; ε = 5 MiB; C_model calibrated from T0
+when not supplied):
+
+| Model | C_model (calibrated) | max deviation | PASS |
+|---|---:|---:|---|
+| Qwen3-Coder-30B | +0.037 MiB | 1,152 B | PASS |
+| Nail-Qwen3.6-35B | −851.057 MiB | 960 B | PASS |
+| Cyber-Tiel-35B | −851.455 MiB | 960 B | PASS |
+| Gemma4-12B | +2.319 MiB | 2,358,144 B | PASS |
+| Muse-Glimmer-30B | +4.939 MiB | 2,554,656 B | PASS |
+
+The calibrated C_model values reproduce the observability audit's per-model
+constants (Nail/Cyber-Tiel vision-tower offset; Gemma4/Muse small
+dense-path offsets), and their CONSTANCY across load committed, release
+committed, failure, DIRTY, recovery, and pressure paths is verified on the
+real runtime. T6 correctly entered DIRTY while the reconciliation still
+held. Not a performance test: no latency/throughput/improvement claims.
+
+```text
+Current gate  : L4-B → COMPLETE
+Next          : L4-C end-to-end identity (baseline vs Controller path on
+                real generation; token/logits identity + transfer log)
+L4-C          : NOT STARTED
+```
+
+L4-B history: `L4Reconciliation.swift` probe +
+`results/l4b-reconciliation/*.json` (5 models).

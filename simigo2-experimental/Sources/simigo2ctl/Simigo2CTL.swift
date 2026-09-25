@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -231,6 +231,15 @@ struct Simigo2CTL {
       let report = try await MeasuredTraceCollection.run(
         modelDirectory: modelDirectory,
         maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "l4b-reconcile":
+      let cModelBytes = optionalOption("--c-model-bytes", rest).flatMap(Int64.init)
+      let epsilonBytes = (optionalOption("--epsilon-mib", rest).flatMap(Int64.init) ?? 5) * 1024 * 1024
+      let report = try await L4ReconciliationProbe.run(
+        modelDirectory: modelDirectory,
+        cModelBytes: cModelBytes,
+        epsilonBytes: epsilonBytes
       )
       print(try toJSON(report))
     default:
