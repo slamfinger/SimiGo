@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: L4C_IDENTITY_PASS_THREE_MODELS / RUNTIME_ENGINEERING_VALIDATION_COMPLETE
+Engineering subphase: RUNTIME_ENGINEERING_VALIDATION_COMPLETE / EXECUTION_STATE_ENGINEERING_GATE_OPEN_E1_CONTRACT_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1858,6 +1858,55 @@ Sequenced work items 1–8 registered in the audit document.
 
 Audit history:
 docs/00-governance/SIMIGO2_EXPERIMENTAL_FINAL_RESEARCH_AUDIT_v1.0.md.
+
+### Gate A + Gate B — Runtime Engineering Validation Complete; Execution State Engineering Open — 2026-09-25
+
+**Gate A** (`SIMIGO2_RUNTIME_ENGINEERING_VALIDATION_COMPLETE_v1.0.md`)
+registered the complete Residency Runtime validation chain with executable
+evidence: Requirements (efeb49c) → Verification Design (022fd16) → L1/L2
+(254638b) → Controller (3d4fdd7) → L3 F1–F8 (78af4f5) → B1/B2 contract
+target (ee07123) → L4-A adapter (0774110) → L4-B INV-3 five-model
+reconciliation (250f683) → L4-C three-model identity (aa30eb2). The
+verification-system quality improvements are registered first-class: four
+vacuous-pass/defect classes (unhinted fill; effect label; empty-initial
+replay; L4-C self-comparison, wrong DIRTY injection target, over-subtracted
+evict set) were caught by the gates and fixed, and `overallPass` now
+REQUIRES `dirtyCycleExecuted == true`. Principle registered: a verification
+suite that cannot fail is not evidence.
+
+The two-sided proof stands: L4-B (the resource state is real — INV-3 within
+ε on 5 models × 10 transitions, C_model constants verified constant) +
+L4-C (the computation is unchanged — token/logits identity with
+max_abs_diff = 0.0 across real residency transitions and an executed
+DIRTY/recovery cycle on 3 models) ground the architecture statement:
+SimiGo does not decide what the model computes; it decides in what resource
+state the model runs.
+
+Repository anchor corrected and verified: `slamfinger/SimiGo-Lab`, branch
+`exp/simigo2-experimental`, HEAD `aa30eb2` at Gate A registration (the
+"wrong repository" observation is voided).
+
+**Gate B** (`SIMIGO2_EXECUTION_STATE_ENGINEERING_GATE_v1.0.md`) opened the
+Execution State Engineering line per the E0 architecture registration
+(`SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE_v1.0.md`): E1 Execution
+Continuity Contract (pure Swift, in the MLX-free contract target) → E2
+FakeExecutionBackend lifecycle verification (fork/continue/restore/
+reattach/discard tree; parent-identity, child-lineage, continuation-
+independence, discard, restore assertions) → E3 MLX Execution-State adapter
+(Backend Representation Strategy; no second KV authority) → E4 Continuity +
+Residency integration (an evicted Execution State IS still the same
+Execution State) → E5 end-to-end identity scenario. The core 2.0
+engineering invariant is registered: representation migration MUST preserve
+Execution Identity, Position, Next Input, Continuation Semantics, and
+Subsequent State Evolution.
+
+```text
+Research lines                            all CLOSED / FROZEN
+Runtime Engineering validation (Gate A)   COMPLETE
+Execution State Engineering (Gate B)      OPEN
+E1 contract                               NEXT (tests-first)
+E2–E5                                     NOT STARTED
+```
 
 ### Runtime Residency Engineering — Requirements & Contract v1.0 — 2026-09-25
 
