@@ -1,0 +1,93 @@
+{
+  "status": "LOAD_INCOMPLETE_MEASURED",
+  "protocolVersion": "G1.9-O2.BASELINE.V1",
+  "boundary": "NATIVE_MLX_BASELINE / ZERO_SIMIGO_INTERVENTION / MEASUREMENT_ONLY / NOT_A_PERFORMANCE_CLAIM",
+  "modelID": "mlx-community/Qwen3-Coder-Next-4bit (snapshot 7b9321ea)",
+  "modelType": "Qwen3NextForCausalLM (registered in fork; load attempted)",
+  "physicalTotalBytes": 34359738368,
+  "note": "Report reconstructed from EXTERNAL observation timeline (ps/sysctl polling ~45s): the probe process was terminated by the 9-minute watchdog BEFORE loadWeights returned, so no in-probe snapshots exist. The timeline below is the measured evidence.",
+  "externalTimeline": [
+    {
+      "t": "00:00",
+      "event": "process start",
+      "cpuPercent": 100.0,
+      "rssMB": 98.9,
+      "swapUsedGiB": 0.0
+    },
+    {
+      "t": "01:36",
+      "event": "load in progress",
+      "cpuPercent": 114.9,
+      "rssMB": 83.6,
+      "swapUsedGiB": 22.57
+    },
+    {
+      "t": "02:21",
+      "event": "load in progress (thrash signature)",
+      "cpuPercent": 113.2,
+      "rssMB": 51.6,
+      "swapUsedGiB": 23.09
+    },
+    {
+      "t": "03:06",
+      "event": "load in progress",
+      "cpuPercent": 112.4,
+      "rssMB": 51.1,
+      "swapUsedGiB": 22.83
+    },
+    {
+      "t": "03:51",
+      "event": "load in progress",
+      "cpuPercent": 111.8,
+      "rssMB": 51.0,
+      "swapUsedGiB": 22.74
+    },
+    {
+      "t": "04:36",
+      "event": "load in progress",
+      "cpuPercent": 114.4,
+      "rssMB": 51.1,
+      "swapUsedGiB": 22.87
+    },
+    {
+      "t": "05:21",
+      "event": "load in progress",
+      "cpuPercent": 113.2,
+      "rssMB": 52.7,
+      "swapUsedGiB": 23.04
+    },
+    {
+      "t": "07:41",
+      "event": "load in progress",
+      "cpuPercent": 108.2,
+      "rssMB": 42.3,
+      "swapUsedGiB": 23.47
+    },
+    {
+      "t": "09:01",
+      "event": "watchdog kill (load never returned)",
+      "cpuPercent": 112.1,
+      "rssMB": 41.0,
+      "swapUsedGiB": 23.27
+    }
+  ],
+  "postKill": {
+    "swapDrain": "23 GiB -> 2.2 GiB over minutes",
+    "reportWritten": false
+  },
+  "verdict": {
+    "hypothesis": "H-EAGER for the native full-model load path",
+    "evidence": "swap climbed from ~0 to pinned 22.7-23.5 GiB within ~2 minutes while RSS stayed ~50 MB and CPU saturated: weights were eagerly bound into device buffers, overflowing to encrypted swap; mmap-backed lazy arrays at read did not survive loadWeights -> update(verify:.all)",
+    "completion": "loadWeights never returned within the watchdog; T3 first forward and generations UNREACHABLE"
+  },
+  "boundaries": {
+    "capacity": "native path cannot deliver an executable model on 32 GiB (outcome C)",
+    "stability": "violated during load (22.9 GiB swap, system-wide pressure)",
+    "performance": "unreachable via this path"
+  },
+  "caveats": [
+    "9-minute watchdog is a safety bound, not an impossibility bound",
+    "ps RSS does not capture GPU-wired unified-memory allocations; swap curve + CPU signature are the evidence",
+    "in-probe periodic snapshot flush registered as a probe improvement for any re-run"
+  ]
+}
