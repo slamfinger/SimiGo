@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_V2_IMPLEMENTATION_IN_PROGRESS / MEMORY_RETENTION_DEFECT_FOUND
+Engineering subphase: O3C_DIAGNOSIS_BOUNDARY_LOCATED / SEG1_AFTER_READ_BATCH_MATERIALIZATION
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2358,6 +2358,39 @@ materialize/exec/release; diagnose retention (buffer cache vs graph
 retention vs update-copy); fix; re-run the two-pass determinism +
 capacity protocol. No frozen-line changes.
 
+### O3-C″ Diagnosis — Retention Boundary Located — 2026-09-25
+
+The instrumented O3-C run (five-metric gauges: active/cache/peak/footprint/
+swap at every boundary, mirrored to stderr, 7 gauges captured before the
+shell watchdog killed the thrashing run) located the FIRST anomalous
+boundary precisely:
+
+```text
+STEP_START                 footprint 80 MiB
+SEG0_AFTER_READ            core 1294 MiB payload → footprint 2869 MiB
+SEG0_AFTER_MATERIALIZE     2902 MiB
+SEG1_AFTER_READ            144 tensors / 13824 MiB payload accumulated in
+                           the arrays dictionary → footprint 30616 MiB
+                           (30.6 GiB — at the 32 GiB physical edge)
+[external swap timeline]   300 s: 5.4 GiB → 540 s: 23 GiB (thrash, killed)
+```
+
+Verdict: the retention defect is NOT missing release, NOT buffer cache, NOT
+graph retention — it is the **BATCH-THEN-UPDATE materialization shape**: the
+segment loop accumulates ALL of a segment's tensors (13.5 GiB per
+switch_mlp segment) in a dictionary before a single model.update; combined
+with the already-resident core+segment-0, the footprint crosses the
+physical limit at exactly the SEG1_AFTER_READ boundary. Additionally, no
+release boundary exists at all in this code path (the whole-graph forward
+runs before any release could).
+
+Registered fix direction (minimal, no architecture change): per-tensor
+streaming update — read ONE tensor → eval → model.update(unflattened
+single) → drop the reference; peak becomes core + previous segments + ONE
+tensor. The fork's forwardLayerRange API (landed, builds clean) then
+serves the segment-segmented execution on top of the corrected
+materialization.
+
 ### O3-C″ Implementation In Progress — Memory Retention Defect Found — 2026-09-25
 
 Component 1 (PerTensorSafetensorsReader) landed and verified: header-only
@@ -2393,6 +2426,39 @@ Registered next steps (NOT STARTED): in-loop footprint instrumentation per
 materialize/exec/release; diagnose retention (buffer cache vs graph
 retention vs update-copy); fix; re-run the two-pass determinism +
 capacity protocol. No frozen-line changes.
+
+### O3-C″ Diagnosis — Retention Boundary Located — 2026-09-25
+
+The instrumented O3-C run (five-metric gauges: active/cache/peak/footprint/
+swap at every boundary, mirrored to stderr, 7 gauges captured before the
+shell watchdog killed the thrashing run) located the FIRST anomalous
+boundary precisely:
+
+```text
+STEP_START                 footprint 80 MiB
+SEG0_AFTER_READ            core 1294 MiB payload → footprint 2869 MiB
+SEG0_AFTER_MATERIALIZE     2902 MiB
+SEG1_AFTER_READ            144 tensors / 13824 MiB payload accumulated in
+                           the arrays dictionary → footprint 30616 MiB
+                           (30.6 GiB — at the 32 GiB physical edge)
+[external swap timeline]   300 s: 5.4 GiB → 540 s: 23 GiB (thrash, killed)
+```
+
+Verdict: the retention defect is NOT missing release, NOT buffer cache, NOT
+graph retention — it is the **BATCH-THEN-UPDATE materialization shape**: the
+segment loop accumulates ALL of a segment's tensors (13.5 GiB per
+switch_mlp segment) in a dictionary before a single model.update; combined
+with the already-resident core+segment-0, the footprint crosses the
+physical limit at exactly the SEG1_AFTER_READ boundary. Additionally, no
+release boundary exists at all in this code path (the whole-graph forward
+runs before any release could).
+
+Registered fix direction (minimal, no architecture change): per-tensor
+streaming update — read ONE tensor → eval → model.update(unflattened
+single) → drop the reference; peak becomes core + previous segments + ONE
+tensor. The fork's forwardLayerRange API (landed, builds clean) then
+serves the segment-segmented execution on top of the corrected
+materialization.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.

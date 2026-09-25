@@ -46,11 +46,25 @@ public struct O3CStreamingReport: Codable, Sendable {
     public let determinismIdentical: Bool
     public let logitsIdentical: Bool
     public let capacityHeldThroughout: Bool
+    public let gauges: [O3CGauge]
     public let overallPass: Bool
 }
 
 public enum O3CError: Error, Equatable, Sendable {
     case invalidTensorIndex
+}
+
+/// O3-C″ diagnostic gauge: five-metric memory snapshot at one boundary.
+public struct O3CGauge: Codable, Sendable {
+    public let label: String
+    public let pass: Int
+    public let step: Int
+    public let tMilliseconds: Int64
+    public let mlxActiveBytes: Int64
+    public let mlxCacheBytes: Int64
+    public let mlxPeakBytes: Int64
+    public let physFootprintBytes: Int64
+    public let swapUsedBytes: Int64
 }
 
 public enum O3CStreamingV2 {
@@ -94,6 +108,60 @@ public enum O3CStreamingV2 {
     private static func trace(_ message: String) {
         FileHandle.standardError.write(
             Data("O3C +\(Int(Double(start.duration(to: .now).components.attoseconds) / 1e18))s \(message)\n".utf8)
+        )
+    }
+
+    /// Five-metric diagnostic gauge; also mirrored to stderr so the trace
+    /// survives a watchdog kill.
+    private static func gauge(
+        _ label: String, pass: Int, step: Int, to gauges: inout [O3CGauge]
+    ) {
+        let mlx = Memory.snapshot()
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(
+            MemoryLayout<task_vm_info_data_t>.stride / MemoryLayout<integer_t>.stride
+        )
+        let result = withUnsafeMutablePointer(to: &info) { pointer -> kern_return_t in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPointer in
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), intPointer, &count)
+            }
+        }
+        let footprint = result == KERN_SUCCESS ? Int64(info.phys_footprint) : -1
+        var swapUsed: Int64 = 0
+        var size = 0
+        sysctlbyname("vm.swapusage", nil, &size, nil, 0)
+        if size > 0 {
+            var buffer = [CChar](repeating: 0, count: size)
+            sysctlbyname("vm.swapusage", &buffer, &size, nil, 0)
+            let raw = String(cString: buffer)
+            let components = raw.split(separator: " ")
+            if let usedIndex = components.firstIndex(of: "used"), usedIndex + 1 < components.count {
+                let value = components[usedIndex + 1]
+                let magnitude = Double(value.dropLast()) ?? 0
+                let bytes: Double
+                switch value.last {
+                case "G": bytes = magnitude * 1024 * 1024 * 1024
+                case "M": bytes = magnitude * 1024 * 1024
+                case "K": bytes = magnitude * 1024
+                default: bytes = magnitude
+                }
+                swapUsed = Int64(bytes)
+            }
+        }
+        let gauge = O3CGauge(
+            label: label,
+            pass: pass,
+            step: step,
+            tMilliseconds: Int64(Double(start.duration(to: .now).components.attoseconds) / 1e18 * 1000),
+            mlxActiveBytes: Int64(mlx.activeMemory),
+            mlxCacheBytes: Int64(mlx.cacheMemory),
+            mlxPeakBytes: Int64(mlx.peakMemory),
+            physFootprintBytes: footprint,
+            swapUsedBytes: swapUsed
+        )
+        gauges.append(gauge)
+        FileHandle.standardError.write(
+            Data("GAUGE \(label) pass=\(pass) step=\(step) active=\(gauge.mlxActiveBytes / 1048576)MiB cache=\(gauge.mlxCacheBytes / 1048576)MiB peak=\(gauge.mlxPeakBytes / 1048576)MiB footprint=\(gauge.physFootprintBytes / 1048576)MiB swap=\(gauge.swapUsedBytes / 1048576)MiB\n".utf8)
         )
     }
 
@@ -155,10 +223,12 @@ public enum O3CStreamingV2 {
         /// current switch_mlp segment is loaded into the model.
         func materializeSegment(
             _ segment: Int,
-            coreLoaded: inout Bool
+            coreLoaded: inout Bool,
+            pass: Int
         ) async throws -> Double {
             let mStart = ContinuousClock.now
             var arrays: [String: MLXArray] = [:]
+            var readBytes: Int64 = 0
 
             for location in tensorReader.locations.values {
                 let name = location.name
@@ -166,6 +236,7 @@ public enum O3CStreamingV2 {
                 if !coreLoaded {
                     if !name.contains(".switch_mlp.") {
                         arrays[name] = try tensorReader.loadTensor(named: name)
+                        readBytes += location.byteCount
                     }
                 } else {
                     guard name.contains(".switch_mlp.") else { continue }
@@ -177,12 +248,16 @@ public enum O3CStreamingV2 {
                     else { continue }
 
                     arrays[name] = try tensorReader.loadTensor(named: name)
+                    readBytes += location.byteCount
                 }
             }
 
+            gauge("SEG\(segment)_AFTER_READ(\(arrays.count) tensors, \(readBytes / 1048576)MiB payload)", pass: pass, step: -1, to: &gauges)
             eval(arrays.values.map { $0 })
+            gauge("SEG\(segment)_AFTER_EVAL", pass: pass, step: -1, to: &gauges)
             let parameters = ModuleParameters.unflattened(arrays)
             try model.update(parameters: parameters, verify: [])
+            gauge("SEG\(segment)_AFTER_MATERIALIZE", pass: pass, step: -1, to: &gauges)
 
             return Double(mStart.duration(to: .now).components.attoseconds) / 1e18
         }
@@ -190,6 +265,7 @@ public enum O3CStreamingV2 {
         var segmentRecords: [O3CSegmentRecord] = []
         var capacityHeld = true
         var coreLoaded = false
+        var gauges: [O3CGauge] = []
 
         let messages: [[String: any Sendable]] = [["role": "user", "content": prompt]]
         let promptTokenIDs = try tokenizer.applyChatTemplate(
@@ -212,7 +288,8 @@ public enum O3CStreamingV2 {
             var logitsChecksumFinal = ""
 
             for step in 0..<maxTokens {
-                let m0 = try await materializeSegment(0, coreLoaded: &coreLoaded)
+                gauge("STEP_START", pass: streamingPass, step: step, to: &gauges)
+                let m0 = try await materializeSegment(0, coreLoaded: &coreLoaded, pass: streamingPass)
                 coreLoaded = true
                 segmentRecords.append(
                     O3CSegmentRecord(
@@ -226,7 +303,7 @@ public enum O3CStreamingV2 {
                 if footprintGiB() > capacityGiB { capacityHeld = false }
 
                 for segment in 1...2 {
-                    let m = try await materializeSegment(segment, coreLoaded: &coreLoaded)
+                    let m = try await materializeSegment(segment, coreLoaded: &coreLoaded, pass: streamingPass)
                     segmentRecords.append(
                         O3CSegmentRecord(
                             pass: streamingPass, segment: segment,
@@ -241,10 +318,11 @@ public enum O3CStreamingV2 {
                 }
 
                 // C′ deliberately retained the naive whole-graph call here.
-                // C″ must replace this with the fork's layer-range execution
-                // API; without that API MLX lazy evaluation touches all layers.
+                // C″ diagnosis: instrument its memory effect directly.
+                gauge("BEFORE_WHOLE_GRAPH_FORWARD", pass: streamingPass, step: step, to: &gauges)
                 let logits = model(running, cache: nil)[0, -1]
                 let nextToken = logits.argMax().item(Int.self)
+                gauge("AFTER_WHOLE_GRAPH_FORWARD", pass: streamingPass, step: step, to: &gauges)
                 generated.append(nextToken)
                 if step == maxTokens - 1 {
                     eval(logits)
@@ -256,6 +334,7 @@ public enum O3CStreamingV2 {
                 let all = promptTokenIDs + generated
                 running = MLXArray(all, [1, all.count])
                 eval(logits)
+                gauge("STEP_END", pass: streamingPass, step: step, to: &gauges)
             }
 
             passResults.append(generated)
@@ -283,6 +362,7 @@ public enum O3CStreamingV2 {
             determinismIdentical: determinismIdentical,
             logitsIdentical: logitsIdentical,
             capacityHeldThroughout: capacityHeld,
+            gauges: gauges,
             overallPass: overallPass
         )
     }
