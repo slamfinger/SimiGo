@@ -1,6 +1,6 @@
 # SimiGo 2.0 — Execution State Engineering Gate v1.0 (Gate B)
 
-Status: EXECUTION_STATE_ENGINEERING_GATE_OPEN / E1_CONTRACT_NEXT
+Status: EXECUTION_STATE_ENGINEERING_GATE_OPEN / E1_IMPLEMENTED_VERIFICATION_PENDING
 Date: 2026-09-25
 Anchor: repository `slamfinger/SimiGo-Lab`, branch `exp/simigo2-experimental`
 Semantic source: `SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE_v1.0.md` (E0) —
@@ -170,8 +170,8 @@ Resource Lifecycle + Backend).
 ```text
 Gate A (Runtime Engineering Validation) : COMPLETE
 Gate B (Execution State Engineering)    : OPEN
-E1 contract                             : NEXT (no code before its tests
-                                          are designed — tests-first)
+E1 contract                             : IMPLEMENTED / VERIFICATION PENDING
+E1 tests-first evidence                 : 8ad9075 → 8c5836e
 E2 / E3 / E4 / E5                       : NOT STARTED
 Research lines                          : all CLOSED / FROZEN
 ```
