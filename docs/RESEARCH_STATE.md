@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E1_CONTRACT_IMPLEMENTED_AND_VERIFIED / E2_FAKE_BACKEND_LIFECYCLE_NEXT
+Engineering subphase: E2_FAKE_BACKEND_LIFECYCLE_VERIFIED / E3_MLX_EXECUTION_STATE_ADAPTER_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1938,6 +1938,50 @@ Next          : E2 FakeExecutionBackend lifecycle-tree verification
                 child lineage, continuation independence, discard, restore)
 E2–E5         : NOT STARTED
 ```
+
+### E2 FakeExecutionBackend Lifecycle Verification — 2026-09-25
+
+`FakeExecutionContinuityRuntime` (test-only, MLX-free, no residency
+modeling) implements the E1 `ExecutionContinuityRuntime` protocol with one
+authoritative lifecycle record per transition and representation migrations
+recorded SEPARATELY from lifecycle history. The lifecycle tree
+(create → continue → fork → child continue → child restore → child
+reattach → child discard → parent continue) was verified against the eight
+registered constraints:
+
+```text
+V1 parent identity stable after fork                    PASS
+V2 child identity/lineage distinct and traceable        PASS
+V3 child continuation independent of parent             PASS
+V4 discard(child); continue(parent) uses the parent's
+   OWN continuation; discarded branch is terminal       PASS
+V5 restore returns the LOGICAL execution state
+   (identity/lineage preserved; position/continuation
+   = logical target; no tensor/snapshot type exists)    PASS
+V6 reattach preserves the continuation contract         PASS
+V7 representation migration touches nothing logical
+   and creates no lifecycle record                      PASS
+V8 exactly one authoritative lifecycle record per
+   transition; failed operations create none            PASS
+Full tree scenario (incl. parent timeline independence
+   from the child's fork position)                      PASS
+```
+
+Suite: **95/95 test cases PASS** (76 XCTest regression + 19 contract-target:
+4 backend + 6 E1 + 9 E2). One test-side assertion corrected during the run
+(parent timeline position — parent 0→1→2 is independent of the child's fork
+position 2); no contract or implementation change needed.
+
+```text
+Current gate  : E2 → VERIFIED
+Next          : E3 MLX Execution-State adapter (extend the Backend boundary;
+                checkpoint/KV strategies are Backend Representation
+                Strategy; SimiGo remains no second KV authority)
+E3–E5         : NOT STARTED
+```
+
+E2 history: `FakeExecutionContinuityRuntime.swift` +
+`ExecutionContinuityLifecycleTreeTests.swift`.
 
 E1 history: `ExecutionContinuityContract.swift` +
 `ExecutionContinuityContractTests.swift` (8ad9075 / 8c5836e / 7f64015).
