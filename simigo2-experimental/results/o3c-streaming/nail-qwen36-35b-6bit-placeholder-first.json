@@ -1,0 +1,334 @@
+{
+  "boundary" : "SEGMENT_WISE_EXECUTION \/ RESIDENT_SET_BOUNDARY \/ CAPACITY_FIRST \/ DETERMINISM_SECONDARY \/ NOT_A_PERFORMANCE_CLAIM",
+  "capacityHeldThroughout" : true,
+  "determinismIdentical" : true,
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX-6bit\/snapshots\/358c6c587b289b6f2da97147268af5e0ecf9900e",
+  "modelType" : "Qwen35MoEModel",
+  "observations" : [
+    {
+      "activeMiB" : 3356,
+      "cacheMiB" : 0,
+      "footprintMiB" : 4038,
+      "label" : "AFTER_CORE_LOAD",
+      "peakMiB" : 3356,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 4069,
+      "label" : "AFTER_EMBED_PASS1",
+      "peakMiB" : 3357,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 4069,
+      "label" : "BEFORE_SEG0_FORWARD",
+      "peakMiB" : 3357,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10365,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11244,
+      "label" : "AFTER_SEG0_MATERIALIZE",
+      "peakMiB" : 10365,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10372,
+      "cacheMiB" : 356,
+      "footprintMiB" : 11680,
+      "label" : "AFTER_SEG0_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11437,
+      "label" : "AFTER_SEG0_RELEASE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11429,
+      "label" : "BEFORE_SEG1_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11156,
+      "label" : "AFTER_SEG1_MATERIALIZE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 356,
+      "footprintMiB" : 11552,
+      "label" : "AFTER_SEG1_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11202,
+      "label" : "AFTER_SEG1_RELEASE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11199,
+      "label" : "BEFORE_SEG2_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11156,
+      "label" : "AFTER_SEG2_MATERIALIZE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 360,
+      "footprintMiB" : 11557,
+      "label" : "AFTER_SEG2_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11291,
+      "label" : "AFTER_SEG2_RELEASE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11287,
+      "label" : "BEFORE_SEG3_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11157,
+      "label" : "AFTER_SEG3_MATERIALIZE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 356,
+      "footprintMiB" : 11553,
+      "label" : "AFTER_SEG3_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11385,
+      "label" : "AFTER_SEG3_RELEASE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11383,
+      "label" : "BEFORE_PROJECT_OUTPUT",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3440,
+      "cacheMiB" : 0,
+      "footprintMiB" : 9473,
+      "label" : "AFTER_PROJECT_OUTPUT",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 84,
+      "footprintMiB" : 4390,
+      "label" : "AFTER_EMBED_PASS2",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 84,
+      "footprintMiB" : 4390,
+      "label" : "BEFORE_SEG0_FORWARD",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10365,
+      "cacheMiB" : 84,
+      "footprintMiB" : 11370,
+      "label" : "AFTER_SEG0_MATERIALIZE",
+      "peakMiB" : 10659,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10372,
+      "cacheMiB" : 444,
+      "footprintMiB" : 11768,
+      "label" : "AFTER_SEG0_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11518,
+      "label" : "AFTER_SEG0_RELEASE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11514,
+      "label" : "BEFORE_SEG1_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11157,
+      "label" : "AFTER_SEG1_MATERIALIZE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 356,
+      "footprintMiB" : 11553,
+      "label" : "AFTER_SEG1_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11294,
+      "label" : "AFTER_SEG1_RELEASE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11292,
+      "label" : "BEFORE_SEG2_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11157,
+      "label" : "AFTER_SEG2_MATERIALIZE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 356,
+      "footprintMiB" : 11553,
+      "label" : "AFTER_SEG2_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11358,
+      "label" : "AFTER_SEG2_RELEASE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11354,
+      "label" : "BEFORE_SEG3_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10237,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11157,
+      "label" : "AFTER_SEG3_MATERIALIZE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 10244,
+      "cacheMiB" : 359,
+      "footprintMiB" : 11555,
+      "label" : "AFTER_SEG3_FORWARD",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11364,
+      "label" : "AFTER_SEG3_RELEASE",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3357,
+      "cacheMiB" : 0,
+      "footprintMiB" : 11362,
+      "label" : "BEFORE_PROJECT_OUTPUT",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    },
+    {
+      "activeMiB" : 3440,
+      "cacheMiB" : 0,
+      "footprintMiB" : 9256,
+      "label" : "AFTER_PROJECT_OUTPUT",
+      "peakMiB" : 10663,
+      "swapMiB" : 0
+    }
+  ],
+  "overallPass" : true,
+  "passes" : [
+    [
+      71093
+    ],
+    [
+      71093
+    ]
+  ],
+  "promptTokens" : 176,
+  "protocolVersion" : "G1.9-O3C.SEGMENTWISE.V1",
+  "residentSetBoundaryObserved" : true,
+  "status" : "PASS"
+}

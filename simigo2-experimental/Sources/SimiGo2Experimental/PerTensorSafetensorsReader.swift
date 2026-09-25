@@ -101,43 +101,32 @@ public final class PerTensorSafetensorsReader: @unchecked Sendable {
     static func makeArray(
         data: Data, dtype: String, shape: [Int], name: String
     ) throws -> MLXArray {
-        func leValues<T: FixedWidthInteger>(_ type: T.Type) -> [T] {
-            let stride = MemoryLayout<T>.stride
-            let count = data.count / stride
-            return data.withUnsafeBytes { raw in
-                (0..<count).map { offset in
-                    T(littleEndian: raw.loadUnaligned(
-                        fromByteOffset: offset * stride, as: T.self))
-                }
-            }
-        }
-
+        // Single-copy construction straight from the file bytes
+        // (mlx_array_new_data). Safetensors are little-endian and this host
+        // is little-endian, so the raw copy IS the decode. The previous
+        // element-mapped Swift-Array path materialized a full intermediate
+        // copy of every tensor — on the 6-bit Nail model that was ~7 GiB of
+        // extra churn per switch_mlp segment and the driver of the
+        // resident-footprint ratchet. The BF16 branch additionally NUMERICALLY
+        // converted uint16 values instead of reinterpreting their bits, so
+        // every BF16 scale/bias it produced was wrong; the raw copy here is
+        // bit-exact.
+        let mlxType: DType
         switch dtype {
-        case "F32":
-            let values: [Float] = leValues(UInt32.self).map { Float(bitPattern: $0) }
-            return MLXArray(values, shape)
-        case "F64":
-            let values: [Double] = leValues(UInt64.self).map { Double(bitPattern: $0) }
-            return MLXArray(values, shape)
-        case "F16":
-            let values: [Float16] = leValues(UInt16.self).map { Float16(bitPattern: $0) }
-            return MLXArray(values, shape)
-        case "BF16":
-            return MLXArray(leValues(UInt16.self), shape).asType(.bfloat16)
-        case "U32":
-            return MLXArray(leValues(UInt32.self), shape)
-        case "I32":
-            return MLXArray(leValues(Int32.self), shape)
-        case "I64":
-            return MLXArray(leValues(Int64.self), shape)
-        case "U8":
-            return MLXArray(Array(data), shape)
-        case "I8":
-            let values: [Int8] = data.map { Int8(bitPattern: $0) }
-            return MLXArray(values, shape)
+        case "F32": mlxType = .float32
+        case "F64": mlxType = .float64
+        case "F16": mlxType = .float16
+        case "BF16": mlxType = .bfloat16
+        case "U32": mlxType = .uint32
+        case "I32": mlxType = .int32
+        case "I64": mlxType = .int64
+        case "U8": mlxType = .uint8
+        case "I8": mlxType = .int8
+        case "U64": mlxType = .uint64
         default:
             throw ReaderError.unsupportedDType("\(name): \(dtype)")
         }
+        return MLXArray(data, shape, dtype: mlxType)
     }
 
     static func int(of value: Any) -> Int? {

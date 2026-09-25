@@ -288,9 +288,11 @@ struct Simigo2CTL {
       print(try toJSON(report))
     case "o3c-segmentwise":
       let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 1
+      let passes = optionalOption("--passes", rest).flatMap(Int.init) ?? 1
       let report = try await O3CSegmentWiseProbe.run(
         modelDirectory: modelDirectory,
-        maxTokens: maxTokens
+        maxTokens: maxTokens,
+        streamingPasses: passes
       )
       print(try toJSON(report))
     default:

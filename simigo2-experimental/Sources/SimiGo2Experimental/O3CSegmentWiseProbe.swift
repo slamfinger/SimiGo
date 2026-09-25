@@ -95,7 +95,9 @@ public enum O3CSegmentWiseProbe {
             swapMiB: swapMiB
         )
         observations.append(observation)
-        if footprint > capacityMiB {
+        // footprint is raw bytes here; capacityMiB is MiB — compare in MiB.
+        // (The byte-vs-MiB mixup made this gate false in every run.)
+        if footprint / 1048576 > capacityMiB {
             capacityHeld = false
         }
         FileHandle.standardError.write(
@@ -112,7 +114,7 @@ public enum O3CSegmentWiseProbe {
             if let range = name.range(of: #"layers\.(\d+)\."#, options: .regularExpression) {
                 let digits = name[range].split(separator: ".").compactMap { Int($0) }
                 if let layer = digits.first, layer >= segmentRange.lowerBound, layer <= segmentRange.upperBound {
-                    placeholders[name] = MLXArray([0], [1])
+                    placeholders[name] = MLXArray([Int](), [0])
                 }
             }
         }
@@ -162,13 +164,12 @@ public enum O3CSegmentWiseProbe {
         let reader = try PerTensorSafetensorsReader(
             modelDirectory: modelDirectory, weightMap: weightMap
         )
-        let container = try await LLMModelFactory.shared.loadContainer(
-            from: modelDirectory,
-            using: #huggingFaceTokenizerLoader()
-        )
-        let modelType: String = try await container.perform { (context: ModelContext) in
-            String(describing: type(of: context.model))
-        }
+        // No loadContainer here: the native full-model load would keep a
+        // complete second copy of the weights resident for the whole probe
+        // (measured +30.28 GiB on the 6-bit Nail model). The model type is
+        // read from the skeleton model, which the type registry constructed
+        // from the same config.
+        let modelType = String(describing: type(of: model))
 
         let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
         let messages: [[String: any Sendable]] = [["role": "user", "content": prompt]]
@@ -182,16 +183,34 @@ public enum O3CSegmentWiseProbe {
             additionalContext: ["enable_thinking": false]
         )
 
-        // Core: all non-switch_mlp tensors, resident for the whole run.
-        var coreArrays: [String: MLXArray] = [:]
-        for location in reader.locations.values
-        where !location.name.contains(".switch_mlp.") {
-            coreArrays[location.name] = try reader.loadTensor(named: location.name)
+        // Placeholder-first full-parameter update — the registered fix for
+        // the lazy-random materialization cliff. Immediately after quantize,
+        // and BEFORE any parameter evaluation, ONE update replaces EVERY
+        // parameter with either the real checkpoint tensor (core, resident
+        // for the whole run) or a zero-size placeholder (switch_mlp segment
+        // tensors, materialized per segment later). update(verify: []) is
+        // pure assignment, so the ~22 GiB of lazy random quantized arrays
+        // left by quantize are discarded without ever materializing.
+        var fullParameterMap: [String: MLXArray] = [:]
+        for location in reader.locations.values {
+            if location.name.contains(".switch_mlp.") {
+                fullParameterMap[location.name] = MLXArray([Int](), [0])
+            } else {
+                fullParameterMap[location.name] = try autoreleasepool { try reader.loadTensor(named: location.name) }
+            }
         }
-        eval(coreArrays.values.map { $0 })
+        // Coverage guard: any model parameter path the checkpoint index does
+        // not cover also gets a placeholder, so no lazy random array can
+        // survive the update.
+        let covered = Set(fullParameterMap.keys)
+        for (path, _) in model.parameters().flattened() where !covered.contains(path) {
+            fullParameterMap[path] = MLXArray([Int](), [0])
+        }
+        eval(fullParameterMap.values.map { $0 })
         try model.update(
-            parameters: ModuleParameters.unflattened(coreArrays), verify: []
+            parameters: ModuleParameters.unflattened(fullParameterMap), verify: []
         )
+        Memory.clearCache()
         observe("AFTER_CORE_LOAD")
 
         // Segment partition from the model's actual layer count — do not
@@ -220,26 +239,35 @@ public enum O3CSegmentWiseProbe {
             for (segIndex, segment) in segments.enumerated() {
                 observe("BEFORE_SEG\(segIndex)_FORWARD")
 
-                // Materialize the segment's switch_mlp tensors.
-                var arrays: [String: MLXArray] = [:]
-                for location in reader.locations.values
-                where location.name.contains(".switch_mlp.") {
-                    if let range = location.name.range(
-                        of: #"layers\.(\d+)\."#, options: .regularExpression
-                    ) {
-                        let digits = location.name[range].split(separator: ".").compactMap { Int($0) }
-                        if let layer = digits.first, segment.contains(layer) {
-                            arrays[location.name] = try reader.loadTensor(
-                                named: location.name
-                            )
+                // Materialize the segment's switch_mlp tensors. The arrays
+                // dictionary is scoped to this block ON PURPOSE:
+                // update(verify: []) assigns the same array refs into the
+                // model, so the dictionary must drop its own refs here —
+                // otherwise it pins the segment's ~7 GiB until the NEXT loop
+                // iteration and the release boundary frees nothing at the
+                // right time (measured footprint ratchet 22 -> 29 GiB per
+                // segment, cache-parked).
+                do {
+                    var arrays: [String: MLXArray] = [:]
+                    for location in reader.locations.values
+                    where location.name.contains(".switch_mlp.") {
+                        if let range = location.name.range(
+                            of: #"layers\.(\d+)\."#, options: .regularExpression
+                        ) {
+                            let digits =
+                                location.name[range].split(separator: ".").compactMap { Int($0) }
+                            if let layer = digits.first, segment.contains(layer) {
+                                arrays[location.name] = try autoreleasepool {
+                                    try reader.loadTensor(named: location.name)
+                                }
+                            }
                         }
                     }
+                    eval(arrays.values.map { $0 })
+                    try model.update(
+                        parameters: ModuleParameters.unflattened(arrays), verify: []
+                    )
                 }
-                eval(arrays.values.map { $0 })
-                try model.update(
-                    parameters: ModuleParameters.unflattened(arrays), verify: []
-                )
-                eval(arrays.values.map { $0 })
                 observe("AFTER_SEG\(segIndex)_MATERIALIZE")
 
                 // Execute the segment's layer range.
@@ -250,9 +278,12 @@ public enum O3CSegmentWiseProbe {
                 eval(hidden)
                 observe("AFTER_SEG\(segIndex)_FORWARD")
 
-                // Release the segment's weights.
+                // Release: swap the model's refs to zero-size placeholders,
+                // then purge the MLX buffer cache so the freed segment
+                // actually returns to the OS. clearCache can only reclaim
+                // buffers that are no longer referenced, which is why the
+                // arrays dictionary above must already be out of scope here.
                 releaseSegmentWeights(model, segment: segment, reader: reader)
-                eval(model.parameters())
                 observe("AFTER_SEG\(segIndex)_RELEASE")
             }
 
