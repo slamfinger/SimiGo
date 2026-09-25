@@ -65,7 +65,10 @@ public struct ResidencyPlan: Hashable, Sendable, Codable {
 /// materialization / eviction
 ///
 /// requiredGroupIDs are mandatory for the current execution. Demand hints
-/// choose additional optional groups to retain/preload.
+/// choose additional optional groups to retain/preload. Groups without a
+/// hint are never auto-retained: an unhinted optional group is not a
+/// retention candidate (contract R1.4 — no hints must not invent
+/// additional demand).
 public struct ExecutionResidencyPlanner: Sendable {
     public let inventory: LayerInventory
 
@@ -112,8 +115,10 @@ public struct ExecutionResidencyPlanner: Sendable {
             overflow = mandatory
         }
 
+        // Only hinted groups are retention candidates: unhinted optionals
+        // are never auto-retained (contract R1.4).
         let optionalCandidates = inventory.groups
-            .filter { !desired.contains($0.id) }
+            .filter { !desired.contains($0.id) && priorities[$0.id] != nil }
             .sorted {
                 let left = priorities[$0.id] ?? 0
                 let right = priorities[$1.id] ?? 0

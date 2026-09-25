@@ -95,7 +95,6 @@ public enum ResidencyStateMachineEffect: Equatable, Sendable {
     case transferCommitted
     case transferRejected
     case auditAccepted
-    case auditRejected
     case recoverRequired
     case recovered
     case cancelled
@@ -127,11 +126,13 @@ public final class ResidencyStateMachine: @unchecked Sendable {
     public private(set) var state: ResidencyControllerState = .clean
     public private(set) var bookkeeping: ResidencyBookkeeping
     public let transferLog: ResidencyTransferLog
+    private let initialBookkeeping: ResidencyBookkeeping
 
     public init(
         initialBookkeeping: ResidencyBookkeeping = ResidencyBookkeeping(),
         transferLog: ResidencyTransferLog = ResidencyTransferLog()
     ) {
+        self.initialBookkeeping = initialBookkeeping
         self.bookkeeping = initialBookkeeping
         self.transferLog = transferLog
         self.bookkeeping = transferLog.replay(initial: initialBookkeeping)
@@ -182,14 +183,14 @@ public final class ResidencyStateMachine: @unchecked Sendable {
 
         case .auditMismatch:
             state = .dirty
-            return .init(state: state, effect: .auditRejected)
+            return .init(state: state, effect: .enteredDirty)
 
         case .recover:
             guard state == .dirty else {
                 return .init(state: state, effect: .recoverRequired)
             }
             state = .clean
-            bookkeeping = transferLog.replay(initial: ResidencyBookkeeping())
+            bookkeeping = transferLog.replay(initial: initialBookkeeping)
             return .init(state: state, effect: .recovered)
 
         case .cancelled:

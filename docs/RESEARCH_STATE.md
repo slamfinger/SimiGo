@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: CONTRACT_VERIFICATION_DESIGN_v1.0_REGISTERED / IMPLEMENTATION_NOT_STARTED
+Engineering subphase: IMPLEMENTATION_L1_L2_GATE_PASS / CONTROLLER_IMPLEMENTATION_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1944,3 +1944,47 @@ Implementation: NOT STARTED
 
 Design history:
 docs/00-governance/SIMIGO2_RUNTIME_RESIDENCY_VERIFICATION_DESIGN_v1.0.md.
+
+### Implementation Gate — L1/L2 Executed and Passed — 2026-09-25
+
+L1 contract tests (942f0a9), L2 state-machine contract tests (3042b70), and
+the L2 verification skeleton (2f8bd0c) were landed via GitHub file
+operations without execution claims, then executed for the first time in a
+real Swift toolchain.
+
+First run: **60 tests, 6 failures** — all in the two new test files. The
+conflict protocol (record → judge: implementation defect / contract defect /
+new fact) was applied:
+
+```text
+F-L1-1 (implementation defect)  planner auto-retained UNHINTED optional
+                                groups into remaining budget, contradicting
+                                its documented intent ("hints CHOOSE
+                                additional groups") and contract R1.4.
+                                Fix: retention candidates are hinted groups
+                                only. Behavior-preserving for every
+                                registered research artifact (budget sweep
+                                and trace replay pass explicit hints for
+                                all optionals; Gate 5 required = all) —
+                                verified by byte-identical re-run diff.
+F-L2-1 (skeleton defect)        auditMismatch returned .auditRejected while
+                                the semantics (and evictFailed) are
+                                .enteredDirty. Fix: effect unified; dead
+                                enum case removed.
+F-L2-2 (latent INV-1 defect)    recover() replayed from an EMPTY initial
+                                state, dropping initially resident groups.
+                                Fix: replay from the stored original
+                                initial bookkeeping; pinned by a new
+                                bookkeeping assertion in the recover test.
+```
+
+Re-run: **60 tests, 0 failures — L1 + L2 gate truly PASS**. No conflicts
+remained unresolved; no contract clause required amendment; no research
+conclusion changed.
+
+```text
+Current gate  : IMPLEMENTATION (L1/L2) → COMPLETE
+Next          : Controller/Materializer implementation (L3 fault injection
+                and L4 real-runtime reconciliation follow)
+Implementation: Controller NOT STARTED; L3 NOT STARTED; L4 NOT STARTED
+```

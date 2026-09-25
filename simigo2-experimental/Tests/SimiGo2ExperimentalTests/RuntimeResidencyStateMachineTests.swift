@@ -64,6 +64,10 @@ final class RuntimeResidencyStateMachineTests: XCTestCase {
         let recovered = machine.reduce(.recover)
         XCTAssertEqual(recovered.state, .clean)
         XCTAssertEqual(recovered.effect, .recovered)
+
+        // Recovery replays from the ORIGINAL initial state: the initially
+        // resident CORE group must survive (INV-1 uses the same initial).
+        XCTAssertEqual(machine.bookkeeping, initial)
     }
 
     func testTransferLogReplayMatchesBookkeeping() {
