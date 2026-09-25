@@ -166,13 +166,33 @@ lag-1 0.553–0.795）；T4-ALL 边界对照成立（execution 侧无结构，re
 = **POLICY_RETENTION_STRUCTURE_EMPIRICALLY_CHARACTERIZED**（非
 INCONCLUSIVE/STOP）；按授权边界，主张到此为止——是否研究 retention
 优化 = 基于新证据的新决定）
+；**用户裁定（2026-09-25）：开启 G1.9-E0 Retention Optimization
+Feasibility Audit**（纯离线审计授权：既有 20 条 trace + inventory +
+policy/budget/transfer artifacts + candidate enumeration/replay + 离线
+reload/resident/correctness 比较；仍未授权 = 新 runtime instrumentation、
+MLX 内部修改、Router/Expert、Predictor、Probability、production
+optimizer、speculative retention、architecture declaration；冻结词汇
+Optimal* 继续冻结——candidates 而非 optima）
+；**E0 已执行完毕（80 个离线 candidate-replay = 4 候选 × 20 对）**：
+①结构事实（此前已实测）execution=ALL ⇒ reload(t)=optTotal−retained(t−1)
+⇒ reloadTotal = n·optTotal − retainedLeadingIntegral——总 reload 由保留
+字节时间积分唯一决定，该前治面恒等式对全部候选全部 20 对精确成立；
+②三判定：V1 等峰值预算下改进候选存在（20/20；如 Qwen T3 reload
+81.0→15.19 GiB）但平均驻留升至峰值（8.69→16.00 GiB）；V2 等积分预算下
+改进**可证不可能**；V3 无候选支配现行 policy（20/20）——现行 policy 在
+trade-off 前治面上；**判定 = FEASIBLE_TRADEOFF_SPACE_ONLY_NO_FREE_
+IMPROVEMENT**：改进空间只存在于保持结构-经济学的前治面上（更多积分换
+更少 reload），无免费改进、无被支配收益；E1 reload 只能以 E2 驻留积分
+为代价改善，E3 预算定义决定可行点，E4 correctness 对全部候选结构性
+成立；下一门 = 用户决定（声明 cost weighting 的 candidate analysis 门 /
+或 STOP——前治面已完整刻画 + 无免费改进本身即完整工程结论））
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: G19D_RETENTION_STRUCTURE_CHARACTERIZED / NEXT_GATE_USER_DECISION
+Engineering subphase: G19E0_FEASIBILITY_TRADEOFF_ONLY / NEXT_GATE_USER_DECISION
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1722,3 +1742,32 @@ new decision on new evidence.
 
 Phase history:
 docs/00-governance/SIMIGO2_G19D_POLICY_RETENTION_ANALYSIS_20260925.md.
+
+### G1.9-E0 Retention Optimization Feasibility Audit — 2026-09-25
+
+Offline audit over the existing artifacts (80 candidate-replays = 4
+candidates × 20 pairs; no runtime observation, no optimizer construction,
+frozen vocabulary absent from the artifact). Structural basis: with
+execution set = ALL (measured), total reload equals
+n·optionalTotal − retention leading integral — the frontier identity holds
+exactly for every candidate on every pair.
+
+```text
+V1 equal-peak budget    improvers exist on 20/20 pairs (fill-to-peak),
+                        but mean residency rises to the peak
+V2 equal-integral       improvement provably impossible (frontier exact)
+V3 domination           none — the current policy is on the frontier
+verdict                 FEASIBLE_TRADEOFF_SPACE_ONLY_NO_FREE_IMPROVEMENT
+```
+
+The policy space at this resolution is the linear trade-off frontier
+between retention integral and reload bytes; the current policy and the
+fill-to-peak candidate are two points on it. Correctness (E4) holds
+structurally for every candidate via the load-before-generation semantics
+(empirically verified only for the three measured policies). Next-gate
+options (user decision): a candidate-analysis gate under a declared cost
+weighting, or STOP with the frontier characterization as the complete
+engineering conclusion.
+
+Phase history:
+docs/00-governance/SIMIGO2_G19E0_RETENTION_FEASIBILITY_AUDIT_20260925.md.
