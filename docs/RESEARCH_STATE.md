@@ -149,13 +149,30 @@ maxRel=4.6e-5、Gemma4/Muse ≤6.6e-4；Nail/Cyber-Tiel 存在精确恒定偏移
 命名纪律：只允许「PolicyResidency retention structure (byte-validated)」，
 禁称 natural residency demand / observed residency locality；下一门 =
 用户决定（residency locality 分析 / 最小 per-group 观测机制 / STOP））
+；**用户裁定（2026-09-25）：选 (a) 独家授权——G1.9-D PolicyResidency
+Retention Analysis**（窄授权：仅分析既有 20 条真实 trace 与已验证
+bookkeeping，不增加任何新 runtime 观测，不重定义 residency demand，不开
+Router/Expert；标签 = PolicyResidency retention structure，禁称
+residency locality；C_model 偏移封存为 accounting item 不进入分析；
+冻结词汇 ResidencyDemand/ResidencyProbability/RetentionPredictor/
+OptimalResidentSet/predictedResidentSet 不得出现）
+；**G1.9-D 已执行完毕**：D4 恒等式 savings = Σ retainedOptionalBytes(t)
+− oneColdStartLoad 在 20/20 (模型, workload) 对上精确成立（<0.1% 容差），
+把此前 16.7–55% 节益分解为 retained-optional-bytes 积分减一次冷启动；
+D1 keep-ratio 与 D3 lag-1 overlap 为 (policy, state sequence) 的确定性
+结构常数（T1 0.600 / T2 0.500 / T3 0.521–0.537 / T4 0.667–0.742；
+lag-1 0.553–0.795）；T4-ALL 边界对照成立（execution 侧无结构，residency
+侧 T4 含 2/5 full-retention 步且节省比例最高 0.500–0.550）；预注册判定
+= **POLICY_RETENTION_STRUCTURE_EMPIRICALLY_CHARACTERIZED**（非
+INCONCLUSIVE/STOP）；按授权边界，主张到此为止——是否研究 retention
+优化 = 基于新证据的新决定）
 
 ## Current research state
 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: GROUP_RESOLUTION_CLOSED / RESIDENCY_OBSERVABILITY_AUDITED / NEXT_GATE_USER_DECISION
+Engineering subphase: G19D_RETENTION_STRUCTURE_CHARACTERIZED / NEXT_GATE_USER_DECISION
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1668,3 +1685,40 @@ probes or runtime support — both new authorizations); or STOP.
 
 Audit history:
 docs/00-governance/SIMIGO2_RESIDENCY_OBSERVABILITY_AUDIT_20260925.md.
+
+### G1.9-D PolicyResidency Retention Analysis — 2026-09-25
+
+The user ruled option (a) exclusively: analyze the existing policy traces
+under the label "PolicyResidency retention structure (byte-validated)";
+no new runtime observation, no redefinition of residency demand, no
+Router/Expert; the frozen vocabulary (demand/probability/predictor/
+optimal-set) is absent from the analysis and artifacts; C_model offsets stay
+sealed as accounting items.
+
+Results over the 20 existing real trace artifacts (per model, per workload,
+no pooling):
+
+```text
+D4 identity   savings = Σ retainedOptionalBytes(t) − oneColdStartLoad
+              holds exactly on 20/20 pairs (< 0.1% tolerance)
+D1/D3         keep ratios and lag-1 overlaps are deterministic structural
+              constants of the workload shape (T1 0.600, T2 0.500,
+              T3 0.521–0.537, T4 0.667–0.742; lag-1 0.553–0.795)
+D2            measured reload per generation = exact complement of the
+              previous retention set
+T4 boundary   full-retention steps (2/5) coincide with the largest savings
+              fraction (0.500–0.550) — execution side structureless,
+              residency side structured, cleanly separated
+```
+
+Pre-registered verdict applied:
+
+```text
+POLICY_RETENTION_STRUCTURE_EMPIRICALLY_CHARACTERIZED
+```
+
+Per the authorization the claim stops there: retention optimization is a
+new decision on new evidence.
+
+Phase history:
+docs/00-governance/SIMIGO2_G19D_POLICY_RETENTION_ANALYSIS_20260925.md.
