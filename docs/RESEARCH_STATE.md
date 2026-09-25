@@ -3228,3 +3228,37 @@ O6            : NOT STARTED
 
 Gate history: `docs/00-governance/SIMIGO2_O5_SEGMENT_SIZE_SWEEP_V1_20260926.md`;
 artifact `results/o4-generation/qwen3-coder-next-4bit-seg8-sweep.json`.
+
+### Qwen4Exp Compatibility Boundary — User-Downloaded 54.3 GB Model — 2026-09-26
+
+Compatibility audit of `ddalcu/Qwen3.8-Flash-Next-MLX-Serve-iQ-MLX-3.3bpw`
+(50.6 GiB weights = 54.3 GB decimal, 3167 tensors, 101 shards, complete):
+
+```text
+compatible     iQ-MLX = standard affine quant (group 64 / bits 4, U32
+               packed + scales/biases; imatrix affects calibration, not
+               layout) — reader/quantize machinery compatible
+compatible     fused switch_mlp present (441 tensors); layers.N regex
+               partition works; 48 layers, 512 experts × 10 active
+               (same MoE topology as Qwen3-Coder-Next)
+INCOMPATIBLE   model_type = qwen4_exp (Qwen4ExpForConditionalGeneration)
+               — the Qwen4 preview architecture: gated HyperConnections,
+               partial-rotary M-RoPE, sparse attention, ngram-embedding,
+               MTP head, vision tower. No implementation exists in the
+               fork, mlx-lm (0.31.3 is PyPI latest), or HF transformers
+               (open issue; loading fails). Reference implementations:
+               vLLM and the proprietary mlx-serve stack only.
+```
+
+Verdict: not runnable on the current machinery; running it requires a
+fork-side Qwen4Exp implementation ported from vLLM (Python/PyTorch →
+MLXNN, text tower only: embed + 48 layers + norm + head; MTP/vision
+skippable) plus the E3-pattern segment API and tests — a real port with
+no MLX-native reference to diff against (correctness checks: greedy
+sanity + double-pass machinery). Registered as a compatibility boundary
+and a candidate engineering gate; user decision required before opening.
+
+```text
+Current gate  : O5 → QWEN4EXP_COMPATIBILITY_BOUNDARY_REGISTERED /
+                O5_SWEEP_CONTINUES
+```
