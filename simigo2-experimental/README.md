@@ -1,119 +1,101 @@
-# SimiGo 2.0 Experimental Scaffold
+# SimiGo 2.0 — Execution-State-oriented Runtime Experiment
 
-This is an experimental harness for **execution-state-driven layer-group residency**. Real MLX runtime gates now cover selective tensor materialization, whole-group lifecycle, parameter restore, single-group inference residency, and multi-state real-runtime residency benchmarks. The harness does not modify MLX internals or skip Transformer layers during complete inference.
+This directory contains the SimiGo 2.0 experimental runtime and verification code.
 
-## Current goal
+## Position
 
-The residency path is being refined toward an execution-centric separation:
+SimiGo is **not** attempting to replace MLX, Llama, or other model-execution backends.
 
-    execution context
-        ↓
-    required execution set
-        ↓
-    bounded residency plan
-        ↓
-    materialization / eviction
-        ↓
-    execution
-        ↓
-    runtime observations
+The current experiment asks a narrower systems question:
 
-The existing execution-state experiment remains the baseline. The new planner is an engineering layer and does not replace that baseline.
+> **Is Execution State the missing semantic boundary between execution semantics and physical resource management?**
 
-## Current experimental scope
+The working hypothesis is expressed as an engineering boundary, not as a claim of a new universal architecture:
 
-The residency mechanism currently controls **idle retention between complete generations**.
+```
+Execution State
+  = logical identity + lineage + position + continuation
+  ≠ physical representation
+  ≠ residency state
+```
 
-A complete Transformer generation still materializes all decoder-layer groups required by the model. Therefore the current experiment does **not** demonstrate layer skipping, reduced Transformer compute, or predictive next-state loading.
+The Runtime owns the logical execution contract. The Backend owns physical model state and computation semantics.
 
-The current generation identity probe intentionally uses a cache-free forward path for controlled parameter-replacement/residency validation. Its generation time must not be interpreted as normal KV-cache decode latency.
+## Current engineering gate
 
-## ds4-inspired engineering refinement
+```
+E1  Execution Continuity Contract       VERIFIED
+E2  Fake Runtime lifecycle tree         VERIFIED
+E3  MLX Execution-State Adapter         VERIFIED
+E4  Continuity + Residency Integration  NEXT
+E5  End-to-End scenario                 NOT STARTED
+```
 
-The independent antirez/ds4 runtime demonstrates a useful execution-centric pattern: distinguish the parameters required by the current execution from the bounded set kept resident, then manage materialization and eviction under an explicit memory budget.
+Latest registered E3 result: commit `646bc098`, **84/84 tests PASS**.
 
-SimiGo now has a pure planning implementation of this separation:
+E3 introduces an MLX-backed representation adapter while keeping physical-state sovereignty in the Backend. The current concrete representation strategy is an implementation strategy, not the semantic definition of Execution State.
 
-    Required Execution Set
-            ↓
-    ExecutionResidencyPlanner
-       ┌────┴──────────────┐
-       │                   │
-    mandatory/core     working-set candidates
-       │                   │
-       └─────────┬─────────┘
-                 ↓
-          Load / Keep / Evict
-                 ↓
-          Materialization
-                 ↓
-              MLX
+## Runtime boundary
 
-The planner supports fixed or percentage budgets, mandatory/core reservation, externally supplied demand priorities, deterministic candidate ordering, and explicit overflow reporting.
+```
+                    SimiGo Runtime
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+      Execution Continuity    Resource Lifecycle
+              │                     │
+      identity / lineage       residency / materialization
+      position / continuation  eviction / resource state
+              │                     │
+              └──────────┬──────────┘
+                         │
+                  Backend Adapter
+                         │
+                         ▼
+                        MLX
+```
 
-This does not claim feature parity with ds4. In particular, SimiGo has not yet implemented ds4's model-specific expert routing, SSD-streaming backend, asynchronous I/O-compute overlap, or distributed execution.
+The invariant is:
 
-## Supported runtime families
+```
+Execution State ≠ KV Cache ≠ Residency State
+```
 
-The grouping layer currently has separate strategies for:
+Representation migration must preserve execution identity and continuation semantics.
 
-- Qwen3-Coder-style switch/MoE MLP groups
-- dense MLP groups used by Gemma4 and Muse-Glimmer-compatible checkpoints
+## What this experiment does not claim
 
-Model compatibility is an experimental runtime gate, not a claim of universal MLX architecture support.
+It does not claim:
+
+- a new MLX or Llama implementation;
+- a second KV engine;
+- universal model-architecture support;
+- layer skipping or reduced Transformer computation;
+- predictive execution-state demand;
+- performance superiority;
+- a general-purpose inference architecture.
+
+The purpose is to determine whether the Execution State boundary can be made **concrete, testable, and compatible with a real Backend**.
+
+## Development path
+
+```
+E1 Contract
+   ↓
+E2 Fake Runtime
+   ↓
+E3 Real Backend Adapter
+   ↓
+E4 Continuity + Residency
+   ↓
+E5 End-to-End Identity / Continuation
+```
+
+Research depth follows evidence, not curiosity. Frozen research lines remain frozen unless a new decision explicitly reopens them.
 
 ## Commands
 
     swift build
     swift test
 
-    swift run simigo2ctl inventory /path/to/model-snapshot
-
-    swift run simigo2ctl simulate /path/to/model-snapshot --states STATE_A,STATE_B,STATE_ALL
-
-    swift run simigo2ctl benchmark /path/to/model-snapshot --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
-
-    swift run simigo2ctl materialize /path/to/model-snapshot --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
-
-    swift run simigo2ctl mlx-gate1 /path/to/model-snapshot --group SWITCH_MLP_L00_15
-
-    swift run simigo2ctl mlx-sequence-sweep /path/to/model-snapshot --sequences BASELINE_ABA,LOCALITY_A,ALTERNATE_AB,CYCLE_ABC,ALTERNATE_A_AB,FULL_PARTIAL
-
-## MVP policy
-
-    CORE_NON_SWITCH   = always resident
-    STATE_A           = CORE + SWITCH_MLP_L00_15
-    STATE_B           = CORE + SWITCH_MLP_L16_31
-    STATE_C           = CORE + SWITCH_MLP_L32_47
-    STATE_AB          = CORE + SWITCH_MLP_L00_15 + SWITCH_MLP_L16_31
-    STATE_BC          = CORE + SWITCH_MLP_L16_31 + SWITCH_MLP_L32_47
-    STATE_ALL         = CORE + all switch groups
-
-The existing CORE_NON_SWITCH classification remains a harness grouping, not a scientifically established permanent Core Resident Set.
-
-## Research boundary
-
-Current evidence supports:
-
-- selective Safetensors materialization
-- real MLX parameter replacement/rematerialization
-- group lifecycle and parameter restore
-- output-identity validation
-- execution-state-driven idle residency reduction
-- reduced reload traffic versus naive on-demand in the tested workloads
-- a pure execution-residency planning layer with explicit budget semantics
-
-Current evidence does **not** establish:
-
-- normal KV-cache decode latency improvement
-- overall performance improvement
-- Transformer layer skipping
-- reduced Transformer compute
-- predictive loading from future-state probabilities
-- a general SimiGo architecture
-- universal layer/expert semantic specialization
-- ds4 feature parity
-
-The next useful validation is to run planner tests, compare planner decisions with the current deterministic residency baseline, and then use repeated real-device traces to measure cache hits, reload bytes, idle residency, and reload timing before introducing preload or I/O-compute overlap.
-
-The research-depth governance remains in force: research depth follows evidence, not curiosity.
+The repository's gate documents and `docs/RESEARCH_STATE.md` are authoritative for current status and acceptance criteria.
