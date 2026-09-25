@@ -35,6 +35,10 @@ public struct ResidencyAdmissionOutcome: Equatable, Sendable {
     /// True when the cancellation token fired before every planned group
     /// completed; committed groups remain resident (R3.15–R3.16).
     public let cancelled: Bool
+    /// Non-nil when the admission holds a residency window (R3.20): the
+    /// required set stays protected from eviction until the host closes the
+    /// window via `closeResidencyWindow(_:)`.
+    public let requestID: UUID?
 }
 
 /// The runtime residency controller: the single writer of resident state
@@ -55,6 +59,15 @@ public final class ResidencyController: @unchecked Sendable {
     private let materializer: any ResidencyMaterializer
     private let machine: ResidencyStateMachine
     private let initialBookkeeping: ResidencyBookkeeping
+    /// R3.18: all public mutations serialize through this lock — the
+    /// controller itself is the single serialized mutation stream. Admissions
+    /// are atomic (R2.2): a plan runs to completion or failure as a whole.
+    private let stateLock = NSLock()
+    /// R3.20: open residency windows for concurrently admitted requests.
+    /// A windowed request's required set is protected from eviction for the
+    /// whole execution window; the host closes the window when its execution
+    /// finishes.
+    private var residencyWindows: [UUID: Set<String>] = [:]
 
     public init(
         inventory: LayerInventory,
@@ -97,20 +110,35 @@ public final class ResidencyController: @unchecked Sendable {
     /// Hints are intentionally absent (R1.4): the controller never supplies
     /// ordering signals. Required-set overflow fails fast before any
     /// transfer (R3.11).
+    ///
+    /// With `holdsResidencyWindow: true` (R3.20) the admission opens a
+    /// residency window: its required set is unioned into every subsequent
+    /// admission's effective required set (and protected from pressure
+    /// eviction) until the host closes the window via
+    /// `closeResidencyWindow(_:)` with the returned requestID.
     @discardableResult
     public func admit(
         requiredGroupIDs: Set<String>,
         budget: ResidencyBudgetPolicy,
+        holdsResidencyWindow: Bool = false,
         cancellationToken: ResidencyCancellationToken = .none
     ) throws -> ResidencyAdmissionOutcome {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+
         let admission = machine.reduce(.planAdmission(requiredGroupIDs: requiredGroupIDs))
         guard admission.effect == .admissionAccepted else {
             throw ResidencyControllerError.dirty
         }
 
+        // Effective required set = this request's set unioned with every
+        // open residency window (R3.20: jointly resident).
+        let windowRequired = residencyWindows.values.reduce(into: Set<String>()) { $0.formUnion($1) }
+        let effectiveRequired = requiredGroupIDs.union(windowRequired)
+
         let plan = try planner.plan(
             currentResidentGroupIDs: residentGroupIDs,
-            requiredGroupIDs: requiredGroupIDs,
+            requiredGroupIDs: effectiveRequired,
             demandHints: [],
             budget: budget,
             recommendedBytes: inventory.totalByteCount
@@ -121,6 +149,13 @@ public final class ResidencyController: @unchecked Sendable {
         }
 
         var cancelled = false
+        var requestID: UUID?
+
+        if holdsResidencyWindow {
+            let id = UUID()
+            residencyWindows[id] = requiredGroupIDs
+            requestID = id
+        }
 
         for groupID in plan.loadGroupIDs.sorted() {
             if cancellationToken.isCancelled {
@@ -150,7 +185,22 @@ public final class ResidencyController: @unchecked Sendable {
             machine.reduce(.evictCommitted(groupID: groupID))
         }
 
-        return ResidencyAdmissionOutcome(plan: plan, cancelled: cancelled)
+        return ResidencyAdmissionOutcome(plan: plan, cancelled: cancelled, requestID: requestID)
+    }
+
+    /// Closes a residency window (R3.20): the request's execution finished.
+    /// Its groups become eviction candidates at the NEXT admission or
+    /// pressure event — closing alone performs no transfers.
+    public func closeResidencyWindow(_ requestID: UUID) {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        residencyWindows.removeValue(forKey: requestID)
+    }
+
+    public var activeResidencyWindowCount: Int {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return residencyWindows.count
     }
 
     // MARK: - Reconciliation and recovery
@@ -164,6 +214,9 @@ public final class ResidencyController: @unchecked Sendable {
         cModelBytes: Int64 = 0,
         epsilonBytes: Int64
     ) -> Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+
         let expected = residentBytes + cModelBytes
         let deviation = abs(observedIdleBytes - expected)
         if deviation <= epsilonBytes {
@@ -178,6 +231,72 @@ public final class ResidencyController: @unchecked Sendable {
     /// full re-materialization pass) before calling; the bookkeeping is
     /// rebuilt from the transfer log over the initial state (R3.6).
     public func recover() {
+        stateLock.lock()
+        defer { stateLock.unlock() }
         machine.reduce(.recover)
+    }
+
+    // MARK: - Memory pressure
+
+    /// Contractual response to an external memory-pressure event
+    /// (R3.21–R3.23): proactively shrink residency by evicting resident
+    /// non-core groups largest-byte-first (registered default victim order;
+    /// ties broken by group ID) until `residentBytes + cModelBytes` is at or
+    /// below `targetBytes`, or only core groups remain (the floor — core is
+    /// never evicted). Every eviction is a committed, logged transfer; a
+    /// release failure enters DIRTY. Never speculatively re-materializes
+    /// anything afterwards (R3.24). Refused while DIRTY (R3.6).
+    ///
+    /// With the serialized single-writer controller, pressure events occur
+    /// between admissions by construction, so no in-flight request can lose
+    /// a required group (R3.22).
+    @discardableResult
+    public func respondToMemoryPressure(
+        targetBytes: Int64,
+        cModelBytes: Int64 = 0
+    ) throws -> [String] {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+
+        guard machine.state == .clean else {
+            throw ResidencyControllerError.dirty
+        }
+
+        let byteLookup = Dictionary(uniqueKeysWithValues: inventory.groups.map { ($0.id, $0.byteCount) })
+        let coreIDs = Set(inventory.groups.filter(\.alwaysResident).map(\.id))
+        // R3.22: groups required by an open residency window are not
+        // pressure-eviction victims.
+        let windowRequired = residencyWindows.values.reduce(into: Set<String>()) { $0.formUnion($1) }
+        var evicted: [String] = []
+
+        func residentBytesNow() -> Int64 {
+            residentGroupIDs.reduce(Int64(0)) { $0 + (byteLookup[$1] ?? 0) }
+        }
+
+        while residentBytesNow() + cModelBytes > targetBytes {
+            let candidates = residentGroupIDs
+                .subtracting(coreIDs)
+                .subtracting(windowRequired)
+                .map { (id: $0, bytes: byteLookup[$0] ?? 0) }
+                .sorted { left, right in
+                    if left.bytes != right.bytes { return left.bytes > right.bytes }
+                    return left.id < right.id
+                }
+
+            guard let victim = candidates.first else {
+                break // core floor reached
+            }
+
+            do {
+                try materializer.release(groupID: victim.id)
+            } catch {
+                machine.reduce(.evictFailed(groupID: victim.id, reason: String(describing: error)))
+                throw ResidencyControllerError.evictFailed(groupID: victim.id)
+            }
+            machine.reduce(.evictCommitted(groupID: victim.id))
+            evicted.append(victim.id)
+        }
+
+        return evicted
     }
 }

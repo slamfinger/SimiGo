@@ -16,40 +16,6 @@ final class ResidencyControllerTests: XCTestCase {
         )
     }
 
-    private final class MockMaterializer: ResidencyMaterializer, @unchecked Sendable {
-        var failLoadsOf: Set<String> = []
-        var failReleasesOf: Set<String> = []
-        private(set) var calls: [String] = []
-
-        func materialize(groupID: String) throws {
-            calls.append("load:\(groupID)")
-            if failLoadsOf.contains(groupID) {
-                throw MockError.io
-            }
-        }
-
-        func release(groupID: String) throws {
-            calls.append("release:\(groupID)")
-            if failReleasesOf.contains(groupID) {
-                throw MockError.io
-            }
-        }
-    }
-
-    private final class CheckCounter: @unchecked Sendable {
-        private let lock = NSLock()
-        private(set) var value = 0
-
-        func increment() -> Int {
-            lock.lock()
-            defer { lock.unlock() }
-            value += 1
-            return value
-        }
-    }
-
-    private enum MockError: Error { case io }
-
     private func assertInvariants(
         _ controller: ResidencyController,
         file: StaticString = #filePath,
@@ -65,7 +31,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testAdmitLoadsMissingGroupsInDeterministicOrder() throws {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         let outcome = try controller.admit(
@@ -81,7 +47,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testFailFastOnRequiredOverflowBeforeAnyTransfer() {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         XCTAssertThrowsError(
@@ -106,7 +72,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testLoadFailureCommitsPriorGroupsOnlyAndStaysClean() {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         mock.failLoadsOf = ["B"]
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
@@ -126,7 +92,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testEvictFailureEntersDirtyAndRejectsFurtherAdmission() throws {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         _ = try controller.admit(
@@ -161,7 +127,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testCancellationCommitsCompletedGroupsOnly() throws {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         let counter = CheckCounter()
@@ -181,7 +147,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testReconcileMismatchEntersDirtyAndRecoveryRestores() throws {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
         _ = try controller.admit(
             requiredGroupIDs: ["CORE", "A"],
@@ -219,7 +185,7 @@ final class ResidencyControllerTests: XCTestCase {
     }
 
     func testLogReplayEquivalenceHoldsAcrossMixedOperationSequence() throws {
-        let mock = MockMaterializer()
+        let mock = MockResidencyMaterializer()
         let controller = ResidencyController(inventory: inventory(), materializer: mock)
 
         _ = try controller.admit(

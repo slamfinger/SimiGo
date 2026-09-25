@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: B1_B2_CONTRACT_TARGET_REGISTERED / B3_MLX_BACKEND_NEXT
+Engineering subphase: L3_FAULT_INJECTION_PASS / L4_REAL_RUNTIME_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2085,3 +2085,50 @@ B3/B4/B5/L3/L4: NOT STARTED
 
 B1/B2 history: `SimiGoRuntimeContract` target +
 `RuntimeBackendContractTests.swift`.
+
+### L3 Fault Injection Complete — 2026-09-25
+
+F1–F8 (plus F7b) executed against the production `ResidencyController` with
+a mock materializer, per the verification-design catalog. Boundary held:
+F6/F7/F8 verified the controller's contractual responses only — no Memory
+Pressure / Budget / Concurrency Manager entities were created.
+
+Controller contract completions inside the existing type (no new entities):
+
+```text
+R3.18  internal serialization lock — the controller itself is the single
+       serialized mutation stream; admissions atomic (R2.2)
+R3.21–23  respondToMemoryPressure(targetBytes:cModelBytes:) — proactive
+       shrink, largest-byte-first victims (ties by ID), core floor, every
+       eviction a logged transfer, refused while DIRTY, never evicts a
+       group required by an open residency window (R3.22)
+```
+
+Findings from the injections:
+
+```text
+F-L3-8 (implementation gap)  R3.20's joint-residency obligation had no
+        mechanism: the second concurrent admission evicted the first
+        request's still-required groups. Resolved INSIDE the controller by
+        minimal residency windows — admit(holdsResidencyWindow:true) opens
+        one, the window's required set unions into subsequent effective
+        required sets and is pressure-exempt, closeResidencyWindow(_) makes
+        its groups reclaimable at the next transition. No contract text
+        changed; R3.20 already specified the behavior.
+F3/F4 test corrections: stale fault configuration and a wrong expectation
+        (first sorted victim) — test bugs, no semantic change.
+```
+
+Result: **F1–F8 + F7b all PASS (76 tests, 0 failures)** — mid-load failure
+with retry, evict failure → DIRTY → blocked admission → recovery,
+cancellation at group boundaries during load and eviction, audit deviation
+→ DIRTY, budget-shrink fail-fast with zero transfers, pressure shrink with
+logged evictions and no speculative reload, concurrent admission with
+windows and joint residency.
+
+```text
+Current gate  : L3 → COMPLETE
+Next          : L4 real materializer (MLX behind the contract) + INV-3
+                reconciliation + output identity on real models
+L4            : NOT STARTED
+```
