@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O3C_SEGMENTWISE_PLACEHOLDER_FIRST_PASS / CAPACITY_ATTRIBUTION_CORRECTED / O4_DECISION_PENDING
+Engineering subphase: O4_PERFORMANCE_DIFFERENTIAL_MEASURED / SEGMENTED_2X_FULL_AT_20GIB / OVERSIZED_DIRECT_RUN_PENDING_USER_PULL
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3122,3 +3122,44 @@ O4/O5/O6      : awaiting user decision
 Gate history:
 `docs/00-governance/SIMIGO2_O3C_SEGMENTWISE_FIX_VERIFICATION_20260926.md`;
 artifact `results/o3c-streaming/nail-qwen36-35b-6bit-placeholder-first.json`.
+
+### O4 Full-vs-Segmented Performance Differential — User-Directed — 2026-09-26
+
+User directive: analyze the performance difference between full (whole-
+model resident) and segmented computation. On the oversized checkpoint the
+full path does not exist (O2/O3 measured), so the differential was measured
+on Nail-Qwen3.6-35B-A3B-MLX-4bit (20.15 GiB — both strategies fit), same
+greedy cacheless function through both paths (protocol G1.9-O4.GEN.V1,
+8 tokens × 2 passes, 4×10-layer segments):
+
+```text
+segmented   peak 6,649 MiB  footprint / 3,353 MiB core resident
+            4,640-4,771 ms/token  = read ~2.5 s + forward ~2.0 s
+full        peak 22,451 MiB footprint / 20,633 MiB resident
+            2,295-2,355 ms/token  (whole-graph)
+ratio       segmented ≈ 2.0× full per token, for 3.4× less peak memory
+tokens      bit-identical across paths and passes (descriptive only)
+```
+
+Decomposition: the fork's forwardLayerRange decomposition adds no
+measurable penalty (segmented forward 2.04 s ≈ whole-graph 2.30 s); the
+entire differential is per-token re-materialization I/O (~17 GiB/token at
+~6.9 GB/s under a concurrent download that neutralized the cold/warm
+contrast — registered caveat). Oversized axis: at 41.76 GiB the segmented
+path is the only executable one (~6-14 s/token extrapolated; direct O4
+measurement pending the user's re-pull). Same no-free-improvement economics
+as the frozen frontier result, now at forward granularity.
+
+Probe timing-defect fixed in-flight before accepting numbers (msSince
+dropped whole-seconds for durations ≥ 1 s — first run's token totals void).
+
+```text
+Current gate  : O4 → PERFORMANCE_DIFFERENTIAL_MEASURED (20.15 GiB A/B)
+Next          : direct oversized generation on the re-downloaded
+                Qwen3-Coder-Next-4bit (41.76 GiB) — awaiting user pull
+O5/O6         : NOT STARTED
+```
+
+Gate history:
+`docs/00-governance/SIMIGO2_O4_FULL_VS_SEGMENTED_PERFORMANCE_DIFFERENTIAL_20260926.md`;
+artifact `results/o4-generation/nail-qwen36-35b-4bit-full-vs-segmented.json`.
