@@ -4,10 +4,14 @@ import SimiGoRuntimeContract
 /// E3 — the first concrete ExecutionStateBackend: the prefix-recompute
 /// representation strategy of the currently validated harness. An
 /// execution's physical state is its token prefix (prompt + generated);
-/// continue/fork/restore bind token prefixes, and generation recomputes
+/// continue/fork/restore bind token prefixes, and the executor recomputes
 /// over the bound prefix. Future KV-copy or shared-prefix strategies
 /// replace THIS strategy only — the E1 logical contract and this backend
 /// contract are unchanged.
+///
+/// This backend is pure data: it holds bindings and captured
+/// representations but performs no model execution. Execution consumes the
+/// bound representation through the MLXPrefixRecomputeExecutor.
 public struct MLXPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable {
     public let tokenPrefix: [Int]
 
@@ -39,9 +43,11 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
         boundPositions[executionID] = position
     }
 
-    public func captureRepresentation(
+    /// Concrete accessor for the execution component: the bound prefix of
+    /// one logical execution state, with position validation.
+    public func boundPrefix(
         for state: ExecutionStateHandle
-    ) async throws -> ExecutionRepresentation {
+    ) throws -> (prefix: [Int], position: ExecutionPosition) {
         guard let prefix = prefixes[state.id], let bound = boundPositions[state.id] else {
             throw ExecutionStateBackendError.noBoundRepresentation(state.id)
         }
@@ -52,6 +58,21 @@ public final class MLXExecutionStateBackend: ExecutionStateBackend, @unchecked S
                 logical: state.position
             )
         }
+        return (prefix, bound)
+    }
+
+    /// Concrete accessor for the execution component: consume the CURRENT
+    /// binding after the physical prefix advanced (the Runtime rebinds the
+    /// advanced representation afterwards).
+    func consumeBinding(for state: ExecutionStateHandle) {
+        prefixes.removeValue(forKey: state.id)
+        boundPositions.removeValue(forKey: state.id)
+    }
+
+    public func captureRepresentation(
+        for state: ExecutionStateHandle
+    ) async throws -> ExecutionRepresentation {
+        let (prefix, bound) = try boundPrefix(for: state)
         return ExecutionRepresentation(
             executionID: state.id,
             position: bound,

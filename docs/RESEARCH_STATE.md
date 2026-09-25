@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E5_END_TO_END_IDENTITY_PASS / EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
+Engineering subphase: E5_V2_REPRESENTATION_CONSUMING_IDENTITY_PASS / EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2058,46 +2058,45 @@ Next          : E5 end-to-end product scenario on real MLX (Create →
 E5            : NOT STARTED
 ```
 
-### E5 End-to-End Execution State Scenario — Three Models PASS — 2026-09-25
+### E5 v2 — Representation-Consuming Execution — Three Models PASS — 2026-09-25
 
-The `e5-scenario` probe (protocol G1.9-E5.SCENARIO.V1) executed the full
-product scenario on real MLX: Create → Generate → Fork → Parent/Child
-Continue → Child Evict (residency floor + representation release) →
-Re-materialize → Restore → Child Continue → Discard child → Parent
-Continue, on Qwen3-Coder, Nail-Qwen3.6, and Gemma4-12B. Six identity
-assertions, ALL PASS on every model:
+External audit finding (accepted): the first E5 implementation executed the
+child's continuations by reconstructing equivalent chat-message inputs and
+recomputing from scratch — it never CONSUMED the Execution State's bound
+representation, so the determinism check proved less than it claimed.
+Remedy: the ExecutionStateBackend contract gained `continueExecution(state,
+nextInputTokens, maxTokens)` — real execution that CONSUMES the current
+bound representation — implemented by the new `MLXPrefixRecomputeExecutor`
+(prefix-recompute strategy; the Backend owns tokenization/generation; the
+Runtime owns identity/lineage/position/continuation). The E5 scenario now
+routes EVERY continuation after the bootstrap through
+`backend.continueExecution`, and INV-1 is an explicit assertion (not a
+debug assert). The raw-continuation encoding also replaced chat-message
+reconstruction, eliminating a degenerate immediate-EOS divergence failure
+on Nail.
+
+Results (protocol G1.9-E5.SCENARIO.V2, 3 models):
 
 ```text
-FORK_DIVERGENCE            child and parent continuations with different
-                           next inputs produce different token sequences
-                           (the fork branches for real)
-LOGITS_REFORWARD_IDENTITY  logits over the child's prefix checksum
-                           identical before and after the
-                           evict/re-materialize cycle
-CHILD_DETERMINISM          the child's continuation re-executed after
-                           evict + re-materialize + restore is
-                           token-identical to its pre-eviction execution
-PARENT_NON_INTERFERENCE    the parent's turn-2 continuation equals the
-                           pre-fork reference token-for-token (the whole
-                           child episode left no residue)
-PARENT_IDENTITY_STABLE     A: root=A, parent=nil, active, position 2
-CHILD_LINEAGE_TRACEABLE    B discarded, lineage still traces to A
+FORK_DIVERGENCE            child vs parent continuations token-divergent
+D-I determinism            run2 (after evict + re-materialize + RESTORE)
+                           == run1, consuming the RESTORED representation
+N-I non-interference       parent turn-2 after the whole child episode ==
+                           pre-fork reference (token-identical)
+PARENT_IDENTITY_STABLE / CHILD_LINEAGE_TRACEABLE   PASS
+RESIDENCY_INV1             explicit assertion PASS
+overall                    PASS on all three models
 ```
 
-Residency evidence: real evictions (pressure to the core floor) and real
-re-materialization (3 group loads through the MLX backend) around the
-child's restore; residency INV-1 held throughout.
-
-This closes the Execution State Runtime loop: Execution Semantics +
-Execution Continuity + Resource Lifecycle + Backend — with the identity
-assertions holding over real model computation. The E1–E5 chain plus the
-L1/L2/L3/L4 residency chain together form the validated SimiGo 2.0
-Execution State Runtime.
+This closes the audit finding: the E5 identity checks now exercise the
+bound representation as the actual execution input. Execution Semantics +
+Execution Continuity + Resource Lifecycle + Backend — validated end-to-end
+with the representation consuming path.
 
 ```text
-Current gate  : E5 → COMPLETE
+Current gate  : E5 v2 → COMPLETE
 Status        : EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
-Validation history: `E5ExecutionStateScenario.swift` probe +
+Validation history: `E5ExecutionStateScenario.swift` (v2) probe +
                 `results/e5-execution-state/*.json` (3 models)
 ```
 
