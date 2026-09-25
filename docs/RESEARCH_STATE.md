@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: E4_CONTINUITY_RESIDENCY_INTEGRATION_VERIFIED / E5_END_TO_END_IDENTITY_NEXT
+Engineering subphase: E5_END_TO_END_IDENTITY_PASS / EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2056,6 +2056,49 @@ Next          : E5 end-to-end product scenario on real MLX (Create →
                 Continue; compare identity/lineage/position/next
                 input/continuation/tokens/logits)
 E5            : NOT STARTED
+```
+
+### E5 End-to-End Execution State Scenario — Three Models PASS — 2026-09-25
+
+The `e5-scenario` probe (protocol G1.9-E5.SCENARIO.V1) executed the full
+product scenario on real MLX: Create → Generate → Fork → Parent/Child
+Continue → Child Evict (residency floor + representation release) →
+Re-materialize → Restore → Child Continue → Discard child → Parent
+Continue, on Qwen3-Coder, Nail-Qwen3.6, and Gemma4-12B. Six identity
+assertions, ALL PASS on every model:
+
+```text
+FORK_DIVERGENCE            child and parent continuations with different
+                           next inputs produce different token sequences
+                           (the fork branches for real)
+LOGITS_REFORWARD_IDENTITY  logits over the child's prefix checksum
+                           identical before and after the
+                           evict/re-materialize cycle
+CHILD_DETERMINISM          the child's continuation re-executed after
+                           evict + re-materialize + restore is
+                           token-identical to its pre-eviction execution
+PARENT_NON_INTERFERENCE    the parent's turn-2 continuation equals the
+                           pre-fork reference token-for-token (the whole
+                           child episode left no residue)
+PARENT_IDENTITY_STABLE     A: root=A, parent=nil, active, position 2
+CHILD_LINEAGE_TRACEABLE    B discarded, lineage still traces to A
+```
+
+Residency evidence: real evictions (pressure to the core floor) and real
+re-materialization (3 group loads through the MLX backend) around the
+child's restore; residency INV-1 held throughout.
+
+This closes the Execution State Runtime loop: Execution Semantics +
+Execution Continuity + Resource Lifecycle + Backend — with the identity
+assertions holding over real model computation. The E1–E5 chain plus the
+L1/L2/L3/L4 residency chain together form the validated SimiGo 2.0
+Execution State Runtime.
+
+```text
+Current gate  : E5 → COMPLETE
+Status        : EXECUTION_STATE_RUNTIME_LOOP_COMPLETE
+Validation history: `E5ExecutionStateScenario.swift` probe +
+                `results/e5-execution-state/*.json` (3 models)
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
