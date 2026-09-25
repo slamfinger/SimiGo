@@ -1,0 +1,864 @@
+{
+  "boundary" : "OVERSIZED_REAL_GENERATION \/ SEGMENTED_ONLY \/ FULL_PATH_DOES_NOT_EXIST_AT_SCALE \/ HARNESS_LEVEL_NO_EXECUTION_STATE_O6_PENDING \/ NOT_A_PERFORMANCE_CLAIM",
+  "determinismIdentical" : true,
+  "maxSwapMiB" : 0,
+  "meanTokenMsByPass" : [
+    7725.8169742499995,
+    7667.86323975
+  ],
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "peakActiveMiB" : 1302,
+  "peakFootprintMiB" : 8821,
+  "prefetch" : false,
+  "promptTokens" : 18,
+  "protocolVersion" : "G1.9-O4.OVERSIZEGEN.V1",
+  "residentActiveMiB" : 1294,
+  "samplesByPass" : [
+    [
+      {
+        "activeMiB" : 1299,
+        "footprintMiB" : 8789,
+        "segments" : [
+          {
+            "forwardMs" : 96.32191599999999,
+            "readMs" : 1471.4270840000001,
+            "releaseMs" : 2.837792,
+            "segment" : 0,
+            "updateMs" : 0.6705
+          },
+          {
+            "forwardMs" : 76.233041,
+            "readMs" : 1206.087208,
+            "releaseMs" : 3.10625,
+            "segment" : 1,
+            "updateMs" : 0.6464580000000001
+          },
+          {
+            "forwardMs" : 79.7375,
+            "readMs" : 1179.530125,
+            "releaseMs" : 2.8925,
+            "segment" : 2,
+            "updateMs" : 0.660917
+          },
+          {
+            "forwardMs" : 82.467083,
+            "readMs" : 1176.1403340000002,
+            "releaseMs" : 2.95175,
+            "segment" : 3,
+            "updateMs" : 0.6677500000000001
+          },
+          {
+            "forwardMs" : 86.849583,
+            "readMs" : 1183.9191250000001,
+            "releaseMs" : 3.265959,
+            "segment" : 4,
+            "updateMs" : 0.702083
+          },
+          {
+            "forwardMs" : 80.3035,
+            "readMs" : 1193.817375,
+            "releaseMs" : 3.0663750000000003,
+            "segment" : 5,
+            "updateMs" : 0.68
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 8420,
+        "totalMs" : 7949.141875
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8789,
+        "segments" : [
+          {
+            "forwardMs" : 80.410917,
+            "readMs" : 1190.067583,
+            "releaseMs" : 2.963958,
+            "segment" : 0,
+            "updateMs" : 0.6791670000000001
+          },
+          {
+            "forwardMs" : 78.634375,
+            "readMs" : 1183.682,
+            "releaseMs" : 2.896667,
+            "segment" : 1,
+            "updateMs" : 0.6635420000000001
+          },
+          {
+            "forwardMs" : 78.493541,
+            "readMs" : 1187.9010839999999,
+            "releaseMs" : 2.973875,
+            "segment" : 2,
+            "updateMs" : 0.790083
+          },
+          {
+            "forwardMs" : 77.786542,
+            "readMs" : 1188.8037920000002,
+            "releaseMs" : 3.194334,
+            "segment" : 3,
+            "updateMs" : 0.66
+          },
+          {
+            "forwardMs" : 77.194458,
+            "readMs" : 1188.2117919999998,
+            "releaseMs" : 2.952584,
+            "segment" : 4,
+            "updateMs" : 0.6749580000000001
+          },
+          {
+            "forwardMs" : 79.908209,
+            "readMs" : 1191.905,
+            "releaseMs" : 3.059084,
+            "segment" : 5,
+            "updateMs" : 0.680959
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 594,
+        "totalMs" : 7633.058209
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8789,
+        "segments" : [
+          {
+            "forwardMs" : 81.675167,
+            "readMs" : 1189.798792,
+            "releaseMs" : 2.9827909999999997,
+            "segment" : 0,
+            "updateMs" : 0.651709
+          },
+          {
+            "forwardMs" : 90.10074999999999,
+            "readMs" : 1176.016583,
+            "releaseMs" : 3.181416,
+            "segment" : 1,
+            "updateMs" : 0.656792
+          },
+          {
+            "forwardMs" : 92.17450000000001,
+            "readMs" : 1177.111625,
+            "releaseMs" : 2.978959,
+            "segment" : 2,
+            "updateMs" : 0.665625
+          },
+          {
+            "forwardMs" : 128.542042,
+            "readMs" : 1178.792084,
+            "releaseMs" : 3.195458,
+            "segment" : 3,
+            "updateMs" : 0.6636669999999999
+          },
+          {
+            "forwardMs" : 87.999208,
+            "readMs" : 1195.320375,
+            "releaseMs" : 2.905458,
+            "segment" : 4,
+            "updateMs" : 0.75475
+          },
+          {
+            "forwardMs" : 81.299458,
+            "readMs" : 1195.553625,
+            "releaseMs" : 3.1088750000000003,
+            "segment" : 5,
+            "updateMs" : 0.70525
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 264,
+        "totalMs" : 7704.398584
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8790,
+        "segments" : [
+          {
+            "forwardMs" : 82.900125,
+            "readMs" : 1189.765417,
+            "releaseMs" : 3.256875,
+            "segment" : 0,
+            "updateMs" : 0.651083
+          },
+          {
+            "forwardMs" : 87.797292,
+            "readMs" : 1188.195417,
+            "releaseMs" : 3.612625,
+            "segment" : 1,
+            "updateMs" : 0.672792
+          },
+          {
+            "forwardMs" : 80.68420900000001,
+            "readMs" : 1188.1188750000001,
+            "releaseMs" : 3.31175,
+            "segment" : 2,
+            "updateMs" : 0.693042
+          },
+          {
+            "forwardMs" : 84.214916,
+            "readMs" : 1188.985083,
+            "releaseMs" : 3.3957919999999997,
+            "segment" : 3,
+            "updateMs" : 0.6580419999999999
+          },
+          {
+            "forwardMs" : 86.610583,
+            "readMs" : 1191.119125,
+            "releaseMs" : 3.538416,
+            "segment" : 4,
+            "updateMs" : 0.666292
+          },
+          {
+            "forwardMs" : 79.346958,
+            "readMs" : 1180.7865419999998,
+            "releaseMs" : 3.278583,
+            "segment" : 5,
+            "updateMs" : 0.6905830000000001
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 13027,
+        "totalMs" : 7660.811709
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8790,
+        "segments" : [
+          {
+            "forwardMs" : 102.38083300000001,
+            "readMs" : 1177.834375,
+            "releaseMs" : 3.151541,
+            "segment" : 0,
+            "updateMs" : 0.658875
+          },
+          {
+            "forwardMs" : 98.129166,
+            "readMs" : 1177.6774169999999,
+            "releaseMs" : 3.118917,
+            "segment" : 1,
+            "updateMs" : 0.651333
+          },
+          {
+            "forwardMs" : 87.79475000000001,
+            "readMs" : 1177.4578330000002,
+            "releaseMs" : 3.0169580000000003,
+            "segment" : 2,
+            "updateMs" : 0.698458
+          },
+          {
+            "forwardMs" : 83.527667,
+            "readMs" : 1178.795834,
+            "releaseMs" : 3.184333,
+            "segment" : 3,
+            "updateMs" : 0.6651670000000001
+          },
+          {
+            "forwardMs" : 96.165,
+            "readMs" : 1178.888,
+            "releaseMs" : 3.1814999999999998,
+            "segment" : 4,
+            "updateMs" : 0.687875
+          },
+          {
+            "forwardMs" : 85.454667,
+            "readMs" : 1203.6008330000002,
+            "releaseMs" : 3.305375,
+            "segment" : 5,
+            "updateMs" : 0.68625
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 729,
+        "totalMs" : 7678.039584
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8791,
+        "segments" : [
+          {
+            "forwardMs" : 88.35925,
+            "readMs" : 1190.120625,
+            "releaseMs" : 3.51125,
+            "segment" : 0,
+            "updateMs" : 0.6573749999999999
+          },
+          {
+            "forwardMs" : 85.958708,
+            "readMs" : 1191.0552089999999,
+            "releaseMs" : 3.165,
+            "segment" : 1,
+            "updateMs" : 0.6849999999999999
+          },
+          {
+            "forwardMs" : 86.349083,
+            "readMs" : 1189.333625,
+            "releaseMs" : 3.219,
+            "segment" : 2,
+            "updateMs" : 0.6847920000000001
+          },
+          {
+            "forwardMs" : 87.89337499999999,
+            "readMs" : 1190.873458,
+            "releaseMs" : 3.222708,
+            "segment" : 3,
+            "updateMs" : 0.677042
+          },
+          {
+            "forwardMs" : 93.225292,
+            "readMs" : 1192.378666,
+            "releaseMs" : 3.448458,
+            "segment" : 4,
+            "updateMs" : 0.667459
+          },
+          {
+            "forwardMs" : 102.668625,
+            "readMs" : 1181.615042,
+            "releaseMs" : 3.15,
+            "segment" : 5,
+            "updateMs" : 0.704458
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 429,
+        "totalMs" : 7712.562333
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8791,
+        "segments" : [
+          {
+            "forwardMs" : 97.589417,
+            "readMs" : 1176.062375,
+            "releaseMs" : 3.172583,
+            "segment" : 0,
+            "updateMs" : 0.654417
+          },
+          {
+            "forwardMs" : 98.06125,
+            "readMs" : 1183.9217079999999,
+            "releaseMs" : 2.980958,
+            "segment" : 1,
+            "updateMs" : 0.666167
+          },
+          {
+            "forwardMs" : 91.911917,
+            "readMs" : 1195.3914160000002,
+            "releaseMs" : 3.039084,
+            "segment" : 2,
+            "updateMs" : 0.66425
+          },
+          {
+            "forwardMs" : 90.193416,
+            "readMs" : 1195.837791,
+            "releaseMs" : 2.993,
+            "segment" : 3,
+            "updateMs" : 0.699458
+          },
+          {
+            "forwardMs" : 88.519417,
+            "readMs" : 1196.087958,
+            "releaseMs" : 3.181584,
+            "segment" : 4,
+            "updateMs" : 0.667167
+          },
+          {
+            "forwardMs" : 88.03625,
+            "readMs" : 1200.314959,
+            "releaseMs" : 3.023792,
+            "segment" : 5,
+            "updateMs" : 0.708125
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 80953,
+        "totalMs" : 7732.756875
+      },
+      {
+        "activeMiB" : 1302,
+        "footprintMiB" : 8792,
+        "segments" : [
+          {
+            "forwardMs" : 97.563375,
+            "readMs" : 1186.3415420000001,
+            "releaseMs" : 3.2104999999999997,
+            "segment" : 0,
+            "updateMs" : 0.654375
+          },
+          {
+            "forwardMs" : 108.59279199999999,
+            "readMs" : 1177.530875,
+            "releaseMs" : 2.965166,
+            "segment" : 1,
+            "updateMs" : 0.656917
+          },
+          {
+            "forwardMs" : 93.594916,
+            "readMs" : 1184.8503329999999,
+            "releaseMs" : 3.1685,
+            "segment" : 2,
+            "updateMs" : 0.731667
+          },
+          {
+            "forwardMs" : 100.931167,
+            "readMs" : 1175.797209,
+            "releaseMs" : 3.017792,
+            "segment" : 3,
+            "updateMs" : 0.681291
+          },
+          {
+            "forwardMs" : 93.96520799999999,
+            "readMs" : 1195.97275,
+            "releaseMs" : 3.1029579999999997,
+            "segment" : 4,
+            "updateMs" : 0.6932499999999999
+          },
+          {
+            "forwardMs" : 90.747541,
+            "readMs" : 1199.315167,
+            "releaseMs" : 3.039,
+            "segment" : 5,
+            "updateMs" : 0.6744169999999999
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 1378,
+        "totalMs" : 7735.766625
+      }
+    ],
+    [
+      {
+        "activeMiB" : 1299,
+        "footprintMiB" : 8790,
+        "segments" : [
+          {
+            "forwardMs" : 77.49350000000001,
+            "readMs" : 1190.795209,
+            "releaseMs" : 3.4225000000000003,
+            "segment" : 0,
+            "updateMs" : 0.6665
+          },
+          {
+            "forwardMs" : 77.12933299999999,
+            "readMs" : 1191.9296669999999,
+            "releaseMs" : 3.400958,
+            "segment" : 1,
+            "updateMs" : 0.646208
+          },
+          {
+            "forwardMs" : 77.626625,
+            "readMs" : 1183.815292,
+            "releaseMs" : 3.281583,
+            "segment" : 2,
+            "updateMs" : 0.688917
+          },
+          {
+            "forwardMs" : 66.066833,
+            "readMs" : 1176.157625,
+            "releaseMs" : 3.229042,
+            "segment" : 3,
+            "updateMs" : 0.669625
+          },
+          {
+            "forwardMs" : 69.0665,
+            "readMs" : 1179.0115,
+            "releaseMs" : 3.20175,
+            "segment" : 4,
+            "updateMs" : 0.665875
+          },
+          {
+            "forwardMs" : 77.61483399999999,
+            "readMs" : 1184.47125,
+            "releaseMs" : 3.195458,
+            "segment" : 5,
+            "updateMs" : 0.699459
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 8420,
+        "totalMs" : 7582.75975
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8790,
+        "segments" : [
+          {
+            "forwardMs" : 76.55645799999999,
+            "readMs" : 1186.491042,
+            "releaseMs" : 3.084458,
+            "segment" : 0,
+            "updateMs" : 0.642542
+          },
+          {
+            "forwardMs" : 75.468417,
+            "readMs" : 1176.489,
+            "releaseMs" : 3.15325,
+            "segment" : 1,
+            "updateMs" : 0.6965
+          },
+          {
+            "forwardMs" : 72.732625,
+            "readMs" : 1176.601,
+            "releaseMs" : 2.9381670000000004,
+            "segment" : 2,
+            "updateMs" : 0.6751250000000001
+          },
+          {
+            "forwardMs" : 70.24320900000001,
+            "readMs" : 1177.202916,
+            "releaseMs" : 3.015041,
+            "segment" : 3,
+            "updateMs" : 0.665
+          },
+          {
+            "forwardMs" : 68.67962499999999,
+            "readMs" : 1177.038,
+            "releaseMs" : 2.972625,
+            "segment" : 4,
+            "updateMs" : 0.663125
+          },
+          {
+            "forwardMs" : 77.534583,
+            "readMs" : 1186.5885,
+            "releaseMs" : 3.068333,
+            "segment" : 5,
+            "updateMs" : 0.694125
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 594,
+        "totalMs" : 7551.762292
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8790,
+        "segments" : [
+          {
+            "forwardMs" : 78.366791,
+            "readMs" : 1176.10325,
+            "releaseMs" : 3.0311660000000002,
+            "segment" : 0,
+            "updateMs" : 0.660375
+          },
+          {
+            "forwardMs" : 75.882708,
+            "readMs" : 1176.155083,
+            "releaseMs" : 3.016375,
+            "segment" : 1,
+            "updateMs" : 0.643875
+          },
+          {
+            "forwardMs" : 86.627375,
+            "readMs" : 1179.396583,
+            "releaseMs" : 2.966917,
+            "segment" : 2,
+            "updateMs" : 0.7725
+          },
+          {
+            "forwardMs" : 84.416833,
+            "readMs" : 1181.702458,
+            "releaseMs" : 3.0557499999999997,
+            "segment" : 3,
+            "updateMs" : 0.672292
+          },
+          {
+            "forwardMs" : 100.719084,
+            "readMs" : 1178.852417,
+            "releaseMs" : 2.979667,
+            "segment" : 4,
+            "updateMs" : 0.682167
+          },
+          {
+            "forwardMs" : 93.78575000000001,
+            "readMs" : 1189.0326659999998,
+            "releaseMs" : 2.992042,
+            "segment" : 5,
+            "updateMs" : 0.7561669999999999
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 264,
+        "totalMs" : 7631.2429999999995
+      },
+      {
+        "activeMiB" : 1300,
+        "footprintMiB" : 8791,
+        "segments" : [
+          {
+            "forwardMs" : 97.630292,
+            "readMs" : 1179.350042,
+            "releaseMs" : 3.159625,
+            "segment" : 0,
+            "updateMs" : 0.680292
+          },
+          {
+            "forwardMs" : 82.84575,
+            "readMs" : 1191.3761670000001,
+            "releaseMs" : 3.0699579999999997,
+            "segment" : 1,
+            "updateMs" : 0.6967909999999999
+          },
+          {
+            "forwardMs" : 81.48237499999999,
+            "readMs" : 1195.049375,
+            "releaseMs" : 3.006459,
+            "segment" : 2,
+            "updateMs" : 0.67975
+          },
+          {
+            "forwardMs" : 82.3905,
+            "readMs" : 1190.675917,
+            "releaseMs" : 3.166542,
+            "segment" : 3,
+            "updateMs" : 0.665
+          },
+          {
+            "forwardMs" : 80.470208,
+            "readMs" : 1198.97425,
+            "releaseMs" : 3.1015,
+            "segment" : 4,
+            "updateMs" : 0.675708
+          },
+          {
+            "forwardMs" : 84.77879200000001,
+            "readMs" : 1193.23675,
+            "releaseMs" : 3.226833,
+            "segment" : 5,
+            "updateMs" : 0.754042
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 13027,
+        "totalMs" : 7689.399709
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8791,
+        "segments" : [
+          {
+            "forwardMs" : 79.154459,
+            "readMs" : 1185.9838750000001,
+            "releaseMs" : 3.200625,
+            "segment" : 0,
+            "updateMs" : 0.6837920000000001
+          },
+          {
+            "forwardMs" : 80.414125,
+            "readMs" : 1177.088375,
+            "releaseMs" : 3.397625,
+            "segment" : 1,
+            "updateMs" : 0.6945830000000001
+          },
+          {
+            "forwardMs" : 92.593458,
+            "readMs" : 1177.778666,
+            "releaseMs" : 3.342916,
+            "segment" : 2,
+            "updateMs" : 0.669083
+          },
+          {
+            "forwardMs" : 105.40062499999999,
+            "readMs" : 1179.6327500000002,
+            "releaseMs" : 3.183459,
+            "segment" : 3,
+            "updateMs" : 0.68525
+          },
+          {
+            "forwardMs" : 94.68391600000001,
+            "readMs" : 1177.324291,
+            "releaseMs" : 3.321459,
+            "segment" : 4,
+            "updateMs" : 0.660833
+          },
+          {
+            "forwardMs" : 84.756708,
+            "readMs" : 1183.708959,
+            "releaseMs" : 3.1440840000000003,
+            "segment" : 5,
+            "updateMs" : 0.733083
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 729,
+        "totalMs" : 7651.015582999999
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8821,
+        "segments" : [
+          {
+            "forwardMs" : 95.97716700000001,
+            "readMs" : 1179.40075,
+            "releaseMs" : 3.334375,
+            "segment" : 0,
+            "updateMs" : 0.669209
+          },
+          {
+            "forwardMs" : 86.850834,
+            "readMs" : 1190.4512089999998,
+            "releaseMs" : 3.1125,
+            "segment" : 1,
+            "updateMs" : 0.659458
+          },
+          {
+            "forwardMs" : 86.876541,
+            "readMs" : 1192.107458,
+            "releaseMs" : 3.231625,
+            "segment" : 2,
+            "updateMs" : 0.69475
+          },
+          {
+            "forwardMs" : 90.805583,
+            "readMs" : 1193.899208,
+            "releaseMs" : 3.076,
+            "segment" : 3,
+            "updateMs" : 0.6605
+          },
+          {
+            "forwardMs" : 94.026334,
+            "readMs" : 1189.97225,
+            "releaseMs" : 3.356917,
+            "segment" : 4,
+            "updateMs" : 0.6613749999999999
+          },
+          {
+            "forwardMs" : 90.632375,
+            "readMs" : 1190.079083,
+            "releaseMs" : 3.2949580000000003,
+            "segment" : 5,
+            "updateMs" : 0.713584
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 429,
+        "totalMs" : 7712.0305
+      },
+      {
+        "activeMiB" : 1301,
+        "footprintMiB" : 8792,
+        "segments" : [
+          {
+            "forwardMs" : 103.636458,
+            "readMs" : 1180.9012500000001,
+            "releaseMs" : 3.2857920000000003,
+            "segment" : 0,
+            "updateMs" : 0.646125
+          },
+          {
+            "forwardMs" : 129.89762499999998,
+            "readMs" : 1175.719916,
+            "releaseMs" : 3.132958,
+            "segment" : 1,
+            "updateMs" : 0.652792
+          },
+          {
+            "forwardMs" : 98.59420800000001,
+            "readMs" : 1191.785625,
+            "releaseMs" : 3.144959,
+            "segment" : 2,
+            "updateMs" : 0.816708
+          },
+          {
+            "forwardMs" : 89.646375,
+            "readMs" : 1194.06625,
+            "releaseMs" : 3.1205830000000003,
+            "segment" : 3,
+            "updateMs" : 0.6712079999999999
+          },
+          {
+            "forwardMs" : 87.61625000000001,
+            "readMs" : 1193.325792,
+            "releaseMs" : 3.230167,
+            "segment" : 4,
+            "updateMs" : 0.702375
+          },
+          {
+            "forwardMs" : 88.046833,
+            "readMs" : 1191.4315,
+            "releaseMs" : 3.238417,
+            "segment" : 5,
+            "updateMs" : 0.768584
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 80953,
+        "totalMs" : 7755.949917
+      },
+      {
+        "activeMiB" : 1302,
+        "footprintMiB" : 8792,
+        "segments" : [
+          {
+            "forwardMs" : 95.677375,
+            "readMs" : 1190.2812090000002,
+            "releaseMs" : 3.262667,
+            "segment" : 0,
+            "updateMs" : 0.6635
+          },
+          {
+            "forwardMs" : 96.9435,
+            "readMs" : 1181.183792,
+            "releaseMs" : 3.185084,
+            "segment" : 1,
+            "updateMs" : 0.653458
+          },
+          {
+            "forwardMs" : 129.970208,
+            "readMs" : 1181.088083,
+            "releaseMs" : 3.1723749999999997,
+            "segment" : 2,
+            "updateMs" : 1.60575
+          },
+          {
+            "forwardMs" : 100.078875,
+            "readMs" : 1188.01575,
+            "releaseMs" : 3.090625,
+            "segment" : 3,
+            "updateMs" : 0.675083
+          },
+          {
+            "forwardMs" : 92.552542,
+            "readMs" : 1189.492334,
+            "releaseMs" : 3.261834,
+            "segment" : 4,
+            "updateMs" : 0.667459
+          },
+          {
+            "forwardMs" : 94.701875,
+            "readMs" : 1196.8944999999999,
+            "releaseMs" : 3.121667,
+            "segment" : 5,
+            "updateMs" : 0.7232500000000001
+          }
+        ],
+        "swapMiB" : 0,
+        "token" : 1378,
+        "totalMs" : 7768.745167
+      }
+    ]
+  ],
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "status" : "PASS",
+  "tokensByPass" : [
+    [
+      8420,
+      594,
+      264,
+      13027,
+      729,
+      429,
+      80953,
+      1378
+    ],
+    [
+      8420,
+      594,
+      264,
+      13027,
+      729,
+      429,
+      80953,
+      1378
+    ]
+  ]
+}

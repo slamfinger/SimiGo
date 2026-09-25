@@ -24,6 +24,7 @@ public struct O4OversizedReport: Codable, Sendable {
     public let promptTokens: Int
     public let segmentSize: Int
     public let segmentCount: Int
+    public let prefetch: Bool
     public let residentActiveMiB: Int64
     public let peakActiveMiB: Int64
     public let peakFootprintMiB: Int64
@@ -96,7 +97,8 @@ public enum O4OversizedGenerationProbe {
         prompt: String = "Write a Python function that merges two sorted lists.",
         maxNewTokens: Int = 8,
         passes: Int = 2,
-        segmentSize: Int = 16
+        segmentSize: Int = 16,
+        prefetch: Bool = false
     ) async throws -> O4OversizedReport {
         let configData = try Data(contentsOf: modelDirectory.appendingPathComponent("config.json"))
         let baseConfig = try JSONDecoder.json5().decode(BaseConfiguration.self, from: configData)
@@ -188,31 +190,70 @@ public enum O4OversizedGenerationProbe {
         var samplesByPass: [[O4TokenSample]] = []
         var meanByPass: [Double] = []
 
+        // Prefetch pipelining (O5 lever): while forward(seg i) runs on the
+        // device, segment i+1's tensors are read on a background task. Peak
+        // memory gains the in-flight next segment (core + current + next).
+        @Sendable func startSegmentRead(
+            _ segment: ClosedRange<Int>
+        ) -> Task<[String: MLXArray], Error> {
+            Task.detached(priority: .userInitiated) {
+                var arrays: [String: MLXArray] = [:]
+                for name in switchNames {
+                    if let range = name.range(
+                        of: #"layers\.(\d+)\."#, options: .regularExpression
+                    ) {
+                        let digits = name[range].split(separator: ".").compactMap { Int($0) }
+                        if let layer = digits.first, segment.contains(layer) {
+                            arrays[name] = try autoreleasepool {
+                                try reader.loadTensor(named: name)
+                            }
+                        }
+                    }
+                }
+                return arrays
+            }
+        }
+
         for _ in 1...passes {
             var ids = promptTokenIDs
             var passTokens: [Int] = []
             var passSamples: [O4TokenSample] = []
             for _ in 0..<maxNewTokens {
+                // Pipeline state resets per token: the fill read for seg 0 is
+                // exposed each token (no cross-token overlap — the previous
+                // token's last segment is still in flight when seg 0's read
+                // would need to start, and double-buffering across the token
+                // boundary would double peak residency).
+                var pending: Task<[String: MLXArray], Error>? =
+                    prefetch ? startSegmentRead(segments[0]) : nil
                 let tokenStart = clock.now
                 var hidden = model.embedInputs(MLXArray(ids, [1, ids.count]))
                 eval(hidden)
                 var breakdowns: [O4SegmentBreakdown] = []
                 for (segIndex, segment) in segments.enumerated() {
                     var readMs = 0.0, updateMs = 0.0, forwardMs = 0.0, releaseMs = 0.0
+                    let arrays: [String: MLXArray]
                     do {
                         let readStart = clock.now
-                        var arrays: [String: MLXArray] = [:]
-                        for name in switchNames {
-                            if let range = name.range(
-                                of: #"layers\.(\d+)\."#, options: .regularExpression
-                            ) {
-                                let digits = name[range].split(separator: ".").compactMap { Int($0) }
-                                if let layer = digits.first, segment.contains(layer) {
-                                    arrays[name] = try autoreleasepool {
-                                        try reader.loadTensor(named: name)
+                        if prefetch {
+                            arrays = try await pending!.value
+                            pending = nil
+                        } else {
+                            var dict: [String: MLXArray] = [:]
+                            for name in switchNames {
+                                if let range = name.range(
+                                    of: #"layers\.(\d+)\."#, options: .regularExpression
+                                ) {
+                                    let digits =
+                                        name[range].split(separator: ".").compactMap { Int($0) }
+                                    if let layer = digits.first, segment.contains(layer) {
+                                        dict[name] = try autoreleasepool {
+                                            try reader.loadTensor(named: name)
+                                        }
                                     }
                                 }
                             }
+                            arrays = dict
                         }
                         eval(arrays.values.map { $0 })
                         readMs = msSince(readStart)
@@ -223,6 +264,12 @@ public enum O4OversizedGenerationProbe {
                         )
                         updateMs = msSince(updateStart)
                     }
+                    // Start the next read BEFORE the forward so the two
+                    // overlap; its residual cost surfaces at the next await.
+                    var nextTask: Task<[String: MLXArray], Error>? = nil
+                    if prefetch, segIndex + 1 < segments.count {
+                        nextTask = startSegmentRead(segments[segIndex + 1])
+                    }
                     let forwardStart = clock.now
                     hidden = model.forwardLayerRange(
                         hidden,
@@ -231,6 +278,7 @@ public enum O4OversizedGenerationProbe {
                     )
                     eval(hidden)
                     forwardMs = msSince(forwardStart)
+                    pending = nextTask
 
                     let releaseStart = clock.now
                     var placeholders: [String: MLXArray] = [:]
@@ -291,6 +339,7 @@ public enum O4OversizedGenerationProbe {
             promptTokens: promptTokenIDs.count,
             segmentSize: segmentSize,
             segmentCount: segments.count,
+            prefetch: prefetch,
             residentActiveMiB: resident.activeMiB,
             peakActiveMiB: peakActive,
             peakFootprintMiB: peakFootprint,

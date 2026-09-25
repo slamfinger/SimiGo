@@ -310,11 +310,13 @@ struct Simigo2CTL {
       let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 8
       let passes = optionalOption("--passes", rest).flatMap(Int.init) ?? 2
       let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 16
+      let prefetch = rest.contains("--prefetch")
       let report = try await O4OversizedGenerationProbe.run(
         modelDirectory: modelDirectory,
         maxNewTokens: tokens,
         passes: passes,
-        segmentSize: segmentSize
+        segmentSize: segmentSize,
+        prefetch: prefetch
       )
       print(try toJSON(report))
     default:
