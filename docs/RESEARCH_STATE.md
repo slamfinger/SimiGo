@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O2_BASELINE_MEASURED_H_EAGER_LOAD_INCOMPLETE / O3_SKELETON_LOAD_REQUIRED
+Engineering subphase: O3A_SKELETON_PASS_O3B_SELECTIVE_PASS_O3C_STREAMING_FORWARD_REQUIRED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -2237,6 +2237,54 @@ O3–O6         : NOT STARTED
 
 O2 history:
 docs/00-governance/SIMIGO2_O2_NATIVE_BASELINE_RESULT_20260925.md.
+
+### O3 Skeleton Load + Selective Residency — A/B PASS, C Requires Streaming Forward — 2026-09-25
+
+The O3 probe (`simigo2ctl o3-skeleton`, per-layer quantization resolution
+mirroring loadWeights) measured the three sub-gates against
+Qwen3-Coder-Next-4bit:
+
+```text
+O3-A Skeleton Load    PASS — Qwen3NextModel constructed with NO weights at
+                      0.08 GiB footprint; in-place quantize from the
+                      checkpoint's interleaved quantization dict (base
+                      64/4 + per-module 8-bit overrides) at 0.09 GiB. The
+                      native path's hidden cost is located: it materializes
+                      LAZY RANDOM full-size weights per module during
+                      quantize, then overwrites them.
+O3-B Selective        PASS — core + switch groups 0–15 and 32–47
+  Residency           materialized: 1747 tensors / 28.26 GiB in 0.3–0.4 s
+                      (shard-range reads); skipped 13.50 GiB evicted group;
+                      footprint 28.33 GiB, swap 0.00 — under the 32 GiB
+                      physical limit. Mixed 4-bit/8-bit checkpoint
+                      quantization verified by the per-layer resolution.
+O3-C Real Forward     BLOCKED — mechanism identified: the naive skeleton
+                      forward touches every layer, lazily materializing the
+                      evicted group's 13.50 GiB random weights during the
+                      pass (footprint ≈ 41.8 GiB → over-physical, hung,
+                      killed at 29 min, swap 24.5 GiB). A complete forward
+                      NECESSARILY touches every layer; between-generation
+                      residency (the L4 pattern) cannot help during a
+                      forward.
+```
+
+Structural conclusion: **oversized execution requires a STREAMING FORWARD**
+(materialize 16-layer group → run those layers → release → next range) —
+Route D at forward granularity. Feasibility is high: layers are strictly
+sequential and the selective materializer loads arbitrary shard ranges in
+~0.4 s; granularity is improvable (per-tensor offsets exist in safetensors;
+the 3-group partition was the only coarse choice). Zero-placeholder release
+must also suppress lazy-random materialization of untouched groups.
+
+```text
+Current gate  : O3-A/B → PASS; O3-C → REQUIRES STREAMING FORWARD (O3-C′)
+Next          : O3-C′ streaming forward implementation + forward identity
+                vs a full-resident reference on the largest fitting model
+O4/O5/O6      : NOT STARTED
+```
+
+O3 history: `O3SkeletonProbe.swift`;
+docs/00-governance/SIMIGO2_O3_SKELETON_SELECTIVE_RESIDENCY_RESULT_20260925.md.
 ```
 
 E4 history: `ExecutionResidencyIntegrationTests.swift`.
