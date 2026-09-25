@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: IMPLEMENTATION_L1_L2_GATE_PASS / CONTROLLER_IMPLEMENTATION_NEXT
+Engineering subphase: CONTROLLER_IMPLEMENTED_CONTRACT_TESTS_PASS / L3_FAULT_INJECTION_NEXT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -1988,3 +1988,50 @@ Next          : Controller/Materializer implementation (L3 fault injection
                 and L4 real-runtime reconciliation follow)
 Implementation: Controller NOT STARTED; L3 NOT STARTED; L4 NOT STARTED
 ```
+
+### Controller Implementation Complete — 2026-09-25
+
+`ResidencyController` implemented per the frozen contract, composing the
+verified planner + state-machine skeleton behind a `ResidencyMaterializer`
+port (the Controller/Materializer boundary; the MLX-backed materializer is
+L4 — no second backend, no async I/O, no memory-pressure implementation in
+this step):
+
+```text
+commit protocol per group : materializer executes the real effect FIRST;
+                            success commits via loadCommitted/evictCommitted
+                            (log + bookkeeping); failure reduces to
+                            loadFailed (stays CLEAN) or evictFailed
+                            (enters DIRTY)
+admission                 : plan with hints=[] (R1.4); required overflow
+                            fails fast BEFORE any transfer (R3.11);
+                            planner validation errors surface unchanged
+cancel                    : token checked at group boundaries; committed
+                            groups stay resident; cancelled flag returned
+                            (R3.15–R3.16)
+reconcile                 : observed idle bytes vs residentBytes + C_model
+                            within ε; mismatch enters DIRTY; match in DIRTY
+                            still requires explicit recover (R3.6)
+recovery                  : bookkeeping rebuilt from the transfer log over
+                            the original initial state
+determinism               : loads and evicts execute in sorted group-ID
+                            order
+```
+
+7 contract tests (mock materializer) all pass: deterministic execution
+order, fail-fast zero-transfer, per-group commit on load failure, evict
+failure → DIRTY → admission refused, cancellation partial commit,
+reconcile mismatch → DIRTY → recovery restores, and log-replay equivalence
+(INV-1) across a mixed operation sequence. Full suite: **67 tests, 0
+failures**. The legacy `LayerResidencyEngine` remains untouched as a
+research artifact.
+
+```text
+Current gate  : CONTROLLER IMPLEMENTATION → COMPLETE
+Next          : L3 fault injection (F1–F8) against the controller
+Then          : L4 real materializer + real-runtime reconciliation
+L3 / L4       : NOT STARTED
+```
+
+Implementation history: `ResidencyController.swift` +
+`ResidencyControllerTests.swift`.
