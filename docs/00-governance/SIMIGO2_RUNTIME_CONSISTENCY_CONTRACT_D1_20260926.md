@@ -1,6 +1,11 @@
-# SimiGo-Lab — Runtime Consistency Contract D1 (Draft for Review) — 2026-09-26
+# SimiGo-Lab — Runtime Consistency Contract D1 (APPROVED, with Review Clauses) — 2026-09-26
 
-Status: CONTRACT_D1_DRAFT / AWAITING_REVIEW
+Status: CONTRACT_D1_APPROVED_FOR_IMPLEMENTATION
+Review: approved with three binding clauses (below); implementation order
+locked: ① cancellation token pipeline → ② INV-3 calibration + production
+reconcile → ③ Failure Matrix re-run → ④ UI fork/branch.
+Explicitly OUT OF D1 SCOPE (would change the system class): distributed
+transaction, persistent WAL, global rollback, transaction coordinator.
 Scope: FM-04 cancellation contract · FM-05 cross-layer commit boundary ·
 INV-3 reconciliation semantics. Definition only — no code in this round.
 
@@ -68,6 +73,14 @@ Registered consequence (GA): streaming a partial response to the client
 under ABORT would violate the two-outcome rule; beta serves tokens only
 for completed (non-cancelled) turns.
 
+**Clause FM-04-a (review binding): cancellation is PHASE-BOUNDARY
+OBSERVATION semantics.** The contract guarantees WHERE a cancellation
+request is observed (phase boundaries only), NOT that an external cancel
+event is guaranteed to land before a commit. A cancel observed before the
+commit boundary → ABORT; observed after/within the commit boundary →
+COMMIT. "User pressed Cancel therefore this turn is cancelled" is NOT a
+guarantee.
+
 ## 3. FM-05 — Cross-Layer Commit Boundary
 
 **The conversation-atomic boundary covers Execution State + Representation
@@ -102,6 +115,13 @@ Residency        INV-1 per transition; DIRTY on reconciled divergence;
 Physical MLX     update(verify: []) assignment sequence: all-or-nothing by
                  construction (no throw sites); MLX-internal faults are a
                  vendor-boundary concern (FM-08, registered)
+
+**Clause FM-05-a (review binding): the atomic pair's scope is the SimiGo
+Runtime LOGICAL COMMIT ONLY — representation binding + execution position
+consistent commit.** No claim of MLX/physical-system ACID atomicity
+(process crash during MLX update is outside this guarantee; FM-08). Any
+future reading of "atomic commit" in this contract means exactly this
+logical pair — not physical-system ACID.
 ```
 
 ## 4. INV-3 — Reconciliation Semantics (consistency-model role)
@@ -117,6 +137,12 @@ Production integration definition (for implementation after review):
   engine C_model requires its own calibration pass — GA item),
 - divergence → surface as DIRTY through the existing
   respondToMemoryPressure/recover path, never silently ignored.
+
+**Clause INV-3-a (review binding): reconciliation is an
+observation/detection mechanism producing DIRTY + recovery — it is NOT a
+commit/rollback participant and must not evolve into a transaction
+coordinator** (explicitly out of D1: distributed transaction, WAL, global
+rollback).
 
 ## 5. FM-09 — reattach obligation (defined while auditing)
 
