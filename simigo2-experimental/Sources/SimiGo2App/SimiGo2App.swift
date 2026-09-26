@@ -382,6 +382,9 @@ struct OversizedSelfTestReport: Codable {
     let strictExecutionState: Bool
     let residencyINV1Pass: Bool
     let residencyTransfers: Int
+    let tokenLedgerEntries: Int
+    let tokenLedgerChain: [String]
+    let tokenLedgerSuperseded: Int
     let overallPass: Bool
 }
 
@@ -411,7 +414,19 @@ enum OversizedRealDeviceSelfTest {
         let inv1Pass = engine.residencyINV1Holds
             && engine.residencyINV1Failures == 0
             && engine.residencyINV1Checks > 0
-        let overall = determinism && strict && inv1Pass
+        // Token Ledger Gate check: the E5 replay flow must produce
+        // bootstrap -> turn -> restoreMarker entries with the turn tail
+        // flagged superseded (append-only rewind audit).
+        let ledgerEntries = engine.tokenLedger?.allEntries() ?? []
+        let ledgerChain = ledgerEntries.map { entry in
+            "\(entry.kind)@\(entry.position)p\(entry.prefixLength)\(entry.superseded ? "!S" : "")"
+        }
+        let hasBootstrap = ledgerEntries.contains { $0.kind == .bootstrap && $0.position == 0 }
+        let hasTurn = ledgerEntries.contains { $0.kind == .turn && $0.position == 1 }
+        let hasRestoreMarker = ledgerEntries.contains { $0.kind == .restoreMarker && $0.position == 0 }
+        let turnSuperseded = ledgerEntries.contains { $0.kind == .turn && $0.position == 1 && $0.superseded }
+        let ledgerPass = hasBootstrap && hasTurn && hasRestoreMarker && turnSuperseded
+        let overall = determinism && strict && inv1Pass && ledgerPass
             && finalStats.peakFootprintMiB <= finalStats.peakCapacityMiB
             && finalStats.peakCacheMiB <= finalStats.peakCapacityMiB
             && finalStats.maxSwapMiB == 0
@@ -442,6 +457,9 @@ enum OversizedRealDeviceSelfTest {
             strictExecutionState: strict,
             residencyINV1Pass: inv1Pass,
             residencyTransfers: engine.residencyTransferCount,
+            tokenLedgerEntries: ledgerEntries.count,
+            tokenLedgerChain: ledgerChain,
+            tokenLedgerSuperseded: ledgerEntries.filter(\.superseded).count,
             overallPass: overall
         )
     }
