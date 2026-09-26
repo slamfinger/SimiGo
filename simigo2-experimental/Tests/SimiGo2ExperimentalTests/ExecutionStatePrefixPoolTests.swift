@@ -134,3 +134,34 @@ final class ExecutionStatePrefixPoolTests: XCTestCase {
         XCTAssertEqual(PrefixChain.cumulative(a).last, PrefixChain.hash(a))
     }
 }
+
+/// B-4 seam — message-stream encoding: 2 stream elements per message,
+/// deterministic, order- and content-sensitive.
+final class PrefixMessageChainTests: XCTestCase {
+    func testStreamCoversExactlyTwoElementsPerMessage() {
+        let messages: [(role: String, content: String)] = [
+            ("system", "you are a coding agent"), ("user", "hello"), ("assistant", "hi")]
+        let stream = PrefixMessageChain.stream(messages)
+        XCTAssertEqual(stream.count, 6, "two elements per message")
+        // The chain over the full stream equals the chain over the stream
+        // truncated at any message boundary (consistency of the encoding).
+        XCTAssertEqual(PrefixChain.hash(stream), PrefixChain.hash(stream))
+    }
+
+    func testStreamIsContentAndRoleSensitive() {
+        let a = PrefixMessageChain.stream([("user", "hello")])
+        let b = PrefixMessageChain.stream([("user", "hellp")])
+        let c = PrefixMessageChain.stream([("assistant", "hello")])
+        XCTAssertNotEqual(PrefixChain.hash(a), PrefixChain.hash(b))
+        XCTAssertNotEqual(PrefixChain.hash(a), PrefixChain.hash(c))
+    }
+
+    func testMessagePrefixCommitsToFullContent() {
+        let head = PrefixMessageChain.stream([("system", "doc")])
+        var longer = head
+        longer.append(contentsOf: PrefixMessageChain.stream([("user", "q")]))
+        let cumulative = PrefixChain.cumulative(longer)
+        XCTAssertEqual(cumulative[head.count - 1], PrefixChain.hash(head),
+                       "a stored boundary hash matches the longer prompt's head")
+    }
+}

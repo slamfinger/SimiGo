@@ -29,6 +29,38 @@ public struct PrefixPoolNamespace: Equatable, Hashable, Sendable {
     }
 }
 
+/// Message-sequence encoding for the daily (ChatSession) path. The pool
+/// hashes an Int stream; the product's natural content unit is the
+/// conversation message. Encoding: two Ints per message (low/high halves
+/// of an FNV-1a fold over "role\u{1f}content" UTF-8) — 1:1, deterministic
+/// across restarts, order-sensitive, so a covered boundary commits to the
+/// exact message prefix.
+///
+/// Why messages, not tokenizer ids: on the ChatSession path the rendered
+/// token stream does not exist before generation (the engine tokenizes
+/// internally). Message-level equality is sound for pool hits — identical
+/// message prefixes render to identical token prefixes under the same
+/// tokenizer + template, so a hit's KV snapshot IS the exact prefix of
+/// what would otherwise be recomputed. Template-affecting config (e.g.
+/// thinking flag) must ride in the namespace, not here.
+public enum PrefixMessageChain {
+    public static func messageHash(role: String, content: String) -> UInt64 {
+        var h = PrefixChain.seed
+        for byte in (role + "\u{1f}" + content).utf8 {
+            h = PrefixChain.fold(h, Int(byte))
+        }
+        return h
+    }
+
+    /// Two stream elements per message — tokenCount / 2 = message count.
+    public static func stream(_ messages: [(role: String, content: String)]) -> [Int] {
+        messages.flatMap { message -> [Int] in
+            let h = messageHash(role: message.role, content: message.content)
+            return [Int(truncatingIfNeeded: h), Int(truncatingIfNeeded: h >> 32)]
+        }
+    }
+}
+
 /// Opaque handle to the representation artifact (KV snapshot). Zero-MLX:
 /// the pool counts tokens and orders recency; what the artifact points
 /// at is the adapter's business.
