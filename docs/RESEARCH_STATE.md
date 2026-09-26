@@ -4094,3 +4094,36 @@ A-then-B. Implementation starts only after review approval.
 Current gate  : BETA_1_PULLED / SIMIGO17_PREFIX_POOL_DEFINITION /
                 AWAITING_REVIEW
 ```
+
+### Route B SELECTED + B-1 (PrefixPool Core) LANDED — 2026-09-27
+
+User ruling: **Route B** — daily small models served through the strict
+Execution State layer; prefix pool as its shared representation store.
+Pre-implementation audit confirmed every physical premise is already
+production-proven: `ChatSession.saveCache(to:)` / `ChatSession
+(container, cache:state:)` (official KV snapshot import) with the
+registered fragment-continuation semantics ("delta messages only, warm
+first token") — v1.7 cacheSave/cacheLoad + rollforward run exactly this
+path on live traffic. Architecture registered in the gate: state layer
+= E-line contracts; executor = ChatSession (multi-architecture
+registry); representation = KV snapshots; sharing = content-addressed
+pool; all-resident for fitting models is trivial; oversized engine
+untouched. Staged plan B-1..B-5 registered (pool core → KV artifact
+adapter → strict-ES session integration → product routing → real-device
+battery with metrics registered in advance: cold 47.6s @6.2K shared →
+snapshot load + delta × prefill rate; restart warm; swap flat;
+determinism bit-identical).
+
+**B-1 landed tests-first (6dc1a38)**: `ExecutionStatePrefixPool`
+(zero-MLX) — order-sensitive rolling hash-chain keying, (modelID,
+kvFingerprint) namespace isolation, longest-match admission, LRU
+eviction under token budget, artifact replacement on re-export. P-I1
+shape enforced: a hit's boundary hash provably equals the incoming
+prefix hash (verified against the caller's actual tokens); a mismatch
+is a normal miss (entry retained), and load-time corruption is the
+B-2 adapter's loud failure. 10-case battery; suite 110/110.
+
+```text
+Current gate  : ROUTE_B_IN_PROGRESS / B1_POOL_CORE_VERIFIED /
+                B2_KV_ARTIFACT_ADAPTER_NEXT
+```
