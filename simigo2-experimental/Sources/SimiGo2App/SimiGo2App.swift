@@ -367,6 +367,8 @@ struct OversizedSelfTestReport: Codable {
     let peakCapacityMiB: Int64
     let executionRecords: Int
     let strictExecutionState: Bool
+    let residencyINV1Pass: Bool
+    let residencyTransfers: Int
     let overallPass: Bool
 }
 
@@ -396,7 +398,10 @@ enum OversizedRealDeviceSelfTest {
         let session = engine.sessionInfo
         let determinism = pass1.tokenIDs == pass2.tokenIDs
         let strict = (session?.records ?? 0) >= 3 && session?.position == 1
-        let overall = determinism && strict
+        let inv1Pass = engine.residencyINV1Holds
+            && engine.residencyINV1Failures == 0
+            && engine.residencyINV1Checks > 0
+        let overall = determinism && strict && inv1Pass
             && finalStats.peakFootprintMiB <= finalStats.peakCapacityMiB
             && finalStats.peakCacheMiB <= finalStats.peakCapacityMiB
             && finalStats.maxSwapMiB == 0
@@ -425,6 +430,8 @@ enum OversizedRealDeviceSelfTest {
             peakCapacityMiB: finalStats.peakCapacityMiB,
             executionRecords: session?.records ?? 0,
             strictExecutionState: strict,
+            residencyINV1Pass: inv1Pass,
+            residencyTransfers: engine.residencyTransferCount,
             overallPass: overall
         )
     }

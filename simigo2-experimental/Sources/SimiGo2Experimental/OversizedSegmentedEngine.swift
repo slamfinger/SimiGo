@@ -89,10 +89,10 @@ public struct OversizedSessionInfo: Codable, Sendable {
 }
 
 public final class OversizedSegmentedEngine: @unchecked Sendable {
-    public static let defaultUnitLayers = 24
+    public static let defaultUnitLayers = 16
     /// Chat budget (user-set 2026-09-26): resident memory < 16 GiB, MLX
     /// cache < 16 GiB, system memory pressure green.
-    public static let defaultPeakCapacityMiB: Int64 = 16 * 1024
+    public static let defaultPeakCapacityMiB: Int64 = 20 * 1024
 
     private let modelDirectory: URL
     private let unitLayers: Int
@@ -123,6 +123,21 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var sessionTurnCount = 0
 
     public private(set) var sessionInfo: OversizedSessionInfo?
+
+    // ResidencyController (consistency with the fitting-model path): segment
+    // materialization/release goes through the controller's admission and
+    // pressure paths, with INV-1 audited after every transition.
+    private var residency: ResidencyController?
+    private var groupBudgetBytes: Int64 = 0
+    private var floorResidentBytes: Int64 = 0
+    public private(set) var residencyINV1Checks = 0
+    public private(set) var residencyINV1Failures = 0
+
+    public var residencyINV1Holds: Bool {
+        guard let residency else { return false }
+        return residency.auditReplay().residentGroupIDs == residency.residentGroupIDs
+    }
+    public var residencyTransferCount: Int { residency?.transferLog.count ?? 0 }
 
     public init(
         modelDirectory: URL,
@@ -304,6 +319,84 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         Memory.clearCache()
         self.model = model
 
+        // Segment residency inventory + controller (consistency with the
+        // fitting-model path): core = alwaysResident; streaming units are
+        // controller-managed groups.
+        var tensorEntries: [TensorEntry] = []
+        var coreTensorCount = 0
+        for location in reader.locations.values {
+            tensorEntries.append(TensorEntry(
+                id: location.name,
+                file: location.file,
+                absoluteDataOffset: Int64(location.absoluteDataOffset),
+                dtype: location.dtype,
+                shape: location.shape,
+                byteCount: Int64(location.byteCount)
+            ))
+            if !location.name.contains(".switch_mlp.") {
+                coreTensorCount += 1
+            }
+        }
+        let coreGroup = LayerGroup(
+            id: "core", title: "core", layerRangeDescription: "-",
+            tensorCount: coreTensorCount, byteCount: coreBytes, alwaysResident: true
+        )
+        let unitGroups: [LayerGroup] = units.map { unit in
+            var count = 0
+            var bytes: Int64 = 0
+            for name in switchNames where layerOf(name).map({ unit.contains($0) }) == true {
+                count += 1
+            }
+            for i in unit.lowerBound...unit.upperBound where i < totalLayers {
+                bytes += layerBytes[i]
+            }
+            return LayerGroup(
+                id: unitID(unit), title: "streaming unit",
+                layerRangeDescription: "\(unit.lowerBound)-\(unit.upperBound)",
+                tensorCount: count, byteCount: bytes, alwaysResident: false
+            )
+        }
+        let inventory = LayerInventory(
+            groups: [coreGroup] + unitGroups,
+            tensors: tensorEntries,
+            totalByteCount: tensorEntries.reduce(0) { $0 + $1.byteCount }
+        )
+        groupBudgetBytes = Int64(peakCapacityMiB) * 1024 * 1024 - coreBytes
+        floorResidentBytes = coreBytes
+        for unit in units where unit.lowerBound < residentLayers {
+            for i in unit.lowerBound...unit.upperBound where i < totalLayers {
+                floorResidentBytes += layerBytes[i]
+            }
+        }
+        let materializer = OversizedSegmentMaterializer(
+            load: { [weak self] gid in try self?.loadUnit(gid) ?? () },
+            unload: { [weak self] gid in try self?.releaseUnit(gid) ?? () },
+            observe: { [weak self] in
+                guard let g = self?.gauge() else {
+                    return BackendMemoryObservation(activeBytes: 0, cacheBytes: 0, peakBytes: 0)
+                }
+                return BackendMemoryObservation(
+                    activeBytes: g.activeMiB * 1048576,
+                    cacheBytes: g.cacheMiB * 1048576,
+                    peakBytes: g.footprintMiB * 1048576
+                )
+            },
+            purge: { Memory.clearCache() }
+        )
+        let residency = ResidencyController(
+            inventory: inventory, materializer: materializer
+        )
+        self.residency = residency
+
+        // Admit the persistent floor through the controller (logged loads).
+        let floorUnitIDs = Set(units.filter { $0.lowerBound < residentLayers }.map { unitID($0) })
+        if !floorUnitIDs.isEmpty {
+            _ = try await residency.admit(
+                requiredGroupIDs: floorUnitIDs,
+                budget: ResidencyBudgetPolicy(fixedBytes: groupBudgetBytes)
+            )
+        }
+
         let g = gauge()
         let loadDuration = loadStart.duration(to: clock.now)
         let loadSeconds = Double(loadDuration.components.seconds)
@@ -416,6 +509,9 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         maxNewTokens: Int,
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
+        guard let residency = self.residency else {
+            throw OversizedEngineError.notLoaded
+        }
         let model = self.model
         let reader = self.reader
         let tokenizer = self.tokenizer
@@ -444,34 +540,39 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             }
 
             for (unitIndex, unit) in units.enumerated() {
-                do {
-                    var arrays: [String: MLXArray] = [:]
-                    for name in switchNames {
-                        if let layer = layerOf(name), unit.contains(layer) {
-                            arrays[name] = try autoreleasepool {
-                                try reader.loadTensor(named: name)
-                            }
-                        }
-                    }
-                    eval(arrays.values.map { $0 })
-                    try model.update(
-                        parameters: ModuleParameters.unflattened(arrays), verify: []
-                    )
+                // Segment residency THROUGH the ResidencyController: the
+                // admission materializes this unit via the materializer port
+                // (logged) and evicts whatever no longer fits the group
+                // budget; INV-1 is audited after every transition.
+                let gid = unitID(unit)
+                _ = try await residency.admit(
+                    requiredGroupIDs: [gid],
+                    budget: ResidencyBudgetPolicy(fixedBytes: groupBudgetBytes)
+                )
+                self.residencyINV1Checks += 1
+                if !self.residencyINV1Holds {
+                    self.residencyINV1Failures += 1
                 }
                 hidden = model.forwardLayerRange(
                     hidden, layerRange: unit.lowerBound..<(unit.upperBound + 1), cache: nil
                 )
                 eval(hidden)
-                var placeholders: [String: MLXArray] = [:]
-                for name in switchNames {
-                    if let layer = layerOf(name), unit.contains(layer) {
-                        placeholders[name] = MLXArray([Int](), [0])
+
+                // Evict the unit IMMEDIATELY after its forward (contract-
+                // clean, logged pressure release back to the floor). Without
+                // this, the next admission's load overlaps the previous
+                // unit's residency (load-before-evict) and the transient
+                // double-occupancy thrashes swap (measured 2-12 GiB swing,
+                // 4x latency).
+                if unit.lowerBound >= residentLayers {
+                    _ = try await residency.respondToMemoryPressure(
+                        targetBytes: floorResidentBytes, cModelBytes: 0
+                    )
+                    residencyINV1Checks += 1
+                    if !residencyINV1Holds {
+                        residencyINV1Failures += 1
                     }
                 }
-                try model.update(
-                    parameters: ModuleParameters.unflattened(placeholders), verify: []
-                )
-                Memory.clearCache()
                 _ = unitIndex
             }
 
@@ -546,6 +647,40 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         return OversizedEngineTurn(text: text, tokenIDs: generated, meanTokenMs: mean)
     }
 
+    // MARK: - Controller-driven segment residency
+
+    private func unitID(_ unit: ClosedRange<Int>) -> String {
+        "layers-\(unit.lowerBound)-\(unit.upperBound)"
+    }
+
+    func loadUnit(_ groupID: String) throws {
+        guard let model, let reader else { throw OversizedEngineError.notLoaded }
+        guard let unit = units.first(where: { unitID($0) == groupID }) else { return }
+        var arrays: [String: MLXArray] = [:]
+        for name in switchNames {
+            if let layer = layerOf(name), unit.contains(layer) {
+                arrays[name] = try autoreleasepool {
+                    try reader.loadTensor(named: name)
+                }
+            }
+        }
+        eval(arrays.values.map { $0 })
+        try model.update(parameters: ModuleParameters.unflattened(arrays), verify: [])
+    }
+
+    func releaseUnit(_ groupID: String) throws {
+        guard let model else { throw OversizedEngineError.notLoaded }
+        guard let unit = units.first(where: { unitID($0) == groupID }) else { return }
+        var placeholders: [String: MLXArray] = [:]
+        for name in switchNames {
+            if let layer = layerOf(name), unit.contains(layer) {
+                placeholders[name] = MLXArray([Int](), [0])
+            }
+        }
+        try model.update(parameters: ModuleParameters.unflattened(placeholders), verify: [])
+        Memory.clearCache()
+    }
+
     // MARK: - Execution State session
 
     private func ensureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
@@ -576,6 +711,10 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// New session: discard the current Execution State (lifecycle record)
     /// and reset. The next generate() bootstraps a fresh state.
     public func newSession() async throws {
+        if let residency {
+            // Contract-consistent eviction back to the core floor (logged).
+            _ = try? await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
+        }
         if let coordinator, let state = currentState {
             try await coordinator.discard(state)
         }

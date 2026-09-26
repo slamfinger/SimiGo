@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: APP_CHAT_STRICT_EXECSTATE_WIRED / RESTORE_REPLAY_PASS
+Engineering subphase: CONSISTENCY_CLOSEOUT_PASS / OVERSIZED_MATCHES_FITTING_CONTRACT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3448,3 +3448,43 @@ Next          : fork/branch conversations in the UI (machinery ready);
 ```
 
 Gate history: `docs/00-governance/SIMIGO2_APP_EXECSTATE_WIRING_20260926.md`.
+
+### Consistency Close-out — Controller-Driven Segments + Swap Fix — 2026-09-26
+
+The last semantic consistency gap closed: oversized segment residency now
+goes through the ResidencyController contract, same as the fitting-model
+path. `OversizedSegmentMaterializer` (RuntimeResidencyBackend) maps
+groupIDs to engine units; the engine builds the segment inventory (core =
+alwaysResident; units = controller groups) and drives unit residency via
+`admit(requiredGroupIDs:budget:)` with INV-1 audited after every
+transition. Placeholder-first load now leaves all switch units as
+placeholders and admits the floor through the controller, so bookkeeping,
+transfer log, and physical state agree from the first transition.
+
+**Swap-thrash root cause fixed** (user-observed 2-20 GiB violent paging at
+the 24-layer-unit profile, 2-12 GiB at 16 layers): the controller's
+admission loads the new unit BEFORE evicting the previous one — transient
+double occupancy (~28 GiB wired) thrashed swap and cost 4x latency. Fix:
+explicit `respondToMemoryPressure(targetBytes: floorResidentBytes)` right
+after each unit's forward (contract-clean, logged). Measured: swap flat at
+the ~1.4 GiB system baseline, 10.5 s/token (from 38.5 s), pressure green.
+
+Real-device verification (release bundle): overallPass TRUE —
+restore-replay determinism PASS, strictExecutionState TRUE, INV-1 over
+segments TRUE (96 logged transfers, audited per transition), peak
+13,729 MiB / cache 0 / swap flat / pressure green.
+
+Measurement hygiene registered: engine boundary gauges under-report system
+swap (dense external sampling required); zsh no-word-split voided a
+sweep's flag arguments (caught by floor-count mismatch); controller
+admission load-before-evict order interacts with unified-memory thrash at
+large unit sizes.
+
+```text
+Current gate  : CONSISTENCY_CLOSEOUT_PASS /
+                OVERSIZED_MATCHES_FITTING_CONTRACT
+Next          : optional UI fork sessions; Qwen4Exp port gate (user
+                decision)
+```
+
+Gate history: `docs/00-governance/SIMIGO2_CONSISTENCY_CLOSEOUT_20260926.md`.
