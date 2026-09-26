@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: APP_TUNING_MATRIX_MEASURED / MEM22_UNIT24_SHIPPED_DEFAULT
+Engineering subphase: APP_CHAT_STRICT_EXECSTATE_WIRED / RESTORE_REPLAY_PASS
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3415,3 +3415,36 @@ Current gate  : APP_TUNING_MATRIX_MEASURED / MEM22_UNIT24_SHIPPED_DEFAULT
 ```
 
 Gate history: `docs/00-governance/SIMIGO2_APP_PERFORMANCE_TUNING_20260926.md`.
+
+### App Chat Path Wired Through Execution State — Strict — 2026-09-26
+
+Answering the user's audit question ("超规模大模型也严格进行 Execution State
+了吗" — at the time, NO for the app chat path): the conversation now runs
+strictly through the Execution State layer. Session = a real Execution
+State (bootstrap prefix bound at position 0); every turn consumes the
+bound representation with the raw next user input (E5-v2 encoding),
+advances the logical position with one authoritative lifecycle record, and
+rebinds the advanced prefix; new session = discard + create;
+restoreSession exposes logical rollback; the UI shows the Execution State
+readout (ID/position/turns/records). Backend decoupled from O6SegmentedCore
+via a release closure.
+
+Self-test upgraded to STRICT restore-replay semantics: pass 1 → logical
+restore to bootstrap → pass 2 replays consuming the restored
+representation. Real-device (release bundle, Apple M5): determinism PASS
+(pass1 == pass2 == canonical tokens), lifecycle records 4,
+strictExecutionState TRUE, peak 10,228 MiB / cache 0 / swap 0 / pressure
+green, 13.4 s/token, overallPass TRUE. Two in-flight defects fixed before
+accepting results (extraction dropped the bootstrap branch; the replay
+initially compared different input sequences — corrected to the E5
+authoritative shape).
+
+```text
+Current gate  : APP_CHAT_STRICT_EXECSTATE_WIRED /
+                SELFTEST_RESTORE_REPLAY_PASS
+Next          : fork/branch conversations in the UI (machinery ready);
+                ResidencyController segment accounting (INV-1);
+                Qwen4Exp port gate (user decision)
+```
+
+Gate history: `docs/00-governance/SIMIGO2_APP_EXECSTATE_WIRING_20260926.md`.

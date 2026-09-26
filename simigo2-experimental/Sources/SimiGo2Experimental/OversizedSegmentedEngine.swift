@@ -3,6 +3,7 @@ import MLX
 import MLXLMCommon
 import MLXLLM
 import MLXNN
+import SimiGoRuntimeContract
 import Tokenizers
 
 /// OversizedSegmentedEngine — the O-line's verified execution mechanics,
@@ -80,6 +81,13 @@ public enum OversizedEngineError: Error, LocalizedError {
     }
 }
 
+public struct OversizedSessionInfo: Codable, Sendable {
+    public let executionID: String
+    public let position: Int
+    public let turns: Int
+    public let records: Int
+}
+
 public final class OversizedSegmentedEngine: @unchecked Sendable {
     public static let defaultUnitLayers = 24
     /// Chat budget (user-set 2026-09-26): resident memory < 16 GiB, MLX
@@ -104,6 +112,17 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var modelType = ""
 
     public private(set) var stats: OversizedEngineStats?
+
+    // Execution State session layer (strict): every conversation turn is a
+    // lifecycle-recorded continueExecution on a real Execution State; the
+    // conversation prefix IS the bound representation; new session =
+    // discard + create; restore = logical rollback (used by the self-test).
+    private var coordinator: ExecutionContinuityCoordinator?
+    private var stateBackend: OversizedSegmentedStateBackend?
+    private var currentState: ExecutionStateHandle?
+    private var sessionTurnCount = 0
+
+    public private(set) var sessionInfo: OversizedSessionInfo?
 
     public init(
         modelDirectory: URL,
@@ -328,20 +347,83 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         return try tokenizer.applyChatTemplate(messages: msgs)
     }
 
-    /// Multi-turn greedy generation with per-token streaming callbacks.
-    /// The persistent floor forwards in one call; streamed units follow
-    /// materialize → forward → release. Peak memory = core + floor + one
-    /// unit, held under the budget by construction.
+    /// Multi-turn greedy generation with per-token streaming callbacks —
+    /// strictly through the Execution State layer: turn 1 bootstraps the
+    /// session (chat-template prefix bound at position 0); every later turn
+    /// CONSUMES the bound representation (raw continuation, E5-v2 encoding),
+    /// advances the logical position (lifecycle record), and rebinds the
+    /// advanced prefix. The persistent floor forwards in one call; streamed
+    /// units follow materialize → forward → release.
     @discardableResult
     public func generate(
         messages: [EngineChatMessage],
+        maxNewTokens: Int,
+        nextInputTokens: [Int]?? = nil,
+        onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
+    ) async throws -> OversizedEngineTurn {
+        guard let model, let reader, let tokenizer else {
+            throw OversizedEngineError.notLoaded
+        }
+        var nextInput: [Int]
+        if let explicit = nextInputTokens {
+            // Explicitly provided (including empty) — e.g. the strict
+            // bootstrap replay in the self-test.
+            nextInput = explicit ?? []
+        } else if currentState == nil || coordinator == nil {
+            let prefix = try promptTokenIDs(for: messages)
+            currentState = try await ensureSession(prefix: prefix)
+            nextInput = []
+        } else {
+            guard let lastUser = messages.last(where: { $0.role == "user" }) else {
+                throw OversizedEngineError.notLoaded
+            }
+            nextInput = try tokenizer.encode(text: lastUser.content, addSpecialTokens: false)
+        }
+        guard let state = currentState, let stateBackend else {
+            throw OversizedEngineError.notLoaded
+        }
+        return try await executeTurn(
+            state: state, backend: stateBackend, nextInput: nextInput,
+            messages: messages, maxNewTokens: maxNewTokens, onToken: onToken
+        )
+    }
+
+    /// Strict replay of the bootstrap turn: consumes the CURRENT bound
+    /// representation (the position-0 prefix after restoreSession(to: 0))
+    /// with an EMPTY next input — bit-identical to the original bootstrap.
+    @discardableResult
+    public func replayBootstrapTurn(
         maxNewTokens: Int,
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
         guard let model, let reader, let tokenizer else {
             throw OversizedEngineError.notLoaded
         }
-        var ids = try promptTokenIDs(for: messages)
+        guard let state = currentState, let stateBackend else {
+            throw OversizedEngineError.notLoaded
+        }
+        return try await executeTurn(
+            state: state, backend: stateBackend, nextInput: [],
+            messages: [], maxNewTokens: maxNewTokens, onToken: onToken
+        )
+    }
+
+    private func executeTurn(
+        state: ExecutionStateHandle,
+        backend: OversizedSegmentedStateBackend,
+        nextInput: [Int],
+        messages: [EngineChatMessage],
+        maxNewTokens: Int,
+        onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
+    ) async throws -> OversizedEngineTurn {
+        let model = self.model
+        let reader = self.reader
+        let tokenizer = self.tokenizer
+        guard let model, let reader, let tokenizer else {
+            throw OversizedEngineError.notLoaded
+        }
+        let bound = try backend.boundPrefix(for: state)
+        var ids = bound.prefix + nextInput
         var generated: [Int] = []
         var tokenMs: [Double] = []
         var peakFootprint: Int64 = 0
@@ -418,6 +500,30 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             ), tokenText)
         }
 
+        // Physical prefix consumed; advance the logical Execution State and
+        // rebind the advanced representation (E5-v2 pattern).
+        backend.consumeBinding(for: state)
+        let advanced = try await coordinator!.continueExecution(
+            state,
+            continuation: ExecutionContinuation(
+                nextInput: messages.last?.content ?? "",
+                continuationID: "S-cont-\(state.position.value + 1)"
+            )
+        )
+        currentState = advanced
+        sessionTurnCount += 1
+        try await coordinator!.bindRepresentation(
+            executionID: advanced.id,
+            position: advanced.position,
+            payload: OversizedPrefixPayload(tokenPrefix: ids)
+        )
+        sessionInfo = OversizedSessionInfo(
+            executionID: advanced.id.rawValue,
+            position: Int(advanced.position.value),
+            turns: sessionTurnCount,
+            records: coordinator!.recordCount
+        )
+
         let text = tokenizer.decode(tokens: generated, skipSpecialTokens: true)
         let mean = tokenMs.isEmpty ? 0 : tokenMs.reduce(0, +) / Double(tokenMs.count)
         if var s = stats {
@@ -438,6 +544,69 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             stats = s
         }
         return OversizedEngineTurn(text: text, tokenIDs: generated, meanTokenMs: mean)
+    }
+
+    // MARK: - Execution State session
+
+    private func ensureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
+        guard coordinator == nil, stateBackend == nil, currentState == nil else {
+            throw OversizedEngineError.notLoaded
+        }
+        let backend = OversizedSegmentedStateBackend(releaseAll: { [weak self] in
+            guard let self else { return }
+            try self.releaseAllSegments()
+        })
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("S"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "S-cont-0")
+        )
+        backend.bind(executionID: state.id, position: state.position, prefix: prefix)
+        try await coordinator.bindRepresentation(
+            executionID: state.id, position: state.position,
+            payload: OversizedPrefixPayload(tokenPrefix: prefix)
+        )
+        stateBackend = backend
+        self.coordinator = coordinator
+        currentState = state
+        return state
+    }
+
+    /// New session: discard the current Execution State (lifecycle record)
+    /// and reset. The next generate() bootstraps a fresh state.
+    public func newSession() async throws {
+        if let coordinator, let state = currentState {
+            try await coordinator.discard(state)
+        }
+        coordinator = nil
+        stateBackend = nil
+        currentState = nil
+        sessionTurnCount = 0
+        sessionInfo = nil
+    }
+
+    /// Logical restore to an earlier turn position (the coordinator re-binds
+    /// the surviving representation at that position; segments re-materialize
+    /// on demand at the next forward).
+    public func restoreSession(to position: Int) async throws {
+        guard let coordinator, let state = currentState else {
+            throw OversizedEngineError.notLoaded
+        }
+        currentState = try await coordinator.restore(
+            state,
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(Int64(position)),
+                continuation: ExecutionContinuation(
+                    nextInput: "", continuationID: "S-restore-\(position)")
+            )
+        )
+        sessionInfo = OversizedSessionInfo(
+            executionID: currentState!.id.rawValue,
+            position: Int(currentState!.position.value),
+            turns: sessionTurnCount,
+            records: coordinator.recordCount
+        )
     }
 
     /// The oversized eviction: release every streamed layer's weights

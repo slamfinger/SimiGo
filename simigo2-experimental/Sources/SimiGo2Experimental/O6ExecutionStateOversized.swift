@@ -243,10 +243,12 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
     private let lock = NSLock()
     private var prefixes: [ExecutionID: [Int]] = [:]
     private var boundPositions: [ExecutionID: ExecutionPosition] = [:]
-    private let core: O6SegmentedCore
+    /// Physical eviction hook (the oversized segment release). Decoupled
+    /// from O6SegmentedCore so the app engine can host the same backend.
+    private let releaseAll: () throws -> Void
 
-    init(core: O6SegmentedCore) {
-        self.core = core
+    init(releaseAll: @escaping () throws -> Void) {
+        self.releaseAll = releaseAll
     }
 
     public func bind(executionID: ExecutionID, position: ExecutionPosition, prefix: [Int]) {
@@ -323,7 +325,7 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
         prefixes[representation.executionID] = nil
         boundPositions[representation.executionID] = nil
         lock.unlock()
-        try core.releaseAllSegments()
+        try releaseAll()
     }
 }
 
@@ -407,7 +409,7 @@ public enum O6ExecutionStateScenario {
         let core = try await O6SegmentedCore(
             modelDirectory: modelDirectory, segmentSize: segmentSize
         )
-        let backend = OversizedSegmentedStateBackend(core: core)
+        let backend = OversizedSegmentedStateBackend(releaseAll: { try core.releaseAllSegments() })
         let coordinator = ExecutionContinuityCoordinator(backend: backend)
         let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
         let executor = OversizedSegmentedExecutor(

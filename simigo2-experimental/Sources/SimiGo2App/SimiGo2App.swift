@@ -83,6 +83,7 @@ final class ChatAppModel: ObservableObject {
     @Published var transcript: [ChatEntry] = []
     @Published var inputText = ""
     @Published var liveGauge = "idle"
+    @Published var execStateLine = "no execution state yet"
     @Published var statsLine = "engine not loaded"
     @Published var isGenerating = false
     @Published var loadLine = "model not loaded"
@@ -155,8 +156,9 @@ final class ChatAppModel: ObservableObject {
         liveGauge = "generating…"
         isGenerating = true
 
-        let history = transcript.filter { !$0.streaming && ($0.role == "user" || $0.role == "assistant") }
-            .map { EngineChatMessage(role: $0.role, content: $0.text) }
+        // Strict Execution State turns: prior history lives in the bound
+        // prefix; each send consumes it with only the NEW user message.
+        let message = [EngineChatMessage(role: "user", content: text)]
         let engine: OversizedSegmentedEngine
         do {
             engine = try ensureEngine()
@@ -175,7 +177,7 @@ final class ChatAppModel: ObservableObject {
                     DispatchQueue.main.async { self.loadLine = "loaded on first message" }
                 }
                 let turn = try await engine.generate(
-                    messages: history,
+                    messages: message,
                     maxNewTokens: 24,
                     onToken: { gauge, tokenText in
                         DispatchQueue.main.async {
@@ -190,6 +192,9 @@ final class ChatAppModel: ObservableObject {
                 )
                 DispatchQueue.main.async {
                     self.finishLastAssistant(turn.text, mean: turn.meanTokenMs)
+                    self.execStateLine = engine.sessionInfo.map {
+                        "Execution State \($0.executionID) | position \($0.position) | turns \($0.turns) | lifecycle records \($0.records)"
+                    } ?? "-"
                     self.isGenerating = false
                 }
             } catch {
@@ -206,7 +211,15 @@ final class ChatAppModel: ObservableObject {
     func newSession() {
         guard !isGenerating else { return }
         transcript.removeAll()
-        liveGauge = "idle (session reset; segments already released per token)"
+        liveGauge = "new session…"
+        let engine = engine
+        Task.detached {
+            try? await engine?.newSession()
+            DispatchQueue.main.async {
+                self.execStateLine = "execution state discarded — fresh state on next message"
+                self.liveGauge = "idle"
+            }
+        }
     }
 
     fileprivate func appendToLastAssistant(_ token: String) {
@@ -352,6 +365,8 @@ struct OversizedSelfTestReport: Codable {
     let maxPressureLevel: Int32
     let meanTokenMs: Double
     let peakCapacityMiB: Int64
+    let executionRecords: Int
+    let strictExecutionState: Bool
     let overallPass: Bool
 }
 
@@ -366,11 +381,22 @@ enum OversizedRealDeviceSelfTest {
         let prompt = [
             EngineChatMessage(role: "user", content: "Write a Python function that merges two sorted lists.")
         ]
+        FileHandle.standardError.write(Data("marker: loaded\n".utf8))
         let pass1 = try await engine.generate(messages: prompt, maxNewTokens: configuration.tokens)
-        let pass2 = try await engine.generate(messages: prompt, maxNewTokens: configuration.tokens)
+        FileHandle.standardError.write(Data("marker: pass1 done\n".utf8))
+        // Strict Execution State determinism: logically restore the session
+        // to the bootstrap position, then replay the SAME turn consuming the
+        // restored representation (E5 semantics — not a cache comparison).
+        try await engine.restoreSession(to: 0)
+        FileHandle.standardError.write(Data("marker: restored\n".utf8))
+        let pass2 = try await engine.generate(
+            messages: prompt, maxNewTokens: configuration.tokens, nextInputTokens: []
+        )
         let finalStats = engine.stats ?? stats
+        let session = engine.sessionInfo
         let determinism = pass1.tokenIDs == pass2.tokenIDs
-        let overall = determinism
+        let strict = (session?.records ?? 0) >= 3 && session?.position == 1
+        let overall = determinism && strict
             && finalStats.peakFootprintMiB <= finalStats.peakCapacityMiB
             && finalStats.peakCacheMiB <= finalStats.peakCapacityMiB
             && finalStats.maxSwapMiB == 0
@@ -397,6 +423,8 @@ enum OversizedRealDeviceSelfTest {
             maxPressureLevel: finalStats.maxPressureLevel,
             meanTokenMs: pass1.meanTokenMs,
             peakCapacityMiB: finalStats.peakCapacityMiB,
+            executionRecords: session?.records ?? 0,
+            strictExecutionState: strict,
             overallPass: overall
         )
     }
