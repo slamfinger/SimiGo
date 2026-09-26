@@ -127,13 +127,14 @@ final class ChatAppModel: ObservableObject {
                 let stats = try await engine.load()
                 await MainActor.run {
                     self.loadLine = String(
-                        format: "loaded: core %.2f GiB | %d segments × %d layers | load %.1fs | peak %.2f GiB",
+                        format: "loaded: core %.2f GiB | resident floor %d/%d layers | %d streaming units × %d layers | load %.1fs",
                         Double(stats.residentActiveMiB) / 1024,
-                        stats.segmentCount, stats.totalLayers, stats.loadSeconds,
-                        Double(stats.peakFootprintMiB) / 1024)
+                        stats.residentLayers, stats.totalLayers,
+                        stats.unitCount, stats.unitLayers, stats.loadSeconds)
                     self.statsLine = String(
-                        format: "capacity gate %d MiB | swap %d MiB",
-                        stats.peakCapacityMiB, stats.maxSwapMiB)
+                        format: "budget %d MiB | peak %.2f GiB | cache %d MiB | swap %d MiB | pressure %d",
+                        stats.peakCapacityMiB, Double(stats.peakFootprintMiB) / 1024,
+                        stats.peakCacheMiB, stats.maxSwapMiB, stats.maxPressureLevel)
                     self.isGenerating = false
                 }
             } catch {
@@ -180,9 +181,10 @@ final class ChatAppModel: ObservableObject {
                         DispatchQueue.main.async {
                             self.appendToLastAssistant(tokenText)
                             self.liveGauge = String(
-                                format: "token %d | active %d MiB | footprint %d MiB | swap %d MiB | resident seg %d",
+                                format: "token %d | active %d MiB | footprint %d MiB | cache %d MiB | swap %d MiB | streaming from layer %d | pressure %d",
                                 gauge.tokenIndex, gauge.activeMiB, gauge.footprintMiB,
-                                gauge.swapMiB, gauge.residentSegment)
+                                gauge.cacheMiB, gauge.swapMiB, gauge.streamingUnit,
+                                gauge.pressureLevel)
                         }
                     }
                 )
@@ -302,6 +304,7 @@ struct OversizedSelfTestConfiguration {
     let modelDirectory: URL
     let tokens: Int
     let segmentSize: Int
+    let floorBudgetMiB: Int64
 
     init?(commandLine arguments: [String]) {
         guard arguments.contains("--self-test-oversized"),
@@ -317,11 +320,17 @@ struct OversizedSelfTestConfiguration {
         } else {
             tokens = 8
         }
-        if let segIndex = arguments.firstIndex(of: "--segment-size"),
+        if let segIndex = arguments.firstIndex(of: "--unit-layers"),
            segIndex + 1 < arguments.count, let parsed = Int(arguments[segIndex + 1]) {
             segmentSize = parsed
         } else {
-            segmentSize = OversizedSegmentedEngine.defaultSegmentSize
+            segmentSize = OversizedSegmentedEngine.defaultUnitLayers
+        }
+        if let bIndex = arguments.firstIndex(of: "--floor-budget-mib"),
+           bIndex + 1 < arguments.count, let parsed = Int64(arguments[bIndex + 1]) {
+            floorBudgetMiB = parsed
+        } else {
+            floorBudgetMiB = OversizedSegmentedEngine.defaultPeakCapacityMiB
         }
     }
 }
@@ -330,14 +339,17 @@ struct OversizedSelfTestReport: Codable {
     let gate: String
     let device: DeviceFacts
     let modelDirectory: String
-    let segmentSize: Int
-    let segmentCount: Int
+    let unitLayers: Int
+    let unitCount: Int
+    let residentLayers: Int
     let loadSeconds: Double
     let pass1Tokens: [Int]
     let pass2Tokens: [Int]
     let determinismIdentical: Bool
     let peakFootprintMiB: Int64
+    let peakCacheMiB: Int64
     let maxSwapMiB: Int64
+    let maxPressureLevel: Int32
     let meanTokenMs: Double
     let peakCapacityMiB: Int64
     let overallPass: Bool
@@ -347,7 +359,8 @@ enum OversizedRealDeviceSelfTest {
     static func run(_ configuration: OversizedSelfTestConfiguration) async throws -> OversizedSelfTestReport {
         let engine = OversizedSegmentedEngine(
             modelDirectory: configuration.modelDirectory,
-            segmentSize: configuration.segmentSize
+            unitLayers: configuration.segmentSize,
+            floorBudgetMiB: configuration.floorBudgetMiB
         )
         let stats = try await engine.load()
         let prompt = [
@@ -359,7 +372,9 @@ enum OversizedRealDeviceSelfTest {
         let determinism = pass1.tokenIDs == pass2.tokenIDs
         let overall = determinism
             && finalStats.peakFootprintMiB <= finalStats.peakCapacityMiB
+            && finalStats.peakCacheMiB <= finalStats.peakCapacityMiB
             && finalStats.maxSwapMiB == 0
+            && finalStats.maxPressureLevel == 1
         return OversizedSelfTestReport(
             gate: "O4_OVERSIZED_REAL_DEVICE_APP_SELFTEST",
             device: DeviceFacts(
@@ -369,14 +384,17 @@ enum OversizedRealDeviceSelfTest {
                 operatingSystem: ProcessInfo.processInfo.operatingSystemVersionString
             ),
             modelDirectory: configuration.modelDirectory.path,
-            segmentSize: finalStats.segmentSize,
-            segmentCount: finalStats.segmentCount,
+            unitLayers: finalStats.unitLayers,
+            unitCount: finalStats.unitCount,
+            residentLayers: finalStats.residentLayers,
             loadSeconds: finalStats.loadSeconds,
             pass1Tokens: pass1.tokenIDs,
             pass2Tokens: pass2.tokenIDs,
             determinismIdentical: determinism,
             peakFootprintMiB: finalStats.peakFootprintMiB,
+            peakCacheMiB: finalStats.peakCacheMiB,
             maxSwapMiB: finalStats.maxSwapMiB,
+            maxPressureLevel: finalStats.maxPressureLevel,
             meanTokenMs: pass1.meanTokenMs,
             peakCapacityMiB: finalStats.peakCapacityMiB,
             overallPass: overall

@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: APP_V2_DELIVERED / OVERSIZED_SELFTEST_PASS_ON_DEVICE / FOLLOWUPS_REGISTERED
+Engineering subphase: APP_TUNING_MATRIX_MEASURED / MEM22_UNIT24_SHIPPED_DEFAULT
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3389,3 +3389,29 @@ Next          : user-facing GUI validation; registered follow-ups =
 
 Gate history: `docs/00-governance/SIMIGO2_APP_V2_REAL_DEVICE_20260926.md`;
 artifact `results/o5-sweep/app-realdevice-oversized-selftest.json`.
+
+### App Performance Tuning — Residency-Shape Sweep; 22 GiB Profile Shipped — 2026-09-26
+
+User clarification + directive: the earlier 16 GiB/green readings were the
+observed state, not constraints; raise memory usage to ~22 GiB, keep cache
+low, tune performance. The engine gained a persistent layer floor
+(derivation-only budget) and configurable streaming unit size; gauges now
+include MLX cache and the system memory-pressure level. Measured matrix
+(9 shapes): latency DEGRADES monotonically with wired floor (9.0 s at
+5 GiB → 32.9 s at 25.3 GiB, pressure escalating green → warning →
+critical) — the "more residency = faster" hypothesis is falsified on
+unified memory. At a given footprint, larger streaming units win (fewer
+cycles): 2×24-layer units at the ~21.5 GiB mid-token peak run 13.2 s/token
+with pressure green, cache ≈ 0, swap 0. Shipped default = the user's
+22 GiB operating point (floor 0 / unit 24); the low-footprint fast
+profile (floor 0 / unit 4: 9.0 s at 5.1 GiB) remains flag-selectable.
+All shapes produce identical token sequences. Final real-device
+verification from the release bundle: overallPass TRUE, determinism PASS,
+boundary-sampled peak 11,668 MiB (mid-token ≈ 21.5 GiB), swap 0,
+pressure 1.
+
+```text
+Current gate  : APP_TUNING_MATRIX_MEASURED / MEM22_UNIT24_SHIPPED_DEFAULT
+```
+
+Gate history: `docs/00-governance/SIMIGO2_APP_PERFORMANCE_TUNING_20260926.md`.

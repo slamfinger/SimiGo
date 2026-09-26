@@ -1,0 +1,34 @@
+{
+  "determinismIdentical" : true,
+  "device" : {
+    "brand" : "Apple M5",
+    "machine" : "arm64",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368
+  },
+  "gate" : "O4_OVERSIZED_REAL_DEVICE_APP_SELFTEST",
+  "loadSeconds" : 4.248541833,
+  "maxPressureLevel" : 2,
+  "maxSwapMiB" : 0,
+  "meanTokenMs" : 16556.65817725,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : false,
+  "pass1Tokens" : [
+    8420,
+    594,
+    264,
+    13027
+  ],
+  "pass2Tokens" : [
+    8420,
+    594,
+    264,
+    13027
+  ],
+  "peakCacheMiB" : 0,
+  "peakCapacityMiB" : 16384,
+  "peakFootprintMiB" : 19922,
+  "residentLayers" : 16,
+  "unitCount" : 4,
+  "unitLayers" : 8
+}

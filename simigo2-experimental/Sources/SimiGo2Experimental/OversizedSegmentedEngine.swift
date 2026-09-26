@@ -6,20 +6,23 @@ import MLXNN
 import Tokenizers
 
 /// OversizedSegmentedEngine — the O-line's verified execution mechanics,
-/// productized as the app-facing engine (2026-09-26).
+/// productized as the app-facing engine, tuned for normal conversation
+/// (2026-09-26 user budget: resident memory < 16 GiB, MLX cache < 16 GiB,
+/// system memory pressure green/normal).
 ///
-/// Defaults encode the measured O5 operating point: segment size 8
-/// (6×8-layer segments on 48 layers = the Pareto-best configuration on
-/// 32 GiB hardware: 7.7 s/token at 8.8 GiB peak, swap 0). Load is
-/// placeholder-first (the registered cliff fix) through the single-copy
-/// reader; per token, per segment: materialize → forwardLayerRange →
-/// release. Generation is greedy and cacheless (full-sequence re-forward;
-/// no second KV authority) with checkpoint chat-template multi-turn input.
-/// Residency/O6 note: segment eviction here is engine-internal; Execution
-/// State semantics live in the O6 components.
+/// Policy: PERSISTENT LAYER FLOOR — the first L layers' switch_mlp weights
+/// load real at startup and stay resident (never re-read); the remaining
+/// layers stream in small units (materialize → forwardLayerRange → release
+/// per unit). L is derived from the actual per-layer byte sizes so that
+/// core + floor + one streaming unit fits the resident budget. Per-token
+/// re-read volume drops from the full switch span (~40.5 GiB) to the
+/// streamed span only.
 ///
-/// Supported: qwen3_next (the registered oversized architecture). Other
-/// model types throw at load.
+/// Defaults encode the measured O5 baseline (segment unit 4-8 layers,
+/// Pareto-best granularity on 32 GiB hardware). Load is placeholder-first
+/// (the registered cliff fix) through the single-copy reader; generation
+/// is greedy and cacheless (no second KV authority) with checkpoint
+/// chat-template multi-turn input. Supported: qwen3_next.
 
 public struct EngineChatMessage: Sendable {
     public let role: String
@@ -34,18 +37,25 @@ public struct OversizedEngineGauge: Codable, Sendable {
     public let tokenIndex: Int
     public let activeMiB: Int64
     public let footprintMiB: Int64
+    public let cacheMiB: Int64
     public let swapMiB: Int64
-    public let residentSegment: Int
+    public let streamingUnit: Int
+    /// System memory-pressure level (kern.memorystatus_vm_pressure_level):
+    /// 1 = normal (green), 2 = warning, 4 = critical.
+    public let pressureLevel: Int32
 }
 
 public struct OversizedEngineStats: Codable, Sendable {
     public let residentActiveMiB: Int64
     public let peakFootprintMiB: Int64
+    public let peakCacheMiB: Int64
     public let maxSwapMiB: Int64
+    public let maxPressureLevel: Int32
     public let loadSeconds: Double
     public let meanTokenMs: Double
-    public let segmentSize: Int
-    public let segmentCount: Int
+    public let unitLayers: Int
+    public let unitCount: Int
+    public let residentLayers: Int
     public let totalLayers: Int
     public let peakCapacityMiB: Int64
 }
@@ -71,30 +81,56 @@ public enum OversizedEngineError: Error, LocalizedError {
 }
 
 public final class OversizedSegmentedEngine: @unchecked Sendable {
-    public static let defaultSegmentSize = 8
-    public static let peakCapacityMiB: Int64 = 30 * 1024
+    public static let defaultUnitLayers = 24
+    /// Chat budget (user-set 2026-09-26): resident memory < 16 GiB, MLX
+    /// cache < 16 GiB, system memory pressure green.
+    public static let defaultPeakCapacityMiB: Int64 = 16 * 1024
 
     private let modelDirectory: URL
-    private let segmentSize: Int
+    private let unitLayers: Int
+    private let peakCapacityMiB: Int64
+    /// Derivation-only budget for the persistent floor. Decoupled from the
+    /// PASS gate: pushing the floor up trades page cache for wired memory,
+    /// so the latency/pressure optimum is measured, not assumed.
+    private let floorBudgetMiB: Int64
 
     private var model: Qwen3NextModel?
     private var reader: PerTensorSafetensorsReader?
     private var tokenizer: Tokenizers.Tokenizer?
     private var switchNames: [String] = []
-    private var segments: [ClosedRange<Int>] = []
+    private var units: [ClosedRange<Int>] = []
+    private var residentLayers = 0
     private var totalLayers = 0
     private var modelType = ""
 
     public private(set) var stats: OversizedEngineStats?
 
-    public init(modelDirectory: URL, segmentSize: Int = OversizedSegmentedEngine.defaultSegmentSize) {
+    public init(
+        modelDirectory: URL,
+        unitLayers: Int = OversizedSegmentedEngine.defaultUnitLayers,
+        peakCapacityMiB: Int64 = OversizedSegmentedEngine.defaultPeakCapacityMiB,
+        floorBudgetMiB: Int64? = 4096
+    ) {
         self.modelDirectory = modelDirectory
-        self.segmentSize = segmentSize
+        self.unitLayers = unitLayers
+        self.peakCapacityMiB = peakCapacityMiB
+        self.floorBudgetMiB = floorBudgetMiB ?? peakCapacityMiB
     }
 
-    private var clock = ContinuousClock()
+    private let clock = ContinuousClock()
 
-    private func gauge() -> (activeMiB: Int64, footprintMiB: Int64, swapMiB: Int64) {
+    private func pressureLevel() -> Int32 {
+        var level: Int32 = 0
+        var size = MemoryLayout<Int32>.stride
+        if sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, nil, 0) != 0 {
+            return -1
+        }
+        return level
+    }
+
+    private func gauge() -> (
+        activeMiB: Int64, footprintMiB: Int64, cacheMiB: Int64, swapMiB: Int64, pressure: Int32
+    ) {
         let mlx = Memory.snapshot()
         var info = task_vm_info_data_t()
         var count = mach_msg_type_number_t(
@@ -127,11 +163,24 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 swapMiB = Int64(bytes / 1048576)
             }
         }
-        return (Int64(mlx.activeMemory / 1048576), footprint / 1048576, swapMiB)
+        return (
+            Int64(mlx.activeMemory / 1048576), footprint / 1048576,
+            Int64(mlx.cacheMemory / 1048576), swapMiB, pressureLevel()
+        )
     }
 
-    /// Skeleton + per-layer quantize + placeholder-first load (real core,
-    /// zero-size segment placeholders — the registered cliff fix).
+    private func layerOf(_ name: String) -> Int? {
+        guard let range = name.range(of: #"layers\.(\d+)\."#, options: .regularExpression) else {
+            return nil
+        }
+        let digits = name[range].split(separator: ".").compactMap { Int($0) }
+        return digits.first
+    }
+
+    /// Skeleton + per-layer quantize + budgeted placeholder-first load:
+    /// real tensors for the core AND the persistent layer floor; zero-size
+    /// placeholders for the streamed units. ONE update before any eval —
+    /// the registered cliff fix. update(verify: []) is pure assignment.
     public func load() async throws -> OversizedEngineStats {
         let loadStart = clock.now
         let configData = try Data(contentsOf: modelDirectory.appendingPathComponent("config.json"))
@@ -178,26 +227,53 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             ?? ((configObject?["text_config"] as? [String: Any])?["num_hidden_layers"] as? Int)
             ?? 48
         self.totalLayers = totalLayers
-        var segs: [ClosedRange<Int>] = []
-        var start = 0
-        while start < totalLayers {
-            let end = min(start + segmentSize - 1, totalLayers - 1)
-            segs.append(start...end)
-            start = end + 1
-        }
-        segments = segs
         switchNames = reader.locations.values
             .filter { $0.name.contains(".switch_mlp.") }
             .map { $0.name }
 
+        // Budgeted persistent-floor derivation from actual per-layer bytes.
+        var layerBytes = [Int64](repeating: 0, count: totalLayers)
+        var coreBytes: Int64 = 0
+        for location in reader.locations.values {
+            if location.name.contains(".switch_mlp."), let layer = layerOf(location.name),
+               layer < totalLayers {
+                layerBytes[layer] += Int64(location.byteCount)
+            } else if !location.name.contains(".switch_mlp.") {
+                coreBytes += Int64(location.byteCount)
+            }
+        }
+        let unitCount0 = max(1, totalLayers / max(1, unitLayers))
+        let avgLayerBytes = layerBytes.isEmpty
+            ? Int64(0)
+            : layerBytes.reduce(Int64(0), +) / Int64(max(1, layerBytes.count))
+        let budgetBytes = floorBudgetMiB * 1024 * 1024
+        let unitBytes = avgLayerBytes * Int64(unitLayers)
+        let floorCount = Int(
+            max(0, min(Double(totalLayers - unitLayers), floor(Double(budgetBytes - coreBytes - unitBytes) / Double(max(avgLayerBytes, 1)))))
+        )
+        residentLayers = floorCount
+        var segs: [ClosedRange<Int>] = []
+        var start = floorCount
+        while start < totalLayers {
+            let end = min(start + unitLayers - 1, totalLayers - 1)
+            segs.append(start...end)
+            start = end + 1
+        }
+        units = segs
+        _ = unitCount0
+
         var fullParameterMap: [String: MLXArray] = [:]
         for location in reader.locations.values {
-            if location.name.contains(".switch_mlp.") {
-                fullParameterMap[location.name] = MLXArray([Int](), [0])
-            } else {
+            let isSwitch = location.name.contains(".switch_mlp.")
+            let persistent =
+                !isSwitch
+                || (layerOf(location.name).flatMap { $0 < residentLayers } ?? false)
+            if persistent {
                 fullParameterMap[location.name] = try autoreleasepool {
                     try reader.loadTensor(named: location.name)
                 }
+            } else {
+                fullParameterMap[location.name] = MLXArray([Int](), [0])
             }
         }
         let covered = Set(fullParameterMap.keys)
@@ -210,19 +286,22 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         self.model = model
 
         let g = gauge()
-        let loadSeconds =
-            Double(loadStart.duration(to: clock.now).components.seconds)
-            + Double(loadStart.duration(to: clock.now).components.attoseconds) / 1e18
+        let loadDuration = loadStart.duration(to: clock.now)
+        let loadSeconds = Double(loadDuration.components.seconds)
+            + Double(loadDuration.components.attoseconds) / 1e18
         let stats = OversizedEngineStats(
             residentActiveMiB: g.activeMiB,
             peakFootprintMiB: g.footprintMiB,
+            peakCacheMiB: g.cacheMiB,
             maxSwapMiB: g.swapMiB,
+            maxPressureLevel: g.pressure,
             loadSeconds: loadSeconds,
             meanTokenMs: 0,
-            segmentSize: segmentSize,
-            segmentCount: segs.count,
+            unitLayers: unitLayers,
+            unitCount: units.count,
+            residentLayers: residentLayers,
             totalLayers: totalLayers,
-            peakCapacityMiB: Self.peakCapacityMiB
+            peakCapacityMiB: peakCapacityMiB
         )
         self.stats = stats
         return stats
@@ -250,6 +329,9 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     }
 
     /// Multi-turn greedy generation with per-token streaming callbacks.
+    /// The persistent floor forwards in one call; streamed units follow
+    /// materialize → forward → release. Peak memory = core + floor + one
+    /// unit, held under the budget by construction.
     @discardableResult
     public func generate(
         messages: [EngineChatMessage],
@@ -263,25 +345,29 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         var generated: [Int] = []
         var tokenMs: [Double] = []
         var peakFootprint: Int64 = 0
+        var peakCache: Int64 = 0
         var maxSwap: Int64 = 0
+        var maxPressure: Int32 = 0
 
         for index in 0..<maxNewTokens {
             let tokenStart = clock.now
             var hidden = model.embedInputs(MLXArray(ids, [1, ids.count]))
             eval(hidden)
-            var residentSegment = -1
-            for (segIndex, segment) in segments.enumerated() {
+
+            if residentLayers > 0 {
+                hidden = model.forwardLayerRange(
+                    hidden, layerRange: 0..<residentLayers, cache: nil
+                )
+                eval(hidden)
+            }
+
+            for (unitIndex, unit) in units.enumerated() {
                 do {
                     var arrays: [String: MLXArray] = [:]
                     for name in switchNames {
-                        if let range = name.range(
-                            of: #"layers\.(\d+)\."#, options: .regularExpression
-                        ) {
-                            let digits = name[range].split(separator: ".").compactMap { Int($0) }
-                            if let layer = digits.first, segment.contains(layer) {
-                                arrays[name] = try autoreleasepool {
-                                    try reader.loadTensor(named: name)
-                                }
+                        if let layer = layerOf(name), unit.contains(layer) {
+                            arrays[name] = try autoreleasepool {
+                                try reader.loadTensor(named: name)
                             }
                         }
                     }
@@ -290,29 +376,23 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                         parameters: ModuleParameters.unflattened(arrays), verify: []
                     )
                 }
-                residentSegment = segIndex
                 hidden = model.forwardLayerRange(
-                    hidden,
-                    layerRange: segment.lowerBound..<(segment.upperBound + 1),
-                    cache: nil
+                    hidden, layerRange: unit.lowerBound..<(unit.upperBound + 1), cache: nil
                 )
                 eval(hidden)
                 var placeholders: [String: MLXArray] = [:]
                 for name in switchNames {
-                    if let range = name.range(
-                        of: #"layers\.(\d+)\."#, options: .regularExpression
-                    ) {
-                        let digits = name[range].split(separator: ".").compactMap { Int($0) }
-                        if let layer = digits.first, segment.contains(layer) {
-                            placeholders[name] = MLXArray([Int](), [0])
-                        }
+                    if let layer = layerOf(name), unit.contains(layer) {
+                        placeholders[name] = MLXArray([Int](), [0])
                     }
                 }
                 try model.update(
                     parameters: ModuleParameters.unflattened(placeholders), verify: []
                 )
                 Memory.clearCache()
+                _ = unitIndex
             }
+
             let logits = model.projectOutput(hidden)[0, -1]
             eval(logits)
             let next = logits.argMax().item(Int.self)
@@ -326,12 +406,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
             let g = gauge()
             peakFootprint = max(peakFootprint, g.footprintMiB)
+            peakCache = max(peakCache, g.cacheMiB)
             maxSwap = max(maxSwap, g.swapMiB)
+            maxPressure = max(maxPressure, g.pressure)
             let tokenText = tokenizer.decode(tokens: [next], skipSpecialTokens: true)
             onToken?(OversizedEngineGauge(
                 tokenIndex: index + 1, activeMiB: g.activeMiB,
-                footprintMiB: g.footprintMiB, swapMiB: g.swapMiB,
-                residentSegment: residentSegment
+                footprintMiB: g.footprintMiB, cacheMiB: g.cacheMiB, swapMiB: g.swapMiB,
+                streamingUnit: units.isEmpty ? -1 : units[units.count - 1].lowerBound,
+                pressureLevel: g.pressure
             ), tokenText)
         }
 
@@ -341,11 +424,14 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             s = OversizedEngineStats(
                 residentActiveMiB: s.residentActiveMiB,
                 peakFootprintMiB: max(s.peakFootprintMiB, peakFootprint),
+                peakCacheMiB: max(s.peakCacheMiB, peakCache),
                 maxSwapMiB: max(s.maxSwapMiB, maxSwap),
+                maxPressureLevel: max(s.maxPressureLevel, maxPressure),
                 loadSeconds: s.loadSeconds,
                 meanTokenMs: mean,
-                segmentSize: s.segmentSize,
-                segmentCount: s.segmentCount,
+                unitLayers: s.unitLayers,
+                unitCount: s.unitCount,
+                residentLayers: s.residentLayers,
                 totalLayers: s.totalLayers,
                 peakCapacityMiB: s.peakCapacityMiB
             )
@@ -354,12 +440,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         return OversizedEngineTurn(text: text, tokenIDs: generated, meanTokenMs: mean)
     }
 
-    /// The oversized eviction: release every segment's weights.
+    /// The oversized eviction: release every streamed layer's weights
+    /// (persistent floor stays).
     public func releaseAllSegments() throws {
         guard let model else { throw OversizedEngineError.notLoaded }
         var placeholders: [String: MLXArray] = [:]
         for name in switchNames {
-            placeholders[name] = MLXArray([Int](), [0])
+            if let layer = layerOf(name), layer >= residentLayers {
+                placeholders[name] = MLXArray([Int](), [0])
+            }
         }
         try model.update(parameters: ModuleParameters.unflattened(placeholders), verify: [])
         Memory.clearCache()
