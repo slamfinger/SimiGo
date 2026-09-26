@@ -124,13 +124,17 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
         // served one consumes ONLY the new user turn (raw continuation over
         // the bound prefix); a divergent or fresh transcript discards the
         // session and re-bootstraps from the chat template.
+        //
+        // servedTranscript is a DERIVED control state (review P1/P2): it is
+        // committed only AFTER the turn (physical rebind + logical advance)
+        // has succeeded, so a failed generation cannot desynchronize the
+        // continuation judgment from the actual Execution State.
         let isContinuation =
             incoming.count > servedTranscript.count
             && Array(incoming.prefix(servedTranscript.count)) == servedTranscript
         if !isContinuation {
             try await engine.newSession()
         }
-        servedTranscript = incoming
 
         let started = ContinuousClock.now
         var firstChunkAt: ContinuousClock.Instant?
@@ -154,6 +158,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 }
             )
         }
+        servedTranscript = incoming
         servedTranscript.append(EngineChatMessage(role: "assistant", content: turn.text))
 
         var ttftSeconds: TimeInterval?
