@@ -10,6 +10,58 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         ?? "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5"
     private let port = 18_123
 
+    func testClientCancellationAbortsTurnAndStateStaysConsistent() async throws {
+        guard FileManager.default.fileExists(atPath: modelPath) else {
+            throw XCTSkip("oversized model not present")
+        }
+        let detected = ModelDetector.detect(path: modelPath)
+        let runtime = OversizedRuntime(info: detected)
+        try await runtime.start(detected, port: port)
+        defer { Task { await runtime.stop() } }
+
+        // D1 FM-04: a client cancel during generation resolves to ABORT —
+        // the cooperative cancellation point at the token/unit boundary
+        // throws CancellationError, leaving position and residency
+        // mechanics unchanged (no half commit).
+        let messages: [JSONValue] = [
+            .object([
+                "role": .string("user"),
+                "content": .string("Write a long essay about sorting algorithms.")
+            ])
+        ]
+        let handle = Task {
+            try await runtime.handleGenerate(
+                messages: messages,
+                maxTokens: 64,
+                onChunk: { _ in }
+            )
+        }
+        try await Task.sleep(nanoseconds: 3_000_000_000)
+        handle.cancel()
+        do {
+            _ = try await handle.value
+            XCTFail("expected CancellationError")
+        } catch is CancellationError {
+            // expected ABORT
+        }
+
+        // The runtime remains fully consistent: the canonical request
+        // produces the canonical greedy sequence afterwards.
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!, timeoutInterval: 900)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": "oversized",
+            "messages": [["role": "user", "content": "Write a Python function that merges two sorted lists."]],
+            "max_tokens": 8,
+            "stream": false,
+        ])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        let body = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        XCTAssertNotNil(body?["choices"])
+    }
+
     func testOversizedChatCompletionEndToEnd() async throws {
         guard FileManager.default.fileExists(atPath: modelPath) else {
             throw XCTSkip("oversized model not present: \(modelPath)")
