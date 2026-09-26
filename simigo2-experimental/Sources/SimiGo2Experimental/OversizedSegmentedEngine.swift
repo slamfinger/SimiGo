@@ -695,9 +695,10 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         )
 
         // Token Ledger (I-L1 committed-only): the turn entry is appended only
-        // after the full commit sequence succeeded, recording the confirmed
-        // token-prefix fact at the advanced position (I-L3: the backend bound
-        // prefix at `advancedPosition` is exactly `ids`).
+        // after the full commit sequence succeeded. The claimed prefixLength
+        // (`ids.count`) is cross-checked inside the ledger against the
+        // backend's own binding record (I-L3) — the bind above put the
+        // physical representation at `advancedPosition` with exactly `ids`.
         try tokenLedger?.append(OversizedTokenLedgerEntry(
             executionID: advanced.id,
             position: Int(advanced.position.value),
@@ -806,7 +807,12 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             guard let self else { return }
             try self.releaseAllSegments()
         })
-        tokenLedger = OversizedTokenLedger()
+        tokenLedger = OversizedTokenLedger { [weak backend] executionID, position in
+            guard let backend else { throw OversizedEngineError.notLoaded }
+            return try backend.boundPrefixLength(
+                executionID: executionID, position: ExecutionPosition(Int64(position))
+            )
+        }
         let coordinator = ExecutionContinuityCoordinator(backend: backend)
         let state = try await coordinator.create(
             id: ExecutionID("S"),
@@ -851,7 +857,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     public func restoreSession(to position: Int) async throws {
         await lifecycleSerialLock.lock()
         defer { lifecycleSerialLock.unlock() }
-        guard let coordinator, let state = currentState else {
+        guard let coordinator, let stateBackend, let state = currentState else {
             throw OversizedEngineError.notLoaded
         }
         currentState = try await coordinator.restore(
@@ -865,14 +871,19 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         // Token ledger restore marker: records the rollback point so the
         // audit trail shows the rewind (append-only — the superseded tail is
         // retained and flagged, not deleted). The marker's prefixLength is
-        // the active chain's bound-prefix length AT the restored position
-        // (I-L3), not the last entry's length.
+        // derived from the BACKEND's re-bound representation at the restored
+        // position (I-L3 source of truth — coordinator.restore re-binds the
+        // historical prefix before returning), and the ledger independently
+        // re-verifies it against the backend at append.
         tokenLedger?.markSuperseded(beyond: position, executionID: state.id)
+        let restoredPrefixLength = try stateBackend.boundPrefixLength(
+            executionID: currentState!.id, position: currentState!.position
+        )
         try tokenLedger?.append(OversizedTokenLedgerEntry(
             executionID: currentState!.id,
             position: Int(currentState!.position.value),
             kind: .restoreMarker,
-            prefixLength: boundPrefixLength(at: position)
+            prefixLength: restoredPrefixLength
         ))
         sessionInfo = OversizedSessionInfo(
             executionID: currentState!.id.rawValue,
@@ -880,16 +891,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             turns: Int(currentState!.position.value),
             records: coordinator.recordCount
         )
-    }
-
-    /// Active-chain bound-prefix length at `position` (I-L3 source): the
-    /// latest non-superseded entry at or before `position`.
-    private func boundPrefixLength(at position: Int) -> Int {
-        guard let ledger = tokenLedger else { return 0 }
-        return ledger.allEntries()
-            .filter { $0.executionID == currentState?.id && !$0.superseded && $0.position <= position }
-            .max(by: { $0.position < $1.position })?
-            .prefixLength ?? 0
     }
 
     /// The oversized eviction: release every streamed layer's weights

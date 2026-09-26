@@ -4,10 +4,13 @@ import SimiGoRuntimeContract
 /// Token Ledger (review-approved gate) — append-only record of confirmed
 /// token-prefix facts per Execution State.
 ///
-/// Ownership: the ExecutionStateBackend owns the ledger (the prefix IS the
-/// physical representation; the ledger is its token-level view). Positions
-/// remain Coordinator-owned. Boundaries: NOT a KV record, NOT usage, NOT a
-/// position source, NOT a transcript.
+/// Ownership: conceptually the Execution State representation layer (the
+/// prefix IS the physical representation; the ledger is its token-level
+/// view); the CURRENT implementation owner is the OversizedSegmentedEngine
+/// (engine-side representation audit structure — sinking it into the
+/// backend abstraction is deferred until that abstraction stabilizes).
+/// Positions remain Coordinator-owned. Boundaries: NOT a KV record, NOT
+/// usage, NOT a position source, NOT a transcript.
 ///
 /// Invariants:
 ///   I-L1 committed-only — entries exist only for committed transitions
@@ -16,7 +19,11 @@ import SimiGoRuntimeContract
 ///        marker resets the growth point; the superseded tail is retained
 ///        and flagged)
 ///   I-L3 entry prefixLength == backend bound-prefix length at that
-///        position (cross-checked against the backend)
+///        position — ENFORCED at append: every entry is cross-checked
+///        against the backend's own binding record through the authority
+///        closure; a mismatch (wrong length, missing binding, or binding
+///        at another position) throws divergence-class and the entry is
+///        never recorded
 public struct OversizedTokenLedgerEntry: Equatable, Sendable {
     public enum Kind: Equatable, Sendable {
         case bootstrap
@@ -50,19 +57,45 @@ public final class OversizedTokenLedger: @unchecked Sendable {
     private var entries: [OversizedTokenLedgerEntry] = []
     /// Last committed position per execution — drives I-L2 validation.
     private var lastCommittedPosition: [ExecutionID: Int] = [:]
+    /// I-L3 authority — the backend's own binding record, queried per
+    /// append. Required (never optional): a ledger that can skip the
+    /// cross-check is the gap this gate exists to close.
+    private let boundPrefixLength: (ExecutionID, Int) throws -> Int
 
-    public init() {}
+    public init(
+        boundPrefixLength: @escaping (ExecutionID, Int) throws -> Int
+    ) {
+        self.boundPrefixLength = boundPrefixLength
+    }
 
     /// Append a committed entry. Validates per-execution ordering: turn and
     /// bootstrap entries must move strictly forward from the current growth
     /// point; a restore marker records the rollback/resume point and may move
     /// the growth point to any coordinator-valid position — rewind OR forward
-    /// resume of a previously superseded position. Defense in depth only: the
-    /// coordinator already gates restore targets on representation existence,
-    /// so the ledger bound is the furthest-ever committed position (I-L2).
+    /// resume of a previously superseded position. Every entry is first
+    /// cross-checked against the backend's binding record (I-L3); a mismatch
+    /// throws and the entry is never recorded. Position ordering defense in
+    /// depth: the coordinator already gates restore targets on representation
+    /// existence, so the ledger bound is the furthest-ever committed
+    /// position (I-L2).
     public func append(_ entry: OversizedTokenLedgerEntry) throws {
         lock.lock()
         defer { lock.unlock() }
+
+        let backendLength: Int
+        do {
+            backendLength = try boundPrefixLength(entry.executionID, entry.position)
+        } catch {
+            throw OversizedEngineError.residencyDivergence(
+                "token ledger: I-L3 no backend binding at position \(entry.position) "
+                    + "for \(entry.executionID) (\(error))")
+        }
+        guard entry.prefixLength == backendLength else {
+            throw OversizedEngineError.residencyDivergence(
+                "token ledger: I-L3 prefix mismatch at position \(entry.position) for "
+                    + "\(entry.executionID) (entry claims \(entry.prefixLength), "
+                    + "backend bound \(backendLength))")
+        }
 
         if entry.kind == .restoreMarker {
             let furthest = entries

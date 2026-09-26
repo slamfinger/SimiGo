@@ -277,6 +277,24 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
         boundPositions[state.id] = nil
     }
 
+    /// I-L3 authority: the token-level fact of the CURRENT physical binding —
+    /// the bound prefix's length, verified to be bound at exactly `position`.
+    /// This is the ledger's cross-check source: the value comes from the
+    /// backend's own binding record, never from the caller's local copy.
+    public func boundPrefixLength(
+        executionID: ExecutionID, position: ExecutionPosition
+    ) throws -> Int {
+        lock.lock(); defer { lock.unlock() }
+        guard let prefix = prefixes[executionID], let bound = boundPositions[executionID] else {
+            throw ExecutionStateBackendError.noBoundRepresentation(executionID)
+        }
+        guard bound == position else {
+            throw ExecutionStateBackendError.representationPositionMismatch(
+                executionID: executionID, bound: bound, logical: position)
+        }
+        return prefix.count
+    }
+
     public func captureRepresentation(
         for state: ExecutionStateHandle
     ) async throws -> ExecutionRepresentation {
