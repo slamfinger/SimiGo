@@ -124,6 +124,12 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     public private(set) var sessionInfo: OversizedSessionInfo?
     public private(set) var lastInputTokenCount: Int?
 
+    /// FM-03: lifecycle/generation serialization. The product guards
+    /// single-flight at the UI layer; this lock makes the ENGINE itself
+    /// concurrency-safe for direct callers (generate / newSession /
+    /// restoreSession are serialized against each other).
+    private let lifecycleSerialLock = AsyncLock()
+
     // ResidencyController (consistency with the fitting-model path): segment
     // materialization/release goes through the controller's admission and
     // pressure paths, with INV-1 audited after every transition.
@@ -472,6 +478,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         guard let model, let reader, let tokenizer else {
             throw OversizedEngineError.notLoaded
         }
+        await lifecycleSerialLock.lock()
+        defer { lifecycleSerialLock.unlock() }
         var nextInput: [Int]
         if let explicit = nextInputTokens {
             // Explicitly provided (including empty) — e.g. the strict
@@ -742,6 +750,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// fresh while segment residency is unresolved. The Execution State is
     /// discarded only after the residency floor has been reached.
     public func newSession() async throws {
+        await lifecycleSerialLock.lock()
+        defer { lifecycleSerialLock.unlock() }
         if let residency {
             _ = try await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
         }
@@ -758,6 +768,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// the surviving representation at that position; segments re-materialize
     /// on demand at the next forward).
     public func restoreSession(to position: Int) async throws {
+        await lifecycleSerialLock.lock()
+        defer { lifecycleSerialLock.unlock() }
         guard let coordinator, let state = currentState else {
             throw OversizedEngineError.notLoaded
         }

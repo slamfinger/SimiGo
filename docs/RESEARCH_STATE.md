@@ -3607,6 +3607,45 @@ Current gate  : BACKEND_PHYSICAL_ATOMICITY_HARDENED /
                 AWAITING_REVIEW_RESTAMP
 ```
 
+### Reviewer Sequence-Audit Round — FM-01/02/03 Addressed — 2026-09-26
+
+Reviewer audited at 7b87312 (one commit behind f495a85) and registered the
+Failure Matrix FM-01~FM-10. Disposition:
+
+```text
+FM-01 (P1) generate: logical advance vs representation rebind
+     non-atomic            → ALREADY FIXED at f495a85 (the commit after
+                             the reviewer's baseline): greedy generation
+                             mutates nothing; commit order = physical
+                             rebind at N+1 -> logical advance -> history
+                             record. The reviewer's proposed
+                             candidate->bind->logical-commit design is
+                             what f495a85 ships.
+FM-02 (P1) fork: child logical commit before physical derivation
+                           → FIXED this round: derivation FIRST; failure
+                             leaves parent unchanged and the child
+                             UNCOMMITTED (no handle/record/history);
+                             logical fork commits only after derivation
+                             succeeds. Lazy-fork semantics preserved
+                             (parent unbound -> no derivation).
+FM-03 (P1) engine lifecycle not concurrency-safe
+                           → HARDENED: AsyncLock serializes generate /
+                             newSession / restoreSession entries.
+FM-04 cancellation transaction semantics     → registered (GA)
+FM-05 Residency <-> ExecutionState cross-layer transaction → registered (GA)
+FM-06 INV-3 reconcile in production path     → registered (completeness)
+FM-07 budget/core conservatism               → FIXED at f495a85
+FM-08 MLX-internal fault atomicity           → registered (beta boundary)
+FM-09 reattach physical obligation           → registered (semantic definition)
+FM-10 oversized fork/branch product surface  → beta scope
+```
+
+Verification: 89 tests PASS (87 + 2 atomicity; fork happy-path unchanged).
+
+```text
+Current gate  : FM01_02_03_ADDRESSED / FAILURE_MATRIX_AUDIT_ONGOING
+```
+
 ### Second-Audit Fixes — Turn-Commit Atomicity + Budget Semantics + servedTranscript Ordering — 2026-09-26
 
 Three findings from the second audit round (ResidencyController →

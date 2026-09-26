@@ -166,26 +166,40 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             throw CoordinatorError.duplicateExecution(request.childID)
         }
 
-        let child = ExecutionStateHandle(
+        // TRANSACTIONAL FORK (review FM-02): the physical derivation runs
+        // BEFORE the logical child commits — a derivation failure leaves the
+        // parent unchanged and the child UNCOMMITTED (no handle, no fork
+        // record, no partial representation history). The logical fork
+        // (handle + record + history) is in-memory and commits only after
+        // the physical derivation succeeded.
+        var child: ExecutionStateHandle?
+        var childRep: ExecutionRepresentation?
+        if parent.position == request.childPosition,
+            let parentRep = representationHistory[parent.id]?.last {
+            let probe = ExecutionStateHandle(
+                id: request.childID,
+                lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
+                position: request.childPosition,
+                continuation: request.childContinuation,
+                lifecycle: .active
+            )
+            childRep = try await backend.deriveRepresentation(from: parentRep, for: probe)
+        }
+
+        child = ExecutionStateHandle(
             id: request.childID,
             lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
             position: request.childPosition,
             continuation: request.childContinuation,
             lifecycle: .active
         )
-        handles[request.childID] = child
+        handles[request.childID] = child!
         appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
 
-        // Physical derivation is best-effort: if the parent has a bound
-        // representation, the child's representation derives from it; if the
-        // parent was never bound (no generation yet), the child binds lazily
-        // after its first generation. Either way the LOGICAL fork is complete.
-        if parent.position == request.childPosition,
-            let parentRep = representationHistory[parent.id]?.last {
-            let childRep = try await backend.deriveRepresentation(from: parentRep, for: child)
-            representationHistory[child.id, default: []].append(childRep)
+        if let rep = childRep {
+            representationHistory[request.childID, default: []].append(rep)
         }
-        return child
+        return child!
     }
 
     public func restore(
