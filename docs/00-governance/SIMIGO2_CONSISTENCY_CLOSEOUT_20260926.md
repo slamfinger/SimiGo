@@ -71,3 +71,31 @@ mean token             10,489 ms
 Artifacts: `results/o5-sweep/app-realdevice-selftest-{inv1,final}.json`,
 `app-selftest-*.json`; code: `OversizedSegmentMaterializer.swift`,
 `OversizedSegmentedEngine.swift`, `SimiGo2App.swift`.
+
+## Addendum — Fitting-Model Swap Behavior (descriptive probe) — 2026-09-26
+
+Question: do the oversized techniques matter for fitting (fully-resident)
+models? Native full-resident path probe (o2-baseline, zero SimiGo
+involvement) on Qwen3-Coder-30B-A3B-Instruct-4bit (16 GiB weights, 32 GiB
+machine), dense external swap sampling across load + 3 generations:
+
+```text
+swap: flat at 1.61 GiB — the pre-existing system baseline; ZERO
+paging activity during load or generation
+```
+
+Conclusion: a fitting model that fully resides is naturally swap-free —
+there is no streaming, hence no wired-oscillation source for the kernel
+to page against. The oversized techniques divide accordingly:
+- No use for fitting models: floor/streaming-unit policy and
+  post-forward eviction (no streaming = no oscillation source).
+- Universal (already model-agnostic): Controller/INV-1 accounting and
+  placeholder-first load (the native quantize transient exists at small
+  scale too, but at 16 GiB it stays far below the paging threshold —
+  headroom, not necessity).
+- The one fitting-model class that benefits: borderline models (e.g.
+  Nail-6bit, 30.28 GiB — nominally fitting but squeezed under
+  co-residency) — for those, the segmented streaming policy applies
+  directly.
+
+Artifact: `results/o5-sweep/qwen30b-native-swap-probe.json`.
