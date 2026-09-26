@@ -3,10 +3,42 @@ import Foundation
 import SimiGo2Experimental
 import SwiftUI
 
+/// SimiGo 2.0 app — v1.7-inspired chat experience over the oversized
+/// segmented engine, plus machine-verifiable self-tests.
+///
+/// Modes:
+///   (GUI)                          chat with a qwen3_next oversized model
+///                                  (segmented streaming engine, live
+///                                  residency gauges)
+///   --self-test --model M --states S   legacy Gate 5 group-residency proof
+///   --self-test-oversized --model M [--tokens N]
+///                                  double-pass segmented generation on the
+///                                  oversized model; PASS requires token
+///                                  determinism, footprint <= 30 GiB, swap 0
+
 @main
 enum SimiGo2App {
     static func main() async {
-        guard let configuration = SelfTestConfiguration(commandLine: CommandLine.arguments) else {
+        let arguments = CommandLine.arguments
+
+        if let oversized = OversizedSelfTestConfiguration(commandLine: arguments) {
+            do {
+                let report = try await OversizedRealDeviceSelfTest.run(oversized)
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                let data = try encoder.encode(report)
+                FileHandle.standardOutput.write(data)
+                FileHandle.standardError.write(
+                    Data("self-test-oversized: \(report.overallPass ? "PASS" : "FAIL")\n".utf8))
+                exit(report.overallPass ? 0 : 2)
+            } catch {
+                FileHandle.standardError.write(
+                    Data("self-test-oversized error: \(error.localizedDescription)\n".utf8))
+                exit(1)
+            }
+        }
+
+        guard let configuration = SelfTestConfiguration(commandLine: arguments) else {
             await SimiGo2AppScene.main()
             return
         }
@@ -28,77 +60,339 @@ enum SimiGo2App {
     }
 }
 
+// MARK: - GUI (v1.7-inspired chat over the oversized segmented engine)
+
 struct SimiGo2AppScene: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ChatRootView()
         }
     }
 }
 
-private struct ContentView: View {
-    @State private var modelPath = "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d"
-    @State private var states = "STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL"
-    @State private var output = "Ready."
-    @State private var isRunning = false
+struct ChatEntry: Identifiable, Equatable {
+    let id = UUID()
+    let role: String
+    var text: String
+    var streaming: Bool
+}
+
+@MainActor
+final class ChatAppModel: ObservableObject {
+    @Published var modelPath = ChatAppModel.resolvedDefaultModelPath
+    @Published var transcript: [ChatEntry] = []
+    @Published var inputText = ""
+    @Published var liveGauge = "idle"
+    @Published var statsLine = "engine not loaded"
+    @Published var isGenerating = false
+    @Published var loadLine = "model not loaded"
+
+    private var engine: OversizedSegmentedEngine?
+    private var loadedPath: URL?
+
+    static var resolvedDefaultModelPath: String {
+        let hub = NSHomeDirectory() + "/.cache/huggingface/hub"
+        let dir = hub + "/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots"
+        if let entries = try? FileManager.default.contentsOfDirectory(atPath: dir),
+           let snap = entries.first {
+            return dir + "/" + snap
+        }
+        return dir
+    }
+
+    private func ensureEngine() throws -> OversizedSegmentedEngine {
+        let url = URL(fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
+        if let engine = engine, loadedPath == url, engine.stats != nil {
+            return engine
+        }
+        let engine = OversizedSegmentedEngine(modelDirectory: url)
+        loadedPath = url
+        self.engine = engine
+        return engine
+    }
+
+    func loadModel() {
+        isGenerating = true
+        loadLine = "loading…"
+        let engine: OversizedSegmentedEngine
+        do {
+            engine = try ensureEngine()
+        } catch {
+            loadLine = "load error: \(error.localizedDescription)"
+            isGenerating = false
+            return
+        }
+        Task.detached {
+            do {
+                let stats = try await engine.load()
+                await MainActor.run {
+                    self.loadLine = String(
+                        format: "loaded: core %.2f GiB | %d segments × %d layers | load %.1fs | peak %.2f GiB",
+                        Double(stats.residentActiveMiB) / 1024,
+                        stats.segmentCount, stats.totalLayers, stats.loadSeconds,
+                        Double(stats.peakFootprintMiB) / 1024)
+                    self.statsLine = String(
+                        format: "capacity gate %d MiB | swap %d MiB",
+                        stats.peakCapacityMiB, stats.maxSwapMiB)
+                    self.isGenerating = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.loadLine = "load error: \(error.localizedDescription)"
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+
+    func send() {
+        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !isGenerating else { return }
+        inputText = ""
+        transcript.append(ChatEntry(role: "user", text: text, streaming: false))
+        transcript.append(ChatEntry(role: "assistant", text: "", streaming: true))
+        liveGauge = "generating…"
+        isGenerating = true
+
+        let history = transcript.filter { !$0.streaming && ($0.role == "user" || $0.role == "assistant") }
+            .map { EngineChatMessage(role: $0.role, content: $0.text) }
+        let engine: OversizedSegmentedEngine
+        do {
+            engine = try ensureEngine()
+        } catch {
+            appendToLastAssistant("  [error: \(error.localizedDescription)]")
+            finishLastAssistantSelf()
+            liveGauge = "error"
+            isGenerating = false
+            return
+        }
+
+        Task.detached {
+            do {
+                if engine.stats == nil {
+                    _ = try await engine.load()
+                    DispatchQueue.main.async { self.loadLine = "loaded on first message" }
+                }
+                let turn = try await engine.generate(
+                    messages: history,
+                    maxNewTokens: 24,
+                    onToken: { gauge, tokenText in
+                        DispatchQueue.main.async {
+                            self.appendToLastAssistant(tokenText)
+                            self.liveGauge = String(
+                                format: "token %d | active %d MiB | footprint %d MiB | swap %d MiB | resident seg %d",
+                                gauge.tokenIndex, gauge.activeMiB, gauge.footprintMiB,
+                                gauge.swapMiB, gauge.residentSegment)
+                        }
+                    }
+                )
+                DispatchQueue.main.async {
+                    self.finishLastAssistant(turn.text, mean: turn.meanTokenMs)
+                    self.isGenerating = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.appendToLastAssistant("  [error: \(error.localizedDescription)]")
+                    self.finishLastAssistantSelf()
+                    self.liveGauge = "error"
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+
+    func newSession() {
+        guard !isGenerating else { return }
+        transcript.removeAll()
+        liveGauge = "idle (session reset; segments already released per token)"
+    }
+
+    fileprivate func appendToLastAssistant(_ token: String) {
+        guard let last = transcript.indices.last, transcript[last].role == "assistant" else { return }
+        transcript[last].text += token
+    }
+
+    fileprivate func finishLastAssistant(_ fullText: String, mean: Double) {
+        guard let last = transcript.indices.last, transcript[last].role == "assistant" else { return }
+        transcript[last].text = fullText
+        transcript[last].streaming = false
+        statsLine = String(format: "last turn: %.0f ms/token | %@", mean, statsLine)
+    }
+
+    fileprivate func finishLastAssistantSelf() {
+        guard let last = transcript.indices.last else { return }
+        transcript[last].streaming = false
+    }
+}
+
+struct ChatRootView: View {
+    @StateObject private var model = ChatAppModel()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SimiGo 2.0 Experimental — MLX real-device proof")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("SimiGo 2.0 — oversized segmented chat (qwen3_next)")
                 .font(.headline)
 
             LabeledContent("Model") {
-                TextField("Model directory", text: $modelPath)
+                TextField("Model directory", text: $model.modelPath)
                     .textFieldStyle(.roundedBorder)
-            }
-
-            LabeledContent("States") {
-                TextField("Execution states", text: $states)
-                    .textFieldStyle(.roundedBorder)
+                Button("Load") { model.loadModel() }
+                    .disabled(model.isGenerating)
             }
 
             HStack {
-                Button("Run Gate 5") { run() }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isRunning)
-                if isRunning {
-                    ProgressView()
-                    Text("Running real MLX inference…")
+                Text(model.loadLine).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(model.statsLine).font(.caption2).foregroundStyle(.tertiary)
+                Button("New session") { model.newSession() }
+                    .disabled(model.isGenerating)
+            }
+
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(model.transcript) { entry in
+                            HStack {
+                                if entry.role == "user" { Spacer(minLength: 60) }
+                                Text(entry.role == "user" ? entry.text : entry.text)
+                                    .padding(10)
+                                    .background(
+                                        entry.role == "user"
+                                            ? Color.accentColor.opacity(0.18)
+                                            : Color.secondary.opacity(0.12)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                if entry.role == "assistant" { Spacer(minLength: 60) }
+                            }
+                            .id(entry.id)
+                        }
+                    }
+                    .padding(4)
+                }
+                .frame(minHeight: 280)
+                .onChange(of: model.transcript) { _, _ in
+                    if let last = model.transcript.last {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
                 }
             }
 
-            TextEditor(text: .constant(output))
+            Text(model.liveGauge)
                 .font(.system(size: 11, design: .monospaced))
-                .frame(minHeight: 360)
+                .foregroundStyle(.secondary)
+
+            HStack {
+                TextField("Message…", text: $model.inputText, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { model.send() }
+                Button("Send") { model.send() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.isGenerating || model.inputText.isEmpty)
+            }
         }
         .padding(18)
-        .frame(minWidth: 860, minHeight: 520)
+        .frame(minWidth: 900, minHeight: 620)
+        .onAppear { model.modelPath = ChatAppModel.resolvedDefaultModelPath }
     }
+}
 
-    private func run() {
-        isRunning = true
-        output = "Running…"
-        Task {
-            do {
-                let parsedStates = try states.split(separator: ",").map {
-                    try ExecutionStateLabel(parsing: String($0))
-                }
-                let configuration = SelfTestConfiguration(
-                    modelDirectory: URL(fileURLWithPath: modelPath, isDirectory: true),
-                    states: parsedStates
-                )
-                let (data, residencyPass) = try await RealDeviceSelfTest.run(configuration)
-                output = String(decoding: data, as: UTF8.self)
-                if !residencyPass {
-                    output += "\n\nRESULT: RESIDENCY_COMPATIBILITY_BOUNDARY (benchmarkPass=false)"
-                }
-            } catch {
-                output = "ERROR: \(error.localizedDescription)"
-            }
-            isRunning = false
+// MARK: - Oversized real-device self-test
+
+struct OversizedSelfTestConfiguration {
+    let modelDirectory: URL
+    let tokens: Int
+    let segmentSize: Int
+
+    init?(commandLine arguments: [String]) {
+        guard arguments.contains("--self-test-oversized"),
+              let modelIndex = arguments.firstIndex(of: "--model"),
+              modelIndex + 1 < arguments.count
+        else { return nil }
+        modelDirectory = URL(
+            fileURLWithPath: arguments[modelIndex + 1], isDirectory: true
+        ).standardizedFileURL
+        if let tokensIndex = arguments.firstIndex(of: "--tokens"),
+           tokensIndex + 1 < arguments.count, let parsed = Int(arguments[tokensIndex + 1]) {
+            tokens = parsed
+        } else {
+            tokens = 8
+        }
+        if let segIndex = arguments.firstIndex(of: "--segment-size"),
+           segIndex + 1 < arguments.count, let parsed = Int(arguments[segIndex + 1]) {
+            segmentSize = parsed
+        } else {
+            segmentSize = OversizedSegmentedEngine.defaultSegmentSize
         }
     }
 }
+
+struct OversizedSelfTestReport: Codable {
+    let gate: String
+    let device: DeviceFacts
+    let modelDirectory: String
+    let segmentSize: Int
+    let segmentCount: Int
+    let loadSeconds: Double
+    let pass1Tokens: [Int]
+    let pass2Tokens: [Int]
+    let determinismIdentical: Bool
+    let peakFootprintMiB: Int64
+    let maxSwapMiB: Int64
+    let meanTokenMs: Double
+    let peakCapacityMiB: Int64
+    let overallPass: Bool
+}
+
+enum OversizedRealDeviceSelfTest {
+    static func run(_ configuration: OversizedSelfTestConfiguration) async throws -> OversizedSelfTestReport {
+        let engine = OversizedSegmentedEngine(
+            modelDirectory: configuration.modelDirectory,
+            segmentSize: configuration.segmentSize
+        )
+        let stats = try await engine.load()
+        let prompt = [
+            EngineChatMessage(role: "user", content: "Write a Python function that merges two sorted lists.")
+        ]
+        let pass1 = try await engine.generate(messages: prompt, maxNewTokens: configuration.tokens)
+        let pass2 = try await engine.generate(messages: prompt, maxNewTokens: configuration.tokens)
+        let finalStats = engine.stats ?? stats
+        let determinism = pass1.tokenIDs == pass2.tokenIDs
+        let overall = determinism
+            && finalStats.peakFootprintMiB <= finalStats.peakCapacityMiB
+            && finalStats.maxSwapMiB == 0
+        return OversizedSelfTestReport(
+            gate: "O4_OVERSIZED_REAL_DEVICE_APP_SELFTEST",
+            device: DeviceFacts(
+                brand: Self.sysctlString("machdep.cpu.brand_string") ?? "unknown",
+                machine: Self.sysctlString("hw.machine") ?? "unknown",
+                physicalMemoryBytes: ProcessInfo.processInfo.physicalMemory,
+                operatingSystem: ProcessInfo.processInfo.operatingSystemVersionString
+            ),
+            modelDirectory: configuration.modelDirectory.path,
+            segmentSize: finalStats.segmentSize,
+            segmentCount: finalStats.segmentCount,
+            loadSeconds: finalStats.loadSeconds,
+            pass1Tokens: pass1.tokenIDs,
+            pass2Tokens: pass2.tokenIDs,
+            determinismIdentical: determinism,
+            peakFootprintMiB: finalStats.peakFootprintMiB,
+            maxSwapMiB: finalStats.maxSwapMiB,
+            meanTokenMs: pass1.meanTokenMs,
+            peakCapacityMiB: finalStats.peakCapacityMiB,
+            overallPass: overall
+        )
+    }
+
+    private static func sysctlString(_ name: String) -> String? {
+        var size = 0
+        guard sysctlbyname(name, nil, &size, nil, 0) == 0, size > 0 else { return nil }
+        var buffer = [CChar](repeating: 0, count: size)
+        guard sysctlbyname(name, &buffer, &size, nil, 0) == 0 else { return nil }
+        return String(cString: buffer)
+    }
+}
+
+// MARK: - Legacy Gate 5 real-device proof (fitting models) — unchanged
 
 struct SelfTestConfiguration: Sendable {
     let modelDirectory: URL
@@ -128,7 +422,7 @@ struct SelfTestConfiguration: Sendable {
     }
 }
 
-private struct DeviceFacts: Codable, Hashable, Sendable {
+struct DeviceFacts: Codable, Hashable, Sendable {
     let brand: String
     let machine: String
     let physicalMemoryBytes: UInt64

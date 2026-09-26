@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: O6_EXECSTATE_OVERSIZED_PASS / SEVEN_OF_SEVEN / APP_BUILD_NEXT
+Engineering subphase: APP_V2_DELIVERED / OVERSIZED_SELFTEST_PASS_ON_DEVICE / FOLLOWUPS_REGISTERED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3353,3 +3353,39 @@ Next          : SimiGo-1.7-inspired 2.0 app (oversized segmented engine +
 
 Gate history: `docs/00-governance/SIMIGO2_O6_EXECUTION_STATE_OVERSIZED_20260926.md`;
 artifact `results/o5-sweep/qwen3-next-o6-execstate.json`.
+
+### SimiGo 2.0 App v2 + Real-Device Verification — PASS — 2026-09-26
+
+The O-line mechanics were productized as `OversizedSegmentedEngine`
+(seg8 default / placeholder-first / single-copy reader / chat-template
+multi-turn / per-token gauge streaming), and the app was upgraded to a
+v1.7-inspired chat experience (multi-turn session, streaming assistant,
+live residency panel: per-token active/footprint/swap + resident-segment
+indicator) with a new machine-verifiable `--self-test-oversized`
+(determinism + footprint ≤ 30 GiB + swap 0); legacy Gate 5 self-test
+retained.
+
+Real-device verification from the built .app bundle binary (Apple M5,
+32.0 GiB, macOS 26.6.2), release build, Qwen3-Coder-Next-4bit
+(41.76 GiB > physical):
+
+```text
+overallPass      TRUE
+determinism      PASS — pass1 == pass2 == [8420, 594, 264, 13027, 729, 429, 80953, 1378]
+peak footprint   8,293 MiB (gate 30,720) / max swap 0 MiB
+mean token       9,075 ms / engine load 0.82 s
+```
+
+Engine timer unit defect (as→ms /1e6 instead of /1e15) found via the
+first report's meanTokenMs and fixed before registration.
+
+```text
+Current gate  : APP_V2_DELIVERED / OVERSIZED_SELFTEST_PASS_ON_DEVICE
+Next          : user-facing GUI validation; registered follow-ups =
+                ResidencyController segment accounting (INV-1 over
+                segments), Execution State fork/restore in the app session
+                layer, Qwen4Exp port gate (user decision)
+```
+
+Gate history: `docs/00-governance/SIMIGO2_APP_V2_REAL_DEVICE_20260926.md`;
+artifact `results/o5-sweep/app-realdevice-oversized-selftest.json`.
