@@ -5,6 +5,7 @@ import MLXLMCommon
 import MLXLLM
 import MLXHuggingFace
 import Tokenizers
+import SimiGo2Experimental
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
 /// SimiGo retains only service state around that API.
@@ -560,6 +561,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
         var managed: ManagedSession
         var reusedSession = false
+        // Route B 前缀池命中轮：本会话的表示来自共享池快照（已对账），
+        // roll-forward 无需再对其做 conditional restore。
+        var poolRestoredTurn = false
 
         let kvFingerprint = kvSettings.map { String(describing: $0) }
 
@@ -604,22 +608,67 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     )
                 )
             }
-            let history = Array(incoming.dropLast())
-            let session = ChatSession(
-                container,
-                history: history,
-                generateParameters: params,
-                additionalContext: additionalContext,
-                tools: toolSpecs
-            )
-            managed = ManagedSession(
-                session: session,
-                history: history,
-                historyJSON: Array(messages.dropLast()),
-                kvFingerprint: kvFingerprint
-            )
-            reusedSession = false
-            state.withLock { $0.sessions[executionKey.storageKey] = managed }
+            // Route B 前缀池（SIMIGO17）：冷重建前先查跨会话共享池。
+            // 命中即 cacheLoad 恢复同款形态（快照 KV + delta 契约），
+            // 只付自己的尾巴——47.6s 冷税变快照加载 + delta prefill。
+            var poolRestored: ManagedSession?
+            if let poolAdmission = NativeMLXPrefixPool.shared.admit(
+                modelID: modelName(from: modelPath),
+                kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled,
+                incoming: incoming.map { (role: $0.role.rawValue, content: $0.content) }
+            ) {
+                do {
+                    let snapshot = try await NativeMLXPrefixPool.shared.load(poolAdmission)
+                    let coveredMessages = poolAdmission.entry.tokenCount / 2
+                    let session = ChatSession(
+                        container,
+                        cache: snapshot.cache,
+                        state: snapshot.state,
+                        generateParameters: params,
+                        additionalContext: additionalContext
+                    )
+                    let restored = ManagedSession(
+                        session: session,
+                        history: Array(incoming.prefix(coveredMessages)),
+                        historyJSON: Array(messages.prefix(coveredMessages)),
+                        kvFingerprint: kvFingerprint,
+                        isRestoredSnapshot: true
+                    )
+                    state.withLock { $0.sessions[executionKey.storageKey] = restored }
+                    poolRestored = restored
+                    traceLogger.trace(
+                        "[MLX] poolBind messages=\(coveredMessages) delta=\(incoming.count - coveredMessages)"
+                    )
+                } catch {
+                    // P-I1 响亮失败已在适配器内自愈（条目已删）；
+                    // 本轮回退冷路径，绝不静默续算在未对账表示上。
+                    traceLogger.trace(
+                        "[MLX] poolBindFailed err=\(error.localizedDescription)")
+                }
+            }
+            if let restored = poolRestored {
+                managed = restored
+                reusedSession = true
+                poolRestoredTurn = true
+            } else {
+                let history = Array(incoming.dropLast())
+                let session = ChatSession(
+                    container,
+                    history: history,
+                    generateParameters: params,
+                    additionalContext: additionalContext,
+                    tools: toolSpecs
+                )
+                managed = ManagedSession(
+                    session: session,
+                    history: history,
+                    historyJSON: Array(messages.dropLast()),
+                    kvFingerprint: kvFingerprint
+                )
+                reusedSession = false
+                state.withLock { $0.sessions[executionKey.storageKey] = managed }
+            }
         }
 
         // Phase B roll-forward（2026-09-18，探索文档 §5/§6）：账本尾部 assistant
@@ -631,7 +680,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 小 delta 轮（162 fork 样本实测：分歧全在尾段、rebuild 170-248 vs
         // 恢复态 94-139 tok/s ⇒ delta<0.8×full 恒赢；大 delta 交回 extend）。
         var rolledForward = false
-        if reusedSession, ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last) {
+        if reusedSession, !poolRestoredTurn,
+            ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last) {
             switch ExecutionPolicy.conditionalRestoreGate(
                 configuration: restorePolicy,
                 incoming: messages,
@@ -975,6 +1025,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 current.lastActivity = Date()
             }
             $0.lastActivity = Date()
+        }
+
+        // Route B 前缀池轮末导出：把本轮已处理消息流 + 新鲜 KV 注册为共享
+        // 边界（best-effort，await 内联——不与下一轮对该 session 的使用竞态；
+        // 序列化量级与上方 performSave 相当，0.15s@58k 实测口径）。
+        if RuntimeTuning.prefixPoolEnabled {
+            let poolHistory = managed.history.map {
+                (role: $0.role.rawValue, content: $0.content)
+            }
+            let poolSession = managed.session
+            await NativeMLXPrefixPool.shared.export(
+                modelID: modelName(from: modelPath),
+                kvFingerprint: kvFingerprint,
+                thinkingDisabled: thinkingDisabled,
+                history: poolHistory
+            ) { url in
+                try await poolSession.saveCache(to: url)
+            }
         }
 
         // Phase B：每成功轮落 checkpoint（roll-forward 的 last known good；
