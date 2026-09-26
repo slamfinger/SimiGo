@@ -1,5 +1,5 @@
 {
-  "originHash" : "12eea5d6ca83edcbc992763ab95bd105ef2bf3c386dfb68ef1b45054fe5c5e37",
+  "originHash" : "d3096cdfa9f9e7b3421c20f645afb9b80b4d668a07ff83b076b79bb5666f83f3",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -17,14 +17,6 @@
       "state" : {
         "revision" : "0bb916c67f4b9e5c682cbe02a42c701c93ab5021",
         "version" : "0.31.6"
-      }
-    },
-    {
-      "identity" : "mlx-swift-lm",
-      "kind" : "localSourceControl",
-      "location" : "/Users/mr.simi/Documents/mlx-swift-lm",
-      "state" : {
-        "revision" : "dc3ca619717192425254d4da18af0c29b978fcf7"
       }
     },
     {

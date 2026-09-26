@@ -50,6 +50,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     private struct State {
         var modelContainer: ModelContainer?
+        /// v2.0 beta: oversized models are served by the segmented runtime
+        /// instead of the container path; nil for fitting models.
+        var oversized: OversizedRuntime?
         var httpServer: HTTPServer?
         var isRunning = false
         var lifecycle: Lifecycle = .stopped
@@ -140,10 +143,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
             logMemory("beforeLoad")
             self.state.withLock { $0.lifecycle = .loading }
-            let container = try await LLMModelFactory.shared.loadContainer(
-                from: URL(fileURLWithPath: info.path),
-                using: #huggingFaceTokenizerLoader()
-            )
+            // v2.0 beta: oversized models route to the segmented engine
+            // (controller-driven segment residency + strict Execution State
+            // sessions); every other model loads through the unchanged
+            // container path below.
+            var container: ModelContainer?
+            if OversizedRuntime.supports(path: info.path) {
+                let oversized = OversizedRuntime(info: info)
+                try await oversized.start(info, port: port)
+                self.state.withLock { $0.oversized = oversized }
+            } else {
+                container = try await LLMModelFactory.shared.loadContainer(
+                    from: URL(fileURLWithPath: info.path),
+                    using: #huggingFaceTokenizerLoader()
+                )
+            }
             let modelId = modelName(from: info.path)
             let nodeConfiguration = await MainActor.run {
                 let current = InferenceNodeConfiguration.shared.snapshot()
@@ -286,6 +300,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     private func ensureLoaded() async throws {
+            if state.withLock({ $0.oversized }) != nil { return }
+
         let needsResume = state.withLock { $0.isRunning && $0.modelContainer == nil }
         guard needsResume else { return }
 
@@ -391,6 +407,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void = { _ in }
     ) async throws -> GenerationResult {
         state.withLock { $0.lastActivity = Date() }
+        if let oversized = state.withLock({ $0.oversized }) {
+            return try await oversized.handleGenerate(
+                messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
+            )
+        }
         try await ensureLoaded()
 
         let executionKey = try AgentExecutionKey.resolve(

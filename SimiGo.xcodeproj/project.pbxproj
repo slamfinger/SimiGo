@@ -15,6 +15,8 @@
 		C1632AEC3028D78100D1EF95 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEB3028D78100D1EF95 /* MLXVLM */; };
 		C1632AEE3028D78A00D1EF95 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AED3028D78A00D1EF95 /* MLXLMCommon */; };
 		C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
+		C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
+		C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +60,8 @@
 				C1632AE03028D4EB00D1EF95 /* Hub in Frameworks */,
 				C1632AEE3028D78A00D1EF95 /* MLXLMCommon in Frameworks */,
 				C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */,
+				C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */,
+				C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +129,8 @@
 				C1632AEB3028D78100D1EF95 /* MLXVLM */,
 				C1632AED3028D78A00D1EF95 /* MLXLMCommon */,
 				C1632AEF3028D80300D1EF95 /* MLXHuggingFace */,
+				C1632B112FB5000000D1EF95 /* SimiGo2Experimental */,
+				C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */,
 			);
 			productName = SimiGo;
 			productReference = C138807D2FB37213009F04D2 /* SimiGo.app */;
@@ -185,6 +191,7 @@
 				C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 				C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C138807E2FB37213009F04D2 /* Products */;
@@ -377,7 +384,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -410,7 +417,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.7;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = SwiftUI.SimiGo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -516,7 +523,18 @@
 				revision = dc3ca619717192425254d4da18af0c29b978fcf7;
 			};
 		};
+		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../SimiGo-Lab/simigo2-experimental;
+		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../SimiGo-Lab/simigo2-experimental;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		C1632ADF3028D4EB00D1EF95 /* Hub */ = {
@@ -558,6 +576,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXHuggingFace;
+		};
+		C1632B112FB5000000D1EF95 /* SimiGo2Experimental */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B102FB5000000D1EF95 /* XCRemoteSwiftPackageReference "simigo2-experimental" */;
+			productName = SimiGo2Experimental;
+		};
+		C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B102FB5000000D1EF95 /* XCRemoteSwiftPackageReference "simigo2-experimental" */;
+			productName = SimiGoRuntimeContract;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
