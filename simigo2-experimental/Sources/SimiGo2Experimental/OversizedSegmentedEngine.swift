@@ -568,6 +568,12 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             }
 
             for (unitIndex, unit) in units.enumerated() {
+                // D1 FM-04 cancellation point: phase-boundary observation.
+                // ABORT here leaves position/binding unchanged; unit
+                // residency mechanics converge via INV-1. The commit
+                // section (bind -> advance -> history) deliberately has NO
+                // cancellation check.
+                try Task.checkCancellation()
                 // Segment residency THROUGH the ResidencyController: the
                 // admission materializes this unit via the materializer port
                 // (logged) and evicts whatever no longer fits the group
