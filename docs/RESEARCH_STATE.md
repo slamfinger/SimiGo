@@ -3635,6 +3635,42 @@ Current gate  : STEP2_INV3_PRODUCTION_RECONCILE_DONE /
                 FAILURE_MATRIX_FULL_RERUN_NEXT
 ```
 
+### Failure Matrix Full Re-run — COMPLETE — 2026-09-26
+
+Final audit round executed on the combined baseline (D1 contract + Step 1
+cancellation + Step 2 reconcile): 13 operations × 6 conditions × five
+state layers. Result: **P1 = zero**; all previously fixed boundaries
+re-verified intact (cancel→ABORT position/binding unchanged;
+commit→reconcile→DIRTY→recovery never touches committed Execution State;
+C_model per-engine-instance confirmed). Residuals are all non-blocking
+and registered:
+
+```text
+FM-01/02/03          CLOSED
+FM-04 cancellation   DEFINED + IMPLEMENTED (phase-boundary observation)
+FM-05 cross-layer    DEFINED (atomic pair vs mechanics layer)
+FM-06 INV-3 production CLOSED (per-turn reconcile integrated)
+FM-07 budget semantics CLOSED (f495a85)
+FM-08 MLX-internal faults  BETA BOUNDARY (registered)
+FM-09 reattach obligation  DEFINED (lazy; next-forward admissions)
+FM-10 oversized fork/branch BETA SCOPE
+P2 residuals         coordinator standalone concurrency (GA);
+                     C_model calibration review (GA); MLX-internal fault
+                     injection (beta boundary)
+```
+
+Verification evidence: 89/89 core tests; product strict E2E 2 tests PASS
+(cancellation-abort + canonical completion); real-device swap ≤ baseline
+throughout. Test layers recorded separately per review discipline:
+89 core ≠ product E2E ≠ true-machine ≠ Failure Matrix audit.
+
+```text
+Current gate  : FAILURE_MATRIX_COMPLETE / P1_ZERO / P2_REGISTERED
+Next          : GA work items (floor redesign, token ledger, cancellable
+                generation, segment KV, UI branch sessions);
+                Qwen4Exp port gate (independent decision)
+```
+
 ### Reviewer Sequence-Audit Round — FM-01/02/03 Addressed — 2026-09-26
 
 Reviewer audited at 7b87312 (one commit behind f495a85) and registered the
