@@ -55,18 +55,24 @@ public final class OversizedTokenLedger: @unchecked Sendable {
 
     /// Append a committed entry. Validates per-execution ordering: turn and
     /// bootstrap entries must move strictly forward from the current growth
-    /// point; a restore marker records the rollback point itself and may
-    /// rewind the growth point to any at-or-before position (I-L2).
+    /// point; a restore marker records the rollback/resume point and may move
+    /// the growth point to any coordinator-valid position — rewind OR forward
+    /// resume of a previously superseded position. Defense in depth only: the
+    /// coordinator already gates restore targets on representation existence,
+    /// so the ledger bound is the furthest-ever committed position (I-L2).
     public func append(_ entry: OversizedTokenLedgerEntry) throws {
         lock.lock()
         defer { lock.unlock() }
 
         if entry.kind == .restoreMarker {
-            if let growth = lastCommittedPosition[entry.executionID] {
-                guard entry.position <= growth else {
+            let furthest = entries
+                .filter { $0.executionID == entry.executionID }
+                .max(by: { $0.position < $1.position })?.position
+            if let furthest {
+                guard entry.position <= furthest else {
                     throw OversizedEngineError.residencyDivergence(
-                        "token ledger: restore marker ahead of growth point for \(entry.executionID) "
-                            + "(\(entry.position) > \(growth))"
+                        "token ledger: restore marker beyond committed history for "
+                            + "\(entry.executionID) (\(entry.position) > \(furthest))"
                     )
                 }
             }

@@ -3868,12 +3868,18 @@ Implementation landed (3ba44f7) per the registered definition. The
 definition's I-L2 wording ("strictly increasing prefixLength") was
 under-specified for rewind: as implemented and unit-pinned, I-L2 is
 growth-point based — turn/bootstrap entries must move strictly forward
-from the current growth point; a restore marker may rewind to any
-at-or-before position and RESETS the growth point; the rewound tail is
-retained and flagged (markSuperseded, append-only audit). I-L3 as
-implemented: entry prefixLength == active-chain bound-prefix length AT
-that position (the restore marker takes the restored position's prefix,
-not the last entry's).
+from the current growth point; a restore marker may move the growth
+point to any coordinator-valid position — rewind OR forward resume of a
+previously superseded position (undo of a rewind); the rewound tail is
+retained and flagged (markSuperseded, append-only audit). Marker bound =
+furthest-ever committed position (defense in depth; the coordinator
+already gates restore targets on representation existence — an earlier
+ahead-of-growth-only guard would have rejected legitimate forward
+restores with a post-commit throw, found by failure-surface review and
+fixed before any device run exercised it). I-L3 as implemented: entry
+prefixLength == active-chain bound-prefix length AT that position (the
+restore marker takes the restored position's prefix, not the last
+entry's).
 
 Wiring: bootstrap entry at session creation; turn entry appended only
 after the full commit sequence (physical rebind -> logical advance ->

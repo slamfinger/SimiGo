@@ -51,10 +51,29 @@ final class OversizedTokenLedgerTests: XCTestCase {
         XCTAssertEqual(ledger.allEntries().count, 4, "append-only: nothing deleted")
     }
 
-    func testRestoreMarkerAheadOfGrowthPointRejected() throws {
+    func testRestoreMarkerBeyondCommittedHistoryRejected() throws {
         let ledger = OversizedTokenLedger()
         try ledger.append(entry(0, .bootstrap, 18))
         XCTAssertThrowsError(try ledger.append(entry(3, .restoreMarker, 21)))
+    }
+
+    func testRestoreMarkerMayResumeSupersededPosition() throws {
+        let ledger = OversizedTokenLedger()
+        try ledger.append(entry(0, .bootstrap, 18))
+        try ledger.append(entry(1, .turn, 19))
+        // Rewind to bootstrap, re-commit the turn (the E5 replay shape)…
+        ledger.markSuperseded(beyond: 0, executionID: exec)
+        try ledger.append(entry(0, .restoreMarker, 18))
+        try ledger.append(entry(1, .turn, 19))
+        // …then RESUME the previously committed position — a forward restore
+        // is a legitimate marker (undo of a rewind), not forward growth.
+        try ledger.append(entry(1, .restoreMarker, 19))
+        try ledger.append(entry(2, .turn, 20))
+        let all = ledger.entries(for: exec)
+        XCTAssertEqual(
+            all.map(\.kind),
+            [.bootstrap, .turn, .restoreMarker, .turn, .restoreMarker, .turn])
+        XCTAssertEqual(all.last?.position, 2)
     }
 
     func testMarkSupersededRetainsAndFlags() throws {
