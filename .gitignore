@@ -9,3 +9,4 @@ xcuserdata/
 bench-output/
 __pycache__/
 *.pyc
+.zcode/
