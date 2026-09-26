@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: APP_TUNING_RERECORDED_POST_FIX / UNIT8_SHIPPED_DEFAULT / CONSISTENCY_CLOSEOUT_PASS
+Engineering subphase: V2_0_0_BETA_RELEASED / PRODUCT_INTEGRATION_PASS / GA_WORKITEMS_REGISTERED
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3527,3 +3527,19 @@ Current gate  : APP_TUNING_MATRIX_RERECORDED_POST_FIX /
 
 Gate history: `docs/00-governance/SIMIGO2_APP_PERFORMANCE_TUNING_20260926.md`
 (appendix: post-fix matrix in this section).
+
+### SimiGo v2.0.0-beta Released — Product Integration — 2026-09-26
+
+The matured code shipped as a product beta: SimiGo (the v1.7 production
+runtime, separate repo, main untouched) gained `release/v2.0.0-beta`
+(89cdbbf, tag v2.0.0-beta). mlx-swift-lm moved to the integration branch
+`release/v2.0-beta-ml` (dc3ca619 + merged segment APIs); simigo2-experimental
+added as a local package (SimiGo2Experimental + SimiGoRuntimeContract);
+`OversizedRuntime` routes qwen3_next >= 20 GiB models to the verified
+segmented engine through the product's own HTTP API surface (all v1.7
+functions unchanged; NativeMLX zero behavior change for fitting models).
+Real-device E2E via /v1/chat/completions: restore-replay determinism PASS.
+Known beta limitations: oversized-path usage counts zero (token-ledger
+integration = GA scope), non-cancellable greedy generation, single
+oversized session, no segment KV. Release .app built; release notes
+`docs/RELEASE_v2.0.0-beta.md` in the SimiGo repo.
