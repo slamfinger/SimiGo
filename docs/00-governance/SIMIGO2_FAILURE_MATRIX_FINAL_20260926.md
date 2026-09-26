@@ -108,3 +108,47 @@ device evidence               E5 replay chain bootstrap/turn!S/restoreMarker/
                               turn PASS (app-selftest-tl-gate.json); rewind
                               path byte-identical after 07b210d
 ```
+
+---
+
+## Addendum 2 — I-L3 enforcement closure — 2026-09-27
+
+Code-level audit at e29fce7 found I-L3 was cross-REFERENCED but not
+cross-CHECKED: `append()` never verified `prefixLength`, the restore
+marker's value was ledger-self-derived, so a ledger/backend prefix
+divergence was undetectable. Closed the same day (this addendum's
+commit): the ledger now carries a REQUIRED authority closure over the
+backend binding record (`boundPrefixLength(executionID:position:)` with
+no-binding + position-mismatch guards) and enforces I-L3 on every append
+of every kind — mismatch throws divergence-class, nothing recorded. The
+restore marker's prefixLength is backend-derived (coordinator.restore
+re-binds the historical prefix before returning); the ledger-self-derived
+helper is deleted. Ownership wording unified in the gate definition
+(conceptual owner: Execution State representation layer; implementation
+owner: OversizedSegmentedEngine — no migration, registered as deferred).
+No full matrix re-run triggered (narrow, single-invariant addition; the
+physical commit paths are untouched — the authority only READS the
+binding record). Targeted surfaces:
+
+```text
+turn/bootstrap append, wrong length    divergence-class throw post-commit;
+                                       entry not recorded; canonical state
+                                       governs client retry (existing
+                                       post-commit disposition unchanged)
+append with no backend binding         divergence-class throw (was:
+                                       silently recordable — closed)
+binding at another position            divergence-class throw via
+                                       position-mismatch guard (was:
+                                       undetectable position drift)
+restore marker, wrong prefixLength     divergence-class throw BEFORE
+                                       sessionInfo update surfaces; retry
+                                       safe (markSuperseded idempotent)
+unit battery                           11-case (100/100 total): the 7
+                                       prior cases re-pinned through the
+                                       independent backend stub + 4
+                                       deliberate-mismatch cases
+device evidence                        unchanged (app-selftest-tl-gate
+                                       chain); re-run NOT triggered — the
+                                       change adds a read-only check on
+                                       the existing commit path
+```

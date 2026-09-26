@@ -28,15 +28,25 @@ after a logical restore to position J, the next committed turn at J+1
 continues from the entry at J (the superseded tail is retained, marked
 superseded by the restore — append-only audit trail).
 Invariant I-L3 (cross-check): the entry's prefixLength equals the backend
-bound-prefix length reported at that position.
+bound-prefix length reported at that position. ENFORCED at append — the
+ledger consults the backend's own binding record (authority closure) for
+every entry; a wrong length, a missing binding, or a binding at another
+position throws divergence-class and the entry is never recorded.
 
 ## 2. Who owns it
 
-The ExecutionStateBackend (the physical representation owner) — the
-ledger is the token-level view of the representation history. The
+Conceptual owner: the Execution State representation layer — the prefix
+IS the physical representation; the ledger is its token-level view. The
 Coordinator owns positions; the Backend owns prefixes; the LEDGER is
-their join record, owned by the Backend, appended only by the commit
-path (physical rebind + logical advance both succeeded).
+their join record, appended only by the commit path (physical rebind +
+logical advance both succeeded).
+
+Current implementation owner (beta): the OversizedSegmentedEngine hosts
+the ledger as an engine-side representation audit structure, with the
+I-L3 authority wired directly to the backend binding record. Sinking the
+ledger into the ExecutionStateBackend abstraction is deferred until that
+abstraction stabilizes — this keeps the beta implementation honest about
+where the code lives while preserving the conceptual ownership above.
 
 ## 3. Which transitions update it
 
@@ -95,3 +105,44 @@ NOT a position source        positions come from the Coordinator; the
 Review disposition requested: approve the ledger model (scope/ownership/
 transition set/boundaries/invariants) — implementation follows in the
 next round.
+
+---
+
+## Amendment — 2026-09-27 — I-L3 enforcement + ownership wording
+
+Registered from the code-level audit at e29fce7 (no code changed during
+the audit). Two findings dispositioned:
+
+1. **I-L3 was cross-referenced, not cross-checked.** The original
+   wording ("equals the backend bound-prefix length reported at that
+   position") was satisfied only on the happy path: `append()` checked
+   position ordering but never `prefixLength`, and the restore marker's
+   value was derived from the ledger's own entries (self-referential).
+   The invariant is now ENFORCED: the ledger is constructed with a
+   required authority closure over the backend binding record
+   (`OversizedSegmentedStateBackend.boundPrefixLength(
+   executionID:position:)` — no-binding and position-mismatch guards
+   included); every append of every kind cross-checks against it and
+   throws divergence-class on mismatch, recording nothing. The restore
+   marker's prefixLength is now derived from the backend's re-bound
+   representation (coordinator.restore re-binds the historical prefix
+   before returning), not from ledger entries; the ledger-self-derived
+   helper is deleted. Unit battery: 4 deliberate-mismatch cases
+   (value mismatch / missing binding / position drift / marker
+   mismatch) — 96 → 100, all green.
+
+2. **Ownership wording unified.** The definition claimed the
+   ExecutionStateBackend owns the ledger; the code had it engine-side.
+   §2 now states both layers (conceptual owner: Execution State
+   representation layer; current implementation owner:
+   OversizedSegmentedEngine, engine-side audit structure with the I-L3
+   authority wired to the backend record). No ownership migration now —
+   sinking the ledger into the backend abstraction stays deferred until
+   that abstraction stabilizes.
+
+Also registered (P2, defensive consistency gap, no redesign): the
+restore sequence still has a theoretical post-commit window
+(restore committed → markSuperseded → marker append throws). With the
+I-L3 authority in place the marker append fails only under genuine
+backend/ledger divergence — which is exactly the loud failure the gate
+wants; the superseded flags are idempotent under retry.

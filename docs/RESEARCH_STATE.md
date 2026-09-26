@@ -3900,3 +3900,60 @@ determinism identical, 192 transfers, swap 0, pressure green
 Current gate  : TOKEN_LEDGER_GATE_VERIFIED / GA0_POLICY_TARGET_DEPENDENT /
                 FAILURE_MATRIX_RERUN_NEXT
 ```
+
+### Token Ledger I-L3 Enforcement Closure + Ownership Wording Unified — 2026-09-27
+
+Code-level review at e29fce7 (no code changed during review) dispositioned
+the gate as: I-L1/I-L2 verified; I-L3 cross-REFERENCED but not cross-CHECKED
+(`append()` never verified `prefixLength`; the restore marker's value was
+ledger-self-derived — "Ledger 找 Ledger 要 prefixLength"); ownership
+definition-vs-code deviation (definition said ExecutionStateBackend, code
+had OversizedSegmentedEngine). Same-day closure, minimal cut, no ownership
+migration, no Execution State refactor:
+
+```text
+I-L3 now ENFORCED   the ledger takes a REQUIRED authority closure over the
+                    backend binding record (new backend query
+                    boundPrefixLength(executionID:position:) with
+                    no-binding + position-mismatch guards); every append of
+                    every kind cross-checks entry.prefixLength against it —
+                    wrong length / missing binding / position drift throws
+                    divergence-class and records NOTHING (the authority is
+                    required, never optional — an optional check would
+                    recreate the gap)
+marker source moved restoreSession derives the marker's prefixLength from
+                    the backend's re-bound representation (coordinator.restore
+                    re-binds the historical prefix before returning); the
+                    ledger-self-derived helper is DELETED
+ownership unified   gate definition §2 amended: conceptual owner = Execution
+                    State representation layer; current implementation owner =
+                    OversizedSegmentedEngine (engine-side audit structure);
+                    backend sink deferred until the abstraction stabilizes
+P2 registered       restore post-commit window (restore committed ->
+                    markSuperseded -> marker append throws) = defensive
+                    consistency gap; with I-L3 live it fails only under
+                    genuine divergence (the loud failure the gate wants);
+                    markSuperseded idempotent under retry — no transaction
+                    redesign
+verification        unit battery 7 → 11 cases (4 deliberate-mismatch:
+                    value mismatch / missing binding / position drift /
+                    marker mismatch, each re-pinned through an INDEPENDENT
+                    backend stub — never derived from ledger entries);
+                    100/100 all green; full 13×6 matrix re-run NOT
+                    triggered (read-only check on untouched commit paths;
+                    surfaces dispositioned in Failure Matrix Addendum 2);
+                    device evidence unchanged (app-selftest-tl-gate.json)
+```
+
+Evidence boundary corrected per review: the earlier PASS proved normal-path
+ledger behavior; mismatch DETECTION is proven only from this round's unit
+battery. Next: release engineering round (mlx-swift-lm path, version,
+License, test defaults, deploy guide) — in the review-prescribed order
+(code correctness → gate closure → failure matrix disposition → public
+release engineering → v2.0.0-beta).
+
+```text
+Current gate  : TOKEN_LEDGER_GATE_VERIFIED_I_L3_ENFORCED /
+                GA0_POLICY_TARGET_DEPENDENT /
+                RELEASE_ENGINEERING_NEXT
+```
