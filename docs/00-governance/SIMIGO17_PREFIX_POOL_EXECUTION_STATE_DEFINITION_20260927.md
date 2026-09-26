@@ -196,15 +196,66 @@ Reviewer decides A, B, or A-then-B. Non-binding author note: A ships the
 user-visible fix fastest; B is the destination consistent with "daily
 path IS the Execution State product".
 
-## 9. Remaining open review questions
+## 10. ROUTE B SELECTED — Implementation Plan — 2026-09-27
 
-1. Block size 512: prefill-rate-weighted optimum vs hash granularity?
-2. Export points: turn-commit only (proposed) vs also mid-prefill?
-3. Disk persistence lifetime: session-scoped today (cacheSave) —
-   pool-scoped LRU with what cap?
-4. Interaction with rollforward conditional-restore gate — precedence
-   and accounting when both fire?
-5. (Route A only) confirm ChatSession delta-extend from an imported
-   checkpoint on the target model class — production rollforward
-   already exercises this path; audit = wiring confirmation, not an
-   open physical premise.
+User ruling: **Route B.** Architecture statement (refined during the
+pre-implementation audit, registered for review visibility):
+
+```text
+state layer    strict Execution State (E-line coordinator/contracts):
+               identity / position / lineage / bind-consume / restore
+executor       ChatSession (mlx-swift-lm registry) — architecture
+               coverage inherited from the same multi-architecture
+               base the E-line was validated on
+representation KV snapshots — ChatSession.saveCache(to:) /
+               ChatSession(container, cache:state:) are PRODUCTION-
+               PROVEN (v1.7 cacheSave/cacheLoad + rollforward:
+               import → delta-continue → warm first token)
+sharing        content-addressed prefix pool (this gate): rolling
+               hash-chain keys over token ids, namespaced by
+               (modelID, kvFingerprint — both already in
+               SessionCacheMetadata)
+all-resident   trivially true for daily models: ChatSession keeps KV
+               in memory; no segment machinery involved. The oversized
+               segmented engine is UNTOUCHED.
+principle      SimiGo decides in what resource state the model runs,
+               never what it computes (E-line architecture doc) — the
+               KV representation strategy is the fitting-model answer
+               to the resource-state question, exactly as the contract
+               comment anticipated ("a future KV strategy would carry
+               its own handle type").
+```
+
+### Stages
+
+```text
+B-1  PrefixPool core (zero-MLX, tests-first, E2 pattern)
+     rolling hash-chain keying; namespace isolation; longest-match
+     admission with P-I1 reconciliation (stored boundary hash MUST
+     equal the recomputed prefix hash of the incoming tokens — loud
+     miss otherwise); LRU eviction under token budget
+B-2  KV artifact adapter (Lab package): snapshot store wiring
+     saveCache/loadCache behind the pool's artifact handle; export at
+     turn commit (+ optional intra-turn checkpoints — default OFF,
+     review question #2 resolved conservatively); disk-backed →
+     restart survival for free
+B-3  Strict-ES session integration: daily sessions bind/consume pool
+     representations; turn commit exports the new tail boundary;
+     existing same-session reuse precedence preserved; INV + ledger
+     semantics unchanged
+B-4  Product routing: NativeMLX serves daily models through the
+     strict-ES layer; ChatSession direct path kept behind a flag;
+     oversized routing untouched
+B-5  Real-device battery (metrics registered BEFORE work):
+     cold 47.6s @6.2K shared context → target = snapshot load +
+     delta × prefill rate (~seconds); second shared-prefix session
+     TTFT ≈ delta only; restart + same prompt → warm (pool is
+     disk-backed); swap flat; determinism bit-identical
+```
+
+Registered honestly: snapshot import is disk I/O (large contexts =
+GBs of KV) — B-5 measures it against the recompute baseline; if load
+cost ever approaches recompute for a size class, the pool is simply
+not consulted for that size (policy floor, not correctness).
+
+Implementation status: **B-1 in progress this round** (tests-first).
