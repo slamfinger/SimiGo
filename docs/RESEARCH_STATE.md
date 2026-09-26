@@ -3646,6 +3646,38 @@ Verification: 89 tests PASS (87 + 2 atomicity; fork happy-path unchanged).
 Current gate  : FM01_02_03_ADDRESSED / FAILURE_MATRIX_AUDIT_ONGOING
 ```
 
+### Runtime Consistency Contract D1 (Draft) — FM-04/05 + INV-3 Semantics — 2026-09-26
+
+Per review direction (contract definitions BEFORE code): registered
+`SIMIGO2_RUNTIME_CONSISTENCY_CONTRACT_D1_20260926.md` defining:
+
+```text
+D1 cancellation contract  — cancellation resolves at phase boundaries to
+        exactly ABORT or COMMIT; the commit section (physical rebind ->
+        logical advance -> history) contains no await points and is
+        structurally non-cancellable; per-token-boundary cancellation
+        aborts with position unchanged (mechanics converge via INV-1)
+D2 cross-layer boundary   — atomic pair = Representation binding + logical
+        position (physical first, logical second); Residency bookkeeping is
+        the mechanics layer (INV-1 per transition), deliberately OUTSIDE
+        the conversation transaction
+D3 INV-3 semantics        — reconciliation is DETECTION (bookkeeping vs
+        physical), not a transaction participant; production integration =
+        post-unit-cycle observation with calibrated C_model, divergence
+        surfaces as DIRTY
+D4 reattach obligation    — lazy by contract; next forward's admissions
+        carry the physical obligation; their failure is a TURN failure
+```
+
+Deliberately NOT defined (GA): floor redesign, token ledger, partial-token
+COMMIT streaming, concurrent oversized sessions. Draft awaits review;
+implementation order on approval: cancellation token plumbing -> INV-3
+calibration -> production reconcile integration.
+
+```text
+Current gate  : CONTRACT_D1_DRAFT_REGISTERED / AWAITING_REVIEW
+```
+
 ### Second-Audit Fixes — Turn-Commit Atomicity + Budget Semantics + servedTranscript Ordering — 2026-09-26
 
 Three findings from the second audit round (ResidencyController →
