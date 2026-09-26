@@ -4286,3 +4286,35 @@ docs       README v2.0 section + 部署指南 prefix-pool paragraph;
 Current gate  : V2_0_0_BETA_2_PUBLISHED / PREFIX_POOL_LIVE_IN_PRODUCT /
                 GA_WORKITEMS_OPEN
 ```
+
+### B-6 Definition Opened — Token-Level Prefix Cache (fork) — 2026-09-27
+
+User re-check of the logs: "not fully implemented." Two-layer diagnosis:
+
+```text
+layer 1  the 03:52-03:55 session (081f70, cold 43s + 56s/114s injection
+         turns) ran on the 02:18 process — a PRE-POOL binary (B-4 landed
+         ~03:3x; no poolRescan in that window is the proof). beta.2
+         requires install + restart.
+layer 2  EVEN on beta.2, this workload misses: new sessions share the
+         large system DOCUMENT but differ at message 2 — turn-commit
+         boundaries are message-aligned, so "same document, different
+         first question" never hits. The registered honest boundary is
+         exactly where the user's dominant workload lives. Confirmed
+         gap, not a defect of the shipped mechanism.
+```
+
+B-6 definition registered
+(`SIMIGO17_TOKEN_LEVEL_PREFIX_CACHE_B6_20260927.md`): move the match
+surface to FINAL RENDERED TOKEN IDS inside the fork's ChatSession —
+discovery: `KVCacheStorage.Conversation.cachedTokens` already tracks the
+rendered token stream, so the substrate exists. Causal-KV soundness
+makes token-prefix matching safe regardless of message boundaries or
+template wrappers (KV[0..<T] depends only on tokens[0..<T]). Fork core
+serving path is touched → gated, implementation only on approval.
+Interim mitigations while open: client stable session_id; large
+documents as tool results rather than prompt.
+
+```text
+Current gate  : B6_TOKEN_PREFIX_CACHE_DEFINITION / AWAITING_REVIEW
+```
