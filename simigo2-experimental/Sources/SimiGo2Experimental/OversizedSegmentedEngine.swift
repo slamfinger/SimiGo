@@ -25,7 +25,7 @@ import Tokenizers
 /// is greedy and cacheless (no second KV authority) with checkpoint
 /// chat-template multi-turn input. Supported: qwen3_next.
 
-public struct EngineChatMessage: Sendable {
+public struct EngineChatMessage: Equatable, Sendable {
     public let role: String
     public let content: String
     public init(role: String, content: String) {
@@ -123,12 +123,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var sessionTurnCount = 0
 
     public private(set) var sessionInfo: OversizedSessionInfo?
+    public private(set) var lastInputTokenCount: Int?
 
     // ResidencyController (consistency with the fitting-model path): segment
     // materialization/release goes through the controller's admission and
     // pressure paths, with INV-1 audited after every transition.
     private var residency: ResidencyController?
     private var groupBudgetBytes: Int64 = 0
+    /// Persistent floor in WHOLE units (single floor authority).
+    private var floorUnitsCount = 0
     private var floorResidentBytes: Int64 = 0
     public private(set) var residencyINV1Checks = 0
     public private(set) var residencyINV1Failures = 0
@@ -276,38 +279,48 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 coreBytes += Int64(location.byteCount)
             }
         }
-        let unitCount0 = max(1, totalLayers / max(1, unitLayers))
-        let avgLayerBytes = layerBytes.isEmpty
-            ? Int64(0)
-            : layerBytes.reduce(Int64(0), +) / Int64(max(1, layerBytes.count))
-        let budgetBytes = floorBudgetMiB * 1024 * 1024
-        let unitBytes = avgLayerBytes * Int64(unitLayers)
-        let floorCount = Int(
-            max(0, min(Double(totalLayers - unitLayers), floor(Double(budgetBytes - coreBytes - unitBytes) / Double(max(avgLayerBytes, 1)))))
-        )
-        residentLayers = floorCount
+        // Units cover ALL layers from 0; the persistent floor is a prefix of
+        // WHOLE units (single authority: floorUnits). A layer-level floor
+        // derivation previously left floor layers loaded-but-never-forwarded
+        // (units started at floorCount) — silently skipping them at floor>0.
+        func unitBytesSum(_ unit: ClosedRange<Int>) -> Int64 {
+            var bytes: Int64 = 0
+            for i in unit.lowerBound...unit.upperBound where i < totalLayers {
+                bytes += layerBytes[i]
+            }
+            return bytes
+        }
         var segs: [ClosedRange<Int>] = []
-        var start = floorCount
-        while start < totalLayers {
-            let end = min(start + unitLayers - 1, totalLayers - 1)
-            segs.append(start...end)
-            start = end + 1
+        var chunkStart = 0
+        while chunkStart < totalLayers {
+            let end = min(chunkStart + unitLayers - 1, totalLayers - 1)
+            segs.append(chunkStart...end)
+            chunkStart = end + 1
         }
         units = segs
-        _ = unitCount0
+        // v2.0 beta: the persistent floor is DISABLED. floorUnits is forced
+        // to 0: a unit-derived floor crashes in quantized projection
+        // (gather_qmm int32 scales) and the floor budget silently traded
+        // page cache for wired memory with no latency benefit. floor 0 is
+        // the measured optimum; the parameter stays reserved for a
+        // redesigned GA mechanism.
+        let floorUnits = 0
+        residentLayers = floorUnits * unitLayers
+        self.floorUnitsCount = floorUnits
 
+        let floorRanges = Array(units.prefix(floorUnits))
         var fullParameterMap: [String: MLXArray] = [:]
         for location in reader.locations.values {
             let isSwitch = location.name.contains(".switch_mlp.")
-            let persistent =
-                !isSwitch
-                || (layerOf(location.name).flatMap { $0 < residentLayers } ?? false)
-            if persistent {
+            let inFloorUnit = isSwitch && layerOf(location.name).map { layer in
+                floorRanges.contains { $0.contains(layer) }
+            } ?? false
+            if isSwitch && !inFloorUnit {
+                fullParameterMap[location.name] = MLXArray([Int](), [0])
+            } else {
                 fullParameterMap[location.name] = try autoreleasepool {
                     try reader.loadTensor(named: location.name)
                 }
-            } else {
-                fullParameterMap[location.name] = MLXArray([Int](), [0])
             }
         }
         let covered = Set(fullParameterMap.keys)
@@ -363,10 +376,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         )
         groupBudgetBytes = Int64(peakCapacityMiB) * 1024 * 1024 - coreBytes
         floorResidentBytes = coreBytes
-        for unit in units where unit.lowerBound < residentLayers {
-            for i in unit.lowerBound...unit.upperBound where i < totalLayers {
-                floorResidentBytes += layerBytes[i]
-            }
+        for unit in units.prefix(floorUnits) {
+            floorResidentBytes += unitBytesSum(unit)
         }
         let materializer = OversizedSegmentMaterializer(
             load: { [weak self] gid in try self?.loadUnit(gid) ?? () },
@@ -389,7 +400,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         self.residency = residency
 
         // Admit the persistent floor through the controller (logged loads).
-        let floorUnitIDs = Set(units.filter { $0.lowerBound < residentLayers }.map { unitID($0) })
+        let floorUnitIDs = Set(units.prefix(floorUnits).map { unitID($0) })
         if !floorUnitIDs.isEmpty {
             _ = try await residency.admit(
                 requiredGroupIDs: floorUnitIDs,
@@ -452,6 +463,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         messages: [EngineChatMessage],
         maxNewTokens: Int,
         nextInputTokens: [Int]?? = nil,
+        stopTokenIDs: Set<Int> = [],
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
         guard let model, let reader, let tokenizer else {
@@ -477,7 +489,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         }
         return try await executeTurn(
             state: state, backend: stateBackend, nextInput: nextInput,
-            messages: messages, maxNewTokens: maxNewTokens, onToken: onToken
+            messages: messages, maxNewTokens: maxNewTokens,
+            stopTokenIDs: stopTokenIDs, onToken: onToken
         )
     }
 
@@ -487,6 +500,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     @discardableResult
     public func replayBootstrapTurn(
         maxNewTokens: Int,
+        stopTokenIDs: Set<Int> = [],
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
         guard let model, let reader, let tokenizer else {
@@ -497,7 +511,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         }
         return try await executeTurn(
             state: state, backend: stateBackend, nextInput: [],
-            messages: [], maxNewTokens: maxNewTokens, onToken: onToken
+            messages: [], maxNewTokens: maxNewTokens,
+            stopTokenIDs: stopTokenIDs, onToken: onToken
         )
     }
 
@@ -507,6 +522,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         nextInput: [Int],
         messages: [EngineChatMessage],
         maxNewTokens: Int,
+        stopTokenIDs: Set<Int> = [],
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
         guard let residency = self.residency else {
@@ -520,6 +536,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         }
         let bound = try backend.boundPrefix(for: state)
         var ids = bound.prefix + nextInput
+        lastInputTokenCount = ids.count
         var generated: [Int] = []
         var tokenMs: [Double] = []
         var peakFootprint: Int64 = 0
@@ -540,6 +557,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             }
 
             for (unitIndex, unit) in units.enumerated() {
+                FileHandle.standardError.write(Data("DBG fwd unit \(unit.lowerBound)-\(unit.upperBound)\n".utf8))
                 // Segment residency THROUGH the ResidencyController: the
                 // admission materializes this unit via the materializer port
                 // (logged) and evicts whatever no longer fits the group
@@ -564,7 +582,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 // unit's residency (load-before-evict) and the transient
                 // double-occupancy thrashes swap (measured 2-12 GiB swing,
                 // 4x latency).
-                if unit.lowerBound >= residentLayers {
+                if unitIndex >= self.floorUnitsCount {
                     _ = try await residency.respondToMemoryPressure(
                         targetBytes: floorResidentBytes, cModelBytes: 0
                     )
@@ -576,11 +594,13 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 _ = unitIndex
             }
 
+            FileHandle.standardError.write(Data("DBG project\n".utf8))
             let logits = model.projectOutput(hidden)[0, -1]
             eval(logits)
             let next = logits.argMax().item(Int.self)
             generated.append(next)
             ids.append(next)
+            if stopTokenIDs.contains(next) { break }
 
             let duration = tokenStart.duration(to: clock.now)
             let ms = Double(duration.components.seconds) * 1000
@@ -655,6 +675,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
     func loadUnit(_ groupID: String) throws {
         guard let model, let reader else { throw OversizedEngineError.notLoaded }
+        FileHandle.standardError.write(Data("DBG loadUnit \(groupID)\n".utf8))
         guard let unit = units.first(where: { unitID($0) == groupID }) else { return }
         var arrays: [String: MLXArray] = [:]
         for name in switchNames {
