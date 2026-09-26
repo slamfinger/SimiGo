@@ -187,6 +187,37 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return true
     }
 
+    /// Register an entry from a PRECOMPUTED content claim (restart rescan:
+    /// only the chain hash survives on disk, the token array does not).
+    /// P-I1 is unaffected — registration is a claim, admission still
+    /// recomputes the chain over the caller's live tokens before any hit,
+    /// so a corrupt claim can only ever miss, never mis-bind.
+    @discardableResult
+    public func register(
+        namespace: PrefixPoolNamespace,
+        tokenCount: Int,
+        boundaryHash: UInt64,
+        artifact: any PrefixArtifactHandle
+    ) -> PrefixPoolEntry {
+        precondition(tokenCount > 0)
+        lock.lock()
+        defer { lock.unlock() }
+        let entry = PrefixPoolEntry(
+            namespace: namespace, tokenCount: tokenCount,
+            boundaryHash: boundaryHash, artifact: artifact)
+        if let index = entries.firstIndex(where: { $0 == entry }) {
+            entries[index] = entry
+            stats.artifactReplacements += 1
+        } else {
+            entries.append(entry)
+            stats.exports += 1
+        }
+        tick += 1
+        lastUse[entry.boundaryHash] = tick
+        evictLocked()
+        return entry
+    }
+
     // MARK: - Budget
 
     public var totalTokens: Int {

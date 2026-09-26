@@ -163,6 +163,48 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         pool.remove(entry)
     }
 
+    // MARK: - Restart (disk → pool)
+
+    /// Re-register disk-persisted boundaries into the pool after a
+    /// restart. Only the sidecar claims survive on disk (the token array
+    /// is not reconstructable from its hash), so this registers claims —
+    /// which is sound because P-I1 holds at ADMISSION: a claim that does
+    /// not match a live prompt's recomputed chain can only miss, never
+    /// mis-bind. Entries whose snapshot file has vanished are skipped.
+    ///
+    /// - Returns: the number of entries re-registered.
+    @discardableResult
+    public func rescan() throws -> Int {
+        var registered = 0
+        let dirs = try fileManager.contentsOfDirectory(
+            at: root, includingPropertiesForKeys: [.isDirectoryKey])
+        for dir in dirs where dir.hasDirectoryPath {
+            let files = try fileManager.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: nil)
+            for metaURL in files where metaURL.pathExtension == "json" {
+                guard
+                    let data = fileManager.contents(atPath: metaURL.path),
+                    let sidecar = try? JSONDecoder().decode(
+                        PrefixSnapshotSidecar.self, from: data)
+                else { continue }
+                let snapshotURL = metaURL.deletingPathExtension()
+                    .appendingPathExtension("safetensors")
+                guard fileManager.fileExists(atPath: snapshotURL.path) else {
+                    continue
+                }
+                pool.register(
+                    namespace: PrefixPoolNamespace(
+                        modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
+                    tokenCount: sidecar.tokenCount,
+                    boundaryHash: sidecar.chainHash,
+                    artifact: DiskPrefixArtifact(
+                        snapshotURL: snapshotURL, metadataURL: metaURL))
+                registered += 1
+            }
+        }
+        return registered
+    }
+
     // MARK: - Layout
 
     private func namespaceDirectory(
