@@ -4076,10 +4076,19 @@ reconciliation proven in rollforward). Invariants P-I1..P-I4 drafted —
 P-I1 carries the I-L3 lesson (cross-check the claim against the loaded
 representation, never trust the key). Honest scope: removes the
 shared-prefix cold tax; the genuinely-new-token injection class is
-real compute (G1.9-C: no locality) and stays out of scope. First
-implementation step on approval: mlx-swift-lm API audit — does
-ChatSession delta-extend from an imported checkpoint without full
-re-render. Implementation starts only after review approval.
+real compute (G1.9-C: no locality) and stays out of scope.
+CORRECTION OF RECORD (same day, documentary): the Execution State chain
+was validated small-model-first across multiple architectures (E1–E5;
+L4-B 5-model INV-3; L4-C 3-model identity: Qwen3-Coder MoE,
+Nail-Qwen3.6 MoE, Gemma4-12B dense) with oversized (O0–O6) as the FINAL
+stress step — the daily-path work is productization of already-validated
+machinery, not an import of unproven tech. The gate now carries the
+routing decision as its first-class review question: Route A (prefix
+pool around the ChatSession path; de-risked — production rollforward
+already proves checkpoint restore + delta-continue) vs Route B (serve
+daily models through the strict Execution State engine, all-resident
+for fitting models; pool as its shared representation store) vs
+A-then-B. Implementation starts only after review approval.
 
 ```text
 Current gate  : BETA_1_PULLED / SIMIGO17_PREFIX_POOL_DEFINITION /

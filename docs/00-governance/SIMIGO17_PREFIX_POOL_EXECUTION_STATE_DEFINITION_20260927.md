@@ -1,6 +1,7 @@
 # SimiGo 1.7 Execution State Prefix Pool — Problem Definition & Design Draft
 
-**Date**: 2026-09-27
+**Date**: 2026-09-27 (revised same day after documentary correction by
+the author — see §0.1)
 **Status**: DEFINITION_DRAFT / AWAITING_REVIEW (implementation starts only
 after review approval — gate discipline)
 **Trigger**: user ruling 2026-09-27 — the oversized line is THEORY
@@ -8,6 +9,37 @@ VALIDATION only; the daily small-scale path is the foundation. Bring
 Execution State to the daily v1.7 NativeMLX path.
 
 ---
+
+## 0. Verified lineage (correction of record)
+
+The Execution State engineering chain was built and validated
+SMALL-MODEL-FIRST, across multiple architectures, with oversized as the
+FINAL stress step — not the other way round:
+
+```text
+E1 contract (zero-MLX)          VERIFIED 86/86
+E2 fake runtime                 VERIFIED 95/95
+E3 MLX adapter                  VERIFIED 84/84
+E4 continuity + residency       VERIFIED (INV-1 per-transition)
+L4-B  5 models × 10 transitions INV-3 byte reconciliation (250f683)
+L4-C  3 models × 3 prompts      full-path identity, token/logits
+                                bit-zero (aa30eb2): Qwen3-Coder (MoE
+                                switch), Nail-Qwen3.6 (MoE), Gemma4-12B
+                                (dense) — multiple architectures
+E5 end-to-end                   VERIFIED, EXECUTION_STATE_RUNTIME_LOOP_
+                                COMPLETE (2026-09-25)
+O0–O6 oversized                 LAST step only: capacity stress
+                                validation of the already-validated
+                                engine (2026-09-25/26)
+```
+
+Consequence for this gate: "Execution State 化 the daily path" is NOT
+importing unproven experimental technology into production. It is the
+PRODUCTIZATION of machinery already validated on exactly the daily class
+of models and architectures; the oversized run was the last-step
+validation, as ruled. What has never crossed into the v1.7 daily path is
+one specific piece: content-addressed REPRESENTATION SHARING across
+logical states (the v1.7 path gates KV reuse on session identity).
 
 ## 0. Evidence (real-device, native_mlx_trace.log 2026-09-27 02:18–02:25)
 
@@ -136,7 +168,35 @@ is real compute — G1.9-C proved no locality exists to exploit. That tax
 is addressable only client-side (context curation) or by prefill
 throughput work, both out of scope here.
 
-## 8. Open review questions
+## 8. The routing decision (first-class review question)
+
+Two integration routes exist; both keep the pool concept identical. The
+difference is which engine serves daily small models:
+
+```text
+Route A — augment the ChatSession path
+  keep mlx-swift-lm ChatSession serving; add the prefix pool around it.
+  De-risked: v1.7 production already proves checkpoint restore +
+  delta-continue (rollforward conditional-restore performs exactly
+  load-checkpoint → continue on live traffic; cacheSave/cacheLoad run
+  per turn). The pool load mechanism is the same machinery keyed by
+  content instead of session identity. Smallest delta to daily traffic.
+
+Route B — serve daily models through the strict Execution State engine
+  the E3/E5-validated engine (multi-architecture identity-proven) takes
+  over fitting-model serving; all-resident for fitting models (segment
+  I/O only ever applied to oversized); the pool becomes the engine's
+  shared representation store per the E-line contracts
+  (ExecutionRepresentation capture/derive/restore — vocabulary already
+  exists and is validated). Larger product delta; strongest semantics;
+  consolidates the two serving paths long-term.
+```
+
+Reviewer decides A, B, or A-then-B. Non-binding author note: A ships the
+user-visible fix fastest; B is the destination consistent with "daily
+path IS the Execution State product".
+
+## 9. Remaining open review questions
 
 1. Block size 512: prefill-rate-weighted optimum vs hash granularity?
 2. Export points: turn-commit only (proposed) vs also mid-prefill?
@@ -144,5 +204,7 @@ throughput work, both out of scope here.
    pool-scoped LRU with what cap?
 4. Interaction with rollforward conditional-restore gate — precedence
    and accounting when both fire?
-5. Does ChatSession delta-extend from an imported checkpoint without
-   full re-render (mlx-swift-lm API audit — first implementation step)?
+5. (Route A only) confirm ChatSession delta-extend from an imported
+   checkpoint on the target model class — production rollforward
+   already exercises this path; audit = wiring confirmation, not an
+   open physical premise.
