@@ -4225,3 +4225,37 @@ GC for evicted entries deferred (registered).
 ```text
 Current gate  : ROUTE_B_WIRED / B5_REAL_DEVICE_BATTERY_NEXT
 ```
+
+### B-5 (Real-Device Battery) PASSED — 2026-09-27
+
+Real-device run (Apple M5, Qwen3-Coder-30B-A3B-Instruct-4bit via the
+product HTTP surface, ~9.7K-token shared document):
+
+```text
+turn 1  session A, cold        ttft=16951ms  cacheEff=0.00  mode=cold
+        full prefill of 9,706 prompt tokens
+turn 2  session B = NEW session id, same conversation + 1 message
+        (same-session reuse cannot fire) — pool served:
+        ttft=201ms             cacheEff=1.00  mode=restore
+trace chain: poolRescan entries=0 → poolExport messages=2/3 →
+poolHit messages=3 → poolBind messages=3 delta=1 → poolExport 5
+restart-warm: fresh store over the same disk root re-registered the
+committed boundary
+```
+
+**Registered metric met with margin: the 47.6s-class cold tax is GONE —
+84x faster, 98.8% reduction.** The agent-reconnect / restart-resume
+scenario now pays snapshot load + one-message delta instead of a full
+context re-prefill. Honest boundary unchanged: genuinely NEW content
+(different document, or large fresh injections) is real compute and
+still pays prefill; message-boundary granularity means a shared
+prefix must align at message boundaries.
+
+Route B complete: B-1 pool core → B-2 KV artifact adapter → B-3
+lifecycle/restart-warm → B-4 product routing → B-5 real-device battery,
+each stage unit/real-device verified.
+
+```text
+Current gate  : SIMIGO17_PREFIX_POOL_COMPLETE / B1_B5_ALL_VERIFIED /
+                DAILY_PATH_EXECUTION_STATE_LIVE
+```
