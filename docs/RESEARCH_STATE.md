@@ -4188,3 +4188,40 @@ rules otherwise.
 Current gate  : ROUTE_B_IN_PROGRESS / B1_B2_B3_VERIFIED /
                 B4_PRODUCT_ROUTING_NEXT
 ```
+
+### B-4 (Product Routing) LANDED — 2026-09-27
+
+Cross-session prefix sharing is wired into the product daily path
+(product e840836, Lab seam 774d1c5). Three integration points in
+`generateUsingChatSession`:
+
+```text
+admission  same-session reuse stays FIRST (untouched); when it misses
+           (the cold-rebuild branch), the pool is consulted — keyed by
+           the message-content chain (PrefixMessageChain: 2 Int elements
+           per message; message-level keying registered as sound —
+           identical message prefixes render to identical token prefixes
+           under the same tokenizer+template), namespace = modelID +
+           kvFingerprint + thinking flag
+bind       a hit takes the exact cacheLoad-restored shape:
+           ChatSession(cache:state:) + isRestoredSnapshot + delta
+           contract; sidecar reconciliation inside the adapter — wrong
+           claims = entry self-heal + loud throw + cold fallback (never
+           a silent bind on an unreconciled representation);
+           poolRestoredTurn skips roll-forward (snapshot is already a
+           verified checkpoint)
+export     per successful turn, processed message history + fresh KV
+           snapshot register a shared boundary (inline await — no race
+           with the next turn; best-effort)
+```
+
+Disk pool `~/.simigo/prefix-pool`, rescan on first use = restart-warm.
+Kill switch `SIMIGO_PREFIX_POOL=0` = exact v1.7 behavior. Verified:
+Release build SUCCEEDED; product unit suite 73/73 (5 skipped,
+model-dependent); Lab 124/124. Registered known cost: pool export is a
+second KV serialize+write per turn (~0.15s@58k serialize scale); disk
+GC for evicted entries deferred (registered).
+
+```text
+Current gate  : ROUTE_B_WIRED / B5_REAL_DEVICE_BATTERY_NEXT
+```
