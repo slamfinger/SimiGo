@@ -1,151 +1,397 @@
 # SimiGo
 
-> Apple Silicon macOS 本地高性能 AI 推理 Runtime
+> **An Execution-State-Centered Runtime for Long-Lived Model Execution**
 
-SimiGo 是运行在 Apple Silicon macOS 上的本地 AI 推理 Runtime，同时可以作为局域网共享推理节点，对外提供 OpenAI-compatible API。
+SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本地 AI Runtime，当前运行在 Apple Silicon macOS 上，并通过 OpenAI-compatible API 对外提供模型推理服务。
 
-SimiGo 的定位很简单：**外部 Agent 决定做什么，SimiGo 负责把模型安全、高效、可观测地算出来。**
+项目的研究重点已经从“把模型推理跑起来”发展为：
 
-## 核心能力
-
-- 基于 MLX / `mlx-swift-lm` 执行本地模型推理
-- 提供 OpenAI-compatible API（Chat Completions / Text Completions / Responses）
-- 支持流式与非流式生成
-- 支持请求取消与生命周期安全收敛
-- 支持多 Session / 多 Branch 的逻辑隔离
-- 支持 Physical KV 与 Prefix Reuse
-- 支持资源准入、物理缓存淘汰与运行状态观测
-- 支持官方 Tool Calling，并将 Tool Call 转交外部 Agent
-- 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
-- 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
-
-## Runtime 三层契约
-
-SimiGo 的核心不是一个 API 转发层，而是一个可靠的 Agent Runtime。
-三层契约共同构成 Runtime 的能力边界：
+> **将执行身份、连续性与生命周期，与模型表示、物理驻留以及具体 Backend 的实现方式分离。**
 
 ```text
-             SimiGo Agent Runtime
-                      │
-      ┌───────────────┼───────────────┐
-      ↓               ↓               ↓
- Capability      Generation       Tool Governance
-   Contract         Truth          Contract
-   （P1-1）         （P1-2）        （P1-3）
-      │               │               │
-      │            ┌──┴──┐            │
-      │            ↓     ↓            │
-      │        usage    cache        │
-      │        ledger   reuse        │
-      │                              │
-      └──────────────────────────────┘
-                    ↓
-         可靠的本地 Agent Runtime
+Execution State       ≠ KV Cache
+Execution State       ≠ Residency State
+Execution Continuity  ≠ Computation Semantics
+SimiGo Runtime        ≠ Backend
 ```
 
-| 契约 | 保证 | 实测 |
-|---|---|---|
-| **Capability** | Runtime 明确知道模型能做什么、不能做什么、哪些未验证 | `/v1/models` 透出三态能力声明 |
-| **Generation Truth** | usage 来自真实 token ledger，不是估算 | input/output/total/cached 与 [MLX] 逐轮吻合 |
-| **Tool Governance** | 每个工具调用有完整生命周期事件链 | REQUESTED→VALIDATED→RESULT(observed) |
+**当前阶段：Experimental Beta / Research Preview。**
 
-可靠性保证：
+已经完成真实设备、真实模型和 Runtime 故障矩阵验证，但目前不宣称为生产级通用推理 Runtime，也不宣称已经完成 Backend-independent Runtime。
 
-- **失败分类**：每次失败都有明确的 reason（`cancelled_by_client` / `cancelled_by_runtime` / `model_execution_error` / …），不再笼统 `cancelled_or_failed`
-- **取消→释放强保证**：客户端断连 → 生成取消 → gate 释放 → 下一请求接棒（实测 2ms）
-- **状态真实性**：排队中的请求 LC 保持 QUEUED，不虚假 RUNNING
-- **KV 配置指纹**：KV 配置变更时旧缓存自动失效，全量 prefill
-- **Session LRU**：超出上限自动驱逐最久未用会话，释放 KV 后 `Memory.clearCache()`
+## 1. 当前状态
 
-## 核心架构
+| 项目 | 当前状态 |
+|---|---|
+| Version | `v2.0.0-beta` |
+| Stage | Experimental Beta / Research Preview |
+| Platform | Apple Silicon macOS |
+| Primary execution substrate | MLX / `mlx-swift-lm` |
+| API | OpenAI-compatible |
+| Oversized model validation | Qwen3-Coder-Next-4bit |
+| Oversized validation machine | 32 GiB Apple Silicon |
+
+当前公开证据已经覆盖：
+
+- Execution State 生命周期与连续性
+- Fork / Restore / Reattach / Discard
+- Oversized Model 执行
+- Segment-level physical residency
+- Cancellation
+- Runtime consistency contract
+- Residency / physical-state reconciliation
+- Failure Matrix 全量审计
+
+最新 Failure Matrix 结果：
+
+> **P1 = 0**
+
+剩余项目已经分类为 Beta boundary、GA work item 或 product scope。
+
+## 2. SimiGo 的核心问题
+
+传统本地推理系统通常围绕模型加载、Prefill / Decode、KV Cache、Batch、Memory 和 Scheduler 组织 Runtime。
+
+SimiGo 进一步研究：
 
 ```text
-External Agent
-      ↓
-OpenAI-compatible API
-      ↓
-Protocol Gateway
-      ↓
-Canonical Generation Request
-      ↓
-MLXLMCommon
-      ↓
-Inference Runtime
- ┌────┼───────────────┐
- │    │               │
-Context  Execution   Physical KV
- │       │               │
-Session  Prefill/Decode  Token Ledger
-Branch   Cancellation    Prefix Reuse
-Request  Execution Policy Residency
- └───────┼───────────────┘
-         ↓
-Resource Governance + Lifecycle + Observability
+已经完成的模型计算
+        ↓
+可继续执行的状态
+        ↓
+这个状态能否被保存、继续、Fork、Restore、Reattach、Discard？
+        ↓
+它能否脱离某一种物理表示继续存在？
 ```
 
-最重要的原则是：
+因此 SimiGo 将 **Execution State** 作为独立于物理表示的 Runtime 概念。
 
-> **官方推理能力优先，SimiGo 负责 Runtime 能力，而不是重新实现模型协议。**
+它至少包含：
 
-## SimiGo 不负责什么
+```text
+Execution State
+├── identity
+├── lineage
+├── position
+├── continuation
+└── lifecycle
+```
 
-SimiGo 不负责：
+而物理系统负责：
 
-- Agent 规划与决策
-- Agent Memory
-- Tool 实际执行
-- Shell / SSH / Skill / Plugin 执行
-- Agent 编排
+```text
+Representation State
+        ↓
+Residency State
+        ↓
+Physical MLX State
+```
 
-模型产生的 Tool Call 是推理结果。SimiGo 可以解析、规范化并转交，但不执行 Tool。
+## 3. 核心架构
 
-## 文档体系
+```text
+HTTP / Product State
+        ↕
+Execution State
+(ID / lineage / position / continuation / lifecycle)
+        ↕
+Representation State
+(prefix / checkpoint / physical representation)
+        ↕
+Residency State
+(resident groups / transfer bookkeeping / DIRTY)
+        ↕
+Physical MLX State
+(tensors / weights / cache)
+```
+
+### Execution State
+
+描述“这是哪个执行、从哪里继续、属于哪条 lineage、当前处于什么生命周期”。
+
+它不是 KV Cache 的别名，也不要求永远驻留在某一种物理表示中。
+
+### Representation State
+
+描述 Execution State 当前由什么物理表示承载，例如 prefix、checkpoint、segmented representation，以及未来可能出现的其他 Backend-specific representation。
+
+### Residency State
+
+描述表示当前哪些部分实际驻留，以及加载、释放、eviction 和 reconciliation 的状态。
+
+### Physical MLX State
+
+是当前 MLX Backend 的具体物理实现，包括 tensor、weight、cache 等。
+
+## 4. Execution State 生命周期
+
+```text
+create
+  ↓
+attach
+  ↓
+continue
+  ├──────────────→ fork → child → continue
+  ├──────────────→ restore → reattach → continue
+  └──────────────→ discard
+```
+
+表示可以发生变化：
+
+```text
+Representation A
+      ↓
+evict / release
+      ↓
+logical Execution State remains
+      ↓
+reattach / materialize
+      ↓
+Representation B
+      ↓
+continue
+```
+
+> **释放物理驻留不等于删除 Execution State。**
+
+## 5. Oversized Execution State：已验证
+
+SimiGo 已在真实 Apple Silicon 设备上验证 **Qwen3-Coder-Next-4bit**：模型约 41.76 GiB，在 32 GiB 物理内存环境下进行 Execution State × Oversized Model 验证。
+
+验证覆盖：
+
+- Parent identity stable
+- Child lineage traceable
+- Fork divergence
+- Restore to fork point
+- Segment eviction / restore 后继续执行
+- Parent non-interference
+- Zero swap
+- 多次 segment materialize / release transition
+
+在测试范围内，完整 segment eviction 后，逻辑 Execution State 仍可恢复，并通过按需重新物化继续执行。
+
+详细结果：`docs/knowledge/findings/O6_OVERSIZED_EXECUTION_STATE_20260926.md`
+
+## 6. Runtime 一致性
+
+SimiGo 已形成并实现 D1 Runtime Consistency Contract。
+
+一次 Runtime turn 的逻辑 commit boundary 是：
+
+```text
+Representation Binding
+        +
+Execution Position Advance
+```
+
+取消采用阶段边界观察语义：
+
+```text
+cancel observed before commit
+        → ABORT
+
+cancel observed during / after commit
+        → COMMIT
+```
+
+ABORT 不改变已提交的 position / representation；COMMIT 后即使客户端取消，也不会把已经提交的 Runtime 状态伪装成未提交。
+
+Residency 与 Physical MLX 则通过 reconciliation 进行观察。D1 不宣称 MLX 或进程级 ACID，也不引入 WAL、分布式事务或全局事务协调器。
+
+详细定义：`docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md`
+
+## 7. Residency 与资源治理
+
+SimiGo 将 Residency 与 Execution State 分开。
+
+当前 Runtime 可以：
+
+- admit physical resources
+- materialize representation
+- release / evict physical residency
+- reattach logical state
+- reconcile bookkeeping 与物理观察
+- 在压力下释放非核心驻留
+
+Floor 是 Residency policy，而不是 Execution State。
+
+```text
+Floor ≠ Execution State
+Floor ≠ Physical observation
+```
+
+当前 beta 的 floor 配置为 0。正式语义为 **TARGET-DEPENDENT**：floor 并不是结构性的“永不释放”；target=0 仍意味着清理全部非 core residency。
+
+详细定义：`docs/knowledge/invariants/GA0_FLOOR_POLICY_20260927.md`
+
+## 8. Failure Matrix
+
+SimiGo 对 Runtime 操作进行跨状态层故障审计。
+
+覆盖操作包括：
+
+`create / attach / continue / fork / restore / reattach / discard / bindRepresentation / releaseRepresentation / materialize / evict / generate / newSession / HTTP request`
+
+每项分别检查：
+
+`success / physical failure / cancellation / mid-exception / repeat / concurrency`
+
+并观察五层状态：
+
+```text
+Execution State
+Representation State
+Residency State
+Physical MLX State
+HTTP / Product State
+```
+
+最终结果：
+
+> **FAILURE_MATRIX_COMPLETE / P1_ZERO**
+
+详细结果：`docs/knowledge/findings/FAILURE_MATRIX_FINAL_20260926.md`
+
+## 9. Product / API 能力
+
+SimiGo 当前仍提供完整的本地模型服务能力，包括：
+
+- OpenAI-compatible API
+- Streaming / non-streaming generation
+- Session / Branch 逻辑隔离
+- 请求取消
+- Tool Call 解析与转交
+- Tool Governance
+- Model Capability Contract
+- Physical KV / Prefix Reuse
+- Resource admission / eviction
+- Runtime lifecycle
+- Observability
+
+SimiGo 不执行 Agent Tool，也不负责 Agent 的规划、决策、Memory 或编排。
+
+## 10. Backend 边界
+
+MLX 是 SimiGo 当前主要的具体执行 Backend / substrate，但 **MLX 不是 SimiGo 的定义**。
+
+长期需要验证的问题是：当模型、物理表示和 Backend 改变后，Execution State 的 identity、lineage、position、continuation 和 lifecycle 是否仍然成立。
+
+目前 Backend Conformance 仍属于后续验证工作，因此 SimiGo **不宣称已经完成 Backend-independent Runtime**。
+
+## 11. 文档体系
+
+公开文档已经从单纯的产品说明扩展为研究证据链：
+
+```text
+Research Story
+      ↓
+Execution State architecture
+      ↓
+Runtime consistency
+      ↓
+Oversized execution evidence
+      ↓
+Failure Matrix
+      ↓
+Residency policy
+```
 
 | 文档 | 定位 |
 |---|---|
-| [`README_base.md`](README_base.md) | **架构白皮书**：定义核心架构、边界与长期不变量 |
-| [`docs/decisions/`](docs/decisions/) | **架构决策**：记录为什么采用某个长期设计 |
-| [`docs/lessons/`](docs/lessons/) | **工程经验**：记录踩坑、故障分析与经验，不自动升级为架构规则 |
-| [`docs/experiments/`](docs/experiments/) | **实验记录**：记录尚未进入核心架构的方案与验证 |
-| [`docs/benchmarks/`](docs/benchmarks/) | **性能与正确性数据**：保存可重复的实机测量结果 |
-| [`部署指南.md`](部署指南.md) | **部署说明**：本地与局域网使用方式 |
+| `README.md` | 项目入口、当前状态、能力与研究方向 |
+| `README_base.md` | 核心架构白皮书 |
+| `docs/research/` | 研究故事与长期问题演进 |
+| `docs/knowledge/findings/` | 已验证的研究 / 工程结果 |
+| `docs/knowledge/invariants/` | 已形成稳定边界的不变量与契约 |
+| `docs/decisions/` | 架构决策 |
+| `docs/lessons/` | 工程经验与故障分析 |
+| `docs/experiments/` | 尚未进入核心架构的实验 |
+| `docs/benchmarks/` | 可重复的实机测量与性能数据 |
+| `部署指南.md` | 本地与局域网部署 |
 
-## 架构演进纪律
+`README.md` 回答：**SimiGo 现在是什么、已经证明了什么、当前边界在哪里、下一步研究什么。**
 
-SimiGo 不采用“发现一个问题，就增加一条铁律”的演进方式。
+`README_base.md` 回答：**哪些架构原则应该长期保持不变。**
+
+## 12. 当前研究路线
 
 ```text
-问题 / 经验
-    ↓
-Lesson
-    ↓
-Experiment / Test
-    ↓
-Benchmark / Evidence
-    ↓
-ADR
-    ↓
-必要时才进入 Core Invariant
+Runtime / Residency / E2E
+        ↓
+Execution State
+        ↓
+Failure Matrix
+        ↓
+Runtime Consistency
+        ↓
+Oversized Execution
+        ↓
+GA-0 Floor Formalization
+        ↓
+Token Ledger
+        ↓
+UI Branch / Backend Conformance
 ```
 
-只有经过长期验证、并且不依赖某个具体实现的原则，才进入架构白皮书。
+### 已完成
 
-因此：
+- Execution State 基础生命周期
+- Oversized Execution State 验证
+- D1 Runtime Consistency
+- Cancellation
+- INV-3 reconciliation
+- Failure Matrix
+- GA-0 Floor policy formalization
 
-- **白皮书**回答“什么不能被破坏”。
-- **架构决策**回答“为什么这样设计”。
-- **工程经验**回答“我们踩过什么坑”。
-- **实验记录**回答“这个想法是否成立”。
-- **基准数据**回答“实测到底怎么样”。
+### 当前工作
 
-## 当前基线
+- Token Ledger 的进一步实现与回归验证
 
-- 平台：macOS + Apple Silicon
-- 应用：SwiftUI 菜单栏应用
-- 推理基础：MLX / `mlx-swift-lm`
-- API：OpenAI-compatible
-- 架构白皮书：v5.0 Core Architecture Baseline
+### 后续方向
 
-## 设计目标
+- UI Branch sessions
+- Coordinator standalone concurrency
+- MLX internal fault boundary
+- Backend Conformance
+- 更广泛的模型 / workload 验证
 
-SimiGo 的核心目标不是复制某个现有推理框架，而是在官方 MLX 推理能力之上，建立一个边界清晰、资源可控、逻辑隔离、可取消、可观测，并能够持续演进的本地 Inference Runtime。
+这些方向都需要通过实际证据逐步收敛，不会因为进入路线图就自动成为 Core Architecture。
+
+## 13. SimiGo 不是什么
+
+SimiGo 当前不定位为：
+
+- vLLM 的替代品
+- 通用生产级 inference server
+- Agent Framework
+- Agent Memory
+- Tool Executor
+- 单纯的 KV Cache Manager
+- 只负责启动外部推理进程的 Process Wrapper
+
+更准确的定位是：
+
+> **一个以 Execution State 为核心抽象、正在通过真实模型、真实设备和故障矩阵持续验证的实验性 Runtime。**
+
+## 14. Long-term thesis
+
+> **如果 Execution State 的身份、连续性和生命周期可以独立于其物理表示，那么 Runtime 就可以围绕“可继续执行的状态”而不是某一种具体缓存结构进行组织。**
+
+当前证据已经支持这一方向的多个关键组成部分，但更广泛的 Backend、模型和 workload 泛化仍需要继续验证。
+
+因此，SimiGo 的长期目标不是不断增加 Runtime 中的特殊对象，而是：
+
+```text
+更清晰的状态边界
+        ↓
+更少的隐式耦合
+        ↓
+更可验证的 Runtime semantics
+        ↓
+更广泛的 Backend / Model conformance
+```
+
+## License
+
+See the repository license file for the current licensing terms.
