@@ -73,3 +73,38 @@ real-device          overallPass TRUE, swap ≤ baseline, pressure green
 
 Artifacts: `results/o5-sweep/app-realdevice-selftest-*.json`;
 `results/o5-sweep/matrix2-*.json`; engine + coordinator sources.
+
+---
+
+## Addendum — Token Ledger failure surfaces — 2026-09-27
+
+The Token Ledger (3ba44f7 + 07b210d) adds one append point per committed
+transition and one per restore. Surface-by-surface disposition against the
+existing matrix — no full re-run triggered (single narrow addition; every
+surface maps to an already-registered disposition):
+
+```text
+generate turn-commit append   post-commit throw window (ledger append sits
+                              between logical commit and INV-3 observation) —
+                              existing disposition "post-commit throw =
+                              visible; canonical state governs client retry"
+                              applies unchanged; a ledger invariant throw is
+                              divergence-class and fails loudly (I-L1/I-L2)
+restore marker append         marker bound = furthest-ever committed
+                              position; the coordinator gates targets on
+                              representation existence BEFORE the physical
+                              restore commits, so the ledger bound is
+                              unreachable defense in depth. The interim
+                              ahead-of-growth-only guard (which DID create a
+                              post-commit half-apply window for forward
+                              restores) was caught by this review and closed
+                              in 07b210d before any device run hit it
+markSuperseded                infallible (flag-and-retain)
+unit battery                  7-case (96/96 total): forward growth,
+                              rejection without growth-point consumption,
+                              rewind + superseded retention, resume marker,
+                              beyond-history rejection, isolation
+device evidence               E5 replay chain bootstrap/turn!S/restoreMarker/
+                              turn PASS (app-selftest-tl-gate.json); rewind
+                              path byte-identical after 07b210d
+```
