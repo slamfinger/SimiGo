@@ -4259,3 +4259,30 @@ each stage unit/real-device verified.
 Current gate  : SIMIGO17_PREFIX_POOL_COMPLETE / B1_B5_ALL_VERIFIED /
                 DAILY_PATH_EXECUTION_STATE_LIVE
 ```
+
+### v2.0.0-beta.2 PUBLISHED — 2026-09-27
+
+User-ordered build + publish, delivering the Route B answer in a
+release:
+
+```text
+source     product e121335 (docs) on release/v2.0.0-beta, Lab 44d0dd1 —
+           both pushed
+tag        v2.0.0-beta.2 (annotated, peeled → e121335) pushed
+build      Release BUILD SUCCEEDED (app 2.0.0; prefix pool wired,
+           SIMIGO_PREFIX_POOL=0 kill switch)
+dmg        SimiGo-v2.0.0-beta.2.dmg (25,467,522 bytes, CRC VALID,
+           sha256 2b23738339b51f087f1a43e11627d210cd15bea5e0864a0379a505bf0cb7a81c)
+release    GitHub Release (prerelease) live with DMG + full notes:
+           prefix pool 84x reading front and center, honest limits
+           (message-boundary granularity, fresh-content prefill, pool
+           export cost), open-source dependency chain
+           → https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.2
+docs       README v2.0 section + 部署指南 prefix-pool paragraph;
+           RELEASE notes banner now records beta.1 → beta.2 succession
+```
+
+```text
+Current gate  : V2_0_0_BETA_2_PUBLISHED / PREFIX_POOL_LIVE_IN_PRODUCT /
+                GA_WORKITEMS_OPEN
+```
