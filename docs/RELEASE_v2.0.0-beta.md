@@ -1,11 +1,9 @@
 # SimiGo v2.0.0-beta — Release Notes
 
-> **⚠️ 已撤下（2026-09-27）**：v2.0.0-beta.1 Release 与 tag 已应裁定撤下。
-> 原因：路线优先级——超规模只是理论验证线，日常小规模路径才是产品根基；
-> 小规模路径存在未解决的真实痛点（每个新会话冷 prefill，真机实测 47.6s @6.2K
-> 共享上下文）。下一工作项 = SimiGo 1.7 Execution State Prefix Pool
-> （跨会话前缀 KV 共享，定义门已开）。撤下不撤码：依赖公开化与引擎修复
-> 保留于 `release/v2.0.0-beta` 分支（d8c6ba6）。
+> **版本说明**：v2.0.0-beta.1 曾发布后撤下（路线优先级裁定：日常小规模
+> 路径是根基）。其继任者 **v2.0.0-beta.2 已交付该裁定的答案**——Execution
+> State 前缀池（跨会话前缀 KV 共享），真机实测池命中轮 201ms vs 冷轮
+> 16,951ms（84 倍），重启 warm。见 v2.0.0-beta.2 Release 页。
 
 **测试版（Beta）** · 分支 `release/v2.0.0-beta` · tag `v2.0.0-beta` · 基线 main@632b1d9
 
