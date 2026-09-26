@@ -556,7 +556,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             }
 
             for (unitIndex, unit) in units.enumerated() {
-                FileHandle.standardError.write(Data("DBG fwd unit \(unit.lowerBound)-\(unit.upperBound)\n".utf8))
                 // Segment residency THROUGH the ResidencyController: the
                 // admission materializes this unit via the materializer port
                 // (logged) and evicts whatever no longer fits the group
@@ -593,7 +592,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 _ = unitIndex
             }
 
-            FileHandle.standardError.write(Data("DBG project\n".utf8))
             let logits = model.projectOutput(hidden)[0, -1]
             eval(logits)
             let next = logits.argMax().item(Int.self)
@@ -673,7 +671,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
     func loadUnit(_ groupID: String) throws {
         guard let model, let reader else { throw OversizedEngineError.notLoaded }
-        FileHandle.standardError.write(Data("DBG loadUnit \(groupID)\n".utf8))
         guard let unit = units.first(where: { unitID($0) == groupID }) else { return }
         var arrays: [String: MLXArray] = [:]
         for name in switchNames {
