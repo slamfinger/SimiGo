@@ -3861,3 +3861,36 @@ reconciliation dimension. Implementation AFTER review approval.
 Current gate  : TOKEN_LEDGER_GATE_DEFINITION / GA0_POLICY_TARGET_DEPENDENT /
                 AWAITING_REVIEW
 ```"""
+
+### Token Ledger Gate — IMPLEMENTED + REAL-DEVICE VERIFIED — 2026-09-27
+
+Implementation landed (3ba44f7) per the registered definition. The
+definition's I-L2 wording ("strictly increasing prefixLength") was
+under-specified for rewind: as implemented and unit-pinned, I-L2 is
+growth-point based — turn/bootstrap entries must move strictly forward
+from the current growth point; a restore marker may rewind to any
+at-or-before position and RESETS the growth point; the rewound tail is
+retained and flagged (markSuperseded, append-only audit). I-L3 as
+implemented: entry prefixLength == active-chain bound-prefix length AT
+that position (the restore marker takes the restored position's prefix,
+not the last entry's).
+
+Wiring: bootstrap entry at session creation; turn entry appended only
+after the full commit sequence (physical rebind -> logical advance ->
+history) succeeds (I-L1 committed-only); restoreSession marks the
+superseded tail then appends the marker; discard closes the ledger with
+the session. Self-test overallPass now requires the ledger chain
+bootstrap -> turn(!S) -> restoreMarker -> turn.
+
+Verification: 95/95 unit tests green (6-case ledger battery: forward
+growth, rejection without growth-point consumption, rewind + superseded
+retention, marker-ahead-of-growth rejection, per-execution isolation);
+real-device Qwen3-Coder-Next-4bit E5 replay flow PASS — chain
+`bootstrap@0p18 / turn@1p26!S / restoreMarker@0p18 / turn@1p26`,
+determinism identical, 192 transfers, swap 0, pressure green
+(`results/o5-sweep/app-selftest-tl-gate.json`).
+
+```text
+Current gate  : TOKEN_LEDGER_GATE_VERIFIED / GA0_POLICY_TARGET_DEPENDENT /
+                FAILURE_MATRIX_RERUN_NEXT
+```
