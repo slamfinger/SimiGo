@@ -4127,3 +4127,29 @@ B-2 adapter's loud failure. 10-case battery; suite 110/110.
 Current gate  : ROUTE_B_IN_PROGRESS / B1_POOL_CORE_VERIFIED /
                 B2_KV_ARTIFACT_ADAPTER_NEXT
 ```
+
+### B-2 (Prefix Snapshot Store) LANDED — 2026-09-27
+
+The KV artifact adapter (bd74bac): disk-backed store wiring the pool to
+ChatSession.saveCache / loadPromptCacheSnapshot. Layout
+`<root>/<nsHash>/<hash>-<count>.safetensors` + JSON sidecar — sidecar
+rather than in-file metadata because the production export path takes
+no user metadata and re-serializing multi-GB KV arrays to attach claims
+is unacceptable (the same safetensors+sidecar pattern the product
+already runs). Export writes through a pre-created temp file; two mlx
+IO pitfalls are now pinned by tests (save dispatches on pathExtension;
+it also removes an existing destination before writing, so a missing
+temp file fails with ENOENT). A failing exporter leaves the pool
+untouched. Bind path enforces P-I1's loud half: sidecar claims must
+equal the admitted entry's claims (modelID/kvFingerprint/tokenCount/
+chainHash); any disagreement or unreadability removes the entry
+(self-healing) and throws. Full P-I1 chain now verified link by link:
+prompt → entry (pool admission) → artifact (sidecar reconciliation).
+Unit battery without a model (E2 pattern): REAL file round-trip via
+synthetic KVCacheSimple layers; tampered tokenCount/chainHash, missing
+snapshot → throw + self-heal; 7 cases; suite 117/117.
+
+```text
+Current gate  : ROUTE_B_IN_PROGRESS / B1_B2_VERIFIED /
+                B3_STRICT_ES_SESSION_INTEGRATION_NEXT
+```
