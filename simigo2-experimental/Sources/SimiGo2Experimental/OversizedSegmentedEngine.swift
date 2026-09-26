@@ -373,7 +373,11 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             tensors: tensorEntries,
             totalByteCount: tensorEntries.reduce(0) { $0 + $1.byteCount }
         )
-        groupBudgetBytes = Int64(peakCapacityMiB) * 1024 * 1024 - coreBytes
+        // Group-space budget covers core ∪ streamed units exactly once:
+        // the planner computes desired = core ∪ required and compares it
+        // against this budget, so subtracting core here would double-count
+        // it (review P2: over-conservative by 2× core).
+        groupBudgetBytes = Int64(peakCapacityMiB) * 1024 * 1024
         floorResidentBytes = coreBytes
         for unit in units.prefix(floorUnits) {
             floorResidentBytes += unitBytesSum(unit)
@@ -618,14 +622,21 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             ), tokenText)
         }
 
-        // Physical prefix consumed; advance the logical Execution State and
-        // rebind the advanced representation (E5-v2 pattern).
-        backend.consumeBinding(for: state)
+        // Atomic turn commit (review P1): generation has completed without
+        // mutating any binding; the commit order is physical rebind at the
+        // advanced position FIRST, then the logical advance (in-memory,
+        // infallible), then the history record. The previous order
+        // (consumeBinding -> logical advance -> bind) left a window where a
+        // bind failure produced "logical advanced / representation missing".
+        let advancedPosition = ExecutionPosition(state.position.value + 1)
+        try backend.bind(
+            executionID: state.id, position: advancedPosition, prefix: ids
+        )
         let advanced = try await coordinator!.continueExecution(
             state,
             continuation: ExecutionContinuation(
                 nextInput: messages.last?.content ?? "",
-                continuationID: "S-cont-\(state.position.value + 1)"
+                continuationID: "S-cont-\(advancedPosition.value)"
             )
         )
         currentState = advanced

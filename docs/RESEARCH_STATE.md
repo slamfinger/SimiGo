@@ -3607,6 +3607,44 @@ Current gate  : BACKEND_PHYSICAL_ATOMICITY_HARDENED /
                 AWAITING_REVIEW_RESTAMP
 ```
 
+### Second-Audit Fixes — Turn-Commit Atomicity + Budget Semantics + servedTranscript Ordering — 2026-09-26
+
+Three findings from the second audit round (ResidencyController →
+Materializer → Engine → API chain) fixed and verified on device:
+
+```text
+fix A (P1)  turn-commit atomicity: the old order (consumeBinding →
+            logical advance → bind at N+1) left a window where a bind
+            failure produced "logical advanced / representation missing".
+            New order: physical rebind at the advanced position FIRST
+            (in-memory infallible), then the logical advance, then the
+            history record; consumeBinding is subsumed by the rebind.
+fix B (P2)  group budget no longer double-counts core: the planner
+            computes desired = core ∪ required against the budget, so the
+            engine now passes the FULL peak capacity as the group budget
+            (was: peak − core, over-conservative by 2× core).
+fix C (P1/P2) servedTranscript is now a DERIVED control state committed
+            only AFTER the turn (physical rebind + logical advance)
+            succeeds — a failed generation can no longer desynchronize
+            the continuation judgment from the Execution State.
+```
+
+Registered for the final audit round (reviewer-proposed): the full
+Failure Matrix — create/continue/fork/restore/reattach/discard/
+materialize/evict/generation/bindRepresentation/newSession/HTTP failure ×
+{success, failure, cancel, mid-exception, repeated, concurrent} — across
+the five state layers. INV-3 reconciliation in the production path
+remains a registered completeness gap.
+
+Verification: SimiGo-Lab 89 tests PASS; real-device self-test
+overallPass TRUE (canonical tokens, peak 6,859 MiB — budget semantics
+now let the planner work as intended — swap ≤ baseline, pressure green).
+
+```text
+Current gate  : STATE_ATOMICITY_AND_BUDGET_FIXES_VERIFIED /
+                FAILURE_MATRIX_NEXT
+```
+
 ### Foreign-Payload Guard Restored + Fault-Injection Verification — 2026-09-26
 
 Review findings at e9963fe addressed:
