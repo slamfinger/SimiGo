@@ -3631,8 +3631,8 @@ Step 2 closes (this registration), on the clean combined baseline
 future issue is attributable to exactly one landed change.
 
 ```text
-Current gate  : GA0_FLOOR_FORMAL_MODEL_REGISTERED /
-                TOKEN_LEDGER_GATE_PENDING_REVIEW
+Current gate  : TOKEN_LEDGER_GATE_DEFINITION / GA0_POLICY_TARGET_DEPENDENT /
+                AWAITING_REVIEW
 ```
 
 ### Failure Matrix Full Re-run — COMPLETE — 2026-09-26
@@ -3822,3 +3822,42 @@ Known beta limitations: oversized-path usage counts zero (token-ledger
 integration = GA scope), non-cancellable greedy generation, single
 oversized session, no segment KV. Release .app built; release notes
 `docs/RELEASE_v2.0.0-beta.md` in the SimiGo repo.
+
+### GA-0 Ruling — Floor Policy = TARGET_DEPENDENT — 2026-09-26
+
+Reviewer ruling registered: floor stays a POLICY-LEVEL pressure exemption
+(target-dependent), NOT structural immunity (alwaysResident). Principles
+fixed:
+
+```text
+core     = structural residency (alwaysResident; eviction-immune)
+floor    = policy exemption (survives only while target >= core+floor)
+target=0 = release ALL non-core residency (no alwaysResident exception)
+```
+
+Rationale: upgrading floor to structural immunity would (a) turn a
+policy parameter into a Residency structural attribute, (b) break the
+uniform target=0 semantics of newSession ("release all non-core"), and
+(c) force reconcile/newSession/eviction to document an alwaysResident
+exception. No code change — current behavior already matches the ruling.
+
+### Token Ledger Gate Definition — Model First, No Code — 2026-09-26
+
+`SIMIGO2_TOKEN_LEDGER_GATE_DEFINITION_20260926.md` registered. The
+ledger = per-ExecutionState APPEND-ONLY record of confirmed token-prefix
+facts: one entry per committed transition (bootstrap + successful turns);
+failed turns append nothing; restore records a marker and retains the
+superseded tail (append-only audit trail); discard closes the ledger.
+Ownership: ExecutionStateBackend (the prefix IS the physical
+representation; the ledger is its token-level view). Boundaries: NOT a KV
+record / NOT usage / NOT a position source / NOT a transcript.
+Invariants: I-L1 committed-only entries; I-L2 strictly increasing
+prefixLength along the chain; I-L3 entry prefixLength == backend bound
+prefix length at that position. Enables: oversized usage accounting
+(closes the beta usage=0 limitation), prefix-drift detection, token-level
+reconciliation dimension. Implementation AFTER review approval.
+
+```text
+Current gate  : TOKEN_LEDGER_GATE_DEFINITION / GA0_POLICY_TARGET_DEPENDENT /
+                AWAITING_REVIEW
+```"""
