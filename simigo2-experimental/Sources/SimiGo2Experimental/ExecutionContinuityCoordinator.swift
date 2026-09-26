@@ -246,9 +246,12 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
 
         // Release the execution's physical representations: the LOGICAL
-        // record survives; only the representation goes.
+        // record survives; only the representation goes. A physical release
+        // FAILURE propagates (review fix ③): callers must see that model
+        // residency may still hold the representation's weights — silent
+        // swallowing crossed the Execution State / residency boundary.
         if let last = representationHistory[current.id]?.last {
-            try? await backend.releaseRepresentation(last)
+            try await backend.releaseRepresentation(last)
         }
     }
 

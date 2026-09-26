@@ -3528,6 +3528,42 @@ Current gate  : APP_TUNING_MATRIX_RERECORDED_POST_FIX /
 Gate history: `docs/00-governance/SIMIGO2_APP_PERFORMANCE_TUNING_20260926.md`
 (appendix: post-fix matrix in this section).
 
+### Four-Layer State Audit Fixes — Strict Session Boundaries — 2026-09-26
+
+External four-layer audit (SimiGo2App → Engine → ResidencyController →
+Execution State at 1422328, server-verified) surfaced three state-boundary
+defects; all fixed, all gates green:
+
+```text
+fix ① (P1) engine.newSession swallowed residency failures (try? on
+     respondToMemoryPressure → DIRTY invisible, UI claimed fresh state).
+     Now fail-fast: pressure errors propagate BEFORE the Execution State
+     discard; the app shows the failure and retains the session.
+fix ② sessionTurnCount was a second source of truth (restore left
+     position=1 / turns=3 divergence). REMOVED — turns derive from the
+     Execution State position (single source of truth).
+fix ③ coordinator.discard swallowed physical release failures (try?).
+     Now propagates: callers see that model residency may still hold the
+     representation's weights (Execution State / residency boundary).
+fix ④ institutionalized: ChatAppModel.transcript = UI presentation
+     history ONLY — never a restore source; failed turns keep the error
+     entry visible instead of advancing the served transcript.
+```
+
+Verification: SimiGo-Lab 87/87 PASS; product build SUCCEEDED; strict E2E
+(2× real /v1/chat/completions through the oversized runtime) PASSED with
+restore-replay determinism. Reviewer's continuing sequence audit
+(representationHistory / backend.prefixes / currentState /
+ResidencyController.residentGroupIDs across
+Turn1→2→3→restore→replay→newSession→failed-release) welcomed — the
+sessionTurnCount removal makes position the single turn authority, and
+discard now propagates physical release failures.
+
+```text
+Current gate  : STATE_BOUNDARY_FIXES_APPLIED / AWAITING_REVIEW_RESTAMP
+```
+
+
 ### SimiGo v2.0.0-beta Released — Product Integration — 2026-09-26
 
 The matured code shipped as a product beta: SimiGo (the v1.7 production

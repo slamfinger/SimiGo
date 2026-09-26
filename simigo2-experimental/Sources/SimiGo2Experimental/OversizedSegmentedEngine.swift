@@ -120,7 +120,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var coordinator: ExecutionContinuityCoordinator?
     private var stateBackend: OversizedSegmentedStateBackend?
     private var currentState: ExecutionStateHandle?
-    private var sessionTurnCount = 0
 
     public private(set) var sessionInfo: OversizedSessionInfo?
     public private(set) var lastInputTokenCount: Int?
@@ -632,7 +631,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             )
         )
         currentState = advanced
-        sessionTurnCount += 1
         try await coordinator!.bindRepresentation(
             executionID: advanced.id,
             position: advanced.position,
@@ -641,7 +639,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         sessionInfo = OversizedSessionInfo(
             executionID: advanced.id.rawValue,
             position: Int(advanced.position.value),
-            turns: sessionTurnCount,
+            turns: Int(advanced.position.value),
             records: coordinator!.recordCount
         )
 
@@ -731,10 +729,13 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
     /// New session: discard the current Execution State (lifecycle record)
     /// and reset. The next generate() bootstraps a fresh state.
+    /// New session — FAIL-FAST (review fix ①): a residency failure
+    /// (eviction failure → DIRTY) propagates; the session is NOT reported
+    /// fresh while segment residency is unresolved. The Execution State is
+    /// discarded only after the residency floor has been reached.
     public func newSession() async throws {
         if let residency {
-            // Contract-consistent eviction back to the core floor (logged).
-            _ = try? await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
+            _ = try await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
         }
         if let coordinator, let state = currentState {
             try await coordinator.discard(state)
@@ -742,7 +743,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         coordinator = nil
         stateBackend = nil
         currentState = nil
-        sessionTurnCount = 0
         sessionInfo = nil
     }
 
@@ -764,7 +764,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         sessionInfo = OversizedSessionInfo(
             executionID: currentState!.id.rawValue,
             position: Int(currentState!.position.value),
-            turns: sessionTurnCount,
+            turns: Int(currentState!.position.value),
             records: coordinator.recordCount
         )
     }

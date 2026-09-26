@@ -208,16 +208,29 @@ final class ChatAppModel: ObservableObject {
         }
     }
 
+    // `transcript` is UI PRESENTATION history only — never a source for
+    // Execution State restore/replay. The executable conversation history
+    // lives in the engine's Execution State (coordinator + bound prefix).
+    // A failed newSession therefore leaves the transcript intact and the
+    // failure visible, instead of claiming a fresh state (review fix ①).
     func newSession() {
         guard !isGenerating else { return }
-        transcript.removeAll()
         liveGauge = "new session…"
         let engine = engine
         Task.detached {
-            try? await engine?.newSession()
-            DispatchQueue.main.async {
-                self.execStateLine = "execution state discarded — fresh state on next message"
-                self.liveGauge = "idle"
+            do {
+                try await engine?.newSession()
+                DispatchQueue.main.async {
+                    self.transcript.removeAll()
+                    self.execStateLine = "execution state discarded — fresh state on next message"
+                    self.liveGauge = "idle"
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.execStateLine =
+                        "new session FAILED: \(error.localizedDescription) — session retained, residency unresolved"
+                    self.liveGauge = "error"
+                }
             }
         }
     }
