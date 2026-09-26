@@ -3583,6 +3583,30 @@ Current gate  : DISCARD_FAILURE_ATOMICITY_FIXED /
                 AWAITING_REVIEW_RESTAMP
 ```
 
+### Backend Physical Atomicity — releaseRepresentation Hardened — 2026-09-26
+
+Per review distinction (coordinator logical atomicity FIXED ≠ backend
+physical atomicity proven): `OversizedSegmentedStateBackend.
+releaseRepresentation` audited and hardened. Old order: binding cleanup
+(infallible) THEN physical release (fallible) — a physical failure left
+"binding cleaned / weights resident" (unretryable partial state). New
+order: fallible physical release FIRST (single all-or-nothing
+model.update over the combined placeholder map + infallible clearCache),
+infallible binding cleanup LAST. Failure now leaves the binding intact
+and retryable; success is all-or-nothing. The foreign-payload guard
+remains first (throws before any mutation). 87/87 green.
+
+Open item registered for the reviewer's sequence audit: per-node state
+of representationHistory / backend.prefixes / currentState /
+residentGroupIDs is derivable from 4e45b07+ code; happy-path and
+discard-failure paths now both hold "logical and physical move
+together, binding as the retry anchor".
+
+```text
+Current gate  : BACKEND_PHYSICAL_ATOMICITY_HARDENED /
+                AWAITING_REVIEW_RESTAMP
+```
+
 
 ### SimiGo v2.0.0-beta Released — Product Integration — 2026-09-26
 
