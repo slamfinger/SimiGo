@@ -19,6 +19,18 @@ SimiGo 的定位很简单：**外部 Agent 决定做什么，SimiGo 负责把模
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
 
+## v2.0 Beta：超规模模型执行
+
+`release/v2.0.0-beta` 分支在 v1.7 全部功能不变的前提下新增**超规模模型
+执行**：超过物理内存的大模型（已验证 Qwen3-Coder-Next-4bit，
+41.76 GiB @ 32 GiB 机器）经同一 OpenAI 兼容 API 正常服务——placeholder-first
+分段加载、persistent-floor 段驻留、严格 Execution State 会话，
+swap 平坦、逐位确定性。详见
+[docs/RELEASE_v2.0.0-beta.md](docs/RELEASE_v2.0.0-beta.md)；
+从源码构建需与
+[SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) 双仓兄弟克隆，
+步骤见 [部署指南.md](部署指南.md) 第六节。
+
 ## Runtime 三层契约
 
 SimiGo 的核心不是一个 API 转发层，而是一个可靠的 Agent Runtime。

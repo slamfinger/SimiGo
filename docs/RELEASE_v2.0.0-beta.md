@@ -55,6 +55,9 @@ OpenAI 兼容 API 正常服务，swap 全程平坦、压力绿、确定性可复
 2. 菜单栏选择模型目录（超规模模型自动识别，日志出现
    `[V2] oversized model detected`）。
 3. 启动服务后按 v1.7 相同方式调用 API。
-4. 依赖说明：v2.0-beta 依赖本地 `mlx-swift-lm`（分支
-   `release/v2.0-beta-ml`，含分段执行 API）与 SimiGo-Lab 本地包——
-   正式分发将切远端分支。
+4. 依赖说明（2026-09-27 更新：远端分支切换已兑现）：v2.0-beta 的引擎包
+   SimiGo2Experimental + SimiGoRuntimeContract 来自兄弟克隆的 SimiGo-Lab
+   仓库（Xcode 本地包引用，`../SimiGo-Lab/simigo2-experimental`）；引擎对
+   `mlx-swift-lm` 的依赖已切至公开远端分支
+   `slamfinger/mlx-swift-lm@release/v2.0-beta-ml`（Package.resolved 钉住
+   fbfa1f4）。从源码构建需双仓兄弟克隆，见 `部署指南.md` 第六节。

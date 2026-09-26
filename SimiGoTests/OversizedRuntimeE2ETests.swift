@@ -6,8 +6,21 @@ import XCTest
 /// completions through the product HTTP surface, with restore-replay
 /// determinism and honest usage accounting.
 final class OversizedRuntimeE2ETests: XCTestCase {
-    private let modelPath = ProcessInfo.processInfo.environment["OVERSIZED_MODEL_PATH"]
-        ?? "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5"
+    /// Resolution order: OVERSIZED_MODEL_PATH env override, then the default
+    /// HuggingFace cache location for the verified beta model (first
+    /// snapshot). Tests SKIP when no model is present — no machine-specific
+    /// absolute paths are baked in.
+    private var modelPath: String {
+        if let override = ProcessInfo.processInfo.environment["OVERSIZED_MODEL_PATH"] {
+            return override
+        }
+        let hub = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots")
+        let snapshots = (try? FileManager.default.contentsOfDirectory(
+            at: hub, includingPropertiesForKeys: [.isDirectoryKey]))?
+            .filter { $0.hasDirectoryPath } ?? []
+        return snapshots.first?.path ?? hub.appendingPathComponent("NOT-PRESENT").path
+    }
     private let port = 18_123
 
     func testClientCancellationAbortsTurnAndStateStaysConsistent() async throws {
