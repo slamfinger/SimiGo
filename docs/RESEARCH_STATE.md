@@ -4034,3 +4034,54 @@ Qwen4Exp port gate (independent decision).
 ```text
 Current gate  : V2_0_0_BETA_1_PUBLISHED / GA_WORKITEMS_OPEN
 ```
+
+### Beta Pulled + Route Ruling — Daily Path Execution State — 2026-09-27
+
+User ruling (explicit, repeated priority principle): **the oversized
+line is theory validation only; the daily small-scale path is the
+foundation.** Executed under direct authorization:
+
+```text
+beta pulled     GitHub Release v2.0.0-beta.1 deleted (--cleanup-tag:
+                remote tag removed; local tag deleted). Commit d8c6ba6
+                remains on release/v2.0.0-beta (code and public
+                dependency chain stay — only the release page came
+                down). The older tag v2.0.0-beta (89cdbbf, no Release
+                page) untouched — outside this ruling.
+retraction      product RELEASE notes banner added
+root cause      real-device log audit (02:18–02:25): every NEW session
+                cold-prefills its full context (47.6s @6.2K; per-turn
+                ~18K injections 76–225s) — v1.7 KV reuse is gated on
+                session identity (storageKey), zero cross-session
+                sharing; same-session reuse healthy (cacheEff 1.00,
+                TTFT 0.478s). Audits to date covered correctness and
+                the oversized path, never daily-path workload
+                economics — registered blind spot.
+priority        feedback memory registered: work-item ordering takes
+                daily-path benefit as the first criterion
+```
+
+### Definition Gate Opened — SimiGo 1.7 Execution State Prefix Pool — 2026-09-27
+
+`SIMIGO17_PREFIX_POOL_EXECUTION_STATE_DEFINITION_20260927.md` registered
+(per gate discipline: definition before code). Thesis: apply the
+Execution State principle to the daily path at token granularity —
+logical states consume physical KV representations by CONTENT, not by
+session identity; a shared, content-addressed prefix pool (rolling
+hash-chain keys over token ids, namespaced by model+kvFingerprint, block
+boundaries every 512 tokens, LRU under the existing warmTokenBudget)
+turns new-session cold prefill into delta prefill. Admission reuses the
+existing performLoad/cacheLoad checkpoint machinery (kvFingerprint
+reconciliation proven in rollforward). Invariants P-I1..P-I4 drafted —
+P-I1 carries the I-L3 lesson (cross-check the claim against the loaded
+representation, never trust the key). Honest scope: removes the
+shared-prefix cold tax; the genuinely-new-token injection class is
+real compute (G1.9-C: no locality) and stays out of scope. First
+implementation step on approval: mlx-swift-lm API audit — does
+ChatSession delta-extend from an imported checkpoint without full
+re-render. Implementation starts only after review approval.
+
+```text
+Current gate  : BETA_1_PULLED / SIMIGO17_PREFIX_POOL_DEFINITION /
+                AWAITING_REVIEW
+```
