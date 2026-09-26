@@ -3563,6 +3563,26 @@ discard now propagates physical release failures.
 Current gate  : STATE_BOUNDARY_FIXES_APPLIED / AWAITING_REVIEW_RESTAMP
 ```
 
+### Discard Failure Atomicity — Transactional Reorder — 2026-09-26 (review P1 residual fixed)
+
+Reviewer re-audit at 26e9ad1 (server-verified) stamped
+"REVIEW PASS WITH 1×P1 RESIDUAL": coordinator.discard wrote the .discarded
+lifecycle/record BEFORE the physical release — a failed release left
+"logical = discarded / physical = unresolved", and newSession's
+"session retained" was actually "retained but logically discarded and
+unusable". Fixed by transactional reorder: physical release FIRST
+(backend.releaseRepresentation), logical discard (handle + record)
+commits only after success. Failed release now leaves the Execution State
+UNCHANGED (resumable/retryable); newSession's "session retained" is now
+literally true. Success-path outcomes identical (E2 lifecycle tree +
+coordinator contract tests green). SimiGo-Lab 87/87 + product strict E2E
+re-verified after the reorder.
+
+```text
+Current gate  : DISCARD_FAILURE_ATOMICITY_FIXED /
+                AWAITING_REVIEW_RESTAMP
+```
+
 
 ### SimiGo v2.0.0-beta Released — Product Integration — 2026-09-26
 

@@ -235,6 +235,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
 
     public func discard(_ state: ExecutionStateHandle) async throws {
         let current = try guardKnown(state.id)
+
+        // TRANSACTIONAL DISCARD (review fix: failure atomicity) — the
+        // physical representation is released FIRST; the logical discard
+        // commits only after the release succeeded. A failed release leaves
+        // the logical state UNCHANGED (still resumable/retryable) instead of
+        // a "discarded-but-weights-resident" split.
+        if let last = representationHistory[current.id]?.last {
+            try await backend.releaseRepresentation(last)
+        }
+
         let discardedHandle = ExecutionStateHandle(
             id: current.id,
             lineage: current.lineage,
@@ -244,15 +254,6 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         )
         handles[current.id] = discardedHandle
         appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
-
-        // Release the execution's physical representations: the LOGICAL
-        // record survives; only the representation goes. A physical release
-        // FAILURE propagates (review fix ③): callers must see that model
-        // residency may still hold the representation's weights — silent
-        // swallowing crossed the Execution State / residency boundary.
-        if let last = representationHistory[current.id]?.last {
-            try await backend.releaseRepresentation(last)
-        }
     }
 
     public var recordCount: Int { records.count }
