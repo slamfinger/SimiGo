@@ -3631,8 +3631,8 @@ Step 2 closes (this registration), on the clean combined baseline
 future issue is attributable to exactly one landed change.
 
 ```text
-Current gate  : STEP2_INV3_PRODUCTION_RECONCILE_DONE /
-                FAILURE_MATRIX_FULL_RERUN_NEXT
+Current gate  : GA0_FLOOR_FORMAL_MODEL_REGISTERED /
+                TOKEN_LEDGER_GATE_PENDING_REVIEW
 ```
 
 ### Failure Matrix Full Re-run — COMPLETE — 2026-09-26
