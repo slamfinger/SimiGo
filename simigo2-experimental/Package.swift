@@ -9,6 +9,7 @@ let package = Package(
     ],
     products: [
         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
+        .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
         .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],

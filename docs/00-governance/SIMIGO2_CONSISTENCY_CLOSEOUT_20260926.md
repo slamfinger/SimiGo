@@ -99,3 +99,30 @@ to page against. The oversized techniques divide accordingly:
   directly.
 
 Artifact: `results/o5-sweep/qwen30b-native-swap-probe.json`.
+
+## Addendum 2 — Nail-4bit (20.15 GiB) Real-Use Swap Probe — 2026-09-26
+
+Question: does the 20 GiB-class fitting model swap in real use? Native
+full-resident path (o2-baseline) on Nail-Qwen3.6-35B-A3B-MLX-4bit
+(20.15 GiB weights, qwen3_5_moe), dense external swap sampling (3 s) plus
+in-probe snapshots:
+
+```text
+load                 510 ms (page-cache warm; cold ~1-2 min)
+load transient       swap briefly +1.5 GiB (1.56 -> 3.16 -> 1.99 G),
+                     settled within one sample
+generation           3 x 48 tokens, TTFT ~0.5 s, ~7-14 ms/token;
+                     swap FLAT at 1.99 GiB — zero oscillation
+full residency       mlxActive 20.74 GiB / phys footprint 22.57 GiB
+max system swap      3.16 GiB (load transient only)
+```
+
+Conclusion: at current co-residency the 20 GiB-class model is safely
+full-resident — no meaningful swap, generation is ~100x faster than the
+segmented path. The segmented machinery is NOT recommended for this class
+today; it becomes the right tool exactly when co-residency squeezes
+available memory below the full-residency point (the borderline regime).
+Probe cosmetic: gen-1 tokensPerSecond metric mis-scaled (timing
+division); ttft/total fields are the meaningful ones.
+
+Artifact: `results/o5-sweep/nail4b-native-swap-probe.json`.
