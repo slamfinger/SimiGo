@@ -4006,3 +4006,31 @@ left untouched — dated records are not rewritten.
 Current gate  : RELEASE_ENGINEERING_COMPLETE / BETA_BUILD_VERIFIED /
                 TAG_PUSH_PENDING_USER (v2.0.0-beta.1 on d8c6ba6)
 ```
+
+### v2.0.0-beta.1 PUBLISHED — 2026-09-27
+
+The three outward actions executed under explicit user authorization:
+
+```text
+tag            v2.0.0-beta.1 pushed to slamfinger/SimiGo (annotated,
+               peeled → d8c6ba6)
+DMG            SimiGo-v2.0.0-beta.1.dmg packaged from the verified
+               Release build (app 2.0.0 build 6; /Applications
+               drag-install layout); hdiutil CRC verify VALID;
+               25,393,778 bytes
+release        GitHub Release v2.0.0-beta.1 (prerelease) with the DMG
+               asset + full notes (beta.1 delta, capabilities, known
+               limits, install, SHA-256
+               c9ab1fc8e9f9c9d9a5b8332972b99ea55e66b1b41b6fb4b49297b68b23749361)
+               → https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.1
+license        MIT accepted as-is (no further action)
+```
+
+Remaining GA items unchanged: segment KV, UI branch sessions, INV-3
+production-integration completeness gap, usage projection wiring
+(engine token ledger already in place), floor redesign per GA-0 ruling,
+Qwen4Exp port gate (independent decision).
+
+```text
+Current gate  : V2_0_0_BETA_1_PUBLISHED / GA_WORKITEMS_OPEN
+```
