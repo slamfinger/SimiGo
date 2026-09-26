@@ -210,7 +210,7 @@ residency retention 仍可严格测量、字节级验证、其 reload economics 
 Phase: Architecture 2.0 / P4 Redefinition
 
 Engineering phase: SimiGo 2.0 Experimental R0 / PLANNER_RUNTIME_INTEGRATION_PASS
-Engineering subphase: CONSISTENCY_CLOSEOUT_PASS / OVERSIZED_MATCHES_FITTING_CONTRACT
+Engineering subphase: APP_TUNING_RERECORDED_POST_FIX / UNIT8_SHIPPED_DEFAULT / CONSISTENCY_CLOSEOUT_PASS
 
 R-INTERNAL-1 = P4
 R-INTERNAL-2 = δ3
@@ -3488,3 +3488,42 @@ Next          : optional UI fork sessions; Qwen4Exp port gate (user
 ```
 
 Gate history: `docs/00-governance/SIMIGO2_CONSISTENCY_CLOSEOUT_20260926.md`.
+
+### Post-Eviction-Fix Tuning Matrix Re-measured — unit8 Shipped — 2026-09-26
+
+User directive: re-measure the tuning matrix after the eviction fix. The
+curve INVERTED versus the pre-fix matrix — smaller streaming units now win
+on both latency and memory, and larger units regress hard (unit 24 is
+REJECTED by the ResidencyController itself: required unit bytes exceed the
+group budget — the contract enforces the capacity boundary that the
+pre-fix thrash used to surface as swap).
+
+```text
+shape (controller path, 8-token runs)   mean ms/token  peak MiB   pressure
+floor 0 / unit 4 ×12                          13,920         18,139    2*
+floor 0 / unit 8 ×6                            8,820          8,215    1  ← shipped
+floor 0 / unit 12 ×4                          11,467          9,419    1
+floor 0 / unit 16 ×3                          11,610         13,729    1
+floor 0 / unit 24 ×2                          REJECTED by the controller
+floor 4 / unit 8 ×6                            9,529          8,485    1
+floor 14 / unit 8 ×5 (24 GiB floor budget)    11,988         15,192    2
+```
+
+*unit 4's 4-token sweep number (8.9 s) was a short-run artifact; the
+8-token run exposed churn accumulation (13.9 s, pressure yellow). Floor
+> 0 adds wired pressure with no latency benefit (floor 8: 9.1 s vs floor
+0: 9.0 s in the pre-fix matrix; floor 14: 11.99 s yellow here) — the
+floor budget default is decoupled to 4096 MiB (floor 0 on this model).
+
+Shipped default: **floor 0 / unit 8 ×6 — 8,820 ms/token at 8,215 MiB peak,
+cache 0, swap 0, pressure green, INV-1 over segments, strict Execution
+State restore-replay determinism** (release bundle, real device). Larger
+units remain flag-selectable where capacity allows.
+
+```text
+Current gate  : APP_TUNING_MATRIX_RERECORDED_POST_FIX /
+                UNIT8_SHIPPED_DEFAULT
+```
+
+Gate history: `docs/00-governance/SIMIGO2_APP_PERFORMANCE_TUNING_20260926.md`
+(appendix: post-fix matrix in this section).

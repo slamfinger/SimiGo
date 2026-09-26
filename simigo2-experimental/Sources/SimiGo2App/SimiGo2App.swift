@@ -343,7 +343,7 @@ struct OversizedSelfTestConfiguration {
            bIndex + 1 < arguments.count, let parsed = Int64(arguments[bIndex + 1]) {
             floorBudgetMiB = parsed
         } else {
-            floorBudgetMiB = OversizedSegmentedEngine.defaultPeakCapacityMiB
+            floorBudgetMiB = 4096
         }
     }
 }
@@ -383,14 +383,11 @@ enum OversizedRealDeviceSelfTest {
         let prompt = [
             EngineChatMessage(role: "user", content: "Write a Python function that merges two sorted lists.")
         ]
-        FileHandle.standardError.write(Data("marker: loaded\n".utf8))
         let pass1 = try await engine.generate(messages: prompt, maxNewTokens: configuration.tokens)
-        FileHandle.standardError.write(Data("marker: pass1 done\n".utf8))
         // Strict Execution State determinism: logically restore the session
         // to the bootstrap position, then replay the SAME turn consuming the
         // restored representation (E5 semantics — not a cache comparison).
         try await engine.restoreSession(to: 0)
-        FileHandle.standardError.write(Data("marker: restored\n".utf8))
         let pass2 = try await engine.generate(
             messages: prompt, maxNewTokens: configuration.tokens, nextInputTokens: []
         )

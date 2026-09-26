@@ -89,7 +89,7 @@ public struct OversizedSessionInfo: Codable, Sendable {
 }
 
 public final class OversizedSegmentedEngine: @unchecked Sendable {
-    public static let defaultUnitLayers = 16
+    public static let defaultUnitLayers = 8
     /// Chat budget (user-set 2026-09-26): resident memory < 16 GiB, MLX
     /// cache < 16 GiB, system memory pressure green.
     public static let defaultPeakCapacityMiB: Int64 = 20 * 1024
