@@ -3607,6 +3607,34 @@ Current gate  : BACKEND_PHYSICAL_ATOMICITY_HARDENED /
                 AWAITING_REVIEW_RESTAMP
 ```
 
+### Step 2 — INV-3 Production Reconcile + C_model Calibration — DONE — 2026-09-26
+
+Per review direction (Step 2 scope locked: C_model calibration + production
+reconcile integration ONLY — no transaction-coordinator expansion):
+
+```text
+C_model   calibrated at T0 for the oversized engine instance
+          (observed MLX active − core bookkeeping at the core-only point);
+          epsilon = 64 MiB (beta, calibration review required before GA)
+reconcile observed at the stable post-commit point of every turn;
+          divergence gets ONE recover attempt (bookkeeping rebuilt from
+          the transfer log) then re-checked; persistent divergence FAILS
+          the turn — physical inconsistency is never silently continued;
+          the observation never touches committed Execution State
+real-device overallPass TRUE — 192 transfers, swap 0, pressure green,
+          canonical tokens, reconcile clean across the full double pass
+```
+
+Registered per review guidance: Failure Matrix full re-run happens AFTER
+Step 2 closes (this registration), on the clean combined baseline
+(D1 contract + Step 1 cancellation + Step 2 reconciliation) — so any
+future issue is attributable to exactly one landed change.
+
+```text
+Current gate  : STEP2_INV3_PRODUCTION_RECONCILE_DONE /
+                FAILURE_MATRIX_FULL_RERUN_NEXT
+```
+
 ### Reviewer Sequence-Audit Round — FM-01/02/03 Addressed — 2026-09-26
 
 Reviewer audited at 7b87312 (one commit behind f495a85) and registered the
