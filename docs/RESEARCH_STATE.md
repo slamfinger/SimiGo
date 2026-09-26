@@ -3957,3 +3957,52 @@ Current gate  : TOKEN_LEDGER_GATE_VERIFIED_I_L3_ENFORCED /
                 GA0_POLICY_TARGET_DEPENDENT /
                 RELEASE_ENGINEERING_NEXT
 ```
+
+### Release Engineering Round — Open-Source Dependency Chain Public — 2026-09-27
+
+The five review-listed release-engineering items closed; v2.0 beta
+rebuild verified end-to-end on the PUBLIC dependency chain:
+
+```text
+mlx-swift-lm path   Lab Package.swift: path dep (outside-repo relative
+                    path, broke public clones) -> remote branch
+                    slamfinger/mlx-swift-lm@release/v2.0-beta-ml,
+                    Package.resolved pins fbfa1f4; product project: the
+                    file:///Users/... reference pinned at stale revision
+                    dc3ca619 -> same public branch (two different
+                    revision requirements are a SwiftPM resolution
+                    error — found by the rebuild, unified on branch);
+                    product Package.resolved pins fbfa1f4
+测试默认路径        OversizedRuntimeE2ETests: /Users hardcoded fallback ->
+                    dynamic HF-cache snapshot resolution (env override
+                    OVERSIZED_MODEL_PATH retained; XCTSkip when absent)
+License             MIT added to SimiGo-Lab + SimiGo (fork inherits
+                    ml-explore MIT upstream — three-repo license
+                    coherence); copyright Mr.Simi (slamfinger)
+版本号              app MARKETING_VERSION 2.0.0 (unchanged); product tag
+                    v2.0.0-beta.1 prepared LOCALLY on d8c6ba6 (push =
+                    pending user action); Lab packages carried by the
+                    release branch + resolved pin
+部署指南            部署指南.md §6: v2.0 beta sibling-clone build
+                    (SimiGo + SimiGo-Lab side by side), oversized
+                    routing rules, known limits; RELEASE notes
+                    dependency section updated (remote-switch promise
+                    fulfilled); README gains v2.0 beta section
+verification        Lab swift test 100/100 against the REMOTE dep (the
+                    public-clone path); product Release xcodebuild BUILD
+                    SUCCEEDED with fresh derived data — product -> local
+                    Lab package -> public fork branch resolves and
+                    compiles clean; device E2E re-run NOT triggered
+                    (dependency metadata + docs only, no engine or
+                    product behavior change — same disposition logic as
+                    Failure Matrix Addendum 2)
+```
+
+Historical docs mentioning the old local path
+(`ARCHITECTURE_2.0_PRERESEARCH_20260920.md`, MUSE_GLIMMER evidence JSON)
+left untouched — dated records are not rewritten.
+
+```text
+Current gate  : RELEASE_ENGINEERING_COMPLETE / BETA_BUILD_VERIFIED /
+                TAG_PUSH_PENDING_USER (v2.0.0-beta.1 on d8c6ba6)
+```
