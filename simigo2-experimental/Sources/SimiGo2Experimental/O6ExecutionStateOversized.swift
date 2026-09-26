@@ -319,11 +319,17 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
 
     /// The oversized eviction: release every segment's weights, then drop
     /// the prefix binding. ORDER IS THE ATOMICITY CONTRACT (review:
-    /// backend physical atomicity): the fallible physical release runs
-    /// FIRST — a failure leaves the binding INTACT and retryable — and the
+    /// backend physical atomicity): the foreign-payload guard throws
+    /// before ANY mutation, the fallible physical release runs FIRST — a
+    /// failure leaves the binding INTACT and retryable — and the
     /// infallible binding cleanup commits last. The logical Execution
     /// State survives either way (E4 invariant at segment granularity).
     public func releaseRepresentation(_ representation: ExecutionRepresentation) async throws {
+        guard representation.payload is OversizedPrefixPayload else {
+            throw ExecutionStateBackendError.foreignRepresentationPayload(
+                representation.executionID
+            )
+        }
         try releaseAll()
         lock.lock()
         prefixes[representation.executionID] = nil

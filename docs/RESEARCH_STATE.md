@@ -3607,6 +3607,32 @@ Current gate  : BACKEND_PHYSICAL_ATOMICITY_HARDENED /
                 AWAITING_REVIEW_RESTAMP
 ```
 
+### Foreign-Payload Guard Restored + Fault-Injection Verification — 2026-09-26
+
+Review findings at e9963fe addressed:
+1. **Foreign-payload guard restored** in releaseRepresentation — the
+   registration had claimed a guard the code never had; now the guard
+   throws BEFORE any mutation (zero physical attempt on foreign payload).
+2. **Fault-injection verification added**
+   (`OversizedBackendAtomicityTests`, 2 tests): a release closure forced
+   to throw leaves the binding INTACT (retryable — boundPrefix still
+   returns the prefix) and a successful retry commits the cleanup; at the
+   coordinator level, a failed discard propagates WITHOUT mutating
+   handle/position/lifecycle/records/binding, and a successful retry
+   commits `.discarded`.
+3. **model.update atomicity note (registered boundary)**: with
+   `verify: []` and a structurally valid unflattened map, MLXNN update is
+   a sequence of infallible assignments — there is no internal throw
+   site, so "all-or-nothing" holds by construction; a true fault-injection
+   of the MLX assignment path itself would require vendor-side hooks and
+   is registered as out of beta scope.
+Verification: 89 tests (87 + 2 atomicity) all PASS.
+
+```text
+Current gate  : FOREIGN_GUARD_RESTORED / FAULT_INJECTION_VERIFIED /
+                BACKEND_ATOMICITY_TESTED
+```
+
 
 ### SimiGo v2.0.0-beta Released — Product Integration — 2026-09-26
 
