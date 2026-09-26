@@ -70,6 +70,7 @@ public struct OversizedEngineTurn: Sendable {
 public enum OversizedEngineError: Error, LocalizedError {
     case unsupportedModelType(String)
     case notLoaded
+    case residencyDivergence(String)
 
     public var errorDescription: String? {
         switch self {
@@ -77,6 +78,8 @@ public enum OversizedEngineError: Error, LocalizedError {
             return "unsupported model type for the oversized segmented engine: \(t)"
         case .notLoaded:
             return "engine not loaded — call load() first"
+        case .residencyDivergence(let detail):
+            return "residency reconciliation divergence: \(detail)"
         }
     }
 }
@@ -137,6 +140,16 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var groupBudgetBytes: Int64 = 0
     /// Persistent floor in WHOLE units (single floor authority).
     private var floorUnitsCount = 0
+
+    // INV-3 production reconciliation (registered: detection, not
+    // transaction). C_model is calibrated at T0 for THIS engine; epsilon is
+    // a beta value and requires calibration review before GA.
+    private var cModelBytes: Int64 = 0
+    private let reconcileEpsilonBytes: Int64 = 64 * 1024 * 1024
+    public private(set) var residencyReconcileChecks = 0
+    public private(set) var residencyReconcileDivergences = 0
+    public private(set) var residencyReconcileRecoveries = 0
+    public private(set) var residencyReconcileErrors = 0
     private var floorResidentBytes: Int64 = 0
     public private(set) var residencyINV1Checks = 0
     public private(set) var residencyINV1Failures = 0
@@ -336,6 +349,12 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         try model.update(parameters: ModuleParameters.unflattened(fullParameterMap), verify: [])
         Memory.clearCache()
         self.model = model
+
+        // INV-3 C_model calibration (T0): the controller bookkeeping at this
+        // point is exactly the core group, so observed − core IS the
+        // calibrated constant for this engine instance.
+        let calib = gauge()
+        cModelBytes = calib.activeMiB * 1048576 - coreBytes
 
         // Segment residency inventory + controller (consistency with the
         // fitting-model path): core = alwaysResident; streaming units are
@@ -665,6 +684,41 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             turns: Int(advanced.position.value),
             records: coordinator!.recordCount
         )
+
+        // INV-3 production observation (review FM-06): at this stable
+        // post-commit point, controller bookkeeping must match the MLX
+        // physical observation within epsilon. Divergence gets ONE recover
+        // attempt (bookkeeping rebuilt from the transfer log); a persistent
+        // divergence FAILS the turn — physical inconsistency is never
+        // silently continued. This observation never touches the Execution
+        // State (position/binding/history are already committed).
+        residencyReconcileChecks += 1
+        do {
+            let matched = try residency.reconcile(
+                observedIdleBytes: Int64(gauge().activeMiB) * 1048576,
+                cModelBytes: cModelBytes,
+                epsilonBytes: 64 * 1024 * 1024
+            )
+            if !matched {
+                residencyReconcileDivergences += 1
+                try residency.recover()
+                let rematch = try residency.reconcile(
+                    observedIdleBytes: Int64(gauge().activeMiB) * 1048576,
+                    cModelBytes: cModelBytes,
+                    epsilonBytes: 64 * 1024 * 1024
+                )
+                if !rematch {
+                    throw OversizedEngineError.residencyDivergence(
+                        "reconcile divergence persists after recovery")
+                }
+            }
+        } catch let e as OversizedEngineError {
+            throw e
+        } catch {
+            // observation infrastructure error: count, surface on the NEXT
+            // turn (never silently continue across a divergence)
+            residencyReconcileErrors += 1
+        }
 
         let text = tokenizer.decode(tokens: generated, skipSpecialTokens: true)
         let mean = tokenMs.isEmpty ? 0 : tokenMs.reduce(0, +) / Double(tokenMs.count)
