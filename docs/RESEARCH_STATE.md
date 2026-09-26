@@ -4153,3 +4153,38 @@ snapshot → throw + self-heal; 7 cases; suite 117/117.
 Current gate  : ROUTE_B_IN_PROGRESS / B1_B2_VERIFIED /
                 B3_STRICT_ES_SESSION_INTEGRATION_NEXT
 ```
+
+### B-3 (Session Lifecycle + Restart-Warm) LANDED — 2026-09-27
+
+Two pieces (00e0448):
+
+```text
+pool.register  entry insertion from a PRECOMPUTED content claim (only
+               the chain hash survives on disk); P-I1 unaffected —
+               admission still recomputes over live prompt tokens, so a
+               corrupt claim can only miss, never mis-bind
+store.rescan   re-registers disk-persisted boundaries into a fresh pool
+               after restart — the 02:18 warmTokens=0 failure mode dies:
+               after a restart, a continuing conversation admits its
+               boundary warm
+```
+
+Lifecycle battery (no model, synthetic real snapshots): session A cold
+start → commit/export 6.2K boundary → session B (same document, own
+tail) admits at 6200 through a SECOND store instance over the same disk
+→ commits a longer boundary → RESTART → rescan re-registers both → a
+continuing session admits the longest boundary warm; one-token
+divergence at position 0 never false-hits. Vanished snapshots and
+garbage sidecars skipped; budget enforced across rescan. 4 cases;
+suite 121/121.
+
+Honest scope note: daily-path execution identity remains the product's
+LC lineage + history sidecar; the strict-ES increment for the daily
+path is content-addressed binding + restart-warm. A coordinator port
+would re-derive existing product machinery — deferred unless review
+rules otherwise.
+
+```text
+Current gate  : ROUTE_B_IN_PROGRESS / B1_B2_B3_VERIFIED /
+                B4_PRODUCT_ROUTING_NEXT
+```
