@@ -7,3 +7,6 @@ xcuserdata/
 *.xcuserstate
 *.log
 bench-output/
+__pycache__/
+*.pyc
+.zcode/

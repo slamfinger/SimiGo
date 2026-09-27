@@ -1,0 +1,95 @@
+{
+  "baselineForwardMilliseconds" : 153.2795,
+  "baselineOutput" : {
+    "checksum" : "640VhGBLIvdOdvjjCnztVxq1b7XbdO37kVs7FiPhwto=",
+    "dtype" : "bfloat16",
+    "kind" : "outputLogits",
+    "shape" : [
+      1,
+      14,
+      151936
+    ]
+  },
+  "boundary" : "ISOLATED_IDENTITY_PROBE \/ SINGLE_PROXY_MODULE_POINT \/ NOT_H_I_X \/ NOT_DEMAND",
+  "captureMilliseconds" : 13.7305,
+  "captureOverheadPercent" : "NOT_ESTABLISHED",
+  "forwardExecuted" : true,
+  "instrumentedForwardMilliseconds" : 342.6185,
+  "instrumentedModules" : [
+    {
+      "originalType" : "QuantizedSwitchLinear",
+      "path" : "model.layers.0.mlp.switch_mlp.down_proj",
+      "quantized" : true,
+      "replacementType" : "InstrumentedQuantizedSwitchLinear"
+    }
+  ],
+  "instrumentedOutput" : {
+    "checksum" : "640VhGBLIvdOdvjjCnztVxq1b7XbdO37kVs7FiPhwto=",
+    "dtype" : "bfloat16",
+    "kind" : "outputLogits",
+    "shape" : [
+      1,
+      14,
+      151936
+    ]
+  },
+  "modelType" : "Qwen3MoEModel",
+  "observationGranularity" : "MLP_SWITCH_DOWN_PROJ_OUTPUT",
+  "observationPath" : "model.layers.0.mlp.switch_mlp.down_proj",
+  "observations" : [
+    {
+      "checksum" : "Y4WqUFGASYIQD86+4TXTybwmWxZ4xXY5CH4vtqnaJNY=",
+      "dtype" : "bfloat16",
+      "kind" : "observationValue",
+      "shape" : [
+        112,
+        1,
+        2048
+      ]
+    }
+  ],
+  "outputComparison" : {
+    "baseline" : {
+      "checksum" : "640VhGBLIvdOdvjjCnztVxq1b7XbdO37kVs7FiPhwto=",
+      "dtype" : "bfloat16",
+      "kind" : "outputLogits",
+      "shape" : [
+        1,
+        14,
+        151936
+      ]
+    },
+    "exactlyEqual" : true,
+    "instrumented" : {
+      "checksum" : "640VhGBLIvdOdvjjCnztVxq1b7XbdO37kVs7FiPhwto=",
+      "dtype" : "bfloat16",
+      "kind" : "outputLogits",
+      "shape" : [
+        1,
+        14,
+        151936
+      ]
+    },
+    "maxAbsoluteDifference" : 0
+  },
+  "overheadEstablished" : false,
+  "peakMemoryOverheadMegabytes" : 4.5,
+  "status" : "PASS",
+  "timingBoundary" : "RAW_TIMES_ONLY \/ SINGLE_CONTAINER_WARMUP_ASYMMETRY \/ OVERHEAD_NOT_ESTABLISHED",
+  "tokenIDs" : [
+    151644,
+    872,
+    198,
+    5598,
+    6896,
+    825,
+    3409,
+    25,
+    29998,
+    151645,
+    198,
+    151644,
+    77091,
+    198
+  ]
+}

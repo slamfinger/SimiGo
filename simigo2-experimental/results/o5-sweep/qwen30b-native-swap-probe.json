@@ -1,0 +1,111 @@
+{
+  "boundary" : "NATIVE_MLX_BASELINE \/ ZERO_SIMIGO_INTERVENTION \/ MEASUREMENT_ONLY \/ NOT_A_PERFORMANCE_CLAIM",
+  "firstForwardMilliseconds" : 701.037542,
+  "generations" : [
+    {
+      "generatedTokens" : 48,
+      "index" : 1,
+      "promptTokens" : 17,
+      "tokensPerSecond" : 60.69174380909056,
+      "totalMilliseconds" : 922.2923750000001,
+      "ttftMilliseconds" : 147.887208
+    },
+    {
+      "generatedTokens" : 48,
+      "index" : 2,
+      "promptTokens" : 17,
+      "tokensPerSecond" : 59.27611882614881,
+      "totalMilliseconds" : 937.2903329999999,
+      "ttftMilliseconds" : 144.390917
+    },
+    {
+      "generatedTokens" : 48,
+      "index" : 3,
+      "promptTokens" : 17,
+      "tokensPerSecond" : 2864.936529464649,
+      "totalMilliseconds" : 158.827042,
+      "ttftMilliseconds" : 142.42179199999998
+    }
+  ],
+  "loadMilliseconds" : 670.255709,
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "modelType" : "Qwen3MoEModel",
+  "notes" : [
+    "selective touch skipped: shard file not found"
+  ],
+  "physicalTotalBytes" : 34359738368,
+  "promptLogitsChecksum" : "v32hfE5YFWR95KtVQp3KsN3Y2nahNWJ6XdbmhLKJOEU=",
+  "protocolVersion" : "G1.9-O2.BASELINE.V1",
+  "selectiveTouch" : [
+
+  ],
+  "snapshots" : [
+    {
+      "label" : "T0_PROCESS_START",
+      "mlxActiveBytes" : 0,
+      "mlxCacheBytes" : 0,
+      "mlxPeakBytes" : 0,
+      "physFootprintBytes" : 2916904,
+      "residentBytes" : 20152320,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 16
+    },
+    {
+      "label" : "T1_T2_LOAD_COMPLETE",
+      "mlxActiveBytes" : 17180952624,
+      "mlxCacheBytes" : 772,
+      "mlxPeakBytes" : 17180953396,
+      "physFootprintBytes" : 17287164672,
+      "residentBytes" : 10795270144,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 686
+    },
+    {
+      "label" : "T3_FIRST_FORWARD_COMPLETE",
+      "mlxActiveBytes" : 17180952624,
+      "mlxCacheBytes" : 5177344,
+      "mlxPeakBytes" : 17206364902,
+      "physFootprintBytes" : 17362301816,
+      "residentBytes" : 10452926464,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 396
+    },
+    {
+      "label" : "T4_GEN_1",
+      "mlxActiveBytes" : 17180952624,
+      "mlxCacheBytes" : 2284230558,
+      "mlxPeakBytes" : 17273974420,
+      "physFootprintBytes" : 19626505104,
+      "residentBytes" : 10361487360,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 318
+    },
+    {
+      "label" : "T6_GEN_3",
+      "mlxActiveBytes" : 17180952624,
+      "mlxCacheBytes" : 2284230558,
+      "mlxPeakBytes" : 17273974420,
+      "physFootprintBytes" : 19626488720,
+      "residentBytes" : 10361536512,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 414
+    },
+    {
+      "label" : "END",
+      "mlxActiveBytes" : 17180952624,
+      "mlxCacheBytes" : 2284230558,
+      "mlxPeakBytes" : 17273974420,
+      "physFootprintBytes" : 19626488720,
+      "residentBytes" : 10361536512,
+      "swapRaw" : "",
+      "swapUsedBytes" : 0,
+      "tMilliseconds" : 414
+    }
+  ],
+  "status" : "COMPLETED"
+}

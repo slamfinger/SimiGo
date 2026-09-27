@@ -1,7 +1,7 @@
 # SimiGo 2.0 Experimental Route and MVP Plan
 
 **Date**: 2026-09-23  
-**Status**: ROUTE_REGISTERED / PHASE_0_IN_PROGRESS / IMPLEMENTATION_NOT_STARTED  
+**Status**: ROUTE_REGISTERED / PHASE_0_COMPLETE / PHASE_1_COMPLETE / MLX_RUNTIME_GATES_1_5_PASS / PHASE_3_FEASIBILITY_PASS / APP_REAL_DEVICE_PROOF_PASS / NAIL_QWEN36_REAL_DEVICE_VALIDATION_PASS / GEMMA4_RESIDENCY_BOUNDARY_REGISTERED / MUSE_GLIMMER_TEXT_FORWARD_SUPPORTED / DENSE_MLP_EXTENSION_IMPLEMENTED / GEMMA4_DENSE_GATE5_PASS / MUSE_GLIMMER_DENSE_GATE5_PASS / CHAT_TEMPLATE_APPLICATION_VALIDATED / LATENCY_ADVANTAGE_NOT_ESTABLISHED
 **Nature**: engineering experiment registration; not an A2.0 reopening, new formal theory, product release, or performance claim
 
 ## 1. Decision
@@ -124,8 +124,8 @@ can be skipped during real inference.
 
 ### Phase 0 — Feasibility and inventory
 
-Authorized and in progress. The Qwen3-Coder Safetensors inventory is complete; the
-runtime partial-load capability test is still pending.
+Complete. The Qwen3-Coder Safetensors inventory and MLX selective group
+materialization probes are complete.
 
 Deliverables:
 
@@ -143,10 +143,16 @@ Initial inventory report:
 docs/00-governance/SIMIGO2_PHASE0_QWEN3_CODER_INVENTORY_20260923.md
 ```
 
+Gate results:
+
+```text
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md
+docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md
+```
+
 Pending Phase 0 audits:
 
 ```text
-MLX Swift LM partial-load feasibility;
 llama.cpp residency/offload reference audit.
 ```
 

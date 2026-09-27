@@ -402,6 +402,15 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This does not prove minimality, final sufficiency, or route selection.
 - Audit history: docs/07-history/A2_CORE_NONTRIVIALITY_AUDIT_20260923.md.
 
+## SimiGo 2.0 Phase 1 Qwen3-Coder Materialization Experiment — 2026-09-24
+
+- Status: `EXPERIMENT_COMPLETE / CONTROL_PLANE_ONLY`.
+- Added pure-Swift `SafetensorsGroupMaterializer` and `ExecutionStateMaterializationExperiment`.
+- For each state transition, the materializer reads only newly required layer groups by absolute Safetensors offsets.
+- Actual Qwen3-Coder run: 28,052,549,632 bytes in 6,905.28 ms, average 3,874.28 MiB/s.
+- No MLX internals were modified and no inference was run; this does not prove runtime layer swappability.
+- Result history: docs/00-governance/SIMIGO2_PHASE1_QWEN3_MATERIALIZATION_RESULTS_20260924.md.
+
 ## A2.0 Core Degeneracy / Distinctiveness Audit — 2026-09-23
 
 - Status: `DISTINCTIVENESS_OPEN / PARTIAL_DISTINCTIVE`.
@@ -472,6 +481,168 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - This is outside frozen A2.0: no stochastic transition, `g:S→Δ(A)`, trajectory distribution, resource policy, or risk functional is registered.
 - Hypothesis history: docs/07-history/EXECUTION_STATE_PREDICTIVE_RESOURCE_HYPOTHESIS_20260923.md.
 
+## SimiGo 2.0 MLX Gate 1 Results — 2026-09-24
+
+- Gate 1 selective tensor materialization: PASS.
+- `CORE_NON_SWITCH`: 919 tensors, 873,459,712 bytes, 167.01 ms.
+- `SWITCH_MLP_L00_15`: 144 tensors, 5,435,817,984 bytes, 782.72 ms.
+- Pending: independent group lifecycle, parameter replacement/release, and inference semantic consistency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE1_RESULTS_20260924.md.
+
+## SimiGo 2.0 MLX Gate 2 Results — 2026-09-24
+
+- Gate 2 group lifecycle: PASS at fingerprint level for `SWITCH_MLP_L00_15`.
+- Initial load: 5,435,817,984 bytes in 177.78 ms; release dropped active/cache to zero.
+- Rematerialization: 5,435,817,984 bytes in 166.49 ms.
+- Fingerprint check: 144/144 tensors matched dtype/shape/sum/min/max.
+- Pending: real model parameter swap and inference semantic consistency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE2_RESULTS_20260924.md.
+
+## SimiGo 2.0 MLX Gate 3 Parameter-Swap Results — 2026-09-24
+
+- Gate 3 parameter swap and semantic restore: PASS for
+  `model.layers.0.mlp.switch_mlp.gate_proj.weight`.
+- Deterministic prompt: baseline/restored output `pong`; zeroed-parameter output
+  changed to `ping` followed by a newline and three backticks.
+- Both the target-parameter fingerprint and output returned exactly to baseline.
+- A router-gate control did not alter this narrow prompt; this does not establish
+  global router inertness.
+- Root-cause finding: MLX parameter update mutates the `MLXArray` wrapper in
+  place, so the restore value must be snapshotted before perturbation.
+- Pending: whole-group release/rematerialization around real inference with
+  execution-state control, output identity, peak memory, reload cost, and latency.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE3_RESULTS_20260924.md.
+
+## SimiGo 2.0 MLX Gate 4 Whole-Group Inference Results — 2026-09-24
+
+- Gate 4 whole-group runtime residency: PASS for `STATE_A → SWITCH_MLP_L00_15`.
+- Released and rematerialized 144/144 group tensors on the real MLX model object.
+- Deterministic inference: baseline/restored output `pong`; `outputEquals=true`.
+- Active memory: 17,180,952,624 bytes after baseline, 11,745,135,024 after release,
+  and 17,180,952,624 after rematerialization.
+- Timing: 16.85 ms release, 606.10 ms rematerialization, 1,060.46 ms cold baseline,
+  and 368.58 ms warm restored generation.
+- The release occurred only between generations; no semantic layer skipping was used.
+- This proves single-group feasibility, not a multi-state residency or reload-cost win.
+- Gate history: docs/00-governance/SIMIGO2_PHASE0_MLX_GATE4_RESULTS_20260924.md.
+
+## SimiGo 2.0 MLX Gate 5 Multi-State Runtime Results — 2026-09-24
+
+## SimiGo 2.0 MLX Gate 5 Multi-State Runtime Results — 2026-09-24
+
+- Gate 5 multi-state runtime residency: PASS for feasibility, output identity,
+  and reload reduction versus naive on-demand; latency advantage NOT ESTABLISHED.
+- Compared `ALL_RESIDENT`, `NAIVE_ON_DEMAND`, and `EXECUTION_STATE` across
+  `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- All fifteen real generations returned `pong`; `outputIdentityPass=true`.
+- Maximum idle active-memory reduction versus all-resident: 10,871,635,200 bytes.
+- Reload bytes: 0 all-resident, 65,229,815,808 naive, 54,358,179,840 state-driven;
+  state-driven uses 10,871,635,968 fewer reload bytes than naive.
+- Generation totals: 1,513.55 ms all-resident, 3,469.65 ms naive,
+  3,918.20 ms state-driven.
+- State-driven reload/release time: 7,734.08 ms plus 98.67 ms.
+- Complete generations still required all decoder-layer groups; the state policy
+  governed idle retention only.
+- Gate history: docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md.
+
+## SimiGo 2.0 App Real-Device Proof — 2026-09-24
+
+- Added `SimiGo2App` SwiftUI target and `scripts/build-app.sh`; local bundle:
+  `simigo2-experimental/build/SimiGo2Experimental.app`.
+- Real-device proof: Apple M5 / arm64 / macOS 26.6.2 / 34,359,738,368 bytes RAM.
+- Ran Gate 5 self-test on Qwen3-Coder with
+  `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- Exit code `0`; all 15 generations returned `pong`; self-test `PASS`.
+- `outputIdentityPass=true`; maximum idle reduction 10,871,635,200 bytes.
+- Execution-state reload bytes: 54,358,179,840 versus naive 65,229,815,808.
+- This remains a local feasibility proof, not a release or latency-optimization claim.
+- Proof history: docs/00-governance/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.md.
+- Raw evidence: docs/02-evidence/SIMIGO2_APP_REAL_DEVICE_PROOF_20260924.json.
+
+## Nail-Qwen3.6 Real-Device Validation — 2026-09-24
+
+- Validated `Nail-Qwen3.6-35B-A3B-MLX` snapshot
+  `31a0106483c94e9fbb0a6d3360ff122d47377058` on Apple M5.
+- Inventory: 1,930 tensors / 21,634,738,912 bytes; 360 switch-MLP tensors grouped
+  into three whole-group ranges.
+- Gate 4: PASS for `STATE_A → SWITCH_MLP_L00_15`; 144/144 tensors released and
+  rematerialized; output restored exactly.
+- App Gate 5 self-test: PASS; 15 generations had identical outputs.
+- Maximum idle reduction: 10,871,635,392 bytes; reload reduction versus naive:
+  18,119,393,280 bytes.
+- Latency advantage remains NOT ESTABLISHED; complete inference still traverses
+  all required groups.
+- Validation history:
+  docs/00-governance/SIMIGO2_NAIL_QWEN36_REAL_DEVICE_VALIDATION_20260924.md.
+
+## Gemma4 Residency Compatibility Boundary — 2026-09-24
+
+- Probed `mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit`
+  snapshot `6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff` on Apple M5.
+- MLX Swift LM text inference loaded successfully; baseline/restored output was
+  `ping` and `outputIdentityPass=true`.
+- Inventory found 0 `switch_mlp` tensors; all 1,324 tensors / 6,698,991,200 bytes
+  fell into `CORE_NON_SWITCH`.
+- Gate 4 released/rematerialized 0 tensors and `groupInferenceResidencyPass=false`.
+- Gate 5 completed but `benchmarkPass=false`; idle and reload reduction were 0 bytes.
+- App self-test verdict was corrected to report
+  `RESIDENCY_COMPATIBILITY_BOUNDARY; benchmarkPass=false`; it no longer reports a
+  generic PASS when residency benefit is absent.
+- Boundary: runtime text execution is viable, but SimiGo's current switch-MLP
+  whole-group residency abstraction is not applicable to this Gemma4 checkpoint.
+- Boundary history:
+  docs/00-governance/SIMIGO2_GEMMA4_RESIDENCY_COMPATIBILITY_BOUNDARY_20260924.md.
+
+## Muse-Glimmer Runtime Support — 2026-09-24
+
+- Probed `OpensourceWTF/Muse-Glimmer-30B-MLX-q4` snapshot
+  `e1c987b60874388e68621c71b680643b1cb0ce03`.
+- Config model type is `muse_glimmer_text`; checkpoint has 1,463 tensors,
+  17,603,109,888 bytes, and 0 `switch_mlp` tensors.
+- Borrowed the Python `mlx-lm` language-tower design into the local Swift fork
+  and registered `muse_glimmer_text` with `LLMModelFactory`.
+- MLX runtime load/forward now passes; Gate 4 baseline/restored outputs match.
+- The no-chat-template prompt emits a repeated-token sequence, so semantic
+  quality remains unresolved.
+- Whole-group residency is NOT APPLICABLE because the checkpoint has no
+  `switch_mlp` tensors.
+- Support history:
+  docs/00-governance/SIMIGO2_MUSE_GLIMMER_RUNTIME_COMPATIBILITY_BOUNDARY_20260924.md.
+
+## Dense MLP Residency Extension — 2026-09-24
+
+- Status: `EXTENSION_IMPLEMENTED / GEMMA4_GATE5_PASS / MUSE_GLIMMER_GATE4_PASS / SEMANTIC_QUALITY_UNRESOLVED`.
+- Added model-aware inventory for `gemma4_unified` and `muse_glimmer_text`, dense
+  MLP partitioning, and `ContiguousLayerStatePolicy`.
+- Gemma4 partition: core 892 tensors plus three dense MLP groups of 144 tensors each.
+- Gemma4 Gate 4: PASS; 144/144 tensors released/rematerialized and output restored.
+- Gate 4 memory: 6,701,423,370 bytes resident, 5,108,112,522 after release, then
+  restored to 6,701,423,370 bytes.
+- Root cause of Gate 5 discrepancy: hard-coded switch-MLP matching selected zero
+  dense tensors, making release metadata-only. Dense-range matching now fixes it.
+- Benchmark now uses direct low-cache generation so ChatSession prompt-cache
+  lifetime is not confused with model-parameter residency.
+- Gemma4 Gate 5: PASS; 3,186,621,696 bytes idle reduction and 3,185,049,600 bytes
+  reload reduction versus naive on-demand.
+- Muse-Glimmer Gate 4: PASS; 162/162 dense tensors released/rematerialized.
+- Muse-Glimmer Gate 5: PASS; 8,472,820,944 bytes idle reduction and
+  9,469,624,320 bytes reload reduction versus naive on-demand.
+- Both models still emit repeated-token sequences under the no-chat-template
+  probe; semantic quality remains unresolved.
+- Extension history: docs/00-governance/SIMIGO2_DENSE_MLP_RESIDENCY_EXTENSION_20260924.md.
+
+## Checkpoint Chat Template Application — 2026-09-24
+
+- Runtime generation now applies the checkpoint chat template when present.
+- Lookup order: standalone `chat_template.jinja`, configured tokenizer template,
+  then raw encode fallback.
+- Adds the assistant generation prompt and passes `enable_thinking=false` when
+  supported.
+- Validated with Gemma4 dense Gate 5: all 15 outputs were `ping`,
+  `benchmarkPass=true`, idle reduction 3,186,621,696 bytes, and reload reduction
+  versus naive 3,185,049,600 bytes.
+- Application history: docs/00-governance/SIMIGO2_CHAT_TEMPLATE_APPLICATION_20260924.md.
+
 ## Execution-State Information Boundary Hypothesis — 2026-09-23
 
 - Status: `HYPOTHESIS_REGISTERED / NOT_FORMALIZED / ROUTE_UNSELECTED`.
@@ -503,6 +674,16 @@ D(P;θ) = R(P;θ) - R_oracle(θ)
 - Do not combine MLX and llama.cpp in the MVP or introduce a universal runtime abstraction yet.
 - Phase 0 remains partial: Qwen3-Coder tensor inventory is complete; MLX partial-load feasibility and llama.cpp reference audit are pending.
 - Selection history: docs/00-governance/SIMIGO2_RUNTIME_REFERENCE_SELECTION_20260924.md.
+
+## SimiGo 2.0 Phase 1 Swift Scaffold — 2026-09-24
+
+- Location: `simigo2-experimental/`.
+- Status: `SCAFFOLD_IMPLEMENTED / POLICY_BENCHMARK_COMPLETE`.
+- Pure Swift components: Safetensors metadata reader, Qwen3-Coder group catalog, execution-state policy, residency engine, policy benchmark, and `simigo2ctl`.
+- Validation: `swift build` PASS and 5 Swift tests PASS.
+- Benchmark states: `STATE_A → STATE_B → STATE_AB → STATE_A → STATE_ALL`.
+- Result: full-resident minimizes reloads; reactive/lazy lower some intermediate residency but increase reload traffic; this is still control-plane measurement only.
+- Scaffold history: docs/00-governance/SIMIGO2_PHASE1_SCAFFOLD_20260924.md.
 
 ## SimiGo 2.0 Phase 0 Qwen3-Coder Inventory — 2026-09-23
 

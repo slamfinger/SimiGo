@@ -1,231 +1,141 @@
 import Foundation
 import MLX
 
-public struct SafetensorsTensorLocation: Sendable, Hashable {
+/// O3-C″ component 1: tensor-level Safetensors reader.
+///
+/// Route D's minimal I/O primitive: index each shard's header once
+/// (tensor → file → absolute data offset → dtype/shape), then read ONLY the
+/// requested tensor payload via seek+read. Replaces shard-granular
+/// `loadArraysAndMetadata` where materialization must not read whole shards.
+public struct PerTensorLocation: Sendable {
     public let name: String
-    public let fileURL: URL
+    public let file: String
     public let absoluteDataOffset: Int64
-    public let byteCount: Int64
     public let dtype: String
     public let shape: [Int]
-
-    public init(
-        name: String,
-        fileURL: URL,
-        absoluteDataOffset: Int64,
-        byteCount: Int64,
-        dtype: String,
-        shape: [Int]
-    ) {
-        self.name = name
-        self.fileURL = fileURL
-        self.absoluteDataOffset = absoluteDataOffset
-        self.byteCount = byteCount
-        self.dtype = dtype
-        self.shape = shape
-    }
+    public let byteCount: Int64
 }
 
-public enum PerTensorSafetensorsReaderError: Error, Equatable, Sendable {
-    case invalidHeaderLength(URL)
-    case invalidHeader(URL)
-    case tensorNotFound(String, URL)
-    case invalidTensorEntry(String)
-    case invalidOffsets(String)
-    case integerOverflow(String)
-    case unsupportedDType(String)
-    case shortRead(String, expected: Int, actual: Int)
-}
-
-/// Tensor-level Safetensors reader for Route D.
-///
-/// The existing MLX shard loader returns every tensor in a shard. This reader
-/// keeps only the Safetensors header index resident, seeks directly to one
-/// tensor's data_offsets, and constructs exactly that MLXArray. It therefore
-/// provides the missing I/O primitive for layer-streaming execution.
 public final class PerTensorSafetensorsReader: @unchecked Sendable {
-    private let handles: [URL: FileHandle]
-    public let locations: [String: SafetensorsTensorLocation]
+    public enum ReaderError: Error, Equatable, Sendable {
+        case invalidSafetensorsHeader(String)
+        case unknownTensor(String)
+        case unsupportedDType(String)
+        case shortRead(String, expected: Int, actual: Int)
+    }
 
-    public init(modelDirectory: URL, files: Set<String>) throws {
-        var handles: [URL: FileHandle] = [:]
-        var locations: [String: SafetensorsTensorLocation] = [:]
+    public let locations: [String: PerTensorLocation]
+    private let modelDirectory: URL
 
-        for file in files.sorted() {
+    public init(modelDirectory: URL, weightMap: [String: String]) throws {
+        self.modelDirectory = modelDirectory
+        var locations: [String: PerTensorLocation] = [:]
+
+        for file in Set(weightMap.values) {
             let url = modelDirectory.appendingPathComponent(file)
-            let handle = try FileHandle(forReadingFrom: url)
+            let fileHandle = try FileHandle(forReadingFrom: url)
+            defer { try? fileHandle.close() }
 
-            do {
-                let prefix = try Self.readExact(handle, count: 8, name: url.path)
-                let headerLength = prefix.withUnsafeBytes {
-                    $0.loadUnaligned(as: UInt64.self).littleEndian
-                }
+            let lengthData = try fileHandle.read(upToCount: 8) ?? Data()
+            guard lengthData.count == 8 else {
+                throw ReaderError.invalidSafetensorsHeader(url.path)
+            }
+            let length = lengthData.withUnsafeBytes {
+                $0.loadUnaligned(fromByteOffset: 0, as: UInt64.self).littleEndian
+            }
+            let headerData = try fileHandle.read(upToCount: Int(length)) ?? Data()
+            guard headerData.count == Int(length),
+                let headerObject = try JSONSerialization.jsonObject(
+                    with: headerData, options: [.fragmentsAllowed]
+                ) as? [String: Any]
+            else {
+                throw ReaderError.invalidSafetensorsHeader(url.path)
+            }
 
-                guard headerLength <= UInt64(Int.max - 8) else {
-                    throw PerTensorSafetensorsReaderError.invalidHeaderLength(url)
-                }
+            for (name, value) in headerObject {
+                guard name != "__metadata__",
+                    let entry = value as? [String: Any],
+                    let dtype = entry["dtype"] as? String,
+                    let shapeObject = entry["shape"] as? [Any],
+                    let offsets = entry["data_offsets"] as? [Any],
+                    offsets.count == 2,
+                    let start = Self.int(of: offsets[0]),
+                    let end = Self.int(of: offsets[1])
+                else { continue }
 
-                let headerData = try Self.readExact(
-                    handle,
-                    count: Int(headerLength),
-                    name: url.path
+                locations[name] = PerTensorLocation(
+                    name: name,
+                    file: file,
+                    absoluteDataOffset: Int64(8 + length) + Int64(start),
+                    dtype: dtype,
+                    shape: shapeObject.compactMap(Self.int),
+                    byteCount: Int64(end - start)
                 )
-
-                guard let object = try JSONSerialization.jsonObject(with: headerData)
-                    as? [String: Any]
-                else {
-                    throw PerTensorSafetensorsReaderError.invalidHeader(url)
-                }
-
-                for (name, raw) in object where name != "__metadata__" {
-                    guard
-                        let entry = raw as? [String: Any],
-                        let dtype = entry["dtype"] as? String,
-                        let shapeRaw = entry["shape"] as? [Any],
-                        let offsetsRaw = entry["data_offsets"] as? [Any],
-                        offsetsRaw.count == 2
-                    else {
-                        throw PerTensorSafetensorsReaderError.invalidTensorEntry(name)
-                    }
-
-                    let shape = try shapeRaw.map {
-                        try Self.intValue($0, tensor: name)
-                    }
-                    let start = try Self.int64Value(offsetsRaw[0], tensor: name)
-                    let end = try Self.int64Value(offsetsRaw[1], tensor: name)
-
-                    guard start >= 0, end >= start else {
-                        throw PerTensorSafetensorsReaderError.invalidOffsets(name)
-                    }
-
-                    let absoluteOffset = Int64(8) + Int64(headerLength) + start
-
-                    locations[name] = SafetensorsTensorLocation(
-                        name: name,
-                        fileURL: url,
-                        absoluteDataOffset: absoluteOffset,
-                        byteCount: end - start,
-                        dtype: dtype,
-                        shape: shape
-                    )
-                }
-
-                handles[url] = handle
-            } catch {
-                try? handle.close()
-                throw error
             }
         }
-
-        self.handles = handles
         self.locations = locations
     }
 
-    public convenience init(modelDirectory: URL, weightMap: [String: String]) throws {
-        try self.init(modelDirectory: modelDirectory, files: Set(weightMap.values))
-    }
-
-    deinit {
-        handles.values.forEach { try? $0.close() }
-    }
-
-    public func location(for tensorName: String) throws -> SafetensorsTensorLocation {
-        guard let location = locations[tensorName] else {
-            throw PerTensorSafetensorsReaderError.tensorNotFound(
-                tensorName,
-                URL(fileURLWithPath: "")
-            )
+    /// Read exactly one tensor payload and construct the MLXArray.
+    public func loadTensor(named name: String) throws -> MLXArray {
+        guard let location = locations[name] else {
+            throw ReaderError.unknownTensor(name)
         }
-        return location
-    }
+        let url = modelDirectory.appendingPathComponent(location.file)
+        let fileHandle = try FileHandle(forReadingFrom: url)
+        defer { try? fileHandle.close() }
 
-    public func readData(_ location: SafetensorsTensorLocation) throws -> Data {
-        guard let handle = handles[location.fileURL] else {
-            throw PerTensorSafetensorsReaderError.tensorNotFound(
-                location.name,
-                location.fileURL
+        try fileHandle.seek(toOffset: UInt64(location.absoluteDataOffset))
+        let data = try fileHandle.read(upToCount: Int(location.byteCount)) ?? Data()
+        guard data.count == Int(location.byteCount) else {
+            throw ReaderError.shortRead(
+                name, expected: Int(location.byteCount), actual: data.count
             )
         }
 
-        try handle.seek(toOffset: UInt64(location.absoluteDataOffset))
-
-        let count = Int(location.byteCount)
-        let data = try handle.read(upToCount: count) ?? Data()
-        guard data.count == count else {
-            throw PerTensorSafetensorsReaderError.shortRead(
-                location.name,
-                expected: count,
-                actual: data.count
-            )
-        }
-        return data
+        return try Self.makeArray(data: data, dtype: location.dtype, shape: location.shape, name: name)
     }
 
-    public func loadTensor(
-        named tensorName: String,
-        stream: StreamOrDevice = .cpu
+    // MARK: - dtype construction
+
+    static func makeArray(
+        data: Data, dtype: String, shape: [Int], name: String
     ) throws -> MLXArray {
-        let location = try location(for: tensorName)
-        let data = try readData(location)
-
-        guard let dtype = Self.dtype(location.dtype) else {
-            throw PerTensorSafetensorsReaderError.unsupportedDType(location.dtype)
+        // Single-copy construction straight from the file bytes
+        // (mlx_array_new_data). Safetensors are little-endian and this host
+        // is little-endian, so the raw copy IS the decode. The previous
+        // element-mapped Swift-Array path materialized a full intermediate
+        // copy of every tensor — on the 6-bit Nail model that was ~7 GiB of
+        // extra churn per switch_mlp segment and the driver of the
+        // resident-footprint ratchet. The BF16 branch additionally NUMERICALLY
+        // converted uint16 values instead of reinterpreting their bits, so
+        // every BF16 scale/bias it produced was wrong; the raw copy here is
+        // bit-exact.
+        let mlxType: DType
+        switch dtype {
+        case "F32": mlxType = .float32
+        case "F64": mlxType = .float64
+        case "F16": mlxType = .float16
+        case "BF16": mlxType = .bfloat16
+        case "U32": mlxType = .uint32
+        case "I32": mlxType = .int32
+        case "I64": mlxType = .int64
+        case "U8": mlxType = .uint8
+        case "I8": mlxType = .int8
+        case "U64": mlxType = .uint64
+        default:
+            throw ReaderError.unsupportedDType("\(name): \(dtype)")
         }
-
-        _ = stream
-        return MLXArray(data, location.shape, dtype: dtype)
+        return MLXArray(data, shape, dtype: mlxType)
     }
 
-    private static func readExact(
-        _ handle: FileHandle,
-        count: Int,
-        name: String
-    ) throws -> Data {
-        let data = try handle.read(upToCount: count) ?? Data()
-        guard data.count == count else {
-            throw PerTensorSafetensorsReaderError.shortRead(
-                name,
-                expected: count,
-                actual: data.count
-            )
+    static func int(of value: Any) -> Int? {
+        if let value = value as? Int {
+            return value
         }
-        return data
-    }
-
-    private static func intValue(_ value: Any, tensor: String) throws -> Int {
-        guard let number = value as? NSNumber else {
-            throw PerTensorSafetensorsReaderError.integerOverflow(tensor)
+        if let value = value as? NSNumber {
+            return value.intValue
         }
-        let value = number.int64Value
-        guard value >= 0, value <= Int64(Int.max) else {
-            throw PerTensorSafetensorsReaderError.integerOverflow(tensor)
-        }
-        return Int(value)
-    }
-
-    private static func int64Value(_ value: Any, tensor: String) throws -> Int64 {
-        guard let number = value as? NSNumber else {
-            throw PerTensorSafetensorsReaderError.integerOverflow(tensor)
-        }
-        return number.int64Value
-    }
-
-    private static func dtype(_ name: String) -> DType? {
-        switch name {
-        case "BOOL": return .bool
-        case "U8": return .uint8
-        case "U16": return .uint16
-        case "U32": return .uint32
-        case "U64": return .uint64
-        case "I8": return .int8
-        case "I16": return .int16
-        case "I32": return .int32
-        case "I64": return .int64
-        case "F16": return .float16
-        case "BF16": return .bfloat16
-        case "F32": return .float32
-        case "F64": return .float64
-        default: return nil
-        }
+        return nil
     }
 }

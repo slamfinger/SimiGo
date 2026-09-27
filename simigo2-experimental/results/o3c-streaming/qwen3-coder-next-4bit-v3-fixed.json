@@ -1,0 +1,54 @@
+{
+  "status": "PER_TENSOR_FIX_MEASURED_PEAK_NOT_RESOLVED",
+  "protocolVersion": "G1.9-O3C.STREAMING.V1+GAUGE+PER-TENSOR-FIX",
+  "modelID": "mlx-community/Qwen3-Coder-Next-4bit",
+  "fixCommit": "3dea7ee (per-tensor streaming update, batch dictionary removed)",
+  "note": "Run killed at pass-2 step-0 (57 GiB swap, thrash). 14 gauges captured. Comparison vs batch baseline.",
+  "comparison": {
+    "batch": {
+      "SEG0_AFTER_READ": {
+        "activeMiB": 1294,
+        "footprintMiB": 2869
+      },
+      "SEG1_AFTER_READ": {
+        "activeMiB": 15118,
+        "footprintMiB": 30616
+      },
+      "SEG1_AFTER_MATERIALIZE_footprintMiB": 30376,
+      "maxSwapMiB": 23030,
+      "boundaryCount": 7
+    },
+    "perTensor": {
+      "SEG0_AFTER_READ": {
+        "activeMiB": 1294,
+        "footprintMiB": 2896
+      },
+      "SEG1_AFTER_READ": {
+        "activeMiB": 15118,
+        "footprintMiB": 30384
+      },
+      "SEG1_AFTER_MATERIALIZE_footprintMiB": 30384,
+      "SEG2_AFTER_MATERIALIZE": {
+        "activeMiB": 28942,
+        "footprintMiB": 58049
+      },
+      "BEFORE_WHOLE_GRAPH_FORWARD_footprintMiB": 58049,
+      "AFTER_WHOLE_GRAPH_FORWARD": {
+        "activeMiB": 44313,
+        "peakMiB": 49808,
+        "footprintMiB": 73466
+      },
+      "PASS2_STEP0_START_activeMiB": 44302,
+      "maxSwapMiB": 57067,
+      "boundaryCount": 14
+    }
+  },
+  "keyFindings": [
+    "per-tensor update did NOT reduce the SEG1_AFTER_READ peak: active 15118 MiB identical to batch (the model retains every updated tensor)",
+    "SEG2 materialization: active 28942 MiB / footprint 58049 MiB",
+    "whole-graph forward added ~16 GiB more: active 44313, peak 49808, footprint 73466 MiB",
+    "pass 2 started at baseline 44302 MiB active - nothing released between passes",
+    "swap reached 57 GiB; run killed in pass 2"
+  ],
+  "rawGauges": "14 gauges mirrored verbatim to stderr (session artifact /tmp/o3c-fixed.err)"
+}

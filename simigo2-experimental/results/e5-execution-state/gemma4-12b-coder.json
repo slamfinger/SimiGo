@@ -1,0 +1,116 @@
+{
+  "boundary" : "REAL_RUNTIME_EXECUTION_STATE_SCENARIO \/ REPRESENTATION_CONSUMING_EXECUTION \/ COMPUTATIONAL_SEMANTICS_PRESERVATION \/ RESOURCE_STATE_CORRECTNESS \/ NOT_A_PERFORMANCE_TEST \/ NOT_PREDICTION",
+  "finalLineage" : {
+    "A" : "root=A parent=nil lifecycle=active position=2",
+    "B" : "root=A parent=A lifecycle=discarded position=2"
+  },
+  "identityAssertions" : [
+    {
+      "check" : "child(UC) tokens != parent(U2) tokens",
+      "detail" : "child 12 tokens vs parent reference 12 tokens",
+      "label" : "FORK_DIVERGENCE",
+      "pass" : true
+    },
+    {
+      "check" : "child continuation re-executed after evict\/remat\/restore is token-identical",
+      "detail" : "run1 12 tokens, run2 12 tokens",
+      "label" : "CHILD_DETERMINISM_THROUGH_RESOURCE_CYCLE",
+      "pass" : true
+    },
+    {
+      "check" : "parent turn-2 after the child episode == pre-fork reference",
+      "detail" : "reference 12 tokens vs actual 12 tokens",
+      "label" : "PARENT_NON_INTERFERENCE",
+      "pass" : true
+    },
+    {
+      "check" : "parent id\/lineage unchanged through the scenario",
+      "detail" : "A@position 2",
+      "label" : "PARENT_IDENTITY_STABLE",
+      "pass" : true
+    },
+    {
+      "check" : "discarded child lineage still traces to parent",
+      "detail" : "B discarded, lineage.parent = A",
+      "label" : "CHILD_LINEAGE_TRACEABLE",
+      "pass" : true
+    },
+    {
+      "check" : "transfer-log replay == resident bookkeeping",
+      "detail" : "log count 3",
+      "label" : "RESIDENCY_INV1",
+      "pass" : true
+    }
+  ],
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+  "modelType" : "Gemma4Model",
+  "overallPass" : true,
+  "protocolVersion" : "G1.9-E5.SCENARIO.V2",
+  "residencyReplayIdentical" : true,
+  "status" : "PASS",
+  "steps" : [
+    {
+      "generatedTokenCount" : 12,
+      "label" : "PARENT_GENERATE_TURN1",
+      "prefixLength" : 21,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 1
+    },
+    {
+      "generatedTokenCount" : 12,
+      "label" : "PARENT_REFERENCE_TURN2",
+      "prefixLength" : 41,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 1
+    },
+    {
+      "generatedTokenCount" : 0,
+      "label" : "FORK_CHILD_B",
+      "prefixLength" : 0,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 1
+    },
+    {
+      "generatedTokenCount" : 12,
+      "label" : "CHILD_CONTINUE_RUN1",
+      "prefixLength" : 61,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 1
+    },
+    {
+      "generatedTokenCount" : 0,
+      "label" : "CHILD_EVICT",
+      "prefixLength" : 0,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 1
+    },
+    {
+      "generatedTokenCount" : 0,
+      "label" : "CHILD_REMATERIALIZE",
+      "prefixLength" : 0,
+      "residencyTransferDelta" : 3,
+      "residentGroupCount" : 4
+    },
+    {
+      "generatedTokenCount" : 12,
+      "label" : "CHILD_CONTINUE_RUN2_AFTER_RESTORE",
+      "prefixLength" : 49,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 4
+    },
+    {
+      "generatedTokenCount" : 0,
+      "label" : "DISCARD_CHILD",
+      "prefixLength" : 0,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 4
+    },
+    {
+      "generatedTokenCount" : 12,
+      "label" : "PARENT_CONTINUE_TURN2",
+      "prefixLength" : 41,
+      "residencyTransferDelta" : 0,
+      "residentGroupCount" : 4
+    }
+  ]
+}

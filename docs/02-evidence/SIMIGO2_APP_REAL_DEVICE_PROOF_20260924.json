@@ -1,0 +1,379 @@
+{
+  "device" : {
+    "brand" : "Apple M5",
+    "machine" : "arm64",
+    "operatingSystem" : "Version 26.6.2 (Build 25G83)",
+    "physicalMemoryBytes" : 34359738368
+  },
+  "gate" : "GATE5_MULTI_STATE_REAL_DEVICE",
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "report" : {
+    "allResident" : {
+      "cumulativeReleasedBytes" : 0,
+      "cumulativeReloadedBytes" : 0,
+      "outputs" : [
+        "pong",
+        "pong",
+        "pong",
+        "pong",
+        "pong"
+      ],
+      "policy" : "ALL_RESIDENT",
+      "totalGenerationMilliseconds" : 4510.482626000001,
+      "totalReleaseMilliseconds" : 0,
+      "totalReloadMilliseconds" : 0,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 3861.390209,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 186.933208,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 154.159584,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 154.235542,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 153.764083,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        }
+      ]
+    },
+    "benchmarkPass" : true,
+    "idleReductionBytes" : 10871635200,
+    "idleReductionObserved" : true,
+    "naiveOnDemand" : {
+      "cumulativeReleasedBytes" : 81537269760,
+      "cumulativeReloadedBytes" : 65229815808,
+      "outputs" : [
+        "pong",
+        "pong",
+        "pong",
+        "pong",
+        "pong"
+      ],
+      "policy" : "NAIVE_ON_DEMAND",
+      "totalGenerationMilliseconds" : 5252.099792,
+      "totalReleaseMilliseconds" : 229.430375,
+      "totalReloadMilliseconds" : 9943.009208,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 152.9185,
+          "idleActiveBytes" : 873499824,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 49.860583,
+          "releasedBytes" : 16307453952,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 0,
+          "reloadedBytes" : 0,
+          "reloadedGroupIDs" : [
+
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1332.8762080000001,
+          "idleActiveBytes" : 873499824,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 42.451542,
+          "releasedBytes" : 16307453952,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2740.736875,
+          "reloadedBytes" : 16307453952,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1354.4915839999999,
+          "idleActiveBytes" : 873499824,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 45.797,
+          "releasedBytes" : 16307453952,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2507.420834,
+          "reloadedBytes" : 16307453952,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1259.6305419999999,
+          "idleActiveBytes" : 873499824,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 46.562083,
+          "releasedBytes" : 16307453952,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2326.373583,
+          "reloadedBytes" : 16307453952,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1152.182958,
+          "idleActiveBytes" : 873499824,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 44.759167,
+          "releasedBytes" : 16307453952,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2368.477916,
+          "reloadedBytes" : 16307453952,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "outputIdentityPass" : true,
+    "reloadReductionVsNaiveBytes" : 10871635968,
+    "reloadReductionVsNaiveObserved" : true,
+    "stateDriven" : {
+      "cumulativeReleasedBytes" : 38050725888,
+      "cumulativeReloadedBytes" : 54358179840,
+      "outputs" : [
+        "pong",
+        "pong",
+        "pong",
+        "pong",
+        "pong"
+      ],
+      "policy" : "EXECUTION_STATE",
+      "totalGenerationMilliseconds" : 5608.812627,
+      "totalReleaseMilliseconds" : 102.858375,
+      "totalReloadMilliseconds" : 8647.106876,
+      "transitions" : [
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1202.600667,
+          "idleActiveBytes" : 6309317424,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 28.10675,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2355.231458,
+          "reloadedBytes" : 16307453952,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_B",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1537.161042,
+          "idleActiveBytes" : 6309317424,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 29.143875,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 1701.770375,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_AB",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1399.4727090000001,
+          "idleActiveBytes" : 11745135024,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 15.3455,
+          "releasedBytes" : 5435817984,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 2140.019292,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L00_15",
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_A",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 297.676209,
+          "idleActiveBytes" : 6309317424,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 30.26225,
+          "releasedBytes" : 10871635968,
+          "releasedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ],
+          "reloadMilliseconds" : 590.481584,
+          "reloadedBytes" : 5435817984,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L32_47"
+          ]
+        },
+        {
+          "executionState" : "STATE_ALL",
+          "generatedActiveBytes" : 17180952624,
+          "generationMilliseconds" : 1171.902,
+          "idleActiveBytes" : 17180952624,
+          "output" : "pong",
+          "readyActiveBytes" : 17180952624,
+          "releaseMilliseconds" : 0,
+          "releasedBytes" : 0,
+          "releasedGroupIDs" : [
+
+          ],
+          "reloadMilliseconds" : 1859.604167,
+          "reloadedBytes" : 10871635968,
+          "reloadedGroupIDs" : [
+            "SWITCH_MLP_L16_31",
+            "SWITCH_MLP_L32_47"
+          ]
+        }
+      ]
+    },
+    "states" : [
+      "STATE_A",
+      "STATE_B",
+      "STATE_AB",
+      "STATE_A",
+      "STATE_ALL"
+    ]
+  },
+  "states" : [
+    "STATE_A",
+    "STATE_B",
+    "STATE_AB",
+    "STATE_A",
+    "STATE_ALL"
+  ]
+}
