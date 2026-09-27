@@ -4997,3 +4997,44 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 GATE_D_EVICT_REFERENCE_SEMANTICS_OPEN /
                 UPSTREAM_SYNC_PENDING
 ```
+
+### Gate D CONTRACT — Eviction/Reference Semantics — 2026-09-27
+
+Ruling executed: 「evict-by-policy, retain-binding, per-execution
+rematerialization」(`SIMIGO17_GATE_D_EVICT_REFERENCE_SEMANTICS_20260927.md`).
+
+```text
+D-I1  Binding = semantic reference, never Artifact ownership
+D-I2  multi-Execution Bindings never prevent Artifact eviction
+D-I3  BindingCount ≠ retention correctness (semantic vs physical
+      references are different questions, never merged)
+D-I4  PhysicalUseCount/transient protection = in-flight physical
+      operations only; BindingCount ≠ PhysicalUseCount
+D-I5  v1 introduces NO Lease correctness mechanism
+D-I6  post-eviction: Bindings stay active; per-Execution independent
+      resolution (Gate C four states — no fifth state)
+D-R1  reclamation must not modify/supersede/detach active Bindings
+D-R2  post-reclamation resolution is per-Execution independent
+acceptance matrix (Artifact × P live × C live → 8 rows) proves:
+      Artifact eviction = Representation Availability change, NOT an
+      Execution State change
+positions: Binding-pin NO / refcount-eviction NO / transient physical
+      protection allowed / Lease out of correctness contract / pin as
+      future optimization allowed / COW page-level pin v1 no
+「Pin 可以优化，不可以定义正确性」 — even a failed pin leaves the
+      system semantically correct (Binding valid →
+      REMATERIALIZATION_REQUIRED)
+```
+
+Four lifetimes formally separate: Execution ≠ Binding ≠ Artifact ≠ Live
+materialization.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_CONTRACT_PASSED /
+                GATE_D_CONCURRENCY_BOUNDARY_NEXT /
+                UPSTREAM_SYNC_PENDING
+```
