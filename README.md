@@ -8,6 +8,48 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 
 > **将执行身份、连续性与生命周期，与模型表示、物理驻留以及具体 Backend 的实现方式分离。**
 
+## 核心能力
+
+- 基于 MLX / `mlx-swift-lm` 执行本地模型推理
+- 提供 OpenAI-compatible API（Chat Completions / Text Completions / Responses）
+- 支持流式与非流式生成
+- 支持请求取消与生命周期安全收敛
+- 支持多 Session / 多 Branch 的逻辑隔离
+- 支持 Physical KV 与 Prefix Reuse
+- 支持资源准入、物理缓存淘汰与运行状态观测
+- 支持官方 Tool Calling，并将 Tool Call 转交外部 Agent
+- 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
+- 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
+
+## v2.0 Beta：超规模模型执行 + 跨会话前缀共享
+
+main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全部
+功能不变）：
+
+- **超规模模型执行**：超过物理内存的大模型（已验证 Qwen3-Coder-Next-4bit，
+  41.76 GiB @ 32 GiB 机器）经同一 OpenAI 兼容 API 正常服务——
+  placeholder-first 分段加载、persistent-floor 段驻留、严格 Execution
+  State 会话，swap 平坦、逐位确定性。
+- **跨会话前缀 KV 共享（Execution State 前缀池）**：新会话若与既有会话
+  共享对话前缀（agent 重启/重连/换 session 续聊/同文档新会话），直接
+  消费已算过的 KV 快照，只付增量——真机实测对话续接池命中轮 TTFT
+  201ms 对比冷轮 16,951ms（84 倍）；token 级共享下同文档新会话
+  11,620ms → 5,944ms（文档 84% 从池播种）。重启后同样 warm。
+  `SIMIGO_PREFIX_POOL=0` 可一键关闭。
+  **术语约定**：当前 Branch API 是「分支 checkpoint fork」（checkpoint
+  复制语义）；「Execution State 共享前缀 fork」（fork point 处共享
+  Representation）尚未实现，为登记的 GA 方向。
+
+详见 [docs/RELEASE_v2.0.0-beta.md](docs/RELEASE_v2.0.0-beta.md)；
+从源码构建需与
+[SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) 双仓兄弟克隆，
+步骤见 [部署指南.md](部署指南.md) 第六节。
+
+## Runtime 三层契约
+
+SimiGo 的核心不是一个 API 转发层，而是一个可靠的 Agent Runtime。
+三层契约共同构成 Runtime 的能力边界：
+
 ```text
 Execution State       ≠ KV Cache
 Execution State       ≠ Residency State

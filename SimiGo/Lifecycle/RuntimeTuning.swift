@@ -38,6 +38,16 @@ nonisolated enum RuntimeTuning {
     /// 随 [MLX] admission 观测行调整。
     static let warmTokenBudget = 100_000
 
+    /// Route B 前缀池（SIMIGO17_PREFIX_POOL 门，2026-09-27）：跨会话内容寻址
+    /// KV 共享——新会话在冷重建前先查共享池，命中则只付 delta。默认开启；
+    /// `SIMIGO_PREFIX_POOL=0` 一键关闭（关闭后行为与 v1.7 完全一致）。
+    static let prefixPoolEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_POOL"] != "0"
+
+    /// 前缀池 token 预算（池内 LRU 逐出的记账单位；tokenCount 以消息流
+    /// 元素计——每消息 2 元素）。
+    static let prefixPoolTokenBudget = 200_000
+
     /// swap 压力触发阈值：全机信号（其他进程占用也计入），作触发偏保守正确。
     /// 逐出循环的出口用进程内可立即复测的暖 token 总和，不用 swap（回落滞后）。
     /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。
