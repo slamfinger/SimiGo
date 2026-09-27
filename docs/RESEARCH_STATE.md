@@ -4814,3 +4814,36 @@ FORK-3  true Execution-State shared-prefix fork: child →
         RepresentationRef → fork point (needs its own definition gate;
         the prefix pool serves session ADMISSION, not the fork API)
 ```
+
+### IDENT-1 Chain Audit Round 1 COMPLETE + Gate C Algorithm Drafted — 2026-09-27
+
+IDENT-1 chain audit round 1 (`SIMIGO17_IDENT1_CHAIN_AUDIT_20260927.md`),
+five findings: F1 同名不同义 confirmed (two ExecutionID types, cannot
+merge); F2 身份存在但寻址不用 (S4 surface has NO conformer, no
+implemented ExecutionID→AgentExecutionKey mapping); F3 storageKey =
+string join (collision hazard registered); F4 identity islands (daily
+AgentExecutionKey chain vs oversized constant ExecutionID("S") never
+interchange); F5 RepresentationRef ABSENT, binding ephemeral. Red line
+re-confirmed: the missing piece is the BINDING CONTRACT, not a type
+merger. Recommendations: S4 implement-or-retire (S5); oversized
+multi-session must thread request identity; RepresentationRef = third
+identity kind + explicit binding table (IDENT-1/FORK-3 convergence);
+storageKey stays session-addressing.
+
+Gate C opened per ruling (`SIMIGO17_GATE_C_RESOLUTION_ALGORITHM_20260927.md`):
+artifact-state judgment (pool registration ≠ representation existence);
+three-registry separation (Binding Registry ≠ Prefix Pool ≠ Session
+Registry); canonical key ExecutionID → Binding → AgentExecutionKey,
+never reverse; resolve() = pure observation (forbidden: pool.admit
+LRU mutation, snapshot loading, ChatSession construction, coordinator
+mutation). Total read-only algorithm → UNBOUND / ATTACHED_LIVE /
+REATTACHABLE / REMATERIALIZATION_REQUIRED, each mapped to running
+machinery; non-linear transition table with contract owners.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_ALGORITHM_DRAFTED /
+                UPSTREAM_SYNC_PENDING
+```
