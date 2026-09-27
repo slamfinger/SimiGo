@@ -244,6 +244,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 $0.sessions.removeAll()
             }
 
+            // B-6：跨会话 token 前缀池钩子（基配置命名空间）。
+            NativeMLXPrefixPool.shared.installHook(
+                modelID: modelName(from: info.path),
+                kvFingerprint: baseConfig.kvCache.map { String(describing: $0) },
+                thinkingDisabled: baseConfig.disableThinking
+            )
+
             self.traceLogger.trace("NativeMLX ready: model=\(modelId) port=\(nodeConfiguration.port)")
             logMemory("afterLoad")
         }
@@ -1042,6 +1049,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 history: poolHistory
             ) { url in
                 try await poolSession.saveCache(to: url)
+            }
+            // B-6 token 边界：仅基 kvSettings 会话导出（跨 plan 类误装
+            // 不可能进池——登记的 beta 边界）。
+            if kvFingerprint == baseConfig.kvCache.map({ String(describing: $0) }) {
+                let tokenIds = await poolSession.cachedTokenIds()
+                if !tokenIds.isEmpty {
+                    await NativeMLXPrefixPool.shared.exportTokenBoundaries(
+                        modelID: modelName(from: modelPath),
+                        kvFingerprint: kvFingerprint,
+                        thinkingDisabled: thinkingDisabled,
+                        tokenIds: tokenIds, session: poolSession
+                    )
+                }
             }
         }
 

@@ -134,6 +134,26 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
             warmSeconds, coldSeconds * 0.5,
             "pool turn \(warmSeconds)s should be well under cold \(coldSeconds)s")
 
+        // --- B-6: a genuinely NEW conversation sharing only the document
+        //     (different first question) — message boundaries diverge at
+        //     message 2, but the TOKEN prefix (the document) matches a
+        //     grid boundary exported by turn 1. ---
+        let messagesC = [message("system", "You are a precise assistant. Internal "
+            + "specification document:\n" + document),
+            message("user", "What is 2+2? Answer with the numeral only.")]
+        let (replyC, crossSeconds) = try await chatCompletion(
+            sessionId: "pool-battery-C", messages: messagesC)
+        XCTAssertFalse(replyC.isEmpty)
+        XCTAssertTrue(
+            traceLogContains("mode=cross-session", sinceByteOffset: logStart),
+            "token-level cross-session seeding must fire for a shared-document new session")
+        XCTAssertTrue(
+            traceLogContains("poolTokenHit", sinceByteOffset: logStart),
+            "the token-level pool admitted a boundary")
+        XCTAssertLessThan(
+            crossSeconds, coldSeconds * 0.5,
+            "cross-session turn \(crossSeconds)s should be well under cold \(coldSeconds)s")
+
         // --- Restart-warm: a fresh store over the same disk root admits
         //     the committed boundary without any live session. ---
         let freshStore = PrefixSnapshotStore(

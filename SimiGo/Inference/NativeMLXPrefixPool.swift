@@ -20,6 +20,8 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
     private let lock = NSLock()
     private var store: PrefixSnapshotStore?
     private var rescanned = false
+    /// 已导出的 token 边界登记（避免同轮重复落盘同一边界）。
+    private var exportedTokenBoundaries = Set<String>()
 
     static func namespace(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool)
         -> PrefixPoolNamespace
@@ -69,9 +71,74 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
         try await makeStore().load(admission)
     }
 
-    /// 轮末导出：把已处理消息流注册为新边界（best-effort——导出失败
-    /// 只记 trace 不影响本轮成功）。await 内联执行：不与下一轮对该
-    /// session 的使用竞态（生成全局串行已由 serializeGeneration 保证）。
+    /// B-6：安装 fork 级跨会话 token 前缀查询钩子（模型加载时一次）。
+    /// 同步闭包：池对账（token 链）→ sidecar 对账 → 快照装载，任一失败
+    /// 自愈 + nil（会话回退全量 prefill）。命名空间绑定**基配置**指纹；
+    /// 非基 kvSettings 的会话不导出 token 边界（登记的 beta 边界：仅基
+    /// 配置会话进 token 池，跨 plan 类的静默误装不可能发生）。
+    func installHook(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool) {
+        guard RuntimeTuning.prefixPoolEnabled else { return }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIds in
+            guard let self,
+                let admission = self.makeStore().pool.admit(
+                    namespace: namespace, promptTokens: promptTokenIds)
+            else { return nil }
+            do {
+                let snapshot = try self.makeStore().loadSync(admission)
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenHit tokens=\(admission.entry.tokenCount)")
+                return (snapshot, admission.entry.tokenCount)
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenHitRejected err=\(String(describing: error))")
+                return nil
+            }
+        }
+    }
+
+    /// B-6：轮末 token 边界导出——全量 + 2048 网格（best-effort，已导出
+    /// 的边界不重写）。
+    func exportTokenBoundaries(
+        modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        tokenIds: [Int], session: ChatSession
+    ) async {
+        guard RuntimeTuning.prefixPoolEnabled, tokenIds.count > 2048 else { return }
+        let namespace = Self.namespace(
+            modelID: modelID, kvFingerprint: kvFingerprint, thinkingDisabled: thinkingDisabled)
+        let store = makeStore()
+        var boundaries: [Int] = [tokenIds.count]
+        var grid = 2048
+        while grid < tokenIds.count {
+            boundaries.append(grid)
+            grid += 2048
+        }
+        for count in boundaries {
+            let slice = Array(tokenIds[..<count])
+            let hash = PrefixChain.hash(slice)
+            let key = "\(namespace.modelID)|\(namespace.kvFingerprint)|\(count)|\(hash)"
+            lock.lock()
+            let known = exportedTokenBoundaries.contains(key)
+            lock.unlock()
+            guard !known else { continue }
+            do {
+                _ = try await store.export(
+                    namespace: namespace, tokens: slice
+                ) { url in
+                    try await session.savePrefixSnapshot(to: url, upTo: count)
+                }
+                lock.lock()
+                exportedTokenBoundaries.insert(key)
+                lock.unlock()
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenExport tokens=\(count)")
+            } catch {
+                RuntimeTraceLogger.shared.trace(
+                    "[MLX] poolTokenExportFailed tokens=\(count) err=\(String(describing: error))")
+            }
+        }
+    }
     func export(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
         history: [(role: String, content: String)],
