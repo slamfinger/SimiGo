@@ -1,7 +1,8 @@
 # Gate B — Execution↔Representation Binding Contract — Definition
 
-**Date**: 2026-09-27 · **Status**: DEFINITION_DRAFT / AWAITING_REVIEW
-(no implementation code — per the Gate-A ruling order)
+**Date**: 2026-09-27 · **Status**: PASSED (reviewer: B-1/B-2 PASS,
+B-3 PASS with semantic tightening; final invariant set §3, rules §4;
+this document is FINAL for Gate B)
 **First principle (reviewer)**: **Binding is a RELATION, not an
 attribute of RepresentationRef.** `RepresentationRef { executionID }` is
 forbidden; one Representation bound by multiple Execution States must be
@@ -17,7 +18,10 @@ ExecutionRepresentationBinding (one relation row, append-only):
   runtimeAddress       AgentExecutionKey      "在哪里"（本次物化/绑定的运行时寻址）
   ref                  RepresentationRef      "绑定了哪份表示"
   boundPositionAtBind  Int                    == ref.boundLength（R-I5）
-  generation           Int                    绑定代次（同执行多次绑定单调递增）
+  generation           Int                    绑定代次（per-Execution 单调递增；
+                                               是 Binding 关系版本号——不是 token
+                                               position、不是 Representation 版本、
+                                               不是 Pool LRU 版本、不是全局事务号）
   state                active | superseded | detached
   boundAt / notes      metadata（永不参与身份）
 ```
@@ -40,27 +44,42 @@ generation 最大的 non-detached 记录。历史记录保留（append-only 审�
               新 Binding——禁止陈旧绑定静默延续）。
 ```
 
-## 3. Invariants
+## 3. Final invariant set (reviewer wording, 2026-09-27)
 
 ```text
-B-I1  relation, not attribute   Ref 不携带执行身份；多执行绑定同一
-                                Ref 在类型层合法（FORK-3 基础）
-B-I2  bind-time consistency     boundPositionAtBind == ref.boundLength
-                                （Gate A R-I5，仅约束绑定时刻）
-B-I3  forward monotonicity      active 绑定期间 currentPosition ≥
-                                boundPositionAtBind；任何 rewind ⇒
-                                新 Binding（旧记录转 superseded）
-B-I4  append-only               superseded/detached 记录保留；当前解析
-                                确定性（最大 generation）
-B-I5  cardinality               一个 Execution 至多一个 active Binding；
-                                一个 Ref 可被多个 Execution 同时 active
-                                绑定
-B-I6  lifecycle independence    Binding 存续 ≠ Ref artifact 存续 ≠ 活 KV
-                                存续。Ref artifact 被驱逐（Gate D）时
-                                Binding 不消失——转 rematerialization
-                                required（契约标记，绝非 LRU 隐含）；
-                                Execution 有效性由重物化义务承接
+B-I1  Binding is a relation, never a Ref property
+B-I2  bind-time position consistency
+      (Binding.boundPositionAtBind == Ref.boundLength)
+B-I3  monotonic generation (per-Execution)
+B-I4  append-only history
+B-I5  cardinality: one Execution → ≤1 active Binding;
+      one Ref → N active Executions
+B-I6  lifecycle independence (Binding ≠ artifact ≠ live KV;
+      artifact eviction → rematerialization-required mark,
+      never Binding invalidation)
 ```
+
+Plus three RULES (reviewer-added):
+
+```text
+B-R1  RuntimeAddress change increments Binding generation, but NEVER
+      changes canonical ExecutionID. (K1 ≠ K2 still ⇒ ExecutionID A;
+      this is the F2/F4 resolution: Execution Identity ≠ Runtime
+      Address.)
+B-R2  Current-Binding resolution is deterministic AND consistency is
+      separate: same ExecutionID → at most one active Binding,
+      selected by highest generation. max-generation is the RESOLUTION
+      RULE; the consistency guarantee is B-I5's ≤1 (two concurrent
+      actives = ILLEGAL STATE, not a selection tie).
+B-R3  Generation is scoped per Execution — neither token position, nor
+      Representation version, nor Pool LRU version, nor a global
+      transaction/version ID.
+```
+
+Rewind semantics (B-2 PASS): the old record stays SUPERSEDED — a rewind
+is still the same Execution State acquiring a new valid version of its
+representation/position relation (gen 7 Ref X @ 4096 → rewind → gen 8
+Ref Y @ 2048); superseded (not detached) matches markSuperseded.
 
 ## 4. What Binding deliberately does NOT do
 
@@ -96,3 +115,14 @@ daily ChatSession path           = Gate B rows created at bootstrap
    的 markSuperseded 同构。）
 3. AgentExecutionKey 变更（同 Execution 换运行时寻址）是否产生新
    generation？（v1 提议：是——绑定记录的是事实历史。）
+
+---
+
+## 7. Reviewer verdict — 2026-09-27 — PASS
+
+B-1 generation scope (per-Execution) PASS · B-2 rewind=superseded PASS ·
+B-3 address mutation PASS with the tightening (B-R1). Resolution
+hardening adopted (B-R2: max-generation = resolution rule; B-I5 ≤1 =
+consistency guarantee). rematerialization-required: kept OUT of Binding
+state enums — it is artifact availability surfaced through the active
+Binding (Binding stays active; Pool eviction ≠ Binding invalidation).

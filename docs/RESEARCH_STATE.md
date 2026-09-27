@@ -4582,6 +4582,47 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 UPSTREAM_SYNC_PENDING
 ```
 
+### Gate B PASSED + Runtime Resolution Contract DRAFTED — 2026-09-27
+
+Gate B verdict: B-1/B-2 PASS, B-3 PASS with tightening — all applied,
+Gate B doc FINAL. Final structure adopted verbatim:
+
+```text
+B-I1 relation never Ref property · B-I2 bind-time position consistency ·
+B-I3 monotonic generation (per-Execution) · B-I4 append-only history ·
+B-I5 cardinality (Execution → ≤1 active; Ref → N) · B-I6 lifecycle
+independence
+B-R1 RuntimeAddress change increments generation, NEVER changes
+     canonical ExecutionID (F2/F4 resolution: Identity ≠ Runtime Address)
+B-R2 max-generation = RESOLUTION RULE; B-I5 ≤1 = the consistency
+     guarantee (two actives = illegal state, not a selection tie)
+B-R3 generation scoped per Execution — not token position, not
+     Representation version, not Pool LRU version, not global txn ID
+rematerialization-required stays OUT of Binding state enums — artifact
+availability surfaced through the active Binding (Pool eviction ≠
+Binding invalidation)
+```
+
+**Runtime Resolution Contract DRAFTED**
+(`SIMIGO17_RUNTIME_RESOLUTION_CONTRACT_20260927.md`) — the reviewer's
+flagged question answered by contract: **detached is an OPERATION, never
+a resolution outcome.** Resolution is total over the durable Binding:
+UNBOUND (none/never/detached-by-operation) · ATTACHED_LIVE ·
+REATTACHABLE (artifact available → materialize = today's poolBind/
+restore) · REMATERIALIZATION_REQUIRED (artifact evicted → Binding
+stays active, recompute from history). Invariants RR-I1..I4 (total,
+read-only, contract-owned transitions, no invalidation). Each state
+maps to machinery that already runs. Remaining for Gate C: resolve-call
+ownership + where the resolution table lives (Binding Registry ≠ Pool).
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                RUNTIME_RESOLUTION_CONTRACT_DRAFTED /
+                UPSTREAM_SYNC_PENDING
+```
+
 ### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
 
 The follow-up audit (post-merge main) confirmed Route B as a REAL
