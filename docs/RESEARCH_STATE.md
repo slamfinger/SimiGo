@@ -4380,6 +4380,146 @@ Current gate  : V2_0_0_BETA_3_PUBLISHED / TOKEN_LEVEL_POOL_IN_PRODUCT /
                 GA_WORKITEMS_OPEN
 ```
 
+### MAIN LINE UNIFICATION + Follow-up Audit Response — 2026-09-27
+
+User ruling: **the lab-validated line IS the mainline** — the previous
+topology (main = frozen v1.7, all work on side branches) is superseded.
+Executed:
+
+```text
+product main  e51ac28 = merge(origin/main curated docs, release/
+              v2.0.0-beta @ 87eb6d9) — README conflict resolved keeping
+              BOTH (curated Execution-State positioning + capability
+              list + v2.0 section in mainline framing, incl. the
+              branch-checkpoint-fork vs shared-prefix-fork terminology
+              split). Pool verified on main (git grep). Pushed.
+lab main      48ffb2b = merge(origin/main, exp/simigo2-experimental @
+              ad1ded2), 179 commits fast-forwarded; the O3-C reader
+              add/add conflict resolved in favor of the evolved exp
+              implementation (PerTensorLocation); one superseded
+              main-side test file dropped (it pinned the replaced
+              variant); suite re-run ON MAIN: 124/124. Pushed.
+fork          main = upstream-tracking line (carries upstream PRs
+              #620/#515/#548; ChatSession/Evaluate/PromptCacheReusePolicy
+              diverged). NOT merged — merging is an upstream-sync
+              project, registered as UPSTREAM-SYNC-PENDING. Our line
+              stays release/v2.0-beta-ml @ 6f0af10 (public, pinned).
+```
+
+Follow-up audit response (the mid-turn audit reviewed the pre-merge
+main; findings dispositioned):
+
+```text
+ACCEPTED  forkSessionBranch = BranchFork v1 checkpoint fork, and
+          ExecutionLineage itself documents it ("checkpoint 从哪个分支
+          复制而来, 不是 execution→execution lineage") — FORK-1/2/3
+          stand.
+ACCEPTED  ExecutionID is TELEMETRY-ONLY: generate() mints a UUID for
+          lineage.begin/end while AgentExecutionKey
+          (agentId+sessionId+logicalBranchId) is the actual state-
+          addressing unit. The Lab E-line's Execution-identity-as-
+          addressing did NOT land in the product. Registered IDENT-1
+          (GA): execution identity as the state-addressing unit +
+          RepresentationRef binding — this is the "missing middle
+          layer" the audit names.
+UPDATED   "no second path / no content-addressed sharing" held for the
+          PRE-merge main only. Post-merge main carries the verified
+          content-addressed admission path (pool + token consult).
+```
+
+Post-merge integration inventory for the proposed Lab→main diff audit
+(real vs v1 vs absent):
+
+```text
+REAL (device-verified)   prefix pool trio + NativeMLX admission/export
+                         + fork ChatSession token consult (B-5 201ms,
+                         B-6 5,944ms @84%) + token ledger (oversized)
+                         + coordinator/contracts (oversized sessions)
+V1 BY DESIGN             forkSessionBranch checkpoint fork
+                         (FORK-1 atomicity, FORK-2 fork-point
+                         persistence registered)
+ABSENT (registered)      RepresentationRef binding, ExecutionID as
+                         addressing (IDENT-1), COW shared-prefix fork
+                         (FORK-3), durable Execution State
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED (product e51ac28 / lab 48ffb2b) /
+                IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
+```
+
+### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
+
+The follow-up audit (post-merge main) confirmed Route B as a REAL
+product execution path, retracted its own "no second path" claim, and
+sharpened three things — all adopted:
+
+```text
+IDENT-1 (refined wording)  Execution State's protocol/lifecycle
+                           abstraction IS in main; what has NOT landed
+                           is Execution Identity as the stable
+                           addressing/binding unit for physical
+                           representations (ExecutionID doc: "S4 红线：
+                           不发明新身份语义"; the UUID is lineage/trace
+                           only). IDENT-1 stays a GA item with this
+                           wording.
+FORK-3 (sharpened)         Route B and Branch Fork are two independent
+                           paths: forkSessionBranch never touches the
+                           pool. FORK-3 = connect them at the Execution
+                           State layer (child binds the shared
+                           boundary at the fork point).
+TERMINOLOGY RED LINE       poolHit/poolBind/poolTokenHit prove
+                           REPRESENTATION REUSE, not Execution-State
+                           Fork. Pinned in code
+                           (NativeMLXPrefixPool header, product
+                           ac25b55) and in README.
+```
+
+The audit's four closure questions, dispositioned from code:
+
+```text
+Q1 ownership after poolBind   in-memory KV belongs EXCLUSIVELY to the
+                              consuming ChatSession (self-materialized
+                              copy from disk); the pool owns only the
+                              disk artifact + claims; no live memory is
+                              ever shared. This IS the Reuse/Shared
+                              boundary.
+Q2 lifecycle owner            three lines: memory = existing session
+                              LRU/warmTokenBudget/session.clear;
+                              registry = pool LRU (prefixPoolTokenBudget);
+                              disk = UNMANAGED (GC registered gap).
+Q3 eviction semantics         registry eviction has ZERO effect on live
+                              sessions (independent copies); the cost is
+                              only that future admissions lose that
+                              boundary until some session re-commits the
+                              content; concurrency pool-lock guarded;
+                              evicted disk files linger (registered).
+Q4 should fork reuse the      YES — that IS FORK-3's definition (child
+   representation?            binds the pool boundary at the fork point,
+                              pays only its delta, FORK-2 persists the
+                              fork position; boundary pinning under
+                              child reference joins FORK-3 scope).
+                              Ruled: own gate, not a checkpoint-fork
+                              patch.
+```
+
+Beta gate position (audit-proposed structure, adopted):
+
+```text
+MAIN_LINE_UNIFIED
+  ├── Route B Prefix Reuse       REAL (device-verified)
+  ├── Branch Fork V1             REAL (checkpoint semantics)
+  ├── Execution State Protocol   REAL / thin
+  ├── IDENT-1 ExecutionID        GA
+  ├── FORK-3 Shared-prefix COW   GA / upstream dependent
+  └── Durable Execution State    Research
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN /
+                IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
+```
+
 ### External Code Audit Disposition — Branch Confusion Resolved — 2026-09-27
 
 A code-level audit arrived reviewing the PUBLIC SimiGo **main** branch

@@ -130,6 +130,14 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     private var lastUse: [UInt64: UInt] = [:]
     private var tick: UInt = 0
     private let tokenBudget: Int
+    /// Eviction persistence (SIMIGO17 P2 closure): invoked for every
+    /// evicted entry AFTER the lock is released. The disk-backed store
+    /// installs this at construction to delete the artifact — an evicted
+    /// representation must neither be re-admitted in this process NOR
+    /// resurrected by a restart rescan (eviction is a budget decision
+    /// and outlives the process). The callback must not re-enter the
+    /// pool.
+    public var onEvict: ((PrefixPoolEntry) -> Void)?
     public private(set) var stats = PrefixPoolStats()
 
     public init(tokenBudget: Int) {
@@ -268,6 +276,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
 
     private func evictLocked() {
         var total = entries.reduce(0) { $0 + $1.tokenCount }
+        var evicted: [PrefixPoolEntry] = []
         while total > tokenBudget, let victim = entries.min(
             by: { (lastUse[$0.boundaryHash] ?? 0) < (lastUse[$1.boundaryHash] ?? 0) }
         ) {
@@ -275,6 +284,15 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
             lastUse[victim.boundaryHash] = nil
             total -= victim.tokenCount
             stats.evictions += 1
+            evicted.append(victim)
+        }
+        // P2: deliver eviction notifications OUTSIDE the pool lock (the
+        // disk-backed store deletes artifacts there; it must never
+        // re-enter the pool from inside this lock).
+        if let onEvict, !evicted.isEmpty {
+            lock.unlock()
+            for victim in evicted { onEvict(victim) }
+            lock.lock()
         }
     }
 }

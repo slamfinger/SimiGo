@@ -167,3 +167,59 @@ final class PrefixSnapshotStoreTests: XCTestCase {
         store.pool.admit(namespace: ns, promptTokens: tokens)
     }
 }
+
+/// P2 — eviction persistence: an evicted representation must neither be
+/// re-admitted in-process NOR resurrected by a restart rescan (its disk
+/// artifact is deleted at eviction time).
+final class PrefixPoolEvictionPersistenceTests: XCTestCase {
+    private let ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
+
+    private func tokens(_ count: Int, seed: Int = 0) -> [Int] {
+        (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
+    }
+
+    private func writeSnapshot(to url: URL) throws {
+        let layer = KVCacheSimple()
+        layer.update(
+            keys: MLXArray.zeros([1, 2, 8, 4]),
+            values: MLXArray.zeros([1, 2, 8, 4]))
+        try savePromptCache(url: url, cache: [layer])
+    }
+
+    func testEvictionDeletesArtifactAndBlocksResurrection() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("prefix-p2-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pool = ExecutionStatePrefixPool(tokenBudget: 1100)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+
+        let a = tokens(512, seed: 1)
+        let b = tokens(512, seed: 2)
+        let c = tokens(512, seed: 3)
+        _ = try await store.export(namespace: ns, tokens: a) { url in
+            try writeSnapshot(to: url)
+        }
+        let entryB = try await store.export(namespace: ns, tokens: b) { url in
+            try writeSnapshot(to: url)
+        }
+        // Touch A so B is the LRU victim when C arrives.
+        _ = pool.admit(namespace: ns, promptTokens: a)
+        let artifactB = entryB.artifact as! DiskPrefixArtifact
+        _ = try await store.export(namespace: ns, tokens: c) { url in
+            try writeSnapshot(to: url)
+        }
+        XCTAssertEqual(pool.stats.evictions, 1, "B evicted")
+
+        // B's artifact files are GONE from disk (eviction = deletion).
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: artifactB.snapshotURL.path),
+            "evicted artifact must not linger to resurrect on rescan")
+
+        // Restart rescan must NOT resurrect B.
+        let fresh = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        XCTAssertEqual(try fresh.rescan(), 2, "only A and C re-register")
+        XCTAssertNil(fresh.pool.admit(namespace: ns, promptTokens: b))
+        XCTAssertNotNil(fresh.pool.admit(namespace: ns, promptTokens: a))
+    }
+}
