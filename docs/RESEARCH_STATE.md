@@ -4379,3 +4379,61 @@ https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.3
 Current gate  : V2_0_0_BETA_3_PUBLISHED / TOKEN_LEVEL_POOL_IN_PRODUCT /
                 GA_WORKITEMS_OPEN
 ```
+
+### External Code Audit Disposition — Branch Confusion Resolved — 2026-09-27
+
+A code-level audit arrived reviewing the PUBLIC SimiGo **main** branch
+and concluded the Route B implementation (ExecutionStatePrefixPool /
+PrefixSnapshotStore / content-addressed admission path) does not exist
+there. Git-verified disposition:
+
+```text
+main @ 632b1d9               pool types ABSENT (grep: zero hits);
+                             forkSessionBranch = disk-checkpoint fork.
+                             EVERY audit finding about main is CORRECT:
+                             fork = saveCache→copyItem→loadCache (no
+                             shared prefix); target overwrite is
+                             delete→copy (non-atomic); no fork point
+                             persisted (no forkPosition /
+                             sharedPrefixLength); lineage.recordFork is
+                             a relationship LOG, not a representation
+                             binding; session reuse is storageKey-local.
+release/v2.0.0-beta @ 87eb6d9  the beta.3 DMG build source — pool
+                             wiring PRESENT (NativeMLX.swift ×5,
+                             NativeMLXPrefixPool.swift ×6; Lab package
+                             carries the pool core); the
+                             content-addressed admission path EXISTS
+                             and is device-verified (B-5 201ms /
+                             B-6 mode=cross-session 5,944ms readings).
+                             The audit's "no second path" holds for
+                             main, NOT for this tree.
+forkSessionBranch            UNTOUCHED on BOTH trees — the fork
+                             critique applies to both and is ACCEPTED
+                             in full.
+```
+
+Disciplines ADOPTED from the audit:
+
+```text
+1. AUDIT-TREE PIN: every future audit states the audited commit
+   (git rev-parse) and the audited tree as the single source of truth;
+   local-experimental vs public code must never be conflated.
+2. TERMINOLOGY SPLIT: 「分支 checkpoint fork」(branch checkpoint fork —
+   what forkSessionBranch does) is permanently distinct from
+   「Execution State 共享前缀 fork」(shared-representation fork — not
+   implemented anywhere yet). README/log/research prose must not mix
+   them.
+```
+
+Registered gaps (GA candidates, NOT patched now per the audit's own
+ruling against stacking shared-KV onto the checkpoint-fork layer):
+
+```text
+FORK-1  fork file atomicity: temp → fsync/validate → atomic rename →
+        publish (today: delete → copy)
+FORK-2  fork point persistence: forkPosition / forkTokenPosition /
+        sharedPrefixLength in branch metadata
+FORK-3  true Execution-State shared-prefix fork: child →
+        RepresentationRef → fork point (needs its own definition gate;
+        the prefix pool serves session ADMISSION, not the fork API)
+```
