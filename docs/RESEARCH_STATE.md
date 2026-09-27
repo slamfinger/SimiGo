@@ -4536,6 +4536,52 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 UPSTREAM_SYNC_PENDING
 ```
 
+### Gate A PASSED (two corrections applied, doc FINAL) + Gate B OPEN — 2026-09-27
+
+Reviewer verdict: PASS with two definition-level corrections, both
+applied into the final Gate A document:
+
+```text
+① renderIdentity  v1 single field approved; NEW invariant — generation
+                  must be canonical/deterministic; today's "|think:"
+                  string-join hack must never be exposed as the Ref
+                  format (render semantics → canonical renderIdentity →
+                  Ref; the hack can disappear without semantic change)
+② R-I5 FINAL WORDING  Binding.boundPositionAtBind == Ref.boundLength —
+                  bind-TIME coverage consistency only, explicitly NOT
+                  Execution.currentPosition == Ref.boundLength; a
+                  3072-position execution bound to Ref X @ 2048 is
+                  LEGAL (continued past its materialized base).
+                  boundLength = the Representation's logical token-
+                  prefix boundary, not a session position.
+③ backendIdentity independent field approved (what model vs who
+                  interprets the representation — never collapsed).
+Migration wording corrected: existing artifacts can be DERIVED INTO
+RepresentationRef; RepresentationRef itself does not exist today
+(consistent with F5). Gate A = formalizing implicit identity conditions.
+```
+
+**Gate B OPENED** (`SIMIGO17_BINDING_CONTRACT_GATE_B_20260927.md`,
+definition draft, no code): first principle = **Binding is a RELATION,
+not a RepresentationRef attribute** (`RepresentationRef{executionID}`
+forbidden; multi-bind type-level legal). Relation record:
+execution + runtimeAddress + ref + boundPositionAtBind + generation +
+state (append-only; deterministic current resolution). Invariants
+B-I1..B-I6 (incl. B-I3 forward monotonicity — rewind ⇒ new binding;
+B-I6 lifecycle independence with contract-marked rematerialization).
+Deliberate non-duties: not residency, not transcript, not position
+source, not the pool's registry (Gate C stands). Three review questions
+posted (generation scope, superseded-vs-detached on rewind, key-change
+semantics).
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED /
+                IDENT1_GATE_B_BINDING_CONTRACT_DRAFTED /
+                UPSTREAM_SYNC_PENDING
+```
+
 ### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
 
 The follow-up audit (post-merge main) confirmed Route B as a REAL
