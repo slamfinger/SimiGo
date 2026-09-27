@@ -4448,6 +4448,49 @@ Current gate  : MAIN_LINE_UNIFIED (product e51ac28 / lab 48ffb2b) /
                 IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
 ```
 
+### IDENT-1 Chain Audit Round 1 COMPLETE — 2026-09-27
+
+Per the ruling (walk every arrow; type? mapping? runtime use?), full
+chain audited (`SIMIGO17_IDENT1_CHAIN_AUDIT_20260927.md`). Five
+findings:
+
+```text
+F1  同名不同义 CONFIRMED — two ExecutionID types (product triple-
+    mapping protocol identity vs Lab opaque contract identity); cannot
+    merge; canonical choice is a ruling, not a rename
+F2  身份存在但寻址不用 CONFIRMED — the product S4 surface
+    (ExecutionControlling: checkpoint/restore/fork via ExecutionID) has
+    NO conformer and NO implemented ExecutionID→AgentExecutionKey
+    mapping; the product calls save/load/fork with AgentExecutionKey
+    directly. Declared-but-dead identity surface.
+F3  storageKey = string join; normalization exists; delimiter-escape
+    absence = theoretical collision (registered hazard)
+F4  IDENTITY ISLANDS — daily (AgentExecutionKey→storageKey→
+    ManagedSession) and oversized (constant ExecutionID("S")→
+    coordinator→handle) never interchange; oversized request identity
+    is a CONSTANT
+F5  RepresentationRef ABSENT; binding ephemeral (dict entry holds a
+    materialized copy); the pool's content-addressed artifact+claims is
+    a nascent representation address deliberately identity-free
+```
+
+Red line re-confirmed with stronger evidence: execution identity ≠
+physical representation identity; the missing piece is the BINDING
+CONTRACT, not a type merger. Recommendations registered: (1) S4 surface
+implement-or-retire (S5 decision); (2) oversized multi-session must
+thread request identity (today every oversized session is identity "S");
+(3) RepresentationRef as a THIRD identity kind (content-addressed) with
+an explicit binding table = the IDENT-1/FORK-3 convergence point;
+(4) storageKey stays session-addressing with the collision hazard
+registered.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_CHAIN_AUDIT_R1_COMPLETE /
+                UPSTREAM_SYNC_PENDING
+```
+
 ### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
 
 The follow-up audit (post-merge main) confirmed Route B as a REAL
