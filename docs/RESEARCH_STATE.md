@@ -4448,6 +4448,78 @@ Current gate  : MAIN_LINE_UNIFIED (product e51ac28 / lab 48ffb2b) /
                 IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
 ```
 
+### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
+
+The follow-up audit (post-merge main) confirmed Route B as a REAL
+product execution path, retracted its own "no second path" claim, and
+sharpened three things — all adopted:
+
+```text
+IDENT-1 (refined wording)  Execution State's protocol/lifecycle
+                           abstraction IS in main; what has NOT landed
+                           is Execution Identity as the stable
+                           addressing/binding unit for physical
+                           representations (ExecutionID doc: "S4 红线：
+                           不发明新身份语义"; the UUID is lineage/trace
+                           only). IDENT-1 stays a GA item with this
+                           wording.
+FORK-3 (sharpened)         Route B and Branch Fork are two independent
+                           paths: forkSessionBranch never touches the
+                           pool. FORK-3 = connect them at the Execution
+                           State layer (child binds the shared
+                           boundary at the fork point).
+TERMINOLOGY RED LINE       poolHit/poolBind/poolTokenHit prove
+                           REPRESENTATION REUSE, not Execution-State
+                           Fork. Pinned in code
+                           (NativeMLXPrefixPool header, product
+                           ac25b55) and in README.
+```
+
+The audit's four closure questions, dispositioned from code:
+
+```text
+Q1 ownership after poolBind   in-memory KV belongs EXCLUSIVELY to the
+                              consuming ChatSession (self-materialized
+                              copy from disk); the pool owns only the
+                              disk artifact + claims; no live memory is
+                              ever shared. This IS the Reuse/Shared
+                              boundary.
+Q2 lifecycle owner            three lines: memory = existing session
+                              LRU/warmTokenBudget/session.clear;
+                              registry = pool LRU (prefixPoolTokenBudget);
+                              disk = UNMANAGED (GC registered gap).
+Q3 eviction semantics         registry eviction has ZERO effect on live
+                              sessions (independent copies); the cost is
+                              only that future admissions lose that
+                              boundary until some session re-commits the
+                              content; concurrency pool-lock guarded;
+                              evicted disk files linger (registered).
+Q4 should fork reuse the      YES — that IS FORK-3's definition (child
+   representation?            binds the pool boundary at the fork point,
+                              pays only its delta, FORK-2 persists the
+                              fork position; boundary pinning under
+                              child reference joins FORK-3 scope).
+                              Ruled: own gate, not a checkpoint-fork
+                              patch.
+```
+
+Beta gate position (audit-proposed structure, adopted):
+
+```text
+MAIN_LINE_UNIFIED
+  ├── Route B Prefix Reuse       REAL (device-verified)
+  ├── Branch Fork V1             REAL (checkpoint semantics)
+  ├── Execution State Protocol   REAL / thin
+  ├── IDENT-1 ExecutionID        GA
+  ├── FORK-3 Shared-prefix COW   GA / upstream dependent
+  └── Durable Execution State    Research
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN /
+                IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
+```
+
 ### External Code Audit Disposition — Branch Confusion Resolved — 2026-09-27
 
 A code-level audit arrived reviewing the PUBLIC SimiGo **main** branch
