@@ -56,21 +56,36 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
 public final class PrefixSnapshotStore: @unchecked Sendable {
     public let root: URL
     public let pool: ExecutionStatePrefixPool
+    /// F3 (IMPLEMENTATION_PLANNING Q1): transient in-flight physical-use
+    /// protection, keyed by artifact snapshot path. Gate D eviction goes
+    /// THROUGH this registry: a deletion while a materialization work
+    /// holds the artifact is deferred until release (D-C1/C2) — the P2
+    /// delete-on-evict semantics are unchanged for the no-in-flight case.
+    public let physicalUse: PhysicalUseRegistry
     private let fileManager = FileManager.default
 
     public init(root: URL, pool: ExecutionStatePrefixPool) {
         self.root = root
         self.pool = pool
+        let fileManager = FileManager.default
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let registry = PhysicalUseRegistry(onDelete: { key in
+            let snapshotURL = URL(fileURLWithPath: key)
+            let metadataURL = snapshotURL.deletingPathExtension()
+                .appendingPathExtension("json")
+            try? fileManager.removeItem(at: snapshotURL)
+            try? fileManager.removeItem(at: metadataURL)
+        })
+        self.physicalUse = registry
         // P2 eviction persistence: an evicted entry's artifact is deleted
-        // immediately — eviction must survive restarts (rescan only finds
-        // files that were never evicted).
+        // (immediately when unused; deferred while a physical operation
+        // holds it — Gate D) — eviction must survive restarts (rescan
+        // only finds files that were never evicted).
         pool.onEvict = { [weak self] entry in
             guard let self, let artifact = entry.artifact as? DiskPrefixArtifact else {
                 return
             }
-            try? self.fileManager.removeItem(at: artifact.snapshotURL)
-            try? self.fileManager.removeItem(at: artifact.metadataURL)
+            registry.requestDelete(artifact.snapshotURL.path)
         }
     }
 
