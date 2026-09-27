@@ -4520,6 +4520,68 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN /
                 IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
 ```
 
+### P2 CLOSED + IDENT-1 OPENED — 2026-09-27
+
+**P2 (eviction persistence) — gap CONFIRMED and CLOSED same round**
+(Lab 4c8f582, main 448b8c9). The audit was right: rescan re-registered
+evicted representations — eviction did not survive process boundaries.
+Eviction Persistence Rule now implemented: `ExecutionStatePrefixPool`
+gains an `onEvict` notification (delivered outside the lock; callback
+must not re-enter the pool); `PrefixSnapshotStore` installs it to delete
+the artifact at eviction time. Evicted = not re-admittable in-process
+(registry gone + export dedup) AND not resurrectable on restart
+(artifact gone; rescan skips vanished files). Test: eviction deletes B's
+files; fresh-store rescan re-registers only A and C; B admits nil.
+Suite 125/125; Lab main synced (448b8c9).
+
+```text
+Representation Reuse V1 — final lifecycle definition (audit wording
+adopted):
+  live-session KV   independent; unaffected by pool eviction
+  PrefixPool        owns disk artifact + admission/index registration;
+                    never live KV; eviction = admission right removal
+  disk artifact     deleted at eviction (P2 closure); GC for
+                    unreadable-snapshot orphans still policy-deferred
+Three lifecycle layers remain distinct: Execution State lifecycle ≠
+Representation Artifact lifecycle ≠ live KV lifecycle.
+```
+
+**IDENT-1 OPENED** — symbol-by-symbol addressing audit, stage 0
+inventory (symbol → current role):
+
+```text
+product ExecutionControlling.ExecutionID   triple mapping
+                                           (agent/session/branch), doc:
+                                           "S4 红线：不发明新身份语义"
+product AgentExecutionKey.storageKey       THE addressing unit
+                                           (sessions dict; 33 refs in
+                                           NativeMLX alone)
+product executionId (UUID in generate())   lineage.begin/end + trace
+                                           only — never addressing
+product ExecutionLineage/ExecutionRecord   telemetry
+lab RuntimeContract.ExecutionID            opaque string id (oversized
+                                           sessions) — NOTE: two
+                                           distinct ExecutionID types
+                                           across repos (collision to
+                                           resolve)
+lab ExecutionStateHandle/Position          contract identities (oversized
+                                           path only)
+RepresentationRef                          ABSENT everywhere
+```
+
+The audit proceeds symbol-by-symbol from this inventory: which layers a
+stable Execution/Representation addressing contract must unify, and the
+S4 red-line interaction (no new identity semantics invented ad hoc).
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_SYMBOL_AUDIT_OPEN /
+                UPSTREAM_SYNC_PENDING
+(* Beta Closure ≠ all lifecycle questions gone — disk GC for orphans
+   and FORK-3 boundary pinning remain registered.)
+```
+
 ### External Code Audit Disposition — Branch Confusion Resolved — 2026-09-27
 
 A code-level audit arrived reviewing the PUBLIC SimiGo **main** branch
