@@ -1,7 +1,7 @@
 # Gate C — Deterministic Resolution Algorithm & Mapping — Definition Draft
 
-**Date**: 2026-09-27 · **Status**: DEFINITION_DRAFT / AWAITING_REVIEW
-(no implementation code)
+**Date**: 2026-09-27 · **Status**: PASSED (reviewer: C.2-1/C.2-2
+refinements applied, §7; this document is FINAL for Gate C)
 **Adopted rulings**: RR contract PASSED; `resolve()` = pure observation,
 never materialization (Gate C forbidden zone); artifact-state judgment
 (NOT pool registration): `Pool registration ≠ Representation existence`;
@@ -84,7 +84,37 @@ REMATERIALIZATION_REQUIRED → REATTACHABLE   replay/regenerate/export
 any → UNBOUND                        ONLY explicit detach/discard op
 ```
 
-## C.6 Registered hazards
+## C.6 C.2 refinements (reviewer rulings, 2026-09-27 — FINAL)
+
+```text
+holdsMaterialization (v1)  = runtime-held materialization check:
+  · current binding generation == b.generation   (NECESSARY, not sufficient)
+  · session runtime address == b.runtimeAddress
+  · materialization identity == b.ref
+  — generation match ALONE is insufficient (a session that switched
+    representations would make an old Binding falsely ATTACHED_LIVE)
+  — it is a HOLDING-RELATION QUERY ("does the session currently hold a
+    materialization of this Ref?"), never a Representation integrity
+    validator ("is the KV truly equivalent?" = higher-cost validation,
+    out of scope)
+
+available(Ref) (v1)  = cheap read-only CANDIDATE availability:
+  · artifact exists ∧ sidecar decodable ∧ sidecar identity compatible
+  — NO full artifact hash recomputation (resolve is low-cost state
+    resolution; GB-scale read+hash would smuggle integrity verification
+    into resolution)
+  — AVAILABLE means "can serve as a candidate for
+    resolution/rematerialization", NOT "proven correct"
+  — future chain: available → candidate → materialize() → optional
+    integrity validation → commit attachment; on mismatch/corruption:
+    candidate rejected → artifact invalidated/isolated → Binding remains
+    active → REMATERIALIZATION_REQUIRED
+  — available(Ref)==false NEVER deletes or supersedes the Binding: the
+    Binding is the historical relation; the representation is merely
+    temporarily unavailable
+```
+
+## C.7 Registered hazards
 
 ```text
 - live-session coverage check (s.holdsMaterialization) v1 = generation
@@ -94,3 +124,25 @@ any → UNBOUND                        ONLY explicit detach/discard op
 - AgentExecutionKey reverse index: absent; needed only if a future
   feature must find "all executions on this Key" — separate ruling
 ```
+
+---
+
+## 8. Reviewer verdict — 2026-09-27 — PASS
+
+C.2-1/C.2-2 refinements applied above. ⑤⑥⑦ contract skeleton formally
+closed:
+
+```text
+⑤ Runtime Resolution        ExecutionID → Binding → AgentExecutionKey →
+                            Session Registry
+⑥ Representation Resolution RepresentationRef → RepresentationResolver
+                            → artifact availability
+⑦ Binding Consistency       Binding.boundPositionAtBind ==
+                            RepresentationRef.boundLength
+```
+
+Next: **FORK-3 structural gate OPENED** — core to prove: Parent
+Binding → Ref X @ T; fork → Child Binding → Ref X @ T — two executions
+sharing the SAME RepresentationRef with INDEPENDENT Execution Position /
+subsequent deltas. This is the line from Representation Reuse to
+Execution-State Shared Representation.
