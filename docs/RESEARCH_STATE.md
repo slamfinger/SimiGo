@@ -5085,3 +5085,46 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 GATE_D_CONCURRENCY_BOUNDARY_PASSED /
                 IMPLEMENTATION_PLANNING_NEXT
 ```
+
+### Implementation Planning REGISTERED — 2026-09-27
+
+Three-question layer assignments ruled
+(`SIMIGO17_IMPLEMENTATION_PLANNING_20260927.md`):
+
+```text
+Q1  PhysicalUseCount → RepresentationResolver/ArtifactStore 物理句柄层
+    (PhysicalUseHandle); BindingCount/PhysicalUseCount/Pool residency
+    三者独立
+Q2  single-flight → MaterializationCoordinator (Ref → in-flight
+    MaterializationWork); the WORK owns the PhysicalUseHandle (C.6);
+    lifecycle create→acquire→load/validate→publish→release→remove;
+    success ≠ auto-attachment
+Q3  PrefixSnapshotStore → P2 semantics preserved; FORK-3 adds ONLY the
+    PhysicalUseCount==0 gate before the existing onEvict path; no other
+    change to eviction semantics; handle release restores eviction
+    eligibility (no re-admission/Binding/LRU changes)
+```
+
+Five-layer boundary: Binding Registry → RepresentationResolver →
+MaterializationCoordinator → ExecutionStatePrefixPool →
+PrefixSnapshotStore/ArtifactStore. Hard constraint: FORK-3 does not
+change the passed P2 loop; it only ADDS the transient physical-use
+protection boundary.
+
+First cut (sequencing ruling): NOT forkSessionBranch — the
+MaterializationCoordinator/PhysicalUseHandle minimal skeleton,
+tests-first with three concurrency tests (materialize×eviction,
+materialize×materialize, materialize×restart/rescan) BEFORE Parent/
+Child Binding wiring. Deferred: Binding wiring, forkSessionBranch
+plug-in decision, usage projection, disk GC, upstream sync.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_CONTRACT_PASSED /
+                GATE_D_CONCURRENCY_BOUNDARY_PASSED /
+                IMPLEMENTATION_PLANNING_REGISTERED /
+                F3_COORDINATOR_SKELETON_NEXT
+```
