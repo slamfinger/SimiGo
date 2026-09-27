@@ -62,6 +62,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.root = root
         self.pool = pool
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        // P2 eviction persistence: an evicted entry's artifact is deleted
+        // immediately — eviction must survive restarts (rescan only finds
+        // files that were never evicted).
+        pool.onEvict = { [weak self] entry in
+            guard let self, let artifact = entry.artifact as? DiskPrefixArtifact else {
+                return
+            }
+            try? self.fileManager.removeItem(at: artifact.snapshotURL)
+            try? self.fileManager.removeItem(at: artifact.metadataURL)
+        }
     }
 
     // MARK: - Export (turn commit)
