@@ -4893,3 +4893,43 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 IDENT1_GATE_C_PASSED / F3_STRUCTURAL_GATE_OPEN /
                 UPSTREAM_SYNC_PENDING
 ```
+
+### FORK-3 Structural Contract DRAFTED — 2026-09-27
+
+Per the ruled order (FORK-3 structural contract → Gate D eviction/
+reference semantics → implementation boundary),
+`SIMIGO17_FORK3_STRUCTURAL_CONTRACT_20260927.md` registered:
+
+```text
+proof object    two Executions share the SAME RepresentationRef (X @ T)
+                with independent positions/deltas — NOT a
+                forkSessionBranch replacement
+fork semantics  child gets NEW canonical ExecutionID + NEW
+                runtimeAddress (B-R1) + Binding → SAME Ref X @ T
+                (zero re-materialization at fork; cost ≈ O(binding
+                metadata)); ΔP/ΔC fully independent
+invariants      F-I1 shared identity not copied state · F-I2 parent
+                non-interference · F-I3 child starts at boundary ·
+                F-I4 delta independence · F-I5 Ref X carries ≥2 active
+                bindings · F-I6 identity separation (sharing only at
+                the Ref layer)
+not claimed     no live-KV COW in v1 (copy-on-derive, compute-on-
+                diverge; page-level COW = RFC mlx-swift-lm#629
+                deferred) · no forkSessionBranch edit · no terminology
+                drift
+acceptance      zero-MLX structural battery + device battery (child
+                prefills only ΔC; parent unchanged; Gate D eviction
+                constraint realized)
+handoff         FORK-3 makes Gate D mandatory (pin-while-referenced vs
+                rematerialization-required, contract-decided); FORK-2
+                subsumed (fork point = Ref X @ T persisted as Binding)
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_DRAFTED /
+                GATE_D_EVICT_REFERENCE_SEMANTICS_NEXT /
+                UPSTREAM_SYNC_PENDING
+```
