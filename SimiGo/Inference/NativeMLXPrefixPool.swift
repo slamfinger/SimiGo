@@ -5,6 +5,19 @@ import SimiGo2Experimental
 /// Route B 前缀池协调器（SIMIGO17_PREFIX_POOL 门 B-4）——跨会话内容寻址
 /// KV 共享在产品日常路径的接缝。
 ///
+/// **架构术语红线（beta.3 审计裁定，2026-09-27）**：poolHit / poolBind /
+/// poolTokenHit 证明的是 **Representation Reuse（跨会话找到并消费已存在
+/// 的前缀表示，免重算）**，不是 **Execution-State Fork（fork point 处
+/// parent/child 共享同一 Representation 的绑定）**。两词不得混用：
+/// Branch API 的 fork 仍是「分支 checkpoint fork」v1；共享前缀 fork =
+/// FORK-3（GA，未实现）。
+///
+/// **所有权/生命周期边界**：poolBind 后，内存 KV 归消费方 ChatSession
+/// **独占**（自盘物化的独立副本，池从不持有活内存）；池只拥有磁盘
+/// artifact + 声明登记。三条生命周期线：内存侧=既有会话 LRU/
+/// warmTokenBudget/session.clear；登记侧=池 LRU（prefixPoolTokenBudget，
+/// 驱逐对活会话零影响——副本独立）；磁盘侧=GC 登记延后（已知缺口）。
+///
 /// 语义（与 E 线 Execution State 原则一致）：逻辑会话按内容消费物理
 /// KV 表示，不按会话身份独占。三步链全程对账（P-I1）：
 ///   admission   存储边界哈希 == 对来方消息流重算的链哈希（池内核）
