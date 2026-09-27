@@ -4380,6 +4380,74 @@ Current gate  : V2_0_0_BETA_3_PUBLISHED / TOKEN_LEVEL_POOL_IN_PRODUCT /
                 GA_WORKITEMS_OPEN
 ```
 
+### MAIN LINE UNIFICATION + Follow-up Audit Response — 2026-09-27
+
+User ruling: **the lab-validated line IS the mainline** — the previous
+topology (main = frozen v1.7, all work on side branches) is superseded.
+Executed:
+
+```text
+product main  e51ac28 = merge(origin/main curated docs, release/
+              v2.0.0-beta @ 87eb6d9) — README conflict resolved keeping
+              BOTH (curated Execution-State positioning + capability
+              list + v2.0 section in mainline framing, incl. the
+              branch-checkpoint-fork vs shared-prefix-fork terminology
+              split). Pool verified on main (git grep). Pushed.
+lab main      48ffb2b = merge(origin/main, exp/simigo2-experimental @
+              ad1ded2), 179 commits fast-forwarded; the O3-C reader
+              add/add conflict resolved in favor of the evolved exp
+              implementation (PerTensorLocation); one superseded
+              main-side test file dropped (it pinned the replaced
+              variant); suite re-run ON MAIN: 124/124. Pushed.
+fork          main = upstream-tracking line (carries upstream PRs
+              #620/#515/#548; ChatSession/Evaluate/PromptCacheReusePolicy
+              diverged). NOT merged — merging is an upstream-sync
+              project, registered as UPSTREAM-SYNC-PENDING. Our line
+              stays release/v2.0-beta-ml @ 6f0af10 (public, pinned).
+```
+
+Follow-up audit response (the mid-turn audit reviewed the pre-merge
+main; findings dispositioned):
+
+```text
+ACCEPTED  forkSessionBranch = BranchFork v1 checkpoint fork, and
+          ExecutionLineage itself documents it ("checkpoint 从哪个分支
+          复制而来, 不是 execution→execution lineage") — FORK-1/2/3
+          stand.
+ACCEPTED  ExecutionID is TELEMETRY-ONLY: generate() mints a UUID for
+          lineage.begin/end while AgentExecutionKey
+          (agentId+sessionId+logicalBranchId) is the actual state-
+          addressing unit. The Lab E-line's Execution-identity-as-
+          addressing did NOT land in the product. Registered IDENT-1
+          (GA): execution identity as the state-addressing unit +
+          RepresentationRef binding — this is the "missing middle
+          layer" the audit names.
+UPDATED   "no second path / no content-addressed sharing" held for the
+          PRE-merge main only. Post-merge main carries the verified
+          content-addressed admission path (pool + token consult).
+```
+
+Post-merge integration inventory for the proposed Lab→main diff audit
+(real vs v1 vs absent):
+
+```text
+REAL (device-verified)   prefix pool trio + NativeMLX admission/export
+                         + fork ChatSession token consult (B-5 201ms,
+                         B-6 5,944ms @84%) + token ledger (oversized)
+                         + coordinator/contracts (oversized sessions)
+V1 BY DESIGN             forkSessionBranch checkpoint fork
+                         (FORK-1 atomicity, FORK-2 fork-point
+                         persistence registered)
+ABSENT (registered)      RepresentationRef binding, ExecutionID as
+                         addressing (IDENT-1), COW shared-prefix fork
+                         (FORK-3), durable Execution State
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED (product e51ac28 / lab 48ffb2b) /
+                IDENT1_FORK123_GA_REGISTERED / UPSTREAM_SYNC_PENDING
+```
+
 ### External Code Audit Disposition — Branch Confusion Resolved — 2026-09-27
 
 A code-level audit arrived reviewing the PUBLIC SimiGo **main** branch
