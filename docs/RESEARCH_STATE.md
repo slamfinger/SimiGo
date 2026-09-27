@@ -4491,6 +4491,51 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 UPSTREAM_SYNC_PENDING
 ```
 
+### Gate ③ OPENED — RepresentationRef Identity Contract (Gate A) — 2026-09-27
+
+User ruling executed: gate ③ opened, NO implementation code; order =
+`Ref identity contract → Binding contract → runtime resolution →
+FORK-3`. Deliverable:
+`SIMIGO17_REPRESENTATION_REF_IDENTITY_CONTRACT_20260927.md`.
+
+```text
+three-identity layering (never merged):
+  ExecutionID         "我是谁"      logical ES identity
+  AgentExecutionKey   "在哪里"      runtime addressing (Session/Branch)
+  RepresentationRef   "绑定哪份表示" content/physical representation
+                                   identity — NO ExecutionID inside
+
+field rulings (identity / metadata / compatibility-check):
+  IDENTITY   kind · modelIdentity · kvLayoutIdentity · renderIdentity
+             (thinking flag promoted from product hack to field) ·
+             contentHash (core) · boundLength · backendIdentity (v1
+             constant "mlx")
+  METADATA   artifact location · createdAt/size/lastUse/source
+  COMPAT     dtype/quantization (via modelIdentity) · residency (never
+             identity) · live position (via Binding, invariant R-I5)
+
+invariants  R-I1 deterministic derivation · R-I2 discrimination ·
+            R-I3 no execution identity in a Ref · R-I4 storage
+            independence · R-I5 binding consistency
+            (Binding.boundPosition == Ref.boundLength)
+
+gap table   today's namespace+entry ≈ the contract minus explicit
+            kind/render/backend — migration derivable, no stored
+            artifact invalidated
+```
+
+Gates C (Binding Registry ≠ PrefixPool) and D (eviction vs binding
+constraint — contract-decided, never LRU accident) registered, not
+open. IDENT-1 stays OPEN (③ defined, ④⑦ pending Gate B). Three
+lifecycle layers remain distinct per the P2 ruling.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_REPREF_CONTRACT_DEFINED /
+                UPSTREAM_SYNC_PENDING
+```
+
 ### Refined Audit Adopted — Ownership/Lifecycle Disposition — 2026-09-27
 
 The follow-up audit (post-merge main) confirmed Route B as a REAL
