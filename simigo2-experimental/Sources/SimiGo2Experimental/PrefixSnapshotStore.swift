@@ -122,28 +122,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
         do {
-            let sidecarData = try fileManager.contents(
-                atPath: artifact.metadataURL.path)
-            guard let sidecar = try? JSONDecoder().decode(
-                PrefixSnapshotSidecar.self, from: sidecarData ?? Data())
-            else {
-                throw PrefixSnapshotStoreError.artifactUnreadable(
-                    "sidecar missing or undecodable: \(artifact.metadataURL.lastPathComponent)")
-            }
-            let snapshotNamespace = PrefixPoolNamespace(
-                modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
-            guard snapshotNamespace == entry.namespace else {
-                throw PrefixSnapshotStoreError.namespaceMismatch(
-                    expected: entry.namespace, snapshot: snapshotNamespace)
-            }
-            guard sidecar.tokenCount == entry.tokenCount,
-                sidecar.chainHash == entry.boundaryHash
-            else {
-                throw PrefixSnapshotStoreError.metadataMismatch(
-                    entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
-                    snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
-            }
-            return try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
+            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
+            return snapshot
         } catch let error as PrefixSnapshotStoreError {
             pool.remove(entry)
             throw error
@@ -161,6 +141,53 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             try? fileManager.removeItem(at: artifact.metadataURL)
         }
         pool.remove(entry)
+    }
+
+    /// Synchronous twin of `load` for host hooks that run inside a
+    /// session's synchronous consult path (B-6). Same reconciliation, same
+    /// self-healing.
+    public func loadSync(_ admission: PrefixAdmission) throws -> PromptCacheSnapshot {
+        let entry = admission.entry
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+            throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
+        }
+        do {
+            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
+            return snapshot
+        } catch let error as PrefixSnapshotStoreError {
+            pool.remove(entry)
+            throw error
+        } catch {
+            pool.remove(entry)
+            throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
+        }
+    }
+
+    /// Shared reconciliation + snapshot read for both load paths.
+    private func reconciledSnapshot(
+        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
+    ) throws -> PromptCacheSnapshot {
+        let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
+        guard let sidecar = sidecarData.flatMap({
+            try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
+        }) else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "sidecar missing or undecodable: \(artifact.metadataURL.lastPathComponent)")
+        }
+        let snapshotNamespace = PrefixPoolNamespace(
+            modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint)
+        guard snapshotNamespace == entry.namespace else {
+            throw PrefixSnapshotStoreError.namespaceMismatch(
+                expected: entry.namespace, snapshot: snapshotNamespace)
+        }
+        guard sidecar.tokenCount == entry.tokenCount,
+            sidecar.chainHash == entry.boundaryHash
+        else {
+            throw PrefixSnapshotStoreError.metadataMismatch(
+                entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
+                snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
+        }
+        return try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
     }
 
     // MARK: - Restart (disk → pool)
