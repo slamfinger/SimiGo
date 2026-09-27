@@ -4933,3 +4933,67 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 GATE_D_EVICT_REFERENCE_SEMANTICS_NEXT /
                 UPSTREAM_SYNC_PENDING
 ```
+
+### FORK-3 PASSED (four refinements applied) + Gate D OPEN — 2026-09-27
+
+FORK-3 structural contract PASSED; four non-blocking refinements
+applied into the final document:
+
+```text
+1. F-I1  shared Ref ≠ shared physical materialization — Ref X is the
+         common identity/content-boundary FACT; Execution State,
+         Position, delta, and live materialization remain fully
+         independent per side. 「语义上共享、物理上各自物化」= v1
+         explicit constraint (guards against "same Ref ⇒ merge live KV"
+         misreads by implementers)
+2. F-I4  delta advancement independence tightened: only an
+         EXPORT/materizalization creates a new Ref (Ref P @ T' /
+         Ref C @ T'' after divergence — no longer the common ancestor
+         X). FORBIDDEN: "every Δ must produce a Ref" (Representation
+         lifecycle must not hijack Execution State)
+3. F-I5  = Fork Sharing POSTCONDITION (successful fork ⇒ Ref X holds
+         ≥2 active bindings at that moment), NOT a universal
+         invariant. B-I5 (Ref → N) stays the general contract; F-I5 is
+         the first realized N=2 instance
+4. eviction acceptance CONDITIONAL: REMATERIALIZATION_REQUIRED only
+         when (artifact unavailable) AND (no live materialization);
+         artifact eviction with both sides live → both stay
+         ATTACHED_LIVE; mixed → per-execution states (Gate C
+         continuity: Pool eviction ≠ Binding invalidation ≠ Execution
+         mutation)
+cost model: fork ≈ O(binding metadata) = contract goal, not a proven
+         performance promise. Order preserved: Contract → semantics →
+         Gate D → implementation boundary → fork API plug-in decision
+         last (never edit forkSessionBranch → poolBind → reverse-
+         engineer the contract)
+```
+
+**Gate D OPEN.** Core (reviewer framing): no longer "how the pool LRU
+works" — **who owns the Representation Artifact lifecycle when multiple
+Execution references exist, and when physical reclamation is
+permitted**:
+
+```text
+Ref X
+ ├── Binding(P)
+ └── Binding(C)
+        ↓
+     eviction?
+   ┌────┴────┐
+   ↓         ↓
+ pin       evict
+             ↓
+   P/C 各自解析 materialization 可用性
+            ↓
+ ATTACHED_LIVE / REATTACHABLE /
+ REMATERIALIZATION_REQUIRED
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_EVICT_REFERENCE_SEMANTICS_OPEN /
+                UPSTREAM_SYNC_PENDING
+```
