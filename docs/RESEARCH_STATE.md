@@ -5128,3 +5128,49 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 IMPLEMENTATION_PLANNING_REGISTERED /
                 F3_COORDINATOR_SKELETON_NEXT
 ```
+
+### F3 Coordinator Skeleton LANDED — 2026-09-27
+
+IMPLEMENTATION_PLANNING first cut implemented (Lab, tests-first):
+
+```text
+PhysicalUseRegistry          transient in-flight physical-operation
+                             protection keyed by artifact path
+                             (D-I4 BindingCount ≠ PhysicalUseCount;
+                             D-C2 requestDelete defers while in
+                             flight; deletion fires on release-to-
+                             zero)
+PrefixSnapshotStore          eviction now goes THROUGH the registry —
+                             P2 delete-on-evict unchanged for the
+                             no-in-flight case; PhysicalUseCount is
+                             transient runtime state, never in
+                             snapshot metadata (T3 pins this)
+MaterializationCoordinator   Ref-scoped single-flight (D-C4/C5):
+                             MaterializationKey = canonical
+                             RepresentationRef, never ExecutionID;
+                             the WORK owns the PhysicalUseHandle for
+                             its whole lifetime (C.6 race); joiners
+                             await the same task; success ≠ automatic
+                             attachment
+battery                      T1 eviction deferred during work +
+                             delete on release; T2 concurrent same-
+                             key materialize = one load, shared
+                             result (winner nondeterministic —
+                             contract pins same-result + single-
+                             load); T3 protection transient, rescan
+                             no-resurrect; suite 128/128
+```
+
+Next cut: Parent/Child → same Ref X Binding wiring (only after this
+infrastructure — per sequencing ruling).
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_CONTRACT_PASSED /
+                GATE_D_CONCURRENCY_BOUNDARY_PASSED /
+                F3_COORDINATOR_SKELETON_LANDED /
+                F3_PARENT_CHILD_BINDING_NEXT
+```
