@@ -5038,3 +5038,50 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 GATE_D_CONCURRENCY_BOUNDARY_NEXT /
                 UPSTREAM_SYNC_PENDING
 ```
+
+### Gate D Concurrency Boundary CONTRACT — 2026-09-27
+
+Reviewer ruling executed
+(`SIMIGO17_GATE_D_CONCURRENCY_BOUNDARY_20260927.md`): concurrency
+correctness protects **physical operations in flight**, never Bindings;
+dedup protects **the materialization WORK of one Ref**, never
+Executions.
+
+```text
+D-C1  PhysicalUseCount protects in-flight physical operations, not
+      Bindings; Binding Lease ❌ vs Physical Operation Handle ✅ — the
+      distinction is permanent
+D-C2  eviction deferred ≠ artifact pinned (PhysicalUseCount > 0 ⇒ defer
+      physical delete)
+D-C3  last-live-materialization disappearance is NOT a global state
+      event — Resolution derives states at query time; NO
+      NO_LIVE_MATERIALIZATION global RefState (would reverse-pollute
+      Execution Resolution)
+D-C4  Ref-scoped single-flight for concurrent same-Ref materialize
+D-C5  single-flight = performance/resource-correctness mechanism, not
+      Binding semantics; MaterializationKey = canonical
+      RepresentationRef, NEVER ExecutionID
+D-C6  single-flight success ≠ automatic attachment — P/C pass their own
+      commit boundaries (one Execution's failure must not pollute the
+      other)
+D-C7  materialization failure changes Representation Availability only;
+      never modifies/supersedes/detaches active Bindings
+extra race pinned: the single-flight WORK holds the transient
+      physical-use protection (caller-scoped acquire/release would let
+      joiners/async lifecycles escape protection)
+ownership: Binding Registry (semantic relations) / PrefixPool+
+      ArtifactStore (eviction/residency) / RepresentationResolver+
+      Materialization Coordinator (availability/protection/single-
+      flight); Gate C available() stays read-only, untouched by the
+      transient counter
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_CONTRACT_PASSED /
+                GATE_D_CONCURRENCY_BOUNDARY_PASSED /
+                IMPLEMENTATION_PLANNING_NEXT
+```
