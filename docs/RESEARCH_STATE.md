@@ -4363,3 +4363,19 @@ same-document new conversations.
 Current gate  : B6_TOKEN_PREFIX_CACHE_VERIFIED /
                 DAILY_PATH_TWO_SHAPES_SERVED / BETA_REFRESH_PENDING
 ```
+
+### v2.0.0-beta.3 PUBLISHED — 2026-09-27
+
+User-ordered rebuild + package. Release BUILD SUCCEEDED; tag
+v2.0.0-beta.3 (peeled → 87eb6d9) pushed; SimiGo-v2.0.0-beta.3.dmg
+(25,467,522-byte-class, CRC VALID, sha256 cad73117d31ded7daf91a5e90eca3
+e27d43c20983cd463027a1d4b66b548268a); GitHub Release (prerelease) live
+with full notes (B-6 readings front and center, fork bump 6f0af10,
+honest limits incl. KVCacheSimple/no-M-RoPE v1 constraints and
+base-config-only export) →
+https://github.com/slamfinger/SimiGo/releases/tag/v2.0.0-beta.3
+
+```text
+Current gate  : V2_0_0_BETA_3_PUBLISHED / TOKEN_LEVEL_POOL_IN_PRODUCT /
+                GA_WORKITEMS_OPEN
+```
