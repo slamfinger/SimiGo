@@ -4847,3 +4847,49 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 IDENT1_GATE_C_ALGORITHM_DRAFTED /
                 UPSTREAM_SYNC_PENDING
 ```
+
+### Gate C PASSED (C.2 refinements applied) + FORK-3 Structural Gate OPENED — 2026-09-27
+
+Gate C verdict: PASS with two refinements applied into the final
+document:
+
+```text
+holdsMaterialization (v1)  THREE-condition runtime holding-relation
+                           query (generation ∧ runtimeAddress ∧
+                           materialization identity == ref); generation
+                           alone insufficient; NEVER a KV-introspection
+                           integrity validator
+available(Ref) (v1)        cheap read-only CANDIDATE availability
+                           (exists ∧ sidecar decodable ∧ identity
+                           compatible) — no full hash recomputation
+                           (resolve ≠ expensive validation);
+                           AVAILABLE = candidate semantics, not proven
+                           correctness; chain: available → candidate →
+                           materialize() → optional integrity
+                           validation → commit attachment; mismatch ⇒
+                           candidate rejected → artifact isolated →
+                           Binding remains active →
+                           REMATERIALIZATION_REQUIRED;
+                           available==false NEVER deletes/supersedes
+                           the Binding
+```
+
+⑤⑥⑦ contract skeleton formally CLOSED (Runtime Resolution /
+Representation Resolution / Binding Consistency, each defined in Gates
+A/B/C).
+
+**FORK-3 structural gate OPENED.** Core to prove (reviewer statement
+registered as the gate's definition core): Parent Binding → Ref X @ T;
+fork → Child Binding → Ref X @ T — two executions sharing the SAME
+RepresentationRef with INDEPENDENT Execution Position / subsequent
+deltas. The line from Representation Reuse to Execution-State Shared
+Representation. NOT "turn forkSessionBranch into poolBind".
+Definition draft next.
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_GATE_OPEN /
+                UPSTREAM_SYNC_PENDING
+```
