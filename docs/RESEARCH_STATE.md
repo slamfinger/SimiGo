@@ -4318,3 +4318,48 @@ documents as tool results rather than prompt.
 ```text
 Current gate  : B6_TOKEN_PREFIX_CACHE_DEFINITION / AWAITING_REVIEW
 ```
+
+### B-6 IMPLEMENTED + REAL-DEVICE VERIFIED — 2026-09-27
+
+User approved ("继续"). Fork surgery landed (mlx-swift-lm 6f0af10 on
+release/v2.0-beta-ml) + product wiring (product 87eb6d9, Lab seam
+519bc0c):
+
+```text
+fork      crossSessionPrefixLookup static hook (fresh-session cold
+          prefill consults the host with rendered token ids; verified
+          prefix hit seeds the cache + ledger + narrows input to the
+          remainder, cacheReuseMode=cross-session); cachedTokenIds()
+          ledger read; savePrefixSnapshot(upTo:) token-boundary
+          serialization (all-KVCacheSimple v1, no carried model state —
+          both throw rather than degrade)
+product   installHook at model start (base-config namespace; sync admit
+          + sidecar-reconciled loadSync — mismatches self-heal + nil =
+          exact cold path); turn-end export full + 2048 grid, dedup per
+          (namespace,count,hash); only base-kvSettings sessions export
+          (registered beta boundary); pin fbfa1f4 -> 6f0af10
+battery   EXTENDED: a genuinely new conversation sharing only the
+          document (different first question) — PASSED on device
+```
+
+Real-device readings (same ~9.7K shared document):
+
+```text
+session A cold          ttft=11620ms  cacheEff=0.00  9,706-token
+                        full prefill; exports token grid
+                        2048/4096/6144/8192 + full
+session C NEW conversation, same document, different first question
+        poolTokenHit tokens=8192
+        ttft=5944ms     cacheEff=0.84  mode=cross-session
+        the document body (84% of the context) served from the pool;
+        only the 1,524 genuinely-new tokens prefilled
+```
+
+Combined with B-4/B-5 (conversation continuation at 201ms), both daily
+workload shapes are now served: same-conversation reconnects AND
+same-document new conversations.
+
+```text
+Current gate  : B6_TOKEN_PREFIX_CACHE_VERIFIED /
+                DAILY_PATH_TWO_SHAPES_SERVED / BETA_REFRESH_PENDING
+```
