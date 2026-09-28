@@ -5507,3 +5507,142 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 FORK3_CUT_SEQUENCE_COMPLETE /
                 DEFERRED_REMAINS (usage projection; disk GC)
 ```
+
+### LAB RQ1 PASS_WITH_BOUNDARY — Backend Conformance — 2026-09-29
+
+Lab 转向 Execution State 抽象验证，暂停继续扩展 runtime feature。新增
+`BackendConformanceMatrixTests` 作为最小契约矩阵：同一
+create/bind/fork/diverge/stale-reject/foreign-reject/
+stale-release-no-clobber/release/restore/discard/parent-restore 序列覆盖
+MLX prefix recompute、oversized segmented representation、以及新增 non-MLX
+`LLAMAServerExecutionStateBackend`。矩阵发现并修复 `FBC-001`：oversized
+backend 释放过期 snapshot 时会清掉新 live binding；修复后三者均 PASS。
+全仓 157 PASS / 0 FAIL（XCTest 19 + 137，Swift Testing 1；base `669467d`
+加未提交 harness）。
+
+另用本机 llama-server 0.3.0-dev 与
+Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL GGUF 做 live smoke：
+`ping → divergent prompt → ping replay`，`semanticIdentical=true` 且
+`branchDiverged=true`。证据见
+`simigo2-experimental/results/backend-conformance/llama-server-live-smoke.json`。
+当前 live executor 仍是外部 curl，不是集成 Swift executor。
+
+RQ1 判 `PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT`：Execution State
+Contract 在已测 MLX prefix、oversized segmented prefix、LLAMA-server prefix
+representation 上成立；不 claim universal。RQ2 保持 PARTIAL：已有 qwen3_next、
+Qwen3MoE、Qwen35MoE、Gemma4 的 E5/O6 PASS，但 Qwen4Exp 不可用。RQ3 未开
+实验。详细边界与收口条件见
+`docs/00-governance/SIMIGO_LAB_BACKEND_CONFORMANCE_OPENING_20260929.md`。
+
+### LAB RQ3 PRELIMINARY_NON_REGRESSION — 2026-09-29
+
+新增 `rq3_llama_hotpath_ab.py` 做 no-fork ordinary generation A/B。
+llama-server 请求在 OFF/ON 两态 byte-identical；ON 仅额外执行本地
+capture/bind/release。30 对交替样本、temperature=0、seed=42、8 generated
+tokens、同一 GGUF model：content+token 语义 30/30 一致；client mean
+`OFF=300.951ms`、`ON=300.827ms`，paired mean `-0.124ms`；state bookkeeping
+mean `8.525µs/request`，mean absolute paired client difference `2.809ms`。
+结果支持本 run 的 hot-path non-regression，但不 claim fork/restore、
+long-context、memory pressure、MLX oversized 或跨 backend 成本。
+
+RQ3 状态 `OPEN / PRELIMINARY_NON_REGRESSION`。详细边界见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_HOTPATH_AB_20260929.md`；原始证据
+见 `simigo2-experimental/results/backend-conformance/rq3-llama-hotpath-ab.json`。
+
+### LAB RQ3 FORK_RESTORE_COST_CHARACTERIZED — 2026-09-29
+
+新增 `rq3_llama_fork_restore_cost.py`，在 LLAMA-server token-prefix 路径上
+执行 `checkpoint/reference → derive → diverge → release → restore → replay`。
+30 sample 中 restored replay identity、branch divergence、parent
+non-interference、child fork-point restore 全部 30/30 PASS。本地
+`derive/release/restore` 合计 mean `3.821µs`，为 reference/replay 平均绝对
+client difference 的 `0.0563%`。
+
+同一 run 观测 replay-reference client mean `+6.688ms`，但 server predicted
+delta `-0.161ms`、prompt delta `-0.765ms`；扣除 server 报告耗时后仍有
+`+7.614ms` 未归因。该差异不能归给本地 Execution State bookkeeping，原因尚未
+确定。RQ3 保持 `OPEN`；当前状态
+`FORK_RESTORE_LOCAL_COST_CHARACTERIZED / SEMANTICS_PASS`。证据见
+`simigo2-experimental/results/backend-conformance/rq3-llama-fork-restore-cost.json`
+与 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_FORK_RESTORE_COST_20260929.md`。
+
+### LAB RQ3 BACKEND_CONTEXT_TRANSITION_IDENTIFIED — 2026-09-29
+
+新增纯 backend control `rq3_llama_context_controls.py`，不含 Execution State
+object。llama-server 以 `--no-cache-prompt --no-cache-idle-slots` 启动，
+request `cache_prompt=false`，交替比较 `C,C,C` 与 `C,D,C`。long D（10
+tokens）、`n_predict=1` 时，third-minus-first client mean 差异
+`+5.284ms`；D 改为与 C 同长（6 tokens）后降至 `+0.216ms`。两条件语义均
+20/20 一致。
+
+该 control 排除本地 Execution State bookkeeping 与 prompt cache 作为主因，
+将原 fork/restore run 的 `+6.688ms` 差异归入“longer divergent prompt 引发的
+backend context transition cost”。llama-server 内部步骤尚未定位。RQ3 状态
+更新为 `OPEN / LOCAL_STATE_NON_REGRESSION /
+BACKEND_CONTEXT_TRANSITION_IDENTIFIED`。
+
+### LAB RQ3 SERVER_TRANSITION_DELAY_LOCALIZED — 2026-09-29
+
+进一步禁用 `--slot-prompt-similarity` 后，`C,D,C` 相对 `C,C,C` 的差异仍为
+`+8.423ms`，排除 slot similarity / LCP selection 主因。解析 server log 得到
+`release → next launch` delay：`10→6` tokens mean `7.741ms`，`6→10` mean
+`2.294ms`，`6→6` mean `1.915ms`；trace 与 20-cycle request sequence 完全匹配。
+这把差异定位到 llama-server task transition，而不是本地 Execution State。
+
+6–10 token divergent prompt sweep 显示 client difference 非单调
+（correlation `-0.593`），不能简化为长度公式；但 log trace 中 `7→6`、`8→6`、
+`9→6`、`10→6` 的 delay mean 分别为 `8.404/12.309/6.951/7.124ms`，高于
+same-sequence `6→6` baseline `1.415–2.035ms`。RQ3 仍 OPEN；当前状态
+`LOCAL_STATE_NON_REGRESSION /
+SERVER_RELEASE_TO_LAUNCH_TRANSITION_DELAY_LOCALIZED`。llama-server 内部步骤
+尚未定位。
+
+### LAB RQ3 SLOT_STATE_CACHE_ROOT_CAUSE_CONFIRMED — 2026-09-29
+
+HTTP keep-alive control 排除新建 TCP transport：long-D 差异仍为
+`+6.779ms`。`--verbosity 6` 定位到 `D → C` 时 llama-server 执行 slot state
+cache update：保存 10-token state `63.009MiB`，查找/加载 6-token prompt，
+并显式记录 `prompt cache update took 10.26ms`。该 build 虽带
+`--no-cache-prompt --no-cache-idle-slots`，但该 update 仍发生。
+
+加入 `--cache-ram 0` 后，`C,D,C` 减 `C,C,C` 变为 `-0.693ms`；
+`10→6 / 6→10 / 6→6` 的 release-to-launch mean 均降至
+`0.530/0.549/0.555ms`。复跑 30-sample fork/restore benchmark：四项语义
+check 均 `30/30 PASS`，本地 `derive/release/restore` mean `3.306µs`，
+replay-reference client delta 从 `+6.688ms` 降至 `+2.150ms`，进入本 run
+测量噪声。
+
+RQ3 状态更新为 `OPEN / LOCAL_STATE_NON_REGRESSION /
+FORK_RESTORE_SEMANTICS_PASS / SLOT_STATE_CACHE_ROOT_CAUSE_CONFIRMED`。
+上述结论仅限当前 llama-server build/config、GGUF model、short prompt 与
+8-token generation；long-context、memory pressure、cancellation、MLX
+oversized 与跨 backend 仍未收口。
+
+### LAB O6 WORKLOAD MATRIX V2 PASS — Qwen3-Coder-Next — 2026-09-29
+
+O6 从单次 evict/restore gate 扩展为 `G1.9-O6.EXECSTATE.V2` workload matrix。
+在 Qwen3-Coder-Next-4bit oversized segmented executor 上，W0 linear、W1
+capture、W2 fork、W3 divergence、W4 restore、W5 release、W6 repeated
+fork/restore、W7 long-running branch、W8 explicit release/recovery 全部 PASS。
+峰值 footprint `8,041MiB <= 30,720MiB`，swap `0MiB`，292 次 segment
+transition。W9 cancellation 未实现、未 claim。
+
+该结果补齐 Qwen3-Coder-Next workload baseline 的 W0-W8 语义/资源边界；
+性能耗时仅作 harness 运行记录。RQ2 对 qwen3_next 的 oversized evidence
+增强，但仍不等价于 Qwen4Exp cross-architecture closure。RQ3 中 MLX oversized
+cancellation 仍未收口。
+
+### LAB O6 WORKLOAD MATRIX V3 PASS — W9 CANCELLATION — 2026-09-29
+
+O6 V3 新增 cooperative generation cancellation：取消检查只在完整 greedy token
+boundary 执行，segment 不会被拆分。真实 Qwen3-Coder-Next oversized run 中，
+branch X 在第一个完整 token 后取消；pre-cancel checkpoint binding 保持
+position 1，consumed prefix 能精确重建 full run 的对应 prefix，逻辑 restore
+回到 position 1，后续 full replay 与 C token-identical。
+
+最终 `G1.9-O6.EXECSTATE.V3` 为 12/12 PASS：W0-W9 全覆盖，peak footprint
+`8,032MiB <= 30,720MiB`，swap `0MiB`，322 次 segment transition。两次早期
+V3 FAIL 是 harness 断言把 one-token cancelled prefix 误比作 full four-token
+payload；失败 artifact 已保留，不是 cancellation/restore 语义失败。全仓
+`swift test` 在修正后 PASS。RQ3 的 MLX oversized W0-W9 cancellation 证据
+已补齐；性能与上游 runtime claim 仍不开放。
