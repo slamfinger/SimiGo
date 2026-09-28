@@ -5666,3 +5666,18 @@ transition attribution。
 通用公式，也不是 Execution State hot-path A/B。RQ3 增加
 `LONG_D_TRANSITION_PILOT_WITHIN_NOISE`；memory pressure、cancellation、
 MLX oversized A/B 与 integrated Swift executor 仍未收口。
+
+### LAB RQ3 BACKEND KV PRESSURE PILOT — RECOVERS — 2026-09-29
+
+用 `ctx512` 自动展开的 `4-slot / unified KV` topology 复跑 432-token D 的
+`C,D,C` backend control。verbosity-6 trace 抽取到 18 次 attention-ubatch
+failure、18 次 failed memory/free-space retry、18 次 purge；purge 分布为
+slot0(6 tokens) x6、slot1(6 tokens) x6、slot2(432 tokens) x6。请求未失败，
+D client/prompt mean `651.604/650.617ms`，后续 6-token C 恢复到
+client/prompt mean `100.720/99.930ms`，paired transition delta
+`+0.268ms`，两序列语义均 `12/12`。
+
+这是 backend KV pressure observation，不是系统 RAM/swap、并发 workload 或
+Execution State release/recovery A/B；不能 claim recovery 零成本。RQ3 增加
+`BACKEND_KV_PRESSURE_RECOVERS`。Execution State pressure A/B、并发、
+cancellation、MLX oversized A/B 与 integrated Swift executor 仍未收口。
