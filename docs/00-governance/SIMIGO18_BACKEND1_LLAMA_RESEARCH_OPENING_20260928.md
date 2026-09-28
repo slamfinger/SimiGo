@@ -3,6 +3,10 @@
 日期：2026-09-28
 状态：RESEARCH OPEN / AUDIT FIRST
 
+## 与 Beta 首发审计的边界
+
+本方向是独立的下一阶段架构预研，不是 Beta 首发技术路线审计。Beta 首发审计单独受 `SIMIGO18_BETA_RELEASE_TECHNICAL_ROUTE_AUDIT_GATE_20260928.md` 管理；本方向的研究结果不得替代 Beta 首发的代码级发布证据。
+
 ## 目标
 Llama backend 接入现有 SimiGo Execution Runtime，同时保持 backend-neutral 的 Execution 抽象。
 
