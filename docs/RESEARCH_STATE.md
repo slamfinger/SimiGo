@@ -5852,3 +5852,23 @@ performance、production readiness、upstream MLX 或跨模型 claim。修改 Sw
 全仓 `swift test` 为 `157 PASS / 0 FAIL`。报告见
 `docs/00-governance/SIMIGO2_O6_CANCELLATION_AB_20260929.md`；artifact 见
 `simigo2-experimental/results/o6-workload-matrix/qwen3-coder-next-4bit-cancellation-ab.json`。
+
+### LAB RQ3 HIGHER_CONCURRENCY_CANCEL CURVE — COMPLETION PASS / IDENTITY BOUNDARY — 2026-09-29
+
+新增 `rq3_llama_concurrency_curve.py`，在 `parallel4 / ctx2048 / n_slots=4`
+上覆盖 L1（1 long + 3 controls）、L2（2 long + 2 controls）、L3（3 long +
+1 control），每 level 2 cycles。每个 cycle 先运行同负载 full-completion
+baseline，再运行相同 slot 占用的 explicit cancellation arm。
+
+strict 判定保持 FAIL：same-load baseline stability `5/6`，cancellation
+controls matched same-load baseline `5/6`。可分离登记的是 cancellation
+acceptance/completion pass：DELETE `12/12`，control batches complete `6/6`，
+controls 全部在 cancellation window 启动。DELETE→all-long-free mean 从 L1
+`1,089.059ms` 到 L3 `2,179.503ms`；耗时只作运行记录。这登记
+`HIGHER_CONCURRENCY_CANCEL_ACCEPTANCE_COMPLETION_PASS` 和
+`GREEDY_IDENTITY_BOUNDARY_OBSERVED`。不能 claim higher-concurrency semantic
+closure 或 production readiness。RQ3 仍 OPEN，下一步应定位 batch-transition
+identity mismatch 机制。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve.json`。
