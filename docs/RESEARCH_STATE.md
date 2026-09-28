@@ -5387,11 +5387,11 @@ Current gate  : MAIN_LINE_UNIFIED / ... /
                 (audit owner closure; PR #11 merged to main fc96423;
                 post-merge battery 10/10 green on M5) /
                 SECOND REVIEW = PASS / MAIN MERGED / 0 BLOCKER
-                (P2-ES-01 dirty-retry gate alignment; P2-ES-02
-                digest-at-write — both registered non-gate) /
-                R5_SWEEP_FINAL (bb52967 streamed O(chunk) hash:
-                84/0/2 full sweep 552.9s — Round 5 evidence complete) /
-                (C1 checkpoint consistency+durability; C3 fork
+                (P2-ES-01 dirty-retry gate alignment — registered;
+                P2-ES-02 digest-at-write = CLOSED: receipt chain @
+                mlx-swift ef5f1b6 + mlx-swift-lm fd5d1b4; acceptance
+                battery 10/10 on M5 incl. W1/W2 fail-closed +
+                multi-GB round-trip + race seam) /
                 transaction boundary — see BETA-AUDIT-1 doc §10) /
                 BETA_RELEASE_SWEEP_AND_REVIEWS_GREEN (79-test sweep
                 + review batches; evidence recorded below) /
