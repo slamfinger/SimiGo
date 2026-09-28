@@ -5383,7 +5383,9 @@ Current gate  : MAIN_LINE_UNIFIED / ... /
                 BETA-AUDIT-1 = FAIL / IMPLEMENTATION VERIFIED ON BRANCH
                 (R5 evidence @ 21c1e82/bc2e0ea: compile+gate 2/2+W1/W2
                 fail-closed injection+race seam+84/0/2 full sweep —
-                Round 5 ruling pending audit owner) /
+                Round 5 RULING = PASS / IMPLEMENTATION VERIFIED
+                (audit owner closure; PR #11 merged to main fc96423;
+                post-merge battery 10/10 green on M5) /
                 R5_SWEEP_FINAL (bb52967 streamed O(chunk) hash:
                 84/0/2 full sweep 552.9s — Round 5 evidence complete) /
                 (C1 checkpoint consistency+durability; C3 fork
