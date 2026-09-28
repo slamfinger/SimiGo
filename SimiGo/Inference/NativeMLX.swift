@@ -1597,10 +1597,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 $0.load(as: UInt64.self)
             },
             boundLength: forkTokenCount)
-        let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
-            executionID: targetKey.storageKey,
-            runtimeAddress: "checkpoint:\(targetKey.storageKey)",
-            ref: ref)
 
         let metadata = try await loadSessionCache(
             agentId: agentId,
@@ -1608,6 +1604,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             logicalBranchId: targetBranch,
             from: store
         )
+        // Transaction boundary (STEP-10 review): the child binding registers
+        // only AFTER the restore succeeded - a failed fork leaves no relation
+        // behind, and a re-fork over an existing target cannot supersede a
+        // binding for a restore that never happened.
+        let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
+            executionID: targetKey.storageKey,
+            runtimeAddress: "checkpoint:\(targetKey.storageKey)",
+            ref: ref)
         traceLogger.trace(
             "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)"
                 + " history=\(metadata.history.count) forkToken=\(forkTokenCount)"
@@ -1639,6 +1643,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let session {
             await session.clear()
         }
+        // STEP-10 lifecycle: deleting the branch ENDS the execution - its
+        // binding is explicitly detached (Gate C: detach is an OPERATION).
+        // The row is retained (append-only history); only the active state
+        // clears, so currentBinding/activeBindings stop resolving it.
+        _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
         let baseName = Self.cacheFileName(for: key.storageKey)
         for suffix in [".safetensors", ".meta.json"] {

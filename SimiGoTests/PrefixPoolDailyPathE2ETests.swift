@@ -52,13 +52,24 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         ["role": role, "content": content]
     }
 
-    private func traceLogContains(_ marker: String, sinceByteOffset offset: Int) -> Bool {
+    private func traceLogContains(
+        _ marker: String, sinceByteOffset offset: Int,
+        timeout: TimeInterval = 2
+    ) -> Bool {
+        // The completion line is flushed right around the HTTP response;
+        // under full-suite memory pressure the flush can trail the assert by
+        // a beat - poll briefly instead of racing it.
+        let deadline = Date().addingTimeInterval(timeout)
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
-        guard let data = try? Data(contentsOf: url), data.count > offset else {
-            return false
-        }
-        return data.suffix(data.count - offset).range(of: Data(marker.utf8)) != nil
+        repeat {
+            if let data = try? Data(contentsOf: url), data.count > offset,
+                data.suffix(data.count - offset).range(of: Data(marker.utf8)) != nil {
+                return true
+            }
+            Thread.sleep(forTimeInterval: 0.2)
+        } while Date() < deadline
+        return false
     }
 
     private func traceLogLineContains(
