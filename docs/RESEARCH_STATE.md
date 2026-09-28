@@ -5646,3 +5646,23 @@ V3 FAIL 是 harness 断言把 one-token cancelled prefix 误比作 full four-tok
 payload；失败 artifact 已保留，不是 cancellation/restore 语义失败。全仓
 `swift test` 在修正后 PASS。RQ3 的 MLX oversized W0-W9 cancellation 证据
 已补齐；性能与上游 runtime claim 仍不开放。
+
+### LAB RQ3 LONG-D TRANSITION PILOT — WITHIN NOISE — 2026-09-29
+
+在 slot state cache root cause 确认后，继续用纯 backend `C,C,C` vs `C,D,C`
+control 做 36/144/288/432-token long-D pilot。llama-server 使用
+`ctx512 / parallel1 / no prompt or idle cache / cacheRam0 / slot
+similarity0`，request `cache_prompt=false`，每长度 12 cycles。
+
+四个长度的 paired third-minus-first delta 分别为 `-0.986 / +1.685 /
+-0.071 / -0.662ms`，均未形成单调增长；两序列语义均 `12/12 + 12/12`。
+D 的 prefill mean 为 `191.289–663.658ms`，但 D 后回到 6-token C 的 prompt
+mean 保持 `99.676–105.671ms`。默认 4-slot preflight 在 432-token D 时出现
+KV free-space retry/purge，相关 artifact 只保留为 topology hazard，不参与
+transition attribution。
+
+该结果支持“slot state cache 是先前毫秒级差异主因”的当前解释，但仅限
+`512-token / one-slot / GGUF model / 12 cycles` pilot，不建立长上下文
+通用公式，也不是 Execution State hot-path A/B。RQ3 增加
+`LONG_D_TRANSITION_PILOT_WITHIN_NOISE`；memory pressure、cancellation、
+MLX oversized A/B 与 integrated Swift executor 仍未收口。
