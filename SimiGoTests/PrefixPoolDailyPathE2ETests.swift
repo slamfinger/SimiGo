@@ -77,6 +77,35 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
             }
     }
 
+    /// Code-level D3 witness: the child's completion line records the actual
+    /// delta prefill it paid (`promptTokens=`) plus the hit quality
+    /// (`mode=` / `cacheEff=`). Fails the test when the line is absent, so
+    /// the D2 negative gate above can never pass vacuously.
+    private func childDeltaPrefillTokens(sinceByteOffset offset: Int) throws -> Int {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        let data = try Data(contentsOf: url)
+        let suffix = String(decoding: data.suffix(data.count - offset), as: UTF8.self)
+        let line = try XCTUnwrap(
+            suffix.split(separator: "\n").first {
+                $0.contains("session=child/main") && $0.contains("mode=")
+            },
+            "child completion line missing from the trace window")
+        XCTAssertTrue(
+            line.contains("mode=restore"),
+            "D3: child must restore the bound boundary, not re-prefill: \(line)")
+        XCTAssertTrue(
+            line.contains("cacheEff=1.00"),
+            "D3: the shared prefix must be a full hit: \(line)")
+        let marker = "promptTokens="
+        guard let range = line.range(of: marker) else {
+            XCTFail("child delta token count missing: \(line)")
+            return -1
+        }
+        let digits = line[range.upperBound...].prefix { $0.isNumber }
+        return Int(digits) ?? -1
+    }
+
     private func traceLogSize() -> Int {
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
@@ -262,8 +291,18 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
             "D1: consumption via the existing materialization")
         XCTAssertFalse(
             traceLogLineContains(
-                ["session=f3-child", "mode=cold"], sinceByteOffset: logStart),
+                // The app strips the "f3-" prefix: the child logs as
+                // session=child/main. The gate is non-vacuous because D3's
+                // helper below fails the test if no child line exists at all.
+                ["session=child/main", "mode=cold"], sinceByteOffset: logStart),
             "D2: child must not take a cold materialization path")
+        // Code-level D3 witness: the child's completion line records the
+        // ACTUAL delta prefill it paid — not a wall-clock proxy.
+        let childDeltaTokens = try childDeltaPrefillTokens(sinceByteOffset: logStart)
+        XCTAssertLessThan(
+            childDeltaTokens, 200,
+            "D3: child paid \(childDeltaTokens) delta tokens — a re-prefill of "
+                + "the ~9.7K shared prefix would exceed the ΔC bound")
         XCTAssertLessThan(
             childSeconds, coldSeconds * 0.5,
             "D3: child incremental cost (\(childSeconds)s) must be far below the "
@@ -275,6 +314,11 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         let (replyP3, parentAfterSeconds) = try await chatCompletion(
             sessionId: "f3-parent", messages: msgsP3)
         XCTAssertFalse(replyP3.isEmpty)
+        XCTAssertLessThan(
+            parentAfterSeconds, parentWarmSeconds * 1.5,
+            "D4: parent after child (\(parentAfterSeconds)s) must stay within 50% "
+                + "of its own warm level (\(parentWarmSeconds)s) — a regression that "
+                + "still sits below cold must fail")
         XCTAssertLessThan(
             parentAfterSeconds, coldSeconds,
             "D4: parent continuation (\(parentAfterSeconds)s) must stay at the warm "
