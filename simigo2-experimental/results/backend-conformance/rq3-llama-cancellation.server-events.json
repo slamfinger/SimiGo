@@ -1,0 +1,328 @@
+{
+  "protocolVersion": "RQ3.LLAMA.CANCELLATION.SERVER.EVENTS.V1",
+  "boundary": "BACKEND_CANCELLATION_TRACE / NO_EXECUTION_STATE_OBJECT / RAW_LLAMA_LOG_IS_GITIGNORED",
+  "source": "local llama-server verbosity-6 log; one aborted first harness cycle is excluded",
+  "server": {
+    "build": "0.3.0-dev build 10775 commit 67a17c17c",
+    "model": "Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "ctxSize": 512,
+    "parallel": 1,
+    "nSlots": 1,
+    "nCtxSlot": 512,
+    "flags": [
+      "--no-cache-prompt",
+      "--no-cache-idle-slots",
+      "--cache-ram 0",
+      "--slot-prompt-similarity 0.0"
+    ]
+  },
+  "eventCounts": {
+    "deleteEvents": 20,
+    "cancelTasks": 20,
+    "releases": 20,
+    "cancelAtTokenOne": 20,
+    "releaseAtTokenTwo": 20
+  },
+  "records": [
+    {
+      "conversationId": "rq3-cancel-0-1790633268595817000",
+      "taskId": 504,
+      "deleteEvent": "3.55.453.178 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-0-1790633268595817000 -> evict_and_cancel",
+      "cancelEvent": "3.55.971.743 W srv          stop: cancel task, id_task = 504",
+      "releaseEvent": "3.56.005.378 I slot      release: id  0 | task 504 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.55.971.602 D slot process_toke: id  0 | task 504 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.55.971.743 W srv          stop: cancel task, id_task = 504",
+        "3.56.005.376 D slot process_toke: id  0 | task 504 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.56.005.378 I slot      release: id  0 | task 504 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-1-1790633269358165000",
+      "taskId": 543,
+      "deleteEvent": "3.56.216.392 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-1-1790633269358165000 -> evict_and_cancel",
+      "cancelEvent": "3.56.755.957 W srv          stop: cancel task, id_task = 543",
+      "releaseEvent": "3.56.794.139 I slot      release: id  0 | task 543 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.56.755.842 D slot process_toke: id  0 | task 543 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.56.755.957 W srv          stop: cancel task, id_task = 543",
+        "3.56.794.134 D slot process_toke: id  0 | task 543 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.56.794.139 I slot      release: id  0 | task 543 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-2-1790633270151400000",
+      "taskId": 585,
+      "deleteEvent": "3.57.008.846 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-2-1790633270151400000 -> evict_and_cancel",
+      "cancelEvent": "3.57.543.183 W srv          stop: cancel task, id_task = 585",
+      "releaseEvent": "3.57.583.071 I slot      release: id  0 | task 585 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.57.543.079 D slot process_toke: id  0 | task 585 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.57.543.183 W srv          stop: cancel task, id_task = 585",
+        "3.57.583.067 D slot process_toke: id  0 | task 585 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.57.583.071 I slot      release: id  0 | task 585 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-3-1790633270940974000",
+      "taskId": 627,
+      "deleteEvent": "3.57.791.418 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-3-1790633270940974000 -> evict_and_cancel",
+      "cancelEvent": "3.58.333.802 W srv          stop: cancel task, id_task = 627",
+      "releaseEvent": "3.58.372.229 I slot      release: id  0 | task 627 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.58.333.656 D slot process_toke: id  0 | task 627 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.58.333.802 W srv          stop: cancel task, id_task = 627",
+        "3.58.372.224 D slot process_toke: id  0 | task 627 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.58.372.229 I slot      release: id  0 | task 627 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-4-1790633271737782000",
+      "taskId": 670,
+      "deleteEvent": "3.58.595.372 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-4-1790633271737782000 -> evict_and_cancel",
+      "cancelEvent": "3.59.136.405 W srv          stop: cancel task, id_task = 670",
+      "releaseEvent": "3.59.172.542 I slot      release: id  0 | task 670 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.59.136.325 D slot process_toke: id  0 | task 670 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.59.136.405 W srv          stop: cancel task, id_task = 670",
+        "3.59.172.539 D slot process_toke: id  0 | task 670 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.59.172.542 I slot      release: id  0 | task 670 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-5-1790633272530735000",
+      "taskId": 712,
+      "deleteEvent": "3.59.387.946 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-5-1790633272530735000 -> evict_and_cancel",
+      "cancelEvent": "3.59.914.058 W srv          stop: cancel task, id_task = 712",
+      "releaseEvent": "3.59.946.646 I slot      release: id  0 | task 712 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "3.59.913.986 D slot process_toke: id  0 | task 712 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "3.59.914.058 W srv          stop: cancel task, id_task = 712",
+        "3.59.946.644 D slot process_toke: id  0 | task 712 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "3.59.946.646 I slot      release: id  0 | task 712 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-6-1790633273298472000",
+      "taskId": 751,
+      "deleteEvent": "4.00.155.626 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-6-1790633273298472000 -> evict_and_cancel",
+      "cancelEvent": "4.00.683.818 W srv          stop: cancel task, id_task = 751",
+      "releaseEvent": "4.00.718.833 I slot      release: id  0 | task 751 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.00.683.753 D slot process_toke: id  0 | task 751 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.00.683.818 W srv          stop: cancel task, id_task = 751",
+        "4.00.718.831 D slot process_toke: id  0 | task 751 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.00.718.833 I slot      release: id  0 | task 751 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-7-1790633274073925000",
+      "taskId": 791,
+      "deleteEvent": "4.00.925.689 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-7-1790633274073925000 -> evict_and_cancel",
+      "cancelEvent": "4.01.471.312 W srv          stop: cancel task, id_task = 791",
+      "releaseEvent": "4.01.509.540 I slot      release: id  0 | task 791 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.01.471.063 D slot process_toke: id  0 | task 791 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.01.471.312 W srv          stop: cancel task, id_task = 791",
+        "4.01.509.536 D slot process_toke: id  0 | task 791 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.01.509.540 I slot      release: id  0 | task 791 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-8-1790633274868226000",
+      "taskId": 833,
+      "deleteEvent": "4.01.725.812 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-8-1790633274868226000 -> evict_and_cancel",
+      "cancelEvent": "4.02.261.496 W srv          stop: cancel task, id_task = 833",
+      "releaseEvent": "4.02.302.432 I slot      release: id  0 | task 833 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.02.261.388 D slot process_toke: id  0 | task 833 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.02.261.496 W srv          stop: cancel task, id_task = 833",
+        "4.02.302.427 D slot process_toke: id  0 | task 833 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.02.302.432 I slot      release: id  0 | task 833 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-9-1790633275662477000",
+      "taskId": 875,
+      "deleteEvent": "4.02.519.679 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-9-1790633275662477000 -> evict_and_cancel",
+      "cancelEvent": "4.03.043.917 W srv          stop: cancel task, id_task = 875",
+      "releaseEvent": "4.03.077.559 I slot      release: id  0 | task 875 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.03.043.856 D slot process_toke: id  0 | task 875 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.03.043.917 W srv          stop: cancel task, id_task = 875",
+        "4.03.077.556 D slot process_toke: id  0 | task 875 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.03.077.559 I slot      release: id  0 | task 875 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-10-1790633276434919000",
+      "taskId": 914,
+      "deleteEvent": "4.03.292.419 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-10-1790633276434919000 -> evict_and_cancel",
+      "cancelEvent": "4.03.834.219 W srv          stop: cancel task, id_task = 914",
+      "releaseEvent": "4.03.872.849 I slot      release: id  0 | task 914 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.03.834.093 D slot process_toke: id  0 | task 914 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.03.834.219 W srv          stop: cancel task, id_task = 914",
+        "4.03.872.843 D slot process_toke: id  0 | task 914 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.03.872.849 I slot      release: id  0 | task 914 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-11-1790633277233184000",
+      "taskId": 955,
+      "deleteEvent": "4.04.087.723 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-11-1790633277233184000 -> evict_and_cancel",
+      "cancelEvent": "4.04.630.088 W srv          stop: cancel task, id_task = 955",
+      "releaseEvent": "4.04.667.016 I slot      release: id  0 | task 955 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.04.629.912 D slot process_toke: id  0 | task 955 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.04.630.088 W srv          stop: cancel task, id_task = 955",
+        "4.04.667.014 D slot process_toke: id  0 | task 955 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.04.667.016 I slot      release: id  0 | task 955 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-12-1790633278022876000",
+      "taskId": 996,
+      "deleteEvent": "4.04.874.232 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-12-1790633278022876000 -> evict_and_cancel",
+      "cancelEvent": "4.05.402.249 W srv          stop: cancel task, id_task = 996",
+      "releaseEvent": "4.05.437.724 I slot      release: id  0 | task 996 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.05.402.188 D slot process_toke: id  0 | task 996 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.05.402.249 W srv          stop: cancel task, id_task = 996",
+        "4.05.437.721 D slot process_toke: id  0 | task 996 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.05.437.724 I slot      release: id  0 | task 996 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-13-1790633278794998000",
+      "taskId": 1036,
+      "deleteEvent": "4.05.648.620 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-13-1790633278794998000 -> evict_and_cancel",
+      "cancelEvent": "4.06.193.859 W srv          stop: cancel task, id_task = 1036",
+      "releaseEvent": "4.06.232.701 I slot      release: id  0 | task 1036 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.06.193.771 D slot process_toke: id  0 | task 1036 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.06.193.859 W srv          stop: cancel task, id_task = 1036",
+        "4.06.232.695 D slot process_toke: id  0 | task 1036 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.06.232.701 I slot      release: id  0 | task 1036 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-14-1790633279593967000",
+      "taskId": 1077,
+      "deleteEvent": "4.06.444.385 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-14-1790633279593967000 -> evict_and_cancel",
+      "cancelEvent": "4.06.994.222 W srv          stop: cancel task, id_task = 1077",
+      "releaseEvent": "4.07.030.144 I slot      release: id  0 | task 1077 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.06.993.993 D slot process_toke: id  0 | task 1077 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.06.994.222 W srv          stop: cancel task, id_task = 1077",
+        "4.07.030.136 D slot process_toke: id  0 | task 1077 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.07.030.144 I slot      release: id  0 | task 1077 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-15-1790633280391625000",
+      "taskId": 1118,
+      "deleteEvent": "4.07.247.820 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-15-1790633280391625000 -> evict_and_cancel",
+      "cancelEvent": "4.07.795.884 W srv          stop: cancel task, id_task = 1118",
+      "releaseEvent": "4.07.834.445 I slot      release: id  0 | task 1118 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.07.795.745 D slot process_toke: id  0 | task 1118 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.07.795.884 W srv          stop: cancel task, id_task = 1118",
+        "4.07.834.442 D slot process_toke: id  0 | task 1118 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.07.834.445 I slot      release: id  0 | task 1118 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-16-1790633281190055000",
+      "taskId": 1160,
+      "deleteEvent": "4.08.045.442 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-16-1790633281190055000 -> evict_and_cancel",
+      "cancelEvent": "4.08.569.695 W srv          stop: cancel task, id_task = 1160",
+      "releaseEvent": "4.08.604.292 I slot      release: id  0 | task 1160 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.08.569.632 D slot process_toke: id  0 | task 1160 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.08.569.695 W srv          stop: cancel task, id_task = 1160",
+        "4.08.604.288 D slot process_toke: id  0 | task 1160 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.08.604.292 I slot      release: id  0 | task 1160 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-17-1790633281961878000",
+      "taskId": 1200,
+      "deleteEvent": "4.08.819.605 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-17-1790633281961878000 -> evict_and_cancel",
+      "cancelEvent": "4.09.360.211 W srv          stop: cancel task, id_task = 1200",
+      "releaseEvent": "4.09.399.510 I slot      release: id  0 | task 1200 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.09.360.023 D slot process_toke: id  0 | task 1200 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.09.360.211 W srv          stop: cancel task, id_task = 1200",
+        "4.09.399.481 D slot process_toke: id  0 | task 1200 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.09.399.510 I slot      release: id  0 | task 1200 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-18-1790633282763037000",
+      "taskId": 1243,
+      "deleteEvent": "4.09.616.742 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-18-1790633282763037000 -> evict_and_cancel",
+      "cancelEvent": "4.10.160.794 W srv          stop: cancel task, id_task = 1243",
+      "releaseEvent": "4.10.200.025 I slot      release: id  0 | task 1243 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.10.160.644 D slot process_toke: id  0 | task 1243 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.10.160.794 W srv          stop: cancel task, id_task = 1243",
+        "4.10.200.000 D slot process_toke: id  0 | task 1243 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.10.200.025 I slot      release: id  0 | task 1243 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    },
+    {
+      "conversationId": "rq3-cancel-19-1790633283565307000",
+      "taskId": 1287,
+      "deleteEvent": "4.10.419.082 I srv    operator(): DELETE /v1/stream conv_id=rq3-cancel-19-1790633283565307000 -> evict_and_cancel",
+      "cancelEvent": "4.10.966.621 W srv          stop: cancel task, id_task = 1287",
+      "releaseEvent": "4.11.003.396 I slot      release: id  0 | task 1287 | stop processing: n_tokens = 208, truncated = 0",
+      "nGenAtCancel": 1,
+      "nGenAtRelease": 2,
+      "events": [
+        "4.10.966.499 D slot process_toke: id  0 | task 1287 | n_gen = 1, n_remaining = 255, next token:   760 'The'",
+        "4.10.966.621 W srv          stop: cancel task, id_task = 1287",
+        "4.11.003.391 D slot process_toke: id  0 | task 1287 | n_gen = 2, n_remaining = 254, next token:  1156 ' user'",
+        "4.11.003.396 I slot      release: id  0 | task 1287 | stop processing: n_tokens = 208, truncated = 0"
+      ]
+    }
+  ]
+}

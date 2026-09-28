@@ -5681,3 +5681,19 @@ client/prompt mean `100.720/99.930ms`，paired transition delta
 Execution State release/recovery A/B；不能 claim recovery 零成本。RQ3 增加
 `BACKEND_KV_PRESSURE_RECOVERS`。Execution State pressure A/B、并发、
 cancellation、MLX oversized A/B 与 integrated Swift executor 仍未收口。
+
+### LAB RQ3 LLAMA EXPLICIT CANCELLATION — RECOVERS — 2026-09-29
+
+新增纯 backend cancellation control：先通过
+`POST /v1/chat/completions` 开启 resumable stream，100ms 后用
+`DELETE /v1/stream` 显式取消，等待唯一 slot free，再用固定 token prefix 的
+greedy `/completion` 验证恢复。20 cycles 中 DELETE 全部 `204`，恢复
+token/content 全部与 reference 一致；DELETE→free mean/median/p95 为
+`577.376/581.312/588.358ms`，recovery client mean `102.501ms`。
+
+verbosity-6 trace 抽取确认 20/20 task 在 `n_gen=1` 收到 cancel，并在
+`n_gen=2` token boundary release。该结果限定 current resumable-stream path、
+one slot、`ctx512/cacheRam0/GGUF model`；不覆盖 Execution State
+cancellation、并发 workload 或 production readiness。非流式
+client-disconnect 探索在本 build 上可跑满请求，不作为可靠取消证据。RQ3 增加
+`EXPLICIT_BACKEND_CANCEL_AND_RECOVER`。
