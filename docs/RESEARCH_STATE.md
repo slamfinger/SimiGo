@@ -5787,3 +5787,26 @@ production readiness 仍未收口。修改 Swift 后全仓 `swift test` 为 `157
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_HOTPATH_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab.json`。
+
+### LAB RQ3 SWIFT EXECSTATE FORK_RESTORE INTEGRATION PASS — 2026-09-29
+
+新增 `LLAMAServerExecutionStateForkRestore` 和
+`simigo2ctl llama-execstate-fork-restore`，把 Swift representation-consuming
+integration 扩展到 live fork / diverge / release / restore / replay。每
+sample 用新的 Coordinator 驱动 `LLAMAServerExecutionStateBackend`，Swift
+executor 只消费 `LLAMAServerPrefixPayload` 并请求既有 llama-server。
+
+30 samples 中 restore replay identical、branch diverged、parent
+non-interference、child restored to fork point 均为 `30/30`。reference /
+divergence / replay client mean 为 `355.008/450.940/356.934ms`，replay−reference
+mean `+1.926ms`；local fork+capture 与 release+restore+capture 分别 mean
+`16.071/34.044µs`。耗时仅作本 run 记录；`cache_prompt=false`，不与旧 Python
+cost run 直接 paired compare。
+
+RQ3 增加 `SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS`，但仍 OPEN。剩余
+Swift integration 缺口是 cancellation executor；MLX oversized equivalent A/B、
+更高并发与 production readiness 仍未收口。修改 Swift 后全仓 `swift test`
+为 `157 PASS / 0 FAIL`。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_FORK_RESTORE_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-fork-restore.json`。

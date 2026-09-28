@@ -12,6 +12,7 @@ RQ1 = PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 RQ2 = PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT
 RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
+      / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
 O6  = PASS / QWEN3_NEXT_OVERSIZED_W0_W9_HARNESS_LEVEL
 ```
 
@@ -71,6 +72,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | Concurrent backend cancellation | `parallel2/ctx1024`, long cancel + short control, 20 cycles | DELETE `20/20`; control identical `20/20`; unaffected control `20/20` | `results/backend-conformance/rq3-llama-concurrent-cancellation.json`; `SIMIGO_LAB_RQ3_LLAMA_CONCURRENT_CANCELLATION_20260929.md` |
 | Execution State cancellation A/B | local prefix mirror around explicit cancel, 20 paired cycles | OFF/ON cancel and recovery `20/20 + 20/20`; paired recovery delta `+0.088ms` | `results/backend-conformance/rq3-llama-execution-state-cancellation-ab.json`; `SIMIGO_LAB_RQ3_LLAMA_EXECSTATE_CANCEL_AB_20260929.md` |
 | Swift Execution State hot-path A/B | Swift HTTP executor consumes `LLAMAServerPrefixPayload`; ordinary generation, 30 paired samples | OFF/ON semantic `30/30 + 30/30`; paired client delta `-0.007ms`; capture mean `6.171µs` | `results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab.json`; `SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_HOTPATH_20260929.md` |
+| Swift Execution State fork/restore | Swift coordinator/backend/HTTP executor; 30 live samples | replay/divergence/parent/restore checks `30/30`; replay−reference `+1.926ms` | `results/backend-conformance/rq3-llama-swift-execstate-fork-restore.json`; `SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_FORK_RESTORE_20260929.md` |
 
 RQ3 当前状态：
 
@@ -83,7 +85,8 @@ OPEN / LOCAL_STATE_NON_REGRESSION /
       EXPLICIT_BACKEND_CANCEL_AND_RECOVER /
       CONCURRENT_BACKEND_CANCEL_WITH_UNAFFECTED_CONTROL /
       EXECUTION_STATE_CANCEL_ISOLATION_PASS /
-      SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
+      SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS /
+      SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
 ```
 
 ## O6 — Qwen3-Coder-Next oversized baseline
@@ -133,8 +136,8 @@ simigo2-experimental/results/o6-workload-matrix/
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
-2. RQ3 缺少 Swift LLAMA fork/restore/cancellation representation-consuming
-   executor integration。
+2. RQ3 缺少 Swift LLAMA cancellation representation-consuming executor
+   integration。
 3. RQ3 缺少 MLX oversized cancellation/release/recovery 的显式 A/B。
 4. RQ3 缺少更高并发 cancellation 曲线。
 5. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
