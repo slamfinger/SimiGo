@@ -5380,7 +5380,10 @@ main/release convergence  trees identical at e168555 (F3 battery
 Current gate  : MAIN_LINE_UNIFIED / ... /
                 FORK3_CUT_SEQUENCE_COMPLETE /
                 FORK3_STEP10_REVIEW_CLOSED (2 P1 fixed) /
-                BETA-AUDIT-1 = FAIL / RETURN TO IMPLEMENTATION
+                BETA-AUDIT-1 = FAIL / IMPLEMENTATION VERIFIED ON BRANCH
+                (R5 evidence @ 21c1e82/bc2e0ea: compile+gate 2/2+W1/W2
+                fail-closed injection+race seam+84/0/2 full sweep —
+                Round 5 ruling pending audit owner) /
                 (C1 checkpoint consistency+durability; C3 fork
                 transaction boundary — see BETA-AUDIT-1 doc §10) /
                 BETA_RELEASE_SWEEP_AND_REVIEWS_GREEN (79-test sweep
