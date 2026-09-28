@@ -158,13 +158,30 @@ final class BranchForkTests: XCTestCase {
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(forgedMeta).write(to: metaURL, options: .atomic)
 
-        // ---- C1 修复验证：错位对 restore fail-closed（generation mismatch 抛出）----
+        // ---- W2a 意外窗口（C1 修复验证）：陈旧 cacheSHA256 的 meta 配新
+        // cache（= crash-between-files 的实际形态）→ 必须 fail-closed。
+        var stalePairMeta = realMeta
+        stalePairMeta.cacheSHA256 = String(repeating: "0", count: 64)
+        stalePairMeta.checkpointGeneration = "stale-generation"
+        try encoder.encode(stalePairMeta).write(to: metaURL, options: .atomic)
         do {
             _ = try await runtime.loadSessionCache(
                 sessionId: "s", logicalBranchId: "main", from: dir)
-            XCTFail("W2：伪造 transcript 配对不应静默 restore（fail-open 复发）")
+            XCTFail("W2a：陈旧 SHA/代际的配对不应 restore（fail-closed 修复必须保持）")
         } catch {
             // 期望：fail-closed（C1 修复生效）
+        }
+
+        // ---- W2b 语义残留（已登记，非阻塞）：伪造 transcript + 保留真实
+        // cacheSHA256/checkpointGeneration 的配对仍会 restore——SHA/代际
+        // 只证同 commit 配对，不证 transcript↔KV 语义一致。收口 = C1 的
+        // tokenCount 交叉核对（E4 Position 验证面）。见证性记录，不作断言。
+        try encoder.encode(forgedMeta).write(to: metaURL, options: .atomic)
+        if let residual = try? await runtime.loadSessionCache(
+            sessionId: "s", logicalBranchId: "main", from: dir) {
+            XCTAssertEqual(
+                residual.history.count, fabricatedHistory.count,
+                "W2b 残留见证：伪造 transcript 被静默 restore（已登记非阻塞）")
         }
 
         // ---- W1 注入：截断 .safetensors（数据段损坏）----
