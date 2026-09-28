@@ -119,6 +119,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             throw PrefixSnapshotStoreError.artifactUnreadable(
                 "exporter produced no file (e.g. noCacheAvailable)")
         }
+        // Same-content re-exports (persistent pool across runs) hit an
+        // existing destination: replace it — moveItem alone throws 516.
+        if fileManager.fileExists(atPath: snapshotURL.path) {
+            try? fileManager.removeItem(at: snapshotURL)
+        }
         try fileManager.moveItem(at: tempURL, to: snapshotURL)
 
         let sidecar = PrefixSnapshotSidecar(

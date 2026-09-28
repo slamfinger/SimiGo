@@ -223,3 +223,40 @@ final class PrefixPoolEvictionPersistenceTests: XCTestCase {
         XCTAssertNotNil(fresh.pool.admit(namespace: ns, promptTokens: a))
     }
 }
+
+/// P2 continuity — same-boundary re-export across persistent pool runs
+/// must REPLACE the artifact (real-device finding 2026-09-28: moveItem
+/// to an existing destination threw 516, leaving the pool entry stale).
+final class PrefixSnapshotReexportTests: XCTestCase {
+    private func f3tokens(_ count: Int, seed: Int = 0) -> [Int] {
+        (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
+    }
+
+    private let ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
+
+    func testSameBoundaryReExportSucceeds() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("f3-reexport-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pool = ExecutionStatePrefixPool(tokenBudget: 10_000)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+
+        let write: (URL) async throws -> Void = { url in
+            let layer = KVCacheSimple()
+            layer.update(
+                keys: MLXArray.zeros([1, 2, 8, 4]),
+                values: MLXArray.zeros([1, 2, 8, 4]))
+            try savePromptCache(url: url, cache: [layer])
+        }
+        let first = try await store.export(
+            namespace: ns, tokens: f3tokens(512, seed: 1), write: write)
+        let second = try await store.export(
+            namespace: ns, tokens: f3tokens(512, seed: 1), write: write)
+        XCTAssertEqual(first, second, "same content = same boundary")
+        XCTAssertEqual(store.pool.stats.exports, 1)
+        XCTAssertEqual(store.pool.stats.artifactReplacements, 1)
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: (second.artifact as! DiskPrefixArtifact).snapshotURL.path))
+    }
+}
