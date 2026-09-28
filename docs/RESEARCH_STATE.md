@@ -5380,7 +5380,12 @@ main/release convergence  trees identical at e168555 (F3 battery
 Current gate  : MAIN_LINE_UNIFIED / ... /
                 FORK3_CUT_SEQUENCE_COMPLETE /
                 FORK3_STEP10_REVIEW_CLOSED (2 P1 fixed) /
-                BETA_RELEASE_GATE_VERIFIED /
+                BETA_RELEASE_SWEEP_AND_REVIEWS_GREEN (79-test sweep
+                + review batches; evidence recorded below) /
+                SIMIGO18_BETA_RELEASE_AUDIT_GATE_REGISTERED
+                (formal independent audit: NOT STARTED - owned by
+                SIMIGO18_BETA_RELEASE_TECHNICAL_ROUTE_AUDIT_GATE_
+                20260928) /
                 DEFERRED_REMAINS (usage projection; disk GC; whole-
                 fork transaction atomicity) /
                 UPSTREAM_BACKUP_ON_FORK
