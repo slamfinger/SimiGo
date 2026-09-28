@@ -241,6 +241,10 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         XCTAssertTrue(
             traceLogContains("poolHit", sinceByteOffset: logStart),
             "D1: consumption via the existing materialization")
+        XCTAssertFalse(
+            traceLogContains("session=f3-child", sinceByteOffset: logStart)
+                && traceLogContains("mode=cold", sinceByteOffset: logStart),
+            "D2: child must not take a cold materialization path")
         XCTAssertLessThan(
             childSeconds, coldSeconds * 0.5,
             "D3: child incremental cost (\(childSeconds)s) must be far below the "
