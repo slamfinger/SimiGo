@@ -5731,3 +5731,22 @@ RQ2 维持 `PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT`，等待用户提供
 full Qwen4Exp artifact、授权只做 pruned-substrate 线、独立化 pruned 研究线
 或优先暂停 RQ2。证据边界见
 `docs/00-governance/SIMIGO_LAB_RQ2_QWEN4EXP_READONLY_AUDIT_20260929.md`。
+
+### LAB RQ3 EXECSTATE CANCELLATION ISOLATION PASS — 2026-09-29
+
+新增 `rq3_llama_execution_state_cancellation.py`，把 explicit LLAMA
+cancellation 扩展为 local prefix Execution State A/B。20 paired cycles 中，
+OFF/ON DELETE 均为 `20/20` accepted，恢复 token/content 均为 `20/20`
+identical。ON 路径先 capture root，再 bind/capture child，取消并释放 child 后
+restore root snapshot；root continuation 逐 cycle 恢复 reference。
+
+OFF/ON DELETE→free mean 为 `576.891/576.769ms`，recovery client mean 为
+`102.883/102.971ms`，paired ON−OFF recovery client mean `+0.088ms`。本地
+bind/capture/release/restore 合计每 ON cycle mean `24.225µs`。该证据是
+local prefix representation mirror 的 harness-level control；llama-server 仍是
+inference/native cache authority，没有 Swift integrated executor、MLX
+oversized equivalence、更高并发或 production readiness claim。RQ3 增加
+`EXECUTION_STATE_CANCEL_ISOLATION_PASS`，但保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_EXECSTATE_CANCEL_AB_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-execution-state-cancellation-ab.json`。
