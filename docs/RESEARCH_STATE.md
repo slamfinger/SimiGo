@@ -5386,6 +5386,12 @@ Current gate  : MAIN_LINE_UNIFIED / ... /
                 (formal independent audit: NOT STARTED - owned by
                 SIMIGO18_BETA_RELEASE_TECHNICAL_ROUTE_AUDIT_GATE_
                 20260928) /
+                BRANCHES_CONVERGED (all non-vendor SimiGo branches
+                contained in main; main=release @ e168555 tree,
+                pin doc 94c62ed/1657d6e) /
+                AUDIT_BASELINE_PINNED (docs/AUDIT_BASELINE_20260928:
+                sweep 79/0/2 on the audited tree; no beta release
+                publication; mlx-swift-lm backup-only stands) /
                 DEFERRED_REMAINS (usage projection; disk GC; whole-
                 fork transaction atomicity) /
                 UPSTREAM_BACKUP_ON_FORK
