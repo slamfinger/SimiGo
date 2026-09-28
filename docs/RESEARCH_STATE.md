@@ -5175,6 +5175,7 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 F3_PARENT_CHILD_BINDING_NEXT
 ```
 
+<<<<<<< HEAD
 ### F3_DEVICE_ACCEPTANCE attempt 1 — REAL BUG F3-BUG-001 FOUND — 2026-09-28
 
 The device battery did exactly its job: it caught a real multi-turn bug
@@ -5208,6 +5209,36 @@ also fixed   seed-side truncation to the claimed grid boundary
             port mismatch in the battery
 ```
 
+=======
+### F3-BUG-002 FOUND — Cross-Gate Double-Seed — 2026-09-28
+
+The F3 device battery (with the Gate D ledger fix at fork d6e9ba9,
+diagnostics instrumented) crashed the runtime with instrumented numbers:
+
+```text
+assert (ChatSession:1170, policy block):
+  processed=1520  ledger=0  layerOffsets=[9712 × 48]
+```
+
+Diagnosis: the Child session was seeded TWICE by two independent
+mechanisms — B-4's message-level poolBind restored the parent's
+5-message materialization (9712 rows into the child's cache), THEN
+B-6's token-level fork hook fired on the same session (its trigger
+`conversation?.cachedTokens.isEmpty == true` cannot distinguish a truly
+new session from one just bound via B-4) and overlaid an 8192-grid seed
++ second narrowing. Double-seed → ledger/offset bookkeeping destroyed.
+
+This is a cross-GATE boundary violation, exactly the class the audit
+warned about: Gate B-4 (message-level bind) and Gate B-6 (token hook)
+each correct alone, jointly corrupting. Fix design needs a ruling:
+mutual exclusion (a session bound by B-4 marks the token hook down; a
+session bound by the token hook marks B-4 down) — which is the
+Binding-Registry-as-single-source-of-truth principle applied to the
+two mechanisms. Registered as F3-BUG-002; battery preserved; Route B
+v1 single-mechanism behaviors (B-4 alone: 201ms continuation; B-6
+alone: 5.9s cross-session) remain device-verified.
+
+>>>>>>> main
 ```text
 Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 P2_EVICT_PERSISTENCE_CLOSED /
@@ -5215,7 +5246,12 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
                 GATE_D_CONTRACT_PASSED /
                 GATE_D_CONCURRENCY_BOUNDARY_PASSED /
+<<<<<<< HEAD
                 F3_BUG001_REGISTERED (device acceptance blocked) /
                 F3_TRANSCRIPT_RESTORE_FIX_NEXT /
+=======
+                F3_BUG002_DOUBLE_SEED_FOUND /
+                F3_BUG002_FIX_DESIGN_AWAITING_RULING /
+>>>>>>> main
                 UPSTREAM_SYNC_PENDING
 ```
