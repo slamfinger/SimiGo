@@ -4,6 +4,7 @@ import MLXLMCommon
 import MLXLLM
 import MLXHuggingFace
 import Tokenizers
+import SimiGo2Experimental
 @testable import SimiGo
 
 /// Branch-Fork 能力回归（v1.4 转正）。
@@ -199,12 +200,15 @@ final class BranchForkTests: XCTestCase {
         }
 
         XCTAssertEqual(modes("base"), ["cold"], "base 首生成应为 cold")
-        XCTAssertEqual(modes("coldA"), ["cold"], "coldA 应 cold")
-        XCTAssertEqual(modes("retr"), ["cold"], "retr 应 cold")
-        // 恢复分支走 fragment-continuation（raw-cache 无账本）：官方不发 mode、
-        // cacheHit=0（透传官方值，不估算）。零重算证据 = cacheTokens/promptTokens/TTFT。
-        XCTAssertEqual(modes("forkA"), [], "恢复分支走 fragment-continuation，官方不发 mode")
-        XCTAssertEqual(modes("forkB"), [])
+        // 池语义后：同内容的分支复制会被内容寻址 admission 命中（同一
+        // RepresentationRef 的 poolBind）→ restore，而非 cold。这正是 F3
+        // 经济学在复制分支上的体现。
+        XCTAssertEqual(modes("coldA"), ["restore"], "coldA 同内容 → 池 restore")
+        XCTAssertEqual(modes("retr"), ["restore"], "retr 同内容 → 池 restore")
+        // 账本修复链（ce9e056..6d01a13）后：恢复分支 bootstrap 出对齐账本，
+        // 走真正的暖 extend，不再 fragment-continuation。
+        XCTAssertEqual(modes("forkA"), ["extend", "extend"], "恢复分支应暖 extend")
+        XCTAssertEqual(modes("forkB"), ["extend"])
 
         // checkpoint 账本 = base prompt + 生成尾部；官方 generationTokens 口径
         // 可能不含结束 token（±2 容差，真正的截断是千级差距）。
@@ -240,12 +244,20 @@ final class BranchForkTests: XCTestCase {
         XCTAssertEqual(
             forkB.text, retr.text,
             "forkB 与 retr 输出应逐字一致\nforkB: \(forkB.text)\nretr: \(retr.text)")
-        XCTAssertEqual(retr.usage?.cachedPromptTokens ?? 0, 0, "冷路径 cacheHit 应为 0")
-        let ttftFork = forkB.usage?.ttftSeconds ?? -1
-        let ttftCold = retr.usage?.ttftSeconds ?? .greatestFiniteMagnitude
-        XCTAssertGreaterThan(
-            ttftCold, ttftFork * 3,
-            String(format: "fork TTFT 应比 cold 低 3 倍以上：fork=%.3fs cold=%.3fs", ttftFork, ttftCold))
+        // usage.cachedPromptTokens 在 restore 路径透传官方 0 值——池经济性
+        // 证据用 trace 的 cacheEff（完整命中 = 1.00）。
+        let retrCacheEff = Double(
+            Self.field(in: lines, sessionKey: "s/retr", "cacheEff").first ?? "") ?? 0
+        XCTAssertGreaterThanOrEqual(
+            retrCacheEff, 0.9,
+            "池 restore 应近满命中（delta 仅为最后一条消息），实际 cacheEff=\(retrCacheEff)")
+        // 原「fork TTFT < cold/3」断言退役：retr 已被池 restore（不再冷）。
+        // fork 经济学的代码级证据在 F3 电池 D3（实际 delta prefill < 200）。
+        // 这里保留 forkB 快于 base 真冷的单一 sanity。
+        XCTAssertLessThan(
+            forkB.usage?.ttftSeconds ?? .greatestFiniteMagnitude,
+            base.usage?.ttftSeconds ?? .greatestFiniteMagnitude,
+            "forkB 应快于 base 真冷")
     }
 
     // MARK: - 内存版 ownership（KVCache.copy() 双向隔离）
@@ -382,6 +394,31 @@ final class BranchForkTests: XCTestCase {
         let forkMeta = try await runtime.forkSessionBranch(
             sessionId: "s", sourceBranch: "main", targetBranch: "alt")
         XCTAssertEqual(forkMeta.history.count, 3, "fork 元数据应携带源分支 history")
+
+        // STEP-10 R2: fork 点持久化进 target 分支 metadata。
+        let altKey = try AgentExecutionKey(
+            agentId: nil, sessionId: "s", logicalBranchId: "alt")
+        let altMetaURL = store.appendingPathComponent(
+            NativeMLX.cacheFileName(for: altKey.storageKey) + ".meta.json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let stamped = try decoder.decode(
+            SessionCacheMetadata.self, from: Data(contentsOf: altMetaURL))
+        let forkPoint = try XCTUnwrap(
+            stamped.forkPoint, "forkSessionBranch 必须持久化 fork 点")
+        XCTAssertEqual(forkPoint.sourceStorageKey, "default/s/main")
+        XCTAssertEqual(forkPoint.atMessage, 3)
+        XCTAssertGreaterThan(forkPoint.atToken, 0)
+
+        // STEP-10 R3: child 在 ExecutionBindingRegistry 绑定 checkpoint 的
+        // .residentKV RepresentationRef；parent 的池绑定不被 supersede。
+        let childBinding = try XCTUnwrap(
+            NativeMLXPrefixPool.shared.bindings.currentBinding(
+                executionID: altKey.storageKey),
+            "child fork binding 必须已登记")
+        XCTAssertEqual(childBinding.ref.kind, .residentKV)
+        XCTAssertEqual(childBinding.ref.boundLength, forkPoint.atToken)
+        XCTAssertNotEqual(childBinding.executionID, forkPoint.sourceStorageKey)
 
         // alt 分支续问：只算增量 + 记忆召回
         let questionB = "What number did I ask you to remember? Reply with only that number."
