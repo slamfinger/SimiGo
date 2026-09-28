@@ -1,0 +1,33 @@
+{
+  "boundary": "LLAMA_SERVER_LIVE_PREFIX_SMOKE / REPRESENTATION_PREFIX_RECOMPUTE / NOT_A_PERFORMANCE_CLAIM",
+  "backend": "llama-server 0.3.0-dev build 10775 commit 67a17c17c",
+  "model": "Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "tokenPrefix": [
+    5423,
+    6681,
+    799,
+    3299,
+    25,
+    29018
+  ],
+  "run1": {
+    "content": " or pong\n\n<think>\nThe user is",
+    "tokensEvaluated": 6,
+    "tokensPredicted": 8,
+    "tokensCached": 13
+  },
+  "diverge": {
+    "content": "\n\n<think>\nThe user wants me to",
+    "tokensEvaluated": 7,
+    "tokensPredicted": 8,
+    "tokensCached": 14
+  },
+  "run2AfterDiverge": {
+    "content": " or pong\n\n<think>\nThe user is",
+    "tokensEvaluated": 6,
+    "tokensPredicted": 8,
+    "tokensCached": 13
+  },
+  "semanticIdentical": true,
+  "branchDiverged": true
+}
