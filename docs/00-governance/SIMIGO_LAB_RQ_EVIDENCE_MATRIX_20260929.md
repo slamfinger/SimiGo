@@ -21,6 +21,8 @@ RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / CANCELLATION_CAUSALITY_NOT_SUPPORTED
       / BATCH_CARDINALITY_THRESHOLD_LOCALIZED
       / GREEDY_IDENTITY_UNSTABLE_AT_CONTROL_COUNT_3_PLUS
+      / DISTINCT_PROMPT_CARDINALITY_INSTABILITY_OBSERVED
+      / DUPLICATE_PROMPT_CONFOUND_EXCLUDED
 O6  = PASS / QWEN3_NEXT_OVERSIZED_W0_W9_HARNESS_LEVEL
       / CANCELLATION_AB_PASS
 ```
@@ -87,6 +89,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | Higher-concurrency cancellation curve | llama-server `parallel4/ctx2048`; L1-L3 long streams fill all slots; 6 cycles vs same-load completion baseline | DELETE `12/12`; control batches complete `6/6`; strict greedy identity `5/6`, baseline stability `5/6` | `results/backend-conformance/rq3-llama-concurrency-curve.json`; `SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_20260929.md` |
 | No-cancel batch identity probe | same `parallel4` load, 1 long + 3 controls, no DELETE, 16 cycles | batches complete `16/16`; within-cycle identity only `8/16`; two output groups `32/16`; instability exists without cancellation | `results/backend-conformance/rq3-llama-batch-identity-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_BATCH_IDENTITY_PROBE_20260929.md` |
 | Batch-cardinality probe | no long, no cancel; 1/2/3/4 identical greedy controls, 8 batches each | N1-N2 stable; N3 across-cycle drift `1/8`; N4 within-cycle mismatch `3/8` and across-cycle `7/8` | `results/backend-conformance/rq3-llama-batch-cardinality-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_BATCH_CARDINALITY_PROBE_20260929.md` |
+| Distinct-prompt cardinality probe | no long, no cancel; 1/2/3/4 distinct equal-length prompts, 8 batches each; per-prompt single-load refs | N1-N2 stable; N3/N4 match own reference in only `4/8` cycles; duplicate-prompt confound excluded | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_DISTINCT_PROMPT_CARDINALITY_PROBE_20260929.md` |
 
 RQ3 当前状态：
 
@@ -108,7 +111,9 @@ OPEN / LOCAL_STATE_NON_REGRESSION /
       NO_CANCEL_BATCH_IDENTITY_INSTABILITY_OBSERVED /
       CANCELLATION_CAUSALITY_NOT_SUPPORTED /
       BATCH_CARDINALITY_THRESHOLD_LOCALIZED /
-      GREEDY_IDENTITY_UNSTABLE_AT_CONTROL_COUNT_3_PLUS
+      GREEDY_IDENTITY_UNSTABLE_AT_CONTROL_COUNT_3_PLUS /
+      DISTINCT_PROMPT_CARDINALITY_INSTABILITY_OBSERVED /
+      DUPLICATE_PROMPT_CONFOUND_EXCLUDED
 ```
 
 ## O6 — Qwen3-Coder-Next oversized baseline
@@ -158,9 +163,10 @@ simigo2-experimental/results/o6-workload-matrix/
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
-2. RQ3 的 greedy identity mismatch 已解耦到 no-long/no-cancel control
-   cardinality >=3，但 llama-server concurrent scheduling / batching 内部机制
-   未定位；higher-concurrency semantic closure 未完成。
+2. RQ3 的 greedy identity mismatch 已排除 cancellation、long request 和
+   duplicate-prompt confound，局部化到 no-long/no-cancel control cardinality
+   >=3；llama-server concurrent scheduling / batching 内部机制未定位，
+   higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 

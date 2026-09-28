@@ -5909,3 +5909,23 @@ across-cycle drift 从 N3 开始，within-batch mismatch 在 N4 明显。先前
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BATCH_CARDINALITY_PROBE_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-batch-cardinality-no-cancel.json`。
+
+### LAB RQ3 DISTINCT_PROMPT CARDINALITY PROBE — DUPLICATE CONFOUND EXCLUDED — 2026-09-29
+
+新增 `rq3_llama_distinct_prompt_cardinality_probe.py`，用 4 个不同但均为
+6-token 的 prompt 重跑 no-long/no-cancel cardinality probe。每个 prompt 先串行
+生成 3 次 single-load reference，三次均 token/content stable；随后 cardinality
+1–4 各并发 8 cycles，响应按 prompt index 与自己的 reference 比较。
+
+N1/N2 全部 stable。N3 只有 prompt0 在 `4/8` cycles 偏离 reference，整 batch
+match 与 across-cycle stable 都为 `4/8`。N4 prompt0 和 prompt3 各在 `4/8`
+cycles 偏离 reference，整 batch match 与 across-cycle stable 也为 `4/8`。
+mismatch 分布在不同 slot，不支持固定 bad-slot 解释。
+
+这排除 duplicate prompt / duplicate sequence batching 作为唯一或主要原因，
+登记 `DISTINCT_PROMPT_CARDINALITY_INSTABILITY_OBSERVED` 和
+`DUPLICATE_PROMPT_CONFOUND_EXCLUDED`。当前边界继续局部化到 llama-server
+concurrent scheduling / batching；内部机制未定位，RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_DISTINCT_PROMPT_CARDINALITY_PROBE_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`。
