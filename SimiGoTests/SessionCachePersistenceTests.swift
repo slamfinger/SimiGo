@@ -1,4 +1,6 @@
 import XCTest
+import CryptoKit
+import MLX
 import MLXLMCommon
 @testable import SimiGo
 
@@ -60,6 +62,26 @@ final class SessionCachePersistenceTests: XCTestCase {
             reparsed.first?.function.arguments["query"],
             MLXLMCommon.JSONValue.string("swift concurrency")
         )
+    }
+
+    func testSafetensorsSaveReceiptMatchesIndependentDigest() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("simigo-save-receipt-(UUID().uuidString).safetensors")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let receipt = try saveWithReceipt(
+            arrays: ["0.0": MLXArray([1, 2, 3, 4])],
+            metadata: ["test": "p2-es-02"],
+            url: url
+        )
+        let bytes = try Data(contentsOf: url)
+        let digest = SHA256.hash(data: bytes)
+            .map { String(format: "%02x", $0) }
+            .joined()
+
+        XCTAssertEqual(receipt.sha256, digest)
+        XCTAssertEqual(receipt.bytesWritten, Int64(bytes.count))
+        XCTAssertFalse(receipt.sha256.isEmpty)
     }
 
     func testSessionCacheMetadataCodableRoundTrip() throws {
