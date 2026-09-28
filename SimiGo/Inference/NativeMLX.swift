@@ -26,6 +26,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
         /// cacheTokensBefore 补回 cacheHit 归因，消除 cacheEff=0.00 歧义。
         let isRestoredSnapshot: Bool
+        /// The gate identity of the live execution. It is assigned when a
+        /// generation uses the session; restored sessions acquire it lazily.
+        var executionKey: AgentExecutionKey?
         /// A successful generation makes the live execution newer than its
         /// durable checkpoint until the automatic checkpoint completes.
         var checkpointDirty = false
@@ -395,8 +398,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // session resident rather than silently discarding continuity.
                 if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
                     let dirty = self.state.withLock { state in
-                        state.sessions.compactMap { key, managed in
-                            managed.checkpointDirty ? (key, managed) : nil
+                        state.sessions.compactMap { _, managed -> (AgentExecutionKey, ManagedSession)? in
+                            guard managed.checkpointDirty,
+                                  let executionKey = managed.executionKey else {
+                                return nil
+                            }
+                            return (executionKey, managed)
                         }
                     }
                     if !dirty.isEmpty {
@@ -404,26 +411,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                             return false
                         }
                         let gate = self.gateHolder.withLock { $0 }
-                        for (key, managed) in dirty {
+                        for (executionKey, managed) in dirty {
                             do {
-                                try await gate.withExclusive(
-                                    key: key,
-                                    operation: { [weak self] in
-                                        guard let self else { throw RuntError.notLoaded }
-                                        return try await self.performSave(
-                                            key: key,
-                                            traceKey: key,
-                                            container: container,
-                                            managed: managed,
-                                            directory: Self.defaultBranchCheckpointStore(),
-                                            modelPath: self.modelPath
-                                        )
-                                    }
-                                )
+                                _ = try await gate.withExclusive(executionKey) { [weak self] in
+                                    guard let self else { throw RuntError.notLoaded }
+                                    return try await self.performSave(
+                                        key: executionKey.storageKey,
+                                        traceKey: executionKey.traceKey,
+                                        container: container,
+                                        managed: managed,
+                                        directory: Self.defaultBranchCheckpointStore(),
+                                        modelPath: self.modelPath
+                                    )
+                                }
                                 managed.checkpointDirty = false
                             } catch {
                                 self.traceLogger.trace(
-                                    "[LIFECYCLE] suspend_blocked_dirtyCheckpoint key=\(key)"
+                                    "[LIFECYCLE] suspend_blocked_dirtyCheckpoint key=\(executionKey.traceKey)"
                                         + " err=\(error.localizedDescription)"
                                 )
                                 return false
@@ -850,6 +854,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         guard !delta.isEmpty else { return GenerationResult(text: "", usage: nil) }
+
+        managed.executionKey = executionKey
 
         // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
         // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
