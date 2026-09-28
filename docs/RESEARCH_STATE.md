@@ -5766,3 +5766,24 @@ non-claims 与 open gaps。
 Qwen4Exp artifact、integrated Swift LLAMA executor A/B、MLX oversized
 equivalent A/B、更高并发曲线和 cross-backend closure。该文档只是索引，不新增
 实验结果或性能 claim。
+
+### LAB RQ3 SWIFT EXECSTATE HOTPATH INTEGRATION PASS — 2026-09-29
+
+新增最小 `LLAMAServerExecutionStateExecutor` 和
+`simigo2ctl llama-execstate-ab`。Swift executor 只检查并消费
+`LLAMAServerPrefixPayload`，将 token prefix 提交给既有 llama-server；不接管
+inference、不创建 KV authority、不建立第二 runtime。ON 路径从
+`LLAMAServerExecutionStateBackend` capture representation 后交给 Swift
+executor，OFF 直接发送同一 token prefix；每 cycle 交替顺序。
+
+30 paired samples 中 OFF/ON semantic stability 均为 `30/30`；OFF/ON client
+mean 为 `338.788/338.781ms`，paired ON−OFF mean `-0.007ms`，capture state
+operation mean `6.171µs`。这补上 Swift representation-consuming ordinary
+generation hot-path 缺口，登记
+`SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS`。fork/restore/cancellation 的
+Swift executor integration、MLX oversized equivalent A/B、更高并发与
+production readiness 仍未收口。修改 Swift 后全仓 `swift test` 为 `157 PASS /
+0 FAIL`。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_HOTPATH_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab.json`。
