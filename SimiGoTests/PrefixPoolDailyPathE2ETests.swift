@@ -32,10 +32,13 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         return snapshots.first?.path ?? hub.appendingPathComponent("NOT-PRESENT").path
     }
 
-    /// ~16KB deterministic shared document (≈4-6K tokens) — the cold-
-    /// prefill class from the registered evidence.
+    /// ~16KB shared document (≈4-6K tokens) — the cold-prefill class from
+    /// the registered evidence. A per-run nonce keeps the pool's persistent
+    /// boundaries from serving THIS run's turn 1, so the cold baseline is a
+    /// genuine full prefill and the warm/cold ratio stays meaningful.
     private let document: String = {
         var lines: [String] = []
+        lines.append("Run scope: \(UUID().uuidString)")
         for i in 0..<220 {
             lines.append(
                 "Section \(i): The runtime maintains execution state as a first-class "
