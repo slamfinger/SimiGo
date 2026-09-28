@@ -5303,7 +5303,7 @@ disk GC policy; forkSessionBranch API plug-in decision (LAST).
 ### FORK-3 step-10 LANDED — forkSessionBranch plugin decided — 2026-09-28
 
 Decision doc: SIMIGO17_FORK_SESSION_BRANCH_PLUGIN_DECISION_20260928
-(R1-R5). Product main cb5d712, release b798662... b79866c.
+(R1-R5). Product main cb5d712, release b79866c.
 
 ```text
 R1  checkpoint layer unchanged (copy/overwrite/promotion);
