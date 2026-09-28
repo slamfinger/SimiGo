@@ -5285,9 +5285,45 @@ D5 PASS  child repeat identical; shared-prefix cacheEff 1.00
 ```
 
 F3_DEVICE_ACCEPTANCE_PASSED. F3-BUG-001 closed (fork ledger chain
-ce9e056 + 3341ace + d6e9ba9 + 88f05a7). Next: land the validated line
-into product main (release/v2.0.0-beta 8eacecd carries the battery and
-pins).
+ce9e056 + 3341ace + d6e9ba9 + 88f05a7).
+
+### External review round — 5 findings dispositioned — 2026-09-28
+
+An external code-level review accepted the record() root fix but
+blocked final acceptance on five items. Disposition:
+
+```text
+1 cancel ledger      FIXED  fork 6d01a13: the retained ledger is
+                     rebuilt from THIS turn's promptTokens prefix
+                     (removeLast() desynced KV vs ledger in the
+                     seed window; prefillTokenCount was the narrowed
+                     suffix size under reuse modes and is gone)
+2 bootstrap swallow  FIXED  fork 6d01a13: progress > transcript now
+                     invalidates the ledger instead of clearing the
+                     pending flag with an empty one; the terminal
+                     rule rebuilds
+3 assert-as-boundary FIXED  fork 6d01a13: nativeAttentionOffsetsAre
+                     Aligned folded into mainCacheIsAligned /
+                     draftCacheIsAligned — release builds rebuild a
+                     desynced cache instead of reusing it; debug
+                     asserts stay as the diagnostic witness
+4 speculative pin    ALREADY PINNED  the TimelineModel offset-12
+                     witness (testSpeculativeFinalCallTokenResumes
+                     FromTheLiveMainCache) proves verifier lookahead
+                     stays uncommitted; contract comment added
+5 D3/D4 evidence     HARDENED  D2's gate was VACUOUS (session=f3-child
+                     never appears in the trace — the app strips the
+                     prefix): now session=child/main, made non-vacuous
+                     by D3's existence check. D3 records the ACTUAL
+                     delta prefill (child line: mode=restore,
+                     cacheEff=1.00, promptTokens < 200 ≈ 2% of 9.7K).
+                     D4 compares P3 against the parent's OWN warm
+                     level (P3 < P2 x 1.5), cold kept as sanity.
+```
+
+Battery re-run on M5 with fork 6d01a13 and the hardened gates:
+PASSED (27.6s). The validated line is landed on product main
+(112112c; release f7c23e9).
 
 ```text
 Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
