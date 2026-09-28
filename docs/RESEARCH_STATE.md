@@ -5872,3 +5872,20 @@ identity mismatch 机制。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve.json`。
+
+### LAB RQ3 NO_CANCEL BATCH IDENTITY PROBE — INSTABILITY WITHOUT CANCELLATION — 2026-09-29
+
+新增 `rq3_llama_batch_identity_probe.py`，在 `parallel4 / ctx2048` 上重复
+`1 long full-completion + 3 greedy controls` 的 same-load run，共 16 cycles；
+全程没有 DELETE 或 cancellation。16/16 batches 完成，但 within-cycle identity
+只有 `8/16`，48 个 controls 分成 `32/16` 两个 greedy output groups。
+
+该 probe 把 higher-concurrency curve 的 strict identity mismatch 与 cancellation
+因果解耦：mismatch 在 no-cancel scheduling 中也会出现。可登记
+`NO_CANCEL_BATCH_IDENTITY_INSTABILITY_OBSERVED` 和
+`CANCELLATION_CAUSALITY_NOT_SUPPORTED`。当前局部化边界是 llama-server
+concurrent scheduling / batching，不是 Execution State failure；上游内部机制
+仍未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BATCH_IDENTITY_PROBE_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-batch-identity-no-cancel.json`。
