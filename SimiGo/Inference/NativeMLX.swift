@@ -1394,8 +1394,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         _ = container
 
+        let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
-        return try await gate.withExclusive(key) {
+        return try await gate.withExclusive(generationKey) {
             guard let managed = state.withLock({ $0.sessions[key.storageKey] }) else {
                 throw RuntError.generationFailed(
                     "no live session for \(key.storageKey); nothing to save"
@@ -1494,17 +1495,25 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
+        let existing = state.withLock { $0.sessions[key.storageKey] }
 
+        let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
-        let output = try await gate.withExclusive(key) {
-            try await performLoad(
+        let output = try await gate.withExclusive(generationKey) {
+            let loaded = try await performLoad(
                 key: key.storageKey, traceKey: key.traceKey, container: container,
                 config: config, baseConfig: baseConfig, directory: directory,
                 modelPath: modelPath)
-        }
-        state.withLock {
-            $0.sessions[key.storageKey] = output.managed
-            $0.lastActivity = Date()
+            try state.withLock {
+                if let existing, $0.sessions[key.storageKey] !== existing {
+                    throw RuntError.generationFailed(
+                        "session replaced during checkpoint load: \(key.storageKey)"
+                    )
+                }
+                $0.sessions[key.storageKey] = loaded.managed
+                $0.lastActivity = Date()
+            }
+            return loaded
         }
         return output.metadata
     }
@@ -1598,6 +1607,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     func integrationSnapshot() -> (activeRequests: Int, activeGenerations: Int, sessions: Int) {
         state.withLock {
             ($0.activeRequestTasks.count, $0.activeRequestTasks.count, $0.sessions.count)
+        }
+    }
+
+    /// Regression witness only: lifecycle tests need the identity of the
+    /// ManagedSession registered in the active execution slot.
+    func integrationActiveSessionIdentity(
+        agentId: String? = nil,
+        sessionId: String,
+        logicalBranchId: String
+    ) -> ObjectIdentifier? {
+        guard let key = try? AgentExecutionKey.resolve(
+            agentId: agentId,
+            sessionId: sessionId,
+            logicalBranchId: logicalBranchId
+        ) else { return nil }
+        return state.withLock {
+            $0.sessions[key.storageKey].map(ObjectIdentifier.init)
         }
     }
 
@@ -1781,24 +1807,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         )
-        let session: ChatSession? = state.withLock { state in
-            state.sessions.removeValue(forKey: key.storageKey)?.session
-        }
-        if let session {
-            await session.clear()
-        }
-        // STEP-10 lifecycle: deleting the branch ENDS the execution - its
-        // binding is explicitly detached (Gate C: detach is an OPERATION).
-        // The row is retained (append-only history); only the active state
-        // clears, so currentBinding/activeBindings stop resolving it.
-        _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
-        let baseName = Self.cacheFileName(for: key.storageKey)
-        for suffix in [".safetensors", ".meta.json"] {
-            try? FileManager.default.removeItem(
-                at: store.appendingPathComponent(baseName + suffix))
+        let generationKey = try generationGateKey(for: key)
+        let gate = gateHolder.withLock { $0 }
+        try await gate.withExclusive(generationKey) {
+            let session: ChatSession? = state.withLock { state in
+                state.sessions.removeValue(forKey: key.storageKey)?.session
+            }
+            if let session {
+                await session.clear()
+            }
+            // STEP-10 lifecycle: deleting the branch ENDS the execution - its
+            // binding is explicitly detached (Gate C: detach is an OPERATION).
+            // The row is retained (append-only history); only the active state
+            // clears, so currentBinding/activeBindings stop resolving it.
+            _ = NativeMLXPrefixPool.shared.bindings.detach(executionID: key.storageKey)
+            let baseName = Self.cacheFileName(for: key.storageKey)
+            for suffix in [".safetensors", ".meta.json"] {
+                try? FileManager.default.removeItem(
+                    at: store.appendingPathComponent(baseName + suffix))
+            }
+            traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
         }
-        traceLogger.trace("[MLX] branchDelete session=\(key.traceKey)")
     }
 
     /// 列出某会话的存活分支：live = 内存中的会话分支；checkpoints = 落盘 checkpoint 文件。
