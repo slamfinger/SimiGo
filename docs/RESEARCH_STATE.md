@@ -5174,3 +5174,48 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 F3_COORDINATOR_SKELETON_LANDED /
                 F3_PARENT_CHILD_BINDING_NEXT
 ```
+
+### F3_DEVICE_ACCEPTANCE attempt 1 — REAL BUG F3-BUG-001 FOUND — 2026-09-28
+
+The device battery did exactly its job: it caught a real multi-turn bug
+on the real MLX path.
+
+```text
+symptom     the seeded session's SECOND turn (warm continuation on the
+            session that was bound from a pool snapshot) trips the
+            fork-internal alignment assert (ChatSession.swift:1131
+            "Main attention cache offsets diverged from model-cache
+            progress") and returns empty text
+root cause  the restored-cache construction
+            (ChatSession(container, cache:state:)) carries NO
+            conversation transcript ledger — the fork-internal
+            cachedTokens/offset bookkeeping starts empty against a
+            non-empty cache and diverges on the following turn.
+            Single-turn cross-session reuse (B-5 201ms / B-6 5.9s)
+            remains verified intact — the bug is the SECOND turn on a
+            seeded session.
+disposition battery preserved as the acceptance gate, gated behind
+            XCTSkip(F3-BUG-001) (product 573c09b on main,
+            0837920 on release). Fix direction: fork-level transcript
+            restoration for cache-constructed sessions (the ctor must
+            accept the transcript so the ledger exists) — next round,
+            fork-surgery scope.
+also fixed   seed-side truncation to the claimed grid boundary
+            (grid artifacts hold the FULL source snapshot; truncated
+            to the claimed boundary per causal-KV — stale full-length
+            artifacts become safe); same-boundary re-export collision
+            (moveItem 516 on the persistent pool); HTTP readiness poll;
+            port mismatch in the battery
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
+                P2_EVICT_PERSISTENCE_CLOSED /
+                IDENT1_GATE_A_PASSED / IDENT1_GATE_B_PASSED /
+                IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
+                GATE_D_CONTRACT_PASSED /
+                GATE_D_CONCURRENCY_BOUNDARY_PASSED /
+                F3_BUG001_REGISTERED (device acceptance blocked) /
+                F3_TRANSCRIPT_RESTORE_FIX_NEXT /
+                UPSTREAM_SYNC_PENDING
+```
