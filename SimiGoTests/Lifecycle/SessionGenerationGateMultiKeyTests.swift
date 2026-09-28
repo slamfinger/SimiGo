@@ -1,6 +1,12 @@
 import XCTest
 @testable import SimiGo
 
+actor TestFlag {
+    private var valueStorage = false
+    func set(_ value: Bool) { valueStorage = value }
+    func get() -> Bool { valueStorage }
+}
+
 final class SessionGenerationGateMultiKeyTests: XCTestCase {
     private func key(_ branch: String) -> AgentExecutionKey {
         try! AgentExecutionKey(
@@ -31,16 +37,16 @@ final class SessionGenerationGateMultiKeyTests: XCTestCase {
         let gate = SessionGenerationGate()
         let a = key("a")
         let b = key("b")
-        let acquired = Locked(false)
+        let acquired = TestFlag()
 
         let holder = Task {
             try await gate.withExclusive([a, b]) {
-                acquired.set(true)
+                await acquired.set(true)
                 try await Task.sleep(nanoseconds: 100_000_000)
             }
         }
 
-        while !acquired.value {
+        while !(await acquired.get()) {
             try await Task.sleep(nanoseconds: 1_000_000)
         }
 
@@ -54,6 +60,8 @@ final class SessionGenerationGateMultiKeyTests: XCTestCase {
         try await Task.sleep(nanoseconds: 20_000_000)
         XCTAssertFalse(blockedA.isCancelled)
         XCTAssertFalse(blockedB.isCancelled)
+        XCTAssertFalse(blockedA.isCompleted)
+        XCTAssertFalse(blockedB.isCompleted)
 
         _ = try await holder.value
         XCTAssertTrue(try await blockedA.value)
