@@ -93,7 +93,8 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | No-cancel batch identity probe | same `parallel4` load, 1 long + 3 controls, no DELETE, 16 cycles | batches complete `16/16`; within-cycle identity only `8/16`; two output groups `32/16`; instability exists without cancellation | `results/backend-conformance/rq3-llama-batch-identity-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_BATCH_IDENTITY_PROBE_20260929.md` |
 | Batch-cardinality probe | no long, no cancel; 1/2/3/4 identical greedy controls, 8 batches each | N1-N2 stable; N3 across-cycle drift `1/8`; N4 within-cycle mismatch `3/8` and across-cycle `7/8` | `results/backend-conformance/rq3-llama-batch-cardinality-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_BATCH_CARDINALITY_PROBE_20260929.md` |
 | Distinct-prompt cardinality probe | no long, no cancel; 1/2/3/4 distinct equal-length prompts, 8 batches each; per-prompt single-load refs | N1-N2 stable; N3/N4 match own reference in only `4/8` cycles; duplicate-prompt confound excluded | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`; `SIMIGO_LAB_RQ3_LLAMA_DISTINCT_PROMPT_CARDINALITY_PROBE_20260929.md` |
-| Active-concurrency isolation | same distinct-prompt probe across `parallel4/contbatch`, `parallel4/no-contbatch`, and `parallel1/queued` | N3/N4 unstable in both 4-slot configs; `parallel1` N1-N4 all `8/8` stable | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json / no-contbatch.json / parallel1.json`; `SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_ISOLATION_20260929.md` |
+| Active-concurrency isolation | same distinct-prompt probe across `parallel4/contbatch`, `parallel4/no-contbatch`, and `parallel1/queued` | N3/N4 unstable in both 4-slot configs; `parallel1` N1-N4 all `8/8` stable | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-contbatch.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel1.json`; `SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_ISOLATION_20260929.md` |
+| Active-concurrency threshold | same distinct-prompt probe on `parallel2/slot512`; N3/N4 queue with max active 2 | N1-N4 all-match and across-cycle `8/8`; instability threshold is active batch count 3+ | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel2-active2.json`; `SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_THRESHOLD_20260929.md` |
 
 RQ3 当前状态：
 
@@ -170,9 +171,9 @@ simigo2-experimental/results/o6-workload-matrix/
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
-2. RQ3 的 greedy identity mismatch 已因果定位到 multi-slot active concurrent
-   execution；continuous batching flag 单独关闭不消除，llama-server 内部
-   kernel/scheduler 机制未定位，higher-concurrency semantic closure 未完成。
+2. RQ3 的 greedy identity mismatch 阈值已定位到 active batch cardinality 3+；
+   active 1–2 stable。llama-server 内部 kernel/scheduler 机制未定位，
+   higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 

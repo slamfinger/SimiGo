@@ -5947,3 +5947,21 @@ concurrent execution。已排除 cancellation、long request、duplicate prompt 
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_ISOLATION_20260929.md`；
 artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-contbatch.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel1.json`。
+
+### LAB RQ3 ACTIVE CONCURRENCY THRESHOLD — TWO STABLE / THREE PLUS UNSTABLE — 2026-09-29
+
+用同一 distinct equal-length prompt probe 在 `parallel2 / ctx1024 /
+slot512` 重跑 cardinality 1–4。当客户端提交 N3/N4 时，额外请求排队，任一时刻最
+多 2 个 active sequences。结果 N1–N4 all-match 与 across-cycle stable 均为
+`8/8`，共 80 requests stable。
+
+与 `parallel1`（max active 1）和 `parallel4`（N3/N4 分别 max active 3/4）对照
+后，阈值进一步精确化：active batch cardinality 1–2 observed stable；3–4
+observed unstable。这证明客户端提交数量不是阈值，active batch cardinality 才是
+关键变量。RQ3 增加 `ACTIVE_BATCH_COUNT_TWO_STABLE`、
+`ACTIVE_BATCH_COUNT_THREE_OR_MORE_UNSTABLE` 和
+`ACTIVE_CONCURRENCY_THRESHOLD_LOCALIZED`；llama-server 内部机制未定位，RQ3 仍
+OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_THRESHOLD_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel2-active2.json`。
