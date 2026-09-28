@@ -2094,5 +2094,7 @@
         ]
       }
     ]
-  }
+  },
+  "expectedSlots": 4,
+  "observedSlots": 4
 }

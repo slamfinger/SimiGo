@@ -5929,3 +5929,21 @@ concurrent scheduling / batching；内部机制未定位，RQ3 保持 OPEN。报
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_DISTINCT_PROMPT_CARDINALITY_PROBE_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`。
+
+### LAB RQ3 ACTIVE CONCURRENCY ISOLATION — PARALLEL1 STABLE — 2026-09-29
+
+继续用 distinct equal-length prompt probe 做三配置对照。`parallel4` continuous
+batching enabled 时 N3/N4 all-match 均为 `4/8`；`parallel4 --no-cont-batching`
+仍为 N3 `4/8`、N4 `4/8`，且 mismatch prompt 分布相同，说明该 flag 单独关闭不
+消除边界。改为 `parallel1` 后，4 路客户端请求排队串行执行，N1–N4 全部
+`8/8` match 自己的 single-load reference，共 80 requests stable。
+
+因此 mismatch 的必要条件不是客户端提交 4 个请求，而是多个 slot 中 active
+concurrent execution。已排除 cancellation、long request、duplicate prompt 和
+客户端排队数量；continuous batching 开关单独不是充分解释。RQ3 增加
+`ACTIVE_SLOT_CONCURRENCY_CAUSAL_BOUNDARY`、`QUEUED_N4_STABLE` 和
+`CONTINUOUS_BATCHING_FLAG_NOT_SUFFICIENT`。llama-server 内部 kernel/scheduler
+机制仍未定位，RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_ISOLATION_20260929.md`；
+artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-contbatch.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel1.json`。

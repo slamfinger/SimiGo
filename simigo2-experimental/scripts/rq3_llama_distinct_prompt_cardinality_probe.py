@@ -62,6 +62,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=18080)
     parser.add_argument("--cycles-per-cardinality", type=int, default=8)
     parser.add_argument("--max-cardinality", type=int, default=4)
+    parser.add_argument("--expected-slots", type=int, default=None)
     parser.add_argument("--control-tokens", type=int, default=8)
     parser.add_argument("--reference-repeats", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
@@ -82,9 +83,13 @@ def main() -> None:
         health = json.loads(response.read())
     if health.get("status") != "ok":
         raise RuntimeError(f"llama-server not healthy: {health}")
+    if args.expected_slots is None:
+        args.expected_slots = args.max_cardinality
     slots = get_json(args.host, args.port, "/slots")
-    if not isinstance(slots, list) or len(slots) < args.max_cardinality:
-        raise RuntimeError(f"need {args.max_cardinality} slots, got {slots!r}")
+    if not isinstance(slots, list) or len(slots) != args.expected_slots:
+        raise RuntimeError(
+            f"expected {args.expected_slots} slots, got {slots!r}"
+        )
 
     prompt_tokens: list[list[int]] = []
     for prompt in prompts[: args.max_cardinality]:
@@ -246,6 +251,8 @@ def main() -> None:
         ),
         "health": health,
         "maxCardinality": args.max_cardinality,
+        "expectedSlots": args.expected_slots,
+        "observedSlots": len(slots),
         "cyclesPerCardinality": args.cycles_per_cardinality,
         "referenceRepeats": args.reference_repeats,
         "prompts": prompts[: args.max_cardinality],
