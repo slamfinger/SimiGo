@@ -86,6 +86,111 @@ final class BranchForkTests: XCTestCase {
 
     // MARK: - 磁盘 fork 全链路（Runtime API + 官方遥测）
 
+    /// BETA-AUDIT-1 R4-A（P1-C1 动态注入实证）：现有 Beta 能不能安全失败？
+    ///
+    /// W2（新 cache + 旧/异 transcript meta，两文件各自合法）：
+    ///   → restore 静默成功（fail-open）——错位对被当正常 checkpoint。
+    /// W1（.safetensors 截断损坏）：
+    ///   → restore 抛出（fail-closed）。
+    /// meta 缺失：
+    ///   → restore 抛出（fail-closed）。
+    /// 这是 P1-C1 的动态见证：一致性缺口不在"文件损坏"，而在
+    /// "合法但不同代"的配对。修复（save 盖章 tokenCount + restore
+    /// 交叉核对）落地后，本测试的 W2 断言应翻转为 fail-closed。
+    func testCheckpointPairMismatchFailsOpen() async throws {
+        let modelPath = try Self.requireModel()
+        let cfg = Self.greedyConfig()
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: cfg)
+        let port = 18777
+        try await runtime.start(info, port: port)
+        defer { Task { await runtime.stop() } }
+
+        func gen(_ branch: String, _ messages: [SimiGo.JSONValue]) async throws -> GenerationResult {
+            let requestId = "mismatch-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
+            await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
+            return try await runtime.generate(
+                requestId: requestId,
+                agentId: nil,
+                sessionId: "s",
+                logicalBranchId: branch,
+                messages: messages,
+                tools: nil,
+                config: cfg
+            ) { _ in }
+        }
+
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("mismatch-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        // 真实会话 + 真实 checkpoint
+        let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
+        _ = try await gen("main", baseMessages)
+        let real = try await gen(
+            "main", baseMessages + [Self.user("What number did I ask you to remember?")])
+        XCTAssertFalse(real.text.isEmpty)
+        _ = try await runtime.saveSessionCache(
+            sessionId: "s", logicalBranchId: "main", to: dir)
+
+        let mainKey = "default/s/main"
+        let metaURL = dir.appendingPathComponent(
+            NativeMLX.cacheFileName(for: mainKey) + ".meta.json")
+        let cacheURL = dir.appendingPathComponent(
+            NativeMLX.cacheFileName(for: mainKey) + ".safetensors")
+
+        // ---- W2 注入：伪造一个从未发生过的异 transcript（各自合法）----
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let realMeta = try decoder.decode(
+            SessionCacheMetadata.self, from: Data(contentsOf: metaURL))
+        XCTAssertGreaterThanOrEqual(
+            realMeta.history.count, 3, "真实 checkpoint 应含多轮 history")
+        let fabricatedHistory: [SimiGo.JSONValue] = [
+            Self.systemMsg,
+            Self.user("fabricated question"),
+            Self.assistant("fabricated reply"),
+        ]
+        var forgedMeta = realMeta
+        forgedMeta.history = fabricatedHistory
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(forgedMeta).write(to: metaURL, options: .atomic)
+
+        // ---- 见证：错位对 restore 静默成功（fail-open）----
+        let mismatched = try await runtime.loadSessionCache(
+            sessionId: "s", logicalBranchId: "main", from: dir)
+        XCTAssertEqual(
+            mismatched.history, fabricatedHistory,
+            "W2 见证：KV 属于真实会话，但恢复出的 transcript 是伪造的三轮——"
+                + "错位对被静默接受（fail-open）。修复后本断言应翻转为抛出。")
+
+        // ---- W1 注入：截断 .safetensors（数据段损坏）----
+        // 动态发现：头部可解析 + 数组惰性映射 → 截断文件 restore 也不抛出，
+        // 损坏推迟到生成时的前向读取。与 W2 同属 fail-open 见证。
+        let originalCache = try Data(contentsOf: cacheURL)
+        try Data(originalCache.prefix(originalCache.count / 2))
+            .write(to: cacheURL)
+        let truncated = try await runtime.loadSessionCache(
+            sessionId: "s", logicalBranchId: "main", from: dir)
+        XCTAssertEqual(
+            truncated.history.count, fabricatedHistory.count,
+            "W1 见证：截断的 safetensors 静默 restore，且携带的是 W2 伪造的"
+                + " transcript（损坏推迟到生成期）。修复（restore 时校验数据段"
+                + "完整性 + 配对一致性）后应翻转为抛出。")
+
+        // ---- meta 缺失注入 ----
+        try FileManager.default.removeItem(at: metaURL)
+        do {
+            _ = try await runtime.loadSessionCache(
+                sessionId: "s", logicalBranchId: "main", from: dir)
+            XCTFail("meta 缺失应 fail-closed（restore 抛出）")
+        } catch {
+            // 期望：fail-closed
+        }
+    }
+
     func testCheckpointForkRoundTrip() async throws {
         let modelPath = try Self.requireModel()
         let traceOffset = Self.traceLogByteLength()
