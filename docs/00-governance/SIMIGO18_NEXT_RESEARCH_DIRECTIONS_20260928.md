@@ -40,16 +40,28 @@ PALACE-1：Execution State Store 管理 logical state；Representation Store 管
 
 暂不锁定最终数据库产品或 API。
 
-## 6. 多轮代码级审核
+## 6. 与 Beta 首发技术路线审计的严格边界
 
-Audit-1：盘点 Execution、ChatSession、NativeMLX、PrefixPool、Lineage、HTTP API、OversizedRuntime、持久化代码真实边界。
-Audit-2：审核小规模热路径的创建、append、resume、fork、delete、restore 固定成本与 IO。
-Audit-3：审核 Execution State 与 Representation artifact 的一致性边界及失败恢复。
-Audit-4：审核 Llama seam，防止 MLX 特性泄漏到公共 Execution API。
-Audit-5：用 oversized、大 transcript、remote artifact 验证同一逻辑模型。
-Audit-6：回归审核，确保支持超规模、Llama、LAN/remote 不增加日常默认开销。
+Beta 首发技术路线审计是一个**独立的发布门槛任务**，不是本文件两个下一阶段预研方向的组成部分。
 
-## 7. 第一阶段不做
+其治理文件为：
+docs/00-governance/SIMIGO18_BETA_RELEASE_TECHNICAL_ROUTE_AUDIT_GATE_20260928.md
+
+Beta 审计的对象是当前 Beta 真实代码，目标是确认首发前核心技术路线、生命周期、一致性、性能和恢复能力达到发布要求，并清零核心路线 P0/P1。它必须在本地 agent 当前修改完成后立即启动。
+
+本文件的 BACKEND-1 / PALACE-1 仍然是独立的下一阶段架构预研。它们可以并行，但不得用未来架构设计替代 Beta 首发审计证据。
+
+## 7. 预研自身的代码审核
+
+BACKEND-1 / PALACE-1 的研究也坚持“先代码证据，再抽象”，但这些审核服务于下一阶段架构研究，不承担 Beta 首发门槛。
+
+Research-Audit-1：盘点 Execution、ChatSession、NativeMLX、PrefixPool、Lineage、HTTP API、OversizedRuntime、持久化代码真实边界。
+Research-Audit-2：识别 Llama seam 与 Execution State physical storage seam。
+Research-Audit-3：比较小规模与超规模状态模型，验证未来扩展不需要另建逻辑模型。
+Research-Audit-4：研究 LAN/remote、artifact locator、backend-specific representation 的边界。
+Research-Audit-5：形成候选接口、数据模型与一致性边界，不提前锁定最终实现。
+
+## 8. 第一阶段不做
 
 - 不重新打开 FORK-3 已关闭 Gate。
 - 不提前实现 usage projection / disk GC 两个已延期候选。
@@ -58,8 +70,8 @@ Audit-6：回归审核，确保支持超规模、Llama、LAN/remote 不增加日
 - 不立即把本地 Execution State 默认远程化。
 - 不因为支持 Llama 而重写成熟 MLX 路径。
 
-## 8. 下一步
+## 9. 下一步
 
-先代码级审核，不直接写生产代码：审核 Execution Runtime / ChatSession 状态边界；session checkpoint 与 Lineage；PrefixPool / RepresentationRef 持久化边界；HTTP API 的本地/LAN/remote 接口潜力；形成 BACKEND-1 与 PALACE-1 的接口和数据模型候选。
+下一阶段预研先代码级审核，不直接写生产代码：审核 Execution Runtime / ChatSession 状态边界；session checkpoint 与 Lineage；PrefixPool / RepresentationRef 持久化边界；HTTP API 的本地/LAN/remote 接口潜力；形成 BACKEND-1 与 PALACE-1 的接口和数据模型候选。Beta 首发技术路线审计另按独立发布门槛执行。
 
 本文件作为两个方向的总入口和治理约束。
