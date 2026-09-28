@@ -5335,7 +5335,9 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 F3_BUG001_CLOSED (fork ledger chain -> 88f05a7) /
                 F3_BUG002_CORRECTED (single-seed timeline desync;
                 B-4/B-6 exclusion contract registered) /
-                F3_DEVICE_ACCEPTANCE_PASSED (M5, D1-D5 green) /
+                F3_DEVICE_ACCEPTANCE = PASSED (formally closed by owner
+                verification: fork 6d01a13c / product main 112112c /
+                release f7c23e9 / Lab f4ca9f7; D1-D5 green on M5) /
                 PRODUCT_MAIN_LANDED (main 971f43e; battery + B-5 +
                 truncation green on the mainline, real cold baseline
                 via per-run nonce) /
