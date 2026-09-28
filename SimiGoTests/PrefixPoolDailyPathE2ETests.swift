@@ -289,6 +289,10 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         XCTAssertTrue(
             traceLogContains("poolHit", sinceByteOffset: logStart),
             "D1: consumption via the existing materialization")
+        XCTAssertTrue(
+            traceLogLineContains(["poolBind", "bindingGen="], sinceByteOffset: logStart),
+            "step-9: the child fork is recorded in the ExecutionBindingRegistry "
+                + "(same Ref as the exporting parent)")
         XCTAssertFalse(
             traceLogLineContains(
                 // The app strips the "f3-" prefix: the child logs as

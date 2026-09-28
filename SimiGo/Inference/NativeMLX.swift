@@ -644,8 +644,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     )
                     state.withLock { $0.sessions[executionKey.storageKey] = restored }
                     poolRestored = restored
+                    // FORK-3 step-9: the child binds the SAME RepresentationRef
+                    // the exporting parent bound — zero re-materialization is
+                    // structural (the registry has no store parameter).
+                    let boundRef = NativeMLXPrefixPool.representationRef(
+                        namespace: NativeMLXPrefixPool.namespace(
+                            modelID: modelName(from: modelPath),
+                            kvFingerprint: kvFingerprint,
+                            thinkingDisabled: thinkingDisabled),
+                        boundaryHash: poolAdmission.entry.boundaryHash,
+                        boundLength: poolAdmission.entry.tokenCount)
+                    let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
+                        executionID: executionKey.storageKey,
+                        runtimeAddress: "live:\(executionKey.storageKey)",
+                        ref: boundRef)
                     traceLogger.trace(
                         "[MLX] poolBind messages=\(coveredMessages) delta=\(incoming.count - coveredMessages)"
+                            + " bindingGen=\(childBinding.generation)"
+                            + " refHash=\(String(poolAdmission.entry.boundaryHash, radix: 16))"
                     )
                 } catch {
                     // P-I1 响亮失败已在适配器内自愈（条目已删）；
@@ -1046,6 +1062,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 modelID: modelName(from: modelPath),
                 kvFingerprint: kvFingerprint,
                 thinkingDisabled: thinkingDisabled,
+                executionID: executionKey.storageKey,
                 history: poolHistory
             ) { url in
                 try await poolSession.saveCache(to: url)
