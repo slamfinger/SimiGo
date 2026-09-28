@@ -5384,6 +5384,8 @@ Current gate  : MAIN_LINE_UNIFIED / ... /
                 (R5 evidence @ 21c1e82/bc2e0ea: compile+gate 2/2+W1/W2
                 fail-closed injection+race seam+84/0/2 full sweep —
                 Round 5 ruling pending audit owner) /
+                R5_SWEEP_FINAL (bb52967 streamed O(chunk) hash:
+                84/0/2 full sweep 552.9s — Round 5 evidence complete) /
                 (C1 checkpoint consistency+durability; C3 fork
                 transaction boundary — see BETA-AUDIT-1 doc §10) /
                 BETA_RELEASE_SWEEP_AND_REVIEWS_GREEN (79-test sweep
