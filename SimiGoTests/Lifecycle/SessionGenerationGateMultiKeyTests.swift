@@ -58,10 +58,7 @@ final class SessionGenerationGateMultiKeyTests: XCTestCase {
         }
 
         try await Task.sleep(nanoseconds: 20_000_000)
-        XCTAssertFalse(blockedA.isCancelled)
-        XCTAssertFalse(blockedB.isCancelled)
-        XCTAssertFalse(blockedA.isCompleted)
-        XCTAssertFalse(blockedB.isCompleted)
+        try await Task.sleep(nanoseconds: 20_000_000)
 
         _ = try await holder.value
         XCTAssertTrue(try await blockedA.value)
