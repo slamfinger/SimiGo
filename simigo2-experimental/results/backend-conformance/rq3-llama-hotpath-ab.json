@@ -1,0 +1,1875 @@
+{
+  "protocolVersion": "RQ3.LLAMA.HOTPATH.AB.V1",
+  "boundary": "ORDINARY_GENERATION_NO_FORK / LOCAL_EXECUTION_STATE_BOOKKEEPING / SERVER_PAYLOAD_IDENTICAL / NOT_A_UNIVERSAL_PERFORMANCE_CLAIM",
+  "health": {
+    "status": "ok"
+  },
+  "request": {
+    "prompt": "Return exactly one word: ping",
+    "n_predict": 8,
+    "temperature": 0.0,
+    "seed": 42,
+    "cache_prompt": true,
+    "return_tokens": true
+  },
+  "promptTokens": [
+    5423,
+    6681,
+    799,
+    3299,
+    25,
+    29018
+  ],
+  "samplesRequested": 30,
+  "alternation": "even=ON,OFF odd=OFF,ON",
+  "results": {
+    "semanticIdentical": 30,
+    "semanticIdenticalRatio": 1.0,
+    "offClient": {
+      "n": 30.0,
+      "meanMs": 300.9510778,
+      "medianMs": 300.62208350000003,
+      "p95Ms": 304.2572667,
+      "minMs": 295.799875,
+      "maxMs": 311.046125
+    },
+    "stateOnClient": {
+      "n": 30.0,
+      "meanMs": 300.8267291,
+      "medianMs": 300.648396,
+      "p95Ms": 303.46165815,
+      "minMs": 296.018916,
+      "maxMs": 306.953083
+    },
+    "offServerPredicted": {
+      "n": 30.0,
+      "meanMs": 237.13209999999998,
+      "medianMs": 236.88150000000002,
+      "p95Ms": 240.504,
+      "minMs": 232.715,
+      "maxMs": 247.993
+    },
+    "stateOnServerPredicted": {
+      "n": 30.0,
+      "meanMs": 236.90453333333335,
+      "medianMs": 236.86950000000002,
+      "p95Ms": 240.2894,
+      "minMs": 232.646,
+      "maxMs": 242.296
+    },
+    "pairedClientDeltaOnMinusOff": {
+      "n": 30.0,
+      "meanMs": -0.12434870000000349,
+      "medianMs": 0.11593750000000114,
+      "p95Ms": 6.392260299999999,
+      "minMs": -10.705332999999996,
+      "maxMs": 7.280875000000037
+    },
+    "pairedServerPredictedDeltaOnMinusOff": {
+      "n": 30.0,
+      "meanMs": -0.22756666666666567,
+      "medianMs": 0.018999999999991246,
+      "p95Ms": 5.228999999999999,
+      "minMs": -11.870999999999981,
+      "maxMs": 5.442999999999984
+    },
+    "stateOverhead": {
+      "n": 30.0,
+      "meanMs": 0.008525133333333332,
+      "medianMs": 0.006333,
+      "p95Ms": 0.010993300000000001,
+      "minMs": 0.004209,
+      "maxMs": 0.062125
+    },
+    "meanClientOverheadRatio": -0.00041318576065252355,
+    "meanServerPredictedOverheadRatio": -0.0009596620055514204,
+    "pairedClientAbsoluteDelta": {
+      "n": 30.0,
+      "meanMs": 2.808679166666665,
+      "medianMs": 2.3730005000000176,
+      "minMs": 0.002207999999995991,
+      "maxMs": 10.705332999999996
+    },
+    "pairedServerPredictedAbsoluteDelta": {
+      "n": 30.0,
+      "meanMs": 2.5488333333333317,
+      "medianMs": 2.01700000000001,
+      "minMs": 0.046999999999997044,
+      "maxMs": 11.870999999999981
+    },
+    "stateOverheadVsMeanRequestRatio": 2.832730620422896e-05,
+    "stateOverheadVsMeanAbsolutePairedDeltaRatio": 0.003035282005331689
+  },
+  "samples": [
+    {
+      "sample": 0,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.465,
+          "prompt_per_token_ms": 15.61625,
+          "prompt_per_second": 64.03586008164572,
+          "predicted_n": 8,
+          "predicted_ms": 236.931,
+          "predicted_per_token_ms": 33.84728571428572,
+          "predicted_per_second": 29.54446653245037
+        },
+        "clientWallMs": 300.429875,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.885,
+          "prompt_per_token_ms": 15.72125,
+          "prompt_per_second": 63.608173650314065,
+          "predicted_n": 8,
+          "predicted_ms": 236.295,
+          "predicted_per_token_ms": 33.75642857142857,
+          "predicted_per_second": 29.623986965445738
+        },
+        "clientWallMs": 300.108791,
+        "stateOverheadMs": 0.005917
+      },
+      "pairedClientDeltaMs": -0.3210839999999848,
+      "pairedPredictedDeltaMs": -0.6360000000000241
+    },
+    {
+      "sample": 1,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.118,
+          "prompt_per_token_ms": 15.5295,
+          "prompt_per_second": 64.39357352136257,
+          "predicted_n": 8,
+          "predicted_ms": 247.993,
+          "predicted_per_token_ms": 35.427571428571426,
+          "predicted_per_second": 28.226603170250772
+        },
+        "clientWallMs": 311.046125,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.296,
+          "prompt_per_token_ms": 15.824,
+          "prompt_per_second": 63.19514661274014,
+          "predicted_n": 8,
+          "predicted_ms": 236.122,
+          "predicted_per_token_ms": 33.73171428571429,
+          "predicted_per_second": 29.645691633985816
+        },
+        "clientWallMs": 300.340792,
+        "stateOverheadMs": 0.005292
+      },
+      "pairedClientDeltaMs": -10.705332999999996,
+      "pairedPredictedDeltaMs": -11.870999999999981
+    },
+    {
+      "sample": 2,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.433,
+          "prompt_per_token_ms": 15.85825,
+          "prompt_per_second": 63.058660318761525,
+          "predicted_n": 8,
+          "predicted_ms": 234.156,
+          "predicted_per_token_ms": 33.450857142857146,
+          "predicted_per_second": 29.894600181075866
+        },
+        "clientWallMs": 298.662959,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.789,
+          "prompt_per_token_ms": 15.69725,
+          "prompt_per_second": 63.70542610966889,
+          "predicted_n": 8,
+          "predicted_ms": 237.005,
+          "predicted_per_token_ms": 33.85785714285714,
+          "predicted_per_second": 29.535241872534336
+        },
+        "clientWallMs": 300.823083,
+        "stateOverheadMs": 0.004793
+      },
+      "pairedClientDeltaMs": 2.160123999999996,
+      "pairedPredictedDeltaMs": 2.8489999999999895
+    },
+    {
+      "sample": 3,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.078,
+          "prompt_per_token_ms": 15.5195,
+          "prompt_per_second": 64.43506556267921,
+          "predicted_n": 8,
+          "predicted_ms": 233.924,
+          "predicted_per_token_ms": 33.41771428571429,
+          "predicted_per_second": 29.924248901352573
+        },
+        "clientWallMs": 296.819041,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.262,
+          "prompt_per_token_ms": 16.0655,
+          "prompt_per_second": 62.24518377890511,
+          "predicted_n": 8,
+          "predicted_ms": 234.711,
+          "predicted_per_token_ms": 33.530142857142856,
+          "predicted_per_second": 29.823911107702664
+        },
+        "clientWallMs": 300.066958,
+        "stateOverheadMs": 0.0115
+      },
+      "pairedClientDeltaMs": 3.2479169999999726,
+      "pairedPredictedDeltaMs": 0.7870000000000061
+    },
+    {
+      "sample": 4,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.466,
+          "prompt_per_token_ms": 15.8665,
+          "prompt_per_second": 63.02587212050547,
+          "predicted_n": 8,
+          "predicted_ms": 237.1,
+          "predicted_per_token_ms": 33.871428571428574,
+          "predicted_per_second": 29.523407844791226
+        },
+        "clientWallMs": 301.530542,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.585,
+          "prompt_per_token_ms": 15.89625,
+          "prompt_per_second": 62.907918534245496,
+          "predicted_n": 8,
+          "predicted_ms": 242.296,
+          "predicted_per_token_ms": 34.61371428571429,
+          "predicted_per_second": 28.89028295968567
+        },
+        "clientWallMs": 306.953083,
+        "stateOverheadMs": 0.004959
+      },
+      "pairedClientDeltaMs": 5.422540999999967,
+      "pairedPredictedDeltaMs": 5.195999999999998
+    },
+    {
+      "sample": 5,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.053,
+          "prompt_per_token_ms": 15.51325,
+          "prompt_per_second": 64.46102525260665,
+          "predicted_n": 8,
+          "predicted_ms": 236.273,
+          "predicted_per_token_ms": 33.75328571428572,
+          "predicted_per_second": 29.626745332729513
+        },
+        "clientWallMs": 299.283917,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.564,
+          "prompt_per_token_ms": 15.641,
+          "prompt_per_second": 63.93453104021482,
+          "predicted_n": 8,
+          "predicted_ms": 236.734,
+          "predicted_per_token_ms": 33.81914285714286,
+          "predicted_per_second": 29.569052185152955
+        },
+        "clientWallMs": 300.213083,
+        "stateOverheadMs": 0.005958
+      },
+      "pairedClientDeltaMs": 0.9291660000000093,
+      "pairedPredictedDeltaMs": 0.46100000000001273
+    },
+    {
+      "sample": 6,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.853,
+          "prompt_per_token_ms": 15.71325,
+          "prompt_per_second": 63.64055812769478,
+          "predicted_n": 8,
+          "predicted_ms": 236.587,
+          "predicted_per_token_ms": 33.79814285714286,
+          "predicted_per_second": 29.58742449923284
+        },
+        "clientWallMs": 300.355334,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.43,
+          "prompt_per_token_ms": 15.6075,
+          "prompt_per_second": 64.07176037161621,
+          "predicted_n": 8,
+          "predicted_ms": 232.646,
+          "predicted_per_token_ms": 33.235142857142854,
+          "predicted_per_second": 30.08863251463597
+        },
+        "clientWallMs": 296.018916,
+        "stateOverheadMs": 0.004417
+      },
+      "pairedClientDeltaMs": -4.336418000000037,
+      "pairedPredictedDeltaMs": -3.9410000000000025
+    },
+    {
+      "sample": 7,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.826,
+          "prompt_per_token_ms": 15.9565,
+          "prompt_per_second": 62.670385109516495,
+          "predicted_n": 8,
+          "predicted_ms": 236.39,
+          "predicted_per_token_ms": 33.769999999999996,
+          "predicted_per_second": 29.612081729345576
+        },
+        "clientWallMs": 301.131083,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.621,
+          "prompt_per_token_ms": 15.90525,
+          "prompt_per_second": 62.872322032033445,
+          "predicted_n": 8,
+          "predicted_ms": 233.872,
+          "predicted_per_token_ms": 33.41028571428571,
+          "predicted_per_second": 29.93090237394814
+        },
+        "clientWallMs": 298.4485,
+        "stateOverheadMs": 0.006333
+      },
+      "pairedClientDeltaMs": -2.6825829999999655,
+      "pairedPredictedDeltaMs": -2.5179999999999723
+    },
+    {
+      "sample": 8,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.677,
+          "prompt_per_token_ms": 15.91925,
+          "prompt_per_second": 62.81702969675079,
+          "predicted_n": 8,
+          "predicted_ms": 238.83,
+          "predicted_per_token_ms": 34.11857142857143,
+          "predicted_per_second": 29.30955072645815
+        },
+        "clientWallMs": 303.512583,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.333,
+          "prompt_per_token_ms": 15.58325,
+          "prompt_per_second": 64.17146615757304,
+          "predicted_n": 8,
+          "predicted_ms": 238.013,
+          "predicted_per_token_ms": 34.00185714285714,
+          "predicted_per_second": 29.410158268665995
+        },
+        "clientWallMs": 301.393875,
+        "stateOverheadMs": 0.004251
+      },
+      "pairedClientDeltaMs": -2.1187080000000265,
+      "pairedPredictedDeltaMs": -0.8170000000000073
+    },
+    {
+      "sample": 9,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.091,
+          "prompt_per_token_ms": 15.52275,
+          "prompt_per_second": 64.42157478539563,
+          "predicted_n": 8,
+          "predicted_ms": 239.58,
+          "predicted_per_token_ms": 34.22571428571429,
+          "predicted_per_second": 29.217797812839134
+        },
+        "clientWallMs": 302.688833,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.192,
+          "prompt_per_token_ms": 15.298,
+          "prompt_per_second": 65.36802196365538,
+          "predicted_n": 8,
+          "predicted_ms": 235.603,
+          "predicted_per_token_ms": 33.65757142857143,
+          "predicted_per_second": 29.71099688883418
+        },
+        "clientWallMs": 297.845209,
+        "stateOverheadMs": 0.006458
+      },
+      "pairedClientDeltaMs": -4.843623999999977,
+      "pairedPredictedDeltaMs": -3.977000000000004
+    },
+    {
+      "sample": 10,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.217,
+          "prompt_per_token_ms": 15.55425,
+          "prompt_per_second": 64.29111014674446,
+          "predicted_n": 8,
+          "predicted_ms": 235.949,
+          "predicted_per_token_ms": 33.707,
+          "predicted_per_second": 29.667428130655352
+        },
+        "clientWallMs": 299.1755,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.744,
+          "prompt_per_token_ms": 15.686,
+          "prompt_per_second": 63.75111564452378,
+          "predicted_n": 8,
+          "predicted_ms": 236.034,
+          "predicted_per_token_ms": 33.719142857142856,
+          "predicted_per_second": 29.65674436733691
+        },
+        "clientWallMs": 299.809084,
+        "stateOverheadMs": 0.010208
+      },
+      "pairedClientDeltaMs": 0.6335839999999848,
+      "pairedPredictedDeltaMs": 0.08499999999997954
+    },
+    {
+      "sample": 11,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.1,
+          "prompt_per_token_ms": 15.525,
+          "prompt_per_second": 64.4122383252818,
+          "predicted_n": 8,
+          "predicted_ms": 232.715,
+          "predicted_per_token_ms": 33.245,
+          "predicted_per_second": 30.079711234772144
+        },
+        "clientWallMs": 295.799875,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.998,
+          "prompt_per_token_ms": 15.9995,
+          "prompt_per_second": 62.50195318603706,
+          "predicted_n": 8,
+          "predicted_ms": 238.158,
+          "predicted_per_token_ms": 34.022571428571425,
+          "predicted_per_second": 29.392252202319472
+        },
+        "clientWallMs": 303.08075,
+        "stateOverheadMs": 0.006333
+      },
+      "pairedClientDeltaMs": 7.280875000000037,
+      "pairedPredictedDeltaMs": 5.442999999999984
+    },
+    {
+      "sample": 12,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.007,
+          "prompt_per_token_ms": 15.50175,
+          "prompt_per_second": 64.50884577547697,
+          "predicted_n": 8,
+          "predicted_ms": 234.801,
+          "predicted_per_token_ms": 33.543,
+          "predicted_per_second": 29.812479503920343
+        },
+        "clientWallMs": 297.900166,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.006,
+          "prompt_per_token_ms": 15.5015,
+          "prompt_per_second": 64.50988614005097,
+          "predicted_n": 8,
+          "predicted_ms": 237.476,
+          "predicted_per_token_ms": 33.92514285714286,
+          "predicted_per_second": 29.47666290488302
+        },
+        "clientWallMs": 300.473709,
+        "stateOverheadMs": 0.004209
+      },
+      "pairedClientDeltaMs": 2.5735429999999724,
+      "pairedPredictedDeltaMs": 2.6750000000000114
+    },
+    {
+      "sample": 13,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.727,
+          "prompt_per_token_ms": 15.43175,
+          "prompt_per_second": 64.801464513098,
+          "predicted_n": 8,
+          "predicted_ms": 237.203,
+          "predicted_per_token_ms": 33.88614285714286,
+          "predicted_per_second": 29.510587977386457
+        },
+        "clientWallMs": 299.867584,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.486,
+          "prompt_per_token_ms": 15.8715,
+          "prompt_per_second": 63.00601707463063,
+          "predicted_n": 8,
+          "predicted_ms": 237.413,
+          "predicted_per_token_ms": 33.91614285714286,
+          "predicted_per_second": 29.484484842868756
+        },
+        "clientWallMs": 301.801041,
+        "stateOverheadMs": 0.006791
+      },
+      "pairedClientDeltaMs": 1.9334569999999758,
+      "pairedPredictedDeltaMs": 0.21000000000000796
+    },
+    {
+      "sample": 14,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 60.207,
+          "prompt_per_token_ms": 15.05175,
+          "prompt_per_second": 66.43745743850383,
+          "predicted_n": 8,
+          "predicted_ms": 235.379,
+          "predicted_per_token_ms": 33.625571428571426,
+          "predicted_per_second": 29.739271557785532
+        },
+        "clientWallMs": 296.368166,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.811,
+          "prompt_per_token_ms": 15.45275,
+          "prompt_per_second": 64.71340052741421,
+          "predicted_n": 8,
+          "predicted_ms": 240.635,
+          "predicted_per_token_ms": 34.37642857142857,
+          "predicted_per_second": 29.08970016830469
+        },
+        "clientWallMs": 303.553833,
+        "stateOverheadMs": 0.004417
+      },
+      "pairedClientDeltaMs": 7.185667000000024,
+      "pairedPredictedDeltaMs": 5.256
+    },
+    {
+      "sample": 15,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.665,
+          "prompt_per_token_ms": 15.41625,
+          "prompt_per_second": 64.86661801670316,
+          "predicted_n": 8,
+          "predicted_ms": 237.775,
+          "predicted_per_token_ms": 33.96785714285714,
+          "predicted_per_second": 29.43959625696562
+        },
+        "clientWallMs": 300.592834,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.165,
+          "prompt_per_token_ms": 15.54125,
+          "prompt_per_second": 64.34488860291161,
+          "predicted_n": 8,
+          "predicted_ms": 236.666,
+          "predicted_per_token_ms": 33.80942857142857,
+          "predicted_per_second": 29.57754810576931
+        },
+        "clientWallMs": 299.931625,
+        "stateOverheadMs": 0.062125
+      },
+      "pairedClientDeltaMs": -0.6612089999999853,
+      "pairedPredictedDeltaMs": -1.1090000000000089
+    },
+    {
+      "sample": 16,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.686,
+          "prompt_per_token_ms": 15.9215,
+          "prompt_per_second": 62.80815249819427,
+          "predicted_n": 8,
+          "predicted_ms": 237.561,
+          "predicted_per_token_ms": 33.937285714285714,
+          "predicted_per_second": 29.46611607124065
+        },
+        "clientWallMs": 302.326167,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.971,
+          "prompt_per_token_ms": 15.74275,
+          "prompt_per_second": 63.52130345714694,
+          "predicted_n": 8,
+          "predicted_ms": 233.047,
+          "predicted_per_token_ms": 33.29242857142857,
+          "predicted_per_second": 30.036859517608033
+        },
+        "clientWallMs": 296.930375,
+        "stateOverheadMs": 0.009417
+      },
+      "pairedClientDeltaMs": -5.395791999999972,
+      "pairedPredictedDeltaMs": -4.51400000000001
+    },
+    {
+      "sample": 17,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.526,
+          "prompt_per_token_ms": 15.6315,
+          "prompt_per_second": 63.97338707097847,
+          "predicted_n": 8,
+          "predicted_ms": 236.773,
+          "predicted_per_token_ms": 33.824714285714286,
+          "predicted_per_second": 29.56418172680162
+        },
+        "clientWallMs": 300.507042,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.108,
+          "prompt_per_token_ms": 15.527,
+          "prompt_per_second": 64.4039415212211,
+          "predicted_n": 8,
+          "predicted_ms": 234.966,
+          "predicted_per_token_ms": 33.56657142857143,
+          "predicted_per_second": 29.791544308538256
+        },
+        "clientWallMs": 297.980625,
+        "stateOverheadMs": 0.008
+      },
+      "pairedClientDeltaMs": -2.5264170000000377,
+      "pairedPredictedDeltaMs": -1.806999999999988
+    },
+    {
+      "sample": 18,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.666,
+          "prompt_per_token_ms": 15.4165,
+          "prompt_per_second": 64.86556611422826,
+          "predicted_n": 8,
+          "predicted_ms": 237.398,
+          "predicted_per_token_ms": 33.914,
+          "predicted_per_second": 29.486347820958898
+        },
+        "clientWallMs": 300.186959,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.828,
+          "prompt_per_token_ms": 15.457,
+          "prompt_per_second": 64.69560716827327,
+          "predicted_n": 8,
+          "predicted_ms": 238.337,
+          "predicted_per_token_ms": 34.04814285714286,
+          "predicted_per_second": 29.37017752174442
+        },
+        "clientWallMs": 301.17325,
+        "stateOverheadMs": 0.004875
+      },
+      "pairedClientDeltaMs": 0.9862909999999943,
+      "pairedPredictedDeltaMs": 0.938999999999993
+    },
+    {
+      "sample": 19,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.703,
+          "prompt_per_token_ms": 15.67575,
+          "prompt_per_second": 63.79280098240913,
+          "predicted_n": 8,
+          "predicted_ms": 236.832,
+          "predicted_per_token_ms": 33.83314285714285,
+          "predicted_per_second": 29.556816646399135
+        },
+        "clientWallMs": 300.651333,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 60.618,
+          "prompt_per_token_ms": 15.1545,
+          "prompt_per_second": 65.9870005608895,
+          "predicted_n": 8,
+          "predicted_ms": 236.208,
+          "predicted_per_token_ms": 33.744,
+          "predicted_per_second": 29.63489805595069
+        },
+        "clientWallMs": 297.838166,
+        "stateOverheadMs": 0.007251
+      },
+      "pairedClientDeltaMs": -2.8131670000000213,
+      "pairedPredictedDeltaMs": -0.6239999999999952
+    },
+    {
+      "sample": 20,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.328,
+          "prompt_per_token_ms": 15.582,
+          "prompt_per_second": 64.17661404184315,
+          "predicted_n": 8,
+          "predicted_ms": 239.432,
+          "predicted_per_token_ms": 34.20457142857143,
+          "predicted_per_second": 29.235858197734643
+        },
+        "clientWallMs": 302.700667,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.677,
+          "prompt_per_token_ms": 15.66925,
+          "prompt_per_second": 63.81926384479155,
+          "predicted_n": 8,
+          "predicted_ms": 238.011,
+          "predicted_per_token_ms": 34.00157142857143,
+          "predicted_per_second": 29.410405401431024
+        },
+        "clientWallMs": 301.752083,
+        "stateOverheadMs": 0.008415
+      },
+      "pairedClientDeltaMs": -0.9485839999999826,
+      "pairedPredictedDeltaMs": -1.4209999999999923
+    },
+    {
+      "sample": 21,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.892,
+          "prompt_per_token_ms": 15.723,
+          "prompt_per_second": 63.601093938815744,
+          "predicted_n": 8,
+          "predicted_ms": 232.737,
+          "predicted_per_token_ms": 33.24814285714286,
+          "predicted_per_second": 30.076867880912786
+        },
+        "clientWallMs": 296.574083,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.445,
+          "prompt_per_token_ms": 15.61125,
+          "prompt_per_second": 64.05636960525263,
+          "predicted_n": 8,
+          "predicted_ms": 236.606,
+          "predicted_per_token_ms": 33.80085714285714,
+          "predicted_per_second": 29.585048561743996
+        },
+        "clientWallMs": 300.061167,
+        "stateOverheadMs": 0.007001
+      },
+      "pairedClientDeltaMs": 3.4870840000000385,
+      "pairedPredictedDeltaMs": 3.8689999999999998
+    },
+    {
+      "sample": 22,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.552,
+          "prompt_per_token_ms": 16.138,
+          "prompt_per_second": 61.96554715578138,
+          "predicted_n": 8,
+          "predicted_ms": 236.351,
+          "predicted_per_token_ms": 33.764428571428574,
+          "predicted_per_second": 29.61696798405761
+        },
+        "clientWallMs": 301.832125,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.415,
+          "prompt_per_token_ms": 15.60375,
+          "prompt_per_second": 64.08715853560842,
+          "predicted_n": 8,
+          "predicted_ms": 238.443,
+          "predicted_per_token_ms": 34.06328571428572,
+          "predicted_per_second": 29.35712098908334
+        },
+        "clientWallMs": 301.829917,
+        "stateOverheadMs": 0.005334
+      },
+      "pairedClientDeltaMs": -0.002207999999995991,
+      "pairedPredictedDeltaMs": 2.092000000000013
+    },
+    {
+      "sample": 23,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.627,
+          "prompt_per_token_ms": 16.15675,
+          "prompt_per_second": 61.89363578690022,
+          "predicted_n": 8,
+          "predicted_ms": 237.09,
+          "predicted_per_token_ms": 33.87,
+          "predicted_per_second": 29.524653085326246
+        },
+        "clientWallMs": 302.730291,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.451,
+          "prompt_per_token_ms": 16.11275,
+          "prompt_per_second": 62.0626522474438,
+          "predicted_n": 8,
+          "predicted_ms": 237.87,
+          "predicted_per_token_ms": 33.98142857142857,
+          "predicted_per_second": 29.42783873544373
+        },
+        "clientWallMs": 303.349,
+        "stateOverheadMs": 0.010374
+      },
+      "pairedClientDeltaMs": 0.6187089999999671,
+      "pairedPredictedDeltaMs": 0.7800000000000011
+    },
+    {
+      "sample": 24,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 61.552,
+          "prompt_per_token_ms": 15.388,
+          "prompt_per_second": 64.98570314530804,
+          "predicted_n": 8,
+          "predicted_ms": 236.754,
+          "predicted_per_token_ms": 33.821999999999996,
+          "predicted_per_second": 29.566554313760278
+        },
+        "clientWallMs": 299.343167,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.047,
+          "prompt_per_token_ms": 15.76175,
+          "prompt_per_second": 63.44473170809079,
+          "predicted_n": 8,
+          "predicted_ms": 238.696,
+          "predicted_per_token_ms": 34.09942857142857,
+          "predicted_per_second": 29.326004625129876
+        },
+        "clientWallMs": 302.6015,
+        "stateOverheadMs": 0.004792
+      },
+      "pairedClientDeltaMs": 3.2583329999999933,
+      "pairedPredictedDeltaMs": 1.9420000000000073
+    },
+    {
+      "sample": 25,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.395,
+          "prompt_per_token_ms": 16.09875,
+          "prompt_per_second": 62.1166239614877,
+          "predicted_n": 8,
+          "predicted_ms": 237.632,
+          "predicted_per_token_ms": 33.947428571428574,
+          "predicted_per_second": 29.45731214651225
+        },
+        "clientWallMs": 303.101583,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.409,
+          "prompt_per_token_ms": 15.60225,
+          "prompt_per_second": 64.09331987373616,
+          "predicted_n": 8,
+          "predicted_ms": 239.867,
+          "predicted_per_token_ms": 34.266714285714286,
+          "predicted_per_second": 29.18283882318118
+        },
+        "clientWallMs": 303.335666,
+        "stateOverheadMs": 0.007792
+      },
+      "pairedClientDeltaMs": 0.23408299999999826,
+      "pairedPredictedDeltaMs": 2.234999999999985
+    },
+    {
+      "sample": 26,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 65.345,
+          "prompt_per_token_ms": 16.33625,
+          "prompt_per_second": 61.21355880327493,
+          "predicted_n": 8,
+          "predicted_ms": 235.72,
+          "predicted_per_token_ms": 33.674285714285716,
+          "predicted_per_second": 29.69624978788393
+        },
+        "clientWallMs": 302.036875,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 65.641,
+          "prompt_per_token_ms": 16.41025,
+          "prompt_per_second": 60.93752380372023,
+          "predicted_n": 8,
+          "predicted_ms": 235.673,
+          "predicted_per_token_ms": 33.66757142857143,
+          "predicted_per_second": 29.70217207741235
+        },
+        "clientWallMs": 302.350458,
+        "stateOverheadMs": 0.00625
+      },
+      "pairedClientDeltaMs": 0.31358299999999417,
+      "pairedPredictedDeltaMs": -0.046999999999997044
+    },
+    {
+      "sample": 27,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 64.433,
+          "prompt_per_token_ms": 16.10825,
+          "prompt_per_second": 62.079990067201585,
+          "predicted_n": 8,
+          "predicted_ms": 238.47,
+          "predicted_per_token_ms": 34.067142857142855,
+          "predicted_per_second": 29.35379712332788
+        },
+        "clientWallMs": 303.861083,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 65.026,
+          "prompt_per_token_ms": 16.2565,
+          "prompt_per_second": 61.513855996063114,
+          "predicted_n": 8,
+          "predicted_ms": 234.095,
+          "predicted_per_token_ms": 33.442142857142855,
+          "predicted_per_second": 29.902390055319422
+        },
+        "clientWallMs": 299.972959,
+        "stateOverheadMs": 0.007625
+      },
+      "pairedClientDeltaMs": -3.888124000000005,
+      "pairedPredictedDeltaMs": -4.375
+    },
+    {
+      "sample": 28,
+      "order": "ON,OFF",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.656,
+          "prompt_per_token_ms": 15.914,
+          "prompt_per_second": 62.83775292195551,
+          "predicted_n": 8,
+          "predicted_ms": 238.367,
+          "predicted_per_token_ms": 34.05242857142857,
+          "predicted_per_second": 29.366481098474203
+        },
+        "clientWallMs": 302.935125,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.605,
+          "prompt_per_token_ms": 15.90125,
+          "prompt_per_second": 62.88813772502162,
+          "predicted_n": 8,
+          "predicted_ms": 237.877,
+          "predicted_per_token_ms": 33.98242857142857,
+          "predicted_per_second": 29.42697276323478
+        },
+        "clientWallMs": 302.402542,
+        "stateOverheadMs": 0.005084
+      },
+      "pairedClientDeltaMs": -0.5325830000000451,
+      "pairedPredictedDeltaMs": -0.4899999999999807
+    },
+    {
+      "sample": 29,
+      "order": "OFF,ON",
+      "semanticIdentical": true,
+      "off": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 62.233,
+          "prompt_per_token_ms": 15.55825,
+          "prompt_per_second": 64.27458101007504,
+          "predicted_n": 8,
+          "predicted_ms": 241.26,
+          "predicted_per_token_ms": 34.465714285714284,
+          "predicted_per_second": 29.0143413744508
+        },
+        "clientWallMs": 304.581417,
+        "stateOverheadMs": 0.0
+      },
+      "stateOn": {
+        "content": " or pong\n\n<think>\nThe user is",
+        "generatedTokens": [
+          466,
+          74966,
+          271,
+          248068,
+          198,
+          760,
+          1156,
+          369
+        ],
+        "serverTimings": {
+          "cache_n": 2,
+          "prompt_n": 4,
+          "prompt_ms": 63.583,
+          "prompt_per_token_ms": 15.89575,
+          "prompt_per_second": 62.90989729959266,
+          "predicted_n": 8,
+          "predicted_ms": 237.761,
+          "predicted_per_token_ms": 33.96585714285714,
+          "predicted_per_second": 29.441329738687173
+        },
+        "clientWallMs": 302.361833,
+        "stateOverheadMs": 0.009583
+      },
+      "pairedClientDeltaMs": -2.2195839999999976,
+      "pairedPredictedDeltaMs": -3.4989999999999952
+    }
+  ]
+}

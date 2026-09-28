@@ -1,0 +1,2086 @@
+{
+  "protocolVersion": "RQ3.LLAMA.SERVER.TRACE.PARSE.V1",
+  "boundary": "SERVER_LOG_TASK_AND_TRANSITION_TIMING / CORRELATION_ONLY / NOT_AN_INTERNAL_LLAMA_CPP_IMPLEMENTATION_CLAIM",
+  "control": "simigo2-experimental/results/backend-conformance/rq3-llama-context-controls-slotSim0-longD.json",
+  "log": "simigo2-experimental/results/backend-conformance/rq3-llama-context-controls-slotSim0-server.log",
+  "expectedRequestCount": 121,
+  "observedRequestCount": 121,
+  "sequenceMatch": true,
+  "transitionSummaryMs": {
+    "10->6": {
+      "n": 20.0,
+      "meanMs": 7.741449999999861,
+      "medianMs": 5.2949999999993835,
+      "minMs": 4.777999999999061,
+      "maxMs": 34.258999999999595
+    },
+    "6->10": {
+      "n": 20.0,
+      "meanMs": 2.294300000000149,
+      "medianMs": 1.8040000000003609,
+      "minMs": 0.48599999999998644,
+      "maxMs": 5.2290000000017045
+    },
+    "6->6": {
+      "n": 80.0,
+      "meanMs": 1.9146625000000363,
+      "medianMs": 0.5639999999997869,
+      "minMs": 0.4509999999999792,
+      "maxMs": 29.498999999999942
+    }
+  },
+  "tasks": [
+    {
+      "taskID": 0,
+      "launchAtSec": 1.5988149999999999,
+      "releaseAtSec": 1.721438,
+      "serverTaskMs": 122.62300000000015,
+      "serverPromptMs": 122.58,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 3,
+      "launchAtSec": 1.750937,
+      "releaseAtSec": 1.84968,
+      "serverTaskMs": 98.74300000000002,
+      "serverPromptMs": 98.72,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 6,
+      "launchAtSec": 1.850413,
+      "releaseAtSec": 1.947308,
+      "serverTaskMs": 96.89499999999995,
+      "serverPromptMs": 96.88,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 9,
+      "launchAtSec": 1.9478950000000002,
+      "releaseAtSec": 2.044774,
+      "serverTaskMs": 96.87899999999972,
+      "serverPromptMs": 96.87,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 12,
+      "launchAtSec": 2.0452939999999997,
+      "releaseAtSec": 2.1432889999999998,
+      "serverTaskMs": 97.99500000000006,
+      "serverPromptMs": 97.98,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 15,
+      "launchAtSec": 2.1437749999999998,
+      "releaseAtSec": 2.266734,
+      "serverTaskMs": 122.95900000000026,
+      "serverPromptMs": 122.93,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 18,
+      "launchAtSec": 2.3009929999999996,
+      "releaseAtSec": 2.3962369999999997,
+      "serverTaskMs": 95.24400000000011,
+      "serverPromptMs": 95.23,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 21,
+      "launchAtSec": 2.400103,
+      "releaseAtSec": 2.49578,
+      "serverTaskMs": 95.6769999999998,
+      "serverPromptMs": 95.66,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 24,
+      "launchAtSec": 2.497779,
+      "releaseAtSec": 2.616973,
+      "serverTaskMs": 119.19400000000024,
+      "serverPromptMs": 119.18,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 27,
+      "launchAtSec": 2.621872,
+      "releaseAtSec": 2.718774,
+      "serverTaskMs": 96.9019999999996,
+      "serverPromptMs": 96.89,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 30,
+      "launchAtSec": 2.72256,
+      "releaseAtSec": 2.819195,
+      "serverTaskMs": 96.63500000000002,
+      "serverPromptMs": 96.62,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 33,
+      "launchAtSec": 2.819772,
+      "releaseAtSec": 2.916835,
+      "serverTaskMs": 97.0629999999999,
+      "serverPromptMs": 97.05,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 36,
+      "launchAtSec": 2.917359,
+      "releaseAtSec": 3.013041,
+      "serverTaskMs": 95.68200000000004,
+      "serverPromptMs": 95.67,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 39,
+      "launchAtSec": 3.01353,
+      "releaseAtSec": 3.110112,
+      "serverTaskMs": 96.58200000000016,
+      "serverPromptMs": 96.56,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 42,
+      "launchAtSec": 3.110594,
+      "releaseAtSec": 3.206514,
+      "serverTaskMs": 95.92,
+      "serverPromptMs": 95.91,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 45,
+      "launchAtSec": 3.206978,
+      "releaseAtSec": 3.302463,
+      "serverTaskMs": 95.48500000000004,
+      "serverPromptMs": 95.47,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 48,
+      "launchAtSec": 3.302931,
+      "releaseAtSec": 3.400157,
+      "serverTaskMs": 97.22600000000003,
+      "serverPromptMs": 97.22,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 51,
+      "launchAtSec": 3.4018919999999997,
+      "releaseAtSec": 3.522507,
+      "serverTaskMs": 120.61500000000036,
+      "serverPromptMs": 120.6,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 54,
+      "launchAtSec": 3.52772,
+      "releaseAtSec": 3.622041,
+      "serverTaskMs": 94.32099999999988,
+      "serverPromptMs": 94.31,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 57,
+      "launchAtSec": 3.626257,
+      "releaseAtSec": 3.721933,
+      "serverTaskMs": 95.6760000000001,
+      "serverPromptMs": 95.66,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 60,
+      "launchAtSec": 3.723697,
+      "releaseAtSec": 3.846083,
+      "serverTaskMs": 122.38600000000011,
+      "serverPromptMs": 122.37,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 63,
+      "launchAtSec": 3.851037,
+      "releaseAtSec": 3.9463009999999996,
+      "serverTaskMs": 95.2639999999998,
+      "serverPromptMs": 95.25,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 66,
+      "launchAtSec": 3.9500710000000003,
+      "releaseAtSec": 4.046748,
+      "serverTaskMs": 96.67699999999968,
+      "serverPromptMs": 96.65,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 69,
+      "launchAtSec": 4.047422999999999,
+      "releaseAtSec": 4.144,
+      "serverTaskMs": 96.5770000000008,
+      "serverPromptMs": 96.56,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 72,
+      "launchAtSec": 4.144503,
+      "releaseAtSec": 4.239724,
+      "serverTaskMs": 95.22099999999955,
+      "serverPromptMs": 95.2,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 75,
+      "launchAtSec": 4.240207,
+      "releaseAtSec": 4.335666,
+      "serverTaskMs": 95.45899999999996,
+      "serverPromptMs": 95.45,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 78,
+      "launchAtSec": 4.336143,
+      "releaseAtSec": 4.4330739999999995,
+      "serverTaskMs": 96.93099999999966,
+      "serverPromptMs": 96.92,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 81,
+      "launchAtSec": 4.43358,
+      "releaseAtSec": 4.52937,
+      "serverTaskMs": 95.79000000000005,
+      "serverPromptMs": 95.78,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 84,
+      "launchAtSec": 4.529851,
+      "releaseAtSec": 4.624092,
+      "serverTaskMs": 94.24100000000024,
+      "serverPromptMs": 94.23,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 87,
+      "launchAtSec": 4.626312,
+      "releaseAtSec": 4.749548,
+      "serverTaskMs": 123.23599999999945,
+      "serverPromptMs": 123.22,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 90,
+      "launchAtSec": 4.754333999999999,
+      "releaseAtSec": 4.851211,
+      "serverTaskMs": 96.87700000000099,
+      "serverPromptMs": 96.86,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 93,
+      "launchAtSec": 4.8549940000000005,
+      "releaseAtSec": 4.95196,
+      "serverTaskMs": 96.96599999999921,
+      "serverPromptMs": 96.95,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 96,
+      "launchAtSec": 4.9537640000000005,
+      "releaseAtSec": 5.078047000000001,
+      "serverTaskMs": 124.28300000000014,
+      "serverPromptMs": 124.27,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 99,
+      "launchAtSec": 5.083331,
+      "releaseAtSec": 5.179670000000001,
+      "serverTaskMs": 96.3390000000004,
+      "serverPromptMs": 96.32,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 102,
+      "launchAtSec": 5.183483,
+      "releaseAtSec": 5.279701,
+      "serverTaskMs": 96.21800000000036,
+      "serverPromptMs": 96.2,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 105,
+      "launchAtSec": 5.280176,
+      "releaseAtSec": 5.376955000000001,
+      "serverTaskMs": 96.77900000000062,
+      "serverPromptMs": 96.77,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 108,
+      "launchAtSec": 5.377409,
+      "releaseAtSec": 5.472377,
+      "serverTaskMs": 94.96799999999972,
+      "serverPromptMs": 94.95,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 111,
+      "launchAtSec": 5.472833,
+      "releaseAtSec": 5.567817,
+      "serverTaskMs": 94.98400000000018,
+      "serverPromptMs": 94.97,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 114,
+      "launchAtSec": 5.568276999999999,
+      "releaseAtSec": 5.6642969999999995,
+      "serverTaskMs": 96.02000000000021,
+      "serverPromptMs": 96.0,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 117,
+      "launchAtSec": 5.664762,
+      "releaseAtSec": 5.761815,
+      "serverTaskMs": 97.05300000000072,
+      "serverPromptMs": 97.04,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 120,
+      "launchAtSec": 5.762266,
+      "releaseAtSec": 5.859821,
+      "serverTaskMs": 97.55499999999984,
+      "serverPromptMs": 97.54,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 123,
+      "launchAtSec": 5.8615569999999995,
+      "releaseAtSec": 5.984562,
+      "serverTaskMs": 123.00500000000092,
+      "serverPromptMs": 122.99,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 126,
+      "launchAtSec": 5.989339999999999,
+      "releaseAtSec": 6.0861350000000005,
+      "serverTaskMs": 96.79500000000107,
+      "serverPromptMs": 96.78,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 129,
+      "launchAtSec": 6.0900479999999995,
+      "releaseAtSec": 6.188689999999999,
+      "serverTaskMs": 98.6419999999999,
+      "serverPromptMs": 98.62,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 132,
+      "launchAtSec": 6.190529000000001,
+      "releaseAtSec": 6.313638,
+      "serverTaskMs": 123.10899999999947,
+      "serverPromptMs": 123.09,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 135,
+      "launchAtSec": 6.318664999999999,
+      "releaseAtSec": 6.416187000000001,
+      "serverTaskMs": 97.52200000000144,
+      "serverPromptMs": 97.51,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 138,
+      "launchAtSec": 6.419671999999999,
+      "releaseAtSec": 6.516479,
+      "serverTaskMs": 96.80700000000098,
+      "serverPromptMs": 96.79,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 141,
+      "launchAtSec": 6.517046000000001,
+      "releaseAtSec": 6.612585,
+      "serverTaskMs": 95.53899999999959,
+      "serverPromptMs": 95.52,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 144,
+      "launchAtSec": 6.613103,
+      "releaseAtSec": 6.710241,
+      "serverTaskMs": 97.13800000000018,
+      "serverPromptMs": 97.12,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 147,
+      "launchAtSec": 6.710771,
+      "releaseAtSec": 6.806959,
+      "serverTaskMs": 96.18799999999972,
+      "serverPromptMs": 96.18,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 150,
+      "launchAtSec": 6.807527,
+      "releaseAtSec": 6.902894,
+      "serverTaskMs": 95.36699999999954,
+      "serverPromptMs": 95.35,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 153,
+      "launchAtSec": 6.9034,
+      "releaseAtSec": 7.001129000000001,
+      "serverTaskMs": 97.72900000000018,
+      "serverPromptMs": 97.72,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 156,
+      "launchAtSec": 7.0016300000000005,
+      "releaseAtSec": 7.097917000000001,
+      "serverTaskMs": 96.28700000000023,
+      "serverPromptMs": 96.26,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 159,
+      "launchAtSec": 7.099611,
+      "releaseAtSec": 7.2227500000000004,
+      "serverTaskMs": 123.13900000000011,
+      "serverPromptMs": 123.12,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 162,
+      "launchAtSec": 7.228224,
+      "releaseAtSec": 7.325545,
+      "serverTaskMs": 97.321,
+      "serverPromptMs": 97.31,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 165,
+      "launchAtSec": 7.32925,
+      "releaseAtSec": 7.426369,
+      "serverTaskMs": 97.11900000000017,
+      "serverPromptMs": 97.11,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 168,
+      "launchAtSec": 7.428173,
+      "releaseAtSec": 7.549224000000001,
+      "serverTaskMs": 121.05100000000047,
+      "serverPromptMs": 121.03,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 171,
+      "launchAtSec": 7.554270000000001,
+      "releaseAtSec": 7.650669000000001,
+      "serverTaskMs": 96.3989999999999,
+      "serverPromptMs": 96.39,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 174,
+      "launchAtSec": 7.654449,
+      "releaseAtSec": 7.762056,
+      "serverTaskMs": 107.60700000000068,
+      "serverPromptMs": 107.59,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 177,
+      "launchAtSec": 7.762662000000001,
+      "releaseAtSec": 7.860671,
+      "serverTaskMs": 98.00899999999935,
+      "serverPromptMs": 97.99,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 180,
+      "launchAtSec": 7.861324,
+      "releaseAtSec": 7.961322,
+      "serverTaskMs": 99.99800000000025,
+      "serverPromptMs": 99.97,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 183,
+      "launchAtSec": 7.962047999999999,
+      "releaseAtSec": 8.062305,
+      "serverTaskMs": 100.25700000000093,
+      "serverPromptMs": 100.24,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 186,
+      "launchAtSec": 8.063128,
+      "releaseAtSec": 8.162991000000002,
+      "serverTaskMs": 99.86300000000092,
+      "serverPromptMs": 99.84,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 189,
+      "launchAtSec": 8.163851000000001,
+      "releaseAtSec": 8.263565999999999,
+      "serverTaskMs": 99.714999999998,
+      "serverPromptMs": 99.69,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 192,
+      "launchAtSec": 8.264448,
+      "releaseAtSec": 8.366021,
+      "serverTaskMs": 101.57300000000014,
+      "serverPromptMs": 101.55,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 195,
+      "launchAtSec": 8.370382,
+      "releaseAtSec": 8.499257,
+      "serverTaskMs": 128.87500000000074,
+      "serverPromptMs": 128.83,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 198,
+      "launchAtSec": 8.511232,
+      "releaseAtSec": 8.611036,
+      "serverTaskMs": 99.80400000000067,
+      "serverPromptMs": 99.77,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 201,
+      "launchAtSec": 8.617581000000001,
+      "releaseAtSec": 8.719038,
+      "serverTaskMs": 101.45699999999813,
+      "serverPromptMs": 101.43,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 204,
+      "launchAtSec": 8.722194,
+      "releaseAtSec": 8.850624,
+      "serverTaskMs": 128.42999999999984,
+      "serverPromptMs": 128.41,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 207,
+      "launchAtSec": 8.857564,
+      "releaseAtSec": 8.955608,
+      "serverTaskMs": 98.0439999999998,
+      "serverPromptMs": 98.03,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 210,
+      "launchAtSec": 8.959697,
+      "releaseAtSec": 9.056718,
+      "serverTaskMs": 97.0209999999998,
+      "serverPromptMs": 97.0,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 213,
+      "launchAtSec": 9.057203000000001,
+      "releaseAtSec": 9.152781,
+      "serverTaskMs": 95.57799999999794,
+      "serverPromptMs": 95.56,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 216,
+      "launchAtSec": 9.153318,
+      "releaseAtSec": 9.251584999999999,
+      "serverTaskMs": 98.2669999999981,
+      "serverPromptMs": 98.25,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 219,
+      "launchAtSec": 9.252072,
+      "releaseAtSec": 9.350265,
+      "serverTaskMs": 98.1930000000002,
+      "serverPromptMs": 98.18,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 222,
+      "launchAtSec": 9.350723,
+      "releaseAtSec": 9.446333,
+      "serverTaskMs": 95.60999999999886,
+      "serverPromptMs": 95.6,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 225,
+      "launchAtSec": 9.4469,
+      "releaseAtSec": 9.543047,
+      "serverTaskMs": 96.1470000000002,
+      "serverPromptMs": 96.14,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 228,
+      "launchAtSec": 9.543574,
+      "releaseAtSec": 9.638964,
+      "serverTaskMs": 95.39000000000009,
+      "serverPromptMs": 95.38,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 231,
+      "launchAtSec": 9.640962,
+      "releaseAtSec": 9.762874,
+      "serverTaskMs": 121.91200000000002,
+      "serverPromptMs": 121.89,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 234,
+      "launchAtSec": 9.768185,
+      "releaseAtSec": 9.864321,
+      "serverTaskMs": 96.13599999999956,
+      "serverPromptMs": 96.12,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 237,
+      "launchAtSec": 9.867999000000001,
+      "releaseAtSec": 9.964371,
+      "serverTaskMs": 96.37199999999879,
+      "serverPromptMs": 96.35,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 240,
+      "launchAtSec": 9.966116,
+      "releaseAtSec": 10.089764,
+      "serverTaskMs": 123.64800000000109,
+      "serverPromptMs": 123.63,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 243,
+      "launchAtSec": 10.09507,
+      "releaseAtSec": 10.192971,
+      "serverTaskMs": 97.90100000000024,
+      "serverPromptMs": 97.89,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 246,
+      "launchAtSec": 10.196703,
+      "releaseAtSec": 10.293894,
+      "serverTaskMs": 97.19100000000047,
+      "serverPromptMs": 97.18,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 249,
+      "launchAtSec": 10.294363,
+      "releaseAtSec": 10.39274,
+      "serverTaskMs": 98.37699999999927,
+      "serverPromptMs": 98.36,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 252,
+      "launchAtSec": 10.393194000000001,
+      "releaseAtSec": 10.489006000000002,
+      "serverTaskMs": 95.81200000000045,
+      "serverPromptMs": 95.8,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 255,
+      "launchAtSec": 10.489488000000001,
+      "releaseAtSec": 10.584862,
+      "serverTaskMs": 95.37399999999785,
+      "serverPromptMs": 95.36,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 258,
+      "launchAtSec": 10.585353000000001,
+      "releaseAtSec": 10.683355,
+      "serverTaskMs": 98.00199999999926,
+      "serverPromptMs": 97.99,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 261,
+      "launchAtSec": 10.683847,
+      "releaseAtSec": 10.779932,
+      "serverTaskMs": 96.08500000000042,
+      "serverPromptMs": 96.07,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 264,
+      "launchAtSec": 10.780484999999999,
+      "releaseAtSec": 10.877903,
+      "serverTaskMs": 97.41800000000111,
+      "serverPromptMs": 97.4,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 267,
+      "launchAtSec": 10.879669999999999,
+      "releaseAtSec": 11.002623,
+      "serverTaskMs": 122.95300000000076,
+      "serverPromptMs": 122.94,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 270,
+      "launchAtSec": 11.007607,
+      "releaseAtSec": 11.104021,
+      "serverTaskMs": 96.41399999999933,
+      "serverPromptMs": 96.4,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 273,
+      "launchAtSec": 11.108122,
+      "releaseAtSec": 11.204207,
+      "serverTaskMs": 96.08500000000042,
+      "serverPromptMs": 96.07,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 276,
+      "launchAtSec": 11.205965,
+      "releaseAtSec": 11.329746,
+      "serverTaskMs": 123.78099999999925,
+      "serverPromptMs": 123.77,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 279,
+      "launchAtSec": 11.334665,
+      "releaseAtSec": 11.431384,
+      "serverTaskMs": 96.71900000000022,
+      "serverPromptMs": 96.71,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 282,
+      "launchAtSec": 11.435186,
+      "releaseAtSec": 11.530612999999999,
+      "serverTaskMs": 95.42699999999904,
+      "serverPromptMs": 95.41,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 285,
+      "launchAtSec": 11.531083,
+      "releaseAtSec": 11.627721000000001,
+      "serverTaskMs": 96.63800000000045,
+      "serverPromptMs": 96.63,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 288,
+      "launchAtSec": 11.628205,
+      "releaseAtSec": 11.726612999999999,
+      "serverTaskMs": 98.40799999999916,
+      "serverPromptMs": 98.4,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 291,
+      "launchAtSec": 11.727085,
+      "releaseAtSec": 11.823601,
+      "serverTaskMs": 96.51599999999938,
+      "serverPromptMs": 96.5,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 294,
+      "launchAtSec": 11.824162,
+      "releaseAtSec": 11.920227,
+      "serverTaskMs": 96.06500000000118,
+      "serverPromptMs": 96.05,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 297,
+      "launchAtSec": 11.920688,
+      "releaseAtSec": 12.018346000000001,
+      "serverTaskMs": 97.65800000000091,
+      "serverPromptMs": 97.65,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 300,
+      "launchAtSec": 12.0188,
+      "releaseAtSec": 12.117029,
+      "serverTaskMs": 98.2289999999999,
+      "serverPromptMs": 98.22,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 303,
+      "launchAtSec": 12.118778,
+      "releaseAtSec": 12.245256999999999,
+      "serverTaskMs": 126.47899999999801,
+      "serverPromptMs": 126.46,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 306,
+      "launchAtSec": 12.251253,
+      "releaseAtSec": 12.354253,
+      "serverTaskMs": 102.99999999999976,
+      "serverPromptMs": 102.97,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 309,
+      "launchAtSec": 12.363553999999999,
+      "releaseAtSec": 12.466603999999998,
+      "serverTaskMs": 103.04999999999964,
+      "serverPromptMs": 103.01,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 312,
+      "launchAtSec": 12.471833,
+      "releaseAtSec": 12.599521000000001,
+      "serverTaskMs": 127.68800000000091,
+      "serverPromptMs": 127.65,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 315,
+      "launchAtSec": 12.614324000000002,
+      "releaseAtSec": 12.717656,
+      "serverTaskMs": 103.3319999999982,
+      "serverPromptMs": 103.3,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 318,
+      "launchAtSec": 12.724757,
+      "releaseAtSec": 12.82743,
+      "serverTaskMs": 102.67299999999935,
+      "serverPromptMs": 102.64,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 321,
+      "launchAtSec": 12.828273999999999,
+      "releaseAtSec": 12.929654000000001,
+      "serverTaskMs": 101.38000000000247,
+      "serverPromptMs": 101.35,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 324,
+      "launchAtSec": 12.930438,
+      "releaseAtSec": 13.030724999999999,
+      "serverTaskMs": 100.28699999999802,
+      "serverPromptMs": 100.25,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 327,
+      "launchAtSec": 13.031573,
+      "releaseAtSec": 13.13393,
+      "serverTaskMs": 102.35699999999959,
+      "serverPromptMs": 102.33,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 330,
+      "launchAtSec": 13.134656,
+      "releaseAtSec": 13.239264,
+      "serverTaskMs": 104.6080000000007,
+      "serverPromptMs": 104.58,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 333,
+      "launchAtSec": 13.240125,
+      "releaseAtSec": 13.34336,
+      "serverTaskMs": 103.23499999999974,
+      "serverPromptMs": 103.21,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 336,
+      "launchAtSec": 13.344016,
+      "releaseAtSec": 13.446185,
+      "serverTaskMs": 102.16899999999995,
+      "serverPromptMs": 102.15,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 339,
+      "launchAtSec": 13.450225999999999,
+      "releaseAtSec": 13.577982,
+      "serverTaskMs": 127.75600000000153,
+      "serverPromptMs": 127.72,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 342,
+      "launchAtSec": 13.586403,
+      "releaseAtSec": 13.688151000000001,
+      "serverTaskMs": 101.74800000000062,
+      "serverPromptMs": 101.72,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 345,
+      "launchAtSec": 13.694140999999998,
+      "releaseAtSec": 13.795777,
+      "serverTaskMs": 101.63600000000095,
+      "serverPromptMs": 101.61,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 348,
+      "launchAtSec": 13.798778,
+      "releaseAtSec": 13.927667999999999,
+      "serverTaskMs": 128.8899999999984,
+      "serverPromptMs": 128.87,
+      "promptTokens": 10
+    },
+    {
+      "taskID": 351,
+      "launchAtSec": 13.934121999999999,
+      "releaseAtSec": 14.033496999999999,
+      "serverTaskMs": 99.37500000000021,
+      "serverPromptMs": 99.36,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 354,
+      "launchAtSec": 14.037598000000001,
+      "releaseAtSec": 14.135504,
+      "serverTaskMs": 97.90599999999827,
+      "serverPromptMs": 97.89,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 357,
+      "launchAtSec": 14.13603,
+      "releaseAtSec": 14.234991,
+      "serverTaskMs": 98.96100000000096,
+      "serverPromptMs": 98.95,
+      "promptTokens": 6
+    },
+    {
+      "taskID": 360,
+      "launchAtSec": 14.235489,
+      "releaseAtSec": 14.334489999999999,
+      "serverTaskMs": 99.00099999999945,
+      "serverPromptMs": 98.99,
+      "promptTokens": 6
+    }
+  ],
+  "transitions": [
+    {
+      "previousTaskID": 0,
+      "currentTaskID": 3,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 29.498999999999942
+    },
+    {
+      "previousTaskID": 3,
+      "currentTaskID": 6,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.7330000000000947
+    },
+    {
+      "previousTaskID": 6,
+      "currentTaskID": 9,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5870000000001152
+    },
+    {
+      "previousTaskID": 9,
+      "currentTaskID": 12,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5199999999998539
+    },
+    {
+      "previousTaskID": 12,
+      "currentTaskID": 15,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 0.48599999999998644
+    },
+    {
+      "previousTaskID": 15,
+      "currentTaskID": 18,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 34.258999999999595
+    },
+    {
+      "previousTaskID": 18,
+      "currentTaskID": 21,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.866000000000369
+    },
+    {
+      "previousTaskID": 21,
+      "currentTaskID": 24,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.999000000000084
+    },
+    {
+      "previousTaskID": 24,
+      "currentTaskID": 27,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.898999999999987
+    },
+    {
+      "previousTaskID": 27,
+      "currentTaskID": 30,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.786000000000289
+    },
+    {
+      "previousTaskID": 30,
+      "currentTaskID": 33,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5769999999998277
+    },
+    {
+      "previousTaskID": 33,
+      "currentTaskID": 36,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5239999999999689
+    },
+    {
+      "previousTaskID": 36,
+      "currentTaskID": 39,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4889999999999617
+    },
+    {
+      "previousTaskID": 39,
+      "currentTaskID": 42,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4819999999998714
+    },
+    {
+      "previousTaskID": 42,
+      "currentTaskID": 45,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.46400000000001995
+    },
+    {
+      "previousTaskID": 45,
+      "currentTaskID": 48,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.468000000000135
+    },
+    {
+      "previousTaskID": 48,
+      "currentTaskID": 51,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.734999999999598
+    },
+    {
+      "previousTaskID": 51,
+      "currentTaskID": 54,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.212999999999912
+    },
+    {
+      "previousTaskID": 54,
+      "currentTaskID": 57,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 4.2159999999999975
+    },
+    {
+      "previousTaskID": 57,
+      "currentTaskID": 60,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7640000000000988
+    },
+    {
+      "previousTaskID": 60,
+      "currentTaskID": 63,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.953999999999681
+    },
+    {
+      "previousTaskID": 63,
+      "currentTaskID": 66,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.770000000000717
+    },
+    {
+      "previousTaskID": 66,
+      "currentTaskID": 69,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.674999999999315
+    },
+    {
+      "previousTaskID": 69,
+      "currentTaskID": 72,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5030000000001422
+    },
+    {
+      "previousTaskID": 72,
+      "currentTaskID": 75,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4830000000000112
+    },
+    {
+      "previousTaskID": 75,
+      "currentTaskID": 78,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4770000000000607
+    },
+    {
+      "previousTaskID": 78,
+      "currentTaskID": 81,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5060000000005616
+    },
+    {
+      "previousTaskID": 81,
+      "currentTaskID": 84,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.48099999999973164
+    },
+    {
+      "previousTaskID": 84,
+      "currentTaskID": 87,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 2.220000000000333
+    },
+    {
+      "previousTaskID": 87,
+      "currentTaskID": 90,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.785999999999291
+    },
+    {
+      "previousTaskID": 90,
+      "currentTaskID": 93,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.783000000000314
+    },
+    {
+      "previousTaskID": 93,
+      "currentTaskID": 96,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.804000000000805
+    },
+    {
+      "previousTaskID": 96,
+      "currentTaskID": 99,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.283999999999622
+    },
+    {
+      "previousTaskID": 99,
+      "currentTaskID": 102,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.812999999999178
+    },
+    {
+      "previousTaskID": 102,
+      "currentTaskID": 105,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.47499999999978115
+    },
+    {
+      "previousTaskID": 105,
+      "currentTaskID": 108,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.45399999999951035
+    },
+    {
+      "previousTaskID": 108,
+      "currentTaskID": 111,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4559999999997899
+    },
+    {
+      "previousTaskID": 111,
+      "currentTaskID": 114,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.45999999999946084
+    },
+    {
+      "previousTaskID": 114,
+      "currentTaskID": 117,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.46500000000015973
+    },
+    {
+      "previousTaskID": 117,
+      "currentTaskID": 120,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4509999999999792
+    },
+    {
+      "previousTaskID": 120,
+      "currentTaskID": 123,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7359999999992937
+    },
+    {
+      "previousTaskID": 123,
+      "currentTaskID": 126,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.777999999999061
+    },
+    {
+      "previousTaskID": 126,
+      "currentTaskID": 129,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.912999999998945
+    },
+    {
+      "previousTaskID": 129,
+      "currentTaskID": 132,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.8390000000012563
+    },
+    {
+      "previousTaskID": 132,
+      "currentTaskID": 135,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.0269999999992265
+    },
+    {
+      "previousTaskID": 135,
+      "currentTaskID": 138,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.484999999998628
+    },
+    {
+      "previousTaskID": 138,
+      "currentTaskID": 141,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5670000000002062
+    },
+    {
+      "previousTaskID": 141,
+      "currentTaskID": 144,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5179999999995744
+    },
+    {
+      "previousTaskID": 144,
+      "currentTaskID": 147,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5300000000003635
+    },
+    {
+      "previousTaskID": 147,
+      "currentTaskID": 150,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.568000000000346
+    },
+    {
+      "previousTaskID": 150,
+      "currentTaskID": 153,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5060000000005616
+    },
+    {
+      "previousTaskID": 153,
+      "currentTaskID": 156,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5009999999998627
+    },
+    {
+      "previousTaskID": 156,
+      "currentTaskID": 159,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.6939999999996402
+    },
+    {
+      "previousTaskID": 159,
+      "currentTaskID": 162,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.473999999999535
+    },
+    {
+      "previousTaskID": 162,
+      "currentTaskID": 165,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.7050000000000693
+    },
+    {
+      "previousTaskID": 165,
+      "currentTaskID": 168,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.8039999999999168
+    },
+    {
+      "previousTaskID": 168,
+      "currentTaskID": 171,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.046000000000106
+    },
+    {
+      "previousTaskID": 171,
+      "currentTaskID": 174,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.7799999999990064
+    },
+    {
+      "previousTaskID": 174,
+      "currentTaskID": 177,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.6060000000003285
+    },
+    {
+      "previousTaskID": 177,
+      "currentTaskID": 180,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.6529999999997926
+    },
+    {
+      "previousTaskID": 180,
+      "currentTaskID": 183,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.7259999999993383
+    },
+    {
+      "previousTaskID": 183,
+      "currentTaskID": 186,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8230000000004623
+    },
+    {
+      "previousTaskID": 186,
+      "currentTaskID": 189,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8599999999994168
+    },
+    {
+      "previousTaskID": 189,
+      "currentTaskID": 192,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8820000000007155
+    },
+    {
+      "previousTaskID": 192,
+      "currentTaskID": 195,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 4.360999999999393
+    },
+    {
+      "previousTaskID": 195,
+      "currentTaskID": 198,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 11.974999999999625
+    },
+    {
+      "previousTaskID": 198,
+      "currentTaskID": 201,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 6.545000000000911
+    },
+    {
+      "previousTaskID": 201,
+      "currentTaskID": 204,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 3.1560000000006028
+    },
+    {
+      "previousTaskID": 204,
+      "currentTaskID": 207,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 6.940000000000168
+    },
+    {
+      "previousTaskID": 207,
+      "currentTaskID": 210,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 4.089000000000453
+    },
+    {
+      "previousTaskID": 210,
+      "currentTaskID": 213,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.48500000000117893
+    },
+    {
+      "previousTaskID": 213,
+      "currentTaskID": 216,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.537000000001342
+    },
+    {
+      "previousTaskID": 216,
+      "currentTaskID": 219,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4870000000014585
+    },
+    {
+      "previousTaskID": 219,
+      "currentTaskID": 222,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.45800000000006946
+    },
+    {
+      "previousTaskID": 222,
+      "currentTaskID": 225,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5670000000002062
+    },
+    {
+      "previousTaskID": 225,
+      "currentTaskID": 228,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5269999999999442
+    },
+    {
+      "previousTaskID": 228,
+      "currentTaskID": 231,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.9980000000003884
+    },
+    {
+      "previousTaskID": 231,
+      "currentTaskID": 234,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.311000000000732
+    },
+    {
+      "previousTaskID": 234,
+      "currentTaskID": 237,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.6780000000007362
+    },
+    {
+      "previousTaskID": 237,
+      "currentTaskID": 240,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7449999999996635
+    },
+    {
+      "previousTaskID": 240,
+      "currentTaskID": 243,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.305999999999145
+    },
+    {
+      "previousTaskID": 243,
+      "currentTaskID": 246,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.7319999999994025
+    },
+    {
+      "previousTaskID": 246,
+      "currentTaskID": 249,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.46900000000071884
+    },
+    {
+      "previousTaskID": 249,
+      "currentTaskID": 252,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4540000000012867
+    },
+    {
+      "previousTaskID": 252,
+      "currentTaskID": 255,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4819999999998714
+    },
+    {
+      "previousTaskID": 255,
+      "currentTaskID": 258,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4910000000020176
+    },
+    {
+      "previousTaskID": 258,
+      "currentTaskID": 261,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.49199999999949284
+    },
+    {
+      "previousTaskID": 261,
+      "currentTaskID": 264,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5529999999982493
+    },
+    {
+      "previousTaskID": 264,
+      "currentTaskID": 267,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7669999999991859
+    },
+    {
+      "previousTaskID": 267,
+      "currentTaskID": 270,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.9840000000003215
+    },
+    {
+      "previousTaskID": 270,
+      "currentTaskID": 273,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 4.101000000000354
+    },
+    {
+      "previousTaskID": 273,
+      "currentTaskID": 276,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7580000000005924
+    },
+    {
+      "previousTaskID": 276,
+      "currentTaskID": 279,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 4.9189999999992295
+    },
+    {
+      "previousTaskID": 279,
+      "currentTaskID": 282,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 3.802000000000305
+    },
+    {
+      "previousTaskID": 282,
+      "currentTaskID": 285,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4700000000017468
+    },
+    {
+      "previousTaskID": 285,
+      "currentTaskID": 288,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4839999999983746
+    },
+    {
+      "previousTaskID": 288,
+      "currentTaskID": 291,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.47200000000202635
+    },
+    {
+      "previousTaskID": 291,
+      "currentTaskID": 294,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5609999999993676
+    },
+    {
+      "previousTaskID": 294,
+      "currentTaskID": 297,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.4609999999996006
+    },
+    {
+      "previousTaskID": 297,
+      "currentTaskID": 300,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.45399999999951035
+    },
+    {
+      "previousTaskID": 300,
+      "currentTaskID": 303,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 1.7490000000002226
+    },
+    {
+      "previousTaskID": 303,
+      "currentTaskID": 306,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 5.996000000001445
+    },
+    {
+      "previousTaskID": 306,
+      "currentTaskID": 309,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 9.300999999998893
+    },
+    {
+      "previousTaskID": 309,
+      "currentTaskID": 312,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 5.2290000000017045
+    },
+    {
+      "previousTaskID": 312,
+      "currentTaskID": 315,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 14.803000000000566
+    },
+    {
+      "previousTaskID": 315,
+      "currentTaskID": 318,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 7.101000000000468
+    },
+    {
+      "previousTaskID": 318,
+      "currentTaskID": 321,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8439999999989567
+    },
+    {
+      "previousTaskID": 321,
+      "currentTaskID": 324,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.7839999999994518
+    },
+    {
+      "previousTaskID": 324,
+      "currentTaskID": 327,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8480000000012922
+    },
+    {
+      "previousTaskID": 327,
+      "currentTaskID": 330,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.7260000000002265
+    },
+    {
+      "previousTaskID": 330,
+      "currentTaskID": 333,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.8610000000004447
+    },
+    {
+      "previousTaskID": 333,
+      "currentTaskID": 336,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.6559999999993238
+    },
+    {
+      "previousTaskID": 336,
+      "currentTaskID": 339,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 4.040999999999073
+    },
+    {
+      "previousTaskID": 339,
+      "currentTaskID": 342,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 8.421000000000234
+    },
+    {
+      "previousTaskID": 342,
+      "currentTaskID": 345,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 5.989999999997053
+    },
+    {
+      "previousTaskID": 345,
+      "currentTaskID": 348,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 10,
+      "transition": "6->10",
+      "releaseToLaunchMs": 3.0010000000011416
+    },
+    {
+      "previousTaskID": 348,
+      "currentTaskID": 351,
+      "previousPromptTokens": 10,
+      "currentPromptTokens": 6,
+      "transition": "10->6",
+      "releaseToLaunchMs": 6.453999999999738
+    },
+    {
+      "previousTaskID": 351,
+      "currentTaskID": 354,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 4.101000000002131
+    },
+    {
+      "previousTaskID": 354,
+      "currentTaskID": 357,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.5260000000006926
+    },
+    {
+      "previousTaskID": 357,
+      "currentTaskID": 360,
+      "previousPromptTokens": 6,
+      "currentPromptTokens": 6,
+      "transition": "6->6",
+      "releaseToLaunchMs": 0.49799999999855515
+    }
+  ],
+  "expectedOrders": [
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "same",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "diverge",
+    "same",
+    "same",
+    "same"
+  ]
+}
