@@ -519,7 +519,7 @@
 			repositoryURL = "https://github.com/slamfinger/mlx-swift";
 			requirement = {
 				kind = revision;
-				revision = "6ca0e88c90b71267bf312e8106ceccf84017fba9";
+				revision = "25b3cea4bb82fe1f0e4af73fd831fb35fef77f5b";
 			};
 		};
 		C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
