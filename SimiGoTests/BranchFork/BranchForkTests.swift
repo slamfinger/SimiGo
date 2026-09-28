@@ -94,10 +94,10 @@ final class BranchForkTests: XCTestCase {
     ///   → restore 抛出（fail-closed）。
     /// meta 缺失：
     ///   → restore 抛出（fail-closed）。
-    /// 这是 P1-C1 的动态见证：一致性缺口不在"文件损坏"，而在
-    /// "合法但不同代"的配对。修复（save 盖章 tokenCount + restore
-    /// 交叉核对）落地后，本测试的 W2 断言应翻转为 fail-closed。
-    func testCheckpointPairMismatchFailsOpen() async throws {
+    /// C1 契约测试（BETA-AUDIT-1 R5）：checkpoint 配对一致性——
+    /// 混代对/截断/缺失一律 fail-closed；语义残留（W2b）已登记为
+    /// 非阻塞见证。
+    func testCheckpointPairMismatchFailsClosed() async throws {
         let modelPath = try Self.requireModel()
         let cfg = Self.greedyConfig()
         let info = ModelInfo(path: modelPath, kind: .mlx)
@@ -159,7 +159,7 @@ final class BranchForkTests: XCTestCase {
         try encoder.encode(forgedMeta).write(to: metaURL, options: .atomic)
 
         // ---- W2a 意外窗口（C1 修复验证）：陈旧 cacheSHA256 的 meta 配新
-        // cache（= crash-between-files 的实际形态）→ 必须 fail-closed。
+        // 形态（= crash-between-files 的磁盘残留）。SHA 守卫必须拒绝混代对。
         var stalePairMeta = realMeta
         stalePairMeta.cacheSHA256 = String(repeating: "0", count: 64)
         stalePairMeta.checkpointGeneration = "stale-generation"
@@ -194,7 +194,7 @@ final class BranchForkTests: XCTestCase {
         do {
             _ = try await runtime.loadSessionCache(
                 sessionId: "s", logicalBranchId: "main", from: dir)
-            XCTFail("W1：截断 safetensors 不应静默 restore（fail-open 复发）")
+            XCTFail("W1：截断 safetensors 不应静默 restore")
         } catch {
             // 期望：fail-closed（C1 修复生效）
         }
@@ -738,7 +738,7 @@ final class BranchForkTests: XCTestCase {
         do {
             _ = try await runtime.loadSessionCache(
                 sessionId: "s", logicalBranchId: "main", from: dirA)
-            XCTFail("混代对（G2 cache + G1 meta）不应静默 restore——C1 fail-open 复发")
+            XCTFail("混代对（G2 cache + G1 meta）不应静默 restore")
         } catch {
             // 期望：fail-closed（SHA/generation 守卫）
         }

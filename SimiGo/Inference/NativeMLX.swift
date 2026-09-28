@@ -1410,6 +1410,25 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     /// checkpoint 落盘内核（无 gate）——公开 saveSessionCache 包 gate 使用；
     /// roll-forward 路径在 generate 持 gate 期间直接调用，避免 gate 重入死锁。
+    /// Streamed SHA-256 over a file (O(chunk) memory). Checkpoint content
+    /// identity must never pull a multi-GiB representation into RAM for
+    /// hashing (STEP-10 review, 2026-09-28): lifecycle-boundary operation,
+    /// never in the generation hot path.
+    nonisolated static func sha256HexOfFile(at url: URL, chunkBytes: Int = 4 << 20) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while true {
+            let chunk = try handle.read(upToCount: chunkBytes)
+            guard let chunk, !chunk.isEmpty else { break }
+            var data = chunk
+            try autoreleasepool {
+                hasher.update(data: data)
+            }
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
     private func performSave(
         key: String, traceKey: String, container: ModelContainer,
         managed: ManagedSession, directory: URL, modelPath: String
@@ -1429,10 +1448,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // The vendor cache is written separately from the sidecar. Bind the
         // pair with a generation id + content hash so any crash/failure between
         // the two writes becomes an invalid checkpoint instead of a mixed pair.
-        let cacheBytes = try Data(contentsOf: cacheURL)
-        let cacheSHA256 = SHA256.hash(data: cacheBytes)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        let cacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
         let checkpointGeneration = UUID().uuidString.lowercased()
 
         let encoder = JSONEncoder()
@@ -1519,10 +1535,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "session checkpoint has no generation/hash commit proof"
             )
         }
-        let cacheURLData = try Data(contentsOf: cacheURL)
-        let actualCacheSHA256 = SHA256.hash(data: cacheURLData)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        let actualCacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
         guard actualCacheSHA256 == expectedCacheSHA256 else {
             throw RuntError.generationFailed(
                 "session checkpoint generation mismatch: generation=\(checkpointGeneration)"
