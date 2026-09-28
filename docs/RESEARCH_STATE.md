@@ -5255,6 +5255,51 @@ the triple guard already enforces it. The contract breaks only if a
 future B-4 restore stops setting state/ledger; guard replacement with
 a registry query is then mandatory.
 
+### FORK-3 step-8 LANDED (bookkeeping backfilled) — 2026-09-28
+
+3a29250 turned the Gate A/B contracts into real runtime types
+(zero-MLX): RepresentationRef (identity fields + canonical key, R-I3/
+I5 by construction), ExecutionRepresentationBinding +
+ExecutionBindingRegistry (append-only rows, per-Execution monotonic
+generation, supersede-on-rebind, explicit detach, currentBinding =
+B-R2, activeBindings = B-I5's Ref -> N), forkChildBinding (F-I1/I2/
+I3/I6 — zero re-materialization is STRUCTURAL: the registry has no
+store parameter), and the Gate C ResolutionState classifier.
+Structural battery 5 tests; suite 133/133. This section backfills the
+registration gap — the landing predated the F3 device-acceptance
+rounds.
+
+### FORK-3 step-9 LANDED — Binding wiring on the daily path — 2026-09-28
+
+The registry is now the REAL holder of bindings on the serving path
+(product main 2bc40f2, release 27f1b32):
+
+```text
+registry      process-lifetime, owned by NativeMLXPrefixPool
+              (bindings are execution-scoped runtime state; the
+              store persists, the registry does not — a restored
+              session re-binds at its poolBind)
+ref deriving  deterministic from a pool entry (R-I1): kind=
+              prefixSnapshot, namespace modelID/kvFingerprint,
+              renderIdentity=chat-daily, contentHash=entry
+              boundaryHash, boundLength=entry.tokenCount — parent
+              export and child bind derive the IDENTICAL Ref
+bind points   poolExport binds the exporting execution; poolBind
+              binds the child to the same Ref (cross-process fork =
+              bind to the derived ref; activeBindings realizes
+              B-I5's Ref -> N). forkChildBinding stays the same-
+              process API.
+evidence      trace lines carry bindingGen/refHash; the battery
+              asserts the registry recorded the child fork
+device        full pool class PASSED (F3 30.1s / B-5 22.7s /
+              truncation x2); trace witness: child poolBind
+              bindingGen=1, parent poolExport bindingGen=2
+              (B-R3 monotonic)
+```
+
+Deferred after step-9: usage projection into GenerationUsageReport;
+disk GC policy; forkSessionBranch API plug-in decision (LAST).
+
 ### F3_DEVICE_ACCEPTANCE attempt 2 — PASSED — 2026-09-28
 
 M5 (Mac17,4), Qwen3-Coder-30B-A3B-Instruct-4bit, Debug,
@@ -5341,5 +5386,10 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 PRODUCT_MAIN_LANDED (main 971f43e; battery + B-5 +
                 truncation green on the mainline, real cold baseline
                 via per-run nonce) /
-                UPSTREAM_SYNC_PENDING
+                UPSTREAM_BACKUP_ON_FORK (owner ruling 2026-09-28: no
+                upstream push; the slamfinger fork IS the remote
+                backup) /
+                FORK3_STEP9_BINDING_WIRED (daily path) /
+                FORK3_STEP10_NEXT (forkSessionBranch plug-in decision,
+                LAST per the preserved ordering)
 ```
