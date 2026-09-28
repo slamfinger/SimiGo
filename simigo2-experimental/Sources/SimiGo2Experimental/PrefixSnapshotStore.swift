@@ -12,6 +12,12 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle {
     public let snapshotURL: URL
     public let metadataURL: URL
 
+    public var physicalByteCount: Int? {
+        let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        return snapshotBytes + metadataBytes
+    }
+
     public init(snapshotURL: URL, metadataURL: URL) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL

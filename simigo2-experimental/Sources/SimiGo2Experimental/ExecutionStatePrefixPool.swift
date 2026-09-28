@@ -64,7 +64,15 @@ public enum PrefixMessageChain {
 /// Opaque handle to the representation artifact (KV snapshot). Zero-MLX:
 /// the pool counts tokens and orders recency; what the artifact points
 /// at is the adapter's business.
-public protocol PrefixArtifactHandle: Sendable {}
+public protocol PrefixArtifactHandle: Sendable {
+    /// Physical artifact size when the adapter can provide it. Unknown sizes
+    /// are exempt from the byte budget; disk artifacts always report one.
+    var physicalByteCount: Int? { get }
+}
+
+public extension PrefixArtifactHandle {
+    var physicalByteCount: Int? { nil }
+}
 
 /// Rolling hash chain over token ids — order-sensitive content identity.
 /// chain(L) commits to the ENTIRE prefix tokens[0..<L]: equality at
@@ -130,6 +138,7 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     private var lastUse: [UInt64: UInt] = [:]
     private var tick: UInt = 0
     private let tokenBudget: Int
+    private let physicalByteBudget: Int?
     /// Eviction persistence (SIMIGO17 P2 closure): invoked for every
     /// evicted entry AFTER the lock is released. The disk-backed store
     /// installs this at construction to delete the artifact — an evicted
@@ -140,9 +149,11 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
     public var onEvict: ((PrefixPoolEntry) -> Void)?
     public private(set) var stats = PrefixPoolStats()
 
-    public init(tokenBudget: Int) {
+    public init(tokenBudget: Int, physicalByteBudget: Int? = nil) {
         precondition(tokenBudget > 0)
+        precondition(physicalByteBudget.map { $0 > 0 } ?? true)
         self.tokenBudget = tokenBudget
+        self.physicalByteBudget = physicalByteBudget
     }
 
     // MARK: - Admission (bind)
@@ -266,6 +277,15 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return entries.reduce(0) { $0 + $1.tokenCount }
     }
 
+    /// Nil means at least one artifact cannot report its physical cost.
+    public var totalPhysicalBytes: Int? {
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.reduce(0) { total, entry in
+            total.flatMap { sum in entry.artifact.physicalByteCount.map { sum + $0 } }
+        }
+    }
+
     /// LRU eviction until within budget. Called automatically on export;
     /// public for pressure hooks.
     public func evictToBudget() {
@@ -276,13 +296,19 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
 
     private func evictLocked() {
         var total = entries.reduce(0) { $0 + $1.tokenCount }
+        var totalBytes = entries.reduce(0) { total, entry in
+            total + (entry.artifact.physicalByteCount ?? 0)
+        }
         var evicted: [PrefixPoolEntry] = []
-        while total > tokenBudget, let victim = entries.min(
+        var overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false
+        while (total > tokenBudget || overByteBudget), let victim = entries.min(
             by: { (lastUse[$0.boundaryHash] ?? 0) < (lastUse[$1.boundaryHash] ?? 0) }
         ) {
             entries.removeAll { $0 == victim }
             lastUse[victim.boundaryHash] = nil
             total -= victim.tokenCount
+            totalBytes -= victim.artifact.physicalByteCount ?? 0
+            overByteBudget = physicalByteBudget.map { totalBytes > $0 } ?? false
             stats.evictions += 1
             evicted.append(victim)
         }
