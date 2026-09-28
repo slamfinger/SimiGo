@@ -5697,3 +5697,18 @@ one slot、`ctx512/cacheRam0/GGUF model`；不覆盖 Execution State
 cancellation、并发 workload 或 production readiness。非流式
 client-disconnect 探索在本 build 上可跑满请求，不作为可靠取消证据。RQ3 增加
 `EXPLICIT_BACKEND_CANCEL_AND_RECOVER`。
+
+### LAB RQ3 LLAMA CONCURRENT CANCELLATION — UNAFFECTED CONTROL PASS — 2026-09-29
+
+继续把显式取消扩展到 `parallel2 / ctx1024` backend topology：每 cycle 同时
+启动 208-token/256-token 的 resumable stream 与 6-token/one-token greedy
+`/completion`，100ms 后取消长请求。20 cycles 中 DELETE 全部 `204`，并发
+short control 全部与 pre-run reference token/content 一致；20/20 control 在
+长请求释放前启动并完成。
+
+DELETE→long-free mean/median/p95 为 `705.564/706.760/720.590ms`，control
+client mean `509.130ms`。verbosity-6 trace 抽取确认 20/20 长任务在
+`n_gen=1` 收到 cancel、`n_gen=2` release，并且 20/20 short control 先于长
+任务释放。该结果仅限当前 backend topology 和 workload，不是 Execution State
+cancellation、更高并发曲线或生产 readiness。RQ3 增加
+`CONCURRENT_BACKEND_CANCEL_WITH_UNAFFECTED_CONTROL`。
