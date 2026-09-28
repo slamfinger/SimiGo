@@ -1,0 +1,69 @@
+{
+  "boundary" : "EXECUTION_STATE_X_OVERSIZED \/ W0-W8_SEGMENT_EVICT_RESTORE_MATRIX \/ W9_CANCELLATION_NOT_CLAIMED \/ HARNESS_LEVEL \/ NOT_A_PERFORMANCE_CLAIM",
+  "checks" : [
+    {
+      "detail" : "parent identity\/lineage unchanged across fork",
+      "name" : "PARENT_IDENTITY_STABLE",
+      "pass" : true
+    },
+    {
+      "detail" : "child lineage parent=P, root shared",
+      "name" : "CHILD_LINEAGE_TRACEABLE",
+      "pass" : true
+    },
+    {
+      "detail" : "child continuation diverged from parent continuation",
+      "name" : "FORK_DIVERGENCE",
+      "pass" : true
+    },
+    {
+      "detail" : "logical position rolled back to the fork point; segments re-materialize on demand",
+      "name" : "RESTORE_TO_FORK_POINT",
+      "pass" : true
+    },
+    {
+      "detail" : "run2 after evict+restore == run1, consuming the restored fork-point representation",
+      "name" : "CHILD_DETERMINISM_THROUGH_SEGMENT_EVICT_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "parent turn 2 after the child episode == pre-fork reference",
+      "name" : "PARENT_NON_INTERFERENCE",
+      "pass" : true
+    },
+    {
+      "detail" : "two repeated forks restored to the same checkpoint and replayed C's continuation",
+      "name" : "W6_REPEATED_FORK_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "two-continuation branch restored to root checkpoint and replayed C semantics",
+      "name" : "W7_LONG_RUNNING_BRANCH_RESTORE",
+      "pass" : true
+    },
+    {
+      "detail" : "after explicit oversized release: swap 0 MiB, footprint 7612 MiB; restored replay remained deterministic",
+      "name" : "W8_MEMORY_PRESSURE_RELEASE_RECOVERY",
+      "pass" : true
+    },
+    {
+      "detail" : "peak footprint 8041 MiB <= 30720 MiB, max swap 0 MiB",
+      "name" : "RESIDENCY_BOUNDED_ZERO_SWAP",
+      "pass" : true
+    },
+    {
+      "detail" : "292 segment materialize\/release transitions executed",
+      "name" : "SEGMENT_TRANSITIONS_EXECUTED",
+      "pass" : true
+    }
+  ],
+  "maxSwapMiB" : 0,
+  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "overallPass" : true,
+  "peakFootprintMiB" : 8041,
+  "protocolVersion" : "G1.9-O6.EXECSTATE.V2",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "status" : "PASS"
+}

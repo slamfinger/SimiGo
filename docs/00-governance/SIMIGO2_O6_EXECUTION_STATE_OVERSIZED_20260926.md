@@ -68,3 +68,17 @@ no performance claims. Greedy cacheless execution (no KV authority).
 
 Artifact: `simigo2-experimental/results/o5-sweep/qwen3-next-o6-execstate.json`;
 probe `O6ExecutionStateOversized.swift`.
+
+## V2/V3 update — 2026-09-29
+
+V2 extends the original gate to a W0-W8 workload matrix: repeated
+fork/restore, a two-continuation long-running branch, and an explicit
+oversized release/recovery gate. All W0-W8 checks passed on Qwen3-Coder-Next
+with peak footprint 8,041 MiB, zero swap, and 292 segment transitions.
+
+V3 adds cooperative W9 cancellation at a complete greedy-token boundary.
+After one token, the pre-cancel checkpoint binding survived; logical restore
+and full replay matched C. The final V3 run is 12/12 PASS with peak footprint
+8,032 MiB, zero swap, and 322 segment transitions. See
+`SIMIGO2_O6_WORKLOAD_MATRIX_V2_20260929.md` and
+`simigo2-experimental/results/o6-workload-matrix/qwen3-coder-next-4bit-v3.json`.
