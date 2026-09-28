@@ -178,6 +178,7 @@ final class RollForwardExperimentTests: XCTestCase {
         let rfDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("rollfwd-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: rfDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: rfDir) }
 
         for round in 1...40 {
             messagesR.append(.object(["role": .string("user"), "content": .string(Self.chunk(round))]))

@@ -123,6 +123,7 @@ final class BranchForkTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("mismatch-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         // 真实会话 + 真实 checkpoint
         let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
@@ -216,6 +217,7 @@ final class BranchForkTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("kvfork-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         let info = ModelInfo(path: modelPath, kind: .mlx)
         let runtime = NativeMLX(info: info, config: Self.greedyConfig())
@@ -425,6 +427,7 @@ final class BranchForkTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("kvfork-mem-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
         let snapshotURL = dir.appendingPathComponent("base.safetensors")
         try await base.saveCache(to: snapshotURL)
         let shared = try loadPromptCacheSnapshot(url: snapshotURL)
@@ -712,6 +715,11 @@ final class BranchForkTests: XCTestCase {
         for d in [dirA, dirB] {
             try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         }
+        defer {
+            for d in [dirA, dirB] {
+                try? FileManager.default.removeItem(at: d)
+            }
+        }
 
         let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
         _ = try await gen(baseMessages)
@@ -768,6 +776,7 @@ final class BranchForkTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("race-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
         _ = try await gen("main", baseMessages)

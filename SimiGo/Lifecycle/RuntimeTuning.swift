@@ -48,6 +48,20 @@ nonisolated enum RuntimeTuning {
     /// 元素计——每消息 2 元素）。
     static let prefixPoolTokenBudget = 200_000
 
+    /// BETA-STORAGE-1: physical cost cannot be derived from token/message
+    /// counts. Bound persisted prefix snapshots by bytes as well as logic
+    /// tokens; LRU is shared by both budgets.
+    static let prefixPoolPhysicalByteBudget = Int(
+        ProcessInfo.processInfo.environment["SIMIGO_PREFIX_POOL_MAX_BYTES"]
+            .flatMap(Int.init) ?? 16 * gibibyte)
+
+    /// BETA-STORAGE-1: durable checkpoints are owned receipts, but retention
+    /// still needs an explainable physical ceiling. Active keys are protected;
+    /// oldest valid durable receipts are released only after this budget.
+    static let branchCheckpointByteBudget = Int(
+        ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINT_MAX_BYTES"]
+            .flatMap(Int.init) ?? 64 * gibibyte)
+
     /// swap 压力触发阈值：全机信号（其他进程占用也计入），作触发偏保守正确。
     /// 逐出循环的出口用进程内可立即复测的暖 token 总和，不用 swap（回落滞后）。
     /// swap 读不到（nil=未知）不触发内存维度：未知不冒充压力。

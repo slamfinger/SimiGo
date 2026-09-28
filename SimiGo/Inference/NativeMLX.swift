@@ -180,6 +180,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 return InferenceNodeConfiguration.shared.snapshot()
             }
+            Self.enforceDefaultBranchCheckpointRetention(
+                retaining: self.state.withLock { Set($0.sessions.keys) })
 
             let server = await MainActor.run {
                 HTTPServer(
@@ -1155,6 +1157,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
                 managed.checkpointDirty = false
+                Self.enforceDefaultBranchCheckpointRetention(
+                    retaining: state.withLock { Set($0.sessions.keys) })
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
@@ -1637,6 +1641,26 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         try? FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
         return directory
+    }
+
+    nonisolated private static func enforceDefaultBranchCheckpointRetention(
+        retaining activeKeys: Set<String>
+    ) {
+        do {
+            let result = try BranchCheckpointRetention.enforce(
+                directory: defaultBranchCheckpointStore(),
+                retainedKeys: activeKeys,
+                byteBudget: RuntimeTuning.branchCheckpointByteBudget)
+            RuntimeTraceLogger.shared.trace(
+                "[STORAGE] branchRetention retained=\(result.retainedReceipts)"
+                    + " retainedGiB=\(String(format: "%.2f", Double(result.retainedBytes) / 1_073_741_824))"
+                    + " orphans=\(result.removedOrphans)"
+                    + " budgetRemoved=\(result.removedForBudget)"
+                    + " freedGiB=\(String(format: "%.2f", Double(result.freedBytes) / 1_073_741_824))")
+        } catch {
+            RuntimeTraceLogger.shared.trace(
+                "[STORAGE] branchRetentionFailed err=\(error.localizedDescription)")
+        }
     }
 
     /// 把 source 逻辑分支的当前 checkpoint 复制注册为 target 逻辑分支。

@@ -125,6 +125,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("b3-save-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         _ = try await baseGen(Self.baseMessages())
 
@@ -175,6 +176,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("b3-load-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         _ = try await baseGen(Self.baseMessages())
         let checkpoint = try await runtime.saveSessionCache(
@@ -236,6 +238,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("b3-delete-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
 
         _ = try await baseGen(Self.baseMessages())
         let cacheURL = try await runtime.saveSessionCache(

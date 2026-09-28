@@ -19,8 +19,9 @@ import SimiGo2Experimental
 /// **所有权/生命周期边界**：poolBind 后，内存 KV 归消费方 ChatSession
 /// **独占**（自盘物化的独立副本，池从不持有活内存）；池只拥有磁盘
 /// artifact + 声明登记。三条生命周期线：内存侧=既有会话 LRU/
-/// warmTokenBudget/session.clear；登记侧=池 LRU（prefixPoolTokenBudget，
-/// 驱逐对活会话零影响——副本独立）；磁盘侧=GC 登记延后（已知缺口）。
+/// warmTokenBudget/session.clear；登记侧=池 LRU（logical-token budget +
+/// physical-byte budget，任一超限即 LRU 驱逐并删除磁盘 artifact）；
+/// 驱逐对活会话零影响——副本独立。
 /// 绑定登记侧=ExecutionBindingRegistry（STEP-9/10）：deleteSessionBranch
 /// 显式 detach；forkSessionBranch 只登记 child 绑定，不 supersede parent。
 ///
@@ -78,7 +79,9 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
         let root = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/prefix-pool")
         let store = PrefixSnapshotStore(
-            root: root, pool: ExecutionStatePrefixPool(tokenBudget: RuntimeTuning.prefixPoolTokenBudget))
+            root: root, pool: ExecutionStatePrefixPool(
+                tokenBudget: RuntimeTuning.prefixPoolTokenBudget,
+                physicalByteBudget: RuntimeTuning.prefixPoolPhysicalByteBudget))
         self.store = store
         // 重启 warm：磁盘边界重新注册进池。声明式注册——P-I1 在 admission
         // 对来方消息流重算，坏声明只会 miss。
