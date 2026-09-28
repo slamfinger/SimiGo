@@ -222,3 +222,73 @@ forkSessionBranch 在 source save 完成后释放 source gate，再读取 cached
 **BETA-AUDIT-1 = FAIL / RETURN TO IMPLEMENTATION FOR C1 + C3**
 
 这不是要求重新设计 SimiGo 的 Execution State，也不是启动 Palace-1。首发前只需要把 checkpoint generation/commit 与 fork transaction boundary 收紧到当前五动作语义之内，并补对应 failure/race evidence。
+
+## 11. Round 4 — R3-A 动态注入实证 + R3-B Gate B/E0-E5 回收（2026-09-28）
+
+### 11.1 R4-A：checkpoint 失败注入实证（testCheckpointPairMismatchFailsOpen，M5 实测）
+
+对同一 checkpoint 依次注入三种失败，回答"现有 Beta 能不能安全失败"：
+
+```text
+W2 注入  伪造异 transcript 的 meta.json（与真实 .safetensors 配对）
+         → restore 静默成功，返回伪造 transcript
+         → FAIL-OPEN（正确性危害，动态实锤）
+W1 注入  截断 .safetensors 数据段（头部可解析 + 数组惰性映射）
+         → restore 静默成功，损坏推迟到生成期前向读取
+         → FAIL-OPEN（新发现：不仅 W2，W1 也不安全）
+meta 缺失 → restore 抛出
+         → fail-closed（唯一安全窗口：meta 的 JSON 解码边界）
+```
+
+结论：现有 Beta **不能安全失败**。P1-C1 从"机制推定"升级为"动态实证"。
+回环 witness 已固化在 BranchForkTests（修复落地后三条断言翻转为
+fail-closed 即回归门）。
+
+### 11.2 R4-B：C2 对 Gate B / E0-E5 的语义回收
+
+E0 注册的核心不变量五属性（SIMIGO2_EXECUTION_CONTINUITY_ARCHITECTURE
+v1.0）：representation migration MUST preserve Execution Identity /
+Position / Next Input / Continuation Semantics / Subsequent State
+Evolution。E1 合同（86/86）在类型层强制：ExecutionStateHandle 只载
+逻辑态（identity/lineage/position/continuation/lifecycle），物理表示
+类型不得进入 handle。E2/E3 VERIFIED；E4 NEXT；E5 NOT STARTED。
+
+逐属性判定（当前五动作 release contract 口径）：
+
+```text
+Execution Identity   REQUIRED-durable ✓ 已满足（AgentExecutionKey/
+                     storageKey 跨进程寻址；meta 持久化 storageKey）
+Position             REQUIRED-durable，满足但未验证——位置经
+                     checkpoint 隐式存活，无 tokenCount 交叉核对
+                     （= P1-C1 的修复面，即 E4 对齐工作本体）
+Next Input           NOT required-durable（E1 合同：nextInput 是调用
+                     方逐轮供给的逻辑字段，非持久化状态）
+Continuation         REQUIRED-via-mechanism ✓ delta 契约程序性重建，
+Semantics            依赖 C1 的配对一致性（同上修复面）
+Subsequent State     NOT required-durable for THIS release contract：
+Evolution            分支不可 merge、选边提升后 lineage 历史不被任何
+                     发布流消费；唯一持久 lineage 事实 = forkPoint
+                     （STEP-10 已持久化）。完整 lineage durable =
+                     observability/history 边界（与并行 Round 3
+                     §10.4 结论一致，现经 Gate B/E1 语义回收确证）
+```
+
+结论：**C2 = CONFIRMED NON-BLOCKING architecture boundary**（Gate B /
+E0-E5 语义回收后确证，非凭空豁免）。release 契约措辞约束随之成立：
+不得宣称完整 lineage durable；必须宣称 identity/position/continuation
+可恢复——而 position 的"可验证可恢复"正是 C1 修复（tokenCount 盖章 +
+restore 交叉核对）。
+
+### 11.3 Round 4 后的收口定义
+
+```text
+C1 修复（BLOCKER，本轮后实施）：
+  performSave 盖章 tokenCount（+可选 cache 内容指纹）→
+  performLoad 交叉核对，mismatch 即 fail-closed →
+  witness 三断言翻转为 fail-closed = 回归门
+C3 修复（BLOCKER，随后实施）：
+  fork 全程持 source gate（或等价 generation token）关闭 skew window
+release wording：Runtime resume + Execution reconstitution；
+  checkpoint = durable identity/position/continuation 载体（经 C1
+  修复后可验证），不宣称完整 lineage durable
+```
