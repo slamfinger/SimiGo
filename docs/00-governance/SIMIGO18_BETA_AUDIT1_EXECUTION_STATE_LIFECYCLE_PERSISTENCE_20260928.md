@@ -82,3 +82,102 @@ BETA-AUDIT-1 = OPEN。
 下一轮 Round 2：沿 create → generate → checkpoint → suspend → resume → restore → continue → fork → delete 建完整状态转移表；为每个状态找唯一事实源；检查 failure/cancellation 边界；审计普通 checkpoint 与 fork checkpoint 的 generation/mismatch 检测；然后再给 P1 candidates 定级。
 
 首发门槛仍保持 OPEN。
+## 9. Round 2 — 九状态单事实源 / 转移 / 失败取消边界（代码级）
+
+审计树：SimiGo main @ 109fef9（树 = 基线 e168555）。行号为该树实际位置。
+
+### 9.1 create
+- SoT：`NativeMLX.state.sessions[storageKey] → ManagedSession`（进程内存）。
+- 创建路径：(a) generate 冷重建新会话；(b) 池命中 poolBind restore；(c)
+  loadSessionCache。三条路径互斥，均落同一个 sessions 槽位。
+- 失败边界：无活模型 → notLoaded；池绑定失败 → 回退冷路径（不抛）；
+  loadSessionCache 失败 → 抛出、不注册会话。
+
+### 9.2 generate
+- SoT：KV/token = ChatSession（物理权威）；transcript = ManagedSession
+  .history/historyJSON；请求级 lineage = 进程内 128 FIFO。
+- 入口顺序（:407）：oversized 直通（:412，见 9.9）→ ensureLoaded →
+  AgentExecutionKey.resolve → lineage.begin → 全局生成 gate → Task +
+  LC QUEUED→RUNNING（排队期取消 = CancellationError）→ 注册（重复
+  requestId → task.cancel + 抛；isRunning=false → notLoaded）→
+  withTaskCancellationHandler（取消传播进 task）→ lineage.end。
+- 失败/取消：generateUsingChatSession 内错误上抛 → lineage.end(failed/
+  cancelled)；取消走 record() 的 retain-cancelled-prefix 路径（前缀
+  保留 + ledger 以本轮 promptTokens 重建，6d01a13）。
+- suspend 不可与 generate 并发：suspend 要求 activeRequestTasks 空。
+
+### 9.3 checkpoint
+- SoT：磁盘双文件 .safetensors（官方 saveCache，非原子写）+
+  .meta.json（SessionCacheMetadata，.atomic 写）。
+- **两个失败窗口（W1/W2）**：
+  - W1 崩溃于 saveCache 中途 → 部分 safetensors + 旧 meta → restore
+    抛出（fail-closed），但**上一代好 checkpoint 已被覆盖销毁**（可用
+    性损失，非一致性损失）。
+  - W2 崩溃于 saveCache 之后、meta 写之前 → 新 safetensors + 旧 meta
+    → **两个文件各自合法，restore 静默成功且 transcript 与 KV 错位**。
+- 交叉核对能力：SessionCacheMetadata 无 tokenCount/无 cache 指纹字段
+  → 当前**无法检测** W2 错位。修复方向 = save 时盖章 tokenCount（+
+  可选 cache 内容指纹），restore 时与实际 ledger 交叉核对，不符即
+  fail-closed。注入实验只量化 W2 概率，机制本身已由代码路径确证。
+
+### 9.4 suspend
+- 代码（:366）：lifecycleGate 下 lifecycle=.suspended、modelContainer=
+  nil、**sessions.removeAll()**、Memory.clearCache()；前置 = 无活跃
+  请求 + 闲置超时（自适应，600s 基线）。
+- suspend 后存活状态只剩磁盘：checkpoint 文件、prefix-pool artifacts、
+  branch-checkpoints 目录。进程存活 → ExecutionBindingRegistry 与
+  lineage FIFO 保留（suspend 不清进程内存对象，只清 runtime 状态）。
+
+### 9.5 resume
+- 代码（:311）：ensureLoaded 仅重载 ModelContainer；**不回挂任何
+  ManagedSession**；lifecycle=.running。
+- suspend→resume→同一 Execution continue 的真实路径 = 后续请求触发的
+  冷重建（池 admission / branch checkpoint conditional restore），而
+  非直接 reattach。resume 成功 ≠ Execution State 恢复成功——二者必须
+  分开验证（Round 3 注入矩阵项）。
+
+### 9.6 restore
+- 代码（:1420 performLoad）：逐文件 fail-closed——meta decode 失败抛、
+  modelId 不匹配抛、snapshot decode 失败抛；但 **W2 错位对（各自合法）
+  静默通过**（见 9.3）。恢复会话携带 checkpoint 的 kvFingerprint
+  （reuse 检查依赖）+ isRestoredSnapshot 标记。
+
+### 9.7 continue
+- 复用/extend 路径（账本修复链后）：恢复/活会话下一轮按 delta 契约
+  extend，mode=extend/restore 有 trace 证据；错位对进入时（W2）同样
+  走 extend——错误状态被当正常续跑，这是 W2 的实际危害面。
+
+### 9.8 fork
+- 代码（:1522 起，含 9956e64 审核批次）：stamp forkPoint（单文件
+  原子）→ loadSessionCache 成功 → bind child（事务边界：restore 失败
+  不留绑定）→ lineage.recordFork。R1-R5 维持。
+
+### 9.9 delete
+- 代码（:1633 起，含 9956e64）：remove session → session.clear() →
+  **registry.detach**（行保留、active 清除）→ 删 checkpoint 文件。
+  分支不可 merge 语义不变。
+
+### 9.10 oversized 直通（P1-CANDIDATE-3 代码级确证）
+- generate() 入口 :412：`if let oversized … return try await
+  oversized.handleGenerate(...)` —— 发生在 AgentExecutionKey.resolve、
+  lineage.begin、sessions、checkpoint、BindingRegistry、取消保留路径
+  **之前**。即 oversized 请求不经过普通执行状态机制约任何一个环节。
+- 结论：P1-CANDIDATE-3 的 scope 分叉在代码级确证；"同一核心路线"
+  的主张目前仅 oversize 的**模型执行层**成立，执行状态层是独立实现。
+  定级待 Round 3 的 conformance 决策。
+
+## 10. Round 2 定级输入汇总
+
+```text
+P1-CANDIDATE-1  机制升级：W2（错位对静默通过）为正确性危害，
+                代码路径确证；W1 为可用性危害。定级=维持 P1
+                candidate，Round 3 注入定概率。
+P1-CANDIDATE-2  确证：durable Execution State 不存在（lineage
+                128 FIFO 进程内、checkpoint 无 lineage history）。
+                定级=与 Gate B / E0-E5 验收语义对齐矩阵（Round 3）。
+P1-CANDIDATE-3  确证：代码级直通分叉。定级=Round 3 conformance
+                决策（补齐 vs 声明独立 runtime 边界）。
+```
+
+下一步 Round 3：W1/W2 失败注入实验 + Gate B/E 对齐矩阵 + oversized
+conformance 决策。
