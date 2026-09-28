@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Synchronization
 import MLX
 import MLXLMCommon
@@ -1532,16 +1533,74 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             agentId: agentId, sessionId: sessionId, logicalBranchId: sourceBranch)
         let targetKey = try AgentExecutionKey(
             agentId: agentId, sessionId: sessionId, logicalBranchId: targetBranch)
+
+        // FORK-2: the fork position in token units, read off the LIVE source
+        // session (saveSessionCache above requires it, so it exists).
+        var forkTokenCount = 0
+        if let sourceSession = state.withLock({ $0.sessions[sourceKey.storageKey]?.session }) {
+            forkTokenCount = await sourceSession.cachedTokenIds().count
+        }
+
         for suffix in [".safetensors", ".meta.json"] {
             let source = store.appendingPathComponent(
                 Self.cacheFileName(for: sourceKey.storageKey) + suffix)
             let target = store.appendingPathComponent(
                 Self.cacheFileName(for: targetKey.storageKey) + suffix)
+            // FORK-1: land the copy under a temporary name and swap it in
+            // atomically — a crash mid-fork can no longer leave the target
+            // branch destroyed (the old delete -> copy window is gone).
+            let temp = store.appendingPathComponent(
+                Self.cacheFileName(for: targetKey.storageKey) + suffix
+                    + ".fork-tmp-\(UUID().uuidString)")
+            try FileManager.default.copyItem(at: source, to: temp)
             if FileManager.default.fileExists(atPath: target.path) {
-                try FileManager.default.removeItem(at: target)
+                _ = try FileManager.default.replaceItemAt(target, withItemAt: temp)
+            } else {
+                _ = try FileManager.default.moveItem(at: temp, to: target)
             }
-            try FileManager.default.copyItem(at: source, to: target)
         }
+
+        // FORK-2 + STEP-10 R3: persist the fork point into the TARGET branch
+        // metadata, and bind the child to the checkpoint's RepresentationRef
+        // (kind .residentKV). The parent is NOT bound: its pool-boundary
+        // binding, when present, must not be superseded (B-R2 single active
+        // row) — the checkpoint is the parent's own archive, not a change of
+        // its representation relation. The fork relation lives in the child
+        // row + lineage.recordFork.
+        let targetMetaURL = store.appendingPathComponent(
+            Self.cacheFileName(for: targetKey.storageKey) + ".meta.json")
+        let metaBytes = try Data(contentsOf: targetMetaURL)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var stamped = try decoder.decode(SessionCacheMetadata.self, from: metaBytes)
+        let forkPoint = BranchForkPoint(
+            sourceStorageKey: sourceKey.storageKey,
+            atMessage: stamped.history.count,
+            atToken: forkTokenCount)
+        stamped.forkPoint = forkPoint
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let stampedBytes = try encoder.encode(stamped)
+        try stampedBytes.write(to: targetMetaURL, options: .atomic)
+
+        // contentHash = SHA256 of the stamped meta bytes, truncated — the
+        // identity of THIS fork's representation (per-fork-event, not a
+        // dedupe claim).
+        let contentHash = SHA256.hash(data: stampedBytes)
+        let ref = RepresentationRef(
+            kind: .residentKV,
+            modelIdentity: stamped.modelId,
+            kvLayoutIdentity: stamped.kvFingerprint ?? "none",
+            renderIdentity: "chat-daily",
+            contentHash: contentHash.withUnsafeBytes {
+                $0.load(as: UInt64.self)
+            },
+            boundLength: forkTokenCount)
+        let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
+            executionID: targetKey.storageKey,
+            runtimeAddress: "checkpoint:\(targetKey.storageKey)",
+            ref: ref)
 
         let metadata = try await loadSessionCache(
             agentId: agentId,
@@ -1550,8 +1609,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             from: store
         )
         traceLogger.trace(
-            "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)" +
-            " history=\(metadata.history.count)")
+            "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)"
+                + " history=\(metadata.history.count) forkToken=\(forkTokenCount)"
+                + " bindingGen=\(childBinding.generation)"
+                + " refHash=\(String(ref.contentHash, radix: 16))")
         lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
         traceLogger.trace(
             "[EXEC] fork parent=\(sourceKey.storageKey)"
@@ -1900,18 +1961,38 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
     /// roll-forward 连续收益被清零。可选 + decodeIfPresent：旧格式文件
     /// （无此键）解码为 nil，向后兼容。
     public var kvFingerprint: String?
+    /// FORK-2 (STEP-10): the branch point this copy was created from, when
+    /// the copy was registered by forkSessionBranch. Optional + decodeIfPresent:
+    /// files saved outside a fork (and pre-STEP-10 files) decode without it.
+    public var forkPoint: BranchForkPoint?
 
     public init(
         storageKey: String,
         modelId: String,
         savedAt: Date,
         history: [JSONValue],
-        kvFingerprint: String? = nil
+        kvFingerprint: String? = nil,
+        forkPoint: BranchForkPoint? = nil
     ) {
         self.storageKey = storageKey
         self.modelId = modelId
         self.savedAt = savedAt
         self.history = history
         self.kvFingerprint = kvFingerprint
+        self.forkPoint = forkPoint
+    }
+}
+
+/// FORK-2: the persisted fork point of a branch checkpoint — WHERE the copy
+/// branched from, in both message and token units of the SOURCE at fork time.
+nonisolated public struct BranchForkPoint: Codable, Sendable, Equatable {
+    public var sourceStorageKey: String
+    public var atMessage: Int
+    public var atToken: Int
+
+    public init(sourceStorageKey: String, atMessage: Int, atToken: Int) {
+        self.sourceStorageKey = sourceStorageKey
+        self.atMessage = atMessage
+        self.atToken = atToken
     }
 }
