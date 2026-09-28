@@ -1444,12 +1444,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
 
         // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
-        try await managed.session.saveCache(to: cacheURL)
+        let saveReceipt = try await managed.session.saveCache(to: cacheURL)
 
         // The vendor cache is written separately from the sidecar. Bind the
         // pair with a generation id + content hash so any crash/failure between
         // the two writes becomes an invalid checkpoint instead of a mixed pair.
-        let cacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
+        // P2-ES-02: SHA-256 is returned by the safetensors writer from the same
+        // byte stream that produced the checkpoint; save no longer rereads GBs.
+        let cacheSHA256 = saveReceipt.sha256
         let checkpointGeneration = UUID().uuidString.lowercased()
 
         let encoder = JSONEncoder()

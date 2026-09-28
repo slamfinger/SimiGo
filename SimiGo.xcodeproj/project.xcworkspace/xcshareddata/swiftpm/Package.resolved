@@ -13,9 +13,9 @@
     {
       "identity" : "mlx-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ml-explore/mlx-swift",
+      "location" : "https://github.com/slamfinger/mlx-swift",
       "state" : {
-        "revision" : "0bb916c67f4b9e5c682cbe02a42c701c93ab5021",
+        "revision" : "6ca0e88c90b71267bf312e8106ceccf84017fba9",
         "version" : "0.31.6"
       }
     },
@@ -24,7 +24,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
       "state" : {
-        "branch" : "release/v2.0-beta-ml",
+        "branch" : "perf/p2-es-02-digest-receipt-beta",
         "revision" : "6d01a13c8f54610054bc28f7163de740b43be4f8"
       }
     },
