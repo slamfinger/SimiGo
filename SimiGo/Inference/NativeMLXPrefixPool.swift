@@ -34,6 +34,27 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
     private let lock = NSLock()
     private var store: PrefixSnapshotStore?
     private var rescanned = false
+    /// FORK-3 step-9 wiring: the REAL holder of Execution↔Representation
+    /// bindings on the daily path. Process-lifetime by design — bindings are
+    /// execution-scoped runtime state; the pool store persists, the registry
+    /// does not (a restored session re-binds on its poolBind).
+    let bindings = ExecutionBindingRegistry()
+
+    /// Deterministic Ref derivation for a pool boundary (R-I1): the entry's
+    /// own chain hash is the content claim; message-level boundaries use the
+    /// message-chain position as boundLength so the exporting parent and the
+    /// binding child derive the IDENTICAL Ref from the same entry.
+    static func representationRef(
+        namespace: PrefixPoolNamespace, boundaryHash: UInt64, boundLength: Int
+    ) -> RepresentationRef {
+        RepresentationRef(
+            kind: .prefixSnapshot,
+            modelIdentity: namespace.modelID,
+            kvLayoutIdentity: namespace.kvFingerprint,
+            renderIdentity: "chat-daily",
+            contentHash: boundaryHash,
+            boundLength: boundLength)
+    }
     /// 已导出的 token 边界登记（避免同轮重复落盘同一边界）。
     private var exportedTokenBoundaries = Set<String>()
 
@@ -155,6 +176,7 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
     }
     func export(
         modelID: String, kvFingerprint: String?, thinkingDisabled: Bool,
+        executionID: String,
         history: [(role: String, content: String)],
         save: @escaping (URL) async throws -> Void
     ) async {
@@ -166,8 +188,15 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             let entry = try await store.export(
                 namespace: namespace, tokens: PrefixMessageChain.stream(history),
                 write: save)
+            let ref = Self.representationRef(
+                namespace: namespace, boundaryHash: entry.boundaryHash,
+                boundLength: entry.tokenCount)
+            let binding = bindings.bind(
+                executionID: executionID, runtimeAddress: "live:\(executionID)", ref: ref)
             RuntimeTraceLogger.shared.trace(
-                "[MLX] poolExport messages=\(entry.tokenCount / 2)")
+                "[MLX] poolExport messages=\(entry.tokenCount / 2) "
+                    + "bindingGen=\(binding.generation) "
+                    + "refHash=\(String(entry.boundaryHash, radix: 16))")
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExportFailed err=\(String(describing: error))")
