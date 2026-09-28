@@ -158,7 +158,6 @@ actor SessionGenerationGate {
         do {
             for key in ordered {
                 guard await acquire(key) else {
-                    for held in acquired.reversed() { release(held) }
                     throw CancellationError()
                 }
                 acquired.append(key)
