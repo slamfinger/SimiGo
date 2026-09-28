@@ -1,0 +1,192 @@
+{
+  "boundary" : "REAL_OVERSIZED_MLX_SEGMENTED_CORE \/ COOPERATIVE_TOKEN_BOUNDARY_CANCEL \/ HARNESS_LEVEL \/ NOT_A_PERFORMANCE_OR_PRODUCTION_CLAIM",
+  "checks" : [
+    {
+      "detail" : "3\/3",
+      "name" : "COOPERATIVE_CANCEL_ONE_TOKEN",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "DIRECT_RECOVERY_EXACT",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "EXECSTATE_RECOVERY_EXACT",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "CANCELLED_PREFIX_EXACT",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "RELEASE_REMOVED_CURRENT_BINDING",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "RESTORE_TO_FORK_POINT",
+      "pass" : true
+    },
+    {
+      "detail" : "3\/3",
+      "name" : "PARENT_NON_INTERFERENCE",
+      "pass" : true
+    },
+    {
+      "detail" : "peak 8132 MiB <= 30720 MiB; swap 0 MiB",
+      "name" : "RESIDENCY_BOUNDED_ZERO_SWAP",
+      "pass" : true
+    },
+    {
+      "detail" : "210",
+      "name" : "SEGMENT_TRANSITIONS_EXECUTED",
+      "pass" : true
+    }
+  ],
+  "cycles" : 3,
+  "directCancelMs" : {
+    "meanMs" : 9284.341736,
+    "medianMs" : 9265.817084,
+    "n" : 3
+  },
+  "directRecoveryMs" : {
+    "meanMs" : 37626.793096999994,
+    "medianMs" : 36985.818916,
+    "n" : 3
+  },
+  "directReleaseMs" : {
+    "meanMs" : 4.566764,
+    "medianMs" : 4.515042,
+    "n" : 3
+  },
+  "maxSwapMiB" : 0,
+  "maxTokens" : 4,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelType" : "qwen3_next",
+  "overallPass" : true,
+  "peakFootprintMiB" : 8132,
+  "protocolVersion" : "RQ3.O6.MLX.OVERSIZED.CANCELLATION.AB.V1",
+  "samples" : [
+    {
+      "cancelledTokenCount" : 1,
+      "cycle" : 0,
+      "directCancelMs" : 9399.150958,
+      "directMatchesReference" : true,
+      "directOrderFirst" : true,
+      "directRecoveryMs" : 36900.413417,
+      "directRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "directReleaseMs" : 4.515042,
+      "parentNonInterference" : true,
+      "referenceMs" : 37043.988875,
+      "stateCancelMs" : 9236.798708,
+      "stateCancelledPrefixExact" : true,
+      "stateForkCaptureMs" : 0.009167,
+      "stateMatchesReference" : true,
+      "stateRecoveryMs" : 36951.931875,
+      "stateRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "stateReleaseRemovedCurrentBinding" : true,
+      "stateReleaseRestoreMs" : 4.59625,
+      "stateRestoredToForkPoint" : true
+    },
+    {
+      "cancelledTokenCount" : 1,
+      "cycle" : 1,
+      "directCancelMs" : 9188.057166,
+      "directMatchesReference" : true,
+      "directOrderFirst" : false,
+      "directRecoveryMs" : 38994.146958,
+      "directRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "directReleaseMs" : 4.692541,
+      "parentNonInterference" : true,
+      "referenceMs" : 37043.988875,
+      "stateCancelMs" : 9203.047083,
+      "stateCancelledPrefixExact" : true,
+      "stateForkCaptureMs" : 0.005208,
+      "stateMatchesReference" : true,
+      "stateRecoveryMs" : 36939.689083,
+      "stateRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "stateReleaseRemovedCurrentBinding" : true,
+      "stateReleaseRestoreMs" : 5.203375,
+      "stateRestoredToForkPoint" : true
+    },
+    {
+      "cancelledTokenCount" : 1,
+      "cycle" : 2,
+      "directCancelMs" : 9265.817084,
+      "directMatchesReference" : true,
+      "directOrderFirst" : true,
+      "directRecoveryMs" : 36985.818916,
+      "directRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "directReleaseMs" : 4.492709,
+      "parentNonInterference" : true,
+      "referenceMs" : 37043.988875,
+      "stateCancelMs" : 9410.549542,
+      "stateCancelledPrefixExact" : true,
+      "stateForkCaptureMs" : 0.008125,
+      "stateMatchesReference" : true,
+      "stateRecoveryMs" : 36947.850459,
+      "stateRecoveryTokenIDs" : [
+        198,
+        198,
+        198,
+        198
+      ],
+      "stateReleaseRemovedCurrentBinding" : true,
+      "stateReleaseRestoreMs" : 4.525208,
+      "stateRestoredToForkPoint" : true
+    }
+  ],
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 210,
+  "stateCancelMs" : {
+    "meanMs" : 9283.465111,
+    "medianMs" : 9236.798708,
+    "n" : 3
+  },
+  "stateForkCaptureMs" : {
+    "meanMs" : 0.0075,
+    "medianMs" : 0.008125,
+    "n" : 3
+  },
+  "stateRecoveryMs" : {
+    "meanMs" : 36946.49047233333,
+    "medianMs" : 36947.850459,
+    "n" : 3
+  },
+  "stateReleaseRestoreMs" : {
+    "meanMs" : 4.774944333333334,
+    "medianMs" : 4.59625,
+    "n" : 3
+  },
+  "status" : "PASS"
+}

@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -328,6 +328,17 @@ struct Simigo2CTL {
       let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 8
       let report = try await O6ExecutionStateScenario.run(
         modelDirectory: modelDirectory,
+        maxTokens: tokens,
+        segmentSize: segmentSize
+      )
+      print(try toJSON(report))
+    case "o6-cancel-ab":
+      let cycles = optionalOption("--cycles", rest).flatMap(Int.init) ?? 3
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 4
+      let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 8
+      let report = try await O6CancellationAB.run(
+        modelDirectory: modelDirectory,
+        cycles: cycles,
         maxTokens: tokens,
         segmentSize: segmentSize
       )

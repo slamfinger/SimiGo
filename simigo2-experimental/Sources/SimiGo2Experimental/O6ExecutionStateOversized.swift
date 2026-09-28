@@ -424,6 +424,37 @@ public final class OversizedSegmentedExecutor: @unchecked Sendable {
     try tokenizer.encode(text: text, addSpecialTokens: true)
   }
 
+  struct DirectGenerationResult: Sendable {
+    let generatedTokenIDs: [Int]
+    let updatedPrefix: [Int]
+  }
+
+  /// OFF-arm control for O6 cancellation A/B: same physical core and greedy
+  /// executor, but no binding consume/restore contract operation.
+  func directGenerate(
+    prefix: [Int],
+    nextInputTokens: [Int],
+    maxTokens: Int,
+    cancellationToken: O6GenerationCancellationToken = .none
+  ) throws -> DirectGenerationResult {
+    let inputTokens = prefix + nextInputTokens
+    let generated = try core.greedy(
+      prefix: inputTokens,
+      maxTokens: maxTokens,
+      cancellationToken: cancellationToken
+    )
+    return DirectGenerationResult(
+      generatedTokenIDs: generated,
+      updatedPrefix: inputTokens + generated
+    )
+  }
+
+  /// OFF-arm physical release control, matching the ON arm's oversized
+    /// release action without involving an ExecutionStateBackend.
+  func directReleaseAll() throws {
+    try core.releaseAllSegments()
+  }
+
   public func continueExecution(
     _ state: ExecutionStateHandle,
     nextInputTokens: [Int],

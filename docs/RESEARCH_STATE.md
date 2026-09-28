@@ -5832,3 +5832,23 @@ oversized equivalent A/B、更高并发曲线与 cross-backend closure。修改 
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_CANCELLATION_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-cancellation.json`。
+
+### LAB O6 MLX OVERSIZED CANCELLATION AB PASS — 2026-09-29
+
+新增 `O6CancellationAB` 和 `simigo2ctl o6-cancel-ab`，在真实
+Qwen3-Coder-Next-4bit segmented core 上比较 direct cancellation/release/
+recovery 与 Execution State fork/capture/release/restore/replay。OFF 执行
+same physical release 但不使用 binding contract；ON 走 Coordinator 与
+`OversizedSegmentedStateBackend`，replay 由 representation-consuming executor
+执行。每 cycle 交替先后顺序。
+
+3 cycles 中 cooperative cancel one token、direct recovery exact、Execution
+State recovery exact、cancelled prefix exact、release removed current binding、
+restore to fork point、parent non-interference 均为 `3/3`。peak footprint
+`8,132MiB <= 30,720MiB`，swap `0MiB`，210 次 segment transition。这登记
+`O6_MLX_OVERSIZED_CANCELLATION_AB_PASS`，补上 MLX oversized
+cancellation/release/recovery A/B 缺口。诊断耗时只作运行记录，不建立
+performance、production readiness、upstream MLX 或跨模型 claim。修改 Swift 后
+全仓 `swift test` 为 `157 PASS / 0 FAIL`。报告见
+`docs/00-governance/SIMIGO2_O6_CANCELLATION_AB_20260929.md`；artifact 见
+`simigo2-experimental/results/o6-workload-matrix/qwen3-coder-next-4bit-cancellation-ab.json`。
