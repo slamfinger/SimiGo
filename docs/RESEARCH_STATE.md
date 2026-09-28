@@ -5175,7 +5175,6 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 F3_PARENT_CHILD_BINDING_NEXT
 ```
 
-<<<<<<< HEAD
 ### F3_DEVICE_ACCEPTANCE attempt 1 — REAL BUG F3-BUG-001 FOUND — 2026-09-28
 
 The device battery did exactly its job: it caught a real multi-turn bug
@@ -5201,7 +5200,7 @@ disposition battery preserved as the acceptance gate, gated behind
             restoration for cache-constructed sessions (the ctor must
             accept the transcript so the ledger exists) — next round,
             fork-surgery scope.
-also fixed   seed-side truncation to the claimed grid boundary
+also fixed  seed-side truncation to the claimed grid boundary
             (grid artifacts hold the FULL source snapshot; truncated
             to the claimed boundary per causal-KV — stale full-length
             artifacts become safe); same-boundary re-export collision
@@ -5209,36 +5208,87 @@ also fixed   seed-side truncation to the claimed grid boundary
             port mismatch in the battery
 ```
 
-=======
-### F3-BUG-002 FOUND — Cross-Gate Double-Seed — 2026-09-28
+### F3-BUG-002 FOUND (as registered) — 2026-09-28
 
-The F3 device battery (with the Gate D ledger fix at fork d6e9ba9,
-diagnostics instrumented) crashed the runtime with instrumented numbers:
+With the fork ledger fix at d6e9ba9 (instrumented assert), the battery
+still crashed the runtime:
 
 ```text
 assert (ChatSession:1170, policy block):
   processed=1520  ledger=0  layerOffsets=[9712 × 48]
 ```
 
-Diagnosis: the Child session was seeded TWICE by two independent
-mechanisms — B-4's message-level poolBind restored the parent's
-5-message materialization (9712 rows into the child's cache), THEN
-B-6's token-level fork hook fired on the same session (its trigger
-`conversation?.cachedTokens.isEmpty == true` cannot distinguish a truly
-new session from one just bound via B-4) and overlaid an 8192-grid seed
-+ second narrowing. Double-seed → ledger/offset bookkeeping destroyed.
+Registered at the time as a cross-gate double-seed (B-4 message bind
+then B-6 token hook on the same child session); the fix design was
+routed to a ruling.
 
-This is a cross-GATE boundary violation, exactly the class the audit
-warned about: Gate B-4 (message-level bind) and Gate B-6 (token hook)
-each correct alone, jointly corrupting. Fix design needs a ruling:
-mutual exclusion (a session bound by B-4 marks the token hook down; a
-session bound by the token hook marks B-4 down) — which is the
-Binding-Registry-as-single-source-of-truth principle applied to the
-two mechanisms. Registered as F3-BUG-002; battery preserved; Route B
-v1 single-mechanism behaviors (B-4 alone: 201ms continuation; B-6
-alone: 5.9s cross-session) remain device-verified.
+### F3-BUG-002 CORRECTED — single-seed timeline desync — 2026-09-28
 
->>>>>>> main
+Code-level verification during the ruling overturned the registered
+mechanism:
+
+```text
+evidence     the crashing request was r=1d5db5 s=f3-par (parent turn 2),
+             not the child — the child never started; the trace holds
+             exactly ONE seed marker (poolTokenHit tokens=8192, P1
+             cross-session)
+guards       the B-6 hook is structurally triple-guarded
+             (cachedTokens.isEmpty && lmState == nil && decision ==
+             .prefillAll); a B-4-restored session exits ledgerBootstrap
+             with a non-empty ledger and carries snapshot state, so it
+             cannot enter the hook — mutual exclusion is ALREADY
+             structural
+true root    KVCachePlan.replace(with:) swapped the cache entries
+cause        WITHOUT advancing processedTokenCount: after the seed the
+             logical timeline stayed at 0 while the layers held 8192
+             rows; delta prefill 1518 + 2 gen = processed 1520 vs rows
+             9712; record() saw processed < prompt, hit the wipe
+             branch, and turn 2 tripped the alignment assert
+disposition  fork 88f05a7: replace(with:processedTokenCount:) advances
+             the timeline to the matched boundary — invariant
+             ledger == processed == layer rows holds at seed exit
+```
+
+Boundary contract ruled (no new code): Binding Registry is the single
+source of truth for B-4/B-6 — semantic bind wins, token hook defers;
+the triple guard already enforces it. The contract breaks only if a
+future B-4 restore stops setting state/ledger; guard replacement with
+a registry query is then mandatory.
+
+### F3_DEVICE_ACCEPTANCE attempt 2 — PASSED — 2026-09-28
+
+M5 (Mac17,4), Qwen3-Coder-30B-A3B-Instruct-4bit, Debug,
+testF3DeviceAcceptanceBattery: 17.1s, TEST SUCCEEDED.
+
+```text
+warmup   cold                       ttft 1656ms
+P1       cross-session              ttft 5706ms  cacheEff 0.84
+         (seed 8192 + Δprefill 1518)             ledger extends
+P2       extend                     ttft  315ms  cacheEff 1.00
+child C  poolBind messages=5        ttft  290ms  cacheEff 1.00
+         restore, promptTokens=11                ΔC only
+P3       extend (after child)       ttft  297ms  cacheEff 1.00
+child C2 restore, repeat            ttft  297ms  deterministic
+```
+
+Five-condition final judgment (reviewer-ruled D1-D5):
+
+```text
+D1 PASS  child starts from T, not 0 — poolBind messages=5 + poolHit,
+         mode=restore over the 9728-row boundary
+D2 PASS  no second materialization — line-precise gate found no
+         session=f3-child mode=cold line
+D3 PASS  child paid ΔC only — promptTokens=11, not T+ΔC
+D4 PASS  parent continuation after child at warm level (297ms extend,
+         cacheEff 1.00) — no attributable regression
+D5 PASS  child repeat identical; shared-prefix cacheEff 1.00
+```
+
+F3_DEVICE_ACCEPTANCE_PASSED. F3-BUG-001 closed (fork ledger chain
+ce9e056 + 3341ace + d6e9ba9 + 88f05a7). Next: land the validated line
+into product main (release/v2.0.0-beta 8eacecd carries the battery and
+pins).
+
 ```text
 Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 P2_EVICT_PERSISTENCE_CLOSED /
@@ -5246,12 +5296,10 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 IDENT1_GATE_C_PASSED / F3_STRUCTURAL_CONTRACT_PASSED /
                 GATE_D_CONTRACT_PASSED /
                 GATE_D_CONCURRENCY_BOUNDARY_PASSED /
-<<<<<<< HEAD
-                F3_BUG001_REGISTERED (device acceptance blocked) /
-                F3_TRANSCRIPT_RESTORE_FIX_NEXT /
-=======
-                F3_BUG002_DOUBLE_SEED_FOUND /
-                F3_BUG002_FIX_DESIGN_AWAITING_RULING /
->>>>>>> main
+                F3_BUG001_CLOSED (fork ledger chain -> 88f05a7) /
+                F3_BUG002_CORRECTED (single-seed timeline desync;
+                B-4/B-6 exclusion contract registered) /
+                F3_DEVICE_ACCEPTANCE_PASSED (M5, D1-D5 green) /
+                PRODUCT_MAIN_LANDING_NEXT /
                 UPSTREAM_SYNC_PENDING
 ```
