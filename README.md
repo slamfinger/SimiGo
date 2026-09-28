@@ -13,10 +13,10 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 - 基于 MLX / `mlx-swift-lm` 执行本地模型推理
 - 提供 OpenAI-compatible API（Chat Completions / Text Completions / Responses）
 - 支持流式与非流式生成
-- 支持请求取消与生命周期安全收敛
+- 支持请求取消，以及 generation / suspend / resume 之间的生命周期一致性
 - 支持多 Session / 多 Branch 的逻辑隔离
-- 支持 Physical KV 与 Prefix Reuse
-- 支持资源准入、物理缓存淘汰与运行状态观测
+- 支持 Physical KV 与跨会话 Prefix Reuse
+- 支持资源准入、物理表示 retention / eviction 与运行状态观测
 - 支持官方 Tool Calling，并将 Tool Call 转交外部 Agent
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
@@ -36,6 +36,9 @@ main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全�
   201ms 对比冷轮 16,951ms（84 倍）；token 级共享下同文档新会话
   11,620ms → 5,944ms（文档 84% 从池播种）。重启后同样 warm。
   `SIMIGO_PREFIX_POOL=0` 可一键关闭。
+  Prefix Pool 同时受逻辑容量与物理磁盘容量约束；当前 Beta 默认分别为
+  200,000 message elements 与 16 GiB，并通过既有 LRU 生命周期回收超出
+  预算的物理快照。
   **术语约定**：当前 Branch API 是「分支 checkpoint fork」（checkpoint
   复制语义）；「Execution State 共享前缀 fork」（fork point 处共享
   Representation）尚未实现，为登记的 GA 方向。
@@ -65,7 +68,7 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.0.0-beta` |
+| Version | `v2.0-beta RC` |
 | Stage | Experimental Beta / Research Preview |
 | Platform | Apple Silicon macOS |
 | Primary execution substrate | MLX / `mlx-swift-lm` |
@@ -82,6 +85,9 @@ SimiGo Runtime        ≠ Backend
 - Cancellation
 - Runtime consistency contract
 - Residency / physical-state reconciliation
+- Durable Execution State checkpoint integrity
+- Cross-session Prefix Reuse 与物理 retention
+- Release suspend / resume lifecycle consistency
 - Failure Matrix 全量审计
 
 最新 Failure Matrix 结果：
@@ -243,6 +249,10 @@ Residency 与 Physical MLX 则通过 reconciliation 进行观察。D1 不宣称 
 
 详细定义：`docs/knowledge/invariants/RUNTIME_CONSISTENCY_CONTRACT_D1_PUBLIC_20260927.md`
 
+Beta release 还验证了 generation 与 suspend / resume 之间的生命周期一致性。
+Runtime 在 request admission 阶段建立 generation ownership，使 idle suspend
+不会卸载仍处于准入但尚未注册为 active task 的执行请求。
+
 ## 7. Residency 与资源治理
 
 SimiGo 将 Residency 与 Execution State 分开。
@@ -255,6 +265,21 @@ SimiGo 将 Residency 与 Execution State 分开。
 - reattach logical state
 - reconcile bookkeeping 与物理观察
 - 在压力下释放非核心驻留
+
+对于需要持久化的 Physical Representation，Beta Runtime 同时提供
+ownership-aware retention policy：
+
+- active Execution State 对应的 checkpoint 不参与自动淘汰；
+- 不完整或无法配对的 checkpoint artifact 视为 orphan 并回收；
+- 非 active checkpoint 在物理预算超限时按保存时间进行 LRU 回收；
+- Prefix Pool 在既有逻辑容量之外增加物理字节预算。
+
+当前 Beta 默认物理预算为：
+
+```text
+branch checkpoints : 64 GiB
+prefix pool        : 16 GiB
+```
 
 Floor 是 Residency policy，而不是 Execution State。
 
@@ -358,22 +383,23 @@ Residency policy
 
 ## 12. 当前研究路线
 
+当前 SimiGo 已经完成从 Execution State 基础语义到 Runtime 一致性、
+物理表示治理和真实设备验证的第一轮闭环。
+
 ```text
-Runtime / Residency / E2E
-        ↓
 Execution State
         ↓
-Failure Matrix
+Lifecycle consistency
         ↓
-Runtime Consistency
+Representation / Residency separation
+        ↓
+Runtime consistency
         ↓
 Oversized Execution
         ↓
-GA-0 Floor Formalization
+Persistence / Prefix Reuse
         ↓
-Token Ledger
-        ↓
-UI Branch / Backend Conformance
+Backend / Model Conformance
 ```
 
 ### 已完成
@@ -385,10 +411,16 @@ UI Branch / Backend Conformance
 - INV-3 reconciliation
 - Failure Matrix
 - GA-0 Floor policy formalization
+- Token Ledger
+- Durable checkpoint integrity
+- Generation / save / load / delete lifecycle race validation
+- Ownership-aware checkpoint retention
+- Prefix Pool physical-byte budget
+- Release suspend / resume lifecycle validation
 
 ### 当前工作
 
-- Token Ledger 的进一步实现与回归验证
+- v2.0 Beta release validation 与外部反馈收敛
 
 ### 后续方向
 
