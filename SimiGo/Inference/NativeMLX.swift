@@ -1439,11 +1439,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }()
 
         let snapshot = try loadPromptCacheSnapshot(url: cacheURL, materializeArrays: true)
+        let restoredHistory = Self.makeChatMessages(metadata.history)
         let session = ChatSession(
             container,
             instructions: nil,
             cache: snapshot.cache,
             state: snapshot.state,
+            history: restoredHistory,
             generateParameters: sessionParams,
             additionalContext: thinkingDisabled ? ["enable_thinking": false] : nil
         )
@@ -1451,7 +1453,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 否则下一轮复用检查 nil ≠ 当前指纹 → reuseMiss → 全量重建清零收益。
         let restored = ManagedSession(
             session: session,
-            history: Self.makeChatMessages(metadata.history),
+            history: restoredHistory,
             historyJSON: metadata.history,
             kvFingerprint: metadata.kvFingerprint,
             isRestoredSnapshot: true
