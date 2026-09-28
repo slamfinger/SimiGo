@@ -1559,6 +1559,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "fork source and target branch are identical: \(sourceBranch)")
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
+        guard let container = state.withLock({ $0.modelContainer }) else {
+            throw RuntError.notLoaded
+        }
         let sourceKey = try AgentExecutionKey(
             agentId: agentId, sessionId: sessionId, logicalBranchId: sourceBranch)
         let targetKey = try AgentExecutionKey(
@@ -1653,12 +1656,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             },
             boundLength: forkTokenCount)
 
-        let metadata = try await loadSessionCache(
-            agentId: agentId,
-            sessionId: sessionId,
-            logicalBranchId: targetBranch,
-            from: store
+        let loaded = try await performLoad(
+            key: targetKey.storageKey,
+            traceKey: targetKey.traceKey,
+            container: container,
+            config: nil,
+            baseConfig: baseConfig,
+            directory: store,
+            modelPath: modelPath
         )
+        state.withLock {
+            $0.sessions[targetKey.storageKey] = loaded.managed
+            $0.lastActivity = Date()
+        }
+        let metadata = loaded.metadata
+
         // Transaction boundary (STEP-10 review): the child binding registers
         // only AFTER the restore succeeded - a failed fork leaves no relation
         // behind, and a re-fork over an existing target cannot supersede a
