@@ -11,7 +11,9 @@ import Foundation
 /// checkpoint → NativeMLX.saveSessionCache（BranchFork v1 存储语义）
 /// restore    → NativeMLX.loadSessionCache（raw-cache 恢复语义）
 /// fork       → NativeMLX.forkSessionBranch（磁盘 checkpoint fork v1；
-///              真共享 fork 等上游原语，见 RFC mlx-swift-lm#629）
+///              fork 点持久化 + registry 登记。真共享 fork 的经济性在
+///              admission 层（poolBind）；上游原语路线已裁定关闭
+///              （UPSTREAM_BACKUP_ON_FORK），不再等待 mlx-swift-lm#629）
 /// ```
 
 /// Execution 身份 = 现有 AgentExecutionKey 三元组的直映射。

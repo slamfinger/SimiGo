@@ -441,6 +441,12 @@ final class BranchForkTests: XCTestCase {
         let residue = ((try? FileManager.default.contentsOfDirectory(atPath: store.path)) ?? [])
             .filter { $0.hasPrefix(altPrefix) }
         XCTAssertTrue(residue.isEmpty, "delete 后不应有 checkpoint 残留：\(residue)")
+        // STEP-10 lifecycle: delete detaches the child binding (Gate C:
+        // detach is an operation; the row history remains, active clears).
+        XCTAssertNil(
+            NativeMLXPrefixPool.shared.bindings.currentBinding(
+                executionID: altKey.storageKey),
+            "delete 后 child binding 必须已 detach")
         XCTAssertFalse(
             runtime.listSessionBranches(sessionId: "s").liveBranches.contains("alt"),
             "delete 后 live 不应含 alt")
