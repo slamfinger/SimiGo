@@ -1,4 +1,5 @@
 import Foundation
+import MLX
 import MLXLMCommon
 import SimiGo2Experimental
 
@@ -158,5 +159,28 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExportFailed err=\(String(describing: error))")
         }
+    }
+
+    /// 将快照的 KV 层截断到 claimed 边界（Gate C/D：artifact 是候选，
+    /// claimed boundLength 定义可用边界；因果 KV 保证行 [0..<T] 恰为
+    /// 共享前缀）。不可安全切片（非 KVCacheSimple / 携带模型 state）
+    /// → nil = 候选拒绝，回退精确冷路径。
+    static func truncatedSnapshot(
+        _ snapshot: PromptCacheSnapshot, to tokenCount: Int
+    ) -> PromptCacheSnapshot? {
+        guard snapshot.state == nil, tokenCount > 0 else { return nil }
+        var layers: [any KVCache] = []
+        for layer in snapshot.cache {
+            guard let simple = layer as? KVCacheSimple else { return nil }
+            let state = simple.state
+            guard let first = state.first, first.dim(2) >= tokenCount else {
+                return nil
+            }
+            let copy = KVCacheSimple()
+            copy.state = state.map { $0[.ellipsis, ..<tokenCount, 0...] }
+            layers.append(copy)
+        }
+        return PromptCacheSnapshot(
+            cache: layers, metadata: snapshot.metadata, state: nil)
     }
 }
