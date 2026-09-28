@@ -222,3 +222,35 @@ forkSessionBranch 在 source save 完成后释放 source gate，再读取 cached
 **BETA-AUDIT-1 = FAIL / RETURN TO IMPLEMENTATION FOR C1 + C3**
 
 这不是要求重新设计 SimiGo 的 Execution State，也不是启动 Palace-1。首发前只需要把 checkpoint generation/commit 与 fork transaction boundary 收紧到当前五动作语义之内，并补对应 failure/race evidence。
+
+
+## 11. Round 4 — 最小实现修复批次（2026-09-28）
+
+### 11.1 实现分支
+产品仓库创建实现分支：
+`audit/beta-c1-c3-checkpoint-fork-consistency`。
+对应草案 PR：#11（draft）。本批次不进入 main，不视为 Gate 已关闭。
+
+### 11.2 C1 — checkpoint generation / pair consistency
+- `SessionCacheMetadata` 新增 `checkpointGeneration` 与 `cacheSHA256`。
+- `performSave()` 在官方 `.safetensors` 写入后计算 SHA-256，并为本次 checkpoint 生成 UUID generation；两者写入 `.meta.json`。
+- `performLoad()` 在构造 `ChatSession` 前必须同时验证 generation 存在、cache SHA-256 与当前 `.safetensors` 完全一致；缺失或不一致直接 fail-closed。
+- 因此 W2（新 cache + 旧 meta / 新 meta + 旧 cache）不再静默通过；W1 的部分 cache 也因 hash 不匹配而拒绝恢复。
+- 自动 checkpoint 失败不再把 live session 当作干净状态：`ManagedSession.checkpointDirty=true`；suspend 前重试现有 checkpoint 路径，失败则阻止 suspend，保留 live Execution。
+- 显式 `saveSessionCache()` 成功后清除 dirty 标记。
+
+### 11.3 C3 — fork transaction boundary
+- `SessionGenerationGate` 增加 deterministic ordered multi-key acquire/release。
+- `forkSessionBranch()` 不再先 `saveSessionCache()` 再释放 source gate；改为一次 transaction 同时覆盖 source、target，以及 `serializeGeneration=true` 时实际使用的 global generation key。
+- transaction 内直接调用无 gate 的 `performSave()` / `performLoad()`，避免 gate re-entry deadlock。
+- fork token position 在同一 source checkpoint save 后、transaction 释放前读取；source generation 无法在 checkpoint/copy/stamp/restore/bind 之间插入。
+- Step-10 child binding 顺序保持不变：target restore 成功后才 bind；不重新打开 FORK-3 / Step-10。
+
+### 11.4 新增单测
+- `SimiGoTests/Lifecycle/SessionGenerationGateMultiKeyTests.swift`
+- 覆盖反向 key 顺序无死锁，以及 multi-key transaction 同时阻塞 source/target 单 key acquisition。
+
+### 11.5 当前证据等级 / Gate
+当前只有**代码实现批次**，尚未取得 CI/真机 failure-injection 与 race evidence，因此不能把 C1/C3 标为 PASS。
+当前 Gate：**BETA-AUDIT-1 = FAIL / IMPLEMENTATION BRANCH UNDER VERIFICATION**。
+下一步固定为：编译 + unit tests → checkpoint W1/W2 failure injection → fork source-generation race test → 原有 95/95 + F3/B-5/BranchFork 回归 → 再做 Round 5 Gate 裁定。
