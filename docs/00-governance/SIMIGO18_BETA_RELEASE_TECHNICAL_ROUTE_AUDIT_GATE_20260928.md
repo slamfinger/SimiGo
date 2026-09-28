@@ -70,6 +70,32 @@
 
 每轮都必须以真实代码和可复现证据为依据。
 
+### 3.4 Execution State 效率不退化原则
+
+**这是 Execution State 抽象的长期硬约束，而不只是某一版本的性能优化项。**
+
+> **无论抽象如何演进、代码如何实现，Execution State 的出发点和终点都必须是：不降低推理效率，并通过状态复用、增量物理操作、生命周期调度与资源管理，减少 Execution Lifecycle 的总开销。**
+
+因此：
+
+- Execution State 抽象不得以牺牲 backend 推理热路径效率为代价。
+- 默认推理热路径不得因为 Execution State 引入不必要的每 token / 每 step 锁、复制、序列化、hash、全局状态同步或其他固定负担。
+- 状态一致性检查应优先位于 checkpoint、restore、fork、suspend、delete 等生命周期边界；不能为了简单实现而污染推理热路径。
+- Execution State 应尽可能通过 Logical State 与 Physical Representation 的分离，复用已有状态、避免不必要的重算、全量复制、重复加载和重复物理分配。
+- Gate、checkpoint、Binding、MLX session、Representation 等都是实现手段，不能反过来取代 Execution State 抽象本身。
+- “代码更统一”“状态更完整”“一致性更严格”本身不是充分理由；任何新增机制都必须同时回答：**是否保持推理效率？是否降低或控制生命周期成本？**
+- 如果一个设计为了状态管理引入持续性的推理热路径成本，即使语义上正确，也应视为 Execution State 路线的潜在架构退化，必须重新审查。
+
+最终评价标准不是：
+
+> “是否成功增加了一层 Execution State 抽象。”
+
+而是：
+
+> **“在不降低推理效率的前提下，Execution State 是否使执行状态的分叉、保存、恢复、挂起、复用、释放与资源调度成本更低、更可控。”**
+
+该原则适用于 Beta 及后续 BACKEND-1、PALACE-1 等架构演进；未来架构不得通过增加默认推理热路径负担来换取抽象完整性。
+
 ## 4. 首发门槛
 
 首发前至少满足：
