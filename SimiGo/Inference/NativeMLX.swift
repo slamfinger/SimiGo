@@ -457,9 +457,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     private nonisolated func generationGateKey(
         for executionKey: AgentExecutionKey
-    ) -> AgentExecutionKey {
+    ) throws -> AgentExecutionKey {
         guard RuntimeTuning.serializeGeneration else { return executionKey }
-        return AgentExecutionKey(
+        return try AgentExecutionKey(
             agentId: executionKey.agentId,
             sessionId: "__global_generation__",
             logicalBranchId: executionKey.logicalBranchId
@@ -503,7 +503,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // P0-3 强化：全局生成串行化。gate key 常量化使所有生成跨 session 单飞，
         // 规避 qwen3_5_moe 动态编译架构在并发首次编译时的 mlx 锁互堵
         // （sessions 存储仍用真实 executionKey，仅互斥令牌常量化）。
-        let gateExecutionKey = self.generationGateKey(for: executionKey)
+        let gateExecutionKey = try self.generationGateKey(for: executionKey)
 
         let gate = gateHolder.withLock { $0 }
         let task = Task<GenerationResult, Error> { [weak self] in
@@ -1631,7 +1631,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // When generation serialization is enabled, include the exact global
         // generation key used by generate; otherwise source + target keys are
         // sufficient. Deterministic ordering prevents cross-key deadlock.
-        let generationKey = generationGateKey(for: sourceKey)
+        let generationKey = try generationGateKey(for: sourceKey)
         let transactionKeys = RuntimeTuning.serializeGeneration
             ? [generationKey, sourceKey, targetKey]
             : [sourceKey, targetKey]

@@ -158,13 +158,14 @@ final class BranchForkTests: XCTestCase {
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(forgedMeta).write(to: metaURL, options: .atomic)
 
-        // ---- 见证：错位对 restore 静默成功（fail-open）----
-        let mismatched = try await runtime.loadSessionCache(
-            sessionId: "s", logicalBranchId: "main", from: dir)
-        XCTAssertEqual(
-            mismatched.history, fabricatedHistory,
-            "W2 见证：KV 属于真实会话，但恢复出的 transcript 是伪造的三轮——"
-                + "错位对被静默接受（fail-open）。修复后本断言应翻转为抛出。")
+        // ---- C1 修复验证：错位对 restore fail-closed（generation mismatch 抛出）----
+        do {
+            _ = try await runtime.loadSessionCache(
+                sessionId: "s", logicalBranchId: "main", from: dir)
+            XCTFail("W2：伪造 transcript 配对不应静默 restore（fail-open 复发）")
+        } catch {
+            // 期望：fail-closed（C1 修复生效）
+        }
 
         // ---- W1 注入：截断 .safetensors（数据段损坏）----
         // 动态发现：头部可解析 + 数组惰性映射 → 截断文件 restore 也不抛出，
@@ -172,13 +173,14 @@ final class BranchForkTests: XCTestCase {
         let originalCache = try Data(contentsOf: cacheURL)
         try Data(originalCache.prefix(originalCache.count / 2))
             .write(to: cacheURL)
-        let truncated = try await runtime.loadSessionCache(
-            sessionId: "s", logicalBranchId: "main", from: dir)
-        XCTAssertEqual(
-            truncated.history.count, fabricatedHistory.count,
-            "W1 见证：截断的 safetensors 静默 restore，且携带的是 W2 伪造的"
-                + " transcript（损坏推迟到生成期）。修复（restore 时校验数据段"
-                + "完整性 + 配对一致性）后应翻转为抛出。")
+        // ---- C1 修复验证：截断 safetensors fail-closed（SHA/代际守卫）----
+        do {
+            _ = try await runtime.loadSessionCache(
+                sessionId: "s", logicalBranchId: "main", from: dir)
+            XCTFail("W1：截断 safetensors 不应静默 restore（fail-open 复发）")
+        } catch {
+            // 期望：fail-closed（C1 修复生效）
+        }
 
         // ---- meta 缺失注入 ----
         try FileManager.default.removeItem(at: metaURL)
