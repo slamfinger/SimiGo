@@ -183,7 +183,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
             sessionId: "race", logicalBranchId: "main", to: dir)
         let key = try AgentExecutionKey(
             agentId: nil, sessionId: "race", logicalBranchId: "main")
-        let identityBefore = runtime.integrationActiveSessionIdentity(
+        let identityBefore = runtime.integrationActiveSessionWitness(
             sessionId: "race", logicalBranchId: "main")
         XCTAssertNotNil(identityBefore)
 
@@ -217,10 +217,10 @@ final class GenerationLifecycleRaceTests: XCTestCase {
             [1, 2],
             "load commit must be released only after generation")
 
-        let identityAfter = runtime.integrationActiveSessionIdentity(
+        let identityAfter = runtime.integrationActiveSessionWitness(
             sessionId: "race", logicalBranchId: "main")
-        XCTAssertNotEqual(
-            identityAfter, identityBefore,
+        XCTAssertFalse(
+            identityAfter === identityBefore,
             "active execution must be the restored ManagedSession, not old A")
         XCTAssertTrue(
             runtime.listSessionBranches(sessionId: "race").liveBranches.contains("main"))
@@ -245,7 +245,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
             sessionId: "race", logicalBranchId: "main", to: dir)
         let key = try AgentExecutionKey(
             agentId: nil, sessionId: "race", logicalBranchId: "main")
-        XCTAssertNotNil(runtime.integrationActiveSessionIdentity(
+        XCTAssertNotNil(runtime.integrationActiveSessionWitness(
             sessionId: "race", logicalBranchId: "main"))
         XCTAssertNotNil(NativeMLXPrefixPool.shared.bindings.currentBinding(
             executionID: key.storageKey))
@@ -279,7 +279,7 @@ final class GenerationLifecycleRaceTests: XCTestCase {
             [1, 2],
             "delete lifecycle must be released only after generation")
 
-        XCTAssertNil(runtime.integrationActiveSessionIdentity(
+        XCTAssertNil(runtime.integrationActiveSessionWitness(
             sessionId: "race", logicalBranchId: "main"))
         XCTAssertNil(NativeMLXPrefixPool.shared.bindings.currentBinding(
             executionID: key.storageKey))

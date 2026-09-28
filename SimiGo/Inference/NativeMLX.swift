@@ -69,6 +69,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         var sessions: [String: ManagedSession] = [:]
         var modelCapabilityContract: ModelCapabilityContract?
         var activeRequestTasks: [String: Task<GenerationResult, Error>] = [:]
+        /// Request intent survives the async ensureLoaded → task-registration
+        /// gap. Suspend must not unload the runtime while this is non-empty.
+        var pendingRequestIds: Set<String> = []
     }
 
     private enum Lifecycle {
@@ -92,7 +95,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     }
 
     public var isInProcess: Bool { true }
-    public var isGenerating: Bool { state.withLock { !$0.activeRequestTasks.isEmpty } }
+    public var isGenerating: Bool {
+        state.withLock { !$0.activeRequestTasks.isEmpty || !$0.pendingRequestIds.isEmpty }
+    }
     public var isRunning: Bool { state.withLock { $0.isRunning } }
 
     public init(info: ModelInfo, config: ModelConfig) {
@@ -282,6 +287,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 state.sessions.removeAll()
                 state.modelContainer = nil
                 state.activeRequestTasks.removeAll()
+                state.pendingRequestIds.removeAll()
                 return (server, tasks, gate)
             }
 
@@ -378,6 +384,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             state.isRunning &&
             state.modelContainer != nil &&
             state.activeRequestTasks.isEmpty &&
+            state.pendingRequestIds.isEmpty &&
             Date().timeIntervalSince(state.lastActivity) >= idleTimeout
         }
         guard eligible else { return false }
@@ -390,6 +397,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     state.isRunning &&
                     state.modelContainer != nil &&
                     state.activeRequestTasks.isEmpty &&
+                    state.pendingRequestIds.isEmpty &&
                     Date().timeIntervalSince(state.lastActivity) >= timeout
                 }
                 guard stillEligible else { return false }
@@ -481,6 +489,44 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         onToolCall: @escaping @Sendable (ParsedToolCall) -> Void = { _ in }
     ) async throws -> GenerationResult {
         state.withLock { $0.lastActivity = Date() }
+        var reservationError: RuntError?
+        state.withLock { state in
+            guard state.isRunning else {
+                reservationError = .notLoaded
+                return
+            }
+            guard state.activeRequestTasks[requestId] == nil,
+                  !state.pendingRequestIds.contains(requestId) else {
+                reservationError = .generationFailed("Duplicate request ID: \(requestId)")
+                return
+            }
+            state.pendingRequestIds.insert(requestId)
+        }
+        if let reservationError {
+            // Preserve the existing lineage contract: admission-time
+            // notLoaded/duplicate failures are still failed executions.
+            let executionKey = try AgentExecutionKey.resolve(
+                agentId: agentId,
+                sessionId: sessionId,
+                logicalBranchId: logicalBranchId
+            )
+            let executionId = UUID().uuidString.lowercased()
+            lineage.begin(ExecutionRecord(
+                executionId: String(executionId), requestId: requestId,
+                agentId: agentId, sessionId: sessionId,
+                logicalBranchId: logicalBranchId, status: .running,
+                startedAt: Date()))
+            lineage.end(executionId: String(executionId), status: .failed)
+            throw reservationError
+        }
+        defer {
+            state.withLock {
+                $0.pendingRequestIds.remove(requestId)
+                $0.activeRequestTasks.removeValue(forKey: requestId)
+                $0.lastActivity = Date()
+            }
+        }
+
         if let oversized = state.withLock({ $0.oversized }) {
             return try await oversized.handleGenerate(
                 messages: messages, maxTokens: config.maxTokens, onChunk: onChunk
@@ -542,23 +588,18 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 registrationError = .notLoaded
                 return
             }
-            guard state.activeRequestTasks[requestId] == nil else {
+            guard state.activeRequestTasks[requestId] == nil,
+                  state.pendingRequestIds.contains(requestId) else {
                 registrationError = .generationFailed("Duplicate request ID: \(requestId)")
                 return
             }
             state.activeRequestTasks[requestId] = task
+            state.pendingRequestIds.remove(requestId)
         }
 
         if let registrationError {
             task.cancel()
             throw registrationError
-        }
-
-        defer {
-            state.withLock {
-                $0.activeRequestTasks.removeValue(forKey: requestId)
-                $0.lastActivity = Date()
-            }
         }
 
         let result = try await withTaskCancellationHandler(
@@ -1614,20 +1655,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// Regression witness only: lifecycle tests need the identity of the
-    /// ManagedSession registered in the active execution slot.
-    func integrationActiveSessionIdentity(
+    /// Regression witness only. Return a strong reference so ObjectIdentifier
+    /// reuse cannot make a removed session look like its replacement.
+    func integrationActiveSessionWitness(
         agentId: String? = nil,
         sessionId: String,
         logicalBranchId: String
-    ) -> ObjectIdentifier? {
+    ) -> AnyObject? {
         guard let key = try? AgentExecutionKey.resolve(
             agentId: agentId,
             sessionId: sessionId,
             logicalBranchId: logicalBranchId
         ) else { return nil }
         return state.withLock {
-            $0.sessions[key.storageKey].map(ObjectIdentifier.init)
+            $0.sessions[key.storageKey].map { $0 as AnyObject }
         }
     }
 
