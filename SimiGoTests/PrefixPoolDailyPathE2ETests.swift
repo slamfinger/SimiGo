@@ -58,6 +58,22 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         return data.suffix(data.count - offset).range(of: Data(marker.utf8)) != nil
     }
 
+    private func traceLogLineContains(
+        _ markers: [String], sinceByteOffset offset: Int
+    ) -> Bool {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        guard let data = try? Data(contentsOf: url), data.count > offset else {
+            return false
+        }
+        let suffix = data.suffix(data.count - offset)
+        return String(decoding: suffix, as: UTF8.self)
+            .split(separator: "\n")
+            .contains { line in
+                markers.allSatisfy { line.contains($0) }
+            }
+    }
+
     private func traceLogSize() -> Int {
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
@@ -242,8 +258,8 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
             traceLogContains("poolHit", sinceByteOffset: logStart),
             "D1: consumption via the existing materialization")
         XCTAssertFalse(
-            traceLogContains("session=f3-child", sinceByteOffset: logStart)
-                && traceLogContains("mode=cold", sinceByteOffset: logStart),
+            traceLogLineContains(
+                ["session=f3-child", "mode=cold"], sinceByteOffset: logStart),
             "D2: child must not take a cold materialization path")
         XCTAssertLessThan(
             childSeconds, coldSeconds * 0.5,
