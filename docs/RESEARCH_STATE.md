@@ -5300,6 +5300,38 @@ device        full pool class PASSED (F3 30.1s / B-5 22.7s /
 Deferred after step-9: usage projection into GenerationUsageReport;
 disk GC policy; forkSessionBranch API plug-in decision (LAST).
 
+### FORK-3 step-10 LANDED — forkSessionBranch plugin decided — 2026-09-28
+
+Decision doc: SIMIGO17_FORK_SESSION_BRANCH_PLUGIN_DECISION_20260928
+(R1-R5). Product main cb5d712, release b798662... b79866c.
+
+```text
+R1  checkpoint layer unchanged (copy/overwrite/promotion);
+    terminology red line holds
+R2  FORK-2 closed: forkPoint {sourceStorageKey, atMessage, atToken}
+    persisted into the TARGET branch metadata (optional Codable,
+    backward compatible)
+R3  child binds the checkpoint Ref (kind .residentKV, contentHash =
+    SHA256(stamped meta) truncated, boundLength = fork token
+    position); parent NOT bound (B-R2 - its pool binding must not
+    supersede); fork relation = child row + lineage.recordFork
+R4  FORK-1 closed: temp copy + atomic replace (delete -> copy crash
+    window gone)
+R5  no zero-copy (upstream route closed by UPSTREAM_BACKUP_ON_FORK);
+    forkSessionBranch does not become poolBind
+```
+
+Verification (M5): BranchFork 3/3 (round-trip expectations updated to
+the post-fix architecture — same-content copies are pool-served
+restore with cacheEff >= 0.9; restored branches warm-extend after the
+ledger fix chain; output-verbatim equality green) + F3 battery PASSED
+(32.5s).
+
+FORK-3 cut sequence COMPLETE (step skeleton -> D contract -> device
+acceptance -> step-8 binding types -> step-9 daily wiring -> step-10
+forkSessionBranch plugin). Remaining registered: usage projection,
+disk GC (deferred candidates).
+
 ### F3_DEVICE_ACCEPTANCE attempt 2 — PASSED — 2026-09-28
 
 M5 (Mac17,4), Qwen3-Coder-30B-A3B-Instruct-4bit, Debug,
@@ -5390,6 +5422,10 @@ Current gate  : MAIN_LINE_UNIFIED / BETA_CLOSURE_AUDIT_CLEAN* /
                 upstream push; the slamfinger fork IS the remote
                 backup) /
                 FORK3_STEP9_BINDING_WIRED (daily path) /
-                FORK3_STEP10_NEXT (forkSessionBranch plug-in decision,
-                LAST per the preserved ordering)
+                FORK3_STEP10_DECIDED_AND_LANDED (forkSessionBranch
+                plugin: R1 checkpoint layer unchanged; R2 fork point
+                persisted; R3 child .residentKV binding; R4 atomic
+                copy; R5 no zero-copy/no poolBind-mix) /
+                FORK3_CUT_SEQUENCE_COMPLETE /
+                DEFERRED_REMAINS (usage projection; disk GC)
 ```
