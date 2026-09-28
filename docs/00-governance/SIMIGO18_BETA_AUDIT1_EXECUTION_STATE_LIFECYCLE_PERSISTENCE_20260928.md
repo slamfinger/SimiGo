@@ -395,3 +395,31 @@ F3/B-5/BranchFork ✓（含于全量扫）
 Round 5 裁定输入已齐：C1/C3 实现审计 PASS（§13）+ 注入/race 动态
 证据（本节）。剩余：审计会话裁定（PASS → PR #11 转 ready 落 main；
 或继续 RETURN 并列明缺口）。
+
+## 14. 第二次审核（main 合入后反向审计）— 2026-09-28
+
+审计对象升级为正式产品主线 main @ fc96423（PR #11 merge commit；树与
+审计分支一致，merge 无丢失）。结论：
+
+```text
+BETA-AUDIT-1 = PASS / MAIN MERGED / 0 BLOCKER
+Execution State 抽象未被 checkpoint/gate 偷换 ✓
+inference hot path 未被污染 ✓
+40 GiB checkpoint RAM 风险已消除 ✓
+C1/C3/dirty/multi-key/全量回归 全部 PASS ✓
+W2b / CI workflow 维持非阻塞登记 ✓
+```
+
+新登记两项（非 Beta release gate，后续演进点）：
+
+```text
+P2-ES-01  dirty checkpoint retry gate 与 generationGateKey 的
+          语义统一/证明（并发加固项）
+P2-ES-02  checkpoint SHA：若 backend 未来提供 digest-at-write /
+          streaming sink，消除 save 后的整文件二次读取
+          （当前 = 必要的生命周期一致性成本，O(chunk) 内存，
+          非 hot path 成本，不构成本轮 Gate 阻断）
+```
+
+C1/C3 冻结：不再反复修改；F3 / B-5 / FORK-3 / Step-8/9/10 / C2
+维持关闭。
