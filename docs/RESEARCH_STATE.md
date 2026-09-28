@@ -5332,6 +5332,60 @@ acceptance -> step-8 binding types -> step-9 daily wiring -> step-10
 forkSessionBranch plugin). Remaining registered: usage projection,
 disk GC (deferred candidates).
 
+### External review round 2 + BETA RELEASE GATE — 2026-09-28
+
+A second external code-level review of cb5d712/b79866c/650407b
+confirmed R1-R5, parent-no-supersede, identity contract, step-9
+non-interference, and the closed F3 chain; it raised 2 P1 lifecycle
+findings + P2 documentation items. Disposition (product review batch
+9956e64 / main merge 24399ae / e168555):
+
+```text
+P1 delete lifecycle   FIXED  deleteSessionBranch now DETACHES the
+                      execution binding (row retained, active clears)
+P1 fork transaction   FIXED  the child binding registers AFTER
+                      loadSessionCache succeeds - a failed fork
+                      leaves no relation and cannot supersede a
+                      binding for a restore that never happened
+P2 two-file atomicity REGISTERED  per-file atomic swap accepted for
+                      beta; whole-fork transaction = deferred
+                      reliability candidate
+P2 stale comment      FIXED  the beta.3 "FORK-3 (GA, unimplemented)"
+                      claim modernized (main carried it; release did
+                      not); the upstream-primitive note in
+                      ExecutionControlling updated per
+                      UPSTREAM_BACKUP_ON_FORK
+P2 release doc pin    FIXED  88f05a77 -> 6d01a13c (matches
+                      Package.resolved)
+```
+
+BETA RELEASE GATE (release/v2.0.0-beta @ b79866c pre-fix sweep, then
+post-fix re-runs):
+
+```text
+full SimiGoTests sweep  79 executed / 2 skipped (env-gated) /
+                        1 failure = B-5 cross-session assert raced
+                        the trace flush under full-suite swap
+                        pressure (the line EXISTS in the
+                        authoritative trace; poolTokenHit and the
+                        timing asserts in the same window passed)
+race fix                traceLogContains polls briefly; post-fix
+                        re-run: BranchFork 3/3 + F3 26.3s + B-5
+                        26.5s green
+main/release convergence  trees identical at e168555 (F3 battery
+                        32.5s re-verified on the merged main)
+```
+
+```text
+Current gate  : MAIN_LINE_UNIFIED / ... /
+                FORK3_CUT_SEQUENCE_COMPLETE /
+                FORK3_STEP10_REVIEW_CLOSED (2 P1 fixed) /
+                BETA_RELEASE_GATE_VERIFIED /
+                DEFERRED_REMAINS (usage projection; disk GC; whole-
+                fork transaction atomicity) /
+                UPSTREAM_BACKUP_ON_FORK
+```
+
 ### F3_DEVICE_ACCEPTANCE attempt 2 — PASSED — 2026-09-28
 
 M5 (Mac17,4), Qwen3-Coder-30B-A3B-Instruct-4bit, Debug,
