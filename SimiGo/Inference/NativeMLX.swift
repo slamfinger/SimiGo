@@ -413,7 +413,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         let gate = self.gateHolder.withLock { $0 }
                         for (executionKey, managed) in dirty {
                             do {
-                                _ = try await gate.withExclusive(executionKey) { [weak self] in
+                                let retryGateKey = try self.generationGateKey(for: executionKey)
+                                _ = try await gate.withExclusive(retryGateKey) { [weak self] in
                                     guard let self else { throw RuntError.notLoaded }
                                     return try await self.performSave(
                                         key: executionKey.storageKey,
