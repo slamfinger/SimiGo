@@ -5712,3 +5712,22 @@ client mean `509.130ms`。verbosity-6 trace 抽取确认 20/20 长任务在
 任务释放。该结果仅限当前 backend topology 和 workload，不是 Execution State
 cancellation、更高并发曲线或生产 readiness。RQ3 增加
 `CONCURRENT_BACKEND_CANCEL_WITH_UNAFFECTED_CONTROL`。
+
+### LAB RQ2 QWEN4EXP READONLY AUDIT — STILL BLOCKED — 2026-09-29
+
+对五个 Qwen4Exp 相关候选完成远程 metadata / manifest / README 只读审计。
+全部 REJECT：`Jab1718` 为 `42,620,341,120 bytes`；`ISTA-DASLab GSQ-RCO`
+为 `116,514,464,640 bytes`；`AnonimousA REAP-320` Q3/Q2 shards 分别约
+`64.21/57.27GiB`；`sh0wie REAP-288-GGUF` 总量为
+`124,068,144,000 bytes`，README 覆盖 Q4/Q5/Q8 `78/87/116GB`；
+`sh0wie REAP-288-MLX-4bit` 外部指南报告 `73.5GB`。这些对象均超过 32GB
+physical-RAM fit，并且属于 pruned / subnet / expert-pruned Qwen4Exp-family
+substrate，不是 full Qwen4Exp closure。
+
+原 `sh0wie/Qwen3.8-Flash-Next-REAP` 已 404，实际候选收窄为 REAP-288 的
+GGUF 与 MLX-4bit。该审计不验证 tensor/tokenizer completeness、runtime
+load、Execution State semantics 或推理质量；磁盘可用空间不构成 fit 证据。
+RQ2 维持 `PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT`，等待用户提供
+full Qwen4Exp artifact、授权只做 pruned-substrate 线、独立化 pruned 研究线
+或优先暂停 RQ2。证据边界见
+`docs/00-governance/SIMIGO_LAB_RQ2_QWEN4EXP_READONLY_AUDIT_20260929.md`。
