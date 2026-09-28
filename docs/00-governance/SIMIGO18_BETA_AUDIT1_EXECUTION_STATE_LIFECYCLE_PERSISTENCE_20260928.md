@@ -371,3 +371,27 @@ child 0.3s→11.1s（parent 导出与 child admission 的既有竞态在压力
 下放大 → child admission miss）；空闲态复跑 F3 即 PASS（33.8s）。
 登记为运行前置条件（时序门需空闲态执行）+ 独立加固候选
 （export-admission 竞态）。
+
+### 12.1 Round-4 Verification EXECUTED（真机 M5；audit 分支 tip bc2e0ea）
+
+并行会话环境无法编译 Swift——§12 验证计划已由实机环境执行完毕。
+实施分支 tip = bc2e0ea = e9423d0 + 构建修复（generationGateKey
+throws + 调用点、autoclosure）+ witness 翻转（fail-closed 预期）+
+R5 seam tests：
+
+```text
+编译          ✓ 全量扫构建通过
+Gate 单测     ✓ 2/2（TestFlag actor 版本，isCompleted 断言内含）
+W1 注入       ✓ 截断 safetensors → SHA 守卫 fail-closed（动态实测）
+W2 注入       ✓ 陈旧 SHA/代际 → generation mismatch 抛出（动态实测）；
+              W2b 语义残留登记为非阻塞见证（无断言记录保留）
+race seam     ✓ 长生成持 gate 期间 fork 被阻塞（forkFinished 探针），
+              generation 释放后完成且 forkPoint 指向 source 状态
+全量回归      ✓ 84 executed / 2 skipped / 0 failures / 511.7s
+              （含 Oversized 41.76GiB E2E）
+F3/B-5/BranchFork ✓（含于全量扫）
+```
+
+Round 5 裁定输入已齐：C1/C3 实现审计 PASS（§13）+ 注入/race 动态
+证据（本节）。剩余：审计会话裁定（PASS → PR #11 转 ready 落 main；
+或继续 RETURN 并列明缺口）。
