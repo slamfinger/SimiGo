@@ -26,6 +26,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
         /// cacheTokensBefore 补回 cacheHit 归因，消除 cacheEff=0.00 歧义。
         let isRestoredSnapshot: Bool
+        /// The gate identity of the live execution. It is assigned when a
+        /// generation uses the session; restored sessions acquire it lazily.
+        var executionKey: AgentExecutionKey?
+        /// A successful generation makes the live execution newer than its
+        /// durable checkpoint until the automatic checkpoint completes.
+        var checkpointDirty = false
 
         init(
             session: ChatSession,
@@ -39,6 +45,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             self.historyJSON = historyJSON
             self.kvFingerprint = kvFingerprint
             self.isRestoredSnapshot = isRestoredSnapshot
+            self.checkpointDirty = false
         }
     }
 
@@ -385,6 +392,50 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 guard stillEligible else { return false }
 
+                // A checkpoint-enabled execution cannot be evicted from
+                // memory while its latest logical commit is still dirty. Retry
+                // the existing checkpoint path first; failure keeps the live
+                // session resident rather than silently discarding continuity.
+                if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
+                    let dirty = self.state.withLock { state in
+                        state.sessions.compactMap { _, managed -> (AgentExecutionKey, ManagedSession)? in
+                            guard managed.checkpointDirty,
+                                  let executionKey = managed.executionKey else {
+                                return nil
+                            }
+                            return (executionKey, managed)
+                        }
+                    }
+                    if !dirty.isEmpty {
+                        guard let container = self.state.withLock({ $0.modelContainer }) else {
+                            return false
+                        }
+                        let gate = self.gateHolder.withLock { $0 }
+                        for (executionKey, managed) in dirty {
+                            do {
+                                _ = try await gate.withExclusive(executionKey) { [weak self] in
+                                    guard let self else { throw RuntError.notLoaded }
+                                    return try await self.performSave(
+                                        key: executionKey.storageKey,
+                                        traceKey: executionKey.traceKey,
+                                        container: container,
+                                        managed: managed,
+                                        directory: Self.defaultBranchCheckpointStore(),
+                                        modelPath: self.modelPath
+                                    )
+                                }
+                                managed.checkpointDirty = false
+                            } catch {
+                                self.traceLogger.trace(
+                                    "[LIFECYCLE] suspend_blocked_dirtyCheckpoint key=\(executionKey.traceKey)"
+                                        + " err=\(error.localizedDescription)"
+                                )
+                                return false
+                            }
+                        }
+                    }
+                }
+
                 self.state.withLock {
                     $0.lifecycle = .suspended
                     $0.modelContainer = nil
@@ -402,6 +453,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "[LIFECYCLE] suspend_failed err=\(error.localizedDescription)")
             return false
         }
+    }
+
+    private nonisolated func generationGateKey(
+        for executionKey: AgentExecutionKey
+    ) throws -> AgentExecutionKey {
+        guard RuntimeTuning.serializeGeneration else { return executionKey }
+        return try AgentExecutionKey(
+            agentId: executionKey.agentId,
+            sessionId: "__global_generation__",
+            logicalBranchId: executionKey.logicalBranchId
+        )
     }
 
     public func generate(
@@ -441,13 +503,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // P0-3 强化：全局生成串行化。gate key 常量化使所有生成跨 session 单飞，
         // 规避 qwen3_5_moe 动态编译架构在并发首次编译时的 mlx 锁互堵
         // （sessions 存储仍用真实 executionKey，仅互斥令牌常量化）。
-        let gateExecutionKey = try RuntimeTuning.serializeGeneration
-            ? AgentExecutionKey(
-                agentId: executionKey.agentId,
-                sessionId: "__global_generation__",
-                logicalBranchId: executionKey.logicalBranchId
-            )
-            : executionKey
+        let gateExecutionKey = try self.generationGateKey(for: executionKey)
 
         let gate = gateHolder.withLock { $0 }
         let task = Task<GenerationResult, Error> { [weak self] in
@@ -799,6 +855,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
         guard !delta.isEmpty else { return GenerationResult(text: "", usage: nil) }
 
+        managed.executionKey = executionKey
+
         // P1-3 ③：function_call_output ingestion——只观测本轮新增的 tool 消息。
         // 历史结果在各自轮次首次到达时已观测过，全量重放只会刷 unknown_tc 噪音
         // （2026-09-13 实测 110k 会话每轮 52-60 条，淹没 trace）。新增 tool 消息
@@ -1089,15 +1147,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // （a210155 对照：checkpoint 覆盖 31k vs 活 41k），是旧 rf 负收益
         // 的第一来源，故两 flag 任一开启都落盘。
         if restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled {
+            managed.checkpointDirty = true
             do {
                 try await performSave(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                managed.checkpointDirty = false
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
             } catch {
+                // Do not discard the live execution on checkpoint failure.
+                // suspendIfIdle will retry; until then the session remains the
+                // authoritative newer state and is explicitly marked dirty.
                 traceLogger.trace(
                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
                     + " err=\(error.localizedDescription)")
@@ -1337,14 +1400,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     "no live session for \(key.storageKey); nothing to save"
                 )
             }
-            return try await performSave(
+            let url = try await performSave(
                 key: key.storageKey, traceKey: key.traceKey, container: container,
                 managed: managed, directory: directory, modelPath: modelPath)
+            managed.checkpointDirty = false
+            return url
         }
     }
 
     /// checkpoint 落盘内核（无 gate）——公开 saveSessionCache 包 gate 使用；
     /// roll-forward 路径在 generate 持 gate 期间直接调用，避免 gate 重入死锁。
+    /// Streamed SHA-256 over a file (O(chunk) memory). Checkpoint content
+    /// identity must never pull a multi-GiB representation into RAM for
+    /// hashing (STEP-10 review, 2026-09-28): lifecycle-boundary operation,
+    /// never in the generation hot path.
+    nonisolated static func sha256HexOfFile(at url: URL, chunkBytes: Int = 4 << 20) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while true {
+            let chunk = try handle.read(upToCount: chunkBytes)
+            guard let chunk, !chunk.isEmpty else { break }
+            var data = chunk
+            try autoreleasepool {
+                hasher.update(data: data)
+            }
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
     private func performSave(
         key: String, traceKey: String, container: ModelContainer,
         managed: ManagedSession, directory: URL, modelPath: String
@@ -1361,6 +1445,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 未跑过任何生成的会话没有可保存的 cache（官方抛 noCacheAvailable）。
         try await managed.session.saveCache(to: cacheURL)
 
+        // The vendor cache is written separately from the sidecar. Bind the
+        // pair with a generation id + content hash so any crash/failure between
+        // the two writes becomes an invalid checkpoint instead of a mixed pair.
+        let cacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
+        let checkpointGeneration = UUID().uuidString.lowercased()
+
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
@@ -1369,7 +1459,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             modelId: modelName(from: modelPath),
             savedAt: Date(),
             history: managed.historyJSON,
-            kvFingerprint: managed.kvFingerprint
+            kvFingerprint: managed.kvFingerprint,
+            checkpointGeneration: checkpointGeneration,
+            cacheSHA256: cacheSHA256
         )
         try encoder.encode(metadata).write(to: metaURL, options: .atomic)
 
@@ -1431,6 +1523,24 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         decoder.dateDecodingStrategy = .iso8601
         let metadata = try decoder.decode(
             SessionCacheMetadata.self, from: try Data(contentsOf: metaURL))
+
+        // Fail closed for pre-generation or mixed checkpoints. The generation
+        // id is the sidecar commit identity; the cache hash proves that the
+        // sidecar describes the exact .safetensors bytes on disk.
+        guard let checkpointGeneration = metadata.checkpointGeneration,
+              !checkpointGeneration.isEmpty,
+              let expectedCacheSHA256 = metadata.cacheSHA256,
+              !expectedCacheSHA256.isEmpty else {
+            throw RuntError.generationFailed(
+                "session checkpoint has no generation/hash commit proof"
+            )
+        }
+        let actualCacheSHA256 = try Self.sha256HexOfFile(at: cacheURL)
+        guard actualCacheSHA256 == expectedCacheSHA256 else {
+            throw RuntError.generationFailed(
+                "session checkpoint generation mismatch: generation=\(checkpointGeneration)"
+            )
+        }
 
         let currentModelId = modelName(from: modelPath)
         guard metadata.modelId == currentModelId else {
@@ -1522,26 +1632,47 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "fork source and target branch are identical: \(sourceBranch)")
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
-        _ = try await saveSessionCache(
-            agentId: agentId,
-            sessionId: sessionId,
-            logicalBranchId: sourceBranch,
-            to: store
-        )
-
+        guard let container = state.withLock({ $0.modelContainer }) else {
+            throw RuntError.notLoaded
+        }
         let sourceKey = try AgentExecutionKey(
             agentId: agentId, sessionId: sessionId, logicalBranchId: sourceBranch)
         let targetKey = try AgentExecutionKey(
             agentId: agentId, sessionId: sessionId, logicalBranchId: targetBranch)
 
-        // FORK-2: the fork position in token units, read off the LIVE source
-        // session (saveSessionCache above requires it, so it exists).
-        var forkTokenCount = 0
-        if let sourceSession = state.withLock({ $0.sessions[sourceKey.storageKey]?.session }) {
-            forkTokenCount = await sourceSession.cachedTokenIds().count
-        }
+        // One transaction covers every key that can mutate either checkpoint.
+        // When generation serialization is enabled, include the exact global
+        // generation key used by generate; otherwise source + target keys are
+        // sufficient. Deterministic ordering prevents cross-key deadlock.
+        let generationKey = try generationGateKey(for: sourceKey)
+        let transactionKeys = RuntimeTuning.serializeGeneration
+            ? [generationKey, sourceKey, targetKey]
+            : [sourceKey, targetKey]
+        let gate = gateHolder.withLock { $0 }
 
-        for suffix in [".safetensors", ".meta.json"] {
+        return try await gate.withExclusive(transactionKeys) {
+            guard let sourceManaged = state.withLock({
+                $0.sessions[sourceKey.storageKey]
+            }) else {
+                throw RuntError.generationFailed(
+                    "no live source session for \(sourceKey.storageKey); cannot fork"
+                )
+            }
+
+            try await performSave(
+                key: sourceKey.storageKey,
+                traceKey: sourceKey.traceKey,
+                container: container,
+                managed: sourceManaged,
+                directory: store,
+                modelPath: modelPath
+            )
+
+            // Read the token position from the same source session that produced
+            // the checkpoint, before releasing the transaction boundary.
+            let forkTokenCount = await sourceManaged.session.cachedTokenIds().count
+
+            for suffix in [".safetensors", ".meta.json"] {
             let source = store.appendingPathComponent(
                 Self.cacheFileName(for: sourceKey.storageKey) + suffix)
             let target = store.appendingPathComponent(
@@ -1598,12 +1729,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             },
             boundLength: forkTokenCount)
 
-        let metadata = try await loadSessionCache(
-            agentId: agentId,
-            sessionId: sessionId,
-            logicalBranchId: targetBranch,
-            from: store
+        let loaded = try await performLoad(
+            key: targetKey.storageKey,
+            traceKey: targetKey.traceKey,
+            container: container,
+            config: nil,
+            baseConfig: baseConfig,
+            directory: store,
+            modelPath: modelPath
         )
+        state.withLock {
+            $0.sessions[targetKey.storageKey] = loaded.managed
+            $0.lastActivity = Date()
+        }
+        let metadata = loaded.metadata
+
         // Transaction boundary (STEP-10 review): the child binding registers
         // only AFTER the restore succeeded - a failed fork leaves no relation
         // behind, and a re-fork over an existing target cannot supersede a
@@ -1617,11 +1757,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 + " history=\(metadata.history.count) forkToken=\(forkTokenCount)"
                 + " bindingGen=\(childBinding.generation)"
                 + " refHash=\(String(ref.contentHash, radix: 16))")
-        lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
-        traceLogger.trace(
-            "[EXEC] fork parent=\(sourceKey.storageKey)"
-            + " child=\(targetKey.storageKey)")
-        return metadata
+            lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
+            traceLogger.trace(
+                "[EXEC] fork parent=\(sourceKey.storageKey)"
+                    + " child=\(targetKey.storageKey)")
+            return metadata
+        }
     }
 
     /// 删除分支：释放 KV（官方 clear()）+ 移除会话 + 清理 checkpoint 文件。
@@ -1970,6 +2111,12 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
     /// roll-forward 连续收益被清零。可选 + decodeIfPresent：旧格式文件
     /// （无此键）解码为 nil，向后兼容。
     public var kvFingerprint: String?
+    /// Checkpoint generation identity. It is generated for each successful
+    /// save and copied with the checkpoint during fork.
+    public var checkpointGeneration: String?
+    /// SHA-256 of the official .safetensors bytes for this generation.
+    /// Restore is fail-closed when the sidecar and cache do not match.
+    public var cacheSHA256: String?
     /// FORK-2 (STEP-10): the branch point this copy was created from, when
     /// the copy was registered by forkSessionBranch. Optional + decodeIfPresent:
     /// files saved outside a fork (and pre-STEP-10 files) decode without it.
@@ -1981,6 +2128,8 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
         savedAt: Date,
         history: [JSONValue],
         kvFingerprint: String? = nil,
+        checkpointGeneration: String? = nil,
+        cacheSHA256: String? = nil,
         forkPoint: BranchForkPoint? = nil
     ) {
         self.storageKey = storageKey
@@ -1988,6 +2137,8 @@ nonisolated public struct SessionCacheMetadata: Codable, Sendable {
         self.savedAt = savedAt
         self.history = history
         self.kvFingerprint = kvFingerprint
+        self.checkpointGeneration = checkpointGeneration
+        self.cacheSHA256 = cacheSHA256
         self.forkPoint = forkPoint
     }
 }

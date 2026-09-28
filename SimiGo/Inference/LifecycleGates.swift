@@ -134,19 +134,43 @@ actor SessionGenerationGate {
     private var isShuttingDown = false
     private var drainContinuations: [CheckedContinuation<Void, Never>] = []
 
-    func withExclusive<T: Sendable>(_ key: AgentExecutionKey, operation: @Sendable () async throws -> T) async throws -> T {
+    func withExclusive<T: Sendable>(
+        _ key: AgentExecutionKey,
+        operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withExclusive([key], operation: operation)
+    }
+
+    /// Acquires a deterministic ordered set of execution keys for a multi-branch
+    /// transaction. Fork needs source + target (and, when enabled, the same global
+    /// generation key used by generate) so neither side can advance while the
+    /// checkpoint pair is being copied and restored.
+    func withExclusive<T: Sendable>(
+        _ keys: [AgentExecutionKey],
+        operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        let ordered = Array(Set(keys)).sorted { $0.storageKey < $1.storageKey }
         try Task.checkCancellation()
 
-        guard await acquire(key) else {
-            throw CancellationError()
-        }
+        var acquired: [AgentExecutionKey] = []
+        acquired.reserveCapacity(ordered.count)
 
-        defer {
-            release(key)
-        }
+        do {
+            for key in ordered {
+                guard await acquire(key) else {
+                    throw CancellationError()
+                }
+                acquired.append(key)
+            }
 
-        try Task.checkCancellation()
-        return try await operation()
+            try Task.checkCancellation()
+            let result = try await operation()
+            for held in acquired.reversed() { release(held) }
+            return result
+        } catch {
+            for held in acquired.reversed() { release(held) }
+            throw error
+        }
     }
 
     private func acquire(_ key: AgentExecutionKey) async -> Bool {
