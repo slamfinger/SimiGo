@@ -5889,3 +5889,23 @@ concurrent scheduling / batching，不是 Execution State failure；上游内部
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BATCH_IDENTITY_PROBE_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-batch-identity-no-cancel.json`。
+
+### LAB RQ3 BATCH CARDINALITY PROBE — THRESHOLD LOCALIZED — 2026-09-29
+
+新增 `rq3_llama_batch_cardinality_probe.py`，在没有 long request 和
+cancellation 的条件下测量 1/2/3/4 个 identical greedy controls。每 cardinality
+重复 8 batches。N1/N2 完全 stable；N3 within-cycle `8/8` stable 但
+across-cycle `7/8` stable，出现 3 个 `wants` 输出；N4 within-cycle 只有
+`5/8` stable，across-cycle 只有 `1/8` stable，输出分为 `wants` 21 个、`is`
+11 个。
+
+这把 no-cancel identity instability 的边界进一步局部化为 control cardinality：
+across-cycle drift 从 N3 开始，within-batch mismatch 在 N4 明显。先前
+`1 long + 3 controls` 的 mismatch 不需要 long request 或 cancellation。slot
+记录不支持单一固定 slot 解释。RQ3 增加
+`BATCH_CARDINALITY_THRESHOLD_LOCALIZED` 和
+`GREEDY_IDENTITY_UNSTABLE_AT_CONTROL_COUNT_3_PLUS`，但 llama-server 内部机制
+仍未定位，RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BATCH_CARDINALITY_PROBE_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-batch-cardinality-no-cancel.json`。
