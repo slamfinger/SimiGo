@@ -5810,3 +5810,25 @@ Swift integration 缺口是 cancellation executor；MLX oversized equivalent A/B
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_FORK_RESTORE_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-fork-restore.json`。
+
+### LAB RQ3 SWIFT EXECSTATE CANCELLATION INTEGRATION PASS — 2026-09-29
+
+新增 `LLAMAServerExecutionStateCancellation` 和
+`simigo2ctl llama-execstate-cancel`，把 Swift coordinator/backend integration
+扩展到 explicit LLAMA stream cancellation recovery。root 绑定固定 recovery
+prefix；child 绑定 long-prompt prefix。OFF 直接恢复；ON 先 capture root/child，
+DELETE 并等待唯一 slot free 后 release child、restore root，再由 Swift
+executor 消费 restored root representation。
+
+20 paired cycles 中 OFF/ON cancel accepted 与 recovery identical 均为
+`20/20 + 20/20`。OFF/ON DELETE→free mean `581.350/574.579ms`，recovery client
+mean `101.881/101.499ms`，paired ON−OFF recovery mean `-0.382ms`；Swift 状态
+操作每 ON cycle mean `20.827µs`。该证据不 claim production readiness 或取消
+延迟上限；本轮未重新抽取 server trace，token-boundary cancel 行为由同一 build
+前置 trace 支持。RQ3 增加
+`SWIFT_EXECSTATE_CANCELLATION_INTEGRATION_PASS`，但仍 OPEN；剩余缺口为 MLX
+oversized equivalent A/B、更高并发曲线与 cross-backend closure。修改 Swift 后
+全仓 `swift test` 为 `157 PASS / 0 FAIL`。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_SWIFT_EXECSTATE_CANCELLATION_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-cancellation.json`。
