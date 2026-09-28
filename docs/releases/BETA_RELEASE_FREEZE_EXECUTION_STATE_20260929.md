@@ -1,7 +1,7 @@
 # SimiGo v2.0 Beta — Execution State Technical Freeze
 
 Date: 2026-09-29  
-Status: **Technical route frozen; release tag not created.**
+Status: **Release candidate frozen; final audit required; release tag not created.**
 
 ## Freeze decision
 
@@ -16,14 +16,18 @@ BETA-AUDIT-3 = PASS / RETURN TO RELEASE PATH
 P0 = 0
 P1 = 0
 P2 = 0
+
+BETA-STORAGE-1 = PASS / AUDIT RECEIPT
 ```
 
 Implementation baseline:
 
 ```text
 FAIL baseline     eb2247bddbfbae8d40be247b1534c46a8dc160c4
-fix commit        62ef12134c4cbe1b41d2f4fde2c47de9f79a39d1
+audit fix         62ef12134c4cbe1b41d2f4fde2c47de9f79a39d1
 audit receipt     f15bde1
+storage closure   803af14f1ac1977e069941411c174cab7507a7a2
+Lab closure       669467d2165752d492f0795169799bb5cedbaf79
 branch            main
 release tag       not created
 ```
@@ -41,6 +45,8 @@ The following boundaries are frozen for Beta:
 - cooperative cancellation at the lifecycle boundary.
 - oversized model validation path.
 - unified-memory / MLX backend architecture.
+- ownership-aware branch checkpoint retention and prefix-pool physical-byte
+  budget, without UI or additional cache layers.
 - inference-hot-path non-regression: no per-token/per-step lock and no new
   hot-path copy/hash/serialization.
 
@@ -72,7 +78,7 @@ testGenerationGateBlocksDeleteLifecycleUntilGenerationCompletes PASS
 Current SimiGo scheme:
 
 ```text
-85 selected / 0 failures / 8 environment-gated skips
+90 selected / 0 failures / 8 environment-gated skips
 ```
 
 C1 targeted:
@@ -97,11 +103,36 @@ mlx-swift-lm  fd5d1b4a8a5ad83e1d78617fecc817fa196a64fc
 
 No dependency drift was introduced by BETA-AUDIT-3.
 
+### Physical Representation retention
+
+`BETA-STORAGE-1` closed unbounded retention without changing lifecycle
+correctness:
+
+```text
+branch checkpoint ownership + orphan GC        PASS
+branch checkpoint 64 GiB default ceiling       PASS
+prefix-pool logical + physical-byte budget     PASS
+isolated test checkpoint cleanup               PASS
+single-branch delete                           PASS
+checkpoint durability / SaveReceipt            PASS
+HuggingFace model cache                        OUT OF SCOPE
+```
+
+Receipt:
+
+```text
+docs/audit/BETA_STORAGE_1_20260929.md
+```
+
+No further storage-subsystem expansion is required for Beta: no UI, TTL,
+additional cache hierarchy, GC manager, checkpoint refactor, or prefix-pool
+rewrite.
+
 ## Release path
 
 The next phase is release validation, not feature development:
 
-1. clean-tree / commit / dependency receipt check;
+1. final release audit on this frozen tree;
 2. external smoke validation on the release build;
 3. small public technical description;
 4. collect feedback before deciding the next development phase.
