@@ -82,3 +82,41 @@ BETA-AUDIT-1 = OPEN。
 下一轮 Round 2：沿 create → generate → checkpoint → suspend → resume → restore → continue → fork → delete 建完整状态转移表；为每个状态找唯一事实源；检查 failure/cancellation 边界；审计普通 checkpoint 与 fork checkpoint 的 generation/mismatch 检测；然后再给 P1 candidates 定级。
 
 首发门槛仍保持 OPEN。
+## 10. Round 3 — failure-path proof / Gate-B semantic reconciliation（2026-09-28）
+
+### 10.1 C1 failure-path：当前是 fail-open，而不是 fail-closed
+代码证据：generate 成功提交 history 后，在 restorePolicy 任一 checkpoint flag 开启时调用 performSave()；performSave() 失败被 catch，只记录 checkpointFailed，不使本轮 generate 失败。
+因此：
+- logical Execution 已 commit；
+- checkpoint 可能不存在、半更新或混代；
+- API 仍向调用方返回本轮 GenerationResult；
+- 后续 suspend 会清空 sessions；若没有其他可用 PrefixPool 表示，则该轮 durable continuation 可能丢失。
+这意味着 checkpoint 当前实际语义是 best-effort recovery aid，而不是成功提交后的强 durability invariant。
+若 Beta 对外把 checkpoint 描述为 Execution State durable continuity，则这是 P1 blocking；若明确声明为 best-effort optimization，则需要把对外契约降级并证明 suspend/restore 核心路径不依赖它。当前生产 Conditional Restore 又明确依赖 fresh checkpoint，因此不能简单视为纯优化。
+
+### 10.2 C1 mismatch：现有 guard 不足以证明同代
+现有 Conditional Restore 有 kvFingerprint 和 rollforwardCompatible 两层守卫，这是防止配置不兼容和 transcript 前缀陈旧的重要保护；但它们不能证明 safetensors 与 meta.json 属于同一次 checkpoint commit。
+因此现有 guard 能做到部分 fail-safe，但不能关闭 generation skew。
+
+### 10.3 C3 fork race：代码路径已能构造出 skew，尚无生产证据证明发生
+forkSessionBranch 在 source save 完成后释放 source gate，再读取 cachedTokenIds 并复制 checkpoint 文件。当前没有跨 source/target 的事务 token 或 generation。
+因此这是静态代码可证明的 race window，而不是需要等真机偶发复现才能成立的问题。
+同时，Step-10 child binding 的顺序仍正确：target restore 成功后才 bind；本轮不重新打开 Step-10。
+
+### 10.4 C2 与既有 ExecutionControlling 语义的对齐
+当前 ExecutionControlling 五动作是既有路径的直映射：execute/continue → generate；checkpoint → saveSessionCache；restore → loadSessionCache；fork → forkSessionBranch。产品文档明确要求“不产生第二套执行语义”。
+因此当前 Beta 的 Execution State 核心并不是要求一个新的 durable object，而是要求既有五动作之间保持同一 Execution identity / position / continuation semantics。
+现阶段没有足够证据把“完整、跨 Runtime、无限历史的 durable lineage log”定义成 Beta 核心 invariant。ExecutionLineage 更接近 observability/history；其 128 FIFO 和 process-local 生命周期不能单独判为 Beta P1。
+因此 C2 从“首发阻断候选”降为：Architecture boundary / non-blocking for current Beta，前提是 release contract 不宣称完整 lineage durable。
+
+### 10.5 Round 3 结论
+- P1-C1：CONFIRMED BLOCKER — checkpoint consistency + durability semantics 未闭合。
+- P1-C3：CONFIRMED BLOCKER — fork source generation 与 child checkpoint generation 没有共同事务边界。
+- C2：NON-BLOCKING ARCHITECTURE BOUNDARY — durable lineage 不是当前五动作核心 invariant 的已证要求。
+- suspend/resume：NON-BLOCKING，但 release wording 必须定义为 Runtime resume + Execution reconstitution。
+- Oversized：仍待产品路径对齐，不得用 oversized engine evidence 替代 NativeMLX lifecycle proof。
+
+### 10.6 Gate status
+**BETA-AUDIT-1 = FAIL / RETURN TO IMPLEMENTATION FOR C1 + C3**
+
+这不是要求重新设计 SimiGo 的 Execution State，也不是启动 Palace-1。首发前只需要把 checkpoint generation/commit 与 fork transaction boundary 收紧到当前五动作语义之内，并补对应 failure/race evidence。
