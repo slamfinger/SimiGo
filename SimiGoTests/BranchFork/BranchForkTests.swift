@@ -684,6 +684,125 @@ final class BranchForkTests: XCTestCase {
             .sorted { $0.key.compare($1.key, options: .numeric) == .orderedAscending }
             .map { $0.value }
     }
+    /// BETA-AUDIT-1 R5-C1（W2 注入实测）：crash-residue 形态——新一代
+    /// .safetensors 覆盖旧代配对（旧 meta 保留）→ restore 必须 fail-closed
+    /// （SHA 守卫拒绝混代对）。
+    func testCheckpointGenerationMismatchFailsClosed() async throws {
+        let modelPath = try Self.requireModel()
+        let cfg = Self.greedyConfig()
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: cfg)
+        let port = 18779
+        try await runtime.start(info, port: port)
+        defer { Task { await runtime.stop() } }
+
+        func gen(_ messages: [SimiGo.JSONValue]) async throws -> GenerationResult {
+            let requestId = "g1m-\(UUID().uuidString.prefix(8).lowercased())"
+            await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
+            return try await runtime.generate(
+                requestId: requestId, agentId: nil, sessionId: "s",
+                logicalBranchId: "main", messages: messages, tools: nil,
+                config: cfg) { _ in }
+        }
+
+        let dirA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("g1m-a-\(UUID().uuidString)", isDirectory: true)
+        let dirB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("g1m-b-\(UUID().uuidString)", isDirectory: true)
+        for d in [dirA, dirB] {
+            try FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        }
+
+        let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
+        _ = try await gen(baseMessages)
+        // G1 配对：A 目录（G1 cache + G1 meta/SHA_A）
+        _ = try await runtime.saveSessionCache(sessionId: "s", logicalBranchId: "main", to: dirA)
+        // 推进 session（G2 状态）
+        _ = try await gen(baseMessages + [
+            Self.assistant("OK"),
+            Self.user("Add one more sentence."),
+        ])
+        // G2 配对：B 目录（G2 cache + G2 meta/SHA_B）
+        _ = try await runtime.saveSessionCache(sessionId: "s", logicalBranchId: "main", to: dirB)
+
+        // W2 注入：新 cache（G2）覆盖 A 目录，旧 meta（G1/SHA_A）保留——
+        // 即 crash-between-files 的磁盘残留形态。
+        let aCache = dirA.appendingPathComponent(
+            NativeMLX.cacheFileName(for: "default/s/main") + ".safetensors")
+        let bCache = dirB.appendingPathComponent(
+            NativeMLX.cacheFileName(for: "default/s/main") + ".safetensors")
+        try FileManager.default.removeItem(at: aCache)
+        try FileManager.default.copyItem(at: bCache, to: aCache)
+
+        // restore：SHA 守卫必须拒绝混代对（fail-closed）
+        do {
+            _ = try await runtime.loadSessionCache(
+                sessionId: "s", logicalBranchId: "main", from: dirA)
+            XCTFail("混代对（G2 cache + G1 meta）不应静默 restore——C1 fail-open 复发")
+        } catch {
+            // 期望：fail-closed（SHA/generation 守卫）
+        }
+    }
+
+    /// BETA-AUDIT-1 R5-C3（fork/source generation race seam）：fork 事务必须
+    /// 持 source generation gate 直到完成——长生成期间 fork 不得完成。
+    func testForkBlocksDuringSourceGeneration() async throws {
+        let modelPath = try Self.requireModel()
+        var longCfg = Self.greedyConfig()
+        longCfg.maxTokens = 128
+        let info = ModelInfo(path: modelPath, kind: .mlx)
+        let runtime = NativeMLX(info: info, config: longCfg)
+        let port = 18781
+        try await runtime.start(info, port: port)
+        defer { Task { await runtime.stop() } }
+
+        func gen(_ branch: String, _ messages: [SimiGo.JSONValue]) async throws -> GenerationResult {
+            let requestId = "race-\(branch)-\(UUID().uuidString.prefix(8).lowercased())"
+            await RuntimeLifecycleCoordinator.shared.register(requestID: requestId, sessionID: "s")
+            return try await runtime.generate(
+                requestId: requestId, agentId: nil, sessionId: "s",
+                logicalBranchId: branch, messages: messages, tools: nil,
+                config: longCfg) { _ in }
+        }
+
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("race-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+
+        let baseMessages: [SimiGo.JSONValue] = [Self.systemMsg, Self.user(Self.baseCorpus())]
+        _ = try await gen("main", baseMessages)
+
+        // 长生成占住 source generation gate（128 token 上限）
+        let longMessages = baseMessages + [
+            Self.user("Count from 1 to 30, one number per line."),
+        ]
+        let genTask = Task { try await gen("main", longMessages) }
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+
+        // 并发 fork：事务必须阻塞在 source generation gate 上
+        let forkFinished = TestFlag()
+        let forkTask = Task {
+            defer { Task { await forkFinished.set(true) } }
+            return try await runtime.forkSessionBranch(
+                sessionId: "s", sourceBranch: "main", targetBranch: "alt", in: dir)
+        }
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        let forkStillBlocked = await forkFinished.get()
+        XCTAssertFalse(
+            forkStillBlocked,
+            "fork 不能在 source generation 持 gate 期间完成（skew window 复发）")
+
+        // generation 释放后 fork 才执行；forkPoint 必须记录 source 状态
+        let genResult = try await genTask.value
+        XCTAssertFalse(genResult.text.isEmpty)
+        let forkMeta = try await forkTask.value
+        XCTAssertEqual(
+            forkMeta.forkPoint?.sourceStorageKey, "default/s/main",
+            "child fork point 必须记录 source execution")
+        XCTAssertGreaterThan(
+            forkMeta.forkPoint?.atToken ?? 0, 0, "fork 点必须持久化")
+    }
+
 }
 
 /// 快照格式异常（官方 savePromptCache 约定被破坏时中断并给出上下文）。
