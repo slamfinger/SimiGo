@@ -333,3 +333,41 @@ Round 4-A 的动态注入 witness（testCheckpointPairMismatchFailsOpen，
 三条断言翻转为 fail-closed 即为 C1 修复的回归门；fork 侧则以
 source-generation race test 关闭 C3。Round 4-B 的 C2 裁定与实施
 批次不冲突（durable lineage 不在本批次范围）。
+
+## 13. 最小实现修复审计（Round 5 输入证据）— 2026-09-28
+
+审计对象：实施分支 audit/beta-c1-c3-checkpoint-fork-consistency
+（e9423d0 → e88f9c9，含验证轮构建修复）。
+
+```text
+C1 实现审计  PASS
+  - SHA 来源：Data(contentsOf: cacheURL) 读回盘上字节后哈希
+    （非预存缓冲）——SHA 可证明描述落盘 .safetensors
+  - 配对绑定：checkpointGeneration + cacheSHA256 写入 meta
+    （.atomic）；performLoad 逐项 guard，缺失/不一致即抛
+  - 动态验证：W2a 陈旧 SHA/代际配对 fail-closed ✓；
+    W1 截断 fail-closed ✓（SHA 守卫命中）
+  - durability 语义：performSave 失败 → checkpointDirty=true →
+    suspend 前强制重试，失败即 suspend_blocked（吞失败+
+    suspend 清场的窗口闭合）
+C3 实现审计  PASS
+  - 多键事务 [generationKey?, source, target] 确定性排序；
+    performSave/performLoad 直调（无 gate 重入死锁）
+  - fork token position 在事务内、同一 source checkpoint save 后
+    读取——source generation 无法在 save/copy/stamp/restore/bind
+    之间插入（skew window 结构性关闭）
+  - 多键测试 2/2（反向顺序无死锁 + 双单键阻塞）
+残留（已登记非阻塞）  W2b 伪造 transcript + 保留真实 pair-identity
+  字段仍 restore（SHA/代际证同 commit 配对，不证 transcript↔KV
+  语义一致）——收口 = tokenCount 交叉核对（E4 Position 验证面），
+  witness 以无断言记录保留
+```
+
+### 环境敏感性发现（非本批次回归）
+
+F3/B-5 的时序门（D3/D4/时序比）对连续模型加载的压力敏感：
+BranchFork 三个模型重型用例先行后，F3 cold 基线 5.4s→15.2s、
+child 0.3s→11.1s（parent 导出与 child admission 的既有竞态在压力
+下放大 → child admission miss）；空闲态复跑 F3 即 PASS（33.8s）。
+登记为运行前置条件（时序门需空闲态执行）+ 独立加固候选
+（export-admission 竞态）。
