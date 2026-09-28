@@ -14,7 +14,7 @@ let package = Package(
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ml-explore/mlx-swift", .upToNextMinor(from: "0.31.6")),
+        .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
         // Public beta runtime fork (segment-execution APIs, Muse-Glimmer text
         // factory). Branch dep; the exact commit is pinned in
         // Package.resolved. Local live-edit alternative: temporarily switch
