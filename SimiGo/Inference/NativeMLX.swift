@@ -26,6 +26,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// delta-only 前缀续接，info 归因块整体跳过。轮末遥测据此把
         /// cacheTokensBefore 补回 cacheHit 归因，消除 cacheEff=0.00 歧义。
         let isRestoredSnapshot: Bool
+        /// A successful generation makes the live execution newer than its
+        /// durable checkpoint until the automatic checkpoint completes.
+        var checkpointDirty = false
 
         init(
             session: ChatSession,
@@ -39,6 +42,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             self.historyJSON = historyJSON
             self.kvFingerprint = kvFingerprint
             self.isRestoredSnapshot = isRestoredSnapshot
+            self.checkpointDirty = false
         }
     }
 
@@ -384,6 +388,49 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     Date().timeIntervalSince(state.lastActivity) >= timeout
                 }
                 guard stillEligible else { return false }
+
+                // A checkpoint-enabled execution cannot be evicted from
+                // memory while its latest logical commit is still dirty. Retry
+                // the existing checkpoint path first; failure keeps the live
+                // session resident rather than silently discarding continuity.
+                if RuntimeTuning.rollforwardEnabled || RuntimeTuning.conditionalRestoreEnabled {
+                    let dirty = self.state.withLock { state in
+                        state.sessions.compactMap { key, managed in
+                            managed.checkpointDirty ? (key, managed) : nil
+                        }
+                    }
+                    if !dirty.isEmpty {
+                        guard let container = self.state.withLock({ $0.modelContainer }) else {
+                            return false
+                        }
+                        let gate = self.gateHolder.withLock { $0 }
+                        for (key, managed) in dirty {
+                            do {
+                                try await gate.withExclusive(
+                                    key: key,
+                                    operation: { [weak self] in
+                                        guard let self else { throw RuntError.notLoaded }
+                                        return try await self.performSave(
+                                            key: key,
+                                            traceKey: key,
+                                            container: container,
+                                            managed: managed,
+                                            directory: Self.defaultBranchCheckpointStore(),
+                                            modelPath: self.modelPath
+                                        )
+                                    }
+                                )
+                                managed.checkpointDirty = false
+                            } catch {
+                                self.traceLogger.trace(
+                                    "[LIFECYCLE] suspend_blocked_dirtyCheckpoint key=\(key)"
+                                        + " err=\(error.localizedDescription)"
+                                )
+                                return false
+                            }
+                        }
+                    }
+                }
 
                 self.state.withLock {
                     $0.lifecycle = .suspended
@@ -1094,15 +1141,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // （a210155 对照：checkpoint 覆盖 31k vs 活 41k），是旧 rf 负收益
         // 的第一来源，故两 flag 任一开启都落盘。
         if restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled {
+            managed.checkpointDirty = true
             do {
                 try await performSave(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
+                managed.checkpointDirty = false
                 lineage.attachCheckpoint(
                     executionId: String(executionId),
                     checkpointKey: executionKey.storageKey)
             } catch {
+                // Do not discard the live execution on checkpoint failure.
+                // suspendIfIdle will retry; until then the session remains the
+                // authoritative newer state and is explicitly marked dirty.
                 traceLogger.trace(
                     "[MLX] action=checkpointFailed key=\(executionKey.traceKey)"
                     + " err=\(error.localizedDescription)")
@@ -1342,9 +1394,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     "no live session for \(key.storageKey); nothing to save"
                 )
             }
-            return try await performSave(
+            let url = try await performSave(
                 key: key.storageKey, traceKey: key.traceKey, container: container,
                 managed: managed, directory: directory, modelPath: modelPath)
+            managed.checkpointDirty = false
+            return url
         }
     }
 
