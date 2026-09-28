@@ -65,4 +65,4 @@ OpenAI 兼容 API 正常服务，swap 全程平坦、压力绿、确定性可复
    仓库（Xcode 本地包引用，`../SimiGo-Lab/simigo2-experimental`）；引擎对
    `mlx-swift-lm` 的依赖已切至公开远端分支
    `slamfinger/mlx-swift-lm@release/v2.0-beta-ml`（Package.resolved 钉住
-   fbfa1f4）。从源码构建需双仓兄弟克隆，见 `部署指南.md` 第六节。
+   88f05a77）。从源码构建需双仓兄弟克隆，见 `部署指南.md` 第六节。

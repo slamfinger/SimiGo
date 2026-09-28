@@ -58,6 +58,22 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         return data.suffix(data.count - offset).range(of: Data(marker.utf8)) != nil
     }
 
+    private func traceLogLineContains(
+        _ markers: [String], sinceByteOffset offset: Int
+    ) -> Bool {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        guard let data = try? Data(contentsOf: url), data.count > offset else {
+            return false
+        }
+        let suffix = data.suffix(data.count - offset)
+        return String(decoding: suffix, as: UTF8.self)
+            .split(separator: "\n")
+            .contains { line in
+                markers.allSatisfy { line.contains($0) }
+            }
+    }
+
     private func traceLogSize() -> Int {
         let url = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
@@ -183,15 +199,8 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
     ///       regression after the Child forward (F-I2)
     ///   D5  Parent/Child deterministic; shared-prefix cacheEff ≈ 1
     func testF3DeviceAcceptanceBattery() async throws {
-        // F3-BUG-001 (registered 2026-09-28): a seeded session's SECOND
-        // turn trips the fork-internal alignment assert
-        // (ChatSession.swift:1131 "Main attention cache offsets diverged
-        // from model-cache progress") — the restored-cache construction
-        // leaves the conversation transcript ledger inconsistent across
-        // turns. Single-turn cross-session reuse (B-5/B-6) remains
-        // verified; the battery stays here as the acceptance gate for
-        // the fork fix.
-        throw XCTSkip("F3-BUG-001: multi-turn seeded-session continuation pending fork transcript-restoration fix")
+        // F3 transcript-restoration fix landed in mlx-swift-lm; this battery
+        // is now a live acceptance gate for the five physical conditions.
         guard FileManager.default.fileExists(atPath: modelPath) else {
             throw XCTSkip("daily model not present: \(modelPath)")
         }
@@ -248,6 +257,10 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         XCTAssertTrue(
             traceLogContains("poolHit", sinceByteOffset: logStart),
             "D1: consumption via the existing materialization")
+        XCTAssertFalse(
+            traceLogLineContains(
+                ["session=f3-child", "mode=cold"], sinceByteOffset: logStart),
+            "D2: child must not take a cold materialization path")
         XCTAssertLessThan(
             childSeconds, coldSeconds * 0.5,
             "D3: child incremental cost (\(childSeconds)s) must be far below the "

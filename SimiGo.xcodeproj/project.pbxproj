@@ -17,6 +17,11 @@
 		C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
 		C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
 		C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */; };
+		C1632B202FB5000000D1EF95 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE63028D60C00D1EF95 /* MLX */; };
+		C1632B212FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
+		C1632B222FB5000000D1EF95 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE93028D77B00D1EF95 /* MLXLLM */; };
+		C1632B232FB5000000D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
+		C1632B242FB5000000D1EF95 /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE13028D4EB00D1EF95 /* Tokenizers */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +74,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1632B202FB5000000D1EF95 /* MLX in Frameworks */,
+				C1632B212FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */,
+				C1632B222FB5000000D1EF95 /* MLXLLM in Frameworks */,
+				C1632B232FB5000000D1EF95 /* MLXHuggingFace in Frameworks */,
+				C1632B242FB5000000D1EF95 /* Tokenizers in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +164,11 @@
 			name = SimiGoTests;
 			packageProductDependencies = (
 				C1632AED3028D78A00D1EF95 /* MLXLMCommon */,
+				C1632AE63028D60C00D1EF95 /* MLX */,
+				C1632B112FB5000000D1EF95 /* SimiGo2Experimental */,
+				C1632AE93028D77B00D1EF95 /* MLXLLM */,
+				C1632AEF3028D80300D1EF95 /* MLXHuggingFace */,
+				C1632AE13028D4EB00D1EF95 /* Tokenizers */,
 			);
 			productName = SimiGoTests;
 			productReference = C1632B012FB4000000D1EF95 /* SimiGoTests.xctest */;
