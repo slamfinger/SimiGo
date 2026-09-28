@@ -5750,3 +5750,19 @@ oversized equivalence、更高并发或 production readiness claim。RQ3 增加
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_EXECSTATE_CANCEL_AB_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-execution-state-cancellation-ab.json`。
+
+### LAB RQ EVIDENCE MATRIX REGISTERED — 2026-09-29
+
+新增 `docs/00-governance/SIMIGO_LAB_RQ_EVIDENCE_MATRIX_20260929.md`，把当前
+RQ1 backend conformance、RQ2 cross-architecture / Qwen4Exp readonly audit、
+RQ3 hot-path / transition / pressure / cancellation controls、以及 O6 V3
+W0-W9 汇总为单一索引。矩阵逐项记录 scope、result、report/artifact，并登记
+non-claims 与 open gaps。
+
+当前索引状态保持 `RQ1 PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT`、
+`RQ2 PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT`、
+`RQ3 OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS`、
+`O6 PASS / QWEN3_NEXT_OVERSIZED_W0_W9_HARNESS_LEVEL`。开放缺口包括 full
+Qwen4Exp artifact、integrated Swift LLAMA executor A/B、MLX oversized
+equivalent A/B、更高并发曲线和 cross-backend closure。该文档只是索引，不新增
+实验结果或性能 claim。
