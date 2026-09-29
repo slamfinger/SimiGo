@@ -278,6 +278,23 @@ def main() -> None:
             time.sleep(0.002)
         all_long_free_ns = time.perf_counter_ns()
         if free_slots is None:
+            failure_slots = get_json(args.host, args.port, "/slots")
+            failure = {
+                "status": "FAIL",
+                "overallPass": False,
+                "protocolVersion": "RQ3.LLAMA.CONCURRENCY.CURVE.V1",
+                "failure": "CANCELLED_LONG_STREAMS_DID_NOT_FREE",
+                "expectedSlots": args.expected_slots,
+                "failedCycle": cycle,
+                "longStreams": long_count,
+                "controls": control_count,
+                "freeTimeoutMs": args.free_timeout_ms,
+                "slotsAtTimeout": failure_slots,
+                "completedCycles": cycles,
+            }
+            output = Path(args.output)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(failure, ensure_ascii=False, indent=2) + "\n")
             raise RuntimeError(f"cycle {cycle}: cancelled long streams did not free")
 
         for thread in threads:

@@ -7128,3 +7128,28 @@ session。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
 `docs/00-governance/SIMIGO_LAB_UI_MEMORY_PRESSURE_CROSSBACKEND_MATRIX_20260929.md`；
 artifact见
 `simigo2-experimental/results/backend-conformance/ui-memory-pressure-crossbackend-matrix.json`。
+
+### LAB RQ3 LLAMA PARALLEL6 CANCELLATION CURVE PASS — 2026-09-29
+
+新增 6-slot higher-concurrency cancellation curve。llama-server使用 Cyber-Tiel
+Coder 35B A3B GGUF canonical mitigation profile并以 6 slots运行；long stream为
+128 tokens，control为 8 tokens，cancel delay 100ms，L1–L5各 2 轮共 10 cycles。
+五项 checks全部 PASS：all cancels accepted、all control batches completed、
+controls overlapped cancellation window、same-load baseline stable、greedy
+identity across cancel。cancel acceptance与 same-concurrency greedy identity均为
+`10/10`。
+
+分层观测：L1 free mean `5,255.238ms`、L2 `7,901.493ms`、L3 `12,149.979ms`、
+L4 `17,043.556ms`、L5 `25,527.031ms`；aggregate delete→all-long-free mean
+`13,575.459ms`、p95 `25,641.629ms`。`controlsFinishedBeforeAllLongFree = 0/10`
+被保留为边界；protocol只声称 control进入 cancellation window并与同并发 baseline
+一致。登记 `RQ3_LLAMA_PARALLEL6_CANCELLATION_CURVE_PASS` 和
+`SIX_SLOT_CANCEL_ACCEPTANCE_PASS`；状态为
+`PARALLEL6 = PASS_WITH_BOUNDARY / HIGHER_CONCURRENCY_CANCEL_IDENTITY_CURVE`。
+
+这是 no-Execution-Object backend curve，不是 production cancellation readiness、
+performance benchmark或 >6-slot closure。一次未落盘的 t256/20s preparatory run在
+L5 free等待超时；正式 t128/60s run PASS。curve脚本已增加失败路径落盘。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL6_CANCELLATION_CURVE_20260929.md`；
+artifact见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel6-t128.json`。
