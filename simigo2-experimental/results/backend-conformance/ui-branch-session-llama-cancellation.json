@@ -1,0 +1,48 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ EXPLICIT_LLAMA_STREAM_CANCEL \/ ROOT_AND_SIBLING_RECOVERY \/ HARNESS_LEVEL \/ NOT_A_PRODUCTION_CLAIM",
+  "cancelDelayMs" : 100,
+  "checks" : {
+    "CANCELLED_LONG_PHYSICAL_RELEASED" : true,
+    "CANCELLED_SLOT_FREED" : true,
+    "CANCEL_ACCEPTED" : true,
+    "CONTROL_RECOVERY_IDENTICAL" : true,
+    "CYCLES_COMPLETE" : true,
+    "RECOVERY_LINEAGE_ISOLATED" : true,
+    "ROOT_AND_CONTROL_PREFIXES_DIVERGED" : true,
+    "ROOT_RECOVERY_IDENTICAL" : true
+  },
+  "controlInput" : "Now write tests for it.",
+  "controlReferenceContent" : "\n   ",
+  "cycles" : 2,
+  "host" : "127.0.0.1",
+  "longPrompt" : "Count from 1 to 500. Return only numbers separated by spaces.",
+  "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "overallPass" : true,
+  "port" : 18080,
+  "predictionTokens" : 2,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.CANCELLATION.V1",
+  "recoveryContent" : "\n   ",
+  "recoveryInput" : "Continue from the root.",
+  "rootInput" : "Explain it briefly.",
+  "rootReferenceContent" : "\n   ",
+  "samples" : [
+    {
+      "controlRecoveryClientMs" : 183.50075,
+      "conversationID" : "ui-cancel-0-1790650106453861888",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 2011.274916,
+      "index" : 0,
+      "rootRecoveryClientMs" : 324.420167
+    },
+    {
+      "controlRecoveryClientMs" : 176.945958,
+      "conversationID" : "ui-cancel-1-1790650108895944960",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 2020.240833,
+      "index" : 1,
+      "rootRecoveryClientMs" : 308.397583
+    }
+  ],
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS"
+}

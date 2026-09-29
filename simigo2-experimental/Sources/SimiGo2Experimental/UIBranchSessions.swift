@@ -492,6 +492,350 @@ public enum UIBranchSessions {
     )
   }
 
+
+  public struct UICancellationReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let host: String
+    public let port: Int
+    public let modelPath: String?
+    public let seedText: String
+    public let rootInput: String
+    public let controlInput: String
+    public let recoveryInput: String
+    public let longPrompt: String
+    public let predictionTokens: Int
+    public let cancelDelayMs: Int
+    public let cycles: Int
+    public let checks: [String: Bool]
+    public let rootReferenceContent: String
+    public let controlReferenceContent: String
+    public let recoveryContent: String
+    public let samples: [UICancellationSample]
+    public let overallPass: Bool
+  }
+
+  public struct UICancellationSample: Encodable, Sendable {
+    public let index: Int
+    public let conversationID: String
+    public let deleteStatus: Int
+    public let deleteToFreeMs: Double
+    public let rootRecoveryClientMs: Double
+    public let controlRecoveryClientMs: Double
+  }
+
+  public static let uiCancellationProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.CANCELLATION.V1"
+  public static let uiCancellationBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / EXPLICIT_LLAMA_STREAM_CANCEL / "
+    + "ROOT_AND_SIBLING_RECOVERY / HARNESS_LEVEL / NOT_A_PRODUCTION_CLAIM"
+
+  public static func runCancellationLLAMA(
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    controlInput: String = "Now write tests for it.",
+    recoveryInput: String = "Continue from the root.",
+    longPrompt: String = "Count from 1 to 500. Return only numbers separated by spaces.",
+    predictionTokens: Int = 2,
+    cancelDelayMs: Int = 100,
+    cycles: Int = 2,
+    freeTimeoutMs: Int = 15000,
+    seed: Int = 42
+  ) async throws -> UICancellationReport {
+    precondition(cycles > 0, "cycles must be positive")
+    let baseURL = URL(string: "http://\(host):\(port)")!
+    let executor = LLAMAServerExecutionStateExecutor(baseURL: baseURL)
+    let serverProps = try await executor.props()
+    let seedTokens = try await executor.tokenizeText(seedText, addSpecialTokens: true)
+    let rootTokens = try await executor.tokenizeText(rootInput)
+    let controlTokens = try await executor.tokenizeText(controlInput)
+
+    let rootReference = try await executor.complete(
+      tokenPrefix: seedTokens + rootTokens, predictionTokens: predictionTokens, seed: seed
+    )
+    let controlReference = try await executor.complete(
+      tokenPrefix: seedTokens + controlTokens, predictionTokens: predictionTokens, seed: seed
+    )
+
+    var samples: [UICancellationSample] = []
+    var rootRecoveries: [LLAMAServerExecutionStateExecutor.Completion] = []
+    var controlRecoveries: [LLAMAServerExecutionStateExecutor.Completion] = []
+    var deleteStatuses: [Int] = []
+    var cancelledReleased = true
+    var recoveryLineagePass = true
+
+    for index in 0..<cycles {
+      let backend = LLAMAServerExecutionStateBackend()
+      let runtime = ExecutionContinuityCoordinator(backend: backend)
+      let rootID = ExecutionID("ui-cancel-root-\(index)")
+      let longID = ExecutionID("ui-cancel-long-\(index)")
+      let controlID = ExecutionID("ui-cancel-control-\(index)")
+      let recoveryID = ExecutionID("ui-cancel-recovery-\(index)")
+      let forkPoint = ExecutionPosition(0)
+
+      let root = try await runtime.create(
+        id: rootID,
+        position: forkPoint,
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-0")
+      )
+      try await runtime.bindRepresentation(
+        executionID: rootID,
+        position: forkPoint,
+        payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens)
+      )
+      let longBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: longID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: longPrompt, continuationID: "long-0"
+          )
+        )
+      )
+      let controlBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: controlID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: controlInput, continuationID: "control-0"
+          )
+        )
+      )
+      let longTokens = try await executor.tokenizeText(longPrompt)
+      try await runtime.bindRepresentation(
+        executionID: longBranch.id,
+        position: forkPoint,
+        payload: LLAMAServerPrefixPayload(tokenPrefix: longTokens)
+      )
+      try await runtime.bindRepresentation(
+        executionID: controlBranch.id,
+        position: forkPoint,
+        payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens + controlTokens)
+      )
+      let longSnapshot = try await backend.captureRepresentation(for: longBranch)
+
+      try await waitIdleSlots(baseURL: baseURL, timeoutMs: freeTimeoutMs)
+      let conversationID =
+        "ui-cancel-\(index)-\(Int(Date().timeIntervalSince1970 * 1_000_000_000))"
+      let stream = UICancellableStream(
+        session: URLSession(configuration: .ephemeral),
+        request: uiStreamRequest(
+          baseURL: baseURL,
+          conversationID: conversationID,
+          prompt: longPrompt,
+          tokens: 256,
+          seed: seed
+        )
+      )
+      try await Task.sleep(nanoseconds: UInt64(cancelDelayMs * 1_000_000))
+      let deleteStarted = DispatchTime.now().uptimeNanoseconds
+      let deleteStatus = try await deleteUIStream(
+        baseURL: baseURL, conversationID: conversationID
+      )
+      try await waitIdleSlots(baseURL: baseURL, timeoutMs: freeTimeoutMs)
+      stream.close()
+      let deleteToFreeMs = elapsedMs(deleteStarted)
+
+      try await backend.releaseRepresentation(longSnapshot)
+      let longReleased = (try? backend.boundPrefix(for: longBranch))?.prefix == nil
+
+      let rootRecoveryStarted = DispatchTime.now().uptimeNanoseconds
+      let restoredRoot = try await runtime.restore(
+        root,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: rootInput, continuationID: "root-recovery"
+          )
+        )
+      )
+      let rootSnapshot = try await backend.captureRepresentation(for: restoredRoot)
+      let rootRecovery = try await executor.complete(
+        rootSnapshot, predictionTokens: predictionTokens, seed: seed
+      )
+      rootRecoveries.append(rootRecovery)
+
+      let recoveryBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: restoredRoot,
+          childID: recoveryID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: recoveryInput, continuationID: "recovery-0"
+          )
+        )
+      )
+      recoveryLineagePass = recoveryLineagePass
+        && recoveryBranch.lineage.parent == rootID
+        && recoveryBranch.lineage.root == root.lineage.root
+
+      let controlRecoveryStarted = DispatchTime.now().uptimeNanoseconds
+      let restoredControl = try await runtime.restore(
+        controlBranch,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: controlInput, continuationID: "control-recovery"
+          )
+        )
+      )
+      let controlSnapshot = try await backend.captureRepresentation(for: restoredControl)
+      let controlRecovery = try await executor.complete(
+        controlSnapshot, predictionTokens: predictionTokens, seed: seed
+      )
+      controlRecoveries.append(controlRecovery)
+
+      deleteStatuses.append(deleteStatus)
+      cancelledReleased = cancelledReleased && longReleased
+      samples.append(
+        UICancellationSample(
+          index: index,
+          conversationID: conversationID,
+          deleteStatus: deleteStatus,
+          deleteToFreeMs: deleteToFreeMs,
+          rootRecoveryClientMs: elapsedMs(rootRecoveryStarted),
+          controlRecoveryClientMs: elapsedMs(controlRecoveryStarted)
+        )
+      )
+    }
+
+    let rootRecoveryIdentical = rootRecoveries.allSatisfy { $0 == rootReference }
+    let controlRecoveryIdentical = controlRecoveries.allSatisfy { $0 == controlReference }
+    let checks = [
+      "CANCEL_ACCEPTED":
+        deleteStatuses.count == cycles && deleteStatuses.allSatisfy { $0 == 204 },
+      "CANCELLED_SLOT_FREED":
+        samples.count == cycles,
+      "CANCELLED_LONG_PHYSICAL_RELEASED":
+        cancelledReleased,
+      "ROOT_RECOVERY_IDENTICAL":
+        rootRecoveryIdentical,
+      "CONTROL_RECOVERY_IDENTICAL":
+        controlRecoveryIdentical,
+      "ROOT_AND_CONTROL_PREFIXES_DIVERGED":
+        seedTokens + rootTokens != seedTokens + controlTokens,
+      "RECOVERY_LINEAGE_ISOLATED":
+        recoveryLineagePass,
+      "CYCLES_COMPLETE":
+        rootRecoveries.count == cycles && controlRecoveries.count == cycles,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return UICancellationReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: uiCancellationProtocolVersion,
+      boundary: uiCancellationBoundary,
+      host: host,
+      port: port,
+      modelPath: serverProps.modelPath,
+      seedText: seedText,
+      rootInput: rootInput,
+      controlInput: controlInput,
+      recoveryInput: recoveryInput,
+      longPrompt: longPrompt,
+      predictionTokens: predictionTokens,
+      cancelDelayMs: cancelDelayMs,
+      cycles: cycles,
+      checks: checks,
+      rootReferenceContent: rootReference.content,
+      controlReferenceContent: controlReference.content,
+      recoveryContent: rootRecoveries.first?.content ?? "",
+      samples: samples,
+      overallPass: overallPass
+    )
+  }
+
+  final class UICancellableStream: @unchecked Sendable {
+    private let task: URLSessionDataTask
+
+    init(session: URLSession, request: URLRequest) {
+      task = session.dataTask(with: request)
+      task.resume()
+    }
+
+    func close() {
+      task.cancel()
+    }
+  }
+
+  private struct UIChatMessage: Encodable {
+    let role: String
+    let content: String
+  }
+
+  private struct UIChatRequest: Encodable {
+    let stream: Bool
+    let maxTokens: Int
+    let temperature: Double
+    let seed: Int
+    let messages: [UIChatMessage]
+
+    enum CodingKeys: String, CodingKey {
+      case stream
+      case maxTokens = "max_tokens"
+      case temperature
+      case seed
+      case messages
+    }
+  }
+
+  private struct UISlot: Decodable {
+    let isProcessing: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case isProcessing = "is_processing"
+    }
+  }
+
+  private static func uiStreamRequest(
+    baseURL: URL, conversationID: String, prompt: String, tokens: Int, seed: Int
+  ) -> URLRequest {
+    var request = URLRequest(url: baseURL.appending(path: "/v1/chat/completions"))
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue(conversationID, forHTTPHeaderField: "X-Conversation-Id")
+    request.timeoutInterval = 30
+    request.httpBody = try? JSONEncoder().encode(
+      UIChatRequest(
+        stream: true,
+        maxTokens: tokens,
+        temperature: 0,
+        seed: seed,
+        messages: [UIChatMessage(role: "user", content: prompt)]
+      )
+    )
+    return request
+  }
+
+  private static func deleteUIStream(baseURL: URL, conversationID: String) async throws -> Int {
+    var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+    components.path = "/v1/stream"
+    components.queryItems = [URLQueryItem(name: "conv_id", value: conversationID)]
+    var request = URLRequest(url: components.url!)
+    request.httpMethod = "DELETE"
+    let (_, response) = try await URLSession.shared.data(for: request)
+    return (response as? HTTPURLResponse)?.statusCode ?? -1
+  }
+
+  private static func waitIdleSlots(baseURL: URL, timeoutMs: Int) async throws {
+    let deadline = Date().addingTimeInterval(Double(timeoutMs) / 1000)
+    while Date() < deadline {
+      let (data, response) = try await URLSession.shared.data(from: baseURL.appending(path: "/slots"))
+      guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        throw LLAMAServerExecutorError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1)
+      }
+      let slots = try JSONDecoder().decode([UISlot].self, from: data)
+      if !slots.isEmpty, slots.allSatisfy({ !$0.isProcessing }) { return }
+      try await Task.sleep(nanoseconds: 20_000_000)
+    }
+    throw LLAMAServerExecutorError.badStatus(-1)
+  }
+
   public struct NestedReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

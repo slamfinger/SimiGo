@@ -6335,3 +6335,26 @@ closure 保持 OPEN，不得解释为 universal 或 same-model closure。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_NESTED_CROSSBACKEND_MATRIX_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-nested-crossbackend-matrix.json`。
+
+### LAB UI BRANCH SESSIONS CANCELLATION PASS — 2026-09-29
+
+把 pasted workload matrix 中的 W9 cancellation 接入 UI Branch Session control
+plane。新增 `runCancellationLLAMA` 和 CLI `llama-branch-session-cancel`；每轮
+建立 root、long branch、control branch，capture long physical prefix 后启动显式
+LLAMA stream，DELETE 取消，等待 slot free，release cancelled prefix，restore
+root，fork recovery branch，并 restore/replay control sibling。使用 canonical
+mitigated profile、当前 Cyber-Tiel model、seed42、2 cycles、100ms cancel delay。
+
+八项 checks 全部 PASS：DELETE `2/2` 返回 204、cancelled slot freed、cancelled
+long physical prefix released、root recovery identity、control sibling recovery
+identity、root/control prefix divergence、post-cancel recovery lineage isolation
+和 cycles complete。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `UI_SESSION_EXPLICIT_CANCEL_RECOVERY_PASS` 和
+`UI_CANCELLED_BRANCH_PHYSICAL_RELEASE_PASS`；状态为
+`UI7 = PASS / LLAMA_SESSION_CANCELLATION_WITH_BOUNDARY`。这是 LLAMA harness
+pilot，不代表 MLX/cross-backend cancellation closure、production cancellation、
+persistent session 或性能结论。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CANCELLATION_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-cancellation.json`。
