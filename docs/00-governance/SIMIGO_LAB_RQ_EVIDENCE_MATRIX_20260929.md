@@ -234,6 +234,33 @@ results/backend-conformance/mlx-release-recovery-factorial-p*.json
 results/backend-conformance/mlx-phase6a-factorial-pilot-summary.json
 ```
 
+### Phase-6B targeted segment replication
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / TARGETED_SEGMENT_REPLICATION_COMPLETE / FULL_FACTORIZATION_OPEN
+```
+
+对 PHASE6A 中最有区分度的 2-token cells做 replication：prefix `8/64` ×
+segment size `8/16`，strategy `RETAIN/RELEASE_RESTORE`。PHASE6A每 strategy 1 cycle，
+PHASE6B增加 2 cycles，combined每 strategy `n=3`。十项 checks全部 PASS；所有
+paired outputs exact；RETAIN transitions全为 `0`，RELEASE_RESTORE全为 `1`；
+generation transitions符合 `segment count × token count`。
+
+Combined median observation：segment size 16 在 prefix 8 两个 strategy和 prefix 64
+RETAIN中慢于 segment size 8；prefix 64 RELEASE_RESTORE median
+`45,780.322ms`仍慢于 segment 8 的 `29,864.848ms`。segment 16 mean
+`45,990.251ms`也高于 segment 8 mean `29,994.914ms`。这 replicated PHASE6A 的
+结论：更少 transition不等于更低总成本。当前结果不建立最优 segment size。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-release-recovery-replicate-p*.json
+results/backend-conformance/mlx-phase6b-segment-size-replication-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -245,9 +272,9 @@ results/backend-conformance/mlx-phase6a-factorial-pilot-summary.json
    higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
-4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot
-   也已通过；但 statistical factorization、更大样本、分布报告、warm-KV/segment-residency
-   policy和cross-backend cost
+4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot和
+   PHASE6B targeted replication也已通过；但 statistical factorization、更多
+   samples、完整分布报告、warm-KV/segment-residency policy和cross-backend cost
    normalization仍未完成。
 
 ## Non-claims
@@ -264,6 +291,7 @@ concurrent cancellation 已达到 production readiness
 pruned / subnet Qwen4Exp 可以替代 full Qwen4Exp closure
 performance 或 upstream runtime claim 已建立
 MLX Phase-6 cost observation是 throughput benchmark
+MLX Phase-6B replication已建立 production segment-size policy
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的

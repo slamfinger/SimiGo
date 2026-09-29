@@ -6608,3 +6608,36 @@ performance或cross-backend/cross-hardware claim。
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6A_FACTORIAL_PILOT_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6a-factorial-pilot-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p*.json`。
+
+### LAB MLX PHASE6B SEGMENT REPLICATION PASS — 2026-09-29
+
+针对 PHASE6A 中 segment size 16 更少 transition但观测更高 latency的矛盾，新增
+targeted segment replication。对 prefix `8/64`、maxTokens `2`、segment size
+`8/16`、strategy `RETAIN/RELEASE_RESTORE`，在 PHASE6A 每 strategy 1 cycle基础上
+增加 2 cycles；combined每 strategy `n=3`。十项 checks全部 PASS：replicate reports
+pass、paired outputs exact、cell/sample coverage完整、RETAIN transitions全 `0`、
+RELEASE_RESTORE全 `1`、generation transitions符合结构、oversized profile under
+30GiB、zero swap。
+
+Combined median显示 segment size 16 在 prefix 8 的 RETAIN/RELEASE_RESTORE
+（`27,638.236/31,111.494ms`）均慢于 segment size 8
+（`18,665.924/18,673.739ms`）；prefix 64 RETAIN segment 16
+（`47,111.706ms`）慢于 segment 8（`26,230.057ms`），prefix 64
+RELEASE_RESTORE segment 16 median `45,780.322ms`也慢于 segment 8
+`29,864.848ms`；segment 16 mean `45,990.251ms`高于 segment 8 mean
+`29,994.914ms`。因此 PHASE6A 的
+“更少 transition不等于更低总成本”得到 replicated。所有 paired generated token
+IDs/text exact；RETAIN/RELEASE action transitions稳定为 `0/1`。PHASE6B replicate
+peak footprint `4,853–10,683 MiB`、max swap `0 MiB`。登记
+`SEGMENT_SIZE_16_LATENCY_PENALTY_REPLICATED`、
+`SEGMENT_TRANSITIONS_SCALE_WITH_SEGMENT_COUNT_AND_TOKENS` 和
+`PAIRED_ACTION_OUTPUTS_EXACT_AFTER_REPLICATION`；状态为
+`PHASE6B = PASS_WITH_BOUNDARY / TARGETED_SEGMENT_REPLICATION_COMPLETE /
+FULL_FACTORIZATION_OPEN`。combined n=3仍小，且 segment size同时改变 transition
+count、每次 segment工作量和 cache行为，不建立最优 segment size、throughput曲线、
+warm-KV retention、production performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6B_SEGMENT_REPLICATION_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6b-segment-size-replication-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p*.json`。

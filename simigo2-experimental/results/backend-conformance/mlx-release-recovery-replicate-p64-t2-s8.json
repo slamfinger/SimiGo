@@ -1,0 +1,121 @@
+{
+  "boundary" : "OVERSIZED_MLX_RETAIN_VS_RELEASE_RESTORE \/ PAIRED_RECOVERY_OBSERVATION \/ SMALL_SAMPLE \/ NOT_A_PERFORMANCE_BENCHMARK",
+  "checks" : {
+    "BOTH_STRATEGIES_COMPLETE" : true,
+    "GENERATION_TOKEN_BUDGET_COMPLETE" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "PAIRED_STRATEGY_OUTPUTS_EXACT" : true,
+    "RECOVERY_BINDINGS_EXACT" : true,
+    "RELEASE_ACTION_RELEASES_SEGMENTS" : true,
+    "RETAIN_ACTION_DOES_NOT_RELEASE_SEGMENTS" : true
+  },
+  "cycles" : 2,
+  "maxSwapMiB" : 0,
+  "maxTokens" : 2,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "pairedOutputsExact" : true,
+  "peakFootprintMiB" : 7255,
+  "prefixTokenLength" : 64,
+  "protocolVersion" : "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.COST.V1",
+  "releasePoint" : {
+    "actionMeanMs" : 7.63,
+    "actionTransitionDeltaMean" : 1,
+    "allAdvancedBindingsExact" : true,
+    "allSemanticIdentical" : true,
+    "cycles" : 2,
+    "generationMeanMs" : 29994.914208000002,
+    "generationTransitionDeltaMean" : 12,
+    "recoveryTokensPerSec" : 0.13335594068587642,
+    "strategy" : "RELEASE_RESTORE",
+    "totalMeanMs" : 30002.544208
+  },
+  "retainPoint" : {
+    "actionMeanMs" : 0.0045415,
+    "actionTransitionDeltaMean" : 0,
+    "allAdvancedBindingsExact" : true,
+    "allSemanticIdentical" : true,
+    "cycles" : 2,
+    "generationMeanMs" : 28353.2328125,
+    "generationTransitionDeltaMean" : 12,
+    "recoveryTokensPerSec" : 0.14107738706383186,
+    "strategy" : "RETAIN",
+    "totalMeanMs" : 28353.237353999997
+  },
+  "rootInput" : "Explain it briefly.",
+  "samples" : [
+    {
+      "actionMs" : 0.005542,
+      "actionTransitionDelta" : 0,
+      "advancedBindingExact" : true,
+      "generatedText" : " Explain the",
+      "generatedTokenIDs" : [
+        81917,
+        279
+      ],
+      "generationMs" : 26230.057042,
+      "generationTransitionDelta" : 12,
+      "index" : 0,
+      "retainFirst" : true,
+      "semanticIdentical" : true,
+      "strategy" : "RETAIN",
+      "totalMs" : 26230.062584
+    },
+    {
+      "actionMs" : 7.6055,
+      "actionTransitionDelta" : 1,
+      "advancedBindingExact" : true,
+      "generatedText" : " Explain the",
+      "generatedTokenIDs" : [
+        81917,
+        279
+      ],
+      "generationMs" : 29864.8475,
+      "generationTransitionDelta" : 12,
+      "index" : 0,
+      "retainFirst" : true,
+      "semanticIdentical" : true,
+      "strategy" : "RELEASE_RESTORE",
+      "totalMs" : 29872.453
+    },
+    {
+      "actionMs" : 7.6545,
+      "actionTransitionDelta" : 1,
+      "advancedBindingExact" : true,
+      "generatedText" : " Explain the",
+      "generatedTokenIDs" : [
+        81917,
+        279
+      ],
+      "generationMs" : 30124.980916,
+      "generationTransitionDelta" : 12,
+      "index" : 1,
+      "retainFirst" : false,
+      "semanticIdentical" : true,
+      "strategy" : "RELEASE_RESTORE",
+      "totalMs" : 30132.635416
+    },
+    {
+      "actionMs" : 0.003541,
+      "actionTransitionDelta" : 0,
+      "advancedBindingExact" : true,
+      "generatedText" : " Explain the",
+      "generatedTokenIDs" : [
+        81917,
+        279
+      ],
+      "generationMs" : 30476.408583,
+      "generationTransitionDelta" : 12,
+      "index" : 1,
+      "retainFirst" : false,
+      "semanticIdentical" : true,
+      "strategy" : "RETAIN",
+      "totalMs" : 30476.412124
+    }
+  ],
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 61,
+  "status" : "PASS"
+}

@@ -93,9 +93,10 @@ simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens4.js
 ## Open questions
 
 1. prefix length × generated tokens × segment size × release/normalize action 的
-   statistical factorization。PHASE6A已完成 one-cycle pilot；每 cell每 strategy
-   仍只有 n=1。
-2. 更多 samples、order counterbalancing、median/IQR/p95 分布报告。
+   statistical factorization。PHASE6A已完成 one-cycle pilot；PHASE6B已对 2-token
+   cells做 targeted replication，combined n=3 per strategy。
+2. 更多 samples和完整 order counterbalancing；median/IQR/p95 分布已在 targeted
+   cells建立，但尚未覆盖全矩阵。
 3. warm-KV 或 segment-residency policy不在当前 cacheless path内,需要单独机制。
 4. cross-backend cost normalization尚无定义,不能与 LLAMA cost直接比较。
 
