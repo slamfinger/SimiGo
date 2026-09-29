@@ -1,0 +1,23 @@
+{
+  "checks" : {
+    "MAX_REFERENCE_RANK" : true,
+    "POSITION_COUNTS_MATCH" : true,
+    "SEED_COUNT" : true,
+    "SEED_OUTCOMES_IDENTICAL" : true,
+    "TOP_K_CONTAINMENT" : true,
+    "TOP_ONE_FLIP_POLICY" : true,
+    "UNIQUE_SEEDS" : true
+  },
+  "failureReasons" : [
+
+  ],
+  "maximumObservedReferenceRank" : 2,
+  "pass" : true,
+  "positionCount" : 139,
+  "profileID" : "NAMED_SOURCE.CYBER_TIEL.MATRIX_V2.TOP16_RANK2.TWO_SEEDS",
+  "seedCount" : 2,
+  "seedOutcomesIdentical" : true,
+  "topKContainmentCount" : 278,
+  "topOneAgreementRatio" : 0.9568345323741008,
+  "topOneFlipCount" : 12
+}

@@ -7382,3 +7382,32 @@ artifacts见
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2-seed43.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all-seed43.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json`。
+
+### LAB NAMED SOURCE CONFORMANCE PROFILE V1 REGISTERED PASS — 2026-09-29
+
+将 Cyber-Tiel Matrix V2 full-margin gate从报告约定固化为 executable named-source
+conformance profile。Profile ID为
+`NAMED_SOURCE.CYBER_TIEL.MATRIX_V2.TOP16_RANK2.TWO_SEEDS`。硬规则包括：至少两个
+unique seeds；各 seed position count一致；所有 reference tokens必须 contained in
+top16；maximum reference rank不超过 `2`；允许 top1 flips作为 observation；两个
+seed的 `(promptID, position)` outcomes必须完全一致。top1 agreement保留为
+observation，不是 hard threshold。
+
+使用 seed42/seed43 margin compare artifacts评估：seedCount `2`、positionCount每
+seed `139`、top16 containment aggregate `278/278`、max observed reference rank
+`2`、top1 flips aggregate `12`（每 seed `6`）、per-position seed outcomes
+identical。七项 checks全部 PASS，failureReasons为空，profile PASS。新增
+`NamedSourceConformanceProfile`、CLI `named-source-profile-evaluate`和四个单元
+测试覆盖 two-seed pass、single-seed fail、rank-3 fail和 seed outcome mismatch
+fail。登记 `NAMED_SOURCE_CONFORMANCE_PROFILE_V1_REGISTERED` 和
+`EXECUTABLE_PROFILE_EVALUATION_PASS`；状态为
+`PROFILE_V1 = REGISTERED / EVALUATION_PASS`。
+
+该 profile只适用于 named-source Cyber-Tiel MLX oQ4e与 MTP UD-Q4_K_XL GGUF
+variants、Matrix V2 12 prompts/139 positions、fixed MLX trajectory和 canonical
+LLAMA profile。不是 same-checkpoint closure、tokenizer-file identity proof、
+quantization equivalence、performance benchmark或 production readiness。全仓
+Swift verification现为 161 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_NAMED_SOURCE_CONFORMANCE_PROFILE_V1_20260929.md`；
+artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json`。
