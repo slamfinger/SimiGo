@@ -7602,3 +7602,29 @@ Pearson仅 `0.0324263`，V↔K为 `0.0979268`。登记
 drift。large quantized tensor attribution继续 BLOCKED。script和artifact见
 `simigo2-experimental/scripts/cyber_tiel_qkv_row_assignment_audit.py`、
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-row-assignment-audit.json`。
+
+### LAB CYBER TIEL QKV FULL ROW CORRELATION ASSIGNMENT MAPPING NOT ESTABLISHED — 2026-09-29
+
+将 QKV layout diagnostic从 row L2 norm升级为 full row-vector Pearson assignment。
+对 layer1 `attn_qkv` GGUF Q8_0 dequant和 MLX `in_proj_qkv` dequant transpose后，
+按假设的 Q2048、K2048、V4096 segments分别 center/L2-normalize rows，构造 GGUF↔
+MLX Pearson matrix并用 Hungarian assignment最大化 matched Pearson。协议三项
+checks全部 PASS：三个 segments完成、所有 Hungarian assignments完成、8192个 qkv
+features全覆盖。
+
+结果显示 layout mapping not established。best matched Pearson：
+Q2048 `0.1159309`、K2048 `0.1098251`、V4096 `0.0785623`；matched means分别为
+`0.0712224 / 0.0714073 / 0.0512549`。6144个 rows中没有任何 matched Pearson达到
+`0.50`，达到 `0.70`或 `0.90`的也是 0。identity Pearson means也接近零。登记
+`CYBER_TIEL_QKV_FULL_ROW_CORRELATION_ASSIGNMENT_PASS`、
+`BEST_ROW_CORRELATION_BELOW_012`、`NO_QKV_ROW_AT_LEAST_050` 和
+`LAYOUT_MAPPING_NOT_ESTABLISHED`；状态为
+`QKV_ROW_CORRELATION_ASSIGNMENT = PASS_WITH_BOUNDARY / LAYOUT_MAPPING_NOT_ESTABLISHED`。
+
+这比 norm-only audit更强：即使允许任意 Q/K/V row permutation，full row vectors
+也不存在一一对应。因此 named-source profile不能升级为 same-checkpoint closure或
+quantization-equivalent payload。可能原因包括不同 source checkpoint、GGUF
+conversion的 projection grouping/order、quantization transformation，或这些因素
+组合；当前证据不足以归因。script与artifact见
+`simigo2-experimental/scripts/cyber_tiel_qkv_row_correlation_assignment.py`、
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-row-correlation-assignment.json`。
