@@ -6358,3 +6358,29 @@ persistent session 或性能结论。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CANCELLATION_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-llama-cancellation.json`。
+
+### LAB UI BRANCH SESSIONS MLX CANCELLATION PASS — 2026-09-29
+
+把 W9 cancellation 从 LLAMA explicit stream cancel 扩展到 oversized MLX
+cooperative token-boundary cancel。新增 `runCancellationOversizedMLX` 和 CLI
+`mlx-branch-session-cancel`；每轮建立 root、long branch、control branch，先记录
+root/control pre-cancel reference，再在 long branch 生成 1 个完整 greedy token 后
+cooperative cancel，bind consumed prefix、release physical representation、restore
+root、fork recovery branch，并逐 cycle 恢复 root/control identity。使用本地
+Qwen3-Coder-Next-4bit snapshot、segment size 8、maxTokens4、2 cycles。
+
+九项 checks 全部 PASS：cooperative cancellation 一致发生在 1 token 边界
+`[1,1]`、cancelled physical prefix released、cancelled long logically discarded、
+root/control 逐 cycle pre-cancel/post-cancel identity、prefix divergence、
+recovery lineage isolation、root/control survive release、oversized profile under
+30GiB。观测 peak footprint `7,946 MiB`、max swap `0 MiB`、segment transitions
+`254`。同一 commit 全仓 Swift verification 为 `157 PASS / 0 FAIL`。登记
+`UI_SESSION_COOPERATIVE_CANCEL_RECOVERY_MLX_PASS` 和
+`UI_CANCELLED_MLX_BRANCH_RELEASE_DISCARD_PASS`；状态为
+`UI8 = PASS / MLX_SESSION_COOPERATIVE_CANCELLATION_WITH_BOUNDARY`。这是 MLX
+harness pilot，不代表 cross-backend cancellation matrix、production cancellation、
+persistent session 或性能结论。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_CANCELLATION_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-cancellation.json`。

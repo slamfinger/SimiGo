@@ -1587,3 +1587,337 @@ extension UIBranchSessions {
     )
   }
 }
+
+extension UIBranchSessions {
+  public struct MLXCancellationReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let rootInput: String
+    public let controlInput: String
+    public let recoveryInput: String
+    public let longInput: String
+    public let maxTokens: Int
+    public let cycles: Int
+    public let cancelledTokenCounts: [Int]
+    public let checks: [String: Bool]
+    public let rootReferenceContent: String
+    public let controlReferenceContent: String
+    public let recoveryContent: String
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let mlxCancellationProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.MLX.CANCELLATION.V1"
+  public static let mlxCancellationBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / OVERSIZED_MLX_COOPERATIVE_CANCEL / "
+    + "ROOT_AND_SIBLING_RECOVERY / HARNESS_LEVEL / NOT_A_PRODUCTION_CLAIM"
+
+  public static func runCancellationOversizedMLX(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    controlInput: String = "Now write tests for it.",
+    recoveryInput: String = "Continue from the root.",
+    longInput: String = "Count from 1 to 500. Return only numbers separated by spaces.",
+    maxTokens: Int = 4,
+    cycles: Int = 2,
+    segmentSize: Int = 8
+  ) async throws -> MLXCancellationReport {
+    precondition(cycles > 0, "cycles must be positive")
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core, backend: backend, tokenizer: tokenizer
+    )
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+    let rootTokens = try executor.tokenizeText(rootInput)
+    let controlTokens = try executor.tokenizeText(controlInput)
+    let recoveryTokens = try executor.tokenizeText(recoveryInput)
+    let longTokens = try executor.tokenizeText(longInput)
+
+    var cancelledTokenCounts: [Int] = []
+    var cancelledTokenIDSets: [[Int]] = []
+    var rootReferences: [ExecutionContinuationResult] = []
+    var controlReferences: [ExecutionContinuationResult] = []
+    var rootRecoveries: [ExecutionContinuationResult] = []
+    var controlRecoveries: [ExecutionContinuationResult] = []
+    var recoveryContents: [String] = []
+    var recoveryLineagePass = true
+    var cancelledReleased = true
+
+    for index in 0..<cycles {
+      let rootID = ExecutionID("mlx-cancel-root-\(index)")
+      let longID = ExecutionID("mlx-cancel-long-\(index)")
+      let controlID = ExecutionID("mlx-cancel-control-\(index)")
+      let recoveryID = ExecutionID("mlx-cancel-recovery-\(index)")
+      let forkPoint = ExecutionPosition(0)
+      let continuedPosition = ExecutionPosition(1)
+
+      let root = try await runtime.create(
+        id: rootID,
+        position: forkPoint,
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-0")
+      )
+      try await runtime.bindRepresentation(
+        executionID: rootID,
+        position: forkPoint,
+        payload: OversizedPrefixPayload(tokenPrefix: seedTokens)
+      )
+      let longBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: longID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: longInput, continuationID: "long-0"
+          )
+        )
+      )
+      let controlBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: controlID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: controlInput, continuationID: "control-0"
+          )
+        )
+      )
+
+      let rootReference = try await executor.continueExecution(
+        root, nextInputTokens: rootTokens, maxTokens: maxTokens
+      )
+      let rootAdvanced = try await runtime.continueExecution(
+        root,
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-1")
+      )
+      try await runtime.bindRepresentation(
+        executionID: rootAdvanced.id,
+        position: continuedPosition,
+        payload: rootReference.updatedPayload
+      )
+      rootReferences.append(rootReference)
+      let controlReference = try await executor.continueExecution(
+        controlBranch, nextInputTokens: controlTokens, maxTokens: maxTokens
+      )
+      controlReferences.append(controlReference)
+      let controlAdvanced = try await runtime.continueExecution(
+        controlBranch,
+        continuation: ExecutionContinuation(nextInput: controlInput, continuationID: "control-1")
+      )
+      try await runtime.bindRepresentation(
+        executionID: controlAdvanced.id,
+        position: continuedPosition,
+        payload: controlReference.updatedPayload
+      )
+
+      var cancelledCount = -1
+      var cancelledIDs: [Int] = []
+      do {
+        _ = try await executor.continueExecution(
+          longBranch,
+          nextInputTokens: longTokens,
+          maxTokens: maxTokens,
+          cancellationToken: O6GenerationCancellationToken { $0 >= 1 }
+        )
+      } catch let cancellation as O6ExecutionCancelled {
+        cancelledIDs = cancellation.generatedTokenIDs
+        cancelledCount = cancelledIDs.count
+      }
+      cancelledTokenCounts.append(cancelledCount)
+      cancelledTokenIDSets.append(cancelledIDs)
+
+      let consumedLongPrefix =
+        seedTokens + longTokens + cancelledIDs
+      _ = try await runtime.continueExecution(
+        longBranch,
+        continuation: ExecutionContinuation(nextInput: longInput, continuationID: "long-1")
+      )
+      try await runtime.bindRepresentation(
+        executionID: longID,
+        position: continuedPosition,
+        payload: OversizedPrefixPayload(tokenPrefix: consumedLongPrefix)
+      )
+      let cancelledRepresentation = try await backend.captureRepresentation(
+        for: try runtimeHandle(runtime, id: longID)
+      )
+      try await backend.releaseRepresentation(cancelledRepresentation)
+      let longReleased = (try? backend.boundPrefix(for: longBranch))?.prefix == nil
+      cancelledReleased = cancelledReleased && longReleased
+
+      let restoredRoot = try await runtime.restore(
+        rootAdvanced,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: rootInput, continuationID: "root-recovery-0"
+          )
+        )
+      )
+      let recoveryBranch = try await runtime.fork(
+        ExecutionForkRequest(
+          parent: restoredRoot,
+          childID: recoveryID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: recoveryInput, continuationID: "recovery-0"
+          )
+        )
+      )
+      recoveryLineagePass = recoveryLineagePass
+        && recoveryBranch.lineage.parent == rootID
+        && recoveryBranch.lineage.root == root.lineage.root
+
+      let rootRecovery = try await executor.continueExecution(
+        restoredRoot, nextInputTokens: rootTokens, maxTokens: maxTokens
+      )
+      let rootRecovered = try await runtime.continueExecution(
+        restoredRoot,
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-recovery-1")
+      )
+      try await runtime.bindRepresentation(
+        executionID: rootRecovered.id,
+        position: continuedPosition,
+        payload: rootRecovery.updatedPayload
+      )
+      rootRecoveries.append(rootRecovery)
+
+      let recoveryRun = try await executor.continueExecution(
+        recoveryBranch, nextInputTokens: recoveryTokens, maxTokens: maxTokens
+      )
+      let recoveryAdvanced = try await runtime.continueExecution(
+        recoveryBranch,
+        continuation: ExecutionContinuation(
+          nextInput: recoveryInput, continuationID: "recovery-1"
+        )
+      )
+      try await runtime.bindRepresentation(
+        executionID: recoveryAdvanced.id,
+        position: continuedPosition,
+        payload: recoveryRun.updatedPayload
+      )
+
+      let restoredControl = try await runtime.restore(
+        controlAdvanced,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: controlInput, continuationID: "control-recovery-0"
+          )
+        )
+      )
+      let controlRecovery = try await executor.continueExecution(
+        restoredControl, nextInputTokens: controlTokens, maxTokens: maxTokens
+      )
+      let controlRecovered = try await runtime.continueExecution(
+        restoredControl,
+        continuation: ExecutionContinuation(
+          nextInput: controlInput, continuationID: "control-recovery-1"
+        )
+      )
+      try await runtime.bindRepresentation(
+        executionID: controlRecovered.id,
+        position: continuedPosition,
+        payload: controlRecovery.updatedPayload
+      )
+      controlRecoveries.append(controlRecovery)
+      recoveryContents.append(recoveryRun.generatedText)
+
+      try await runtime.discard(longBranch)
+    }
+
+    let rootBinding = try backend.boundPrefix(
+      for: try runtimeHandle(runtime, id: ExecutionID("mlx-cancel-root-\(cycles - 1)"))
+    )
+    let controlBinding = try backend.boundPrefix(
+      for: try runtimeHandle(runtime, id: ExecutionID("mlx-cancel-control-\(cycles - 1)"))
+    )
+    let longDiscarded = try runtimeHandle(
+      runtime, id: ExecutionID("mlx-cancel-long-\(cycles - 1)")
+    ).lifecycle == .discarded
+    let rootAdvancedPrefix = (rootRecoveries.last?.updatedPayload as? OversizedPrefixPayload)?
+      .tokenPrefix
+    let controlAdvancedPrefix = (controlRecoveries.last?.updatedPayload as? OversizedPrefixPayload)?
+      .tokenPrefix
+    let oversizedUnderLimit = core.peakFootprintMiB <= 30 * 1024
+
+    let checks = [
+      "COOPERATIVE_CANCEL_ONE_TOKEN":
+        cancelledTokenCounts.count == cycles
+        && cancelledTokenCounts.allSatisfy { $0 == 1 },
+      "CANCELLED_LONG_PHYSICAL_RELEASED":
+        cancelledReleased,
+      "CANCELLED_LONG_LOGICALLY_DISCARDED":
+        longDiscarded,
+      "ROOT_RECOVERY_IDENTICAL":
+        rootReferences.count == cycles && rootRecoveries.count == cycles
+        && zip(rootReferences, rootRecoveries).allSatisfy {
+          $0.generatedTokenIDs == $1.generatedTokenIDs && $0.generatedText == $1.generatedText
+        },
+      "CONTROL_RECOVERY_IDENTICAL":
+        controlReferences.count == cycles && controlRecoveries.count == cycles
+        && zip(controlReferences, controlRecoveries).allSatisfy {
+          $0.generatedTokenIDs == $1.generatedTokenIDs && $0.generatedText == $1.generatedText
+        },
+      "ROOT_AND_CONTROL_PREFIXES_DIVERGED":
+        rootAdvancedPrefix != controlAdvancedPrefix,
+      "RECOVERY_LINEAGE_ISOLATED":
+        recoveryLineagePass,
+      "ROOT_AND_CONTROL_SURVIVE_RELEASE":
+        rootBinding.prefix == rootAdvancedPrefix
+        && controlBinding.prefix == controlAdvancedPrefix,
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && oversizedUnderLimit,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return MLXCancellationReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: mlxCancellationProtocolVersion,
+      boundary: mlxCancellationBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      rootInput: rootInput,
+      controlInput: controlInput,
+      recoveryInput: recoveryInput,
+      longInput: longInput,
+      maxTokens: maxTokens,
+      cycles: cycles,
+      cancelledTokenCounts: cancelledTokenCounts,
+      checks: checks,
+      rootReferenceContent: rootReferences.first?.generatedText ?? "",
+      controlReferenceContent: controlReferences.first?.generatedText ?? "",
+      recoveryContent: recoveryContents.first ?? "",
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: overallPass
+    )
+  }
+
+  private static func runtimeHandle(
+    _ runtime: ExecutionContinuityCoordinator, id: ExecutionID
+  ) throws -> ExecutionStateHandle {
+    guard let handle = runtime.handle(id) else {
+      throw ExecutionStateBackendError.noBoundRepresentation(id)
+    }
+    return handle
+  }
+
+}
