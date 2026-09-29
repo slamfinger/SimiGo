@@ -52,4 +52,19 @@ final class TypesBridgeTests: XCTestCase {
         XCTAssertEqual(back, call)
         XCTAssertEqual(back.argumentsJSON, call.argumentsJSON)
     }
+
+    /// argumentsJSON 存储化之前的存档数据（恰好三字段）必须可解码——
+    /// 解码路径派生 argumentsJSON，不依赖未知键。
+    func testDecodesLegacyThreeFieldPayload() throws {
+        let legacy = #"{"id":"call_9","name":"echo","arguments":{"q":"v","n":2}}"#
+        let call = try JSONDecoder().decode(
+            ParsedToolCall.self, from: Data(legacy.utf8))
+        XCTAssertEqual(call.id, "call_9")
+        XCTAssertEqual(call.name, "echo")
+        XCTAssertEqual(call.arguments["q"], .string("v"))
+        // 渲染结果必须 round-trip 回原 arguments（键序不进契约）
+        let decoded = try JSONDecoder().decode(
+            [String: JSONValue].self, from: Data(call.argumentsJSON.utf8))
+        XCTAssertEqual(decoded, call.arguments)
+    }
 }

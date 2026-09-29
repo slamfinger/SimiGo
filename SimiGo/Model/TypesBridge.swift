@@ -67,9 +67,15 @@ nonisolated public enum JSONValue: Codable, Equatable, Sendable, CustomStringCon
         switch value {
         case let s as String:
             return .string(s)
-        case let b as Bool:
-            return .bool(b)
         case let n as NSNumber:
+            // JSON 布尔按 CFBoolean 类型 ID 严格判别。不能用 `as? Bool`：
+            // 该条件转型对数值型 NSNumber(0/1) 也会成功，会把客户端 JSON
+            // 数字折叠成布尔（MessagesConversionEquivalenceTests 差分实证，
+            // 2026-09-29）。JSONSerialization 的布尔恒为 CFBoolean、数值
+            // 恒为 CFNumber，类型 ID 判别对两条来源都精确。
+            if CFGetTypeID(n) == CFBooleanGetTypeID() {
+                return .bool(n.boolValue)
+            }
             return .number(n.doubleValue)
         case let d as Double:
             return .number(d)
