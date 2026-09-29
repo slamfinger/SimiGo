@@ -1,0 +1,86 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_LONG_RUNNING_BRANCH \/ SEQUENTIAL_TURNS_FORKPOINT_FINAL_RESTORE \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+  "checks" : {
+    "LONG_BRANCH_FINAL_PREFIX_EXACT" : true,
+    "LONG_BRANCH_RESTORES_FINAL_POSITION" : true,
+    "LONG_BRANCH_RESTORES_FORKPOINT" : true,
+    "LONG_SEQUENCE_COMPLETE" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "RELEASE_LONG_AND_SIBLING" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SIBLING_ADVANCED_RETAINED" : true
+  },
+  "longBranchContents" : [
+    " The",
+    " The",
+    " The",
+    " The",
+    " The",
+    " The"
+  ],
+  "maxSwapMiB" : 0,
+  "maxTokens" : 1,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 8022,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.LONG.RUNNING.V1",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 44,
+  "siblingContent" : " You",
+  "siblingInput" : "Now write tests for it.",
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 9678.706792,
+      "executionID" : "mlx-long-sibling",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 9783.935,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 9968.195708,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 2
+    },
+    {
+      "clientMs" : 10058.607583,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 3
+    },
+    {
+      "clientMs" : 10081.700584,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 4
+    },
+    {
+      "clientMs" : 10281.678708,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 5
+    },
+    {
+      "clientMs" : 10465.257125,
+      "executionID" : "mlx-long-branch",
+      "operation" : "continue",
+      "position" : 6
+    }
+  ],
+  "turnInputs" : [
+    "Summarize the first implementation step.",
+    "List one edge case and how to handle it.",
+    "Add a focused unit test for that edge case.",
+    "Describe the expected result in one sentence.",
+    "Review the result and identify one improvement.",
+    "Finalize the implementation with a short TODO."
+  ]
+}

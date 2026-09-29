@@ -32,6 +32,8 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | UI8 | MLX cooperative cancellation | PASS | `ui-branch-session-mlx-cancellation.json` |
 | UI9 | cancellation cross-backend outcome matrix | PASS_WITH_BOUNDARY | `ui-branch-session-cancellation-crossbackend-matrix.json` |
 | UI10 | LLAMA six-turn long-running branch | PASS | `ui-branch-session-llama-long-running.json` |
+| UI11 | MLX six-turn long-running branch | PASS | `ui-branch-session-mlx-long-running.json` |
+| UI10 | LLAMA six-turn long-running branch | PASS | `ui-branch-session-llama-long-running.json` |
 
 ## Coverage checks
 
@@ -48,6 +50,9 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | `NO_PRODUCT_UI_CLAIM` | PASS |
 | `NO_PERSISTENT_SESSION_CLAIM` | PASS |
 | `LONG_RUNNING_LLAMA_PRESENT` | PASS |
+| `LONG_RUNNING_MLX_PRESENT` | PASS |
+| `ENTRY_COUNT_MATCHES` | PASS |
+| `LONG_RUNNING_LLAMA_PRESENT` | PASS |
 | `ENTRY_COUNT_MATCHES` | PASS |
 
 ## Consolidated observations
@@ -57,7 +62,9 @@ boundary   = harness-level prefix representation; different model artifacts/toke
    PASS evidence；cross-backend same-shape matrix也 PASS。
 3. Cancellation outcome-shape matrix在 LLAMA explicit DELETE与 MLX cooperative
    token-boundary cancel之间 PASS；机制差异保留，不伪装为同一 primitive。
-4. 所有结果都是 harness-level observation，不是 product UI、persistent session、
+4. LLAMA和 MLX long-running branch均能 restore到 fork point和 final position，
+   且 sibling/root survival semantics保持。
+5. 所有结果都是 harness-level observation，不是 product UI、persistent session、
    production cancellation readiness或 performance benchmark。
 5. UI10已验证 six-turn long-running branch的 fork-point/final-position restore；
    这不是 persistent session。

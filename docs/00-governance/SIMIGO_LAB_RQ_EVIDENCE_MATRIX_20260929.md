@@ -530,15 +530,17 @@ Status：
 CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE / PRODUCT_PERSISTENCE_OPEN
 ```
 
-UI1–UI9已纳入同一 master index，覆盖：
+UI1–UI11已纳入同一 master index，覆盖：
 
 ```text
 depth-1 pilot / cross-backend matrix
 nested + repeat pilots / cross-backend matrix
 cancellation pilots / cross-backend outcome-shape matrix
+LLAMA long-running branch
+MLX long-running branch
 ```
 
-十个 UI index checks全部 PASS。所有 entry reports PASS或 PASS_WITH_BOUNDARY；coverage
+十一项 UI index checks全部 PASS。所有 entry reports PASS或 PASS_WITH_BOUNDARY；coverage
 包含 LLAMA与 oversized MLX、depth-1与 nested、以及 cancellation。当前结果不建立
 product UI、persistent session、arbitrary-depth graph、same-checkpoint closure或
 production cancellation readiness。
@@ -570,6 +572,28 @@ Artifacts：
 results/backend-conformance/ui-branch-session-llama-long-running.json
 ```
 
+### UI11 MLX long-running branch
+
+Status：
+
+```text
+PASS / MLX_LONG_RUNNING_BRANCH_WITH_BOUNDARY
+```
+
+新增 six-turn MLX long-running UI Branch Session。root包含 long branch和 retained
+sibling；long branch顺序执行 six different prompts。完成 sequence后 restore到
+fork point，再restore到 final position。八项 checks全部 PASS：sequence complete、
+final prefix exact、fork-point restore、final-position restore、sibling retained、
+release long/sibling、root survives、oversized profile under 30GiB。当前只验证
+MLX harness；不是 LLAMA cross-backend、product UI、persistent session或
+performance benchmark。
+
+Artifacts：
+
+```text
+results/backend-conformance/ui-branch-session-mlx-long-running.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -590,9 +614,9 @@ results/backend-conformance/ui-branch-session-llama-long-running.json
    factorization、更多 replicates、完整 n=5 matrix、kernel-level attribution、
    warm-KV/segment-residency policy和cross-backend cost normalization仍未完成。
 5. UI Branch Sessions evidence index已完成，覆盖 depth-1、nested、cancellation和
-   LLAMA long-running branch；MLX long-running、product UI、persistent/multi-process
-   session、arbitrary-depth graph、same-checkpoint closure、memory-pressure UI matrix
-   和production cancellation readiness仍未完成。
+   LLAMA/MLX long-running branches；但 product UI、persistent/multi-process session、
+   arbitrary-depth graph、same-checkpoint closure、memory-pressure UI matrix和
+   production cancellation readiness仍未完成。
 
 ## Non-claims
 
@@ -617,8 +641,9 @@ MLX Phase-6G replicated forward差异已定位到单一 kernel
 MLX Phase-6H已建立 causal prefix-length model
 MLX Phase-6I已建立 universal context-length cost model
 MLX Phase-6J n=3 IQR无outlier证明无变异
-UI Branch Sessions master index已建立 product UI
-UI10 long-running LLAMA branch已验证 persistent session
+UI Branch Sessions master index证明 product UI完成
+UI10 long-running LLAMA branch证明 persistent session完成
+UI11 MLX long-running branch证明 persistent session完成
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的

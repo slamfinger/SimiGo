@@ -1831,6 +1831,233 @@ extension UIBranchSessions {
 }
 
 extension UIBranchSessions {
+  public struct MLXLongRunningReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let siblingInput: String
+    public let turnInputs: [String]
+    public let maxTokens: Int
+    public let checks: [String: Bool]
+    public let longBranchContents: [String]
+    public let siblingContent: String
+    public let steps: [Step]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let mlxLongRunningProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.MLX.LONG.RUNNING.V1"
+  public static let mlxLongRunningBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / OVERSIZED_MLX_LONG_RUNNING_BRANCH / "
+    + "SEQUENTIAL_TURNS_FORKPOINT_FINAL_RESTORE / HARNESS_LEVEL / NOT_A_UI_PRODUCT"
+
+  public static func runLongRunningOversizedMLX(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    siblingInput: String = "Now write tests for it.",
+    turnInputs: [String] = [
+      "Summarize the first implementation step.",
+      "List one edge case and how to handle it.",
+      "Add a focused unit test for that edge case.",
+      "Describe the expected result in one sentence.",
+      "Review the result and identify one improvement.",
+      "Finalize the implementation with a short TODO.",
+    ],
+    maxTokens: Int = 1,
+    segmentSize: Int = 8
+  ) async throws -> MLXLongRunningReport {
+    precondition(!turnInputs.isEmpty)
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core, backend: backend, tokenizer: tokenizer
+    )
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("mlx-long-root")
+    let siblingID = ExecutionID("mlx-long-sibling")
+    let longID = ExecutionID("mlx-long-branch")
+    let forkPoint = ExecutionPosition(0)
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: "", continuationID: "root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: OversizedPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    let sibling = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: siblingID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: siblingInput, continuationID: "sibling-0"
+        )
+      )
+    )
+    var longBranch = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: longID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: turnInputs[0], continuationID: "long-0"
+        )
+      )
+    )
+
+    func advance(
+      _ state: ExecutionStateHandle,
+      input: String,
+      continuationID: String
+    ) async throws -> (ExecutionStateHandle, generated: [Int], text: String, payload: any ExecutionRepresentationPayload) {
+      let started = DispatchTime.now().uptimeNanoseconds
+      let result = try await executor.continueExecution(
+        state, nextInputTokens: try executor.tokenizeText(input), maxTokens: maxTokens
+      )
+      let advanced = try await runtime.continueExecution(
+        state,
+        continuation: ExecutionContinuation(nextInput: input, continuationID: continuationID)
+      )
+      try await runtime.bindRepresentation(
+        executionID: advanced.id,
+        position: advanced.position,
+        payload: result.updatedPayload
+      )
+      record("continue", advanced, started)
+      return (advanced, result.generatedTokenIDs, result.generatedText, result.updatedPayload)
+    }
+
+    let siblingTokens = try executor.tokenizeText(siblingInput)
+    let siblingRun = try await advance(
+      sibling, input: siblingInput, continuationID: "sibling-1"
+    )
+    let siblingAdvanced = siblingRun.0
+    let siblingPrefix = (siblingRun.payload as? OversizedPrefixPayload)?.tokenPrefix
+
+    var longContents: [String] = []
+    var current = longBranch
+    var expectedPrefix: [Int]? = seedTokens
+    for (index, input) in turnInputs.enumerated() {
+      let run = try await advance(
+        current, input: input, continuationID: "long-\(index + 1)"
+      )
+      current = run.0
+      longContents.append(run.text)
+      expectedPrefix = (run.payload as? OversizedPrefixPayload)?.tokenPrefix
+    }
+
+    let finalBinding = try backend.boundPrefix(for: current)
+    let finalPosition = current.position
+    let finalPrefix = finalBinding.prefix
+
+    let restoredToFork = try await runtime.restore(
+      current,
+      request: ExecutionRestoreRequest(
+        targetPosition: forkPoint,
+        continuation: ExecutionContinuation(
+          nextInput: turnInputs[0], continuationID: "long-restore-0"
+        )
+      )
+    )
+    let forkBinding = try backend.boundPrefix(for: restoredToFork)
+
+    let restoredToFinal = try await runtime.restore(
+      restoredToFork,
+      request: ExecutionRestoreRequest(
+        targetPosition: finalPosition,
+        continuation: ExecutionContinuation(
+          nextInput: turnInputs[turnInputs.count - 1],
+          continuationID: "long-restore-final"
+        )
+      )
+    )
+    let finalRestoredBinding = try backend.boundPrefix(for: restoredToFinal)
+
+    try await runtime.discard(restoredToFinal)
+    try await runtime.discard(siblingAdvanced)
+
+    let longBindingGone = (try? backend.boundPrefix(for: restoredToFinal))?.prefix == nil
+    let siblingBindingGone = (try? backend.boundPrefix(for: siblingAdvanced))?.prefix == nil
+    let rootBinding = try backend.boundPrefix(for: root)
+    let oversizedUnderLimit = core.peakFootprintMiB <= 30 * 1024
+
+    let checks = [
+      "LONG_SEQUENCE_COMPLETE":
+        longContents.count == turnInputs.count
+        && longContents.allSatisfy { !$0.isEmpty },
+      "LONG_BRANCH_FINAL_PREFIX_EXACT":
+        finalBinding.prefix == expectedPrefix && finalBinding.position == finalPosition,
+      "LONG_BRANCH_RESTORES_FORKPOINT":
+        restoredToFork.position == forkPoint && forkBinding.prefix == seedTokens,
+      "LONG_BRANCH_RESTORES_FINAL_POSITION":
+        restoredToFinal.position == finalPosition
+        && finalRestoredBinding.prefix == finalPrefix,
+      "SIBLING_ADVANCED_RETAINED":
+        siblingAdvanced.position == ExecutionPosition(1) && siblingPrefix != nil,
+      "RELEASE_LONG_AND_SIBLING":
+        longBindingGone && siblingBindingGone,
+      "ROOT_SURVIVES_RELEASE":
+        rootBinding.prefix == seedTokens,
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && oversizedUnderLimit,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return MLXLongRunningReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: mlxLongRunningProtocolVersion,
+      boundary: mlxLongRunningBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      siblingInput: siblingInput,
+      turnInputs: turnInputs,
+      maxTokens: maxTokens,
+      checks: checks,
+      longBranchContents: longContents,
+      siblingContent: siblingRun.text,
+      steps: steps,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: overallPass
+    )
+  }
+
+}
+extension UIBranchSessions {
   public struct MLXCancellationReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

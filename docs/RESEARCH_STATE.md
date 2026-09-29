@@ -6969,3 +6969,55 @@ performance benchmark或 production readiness。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_LONG_RUNNING_20260929.md`；artifact见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-llama-long-running.json`。
+
+### LAB UI BRANCH SESSIONS MASTER INDEX AND MLX LONG RUNNING PASS — 2026-09-29
+
+新增 UI Branch Sessions consolidated master index，把 UI1–UI11纳入同一 evidence
+index。覆盖 LLAMA GGUF与 oversized MLX、depth-1 pilot/cross-backend matrix、
+nested/repeat pilot/cross-backend matrix、cancellation pilot/cross-backend
+outcome-shape matrix，以及 LLAMA与 MLX long-running branch。十一项 UI index checks
+全部 PASS，所有 entry reports为 PASS或 PASS_WITH_BOUNDARY。
+
+同时新增 `runLongRunningOversizedMLX` 和 CLI `mlx-branch-session-long`。UI11使用
+oversized Qwen3-Coder-Next-4bit、segment size 8、6个 sequential turns、每 turn
+1 token。session包含 long branch与 retained sibling；完成 sequence后 restore到
+fork point和 final position，release long/sibling并验证 root survives。八项 checks
+全部 PASS；peak footprint `8,022 MiB`、max swap `0 MiB`、segment transitions `44`。
+登记 `SIX_TURN_MLX_LONG_RUNNING_BRANCH_PASS`、
+`FORKPOINT_AND_FINAL_POSITION_RESTORE_PASS` 和
+`SIBLING_ADVANCED_RETAINED_ACROSS_LONG_BRANCH`；状态为
+`UI11 = PASS / MLX_LONG_RUNNING_BRANCH_WITH_BOUNDARY`。这只是 harness-level MLX
+pilot，不是 product UI、persistent session、LLAMA cross-backend validation、
+performance benchmark或 production readiness。
+
+Master index报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MASTER_INDEX_20260929.md`；UI11报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_LONG_RUNNING_20260929.md`；artifacts见
+`simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`、
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-long-running.json`。
+
+### LAB UI BRANCH SESSIONS MASTER INDEX AND MLX LONG RUNNING PASS — 2026-09-29
+
+新增 UI Branch Sessions consolidated master index，把 UI1–UI11纳入同一 evidence
+index。覆盖 LLAMA GGUF与 oversized MLX、depth-1 pilot/cross-backend matrix、
+nested/repeat pilot/cross-backend matrix、cancellation pilot/cross-backend
+outcome-shape matrix，以及 LLAMA与 MLX long-running branch。十一项 UI index checks
+全部 PASS，所有 entry reports为 PASS或 PASS_WITH_BOUNDARY。
+
+同时新增 `runLongRunningOversizedMLX` 和 CLI `mlx-branch-session-long`。UI11使用
+oversized Qwen3-Coder-Next-4bit、segment size 8、6个 sequential turns、每 turn
+1 token。session包含 long branch与 retained sibling；完成 sequence后 restore到
+fork point和 final position，release long/sibling并验证 root survives。八项 checks
+全部 PASS；peak footprint `8,022 MiB`、max swap `0 MiB`、segment transitions `44`。
+登记 `SIX_TURN_MLX_LONG_RUNNING_BRANCH_PASS`、
+`FORKPOINT_AND_FINAL_POSITION_RESTORE_PASS` 和
+`SIBLING_ADVANCED_RETAINED_ACROSS_LONG_BRANCH`；状态为
+`UI11 = PASS / MLX_LONG_RUNNING_BRANCH_WITH_BOUNDARY`。这只是 harness-level MLX
+pilot，不是 product UI、persistent session、LLAMA cross-backend validation、
+performance benchmark或 production readiness。
+
+Master index报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MASTER_INDEX_20260929.md`；UI11报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_LONG_RUNNING_20260929.md`；artifacts见
+`simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`、
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-long-running.json`。
