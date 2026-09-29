@@ -7578,3 +7578,27 @@ same-checkpoint closure、tokenizer implementation equivalence、quantization
 equivalence、MTP root cause或 production readiness。script见
 `simigo2-experimental/scripts/named_source_evidence_bundle.py`；artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-evidence-bundle.json`。
+
+### LAB CYBER TIEL QKV ROW ASSIGNMENT AUDIT PERMUTATION SUPPORTED — 2026-09-29
+
+新增 Hungarian row-norm assignment audit，验证 QKV segment diagnostic中的
+permutation hypothesis。输入为 GGUF Q8_0 dequant和 MLX affine dequant后的
+`attn_qkv` row L2 norms；Q/K各 2048 rows，V4096 sampled to 2048 rows以同shape
+assignment。same-segment assignments全部通过：Q2048 assignment cost mean
+`0.0659900`、matched Pearson `0.5066660`；K2048 cost mean `0.0443534`、matched
+Pearson `0.6598681`；V4096 sample cost mean `0.0866736`、matched Pearson
+`0.5719384`。
+
+cross-segment结果显示 Q/K identity ambiguous：`Q2048 ↔ K2048` assignment cost
+mean `0.0485477`、matched Pearson `0.6513951`；`K2048 ↔ Q2048` cost mean
+`0.0599772`、matched Pearson `0.5675769`。V segment与 Q/K更可区分，V↔Q matched
+Pearson仅 `0.0324263`，V↔K为 `0.0979268`。登记
+`CYBER_TIEL_QKV_ROW_NORM_ASSIGNMENT_PASS`、
+`QKV_ROW_NORM_PERMUTATION_HYPOTHESIS_SUPPORTED`、
+`QK_SEGMENT_IDENTITY_AMBIGUOUS`、`V_SEGMENT_DISTRIBUTIONALLY_SEPARABLE`；状态为
+`QKV_ROW_ASSIGNMENT_AUDIT = PASS_WITH_BOUNDARY / PERMUTATION_HYPOTHESIS_SUPPORTED`。
+
+该 audit只使用 row-norm scalar，不建立 element-level mapping，也不归因 quantizer
+drift。large quantized tensor attribution继续 BLOCKED。script和artifact见
+`simigo2-experimental/scripts/cyber_tiel_qkv_row_assignment_audit.py`、
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-row-assignment-audit.json`。

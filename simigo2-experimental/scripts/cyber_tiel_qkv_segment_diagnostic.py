@@ -105,7 +105,7 @@ def pearson_matrix(left,right):
 def main():
  parser=argparse.ArgumentParser()
  parser.add_argument('--gguf',required=True); parser.add_argument('--mlx-dir',required=True)
- parser.add_argument('--layer',type=int,default=1); parser.add_argument('--output',required=True)
+ parser.add_argument('--layer',type=int,default=1); parser.add_argument('--output',required=True); parser.add_argument('--debug-norms')
  args=parser.parse_args()
  gguf_path=Path(args.gguf).resolve(); mlx_dir=Path(args.mlx_dir).resolve()
  gguf_name=f'blk.{args.layer}.attn_qkv.weight'
@@ -169,6 +169,8 @@ def main():
   'interpretation':'BEST_SEGMENT_ORDER_SUGGESTIVE_BUT_ROW_MAPPING_ABSENT / LAYOUT_UNRESOLVED',
   'rowAssignments':row_assignments,
  }
- Path(args.output).write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
+ Path(args.output).write_text(json.dumps(result,ensure_ascii=False,indent=2,sort_keys=True,default=lambda x:x.tolist() if isinstance(x,np.ndarray) else str(x))+'\n')
+ if args.debug_norms:
+  Path(args.debug_norms).write_text(json.dumps({'ggufBlockNorms':[x.tolist() for x in gguf_block_norms],'mlxBlockNorms':[x.tolist() for x in mlx_block_norms]},ensure_ascii=False,indent=2)+'\n')
 
 if __name__=='__main__': main()
