@@ -7525,3 +7525,24 @@ BLOCKED，直到 canonical conversion mapping解析。Named-source profile V1不
 script与artifact见
 `simigo2-experimental/scripts/cyber_tiel_quantized_drift_pilot.py`、
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json`。
+
+### LAB CYBER TIEL QKV SEGMENT LAYOUT DIAGNOSTIC LAYOUT UNRESOLVED — 2026-09-29
+
+新增 layer1 `attn_qkv` fused segment diagnostic，检验 Matrix V2 quantized pilot中
+cosine接近零的可能原因。假设 GGUF/MLX qkv segment划分为 Q2048、K2048、V4096。
+GGUF Q8_0完整 dequant；MLX `in_proj_qkv`按4-bit/group64 dequant后 transpose。
+使用 block norm correlation、segment permutations和同长度 row assignment audit。
+
+九个 block-norm correlations都接近零。six segment permutations排序中，最佳为
+`(K,Q,V)`，summed block-norm Pearson `0.6063845`；自然 `(Q,K,V)`为
+`0.6049992`，两者仅差 `0.0013853`，不足以确定 segment order。同长度 row
+assignment中，最佳 Pearson max为 `0.1159309`，没有任何 pair达到 `0.50`；因此
+row mapping不成立。登记
+`CYBER_TIEL_QKV_SEGMENT_DIAGNOSTIC_PASS`、
+`BEST_SEGMENT_ORDER_SUGGESTIVE_BUT_ROW_MAPPING_ABSENT` 和 `LAYOUT_UNRESOLVED`；
+状态为 `QKV_SEGMENT_DIAGNOSTIC = PASS_WITH_BOUNDARY / LAYOUT_UNRESOLVED`。
+
+该 diagnostic不支持把 GGUF/MLX elementwise difference归因为 quantizer drift。
+large quantized tensor attribution继续 BLOCKED。script见
+`simigo2-experimental/scripts/cyber_tiel_qkv_segment_diagnostic.py`；artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json`。

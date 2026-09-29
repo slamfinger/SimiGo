@@ -10,7 +10,7 @@ listed backend、model、workload、topology 和 harness boundary 内成立。
 ```text
 RQ1 = PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 RQ2 = PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT
-      / NAMED_SOURCE_QUANTIZED_MAPPING_UNRESOLVED
+      / CYBER_TIEL_QKV_SEGMENT_ORDER_UNRESOLVED
 RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
       / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
@@ -60,6 +60,7 @@ Conformance baseline 也是 `157 PASS / 0 FAIL`。
 | Tensor topology audit | GGUF tensor headers vs MLX safetensors headers; no weight values loaded | text topology PASS; `733/733` GGUF text tensors mapped; known extras `20` nextn + `333` MLX vision logical groups | `simigo2-experimental/scripts/cyber_tiel_tensor_topology_audit.py`; `results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json`; `SIMIGO_LAB_CYBER_TIEL_TENSOR_TOPOLOGY_AUDIT_20260929.md` |
 | F32 control drift audit | 260 shared F32/BF16 control tensors across 40 layers | protocol PASS; no failures; exact tensors `30/260`; max abs diff `101.823`; zero-drift `0/260` | `simigo2-experimental/scripts/cyber_tiel_f32_control_tensor_audit.py`; `results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json`; `SIMIGO_LAB_CYBER_TIEL_F32_CONTROL_DRIFT_AUDIT_20260929.md` |
 | Quantized layout pilot | layer1 Q8_0 vs MLX affine full dequant for qkv/z/out | protocol PASS; all finite; elementwise cosine near zero; positional norm correlation near zero; layout/source unresolved | `simigo2-experimental/scripts/cyber_tiel_quantized_drift_pilot.py`; `results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json`; `SIMIGO_LAB_CYBER_TIEL_QUANTIZED_LAYOUT_PILOT_20260929.md` |
+| QKV segment layout diagnostic | layer1 fused qkv; hypothesized Q2048/K2048/V4096; block norms and row assignments | PASS; layout unresolved; best `(K,Q,V)` `0.6063845` vs natural `(Q,K,V)` `0.6049992`; row assignment max `<0.12` | `simigo2-experimental/scripts/cyber_tiel_qkv_segment_diagnostic.py`; `results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json`; `SIMIGO_LAB_CYBER_TIEL_QKV_SEGMENT_LAYOUT_DIAGNOSTIC_20260929.md` |
 
 判定边界：
 

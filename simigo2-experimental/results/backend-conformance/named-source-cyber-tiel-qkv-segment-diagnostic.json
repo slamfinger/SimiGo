@@ -1,0 +1,234 @@
+{
+  "bestPermutation": {
+    "indices": [
+      1,
+      0,
+      2
+    ],
+    "pearson": 0.6063845062927511,
+    "permutation": [
+      "k2048",
+      "q2048",
+      "v4096"
+    ]
+  },
+  "blockNormCorrelations": {
+    "k2048_vs_k2048": -0.0016966898540515547,
+    "k2048_vs_q2048": 0.007692993198017973,
+    "k2048_vs_v4096": 0.010289366313410991,
+    "q2048_vs_k2048": 0.0014683803050277273,
+    "q2048_vs_q2048": -0.010748864645232396,
+    "q2048_vs_v4096": 0.005813083397717108,
+    "v4096_vs_k2048": -0.011937465572616095,
+    "v4096_vs_q2048": -0.008147192214798054,
+    "v4096_vs_v4096": -0.01771188861025668
+  },
+  "boundary": "ROW_BLOCK_NORM_AND_ROW_CORRELATION_DIAGNOSTIC / LAYOUT_NOT_RESOLVED / NO_QUANTIZER_DRIFT_CLAIM",
+  "ggufPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+  "ggufTensor": "blk.1.attn_qkv.weight",
+  "interpretation": "BEST_SEGMENT_ORDER_SUGGESTIVE_BUT_ROW_MAPPING_ABSENT / LAYOUT_UNRESOLVED",
+  "layer": 1,
+  "layoutResolved": false,
+  "mlxPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "mlxQuantization": {
+    "bits": 4,
+    "groupSize": 64
+  },
+  "mlxTensor": "language_model.model.layers.1.linear_attn.in_proj_qkv",
+  "naturalOrderSummedPearson": -0.030157443109540633,
+  "protocolVersion": "LAB.NAMED_SOURCE.QKV.SEGMENT.DIAGNOSTIC.V1",
+  "rowAssignments": [
+    {
+      "bestPearsonMax": 0.11593092147670354,
+      "bestPearsonMean": 0.07364337224041609,
+      "bestPearsonMedian": 0.07454669420181445,
+      "countAtLeast050": 0,
+      "countAtLeast080": 0,
+      "ggufSegment": "q2048",
+      "mlxSegment": "q2048",
+      "rowCount": 2048
+    },
+    {
+      "bestPearsonMax": 0.10986538201259943,
+      "bestPearsonMean": 0.07360633424178342,
+      "bestPearsonMedian": 0.07454383235393461,
+      "countAtLeast050": 0,
+      "countAtLeast080": 0,
+      "ggufSegment": "q2048",
+      "mlxSegment": "k2048",
+      "rowCount": 2048
+    },
+    {
+      "bestPearsonMax": null,
+      "bestPearsonMean": null,
+      "bestPearsonMedian": null,
+      "countAtLeast050": null,
+      "countAtLeast080": null,
+      "ggufSegment": "q2048",
+      "mlxSegment": "v4096",
+      "rowCount": 0,
+      "skipped": "FEATURE_LENGTH_MISMATCH"
+    },
+    {
+      "bestPearsonMax": 0.10873067870204196,
+      "bestPearsonMean": 0.0739030537955244,
+      "bestPearsonMedian": 0.07478448644048163,
+      "countAtLeast050": 0,
+      "countAtLeast080": 0,
+      "ggufSegment": "k2048",
+      "mlxSegment": "q2048",
+      "rowCount": 2048
+    },
+    {
+      "bestPearsonMax": 0.10982514914444984,
+      "bestPearsonMean": 0.07401967630458509,
+      "bestPearsonMedian": 0.07473094623065477,
+      "countAtLeast050": 0,
+      "countAtLeast080": 0,
+      "ggufSegment": "k2048",
+      "mlxSegment": "k2048",
+      "rowCount": 2048
+    },
+    {
+      "bestPearsonMax": null,
+      "bestPearsonMean": null,
+      "bestPearsonMedian": null,
+      "countAtLeast050": null,
+      "countAtLeast080": null,
+      "ggufSegment": "k2048",
+      "mlxSegment": "v4096",
+      "rowCount": 0,
+      "skipped": "FEATURE_LENGTH_MISMATCH"
+    },
+    {
+      "bestPearsonMax": null,
+      "bestPearsonMean": null,
+      "bestPearsonMedian": null,
+      "countAtLeast050": null,
+      "countAtLeast080": null,
+      "ggufSegment": "v4096",
+      "mlxSegment": "q2048",
+      "rowCount": 0,
+      "skipped": "FEATURE_LENGTH_MISMATCH"
+    },
+    {
+      "bestPearsonMax": null,
+      "bestPearsonMean": null,
+      "bestPearsonMedian": null,
+      "countAtLeast050": null,
+      "countAtLeast080": null,
+      "ggufSegment": "v4096",
+      "mlxSegment": "k2048",
+      "rowCount": 0,
+      "skipped": "FEATURE_LENGTH_MISMATCH"
+    },
+    {
+      "bestPearsonMax": 0.07856234448757776,
+      "bestPearsonMean": 0.05316443442365963,
+      "bestPearsonMedian": 0.05299665056017386,
+      "countAtLeast050": 0,
+      "countAtLeast080": 0,
+      "ggufSegment": "v4096",
+      "mlxSegment": "v4096",
+      "rowCount": 2048
+    }
+  ],
+  "segmentHypothesis": [
+    {
+      "length": 2048,
+      "name": "q2048",
+      "start": 0
+    },
+    {
+      "length": 2048,
+      "name": "k2048",
+      "start": 2048
+    },
+    {
+      "length": 4096,
+      "name": "v4096",
+      "start": 4096
+    }
+  ],
+  "segmentPermutationsRanked": [
+    {
+      "indices": [
+        1,
+        0,
+        2
+      ],
+      "pearson": 0.6063845062927511,
+      "permutation": [
+        "k2048",
+        "q2048",
+        "v4096"
+      ]
+    },
+    {
+      "indices": [
+        0,
+        1,
+        2
+      ],
+      "pearson": 0.6049992039917558,
+      "permutation": [
+        "q2048",
+        "k2048",
+        "v4096"
+      ]
+    },
+    {
+      "indices": [
+        0,
+        2,
+        1
+      ],
+      "pearson": -0.23246372168435103,
+      "permutation": [
+        "q2048",
+        "v4096",
+        "k2048"
+      ]
+    },
+    {
+      "indices": [
+        2,
+        0,
+        1
+      ],
+      "pearson": -0.23365061854585287,
+      "permutation": [
+        "v4096",
+        "q2048",
+        "k2048"
+      ]
+    },
+    {
+      "indices": [
+        1,
+        2,
+        0
+      ],
+      "pearson": -0.3740516000512715,
+      "permutation": [
+        "k2048",
+        "v4096",
+        "q2048"
+      ]
+    },
+    {
+      "indices": [
+        2,
+        1,
+        0
+      ],
+      "pearson": -0.3766237992137689,
+      "permutation": [
+        "v4096",
+        "k2048",
+        "q2048"
+      ]
+    }
+  ],
+  "status": "PASS_WITH_BOUNDARY"
+}
