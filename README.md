@@ -68,7 +68,7 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.0-beta RC` |
+| Version | `v2.0.0-beta.4` (build 7, 基线 main@5fa3d38) |
 | Stage | Experimental Beta / Research Preview |
 | Platform | Apple Silicon macOS |
 | Primary execution substrate | MLX / `mlx-swift-lm` |
@@ -420,7 +420,9 @@ Backend / Model Conformance
 
 ### 当前工作
 
-- v2.0 Beta release validation 与外部反馈收敛
+- `v2.0.0-beta.4` 重建（build 7）：FORK-3 全线 + Storage/Lifecycle hardening
+  + 性能收敛六项（Full Gate 111/0，见 docs/audit/PERF_CONVERGENCE_20260929.md）
+- Beta release validation 与外部反馈收敛
 
 ### 后续方向
 

@@ -5,7 +5,56 @@
 > State 前缀池（跨会话前缀 KV 共享），真机实测池命中轮 201ms vs 冷轮
 > 16,951ms（84 倍），重启 warm。见 v2.0.0-beta.2 Release 页。
 
-**测试版（Beta）** · 分支 `release/v2.0.0-beta` · tag `v2.0.0-beta` · 基线 main@632b1d9
+## v2.0.0-beta.4 增量（2026-09-29，build 7，基线 main@5fa3d38）
+
+**性质**：beta.3（`87eb6d9`）之后经过完整 Execution State + Fork + Storage/
+Lifecycle + Performance convergence 验证的下一 beta 增量。不是"性能优化版"——
+优化是验证与工程成熟度的一部分，产品定义不变。
+
+**用户可见 delta（beta.3 → 5fa3d38，72 commits / 31 产品提交）**：
+
+- **FORK-3 全线落地**（STEP-8/9/10）：`forkSessionBranch` 插件、
+  ExecutionBindingRegistry 日常路径绑定、有序多 key 事务 gate、
+  checkpoint generation + 内容哈希 commit 证明（fail-closed）。
+- **正确性修复**：`JSONValue.any` 不再将客户端 JSON 整数 0/1 折叠为布尔
+  （`1524859`，差分等价测试锁死；此前 Responses 路径已潜伏）。
+- **Storage/Lifecycle hardening**：retention 字节预算上界（`803af14`）、
+  阻止 pending generate 期间 suspend（`c4f4660`）、save/load/delete 纳入
+  generation gate（`62ef121`）、streamed SHA-256 save receipt（P2-ES-02）。
+- **性能收敛**（Full Gate 验证）：工具参数单次序列化、Responses envelope
+  直读、Chat messages 零序列化转换、PrefixPool 边界哈希 cumulative 查表
+  （237k 实测 40.4→0.76ms，消除平方增长）、retention 预算前置门
+  （常态 19.7→1.25ms）。
+
+**验证状态**：CPU-only 回归 98/98 演进全程绿；Full Gate **111 executed /
+8 skipped / 0 failures @440.6s**（BranchFork、PrefixPoolDailyPathE2E、
+OversizedRuntimeE2E、GenerationLifecycleRace 全部实跑）。全程矩阵见
+`docs/audit/PERF_CONVERGENCE_20260929.md`。
+
+**引擎依赖 provenance**：`SimiGo2Experimental` 为本地包
+（`../SimiGo-Lab/simigo2-experimental`，无 revision pin）。beta.4 binary
+的引擎源码锚 = **Lab Sources @ `3d902f2`**（Full Gate 实际验证的源码；
+Lab HEAD `8fb16dd` 为 docs-only，不承担代码 provenance）。构建期间 Lab
+工作树冻结。`mlx-swift-lm` 依赖按 Package.resolved 钉
+`release/v2.0.0-beta-ml`（6d01a13c），beta.4 未变更。
+
+**已知限制（beta.4 事实刷新）**：
+
+1. ~~超规模路径的 usage 计数为 0~~ **已修复**：`GenerationUsageReport`
+   已接入（prompt/generation tokens 与实测 tokensPerSecond）。
+2. 超规模生成不可取消（贪心解码）；建议请求侧限制 max_tokens。（不变）
+3. 单超大模型会话串行（内存本质约束）；fork/branch API 对超规模模型
+   返回不支持。（不变）
+4. ~~超规模模型无 KV cache——每轮全序列重算~~ **表述刷新**：续接轮已走
+   Execution State raw continuation（只消费新增消息）；剩余限制是深上下文
+   延迟特征，以 beta.4 真机记录为准。
+5. 流式输出按 token 文本块推送；`tokensPerSecond` 等遥测为直连路径
+   实测值。（不变）
+
+---
+
+**测试版（Beta）** · tag `v2.0.0-beta.4` · 基线 main@5fa3d38（前序：
+beta.2 基线 main@632b1d9，分支 `release/v2.0.0-beta`，tag `v2.0.0-beta`）
 
 ## 一句话
 

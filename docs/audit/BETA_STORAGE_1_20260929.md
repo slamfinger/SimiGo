@@ -132,3 +132,19 @@ Regression runs used a temporary 256 GiB override so the audit did not destroy
 the observed baseline. The default policy takes effect on the next production
 runtime start without overrides: branch checkpoints converge to 64 GiB and the
 prefix pool converges to 16 GiB as new exports occur.
+
+## Delta receipt (2026-09-29, post-audit)
+
+`b37d88f` perf(retention) — committed after this audit's registration — adds a
+pre-budget gate to `BranchCheckpointRetention.enforce`: paired bytes are summed
+via `fileSizeKey` and the metadata decode section is skipped entirely while the
+total is at or under the byte budget. The eviction trigger remains strictly
+`retainedBytes > byteBudget`, so the under-budget early return is
+outcome-equivalent by construction. Accepted trade-off: pairs whose meta
+exists but fails to decode are no longer cleaned while under budget (deferred
+to the first over-budget sweep; the load path fails loudly on bad sidecars).
+Behavior equivalence is locked by `StorageRetentionTests` (+3 differential
+probes: garbage-meta pairs survive under budget and are removed over budget;
+exact-budget boundary takes the pre-budget exit) and by the full-suite gate
+(111 executed / 0 failures @5fa3d38). This receipt covers the delta; the
+audit body above describes the pre-gate mechanism it measured.
