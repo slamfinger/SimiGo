@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A boundary audit已通过 external review，但 review decision尚未被 explicit human/repository registration；PALACE-1和 Phase B继续 closed。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A boundary audit已通过 external review，但 review decision尚未被 explicit human/repository registration；Phase B opening draft已准备，但仍未激活。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7833,3 +7833,24 @@ Phase B must inherit six non-blocking conditions:
 当前唯一 gate 是 explicit human/repository registration of the review decision。
 登记通过前，不开 PALACE-1 Phase B，不做存储选型，不实现 Palace database，
 不实现 Llama adapter。
+
+### LAB PALACE1 PHASE B OPENING DRAFT READY — 2026-09-30
+
+Participant draft:
+`docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_DRAFT_20260930.md`。
+
+This is only a proposal, not Phase B activation。它提出 Phase B 主问题：
+
+> 一个 Execution 的最小 durable semantic unit 是什么，才能恢复 execution
+> semantics，而不把 Runtime Binding、Backend State 或 Physical Representation
+> 错误提升为 Durable Semantic State？
+
+Draft subquestions cover durable identity / tombstone, continuation versus
+transcript, semantic snapshot versus lifecycle history, separate binding relation,
+representation availability / corruption, crash windows, and discarded-state
+semantics。It explicitly excludes storage selection, Palace schema, persistence
+format, Llama adapter, oversized special semantics, and performance benchmark。
+
+状态保持 `PARTICIPANT_DRAFT / PHASE_B_NOT_OPEN / AWAITING_PHASE_A_REGISTRATION`。
+当前 gate 不变：先 explicit human/repository registration Phase A review PASS，
+然后才能注册并激活 Phase B。

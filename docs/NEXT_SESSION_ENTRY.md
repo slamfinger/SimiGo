@@ -1,6 +1,6 @@
 # SimiGo-Lab Next Session Entry
 
-登记时间：2026-09-29  
+登记时间：2026-09-30
 状态：`PHASE_A_REVIEW_PASS / REGISTRATION_REQUIRED / PHASE_B_CLOSED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
@@ -15,7 +15,9 @@
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_20260929.md`
 6. 读 Phase A external review：
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_EXTERNAL_REVIEW_20260930.md`
-7. 如需原始 opening，再读：
+7. 读 Phase B participant draft（未激活）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_DRAFT_20260930.md`
+8. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -26,7 +28,7 @@ branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTRATION PENDING
-PALACE-1 = GATED / MINIMAL DURABLE UNIT NOT STARTED
+PALACE-1 = DRAFT READY / STILL CLOSED
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
 next mode = HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
@@ -64,6 +66,13 @@ next mode = HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
   representation content claim, separate binding persistence boundary,
   crash-consistency semantics, and the discarded-binding gap.
 
+2026-09-30 Phase B draft:
+
+- A PALACE-1 minimal durable unit opening draft is now available.
+- It is a participant proposal only.
+- Phase B remains closed until the Phase A review decision is explicitly
+  registered.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -86,7 +95,9 @@ Canonical route document:
 2. Only after explicit repository registration may Phase B open。
 3. Phase B must formalize PALACE-1 as the minimal durable unit question, using the
    Phase A boundary；it must not select SQLite / KV / event log / remote storage。
-4. BACKEND-1 remains separately scoped until PALACE-1 opens。
+4. The draft may be reviewed or revised before activation, but activation still
+   requires explicit registration。
+5. BACKEND-1 remains separately scoped until PALACE-1 opens。
 
 登记时必须继续区分：
 
