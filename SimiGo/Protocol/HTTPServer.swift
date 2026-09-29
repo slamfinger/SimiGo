@@ -1798,27 +1798,6 @@ public final class HTTPServer: @unchecked Sendable {
         return json
     }
 
-    func jsonValueDictionary(
-        _ value: JSONValue
-    ) -> [String: Any]? {
-
-        guard
-            let data =
-                try? JSONEncoder().encode(
-                    value
-                ),
-
-            let object =
-                try? JSONSerialization.jsonObject(
-                    with: data
-                ) as? [String: Any]
-        else {
-            return nil
-        }
-
-        return object
-    }
-
     // MARK: - HTTP Parsing
 
     private func readRequest(

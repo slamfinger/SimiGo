@@ -1711,9 +1711,12 @@ extension HTTPServer {
 
         for message in messages {
 
+            // 直接在 JSONValue 层读 role（此前每条消息走一次
+            // JSONValue → JSONEncoder → JSONSerialization 全量往返，只为取
+            // 一个字段）。非 object 消息与旧 jsonValueDictionary 返回 nil
+            // 的分支语义一致：进 history。
             guard
-                let object =
-                    jsonValueDictionary(message)
+                case .object(let object) = message
             else {
                 history.append(message)
                 enteredHistory = true
@@ -1721,7 +1724,7 @@ extension HTTPServer {
             }
 
             let role =
-                object["role"] as? String
+                object["role"]?.string
 
             if !enteredHistory &&
                 (role == "system" || role == "developer") {
