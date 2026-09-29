@@ -6787,3 +6787,31 @@ cross-hardware claim。
 `docs/00-governance/SIMIGO_LAB_MLX_SEGMENT_PHASE_PROFILE_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-segment-phase-attribution-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-segment-phase-p64-s8.json`、`...p64-s16.json`。
+
+### LAB MLX PHASE6G SEGMENT PHASE REPLICATION PASS — 2026-09-29
+
+对 PHASE6F 的 safe prefix-64 segment phase profile增加两个 replicates，使 segment
+size `8/16` 的 combined样本达到每 size `n=3`。所有 source reports PASS，generated
+token相同（`26753`），max swap `0 MiB`，peak footprint低于 30GiB gate。八个 checks
+全部 PASS，包括 size coverage、combined n=3、zero swap、under 30GiB、三个 paired
+`segment16 - segment8` total deltas全正、三个 forward sum deltas全正。
+
+Combined means显示 segment 16 total `12,870.913ms`高于 segment 8
+`10,605.054ms`。materialize sum接近（`8,733.775 vs 8,618.143ms`），但 forward sum
+`3,977.427ms`显著高于 segment 8 的 `1,869.628ms`；release sum
+`102.594 vs 89.624ms`也更高。三个 paired total deltas为
+`+2,223.551 / +2,428.887 / +2,145.139ms`，forward sum deltas为
+`+2,055.053 / +2,201.428 / +2,066.917ms`，方向全部一致。per-layer forward mean约
+`38.951 vs 82.863ms`；release per transition约 `14.937 vs 34.198ms`。登记
+`SEGMENT16_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES`、
+`SEGMENT16_FORWARD_SUM_SLOWER_IN_ALL_PAIRED_SAMPLES` 和
+`TRANSITION_COUNT_ALONE_INSUFFICIENT`；状态为
+`PHASE6G = PASS_WITH_BOUNDARY / SEGMENT_PHASE_REPLICATION_COMPLETE / N3_PER_SIZE`。
+combined n=3仍小，且 segment size同时改变每 segment层数、graph和release count；
+不建立最优 segment size、throughput曲线、warm-KV retention、production
+performance或cross-backend/cross-hardware claim。GPU timeout cell仍未重试。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6G_SEGMENT_PHASE_REPLICATION_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6g-segment-phase-replication-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-replicate-p64-s*-b*.json`。

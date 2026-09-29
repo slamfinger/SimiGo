@@ -378,6 +378,39 @@ results/backend-conformance/mlx-segment-phase-p64-s16.json
 results/backend-conformance/mlx-segment-phase-attribution-summary.json
 ```
 
+### Phase-6G segment phase replication
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / SEGMENT_PHASE_REPLICATION_COMPLETE / N3_PER_SIZE
+```
+
+将 PHASE6F 的 safe prefix-64 phase profile扩展到 combined每 size `n=3`：
+segment size `8/16`，no-action phase probe。八个 checks全部 PASS；所有 reports
+PASS、generated token相同、zero swap、低于 30GiB gate。
+
+Combined `n=3` means：
+
+```text
+total:           segment8 10,605.054ms vs segment16 12,870.913ms
+materialize sum: segment8  8,618.143ms vs segment16  8,733.775ms
+forward sum:     segment8  1,869.628ms vs segment16  3,977.427ms
+release sum:     segment8     89.624ms vs segment16    102.594ms
+```
+
+三个 paired `segment16 - segment8` total deltas全为正
+（`+2,223.551 / +2,428.887 / +2,145.139ms`），forward sum deltas全为正
+（`+2,055.053 / +2,201.428 / +2,066.917ms`）。per-layer forward mean约
+`38.951 vs 82.863ms`；release per transition约 `14.937 vs 34.198ms`。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-segment-phase-replicate-p64-s*-b*.json
+results/backend-conformance/mlx-phase6g-segment-phase-replication-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -391,11 +424,11 @@ results/backend-conformance/mlx-segment-phase-attribution-summary.json
    cross-backend closure。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
    PHASE6B targeted replication、PHASE6C token-budget replication、PHASE6E
-   post-hoc distribution analysis和PHASE6F segment phase attribution也已通过；
-   PHASE6D将三个 cells扩展到 n=5，但 `p8/t2/segment16` 因 Metal GPU timeout保持
-   n=3。statistical factorization、更多 replicates、完整 n=5 matrix、
-   kernel-level attribution、warm-KV/segment-residency policy和cross-backend cost
-   normalization仍未完成。
+   post-hoc distribution analysis、PHASE6F segment phase attribution和PHASE6G
+   segment phase replication也已通过；PHASE6D将三个 cells扩展到 n=5，但
+   `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。statistical factorization、
+   更多 replicates、完整 n=5 matrix、kernel-level attribution、
+   warm-KV/segment-residency policy和cross-backend cost normalization仍未完成。
 
 ## Non-claims
 
@@ -416,6 +449,7 @@ MLX Phase-6C mean已建立稳定 token-cost model
 MLX Phase-6D GPU timeout已定位为 Execution State语义错误
 MLX Phase-6E IQR outlier已建立因果诊断
 MLX Phase-6F transition count是 latency的唯一解释
+MLX Phase-6G replicated forward差异已定位到单一 kernel
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的
