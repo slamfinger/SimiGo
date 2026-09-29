@@ -7440,3 +7440,32 @@ shared Ornith/Huihui lineage CyberTiel publication pair profile。报告见
 script见
 `simigo2-experimental/scripts/named_source_lineage_audit.py`；artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-lineage-audit.json`。
+
+### LAB CYBER TIEL TENSOR TOPOLOGY AUDIT PASS WITH BOUNDARY — 2026-09-29
+
+新增只读 GGUF/MLX tensor topology audit，解析 GGUF header/metadata/tensor
+headers和 MLX safetensors index/headers，不读取、不反量化、不比较 weight values。
+GGUF共 753 tensors；MLX snapshot共 2010 physical tensors，聚合 quantized
+`weight/scales/biases` 后为 1066 logical groups。
+
+文本模型 topology完全对应：GGUF global 3个、regular `blk.0–39` 730个，共
+`733/733` 映射到 MLX logical groups。regular block结构为 40层；其中 10个
+full-attention layers各 16 tensors、30个 linear-attention layers各 19 tensors。
+MLX logical groups的 `weight/scales/biases` 聚合规则与当前 oQ4e quantization
+layout一致。
+
+已知差异全部被显式隔离：GGUF-only `blk.40` nextn/MTP-related block共 20
+tensors；MLX-only vision/projector stack共 333 logical groups。没有未解释的
+text-model missing/unmapped tensors。八项 checks全部 PASS；状态为
+`TENSOR_TOPOLOGY_AUDIT = PASS_WITH_BOUNDARY / TEXT_MODEL_TOPOLOGY_MATCH`。登记
+`CYBER_TIEL_TEXT_MODEL_TENSOR_TOPOLOGY_MATCH`、
+`GGUF_NEXTN_BLOCK_ISOLATED_AS_GGUF_ONLY`、
+`MLX_VISION_STACK_ISOLATED_AS_MLX_ONLY` 和
+`NO_WEIGHT_BYTES_OR_DEQUANTIZED_VALUES_COMPARED`。
+
+本 audit不建立 same-checkpoint closure或 dequantized equality。全仓 Swift
+verification为 161 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_TENSOR_TOPOLOGY_AUDIT_20260929.md`；
+script见
+`simigo2-experimental/scripts/cyber_tiel_tensor_topology_audit.py`；artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json`。

@@ -10,7 +10,7 @@ listed backend、model、workload、topology 和 harness boundary 内成立。
 ```text
 RQ1 = PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 RQ2 = PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT
-      / NAMED_SOURCE_LINEAGE_AUDIT_TOKENIZER_SUBSTRATE_PASS
+      / NAMED_SOURCE_TENSOR_TOPOLOGY_TEXT_MODEL_MATCH
 RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
       / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
@@ -57,6 +57,7 @@ Conformance baseline 也是 `157 PASS / 0 FAIL`。
 | Full-matrix margin seed43 reproduction | same protocol and fixed MLX trajectory; seed43 LLAMA compare | gate PASS and reproduced exactly: top1 `133/139`, containment `139/139`, max rank `2`, flips `6`; per-position outcomes `139/139` identical | `results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all-seed43.json`; `results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json`; `SIMIGO_LAB_CYBER_TIEL_FULL_MATRIX_MARGIN_SEED43_REPRODUCTION_20260929.md` |
 | Named-source conformance profile V1 | executable profile over seed42/43 margin reports; hard gates for two seeds, top16 containment, rank≤2, identical per-position outcomes | profile PASS; seeds `2`; aggregate containment `278/278`; max rank `2`; flips `12`; seed outcomes identical | `results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json`; `SIMIGO_LAB_NAMED_SOURCE_CONFORMANCE_PROFILE_V1_20260929.md` |
 | Named-source lineage audit | GGUF metadata vs MLX config/README/tokenizer; Matrix V2 token IDs | substrate/lineage PASS; base vocab `248044/248044`, added `26/26`, merges `247587/247587`, chat template exact; checkpoint identity OPEN | `simigo2-experimental/scripts/named_source_lineage_audit.py`; `results/backend-conformance/named-source-cyber-tiel-lineage-audit.json`; `SIMIGO_LAB_NAMED_SOURCE_LINEAGE_AUDIT_20260929.md` |
+| Tensor topology audit | GGUF tensor headers vs MLX safetensors headers; no weight values loaded | text topology PASS; `733/733` GGUF text tensors mapped; known extras `20` nextn + `333` MLX vision logical groups | `simigo2-experimental/scripts/cyber_tiel_tensor_topology_audit.py`; `results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json`; `SIMIGO_LAB_CYBER_TIEL_TENSOR_TOPOLOGY_AUDIT_20260929.md` |
 
 判定边界：
 
