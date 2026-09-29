@@ -7660,3 +7660,34 @@ pressure，并记录 host resource context。
 报告与artifact见
 `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_20260929.md`、
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5.json`。
+
+### LAB MLX EXECSTATE SCALE N5 PROCESS CLEAN PASS — 2026-09-29
+
+针对上一轮 host-concurrency boundary，追加 process-clean isolation rerun。
+run前后均确认无 `llama-server` / `simigo2ctl` 进程、无 `18080` listener；
+before residual host swap为 `4481.19 MiB`、after为 `4270.44 MiB`，
+`vm.memory_pressure` from `0` to `452` 仅原样记录。run内 artifact记录
+max swap `0 MiB`，peak footprint `7155 MiB`，segment transitions `202`。
+
+本轮 semantic checks `3/3 PASS`，15个 paired samples全部 semantic identical。
+paired `state−direct` mean/median/stdev：
+
+```text
+8   = +8.599517 / -8.149541 / 54.475544 ms
+64  = +94.238883 / +102.098375 / 66.207528 ms
+256 = +349.044725 / +313.837041 / 312.741558 ms
+```
+
+登记 `MLX_EXECSTATE_SCALE_N5_PROCESS_CLEAN_PASS`、
+`PROCESS_CLEAN_ISOLATION_PASS`、
+`PREFIX8_STATE_DIRECT_DELTA_NEAR_ZERO`、
+`PREFIX64_AND_256_POSITIVE_MEAN_DELTA_OBSERVED` 和
+`NO_PERFORMANCE_BENCHMARK_CLAIM`。process-clean结果使 longer-prefix positive
+delta更值得追踪，但仍未分离 segment materialization、cache behavior、scheduling
+和 harness recompute，不能建立 hot-path overhead或 performance curve。state
+local bookkeeping mean保持 `0.009783–0.012891ms`。
+
+结果、process context和报告见
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation.json`、
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation-host-context.json`、
+`docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_PROCESS_CLEAN_20260929.md`。
