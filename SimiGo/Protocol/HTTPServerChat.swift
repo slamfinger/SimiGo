@@ -721,27 +721,19 @@ extension HTTPServer {
         [JSONValue]?,
         ModelConfig
     )? {
+        // 与 Responses 的 input 同款零序列化转换（TypesBridge.JSONValue.any）：
+        // 请求体已完整解析过一次，messages 子树不再走 data → JSONDecoder
+        // 的全量重复往返。逐元素 any 转换与旧解码路径对所有 JSON 类型
+        // （string/bool/number/null/object/array、非 object 元素、空数组、
+        // 非 array messages）行为一致。
         guard
-            let rawMessages =
-                json["messages"],
-
-            let messageData =
-                try? JSONSerialization.data(
-                    withJSONObject:
-                        rawMessages
-                ),
-
-            let messages =
-                try? JSONDecoder()
-                    .decode(
-                        [JSONValue].self,
-                        from: messageData
-                    ),
-
-            !messages.isEmpty
+            let rawMessages = json["messages"] as? [Any],
+            !rawMessages.isEmpty
         else {
             return nil
         }
+
+        let messages = rawMessages.map { JSONValue.any($0) }
 
         var tools:
             [JSONValue]?
