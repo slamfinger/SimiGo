@@ -7499,3 +7499,29 @@ same-checkpoint interpretation。协议初版错误读取 GGUF tensor data offse
 script见
 `simigo2-experimental/scripts/cyber_tiel_f32_control_tensor_audit.py`；artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json`。
+
+### LAB CYBER TIEL QUANTIZED LAYOUT PILOT LAYOUT UNRESOLVED — 2026-09-29
+
+新增 layer1 Q8_0 vs MLX affine quantized tensor layout pilot，选取 `attn_qkv ↔
+in_proj_qkv`、`attn_gate ↔ in_proj_z`、`ssm_out ↔ out_proj`。GGUF Q8_0完整
+dequant；MLX通过 `mx.dequantize`按各自 group size/bits完整 dequant。三个 tensors
+均 finite，protocol PASS。
+
+Raw elementwise comparison显示 mean abs diff约 `0.0169–0.0178`，max abs diff约
+`0.293–0.627`，但 cosine/pearson接近零：
+`0.000224 / 0.000156 / 0.000093`。positional row/column norm correlation也接近
+零；sorted magnitude correlation则为 `0.660–0.982`。因此当前 mapping不能建立
+elementwise correspondence；可能原因包括 GGUF fused group order、MLX projection
+grouping、transpose/packing约定或 artifact source差异。登记
+`CYBER_TIEL_Q8_VS_MLX_QUANTIZED_PILOT_PASS`、
+`TENSOR_ELEMENT_MAPPING_UNRESOLVED` 和 `QUANTIZER_DRIFT_NOT_ATTRIBUTABLE`；状态为
+`QUANTIZED_DRIFT_PILOT = PASS_WITH_BOUNDARY / LAYOUT_OR_SOURCE_UNRESOLVED`。
+
+该结果不得解释为 quantizer drift。large quantized tensor dequant attribution保持
+BLOCKED，直到 canonical conversion mapping解析。Named-source profile V1不受影响，
+因为其 gate基于 fixed-trajectory output behavior，不假设 weight element mapping。
+报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_QUANTIZED_LAYOUT_PILOT_20260929.md`；
+script与artifact见
+`simigo2-experimental/scripts/cyber_tiel_quantized_drift_pilot.py`、
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json`。
