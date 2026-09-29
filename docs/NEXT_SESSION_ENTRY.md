@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`A_AND_DRAFT_REVIEW_PASS / EXPLICIT_REGISTRATION_REQUIRED / PHASE_B_CLOSED`
+状态：`PHASE_B_OPEN / CODE_LEVEL_AUDIT_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -15,11 +15,13 @@
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_20260929.md`
 6. 读 Phase A external review：
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_EXTERNAL_REVIEW_20260930.md`
-7. 读 Phase B participant draft（未激活）：
+7. 读 registered Phase B opening：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_DRAFT_20260930.md`
 8. 读 Phase B draft review：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_DRAFT_EXTERNAL_REVIEW_20260930.md`
-9. 如需原始 opening，再读：
+9. 读 Phase B opening registration：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_OPENING_REGISTRATION_20260930.md`
+10. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -29,11 +31,11 @@
 branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
-architecture contract = PHASE A REVIEW PASS / REGISTRATION PENDING
-PALACE-1 = DRAFT READY / STILL CLOSED
+architecture contract = PHASE A REVIEW PASS / REGISTERED
+PALACE-1 = OPEN / CODE_LEVEL_AUDIT_NEXT
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = EXPLICIT_HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = PHASE_B_CODE_LEVEL_AUDIT / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -83,6 +85,14 @@ next mode = EXPLICIT_HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 - One explicit human registration can approve both the Phase A PASS and the
   reviewed Phase B opening.
 
+2026-09-30 explicit registration:
+
+- Human instruction: `登记两项 PASS，并激活 Phase B opening。`
+- Phase A review PASS is registered.
+- Phase B draft review PASS is registered.
+- The reviewed Phase B draft is activated as the PALACE-1 opening.
+- Phase B is now open only for code-level architecture audit.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -100,13 +110,11 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of:
-   - Phase A review `PASS / REGISTRATION_REQUIRED`;
-   - Phase B draft review `PASS / ACTIVATION_REQUIRED`。
-2. On approval, register the reviewed draft as the PALACE-1 Phase B opening。
-3. Phase B must use the Phase A boundary；it must not select SQLite / KV /
-   event log / remote storage。
-4. BACKEND-1 remains separately scoped until PALACE-1 opens。
+1. Execute the registered Phase B code-level audit。
+2. Answer the seven opening subquestions B1–B7 using current code evidence。
+3. Keep the Phase A D/R/P/O/T boundary。
+4. Do not select SQLite / KV / event log / remote storage。
+5. BACKEND-1 remains separately scoped until the Phase B boundary is registered。
 
 登记时必须继续区分：
 

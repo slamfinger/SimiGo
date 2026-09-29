@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A audit和 Phase B opening draft均已通过 external review，但都等待 explicit human/repository registration；Phase B继续 closed。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A PASS和 Phase B opening draft已由 explicit human registration确认；PALACE-1 Phase B已打开，当前只做 code-level architecture audit。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7884,3 +7884,34 @@ Phase B draft review = PASS / ACTIVATION_REQUIRED
 Phase B              = STILL CLOSED
 Current blocker      = explicit human/repository registration
 ```
+
+### LAB PALACE1 PHASE B OPENING REGISTERED — 2026-09-30
+
+Human approval received:
+
+```text
+登记两项 PASS，并激活 Phase B opening。
+```
+
+Registration artifact:
+`docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_OPENING_REGISTRATION_20260930.md`。
+
+Registered facts：
+
+```text
+Phase A review PASS       = REGISTERED
+Phase B draft review PASS = REGISTERED
+PALACE-1 Phase B          = OPEN
+Current gate              = code-level architecture audit
+```
+
+Registered opening research question：
+
+> 在 Phase A 边界内，一个 Execution 的最小 durable semantic unit 是什么，才能在
+> 进程退出、runtime binding 失效或 Physical Representation 不可用后恢复 execution
+> semantics，而不把 Runtime Binding、Backend State 或 Physical Representation
+> 错误提升为 Durable Semantic State？
+
+This authorization does not select SQLite / KV / event log / remote storage, define
+a Palace schema, choose a persistence format, implement a Llama adapter, add
+oversized-specific semantics, or authorize performance benchmarking。

@@ -1,13 +1,13 @@
 # PALACE-1 Phase B Opening Draft — Minimal Durable Unit
 
-日期：2026-09-30  
-状态：`PARTICIPANT_DRAFT / PHASE_B_NOT_OPEN / AWAITING_PHASE_A_REGISTRATION`  
-前置：Phase A review = `PASS / REGISTRATION_REQUIRED`  
-性质：proposal only；不是 registration，不是 Phase B activation
+日期：2026-09-30\
+状态：`REGISTERED / PHASE_B_OPEN / CODE_LEVEL_AUDIT_NEXT`\
+前置：Phase A review 与 Phase B draft review均已 explicit human registration\
+性质：registered opening；仅授权 architecture audit，不授权实现或存储选型
 
-本文只准备 registration 后可立即评审的 Phase B opening。它不改变 Phase B 的
-closed 状态，不选择 SQLite / KV / event log / remote，不实现 Palace database，
-不实现 Llama adapter。
+本文原为 participant draft，现经 explicit human registration 激活为 Phase B
+opening。它只授权 Phase B code-level architecture audit，不选择 SQLite / KV /
+event log / remote，不实现 Palace database，不实现 Llama adapter。
 
 ## 1. Proposed research question
 
@@ -167,15 +167,16 @@ Phase B may close its first audit only if it produces:
 ```text
 Phase A review PASS
       ↓
-explicit human/repository registration   ← current gate
+explicit human/repository registration   = REGISTERED 2026-09-30
       ↓
-Phase B opening registration
+Phase B opening registration             = REGISTERED 2026-09-30
       ↓
-Phase B code-level audit
+Phase B code-level audit                 ← current gate
       ↓
 external review
       ↓
 explicit registration
 ```
 
-Until the current gate is registered, this draft remains only a participant proposal.
+The opening is registered. The next required artifact is the Phase B code-level
+audit；this file does not itself answer the audit.
