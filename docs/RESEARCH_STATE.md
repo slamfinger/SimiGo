@@ -5985,3 +5985,20 @@ reduction 机制未定位，RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BACKEND_ISOLATION_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-cpu.json`。
+
+### LAB RQ3 METAL FLAG ABLATION — FA OFF NOT SUFFICIENT / CPU-MOE NOT STABLE — 2026-09-29
+
+继续用 distinct equal-length prompt probe 做 Metal flag ablation。Flash Attention
+off 后 N1/N2 `8/8` stable，但 N3 all-match `4/8`、N4 all-match `4/8`、
+across-cycle `2/8`，说明 Flash Attention 不是当前边界原因。改用
+`--cpu-moe` 混合放置后，N1 stable，但 N2 all-match 只有 `2/8`、across-cycle
+`1/8`；N3 `2/8`；N4 `0/8`。该 hybrid 不是 mitigation，反而把 instability
+提前到 N2。
+
+因此登记 `FLASH_ATTN_OFF_NOT_SUFFICIENT`、`CPU_MOE_HYBRID_NOT_STABLE` 和
+`METAL_MOE_HYBRID_BOUNDARY_NOT_ISOLATED`。当前结论仍限定为 Metal execution
+path boundary；具体 MoE kernel、graph、batch reduction 或 synchronization机制
+未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_METAL_FLAG_ABLATION_20260929.md`；
+artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-flashoff.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-cpumoe.json`。
