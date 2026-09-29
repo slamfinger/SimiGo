@@ -63,6 +63,10 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
     }
     /// 已导出的 token 边界登记（避免同轮重复落盘同一边界）。
     private var exportedTokenBoundaries = Set<String>()
+    /// 上一次 token 边界导出失败的错误签名（生产降噪，2026-09-29）：同一
+    /// 能力态只报一次首轮聚合失败；错误集变化或出现成功（能力态翻转）后
+    /// 重新武装。negative-capability cache 可复用此签名。
+    private var exportFailureSignature: String?
 
     static func namespace(modelID: String, kvFingerprint: String?, thinkingDisabled: Bool)
         -> PrefixPoolNamespace
@@ -166,6 +170,11 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
         // 边界上创建（store.export 的输入）。dedup 键 / grid / 池语义 /
         // 遥测均不变。
         let cumulative = PrefixChain.cumulative(tokenIds)
+        // 失败聚合（2026-09-29 降噪）：逐边界失败只累积，轮末按错误集签名
+        // 决定是否发一行聚合——同一能力态（如该模型 noCacheAvailable）不
+        // 逐轮重复，签名变化或全 succeeding 轮重新武装。
+        var failedCounts: [Int] = []
+        var failedErrs: Set<String> = []
         for count in boundaries {
             let hash = cumulative[count - 1]
             let key = "\(namespace.modelID)|\(namespace.kvFingerprint)|\(count)|\(hash)"
@@ -186,8 +195,26 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenExport tokens=\(count)")
             } catch {
+                failedCounts.append(count)
+                failedErrs.insert(String(describing: error))
+            }
+        }
+        if failedCounts.isEmpty {
+            lock.lock()
+            exportFailureSignature = nil
+            lock.unlock()
+        } else {
+            let signature = failedErrs.sorted().joined(separator: " | ")
+            lock.lock()
+            let alreadyReported = exportFailureSignature == signature
+            exportFailureSignature = signature
+            lock.unlock()
+            if !alreadyReported {
                 RuntimeTraceLogger.shared.trace(
-                    "[MLX] poolTokenExportFailed tokens=\(count) err=\(String(describing: error))")
+                    "[MLX] poolTokenExportFailed count=\(failedCounts.count)"
+                        + " first=\(failedCounts.first ?? 0) last=\(failedCounts.last ?? 0)"
+                        + " err=\(failedErrs.sorted().first ?? "-")"
+                        + (failedErrs.count > 1 ? " errs=\(failedErrs.count)" : ""))
             }
         }
     }
@@ -208,11 +235,13 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             let ref = Self.representationRef(
                 namespace: namespace, boundaryHash: entry.boundaryHash,
                 boundLength: entry.tokenCount)
-            let binding = bindings.bind(
+            // bind 每次调用 generation 单调 +1（registry B-R3）——轮末重绑
+            // 行里的 bindingGen 是纯递增计数器噪音（2026-09-29 降噪），
+            // 只保留在 restore（poolBind）/ fork 位点。绑定居于 registry。
+            _ = bindings.bind(
                 executionID: executionID, runtimeAddress: "live:\(executionID)", ref: ref)
             RuntimeTraceLogger.shared.trace(
                 "[MLX] poolExport messages=\(entry.tokenCount / 2) "
-                    + "bindingGen=\(binding.generation) "
                     + "refHash=\(String(entry.boundaryHash, radix: 16))")
         } catch {
             RuntimeTraceLogger.shared.trace(

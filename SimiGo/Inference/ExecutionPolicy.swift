@@ -181,6 +181,32 @@ enum ExecutionPolicy {
         return "[MLX] rollforwardDiff reason=none"
     }
 
+    /// checkpointStale 的生产摘要（2026-09-29 遥测降噪）：只报首个分歧的
+    /// index+field，不带 len/commonPrefix/fp/摘录——全量 diff 是研究期仪器
+    /// （rollforwardDiffLine，实验 harness 仍引用），生产 skip 行只需要
+    /// 能把 stale 归因到字段。扫描与行为判定共用同一张字段表和比较谓词
+    /// （renderReconcileFields / renderFieldCompatible），与 rollforwardDiffLine
+    /// 的定位结果必然一致。
+    static func rollforwardFirstDiffSummary(
+        incoming: [JSONValue], restoredHistory: [JSONValue]
+    ) -> String {
+        guard restoredHistory.count < incoming.count else {
+            return "field=historyCount ckpt=\(restoredHistory.count) incoming=\(incoming.count)"
+        }
+        for (i, m) in restoredHistory.enumerated() {
+            let n = incoming[i]
+            guard case .object(let a) = m, case .object(let b) = n else {
+                return "index=\(i) field=shape"
+            }
+            for field in Self.renderReconcileFields {
+                if !Self.renderFieldCompatible(field, a[field] ?? .null, b[field] ?? .null) {
+                    return "index=\(i) field=\(field)"
+                }
+            }
+        }
+        return "field=none"
+    }
+
     /// 两侧值 compact-JSON 后的 len/commonPrefix/fp/分叉摘录。
     private static nonisolated func valueDiff(_ a: JSONValue, _ b: JSONValue) -> String {
         guard let sa = compactJSON(a), let sb = compactJSON(b) else {

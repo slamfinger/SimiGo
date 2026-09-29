@@ -197,8 +197,16 @@ public actor RuntimeLifecycleCoordinator {
         to: String? = nil,
         reason: String? = nil
     ) {
-        // The success/cancel ladder always ends RELEASING→RELEASED and RELEASED
-        // carries the reason; the intermediate hops are per-request noise.
+        // 生产降噪（2026-09-29）：正常路径只留两条定位锚——QUEUED→RUNNING
+        // （在途标记：execution_bench preflight 与在途生成判别依赖 " to=RUNNING"，
+        // 排队计时依赖 CREATED→QUEUED / QUEUED→RUNNING 两条，故保留）
+        // 和 RELEASED（带 reason 收口）。被抑制的 REGISTER / CREATED→QUEUED /
+        // RUNNING→COMPLETING / CREATED→COMPLETING 及成功尾段：回归时签名仍在
+        // ——漏 QUEUED 会以 from=CREATED to=RUNNING 现形（2026-09-12 实证），
+        // 表外迁移/取消/FORCE_RELEASED 等异常路径永不抑制。
+        if event == "REGISTER" {
+            return
+        }
         if event == "STATE_TRANSITION",
            from == "COMPLETING", to == "COMPLETED" {
             return
@@ -209,6 +217,18 @@ public actor RuntimeLifecycleCoordinator {
         }
         if event == "STATE_TRANSITION",
            from == "RELEASING", to == "RELEASED" {
+            return
+        }
+        if event == "STATE_TRANSITION",
+           from == "CREATED", to == "QUEUED" {
+            return
+        }
+        if event == "STATE_TRANSITION",
+           from == "CREATED", to == "COMPLETING" {
+            return
+        }
+        if event == "STATE_TRANSITION",
+           from == "RUNNING", to == "COMPLETING" {
             return
         }
 

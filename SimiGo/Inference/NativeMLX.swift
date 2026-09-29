@@ -852,12 +852,13 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 }
                 guard ExecutionPolicy.rollforwardCompatible(incoming: messages,
                                                  restoredHistory: meta.history) else {
+                    // 生产遥测只带首分歧摘要（字段归因）；全量 diff 行
+                    // （rollforwardDiffLine）留在研究 harness，不再逐轮进 trace。
                     traceLogger.trace(
                         "[MLX] action=rollforwardSkip key=\(executionKey.traceKey)"
-                        + " reason=checkpointStale")
-                    traceLogger.trace(
-                        ExecutionPolicy.rollforwardDiffLine(
-                            incoming: messages, restoredHistory: meta.history))
+                            + " reason=checkpointStale "
+                            + ExecutionPolicy.rollforwardFirstDiffSummary(
+                                incoming: messages, restoredHistory: meta.history))
                     break rollforward
                 }
                 // 原子替换 + 身份守卫：只有恢复态真正进入 sessions 池才允许
@@ -899,16 +900,20 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         // P1 会话 LRU + P2 Admission：数量/内存双维度驱逐，随后记录暖会话态势
-        // （warmTokenBudget 的校准观测行）。
+        // （warmTokenBudget 的校准观测行）。生产降噪（2026-09-29）：无驱逐
+        // 且未 rollforward 的轮次不发 admission 行——rf= 是 prefill_stats.py
+        // noMode 判别的载荷，rollforward/驱逐轮仍整行保留（格式不变）。
         let admission = await evictSessionsIfNeeded(keeping: executionKey.storageKey)
-        traceLogger.trace(
-            "[MLX] admission warmSessions=\(admission.warmSessions)" +
-            " warmTokens=\(admission.warmTokens)" +
-            " swap=" + (RuntimeTuning.swapUsedBytes()
-                .map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a") +
-            " evicted=\(admission.evicted) freedTokens=\(admission.evictedTokens)"
-            + " rf=\(rolledForward ? 1 : 0)"
-        )
+        if admission.evicted > 0 || rolledForward {
+            traceLogger.trace(
+                "[MLX] admission warmSessions=\(admission.warmSessions)" +
+                " warmTokens=\(admission.warmTokens)" +
+                " swap=" + (RuntimeTuning.swapUsedBytes()
+                    .map { String(format: "%.1fGB", Double($0) / Double(RuntimeTuning.gibibyte)) } ?? "n/a") +
+                " evicted=\(admission.evicted) freedTokens=\(admission.evictedTokens)"
+                + " rf=\(rolledForward ? 1 : 0)"
+            )
+        }
 
         let delta: [Chat.Message]
         if reusedSession {
@@ -1594,7 +1599,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         config: ModelConfig?, baseConfig: ModelConfig, directory: URL,
         modelPath: String
     ) async throws -> (managed: ManagedSession, metadata: SessionCacheMetadata) {
-        let expLoadStart = Date() // EXP-B 实验字段 cacheLoadMs（去留另议）
+        let expLoadStart = Date() // cacheLoadMs：恢复/对冲加载耗时的常设诊断字段（346ms 归因，2026-09-29 转正）
         let baseName = Self.cacheFileName(for: key)
         let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
@@ -1716,12 +1721,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 directory: defaultBranchCheckpointStore(),
                 retainedKeys: activeKeys,
                 byteBudget: RuntimeTuning.branchCheckpointByteBudget)
-            RuntimeTraceLogger.shared.trace(
-                "[STORAGE] branchRetention retained=\(result.retainedReceipts)"
-                    + " retainedGiB=\(String(format: "%.2f", Double(result.retainedBytes) / 1_073_741_824))"
-                    + " orphans=\(result.removedOrphans)"
-                    + " budgetRemoved=\(result.removedForBudget)"
-                    + " freedGiB=\(String(format: "%.2f", Double(result.freedBytes) / 1_073_741_824))")
+            // 生产降噪（2026-09-29）：无 orphan/预算驱逐的例行 sweep 静默，
+            // retention 行只在发生实际回收时出现（retainedGiB 每轮漂移曾致
+            // 每轮一行纯噪音）；失败路径照常响。
+            if result.removedOrphans > 0 || result.removedForBudget > 0 {
+                RuntimeTraceLogger.shared.trace(
+                    "[STORAGE] branchRetention retained=\(result.retainedReceipts)"
+                        + " retainedGiB=\(String(format: "%.2f", Double(result.retainedBytes) / 1_073_741_824))"
+                        + " orphans=\(result.removedOrphans)"
+                        + " budgetRemoved=\(result.removedForBudget)"
+                        + " freedGiB=\(String(format: "%.2f", Double(result.freedBytes) / 1_073_741_824))")
+            }
         } catch {
             RuntimeTraceLogger.shared.trace(
                 "[STORAGE] branchRetentionFailed err=\(error.localizedDescription)")

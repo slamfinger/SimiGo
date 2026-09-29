@@ -204,3 +204,27 @@ HTTP/SSE 层是否透出治理事件 → 非目标（Responses 层的 tool 事�
    多代派生留待 v2。
 4. TOOL_RESULT payload → 契约只定 inline/reference 语义，
    阈值/后端/序列化留给实现。
+
+## 附则 v1.1：发射策略（2026-09-29 生产遥测降噪）
+
+beta.4 生产观察裁定：正常路径逐转移发行为研究期仪器形态，生产日志按
+「正常摘要化、异常展开」收敛。状态机、合法转移表、code 封闭枚举、
+幂等语义**全部不变**；只改 trace 发射策略：
+
+| 事件 | v1.0 | v1.1 |
+|---|---|---|
+| TOOL_REQUESTED（fresh） | 逐行 | **折叠**（dup_tc 异常仍立即展开） |
+| TOOL_VALIDATED / TOOL_DISPATCHED | 逐行 | **折叠** |
+| TOOL_RESULT（成功） | 逐行 | 保留，为正常路径**唯一摘要行**，新增 `durMs=` |
+| TOOL_REJECTED / TOOL_FAILED / 全部 anomaly | 逐行 | 不变（异常路径展开） |
+
+- `durMs` = REQUESTED → RESULT observed 的 wall time（含外部工具执行与
+  客户端回传，Runtime 不做拆分估算——遥测语义诚实红线）。
+- **不变量 1（无损回放）的 v1.1 解释**：正常路径的转移序列由状态机唯一
+  决定（validated→result 恒为唯一合法路径，v1 无内部执行器故 dispatched
+  不产生），终态摘要行 + 终态即完整序列；放弃的只有中间事件的独立
+  时间戳（折叠为 durMs 区间）。孤儿/未知/非法转移兜底（orphan、
+  unknown_tc、unexpected_state、illegal_transition）不受影响。
+- **DONE 判据 2 的断言介质**：由「每个 TOOL_REQUESTED 行恰对应一个终态
+  行」改为「每个 tool_call_id 恰对应一行 TOOL_RESULT/REJECTED/FAILED
+  摘要或一行 orphan anomaly」；状态级核验用 `ToolGovernance.state(of:)`。

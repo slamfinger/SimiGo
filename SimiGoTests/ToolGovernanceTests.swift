@@ -40,11 +40,15 @@ final class ToolGovernanceTests: XCTestCase {
         governance.dispatched(requestId: "r1", generationId: "r1", toolCallId: "c1")
         governance.resultObserved(requestId: "r1", generationId: "r1", toolCallId: "c1", sizeBytes: nil)
 
-        XCTAssertTrue(recorder.contains("event=TOOL_REQUESTED"))
-        XCTAssertTrue(recorder.contains("event=TOOL_VALIDATED"))
-        XCTAssertTrue(recorder.contains("event=TOOL_DISPATCHED"))
+        // v1.1 发射策略：正常路径只发 RESULT 摘要一行（带 durMs）；
+        // 中间转移折叠，事实核验转 state(of:)。
+        XCTAssertEqual(recorder.count, 1)
         XCTAssertTrue(recorder.contains("event=TOOL_RESULT"))
+        XCTAssertTrue(recorder.contains("durMs="))
+        XCTAssertFalse(recorder.contains("event=TOOL_REQUESTED"))
+        XCTAssertFalse(recorder.contains("event=TOOL_VALIDATED"))
         XCTAssertFalse(recorder.contains("anomaly="))
+        XCTAssertEqual(governance.state(of: "c1"), .result)
     }
 
     func testPreDispatchCancelRejectsWithCancelledCode() {
@@ -74,9 +78,9 @@ final class ToolGovernanceTests: XCTestCase {
         governance.resultObserved(requestId: "r1", generationId: "r1", toolCallId: "c1", sizeBytes: nil)
 
         XCTAssertTrue(recorder.contains("anomaly=unexpected_state"))
-        // 状态未被伪造：后续合法 validated 仍可走通
+        // 状态未被伪造：后续合法 validated 仍可走通（v1.1：折叠不发 Validation 行，核验转状态）
         governance.validated(requestId: "r1", generationId: "r1", toolCallId: "c1")
-        XCTAssertTrue(recorder.contains("event=TOOL_VALIDATED"))
+        XCTAssertEqual(governance.state(of: "c1"), .validated)
     }
 
     func testRequestedToFailedIsIllegal() {
