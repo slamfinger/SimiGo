@@ -7073,3 +7073,30 @@ benchmark或 cross-backend closure。全仓 Swift verification为 157 PASS / 0 F
 artifacts见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-memory-pressure.json`、
 `simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。
+
+### LAB UI14 LLAMA CONTROLLED MEMORY PRESSURE PASS — 2026-09-29
+
+新增 `runMemoryPressureLLAMA` 和 CLI
+`llama-branch-session-memory-pressure`，登记 UI14 controlled multi-branch
+memory-pressure action。session为 root、retained control branch、两条 advanced
+pressure branch；每个 pressure branch经历 2 次 capture/release、fork-point
+restore、deterministic replay和 final-position restore，共 4 个 pressure action。
+LLAMA使用 Cyber-Tiel Coder 35B A3B GGUF canonical mitigated ubatch8 profile和
+1-token generation。
+
+八项 checks全部 PASS：workload complete、release actions complete、lineage
+isolated、active branch prefixes diverged、repeated recovery outputs exact、
+final bindings exact、release pressure branches、root/control survive。两条
+pressure branch final prefix token counts分别为 15 和 17。登记
+`UI14_LLAMA_MULTI_BRANCH_RELEASE_RESTORE_PRESSURE_PASS`；状态为
+`UI14 = PASS / CONTROLLED_MULTI_BRANCH_MEMORY_PRESSURE_ACTION`。
+
+语义边界是 controlled session release/restore load，不是 OS or server
+memory-pressure injection、product UI、persistent session、production policy、
+performance benchmark、llama-server native cache release或 cross-backend
+closure。LLAMA representation是 Swift-owned prompt-token prefix；server继续拥有
+computation和 native cache。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_LLAMA_MEMORY_PRESSURE_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-memory-pressure.json`、
+`simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。

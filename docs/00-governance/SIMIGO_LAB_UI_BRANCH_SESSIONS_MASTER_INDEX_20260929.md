@@ -6,7 +6,7 @@
 UI_BRANCH_SESSIONS = CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE / PRODUCT_PERSISTENCE_OPEN
 ```
 
-新的 master index把 UI1–UI13纳入同一 evidence index。它是 harness-level evidence
+新的 master index把 UI1–UI14纳入同一 evidence index。它是 harness-level evidence
 index，不是 product UI、persistent session实现、production cancellation readiness或
 performance benchmark。
 
@@ -15,7 +15,8 @@ performance benchmark。
 ```text
 backends   = LLAMA GGUF Cyber-Tiel; oversized MLX Qwen3-Coder-Next
 workloads  = depth-1 branch; nested/repeat; cancellation; long-running branch;
-             long-running cross-backend matrix; controlled memory-pressure action
+             long-running cross-backend matrix; LLAMA/MLX controlled
+             memory-pressure action pilots
 boundary   = harness-level prefix representation; different model artifacts/tokenizers
 ```
 
@@ -36,6 +37,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | UI11 | MLX six-turn long-running branch | PASS | `ui-branch-session-mlx-long-running.json` |
 | UI12 | long-running cross-backend outcome-shape matrix | PASS_WITH_BOUNDARY | `ui-branch-session-long-running-crossbackend-matrix.json` |
 | UI13 | MLX controlled memory-pressure action | PASS | `ui-branch-session-mlx-memory-pressure.json` |
+| UI14 | LLAMA controlled memory-pressure action | PASS | `ui-branch-session-llama-memory-pressure.json` |
 
 ## Coverage checks
 
@@ -56,6 +58,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | `LONG_RUNNING_CROSSBACKEND_MATRIX_PRESENT` | PASS |
 | `ENTRY_COUNT_MATCHES` | PASS |
 | `MEMORY_PRESSURE_MLX_PRESENT` | PASS |
+| `MEMORY_PRESSURE_LLAMA_PRESENT` | PASS |
 
 ## Consolidated observations
 
@@ -75,6 +78,9 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 7. UI13验证 multi-branch controlled release/restore pressure action下的
    recovery exactness、release semantics、root/control survival和 zero swap。
    这是 session pressure action，不是 OS memory pressure。
+8. UI14在 LLAMA prefix-representation harness上验证相同的 controlled pressure
+   outcome semantics。LLAMA release action作用于 Swift prefix registry，不代表
+   llama-server native cache释放。
 
 ## Master artifact
 
@@ -89,7 +95,6 @@ PRODUCT_UI_SURFACE
 PERSISTENT_OR_MULTI_PROCESS_SESSIONS
 ARBITRARY_DEPTH_BRANCH_GRAPH
 SAME_MODEL_OR_SAME_CHECKPOINT_CROSS_BACKEND_CLOSURE
-LLAMA_MEMORY_PRESSURE_UI_PILOT
 MEMORY_PRESSURE_CROSSBACKEND_UI_MATRIX
 OS_MEMORY_PRESSURE_INJECTION_VALIDATION
 PRODUCTION_CANCELLATION_READINESS

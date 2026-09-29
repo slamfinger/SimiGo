@@ -1831,6 +1831,288 @@ extension UIBranchSessions {
 }
 
 extension UIBranchSessions {
+  public struct LLAMAMemoryPressureBranch: Encodable, Sendable {
+    public let executionID: String
+    public let input: String
+    public let content: String
+    public let generatedTokenIDs: [Int]
+    public let finalPrefixTokenCount: Int
+    public let recoveryMatches: [Bool]
+    public let finalBindingsExact: [Bool]
+  }
+
+  public struct LLAMAMemoryPressureReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let host: String
+    public let port: Int
+    public let modelPath: String?
+    public let seedText: String
+    public let controlInput: String
+    public let predictionTokens: Int
+    public let cycles: Int
+    public let checks: [String: Bool]
+    public let controlContent: String
+    public let pressureBranches: [LLAMAMemoryPressureBranch]
+    public let steps: [Step]
+    public let overallPass: Bool
+  }
+
+  public static let llamaMemoryPressureProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.LLAMA.MEMORY.PRESSURE.V1"
+  public static let llamaMemoryPressureBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD / "
+    + "LLAMA_PREFIX_REPRESENTATION / HARNESS_LEVEL / NOT_OS_MEMORY_PRESSURE / NOT_A_UI_PRODUCT"
+
+  public static func runMemoryPressureLLAMA(
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    controlInput: String = "Now write tests for it.",
+    pressureInputs: [String] = [
+      "List one edge case for the function.",
+      "Add a focused unit test for that edge case.",
+    ],
+    predictionTokens: Int = 1,
+    cycles: Int = 2,
+    seed: Int = 42
+  ) async throws -> LLAMAMemoryPressureReport {
+    precondition(!pressureInputs.isEmpty)
+    let backend = LLAMAServerExecutionStateBackend()
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let executor = LLAMAServerExecutionStateExecutor(
+      baseURL: URL(string: "http://\(host):\(port)")!
+    )
+    let serverProps = try await executor.props()
+    let seedTokens = try await executor.tokenizeText(seedText, addSpecialTokens: true)
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("llama-pressure-root")
+    let controlID = ExecutionID("llama-pressure-control")
+    let pressureIDs = pressureInputs.enumerated().map {
+      ExecutionID("llama-pressure-branch-\($0.offset)")
+    }
+    let forkPoint = ExecutionPosition(0)
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: "", continuationID: "pressure-root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    func fork(_ childID: ExecutionID, input: String) async throws -> ExecutionStateHandle {
+      try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: childID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: input, continuationID: "\(childID.rawValue)-0"
+          )
+        )
+      )
+    }
+
+    let control = try await fork(controlID, input: controlInput)
+    var pressureStates: [ExecutionStateHandle] = []
+    for (index, input) in pressureInputs.enumerated() {
+      pressureStates.append(try await fork(pressureIDs[index], input: input))
+    }
+
+    let controlTokens = try await executor.tokenizeText(controlInput)
+    let controlStarted = DispatchTime.now().uptimeNanoseconds
+    let controlOutput = try await executor.complete(
+      tokenPrefix: seedTokens + controlTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let advancedControl = try await runtime.continueExecution(
+      control,
+      continuation: ExecutionContinuation(
+        nextInput: controlInput, continuationID: "pressure-control-1"
+      )
+    )
+    record("continue", advancedControl, controlStarted)
+    let controlPrefix = seedTokens + controlTokens + (controlOutput.tokens ?? [])
+    try await runtime.bindRepresentation(
+      executionID: advancedControl.id,
+      position: ExecutionPosition(1),
+      payload: LLAMAServerPrefixPayload(tokenPrefix: controlPrefix)
+    )
+
+    struct Run {
+      let id: ExecutionID
+      let input: String
+      let inputTokens: [Int]
+      let output: LLAMAServerExecutionStateExecutor.Completion
+      let prefix: [Int]
+      var state: ExecutionStateHandle
+    }
+    var runs: [Run] = []
+    for (index, state) in pressureStates.enumerated() {
+      let input = pressureInputs[index]
+      let inputTokens = try await executor.tokenizeText(input)
+      let started = DispatchTime.now().uptimeNanoseconds
+      let output = try await executor.complete(
+        tokenPrefix: seedTokens + inputTokens,
+        predictionTokens: predictionTokens,
+        seed: seed + index
+      )
+      let advanced = try await runtime.continueExecution(
+        state,
+        continuation: ExecutionContinuation(
+          nextInput: input, continuationID: "pressure-\(index)-1"
+        )
+      )
+      record("continue", advanced, started)
+      let prefix = seedTokens + inputTokens + (output.tokens ?? [])
+      try await runtime.bindRepresentation(
+        executionID: advanced.id,
+        position: ExecutionPosition(1),
+        payload: LLAMAServerPrefixPayload(tokenPrefix: prefix)
+      )
+      runs.append(
+        Run(
+          id: advanced.id,
+          input: input,
+          inputTokens: inputTokens,
+          output: output,
+          prefix: prefix,
+          state: advanced
+        )
+      )
+    }
+
+    var recoveryMatches = Array(repeating: [Bool](), count: runs.count)
+    var finalBindingsExact = recoveryMatches
+    var releaseActions = 0
+    for cycle in 0..<cycles {
+      for index in runs.indices {
+        let started = DispatchTime.now().uptimeNanoseconds
+        let current = try await backend.captureRepresentation(for: runs[index].state)
+        try await backend.releaseRepresentation(current)
+        releaseActions += 1
+        record("release", runs[index].state, started)
+
+        let restoredToFork = try await runtime.restore(
+          runs[index].state,
+          request: ExecutionRestoreRequest(
+            targetPosition: forkPoint,
+            continuation: ExecutionContinuation(
+              nextInput: runs[index].input,
+              continuationID: "pressure-\(index)-r0-\(cycle)"
+            )
+          )
+        )
+        record("switch", restoredToFork, started)
+        let replay = try await executor.complete(
+          tokenPrefix: seedTokens + runs[index].inputTokens,
+          predictionTokens: predictionTokens,
+          seed: seed + index
+        )
+        recoveryMatches[index].append(replay == runs[index].output)
+
+        let restoredToFinal = try await runtime.restore(
+          restoredToFork,
+          request: ExecutionRestoreRequest(
+            targetPosition: ExecutionPosition(1),
+            continuation: ExecutionContinuation(
+              nextInput: runs[index].input,
+              continuationID: "pressure-\(index)-r1-\(cycle)"
+            )
+          )
+        )
+        record("switch", restoredToFinal, started)
+        let binding = try backend.boundPrefix(for: restoredToFinal)
+        finalBindingsExact[index].append(
+          binding.prefix == runs[index].prefix && binding.position == ExecutionPosition(1)
+        )
+        runs[index].state = restoredToFinal
+      }
+    }
+
+    for run in runs {
+      try await runtime.discard(run.state)
+    }
+    let pressureBindingsGone = runs.allSatisfy {
+      (try? backend.boundPrefix(for: $0.state))?.prefix == nil
+    }
+    let rootBinding = try backend.boundPrefix(for: root)
+    let controlBinding = try backend.boundPrefix(for: advancedControl)
+    let allPrefixes = runs.map(\.prefix) + [controlPrefix]
+    let prefixesDiverged = Set(allPrefixes).count == runs.count + 1
+    let controlLineageIsolated =
+      control.lineage.parent == rootID && control.lineage.root == root.lineage.root
+    let pressureLineageIsolated = pressureStates.allSatisfy {
+      $0.lineage.parent == rootID && $0.lineage.root == root.lineage.root
+    }
+
+    let checks = [
+      "PRESSURE_WORKLOAD_COMPLETE":
+        runs.count == pressureInputs.count
+        && (controlOutput.tokens?.count ?? 0) == predictionTokens,
+      "PRESSURE_RELEASE_ACTIONS_COMPLETE":
+        releaseActions == runs.count * cycles,
+      "PRESSURE_LINEAGE_ISOLATED":
+        controlLineageIsolated && pressureLineageIsolated,
+      "ACTIVE_BRANCH_PREFIXES_DIVERGED": prefixesDiverged,
+      "REPEATED_RECOVERY_OUTPUTS_EXACT":
+        recoveryMatches.allSatisfy { $0.count == cycles && $0.allSatisfy(\.self) },
+      "RECOVERY_FINAL_BINDINGS_EXACT":
+        finalBindingsExact.allSatisfy { $0.count == cycles && $0.allSatisfy(\.self) },
+      "RELEASE_PRESSURE_BRANCHES": pressureBindingsGone,
+      "ROOT_AND_CONTROL_SURVIVE":
+        rootBinding.prefix == seedTokens && controlBinding.prefix == controlPrefix,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return LLAMAMemoryPressureReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: llamaMemoryPressureProtocolVersion,
+      boundary: llamaMemoryPressureBoundary,
+      host: host,
+      port: port,
+      modelPath: serverProps.modelPath,
+      seedText: seedText,
+      controlInput: controlInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      checks: checks,
+      controlContent: controlOutput.content,
+      pressureBranches: runs.enumerated().map { index, run in
+        LLAMAMemoryPressureBranch(
+          executionID: run.id.rawValue,
+          input: run.input,
+          content: run.output.content,
+          generatedTokenIDs: run.output.tokens ?? [],
+          finalPrefixTokenCount: run.prefix.count,
+          recoveryMatches: recoveryMatches[index],
+          finalBindingsExact: finalBindingsExact[index]
+        )
+      },
+      steps: steps,
+      overallPass: overallPass
+    )
+  }
+}
+
+extension UIBranchSessions {
   public struct MLXLongRunningReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

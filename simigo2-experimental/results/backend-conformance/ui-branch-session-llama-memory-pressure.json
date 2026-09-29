@@ -1,0 +1,152 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD \/ LLAMA_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ NOT_OS_MEMORY_PRESSURE \/ NOT_A_UI_PRODUCT",
+  "checks" : {
+    "ACTIVE_BRANCH_PREFIXES_DIVERGED" : true,
+    "PRESSURE_LINEAGE_ISOLATED" : true,
+    "PRESSURE_RELEASE_ACTIONS_COMPLETE" : true,
+    "PRESSURE_WORKLOAD_COMPLETE" : true,
+    "RECOVERY_FINAL_BINDINGS_EXACT" : true,
+    "RELEASE_PRESSURE_BRANCHES" : true,
+    "REPEATED_RECOVERY_OUTPUTS_EXACT" : true,
+    "ROOT_AND_CONTROL_SURVIVE" : true
+  },
+  "controlContent" : "\n",
+  "controlInput" : "Now write tests for it.",
+  "cycles" : 2,
+  "host" : "127.0.0.1",
+  "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "overallPass" : true,
+  "port" : 18080,
+  "predictionTokens" : 1,
+  "pressureBranches" : [
+    {
+      "content" : "\n\n",
+      "executionID" : "llama-pressure-branch-0",
+      "finalBindingsExact" : [
+        true,
+        true
+      ],
+      "finalPrefixTokenCount" : 15,
+      "generatedTokenIDs" : [
+        271
+      ],
+      "input" : "List one edge case for the function.",
+      "recoveryMatches" : [
+        true,
+        true
+      ]
+    },
+    {
+      "content" : "\n\n",
+      "executionID" : "llama-pressure-branch-1",
+      "finalBindingsExact" : [
+        true,
+        true
+      ],
+      "finalPrefixTokenCount" : 17,
+      "generatedTokenIDs" : [
+        271
+      ],
+      "input" : "Add a focused unit test for that edge case.",
+      "recoveryMatches" : [
+        true,
+        true
+      ]
+    }
+  ],
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.LLAMA.MEMORY.PRESSURE.V1",
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 207.565625,
+      "executionID" : "llama-pressure-control",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 178.61375,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 197.390667,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.019667,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.110708,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 183.181417,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.003,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.00725,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 188.840042,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.00225,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.004458,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 171.704916,
+      "executionID" : "llama-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.00225,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.004458,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 185.24075,
+      "executionID" : "llama-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 1
+    }
+  ]
+}
