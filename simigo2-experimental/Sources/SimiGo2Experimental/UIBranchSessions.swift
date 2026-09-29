@@ -381,6 +381,275 @@ public enum UIBranchSessions {
     )
   }
 
+  public struct NestedReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let host: String
+    public let port: Int
+    public let modelPath: String?
+    public let seedText: String
+    public let branchAInput: String
+    public let nestedInput: String
+    public let branchBInput: String
+    public let predictionTokens: Int
+    public let cycles: Int
+    public let checks: [String: Bool]
+    public let branchAContent: String
+    public let nestedContent: String
+    public let branchBContent: String
+    public let nestedReplayContents: [String]
+    public let steps: [Step]
+    public let overallPass: Bool
+  }
+
+  public static let nestedProtocolVersion = "LAB.UI.BRANCH.SESSIONS.NESTED.V1"
+  public static let nestedBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / NESTED_BRANCH_GRAPH / "
+    + "REPEATED_RELEASE_RESTORE_SWITCH / HARNESS_LEVEL / NOT_A_UI_PRODUCT"
+
+  public static func runNestedLLAMA(
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    branchAInput: String = "Now write tests for it.",
+    nestedInput: String = "Explain the first test.",
+    branchBInput: String = "Add a one-line TODO.",
+    predictionTokens: Int = 2,
+    cycles: Int = 2,
+    seed: Int = 42
+  ) async throws -> NestedReport {
+    precondition(cycles > 0, "cycles must be positive")
+    let backend = LLAMAServerExecutionStateBackend()
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let executor = LLAMAServerExecutionStateExecutor(
+      baseURL: URL(string: "http://\(host):\(port)")!)
+    let serverProps = try await executor.props()
+    let seedTokens = try await executor.tokenizeText(seedText, addSpecialTokens: true)
+    let branchATokens = try await executor.tokenizeText(branchAInput)
+    let nestedTokens = try await executor.tokenizeText(nestedInput)
+    let branchBTokens = try await executor.tokenizeText(branchBInput)
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("nested-root")
+    let branchAID = ExecutionID("nested-branch-a")
+    let nestedID = ExecutionID("nested-branch-a1")
+    let branchBID = ExecutionID("nested-branch-b")
+    let forkPoint = ExecutionPosition(0)
+    let continuedPosition = ExecutionPosition(1)
+
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: "", continuationID: "root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    var started = DispatchTime.now().uptimeNanoseconds
+    let branchA = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: branchAID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: branchAInput, continuationID: "branch-a-0"
+        )
+      )
+    )
+    let nested = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: branchA,
+        childID: nestedID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: nestedInput, continuationID: "branch-a1-0"
+        )
+      )
+    )
+    let branchB = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: branchBID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: branchBInput, continuationID: "branch-b-0"
+        )
+      )
+    )
+    record("fork", nested, started)
+
+    let nestedForkPrefix = try backend.boundPrefix(for: nested).prefix
+
+    started = DispatchTime.now().uptimeNanoseconds
+    let branchAOutput = try await executor.complete(
+      tokenPrefix: seedTokens + branchATokens,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let advancedA = try await runtime.continueExecution(
+      branchA,
+      continuation: ExecutionContinuation(nextInput: branchAInput, continuationID: "branch-a-1")
+    )
+    record("continue", advancedA, started)
+    try await runtime.bindRepresentation(
+      executionID: advancedA.id,
+      position: continuedPosition,
+      payload: LLAMAServerPrefixPayload(
+        tokenPrefix: seedTokens + branchATokens + (branchAOutput.tokens ?? []))
+    )
+
+    started = DispatchTime.now().uptimeNanoseconds
+    let nestedOutput = try await executor.complete(
+      tokenPrefix: seedTokens + nestedTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let advancedNested = try await runtime.continueExecution(
+      nested,
+      continuation: ExecutionContinuation(nextInput: nestedInput, continuationID: "branch-a1-1")
+    )
+    record("continue", advancedNested, started)
+    let nestedAdvancedPrefix = seedTokens + nestedTokens + (nestedOutput.tokens ?? [])
+    try await runtime.bindRepresentation(
+      executionID: advancedNested.id,
+      position: continuedPosition,
+      payload: LLAMAServerPrefixPayload(tokenPrefix: nestedAdvancedPrefix)
+    )
+
+    started = DispatchTime.now().uptimeNanoseconds
+    let branchBOutput = try await executor.complete(
+      tokenPrefix: seedTokens + branchBTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let advancedB = try await runtime.continueExecution(
+      branchB,
+      continuation: ExecutionContinuation(nextInput: branchBInput, continuationID: "branch-b-1")
+    )
+    record("continue", advancedB, started)
+    try await runtime.bindRepresentation(
+      executionID: advancedB.id,
+      position: continuedPosition,
+      payload: LLAMAServerPrefixPayload(
+        tokenPrefix: seedTokens + branchBTokens + (branchBOutput.tokens ?? []))
+    )
+
+    var replays: [LLAMAServerExecutionStateExecutor.Completion] = []
+    var retainedAfterSwitch = true
+    for index in 0..<cycles {
+      started = DispatchTime.now().uptimeNanoseconds
+      let current = try await backend.captureRepresentation(for: advancedNested)
+      try await backend.releaseRepresentation(current)
+      record("release", advancedNested, started)
+
+      started = DispatchTime.now().uptimeNanoseconds
+      let restored = try await runtime.restore(
+        advancedNested,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: branchAInput, continuationID: "branch-a1-switch-0-\(index)"
+          )
+        )
+      )
+      record("switch", restored, started)
+      let replay = try await executor.complete(
+        tokenPrefix: seedTokens + branchATokens,
+        predictionTokens: predictionTokens,
+        seed: seed
+      )
+      replays.append(replay)
+
+      started = DispatchTime.now().uptimeNanoseconds
+      let switched = try await runtime.restore(
+        restored,
+        request: ExecutionRestoreRequest(
+          targetPosition: continuedPosition,
+          continuation: ExecutionContinuation(
+            nextInput: nestedInput, continuationID: "branch-a1-switch-1-\(index)"
+          )
+        )
+      )
+      record("switch", switched, started)
+      let binding = try backend.boundPrefix(for: switched)
+      retainedAfterSwitch = retainedAfterSwitch && binding.prefix == nestedAdvancedPrefix
+    }
+
+    started = DispatchTime.now().uptimeNanoseconds
+    try await runtime.discard(advancedNested)
+    try await runtime.discard(advancedB)
+    record("release", advancedNested, started)
+
+    let branchABinding = try backend.boundPrefix(for: advancedA)
+    let rootBinding = try backend.boundPrefix(for: root)
+    let branchAAdvancedPrefix = seedTokens + branchATokens + (branchAOutput.tokens ?? [])
+    let nestedBindingGone = (try? backend.boundPrefix(for: advancedNested))?.prefix == nil
+    let branchBBindingGone = (try? backend.boundPrefix(for: advancedB))?.prefix == nil
+    let branchAPrefix = seedTokens + branchATokens + (branchAOutput.tokens ?? [])
+    let nestedAdvancedPhysicalPrefix = seedTokens + nestedTokens + (nestedOutput.tokens ?? [])
+    let branchBAdvancedPrefix = seedTokens + branchBTokens + (branchBOutput.tokens ?? [])
+
+    let checks = [
+      "NESTED_LINEAGE_ISOLATED":
+        branchA.lineage.parent == rootID && nested.lineage.parent == branchAID
+        && nested.lineage.root == root.lineage.root && branchB.lineage.parent == rootID,
+      "FORK_POINT_ISOLATED":
+        nestedForkPrefix == seedTokens,
+      "BRANCH_PREFIXES_DIVERGED":
+        branchAPrefix != nestedAdvancedPhysicalPrefix
+        && branchAPrefix != branchBAdvancedPrefix
+        && nestedAdvancedPhysicalPrefix != branchBAdvancedPrefix,
+      "REPEATED_RELEASE_RESTORE_REPLAYS":
+        replays.count == cycles && replays.allSatisfy { $0 == branchAOutput },
+      "REPEATED_ADVANCE_RETAINED":
+        retainedAfterSwitch,
+      "RELEASE_NESTED_AND_DIRECT_BRANCH":
+        nestedBindingGone && branchBBindingGone,
+      "PARENT_BRANCH_SURVIVES_RELEASE":
+        branchABinding.prefix == branchAAdvancedPrefix,
+      "ROOT_SURVIVES_RELEASE":
+        rootBinding.prefix == seedTokens,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return NestedReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: nestedProtocolVersion,
+      boundary: nestedBoundary,
+      host: host,
+      port: port,
+      modelPath: serverProps.modelPath,
+      seedText: seedText,
+      branchAInput: branchAInput,
+      nestedInput: nestedInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      checks: checks,
+      branchAContent: branchAOutput.content,
+      nestedContent: nestedOutput.content,
+      branchBContent: branchBOutput.content,
+      nestedReplayContents: replays.map(\.content),
+      steps: steps,
+      overallPass: overallPass
+    )
+  }
+
   public struct MLXReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

@@ -6265,3 +6265,25 @@ artifact 和 tokenizer，因此 cross-backend / model-identity closure 保持 OP
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CROSSBACKEND_MATRIX_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-crossbackend-matrix.json`。
+
+### LAB UI BRANCH SESSIONS NESTED REPEAT PASS — 2026-09-29
+
+把 UI Branch Sessions 从 depth-1 A/B graph 扩展到 nested graph 和 repeated
+physical release/restore/switch。新增 `UIBranchSessions.runNestedLLAMA` 与 CLI
+`llama-branch-session-nested`；session 图为 root -> branch A -> nested A1，且
+root -> branch B。使用 LLAMA canonical mitigated profile、当前 Cyber-Tiel
+model、seed42、2-token continuation 和 2 cycles。
+
+八项 checks 全部 PASS：nested lineage isolation、fork-point isolation、branch
+physical-prefix divergence、两轮 release->restore@0->replay->switch@1 的
+deterministic replay、advanced binding retention、nested/direct branch release、
+parent branch survival、root survival。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `UI_NESTED_BRANCH_GRAPH_LLAMA_PASS` 和
+`UI_REPEATED_RELEASE_RESTORE_SWITCH_PASS`；状态为
+`UI4 = PASS / LLAMA_NESTED_AND_REPEAT_WITH_BOUNDARY`。这只是 LLAMA harness
+pilot，不代表 nested MLX/cross-backend closure、arbitrary-depth graph、persistent
+session、UI product 或性能结论。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_NESTED_REPEAT_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-nested-repeat.json`。

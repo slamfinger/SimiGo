@@ -1,0 +1,100 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ NESTED_BRANCH_GRAPH \/ REPEATED_RELEASE_RESTORE_SWITCH \/ HARNESS_LEVEL \/ NOT_A_UI_PRODUCT",
+  "branchAContent" : "\n   ",
+  "branchAInput" : "Now write tests for it.",
+  "branchBContent" : "\n   ",
+  "branchBInput" : "Add a one-line TODO.",
+  "checks" : {
+    "BRANCH_PREFIXES_DIVERGED" : true,
+    "FORK_POINT_ISOLATED" : true,
+    "NESTED_LINEAGE_ISOLATED" : true,
+    "PARENT_BRANCH_SURVIVES_RELEASE" : true,
+    "RELEASE_NESTED_AND_DIRECT_BRANCH" : true,
+    "REPEATED_ADVANCE_RETAINED" : true,
+    "REPEATED_RELEASE_RESTORE_REPLAYS" : true,
+    "ROOT_SURVIVES_RELEASE" : true
+  },
+  "cycles" : 2,
+  "host" : "127.0.0.1",
+  "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "nestedContent" : "\n   ",
+  "nestedInput" : "Explain the first test.",
+  "nestedReplayContents" : [
+    "\n   ",
+    "\n   "
+  ],
+  "overallPass" : true,
+  "port" : 18080,
+  "predictionTokens" : 2,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.NESTED.V1",
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 0.039208,
+      "executionID" : "nested-branch-a1",
+      "operation" : "fork",
+      "position" : 0
+    },
+    {
+      "clientMs" : 186.906416,
+      "executionID" : "nested-branch-a",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 176.394541,
+      "executionID" : "nested-branch-a1",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 178.468542,
+      "executionID" : "nested-branch-b",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.004292,
+      "executionID" : "nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.008875,
+      "executionID" : "nested-branch-a1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.016834,
+      "executionID" : "nested-branch-a1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.002583,
+      "executionID" : "nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.0045,
+      "executionID" : "nested-branch-a1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.021083,
+      "executionID" : "nested-branch-a1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.007375,
+      "executionID" : "nested-branch-a1",
+      "operation" : "release",
+      "position" : 1
+    }
+  ]
+}
