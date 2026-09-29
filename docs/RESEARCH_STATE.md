@@ -6555,3 +6555,29 @@ claim。
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_RELEASE_RECOVERY_TOKEN_SCALE_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens1.json`、`...tokens2.json`、`...tokens4.json`、`...token-scale-summary.json`。
+
+### LAB MLX EXECSTATE PHASE-6 COST SUMMARY PASS — 2026-09-29
+
+把 COST1–COST5 五组 oversized MLX Execution State cost observations合并为
+Phase-6 summary。新增 consolidated artifact
+`mlx-phase6-cost-summary.json`,自动校验五个 source reports和三个 token-scale raw
+runs均为 PASS、所有 source checks通过、COST1–COST5齐全、token-scale runs通过、
+所有 recovery paired outputs exact。
+
+汇总结论限定为 observation: no-fork state local bookkeeping mean约
+`0.022111ms`; lifecycle local mean约 `7.695876ms`,其中 oversized release mean
+`7.651396ms`。release isolation中 current release mean `4.061400ms`,stale no-op
+mean `0.000188ms`,capture/restore在微秒级。prefix length `8/64/256`与 token
+budget `1/2/4`均观察到 latency/transition scaling趋势,但样本小,不建立定量曲线。
+RETAIN vs RELEASE_RESTORE paired outputs exact; generation mean差异不解释为稳定
+penalty/benefit。登记
+`MLX_PHASE6_COST_OBSERVATION_INDEX_COMPLETE` 和
+`MLX_PHASE6_FULL_FACTORIAL_OPEN`；状态为
+`PHASE6_STAGE = PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE /
+FULL_FACTORIAL_OPEN`。这不是 throughput benchmark、production performance、
+warm-KV retention、release-policy recommendation、cross-backend或cross-hardware
+claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6_COST_SUMMARY_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/mlx-phase6-cost-summary.json`。

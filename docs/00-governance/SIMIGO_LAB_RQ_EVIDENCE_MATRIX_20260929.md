@@ -184,6 +184,32 @@ simigo2-experimental/results/o6-workload-matrix/
 该结果是 harness-level workload evidence，不是性能、生产 cancellation、
 上游 runtime 或跨模型普适 claim。
 
+## MLX oversized Phase-6 cost observation
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE / FULL_FACTORIAL_OPEN
+```
+
+| Profile | Scope | Checks | Key observation | Artifact |
+| --- | --- | ---: | --- | --- |
+| COST1 paired cost | direct-vs-state ordinary generation; lifecycle capture/fork/diverge/release/restore/replay | 5/5 | state local mean `0.022111ms`; lifecycle local mean `7.695876ms`, release mean `7.651396ms` | `results/backend-conformance/mlx-execstate-cost-profile.json` |
+| COST2 token-length scale | prefix `8/64/256`; direct-vs-state; 1-token generation | 3/3 | latency increases across observed lengths; paired delta `-15.811/+27.744/+388.442ms`, n=2 per bucket | `results/backend-conformance/mlx-execstate-scale-profile.json` |
+| COST3 release isolation | current release vs stale no-op vs restore; no generation; 30 samples | 6/6 | current release mean `4.061400ms`; stale no-op mean `0.000188ms` | `results/backend-conformance/mlx-release-cost-profile.json` |
+| COST4 retain vs release/restore | 64-token prefix, 2-token generation, 4 cycles | 7/7 | action mean `0.008479/4.519990ms`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-profile.json` |
+| COST5 token-budget scale | budgets `1/2/4`; two cycles per strategy per budget | 5/5 | strategy-averaged generation `10,435.064/21,721.998/50,665.760ms`; transitions `6/12/24`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-token-scale-summary.json` |
+
+Consolidated artifact：
+
+```text
+results/backend-conformance/mlx-phase6-cost-summary.json
+```
+
+Phase-6 当前状态是 observation index complete，不是 performance benchmark 或
+production readiness。full factorial、更大样本、分布报告、warm-KV/segment-residency
+policy 和 cross-backend cost normalization仍未完成。
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -195,6 +221,9 @@ simigo2-experimental/results/o6-workload-matrix/
    higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
+4. MLX oversized Phase-6 cost observation index已完成，但 full factorial、
+  更大样本、分布报告、warm-KV/segment-residency policy和cross-backend cost
+   normalization仍未完成。
 
 ## Non-claims
 
@@ -209,6 +238,7 @@ W9 cancellation 已达到 production readiness
 concurrent cancellation 已达到 production readiness
 pruned / subnet Qwen4Exp 可以替代 full Qwen4Exp closure
 performance 或 upstream runtime claim 已建立
+MLX Phase-6 cost observation是 throughput benchmark
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的
