@@ -15,6 +15,7 @@ RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
       / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
       / SWIFT_EXECSTATE_CANCELLATION_INTEGRATION_PASS
+      / MLX_EXECSTATE_SCALE_N5_REPLICATION_PASS
       / O6_MLX_OVERSIZED_CANCELLATION_AB_PASS
       / HIGHER_CONCURRENCY_CANCEL_ACCEPTANCE_COMPLETION_PASS
       / GREEDY_IDENTITY_BOUNDARY_OBSERVED
@@ -234,6 +235,7 @@ PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE / FULL_FACTORIAL_OPEN
 | --- | --- | ---: | --- | --- |
 | COST1 paired cost | direct-vs-state ordinary generation; lifecycle capture/fork/diverge/release/restore/replay | 5/5 | state local mean `0.022111ms`; lifecycle local mean `7.695876ms`, release mean `7.651396ms` | `results/backend-conformance/mlx-execstate-cost-profile.json` |
 | COST2 token-length scale | prefix `8/64/256`; direct-vs-state; 1-token generation | 3/3 | latency increases across observed lengths; paired delta `-15.811/+27.744/+388.442ms`, n=2 per bucket | `results/backend-conformance/mlx-execstate-scale-profile.json` |
+| COST2 n=5 replication | same prefix lengths; direct-vs-state; 1-token generation; host-concurrency boundary | 3/3 | semantic replication PASS; paired delta `-27.890/+25.556/+106.075ms`, n=5 per bucket; not stable performance evidence | `results/backend-conformance/mlx-execstate-scale-profile-n5.json`; `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_20260929.md` |
 | COST3 release isolation | current release vs stale no-op vs restore; no generation; 30 samples | 6/6 | current release mean `4.061400ms`; stale no-op mean `0.000188ms` | `results/backend-conformance/mlx-release-cost-profile.json` |
 | COST4 retain vs release/restore | 64-token prefix, 2-token generation, 4 cycles | 7/7 | action mean `0.008479/4.519990ms`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-profile.json` |
 | COST5 token-budget scale | budgets `1/2/4`; two cycles per strategy per budget | 5/5 | strategy-averaged generation `10,435.064/21,721.998/50,665.760ms`; transitions `6/12/24`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-token-scale-summary.json` |

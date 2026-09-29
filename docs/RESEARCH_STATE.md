@@ -7628,3 +7628,35 @@ conversion的 projection grouping/order、quantization transformation，或这�
 组合；当前证据不足以归因。script与artifact见
 `simigo2-experimental/scripts/cyber_tiel_qkv_row_correlation_assignment.py`、
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-row-correlation-assignment.json`。
+
+### LAB MLX EXECSTATE SCALE PROFILE N5 REPLICATION PASS — 2026-09-29
+
+将 MLX Execution State scale observation从每 prefix length 2 pairs扩展到
+5 pairs。prefix `8/64/256`、1-token generation、segment size 8下，semantic
+checks `3/3 PASS`，30个 paired samples全部 semantic identical；peak footprint
+`7617 MiB`，artifact内 max swap `0 MiB`，segment transitions `202`。
+
+paired `state−direct` delta mean/median/stdev 分别为：
+
+```text
+8   = -27.889850 / -14.784833 / 51.927615 ms
+64  = +25.556042 / +40.793125 / 75.081490 ms
+256 = +106.075009 / +96.983626 / 77.262420 ms
+```
+
+登记 `MLX_EXECSTATE_SCALE_N5_REPLICATION_PASS`、
+`PAIRED_STATE_DIRECT_DELTAS_NOT_STABLE_AT_N5`、
+`STATE_LOCAL_COST_MICROSECOND_SCALE` 和 `NO_PERFORMANCE_BENCHMARK_CLAIM`。
+state local bookkeeping mean为 `0.010392–0.033925ms`，但 prefix 8受单个
+`0.131542ms` sample影响，median仍约 `0.011ms`；不能推出稳定 overhead。
+
+用户观察到 llama-server 与 simigo2ctl 并发时 host swap达 `21.51 GiB`。复核时
+两个进程均已退出、`18080` 无监听；artifact记录本 run max swap `0 MiB`。由于
+并发 inference 若与 run 重叠会造成 scheduling/memory confound，本结果只接受为
+semantic / Execution State replication；latency数字继续不是 performance
+benchmark。后续 clean characterization需要无并发 inference、受控 memory
+pressure，并记录 host resource context。
+
+报告与artifact见
+`docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_20260929.md`、
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5.json`。
