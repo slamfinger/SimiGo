@@ -101,6 +101,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | Threadpool ablation | Metal `parallel4`, `--threads 1 --threads-batch 1`, seed42/43, N1-N4 | active3 becomes `8/8` both seeds; active4 remains all-match `6/8` and across `1/8` | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-seed43.json`; `SIMIGO_LAB_RQ3_LLAMA_THREADPOOL_ABLATION_20260929.md` |
 | Ubatch isolation | Metal `parallel4/threads1/ubatch2`, seed42/43, N1-N4 | N1-N4 all-match and across-cycle `8/8` in both seeds; active4 mitigation observed | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2-seed43.json`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH_ISOLATION_20260929.md` |
 | Ubatch2 × threads4 isolation | Metal `parallel4/threads4/ubatch2`, seed42/43, N1-N4 | N1-N4 all-match and across-cycle `8/8` in both seeds; mitigation independent of single-thread setting | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2-seed43.json`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH2_THREAD4_ISOLATION_20260929.md` |
+| Ubatch2 cancellation curve | original L1-L3 cancellation curve rerun with `ubatch2`, 3 cycles | strict PASS: DELETE `6/6`, baseline stable `3/3`, cancellation identity `3/3`; latency 4.2–13.6s | `results/backend-conformance/rq3-llama-concurrency-curve-ubatch2-cycles3.json`; `SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_UBATCH2_20260929.md` |
 
 RQ3 当前状态：
 
@@ -178,9 +179,9 @@ simigo2-experimental/results/o6-workload-matrix/
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
 2. RQ3 的 greedy identity mismatch 已找到 primary harness mitigation：Metal
-   `ubatch2` 不依赖 `threads1`，在 `threads4/ubatch2` 下 N1–N4 两个 seeds 均
-   stable。具体 Metal active4 kernel / graph reduction 机制未定位，
-   higher-concurrency semantic closure 未完成。
+   `ubatch2` 在原始 cancellation curve 中使 baseline 与 cancellation identity 均
+   `3/3` stable，但 latency 放大到 4.2–13.6s。具体 Metal active4 kernel / graph
+   reduction 机制未定位，higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 

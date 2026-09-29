@@ -6067,3 +6067,25 @@ single-thread CPU coordination。未测量性能，不能推荐生产配置；�
 graph reduction 仍未定位。RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH2_THREAD4_ISOLATION_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2-seed43.json`。
+
+### LAB RQ3 UBATCH2 CANCELLATION CURVE — STRICT PASS / LARGE LATENCY — 2026-09-29
+
+把 `ubatch2` mitigation 放回最初失败的 higher-concurrency cancellation curve，
+使用 `parallel4 / ctx2048 / slot512 / ubatch2` 运行 L1-L3 各一次，共 3 cycles。
+结果 strict PASS：DELETE `6/6` accepted；same-load baseline stable `3/3`；
+cancellation controls matched same-load baseline `3/3`；所有 control batches
+完成。default `ubatch512` curve 中的 identity mismatch 不再复现。
+
+代价是延迟显著放大：DELETE→all-long-free 按 L1-L3 分别为
+`4,201.325 / 8,090.322 / 13,633.230ms`，control client mean 为
+`4,691.426 / 8,352.944 / 13,854.959ms`。所有 controls 在 all-longs-free 后才
+完成。因此 `ubatch2` 是 identity mitigation，不是 performance mitigation。
+
+首次尝试用原 `free-timeout-ms=5000` 在 cycle1 报 cancelled longs did not
+free，无 artifact；server 随后可继续响应。改为 `15000` 的 3-cycle run 通过，
+说明 heavy `ubatch2` curve 需要同步放大 harness timeout。RQ3 增加
+`UBATCH2_CURVE_STRICT_PASS`、`UBATCH2_MITIGATES_CANCELLATION_IDENTITY` 和
+`HARNESS_FREE_TIMEOUT_MUST_SCALE_WITH_UBATCH2`；RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_UBATCH2_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-ubatch2-cycles3.json`。
