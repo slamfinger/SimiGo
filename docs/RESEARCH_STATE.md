@@ -7546,3 +7546,35 @@ row mapping不成立。登记
 large quantized tensor attribution继续 BLOCKED。script见
 `simigo2-experimental/scripts/cyber_tiel_qkv_segment_diagnostic.py`；artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json`。
+
+### LAB NAMED SOURCE EVIDENCE BUNDLE V1 CONSOLIDATION PASS — 2026-09-29
+
+新增 `named_source_evidence_bundle.py` 和 evidence bundle V1，把 named-source
+CyberTiel GGUF/MLX研究整合为 machine-checkable evidence set。bundle覆盖 profile
+evaluation、lineage audit、tensor topology audit、margin compare seed42/seed43、
+QKV segment diagnostic、F32 control drift audit和 quantized layout pilot，共 8个
+source artifacts。九项 consolidated checks全部 PASS。
+
+Verdicts：
+- `namedSourceAcceptanceGate = PASS`：seed42/43均为 139 positions、top1
+  agreement `133/139`、top16 containment `139/139`、max rank `2`、6个允许的
+  top1 flips。
+- `tokenizerSubstrate = EXACT`：base vocab、added tokens、merges mismatch均为 0，
+  chat template exact。
+- `declaredLineageChain = PASS`：
+  `Ornith 1.5 → Huihui-Ornith-1.5-abliterated → CyberTiel quantization`。
+- `textTensorTopology = COMPLETE_WITH_KNOWN_EXTRAS`：GGUF 753中 733个 text
+  tensors映射；GGUF nextn-only 20；MLX vision-only 333；MLX language unmapped 0。
+- `sameCheckpointClosure = REJECTED_AT_CONTROL_TENSOR_LEVEL`：260个 F32 control
+  tensors中 exact 30、zero-drift 0、max abs diff `101.82309`。
+- `largeMatrixQuantizerDriftAttribution = BLOCKED_LAYOUT_SOURCE_UNRESOLVED`：
+  layer1三tensor pilot elementwise cosine接近零，layout未解析。
+- `qkvSegmentOrder = UNRESOLVED`：最佳 `(K,Q,V)` `0.6063845`与自然
+  `(Q,K,V)` `0.6049992`差距过小；row mapping不成立。
+
+登记 `NAMED_SOURCE_EVIDENCE_BUNDLE_V1_CONSOLIDATION_PASS`；状态为
+`EVIDENCE_BUNDLE_V1 = PASS_WITH_BOUNDARY / CONSOLIDATION_COMPLETE`。bundle不建立
+same-checkpoint closure、tokenizer implementation equivalence、quantization
+equivalence、MTP root cause或 production readiness。script见
+`simigo2-experimental/scripts/named_source_evidence_bundle.py`；artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-evidence-bundle.json`。
