@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B已打开并完成 minimal durable unit code audit；等待 external review。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B minimal durable unit audit已通过 external review；等待 explicit registration。Phase C / BACKEND-1继续 gated。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7965,3 +7965,57 @@ Targeted clean-HEAD tests PASS：`SimiGoRuntimeContractTests 15/15`，
 `TRANSCRIPT_EQUIVALENCE_NOT_ASSUMED`、
 `BINDING_RELATION_SEPARATE_FROM_MINIMUM_D` 和
 `PHASE_B_AUDIT_AWAITING_REVIEW`。
+
+### LAB PALACE1 PHASE B AUDIT REVIEW PASS — 2026-09-30
+
+External review artifact:
+`docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_EXTERNAL_REVIEW_20260930.md`。
+Verdict is `PASS / REGISTRATION_REQUIRED`。这是 external review decision，不是
+repository registration。
+
+Review accepts the Phase B architecture conclusion：
+
+```text
+minimal durable unit = Execution Semantic Snapshot
+
+fields =
+  id
+  lineage.root
+  lineage.parent
+  position
+  continuation.nextInput
+  continuation.continuationID
+  lifecycle
+
+recoverable set =
+  snapshots
+  + required lineage tombstones
+  + optional separately typed representation binding relations
+```
+
+Boundary checks PASS：no storage selection, no Palace schema, no persistence
+format, no Llama adapter, no oversized special semantics, and no performance
+benchmark claim。Evidence remains targeted structural validation：`57/57 PASS`
+on clean code HEAD `db188ac`；it is not an end-to-end durability proof。
+
+Registration后仍必须继承六个条件：
+
+```text
+1. lineage tombstone closure
+2. transcript equivalence proof before reclassifying nextInput
+3. explicit representation content claim / validation policy
+4. separately typed binding relation; runtimeAddress remains R
+5. crash-window recovery classification without storage design
+6. coordinator concurrency, discarded-binding guard, and durable identity
+   reservation remain separately gated engineering gaps
+```
+
+当前状态：
+
+```text
+Phase A review         = PASS / REGISTERED
+Phase B opening        = PASS / REGISTERED
+Phase B boundary audit = PASS / REGISTRATION_REQUIRED
+Phase C / BACKEND-1    = STILL GATED
+Current blocker        = explicit human/repository registration
+```

@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_B_AUDIT_COMPLETE / AWAITING_REVIEW`
+状态：`PHASE_B_AUDIT_REVIEW_PASS / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -23,7 +23,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_OPENING_REGISTRATION_20260930.md`
 10. 读 Phase B audit：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_AUDIT_20260930.md`
-11. 如需原始 opening，再读：
+11. 读 Phase B audit review：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_EXTERNAL_REVIEW_20260930.md`
+12. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -34,10 +36,10 @@ branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
-PALACE-1 = OPEN / CODE_LEVEL_AUDIT COMPLETE REVIEW PENDING
+PALACE-1 = BOUNDARY AUDIT REVIEW PASS / REGISTRATION PENDING
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_B_EXTERNAL_REVIEW / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = PHASE_B_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -106,6 +108,15 @@ next mode = PHASE_B_EXTERNAL_REVIEW / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 - Full lifecycle records, pool stats, and in-flight work are not minimum D.
 - Targeted clean-HEAD tests passed 57/57.
 
+2026-09-30 Phase B audit review:
+
+- Verdict: `PASS / REGISTRATION_REQUIRED`.
+- Review is not repository registration.
+- Phase C / BACKEND-1 remain gated until the Phase B boundary is registered.
+- Six mandatory conditions carry forward: lineage tombstone closure,
+  transcript equivalence proof, representation content claim, separately typed
+  binding relation, crash-window classification, and concurrency/identity gaps.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -123,7 +134,8 @@ Canonical route document:
 
 ## Next session task
 
-1. Review the Phase B audit and decide `PASS / FAIL / RETURN FOR REVISION`。
+1. Explicitly approve or reject registration of the Phase B audit
+   `PASS / REGISTRATION_REQUIRED`。
 2. Only explicit repository registration may advance the boundary。
 3. Do not select SQLite / KV / event log / remote storage。
 4. BACKEND-1 remains separately scoped until the Phase B boundary is registered。
