@@ -6815,3 +6815,30 @@ performance或cross-backend/cross-hardware claim。GPU timeout cell仍未重试�
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6G_SEGMENT_PHASE_REPLICATION_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6g-segment-phase-replication-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-segment-phase-replicate-p64-s*-b*.json`。
+
+### LAB MLX PHASE6H PREFIX PHASE ATTRIBUTION PASS — 2026-09-29
+
+在 segment size固定为 8的条件下，比较 prefix `8/64` 的 warmed one-token phase
+profile。prefix 8使用 PHASE6H 3个独立 runs；prefix 64复用 PHASE6F/PHASE6G的 3个
+combined runs。九项 checks全部 PASS：source reports pass、prefix coverage完整、
+combined n=3、segment size固定、zero swap、under 30GiB、三个配对 prefix64 total
+deltas全正、forward sum deltas全正。
+
+Combined means显示 prefix 64 total `10,605.054ms`高于 prefix 8
+`9,741.621ms`；三个配对 delta为 `+968.394 / +714.069 / +907.835ms`。主要增量是
+forward sum：prefix 64 `1,869.628ms`高于 prefix 8 `1,023.550ms`，三个配对 delta
+为 `+958.769 / +731.115 / +848.349ms`。release sum delta也全正
+（mean `+22.840ms`）。materialize sum delta方向混合，mean仅 `+9.396ms`。
+per-layer forward约 `21.324 vs 38.951ms`，materialize per-layer约
+`179.349 vs 179.545ms`。登记 `PREFIX64_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES`、
+`PREFIX64_FORWARD_SUM_SLOWER_IN_ALL_PAIRED_SAMPLES` 和
+`PREFIX_LENGTH_EFFECT_IS_OBSERVATIONAL`；状态为
+`PHASE6H = PASS_WITH_BOUNDARY / PREFIX_PHASE_ATTRIBUTION_COMPLETE / N3_PER_PREFIX`。
+prefix 8和 prefix 64的 token sequence、text content和 tokenizer行为不同，因此不建
+立 causal prefix-length model、定量长度曲线、prefix recommendation、warm-KV
+retention、production performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6H_PREFIX_PHASE_ATTRIBUTION_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6h-prefix-phase-attribution-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-replicate-p8-s8-b*.json`。
