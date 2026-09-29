@@ -210,6 +210,30 @@ Phase-6 当前状态是 observation index complete，不是 performance benchmar
 production readiness。full factorial、更大样本、分布报告、warm-KV/segment-residency
 policy 和 cross-backend cost normalization仍未完成。
 
+### Phase-6A factorial pilot
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / FULL_FACTORIAL_PILOT_COMPLETE / STATISTICAL_FACTORIZATION_OPEN
+```
+
+新增 8-cell pilot：prefix `8/64` × tokens `1/2` × segment size `8/16` ×
+strategy `RETAIN/RELEASE_RESTORE`，每 cell每 strategy `n=1`。全部 cells PASS，
+paired outputs exact；RETAIN action transition全为 `0`，RELEASE_RESTORE全为 `1`；
+generation transition符合 `segment count × token count`；max swap `0 MiB`。
+
+Observation：segment size 16 的 transition数量更少，但在全部四个可比 pair中
+strategy-averaged generation latency高于 segment size 8。该结果不建立最优
+segment size结论。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-release-recovery-factorial-p*.json
+results/backend-conformance/mlx-phase6a-factorial-pilot-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -221,8 +245,9 @@ policy 和 cross-backend cost normalization仍未完成。
    higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
-4. MLX oversized Phase-6 cost observation index已完成，但 full factorial、
-  更大样本、分布报告、warm-KV/segment-residency policy和cross-backend cost
+4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot
+   也已通过；但 statistical factorization、更大样本、分布报告、warm-KV/segment-residency
+   policy和cross-backend cost
    normalization仍未完成。
 
 ## Non-claims

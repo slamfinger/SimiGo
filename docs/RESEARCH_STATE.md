@@ -6581,3 +6581,30 @@ claim。
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6_COST_SUMMARY_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/mlx-phase6-cost-summary.json`。
+
+### LAB MLX PHASE6A FACTORIAL PILOT PASS — 2026-09-29
+
+为 Phase-6 full factorial问题补充 8-cell pilot：prefix `8/64` × generated
+tokens `1/2` × segment size `8/16` × strategy `RETAIN/RELEASE_RESTORE`；每 cell
+每 strategy `n=1`。复用 `mlx-release-recovery`，不修改 Swift runtime。八项
+summary checks全部 PASS：all cells present/pass、paired outputs exact、RETAIN
+action transitions全 `0`、RELEASE_RESTORE全 `1`、generation transitions匹配
+`segment count × token count`、oversized profile under 30GiB、all runs zero swap。
+
+Observation显示 segment size 16 虽然transition较少（3/token vs 6/token），但在
+四个可比 pair中 strategy-averaged generation latency均高于 segment size 8；
+prefix 64 也观测上慢于 prefix 8。RELEASE_RESTORE action mean范围
+`3.967–7.108ms`，RETAIN为 `0.001–0.011ms`。peak footprint `6,853–12,046 MiB`、
+max swap `0 MiB`。登记
+`PHASE6A_PREFIX_TOKEN_SEGMENT_ACTION_PILOT_PASS`、
+`LARGER_SEGMENTS_HAVE_FEWER_BUT_COSTLIER_TRANSITIONS` 和
+`PAIRED_ACTION_OUTPUTS_EXACT_IN_ALL_CELLS`；状态为
+`PHASE6A = PASS_WITH_BOUNDARY / FULL_FACTORIAL_PILOT_COMPLETE /
+STATISTICAL_FACTORIZATION_OPEN`。每 cell只有 n=1，不建立最优 segment size、
+throughput曲线、warm-KV retention、release-policy recommendation、production
+performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6A_FACTORIAL_PILOT_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6a-factorial-pilot-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p*.json`。
