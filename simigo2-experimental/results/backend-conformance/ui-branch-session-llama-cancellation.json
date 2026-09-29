@@ -2,6 +2,7 @@
   "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ EXPLICIT_LLAMA_STREAM_CANCEL \/ ROOT_AND_SIBLING_RECOVERY \/ HARNESS_LEVEL \/ NOT_A_PRODUCTION_CLAIM",
   "cancelDelayMs" : 100,
   "checks" : {
+    "CANCELLED_LONG_LOGICALLY_DISCARDED" : true,
     "CANCELLED_LONG_PHYSICAL_RELEASED" : true,
     "CANCELLED_SLOT_FREED" : true,
     "CANCEL_ACCEPTED" : true,
@@ -9,6 +10,7 @@
     "CYCLES_COMPLETE" : true,
     "RECOVERY_LINEAGE_ISOLATED" : true,
     "ROOT_AND_CONTROL_PREFIXES_DIVERGED" : true,
+    "ROOT_AND_CONTROL_SURVIVE_RELEASE" : true,
     "ROOT_RECOVERY_IDENTICAL" : true
   },
   "controlInput" : "Now write tests for it.",
@@ -27,20 +29,20 @@
   "rootReferenceContent" : "\n   ",
   "samples" : [
     {
-      "controlRecoveryClientMs" : 183.50075,
-      "conversationID" : "ui-cancel-0-1790650106453861888",
+      "controlRecoveryClientMs" : 178.046833,
+      "conversationID" : "ui-cancel-0-1790651717023332096",
       "deleteStatus" : 204,
-      "deleteToFreeMs" : 2011.274916,
+      "deleteToFreeMs" : 2013.107167,
       "index" : 0,
-      "rootRecoveryClientMs" : 324.420167
+      "rootRecoveryClientMs" : 318.480708
     },
     {
-      "controlRecoveryClientMs" : 176.945958,
-      "conversationID" : "ui-cancel-1-1790650108895944960",
+      "controlRecoveryClientMs" : 175.214,
+      "conversationID" : "ui-cancel-1-1790651719465766912",
       "deleteStatus" : 204,
-      "deleteToFreeMs" : 2020.240833,
+      "deleteToFreeMs" : 2017.038292,
       "index" : 1,
-      "rootRecoveryClientMs" : 308.397583
+      "rootRecoveryClientMs" : 313.164958
     }
   ],
   "seedText" : "def is_palindrome(s):",

@@ -565,6 +565,8 @@ public enum UIBranchSessions {
     var controlRecoveries: [LLAMAServerExecutionStateExecutor.Completion] = []
     var deleteStatuses: [Int] = []
     var cancelledReleased = true
+    var cancelledDiscarded = true
+    var rootAndControlSurvived = true
     var recoveryLineagePass = true
 
     for index in 0..<cycles {
@@ -690,8 +692,19 @@ public enum UIBranchSessions {
       )
       controlRecoveries.append(controlRecovery)
 
+      let rootBinding = try backend.boundPrefix(for: restoredRoot)
+      let controlBinding = try backend.boundPrefix(for: restoredControl)
+      rootAndControlSurvived = rootAndControlSurvived
+        && rootBinding.prefix == seedTokens
+        && controlBinding.prefix == seedTokens + controlTokens
+
+      try await runtime.discard(longBranch)
+      let longDiscarded = runtime.handle(longID)?.lifecycle == .discarded
+      cancelledDiscarded = cancelledDiscarded && longDiscarded
+
       deleteStatuses.append(deleteStatus)
       cancelledReleased = cancelledReleased && longReleased
+      cancelledDiscarded = cancelledDiscarded && longDiscarded
       samples.append(
         UICancellationSample(
           index: index,
@@ -713,6 +726,8 @@ public enum UIBranchSessions {
         samples.count == cycles,
       "CANCELLED_LONG_PHYSICAL_RELEASED":
         cancelledReleased,
+      "CANCELLED_LONG_LOGICALLY_DISCARDED":
+        cancelledDiscarded,
       "ROOT_RECOVERY_IDENTICAL":
         rootRecoveryIdentical,
       "CONTROL_RECOVERY_IDENTICAL":
@@ -721,6 +736,8 @@ public enum UIBranchSessions {
         seedTokens + rootTokens != seedTokens + controlTokens,
       "RECOVERY_LINEAGE_ISOLATED":
         recoveryLineagePass,
+      "ROOT_AND_CONTROL_SURVIVE_RELEASE":
+        rootAndControlSurvived,
       "CYCLES_COMPLETE":
         rootRecoveries.count == cycles && controlRecoveries.count == cycles,
     ]
@@ -1908,6 +1925,162 @@ extension UIBranchSessions {
       maxSwapMiB: core.maxSwapMiB,
       segmentTransitions: core.segmentTransitions,
       overallPass: overallPass
+    )
+  }
+
+  public struct CancellationMatrixReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let seedText: String
+    public let rootInput: String
+    public let controlInput: String
+    public let recoveryInput: String
+    public let longPrompt: String
+    public let recoveryTokens: Int
+    public let cycles: Int
+    public let commonChecks: [String: Bool]
+    public let llamaCancellationMechanism: String
+    public let mlxCancellationMechanism: String
+    public let sameOutcomeShape: Bool
+    public let sameRecoverySemantics: Bool
+    public let sameWorkloadShape: Bool
+    public let bothBackendsPass: Bool
+    public let crossBackendClosure: Bool
+    public let closureBlocker: String
+    public let llama: UICancellationReport
+    public let mlx: MLXCancellationReport
+    public let overallPass: Bool
+  }
+
+  public static let cancellationMatrixProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.CANCELLATION.CROSSBACKEND.V1"
+  public static let cancellationMatrixBoundary =
+    "SAME_SESSION_CANCELLATION_OUTCOME_SHAPE / EXPLICIT_VS_COOPERATIVE_MECHANISM / "
+    + "HARNESS_LEVEL / NOT_A_MODEL_IDENTITY_CLOSURE"
+
+  public static func runCancellationCrossBackendMatrix(
+    modelDirectory: URL,
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    controlInput: String = "Now write tests for it.",
+    recoveryInput: String = "Continue from the root.",
+    longPrompt: String = "Count from 1 to 500. Return only numbers separated by spaces.",
+    recoveryTokens: Int = 2,
+    cycles: Int = 2,
+    cancelDelayMs: Int = 100,
+    freeTimeoutMs: Int = 15000,
+    seed: Int = 42,
+    segmentSize: Int = 8
+  ) async throws -> CancellationMatrixReport {
+    let llama = try await runCancellationLLAMA(
+      host: host,
+      port: port,
+      seedText: seedText,
+      rootInput: rootInput,
+      controlInput: controlInput,
+      recoveryInput: recoveryInput,
+      longPrompt: longPrompt,
+      predictionTokens: recoveryTokens,
+      cancelDelayMs: cancelDelayMs,
+      cycles: cycles,
+      freeTimeoutMs: freeTimeoutMs,
+      seed: seed
+    )
+    let mlx = try await runCancellationOversizedMLX(
+      modelDirectory: modelDirectory,
+      seedText: seedText,
+      rootInput: rootInput,
+      controlInput: controlInput,
+      recoveryInput: recoveryInput,
+      longInput: longPrompt,
+      maxTokens: recoveryTokens,
+      cycles: cycles,
+      segmentSize: segmentSize
+    )
+
+    let llamaAccepted = llama.checks["CANCEL_ACCEPTED"] == true
+    let mlxAccepted =
+      mlx.checks["COOPERATIVE_CANCEL_ONE_TOKEN"] == true
+      && mlx.cancelledTokenCounts.count == cycles
+    let stopped =
+      llama.checks["CANCELLED_SLOT_FREED"] == true
+      && mlx.checks["COOPERATIVE_CANCEL_ONE_TOKEN"] == true
+    let physicalReleased =
+      llama.checks["CANCELLED_LONG_PHYSICAL_RELEASED"] == true
+      && mlx.checks["CANCELLED_LONG_PHYSICAL_RELEASED"] == true
+    let logicallyDiscarded =
+      llama.checks["CANCELLED_LONG_LOGICALLY_DISCARDED"] == true
+      && mlx.checks["CANCELLED_LONG_LOGICALLY_DISCARDED"] == true
+    let rootRecovery =
+      llama.checks["ROOT_RECOVERY_IDENTICAL"] == true
+      && mlx.checks["ROOT_RECOVERY_IDENTICAL"] == true
+    let controlRecovery =
+      llama.checks["CONTROL_RECOVERY_IDENTICAL"] == true
+      && mlx.checks["CONTROL_RECOVERY_IDENTICAL"] == true
+    let prefixesDiverged =
+      llama.checks["ROOT_AND_CONTROL_PREFIXES_DIVERGED"] == true
+      && mlx.checks["ROOT_AND_CONTROL_PREFIXES_DIVERGED"] == true
+    let lineageIsolated =
+      llama.checks["RECOVERY_LINEAGE_ISOLATED"] == true
+      && mlx.checks["RECOVERY_LINEAGE_ISOLATED"] == true
+    let survivors =
+      llama.checks["ROOT_AND_CONTROL_SURVIVE_RELEASE"] == true
+      && mlx.checks["ROOT_AND_CONTROL_SURVIVE_RELEASE"] == true
+    let cyclesComplete =
+      llama.checks["CYCLES_COMPLETE"] == true && mlx.cycles == cycles
+
+    let commonChecks = [
+      "CANCELLATION_ACCEPTED": llamaAccepted && mlxAccepted,
+      "EXECUTION_STOPPED": stopped,
+      "CANCELLED_LONG_PHYSICAL_RELEASED": physicalReleased,
+      "CANCELLED_LONG_LOGICALLY_DISCARDED": logicallyDiscarded,
+      "ROOT_RECOVERY_IDENTICAL": rootRecovery,
+      "CONTROL_RECOVERY_IDENTICAL": controlRecovery,
+      "ROOT_AND_CONTROL_PREFIXES_DIVERGED": prefixesDiverged,
+      "RECOVERY_LINEAGE_ISOLATED": lineageIsolated,
+      "ROOT_AND_CONTROL_SURVIVE_RELEASE": survivors,
+      "CYCLES_COMPLETE": cyclesComplete,
+    ]
+    let sameOutcomeShape = commonChecks.values.allSatisfy { $0 }
+    let sameRecoverySemantics =
+      rootRecovery && controlRecovery && lineageIsolated && survivors
+    let sameWorkloadShape =
+      llama.seedText == seedText && mlx.seedText == seedText
+      && llama.rootInput == rootInput && mlx.rootInput == rootInput
+      && llama.controlInput == controlInput && mlx.controlInput == controlInput
+      && llama.recoveryInput == recoveryInput && mlx.recoveryInput == recoveryInput
+      && llama.longPrompt == longPrompt && mlx.longInput == longPrompt
+      && llama.predictionTokens == recoveryTokens && mlx.maxTokens == recoveryTokens
+      && llama.cycles == cycles && mlx.cycles == cycles
+    let bothPass = llama.overallPass && mlx.overallPass
+    let matrixPass = bothPass && sameOutcomeShape && sameRecoverySemantics && sameWorkloadShape
+
+    return CancellationMatrixReport(
+      status: matrixPass ? "PASS_WITH_BOUNDARY" : "FAIL",
+      protocolVersion: cancellationMatrixProtocolVersion,
+      boundary: cancellationMatrixBoundary,
+      seedText: seedText,
+      rootInput: rootInput,
+      controlInput: controlInput,
+      recoveryInput: recoveryInput,
+      longPrompt: longPrompt,
+      recoveryTokens: recoveryTokens,
+      cycles: cycles,
+      commonChecks: commonChecks,
+      llamaCancellationMechanism: "EXPLICIT_STREAM_DELETE",
+      mlxCancellationMechanism: "COOPERATIVE_TOKEN_BOUNDARY_CANCEL",
+      sameOutcomeShape: sameOutcomeShape,
+      sameRecoverySemantics: sameRecoverySemantics,
+      sameWorkloadShape: sameWorkloadShape,
+      bothBackendsPass: bothPass,
+      crossBackendClosure: false,
+      closureBlocker: "DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_AND_CANCEL_MECHANISMS",
+      llama: llama,
+      mlx: mlx,
+      overallPass: matrixPass
     )
   }
 

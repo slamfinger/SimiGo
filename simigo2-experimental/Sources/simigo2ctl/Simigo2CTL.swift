@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-cancel|ui-branch-session-matrix|ui-nested-branch-matrix|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-cancel|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -488,6 +488,25 @@ struct Simigo2CTL {
         port: port,
         predictionTokens: tokens,
         cycles: cycles,
+        seed: seed,
+        segmentSize: segmentSize
+      )
+      print(try toJSON(report))
+    case "ui-cancellation-matrix":
+      let host = optionalOption("--host", rest) ?? "127.0.0.1"
+      let port = optionalOption("--port", rest).flatMap(Int.init) ?? 18080
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 2
+      let cycles = optionalOption("--cycles", rest).flatMap(Int.init) ?? 2
+      let cancelDelay = optionalOption("--cancel-delay-ms", rest).flatMap(Int.init) ?? 100
+      let seed = optionalOption("--seed", rest).flatMap(Int.init) ?? 42
+      let segmentSize = optionalOption("--segment-size", rest).flatMap(Int.init) ?? 8
+      let report = try await UIBranchSessions.runCancellationCrossBackendMatrix(
+        modelDirectory: modelDirectory,
+        host: host,
+        port: port,
+        recoveryTokens: tokens,
+        cycles: cycles,
+        cancelDelayMs: cancelDelay,
         seed: seed,
         segmentSize: segmentSize
       )

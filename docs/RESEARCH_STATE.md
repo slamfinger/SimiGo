@@ -6384,3 +6384,31 @@ persistent session 或性能结论。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_CANCELLATION_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-cancellation.json`。
+
+### LAB UI BRANCH SESSIONS CANCELLATION CROSSBACKEND MATRIX PASS — 2026-09-29
+
+把 W9 cancellation 放入 same-session-shape cross-backend matrix。新增
+`runCancellationCrossBackendMatrix` 和 CLI `ui-cancellation-matrix`，在 single
+driver 中先后运行 LLAMA explicit stream DELETE 与 oversized MLX cooperative
+token-boundary cancellation。两边使用相同 seed/root/control/recovery/long 文本、
+相同 root -> long / control / recovery graph、2-token recovery budget 和 2
+cycles。同时升级 LLAMA cancellation harness：cancelled long 增加 logical
+discard，并验证 root/control survive release。
+
+十项 standardized common checks 全部 PASS：cancellation accepted、execution
+stopped、cancelled physical release、logical discard、root/control 逐 cycle
+identity、prefix divergence、recovery lineage isolation、root/control survive、
+cycles complete。`sameOutcomeShape`、`sameRecoverySemantics`、
+`sameWorkloadShape`、`bothBackendsPass` 均 true。MLX backend-specific
+`OVERSIZED_PROFILE_UNDER_30GIB` PASS，观测 peak footprint `6,102 MiB`、segment
+transitions `134`。同一 commit 全仓 Swift verification 为 `157 PASS / 0 FAIL`。
+登记 `UI_SESSION_CANCELLATION_CROSSBACKEND_MATRIX_PASS`、
+`CANCELLATION_MECHANISM_DIFFERENCE_REGISTERED` 和
+`CROSSBACKEND_CANCELLATION_MODEL_IDENTITY_CLOSURE_BLOCKED`；状态为
+`UI9 = PASS_WITH_BOUNDARY / SESSION_CANCELLATION_OUTCOME_SHAPE_MATRIX`。机制、
+model artifact、tokenizer 和 physical representation 不同，因此 cancellation
+closure 保持 OPEN，不得解释为 universal、same-model 或 production claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CANCELLATION_CROSSBACKEND_MATRIX_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-cancellation-crossbackend-matrix.json`、`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-cancellation.json`。
