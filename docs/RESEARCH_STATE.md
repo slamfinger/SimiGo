@@ -5965,3 +5965,23 @@ OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_THRESHOLD_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel2-active2.json`。
+
+### LAB RQ3 BACKEND ISOLATION — CPU STABLE / METAL ACTIVE3_4 UNSTABLE — 2026-09-29
+
+继续用 distinct equal-length prompt probe 做 backend 对照。新增 CPU-only
+`--device none --fit off --threads 4 --threads-batch 4` 的 `parallel4/slot512`
+run。每个 prompt 先在该 CPU configuration 下串行建立 3 次 reference，均 stable；
+随后 cardinality 1–4 各 8 cycles。CPU-only N1–N4 all-match 与 across-cycle
+stable 均为 `8/8`，active3/4 不再复现 mismatch。
+
+与既有 Metal `parallel4` 对照：Metal N3/N4 all-match 与 across-cycle stable 均
+为 `4/8`，而 N1/N2 为 `8/8`。因此 active batch 3/4 instability 进一步隔离到
+current Metal execution path，而不是一般 llama-server logic 或一般 batched
+compute abstraction。CPU outputs 与 Metal references 不同属于预期 backend
+numerical-path difference；两个 backend 分别使用自身 reference。RQ3 增加
+`CPU_ONLY_ACTIVE3_4_STABLE`、`METAL_ACTIVE3_4_UNSTABLE` 和
+`BACKEND_EXECUTION_PATH_ISOLATED`。具体 Metal kernel / scheduler / batch
+reduction 机制未定位，RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_BACKEND_ISOLATION_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-cpu.json`。
