@@ -6287,3 +6287,27 @@ session、UI product 或性能结论。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_NESTED_REPEAT_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-llama-nested-repeat.json`。
+
+### LAB UI BRANCH SESSIONS MLX NESTED REPEAT PASS — 2026-09-29
+
+把 nested + repeated UI Branch Session lifecycle 从 LLAMA 扩展到 oversized MLX
+baseline。新增 `UIBranchSessions.runNestedOversizedMLX` 和 CLI
+`mlx-branch-session-nested`；session 图为 root -> branch A -> nested A1，且
+root -> branch B。使用本地 Qwen3-Coder-Next-4bit snapshot、segment size 8、
+cacheless greedy、2-token continuation 和 2 cycles。
+
+九项 checks 全部 PASS：nested lineage isolation、fork-point isolation、branch
+physical-prefix divergence、两轮 oversized release->restore@0->replay->
+switch@1 的 deterministic replay、advanced binding retention、nested/direct
+branch release、parent branch survival、root survival、oversized profile under
+30GiB。观测 peak footprint `7,970 MiB`、max swap `0 MiB`、segment transitions
+`64`。同一 commit 全仓 Swift verification 为 `157 PASS / 0 FAIL`。登记
+`UI_NESTED_BRANCH_GRAPH_MLX_PASS` 和
+`UI_REPEATED_RELEASE_RESTORE_SWITCH_MLX_PASS`；状态为
+`UI5 = PASS / MLX_NESTED_AND_REPEAT_WITH_BOUNDARY`。这只是 MLX harness pilot，
+不代表 nested cross-backend matrix、arbitrary-depth graph、persistent session、
+UI product 或性能结论。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_NESTED_REPEAT_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-nested-repeat.json`。

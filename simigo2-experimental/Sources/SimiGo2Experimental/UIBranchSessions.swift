@@ -875,3 +875,260 @@ public enum UIBranchSessions {
     )
   }
 }
+
+extension UIBranchSessions {
+  public struct MLXNestedReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let branchAInput: String
+    public let nestedInput: String
+    public let branchBInput: String
+    public let maxTokens: Int
+    public let cycles: Int
+    public let checks: [String: Bool]
+    public let branchAContent: String
+    public let nestedContent: String
+    public let branchBContent: String
+    public let nestedReplayContents: [String]
+    public let steps: [Step]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let mlxNestedProtocolVersion = "LAB.UI.BRANCH.SESSIONS.MLX.NESTED.V1"
+  public static let mlxNestedBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / OVERSIZED_MLX_NESTED_BRANCH_GRAPH / "
+    + "REPEATED_RELEASE_RESTORE_SWITCH / HARNESS_LEVEL / NOT_A_UI_PRODUCT"
+
+  public static func runNestedOversizedMLX(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    branchAInput: String = "Now write tests for it.",
+    nestedInput: String = "Explain the first test.",
+    branchBInput: String = "Add a one-line TODO.",
+    maxTokens: Int = 2,
+    cycles: Int = 2,
+    segmentSize: Int = 8
+  ) async throws -> MLXNestedReport {
+    precondition(cycles > 0, "cycles must be positive")
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core, backend: backend, tokenizer: tokenizer
+    )
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("mlx-nested-root")
+    let branchAID = ExecutionID("mlx-nested-branch-a")
+    let nestedID = ExecutionID("mlx-nested-branch-a1")
+    let branchBID = ExecutionID("mlx-nested-branch-b")
+    let forkPoint = ExecutionPosition(0)
+    let continuedPosition = ExecutionPosition(1)
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: "", continuationID: "root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: OversizedPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    var started = DispatchTime.now().uptimeNanoseconds
+    let branchA = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: branchAID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: branchAInput, continuationID: "branch-a-0"
+        )
+      )
+    )
+    let nested = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: branchA,
+        childID: nestedID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: nestedInput, continuationID: "branch-a1-0"
+        )
+      )
+    )
+    let branchB = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: branchBID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: branchBInput, continuationID: "branch-b-0"
+        )
+      )
+    )
+    record("fork", nested, started)
+    let nestedForkPrefix = try backend.boundPrefix(for: nested).prefix
+
+    func advance(
+      _ state: ExecutionStateHandle,
+      input: String,
+      continuationID: String
+    ) async throws -> (ExecutionStateHandle, generated: [Int], text: String, payload: any ExecutionRepresentationPayload) {
+      let mark = DispatchTime.now().uptimeNanoseconds
+      let result = try await executor.continueExecution(
+        state, nextInputTokens: try executor.tokenizeText(input), maxTokens: maxTokens
+      )
+      let advanced = try await runtime.continueExecution(
+        state,
+        continuation: ExecutionContinuation(nextInput: input, continuationID: continuationID)
+      )
+      try await runtime.bindRepresentation(
+        executionID: advanced.id,
+        position: advanced.position,
+        payload: result.updatedPayload
+      )
+      record("continue", advanced, mark)
+      return (advanced, result.generatedTokenIDs, result.generatedText, result.updatedPayload)
+    }
+
+    let branchARun = try await advance(branchA, input: branchAInput, continuationID: "branch-a-1")
+    let advancedA = branchARun.0
+    let nestedRun = try await advance(nested, input: nestedInput, continuationID: "branch-a1-1")
+    let advancedNested = nestedRun.0
+    let nestedAdvancedPrefix = (nestedRun.payload as? OversizedPrefixPayload)?.tokenPrefix
+    let branchBRun = try await advance(branchB, input: branchBInput, continuationID: "branch-b-1")
+    let advancedB = branchBRun.0
+
+    var replays: [ExecutionContinuationResult] = []
+    var retainedAfterSwitch = true
+    for index in 0..<cycles {
+      started = DispatchTime.now().uptimeNanoseconds
+      let current = try await backend.captureRepresentation(for: advancedNested)
+      try await backend.releaseRepresentation(current)
+      record("release", advancedNested, started)
+
+      started = DispatchTime.now().uptimeNanoseconds
+      let restored = try await runtime.restore(
+        advancedNested,
+        request: ExecutionRestoreRequest(
+          targetPosition: forkPoint,
+          continuation: ExecutionContinuation(
+            nextInput: branchAInput, continuationID: "branch-a1-switch-0-\(index)"
+          )
+        )
+      )
+      record("switch", restored, started)
+      let replay = try await executor.continueExecution(
+        restored,
+        nextInputTokens: try executor.tokenizeText(branchAInput),
+        maxTokens: maxTokens
+      )
+      replays.append(replay)
+
+      started = DispatchTime.now().uptimeNanoseconds
+      let switched = try await runtime.restore(
+        restored,
+        request: ExecutionRestoreRequest(
+          targetPosition: continuedPosition,
+          continuation: ExecutionContinuation(
+            nextInput: nestedInput, continuationID: "branch-a1-switch-1-\(index)"
+          )
+        )
+      )
+      record("switch", switched, started)
+      let binding = try backend.boundPrefix(for: switched)
+      retainedAfterSwitch = retainedAfterSwitch && binding.prefix == nestedAdvancedPrefix
+    }
+
+    started = DispatchTime.now().uptimeNanoseconds
+    try await runtime.discard(advancedNested)
+    try await runtime.discard(advancedB)
+    record("release", advancedNested, started)
+
+    let branchABinding = try backend.boundPrefix(for: advancedA)
+    let rootBinding = try backend.boundPrefix(for: root)
+    let branchAPrefix = (branchARun.payload as? OversizedPrefixPayload)?.tokenPrefix
+    let branchBPrefix = (branchBRun.payload as? OversizedPrefixPayload)?.tokenPrefix
+    let nestedBindingGone = (try? backend.boundPrefix(for: advancedNested))?.prefix == nil
+    let branchBBindingGone = (try? backend.boundPrefix(for: advancedB))?.prefix == nil
+    let oversizedUnderLimit = core.peakFootprintMiB <= 30 * 1024
+
+    let checks = [
+      "NESTED_LINEAGE_ISOLATED":
+        branchA.lineage.parent == rootID && nested.lineage.parent == branchAID
+        && nested.lineage.root == root.lineage.root && branchB.lineage.parent == rootID,
+      "FORK_POINT_ISOLATED":
+        nestedForkPrefix == seedTokens,
+      "BRANCH_PREFIXES_DIVERGED":
+        branchAPrefix != nestedAdvancedPrefix && branchAPrefix != branchBPrefix
+        && nestedAdvancedPrefix != branchBPrefix,
+      "REPEATED_RELEASE_RESTORE_REPLAYS":
+        replays.count == cycles
+        && replays.allSatisfy {
+          $0.generatedTokenIDs == branchARun.generated && $0.generatedText == branchARun.text
+        },
+      "REPEATED_ADVANCE_RETAINED":
+        retainedAfterSwitch,
+      "RELEASE_NESTED_AND_DIRECT_BRANCH":
+        nestedBindingGone && branchBBindingGone,
+      "PARENT_BRANCH_SURVIVES_RELEASE":
+        branchABinding.prefix == branchAPrefix,
+      "ROOT_SURVIVES_RELEASE":
+        rootBinding.prefix == seedTokens,
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && oversizedUnderLimit,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return MLXNestedReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: mlxNestedProtocolVersion,
+      boundary: mlxNestedBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      branchAInput: branchAInput,
+      nestedInput: nestedInput,
+      branchBInput: branchBInput,
+      maxTokens: maxTokens,
+      cycles: cycles,
+      checks: checks,
+      branchAContent: branchARun.text,
+      nestedContent: nestedRun.text,
+      branchBContent: branchBRun.text,
+      nestedReplayContents: replays.map(\.generatedText),
+      steps: steps,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: overallPass
+    )
+  }
+}
