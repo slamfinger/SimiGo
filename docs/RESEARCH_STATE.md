@@ -7267,3 +7267,31 @@ artifacts见
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record-matrix-v2-initial-strict-gate-fail.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record-matrix-v2.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2.json`。
+
+### LAB CYBER TIEL DIVERGENCE LOGIT ATTRIBUTION PASS — 2026-09-29
+
+新增 resource-isolated two-phase divergence logit attribution，覆盖 Matrix V2的
+P6 cjk、P11 docstring和 P12 risk。Phase1只运行 MLX：teacher-force
+prompt IDs + common generated prefix，计算全词表 log-softmax和 top-16 candidate。
+Phase2只运行 llama-server：对同一 teacher-forced prefix提交 `/completion` 并使用
+`n_probs=16`。三个 mismatch的 common generated prefix lengths分别为 8/0/8；
+teacher prefix token counts为 205/207/211。
+
+结果 `top1 agreement = 0/3`，但所有 alternate tokens都在另一 backend的 top2内：
+P6 MLX选 `访问`，LLAMA选 `请求`；P11 MLX选 code fence，LLAMA选 `"""`；P12 MLX选
+` at`，LLAMA选 ` your`。因此分歧是 close-logprob near-boundary selection flip，
+不是 gross top-k dissociation。P11还叠加 code-fence formatting policy和后续
+EOS/length差异。登记
+`CYBER_TIEL_DIVERGENCE_TEACHER_FORCED_TOPK_PASS`、
+`NEAR_BOUNDARY_TOP1_DIVERGENCE_OBSERVED` 和
+`NO_GROSS_TOPK_DISSOCIATION_OBSERVED`；状态为
+`LOGIT_ATTRIBUTION = PASS_WITH_BOUNDARY / THREE_DIVERGENCE_CASES`。
+
+Phase1/Phase2 steady swap delta均为 `0 bytes`，gate `768 MiB`；backend顺序运行。
+这是 named-source variants的 3-case top-k observation，不是 quantization
+equivalence、full logits equality、MTP root cause、tokenizer lineage proof或
+same-checkpoint closure。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_DIVERGENCE_LOGIT_ATTRIBUTION_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-logit-record.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-logit-compare.json`。

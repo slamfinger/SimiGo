@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|cross-backend-logit-record|cross-backend-logit-compare|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -277,6 +277,29 @@ struct Simigo2CTL {
         host: host,
         port: port,
         seed: seed
+      )
+      print(try toJSON(report))
+    case "cross-backend-logit-record":
+      let topK = optionalOption("--top-k", rest).flatMap(Int.init) ?? 16
+      let record = try await CrossBackendLogitProbe.runRecord(
+        modelDirectory: modelDirectory,
+        sourceComparePath: try optionValue("--compare", rest),
+        topK: topK
+      )
+      let output = try optionValue("--output", rest)
+      let json = try toJSON(record)
+      try json.write(toFile: output, atomically: true, encoding: .utf8)
+      print(json)
+    case "cross-backend-logit-compare":
+      let host = optionalOption("--host", rest) ?? "127.0.0.1"
+      let port = optionalOption("--port", rest).flatMap(Int.init) ?? 18080
+      let topK = optionalOption("--top-k", rest).flatMap(Int.init) ?? 16
+      let report = try await CrossBackendLogitProbe.runCompare(
+        modelDirectory: modelDirectory,
+        recordPath: try optionValue("--record", rest),
+        host: host,
+        port: port,
+        topK: topK
       )
       print(try toJSON(report))
     case "o2-baseline":
