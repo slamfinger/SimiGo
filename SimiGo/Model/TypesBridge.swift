@@ -101,14 +101,20 @@ nonisolated public struct ParsedToolCall: Codable, Equatable, Sendable {
     public let id: String
     public let name: String
     public let arguments: [String: JSONValue]
+    /// arguments 的 JSON 字符串形态。构造时渲染一次；此前是无缓存计算属性，
+    /// 每次访问全量重序列化（Responses 流式路径单次调用访问 3 次）。
+    public let argumentsJSON: String
 
     public init(id: String, name: String, arguments: [String: JSONValue]) {
         self.id = id
         self.name = name
         self.arguments = arguments
+        self.argumentsJSON = ParsedToolCall.renderArgumentsJSON(arguments)
     }
 
-    public var argumentsJSON: String {
+    private static func renderArgumentsJSON(
+        _ arguments: [String: JSONValue]
+    ) -> String {
         guard !arguments.isEmpty else { return "{}" }
         let dict = arguments.mapValues { $0.toAny() }
         if let data = try? JSONSerialization.data(withJSONObject: dict),
@@ -116,6 +122,20 @@ nonisolated public struct ParsedToolCall: Codable, Equatable, Sendable {
             return str
         }
         return "{}"
+    }
+
+    /// argumentsJSON 是派生值，不进 Codable wire——契约保持 id/name/arguments
+    /// 三字段，与缓存引入前的编码形态逐字节一致。
+    private enum CodingKeys: String, CodingKey {
+        case id, name, arguments
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        arguments = try container.decode([String: JSONValue].self, forKey: .arguments)
+        argumentsJSON = ParsedToolCall.renderArgumentsJSON(arguments)
     }
 }
 

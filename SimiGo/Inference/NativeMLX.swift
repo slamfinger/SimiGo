@@ -1008,15 +1008,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 toolCalls.append(normalizedCall)
 
                 let callId = normalizedCall.id ?? ""
-                let argumentsRaw = (try? JSONEncoder().encode(normalizedCall.function.arguments))
-                    .flatMap { String(data: $0, encoding: .utf8) }
-                let arguments: [String: JSONValue]
-                if let data = try? JSONEncoder().encode(normalizedCall.function.arguments),
-                   let decoded = try? JSONDecoder().decode([String: JSONValue].self, from: data) {
-                    arguments = decoded
-                } else {
-                    arguments = [:]
-                }
+                // encode-once：同一 arguments 只做一次 JSONEncoder（此前连续
+                // 两次）。字符串形态进治理账本，Data 形态解码出结构化形态；
+                // 编码确定性使两条派生路径与旧双编码行为逐字节一致。
+                let argumentsData = try? JSONEncoder().encode(normalizedCall.function.arguments)
+                let argumentsRaw = argumentsData.flatMap { String(data: $0, encoding: .utf8) }
+                let arguments = argumentsData.flatMap {
+                    try? JSONDecoder().decode([String: JSONValue].self, from: $0)
+                } ?? [:]
 
                 // P1-3 ①：REQUESTED → VALIDATED；invalid → REJECTED(invalid_arguments)。
                 // 失败分支不进入 onToolCall。
