@@ -76,6 +76,32 @@ transcript sidecar 诞生起即如此），Codex 客户端回显 `content: null`
   不写死为产品语义；最终设计须回答"restore 预期收益何时覆盖 ~346ms
   固定成本"。
 
+### 实验 A 结果（2026-09-29 23:07，真机 9 工具轮 + 1 总结轮，PASS）
+
+执行形态：`build/release-exp-a` Release 构建（含 d3961bb），探针客户端
+以 Codex 同款回显驱动（assistant content:null + 字符串化 arguments），
+会话 `expa1/main`，垫底文本将上下文撑至 ~8.3k（90KB 中文经 BPE 压缩
+低于预期的 22.5k——规模注记见下）。
+
+| 观察项 | 基线（22:20 生产日志） | 实验 A（本轮） |
+|---|---|---|
+| `checkpointStale` | 6/6 工具轮 stale | **0/9** |
+| 条件恢复 | 必然 skip | **`action=rollforward` 9/9 稳定成功** |
+| cacheEff | 0.96-1.00 | **1.00 ×9**（首轮 cold 0.00 除外） |
+| transcript/binding | — | bindingGen 1→10 连续；[TOOL] 链合法；**anomaly=0 / REJECTED=0 / unknown_tc=0**；rawB=emitB |
+| 轮次延迟 | TTFT 1.6-5.8s @25-28k | wall 1.47-1.5s、TTFT ~1.0s @8.3k |
+
+- 无 `"" ↔ null` 振荡：history 2→20 单调，checkpoint 一轮转换后稳定
+  null 形态。
+- 附带发现：restore 成功后 completion 行 vendor 自报 `mode=extend` 且
+  `cacheHitTokens = cacheTokens` 全额——恢复态会话的下一轮生成在 vendor
+  账本视角与活会话 extend 同形（rendering/attribution 无新歧义）。
+- **规模注记**：本轮上下文 8.3k（非生产 27k），restore 本体在该规模
+  ≈1-10ms；生产规模的 restore 成本（~346ms）未在本轮复测。A 的五项
+  语义/一致性观察全部成立；**B（hedge-skip）在生产规模下的延迟收益
+  对照仍需 25k+ 真机负载**。
+- **判定：A = PASS**。B 解锁，独立 commit 待授权。
+
 ## 4. Token Export — deterministic noCacheAvailable / capability investigation pending
 
 - 每轮 `poolTokenExportFailed ×13-14 err=noCacheAvailable`（全边界），
