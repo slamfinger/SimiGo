@@ -6898,3 +6898,28 @@ warm-KV retention、production performance或cross-backend/cross-hardware claim�
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6J_FIXED_PREFIX_DISTRIBUTION_20260929.md`；artifact见
 `simigo2-experimental/results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json`。
+
+### LAB MLX PHASE6 MASTER INDEX CONSOLIDATED — 2026-09-29
+
+为避免 Phase-6 evidence碎片化，新增 consolidated master index
+`mlx-phase6-master-summary.json`，把 COST1–COST5 baseline profiles和 PHASE6A–J
+follow-ups纳入同一 evidence index。master checks全部 PASS：11个 expected index
+entries齐全、所有 indexed summaries overallPass、PHASE6D partial status显式、
+`p8/t2/segment16` GPU timeout cell保持 n=3、不声称 GPU timeout root cause、full
+factorization保持 open。
+
+Consolidated findings限定为 observation：Execution State local bookkeeping远小于
+generation cost；controlled fixed-token probes中 prefix 64 forward sum高于 prefix 8；
+segment 16 transition count alone不足以解释 cost；PHASE6D completed n=5 cells有
+long tails；GPU timeout cell保持 partial n=3。登记
+`MLX_PHASE6_MASTER_INDEX_CONSOLIDATED`、
+`MLX_PHASE6_FULL_MATRIX_REMAINS_OPEN` 和
+`MLX_PHASE6_NO_PERFORMANCE_BENCHMARK_CLAIM`；状态为
+`PHASE6 = CONSOLIDATED_PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE /
+FULL_MATRIX_OPEN`。这不是 throughput benchmark、production performance、warm-KV
+retention、release-policy recommendation、cross-backend/cross-hardware comparison，
+也不解释 GPU timeout root cause。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6_MASTER_SUMMARY_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6-master-summary.json`。

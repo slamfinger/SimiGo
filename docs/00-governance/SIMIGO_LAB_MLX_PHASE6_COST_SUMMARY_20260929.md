@@ -6,6 +6,11 @@
 PHASE6_STAGE = PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE / FULL_FACTORIAL_OPEN
 ```
 
+> 2026-09-29 update: COST1–COST5后已追加 PHASE6A–PHASE6J。当前 consolidated
+> index见
+> `SIMIGO_LAB_MLX_PHASE6_MASTER_SUMMARY_20260929.md`
+> 和 `mlx-phase6-master-summary.json`。本文保留 COST1–COST5原始边界。
+
 该文档索引并解释 COST1–COST5 的五组 oversized MLX Execution State cost
 observation。它是 observation index，不是 throughput benchmark、production
 performance claim 或 release-policy recommendation。

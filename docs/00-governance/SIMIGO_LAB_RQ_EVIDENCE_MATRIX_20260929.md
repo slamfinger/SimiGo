@@ -186,6 +186,22 @@ simigo2-experimental/results/o6-workload-matrix/
 
 ## MLX oversized Phase-6 cost observation
 
+Master index：
+
+```text
+CONSOLIDATED_PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE / FULL_MATRIX_OPEN
+```
+
+Consolidated artifact：
+
+```text
+results/backend-conformance/mlx-phase6-master-summary.json
+```
+
+该 index纳入 COST1–COST5与 PHASE6A–PHASE6J。它不改变各 profile边界；full n=5
+matrix、statistical factorization、kernel-level attribution、warm-KV/segment-residency
+policy和cross-backend normalization仍开放。
+
 Status：
 
 ```text
