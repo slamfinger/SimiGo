@@ -2,7 +2,7 @@
   "status": "CONSOLIDATED_PASS_WITH_BOUNDARY",
   "protocolVersion": "SIMIGO.UI.BRANCH.SESSIONS.MASTER.INDEX.V1",
   "boundary": "EVIDENCE_INDEX_ONLY / HARNESS_LEVEL / DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS / NO_PRODUCT_UI / NO_PERSISTENT_SESSION_CLAIM / NOT_A_PERFORMANCE_BENCHMARK",
-  "entryCount": 14,
+  "entryCount": 15,
   "entries": [
     {
       "id": "UI1",
@@ -129,6 +129,15 @@
       "expectedStatus": "PASS",
       "artifact": "ui-branch-session-llama-memory-pressure.json",
       "scope": "LLAMA multi-branch release/restore pressure action; exact recovery and retained control/root"
+    },
+    {
+      "id": "UI15",
+      "title": "controlled memory-pressure cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-memory-pressure-crossbackend-matrix.json",
+      "scope": "LLAMA vs oversized MLX controlled pressure outcome shape; eight common checks"
     }
   ],
   "coverage": {
@@ -163,6 +172,9 @@
     ],
     "llamaControlledMemoryPressure": [
       "UI14"
+    ],
+    "controlledMemoryPressureCrossBackend": [
+      "UI15"
     ]
   },
   "checks": {
@@ -181,7 +193,8 @@
     "LONG_RUNNING_MLX_PRESENT": true,
     "LONG_RUNNING_CROSSBACKEND_MATRIX_PRESENT": true,
     "MEMORY_PRESSURE_MLX_PRESENT": true,
-    "MEMORY_PRESSURE_LLAMA_PRESENT": true
+    "MEMORY_PRESSURE_LLAMA_PRESENT": true,
+    "MEMORY_PRESSURE_CROSSBACKEND_MATRIX_PRESENT": true
   },
   "consolidatedFindings": {
     "DEPTH1_SEMANTIC_MATRIX_PASS": true,
@@ -192,14 +205,14 @@
     "MLX_LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true,
     "LONG_RUNNING_CROSSBACKEND_OUTCOME_SHAPE_MATRIX_PASS": true,
     "CONTROLLED_MEMORY_PRESSURE_RELEASE_RESTORE_PASS": true,
-    "LLAMA_CONTROLLED_MEMORY_PRESSURE_RELEASE_RESTORE_PASS": true
+    "LLAMA_CONTROLLED_MEMORY_PRESSURE_RELEASE_RESTORE_PASS": true,
+    "CONTROLLED_MEMORY_PRESSURE_CROSSBACKEND_OUTCOME_SHAPE_PASS": true
   },
   "openItems": [
     "PRODUCT_UI_SURFACE",
     "PERSISTENT_OR_MULTI_PROCESS_SESSIONS",
     "ARBITRARY_DEPTH_BRANCH_GRAPH",
     "SAME_MODEL_OR_SAME_CHECKPOINT_CROSS_BACKEND_CLOSURE",
-    "MEMORY_PRESSURE_CROSSBACKEND_UI_MATRIX",
     "OS_MEMORY_PRESSURE_INJECTION_VALIDATION",
     "PRODUCTION_CANCELLATION_READINESS"
   ],
@@ -211,6 +224,7 @@
     "NOT_A_PERFORMANCE_BENCHMARK",
     "NOT_AN_OS_MEMORY_PRESSURE_VALIDATION",
     "NOT_A_LLAMA_NATIVE_CACHE_RELEASE_CLAIM",
+    "NOT_A_CROSSBACKEND_PHYSICAL_MECHANISM_CLOSURE",
     "NOT_AN_ARBITRARY_DEPTH_GRAPH_VALIDATION"
   ],
   "overallPass": true

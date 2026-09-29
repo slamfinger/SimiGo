@@ -1574,6 +1574,114 @@ public enum UIBranchSessions {
 }
 
 extension UIBranchSessions {
+  public struct MemoryPressureMatrixReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let seedText: String
+    public let controlInput: String
+    public let predictionTokens: Int
+    public let cycles: Int
+    public let commonChecks: [String: Bool]
+    public let llamaPressureMechanism: String
+    public let mlxPressureMechanism: String
+    public let sameWorkloadShape: Bool
+    public let sameOutcomeShape: Bool
+    public let bothBackendsPass: Bool
+    public let crossBackendClosure: Bool
+    public let closureBlocker: String
+    public let llama: LLAMAMemoryPressureReport
+    public let mlx: MLXMemoryPressureReport
+    public let overallPass: Bool
+  }
+
+  public static let memoryPressureMatrixProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.MEMORY.PRESSURE.CROSSBACKEND.V1"
+  public static let memoryPressureMatrixBoundary =
+    "SAME_CONTROLLED_PRESSURE_OUTCOME_SHAPE / DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_ENGINES_AND_MECHANISMS / "
+    + "HARNESS_LEVEL / NOT_OS_MEMORY_PRESSURE / NOT_A_SAME_CHECKPOINT_CLOSURE"
+
+  public static func runMemoryPressureCrossBackendMatrix(
+    modelDirectory: URL,
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    controlInput: String = "Now write tests for it.",
+    predictionTokens: Int = 1,
+    cycles: Int = 2,
+    seed: Int = 42,
+    segmentSize: Int = 8
+  ) async throws -> MemoryPressureMatrixReport {
+    let llama = try await runMemoryPressureLLAMA(
+      host: host,
+      port: port,
+      seedText: seedText,
+      controlInput: controlInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      seed: seed
+    )
+    let mlx = try await runMemoryPressureOversizedMLX(
+      modelDirectory: modelDirectory,
+      seedText: seedText,
+      controlInput: controlInput,
+      maxTokens: predictionTokens,
+      cycles: cycles,
+      segmentSize: segmentSize
+    )
+
+    let checkNames = [
+      "PRESSURE_WORKLOAD_COMPLETE",
+      "PRESSURE_RELEASE_ACTIONS_COMPLETE",
+      "PRESSURE_LINEAGE_ISOLATED",
+      "ACTIVE_BRANCH_PREFIXES_DIVERGED",
+      "REPEATED_RECOVERY_OUTPUTS_EXACT",
+      "RECOVERY_FINAL_BINDINGS_EXACT",
+      "RELEASE_PRESSURE_BRANCHES",
+      "ROOT_AND_CONTROL_SURVIVE",
+    ]
+    var commonChecks: [String: Bool] = [:]
+    for name in checkNames {
+      commonChecks[name] = llama.checks[name] == true && mlx.checks[name] == true
+    }
+
+    let llamaInputs = llama.pressureBranches.map(\.input)
+    let mlxInputs = mlx.pressureBranches.map(\.input)
+    let sameWorkloadShape =
+      llama.seedText == seedText && mlx.seedText == seedText
+      && llama.controlInput == controlInput && mlx.controlInput == controlInput
+      && llama.predictionTokens == predictionTokens && mlx.maxTokens == predictionTokens
+      && llama.cycles == cycles && mlx.cycles == cycles
+      && llamaInputs == mlxInputs && !llamaInputs.isEmpty
+    let sameOutcomeShape = commonChecks.values.allSatisfy { $0 }
+    let bothBackendsPass = llama.overallPass && mlx.overallPass
+    let matrixPass = sameWorkloadShape && sameOutcomeShape && bothBackendsPass
+
+    return MemoryPressureMatrixReport(
+      status: matrixPass ? "PASS_WITH_BOUNDARY" : "FAIL",
+      protocolVersion: memoryPressureMatrixProtocolVersion,
+      boundary: memoryPressureMatrixBoundary,
+      seedText: seedText,
+      controlInput: controlInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      commonChecks: commonChecks,
+      llamaPressureMechanism: "SWIFT_PREFIX_REGISTRY_RELEASE_RESTORE",
+      mlxPressureMechanism: "SWIFT_PREFIX_REGISTRY_RELEASE_PLUS_OVERSIZED_SEGMENT_RELEASE",
+      sameWorkloadShape: sameWorkloadShape,
+      sameOutcomeShape: sameOutcomeShape,
+      bothBackendsPass: bothBackendsPass,
+      crossBackendClosure: false,
+      closureBlocker:
+        "DIFFERENT_MODEL_ARTIFACTS_TOKENIZERS_EXECUTION_ENGINES_AND_PHYSICAL_PRESSURE_MECHANISMS",
+      llama: llama,
+      mlx: mlx,
+      overallPass: matrixPass
+    )
+  }
+}
+
+extension UIBranchSessions {
   public struct MLXNestedReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

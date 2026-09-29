@@ -7100,3 +7100,31 @@ computation和 native cache。全仓 Swift verification为 157 PASS / 0 FAIL。�
 artifacts见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-llama-memory-pressure.json`、
 `simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。
+
+### LAB UI15 CONTROLLED MEMORY PRESSURE CROSSBACKEND MATRIX PASS — 2026-09-29
+
+新增 `runMemoryPressureCrossBackendMatrix` 和 CLI `ui-memory-pressure-matrix`，
+登记 UI15 LLAMA/MLX controlled memory-pressure outcome-shape matrix。两者使用
+相同 seed/control text、两条 pressure branch inputs、1-token generation、2 cycles
+和每 backend 4个 release action。LLAMA运行 canonical mitigated ubatch8 profile；
+MLX运行 oversized Qwen3-Coder-Next-4bit、segment size 8、cacheless greedy
+recompute。
+
+八项 common checks全部 PASS：workload complete、release actions complete、
+lineage isolated、active branch prefixes diverged、repeated recovery outputs
+exact、final bindings exact、release pressure branches、root/control survive。
+matrix result为 `sameWorkloadShape / sameOutcomeShape / bothBackendsPass = true`，
+但 `crossBackendClosure = false`，blocker是 different model artifacts,
+tokenizers, execution engines and physical pressure mechanisms。LLAMA mechanism是
+Swift prefix-registry release/restore；MLX额外执行 oversized segment release。
+MLX backend-specific profile为 peak footprint `6,628 MiB`、max swap `0 MiB`、
+segment transitions `48`。登记
+`UI15_CONTROLLED_MEMORY_PRESSURE_OUTCOME_SHAPE_MATRIX_PASS`；状态为
+`UI15 = PASS_WITH_BOUNDARY / CONTROLLED_MEMORY_PRESSURE_OUTCOME_SHAPE_MATRIX`。
+
+这不是 OS memory-pressure validation、same-checkpoint closure、native-cache
+equivalence、production policy、performance benchmark、product UI或 persistent
+session。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_UI_MEMORY_PRESSURE_CROSSBACKEND_MATRIX_20260929.md`；
+artifact见
+`simigo2-experimental/results/backend-conformance/ui-memory-pressure-crossbackend-matrix.json`。

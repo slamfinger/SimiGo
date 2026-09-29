@@ -6,7 +6,7 @@
 UI_BRANCH_SESSIONS = CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE / PRODUCT_PERSISTENCE_OPEN
 ```
 
-新的 master index把 UI1–UI14纳入同一 evidence index。它是 harness-level evidence
+新的 master index把 UI1–UI15纳入同一 evidence index。它是 harness-level evidence
 index，不是 product UI、persistent session实现、production cancellation readiness或
 performance benchmark。
 
@@ -16,7 +16,7 @@ performance benchmark。
 backends   = LLAMA GGUF Cyber-Tiel; oversized MLX Qwen3-Coder-Next
 workloads  = depth-1 branch; nested/repeat; cancellation; long-running branch;
              long-running cross-backend matrix; LLAMA/MLX controlled
-             memory-pressure action pilots
+             memory-pressure action pilots and matrix
 boundary   = harness-level prefix representation; different model artifacts/tokenizers
 ```
 
@@ -38,6 +38,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | UI12 | long-running cross-backend outcome-shape matrix | PASS_WITH_BOUNDARY | `ui-branch-session-long-running-crossbackend-matrix.json` |
 | UI13 | MLX controlled memory-pressure action | PASS | `ui-branch-session-mlx-memory-pressure.json` |
 | UI14 | LLAMA controlled memory-pressure action | PASS | `ui-branch-session-llama-memory-pressure.json` |
+| UI15 | controlled memory-pressure cross-backend matrix | PASS_WITH_BOUNDARY | `ui-memory-pressure-crossbackend-matrix.json` |
 
 ## Coverage checks
 
@@ -59,6 +60,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | `ENTRY_COUNT_MATCHES` | PASS |
 | `MEMORY_PRESSURE_MLX_PRESENT` | PASS |
 | `MEMORY_PRESSURE_LLAMA_PRESENT` | PASS |
+| `MEMORY_PRESSURE_CROSSBACKEND_MATRIX_PRESENT` | PASS |
 
 ## Consolidated observations
 
@@ -81,6 +83,9 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 8. UI14在 LLAMA prefix-representation harness上验证相同的 controlled pressure
    outcome semantics。LLAMA release action作用于 Swift prefix registry，不代表
    llama-server native cache释放。
+9. UI15跨backend outcome shape一致；LLAMA与 MLX的 physical pressure mechanism
+   差异保留，不构成 same-checkpoint closure、native-cache equivalence或
+   performance equivalence。
 
 ## Master artifact
 
@@ -95,7 +100,6 @@ PRODUCT_UI_SURFACE
 PERSISTENT_OR_MULTI_PROCESS_SESSIONS
 ARBITRARY_DEPTH_BRANCH_GRAPH
 SAME_MODEL_OR_SAME_CHECKPOINT_CROSS_BACKEND_CLOSURE
-MEMORY_PRESSURE_CROSSBACKEND_UI_MATRIX
 OS_MEMORY_PRESSURE_INJECTION_VALIDATION
 PRODUCTION_CANCELLATION_READINESS
 ```
