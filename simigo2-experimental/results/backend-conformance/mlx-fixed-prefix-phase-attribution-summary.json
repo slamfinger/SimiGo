@@ -1,0 +1,654 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.O6.FIXED.PREFIX.PHASE.ATTRIBUTION.V1",
+  "boundary": "SAME_LEADING_TOKEN_IDS / PREFIX8_VS_PREFIX64 / COMBINED_N3 / SMALL_SAMPLE / NO_EXECUTION_STATE_ACTION / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenIDCount": 64,
+  "segmentSize": 8,
+  "segmentCount": 6,
+  "measuredSamplesPerLength": 3,
+  "cells": [
+    {
+      "prefixTokenLength": 8,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-fixed-prefix-phase-study.json",
+      "prefixTokenIDs": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007
+      ],
+      "generatedTokenIDs": [
+        279,
+        4910,
+        11
+      ],
+      "overallPass": true,
+      "generationTotalMs": {
+        "n": 3,
+        "meanMs": 10033.498166333333,
+        "medianMs": 10021.4105,
+        "minMs": 9992.869208,
+        "maxMs": 10086.214791,
+        "rangeMs": 93.34558300000026,
+        "stdevMs": 47.83234496072702
+      },
+      "embedMs": {
+        "n": 3,
+        "meanMs": 18.497791666666668,
+        "medianMs": 18.586041,
+        "minMs": 17.959209,
+        "maxMs": 18.948125,
+        "rangeMs": 0.9889159999999997,
+        "stdevMs": 0.5003295637770501
+      },
+      "logitsMs": {
+        "n": 3,
+        "meanMs": 36.68455566666667,
+        "medianMs": 34.24875,
+        "minMs": 33.324292,
+        "maxMs": 42.480625,
+        "rangeMs": 9.156333000000004,
+        "stdevMs": 5.040780736755602
+      },
+      "materializeSumMs": {
+        "n": 3,
+        "meanMs": 8625.414457666668,
+        "medianMs": 8625.392124,
+        "minMs": 8611.439082,
+        "maxMs": 8639.412167,
+        "rangeMs": 27.973084999999628,
+        "stdevMs": 13.986555873366436
+      },
+      "forwardSumMs": {
+        "n": 3,
+        "meanMs": 1283.791681,
+        "medianMs": 1287.1973759999998,
+        "minMs": 1258.295125,
+        "maxMs": 1305.882542,
+        "rangeMs": 47.58741699999996,
+        "stdevMs": 23.975813500437045
+      },
+      "releaseSumMs": {
+        "n": 3,
+        "meanMs": 69.01183366666667,
+        "medianMs": 71.34304300000001,
+        "minMs": 48.053751,
+        "maxMs": 87.63870700000001,
+        "rangeMs": 39.58495600000001,
+        "stdevMs": 19.89517750856598
+      },
+      "perLayerMaterialMeanMs": 179.69613453472223,
+      "perLayerForwardMeanMs": 26.74566002083333,
+      "perLayerReleaseMeanMs": 1.4377465347222225,
+      "samples": [
+        {
+          "sampleIndex": 0,
+          "generationTotalMs": 10021.4105,
+          "embedMs": 17.959209,
+          "logitsMs": 33.324292,
+          "segmentTotalsMs": {
+            "materializeMs": 8611.439082,
+            "forwardMs": 1287.1973759999998,
+            "releaseMs": 71.34304300000001
+          },
+          "segments": [
+            {
+              "forwardMs": 221.65475,
+              "layerRange": "0-7",
+              "materializeMs": 1428.666041,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.916375,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 205.264959,
+              "layerRange": "8-15",
+              "materializeMs": 1437.68125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.793834,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 210.210375,
+              "layerRange": "16-23",
+              "materializeMs": 1432.878375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 12.186959,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 206.865459,
+              "layerRange": "24-31",
+              "materializeMs": 1441.64375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 12.093791,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 214.529292,
+              "layerRange": "32-39",
+              "materializeMs": 1435.211833,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 12.194125,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 228.672541,
+              "layerRange": "40-47",
+              "materializeMs": 1435.357833,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 11.157959,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sampleIndex": 1,
+          "generationTotalMs": 9992.869208,
+          "embedMs": 18.586041,
+          "logitsMs": 42.480625,
+          "segmentTotalsMs": {
+            "materializeMs": 8625.392124,
+            "forwardMs": 1258.295125,
+            "releaseMs": 48.053751
+          },
+          "segments": [
+            {
+              "forwardMs": 230.903542,
+              "layerRange": "0-7",
+              "materializeMs": 1433.300541,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.124709,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 204.024833,
+              "layerRange": "8-15",
+              "materializeMs": 1435.163709,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 4.275958,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 202.939167,
+              "layerRange": "16-23",
+              "materializeMs": 1445.416708,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.210042,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 211.510916,
+              "layerRange": "24-31",
+              "materializeMs": 1439.301458,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 4.408917,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 196.300042,
+              "layerRange": "32-39",
+              "materializeMs": 1438.845458,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 4.484958,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 212.616625,
+              "layerRange": "40-47",
+              "materializeMs": 1433.36425,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 4.549167,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sampleIndex": 2,
+          "generationTotalMs": 10086.214791,
+          "embedMs": 18.948125,
+          "logitsMs": 34.24875,
+          "segmentTotalsMs": {
+            "materializeMs": 8639.412167,
+            "forwardMs": 1305.882542,
+            "releaseMs": 87.63870700000001
+          },
+          "segments": [
+            {
+              "forwardMs": 240.375958,
+              "layerRange": "0-7",
+              "materializeMs": 1431.4355,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.0555,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 203.364,
+              "layerRange": "8-15",
+              "materializeMs": 1439.50825,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.178709,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 229.283375,
+              "layerRange": "16-23",
+              "materializeMs": 1451.829584,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 13.244666,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 202.204792,
+              "layerRange": "24-31",
+              "materializeMs": 1437.501042,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.885625,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 214.67625,
+              "layerRange": "32-39",
+              "materializeMs": 1442.577375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.864166,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 215.978167,
+              "layerRange": "40-47",
+              "materializeMs": 1436.560416,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.410041,
+              "segmentIndex": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "prefixTokenLength": 64,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-fixed-prefix-phase-study.json",
+      "prefixTokenIDs": [
+        1000,
+        1001,
+        1002,
+        1003,
+        1004,
+        1005,
+        1006,
+        1007,
+        1008,
+        1009,
+        1010,
+        1011,
+        1012,
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020,
+        1021,
+        1022,
+        1023,
+        1024,
+        1025,
+        1026,
+        1027,
+        1028,
+        1029,
+        1030,
+        1031,
+        1032,
+        1033,
+        1034,
+        1035,
+        1036,
+        1037,
+        1038,
+        1039,
+        1040,
+        1041,
+        1042,
+        1043,
+        1044,
+        1045,
+        1046,
+        1047,
+        1048,
+        1049,
+        1050,
+        1051,
+        1052,
+        1053,
+        1054,
+        1055,
+        1056,
+        1057,
+        1058,
+        1059,
+        1060,
+        1061,
+        1062,
+        1063
+      ],
+      "generatedTokenIDs": [
+        268,
+        198,
+        262
+      ],
+      "overallPass": true,
+      "generationTotalMs": {
+        "n": 3,
+        "meanMs": 10953.391944333334,
+        "medianMs": 10944.811583,
+        "minMs": 10850.093584,
+        "maxMs": 11065.270666,
+        "rangeMs": 215.17708200000015,
+        "stdevMs": 107.84484737328259
+      },
+      "embedMs": {
+        "n": 3,
+        "meanMs": 17.664,
+        "medianMs": 17.777666,
+        "minMs": 17.213584,
+        "maxMs": 18.00075,
+        "rangeMs": 0.7871659999999991,
+        "stdevMs": 0.4057062330751151
+      },
+      "logitsMs": {
+        "n": 3,
+        "meanMs": 30.116611000000002,
+        "medianMs": 29.308375,
+        "minMs": 24.690708,
+        "maxMs": 36.35075,
+        "rangeMs": 11.660041999999997,
+        "stdevMs": 5.871888872774499
+      },
+      "materializeSumMs": {
+        "n": 3,
+        "meanMs": 8653.657777666667,
+        "medianMs": 8647.492375,
+        "minMs": 8642.39725,
+        "maxMs": 8671.083708,
+        "rangeMs": 28.68645800000013,
+        "stdevMs": 15.30481495079407
+      },
+      "forwardSumMs": {
+        "n": 3,
+        "meanMs": 2162.5985396666665,
+        "medianMs": 2165.82379,
+        "minMs": 2046.0241649999998,
+        "maxMs": 2275.947664,
+        "rangeMs": 229.923499,
+        "stdevMs": 114.99567612691031
+      },
+      "releaseSumMs": {
+        "n": 3,
+        "meanMs": 89.27662433333334,
+        "medianMs": 89.207374,
+        "minMs": 88.187374,
+        "maxMs": 90.435125,
+        "rangeMs": 2.247750999999994,
+        "stdevMs": 1.1254744981563671
+      },
+      "perLayerMaterialMeanMs": 180.28453703472223,
+      "perLayerForwardMeanMs": 45.05413624305555,
+      "perLayerReleaseMeanMs": 1.859929673611111,
+      "samples": [
+        {
+          "sampleIndex": 0,
+          "generationTotalMs": 10850.093584,
+          "embedMs": 17.777666,
+          "logitsMs": 24.690708,
+          "segmentTotalsMs": {
+            "materializeMs": 8671.083708,
+            "forwardMs": 2046.0241649999998,
+            "releaseMs": 90.435125
+          },
+          "segments": [
+            {
+              "forwardMs": 332.562458,
+              "layerRange": "0-7",
+              "materializeMs": 1446.351708,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.948916,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 353.689833,
+              "layerRange": "8-15",
+              "materializeMs": 1438.348458,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.219208,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 320.522375,
+              "layerRange": "16-23",
+              "materializeMs": 1451.555625,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.409625,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 376.419833,
+              "layerRange": "24-31",
+              "materializeMs": 1435.508334,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.222084,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 350.387333,
+              "layerRange": "32-39",
+              "materializeMs": 1446.395125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.606042,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 312.442333,
+              "layerRange": "40-47",
+              "materializeMs": 1452.924458,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.02925,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sampleIndex": 1,
+          "generationTotalMs": 11065.270666,
+          "embedMs": 17.213584,
+          "logitsMs": 36.35075,
+          "segmentTotalsMs": {
+            "materializeMs": 8647.492375,
+            "forwardMs": 2275.947664,
+            "releaseMs": 88.187374
+          },
+          "segments": [
+            {
+              "forwardMs": 365.861041,
+              "layerRange": "0-7",
+              "materializeMs": 1445.4825,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.725083,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 418.433416,
+              "layerRange": "8-15",
+              "materializeMs": 1440.164917,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.098792,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 344.048208,
+              "layerRange": "16-23",
+              "materializeMs": 1440.350541,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.824875,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 397.811375,
+              "layerRange": "24-31",
+              "materializeMs": 1439.814042,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.281291,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 353.864833,
+              "layerRange": "32-39",
+              "materializeMs": 1438.304708,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 13.489875,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 395.928791,
+              "layerRange": "40-47",
+              "materializeMs": 1443.375667,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.767458,
+              "segmentIndex": 5
+            }
+          ]
+        },
+        {
+          "sampleIndex": 2,
+          "generationTotalMs": 10944.811583,
+          "embedMs": 18.00075,
+          "logitsMs": 29.308375,
+          "segmentTotalsMs": {
+            "materializeMs": 8642.39725,
+            "forwardMs": 2165.82379,
+            "releaseMs": 89.207374
+          },
+          "segments": [
+            {
+              "forwardMs": 348.703583,
+              "layerRange": "0-7",
+              "materializeMs": 1438.599375,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 15.181458,
+              "segmentIndex": 0
+            },
+            {
+              "forwardMs": 347.035125,
+              "layerRange": "8-15",
+              "materializeMs": 1441.000958,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.443625,
+              "segmentIndex": 1
+            },
+            {
+              "forwardMs": 387.679583,
+              "layerRange": "16-23",
+              "materializeMs": 1442.00325,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.468208,
+              "segmentIndex": 2
+            },
+            {
+              "forwardMs": 373.863583,
+              "layerRange": "24-31",
+              "materializeMs": 1439.483125,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.04975,
+              "segmentIndex": 3
+            },
+            {
+              "forwardMs": 369.069,
+              "layerRange": "32-39",
+              "materializeMs": 1438.909042,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 16.238,
+              "segmentIndex": 4
+            },
+            {
+              "forwardMs": 339.472916,
+              "layerRange": "40-47",
+              "materializeMs": 1442.4015,
+              "materializeTransitionDelta": 1,
+              "releaseMs": 14.826333,
+              "segmentIndex": 5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pairedPrefix64MinusPrefix8": [
+    {
+      "sampleIndex": 0,
+      "prefix64GenerationTotalMsDelta": 828.6830840000002,
+      "prefix64MaterializeSumMsDelta": 59.644625999999334,
+      "prefix64ForwardSumMsDelta": 758.826789,
+      "prefix64ReleaseSumMsDelta": 19.09208199999999
+    },
+    {
+      "sampleIndex": 1,
+      "prefix64GenerationTotalMsDelta": 1072.4014580000003,
+      "prefix64MaterializeSumMsDelta": 22.100250999999844,
+      "prefix64ForwardSumMsDelta": 1017.6525389999997,
+      "prefix64ReleaseSumMsDelta": 40.13362300000001
+    },
+    {
+      "sampleIndex": 2,
+      "prefix64GenerationTotalMsDelta": 858.5967920000003,
+      "prefix64MaterializeSumMsDelta": 2.9850829999995767,
+      "prefix64ForwardSumMsDelta": 859.9412479999999,
+      "prefix64ReleaseSumMsDelta": 1.5686669999999907
+    }
+  ],
+  "meanPairedDelta": {
+    "prefix64GenerationTotalMsDelta": 919.8937780000002,
+    "prefix64MaterializeSumMsDelta": 28.243319999999585,
+    "prefix64ForwardSumMsDelta": 878.8068586666665,
+    "prefix64ReleaseSumMsDelta": 20.264790666666663
+  },
+  "checks": {
+    "ALL_SOURCE_REPORTS_PASS": true,
+    "ALL_LENGTHS_PRESENT": true,
+    "COMBINED_N3_PER_LENGTH": true,
+    "SAME_LEADING_TOKEN_IDS": true,
+    "PREFIX64_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "PREFIX64_FORWARD_SUM_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "ALL_REPORTS_ZERO_SWAP": true,
+    "ALL_REPORTS_UNDER_30GIB": true
+  },
+  "findings": {
+    "PREFIX64_TOTAL_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "PREFIX64_FORWARD_SUM_SLOWER_IN_ALL_PAIRED_SAMPLES": true,
+    "MATERIALIZE_PER_LAYER_APPROXIMATELY_SIMILAR": true,
+    "CONTENT_TOKENIZER_CONFOUND_CONTROLLED": true
+  },
+  "openQuestions": [
+    "MORE_REPLICATES_AND_COUNTERBALANCING",
+    "TEST_ADDITIONAL_LENGTHS",
+    "GPU_KERNEL_LEVEL_ATTRIBUTION"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_PREFIX_LENGTH_RECOMMENDATION",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON"
+  ],
+  "overallPass": true
+}
