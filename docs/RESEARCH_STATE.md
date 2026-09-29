@@ -6441,3 +6441,31 @@ claim。
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_COST_PROFILE_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/mlx-execstate-cost-profile.json`。
+
+### LAB MLX EXECSTATE SCALE PROFILE PASS — 2026-09-29
+
+继续 phase-6 characterization，新增 token-length scale sweep
+`runScaleSweep` 和 CLI `mlx-execstate-scale`。在 oversized MLX prefix-recompute
+路径上比较 direct generation 与 state-aware generation，prefix token lengths
+`8/64/256`，每 bucket 2 组交替 pairs，maxTokens `1`；先执行一次未计时 warmup。
+`stateLocalMs` 明确只含 capture + advance/bind + release stale，不包含
+generation。
+
+三项 checks 全部 PASS：所有 scale semantics stable、所有 length observed、
+oversized profile under 30GiB。观测 direct/state mean：8 tokens
+`9,947.386/9,931.575ms`，64 tokens `11,943.900/11,971.644ms`，256 tokens
+`17,177.501/17,565.942ms`；paired state−direct mean 分别
+`-15.811/+27.744/+388.442ms`，每 bucket 只有 2 samples，不能归因为稳定
+Execution State overhead。state local bookkeeping 约
+`0.0106–0.0149ms`。观测 overall peak footprint `7,954 MiB`、max swap `0 MiB`、
+segment transitions `85`。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `MLX_EXECSTATE_TOKEN_LENGTH_SCALE_OBSERVED`、
+`MLX_EXECSTATE_STATE_LOCAL_COST_SEPARATED` 和
+`SMALL_SAMPLE_NOT_A_PERFORMANCE_BENCHMARK`；状态为
+`COST2 = PASS / OVERSIZED_MLX_TOKEN_LENGTH_OBSERVATION_WITH_BOUNDARY`。观测到
+当前 cacheless greedy harness 的 latency 随 prefix length 增长，但不建立定量
+曲线、throughput、production、跨 backend 或跨硬件 claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile.json`。

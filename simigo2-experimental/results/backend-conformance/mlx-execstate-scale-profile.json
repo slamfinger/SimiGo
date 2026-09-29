@@ -1,0 +1,144 @@
+{
+  "boundary" : "OVERSIZED_MLX_PREFIX_RECOMPUTE \/ TOKEN_LENGTH_SCALE_OBSERVATION \/ SMALL_SAMPLE \/ NOT_A_PERFORMANCE_BENCHMARK",
+  "checks" : {
+    "ALL_LENGTHS_OBSERVED" : true,
+    "ALL_SCALE_SEMANTICS_STABLE" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true
+  },
+  "maxSwapMiB" : 0,
+  "maxTokens" : 1,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "pairsPerLength" : 2,
+  "peakFootprintMiB" : 7954,
+  "points" : [
+    {
+      "allSemanticIdentical" : true,
+      "directMeanMs" : 9947.3857915,
+      "directTokensPerSec" : 0.201057849963856,
+      "pairedStateMinusDirectMeanMs" : -15.811062499999935,
+      "pairs" : 2,
+      "peakFootprintMiB" : 7954,
+      "stateLocalMeanMs" : 0.0105835,
+      "stateMeanMs" : 9931.574729,
+      "stateTokensPerSec" : 0.2013779339705354,
+      "tokenLength" : 8
+    },
+    {
+      "allSemanticIdentical" : true,
+      "directMeanMs" : 11943.8995005,
+      "directTokensPerSec" : 0.16744950004948345,
+      "pairedStateMinusDirectMeanMs" : 27.7443119999989,
+      "pairs" : 2,
+      "peakFootprintMiB" : 7266,
+      "stateLocalMeanMs" : 0.011729,
+      "stateMeanMs" : 11971.643812499999,
+      "stateTokensPerSec" : 0.16706143544896754,
+      "tokenLength" : 64
+    },
+    {
+      "allSemanticIdentical" : true,
+      "directMeanMs" : 17177.5005835,
+      "directTokensPerSec" : 0.11643137430139967,
+      "pairedStateMinusDirectMeanMs" : 388.4418539999988,
+      "pairs" : 2,
+      "peakFootprintMiB" : 5880,
+      "stateLocalMeanMs" : 0.0148545,
+      "stateMeanMs" : 17565.9424375,
+      "stateTokensPerSec" : 0.11385668643262624,
+      "tokenLength" : 256
+    }
+  ],
+  "protocolVersion" : "LAB.MLX.EXECSTATE.COST.SCALE.V1",
+  "rootInput" : "Explain it briefly.",
+  "samples" : [
+    {
+      "directFirst" : true,
+      "directGenerationMs" : 9932.089208,
+      "directTokensPerSec" : 0.10068375132943129,
+      "footprintMiB" : 7714,
+      "pairIndex" : 0,
+      "pairedStateMinusDirectMs" : -17.928874999999607,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 9914.160333,
+      "stateLocalMs" : 0.013083000000000001,
+      "stateTokensPerSec" : 0.1008658289165879,
+      "tokenLength" : 8
+    },
+    {
+      "directFirst" : false,
+      "directGenerationMs" : 9962.682375,
+      "directTokensPerSec" : 0.10037457407147339,
+      "footprintMiB" : 7954,
+      "pairIndex" : 1,
+      "pairedStateMinusDirectMs" : -13.693250000000262,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 9948.989125,
+      "stateLocalMs" : 0.008084,
+      "stateTokensPerSec" : 0.10051272420101273,
+      "tokenLength" : 8
+    },
+    {
+      "directFirst" : true,
+      "directGenerationMs" : 11623.900959,
+      "directTokensPerSec" : 0.0860296387182939,
+      "footprintMiB" : 7266,
+      "pairIndex" : 0,
+      "pairedStateMinusDirectMs" : 127.10979099999895,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 11751.01075,
+      "stateLocalMs" : 0.013667,
+      "stateTokensPerSec" : 0.08509906264871726,
+      "tokenLength" : 64
+    },
+    {
+      "directFirst" : false,
+      "directGenerationMs" : 12263.898042,
+      "directTokensPerSec" : 0.08154014299330554,
+      "footprintMiB" : 7058,
+      "pairIndex" : 1,
+      "pairedStateMinusDirectMs" : -71.62116700000115,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 12192.276875,
+      "stateLocalMs" : 0.009791,
+      "stateTokensPerSec" : 0.08201913475656696,
+      "tokenLength" : 64
+    },
+    {
+      "directFirst" : true,
+      "directGenerationMs" : 16910.264917,
+      "directTokensPerSec" : 0.059135679122016206,
+      "footprintMiB" : 5623,
+      "pairIndex" : 0,
+      "pairedStateMinusDirectMs" : 472.6583329999994,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 17382.92325,
+      "stateLocalMs" : 0.015376,
+      "stateTokensPerSec" : 0.05752772336494093,
+      "tokenLength" : 256
+    },
+    {
+      "directFirst" : false,
+      "directGenerationMs" : 17444.73625,
+      "directTokensPerSec" : 0.057323881867230864,
+      "footprintMiB" : 5880,
+      "pairIndex" : 1,
+      "pairedStateMinusDirectMs" : 304.22537499999817,
+      "semanticIdentical" : true,
+      "stateGenerationMs" : 17748.961625,
+      "stateLocalMs" : 0.014333,
+      "stateTokensPerSec" : 0.05634132413647607,
+      "tokenLength" : 256
+    }
+  ],
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 85,
+  "status" : "PASS",
+  "tokenLengths" : [
+    8,
+    64,
+    256
+  ]
+}

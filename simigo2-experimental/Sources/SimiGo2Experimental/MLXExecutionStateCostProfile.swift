@@ -411,3 +411,276 @@ public enum MLXExecutionStateCostProfile {
     Double(DispatchTime.now().uptimeNanoseconds &- started) / 1e6
   }
 }
+
+extension MLXExecutionStateCostProfile {
+  public struct ScaleSample: Encodable, Sendable {
+    public let tokenLength: Int
+    public let pairIndex: Int
+    public let directFirst: Bool
+    public let directGenerationMs: Double
+    public let stateGenerationMs: Double
+    public let pairedStateMinusDirectMs: Double
+    public let directTokensPerSec: Double
+    public let stateTokensPerSec: Double
+    public let stateLocalMs: Double
+    public let footprintMiB: Int64
+    public let semanticIdentical: Bool
+  }
+
+  public struct ScalePoint: Encodable, Sendable {
+    public let tokenLength: Int
+    public let pairs: Int
+    public let directMeanMs: Double
+    public let stateMeanMs: Double
+    public let pairedStateMinusDirectMeanMs: Double
+    public let directTokensPerSec: Double
+    public let stateTokensPerSec: Double
+    public let stateLocalMeanMs: Double
+    public let peakFootprintMiB: Int64
+    public let allSemanticIdentical: Bool
+  }
+
+  public struct ScaleReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let rootInput: String
+    public let tokenLengths: [Int]
+    public let pairsPerLength: Int
+    public let maxTokens: Int
+    public let points: [ScalePoint]
+    public let samples: [ScaleSample]
+    public let checks: [String: Bool]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let scaleProtocolVersion = "LAB.MLX.EXECSTATE.COST.SCALE.V1"
+  public static let scaleBoundary =
+    "OVERSIZED_MLX_PREFIX_RECOMPUTE / TOKEN_LENGTH_SCALE_OBSERVATION / "
+    + "SMALL_SAMPLE / NOT_A_PERFORMANCE_BENCHMARK"
+
+  public static func runScaleSweep(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    tokenLengths: [Int] = [8, 64, 256],
+    pairsPerLength: Int = 2,
+    maxTokens: Int = 1,
+    segmentSize: Int = 8
+  ) async throws -> ScaleReport {
+    precondition(!tokenLengths.isEmpty && tokenLengths.allSatisfy({ $0 > 0 }))
+    precondition(pairsPerLength > 0 && maxTokens > 0)
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core,
+      backend: backend,
+      tokenizer: tokenizer
+    )
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+    let rootTokens = try executor.tokenizeText(rootInput)
+
+    _ = try executor.directGenerate(
+      prefix: seedTokens, nextInputTokens: rootTokens, maxTokens: 1
+    )
+    try core.releaseAllSegments()
+
+    var samples: [ScaleSample] = []
+    for tokenLength in tokenLengths {
+      var pointFootprint: Int64 = 0
+      for pairIndex in 0..<pairsPerLength {
+        let directFirst = pairIndex % 2 == 0
+        let prefix = makePrefix(
+          seedTokens: seedTokens,
+          fillerTokens: try executor.tokenizeText(
+            "Explain the tradeoff, then list a concise implementation plan "
+              + "with tests, failure modes, and rollback steps."
+          ),
+          length: tokenLength
+        )
+        let runtime = ExecutionContinuityCoordinator(
+          backend: backend
+        )
+        let rootID = ExecutionID("scale-\(tokenLength)-\(pairIndex)")
+        let root = try await runtime.create(
+          id: rootID,
+          position: ExecutionPosition(0),
+          continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "state-0")
+        )
+        try await runtime.bindRepresentation(
+          executionID: rootID,
+          position: ExecutionPosition(0),
+          payload: OversizedPrefixPayload(tokenPrefix: prefix)
+        )
+
+        var directMs = 0.0
+        var directResult: OversizedSegmentedExecutor.DirectGenerationResult?
+        var stateMs = 0.0
+        var stateResult: ExecutionContinuationResult?
+        var stateLocalMs = 0.0
+
+        func runDirect() throws {
+          let started = DispatchTime.now().uptimeNanoseconds
+          directResult = try executor.directGenerate(
+            prefix: prefix, nextInputTokens: rootTokens, maxTokens: maxTokens
+          )
+          directMs = elapsedMs(started)
+        }
+
+        func runState() async throws {
+          let captureStarted = DispatchTime.now().uptimeNanoseconds
+          let checkpoint = try await backendCapture(
+            backend, root
+          )
+          let captureMs = elapsedMs(captureStarted)
+          let generatedStarted = DispatchTime.now().uptimeNanoseconds
+          let generated = try await executor.continueExecution(
+            root, nextInputTokens: rootTokens, maxTokens: maxTokens
+          )
+          stateMs = elapsedMs(generatedStarted)
+          stateResult = generated
+
+          let advanceStarted = DispatchTime.now().uptimeNanoseconds
+          let advanced = try await runtime.continueExecution(
+            root,
+            continuation: ExecutionContinuation(
+              nextInput: rootInput, continuationID: "state-1"
+            )
+          )
+          try await runtime.bindRepresentation(
+            executionID: advanced.id,
+            position: ExecutionPosition(1),
+            payload: generated.updatedPayload
+          )
+          try await backend.releaseRepresentation(checkpoint)
+          let advanceReleaseMs = elapsedMs(advanceStarted)
+          stateLocalMs = captureMs + advanceReleaseMs
+        }
+
+        if directFirst {
+          try runDirect()
+          try await runState()
+        } else {
+          try await runState()
+          try runDirect()
+        }
+
+        let direct = try XCTUnwrapOptional(directResult)
+        let state = try XCTUnwrapOptional(stateResult)
+        let identical =
+          direct.generatedTokenIDs == state.generatedTokenIDs
+          && (state.updatedPayload as? OversizedPrefixPayload)?.tokenPrefix
+            == prefix + rootTokens + state.generatedTokenIDs
+        pointFootprint = max(pointFootprint, core.gauge().footprintMiB)
+
+        samples.append(
+          ScaleSample(
+            tokenLength: tokenLength,
+            pairIndex: pairIndex,
+            directFirst: directFirst,
+            directGenerationMs: directMs,
+            stateGenerationMs: stateMs,
+            pairedStateMinusDirectMs: stateMs - directMs,
+            directTokensPerSec: Double(maxTokens) / (directMs / 1000),
+            stateTokensPerSec: Double(maxTokens) / (stateMs / 1000),
+            stateLocalMs: stateLocalMs,
+            footprintMiB: core.gauge().footprintMiB,
+            semanticIdentical: identical
+          )
+        )
+        try core.releaseAllSegments()
+      }
+      _ = pointFootprint
+    }
+
+    var points: [ScalePoint] = []
+    for tokenLength in tokenLengths {
+      let group = samples.filter { $0.tokenLength == tokenLength }
+      let direct = group.map(\.directGenerationMs)
+      let state = group.map(\.stateGenerationMs)
+      let delta = group.map(\.pairedStateMinusDirectMs)
+      let local = group.map(\.stateLocalMs)
+      points.append(
+        ScalePoint(
+          tokenLength: tokenLength,
+          pairs: group.count,
+          directMeanMs: mean(direct),
+          stateMeanMs: mean(state),
+          pairedStateMinusDirectMeanMs: mean(delta),
+          directTokensPerSec: Double(maxTokens * group.count) / (mean(direct) / 1000),
+          stateTokensPerSec: Double(maxTokens * group.count) / (mean(state) / 1000),
+          stateLocalMeanMs: mean(local),
+          peakFootprintMiB: group.map(\.footprintMiB).max() ?? 0,
+          allSemanticIdentical: group.allSatisfy(\.semanticIdentical)
+        )
+      )
+    }
+
+    let checks = [
+      "ALL_SCALE_SEMANTICS_STABLE":
+        samples.count == tokenLengths.count * pairsPerLength
+        && samples.allSatisfy(\.semanticIdentical),
+      "ALL_LENGTHS_OBSERVED":
+        Set(samples.map(\.tokenLength)) == Set(tokenLengths)
+        && tokenLengths.allSatisfy({ length in
+          samples.filter { $0.tokenLength == length }.count == pairsPerLength
+        }),
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && core.peakFootprintMiB <= 30 * 1024,
+    ]
+
+    return ScaleReport(
+      status: checks.values.allSatisfy(\.self) ? "PASS" : "FAIL",
+      protocolVersion: scaleProtocolVersion,
+      boundary: scaleBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      rootInput: rootInput,
+      tokenLengths: tokenLengths,
+      pairsPerLength: pairsPerLength,
+      maxTokens: maxTokens,
+      points: points,
+      samples: samples,
+      checks: checks,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: checks.values.allSatisfy(\.self)
+    )
+  }
+
+  private static func makePrefix(
+    seedTokens: [Int], fillerTokens: [Int], length: Int
+  ) -> [Int] {
+    precondition(length >= seedTokens.count, "token length must include seed")
+    var tokens = seedTokens
+    while tokens.count < length {
+      tokens.append(contentsOf: fillerTokens)
+    }
+    return Array(tokens.prefix(length))
+  }
+
+  private static func backendCapture(
+    _ backend: OversizedSegmentedStateBackend, _ state: ExecutionStateHandle
+  ) async throws -> ExecutionRepresentation {
+    try await backend.captureRepresentation(for: state)
+  }
+
+  private static func mean(_ values: [Double]) -> Double {
+    values.reduce(0, +) / Double(max(values.count, 1))
+  }
+}
