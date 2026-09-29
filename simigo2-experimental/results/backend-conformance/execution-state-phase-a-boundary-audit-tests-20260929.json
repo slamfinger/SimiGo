@@ -1,0 +1,36 @@
+{
+  "artifact": "EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_TESTS",
+  "date": "2026-09-29",
+  "status": "PASS",
+  "evidence_kind": "TARGETED_UNIT_TEST_SUMMARY",
+  "command": "swift test --filter 'ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|ExecutionContinuityCoordinatorTests|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests'",
+  "working_directory": "simigo2-experimental",
+  "bundles": [
+    {
+      "bundle": "SimiGoRuntimeContractTests",
+      "passed": 15,
+      "failed": 0,
+      "suites": [
+        {"name": "ExecutionContinuityContractTests", "passed": 6, "failed": 0},
+        {"name": "ExecutionContinuityLifecycleTreeTests", "passed": 9, "failed": 0}
+      ]
+    },
+    {
+      "bundle": "SimiGo2ExperimentalTests",
+      "passed": 30,
+      "failed": 0,
+      "suites": [
+        {"name": "ExecutionContinuityCoordinatorTests", "passed": 15, "failed": 0},
+        {"name": "ExecutionStatePrefixPoolTests", "passed": 10, "failed": 0},
+        {"name": "MaterializationCoordinatorTests", "passed": 3, "failed": 0},
+        {"name": "OversizedBackendAtomicityTests", "passed": 2, "failed": 0},
+        {"name": "PrefixSnapshotStoreTests", "passed": 7, "failed": 0}
+      ]
+    }
+  ],
+  "totals": {
+    "passed": 45,
+    "failed": 0
+  },
+  "boundary": "AUDIT_ONLY / NO_STORAGE_SELECTION / NO_ADAPTER_IMPLEMENTATION"
+}

@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Execution State Runtime证据已按 harness boundary收敛；oversized independent line已冻结为 architecture validation payload。PALACE-1与 BACKEND-1保持 `RESEARCH OPEN / AUDIT FIRST`，下一步优先做 PALACE-1 minimal persistence unit code audit，不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A boundary audit已完成并待 review；PALACE-1在 minimal durable unit 正式打开前保持 gated。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7745,3 +7745,64 @@ boundary workload复用。boundary报告与final artifact见
 `docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md`、
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final.json`、
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final-host-context.json`。
+
+### LAB EXECUTION STATE PHASE A BOUNDARY AUDIT COMPLETE — 2026-09-29
+
+状态登记为 `PHASE_A_CODE_AUDIT_COMPLETE / AWAITING_REVIEW`。本轮只审计
+`simigo2-experimental` 当前代码，不选 SQLite / KV / event log / remote，不实现
+Palace database，不实现 Llama adapter。
+
+Observed boundary：
+
+```text
+ExecutionID / Lineage / Position / Continuation / Lifecycle
+    = semantic Execution State aggregate
+
+Coordinator handles / records / representation history
+    = process-local materialization; no persistence sink
+
+ExecutionRepresentation payload, RepresentationRef, prefix entry,
+snapshot + sidecar
+    = physical representation layer
+
+ExecutionBindingRegistry rows / runtimeAddress / generation
+    = runtime relation plus representation locator plus history
+
+lifecycle records, pool stats, oversized token ledger
+    = observability / history
+
+physical-use counts and in-flight materialization
+    = transient
+```
+
+Phase A 的 inferred minimal D closure 是 semantic `ExecutionStateHandle`
+aggregate：`id`, `lineage.root`, `lineage.parent`, `position`,
+`continuation.nextInput`, `continuation.continuationID`, `lifecycle`。
+完整 lifecycle event log、RepresentationRef、binding relation、runtimeAddress、
+token prefix / KV artifact、stats 和 in-flight work 都不属于最小 D 闭包。
+
+关键 code facts：
+
+- Execution position 的 canonical source 是 coordinator-owned handle position；
+  token count / prefix boundary / `RepresentationRef.boundLength` 是 P 层 claim。
+- Generic backend consistency 目前只强制 representation position 和 payload
+  type；content digest 只存在于 prefix pool / sidecar 特定路径。
+- Coordinator restore 依赖 in-memory representation history；restart 后不能恢复。
+- Prefix store `rescan()` 只恢复 representation claims，不恢复 Execution handles
+  或 execution→representation bindings。
+- `bindRepresentation` 不拒绝 discarded lifecycle；这是后续 Phase B 必须处理的
+  logical/physical seam gap。
+
+Targeted tests PASS：`SimiGoRuntimeContractTests 15/15`，
+`SimiGo2ExperimentalTests 30/30`，总计 `45/45`。artifact 见
+`simigo2-experimental/results/backend-conformance/execution-state-phase-a-boundary-audit-tests-20260929.json`；
+报告见
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_20260929.md`。
+
+登记 `EXECUTION_STATE_PHASE_A_AUDIT_COMPLETE`、
+`MINIMAL_D_CANDIDATE_IS_EXECUTION_STATE_HANDLE_AGGREGATE`、
+`REPRESENTATION_AND_BINDING_NOT_EXECUTION_D_STATE` 和
+`NO_STORAGE_SELECTION_NO_ADAPTER_IMPLEMENTATION`。
+
+下一步是 external review / explicit human registration。登记通过后才打开 Phase B
+PALACE-1 minimal durable unit；BACKEND-1继续单独 scoped。

@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-29  
-状态：`HANDOFF_REGISTERED / ROUTE_REDEFINED / AUDIT_FIRST_NEXT`
+状态：`PHASE_A_AUDIT_COMPLETE / AWAITING_REVIEW / NO_IMPLEMENTATION`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -11,7 +11,9 @@
 2. 读 `docs/AGENT_CONTEXT.md` 的 source-of-truth、recovery、boundary规则。
 3. 读 `docs/RESEARCH_STATE.md`；最新结论优先看文件尾部 2026-09-29 sections。
 4. 读 `docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md`。
-5. 按下一步任务读：
+5. 读 Phase A 审计：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_20260929.md`
+6. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -21,11 +23,11 @@
 branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
-architecture contract = NEXT SYNTHESIS GATE
-PALACE-1 = MAIN OPEN / AUDIT FIRST
+architecture contract = PHASE A AUDIT COMPLETE / REVIEW PENDING
+PALACE-1 = GATED / MINIMAL DURABLE UNIT NOT STARTED
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = AUDIT_FIRST / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = EXTERNAL_REVIEW / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -38,6 +40,17 @@ next mode = AUDIT_FIRST / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
   Runtime Binding (R), Physical Representation (P), Observability/History (O), or
   Transient/Reconstructable (T).
 - Storage technology selection and Llama adapter implementation remain unauthorized.
+
+2026-09-29 Phase A result:
+
+- Audit completed for the current Lab runtime code only; no storage was selected.
+- The inferred minimal D closure is the semantic `ExecutionStateHandle` aggregate:
+  id, lineage, position, continuation, lifecycle.
+- `RepresentationRef`, bindings, lifecycle history, artifact sidecars, pool stats,
+  and physical-use state are not part of the minimal D closure.
+- Durable Execution State and durable representation reattachment must remain
+  separate boundary decisions.
+- Targeted contract/pool/store/materialization/atomicity tests passed 45/45.
 
 Canonical route document:
 
@@ -56,36 +69,16 @@ Canonical route document:
 
 ## Next session task
 
-优先进入 **PALACE-1 code-level audit**，回答 opening中的第一问：
+1. Review Phase A and decide one of：`PASS / FAIL / RETURN FOR REVISION`。
+2. Only after explicit repository registration may Phase B open。
+3. Phase B must formalize PALACE-1 as the minimal durable unit question, using the
+   Phase A boundary；it must not select SQLite / KV / event log / remote storage。
+4. BACKEND-1 remains separately scoped until PALACE-1 opens。
 
-> 当前 runtime中 Execution 的最小持久化单元是什么？
-
-建议审计入口：
-
-```text
-simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift
-simigo2-experimental/Sources/SimiGo2Experimental/ExecutionState.swift
-simigo2-experimental/Sources/SimiGo2Experimental/ExecutionBindingRegistry.swift
-simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift
-simigo2-experimental/Sources/SimiGo2Experimental/ExecutionStatePrefixPool.swift
-simigo2-experimental/Sources/SimiGo2Experimental/PrefixSnapshotStore.swift
-simigo2-experimental/Sources/SimiGo2Experimental/MaterializationCoordinator.swift
-```
-
-交付物：
-
-```text
-docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_PERSISTENCE_UNIT_AUDIT_<date>.md
-results artifact if machine-checkable evidence is produced
-RESEARCH_STATE / NEXT_SESSION_ENTRY update
-```
-
-登记时必须区分：
+登记时必须继续区分：
 
 ```text
 observed code fact
 ≠ inferred storage design
 ≠ selected implementation
 ```
-
-BACKEND-1保持 separately scoped；可在 PALACE-1 audit完成后另行审计，不得混入同一结论。
