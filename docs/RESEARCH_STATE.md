@@ -6412,3 +6412,32 @@ closure 保持 OPEN，不得解释为 universal、same-model 或 production clai
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CANCELLATION_CROSSBACKEND_MATRIX_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-cancellation-crossbackend-matrix.json`、`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-cancellation.json`。
+
+### LAB MLX EXECSTATE COST PROFILE PASS — 2026-09-29
+
+开始 pasted plan 的 phase-6 cost characterization。新增
+`MLXExecutionStateCostProfile` 和 CLI `mlx-execstate-cost`，在 oversized MLX
+prefix-recompute 路径上分别观测 paired direct-vs-state ordinary generation 与
+capture/fork/diverge/release/restore/replay lifecycle。使用本地
+Qwen3-Coder-Next-4bit snapshot、segment size 8、2-token generation、3 paired
+cycles、2 lifecycle cycles。
+
+五项 checks 全部 PASS：paired greedy semantics stable、lifecycle replay exact、
+branch divergence、parent non-interference、oversized profile under 30GiB。
+paired observation 中 direct/state generation mean 为
+`19,203.369/19,243.577ms`，state−direct mean `+40.208ms`，但 median
+`-59.290ms`、范围约 `-807.920` 到 `+988.835ms`，且只有 3 samples，因此不解释为
+稳定 overhead。no-fork state local bookkeeping mean `0.022111ms`。lifecycle
+local capture/fork/release/restore 合计 mean `7.695876ms`，其中 oversized
+segment release mean `7.651396ms`，说明 release 是本路径的主要 local operation，
+不可与 LLAMA dictionary release 直接比较。观测 peak footprint `7,714 MiB`、max
+swap `0 MiB`、segment transitions `146`。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `MLX_EXECSTATE_PAIRED_COST_OBSERVED`、
+`MLX_EXECSTATE_LIFECYCLE_LOCAL_COST_OBSERVED` 和 `NOT_A_PERFORMANCE_BENCHMARK`；
+状态为 `COST1 = PASS / OVERSIZED_MLX_COST_OBSERVATION_WITH_BOUNDARY`，不是
+throughput benchmark、production readiness、跨 backend 或跨硬件 performance
+claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_COST_PROFILE_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/mlx-execstate-cost-profile.json`。

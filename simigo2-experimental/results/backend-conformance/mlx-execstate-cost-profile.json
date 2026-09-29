@@ -1,0 +1,172 @@
+{
+  "boundary" : "OVERSIZED_MLX_PREFIX_RECOMPUTE \/ PAIRED_COST_OBSERVATION \/ CAPTURE_FORK_RELEASE_RESTORE_REPLAY \/ NOT_A_PERFORMANCE_BENCHMARK",
+  "branchInput" : "Now write tests for it.",
+  "checks" : {
+    "LIFECYCLE_BRANCH_DIVERGED" : true,
+    "LIFECYCLE_REPLAY_EXACT" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "PAIRED_SEMANTICS_STABLE" : true,
+    "PARENT_NON_INTERFERENCE" : true
+  },
+  "directGenerationMs" : {
+    "maxMs" : 20044.7175,
+    "meanMs" : 19203.369097333332,
+    "medianMs" : 19459.989333,
+    "minMs" : 18105.400459,
+    "n" : 3,
+    "p95Ms" : 20044.7175
+  },
+  "lifecycleCaptureMs" : {
+    "maxMs" : 0.001125,
+    "meanMs" : 0.0010625,
+    "medianMs" : 0.0010625,
+    "minMs" : 0.001,
+    "n" : 2,
+    "p95Ms" : 0.001125
+  },
+  "lifecycleCycles" : 2,
+  "lifecycleForkMs" : {
+    "maxMs" : 0.02375,
+    "meanMs" : 0.0168955,
+    "medianMs" : 0.0168955,
+    "minMs" : 0.010041,
+    "n" : 2,
+    "p95Ms" : 0.02375
+  },
+  "lifecycleLocalMs" : {
+    "maxMs" : 8.287790999999999,
+    "meanMs" : 7.6958755,
+    "medianMs" : 7.6958755,
+    "minMs" : 7.103960000000001,
+    "n" : 2,
+    "p95Ms" : 8.287790999999999
+  },
+  "lifecycleReleaseMs" : {
+    "maxMs" : 8.253667,
+    "meanMs" : 7.651396,
+    "medianMs" : 7.651396,
+    "minMs" : 7.049125,
+    "n" : 2,
+    "p95Ms" : 8.253667
+  },
+  "lifecycleRestoreMs" : {
+    "maxMs" : 0.009208,
+    "meanMs" : 0.007729,
+    "medianMs" : 0.007729,
+    "minMs" : 0.00625,
+    "n" : 2,
+    "p95Ms" : 0.009208
+  },
+  "lifecycleSamples" : [
+    {
+      "branchDiverged" : true,
+      "captureDivergentMs" : 0.000834,
+      "captureMs" : 0.001125,
+      "divergentAdvanceMs" : 0.009584,
+      "divergentGenerationMs" : 22809.948417,
+      "forkMs" : 0.02375,
+      "index" : 0,
+      "lifecycleLocalMs" : 7.103960000000001,
+      "parentNonInterference" : true,
+      "releaseMs" : 7.049125,
+      "replayAdvanceMs" : 0.010334,
+      "replayGenerationMs" : 22827.077542,
+      "replayMatchesReference" : true,
+      "restoreMs" : 0.009208
+    },
+    {
+      "branchDiverged" : true,
+      "captureDivergentMs" : 0.000792,
+      "captureMs" : 0.001,
+      "divergentAdvanceMs" : 0.008666,
+      "divergentGenerationMs" : 22060.251208,
+      "forkMs" : 0.010041,
+      "index" : 1,
+      "lifecycleLocalMs" : 8.287790999999999,
+      "parentNonInterference" : true,
+      "releaseMs" : 8.253667,
+      "replayAdvanceMs" : 0.007375,
+      "replayGenerationMs" : 22027.584625,
+      "replayMatchesReference" : true,
+      "restoreMs" : 0.00625
+    }
+  ],
+  "maxSwapMiB" : 0,
+  "maxTokens" : 2,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "pairedCycles" : 3,
+  "pairedSamples" : [
+    {
+      "directFirst" : true,
+      "directGenerationMs" : 18105.400459,
+      "index" : 0,
+      "pairedStateMinusDirectMs" : -59.289709000000585,
+      "semanticIdentical" : true,
+      "stateAdvanceMs" : 0.006125,
+      "stateBindMs" : 0.014666,
+      "stateCaptureMs" : 0.000666,
+      "stateGenerationMs" : 18046.11075,
+      "stateLocalMs" : 0.021874,
+      "stateReleaseStaleMs" : 0.000417
+    },
+    {
+      "directFirst" : false,
+      "directGenerationMs" : 19459.989333,
+      "index" : 1,
+      "pairedStateMinusDirectMs" : -807.9199160000026,
+      "semanticIdentical" : true,
+      "stateAdvanceMs" : 0.022292,
+      "stateBindMs" : 0.002375,
+      "stateCaptureMs" : 0.0005,
+      "stateGenerationMs" : 18652.069417,
+      "stateLocalMs" : 0.027875999999999998,
+      "stateReleaseStaleMs" : 0.002709
+    },
+    {
+      "directFirst" : true,
+      "directGenerationMs" : 20044.7175,
+      "index" : 2,
+      "pairedStateMinusDirectMs" : 987.8345000000008,
+      "semanticIdentical" : true,
+      "stateAdvanceMs" : 0.008917,
+      "stateBindMs" : 0.006083,
+      "stateCaptureMs" : 0.001,
+      "stateGenerationMs" : 21032.552,
+      "stateLocalMs" : 0.016584,
+      "stateReleaseStaleMs" : 0.000584
+    }
+  ],
+  "pairedStateMinusDirectMs" : {
+    "maxMs" : 987.8345000000008,
+    "meanMs" : 40.2082916666659,
+    "medianMs" : -59.289709000000585,
+    "minMs" : -807.9199160000026,
+    "n" : 3,
+    "p95Ms" : 987.8345000000008
+  },
+  "peakFootprintMiB" : 7714,
+  "protocolVersion" : "LAB.MLX.EXECSTATE.COST.PROFILE.V1",
+  "rootInput" : "Explain it briefly.",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 146,
+  "stateGenerationMs" : {
+    "maxMs" : 21032.552,
+    "meanMs" : 19243.577389,
+    "medianMs" : 18652.069417,
+    "minMs" : 18046.11075,
+    "n" : 3,
+    "p95Ms" : 21032.552
+  },
+  "stateLocalMs" : {
+    "maxMs" : 0.027875999999999998,
+    "meanMs" : 0.022111333333333334,
+    "medianMs" : 0.021874,
+    "minMs" : 0.016584,
+    "n" : 3,
+    "p95Ms" : 0.027875999999999998
+  },
+  "status" : "PASS"
+}
