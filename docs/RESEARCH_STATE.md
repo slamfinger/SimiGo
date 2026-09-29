@@ -6068,6 +6068,22 @@ graph reduction 仍未定位。RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH2_THREAD4_ISOLATION_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2-seed43.json`。
 
+### LAB RQ3 UBATCH8 STABLE — SAFE BOUND AT LEAST 8 — 2026-09-29
+
+继续 ubatch sweep，在 Metal `parallel4 / threads4 / ubatch8` 上用 distinct
+equal-length prompt probe 运行 cardinality 1–4。seed42 和 seed43 中 N1–N4
+all-match 与 across-cycle stable 均为 `8/8`。
+
+结合 `ubatch2/4/8` 两 seeds stable、default `ubatch512` intermittent unstable，
+登记 `UBATCH8_STABLE_N1_N4`、`SAFE_UBATCH_UPPER_BOUND_AT_LEAST_8` 和
+`UBATCH512_INSTABILITY_NOT_SIMPLE_THRESHOLD_AT_8`。`ubatch4` artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch4.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch4-seed43.json`。这说明 mitigation 不是
+`ubatch2` 独有，但 default 512 mismatch 也不能简化为“超过 8 必然失败”。当前
+safe observed upper bound 为 8；9–511 未逐一测试，具体 Metal kernel / graph
+reduction 仍未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH8_STABLE_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch8.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch8-seed43.json`。
+
 ### LAB RQ3 UBATCH2 CANCELLATION CURVE — STRICT PASS / LARGE LATENCY — 2026-09-29
 
 把 `ubatch2` mitigation 放回最初失败的 higher-concurrency cancellation curve，
