@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-29
+**Last updated**: 2026-09-30
 
 ## Route redefinition — 2026-09-29
 
@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A PASS和 Phase B opening draft已由 explicit human registration确认；PALACE-1 Phase B已打开，当前只做 code-level architecture audit。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B已打开并完成 minimal durable unit code audit；等待 external review。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7915,3 +7915,53 @@ Registered opening research question：
 This authorization does not select SQLite / KV / event log / remote storage, define
 a Palace schema, choose a persistence format, implement a Llama adapter, add
 oversized-specific semantics, or authorize performance benchmarking。
+
+### LAB PALACE1 PHASE B MINIMAL DURABLE UNIT AUDIT COMPLETE — 2026-09-30
+
+Phase B code-level audit artifact:
+`docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_AUDIT_20260930.md`。
+状态为 `PHASE_B_CODE_AUDIT_COMPLETE / AWAITING_REVIEW`。
+
+Audit基于 clean HEAD worktree `db188ac`；主工作区当时存在无关未提交 Swift 改动，
+没有混入证据。
+
+Phase B answer：
+
+```text
+minimal durable unit = Execution Semantic Snapshot
+
+fields =
+  id
+  lineage.root
+  lineage.parent
+  position
+  continuation.nextInput
+  continuation.continuationID
+  lifecycle
+
+recoverable set =
+  snapshots
+  + required lineage tombstones
+  + optional separately typed representation binding relations
+```
+
+Boundary decisions：
+
+- `continuation.nextInput` remains D in the current Lab contract; a future
+  transcript canonical source requires bounded equivalence proof。
+- Lifecycle event history is observability/replay data, not minimum D。
+- `RepresentationRef` remains P locator/claim。
+- Execution→Representation relation must remain separate; `runtimeAddress` stays R。
+- `discarded` is a terminal semantic tombstone until explicit GC policy retires it。
+- Crash-window recovery must classify interrupted fork / continue / restore and
+  artifact/claim pairs without selecting a storage transaction protocol。
+
+Targeted clean-HEAD tests PASS：`SimiGoRuntimeContractTests 15/15`，
+`SimiGo2ExperimentalTests 42/42`，总计 `57/57`。artifact 见
+`simigo2-experimental/results/backend-conformance/palace1-phase-b-audit-tests-20260930.json`。
+
+登记 `PALACE1_MINIMAL_DURABLE_UNIT_IS_EXECUTION_SEMANTIC_SNAPSHOT`、
+`DURABLE_SET_REQUIRES_LINEAGE_TOMBSTONE_CLOSURE`、
+`TRANSCRIPT_EQUIVALENCE_NOT_ASSUMED`、
+`BINDING_RELATION_SEPARATE_FROM_MINIMUM_D` 和
+`PHASE_B_AUDIT_AWAITING_REVIEW`。
