@@ -684,3 +684,245 @@ extension MLXExecutionStateCostProfile {
     values.reduce(0, +) / Double(max(values.count, 1))
   }
 }
+
+extension MLXExecutionStateCostProfile {
+  public struct ReleaseSample: Encodable, Sendable {
+    public let tokenLength: Int
+    public let index: Int
+    public let captureCheckpointMs: Double
+    public let captureCurrentMs: Double
+    public let currentReleaseMs: Double
+    public let currentReleaseTransitionDelta: Int
+    public let restoreMs: Double
+    public let staleReleaseNoopMs: Double
+    public let staleReleaseTransitionDelta: Int
+    public let footprintMiB: Int64
+    public let currentRemoved: Bool
+    public let restoreReboundCheckpoint: Bool
+    public let staleNoopPreservedCheckpoint: Bool
+  }
+
+  public struct ReleasePoint: Encodable, Sendable {
+    public let tokenLength: Int
+    public let samples: Int
+    public let captureCheckpointMeanMs: Double
+    public let captureCurrentMeanMs: Double
+    public let currentReleaseMeanMs: Double
+    public let restoreMeanMs: Double
+    public let staleReleaseNoopMeanMs: Double
+    public let staleOverCurrentMeanRatio: Double
+  }
+
+  public struct ReleaseReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let tokenLengths: [Int]
+    public let samplesPerLength: Int
+    public let points: [ReleasePoint]
+    public let samples: [ReleaseSample]
+    public let captureCheckpointMs: TimingSummary
+    public let captureCurrentMs: TimingSummary
+    public let currentReleaseMs: TimingSummary
+    public let restoreMs: TimingSummary
+    public let staleReleaseNoopMs: TimingSummary
+    public let checks: [String: Bool]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let releaseProtocolVersion = "LAB.MLX.EXECSTATE.RELEASE.COST.V1"
+  public static let releaseBoundary =
+    "OVERSIZED_MLX_RELEASE_ACTION_ISOLATION / CURRENT_VS_STALE_NOOP / "
+    + "NO_GENERATION / SMALL_SAMPLE / NOT_A_PERFORMANCE_BENCHMARK"
+
+  public static func runReleaseCostProfile(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    tokenLengths: [Int] = [8, 64, 256],
+    samplesPerLength: Int = 10,
+    segmentSize: Int = 8
+  ) async throws -> ReleaseReport {
+    precondition(!tokenLengths.isEmpty && tokenLengths.allSatisfy({ $0 > 0 }))
+    precondition(samplesPerLength > 0)
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let filler = try tokenizer.encode(
+      text: "Explain the tradeoff, then list a concise implementation plan "
+        + "with tests, failure modes, and rollback steps.",
+      addSpecialTokens: false
+    )
+    let seedTokens = try tokenizer.encode(
+      text: seedText, addSpecialTokens: true
+    )
+
+    var samples: [ReleaseSample] = []
+    for tokenLength in tokenLengths {
+      for index in 0..<samplesPerLength {
+        let prefix = makePrefix(seedTokens: seedTokens, fillerTokens: filler, length: tokenLength)
+        let rootID = ExecutionID("release-root-\(tokenLength)-\(index)")
+        let root = try await runtime.create(
+          id: rootID,
+          position: ExecutionPosition(0),
+          continuation: ExecutionContinuation(nextInput: "", continuationID: "release-0")
+        )
+        try backend.bind(
+          executionID: rootID, position: ExecutionPosition(0), prefix: prefix
+        )
+
+        let captureCheckpointStarted = DispatchTime.now().uptimeNanoseconds
+        let checkpoint = try await backend.captureRepresentation(for: root)
+        let captureCheckpointMs = elapsedMs(captureCheckpointStarted)
+
+        let advanced = try await runtime.continueExecution(
+          root,
+          continuation: ExecutionContinuation(nextInput: "", continuationID: "release-1")
+        )
+        try backend.bind(
+          executionID: advanced.id,
+          position: ExecutionPosition(1),
+          prefix: prefix + [0]
+        )
+        let captureCurrentStarted = DispatchTime.now().uptimeNanoseconds
+        let current = try await backend.captureRepresentation(for: advanced)
+        let captureCurrentMs = elapsedMs(captureCurrentStarted)
+
+        let transitionsBeforeRelease = core.segmentTransitions
+        let currentReleaseStarted = DispatchTime.now().uptimeNanoseconds
+        try await backend.releaseRepresentation(current)
+        let currentReleaseMs = elapsedMs(currentReleaseStarted)
+        let currentReleaseTransitionDelta =
+          core.segmentTransitions - transitionsBeforeRelease
+        let currentRemoved = (try? backend.boundPrefix(for: advanced))?.prefix == nil
+
+        let restoreStarted = DispatchTime.now().uptimeNanoseconds
+        try await backend.restoreRepresentation(checkpoint)
+        let restoreMs = elapsedMs(restoreStarted)
+
+        let transitionsBeforeStale = core.segmentTransitions
+        let staleReleaseStarted = DispatchTime.now().uptimeNanoseconds
+        try await backend.releaseRepresentation(current)
+        let staleReleaseNoopMs = elapsedMs(staleReleaseStarted)
+        let staleReleaseTransitionDelta = core.segmentTransitions - transitionsBeforeStale
+
+        let restoredBinding = try backend.boundPrefix(for: root)
+        let restoreReboundCheckpoint =
+          restoredBinding.prefix == prefix
+          && restoredBinding.position == ExecutionPosition(0)
+        let staleNoopPreservedCheckpoint =
+          (try? backend.boundPrefix(for: root))?.prefix != nil
+
+        samples.append(
+          ReleaseSample(
+            tokenLength: tokenLength,
+            index: index,
+            captureCheckpointMs: captureCheckpointMs,
+            captureCurrentMs: captureCurrentMs,
+            currentReleaseMs: currentReleaseMs,
+            currentReleaseTransitionDelta: currentReleaseTransitionDelta,
+            restoreMs: restoreMs,
+            staleReleaseNoopMs: staleReleaseNoopMs,
+            staleReleaseTransitionDelta: staleReleaseTransitionDelta,
+            footprintMiB: core.gauge().footprintMiB,
+            currentRemoved: currentRemoved,
+            restoreReboundCheckpoint: restoreReboundCheckpoint,
+            staleNoopPreservedCheckpoint: staleNoopPreservedCheckpoint
+          )
+        )
+      }
+    }
+
+    func summary(_ values: [Double]) -> TimingSummary {
+      let sorted = values.sorted()
+      let p95Index = max(0, Int((Double(sorted.count - 1) * 0.95).rounded()))
+      return TimingSummary(
+        n: values.count,
+        meanMs: values.reduce(0, +) / Double(max(values.count, 1)),
+        medianMs: sorted.count % 2 == 1
+          ? sorted[sorted.count / 2]
+          : (sorted[sorted.count / 2 - 1] + sorted[sorted.count / 2]) / 2,
+        p95Ms: sorted[p95Index],
+        minMs: sorted.first ?? 0,
+        maxMs: sorted.last ?? 0
+      )
+    }
+
+    func mean(_ values: [Double]) -> Double {
+      values.reduce(0, +) / Double(max(values.count, 1))
+    }
+
+    var points: [ReleasePoint] = []
+    for tokenLength in tokenLengths {
+      let group = samples.filter { $0.tokenLength == tokenLength }
+      let current = group.map(\.currentReleaseMs)
+      let stale = group.map(\.staleReleaseNoopMs)
+      points.append(
+        ReleasePoint(
+          tokenLength: tokenLength,
+          samples: group.count,
+          captureCheckpointMeanMs: mean(group.map(\.captureCheckpointMs)),
+          captureCurrentMeanMs: mean(group.map(\.captureCurrentMs)),
+          currentReleaseMeanMs: mean(current),
+          restoreMeanMs: mean(group.map(\.restoreMs)),
+          staleReleaseNoopMeanMs: mean(stale),
+          staleOverCurrentMeanRatio: mean(stale) / max(mean(current), .leastNormalMagnitude)
+        )
+      )
+    }
+
+    let checks = [
+      "CURRENT_RELEASE_REMOVES_BINDING":
+        samples.count == tokenLengths.count * samplesPerLength
+        && samples.allSatisfy(\.currentRemoved),
+      "RESTORE_REBINDS_CHECKPOINT":
+        samples.allSatisfy(\.restoreReboundCheckpoint),
+      "STALE_RELEASE_PRESERVES_CHECKPOINT":
+        samples.allSatisfy(\.staleNoopPreservedCheckpoint),
+      "STALE_RELEASE_DOES_NOT_RELEASE_SEGMENTS":
+        samples.allSatisfy {
+          $0.staleReleaseTransitionDelta < $0.currentReleaseTransitionDelta
+        },
+      "ALL_LENGTHS_OBSERVED":
+        Set(samples.map(\.tokenLength)) == Set(tokenLengths)
+        && tokenLengths.allSatisfy({ length in
+          samples.filter { $0.tokenLength == length }.count == samplesPerLength
+        }),
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && core.peakFootprintMiB <= 30 * 1024,
+    ]
+
+    return ReleaseReport(
+      status: checks.values.allSatisfy(\.self) ? "PASS" : "FAIL",
+      protocolVersion: releaseProtocolVersion,
+      boundary: releaseBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      tokenLengths: tokenLengths,
+      samplesPerLength: samplesPerLength,
+      points: points,
+      samples: samples,
+      captureCheckpointMs: summary(samples.map(\.captureCheckpointMs)),
+      captureCurrentMs: summary(samples.map(\.captureCurrentMs)),
+      currentReleaseMs: summary(samples.map(\.currentReleaseMs)),
+      restoreMs: summary(samples.map(\.restoreMs)),
+      staleReleaseNoopMs: summary(samples.map(\.staleReleaseNoopMs)),
+      checks: checks,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: checks.values.allSatisfy(\.self)
+    )
+  }
+}

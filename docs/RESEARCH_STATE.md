@@ -6469,3 +6469,31 @@ segment transitions `85`。同一 commit 全仓 Swift verification 为
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile.json`。
+
+### LAB MLX RELEASE COST PROFILE PASS — 2026-09-29
+
+继续 phase-6 characterization，新增 release-action isolation profile
+`runReleaseCostProfile` 和 CLI `mlx-release-cost`。把 oversized release 从
+generation 中分离，按 prefix token lengths `8/64/256`、每 length 10 samples，
+对比 current release、checkpoint restore、stale release no-op。无 inference
+generation。
+
+六项 checks 全部 PASS：current release removes binding、restore rebinds
+checkpoint、stale release preserves checkpoint、stale release does not release
+segments、all lengths observed、oversized profile under 30GiB。30 samples 中
+current release transition delta 全部 `1`、stale release 全部 `0`。current
+release mean `4.061400ms`、median `4.037834ms`、p95 `4.162667ms`；stale
+no-op mean `0.000188ms`，约为 current release 的 `0.0044%–0.0049%`。8/64/256
+prefix 的 current release mean 分别 `4.112971/4.022534/4.048696ms`，观测范围内
+基本与 prefix length 无关。capture/restore 仍在微秒级。观测 peak footprint
+`1,381 MiB`、max swap `0 MiB`、segment transitions `30`。同一 commit 全仓 Swift
+verification 为 `157 PASS / 0 FAIL`。登记
+`MLX_RELEASE_ACTION_COST_ISOLATED`、`STALE_RELEASE_NOOP_SEMANTICS_ISOLATED` 和
+`PREFIX_LENGTH_INDEPENDENT_RELEASE_OBSERVED`；状态为
+`COST3 = PASS / OVERSIZED_MLX_RELEASE_ACTION_ISOLATED_WITH_BOUNDARY`。这是
+current implementation 的 local action observation，不是最优策略、production
+performance、跨 backend 或跨硬件 claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_RELEASE_COST_PROFILE_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/mlx-release-cost-profile.json`。
