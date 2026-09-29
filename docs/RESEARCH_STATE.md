@@ -4,6 +4,19 @@
 
 **Last updated**: 2026-09-29
 
+## Route redefinition — 2026-09-29
+
+The research program is now **Execution-State-centric**. Runtime correctness is
+`SEALED / BOUNDED CONSOLIDATION`; oversized independent research is
+`FROZEN / ARCHITECTURE VALIDATION PAYLOAD`. A new **Execution State Architecture
+Contract** is the next synthesis gate. PALACE-1 is the main open audit-first line;
+BACKEND-1 is secondary and depends on the persistence/representation boundary.
+Do not select storage technology or implement a Llama adapter before those boundaries
+are established.
+
+Canonical route:
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
+
 **Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Execution State Runtime证据已按 harness boundary收敛；oversized independent line已冻结为 architecture validation payload。PALACE-1与 BACKEND-1保持 `RESEARCH OPEN / AUDIT FIRST`，下一步优先做 PALACE-1 minimal persistence unit code audit，不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
