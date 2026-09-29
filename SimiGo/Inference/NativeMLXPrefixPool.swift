@@ -210,9 +210,11 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             exportFailureSignature = signature
             lock.unlock()
             if !alreadyReported {
+                // first/last 按边界值升序（boundaries 数组以全量边界开头，
+                // 尝试序≠升序；2026-09-30 实证 count=3 first=4638 last=4096）。
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenExportFailed count=\(failedCounts.count)"
-                        + " first=\(failedCounts.first ?? 0) last=\(failedCounts.last ?? 0)"
+                        + " first=\(failedCounts.min() ?? 0) last=\(failedCounts.max() ?? 0)"
                         + " err=\(failedErrs.sorted().first ?? "-")"
                         + (failedErrs.count > 1 ? " errs=\(failedErrs.count)" : ""))
             }
