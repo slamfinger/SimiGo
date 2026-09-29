@@ -2108,9 +2108,14 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         content: String,
         toolCalls: [ToolCall]
     ) -> JSONValue {
+        // 实验 A（null-equivalence，BETA4-PROD-FINDINGS-1）：空 content 写
+        // .null 而非 .string("")——客户端回显形态是 content:null，渲染对账
+        // 两侧必须同形，否则条件恢复在每个工具轮必然 checkpointStale
+        // （beta.4 生产日志实证，历史固有自 757082c）。渲染路径零变化：
+        // makeChatMessages 的 coerceContent(.null) == ""。
         var object: [String: JSONValue] = [
             "role": .string("assistant"),
-            "content": .string(content)
+            "content": content.isEmpty ? .null : .string(content)
         ]
         if !toolCalls.isEmpty {
             let encoder = JSONEncoder()
