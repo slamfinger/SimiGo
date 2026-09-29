@@ -7295,3 +7295,33 @@ same-checkpoint closure。全仓 Swift verification为 157 PASS / 0 FAIL。报�
 artifacts见
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-logit-record.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-logit-compare.json`。
+
+### LAB CYBER TIEL FULL TRAJECTORY MARGIN DISTRIBUTION PASS — 2026-09-29
+
+新增 resource-isolated two-phase full-trajectory margin distribution，覆盖 Matrix V2
+的 P6 cjk、P11 docstring和 P12 risk。Phase1只运行 MLX：对
+`prompt IDs + complete MLX greedy trajectory`一次 forward，抽取 72个 generated
+position的 top-16/logprob/margin。Phase2只运行 llama-server：逐 position
+teacher-force相同 prefix，提交 `/completion` 并使用 `n_probs=16`。
+
+MLX batched full-trajectory logits对 `72/72` greedy choices self-consistent。
+LLAMA top1 agreement为 `66/72 = 91.667%`；P6为 `21/24`、P11为 `23/24`、P12为
+`22/24`。所有 MLX reference tokens都在 LLAMA top16内，最大 reference rank仅为
+`2`。6个 flip position的 reference deficit范围为 `0.715313` 到
+`2.406191` logprob；P11 position 0还包含 code-fence vs direct-docstring
+formatting policy差异。登记
+`CYBER_TIEL_FULL_TRAJECTORY_MARGIN_DISTRIBUTION_PASS`、
+`MLX_BATCHED_TRAJECTORY_SELF_CONSISTENT`、
+`LLAMA_TOP1_NEAR_BOUNDARY_FLIP_OBSERVED` 和
+`NO_TOP16_DISSOCIATION_OBSERVED`；状态为
+`MARGIN_DISTRIBUTION = PASS_WITH_BOUNDARY / FULL_MLX_TRAJECTORY`。
+
+Phase1 MLX steady swap delta `494,340,670 bytes`，在 `768 MiB` gate内；Phase2
+LLAMA steady swap delta `0 bytes`，在 `512 MiB` gate内。两个 backend仍顺序运行。
+这是固定 MLX trajectory的 margin distribution observation，不比较两条 divergent
+paths，不建立 quantization equivalence、tokenizer lineage proof、MTP root cause
+或 same-checkpoint closure。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_MARGIN_DISTRIBUTION_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare.json`。
