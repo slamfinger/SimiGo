@@ -7045,3 +7045,31 @@ persistent session。报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_LONG_RUNNING_CROSSBACKEND_MATRIX_20260929.md`；artifacts见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-long-running-crossbackend-matrix.json`、
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-long-running-t4.json`。
+
+### LAB UI13 MLX CONTROLLED MEMORY PRESSURE PASS — 2026-09-29
+
+新增 `runMemoryPressureOversizedMLX` 和 CLI
+`mlx-branch-session-memory-pressure`，登记 UI13 controlled multi-branch
+memory-pressure action。session为 root、retained control branch、两条 advanced
+pressure branch；每个 pressure branch经历 2 次 capture/release、fork-point
+restore、deterministic replay和 final-position restore，共 4 个 pressure action。
+oversized MLX使用 Qwen3-Coder-Next-4bit、segment size 8、6 segments和 1-token
+generation。
+
+十项 checks全部 PASS：workload complete、release actions complete、lineage
+isolated、active branch prefixes diverged、repeated recovery outputs exact、
+final bindings exact、release pressure branches、root/control survive、zero swap
+和 oversized under 30GiB。两个 pressure branch final prefix分别为 15 和 17
+tokens；peak footprint `6,904 MiB`、max swap `0 MiB`、segment transitions `48`。
+登记 `UI13_MLX_MULTI_BRANCH_RELEASE_RESTORE_PRESSURE_PASS` 和
+`NO_SWAP_ON_CONTROLLED_PRESSURE_ACTION`；状态为
+`UI13 = PASS / CONTROLLED_MULTI_BRANCH_MEMORY_PRESSURE_ACTION`。
+
+语义边界是 controlled session release/restore load，不是 OS memory-pressure
+injection、product UI、persistent session、production policy、performance
+benchmark或 cross-backend closure。全仓 Swift verification为 157 PASS / 0 FAIL。
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_MEMORY_PRESSURE_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-memory-pressure.json`、
+`simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。

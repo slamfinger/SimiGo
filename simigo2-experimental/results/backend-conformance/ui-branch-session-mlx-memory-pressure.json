@@ -1,0 +1,157 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD \/ OVERSIZED_MLX \/ HARNESS_LEVEL \/ NOT_OS_MEMORY_PRESSURE \/ NOT_A_UI_PRODUCT",
+  "checks" : {
+    "ACTIVE_BRANCH_PREFIXES_DIVERGED" : true,
+    "NO_SWAP_ON_PRESSURE_ACTION" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "PRESSURE_LINEAGE_ISOLATED" : true,
+    "PRESSURE_RELEASE_ACTIONS_COMPLETE" : true,
+    "PRESSURE_WORKLOAD_COMPLETE" : true,
+    "RECOVERY_FINAL_BINDINGS_EXACT" : true,
+    "RELEASE_PRESSURE_BRANCHES" : true,
+    "REPEATED_RECOVERY_OUTPUTS_EXACT" : true,
+    "ROOT_AND_CONTROL_SURVIVE" : true
+  },
+  "controlContent" : " You",
+  "controlInput" : "Now write tests for it.",
+  "cycles" : 2,
+  "maxSwapMiB" : 0,
+  "maxTokens" : 1,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 6904,
+  "pressureBranches" : [
+    {
+      "content" : " The",
+      "executionID" : "mlx-pressure-branch-0",
+      "finalBindingsExact" : [
+        true,
+        true
+      ],
+      "finalPrefixTokenCount" : 15,
+      "generatedTokenIDs" : [
+        576
+      ],
+      "input" : "List one edge case for the function.",
+      "recoveryMatches" : [
+        true,
+        true
+      ]
+    },
+    {
+      "content" : " You",
+      "executionID" : "mlx-pressure-branch-1",
+      "finalBindingsExact" : [
+        true,
+        true
+      ],
+      "finalPrefixTokenCount" : 17,
+      "generatedTokenIDs" : [
+        1446
+      ],
+      "input" : "Add a focused unit test for that edge case.",
+      "recoveryMatches" : [
+        true,
+        true
+      ]
+    }
+  ],
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.MEMORY.PRESSURE.V1",
+  "seedText" : "def is_palindrome(s):",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 48,
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 11644.037291,
+      "executionID" : "mlx-pressure-control",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 11541.638791,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 11723.781709,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.523292,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.532167,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 12188.205792,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.532916,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.539666,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 13365.20325,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.593917,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 4.601,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 15407.899625,
+      "executionID" : "mlx-pressure-branch-0",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 5.551375,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "release",
+      "position" : 1
+    },
+    {
+      "clientMs" : 5.563083,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 14579.183208,
+      "executionID" : "mlx-pressure-branch-1",
+      "operation" : "switch",
+      "position" : 1
+    }
+  ]
+}

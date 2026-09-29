@@ -1949,13 +1949,16 @@ extension UIBranchSessions {
         state,
         continuation: ExecutionContinuation(nextInput: input, continuationID: continuationID)
       )
+      guard let payload = result.updatedPayload as? OversizedPrefixPayload else {
+        throw ExecutionStateBackendError.noBoundRepresentation(advanced.id)
+      }
       try await runtime.bindRepresentation(
         executionID: advanced.id,
         position: advanced.position,
-        payload: result.updatedPayload
+        payload: payload
       )
       record("continue", advanced, started)
-      return (advanced, result.generatedTokenIDs, result.generatedText, result.updatedPayload)
+      return (advanced, result.generatedTokenIDs, result.generatedText, payload)
     }
 
     let siblingTokens = try executor.tokenizeText(siblingInput)
@@ -2545,4 +2548,291 @@ extension UIBranchSessions {
     return handle
   }
 
+}
+
+extension UIBranchSessions {
+  public struct MLXMemoryPressureBranch: Encodable, Sendable {
+    public let executionID: String
+    public let input: String
+    public let content: String
+    public let generatedTokenIDs: [Int]
+    public let finalPrefixTokenCount: Int
+    public let recoveryMatches: [Bool]
+    public let finalBindingsExact: [Bool]
+  }
+
+  public struct MLXMemoryPressureReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let controlInput: String
+    public let maxTokens: Int
+    public let cycles: Int
+    public let checks: [String: Bool]
+    public let controlContent: String
+    public let pressureBranches: [MLXMemoryPressureBranch]
+    public let steps: [Step]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let mlxMemoryPressureProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.MLX.MEMORY.PRESSURE.V1"
+  public static let mlxMemoryPressureBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / CONTROLLED_MULTI_BRANCH_RELEASE_RESTORE_LOAD / "
+    + "OVERSIZED_MLX / HARNESS_LEVEL / NOT_OS_MEMORY_PRESSURE / NOT_A_UI_PRODUCT"
+
+  public static func runMemoryPressureOversizedMLX(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    controlInput: String = "Now write tests for it.",
+    pressureInputs: [String] = [
+      "List one edge case for the function.",
+      "Add a focused unit test for that edge case.",
+    ],
+    maxTokens: Int = 1,
+    cycles: Int = 2,
+    segmentSize: Int = 8
+  ) async throws -> MLXMemoryPressureReport {
+    precondition(!pressureInputs.isEmpty)
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core, backend: backend, tokenizer: tokenizer
+    )
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("mlx-pressure-root")
+    let controlID = ExecutionID("mlx-pressure-control")
+    let pressureIDs = pressureInputs.enumerated().map {
+      ExecutionID("mlx-pressure-branch-\($0.offset)")
+    }
+    let forkPoint = ExecutionPosition(0)
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: "", continuationID: "pressure-root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: OversizedPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    func fork(
+      _ childID: ExecutionID, input: String, continuationID: String
+    ) async throws -> ExecutionStateHandle {
+      try await runtime.fork(
+        ExecutionForkRequest(
+          parent: root,
+          childID: childID,
+          childPosition: forkPoint,
+          childContinuation: ExecutionContinuation(
+            nextInput: input, continuationID: continuationID
+          )
+        )
+      )
+    }
+
+    let control = try await fork(
+      controlID, input: controlInput, continuationID: "pressure-control-0"
+    )
+    var pressureStates: [ExecutionStateHandle] = []
+    for (index, input) in pressureInputs.enumerated() {
+      pressureStates.append(
+        try await fork(
+          pressureIDs[index], input: input, continuationID: "pressure-\(index)-0"
+        )
+      )
+    }
+
+    func advance(
+      _ state: ExecutionStateHandle,
+      input: String,
+      continuationID: String
+    ) async throws -> (
+      ExecutionStateHandle, generated: [Int], text: String,
+      payload: OversizedPrefixPayload
+    ) {
+      let started = DispatchTime.now().uptimeNanoseconds
+      let result = try await executor.continueExecution(
+        state, nextInputTokens: try executor.tokenizeText(input), maxTokens: maxTokens
+      )
+      guard let payload = result.updatedPayload as? OversizedPrefixPayload else {
+        throw ExecutionStateBackendError.noBoundRepresentation(state.id)
+      }
+      let advanced = try await runtime.continueExecution(
+        state,
+        continuation: ExecutionContinuation(nextInput: input, continuationID: continuationID)
+      )
+      try await runtime.bindRepresentation(
+        executionID: advanced.id,
+        position: advanced.position,
+        payload: payload
+      )
+      record("continue", advanced, started)
+      return (advanced, result.generatedTokenIDs, result.generatedText, payload)
+    }
+
+    let controlRun = try await advance(
+      control, input: controlInput, continuationID: "pressure-control-1"
+    )
+    let advancedControl = controlRun.0
+    let controlPrefix = controlRun.payload.tokenPrefix
+
+    var runs: [(
+      state: ExecutionStateHandle, generated: [Int], text: String, prefix: [Int]
+    )] = []
+    for (index, state) in pressureStates.enumerated() {
+      let run = try await advance(
+        state,
+        input: pressureInputs[index],
+        continuationID: "pressure-\(index)-1"
+      )
+      runs.append((run.0, run.generated, run.text, run.payload.tokenPrefix))
+    }
+
+    var recoveryMatches = Array(repeating: [Bool](), count: runs.count)
+    var finalBindingsExact = recoveryMatches
+    var releaseActions = 0
+    for cycle in 0..<cycles {
+      for index in runs.indices {
+        let started = DispatchTime.now().uptimeNanoseconds
+        let current = try await backend.captureRepresentation(for: runs[index].state)
+        try await backend.releaseRepresentation(current)
+        releaseActions += 1
+        record("release", runs[index].state, started)
+
+        let restoredToFork = try await runtime.restore(
+          runs[index].state,
+          request: ExecutionRestoreRequest(
+            targetPosition: forkPoint,
+            continuation: ExecutionContinuation(
+              nextInput: pressureInputs[index], continuationID: "pressure-\(index)-r0-\(cycle)"
+            )
+          )
+        )
+        record("switch", restoredToFork, started)
+        let replay = try await executor.continueExecution(
+          restoredToFork,
+          nextInputTokens: try executor.tokenizeText(pressureInputs[index]),
+          maxTokens: maxTokens
+        )
+        recoveryMatches[index].append(
+          replay.generatedTokenIDs == runs[index].generated
+            && replay.generatedText == runs[index].text
+        )
+
+        let restoredToFinal = try await runtime.restore(
+          restoredToFork,
+          request: ExecutionRestoreRequest(
+            targetPosition: ExecutionPosition(1),
+            continuation: ExecutionContinuation(
+              nextInput: pressureInputs[index], continuationID: "pressure-\(index)-r1-\(cycle)"
+            )
+          )
+        )
+        record("switch", restoredToFinal, started)
+        let binding = try backend.boundPrefix(for: restoredToFinal)
+        finalBindingsExact[index].append(
+          binding.prefix == runs[index].prefix && binding.position == ExecutionPosition(1)
+        )
+        runs[index].state = restoredToFinal
+      }
+    }
+
+    for run in runs {
+      try await runtime.discard(run.state)
+    }
+    let pressureBindingsGone = runs.allSatisfy {
+      (try? backend.boundPrefix(for: $0.state))?.prefix == nil
+    }
+    let rootBinding = try backend.boundPrefix(for: root)
+    let controlBinding = try backend.boundPrefix(for: advancedControl)
+    let allPrefixes = runs.map(\.prefix) + [controlPrefix]
+    let prefixesDiverged = Set(allPrefixes).count == runs.count + 1
+    let controlLineageIsolated =
+      control.lineage.parent == rootID && control.lineage.root == root.lineage.root
+    let pressureLineageIsolated = pressureStates.allSatisfy {
+      $0.lineage.parent == rootID && $0.lineage.root == root.lineage.root
+    }
+    let lineageIsolated =
+      controlLineageIsolated && pressureLineageIsolated
+    let oversizedUnderLimit = core.segments.count > 1 && core.peakFootprintMiB <= 30 * 1024
+
+    let checks = [
+      "PRESSURE_WORKLOAD_COMPLETE":
+        runs.count == pressureInputs.count && !controlRun.text.isEmpty,
+      "PRESSURE_RELEASE_ACTIONS_COMPLETE":
+        releaseActions == runs.count * cycles,
+      "PRESSURE_LINEAGE_ISOLATED": lineageIsolated,
+      "ACTIVE_BRANCH_PREFIXES_DIVERGED": prefixesDiverged,
+      "REPEATED_RECOVERY_OUTPUTS_EXACT":
+        recoveryMatches.allSatisfy { $0.count == cycles && $0.allSatisfy(\.self) },
+      "RECOVERY_FINAL_BINDINGS_EXACT":
+        finalBindingsExact.allSatisfy { $0.count == cycles && $0.allSatisfy(\.self) },
+      "RELEASE_PRESSURE_BRANCHES": pressureBindingsGone,
+      "ROOT_AND_CONTROL_SURVIVE":
+        rootBinding.prefix == seedTokens && controlBinding.prefix == controlPrefix,
+      "NO_SWAP_ON_PRESSURE_ACTION": core.maxSwapMiB == 0,
+      "OVERSIZED_PROFILE_UNDER_30GIB": oversizedUnderLimit,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return MLXMemoryPressureReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: mlxMemoryPressureProtocolVersion,
+      boundary: mlxMemoryPressureBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      controlInput: controlInput,
+      maxTokens: maxTokens,
+      cycles: cycles,
+      checks: checks,
+      controlContent: controlRun.text,
+      pressureBranches: runs.enumerated().map { index, run in
+        MLXMemoryPressureBranch(
+          executionID: run.state.id.rawValue,
+          input: pressureInputs[index],
+          content: run.text,
+          generatedTokenIDs: run.generated,
+          finalPrefixTokenCount: run.prefix.count,
+          recoveryMatches: recoveryMatches[index],
+          finalBindingsExact: finalBindingsExact[index]
+        )
+      },
+      steps: steps,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: overallPass
+    )
+  }
 }
