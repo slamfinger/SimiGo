@@ -6194,3 +6194,27 @@ identity 均 `20/20 + 20/20`。因此 canonical mitigation profile 从 `ubatch2`
 observation，不是性能 benchmark 或生产 recommendation。RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-ubatch8.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab-ubatch8.json`、`...fork-restore-ubatch8.json`、`...cancellation-ubatch8.json`。
+
+### LAB UI BRANCH SESSIONS PILOT PASS — 2026-09-29
+
+开始 pasted research program 中排在 Backend Conformance 后面的 UI Branch
+Sessions 线。新增最小 Swift control plane `UIBranchSessions` 和 CLI
+`llama-branch-session`，只编排既有 Execution Continuity Coordinator、LLAMA
+prefix backend 和 HTTP executor；不新增 inference runtime，不修改 native KV
+authority。语义路径覆盖 create/bind、fork A/B、capture root fork point、
+continue root/A/B、switch root 到 fork point、switch A/root 到 advanced
+position、release branches，并验证 root survives。
+
+在 canonical mitigated `ubatch8` LLAMA profile、Cyber-Tiel 当前 model、
+seed42、8 prediction tokens 下 pilot PASS：branch divergence、lineage
+isolation、root fork-point replay、branch/root switch retention、branch
+release、root survival 七项 checks 全部 PASS。同一 commit 全仓 Swift
+verification 为 `157 PASS / 0 FAIL`（contract 19 + experimental 137 +
+Swift Testing 1）。登记 `UI_CONTROL_PLANE_OPERATIONAL` 和
+`UI_BRANCH_SESSIONS_LLAMA_PILOT_PASS`；状态为
+`UI1 = PASS / LLAMA_PILOT_WITH_BOUNDARY`，不是 UI product、persistent session、
+nested branch graph 或 cross-backend closure。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_PILOT_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-pilot.json`。

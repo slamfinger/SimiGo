@@ -1,0 +1,72 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ LLAMA_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_UI_PRODUCT",
+  "branchAContent" : "\n\n<think>\nThe user is asking me",
+  "branchBContent" : " gamma delta\n\n<think>\nThe user is",
+  "checks" : {
+    "BRANCHES_DIVERGED" : true,
+    "BRANCH_LINEAGE_ISOLATED" : true,
+    "RELEASE_BRANCHES" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SWITCH_BRANCH_RETAINS_DIVERGENCE" : true,
+    "SWITCH_ROOT_RETAINS_ADVANCE" : true,
+    "SWITCH_ROOT_TO_FORK_REPLAYS" : true
+  },
+  "host" : "127.0.0.1",
+  "overallPass" : true,
+  "port" : 18080,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.V1",
+  "rootContent" : " or pong\n\n<think>\nThe user is",
+  "rootReplayContent" : " or pong\n\n<think>\nThe user is",
+  "seed" : 42,
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 0.048375,
+      "executionID" : "ui-branch-a",
+      "operation" : "fork",
+      "position" : 0
+    },
+    {
+      "clientMs" : 348.047125,
+      "executionID" : "ui-session-root",
+      "operation" : "continue",
+      "position" : 0
+    },
+    {
+      "clientMs" : 364.957166,
+      "executionID" : "ui-branch-a",
+      "operation" : "continue",
+      "position" : 0
+    },
+    {
+      "clientMs" : 363.048167,
+      "executionID" : "ui-branch-b",
+      "operation" : "continue",
+      "position" : 0
+    },
+    {
+      "clientMs" : 2.639834,
+      "executionID" : "ui-session-root",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.037292,
+      "executionID" : "ui-branch-a",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.003375,
+      "executionID" : "ui-session-root",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.007417,
+      "executionID" : "ui-branch-a",
+      "operation" : "release",
+      "position" : 1
+    }
+  ]
+}
