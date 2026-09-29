@@ -6842,3 +6842,59 @@ retention、production performance或cross-backend/cross-hardware claim。
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6H_PREFIX_PHASE_ATTRIBUTION_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6h-prefix-phase-attribution-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-segment-phase-replicate-p8-s8-b*.json`。
+
+### LAB MLX FIXED PREFIX DISTRIBUTION ANALYSIS PASS — 2026-09-29
+
+对 PHASE6I 的 fixed-token prefix study执行 post-hoc distribution analysis；没有新增
+GPU run。分析覆盖 prefix `8/64` 的 combined `n=3` samples，指标包括 generation
+total、embed、logits、materialize/forward/release sums、per-layer means和
+release-per-transition。计算 mean、median、p05/p25/p75/p95、min/max/range、stdev、
+IQR和 Tukey 1.5×IQR fences。八项 checks全部 PASS：source reports pass、length
+coverage完整、combined n=3、same leading token IDs、三个配对 prefix64 total deltas
+全正、forward sum deltas全正、robust stats computed、no new GPU runs。
+
+Generation total分布：length 8 mean `10,033.498ms`、median `10,021.411ms`、p95
+`10,079.734ms`；length 64 mean `10,953.392ms`、median `10,944.812ms`、p95
+`11,053.225ms`。三个配对 prefix64 deltas为
+`+828.683 / +1,072.401 / +858.597ms`。phase-sum means显示 materialize接近
+（`8,625.414 vs 8,653.658ms`），forward sum差异更大（`1,283.792 vs
+2,162.599ms`），release sum `69.012 vs 89.277ms`。paired forward deltas为
+`+758.827 / +1,017.653 / +859.941ms`。IQR analysis未在当前 `n=3` arms中标出
+outlier；这不证明无变异。登记 `PREFIX64_TOTAL_HIGHER_IN_ALL_PAIRED_SAMPLES`、
+`PREFIX64_FORWARD_SUM_HIGHER_IN_ALL_PAIRED_SAMPLES`、
+`MATERIALIZE_DELTAS_ARE_SMALL_AND_MIXED` 和 `N3_IS_TOO_SMALL_FOR_CAUSAL_MODEL`；
+状态为 `PHASE6J = PASS_WITH_BOUNDARY / FIXED_PREFIX_DISTRIBUTION_ANALYSIS_COMPLETE
+/ NO_NEW_GPU_RUNS`。不建立 throughput benchmark、prefix-length recommendation、
+warm-KV retention、production performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6J_FIXED_PREFIX_DISTRIBUTION_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json`。
+
+### LAB MLX FIXED PREFIX DISTRIBUTION ANALYSIS PASS — 2026-09-29
+
+对 PHASE6I 的 fixed-token prefix study执行 post-hoc distribution analysis；没有新增
+GPU run。分析覆盖 prefix `8/64` 的 combined `n=3` samples，指标包括 generation
+total、embed、logits、materialize/forward/release sums、per-layer means和
+release-per-transition。计算 mean、median、p05/p25/p75/p95、min/max/range、stdev、
+IQR和 Tukey 1.5×IQR fences。八项 checks全部 PASS：source reports pass、length
+coverage完整、combined n=3、same leading token IDs、三个配对 prefix64 total deltas
+全正、forward sum deltas全正、robust stats computed、no new GPU runs。
+
+Generation total分布：length 8 mean `10,033.498ms`、median `10,021.411ms`、p95
+`10,079.734ms`；length 64 mean `10,953.392ms`、median `10,944.812ms`、p95
+`11,053.225ms`。三个配对 prefix64 deltas为
+`+828.683 / +1,072.401 / +858.597ms`。phase-sum means显示 materialize接近
+（`8,625.414 vs 8,653.658ms`），forward sum差异更大（`1,283.792 vs
+2,162.599ms`），release sum `69.012 vs 89.277ms`。paired forward deltas为
+`+758.827 / +1,017.653 / +859.941ms`。IQR analysis未在当前 `n=3` arms中标出
+outlier；这不证明无变异。登记 `PREFIX64_TOTAL_HIGHER_IN_ALL_PAIRED_SAMPLES`、
+`PREFIX64_FORWARD_SUM_HIGHER_IN_ALL_PAIRED_SAMPLES`、
+`MATERIALIZE_DELTAS_ARE_SMALL_AND_MIXED` 和 `N3_IS_TOO_SMALL_FOR_CAUSAL_MODEL`；
+状态为 `PHASE6J = PASS_WITH_BOUNDARY / FIXED_PREFIX_DISTRIBUTION_ANALYSIS_COMPLETE
+/ NO_NEW_GPU_RUNS`。不建立 throughput benchmark、prefix-length recommendation、
+warm-KV retention、production performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6J_FIXED_PREFIX_DISTRIBUTION_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json`。

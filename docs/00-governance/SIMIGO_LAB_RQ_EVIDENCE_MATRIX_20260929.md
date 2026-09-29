@@ -476,6 +476,36 @@ results/backend-conformance/mlx-fixed-prefix-phase-study.json
 results/backend-conformance/mlx-fixed-prefix-phase-attribution-summary.json
 ```
 
+### Phase-6J fixed-prefix distribution analysis
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / FIXED_PREFIX_DISTRIBUTION_ANALYSIS_COMPLETE / NO_NEW_GPU_RUNS
+```
+
+对 PHASE6I 的 prefix `8/64` combined `n=3` samples做 post-hoc robust analysis，
+包含 generation total、embed、logits和 materialize/forward/release sums。八项
+checks全部 PASS；same leading token IDs、三个 paired total deltas全正、三个
+forward sum deltas全正、no new GPU runs。
+
+Generation total分布：
+
+```text
+length8:  mean 10,033.498ms; median 10,021.411ms; p95 10,079.734ms
+length64: mean 10,953.392ms; median 10,944.812ms; p95 11,053.225ms
+```
+
+三个 paired total deltas为 `+828.683 / +1,072.401 / +858.597ms`；forward sum
+deltas为 `+758.827 / +1,017.653 / +859.941ms`。materialize deltas方向混合且
+较小。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -490,11 +520,11 @@ results/backend-conformance/mlx-fixed-prefix-phase-attribution-summary.json
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
    PHASE6B targeted replication、PHASE6C token-budget replication、PHASE6E
    post-hoc distribution analysis、PHASE6F segment phase attribution、PHASE6G
-   segment phase replication和PHASE6I fixed-prefix attribution也已通过；PHASE6D
-   将三个 cells扩展到 n=5，但 `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。
-   statistical factorization、更多 replicates、完整 n=5 matrix、kernel-level
-   attribution、warm-KV/segment-residency policy和cross-backend cost
-   normalization仍未完成。
+   segment phase replication、PHASE6H prefix phase attribution和PHASE6J
+   fixed-prefix distribution analysis也已通过；PHASE6D将三个 cells扩展到 n=5，
+   但 `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。statistical
+   factorization、更多 replicates、完整 n=5 matrix、kernel-level attribution、
+   warm-KV/segment-residency policy和cross-backend cost normalization仍未完成。
 
 ## Non-claims
 
@@ -518,6 +548,7 @@ MLX Phase-6F transition count是 latency的唯一解释
 MLX Phase-6G replicated forward差异已定位到单一 kernel
 MLX Phase-6H已建立 causal prefix-length model
 MLX Phase-6I已建立 universal context-length cost model
+MLX Phase-6J n=3 IQR无outlier证明无变异
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的
