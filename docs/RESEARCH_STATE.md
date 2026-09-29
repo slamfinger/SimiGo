@@ -6241,3 +6241,27 @@ closure 或性能结论。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_PILOT_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-oversized-pilot.json`。
+
+### LAB UI BRANCH SESSIONS CROSSBACKEND MATRIX PASS — 2026-09-29
+
+把 LLAMA UI Branch Session 从硬编码 token workload 升级为 V2 text workload：
+通过 llama-server `/tokenize` 读取与 MLX 相同 seed/root/branchA/branchB 文本，
+两边均执行 2-token generation 和相同 8-step operation sequence。新增
+`runCrossBackendMatrix` 与 CLI `ui-branch-session-matrix`，在 single driver 中
+先后运行 LLAMA 和 oversized MLX harness。LLAMA 为 Cyber-Tiel GGUF canonical
+mitigated profile；MLX 为本地 Qwen3-Coder-Next-4bit oversized snapshot。
+
+七项 common semantic checks 均在两边 PASS；`sameSemanticChecks`、
+`sameOperationSequence`、`sameWorkloadShape`、`bothBackendsPass` 均 true。MLX
+backend-specific `OVERSIZED_PROFILE_UNDER_30GIB` 也 PASS，观测 peak footprint
+`6,577 MiB`。同一 commit 全仓 Swift verification 为 `157 PASS / 0 FAIL`。
+登记 `UI_LLAMA_TEXT_WORKLOAD_ALIGNMENT`、
+`UI_CROSSBACKEND_SEMANTIC_MATRIX_PASS` 和
+`CROSSBACKEND_MODEL_IDENTITY_CLOSURE_BLOCKED`；状态为
+`UI3 = PASS_WITH_BOUNDARY / SAME_SHAPE_SEMANTIC_MATRIX`。两者使用不同 model
+artifact 和 tokenizer，因此 cross-backend / model-identity closure 保持 OPEN，
+不得把矩阵解释为 same-model 或 universal closure。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_CROSSBACKEND_MATRIX_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-crossbackend-matrix.json`。

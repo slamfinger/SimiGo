@@ -10,6 +10,32 @@ public struct LLAMAServerExecutionStateExecutor: Sendable {
     public let tokens: [Int]?
   }
 
+  public struct ServerProps: Codable, Equatable, Sendable {
+    public let modelPath: String?
+
+    public init(modelPath: String?) {
+      self.modelPath = modelPath
+    }
+
+    enum CodingKeys: String, CodingKey {
+      case modelPath = "model_path"
+    }
+  }
+
+  private struct TokenizeRequest: Encodable {
+    let content: String
+    let addSpecialTokens: Bool
+
+    enum CodingKeys: String, CodingKey {
+      case content
+      case addSpecialTokens = "add_special_tokens"
+    }
+  }
+
+  private struct TokenizeResponse: Decodable {
+    let tokens: [Int]
+  }
+
   private struct CompletionRequest: Encodable {
     let prompt: [Int]
     let nPredict: Int
@@ -59,6 +85,22 @@ public struct LLAMAServerExecutionStateExecutor: Sendable {
     }
     return try await complete(
       tokenPrefix: payload.tokenPrefix, predictionTokens: predictionTokens, seed: seed)
+  }
+
+  public func tokenizeText(_ text: String, addSpecialTokens: Bool = false) async throws -> [Int] {
+    let response: TokenizeResponse = try await post(
+      path: "/tokenize",
+      body: TokenizeRequest(content: text, addSpecialTokens: addSpecialTokens)
+    )
+    return response.tokens
+  }
+
+  public func props() async throws -> ServerProps {
+    let (data, response) = try await session.data(from: baseURL.appending(path: "/props"))
+    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+      throw LLAMAServerExecutorError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1)
+    }
+    return try JSONDecoder().decode(ServerProps.self, from: data)
   }
 
   private func post<Body: Encodable, Result: Decodable>(path: String, body: Body) async throws

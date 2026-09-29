@@ -1,0 +1,201 @@
+{
+  "bothBackendsPass" : true,
+  "boundary" : "SAME_TEXT_WORKLOAD_SHAPE_AND_OPERATION_SEQUENCE \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_MODEL_IDENTITY_CLOSURE",
+  "branchAInput" : "Now write tests for it.",
+  "branchBInput" : "Add a one-line TODO.",
+  "closureBlocker" : "DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS",
+  "commonChecks" : {
+    "BRANCHES_DIVERGED" : true,
+    "BRANCH_LINEAGE_ISOLATED" : true,
+    "RELEASE_BRANCHES" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SWITCH_BRANCH_RETAINS_DIVERGENCE" : true,
+    "SWITCH_ROOT_RETAINS_ADVANCE" : true,
+    "SWITCH_ROOT_TO_FORK_REPLAYS" : true
+  },
+  "crossBackendClosure" : false,
+  "llama" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ LLAMA_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_UI_PRODUCT",
+    "branchAContent" : "\n   ",
+    "branchAInput" : "Now write tests for it.",
+    "branchBContent" : "\n   ",
+    "branchBInput" : "Add a one-line TODO.",
+    "checks" : {
+      "BRANCHES_DIVERGED" : true,
+      "BRANCH_LINEAGE_ISOLATED" : true,
+      "RELEASE_BRANCHES" : true,
+      "ROOT_SURVIVES_RELEASE" : true,
+      "SWITCH_BRANCH_RETAINS_DIVERGENCE" : true,
+      "SWITCH_ROOT_RETAINS_ADVANCE" : true,
+      "SWITCH_ROOT_TO_FORK_REPLAYS" : true
+    },
+    "host" : "127.0.0.1",
+    "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "overallPass" : true,
+    "port" : 18080,
+    "predictionTokens" : 2,
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.V2",
+    "rootContent" : "\n   ",
+    "rootInput" : "Explain it briefly.",
+    "rootReplayContent" : "\n   ",
+    "seed" : 42,
+    "seedText" : "def is_palindrome(s):",
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 0.032584,
+        "executionID" : "ui-branch-a",
+        "operation" : "fork",
+        "position" : 0
+      },
+      {
+        "clientMs" : 174.637875,
+        "executionID" : "ui-session-root",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 170.985584,
+        "executionID" : "ui-branch-a",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 174.149625,
+        "executionID" : "ui-branch-b",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.008666,
+        "executionID" : "ui-session-root",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.017,
+        "executionID" : "ui-branch-a",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.003542,
+        "executionID" : "ui-session-root",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.0075,
+        "executionID" : "ui-branch-a",
+        "operation" : "release",
+        "position" : 1
+      }
+    ]
+  },
+  "llamaOperationSequence" : [
+    "fork@0",
+    "continue@1",
+    "continue@1",
+    "continue@1",
+    "switch@0",
+    "switch@1",
+    "switch@1",
+    "release@1"
+  ],
+  "mlx" : {
+    "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ SEGMENTED_CACHELESS_GREEDY \/ NOT_A_UI_PRODUCT",
+    "branchAContent" : " You should",
+    "branchBContent" : "\n   ",
+    "checks" : {
+      "BRANCHES_DIVERGED" : true,
+      "BRANCH_LINEAGE_ISOLATED" : true,
+      "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+      "RELEASE_BRANCHES" : true,
+      "ROOT_SURVIVES_RELEASE" : true,
+      "SWITCH_BRANCH_RETAINS_DIVERGENCE" : true,
+      "SWITCH_ROOT_RETAINS_ADVANCE" : true,
+      "SWITCH_ROOT_TO_FORK_REPLAYS" : true
+    },
+    "maxSwapMiB" : 0,
+    "maxTokens" : 2,
+    "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+    "overallPass" : true,
+    "peakFootprintMiB" : 6577,
+    "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.V1",
+    "rootContent" : "  To",
+    "rootReplayContent" : "  To",
+    "segmentCount" : 6,
+    "segmentSize" : 8,
+    "segmentTransitions" : 50,
+    "status" : "PASS",
+    "steps" : [
+      {
+        "clientMs" : 0.020292,
+        "executionID" : "mlx-branch-a",
+        "operation" : "fork",
+        "position" : 0
+      },
+      {
+        "clientMs" : 272740.045167,
+        "executionID" : "mlx-ui-root",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 33845.205333,
+        "executionID" : "mlx-branch-a",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 29938.910625,
+        "executionID" : "mlx-branch-b",
+        "operation" : "continue",
+        "position" : 1
+      },
+      {
+        "clientMs" : 2.467708,
+        "executionID" : "mlx-ui-root",
+        "operation" : "switch",
+        "position" : 0
+      },
+      {
+        "clientMs" : 0.008958,
+        "executionID" : "mlx-branch-a",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 0.002959,
+        "executionID" : "mlx-ui-root",
+        "operation" : "switch",
+        "position" : 1
+      },
+      {
+        "clientMs" : 15.53725,
+        "executionID" : "mlx-branch-a",
+        "operation" : "release",
+        "position" : 1
+      }
+    ]
+  },
+  "mlxOperationSequence" : [
+    "fork@0",
+    "continue@1",
+    "continue@1",
+    "continue@1",
+    "switch@0",
+    "switch@1",
+    "switch@1",
+    "release@1"
+  ],
+  "overallPass" : true,
+  "predictionTokens" : 2,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.CROSSBACKEND.V1",
+  "rootInput" : "Explain it briefly.",
+  "sameOperationSequence" : true,
+  "sameSemanticChecks" : true,
+  "sameWorkloadShape" : true,
+  "seedText" : "def is_palindrome(s):",
+  "status" : "PASS_WITH_BOUNDARY"
+}

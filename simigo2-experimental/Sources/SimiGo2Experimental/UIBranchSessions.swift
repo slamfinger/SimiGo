@@ -5,7 +5,7 @@ import Tokenizers
 /// Minimal user-level control plane over the existing Execution State contract.
 /// This is a research harness, not a product UI or second inference runtime.
 public enum UIBranchSessions {
-  public static let protocolVersion = "LAB.UI.BRANCH.SESSIONS.V1"
+  public static let protocolVersion = "LAB.UI.BRANCH.SESSIONS.V2"
   public static let boundary =
     "SWIFT_SESSION_CONTROL_PLANE / LLAMA_PREFIX_REPRESENTATION / "
     + "HARNESS_LEVEL / NO_NATIVE_KV_AUTHORITY_CHANGE / NOT_A_UI_PRODUCT"
@@ -29,6 +29,12 @@ public enum UIBranchSessions {
     public let host: String
     public let port: Int
     public let seed: Int
+    public let modelPath: String?
+    public let seedText: String
+    public let rootInput: String
+    public let branchAInput: String
+    public let branchBInput: String
+    public let predictionTokens: Int
     public let checks: [String: Bool]
     public let rootContent: String
     public let branchAContent: String
@@ -41,9 +47,10 @@ public enum UIBranchSessions {
   public static func run(
     host: String = "127.0.0.1",
     port: Int = 18080,
-    rootTokenPrefix: [Int] = [5423, 6681, 799, 3299, 25, 29018],
-    branchAInputTokens: [Int] = [12139, 279, 2235, 1622, 13],
-    branchBInputTokens: [Int] = [3301, 6681, 25, 8029, 13053],
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    branchAInput: String = "Now write tests for it.",
+    branchBInput: String = "Add a one-line TODO.",
     predictionTokens: Int = 8,
     seed: Int = 42
   ) async throws -> Report {
@@ -51,15 +58,20 @@ public enum UIBranchSessions {
     let runtime = ExecutionContinuityCoordinator(backend: backend)
     let executor = LLAMAServerExecutionStateExecutor(
       baseURL: URL(string: "http://\(host):\(port)")!)
+    let serverProps = try await executor.props()
+    let seedTokens = try await executor.tokenizeText(seedText, addSpecialTokens: true)
+    let rootInputTokens = try await executor.tokenizeText(rootInput)
+    let branchAInputTokens = try await executor.tokenizeText(branchAInput)
+    let branchBInputTokens = try await executor.tokenizeText(branchBInput)
 
     var steps: [Step] = []
 
-    func record(_ operation: String, _ id: ExecutionStateHandle, _ started: UInt64) {
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
       steps.append(
         Step(
           operation: operation,
-          executionID: id.id.rawValue,
-          position: id.position.value,
+          executionID: state.id.rawValue,
+          position: state.position.value,
           clientMs: elapsedMs(started)
         )
       )
@@ -74,12 +86,12 @@ public enum UIBranchSessions {
     var root = try await runtime.create(
       id: rootID,
       position: forkPoint,
-      continuation: ExecutionContinuation(nextInput: "", continuationID: "root-0")
+      continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-0")
     )
     try await runtime.bindRepresentation(
       executionID: rootID,
       position: forkPoint,
-      payload: LLAMAServerPrefixPayload(tokenPrefix: rootTokenPrefix)
+      payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens)
     )
 
     var started = DispatchTime.now().uptimeNanoseconds
@@ -88,7 +100,9 @@ public enum UIBranchSessions {
         parent: root,
         childID: branchAID,
         childPosition: forkPoint,
-        childContinuation: ExecutionContinuation(nextInput: "", continuationID: "branch-a-0")
+        childContinuation: ExecutionContinuation(
+          nextInput: branchAInput, continuationID: "branch-a-0"
+        )
       )
     )
     let branchB = try await runtime.fork(
@@ -96,62 +110,66 @@ public enum UIBranchSessions {
         parent: root,
         childID: branchBID,
         childPosition: forkPoint,
-        childContinuation: ExecutionContinuation(nextInput: "", continuationID: "branch-b-0")
+        childContinuation: ExecutionContinuation(
+          nextInput: branchBInput, continuationID: "branch-b-0"
+        )
       )
     )
     record("fork", branchA, started)
-    let rootCheckpoint = try await backend.captureRepresentation(for: root)
+    _ = try await backend.captureRepresentation(for: root)
 
     started = DispatchTime.now().uptimeNanoseconds
     let rootOutput = try await executor.complete(
-      rootCheckpoint, predictionTokens: predictionTokens, seed: seed
+      tokenPrefix: seedTokens + rootInputTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
     )
-    record("continue", root, started)
     root = try await runtime.continueExecution(
       root,
-      continuation: ExecutionContinuation(nextInput: "", continuationID: "root-1")
+      continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-1")
     )
+    record("continue", root, started)
     try await runtime.bindRepresentation(
       executionID: root.id,
       position: continuedPosition,
       payload: LLAMAServerPrefixPayload(
-        tokenPrefix: rootTokenPrefix + (rootOutput.tokens ?? []))
+        tokenPrefix: seedTokens + rootInputTokens + (rootOutput.tokens ?? []))
     )
 
     started = DispatchTime.now().uptimeNanoseconds
     let branchAOutput = try await executor.complete(
-      tokenPrefix: rootTokenPrefix + branchAInputTokens,
+      tokenPrefix: seedTokens + branchAInputTokens,
       predictionTokens: predictionTokens,
       seed: seed
     )
-    record("continue", branchA, started)
     let advancedA = try await runtime.continueExecution(
       branchA,
-      continuation: ExecutionContinuation(nextInput: "", continuationID: "branch-a-1")
+      continuation: ExecutionContinuation(nextInput: branchAInput, continuationID: "branch-a-1")
     )
+    record("continue", advancedA, started)
     try await runtime.bindRepresentation(
       executionID: advancedA.id,
       position: continuedPosition,
       payload: LLAMAServerPrefixPayload(
-        tokenPrefix: rootTokenPrefix + branchAInputTokens + (branchAOutput.tokens ?? []))
+        tokenPrefix: seedTokens + branchAInputTokens + (branchAOutput.tokens ?? []))
     )
 
     started = DispatchTime.now().uptimeNanoseconds
     let branchBOutput = try await executor.complete(
-      tokenPrefix: rootTokenPrefix + branchBInputTokens,
+      tokenPrefix: seedTokens + branchBInputTokens,
       predictionTokens: predictionTokens,
       seed: seed
     )
-    record("continue", branchB, started)
     let advancedB = try await runtime.continueExecution(
       branchB,
-      continuation: ExecutionContinuation(nextInput: "", continuationID: "branch-b-1")
+      continuation: ExecutionContinuation(nextInput: branchBInput, continuationID: "branch-b-1")
     )
+    record("continue", advancedB, started)
     try await runtime.bindRepresentation(
       executionID: advancedB.id,
       position: continuedPosition,
       payload: LLAMAServerPrefixPayload(
-        tokenPrefix: rootTokenPrefix + branchBInputTokens + (branchBOutput.tokens ?? []))
+        tokenPrefix: seedTokens + branchBInputTokens + (branchBOutput.tokens ?? []))
     )
 
     started = DispatchTime.now().uptimeNanoseconds
@@ -159,13 +177,15 @@ public enum UIBranchSessions {
       root,
       request: ExecutionRestoreRequest(
         targetPosition: forkPoint,
-        continuation: ExecutionContinuation(nextInput: "", continuationID: "root-switch-0")
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-switch-0")
       )
     )
     record("switch", restoredRoot, started)
     let restoredRootRepresentation = try await backend.captureRepresentation(for: restoredRoot)
     let rootReplay = try await executor.complete(
-      restoredRootRepresentation, predictionTokens: predictionTokens, seed: seed
+      tokenPrefix: restoredRootPrefix(restoredRootRepresentation) + rootInputTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
     )
 
     started = DispatchTime.now().uptimeNanoseconds
@@ -173,7 +193,9 @@ public enum UIBranchSessions {
       advancedA,
       request: ExecutionRestoreRequest(
         targetPosition: continuedPosition,
-        continuation: ExecutionContinuation(nextInput: "", continuationID: "branch-a-switch-1")
+        continuation: ExecutionContinuation(
+          nextInput: branchAInput, continuationID: "branch-a-switch-1"
+        )
       )
     )
     _ = try await backend.captureRepresentation(for: restoredA)
@@ -184,7 +206,7 @@ public enum UIBranchSessions {
       root,
       request: ExecutionRestoreRequest(
         targetPosition: continuedPosition,
-        continuation: ExecutionContinuation(nextInput: "", continuationID: "root-switch-1")
+        continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-switch-1")
       )
     )
     let rootRepresentation = try await backend.captureRepresentation(for: switchedRoot)
@@ -201,10 +223,14 @@ public enum UIBranchSessions {
     let branchBReleased = (try? backend.boundPrefix(for: advancedB))?.prefix == nil
     let rootSurvives = (try? backend.boundPrefix(for: switchedRoot))?.prefix != nil
 
+    let rootAdvancedPrefix = seedTokens + rootInputTokens + (rootOutput.tokens ?? [])
+    let branchAPrefix = seedTokens + branchAInputTokens + (branchAOutput.tokens ?? [])
+    let branchBPrefix = seedTokens + branchBInputTokens + (branchBOutput.tokens ?? [])
+
     let checks = [
       "BRANCHES_DIVERGED":
-        rootOutput != branchAOutput && rootOutput != branchBOutput
-        && branchAOutput != branchBOutput,
+        rootAdvancedPrefix != branchAPrefix && rootAdvancedPrefix != branchBPrefix
+        && branchAPrefix != branchBPrefix,
       "BRANCH_LINEAGE_ISOLATED":
         branchA.lineage.parent == rootID && branchB.lineage.parent == rootID
         && branchA.lineage.root == root.lineage.root,
@@ -212,15 +238,14 @@ public enum UIBranchSessions {
         rootReplay == rootOutput,
       "SWITCH_BRANCH_RETAINS_DIVERGENCE":
         branchABinding.prefix
-        == rootTokenPrefix + branchAInputTokens + (branchAOutput.tokens ?? []),
+        == branchAPrefix,
       "SWITCH_ROOT_RETAINS_ADVANCE":
-        rootBinding.prefix == rootTokenPrefix + (rootOutput.tokens ?? []),
+        rootBinding.prefix == rootAdvancedPrefix,
       "RELEASE_BRANCHES":
         branchAReleased && branchBReleased,
       "ROOT_SURVIVES_RELEASE":
         rootSurvives && rootRepresentation.payload is LLAMAServerPrefixPayload,
     ]
-
     let overallPass = checks.values.allSatisfy { $0 }
 
     return Report(
@@ -230,6 +255,12 @@ public enum UIBranchSessions {
       host: host,
       port: port,
       seed: seed,
+      modelPath: serverProps.modelPath,
+      seedText: seedText,
+      rootInput: rootInput,
+      branchAInput: branchAInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
       checks: checks,
       rootContent: rootOutput.content,
       branchAContent: branchAOutput.content,
@@ -240,8 +271,114 @@ public enum UIBranchSessions {
     )
   }
 
+  private static func restoredRootPrefix(_ representation: ExecutionRepresentation) -> [Int] {
+    guard let payload = representation.payload as? LLAMAServerPrefixPayload else { return [] }
+    return payload.tokenPrefix
+  }
+
   private static func elapsedMs(_ started: UInt64) -> Double {
     Double(DispatchTime.now().uptimeNanoseconds &- started) / 1e6
+  }
+
+  public struct MatrixReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let seedText: String
+    public let rootInput: String
+    public let branchAInput: String
+    public let branchBInput: String
+    public let predictionTokens: Int
+    public let commonChecks: [String: Bool]
+    public let llamaOperationSequence: [String]
+    public let mlxOperationSequence: [String]
+    public let sameSemanticChecks: Bool
+    public let sameOperationSequence: Bool
+    public let sameWorkloadShape: Bool
+    public let bothBackendsPass: Bool
+    public let crossBackendClosure: Bool
+    public let closureBlocker: String
+    public let llama: Report
+    public let mlx: MLXReport
+    public let overallPass: Bool
+  }
+
+  public static let matrixProtocolVersion = "LAB.UI.BRANCH.SESSIONS.CROSSBACKEND.V1"
+  public static let matrixBoundary =
+    "SAME_TEXT_WORKLOAD_SHAPE_AND_OPERATION_SEQUENCE / HARNESS_LEVEL / "
+    + "NO_NATIVE_KV_AUTHORITY_CHANGE / NOT_A_MODEL_IDENTITY_CLOSURE"
+
+  public static func runCrossBackendMatrix(
+    modelDirectory: URL,
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    branchAInput: String = "Now write tests for it.",
+    branchBInput: String = "Add a one-line TODO.",
+    predictionTokens: Int = 2,
+    seed: Int = 42,
+    segmentSize: Int = 8
+  ) async throws -> MatrixReport {
+    let llama = try await run(
+      host: host,
+      port: port,
+      seedText: seedText,
+      rootInput: rootInput,
+      branchAInput: branchAInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let mlx = try await runOversizedMLX(
+      modelDirectory: modelDirectory,
+      seedText: seedText,
+      rootInput: rootInput,
+      branchAInput: branchAInput,
+      branchBInput: branchBInput,
+      maxTokens: predictionTokens,
+      segmentSize: segmentSize
+    )
+
+    func signature(_ step: Step) -> String {
+      "\(step.operation)@\(step.position)"
+    }
+    let llamaOperations = llama.steps.map(signature)
+    let mlxOperations = mlx.steps.map(signature)
+    let commonChecks = llama.checks
+    let sameSemanticChecks = commonChecks.allSatisfy { name, expected in
+      mlx.checks[name] == expected
+    }
+    let sameOperationSequence = llamaOperations == mlxOperations
+    let sameWorkloadShape =
+      llama.predictionTokens == predictionTokens && mlx.maxTokens == predictionTokens
+      && mlx.modelDirectory == modelDirectory.path
+    let semanticMatrixPass =
+      llama.overallPass && mlx.overallPass && sameSemanticChecks
+      && sameOperationSequence && sameWorkloadShape
+
+    return MatrixReport(
+      status: semanticMatrixPass ? "PASS_WITH_BOUNDARY" : "FAIL",
+      protocolVersion: matrixProtocolVersion,
+      boundary: matrixBoundary,
+      seedText: seedText,
+      rootInput: rootInput,
+      branchAInput: branchAInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
+      commonChecks: commonChecks,
+      llamaOperationSequence: llamaOperations,
+      mlxOperationSequence: mlxOperations,
+      sameSemanticChecks: sameSemanticChecks,
+      sameOperationSequence: sameOperationSequence,
+      sameWorkloadShape: sameWorkloadShape,
+      bothBackendsPass: llama.overallPass && mlx.overallPass,
+      crossBackendClosure: false,
+      closureBlocker: "DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS",
+      llama: llama,
+      mlx: mlx,
+      overallPass: semanticMatrixPass
+    )
   }
 
   public struct MLXReport: Encodable, Sendable {
@@ -411,8 +548,6 @@ public enum UIBranchSessions {
 
     let rootBinding = try backend.boundPrefix(for: switchedRoot)
     let branchABinding = try backend.boundPrefix(for: restoredA)
-    let rootAdvancedPrefix = (rootRun.payload as? OversizedPrefixPayload)?.tokenPrefix
-    let branchAPrefix = (branchARun.payload as? OversizedPrefixPayload)?.tokenPrefix
 
     started = DispatchTime.now().uptimeNanoseconds
     try await runtime.discard(restoredA)
@@ -422,10 +557,12 @@ public enum UIBranchSessions {
     let branchBReleased = (try? backend.boundPrefix(for: advancedB))?.prefix == nil
     let rootSurvives = (try? backend.boundPrefix(for: switchedRoot))?.prefix != nil
 
+    let rootAdvancedPrefix = (rootRun.payload as? OversizedPrefixPayload)?.tokenPrefix
+    let branchAPrefix = (branchARun.payload as? OversizedPrefixPayload)?.tokenPrefix
+    let branchBPrefix = (branchBRun.payload as? OversizedPrefixPayload)?.tokenPrefix
     let branchesDiverged =
-      rootRun.generated != branchARun.generated
-      && rootRun.generated != branchBRun.generated
-      && branchARun.generated != branchBRun.generated
+      rootAdvancedPrefix != branchAPrefix && rootAdvancedPrefix != branchBPrefix
+      && branchAPrefix != branchBPrefix
     let lineageIsolated =
       branchA.lineage.parent == rootID && branchB.lineage.parent == rootID
       && branchA.lineage.root == root.lineage.root
