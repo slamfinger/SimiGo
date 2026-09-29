@@ -7153,3 +7153,34 @@ L5 free等待超时；正式 t128/60s run PASS。curve脚本已增加失败路�
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL6_CANCELLATION_CURVE_20260929.md`；
 artifact见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel6-t128.json`。
+
+### LAB RQ3 LLAMA PARALLEL8 CANCELLATION CURVE PASS — 2026-09-29
+
+新增 8-slot higher-concurrency cancellation curve。llama-server使用 Cyber-Tiel
+Coder 35B A3B GGUF canonical mitigation profile并以 8 slots运行；observed
+per-slot context为 256。long stream为 128 tokens，control为 8 tokens，cancel
+delay 100ms，L1–L7各 2 轮共 14 cycles，baseline/control watchdog为 120s，free
+watchdog为 90s。
+
+五项 checks全部 PASS：all cancels accepted、all control batches completed、
+controls overlapped cancellation window、same-load baseline stable、greedy
+identity across cancel。cancel acceptance为 `56/56`，same-load baseline stability
+与 same-concurrency greedy identity均为 `14/14`。分层 free mean：L1
+`4,543.997ms`、L2 `7,512.166ms`、L3 `11,452.115ms`、L4 `18,199.071ms`、L5
+`27,529.977ms`、L6 `29,414.962ms`、L7 `35,534.542ms`。aggregate
+delete→all-long-free mean `19,169.547ms`、p95 `35,734.813ms`。
+`controlsFinishedBeforeAllLongFree = 0/14`保留为边界。
+
+一次使用旧固定 30s watchdog的 preparatory run在 same-load baseline controls处
+超时且未落盘；slots随后 idle。脚本已增加 `--long-timeout-ms` /
+`--control-timeout-ms` 和 baseline-controls failure artifact；120s protocol PASS。
+登记 `RQ3_LLAMA_PARALLEL8_CANCELLATION_CURVE_PASS`、
+`EIGHT_SLOT_CANCEL_ACCEPTANCE_PASS` 和
+`THIRTY_SECOND_BASELINE_WATCHDOG_INSUFFICIENT`；状态为
+`PARALLEL8 = PASS_WITH_BOUNDARY / HIGHER_CONCURRENCY_CANCEL_IDENTITY_CURVE`。
+
+这是 no-Execution-Object backend curve，不是 production cancellation readiness、
+performance benchmark或 >8-slot closure。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL8_CANCELLATION_CURVE_20260929.md`；
+artifact见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel8-t128.json`。

@@ -27,6 +27,7 @@ RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / QUEUED_N4_STABLE
       / CONTINUOUS_BATCHING_FLAG_NOT_SUFFICIENT
       / PARALLEL6_CURVE_CANCEL_IDENTITY_PASS_T128
+      / PARALLEL8_CURVE_CANCEL_IDENTITY_PASS_T128
 O6  = PASS / QWEN3_NEXT_OVERSIZED_W0_W9_HARNESS_LEVEL
       / CANCELLATION_AB_PASS
 ```
@@ -109,6 +110,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | Ubatch2 cancellation curve | original L1-L3 cancellation curve rerun with `ubatch2`, 3 cycles | strict PASS: DELETE `6/6`, baseline stable `3/3`, cancellation identity `3/3`; latency 4.2–13.6s | `results/backend-conformance/rq3-llama-concurrency-curve-ubatch2-cycles3.json`; `SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_UBATCH2_20260929.md` |
 | Ubatch8 cancellation curve | original L1-L3 cancellation curve rerun with `ubatch8`, 3 cycles | strict PASS: DELETE `6/6`, baseline stable `3/3`, cancellation identity `3/3`; latency 2.5–7.2s | `results/backend-conformance/rq3-llama-concurrency-curve-ubatch8.json`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md` |
 | Parallel-6 cancellation curve | llama-server 6 slots, `ubatch8`, L1-L5, t128 long streams, 10 cycles | 5 curve checks PASS; DELETE `30/30`; same-load baseline and cancellation identity `10/10`; L5 free mean `25,527ms` | `results/backend-conformance/rq3-llama-concurrency-curve-parallel6-t128.json`; `SIMIGO_LAB_RQ3_LLAMA_PARALLEL6_CANCELLATION_CURVE_20260929.md` |
+| Parallel-8 cancellation curve | llama-server 8 slots with observed 256-token slot context, `ubatch8`, L1-L7, t128 long streams, 14 cycles, 120s baseline/control watchdog | 5 curve checks PASS; DELETE `56/56`; same-load baseline and cancellation identity `14/14`; L7 free mean `35,535ms` | `results/backend-conformance/rq3-llama-concurrency-curve-parallel8-t128.json`; `SIMIGO_LAB_RQ3_LLAMA_PARALLEL8_CANCELLATION_CURVE_20260929.md` |
 | Ubatch8 canonical regression | Swift hot-path, fork/restore, and cancellation harnesses under `ubatch8` | hot-path `30/30 + 30/30`; fork/restore checks `30/30`; cancellation `20/20 + 20/20` | `results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab-ubatch8.json`; `results/backend-conformance/rq3-llama-swift-execstate-fork-restore-ubatch8.json`; `results/backend-conformance/rq3-llama-swift-execstate-cancellation-ubatch8.json`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md` |
 | Ubatch8 launch profile upgrade | canonical wrapper default changed from `ubatch2` to `ubatch8`; wrapper validated | operational profile upgraded for lower observed latency while preserving strict identity PASS | `simigo2-experimental/scripts/rq3_llama_server_mitigated.sh`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md` |
 | Mitigated launch profile | canonical wrapper fixes `parallel4/ubatch2/threads4` and cache-disabled flags; smoke tested | operational profile registered; curve free timeout default hardened to `15s` | `simigo2-experimental/scripts/rq3_llama_server_mitigated.sh`; `SIMIGO_LAB_RQ3_LLAMA_MITIGATION_PROFILE_20260929.md` |
@@ -603,9 +605,10 @@ results/backend-conformance/ui-branch-session-mlx-long-running.json
    `ubatch2/4/8` 在两 seeds 中均 stable；`ubatch2` 在原始 cancellation curve 中
    使 baseline 与 cancellation identity 均 `3/3` stable，但 latency 放大到
    4.2–13.6s。NGL sweep 将敏感区收窄到 high-layer split，`ngl38` 呈间歇性
-   mismatch；具体 Metal kernel / graph reduction 机制未定位。4-slot与新的
-   6-slot t128 curve均 PASS，但 >6-slot、6-slot t256和更广 token-length matrix
-   的 semantic closure仍未完成。
+   mismatch；具体 Metal kernel / graph reduction 机制未定位。4-slot、6-slot和
+   8-slot t128 curve均 PASS；但 >8-slot、6/8-slot t256和更广 token-length
+   matrix的 semantic closure仍未完成。8-slot首次 30s baseline watchdog超时，
+   120s protocol PASS，说明 watchdog是 workload-sensitive operational parameter。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、

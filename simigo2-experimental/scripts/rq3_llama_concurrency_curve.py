@@ -97,9 +97,13 @@ def run_long_completion(
         sink["error"] = error
 
 
-def join_controls(threads: list[threading.Thread], controls: list[dict[str, Any]]) -> None:
+def join_controls(
+    threads: list[threading.Thread],
+    controls: list[dict[str, Any]],
+    timeout_s: float,
+) -> None:
     for thread in threads:
-        thread.join(timeout=30)
+        thread.join(timeout=timeout_s)
     if any(thread.is_alive() for thread in threads):
         raise RuntimeError("controls timed out")
     if any("error" in control for control in controls):
@@ -113,6 +117,8 @@ def main() -> None:
     parser.add_argument("--cycles", type=int, default=12)
     parser.add_argument("--expected-slots", type=int, default=4)
     parser.add_argument("--cancel-delay-ms", type=int, default=100)
+    parser.add_argument("--long-timeout-ms", type=int, default=30000)
+    parser.add_argument("--control-timeout-ms", type=int, default=30000)
     parser.add_argument("--prediction-tokens", type=int, default=256)
     parser.add_argument("--control-tokens", type=int, default=8)
     parser.add_argument("--free-timeout-ms", type=int, default=15000)
@@ -187,9 +193,37 @@ def main() -> None:
             control_request,
             control_count,
         )
-        join_controls(baseline_threads, baseline_controls)
+        try:
+            join_controls(
+                baseline_threads,
+                baseline_controls,
+                args.control_timeout_ms / 1000,
+            )
+        except RuntimeError as error:
+            Path(args.output).write_text(
+                json.dumps(
+                    {
+                        "status": "FAIL",
+                        "overallPass": False,
+                        "protocolVersion": "RQ3.LLAMA.CONCURRENCY.CURVE.V1",
+                        "failure": "BASELINE_CONTROLS_TIMEOUT_OR_FAILED",
+                        "expectedSlots": args.expected_slots,
+                        "failedCycle": cycle,
+                        "longStreams": long_count,
+                        "controls": control_count,
+                        "controlTimeoutMs": args.control_timeout_ms,
+                        "completedCycles": cycles,
+                        "controlsAtTimeout": baseline_controls,
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                    indent=2,
+                )
+                + "\n"
+            )
+            raise
         for thread in baseline_long_threads:
-            thread.join(timeout=30)
+            thread.join(timeout=args.long_timeout_ms / 1000)
         if any(thread.is_alive() for thread in baseline_long_threads):
             raise RuntimeError(f"cycle {cycle}: baseline longs timed out")
         if any("error" in sink for sink in baseline_longs):
@@ -298,7 +332,7 @@ def main() -> None:
             raise RuntimeError(f"cycle {cycle}: cancelled long streams did not free")
 
         for thread in threads:
-            thread.join(timeout=30)
+            thread.join(timeout=args.control_timeout_ms / 1000)
         if any(thread.is_alive() for thread in threads):
             raise RuntimeError(f"cycle {cycle}: controls timed out")
         if any("error" in control for control in controls):
