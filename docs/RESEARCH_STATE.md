@@ -6084,6 +6084,22 @@ reduction 仍未定位。RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH8_STABLE_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch8.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch8-seed43.json`。
 
+### LAB RQ3 NGL SWEEP — HIGH-LAYER SPLIT INTERMITTENT BOUNDARY — 2026-09-29
+
+用 distinct equal-length prompt probe 做 Metal layer-split sweep。NGL20/30/35/37
+各运行 cardinality 1–4，active4 均稳定；NGL38 运行三次，其中 seed42 首次出现
+active4 all-match `3/8`、across-cycle `5/8`，seed42 repeat 为 `7/8` /
+`7/8`，seed43 为 `8/8` / `8/8`。full-Metal NGL40 baseline 此前亦观察到
+active4 mismatch。
+
+登记 `NGL20_30_35_37_STABLE_ACTIVE4`、`NGL38_INTERMITTENT_ACTIVE4_MISMATCH`、
+`NGL_BOUNDARY_LOCALIZED_TO_HIGH_LAYER_SPLIT` 和
+`DETERMINISTIC_NGL_THRESHOLD_NOT_ESTABLISHED`。这说明 boundary 与 high-layer
+Metal split 相关，但 mismatch 是概率性/调度相关，不是简单 `NGL>=38` threshold。
+具体 Metal kernel / graph reduction 仍未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_NGL_SWEEP_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-ngl20.json`、`...ngl30.json`、`...ngl35.json`、`...ngl37.json`、`...ngl38.json`、`...ngl38-seed42-repeat.json`、`...ngl38-seed43.json`。
+
 ### LAB RQ3 UBATCH2 CANCELLATION CURVE — STRICT PASS / LARGE LATENCY — 2026-09-29
 
 把 `ubatch2` mitigation 放回最初失败的 higher-concurrency cancellation curve，
