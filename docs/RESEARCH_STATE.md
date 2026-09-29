@@ -7021,3 +7021,27 @@ Master index报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_LONG_RUNNING_20260929.md`；artifacts见
 `simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`、
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-long-running.json`。
+
+### LAB UI12 LONG RUNNING CROSSBACKEND MATRIX PASS — 2026-09-29
+
+新增 UI12 long-running cross-backend outcome-shape matrix，将 UI10 LLAMA long-running
+branch与 UI11 oversized MLX long-running branch纳入同一 matrix。两者使用相同
+seed/root/sibling text、相同 six fixed implementation prompts、相同 6-turn workload
+shape和 4-token per-turn budget。LLAMA使用 Cyber-Tiel GGUF canonical mitigated
+profile；MLX使用 oversized Qwen3-Coder-Next-4bit、segment size 8、cacheless greedy
+recompute。
+
+七项 common outcome checks全部 PASS：sequence complete、final prefix exact、
+fork-point restore、final-position restore、sibling retained、release long/sibling、
+root survives。matrix result为 `sameWorkloadShape / sameOutcomeShape /
+bothBackendsPass = true`，但 `crossBackendClosure = false`，blocker是 different
+model artifacts, tokenizers and execution engines。MLX backend-specific oversized
+profile under 30GiB也 PASS，peak footprint `8,019 MiB`、max swap `0 MiB`、segment
+transitions `170`。登记 `UI12_LONG_RUNNING_CROSSBACKEND_OUTCOME_SHAPE_MATRIX_PASS`
+和 `CROSSBACKEND_MODEL_AND_EXECUTION_DIFFERENCES_PRESERVED`；状态为
+`UI12 = PASS_WITH_BOUNDARY / LONG_RUNNING_OUTCOME_SHAPE_MATRIX`。这不是
+same-checkpoint closure、performance equivalence、production readiness、product UI或
+persistent session。报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_LONG_RUNNING_CROSSBACKEND_MATRIX_20260929.md`；artifacts见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-long-running-crossbackend-matrix.json`、
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-long-running-t4.json`。

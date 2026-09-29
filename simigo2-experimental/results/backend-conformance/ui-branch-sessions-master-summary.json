@@ -2,7 +2,7 @@
   "status": "CONSOLIDATED_PASS_WITH_BOUNDARY",
   "protocolVersion": "SIMIGO.UI.BRANCH.SESSIONS.MASTER.INDEX.V1",
   "boundary": "EVIDENCE_INDEX_ONLY / HARNESS_LEVEL / DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS / NO_PRODUCT_UI / NO_PERSISTENT_SESSION_CLAIM / NOT_A_PERFORMANCE_BENCHMARK",
-  "entryCount": 11,
+  "entryCount": 12,
   "entries": [
     {
       "id": "UI1",
@@ -102,6 +102,15 @@
       "expectedStatus": "PASS",
       "artifact": "ui-branch-session-mlx-long-running.json",
       "scope": "oversized MLX 6-turn long-running branch; forkpoint/final restores; sibling retained"
+    },
+    {
+      "id": "UI12",
+      "title": "long-running cross-backend matrix",
+      "status": "PASS_WITH_BOUNDARY",
+      "overallPass": true,
+      "expectedStatus": "PASS_WITH_BOUNDARY",
+      "artifact": "ui-branch-session-long-running-crossbackend-matrix.json",
+      "scope": "LLAMA vs oversized MLX six-turn outcome-shape matrix; same prompts and 4-token budget"
     }
   ],
   "coverage": {
@@ -127,6 +136,9 @@
     "longRunningBranch": [
       "UI10",
       "UI11"
+    ],
+    "longRunningCrossBackend": [
+      "UI12"
     ]
   },
   "checks": {
@@ -142,7 +154,8 @@
     "NO_PERSISTENT_SESSION_CLAIM": true,
     "LONG_RUNNING_LLAMA_PRESENT": true,
     "ENTRY_COUNT_MATCHES": true,
-    "LONG_RUNNING_MLX_PRESENT": true
+    "LONG_RUNNING_MLX_PRESENT": true,
+    "LONG_RUNNING_CROSSBACKEND_MATRIX_PRESENT": true
   },
   "consolidatedFindings": {
     "DEPTH1_SEMANTIC_MATRIX_PASS": true,
@@ -150,7 +163,8 @@
     "CANCELLATION_OUTCOME_SHAPE_MATRIX_PASS": true,
     "ALL_REPORTS_ARE_HARNESS_LEVEL": true,
     "LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true,
-    "MLX_LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true
+    "MLX_LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true,
+    "LONG_RUNNING_CROSSBACKEND_OUTCOME_SHAPE_MATRIX_PASS": true
   },
   "openItems": [
     "PRODUCT_UI_SURFACE",

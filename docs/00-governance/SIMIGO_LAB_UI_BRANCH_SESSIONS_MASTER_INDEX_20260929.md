@@ -6,7 +6,7 @@
 UI_BRANCH_SESSIONS = CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE / PRODUCT_PERSISTENCE_OPEN
 ```
 
-新的 master index把 UI1–UI9纳入同一 evidence index。它是 harness-level evidence
+新的 master index把 UI1–UI12纳入同一 evidence index。它是 harness-level evidence
 index，不是 product UI、persistent session实现、production cancellation readiness或
 performance benchmark。
 
@@ -14,7 +14,8 @@ performance benchmark。
 
 ```text
 backends   = LLAMA GGUF Cyber-Tiel; oversized MLX Qwen3-Coder-Next
-workloads  = depth-1 branch; nested/repeat; cancellation
+workloads  = depth-1 branch; nested/repeat; cancellation; long-running branch;
+             long-running cross-backend matrix
 boundary   = harness-level prefix representation; different model artifacts/tokenizers
 ```
 
@@ -33,7 +34,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | UI9 | cancellation cross-backend outcome matrix | PASS_WITH_BOUNDARY | `ui-branch-session-cancellation-crossbackend-matrix.json` |
 | UI10 | LLAMA six-turn long-running branch | PASS | `ui-branch-session-llama-long-running.json` |
 | UI11 | MLX six-turn long-running branch | PASS | `ui-branch-session-mlx-long-running.json` |
-| UI10 | LLAMA six-turn long-running branch | PASS | `ui-branch-session-llama-long-running.json` |
+| UI12 | long-running cross-backend outcome-shape matrix | PASS_WITH_BOUNDARY | `ui-branch-session-long-running-crossbackend-matrix.json` |
 
 ## Coverage checks
 
@@ -51,8 +52,7 @@ boundary   = harness-level prefix representation; different model artifacts/toke
 | `NO_PERSISTENT_SESSION_CLAIM` | PASS |
 | `LONG_RUNNING_LLAMA_PRESENT` | PASS |
 | `LONG_RUNNING_MLX_PRESENT` | PASS |
-| `ENTRY_COUNT_MATCHES` | PASS |
-| `LONG_RUNNING_LLAMA_PRESENT` | PASS |
+| `LONG_RUNNING_CROSSBACKEND_MATRIX_PRESENT` | PASS |
 | `ENTRY_COUNT_MATCHES` | PASS |
 
 ## Consolidated observations
@@ -66,8 +66,10 @@ boundary   = harness-level prefix representation; different model artifacts/toke
    且 sibling/root survival semantics保持。
 5. 所有结果都是 harness-level observation，不是 product UI、persistent session、
    production cancellation readiness或 performance benchmark。
-5. UI10已验证 six-turn long-running branch的 fork-point/final-position restore；
-   这不是 persistent session。
+6. UI10和UI11均已验证 six-turn long-running branch的 fork-point/final-position
+   restore；UI12跨backend outcome shape一致，但模型 artifact、tokenizer和
+   execution engine不同；这不构成 same-checkpoint closure、persistent session或
+   performance equivalence。
 
 ## Master artifact
 
