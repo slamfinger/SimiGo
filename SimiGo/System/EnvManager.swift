@@ -353,7 +353,10 @@ public final class EnvManager: ObservableObject {
                 if !residual.isEmpty, let text = String(data: residual, encoding: .utf8) {
                     let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !clean.isEmpty {
-                        Task { @MainActor in onOutput(clean) }
+                        Task { @MainActor [weak self] in
+                            guard let self else { return }
+                            self.appendCommandLog(clean)
+                        }
                     }
                 }
                 if process.terminationStatus == 0 {
