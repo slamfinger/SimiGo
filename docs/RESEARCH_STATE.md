@@ -7240,3 +7240,30 @@ artifacts见
 `simigo2-experimental/results/e5-execution-state/cyber-tiel-coder-35b.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare.json`。
+
+### LAB CYBER TIEL CROSSBACKEND TOKEN MATRIX V2 BOUNDARY PASS — 2026-09-29
+
+将 named-source Cyber-Tiel MLX/GGUF token observation从 3-prompt pilot扩展为
+12-family matrix V2。Phase1只运行 MLX，Phase2只运行 llama-server；prompt families
+覆盖 baseline、counting、list、code-transform、exact-json、cjk、ambiguous
+continuation、long-prefix code、constraint、repeat、docstring和 risk。budget为
+24 greedy tokens，seed42。
+
+协议PASS且 identity boundary明确：`9/12` prompt的 greedy token IDs exact；
+`3/12` mismatch。P6 cjk在第9个 token分叉；P11 docstring首 token分叉，MLX渲染
+code fence且生成24 tokens，LLAMA直接输出docstring并在14 tokens终止；P12 risk在
+第9个 token分叉但语义方向相同。登记
+`CYBER_TIEL_NAMED_SOURCE_TOKEN_MATRIX_V2_PROTOCOL_PASS` 和
+`NAMED_SOURCE_GREEDY_IDENTITY_BOUNDARY_OBSERVED`；状态为
+`MATRIX_V2 = PASS_WITH_BOUNDARY / PROTOCOL_COMPLETE`。
+
+初次 strict gate FAIL artifact保留：MLX-only模型加载时全局 swap瞬时上升
+`1,116,272,066 bytes`。V2 gate拆分为 load transient `1,610,612,736 bytes` 和
+steady-state `536,870,912 bytes`。正式 Phase1 load delta `0`、steady delta
+`198,317,179 bytes`；Phase2 max delta `0`。这不是两个 backend同时驻留，也不是
+放宽 co-residency isolation。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_CROSSBACKEND_TOKEN_MATRIX_V2_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record-matrix-v2-initial-strict-gate-fail.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record-matrix-v2.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2.json`。
