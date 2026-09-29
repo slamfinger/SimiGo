@@ -6526,3 +6526,32 @@ retention，也不建立 release policy、production、跨 backend 或跨硬件 
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_RELEASE_RECOVERY_PROFILE_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-profile.json`。
+
+### LAB MLX RELEASE/RECOVERY TOKEN SCALE PASS — 2026-09-29
+
+继续 phase-6 token-budget scale observation。复用
+`runReleaseRecoveryProfile`，在 oversized MLX prefix-recompute 路径上对
+`RETAIN` vs `RELEASE_RESTORE` 分别运行 maxTokens `1/2/4`；prefix length `64`、
+cycles `2` per strategy per budget、segment size `8`、交替 order。三个 raw runs
+均 PASS，7 项 checks 全部 PASS，所有 paired generated token IDs/text exact。
+
+strategy-averaged generation mean 按 budget 为
+`10,435.064 / 21,721.998 / 50,665.760ms`；相对 marginal 增量为
+`+11,286.935ms`（1→2）和 `+28,943.762ms`（2→4）。generation segment-transition
+delta 为 `6/12/24`，与 6 segments 和 token count 成比例。RELEASE_RESTORE action
+mean 在三个 budget 为 `4.447/4.670/7.197ms`，仍远小于 generation cost，但小样本
+不建立统计结论。aggregate recovery throughput observation 随 budget 从约
+`0.383` 降至 `0.316` tokens/s。peak footprint `7,765/7,848/7,541 MiB`、max swap
+`0 MiB`、segment transitions `37/61/109`。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记
+`MLX_RELEASE_RECOVERY_TOKEN_SCALE_OBSERVED`、
+`GENERATION_TRANSITIONS_SCALE_WITH_TOKEN_COUNT` 和
+`PAIRED_STRATEGY_OUTPUTS_REMAIN_EXACT`；状态为
+`COST5 = PASS / RETAIN_VS_RELEASE_RESTORE_TOKEN_SCALE_WITH_BOUNDARY`。这是小样本
+cacheless greedy observation，不建立定量 throughput 曲线、warm-KV retention、
+release-policy recommendation、production performance、跨 backend 或跨硬件
+claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_RELEASE_RECOVERY_TOKEN_SCALE_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens1.json`、`...tokens2.json`、`...tokens4.json`、`...token-scale-summary.json`。

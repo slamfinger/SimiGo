@@ -1,0 +1,184 @@
+{
+  "status": "PASS",
+  "protocolVersion": "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.TOKEN.SCALE.V1",
+  "boundary": "RETAIN_VS_RELEASE_RESTORE_BY_TOKEN_BUDGET / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "segmentSize": 8,
+  "segmentCount": 6,
+  "prefixTokenLength": 64,
+  "cyclesPerStrategy": 2,
+  "maxTokens": [
+    1,
+    2,
+    4
+  ],
+  "runs": [
+    {
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens1.json",
+      "maxTokens": 1,
+      "cycles": 2,
+      "status": "PASS",
+      "overallPass": true,
+      "pairedOutputsExact": true,
+      "retain": {
+        "actionMeanMs": 0.002062,
+        "actionTransitionDeltaMean": 0,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 10438.334667,
+        "generationTransitionDeltaMean": 6,
+        "recoveryTokensPerSec": 0.19160144446439792,
+        "strategy": "RETAIN",
+        "totalMeanMs": 10438.336728999999
+      },
+      "releaseRestore": {
+        "actionMeanMs": 4.447208,
+        "actionTransitionDeltaMean": 1,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 10431.7926665,
+        "generationTransitionDeltaMean": 6,
+        "recoveryTokensPerSec": 0.19172160183193382,
+        "strategy": "RELEASE_RESTORE",
+        "totalMeanMs": 10436.2398745
+      },
+      "peakFootprintMiB": 7765,
+      "maxSwapMiB": 0,
+      "segmentTransitions": 37,
+      "generatedTokenIDs": [
+        81917
+      ]
+    },
+    {
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens2.json",
+      "maxTokens": 2,
+      "cycles": 2,
+      "status": "PASS",
+      "overallPass": true,
+      "pairedOutputsExact": true,
+      "retain": {
+        "actionMeanMs": 0.002188,
+        "actionTransitionDeltaMean": 0,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 21862.1672295,
+        "generationTransitionDeltaMean": 12,
+        "recoveryTokensPerSec": 0.1829644773095756,
+        "strategy": "RETAIN",
+        "totalMeanMs": 21862.1694175
+      },
+      "releaseRestore": {
+        "actionMeanMs": 4.6701875,
+        "actionTransitionDeltaMean": 1,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 21581.829583,
+        "generationTransitionDeltaMean": 12,
+        "recoveryTokensPerSec": 0.1853410983817053,
+        "strategy": "RELEASE_RESTORE",
+        "totalMeanMs": 21586.4997705
+      },
+      "peakFootprintMiB": 7848,
+      "maxSwapMiB": 0,
+      "segmentTransitions": 61,
+      "generatedTokenIDs": [
+        81917,
+        279
+      ]
+    },
+    {
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-tokens4.json",
+      "maxTokens": 4,
+      "cycles": 2,
+      "status": "PASS",
+      "overallPass": true,
+      "pairedOutputsExact": true,
+      "retain": {
+        "actionMeanMs": 0.0026875,
+        "actionTransitionDeltaMean": 0,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 50240.500771,
+        "generationTransitionDeltaMean": 24,
+        "recoveryTokensPerSec": 0.15923408161205646,
+        "strategy": "RETAIN",
+        "totalMeanMs": 50240.503458499996
+      },
+      "releaseRestore": {
+        "actionMeanMs": 7.196896,
+        "actionTransitionDeltaMean": 1,
+        "allAdvancedBindingsExact": true,
+        "allSemanticIdentical": true,
+        "cycles": 2,
+        "generationMeanMs": 51091.0190415,
+        "generationTransitionDeltaMean": 24,
+        "recoveryTokensPerSec": 0.15658329291693698,
+        "strategy": "RELEASE_RESTORE",
+        "totalMeanMs": 51098.215937500005
+      },
+      "peakFootprintMiB": 7541,
+      "maxSwapMiB": 0,
+      "segmentTransitions": 109,
+      "generatedTokenIDs": [
+        81917,
+        279,
+        6559,
+        1847
+      ]
+    }
+  ],
+  "points": [
+    {
+      "maxTokens": 1,
+      "cyclesPerStrategy": 2,
+      "retainGenerationMeanMs": 10438.334667,
+      "releaseRestoreGenerationMeanMs": 10431.7926665,
+      "strategyGenerationMeanMs": 10435.06366675,
+      "marginalGenerationMeanMsVsPrevious": null,
+      "retainActionMeanMs": 0.002062,
+      "releaseRestoreActionMeanMs": 4.447208,
+      "generationTransitionDeltaMean": 6,
+      "aggregateRecoveryTokensPerSec": 0.3833230086315132,
+      "pairedOutputsExact": true
+    },
+    {
+      "maxTokens": 2,
+      "cyclesPerStrategy": 2,
+      "retainGenerationMeanMs": 21862.1672295,
+      "releaseRestoreGenerationMeanMs": 21581.829583,
+      "strategyGenerationMeanMs": 21721.99840625,
+      "marginalGenerationMeanMsVsPrevious": 11286.9347395,
+      "retainActionMeanMs": 0.002188,
+      "releaseRestoreActionMeanMs": 4.6701875,
+      "generationTransitionDeltaMean": 12,
+      "aggregateRecoveryTokensPerSec": 0.368290239709169,
+      "pairedOutputsExact": true
+    },
+    {
+      "maxTokens": 4,
+      "cyclesPerStrategy": 2,
+      "retainGenerationMeanMs": 50240.500771,
+      "releaseRestoreGenerationMeanMs": 51091.0190415,
+      "strategyGenerationMeanMs": 50665.75990625,
+      "marginalGenerationMeanMsVsPrevious": 28943.7615,
+      "retainActionMeanMs": 0.0026875,
+      "releaseRestoreActionMeanMs": 7.196896,
+      "generationTransitionDeltaMean": 24,
+      "aggregateRecoveryTokensPerSec": 0.31579512533919935,
+      "pairedOutputsExact": true
+    }
+  ],
+  "checks": {
+    "ALL_RUNS_PASS": true,
+    "ALL_PAIRED_OUTPUTS_EXACT": true,
+    "ALL_TOKEN_BUDGETS_OBSERVED": true,
+    "TRANSITIONS_SCALE_WITH_GENERATED_TOKENS": true,
+    "OVERSIZED_PROFILE_UNDER_30GIB": true
+  },
+  "overallPass": true
+}
