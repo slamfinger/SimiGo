@@ -10,7 +10,7 @@ listed backend、model、workload、topology 和 harness boundary 内成立。
 ```text
 RQ1 = PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 RQ2 = PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT
-      / CYBER_TIEL_FULL_MATRIX_MARGIN_ACCEPTANCE_GATE_PASS
+      / CYBER_TIEL_FULL_MATRIX_MARGIN_ACCEPTANCE_REPRODUCED_SEED43
 RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
       / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
@@ -54,6 +54,7 @@ Conformance baseline 也是 `157 PASS / 0 FAIL`。
 | Named-source divergence logit attribution | same variants; teacher-forced P6/P11/P12 first-divergence prefixes; top-16 logprobs | protocol PASS; top1 agreement `0/3`; every alternate is in other backend top2 | `results/backend-conformance/cross-backend-cyber-tiel-logit-record.json`; `results/backend-conformance/cross-backend-cyber-tiel-logit-compare.json`; `SIMIGO_LAB_CYBER_TIEL_DIVERGENCE_LOGIT_ATTRIBUTION_20260929.md` |
 | Full-trajectory margin distribution | same variants; fixed MLX greedy trajectory for P6/P11/P12; 72 positions; top-16 logprobs | protocol PASS; MLX self-consistency `72/72`; LLAMA top1 agreement `66/72`; reference in top16 `72/72`; max reference rank `2` | `results/backend-conformance/cross-backend-cyber-tiel-margin-record.json`; `results/backend-conformance/cross-backend-cyber-tiel-margin-compare.json`; `SIMIGO_LAB_CYBER_TIEL_MARGIN_DISTRIBUTION_20260929.md` |
 | Full-matrix margin acceptance gate | same variants; fixed MLX greedy trajectory for all 12 families; 139 positions; top-16 logprobs | protocol and acceptance gate PASS; top1 agreement `133/139`; top16 containment `139/139`; max rank `2`; identity subset `67/67` | `results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all.json`; `results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json`; `SIMIGO_LAB_CYBER_TIEL_FULL_MATRIX_MARGIN_ACCEPTANCE_20260929.md` |
+| Full-matrix margin seed43 reproduction | same protocol and fixed MLX trajectory; seed43 LLAMA compare | gate PASS and reproduced exactly: top1 `133/139`, containment `139/139`, max rank `2`, flips `6`; per-position outcomes `139/139` identical | `results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all-seed43.json`; `results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json`; `SIMIGO_LAB_CYBER_TIEL_FULL_MATRIX_MARGIN_SEED43_REPRODUCTION_20260929.md` |
 
 判定边界：
 
@@ -625,8 +626,9 @@ results/backend-conformance/ui-branch-session-mlx-long-running.json
    checkpoint bytes、tokenizer lineage和 quantization equivalence仍未审计。
    P6/P11/P12 teacher-forced top-16 attribution已证明 top1 flip且互为对方 top2；
    longer free-form generation仍未完成。full-matrix margin gate已形式化并在
-   `139` positions PASS：top1 agreement `133/139`，top16 containment `139/139`，
-   reference最大 rank `2`；identity subset为 `67/67`。
+   `139` positions PASS，且 seed42/seed43 per-position outcome `139/139` 一致：
+   top1 agreement均 `133/139`，top16 containment均 `139/139`，reference最大
+   rank均 `2`；identity subset均 `67/67`。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
    PHASE6B targeted replication、PHASE6C token-budget replication、PHASE6E
    post-hoc distribution analysis、PHASE6F segment phase attribution、PHASE6G

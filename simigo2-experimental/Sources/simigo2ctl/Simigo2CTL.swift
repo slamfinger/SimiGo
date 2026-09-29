@@ -323,6 +323,7 @@ struct Simigo2CTL {
       let port = optionalOption("--port", rest).flatMap(Int.init) ?? 18080
       let topK = optionalOption("--top-k", rest).flatMap(Int.init) ?? 16
       let scope = optionalOption("--scope", rest) ?? "all"
+      let seed = optionalOption("--seed", rest).flatMap(Int.init) ?? 42
       guard let marginScope = CrossBackendMarginProbe.Scope(rawValue: scope) else {
         throw OutputError(message: "invalid --scope: \(scope)")
       }
@@ -332,7 +333,8 @@ struct Simigo2CTL {
         host: host,
         port: port,
         scope: marginScope,
-        topK: topK
+        topK: topK,
+        seed: seed
       )
       print(try toJSON(report))
     case "o2-baseline":

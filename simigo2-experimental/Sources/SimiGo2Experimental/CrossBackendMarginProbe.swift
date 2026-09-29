@@ -147,6 +147,7 @@ public enum CrossBackendMarginProbe {
     public let recordPath: String
     public let recordSHA256: String
     public let scope: Scope
+    public let seed: Int
     public let llamaModelPath: String?
     public let topK: Int
     public let cases: [CompareCase]
@@ -451,7 +452,8 @@ public enum CrossBackendMarginProbe {
     host: String,
     port: Int,
     scope: Scope = .mismatches,
-    topK: Int = 16
+    topK: Int = 16,
+    seed: Int = 42
   ) async throws -> CompareReport {
     let recordURL = URL(fileURLWithPath: recordPath)
     let recordData = try Data(contentsOf: recordURL)
@@ -482,7 +484,7 @@ public enum CrossBackendMarginProbe {
           "prompt": prefix,
           "n_predict": 1,
           "temperature": 0.0,
-          "seed": 42,
+          "seed": seed,
           "cache_prompt": false,
           "return_tokens": true,
           "n_probs": topK,
@@ -603,6 +605,7 @@ public enum CrossBackendMarginProbe {
       recordPath: recordPath,
       recordSHA256: recordDigest,
       scope: scope,
+      seed: seed,
       llamaModelPath: props.modelPath,
       topK: topK,
       cases: compareCases,

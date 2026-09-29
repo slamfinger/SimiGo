@@ -7352,3 +7352,33 @@ verification为 157 PASS / 0 FAIL。报告见
 artifacts见
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json`。
+
+### LAB CYBER TIEL FULL MATRIX MARGIN SEED43 REPRODUCTION PASS — 2026-09-29
+
+完成 full matrix V2 margin acceptance gate的 seed43复现。链路依次为 MLX token
+record、LLAMA token compare seed43、MLX margin record scope=all、LLAMA margin
+compare scope=all seed43。token matrix结果为 `PASS_WITH_BOUNDARY`，identity仍为
+`9/12`，mismatch仍为 P6 cjk / P11 docstring / P12 risk；MLX greedy trajectory
+与 seed42逐 case semantic identical。
+
+Margin gate结果与 seed42完全一致：12 cases、139 positions、LLAMA top1 agreement
+`133/139 = 95.683%`、top16 containment `139/139 = 100%`、max reference rank `2`、
+top1 flips `6` 且允许、acceptance gate PASS。分层结果也一致：9个 identity cases
+共 67 positions全部 top1一致；3个 mismatch cases共 72 positions中 66个 top1
+一致。逐 `(promptID, position)` 审计显示 `139/139` outcome shape与 seed42相同，
+差异为 0。登记
+`CYBER_TIEL_FULL_MATRIX_MARGIN_V2_SEED43_PASS`、
+`FULL_MATRIX_ACCEPTANCE_GATE_REPRODUCED`、
+`PER_POSITION_OUTCOME_IDENTICAL_TO_SEED42` 和
+`MLX_GREEDY_TRAJECTORY_REPRODUCED`；状态为
+`FULL_MATRIX_MARGIN_V2_SEED43 = PASS_WITH_BOUNDARY / ACCEPTANCE_GATE_REPRODUCED`。
+
+为支持该实验，`CrossBackendMarginProbe.runCompare` 和
+`cross-backend-margin-compare` 增加显式 seed并写入 report；Phase2请求不再硬编码
+seed42。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_FULL_MATRIX_MARGIN_SEED43_REPRODUCTION_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record-matrix-v2-seed43.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2-seed43.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all-seed43.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json`。
