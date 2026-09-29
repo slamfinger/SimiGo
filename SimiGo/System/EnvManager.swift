@@ -344,8 +344,18 @@ public final class EnvManager: ObservableObject {
             }
 
             process.terminationHandler = { process in
-                pipe.fileHandleForReading.readabilityHandler = nil
-
+                let handle = pipe.fileHandleForReading
+                handle.readabilityHandler = nil
+                // 竞态修复（2026-09-30）：置 nil 与进程退出之间管道里可能还压着
+                // 最后一块输出——直接 resume 会把收尾总结行整个丢掉。先排干再
+                // 恢复 continuation（Task 入队在 resume 之前，实践中先于收尾行）。
+                let residual = handle.availableData
+                if !residual.isEmpty, let text = String(data: residual, encoding: .utf8) {
+                    let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !clean.isEmpty {
+                        Task { @MainActor in onOutput(clean) }
+                    }
+                }
                 if process.terminationStatus == 0 {
                     continuation.resume()
                 } else {
@@ -569,8 +579,18 @@ public final class EnvManager: ObservableObject {
             }
 
             process.terminationHandler = { process in
-                pipe.fileHandleForReading.readabilityHandler = nil
-
+                let handle = pipe.fileHandleForReading
+                handle.readabilityHandler = nil
+                // 竞态修复（2026-09-30）：置 nil 与进程退出之间管道里可能还压着
+                // 最后一块输出——直接 resume 会把收尾总结行整个丢掉。先排干再
+                // 恢复 continuation（Task 入队在 resume 之前，实践中先于收尾行）。
+                let residual = handle.availableData
+                if !residual.isEmpty, let text = String(data: residual, encoding: .utf8) {
+                    let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !clean.isEmpty {
+                        Task { @MainActor in onOutput(clean) }
+                    }
+                }
                 if process.terminationStatus == 0 {
                     continuation.resume()
                 } else {

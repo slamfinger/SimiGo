@@ -68,6 +68,11 @@ struct Settings: View {
                     VStack(alignment: .leading, spacing: 12) {
                         TextField("输入命令，例如 hf download ... / llama-server ...", text: $envMgr.commandInput, axis: .vertical)
                             .textFieldStyle(.roundedBorder)
+                            // 下载期间禁用：防中途改命令；同时释放字段焦点——
+                            // 否则聚焦的 NSTextField 字段编辑器会吞掉完成后
+                            // 的程序化复位（commandInput 复位代码在 EnvManager，
+                            // 绑定值变了但焦点框视觉不变）。
+                            .disabled(envMgr.isDownloading)
                             .onSubmit {
                                 executeCommand()
                             }
