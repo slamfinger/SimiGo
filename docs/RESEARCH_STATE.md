@@ -7469,3 +7469,33 @@ verification为 161 PASS / 0 FAIL。报告见
 script见
 `simigo2-experimental/scripts/cyber_tiel_tensor_topology_audit.py`；artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json`。
+
+### LAB CYBER TIEL F32 CONTROL DRIFT AUDIT PASS WITH OBSERVED DRIFT — 2026-09-29
+
+新增 GGUF F32与 MLX BF16 shared control tensor numerical audit，覆盖 40层中的
+260个 non-large-matrix tensors：所有层 `attn_norm`、`post_attention_norm`、
+`ffn_gate_inp`；30个 linear-attention层的 `ssm_a`、`ssm_conv1d`、`ssm_dt.bias`、
+`ssm_norm`；10个 full-attention层的 `attn_q_norm`、`attn_k_norm`。GGUF侧为 F32，
+MLX侧为 BF16；`ffn_gate_inp` 使用 transpose，`ssm_conv1d` 使用 conv layout
+auto-orientation。
+
+协议 `MAPPINGS_COMPLETE`、`NO_FAILURES`、`ALL_RECORDS_FINITE`全部 PASS；共
+260 tensors，其中 exact 30/260，zero-drift tensors 0/260。aggregate max abs diff
+`101.82308959960938`，mean of per-tensor mean abs diff
+`0.644830577143153`。分族观测：layer norms和 q/k norms的最大 drift约
+`0.0078125`；`ffn_gate_inp`最大 `0.51953125`；`ssm_a`最大 `101.82309`、
+`ssm_dt.bias`最大 `18.40625`；`ssm_norm.weight`是唯一 exact family（30/30）。
+登记 `CYBER_TIEL_F32_CONTROL_TENSOR_AUDIT_PASS`、
+`NAMED_SOURCE_CHECKPOINT_NUMERICAL_DRIFT_OBSERVED` 和
+`SAME_CHECKPOINT_IDENTITY_EFFECTIVELY_REJECTED_FOR_CONTROL_TENSORS`；状态为
+`F32_CONTROL_AUDIT = PASS_WITH_OBSERVED_DRIFT`。
+
+这排除 named-source CyberTiel GGUF/MLX pair在 control tensor层面的
+same-checkpoint interpretation。协议初版错误读取 GGUF tensor data offset；已修正
+为解析完整 tensor-info list后按 32-byte alignment计算 tensor data section起点。
+结果不比较 large quantized matrices，也不定位 drift来自 abliteration、conversion
+还是 quantizer。全仓 Swift verification为 161 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_F32_CONTROL_DRIFT_AUDIT_20260929.md`；
+script见
+`simigo2-experimental/scripts/cyber_tiel_f32_control_tensor_audit.py`；artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json`。

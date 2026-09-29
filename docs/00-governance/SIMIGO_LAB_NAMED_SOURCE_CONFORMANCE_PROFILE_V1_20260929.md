@@ -96,6 +96,14 @@ simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-
 Swift tests = 161 PASS / 0 FAIL
 ```
 
+## Numerical drift correction — 2026-09-29 later audit
+
+F32 control tensor audit观察到 GGUF F32与 MLX BF16 control tensors存在 finite
+drift，且 zero-drift tensors为 `0/260`。因此 named-source profile V1只能证明
+shared lineage/tokenizer substrate与 topology，加上 fixed-trajectory near-boundary
+output profile；不能解释为 same-checkpoint或 dequantization-equivalent payload。
+详见 `SIMIGO_LAB_CYBER_TIEL_F32_CONTROL_DRIFT_AUDIT_20260929.md`。
+
 ## Lineage correction — 2026-09-29 later audit
 
 后续 GGUF/MLX lineage audit确认这两个 artifact共享 Ornith/Huihui tokenizer
