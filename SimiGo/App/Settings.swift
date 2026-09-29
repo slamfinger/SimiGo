@@ -5,6 +5,15 @@ struct Settings: View {
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
 
+    /// 版本脚注从 bundle 实读（CFBundleShortVersionString + CFBundleVersion），
+    /// 随发版自动更新——硬编码 "SimiGo v1.3" 曾滞留四个大版本（2026-09-30）。
+    static let versionFooter: String = {
+        let info = Bundle.main.infoDictionary
+        let marketing = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "SimiGo v\(marketing) (build \(build))"
+    }()
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -130,7 +139,7 @@ struct Settings: View {
                 }
                 .padding(.horizontal)
 
-                Text("SimiGo v1.3")
+                Text(Self.versionFooter)
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
