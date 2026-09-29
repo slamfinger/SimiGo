@@ -6018,3 +6018,20 @@ path。具体上游机制未定位，RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_RUNTIME_FLAG_ABLATION_20260929.md`；
 artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-norepack.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload-seed43.json`。
+
+### LAB RQ3 THREADPOOL ABLATION — THREADS1 FIXES ACTIVE3 ONLY — 2026-09-29
+
+在 Metal `parallel4` 下将 llama-server generation threadpool 改为
+`--threads 1 --threads-batch 1`，用 distinct equal-length prompt probe 在 seed42
+和 seed43 各完整运行 cardinality 1–4。两个 seeds 中 active3 全部恢复 stable：
+all-match 与 across-cycle 均为 `8/8`。active4 仍 unstable：all-match `6/8`，
+across-cycle `1/8`，mismatch 分布为 prompt0 1 次、prompt3 2 次。
+
+登记 `METAL_THREADPOOL_ONE_ELIMINATES_ACTIVE3_MISMATCH`、
+`ACTIVE4_METAL_STILL_UNSTABLE` 和 `METAL_THREADPOOL_COUNT_ISOLATED`。这说明
+CPU threadpool 并发是 active3 mismatch 的真实变量，但 active4 还有与 Metal
+active4 execution path / graph shape 相关的独立变量。threads=1 只作为当前
+harness 观察登记，不是通用生产 mitigation。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_THREADPOOL_ABLATION_20260929.md`；
+artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-seed43.json`。
