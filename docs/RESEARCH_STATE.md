@@ -6158,3 +6158,21 @@ Execution State backend、llama.cpp 上游或采样逻辑；不建立生产 read
 性能结论。登记 `MITIGATED_LAUNCH_PROFILE_OPERATIONAL` 和
 `CURVE_FREE_TIMEOUT_DEFAULT_HARDENED`。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_MITIGATION_PROFILE_20260929.md`。
+
+### LAB RQ3 UBATCH2 CANONICAL HARNESS REGRESSION PASS — 2026-09-29
+
+使用 canonical mitigated launch profile 回归三个 Swift RQ3 harness。Swift
+hot-path A/B 在 30 paired samples 中 OFF/ON semantic stability 均 `30/30`，
+paired ON−OFF mean `+0.071ms`；Swift fork/restore 30 samples 的 replay identity、
+divergence、parent non-interference、restore-to-fork-point 均 `30/30`；Swift
+cancellation A/B 中 OFF/ON DELETE accepted 与 recovery identity 均 `20/20 + 20/20`。
+
+同时修复 Swift cancellation harness 的 multi-slot bug：原逻辑等待
+`slots.count == 1`，无法用于 canonical `parallel4` profile；现改为等待所有
+slots idle，并将 free timeout default 提高到 `15000ms`。该修复只放宽 readiness
+判定，不改变 Execution State semantics 或 server flags。修改 Swift 后全仓
+`swift test` 为 `157 PASS / 0 FAIL`。RQ3 增加
+`UBATCH2_CANONICAL_HARNESS_REGRESSION_PASS` 和
+`CANCELLATION_HARNESS_MULTISLOT_WAIT_FIXED`，但仍保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH2_CANONICAL_REGRESSION_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab-ubatch2.json`、`...fork-restore-ubatch2.json`、`...cancellation-ubatch2.json`。

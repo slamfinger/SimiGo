@@ -114,7 +114,7 @@ public enum LLAMAServerExecutionStateCancellation {
     cycles: Int = 20,
     cancelDelayMs: Int = 100,
     predictionTokens: Int = 256,
-    freeTimeoutMs: Int = 5000,
+    freeTimeoutMs: Int = 15000,
     seed: Int = 42,
     longPrompt: String = "Count from 1 to 500. Return only numbers separated by spaces.",
     rootTokenPrefix: [Int] = [5423, 6681, 799, 3299, 25, 29018]
@@ -374,7 +374,7 @@ public enum LLAMAServerExecutionStateCancellation {
     let deadline = Date().addingTimeInterval(Double(timeoutMs) / 1000)
     while Date() < deadline {
       let slots: [Slot] = try await get(baseURL: baseURL, path: "/slots")
-      if slots.count == 1, !slots[0].isProcessing {
+      if !slots.isEmpty, slots.allSatisfy({ !$0.isProcessing }) {
         return slots[0]
       }
       try await Task.sleep(nanoseconds: 2_000_000)

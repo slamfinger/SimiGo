@@ -1,0 +1,673 @@
+{
+  "boundary" : "SWIFT_CONTRACT_STATE_AROUND_EXPLICIT_BACKEND_CANCEL \/ HARNESS_LEVEL \/ NO_NATIVE_KV_AUTHORITY_CHANGE \/ NOT_A_PERFORMANCE_OR_PRODUCTION_CLAIM",
+  "cancelDelayMs" : 100,
+  "checks" : [
+    {
+      "detail" : "20\/20",
+      "name" : "OFF_CANCEL_AND_RECOVER",
+      "pass" : true
+    },
+    {
+      "detail" : "20\/20",
+      "name" : "SWIFT_EXECSTATE_CANCEL_ISOLATION",
+      "pass" : true
+    }
+  ],
+  "deleteToFreeMs" : {
+    "off" : {
+      "meanMs" : 4151.21813325,
+      "medianMs" : 3883.492229,
+      "n" : 20
+    },
+    "swiftExecutionStateOn" : {
+      "meanMs" : 4146.04446665,
+      "medianMs" : 3878.1367499999997,
+      "n" : 20
+    }
+  },
+  "host" : "127.0.0.1",
+  "longPrompt" : "Count from 1 to 500. Return only numbers separated by spaces.",
+  "overallPass" : true,
+  "pairedOnMinusOffRecoveryMs" : {
+    "meanMs" : -0.7206084500000038,
+    "medianMs" : -0.22897950000000122,
+    "n" : 20
+  },
+  "port" : 18080,
+  "predictionTokens" : 256,
+  "protocolVersion" : "RQ3.LLAMA.SWIFT.EXECSTATE.CANCELLATION.V1",
+  "recoveryClientMs" : {
+    "off" : {
+      "meanMs" : 136.58257495,
+      "medianMs" : 125.939416,
+      "n" : 20
+    },
+    "swiftExecutionStateOn" : {
+      "meanMs" : 135.86196650000002,
+      "medianMs" : 126.46814599999999,
+      "n" : 20
+    }
+  },
+  "reference" : {
+    "content" : " or",
+    "tokens" : [
+      466
+    ]
+  },
+  "rootTokenPrefix" : [
+    5423,
+    6681,
+    799,
+    3299,
+    25,
+    29018
+  ],
+  "samples" : [
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-0-1790645691174535936",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3504.518792,
+      "index" : 0,
+      "mode" : "off",
+      "recoveryClientMs" : 118.427,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-0-1790645694902922240",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3500.867417,
+      "index" : 0,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 118.29375,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.050873
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-1-1790645698633188096",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3522.168125,
+      "index" : 1,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 117.665292,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.025084000000000002
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-1-1790645702384250112",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3544.913125,
+      "index" : 1,
+      "mode" : "off",
+      "recoveryClientMs" : 118.352083,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-2-1790645706157544192",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3524.220583,
+      "index" : 2,
+      "mode" : "off",
+      "recoveryClientMs" : 120.274542,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-2-1790645709912188928",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3575.467708,
+      "index" : 2,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 119.949833,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.028584
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-3-1790645713718257920",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3584.085042,
+      "index" : 3,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 119.729209,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.028333000000000004
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-3-1790645717531378944",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3598.230458,
+      "index" : 3,
+      "mode" : "off",
+      "recoveryClientMs" : 117.247042,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-4-1790645721353814016",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3607.718667,
+      "index" : 4,
+      "mode" : "off",
+      "recoveryClientMs" : 119.1645,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-4-1790645725186988800",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3651.980958,
+      "index" : 4,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 121.173666,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.027043
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-5-1790645729067141888",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3630.539333,
+      "index" : 5,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 122.265083,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.021917
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-5-1790645732930907136",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3652.149041,
+      "index" : 5,
+      "mode" : "off",
+      "recoveryClientMs" : 124.78525,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-6-1790645736814585088",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3680.838375,
+      "index" : 6,
+      "mode" : "off",
+      "recoveryClientMs" : 122.389333,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-6-1790645740724258048",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3694.063416,
+      "index" : 6,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 123.322875,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.027417
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-7-1790645744643270912",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3706.852958,
+      "index" : 7,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 122.652833,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.020042000000000004
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-7-1790645748584045056",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3721.865375,
+      "index" : 7,
+      "mode" : "off",
+      "recoveryClientMs" : 124.48125,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-8-1790645752538682880",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3739.364833,
+      "index" : 8,
+      "mode" : "off",
+      "recoveryClientMs" : 125.04,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-8-1790645756511825152",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3741.9545,
+      "index" : 8,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 125.175958,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.025167
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-9-1790645760489948928",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3785.44425,
+      "index" : 9,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 125.985334,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.020958
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-9-1790645764512340992",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3851.585083,
+      "index" : 9,
+      "mode" : "off",
+      "recoveryClientMs" : 125.609416,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-10-1790645768592064768",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3915.399375,
+      "index" : 10,
+      "mode" : "off",
+      "recoveryClientMs" : 128.1425,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-10-1790645772747083008",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3970.82925,
+      "index" : 10,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 126.950958,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.020041
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-11-1790645776949972224",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 3994.516458,
+      "index" : 11,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 127.577334,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.0225
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-11-1790645781180852992",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4022.91075,
+      "index" : 11,
+      "mode" : "off",
+      "recoveryClientMs" : 126.269416,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-12-1790645785436614912",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4057.130166,
+      "index" : 12,
+      "mode" : "off",
+      "recoveryClientMs" : 127.869084,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-12-1790645789727007744",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4107.481542,
+      "index" : 12,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 128.036333,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.021499000000000004
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-13-1790645794067849216",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4173.387375,
+      "index" : 13,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 134.877291,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.021292000000000002
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-13-1790645798484685824",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4243.516708,
+      "index" : 13,
+      "mode" : "off",
+      "recoveryClientMs" : 137.319083,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-14-1790645802976880128",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4313.016459,
+      "index" : 14,
+      "mode" : "off",
+      "recoveryClientMs" : 142.337333,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-14-1790645807543287040",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4436.722083,
+      "index" : 14,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 144.737708,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.037959
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-15-1790645812235908096",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4556.255042,
+      "index" : 15,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 148.181166,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.025374
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-15-1790645817050773248",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4698.517292,
+      "index" : 15,
+      "mode" : "off",
+      "recoveryClientMs" : 152.086666,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-16-1790645822004699904",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4894.233916,
+      "index" : 16,
+      "mode" : "off",
+      "recoveryClientMs" : 163.671125,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-16-1790645827173665024",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 4970.601292,
+      "index" : 16,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 160.297666,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.026374
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-17-1790645832407852288",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5106.732292,
+      "index" : 17,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 165.382916,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.031501
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-17-1790645837792755200",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5228.2025,
+      "index" : 17,
+      "mode" : "off",
+      "recoveryClientMs" : 167.17025,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-18-1790645843298046208",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5438.463375,
+      "index" : 18,
+      "mode" : "off",
+      "recoveryClientMs" : 177.092709,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-18-1790645849023603968",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5535.329375,
+      "index" : 18,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 181.370417,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.029126
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-swift_execution_state_on-19-1790645854851386112",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5675.610917,
+      "index" : 19,
+      "mode" : "swift_execution_state_on",
+      "recoveryClientMs" : 183.613708,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0.028791
+    },
+    {
+      "cancelAccepted" : true,
+      "conversationId" : "swift-rq3-cancel-off-19-1790645860817800960",
+      "deleteStatus" : 204,
+      "deleteToFreeMs" : 5787.567792,
+      "index" : 19,
+      "mode" : "off",
+      "recoveryClientMs" : 193.922917,
+      "recoveryContent" : " or",
+      "recoveryTokens" : [
+        466
+      ],
+      "semanticIdentical" : true,
+      "stateOperationMs" : 0
+    }
+  ],
+  "stateOperationMs" : {
+    "meanMs" : 0.02699375,
+    "medianMs" : 0.025874,
+    "n" : 20
+  },
+  "status" : "PASS"
+}
