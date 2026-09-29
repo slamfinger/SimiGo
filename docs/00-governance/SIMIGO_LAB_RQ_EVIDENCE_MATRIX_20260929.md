@@ -97,6 +97,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | Active-concurrency threshold | same distinct-prompt probe on `parallel2/slot512`; N3/N4 queue with max active 2 | N1-N4 all-match and across-cycle `8/8`; instability threshold is active batch count 3+ | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-parallel2-active2.json`; `SIMIGO_LAB_RQ3_LLAMA_ACTIVE_CONCURRENCY_THRESHOLD_20260929.md` |
 | Backend execution isolation | same distinct-prompt active3/4 probe on CPU-only vs Metal, 8 cycles/cardinality | CPU-only N1-N4 `8/8`; Metal N3/N4 `4/8`; boundary isolated to current Metal execution path | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-cpu.json`; `SIMIGO_LAB_RQ3_LLAMA_BACKEND_ISOLATION_20260929.md` |
 | Metal flag ablation | distinct-prompt N1-N4 with FA off and CPU-Moe hybrid, 8 cycles each | FA off leaves N3/N4 unstable; CPU-Moe hybrid becomes unstable at N2 | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-flashoff.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-cpumoe.json`; `SIMIGO_LAB_RQ3_LLAMA_METAL_FLAG_ABLATION_20260929.md` |
+| Runtime flag ablation II | distinct-prompt N1-N4 with `--no-repack`; `--no-op-offload` seed42/seed43 | no-repack N3/N4 unstable; no-op-offload N3 unstable both seeds and N4 unstable on repeat | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-norepack.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload-seed43.json`; `SIMIGO_LAB_RQ3_LLAMA_RUNTIME_FLAG_ABLATION_20260929.md` |
 
 RQ3 当前状态：
 
@@ -174,9 +175,9 @@ simigo2-experimental/results/o6-workload-matrix/
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
 2. RQ3 的 greedy identity mismatch 已进一步隔离到 current Metal active batch
-   execution path；CPU-only active3/4 stable。Flash Attention off 不消除，
-   CPU-Moe hybrid 不稳定且提前到 N2；具体 Metal kernel / scheduler / batch
-   reduction 机制未定位，higher-concurrency semantic closure 未完成。
+   execution path；CPU-only active3/4 stable。Flash Attention off、no-repack 与
+   no-op-offload 都不消除；CPU-Moe hybrid 提前到 N2。可稳定化 runtime mitigation
+   未建立，higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 

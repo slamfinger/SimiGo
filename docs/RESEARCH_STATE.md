@@ -6002,3 +6002,19 @@ path boundary；具体 MoE kernel、graph、batch reduction 或 synchronization�
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_METAL_FLAG_ABLATION_20260929.md`；
 artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-flashoff.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-cpumoe.json`。
+
+### LAB RQ3 RUNTIME FLAG ABLATION II — NO STABLE METAL MITIGATION — 2026-09-29
+
+继续 Metal runtime flag ablation。`--no-repack` 下 N1/N2 `8/8` stable，但 N3
+all-match 与 across-cycle 均为 `5/8`，N4 均为 `6/8`。`--no-op-offload` seed42
+中 N3 为 `7/8`、N4 为 `8/8`，但 seed43 repeat 中 N3 降为 `4/8`、N4 降为
+`6/8`；因此 seed42 的 N4 改善只是单次观察，不能外推为修复。
+
+登记 `NO_REPACK_NOT_SUFFICIENT`、`NO_OP_OFFLOAD_NOT_SUFFICIENT` 和
+`METAL_FLAG_MITIGATION_NOT_ESTABLISHED`。结合先前 ablation：Flash Attention
+off、no-cont-batching、CPU-Moe hybrid、no-repack、no-op-offload 都不是稳定化
+mitigation。CPU-only 仍 stable，边界继续指向 current Metal active execution
+path。具体上游机制未定位，RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_RUNTIME_FLAG_ABLATION_20260929.md`；
+artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-norepack.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-noopoffload-seed43.json`。
