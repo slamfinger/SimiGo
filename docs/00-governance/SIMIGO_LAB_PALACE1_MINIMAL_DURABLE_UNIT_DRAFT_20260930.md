@@ -114,6 +114,9 @@ D record written without relation
 relation written without D record
 representation written without claim
 claim written without representation
+fork transition partially applied
+continued logical state without representation rebind
+restored logical state with stale binding
 tombstone written without physical release
 physical release without tombstone
 ```
@@ -129,8 +132,8 @@ Must define whether it is:
 ```text
 terminal tombstone
 recoverable lifecycle state
- garbage-collectable identity reservation
- observability-only history
+garbage-collectable identity reservation
+observability-only history
 ```
 
 ## 4. Explicit non-goals
