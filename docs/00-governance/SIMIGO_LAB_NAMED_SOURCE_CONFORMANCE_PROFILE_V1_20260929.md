@@ -96,6 +96,14 @@ simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-
 Swift tests = 161 PASS / 0 FAIL
 ```
 
+## Lineage correction — 2026-09-29 later audit
+
+后续 GGUF/MLX lineage audit确认这两个 artifact共享 Ornith/Huihui tokenizer
+substrate，CyberTiel是 publication/build alias；底层 chain为
+`Ornith 1.5 → Huihui-Ornith-1.5-abliterated → CyberTiel quantization`。
+因此本 profile中 “named-source”不得解释为 same-checkpoint closure。详见
+`SIMIGO_LAB_NAMED_SOURCE_LINEAGE_AUDIT_20260929.md`。
+
 ## Boundary
 
 该 profile 只适用于 named-source Cyber-Tiel MLX oQ4e与 MTP UD-Q4_K_XL GGUF

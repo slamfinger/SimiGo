@@ -1,0 +1,239 @@
+{
+  "boundary": "TOKENIZER_AND_DECLARED_LINEAGE_AUDIT / NO_WEIGHT_BYTES_COMPARED / NO_SAME_CHECKPOINT_CLAIM",
+  "checks": {
+    "ADDED_TOKENS_EXACT": true,
+    "ARCHITECTURE_NORMALIZED_MATCH": true,
+    "BASE_VOCAB_EXACT": true,
+    "CHAT_TEMPLATE_EXACT": true,
+    "GGUF_VERSION_SUPPORTED": true,
+    "MATRIX_IDS_WITHIN_SHARED_VOCAB": true,
+    "MERGES_EXACT": true,
+    "SOURCE_LINEAGE_CHAIN_MATCH": true,
+    "TOKENIZER_MODEL_MATCH": true
+  },
+  "gguf": {
+    "baseModelName": "Ornith 1.5 35B A3B",
+    "baseModelOrganization": "Ornith Ai",
+    "baseModelUrl": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B",
+    "generalArchitecture": "qwen35moe",
+    "generalBasename": "Huihui-Ornith-1.5",
+    "generalFinetune": "abliterated",
+    "generalName": "Huihui Ornith 1.5 35B A3B Abliterated",
+    "metadataCount": 55,
+    "path": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+    "sizeBytes": 22749880640,
+    "tensorCount": 753,
+    "tokenizerModel": "gpt2",
+    "tokenizerPre": "qwen35",
+    "version": 3
+  },
+  "lineage": {
+    "architectureNormalizedMatch": true,
+    "checkpointIdentity": "OPEN / WEIGHT_BYTES_NOT_COMPARED",
+    "ggufDeclaredBase": {
+      "name": "Ornith 1.5 35B A3B",
+      "organization": "Ornith Ai",
+      "url": "https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B"
+    },
+    "ggufSubstrateMatch": true,
+    "ggufUpstreamMatch": true,
+    "lineageChain": "Ornith 1.5 -> Huihui-Ornith-1.5-abliterated -> CyberTiel quantization",
+    "mlxReadmeDeclaredBase": "huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated",
+    "mlxSubstrateMatch": true,
+    "publicationAlias": "CyberTiel",
+    "sourceMetadataMatch": true
+  },
+  "matrixUsage": {
+    "maxUsedTokenID": 248069,
+    "sharedVocabLimit": 248070,
+    "sourceComparePath": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2.json",
+    "sourceCompareSHA256": "6e86c2c560a3994afa0b47bbd0513ed4d0ee7a4a4c34093b9751f6f47313409a",
+    "usedIDsOutsideSharedVocab": [],
+    "usedUniqueTokenIDCount": 294
+  },
+  "mlx": {
+    "architecture": "qwen3_5_moe",
+    "chatTemplateJinjaSHA256": "b629ec1ffdcf88bd8b547f3eb7d5dbde61002fe2a2727c5720b2f48f5b6545e7",
+    "mergesTxtSHA256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+    "path": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+    "readmeBaseModel": "huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated",
+    "tokenizerJsonSHA256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+    "vocabJsonSHA256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+  },
+  "overallPass": true,
+  "protocolVersion": "LAB.NAMED_SOURCE.LINEAGE.AUDIT.V1",
+  "status": "PASS_WITH_BOUNDARY",
+  "substratePass": true,
+  "tokenizerSubstrate": {
+    "addedTokenMismatchCount": 0,
+    "baseVocabMismatchCount": 0,
+    "chatTemplateExact": true,
+    "extraTokenCategories": {
+      "control": 7,
+      "padding": 243
+    },
+    "extraTokenSample": [
+      {
+        "id": 248070,
+        "token": "<|audio_start|>",
+        "type": 3
+      },
+      {
+        "id": 248071,
+        "token": "<|audio_end|>",
+        "type": 3
+      },
+      {
+        "id": 248072,
+        "token": "<tts_pad>",
+        "type": 3
+      },
+      {
+        "id": 248073,
+        "token": "<tts_text_bos>",
+        "type": 3
+      },
+      {
+        "id": 248074,
+        "token": "<tts_text_eod>",
+        "type": 3
+      },
+      {
+        "id": 248075,
+        "token": "<tts_text_bos_single>",
+        "type": 3
+      },
+      {
+        "id": 248076,
+        "token": "<|audio_pad|>",
+        "type": 3
+      },
+      {
+        "id": 248077,
+        "token": "[PAD248077]",
+        "type": 5
+      },
+      {
+        "id": 248078,
+        "token": "[PAD248078]",
+        "type": 5
+      },
+      {
+        "id": 248079,
+        "token": "[PAD248079]",
+        "type": 5
+      },
+      {
+        "id": 248080,
+        "token": "[PAD248080]",
+        "type": 5
+      },
+      {
+        "id": 248081,
+        "token": "[PAD248081]",
+        "type": 5
+      },
+      {
+        "id": 248082,
+        "token": "[PAD248082]",
+        "type": 5
+      },
+      {
+        "id": 248083,
+        "token": "[PAD248083]",
+        "type": 5
+      },
+      {
+        "id": 248084,
+        "token": "[PAD248084]",
+        "type": 5
+      },
+      {
+        "id": 248085,
+        "token": "[PAD248085]",
+        "type": 5
+      },
+      {
+        "id": 248086,
+        "token": "[PAD248086]",
+        "type": 5
+      },
+      {
+        "id": 248087,
+        "token": "[PAD248087]",
+        "type": 5
+      },
+      {
+        "id": 248088,
+        "token": "[PAD248088]",
+        "type": 5
+      },
+      {
+        "id": 248089,
+        "token": "[PAD248089]",
+        "type": 5
+      },
+      {
+        "id": 248090,
+        "token": "[PAD248090]",
+        "type": 5
+      },
+      {
+        "id": 248091,
+        "token": "[PAD248091]",
+        "type": 5
+      },
+      {
+        "id": 248092,
+        "token": "[PAD248092]",
+        "type": 5
+      },
+      {
+        "id": 248093,
+        "token": "[PAD248093]",
+        "type": 5
+      },
+      {
+        "id": 248094,
+        "token": "[PAD248094]",
+        "type": 5
+      },
+      {
+        "id": 248095,
+        "token": "[PAD248095]",
+        "type": 5
+      },
+      {
+        "id": 248096,
+        "token": "[PAD248096]",
+        "type": 5
+      },
+      {
+        "id": 248097,
+        "token": "[PAD248097]",
+        "type": 5
+      },
+      {
+        "id": 248098,
+        "token": "[PAD248098]",
+        "type": 5
+      },
+      {
+        "id": 248099,
+        "token": "[PAD248099]",
+        "type": 5
+      }
+    ],
+    "ggufExtraTokenCount": 250,
+    "ggufMergeCount": 247587,
+    "ggufTokenCount": 248320,
+    "mergeMismatchCount": 0,
+    "mlxAddedTokenCount": 26,
+    "mlxBaseVocabCount": 248044,
+    "mlxExpectedTotalCount": 248070,
+    "mlxMergeCount": 247587,
+    "sharedAddedTokenCount": 26,
+    "sharedBaseVocabCount": 248044,
+    "sharedMergeCount": 247587
+  }
+}

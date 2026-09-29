@@ -7411,3 +7411,32 @@ Swift verification现为 161 PASS / 0 FAIL。报告见
 `docs/00-governance/SIMIGO_LAB_NAMED_SOURCE_CONFORMANCE_PROFILE_V1_20260929.md`；
 artifact见
 `simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json`。
+
+### LAB NAMED SOURCE LINEAGE AUDIT PASS WITH BOUNDARY — 2026-09-29
+
+新增可复现 GGUF metadata parser和 named-source lineage audit，覆盖 CyberTiel
+GGUF UD-Q4_K_XL与 CyberTiel MLX oQ4e。该 audit纠正了术语边界：CyberTiel是
+publication/build alias；底层 declared chain为
+`Ornith 1.5 35B A3B → huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated →
+CyberTiel quantization`。GGUF metadata的 `general.name` 为
+`Huihui Ornith 1.5 35B A3B Abliterated`、basename `Huihui-Ornith-1.5`、finetune
+`abliterated`，upstream base URL为 `ornith-ai/Ornith-1.5-35B-A3B`；MLX README
+declared base为 `huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated`。
+`SOURCE_LINEAGE_CHAIN_MATCH = PASS`。
+
+Tokenizer substrate exact：base vocab `248044/248044`，added tokens `26/26`，
+BPE merges `247587/247587`，chat template exact；mismatch均为 0。GGUF总 token数
+`248320`，比 MLX shared substrate多 `250`（7 control +243 padding），extra IDs从
+`248070`开始。Matrix V2使用 294个 unique token IDs、max token ID `248069`，因此
+`MATRIX_IDS_WITHIN_SHARED_VOCAB = PASS`。
+
+九项 checks全部 PASS；状态为
+`LINEAGE_AUDIT = PASS_WITH_BOUNDARY / TOKENIZER_SUBSTRATE_AND_DECLARED_LINEAGE`。
+本 audit没有比较 weight bytes、tensor values或 dequantized tensors，因此
+`CHECKPOINT_IDENTITY = OPEN / WEIGHT_BYTES_NOT_COMPARED`，不能升级为
+same-checkpoint closure。此前 named-source profile V1必须按本 correction解释为
+shared Ornith/Huihui lineage CyberTiel publication pair profile。报告见
+`docs/00-governance/SIMIGO_LAB_NAMED_SOURCE_LINEAGE_AUDIT_20260929.md`；
+script见
+`simigo2-experimental/scripts/named_source_lineage_audit.py`；artifact见
+`simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-lineage-audit.json`。
