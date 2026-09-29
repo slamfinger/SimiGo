@@ -6923,3 +6923,25 @@ retention、release-policy recommendation、cross-backend/cross-hardware compari
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6_MASTER_SUMMARY_20260929.md`；artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6-master-summary.json`。
+
+### LAB UI BRANCH SESSIONS MASTER INDEX CONSOLIDATED — 2026-09-29
+
+为避免 UI Branch Sessions evidence碎片化，新增 consolidated master index
+`ui-branch-sessions-master-summary.json`，把 UI1–UI9纳入同一 evidence index。覆盖
+LLAMA GGUF与 oversized MLX、depth-1 pilot/cross-backend matrix、nested/repeat
+pilot/cross-backend matrix、以及 cancellation pilot/cross-backend outcome-shape
+matrix。十项 index checks全部 PASS：9个 entry reports符合预期状态、all entry
+reports pass、depth-1 LLAMA/MLX与 cross-backend matrix齐全、nested LLAMA/MLX与
+cross-backend matrix齐全、cancellation LLAMA/MLX与 cross-backend matrix齐全；同时
+显式声明 no product UI claim和 no persistent session claim。登记
+`UI_BRANCH_SESSIONS_MASTER_INDEX_CONSOLIDATED`、
+`UI_BRANCH_SESSIONS_PRODUCT_SURFACE_REMAINS_OPEN` 和
+`UI_BRANCH_SESSIONS_PERSISTENCE_REMAINS_OPEN`；状态为
+`UI_BRANCH_SESSIONS = CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE /
+PRODUCT_PERSISTENCE_OPEN`。这不是 product UI、persistent/multi-process session、
+arbitrary-depth graph、same-checkpoint closure、production cancellation readiness或
+performance benchmark。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MASTER_INDEX_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。

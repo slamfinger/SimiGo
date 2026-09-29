@@ -522,6 +522,33 @@ Artifacts：
 results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json
 ```
 
+## UI Branch Sessions consolidated index
+
+Status：
+
+```text
+CONSOLIDATED_PASS_WITH_BOUNDARY / EVIDENCE_INDEX_COMPLETE / PRODUCT_PERSISTENCE_OPEN
+```
+
+UI1–UI9已纳入同一 master index，覆盖：
+
+```text
+depth-1 pilot / cross-backend matrix
+nested + repeat pilots / cross-backend matrix
+cancellation pilots / cross-backend outcome-shape matrix
+```
+
+十个 UI index checks全部 PASS。所有 entry reports PASS或 PASS_WITH_BOUNDARY；coverage
+包含 LLAMA与 oversized MLX、depth-1与 nested、以及 cancellation。当前结果不建立
+product UI、persistent session、arbitrary-depth graph、same-checkpoint closure或
+production cancellation readiness。
+
+Master artifact：
+
+```text
+results/backend-conformance/ui-branch-sessions-master-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -541,6 +568,10 @@ results/backend-conformance/mlx-fixed-prefix-phase-distribution-analysis.json
    但 `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。statistical
    factorization、更多 replicates、完整 n=5 matrix、kernel-level attribution、
    warm-KV/segment-residency policy和cross-backend cost normalization仍未完成。
+5. UI Branch Sessions evidence index已完成，覆盖 depth-1、nested和 cancellation的
+   LLAMA/MLX harness evidence；但 product UI、persistent/multi-process session、
+   arbitrary-depth graph、same-checkpoint closure、long-running/memory-pressure UI
+   matrix和production cancellation readiness仍未完成。
 
 ## Non-claims
 
@@ -565,6 +596,7 @@ MLX Phase-6G replicated forward差异已定位到单一 kernel
 MLX Phase-6H已建立 causal prefix-length model
 MLX Phase-6I已建立 universal context-length cost model
 MLX Phase-6J n=3 IQR无outlier证明无变异
+UI Branch Sessions master index已建立 product UI
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的
