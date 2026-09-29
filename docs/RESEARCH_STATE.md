@@ -6051,3 +6051,19 @@ stable。
 graph reduction 仍未定位。RQ3 保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH_ISOLATION_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2-seed43.json`。
+
+### LAB RQ3 UBATCH2 × THREADS4 ISOLATION — PRIMARY MITIGATION CONFIRMED — 2026-09-29
+
+为区分 `ubatch2` 与 `threads1` 的贡献，保持默认
+`--threads 4 --threads-batch 4`，仅添加 `--ubatch-size 2`，在 seed42 和 seed43
+各运行 distinct equal-length prompt cardinality 1–4。两个 seeds 中 N1–N4
+all-match 与 across-cycle stable 均为 `8/8`，共 80 requests stable。
+
+登记 `UBATCH2_INDEPENDENT_OF_THREADPOOL`、`THREADS4_UBATCH2_STABLE_N1_N4` 和
+`UBATCH2_IS_PRIMARY_MITIGATION`。因子矩阵现为：`threads4/ubatch512` N3/N4
+unstable；`threads1/ubatch512` N3 stable 但 N4 unstable；`threads1/ubatch2` 与
+`threads4/ubatch2` N1–N4 stable。因此 `ubatch2` 是 primary mitigation，不依赖
+single-thread CPU coordination。未测量性能，不能推荐生产配置；具体 Metal kernel /
+graph reduction 仍未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH2_THREAD4_ISOLATION_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads4-ubatch2-seed43.json`。
