@@ -618,7 +618,7 @@ MLX Phase-6H已建立 causal prefix-length model
 MLX Phase-6I已建立 universal context-length cost model
 MLX Phase-6J n=3 IQR无outlier证明无变异
 UI Branch Sessions master index已建立 product UI
-UI10 long-running LLAMA branch已建立 persistent session
+UI10 long-running LLAMA branch已验证 persistent session
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的
