@@ -102,6 +102,39 @@ transcript sidecar 诞生起即如此），Codex 客户端回显 `content: null`
   对照仍需 25k+ 真机负载**。
 - **判定：A = PASS**。B 解锁，独立 commit 待授权。
 
+### 实验 B 结果（2026-09-29 23:30-23:37，生产规模三态对照，PASS）
+
+执行形态：`build/release-exp-b`（含 17bfba7，env-gated），垫底按 A 实测
+比例校准至 108KB → **promptTokens 24,627 首轮**（≥25k 窗口边缘，与生产
+24,856 同量级），双独立 session 各 10 工具轮 + 1 总结轮，同一 binary、
+env 区分，按轮配对。
+
+**restore 成本首次精确计量**（B0 的 `cacheLoadMs`，此前只有 346ms 上界
+束紧）：**中位 278ms、range 274-339ms** @24.7-25.2k 上下文——生产
+346ms 上界中的 restore 本体占比就此坐实，reconciliation/preflight 部分
+≈70ms。
+
+| 状态 | 行为序列 | 实测 |
+|---|---|---|
+| B0（A 基线，`expb0`） | restore → rollforward → extend | cacheLoadMs 274-339 ×10；rollforward 10/10；stale 0 |
+| B1（hedge-skip，`expb1`） | `action=hedgeSkip` 9/9 → direct extend | cacheLoad 仅 1 次（首轮 A 态继承）；rollforward 1 |
+
+**配对 TTFT（rounds 2-11，B1−B0）**：**mean −146ms、median −175ms、
+range 0…−217ms**——与 restore 本体（~278ms）同量级、略低于其全值，
+符合"hedge-skip 只省 restore 本体、preflight 照付"的模型。
+**硬门槛全数保持**：cacheEff 1.00 ×11（两态同）；cacheHitTokens 全额；
+bindingGen 1→11 两态连续；[TOOL] 链合法；anomaly=0 / REJECTED=0 /
+unknown_tc=0（两态同）；cacheSave 11/11 零失败、零 orphan；stale 0；
+filter 零吞没。冷轮（round 1）B0 43.4s vs B1 29.3s 差异属冷启动方差，
+不进配对结论。
+
+**判定：EXP-B = PASS**——hedge-skip 在生产规模下消除 restore 本体
+（~278ms/轮），全部 Execution State 语义无偏差。**策略含义**（非本次
+代码变更）：conditional restore 的产品化方向 = "有条件 hedge"（正常
+warm continuation 直接 extend；divergence/cold/uncertain 才 restore），
+阈值 0.95 仅为实验参数，产品化设计（含 cacheLoadMs 字段去留）另行
+立项。实验期间 env 关闭 = A 行为，可安全合入主干。
+
 ## 4. Token Export — deterministic noCacheAvailable / capability investigation pending
 
 - 每轮 `poolTokenExportFailed ×13-14 err=noCacheAvailable`（全边界），
