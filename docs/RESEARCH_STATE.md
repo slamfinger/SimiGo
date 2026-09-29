@@ -6497,3 +6497,32 @@ performance、跨 backend 或跨硬件 claim。
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_RELEASE_COST_PROFILE_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/mlx-release-cost-profile.json`。
+
+### LAB MLX RELEASE/RECOVERY COST PROFILE PASS — 2026-09-29
+
+继续 phase-6 characterization，新增 retain-vs-release/restore paired recovery
+profile `runReleaseRecoveryProfile` 和 CLI `mlx-release-recovery`。在 oversized
+MLX prefix-recompute 路径上比较 `RETAIN`（capture 后不额外 release/restore）与
+`RELEASE_RESTORE`（capture、current release、checkpoint restore），然后执行相同
+cacheless greedy generation。prefix length `64`、maxTokens `2`、4 cycles；每
+strategy 前先 normalize released segment state，交替 order。
+
+七项 checks 全部 PASS：both strategies complete、generation token budget
+complete、oversized profile under 30GiB、paired strategy outputs exact、recovery
+bindings exact、RETAIN action does not release segments、RELEASE action releases
+segments。四个 cycle 中 RETAIN action transition delta 全部 `0`，RELEASE_RESTORE
+全部 `1`。action mean `0.008479/4.519990ms`；generation mean
+`21,294.930/21,084.897ms`。两两配对 generated token IDs/text 完全一致。观测
+peak footprint `7,732 MiB`、max swap `0 MiB`、segment transitions `115`。同一
+commit 全仓 Swift verification 为 `157 PASS / 0 FAIL`。登记
+`MLX_RETAIN_VS_RELEASE_RECOVERY_ACTION_COST_OBSERVED`、
+`PAIRED_STRATEGY_OUTPUTS_EXACT` 和
+`CACHELESS_RELEASE_DID_NOT_CHANGE_PAIRED_GENERATION_OUTPUT`；状态为
+`COST4 = PASS / RETAIN_VS_RELEASE_RESTORE_OBSERVATION_WITH_BOUNDARY`。RELEASE
+action 的可归因 local cost约 `4.5ms`；generation mean 差异方向不稳定且每 strategy
+只有 4 samples，不建立 performance penalty/benefit。`RETAIN` 不是 warm-KV
+retention，也不建立 release policy、production、跨 backend 或跨硬件 claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_RELEASE_RECOVERY_PROFILE_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-profile.json`。

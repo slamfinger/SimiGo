@@ -926,3 +926,254 @@ extension MLXExecutionStateCostProfile {
     )
   }
 }
+
+extension MLXExecutionStateCostProfile {
+  public struct ReleaseRecoverySample: Encodable, Sendable {
+    public let index: Int
+    public let retainFirst: Bool
+    public let strategy: String
+    public let actionMs: Double
+    public let actionTransitionDelta: Int
+    public let generationMs: Double
+    public let generationTransitionDelta: Int
+    public let totalMs: Double
+    public let advancedBindingExact: Bool
+    public let generatedTokenIDs: [Int]
+    public let generatedText: String
+    public let semanticIdentical: Bool
+  }
+
+  public struct ReleaseRecoveryPoint: Encodable, Sendable {
+    public let strategy: String
+    public let cycles: Int
+    public let actionMeanMs: Double
+    public let actionTransitionDeltaMean: Double
+    public let generationMeanMs: Double
+    public let generationTransitionDeltaMean: Double
+    public let totalMeanMs: Double
+    public let recoveryTokensPerSec: Double
+    public let allAdvancedBindingsExact: Bool
+    public let allSemanticIdentical: Bool
+  }
+
+  public struct ReleaseRecoveryReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let modelDirectory: String
+    public let segmentSize: Int
+    public let segmentCount: Int
+    public let seedText: String
+    public let rootInput: String
+    public let prefixTokenLength: Int
+    public let maxTokens: Int
+    public let cycles: Int
+    public let retainPoint: ReleaseRecoveryPoint
+    public let releasePoint: ReleaseRecoveryPoint
+    public let samples: [ReleaseRecoverySample]
+    public let pairedOutputsExact: Bool
+    public let checks: [String: Bool]
+    public let peakFootprintMiB: Int64
+    public let maxSwapMiB: Int64
+    public let segmentTransitions: Int
+    public let overallPass: Bool
+  }
+
+  public static let releaseRecoveryProtocolVersion =
+    "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.COST.V1"
+  public static let releaseRecoveryBoundary =
+    "OVERSIZED_MLX_RETAIN_VS_RELEASE_RESTORE / PAIRED_RECOVERY_OBSERVATION / "
+    + "SMALL_SAMPLE / NOT_A_PERFORMANCE_BENCHMARK"
+
+  public static func runReleaseRecoveryProfile(
+    modelDirectory: URL,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    prefixTokenLength: Int = 64,
+    maxTokens: Int = 2,
+    cycles: Int = 4,
+    segmentSize: Int = 8
+  ) async throws -> ReleaseRecoveryReport {
+    precondition(cycles > 0 && prefixTokenLength > 0 && maxTokens > 0)
+    let core = try await O6SegmentedCore(
+      modelDirectory: modelDirectory, segmentSize: segmentSize
+    )
+    let backend = OversizedSegmentedStateBackend(
+      releaseAll: { try core.releaseAllSegments() }
+    )
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
+    let executor = OversizedSegmentedExecutor(
+      core: core, backend: backend, tokenizer: tokenizer
+    )
+    let seedTokens = try executor.tokenizeSeedText(seedText)
+    let rootTokens = try executor.tokenizeText(rootInput)
+    let prefix = makePrefix(
+      seedTokens: seedTokens,
+      fillerTokens: try executor.tokenizeText(
+        "Explain the tradeoff, then list a concise implementation plan "
+          + "with tests, failure modes, and rollback steps."
+      ),
+      length: prefixTokenLength
+    )
+
+    _ = try executor.directGenerate(
+      prefix: prefix, nextInputTokens: rootTokens, maxTokens: 1
+    )
+    try core.releaseAllSegments()
+
+    var samples: [ReleaseRecoverySample] = []
+    var outputsByCycle: [Int: [String: ExecutionContinuationResult]] = [:]
+    for index in 0..<cycles {
+      let retainFirst = index % 2 == 0
+      let strategies: [(String, Bool)] = retainFirst
+        ? [("RETAIN", true), ("RELEASE_RESTORE", false)]
+        : [("RELEASE_RESTORE", false), ("RETAIN", true)]
+
+      for (strategy, isRetain) in strategies {
+        try core.releaseAllSegments()
+        let rootID = ExecutionID("release-recovery-\(strategy)-\(index)")
+        let root = try await runtime.create(
+          id: rootID,
+          position: ExecutionPosition(0),
+          continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "action-0")
+        )
+        try backend.bind(
+          executionID: rootID,
+          position: ExecutionPosition(0),
+          prefix: prefix
+        )
+
+        let actionStarted = DispatchTime.now().uptimeNanoseconds
+        let transitionsBeforeAction = core.segmentTransitions
+        let checkpoint = try await backend.captureRepresentation(for: root)
+        if !isRetain {
+          try await backend.releaseRepresentation(checkpoint)
+          try await backend.restoreRepresentation(checkpoint)
+        }
+        let actionMs = elapsedMs(actionStarted)
+        let actionTransitionDelta = core.segmentTransitions - transitionsBeforeAction
+
+        let generationStarted = DispatchTime.now().uptimeNanoseconds
+        let transitionsBeforeGeneration = core.segmentTransitions
+        let generated = try await executor.continueExecution(
+          root, nextInputTokens: rootTokens, maxTokens: maxTokens
+        )
+        let generationMs = elapsedMs(generationStarted)
+        let generationTransitionDelta =
+          core.segmentTransitions - transitionsBeforeGeneration
+
+        let advanced = try await runtime.continueExecution(
+          root,
+          continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "recovery-1")
+        )
+        try await runtime.bindRepresentation(
+          executionID: advanced.id,
+          position: ExecutionPosition(1),
+          payload: generated.updatedPayload
+        )
+        let advancedBinding = try backend.boundPrefix(for: advanced)
+        let advancedBindingExact =
+          advancedBinding.prefix == prefix + rootTokens + generated.generatedTokenIDs
+          && advancedBinding.position == ExecutionPosition(1)
+        outputsByCycle[index, default: [:]][strategy] = generated
+
+        samples.append(
+          ReleaseRecoverySample(
+            index: index,
+            retainFirst: retainFirst,
+            strategy: strategy,
+            actionMs: actionMs,
+            actionTransitionDelta: actionTransitionDelta,
+            generationMs: generationMs,
+            generationTransitionDelta: generationTransitionDelta,
+            totalMs: actionMs + generationMs,
+            advancedBindingExact: advancedBindingExact,
+            generatedTokenIDs: generated.generatedTokenIDs,
+            generatedText: generated.generatedText,
+            semanticIdentical:
+              generated.generatedTokenIDs.count == maxTokens
+              && generated.updatedPayload is OversizedPrefixPayload
+          )
+        )
+      }
+    }
+
+    func point(_ strategy: String) -> ReleaseRecoveryPoint {
+      let group = samples.filter { $0.strategy == strategy }
+      let action = group.map(\.actionMs)
+      let generation = group.map(\.generationMs)
+      let total = group.map(\.totalMs)
+      let actionDelta = group.map(\.actionTransitionDelta)
+      let generationDelta = group.map(\.generationTransitionDelta)
+      return ReleaseRecoveryPoint(
+        strategy: strategy,
+        cycles: group.count,
+        actionMeanMs: mean(action),
+        actionTransitionDeltaMean: mean(actionDelta.map(Double.init)),
+        generationMeanMs: mean(generation),
+        generationTransitionDeltaMean: mean(generationDelta.map(Double.init)),
+        totalMeanMs: mean(total),
+        recoveryTokensPerSec: Double(maxTokens * group.count) / (mean(generation) / 1000),
+        allAdvancedBindingsExact: group.allSatisfy(\.advancedBindingExact),
+        allSemanticIdentical: group.allSatisfy { $0.generatedTokenIDs.count == maxTokens }
+      )
+    }
+
+    let retain = point("RETAIN")
+    let release = point("RELEASE_RESTORE")
+    let retainOutputTokenIDs = samples.filter { $0.strategy == "RETAIN" }.count
+    let releaseOutputTokenIDs = samples.filter { $0.strategy == "RELEASE_RESTORE" }.count
+    let pairedOutputsExact =
+      (0..<cycles).allSatisfy { index in
+        guard let retain = outputsByCycle[index]?["RETAIN"],
+          let release = outputsByCycle[index]?["RELEASE_RESTORE"]
+        else { return false }
+        return retain.generatedTokenIDs == release.generatedTokenIDs
+          && retain.generatedText == release.generatedText
+      }
+    let checks = [
+      "BOTH_STRATEGIES_COMPLETE":
+        retain.cycles == cycles && release.cycles == cycles,
+      "RECOVERY_BINDINGS_EXACT":
+        retain.allAdvancedBindingsExact && release.allAdvancedBindingsExact,
+      "GENERATION_TOKEN_BUDGET_COMPLETE":
+        retainOutputTokenIDs == cycles && releaseOutputTokenIDs == cycles,
+      "RETAIN_ACTION_DOES_NOT_RELEASE_SEGMENTS":
+        samples.filter { $0.strategy == "RETAIN" }.allSatisfy {
+          $0.actionTransitionDelta == 0
+        },
+      "RELEASE_ACTION_RELEASES_SEGMENTS":
+        samples.filter { $0.strategy == "RELEASE_RESTORE" }.allSatisfy {
+          $0.actionTransitionDelta > 0
+        },
+      "PAIRED_STRATEGY_OUTPUTS_EXACT":
+        pairedOutputsExact,
+      "OVERSIZED_PROFILE_UNDER_30GIB":
+        core.segments.count > 1 && core.peakFootprintMiB <= 30 * 1024,
+    ]
+
+    return ReleaseRecoveryReport(
+      status: checks.values.allSatisfy(\.self) ? "PASS" : "FAIL",
+      protocolVersion: releaseRecoveryProtocolVersion,
+      boundary: releaseRecoveryBoundary,
+      modelDirectory: modelDirectory.path,
+      segmentSize: segmentSize,
+      segmentCount: core.segments.count,
+      seedText: seedText,
+      rootInput: rootInput,
+      prefixTokenLength: prefixTokenLength,
+      maxTokens: maxTokens,
+      cycles: cycles,
+      retainPoint: retain,
+      releasePoint: release,
+      samples: samples,
+      pairedOutputsExact: pairedOutputsExact,
+      checks: checks,
+      peakFootprintMiB: core.peakFootprintMiB,
+      maxSwapMiB: core.maxSwapMiB,
+      segmentTransitions: core.segmentTransitions,
+      overallPass: checks.values.allSatisfy(\.self)
+    )
+  }
+}
