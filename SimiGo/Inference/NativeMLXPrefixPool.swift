@@ -157,15 +157,24 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             boundaries.append(grid)
             grid += 2048
         }
+        // #4（2026-09-29 效率审查）：一次 cumulative 算出全部前缀位置的链哈希，
+        // 各边界查表取值。取代此前「每个边界切片拷贝 + 全量重哈希」——去重
+        // 检查原在重哈希之后，稳定会话每轮对全部已导出边界重复付费（237k
+        // 实测 40.4ms/轮，随深度平方增长）。cumulative[i] = hash(tokens[0...i])
+        // 与逐边界 PrefixChain.hash(tokens[0..<count]) 逐值相等
+        // （PrefixBoundaryHashEquivalenceTests 差分锁定）；slice 只在未导出
+        // 边界上创建（store.export 的输入）。dedup 键 / grid / 池语义 /
+        // 遥测均不变。
+        let cumulative = PrefixChain.cumulative(tokenIds)
         for count in boundaries {
-            let slice = Array(tokenIds[..<count])
-            let hash = PrefixChain.hash(slice)
+            let hash = cumulative[count - 1]
             let key = "\(namespace.modelID)|\(namespace.kvFingerprint)|\(count)|\(hash)"
             lock.lock()
             let known = exportedTokenBoundaries.contains(key)
             lock.unlock()
             guard !known else { continue }
             do {
+                let slice = Array(tokenIds[..<count])
                 _ = try await store.export(
                     namespace: namespace, tokens: slice
                 ) { url in
