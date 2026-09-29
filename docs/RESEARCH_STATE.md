@@ -6100,6 +6100,27 @@ Metal split 相关，但 mismatch 是概率性/调度相关，不是简单 `NGL>
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_NGL_SWEEP_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-ngl20.json`、`...ngl30.json`、`...ngl35.json`、`...ngl37.json`、`...ngl38.json`、`...ngl38-seed42-repeat.json`、`...ngl38-seed43.json`。
 
+### LAB RQ3 UBATCH512 REPRODUCIBILITY — ACTIVE3/4 UNSTABLE BOTH SEEDS — 2026-09-29
+
+为避免将 default Metal full-GPU mismatch 当作 seed42 单次观察，使用同一 distinct
+equal-length prompt probe 在 `parallel4 / slot512 / ubatch512 / threads4` 下补跑
+seed43。每个 prompt 先串行建立 3 次 stable reference；cardinality 1–4 各 8
+cycles。
+
+seed43 中 N1/N2 stable，但 N3 all-match 与 across-cycle 均为 `6/8`，prompt0
+出现 2 次 mismatch；N4 all-match `3/8`、across-cycle `5/8`，prompt0 和 prompt3
+各出现 5 次 mismatch。结合 seed42 baseline（N3 `4/8`、N4 `4/8`），登记
+`METAL_UBATCH512_MISMATCH_REPRODUCED`、`ACTIVE3_UNSTABLE_BOTH_SEEDS` 和
+`ACTIVE4_UNSTABLE_BOTH_SEEDS`。
+
+结合既有 mitigation runs，`ubatch512/threads4` 两 seeds unstable，而
+`ubatch2/threads4` 与 `ubatch2/threads1` 均 stable；因此 `ubatch2` mitigation
+不是 seed-specific coincidence。具体 Metal kernel / graph reduction 仍未定位，
+RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH512_REPRODUCIBILITY_20260929.md`；
+artifact 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-ubatch512-seed43.json`。
+
 ### LAB RQ3 UBATCH2 CANCELLATION CURVE — STRICT PASS / LARGE LATENCY — 2026-09-29
 
 把 `ubatch2` mitigation 放回最初失败的 higher-concurrency cancellation curve，
