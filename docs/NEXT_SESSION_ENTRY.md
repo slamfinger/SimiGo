@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-29  
-状态：`PHASE_A_AUDIT_COMPLETE / AWAITING_REVIEW / NO_IMPLEMENTATION`
+状态：`PHASE_A_REVIEW_PASS / REGISTRATION_REQUIRED / PHASE_B_CLOSED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -13,7 +13,9 @@
 4. 读 `docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md`。
 5. 读 Phase A 审计：
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_BOUNDARY_AUDIT_20260929.md`
-6. 如需原始 opening，再读：
+6. 读 Phase A external review：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_EXTERNAL_REVIEW_20260930.md`
+7. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -23,11 +25,11 @@
 branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
-architecture contract = PHASE A AUDIT COMPLETE / REVIEW PENDING
+architecture contract = PHASE A REVIEW PASS / REGISTRATION PENDING
 PALACE-1 = GATED / MINIMAL DURABLE UNIT NOT STARTED
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = EXTERNAL_REVIEW / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -52,6 +54,16 @@ next mode = EXTERNAL_REVIEW / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
   separate boundary decisions.
 - Targeted contract/pool/store/materialization/atomicity tests passed 45/45.
 
+2026-09-30 external review:
+
+- Verdict: `PASS / REGISTRATION_REQUIRED`.
+- Review is not repository registration.
+- Phase B remains closed until explicit human/repository registration.
+- Six non-blocking conditions are registered for Phase B:
+  durable identity allocation, continuation-vs-transcript equivalence,
+  representation content claim, separate binding persistence boundary,
+  crash-consistency semantics, and the discarded-binding gap.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -69,7 +81,8 @@ Canonical route document:
 
 ## Next session task
 
-1. Review Phase A and decide one of：`PASS / FAIL / RETURN FOR REVISION`。
+1. Explicitly accept and register the Phase A `PASS / REGISTRATION_REQUIRED`
+   review decision, or reject / return it。
 2. Only after explicit repository registration may Phase B open。
 3. Phase B must formalize PALACE-1 as the minimal durable unit question, using the
    Phase A boundary；it must not select SQLite / KV / event log / remote storage。

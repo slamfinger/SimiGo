@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A boundary audit已完成并待 review；PALACE-1在 minimal durable unit 正式打开前保持 gated。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A boundary audit已通过 external review，但 review decision尚未被 explicit human/repository registration；PALACE-1和 Phase B继续 closed。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -7806,3 +7806,30 @@ Targeted tests PASS：`SimiGoRuntimeContractTests 15/15`，
 
 下一步是 external review / explicit human registration。登记通过后才打开 Phase B
 PALACE-1 minimal durable unit；BACKEND-1继续单独 scoped。
+
+### LAB EXECUTION STATE PHASE A EXTERNAL REVIEW PASS — 2026-09-30
+
+External review artifact：
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_EXTERNAL_REVIEW_20260930.md`。
+Review verdict is `PASS / REGISTRATION_REQUIRED`。这是 external review decision，
+不是 repository registration；因此 Phase B仍然 closed。
+
+Review confirms Phase A answered the six route questions, preserved
+`observed code fact ≠ inferred minimal contract ≠ selected implementation`, did not
+select storage, and did not authorize adapter implementation。Targeted evidence
+remains `45/45 PASS`。
+
+Phase B must inherit six non-blocking conditions:
+
+```text
+1. durable identity allocation / tombstone policy
+2. continuation versus transcript equivalence, if transcript becomes canonical
+3. explicit representation content claim / validation policy
+4. durable binding relation kept separate from Execution State
+5. explicit crash-consistency recovery semantics
+6. discarded-binding semantic guard
+```
+
+当前唯一 gate 是 explicit human/repository registration of the review decision。
+登记通过前，不开 PALACE-1 Phase B，不做存储选型，不实现 Palace database，
+不实现 Llama adapter。
