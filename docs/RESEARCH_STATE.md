@@ -7207,3 +7207,36 @@ performance benchmark、跨 seed raw-output identity或 >8-slot closure。报告
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL8_SEED43_REPRODUCTION_20260929.md`；
 artifact见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel8-t128-seed43.json`。
+
+### LAB CYBER TIEL MLX E5 AND RESOURCE ISOLATED CROSSBACKEND TOKEN OBSERVATION PASS — 2026-09-29
+
+Cyber-Tiel Coder 35B A3B MLX oQ4e通过 E5 real-runtime scenario；模型类型为
+`Qwen35MoEModel` / `qwen3_5_moe`。child在 evict → rematerialize → restore 后
+replay token-identical，parent在 child discard后与 pre-fork reference一致；
+fork divergence、parent identity、child lineage和 residency invariant全部 PASS。
+
+同时新增 resource-isolated two-phase cross-backend token observation，替换早前
+因 MLX与 llama-server同时驻留导致大量 swap 的废弃 combined probe。Phase1只运行
+MLX：渲染 checkpoint chat-template prompt IDs并记录 greedy outputs；P1/P2/P3
+prompt token counts为 197/197/195，generated lengths为 2/12/11，P1/P3遇 EOS，
+P2用满 budget。MLX peak bytes `21,103,830,324`、peak footprint
+`21,308,833,344`、max swap delta `0`。Phase1 record SHA-256为
+`28a7c919c41a874c4eae49ca894104b55747e3cffbc978773eeae24d3a0215f0`。
+
+Phase2在 MLX进程退出后只运行 llama-server，提交相同 prompt token IDs。三个
+short prompts的 greedy token IDs和 decoded text均 identical（3/3）。Phase2 max
+swap delta也为 `0`。登记
+`CYBER_TIEL_QWEN35MOE_E5_PASS`、
+`RESOURCE_ISOLATED_SEQUENTIAL_BACKEND_OBSERVATION_PASS` 和
+`NAMED_SOURCE_GREEDY_TOKEN_IDENTITY_OBSERVED`；状态为
+`CROSSBACKEND_TOKEN_OBSERVATION = PASS_WITH_BOUNDARY / SEQUENTIAL_TWO_PHASE`。
+
+边界：这是 named-source Cyber-Tiel MLX oQ4e与 MTP UD-Q4_K_XL GGUF variants之间的
+3-prompt greedy observation，不是 same-checkpoint closure、tokenizer-file
+identity proof、quantization equivalence、all-prompt semantic equivalence或
+performance equivalence。全仓 Swift verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_MLX_E5_AND_CROSSBACKEND_TOKEN_OBSERVATION_20260929.md`；
+artifacts见
+`simigo2-experimental/results/e5-execution-state/cyber-tiel-coder-35b.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-mlx-record.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare.json`。

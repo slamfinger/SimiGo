@@ -10,6 +10,7 @@ listed backend、model、workload、topology 和 harness boundary 内成立。
 ```text
 RQ1 = PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 RQ2 = PARTIAL / BLOCKED_BY_QWEN4EXP_MODEL_ARTIFACT
+      / CYBER_TIEL_NAMED_SOURCE_MLX_LLAMA_TOKEN_IDENTITY_OBSERVED
 RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / SWIFT_EXECSTATE_HOTPATH_INTEGRATION_PASS
       / SWIFT_EXECSTATE_FORK_RESTORE_INTEGRATION_PASS
@@ -48,6 +49,7 @@ Conformance baseline 也是 `157 PASS / 0 FAIL`。
 | --- | --- | --- | --- |
 | Same Execution State lifecycle on three representations | `MLXExecutionStateBackend`, `OversizedSegmentedStateBackend`, `LLAMAServerExecutionStateBackend`; current contract | PASS; `FBC-001` stale-release defect fixed | `docs/00-governance/SIMIGO_LAB_BACKEND_CONFORMANCE_OPENING_20260929.md` |
 | Non-MLX live prefix smoke | llama-server, one GGUF model, ping/diverge/replay | semantic replay identical; branch diverged | `simigo2-experimental/results/backend-conformance/llama-server-live-smoke.json` |
+| Named-source MLX/LLAMA token observation | Cyber-Tiel oQ4e MLX vs MTP UD-Q4_K_XL GGUF; sequential phases; 3 greedy prompts | protocol PASS; token identity `3/3`; swap delta `0` each phase | `results/backend-conformance/cross-backend-cyber-tiel-mlx-record.json`; `results/backend-conformance/cross-backend-cyber-tiel-token-compare.json`; `SIMIGO_LAB_CYBER_TIEL_MLX_E5_AND_CROSSBACKEND_TOKEN_OBSERVATION_20260929.md` |
 
 判定边界：
 
@@ -64,6 +66,7 @@ PASS_WITH_BOUNDARY / CLOSED-FOR-CURRENT-CONTRACT
 | O6 workload matrix V3 | Qwen3-Coder-Next / `qwen3_next` | oversized segmented, W0-W9 | PASS | `simigo2-experimental/results/o6-workload-matrix/qwen3-coder-next-4bit-v3.json` |
 | E5 real-runtime scenario | Qwen3-Coder-30B / `Qwen3MoEModel` | real runtime, representation-consuming | PASS | `simigo2-experimental/results/e5-execution-state/qwen3-coder-30b.json` |
 | E5 real-runtime scenario | Nail-Qwen3.6 / `Qwen35MoEModel` | real runtime, representation-consuming | PASS | `simigo2-experimental/results/e5-execution-state/nail-qwen36-35b.json` |
+| E5 real-runtime scenario | Cyber-Tiel Coder 35B / `Qwen35MoEModel` | real runtime, representation-consuming; evict/remat/restore | PASS | `simigo2-experimental/results/e5-execution-state/cyber-tiel-coder-35b.json` |
 | E5 real-runtime scenario | Gemma-4 coder / `Gemma4Model` | real runtime, representation-consuming | PASS | `simigo2-experimental/results/e5-execution-state/gemma4-12b-coder.json` |
 | Read-only candidate audit | five Qwen4Exp-family candidates | remote metadata / manifest / README only | all REJECT | `docs/00-governance/SIMIGO_LAB_RQ2_QWEN4EXP_READONLY_AUDIT_20260929.md` |
 
@@ -611,8 +614,11 @@ results/backend-conformance/ui-branch-session-mlx-long-running.json
    6/8-slot t256和更广 token-length
    matrix的 semantic closure仍未完成。8-slot首次 30s baseline watchdog超时，
    120s protocol PASS，说明 watchdog是 workload-sensitive operational parameter。
-3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
-   cross-backend closure。
+3. RQ1/RQ2/RQ3 还没有形成 same-checkpoint、same-workload、same-harness 的
+   cross-backend closure。named-source Cyber-Tiel variants已在 sequential
+   two-phase protocol中观察到 3/3 short-prompt greedy token identity；但
+   checkpoint bytes、tokenizer lineage和 quantization equivalence仍未审计，
+   prompt matrix也未扩展。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
    PHASE6B targeted replication、PHASE6C token-budget replication、PHASE6E
    post-hoc distribution analysis、PHASE6F segment phase attribution、PHASE6G

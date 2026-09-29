@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -254,6 +254,29 @@ struct Simigo2CTL {
       let report = try await E5ExecutionStateScenario.run(
         modelDirectory: modelDirectory,
         maxTokens: maxTokens
+      )
+      print(try toJSON(report))
+    case "cross-backend-token-record":
+      let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 12
+      let record = try await CrossBackendTokenProbe.runRecord(
+        modelDirectory: modelDirectory,
+        maxTokens: maxTokens
+      )
+      let output = try optionValue("--output", rest)
+      let json = try toJSON(record)
+      try json.write(toFile: output, atomically: true, encoding: .utf8)
+      print(json)
+    case "cross-backend-token-compare":
+      let host = optionalOption("--host", rest) ?? "127.0.0.1"
+      let port = optionalOption("--port", rest).flatMap(Int.init) ?? 18080
+      let seed = optionalOption("--seed", rest).flatMap(Int.init) ?? 42
+      let recordPath = try optionValue("--record", rest)
+      let report = try await CrossBackendTokenProbe.runCompare(
+        modelDirectory: modelDirectory,
+        recordPath: recordPath,
+        host: host,
+        port: port,
+        seed: seed
       )
       print(try toJSON(report))
     case "o2-baseline":
