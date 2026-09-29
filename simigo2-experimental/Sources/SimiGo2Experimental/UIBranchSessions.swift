@@ -1122,6 +1122,231 @@ public enum UIBranchSessions {
     )
   }
 
+  public struct LongRunningReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let host: String
+    public let port: Int
+    public let modelPath: String?
+    public let seedText: String
+    public let rootInput: String
+    public let siblingInput: String
+    public let turns: Int
+    public let predictionTokens: Int
+    public let checks: [String: Bool]
+    public let longBranchContents: [String]
+    public let siblingContent: String
+    public let steps: [Step]
+    public let overallPass: Bool
+  }
+
+  public static let longRunningProtocolVersion = "LAB.UI.BRANCH.SESSIONS.LONG.RUNNING.V1"
+  public static let longRunningBoundary =
+    "SWIFT_SESSION_CONTROL_PLANE / MULTI_TURN_LONG_RUNNING_BRANCH / "
+    + "FORKPOINT_AND_FINAL_POSITION_RESTORE / HARNESS_LEVEL / NOT_A_UI_PRODUCT"
+
+  public static func runLongRunningLLAMA(
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    rootInput: String = "Explain it briefly.",
+    siblingInput: String = "Now write tests for it.",
+    longBranchInputs: [String] = [
+      "Summarize the first implementation step.",
+      "List one edge case and how to handle it.",
+      "Add a focused unit test for that edge case.",
+      "Describe the expected result in one sentence.",
+      "Review the result and identify one improvement.",
+      "Finalize the implementation with a short TODO.",
+    ],
+    turns: Int = 6,
+    predictionTokens: Int = 4,
+    seed: Int = 42
+  ) async throws -> LongRunningReport {
+    precondition(turns > 0 && turns <= longBranchInputs.count)
+    let activeInputs = Array(longBranchInputs.prefix(turns))
+    let backend = LLAMAServerExecutionStateBackend()
+    let runtime = ExecutionContinuityCoordinator(backend: backend)
+    let executor = LLAMAServerExecutionStateExecutor(
+      baseURL: URL(string: "http://\(host):\(port)")!)
+    let serverProps = try await executor.props()
+    let seedTokens = try await executor.tokenizeText(seedText, addSpecialTokens: true)
+
+    var steps: [Step] = []
+    func record(_ operation: String, _ state: ExecutionStateHandle, _ started: UInt64) {
+      steps.append(
+        Step(
+          operation: operation,
+          executionID: state.id.rawValue,
+          position: state.position.value,
+          clientMs: elapsedMs(started)
+        )
+      )
+    }
+
+    let rootID = ExecutionID("long-root")
+    let siblingID = ExecutionID("long-sibling")
+    let longID = ExecutionID("long-branch")
+    let forkPoint = ExecutionPosition(0)
+
+    let root = try await runtime.create(
+      id: rootID,
+      position: forkPoint,
+      continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "root-0")
+    )
+    try await runtime.bindRepresentation(
+      executionID: rootID,
+      position: forkPoint,
+      payload: LLAMAServerPrefixPayload(tokenPrefix: seedTokens)
+    )
+
+    let sibling = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: siblingID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: siblingInput, continuationID: "sibling-0"
+        )
+      )
+    )
+    var longInputs: [[Int]] = []
+    for input in longBranchInputs {
+      longInputs.append(try await executor.tokenizeText(input))
+    }
+    let longBranch = try await runtime.fork(
+      ExecutionForkRequest(
+        parent: root,
+        childID: longID,
+        childPosition: forkPoint,
+        childContinuation: ExecutionContinuation(
+          nextInput: longBranchInputs[0], continuationID: "long-0"
+        )
+      )
+    )
+
+    // Sibling baseline is retained while the other branch runs for many turns.
+    let siblingTokens = try await executor.tokenizeText(siblingInput)
+    let siblingOutput = try await executor.complete(
+      tokenPrefix: seedTokens + siblingTokens,
+      predictionTokens: predictionTokens,
+      seed: seed
+    )
+    let siblingAdvanced = try await runtime.continueExecution(
+      sibling,
+      continuation: ExecutionContinuation(nextInput: siblingInput, continuationID: "sibling-1")
+    )
+    let siblingPrefix = seedTokens + siblingTokens + (siblingOutput.tokens ?? [])
+    try await runtime.bindRepresentation(
+      executionID: siblingAdvanced.id,
+      position: ExecutionPosition(1),
+      payload: LLAMAServerPrefixPayload(tokenPrefix: siblingPrefix)
+    )
+
+    var outputs: [LLAMAServerExecutionStateExecutor.Completion] = []
+    var current = longBranch
+    var currentPrefix = seedTokens
+    for (index, input) in activeInputs.enumerated() {
+      let inputTokens = try await executor.tokenizeText(input)
+      let output = try await executor.complete(
+        tokenPrefix: currentPrefix + inputTokens,
+        predictionTokens: predictionTokens,
+        seed: seed + index
+      )
+      let started = DispatchTime.now().uptimeNanoseconds
+      current = try await runtime.continueExecution(
+        current,
+        continuation: ExecutionContinuation(
+          nextInput: input, continuationID: "long-\(index + 1)"
+        )
+      )
+      record("continue", current, started)
+      currentPrefix = currentPrefix + inputTokens + (output.tokens ?? [])
+      try await runtime.bindRepresentation(
+        executionID: current.id,
+        position: current.position,
+        payload: LLAMAServerPrefixPayload(tokenPrefix: currentPrefix)
+      )
+      outputs.append(output)
+    }
+
+    let finalBinding = try backend.boundPrefix(for: current)
+    let finalPosition = current.position
+
+    // Exercise fork-point restore, then restore the advanced multi-turn state again.
+    let restoredToFork = try await runtime.restore(
+      current,
+      request: ExecutionRestoreRequest(
+        targetPosition: forkPoint,
+        continuation: ExecutionContinuation(
+          nextInput: longBranchInputs[0], continuationID: "long-restore-0"
+        )
+      )
+    )
+    let forkBinding = try backend.boundPrefix(for: restoredToFork)
+
+    let restoredToFinal = try await runtime.restore(
+      restoredToFork,
+      request: ExecutionRestoreRequest(
+        targetPosition: finalPosition,
+        continuation: ExecutionContinuation(
+          nextInput: activeInputs[turns - 1], continuationID: "long-restore-final"
+        )
+      )
+    )
+    let finalRestoredBinding = try backend.boundPrefix(for: restoredToFinal)
+
+    try await runtime.discard(restoredToFinal)
+    try await runtime.discard(siblingAdvanced)
+
+    let longBindingGone = (try? backend.boundPrefix(for: restoredToFinal))?.prefix == nil
+    let siblingBindingGone = (try? backend.boundPrefix(for: siblingAdvanced))?.prefix == nil
+    let rootBinding = try backend.boundPrefix(for: root)
+
+    let expectedFinalPrefix = currentPrefix
+    let checks = [
+      "LONG_SEQUENCE_COMPLETE":
+        outputs.count == turns && outputs.allSatisfy {
+          ($0.tokens?.count ?? 0) == predictionTokens
+        },
+      "LONG_BRANCH_FINAL_PREFIX_EXACT":
+        finalBinding.prefix == expectedFinalPrefix && finalBinding.position == finalPosition,
+      "LONG_BRANCH_RESTORES_FORKPOINT":
+        restoredToFork.position == forkPoint && forkBinding.prefix == seedTokens,
+      "LONG_BRANCH_RESTORES_FINAL_POSITION":
+        restoredToFinal.position == finalPosition
+        && finalRestoredBinding.prefix == expectedFinalPrefix,
+      "SIBLING_BASELINE_RETAINED":
+        siblingAdvanced.position == ExecutionPosition(1)
+        && siblingPrefix == seedTokens + siblingTokens + (siblingOutput.tokens ?? []),
+      "RELEASE_LONG_AND_SIBLING":
+        longBindingGone && siblingBindingGone,
+      "ROOT_SURVIVES_RELEASE":
+        rootBinding.prefix == seedTokens,
+    ]
+    let overallPass = checks.values.allSatisfy { $0 }
+
+    return LongRunningReport(
+      status: overallPass ? "PASS" : "FAIL",
+      protocolVersion: longRunningProtocolVersion,
+      boundary: longRunningBoundary,
+      host: host,
+      port: port,
+      modelPath: serverProps.modelPath,
+      seedText: seedText,
+      rootInput: rootInput,
+      siblingInput: siblingInput,
+      turns: turns,
+      predictionTokens: predictionTokens,
+      checks: checks,
+      longBranchContents: outputs.map(\.content),
+      siblingContent: siblingOutput.content,
+      steps: steps,
+      overallPass: overallPass
+    )
+  }
+
   public struct MLXReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

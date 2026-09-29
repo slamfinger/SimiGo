@@ -2,7 +2,7 @@
   "status": "CONSOLIDATED_PASS_WITH_BOUNDARY",
   "protocolVersion": "SIMIGO.UI.BRANCH.SESSIONS.MASTER.INDEX.V1",
   "boundary": "EVIDENCE_INDEX_ONLY / HARNESS_LEVEL / DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS / NO_PRODUCT_UI / NO_PERSISTENT_SESSION_CLAIM / NOT_A_PERFORMANCE_BENCHMARK",
-  "entryCount": 9,
+  "entryCount": 10,
   "entries": [
     {
       "id": "UI1",
@@ -84,6 +84,15 @@
       "expectedStatus": "PASS_WITH_BOUNDARY",
       "artifact": "ui-branch-session-cancellation-crossbackend-matrix.json",
       "scope": "same outcome-shape matrix; explicit DELETE vs cooperative cancel"
+    },
+    {
+      "id": "UI10",
+      "title": "LLAMA long-running branch",
+      "status": "PASS",
+      "overallPass": true,
+      "expectedStatus": "PASS",
+      "artifact": "ui-branch-session-llama-long-running.json",
+      "scope": "6-turn long-running branch; fork-point and final-position restores; sibling retained"
     }
   ],
   "coverage": {
@@ -105,6 +114,9 @@
       "UI7",
       "UI8",
       "UI9"
+    ],
+    "longRunningBranch": [
+      "UI10"
     ]
   },
   "checks": {
@@ -117,13 +129,16 @@
     "CANCELLATION_LLAMA_AND_MLX_PRESENT": true,
     "CANCELLATION_CROSSBACKEND_MATRIX_PRESENT": true,
     "NO_PRODUCT_UI_CLAIM": true,
-    "NO_PERSISTENT_SESSION_CLAIM": true
+    "NO_PERSISTENT_SESSION_CLAIM": true,
+    "LONG_RUNNING_LLAMA_PRESENT": true,
+    "ENTRY_COUNT_MATCHES": true
   },
   "consolidatedFindings": {
     "DEPTH1_SEMANTIC_MATRIX_PASS": true,
     "NESTED_SEMANTIC_MATRIX_PASS": true,
     "CANCELLATION_OUTCOME_SHAPE_MATRIX_PASS": true,
-    "ALL_REPORTS_ARE_HARNESS_LEVEL": true
+    "ALL_REPORTS_ARE_HARNESS_LEVEL": true,
+    "LONG_RUNNING_BRANCH_RESTORES_FORKPOINT_AND_FINAL_POSITION": true
   },
   "openItems": [
     "PRODUCT_UI_SURFACE",

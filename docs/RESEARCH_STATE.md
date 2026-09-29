@@ -6945,3 +6945,27 @@ performance benchmark。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MASTER_INDEX_20260929.md`；artifact见
 `simigo2-experimental/results/backend-conformance/ui-branch-sessions-master-summary.json`。
+
+### LAB UI10 LLAMA LONG RUNNING BRANCH PASS — 2026-09-29
+
+新增 `UIBranchSessions.runLongRunningLLAMA` 和 CLI
+`llama-branch-session-long`，验证 six-turn long-running branch。session graph为
+root包含 long branch和 sibling baseline；long branch使用六个不同 prompts顺序推进，
+每次 generation后更新 logical position并 bind token-prefix representation。完成
+sequence后 restore到 fork point验证 checkpoint，再restore到 final position验证
+advanced binding；随后 release long branch与 sibling，验证 root survives。使用
+canonical mitigated LLAMA profile、Cyber-Tiel当前 model、seed42、4-token turns。
+
+七项 checks全部 PASS：long sequence complete、final prefix exact、fork-point
+restore、final-position restore、sibling baseline retained、release long/sibling、
+root survives。同一提交全仓 Swift verification为 `157 PASS / 0 FAIL`。登记
+`SIX_TURN_LONG_RUNNING_BRANCH_PASS`、
+`FORKPOINT_AND_FINAL_POSITION_RESTORE_PASS` 和
+`SIBLING_BASELINE_RETAINED_ACROSS_LONG_BRANCH`；状态为
+`UI10 = PASS / LLAMA_LONG_RUNNING_BRANCH_WITH_BOUNDARY`。这是 LLAMA harness-level
+pilot，不是 product UI、persistent session、MLX cross-backend validation、
+performance benchmark或 production readiness。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_LONG_RUNNING_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-llama-long-running.json`。
