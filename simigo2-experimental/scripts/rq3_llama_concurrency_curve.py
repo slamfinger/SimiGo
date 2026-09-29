@@ -115,7 +115,7 @@ def main() -> None:
     parser.add_argument("--cancel-delay-ms", type=int, default=100)
     parser.add_argument("--prediction-tokens", type=int, default=256)
     parser.add_argument("--control-tokens", type=int, default=8)
-    parser.add_argument("--free-timeout-ms", type=int, default=5000)
+    parser.add_argument("--free-timeout-ms", type=int, default=15000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--prompt",

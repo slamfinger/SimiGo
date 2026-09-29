@@ -106,6 +106,7 @@ substrate 也不能替代完整 Qwen4Exp artifact。
 | NGL layer-split sweep | Metal `parallel4/ubatch512`, NGL20/30/35/37/38, active4 | NGL20/30/35/37 stable; NGL38 intermittent mismatch across three runs | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-ngl*.json`; `SIMIGO_LAB_RQ3_LLAMA_NGL_SWEEP_20260929.md` |
 | Ubatch512 reproducibility | full-Metal default `ubatch512`, seed42/43, N1-N4 | N3 unstable in both seeds (`4/8`, `6/8`); N4 unstable in both seeds (`4/8`, `3/8`) | `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-no-cancel.json`; `results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-ubatch512-seed43.json`; `SIMIGO_LAB_RQ3_LLAMA_UBATCH512_REPRODUCIBILITY_20260929.md` |
 | Ubatch2 cancellation curve | original L1-L3 cancellation curve rerun with `ubatch2`, 3 cycles | strict PASS: DELETE `6/6`, baseline stable `3/3`, cancellation identity `3/3`; latency 4.2–13.6s | `results/backend-conformance/rq3-llama-concurrency-curve-ubatch2-cycles3.json`; `SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_UBATCH2_20260929.md` |
+| Mitigated launch profile | canonical wrapper fixes `parallel4/ubatch2/threads4` and cache-disabled flags; smoke tested | operational profile registered; curve free timeout default hardened to `15s` | `simigo2-experimental/scripts/rq3_llama_server_mitigated.sh`; `SIMIGO_LAB_RQ3_LLAMA_MITIGATION_PROFILE_20260929.md` |
 
 RQ3 当前状态：
 

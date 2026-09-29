@@ -6142,3 +6142,19 @@ free，无 artifact；server 随后可继续响应。改为 `15000` 的 3-cycle 
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_CONCURRENCY_CURVE_UBATCH2_20260929.md`；
 artifact 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-ubatch2-cycles3.json`。
+
+### LAB RQ3 MITIGATED LAUNCH PROFILE OPERATIONAL — 2026-09-29
+
+将 `threads4 / ubatch2` mitigation 操作化为 canonical launch wrapper
+`rq3_llama_server_mitigated.sh`，固定 `ctx2048 / parallel4 / ubatch2 /
+threads4` 与 cache-disabled RQ3 flags；model path 为必填参数，host/port/
+threads/ubatch 可用环境变量覆盖。wrapper smoke 已在 `LLAMA_PORT=18081`
+成功启动并返回 model path。
+
+同时把 `rq3_llama_concurrency_curve.py` 默认 `--free-timeout-ms` 从 `5000`
+提高到 `15000`，避免 `ubatch2` heavy curve 中最长约 `13.6s` 的 slot release
+被误判为 failure。该变更只操作化已验证 mitigation，不修改 Swift runtime、
+Execution State backend、llama.cpp 上游或采样逻辑；不建立生产 readiness 或
+性能结论。登记 `MITIGATED_LAUNCH_PROFILE_OPERATIONAL` 和
+`CURVE_FREE_TIMEOUT_DEFAULT_HARDENED`。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_MITIGATION_PROFILE_20260929.md`。
