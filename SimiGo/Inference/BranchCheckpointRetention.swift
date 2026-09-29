@@ -62,6 +62,30 @@ nonisolated enum BranchCheckpointRetention {
             var metadataURL: URL
             var bytes: Int64
         }
+
+        // 预算前置门（2026-09-29 效率审查 #1，窄实施）：配对后的字节总量
+        // 用 fileSizeKey 统计即可，未超预算时 eviction 循环在数学上不可能
+        // 触发（唯一触发条件是 retainedBytes > byteBudget），因此整段
+        // sidecar 解码——每个 .meta.json 内嵌全量 transcript，MB 级——完全
+        // 跳过。代价：配对完好但解码失败的畸形 receipt 在未超预算期间暂
+        // 不清理，推迟到首次超预算清扫；load 路径对坏 sidecar 本就响亮
+        // 失败并回退 extend，无静默续算风险。gate 位置 / eviction 排序 /
+        // schema / 遥测格式均不变。
+        var pairedBytes: Int64 = 0
+        var pairedCount = 0
+        for (base, cacheURL) in cacheURLsByBase {
+            guard let metadataURL = metadataURLsByBase[base] else { continue }
+            let cacheBytes = Int64((try? cacheURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+            let metadataBytes = Int64((try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+            pairedBytes += cacheBytes + metadataBytes
+            pairedCount += 1
+        }
+        if pairedBytes <= Int64(byteBudget) {
+            result.retainedBytes = pairedBytes
+            result.retainedReceipts = pairedCount
+            return result
+        }
+
         var receipts: [Receipt] = []
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
