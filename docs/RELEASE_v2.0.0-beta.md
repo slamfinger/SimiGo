@@ -33,10 +33,13 @@ OversizedRuntimeE2E、GenerationLifecycleRace 全部实跑）。全程矩阵见
 
 **引擎依赖 provenance**：`SimiGo2Experimental` 为本地包
 （`../SimiGo-Lab/simigo2-experimental`，无 revision pin）。beta.4 binary
-的引擎源码锚 = **Lab Sources @ `3d902f2`**（Full Gate 实际验证的源码；
-Lab HEAD `8fb16dd` 为 docs-only，不承担代码 provenance）。构建期间 Lab
-工作树冻结。`mlx-swift-lm` 依赖按 Package.resolved 钉
-`release/v2.0.0-beta-ml`（6d01a13c），beta.4 未变更。
+的引擎源码锚 = **Lab @ `8fb16dd`**。纪律说明：最初锚定为 `3d902f2`
+（Gate 时刻源码），但 Lab 在 17:45-19:02 新增了 cyber-tiel 跨后端 probe
+（4 个文件，纯新增于 SimiGo2Experimental target，+1472 行）；为满足
+「provenance 必须指向实际被 Gate 验证的引擎源码」，对 `8fb16dd` 精确
+重跑 Full Gate——**111 executed / 8 skipped / 0 failures @380.0s**，
+PASS。构建期间 Lab 工作树冻结。`mlx-swift-lm` 依赖按 Package.resolved
+钉 `release/v2.0.0-beta-ml`（6d01a13c），beta.4 未变更。
 
 **已知限制（beta.4 事实刷新）**：
 
