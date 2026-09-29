@@ -6035,3 +6035,19 @@ harness 观察登记，不是通用生产 mitigation。RQ3 保持 OPEN。报告�
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_THREADPOOL_ABLATION_20260929.md`；
 artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-seed43.json`。
+
+### LAB RQ3 UBATCH ISOLATION — UBATCH2 STABILIZES METAL ACTIVE4 — 2026-09-29
+
+在 Metal `parallel4 / threads1` 下将 `--ubatch-size` 从默认 512 降到 2，继续用
+distinct equal-length prompt probe 在 seed42 和 seed43 各运行 cardinality 1–4。
+两个 seeds 中 N1–N4 all-match 与 across-cycle stable 均为 `8/8`，共 80 requests
+stable。
+
+与 `threads1 / ubatch512` 对照：active4 all-match 从 `6/8`、across-cycle `1/8`
+变为两 seeds 均 `8/8`。因此 active4 mismatch 与 physical ubatch shape 相关；
+`ubatch2` 是当前 harness 中第一个可复现的 Metal active4 mitigation。RQ3 增加
+`METAL_THREADS1_UBATCH2_STABLE_N1_N4`、`ACTIVE4_METAL_UBATCH2_MITIGATION_OBSERVED`
+和 `UBATCH_SHAPE_ISOLATED`。未测量性能，不能推荐生产配置；具体 Metal kernel /
+graph reduction 仍未定位。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH_ISOLATION_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-distinct-prompt-cardinality-metal-threads1-ubatch2-seed43.json`。
