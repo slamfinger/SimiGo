@@ -48,6 +48,15 @@ nonisolated enum RuntimeTuning {
     /// 元素计——每消息 2 元素）。
     static let prefixPoolTokenBudget = 200_000
 
+    /// EXP-B（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1，实验）：hedge-skip 开关
+    /// 与阈值。缺省关闭 = 实验 A 行为；threshold 仅为实验参数，不进入
+    /// 产品语义（PASS 后的产品化形态另行设计）。
+    static let expHedgeSkipEnabled =
+        ProcessInfo.processInfo.environment["SIMIGO_EXP_HEDGE_SKIP"] == "1"
+    static let expHedgeSkipThreshold: Double =
+        ProcessInfo.processInfo.environment["SIMIGO_EXP_HEDGE_SKIP_THRESHOLD"]
+            .flatMap(Double.init) ?? 0.95
+
     /// BETA-STORAGE-1: physical cost cannot be derived from token/message
     /// counts. Bound persisted prefix snapshots by bytes as well as logic
     /// tokens; LRU is shared by both budgets.

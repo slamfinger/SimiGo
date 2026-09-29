@@ -32,6 +32,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// A successful generation makes the live execution newer than its
         /// durable checkpoint until the automatic checkpoint completes.
         var checkpointDirty = false
+        /// EXP-B 实验字段（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1；运行时态，
+        /// 不持久化）：上一轮 completion 的 vendor mode 与 cacheEff。
+        /// 重启后为 nil → 对冲保守开启（未知状态不跳过 restore）。
+        var lastCompletionMode: String?
+        var lastCompletionCacheEff: Double?
 
         init(
             session: ChatSession,
@@ -804,8 +809,23 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 小 delta 轮（162 fork 样本实测：分歧全在尾段、rebuild 170-248 vs
         // 恢复态 94-139 tok/s ⇒ delta<0.8×full 恒赢；大 delta 交回 extend）。
         var rolledForward = false
-        if reusedSession, !poolRestoredTurn,
-            ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last) {
+        // EXP-B：hedge-skip 判定（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1）。
+        // 仅在 restore 本会触发的轮次（复用会话 + 工具尾）评估；env 关闭时
+        // 恒 false = 实验 A 行为，逐字节不变。
+        let restoreRiskFires = reusedSession && !poolRestoredTurn
+            && ExecutionPolicy.rollforwardRisk(lastJSON: managed.historyJSON.last)
+        let hedgeSkip = restoreRiskFires
+            && RuntimeTuning.expHedgeSkipEnabled
+            && managed.lastCompletionMode == "extend"
+            && (managed.lastCompletionCacheEff ?? 0) >= RuntimeTuning.expHedgeSkipThreshold
+        if hedgeSkip {
+            traceLogger.trace(
+                "[MLX] action=hedgeSkip key=\(executionKey.traceKey)"
+                + " lastMode=\(managed.lastCompletionMode ?? "-")"
+                + " lastEff=\(managed.lastCompletionCacheEff.map { String(format: "%.2f", $0) } ?? "-")"
+                + " threshold=\(RuntimeTuning.expHedgeSkipThreshold)")
+        }
+        if restoreRiskFires, !hedgeSkip {
             switch ExecutionPolicy.conditionalRestoreGate(
                 configuration: restorePolicy,
                 incoming: messages,
@@ -1230,6 +1250,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             reportedCacheEff = Double(n) / Double(n + d)
             reportedMode = "restore"
         }
+        // EXP-B：记录上一轮 completion 形态（hedge-skip 判定输入）。
+        managed.lastCompletionMode = reportedMode
+        managed.lastCompletionCacheEff = reportedCacheEff
 
         // 轮末完成行（build 4 恢复，211aa59 trim 曾删）：V1.7-0 矩阵
         // 位置法捕获的唯一认证级来源——mode/reuse/cacheEff/ttft 逐轮
@@ -1571,6 +1594,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         config: ModelConfig?, baseConfig: ModelConfig, directory: URL,
         modelPath: String
     ) async throws -> (managed: ManagedSession, metadata: SessionCacheMetadata) {
+        let expLoadStart = Date() // EXP-B 实验字段 cacheLoadMs（去留另议）
         let baseName = Self.cacheFileName(for: key)
         let cacheURL = directory.appendingPathComponent(baseName + ".safetensors")
         let metaURL = directory.appendingPathComponent(baseName + ".meta.json")
@@ -1644,6 +1668,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         )
         traceLogger.trace(
             "[MLX] cacheLoad session=\(traceKey) history=\(metadata.history.count)"
+            + " cacheLoadMs=\(Int(Date().timeIntervalSince(expLoadStart) * 1000))"
         )
         return (restored, metadata)
     }
