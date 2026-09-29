@@ -261,6 +261,38 @@ results/backend-conformance/mlx-release-recovery-replicate-p*.json
 results/backend-conformance/mlx-phase6b-segment-size-replication-summary.json
 ```
 
+### Phase-6C token-budget replication
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / TOKEN_BUDGET_REPLICATION_COMPLETE / SMALL_SAMPLE
+```
+
+将 prefix `64` / segment size `8` 的 token budgets提升到 combined每 strategy
+`n=3`：budget `1/4`由 COST5 `n=2` + PHASE6C `n=1`组成；budget `2`由 COST5
+`n=2` + PHASE6A `n=1`组成。九项 checks全部 PASS；所有 budgets的 RETAIN和
+RELEASE_RESTORE generated token IDs/text exact；RETAIN action transitions全为
+`0`，RELEASE_RESTORE全为 `1`；generation transitions为 `6/12/24`。
+
+Median generation随 budget增长：
+
+```text
+RETAIN:          10,448.105 -> 22,858.117 -> 50,508.985ms
+RELEASE_RESTORE: 10,436.751 -> 22,061.736 -> 52,059.338ms
+```
+
+但 mean被长尾拉高。budget 4 RELEASE_RESTORE包含 `149,541.501ms` run，range
+`99,418.801ms`；prefix-8 supplementary 4-token run也观测到
+`48,387.495 / 98,497.580ms`。因此不建立固定 token-cost或 release-penalty模型。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-release-recovery-token-replicate-p*.json
+results/backend-conformance/mlx-phase6c-token-budget-replication-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -272,10 +304,10 @@ results/backend-conformance/mlx-phase6b-segment-size-replication-summary.json
    higher-concurrency semantic closure 未完成。
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
-4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot和
-   PHASE6B targeted replication也已通过；但 statistical factorization、更多
-   samples、完整分布报告、warm-KV/segment-residency policy和cross-backend cost
-   normalization仍未完成。
+4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
+   PHASE6B targeted replication和PHASE6C token-budget replication也已通过；但
+   statistical factorization、更多 samples、完整分布报告、warm-KV/segment-residency
+   policy和cross-backend cost normalization仍未完成。
 
 ## Non-claims
 
@@ -292,6 +324,7 @@ pruned / subnet Qwen4Exp 可以替代 full Qwen4Exp closure
 performance 或 upstream runtime claim 已建立
 MLX Phase-6 cost observation是 throughput benchmark
 MLX Phase-6B replication已建立 production segment-size policy
+MLX Phase-6C mean已建立稳定 token-cost model
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的

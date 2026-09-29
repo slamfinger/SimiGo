@@ -6641,3 +6641,30 @@ warm-KV retention、production performance或cross-backend/cross-hardware claim�
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6B_SEGMENT_REPLICATION_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6b-segment-size-replication-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p*.json`。
+
+### LAB MLX PHASE6C TOKEN BUDGET REPLICATION PASS — 2026-09-29
+
+将 prefix `64` / segment size `8` 的 RETAIN-vs-RELEASE_RESTORE token budgets提升到
+combined每 strategy `n=3`。budget `1/4`由 COST5 2 cycles加 PHASE6C 1 cycle组成；
+budget `2`由 COST5 2 cycles加 PHASE6A 1 cycle组成。九项 checks全部 PASS：source
+reports pass、budget coverage完整、combined n=3、所有 budgets的 paired generated
+token IDs/text exact、RETAIN action transitions全 `0`、RELEASE_RESTORE全 `1`、
+generation transitions为 `6/12/24`、zero swap、oversized profile under 30GiB。
+
+Median generation随 budget增长：RETAIN
+`10,448.105 -> 22,858.117 -> 50,508.985ms`；RELEASE_RESTORE
+`10,436.751 -> 22,061.736 -> 52,059.338ms`。但 mean受长尾影响：budget 4
+RELEASE_RESTORE mean `83,907.846ms`、median `52,059.338ms`、max
+`149,541.501ms`、range `99,418.801ms`。prefix-8 supplementary budget-4 run也观测到
+`48,387.495 / 98,497.580ms`。RELEASE action mean/median分别为
+`6.632/4.559ms`、`5.483/4.865ms`、`9.934/7.261ms`，仍远小于 generation cost，但
+自身小样本波动明显。登记 `TOKEN_BUDGET_COMBINED_N3_OBSERVED`、
+`PAIRED_STRATEGY_OUTPUTS_EXACT_AT_ALL_BUDGETS` 和
+`T4_RELEASE_RUN_VARIATION_OBSERVED`；状态为
+`PHASE6C = PASS_WITH_BOUNDARY / TOKEN_BUDGET_REPLICATION_COMPLETE / SMALL_SAMPLE`。不建立定量 token-cost曲线、release因果结论、warm-KV retention、release-policy
+recommendation、production performance或cross-backend/cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6C_TOKEN_BUDGET_REPLICATION_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6c-token-budget-replication-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-token-replicate-p*.json`。

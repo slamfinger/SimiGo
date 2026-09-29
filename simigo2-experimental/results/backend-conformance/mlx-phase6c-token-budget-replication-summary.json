@@ -1,0 +1,462 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6C.TOKEN.REPLICATION.V1",
+  "boundary": "PREFIX64_TOKEN_BUDGET_REPLICATION / COMBINED_N3 / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenLength": 64,
+  "segmentSize": 8,
+  "segmentCount": 6,
+  "combinedSamplesPerStrategy": 3,
+  "budgets": [
+    {
+      "maxTokens": 1,
+      "prefixTokenLength": 64,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samplesPerStrategy": 3,
+      "sources": [
+        {
+          "id": "COST5",
+          "artifact": "mlx-release-recovery-tokens1.json"
+        },
+        {
+          "id": "PHASE6C",
+          "artifact": "mlx-release-recovery-token-replicate-p64-t1-s8.json"
+        }
+      ],
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.005763666666666667,
+        "medianMs": 0.003083,
+        "minMs": 0.001041,
+        "maxMs": 0.013167,
+        "rangeMs": 0.012126
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 6.632416666666667,
+        "medianMs": 4.558916,
+        "minMs": 4.3355,
+        "maxMs": 11.002834,
+        "rangeMs": 6.667334
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 15923.830875333333,
+        "medianMs": 10448.105375,
+        "minMs": 10428.563959,
+        "maxMs": 26894.823292,
+        "rangeMs": 16466.259333
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 15467.756319333334,
+        "medianMs": 10436.750542,
+        "minMs": 10426.834791,
+        "maxMs": 25539.683625,
+        "rangeMs": 15112.848834000002
+      },
+      "generationTransitionsPerStrategy": 6,
+      "allPairedOutputsExact": true,
+      "retainActionTransitionsZero": true,
+      "releaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "COST5",
+            "actionMs": 0.003083,
+            "actionTransitionDelta": 0,
+            "generationMs": 10428.563959,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 0.001041,
+            "actionTransitionDelta": 0,
+            "generationMs": 10448.105375,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          },
+          {
+            "source": "PHASE6C",
+            "actionMs": 0.013167,
+            "actionTransitionDelta": 0,
+            "generationMs": 26894.823292,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "COST5",
+            "actionMs": 4.558916,
+            "actionTransitionDelta": 1,
+            "generationMs": 10436.750542,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 4.3355,
+            "actionTransitionDelta": 1,
+            "generationMs": 10426.834791,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          },
+          {
+            "source": "PHASE6C",
+            "actionMs": 11.002834,
+            "actionTransitionDelta": 1,
+            "generationMs": 25539.683625,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917
+            ],
+            "generatedText": " Explain"
+          }
+        ]
+      }
+    },
+    {
+      "maxTokens": 2,
+      "prefixTokenLength": 64,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samplesPerStrategy": 3,
+      "sources": [
+        {
+          "id": "COST5",
+          "artifact": "mlx-release-recovery-tokens2.json"
+        },
+        {
+          "id": "PHASE6A",
+          "artifact": "mlx-release-recovery-factorial-p64-t2-s8.json"
+        }
+      ],
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.003028333333333333,
+        "medianMs": 0.002667,
+        "minMs": 0.001709,
+        "maxMs": 0.004709,
+        "rangeMs": 0.0029999999999999996
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 5.482930666666667,
+        "medianMs": 4.865125,
+        "minMs": 4.47525,
+        "maxMs": 7.108417,
+        "rangeMs": 2.6331670000000003
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 22799.21145866667,
+        "medianMs": 22858.117292,
+        "minMs": 20866.217167,
+        "maxMs": 24673.299917,
+        "rangeMs": 3807.0827500000014
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 22620.266499666668,
+        "medianMs": 22061.735541,
+        "minMs": 21101.923625,
+        "maxMs": 24697.140333,
+        "rangeMs": 3595.216708
+      },
+      "generationTransitionsPerStrategy": 12,
+      "allPairedOutputsExact": true,
+      "retainActionTransitionsZero": true,
+      "releaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "COST5",
+            "actionMs": 0.002667,
+            "actionTransitionDelta": 0,
+            "generationMs": 20866.217167,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 0.001709,
+            "actionTransitionDelta": 0,
+            "generationMs": 22858.117292,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6A",
+            "actionMs": 0.004709,
+            "actionTransitionDelta": 0,
+            "generationMs": 24673.299917,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "COST5",
+            "actionMs": 4.865125,
+            "actionTransitionDelta": 1,
+            "generationMs": 21101.923625,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 4.47525,
+            "actionTransitionDelta": 1,
+            "generationMs": 22061.735541,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "source": "PHASE6A",
+            "actionMs": 7.108417,
+            "actionTransitionDelta": 1,
+            "generationMs": 24697.140333,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ]
+      }
+    },
+    {
+      "maxTokens": 4,
+      "prefixTokenLength": 64,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "samplesPerStrategy": 3,
+      "sources": [
+        {
+          "id": "COST5",
+          "artifact": "mlx-release-recovery-tokens4.json"
+        },
+        {
+          "id": "PHASE6C",
+          "artifact": "mlx-release-recovery-token-replicate-p64-t4-s8.json"
+        }
+      ],
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.005541666666666667,
+        "medianMs": 0.0035,
+        "minMs": 0.001875,
+        "maxMs": 0.01125,
+        "rangeMs": 0.009375
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 9.933680666666666,
+        "medianMs": 7.260584,
+        "minMs": 7.133208,
+        "maxMs": 15.40725,
+        "rangeMs": 8.274042
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 62628.598264,
+        "medianMs": 50508.98525,
+        "minMs": 49972.016292,
+        "maxMs": 87404.79325,
+        "rangeMs": 37432.776958
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 83907.84629133334,
+        "medianMs": 52059.338,
+        "minMs": 50122.700083,
+        "maxMs": 149541.500791,
+        "rangeMs": 99418.800708
+      },
+      "generationTransitionsPerStrategy": 24,
+      "allPairedOutputsExact": true,
+      "retainActionTransitionsZero": true,
+      "releaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "source": "COST5",
+            "actionMs": 0.0035,
+            "actionTransitionDelta": 0,
+            "generationMs": 50508.98525,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 0.001875,
+            "actionTransitionDelta": 0,
+            "generationMs": 49972.016292,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          },
+          {
+            "source": "PHASE6C",
+            "actionMs": 0.01125,
+            "actionTransitionDelta": 0,
+            "generationMs": 87404.79325,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "source": "COST5",
+            "actionMs": 7.133208,
+            "actionTransitionDelta": 1,
+            "generationMs": 52059.338,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          },
+          {
+            "source": "COST5",
+            "actionMs": 7.260584,
+            "actionTransitionDelta": 1,
+            "generationMs": 50122.700083,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          },
+          {
+            "source": "PHASE6C",
+            "actionMs": 15.40725,
+            "actionTransitionDelta": 1,
+            "generationMs": 149541.500791,
+            "generationTransitionDelta": 24,
+            "generatedTokenIDs": [
+              81917,
+              279,
+              6559,
+              1847
+            ],
+            "generatedText": " Explain the tradeoff"
+          }
+        ]
+      }
+    }
+  ],
+  "supplementaryPrefix8Runs": [
+    {
+      "maxTokens": 1,
+      "prefixTokenLength": 8,
+      "segmentSize": 8,
+      "cyclesPerStrategy": 1,
+      "overallPass": true,
+      "pairedOutputsExact": true,
+      "retainGenerationMeanMs": 11707.5315,
+      "releaseGenerationMeanMs": 12007.561042,
+      "peakFootprintMiB": 6886,
+      "maxSwapMiB": 0
+    },
+    {
+      "maxTokens": 4,
+      "prefixTokenLength": 8,
+      "segmentSize": 8,
+      "cyclesPerStrategy": 1,
+      "overallPass": true,
+      "pairedOutputsExact": true,
+      "retainGenerationMeanMs": 48387.494833,
+      "releaseGenerationMeanMs": 98497.579583,
+      "peakFootprintMiB": 6647,
+      "maxSwapMiB": 0
+    }
+  ],
+  "checks": {
+    "ALL_SOURCE_REPORTS_PASS": true,
+    "ALL_BUDGETS_PRESENT": true,
+    "COMBINED_N3_PER_STRATEGY": true,
+    "ALL_COMBINED_PAIRED_OUTPUTS_EXACT": true,
+    "RETAIN_ACTION_NEVER_RELEASES_SEGMENTS": true,
+    "RELEASE_ACTION_ALWAYS_RELEASES_SEGMENTS": true,
+    "GENERATION_TRANSITIONS_MATCH_STRUCTURE": true,
+    "ALL_RUNS_ZERO_SWAP": true,
+    "OVERSIZED_PROFILE_UNDER_30GIB": true
+  },
+  "openQuestions": [
+    "MORE_REPLICATES_AND_COUNTERBALANCING",
+    "PREFIX8_TOKEN_BUDGET_REPLICATION_AT_N3",
+    "CAUSE_OF_LARGE_T4_RELEASE_RUN_VARIATION",
+    "WARM_KV_OR_RESIDENCY_POLICY_IS_NOT_IMPLEMENTED_IN_THIS_CACHELESS_PATH"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON"
+  ],
+  "overallPass": true
+}
