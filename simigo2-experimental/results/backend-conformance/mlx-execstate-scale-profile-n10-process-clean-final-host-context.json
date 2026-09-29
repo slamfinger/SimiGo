@@ -1,0 +1,29 @@
+{
+  "protocolVersion": "LAB.MLX.EXECSTATE.SCALE.N10.PROCESS_CLEAN_CONTEXT.V1",
+  "resultArtifact": "mlx-execstate-scale-profile-n10-process-clean-final.json",
+  "resultSha256": "f6bff44050ebfb0ee8a8fb63332c1ee690c663c24dd62a7962299d480c4f701d",
+  "resultStatus": "PASS",
+  "boundary": "FINAL_OVERSIZED_SCALE_OBSERVATION / PROCESS_CLEAN_ONLY / NOT_A_PERFORMANCE_BENCHMARK",
+  "wallClockSeconds": 898.09,
+  "isolation": {
+    "beforeNoPort18080Listener": true,
+    "beforeNoInferenceProcess": true,
+    "afterNoPort18080Listener": true,
+    "afterNoInferenceProcess": true,
+    "processClean": true
+  },
+  "before": {
+    "capturedAt": "2026-09-29T12:38:09.519400+00:00",
+    "swapUsage": "total = 5120.00M  used = 4262.44M  free = 857.56M  (encrypted)",
+    "memoryPressure": "0",
+    "port18080Listeners": "",
+    "inferenceProcesses": "PID  PPID STAT COMM                RSS      VSZ"
+  },
+  "after": {
+    "capturedAt": "2026-09-29T12:53:07.744721+00:00",
+    "swapUsage": "total = 5120.00M  used = 3750.44M  free = 1369.56M  (encrypted)",
+    "memoryPressure": "249",
+    "port18080Listeners": "",
+    "inferenceProcesses": "PID  PPID STAT COMM                RSS      VSZ"
+  }
+}

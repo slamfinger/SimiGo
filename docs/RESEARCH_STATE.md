@@ -7691,3 +7691,40 @@ local bookkeeping mean保持 `0.009783–0.012891ms`。
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation.json`、
 `simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation-host-context.json`、
 `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_PROCESS_CLEAN_20260929.md`。
+
+### LAB OVERSIZED RESEARCH BOUNDARY FROZEN — 2026-09-29
+
+冻结 oversized independent research line。历史 COST / workload / UI / cancel
+实验继续有效，但 oversized身份从“研究对象”改为“architecture validation
+payload”。后续只允许在 Execution State / Storage / Backend architecture实验中
+作为 retention、artifact lifecycle、restore、resource budget、backend
+capability、failure / recovery的规模旁证；不再新建 layer loading、tensor
+strategy或 standalone oversized scale分支，也不得为了让 oversized产生结果而给
+Execution State添加特殊语义。
+
+冻结前完成最后一个 MLX scale observation：prefix `8/64/256`，每 bucket
+`10` pairs，1-token generation，segment size 8。run前后均无
+`llama-server` / `simigo2ctl`、无 `18080` listener。semantic checks `3/3 PASS`，
+30个 paired samples全部 semantic identical；peak footprint `7364 MiB`，
+artifact内 max swap `0 MiB`，segment transitions `397`。
+
+paired `state−direct` mean/median/stdev：
+
+```text
+8   = +18.171537 / -4.314375 / 171.364680 ms
+64  = -337.701508 / -44.328895 / 897.093750 ms
+256 = -537.781654 / -565.164395 / 690.257408 ms
+```
+
+登记 `MLX_EXECSTATE_SCALE_N10_PROCESS_CLEAN_FINAL_PASS`、
+`OVERSIZED_INDEPENDENT_RESEARCH_LINE_FROZEN`、
+`OVERSIZED_ROLE_ARCHITECTURE_VALIDATION_PAYLOAD`、
+`SCALE_DELTAS_SIGN_REVERSING_ACROSS_RUNS` 和
+`NO_PERFORMANCE_BENCHMARK_CLAIM`。delta方向与上一轮 n=5 process-clean相反，
+进一步说明继续扩张 oversized scale线不适合作为主线证据。
+
+下一主线保持 PALACE-1与 BACKEND-1的 audit-first路径；oversized只在其中作为
+boundary workload复用。boundary报告与final artifact见
+`docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md`、
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final.json`、
+`simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final-host-context.json`。

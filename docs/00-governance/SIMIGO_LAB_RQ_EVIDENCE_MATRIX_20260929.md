@@ -34,6 +34,8 @@ RQ3 = OPEN / EXECUTION_STATE_CANCEL_ISOLATION_PASS
       / PARALLEL8_CURVE_CANCEL_IDENTITY_REPRODUCED_SEED43
 O6  = PASS / QWEN3_NEXT_OVERSIZED_W0_W9_HARNESS_LEVEL
       / CANCELLATION_AB_PASS
+OVERSIZED = FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD
+      / NOT_AN_INDEPENDENT_RESEARCH_LINE
 ```
 
 最新全仓 Swift baseline：
@@ -222,9 +224,10 @@ Consolidated artifact：
 results/backend-conformance/mlx-phase6-master-summary.json
 ```
 
-该 index纳入 COST1–COST5与 PHASE6A–PHASE6J。它不改变各 profile边界；full n=5
-matrix、statistical factorization、kernel-level attribution、warm-KV/segment-residency
-policy和cross-backend normalization仍开放。
+该 index纳入 COST1–COST5与 PHASE6A–PHASE6J。它不改变各 profile边界。oversized
+scale线已在 n=10 process-clean observation后冻结；后续 factorization、kernel
+attribution、warm-KV/segment-residency policy或 cross-backend normalization只在
+PALACE-1 / BACKEND-1需要规模旁证时作为 secondary validation考虑，不再是独立主线。
 
 Status：
 
@@ -238,6 +241,7 @@ PASS_WITH_BOUNDARY / OBSERVATION_INDEX_COMPLETE / FULL_FACTORIAL_OPEN
 | COST2 token-length scale | prefix `8/64/256`; direct-vs-state; 1-token generation | 3/3 | latency increases across observed lengths; paired delta `-15.811/+27.744/+388.442ms`, n=2 per bucket | `results/backend-conformance/mlx-execstate-scale-profile.json` |
 | COST2 n=5 replication | same prefix lengths; direct-vs-state; 1-token generation; host-concurrency boundary | 3/3 | semantic replication PASS; paired delta `-27.890/+25.556/+106.075ms`, n=5 per bucket; not stable performance evidence | `results/backend-conformance/mlx-execstate-scale-profile-n5.json`; `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_20260929.md` |
 | COST2 n=5 process-clean | same prefix lengths; no llama-server/simigo2ctl before or after; 1-token generation | 3/3 | semantic `15/15` pairs PASS; paired delta `+8.600/+94.239/+349.045ms`, n=5 per bucket; observation only | `results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation.json`; `results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation-host-context.json`; `docs/00-governance/SIMIGO_LAB_MLX_EXECSTATE_SCALE_PROFILE_N5_PROCESS_CLEAN_20260929.md` |
+| COST2 n=10 process-clean final | same prefix lengths; no llama-server/simigo2ctl before or after; 1-token generation; closes standalone scale line | 3/3 | semantic `30/30` pairs PASS; unstable sign-reversing deltas `+18.172/-337.702/-537.782ms`, n=10 per bucket; observation only | `results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final.json`; `results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final-host-context.json`; `docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md` |
 | COST3 release isolation | current release vs stale no-op vs restore; no generation; 30 samples | 6/6 | current release mean `4.061400ms`; stale no-op mean `0.000188ms` | `results/backend-conformance/mlx-release-cost-profile.json` |
 | COST4 retain vs release/restore | 64-token prefix, 2-token generation, 4 cycles | 7/7 | action mean `0.008479/4.519990ms`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-profile.json` |
 | COST5 token-budget scale | budgets `1/2/4`; two cycles per strategy per budget | 5/5 | strategy-averaged generation `10,435.064/21,721.998/50,665.760ms`; transitions `6/12/24`; paired outputs exact | `results/backend-conformance/mlx-release-recovery-token-scale-summary.json` |
