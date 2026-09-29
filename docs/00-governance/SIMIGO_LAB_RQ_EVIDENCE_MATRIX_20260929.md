@@ -344,6 +344,40 @@ Artifacts：
 results/backend-conformance/mlx-phase6e-distribution-analysis.json
 ```
 
+### Phase-6F segment phase attribution
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / SEGMENT_PHASE_ATTRIBUTION_PILOT / N1_PER_SIZE
+```
+
+新增 warmed one-token phase profiler，对 prefix `64` 的 segment size `8/16`
+分别测量 embed、每 segment materialize/forward/release、logits/argMax。两个
+reports PASS，generated token相同，zero swap，低于 30GiB gate。同一代码基线全仓
+Swift verification保持 `157/0`。
+
+Key observation：
+
+```text
+segment 8:  materialize 8,592.810ms; forward 1,953.801ms; release 89.098ms
+segment 16: materialize 8,718.752ms; forward 4,008.853ms; release 104.645ms
+segment16 total delta vs segment8 = +2,223.551ms
+forward sum delta                 = +2,055.053ms
+```
+
+这解释了为什么“transition少”不等于更快：segment 16 的 forward sum显著更高，
+release per transition也从 `14.850ms`增至 `34.882ms`。`n=1` per size，不建立
+最优 segment size。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-segment-phase-p64-s8.json
+results/backend-conformance/mlx-segment-phase-p64-s16.json
+results/backend-conformance/mlx-segment-phase-attribution-summary.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -356,11 +390,12 @@ results/backend-conformance/mlx-phase6e-distribution-analysis.json
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
-   PHASE6B targeted replication、PHASE6C token-budget replication和PHASE6E
-   post-hoc distribution analysis也已通过；PHASE6D将三个 cells扩展到 n=5，但
-   `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。statistical factorization、
-   完整 n=5 matrix、更多 replicates、warm-KV/segment-residency policy和
-   cross-backend cost normalization仍未完成。
+   PHASE6B targeted replication、PHASE6C token-budget replication、PHASE6E
+   post-hoc distribution analysis和PHASE6F segment phase attribution也已通过；
+   PHASE6D将三个 cells扩展到 n=5，但 `p8/t2/segment16` 因 Metal GPU timeout保持
+   n=3。statistical factorization、更多 replicates、完整 n=5 matrix、
+   kernel-level attribution、warm-KV/segment-residency policy和cross-backend cost
+   normalization仍未完成。
 
 ## Non-claims
 
@@ -380,6 +415,7 @@ MLX Phase-6B replication已建立 production segment-size policy
 MLX Phase-6C mean已建立稳定 token-cost model
 MLX Phase-6D GPU timeout已定位为 Execution State语义错误
 MLX Phase-6E IQR outlier已建立因果诊断
+MLX Phase-6F transition count是 latency的唯一解释
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的

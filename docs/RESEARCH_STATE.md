@@ -6725,3 +6725,65 @@ throughput、segment-size recommendation、warm-KV retention或production claim�
 报告见
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6E_DISTRIBUTION_ANALYSIS_20260929.md`；artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6e-distribution-analysis.json`。
+
+### LAB MLX SEGMENT PHASE ATTRIBUTION PASS — 2026-09-29
+
+针对 PHASE6A/B 中“segment 16 transition少但 latency高”的问题，新增
+`O6SegmentPhaseProfiler` 和 CLI `mlx-segment-phase`，将 warmed one-token
+generation拆分为 embed、每 segment materialize/forward/release、logits/argMax。
+代码只新增 phase instrumentation；normal greedy path不变。使用本地
+Qwen3-Coder-Next-4bit、prefix 64、segment size 8/16，每 size一次 measured token；
+先执行 unprofiled warmup。不包含 Execution State action，也不重试此前 GPU timeout
+cell。同一代码基线全仓 Swift verification为 `157 PASS / 0 FAIL`。
+
+两个 reports PASS，generated token相同，zero swap，低于 30GiB。segment 8/6
+segments总耗时 `10,673.082ms`，materialize/forward/release分别为
+`8,592.810 / 1,953.801 / 89.098ms`。segment 16/3 segments总耗时
+`12,896.634ms`，三项分别为 `8,718.752 / 4,008.853 / 104.645ms`。segment 16相对
+segment 8 total增加 `+2,223.551ms`，其中 forward sum增加 `+2,055.053ms`；
+materialize sum只增加 `+125.942ms`，release sum增加 `+15.548ms`。这说明
+transition count单独不足以解释成本：segment 16的 forward sum显著更高，release
+per transition也从 `14.850ms`增至 `34.882ms`。登记
+`SEGMENT_PHASE_INSTRUMENTATION_OPERATIONAL`、
+`SEGMENT16_FORWARD_COST_REPLICATES_LATENCY_TREND` 和
+`TRANSITION_COUNT_ALONE_INSUFFICIENT`；状态为
+`PHASE6F = PASS_WITH_BOUNDARY / SEGMENT_PHASE_ATTRIBUTION_PILOT / N1_PER_SIZE`。
+每个 size只有 n=1，不建立最优 segment size或 throughput曲线，不解释 Metal timeout
+root cause，也不建立warm-KV retention、production performance或cross-backend /
+cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_SEGMENT_PHASE_PROFILE_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-attribution-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-p64-s8.json`、`...p64-s16.json`。
+
+### LAB MLX SEGMENT PHASE ATTRIBUTION PASS — 2026-09-29
+
+针对 PHASE6A/B 中“segment 16 transition少但 latency高”的问题，新增
+`O6SegmentPhaseProfiler` 和 CLI `mlx-segment-phase`，将 warmed one-token
+generation拆分为 embed、每 segment materialize/forward/release、logits/argMax。
+代码只新增 phase instrumentation；normal greedy path不变。使用本地
+Qwen3-Coder-Next-4bit、prefix 64、segment size 8/16，每 size一次 measured token；
+先执行 unprofiled warmup。不包含 Execution State action，也不重试此前 GPU timeout
+cell。同一代码基线全仓 Swift verification为 `157 PASS / 0 FAIL`。
+
+两个 reports PASS，generated token相同，zero swap，低于 30GiB。segment 8/6
+segments总耗时 `10,673.082ms`，materialize/forward/release分别为
+`8,592.810 / 1,953.801 / 89.098ms`。segment 16/3 segments总耗时
+`12,896.634ms`，三项分别为 `8,718.752 / 4,008.853 / 104.645ms`。segment 16相对
+segment 8 total增加 `+2,223.551ms`，其中 forward sum增加 `+2,055.053ms`；
+materialize sum只增加 `+125.942ms`，release sum增加 `+15.548ms`。这说明
+transition count单独不足以解释成本：segment 16的 forward sum显著更高，release
+per transition也从 `14.850ms`增至 `34.882ms`。登记
+`SEGMENT_PHASE_INSTRUMENTATION_OPERATIONAL`、
+`SEGMENT16_FORWARD_COST_REPLICATES_LATENCY_TREND` 和
+`TRANSITION_COUNT_ALONE_INSUFFICIENT`；状态为
+`PHASE6F = PASS_WITH_BOUNDARY / SEGMENT_PHASE_ATTRIBUTION_PILOT / N1_PER_SIZE`。
+每个 size只有 n=1，不建立最优 segment size或 throughput曲线，不解释 Metal timeout
+root cause，也不建立warm-KV retention、production performance或cross-backend /
+cross-hardware claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_SEGMENT_PHASE_PROFILE_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-attribution-summary.json`；raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-segment-phase-p64-s8.json`、`...p64-s16.json`。

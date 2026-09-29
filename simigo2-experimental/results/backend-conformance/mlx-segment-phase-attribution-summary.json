@@ -1,0 +1,185 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.O6.SEGMENT.PHASE.ATTRIBUTION.V1",
+  "boundary": "PREFIX64_ONE_MEASURED_TOKEN_PER_SIZE / WARMED_PATH / N1_PER_SIZE / PHASE_ISOLATION_ONLY / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenLength": 64,
+  "maxTokens": 1,
+  "segmentSizes": [
+    8,
+    16
+  ],
+  "measuredSamplesPerSize": 1,
+  "runs": [
+    {
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-segment-phase-p64-s8.json",
+      "prefixTokenLength": 64,
+      "maxTokens": 1,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "status": "PASS",
+      "overallPass": true,
+      "generatedTokenID": 26753,
+      "embedMs": 9.705916,
+      "logitsMs": 27.509209,
+      "totalMs": 10673.082208,
+      "segmentSumMs": {
+        "materializeMs": 8592.809749,
+        "forwardMs": 1953.800668,
+        "releaseMs": 89.09774999999999
+      },
+      "perSegmentMeanMs": {
+        "materializeMs": 1432.1349581666666,
+        "forwardMs": 325.63344466666666,
+        "releaseMs": 14.849624999999998
+      },
+      "perLayerMeanMs": {
+        "materializeMs": 1074.101218625,
+        "forwardMs": 244.2250835,
+        "releaseMs": 11.137218749999999
+      },
+      "releasePerTransitionMs": 14.849624999999998,
+      "peakFootprintMiB": 7793,
+      "maxSwapMiB": 0,
+      "segmentTransitions": 12,
+      "segments": [
+        {
+          "forwardMs": 343.65025,
+          "layerRange": "0-7",
+          "materializeMs": 1436.560041,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 15.443875,
+          "segmentIndex": 0
+        },
+        {
+          "forwardMs": 281.60625,
+          "layerRange": "8-15",
+          "materializeMs": 1422.913125,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 14.471541,
+          "segmentIndex": 1
+        },
+        {
+          "forwardMs": 316.233459,
+          "layerRange": "16-23",
+          "materializeMs": 1438.943666,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 14.2985,
+          "segmentIndex": 2
+        },
+        {
+          "forwardMs": 346.507542,
+          "layerRange": "24-31",
+          "materializeMs": 1429.103625,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 15.6065,
+          "segmentIndex": 3
+        },
+        {
+          "forwardMs": 293.22925,
+          "layerRange": "32-39",
+          "materializeMs": 1433.765,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 14.812167,
+          "segmentIndex": 4
+        },
+        {
+          "forwardMs": 372.573917,
+          "layerRange": "40-47",
+          "materializeMs": 1431.524292,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 14.465167,
+          "segmentIndex": 5
+        }
+      ]
+    },
+    {
+      "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-segment-phase-p64-s16.json",
+      "prefixTokenLength": 64,
+      "maxTokens": 1,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "status": "PASS",
+      "overallPass": true,
+      "generatedTokenID": 26753,
+      "embedMs": 18.241416,
+      "logitsMs": 46.023958,
+      "totalMs": 12896.633708,
+      "segmentSumMs": {
+        "materializeMs": 8718.752083,
+        "forwardMs": 4008.8532490000002,
+        "releaseMs": 104.645333
+      },
+      "perSegmentMeanMs": {
+        "materializeMs": 2906.2506943333333,
+        "forwardMs": 1336.2844163333334,
+        "releaseMs": 34.881777666666665
+      },
+      "perLayerMeanMs": {
+        "materializeMs": 544.9220051875,
+        "forwardMs": 250.55332806250001,
+        "releaseMs": 6.5403333125
+      },
+      "releasePerTransitionMs": 34.881777666666665,
+      "peakFootprintMiB": 8883,
+      "maxSwapMiB": 0,
+      "segmentTransitions": 6,
+      "segments": [
+        {
+          "forwardMs": 1367.795166,
+          "layerRange": "0-15",
+          "materializeMs": 2906.019708,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 35.186291,
+          "segmentIndex": 0
+        },
+        {
+          "forwardMs": 1306.908083,
+          "layerRange": "16-31",
+          "materializeMs": 2912.188209,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 42.128417,
+          "segmentIndex": 1
+        },
+        {
+          "forwardMs": 1334.15,
+          "layerRange": "32-47",
+          "materializeMs": 2900.544166,
+          "materializeTransitionDelta": 1,
+          "releaseMs": 27.330625,
+          "segmentIndex": 2
+        }
+      ]
+    }
+  ],
+  "deltaSegment16MinusSegment8": {
+    "totalMs": 2223.5514999999996,
+    "materializeMs": 125.94233399999939,
+    "forwardMs": 2055.052581,
+    "releaseMs": 15.547583000000003,
+    "logitsMs": 18.514749000000002,
+    "embedMs": 8.5355
+  },
+  "checks": {
+    "BOTH_SIZE_REPORTS_PASS": true,
+    "SAME_MEASURED_TOKEN_OUTPUT": true,
+    "MATERIALIZE_TRANSITIONS_EXACT": true,
+    "ALL_MEASURED_SEGMENTS_PRESENT": true,
+    "ALL_MATERIALIZE_TRANSITIONS_ONE": true,
+    "ZERO_SWAP": true,
+    "UNDER_30GIB": true
+  },
+  "openQuestions": [
+    "MULTIPLE_SAMPLES_AND_COUNTERBALANCING",
+    "GPU_TIMEOUT_CELL_P8_T2_S16_REQUIRES_USER_APPROVED_RETRY",
+    "KERNEL_AND_MEMORY_ALLOCATION_ATTRIBUTION"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_SEGMENT_SIZE_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_COMPARISON",
+    "NOT_A_GPU_TIMEOUT_ROOT_CAUSE_EXPLANATION"
+  ],
+  "overallPass": true
+}

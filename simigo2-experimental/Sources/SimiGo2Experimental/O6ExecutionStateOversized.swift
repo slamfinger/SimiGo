@@ -255,6 +255,73 @@ final class O6SegmentedCore: @unchecked Sendable {
     return generated
   }
 
+  /// Phase-isolated one-token profile. This does not replace `greedy`;
+  /// callers use it only for targeted cost attribution.
+  func profileToken(
+    prefix: [Int],
+    nextInputTokens: [Int]
+  ) throws -> O6TokenPhaseProfile {
+    let ids = prefix + nextInputTokens
+    let profileStarted = DispatchTime.now().uptimeNanoseconds
+
+    let embedStarted = DispatchTime.now().uptimeNanoseconds
+    var hidden = model.embedInputs(MLXArray(ids, [1, ids.count]))
+    eval(hidden)
+    let embedMs = msSince(embedStarted)
+
+    var segmentMeasurements: [O6SegmentPhaseMeasurement] = []
+    for (index, segment) in segments.enumerated() {
+      let materializeStarted = DispatchTime.now().uptimeNanoseconds
+      let transitionsBeforeMaterialize = segmentTransitions
+      try materialize(segment)
+      let materializeMs = msSince(materializeStarted)
+
+      let forwardStarted = DispatchTime.now().uptimeNanoseconds
+      hidden = model.forwardLayerRange(
+        hidden, layerRange: segment.lowerBound..<(segment.upperBound + 1), cache: nil
+      )
+      eval(hidden)
+      let forwardMs = msSince(forwardStarted)
+
+      let releaseStarted = DispatchTime.now().uptimeNanoseconds
+      try releaseSegment(segment)
+      let releaseMs = msSince(releaseStarted)
+
+      segmentMeasurements.append(
+        O6SegmentPhaseMeasurement(
+          segmentIndex: index,
+          layerRange: "\(segment.lowerBound)-\(segment.upperBound)",
+          materializeMs: materializeMs,
+          forwardMs: forwardMs,
+          releaseMs: releaseMs,
+          materializeTransitionDelta: segmentTransitions - transitionsBeforeMaterialize
+        )
+      )
+    }
+
+    let logitsStarted = DispatchTime.now().uptimeNanoseconds
+    let logits = model.projectOutput(hidden)[0, -1]
+    eval(logits)
+    let next = logits.argMax().item(Int.self)
+    let logitsMs = msSince(logitsStarted)
+
+    return O6TokenPhaseProfile(
+      inputTokenCount: ids.count,
+      embedMs: embedMs,
+      segments: segmentMeasurements,
+      logitsMs: logitsMs,
+      totalMs: msSince(profileStarted),
+      generatedTokenID: next,
+      peakFootprintMiB: gauge().footprintMiB,
+      maxSwapMiB: gauge().swapMiB,
+      segmentTransitions: segmentTransitions
+    )
+  }
+
+  private func msSince(_ started: UInt64) -> Double {
+    Double(DispatchTime.now().uptimeNanoseconds &- started) / 1e6
+  }
+
   private func releaseSegment(_ segment: ClosedRange<Int>) throws {
     var placeholders: [String: MLXArray] = [:]
     for name in switchNames {
