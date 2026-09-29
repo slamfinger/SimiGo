@@ -320,6 +320,30 @@ results/backend-conformance/mlx-release-recovery-distribution-p64-t2-s16.json
 results/backend-conformance/mlx-phase6d-distribution-partial-summary.json
 ```
 
+### Phase-6E post-hoc distribution analysis
+
+Status：
+
+```text
+PASS_WITH_BOUNDARY / POST_HOC_DISTRIBUTION_ANALYSIS_COMPLETE / NO_NEW_GPU_RUNS
+```
+
+对 PHASE6D 已有 samples做 robust analysis：mean、median、p05/p25/p75/p95、IQR和
+Tukey 1.5×IQR fences。八个 analysis checks全部 PASS；所有 cell内 samples共享同一
+generated output；generation transitions符合 `segment count × token count`；RETAIN
+transitions全为 `0`，RELEASE_RESTORE全为 `1`。
+
+Completed n=5 cells呈现 long tail。IQR analysis在 prefix `64 / segment16` 的
+RETAIN arm标出 `92,221.424ms` outlier；其他 completed generation arms在该规则下
+没有标出 outlier。action distributions也有长尾，但小样本 IQR不构成因果诊断。
+`prefix8 / segment16` 仍只有 combined `n=3`，不足以比较。
+
+Artifacts：
+
+```text
+results/backend-conformance/mlx-phase6e-distribution-analysis.json
+```
+
 ## Open gaps
 
 1. RQ2 缺少可用且 32GB-fit 的 full Qwen4Exp artifact；候选问题需要用户裁定。
@@ -332,10 +356,11 @@ results/backend-conformance/mlx-phase6d-distribution-partial-summary.json
 3. RQ1/RQ2/RQ3 还没有形成同一 model、同一 workload、同一 harness 的
    cross-backend closure。
 4. MLX oversized Phase-6 cost observation index已完成，PHASE6A one-cycle pilot、
-   PHASE6B targeted replication和PHASE6C token-budget replication也已通过；
-   PHASE6D将三个 cells扩展到 n=5，但 `p8/t2/segment16` 因 Metal GPU timeout保持
-   n=3。statistical factorization、完整 n=5 matrix、分布/outlier分析、
-   warm-KV/segment-residency policy和cross-backend cost normalization仍未完成。
+   PHASE6B targeted replication、PHASE6C token-budget replication和PHASE6E
+   post-hoc distribution analysis也已通过；PHASE6D将三个 cells扩展到 n=5，但
+   `p8/t2/segment16` 因 Metal GPU timeout保持 n=3。statistical factorization、
+   完整 n=5 matrix、更多 replicates、warm-KV/segment-residency policy和
+   cross-backend cost normalization仍未完成。
 
 ## Non-claims
 
@@ -354,6 +379,7 @@ MLX Phase-6 cost observation是 throughput benchmark
 MLX Phase-6B replication已建立 production segment-size policy
 MLX Phase-6C mean已建立稳定 token-cost model
 MLX Phase-6D GPU timeout已定位为 Execution State语义错误
+MLX Phase-6E IQR outlier已建立因果诊断
 ```
 
 所有耗时只是当前 harness run 记录；语义 PASS 只覆盖对应 protocol 的

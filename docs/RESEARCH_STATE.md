@@ -6698,3 +6698,30 @@ segment-residency policy仍未完成。
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6D_DISTRIBUTION_PARTIAL_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6d-distribution-partial-summary.json`；completed raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-distribution-p8-t2-s8.json`、`...p64-t2-s8.json`、`...p64-t2-s16.json`。
+
+### LAB MLX PHASE6E DISTRIBUTION ANALYSIS PASS — 2026-09-29
+
+对 PHASE6D 已有 combined samples执行 post-hoc robust distribution analysis；没有
+新增 GPU run。分析覆盖 prefix `8/64` × segment size `8/16` 的 2-token cells，
+计算 mean、median、p05/p25/p75/p95、min/max、IQR和 Tukey 1.5×IQR fences。八个
+analysis checks全部 PASS：expected cells present、三个 completed cells at n=5、
+GPU timeout cell remains n=3、每个 cell内 generated output唯一、generation
+transitions符合 `segment count × token count`、action transition semantics保持、
+robust stats computed、no new GPU runs。
+
+结果显示 completed n=5 cells有明显 long tail。Tukey规则只在 prefix `64 / segment
+16` RETAIN中标出 `92,221.424ms` outlier；其他 completed generation arms没有超出
+1.5×IQR fences，但 p75/p95与 median差距很大。action distributions同样有长尾，例如
+prefix 8 / segment 8 RELEASE_RESTORE max `32.784917ms`，prefix 64 / segment 8
+RELEASE_RESTORE max `24.931000ms`。所有 generation transitions匹配结构，RETAIN
+transitions全 `0`，RELEASE_RESTORE全 `1`，说明分布波动不是 Execution State
+identity/lineage/position语义失败。登记 `N5_CELLS_LONG_TAIL_OBSERVED`、
+`IQR_FENCES_FLAG_OUTLIERS_IN_COMPLETED_CELLS` 和
+`GPU_TIMEOUT_CELL_IS_UNDERPOWERED_N3`；状态为
+`PHASE6E = PASS_WITH_BOUNDARY / POST_HOC_DISTRIBUTION_ANALYSIS_COMPLETE /
+NO_NEW_GPU_RUNS`。IQR outlier不是因果诊断；n=3 cell不足以比较，也不建立
+throughput、segment-size recommendation、warm-KV retention或production claim。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6E_DISTRIBUTION_ANALYSIS_20260929.md`；artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6e-distribution-analysis.json`。

@@ -1,0 +1,992 @@
+{
+  "status": "PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6E.DISTRIBUTION.ANALYSIS.V1",
+  "boundary": "POST_HOC_ROBUST_STATS / SMALL_N / IQR_FENCES / GPU_TIMEOUT_CELL_REMAINS_N3 / NOT_A_PERFORMANCE_BENCHMARK",
+  "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-phase6d-distribution-partial-summary.json",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenLengths": [
+    8,
+    64
+  ],
+  "maxTokens": 2,
+  "segmentSizes": [
+    8,
+    16
+  ],
+  "cells": [
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "combinedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "gpuTimeoutCell": false,
+      "strategies": {
+        "RETAIN": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 38679.0131,
+            "medianMs": 18712.340917,
+            "p05Ms": 18549.2356754,
+            "p25Ms": 18665.924209,
+            "p75Ms": 66081.098166,
+            "p95Ms": 70348.730566,
+            "minMs": 18520.063542,
+            "maxMs": 71415.638666,
+            "iqrMs": 47415.17395699999,
+            "lowerFenceMs": -52456.83672649998,
+            "upperFenceMs": 137203.85910149998,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 0.08206680000000001,
+            "medianMs": 0.002792,
+            "p05Ms": 0.0012753999999999999,
+            "p25Ms": 0.002709,
+            "p75Ms": 0.006208,
+            "p95Ms": 0.3194079999999999,
+            "minMs": 0.000917,
+            "maxMs": 0.397708,
+            "iqrMs": 0.003499,
+            "lowerFenceMs": -0.0025394999999999997,
+            "upperFenceMs": 0.0114565,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              0.397708
+            ]
+          },
+          "generationMsPerTokenMean": 19339.50655,
+          "iqrOutliers": [
+            {
+              "phase": "D",
+              "kind": "actionMs",
+              "valueMs": 0.397708
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 0.002709,
+              "actionTransitionDelta": 0,
+              "generationMs": 18520.063542,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9260.031771,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.002792,
+              "actionTransitionDelta": 0,
+              "generationMs": 18665.924209,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9332.9621045,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.000917,
+              "actionTransitionDelta": 0,
+              "generationMs": 18712.340917,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9356.1704585,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.397708,
+              "actionTransitionDelta": 0,
+              "generationMs": 71415.638666,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 35707.819333,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.006208,
+              "actionTransitionDelta": 0,
+              "generationMs": 66081.098166,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 33040.549083,
+              "transitionMatchesStructure": true
+            }
+          ]
+        },
+        "RELEASE_RESTORE": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 38210.5365918,
+            "medianMs": 18723.822,
+            "p05Ms": 18550.2983922,
+            "p25Ms": 18673.739125,
+            "p75Ms": 67378.249625,
+            "p95Ms": 67681.597125,
+            "minMs": 18519.438209,
+            "maxMs": 67757.434,
+            "iqrMs": 48704.5105,
+            "lowerFenceMs": -54383.02662499999,
+            "upperFenceMs": 140435.015375,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 11.963825199999999,
+            "medianMs": 4.156708,
+            "p05Ms": 3.9774586,
+            "p25Ms": 4.021125,
+            "p75Ms": 14.889834,
+            "p95Ms": 29.205900399999997,
+            "minMs": 3.966542,
+            "maxMs": 32.784917,
+            "iqrMs": 10.868709,
+            "lowerFenceMs": -12.2819385,
+            "upperFenceMs": 31.1928975,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              32.784917
+            ]
+          },
+          "generationMsPerTokenMean": 19105.2682959,
+          "iqrOutliers": [
+            {
+              "phase": "D",
+              "kind": "actionMs",
+              "valueMs": 32.784917
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 3.966542,
+              "actionTransitionDelta": 1,
+              "generationMs": 18519.438209,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9259.7191045,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 4.156708,
+              "actionTransitionDelta": 1,
+              "generationMs": 18673.739125,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9336.8695625,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 4.021125,
+              "actionTransitionDelta": 1,
+              "generationMs": 18723.822,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 9361.911,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 14.889834,
+              "actionTransitionDelta": 1,
+              "generationMs": 67378.249625,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 33689.1248125,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 32.784917,
+              "actionTransitionDelta": 1,
+              "generationMs": 67757.434,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 33878.717,
+              "transitionMatchesStructure": true
+            }
+          ]
+        }
+      },
+      "checks": {
+        "allSamplesWithinCellShareOneOutput": true,
+        "allGenerationTransitionsMatchStructure": true,
+        "allRetainActionTransitionsZero": true,
+        "allReleaseActionTransitionsOne": true
+      }
+    },
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "combinedSamplesPerStrategy": {
+        "RETAIN": 3,
+        "RELEASE_RESTORE": 3
+      },
+      "expansionComplete": false,
+      "gpuTimeoutCell": true,
+      "strategies": {
+        "RETAIN": {
+          "generationMs": {
+            "n": 3,
+            "meanMs": 30012.94809733333,
+            "medianMs": 27638.235542,
+            "p05Ms": 26407.3490039,
+            "p25Ms": 26954.4096875,
+            "p75Ms": 31884.1302295,
+            "p95Ms": 35280.8459795,
+            "minMs": 26270.583833,
+            "maxMs": 36130.024917,
+            "iqrMs": 4929.720541999999,
+            "lowerFenceMs": 19559.828874500003,
+            "upperFenceMs": 39278.7110425,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 3,
+            "meanMs": 0.006000000000000001,
+            "medianMs": 0.004667,
+            "p05Ms": 0.0031289,
+            "p25Ms": 0.0038125,
+            "p75Ms": 0.007521,
+            "p95Ms": 0.009804199999999999,
+            "minMs": 0.002958,
+            "maxMs": 0.010375,
+            "iqrMs": 0.0037085,
+            "lowerFenceMs": -0.00175025,
+            "upperFenceMs": 0.01308375,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "generationMsPerTokenMean": 15006.474048666665,
+          "iqrOutliers": [],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 0.004667,
+              "actionTransitionDelta": 0,
+              "generationMs": 26270.583833,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 13135.2919165,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.010375,
+              "actionTransitionDelta": 0,
+              "generationMs": 27638.235542,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 13819.117771,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.002958,
+              "actionTransitionDelta": 0,
+              "generationMs": 36130.024917,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 18065.0124585,
+              "transitionMatchesStructure": true
+            }
+          ]
+        },
+        "RELEASE_RESTORE": {
+          "generationMs": {
+            "n": 3,
+            "meanMs": 31446.576944666667,
+            "medianMs": 31111.494208,
+            "p05Ms": 28846.5227836,
+            "p25Ms": 29853.17675,
+            "p75Ms": 32872.435771,
+            "p95Ms": 34281.189021399994,
+            "minMs": 28594.859292,
+            "maxMs": 34633.377334,
+            "iqrMs": 3019.259020999998,
+            "lowerFenceMs": 25324.2882185,
+            "upperFenceMs": 37401.3243025,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 3,
+            "meanMs": 5.2897636666666665,
+            "medianMs": 4.798833,
+            "p05Ms": 4.700508,
+            "p25Ms": 4.744208,
+            "p75Ms": 5.589854,
+            "p95Ms": 6.2226707999999995,
+            "minMs": 4.689583,
+            "maxMs": 6.380875,
+            "iqrMs": 0.8456459999999995,
+            "lowerFenceMs": 3.4757390000000012,
+            "upperFenceMs": 6.858322999999999,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "generationMsPerTokenMean": 15723.288472333334,
+          "iqrOutliers": [],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 4.798833,
+              "actionTransitionDelta": 1,
+              "generationMs": 28594.859292,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 14297.429646,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 4.689583,
+              "actionTransitionDelta": 1,
+              "generationMs": 31111.494208,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 15555.747104,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 6.380875,
+              "actionTransitionDelta": 1,
+              "generationMs": 34633.377334,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                198,
+                198
+              ],
+              "generatedText": "\n\n",
+              "generationMsPerToken": 17316.688667,
+              "transitionMatchesStructure": true
+            }
+          ]
+        }
+      },
+      "checks": {
+        "allSamplesWithinCellShareOneOutput": true,
+        "allGenerationTransitionsMatchStructure": true,
+        "allRetainActionTransitionsZero": true,
+        "allReleaseActionTransitionsOne": true
+      }
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "combinedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "gpuTimeoutCell": false,
+      "strategies": {
+        "RETAIN": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 51056.256125,
+            "medianMs": 30476.408583,
+            "p05Ms": 24984.651342,
+            "p25Ms": 26230.057042,
+            "p75Ms": 65587.02675,
+            "p95Ms": 99768.9960164,
+            "minMs": 24673.299917,
+            "maxMs": 108314.488333,
+            "iqrMs": 39356.969708000004,
+            "lowerFenceMs": -32805.397520000006,
+            "upperFenceMs": 124622.48131200002,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 0.10768340000000001,
+            "medianMs": 0.004709,
+            "p05Ms": 0.0031418,
+            "p25Ms": 0.003541,
+            "p75Ms": 0.005542,
+            "p95Ms": 0.4183747999999999,
+            "minMs": 0.003042,
+            "maxMs": 0.521583,
+            "iqrMs": 0.002001,
+            "lowerFenceMs": 0.0005394999999999996,
+            "upperFenceMs": 0.0085435,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              0.521583
+            ]
+          },
+          "generationMsPerTokenMean": 25528.1280625,
+          "iqrOutliers": [
+            {
+              "phase": "D",
+              "kind": "actionMs",
+              "valueMs": 0.521583
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 0.004709,
+              "actionTransitionDelta": 0,
+              "generationMs": 24673.299917,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 12336.6499585,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.005542,
+              "actionTransitionDelta": 0,
+              "generationMs": 26230.057042,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 13115.028521,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.003541,
+              "actionTransitionDelta": 0,
+              "generationMs": 30476.408583,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 15238.2042915,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.521583,
+              "actionTransitionDelta": 0,
+              "generationMs": 108314.488333,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 54157.2441665,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.003042,
+              "actionTransitionDelta": 0,
+              "generationMs": 65587.02675,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 32793.513375,
+              "transitionMatchesStructure": true
+            }
+          ]
+        },
+        "RELEASE_RESTORE": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 48867.3342916,
+            "medianMs": 30124.980916,
+            "p05Ms": 25730.6817664,
+            "p25Ms": 29864.8475,
+            "p75Ms": 72557.311084,
+            "p95Ms": 84185.3755168,
+            "minMs": 24697.140333,
+            "maxMs": 87092.391625,
+            "iqrMs": 42692.463584,
+            "lowerFenceMs": -34173.847876,
+            "upperFenceMs": 136596.00646,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 11.3645084,
+            "medianMs": 7.6545,
+            "p05Ms": 7.2078336,
+            "p25Ms": 7.6055,
+            "p75Ms": 9.523125,
+            "p95Ms": 21.849424999999997,
+            "minMs": 7.108417,
+            "maxMs": 24.931,
+            "iqrMs": 1.9176250000000001,
+            "lowerFenceMs": 4.7290624999999995,
+            "upperFenceMs": 12.3995625,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              24.931
+            ]
+          },
+          "generationMsPerTokenMean": 24433.6671458,
+          "iqrOutliers": [
+            {
+              "phase": "D",
+              "kind": "actionMs",
+              "valueMs": 24.931
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 7.108417,
+              "actionTransitionDelta": 1,
+              "generationMs": 24697.140333,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 12348.5701665,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 7.6055,
+              "actionTransitionDelta": 1,
+              "generationMs": 29864.8475,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 14932.42375,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 7.6545,
+              "actionTransitionDelta": 1,
+              "generationMs": 30124.980916,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 15062.490458,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 9.523125,
+              "actionTransitionDelta": 1,
+              "generationMs": 72557.311084,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 36278.655542,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 24.931,
+              "actionTransitionDelta": 1,
+              "generationMs": 87092.391625,
+              "generationTransitionDelta": 12,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 43546.1958125,
+              "transitionMatchesStructure": true
+            }
+          ]
+        }
+      },
+      "checks": {
+        "allSamplesWithinCellShareOneOutput": true,
+        "allGenerationTransitionsMatchStructure": true,
+        "allRetainActionTransitionsZero": true,
+        "allReleaseActionTransitionsOne": true
+      }
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "combinedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "gpuTimeoutCell": false,
+      "strategies": {
+        "RETAIN": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 57027.5860416,
+            "medianMs": 48834.661625,
+            "p05Ms": 38955.854550200005,
+            "p25Ms": 47111.706083,
+            "p75Ms": 60053.247208,
+            "p95Ms": 85787.78834159998,
+            "minMs": 36916.891667,
+            "maxMs": 92221.423625,
+            "iqrMs": 12941.541125000003,
+            "lowerFenceMs": 27699.394395499992,
+            "upperFenceMs": 79465.5588955,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              92221.423625
+            ]
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 0.0079166,
+            "medianMs": 0.004916,
+            "p05Ms": 0.0016418,
+            "p25Ms": 0.002709,
+            "p75Ms": 0.008458,
+            "p95Ms": 0.019391599999999995,
+            "minMs": 0.001375,
+            "maxMs": 0.022125,
+            "iqrMs": 0.005749000000000001,
+            "lowerFenceMs": -0.005914500000000001,
+            "upperFenceMs": 0.0170815,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              0.022125
+            ]
+          },
+          "generationMsPerTokenMean": 28513.7930208,
+          "iqrOutliers": [
+            {
+              "phase": "B",
+              "kind": "actionMs",
+              "valueMs": 0.022125
+            },
+            {
+              "phase": "D",
+              "kind": "generationMs",
+              "valueMs": 92221.423625
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 0.004916,
+              "actionTransitionDelta": 0,
+              "generationMs": 36916.891667,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 18458.4458335,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.022125,
+              "actionTransitionDelta": 0,
+              "generationMs": 48834.661625,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 24417.3308125,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 0.002709,
+              "actionTransitionDelta": 0,
+              "generationMs": 47111.706083,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 23555.8530415,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.008458,
+              "actionTransitionDelta": 0,
+              "generationMs": 60053.247208,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 30026.623604,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 0.001375,
+              "actionTransitionDelta": 0,
+              "generationMs": 92221.423625,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 46110.7118125,
+              "transitionMatchesStructure": true
+            }
+          ]
+        },
+        "RELEASE_RESTORE": {
+          "generationMs": {
+            "n": 5,
+            "meanMs": 70047.4656252,
+            "medianMs": 46200.180042,
+            "p05Ms": 38797.210592,
+            "p25Ms": 45780.321792,
+            "p75Ms": 106291.19525,
+            "p95Ms": 113189.59765,
+            "minMs": 37051.432792,
+            "maxMs": 114914.19825,
+            "iqrMs": 60510.873458,
+            "lowerFenceMs": -44985.98839499999,
+            "upperFenceMs": 197057.505437,
+            "iqrOutlierCount": 0,
+            "iqrOutlierValuesMs": []
+          },
+          "actionMs": {
+            "n": 5,
+            "meanMs": 8.774808400000001,
+            "medianMs": 7.239541,
+            "p05Ms": 5.598775,
+            "p25Ms": 7.227375,
+            "p75Ms": 9.120459,
+            "p95Ms": 13.900125399999999,
+            "minMs": 5.191625,
+            "maxMs": 15.095042,
+            "iqrMs": 1.893084,
+            "lowerFenceMs": 4.387749,
+            "upperFenceMs": 11.960085,
+            "iqrOutlierCount": 1,
+            "iqrOutlierValuesMs": [
+              15.095042
+            ]
+          },
+          "generationMsPerTokenMean": 35023.7328126,
+          "iqrOutliers": [
+            {
+              "phase": "D",
+              "kind": "actionMs",
+              "valueMs": 15.095042
+            }
+          ],
+          "samples": [
+            {
+              "phase": "A",
+              "actionMs": 5.191625,
+              "actionTransitionDelta": 1,
+              "generationMs": 37051.432792,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 18525.716396,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 7.239541,
+              "actionTransitionDelta": 1,
+              "generationMs": 45780.321792,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 22890.160896,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "B",
+              "actionMs": 7.227375,
+              "actionTransitionDelta": 1,
+              "generationMs": 46200.180042,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 23100.090021,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 15.095042,
+              "actionTransitionDelta": 1,
+              "generationMs": 106291.19525,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 53145.597625,
+              "transitionMatchesStructure": true
+            },
+            {
+              "phase": "D",
+              "actionMs": 9.120459,
+              "actionTransitionDelta": 1,
+              "generationMs": 114914.19825,
+              "generationTransitionDelta": 6,
+              "generatedTokenIDs": [
+                81917,
+                279
+              ],
+              "generatedText": " Explain the",
+              "generationMsPerToken": 57457.099125,
+              "transitionMatchesStructure": true
+            }
+          ]
+        }
+      },
+      "checks": {
+        "allSamplesWithinCellShareOneOutput": true,
+        "allGenerationTransitionsMatchStructure": true,
+        "allRetainActionTransitionsZero": true,
+        "allReleaseActionTransitionsOne": true
+      }
+    }
+  ],
+  "checks": {
+    "ALL_EXPECTED_CELLS_PRESENT": true,
+    "COMPLETED_CELLS_AT_N5": true,
+    "GPU_TIMEOUT_CELL_REMAINS_N3": true,
+    "ALL_SAMPLES_WITHIN_CELL_SHARE_ONE_OUTPUT": true,
+    "ALL_GENERATION_TRANSITIONS_MATCH_STRUCTURE": true,
+    "ACTION_TRANSITION_SEMANTICS_PRESERVED": true,
+    "ROBUST_DISTRIBUTION_STATS_COMPUTED": true,
+    "NO_NEW_GPU_RUNS_ATTEMPTED": true
+  },
+  "findings": {
+    "COMPLETED_N5_CELLS_SHOW_LONG_TAILS": true,
+    "IQR_FENCES_FLAG_OUTLIERS_IN_COMPLETED_CELLS": true,
+    "GPU_TIMEOUT_CELL_IS_UNDERPOWERED_N3": true,
+    "NO_CAUSAL_SEGMENT_SIZE_MODEL_ESTABLISHED": true
+  },
+  "openQuestions": [
+    "RETRY_GPU_TIMEOUT_CELL_ONLY_WITH_USER_APPROVAL_AND_COOLDOWN",
+    "INSTRUMENT_PER_SEGMENT_MATERIALIZE_FORWARD_RELEASE_COST",
+    "EXPAND_ALL_CELLS_TO_N5_OR_GREATER_WITH_COUNTERBALANCING",
+    "REPORT_FULL_DISTRIBUTIONS_BEFORE_ANY_SEGMENT_SIZE_RECOMMENDATION"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON",
+    "NOT_A_GPU_TIMEOUT_ROOT_CAUSE_EXPLANATION"
+  ],
+  "overallPass": true
+}
