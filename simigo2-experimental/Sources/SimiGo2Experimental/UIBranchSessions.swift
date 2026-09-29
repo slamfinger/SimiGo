@@ -381,6 +381,117 @@ public enum UIBranchSessions {
     )
   }
 
+  public struct NestedMatrixReport: Encodable, Sendable {
+    public let status: String
+    public let protocolVersion: String
+    public let boundary: String
+    public let seedText: String
+    public let branchAInput: String
+    public let nestedInput: String
+    public let branchBInput: String
+    public let predictionTokens: Int
+    public let cycles: Int
+    public let commonChecks: [String: Bool]
+    public let llamaOperationSequence: [String]
+    public let mlxOperationSequence: [String]
+    public let sameSemanticChecks: Bool
+    public let sameOperationSequence: Bool
+    public let sameWorkloadShape: Bool
+    public let bothBackendsPass: Bool
+    public let crossBackendClosure: Bool
+    public let closureBlocker: String
+    public let llama: NestedReport
+    public let mlx: MLXNestedReport
+    public let overallPass: Bool
+  }
+
+  public static let nestedMatrixProtocolVersion =
+    "LAB.UI.BRANCH.SESSIONS.NESTED.CROSSBACKEND.V1"
+  public static let nestedMatrixBoundary =
+    "SAME_NESTED_TEXT_WORKLOAD_AND_OPERATION_SEQUENCE / HARNESS_LEVEL / "
+    + "NO_NATIVE_KV_AUTHORITY_CHANGE / NOT_A_MODEL_IDENTITY_CLOSURE"
+
+  public static func runNestedCrossBackendMatrix(
+    modelDirectory: URL,
+    host: String = "127.0.0.1",
+    port: Int = 18080,
+    seedText: String = "def is_palindrome(s):",
+    branchAInput: String = "Now write tests for it.",
+    nestedInput: String = "Explain the first test.",
+    branchBInput: String = "Add a one-line TODO.",
+    predictionTokens: Int = 2,
+    cycles: Int = 2,
+    seed: Int = 42,
+    segmentSize: Int = 8
+  ) async throws -> NestedMatrixReport {
+    let llama = try await runNestedLLAMA(
+      host: host,
+      port: port,
+      seedText: seedText,
+      branchAInput: branchAInput,
+      nestedInput: nestedInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      seed: seed
+    )
+    let mlx = try await runNestedOversizedMLX(
+      modelDirectory: modelDirectory,
+      seedText: seedText,
+      branchAInput: branchAInput,
+      nestedInput: nestedInput,
+      branchBInput: branchBInput,
+      maxTokens: predictionTokens,
+      cycles: cycles,
+      segmentSize: segmentSize
+    )
+
+    func signature(_ step: Step) -> String {
+      "\(step.operation)@\(step.position)"
+    }
+    let llamaOperations = llama.steps.map(signature)
+    let mlxOperations = mlx.steps.map(signature)
+    let commonChecks = llama.checks
+    let sameSemanticChecks = commonChecks.allSatisfy { name, expected in
+      mlx.checks[name] == expected
+    }
+    let sameOperationSequence = llamaOperations == mlxOperations
+    let sameWorkloadShape =
+      llama.seedText == seedText && mlx.seedText == seedText
+      && llama.branchAInput == branchAInput && mlx.branchAInput == branchAInput
+      && llama.nestedInput == nestedInput && mlx.nestedInput == nestedInput
+      && llama.branchBInput == branchBInput && mlx.branchBInput == branchBInput
+      && llama.predictionTokens == predictionTokens && mlx.maxTokens == predictionTokens
+      && llama.cycles == cycles && mlx.cycles == cycles
+    let semanticMatrixPass =
+      llama.overallPass && mlx.overallPass && sameSemanticChecks
+      && sameOperationSequence && sameWorkloadShape
+
+    return NestedMatrixReport(
+      status: semanticMatrixPass ? "PASS_WITH_BOUNDARY" : "FAIL",
+      protocolVersion: nestedMatrixProtocolVersion,
+      boundary: nestedMatrixBoundary,
+      seedText: seedText,
+      branchAInput: branchAInput,
+      nestedInput: nestedInput,
+      branchBInput: branchBInput,
+      predictionTokens: predictionTokens,
+      cycles: cycles,
+      commonChecks: commonChecks,
+      llamaOperationSequence: llamaOperations,
+      mlxOperationSequence: mlxOperations,
+      sameSemanticChecks: sameSemanticChecks,
+      sameOperationSequence: sameOperationSequence,
+      sameWorkloadShape: sameWorkloadShape,
+      bothBackendsPass: llama.overallPass && mlx.overallPass,
+      crossBackendClosure: false,
+      closureBlocker: "DIFFERENT_MODEL_ARTIFACTS_AND_TOKENIZERS",
+      llama: llama,
+      mlx: mlx,
+      overallPass: semanticMatrixPass
+    )
+  }
+
   public struct NestedReport: Encodable, Sendable {
     public let status: String
     public let protocolVersion: String

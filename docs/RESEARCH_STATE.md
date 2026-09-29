@@ -6311,3 +6311,27 @@ UI product 或性能结论。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_NESTED_REPEAT_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-nested-repeat.json`。
+
+### LAB UI BRANCH SESSIONS NESTED CROSSBACKEND MATRIX PASS — 2026-09-29
+
+把 nested + repeated UI Branch Session lifecycle 放入 same-shape cross-backend
+matrix。新增 `runNestedCrossBackendMatrix` 和 CLI `ui-nested-branch-matrix`，
+在 single driver 中先后运行 LLAMA nested harness 与 oversized MLX nested
+harness。两边使用同一 seed/root/branchA/nested/branchB 文本、2-token budget、
+2 cycles、相同 root -> A -> A1 / root -> B graph 和相同 11-step operation
+sequence。
+
+八项 common semantic checks 均在两边 PASS；
+`sameSemanticChecks`、`sameOperationSequence`、`sameWorkloadShape`、
+`bothBackendsPass` 均 true。MLX backend-specific
+`OVERSIZED_PROFILE_UNDER_30GIB` PASS，观测 peak footprint `6,079 MiB`、max swap
+`0 MiB`、segment transitions `64`。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `UI_NESTED_CROSSBACKEND_SEMANTIC_MATRIX_PASS` 和
+`NESTED_CROSSBACKEND_MODEL_IDENTITY_CLOSURE_BLOCKED`；状态为
+`UI6 = PASS_WITH_BOUNDARY / NESTED_SAME_SHAPE_SEMANTIC_MATRIX`。LLAMA 与 MLX
+model artifact 和 tokenizer 不同，因此 nested cross-backend / model-identity
+closure 保持 OPEN，不得解释为 universal 或 same-model closure。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_NESTED_CROSSBACKEND_MATRIX_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-nested-crossbackend-matrix.json`。
