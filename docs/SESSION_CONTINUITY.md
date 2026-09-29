@@ -2,7 +2,9 @@
 
 > 用于新会话恢复研究上下文；权威语义以 `docs/RESEARCH_STATE.md` 为准。本文件是连续性索引，不覆盖 RESEARCH_STATE。
 
-**保存时间**：2026-09-23
+**保存时间**：2026-09-29
+
+**最新入口**：`docs/NEXT_SESSION_ENTRY.md`。新会话应先读该文件，再按需读取下方历史连续性索引。
 
 ## 项目身份与仓库边界
 
@@ -11,7 +13,19 @@
 - 本阶段只推进 SimiGo-Lab 的研究状态，不将研究声明直接转化为产品实现。
 - 新会话恢复入口：先读取 `docs/RESEARCH_STATE.md`，再读取本文件；不得用旧会话记忆覆盖仓库权威状态。
 
-## 当前研究阶段
+## 当前研究阶段 — 2026-09-29
+
+- Phase：Execution State architecture consolidation → PALACE-1 / BACKEND-1 audit-first
+- Execution State Runtime：evidence consolidated with harness boundary
+- Oversized independent line：`FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD`
+- PALACE-1：`RESEARCH OPEN / AUDIT FIRST`
+- BACKEND-1：`RESEARCH OPEN / AUDIT FIRST`
+- 下一任务：PALACE-1 minimal persistence unit code audit
+- 禁止：Palace storage implementation、backend adapter implementation、standalone oversized expansion
+
+详细入口见 `docs/NEXT_SESSION_ENTRY.md`；权威状态见 `docs/RESEARCH_STATE.md`。
+
+## 当前研究阶段 — 2026-09-23 historical snapshot
 
 - Phase：Architecture 2.0 / P4 Redefinition
 - STEP④ semantic instantiation：COMPLETE

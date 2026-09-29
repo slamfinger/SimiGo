@@ -23,10 +23,11 @@
 Before substantive SimiGo-Lab research:
 
 1. Read `docs/RESEARCH_STATE.md`.
-2. Read the current phase's endpoint/closure document.
-3. Verify relevant anchor commits with git history.
-4. Apply the repository's state vocabulary.
-5. Only then answer, propose, or execute an action.
+2. Read `docs/NEXT_SESSION_ENTRY.md` for the registered handoff entry.
+3. Read the current phase's endpoint/closure document.
+4. Verify relevant anchor commits with git history.
+5. Apply the repository's state vocabulary.
+6. Only then answer, propose, or execute an action.
 
 ## 4. Research-state vocabulary
 
@@ -68,14 +69,13 @@ Any reuse requires a new provenance anchor and must respect the current research
 
 As of the latest repository state:
 
-- Track E / nodes-out is CLOSED.
-- H-P1 is CLOSED / SEALED.
-- P3-C is CLOSED / SEALED.
-- Track F / RQ-F-01 is NOT DEFINED.
-- P4 / RQ-P4-01 is NOT STARTED.
-- The current gate is a new research-question definition gate, not runtime implementation.
+- The Execution State Runtime evidence line is consolidated with explicit harness boundaries.
+- Oversized layer work is `FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD`; it is no longer an independent research line.
+- PALACE-1 and BACKEND-1 are both `RESEARCH OPEN / AUDIT FIRST`.
+- The next registered entry is a PALACE-1 minimal-persistence-unit code audit.
+- Storage technology selection and backend adapter implementation are not authorized.
 
-Therefore an Agent must not jump directly to runtime harness construction, implementation, or data collection.
+Therefore an Agent must not jump directly to Palace database implementation, Llama adapter implementation, new oversized harness expansion, or performance benchmarking.
 
 ## 8. Agent behavior
 
@@ -88,6 +88,7 @@ When asked to "resume SimiGo-Lab" or equivalent:
 - do not revive closed experiments because they appear interesting;
 - do not convert a registered prediction into a result;
 - do not invent a next step when the current gate says NOT DEFINED or NOT STARTED.
+- do not reopen the frozen oversized line except as a secondary workload inside an authorized PALACE-1 or BACKEND-1 experiment.
 
 ## 9. Personal-memory boundary
 

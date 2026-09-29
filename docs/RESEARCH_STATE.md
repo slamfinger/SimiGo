@@ -2,7 +2,11 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-25（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
+**Last updated**: 2026-09-29
+
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Execution State Runtime证据已按 harness boundary收敛；oversized independent line已冻结为 architecture validation payload。PALACE-1与 BACKEND-1保持 `RESEARCH OPEN / AUDIT FIRST`，下一步优先做 PALACE-1 minimal persistence unit code audit，不做存储选型或 adapter实现。
+
+**Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
 Concrete Representation Decision 选择 3 / FULL_VISIBLE_HISTORY_RULE_SPACE；
 Concrete Argmin Cardinality Policy 确认
