@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_A_REVIEW_PASS / REGISTRATION_REQUIRED / PHASE_B_CLOSED`
+状态：`A_AND_DRAFT_REVIEW_PASS / EXPLICIT_REGISTRATION_REQUIRED / PHASE_B_CLOSED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -17,7 +17,9 @@
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_PHASE_A_EXTERNAL_REVIEW_20260930.md`
 7. 读 Phase B participant draft（未激活）：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_DRAFT_20260930.md`
-8. 如需原始 opening，再读：
+8. 读 Phase B draft review：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_DRAFT_EXTERNAL_REVIEW_20260930.md`
+9. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -31,7 +33,7 @@ architecture contract = PHASE A REVIEW PASS / REGISTRATION PENDING
 PALACE-1 = DRAFT READY / STILL CLOSED
 BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = EXPLICIT_HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -73,6 +75,14 @@ next mode = HUMAN_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 - Phase B remains closed until the Phase A review decision is explicitly
   registered.
 
+2026-09-30 Phase B draft review:
+
+- Verdict: `PASS / ACTIVATION_REQUIRED`.
+- The draft now includes interrupted fork / continue / restore recovery windows.
+- Review is not activation; Phase B remains closed.
+- One explicit human registration can approve both the Phase A PASS and the
+  reviewed Phase B opening.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -90,14 +100,13 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly accept and register the Phase A `PASS / REGISTRATION_REQUIRED`
-   review decision, or reject / return it。
-2. Only after explicit repository registration may Phase B open。
-3. Phase B must formalize PALACE-1 as the minimal durable unit question, using the
-   Phase A boundary；it must not select SQLite / KV / event log / remote storage。
-4. The draft may be reviewed or revised before activation, but activation still
-   requires explicit registration。
-5. BACKEND-1 remains separately scoped until PALACE-1 opens。
+1. Explicitly approve or reject registration of:
+   - Phase A review `PASS / REGISTRATION_REQUIRED`;
+   - Phase B draft review `PASS / ACTIVATION_REQUIRED`。
+2. On approval, register the reviewed draft as the PALACE-1 Phase B opening。
+3. Phase B must use the Phase A boundary；it must not select SQLite / KV /
+   event log / remote storage。
+4. BACKEND-1 remains separately scoped until PALACE-1 opens。
 
 登记时必须继续区分：
 
