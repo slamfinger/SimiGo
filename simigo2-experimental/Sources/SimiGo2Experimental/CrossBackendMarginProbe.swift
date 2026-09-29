@@ -22,6 +22,22 @@ public enum CrossBackendMarginProbe {
     public let token: String?
   }
 
+  public enum Scope: String, Codable, Sendable {
+    case all
+    case mismatches
+  }
+
+  public struct AcceptanceGate: Codable, Sendable {
+    public let topOneFlipsAllowed: Bool
+    public let topKContainmentRequired: Bool
+    public let maxReferenceRankLimit: Int
+    public let positions: Int
+    public let topOneFlipCount: Int
+    public let topKContainmentCount: Int
+    public let maxObservedReferenceRank: Int
+    public let pass: Bool
+  }
+
   public struct ResourceSnapshot: Codable, Sendable {
     public let label: String
     public let tMilliseconds: Int64
@@ -84,6 +100,11 @@ public enum CrossBackendMarginProbe {
     public let boundary: String
     public let sourceComparePath: String
     public let sourceCompareSHA256: String
+    public let scope: Scope
+    public let sourceCaseCount: Int
+    public let selectedCaseCount: Int
+    public let sourceIdentityCaseCount: Int
+    public let sourceMismatchCaseCount: Int
     public let mlxModelDirectory: String
     public let mlxModelType: String
     public let topK: Int
@@ -125,6 +146,7 @@ public enum CrossBackendMarginProbe {
     public let boundary: String
     public let recordPath: String
     public let recordSHA256: String
+    public let scope: Scope
     public let llamaModelPath: String?
     public let topK: Int
     public let cases: [CompareCase]
@@ -134,6 +156,7 @@ public enum CrossBackendMarginProbe {
     public let positionCount: Int
     public let llamaTopOneAgreementCount: Int
     public let llamaTopOneAgreementRatio: Double
+    public let acceptanceGate: AcceptanceGate
     public let overallPass: Bool
   }
 
@@ -167,8 +190,8 @@ public enum CrossBackendMarginProbe {
     }
   }
 
-  public static let recordProtocolVersion = "LAB.CROSSBACKEND.MARGIN.RECORD.V1"
-  public static let compareProtocolVersion = "LAB.CROSSBACKEND.MARGIN.COMPARE.V1"
+  public static let recordProtocolVersion = "LAB.CROSSBACKEND.MARGIN.RECORD.V2"
+  public static let compareProtocolVersion = "LAB.CROSSBACKEND.MARGIN.COMPARE.V2"
   public static let recordBoundary =
     "PHASE1_MLX_ONLY / FULL_MLX_GREEDY_TRAJECTORY / PER_POSITION_TOP_K_MARGIN / "
     + "RESOURCE_ISOLATION_SNAPSHOT / NOT_A_QUANTIZATION_EQUIVALENCE_CLAIM"
@@ -255,7 +278,7 @@ public enum CrossBackendMarginProbe {
         textIdentical: textIdentical
       )
     }
-    return (cases.filter { !$0.tokenSequenceIdentical }, digest)
+    return (cases, digest)
   }
 
   static func summarize(
@@ -290,10 +313,14 @@ public enum CrossBackendMarginProbe {
   public static func runRecord(
     modelDirectory: URL,
     sourceComparePath: String,
+    scope: Scope = .mismatches,
     topK: Int = 16
   ) async throws -> Record {
-    let (mismatched, sourceDigest) = try sourceCases(from: sourceComparePath)
-    precondition(!mismatched.isEmpty, "source compare report has no mismatch cases")
+    let (allSourceCases, sourceDigest) = try sourceCases(from: sourceComparePath)
+    let selectedCases = scope == .all
+      ? allSourceCases
+      : allSourceCases.filter { !$0.tokenSequenceIdentical }
+    precondition(!selectedCases.isEmpty, "selected source compare scope has no cases")
     let start = ContinuousClock.now
     let baselineSwap = CrossBackendTokenProbe.globalSwapUsedBytes()
     var snapshots = [snapshot("START", start: start, baselineSwap: baselineSwap)]
@@ -308,7 +335,7 @@ public enum CrossBackendMarginProbe {
     snapshots.append(snapshot("MLX_MODEL_LOADED", start: start, baselineSwap: baselineSwap))
 
     var cases: [Case] = []
-    for source in mismatched {
+    for source in selectedCases {
       let fullTokens = source.promptTokenIDs + source.mlxGeneratedTokenIDs
       let positions: [Position] = try await container.perform { context -> [Position] in
         let sequenceLogits = context.model(
@@ -384,7 +411,7 @@ public enum CrossBackendMarginProbe {
       limit: phase1SteadySwapDeltaLimitBytes
     )
     let checks = [
-      "CASE_COUNT_COMPLETE": cases.count == mismatched.count,
+      "CASE_COUNT_COMPLETE": cases.count == selectedCases.count,
       "POSITION_COUNTS_COMPLETE": cases.allSatisfy {
         $0.positions.count == $0.generatedTokenCount
       },
@@ -402,6 +429,11 @@ public enum CrossBackendMarginProbe {
       boundary: recordBoundary,
       sourceComparePath: sourceComparePath,
       sourceCompareSHA256: sourceDigest,
+      scope: scope,
+      sourceCaseCount: allSourceCases.count,
+      selectedCaseCount: selectedCases.count,
+      sourceIdentityCaseCount: allSourceCases.filter(\.tokenSequenceIdentical).count,
+      sourceMismatchCaseCount: allSourceCases.filter { !$0.tokenSequenceIdentical }.count,
       mlxModelDirectory: modelDirectory.path,
       mlxModelType: modelType,
       topK: topK,
@@ -418,6 +450,7 @@ public enum CrossBackendMarginProbe {
     recordPath: String,
     host: String,
     port: Int,
+    scope: Scope = .mismatches,
     topK: Int = 16
   ) async throws -> CompareReport {
     let recordURL = URL(fileURLWithPath: recordPath)
@@ -540,6 +573,7 @@ public enum CrossBackendMarginProbe {
     let agreementCount = allPositions.filter(\.llamaTopOneMatchesReference).count
     let checks = [
       "RECORD_VALID": record.overallPass,
+      "RECORD_SCOPE_MATCH": record.scope == scope,
       "RECORD_MODEL_DIRECTORY_MATCH": record.mlxModelDirectory == modelDirectory.path,
       "CASE_COUNT_COMPLETE": compareCases.count == record.cases.count,
       "POSITION_COUNT_COMPLETE": allPositions.count == record.cases.reduce(0) {
@@ -549,14 +583,26 @@ public enum CrossBackendMarginProbe {
       "RESOURCE_SWAP_SAMPLES_VALID": resource.swapSamplesValid,
       "RESOURCE_SWAP_DELTA_WITHIN_LIMIT": resource.swapDeltaWithinLimit,
     ]
-    let overallPass = checks.values.allSatisfy { $0 }
+    let acceptanceGate = AcceptanceGate(
+      topOneFlipsAllowed: true,
+      topKContainmentRequired: true,
+      maxReferenceRankLimit: 2,
+      positions: allPositions.count,
+      topOneFlipCount: allPositions.count - agreementCount,
+      topKContainmentCount: allPositions.filter(\.referenceInLlamaTopK).count,
+      maxObservedReferenceRank: allPositions.compactMap(\.referenceRankInLlama).max() ?? Int.max,
+      pass: allPositions.allSatisfy { $0.referenceInLlamaTopK }
+        && (allPositions.compactMap(\.referenceRankInLlama).max() ?? Int.max) <= 2
+    )
+    let overallPass = checks.values.allSatisfy { $0 } && acceptanceGate.pass
 
     return CompareReport(
-      status: overallPass ? "PASS_WITH_BOUNDARY" : "FAIL",
+      status: acceptanceGate.pass ? "PASS_WITH_BOUNDARY" : "FAIL",
       protocolVersion: compareProtocolVersion,
       boundary: compareBoundary,
       recordPath: recordPath,
       recordSHA256: recordDigest,
+      scope: scope,
       llamaModelPath: props.modelPath,
       topK: topK,
       cases: compareCases,
@@ -568,6 +614,7 @@ public enum CrossBackendMarginProbe {
       llamaTopOneAgreementRatio: allPositions.isEmpty
         ? 0
         : Double(agreementCount) / Double(allPositions.count),
+      acceptanceGate: acceptanceGate,
       overallPass: overallPass
     )
   }

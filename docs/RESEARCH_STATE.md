@@ -7325,3 +7325,30 @@ paths，不建立 quantization equivalence、tokenizer lineage proof、MTP root 
 artifacts见
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record.json`、
 `simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare.json`。
+
+### LAB CYBER TIEL FULL MATRIX MARGIN ACCEPTANCE GATE PASS — 2026-09-29
+
+将 full-trajectory margin distribution从 P6/P11/P12 mismatch-only扩展到 Matrix
+V2 full scope：12 cases、12 families、139 positions。Phase1只运行 MLX并重建完整
+greedy trajectory的 top-16/logprob/margin；Phase2只运行 llama-server并逐 position
+teacher-force相同 prefix。两阶段顺序执行，steady swap delta均为 `0 bytes`。
+
+named-source acceptance gate正式定义为：top1 flips允许；top16 containment必须；
+reference rank不得超过 `2`。结果 `133/139 = 95.683%` top1 agreement；
+`139/139 = 100%` top16 containment；max observed reference rank `2`；6个 top1
+flip全部允许。gate PASS。分层观测：9个 token-identity cases共 67 positions，
+LLAMA top1 agreement为 `67/67 = 100%`，max rank `0`；3个 mismatch cases共 72
+positions，top1 agreement为 `66/72 = 91.667%`，max rank `2`。登记
+`CYBER_TIEL_FULL_MATRIX_MARGIN_V2_PASS`、`NAMED_SOURCE_ACCEPTANCE_GATE_PASS`、
+`IDENTITY_CASE_TOP1_PERFECT_SUBSET_OBSERVED` 和
+`MISMATCH_CASE_TOP1_NEAR_BOUNDARY_FLIPS_ONLY`；状态为
+`FULL_MATRIX_MARGIN_V2 = PASS_WITH_BOUNDARY / ACCEPTANCE_GATE_PASS`。
+
+MLX self-consistency为 `139/139`。这是固定 MLX trajectory的 named-source
+margin observation，不是 same-checkpoint closure、tokenizer-file identity proof、
+quantization equivalence、MTP root cause或 production readiness。全仓 Swift
+verification为 157 PASS / 0 FAIL。报告见
+`docs/00-governance/SIMIGO_LAB_CYBER_TIEL_FULL_MATRIX_MARGIN_ACCEPTANCE_20260929.md`；
+artifacts见
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-record-matrix-v2-all.json`、
+`simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json`。

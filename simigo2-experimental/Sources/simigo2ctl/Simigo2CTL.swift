@@ -304,9 +304,14 @@ struct Simigo2CTL {
       print(try toJSON(report))
     case "cross-backend-margin-record":
       let topK = optionalOption("--top-k", rest).flatMap(Int.init) ?? 16
+      let scope = optionalOption("--scope", rest) ?? "all"
+      guard let marginScope = CrossBackendMarginProbe.Scope(rawValue: scope) else {
+        throw OutputError(message: "invalid --scope: \(scope)")
+      }
       let record = try await CrossBackendMarginProbe.runRecord(
         modelDirectory: modelDirectory,
         sourceComparePath: try optionValue("--compare", rest),
+        scope: marginScope,
         topK: topK
       )
       let output = try optionValue("--output", rest)
@@ -317,11 +322,16 @@ struct Simigo2CTL {
       let host = optionalOption("--host", rest) ?? "127.0.0.1"
       let port = optionalOption("--port", rest).flatMap(Int.init) ?? 18080
       let topK = optionalOption("--top-k", rest).flatMap(Int.init) ?? 16
+      let scope = optionalOption("--scope", rest) ?? "all"
+      guard let marginScope = CrossBackendMarginProbe.Scope(rawValue: scope) else {
+        throw OutputError(message: "invalid --scope: \(scope)")
+      }
       let report = try await CrossBackendMarginProbe.runCompare(
         modelDirectory: modelDirectory,
         recordPath: try optionValue("--record", rest),
         host: host,
         port: port,
+        scope: marginScope,
         topK: topK
       )
       print(try toJSON(report))
