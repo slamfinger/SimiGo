@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-29  
-状态：`HANDOFF_REGISTERED / AUDIT_FIRST_NEXT`
+状态：`HANDOFF_REGISTERED / ROUTE_REDEFINED / AUDIT_FIRST_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -19,44 +19,29 @@
 
 ```text
 branch = codex/execution-state-research-20260929
-anchor = 9c8befe research: freeze oversized independent line
-runtime line = Execution State architecture evidence consolidated
-oversized line = FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD
+route = EXECUTION-STATE-CENTRIC
+runtime line = SEALED / BOUNDED CONSOLIDATION
+architecture contract = NEXT SYNTHESIS GATE
+PALACE-1 = MAIN OPEN / AUDIT FIRST
+BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
+oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
 next mode = AUDIT_FIRST / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
-2026-09-29 已完成并登记：
+2026-09-29 route redefinition:
 
-- MLX Execution State scale n=5 replication：semantic PASS，latency仍不是 benchmark。
-- MLX Execution State scale n=5 process-clean rerun：semantic PASS，process isolation已记录。
-- MLX Execution State scale n=10 process-clean final observation：semantic `30/30` PASS；
-  paired delta sign-reversing，支持停止独立 oversized scale扩张。
-- oversized independent research line frozen；历史资产保留，只作为 PALACE-1 / BACKEND-1
-  的规模边界载荷。
+- Runtime correctness evidence is no longer a main expansion line.
+- Oversized independent research is frozen and retained only as validation payload.
+- PALACE-1 and BACKEND-1 are no longer treated as two immediately parallel implementation tracks.
+- A new Execution State Architecture Contract synthesis gate comes first.
+- The next audit must classify current runtime state touches as Durable Semantic State (D),
+  Runtime Binding (R), Physical Representation (P), Observability/History (O), or
+  Transient/Reconstructable (T).
+- Storage technology selection and Llama adapter implementation remain unauthorized.
 
-关键 artifact：
+Canonical route document:
 
-```text
-docs/00-governance/SIMIGO_LAB_OVERSIZED_RESEARCH_BOUNDARY_FREEZE_20260929.md
-simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n5-clean-isolation.json
-simigo2-experimental/results/backend-conformance/mlx-execstate-scale-profile-n10-process-clean-final.json
-```
-
-## Research tree
-
-```text
-SimiGo
-├── Execution State Runtime
-│   └── 当前证据已进入 bounded consolidation；不再扩大 harness功能
-├── PALACE-1
-│   └── Execution State physical storage / Representation Store
-│       status = RESEARCH OPEN / AUDIT FIRST
-├── BACKEND-1
-│   └── backend seam / capability / cancellation / representation
-│       status = RESEARCH OPEN / AUDIT FIRST
-└── oversized
-    └── FROZEN / architecture validation workload only
-```
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
 ## Hard boundaries
 
