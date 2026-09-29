@@ -6218,3 +6218,26 @@ nested branch graph 或 cross-backend closure。
 报告见
 `docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_PILOT_20260929.md`；artifact 见
 `simigo2-experimental/results/backend-conformance/ui-branch-session-llama-pilot.json`。
+
+### LAB UI BRANCH SESSIONS MLX PILOT PASS — 2026-09-29
+
+把 UI Branch Sessions 从 LLAMA pilot 扩展到 oversized MLX baseline。新增
+`UIBranchSessions.runOversizedMLX` 和 CLI `mlx-branch-session`，复用
+`ExecutionContinuityCoordinator`、`OversizedSegmentedStateBackend`、
+`OversizedSegmentedExecutor` 与 `O6SegmentedCore`；不新增 inference runtime，
+不修改 Execution State contract。使用本地 Qwen3-Coder-Next-4bit snapshot、
+segment size 8、cacheless greedy、2-token continuation；未下载模型。
+
+八项 checks 全部 PASS：branch divergence、lineage isolation、root fork-point
+replay、branch/root switch retention、branch release、root survival、oversized
+profile under 30GiB。观测 peak footprint `7,858 MiB`、max swap `0 MiB`、
+segment transitions `50`。同一 commit 全仓 Swift verification 为
+`157 PASS / 0 FAIL`。登记 `UI_BRANCH_SESSIONS_MLX_PILOT_PASS` 和
+`UI_SESSION_TWO_BACKEND_EVIDENCE`；状态为
+`UI2 = PASS / OVERSIZED_MLX_PILOT_WITH_BOUNDARY`。这只是 second-backend
+harness evidence，不是 exact same-workload cross-backend closure、UI product
+closure 或性能结论。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_UI_BRANCH_SESSIONS_MLX_PILOT_20260929.md`；artifact 见
+`simigo2-experimental/results/backend-conformance/ui-branch-session-mlx-oversized-pilot.json`。

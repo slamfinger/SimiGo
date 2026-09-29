@@ -1,0 +1,77 @@
+{
+  "boundary" : "SWIFT_SESSION_CONTROL_PLANE \/ OVERSIZED_MLX_PREFIX_REPRESENTATION \/ HARNESS_LEVEL \/ SEGMENTED_CACHELESS_GREEDY \/ NOT_A_UI_PRODUCT",
+  "branchAContent" : " You should",
+  "branchBContent" : "\n   ",
+  "checks" : {
+    "BRANCHES_DIVERGED" : true,
+    "BRANCH_LINEAGE_ISOLATED" : true,
+    "OVERSIZED_PROFILE_UNDER_30GIB" : true,
+    "RELEASE_BRANCHES" : true,
+    "ROOT_SURVIVES_RELEASE" : true,
+    "SWITCH_BRANCH_RETAINS_DIVERGENCE" : true,
+    "SWITCH_ROOT_RETAINS_ADVANCE" : true,
+    "SWITCH_ROOT_TO_FORK_REPLAYS" : true
+  },
+  "maxSwapMiB" : 0,
+  "maxTokens" : 2,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "overallPass" : true,
+  "peakFootprintMiB" : 7858,
+  "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.V1",
+  "rootContent" : "  To",
+  "rootReplayContent" : "  To",
+  "segmentCount" : 6,
+  "segmentSize" : 8,
+  "segmentTransitions" : 50,
+  "status" : "PASS",
+  "steps" : [
+    {
+      "clientMs" : 0.032833,
+      "executionID" : "mlx-branch-a",
+      "operation" : "fork",
+      "position" : 0
+    },
+    {
+      "clientMs" : 18307.77725,
+      "executionID" : "mlx-ui-root",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 18597.399833,
+      "executionID" : "mlx-branch-a",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 18275.848833,
+      "executionID" : "mlx-branch-b",
+      "operation" : "continue",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.002792,
+      "executionID" : "mlx-ui-root",
+      "operation" : "switch",
+      "position" : 0
+    },
+    {
+      "clientMs" : 0.009458,
+      "executionID" : "mlx-branch-a",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 0.002541,
+      "executionID" : "mlx-ui-root",
+      "operation" : "switch",
+      "position" : 1
+    },
+    {
+      "clientMs" : 8.767334,
+      "executionID" : "mlx-branch-a",
+      "operation" : "release",
+      "position" : 1
+    }
+  ]
+}
