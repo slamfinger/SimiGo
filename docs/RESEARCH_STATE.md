@@ -6668,3 +6668,33 @@ recommendation、production performance或cross-backend/cross-hardware claim。
 `docs/00-governance/SIMIGO_LAB_MLX_PHASE6C_TOKEN_BUDGET_REPLICATION_20260929.md`；summary artifact见
 `simigo2-experimental/results/backend-conformance/mlx-phase6c-token-budget-replication-summary.json`；raw artifacts见
 `simigo2-experimental/results/backend-conformance/mlx-release-recovery-token-replicate-p*.json`。
+
+### LAB MLX PHASE6D DISTRIBUTION PARTIAL — 2026-09-29
+
+尝试把 2-token cells的 RETAIN-vs-RELEASE_RESTORE distribution提升到 combined每
+strategy `n=5`（PHASE6A 1 + PHASE6B 2 + PHASE6D 2）。三个 cells完成：prefix
+`8 / segment 8`、prefix `64 / segment 8`、prefix `64 / segment 16`。
+`prefix 8 / segment 16`连续两次遇到 Metal GPU command buffer timeout
+（`kIOGPUCommandBufferCallbackErrorTimeout`），没有产生 measured report；按熔断
+不再自动重试，该 cell保持 combined `n=3`。
+
+所有 completed runs paired outputs exact；RETAIN action transitions全 `0`，
+RELEASE_RESTORE全 `1`；generation transitions符合 `segment count × token count`；
+completed PHASE6D runs max swap `0 MiB`且低于 30GiB gate。完成后 cells的分布显示
+明显长尾和波动：prefix 8 / segment 8 generation mean约 `38.7s / 38.2s`但 median约
+`18.7s`；prefix 64 / segment 8 mean约 `51.1s / 48.9s`但 median约 `30.5s /
+30.1s`；prefix 64 / segment 16 release mean约 `70.0s`、max约 `114.9s`。action cost
+也出现 max `0.52ms`（RETAIN）和 `24.93ms`（RELEASE_RESTORE）的波动。因此只登记
+observation，不建立稳定 performance model。
+
+登记 `THREE_CELLS_DISTRIBUTION_EXPANDED_TO_N5`、`P8_S16_GPU_TIMEOUT_BOUNDARY` 和
+`ACTION_AND_GENERATION_DISTRIBUTIONS_OBSERVED`；状态为
+`PHASE6D = PARTIAL_PASS_WITH_BOUNDARY / DISTRIBUTION_EXPANSION_PARTIAL /
+GPU_TIMEOUT_BOUNDARY`。GPU timeout没有任何 Execution State semantic assertion失败，
+不能解释为语义错误或定位 root cause。完整 n=5 matrix、outlier分析和 warm-KV /
+segment-residency policy仍未完成。
+
+报告见
+`docs/00-governance/SIMIGO_LAB_MLX_PHASE6D_DISTRIBUTION_PARTIAL_20260929.md`；summary artifact见
+`simigo2-experimental/results/backend-conformance/mlx-phase6d-distribution-partial-summary.json`；completed raw artifacts见
+`simigo2-experimental/results/backend-conformance/mlx-release-recovery-distribution-p8-t2-s8.json`、`...p64-t2-s8.json`、`...p64-t2-s16.json`。

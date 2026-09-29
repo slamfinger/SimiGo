@@ -1,0 +1,825 @@
+{
+  "status": "PARTIAL_PASS_WITH_BOUNDARY",
+  "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6D.DISTRIBUTION.PARTIAL.V1",
+  "boundary": "TARGETED_N5_DISTRIBUTION_EXPANSION / GPU_TIMEOUT_ON_ONE_CELL / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
+  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "prefixTokenLengths": [
+    8,
+    64
+  ],
+  "maxTokens": 2,
+  "segmentSizes": [
+    8,
+    16
+  ],
+  "targetSamplesPerStrategyPerCell": 5,
+  "completedExpansions": 3,
+  "targetCells": 4,
+  "cells": [
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "targetSamplesPerStrategy": 5,
+      "completedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "sourceReports": [
+        {
+          "phase": "A",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p8-t2-s8.json",
+          "cycles": 1
+        },
+        {
+          "phase": "B",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p8-t2-s8.json",
+          "cycles": 2
+        },
+        {
+          "phase": "D",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-distribution-p8-t2-s8.json",
+          "cycles": 2
+        }
+      ],
+      "retainActionMs": {
+        "n": 5,
+        "meanMs": 0.08206680000000001,
+        "medianMs": 0.002792,
+        "minMs": 0.000917,
+        "maxMs": 0.397708,
+        "rangeMs": 0.396791,
+        "stdevMs": 0.17645918015988854
+      },
+      "releaseActionMs": {
+        "n": 5,
+        "meanMs": 11.963825199999999,
+        "medianMs": 4.156708,
+        "minMs": 3.966542,
+        "maxMs": 32.784917,
+        "rangeMs": 28.818375,
+        "stdevMs": 12.550632407017611
+      },
+      "retainGenerationMs": {
+        "n": 5,
+        "meanMs": 38679.0131,
+        "medianMs": 18712.340917,
+        "minMs": 18520.063542,
+        "maxMs": 71415.638666,
+        "rangeMs": 52895.575123999995,
+        "stdevMs": 27514.250361027585
+      },
+      "releaseGenerationMs": {
+        "n": 5,
+        "meanMs": 38210.5365918,
+        "medianMs": 18723.822,
+        "minMs": 18519.438209,
+        "maxMs": 67757.434,
+        "rangeMs": 49237.995790999994,
+        "stdevMs": 26799.871671334284
+      },
+      "generationTransitionDelta": {
+        "min": 12,
+        "max": 12,
+        "expectedPerStrategy": 12
+      },
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "phase": "A",
+            "actionMs": 0.002709,
+            "actionTransitionDelta": 0,
+            "generationMs": 18520.063542,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.002792,
+            "actionTransitionDelta": 0,
+            "generationMs": 18665.924209,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.000917,
+            "actionTransitionDelta": 0,
+            "generationMs": 18712.340917,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.397708,
+            "actionTransitionDelta": 0,
+            "generationMs": 71415.638666,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.006208,
+            "actionTransitionDelta": 0,
+            "generationMs": 66081.098166,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "phase": "A",
+            "actionMs": 3.966542,
+            "actionTransitionDelta": 1,
+            "generationMs": 18519.438209,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 4.156708,
+            "actionTransitionDelta": 1,
+            "generationMs": 18673.739125,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 4.021125,
+            "actionTransitionDelta": 1,
+            "generationMs": 18723.822,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "D",
+            "actionMs": 14.889834,
+            "actionTransitionDelta": 1,
+            "generationMs": 67378.249625,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "D",
+            "actionMs": 32.784917,
+            "actionTransitionDelta": 1,
+            "generationMs": 67757.434,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ]
+      },
+      "phase6D": {
+        "peakFootprintMiB": 6355,
+        "maxSwapMiB": 0,
+        "segmentTransitions": 61
+      }
+    },
+    {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "targetSamplesPerStrategy": 5,
+      "completedSamplesPerStrategy": {
+        "RETAIN": 3,
+        "RELEASE_RESTORE": 3
+      },
+      "expansionComplete": false,
+      "sourceReports": [
+        {
+          "phase": "A",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p8-t2-s16.json",
+          "cycles": 1
+        },
+        {
+          "phase": "B",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p8-t2-s16.json",
+          "cycles": 2
+        }
+      ],
+      "retainActionMs": {
+        "n": 3,
+        "meanMs": 0.006000000000000001,
+        "medianMs": 0.004667,
+        "minMs": 0.002958,
+        "maxMs": 0.010375,
+        "rangeMs": 0.007417,
+        "stdevMs": 0.003884023558115991
+      },
+      "releaseActionMs": {
+        "n": 3,
+        "meanMs": 5.2897636666666665,
+        "medianMs": 4.798833,
+        "minMs": 4.689583,
+        "maxMs": 6.380875,
+        "rangeMs": 1.6912919999999998,
+        "stdevMs": 0.9465077109677095
+      },
+      "retainGenerationMs": {
+        "n": 3,
+        "meanMs": 30012.94809733333,
+        "medianMs": 27638.235542,
+        "minMs": 26270.583833,
+        "maxMs": 36130.024917,
+        "rangeMs": 9859.441084000002,
+        "stdevMs": 5341.496926195888
+      },
+      "releaseGenerationMs": {
+        "n": 3,
+        "meanMs": 31446.576944666667,
+        "medianMs": 31111.494208,
+        "minMs": 28594.859292,
+        "maxMs": 34633.377334,
+        "rangeMs": 6038.518041999996,
+        "stdevMs": 3033.172491995614
+      },
+      "generationTransitionDelta": {
+        "min": 6,
+        "max": 6,
+        "expectedPerStrategy": 6
+      },
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "phase": "A",
+            "actionMs": 0.004667,
+            "actionTransitionDelta": 0,
+            "generationMs": 26270.583833,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.010375,
+            "actionTransitionDelta": 0,
+            "generationMs": 27638.235542,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.002958,
+            "actionTransitionDelta": 0,
+            "generationMs": 36130.024917,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "phase": "A",
+            "actionMs": 4.798833,
+            "actionTransitionDelta": 1,
+            "generationMs": 28594.859292,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 4.689583,
+            "actionTransitionDelta": 1,
+            "generationMs": 31111.494208,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          },
+          {
+            "phase": "B",
+            "actionMs": 6.380875,
+            "actionTransitionDelta": 1,
+            "generationMs": 34633.377334,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              198,
+              198
+            ],
+            "generatedText": "\n\n"
+          }
+        ]
+      },
+      "phase6D": {
+        "status": "NOT_COMPLETED",
+        "attempts": 2,
+        "error": "METAL GPU_COMMAND_BUFFER_TIMEOUT",
+        "peakFootprintMiB": null,
+        "maxSwapMiB": null,
+        "segmentTransitions": null
+      }
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 8,
+      "segmentCount": 6,
+      "targetSamplesPerStrategy": 5,
+      "completedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "sourceReports": [
+        {
+          "phase": "A",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p64-t2-s8.json",
+          "cycles": 1
+        },
+        {
+          "phase": "B",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p64-t2-s8.json",
+          "cycles": 2
+        },
+        {
+          "phase": "D",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-distribution-p64-t2-s8.json",
+          "cycles": 2
+        }
+      ],
+      "retainActionMs": {
+        "n": 5,
+        "meanMs": 0.10768340000000001,
+        "medianMs": 0.004709,
+        "minMs": 0.003042,
+        "maxMs": 0.521583,
+        "rangeMs": 0.518541,
+        "stdevMs": 0.23137898219220346
+      },
+      "releaseActionMs": {
+        "n": 5,
+        "meanMs": 11.3645084,
+        "medianMs": 7.6545,
+        "minMs": 7.108417,
+        "maxMs": 24.931,
+        "rangeMs": 17.822583,
+        "stdevMs": 7.639519088973487
+      },
+      "retainGenerationMs": {
+        "n": 5,
+        "meanMs": 51056.256125,
+        "medianMs": 30476.408583,
+        "minMs": 24673.299917,
+        "maxMs": 108314.488333,
+        "rangeMs": 83641.188416,
+        "stdevMs": 36144.08359114798
+      },
+      "releaseGenerationMs": {
+        "n": 5,
+        "meanMs": 48867.3342916,
+        "medianMs": 30124.980916,
+        "minMs": 24697.140333,
+        "maxMs": 87092.391625,
+        "rangeMs": 62395.251292,
+        "stdevMs": 28805.11499232085
+      },
+      "generationTransitionDelta": {
+        "min": 12,
+        "max": 12,
+        "expectedPerStrategy": 12
+      },
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "phase": "A",
+            "actionMs": 0.004709,
+            "actionTransitionDelta": 0,
+            "generationMs": 24673.299917,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.005542,
+            "actionTransitionDelta": 0,
+            "generationMs": 26230.057042,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.003541,
+            "actionTransitionDelta": 0,
+            "generationMs": 30476.408583,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.521583,
+            "actionTransitionDelta": 0,
+            "generationMs": 108314.488333,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.003042,
+            "actionTransitionDelta": 0,
+            "generationMs": 65587.02675,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "phase": "A",
+            "actionMs": 7.108417,
+            "actionTransitionDelta": 1,
+            "generationMs": 24697.140333,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 7.6055,
+            "actionTransitionDelta": 1,
+            "generationMs": 29864.8475,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 7.6545,
+            "actionTransitionDelta": 1,
+            "generationMs": 30124.980916,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 9.523125,
+            "actionTransitionDelta": 1,
+            "generationMs": 72557.311084,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 24.931,
+            "actionTransitionDelta": 1,
+            "generationMs": 87092.391625,
+            "generationTransitionDelta": 12,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ]
+      },
+      "phase6D": {
+        "peakFootprintMiB": 7219,
+        "maxSwapMiB": 0,
+        "segmentTransitions": 61
+      }
+    },
+    {
+      "prefixTokenLength": 64,
+      "maxTokens": 2,
+      "segmentSize": 16,
+      "segmentCount": 3,
+      "targetSamplesPerStrategy": 5,
+      "completedSamplesPerStrategy": {
+        "RETAIN": 5,
+        "RELEASE_RESTORE": 5
+      },
+      "expansionComplete": true,
+      "sourceReports": [
+        {
+          "phase": "A",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-factorial-p64-t2-s16.json",
+          "cycles": 1
+        },
+        {
+          "phase": "B",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-replicate-p64-t2-s16.json",
+          "cycles": 2
+        },
+        {
+          "phase": "D",
+          "artifact": "simigo2-experimental/results/backend-conformance/mlx-release-recovery-distribution-p64-t2-s16.json",
+          "cycles": 2
+        }
+      ],
+      "retainActionMs": {
+        "n": 5,
+        "meanMs": 0.0079166,
+        "medianMs": 0.004916,
+        "minMs": 0.001375,
+        "maxMs": 0.022125,
+        "rangeMs": 0.020749999999999998,
+        "stdevMs": 0.00838282430330017
+      },
+      "releaseActionMs": {
+        "n": 5,
+        "meanMs": 8.774808400000001,
+        "medianMs": 7.239541,
+        "minMs": 5.191625,
+        "maxMs": 15.095042,
+        "rangeMs": 9.903417,
+        "stdevMs": 3.7965651084507686
+      },
+      "retainGenerationMs": {
+        "n": 5,
+        "meanMs": 57027.5860416,
+        "medianMs": 48834.661625,
+        "minMs": 36916.891667,
+        "maxMs": 92221.423625,
+        "rangeMs": 55304.53195799999,
+        "stdevMs": 21316.950669705628
+      },
+      "releaseGenerationMs": {
+        "n": 5,
+        "meanMs": 70047.4656252,
+        "medianMs": 46200.180042,
+        "minMs": 37051.432792,
+        "maxMs": 114914.19825,
+        "rangeMs": 77862.76545800001,
+        "stdevMs": 37326.12059864521
+      },
+      "generationTransitionDelta": {
+        "min": 6,
+        "max": 6,
+        "expectedPerStrategy": 6
+      },
+      "allPairedOutputsExact": true,
+      "allRetainActionTransitionsZero": true,
+      "allReleaseActionTransitionsOne": true,
+      "samples": {
+        "RETAIN": [
+          {
+            "phase": "A",
+            "actionMs": 0.004916,
+            "actionTransitionDelta": 0,
+            "generationMs": 36916.891667,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.022125,
+            "actionTransitionDelta": 0,
+            "generationMs": 48834.661625,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 0.002709,
+            "actionTransitionDelta": 0,
+            "generationMs": 47111.706083,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.008458,
+            "actionTransitionDelta": 0,
+            "generationMs": 60053.247208,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 0.001375,
+            "actionTransitionDelta": 0,
+            "generationMs": 92221.423625,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ],
+        "RELEASE_RESTORE": [
+          {
+            "phase": "A",
+            "actionMs": 5.191625,
+            "actionTransitionDelta": 1,
+            "generationMs": 37051.432792,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 7.239541,
+            "actionTransitionDelta": 1,
+            "generationMs": 45780.321792,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "B",
+            "actionMs": 7.227375,
+            "actionTransitionDelta": 1,
+            "generationMs": 46200.180042,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 15.095042,
+            "actionTransitionDelta": 1,
+            "generationMs": 106291.19525,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          },
+          {
+            "phase": "D",
+            "actionMs": 9.120459,
+            "actionTransitionDelta": 1,
+            "generationMs": 114914.19825,
+            "generationTransitionDelta": 6,
+            "generatedTokenIDs": [
+              81917,
+              279
+            ],
+            "generatedText": " Explain the"
+          }
+        ]
+      },
+      "phase6D": {
+        "peakFootprintMiB": 5590,
+        "maxSwapMiB": 0,
+        "segmentTransitions": 34
+      }
+    }
+  ],
+  "gpuTimeoutBoundary": {
+    "cell": {
+      "prefixTokenLength": 8,
+      "maxTokens": 2,
+      "segmentSize": 16
+    },
+    "attempts": 2,
+    "completedMeasuredRuns": 0,
+    "error": "METAL command buffer execution failed: kIOGPUCommandBufferCallbackErrorTimeout",
+    "interpretation": "HARNESS_ENVIRONMENT_BOUNDARY / NOT_A_SEMANTIC_FAILURE"
+  },
+  "checks": {
+    "ALL_COMPLETED_REPORTS_PASS": true,
+    "ALL_COMPLETED_PAIRED_OUTPUTS_EXACT": true,
+    "THREE_CELLS_EXPANDED_TO_N5": true,
+    "P8_S16_REMAINS_N3_AFTER_GPU_TIMEOUT": true,
+    "RETAIN_NEVER_RELEASES_SEGMENTS": true,
+    "RELEASE_ALWAYS_RELEASES_SEGMENTS": true,
+    "GENERATION_TRANSITIONS_MATCH_STRUCTURE": true,
+    "ALL_COMPLETED_RUNS_ZERO_SWAP": true,
+    "ALL_COMPLETED_PROFILES_UNDER_30GIB": true,
+    "TARGET_MATRIX_FULLY_EXPANDED_TO_N5": false
+  },
+  "openQuestions": [
+    "RETRY_P8_T2_S16_ONLY_AFTER_GPU_COOLDOWN_AND_USER_APPROVAL",
+    "INSTRUMENT_PER_SEGMENT_MATERIALIZE_FORWARD_RELEASE_COST",
+    "FULL_N5_MATRIX_AND_ORDER_COUNTERBALANCING"
+  ],
+  "nonClaims": [
+    "NOT_A_THROUGHPUT_BENCHMARK",
+    "NOT_A_PRODUCTION_PERFORMANCE_CLAIM",
+    "NOT_A_WARM_KV_RETENTION_CLAIM",
+    "NOT_A_RELEASE_POLICY_RECOMMENDATION",
+    "NOT_A_CROSS_BACKEND_OR_CROSS_HARDWARE_COMPARISON",
+    "GPU_TIMEOUT_IS_NOT_A_EXECUTION_STATE_SEMANTIC_FAILURE"
+  ],
+  "completedExpansionPass": true,
+  "overallPass": true,
+  "targetMatrixComplete": false
+}
