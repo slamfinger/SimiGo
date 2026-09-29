@@ -6176,3 +6176,21 @@ slots idle，并将 free timeout default 提高到 `15000ms`。该修复只放�
 `CANCELLATION_HARNESS_MULTISLOT_WAIT_FIXED`，但仍保持 OPEN。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH2_CANONICAL_REGRESSION_20260929.md`；artifacts 见
 `simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab-ubatch2.json`、`...fork-restore-ubatch2.json`、`...cancellation-ubatch2.json`。
+
+### LAB RQ3 UBATCH8 OPERATIONAL PROFILE — SELECTED OVER UBATCH2 — 2026-09-29
+
+在 `ubatch2/4/8` cardinality probe 均 stable 后，将 `ubatch8` 放回原始
+L1-L3 cancellation curve。结果 strict PASS：DELETE `6/6` accepted；same-load
+baseline stable `3/3`；cancellation identity matched same-load baseline `3/3`。
+DELETE→all-long-free mean 从 `ubatch2` 的 `8,641.626ms` 降至 `4,806.919ms`。
+
+随后用 `ubatch8` 回归三个 Swift canonical harness。hot-path A/B OFF/ON
+semantic stability 均 `30/30`，paired ON−OFF mean `+1.499ms`；fork/restore 四项
+semantic checks 均 `30/30`；cancellation A/B OFF/ON accepted 与 recovery
+identity 均 `20/20 + 20/20`。因此 canonical mitigation profile 从 `ubatch2`
+升级为 `ubatch8`，登记 `UBATCH8_CANONICAL_HARNESS_REGRESSION_PASS`、
+`MITIGATED_LAUNCH_PROFILE_UPGRADED_TO_UBATCH8` 和
+`UBATCH8_SELECTED_OVER_UBATCH2_FOR_LOWER_LATENCY`。延迟比较只是同一日 harness
+observation，不是性能 benchmark 或生产 recommendation。RQ3 保持 OPEN。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md`；artifacts 见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-ubatch8.json`、`simigo2-experimental/results/backend-conformance/rq3-llama-swift-execstate-hotpath-ab-ubatch8.json`、`...fork-restore-ubatch8.json`、`...cancellation-ubatch8.json`。

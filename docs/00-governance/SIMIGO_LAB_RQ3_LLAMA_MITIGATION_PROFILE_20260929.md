@@ -85,3 +85,21 @@ server log 确认 wrapper 进程启动并监听。该 smoke 只验证 launch pro
 ❌ Metal kernel / graph reduction 根因已定位
 ❌ 所有模型 / backend / context 均已验证
 ```
+
+## Addendum — canonical profile upgraded to ubatch8
+
+在 `ubatch8` cancellation curve strict PASS 和三个 Swift canonical harness PASS
+后，wrapper default 已从 `ubatch2` 升级为：
+
+```text
+LLAMA_UBATCH=8
+```
+
+如需复现早期 `ubatch2` run：
+
+```bash
+LLAMA_UBATCH=2 simigo2-experimental/scripts/rq3_llama_server_mitigated.sh MODEL_PATH
+```
+
+详见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_UBATCH8_OPERATIONAL_20260929.md`。
