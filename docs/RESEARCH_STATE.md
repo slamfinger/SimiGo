@@ -7184,3 +7184,26 @@ performance benchmark或 >8-slot closure。报告见
 `docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL8_CANCELLATION_CURVE_20260929.md`；
 artifact见
 `simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel8-t128.json`。
+
+### LAB RQ3 LLAMA PARALLEL8 SEED43 REPRODUCTION PASS — 2026-09-29
+
+以 seed43复现 8-slot / t128 cancellation curve。server、observed per-slot context
+256、ubatch8、long/control token budget、L1–L7 workload、14 cycles和 120s
+baseline/control watchdog均与 seed42 protocol一致。五项 checks全部 PASS；cancel
+acceptance `56/56`，same-load baseline stability与 same-concurrency greedy
+identity均 `14/14`。`controlsFinishedBeforeAllLongFree = 0/14`保留为边界。
+
+seed43 aggregate delete→all-long-free mean为 `17,828.202ms`，相比 seed42
+`19,169.547ms`低 `1,341.345ms`。分层差值方向混合：L1–L5较低，L6/L7较高；每层
+只有 n=2，不建立 latency distribution或 seed effect。语义结论是 8-slot
+cancellation acceptance和 same-concurrency greedy identity已在两个 seeds复现。
+登记 `RQ3_LLAMA_PARALLEL8_CANCELLATION_CURVE_SEED43_PASS`、
+`EIGHT_SLOT_CANCEL_ACCEPTANCE_REPRODUCED` 和
+`SAME_CONCURRENCY_GREEDY_IDENTITY_REPRODUCED`；状态为
+`PARALLEL8_T128_SEED43 = PASS_WITH_BOUNDARY / REPRODUCTION_RUN`。
+
+这是 no-Execution-Object backend curve，不是 production cancellation readiness、
+performance benchmark、跨 seed raw-output identity或 >8-slot closure。报告见
+`docs/00-governance/SIMIGO_LAB_RQ3_LLAMA_PARALLEL8_SEED43_REPRODUCTION_20260929.md`；
+artifact见
+`simigo2-experimental/results/backend-conformance/rq3-llama-concurrency-curve-parallel8-t128-seed43.json`。
