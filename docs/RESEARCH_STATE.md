@@ -10031,3 +10031,31 @@ SimiGo 核心问题——YES 才进 D+P4 设计+授权；NO 停车
 Phase R4 = R4-0 ✅ / A ✅ / B ✅ / C GATE OPEN（human）
 Current blocker = none（C 门裁定归 human；未经 C 门不设计/执行 P4）
 ```
+
+
+### LAB R4 C PASS + D CONSTITUTION REGISTERED — 2026-10-01
+
+Human C 门裁定：**C = PASS / REFRAMING ACCEPTED**——P4/P5 进入 SimiGo
+核心研究问题（YES 只授权进入 D 门；不授权 P4 执行、不提前定义 State
+内部形态）。四条理由与裁定全文见宪法文档。同轮 D 纪律确认完成：
+
+```text
+实验宪法 D1–D8 落档
+  （SIMIGO_LAB_R4_D_DISCIPLINE_CONSTITUTION_20261001.md）
+  D1 Common Base / D2 Two Independent Futures / D3 Independence /
+  D4 Independent Sample / D5 observation null ≠ mechanism null /
+  D6 no construct-then-claim / D7 backend boundary（内部机制不得
+  升格 State 定义）/ D8 no premature P5
+拓扑优先原则：P4 只问拓扑（S₀→{Future A, Future B} 的共同出发与
+  独立演化），不问性能
+失败有效性条款（写死）：P4 失败 =「共同基点目前无法成立」为有效
+  研究结果；不得为使路线成立而修改判据；判据修订须预注册+human 确认
+```
+
+当前状态：
+
+```text
+R4 = R4-0 ✅ / A ✅ / B ✅ / C PASS / D CONFIRMED
+Next = P4 readiness 交付（本轮）；P4 三要素设计待 human 放行
+Current blocker = none
+```
