@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Architecture Contract opening 已登记/激活（registration `62142ad`）；contract synthesis 已执行完成——Contract v1.0 draft（`a1e2e28`）产出：§1 Semantic Core（route Q2/Q3）、§2 Identity·Continuity same/new-State 法则（route Q1）、§3 Representation Boundary 四态结果（route Q4/Q5/Q6）、§4 Backend Independence 准入 BI-1…BI-5、§5 open points OP-1…OP-7、§6 C-13 双向 drift 信号。合成纪律遵守（零新增语义、零静默解决）。下一步 = Contract v1.0 的 review（路径由 human 指定）→ registration。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Contract v1.0 synthesis draft（`a1e2e28`）已通过 external review（`a020344`，`PASS / REGISTRATION_REQUIRED`；六项审查全 PASS；四条 strengthening 随登记固化，含五元组法则精确读法钉死）。等待 explicit registration——registration 即时效果：v1.0 升格为 Execution State 上游语义参照，C-13 双向漂移检测生效，研究层级切换为 Contract ⇅ 实现侧。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8442,5 +8442,33 @@ Contract v1.0 draft = a1e2e28（SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_
 Architecture Contract opening   = PASS / REGISTERED / ACTIVATED
 Contract synthesis              = COMPLETE（v1.0 draft awaiting review）
 Current blocker                 = none（下一步 = review，路径由 human 指定）
+```
+
+### LAB ARCHITECTURE CONTRACT V1 REVIEW PASS — 2026-09-30
+
+Contract v1.0 external review（`a020344`，human 指令进入 review、暂不做
+第二层裁决，固定六项审查）：
+
+```text
+R-1 synthesis fidelity      = PASS（逐条回溯核验，行号属实）
+R-2 five-tuple identity law = PASS（无隐藏矛盾；一处表述歧义钉死修订语）
+R-3 representation sovereignty = PASS（单向成立）
+R-4 open-point integrity    = PASS（OP-1…OP-7 无软关闭）
+R-5 bidirectional drift     = PASS（C-13 双向；程序性检测定位）
+R-6 scope discipline        = PASS（无外推）
+Verdict = PASS / REGISTRATION_REQUIRED
+```
+
+四条 strengthening 随 registration 固化：①五元组法则精确读法（「语义
+保持」= 保持 Runtime 独占、值仅经登记生命周期转移演化；identity 锚 =
+ExecutionID；representation 从不直写）②C-13 程序性检测定位（自动化归
+P-2）③BackendMemoryObservation 行溯源补强 ④升格效果声明（registration
+即时：v1.0 = 上游语义参照；层级切换为 Contract ⇅ 实现侧）。
+
+当前状态：
+
+```text
+Contract v1.0                = PASS / REGISTRATION_REQUIRED
+Current blocker              = explicit human/repository registration
 ```
 

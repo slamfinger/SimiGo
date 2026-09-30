@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`ARCH_CONTRACT_SYNTHESIS_COMPLETE / AWAITING_REVIEW`
+状态：`ARCH_CONTRACT_V1_REVIEW_PASS / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -66,6 +66,8 @@
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_OPENING_REGISTRATION_20260930.md`
 31. 读 Contract v1.0 synthesis draft：
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_DRAFT_20260930.md`
+32. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_EXTERNAL_REVIEW_20260930.md`
 
 ## Current snapshot
 
@@ -77,9 +79,9 @@ architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
-ARCH-CONTRACT = OPENING REGISTERED / ACTIVATED / SYNTHESIS COMPLETE（v1.0 draft awaiting review）
+ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REVIEW PASS / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = ARCH_CONTRACT_REVIEW / SYNTHESIS_ONLY_NO_REDESIGN
+next mode = ARCH_CONTRACT_V1_REGISTRATION / UPGRADE_TO_UPSTREAM_REFERENCE
 ```
 
 2026-09-29 route redefinition:
@@ -303,6 +305,19 @@ next mode = ARCH_CONTRACT_REVIEW / SYNTHESIS_ONLY_NO_REDESIGN
 - Current blocker = none（synthesis 完成）；下一步 = Contract v1.0 的
   external review（second-layer 或 reviewer 角色，由 human 指定）。
 
+2026-09-30 Contract v1.0 external review:
+
+- Human 指令：进入 External Review（暂不做第二层裁决），固定六项审查
+  （synthesis fidelity / 五元组法则 / representation sovereignty /
+  open-point integrity / bidirectional drift / scope discipline）。
+- Review（`a020344`）verdict: `PASS / REGISTRATION_REQUIRED`。六项全 PASS；
+  一处表述歧义（「五元组语义保持」≠「值不变」）以 strengthening #1 钉死
+  精确读法（identity 锚 = ExecutionID；五字段保持 Runtime 独占、值仅经
+  登记生命周期转移演化）；另三条：C-13 程序性检测定位 / BackendMemory
+  Observation 行溯源补强 / 升格效果声明。
+- Current blocker = explicit human registration。registration 即时生效：
+  v1.0 升格为上游语义参照，研究层级切换为 Contract ⇅ 实现侧。
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -320,15 +335,14 @@ Canonical route document:
 
 ## Next session task
 
-1. Review the Contract v1.0 synthesis draft（`a1e2e28`）：second-layer 研究
-   判断（human）或 external review（reviewer 角色），由 human 指定路径。
-2. Review 通过后 → registration（v1.0 成为登记上游语义参照；C-13 双向
-   drift 检测生效）。
+1. Explicitly approve or reject registration of the Contract v1.0 review
+   `PASS / REGISTRATION_REQUIRED`（含四条 strengthening 并入：五元组精确
+   读法 / C-13 机制定位 / 溯源补强 / 升格效果声明）。
+2. Registration 即时效果：v1.0 升格为 Execution State 上游语义参照；C-13
+   双向漂移检测生效；研究层级切换为 Contract ⇅ 实现侧。
 3. 不重设计代码；不修改已登记语义；不选 storage / persistence format /
    API / protocol；不新增测试（re-run 须 hash 级绑定）。
-4. Maintain the Seam Stability standing drift-detection surface（S6）；契约
-   v1.0 登记后扩展为双向 drift 参照。
-5. OP-1…OP-7 与 G-1…G-10 只经各自 gate 解决；PALACE 不消费；M-1…M-5 与
+4. OP-1…OP-7 与 G-1…G-10 只经各自 gate 解决；PALACE 不消费；M-1…M-5 与
    Phase B/C inherited conditions 继续有效；G-9/G-6/G-7/G-10 触发纪律不变。
 
 继续区分：
