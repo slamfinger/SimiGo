@@ -9233,3 +9233,29 @@ Gates    = A Formation Minimality（Formation Sufficiency Boundary，
 ES-R2 = DESIGN LOCKED / GATE A AWAITING EXECUTION APPROVAL
 Current blocker = none（Gate A 批准归 human）
 ```
+
+
+### LAB ES-R2 GATE A COMPLETE — TWO-TIER FORMATION SUFFICIENCY BOUNDARY — 2026-09-30
+
+Human 批准 Gate A 执行（Formation Minimality）。执行（`24c4a97`，纯分析
++synthetic carrier 构造，零运行时零修改）：
+
+```text
+FSB-1 DESCRIPTIVE/AUTHORITY TIER：最小充分集 = {storageKey, position: N,
+  continuation-anchor: tail(N)}——标量字节、formation 时刻全部在场；
+  捕获即形成独立权威 State 记录（跨 P 丢失/进程死亡存活）
+FSB-2 OPERATIVE/REMATERIALIZATION TIER：观察宇宙内 INSUFFICIENT——
+  驱动 R' 物化需要 N-token 上下文的压缩表示，而唯一压缩物就是 per-token
+  KV 本身（=P，按定义排除）——缺口不是字段而是一类不存在的载体
+可否证预测：信息宇宙不变前提下，任何 State Reuse 实验要么退化为 H→R'
+  （读完整 history）要么 P→R（用旧表示）；纯 S→R' 需 Tier-2 新载体，
+  其存在性未证
+与 Gate H/E1.5-Q2/R2n/E3/Gate D 全部一致性校验通过
+```
+
+当前状态：
+
+```text
+ES-R2 = GATE A COMPLETE / R2-A/E/F 归类权归 human
+Gate B（State Survival）待裁定是否开放
+```
