@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = P4_DESIGN_DELIVERED_EXECUTION_LOCKED（2026-10-01：human 放行设计门[只设计不执行]→P4 Design Document 交付 SIMIGO_LAB_P4_DESIGN_20261001.md——六要素：I Common Base[真实 checkpoint 只读复制=运输非构造+base-record 五元]/II Identity 单列[威胁模型=内容相似实则分别形成；四重检查 ID-1..4 工件SHA/寻址/位置/边界锚；失败=INCONCLUSIVE 非FAIL；独立 restore 测基点语义非 fork 机制]/III Divergence[四输入一次定死：概括型+抽取型+各一轮演化；Sample2 京都脚本先冻结后形成]/IV Independence[内存构造排除+durable 隔离+换序重跑逐字复现 Gate H 先例]/V Sample[2 样本；模型维度 Sample3 诚实登记受限]/VI Judgment[J1..J6 PASS/FAIL=「共同基点拓扑不成立」有效结果不得改判据/INCONCLUSIVE 含 D5 通道先裁]→**EXECUTION LOCKED 等待 Human Authorization**）
+next mode = P4_EXECUTED_JUDGMENT_PASS_AWAITING_SECOND_LAYER（2026-10-01：授权 17fce06[范围=设计 792afbc 零修改；机械执行/Identity 优先/拓扑优先/接受失败]→6 独立进程 invocation 全 SUCCEEDED→机械判读 **overall PASS**（J1..J6 两样本全 PASS；8/8 身份检查 YES；204→204 池 2→2；换序跨进程逐字复现；0 tool_calls）——按预注册措辞：「S₀ 可作为多个未来计算分支的共同基点」在本样本类上成立（拓扑级不涉性能）；边界=Sample-3 模型维度 coverage gap 不伪装/P5 LOCKED/超规则解读归 human；结果文档 SIMIGO_LAB_R4_P4_EXECUTION_RESULTS_20261001.md+观测 262 行已落库——**下一门=human second-layer 终审，无追加实验**）
 ```
 
 2026-09-29 route redefinition:

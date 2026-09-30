@@ -10153,3 +10153,34 @@ A/B 独立性）④接受失败（J1–J6 不成立即按预注册 FAIL 措辞�
 P4 EXECUTION = IN PROGRESS（机械执行 792afbc 设计）
 Current blocker = none
 ```
+
+
+### LAB R4 P4 EXECUTED — JUDGMENT PASS PER PREREGISTERED RULES — 2026-10-01
+
+P4 机械执行完成（6 个独立进程 invocation 全 TEST SUCCEEDED；零设计修
+改）。原始事实+机械判读落档
+（`SIMIGO_LAB_R4_P4_EXECUTION_RESULTS_20261001.md`；观测 262 行已落库）：
+
+```text
+Identity  8/8 restore 全 YES（ID-1..4）；base-record 跨 run 恒等
+样本      S1=既有会话(pos 17)；S2=新建会话（脚本先冻结后 8 轮真实
+          对话→commit，pos 16，隔离工作区落盘）
+隔离      204→204、池 2→2（全部 5 次生成型 invocation）
+发散      分支输出逐字记录（概括型/抽取型+各一轮演化）；全程 0
+          tool_calls（无 D5 通道疑云）
+换序      跨独立进程逐字复现（J4）
+机械判读  J1..J6 两样本全 PASS ⇒ overall PASS（设计 §6 预注册措辞：
+          「S₀ 可作为多个未来计算分支的共同基点」在本样本类上成立，
+          拓扑级，不涉性能）
+边界      Sample-3 模型维度=coverage gap（同模型同 vendor）不伪装；
+          P5 LOCKED；超规则解读归 human second layer
+```
+
+当前状态：
+
+```text
+R4 = R4-0✅/A✅/B✅/C PASS/D✅/readiness✅/DESIGN✅/EXECUTION✅
+      JUDGMENT = PASS（预注册规则机械输出）
+Next = human second-layer 终审（结果解读归 human；无追加实验）
+Current blocker = none
+```
