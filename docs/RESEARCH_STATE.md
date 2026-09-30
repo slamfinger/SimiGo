@@ -10184,3 +10184,38 @@ R4 = R4-0✅/A✅/B✅/C PASS/D✅/readiness✅/DESIGN✅/EXECUTION✅
 Next = human second-layer 终审（结果解读归 human；无追加实验）
 Current blocker = none
 ```
+
+
+### LAB R4 P5-0 HUMAN DECISION RECORD — P4 ACCEPTED AS PREMISE / P5 REGISTERED — 2026-10-01
+
+Human second-layer 对 P4 的验收与 P5 开线裁定：
+
+```text
+P4 验收（human 原话登记）：P4 PASS——S₀ 在当前样本类中具有
+   Common Future Base 性质（P4 结果正式作为 R4 前提）
+P5 注册（human 原话登记）：从已有 S₀ 出发，未来计算是否可以只
+   依赖新增输入 Δ，而无需重新计算已完成历史？
+   形式：S₀ + Δ →（只处理 Δ）→ Result
+   即测「历史输入是否必须再次进入计算路径」
+P5 纪律（human 明令）：
+   ❶ 第一阶段不测性能（latency/token-s/GPU/内存/cache 命中率
+     全部不碰——防滑入性能工程）
+   ❷ 第一问只有一句：已有 S₀ 是否足以让 backend 接受新 Δ 并完成
+     continuation，而不重新提供已完成的历史
+   ❸ 防走私条款：若 S₀ + 偷偷重读 History → Y，不证明 P5——
+     判据必须含「删除/隔离旧 History 后仍成立」
+   ❹ 沿用 P4 的 S1/S2 样本结构，最大程度减少实验变量
+   ❺ 不回头研究 T3、不研究 PALACE、不开始设计 State schema
+方向登记（human）：P4=「一个过去的计算状态可以产生多个未来」；
+   P5=「未来不必把过去重新做一遍」——两者合起来接近核心问题
+   「过去的计算怎样真正成为未来计算的一部分」
+路线：P5 readiness → 判据锁定 → 再决定是否授权执行
+```
+
+当前状态：
+
+```text
+P5-0 = COMMITTED（P4 前提验收 + P5 注册）
+P5 readiness/判据 = IN PROGRESS（交付后停在授权门）
+Current blocker = none
+```
