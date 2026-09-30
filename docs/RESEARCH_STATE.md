@@ -8975,3 +8975,38 @@ State？约束登记：不得直接加 State object（实验→设计边界）�
 ES-R1 = SEALED WITHOUT FINAL VERDICT；C-4 LOCKED
 Current blocker = none（下一 gate 问题由 human 界定中）
 ```
+
+
+### LAB ES-R1 GATE D COMPLETE — VERDICT D-B CONTRACT-ONLY — 2026-09-30
+
+Human Gate D 授权（D-1 authority trace / D-2 lifetime independence /
+D-3 source-of-truth；结论限 D-A/D-B/D-C；C-4 继续锁定；纪律=只找「是否
+有已存在的东西承担 State 独立生命周期」）。执行（`b7084ff`）：
+
+```text
+D-1  五元组逐项权威载体穷举：
+     Identity = 有权威载体（寻址链，identity-only，跨进程持久）
+     Lineage  = durable 全域缺席（进程 records 死/forkPoint ABSENT/
+                sidecar 无字段）
+     Position = 无权威实例（=history.count 推导）
+     Continuation = 无权威实例（=history 末端推导）
+     Recovery = P + history 组合（纯字段不携带）
+D-2  fixture 跨进程核验：meta 持久（SHA=C-0 冻结）、17 条语义载荷存活；
+     position/continuation/lineage/lifecycle 在 durable 层无字段
+D-3  矩阵填毕（Identity=独立 carrier；Lineage/Position/Continuation=
+     History 推导或 Contract-only；Recovery=P+History）
+```
+
+**Verdict = D-B（CONTRACT-ONLY，H-B2 获支持）**，反过度解读精化：durable
+semantic side（identity 寻址 + history 载荷）真实跨进程存在（PALACE
+nucleus）；Lab 五元形状存在（KV 别名之路仍被排除）；**D-B 精确含义 =
+五元 State 目前只以「寻址键 + 可推导观察」存在于 durable 层——R1-B
+精化：Runtime 无物可消费，缺的不是 seam 一条边，是 seam 的输入端对象
+本身**。
+
+当前状态：
+
+```text
+Gate D = COMPLETE / VERDICT D-B / AWAITING SECOND-LAYER
+C-4    = LOCKED（D-A 未发生）
+```
