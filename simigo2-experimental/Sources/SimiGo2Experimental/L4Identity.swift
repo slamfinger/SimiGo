@@ -78,7 +78,7 @@ public enum L4IdentityProbe {
             from: modelDirectory,
             using: #huggingFaceTokenizerLoader()
         )
-        let modelType = try await container.perform { (context: ModelContext) -> String in
+        let modelType = await container.perform { (context: ModelContext) -> String in
             String(describing: type(of: context.model))
         }
         let allGroups = Set(inventory.groups.map(\.id))
@@ -115,8 +115,8 @@ public enum L4IdentityProbe {
             baselineChecksums[promptCase.id] = checksum
             promptTokenCounts[promptCase.id] = tokenIDs.count
 
-            baselineLogits[promptCase.id] = try await container.perform {
-                (context: ModelContext) async throws -> MLXArray in
+            let baselineBox = try await container.perform {
+                (context: ModelContext) async throws -> UnsafeSendableBox<MLXArray> in
                 let tokenIDs = try await ChatTemplateGeneration.promptTokenIDs(
                     tokenizer: context.tokenizer,
                     modelDirectory: modelDirectory,
@@ -125,8 +125,9 @@ public enum L4IdentityProbe {
                 let input = MLXArray(tokenIDs, [1, tokenIDs.count])
                 let logits = context.model(input, cache: nil)
                 eval(logits)
-                return logits
+                return UnsafeSendableBox(value: logits)
             }
+            baselineLogits[promptCase.id] = baselineBox.value
 
             let outcome = try await ChatTemplateGeneration.generateWithTokens(
                 container: container,
@@ -160,12 +161,12 @@ public enum L4IdentityProbe {
             )
 
             // Controller-path forward: logits identity vs the baseline array.
+            guard let baselineArray = baselineLogits[promptCase.id] else {
+                throw L4IdentityError.missingBaseline(promptCase.id)
+            }
             let (controllerChecksum, maxDiff, relativeDiff) =
-                try await container.perform {
-                    (context: ModelContext) async throws -> (String, Float, Float) in
-                    guard let baselineArray = baselineLogits[promptCase.id] else {
-                        throw L4IdentityError.missingBaseline(promptCase.id)
-                    }
+                try await container.perform(nonSendable: baselineArray) {
+                    (context: ModelContext, baselineArray: MLXArray) async throws -> (String, Float, Float) in
                     let tokenIDs = try await ChatTemplateGeneration.promptTokenIDs(
                         tokenizer: context.tokenizer,
                         modelDirectory: modelDirectory,

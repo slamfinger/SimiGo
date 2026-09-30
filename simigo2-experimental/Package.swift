@@ -24,7 +24,6 @@ let package = Package(
             url: "https://github.com/slamfinger/mlx-swift-lm.git",
             branch: "release/v2.0-beta-ml"),
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
-        .package(url: "https://github.com/apple/swift-collections.git", "1.1.4" ..< "1.2.0")
     ],
     targets: [
         .target(

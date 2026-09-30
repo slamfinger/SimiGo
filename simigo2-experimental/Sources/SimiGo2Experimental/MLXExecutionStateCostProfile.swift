@@ -758,12 +758,12 @@ extension MLXExecutionStateCostProfile {
     )
     let runtime = ExecutionContinuityCoordinator(backend: backend)
     let tokenizer = try await Tokenizers.AutoTokenizer.from(modelFolder: modelDirectory)
-    let filler = try tokenizer.encode(
+    let filler = tokenizer.encode(
       text: "Explain the tradeoff, then list a concise implementation plan "
         + "with tests, failure modes, and rollback steps.",
       addSpecialTokens: false
     )
-    let seedTokens = try tokenizer.encode(
+    let seedTokens = tokenizer.encode(
       text: seedText, addSpecialTokens: true
     )
 
@@ -777,7 +777,7 @@ extension MLXExecutionStateCostProfile {
           position: ExecutionPosition(0),
           continuation: ExecutionContinuation(nextInput: "", continuationID: "release-0")
         )
-        try backend.bind(
+        backend.bind(
           executionID: rootID, position: ExecutionPosition(0), prefix: prefix
         )
 
@@ -789,7 +789,7 @@ extension MLXExecutionStateCostProfile {
           root,
           continuation: ExecutionContinuation(nextInput: "", continuationID: "release-1")
         )
-        try backend.bind(
+        backend.bind(
           executionID: advanced.id,
           position: ExecutionPosition(1),
           prefix: prefix + [0]
@@ -1038,7 +1038,7 @@ extension MLXExecutionStateCostProfile {
           position: ExecutionPosition(0),
           continuation: ExecutionContinuation(nextInput: rootInput, continuationID: "action-0")
         )
-        try backend.bind(
+        backend.bind(
           executionID: rootID,
           position: ExecutionPosition(0),
           prefix: prefix

@@ -36,7 +36,7 @@ public enum MLXGroupLifecycleExperiment {
     inventory: LayerInventory,
     groupID: String
   ) async throws -> MLXGroupLifecycleReport {
-    guard let group = inventory.group(withID: groupID) else {
+    guard inventory.group(withID: groupID) != nil else {
       throw LayerResidencyError.unknownLayerGroup(groupID)
     }
 
@@ -61,7 +61,7 @@ public enum MLXGroupLifecycleExperiment {
     let clock = ContinuousClock()
 
     var initial: [String: MLXArray] = [:]
-    let initialLoadElapsed = try await clock.measure {
+    let initialLoadElapsed = try clock.measure {
       for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
         let (all, _) = try MLX.loadArraysAndMetadata(url: file, stream: .cpu)
         for (name, array) in all where groupTensorNames.contains(name) {
@@ -81,7 +81,7 @@ public enum MLXGroupLifecycleExperiment {
     let memoryAfterRelease = Memory.snapshot()
 
     var rematerialized: [String: MLXArray] = [:]
-    let rematerializeElapsed = try await clock.measure {
+    let rematerializeElapsed = try clock.measure {
       for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
         let (all, _) = try MLX.loadArraysAndMetadata(url: file, stream: .cpu)
         for (name, array) in all where groupTensorNames.contains(name) {

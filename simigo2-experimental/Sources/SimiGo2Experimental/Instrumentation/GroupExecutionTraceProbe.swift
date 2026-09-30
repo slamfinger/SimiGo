@@ -300,7 +300,7 @@ public enum GroupExecutionTraceProbe {
             from: modelDirectory,
             using: #huggingFaceTokenizerLoader()
         )
-        return try await container.perform { (context: ModelContext) -> LeafModulePathAuditReport in
+        return await container.perform { (context: ModelContext) -> LeafModulePathAuditReport in
             let paths = context.model.leafModules().flattened().map(\.0).sorted()
             let matching = paths.filter { $0.contains(filterSubstring) }
             return LeafModulePathAuditReport(

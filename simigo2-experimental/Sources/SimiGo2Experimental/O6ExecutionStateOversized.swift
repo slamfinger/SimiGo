@@ -102,9 +102,6 @@ final class O6SegmentedCore: @unchecked Sendable {
         if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
           return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
         }
-        if let base = baseConfig.quantization {
-          return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
-        }
         return nil
       },
       apply: { module, groupSize, bits, mode in
@@ -402,10 +399,9 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
   public func captureRepresentation(
     for state: ExecutionStateHandle
   ) async throws -> ExecutionRepresentation {
-    lock.lock()
-    let prefix = prefixes[state.id]
-    let bound = boundPositions[state.id]
-    lock.unlock()
+    let (prefix, bound) = lock.withLock {
+        (prefixes[state.id], boundPositions[state.id])
+    }
     guard let prefix, let bound else {
       throw ExecutionStateBackendError.noBoundRepresentation(state.id)
     }
@@ -454,17 +450,17 @@ public final class OversizedSegmentedStateBackend: ExecutionStateBackend, @unche
         representation.executionID
       )
     }
-    lock.lock()
-    let isCurrent = boundPositions[representation.executionID] == representation.position
-    lock.unlock()
+    let isCurrent = lock.withLock {
+        boundPositions[representation.executionID] == representation.position
+    }
     guard isCurrent else { return }
     try releaseAll()
-    lock.lock()
-    if boundPositions[representation.executionID] == representation.position {
-      prefixes[representation.executionID] = nil
-      boundPositions[representation.executionID] = nil
+    lock.withLock {
+      if boundPositions[representation.executionID] == representation.position {
+        prefixes[representation.executionID] = nil
+        boundPositions[representation.executionID] = nil
+      }
     }
-    lock.unlock()
   }
 }
 
@@ -484,11 +480,11 @@ public final class OversizedSegmentedExecutor: @unchecked Sendable {
   }
 
   public func tokenizeText(_ text: String) throws -> [Int] {
-    try tokenizer.encode(text: text, addSpecialTokens: false)
+    tokenizer.encode(text: text, addSpecialTokens: false)
   }
 
   public func tokenizeSeedText(_ text: String) throws -> [Int] {
-    try tokenizer.encode(text: text, addSpecialTokens: true)
+    tokenizer.encode(text: text, addSpecialTokens: true)
   }
 
   struct DirectGenerationResult: Sendable {
@@ -604,7 +600,7 @@ public enum O6ExecutionStateScenario {
       position: ExecutionPosition(0),
       continuation: ExecutionContinuation(nextInput: parentUserText, continuationID: "P-cont-0")
     )
-    try backend.bind(
+    backend.bind(
       executionID: ExecutionID("P"), position: ExecutionPosition(0), prefix: seedTokens)
     let u1 = try executor.tokenizeText(parentUserText)
     let outP1 = try await executor.continueExecution(

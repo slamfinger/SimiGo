@@ -196,9 +196,6 @@ public enum O3CStreamingV2 {
             if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
                 return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
             }
-            if let base = baseConfig.quantization {
-                return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
-            }
             return nil
         }, apply: { module, groupSize, bits, mode in
             quantizeSingle(layer: module, groupSize: groupSize, bits: bits, mode: mode)

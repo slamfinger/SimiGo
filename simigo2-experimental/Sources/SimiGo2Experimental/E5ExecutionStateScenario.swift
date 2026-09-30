@@ -77,11 +77,11 @@ public enum E5ExecutionStateScenario {
             from: modelDirectory,
             using: #huggingFaceTokenizerLoader()
         )
-        let modelType = try await container.perform { (context: ModelContext) -> String in
+        let modelType = await container.perform { (context: ModelContext) -> String in
             String(describing: type(of: context.model))
         }
         let allGroups = Set(inventory.groups.map(\.id))
-        let coreIDs = Set(inventory.groups.filter(\.alwaysResident).map(\.id))
+        _ = Set(inventory.groups.filter(\.alwaysResident).map(\.id))
         let coreBytes = inventory.groups
             .filter(\.alwaysResident)
             .reduce(Int64(0)) { $0 + $1.byteCount }
@@ -147,7 +147,7 @@ public enum E5ExecutionStateScenario {
 
         FileHandle.standardError.write(Data("E5 step: CAPTURE_REP1\n".utf8))
         // Checkpoint the parent's representation at position 1.
-        let parentRep1 = try await executionStateBackend.captureRepresentation(
+        _ = try await executionStateBackend.captureRepresentation(
             for: coordinator.handle(ExecutionID("A"))!
         )
 
@@ -172,7 +172,7 @@ public enum E5ExecutionStateScenario {
 
         FileHandle.standardError.write(Data("E5 step: CAPTURE_REP2\n".utf8))
         // Checkpoint the parent's representation at position 2.
-        let parentRep2 = try await executionStateBackend.captureRepresentation(
+        _ = try await executionStateBackend.captureRepresentation(
             for: coordinator.handle(ExecutionID("A"))!
         )
 
@@ -371,7 +371,7 @@ public enum E5ExecutionStateScenario {
         promptTokens: [Int],
         maxTokens: Int
     ) async throws -> (promptTokenIDs: [Int], tokens: [Int], text: String) {
-        try await container.perform { (context: ModelContext) -> (promptTokenIDs: [Int], tokens: [Int], text: String) in
+        await container.perform { (context: ModelContext) -> (promptTokenIDs: [Int], tokens: [Int], text: String) in
             var generated: [Int] = []
             var input = MLXArray(promptTokens, [1, promptTokens.count])
             for _ in 0..<maxTokens {

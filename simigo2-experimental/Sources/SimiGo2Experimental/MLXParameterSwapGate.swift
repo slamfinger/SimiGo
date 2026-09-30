@@ -40,14 +40,15 @@ public enum MLXParameterSwapGate {
       return key
     }
 
-    let original = try await container.perform { context -> MLXArray in
+    let originalBox = try await container.perform { context -> UnsafeSendableBox<MLXArray> in
       let parameter = context.model.parameters().flattened().first { $0.0 == targetKey }
       guard let array = parameter?.1 else {
         throw LayerResidencyError.unknownLayerGroup(targetKey)
       }
       eval(array)
-      return array
+      return UnsafeSendableBox(value: array)
     }
+    let original = originalBox.value
 
     // Module update mutates the MLXArray wrapper in place, so snapshot before perturbing.
     let snapshot = original + 0
@@ -57,8 +58,9 @@ public enum MLXParameterSwapGate {
     let baselineFingerprint = Self.fingerprint(original)
 
     func apply(_ parameters: ModuleParameters) async throws {
-      try await container.perform { context in
-        try context.model.update(parameters: parameters, verify: [])
+      _ = try await container.perform(nonSendable: parameters) { context, parameters in
+        let model = UnsafeSendableBox(value: context.model)
+      try model.value.update(parameters: parameters, verify: [])
       }
     }
 

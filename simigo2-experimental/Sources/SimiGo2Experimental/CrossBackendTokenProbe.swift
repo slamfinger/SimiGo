@@ -217,7 +217,7 @@ public enum CrossBackendTokenProbe {
       from: modelDirectory,
       using: #huggingFaceTokenizerLoader()
     )
-    let modelType = try await container.perform { context in
+    let modelType = await container.perform { context in
       String(describing: type(of: context.model))
     }
     snapshots.append(snapshot("MLX_MODEL_LOADED", start: start, baselineSwap: baselineSwap))

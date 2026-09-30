@@ -342,11 +342,10 @@ public enum MLXGroupResidencyBenchmark {
     }
     eval(Array(arrays.values))
 
-    try await container.perform { context in
-      try context.model.update(
-        parameters: ModuleParameters.unflattened(arrays),
-        verify: []
-      )
+    let parameters = ModuleParameters.unflattened(arrays)
+    _ = try await container.perform(nonSendable: parameters) { context, parameters in
+      let model = UnsafeSendableBox(value: context.model)
+      try model.value.update(parameters: parameters, verify: [])
     }
     arrays.removeAll()
     Memory.clearCache()

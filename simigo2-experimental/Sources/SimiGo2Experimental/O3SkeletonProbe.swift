@@ -151,18 +151,15 @@ public enum O3SkeletonProbe {
         let quantizedModules: Set<String> = Set(
             weightMap.keys.filter { $0.hasSuffix(".scales") }.map { String($0.dropLast(".scales".count)) }
         )
-        let quantization = try JSONDecoder.json5().decode(
+        _ = try JSONDecoder.json5().decode(
             BaseConfiguration.self, from: configData
-        ).quantization
+        )
         // Mirror loadWeights: per-module (group,bits) resolved from the
         // checkpoint config's interleaved quantization dict; base fallback.
         quantize(model: model, filter: { path, _ in
             guard quantizedModules.contains(path) else { return nil }
             if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
                 return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
-            }
-            if let base = baseConfig.quantization {
-                return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
             }
             return nil
         }, apply: { module, groupSize, bits, mode in
@@ -245,7 +242,7 @@ public enum O3SkeletonProbe {
         }
         forwardMilliseconds = Double(forwardStart.duration(to: .now).components.attoseconds) / 1e18 * 1000
         generatedTokens = generated.count
-        let generatedText = tokenizer.decode(tokens: generated, skipSpecialTokens: true)
+        _ = tokenizer.decode(tokens: generated, skipSpecialTokens: true)
         let forwardPass = generated.count > 0 && generated.allSatisfy { $0 >= 0 }
         stage(
             "C_REAL_FORWARD", pass: forwardPass,

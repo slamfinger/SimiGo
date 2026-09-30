@@ -255,7 +255,7 @@ public enum CrossBackendLogitProbe {
       from: modelDirectory,
       using: #huggingFaceTokenizerLoader()
     )
-    let modelType = try await container.perform { context in
+    let modelType = await container.perform { context in
       String(describing: type(of: context.model))
     }
     snapshots.append(
@@ -270,7 +270,7 @@ public enum CrossBackendLogitProbe {
       let teacherPrefix = sourceCase.promptTokenIDs + sourceCase.mlxGeneratedTokenIDs.prefix(common)
       let mlxFirst = sourceCase.mlxGeneratedTokenIDs[common]
       let llamaFirst = sourceCase.llamaGeneratedTokenIDs[common]
-      let observation = try await container.perform { context -> Case in
+      let observation = await container.perform { context -> Case in
         let logits = context.model(
           MLXArray(teacherPrefix, [1, teacherPrefix.count]), cache: nil
         )[0, -1]

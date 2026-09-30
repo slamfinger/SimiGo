@@ -133,13 +133,9 @@ public final class ResidencyController: @unchecked Sendable {
         await admissionLock.lock()
         defer { admissionLock.unlock() }
 
-        stateLock.lock()
-        admissionInFlight = true
-        stateLock.unlock()
+        stateLock.withLock { admissionInFlight = true }
         defer {
-            stateLock.lock()
-            admissionInFlight = false
-            stateLock.unlock()
+            stateLock.withLock { admissionInFlight = false }
         }
 
         let admission = machine.reduce(.planAdmission(requiredGroupIDs: requiredGroupIDs))

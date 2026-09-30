@@ -330,7 +330,7 @@ public enum CrossBackendMarginProbe {
       from: modelDirectory,
       using: #huggingFaceTokenizerLoader()
     )
-    let modelType = try await container.perform { context in
+    let modelType = await container.perform { context in
       String(describing: type(of: context.model))
     }
     snapshots.append(snapshot("MLX_MODEL_LOADED", start: start, baselineSwap: baselineSwap))
@@ -338,12 +338,12 @@ public enum CrossBackendMarginProbe {
     var cases: [Case] = []
     for source in selectedCases {
       let fullTokens = source.promptTokenIDs + source.mlxGeneratedTokenIDs
-      let positions: [Position] = try await container.perform { context -> [Position] in
+      let positions: [Position] = await container.perform { context -> [Position] in
         let sequenceLogits = context.model(
           MLXArray(fullTokens, [1, fullTokens.count]), cache: nil
         )[0]
         eval(sequenceLogits)
-        return try source.mlxGeneratedTokenIDs.enumerated().map { position, target in
+        return source.mlxGeneratedTokenIDs.enumerated().map { position, target in
           let row = sequenceLogits[source.promptTokenIDs.count + position - 1]
           let values = row.asArray(Float.self)
           let ordered = values.enumerated().sorted { $0.element > $1.element }

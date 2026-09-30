@@ -233,13 +233,14 @@ public enum ExecutionTracePilot {
             baselineChecksums[promptCase.id] = checksum
             promptTokenCounts[promptCase.id] = tokenIDs.count
 
-            baselineLogits[promptCase.id] = try await container.perform {
-                (context: ModelContext) async throws -> MLXArray in
+            let baselineBox = try await container.perform {
+                (context: ModelContext) async throws -> UnsafeSendableBox<MLXArray> in
                 let input = MLXArray(tokenIDs, [1, tokenIDs.count])
                 let logits = context.model(input, cache: nil)
                 eval(logits)
-                return logits
+                return UnsafeSendableBox(value: logits)
             }
+            baselineLogits[promptCase.id] = baselineBox.value
 
             _ = try await ChatTemplateGeneration.generate(
                 container: container,
@@ -284,12 +285,13 @@ public enum ExecutionTracePilot {
             guard let baselineLogitsArray = baselineLogits[promptCase.id] else {
                 throw PilotError.missingBaseline(promptCase.id)
             }
-            let (instrumentedChecksum, maxAbsDiff, relativeDiff) = try await container.perform {
-                (context: ModelContext) async throws -> (String, Float, Float) in
-                guard let tokenIDs = baselineTokenIDs[promptCase.id] else {
-                    throw PilotError.missingBaseline(promptCase.id)
-                }
-                let input = MLXArray(tokenIDs, [1, tokenIDs.count])
+            guard let expectedTokenIDs = baselineTokenIDs[promptCase.id] else {
+                throw PilotError.missingBaseline(promptCase.id)
+            }
+            let (instrumentedChecksum, maxAbsDiff, relativeDiff) =
+                try await container.perform(nonSendable: baselineLogitsArray) {
+                (context: ModelContext, baselineLogitsArray: MLXArray) async throws -> (String, Float, Float) in
+                let input = MLXArray(expectedTokenIDs, [1, expectedTokenIDs.count])
                 let logits = context.model(input, cache: nil)
                 eval(logits)
                 let checksum = InstrumentationIdentityProbe.sha256Base64(logits)
@@ -410,7 +412,7 @@ public enum ExecutionTracePilot {
             memoryAfterInstrumented.peakMemory - memoryBeforeInstrumented.peakMemory
         ) / (1024 * 1024)
 
-        let modelType = try await container.perform {
+        let modelType = await container.perform {
             (context: ModelContext) -> String in
             String(describing: type(of: context.model))
         }

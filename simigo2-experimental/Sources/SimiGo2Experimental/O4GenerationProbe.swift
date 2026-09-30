@@ -146,9 +146,6 @@ public enum O4GenerationProbe {
             if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
                 return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
             }
-            if let base = baseConfig.quantization {
-                return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
-            }
             return nil
         }, apply: { module, groupSize, bits, mode in
             quantizeSingle(layer: module, groupSize: groupSize, bits: bits, mode: mode)
@@ -250,7 +247,7 @@ public enum O4GenerationProbe {
             var samplesByPass: [[O4TokenSample]] = []
             var meanByPass: [Double] = []
 
-            for pass in 1...passes {
+            for _ in 1...passes {
                 var ids = promptTokenIDs
                 var passTokens: [Int] = []
                 var passSamples: [O4TokenSample] = []

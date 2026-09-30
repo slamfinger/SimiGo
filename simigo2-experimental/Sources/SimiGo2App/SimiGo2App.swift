@@ -39,7 +39,7 @@ enum SimiGo2App {
         }
 
         guard let configuration = SelfTestConfiguration(commandLine: arguments) else {
-            await SimiGo2AppScene.main()
+            SimiGo2AppScene.main()
             return
         }
 

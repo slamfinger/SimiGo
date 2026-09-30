@@ -159,9 +159,6 @@ public enum O4OversizedGenerationProbe {
             if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
                 return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
             }
-            if let base = baseConfig.quantization {
-                return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
-            }
             return nil
         }, apply: { module, groupSize, bits, mode in
             quantizeSingle(layer: module, groupSize: groupSize, bits: bits, mode: mode)
@@ -198,7 +195,7 @@ public enum O4OversizedGenerationProbe {
         // memory gains the in-flight next segment (core + current + next).
         @Sendable func startSegmentRead(
             _ segment: ClosedRange<Int>
-        ) -> Task<[String: MLXArray], Error> {
+        ) -> Task<UnsafeSendableBox<[String: MLXArray]>, Error> {
             Task.detached(priority: .userInitiated) {
                 var arrays: [String: MLXArray] = [:]
                 for name in switchNames {
@@ -213,7 +210,7 @@ public enum O4OversizedGenerationProbe {
                         }
                     }
                 }
-                return arrays
+                return UnsafeSendableBox(value: arrays)
             }
         }
 
@@ -227,7 +224,7 @@ public enum O4OversizedGenerationProbe {
                 // token's last segment is still in flight when seg 0's read
                 // would need to start, and double-buffering across the token
                 // boundary would double peak residency).
-                var pending: Task<[String: MLXArray], Error>? =
+                var pending: Task<UnsafeSendableBox<[String: MLXArray]>, Error>? =
                     prefetch ? startSegmentRead(segments[0]) : nil
                 let tokenStart = clock.now
                 var hidden = model.embedInputs(MLXArray(ids, [1, ids.count]))
@@ -239,7 +236,7 @@ public enum O4OversizedGenerationProbe {
                     do {
                         let readStart = clock.now
                         if prefetch {
-                            arrays = try await pending!.value
+                            arrays = try await pending!.value.value
                             pending = nil
                         } else {
                             var dict: [String: MLXArray] = [:]
@@ -269,7 +266,7 @@ public enum O4OversizedGenerationProbe {
                     }
                     // Start the next read BEFORE the forward so the two
                     // overlap; its residual cost surfaces at the next await.
-                    var nextTask: Task<[String: MLXArray], Error>? = nil
+                    var nextTask: Task<UnsafeSendableBox<[String: MLXArray]>, Error>? = nil
                     if prefetch, segIndex + 1 < segments.count {
                         nextTask = startSegmentRead(segments[segIndex + 1])
                     }

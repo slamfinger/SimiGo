@@ -118,11 +118,10 @@ public enum MLXGroupInferenceGate {
     eval(Array(rematerialized.values))
     let rematerializedTensorCount = rematerialized.count
 
-    try await container.perform { context in
-      try context.model.update(
-        parameters: ModuleParameters.unflattened(rematerialized),
-        verify: []
-      )
+    let parameters = ModuleParameters.unflattened(rematerialized)
+    _ = try await container.perform(nonSendable: parameters) { context, parameters in
+      let model = UnsafeSendableBox(value: context.model)
+      try model.value.update(parameters: parameters, verify: [])
     }
     rematerialized.removeAll()
     Memory.clearCache()

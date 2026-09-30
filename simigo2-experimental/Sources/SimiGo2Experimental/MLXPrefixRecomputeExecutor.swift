@@ -52,7 +52,7 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
 
     /// Tokenize next-input text (Backend-owned tokenization).
     public func tokenizeText(_ text: String) async throws -> [Int] {
-        try await container.perform { (context: ModelContext) -> [Int] in
+        await container.perform { (context: ModelContext) -> [Int] in
             context.tokenizer.encode(text: text, addSpecialTokens: false)
         }
     }
@@ -60,7 +60,7 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
     /// Seed-text encoding for the scenario bootstrap: raw text encoding WITH
     /// special tokens (BOS) — the one text-seeded generation.
     public func tokenizeSeedText(_ text: String) async throws -> [Int] {
-        try await container.perform { (context: ModelContext) -> [Int] in
+        await container.perform { (context: ModelContext) -> [Int] in
             context.tokenizer.encode(text: text, addSpecialTokens: true)
         }
     }
@@ -77,7 +77,7 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
         let bound = try backend.boundPrefix(for: state)
         let inputTokens = bound.prefix + nextInputTokens
 
-        let generated = try await container.perform { (context: ModelContext) -> [Int] in
+        let generated = await container.perform { (context: ModelContext) -> [Int] in
             var generated: [Int] = []
             var tokens = inputTokens
             var running = MLXArray(tokens, [1, tokens.count])
@@ -100,7 +100,7 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
         // until the Runtime advances the logical position and rebinds.
         backend.consumeBinding(for: state)
 
-        let text: String = try await container.perform { (context: ModelContext) -> String in
+        let text: String = await container.perform { (context: ModelContext) -> String in
             context.tokenizer.decode(tokenIds: generated, skipSpecialTokens: true)
         }
 

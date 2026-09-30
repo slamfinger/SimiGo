@@ -88,23 +88,23 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     public func materialize(
         key: String, work: @escaping @Sendable () async throws -> Value
     ) async throws -> Value {
-        lock.lock()
-        if let existing = inFlight[key] {
-            lock.unlock()
-            return try await existing.value
+        let start = lock.withLock { () -> (existing: Task<Value, Error>?, created: Task<Value, Error>?) in
+            if let existing = inFlight[key] { return (existing, nil) }
+            let physicalUse = self.physicalUse
+            let created = Task<Value, Error> {
+                physicalUse.acquire(key)
+                defer { physicalUse.release(key) }
+                return try await work()
+            }
+            inFlight[key] = created
+            return (nil, created)
         }
-        let physicalUse = self.physicalUse
-        let task = Task<Value, Error> {
-            physicalUse.acquire(key)
-            defer { physicalUse.release(key) }
-            return try await work()
+        if let task = start.existing {
+            return try await task.value
         }
-        inFlight[key] = task
-        lock.unlock()
+        guard let task = start.created else { fatalError("unreachable materialization state") }
         defer {
-            lock.lock()
-            inFlight[key] = nil
-            lock.unlock()
+            lock.withLock { inFlight[key] = nil }
         }
         return try await task.value
     }

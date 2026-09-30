@@ -149,15 +149,19 @@ public enum MeasuredTraceCollection {
         )
 
         let box = ExecutionTraceEventBox()
-        let (installed, modelType) = try await container.perform {
-            (context: ModelContext) async throws -> ([String], String) in
+        let installed = try await container.perform {
+            (context: ModelContext) async throws -> [String] in
             let paths = GroupExecutionTraceProbe.allObservationPaths(model: context.model)
             let installed = try GroupExecutionTraceProbe.install(
                 model: context.model,
                 observationPaths: Set(paths),
                 box: box
             )
-            return (installed, String(describing: type(of: context.model)))
+            return installed
+        }
+        let modelType = await container.perform {
+            (context: ModelContext) -> String in
+            String(describing: type(of: context.model))
         }
 
         let instrumentedOutcome = try await ChatTemplateGeneration.generateWithTokens(
@@ -251,7 +255,7 @@ public enum MeasuredTraceCollection {
                 "ISOLATED_INSTRUMENTATION / LAYER_ENTERED_ONLY / OBSERVER_PASSIVE / DECLARED_LINE_IS_SCENARIO / MEASURED_LINE_IS_OBSERVATION / NOT_DEMAND / NOT_PREDICTION / EXPERT_DEMAND_NOT_INSTRUMENTED",
             protocolVersion: protocolVersion,
             modelID: modelID,
-            modelType: String(describing: type(of: (try await container.perform { (context: ModelContext) in context.model }))),
+            modelType: modelType,
             instrumentedModuleCount: installed.count,
             preamble: preamble,
             workloads: workloads

@@ -87,8 +87,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
         // only finds files that were never evicted).
-        pool.onEvict = { [weak self] entry in
-            guard let self, let artifact = entry.artifact as? DiskPrefixArtifact else {
+        pool.onEvict = { entry in
+            guard let artifact = entry.artifact as? DiskPrefixArtifact else {
                 return
             }
             registry.requestDelete(artifact.snapshotURL.path)

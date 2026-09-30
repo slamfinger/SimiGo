@@ -271,9 +271,6 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             if let perLayer = baseConfig.perLayerQuantization?.quantization(layer: path) {
                 return (groupSize: perLayer.groupSize, bits: perLayer.bits, mode: perLayer.mode)
             }
-            if let base = baseConfig.quantization {
-                return (groupSize: base.groupSize, bits: base.bits, mode: base.mode)
-            }
             return nil
         }, apply: { module, groupSize, bits, mode in
             quantizeSingle(layer: module, groupSize: groupSize, bits: bits, mode: mode)
@@ -497,7 +494,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         stopTokenIDs: Set<Int> = [],
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
-        guard let model, let reader, let tokenizer else {
+        guard model != nil, reader != nil, let tokenizer else {
             throw OversizedEngineError.notLoaded
         }
         await lifecycleSerialLock.lock()
@@ -521,7 +518,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             guard let lastUser = messages.last(where: { $0.role == "user" }) else {
                 throw OversizedEngineError.notLoaded
             }
-            nextInput = try tokenizer.encode(text: lastUser.content, addSpecialTokens: false)
+            nextInput = tokenizer.encode(text: lastUser.content, addSpecialTokens: false)
         }
         guard let state = currentState, let stateBackend else {
             throw OversizedEngineError.notLoaded
@@ -542,7 +539,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         stopTokenIDs: Set<Int> = [],
         onToken: (@Sendable (OversizedEngineGauge, String) -> Void)? = nil
     ) async throws -> OversizedEngineTurn {
-        guard let model, let reader, let tokenizer else {
+        guard model != nil, reader != nil, tokenizer != nil else {
             throw OversizedEngineError.notLoaded
         }
         guard let state = currentState, let stateBackend else {
@@ -570,7 +567,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         let model = self.model
         let reader = self.reader
         let tokenizer = self.tokenizer
-        guard let model, let reader, let tokenizer else {
+        guard let model, reader != nil, let tokenizer else {
             throw OversizedEngineError.notLoaded
         }
         let bound = try backend.boundPrefix(for: state)
@@ -671,7 +668,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         // (consumeBinding -> logical advance -> bind) left a window where a
         // bind failure produced "logical advanced / representation missing".
         let advancedPosition = ExecutionPosition(state.position.value + 1)
-        try backend.bind(
+        backend.bind(
             executionID: state.id, position: advancedPosition, prefix: ids
         )
         let advanced = try await coordinator!.continueExecution(

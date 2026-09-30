@@ -95,7 +95,7 @@ public enum L4ReconciliationProbe {
             from: modelDirectory,
             using: #huggingFaceTokenizerLoader()
         )
-        let modelType = try await container.perform { (context: ModelContext) -> String in
+        let modelType = await container.perform { (context: ModelContext) -> String in
             String(describing: type(of: context.model))
         }
 
@@ -131,7 +131,7 @@ public enum L4ReconciliationProbe {
         func record(label: String, path: String) async throws {
             // Validated transition hygiene: purge transient caches, allow
             // the backend to settle, then observe passively.
-            try backend.purgeTransientCaches()
+            backend.purgeTransientCaches()
             try? await Task.sleep(for: .milliseconds(25))
             let observation = try backend.memoryObservation()
 

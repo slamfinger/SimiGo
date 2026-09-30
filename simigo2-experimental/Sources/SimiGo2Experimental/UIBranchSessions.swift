@@ -2315,7 +2315,7 @@ extension UIBranchSessions {
         )
       )
     )
-    var longBranch = try await runtime.fork(
+    let longBranch = try await runtime.fork(
       ExecutionForkRequest(
         parent: root,
         childID: longID,
@@ -2351,7 +2351,7 @@ extension UIBranchSessions {
       return (advanced, result.generatedTokenIDs, result.generatedText, payload)
     }
 
-    let siblingTokens = try executor.tokenizeText(siblingInput)
+    _ = try executor.tokenizeText(siblingInput)
     let siblingRun = try await advance(
       sibling, input: siblingInput, continuationID: "sibling-1"
     )

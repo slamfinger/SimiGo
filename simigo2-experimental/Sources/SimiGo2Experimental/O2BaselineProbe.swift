@@ -157,7 +157,7 @@ public enum O2BaselineProbe {
             using: #huggingFaceTokenizerLoader()
         )
         let loadMilliseconds = Double(loadStart.duration(to: .now).components.attoseconds) / 1e18 * 1000
-        let modelType: String = try await container.perform { (context: ModelContext) in
+        let modelType: String = await container.perform { (context: ModelContext) in
             String(describing: type(of: context.model))
         }
         snapshots.append(snapLabel("T1_T2_LOAD_COMPLETE", start: start))
@@ -223,7 +223,7 @@ public enum O2BaselineProbe {
         }
 
         let forwardStart = ContinuousClock.now
-        let logitsChecksum: String = try await container.perform { (context: ModelContext) -> String in
+        let logitsChecksum: String = await container.perform { (context: ModelContext) -> String in
             let logits = context.model(
                 MLXArray(promptTokenIDs, [1, promptTokenIDs.count]), cache: nil
             )
@@ -238,9 +238,9 @@ public enum O2BaselineProbe {
         var generationRecords: [O2GenerationRecord] = []
         for index in 1...max(1, generations) {
             let genStart = ContinuousClock.now
-            var ttftMilliseconds: Double = 0
-            var tokens: [Int] = []
-            try await container.perform { (context: ModelContext) in
+            let (ttftMilliseconds, tokens) = await container.perform { (context: ModelContext) -> (Double, [Int]) in
+                var ttftMilliseconds: Double = 0
+                var tokens: [Int] = []
                 var running = MLXArray(promptTokenIDs, [1, promptTokenIDs.count])
                 var first = true
                 for _ in 0..<maxTokens {
@@ -260,6 +260,7 @@ public enum O2BaselineProbe {
                     running = MLXArray(promptAndGenerated, [1, promptAndGenerated.count])
                     eval(logits)
                 }
+                return (ttftMilliseconds, tokens)
             }
             let totalMs = Double(genStart.duration(to: .now).components.attoseconds) / 1e18 * 1000
             let steadyTokens = max(tokens.count - 1, 1)

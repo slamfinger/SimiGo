@@ -39,7 +39,7 @@ public enum MLXGroupGate {
     var shapes: [String] = []
 
     let clock = ContinuousClock()
-    let elapsed = try await clock.measure {
+    let elapsed = try clock.measure {
       for file in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
         // MLX's Safetensors loader is lazy. Filter before evaluation so only
         // the selected tensor ranges are materialized.
