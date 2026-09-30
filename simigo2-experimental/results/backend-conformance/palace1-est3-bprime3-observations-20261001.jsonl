@@ -1,0 +1,59 @@
+{"ts":"2026-09-30T16:43:17Z","case":"b0","fixture_cacheSHA256":"5ce9dcbda52286ef2717e6212feabbc2d99eabf1415ee32510e35fd3ac7238ae"}
+{"ts":"2026-09-30T16:43:17Z","case":"b0","fixture_history_count":"17"}
+{"ts":"2026-09-30T16:43:17Z","case":"b3","fixture_cacheSHA256":"204952e648ce6045766baa265b40a14a55cf5004052cc4601c69ebe2192ef405"}
+{"ts":"2026-09-30T16:43:17Z","case":"b3","fixture_history_count":"17"}
+{"ts":"2026-09-30T16:43:17Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T16:43:17Z","case":"setup","prefix_pool_entries_before":"2"}
+{"ts":"2026-09-30T16:43:23Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T16:43:23Z","case":"b0-listing","restore_position":"17"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","text_chars":"0"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","text":""}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","tool_call_count":"1"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","tool_call_0":"Bash {\"command\":\"find \\/Users\\/mr.simi\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","generation_tokens":"64"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","prompt_tokens":"13235"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","stream_end":"NORMAL"}
+{"ts":"2026-09-30T16:43:59Z","case":"b3-listing","restore_position":"17"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","text_chars":"0"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","text":""}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","tool_call_count":"1"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","tool_call_0":"Bash {\"command\":\"find \\/Users\\/mr.simi\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","generation_tokens":"64"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","prompt_tokens":"13235"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","stream_end":"NORMAL"}
+{"ts":"2026-09-30T16:44:15Z","case":"b0-summary","restore_position":"17"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","text_chars":"43"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","text":"这个会话在查看桌面文件结构，逐步浏览了\"参考文件\"目录下的\"项目部管理制度汇编\"内容。"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","tool_call_count":"0"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","generation_tokens":"24"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","prompt_tokens":"13242"}
+{"ts":"2026-09-30T16:44:30Z","case":"b0-summary","stream_end":"NORMAL"}
+{"ts":"2026-09-30T16:44:30Z","case":"b3-summary","restore_position":"17"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","text_chars":"43"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","text":"这个会话在查看桌面文件结构，逐步浏览了\"参考文件\"目录下的\"项目部管理制度汇编\"内容。"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","tool_call_count":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","generation_tokens":"24"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","prompt_tokens":"13242"}
+{"ts":"2026-09-30T16:44:46Z","case":"b3-summary","stream_end":"NORMAL"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","o_b0_chars":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","o_b3_chars":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","lccp_chars":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","identical":"YES"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","b0_tool_calls":"1"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","b3_tool_calls":"1"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","b0_generation_tokens":"64"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","b3_generation_tokens":"64"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-listing","reading":"IDENTICAL — but see P-1 channel adjudication; identity on the text surface alone is uninformative if the product was not on the text channel"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","o_b0_chars":"43"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","o_b3_chars":"43"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","lccp_chars":"43"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","identical":"YES"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","b0_tool_calls":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","b3_tool_calls":"0"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","b0_generation_tokens":"24"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","b3_generation_tokens":"24"}
+{"ts":"2026-09-30T16:44:46Z","case":"comparison-summary","reading":"IDENTICAL under summary probe — no GDN difference observed under the current probe (LIMITATION: not 'GDN does not participate in continuation')"}
+{"ts":"2026-09-30T16:44:46Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T16:44:46Z","case":"teardown","real_branch_checkpoints_after":"204"}
+{"ts":"2026-09-30T16:44:46Z","case":"teardown","prefix_pool_entries_after":"2"}
+{"ts":"2026-09-30T16:44:46Z","case":"teardown","prefix_pool_delta":"0"}

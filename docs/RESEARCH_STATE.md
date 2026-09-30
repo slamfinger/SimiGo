@@ -9604,3 +9604,37 @@ ES-T3 = A CLOSED / B CLOSED（B-3）/ B′-1 PARTIAL INCONCLUSIVE /
 GATES C-D = LOCKED
 Current blocker = none（B′-3 执行按授权文档进行）
 ```
+
+
+### LAB ES-T3 T3-B′-3 EXECUTED — OBSERVABILITY ESTABLISHED / NULL DIFFERENCE — 2026-10-01
+
+B′-3 按授权执行（四 cell {b0,b3}×{listing,summary}，逐 cell 独立
+restore，greedy 128，tools nil，`Palace1EST3BPrime3ObservableSurfaceTests`）：
+
+```text
+P-1 CONFIRMED：B′-2 的「0 文本」= tool-call 通道产物——b0/b3 各 64
+    tokens、各 1 个逐字相同 Bash find 调用（text 面 0 字符）；观测
+    截断 + probe 命中会话工具模式两混淆由「疑似」升格为实测
+P-2 恒等（限缩读数）：summary probe 下 b0/b3 各 43 字符 ANCHORED
+    文本逐字相同、24/24 tokens、0 tool calls——按强制限制条款只读作
+    「当前 probe 下未观察到 GDN 差异」，不升格
+P-3 PASS：summary-b0 与 E3-C0（meta-only 管线）43 字符逐字一致
+    （附带观察：跨管线文本恒等支持 transcript 承载定位，不升格）
+```
+
+**可观测面已建立**：text + toolCalls + token 计数三通道挂载后，
+b0/b3 差异已能进入观测面——本轮在该面上观测到的是【差异不存在】
+（两 probe 型 × 两通道 × token 计数全恒等）。A/B 解释仍双未决（恒等
+在 A 下必然 / 在 B 下=不敏感，观测不可分离）；B′-1 源码证据仍偏向 A。
+隔离全绿（204→204、池 delta 0）；结果文档
+`SIMIGO_LAB_EST3_BPRIME3_RESULTS_20261001.md`，观测已落库。
+
+当前状态：
+
+```text
+ES-T3 = A CLOSED / B CLOSED（B-3）/ B′-1 PARTIAL INCONCLUSIVE /
+        B′-2 EXECUTED-UNINFORMATIVE / B′-3 EXECUTED
+        （OBSERVABILITY ESTABLISHED / NULL DIFFERENCE, 限制条款在案）
+GATES C-D = LOCKED
+Current blocker = none（B′ 续 vs 封存归 human）
+```
