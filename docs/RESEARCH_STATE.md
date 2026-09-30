@@ -8369,7 +8369,12 @@ axis-c 表述域限定（观察窗口非预测）、轴 d 再检验为 standing 
 
 ```text
 Seam stability opening     = PASS / REGISTERED / ACTIVATED
-Seam stability audit       = COMPLETE / REVIEW PASS / REGISTRATION_REQUIRED
-Current blocker            = explicit human/repository registration
+Seam stability audit       = PASS / REGISTERED / CLOSED
+Current blocker            = none
+Next standing mode         = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 ```
+
+Registration:
+`docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_REGISTRATION_20260930.md`
+Registration commit chain: `c9299375` → `671a69f` → `1857d57`.
 
