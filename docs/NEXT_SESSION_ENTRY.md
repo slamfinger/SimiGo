@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`ARCH_CONTRACT_V1_REVIEW_PASS / REGISTRATION_REQUIRED`
+状态：`ARCH_CONTRACT_V1_REGISTERED / UPSTREAM_REFERENCE`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -79,9 +79,9 @@ architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
-ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REVIEW PASS / REGISTRATION PENDING
+ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = ARCH_CONTRACT_V1_REGISTRATION / UPGRADE_TO_UPSTREAM_REFERENCE
+next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 ```
 
 2026-09-29 route redefinition:
@@ -353,3 +353,26 @@ observed code fact
 ≠ selected implementation
 ```
 
+
+
+### LAB ARCHITECTURE CONTRACT V1 REGISTERED — 2026-09-30
+
+Human/repository registration completed after external review `a020344` with verdict `PASS / REGISTRATION_REQUIRED`.
+
+- Registration artifact:
+  `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_REGISTRATION_20260930.md`
+- Registered contract artifact:
+  `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_DRAFT_20260930.md`
+- Five-tuple ambiguity is fixed: Runtime-owned semantic fields evolve only through registered lifecycle transitions; ExecutionID is the identity anchor; representation never directly writes the five fields.
+- C-13 is active as procedural gate-check detection; automation remains P-2.
+- `BackendMemoryObservation` R classification is recorded as a derivation from passive-observation semantics.
+- v1.0 is now the upstream semantic reference. Research hierarchy is `Contract ⇅ code / Runtime / Backend / Persistence`.
+- OP-1…OP-7, G-1…G-10, Phase B inherited conditions, M-1…M-5, and Seam Stability S2/S6 remain active; no open point is closed by registration.
+
+Current state:
+
+```text
+Contract v1.0 = PASS / REGISTERED
+Current blocker = none
+Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
+```
