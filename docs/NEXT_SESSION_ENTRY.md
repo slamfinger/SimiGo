@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = R4_D_CONFIRMED_P4_READINESS_DELIVERED（2026-10-01：C=PASS/REFRAMING ACCEPTED——P4/P5 进入核心问题[YES 只授权 D 门，不授权执行不定义内部形态]→D 宪法落档 9676641[D1 Common Base/D2 两独立未来/D3 Independence/D4 Independent Sample/D5 null≠mechanism null/D6 no construct-then-claim/D7 backend boundary/D8 no premature P5+拓扑优先不问性能+失败有效性条款写死=P4 失败即「共同基点目前无法成立」有效结果、不得改判据]→P4 readiness 交付[就绪资产 7 项+设计门议程 Q1..Q6 只列不答+READY-FOR-DESIGN 无 blocker；执行双重门控]——**下一门=P4 三要素设计待 human 放行；执行须再过 human authorization**）
+next mode = P4_DESIGN_DELIVERED_EXECUTION_LOCKED（2026-10-01：human 放行设计门[只设计不执行]→P4 Design Document 交付 SIMIGO_LAB_P4_DESIGN_20261001.md——六要素：I Common Base[真实 checkpoint 只读复制=运输非构造+base-record 五元]/II Identity 单列[威胁模型=内容相似实则分别形成；四重检查 ID-1..4 工件SHA/寻址/位置/边界锚；失败=INCONCLUSIVE 非FAIL；独立 restore 测基点语义非 fork 机制]/III Divergence[四输入一次定死：概括型+抽取型+各一轮演化；Sample2 京都脚本先冻结后形成]/IV Independence[内存构造排除+durable 隔离+换序重跑逐字复现 Gate H 先例]/V Sample[2 样本；模型维度 Sample3 诚实登记受限]/VI Judgment[J1..J6 PASS/FAIL=「共同基点拓扑不成立」有效结果不得改判据/INCONCLUSIVE 含 D5 通道先裁]→**EXECUTION LOCKED 等待 Human Authorization**）
 ```
 
 2026-09-29 route redefinition:

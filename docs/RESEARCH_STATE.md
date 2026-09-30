@@ -10088,3 +10088,43 @@ Next = P4 三要素设计（Common Base / Divergence / Independence）
        ——待 human 放行设计门
 Current blocker = none
 ```
+
+
+### LAB R4 P4 DESIGN DELIVERED — EXECUTION LOCKED — 2026-10-01
+
+Human 放行 P4 设计门（只放行设计；执行 LOCKED）。P4 Design Document
+交付（`SIMIGO_LAB_P4_DESIGN_20261001.md`，零执行）：
+
+```text
+要素 I  Common Base：S₀=系统自身形成路径的真实 checkpoint 只读复制
+        入隔离 fixture（复制=运输非构造，D6）；base-record 五元
+        （key/position/anchor/工件 SHA/形成溯源）先于一切分支运行
+要素 II Identity（单列，核心证据问题）：威胁模型=「内容相似实则
+        分别形成」；四重检查 ID-1..4（工件 SHA/寻址/位置/边界锚
+        逐 restore 核对）；任一失败=INCONCLUSIVE 非FAIL
+        研究级理由：逐分支独立 restore 自同一字节工件测「基点语义」
+        （共享内存对象测的是 fork 机制）——非 API 便利论证
+要素 III Divergence：四输入现在一次定死（Sample 1：概括型 ΔA₁
+        [E3-C0 逐字先例]+演化步 ΔA₂；抽取型 ΔB₁[子串机器核验]
+        +ΔB₂；Sample 2：京都行程脚本先冻结后形成，Δ 同构）
+要素 IV Independence：污染通道三关闭（内存=构造排除/durable=隔离
+        配方/顺序=换序重跑逐字复现，Gate H 跨进程先例背书）；
+        独立演化=每分支第二轮非空且衔接本分支
+要素 V  Sample：Sample1=既有会话；Sample2=新建会话（真实对话→
+        commit）；诚实边界=模型维度（Sample 3）受本地模型可用性
+        限制，登记不静默丢弃
+要素 VI Judgment 预注册：PASS=J1..J6 两样本一致；FAIL=「共同基点
+        拓扑在当前样本类与判据下不成立」有效结果、不得改判据重试；
+        INCONCLUSIVE=身份/隔离失败或 D5 通道疑云（B′-3 P-1 方法
+        先裁通道）
+执行剖面 ≈16+8 generate，全 greedy；usage 仅作退化/规模核对非性能
+        读数（D8）
+```
+
+当前状态：
+
+```text
+R4 = R4-0 ✅ / A ✅ / B ✅ / C PASS / D ✅ / readiness ✅ / P4 DESIGN ✅
+EXECUTION = LOCKED —— 等待 Human Authorization
+Current blocker = none
+```
