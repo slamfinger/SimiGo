@@ -9566,3 +9566,41 @@ ES-T3 = A/B CLOSED（B-3）/ T3-B′-1 PARTIAL INCONCLUSIVE /
         T3-B′-2 EXECUTED-UNINFORMATIVE（限制说明已交）
 Current blocker = none（替代设计裁定归 human）
 ```
+
+
+### LAB ES-T3 B′-2 HUMAN RULING + T3-B′-3 AUTHORIZED — 2026-10-01
+
+Human 三项裁定（授权文档
+`SIMIGO_LAB_EST3_BPRIME3_AUTHORIZATION_20261001.md`）：
+
+```text
+裁定一 B′-2 = EXECUTED-UNINFORMATIVE：LCCP=0 是观测截断的平凡恒等，
+       不得当成解释 A 的证据；不升格、不引用为 A/B 任一方支持
+裁定二 下一步 = (c)=(a)+(b) 两目的严格拆分：
+       目的 1 观测面扩展——记录 toolCalls 与 finishReason 功能等价面
+              （本栈无 finishReason 暴露：onToolCall 回调 + usage
+              .generationTokens + 流结束位作判别替代，如实落档），
+              先确认「0 text」是否 = tool-call 通道产物
+       目的 2 换 probe——E3-C0 逐字先例（「PALACE-1 E3 probe: 这个
+              会话此前在做什么？用一句话概括。」ANCHORED 已证），
+              重做 b0/b3 对照
+       强制限制条款：若 (c) 后 b0/b3 仍恒等，最多 = 当前 probe 下
+       未观察到 GDN 差异，不得升格为「GDN 不参与 continuation」
+裁定三 E3-C-2 对照差异（ES-R2 Gate C attempt 2 明示索要 vs E3-C-2
+       persona 虚构）= 仅登记观察，不注册独立结论——persona/残留
+       上下文/probe 形式/生成路径均未受控
+Gate C/D = LOCKED（不变）
+```
+
+B′-3 设计要点（预注册读数 P-1/P-2/P-3 在授权文档）：同 Gate B fixture
+（b0/b3），四 cell {b0,b3}×{listing,summary} 逐 cell 独立 restore；
+greedy 128；tools nil 同 B′-2；隔离配方同前 + prefix-pool 计数。
+
+当前状态：
+
+```text
+ES-T3 = A CLOSED / B CLOSED（B-3）/ B′-1 PARTIAL INCONCLUSIVE /
+        B′-2 EXECUTED-UNINFORMATIVE / next = B′-3（AUTHORIZED）
+GATES C-D = LOCKED
+Current blocker = none（B′-3 执行按授权文档进行）
+```

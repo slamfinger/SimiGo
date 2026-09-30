@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = AWAITING_HUMAN_ALTERNATIVE_DESIGN（B′-2 判别力不足 ab20168：双侧 0 文本，疑 tool-call 模式；选项 a/b/c 归 human）
+next mode = BPRIME3_AUTHORIZED（human 2026-10-01 三裁定：B′-2=EXECUTED-UNINFORMATIVE 不作 A 证据；B′-3=观测面扩展[toolCalls/usage.generationTokens/流结束位]+换 E3-C0 逐字 summary probe，四 cell {b0,b3}×{listing,summary}；恒等读数不得升格「GDN 不参与 continuation」；E3-C-2 对照仅观察；Gate C/D LOCKED——授权文档 SIMIGO_LAB_EST3_BPRIME3_AUTHORIZATION_20261001.md）
 ```
 
 2026-09-29 route redefinition:
