@@ -9421,3 +9421,33 @@ Census 附带发现（A3 边界素材）：融合工件内部分裂为 GDN 固�
 ES-T2 = T2-A COMPLETE / VERDICT T2-A2 / T2-B/C/D LOCKED
 Current blocker = none（归类与方向归 human）
 ```
+
+
+### LAB ES-T3 DESIGN LOCKED — GATE A CENSUS DESIGN DELIVERED — 2026-09-30
+
+Human 授权 ES-T3（Computational Result / Representation Decomposition；
+替代假设=「第三形态可能已潜藏于 P 内部，被整体封装」；先验证结构与功
+能关系，不预设 GDN=State/KV=State）。设计文档冻结（`a272424`）：
+
+`docs/00-governance/SIMIGO_LAB_ES_T3_RESEARCH_DESIGN_20260930.md`
+
+```text
+Gate A（DESIGN DELIVERED / 执行待授权）= Representation Component
+  Census：GDN/Attention 两类组件沿 生成→save→load→ChatSession→下一
+  token 全生命周期的七问检查（生命周期绑定/position 承载/continuation
+  参与/独立入口/更新方式/架构依赖/可替换性）——全部代码级可验证；
+  纪律=物理分解≠语义分解，结构事实与计算语义判定分属 A/B
+Gate B（LOCKED）= Component Necessity 最小扰动矩阵（扰动只证必要性）
+Gate C（LOCKED）= Independent Computational Carrier（H✗/oldP✗/
+  candidate✓ → computation → R'）
+Gate D（LOCKED）= Representation Independence（抽离/删P1/跨进程/C→R2）
+预注册 = T3-A1 纯物理分解 / A2 计算语义差异 / A3 独立生命周期 /
+  A4 无法形成独立边界（A2/A3 → 申请 B；A1/A4 → 封存换假设）
+```
+
+当前状态：
+
+```text
+ES-T3 = DESIGN LOCKED / T3-A EXECUTION AWAITING AUTHORIZATION
+T3-B/C/D = LOCKED；ES-R1/D1/R2 = SEALED；C-4 LOCKED
+```
