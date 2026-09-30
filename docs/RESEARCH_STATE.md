@@ -9482,3 +9482,37 @@ A2 CONFIRMED + A3 PARTIAL（in-memory only）**。分道图与生命周期
 ES-T3 = GATE A COMPLETE / T3-B AWAITING HUMAN APPLICATION DECISION
 C-4   = LOCKED
 ```
+
+
+### LAB ES-T3 GATE B COMPLETE — VERDICT B-3 + b3 ANOMALY — 2026-09-30
+
+Human 授权 Gate B 执行（Component Necessity 扰动矩阵；artifact 级手术
+b0/b1/b2/b3 + 统一 greedy probe；无完整 History 保护边界）。执行
+（`fa21551`，零 durable 写入，204 核验）：
+
+```text
+B0 完整      = 55 字符（≡PB1 确定性基线）
+B1 摘除 (1,3,8192)组 = load FAIL（KVCacheError non-contiguous indices
+               ——结构性校验存在）
+B2 摘除 attention KV = load OK(position 17)→probe 0 字符空响应，
+               DIFFERS——attention KV 计算必要
+B3 零化 (1,3,8192)内容 = load OK(position 17)→probe 55 字符与 B0 逐字
+               一致——该组内容对本次 continuation 零影响
+```
+
+**VERDICT = B-3：attention KV 计算必要；(1,3,8192) 组内容可替代/本
+路径未使用。** B3 异常登记（两候选解释未证）：(a) restore 链未将
+LMOutput.State 挂载到线性层 MambaCache——线性态在全部 probe（含 PB1）
+中以 fresh 状态参与，(1,3,8192) 组=write-only 工件；(b) forward 对其
+不敏感。无论何者，operative continuation carrier 收敛于 attention KV
+位置比例分量；固定尺寸线性分量=write-only/结构必要但内容非必要。
+
+三层框架更新：知识 durable✓/计算状态（attention 位置比例分量）durable✓
+operative✓/线性层分量 durable✓ operative✗。
+
+当前状态：
+
+```text
+ES-T3 = GATE B COMPLETE / VERDICT B-3 / GATES C-D LOCKED
+Current blocker = none（C/D 授权与 b3 异常解释方向归 human）
+```
