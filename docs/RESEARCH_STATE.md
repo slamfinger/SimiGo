@@ -9386,3 +9386,38 @@ T2-A 定位 = 依赖普查，非 Tier-2 实现；KV/History/现有 Representatio
 ES-T2 = DESIGN LOCKED / T2-A EXECUTION AWAITING AUTHORIZATION
 T2-B/C/D = LOCKED；生产 State API 禁止；PALACE-2/Backend 不启动
 ```
+
+
+### LAB ES-T2 T2-A COMPLETE — VERDICT T2-A2 CARRIER-FORM GAP — 2026-09-30
+
+Human 授权 T2-A 执行（Dependency Census；只读 vendor/代码追踪，零运行
+时）。执行（`fe35722`）：
+
+```text
+S→R' 依赖闭包表：
+  闭 = identity / position 断言 / model 环境
+  开 = position 执行 + continuation 语义——同一根依赖
+FIRST BLOCKING DEPENDENCY = context computation payload（把会话推进到
+  17 的上下文计算内容）。其宇宙内载体只有两形态：
+  形态 H = 17 条 transcript（full prefill 成本）
+  形态 P = per-token KV artifact（与 P 身份融合）
+  两形态均被 S→R' 硬约束排除 ⇒ 闭包开在「第三形态不存在」
+Vendor API 闭合验证（决定性）：ChatSession 位置承载输入恰两类
+  （history 文本 / cache+state 快照），无第三输入；vendor Important
+  注释自证「表示与计算态拆分→不连贯」危害——缺口是上游推理 API
+  通用形态，非 SimiGo 封装缺失
+Census 附带发现（A3 边界素材）：融合工件内部分裂为 GDN 固定态
+  [1,3,8192]（位置无关压缩分量）与注意力 KV [1,2,31712,256]（位置
+  比例分量）——同一 save/load 单元，无机制区别对待
+```
+
+**VERDICT = T2-A2（carrier-FORM gap）+ A3 边界注记**：信息不缺（两种
+形态都在宇宙内），缺的是第三形态——既非 transcript 重放亦非 P 装载的
+、State 可携带的计算承载形态。
+
+当前状态：
+
+```text
+ES-T2 = T2-A COMPLETE / VERDICT T2-A2 / T2-B/C/D LOCKED
+Current blocker = none（归类与方向归 human）
+```
