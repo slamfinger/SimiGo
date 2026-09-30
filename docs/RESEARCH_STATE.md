@@ -9103,3 +9103,33 @@ continuation 观察能否在进程死亡+表示删除后仍成立；partial auth
 ES-D1 = GATE G COMPLETE / VERDICT G-C / GATE H AWAITING AUTHORIZATION
 C-4   = 续锁
 ```
+
+
+### LAB ES-R1 GATE H COMPLETE — VERDICT H-B FORMATION GAP EVIDENCED — 2026-09-30
+
+Human 授权 Gate H（Lifetime Test；只答 partial authoritative information
+跨表示丢失/进程死亡/重启后的存活情况）。执行双真实进程实验（`f5b4690`）：
+
+```text
+进程 A：restore(17)→probe→O_A（55 字符确定性）→推进至 position 18
+        （仅内存，tunables off 不落盘）→退出
+进程 B（全新）：durable 位置=17（runtime 18 已随 A 死亡——lifetime
+        endpoint 实测）→restore→position 17→同 probe→O_B=O_A 逐字
+零 durable 写入（204 前后核验）
+```
+
+**VERDICT = H-B**：只有 identity + history 以权威形式跨全部边界存活；
+position/continuation 每次都必须从 history 重新推导——formation gap
+获运行时直接证据。精确新事实：**position 持久性是事件门控的**（
+checkpoint 提交固化的 17 跨进程存活且权威；runtime 推进的 18 死亡），
+且存活的 position 嵌在 checkpoint 对（P+meta）中、非独立 carrier——
+与 Gate D「无独立五元 carrier」一致。
+
+观察矩阵（三边界×七维度）已填；Gate I（Sufficiency）待授权。
+
+当前状态：
+
+```text
+ES-D1 = F/G/H COMPLETE / GATE I AWAITING AUTHORIZATION
+C-4   = LOCKED
+```
