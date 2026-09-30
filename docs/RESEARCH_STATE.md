@@ -9071,3 +9071,35 @@ B-2 authoritative-but-unread 字段计法（Gate G）
 ES-D1 = PHASE F COMPLETE / GATE G AWAITING AUTHORIZATION
 Current blocker = none（G/H/I/J 节奏由 human 掌握）
 ```
+
+
+### LAB ES-D1 GATE G COMPLETE — VERDICT G-C PARTIAL AUTHORITY — 2026-09-30
+
+Human 授权 Gate G（Authority Test；只裁 authority 不裁 lifetime；纪律=
+只做事实裁定）。执行（`02643b3`）：
+
+```text
+CC-1 逐字段：meta.storageKey 字段值=DUPLICATE（caller key=寻址权威）；
+  history=lifecycle-dependent AUTHORITATIVE（写入时 DUPLICATE→进程死亡
+  后 SURVIVING-AUTHORITATIVE——**B-1 裁定：authority 是生命周期属性，
+  转移点确定性可见**）；generation/SHA/modelId=各门 AUTHORITATIVE
+  （acceptance/integrity/compatibility）；savedAt=AUTHORITATIVE
+  （retention 排序）
+CC-2  forkPoint=DESCRIPTIVE（零 reader 零决策依赖；部署库 0 实例）；
+  **B-2 裁定：writer-only ⇒ 非 authority**；登记 latent semantic
+  carrier（lineage+position 代理的唯一 durable 物理形态）
+核心问题作答（表示缺席）：PARTIAL authority——identity+语义内容可独立
+  确定；position/continuation/lineage 只能推导
+```
+
+**VERDICT = G-C（PARTIAL AUTHORITY / PARTIAL-STATE CANDIDATE）**——按
+指令不补齐，原样记录进入 Gate H。H 问题精确化：推导出的 position/
+continuation 观察能否在进程死亡+表示删除后仍成立；partial authority
+组合是否构成 Formation（J）前半条件。
+
+当前状态：
+
+```text
+ES-D1 = GATE G COMPLETE / VERDICT G-C / GATE H AWAITING AUTHORIZATION
+C-4   = 续锁
+```
