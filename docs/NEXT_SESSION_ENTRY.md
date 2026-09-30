@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = RESEARCH_LINE_REVIEW_DELIVERED（2026-10-01：Research Line Reset 复盘交付 SIMIGO_LAB_RESEARCH_LINE_REVIEW_20261001.md——15 阶段五问 profile+命题矩阵 P-a…P8+反事实 A/B/C 分级（概念列全 A/证据列大量 B/C=支线机制）+主/支分类（OFF-MAINLINE 6 项降级保留不得再引用为 ES 定义证据）+滑移定位（真正分叉=T3 潜藏假设后无抽样加深单点；三次刹车防固化）+UK-1…4+候选线 A 左支语义（与产品根基对齐）/B 能力缺口门/C reframing 门/D 抽样纪律+决定门 D-1…D-4 只给选项；T3 终判可经 D-3 一并裁；全部悬置归 human）
+next mode = LINE_REVIEW_HUMAN_ASSESSED_AWAITING_FORMAL_RULING（2026-10-01：human 评估复盘达标=「研究坐标系纠偏」非新 ES 发现；三项提升=P4 最大空白[共同计算基点，候选非定义]/T3 降回 backend-specific investigation[保持 CLOSED/LIMITED，永久 SEAL 延后主线重构后裁]/E2 标准+A 级语言+C 级证据=潜在支线句长期检查器[裁定后迁 AGENT_CONTEXT §5]；D 建议=D-1 采信/D-2 A→B→C→D 且 A 先对齐 Contract D1 不做实验/D-3 如上/D-4 确认归档；研究地图关键句=Backend 管「怎么继续计算」、SimiGo 研究「从哪里继续计算」；**正式裁定前零下一阶段执行**——全部悬置归 human）
 ```
 
 2026-09-29 route redefinition:

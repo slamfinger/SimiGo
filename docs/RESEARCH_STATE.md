@@ -9904,3 +9904,54 @@ Research Line Review = DELIVERED（决定门 D-1…D-4 待 human）
 T3 终判 = 悬置（可经 D-3 一并终判）
 Current blocker = none
 ```
+
+
+### LAB RESEARCH LINE REVIEW HUMAN ASSESSMENT — RECOMMENDATIONS REGISTERED / FORMAL RULING PENDING — 2026-10-01
+
+Human 对复盘的评估（**登记为评估+研究建议，非 D-1…D-4 正式裁定**——
+原文坚持「先由 human 对 D-1～D-4 做正式裁定，再让本地模型执行下一阶
+段」）：
+
+```text
+总评   复盘达标：完成的是「研究坐标系纠偏」，不是发现新 Execution
+       State——把「我们已经知道什么」与「曾为理解 backend 而研究了
+       什么」分开
+三项提升
+  ① P4 = 最大空白：一个已形成的 State 能否成为多个未来计算的共同
+     基点——研究线从未直接触及；「共同基点+增量计算」直觉首次获得
+     历史证据对应物；仍只是候选重构方向，不因此宣布为 ES 定义
+  ② T3 重定位：从主线研究问题降回「已完成大量有效边界探测的
+     backend-specific investigation」——原问合法（Representation
+     内部是否有能继续计算的独立信息），偏移=假设检验→单 vendor→
+     单模型→单样本→深挖内部机制；其问题不是错误而是「已答到当前
+     backend-specific investigation 的边界」
+  ③ E2 标准 + 长期检查器：优先问「这个结论是否具有 E2 的概念/证据
+     等级匹配强度」；「A 级语言 + C 级证据 = 潜在支线句」应成为
+     以后研究治理的长期检查器（正式裁定后迁入 AGENT_CONTEXT §5
+     Research method inheritance）
+D 建议（建议非裁定）
+  D-1 采信分级与降级清单（未删历史，只重定义证据层级与主线归属）
+  D-2 顺序 A→B→C→D；**A ≠ 马上做实验**——先与现有 Contract D1、
+      已证 continuation 事实重新对齐，确认能补 P5 哪部分，再进 B
+  D-3 T3 不重开实验、也不宣布无效；保持 CLOSED/LIMITED，永久
+      SEALED 与否延后至主线重构完成后裁
+  D-4 确认支线归档；六项 OFF-MAINLINE 不删除；归档问询标准答案
+      （原话）：「研究过，并且有明确证据；只是证据等级、问题归属
+      和跨 backend 价值不足以让它成为主线」
+研究地图（纠偏后）
+  SimiGo → Execution State? → 存在性(已证)/持久性(已证)/
+  可执行性(已证/有边界) → 共同计算基点?(P4 未研究) → Fork/Reuse
+  → Incremental Continuation → Backend
+  关键句（原话）：Backend 是「怎么继续计算」的地方；SimiGo 要研究
+  的是「从哪里继续计算」——由此避免「把哪个内部 tensor/cache/KV
+  定义成 State」的问题（现在暂不需要回答）
+```
+
+当前状态：
+
+```text
+Research Line Review = DELIVERED / HUMAN-ASSESSED
+D-1…D-4 = 研究建议已登记；正式裁定悬置（裁定前零下一阶段执行）
+P4 = 最大空白 / 下一阶段核心候选（升级须经定义门）
+Current blocker = none（正式裁定归 human）
+```
