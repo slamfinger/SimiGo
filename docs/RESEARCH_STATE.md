@@ -8592,3 +8592,41 @@ Human 第二层判断（draft `ddb9cbc` 不进入 external review）：
 
 收敛路线钉死：不是「PALACE 理论上该保存什么 → 找对应物」，而是「磁盘上
 实际保存了什么 → 删除它会失去什么 → 逼出 PALACE 该保存什么」。
+
+### LAB PALACE1 PRODUCT WRITER PROVENANCE AUDIT COMPLETE — 2026-09-30
+
+Human 指令走选项 2（先 provenance 后实验；实验须在隔离副本上、原始 79G
+不动）。产品仓定位 = `~/Documents/SimiGo`（slamfinger/SimiGo，main @
+`dc12a0c`，clean）。只读审计完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_PRODUCT_WRITER_PROVENANCE_AUDIT_
+20260930.md`。
+
+11 问全部 file:line 作答，关键结论：
+
+```text
+writer     = NativeMLX.saveSessionCache/performSave；触发 = 每成功轮自动
+             （0.15s@58k，roll-forward last-known-good）+ 驱逐保护 + 显式
+identity   = storageKey = agentId/sessionId/logicalBranchId（caller 供给），
+             且产品把 storageKey 直接作为 executionID 传给 Lab 契约调用
+             ——两套身份方案在运行时调用层已部分映射
+integrity  = generation（每保存新 UUID，fork 随拷）+ cacheSHA256（官方
+             safetensors 流式哈希）双重 fail-closed 恢复判据 + modelId 同源
+transcript = managed.historyJSON 逐字落盘；恢复时 makeChatMessages 重建
+pool       = NativeMLXPrefixPool 持 Lab ExecutionBindingRegistry（FORK-3
+             step-9，日常路径绑定真实持有者，进程生命周期）；重启 rescan +
+             P-I1 自愈；与 checkpoint 的代码层关联未建立（UNKNOWN 维持）
+retention  = 机制存在（BETA-STORAGE-1：成对回收/ownership-aware/字节预算
+             64GiB+16GiB）——62G/15G 为预算内累积（修正 Physical Audit
+             F-6）；C 答案按 human 指令撤换「零个」措辞
+无自主恢复  删除 checkpoint 后无系统自主恢复路径（fail-closed throw）；
+             恢复 = 客户端协作全量对话 + 重算
+```
+
+当前状态：
+
+```text
+PALACE1 writer provenance   = COMPLETE / AWAITING SECOND-LAYER
+Current blocker             = none（实验矩阵 E1/E2/E3 由 human 决定；
+                              隔离副本实验、原始 79G 不动、恢复判据先行）
+```
