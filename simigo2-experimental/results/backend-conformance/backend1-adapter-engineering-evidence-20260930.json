@@ -2,7 +2,7 @@
   "evidence": "BACKEND1_ADAPTER_ENGINEERING_ROUND1_TARGETED",
   "date": "2026-09-30",
   "base": "5ab7247 + audit 7f1fa4a + impl 2cf5adb + tests (this commit)",
-  "worktree": "main worktree, clean at commit time; no unrelated changes mixed in",
+  "worktree": "main worktree; evidence ran on 2cf5adb PLUS the restore-fallback source fix (uncommitted at run time, committed post-seal with this provenance note)",
   "command": "swift test --filter 'LLAMAServerExecutionStateAdapterTests|ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|RuntimeBackendContractTests|BackendConformanceMatrixTests|ExecutionContinuityCoordinatorTests|Fork3StructuralBattery|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests|PrefixPoolSessionLifecycleTests'",
   "total": { "passed": 75, "failed": 0 },
   "bundles": {

@@ -234,7 +234,15 @@ public final class LLAMAServerExecutionStateAdapter: @unchecked Sendable {
     guard let current = coordinator.handle(id) else {
       throw LLAMAServerAdapterError.unknownExecution(id)
     }
-    let continuation = try restoredContinuation(for: id, at: targetPosition)
+    // If no lifecycle record exists at the position, no captured
+    // representation can exist there either (every adapter binding follows
+    // a lifecycle record), so the coordinator's registered
+    // noRepresentationAtPosition outcome governs; the current continuation
+    // is passed as a neutral value that only reaches semantic state on a
+    // successful restore.
+    let continuation =
+      (try? restoredContinuation(for: id, at: targetPosition))
+      ?? current.continuation
     return try await coordinator.restore(
       current,
       request: ExecutionRestoreRequest(
