@@ -10341,3 +10341,31 @@ R4 = 不变（P4 PASS / P5 FAIL 有效结果，待 human second layer）
 Audit = CLOSED（执行真实性已现场核实）
 Current blocker = none
 ```
+
+
+### LAB HUMAN EVIDENCE RULING — ONLY HARNESS SOURCES CREDITED — 2026-10-01
+
+Human 裁定（执行真实性审计之后）：
+
+```text
+裁定   「提交及推送 harness 源码 SimiGoTests/Palace1R4P5ExecutionTests.swift
+       与 Palace1R4P5AuditTests.swift，其他的不采信。」
+动作   两文件已提交并推送产品仓 slamfinger/SimiGo main：
+       0dc166b（dc12a0c..0dc166b，fast-forward，仅此两文件）
+       ——公开可查、可独立审阅、可自行重放的源码 = 唯一获采信记录
+效力   ① P4/P5 的观测文件、判读输出等**自报产物 human 不采信**——
+       Lab 库中已归档副本保留（不删除），状态标记为 not-credited；
+       ② P4 PASS / P5 FAIL 判读 = 「已记录/机械产出」，证据基础
+       待 human 以其自行采信的方式（公开源码独立重放）复核后方可
+       引用；③ 仪器化整改项（run-UUID/独立观测文件/单调钟）在
+       harness 源码中落地后方可在未来轮次采信
+```
+
+当前状态：
+
+```text
+R4 = P4 PASS / P5 FAIL（均「已记录、观测基础 human 不采信」状态）
+Trusted record = harness sources @ slamfinger/SimiGo 0dc166b（public）
+Next = human second layer（以其自选方式复核）
+Current blocker = none
+```

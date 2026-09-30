@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = P5_EXECUTED_JUDGMENT_FAIL_VALID_RESULT（2026-10-01：授权 1d66b74[范围=dcab489 零修改]→3 独立进程 invocation 全 SUCCEEDED→机械判读 **overall FAIL**（4/4 cells Y≠Y′）——原始事实：手术唯一变更键=[history]（17→0/16→0）；4/4 tensor SHA=S₀、restore 成功、history=0、生成 NORMAL、0 tool_calls；Y 呈「无先前对话」形态（S1-ΔA₁=「该会话此前未进行任何对话……」S2-ΔB₁=「无」）；隔离 204→204 池 2→2——按注册措辞收束（failure-validity，有效结果）：「continuation 入口仍要求历史文本进入计算路径（或 (S₀,Δ) 形态未被接受）」=P5 第一问答案否；无机制归因（D7）；P4 PASS 不受影响；无追加实验——结果文档 SIMIGO_LAB_R4_P5_EXECUTION_RESULTS_20261001.md+观测 65 行已落库——**当前停：FAIL 的解读与下一步方向归 human second layer**）
+next mode = HUMAN_EVIDENCE_RULING_ONLY_SOURCES_CREDITED（2026-10-01：human 裁定「提交及推送 harness 源码，其他的不采信」——P4/P5 执行+审计 harness 源码已推 slamfinger/SimiGo main 0dc166b（公开可查唯一获采信记录）；观测/判读等自报产物 human 不采信（Lab 归档副本保留、标记 not-credited）；P4 PASS/P5 FAIL 判读=已记录但证据基础待 human 以公开源码独立重放方式复核后方可引用；仪器化整改（run-UUID/独立观测文件/单调钟）须落地 harness 方可在未来轮采信——**当前停：human second layer（自选方式复核）**）
 ```
 
 2026-09-29 route redefinition:
