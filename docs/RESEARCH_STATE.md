@@ -8265,3 +8265,41 @@ Phase A/B/C                        = PASS / REGISTERED
 BACKEND-1 adapter engineering R1   = COMPLETE / REVIEW PASS / REGISTRATION_REQUIRED
 Current blocker                    = explicit human/repository registration
 ```
+
+
+### 2026-09-30 BACKEND-1 adapter engineering Round 1 — EXTERNAL REVIEW REGISTERED
+
+External Review 落地于 commit ce8c7a6（5b47ea8..ce8c7a6），并按双角色纪律完成独立审查。
+
+Verdict：
+
+```text
+Engineering Round 1 = PASS / REGISTRATION_REQUIRED
+四审查点 R-1…R-4     = PASS
+New blocker           = none
+```
+
+四审查点：
+
+- R-1 SUFFICIENT 支撑性 = PASS：既有契约证据 19/19 + 三异构 backend conformance 3/3 + 真实 transport 组合体 14/14；A2 ownership/隔离与 A8 semantic continuity 同时成立。该结论限定于已测 adapter 类，不外推为 universal backend portability。
+- R-2 ownership 未被夺取 = PASS：ExecutionStateHandle 无 backend 写入路径；adapter 的语义变更全部经 coordinator 公共 API；adapter 自有状态属于 R/T/P；foreign / mispositioned direct-entry guards 有测试证据。
+- R-3 B1 不参与 = PASS，并登记为方法论原则：server-owned weights / physical lifecycle 不属于该 adapter 的所有权范围；强行加入 B1 会制造错误的物理所有权主张。登记原则：Seam 是能力边界，不是强制组件清单。同时 B1 仍属于 registered seam 组成部分，本轮未行使 ≠ 可废弃。
+- R-4 无叙事性夸大 = PASS：cancellation 统一表述为 adapter-level cancellation containment；G-9 cancellation contract surface 仍 NOT CLOSED。
+
+随登记继承四条 strengthening：
+
+1. cancellation = adapter-level containment，非 universal abstraction；
+2. seam = capability boundary，非 mandatory component checklist；
+3. stub-transport 与 live-server evidence 分层；stub response 不称 live E2E，live 端到端仍属于 RQ1 既有证据范围；
+4. SUFFICIENT 适用域限定为已测的 server-owned weights + recompute strategy adapter 类。
+
+当前门位：
+
+```text
+Phase A / B / C                         = PASS / REGISTERED
+BACKEND-1 adapter engineering Round 1  = COMPLETE / PASS / REGISTERED
+Current blocker                         = none
+Next direction                          = seam stability / long-term backend-independence boundary research
+```
+
+下一阶段不得直接堆第二个 backend 的功能；必须先建立独立 opening/definition gate。Contract 不修改，测试面不因本登记自动扩张，不选择 storage / persistence format / API，不做 performance 或 universal portability claim。
