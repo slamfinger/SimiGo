@@ -8873,3 +8873,41 @@ BACKEND-2 audit = COMPLETE / AWAITING SECOND-LAYER
 Current blocker = none（实验矩阵 A–E 是否开、G-B2 缺口如何闭合，由
                   human 决定）
 ```
+
+
+### LAB ES-R1 PHASE A+B COMPLETE — 2026-09-30
+
+Human 开启 ES-R1（Execution State 可复用性实验；唯一问题 = Representation
+消失后已存在的 State 能否在无完整 History/无 Full Cold Prefill 下重新物化
+并继续）。本轮按指令只执行 Phase A + Phase B：
+
+`docs/00-governance/SIMIGO_LAB_ESR1_PHASE_AB_FACT_TRACE_20260930.md`
+（`46058bf`）。
+
+Phase A（State Inventory）关键结论：
+
+```text
+A1 身份 = caller key（storageKey 一物三面：运行时寻址/文件名/Lab
+   ExecutionID 同值）；request UUID 瞬态；generation/SHA = 完整件标记
+A2 四个位置物不等：logical position / KV token length(31712) /
+   generation / history.count(17)——产品无独立 logical position 字段
+A3 continuation = history 末端（delta 契约）；Lab 侧 nextInput/position；
+   无任何独立 continuation marker
+A4 分类：live session = P+R 融合（唯一二合一物）；meta.json = D
+   candidate；BindingRegistry = R；dirty/mode = T；五元组物理实例 = U
+```
+
+Phase B（Live-State Baseline）：**PB1 CONFIRMED**——restore(position 17)
+→ probe「继续执行。」→ O1；rewind → restore → probe → O2 = O1 逐字相同
+（55 字符深度会话关联延续）；确定性基线锁定（P1 强证据层可用）。
+
+Phase D 前置发现（候选 R1-B 形状，待实验裁定）：现有 API 中最接近 Reuse
+的入口 = loadSessionCache——但其本质是把表示装回 State，而非从 State
+物化新表示；符合「State Reuse」定义的入口在现有产品中尚未发现。
+
+当前状态：
+
+```text
+ES-R1 = PHASE A+B COMPLETE / PHASE C AWAITING HUMAN BOUNDARY RULING
+产物① = FACT TRACE（本文件）；②③④ 待 Phase C/D
+```
