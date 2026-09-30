@@ -9830,3 +9830,37 @@ Closure Review = DELIVERED（推荐岔 3：T3 关闭 + 缺口转出）
 T3 续/封终判 + 候选问题定义门 = 归 human
 Current blocker = none
 ```
+
+
+### LAB RESEARCH LINE RESET TASKED — READ-ONLY RETROSPECTIVE — 2026-10-01
+
+Human 下达 Research Line Reset 复盘任务（非「总结过去」——判断哪些研究
+直接验证 SimiGo Execution State 命题、哪些是被当前 backend 内部结构带
+偏的支线）：
+
+```text
+原则   只读/不改代码/不执行实验/不提新实现方案；证据=research state/
+       governance/sealed 结论/artifacts/commit history/C-0
+禁令   ❶ 不得因近期讨论倒推「Execution State=某种中间结果/KV/hidden
+         state/cache」❷ 不得把「共同计算基点」登记为已确定 Execution
+         State 定义——只能作为候选 reframing hypothesis（S ?= Future
+         Computation Base），升级归 human ❸ Human Decision Gate 只给
+         选项不裁定
+任务   建 SimiGo Research Line（ES-R1→T3/C-0），每阶段五问
+       （Original Question/Evidence/Scope/Dependency/Future Value）；
+       覆盖 ES-R1/D1/R2/T2/T3(A/B/B′/C-0)/PALACE-1/FSB-2；命题追踪
+       （命题→实验→证据→结论→当前是否仍成立）；反事实分级 A
+       backend-independent / B backend-mediated / C backend-specific；
+       找出左支（Execution State）→右支（Backend mechanism）滑移点
+交付   SIMIGO_LAB_RESEARCH_LINE_REVIEW_20261001.md（12 节固定结构）
+验收   Q1 过去真正证明了什么（可复用事实）/ Q2 哪些是为理解 backend
+       而非证明 SimiGo（降级不删除）/ Q3 从零重来会否选同路径（若否，
+       从哪个节点偏移、为什么）
+```
+
+当前状态：
+
+```text
+Research Line Review = TASKED / IN PROGRESS（只读）
+T3 终判 + 候选问题定义门 = 继续悬置（复盘交付后一并归 human）
+```
