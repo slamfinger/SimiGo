@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`SEAM_STABILITY_AUDIT_REGISTERED / CLOSED`
+状态：`EXEC_STATE_CONTRACT_OPENING_DRAFT_REVIEWED / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -58,6 +58,10 @@
    - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_20260930.md`
 27. 读其 external review：
    - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_EXTERNAL_REVIEW_20260930.md`
+28. 读 Architecture Contract opening draft：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_OPENING_DRAFT_20260930.md`
+29. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`
 
 ## Current snapshot
 
@@ -69,8 +73,9 @@ architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
+ARCH-CONTRACT = OPENING DRAFT REVIEW PASS / ACTIVATION REQUIRED / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
+next mode = ARCH_CONTRACT_REGISTRATION / SYNTHESIS_ONLY_NO_REDESIGN
 ```
 
 2026-09-29 route redefinition:
@@ -265,6 +270,20 @@ next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
   Round 1 适用域 / S2 机械检测 standing 最低标准）随登记固化。
 - Current blocker = none。
 
+2026-09-30 Architecture Contract opening draft + review:
+
+- Human instruction: 提议 `EXECUTION_STATE_ARCHITECTURE_CONTRACT_OPENING`
+  （下一方向 = 把工程事实证明出的语义提升为唯一上游契约；不马上做第二个
+  backend、不做 durable store 实现）。
+- Participant draft（`0573ec3`）: AC-1 Semantic Core / AC-2 Identity·
+  Continuity（same-vs-new State 判据）/ AC-3 Representation Boundary 四态
+  结果 / AC-4 Backend Independence 准入标准——route 六问全部收口；合成
+  纪律（可追溯 + 冲突即 open point）；契约 v1.0 版本化。
+- Draft review verdict: `PASS / ACTIVATION_REQUIRED`；五条 strengthening
+  （synthesis ≠ re-litigation / Q5 按 Phase B 先答收口 / AC-2 可机械检验 /
+  contract v1.0 成为 drift 参照 / open points 治理）随登记固化。
+- Current blocker = explicit human registration。
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -282,14 +301,16 @@ Canonical route document:
 
 ## Next session task
 
-1. Maintain the registered Seam Stability standing drift-detection surface (S6).
-2. Any G-9 / G-6 / G-7 / G-10 trigger enters an independent contract gate;
-   no silent contract change.
-3. Axis-d must be re-inspected first when durable-store or productization work
-   is activated.
-4. PALACE remains separately scoped; G-1…G-10 remain classified, not resolved;
-   M-1…M-5 and Phase B/C inherited conditions remain active.
-5. No performance / universal portability claim.
+1. Explicitly approve or reject registration of the Architecture Contract
+   opening draft review `PASS / ACTIVATION_REQUIRED`。
+2. Registration 后开始 contract synthesis/audit（AC-1…AC-4 → 契约文档 v1.0
+   草案；synthesis-only：每条陈述可追溯登记工件，冲突即 open point）。
+3. 不重设计代码；不修改已登记语义；不选 storage / persistence format /
+   API / protocol；不新增测试（re-run 须 hash 级绑定）。
+4. Maintain the Seam Stability standing drift-detection surface（S6）；契约
+   v1.0 登记后扩展为双向 drift 参照。
+5. PALACE 不消费；G-1…G-10 与全部 inherited conditions 继续有效；open
+   points 只能经各自 gate 解决；G-9/G-6/G-7/G-10 触发纪律不变。
 
 继续区分：
 

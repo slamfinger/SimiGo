@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Seam stability audit 已登记封口（registration artifact：`docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_REGISTRATION_20260930.md`；review `PASS / REGISTRATION_REQUIRED`；裁决 = `STABLE-AS-REGISTERED`（有界）；standing drift-detection 已激活）。不做存储选型、persistence format/API 设计、contract 修改或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。新 gate `EXECUTION_STATE_ARCHITECTURE_CONTRACT_OPENING`（route 登记的 NEXT SYNTHESIS GATE）已开启前两步：participant draft（`0573ec3`，AC-1…AC-4 合成 route 六问）通过 external review（`PASS / ACTIVATION_REQUIRED`，五条 strengthening）；等待 explicit registration 激活 contract synthesis/audit。合成纪律 = 每条陈述可追溯登记工件、冲突即 open point；不重设计代码、不选存储/格式/API、不消费 PALACE。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8377,4 +8377,41 @@ Next standing mode         = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 Registration:
 `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_REGISTRATION_20260930.md`
 Registration commit chain: `c9299375` → `671a69f` → `1857d57`.
+
+### LAB EXECUTION STATE ARCHITECTURE CONTRACT OPENING DRAFT REVIEWED — 2026-09-30
+
+新 gate（route 登记的 NEXT SYNTHESIS GATE）前两步完成：
+
+```text
+Opening draft = 0573ec3（SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_
+  OPENING_DRAFT_20260930.md）
+  研究问题 = 能否定义独立于 MLX/backend/model format/physical representation
+  的 Execution State Architecture Contract，使「同一 Execution State」语义
+  不依赖实现，成为 PALACE durable-state 与 Backend Independence 的唯一上游
+  语义锚点
+  子问题 = AC-1 Semantic Core（route Q2/Q3）/ AC-2 Identity·Continuity
+  same-vs-new-State 判据（route Q1）/ AC-3 Representation Boundary 四态
+  结果（route Q4/Q5/Q6）/ AC-4 Backend Independence 准入标准
+  合成纪律 = 每条陈述可追溯登记工件；冲突 = open point；契约 v1.0 版本化，
+  修订只能经 contract gate
+External review = …_EXTERNAL_REVIEW_20260930.md，verdict
+  `PASS / ACTIVATION_REQUIRED`
+  五条 strengthening：synthesis ≠ re-litigation（只引用不重推）/ route Q5
+  按 Phase B 登记先答收口 / AC-2 判据与 S2+battery 挂钩可机械检验 /
+  contract v1.0 成为 drift 参照（S6 双向检测，C-13 类信号）/ open points
+  只能经各自 gate 解决
+```
+
+继承不变：Phase B 六条件、Phase C 四 strengthening、M-1…M-5、G-1…G-10、
+Round 1 四 strengthening、seam stability standing 纪律（S2/S6）、
+evidence-source-state 纪律、PALACE SEPARATELY SCOPED。
+
+当前状态：
+
+```text
+Seam stability               = PASS / REGISTERED / CLOSED
+Architecture Contract draft  = PASS / ACTIVATION_REQUIRED
+Contract synthesis/audit     = NOT STARTED（registration 后才可开始）
+Current blocker              = explicit human/repository registration
+```
 
