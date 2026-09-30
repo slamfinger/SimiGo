@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 adapter engineering Round 1 = `PASS / REGISTERED / CLOSED`（859313a/b36525a；provenance 补丁 716de52）。新 gate `SEAM_STABILITY_OPENING` 的 participant draft（6d5e08d，S1–S6）已通过 external review（`PASS / ACTIVATION_REQUIRED`，五条 strengthening）；等待 explicit registration 激活 seam stability audit。不做存储选型、persistence format/API 设计、contract 修改或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 adapter engineering Round 1 = `PASS / REGISTERED / CLOSED`（859313a/b36525a；provenance 补丁 716de52）。`SEAM_STABILITY_OPENING` 已完成 participant draft（6d5e08d）与 external review（aa50504，`PASS / ACTIVATION_REQUIRED`），并已登记/激活（registration 2ea4232b）：seam stability audit ACTIVE / NOT YET EXECUTED。不做存储选型、persistence format/API 设计、contract 修改或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8304,37 +8304,30 @@ Next direction                          = seam stability / long-term backend-ind
 
 下一阶段不得直接堆第二个 backend 的功能；必须先建立独立 opening/definition gate。Contract 不修改，测试面不因本登记自动扩张，不选择 storage / persistence format / API，不做 performance 或 universal portability claim。
 
-### LAB SEAM STABILITY OPENING DRAFT REVIEWED — 2026-09-30
+### LAB SEAM STABILITY OPENING REGISTERED / ACTIVATED — 2026-09-30
 
-新 gate `SEAM_STABILITY_OPENING` 已按 Round 1 封口指令开启前两步：
+新 gate `SEAM_STABILITY_OPENING` 已完成 opening/definition gate，并由 explicit human/repository registration 激活。
 
-```text
-Opening draft = 6d5e08d（SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_20260930.md）
-  研究问题 = E1+E3+B1 seam 与 Execution Semantic Snapshot 边界能否作为
-  SimiGo 长期 backend-independence 的稳定架构边界（contract 变更只由真实
-  语义需求驱动）；Stability ≠ immutability 预钉死
-  子问题 = S1 稳定性四轴（semantic ownership / extension / change
-  discipline / composition）/ S2 contract-change 机械检查表 / S3 G-gap
-  稳定性风险地图（只分类不解决）/ S4 second-backend 需求分析（审计级
-  thought experiment，不实现）/ S5 productization 判据 / S6 standing
-  drift-detection 面（从既有工件组装，re-run ≠ expansion）
-  verdict taxonomy = STABLE-AS-REGISTERED / STABILITY-CONDITIONAL / UNSTABLE
-External review = SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_EXTERNAL_REVIEW_
-  20260930.md，verdict `PASS / ACTIVATION_REQUIRED`
-  五条 strengthening：S4 对象抽象化不点名技术 / S1 轴 d 只审所有权交互
-  判据 / S3 是风险地图非实现队列 / verdict 判据采数前固化不得增删 /
-  re-run 证据绑定 commit hash 级源码状态
-```
-
-继承不变：Phase B 六条件、Phase C 四 strengthening、M-1…M-5、G-1…G-10、
-evidence-source-state 纪律（716de52）、PALACE = SEPARATELY SCOPED（不读取
-不依赖，接口须显式 bridging registration）。
+- Participant draft（`6d5e08d`）：S1–S6。
+- External review（`aa50504`）：`PASS / ACTIVATION_REQUIRED`。
+- Registration artifact：
+  `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_OPENING_REGISTRATION_20260930.md`。
+- Registration commit：`2ea4232b`。
+- Registered verdict taxonomy：
+  `STABLE-AS-REGISTERED / STABILITY-CONDITIONAL / UNSTABLE`。
+- Stability 定义钉死为 `Stability ≠ immutability`；允许经登记的 contract gate 演化，但变更必须受纪律约束并可检测。
+- S1–S6 audit scope 已激活；verdict 判据采数前固定，不得因结果增删。
+- PALACE = SEPARATELY SCOPED，不消费；G-1…G-10 只分类不解决。
+- Phase B 六条件、Phase C strengthening、M-1…M-5 均 inherited / NOT CLOSED。
+- 不修改 contract、不扩测试面、不选 storage / persistence format / API、不做 performance 或 universal portability claim。
+- Re-run evidence 必须绑定 commit-hash 级源码状态；继续执行 `observed code fact ≠ inferred storage design ≠ selected implementation`。
 
 当前状态：
 
 ```text
 Round 1（adapter engineering） = PASS / REGISTERED / CLOSED
-Seam stability opening draft   = PASS / ACTIVATION_REQUIRED
-Seam stability audit           = NOT STARTED（registration 后才可开始）
-Current blocker                = explicit human/repository registration
+Seam stability opening         = PASS / REGISTERED / ACTIVATED
+Seam stability audit           = ACTIVE / NOT YET EXECUTED
+Current blocker                = none
 ```
+
