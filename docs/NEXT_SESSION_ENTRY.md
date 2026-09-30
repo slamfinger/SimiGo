@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`BACKEND1_ENGINEERING_ROUND1_REVIEW_PASS / REGISTRATION_REQUIRED`
+状态：`BACKEND1_ENGINEERING_ROUND1_REGISTERED / CLOSED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -59,9 +59,9 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = ENGINEERING ROUND1 COMPLETE / REVIEW PASS / REGISTRATION PENDING
+BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = BACKEND1_ENGINEERING_ROUND1_REGISTRATION / NO_CONTRACT_CHANGE_NO_TEST_EXPANSION
+next mode = SEAM_STABILITY_OPENING / NOT_STARTED
 ```
 
 2026-09-29 route redefinition:
@@ -243,18 +243,13 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Engineering Round 1
-   external review `PASS / REGISTRATION_REQUIRED`。
-2. Registration 后 Round 1 封口；下一阶段方向（human 已给方向性判断，登记时
-   确认）：seam 稳定性 / 长期 backend-independence 边界研究优先于第二个
-   backend 的功能堆量。
-3. Do not modify contract；do not expand the test surface；do not select
-   storage / persistence format / API design。
-4. 继续继承 M-1…M-5、Phase B 六条件、Phase C 四 strengthening、G-1…G-10；
-   cancellation 表述用 adapter-level containment（G-9 NOT CLOSED）；不做
-   performance claim。
+1. Round 1 已完成登记并封口。
+2. 下一方向为 seam stability / long-term backend-independence boundary research；优先于第二个 backend 功能堆量。
+3. 下一方向必须先通过独立 opening / definition gate，未登记前不得进入工程实现。
+4. 不修改 contract；不因登记扩大测试面；不选择 storage / persistence format / API；不做 performance、artifact portability 或 universal backend-independence claim。
+5. 继续继承 M-1…M-5、Phase B 六条件、Phase C 四 strengthening、G-1…G-10；cancellation 使用 adapter-level containment，G-9 NOT CLOSED。
 
-登记时必须继续区分：
+登记后必须继续区分：
 
 ```text
 observed code fact
