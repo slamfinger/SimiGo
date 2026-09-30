@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`BACKEND1_ENGINEERING_ROUND1_REGISTERED / CLOSED`
+状态：`SEAM_STABILITY_OPENING_DRAFT_REVIEWED / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -50,6 +50,10 @@
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_AUDIT_20260930.md`
 23. 读其 external review：
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_EXTERNAL_REVIEW_20260930.md`
+24. 读 Seam Stability opening draft：
+   - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_20260930.md`
+25. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`
 
 ## Current snapshot
 
@@ -59,9 +63,10 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED
+BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
+SEAM-STABILITY = OPENING DRAFT REVIEW PASS / ACTIVATION REQUIRED / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = SEAM_STABILITY_OPENING / NOT_STARTED
+next mode = SEAM_STABILITY_REGISTRATION / NO_CONTRACT_CHANGE_NO_NEW_TESTS
 ```
 
 2026-09-29 route redefinition:
@@ -226,6 +231,20 @@ next mode = SEAM_STABILITY_OPENING / NOT_STARTED
   分层 / SUFFICIENT 适用域限定）随登记固化。
 - Current blocker = explicit human registration。
 
+2026-09-30 Seam stability opening draft + review:
+
+- Human instruction: `从 opening/definition gate 开始`。
+- Participant draft（`6d5e08d`）: S1–S6（稳定性四轴 / contract-change 机械
+  检查表 / G-gap 风险地图 / second-backend 需求分析（审计级）/ productization
+  判据 / standing drift 面）；Stability ≠ immutability 预钉死；verdict
+  taxonomy 三分法（STABLE-AS-REGISTERED / STABILITY-CONDITIONAL / UNSTABLE）。
+- Draft review verdict: `PASS / ACTIVATION_REQUIRED`；五条 strengthening 随
+  登记固化（S4 抽象化 / 轴 d 读法 / S3 非实现队列 / verdict 判据采数前
+  固化 / re-run 绑定源码状态）。
+- PALACE = SEPARATELY SCOPED 不消费；G-1…G-10 只分类不解决；无实现、无新
+  测试、无 contract 变更授权。
+- Current blocker = explicit human registration。
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -243,11 +262,15 @@ Canonical route document:
 
 ## Next session task
 
-1. Round 1 已完成登记并封口。
-2. 下一方向为 seam stability / long-term backend-independence boundary research；优先于第二个 backend 功能堆量。
-3. 下一方向必须先通过独立 opening / definition gate，未登记前不得进入工程实现。
-4. 不修改 contract；不因登记扩大测试面；不选择 storage / persistence format / API；不做 performance、artifact portability 或 universal backend-independence claim。
-5. 继续继承 M-1…M-5、Phase B 六条件、Phase C 四 strengthening、G-1…G-10；cancellation 使用 adapter-level containment，G-9 NOT CLOSED。
+1. Explicitly approve or reject registration of the Seam Stability opening
+   draft review `PASS / ACTIVATION_REQUIRED`。
+2. Registration 后开始 seam stability audit（S1–S6，判据先于证据；verdict
+   taxonomy 判据随登记固化后不得增删）。
+3. 不修改 contract；不新增测试（既有 battery re-run 须绑定 commit hash 级
+   源码状态）；不选 storage / persistence format / API；不做 performance
+   claim。
+4. PALACE 不消费；G-1…G-10 只分类不解决；M-1…M-5 与 Phase B/C 全部
+   inherited conditions 继续有效。
 
 登记后必须继续区分：
 
