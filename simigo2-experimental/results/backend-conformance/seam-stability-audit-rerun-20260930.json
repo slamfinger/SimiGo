@@ -1,0 +1,10 @@
+{
+  "evidence": "SEAM_STABILITY_AUDIT_REGRESSION_RERUN",
+  "date": "2026-09-30",
+  "sourceState": "b03118856ae4107d416a76ec7ab35dfdac4712ef",
+  "command": "swift test --filter 'LLAMAServerExecutionStateAdapterTests|ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|RuntimeBackendContractTests|BackendConformanceMatrixTests|ExecutionContinuityCoordinatorTests|Fork3StructuralBattery|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests|PrefixPoolSessionLifecycleTests'",
+  "total": { "passed": 75, "failed": 0 },
+  "bundles": { "SimiGoRuntimeContractTests": 19, "SimiGo2ExperimentalTests_selected": 56 },
+  "purpose": "S6 standing drift-detection: confirms zero drift of the standing battery since Round 1 evidence (5b47ea8); re-run bound to commit-hash source state per the evidence-source-state discipline (716de52)",
+  "nature": "regression re-run of existing battery only; not test expansion; not production readiness, performance, or portability evidence"
+}
