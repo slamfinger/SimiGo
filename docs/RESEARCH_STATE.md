@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Seam stability audit（S1–S6）已执行完成（`33fb410`，判据按 opening registration 冻结版逐字适用；re-run 75/75 绑定 `b031188` 零漂移；contract target 自 09-25 后零 commit 为轴 c 直接证据）；裁决 = `STABLE-AS-REGISTERED`（有界）；external review = `PASS / REGISTRATION_REQUIRED`，等待 explicit registration。不做存储选型、persistence format/API 设计、contract 修改或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Seam stability audit 已登记封口（registration artifact：`docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_REGISTRATION_20260930.md`；review `PASS / REGISTRATION_REQUIRED`；裁决 = `STABLE-AS-REGISTERED`（有界）；standing drift-detection 已激活）。不做存储选型、persistence format/API 设计、contract 修改或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8331,7 +8331,7 @@ Seam stability audit           = ACTIVE / NOT YET EXECUTED
 Current blocker                = none
 ```
 
-### LAB SEAM STABILITY AUDIT REVIEW PASS — 2026-09-30
+### LAB SEAM STABILITY AUDIT REGISTERED / CLOSED — 2026-09-30
 
 Audit artifact:
 `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_20260930.md`
