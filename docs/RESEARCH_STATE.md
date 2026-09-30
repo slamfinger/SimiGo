@@ -8472,3 +8472,39 @@ Contract v1.0                = PASS / REGISTRATION_REQUIRED
 Current blocker              = explicit human/repository registration
 ```
 
+
+
+### LAB ARCHITECTURE CONTRACT V1 REGISTERED — 2026-09-30
+
+Human/repository registration completed after external review `a020344`, verdict `PASS / REGISTRATION_REQUIRED`.
+
+Registration artifact:
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_REGISTRATION_20260930.md`
+
+Registered contract:
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_DRAFT_20260930.md`
+
+Registered strengthening:
+
+1. Five-tuple law is fixed: the five fields remain Runtime-owned semantic fields; their values evolve only through registered lifecycle transitions. ExecutionID is the identity anchor; lineage is immutable metadata; representation never directly writes the five fields.
+2. C-13 is currently procedural gate-check detection; automation is deferred to productization P-2.
+3. `BackendMemoryObservation` R classification is recorded as a derivation from `RuntimeBackendContract` passive-observation semantics.
+4. Registration upgrades v1.0 to the upstream Execution State semantic reference; research hierarchy becomes `Contract ⇅ code / Runtime / Backend / Persistence`.
+
+Inherited boundaries remain unchanged:
+
+- OP-1…OP-7 remain OPEN.
+- G-1…G-10 remain inherited / NOT CLOSED.
+- Phase B mandatory conditions, Phase C strengthening, M-1…M-5, and Seam Stability S2/S6 remain active.
+- No storage / persistence format / API / protocol / performance / production-readiness / universal-portability claim is introduced.
+- PALACE remains separately scoped; OP-7 is not consumed.
+
+Current state:
+
+```text
+Architecture Contract opening = PASS / REGISTERED / ACTIVATED
+Contract synthesis           = COMPLETE
+Contract v1.0                = PASS / REGISTERED / UPSTREAM SEMANTIC REFERENCE
+Current blocker              = none
+Next mode                    = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
+```
