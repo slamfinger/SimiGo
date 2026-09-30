@@ -10254,3 +10254,28 @@ P5 = P5-0 ✅ / A 判据锁定 ✅ / B+C 设计交付 ✅
 EXECUTION = LOCKED —— 等待 Human Authorization
 Current blocker = none
 ```
+
+
+### LAB R4 P5 EXECUTION AUTHORIZED — 2026-10-01
+
+Human 授权 P5 执行（设计 `dcab489` 通过设计审查；纪律原样、零新条件）：
+
+```text
+范围   只执行锁定 4 cells：S1/S2 × ΔA₁/ΔB₁
+基线   沿用 P4 S₀ 与既有 Y′，不重跑基线
+Arm X  必须历史缺席
+禁改   不修改 Δ、不新增 probe、不测性能、不回头 T3、不碰 PALACE、
+       不设计/解释 State 内部结构
+判读   严格区分 PASS/FAIL/INCONCLUSIVE；FAIL 按注册措辞接受、
+       不修改判据重试；INCONCLUSIVE 仅限隔离破损或 D5 通道疑云
+声明   P5 测的是 continuation 入口是否仍要求历史文本进入计算路径，
+       不是证明某个内部 representation 就是 Execution State
+汇报   执行完停在结果门：原始事实 + 机械判读，不追加实验
+```
+
+当前状态：
+
+```text
+P5 EXECUTION = IN PROGRESS（机械执行 dcab489：4 cells）
+Current blocker = none
+```
