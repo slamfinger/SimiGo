@@ -9864,3 +9864,43 @@ Human 下达 Research Line Reset 复盘任务（非「总结过去」——判�
 Research Line Review = TASKED / IN PROGRESS（只读）
 T3 终判 + 候选问题定义门 = 继续悬置（复盘交付后一并归 human）
 ```
+
+
+### LAB RESEARCH LINE REVIEW DELIVERED — 12-SECTION RETROSPECTIVE — 2026-10-01
+
+Research Line Reset 复盘交付（
+`SIMIGO_LAB_RESEARCH_LINE_REVIEW_20261001.md`，只读零执行）：
+
+```text
+总结论 概念/方法层高度可复用且大部分 backend-independent；证据层
+       重度集中于单 backend/单模型/单样本——「命题 A 级语言、证据
+       C 级材料」的错位=支线机制；三次 human 刹车（B 终审/B′ 封存/
+       C-0 守护）使滑移止于「多花实验」未变成「错误结论」
+五问表  15 阶段 profile（PALACE-1 六实验/FSB/ES-R1/D1/R2/T2/T3-A/B/
+       B′/C-0+Closure）
+命题矩阵 P-a…P8：P4（State 作 fork 基点）=研究线未触及；P5 分裂
+       （产品证/研究开）；P-a route 原问仍 OPEN
+反事实分级 概念列几乎全 A、证据列大量 B/C；E2=唯一全 A 行
+主/支分类 MAINLINE 9 项/SUPPORTING 4 项/OFF-MAINLINE 6 项（降级
+       保留：E0 张量内容/T3-A 七问事实/B-3 判定/B′ GDN 结论/D1
+       断点位置/R1 七入口清单——不得再引用为 Execution State 定义
+       证据）
+滑移定位 滑移点 1=E0 解剖入口（合法）；滑移点 2=T3「潜藏假设」
+       （真正分叉，缺抽样策略）；滑移点 3=三次刹车未遂固化；
+       Q3=主干会重选；T3 分叉可辩护但偏移节点=Gate A 之后无抽样
+       加深单点
+核心未知 UK-1 可引用断点/UK-2 左支语义未完成（D1-D4+Contract
+       继承条件）/UK-3 S ?=FCB 候选未升级/UK-4 抽样面
+候选线  A 左支语义线（与产品根基对齐）/B 能力缺口定义门/
+       C reframing 门/D 抽样纪律预置
+决定门  D-1 采信/D-2 主线顺序/D-3 T3 终判衔接/D-4 支线归档确认
+       ——只给选项不裁定
+```
+
+当前状态：
+
+```text
+Research Line Review = DELIVERED（决定门 D-1…D-4 待 human）
+T3 终判 = 悬置（可经 D-3 一并终判）
+Current blocker = none
+```

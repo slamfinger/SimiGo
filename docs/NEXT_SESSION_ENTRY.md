@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = T3_CLOSURE_REVIEW_DELIVERED（2026-10-01：human 裁定不写 C 不续 B′ 先做 Closure Review→已交付——三层终态 L1 ESTABLISHED/L2 KV operative 正向证据/L3 UNVERIFIABLE-AS-IS（六 blocker 实测，限当前系统非普适）；缺口=「可引用」断点：可分解已证(E0)/可引用缺/可重组未定义；一句话回答=缺的是 Representation 能力非实验；推荐岔 3 形态收束=T3 关闭+缺口蒸馏为候选研究问题（可分解·可引用·可重组；不构造不证明；NOT STARTED 无 RQ ID）；T3 终判+候选问题定义门归 human；Gate C/D LOCKED——SIMIGO_LAB_EST3_CLOSURE_REVIEW_20261001.md）
+next mode = RESEARCH_LINE_REVIEW_DELIVERED（2026-10-01：Research Line Reset 复盘交付 SIMIGO_LAB_RESEARCH_LINE_REVIEW_20261001.md——15 阶段五问 profile+命题矩阵 P-a…P8+反事实 A/B/C 分级（概念列全 A/证据列大量 B/C=支线机制）+主/支分类（OFF-MAINLINE 6 项降级保留不得再引用为 ES 定义证据）+滑移定位（真正分叉=T3 潜藏假设后无抽样加深单点；三次刹车防固化）+UK-1…4+候选线 A 左支语义（与产品根基对齐）/B 能力缺口门/C reframing 门/D 抽样纪律+决定门 D-1…D-4 只给选项；T3 终判可经 D-3 一并裁；全部悬置归 human）
 ```
 
 2026-09-29 route redefinition:
