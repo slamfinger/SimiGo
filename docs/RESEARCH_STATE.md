@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B boundary audit PASS已由 explicit human registration确认（2026-09-30）。Phase C / BACKEND-1的 boundary precondition已满足，activation仍须独立决策点。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C opening draft已完成对照审阅并通过 external review（`PASS / ACTIVATION_REQUIRED`）；等待 explicit registration。Phase C seam audit未开始。不做存储选型、adapter实现或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8058,3 +8058,43 @@ discarded-binding guard / durable identity reservation（独立 engineering gate
 不选择 persistence format，不实现 Llama adapter，不加 oversized 特殊语义，
 不授权 performance benchmarking。下一决策点 = Phase C / BACKEND-1 activation
 decision；BACKEND-1 opening 须对照本登记边界重新审阅后才可进入执行。
+
+### LAB BACKEND1 PHASE C OPENING DRAFT REVIEWED — 2026-09-30
+
+Human instruction（session goal）: `开始新研究路线的研究`。
+
+Participant draft:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_DRAFT_20260930.md`
+（draft commit `a5a7177`）。草案完成两件事：
+
+1. 对照已登记 Phase B boundary 审阅 2026-09-28 BACKEND-1 opening：修正
+   `Execution → RepresentationRef → …` 目标关系与 Q4 前提（RepresentationRef
+   是 P 层 locator/claim；durable relation 是 separately typed binding
+   relation）；Q7 拆分为结构性问题（C7）与测量（归 RQ3）。
+2. 产出 re-anchored Phase C opening C1–C8：MLX-specific leakage / minimal
+   backend seam / capability requirements / representation contract /
+   sync-async boundary / cancellation-failure-release / default-path
+   non-interference（结构性）/ cross-backend semantic continuity（目标验证
+   问题，来自 route redefinition §Phase C）。
+
+External review:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`。
+Verdict: `PASS / ACTIVATION_REQUIRED`。这是 external review decision，不是
+repository registration。
+
+Prior evidence 处置：RQ1 = `CLOSED-FOR-CURRENT-CONTRACT`（只引用，不重跑，
+非 universal）；RQ3 = `SEPARATELY SCOPED`（hot-path/cancellation/并发测量
+留在 RQ3）；RQ2 = `PARTIAL` 不动。六项 Phase B mandatory conditions 与四条
+review strengthening（session persistence 读法 / C2 输出层级 / C8 证据边界 /
+prior evidence 引用边界）随登记继承。
+
+当前状态：
+
+```text
+Phase A review         = PASS / REGISTERED
+Phase B opening        = PASS / REGISTERED
+Phase B boundary audit = PASS / REGISTERED
+Phase C opening draft  = PASS / ACTIVATION_REQUIRED
+Phase C seam audit     = NOT STARTED（registration 后才可开始）
+Current blocker        = explicit human/repository registration
+```
