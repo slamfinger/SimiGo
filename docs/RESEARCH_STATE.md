@@ -9259,3 +9259,35 @@ FSB-2 OPERATIVE/REMATERIALIZATION TIER：观察宇宙内 INSUFFICIENT——
 ES-R2 = GATE A COMPLETE / R2-A/E/F 归类权归 human
 Gate B（State Survival）待裁定是否开放
 ```
+
+
+### LAB ES-R2 GATE B COMPLETE — STATE-SURVIVES CONFIRMED — 2026-09-30
+
+Human 裁定 R2-A FORMATION-SUFFICIENT（Gate A CLOSED）+ Gate B 开放
+（C/D LOCKED）。执行双进程 State Survival 实验（`92b18c0`）：
+
+```text
+SideA（6.5s，进程 A）：restore 活态（P+H，position 17）→ formation
+  boundary 形成 Tier-1 carrier（严格三标量：storageKey/position/anchor
+  {afterMessageIndex=17, tailSHA256}——排除 history 内容/modelId/
+  generation/SHA/P 引用）→ 写入 Gate B 空间 → P-loss 布置（meta+carrier
+  ，无 safetensors）→ 退出
+SideB（0.002s，全新进程）：P-loss 空间仅含 meta+carrier（无
+  safetensors——P loss 为真）；**identity/position/anchor 全部仅凭
+  carrier 读出：SURVIVED**（identity 与进程 A formation record 逐字
+  匹配；position 17 直接断言，未 reload P 未重数 history；anchor 断言
+  + 与幸存 transcript 尾哈希一致性印证——authority 仍在 carrier）
+```
+
+**STATE-SURVIVES CONFIRMED（零偏离）**。H-B1/H-B2 张力实证消解：能力
+存在（formation 显式执行时 H-B1 成立）；部署 corpus 未形成（Gate D/
+H-B2 描述未形成现状）——不矛盾。Tier-1/Tier-2 边界首次运行时可见：
+carrier 能断言 continuation，但断言的验证与执行仍需上下文（H 或 P）。
+
+当前状态：
+
+```text
+ES-R2 = GATE A CLOSED（R2-A）/ GATE B COMPLETE（STATE-SURVIVES）
+GATES C/D = LOCKED（待授权）
+Current blocker = none
+```
