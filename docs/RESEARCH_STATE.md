@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B minimal durable unit audit已通过 external review；等待 explicit registration。Phase C / BACKEND-1继续 gated。不做存储选型或 adapter实现。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 Phase B boundary audit PASS已由 explicit human registration确认（2026-09-30）。Phase C / BACKEND-1的 boundary precondition已满足，activation仍须独立决策点。不做存储选型或 adapter实现。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8019,3 +8019,42 @@ Phase B boundary audit = PASS / REGISTRATION_REQUIRED
 Phase C / BACKEND-1    = STILL GATED
 Current blocker        = explicit human/repository registration
 ```
+
+### LAB PALACE1 PHASE B AUDIT REGISTERED — 2026-09-30
+
+Human approval received:
+
+```text
+登记 Phase B audit PASS。
+```
+
+Registration artifact:
+`docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_REGISTRATION_20260930.md`。
+
+Registered facts：
+
+```text
+Phase A review               = PASS / REGISTERED
+Phase B opening              = PASS / REGISTERED
+Phase B boundary audit       = PASS / REGISTERED
+minimal durable unit         = Execution Semantic Snapshot（契约级，非存储实现）
+recoverable set              = snapshots + required lineage tombstones
+                               + optional separately typed representation
+                               binding relations
+evidence status              = targeted structural 57/57 PASS on clean db188ac；
+                               非 end-to-end durability proof
+Phase C / BACKEND-1          = boundary precondition SATISFIED；activation 仍须
+                               独立决策点
+```
+
+六个 mandatory conditions 已随登记继承至后续所有 gate：lineage tombstone
+closure、transcript equivalence proof（nextInput 维持 D）、explicit
+representation content claim / validation policy、binding relation separately
+typed（runtimeAddress 维持 R）、crash-window recovery classification（不授权
+transaction protocol / persistence format）、coordinator concurrency /
+discarded-binding guard / durable identity reservation（独立 engineering gate）。
+
+本次登记不选型 SQLite / KV / event log / remote storage，不定义 Palace schema，
+不选择 persistence format，不实现 Llama adapter，不加 oversized 特殊语义，
+不授权 performance benchmarking。下一决策点 = Phase C / BACKEND-1 activation
+decision；BACKEND-1 opening 须对照本登记边界重新审阅后才可进入执行。

@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_B_AUDIT_REVIEW_PASS / REGISTRATION_REQUIRED`
+状态：`PHASE_B_AUDIT_REGISTERED / PHASE_C_DECISION_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -25,7 +25,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE1_MINIMAL_DURABLE_UNIT_AUDIT_20260930.md`
 11. 读 Phase B audit review：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_EXTERNAL_REVIEW_20260930.md`
-12. 如需原始 opening，再读：
+12. 读 Phase B audit registration：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_REGISTRATION_20260930.md`
+13. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -36,10 +38,10 @@ branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
-PALACE-1 = BOUNDARY AUDIT REVIEW PASS / REGISTRATION PENDING
-BACKEND-1 = SECONDARY OPEN / DEPENDENT ON BOUNDARY
+PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
+BACKEND-1 = SECONDARY OPEN / BOUNDARY PRECONDITION SATISFIED / ACTIVATION DECISION NEXT
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_B_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = PHASE_C_BACKEND1_ACTIVATION_DECISION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -117,6 +119,18 @@ next mode = PHASE_B_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
   transcript equivalence proof, representation content claim, separately typed
   binding relation, crash-window classification, and concurrency/identity gaps.
 
+2026-09-30 Phase B audit registration:
+
+- Human instruction: `登记 Phase B audit PASS。`
+- Registration artifact:
+  `docs/00-governance/SIMIGO_LAB_PALACE1_PHASE_B_AUDIT_REGISTRATION_20260930.md`。
+- Phase B boundary audit `PASS` is registered; minimal durable unit =
+  `Execution Semantic Snapshot` is now the registered architecture contract.
+- The six mandatory conditions are inherited by every later gate.
+- Phase C / BACKEND-1 boundary precondition is SATISFIED; activation still
+  requires its own decision point, and the BACKEND-1 opening must be re-reviewed
+  against the registered boundary before execution.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -134,11 +148,12 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Phase B audit
-   `PASS / REGISTRATION_REQUIRED`。
-2. Only explicit repository registration may advance the boundary。
+1. Decide the Phase C / BACKEND-1 activation question：是否现在激活 BACKEND-1
+   opening 的对照审阅（先定义门，不是实现）。
+2. BACKEND-1 opening 须对照已登记的 Phase B boundary（Execution Semantic
+   Snapshot + recoverable set）重新审阅后，才可进入执行。
 3. Do not select SQLite / KV / event log / remote storage。
-4. BACKEND-1 remains separately scoped until the Phase B boundary is registered。
+4. 继续继承六个 mandatory conditions；不实现 Llama adapter。
 
 登记时必须继续区分：
 
