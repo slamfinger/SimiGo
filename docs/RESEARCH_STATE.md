@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C opening draft已完成对照审阅并通过 external review（`PASS / ACTIVATION_REQUIRED`）；等待 explicit registration。Phase C seam audit未开始。不做存储选型、adapter实现或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C opening PASS已由 explicit human registration确认（2026-09-30，指令「登记 Phase C opening PASS，并激活 Phase C seam audit」）；Phase C seam audit已激活（C1–C8，clean HEAD worktree + targeted tests）。不做存储选型、adapter实现或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8098,3 +8098,30 @@ Phase C opening draft  = PASS / ACTIVATION_REQUIRED
 Phase C seam audit     = NOT STARTED（registration 后才可开始）
 Current blocker        = explicit human/repository registration
 ```
+
+### LAB BACKEND1 PHASE C OPENING REGISTERED — 2026-09-30
+
+Human approval received:
+
+```text
+登记 Phase C opening PASS，并激活 Phase C seam audit。
+```
+
+Registration artifact:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_REGISTRATION_20260930.md`。
+
+Registered facts：
+
+```text
+Phase A review                = PASS / REGISTERED
+Phase B boundary audit        = PASS / REGISTERED
+Phase C opening               = REGISTERED / OPEN（re-anchored 09-28 BACKEND-1
+                                opening，draft commit a5a7177）
+Phase C subquestions          = C1–C8
+review strengthening          = 4 条随登记继承
+Phase C seam audit            = ACTIVE（clean HEAD worktree + targeted tests；
+                                observed ≠ inferred ≠ selected）
+```
+
+本次登记不实现 Llama adapter，不选存储，不定义 persistence format，不做
+performance claim，不吸收 RQ1/RQ2/RQ3 已登记工作，不做 API/协议签名设计。

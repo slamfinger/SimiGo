@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_C_OPENING_DRAFT_REVIEWED / REGISTRATION_REQUIRED`
+状态：`PHASE_C_REGISTERED / SEAM_AUDIT_ACTIVE`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -31,7 +31,9 @@
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_DRAFT_20260930.md`
 14. 读 Phase C opening draft review：
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`
-15. 如需原始 opening，再读：
+15. 读 Phase C opening registration：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_REGISTRATION_20260930.md`
+16. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -43,9 +45,9 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = PHASE C OPENING DRAFT REVIEW PASS / REGISTRATION PENDING
+BACKEND-1 = PHASE C REGISTERED / SEAM AUDIT ACTIVE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_C_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = PHASE_C_SEAM_AUDIT / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -150,6 +152,15 @@ next mode = PHASE_C_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 - Six Phase B conditions + four review strengthening points carry into
   registration; RQ1 cited as prior evidence only, RQ3 stays SEPARATELY SCOPED.
 - Current blocker = explicit human registration.
+
+2026-09-30 explicit Phase C registration:
+
+- Human instruction: `登记 Phase C opening PASS，并激活 Phase C seam audit。`
+- Registration artifact:
+  `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_REGISTRATION_20260930.md`。
+- The re-anchored Phase C opening（C1–C8）is registered.
+- Phase C code-level seam audit is now ACTIVE: clean HEAD worktree + targeted
+  tests; observed code fact ≠ inferred contract ≠ selected implementation.
 
 Canonical route document:
 
