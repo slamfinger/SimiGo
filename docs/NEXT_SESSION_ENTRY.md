@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = BPRIME3_EXECUTED_NULL_DIFFERENCE（2026-10-01：B′-3 四 cell 全恒等——P-1 坐实 B′-2「0 文本」=tool-call 通道 64 tokens；P-2 summary 43 字符 ANCHORED 逐字恒等 24/24 tokens，按限制条款只读作当前 probe 下无 GDN 差异观察；可观测面已建立而差异不存在；A/B 双未决、源码证据偏向 A；B′ 续 vs 封存归 human；Gate C/D LOCKED——结果文档 SIMIGO_LAB_EST3_BPRIME3_RESULTS_20261001.md）
+next mode = BPRIME_SEALED / C0_DELIVERED（2026-10-01：B′ 封存 CLOSED/LIMITED——诚实表述「A 获源码结构证据+黑盒一致性支持；B 未被逻辑排除但无可观察后果」逐字落档；独立样本验证入口保留 SEPARATELY SCOPED 非 B′-4；C-0 readiness review 已交付=Gate C 命题重锚+GDN OUT+attention KV 唯一候选被融合载体挡在 H ✗+构造≠潜藏解释陷阱，三 OPTION 停在 human；Gate C/D LOCKED——文档 SIMIGO_LAB_EST3_BPRIME_SEALING_20261001.md + SIMIGO_LAB_EST3_GATEC_READINESS_REVIEW_20261001.md）
 ```
 
 2026-09-29 route redefinition:
