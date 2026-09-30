@@ -1,0 +1,18 @@
+{"ts":"2026-09-30T11:14:45Z","case":"Q3","verdict":"FAIL (matches preregistration)"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q3","error":"generationFailed(\"session cache model mismatch: saved=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit current=peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX\")"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q3","reading":"modelId is a compatibility gate between checkpoint and loaded container"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q4a","verdict":"FAIL (matches preregistration)"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q4a","error":"generationFailed(\"session checkpoint has no generation/hash commit proof\")"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q4a","reading":"generation participates as a presence gate for the commit proof"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q5","verdict":"FAIL (matches preregistration)"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q5","error":"generationFailed(\"session checkpoint generation mismatch: generation=c1185f0a-2cf9-4b02-85c6-c386f9177ea9\")"}
+{"ts":"2026-09-30T11:14:45Z","case":"Q5","reading":"cacheSHA256 is a byte-level integrity gate over the safetensors payload only (transcript excluded)"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q1","verdict":"SUCCEED (matches preregistration)"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q1","returned_meta_storageKey":"default/PERTURBED-Q1/main"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q1","reading":"meta.storageKey is NOT the restore addressing authority; loader accepted a foreign field value under the original caller key/filename"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q2","verdict":"SUCCEED (matches preregistration)"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q2","perturbed_content_accepted":"YES"}
+{"ts":"2026-09-30T11:14:51Z","case":"Q2","reading":"checkpoint restore performs NO integrity check on transcript content; the semantic payload loads unvalidated (integrity boundary only, NOT a necessity result)"}
+{"ts":"2026-09-30T11:14:52Z","case":"Q4b","verdict":"SUCCEED (matches preregistration)"}
+{"ts":"2026-09-30T11:14:52Z","case":"Q4b","returned_generation":"ffffffff-0000-4000-8000-000000000000"}
+{"ts":"2026-09-30T11:14:52Z","case":"Q4b","reading":"generation is a presence/commit marker, NOT identity equality — no registry comparison exists"}
