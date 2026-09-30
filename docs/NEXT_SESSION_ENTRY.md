@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_C_SEAM_AUDIT_REGISTERED / ADAPTER_GATE_NEXT`
+状态：`BACKEND1_ADAPTER_ENGINEERING_REGISTERED / ENGINEERING_AUTHORIZED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -40,6 +40,12 @@
 18. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
+19. 读 BACKEND-1 adapter engineering opening draft：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_DRAFT_20260930.md`
+20. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_EXTERNAL_REVIEW_20260930.md`
+21. 读其 registration：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_REGISTRATION_20260930.md`
 
 ## Current snapshot
 
@@ -49,9 +55,9 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = PHASE C SEAM AUDIT REVIEW PASS / REGISTRATION PENDING
+BACKEND-1 = ADAPTER ENGINEERING OPENING PASS / REGISTERED / ENGINEERING AUTHORIZED（未开始）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_C_SEAM_AUDIT_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = BACKEND1_ADAPTER_ENGINEERING / BOUNDED_BY_REGISTRATION_STOP_CONDITIONS
 ```
 
 2026-09-29 route redefinition:
@@ -181,7 +187,26 @@ next mode = PHASE_C_SEAM_AUDIT_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATI
 - Review is not repository registration; four strengthening points carry
   into registration（condition-1 seam 读法 / L-1 处置 / G-1 前置条件 /
   证据卫生）。
-- Current blocker = explicit human registration.
+- Registered `PASS / REGISTERED` by human-side commit `afdf30f`; Phase C sealed.
+
+2026-09-30 BACKEND-1 adapter engineering opening cycle:
+
+- Opening draft（`2528658`）+ external review（`9ebeaf1`）completed outside
+  this session; review verdict `PASS / ACTIVATION_REQUIRED`, Engineering
+  NOT AUTHORIZED YET。同日 `1e2749f` 清理 Swift 并发/未用结果告警（纯告警
+  修复，非语义变更，不改变审计对象语义）。
+- Human instruction directs the explicit registration; registration artifact:
+  `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_
+  REGISTRATION_20260930.md`（本会话执行）。
+- Registered validation question: E1+E3+B1 seam 是否足以承载真实 adapter
+  engineering，而不把 backend-specific state / representation detail /
+  physical lifecycle 重新提升为 Execution Semantic State。
+- Registered gate state: Engineering = AUTHORIZED / NOT STARTED; 三分法
+  SUFFICIENT / INSUFFICIENT-BUT-LOCAL / CONTRACT-BLOCKED; M-1…M-5 强制检查
+  项 + 七条 stop conditions 随登记固化; G-1…G-10 与 Phase B 六条件全部
+  inherited / NOT CLOSED。
+- Next phase = engineering（A1–A8，先 code-level boundary audit）→ targeted
+  evidence → external review → registration。
 
 Canonical route document:
 
@@ -200,12 +225,15 @@ Canonical route document:
 
 ## Next session task
 
-1. Phase C seam audit registration completed: `PASS / REGISTERED`。
-2. Phase C 已封口；BACKEND-1 adapter engineering 仍是独立 gate（另行开启，不自动继承）。
-3. Do not select SQLite / KV / event log / remote storage。
-4. 继续继承六项 Phase B mandatory conditions + 四条 seam-audit review
-   strengthening + 10 项 G-gaps；不实现 Llama adapter，不做 performance
-   claim（测量归 RQ3，SEPARATELY SCOPED）。
+1. Engineering 阶段（AUTHORIZED / NOT STARTED）：按 A1–A8 展开，先做
+   code-level adapter boundary audit 与最小 integration skeleton 必要性
+   分析，产出 targeted evidence。
+2. 全程受 M-1…M-5 强制检查项与七条 stop conditions 约束；出现
+   CONTRACT-BLOCKED 即 STOP，只允许提出独立 contract gate。
+3. Do not select SQLite / KV / event log / remote storage；不做 persistence
+   format / API / protocol design。
+4. 继续继承 Phase B 六条件 + Phase C 四 strengthening + G-1…G-10；不做
+   performance claim（测量归 RQ3，SEPARATELY SCOPED）。
 
 登记时必须继续区分：
 

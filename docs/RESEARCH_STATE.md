@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C seam audit（C1–C8）已完成并通过 external review（`PASS / REGISTRATION_REQUIRED`，evidence 61/61 PASS on clean `ebe4aec`）；等待 explicit registration。BACKEND-1 adapter engineering 仍未开启。不做存储选型、adapter实现或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A/B/C 全部 PASS / REGISTERED（Phase C seam audit 已由 human 登记 `afdf30f` 封口）。BACKEND-1 adapter engineering opening 已完成 draft+review 并经 explicit registration 登记为 `PASS / REGISTERED`；Engineering = AUTHORIZED / NOT STARTED（A1–A8，受 M-1…M-5 强制检查项与七条 stop conditions 约束）。不做存储选型、persistence format/API 设计或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8189,3 +8189,43 @@ Phase C seam audit       = PASS / REGISTERED
 BACKEND-1 adapter eng.   = NOT OPENED（另行 gate）
 Current blocker          = none on Phase C seam audit
 ```
+
+### LAB BACKEND1 ADAPTER ENGINEERING OPENING REGISTERED — 2026-09-30
+
+Phase C 封口后（human 侧登记 `afdf30f`；同日 `1e2749f` 清理 Swift 告警，
+纯告警修复非语义变更），BACKEND-1 adapter engineering opening cycle 前两步
+在另一会话完成：
+
+```text
+Opening draft    = 2528658（SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_
+                   DRAFT_20260930.md，205 行）
+External review  = 9ebeaf1（…_EXTERNAL_REVIEW_20260930.md，verdict
+                   PASS / ACTIVATION_REQUIRED，Engineering NOT AUTHORIZED YET）
+```
+
+Human instruction 明确指示执行 explicit registration。Registration artifact:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_
+REGISTRATION_20260930.md`。
+
+Registered facts：
+
+```text
+Validation question   = E1+E3+B1 seam 是否足以承载真实 adapter engineering，
+                        而不把 backend-specific state / representation detail
+                        / physical lifecycle 提升为 Execution Semantic State
+三分法                = SUFFICIENT / INSUFFICIENT-BUT-LOCAL / CONTRACT-BLOCKED
+                        （BLOCKED 时 STOP，只允许独立 contract gate）
+Engineering           = AUTHORIZED / NOT STARTED（A1–A8 审计问题）
+Mandatory checks      = M-1…M-5（验证载荷性质 / G-1 前置条件 / L-1·G-5 不得
+                        顺手修复 / Phase B 六条件 inherited / evidence
+                        hierarchy 显式）
+Stop conditions       = 7 条（draft §7 登记）
+禁止项                = storage selection / persistence format·API·protocol
+                        design / performance claim / artifact portability /
+                        oversized 特殊语义 / 静默修改稳定 seam
+G-1…G-10              = INHERITED / NOT CLOSED
+```
+
+下一步 = engineering implementation（先 code-level adapter boundary audit +
+最小 integration skeleton 必要性分析）→ targeted evidence → external review
+→ registration。本登记不修改稳定 seam，不实现产品化 adapter 本体之外授权。
