@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_R4_C_GATE_OPEN（2026-10-01：R4-0 裁定先行 commit f1e35be[D-1 采信/D-2 A→B→C→D/D-3 T3 CLOSED-LIMITED 不重开/D-4 归档确认；治理检查器迁 AGENT_CONTEXT §5]→A 线交付 CONTINUATION_CRITERIA_D1[S+X→Y 判据：C1-C5 前提/SUFF-1..4 充足性/IDENT=FSB-1 最小集/边界内外清单；非 State 定义零实现指定]→B 线交付 CAPABILITY_GAP_MATRIX[八能力：已证×3/部分×2/待定义×1/未知×2 fork+shared base；未知≠做不到逐行标注；C-2/L3 不构成 P4 否证——拓扑不同；P4/P5 候选命题+D 纪律六条预注册]→**停止于 C Reframing Upgrade Gate：P4/P5 是否属于 SimiGo 核心问题归 human——YES 才 D+P4 设计+授权；未经 C 门不设计/执行 P4**）
+next mode = R4_D_CONFIRMED_P4_READINESS_DELIVERED（2026-10-01：C=PASS/REFRAMING ACCEPTED——P4/P5 进入核心问题[YES 只授权 D 门，不授权执行不定义内部形态]→D 宪法落档 9676641[D1 Common Base/D2 两独立未来/D3 Independence/D4 Independent Sample/D5 null≠mechanism null/D6 no construct-then-claim/D7 backend boundary/D8 no premature P5+拓扑优先不问性能+失败有效性条款写死=P4 失败即「共同基点目前无法成立」有效结果、不得改判据]→P4 readiness 交付[就绪资产 7 项+设计门议程 Q1..Q6 只列不答+READY-FOR-DESIGN 无 blocker；执行双重门控]——**下一门=P4 三要素设计待 human 放行；执行须再过 human authorization**）
 ```
 
 2026-09-29 route redefinition:

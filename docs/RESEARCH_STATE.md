@@ -10059,3 +10059,32 @@ R4 = R4-0 ✅ / A ✅ / B ✅ / C PASS / D CONFIRMED
 Next = P4 readiness 交付（本轮）；P4 三要素设计待 human 放行
 Current blocker = none
 ```
+
+
+### LAB R4 P4 READINESS DELIVERED — DESIGN GATE INPUT — 2026-10-01
+
+P4 readiness 交付（`SIMIGO_LAB_P4_READINESS_20261001.md`——非设计、
+非实现、零执行）：
+
+```text
+就绪资产  ①裁定 schema=A 线 SUFF/IDENT（设计只实例化不发明）
+         ②D1–D8 宪法约束+拓扑优先+失败有效性条款 ③证据基线=
+         P4 unknown + C-2/L3 不否证判读 ④greedy 确定性基线法
+         ⑤三通道观测面技术 ⑥隔离配方 ⑦产品机制存在性清单
+         （fork 钩子/分支 checkpoint/restore——仅登记存在，不构成
+         设计承诺，D7 禁升格）
+设计门议程 Q1 S₀ 形成与承载/同一性证明 / Q2 发散输入预选（禁迭代
+         选 probe）/ Q3 独立性观测与污染操作定义 / Q4 独立样本 /
+         Q5 共同出发的可验记录 / Q6 判读预注册（失败措辞须合条款）
+就绪判定  P4 Design = READY-FOR-DESIGN（无 blocker）；
+         执行仍双重门控（设计 → human authorization → 执行）
+```
+
+当前状态：
+
+```text
+R4 = R4-0 ✅ / A ✅ / B ✅ / C PASS / D CONFIRMED / P4 READINESS ✅
+Next = P4 三要素设计（Common Base / Divergence / Independence）
+       ——待 human 放行设计门
+Current blocker = none
+```
