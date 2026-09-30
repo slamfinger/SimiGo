@@ -8719,6 +8719,32 @@ history（observed continuation-bearing）。
 当前状态：
 
 ```text
-E0/E1.5/R2n = COMPLETE；E1 = SEALED；E2 = NOT STARTED
-Current blocker = none（E2 定义门、A/B/C、E3 由 human 掌握节奏）
+E0/E1.5/R2n = COMPLETE；E1 = SEALED；E2 = COMPLETE
+Current blocker = none（E3 定义门、池命中语义等价对照、A/B/C 由 human
+掌握节奏）
 ```
+
+### LAB PALACE1 E2 COMPLETE — PREFIX POOL = REPLACEABLE PERFORMANCE REPRESENTATION — 2026-09-30
+
+E2（`76f1664`）：唯一问题 = 池物理表示拿掉后 cold reconstruction 语义
+能力是否仍在。证据组合（无删除/无性能 claim）：
+
+```text
+① 池缺席语义能力   = R2n 正式归位（SIMIGO_PREFIX_POOL=0 运行中池物理
+                     缺席，n0a/n0b 语义正确 + 扰动敏感性完整）
+② 池在场命中证据   = 只读 admission 探测（pool.admit 纯查找零写入）：
+                     think:1 fp=none → HIT coveredMessages=17/17（真实池
+                     存有本会话全覆盖快照！pool-enabled 运行会整段替代
+                     prefill）；指纹/think 变体正确 MISS（命名空间隔离
+                     按登记工作）
+③ 代码路径合并     = hit→快照+poolBind+delta / miss→cold 分支 /
+                     corrupt→P-I1 fail-closed 自愈回退
+结论（candidate）：Prefix Pool = 可替换性能 Representation，不在
+continuation nucleus 内
+PENDING：池命中语义等价运行时对照（pool-enabled generate 写真实池，
+授权边界外）
+```
+
+E0→E1→E1.5→R2n→E2 总图：不可替代候选（caller-key + history）/
+可替代表示（KV checkpoint、Prefix Pool）/ 保护机制（generation、SHA、
+modelId）/ 信息性未决（meta.storageKey 字段值、forkPoint、kvFingerprint）。
