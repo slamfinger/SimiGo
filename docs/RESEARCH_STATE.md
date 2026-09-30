@@ -8660,3 +8660,35 @@ E0 = COMPLETE；E1 = SEALED AT EXECUTION BOUNDARY（R0/R1 PASS，R2-R4 PENDING�
 E1-R2 capability = CONFIRMED（代码级）；运行时观测仍待隔离方案裁定
 Current blocker  = none（三选项悬置由 human 掌握节奏）
 ```
+
+### LAB PALACE1 E1.5 COMPLETE — FIELD ROLE TABLE — 2026-09-30
+
+E1.5（Metadata Dependency Perturbation）设计冻结（`8961ef6`）→ human 批准
+→ 执行（产品仓加法测试，load 路径零写入故无需写隔离）：**6/6 用例零偏离
+命中预登记**（`263700c`；观测落库 results/backend-conformance/）。
+
+实验钉死的 restore 验收边界：
+
+```text
+meta.storageKey 字段值 = informational duplicate（扰动被接受；寻址权威
+  = caller key/文件名）
+history（语义载荷）= 无完整性门（扰动 tool 消息 round-trip 通过 restore）
+modelId = 兼容门（拒）；generation = presence-only commit marker
+  （空拒/异值受）；cacheSHA256 = 仅 safetensors 字节完整性（Q-2 证
+  transcript 排除）
+```
+
+**最小 durable continuation nucleus CANDIDATE**（严格 candidate）：
+caller-key 寻址 + history + modelId 同源——generation/SHA/storageKey
+字段值/forkPoint/kvFingerprint 全部在此集合之外。纪律：Q-2 证明的是
+integrity boundary 非 necessity boundary；necessity 待 cold-path 运行时
+实验（隔离阻塞不变）。
+
+当前状态：
+
+```text
+E0 = COMPLETE；E1 = SEALED（R0/R1 PASS，R2-R4 PENDING）；
+E1.5 = COMPLETE（6/6）；R2 capability = CONFIRMED（代码级）
+Current blocker = none（cold-path necessity 实验隔离方案 + A/B/C 均悬置
+由 human 掌握节奏）
+```
