@@ -8692,3 +8692,33 @@ E1.5 = COMPLETE（6/6）；R2 capability = CONFIRMED（代码级）
 Current blocker = none（cold-path necessity 实验隔离方案 + A/B/C 均悬置
 由 human 掌握节奏）
 ```
+
+### LAB PALACE1 R2N COMPLETE — HISTORY NECESSITY CONFIRMED — 2026-09-30
+
+Human 指令：先补 cold-path 的 history necessity 证据（不解决隔离工程、
+不做 E2）。执行配方 = 产品自带配置面（SIMIGO_PREFIX_POOL=0 env 经
+TEST_RUNNER_ 转发 + RuntimeTuning.conditionalRestoreEnabled=false 测试
+进程内）——**零产品代码修改、零 durable 写入**（204/24 前后核验不变）。
+
+R2n 结果（`132b9b6`；三预登记全 CONFIRMED）：
+
+```text
+P-N1 greedy 确定性 = CONFIRMED（n0a ≡ n0b「继续执行。」——比较方法有效）
+P-N2 内容扰动      = CONFIRMED（尾条 assistant 追加 needle → continuation
+                     变为「收到，需要我深入查看哪个具体文件的内容？」）
+P-N3 工具历史删除  = CONFIRMED（3 条 tool 全删 → 模型失去指代：
+                     "I don't know what the probe refers to"）
+```
+
+判定提升（human 术语）：history = 「continuation semantic candidate」→
+**observed continuation-bearing durable information**（integrity boundary
+与 necessity boundary 双双钉死）。modelId 移至 nucleus 外围
+（compatibility context）。nucleus candidate 精化 = caller-key 寻址 +
+history（observed continuation-bearing）。
+
+当前状态：
+
+```text
+E0/E1.5/R2n = COMPLETE；E1 = SEALED；E2 = NOT STARTED
+Current blocker = none（E2 定义门、A/B/C、E3 由 human 掌握节奏）
+```
