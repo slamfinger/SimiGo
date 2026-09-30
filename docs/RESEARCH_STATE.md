@@ -8843,3 +8843,33 @@ STARTED；RF-1 OPEN RESEARCH；RF-2 CLOSED FOR CHAIN；Next experiment =
 NOT YET CHOSEN
 Current blocker   = none（线停车）
 ```
+
+
+### LAB BACKEND2 SEAM TAKEOVER AUDIT — 2026-09-30
+
+Human 指令（PALACE-1 停车后回主线）：只读审计「已有 Execution State 脱离
+MLX 表示后被 LLAMA backend 接管」的最小事实缺口。
+
+结果（`7b5d12d`）：
+
+```text
+seam/契约层   = 零缺口（handle 五字段全可移植、contract 零 MLX、三
+                backend 同 battery 已证；binding 重建结构性支持；
+                B1 对 server-owned backend 不需要）
+缺口唯一类别  = 状态迁移载体：
+  G-B2-1 token id 空间后端特异（MLX swift-transformers ≠ llama
+         /tokenize）；文本是唯一可移植介质（contract nextInput:String
+         已在）
+  G-B2-2 多轮 history 无 Lab 契约载体（只存在于产品 sidecar——恰为
+         PALACE 线已证的 continuation-bearing 信息）
+  G-B2-3 「同一模型」跨格式判定未定义（mlx 4bit vs GGUF 量化语义
+         等价无校验面）——新独立 UNKNOWN
+```
+
+当前状态：
+
+```text
+BACKEND-2 audit = COMPLETE / AWAITING SECOND-LAYER
+Current blocker = none（实验矩阵 A–E 是否开、G-B2 缺口如何闭合，由
+                  human 决定）
+```
