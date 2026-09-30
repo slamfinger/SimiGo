@@ -51,6 +51,9 @@ Reusable methodological assets include:
 
 - Five-gate deterministic evidence chain: correctness/harness fidelity → contract → accounting → synthesis → design/decision.
 - Discriminating-power gate: before measurement, establish that the estimand permits a non-zero, observable difference under the proposed design.
+- Evidence-grade alignment checker (Research Line Reset, human-adopted 2026-10-01): before citing a conclusion as mainline evidence, check that its evidence grade matches its claim language — architecture-level (A-grade) wording backed only by backend-specific (C-grade) evidence is a potential off-mainline sentence; E2 (pool = replaceable performance representation, concept A + evidence A) is the reference standard.
+- Observation null ≠ mechanism null: a null result under the current observation surface licenses only the limited reading registered in advance (B′-3 precedent).
+- No construct-then-claim-preexistence: a capability demonstrated by first constructing its carrier proves constructibility, not pre-existence (C-0 precedent).
 - Separate demonstrated facts, registered predictions, and future hypotheses.
 - Do not use performance improvement as a proxy for answering a question that was not registered as a performance question.
 - Access pattern should determine useful management granularity; do not derive a model unit solely from management convenience.

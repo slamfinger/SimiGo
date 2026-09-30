@@ -9955,3 +9955,41 @@ D-1…D-4 = 研究建议已登记；正式裁定悬置（裁定前零下一阶�
 P4 = 最大空白 / 下一阶段核心候选（升级须经定义门）
 Current blocker = none（正式裁定归 human）
 ```
+
+
+### LAB R4-0 HUMAN DECISION RECORD — PHASE R4 OPENED — 2026-10-01
+
+Human 下达 Phase R4（Execution State Fork/Incremental Line；主线从
+「研究 backend 内部结构」转回「研究 Execution State 的未来计算能力」）
+并指令将 D-1…D-4 落为正式裁定（**先 commit，再做任何下一阶段研究**）：
+
+```text
+R4-0 裁定（正式）
+  D-1 采信 Research Line Review 分级与降级清单
+  D-2 进入顺序 = A → B → C → D
+  D-3 T3 保持 CLOSED/LIMITED，不重新开放实验
+  D-4 确认支线归档（六项 OFF-MAINLINE 降级保留）
+治理检查器随 D-1 转正（迁入 AGENT_CONTEXT §5）：证据等级对齐检查器
+  （A 级语言+C 级证据=潜在支线句；E2 为参照标准）/ observation null
+  ≠ mechanism null / no construct-then-claim-preexistence
+
+R4 核心问题（暂不定义 State 内部结构）：
+  一个已经形成的计算状态，能否成为多个未来计算的共同基点，
+  并由 backend 负责完成各自的增量计算？
+路线：R4-0 → A Continuation Criteria → B Capability Gap Matrix →
+  P4/P5 Candidate Definition → C Reframing Upgrade Gate（human）→
+  D Sampling Discipline → P4 Design → Authorization → Execution →
+  Adjudication → P5
+禁区：KV/GDN/tensor=State/carrier 实现/backend 修改/Representation
+  构造——全部暂不研究；未经 C 门不得设计或执行 P4
+第一条任务令：R4-0 → A1-A4 → B Capability Gap Matrix；只读、零执行、
+  零新实现方案
+```
+
+当前状态：
+
+```text
+Phase R4 = OPENED / R4-0 COMMITTED
+A/B readiness 交付 = IN PROGRESS（只读）
+Current blocker = none
+```
