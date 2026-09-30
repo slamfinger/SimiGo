@@ -9356,3 +9356,33 @@ ES-R1/ES-D1/ES-R2 = 三链 SEALED；Contract v1.0 = UPSTREAM REFERENCE
 PALACE-1 = PARKED；ES-T2 = 候选 NOT STARTED；C-4 = LOCKED
 Current blocker = none（下一方向由 human 选择）
 ```
+
+
+### LAB ES-T2 DESIGN LOCKED — T2-A CENSUS DESIGN DELIVERED — 2026-09-30
+
+Human 授权 ES-T2 设计（Tier-2 Computational Bridge；先研究缺口不直接
+设计 State）。设计文档冻结（`14ce2f6`）：
+
+`docs/00-governance/SIMIGO_LAB_ES_T2_RESEARCH_DESIGN_20260930.md`
+
+```text
+研究问题（锁定）= 无完整 History/无旧 P 条件下，独立存活的 Tier-1
+  State 重新驱动计算还缺什么
+T2-A 定位 = 依赖普查，非 Tier-2 实现；KV/History/现有 Representation
+  不预设为答案
+追踪框架 = Gate C 失败路径三分（路径 α H→R' 重算型/路径 β P→R 装载型
+  /路径 γ {identity,position,anchor}→KV(17) 观察宇宙内不存在的入口
+  ——T2-A 核心问题=路径 γ 需要什么输入才可能存在）
+依赖闭包清单 = 8 项（两项重点：Context 内容的可非-transcript 携带形态
+  【不预设】；GDN 固定态与注意力 KV 的可重建性对称性【待实验】）
+预注册 = T2-A0（闭包已被满足——即 Gate C 被推翻）/A1 单一缺失信息/
+  A2 计算上下文类/A3 计算结构/A4 无法闭包
+隔离 = es-t2 新空间（carrier only）；真实 store READ-ONLY
+```
+
+当前状态：
+
+```text
+ES-T2 = DESIGN LOCKED / T2-A EXECUTION AWAITING AUTHORIZATION
+T2-B/C/D = LOCKED；生产 State API 禁止；PALACE-2/Backend 不启动
+```
