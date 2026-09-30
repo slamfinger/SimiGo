@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`ARCH_CONTRACT_V1_REGISTERED / UPSTREAM_REFERENCE`
+状态：`PALACE1_DURABLE_STATE_SEMANTICS_OPENING_DRAFT_COMPLETE / AWAITING_SECOND_LAYER`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PALACE1_DURABLE_STATE_SEMANTICS_OPENING / NOT_STARTED（下一会话第一动作）
+next mode = PALACE1_DURABLE_STATE_SEMANTICS_OPENING_DRAFT / AWAITING_SECOND_LAYER_REVIEW（§0 已过，draft 已交）
 ```
 
 2026-09-29 route redefinition:
@@ -355,7 +355,7 @@ Canonical route document:
 3. 不修改 contract；不新增测试（re-run 须 hash 级绑定）；不选 storage /
    persistence format / API / protocol；不做 performance / universal
    portability claim。
-4. PALACE 线（04c608e hypothesis）仍 SEPARATELY SCOPED——本 opening 只定义
+4. PALACE hypothesis(04c608e)仍 SEPARATELY SCOPED——本 opening 只定义
    durable-state 语义研究门，不消费 PALACE hypothesis 内容；第二 backend
    与 productization 明确排在 PALACE-1 之后。
 

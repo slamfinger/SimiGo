@@ -8533,3 +8533,39 @@ Human 方向决定（Contract v1.0 封档后的路线选择）：
 palace1_durable_state 线与 PALACE hypothesis（04c608e）保持 SEPARATELY
 SCOPED：本 opening 只定义 durable-state 语义研究门，不消费 hypothesis
 内容。standing drift-detection（C-13 / S2 / S6）继续生效。
+
+### LAB PALACE1 DURABLE STATE SEMANTICS OPENING DRAFT COMPLETE — 2026-09-30
+
+§0 并发核验 PASS（LOCAL=REMOTE=da2c8e8、树净、零并发 commit、契约台账无
+漂移、六文档在位）后，participant opening draft 完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_DURABLE_STATE_SEMANTICS_OPENING_
+DRAFT_20260930.md`。
+
+D1–D4 定义结果（四类输出，D1–D4 未被强行全答）：
+
+```text
+CONFIRMED  durable minimum 集 = SC-2 七字段 + tombstone closure data
+           （binding relations OPTIONAL；claims = P 层 DEPENDENT OP-5）；
+           三层可重建边界（snapshot 不可由下层重建）；D3 场景判定
+           restore/reattach/rematerialization/recompute/backend-
+           replacement/representation-loss 全 SAME、closure 破损 loud
+           fail、NEW 仅 create/fork；D4 语义答案（State 的存在 =
+           snapshot 存在，与四层无关）
+OPEN       OP-1（transcript 作为 continuation 源；transcript-recovered
+           是否 SAME）；reopen 恢复机制研究问题（合格恢复的验证判据）
+DEPENDENT  reopen 机制 ← OP-2+G-10；durable reattach ← OP-5/condition 3；
+           D4 实证 ← OP-3/G-10
+UNKNOWN    七字段 snapshot 在全消失恢复下的【充分性】——Phase B 证的是
+           必要性/边界；充分性 = PALACE-1 下一阶段核心命题，不预答
+```
+
+当前状态：
+
+```text
+PALACE1_DURABLE_STATE_SEMANTICS_OPENING = DRAFT COMPLETE
+Current blocker                         = none（等 human 第二层判断）
+下一门                                  = external review（六项固定）→
+                                          PASS/ACTIVATION_REQUIRED →
+                                          registration
+```
