@@ -8748,3 +8748,36 @@ PENDING：池命中语义等价运行时对照（pool-enabled generate 写真实
 E0→E1→E1.5→R2n→E2 总图：不可替代候选（caller-key + history）/
 可替代表示（KV checkpoint、Prefix Pool）/ 保护机制（generation、SHA、
 modelId）/ 信息性未决（meta.storageKey 字段值、forkPoint、kvFingerprint）。
+
+
+### LAB PALACE1 E3 COMPLETE — LOCUS + CONFABULATION FINDING — 2026-09-30
+
+E3（meta-only 阶梯，设计 `d5157f1` → 执行 `aa76f95`）：拿掉 safetensors
+与 Prefix Pool 后逐级截断 meta.history，同一 referential probe 测各级
+grounding。**4/4 预登记零偏离**：
+
+```text
+C-0 全 17 条        = ANCHORED（准确概括：桌面/参考文件/项目部管理制度汇编）
+C-1 去尾 assistant  = ANCHORED（连「秦沈」细节级锚都在——位置回退不失语义）
+C-2 主题缺席(0–4)   = UNANCHORED——**关键发现：模型不拒答，而从 persona
+                      先验虚构了貌似合理、完全错误的会话概述（VBA→C dylib/
+                      codex-chatgpt，与本会话无关）**
+C-3 仅 system       = UNANCHORED（persona 元评论）
+```
+
+定位结论：continuation-bearing 语义住在**会话正文（含 tool 执行历史）**，
+不在 system persona、不在寻址/保护/兼容字段。**虚构发现登记**（工程事实，
+非产品缺陷判定）：durable carrier 缺失语义正文时失败模式 = 自信虚构而非
+fail-closed——语义缺席当前对调用方不可检测；Contract 的 fail-closed 政策
+在语义层无对应物（未来 PALACE 语义设计必须面对，本轮不设计机制）。
+
+全链证据地图闭合：物理层(E0)/恢复层(E1)/验收层(E1.5)/必要层(R2n)/对照层
+(E2)/定位层(E3)。
+
+当前状态：
+
+```text
+E0/E1.5/R2n/E2/E3 = COMPLETE；E1 = SEALED
+Current blocker   = none（下一方向由 human 掌握：nucleus 证据链总审 /
+                    PALACE framing 或其他 gate）
+```
