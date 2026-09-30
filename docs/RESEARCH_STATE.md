@@ -8807,3 +8807,39 @@ Evidence chain   = CLOSED（本文封装）
 PALACE framing   = OPEN（研究边界产物已备；schema NOT STARTED）
 Next cut         = 由 human 决定
 ```
+
+
+### LAB PALACE1 FRAMING REGISTERED — LINE PARKED — 2026-09-30
+
+Human 终局裁定：下一刀 = Framing Registration（只登记研究边界），注册后
+停车（无 PALACE-2、无 Contract、下一实验 NOT YET CHOSEN）。
+
+Registration artifact（`739b967`）：
+`docs/00-governance/SIMIGO_LAB_PALACE1_FRAMING_REGISTRATION_20260930.md`。
+
+Registered framing：
+
+```text
+Observed = 两种生命周期不同的信息侧：
+  A. durable semantic side（addressing carrier = caller key +
+     semantic continuation carrier = conversation history 含 tool 历史）
+  B. physical acceleration side（checkpoint / Prefix Pool 等可替代表示）
+Research question = 生命周期差异是否足以支持更高层长期 Personal State
+  Space 抽象？
+NOT established = schema / State object / universal minimum nucleus /
+  storage architecture / semantic absence solution / cross-backend
+  semantic equivalence
+```
+
+Findings 登记：RF-1 = REGISTERED / OPEN RESEARCH；RF-2 = REGISTERED /
+CLOSED FOR THIS CHAIN。证据链冻结（后续 PALACE 讨论不得反向改写 E0–E3
+事实层；nucleus 的 workload-scoped 限定为登记内容一部分）。
+
+当前状态：
+
+```text
+PALACE-1 Evidence = CLOSED；Framing = REGISTERED；schema/Contract = NOT
+STARTED；RF-1 OPEN RESEARCH；RF-2 CLOSED FOR CHAIN；Next experiment =
+NOT YET CHOSEN
+Current blocker   = none（线停车）
+```
