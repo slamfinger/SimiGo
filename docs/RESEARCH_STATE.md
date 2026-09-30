@@ -10311,3 +10311,33 @@ Next = human second-layer 终审（FAIL 的解读与下一步方向归 human；
        本线停车，无追加实验）
 Current blocker = none
 ```
+
+
+### LAB R4 P5 EXECUTION-AUTHENTICITY AUDIT — LIVE REPRODUCTION MATCH — 2026-10-01
+
+Human 质疑执行真实性（「没看到后台拉起大模型进行测试，如何得到的判
+断结果？」）。处置：①提取既有执行痕迹；②**前台现场复核**——新增
+`Palace1R4P5AuditTests`（非新实验：同一 stripped fixture、同一 probe、
+同一配置的重放核对）重跑 S1-ΔA₁ cell：
+
+```text
+既有痕迹（p5-observations.jsonl，时间线+引擎计数）：
+  18:48:42 模型加载 → 18:48:43 restore(history=0) → 18:49:00 出文本
+  （17 秒真实解码间隔）；各 cell generation_tokens=12/1/20/1
+  （来自引擎 GenerateCompletionInfo——空跑不会产生）
+现场复核（p5-audit-recheck，2026-10-01T19:03-19:04Z）：
+  模型加载 5.5s → restore history=0 → 生成 17.7s、12 tokens
+  reproduction_Y 与已记录 Y 逐字一致（matches_recorded=YES）
+  XcodeTest 0 failures / 23.6s
+证据落库：palace1-r4-p5-audit-recheck-20261001.jsonl
+```
+
+执行真实性核实完毕：模型真实加载、真实推理、结果确定性复现。
+
+当前状态：
+
+```text
+R4 = 不变（P4 PASS / P5 FAIL 有效结果，待 human second layer）
+Audit = CLOSED（执行真实性已现场核实）
+Current blocker = none
+```
