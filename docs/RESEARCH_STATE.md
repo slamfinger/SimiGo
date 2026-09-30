@@ -9753,3 +9753,45 @@ C-0   = DELIVERED / HUMAN-REVIEWED（OPTION-1 认定为逻辑最干净态）
 GATES C-D = LOCKED；C 工程执行 = 零（待明确裁定）
 Current blocker = none（正式裁定悬置，属 human）
 ```
+
+
+### LAB ES-T3 RULING UPDATE — GATE C NOT EXECUTED / T3 CLOSURE REVIEW TASKED — 2026-10-01
+
+Human 裁定更新（明确指令：「不写 C、不继续 B′，先做 T3 Closure
+Review」）：
+
+```text
+① Gate C = 不执行。倾向接受 C-0 OPTION-1（NOT READY）——理由非
+   「KV 不重要」，恰相反：KV 是唯一有正向证据的候选，但现有
+   Representation 无法提供验证「KV 独立存在」的反事实条件；现在
+   写 C 实验代码会把命题偷改成「如何制造 KV-only」
+② 下一步 = T3 Closure Review（先收紧 T3 研究边界再决定是否值得
+   继续），核心三层：
+   L1 Representation 中是否存在继续计算所需内部信息？
+   L2 哪个分量实际参与 continuation？
+   L3 该分量能否脱离融合载体独立成为未来计算基础？
+   若 L3 在当前架构原则上不可实验，T3 边际价值迅速下降
+③ 主线回放要求：结果放回 Execution State → Durable Computational
+   State → Representation → 内部计算分量 → Continuation/Reuse 全栈；
+   「Representation 能保存 continuation 所需信息」≠「Representation
+   中存在可独立复用的计算分量」——两命题非同一命题
+④ T2→T3 真正缺口重述：缺的不是再一条 probe，而是「Representation
+   是否存在可分解、可引用、可重新组合的内部计算结构」
+⑤ 若 review 认为值得继续才建新实验（不叫 B′-4），严格条件=「不能
+   为了证明它存在，先把它构造出来」；做不到则承认当前 Representation
+   是不可分解的计算整体（本身即重要结果）
+⑥ 最终决策门：回答充分→SEALED / 存在不改命题的可验证路径→新实验
+   设计 / 只能造新 carrier→T3 STOP、缺口转为新研究问题
+Review 必答的一句话：我们现在缺的到底是一个实验，还是一种系统本身
+尚不存在的 Representation 能力？若为后者，不为完成 Gate C 继续做
+实验，把缺口正式提炼为下一阶段研究问题。
+```
+
+当前状态：
+
+```text
+ES-T3 = A CLOSED / B CLOSED（B-3）/ B′ SEALED（CLOSED/LIMITED）
+Gate C = NOT EXECUTED（OPTION-1 为 operative 立场）
+T3 Closure Review = TASKED（交付后 T3 续/封终判归 human）
+Current blocker = none
+```
