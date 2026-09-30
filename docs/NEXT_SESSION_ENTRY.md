@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = LINE_REVIEW_HUMAN_ASSESSED_AWAITING_FORMAL_RULING（2026-10-01：human 评估复盘达标=「研究坐标系纠偏」非新 ES 发现；三项提升=P4 最大空白[共同计算基点，候选非定义]/T3 降回 backend-specific investigation[保持 CLOSED/LIMITED，永久 SEAL 延后主线重构后裁]/E2 标准+A 级语言+C 级证据=潜在支线句长期检查器[裁定后迁 AGENT_CONTEXT §5]；D 建议=D-1 采信/D-2 A→B→C→D 且 A 先对齐 Contract D1 不做实验/D-3 如上/D-4 确认归档；研究地图关键句=Backend 管「怎么继续计算」、SimiGo 研究「从哪里继续计算」；**正式裁定前零下一阶段执行**——全部悬置归 human）
+next mode = PHASE_R4_C_GATE_OPEN（2026-10-01：R4-0 裁定先行 commit f1e35be[D-1 采信/D-2 A→B→C→D/D-3 T3 CLOSED-LIMITED 不重开/D-4 归档确认；治理检查器迁 AGENT_CONTEXT §5]→A 线交付 CONTINUATION_CRITERIA_D1[S+X→Y 判据：C1-C5 前提/SUFF-1..4 充足性/IDENT=FSB-1 最小集/边界内外清单；非 State 定义零实现指定]→B 线交付 CAPABILITY_GAP_MATRIX[八能力：已证×3/部分×2/待定义×1/未知×2 fork+shared base；未知≠做不到逐行标注；C-2/L3 不构成 P4 否证——拓扑不同；P4/P5 候选命题+D 纪律六条预注册]→**停止于 C Reframing Upgrade Gate：P4/P5 是否属于 SimiGo 核心问题归 human——YES 才 D+P4 设计+授权；未经 C 门不设计/执行 P4**）
 ```
 
 2026-09-29 route redefinition:

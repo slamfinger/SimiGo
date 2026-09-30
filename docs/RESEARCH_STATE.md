@@ -9993,3 +9993,41 @@ Phase R4 = OPENED / R4-0 COMMITTED
 A/B readiness 交付 = IN PROGRESS（只读）
 Current blocker = none
 ```
+
+
+### LAB R4 A/B LINE DELIVERED — CONTINUATION CRITERIA + CAPABILITY GAP MATRIX — 2026-10-01
+
+第一条任务令执行完毕（只读零执行；R4-0 先行 commit `f1e35be` 后交付）：
+
+```text
+A 线 SIMIGO_LAB_EXECUTION_STATE_CONTINUATION_CRITERIA_D1_20261001.md：
+  判据式 S+X→Y（非 State 定义；内部实现零指定）
+  A1 前提条件 C1 语义落地/C2 位置断言/C3 即时输入/C4 执行能力
+     （backend 责任）/C5 兼容性（G-B2-3 保持 OPEN）
+  A2 充足性 SUFF-1 良定义/SUFF-2 基线等价（greedy 逐字对
+     H-full 重算基线）/SUFF-3 内容敏感性（防空壳载体假阳性）/
+     SUFF-4 历史独立性
+  A3 基点身份 = FSB-1 最小集 {key,position,anchor}；两不声明：
+     内部载体字节同一性（未证）/分叉子分支彼此同一性
+  A4 边界：内={寻址,位置断言,锚,落地载荷（证据定位=会话正文，
+     非定义）}；外={性能表示,验收门字段,生命周期记账,backend
+     内部,完整 History 本身}
+B 线 SIMIGO_LAB_R4_CAPABILITY_GAP_MATRIX_20261001.md：
+  八能力矩阵：formation 已证部分（gap=schema 层）/persistence 已证/
+  restore 已证/continuation 待定义（判据已备）/fork·shared base=
+  未知（产品机制在案但 P4 拓扑从未测）/incremental 部分/backend
+  independence 部分——未知≠做不到逐行标注
+  前线判读：C-2/L3 检验的是「无 H 无旧 P 重物化」拓扑，不构成对
+  P4（fork-from-common-base，增量归 backend）的否证——P4 是新
+  地带非已知失败延伸
+  P4/P5 候选命题落档（candidate only）；D 纪律六条预注册
+交付停止于 C Reframing Upgrade Gate（human）：P4/P5 是否真正属于
+SimiGo 核心问题——YES 才进 D+P4 设计+授权；NO 停车
+```
+
+当前状态：
+
+```text
+Phase R4 = R4-0 ✅ / A ✅ / B ✅ / C GATE OPEN（human）
+Current blocker = none（C 门裁定归 human；未经 C 门不设计/执行 P4）
+```
