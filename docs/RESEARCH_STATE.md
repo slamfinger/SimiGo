@@ -9167,3 +9167,40 @@ ES-D1 = F/G/H/I 全部 COMPLETE（I = 终 gate）/ AWAITING SECOND-LAYER
         总审（J-C 终判归 human）
 C-4   = LOCKED
 ```
+
+
+### LAB ES-D1 SEALED — J-C CONFIRMED / ARCHITECTURAL FINDING — 2026-09-30
+
+Human 终审封存（`180b065`）：**ES-D1 PASS / J-C CONFIRMED**（PARTIAL
+FORMATION / FORMATION GAP LOCATED）。Gate 终态：F PASS / G-C FINAL /
+H-B FINAL / I（Sufficiency）NOT APPLICABLE / I（Formation）J-C CONFIRMED。
+
+核心 finding（固定措辞）：
+
+> Durable Computational State does not emerge as an independent
+> representation-independent carrier in the audited runtime. Instead, the
+> runtime exhibits partial state formation at the checkpoint boundary:
+> identity and semantic history cross the boundary, while position and
+> continuation remain derived, and lineage is only partially represented.
+
+Formation gap 严格表述：located at the checkpoint commit boundary——事件
+durable 化 representation 与 semantic history，position/continuation 未
+被捕获为独立 authoritative carrier（不写「只差字段」）。forkPoint =
+latent formation mechanism。ES-R1→ES-D1 研究链正式闭合（reuse 不可能
+之因 = partial formation + gap 位于 checkpoint boundary）。
+
+已建立/尚未建立 brake 清单逐条登记（后者含最小字段集/独立 continuation
+必要性/跨 backend/machine/经济价值/一等对象——全部未建立）。
+
+新候选研究问题（NOT STARTED，开启须独立 gate）：**若补上 Formation
+Gap，是否真的产生 ES-R1 要求的 Representation-independent State
+Reuse？**；另登记研究方向表述：「现代 LLM runtime 可保存计算的语义输入
+与物理结果，却未必保存计算状态本身」。
+
+当前状态：
+
+```text
+ES-R1 = SEALED（R1-B FINAL）；ES-D1 = SEALED（J-C CONFIRMED）
+Contract v1.0 = UPSTREAM REFERENCE；PALACE-1 = PARKED
+C-4 = LOCKED；无开放 gate；下一方向由 human 选择
+```
