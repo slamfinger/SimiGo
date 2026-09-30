@@ -9544,3 +9544,25 @@ B′-2（更长/结构化差分探针 b0 vs b3）执行决定权移交 human。
 ES-T3 = T3-B′-1 PARTIAL INCONCLUSIVE / B′-2 与 Gate C/D 归 human
 C-4   = LOCKED
 ```
+
+
+### LAB ES-T3 T3-B′-2 EXECUTED — DISCRIMINATIVE POWER LIMITATION — 2026-09-30
+
+B′-2 差分探针执行（`ab20168`）：b0（完整 GDN）vs b3（GDN 零化）restore
+均 OK(17)→同一结构化列表 probe→greedy 128→**双侧 text 输出 0 字符**
+（trivially identical；LCCP 度量退化无信息量）。按预设指令提交
+**判别力不足说明**（`ab20168` 内限制文档）：疑似机制=probe 命中会话
+既有 tool-call 模式，产物疑为 tool call 而非文本，而观测面只捕获
+onChunk 文本（toolCalls/finishReason 未记录）——「0 字符」≠「无 token
+生成」。A/B 解释仍双未决，本轮不支持也不否定任一方。
+
+替代设计选项（请示 human）：(a) 不触发 tool-call 模式的 probe（总结型，
+E3-C0 先例）；(b) 观测面扩展（toolCalls/finishReason）；(c) (a)+(b)。
+
+当前状态：
+
+```text
+ES-T3 = A/B CLOSED（B-3）/ T3-B′-1 PARTIAL INCONCLUSIVE /
+        T3-B′-2 EXECUTED-UNINFORMATIVE（限制说明已交）
+Current blocker = none（替代设计裁定归 human）
+```
