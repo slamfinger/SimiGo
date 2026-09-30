@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C opening PASS已由 explicit human registration确认（2026-09-30，指令「登记 Phase C opening PASS，并激活 Phase C seam audit」）；Phase C seam audit已激活（C1–C8，clean HEAD worktree + targeted tests）。不做存储选型、adapter实现或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 Phase C seam audit（C1–C8）已完成并通过 external review（`PASS / REGISTRATION_REQUIRED`，evidence 61/61 PASS on clean `ebe4aec`）；等待 explicit registration。BACKEND-1 adapter engineering 仍未开启。不做存储选型、adapter实现或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8125,3 +8125,64 @@ Phase C seam audit            = ACTIVE（clean HEAD worktree + targeted tests；
 
 本次登记不实现 Llama adapter，不选存储，不定义 persistence format，不做
 performance claim，不吸收 RQ1/RQ2/RQ3 已登记工作，不做 API/协议签名设计。
+
+### LAB BACKEND1 PHASE C SEAM AUDIT REVIEW PASS — 2026-09-30
+
+Phase C seam audit artifact:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_20260930.md`
+（audit commit `58859a9`；audited clean HEAD `ebe4aec`）。
+
+Targeted evidence：`SimiGoRuntimeContractTests 19/19` + selected
+`SimiGo2ExperimentalTests 42/42`（含 `BackendConformanceMatrixTests 3/3` 三
+adapter）= `61/61 PASS`。Summary artifact:
+`simigo2-experimental/results/backend-conformance/backend1-phase-c-seam-audit-tests-20260930.json`。
+仍为 targeted structural validation，非 end-to-end durability proof。
+
+C1–C8 narrow answer：
+
+```text
+C1  语义层零 MLX 渗漏（contract target 无 dependency；D 级文件全零 MLX
+    import；三 payload 均 [Int]）；唯一跨组件渗漏点 = PrefixSnapshotStore
+    公开 API（MLXLMCommon PromptCacheSnapshot，L-1/G-5，非 blocker）
+C2  最小 seam = E1（7 语义生命周期 op，Runtime 独占）+ E3（4 representation
+    op + opaque payload + 3 契约错误，Backend 独占）+ B1（物化/内存对账面）；
+    sovereignty 结构验证：全 let handle，backend 无语义写路径
+C3  capability = R/T 层策略差异 + 显式降级（ResolutionState 四态 + 
+    noRepresentationAtPosition fail closed）；无 capability 字段进 D
+C4  durable relation 与 Phase B 登记逐字段吻合（RepresentationRef/
+    ExecutionRepresentationBinding）；内容主张为 per-path（pool/sidecar），
+    非 universal
+C5  四个语义 commit 窗口（fork/restore/discard/bind）与 physical outcome
+    同步因果；物理 I/O 在 seam 后 async；契约不强迫阻塞线程
+C6  failure 全部 loud fail-closed（三 adapter throw；discard release 先行
+    可重试；stale release no-op）；cancellation 为 harness/executor 级
+    （契约无 cancel 面，G-9）
+C7  默认路径即 ES 路径（engine 内构造 coordinator，SimiGo2App 零 MLX
+    import）；seam 不强制改动稳定 MLX 路径；测量归 RQ3
+C8  契约支持跨 backend 语义连续（已测三 backend 条件内）；representation
+    侧显式降级；不证明 artifact 可移植 / production-readiness / universal
+```
+
+Registered gaps：G-1（oversized derive 缺 position guard，被 coordinator
+:177 遮蔽）、G-2（coordinator 无内部锁）、G-3（attach 不验证 lineage
+closure）、G-4（bindRepresentation 不查 lifecycle）、G-5（L-1）、G-6（E3
+payload 无 universal digest）、G-7（ExecutionID 无 durable allocator）、
+G-8（BindingRegistry 原地改行，Phase B gap #9 仍在）、G-9（契约无
+cancellation 面）、G-10（Lab 无 durable store）。
+
+External review:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_EXTERNAL_REVIEW_20260930.md`。
+Verdict: `PASS / REGISTRATION_REQUIRED`。这是 external review decision，不是
+repository registration。四条 review strengthening 随登记继承（condition-1
+seam 读法 / L-1 处置 / G-1 前置条件 / 证据卫生）。
+
+当前状态：
+
+```text
+Phase A review           = PASS / REGISTERED
+Phase B boundary audit   = PASS / REGISTERED
+Phase C opening          = PASS / REGISTERED
+Phase C seam audit       = PASS / REGISTRATION_REQUIRED
+BACKEND-1 adapter eng.   = NOT OPENED（另行 gate）
+Current blocker          = explicit human/repository registration
+```

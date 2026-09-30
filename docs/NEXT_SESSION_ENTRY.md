@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`PHASE_C_REGISTERED / SEAM_AUDIT_ACTIVE`
+状态：`PHASE_C_SEAM_AUDIT_REVIEW_PASS / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -33,7 +33,11 @@
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`
 15. 读 Phase C opening registration：
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_OPENING_REGISTRATION_20260930.md`
-16. 如需原始 opening，再读：
+16. 读 Phase C seam audit：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_20260930.md`
+17. 读 Phase C seam audit review：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_EXTERNAL_REVIEW_20260930.md`
+18. 如需原始 opening，再读：
    - `docs/00-governance/SIMIGO18_PALACE1_EXECUTION_STATE_STORAGE_RESEARCH_OPENING_20260928.md`
    - `docs/00-governance/SIMIGO18_BACKEND1_LLAMA_RESEARCH_OPENING_20260928.md`
 
@@ -45,9 +49,9 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = PHASE C REGISTERED / SEAM AUDIT ACTIVE
+BACKEND-1 = PHASE C SEAM AUDIT REVIEW PASS / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = PHASE_C_SEAM_AUDIT / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
+next mode = PHASE_C_SEAM_AUDIT_REGISTRATION / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 ```
 
 2026-09-29 route redefinition:
@@ -162,6 +166,23 @@ next mode = PHASE_C_SEAM_AUDIT / NO_STORAGE_OR_ADAPTER_IMPLEMENTATION
 - Phase C code-level seam audit is now ACTIVE: clean HEAD worktree + targeted
   tests; observed code fact ≠ inferred contract ≠ selected implementation.
 
+2026-09-30 Phase C seam audit + review:
+
+- Audit (commit `58859a9`, clean HEAD `ebe4aec`):
+  `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_20260930.md`。
+  C1–C8 全部有代码级回答：最小 seam = E1+E3+B1 三契约（已存在并被三异构
+  backend 行为验证）；语义层零 MLX 渗漏（唯一渗漏点 PrefixSnapshotStore
+  公开 API，G-5/L-1）；sovereignty 结构验证（backend 无语义写路径）；
+  10 项 gaps 登记（G-1…G-10）；C8 = 契约支持跨 backend 语义连续（边界内）。
+- Evidence: `SimiGoRuntimeContractTests 19/19` + selected
+  `SimiGo2ExperimentalTests 42/42` = `61/61 PASS`；summary JSON 在
+  `simigo2-experimental/results/backend-conformance/`。
+- Audit review verdict: `PASS / REGISTRATION_REQUIRED`。
+- Review is not repository registration; four strengthening points carry
+  into registration（condition-1 seam 读法 / L-1 处置 / G-1 前置条件 /
+  证据卫生）。
+- Current blocker = explicit human registration.
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -179,14 +200,14 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Phase C opening draft
-   review `PASS / ACTIVATION_REQUIRED`。
-2. Registration 后 Phase C 才开始：code-level seam audit（C1–C8，clean HEAD
-   worktree + targeted tests，区分 observed code fact ≠ inferred contract ≠
-   selected implementation）。
+1. Explicitly approve or reject registration of the Phase C seam audit review
+   `PASS / REGISTRATION_REQUIRED`。
+2. Registration 后 Phase C 封口；BACKEND-1 adapter engineering 仍是独立
+   gate（另行开启，不自动继承）。
 3. Do not select SQLite / KV / event log / remote storage。
-4. 继续继承六个 mandatory conditions + 四条 review strengthening；不实现
-   Llama adapter，不做 performance claim（测量归 RQ3，SEPARATELY SCOPED）。
+4. 继续继承六项 Phase B mandatory conditions + 四条 seam-audit review
+   strengthening + 10 项 G-gaps；不实现 Llama adapter，不做 performance
+   claim（测量归 RQ3，SEPARATELY SCOPED）。
 
 登记时必须继续区分：
 
