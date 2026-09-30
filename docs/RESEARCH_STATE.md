@@ -9705,3 +9705,51 @@ C-0   = DELIVERED（停在 human 决定门）
 GATES C-D = LOCKED（不变）
 Current blocker = none（Gate C 开启与否 + 三选项选择归 human）
 ```
+
+
+### LAB ES-T3 C-0 HUMAN REVIEW — OPTION-1 ENDORSED AS CLEANEST / FORMAL RULING PENDING — 2026-10-01
+
+Human 对 C-0 的审阅意见登记（**非正式裁定**——原文明确「直到 human
+对这三个 OPTION 作出明确裁定」，门保持开启）：
+
+```text
+认可     C-0 裁定逻辑成立；当前 = 干净的 human decision gate
+锁定三事实 ① GDN 不再是 C 候选（B′ 判别边界已达，堆 probe 违反封存）
+         ② attention KV 唯一有资格候选（B-3 正向 operative 证据，
+           非单纯排除法）
+         ③ 现有 restore 路径无法实现 C 的核心反事实条件 H ✗——
+           「不是实验还没设计好，而是当前 Representation 载体结构
+           本身不给这个实验条件」
+认可解释分界 人工制造 KV-only carrier ⇒ 测的是 constructibility
+         （P 能被构造），不是 pre-existence（P 是已存在的独立 carrier）
+         ——两命题完全不同
+NOT READY 精确读法 「不 Ready」比「C 做不出来」更准：当前实验宇宙
+         没有提供检验原命题所需的独立载体——与 T2 路径 γ 不存在
+         闭环。OPTION-1 = 逻辑上最干净的研究状态
+独立样本入口 封存 B′ = CLOSED-LIMITED 切断了「实验退化成寻找差异」
+         的风险；若未来独立样本出现新差异，那是新验证实验非 B′-4
+```
+
+**决定门问题结晶（human 原话锁定）**：
+
+> 我们是否允许为了继续验证 T3，而先改变 Representation 的载体结构？
+
+若答「不允许」：T3 停在 candidate identified → consumption observed →
+independence condition unavailable → Gate C NOT READY → T3 remains
+unresolved——**不是失败**。研究边界表述：当前系统已能证明「某个内部
+计算分量在继续计算中起作用」，尚不能证明「该分量能脱离其现有融合载
+体而独立成为未来计算的基础」——**恰好把 operative 与 durably reusable
+两个概念分开**。
+
+**现行指令**：维持现状，不向 C 做任何工程执行，直到 human 对三
+OPTION 明确裁定。
+
+当前状态：
+
+```text
+ES-T3 = A CLOSED / B CLOSED（B-3）/ B′ SEALED（CLOSED/LIMITED）
+C-0   = DELIVERED / HUMAN-REVIEWED（OPTION-1 认定为逻辑最干净态）
+门问题 = 已结晶：是否允许为验证 T3 先改变 Representation 载体结构
+GATES C-D = LOCKED；C 工程执行 = 零（待明确裁定）
+Current blocker = none（正式裁定悬置，属 human）
+```
