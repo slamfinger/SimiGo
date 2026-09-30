@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
+next mode = PALACE1_DURABLE_STATE_SEMANTICS_OPENING / NOT_STARTED（下一会话第一动作）
 ```
 
 2026-09-29 route redefinition:
@@ -335,15 +335,29 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Contract v1.0 review
-   `PASS / REGISTRATION_REQUIRED`（含四条 strengthening 并入：五元组精确
-   读法 / C-13 机制定位 / 溯源补强 / 升格效果声明）。
-2. Registration 即时效果：v1.0 升格为 Execution State 上游语义参照；C-13
-   双向漂移检测生效；研究层级切换为 Contract ⇅ 实现侧。
-3. 不重设计代码；不修改已登记语义；不选 storage / persistence format /
-   API / protocol；不新增测试（re-run 须 hash 级绑定）。
-4. OP-1…OP-7 与 G-1…G-10 只经各自 gate 解决；PALACE 不消费；M-1…M-5 与
-   Phase B/C inherited conditions 继续有效；G-9/G-6/G-7/G-10 触发纪律不变。
+1. 下一会话第一动作：启动 `PALACE1_DURABLE_STATE_SEMANTICS_OPENING`——
+   先 §0 并发核验，然后 participant opening/definition draft（D1–D4）→
+   external review → 停 registration 门。不写代码、不选数据库、不解决
+   OP/G、不做第二 backend。
+   核心四问（human 方向决定，2026-09-30）：
+   ```text
+   D1  什么状态必须 durable？
+   D2  什么状态可以 reconstruct？
+   D3  恢复后什么条件下仍是 SAME Execution State？
+   D4  Physical Representation 丢失后 State 如何继续存在？
+   ```
+   重新审（非解决）：OP-1 transcript equivalence / OP-2 lineage closure /
+   G-7 durable identity / G-10 durable store / RB-1…RB-8 / IC-1…IC-5 /
+   Execution Semantic Snapshot——全部对照 Contract v1.0 重锚定。
+2. Maintain the Contract v1.0 standing drift-detection（C-13 双向 + S2/S6）；
+   G-9/G-6/G-7/G-10 触发纪律不变；轴 d 再检验为 durable-store activation
+   第一审计项（若该线后续激活）。
+3. 不修改 contract；不新增测试（re-run 须 hash 级绑定）；不选 storage /
+   persistence format / API / protocol；不做 performance / universal
+   portability claim。
+4. PALACE 线（04c608e hypothesis）仍 SEPARATELY SCOPED——本 opening 只定义
+   durable-state 语义研究门，不消费 PALACE hypothesis 内容；第二 backend
+   与 productization 明确排在 PALACE-1 之后。
 
 继续区分：
 

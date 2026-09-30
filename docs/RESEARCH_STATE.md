@@ -8508,3 +8508,28 @@ Contract v1.0                = PASS / REGISTERED / UPSTREAM SEMANTIC REFERENCE
 Current blocker              = none
 Next mode                    = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 ```
+
+### LAB NEXT-SESSION DIRECTION DECIDED — 2026-09-30
+
+Human 方向决定（Contract v1.0 封档后的路线选择）：
+
+```text
+选择  = PALACE-1 DURABLE STATE SEMANTICS OPENING（下一会话第一动作）
+排序  = durable-state semantics ＞ 第二 backend（排后）＞ productization
+        （暂不做——研究成立 ≠ 生产就绪 ≠ 产品化 ≠ 性能优化）
+理由  = Contract v1.0 刚成为上游语义参照，应拿它面对最困难的现实问题
+        （Runtime 消失 / Backend 更换 / Physical Representation 丢失后，
+        State 是否仍是那个 State），而非重复 adapter 适配验证
+核心四问 = D1 什么状态必须 durable / D2 什么状态可 reconstruct /
+        D3 恢复后何时仍是 SAME Execution State / D4 Physical
+        Representation 丢失后 State 如何继续存在
+重审清单（重锚定非解决）= OP-1 / OP-2 lineage closure / G-7 / G-10 /
+        RB-1…RB-8 / IC-1…IC-5 / Execution Semantic Snapshot（对照
+        Contract v1.0）
+协议   = §0 并发核验 → participant opening draft → external review →
+        停 registration 门；不写代码、不选数据库、不解决 OP/G
+```
+
+palace1_durable_state 线与 PALACE hypothesis（04c608e）保持 SEPARATELY
+SCOPED：本 opening 只定义 durable-state 语义研究门，不消费 hypothesis
+内容。standing drift-detection（C-13 / S2 / S6）继续生效。
