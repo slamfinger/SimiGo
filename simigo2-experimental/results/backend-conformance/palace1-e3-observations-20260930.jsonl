@@ -1,0 +1,22 @@
+{"ts":"2026-09-30T12:02:15Z","case":"setup","pool":"OFF (env)"}
+{"ts":"2026-09-30T12:02:15Z","case":"setup","conditionalRestore":"OFF (tunable)"}
+{"ts":"2026-09-30T12:02:15Z","case":"setup","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T12:02:20Z","case":"setup","model":"loaded"}
+{"ts":"2026-09-30T12:02:54Z","case":"c0","input_msgs":"18"}
+{"ts":"2026-09-30T12:02:54Z","case":"c0","response":"这个会话在查看桌面文件结构，逐步浏览了\"参考文件\"目录下的\"项目部管理制度汇编\"内容。"}
+{"ts":"2026-09-30T12:02:54Z","case":"c0","anchor":"ANCHORED:桌面,参考文件,项目部,管理制度"}
+{"ts":"2026-09-30T12:02:54Z","case":"c0","wall_seconds":"33.9"}
+{"ts":"2026-09-30T12:03:08Z","case":"c1","input_msgs":"17"}
+{"ts":"2026-09-30T12:03:08Z","case":"c1","response":"这个会话在查看桌面\"参考文件/4.项目部管理制度汇编\"目录下的秦沈高速项目经管部管理制度文件结构。"}
+{"ts":"2026-09-30T12:03:08Z","case":"c1","anchor":"ANCHORED:桌面,参考文件,项目部,管理制度,秦沈"}
+{"ts":"2026-09-30T12:03:08Z","case":"c1","wall_seconds":"14.2"}
+{"ts":"2026-09-30T12:03:17Z","case":"c2","input_msgs":"6"}
+{"ts":"2026-09-30T12:03:17Z","case":"c2","response":"根据当前会话的 MEMORY.md 索引，此前主要在做 **VBA→C dylib 迁移**（Excel 自动化逻辑移植到原生 C 库，配合 VBA OLE 二进制手术和 ABI 踩坑治理），以及 **codex-chatgpt 双向桥接**的部署验证"}
+{"ts":"2026-09-30T12:03:17Z","case":"c2","anchor":"UNANCHORED"}
+{"ts":"2026-09-30T12:03:17Z","case":"c2","wall_seconds":"8.5"}
+{"ts":"2026-09-30T12:03:21Z","case":"c3","input_msgs":"2"}
+{"ts":"2026-09-30T12:03:21Z","case":"c3","response":"::code-comment{title=\"Session Context\" body=\"This is the initial turn of a new session. No prior work has been performed in this conversation.\" file=\"/Users/mr.simi/.zcode/workspace/default\" priority=0}"}
+{"ts":"2026-09-30T12:03:21Z","case":"c3","anchor":"UNANCHORED"}
+{"ts":"2026-09-30T12:03:21Z","case":"c3","wall_seconds":"4.0"}
+{"ts":"2026-09-30T12:03:21Z","case":"teardown","durability_writes":"ZERO"}
+{"ts":"2026-09-30T12:03:21Z","case":"teardown","real_branch_checkpoints_after":"204"}
