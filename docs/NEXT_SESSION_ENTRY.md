@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`SEAM_STABILITY_OPENING_REGISTERED / AUDIT_ACTIVE`
+状态：`SEAM_STABILITY_AUDIT_REVIEW_PASS / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -54,6 +54,10 @@
    - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_20260930.md`
 25. 读其 external review：
    - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_OPENING_DRAFT_EXTERNAL_REVIEW_20260930.md`
+26. 读 Seam Stability audit：
+   - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_20260930.md`
+27. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_SEAM_STABILITY_AUDIT_EXTERNAL_REVIEW_20260930.md`
 
 ## Current snapshot
 
@@ -64,9 +68,9 @@ runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
-SEAM-STABILITY = OPENING PASS / REGISTERED / ACTIVATED / AUDIT ACTIVE
+SEAM-STABILITY = AUDIT COMPLETE / REVIEW PASS / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = SEAM_STABILITY_AUDIT / NO_CONTRACT_CHANGE_NO_NEW_TESTS
+next mode = SEAM_STABILITY_REGISTRATION / BOUNDS_AND_TRIGGERS_INHERITED
 ```
 
 2026-09-29 route redefinition:
@@ -245,6 +249,22 @@ next mode = SEAM_STABILITY_AUDIT / NO_CONTRACT_CHANGE_NO_NEW_TESTS
   测试、无 contract 变更授权。
 - Current blocker = explicit human registration。
 
+2026-09-30 Seam stability audit + review:
+
+- Audit（`33fb410`，source state `b031188`，判据冻结版逐字适用）：
+  S1 四轴 SATISFIED（a/b/c 行使层、d 判据层）；S2 = 12 条机械
+  contract-change 信号；S3 风险地图 0 × CONTRACT-BLOCKING（1 常备触发
+  G-9 + 3 条件触发 G-6/G-7/G-10）；S4 抽象类需求全落点既有 seam；
+  S5 六判据只定义；S6 standing 面组装 + re-run 75/75 @ b031188 零漂移。
+- 关键新事实：contract target 全部历史 4 commits 均在 2026-09-25，此后
+  零变更，横跨全部已登记轮次。
+- 裁决：`STABLE-AS-REGISTERED`（有界：≠ immutability / ≠ universal
+  portability / ≠ production readiness / ≠ performance）。
+- Audit review verdict: `PASS / REGISTRATION_REQUIRED`；四条 strengthening
+  （axis-c 观察窗口限定 / 轴 d 再检验为 standing condition / 裁决继承
+  Round 1 适用域 / S2 机械检测 standing 最低标准）随登记固化。
+- Current blocker = explicit human registration。
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -262,14 +282,15 @@ Canonical route document:
 
 ## Next session task
 
-1. Execute seam stability audit S1–S6 under the registered opening definition.
-2. 固定 verdict taxonomy `STABLE-AS-REGISTERED / STABILITY-CONDITIONAL / UNSTABLE`；
-   判据先于证据，采数后不得增删或改写。
-3. 不修改 contract；不新增测试（既有 battery re-run 须绑定 commit hash 级
-   源码状态）；不选 storage / persistence format / API；不做 performance
-   或 universal portability claim。
-4. PALACE 不消费；G-1…G-10 只分类不解决；M-1…M-5 与 Phase B/C 全部
-   inherited conditions 继续有效。
+1. Explicitly approve or reject registration of the Seam Stability audit
+   review `PASS / REGISTRATION_REQUIRED`。
+2. Registration 后 seam stability gate 封口；standing drift-detection 面
+   （S6 六项）成为后续一切 contract-adjacent 变更的常备检查。
+3. 触发点纪律：G-9 / G-6 / G-7 / G-10 任一触发 = 独立 contract gate，
+   禁止静默变更。
+4. PALACE 不消费；G-1…G-10 不因本 gate 关闭；M-1…M-5 与 Phase B/C 全部
+   inherited conditions 继续有效；不做 performance / universal portability
+   claim。
 
 继续区分：
 
