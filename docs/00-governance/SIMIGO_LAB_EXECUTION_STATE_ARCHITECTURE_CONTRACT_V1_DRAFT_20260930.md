@@ -1,7 +1,7 @@
 # Execution State Architecture Contract — v1.0 (Synthesis Draft)
 
 日期：2026-09-30  
-状态：`CONTRACT SYNTHESIS DRAFT v1.0 / AWAITING EXTERNAL REVIEW`  
+状态：`CONTRACT v1.0 / REGISTERED / UPSTREAM SEMANTIC REFERENCE`  
 Synthesis basis：opening registration `62142ad`（AC-1…AC-4，三大纪律）  
 Source state：`62142ad`  
 Route authority：`SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -38,7 +38,7 @@ Route authority：`SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_202609
 | in-flight physical use | T | Phase B §B5 | 瞬态保护；驱逐延迟 |
 | representation payloads（如 token prefix） | **P** | Phase C §C1 | 对 Runtime opaque；backend 策略自持 |
 | 外部 server native cache / slot state | T | Phase C §C1；Round 1 §A2 | server 所有；策略性忽略 |
-| `BackendMemoryObservation` | R（观测面） | `RuntimeBackendContract:20` | INV-3 对账输入；解释权在 Runtime |
+| `BackendMemoryObservation` | R（观测面） | `RuntimeBackendContract:20` | INV-3 对账输入；解释权在 Runtime；该 R 分类由契约自述的 passive observation 语义推导 |
 
 ### §1.2 Semantic Core 三定律
 
@@ -66,9 +66,9 @@ SC-3  语义演化仅经四个登记事务窗口（fork：物理 derive 先行�
 ### §2.1 核心法则
 
 ```text
-SAME Execution State ⟺ 以下五元组语义保持：
-      id / lineage / position / continuation / lifecycle
-   且 representation 侧仅发生已登记的显式结果：
+SAME Execution State ⟺ 以下五元组保持为 Runtime 独占的语义字段，其值只能经登记生命周期转移（create / continue / fork / restore / reattach / discard）演化；
+      identity 锚 = ExecutionID；lineage 为其不可变元数据；representation 变化从不直接写这些字段。
+      且 representation 侧仅发生已登记的显式结果：
       reattach / rematerializationRequired / recompute / fail-closed
 
 NEW Execution State ⟺ 仅由 create() 或 fork() 以新的 ExecutionID 产生。
@@ -189,7 +189,8 @@ gate；本标准不预证任何未测 backend。
 
 ```text
 C-13（新增信号） 本契约文本与代码/登记行为的任何双向偏离 = contract-
-      change 信号，走独立 contract gate。
+      change 信号，走独立 contract gate。当前检测机制为程序性：每个 gate
+      的 review checklist 对照项；自动化检测归 productization P-2。
 S6 standing 面照常适用：battery 复跑绑 hash、S2 十二信号、M-1…M-5、
 sovereignty 扫描、inherited-conditions ledger、PALACE 隔离检查。
 ```
