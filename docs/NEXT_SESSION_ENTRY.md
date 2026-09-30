@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`ESR2_GATE_C_COMPLETE / VERDICT_C2_PLUS_C3 / GATE_D_LOCKED`
+状态：`ESR2_SEALED / C2_FINAL_C3_BOUNDARY_FINDING / ES_T2_CANDIDATE_NOT_STARTED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = ESR2_GATE_D_AUTHORIZATION / OR_R2_REVIEW（Gate C verdict C-2+C-3 bbe7003：State existence 与 executability 分离；Tier-2 compressed context carrier 缺口确认；Gate D 语义重用按 C-2 裁定暂无前提）
+next mode = AWAITING_NEXT_DIRECTION / NO_OPEN_GATE（ES-R2 已封存 0b7b976；候选方向：ES-T2 Tier-2 Computational Bridge——开启须独立 gate）
 ```
 
 2026-09-29 route redefinition:

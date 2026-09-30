@@ -9321,3 +9321,38 @@ compressed context carrier（Tier-2），观察宇宙内不存在——FSB-2 预
 ES-R2 = A CLOSED（R2-A）/ B COMPLETE（STATE-SURVIVES）/ C COMPLETE
         （C-2+C-3）/ D LOCKED（待授权）
 ```
+
+
+### LAB ES-R2 SEALED — C-2 FINAL / C-3 SUPPORTED BOUNDARY FINDING — 2026-09-30
+
+Human 终审封存（`0b7b976`）：
+
+```text
+Gate A = R2-A FORMATION-SUFFICIENT / CLOSED（FSB-1/FSB-2 两层边界）
+Gate B = STATE-SURVIVES CONFIRMED / CLOSED（11 判据全 PASS）
+Gate C = C-2 FINAL（STATE-EXISTS-BUT-NOT-REMATERIALIZABLE）
+C-3    = MISSING COMPUTATIONAL BRIDGE — SUPPORTED BOUNDARY FINDING /
+         NOT YET UNIVERSAL（刹车措辞登记：更高阶 State 表达/可重建中间
+         态/可解释编码/State 自兼桥梁等理论可能未排除）
+Gate D = NOT APPLICABLE / LOCKED（不做伪 Semantic Reuse）
+ES-R2  = SEALED
+```
+
+三层分离实验性确立：**知识（transcript/语义载荷）≠ 计算状态
+（identity/position/continuation 权威载体）≠ 可执行状态（能驱动 R'
+物化的载体）**。压缩链终版：FSB-1 State 可形成 → Gate B State 可存活
+→ Gate C State 尚不能重新物化 → State 与 Representation 之间存在未被
+表达的【计算桥梁】。
+
+ES-T2（Tier-2 Computational Bridge）登记为下一条候选研究线（NOT
+STARTED，克制定义：「不读取完整 History、不使用旧 Representation 的
+条件下，从独立存活的 Tier-1 State 重新产生 Representation 还缺什
+么」；与设计 compressed carrier 不是一回事）。
+
+当前状态：
+
+```text
+ES-R1/ES-D1/ES-R2 = 三链 SEALED；Contract v1.0 = UPSTREAM REFERENCE
+PALACE-1 = PARKED；ES-T2 = 候选 NOT STARTED；C-4 = LOCKED
+Current blocker = none（下一方向由 human 选择）
+```
