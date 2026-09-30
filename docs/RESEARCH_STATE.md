@@ -9638,3 +9638,37 @@ ES-T3 = A CLOSED / B CLOSED（B-3）/ B′-1 PARTIAL INCONCLUSIVE /
 GATES C-D = LOCKED
 Current blocker = none（B′ 续 vs 封存归 human）
 ```
+
+
+### LAB ES-T3 B′ SEALED — CLOSED/LIMITED + C-0 TASKED — 2026-10-01
+
+Human 终局裁定（封存文档 `SIMIGO_LAB_EST3_BPRIME_SEALING_20261001.md`）：
+
+```text
+裁定   B′ 封存，不在当前样本追加 probe（加 probe = 提高实验数量
+       非解释力；已达当前样本判别力边界）
+定态   B′ = CLOSED / LIMITED——「已完成预定的消费可观测性验证；
+       当前观测面没有发现 GDN 差异，并达到当前样本的判别力边界」
+       （≠ PASS：不构成「GDN 不被消费」的证明）
+档案诚实表述（逐字）：A 获得源码结构证据支持，并得到当前黑盒
+       continuation probes 的一致性支持；B 尚未被逻辑排除，但当前
+       实验没有发现其可观察后果
+P-1 定位 B′-2 的 0 字符 = tool-call 通道 generation（非 0 generation）
+       ——实验缺陷已被机制性解释
+保留入口 独立样本验证（Sample 2/3：新 session/不同架构）SEPARATELY
+       SCOPED，非 B′-4，NOT STARTED，无 RQ ID
+禁止   同样本堆 NL probe / 改 prompt 逼差异 / null 当 negative proof /
+       宣布 GDN write-only / Attention KV operative 升格 Execution State
+```
+
+**C-0 任务令**：Gate C readiness review（先回答「Gate C 到底要证明
+什么」；不得偷换成「证 GDN 无用」；须仍锚定原 T3 问题；review 交付
+后由 human 决定是否开启、测哪个更直接的计算依赖）。
+
+当前状态：
+
+```text
+ES-T3 = A CLOSED / B CLOSED（B-3）/ B′ SEALED（CLOSED/LIMITED）
+GATES C-D = LOCKED；C-0 readiness review = TASKED（交付后归 human）
+Current blocker = none
+```
