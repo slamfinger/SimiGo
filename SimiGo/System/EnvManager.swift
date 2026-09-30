@@ -343,7 +343,7 @@ public final class EnvManager: ObservableObject {
                 }
             }
 
-            process.terminationHandler = { process in
+            process.terminationHandler = { [weak self] process in
                 let handle = pipe.fileHandleForReading
                 handle.readabilityHandler = nil
                 // 竞态修复（2026-09-30）：置 nil 与进程退出之间管道里可能还压着

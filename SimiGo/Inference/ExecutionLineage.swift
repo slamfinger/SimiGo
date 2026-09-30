@@ -36,7 +36,7 @@ public struct BranchForkEvent: Sendable {
 }
 
 /// 有界血统日志（每 Runtime 实例一份；FIFO 淘汰）。只记录与查询。
-public final class ExecutionLineage: @unchecked Sendable {
+nonisolated public final class ExecutionLineage: @unchecked Sendable {
     private struct Storage {
         var records: [ExecutionRecord] = []
         var forks: [BranchForkEvent] = []

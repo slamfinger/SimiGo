@@ -15,7 +15,7 @@ import SimiGo2Experimental
 /// Beta scope: single oversized conversation at a time (generation is
 /// serialized); greedy decoding; tool calls are not interpreted. All other
 /// product paths (NativeMLX, llama-server) are untouched.
-public final class OversizedRuntime: Runtime, @unchecked Sendable {
+nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     public static func supports(path: String) -> Bool {
         let fm = FileManager.default
         guard
@@ -40,7 +40,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
     private let engine: OversizedSegmentedEngine
     private let state = Mutex(State())
     /// Serializes generation onto the single Execution State session.
-    private let generationLock = NSLock()
+    private let generationLock = AsyncLock()
     private var httpServer: HTTPServer?
     private var servedTranscript: [EngineChatMessage] = []
 
@@ -79,7 +79,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
             },
             listBranchesHandler: { _, _ in (live: [], checkpoints: []) },
             checkHealthHandler: { [weak self] in
-                await (self?.engine.sessionInfo) != nil
+                (self?.engine.sessionInfo) != nil
             },
             cancelGenerationHandler: { _ in
                 // Beta: oversized generation is greedy and non-cancellable.
@@ -104,7 +104,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
     }
 
     public func checkHealth() async -> Bool {
-        await (engine.sessionInfo != nil) || state.withLock { $0.loaded }
+        (engine.sessionInfo != nil) || state.withLock { $0.loaded }
     }
 
     // MARK: - Generation (strict Execution State turn flow)
@@ -114,7 +114,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
         maxTokens: Int,
         onChunk: @escaping @Sendable (String) -> Void
     ) async throws -> GenerationResult {
-        generationLock.lock()
+        await generationLock.lock()
         defer { generationLock.unlock() }
         state.withLock { $0.generating = true }
         defer { state.withLock { $0.generating = false } }
@@ -137,14 +137,16 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
         }
 
         let started = ContinuousClock.now
-        var firstChunkAt: ContinuousClock.Instant?
+        let firstChunkAt = Mutex<ContinuousClock.Instant?>(nil)
         let turn: OversizedEngineTurn
         if isContinuation {
             turn = try await engine.generate(
                 messages: [incoming.last!],
                 maxNewTokens: maxTokens,
                 onToken: { _, text in
-                    if firstChunkAt == nil { firstChunkAt = ContinuousClock.now }
+                    if firstChunkAt.withLock({ $0 }) == nil {
+                        firstChunkAt.withLock { $0 = ContinuousClock.now }
+                    }
                     onChunk(text)
                 }
             )
@@ -153,7 +155,9 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 messages: incoming,
                 maxNewTokens: maxTokens,
                 onToken: { _, text in
-                    if firstChunkAt == nil { firstChunkAt = ContinuousClock.now }
+                    if firstChunkAt.withLock({ $0 }) == nil {
+                        firstChunkAt.withLock { $0 = ContinuousClock.now }
+                    }
                     onChunk(text)
                 }
             )
@@ -162,7 +166,7 @@ public final class OversizedRuntime: Runtime, @unchecked Sendable {
         servedTranscript.append(EngineChatMessage(role: "assistant", content: turn.text))
 
         var ttftSeconds: TimeInterval?
-        if let first = firstChunkAt {
+        if let first = firstChunkAt.withLock({ $0 }) {
             let d = started.duration(to: first)
             ttftSeconds = Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
         }

@@ -14,10 +14,14 @@ final class ToolGovernanceTests: XCTestCase {
             lock.lock(); defer { lock.unlock() }; return lines
         }
         var count: Int {
-            lock.lock(); defer { lock.unlock() }; return all.count
+            lock.lock()
+            defer { lock.unlock() }
+            return lines.count
         }
         func contains(_ needle: String) -> Bool {
-            all.contains { $0.contains(needle) }
+            lock.lock()
+            defer { lock.unlock() }
+            return lines.contains { $0.contains(needle) }
         }
     }
 

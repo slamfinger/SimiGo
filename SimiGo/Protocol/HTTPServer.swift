@@ -139,7 +139,7 @@ public final class HTTPServer: @unchecked Sendable {
 
     // MARK: - Connection Context
 
-    final class ConnectionContext: @unchecked Sendable {
+    nonisolated final class ConnectionContext: @unchecked Sendable {
         let connection: NWConnection
         let key: ObjectIdentifier
         let requestId: String
@@ -2237,7 +2237,7 @@ nonisolated final class Locked<T>: @unchecked Sendable {
 // MARK: - NSLock Helper
 
 private extension NSLock {
-    func withLock<T>(
+    nonisolated func withLock<T>(
         _ body: () throws -> T
     ) rethrows -> T {
 

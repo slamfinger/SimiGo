@@ -342,7 +342,7 @@ extension HTTPServer {
     }
 
     @discardableResult
-    private func sendImmediateCompletionsChunk(
+    nonisolated private func sendImmediateCompletionsChunk(
         _ object: [String: Any],
         context: ConnectionContext
     ) -> Bool {

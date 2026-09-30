@@ -34,7 +34,7 @@ import SimiGo2Experimental
 ///
 /// 先级：同会话活复用（cacheEff=1.00 那条健康路径）永远第一优先；
 /// 池只接住「换会话 key / 重启后」的冷重建。
-final class NativeMLXPrefixPool: @unchecked Sendable {
+nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
     static let shared = NativeMLXPrefixPool()
 
     private let lock = NSLock()
@@ -178,9 +178,7 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
         for count in boundaries {
             let hash = cumulative[count - 1]
             let key = "\(namespace.modelID)|\(namespace.kvFingerprint)|\(count)|\(hash)"
-            lock.lock()
-            let known = exportedTokenBoundaries.contains(key)
-            lock.unlock()
+            let known = lock.withLock { exportedTokenBoundaries.contains(key) }
             guard !known else { continue }
             do {
                 let slice = Array(tokenIds[..<count])
@@ -189,9 +187,7 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
                 ) { url in
                     try await session.savePrefixSnapshot(to: url, upTo: count)
                 }
-                lock.lock()
-                exportedTokenBoundaries.insert(key)
-                lock.unlock()
+                _ = lock.withLock { exportedTokenBoundaries.insert(key) }
                 RuntimeTraceLogger.shared.trace(
                     "[MLX] poolTokenExport tokens=\(count)")
             } catch {
@@ -200,15 +196,14 @@ final class NativeMLXPrefixPool: @unchecked Sendable {
             }
         }
         if failedCounts.isEmpty {
-            lock.lock()
-            exportFailureSignature = nil
-            lock.unlock()
+            lock.withLock { exportFailureSignature = nil }
         } else {
             let signature = failedErrs.sorted().joined(separator: " | ")
-            lock.lock()
-            let alreadyReported = exportFailureSignature == signature
-            exportFailureSignature = signature
-            lock.unlock()
+            let alreadyReported = lock.withLock {
+                let alreadyReported = exportFailureSignature == signature
+                exportFailureSignature = signature
+                return alreadyReported
+            }
             if !alreadyReported {
                 // first/last 按边界值升序（boundaries 数组以全量边界开头，
                 // 尝试序≠升序；2026-09-30 实证 count=3 first=4638 last=4096）。

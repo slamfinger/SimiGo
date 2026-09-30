@@ -510,7 +510,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if let reservationError {
             // Preserve the existing lineage contract: admission-time
             // notLoaded/duplicate failures are still failed executions.
-            let executionKey = try AgentExecutionKey.resolve(
+            _ = try AgentExecutionKey.resolve(
                 agentId: agentId,
                 sessionId: sessionId,
                 logicalBranchId: logicalBranchId
@@ -1192,7 +1192,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 executionID: executionKey.storageKey,
                 history: poolHistory
             ) { url in
-                try await poolSession.saveCache(to: url)
+                _ = try await poolSession.saveCache(to: url)
             }
             // B-6 token 边界：仅基 kvSettings 会话导出（跨 plan 类误装
             // 不可能进池——登记的 beta 边界）。
@@ -1217,7 +1217,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         if restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled {
             managed.checkpointDirty = true
             do {
-                try await performSave(
+                _ = try await performSave(
                     key: executionKey.storageKey, traceKey: executionKey.traceKey,
                     container: container, managed: managed,
                     directory: Self.defaultBranchCheckpointStore(), modelPath: modelPath)
@@ -1495,14 +1495,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         while true {
             let chunk = try handle.read(upToCount: chunkBytes)
             guard let chunk, !chunk.isEmpty else { break }
-            var data = chunk
-            try autoreleasepool {
+            let data = chunk
+            autoreleasepool {
                 hasher.update(data: data)
             }
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
+    @discardableResult
     private func performSave(
         key: String, traceKey: String, container: ModelContainer,
         managed: ManagedSession, directory: URL, modelPath: String
@@ -1522,8 +1523,6 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // The vendor cache is written separately from the sidecar. Bind the
         // pair with a generation id + content hash so any crash/failure between
         // the two writes becomes an invalid checkpoint instead of a mixed pair.
-        // P2-ES-02: SHA-256 is returned by the safetensors writer from the same
-        // byte stream that produced the checkpoint; save no longer rereads GBs.
         let cacheSHA256 = saveReceipt.sha256
         let checkpointGeneration = UUID().uuidString.lowercased()
 
@@ -1705,7 +1704,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
 
     /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；
     /// suspend 会清空内存会话，落盘 checkpoint 是分支唯一的 durable 存活物）。
-    public static func defaultBranchCheckpointStore() -> URL {
+    nonisolated public static func defaultBranchCheckpointStore() -> URL {
         let directory = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".simigo/branch-checkpoints", isDirectory: true)
         try? FileManager.default.createDirectory(
