@@ -9451,3 +9451,34 @@ Gate D（LOCKED）= Representation Independence（抽离/删P1/跨进程/C→R2�
 ES-T3 = DESIGN LOCKED / T3-A EXECUTION AWAITING AUTHORIZATION
 T3-B/C/D = LOCKED；ES-R1/D1/R2 = SEALED；C-4 LOCKED
 ```
+
+
+### LAB ES-T3 GATE A COMPLETE — T3-A2 CONFIRMED + T3-A3 PARTIAL — 2026-09-30
+
+Human 批准 Gate A 执行（Representation Component Census；只读 vendor/
+product 追踪）。执行（`19c1ffc`，零修改零扰动）：
+
+```text
+Q1 生命周期绑定   = durable 融合（单次 flatten 写入/全量读入）+
+                    内存分层（[KVCache] 逐层 + MambaCache cache[0]/[1]）
+Q2 position 承载  = attention KV 显式（shape∝position + ropeOffset
+                    追踪）/ GDN 隐式（固定形状递归包含）
+Q3 continuation   = 双组件同时消费，无单组件路径（grep 零命中）
+Q4 独立入口       = 无（vendor loadPromptCache 文档化拒绝带 state
+                    cache 的旧 API；ChatSession 整 snapshot）
+Q5 更新方式       = 异构确认（GDN replace vs KV append，vendor :253-255）
+Q6 架构依赖       = GDN=Qwen3Next 特有 / KVCache 通用类
+Q7 可替换性       = 单 generation/SHA/file，零区别机制
+```
+
+**归类：T3-A1 REJECTED / T3-A2 CONFIRMED / T3-A3 PARTIAL（内存粒度
+存在，durable 融合）/ T3-A4 REJECTED（边界存在且可定位）——复合：
+A2 CONFIRMED + A3 PARTIAL（in-memory only）**。分道图与生命周期
+七问事实表在结果文档；Gate B 申请权归 human。
+
+当前状态：
+
+```text
+ES-T3 = GATE A COMPLETE / T3-B AWAITING HUMAN APPLICATION DECISION
+C-4   = LOCKED
+```
