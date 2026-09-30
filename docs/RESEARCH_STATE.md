@@ -9291,3 +9291,33 @@ ES-R2 = GATE A CLOSED（R2-A）/ GATE B COMPLETE（STATE-SURVIVES）
 GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
+
+
+### LAB ES-R2 GATE C COMPLETE — VERDICT C-2 + C-3 IMPLICATION — 2026-09-30
+
+Human 授权 Gate C（S→R' Re-materialization 首测；硬约束=old P 与 full
+History 在实验环境真实缺席；S 唯一 computational input）。执行
+（`bbe7003`，19.2s，零 durable 写入）：
+
+```text
+C 空间核验 = 仅 state-carrier.json（无 safetensors/无 meta.json）
+Attempt 1  既有 P→R seam → FAILED（meta.json 缺失，Code=260）——seam
+           需要 meta+safetensors，carrier 无法替代任一输入
+Attempt 2  免 history 会话路径（仅 probe 文本）→ 会话创建于 position 2
+           而非 State 的 17——模型逐字响应：「请提供具体的上下文或任务
+           指令，以便我继续执行。」
+R' 核验    = 零新表示工件（R' 未形成即证明其非旧 P 残留）
+```
+
+**VERDICT = C-2**：Tier-1 State 存活但无法 S→R'——**State existence 与
+State executability 由运行时实验正式分离**。C-3 含义登记：S→R' 需要
+compressed context carrier（Tier-2），观察宇宙内不存在——FSB-2 预言
+实验证实。附带观察：无 persona 时模型明示要求上下文（对照 E3-C-2 的
+虚构），登记不外推。
+
+当前状态：
+
+```text
+ES-R2 = A CLOSED（R2-A）/ B COMPLETE（STATE-SURVIVES）/ C COMPLETE
+        （C-2+C-3）/ D LOCKED（待授权）
+```
