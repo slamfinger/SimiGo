@@ -8172,9 +8172,12 @@ cancellation 面）、G-10（Lab 无 durable store）。
 
 External review:
 `docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_EXTERNAL_REVIEW_20260930.md`。
-Verdict: `PASS / REGISTRATION_REQUIRED`。这是 external review decision，不是
-repository registration。四条 review strengthening 随登记继承（condition-1
+Verdict: `PASS / REGISTRATION_REQUIRED`。已于独立登记 commit 中正式登记为
+`PASS / REGISTERED`。四条 review strengthening 随登记继承（condition-1
 seam 读法 / L-1 处置 / G-1 前置条件 / 证据卫生）。
+
+Registration:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_PHASE_C_SEAM_AUDIT_REGISTRATION_20260930.md`。
 
 当前状态：
 
@@ -8182,7 +8185,7 @@ seam 读法 / L-1 处置 / G-1 前置条件 / 证据卫生）。
 Phase A review           = PASS / REGISTERED
 Phase B boundary audit   = PASS / REGISTERED
 Phase C opening          = PASS / REGISTERED
-Phase C seam audit       = PASS / REGISTRATION_REQUIRED
+Phase C seam audit       = PASS / REGISTERED
 BACKEND-1 adapter eng.   = NOT OPENED（另行 gate）
-Current blocker          = explicit human/repository registration
+Current blocker          = none on Phase C seam audit
 ```
