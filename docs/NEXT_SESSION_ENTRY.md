@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = P4_EXECUTED_JUDGMENT_PASS_AWAITING_SECOND_LAYER（2026-10-01：授权 17fce06[范围=设计 792afbc 零修改；机械执行/Identity 优先/拓扑优先/接受失败]→6 独立进程 invocation 全 SUCCEEDED→机械判读 **overall PASS**（J1..J6 两样本全 PASS；8/8 身份检查 YES；204→204 池 2→2；换序跨进程逐字复现；0 tool_calls）——按预注册措辞：「S₀ 可作为多个未来计算分支的共同基点」在本样本类上成立（拓扑级不涉性能）；边界=Sample-3 模型维度 coverage gap 不伪装/P5 LOCKED/超规则解读归 human；结果文档 SIMIGO_LAB_R4_P4_EXECUTION_RESULTS_20261001.md+观测 262 行已落库——**下一门=human second-layer 终审，无追加实验**）
+next mode = P5_READY_CRITERIA_LOCKED_AWAITING_AUTHORIZATION（2026-10-01：P5-0 落档 8809986[human 验收 P4=「S₀ 在当前样本类中具有 Common Future Base 性质」为 R4 前提；P5 注册=S₀+Δ→Result 只处理 Δ、测「历史是否必须重进计算路径」；纪律=不测性能/防走私[删 History 后仍成立]/沿用 S1S2/不碰 T3·PALACE·schema]→P5 readiness+判据锁定+设计交付 SIMIGO_LAB_R4_P5_READINESS_DESIGN_20261001.md——P5-1..5 操作化判据；Arm X 历史缺席[meta.history→[] 手术=依赖性扰动 b3/P-N3 先例，D6 已析] vs P4 Run1 基线 Y′；4 cells=S1/S2×ΔA₁/ΔB₁ 零新 probe；判读预注册 PASS=Y==Y′ 逐字/Fail=入口仍要求历史文本（有效结果不改判据）/INCONCLUSIVE=隔离或 D5——**EXECUTION LOCKED 等待 Human Authorization**）
 ```
 
 2026-09-29 route redefinition:

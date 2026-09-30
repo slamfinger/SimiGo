@@ -10219,3 +10219,38 @@ P5-0 = COMMITTED（P4 前提验收 + P5 注册）
 P5 readiness/判据 = IN PROGRESS（交付后停在授权门）
 Current blocker = none
 ```
+
+
+### LAB R4 P5 READINESS + CRITERIA LOCKED + DESIGN DELIVERED — 2026-10-01
+
+P5 readiness/判据/设计一次交付（`SIMIGO_LAB_R4_P5_READINESS_DESIGN_20261001.md`，
+零执行；「越简单越好」）：
+
+```text
+判据锁定（human 五条件操作化 P5-1..5）
+  P5-1 S₀ 已形成（沿用 P4 base-record）
+  P5-2 Δ 新输入（沿用 P4 已预注册 ΔA₁ 主/ΔB₁ 副——零新 probe）
+  P5-3 入口不要求旧 History（历史缺席臂：meta.history→[] 后
+       restore 接受 (S₀,Δ)；恢复后 history=0 观测）
+  P5-4 Y==Y′ 逐字（Y′=P4 Run1 记录基线，Run2 已证稳定，零重跑）
+  P5-5 删 History 后仍成立（P5-3/5 同臂实现——走私通道构造性
+       不存在）
+设计（P5-B）：Arm X 历史缺席 vs P4 基线；4 cells（2 样本×2Δ）；
+  手术=依赖性扰动（b3/P-N3 先例；D6 边界已析）；身份′=tensor
+  SHA 同+手术记录+history=0 观测
+判读预注册：PASS=4 cells Y==Y′ 逐字+非空+隔离绿 ⇒「continuation
+  入口接受 (S₀,Δ) 无需历史文本进入计算路径」；FAIL=任一 cell 失败
+  ⇒「入口仍要求历史文本进入计算路径（或 (S₀,Δ) 未被接受）」有效
+  结果不得改判据；INCONCLUSIVE=隔离破损/D5 通道疑云
+样本（P5-C）：S1/S2 沿用 P4 fixture；模型维度 gap 延续登记
+执行剖面：2 invocations；不测性能（D8）；不做 T3/PALACE/schema
+当前：EXECUTION LOCKED——等待 Human Authorization
+```
+
+当前状态：
+
+```text
+P5 = P5-0 ✅ / A 判据锁定 ✅ / B+C 设计交付 ✅
+EXECUTION = LOCKED —— 等待 Human Authorization
+Current blocker = none
+```
