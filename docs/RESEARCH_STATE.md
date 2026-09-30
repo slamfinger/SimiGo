@@ -9133,3 +9133,37 @@ checkpoint 提交固化的 17 跨进程存活且权威；runtime 推进的 18 �
 ES-D1 = F/G/H COMPLETE / GATE I AWAITING AUTHORIZATION
 C-4   = LOCKED
 ```
+
+
+### LAB ES-D1 PHASE I COMPLETE — VERDICT J-C PARTIAL FORMATION — 2026-09-30
+
+Human 裁定：Gate I（Sufficiency）= NOT APPLICABLE（无独立 carrier，进入
+条件不满足——终审记录保留）；直接授权 Phase I / Formation Condition
+（编号统一 F/G/H/I）。执行（`15b2952`，纯合成裁定）：
+
+```text
+formation-condition 对照表（F/G/H 全事件回溯）：
+identity     = FORMED（checkpoint commit → 寻址链）
+history      = FORMED（meta.history 副本，continuation-bearing 实证）
+position     = NOT FORMED as independent carrier——形成时机信息在场
+               （performSave 持有 managed.history）但 schema 不捕获；
+               仅代理实例（meta.history.count / forkPoint.atMessage）
+continuation = NOT FORMED（transcript 末端隐含，无 marker）
+lineage      = PARTIALLY FORMED（仅 fork 事件 forkPoint；writer-only、
+               零部署实例）
+recovery     = FORMED as P+markers（表示门控）
+```
+
+**VERDICT = J-C PARTIAL FORMATION**。Formation gap 精确形态：形成事件
+存在（checkpoint commit）、形成时刻信息在场、durable schema 不捕获
+（SessionCacheMetadata 字段集）——外加 fork 的 unconsumed lineage 片段
+形成。J-A/J-B 均被排除。结构断点定位 = checkpoint commit 的 durable
+schema（观察登记，修复归未来 gate）。
+
+当前状态：
+
+```text
+ES-D1 = F/G/H/I 全部 COMPLETE（I = 终 gate）/ AWAITING SECOND-LAYER
+        总审（J-C 终判归 human）
+C-4   = LOCKED
+```
