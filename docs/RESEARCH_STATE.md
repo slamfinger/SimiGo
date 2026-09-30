@@ -10279,3 +10279,35 @@ Arm X  必须历史缺席
 P5 EXECUTION = IN PROGRESS（机械执行 dcab489：4 cells）
 Current blocker = none
 ```
+
+
+### LAB R4 P5 EXECUTED — JUDGMENT FAIL PER PREREGISTERED RULES — VALID RESULT — 2026-10-01
+
+P5 机械执行完成（3 个独立进程 invocation 全 TEST SUCCEEDED；零设计修
+改）。原始事实+机械判读落档
+（`SIMIGO_LAB_R4_P5_EXECUTION_RESULTS_20261001.md`；观测 65 行已落库）：
+
+```text
+手术    唯一变更键=[history]（S1 17→0 / S2 16→0；safetensors 零接触）
+身份′   4/4 cells tensor SHA == S₀（计算载体字节同一）
+入口    4/4 restore 成功且 restored history count=0；生成全部
+        NORMAL、0 tool_calls（无 D5 通道疑云）
+Y vs Y′ 4/4 不等——Y 呈现「无先前对话」形态（原文在档：
+        S1-ΔA₁=「该会话此前未进行任何对话……」；S2-ΔB₁=「无」）
+隔离    204→204、池 2→2
+机械判读 4 cells 全 FAIL ⇒ overall FAIL——按预注册措辞收束
+        （failure-validity 条款，有效研究结果）：「在当前系统形态下，
+        continuation 入口仍要求历史文本进入计算路径（或 (S₀,Δ)
+        形态未被接受）」——P5 第一问答案 = 否
+边界    无机制归因无解释（D7：载体内部未观测不推测）；P4 PASS
+        不受影响（不同命题、不同拓扑）；无性能读数；无追加实验
+```
+
+当前状态：
+
+```text
+R4 = …/P4 PASS（human 验收）/ P5 EXECUTED JUDGMENT FAIL（有效结果）
+Next = human second-layer 终审（FAIL 的解读与下一步方向归 human；
+       本线停车，无追加实验）
+Current blocker = none
+```

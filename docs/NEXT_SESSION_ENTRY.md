@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = P5_READY_CRITERIA_LOCKED_AWAITING_AUTHORIZATION（2026-10-01：P5-0 落档 8809986[human 验收 P4=「S₀ 在当前样本类中具有 Common Future Base 性质」为 R4 前提；P5 注册=S₀+Δ→Result 只处理 Δ、测「历史是否必须重进计算路径」；纪律=不测性能/防走私[删 History 后仍成立]/沿用 S1S2/不碰 T3·PALACE·schema]→P5 readiness+判据锁定+设计交付 SIMIGO_LAB_R4_P5_READINESS_DESIGN_20261001.md——P5-1..5 操作化判据；Arm X 历史缺席[meta.history→[] 手术=依赖性扰动 b3/P-N3 先例，D6 已析] vs P4 Run1 基线 Y′；4 cells=S1/S2×ΔA₁/ΔB₁ 零新 probe；判读预注册 PASS=Y==Y′ 逐字/Fail=入口仍要求历史文本（有效结果不改判据）/INCONCLUSIVE=隔离或 D5——**EXECUTION LOCKED 等待 Human Authorization**）
+next mode = P5_EXECUTED_JUDGMENT_FAIL_VALID_RESULT（2026-10-01：授权 1d66b74[范围=dcab489 零修改]→3 独立进程 invocation 全 SUCCEEDED→机械判读 **overall FAIL**（4/4 cells Y≠Y′）——原始事实：手术唯一变更键=[history]（17→0/16→0）；4/4 tensor SHA=S₀、restore 成功、history=0、生成 NORMAL、0 tool_calls；Y 呈「无先前对话」形态（S1-ΔA₁=「该会话此前未进行任何对话……」S2-ΔB₁=「无」）；隔离 204→204 池 2→2——按注册措辞收束（failure-validity，有效结果）：「continuation 入口仍要求历史文本进入计算路径（或 (S₀,Δ) 形态未被接受）」=P5 第一问答案否；无机制归因（D7）；P4 PASS 不受影响；无追加实验——结果文档 SIMIGO_LAB_R4_P5_EXECUTION_RESULTS_20261001.md+观测 65 行已落库——**当前停：FAIL 的解读与下一步方向归 human second layer**）
 ```
 
 2026-09-29 route redefinition:

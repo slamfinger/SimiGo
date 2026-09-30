@@ -1,0 +1,65 @@
+{"ts":"2026-09-30T18:48:36Z","case":"setup-s1","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T18:48:36Z","case":"setup-s1","prefix_pool_before":"2"}
+{"ts":"2026-09-30T18:48:36Z","case":"surgery-s1","changed_keys":"[history]"}
+{"ts":"2026-09-30T18:48:36Z","case":"surgery-s1","history_from":"17"}
+{"ts":"2026-09-30T18:48:36Z","case":"surgery-s1","history_to":"0"}
+{"ts":"2026-09-30T18:48:42Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T18:48:42Z","case":"s1-dA1","id1_tensor_sha_match":"YES"}
+{"ts":"2026-09-30T18:48:43Z","case":"s1-dA1","restored_history_count":"0"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","text_chars":"21"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","text":"该会话此前未进行任何对话，这是第一条消息。"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","tool_call_count":"0"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","generation_tokens":"12"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","stream_end":"NORMAL"}
+{"ts":"2026-09-30T18:49:00Z","case":"s1-dA1","equal_baseline":"NO"}
+{"ts":"2026-09-30T18:49:01Z","case":"s1-dB1","id1_tensor_sha_match":"YES"}
+{"ts":"2026-09-30T18:49:01Z","case":"s1-dB1","restored_history_count":"0"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","text_chars":"2"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","text":"没有"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","tool_call_count":"0"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","generation_tokens":"1"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","stream_end":"NORMAL"}
+{"ts":"2026-09-30T18:49:02Z","case":"s1-dB1","equal_baseline":"NO"}
+{"ts":"2026-09-30T18:49:02Z","case":"teardown-s1","real_branch_checkpoints_after":"204"}
+{"ts":"2026-09-30T18:49:02Z","case":"teardown-s1","prefix_pool_after":"2"}
+{"ts":"2026-09-30T18:49:02Z","case":"summary","s1":"WRITTEN"}
+{"ts":"2026-09-30T18:49:10Z","case":"setup-s2","real_branch_checkpoints_before":"204"}
+{"ts":"2026-09-30T18:49:10Z","case":"setup-s2","prefix_pool_before":"2"}
+{"ts":"2026-09-30T18:49:10Z","case":"surgery-s2","changed_keys":"[history]"}
+{"ts":"2026-09-30T18:49:10Z","case":"surgery-s2","history_from":"16"}
+{"ts":"2026-09-30T18:49:10Z","case":"surgery-s2","history_to":"0"}
+{"ts":"2026-09-30T18:49:14Z","case":"setup","model":"loaded: Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T18:49:14Z","case":"s2-dA1","id1_tensor_sha_match":"YES"}
+{"ts":"2026-09-30T18:49:14Z","case":"s2-dA1","restored_history_count":"0"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","text_chars":"36"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","text":"该会话此前正在规划 PALACE-1 P4 探测器的任务设计或技术细节。"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","tool_call_count":"0"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","generation_tokens":"20"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","stream_end":"NORMAL"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dA1","equal_baseline":"NO"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dB1","id1_tensor_sha_match":"YES"}
+{"ts":"2026-09-30T18:49:17Z","case":"s2-dB1","restored_history_count":"0"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","text_chars":"1"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","text":"无"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","tool_call_count":"0"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","generation_tokens":"1"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","stream_end":"NORMAL"}
+{"ts":"2026-09-30T18:49:18Z","case":"s2-dB1","equal_baseline":"NO"}
+{"ts":"2026-09-30T18:49:18Z","case":"teardown-s2","real_branch_checkpoints_after":"204"}
+{"ts":"2026-09-30T18:49:18Z","case":"teardown-s2","prefix_pool_after":"2"}
+{"ts":"2026-09-30T18:49:18Z","case":"summary","s2":"WRITTEN"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_s1-dB1_equal":"NO"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_verdict":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_s1-dA1_equal":"NO"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_s1-dA1_cell":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_isolation":"PASS"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s1_s1-dB1_cell":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_s2-dB1_cell":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_s2-dB1_equal":"NO"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_s2-dA1_cell":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_s2-dA1_equal":"NO"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_isolation":"PASS"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","s2_verdict":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","overall":"FAIL"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","registered_wording_pass":"continuation entry accepts (S0, delta) without history text entering the computation path, verbatim-equal to the full-history baseline"}
+{"ts":"2026-09-30T18:49:25Z","case":"judgment","registered_wording_fail":"the continuation entry still requires history text to enter the computation path (or the (S0,delta) form was not accepted)"}
