@@ -132,9 +132,12 @@ F-5 llama-server 二进制定位
     llama-server（830M 构建树）。binary-swap 实验（environment vs State）
     的对象已具备。CrashReporter plist（2026-08-31）证明运行史。
 
-F-6 无 retention/GC 痕迹
-    branch-checkpoints 自 08-16 起持续累积（102 对 / 62G），含 pool-battery
-    等测试产物；未见任何清理机制——观察事实，非建议。
+F-6 retention 机制存在且预算驱动（writer provenance 审计修正）
+    `BranchCheckpointRetention`（BETA-STORAGE-1）：成对完整性回收 +
+    ownership-aware（active keys 永不回收）+ 字节预算（checkpoint 默认
+    64 GiB / pool 16 GiB，env 可覆写）；每次成功轮 enforce。62G/15G 的
+    持续累积 = **预算内行为**，非无机制。「durable accumulation 有机制、
+    durable state lifecycle（tombstone/恢复语义）不存在」的表述保留。
 ```
 
 ## 6. 三问作答
@@ -159,11 +162,18 @@ State 载荷级（唯二候选，影响 UNKNOWN）：
 
 **C. 如果 Physical Representation 全部消失，当前 SimiGo 到底还剩什么？**
 源码 1.3M（含 Contract 实现类型）+ git 222M（全部登记链）+ docs 3.1M +
-results 19M ≈ **245M 语义与证据资产；零个 durable Execution State 实例**
-——进程死亡即具体 State 消失，今天无一例外（Lab 侧）。唯一在进程外存活
-的语义记录 = `.simigo` 的 checkpoint meta.json（transcript+modelId）与
-pool sidecar——它们是否算「Physical Representation」还是「durable 语义」，
-**正是本审计暴露出的、必须由下一阶段定义的第一个问题**。
+results 19M（git 内）≈ **245M 语义与证据资产**。其余结论按第二层指令
+撤换原「零个 durable Execution State 实例」措辞：
+
+> **当前无法确认 meta.json 是 Physical Representation 的附属物，还是已
+> 构成独立的 durable semantic record；因此当前无法判断 Physical
+> Representation 全部消失后是否仍存在 durable Execution State。**
+
+依据：meta.json 已脱离进程存在，且包含 transcript + modelId +
+cacheSHA256 + generation + storageKey——它**至少是一个进程外 durable
+record**；至于它是不是 State，不猜测，由恢复实验（E1/E2/E3）回答。
+（writer provenance 补充：meta.json 与 safetensors 在代码层为 fail-closed
+成对语义、无独立恢复路径——但「附属」与「独立记录」的最终判定仍属实验。）
 
 ## 7. Hypothesis register（A/B/C 情况——全部 hypothesis，不结论）
 
