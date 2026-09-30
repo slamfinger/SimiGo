@@ -1,0 +1,51 @@
+{
+  "specimen": "default_5401315f-faa7-4984-9639-fccef06ae188_main",
+  "meta_sha256": "c9246ab1d77afe16fe272caa271a20dbc4fdcb478232ed7384500d6fd5e0cfb4",
+  "safetensors_sha256": "5ce9dcbda52286ef2717e6212feabbc2d99eabf1415ee32510e35fd3ac7238ae",
+  "safetensors_bytes": 713859116,
+  "tensor_count": 80,
+  "tensor_shapes_sample": {
+    "0.0": [
+      1,
+      3,
+      8192
+    ],
+    "0.1": [
+      1,
+      32,
+      128,
+      128
+    ],
+    "1.0": [
+      1,
+      3,
+      8192
+    ],
+    "1.1": [
+      1,
+      32,
+      128,
+      128
+    ]
+  },
+  "dtypes": {
+    "BF16": 50,
+    "F32": 30
+  },
+  "storageKey": "default/5401315f-faa7-4984-9639-fccef06ae188/main",
+  "checkpointGeneration": "c1185f0a-2cf9-4b02-85c6-c386f9177ea9",
+  "modelId": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "savedAt": "2026-09-30T05:55:17Z",
+  "forkPoint": "ABSENT",
+  "kvFingerprint": "ABSENT",
+  "transcript_canonical_sha256": "fb6a5a0784b676bc2ecaab6c71ac7092d8c40c8c2e5d77dd19c1aff4692734c9",
+  "message_count": 17,
+  "roles": {
+    "system": 1,
+    "user": 6,
+    "assistant": 7,
+    "tool": 3
+  },
+  "content_chars_total": 33925,
+  "position_proxy": "message_count"
+}

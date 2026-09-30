@@ -1,0 +1,21 @@
+{"ts":"2026-09-30T10:40:26Z","layer":"setup","model":"loaded: /Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"}
+{"ts":"2026-09-30T10:40:26Z","layer":"R1","verdict":"FAILED-FAIL-CLOSED"}
+{"ts":"2026-09-30T10:40:26Z","layer":"R1","error":"Error Domain=NSCocoaErrorDomain Code=4 \"The file “default_5401315f-faa7-4984-9639-fccef06ae188_main.safetensors” doesn’t exist.\" UserInfo={NSFilePath=/tmp/simigo-palace1-e1/mutation/default_5401315f-faa7-4984-9639-fccef06ae188_main.safetensors, NSUnderlyingError=0x9159ee280 {Error Domain=NSPOSIXErrorDomain Code=2 \"No such file or directory\"}}"}
+{"ts":"2026-09-30T10:40:26Z","layer":"R1","capability_boundary":"native loadSessionCache depends on the physical safetensors payload"}
+{"ts":"2026-09-30T10:40:26Z","layer":"setup","process_home":"/Users/mr.simi"}
+{"ts":"2026-09-30T10:40:26Z","layer":"R2","verdict":"BLOCKED-SAFE (home redirect inactive)"}
+{"ts":"2026-09-30T10:40:26Z","layer":"R2","error":"process home is /Users/mr.simi"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","verdict":"IDENTIFIED"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","storageKey":"default/5401315f-faa7-4984-9639-fccef06ae188/main"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","generation":"c1185f0a-2cf9-4b02-85c6-c386f9177ea9"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","modelId":"peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","history_count":"17"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","kvFingerprint":"ABSENT"}
+{"ts":"2026-09-30T10:44:05Z","layer":"R0","forkPoint":"ABSENT"}
+{"ts":"2026-09-30T10:44:09Z","layer":"setup","model":"loaded: /Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"}
+{"ts":"2026-09-30T10:44:09Z","layer":"R1","verdict":"FAILED-FAIL-CLOSED"}
+{"ts":"2026-09-30T10:44:09Z","layer":"R1","error":"Error Domain=NSCocoaErrorDomain Code=4 \"The file “default_5401315f-faa7-4984-9639-fccef06ae188_main.safetensors” doesn’t exist.\" UserInfo={NSFilePath=/tmp/simigo-palace1-e1/mutation/default_5401315f-faa7-4984-9639-fccef06ae188_main.safetensors, NSUnderlyingError=0x91aa58630 {Error Domain=NSPOSIXErrorDomain Code=2 \"No such file or directory\"}}"}
+{"ts":"2026-09-30T10:44:09Z","layer":"R1","capability_boundary":"native loadSessionCache depends on the physical safetensors payload"}
+{"ts":"2026-09-30T10:44:09Z","layer":"setup","process_home":"/Users/mr.simi"}
+{"ts":"2026-09-30T10:44:09Z","layer":"R2","verdict":"BLOCKED-SAFE (home redirect inactive)"}
+{"ts":"2026-09-30T10:44:09Z","layer":"R2","error":"process home is /Users/mr.simi"}
