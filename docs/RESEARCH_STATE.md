@@ -9204,3 +9204,32 @@ ES-R1 = SEALED（R1-B FINAL）；ES-D1 = SEALED（J-C CONFIRMED）
 Contract v1.0 = UPSTREAM REFERENCE；PALACE-1 = PARKED
 C-4 = LOCKED；无开放 gate；下一方向由 human 选择
 ```
+
+
+### LAB ES-R2 RESEARCH DESIGN LOCKED — 2026-09-30
+
+Human 确认方向并发布 ES-R2 研究计划（From Partial Formation to
+Representation-Independent Reuse；四 gate A/B/C/D；六预注册结果
+R2-A…R2-F；性能强制后置；ES-R3 backend takeover 与 PALACE 依赖未满足
+冻结）。设计文档冻结（`82a33a9`）：
+
+`docs/00-governance/SIMIGO_LAB_ESR2_RESEARCH_DESIGN_20260930.md`
+
+```text
+研究问题 = 补足 checkpoint durable boundary 缺失的形成条件后，能否产生
+           独立于 P 的 Execution State Reuse（因果验证非功能实现）
+Gates    = A Formation Minimality（Formation Sufficiency Boundary，
+           synthetic carrier 允许/生产 schema 禁止）→ B State Survival
+           （双进程 control vs treatment——最重要实验，失败即停）→
+           C Re-materialization（S→R' 首测；硬条件：不读完整 history、
+           不用旧 P）→ D Semantic Reuse（O1 vs O2，P1/P2 判据）
+对象/环境 = checkpoint 5401315f baseline fixture（PB1 基线在案）+
+           Nail 模型 + 零 durable 写入隔离配方
+```
+
+当前状态：
+
+```text
+ES-R2 = DESIGN LOCKED / GATE A AWAITING EXECUTION APPROVAL
+Current blocker = none（Gate A 批准归 human）
+```
