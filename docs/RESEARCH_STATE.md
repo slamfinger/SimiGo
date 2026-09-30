@@ -9044,3 +9044,30 @@ ES-R1 = SEALED；Contract v1.0 = UPSTREAM REFERENCE
 PALACE-1 = PARKED（framing 已登记）；RQ1/RQ2/RQ3 = 各自登记状态
 Current blocker = none（无开放 gate；下一方向由 human 选择）
 ```
+
+
+### LAB ES-D1 PHASE F CENSUS COMPLETE — 2026-09-30
+
+Human 发布 ES-D1 研究计划（formation-condition 研究；H1 Emergence/H2
+Contract-only/H3 Partial/H4 Formation Gap 四假设；Gate F/G/H/I/J 五门
+独立裁定；三层分离 A description/B reconstruction/C independent）。
+本轮按授权只执行 **Phase F：Lifecycle/Event Census**（`8e30510`）：
+
+```text
+13 事件普查（10 列协议全填）；candidate carriers：
+CC-1 checkpoint meta 非 P 内容（唯一「事件后拥有 P 之外新事实」的载体）
+CC-2 meta.forkPoint durable lineage 片段（代码 writer 存在但部署库
+     0 实例；atMessage=history.count——position 代理进入 lineage 字段）
+CC-3 pool sidecar = performance-P 元数据（E2 裁定延续，不计 State）
+边界项：B-1 meta.history authority 随进程死亡 survival 转移（Gate H）；
+B-2 authoritative-but-unread 字段计法（Gate G）
+全部 state-like 输出同时依赖 P 或 H（H4 正面 census 证据，终判归 J）
+退出条件①命中（candidate found）→ 按指令停止；Gate G 待授权
+```
+
+当前状态：
+
+```text
+ES-D1 = PHASE F COMPLETE / GATE G AWAITING AUTHORIZATION
+Current blocker = none（G/H/I/J 节奏由 human 掌握）
+```
