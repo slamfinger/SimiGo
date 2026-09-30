@@ -10128,3 +10128,28 @@ R4 = R4-0 ✅ / A ✅ / B ✅ / C PASS / D ✅ / readiness ✅ / P4 DESIGN ✅
 EXECUTION = LOCKED —— 等待 Human Authorization
 Current blocker = none
 ```
+
+
+### LAB R4 P4 EXECUTION AUTHORIZED — 2026-10-01
+
+Human 授权 P4 执行，范围严格限定为已提交设计 `792afbc`：
+
+```text
+P4 Design   ✅ APPROVED
+P4 Execution ✅ AUTHORIZED
+P4 Judgment 🔒 预注册规则锁定
+P5          🔒 LOCKED
+执行四原则：①机械执行（不优化/不调参/不追加 probe）②Identity 优先
+（ID 失败=INCONCLUSIVE 不得计作 FAIL）③拓扑优先（S₀→A、S₀→B 及
+A/B 独立性）④接受失败（J1–J6 不成立即按预注册 FAIL 措辞收束，
+不为 PASS 改判据）
+汇报纪律：先出原始事实+预注册判读；不提前解释结果；不据结果追加
+实验
+```
+
+当前状态：
+
+```text
+P4 EXECUTION = IN PROGRESS（机械执行 792afbc 设计）
+Current blocker = none
+```
