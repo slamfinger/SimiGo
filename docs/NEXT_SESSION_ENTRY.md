@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`SEAM_STABILITY_AUDIT_REVIEW_PASS / REGISTRATION_REQUIRED`
+状态：`SEAM_STABILITY_AUDIT_REGISTERED / CLOSED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -68,9 +68,9 @@ runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
-SEAM-STABILITY = AUDIT COMPLETE / REVIEW PASS / REGISTRATION PENDING
+SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = SEAM_STABILITY_REGISTRATION / BOUNDS_AND_TRIGGERS_INHERITED
+next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 ```
 
 2026-09-29 route redefinition:
@@ -263,7 +263,7 @@ next mode = SEAM_STABILITY_REGISTRATION / BOUNDS_AND_TRIGGERS_INHERITED
 - Audit review verdict: `PASS / REGISTRATION_REQUIRED`；四条 strengthening
   （axis-c 观察窗口限定 / 轴 d 再检验为 standing condition / 裁决继承
   Round 1 适用域 / S2 机械检测 standing 最低标准）随登记固化。
-- Current blocker = explicit human registration。
+- Current blocker = none。
 
 Canonical route document:
 
@@ -282,15 +282,14 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Seam Stability audit
-   review `PASS / REGISTRATION_REQUIRED`。
-2. Registration 后 seam stability gate 封口；standing drift-detection 面
-   （S6 六项）成为后续一切 contract-adjacent 变更的常备检查。
-3. 触发点纪律：G-9 / G-6 / G-7 / G-10 任一触发 = 独立 contract gate，
-   禁止静默变更。
-4. PALACE 不消费；G-1…G-10 不因本 gate 关闭；M-1…M-5 与 Phase B/C 全部
-   inherited conditions 继续有效；不做 performance / universal portability
-   claim。
+1. Maintain the registered Seam Stability standing drift-detection surface (S6).
+2. Any G-9 / G-6 / G-7 / G-10 trigger enters an independent contract gate;
+   no silent contract change.
+3. Axis-d must be re-inspected first when durable-store or productization work
+   is activated.
+4. PALACE remains separately scoped; G-1…G-10 remain classified, not resolved;
+   M-1…M-5 and Phase B/C inherited conditions remain active.
+5. No performance / universal portability claim.
 
 继续区分：
 
