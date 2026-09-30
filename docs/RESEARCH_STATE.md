@@ -9010,3 +9010,37 @@ nucleus）；Lab 五元形状存在（KV 别名之路仍被排除）；**D-B 精
 Gate D = COMPLETE / VERDICT D-B / AWAITING SECOND-LAYER
 C-4    = LOCKED（D-A 未发生）
 ```
+
+
+### LAB ES-R1 SEALED — NEGATIVE RESULT WITH ARCHITECTURAL FINDING — 2026-09-30
+
+Human 终审封存（`154d448`）：
+
+```text
+Gate D            = PASS；D-B = FINAL / CONFIRMED（CONTRACT-ONLY）
+R1-B              = FINAL / CONFIRMED：STATE EXISTS AS ARCHITECTURAL
+                    ABSTRACTION, BUT NO INDEPENDENT DURABLE RUNTIME STATE
+                    EXISTS FOR REUSE（语义抽象已出现，尚未成为独立状态资产
+                    ——三重限定不可省略）
+C-4               = LOCKED / NOT APPLICABLE（无合格 durable State 输入，
+                    非「失败」）
+ES-R1             = SEALED — NEGATIVE RESULT WITH ARCHITECTURAL FINDING
+```
+
+压缩链终版：表示丢失 → history+identity 仍在 → continuation 可经 history
+重建 → 独立 position/continuation/lineage State 不存在（Gate D）→ 无
+S→R' seam（C-3）→ 只能回到 history → cold prefill。实验限定事实：当前
+系统的 cold prefill 不是因为存在未调用的 durable State，而是因为表示
+丢失后没有独立 durable State 可作物化输入。
+
+新研究问题登记（候选方向，NOT STARTED，开启须独立 gate）：
+**Architecture State → Durable Computational State 的形成条件**——
+什么条件下计算状态从「运行时现象」变成「可复用计算资产」。
+
+当前状态：
+
+```text
+ES-R1 = SEALED；Contract v1.0 = UPSTREAM REFERENCE
+PALACE-1 = PARKED（framing 已登记）；RQ1/RQ2/RQ3 = 各自登记状态
+Current blocker = none（无开放 gate；下一方向由 human 选择）
+```
