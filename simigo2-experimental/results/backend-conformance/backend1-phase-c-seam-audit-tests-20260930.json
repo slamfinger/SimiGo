@@ -1,0 +1,26 @@
+{
+  "audit": "BACKEND1_PHASE_C_SEAM_AUDIT",
+  "date": "2026-09-30",
+  "auditedHead": "ebe4aec",
+  "worktree": "clean detached-HEAD worktree at ebe4aec; main worktree unrelated dirty Swift changes not mixed in",
+  "command": "swift test --filter 'ExecutionContinuityContractTests|ExecutionContinuityLifecycleTreeTests|RuntimeBackendContractTests|BackendConformanceMatrixTests|ExecutionContinuityCoordinatorTests|Fork3StructuralBattery|ExecutionStatePrefixPoolTests|PrefixSnapshotStoreTests|MaterializationCoordinatorTests|OversizedBackendAtomicityTests|PrefixPoolSessionLifecycleTests'",
+  "bundles": {
+    "SimiGoRuntimeContractTests": 19,
+    "SimiGo2ExperimentalTests": 42
+  },
+  "total": { "passed": 61, "failed": 0 },
+  "suites": {
+    "ExecutionContinuityContractTests": 6,
+    "ExecutionContinuityLifecycleTreeTests": 9,
+    "RuntimeBackendContractTests": 4,
+    "BackendConformanceMatrixTests": 3,
+    "ExecutionContinuityCoordinatorTests": 8,
+    "ExecutionStatePrefixPoolTests": 10,
+    "MaterializationCoordinatorTests": 3,
+    "OversizedBackendAtomicityTests": 2,
+    "PrefixPoolSessionLifecycleTests": 4,
+    "PrefixSnapshotStoreTests": 7,
+    "Fork3StructuralBattery": 5
+  },
+  "nature": "targeted structural validation; not an end-to-end durability proof; not a performance benchmark"
+}
