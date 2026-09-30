@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`BACKEND1_ADAPTER_ENGINEERING_REGISTERED / ENGINEERING_AUTHORIZED`
+状态：`BACKEND1_ENGINEERING_ROUND1_REVIEW_PASS / REGISTRATION_REQUIRED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -46,6 +46,10 @@
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_EXTERNAL_REVIEW_20260930.md`
 21. 读其 registration：
    - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_OPENING_REGISTRATION_20260930.md`
+22. 读 Engineering Round 1 audit：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_AUDIT_20260930.md`
+23. 读其 external review：
+   - `docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_EXTERNAL_REVIEW_20260930.md`
 
 ## Current snapshot
 
@@ -55,9 +59,9 @@ route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
-BACKEND-1 = ADAPTER ENGINEERING OPENING PASS / REGISTERED / ENGINEERING AUTHORIZED（未开始）
+BACKEND-1 = ENGINEERING ROUND1 COMPLETE / REVIEW PASS / REGISTRATION PENDING
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = BACKEND1_ADAPTER_ENGINEERING / BOUNDED_BY_REGISTRATION_STOP_CONDITIONS
+next mode = BACKEND1_ENGINEERING_ROUND1_REGISTRATION / NO_CONTRACT_CHANGE_NO_TEST_EXPANSION
 ```
 
 2026-09-29 route redefinition:
@@ -208,6 +212,20 @@ next mode = BACKEND1_ADAPTER_ENGINEERING / BOUNDED_BY_REGISTRATION_STOP_CONDITIO
 - Next phase = engineering（A1–A8，先 code-level boundary audit）→ targeted
   evidence → external review → registration。
 
+2026-09-30 Engineering round 1 + second-layer review + external review:
+
+- Engineering 完成（`7f1fa4a` audit / `2cf5adb` impl / `5b47ea8` test）：
+  LLAMA backend 定性为 validation payload → reuse+compose 出
+  `LLAMAServerExecutionStateAdapter`（E1+E3+真实 transport 组合体，状态全
+  R/T/P，commit 前取消门）；T1–T8 14/14，并集 75/75（Phase C 零回归）。
+- Engineering 裁决：`SUFFICIENT（有界）`；不自封 gate。
+- Human 第二层裁决：认可 SUFFICIENT（有界），A2+A8 同时成立为关键结果；
+  B1 不参与 = seam 能力边界原则；固定四审查点；不改 contract、不扩测试面。
+- External review verdict: `PASS / REGISTRATION_REQUIRED`；四条 strengthening
+  （cancellation containment 术语钉死 / seam 能力边界原则 / stub-live 证据
+  分层 / SUFFICIENT 适用域限定）随登记固化。
+- Current blocker = explicit human registration。
+
 Canonical route document:
 
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
@@ -225,15 +243,16 @@ Canonical route document:
 
 ## Next session task
 
-1. Engineering 阶段（AUTHORIZED / NOT STARTED）：按 A1–A8 展开，先做
-   code-level adapter boundary audit 与最小 integration skeleton 必要性
-   分析，产出 targeted evidence。
-2. 全程受 M-1…M-5 强制检查项与七条 stop conditions 约束；出现
-   CONTRACT-BLOCKED 即 STOP，只允许提出独立 contract gate。
-3. Do not select SQLite / KV / event log / remote storage；不做 persistence
-   format / API / protocol design。
-4. 继续继承 Phase B 六条件 + Phase C 四 strengthening + G-1…G-10；不做
-   performance claim（测量归 RQ3，SEPARATELY SCOPED）。
+1. Explicitly approve or reject registration of the Engineering Round 1
+   external review `PASS / REGISTRATION_REQUIRED`。
+2. Registration 后 Round 1 封口；下一阶段方向（human 已给方向性判断，登记时
+   确认）：seam 稳定性 / 长期 backend-independence 边界研究优先于第二个
+   backend 的功能堆量。
+3. Do not modify contract；do not expand the test surface；do not select
+   storage / persistence format / API design。
+4. 继续继承 M-1…M-5、Phase B 六条件、Phase C 四 strengthening、G-1…G-10；
+   cancellation 表述用 adapter-level containment（G-9 NOT CLOSED）；不做
+   performance claim。
 
 登记时必须继续区分：
 

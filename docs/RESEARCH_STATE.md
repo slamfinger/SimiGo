@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Phase A/B/C 全部 PASS / REGISTERED（Phase C seam audit 已由 human 登记 `afdf30f` 封口）。BACKEND-1 adapter engineering opening 已完成 draft+review 并经 explicit registration 登记为 `PASS / REGISTERED`；Engineering = AUTHORIZED / NOT STARTED（A1–A8，受 M-1…M-5 强制检查项与七条 stop conditions 约束）。不做存储选型、persistence format/API 设计或 performance claim。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。BACKEND-1 adapter engineering Round 1 已完成（A1–A8 全 PASS、SUFFICIENT/BOUNDED；commits `7f1fa4a`/`2cf5adb`/`5b47ea8`，evidence 75/75 无回归）；human 第二层裁决认可进入 External Review；external review verdict = `PASS / REGISTRATION_REQUIRED`，等待 explicit registration。不做存储选型、persistence format/API 设计或 performance claim。
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8229,3 +8229,39 @@ G-1…G-10              = INHERITED / NOT CLOSED
 下一步 = engineering implementation（先 code-level adapter boundary audit +
 最小 integration skeleton 必要性分析）→ targeted evidence → external review
 → registration。本登记不修改稳定 seam，不实现产品化 adapter 本体之外授权。
+
+### LAB BACKEND1 ADAPTER ENGINEERING ROUND1 REVIEW PASS — 2026-09-30
+
+Engineering Round 1 完成（三 commit，均已推送）：
+
+```text
+audit = 7f1fa4a（A1–A8 全 PASS；D/R/P/O/T 全分类；G-1…G-10 INHERITED）
+impl  = 2cf5adb（LLAMAServerExecutionStateAdapter：E1+E3+真实 transport
+        组合体；adapter 状态全 R/T/P；commit 前取消门；零 seam 改动）
+test  = 5b47ea8（T1–T8 battery 14/14；并集 75/75 = Phase C 61 零回归
+        + adapter 14；evidence JSON 在 results/backend-conformance/）
+```
+
+关键定性：现有 LLAMA-server backend = validation payload（自述 conformance
+vehicle；harness 一次性；无组合体/失败所有权/identity 接线）→ 按方案
+reuse+compose。裁决：`SUFFICIENT（有界）`——seam 是能力边界不是强制组件
+清单（B1 因 server 拥有权重物理生命周期而不参与，原则已随 review 登记）。
+
+Human 第二层裁决（2026-09-30）：认可 SUFFICIENT（有界），A1–A8 全 PASS
+（A5/A8 有界），A2+A8 同时成立为关键研究结果；固定四个 external review
+审查点；指令不修改 contract、不扩大测试面。
+
+External review:
+`docs/00-governance/SIMIGO_LAB_BACKEND1_ADAPTER_ENGINEERING_EXTERNAL_REVIEW_20260930.md`。
+Verdict: `PASS / REGISTRATION_REQUIRED`。四审查点 R-1…R-4 全 PASS；四条
+strengthening 随登记固化：cancellation 表述钉死为 adapter-level
+cancellation containment（G-9 NOT CLOSED）、seam 能力边界原则、stub/live
+证据分层、SUFFICIENT 适用域限定（server-owned weights + recompute 类）。
+
+当前状态：
+
+```text
+Phase A/B/C                        = PASS / REGISTERED
+BACKEND-1 adapter engineering R1   = COMPLETE / REVIEW PASS / REGISTRATION_REQUIRED
+Current blocker                    = explicit human/repository registration
+```
