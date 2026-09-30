@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-09-30
-状态：`SEAM_STABILITY_OPENING_DRAFT_REVIEWED / REGISTRATION_REQUIRED`
+状态：`SEAM_STABILITY_OPENING_REGISTERED / AUDIT_ACTIVE`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -64,9 +64,9 @@ runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
 PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
-SEAM-STABILITY = OPENING DRAFT REVIEW PASS / ACTIVATION REQUIRED / REGISTRATION PENDING
+SEAM-STABILITY = OPENING PASS / REGISTERED / ACTIVATED / AUDIT ACTIVE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = SEAM_STABILITY_REGISTRATION / NO_CONTRACT_CHANGE_NO_NEW_TESTS
+next mode = SEAM_STABILITY_AUDIT / NO_CONTRACT_CHANGE_NO_NEW_TESTS
 ```
 
 2026-09-29 route redefinition:
@@ -262,20 +262,20 @@ Canonical route document:
 
 ## Next session task
 
-1. Explicitly approve or reject registration of the Seam Stability opening
-   draft review `PASS / ACTIVATION_REQUIRED`。
-2. Registration 后开始 seam stability audit（S1–S6，判据先于证据；verdict
-   taxonomy 判据随登记固化后不得增删）。
+1. Execute seam stability audit S1–S6 under the registered opening definition.
+2. 固定 verdict taxonomy `STABLE-AS-REGISTERED / STABILITY-CONDITIONAL / UNSTABLE`；
+   判据先于证据，采数后不得增删或改写。
 3. 不修改 contract；不新增测试（既有 battery re-run 须绑定 commit hash 级
    源码状态）；不选 storage / persistence format / API；不做 performance
-   claim。
+   或 universal portability claim。
 4. PALACE 不消费；G-1…G-10 只分类不解决；M-1…M-5 与 Phase B/C 全部
    inherited conditions 继续有效。
 
-登记后必须继续区分：
+继续区分：
 
 ```text
 observed code fact
 ≠ inferred storage design
 ≠ selected implementation
 ```
+
