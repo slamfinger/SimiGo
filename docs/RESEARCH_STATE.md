@@ -17,7 +17,7 @@ are established.
 Canonical route:
 `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_20260929.md`
 
-**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。Contract v1.0 synthesis draft（`a1e2e28`）已通过 external review（`a020344`，`PASS / REGISTRATION_REQUIRED`；六项审查全 PASS；四条 strengthening 随登记固化，含五元组法则精确读法钉死）。等待 explicit registration——registration 即时效果：v1.0 升格为 Execution State 上游语义参照，C-13 双向漂移检测生效，研究层级切换为 Contract ⇅ 实现侧。
+**Current entry**: `docs/NEXT_SESSION_ENTRY.md`。PALACE-1 线推进至 E1 封存：E0 分解（`ed6cb87`）→ E1 设计冻结（`9953792`）→ E1 执行（R0=IDENTIFIED、R1=FAILED-FAIL-CLOSED 三次复现，P-1/P-2 预登记确认；R2 三次被安全守卫拦截，隔离机制穷尽记录；interim `dd825cb`）→ human 裁定 E1 封存于执行边界（R2-R4 PENDING；A/B/C 隔离选项悬置）→ **E1-R2 capability trace（`f3e498`：R2 所需能力 = 产品 cold-start 一等分支，NativeMLX:763-778，不读 checkpoint/pool/lineage；语义连续性由 meta.history+modelId+storageKey（44KB）承载）。Contract v1.0 = UPSTREAM REFERENCE；不做存储选型、不修改 Contract/产品代码、不碰原始 ~/.simigo。**
 
 **Historical snapshot 2026-09-25**:（R-INTERNAL-18 = ROr-4 / R_ORACLE_DEFERRED
 R-INTERNAL-19 = A / ABSTRACTION_LAYER_COMPLETENESS_AUDIT 已登记；
@@ -8629,4 +8629,34 @@ retention  = 机制存在（BETA-STORAGE-1：成对回收/ownership-aware/字节
 PALACE1 writer provenance   = COMPLETE / AWAITING SECOND-LAYER
 Current blocker             = none（实验矩阵 E1/E2/E3 由 human 决定；
                               隔离副本实验、原始 79G 不动、恢复判据先行）
+```
+
+### LAB PALACE1 E1 SEALED + R2 CAPABILITY CONFIRMED — 2026-09-30
+
+Human 裁定链（全部已执行/落账）：
+
+```text
+1. E1 封存于执行边界：R0 PASS（预登记一致：IDENTIFIED）/ R1 PASS
+   （FAILED-FAIL-CLOSED ×3 复现）/ R2-R4 PENDING；PASS 语义 = 预登记
+   观测与实际一致，非能力判定。A（加写）/B（env 覆写）/C（叶子沙箱）
+   全部悬置——不弄脏 79G 边界、不为实验改产品、不跑成沙箱工程
+2. 新指令 = 只读追踪「客户端协作式 recompute / fragment-continuation
+   现有调用链」：R2 所需能力 SimiGo 是否已有？
+3. Trace 答案（f3e49f8）= YES，一等公民路径：
+   generate → makeChatMessages(:641) → 会话获取三分支 → cold-start
+   分支（:763-778）= 无 checkpoint/pool 时的正常建立方式：
+   ChatSession(container, history: incoming.dropLast()) 于同一
+   storageKey + 全量 prefill + T-1 重新落盘
+   → R2 不需要 4.7GB payload；语义连续性由 meta.history + modelId +
+     storageKey（44KB）承载
+   → 研究含义（未预答）：PALACE durable minimum 对 continuation 的
+     贡献候选 = 44KB 语义 + 4.7GB 只是 prefill 税的缓存
+```
+
+当前状态：
+
+```text
+E0 = COMPLETE；E1 = SEALED AT EXECUTION BOUNDARY（R0/R1 PASS，R2-R4 PENDING）
+E1-R2 capability = CONFIRMED（代码级）；运行时观测仍待隔离方案裁定
+Current blocker  = none（三选项悬置由 human 掌握节奏）
 ```
