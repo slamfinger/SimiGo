@@ -8781,3 +8781,29 @@ E0/E1.5/R2n/E2/E3 = COMPLETE；E1 = SEALED
 Current blocker   = none（下一方向由 human 掌握：nucleus 证据链总审 /
                     PALACE framing 或其他 gate）
 ```
+
+
+### LAB PALACE1 EVIDENCE CONSOLIDATION — CHAIN SEALED — 2026-09-30
+
+Human 第二层总审（E3 COMPLETE；C-2 升格独立 research finding；nucleus
+升格为 addressing carrier + semantic continuation carrier，workload-
+scoped；PALACE framing gate OPEN 产物仅研究边界）后，六实验封装完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_EVIDENCE_CONSOLIDATION_20260930.md`
+（`d408729`）。
+
+内容：逐实验 fact/inference/unproven 分层（E0/E1/E1.5/R2-trace/R2n/E2/E3）；
+最终字段角色矩阵（restore vs continuation 双列）；**RF-1 = Semantic
+Absence Is Not Self-Evidently Detectable**（E3-C-2 现象登记，无方案规定）；
+**RF-2 = restore dependency ≠ continuation dependency**；nucleus 升格
+声明（addressing carrier + semantic continuation carrier 含 tool 历史；
+四条强制限定）；PALACE framing 合法陈述集；schema 禁入清单。
+
+当前状态：
+
+```text
+E0/E1.5/R2/E2/E3 = COMPLETE；E1 = SEALED
+Evidence chain   = CLOSED（本文封装）
+PALACE framing   = OPEN（研究边界产物已备；schema NOT STARTED）
+Next cut         = 由 human 决定
+```
