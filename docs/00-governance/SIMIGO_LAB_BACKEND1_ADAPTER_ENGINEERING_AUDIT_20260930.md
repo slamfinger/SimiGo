@@ -195,13 +195,21 @@ T8 Conformance adapter 的 E3 backend 即 matrix 中同一类型（3/3 先证 +
 
 ```text
 命令：swift test --filter 'LLAMAServerExecutionStateAdapterTests|
-BackendConformanceMatrixTests|ExecutionContinuityContractTests|
-ExecutionContinuityLifecycleTreeTests|RuntimeBackendContractTests'
-结果：<见 results/backend-conformance/backend1-adapter-engineering-evidence-20260930.json>
+ExecutionContinuityContractTests|…（Phase C battery 全集并集）'
+结果：75 / 75 PASS（SimiGoRuntimeContractTests 19 + selected
+SimiGo2ExperimentalTests 56 = Phase C 42 全数复过 + 新增 adapter
+battery 14）
+Evidence artifact：
+results/backend-conformance/backend1-adapter-engineering-evidence-20260930.json
 ```
 
-（本文件提交时（audit commit）测试尚未运行——evidence 属于后续 test/impl
-commit；本节最终数字以 evidence JSON 为准，见该文件。）
+定点证据类别与结果（最终数字以 evidence JSON 为准）：
+
+```text
+T1–T8 全部 PASS（14/14）；Phase C 全部既有 suite 在并集中零回归。
+失败/取消/缺 tokens 路径经 URLProtocol stub 对真实 URLSession transport
+确定性驱动；live server 先证（RQ1 live smoke）未重跑。
+```
 
 ## 8. Gaps disposition（G-1…G-10，不得写 CLOSED）
 
