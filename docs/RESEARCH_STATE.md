@@ -8569,3 +8569,26 @@ Current blocker                         = none（等 human 第二层判断）
                                           PASS/ACTIVATION_REQUIRED →
                                           registration
 ```
+
+### LAB PALACE1 SEMANTIC OPENING DEFERRED — PHYSICAL REALITY AUDIT REQUIRED — 2026-09-30
+
+Human 第二层判断（draft `ddb9cbc` 不进入 external review）：
+
+```text
+判定   = 研究顺序又提前了一步——D1–D4 自 Contract 推导（概念先行），
+         而刚纠正的路线要求 工程事实→发现问题→抽象→语义→Contract
+驳回   = 「D4 语义答案 CONFIRMED」与「各场景 SAME = CONFIRMED」超出
+         现有工程证据：架构契约约束（身份不得依赖 representation）
+         ≠ 工程事实（删除磁盘实物后真能恢复 same-State）
+处理   = draft 保留降级为 semantic hypothesis scaffold（问题框架有用，
+         答案不得视为事实）；gate position =
+         PALACE1 SEMANTIC OPENING = DEFERRED / PHYSICAL REALITY AUDIT
+         REQUIRED
+新任务 = PALACE1 Physical Reality Audit——磁盘实际组成 → 生成代码路径 →
+         物理对象账本（SAME-State 列全 UNKNOWN）→ 三问（组成 / 性能损失
+         vs State 损失 / 全消失后剩什么）；禁止实际删除、禁止数据库设计、
+         禁止修改 Contract、禁止 D1–D4 理论封口
+```
+
+收敛路线钉死：不是「PALACE 理论上该保存什么 → 找对应物」，而是「磁盘上
+实际保存了什么 → 删除它会失去什么 → 逼出 PALACE 该保存什么」。

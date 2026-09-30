@@ -1,7 +1,13 @@
 # PALACE-1 Durable State Semantics Opening Draft
 
 日期：2026-09-30  
-状态：`PARTICIPANT PROPOSAL / AWAITING SECOND-LAYER REVIEW`  
+状态：`DEFERRED / RETAINED AS SEMANTIC HYPOTHESIS SCAFFOLD`  
+**降级记录（2026-09-30 第二层判断）**：研究顺序提前——D1–D4 自 Contract
+推导而非自物理工程事实；文中全部 CONFIRMED/DEPENDENT 判定降级为
+**semantic hypothesis**，不得视为工程事实（尤其「D4 语义答案 CONFIRMED」
+与「各场景 SAME = CONFIRMED」——架构契约约束 ≠ 已证明的工程能力）。
+后继 = Physical Reality Audit（磁盘实物 → 代码路径 → 删除损失 → 逼出
+PALACE 边界）。本文件保留 D1–D4 问题框架与 open points 作 scaffold。  
 上游语义参照：Execution State Architecture Contract v1.0（`REGISTERED /
 UPSTREAM REFERENCE`，源状态 `da2c8e8`）  
 Gate：`PALACE1_DURABLE_STATE_SEMANTICS_OPENING`（definition gate only）  
