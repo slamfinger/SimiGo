@@ -9516,3 +9516,31 @@ operative✓/线性层分量 durable✓ operative✗。
 ES-T3 = GATE B COMPLETE / VERDICT B-3 / GATES C-D LOCKED
 Current blocker = none（C/D 授权与 b3 异常解释方向归 human）
 ```
+
+
+### LAB ES-T3 T3-B′ COMPLETE — SOURCE TRACE PARTIAL/INCONCLUSIVE — 2026-09-30
+
+Human 授权 T3-B′（Consumption Trace；B′-1 源码追踪先行，B′-2 差分探针
+视源码结论决定）。执行（`424b07b`，只读，逐跳 file:line）：
+
+```text
+已证：lmState 从 ChatSession 一路传入 TokenIterator 与
+  model.prepare(state:)/逐步 model(previous, cache:, state:)/
+  asyncEval([token]+cache.state)——协议层 state 通道存在（vendor 注释
+  自证 state seeding 意图）
+未决：Qwen3Next 是否在 prepare/prefill 中把 LMOutput.State 挂载到
+  MambaCache——newCache(parameters:) 无 state 参数（线性层一律 fresh
+  MambaCache()，Qwen3Next.swift:836-844）为强不利证据，但 prepare 路径
+  挂载点未穷尽
+实证锚点：Gate B b3（GDN 内容零化）probe 与 b0 逐字一致——偏向解释 A
+  （未挂载），不足以排除解释 B（不敏感）
+```
+
+B′-2（更长/结构化差分探针 b0 vs b3）执行决定权移交 human。
+
+当前状态：
+
+```text
+ES-T3 = T3-B′-1 PARTIAL INCONCLUSIVE / B′-2 与 Gate C/D 归 human
+C-4   = LOCKED
+```
