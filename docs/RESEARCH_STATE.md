@@ -8911,3 +8911,35 @@ Phase D 前置发现（候选 R1-B 形状，待实验裁定）：现有 API 中�
 ES-R1 = PHASE A+B COMPLETE / PHASE C AWAITING HUMAN BOUNDARY RULING
 产物① = FACT TRACE（本文件）；②③④ 待 Phase C/D
 ```
+
+
+### LAB ES-R1 PHASE C COMPLETE — R1-B CANDIDATE FROZEN — 2026-09-30
+
+Human Phase C 裁定执行（C-0 冻结/C-1 边界/C-3 discovery；C-2 禁止；C-4
+暂缓）：`docs/00-governance/SIMIGO_LAB_ESR1_PHASE_C_RESULTS_20260930.md`
+（`52956ad`）。
+
+```text
+C-0  fixture 冻结（identity/lineage/position/history-SHA/表示身份/
+     env commits/池状态含 E2 17/17 隐蔽快照）
+C-1  边界执行：副本内删 safetensors（meta SHA 完整性验证通过）；
+     隐蔽表示登记 3 项（真实 store 原件/真实池 17/17 快照/E1 mutation
+     副本）+ 排除机制
+C-3  穷举 7 个表示生产/接收入口（product+Lab）：输入全部为既有 P 或
+     完整 history 文本——零个入口消费「无 history 的 State」
+FIRST MISSING SEAM = {identity, position, continuation-marker} → R'
+     的物化入口不存在；per-token KV 唯一来源 = history 文本或既有 P；
+     系统内无独立 continuation marker（A3）
+```
+
+**R1-B CANDIDATE 冻结（非终判）**：A-form 证据（契约层 State 形状存在 +
+meta 载体完好 + 无消费 seam）vs B-form 证据（产品层无 State object，
+State 与 history 当前不可区分）——A/B 终判 = 下一 gate 的研究问题
+（position/continuation marker 应否、以及如何成为表示物化的充分输入）。
+
+当前状态：
+
+```text
+ES-R1 = PHASE C COMPLETE / R1-B CANDIDATE FROZEN / C-4 NOT EXECUTED
+Current blocker = none（A/B-form 终审与下一步由 human 掌握）
+```
