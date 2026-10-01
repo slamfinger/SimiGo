@@ -48,6 +48,19 @@ main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全�
 [SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) 双仓兄弟克隆，
 步骤见 [部署指南.md](部署指南.md) 第六节。
 
+## 开源边界
+
+SimiGo 采用 **Open Research / Open Core / Bounded Product** 结构：
+
+- Execution State Contract、研究文档与证据记录采用 **CC-BY-4.0**。
+- Runtime、conformance suite 与 v2.1 Execution State reference app 采用
+  **Apache-2.0**，允许研究、复现、fork、商业集成和独立实现。
+- 本仓库不发布模型权重；模型永远是独立的外部授权资产。
+- Hosted、Enterprise、管理面、商业支持与专有集成不在本许可证授权范围内。
+- `SimiGo` 名称与官方品牌不随源码许可证授予；fork 不得暗示官方身份。见
+  [TRADEMARKS.md](TRADEMARKS.md)、[OPEN_SOURCE.md](OPEN_SOURCE.md)、
+  [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) 与 [NOTICE](NOTICE)。
+
 ## Runtime 三层契约
 
 SimiGo 的核心不是一个 API 转发层，而是一个可靠的 Agent Runtime。

@@ -23,3 +23,11 @@ __pycache__/
 # 发布物走 GitHub Release 附件，app 二进制不入 git 树
 SimiGo.app/
 default.profraw
+
+# Model weights and local model stores are never repository assets
+*.safetensors
+*.gguf
+*.ckpt
+*.pth
+*.weights
+models/

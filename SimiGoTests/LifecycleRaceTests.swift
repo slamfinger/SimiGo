@@ -13,17 +13,15 @@ import XCTest
 /// 断言的不变量是 **generate 全程成功 + 终态一致**（若竞态真实存在，
 /// generate 会以 notLoaded/model_execution_error 失败，测试即红）。
 final class LifecycleRaceTests: XCTestCase {
-    private static let defaultModelPath =
-        "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e"
-        + "/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81"
-
     /// 环境门控 + 模型路径（缺失即 skip，不污染常规测试跑）。
     private static func requireModel() throws -> String {
         guard ProcessInfo.processInfo.environment["SIMIGO_LIFECYCLE_RACE"] == "1" else {
             throw XCTSkip("生命周期竞态：需 SIMIGO_LIFECYCLE_RACE=1 且本机存在权重")
         }
-        let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? defaultModelPath
+        guard let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"],
+              !path.isEmpty else {
+            throw XCTSkip("生命周期竞态：需 SIMIGO_FORK_MODEL 指定本机测试权重")
+        }
         guard FileManager.default.fileExists(atPath: path + "/config.json") else {
             throw XCTSkip("模型不存在：\(path)")
         }

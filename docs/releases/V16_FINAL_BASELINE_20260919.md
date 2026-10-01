@@ -3,7 +3,7 @@
 **基线提交**：`7aced19`（= tag `v1.6`，git describe exact-match 核实）
 **发布物**：[Release v1.6](https://github.com/slamfinger/SimiGo/releases/tag/v1.6)
 DMG SHA256（前 128bit）：`f4db058658fd5a4256a8cbeac206fb88`
-**构建配置**：Release / MARKETING_VERSION 1.6 / TeamIdentifier YPXU8M53F9
+**构建配置**：Release / MARKETING_VERSION 1.6 / TeamIdentifier <SIGNING_TEAM_ID>
 **依赖**：mlx-swift-lm `dc3ca6197171` / mlx-swift `0.31.6`（与 v1.5 一致）
 
 ## 基线测试（封版当日实测）

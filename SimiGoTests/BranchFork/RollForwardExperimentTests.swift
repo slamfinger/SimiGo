@@ -36,10 +36,6 @@ final class RollForwardExperimentTests: XCTestCase {
         "You are a precise assistant. Follow instructions exactly. " +
         "Answer in English without extra words."
 
-    private static let defaultModelPath =
-        "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX"
-        + "/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"
-
     /// 每轮上下文增量目标 ≈1.45k tokens（~1.6KB 确定性档案文本）；40 轮 ≈58k。
     /// （首轮实测校准：100 行版实测 ~5.7k tok/轮，密度 ≈1.1 字符/token。）
     private static func chunk(_ round: Int) -> String {
@@ -98,8 +94,10 @@ final class RollForwardExperimentTests: XCTestCase {
         guard ProcessInfo.processInfo.environment["SIMIGO_ROLLFWD_EXP"] == "1" else {
             throw XCTSkip("roll-forward Phase A：需 SIMIGO_ROLLFWD_EXP=1 且本机存在权重")
         }
-        let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? defaultModelPath
+        guard let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"],
+              !path.isEmpty else {
+            throw XCTSkip("roll-forward Phase A：需 SIMIGO_FORK_MODEL 指定本机测试权重")
+        }
         guard FileManager.default.fileExists(atPath: path + "/config.json") else {
             throw XCTSkip("模型不存在：\(path)")
         }

@@ -49,7 +49,7 @@ cached 不估算、anomaly 不伪造）：
 - 单测：73 tests / 5 skipped / 0 failures（与 v1.6 build 4 基线一致）
 - Release 构建：fresh derivedDataPath（build/release-v17），vendor 检出
   对齐 pin dc3ca61；nm 验证 conditionalRestore/rollforward 符号族在位
-- codesign TeamIdentifier YPXU8M53F9，strict verify 通过；DMG
+- codesign TeamIdentifier <SIGNING_TEAM_ID>，strict verify 通过；DMG
   hdiutil verify VALID，内嵌 app 版本 1.7(5)
 - 扫描件 attempt-3 真 OCR 满分实跑记录在案
   （results_v17_3_office_docs_smoke.json，meta.provenanceNote 区分
@@ -73,5 +73,5 @@ cached 不估算、anomaly 不伪造）：
 
 验收：单测 73/5 skipped/0 failures 与基线一致（Debug 配置）；vendor
 检出对齐 pin dc3ca61 增量 Release 构建通过；codesign TeamIdentifier
-YPXU8M53F9 strict verify 通过；DMG hdiutil verify VALID，内嵌 app
+<SIGNING_TEAM_ID> strict verify 通过；DMG hdiutil verify VALID，内嵌 app
 版本 1.7(6)。

@@ -26,11 +26,6 @@ final class BranchForkTests: XCTestCase {
         "You are a precise assistant. Follow instructions exactly. " +
         "Answer in English without extra words."
 
-    /// 真机生产同款模型；环境变量 SIMIGO_FORK_MODEL 可覆盖。
-    private static let defaultModelPath =
-        "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX"
-        + "/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"
-
     private static let systemMsg = SimiGo.JSONValue.object([
         "role": .string("system"),
         "content": .string(systemContent),
@@ -67,8 +62,10 @@ final class BranchForkTests: XCTestCase {
         guard ProcessInfo.processInfo.environment["SIMIGO_FORK_EXP"] == "1" else {
             throw XCTSkip("Branch-Fork 回归：需 SIMIGO_FORK_EXP=1 且本机存在权重")
         }
-        let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? defaultModelPath
+        guard let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"],
+              !path.isEmpty else {
+            throw XCTSkip("Branch-Fork 回归：需 SIMIGO_FORK_MODEL 指定本机测试权重")
+        }
         guard FileManager.default.fileExists(atPath: path + "/config.json") else {
             throw XCTSkip("模型不存在：\(path)")
         }

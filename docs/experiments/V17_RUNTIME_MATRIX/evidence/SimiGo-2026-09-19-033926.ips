@@ -32,7 +32,7 @@
   "appleIntelligenceStatus" : {"reasons":["regionIneligible"],"state":"unavailable"},
   "developerMode" : 1,
   "codeSigningID" : "SwiftUI.SimiGo",
-  "codeSigningTeamID" : "YPXU8M53F9",
+  "codeSigningTeamID" : "<SIGNING_TEAM_ID>",
   "codeSigningFlags" : 1644245781,
   "codeSigningValidationCategory" : 3,
   "codeSigningTrustLevel" : 4294967295,

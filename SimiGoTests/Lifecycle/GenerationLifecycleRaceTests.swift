@@ -18,10 +18,6 @@ actor SequenceWitness {
 /// as save/load/delete, so a lifecycle operation can neither commit nor run
 /// physical cleanup until the long generation releases it.
 final class GenerationLifecycleRaceTests: XCTestCase {
-    private static let defaultModelPath =
-        "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX"
-        + "/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"
-
     private static let systemContent =
         "You are a precise assistant. Follow instructions exactly. " +
         "Answer in English without extra words."
@@ -40,8 +36,10 @@ final class GenerationLifecycleRaceTests: XCTestCase {
     }
 
     private static func requireModel() throws -> String {
-        let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"]
-            ?? defaultModelPath
+        guard let path = ProcessInfo.processInfo.environment["SIMIGO_FORK_MODEL"],
+              !path.isEmpty else {
+            throw XCTSkip("GenerationLifecycleRaceTests：需 SIMIGO_FORK_MODEL 指定本机测试权重")
+        }
         guard FileManager.default.fileExists(atPath: path + "/config.json") else {
             throw XCTSkip("GenerationLifecycleRaceTests：本机不存在测试权重")
         }
