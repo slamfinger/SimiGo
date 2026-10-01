@@ -10081,6 +10081,53 @@ OQ-B     = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 OQ-B EXECUTED — SINGLE-CELL DRIFT OBSERVED — REPRESENTATION-NOISE DISCOVERY — 2026-10-02
+
+Human OQ-B 冻结审查 PASS / EXECUTION AUTHORIZED（附加裁定：OB-3
+「预期无痕迹」保持观察性质不预判语义——有痕迹须问痕迹来源，无痕迹
+不得证明不需要 State；核心 = OB-4「世界变化后能否从刚才工作的地方
+继续」）。
+
+OQ-B 执行完成（隔离沙箱；v1 = A 族工作副本 1258847B/14
+Sheets/19841 cells；已发现预登记 = 附表1!F8 = 450.29；外部修改 =
+openpyxl 单 cell F8 → 480.29）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_OQB_RESULT_20261002.md`。
+
+```text
+OB-1 五字段  = size -101KB / mtime / sha256 全变（工具往返
+    重压缩）——只能答「变了」不能答「哪里变了」
+OB-2 cell 定位 = 【计划外发现】全簿 diff = 23 cells：
+    1 个语义变更（F8 450.29→480.29）+ 22 个表示噪声
+    （openpyxl 往返浮点重序列化，最大相对差异 4.209e-16，
+    业务不可辨）——工具中介的单 cell 编辑不是表示隔离的；
+    naive diff 报 23 处、语义仅 1 处；Excel 原生编辑是否
+    表示隔离 = RQ-OQB-1（OQ）
+OB-3 旧状态痕迹 = v2 全簿搜 450.29 = 0 命中（预期成立）；
+    旧值现仅存于 Lab 侧预登记发现记录——按 human 裁定双向
+    不预判
+OB-4 探索继续性 = 重读 F8 = 480.29 ≠ 记录 450.29——矛盾可
+    检测（重读+与发现记录比对）；曾依据 450.29 的结论需重新
+    验证 = 是；继续工作依赖「旧值曾是 450.29」而该值已无法
+    从 v2 恢复（OB-3）——最小形态「继续工作依赖工作记录」
+    实例（Inference bounded，非 H-G1-02 必要性证明）
+H/E6 流向 = H-G1-01 材料增强 / H-G1-02 signal 增强（必要性
+    证明仍缺）/ E6·V1 再激活条件参考观察（bi-temporal 克制
+    依旧）
+生成 RQ-OQB-1..3（Excel 原生编辑表示隔离复测 / 精度感知语义
+    diff / 发现记录过期检测模式——均仅登记）
+```
+
+当前状态：
+
+```text
+OQ-B = EXECUTED / RESULT AT HUMAN
+待裁定 = OB-1..4 验收 + RQ-OQB 处置 + 下一实验方向
+        （G1 收束 / OQ-B2 Excel 原生编辑复测 / E6 设计入口）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
