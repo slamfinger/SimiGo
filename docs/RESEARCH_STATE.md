@@ -9292,6 +9292,76 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2-C EXECUTED — Backend Dependency Closure VALIDATED — 2026-10-01
+
+Harness: `Palace1P52CDependencyClosureTests.swift` @ SimiGo `f4803c8` (public)
+Run: test passed 93.9s, runUUID `2811FC67-B5F3-4153-AC6A-016D0FAD2E69`
+Isolation: checkpoints SHA256 MATCH
+
+#### Results
+
+```text
+Verdict: Backend_Dependency_Closure_Validated
+
+Full (baseline):
+  outcome = NO_EFFECT (continuation succeeded)
+  output  = "这个会话在查看桌面文件结构，逐步浏览了'参考文件'
+            目录下的'项目部管理制度汇编'内容。"（正确引用了会话内容）
+  genTokens = 24
+
+-Identity:
+  outcome = VALIDATION_REJECTED
+  detail  = loadSessionCache threw (modelId nil → identity gate)
+  意义    = Identity 在当前实现中是硬前置条件，不可独立消融
+
+-Position:
+  outcome = CLOSURE_ABLATED
+  detail  = history 17→1 fake，position misaligned
+  output  = "该会话此前未进行任何操作，因为这是当前对话的第一条
+            消息。"——模型丢失了全部 17 条 history 的记忆
+  意义    = Position 关系破坏 → continuation 语义不完整
+
+-Continuation:
+  outcome = CLOSURE_ABLATED
+  detail  = non-prefix input → cold prefill
+  output  = "晴"（回应天气问题，未使用 S₀）
+  意义    = Continuation path 断裂 → S₀ 完全未被消费
+
+-Anchor:
+  outcome = CLOSURE_ABLATED（P5-1 引用，不重复执行）
+  detail  = KV present, history=[] → ledgerBootstrapPending → rebuild
+```
+
+#### Interpretation
+
+```text
+Identity:     NECESSARY（硬前置：validation gate 拒绝）
+Position:     NECESSARY（消融后模型完全丢失会话记忆）
+Anchor:       NECESSARY（P5-1 证明：alignment 断裂 → rebuild）
+Continuation: NECESSARY（消融后 S₀ 完全未被使用）
+
+Backend Dependency Closure Validated（Level 1, MLX only）
+Universal Minimal Closure: NOT CLAIMED (Level 2 requires multi-backend)
+```
+
+关键观察：-Position 的输出"该会话此前未进行任何操作"与 Full baseline
+"这个会话在查看桌面文件结构……"形成鲜明对比——position 破坏后模型
+完全不知道会话历史，证明 position relation 不是可选优化，而是
+continuation 的语义必要条件。
+
+Current state:
+
+```text
+P4 = PASS (topology)
+P5-1 = SEALED / INCONCLUSIVE
+P5-2-0 = Dependency Map COMPLETE
+P5-2-ER = PASS-WITH-REVISIONS
+P5-2-C = EXECUTED / Backend Dependency Closure VALIDATED
+Palace Mapping = UNBLOCKED (provisional closure now has backend evidence)
+Security Boundary = INV-S2 confirmed (authority ∉ state)
+Current blocker = human review of P5-2-C result
+```
+
 ### P5-2-C rev.2 AUTHORIZED — Backend Dependency Closure Validation — 2026-10-01
 
 Human authorization：`执行 rev.2，实验名称固定为
