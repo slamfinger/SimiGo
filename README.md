@@ -21,7 +21,61 @@ SimiGo 是一个以 **Execution State（执行状态）** 为核心抽象的本�
 - 支持 Tool Governance：工具调用生命周期治理与结构化拒绝分类
 - 支持 Model Capability Contract：运行时明确声明模型能力与运行约束
 
-## v2.0 Beta：超规模模型执行 + 跨会话前缀共享
+## Download — v2.1.0 Execution State Reference App
+
+当前公开 DMG：
+
+```text
+https://github.com/slamfinger/SimiGo/releases/tag/v2.1.0
+```
+
+| Asset | Requirement | Checksum |
+|---|---|---|
+| `SimiGo-v2.1.0.dmg` | Apple Silicon macOS 26.4+ | 见 Release 页面 |
+
+该 DMG 使用 **ad-hoc signature**，未做 notarization。首次打开若被 Gatekeeper
+拦截，请先校验 Release 页面 SHA-256，再移除 quarantine 属性：
+
+```bash
+xattr -dr com.apple.quarantine SimiGo.app
+```
+
+不要绕过校验直接运行来源不明的副本。
+
+## v2.1.0 — Execution State Reference App
+
+v2.1.0 是 Frozen Execution State Contract 的第一个产品形态 reference
+implementation。菜单栏新增 **Execution State Graph** 窗口，把 State 本身作为
+一等操作对象：
+
+```text
+create → continue → save → fork → continue → save → restore → continue
+                                              ↘ discard / release
+```
+
+当前 reference app 已实现：
+
+- State Graph UI：用户操作 `ExecutionState`，不是传统 Chat transcript。
+- 七操作 lifecycle：`create / continue / save / fork / restore / discard / release`。
+- Durable checkpoint：checkpoint 将当前 semantic closure 固化为 durable
+  representation；save 不产生新的 semantic state。
+- Fail-closed restore：identity、model、anchor、checksum 全部通过才返回
+  restored；失败不返回半状态。
+- Fork isolation：child 在 fork point value-copy parent closure，parent 不被污染。
+- Discard / release 语义：discard 原子移除 checkpoint，禁止 ghost continuation；
+  release 只清空 durable binding，不废除 logical state。
+- Representation boundary：主 UI 只显示 `Representation: Reference`；MLX、KV、
+  prefix 等 carrier 细节只出现在 Representation Declaration diagnostics。
+
+当前 State Graph 功能使用 `R_Reference_v1` 做 contract-shaped reference
+carrier，**不宣称** MLX 或 llama.cpp conformance，也不宣称 backend-independent
+Execution State。同一 App 仍保留 v2.0 的 MLX Runtime 能力，但 v2.1 的核心边界
+是：backend 不再进入 Execution State 产品的顶层概念。
+
+架构映射见
+[docs/V2.1_REFERENCE_APP_ARCHITECTURE.md](docs/V2.1_REFERENCE_APP_ARCHITECTURE.md)。
+
+## v2.0 能力：超规模模型执行 + 跨会话前缀共享
 
 main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全部
 功能不变）：
@@ -73,7 +127,7 @@ Execution Continuity  ≠ Computation Semantics
 SimiGo Runtime        ≠ Backend
 ```
 
-**当前阶段：Experimental Beta / Research Preview。**
+**当前阶段：v2.1.0 Reference App / Research Preview，不是 GA。**
 
 已经完成真实设备、真实模型和 Runtime 故障矩阵验证，但目前不宣称为生产级通用推理 Runtime，也不宣称已经完成 Backend-independent Runtime。
 
@@ -81,10 +135,12 @@ SimiGo Runtime        ≠ Backend
 
 | 项目 | 当前状态 |
 |---|---|
-| Version | `v2.0.0-beta.4` (build 7, 基线 main@5fa3d38) |
-| Stage | Experimental Beta / Research Preview |
+| Version | `v2.1.0` (build 10, tag `v2.1.0`) |
+| Stage | Execution State Reference App / Research Preview |
 | Platform | Apple Silicon macOS |
+| Minimum macOS | 26.4 |
 | Primary execution substrate | MLX / `mlx-swift-lm` |
+| Reference carrier | `R_Reference_v1` |
 | API | OpenAI-compatible |
 | Oversized model validation | Qwen3-Coder-Next-4bit |
 | Oversized validation machine | 32 GiB Apple Silicon |
@@ -92,7 +148,8 @@ SimiGo Runtime        ≠ Backend
 当前公开证据已经覆盖：
 
 - Execution State 生命周期与连续性
-- Fork / Restore / Reattach / Discard
+- Fork / Restore / Reattach / Discard / Release
+- Save / checkpoint 与 fail-closed restore（v2.1 reference app）
 - Oversized Model 执行
 - Segment-level physical residency
 - Cancellation
@@ -189,12 +246,10 @@ Physical MLX State
 ```text
 create
   ↓
-attach
-  ↓
 continue
-  ├──────────────→ fork → child → continue
-  ├──────────────→ restore → reattach → continue
-  └──────────────→ discard
+  ├──────→ fork → child → continue → save → restore → continue
+  ├──────→ save / checkpoint → durable representation
+  └──────→ discard / release
 ```
 
 表示可以发生变化：
@@ -380,7 +435,7 @@ Residency policy
 | 文档 | 定位 |
 |---|---|
 | `README.md` | 项目入口、当前状态、能力与研究方向 |
-| `README_base.md` | 核心架构白皮书 |
+| `docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md` | 历史 v5 架构白皮书，已 superseded |
 | `docs/research/` | 研究故事与长期问题演进 |
 | `docs/knowledge/findings/` | 已验证的研究 / 工程结果 |
 | `docs/knowledge/invariants/` | 已形成稳定边界的不变量与契约 |
@@ -396,8 +451,9 @@ Residency policy
 
 ## 12. 当前研究路线
 
-当前 SimiGo 已经完成从 Execution State 基础语义到 Runtime 一致性、
-物理表示治理和真实设备验证的第一轮闭环。
+当前 SimiGo 已完成 Execution State 基础语义、Runtime 一致性、物理表示治理、
+真实设备验证、Contract formalization 与 **Abstraction Freeze**；v2.1.0 开始
+进入 Frozen Contract 的产品形态 reference implementation 阶段。
 
 ```text
 Execution State
@@ -430,19 +486,22 @@ Backend / Model Conformance
 - Ownership-aware checkpoint retention
 - Prefix Pool physical-byte budget
 - Release suspend / resume lifecycle validation
+- Execution State Contract v1.0-amended freeze
+- MLX / llama.cpp cross-backend continuation evidence（bounded claim）
+- v2.1 Reference App：seven-operation lifecycle / State Graph / durable checkpoint
 
 ### 当前工作
 
-- `v2.0.0-beta.4` 重建（build 7）：FORK-3 全线 + Storage/Lifecycle hardening
-  + 性能收敛六项（Full Gate 111/0，见 docs/audit/PERF_CONVERGENCE_20260929.md）
-- Beta release validation 与外部反馈收敛
+- v2.1.0 reference app 收敛与 public release hygiene
+- Contract conformance / Representation Declaration 工程化
+- 后续 backend adapter 与 conformance battery 生态
 
 ### 后续方向
 
-- UI Branch sessions
 - Coordinator standalone concurrency
-- MLX internal fault boundary
 - Backend Conformance
+- External Representation Declarations
+- State Graph persistence / conflict semantics
 - 更广泛的模型 / workload 验证
 
 这些方向都需要通过实际证据逐步收敛，不会因为进入路线图就自动成为 Core Architecture。
@@ -461,7 +520,7 @@ SimiGo 当前不定位为：
 
 更准确的定位是：
 
-> **一个以 Execution State 为核心抽象、正在通过真实模型、真实设备和故障矩阵持续验证的实验性 Runtime。**
+> **一个以 Execution State 为核心抽象，并通过真实模型、真实设备、故障矩阵与 Frozen Contract conformance 持续验证的 Runtime。**
 
 ## 14. Long-term thesis
 
@@ -483,4 +542,10 @@ SimiGo 当前不定位为：
 
 ## License
 
-See the repository license file for the current licensing terms.
+SimiGo 使用分层许可：源码与可执行参考材料为 **Apache-2.0**；研究文档、Contract
+与实验证据为 **CC-BY-4.0**；`SimiGo` 名称与官方品牌不随源码许可授予。模型权重
+不随本仓库或 DMG 分发。
+
+详见 [LICENSE](LICENSE)、[LICENSE-DOCS](LICENSE-DOCS)、[NOTICE](NOTICE)、
+[OPEN_SOURCE.md](OPEN_SOURCE.md)、[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+与 [TRADEMARKS.md](TRADEMARKS.md)。
