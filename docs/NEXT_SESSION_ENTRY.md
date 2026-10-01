@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`PALACE1_LIFECYCLE_STORAGE_OPENING_REVIEW_PASS / AWAITING_HUMAN_REGISTRATION`
+状态：`PALACE1_LIFECYCLE_STORAGE_OPENING_REGISTERED_ACTIVATED / FIRST_EXPERIMENT_GATE_APPLICATION_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -74,6 +74,8 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_20261002.md`
 35. 读其 external review（PASS / ACTIVATION_REQUIRED）：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_EXTERNAL_REVIEW_20261002.md`
+36. 读 registration 工件（REGISTERED / ACTIVATED）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_REGISTRATION_20261002.md`
 
 ## Current snapshot
 
@@ -87,7 +89,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE-1 = FRAMING REGISTERED / PARKED → LIFECYCLE STORAGE OPENING REVIEW PASS / ACTIVATION_REQUIRED（2026-10-02；draft rev.2 已含 F-1/F-2 修订；下一门 = human registration；实验/实现/选型授权 = 无）
+PALACE-1 = LIFECYCLE STORAGE OPENING REGISTERED / ACTIVATED（2026-10-02；下一动作 = create durable-identity-reservation 观测设计草案 → human 批准 → 执行；每实验 gate 独立授权一次一项；观测层纪律：禁止 identity→primary key / lineage→table / snapshot→serialization 实现先行映射）
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -342,11 +344,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：`PALACE1_LIFECYCLE_STORAGE_OPENING` external
-   review 已 PASS / ACTIVATION_REQUIRED（2026-10-02；六项固定 =
-   5 PASS + 1 PASS-with-amendment，F-1 台账补齐 / F-2 重入归属已随
-   rev.2 修订）——等待 human registration（唯一剩余 human 门）。
-   registration 后方可按 draft §6 矩阵逐项申请实验 gate（一次一项）。
+1. 下一会话第一动作：起草第一实验 gate 申请——create durable
+   identity reservation 观测设计草案（证据形状见 opening §6 create 行；
+   EF-9 基线 = caller-supplied opaque string、无 durable allocator）。
+   设计冻结 → human 批准 → 执行；一次一项。随后同法推进 fork lineage
+   formation（Gate B 范式）。观测层纪律（human 裁定 2026-10-02）：
+   禁止 identity→database primary key / lineage→table/schema /
+   snapshot→serialization format 一类实现先行映射。
    不写代码、不选数据库、不解决 OP/G、不做第二 backend、不消费 OP-7。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/

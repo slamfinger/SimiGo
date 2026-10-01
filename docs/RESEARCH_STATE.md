@@ -9388,6 +9388,38 @@ Current blocker                   = none
 实验 / 实现 / 选型授权            = 无（review 不授权任何执行）
 ```
 
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING REGISTERED — ACTIVATED — 2026-10-02
+
+Human registration 裁定（原话）：「登记 review PASS 并激活 PALACE1
+LIFECYCLE STORAGE OPENING」。登记工件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_
+REGISTRATION_20261002.md`。
+
+```text
+External review（PASS / ACTIVATION_REQUIRED）= REGISTERED
+Opening（rev.2，F-1/F-2 修订在案）           = REGISTERED / ACTIVATED
+边界纪律（human 重申）  = 第一批实验保持生命周期语义观测层：
+                         ① create → durable identity reservation
+                         ② fork → lineage formation
+                         禁止实现先行映射（identity→primary key /
+                         lineage→table / snapshot→serialization）
+授权边界               = 每个实验 gate 独立申请 + human 授权，一次
+                         一项；选型/schema/persistence API/RF-1 机制/
+                         产品代码/OP-7 仍然禁止
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = REGISTERED / ACTIVATED
+Current work                      = 第一实验 gate 申请：create durable
+                                    identity reservation 观测设计草案
+                                    （设计冻结 → human 批准 → 执行）
+Current blocker                   = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
