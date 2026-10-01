@@ -9292,6 +9292,24 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### PRODUCT REPO EXPERIMENT CODE WITHDRAWN — 2026-10-01
+
+Human direction：实验代码从 `slamfinger/SimiGo` 撤回，研究内容仅局限
+在 `slamfinger/SimiGo-Lab`。
+
+```text
+SimiGo（产品仓）：
+  8ea5476 revert: remove experiment harness code from product repo
+  22 files removed（4051 行删除）
+  working tree clean
+  仅保留产品代码
+
+SimiGo-Lab（研究仓）：
+  所有实验 harness 代码和研究文档保留
+  branch: codex/execution-state-research-20260929
+  最新: a7f45bb
+```
+
 ### R0 SELF-TEST PASSED — ALL CHECKS GREEN — 2026-10-01
 
 ```text
