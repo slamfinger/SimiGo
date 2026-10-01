@@ -424,7 +424,11 @@ struct ExecutionStateGraphView: View {
                 selectedID = store.states.first?.id
             }
             if store.states.isEmpty, store.loadError == nil {
-                try? store.create()
+                do {
+                    _ = try store.create()
+                } catch {
+                    store.operationError = String(describing: error)
+                }
                 selectedID = store.states.first?.id
             }
         }
