@@ -175,3 +175,26 @@ Required / Compensated，附证据级）；(c) 载体检视与全量重算排除
 ---
 
 **停在此处。** 零代码、零产品仓变更、零模型调用。
+
+---
+
+## 10. GATE RULING（human，2026-10-02）：CONTRACT ACCEPTED — FORMALIZATION SUFFICIENT
+
+draft 1.0（2c6df83）通过本 Gate，进入下一阶段 **Abstraction Freeze →
+SimiGo v2.0 Contract** 讨论。批准要点登记：
+
+1. Semantic/Representation 两层正确分离——不会把 MLX/llama 实现细节
+   错误提升为理论本体；
+2. **P 条款必须保留**：「P 的语义必须被保持，但不要求在每一种
+   representation 中作为独立字段存在」——`explicit OR derivable`
+   是正确的 Contract-level abstraction；
+3. Lifecycle 进入契约——Execution State 从「几个关系的集合」变成
+   可操作的生命周期语义；
+4. 非主张清单保持原样（防实现过程反向膨胀）；
+5. 版本规则正确——「MLX upstream 改变/backend/model format/binary
+   改变后 ES 抽象是否仍成立」这一问题被正式纳入架构。
+
+**边界冻结**：Contract accepted ≠ SimiGo v2.0 Contract 已发布。研究
+链：…→ Execution State Contract ★ACCEPTED → Abstraction Freeze →
+SimiGo v2.0 Contract ← CURRENT NEXT GATE。研究形式化可接受；尚不称
+「已完成的 v2.0 产品契约」。

@@ -10149,6 +10149,49 @@ Next   = 验收通过 ⇒ Abstraction Freeze → SimiGo v2.0 Contract 讨论
 Blocker = human acceptance
 ```
 
+### CONTRACT ACCEPTED + ABSTRACTION FREEZE GATE EXECUTED — 1 GAP + 4 CLARIFICATIONS — 2026-10-02
+
+human 裁定：**CONTRACT ACCEPTED — FORMALIZATION SUFFICIENT**（draft
+1.0 通过 Contract Gate；批准要点五项登记于契约文档 §10；边界冻结=
+Contract accepted ≠ SimiGo v2.0 Contract 已发布，CURRENT NEXT GATE=
+Abstraction Freeze）。
+
+**Abstraction Freeze Gate 执行完毕**（契约闭合性七项检查，零实验）：
+`docs/00-governance/SIMIGO_LAB_ABSTRACTION_FREEZE_GATE_20261002.md`。
+
+```text
+检查一 条款语义明确   = PASS（N-1 冻结版 INV-XB 内联或 normative ref）
+检查二 invariant 判定 = PASS（N-2 声明须枚举「哪条规则判定哪条
+                        invariant」）
+检查三 lifecycle 完整 = **G-LC1 缺口：save/checkpoint 操作缺失**
+                        （checkpoint commit=ES-D1 formation 边界，
+                        却在五操作之外）；修正条款已提案（closure
+                        可记录部分 durable 持久化/INV-XB restore
+                        前提/save 原子性/formation provenance 可
+                        记录）；restore 行补 fail-closed 子句；
+                        N-3 eviction=release 族
+检查四 声明面容纳两实现 = PASS（N-4 freeze 时写两份正式
+                        Representation Declaration，材料全在案）
+检查五 循环定义       = PASS（评估方向单向；N-5 方向性声明入契约）
+检查六 版本兼容       = PASS（N-6 兼容性判定=版本钉定合格性电池）
+检查七 research/public 边界 = PASS（证据史留 Lab，义务与非主张进
+                        契约）
+判定 = FREEZE-READY UPON AMENDMENT ACCEPTANCE：G-LC1+N-1..N-6 被
+  human 接受并写入契约文本 ⇒ Abstraction Freeze 可执行 ⇒ 才进
+  SimiGo v2.0 Contract / Public Architecture Freeze；任一被否决⇒
+  修订重审不得静默绕过（G-LC1 属实质 lifecycle 缺口）
+诚实注记 = P7-1/G-δ 的 save 均真实发生且有 R0 工件——G-LC1 缺的是
+  契约条款而非行为，不构成追溯无效
+```
+
+当前状态：
+
+```text
+Gate   = ABSTRACTION FREEZE GATE EXECUTED → freeze conditions 归 human
+Next   = human 接受修正条款+澄清 ⇒ freeze 执行 ⇒ v2.0 Contract 讨论
+Blocker = human acceptance of G-LC1 + N-1..N-6
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
