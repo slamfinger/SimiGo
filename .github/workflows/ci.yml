@@ -22,11 +22,8 @@ jobs:
 
   macos-tests:
     name: macOS targeted tests
-    # Apple's project requires the macOS 26.4 SDK. Keep this job visible but
-    # non-blocking until GitHub's hosted macOS runner image is confirmed to
-    # provide that SDK.
-    runs-on: macos-26
-    continue-on-error: true
+    # Match the local public-build toolchain: Xcode 27 / macOS 27 SDK.
+    runs-on: macos-27-arm64
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
