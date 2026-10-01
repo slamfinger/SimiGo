@@ -9292,6 +9292,52 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5 ATTEMPT-1 INCONCLUSIVE + MLX KV-ONLY CONTINUATION REJECTION — 2026-10-01
+
+Harness-integrity revision (a262839) executed P5 with in-run baseline,
+runUUID, SHA256 isolation. All three tests ran; equalBaseline = true on
+all 8 cells (2 samples × 2 deltas); isolation SHA256 match on both
+checkpoint and prefix-pool directories.
+
+Post-execution trace audit (`native_mlx_trace.log` 2026-10-01 10:14–10:16)
+revealed two critical findings:
+
+**Finding 1 — baseline malformed (participant implementation bug).**
+The in-run baseline passed only `[probe]` to `generate()`, not
+`fullHistory + [probe]`. Trace showed `mode=cold promptTokens=213` —
+the full history text never entered the prompt. The baseline was
+effectively `∅ + Δ → Y′`, not `History + Δ → Y′`.
+
+**Finding 2 — MLX ChatSession rejects KV-only continuation (engine
+boundary fact).** The stripped condition loaded the KV cache from
+safetensors (`cacheLoad history=0`, `cacheTokens=1425/31712`) but
+`streamDetails(to:)` detected a history-token mismatch and triggered
+`mode=rebuild`, `cacheHitTokens=0`, `cacheEff=0.00` — the loaded KV
+cache was discarded and the prompt was re-prefilled from scratch
+(213 tokens = system template + probe). The framework treats the
+KV cache as dependent on history identity/position, not as an
+independent continuation carrier.
+
+Consequence: `equalBaseline = true` is trivially true (both conditions
+generate from empty context). The P5 proposition (S₀ + Δ vs History + Δ)
+was not tested. Status is INCONCLUSIVE, not FAIL and not PASS.
+
+Engineering finding retained as a standalone result:
+`MLX ChatSession rebuild logic prevents KV-cache-only continuation
+regardless of history text presence — the cache is a Representation
+fragment, not an independent Execution State carrier.`
+
+Current state:
+
+```text
+P4 = PASS (S₀ can serve as common future base — topology)
+P5 attempt-1 = INCONCLUSIVE (baseline malformed + KV carrier rejected)
+Engineering fact = MLX ChatSession rejects KV-only continuation
+Next = P5-2 redesign (what minimal relation set enables continuation?)
+Trusted harness = a262839 @ slamfinger/SimiGo main (public)
+Current blocker = P5-2 design gate (human direction required)
+```
+
 
 ### LAB ES-R2 GATE C COMPLETE — VERDICT C-2 + C-3 IMPLICATION — 2026-09-30
 
