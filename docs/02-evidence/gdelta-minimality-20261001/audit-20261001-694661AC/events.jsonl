@@ -1,0 +1,4 @@
+{"event":"run_start","wallTime":"2026-10-01T12:00:34Z","monotonicNs":266690870743041,"runUUID":"audit-20261001-694661AC","payload":{"experiment":"G-delta","cell":"C"}}
+{"monotonicNs":266701621402375,"payload":{"results":"Δ1:ACCEPTED(32tok) | Δ2:ACCEPTED(32tok)"},"event":"two_appends_accepted","wallTime":"2026-10-01T12:00:45Z","runUUID":"audit-20261001-694661AC"}
+{"monotonicNs":266701630085208,"payload":{"result":"ALL_PASS"},"event":"r0_verify","wallTime":"2026-10-01T12:00:45Z","runUUID":"audit-20261001-694661AC"}
+{"monotonicNs":266701630323083,"payload":{"outcome":"NECESSITY_EVIDENCE(invariant-assertion level: continuation-of-THIS-state unconstructible from I\/P\/A; both divergent appends accepted without a legitimizing contract)","cell":"C"},"event":"run_complete","wallTime":"2026-10-01T12:00:45Z","runUUID":"audit-20261001-694661AC"}

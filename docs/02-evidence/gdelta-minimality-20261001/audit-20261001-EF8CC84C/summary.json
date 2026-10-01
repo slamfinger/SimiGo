@@ -1,0 +1,10 @@
+{
+  "carrier_dependence_note" : "MLX KV carrier: P NOT derivable from A (S1: processedTokenCount 31712 ≠ renderable) — if llama compensates, register carrier-dependence of P necessity",
+  "derivability_from_remaining_fields" : "NOT_DERIVABLE",
+  "outcome" : "COMPENSATED(A ⊇ P for boundary integrity on full-prefix-anchor representation) — closure revision gate",
+  "r0RunUUID" : "audit-20261001-EF8CC84C",
+  "remaining_relations" : "I\/A\/C",
+  "removed_relation" : "position assertion",
+  "role" : "gdeltaP",
+  "truncation_detected_by_remaining" : "YES(A)"
+}

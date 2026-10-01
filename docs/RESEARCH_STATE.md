@@ -9909,6 +9909,50 @@ Next   = G-δ RUN → 机械判读 → second-layer review
 Blocker = human execution authorization
 ```
 
+### G-δ EXECUTED — MECHANICAL VERDICT: CLOSURE_REVISION_REQUIRED（I·A·C necessity evidence / P compensated 载体依赖）— 2026-10-02
+
+human 执行授权后，G-δ 按冻结预注册（8151458）执行完毕。结果文档：
+`docs/00-governance/SIMIGO_LAB_GDELTA_EXECUTION_RESULTS_20261001.md`；
+工件+harness 归档：`docs/02-evidence/gdelta-minimality-20261001/`。
+
+```text
+执行两 pass = Pass1 implementation-failure（form modelHash 占位符
+  + FULL child 分支漏 gen-continue → FULL 偏离；按 #10 修复重跑不
+  混判；原始工件被 pass2 清场覆写=过程教训登记，记录存会话审计
+  引文）→ Pass2 valid：7 独立进程全 SUCCEEDED（form 54.7s 含
+  2×GGUF 哈希/FULL 44.0s/I 0.1s/P 0.1s/A 9.8s/C 10.8s/adjudicate
+  0.09s）；r0_verify 全 PASS；git dc12a0c+dirty
+Gδ-FULL    = 全 cell PASS、restore_output 与 P7-1 逐字同型
+             （baseline 一致性成立，电池有效）
+Gδ-I       = NECESSITY_EVIDENCE（provenance conflation[两匿名 record
+             无差别接受]+model-binding 结构性无补偿；content-mismatch
+             子功能由 A 补偿=partial subsumption 登记 Layer 2）
+Gδ-P       = COMPENSATED——derivability 不可推导（hash 无原像）但
+             boundary integrity 被 A 补偿（截断探针 anchor 检出）
+             ⇒ **A ⊇ P（full-prefix 锚载体）**；预注册载体依赖性
+             命中：MLX KV 载体上 P 不可由 A 推导（S1 31712≠可渲染）
+             ⇒ P 必要性载体依赖=压缩载体必要/全拷贝载体被 subsume
+Gδ-A       = NECESSITY_EVIDENCE（最强 cell：same-I-same-P-same-C
+             record 关系层完全相等、carrier 不同⇒两状态不可分辨而
+             输出分叉；PA-2 模式 llama 关系级复制成立）
+Gδ-C       = NECESSITY_EVIDENCE（不变量断言级：无 C 时「continuation
+             of THIS state」从 I/P/A 不可构造；两个 divergent append
+             无差别接受；非崩溃测试）
+机械判读   = overall CLOSURE_REVISION_REQUIRED（subsumption registered）
+```
+
+**closure revision gate 问题（归 human）**：P 在 closure 中的地位——
+保留为关系并注明载体依赖 / 重述为载体级断言 / 其他修正。I·A·C 三
+关系已获 necessity evidence；「necessity of each relation」全称升格
+未达成（P compensated），措辞上限遵守。
+
+当前状态：
+
+```text
+Phase   = G-δ EXECUTED / CLOSURE REVISION GATE（human）
+Blocker = human 对 P 地位的裁定
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

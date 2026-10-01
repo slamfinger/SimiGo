@@ -1,0 +1,18 @@
+{
+  "cells" : {
+    "FULL_baseline_consistent" : "PASS",
+    "Gδ-A_outcome" : "NECESSITY_EVIDENCE",
+    "Gδ-C_outcome" : "NECESSITY_EVIDENCE(invariant-assertion level: continuation-of-THIS-state unconstructible from I\/P\/A; both divergent appends accepted without a legitimizing contract)",
+    "Gδ-I_outcome" : "NECESSITY_EVIDENCE(provenance conflation + model-binding uncompensated; content-mismatch sub-function compensated by A — partial subsumption registered, Layer 2 noted)",
+    "Gδ-P_outcome" : "COMPENSATED(A ⊇ P for boundary integrity on full-prefix-anchor representation) — closure revision gate",
+    "overall" : "CLOSURE_REVISION_REQUIRED(subsumption registered — see per-cell outcomes)"
+  },
+  "inputs" : {
+    "A" : "audit-20261001-DF19FB70",
+    "C" : "audit-20261001-694661AC",
+    "full" : "audit-20261001-0395FB3E",
+    "I" : "audit-20261001-1FF4E887",
+    "P" : "audit-20261001-EF8CC84C"
+  },
+  "overall" : "CLOSURE_REVISION_REQUIRED(subsumption registered — see per-cell outcomes)"
+}
