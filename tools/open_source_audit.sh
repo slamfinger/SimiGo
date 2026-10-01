@@ -16,10 +16,15 @@ check() {
   fi
 }
 
+path_re='/Users''/'
+user_re='mr''\.simi'
+team_re='YPXU''8M53F9'
+email_re='slamfinger''@163''\.com'
+
 check "no tracked local absolute paths or local user identifiers" \
-  bash -c '! git grep -I -n -E "/Users/|mr\.simi" -- .'
+  bash -c '! git grep -I -n -E "$0|$1" -- .' "$path_re" "$user_re"
 check "no tracked signing team or private email" \
-  bash -c '! git grep -I -n -E "YPXU8M53F9|slamfinger@163\.com" -- .'
+  bash -c '! git grep -I -n -E "$0|$1" -- .' "$team_re" "$email_re"
 check "no tracked model-weight artifacts" \
   bash -c '! git ls-files | grep -Ei "\.(safetensors|gguf|bin|pth|ckpt|weights)$"'
 check "no tracked packaged app or DMG" \
