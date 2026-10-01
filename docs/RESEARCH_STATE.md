@@ -10113,6 +10113,42 @@ Gate   = Contract formalization / abstraction freeze 决策（human）
 Blocker = human direction
 ```
 
+### EXECUTION STATE CONTRACT FORMALIZATION GATE OPENED — DRAFT DELIVERED — 2026-10-02
+
+human 指令：不立即升格两层模型为正式 Contract，先开窄 Gate 做契约化
+审查。文档（九节结构，零代码零产品仓零模型）：
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_CONTRACT_FORMALIZATION_GATE_20261002.md`。
+
+```text
+Contract scope 冻结 = 四类（semantic relations/required invariants/
+  lifecycle obligations/representation boundary）+ 明确排除清单
+  （数学最小宣称/具体 backend 字段布局/ρ 实现细节/backend-specific
+  判断/性能指标）
+两层契约 = Semantic Contract（I/P/A/C 语义保持义务+INV-XB——长期
+  稳定部分）+ Representation Contract（backend 必须声明
+  Σ_R/C_R/Inv_R/Rules_R；representation 可变而 invariant 不可变）
+**P 非要求条款（G-δR 最重要产出入契约）**：Semantic Contract 要求
+  P 语义被正确保持；不要求 P 独立字段存在——P may be explicit OR
+  derivable（规则须注册于 Rules_R）；一般化为 (relation,
+  representation) 条款
+其余 = lifecycle 五操作语义义务表（fork/restore/continue/discard/
+  release）/non-claims 清单（minimality/backend-independent/
+  universal/D7/性能/未复制标注义务）/版本规则（ES Contract draft
+  1.0；Semantic 变更=closure-revision 级；Representation 变更=
+  重新声明+电池重跑；新 backend=新声明零 Semantic 变更；v1.0
+  Architecture Contract=前驱参照）/验收门
+定位 = 与 Architecture Contract v1.0 的关系：前驱参照，冲突以证据
+  后置的本契约为准
+```
+
+当前状态：
+
+```text
+Gate   = CONTRACT GATE OPENED（draft 1.0 交付）→ ACCEPTANCE AWAITING HUMAN
+Next   = 验收通过 ⇒ Abstraction Freeze → SimiGo v2.0 Contract 讨论
+Blocker = human acceptance
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
