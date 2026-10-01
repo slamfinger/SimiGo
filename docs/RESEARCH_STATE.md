@@ -14020,3 +14020,44 @@ Trusted record = harness sources @ slamfinger/SimiGo 0dc166b（public）
 Next = human second layer（以其自选方式复核）
 Current blocker = none
 ```
+
+
+### LAB PALACE V2 E6 DESIGN DRAFT COMPLETE — INFORMATION VALIDITY OBSERVATION — 2026-10-02
+
+Human 确认 E6 起草（关键裁定：E6 = 信息有效性问题，不称版本管理；
+证据只证明「当前世界状态与过去工作状态可能脱钩」，未证明需要版本
+树/revision graph/bi-temporal model；有价值的是「让 Agent 发现
+依据变化」（工程观察）而非「自动判断过期」（机制设计）；ES 可能
+承载「可继续工作关系」仅为研究方向登记，不修改 SimiGo 冻结契约）。
+
+E6 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_INFORMATION_VALIDITY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 措辞冻结）= 当信息空间中的原始内容发生变化时，
+    PALACE 如何知道当前工作所依据的信息是否仍然有效？
+观察五问（冻结）= V-1 内容变化场景 / V-2 能否发现变化 /
+    V-3 能否识别「曾依据过什么」/ V-4 能否判断过去发现仍可用 /
+    V-5 不能判断时如何处置（最有价值观察点）
+与 OQ-B 的推进点 = 观察对象从「单 cell 已发现」升级为「工作
+    依据集（D-rec-1..4，附依据粒度自标：cell/多 cell/全簿）」；
+    两次独立漂移（DRIFT-1 改 F8 仅应失效 D-rec-1 / DRIFT-2 改
+    汇总表 cell 仅应失效 D-rec-2）→ 核心观察 = 部分失效时的
+    区分能力（OB-V4）与无法判定条目的处置（OB-V5）
+方法 = G1 同款（最小真实漂移 → 观察 → 再抽象）；预登记预期
+    偏离即溯源
+禁止 = 版本树/revision graph/bi-temporal 设计 / 自动过期机制
+    设计 / 各 Schema / L0 写入 / 性能基准 / 改 SimiGo 冻结契约 /
+    Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+PALACE_V2_E6 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：W1 发现集落盘 → DRIFT-1/2 →
+               重进判定 → 结果门）
+Current blocker = none
+```

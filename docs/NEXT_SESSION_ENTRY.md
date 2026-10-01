@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`RQOQB1_ANSWERED_NOISE_IS_TOOLSPECIFIC / E6_DESIGN_ENTRY_OPEN`
+状态：`E6_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -391,30 +391,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：RQ-OQB-1 已 ANSWERED（Excel 原生编辑 =
-   1 cell 变化零噪声；22 噪声 = openpyxl 工具特有；OQ-B 线完整
-   收束）——下一门 = E6 Design Entry：起草 E6 设计草案（human
-   措辞问题：「当信息空间中的原始内容发生变化时，PALACE 如何知道
-   当前工作所依据的信息是否仍然有效？」——低于版本管理一层
-   抽象；衔接 OQ-B/OB-4「工作记录 vs 世界当前状态独立性」观察与
-   RQ-D3「最新判据」遗留）。draft → human 冻结 → 执行。纪律：
-   L0 只读；不命名 lineage/relation/provenance；禁止提前定义
-   各 Schema；不写 PALACE 代码。
-   研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
-   记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
-   restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、
-   可验证、fail-closed，且存储载体可替换可扩展。
-   事实分层纪律：EF-1…EF-11 = 已登记工程事实；CH-1…CH-4 = 契约推导
-   HYP；U-1…U-4 = 诚实 UNKNOWN（Gate B 结论外推禁止）。
-2. Maintain the Contract v1.0 standing drift-detection（C-13 双向 + S2/S6）；
-   G-9/G-6/G-7/G-10 触发纪律不变；轴 d 再检验为 durable-store activation
-   第一审计项（若该线后续激活）。
-3. 不修改 contract；不新增测试（re-run 须 hash 级绑定）；不选 storage /
-   persistence format / API / protocol；不做 performance / universal
-   portability claim。
-4. PALACE hypothesis(04c608e)仍 SEPARATELY SCOPED——本 opening 只定义
-   durable-state 语义研究门，不消费 PALACE hypothesis 内容；第二 backend
-   与 productization 明确排在 PALACE-1 之后。
+1. 下一会话第一动作：E6 设计草案已完成（信息有效性观察：
+   W1 工作会话建立依据集 D-rec-1..4 → DRIFT-1 改 F8 / DRIFT-2 改
+   汇总表 cell 两次独立漂移 → 逐条重进判定（仍有效/已失效/无法
+   判定）→ OB-V4 区分能力 + OB-V5 处置观察为核心）——等待 human
+   冻结审查；通过 + 执行授权后执行 → 结果门 → human 判读。
+   纪律：不称版本管理；不设计自动过期机制；L0 只读；禁止各
+   Schema；不修改 SimiGo 冻结契约；不写 PALACE 代码。
 
 继续区分：
 
