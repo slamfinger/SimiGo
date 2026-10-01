@@ -1,10 +1,14 @@
-# SimiGo 核心架构白皮书
+# SimiGo 核心架构白皮书（历史存档）
+
+> **状态：HISTORICAL / SUPERSEDED。**<br>
+> 本文保留 v5 阶段架构表述，不再是当前唯一架构参考。当前项目定位以仓库
+> README、`OPEN_SOURCE.md` 与 Execution State Contract 为准。
 
 > **本地 AI 推理 Runtime + 本地/局域网共享推理节点**
 
 SimiGo 运行在 Apple Silicon macOS 上，对外提供 OpenAI-compatible API，底层基于 MLX / `mlx-swift-lm` 执行模型推理。
 
-本文档是 SimiGo 的**唯一核心架构参考**。它只定义长期稳定、跨实现仍成立的架构原则，不把某一次故障、某个版本的参数或某个临时解决方案升级为永久规则。
+本文档是当时的核心架构参考。它只定义当时长期稳定、跨实现仍成立的架构原则，不把某一次故障、某个版本的参数或某个临时解决方案升级为永久规则。
 
 **当前架构基线：v5.0 Core Architecture Baseline（2026-09-12，随官方 ChatSession 迁移收敛）。**
 
