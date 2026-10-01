@@ -9898,6 +9898,44 @@ PALACE_V2_G1 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 DESIGN FROZEN — CORPUS-1 SELECTION RECON COMPLETE — AWAITING HUMAN CONFIRMATION — 2026-10-02
+
+Human 冻结审查：**PASS — G1 DESIGN FROZEN**（13 项逐项 PASS；执行
+授权仅限 Corpus-1 选族只读侦察；关键纪律 = 文件名相似 ≠ 版本链，
+版本演化须由执行阶段内容比较验证）。
+
+只读侦察（真实目录 3094 文件：pdf 1111/xlsx 758/docx 512/doc 156/
+jpg 134/xls 108/pptx 17…）+ 2 件 xlsx 只读抽样。选族清单：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CORPUS1_SELECTION_20261002.md`。
+
+```text
+族 A（推荐主族）标后预算明细表 8 件 xlsx：文件名含阶段线索
+    （1.15/局会议修改后/修改补充/复核/梁成刚版/1.6-报局——仅记录）；
+    只读抽样实证内容差异：1.15 vs 局会议修改后 = sheets 13→14 +
+    4 个同名 Sheet 非空单元格数不同（汇总表 52→58 等）→ C-2 实证；
+    Sheet 结构 = 汇总/分部分项清单/材料价格取定——数字主体（C-3）
+族 B 备选：分包限价报审表 10 件（线外便道子族 4 件日期迭代 +
+    终版命名——仅记录不推断）
+族 C 比较型备选：第400章桥涵清单 8 件（按标段×汇总人平行变体，
+    非版本链）
+族 D（推荐并入主族）成本管控汇报：2026.03.25 .doc+.docx+（改）.doc
+    双格式三件 + 20260506 提质年三家单位版本——混合格式观察点
+推荐 Corpus-1 = 成本控制主题：族 A + 族 D ≈ 15–20 文件
+    （xlsx+docx+doc 混合格式；C-1..C-3 已实证/C-4 执行阶段验证/
+    C-5 ✓）；备选调整方案在档
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = RECON COMPLETE / CORPUS-1 SELECTION AT HUMAN
+human 确认后 = 初始可发现性建立 → 主探针（成本控制变化溯源）
+              → 工作过程全记录 → 结果门
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
