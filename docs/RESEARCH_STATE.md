@@ -9420,6 +9420,46 @@ Current work                      = 第一实验 gate 申请：create durable
 Current blocker                   = none
 ```
 
+
+### LAB PALACE1 GATE1 CREATE IDENTITY RESERVATION DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human Gate① 指令：允许设计「如何观测 EF-9」，未允许执行实验、未允许
+决定 durable identity 实现方式。设计草案完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_CREATE_IDENTITY_RESERVATION_
+DESIGN_20261002.md`。
+
+```text
+研究问题（单问） = create 是否需要跨进程/跨重启保持语义连续性的
+                  durable identity reservation 机制
+概念切分（human） = identity 可唯一 ≠ 须由 durable reservation 保证；
+                  当前无 allocator ≠ 语义上必然需要 allocator
+观测矩阵          = O-1 创建 / O-2 进程内重复（IC-4 enforcement）/
+                  O-3 跨重启重复（reservation 直接观测面）/ O-4 寻址
+                  连续性对照格（寻址持久 ≠ reservation 持久）/
+                  O-5 discard 后跨重启复用（IC-3 tombstone reservation）/
+                  O-6 并发（exploratory 不判读）
+预登记            = P-C2/P-C3/P-C4 带 EXPECTED + 偏离→溯源规则；
+                  P-C1 双分支判读；P-C5 不判读
+positive 条件     = 跨重启静默错误 + IC-3/IC-4 契约禁止 + caller 纪律
+                  崩溃窗口/多写者不可替代——三条齐备方可 inference
+stop conditions   = 新不可约语义关系 → 停止 → Closure Revision gate
+harness 前置      = R0 仪器化 + 源码公开（0dc166b 采信规则）+
+                  一次性 fixture + ~/.simigo 零触碰 + 零产品代码修改
+non-goals         = schema/DB/serialization/allocator 实现/API/
+                  OP-7/RF-1/identity 格式/性能——逐字冻结
+```
+
+当前状态：
+
+```text
+PALACE1_GATE1_CREATE_ID_RESERVATION = DESIGN DRAFT COMPLETE /
+                                      AWAITING HUMAN FREEZE REVIEW
+执行授权                            = 无（冻结审查通过 + 批准后才
+                                      执行 O-1…O-6）
+Current blocker                     = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
