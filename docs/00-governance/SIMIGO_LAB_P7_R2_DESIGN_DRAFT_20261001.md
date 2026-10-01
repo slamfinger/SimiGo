@@ -1,187 +1,227 @@
-# P7-R2: Real Carrier Continuation Validation — Design Draft v1
+# P7-R2: Real Carrier Continuation Validation — Design Draft v2
 
 日期：2026-10-01  
-状态：`DESIGN DRAFT v1 / AWAITING HUMAN REVIEW`  
+状态：`DESIGN DRAFT v2 / APPROVED WITH REVISIONS / READY FOR HARNESS`  
 前置：P6 FROZEN → P7 contract-level validated → audit complete  
-核心命题：∀ backend: restore(S) + Δ → valid continuation  
-Contract v1.0：不变
+核心命题：B(S) + Δ → Continuation  
+Contract v1.0：不变  
+v1→v2 变更：native-produced state / cross-process / cold fallback
+rejection / anchor functional observation / continuation evidence requirement
 
 ---
 
-## §0 核心命题
+## §0 核心命题（v2 最终）
 
-> 验证不同 backend 是否存在满足 continuation invariant 的 runtime
-> closure——不是验证它们保存相同的数据结构。
+> 对任意 backend B，若存在一个由 B 产生的 Execution State S，使得
+> 跨进程 restore 后，B 能在保持 Identity、Position、Anchor、Continuation
+> 四项关系的情况下接受新输入 Δ，则 B 支持 Execution State closure。
 
-每个 backend 独立运行 save → destroy → restore → continue 流程，
-观察 closure 四项 invariant 是否在真实 runtime 中保持。
+形式：B(S) + Δ → Continuation
 
 ## §1 Hard boundaries
 
 ```text
 ❌ 不验证 MLX output == llama output
-❌ 不验证 KV layout identical
-❌ 不验证 internal cache structure identical
-❌ 不验证 token id identical
+❌ 不验证 KV layout / internal cache / token id identical
+❌ 不验证 fake state → restore（必须是 native-produced state）
+❌ 不验证 same-process save → restore（必须跨进程）
+❌ 不接受 cold fallback 作为 continuation 证据
 ❌ 不进入 Palace / Security
 ```
 
-验证范围：
-```text
-✓ Identity continuity
-✓ Position continuity
-✓ Anchor validity
-✓ Continuation acceptance
-```
+## §2 五项 v2 修正
 
-## §2 单 backend 实验流程
+### 修正 1：S 必须由真实 backend runtime 产生
 
 ```text
-Phase A (Create & Save)
-  Create runtime
-    ↓
-  Generate prefix P
-    ↓
-  Checkpoint S
-    ↓
-  Destroy process/runtime
+✅ 正确流程：
+  runtime computation → backend native state → adapter extraction
+  → Execution State representation
 
-Phase B (Restore & Continue)
-  Restore(S)
-    ↓
-  Apply Δ
-    ↓
-  Observe continuation
+❌ 禁止流程：
+  fake Execution State → restore
+  （退化为 contract test，不是 runtime validation）
 ```
 
-## §3 Observation Schema（backend-neutral）
+### 修正 2：Checkpoint 必须跨进程
+
+```text
+✅ 正确流程：
+  Process A: create → generate → checkpoint → exit
+  Process B: load → restore → continue
+
+❌ 禁止流程：
+  同一 process: create → save → restore
+  （内存残留 / singleton / cache pool 污染结果）
+```
+
+### 修正 3：Position monotonic requirement
+
+```text
+必须满足：
+  P_restore == P_checkpoint
+  P_continue > P_restore
+
+禁止：
+  P_restore > P_checkpoint（位置跳跃 = 状态污染）
+```
+
+### 修正 4：Anchor 双层观测
+
+```text
+Layer 1 (Identity)：anchor_hash equal before/after restore
+Layer 2 (Functional)：change Δ input → continuation boundary changes
+
+如果只有 Layer 1 没有 Layer 2 → anchor 可能是无作用的 metadata
+两层都观测到 → anchor 真正参与计算
+```
+
+### 修正 5：Continuation 判定排除 cold fallback
+
+```text
+P5 教训：KV exists ≠ KV used
+
+PASS 必须 observe 至少一个 backend-native continuation evidence：
+  MLX: cache reuse / extend mode / cacheHitTokens > 0
+  llama: context continuation / prefix reuse
+
+如果 backend 未暴露 continuation evidence → INCONCLUSIVE（非 PASS）
+
+❌ 禁止：
+  restore → discard state → fresh generate → 标记为 PASS
+```
+
+## §3 实验流程
+
+```text
+Process A:
+  Start backend runtime (real model)
+    ↓
+  Create session / context
+    ↓
+  Generate history (real model inference)
+    ↓
+  Checkpoint: extract native state → save to storage
+    ↓
+  Destroy runtime (exit process)
+
+─── process boundary ───
+
+Process B:
+  Start backend runtime (same model)
+    ↓
+  Restore from checkpoint
+    ↓
+  Observe: C1 Identity / C2 Position / C3 Anchor
+    ↓
+  Apply Δ (new user input)
+    ↓
+  Observe: C4 Continuation (backend-native evidence required)
+```
+
+## §4 Observation Schema
 
 ```json
 {
   "backend": "mlx",
-  "state_id": "...",
+  "run_id": "...",
+  "timestamp_wall": "...",
+  "timestamp_monotonic": "...",
+
   "identity": {
-    "same_lineage": true
+    "same_lineage": true,
+    "evidence": "execution_id match"
   },
+
   "position": {
     "before_destroy": 1200,
     "after_restore": 1200,
+    "monotonic_ok": true,
     "after_delta": 1234
   },
+
   "anchor": {
-    "before_hash": "...",
-    "after_restore_hash": "..."
+    "identity_hash_before": "...",
+    "identity_hash_after": "...",
+    "hash_equal": true,
+    "functional_test": {
+      "delta_changed": "different input text",
+      "continuation_boundary_changed": true
+    }
   },
+
   "continuation": {
     "accepted": true,
-    "path": "extend"
+    "backend_evidence": "cacheHitTokens=1200, mode=extend",
+    "cold_fallback_detected": false
+  },
+
+  "resource_observation": {
+    "memory_before_mb": 0,
+    "memory_after_load_mb": 19000,
+    "memory_after_generate_mb": 20500
   }
 }
 ```
 
-不记录 backend 私有字段（kvFingerprint 值、safetensors 路径等）。
-只记录 closure relation 的 abstract observation。
-
-## §4 四项判据
+## §5 四项判据（v2）
 
 ### C1 Identity
-
 ```text
-问题：恢复后的状态是不是原来的状态？
 PASS：restore(S) → same execution lineage
 FAIL：new unrelated session
 ```
 
 ### C2 Position
-
 ```text
-问题：恢复后计算位置是否连续？
-PASS：before=100 → restore=100 → after_Δ=110
-FAIL：restore → position=0（全量丢失）
+PASS：P_restore == P_checkpoint AND P_continue > P_restore
+FAIL：P_restore ≠ P_checkpoint OR P_continue ≤ P_restore
 ```
 
-### C3 Anchor
-
+### C3 Anchor（双层）
 ```text
-问题：恢复状态仍然绑定正确输入语义？
-不是要求保存 history 文本，而是验证 same anchor relation。
-PASS：same input prefix → same anchor identity
-FAIL：restore 后 anchor 指向不相关的语义上下文
+PASS：hash_equal AND functional_test confirms computation participation
+PARTIAL：hash_equal but no functional evidence
+FAIL：hash mismatch OR anchor points to unrelated context
 ```
 
 ### C4 Continuation
-
 ```text
-问题：restore(S) + Δ 是否被 runtime 接受为 continuation？
-PASS：extend（warm continuation from restored state）
-允许：backend-specific equivalent of extend
-FAIL：cold start / rebuild from zero / unrelated context
+PASS：backend-native continuation evidence observed (extend/reuse)
+INCONCLUSIVE：continuation occurs but no backend-native evidence available
+FAIL：cold start / rebuild / state discarded after restore
 ```
 
-## §5 Failure 分类
+## §6 Failure 分类
 
 ```text
-CONTINUATION_VALIDATED  closure 保持
+CONTINUATION_VALIDATED  closure 保持 + native evidence
 CLOSURE_REJECTED        状态无法继续
 MAPPING_LIMITED         adapter 无法表达
-INCONCLUSIVE            观测不足
+INCONCLUSIVE            观测不足（含 continuation evidence 缺失）
 ```
 
-## §6 最小实验矩阵
+## §7 实验矩阵
 
-| Backend | State | Restore | Δ |
+| Backend | Runtime | Process boundary | State 来源 |
 |---|---|---|---|
-| MLX | S₀（完整 history checkpoint） | loadSessionCache from checkpoint | Δ₁ |
-| llama.cpp | S₀（token prefix state） | restore from backend dict | Δ₁ |
-
-两个 cell 足够——验证 runtime invariant，不是压力测试。
-
-## §7 关键约束：不能偷偷简化
-
-```text
-P5 教训：history text 属于 Anchor，不是附属物。
-
-错误做法：
-  save KV → restore KV → generate
-  （丢失 anchor → 重复 P5-1 rebuild）
-
-正确做法：
-  save abstract closure representation（含 anchor）
-  restore
-  apply Δ
-  观察 invariant
-```
-
-MLX 侧：checkpoint 必须包含 meta.json（history）+ safetensors（KV）。
-llama 侧：Backend dict 中 tokenPrefix 天然包含 anchor（tokenized history）。
+| MLX | 真实模型（Nail-Qwen3.6-35B-A3B-MLX） | YES | nativeMLX loadSessionCache |
+| llama.cpp | 真实模型（llama-server） | YES | LLAMAServerExecutionStateBackend |
 
 ## §8 预注册措辞
 
 ```text
-MLX CONTINUATION_VALIDATED + llama CONTINUATION_VALIDATED:
+MLX VALIDATED + llama VALIDATED:
   "Both MLX and llama.cpp backends independently satisfy the
-   continuation invariant: restore(S) + Δ → valid continuation.
-   Execution State closure is preserved across runtime
-   save/destroy/restore cycles in both implementations."
+   continuation invariant across process boundaries: native-produced
+   state S, destroyed and restored, accepts Δ as valid continuation
+   with backend-native evidence. Execution State closure preserved."
 
 One VALIDATED, one not:
-  "{backend} satisfies the continuation invariant; {other} does not.
-   The closure definition may need backend-specific qualification."
+  "{backend} satisfies; {other} does not. Closure definition may
+   need backend-specific qualification."
 
 Both fail:
-  "Neither backend preserves the continuation invariant across
-   save/restore. The Execution State closure definition requires
-   revision."
-```
-
-## §9 Route
-
-```text
-P7-R2 Design v1（本文件）
-  ↓ Human review
-  ↓ Harness implementation
-  ↓ Execution
-  ↓ Audit
-  ↓ L2 re-freeze
-  ↓ Security → Palace
+  "Neither backend preserves continuation invariant across
+   process boundary save/restore. ES closure requires revision."
 ```
