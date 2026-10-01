@@ -10,3 +10,6 @@ bench-output/
 __pycache__/
 *.pyc
 .zcode/
+
+# Local AI-chat sync drafts are not public research artifacts
+.tmp-chatgpt-sync/
