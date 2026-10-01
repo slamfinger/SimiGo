@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`E6_CLOSED / G1_CLOSED / G2_DESIGN_ENTRY_OPEN`
+状态：`G2_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -130,6 +130,9 @@
    - ✅ human 验收：E6 PASS/CLOSED（V-1..V-5 全 PASS）；V-5 提升登记（案例一记录-现实可区分性 bounded evidence + 案例二粒度效应）
 57. 读 G1 收束/G2 入口登记：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CLOSED_G2_ENTRY_20261002.md`
+   - ✅ human 确认：G2 设计草案起草批准（四要点：RQ 低于抽象层 / P3=探针非答案 / 过程完整记录 / 禁止架构化升级）
+58. 读 G2 设计草案（仅设计，无执行授权）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_CROSS_DOCUMENT_WORK_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -398,13 +401,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：起草 G2 设计草案（跨文件信息工作——研究
-   对象 = 「正在进行的跨文件工作如何持续利用已发现的信息并继续
-   向下一步推进」；Corpus-1 A+D 上跨文件数字口径映射 = RQ-P3
-   遗留候选探针；第 3 层分析/对比/汇总首次进入）。draft → human
-   冻结 → 执行。禁止带入：信息对象/关系/知识图谱/Provenance
-   Schema/PALACE State Schema 预定义。纪律不变：L0 只读；不命名
-   lineage/relation/provenance；不写 PALACE 代码。
+1. 下一会话第一动作：G2 设计草案已完成（三探针：T-1 数字口径
+   映射 / T-2 钢筋跨文件对照 / T-3 汇总任务；七元组过程协议 +
+   步间依赖标注；观察格 OB-A..D）——等待 human 冻结审查；通过 +
+   执行授权后依序执行 T-1 → T-2 → T-3（逐任务交付过程记录与
+   中间观察）→ 结果门 → human 判读。禁止：Information Object/
+   Relation/Graph/Provenance Schema/PALACE State Schema/知识库
+   叙事/映射模型化/G1·E6 事实架构化升级；L0 只读；不写 PALACE
+   代码。
 
 继续区分：
 

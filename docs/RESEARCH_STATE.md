@@ -14142,3 +14142,42 @@ G2            = DESIGN ENTRY OPEN（具体设计草案待起草 → human
 G3            = LOCKED
 Current blocker = none
 ```
+
+### LAB PALACE V2 G2 DESIGN DRAFT COMPLETE — CROSS-DOCUMENT INFORMATION WORK — 2026-10-02
+
+Human 确认起草（四项冻结审查要点：RQ 低于抽象层 / P3 数字口径映射
+= 探针非答案 / 工作过程完整记录含步间依赖标注 / 禁止把 G1·E6 事实
+架构化升级）。G2 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_CROSS_DOCUMENT_WORK_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（冻结）= 跨文件工作如何持续利用已发现的信息并继续向
+    下一步推进（Corpus-1 操作化：A+D 已发现信息基础上，分析/
+    对比/汇总能否持续进行并推进？已有发现能否成为下一次工作
+    的起点？）
+探针任务 = T-1 数字口径映射（RQ-P3 探针：A 侧 8.10亿/9.48亿/
+    7.09亿/6.94亿 vs D 侧 313,356万/251,029万/62,327万/2,071.69万/
+    8788.34万 等；预登记判定口径：数值相等/万↔元换算/口径包含
+    ⇒ 已映射，否则未映射+阻碍记录）/ T-2 跨文件事实对照（钢筋
+    4200 vs 附表1 折算 ≈3761 差异候选）/ T-3 汇总任务（综合
+    陈述+来源标注——第 3 层首次进入）
+过程协议 = 七元组逐步记录（发现→选择依据→跨文件读取→对照→
+    冲突/对应→中间判断→下一步）+ 每步依赖标注（是否使用前步
+    已发现且未重新提供的信息——H-G1-02 材料）
+观察格 = OB-A 已发现信息复用 / OB-B 映射可行性分布 / OB-C
+    状态依赖步骤清单 / OB-D 综合行为与对应粒度
+禁止 = Information Object/Relation/Graph/Provenance Schema/
+    PALACE State Schema 定义 / 知识库叙事 / 映射模型化 /
+    G1·E6 事实架构化 / L0 写入 / 3000 文件扩容
+```
+
+当前状态：
+
+```text
+PALACE_V2_G2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：T-1 → T-2 → T-3 逐任务交付
+               过程记录与中间观察 → 结果门）
+Current blocker = none
+```
