@@ -9292,6 +9292,28 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### R0 SELF-TEST PASSED — ALL CHECKS GREEN — 2026-10-01
+
+```text
+[✓] unique_run
+[✓] isolated_artifact
+[✓] monotonic_ordering
+[✓] replay_readable
+[✓] schema_valid
+[✓] directory_collision_detected
+
+R0 仪器验证通过。
+下一步 = P4 replication（使用 R0 audit 框架）
+```
+
+Current state:
+
+```text
+R0 = SELF-TEST PASSED
+Day 1 = R0 ✅ → P4 replication（next）
+Blocker = none
+```
+
 ### R0 ENVIRONMENT AUDIT DESIGN — COMPLETE — 2026-10-01
 
 Artifact：`SIMIGO_LAB_R0_ENVIRONMENT_AUDIT_DESIGN_20261001.md`
