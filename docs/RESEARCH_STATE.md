@@ -9292,6 +9292,89 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7 AUDIT REVIEW ACCEPTED — EVIDENCE HIERARCHY ESTABLISHED — 2026-10-01
+
+Human review of P7 audit findings：接受降级措辞。正向修正，非实验失败。
+
+#### 四层证据体系（新框架）
+
+```text
+Level 0  抽象定义层
+         ES = {I,P,A,C} minimal relation closure
+         状态：✅ P6 FROZEN
+
+Level 1  Backend Contract Layer
+         验证：backend 是否可表达 closure relations
+         状态：✅ P7 contract-level validated（llama backend）
+              MLX relation evidence：✅ P5-2-C/P5-4
+
+Level 2  Runtime Execution Layer
+         验证：真实模型计算是否保持 continuation invariant
+         状态：❌ 未验证
+
+Level 3  Production Layer
+         验证：跨模型/跨环境/安全转移
+         状态：❌ 未验证
+```
+
+#### fakeTokens 影响评估
+
+```text
+P7 当前可证明：
+  llama adapter 的 closure 数据结构可以承载这些关系
+
+P7 不能证明：
+  llama.cpp runtime 中这些关系维持真实计算连续
+
+原因：SHA256 伪 token 只证明整数序列上的 prefix relation
+     不证明真实 tokenizer + KV position + model semantics
+```
+
+#### 下一步路线（取代直接 cross-backend output comparison）
+
+```text
+P7-R2: Real Carrier Continuation Validation（优先）
+  目标：llama.cpp backend 真实保存和恢复 Execution State
+  流程：Create S₀ → save → destroy runtime → restore → continue
+  验证：Identity(lineage) / Position(N→N+δ) / Anchor(stable) /
+        Continuation(restore+extend, 非 cold start)
+
+P7-R3: Cross-backend Runtime Mapping（后续）
+  前提：P7-R2 成立
+  目标：Abstract Closure 作为 MLX 和 llama 之间的 mapping 层
+  验证：same future continuation property（非 output equality）
+```
+
+#### 研究方法论
+
+```text
+P5 教训：实验设计和目标不一致
+P7 教训：结论范围超过证据范围
+
+后者是正常收敛：提出抽象 → 验证 → 发现边界 → 收紧定义 → 再验证
+```
+
+#### Palace 决策
+
+```text
+不进入 Palace。
+理由：Palace 依赖 ES 是稳定抽象。
+当前：closure definition 稳定 ✓ / contract representation 部分验证 ✓
+     runtime portability 未完全验证 ✗
+→ 进入 Palace 会混合两个未分离的问题
+```
+
+Current state:
+
+```text
+P6 = FROZEN
+P7 contract-level = VALIDATED（措辞已收紧）
+P7-R2 real carrier = NEXT（待设计）
+P7-R3 cross-backend runtime = AFTER R2
+P8/P9 = PAUSED
+Blocker = P7-R2 design pending
+```
+
 ### P7 AUDIT STAGE 0 + STAGE 1 COMPLETE — CRITICAL FINDINGS — 2026-10-01
 
 #### Stage 0: Original P7 frozen
