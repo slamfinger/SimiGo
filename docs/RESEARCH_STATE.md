@@ -9997,6 +9997,39 @@ Next    = human 裁定是否开启 G-δR formalization gate（或其他方向）
 Blocker = human direction
 ```
 
+### G-δ CLOSED / CLOSURE REVISION ACCEPTED — RESEARCH CHAIN FROZEN — 2026-10-02
+
+human 确认冻结（G-δ 结果文档 §9）。本轮闭环关键=抽象层级修正：
+P7-1（不同 representation ⇒ 同一 semantic closure ⇒ 同一 invariant）
++ G-δ（独立表示需求随 representation 改变）⇒ Closure Revision。
+
+**常设区分（防再混合纪律，下次 gate 必须遵守）**：`P ∈ Derivable(A,
+R_llama)` 不得误写为 `P ∉ ES_semantic`——semantic 层与 representation
+层已明确区分。
+
+**证据边界（冻结）**：P7-1 bounded cross-backend support ✅；
+G-δ I/A/C necessity evidence ✅ + P semantic member retained
+（representational irreducibility carrier-dependent）✅；closure
+revision ACCEPTED ✅；minimality 未证明 ⛔；backend independence
+未证明 ⛔；universal/general ES theory 未证明 ⛔。
+
+**研究链冻结**：PHASE 1 MLX Runtime Evidence Consolidated → Candidate
+semantic closure {I,P,A,C} → P7-1 Bounded Cross-backend Support →
+G-δ Necessity/Derivability → Closure Revision ACCEPTED → **CURRENT
+GATE = G-δR formalization = PENDING**。
+
+**G-δR 保持 PENDING，不顺势启动**；若未来开启，第一义务=formalize
+semantic/representation 两层 closure 的关系，非实验堆叠。产品仓
+0 commit；Lab 69a8866=当前闭合基线。
+
+当前状态：
+
+```text
+Phase  = G-δ CLOSED / CLOSURE REVISION ACCEPTED（研究链冻结）
+Gate   = G-δR formalization = PENDING（不自动进入）
+Blocker = human direction
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

@@ -250,3 +250,51 @@ carrier-specific result。（P7-1 跨 backend + G-δ 连起来才暴露此层：
 - Claim F 维持 bounded cross-backend claim；Gδ-A 与 Gδ-C 的干净性
   （relation record 完全相同 ⇒ continuation 分叉；continuation
   provenance 无法由 I/P/A 构造）作为两层定义的证据锚点登记。
+
+---
+
+## 9. FREEZE — G-δ CLOSED / CLOSURE REVISION ACCEPTED — 2026-10-02
+
+human 确认冻结。本轮闭环的关键=**抽象层级本身被修正得更严谨**：
+P7-1（不同 backend-native representation ⇒ 同一 candidate semantic
+closure ⇒ 同一 continuation invariant）+ G-δ（同一 semantic relation
+的独立表示需求随 representation 改变）⇒ Closure Revision。
+
+**常设区分（防再混合纪律）**：
+
+> `P ∈ Derivable(A, R_llama)` **不得**误写为 `P ∉ ES_semantic`——
+> semantic 层与 representation 层已被明确区分，下一次 gate 不得把
+> 这两层重新混回。
+
+**证据边界（冻结清单）**：
+
+- P7-1：{I,P,A,C} 获得 bounded cross-backend experimental support ✅
+- G-δ：I necessity evidence ✅ / A necessity evidence ✅ /
+  C necessity evidence ✅ / P = semantic member retained；
+  representational irreducibility carrier-dependent ✅
+- Closure revision：ACCEPTED ✅
+- Minimality：**仍未证明** ⛔
+- Backend independence：**仍未证明** ⛔
+- Universal/general Execution State theory：**仍未证明** ⛔
+
+**研究链冻结**：
+
+```text
+PHASE 1
+  MLX Runtime Evidence Consolidated
+        ↓
+Candidate semantic closure {I,P,A,C}
+        ↓
+P7-1 Bounded Cross-backend Support
+        ↓
+G-δ Necessity / Derivability
+        ↓
+Closure Revision ACCEPTED
+        ↓
+CURRENT GATE = G-δR formalization = PENDING
+```
+
+**G-δR 保持 PENDING，不因 G-δ 结束顺势启动**。若未来开启，其第一
+义务=formalize semantic closure 与 representation closure 的关系，
+而非再做一轮 G-δ 式实验堆叠。产品仓 0 commit；Lab 69a8866=当前
+闭合基线。
