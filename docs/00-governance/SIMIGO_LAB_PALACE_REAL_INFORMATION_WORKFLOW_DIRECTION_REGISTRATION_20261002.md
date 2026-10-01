@@ -2,6 +2,11 @@
 
 日期：2026-10-02  
 状态：`DIRECTION REGISTERED / LIFECYCLE_STORAGE_PARKED / RIW_ENTRY_OPEN`  
+**SUPERSEDED（2026-10-02）：本登记的 RIW 入口已被 PALACE V2 方向取代**
+（`SIMIGO_LAB_PALACE_V2_DIRECTION_REGISTRATION_20261002.md`）——V2
+继承本文的 Lifecycle Storage PARKED 处置与方法纪律，但研究入口改为
+「成熟开源 Memory System 实验基座验证」（Buy/Borrow before Build），
+取代本文的 RIW 自建工作闭环入口。本文保留作方向演化记录。  
 Registration authority：explicit human direction ruling（本会话，逐字要点登记）  
 性质：方向登记——不定义 PALACE 对象模型、不命名 semantic fields、
 不选择任何实现路线

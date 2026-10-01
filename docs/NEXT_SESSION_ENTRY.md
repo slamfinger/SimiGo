@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`PALACE_DIRECTION_REPLANNED / LIFECYCLE_STORAGE_PARKED / RIW_ENTRY_OPEN`
+状态：`PALACE_V2_REGISTERED / G0_MEMORY_BACKEND_SURVEY_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -82,6 +82,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_DESIGN_FREEZE_REVIEW_20261002.md`
 39. 读方向变更登记（LIFECYCLE STORAGE PARKED / RIW ENTRY OPEN）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_REAL_INFORMATION_WORKFLOW_DIRECTION_REGISTRATION_20261002.md`
+   - ⚠️ 该登记 RIW 入口已被 V2 取代（工件保留作方向演化记录）
+40. 读 V2 方向登记（现行有效）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_DIRECTION_REGISTRATION_20261002.md`
 
 ## Current snapshot
 
@@ -95,7 +98,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = DIRECTION REPLANNED（2026-10-02）：LIFECYCLE STORAGE 线 FROZEN / PARKED（证据保留、Gate① 永不再推进直至真实应用证明需要 durable identity）；新主线 = Real Personal Information Workflow（工程闭环：真实文档目录 → 读取/定位/比较/综合/生成/追溯；暂名非「知识库」；实现路线全部不承诺）——下一门 = RIW opening draft → human 审查
+PALACE = V2 ACTIVE（2026-10-02，取代 RIW 入口）：Buy/Borrow before Build——G0 开源 Memory Backend Survey（MemPalace 源码级审计 + Mem0/Graphiti 对照，Capability Matrix 15 项）→ G1 Real Corpus（秦沈 500–3000 文件）→ G2 Cross-Document Work → G3 Durable Info/Provenance；只有 G2/G3 证据可产生 PALACE 新抽象；E6 Update/Drift 若重现 identity/version/lineage ⇒ 激活 V1 Lifecycle Storage；V1 = PARKED 不变；下一门 = G0 审计协议草案 → human 审查
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -350,14 +353,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：起草 PALACE-RIW opening draft（participant
-   proposal）——以真实文档目录（秦沈 6标/7标 层级例）为第一实验对象
-   的工作闭环设计：发现/读取/理解结构/保留原始路径与文件名/内容可
-   检索 → 跨文档比较 → 综合 → 生成新成果 → 溯源。工程观察假设
-   （路径不是单纯 storage metadata）登记在案待真实使用验证。
-   禁止：对象模型定义 / semantic fields 命名 / chunk/embedding/
-   vector DB/RAG/KG/schema 承诺 / 文档复制入库 / Lifecycle Storage
-   扩展（已 PARKED，证据保留）。draft → human 审查 → registration。
+1. 下一会话第一动作：起草 **G0 审计协议草案**（PALACE V2 第一 gate：
+   Open-Source Memory Backend Survey）——MemPalace 源码级工程审计
+   设计（≠ 只看 README）：系统清单冻结（MemPalace 主对象 +
+   Mem0/Graphiti/其他对照）/ Capability Matrix 15 维度冻结 /
+   审计问题清单冻结（ingest 管线、原文保存、path 是否入记忆、DB
+   结构、检索、MCP、可复用面、场景失配）/ 证据格式。不写 PALACE
+   代码、不评「谁最好」、不提前设计 schema。draft → human 审查 →
+   执行审计 → G0 结论门（决定第一实验基座）。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、

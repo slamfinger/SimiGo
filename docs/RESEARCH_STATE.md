@@ -9536,6 +9536,59 @@ PALACE 新主线             = RIW ENTRY OPEN（下一门 = RIW opening
 Current blocker           = none
 ```
 
+
+### LAB PALACE V2 DIRECTION REGISTERED — RIW ENTRY SUPERSEDED — G0 NEXT — 2026-10-02
+
+Human PALACE 新研究方案 V2 全文登记（取代同日 RIW 方向登记——RIW
+工件标记 SUPERSEDED 保留；V1 Lifecycle Storage PARKED 处置不变）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_DIRECTION_REGISTRATION_20261002.md`。
+
+```text
+核心变化   = PALACE 从「验证成熟开源 Memory System 能否承载真实
+            个人工作信息」开始（Buy/Borrow before Build）；
+            第一候选 MemPalace，Mem0/Graphiti/其他对照
+研究场景    = 普通人长期数字工作空间（1k–50k+ 异构文件；
+            个人工作资料无统一管理层 = PALACE 研究价值）
+实验链      = 真实文件→发现→异构读取→Memory ingestion→原始信息
+            保留→检索→多文件联合阅读→比较→综合→生成→来源追踪
+            （PALACE = 信息工作的执行环境，非记忆数据库）
+四 Gate     = G0 开源 Backend Survey（采用什么现成基础设施）→
+            G1 Real Corpus Ingestion（500–3000 文件，秦沈目录，
+            不整 NAS 导入）→ G2 Cross-Document Work（能否帮完成
+            真实工作）→ G3 Durable Information / Provenance
+            （哪些信息关系必须持久化）；只有 G2/G3 工程证据
+            才有资格产生 PALACE 新抽象
+实验系列    = E0 Corpus Discovery（path 信息价值不预先规定）/
+            E1 异构阅读 / E2 跨文档检索 / E3 比较（不提前定义
+            Relation）/ E4 综合 / E5 Provenance（做不到 ⇒ 登记
+            Source Trace Failure，不发明 Provenance Object）/
+            E6 Update-Drift（此时才可能重新遇到 identity/version/
+            lineage/snapshot ⇒ 回头激活 V1）/ E7 端到端 Real
+            Work Loop
+Build vs    = 成熟开源已解决 → 采用；真实缺口 → 研究缺口；
+Adopt Gate  禁止「我觉得需要 → 设计 → 实现」
+关系分离    = SimiGo（Execution State，抽象已冻结 = 底层能力）
+            ⟂ PALACE（Information：retrieve/compare/synthesize/
+            trace）——PALACE 新问题 = Agent 在多年信息空间持续
+            工作需要什么信息能力
+G0 审计边界 = 源码级（≠ 只看 README）：ingest 管线/原文保存/
+            path 是否入记忆/DB 结构/检索/MCP/可复用面/场景失配；
+            产出 Capability Matrix（15 项）；不评最好，只答
+            「哪个系统最适合成为第一实验基座」
+```
+
+当前状态：
+
+```text
+PALACE V1（Lifecycle Storage）= PARKED（不变）
+PALACE V2                     = DIRECTION REGISTERED / G0 NEXT
+下一门                        = G0 审计协议草案（系统清单/矩阵维度/
+                                审计问题清单/证据格式冻结）→
+                                human 审查 → 执行审计 → G0 结论门
+Current blocker               = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
