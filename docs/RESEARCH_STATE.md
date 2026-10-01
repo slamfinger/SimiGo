@@ -9699,6 +9699,48 @@ G-δ CRITERIA FROZEN-OPEN / G-ε CLOSED
 Blocker    = human A/B 选择
 ```
 
+### PHASE-2 = ROUTE B DETERMINED — P7-0 MAPPING + INVARIANT CRITERIA FROZEN — 2026-10-01
+
+Human 裁定：**Phase-2 选择 B — Cross-backend Validation**（先选 A/B
+不同时做；不做 G-δ 实验；当前不执行实验、不改产品仓）。严格目标=
+验证 candidate {I,P,A,C} relation closure 能否脱离 MLX 在 llama.cpp
+上表达并保持同一 continuation invariant——填 Claim F 的 evidence
+gap，非重证 llama fork/restore、非 artifact portability。
+
+**P7-0 冻结文档交付**：
+`docs/00-governance/SIMIGO_LAB_P70_RELATION_BACKEND_MAPPING_20261001.md`。
+
+```text
+现状事实（P7-R2-A harness 本地对象恢复）= llama representation 是
+  token-ID 前缀数组（JSON checkpoint），KV 物化在 llama-server
+  请求内部；checkpoint 无 model identity 绑定；anchor=token 级
+  哈希（与 MLX transcript 级不同形同功能）；无 fork cell
+映射表（冻结）= I PARTIAL（model 绑定缺失=P7-0-M1 可补）/
+  P NATIVE/A EXPRESSED-DIFFERENT-FORM（fork cell 缺失=P7-0-M2
+  必补）/C NATIVE-IN-CONTRACT（KV 复用只遥测不判定）——
+  零关系 MISSING ⇒ 实验可设计
+INV-XB（冻结）= INV-I/INV-P/INV-A/INV-C 关系语义级不变量，
+  两 backend 同形式不同 token 输出；fork cell：child 在 fork 点
+  anchor == parent 在 N 的 anchor
+失败三分（冻结）= relation mapping failure ≠ backend implementation
+  failure ≠ closure/invariant failure（观测路由预注册；禁止互混）
+判读预注册 = SUCCESS⇒Claim F 升 bounded cross-backend claim
+  （措辞严格=「各以 backend-native representation 表达同一
+  candidate closure 并保持相同 continuation invariant」，禁止
+  「都通过⇒backend-independent」）；PARTIAL⇒NOT YET+缺口定位；
+  closure failure=OP-6-1 否定性回答=重大有效结果
+下一步 = Phase-2 harness 设计门（M1+M2 补齐设计）→ human 授权 →
+  执行 → R0 登记 → 判读
+```
+
+当前状态：
+
+```text
+Phase   = PHASE-2 ROUTE B ACTIVE（P7-0 冻结；实验未设计未执行）
+Next    = Phase-2 harness 设计门 → human 授权
+Blocker = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
