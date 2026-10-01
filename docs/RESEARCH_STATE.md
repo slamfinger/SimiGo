@@ -9292,6 +9292,75 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2 COLD-START BLOCKER DISCOVERED — 2026-10-01
+
+P7-R2 harness 执行发现 NativeMLX 冷启动路径系统性 CancellationError。
+
+#### 诊断
+
+```text
+Task.isCancelled = false       ← 外层 task 未取消
+Task.checkCancellation() = OK  ← 预检查通过
+native.generate() → CancellationError  ← 内部取消
+
+三种绕法均失败：
+  async test → cancelled
+  Task.detached → cancelled
+  expectation + Task {} → cancelled
+  重试 ×3 → 全部 cancelled
+```
+
+#### 根因分析
+
+```text
+MLX backend 有两条 generate 路径：
+
+  restored session path:
+    loadSessionCache → ChatSession 已有 KV state
+    → generate → reuse/extend → ✅ WORKS (P5-2-C uses this)
+
+  cold start path:
+    无 pre-existing session
+    → ChatSession 从零创建
+    → generate → ❌ CancellationError
+
+P5 系列全部走 restored path（先 loadSessionCache 再 generate）
+P7-R2 需要走 cold start path（从零生成新 state）
+→ cold start path 有系统性问题
+```
+
+#### 影响
+
+```text
+P7-R2 Phase A（Producer）需要从零生成 history
+但冷启动 generate 不可用
+→ Phase A 无法在 XCTest 环境中执行
+```
+
+#### Workaround 选项
+
+```text
+A. 使用 P5-2-C 已有的 checkpoint 作为 seed state
+   → 从 checkpoint 恢复 → 生成新 history → 再 checkpoint
+   → 这仍然测试 save/destroy/restore/continue
+   → 只是不从"完全零"开始
+
+B. 用非 XCTest 方式运行 Phase A（CLI 脚本）
+   → 需要 new target 或 command line tool
+
+C. 修复 NativeMLX cold start path
+   → 需要调查 mlx-swift 内部 task 取消机制
+   → 可能是 upstream bug
+```
+
+Current state:
+
+```text
+P7-R2 = BLOCKED by cold-start CancellationError
+Workaround = Option A recommended (seed from existing checkpoint)
+Blocker = human decision on workaround approach
+```
+
 ### P7-R2 DESIGN DIRECTION FROZEN — 2026-10-01
 
 Human direction：P7-R2 目标不是 cross-backend output comparison，
