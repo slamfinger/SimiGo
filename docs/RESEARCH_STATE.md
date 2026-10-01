@@ -9858,6 +9858,57 @@ Next    = human second layer 终判 → （可选）P7 线收尾或收束矩阵�
 Blocker = none
 ```
 
+### P7-1 HUMAN SECOND-LAYER ACCEPTED + G-δ DESIGN / PRE-REGISTRATION DELIVERED — 2026-10-01
+
+human 终验收（逐字登记）：
+
+- **P7-1 = 一次有效的、结果为阳性的 bounded cross-backend
+  validation**——五 cell 构成 Identity→Position→Anchor→Continuation→
+  Isolation 闭环证据；「第一次把 candidate relation closure 从单一
+  MLX runtime 推到另一个具有不同物理 representation 的真实执行
+  backend 并保持预注册 continuation invariant」。改变的是 **Claim F
+  的证据等级**，不是「backend-independent 理论结论」。
+- **Claim F 官方表述（采纳）**：「在当前实验条件下，Execution State
+  candidate relation closure {I,P,A,C} 已获得 MLX 与 llama.cpp 两个
+  backend 的实验支持；两者使用不同的 backend-native representation，
+  但均保持预注册的 continuation invariant。」（收束矩阵 F 行已更新）
+- **停止堆 P7-1 类实验**（第三个 backend 边际价值明显下降）；下一
+  阶段 = **G-δ Minimality Validation**；核心问题=「拿掉 I/P/A/C 中
+  任意一个，continuation invariant 是否仍能成立」。
+
+**G-δ Design / Pre-registration 交付**（判据/矩阵/失败路由/措辞全部
+冻结，零结论零执行）：
+`docs/00-governance/SIMIGO_LAB_GDELTA_DESIGN_PREREGISTRATION_20261001.md`。
+
+```text
+目标措辞（冻结）= 验证各关系必要性+检查可移除/可替代关系；
+  不证明数学绝对最小性；让实验决定 I/P/A/C 是否正确抽象
+核心纪律（human 逐字冻结）= relation removal ≠ field removal；
+  操作化=移除 record 中该关系的权威断言（carrier 保留）；
+  derivability space=剩余关系 record 字段（排除 carrier 检视与
+  全量重算）
+矩阵 = Gδ-FULL baseline + Gδ-I{P,A,C}/Gδ-P{I,A,C}/Gδ-A{I,P,C}/
+  Gδ-C{I,P,A}；载体=llama.cpp（P7-1 harness 家族）；每 cell 电池=
+  fork/restore/divergent continuation/parent non-pollution/replay
+各 cell 必要性签名 = Gδ-I 跨会话载荷互换不可检测/Gδ-P 进度落点
+  不可断言（预注册合法输出：full-prefix 锚可能 subsume P⇒载体
+  依赖性发现=修正级）/Gδ-A same-I-same-P-different-content 不可
+  分辨（PA-2 模式 llama 版）/Gδ-C 不变量断言不可构造（非崩溃测试）
+两层 = Layer 1 necessity → Layer 2 substitutability（条件触发，
+  变换空间先验枚举，无界搜索=INCONCLUSIVE）
+措辞升格上限 = 「candidate closure with experimentally supported
+  necessity of each relation」；minimality evidence 须 Layer 2 全过
+compensated ⇒ closure 修正门 = 重大有效结果，不得改判据保四关系
+```
+
+当前状态：
+
+```text
+Gate   = G-δ DESIGN FROZEN → EXECUTION AUTHORIZATION（human 单独授权）
+Next   = G-δ RUN → 机械判读 → second-layer review
+Blocker = human execution authorization
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
