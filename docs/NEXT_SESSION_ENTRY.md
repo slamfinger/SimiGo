@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`E6_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`E6_EXECUTED / V1_V5_OBSERVED / RESULT_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -123,6 +123,10 @@
    - ✅ human 验收：OQ-B PASS/CLOSED；OB-4 = HIGH-VALUE EVIDENCE（「工作记录与世界当前状态在最小漂移场景中出现独立性」登记）；RQ-OQB-1 ACCEPT
 54. 读 RQ-OQB-1 复测结果（Excel 原生编辑 = 1 cell 变化，噪声为 openpyxl 特有）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RQOQB1_NATIVE_EXCEL_RESULT_20261002.md`
+55. 读 E6 设计草案（FROZEN / EXECUTION AUTHORIZED）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_INFORMATION_VALIDITY_DESIGN_DRAFT_20261002.md`
+56. 读 E6 结果记录（V-1..V-5 + 金质性 V-5 案例）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_RESULT_20261002.md`
 
 ## Current snapshot
 
@@ -136,7 +140,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 G1 OQ-B 线完整收束：OQ-B PASS/CLOSED（OB-1..4 全 PASS，OB-4 = HIGH-VALUE：「工作记录与世界当前状态在最小漂移场景中出现独立性——L0 可恢复现实但不能恢复过去工作者观察到的状态」）；RQ-OQB-1 真机复测 ANSWERED：Excel 原生编辑 = 1 cell 变化（vs openpyxl 23）——22 噪声为 openpyxl 特有，非 Excel 工作流固有；精度感知 diff 必要性收窄为非原生工具路径前提；下一门 = E6 Design Entry（E6 问题 = 原始内容变化后 PALACE 如何知道当前工作所依据信息仍有效——低于版本管理一层抽象）；G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 E6 EXECUTED（信息有效性观察完成）：W1 工作依据集 D-rec-1..4（粒度自标）× 两次 Excel 原生漂移；V-2 变化可检测可定位（纯往返对照零污染）；V-3 依据可重定位；V-4 跨漂移部分失效区分 = True（D-rec-1 持续失效/D-rec-2 新失效/D-rec-3·4 有效）；V-5 两案例（① D-rec-3 登记截断缺陷误判世界变化——溯源证世界未变，处置 = corrections 登记不静默改写；② 全簿粒度失配 → 粒度拆分观察）；RQ-E6-1..3 生成——RESULT AT HUMAN；G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -391,13 +395,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：E6 设计草案已完成（信息有效性观察：
-   W1 工作会话建立依据集 D-rec-1..4 → DRIFT-1 改 F8 / DRIFT-2 改
-   汇总表 cell 两次独立漂移 → 逐条重进判定（仍有效/已失效/无法
-   判定）→ OB-V4 区分能力 + OB-V5 处置观察为核心）——等待 human
-   冻结审查；通过 + 执行授权后执行 → 结果门 → human 判读。
-   纪律：不称版本管理；不设计自动过期机制；L0 只读；禁止各
-   Schema；不修改 SimiGo 冻结契约；不写 PALACE 代码。
+1. 下一会话第一动作：E6 已执行并交付结果记录（V-2 变化可检测
+   可定位；V-3 依据可重定位；V-4 跨两次漂移部分失效区分 = True；
+   V-5 两案例：①D-rec-3 登记截断缺陷导致误判世界变化——溯源
+   证世界未变，处置 = corrections 登记不静默改写；②全簿粒度
+   失配——粒度拆分观察）——等待 human：E6 验收 + V-5 案例定性 +
+   下一步方向（G1 全面收束 / G2 设计入口 / 复测扩展）。
+   RQ-E6-1..3 已生成。纪律不变：L0 只读；不命名 lineage/relation/
+   provenance；禁止各 Schema；不写 PALACE 代码。
 
 继续区分：
 
