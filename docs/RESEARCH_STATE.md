@@ -9292,6 +9292,74 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2 DESIGN DIRECTION FROZEN — 2026-10-01
+
+Human direction：P7-R2 目标不是 cross-backend output comparison，
+而是每个 backend 独立的 save→destroy→restore→continue validation。
+
+#### P7-R2 核心命题
+
+```text
+∀ backend:
+  create(S₀) → generate → save → destroy → restore → continue(Δ)
+  → closure invariant 保持
+
+不是：MLX output == llama output
+而是：每个 backend 独立满足 continuation invariant
+```
+
+#### 实验矩阵
+
+Cell A (MLX runtime replication):
+```text
+create session → generate history → checkpoint
+→ destroy runtime → restore → continue
+检查：Identity 保持 / Position 增长 / Anchor 对齐 / Continuation 可继续
+```
+
+Cell B (llama.cpp runtime replication):
+```text
+create context → generate → persist state
+→ destroy process → restore → continue
+检查：同上四项
+```
+
+判据：
+```text
+∀ backend: restore(S) + Δ → valid continuation
+（不是 output identical）
+```
+
+#### 理论方向冻结
+
+```text
+ES 不是固定 struct，而是满足条件的映射：
+
+Abstract Closure
+  → mapping → Backend-specific representation
+
+MLX: {modelId, kvFingerprint, processedTokenCount, cachedTokens,
+      history anchor, continuation rule}
+llama: {executionId, token prefix, context position, continuation rule}
+
+两个不同实现都存在满足同一 continuation invariant 的关系闭包。
+```
+
+#### 路线确认
+
+```text
+P7-R2 → L2 重冻结 → Security → Palace
+Palace 前置条件：computation topology 完全坐实
+```
+
+Current state:
+
+```text
+P7-R2 = DIRECTION FROZEN / DESIGN PENDING
+P8/P9 = PAUSED
+Blocker = P7-R2 harness design（下一步）
+```
+
 ### P7 AUDIT REVIEW ACCEPTED — EVIDENCE HIERARCHY ESTABLISHED — 2026-10-01
 
 Human review of P7 audit findings：接受降级措辞。正向修正，非实验失败。
