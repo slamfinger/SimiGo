@@ -9554,6 +9554,49 @@ Gap ledger = G-α CLOSED / G-β EXECUTED（承载项过，终判 INCONCLUSIVE
 Blocker    = none
 ```
 
+### G-δ CRITERIA FROZEN + G-ε RECONCILED — 2026-10-01
+
+**G-δ（{I,P,A,C} 最小性）判据先行文档交付**：
+`docs/00-governance/SIMIGO_LAB_IPAC_MINIMALITY_CRITERIA_20261001.md`
+（零实验，判据冻结）。最小性分解为三个独立判据并合取：
+**M-1 不可消除性**（逐元素破坏+预注册失败签名，补偿即可分辨性）、
+**M-2 不可推导性**（新增未检验层；推导空间先验枚举冻结，「从
+transcript 全量重算」显式排除=放弃 State 非推导；无界搜索失败证明
+力为零⇒枚举不穷尽即 INCONCLUSIVE——D6 构造≠潜藏移植）、
+**M-3 无隐藏依赖**（环境 E 显式枚举+异常化探针）。已有证据映射：
+M-1 部分覆盖（P5-4 原跑，未复制）、M-2/M-3 零覆盖。封口三件套=
+判据（✅本文档）+复核实验（另设设计门，禁止以「已有实验能跑」反推
+设计）+结果登记。
+
+**G-ε（Token Ledger 数字核对）谱系闭合**：
+
+```text
+95/95  = I-L2 时点口径（07b210d，2026-09-27：产品单测电池含当时
+         6-case ledger 电池；真机 PASS=app-selftest-tl-gate.json
+         ——human 证据地图所引即此时点）
+100/100 = I-L3 收束口径（741da68 同日：ledger 电池 6→7→11 增
+          deliberate-mismatch 四件[每件经独立 backend stub 重钉]，
+          电池总数 95→100）＝官方现势数字（更晚、更大、真包含前者）
+另注   = E2 时代亦有 95/95（76 XCTest+19 contract-target 构成）——
+         不同 suite 的历史巧合口径，登记防混淆
+现势   = 产品仓工作树 131 个测试方法（后续无关套件继续增长；模型/
+         平台门控用例运行时跳过）
+裁决   = 两数字为同一电池谱系两个时点，非矛盾；现势引用一律写
+         100/100（I-L3 口径），95/95 标注为 I-L2 历史时点口径
+```
+
+当前状态：
+
+```text
+Gap ledger = G-α CLOSED / G-β EXECUTED（INCONCLUSIVE 归 human 终验收）
+             G-γ CLOSED / G-ζ CLOSED
+             G-δ 判据已冻结（实验设计门待 human）
+             G-ε RECONCILED（数字口径钉死）
+下一步     = human 四缺口终验收 → Claim→Evidence→Replication→Boundary
+             矩阵（正式收束矩阵，human 既定路线）
+Blocker    = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
