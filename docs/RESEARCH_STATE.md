@@ -9292,6 +9292,72 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-4 EXECUTED — Minimal Dependency Set Identified (L1) — 2026-10-01
+
+Harness: `Palace1P54MinimalReductionTests.swift` @ SimiGo `4ab180a` (public)
+Run: test passed 101.8s, runUUID `37897ADB-1D6F-45D1-A073-A08BC6195BF2`
+
+#### Verdict: Minimal_Dependency_Set_Identified_L1
+
+四项 closure relation 独立不可替代。无 containment/equivalence 发现。
+
+#### Key results
+
+```text
+Full (baseline):
+  output = "这个会话在查看桌面文件结构……项目部管理制度汇编内容。"
+  → 正确引用会话内容 ✓
+
+PA-2 (核心：same count, different content):
+  Position 保持（17 条消息，token count 匹配）
+  Anchor 破坏（内容替换为 placeholder）
+  output = "该会话此前由一系列占位符消息组成，旨在打破语义锚定
+           并保留令牌数量。"
+  → 模型描述了 PLACEHOLDER 内容，不是原始会话！
+
+  ★ 关键发现：模型的输出被 rendered prompt text（placeholder）
+    主导，而不是被 KV cache 中的原始语义主导。
+    KV cache 承载计算状态，但 rendered history text 决定语义上下文。
+
+PA-3 (truncated to 3):
+  output = 265 chars（结构化异常输出/code-comment 格式）
+  → Position 破坏后 continuation 严重退化
+
+PA-1 (empty history):
+  output = "该会话此前未进行任何对话……"
+  → 与 P5-1 一致
+
+IC (extreme reduction I+C only):
+  output = 同 PA-1
+  → P+A 不可冗余移除
+```
+
+#### PA-2 的架构含义
+
+```text
+Position（token count 对齐）≠ Semantic Anchor（内容-语义对应）
+
+证明：
+1. A ≠ P——二者是独立关系，不可合并
+2. KV cache 的计算状态不能替代 rendered history text 的语义锚定
+3. 模型"信任" rendered prompt text 超过 KV cache 中的隐含语义
+4. Execution State 不能只保存 KV tensors——必须同时保存
+   semantic anchor（或等价物）才能维持 continuation 的语义正确性
+```
+
+Current state:
+
+```text
+P4 = Common Base topology validated
+P5-1 = KV-only continuation rejected
+P5-2-C = Backend Dependency Closure validated
+P5-4 = Minimal Dependency Set Identified (L1)
+       {I, P, A, C} 独立不可替代
+三层 = Palace(knowledge) / ES(computation) / Security(boundary)
+Next = human review → Palace Mapping / Security / P6 synthesis
+Current blocker = human second-layer review
+```
+
 ### P5-2-C HUMAN REVIEW — INTERPRETATION TIGHTENED — 2026-10-01
 
 Human review of P5-2-C result：
