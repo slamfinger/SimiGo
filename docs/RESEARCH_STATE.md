@@ -14612,3 +14612,51 @@ PALACE_V2_RQG3_2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
     RQ-G3-3 处置）
 Current blocker = none
 ```
+
+### LAB PALACE V2 RQ-G3-2 EXECUTED — DUAL-AXIS SPLIT EMPIRICALLY DEMONSTRATED — CROWN FINDINGS — 2026-10-02
+
+Human RQ-G3-2 冻结 PASS / EXECUTION AUTHORIZED（附加纪律：四档真
+隔离——执行者已知后续历史的污染显式声明；四档 = 在哪/得出什么/
+具体发现/实际做了四问而非压缩率实验；不为证明 Tier-4 倾向
+Tier-4；γ 最值得关注；执行后不急开新实验）。
+
+RQ-G3-2 执行完成（四档物理隔离包 + L0 公共副本 16 文件；逐档只读
+该档 + L0；证据 rqg32-tier-results.json）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`。
+
+```text
+四问矩阵（α/β/γ/重做量）：
+  Tier-1 当前位置：α 方向可起步但执行须全量重扫（16 文件命中 0）；
+      β/γ 不可审查（记录缺失）；重做 = 全量
+  Tier-2 结论摘要：α 可继续且防盲目乐观（S1 数字 + S8 明示未
+      闭合）；β/γ 不可审查（无 D-rec-3/无排除记录）；判断重做
+      部分免除
+  Tier-3 结构化：β 可审查（corrections 使 V-5 缺陷史可审 + 记录
+      现值与 L0 一致）但 α 含错误答案风险——【Crown Finding ①】
+      机械标签「已映射(万换算)」= 量级错配假候选（附表5!E1077
+      = 313,000 元 被当作 313,356万，差 10,000 倍；脚本单位盲
+      容差扫描伪影）——盲信则 α 误定位；按冻结口径复核 = 未
+      映射（与 Tier-2 一致）；corrections 登记不静默改写
+      （80ca238）
+  Tier-4 原样记录：α 不确定性保真（未映射 + 阻碍分类 narrative +
+      RQ-G2-2 在档）；β 可审查（V-5 全案例 + 噪声发现交叉核对）
+【Crown Finding ②】γ 全档缺失形态：E-X1 排除判断在所有四档均未
+      作为独立判断持久化（Tier-4 选族文档仅目录观察级提及族 D
+      成员；0308 甚至未被命名）——γ 失败非「粒度不够细」而是
+      「排除判断从未被持久记录」（缺失形态非粒度形态）；
+      G3-1 撤销裁定（停止点后）才首次显式化
+双轴分离实证 = 恢复能力与判断可审查性不随档位共变：Tier-2 α 可
+    继续但 β/γ 不可审；Tier-3 β 可审但 α 含错误答案风险；
+    Tier-4 全保真——双轴设计必要性获跨档实证
+RQ-G3-3 前瞻材料登记（停止点越早重做越近全链，曲线形态留待后续）
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_2 = EXECUTED / RESULT AT HUMAN
+待裁定 = 四问矩阵验收 + crown findings 定性 + G3 主线收束判定
+        + RQ-G3-3 处置 + 下一方向
+Current blocker = none
+```

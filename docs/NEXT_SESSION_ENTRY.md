@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`RQG3_2_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`RQG3_2_EXECUTED / DUAL_AXIS_SPLIT_DEMONSTRATED / RESULT_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -161,6 +161,9 @@
    - ✅ human 确认：RQ-G3-2 设计起草（双轴；不比格式优劣；测可恢复·可质询·可修正；两故障锚点；不预设原样为最终答案）
 67. 读 RQ-G3-2 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_DESIGN_DRAFT_20261002.md`
+   - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（四档真隔离；非压缩率实验；不倾向 Tier-4；γ 最值得关注）
+68. 读 RQ-G3-2 结果记录（四问矩阵 + 双轴分离实证 + crown findings）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`
 
 ## Current snapshot
 
@@ -429,14 +432,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：RQ-G3-2 设计草案已完成（记录谱系四档
-   机械派生 + 重进任务 α/β/γ + 四问计量 + 重做量对照）——等待
-   human 冻结审查；通过 + 执行授权后四档构建 → 逐档重进 →
-   结果门（四问矩阵 + 重做量对照）→ human 判读（含 G3 主线
-   收束判定与 RQ-G3-3 处置）。禁止：Provenance Schema/Information
-   Object/Relation/Version/Lineage 定义 / 数据库/PALACE State
-   设计 / 记录层级变产品 API / 原样记录预设最终答案 / L0 写入 /
-   性能基准 / Corpus 扩容 / Gate① 复活；不写 PALACE 代码。
+1. 下一会话第一动作：RQ-G3-2 已执行并交付（四问矩阵：Tier-1
+   方向可起步但全量重扫；Tier-2 α 可继续防盲目乐观但 β/γ 不可
+   审；Tier-3 β 可审 + Crown Finding ① 机械标签量级错配假候选
+   10,000×（corrections 已登记 80ca238）盲信则 α 误定位；
+   Tier-4 全保真；Crown Finding ② γ 全档缺失形态——排除判断
+   从未持久入档；双轴分离实证）——等待 human：四问矩阵验收 +
+   crown findings 定性 + G3 主线收束判定 + RQ-G3-3 处置 + 下一
+   方向。纪律不变：L0 只读；禁止各 Schema；不写 PALACE 代码。
 
 继续区分：
 
