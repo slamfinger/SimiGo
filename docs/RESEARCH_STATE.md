@@ -9292,6 +9292,44 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-3 DESIGN GATE ISSUED — DUAL-TRACK — 2026-10-01
+
+Artifact：`SIMIGO_LAB_P5_3_DESIGN_GATE_20261001.md`
+
+Track A: Palace Relation Closure Mapping
+```text
+共享抽象假设: Relation Closure（nodes + relations + transitions）
+三层模型: Immutable Evidence → Relation Graph → Execution Reference
+核心张力: transactional（ES）vs eventual（Palace）一致性
+Open: OP-PA-1..4
+```
+
+Track B: Execution State Security Boundary
+```text
+安全模型转变: data access control → execution authority control
+四维权限: Ownership / Transfer / Revocation / Audit
+安全不变量:
+  INV-S1 possession≠capability: NOT SATISFIED（无 credential gate）
+  INV-S2 authority∉state: SATISFIED（runtime 独立管理工具权限）
+  INV-S3 consent for transfer: NOT SATISFIED
+  INV-S4 revocation≠deletion: NOT SATISFIED
+Open: OP-SB-1..4
+```
+
+三层架构候选：
+```text
+Knowledge Topology（Palace Layer 1-2）
+  → Computation Topology（Execution State closure）
+    → Authority Boundary（Security invariant model）
+```
+
+Current state：
+
+```text
+P5-3 = DESIGN GATE ISSUED / AWAITING HUMAN REVIEW
+Blocker = human review（Palace 主线确认 + Security 升级确认）
+```
+
 ### P5-2-ER COMPLETE — PASS-WITH-REVISIONS — 2026-10-01
 
 Three reviewer outputs + self-review integration complete.
