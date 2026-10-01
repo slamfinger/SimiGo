@@ -447,7 +447,8 @@ Residency policy
 
 `README.md` 回答：**SimiGo 现在是什么、已经证明了什么、当前边界在哪里、下一步研究什么。**
 
-`README_base.md` 回答：**哪些架构原则应该长期保持不变。**
+`docs/history/CORE_ARCHITECTURE_BASELINE_V5_20260912.md` 回答历史 v5
+架构原则；它已被当前 Execution State 定位取代。
 
 ## 12. 当前研究路线
 
