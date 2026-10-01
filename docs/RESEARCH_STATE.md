@@ -9597,6 +9597,64 @@ Gap ledger = G-α CLOSED / G-β EXECUTED（INCONCLUSIVE 归 human 终验收）
 Blocker    = none
 ```
 
+### FOUR-GAP SEQUENCE HUMAN ACCEPTANCE + GATE STATE CORRECTED + CLOSURE MATRIX DELIVERED — 2026-10-01
+
+Human 终验收（逐条登记）与门位修正：
+
+- **G-α 正式 CLOSED**（接受 9202142）。F-3 定性=仪器本身有效性审计
+  （非给原结论打补丁）；**F-5 永久保留在历史解释**：「P4 J4 不能再
+  表述为顺序置换独立性已验证；原 P4 实际验证的是跨进程重复确定性；
+  真正的顺序置换在 G-β/S3 首次获得」。终态公式=mechanical PASS +
+  second-layer audit PASS + instrument correction F-3 + protocol
+  correction F-5 ⇒ G-α CLOSED / NO-MISREADING。
+- **G-β = EXECUTED / INCONCLUSIVE（不接受写成 PASS）**。三层纪律
+  保持：scientific carrier items = PASS / mechanical overall = FAIL /
+  registered adjudication = INCONCLUSIVE。**S3 = INCONCLUSIVE 的
+  原因是 J5 isolation witness，非 J1–J4/J6 carrier failure**——F-6
+  把「实验结果 vs 实验仪器/判读逻辑」明确分开，这比简单 PASS 更有
+  价值。S3 新实证（首次在第二架构族上验证真 A/B 顺序置换下跨独立
+  进程逐字恒等）可进 Evidence Matrix，**必须注明：P4 原 J4 不承担
+  该证据，S3 才承担**。
+- **G-δ = CRITERIA FROZEN / OPEN（NOT CLOSED / NO EXPERIMENT YET）**。
+  M-1 partial / M-2 zero / M-3 zero；「全量重算不能偷偷作为推出
+  State 的方式」被确认为关键一刀（否则实验滑回保存全部历史→重算→
+  同结果=绕开 ES 而非检验 ES）。**G-δ 暂时不跑。**
+- **G-ε 正式 CLOSED / RECONCILED**：95/95=I-L2 historical
+  checkpoint；100/100=I-L3 current official；131 methods=current
+  battery size（不等于 ledger gate count）。**以后「95/95」禁止裸
+  写，必须带时间/电池口径。**
+- **门位修正（不写「四缺口全部 CLOSED」）**：
+
+```text
+G-α  CLOSED
+G-β  EXECUTED / INCONCLUSIVE
+G-γ  CLOSED
+G-ζ  CLOSED
+G-δ  CRITERIA FROZEN / OPEN
+G-ε  CLOSED
+```
+
+- **下一步 = Claim→Evidence→Replication→Boundary 收束矩阵**（非
+  普通总结；做完矩阵**不自动进入 G-δ 实验**；先看矩阵能否回答
+  「我们现在究竟已经能够对 ES 说到哪一句为止」，钉死边界后才裁定
+  G-δ 是否值得继续）。
+
+**收束矩阵已交付**：
+`docs/00-governance/SIMIGO_LAB_ES_CLOSURE_MATRIX_20261001.md`
+（六行 Claim A–F 逐句钉证据；含 S3 证据归属注记；§4 收束句=
+已能说到/尚不能越过的线；§5 = G-δ 两条合法路径供裁定，零自动
+执行）。
+
+当前状态：
+
+```text
+Phase      = CLOSURE MATRIX DELIVERED / AWAITING HUMAN READING
+G-α CLOSED / G-β EXECUTED-INCONCLUSIVE / G-γ CLOSED / G-ζ CLOSED
+G-δ CRITERIA FROZEN-OPEN / G-ε CLOSED
+Next       = human 阅读收束矩阵 → 裁定「能说到哪一句」+ G-δ 去留
+Blocker    = none（零自动执行）
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
