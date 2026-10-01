@@ -9953,6 +9953,50 @@ Phase   = G-δ EXECUTED / CLOSURE REVISION GATE（human）
 Blocker = human 对 P 地位的裁定
 ```
 
+### CLOSURE REVISION GATE RULED — SEMANTIC CLOSURE RETAINED, REPRESENTATIONAL MINIMALITY REVISED — 2026-10-02
+
+human 对 G-δ 的 closure revision 裁定（逐字登记于
+`SIMIGO_LAB_GDELTA_EXECUTION_RESULTS_20261001.md` §8 与判据文档 §8；
+执行证据基线 = Lab 659ebf8）：
+
+- **科学裁定 = `ACCEPTED — SEMANTIC CLOSURE RETAINED,
+  REPRESENTATIONAL MINIMALITY REVISED`**：选 (a) 带关键限定——P
+  保留为 ES 语义关系，标记 **carrier-dependent irreducibility**；
+  不再把「P 在所有 representation 中不可补偿」作为其必要性条件。
+- **正式科学结论（英文逐字）**：「G-δ establishes necessity evidence
+  for I, A, and C under the tested conditions. P remains a semantic
+  member of the candidate closure, but its independent representational
+  necessity is carrier-dependent: it is compensated by A in the tested
+  full-prefix anchor representation, while prior MLX evidence indicates
+  that P is not derivable from A in the tested KV representation.」
+  禁止升格：不得说 {I,P,A,C} minimal 已证；不得说 {I,A,C} 取代
+  {I,P,A,C}。
+- **为什么不选 (b)**：两个方向相反的实证只证明「P 不是 record 层
+  universally irreducible」，未证明「P 只是 carrier metadata」；用
+  单载体可推导性修改跨载体语义模型违背 G-δ「让实验决定抽象」纪律。
+- **两层 closure 定义（修正核心）**：ES_semantic={I,P,A,C}（语义
+  必要性层）+ ES_representation(R)（表示必要性层）——干净表达：
+  llama full-prefix：P ∈ Derivable(A, R_llama)；MLX KV：P ∉
+  Derivable(A, R_MLX) [S1]。
+- **方法论产出**：G-δ 隐含假设修正——**独立性不是纯关系属性，而是
+  (relation, representation) 属性**；后续协议=remove relation →
+  remaining relations + representation-specific invariants 能否
+  derive → carrier-specific result。
+- **已裁定**：①P 保留 semantic relation ②增加 representation-
+  dependent derivability 层 ③minimality 定义改为两层 ⑤不继续堆
+  llama necessity cell。**待决**：④是否开启 G-δR / closure-revision
+  formalization gate。
+- 收束矩阵 C 行已按两层定义更新；Claim F 维持 bounded claim。
+
+当前状态：
+
+```text
+Phase   = G-δ CLOSED（closure revision ACCEPTED）
+Closure = ES_semantic={I,P,A,C} + ES_representation(R) 两层定义
+Next    = human 裁定是否开启 G-δR formalization gate（或其他方向）
+Blocker = human direction
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

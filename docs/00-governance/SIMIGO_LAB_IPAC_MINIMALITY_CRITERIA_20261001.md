@@ -109,3 +109,35 @@ C 最小（相对环境 E） ⟺ M-1 ∧ M-2 ∧ M-3
 
 **判据冻结（本文档）+ 对应复核实验 + 结果登记** 三件齐 = G-δ 封口。
 本文档交付第一件；后两件待 human 授权实验设计门。
+
+---
+
+## 8. CLOSURE REVISION（human 裁定登记，2026-10-02）
+
+G-δ 执行结果（COMPENSATED on P @ full-prefix 锚载体 + MLX S1 反向
+证据）触发本判据文档的首次修正。**M-1/M-2/M-3 框架保留，但其判定
+对象从纯关系层修订为两层**（human 裁定「ACCEPTED — SEMANTIC CLOSURE
+RETAINED, REPRESENTATIONAL MINIMALITY REVISED」）：
+
+```text
+Semantic Closure
+  ES_semantic = { I, P, A, C }
+  ——「未来计算需要保持哪些关系」（语义必要性层）
+
+Representation Closure
+  ES_representation(R)
+  ——在具体 representation R 中，哪些语义关系需独立编码、
+    哪些可由 Derivable(other relations, R) 推出
+    （表示必要性层；irreducibility 是 (relation, representation)
+     属性，非纯关系属性）
+```
+
+- M-1/M-2 的 necessity/substitutability 输出自此标注为
+  **carrier-specific result**；
+- 已有输出重标：I·A·C = necessity evidence（tested conditions）；
+  P = semantic member retained，independent representational
+  necessity carrier-dependent（llama full-prefix：P ∈ Derivable(A,
+  R_llama)；MLX KV：P ∉ Derivable(A, R_MLX) [S1]）；
+- 「minimal 已证」仍为非法措辞；两层全过才可谈 minimality evidence；
+- 正式化（G-δR / closure-revision formalization gate）待 human 决定
+  是否开启。

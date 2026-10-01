@@ -157,3 +157,96 @@ pass-1 原始工件覆写教训已登记。
 - **未来 llama.cpp 实验运行规范**：①启动必加 `-c 8192` 限 KV；
   ②可选 `--n-gpu-layers` 调节 GPU 压力（换速度）；③**跑完即关
   server**，不得留驻后台。
+
+---
+
+## 8. CLOSURE REVISION GATE — HUMAN RULING — ACCEPTED — 2026-10-02
+
+**科学裁定原文：`ACCEPTED — SEMANTIC CLOSURE RETAINED, REPRESENTATIONAL
+MINIMALITY REVISED`**（机械判读 CLOSURE_REVISION_REQUIRED 之上的正式
+裁定；Lab 659ebf8 = 本次 closure revision 的执行证据基线）。
+
+### 8.1 裁定内容：选 (a) 带关键限定
+
+P **保留为 Execution State 的语义关系**；不再把「P 在所有
+representation 中都不可由其他关系补偿」作为其必要性条件。
+
+| 关系 | G-δ 结果 | 裁定 |
+|---|---|---|
+| I | NECESSITY_EVIDENCE | 保留 |
+| P | COMPENSATED | **保留为语义关系，标记 carrier-dependent irreducibility** |
+| A | NECESSITY_EVIDENCE | 保留 |
+| C | NECESSITY_EVIDENCE | 保留 |
+
+### 8.2 正式科学结论（human 原文，英文逐字）
+
+> **G-δ establishes necessity evidence for I, A, and C under the
+> tested conditions. P remains a semantic member of the candidate
+> closure, but its independent representational necessity is
+> carrier-dependent: it is compensated by A in the tested full-prefix
+> anchor representation, while prior MLX evidence indicates that P is
+> not derivable from A in the tested KV representation.**
+
+中文：G-δ 在当前实验条件下为 I、A、C 获得了 necessity evidence。P
+继续保留在 candidate semantic closure 中，但其独立表示必要性呈现
+载体依赖：在本次 full-prefix anchor 载体上，P 可由 A 补偿；而既有
+MLX KV 证据表明 P 不能由 A 推导。
+
+**禁止升格**：不得说 {I,P,A,C} 已被证明 minimal；不得说 {I,A,C} 已
+取代 {I,P,A,C}。
+
+### 8.3 为什么不选 (b)（human 论证，登记）
+
+两个方向相反的实证（llama full-prefix anchor：A 可检测 prefix
+truncation；MLX KV：31712 ≠ 可渲染数）证明的是「**P 不是 record 层
+universally irreducible**」，还没证明「**P 只是 representation-
+specific carrier metadata**」——后者过强。若现在把 P 从 closure 降级，
+是用一次载体上的可推导性去修改跨载体的语义模型——违背 G-δ 原本
+「让实验决定抽象」的纪律。
+
+### 8.4 两层 closure 定义（本次修正的核心）
+
+```text
+Semantic Closure
+  ES_semantic = { I, P, A, C }
+  描述「未来计算需要保持哪些关系」
+
+Representation Closure
+  ES_representation(R)
+  描述在具体 representation R 中，哪些语义关系需要独立编码，
+  哪些可由其他关系 + representation invariant 推导
+
+干净表达：
+  llama full-prefix representation:
+      P ∈ Closure_semantic
+      P ∈ Derivable(A, R_llama)
+  MLX KV representation:
+      P ∈ Closure_semantic
+      P ∉ Derivable(A, R_MLX)   [based on S1 evidence]
+```
+
+### 8.5 方法论产出（G-δ 隐含假设的修正）
+
+G-δ 原隐含假设：「若某关系能在某 carrier 上被另一关系推出⇒它可能
+非 closure 独立关系」。实验修正为：
+
+> **独立性不是纯关系属性，而可能是 (relation, representation) 的
+> 属性。**
+
+后续协议相应改为：remove P → remaining relations +
+representation-specific invariants 能否 derive P？→ YES/NO →
+carrier-specific result。（P7-1 跨 backend + G-δ 连起来才暴露此层：
+前者证不同 native representation 可表达同一 invariant，后者证同一
+语义关系的独立编码需求随 representation 改变。）
+
+### 8.6 已裁定与待决
+
+- **已裁定**：①P 保留为 semantic relation；②增加 representation-
+  dependent derivability 层；③minimality 定义从单纯 relation-level
+  改为 semantic closure + representation-specific irreducibility。
+- **待决**：④是否需要 **G-δR / closure-revision formalization
+  gate**（判据文档的两层定义正式化与否）。
+- **已裁定（路线）**：⑤不继续堆重复的 llama necessity cell。
+- Claim F 维持 bounded cross-backend claim；Gδ-A 与 Gδ-C 的干净性
+  （relation record 完全相同 ⇒ continuation 分叉；continuation
+  provenance 无法由 I/P/A 构造）作为两层定义的证据锚点登记。
