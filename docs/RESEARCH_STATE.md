@@ -9292,6 +9292,39 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2-C rev.2 AUTHORIZED — Backend Dependency Closure Validation — 2026-10-01
+
+Human authorization：`执行 rev.2，实验名称固定为
+"Backend Dependency Closure Validation"，不使用 "Minimal Closure Proof"。`
+
+Authorization conditions:
+```text
+1. Full arm 必须定义为"正确 continuation"（完整 closure + Δ → Y），
+   不只是 load + generate
+2. -Position 结果解释保持 CLOSURE_ABLATED（关系破坏 → contract
+   不满足），不过度归因到单一原因
+3. -Anchor 引用 P5-1 已有证据，不重复执行
+4. NO_EFFECT 必须保留——"删掉所谓必要关系但仍然成功"是有价值的
+   修正信号
+5. 三种可能结果：
+   A. 全部必要 → MLX backend dependency closure validated
+   B. 某项无影响 → 从闭包移除（更好的研究结果）
+   C. 多种组合均可 → 闭包是关系网络而非线性列表
+```
+
+核心研究问题（rev.2 最终表述）：
+
+> 验证 Dependency Closure 中各关系项对于当前 backend continuation
+> contract 的必要性。
+
+Current state:
+
+```text
+P5-2-C = AUTHORIZED / READY TO EXECUTE
+实验名称 = Backend Dependency Closure Validation
+阻塞 = none
+```
+
 ### P5-3 DESIGN GATE HUMAN REVIEW — DUAL-TRACK DEFERRED — 2026-10-01
 
 Human review of `56f7a9e`：
