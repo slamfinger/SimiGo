@@ -9680,6 +9680,47 @@ G0 MEMPALACE = INTERMEDIATE OBSERVATION #1 DELIVERED
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G0 MEMPALACE RUNTIME OBSERVATION ② DELIVERED — RQ-1/RQ-3/RQ-7 ANSWERED — 2026-10-02
+
+Human 批准 Runtime Audit（新增 RQ-7 Source Trace Depth）。隔离沙箱实测
+（HOME 重定向 + PyPI mempalace[extract] + all-MiniLM-L6-v2 本地模型；
+四格式 fixture 含双 Sheet+公式 xlsx）。第二份中间观察：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_RUNTIME_
+OBSERVATION_20261002.md`。
+
+```text
+RQ-1 xlsx（Observation）= Sheet 名保留为 Markdown 标题；Cell 坐标
+    丢失、公式（=C17*1000 及跨 Sheet 引用）缺席、15 个空行以 NaN
+    噪声进入语料、列语义错位（物资名称/钢筋落错列）——协议 §6
+    压平风险运行时坐实
+RQ-7 溯源粒度          = docx 段落级 / pptx Slide 级（页标记注释
+    保留）/ pdf 页级 / xlsx 仅 Sheet 级；search 输出 provenance =
+    wing/hall/文件名 + 双通道分数；metadata 17 键实测（line 区间
+    指向 Markdown 表示层非原件坐标）；⚠️ CJK PDF fixture 缺陷
+    （Helvetica 无字形）→ 该项两说均不成立待复测
+RQ-3 确定性            = 重 mine mtime 跳过（extracted 0/skipped 4/
+    drawers 稳定 4）；id_recipe 暗示确定性 ID
+删库恢复（协议 §5）    = 实测删除 palace 目录后重 mine 完整重建
+    ——MemPalace 侧无不可由 L0 重建的事实；L2 = 预计算加速非
+    语义增量（Inference：E6 若暴露非纯函数点则前提动摇）
+Capability 修正        = 「原文保存」修正为「L1 转换文本 verbatim」
+    （verbatim 指不摘要不改写，非字节级）；BM25 通道实测扛住
+    中文关键词（cosine 0.19 / bm25 0.783）
+新增 OQ                = OQ-A CJK PDF 复测 / OQ-B 变更文件新旧
+    版本语义（E6 前置）/ OQ-1 维持
+```
+
+当前状态：
+
+```text
+G0 MEMPALACE = AUDIT 主体完成（静态 + 运行时）；观察 ① ② 在档
+下一步        = Mem0 源码级审计 → Graphiti 源码级审计（各独立
+              中间观察）→ G0 结论门（AUDIT_RESULT 九节）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
