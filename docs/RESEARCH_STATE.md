@@ -9292,6 +9292,43 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7 CROSS-BACKEND VALIDATION DESIGN GATE — ISSUED — 2026-10-01
+
+Artifact：`SIMIGO_LAB_P7_CROSS_BACKEND_DESIGN_GATE_20261001.md`
+
+核心命题：同一个 ES Closure，能否映射到不同 backend carrier 并保持
+continuation 关系成立？
+
+Backend 选择：
+```text
+A = MLX (NativeMLX)
+B = llama.cpp server（候选——已有 LLAMAServerExecutionStateAdapter）
+```
+
+实验矩阵：
+```text
+Cell 1: Identity 跨 backend（model/config/execution 对应）
+Cell 2: Position 跨 backend（token offset 等价）
+Cell 3: Anchor 跨 backend（最关键——同一 history 产生等价 anchor）
+Cell 4: Continuation 跨 backend（语义等价的未来计算）
+```
+
+关键约束：
+```text
+不比性能，不测文件互操作，不选"更好"的 backend
+测试 closure 结构，不测试 carrier 格式
+Tokenizer 差异 → INCONCLUSIVE（carrier 层问题）
+```
+
+Open questions：OP-7-1..3
+
+Current state:
+
+```text
+P7 = DESIGN GATE ISSUED / AWAITING HUMAN AUTHORIZATION
+Current blocker = human review of design + backend B confirmation
+```
+
 ### P6 ARCHITECTURE SYNTHESIS — FROZEN — 2026-10-01
 
 Human review verdict：`FREEZE (Conceptual Boundary)`
