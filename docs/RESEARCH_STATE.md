@@ -9292,6 +9292,61 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-G0 HUMAN REVIEW — AUTHORIZED FOR HARNESS — 2026-10-01
+
+Human review of P7-G0 audit：授权进入 harness，附三项纪律冻结。
+
+#### 冻结纪律
+
+```text
+1. 不比较内部字段（modelId ≠ modelIdentity 的值等）
+2. 不要求 backend 数据结构一致（history[] ≠ token prefix）
+3. 不以单次输出一致作为 closure 证明
+```
+
+#### Identity 映射修正
+
+```text
+不测试字段相等。
+测试：是否存在足以保证同一计算 lineage 的 Identity relation。
+MLX: model semantics + execution lineage
+llama: model semantics + execution lineage
+验证：same abstract identity（不是 same field values）
+```
+
+#### Anchor 映射修正（最关键）
+
+```text
+不测试 token count 相同。
+测试：同一 semantic input → 不同 backend → 等价 continuation boundary。
+判据：A_MLX → mapping → A_llama 保持 future continuation point 不变。
+P5-4 已证 Position ≠ Anchor，不能因 token count 匹配就认为 anchor 成立。
+```
+
+#### 判定措辞（继承 P5 风格）
+
+```text
+Mapping Validated:  I ✓ P ✓ A ✓ C ✓
+Mapping Partial:    某项 partial（backend 支持 closure 但表达能力不同）
+Mapping Unavailable: 某关系无法建立任何对应
+```
+
+#### 措辞约束
+
+```text
+不是："llama.cpp 具有 Execution State"
+而是："llama.cpp adapter 当前存在表达 Abstract Closure 的候选路径"
+P7 证明 mapping exists，不是 backend already implements theory
+```
+
+Current state:
+
+```text
+P7-G0 = REVIEWED / AUTHORIZED FOR HARNESS
+三项纪律冻结
+阻塞 = none（可进入 harness 编写）
+```
+
 ### P7 OP-7-1..3 ANSWERED — CODE-LEVEL AUDIT — 2026-10-01
 
 代码级审查 `LLAMAServerExecutionStateAdapter.swift`（294 行）、
