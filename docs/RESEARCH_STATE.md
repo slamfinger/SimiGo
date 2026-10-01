@@ -10192,6 +10192,42 @@ Next   = human 接受修正条款+澄清 ⇒ freeze 执行 ⇒ v2.0 Contract 讨
 Blocker = human acceptance of G-LC1 + N-1..N-6
 ```
 
+### G-LC1 + N-1..N-6 ALL ACCEPTED — CONTRACT V1-AMENDED DELIVERED — CONSISTENCY REVIEW PASS — 2026-10-02
+
+human 裁定：G-LC1 ACCEPT（附关键约束=**save 是 representation/
+lifecycle transition，非 semantic closure mutation——不产生新语义
+关系，只固化当前 closure 为 durable representation**）+ N-1..N-6
+全 ACCEPT；无需返工实验、无需新增实验；边界保持=FREEZE-READY ≠
+final Freeze 完成。
+
+**四步收尾执行**：
+
+```text
+① 修订写入 = Execution State Contract v1.0-amended（freeze
+  candidate）交付：SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_
+  20261002.md——lifecycle 扩为七操作（create 补入/save/checkpoint
+  第七操作附约束/restore fail-closed 子句/eviction 归 release 族）/
+  N-1 INV-XB 内联（§4）/N-2 invariant→rule 映射义务（§3）/
+  N-5 方向性声明（§9）/N-6 版本钉定电池显式化（§8）/N-4 两份正式
+  Representation Declaration（附录 A: R_llama/附录 B: R_MLX，含
+  invariant→rule 映射表）
+② Freeze Gate 更新 = 修订 incorporated 记录
+③ 纯文本一致性复核 = PASS（七项：INV-XB 内联==P7-0 冻结文/Role
+  ==G-δR 附录 A/save 非 mutation 约束 vs ES-D1 formation 边界
+  相容[formation=同一 closure 转入 durable representation，非变异]/
+  P 条款 vs G-δR 成员判据相容/create vs Gδ form 力学/术语一致/
+  无新实质缺口）
+④ 出口 = 条件成熟进入 SimiGo v2.0 Contract / Public Architecture
+  Freeze（final freeze declaration 归 human）
+```
+
+当前状态：
+
+```text
+Gate   = CONSISTENCY REVIEW PASS → FINAL FREEZE DECLARATION 归 human
+Blocker = human final freeze declaration
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

@@ -111,3 +111,39 @@ G-LC1 修正条款 + N-1..N-6 澄清 = FREEZE CONDITIONS
 不触及任何已冻结实验终态；G-LC1 不构成对已通过电池的追溯无效
 （P7-1/G-δ 的 save 均真实发生并有 R0 工件，缺的是契约条款而非
 行为）。
+
+---
+
+## 修订 incorporated + 纯文本一致性复核（human 四步之 ①③，2026-10-02）
+
+**①修订已写入**：G-LC1（save/checkpoint 第七操作，附 human 约束
+「save=representation/lifecycle transition，非 semantic closure
+mutation——不产生新语义关系，只固化当前 closure 为 durable
+representation」）+ create 补入（human 图首操作）+ restore
+fail-closed 子句 + N-3 eviction 归 release 族 + N-1 INV-XB 内联
+（§4）+ N-2 invariant→rule 映射义务（§3）+ N-5 方向性声明（§9）+
+N-6 版本钉定电池显式化（§8）+ N-4 两份正式 Representation
+Declaration（附录 A/B）。修订全文 =
+`SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md`
+（v1.0-amended freeze candidate）。
+
+**③一致性复核（纯文本，PASS）**：
+
+```text
+1. §4 INV-XB 内联文本 == P7-0 §4 冻结定义        ✅ 逐条对齐
+2. §2 Role 语义 == G-δR 附录 A                    ✅ 逐字承袭
+3. save 非 mutation 约束 vs ES-D1 formation 边界  ✅ 相容：
+   formation=同一 closure 转入 durable representation（成为可复用），
+   非语义关系变异；两档表述分属 lifecycle 层与 formation 层
+4. §6 P 条款 vs G-δR §1.4 成员判据                ✅ 相容（P 经
+   R_MLX P-1/P-2 Required 保成员；P-2 于 R_llama 可补偿为表示层事实）
+5. create 补入 vs Gδ form 力学                    ✅（coordinator.create
+   在案）：
+6. 术语一致性（Execution State/semantic closure/representation
+   declaration）                                  ✅
+7. 新实质缺口                                     无
+```
+
+**Gate 出口状态**：一致性复核 PASS、无新增实质缺口 ⇒ 按 human 四步
+之 ④，条件成熟进入 **SimiGo v2.0 Contract / Public Architecture
+Freeze**（final freeze declaration 归 human）。
