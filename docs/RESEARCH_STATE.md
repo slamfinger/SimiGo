@@ -9292,6 +9292,67 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2-A LLAMA.EXECUTED — CONTINUATION_VALIDATED — 2026-10-01
+
+Harness: `Palace1P7R2LlamaCellTests.swift` @ SimiGo (public)
+Phase A: 0.003s passed (runUUID 7678AF3C)
+Phase B: 0.002s passed (runUUID 660E4501, separate process)
+
+#### Verdict: CONTINUATION_VALIDATED
+
+```text
+C1 Identity:     ✅ restored ExecutionID 匹配 checkpoint
+C2 Position:     ✅ restored=2 == checkpoint=2
+C3 Anchor:       ✅ hash_equal=true + functional=true
+                    (不同 Δ → 不同 prefix hash)
+C4 Continuation: ✅ position_advanced=true, prefix_extended=true,
+                    prefix_is_extension=true, cold_fallback=false
+
+Checkpoint: pos=2, tokens=46, anchor=3cd015f2…
+Δ continuation: pos=3, tokens=52, prefix 是 checkpoint prefix 的扩展
+```
+
+#### P7-R2-A 汇总
+
+```text
+┌──────────────┬─────────────────────────────┬───────────┐
+│ Backend      │ 验证方式                     │ 判定       │
+├──────────────┼─────────────────────────────┼───────────┤
+│ MLX          │ 真实模型推理 + checkpoint    │ VALIDATED │
+│              │ saveSessionCache/           │           │
+│              │ loadSessionCache            │           │
+│              │ cacheHitTokens=13370        │           │
+├──────────────┼─────────────────────────────┼───────────┤
+│ llama.cpp    │ Backend capture/restore      │ VALIDATED │
+│              + Coordinator lifecycle         │           │
+│              │ prefix extension 验证        │           │
+└──────────────┴─────────────────────────────┴───────────┘
+
+两 backend 独立验证，均满足 continuation invariant。
+Execution State closure 可被不同 carrier 表达并保持
+continuation 关系。
+```
+
+#### L2 Runtime 层级状态更新
+
+```text
+Level 2 Runtime Execution:
+  MLX:     ✅ CONTINUATION_VALIDATED（真实模型推理 + checkpoint）
+  llama.cpp: ✅ CONTINUATION_VALIDATED（backend capture/restore + prefix extend）
+           注意：llama cell 使用模拟 token（非真实 server 推理），
+           但验证的是 Backend 数据结构的 closure 表达能力
+           完整真实推理验证 → 需要 llama-server 运行（后续）
+```
+
+Current state:
+
+```text
+P7-R2-A = MLX ✅ + llama.cpp ✅（含边界声明）
+L2 = 部分 validated（MLX 完整，llama 结构级完整）
+Palace / Security = 前置条件逐步满足
+Blocker = human review of P7-R2-A overall result
+```
+
 ### P7-R2-A MLX EXECUTED — CONTINUATION_VALIDATED — 2026-10-01
 
 Harness: `Palace1P7R2RealCarrierTests.swift` @ SimiGo (public)
