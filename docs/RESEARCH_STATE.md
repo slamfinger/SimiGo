@@ -9331,6 +9331,49 @@ Next         = Day 2 P5-1 replication（每步完成后冻结）
 Blocker      = none
 ```
 
+### P5-1 REPLICATION EXECUTED — R0 FRAMEWORK — OVERALL INCONCLUSIVE（s2 PASS + s1 INCONCLUSIVE，含机制诊断）— 2026-10-01
+
+Human direction「继续」→ Day 2 = P5-1 replication（Anchor Failure
+Boundary）。结果文档：
+`docs/00-governance/SIMIGO_LAB_P51_REPLICATION_RESULTS_20261001.md`；
+产物+harness 归档：`docs/02-evidence/p51-replication-20261001/`。
+
+```text
+被复制命题 = P5-1 封存边界（anchor 对齐断裂→rebuild；KV cache 是
+             Representation fragment 非独立 continuation carrier）
+设计       = 双臂×4 cell；baseline 臂修复 attempt-1 registered 缺陷
+             （fullHistory+Δ，原只传 [probe]）；treatment=[Δ]（S₀,Δ 形态）
+             判读 C1-C5 预注册于执行前（C3 对照臂失败⇒INCONCLUSIVE 非
+             FAIL=attempt-1 教训机械化；C4 失败⇒FAIL 有效结果）
+执行       = 3 独立进程全 SUCCEEDED（S1 105.3s/S2 75.2s/Adjudicate
+             0.06s）；R0 六件套全 PASS；隔离计数+内容 SHA 双 witness
+机械判读   = overall INCONCLUSIVE：
+  s2 = PASS——边界干净复现：baseline cacheHit=1425/cacheEff 0.977-0.979
+       （KV 消费）；treatment cacheHit=0/cacheEff 0.0000（KV 被拒
+       rebuild）；Y≠Y′ 两格；treatment 从 probe 表面文本虚构上下文
+  s1 = INCONCLUSIVE——baseline 对照臂失效：S1 连完整历史也 rebuild
+       （cacheHit=0 ×2）。机制诊断（工件检查非新实验）：S1 KV=31712
+       positions（safetensors header 实测）vs meta.history 33,913 字符
+       （thinking/tool 体量不在 transcript）⇒ 对齐条件结构性不可满足
+新登记     = ①P5-2-0 依赖#3 样本级 sharpening：对齐条件是逐样本可满足
+             属性，S1 类样本不能作 cacheEff 对照臂 ②回溯推断（B 级
+             不入判定）：原 P4/P5-1 S1 臂大概率同在 rebuild 路径
+             ③边界命题获 s2 复现+s1 treatment 四格复现（cacheHit=0
+             ×5 格=Representation fragment 又一直接观测）；treatment
+             输出与原 P5 attempt 逐字同形（预期对照）
+```
+
+当前状态：
+
+```text
+Phase          = REPLICATION AUDIT PHASE-1（Day 1 R0 ✅ / P4 ✅ /
+                 Day 2 P5-1 = INCONCLUSIVE 冻结，含诊断）
+P5-1 replication = EXECUTED / INCONCLUSIVE / 待 human second layer
+Next           = Day 3 P5-2-C replication 是否按原计划推进 + S1 类样本
+                 处置 = 归 human 裁定（P5-2-C 复制设计将撞同一 S1 问题）
+Blocker        = human direction
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

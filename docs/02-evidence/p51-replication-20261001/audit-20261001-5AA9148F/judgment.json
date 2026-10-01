@@ -1,0 +1,51 @@
+{
+  "inputs" : {
+    "s1" : "audit-20261001-214A00FE",
+    "s2" : "audit-20261001-B4731BFB"
+  },
+  "overall" : "INCONCLUSIVE",
+  "registered_wording_fail" : "anchor-failure→rebuild 边界未复现（treatment 消费 KV）——有效结果，不得改判据重试",
+  "registered_wording_pass" : "anchor 对齐断裂→rebuild 边界复现：历史剥离（KV 完好）→ KV 被拒（cacheEff 0.00）；锚在位→KV 消费（cacheEff≈0.99）",
+  "s1" : {
+    "id1_tensor_sha" : "YES",
+    "isolation" : "PASS",
+    "s1-dA1_baseline_cacheEff" : "0.0000",
+    "s1-dA1_C1_surgery" : "PASS",
+    "s1-dA1_C2_authentic" : "PASS",
+    "s1-dA1_C3_baseline_control" : "INCONCLUSIVE",
+    "s1-dA1_C4_boundary_rebuild" : "PASS",
+    "s1-dA1_C5_divergence" : "PASS",
+    "s1-dA1_treatment_cacheEff" : "0.0000",
+    "s1-dB1_baseline_cacheEff" : "0.0000",
+    "s1-dB1_C1_surgery" : "PASS",
+    "s1-dB1_C2_authentic" : "PASS",
+    "s1-dB1_C3_baseline_control" : "INCONCLUSIVE",
+    "s1-dB1_C4_boundary_rebuild" : "PASS",
+    "s1-dB1_C5_divergence" : "PASS",
+    "s1-dB1_treatment_cacheEff" : "0.0000",
+    "surgery_changed_keys" : "OK",
+    "surgery_history" : "OK",
+    "verdict" : "INCONCLUSIVE"
+  },
+  "s2" : {
+    "id1_tensor_sha" : "YES",
+    "isolation" : "PASS",
+    "s2-dA1_baseline_cacheEff" : "0.9767",
+    "s2-dA1_C1_surgery" : "PASS",
+    "s2-dA1_C2_authentic" : "PASS",
+    "s2-dA1_C3_baseline_control" : "PASS",
+    "s2-dA1_C4_boundary_rebuild" : "PASS",
+    "s2-dA1_C5_divergence" : "PASS",
+    "s2-dA1_treatment_cacheEff" : "0.0000",
+    "s2-dB1_baseline_cacheEff" : "0.9787",
+    "s2-dB1_C1_surgery" : "PASS",
+    "s2-dB1_C2_authentic" : "PASS",
+    "s2-dB1_C3_baseline_control" : "PASS",
+    "s2-dB1_C4_boundary_rebuild" : "PASS",
+    "s2-dB1_C5_divergence" : "PASS",
+    "s2-dB1_treatment_cacheEff" : "0.0000",
+    "surgery_changed_keys" : "OK",
+    "surgery_history" : "OK",
+    "verdict" : "PASS"
+  }
+}
