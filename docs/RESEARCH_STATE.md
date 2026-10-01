@@ -9292,6 +9292,99 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7 AUDIT STAGE 0 + STAGE 1 COMPLETE — CRITICAL FINDINGS — 2026-10-01
+
+#### Stage 0: Original P7 frozen
+
+```text
+P7 harness commit: 36b67c9 (slamfinger/SimiGo main)
+P7 result file: /tmp/simigo-p7/p7-summary.json
+P7 result SHA256: 733794be48898c391a1a2f8d51a13eb79250f73d2932d3b9dad5510d93c2af8f
+llama adapter commit: 716de52 (Lab repo)
+MLX harness commit: f4803c8 (P5-2-C)
+```
+
+#### Stage 1: Backend isolation — CONFIRMED WITH CAVEATS
+
+**Import isolation：**
+```text
+MLX NativeMLX: imports MLX, MLXLMCommon, MLXLLM, Tokenizers
+llama adapter: imports Foundation, SimiGoRuntimeContract only
+→ 零 MLX framework 依赖 → 真正独立实现路径 ✓
+```
+
+**P7 test 实际执行的 backend 路径：**
+```text
+NativeMLX references:       0（未使用）
+MLX framework references:   0（未使用）
+LLAMAServerBackend:         3（直接使用）
+Real tokenizer references:  0（未使用）
+MLX coordinator references: 0（未使用）
+→ P7 测试仅执行了 llama.cpp backend 代码路径
+→ MLX evidence 来自 P5-2-C/P5-4 的引用，非重新执行
+```
+
+**Token generation：**
+```text
+P7 使用 fakeTokens()——SHA256 hash 生成确定性伪 token
+非真实 tokenizer 输出
+→ P7 验证的是 closure STRUCTURE（contract relations 正确工作）
+→ P7 未验证真实 tokenizer 行为
+```
+
+#### 审计结论
+
+```text
+P7 结论的适用范围需要收紧：
+
+✅ 已证明：
+   Contract 类型（ExecutionID/Position/Continuation/Handle）
+   + ExecutionContinuityCoordinator
+   + LLAMAServerExecutionStateBackend
+   可以正确表达 closure relations（结构完整性）
+
+⚠️ 未证明：
+   两个真实推理引擎在相同模型上产生等价结果
+   （需要真实模型推理 + 真实 tokenizer 的 cross-backend 运行）
+
+❌ 不能声称：
+   "MLX 和 llama.cpp 的实际推理结果等价"
+   P7 没有运行任何真实推理
+```
+
+#### 修订后的 P7 结论措辞
+
+```text
+旧措辞（过强）：
+  "Cross-backend Portability Validated L1"
+
+新措辞（准确）：
+  "Contract-level Closure Mapping Validated：
+   Execution State closure 的 contract 类型可以在
+   LLAMAServerExecutionStateBackend 中正确表达。
+   MLX 侧表达已在 P5-2-C/P5-4 中独立验证。
+   两 backend 共享 contract layer，backend 实现独立。
+   尚未验证：真实推理层面的 cross-backend 等价性。"
+```
+
+#### Stage 2-4 待执行项
+
+```text
+Stage 2: 需要真实模型推理的 cross-backend 对比（待授权）
+Stage 3: 外部执行观测（CPU/Memory/GPU/file access）
+Stage 4: Invalid mapping negative control
+```
+
+Current state:
+
+```text
+P7 Audit = Stage 0 + Stage 1 COMPLETE
+发现 = P7 是 contract-level 验证，非 real-inference 验证
+措辞 = 已收紧
+Next = human 决定是否需要 real-inference cross-backend test
+Blocker = none（分析完成，等待 human 方向）
+```
+
 ### REPLICATION / AUDIT PHASE ENTERED — NEW RESEARCH PAUSED — 2026-10-01
 
 Human direction：暂停 P8/P9 扩展，进入系统性复核。
