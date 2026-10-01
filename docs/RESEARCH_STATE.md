@@ -9292,6 +9292,73 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### REPLICATION / AUDIT PHASE ENTERED — NEW RESEARCH PAUSED — 2026-10-01
+
+Human direction：暂停 P8/P9 扩展，进入系统性复核。
+
+```text
+理由：
+  实验结果正确 ≠ 实验过程真实执行了目标路径
+  P5 审计已暴露此风险
+  P5-P7 是 Execution State 定义的基础——如果基础证据链有误差，
+  Security / Palace / Runtime Contract 都会建立在不稳定地基上
+  Activity Monitor 无波动提示缺少外部可观察执行证据
+```
+
+#### 复核状态
+
+```text
+P4   Common Base topology      → 待复核
+P5   Dependency Closure        → 待复核
+P7   Cross-backend Mapping     → 待复核
+P8   Security Boundary         → PAUSED
+P9   Palace Mapping            → PAUSED
+```
+
+#### 复核优先级
+
+```text
+第一优先：P7（最高层结论，依赖最多）
+  确认：两 backend 确实走了不同实现路径
+  确认：invariant 而非 output
+  加入：外部执行证据（CPU/Memory/GPU/文件访问）
+
+第二优先：P5-2-C（ES 本体最关键实验）
+  确认：Full = 完整 history + KV + continuation（非 probe-only）
+  确认：每个 ablation 只改变一个变量
+  重点：Position 确认同 carrier 不同 relation（非 carrier 损坏）
+
+第三优先：P4（最基础）
+  确认：分支共享同一 snapshot（不是不同起点）
+```
+
+#### 统一实验记录规范（本次复核一并落地）
+
+```json
+{
+  "run_id": "...",
+  "timestamp_wall": "...",
+  "timestamp_monotonic": "...",
+  "backend": "mlx",
+  "model": "...",
+  "input_hash": "...",
+  "state_before": { "identity": "", "position": "", "anchor": "" },
+  "operation": "...",
+  "state_after": {},
+  "output_hash": "...",
+  "resource_observation": { "memory_before": "", "memory_after": "" }
+}
+```
+
+Current state:
+
+```text
+Phase = REPLICATION / AUDIT
+New research = PAUSED
+P8/P9 = PAUSED
+Blocker = audit execution (prioritized: P7 → P5-2-C → P4)
+```
+
 ### P7-G0 HUMAN REVIEW — AUTHORIZED FOR HARNESS — 2026-10-01
 
 Human review of P7-G0 audit：授权进入 harness，附三项纪律冻结。
