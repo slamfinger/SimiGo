@@ -1,5 +1,13 @@
 # V1.7-0 Runtime Benchmark Matrix（2026-09-19 开工）
 
+## Public evidence boundary
+
+`office_out/` 内的 DOCX / XLSX / PPTX / PDF / 图片均为本目录下
+`tools/v17_3_office*.py` harness 生成的 synthetic benchmark fixtures；其中
+人名、发票号、金额、会议、项目与目录结构都只是测试数据，不代表真实个人、
+企业、客户或交易。这些 fixture 与 `.ips` crash/hang evidence 均已纳入
+`tools/release_artifact_audit.py` 的 tracked-file privacy scan。
+
 **性质**：V1.7-0 首交付——systematic runner `tools/runtime_matrix.py`
 （四路语义：Cold/Warm/Restore/Rebuild × 深度档 10K/40K/80K/120K ×
 RAM/KV/Swap）+ 10K 冒烟结果 + 校准发现。

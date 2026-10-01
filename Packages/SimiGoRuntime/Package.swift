@@ -18,7 +18,10 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
-        .package(url: "https://github.com/slamfinger/mlx-swift-lm.git", branch: "release/v2.0-beta-ml"),
+        .package(
+            url: "https://github.com/slamfinger/mlx-swift-lm.git",
+            revision: "fd5d1b4a8a5ad83e1d78617fecc817fa196a64fc"
+        ),
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
     ],
     targets: [

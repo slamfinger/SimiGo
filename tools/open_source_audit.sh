@@ -43,5 +43,9 @@ check "public runtime package exists" \
   bash -c 'test -s Packages/SimiGoRuntime/Package.swift'
 check "Xcode project has no SimiGo-Lab build dependency" \
   bash -c '! grep -q "SimiGo-Lab" SimiGo.xcodeproj/project.pbxproj'
+check "runtime dependency pins mlx-swift-lm revision" \
+  bash -c '! grep -E "mlx-swift-lm|release/v2.0-beta-ml" Packages/SimiGoRuntime/Package.swift SimiGo.xcodeproj/project.pbxproj | grep -E "branch(:| =)"'
+check "binary research artifact privacy audit" \
+  python3 tools/release_artifact_audit.py
 
 exit "$fail"
