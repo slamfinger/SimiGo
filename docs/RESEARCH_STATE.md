@@ -9485,6 +9485,39 @@ Remaining    = G-α P4 second layer 保留 / G-β Sample-3 / G-δ 最小性
 Blocker      = none（待 human 下一方向）
 ```
 
+### G-α CLOSED — P4 SECOND-LAYER JUDGMENT DELIVERED — NO-MISREADING — 2026-10-01
+
+Human 指令「下一步直接做 G-α」执行完毕。判定文档：
+`docs/00-governance/SIMIGO_LAB_P4_SECOND_LAYER_JUDGMENT_20261001.md`。
+
+```text
+设计层   = 无误读（命题↔设计契合/威胁模型覆盖/冻结常量 15/15 逐字
+           机器 diff/预注册完整，判读零旧产物输入）
+观察层   = J1 结构绑定/J3 防探针泄漏/J4 换序逐字=最强项/J6 防退化
+           均不可被机械 PASS 误读；J5 按 F-2 限定读法
+解释层   = F-1 澄清：P5-1 S1 诊断意味着 P4 S1 续算走 rebuild 路径
+           ——不动摇 PASS（命题拓扑级且路径无关，D7），且 S2′
+           （KV 消费 0.977）与 S1（re-prefill）两路径同判 J1..J6
+           =共同基点拓扑横跨续算路径成立；P4 PASS 不证明也不需要
+           KV 级续算（那是 P7-R2-A 的对象）
+F-2      = J5 计数级见证限定：checkpoint store 内容级零写入已证
+           （全天零修改）；prefix-pool 有计数不可见常态 runtime
+           shard 导出（原 P4 11:43 与 P5 attempt 窗口同行为），
+           无可观察跨支效应（J4 恒等/跨日逐位/ID 绑定 fixture）
+F-3      = 仪器勘误：P5-1 pool 内容见证深度 1 空转（checkpoint 项
+           为真）；已在 P5-1 文档登记；P5-1 判定不受影响
+G-α 判定 = NO-MISREADING / 封口条件达成（human 终验收照例保留）
+```
+
+当前状态：
+
+```text
+Gap ledger = G-α CLOSED / G-ζ CLOSED / G-γ CLOSED
+             G-β Sample-3（下一步，同 protocol 同判据独立 sample）
+             G-δ 最小性判据先写死 / G-ε Token Ledger 数字核对
+Blocker    = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

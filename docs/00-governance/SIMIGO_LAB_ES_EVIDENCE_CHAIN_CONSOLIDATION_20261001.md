@@ -87,7 +87,7 @@ protocol-valid INCONCLUSIVE）
 
 | 缺口 | 性质 | 封口需要什么 |
 |---|---|---|
-| G-α P4 human second layer | human 终判 | human 对 P4（含复制结果）发终判——保留中 |
+| G-α P4 human second layer | ~~human 终判~~ → **已交付** | **CLOSED（2026-10-01）**：second-layer judgment 完成并登记（SIMIGO_LAB_P4_SECOND_LAYER_JUDGMENT_20261001.md）=NO-MISREADING；F-1 解释澄清（P4 拓扑级路径无关）+F-2 J5 限定读法（pool 计数不可见常态导出，无可观察分支读效应）+F-3 P5-1 见证勘误；human 终验收照例保留 |
 | G-β Sample-3 模型维度 | coverage gap | 第二模型可用时按同判据补样本；或明示永久边界（登记即可封） |
 | G-γ P5-1 S1 | INCONCLUSIVE 终态 | 无需行动——protocol-valid INCONCLUSIVE 即终态；样本资格条件已登记 |
 | G-δ P5-2-C / P5-4 原跑未复制 | 复制计划 Day3-5 未消费 | human 裁定：按收束模式以原跑证据级引用（标注未复制），或择一补复制 |

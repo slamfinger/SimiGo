@@ -52,6 +52,15 @@ S₂′ fixture 沿用本复制战役 P4-repl S2Form 形成件（1425 positions�
 链条与原 P4→P5 同构）。R0 六件套工件通道；r0_verify 全 PASS；
 monotonic 全真；隔离 204→204/池 2→2 + 目录内容 SHA256 恒等。
 
+> **勘误（G-α 审计登记，2026-10-01）**：上句「目录内容 SHA256 恒等」
+> 对 prefix-pool **不成立**——该见证对 pool 是深度 1 哈希（目录本身
+> →常量 READ_ERR 串），pool 项实际空转；checkpoint 目录项为真
+> （平铺文件，全天零修改）。且 P5-1 运行窗口内 prefix-pool 存在
+> 计数不可见的常态 runtime shard 导出（16:41–16:43，与原跑窗口行为
+> 一致，详见 SIMIGO_LAB_P4_SECOND_LAYER_JUDGMENT_20261001.md F-2）。
+> 本勘误不影响 P5-1 判定：其对照为 cacheEff 可观测量（0.977 vs
+> 0.000），treatment 输出与原 attempt-1 逐字同形。
+
 ## 4. 机械判读 = overall INCONCLUSIVE（s2 PASS / s1 INCONCLUSIVE）
 
 ### s2 = PASS（边界干净复现）
