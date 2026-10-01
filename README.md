@@ -54,8 +54,8 @@ xattr -dr com.apple.quarantine SimiGo.app
 
 ### 源码构建与测试
 
-公开 App 已通过钉定的 `SimiGo-Lab` Swift package 获取 Runtime 依赖；普通源码
-构建只需要 clone 本仓：
+公开 App 通过本仓内的 `Packages/SimiGoRuntime` 获取 Runtime Contract 与
+Runtime/Backend implementation；普通源码构建只需要 clone 本仓：
 
 ```bash
 git clone https://github.com/slamfinger/SimiGo.git
@@ -138,8 +138,8 @@ main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全�
 
 详见 [docs/RELEASE_v2.0.0-beta.md](docs/RELEASE_v2.0.0-beta.md)；
 Runtime 依赖通过钉定的
-[SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) Swift package 解析；
-详细服务配置见 [部署指南.md](部署指南.md)。
+`Packages/SimiGoRuntime` 本地 package 解析；详细服务配置见
+[部署指南.md](部署指南.md)。
 
 ## 开源边界
 

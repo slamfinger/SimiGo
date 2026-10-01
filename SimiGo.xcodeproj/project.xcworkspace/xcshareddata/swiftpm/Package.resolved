@@ -1,5 +1,5 @@
 {
-  "originHash" : "1b6849e1fb0ffb4c0e5fe246d8e56f3b7cf0bb47c2795458319a8b3c1650b066",
+  "originHash" : "d269ef4fecf849f518f99968ade0e54e25aa777145cb5019129072294b863b5f",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -25,14 +25,6 @@
       "state" : {
         "branch" : "release/v2.0-beta-ml",
         "revision" : "fd5d1b4a8a5ad83e1d78617fecc817fa196a64fc"
-      }
-    },
-    {
-      "identity" : "simigo-lab",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/slamfinger/SimiGo-Lab.git",
-      "state" : {
-        "revision" : "25e1a790c841f48d0f3fddc762dcbff3c6d7c72a"
       }
     },
     {

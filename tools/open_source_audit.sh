@@ -39,5 +39,9 @@ check "security policy exists" \
   bash -c 'test -s SECURITY.md'
 check "continuous integration workflow exists" \
   bash -c 'test -s .github/workflows/ci.yml'
+check "public runtime package exists" \
+  bash -c 'test -s Packages/SimiGoRuntime/Package.swift'
+check "Xcode project has no SimiGo-Lab build dependency" \
+  bash -c '! grep -q "SimiGo-Lab" SimiGo.xcodeproj/project.pbxproj'
 
 exit "$fail"
