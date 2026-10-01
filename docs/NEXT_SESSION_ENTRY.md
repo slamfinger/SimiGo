@@ -81,7 +81,7 @@ BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-next mode = HUMAN_EVIDENCE_RULING_ONLY_SOURCES_CREDITED（2026-10-01：human 裁定「提交及推送 harness 源码，其他的不采信」——P4/P5 执行+审计 harness 源码已推 slamfinger/SimiGo main 0dc166b（公开可查唯一获采信记录）；观测/判读等自报产物 human 不采信（Lab 归档副本保留、标记 not-credited）；P4 PASS/P5 FAIL 判读=已记录但证据基础待 human 以公开源码独立重放方式复核后方可引用；仪器化整改（run-UUID/独立观测文件/单调钟）须落地 harness 方可在未来轮采信——**当前停：human second layer（自选方式复核）**）
+next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：human second layer（P4 replication 终判）→ Day 2 = P5-1 replication**）
 ```
 
 2026-09-29 route redefinition:

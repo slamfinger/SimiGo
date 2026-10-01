@@ -1,0 +1,20 @@
+{"runUUID":"audit-20261001-9B526934","wallTime":"2026-10-01T07:09:40Z","event":"run_start","monotonicNs":249236086295500,"payload":{"experiment":"P4-replication","role":"judgment"}}
+{"event":"judgment_inputs","runUUID":"audit-20261001-9B526934","monotonicNs":249236088559916,"payload":{"s2_run2":"audit-20261001-BF2D5DE2","s1_run2":"audit-20261001-25E164C0","s2_run1":"audit-20261001-3141ECC6","s1_run1":"audit-20261001-41EB8D2A"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191660458,"payload":{"cell":"s1_verdict","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191734375,"payload":{"cell":"s1_J3_anchoring","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191791291,"payload":{"cell":"s1_J5_isolation","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191844166,"payload":{"cell":"s1_J2_divergence","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191895916,"payload":{"cell":"s1_J4_order_independence","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191948250,"payload":{"cell":"s1_J6_evolution","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236191998625,"payload":{"cell":"s1_J1_identity","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192048083,"payload":{"cell":"s2_J1_identity","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192097041,"payload":{"cell":"s2_J2_divergence","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192145875,"payload":{"cell":"s2_J3_anchoring","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192194583,"payload":{"cell":"s2_verdict","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192243416,"payload":{"cell":"s2_J4_order_independence","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192291875,"payload":{"cell":"s2_J6_evolution","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192340875,"payload":{"cell":"s2_J5_isolation","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment","runUUID":"audit-20261001-9B526934","monotonicNs":249236192390583,"payload":{"cell":"overall","value":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"judgment_note","runUUID":"audit-20261001-9B526934","monotonicNs":249236192439125,"payload":{"text":"mechanical application of design 792afbc §6 pre-registered rules; sample-3 model dimension remains a registered coverage gap"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"r0_verify","runUUID":"audit-20261001-9B526934","monotonicNs":249236193422000,"payload":{"result":"ALL_PASS"},"wallTime":"2026-10-01T07:09:40Z"}
+{"event":"run_complete","runUUID":"audit-20261001-9B526934","monotonicNs":249236193490583,"payload":{"role":"judgment","overall":"PASS"},"wallTime":"2026-10-01T07:09:40Z"}

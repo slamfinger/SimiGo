@@ -1,0 +1,10 @@
+{
+  "events_exists" : true,
+  "events_readable" : true,
+  "events_same_uuid" : true,
+  "metadata_exists" : true,
+  "monotonic_ordering" : true,
+  "no_duplicate_events" : true,
+  "schema_valid" : true,
+  "unique_run" : true
+}

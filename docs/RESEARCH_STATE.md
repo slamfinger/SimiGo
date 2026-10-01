@@ -9292,6 +9292,45 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
+
+Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
+Base topology）。结果文档：
+`docs/00-governance/SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md`；
+产物+harness 源归档：`docs/02-evidence/p4-replication-20261001/`。
+
+```text
+判据来源   = P4 Design 792afbc §1..§6 逐字移植（判据零修改）
+             实现移植自原 harness Palace1R4P4ExecutionTests @ 70081e5
+             （产品仓本地对象恢复；原跑产物零读取作判定输入）
+R0 接线    = 每 invocation 独立 results/replication/{runUUID}/ 六件套
+             （metadata/events.jsonl 单调钟/summary/hashes/r0_verify）
+             Runner 扩展后 R0 自检重跑再认证 ALL CHECKS PASSED
+执行       = 6 个独立 xcodebuild 进程全 SUCCEEDED（S2Form 56.1s /
+             S1Run1 48.4s / S1Run2 41.8s / S2Run1 13.0s / S2Run2 13.1s /
+             Adjudicate 0.17s）；S₀′ 本轮重新形成（先冻结后形成）；
+             16 分支 generate 全 tokens>0、0 tool_calls
+机械判读   = overall PASS（s1/s2 各 J1..J6 全 PASS；J4 换序 8/8 逐字；
+             J5 隔离 204→204 池 2→2；ID-1..4 八 restore 全 YES）
+预期对照   = S₁ 全部 8 输出与原执行逐字相同（同 fixture 同 greedy
+             跨日复现；仅对照非判定输入）
+边界       = gitDirty=true（harness 不进产品仓 commit，源 SHA256 入
+             metadata+源码归档 Lab 仓）；Sample-3 模型维度 gap 维持；
+             拓扑级不涉性能（D8）
+```
+
+预注册措辞收束：「S₀ 可作为多个未来计算分支的共同基点」在本样本类上
+再次成立（拓扑级，不涉性能）——P4 Common Base topology 复制成功。
+
+当前状态：
+
+```text
+Phase        = REPLICATION AUDIT PHASE-1（Day 1：R0 ✅ → P4 ✅）
+P4 replication = EXECUTED / MECHANICAL PASS / 待 human second layer
+Next         = Day 2 P5-1 replication（每步完成后冻结）
+Blocker      = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
