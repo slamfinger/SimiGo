@@ -9292,6 +9292,78 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### SIMIGO EMPIRICAL REPLICATION AUDIT PHASE-1 — PLAN ISSUED — 2026-10-01
+
+Human direction：暂停扩展，进入系统性实证复核。目标不是证明之前正确，
+而是回答：不了解前序过程的研究者，只拿公开代码和实验说明，能否独立
+得到同样结论？
+
+#### 原则
+
+```text
+1. 只验证已有命题，不新增理论
+2. 所有实验重新产生新 runUUID
+3. 禁止读取旧 observation/summary 作为判定输入
+4. 旧结果只作为预期对照，不作为证据
+5. 每个实验必须保存：harness commit, runUUID, model/checkpoint hash,
+   config hash, runtime trace, 判定脚本输出, 人工审计记录
+```
+
+#### 依赖链
+
+```text
+R0 环境审计（新增，非研究结论）
+ ↓
+P4 Common Base
+ ↓
+P5-1 Anchor Failure Boundary
+ ↓
+P5-2-C Closure Necessity
+ ↓
+P5-4 Minimal Reduction
+ ↓
+P7-R2-A Runtime Continuation
+```
+
+#### R0 环境与仪器审计
+
+```text
+Run identity: runUUID + timestamp + git commit + model hash + checkpoint hash
+Monotonic clock: ContinuousClock（load/restore/generate duration）
+Artifact isolation: results/{runUUID}/（禁止 /tmp/shared append-only）
+```
+
+#### 审计矩阵
+
+| 实验 | 证明层级 | 重要程度 |
+|---|---|---|
+| R0 | 实验可信度 | 最高 |
+| P4 | 拓扑存在 | 基础 |
+| P5-1 | 边界条件 | 基础 |
+| P5-2-C | 闭包必要性 | 核心 |
+| P5-4 | 最小性 | 核心 |
+| P7-R2-A | 运行时连续性 | 最终验证 |
+
+#### 执行顺序
+
+```text
+Day 1: R0 + P4 → 冻结
+Day 2: P5-1 → 冻结
+Day 3: P5-2-C → 冻结
+Day 4: P5-4 → 冻结
+Day 5: P7-R2-A → 冻结
+每步完成后冻结，再进入下一步
+```
+
+Current state:
+
+```text
+Phase = REPLICATION AUDIT PHASE-1
+Plan = ISSUED
+Day 1 = R0 + P4（next）
+Blocker = R0 harness design
+```
+
 ### P7-R2-A LLAMA.EXECUTED — REAL RUNTIME CONTINUATION_VALIDATED — 2026-10-01
 
 Harness: `Palace1P7R2LlamaRealTests.swift` @ SimiGo (public)
