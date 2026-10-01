@@ -14061,3 +14061,44 @@ PALACE_V2_E6 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
                重进判定 → 结果门）
 Current blocker = none
 ```
+
+
+### LAB PALACE V2 E6 EXECUTED — V-1..V-5 OBSERVED — GOLDEN V-5 CASE — 2026-10-02
+
+Human E6 冻结审查 PASS / EXECUTION AUTHORIZED（D-rec 部分失效区分
+= 核心；V-5 不预规定处置；DRIFT 仅制造两种粒度变化）。E6 执行完成
+（隔离沙箱；W1 = L0 直拷验证 sha 一致；漂移 = 真实 Excel 原生单
+cell 修改×2；L0 零触碰）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_RESULT_20261002.md`。
+
+```text
+V-1 场景 = D-rec-1..4 落盘（cell/cell/multi-cell/whole-book 粒度自标）
+V-2 变化发现 = DRIFT-1 F8→450.3、DRIFT-2 H5→709000000 均可检测
+    可定位；对照：Excel 纯往返零 cell 变化（信号未被保存路径污染）
+V-3 依据识别 = 逐条可重定位（坐标/粒度自标实测有效）
+V-4 部分失效区分 = True 跨两次漂移（D-rec-1 持续失效 / D-rec-2
+    DRIFT-2 新失效 / D-rec-3·4 仍有效）
+V-5 两个真实案例 = ①【金质性】D-rec-3 登记截断缺陷（/1000 被
+    str(v)[:14] 截成 /100）导致初判「世界变化」误判——溯源
+    （L0 新鲜副本 + 纯往返对照 + L0 sha 未变）证世界从未变化，
+    处置 = corrections 登记不静默改写；推断 = 「记录与现实
+    不符」有世界变了 vs 记录缺陷两种根因，不溯源不可分——
+    直接支撑「让 Agent 发现依据变化 + 可溯源」优先于「自动
+    判定过期」；②D-rec-4 全簿粒度失配——结构判定无法覆盖
+    数值变化，处置 = 粒度拆分（观察登记）
+H/E6 流向 = H-G1-01 材料增强（发现集使 DRIFT-2 精确定位）/
+    H-G1-02 signal 增强（V-5 案例一处置依赖 W1 记录+L0 双源
+    对照）/ E6·V1 旧值仅存工作记录形态再现（bi-temporal 克制
+    依旧）
+生成 RQ-E6-1..3（记录缺陷 vs 世界变化区分规程 / 依据粒度标准化 /
+    隐性失效——留 G2）
+```
+
+当前状态：
+
+```text
+PALACE_V2_E6 = EXECUTED / V-1..V-5 完成 / RESULT AT HUMAN
+待裁定 = E6 验收 + V-5 案例定性 + 下一步方向
+Current blocker = none
+```
