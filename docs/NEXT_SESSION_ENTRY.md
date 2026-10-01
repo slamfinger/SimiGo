@@ -160,16 +160,16 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`
    - ✅ human 方向确认：边界问题已比最初清楚（PALACE=信息空间/世界中「有什么·曾发现·曾如何判断」；SimiGo=「我正在做什么·走到哪里·为什么下一步这样走」）；G3 实证 L0 ≠ L0+工作状态记录且未证后者必须由 SimiGo 提供——边界干净
    - ✅ 下一步方向 = Boundary Study（核心问 = 同一信息世界两工作者为何不能互相恢复工作状态；四情况矩阵 + ES 候选边界六问；终态公式 = PALACE 负责「世界」/ SimiGo 负责「人在世界中的持续行动」）
-69. 读 Boundary Study 方向登记：
+67. 读 Boundary Study 方向登记：
    - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DIRECTION_20261002.md`
    - ✅ human 确认：RQ-G3-2 设计起草（双轴；不比格式优劣；测可恢复·可质询·可修正；两故障锚点；不预设原样为最终答案）
-67. 读 RQ-G3-2 设计草案（仅设计，无执行授权）：
+68. 读 RQ-G3-2 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_DESIGN_DRAFT_20261002.md`
    - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（四档真隔离；非压缩率实验；不倾向 Tier-4；γ 最值得关注）
-68. 读 RQ-G3-2 结果记录（四问矩阵 + 双轴分离实证 + crown findings）：
+69. 读 RQ-G3-2 结果记录（四问矩阵 + 双轴分离实证 + crown findings）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`
    - ✅ human 主线收束裁定：四问矩阵 PASS/CLOSED（continue ≠ audit/review 两维度）；CF-①② 双 HIGH VALUE/ACCEPTED；G3 = CLOSED（五项工作恢复要素登记非 Schema）；RQ-G3-3 转向；PALACE-SimiGo Boundary Study ENTRY OPEN
-69. 读 G3 收束与 Boundary Study 入口登记：
+70. 读 G3 收束与 Boundary Study 入口登记：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`
 
 ## Current snapshot
