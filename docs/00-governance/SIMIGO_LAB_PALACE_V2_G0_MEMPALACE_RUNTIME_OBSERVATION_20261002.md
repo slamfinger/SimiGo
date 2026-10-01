@@ -2,6 +2,7 @@
 
 日期：2026-10-02  
 状态：`INTERMEDIATE OBSERVATION #2 / MEMPALACE / RUNTIME AUDIT`  
+**FROZEN（human 2026-10-02：MemPalace Observation Set 冻结——不作 PALACE 设计结论）**  
 环境：隔离沙箱（HOME 重定向 `.build/mp-home`；venv Python 3.12；
 mempalace[extract] PyPI 安装；模型 all-MiniLM-L6-v2 79.3MB 本地 ONNX；
 零真实个人数据）  

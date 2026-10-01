@@ -9721,6 +9721,52 @@ G0 MEMPALACE = AUDIT 主体完成（静态 + 运行时）；观察 ① ② 在�
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G0 MEM0 OBSERVATION ③ DELIVERED — MEMPALACE SET FROZEN — 2026-10-02
+
+Human 裁定：MemPalace Observation Set **FROZEN**（观察 ① ② 标头标记，
+不作 PALACE 设计结论）；RQ-PALACE-01/02/03 登记（G0 输出问题非设计）：
+①结构语义（Sheet/Cell/Formula/Position）是否需在 Memory representation
+中保持原始结构关系；②provenance 是否须达原始 artifact 粒度而非仅
+extraction representation 粒度；③派生 Memory 是否足够还是需可持续
+演化的信息实体。OQ-B 场景钉定：v1.xlsx→改 cell→v2.xlsx→mine（并存/
+覆盖/历史/检索可区分性）。判读方向钉死 = Observation→Comparison→Gap，
+禁止 Gap→PALACE schema。
+
+Mem0 中间观察 ③（静态源码级，mem0ai/mem0 @ `abb81c8`，SDK v2.2.1）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEM0_OBSERVATION_20261002.md`。
+
+```text
+关键观察（源码级）
+  ① 输入 = 对话消息（add(messages)，user/agent/run 作用域）；
+     OSS Python 核心零文件摄入（docx/xlsx/pptx/pdf 全仓零命中）
+  ② 记忆 = LLM 蒸馏事实陈述（非原文）：infer=True 默认走 LLM
+     提取 JSON + 事件决策（ADD/UPDATE/DELETE）+ add_history 变更
+     账本；LLM 失败 = 硬失败；init 即需 LLM（LlmFactory）
+  ③ 记忆→源消息 provenance 链未在 add 管线出现（消息分储）=
+     Open Question；OSS core 无图模块（文档宣称 vs 缺位 = OQ）
+  ④ 检索 = scope 过滤 + vector similarity + BM25 lemmatized——
+     H-PALACE-G0-01 对照样本第二例（与 MemPalace 一致：主检索
+     均为相似度形态、关系为旁路；假设保持 UNVERIFIED 待 Graphiti）
+  ⑤ L0/L1/L2 定性：Mem0 = Memory-native 代表（库删即记忆灭，
+     无从 L0 重建对应物）；与 MemPalace Artifact-centric（文件是
+     事实、memory 是派生索引）构成方向两端——两端差异本身为
+     G0 矩阵外发现
+  ⑥ Interaction Dependency 极端样本：核心写路径强制 LLM
+     （provider 无关但 LLM 依赖 by design）
+生成 RQ-M0-1…4（蒸馏保真 / provenance 链 / 事件决策确定性 /
+graph 宣称落差）
+```
+
+当前状态：
+
+```text
+G0 = MemPalace FROZEN（①②）；Mem0 ③ 交付（静态）；Graphiti 待审计
+下一步 = Graphiti（唯一关系核心方向样本）→ G0 结论门
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common

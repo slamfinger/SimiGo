@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G0_EXECUTION_ACTIVE / MEMPALACE_RUNTIME_OBSERVATION_2_DELIVERED`
+状态：`G0_EXECUTION_ACTIVE / MEM0_OBSERVATION_3_DELIVERED / GRAPHITI_NEXT`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -92,6 +92,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_OBSERVATION_20261002.md`
 43. 读 G0 中间观察 ② — MemPalace 运行时实测（RQ-1/RQ-3/RQ-7 已答）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_RUNTIME_OBSERVATION_20261002.md`
+   - ✅ MemPalace Observation Set FROZEN（human 2026-10-02；RQ-PALACE-01/02/03 登记为 G0 输出问题）
+44. 读 G0 中间观察 ③ — Mem0（静态源码级）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEM0_OBSERVATION_20261002.md`
 
 ## Current snapshot
 
@@ -105,7 +108,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 G0 EXECUTION ACTIVE：MemPalace 审计主体完成（观察 ① 静态 + ② 运行时：RQ-1 xlsx Sheet 级可溯源/Cell+Formula 丢失+NaN 噪声+列错位；RQ-7 溯源粒度 docx 段落/pptx 页/pdf 页/xlsx 仅 Sheet；RQ-3 mtime 跳过零重复；删库重 mine 可重建——L2 = 预计算非语义增量；CJK PDF fixture 缺陷待复测）；下一步 = Mem0 → Graphiti → G0 结论门；G1/G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G0 EXECUTION ACTIVE：MemPalace Set FROZEN（① 静态 + ② 运行时在档）；Mem0 观察 ③ 交付（对话消息中心/LLM 蒸馏事实非原文/事件式记忆生命周期 + history 账本/零文件摄入零原文保存/检索 = 相似度形态——H-G0-01 第二例/Memory-native 定性）；下一步 = Graphiti（关系核心方向唯一样本）→ G0 结论门（AUDIT_RESULT 九节）；G1/G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -360,12 +363,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G0 MemPalace 审计主体完成（观察 ① 静态 +
-   ② 运行时，RQ-1/RQ-3/RQ-7 已答）——下一步依序 Mem0 源码级审计 →
-   Graphiti 源码级审计（各交付独立中间观察，不并评）→ G0 结论门
-   （AUDIT_RESULT 九节，§8 缺口 + §9 研究问题为决定性节）。遗留：
-   OQ-A CJK PDF fixture 复测 / OQ-B 变更文件新旧版本语义（E6 前置）。
-   不写 PALACE 代码、不评排名、不设计 schema。
+1. 下一会话第一动作：Graphiti 源码级审计（三系统中唯一以
+   Entity→Relation→Memory 为核心方向的样本；重点 = 时间边/关系
+   遍历是否进入检索路径——H-PALACE-G0-01 判定性对照样本），
+   交付中间观察 ④；随后 G0 结论门（AUDIT_RESULT 九节，跨系统
+   Comparison + Gap；§8/§9 为决定性节；RQ-PALACE-01/02/03 与
+   H-PALACE-G0-01 一并收束）。遗留 OQ-A/OQ-B 不变。不写 PALACE
+   代码、不评排名、不设计 schema。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、
