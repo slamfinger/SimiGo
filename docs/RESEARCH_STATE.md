@@ -10030,6 +10030,57 @@ PALACE_V2_G1 = MAIN PROBE EXECUTED / OBSERVATION RECORD 在档
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 RESULT GATE RULED — OQ-B DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human G1 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = 主探针 PASS；C-1/C-2/C-3/C-5 OBSERVED；C-4 PARTIAL/
+  BOUNDED；H-G1-01 = SUPPORTED — exploratory evidence（已证明
+  「先前发现的信息会改变后续探索行为」，未证明「必须持久化到
+  动态索引」——边界守住）；H-G1-02 = UNVERIFIED + Evidence:
+  STATE-DEPENDENCY-SIGNAL（不能由过程像 State 反推 State 必要；
+  升格实验形态 = State restore vs L0/L1 cold recompute 对照）；
+  未产生 PALACE Schema / Execution State 新定义；出现 ES 相关
+  工程证据 = 是；下一实验 = OQ-B；CJK PDF 暂缓；E6 暂缓
+变化溯源三层登记 = ①找不到源头 ②局部支撑事实 ③多数值无口径关系
+四类现实证据 = 文件名不是信息拓扑 / 同名不是同一信息 / 时间≠
+  当前状态 / 工作过程路径依赖（information exploration path）
+强表述登记（不越界版本）= 「从首次目录扫描开始，PALACE 的信息
+  工作就可能表现为持续演化的执行过程；目录、时间、内容变化构成
+  自然分叉，而用户实际探索的位置决定当前分支」——尚缺 = 证明
+  该分支是否需要作为可恢复 State 保留
+```
+
+OQ-B 设计草案（极小实验）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_OQB_DRIFT_DESIGN_DRAFT_
+20261002.md`。
+
+```text
+研究问题 = v1 → 外部修改一个 cell → v2 重新进入：能否发现变化/
+  知道旧状态/定位变化/继续原探索
+设置 = 沙箱副本（A 族一件）+ 五字段基线 + 内容抽样预登记
+  （「已发现」清单）+ 脚本单 cell 修改（4200→4500 例）
+观察格 = OB-1 五字段变化检测 / OB-2 cell 级定位 / OB-3 旧状态
+  痕迹（预登记预期：无痕迹，若有 ⇒ 偏离溯源）/ OB-4 探索
+  继续性（预登记发现 vs v2 现实矛盾如何检测）
+连接 = H-G1-01/02 材料源 + E6/V1 再激活条件观察（bi-temporal
+  克制裁定继续适用）
+禁止 = L0 写入 / schema 定义 / 机制命名 / 批量变更 / 性能基准
+```
+
+当前状态：
+
+```text
+G1 结果门 = REGISTERED（主探针 PASS / H 判定在案）
+OQ-B     = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
