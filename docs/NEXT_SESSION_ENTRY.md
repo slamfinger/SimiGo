@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G1_CORPUS1_APPROVED / INITIAL_DISCOVERABILITY_COMPLETE / MAIN_PROBE_NEXT`
+状态：`G1_MAIN_PROBE_EXECUTED / OBSERVATION_RECORD_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -109,6 +109,9 @@
 49. 读 G1 初始可发现性实验记录（substrate-agnostic 基线 + 三查询）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CORPUS1_INITIAL_DISCOVERABILITY_20261002.md`
    - 基线证据：`docs/02-evidence/palace-v2-g1-corpus1/baseline-inventory.json`
+   - ✅ human 放行主探针（why-continue 原样记录 = H-G1-02 材料；发现不命名 lineage/relation/provenance）
+50. 读 G1 主探针记录（内容级事实 + 工作过程轨迹 + H 判定材料）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_MAIN_PROBE_20261002.md`
 
 ## Current snapshot
 
@@ -122,7 +125,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 G1 EXECUTION：Corpus-1 APPROVED（A 8 xlsx + D 6 doc/docx = 14 文件冻结清单；B1 暂缓 Corpus-1B）；初始可发现性实验完成（substrate-agnostic 五字段基线；同名×2 异目录异大小 → path 消歧直接证据；mtime 迁移伪迹 12/14；词汇检索漏检 A 族核心 7 件——主题-文件名 lexical 不一致；「最新」mtime 与文件名日期偶然一致）——观察记录在档；下一步（待放行）= 主探针内容读取与比较 → H-G1-01/02 判定材料；G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G1 MAIN PROBE EXECUTED：Phase1 A×8 结构 diff（F1 缺其他费用 Sheet；分部分项清单 8 件全不同；汇总表 F6=F3/F7=F1 非线性拓扑；同名双件 = 单版本汇总 vs 三版对照表两种文档；数字漂移 8.10亿 vs 9.48亿 等 + 公式态/数值态分裂）；Phase2 D×6 抽取（暂定 61,540万/19.64% → 动态 62,327万/+787万；三家单位创效事实）；Phase3 溯源任务（「原施工方案」不在 Corpus-1 = Source Trace Failure 登记；A/D 数字口径映射未建立 = 无法确定）；H-G1-01/02 保持 UNVERIFIED（过程证据已登记：状态需求迹象出现、必要性未证明，判定归 human）；RQ-P1..4 生成；G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -377,14 +380,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G1 初始可发现性实验已完成（14 文件五字段
-   基线在档；三查询观察：同名×2 path 消歧 / mtime 迁移伪迹 /
-   词汇检索漏检 A 族核心 7 件）——等待 human 放行主探针阶段：
-   内容读取（A 族 8 件 xlsx 结构级 diff + D 族 6 件文本抽取）→
-   成本控制变化溯源任务 → 工作过程全记录 → H-G1-01/02 判定材料。
-   纪律不变：L0 只读；「溯源」不预定义 Provenance；禁止提前
-   定义 KB/Relation/Graph/Provenance Schema/Dynamic Index Schema/
-   PALACE State Schema；不写 PALACE 代码。
+1. 下一会话第一动作：G1 主探针已执行并记录（Phase1 A×8 结构
+   diff：内容拓扑 ≠ 文件名链 + 同名双件实为两种文档 + 数字漂移；
+   Phase2 D×6 抽取；Phase3 溯源任务含 Source Trace Failure 登记
+   与「无法确定」诚实记录；H-G1-01/02 保持 UNVERIFIED，判定
+   材料齐备）——等待 human：H 判定 + 主探针验收 + 下一步方向
+   （G1 结果门 / OQ-A 复测 / OQ-B v1→改→v2 场景 / E6 衔接）。
+   纪律不变：L0 只读；不命名 lineage/relation/provenance；禁止
+   提前定义各 Schema；不写 PALACE 代码。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、

@@ -9977,6 +9977,59 @@ PALACE_V2_G1 = 初始可发现性 COMPLETE / 观察记录在档
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 MAIN PROBE EXECUTED — CHANGE TRACING + WORK-PROCESS TRACE RECORDED — 2026-10-02
+
+Human 放行主探针（含执行纪律：why-continue 原样记录 = H-G1-02 材料；
+发现不命名 lineage/relation/provenance/version graph；两种 H 结果
+均有效）。主探针记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_MAIN_PROBE_20261002.md`。
+
+```text
+Phase 1（A×8 结构 diff，源码级读）
+  [O] F1（1.15）缺「其他费用」Sheet（13 vs 14）
+  [O] 内容拓扑 ≠ 文件名链：表2-分部分项清单 8 件全不同；
+      汇总表 F6=F3、F7=F1 同内容组（非线性）；附表6/附表7/
+      临时用电 8 件零变化
+  [O] 同名双件=两种文档：A 件单版本项目部汇总表头 vs B 件
+      「1版/2版/3版/差异」三版对照表头（diff 55/142 cells）
+      ——文件名相似 ≠ 同职能，内容级坐实
+  [O] 数字漂移：合同收入类 810,115,387.77 vs 948,491,027.32；
+      成本类 694,263,135.39 vs 708,802,383.39；公式态（F2/F3/F6）
+      vs 数值态（F2'/F4/F5）表示分裂；F1/F7 汇总为空
+Phase 2（D×6 文本抽取）
+  [O] 标后预算(暂定) 313,356万收入/251,816万支出/盈利61,540万/
+      19.64% → 动态预测 62,327万/19.89%（+787万）；（改）版多出
+      投资价差段；一公局设计优化14项8788.34万/运距+7060万/
+      钢便桥→钢栈桥+1288万；中交路建批复预算121.29亿（+3.5亿）；
+      一航局提质年：钢栈桥+2105万/降本2071.69万（6.89%）/
+      桩基下构-1694.58万
+Phase 3（变化溯源任务）
+  [O] Source Trace Failure：任务字面的「原施工方案」不在
+      Corpus-1——字面无法完全回答（登记事实不发明机制）
+  [O] 可行解释下的变化溯源 = 暂定→动态预测 +787万，支撑事实
+      来自三个单位汇报（观察事实列举）；A 族 Excel 数字与 D 族
+      文字数字（313,356万 vs 8.1亿）对应关系未能在抽样层级
+      建立——记录「无法确定」
+H 判定材料（状态不变）
+  H-G1-01 UNVERIFIED：Step3 发现改变后续可发现性（过程证据）
+  H-G1-02 UNVERIFIED：Step3/Step5 出现「下一步依赖此前发现且
+      当前输入未重新提供」迹象；但均可由重读 L0+L1 重算——
+      「状态需求迹象出现，状态必要性未证明」，判定归 human
+生成 RQ-P1..4（汇总表非线性拓扑成因 / 公式态-数值态工具差异 /
+  313,356万口径映射 / B 件内嵌版本列作为 OQ-B 证据源）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = MAIN PROBE EXECUTED / OBSERVATION RECORD 在档
+待 human      = H-G1-01/02 判定 + 主探针验收 + 下一步方向
+              （G1 结果门 / OQ-A 复测 / OQ-B 变更场景 / E6 衔接）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
