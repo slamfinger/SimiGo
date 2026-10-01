@@ -158,6 +158,10 @@
    - ✅ human 结果门裁定：RQ-G3-1 PASS/CLOSED；E-X1「相邻主题」排除撤销→历史记录；经济运行族纳入候选语料；0308 纳入扩展样本（新增验证样本/后发现版本标记）；经济工作进展维持排除；RQ-G3-2 UNLOCKED（双轴焦点）
 66. 读 RQ-G3-1 结果门裁定登记（E-X1 拆分重裁 + 只存结论的危险 + H 更新）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`
+   - ✅ human 方向确认：边界问题已比最初清楚（PALACE=信息空间/世界中「有什么·曾发现·曾如何判断」；SimiGo=「我正在做什么·走到哪里·为什么下一步这样走」）；G3 实证 L0 ≠ L0+工作状态记录且未证后者必须由 SimiGo 提供——边界干净
+   - ✅ 下一步方向 = Boundary Study（核心问 = 同一信息世界两工作者为何不能互相恢复工作状态；四情况矩阵 + ES 候选边界六问；终态公式 = PALACE 负责「世界」/ SimiGo 负责「人在世界中的持续行动」）
+69. 读 Boundary Study 方向登记：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DIRECTION_20261002.md`
    - ✅ human 确认：RQ-G3-2 设计起草（双轴；不比格式优劣；测可恢复·可质询·可修正；两故障锚点；不预设原样为最终答案）
 67. 读 RQ-G3-2 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_DESIGN_DRAFT_20261002.md`
@@ -435,12 +439,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：PALACE-SimiGo Boundary Study 设计草案
-   起草（human 发起后）——研究问题已冻结：「当信息空间已经保存
-   足够多历史信息后，哪些内容仍然必须属于 Execution State？」；
-   可能观察 = 同一 PALACE/两人同时工作/不同任务/不同探索路径
-   ——哪些无法由 PALACE 恢复 = ES 真正不可替代的位置。纪律：
-   L0 只读；不写 PALACE 代码；不改 SimiGo 冻结契约。
+1. 下一会话第一动作：起草 Boundary Study 设计草案（核心问 =
+   同一信息世界两工作者为何不能互相恢复工作状态；四情况矩阵
+   人A/任务X·Y·人B/Agent × 路径 X/Y/Z/W；ES 候选边界六问 =
+   A 已检查什么/为什么跳过/已排除什么/正在验证什么/下一步/
+   B 接手缺什么）——draft → human 冻结 → 执行。纪律：L0 只读；
+   先观察「什么必须留下」再决定「叫什么」；不造 DurableInformation/
+   WorkState/Provenance/Relation 类；不写 PALACE 代码。
 
 继续区分：
 

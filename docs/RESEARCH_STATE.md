@@ -14712,3 +14712,42 @@ PALACE-SimiGo Boundary Study = ENTRY OPEN（设计草案待 human
     发起后起草）
 Current blocker = none
 ```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DIRECTION REGISTERED — 2026-10-02
+
+Human 方向确认与 Boundary Study 框架登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DIRECTION_
+20261002.md`。
+
+```text
+核心研究问题（human 原语冻结）= 如果 PALACE 已经拥有足够完整的
+    信息，两个工作者面对同一个信息世界时，为什么仍然不能互相
+    恢复对方的工作状态？（比继续扩展 PALACE 信息能力更接近
+    SimiGo 核心）
+ES 候选边界测试六问（冻结）= PALACE 能恢复所有共同信息时若仍
+    无法回答：A 已检查过什么/为什么跳过某文件/已排除什么/正在
+    验证什么/下一步准备什么/B 接手 A 缺什么——则这部分才有
+    资格成为 Execution State 的候选边界
+四情况观察矩阵（冻结）= 同一 PALACE × 人A/任务X/路径X ·
+    人A/任务Y/路径Y · 人B/任务X/路径Z · Agent/任务X/路径W
+分叉连接 = 信息空间分叉→不同工作→不同探索路径→不同 ES
+价值判定 = 若同一 PALACE 中工作者路径仍无法由 PALACE 恢复 →
+    SimiGo 存在价值被 PALACE 实验反向逼出（实证闭环非概念）
+终态公式 = PALACE 负责「世界」，SimiGo 负责「人在世界中的
+    持续行动」
+当前正式状态（human 保持）= G0→G3 CLOSED / H-G1-02 SUPPORTED
+    strong exploratory / ES necessity UNPROVEN / RQ-G3-1→2 已
+    收束 / RQ-G3-3 暂存
+纪律（human 原文语义）= 先观察「什么必须留下」，再决定「应该
+    叫什么」；不先造 DurableInformation/WorkState/Provenance/
+    Relation 类再拿实验证明——让实验逼出自然结构
+```
+
+当前状态：
+
+```text
+Boundary Study = DIRECTION REGISTERED / DESIGN_DRAFT_PENDING_
+    HUMAN_INITIATION
+Current blocker = none
+```
