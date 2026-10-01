@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G2_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`G2_EXECUTED / T123_COMPLETE / RESULT_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -133,6 +133,10 @@
    - ✅ human 确认：G2 设计草案起草批准（四要点：RQ 低于抽象层 / P3=探针非答案 / 过程完整记录 / 禁止架构化升级）
 58. 读 G2 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_CROSS_DOCUMENT_WORK_DESIGN_DRAFT_20261002.md`
+   - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（口径包含=判定规则不升级；来源标注=记录要求非 Provenance Schema）
+59. 读 G2 执行记录（T-1/T-2/T-3 + OB-A..D）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_EXECUTION_20261002.md`
+   - 证据：`docs/02-evidence/palace-v2-g2-corpus1/t1-mapping-results.json`
 
 ## Current snapshot
 
@@ -146,7 +150,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 E6 CLOSED / G1 CLOSED / G2 DESIGN ENTRY OPEN：E6 全 PASS + V-5 提升登记（案例一记录-现实二根因不可分须溯源 / 案例二粒度效应；组合 = 依据有效性 ← 定位精度 + 记录可信度）；H-G1-01 SUPPORTED-strengthened / H-G1-02 UNVERIFIED+strengthened signal（「仅有当前 L0 不一定足够」）；G1 四条结构性事实收束（文件名≠拓扑/同名≠同信息/时间≠当前状态/路径依赖+L0 不可恢复过去工作状态）；G2 方向 = 跨文件信息工作持续利用已发现信息并继续推进（第 3 层）——具体设计草案待起草，禁止预定义信息对象/关系/知识图谱/Provenance Schema/PALACE State Schema；G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G2 EXECUTED（跨文件信息工作完成）：T-1 数字口径映射 = 0 精确/10 万标度强候选（表2!E 列单位未声明）/13 未映射（总量·产值·批复·收款口径缺位）——口径不透明三形态；T-2 钢筋 4200 vs 询价折算 3761.06（差 11.67%，取价/含税/时点三候选不可裁决）；T-3 八点综合逐点来源标注 + 两缺口诚实保留（全部依赖累积发现，零新增读取 = 最强状态依赖形态）；RQ-G2-1..3 生成——RESULT AT HUMAN；E6 已 CLOSED；G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -401,14 +405,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G2 设计草案已完成（三探针：T-1 数字口径
-   映射 / T-2 钢筋跨文件对照 / T-3 汇总任务；七元组过程协议 +
-   步间依赖标注；观察格 OB-A..D）——等待 human 冻结审查；通过 +
-   执行授权后依序执行 T-1 → T-2 → T-3（逐任务交付过程记录与
-   中间观察）→ 结果门 → human 判读。禁止：Information Object/
-   Relation/Graph/Provenance Schema/PALACE State Schema/知识库
-   叙事/映射模型化/G1·E6 事实架构化升级；L0 只读；不写 PALACE
-   代码。
+1. 下一会话第一动作：G2 已执行并交付（T-1 = 0 精确/10 万标度
+   强候选/13 未映射——口径不透明三形态；T-2 钢筋 4200 vs
+   3761.06 三口径候选不可裁决；T-3 八点综合逐点来源标注 + 两
+   缺口诚实保留；最强状态依赖形态记录）——等待 human：G2 验收 +
+   OB 定性 + 下一步方向（G2 补充 / G3 Durable Information 设计
+   入口）。纪律不变：L0 只读；不命名 relation/mapping/provenance；
+   禁止各 Schema；不写 PALACE 代码。
 
 继续区分：
 
