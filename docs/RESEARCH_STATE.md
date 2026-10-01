@@ -9741,6 +9741,47 @@ Next    = Phase-2 harness 设计门 → human 授权
 Blocker = none
 ```
 
+### P7-0 HUMAN ACCEPTANCE + HARNESS DESIGN GATE HELD — 2026-10-01
+
+human 对 P7-0 冻结的验收（三点特别认可，逐字登记）：
+
+1. **未把 llama token-prefix representation 强行等同于 MLX KV
+   representation**——`usage.cached_tokens` 只作遥测，不进 INV-XB；
+2. **I 的 PARTIAL 有真实依据**——checkpoint 无 model identity，
+   恰好暴露「identity ≠ model file」边界；
+3. **A 的 EXPRESSED-DIFFERENT-FORM 未提前算 PASS**——现 harness
+   无 fork cell，必须经 M2 真正验证 fork anchor / child divergence。
+
+门位确认并保持：
+
+```text
+PHASE-2 ROUTE B ACTIVE → P7-0 FROZEN → HARNESS DESIGN GATE
+（当前不执行实验、不修改产品仓；design work 待 human 授权进入
+设计门后才开始）
+```
+
+**设计门输入要求（human 指定，M1+M2 设计须冻结全部判据/cell/
+失败路由/输出格式；不得重新引入 Phase-1 式协议歧义）**：
+
+- **M1 — Model Identity Binding**：checkpoint 增 model identity
+  块（modelPath/GGUF identity 或稳定 hash）+ token-prefix
+  representation；restore 时必须验证 `checkpoint.modelIdentity ==
+  server.loadedModelIdentity`，否则 I 维持 PARTIAL。
+- **M2 — Fork / Divergence Cell**：真分叉树（S₀→N→{Parent P+1,
+  Child C+1 divergent}→restore→N）；**核心判据=anchor(child@fork)
+  == anchor(parent@N)**（非输出文本相同）；随后验证 child
+  divergence 不污染 parent continuation——把 llama 侧 A relation
+  从「形式上存在」推进到「实验上可判定」。
+
+当前状态：
+
+```text
+Gate      = HARNESS DESIGN GATE（等 human 授权进入设计）
+Design    = NOT STARTED（M1+M2 design/pre-registration 待授权）
+Experiments = NOT EXECUTED；产品仓零变更
+Blocker   = human authorization to enter design gate
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
