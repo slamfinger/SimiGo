@@ -79,16 +79,16 @@ As of the latest repository state:
   are retained, but the line is `FROZEN / PARKED` by human direction
   (2026-10-02); Gate① execution is not to proceed unless a real
   application proves durable identity is needed.
-- PALACE V2 (current mainline): G0 = CLOSED/COMPLETE (three-system
-  audit: MemPalace artifact-centric / Mem0 agent-distillation /
-  Graphiti relation-centric; H-PALACE-G0-01 ANSWERED-DIVERGENT);
-  Substrate strategy = W (substrate-agnostic; memory backend is a
-  replaceable experimental component); G1 = UNLOCKED — real 秦沈
-  file-family closed-loop observation (discovery/reading/comparison/
-  version-identification/synthesis), small corpus first, Execution
-  State only a recallable candidate mechanism pending engineering
-  facts. See
-  `SIMIGO_LAB_PALACE_V2_G1_REAL_CORPUS_DESIGN_DRAFT_20261002.md`.
+- PALACE V2 (current mainline): G0 CLOSED (backend survey) → G1
+  CLOSED (real 秦沈 corpus work: initial discoverability / main
+  probe / OQ-B drift / E6 information-validity — all PASS/CLOSED;
+  four structural facts registered incl. work-record vs world-state
+  independence); Substrate = W (agnostic); G2 DESIGN ENTRY OPEN —
+  cross-document information work (Layer 3: analysis/comparison/
+  synthesis; existing discoveries as next-work starting point),
+  no premature information-object/relation/graph/schema
+  definitions. See
+  `SIMIGO_LAB_PALACE_V2_G1_CLOSED_G2_ENTRY_20261002.md`.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

@@ -14102,3 +14102,43 @@ PALACE_V2_E6 = EXECUTED / V-1..V-5 完成 / RESULT AT HUMAN
 待裁定 = E6 验收 + V-5 案例定性 + 下一步方向
 Current blocker = none
 ```
+
+### LAB PALACE V2 E6 CLOSED — G1 CLOSED — G2 DESIGN ENTRY OPEN — 2026-10-02
+
+Human 裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CLOSED_G2_ENTRY_20261002.md`。
+
+```text
+E6 验收 = V-1..V-5 全 PASS（V-4 两次独立漂移均成立；V-5 高价值
+    观察）；E6 = CLOSED；新 Schema/版本模型未授权
+V-5 提升 = 案例一（记录 ≠ 现实 → 世界变化 or 记录缺陷，无溯源
+    时表面信号相同）→ bounded evidence：「发现依据偏离后必须
+    能回溯偏离来自世界还是来自记录」；案例二（全簿粒度失配）
+    → 依据粒度影响有效性判断；组合逼出两个底层工程事实 =
+    依据有效性 ← 依据定位精度 + 依据记录可信度/可溯源性
+H 更新 = H-G1-01 SUPPORTED—strengthened exploratory evidence
+    （发现集参与 DRIFT-2 精确定位）；H-G1-02 UNVERIFIED +
+    strengthened state-dependency signal（两类证据：旧依据
+    仅存工作记录 + V-5 案例一双源对照处置）——「继续工作时
+    仅有当前 L0 不一定足够」，距「ES 必需」一步之遥，交给 G2
+G1 收束 = CLOSE 不扩 Corpus（Main Probe PASS / OQ-B CLOSED /
+    E6 CLOSED）；证据总账四条结构性事实：①文件名≠内容拓扑
+    ②同名≠同一信息 ③时间≠当前状态 ④信息探索路径依赖 +
+    世界变化后过去工作状态可能无法从当前 L0 恢复
+G2 设计入口 = 研究对象从「原始信息变化后怎么办」推进到「正在
+    进行的跨文件工作如何持续利用已发现信息并继续推进」
+    （首次进入第 3 层：分析/对比/汇总）；禁止带入信息对象/
+    关系/知识图谱/Provenance Schema/PALACE State Schema 预定义
+    ——让跨文件真实工作逼出下一层抽象
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6 = CLOSED
+G2            = DESIGN ENTRY OPEN（具体设计草案待起草 → human
+                冻结 → 执行）
+G3            = LOCKED
+Current blocker = none
+```
