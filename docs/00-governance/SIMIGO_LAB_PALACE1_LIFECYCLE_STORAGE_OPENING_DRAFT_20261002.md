@@ -17,6 +17,11 @@ rev.1（2026-10-02 审读修正，零语义变更）：CH 来源归属精化至
 Architecture Contract v1.0；EF-11 补证据级标注（随 stage conclusion
 保留复制状态）；新增附录 A 证据溯源表。
 
+rev.2（2026-10-02 external review 修订，随 review F-1/F-2 执行）：
+§7 台账补齐 OP-4 / OP-6 / RF-2 / RB-1…RB-8 / IC-1…IC-5 携带行；
+§10 标注重入合法性已由 2026-10-02 human 方向指令确立，registration
+门保留 human。零语义变更。
+
 ```text
 registered engineering fact ≠ contract-derived hypothesis ≠ selected implementation
 ```
@@ -201,6 +206,24 @@ OP-7（PALACE 接口）            OPEN；P7 消费前须独立 bridging
                                registration，本 draft 不预答 OP-7-1/2/3
 RF-1（语义缺席不可检测）       OPEN RESEARCH；restore 记录核对（U-3）
                                是其相邻问题但本 draft 不设计机制
+RF-2（restore dependency ≠
+     continuation dependency） CLOSED FOR THIS CHAIN（framing 登记）；
+                               本 draft restore/continue 分列映射即
+                               建立在该已关闭结论上，显式引用
+OP-4（cancellation surface /
+     G-9）                     OPEN；本 draft 映射未消费，携带不关闭
+OP-6（G-1/G-2/G-3/G-4/
+     G-5(L-1)/G-8 工程 gaps）  OPEN；LOCAL-FIXABLE，各自独立
+                               engineering gate，携带不关闭
+RB-1…RB-8（表示结果法则）     CONFIRMED-unchanged；restore/discard/
+                               release 承接候选均不得绕过四态出口
+                               （reattach / loud fail /
+                               rematerializationRequired / fail-closed）
+IC-1…IC-5（SAME/NEW 与终态
+     法则）                    CONFIRMED-unchanged；discard 映射继承
+                               IC-3 终态 tombstone 与 IC-4 fail-closed；
+                               restore 映射继承 IC-1/IC-2（表示事件
+                               不产生 NEW State）
 ES-R2 Gate C/D                 LOCKED（授权归 human），本 draft 不触碰
 Contract v1.0-amended          只消费不修改；final freeze declaration
                                独立归 human
@@ -253,11 +276,13 @@ UNKNOWN
 ## 10. Gate sequence
 
 ```text
-本草案 → human 第二层判断（重入合法性 + 范围裁定）
-       → external review（六项固定：Contract fidelity / lifecycle
+重入合法性 = 2026-10-02 human 方向指令本身（framing registration
+           预留的显式 gate 重入；见 external review F-2）
+本草案 → external review（六项固定：Contract fidelity / lifecycle
          obligation 对齐 / fact-hyp 分层纪律 / F1-F2-F3 不可合并性 /
          OP-G 台账完整性 / scope discipline）
-       → PASS / ACTIVATION_REQUIRED → registration
+         = PASS / ACTIVATION_REQUIRED（2026-10-02，F-1/F-2 修订后）
+       → registration（human；唯一剩余 human 门）
        → 后续实验 gate（§6 矩阵逐项授权，一次一项）
 ```
 

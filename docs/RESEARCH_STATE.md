@@ -9338,6 +9338,56 @@ Current blocker                   = none（重入合法性 + 范围裁定归
 实验 / 实现 / 选型授权            = 无
 ```
 
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING DRAFT REV.1 — REVIEW-READY — 2026-10-02
+
+审读修正（`3d72485`，零语义变更）：CH-1/CH-2 来源归属精化至
+Architecture Contract v1.0（SC-2/SC-3，冲突让位 v1.0-amended）；EF-11
+补复制状态标注（P5-1 INCONCLUSIVE 含复制 / P5-2-C 原跑未复制）；新增
+附录 A 证据溯源表（EF/CH → 工件 + commit + 登记原文摘引；全部引用
+commit 已在仓内核证）。NEXT_SESSION_ENTRY 同步刷新（`777846e`）。
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = DRAFT rev.1 / REVIEW-READY
+Current blocker                   = none
+```
+
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING EXTERNAL REVIEW PASS — ACTIVATION_REQUIRED — 2026-10-02
+
+按 Phase B 先例（draft → external review → human registration）执行六项
+固定评审。评审工件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_
+EXTERNAL_REVIEW_20261002.md`。
+
+```text
+六项结果  = Contract fidelity PASS / lifecycle obligation 对齐 PASS /
+          fact-hyp 分层 PASS / F1-F2-F3 不可合并性 PASS /
+          OP-G 台账完整性 PASS-with-amendment / scope discipline PASS
+F-1       = 原稿 §7 遗漏 OP-4 / OP-6 / RF-2 / RB-1…RB-8 / IC-1…IC-5
+          携带行——rev.2 已补齐（restore/discard/release 映射显式
+          继承 RB 四态出口与 IC-3/IC-4 终态-重复创建法则）
+F-2       = 重入合法性已由 2026-10-02 human 方向指令本身确立
+          （framing 预留的显式 gate 重入）；§10 已标注；
+          registration 门保留 human 不变
+Verdict   = PASS / ACTIVATION_REQUIRED
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = REVIEW PASS / ACTIVATION_REQUIRED
+                                    （draft rev.2 已含全部修订）
+下一门                            = human registration（唯一剩余
+                                    human 门；registration 后方可按
+                                    §6 矩阵逐项申请实验 gate）
+Current blocker                   = none
+实验 / 实现 / 选型授权            = 无（review 不授权任何执行）
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
