@@ -9292,6 +9292,72 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2 OPENING DRAFT HUMAN REVIEW — REVIEW-READY — 2026-10-01
+
+Draft artifact：`SIMIGO_LAB_P5_2_DEPENDENCY_CLOSURE_OPENING_DRAFT_20261001.md`
+(commit `d1a415f`)
+
+Human review verdict：`REVIEW-READY / NOT PASS`
+
+> 不标记为"理论完成"，因为 draft 完成的是研究框架重构，
+> 还没有完成"闭包是否最小"的证明。
+
+#### Registered strengthening points (carry into external review)
+
+**R-1 Carrier ≠ Closure member**
+```text
+Execution State Closure = { Identity, Position, Anchor, Continuation }
+Carrier                  = { KV, Tensor, Cache, Memory, Database }
+Relation: Closure ──instantiated by──▶ Carrier
+NOT: Closure = Carrier
+```
+后续文档明确区分，避免 backend 切换时重蹈覆辙。
+
+**R-2 Minimality NOT proven**
+当前 ES = {I, P, A, C} 是候选，不是最小证明。
+需建立 "remove one relation" test（概念级）：
+
+| 去掉 | 检验 |
+|---|---|
+| Identity | 能否确认状态属于哪个计算？ |
+| Position | 能否知道未来从哪里继续？ |
+| Anchor | 能否解释状态对应什么？ |
+| Continuation | 能否产生未来路径？ |
+
+如删除某项后仍可继续 → 该项不是必要闭包成员。
+
+**R-3 Palace 不合并**
+保持 §6 初探的二元区分：
+```text
+Palace           = Knowledge Topology（past-oriented）
+Execution State  = Computation Topology（future-oriented）
+共同层           = Relation Model
+```
+不定义 Palace = Execution State。
+
+**R-4 Capability Risk 提前至 P5-3 之前**
+P4 PASS 改变研究性质：从"能不能保存状态"变为
+"谁拥有状态，谁拥有未来计算能力"。
+Security Boundary Review 必须在 Palace mapping 或 ablation 之前完成。
+审查范围：
+```text
+A. State possession  → state + identity + path = future computation capability？
+B. State portability → 跨 machine/model/user/tenant 迁移的风险？
+C. State delegation → B 继承 A 的 context/authority/hidden assumptions？
+```
+
+#### Current state
+
+```text
+P4     = PASS (topology existence)
+P5-1   = SEALED / INCONCLUSIVE
+P5-2-0 = Dependency Map COMPLETE
+P5-2   = REVIEW-READY (draft `d1a415f`, 4 strengthening points registered)
+Next   = P5-2 External Review → Minimal Closure Review + Security Boundary Review
+       → P5-3 Palace Mapping (if activated)
+Current blocker = P5-2 external review assignment (human)
+```
+
 ### P5-2-0 CONTINUATION DEPENDENCY MAP + REFRAMING — 2026-10-01
 
 Code-level audit of MLX Swift LM ChatSession + NativeMLX continuation
