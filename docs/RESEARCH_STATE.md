@@ -9589,6 +9589,49 @@ PALACE V2                     = DIRECTION REGISTERED / G0 NEXT
 Current blocker               = none
 ```
 
+
+### LAB PALACE V2 G0 AUDIT PROTOCOL DRAFT COMPLETE — 2026-10-02
+
+Human 确认 + G0 审计纪律指令（G0 的作用 = 防止 PALACE 进入真实工程前
+被某个现有 Memory 系统的概念模型绑架；方法同 Execution State：先观察
+runtime → 本轮观察对象 = Memory System 实际工程行为）。协议草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_
+PROTOCOL_20261002.md`。
+
+```text
+审计对象    = MemPalace（Primary：本地文件→内容获取→Memory→Agent
+            场景最接近）+ Mem0（Agent→Memory）+ Graphiti
+            （Entity→Relation→Memory）——三方向非竞争排名
+矩阵        = 6 类 17 维冻结（Ingestion/Content/Context/Retrieval/
+            Agent/Storage）；判读纪律 = 不问「有没有 schema」，
+            问「系统为完成工作实际保存了哪些事实」
+新增章节    = §4 Memory Path Analysis（Query→Search→Retrieved→
+            Related→Context 三形态：纯相似度/拓扑扩展/时间连续性
+            ——只记录事实，可能成为未来 PALACE Information
+            Topology 来源）；§5 Database Inspection（实际保存什么
+            +「删库后只剩原始文件能否恢复」= 与 human L0/L1/L2
+            分层思路对应）；§6 真实格式实测（docx/xlsx/pptx/pdf
+            强制，Excel 结构保留 = 关键差异）
+Evidence    = Observation / Inference / Open Question 三级；
+            禁止 Observation→「PALACE 必须采用 XXX」升级
+假设寄存器  = H-PALACE-G0-01（Memory retrieval 可能含关系遍历而非
+            纯相似度）= UNVERIFIED
+输出规格    = AUDIT_RESULT 九节（§8 缺口 + §9 生成的研究问题
+            最重要——决定 PALACE 后面有没有必要研究）
+G1/G2/G3    = LOCKED
+```
+
+当前状态：
+
+```text
+PALACE_V2_G0 = AUDIT PROTOCOL DRAFT COMPLETE /
+               AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结审查 + 执行授权后方审计；逐系统交付中间
+               观察，防最后一锅端）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
