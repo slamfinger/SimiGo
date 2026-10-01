@@ -9292,6 +9292,64 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2-A LLAMA.EXECUTED — REAL RUNTIME CONTINUATION_VALIDATED — 2026-10-01
+
+Harness: `Palace1P7R2LlamaRealTests.swift` @ SimiGo (public)
+Phase A: 1.1s passed (runUUID E935E05F)
+Phase B: 1.4s passed (runUUID 8B321A42, separate process)
+
+#### 执行真实性证据
+
+```text
+llama-server process: PID=39213, RSS=14699MB（14.3GB 模型驻留内存）
+model: Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf (21GB GGUF)
+real tokenize: ✅ executor.tokenizeText() → HTTP → llama-server
+real generate: ✅ executor.complete() → HTTP → llama-server
+真实推理输出: Phase A 32 tokens + Phase B 32 tokens
+```
+
+#### Verdict: CONTINUATION_VALIDATED
+
+```text
+C1 Identity:     ✅ ExecutionID 跨进程恢复
+C2 Position:     ✅ restored pos=2 == checkpoint pos=2
+C3 Anchor:       ✅ hash_equal=true + functional=true
+C4 Continuation: ✅ prefix_is_extension=true, cold_fallback=false
+                    真实 generate 32 tokens after restore
+
+Phase A: tokenize(16 tokens) → create → extend → generate(32 tokens)
+         → captureRepresentation → checkpoint (54 tokens total)
+Phase B: NEW Backend+Coordinator → restore checkpoint
+         → tokenize Δ (9 tokens) → prefix extend → real generate (32 tokens)
+         → prefix 是 checkpoint prefix 的严格扩展 ✓
+```
+
+#### 更新后的 P7-R2-A 汇总
+
+```text
+┌──────────────┬──────────────────────────────────┬───────────┐
+│ Backend      │ 验证方式                          │ 判定       │
+├──────────────┼──────────────────────────────────┼───────────┤
+│ MLX          │ 真实模型推理 + checkpoint         │ VALIDATED │
+│              │ cacheHitTokens=13370, extend     │           │
+├──────────────┼──────────────────────────────────┼───────────┤
+│ llama.cpp    │ 真实 llama-server 推理            │ VALIDATED │
+│              │ real tokenize + real generate    │           │
+│              │ prefix extension 验证             │           │
+└──────────────┴──────────────────────────────────┴───────────┘
+
+两个 backend 均在 L2 Runtime 层验证通过。
+Execution State Closure 可跨 carrier 表达并保持 continuation。
+```
+
+Current state:
+
+```text
+P7-R2-A = MLX ✅ + llama.cpp(real) ✅
+L2 Runtime = VALIDATED（双 backend，真实推理）
+Blocker = human review of cross-backend result
+```
+
 ### P7-R2-A LLAMA.EXECUTION AUDIT — DOWNGRADED — 2026-10-01
 
 Human audit finding：llama.cpp cell 未启动 llama-server，无真实推理，
