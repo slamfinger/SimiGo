@@ -14181,3 +14181,47 @@ PALACE_V2_G2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
                过程记录与中间观察 → 结果门）
 Current blocker = none
 ```
+
+### LAB PALACE V2 G2 EXECUTED — CROSS-DOCUMENT WORK T-1/T-2/T-3 COMPLETE — 2026-10-02
+
+Human G2 冻结 PASS / EXECUTION AUTHORIZED（附加边界：「口径包含」
+仅作实验判定规则不升级映射定义；「来源标注」= 记录要求非
+Provenance Schema）。G2 执行完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_EXECUTION_20261002.md`
++ 证据 `docs/02-evidence/palace-v2-g2-corpus1/t1-mapping-results.json`。
+
+```text
+T-1 数字口径映射（A 族 46,972 数值 cell × D 侧 26 数字）
+  [O] 精确映射 = 0/26
+  [O] 万标度近似候选（<0.5%）= 10/26，集中 表2!E 列/附表5!D 列
+      （E1123=2071.0 ↔ 2,071.69万 0.03%；E601=262.38 ↔ 262万
+      0.14%…）——单位未声明，确认不可达
+  [O] 未映射 = 13/26（完工总收入/动态支出/盈利/产值/批复/收款
+      等总量与外部口径——范围性缺位）
+  [O] 边缘候选 = 3/26（±0.5%）
+  [I] T-1 判读：分项级强候选集中 + 总量缺位 + 单位不透明 =
+      口径不透明三形态；不建模型
+T-2 钢筋对照
+  [O] A 侧询价折算 3,761.06/3,407.08 元/t（不含税，公式
+      /1.13/1000）vs D 侧中标 4200 元/t——差 +11.67%/+23.28%；
+      口径候选三记（取价性质/含税/时点），语料内不可裁决
+T-3 汇总任务（第 3 层首次）
+  [O] 8 点综合陈述逐点来源标注完成；S7 口径未决、S8 映射未
+      闭合两缺口诚实保留
+  [O] 过程依赖 = 8 点全部依赖 T-1/T-2/Phase2/G1 累积发现，
+      零新增读取——最强状态依赖形态（H-G1-02 材料增厚；
+      状态不变：可重算故必要性未证）
+观察格 = OB-A 复用已证实 / OB-B 三形态 / OB-C 依赖标注完成 /
+  OB-D 综合可带缺口交付
+生成 RQ-G2-1..3（E 列万口径验证 / 313,356万 生产来源 / 中标-
+  询价口径裁决）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G2 = EXECUTED / RESULT AT HUMAN
+待裁定 = G2 验收 + OB 定性 + 下一步（G2 补充 / G3 入口）
+Current blocker = none
+```
