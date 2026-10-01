@@ -1,8 +1,9 @@
 # P5-1 Replication Results — Anchor Failure Boundary under R0 Framework
 
 日期：2026-10-01
-状态：`EXECUTED / OVERALL INCONCLUSIVE（s2 PASS + s1 INCONCLUSIVE）/
-HUMAN SECOND LAYER REGISTERED（性质定义 + 样本资格条件）`
+状态：`PROTOCOL-VALID INCONCLUSIVE（human 终态指定，2026-10-01）/
+s2′ PASS（KV 1425；baseline cacheEff ≈0.977/0.979；treatment = 0）/
+S1（KV 31712）当前证据不足以完成该项结论`
 任务令：human 2026-10-01（「继续」→ Day 2 = P5-1 replication；
 Empirical Replication Audit Phase-1 依赖链第 2 步）
 性质：复制验证 + 冻结时机制诊断。判定输入零旧产物读取。
@@ -180,3 +181,11 @@ S1 是一个不合格的对照样本。
 > **原 P5-1 命题在合格样本 S2′ 上完成复制；S1 的复核同时完成了对
 > 原实验样本资格问题的定位，因此总体按预注册规则保持
 > INCONCLUSIVE。**
+
+### 8.6 终态指定（human，2026-10-01 追加）
+
+**P5-1 终态 = `protocol-valid INCONCLUSIVE`**——不能写成 PASS，也
+不能写成失败；S2′ 数据（KV 1425；baseline cacheEff ≈0.977/0.979；
+treatment = 0）已复制命题，S1（KV 31712）当前证据不足以完成该项
+结论。本状态为该实验的最终状态；后续研究阶段转入 Execution State
+证据链收束（见 RESEARCH_STATE.md 同日章节），不再追加本实验。

@@ -9404,6 +9404,43 @@ Next             = Day 3 P5-2-C replication 授权归 human
 Blocker          = human direction
 ```
 
+### STAGE REDIRECTION — EVIDENCE CHAIN CONSOLIDATION MODE — 2026-10-01
+
+Human 裁定（复核定调 + 阶段转向）：
+
+- **P5-1 终态 = `protocol-valid INCONCLUSIVE`**（终态指定）：S2′ PASS
+  （KV 1425；baseline cacheEff ≈0.977/0.979；treatment = 0）；S1
+  （KV 31712）当前证据不足以完成该项结论。不能写 PASS 也不能写
+  失败——正确状态就是 INCONCLUSIVE。
+- **不应再回到**：继续完善 P4 harness / 再证明一次 fork 是否存在 /
+  继续堆 layer loading 实验。
+- **应进入**：`P4 replication evidence → P5 边界/解释 → Execution
+  State 证据链收束`。
+- **方向纪律（重申并升级为阶段纪律）**：大模型 layered loading 只是
+  Execution State 的**辅助证据**；把研究重心放在 layer 本身会偏离
+  SimiGo 核心问题（与「小规模是根基」「Backend 管怎么继续计算、
+  SimiGo 研究从哪里继续计算」一脉相承）。
+- **证据地图（human 直录）**：Runtime consistency/D1 已批准并实现；
+  discard/release atomicity 已修复；INV-3 reconcile PASS；C_model
+  已校准；GA-0 Floor policy 已明确；Cancellation E2E PASS；Token
+  Ledger 95/95 + true-device PASS；P4 replication 机械判读 PASS；
+  P4 human second layer 保留；P4 Sample-3 coverage gap；D8
+  performance boundary；P5-1 INCONCLUSIVE；**Execution State 总体
+  论证尚未最终封口**。
+- 收束综合文档交付：
+  `docs/00-governance/SIMIGO_LAB_ES_EVIDENCE_CHAIN_CONSOLIDATION_20261001.md`
+
+当前状态：
+
+```text
+Phase              = EVIDENCE CHAIN CONSOLIDATION（只读综合，零新实验）
+P5-1               = protocol-valid INCONCLUSIVE（终态）
+Replication Audit  = P4 ✅ / P5-1 ✅（剩余 Day3-5 不再机械推进，
+                     是否部分消费归 human）
+Next               = 证据链收束文档 human 审阅 → 封口缺口裁定
+Blocker            = none（收束文档已交付，待审阅）
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
