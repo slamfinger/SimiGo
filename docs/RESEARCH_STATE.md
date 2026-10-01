@@ -9846,6 +9846,58 @@ G0 = AUDIT RESULT DELIVERED / CONCLUSION GATE AT HUMAN
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G0 CLOSED — SUBSTRATE W — G1 UNLOCKED — REAL CORPUS DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human 三项裁定登记：
+
+```text
+R-1  G0 = CLOSED / COMPLETE（G0 未替 PALACE 定义答案，只清理出
+     未知空间——六条工程事实 + H-G0-01 ANSWERED-DIVERGENT 在档）
+R-2  Substrate = W（substrate-agnostic / reference implementation）：
+     Memory backend 降级为可替换实验组件；裁定理由 = 非 X（防变成
+     「修 MemPalace Excel ingestion」）/ 非 Y（防「PALACE 应该是
+     Graph」偏移——Graph 是已有实现方式非 G0 证明的抽象）/
+     非 Z（组合 = 过早架构设计）；第一轮可选最简单最易控 substrate
+R-3  G1 = UNLOCKED
+```
+
+G1 定义（human 措辞冻结）：在真实秦沈文件空间中，观察 PALACE 是否
+能够支持连续的信息发现、阅读、比较、版本识别与综合工作——**不是**
+建立知识库。Execution State 定位 = 可被现实重新「召回」的候选机制
+（非已有答案）；与 SimiGo 冻结抽象形成上下游关系。
+
+G1 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_REAL_CORPUS_DESIGN_DRAFT_
+20261002.md`。
+
+```text
+Corpus-1 = 小型真实文件族小闭环（一个施工主题：Word 方案/Excel
+    预算成本/PPT 汇报/PDF 合同规范/会议纪要/修改版本；入选标准
+    C-1 主题关联/C-2 版本变化/C-3 数字关联/C-4 事实引用/C-5 上下文
+    关联；预估 10–50 文件；L0 原件只读、沙箱隔离）
+主探针（human 示例冻结）= 「找出目前成本控制方案中与原施工方案
+    发生变化的部分，并说明这些变化来自哪些文件。」
+H Register = H-PALACE-G1-01 动态索引假设（查询产生的信息反哺下次
+    查询可发现性）/ H-PALACE-G1-02 查询状态候选假设（系统是否开始
+    需要记住已查/为什么/正在比较/接下来）——均 UNVERIFIED 不定义
+禁止 = Knowledge Base/Information Object/Relation/Graph/Provenance
+    Schema/Dynamic Index Schema/PALACE State Schema 提前定义 /
+    第一轮 3000 文件 / substrate 绑定 / L0 写入 / ES 写成已有答案 /
+    Gate① 复活 / 性能基准
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结审查 + 执行授权后：Corpus-1 选族只读取证 →
+               选族清单 human 确认 → 初始可发现性建立 → 主探针
+               工作过程全记录 → 结果门）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common

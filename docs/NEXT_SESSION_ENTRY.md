@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G0_AUDIT_RESULT_DELIVERED / CONCLUSION_GATE_AT_HUMAN`
+状态：`G0_CLOSED / SUBSTRATE_W / G1_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -99,6 +99,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_GRAPHITI_OBSERVATION_20261002.md`
 46. 读 G0 结论门工件（AUDIT_RESULT 九节+决策输入）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_RESULT_20261002.md`
+   - ✅ human 三项裁定：G0 CLOSED / Substrate W / G1 UNLOCKED
+47. 读 G1 Real Corpus 设计草案（仅设计，无执行授权）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_REAL_CORPUS_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -112,7 +115,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 G0 AUDIT RESULT DELIVERED（九节：三方向样本/实际保存/实际检索/原件脱离处/Comparison/Gap A-D（D=查询状态持久化 OPEN 未决）/RQ·H 收束（H-G0-01 ANSWERED-DIVERGENT human 措辞收束；bi-temporal = E6 参考观察不构成抽象需求）/基座决策输入 X-Y-Z-W 事实陈列）——CONCLUSION GATE AT HUMAN（G0 关闭判定 + 基座决策 + G1 解锁）；G1/G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G0 CLOSED（human 判定：未定义答案只清理未知空间）/ Substrate W（substrate-agnostic，backend 降级为可替换实验组件）/ G1 UNLOCKED：Real Corpus 设计草案 COMPLETE（小型真实文件族小闭环 10–50 文件，C-1..C-5 入选标准；主探针 = 成本控制变化溯源任务；H-PALACE-G1-01 动态索引 + H-G1-02 查询状态候选均 UNVERIFIED；Execution State = 可被现实召回的候选机制非已有答案）——AWAITING HUMAN FREEZE REVIEW；G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -367,12 +370,15 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G0 AUDIT_RESULT 已交付（九节 + 四路线基座
-   决策输入）——等待 human 第二层判读：①G0 关闭判定 ②基座决策
-   （X MemPalace / Y Graphiti / Z 组合 / W 参考实现）③G1 解锁。
-   解锁后起草 G1 Real Corpus 设计草案（秦沈 500–3000 文件接入）。
-   纪律不变：Comparison→Gap，禁止 Gap→PALACE schema；查询状态
-   问题保持 OPEN 待 G1 工程事实；不写 PALACE 代码、不评排名。
+1. 下一会话第一动作：G1 设计草案已完成（小型真实文件族小闭环；
+   主探针 = 成本控制变化溯源；H-G1-01 动态索引 + H-G1-02 查询状态
+   候选 UNVERIFIED）——等待 human 冻结审查；通过 + 执行授权后：
+   Corpus-1 选族（真实秦沈目录只读取证，按 C-1..C-5）→ 选族清单
+   human 确认 → 初始可发现性建立 → 主探针执行（工作过程全记录）
+   → 结果门 → human 判读 H-G1-01/02。禁止提前定义 Knowledge
+   Base/Information Object/Relation/Graph/Provenance Schema/Dynamic
+   Index Schema/PALACE State Schema；L0 原件只读；不写 PALACE
+   代码。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、
