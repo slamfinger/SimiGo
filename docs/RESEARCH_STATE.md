@@ -14368,3 +14368,58 @@ PALACE_V2_G3 = EXECUTED / RESULT AT HUMAN
 待裁定 = G3 验收 + H-G1-02 是否升格 + 下一方向
 Current blocker = none
 ```
+
+### LAB PALACE V2 G3 RESULT GATE RULED — PASS/CLOSED — H-G1-02 UPGRADED — PALACE/SIMIGO EMPIRICAL BOUNDARY — 2026-10-02
+
+Human G3 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = G3 PASS/CLOSED；R-2 OBSERVED/QUANTIFIED；R-3 bounded
+    measurement PASS；R-4/R-5/V-5 复检 PASS；H-G1-02 升格
+    SUPPORTED — strong exploratory evidence；ES 必要性仍
+    UNPROVEN；新 Schema NOT AUTHORIZED；RQ-G3-1..3 进入下一
+    研究阶段
+H-G1-02 冻结措辞（逐字，最终形态）= 「在当前真实文件工作样本
+    中，连续信息工作不仅依赖当前 L0 内容，还依赖此前形成的
+    工作位置、已发现信息、已排除项、未闭合问题以及下一步指向。
+    仅保留当前 L0 时，这些工作状态无法直接恢复，并导致可实测
+    的重复读取、重新判断和路径重推导。」（不写「必须依赖
+    Execution State」——太强）
+A 忘掉的分层 = 第一层重复工作（实测边界 bounded）；第二层工作
+    状态的信息损失（更重要）：「我知道什么/排除了什么/还不知
+    什么/为什么下一步查这个」——313,356万 本身可重找，但
+    「为什么现在应该追它」属于工作过程产生的状态——信息与
+    工作的差别第一次被拉开
+变化溯源三层 = ①找不到源头 ②局部支撑事实 ③多数值无口径
+    关系——比笼统可追溯更有价值
+ES 边界三候选 = A 只 L0 重做（已实测）/ B L0+原样记录 恢复
+    （已实测）/ C L0+PALACE Durable Information 恢复（未验）；
+    已证 A≠B（工作状态需要持久性）；未证 持久性必须由 SimiGo
+    ES 提供——若 C 完整恢复则部分 ES 形态可能沉淀进 PALACE
+方向裁定 = V1 继续 PARKED / G2 不复测 / E6·OQ-B 暂不扩展 /
+    下一入口 = RQ-G3-1（排除项/负知识：数字 X→检查→属于 7 标
+    →排除；无记录则 X 重现→重判→重排除——先观察不命名
+    Schema）/ RQ-G3-2（记录格式谱系：完整日志→结构化→摘要→
+    一句话，哪个还能真正继续——逼近 PALACE Durable Information
+    与 SimiGo ES 边界）/ RQ-G3-3 低优先级（停止点曲线未来
+    形态不预设）
+边界意义（human 原文）= 「它第一次给 PALACE 和 SimiGo 之间的
+    边界提供了实证问题，而不是概念上的边界」
+证据链收束（human 逐字）= 「G1 发现连续信息工作存在路径依赖；
+    G2 证明后续工作实际消费此前发现；G3 则实测证明，丢失这些
+    工作记录会使下一次工作退化为重新发现、重新判断和重新选择
+    路径。」
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2/G3 = 全链 CLOSED
+H-G1-01/02          = SUPPORTED（strengthened / strong exploratory）
+ES 必要性           = UNPROVEN（三候选 C 未验）
+下一入口            = RQ-G3-1（负知识观察）/ RQ-G3-2（记录格式
+                      谱系）——具体设计待 human 发起
+Current blocker     = none
+```
