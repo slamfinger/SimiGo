@@ -13,6 +13,10 @@ Consolidation（`d408729`）· ES-D1 Seal（`180b065`，J-C）· ES-R2 Gate
 A/B（`24c4a97` / `92b18c0`）  
 性质：participant proposal——不实现、不选库、不解决 OP/G、不触发实验
 
+rev.1（2026-10-02 审读修正，零语义变更）：CH 来源归属精化至
+Architecture Contract v1.0；EF-11 补证据级标注（随 stage conclusion
+保留复制状态）；新增附录 A 证据溯源表。
+
 ```text
 registered engineering fact ≠ contract-derived hypothesis ≠ selected implementation
 ```
@@ -66,14 +70,14 @@ F3 七操作适配 每个生命周期操作在 durable 层有可验证的义务�
 | EF-8 | restore 验收边界实测：storageKey 字段值=informational、history 无完整性门、modelId=兼容门、generation=presence-only、cacheSHA256=仅 safetensors 字节 | E1.5（6/6 预登记） |
 | EF-9 | durable 身份分配/跨重启 reservation 不存在（caller-supplied opaque string）；Lab 无 durable Execution State store | G-7 / G-10（NOT CLOSED） |
 | EF-10 | 产品已存在 durable writer：branch checkpoint（62/64 GiB）+ prefix pool（15/16 GiB），成对回收、ownership-aware | Writer Provenance Audit |
-| EF-11 | KV tensor 本身不构成 Execution State；缺关系条件时恢复不能可靠继续 | ES Stage Conclusion §2.1 |
+| EF-11 | KV tensor 本身不构成 Execution State；缺关系条件时恢复不能可靠继续（证据级随登记结论保留标注：P5-1 protocol-valid INCONCLUSIVE 含复制 / P5-2-C 原跑未复制） | ES Stage Conclusion §2.1/§2.2 |
 
 ### 2.2 契约推导（semantic hypothesis 级，非工程事实）
 
 | 编号 | 内容 | 来源 |
 |---|---|---|
-| CH-1 | MUST BE DURABLE 最小集 = SC-2 七字段（id + lineage.root + lineage.parent + position + continuation.nextInput + continuation.continuationID + lifecycle）+ tombstone closure data；binding relations OPTIONAL | Architecture Contract SC-2；Phase B |
-| CH-2 | 语义演化仅经登记事务窗口（fork：物理 derive 先行；restore：物理 restore 先行；discard：物理 release 先行；bind：restore 后记录） | SC-3 |
+| CH-1 | MUST BE DURABLE 最小集 = SC-2 七字段（id + lineage.root + lineage.parent + position + continuation.nextInput + continuation.continuationID + lifecycle）+ tombstone closure data；binding relations OPTIONAL | Architecture Contract v1.0 SC-2；Phase B |
+| CH-2 | 语义演化仅经登记事务窗口（fork：物理 derive 先行；restore：物理 restore 先行；discard：物理 release 先行；bind：restore 后记录） | Architecture Contract v1.0 SC-3（前驱参照，冲突以 v1.0-amended 为准） |
 | CH-3 | 七操作义务表（§5 原文：create 明确 identity 绑定+初始 position；fork 双侧 anchor 相等+parent 非污染；continue 严格前缀延接+provenance 可断言；save durable 固化+原子+溯源+非语义 mutation；restore I/P/A 可再断言+C 可再接续+fail-closed；discard 无 ghost continuation+原子；release 绑定清空+无残留+可重试；eviction=release 族） | Contract v1.0-amended §5 |
 | CH-4 | D3 场景判定（restore/reattach/rematerialization/recompute/backend-replacement/representation-loss 全 SAME；closure 破损 loud fail；NEW 仅 create/fork） | D1–D4 scaffold（降级为 hypothesis） |
 
@@ -258,3 +262,23 @@ UNKNOWN
 ```
 
 当前无实验授权、无实现授权、无选型授权。
+
+## 附录 A — 证据溯源表（EF/CH → 工件 + 关键锚点）
+
+| 项 | 工件（commit） | 关键锚点（登记原文摘引） |
+|---|---|---|
+| EF-1 | Framing Registration（`739b967`）§1 | 「durable semantic side …（addressing carrier = caller key / semantic continuation carrier = conversation history，including tool-execution history）」「physical acceleration side └ checkpoint / Prefix Pool 等可替换 physical representation」 |
+| EF-2 | PALACE1 E3 Results（`aa76f95`） | 「continuation-bearing 语义住在会话正文（含 tool 执行历史），不在 system persona、不在寻址/保护/兼容字段」；C-0…C-3 = 4/4 预登记零偏离 |
+| EF-3 | 同上 + Evidence Consolidation（`d408729`） | 「C-2 …模型不拒答，而从 persona 先验虚构了貌似合理、完全错误的会话概述」；RF-1 = REGISTERED / OPEN RESEARCH |
+| EF-4 | ESD1 Seal（`180b065`） | 「identity and semantic history cross the boundary, while position and continuation remain derived, and lineage is only partially represented」；formation gap located at the checkpoint commit boundary；forkPoint = latent formation mechanism |
+| EF-5 | ES-R2 Gate A（`24c4a97`；RESEARCH_STATE 登记） | FSB-1：「最小充分集 = {storageKey, position: N, continuation-anchor: tail(N)}——标量字节、formation 时刻全部在场；捕获即形成独立权威 State 记录」 |
+| EF-6 | ES-R2 Gate B（`92b18c0`；RESEARCH_STATE 登记） | 「identity/position/anchor 全部仅凭 carrier 读出：SURVIVED」；STATE-SURVIVES CONFIRMED（零偏离） |
+| EF-7 | 同 EF-5（FSB-2） | 「Tier-2 …INSUFFICIENT——缺口不是字段而是一类不存在的载体」 |
+| EF-8 | PALACE1 E15 Results（`263700c`） | 「meta.storageKey 字段值 = informational duplicate」「history（语义载荷）= 无完整性门」「modelId = 兼容门（拒）」「generation = presence-only commit marker」「cacheSHA256 = 仅 safetensors 字节完整性」 |
+| EF-9 | BACKEND1 Adapter Engineering Audit；Seam Audit | 「G-7 INHERITED / NOT CLOSED（ID 由 host 提供，无 durable allocator）」「G-10 INHERITED / NOT CLOSED」「Lab 无 durable Execution State store（Phase B gap #1 仍在）」 |
+| EF-10 | PALACE1 Product Writer Provenance Audit | 「branch checkpoint 约 62 GiB／默认 budget 64 GiB」「prefix pool 约 15 GiB／默认 budget 16 GiB」「成对回收/ownership-aware/字节预算（BETA-STORAGE-1）」 |
+| EF-11 | ES Stage Conclusion（20261001）§2.1/§2.2 | 「KV cache ≠ Execution State」「KV tensor 本身不足；缺少关系条件时，恢复不能可靠继续」（复制状态标注随结论保留） |
+| CH-1 | Architecture Contract v1.0 §1.2 SC-2；Phase B Audit/Registration | 「D 的最小持久对象 = Execution Semantic Snapshot：id + lineage.root + lineage.parent + position + continuation.nextInput + continuation.continuationID + lifecycle」 |
+| CH-2 | Architecture Contract v1.0 §1.2 SC-3 | 「语义演化仅经四个登记事务窗口」 |
+| CH-3 | Contract v1.0-amended §5 | 七操作义务表（create/fork/continue/save/restore/discard/release 逐条） |
+| CH-4 | D-scaffold（`DEFERRED / RETAINED AS SEMANTIC HYPOTHESIS SCAFFOLD`） | D3 场景判定表（降级为 hypothesis 后仅作问题框架引用） |
