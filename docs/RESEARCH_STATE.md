@@ -9358,6 +9358,40 @@ Next   = P5-2 External Review → Minimal Closure Review + Security Boundary Rev
 Current blocker = P5-2 external review assignment (human)
 ```
 
+### P5-2-ER TASK ORDER ISSUED — 2026-10-01
+
+Human direction：P5-2 external review 先行（含 Minimal Closure +
+Security Boundary），Palace Mapping 不得在 ER 完成前激活。
+
+Task order artifact：
+`SIMIGO_LAB_P5_2_ER_EXTERNAL_REVIEW_TASK_ORDER_20261001.md`
+
+Scope：
+```text
+Review A: Minimal Closure
+  A1 Identity necessity
+  A2 Position necessity
+  A3 Semantic Anchor necessity
+  A4 Continuation: state or capability?
+  A5 Minimality proof (remove-one-relation)
+
+Review B: Security Boundary (P5-2-S)
+  B1 State possession → capability
+  B2 State leakage → what leaks?
+  B3 State delegation semantics
+  B4 State revocation mechanism
+```
+
+Output format：统一 YAML（per task order §Review output format）。
+
+Current state：
+
+```text
+P5-2-ER = TASK ORDER ISSUED / REVIEW PENDING
+Palace Mapping = BLOCKED until P5-2-ER completes
+Current blocker = reviewer assignment (human)
+```
+
 ### P5-2-0 CONTINUATION DEPENDENCY MAP + REFRAMING — 2026-10-01
 
 Code-level audit of MLX Swift LM ChatSession + NativeMLX continuation
