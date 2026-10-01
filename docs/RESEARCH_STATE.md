@@ -9292,6 +9292,55 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
+
+#### 事件
+
+```text
+误操作：将 P4-P7 实验代码 + R0 审计仪器推送到公开产品仓
+        slamfinger/SimiGo (public GitHub)
+暴露提交：a262839..70081e5（19 commits，22 个实验文件，~4000 行）
+暴露内容：Execution State closure 模型、ablation matrix、
+         NativeMLX cold-start bug、llama-server 集成、
+         研究方法论、gate 纪律流程
+```
+
+#### 处置
+
+```text
+行动：git push --force origin dc12a0c:main
+结果：remote main 回滚至 dc12a0c（release build 9）
+      19 个暴露 commits 已从 remote history 移除
+      本地也已 reset 至 dc12a0c
+      产品仓无实验代码残留
+```
+
+#### 残余风险
+
+```text
+⚠️ 暴露窗口内（push→force push 之间）clone 的副本不受影响
+⚠️ GitHub server-side cache 可能短期内仍可访问旧 commit
+⚠️ 0dc166b（早期 P5 harness，更早推送）也已被移除，
+   但如果该 commit 曾被 clone，代码仍存在于外部副本中
+```
+
+#### 教训
+
+```text
+1. 实验代码不在产品仓 commit——即时验证 commit 范围再 push
+2. 产品仓 push 前检查 staged files 不包含 Palace1*/P7R2*/Replication* 文件
+3. 研究代码仅在 SimiGo-Lab 仓维护
+4. force push 是最后手段，不能替代推送前审计
+```
+
+Current state:
+
+```text
+产品仓 slamfinger/SimiGo = CLEAN（dc12a0c，无实验代码）
+研究仓 slamfinger/SimiGo-Lab = 所有实验代码和研究文档保留
+Blocker = none
+```
+
 ### PRODUCT REPO EXPERIMENT CODE WITHDRAWN — 2026-10-01
 
 Human direction：实验代码从 `slamfinger/SimiGo` 撤回，研究内容仅局限
