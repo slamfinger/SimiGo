@@ -144,3 +144,16 @@ pass-1 原始工件覆写教训已登记。
 
 **终判待 human closure revision gate：P 关系在 closure 中的地位**
 （保留为关系并注明载体依赖 / 重述为载体级断言 / 其他修正）。
+
+## 8. OPS 注记（2026-10-02 补）：llama-server 运行卫生
+
+- 本轮启动未设 `-c`，llama-server 按模型元数据取 `n_ctx_slot=140544
+  × 4 slots` 巨量 KV 分配；实验结束 server 空转仍占 ~75% CPU（日志
+  证实 20:00 后零请求却持续高负载）+ 21GB mmap 驻留，系统内存空闲
+  曾降至 13%、swap 1.8GB。
+- 用户报告推理期间内建屏间断性闪烁。因果链=Metal GPU 推理（21GB
+  权重统一内存高频读写 + iGPU 同时承担 WindowServer 合成）+ 内存
+  压力/换页 ⇒ 合成器丢帧。server 停止后系统恢复 89% idle。
+- **未来 llama.cpp 实验运行规范**：①启动必加 `-c 8192` 限 KV；
+  ②可选 `--n-gpu-layers` 调节 GPU 压力（换速度）；③**跑完即关
+  server**，不得留驻后台。
