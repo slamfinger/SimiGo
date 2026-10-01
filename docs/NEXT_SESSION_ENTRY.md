@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`RQG3_1_CLOSED / E_X1_REVOKED_CORPUS_EXTENDED / RQG3_2_DESIGN_ENTRY`
+状态：`RQG3_2_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -158,6 +158,9 @@
    - ✅ human 结果门裁定：RQ-G3-1 PASS/CLOSED；E-X1「相邻主题」排除撤销→历史记录；经济运行族纳入候选语料；0308 纳入扩展样本（新增验证样本/后发现版本标记）；经济工作进展维持排除；RQ-G3-2 UNLOCKED（双轴焦点）
 66. 读 RQ-G3-1 结果门裁定登记（E-X1 拆分重裁 + 只存结论的危险 + H 更新）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`
+   - ✅ human 确认：RQ-G3-2 设计起草（双轴；不比格式优劣；测可恢复·可质询·可修正；两故障锚点；不预设原样为最终答案）
+67. 读 RQ-G3-2 设计草案（仅设计，无执行授权）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -426,13 +429,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：起草 RQ-G3-2 设计草案（双轴焦点 = 恢复
-   能力 × 历史判断可审查性；记录谱系 = 当前位置/结论摘要/结构化
-   记录/原样记录 × 能否继续/知道为什么/重新审查旧判断；衔接
-   E6 V-5 与 G3-1 排除撤销两案例——记录既是资产也是需重验的
-   历史证据）。draft → human 冻结 → 执行。纪律不变：L0 只读；
-   不创建 version chain/lineage；禁止各 Schema；不写 PALACE
-   代码。
+1. 下一会话第一动作：RQ-G3-2 设计草案已完成（记录谱系四档
+   机械派生 + 重进任务 α/β/γ + 四问计量 + 重做量对照）——等待
+   human 冻结审查；通过 + 执行授权后四档构建 → 逐档重进 →
+   结果门（四问矩阵 + 重做量对照）→ human 判读（含 G3 主线
+   收束判定与 RQ-G3-3 处置）。禁止：Provenance Schema/Information
+   Object/Relation/Version/Lineage 定义 / 数据库/PALACE State
+   设计 / 记录层级变产品 API / 原样记录预设最终答案 / L0 写入 /
+   性能基准 / Corpus 扩容 / Gate① 复活；不写 PALACE 代码。
 
 继续区分：
 

@@ -14570,3 +14570,45 @@ Corpus-1 = A×8 + D×6 + 经济运行 0307/0308（扩展标记）= 16 文件
 RQ-G3-2 = UNLOCKED / DESIGN ENTRY（双轴焦点）
 Current blocker = none
 ```
+
+### LAB PALACE V2 RQ-G3-2 DESIGN DRAFT COMPLETE — RECORD SPECTRUM DUAL-AXIS EXPERIMENT — 2026-10-02
+
+Human 确认 RQ-G3-2 设计起草（核心问题冻结；研究对象 = 历史工作在
+未来是否仍然具有可恢复·可质询·可修正性；禁止比较「哪个格式最好」；
+两真实故障锚点；不预设「原样记录」为最终答案）。
+
+RQ-G3-2 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+核心问题（human 措辞冻结）= 不同程度的工作记录，在多大程度上
+    既能支持继续工作，又能让过去的判断重新被审查？
+记录谱系四档（从实际产物机械派生，零新整理——G3 原样性裁定
+    延续）= Tier-4 原样记录（G1/G2 产物全量）/ Tier-3 结构化
+    （三份 JSON）/ Tier-2 结论摘要（S1..S8 逐字）/ Tier-1
+    当前位置（台账一行）
+重进任务（每档限用该档记录 + L0；执行者知识污染声明）=
+    α 继续性（RQ-G2-2：313,356万 来源追寻）/ β 可审查 A
+    （D-rec-3 vs F9/F10 现实——V-5 截断缺陷能否检出）/
+    γ 可审查 B（历史排除 vs 0307/0308 内容证据——E-X1 原排除
+    可能问题能否检出）
+观察计量 = ①能否继续 ②知道为什么 ③发现可能有问题 ④定位
+    重检原始信息 + 各档重做量——「高/低」不在设计阶段预设
+禁止 = Provenance Schema/Information Object/Relation/Version/
+    Lineage 定义 / 数据库/PALACE State 设计 / 记录层级变产品
+    API / 原样记录预设为最终答案 / L0 写入 / 性能基准 /
+    Corpus 扩容 / Gate① 复活 / E6·OQ-B·G2 重做
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：四档构建 → 逐档重进 α/β/γ →
+    结果门四问矩阵 + 重做量对照 → human 判读含 G3 主线收束与
+    RQ-G3-3 处置）
+Current blocker = none
+```
