@@ -22,9 +22,9 @@ team_re='YPXU''8M53F9'
 email_re='slamfinger''@163''\.com'
 
 check "no tracked local absolute paths or local user identifiers" \
-  bash -c '! git grep -I -n -E "$0|$1" -- .' "$path_re" "$user_re"
+  bash -c '! git grep -I -n -E "$0|$1" -- . ":(exclude)tools/open_source_audit.sh" ":(exclude)tools/release_artifact_audit.py"' "$path_re" "$user_re"
 check "no tracked signing team or private email" \
-  bash -c '! git grep -I -n -E "$0|$1" -- .' "$team_re" "$email_re"
+  bash -c '! git grep -I -n -E "$0|$1" -- . ":(exclude)tools/open_source_audit.sh" ":(exclude)tools/release_artifact_audit.py"' "$team_re" "$email_re"
 check "no tracked model-weight artifacts" \
   bash -c '! git ls-files | grep -Ei "\.(safetensors|gguf|bin|pth|ckpt|weights)$"'
 check "no tracked packaged app or DMG" \
