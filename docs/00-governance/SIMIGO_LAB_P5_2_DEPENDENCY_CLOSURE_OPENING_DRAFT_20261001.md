@@ -17,7 +17,13 @@ Route authority：`SIMIGO_LAB_EXECUTION_STATE_RESEARCH_ROUTE_REDEFINITION_202609
 
 ### §0.1 修正后的定义
 
-**Execution State = 保证未来计算连续性的最小关系闭包。**
+**Execution State = 保证未来计算连续性的候选最小关系闭包。**
+
+> 本体论声明：此闭包是从观测到的依赖关系（P5-2-0 map）中
+> **构造**的框架，不是对既有自然范畴的发现。其价值以预测力
+> 和工程效用来度量，不以本体论发现来主张。"候选最小"表示
+> 概念论证支持四关系缺一不可，但经验证（P5-3 ablation）尚未
+> 完成。
 
 这不是一个数据对象。它是一个关系系统：
 
@@ -27,8 +33,11 @@ Execution State =
   + Position relation        （计算进行到哪里？）
   + Semantic Anchor relation （这个状态对应什么语义历史？）
   + Continuation relation    （下一步计算如何接入？）
-  + Physical Carrier         （用什么介质承载？）
 ```
+
+> Physical Carrier 不是闭包成员。Carrier 是闭包的实例化介质：
+> `Closure ──instantiated by──▶ Carrier`。闭包定义在关系层，
+> Carrier 在物理层。同一闭包可以由不同 Carrier 承载。
 
 ### §0.2 与 Contract v1.0 的关系
 
@@ -165,8 +174,9 @@ Semantic Anchor relation =
   + continuation input   （nextInput 定义 Δ 的接入点）
 ```
 
-P5-1 根因：alignment anchor 断裂（31712 tokens 的 cache 无法被 212
-tokens 的 prompt 解释）。即使 KV 完好，anchor 缺失 → state 不可解释
+P5-1 根因：alignment anchor 断裂（旧执行 trace：31712 tokens 的 cache
+无法被 212 tokens 的 prompt 解释——仅用于根因分析，不作为新结果
+证据）。即使 KV 完好，anchor 缺失 → state 不可解释
 → rebuild。
 
 ### §3.4 Contract 对照
@@ -284,7 +294,7 @@ identity/position/anchor/continuation 关系，KV 无法独立充当 State。
                  （KV / hidden state / …）
 ```
 
-### §6.1 闭包检查清单（五问）
+### §6.1 已识别的五个关系维度
 
 | 缺失 | 后果 |
 |---|---|

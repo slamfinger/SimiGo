@@ -9292,6 +9292,66 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2-ER COMPLETE — PASS-WITH-REVISIONS — 2026-10-01
+
+Three reviewer outputs + self-review integration complete.
+
+Artifacts:
+- Reviewer-1 (Architecture): `SIMIGO_LAB_P5_2_ER_REVIEWER1_ARCHITECTURE_REVIEW_20261001.md`
+- Reviewer-2 (Security): `SIMIGO_LAB_P5_2_ER_REVIEWER2_SECURITY_REVIEW_20261001.md`
+- Reviewer-3 (Integrity): `SIMIGO_LAB_P5_2_ER_REVIEWER3_INTEGRITY_REVIEW_20261001.md`
+- Self-review: `SIMIGO_LAB_P5_2_ER_SELF_REVIEW_INTEGRATION_20261001.md`
+
+Verdict: `PASS-WITH-REVISIONS`
+
+Revisions applied to draft (`d1a415f` → revised in-place):
+```text
+R3-1  §0 ontology = CONSTRUCTED (not discovered)
+R3-2  "最小" → "候选最小" (until P5-3 ablation)
+R3-3  "五问" → "已识别的五个关系维度"
+R3-4  P5-1 trace numbers marked "old execution, root-cause only"
+R1-Q1 Carrier separated from Closure in §0 (explicit boundary)
+```
+
+Minimal Closure result:
+```text
+Identity:      necessary (code-fact)
+Position:      necessary (code-fact)
+Anchor:        necessary (code-fact; minimum form OPEN → P5-3 axis A)
+Continuation:  in-state (Contract SC-2)
+Minimality:    PROVISIONALLY YES (conceptual; P5-3 required)
+Carrier:       NOT closure member (all reviewers confirm)
+```
+
+Security result:
+```text
+Capability level: EXECUTION-LEVEL
+meta.json = highest-value target (plaintext conversation + identity)
+Revocation: DOES NOT EXIST — requires design
+Delegation: context YES / authority NO / assumptions PARTIAL
+Possession = capability: conditionally (requires closure completeness)
+```
+
+Open points updated (OP-P5-6..8 new from Security review):
+```text
+OP-P5-6  KV inversion attack risk
+OP-P5-7  Revocation mechanism design
+OP-P5-8  Cross-user delegation protocol
+```
+
+Current state:
+
+```text
+P4 = PASS (topology)
+P5-1 = SEALED / INCONCLUSIVE
+P5-2-0 = Dependency Map COMPLETE
+P5-2-ER = PASS-WITH-REVISIONS / revisions applied
+P5-2 = Dependency Closure REGISTERED (provisional, candidate minimal)
+Palace Mapping = UNBLOCKED (provisional closure language required)
+P5-3 ablation = READY FOR DESIGN (axes A/B/C registered)
+Current blocker = none
+```
+
 ### P5-2 OPENING DRAFT HUMAN REVIEW — REVIEW-READY — 2026-10-01
 
 Draft artifact：`SIMIGO_LAB_P5_2_DEPENDENCY_CLOSURE_OPENING_DRAFT_20261001.md`
