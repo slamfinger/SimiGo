@@ -1,7 +1,7 @@
 # P5-4: Minimal Closure Reduction — Design Draft
 
 日期：2026-10-01  
-状态：`DESIGN DRAFT / AWAITING HUMAN AUTHORIZATION`  
+状态：`AUTHORIZED FOR EXECUTION`  
 前置：P5-2-C Backend Dependency Closure Validated  
 Closure：`{I, P, A, C}` (provisional, P5-2-C 后端证据)  
 Contract v1.0：不变
