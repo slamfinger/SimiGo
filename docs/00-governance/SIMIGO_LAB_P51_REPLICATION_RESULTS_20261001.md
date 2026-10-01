@@ -2,7 +2,7 @@
 
 日期：2026-10-01
 状态：`EXECUTED / OVERALL INCONCLUSIVE（s2 PASS + s1 INCONCLUSIVE）/
-含机制诊断 / AWAITING HUMAN SECOND LAYER`
+HUMAN SECOND LAYER REGISTERED（性质定义 + 样本资格条件）`
 任务令：human 2026-10-01（「继续」→ Day 2 = P5-1 replication；
 Empirical Replication Audit Phase-1 依赖链第 2 步）
 性质：复制验证 + 冻结时机制诊断。判定输入零旧产物读取。
@@ -126,3 +126,57 @@ treatment 四格输出与原 P5 attempt 逐字同形（『该会话此前未进�
 非独立 continuation carrier」在本 backend 再次直接观测成立**。
 下一步（Day 3 = P5-2-C replication）是否按原计划推进、以及 S1 类
 样本处置，归 human second layer 裁定。
+
+---
+
+## 8. HUMAN SECOND LAYER — REGISTERED — 2026-10-01
+
+Human 对本轮复核的性质裁定（落档要点，原文语义逐条保留）：
+
+### 8.1 性质精确定义
+
+> **P5-1 replication = 对原 P5 attempt-1 的封存结果进行受控复核
+> （replication），不是重新提出一个新命题。**
+
+归属归类：**protocol-faithful replication with a mechanically
+corrected control arm**（修复实验载体，不修改实验命题和判据），
+不是 exploratory experiment。原 attempt-1 的 baseline 缺陷
+（`messages: [userMsg(probe)]` 而非 fullHistory + probe）使
+treatment 的 rebuild 与 baseline 自身的 rebuild 无法区分；本次复核
+修复该载体使命题可测。
+
+### 8.2 P5-1 在研究链中的定位
+
+P5-1 = **P5 阶段的机制边界复核**。承担的不是证明整个 Execution
+State，而是更窄的一问：
+
+> 当已有 KV representation 与当前可渲染的 prompt anchor 无法对齐
+> 时，runtime 是否把该 representation 视为不可继续消费并进入
+> rebuild 路径？
+
+### 8.3 INCONCLUSIVE 的精确读法（非推翻）
+
+```text
+S1 baseline failure → C3 不成立
+  → 不能用 S1 区分「anchor failure」与「原本就无法对齐」
+  → INCONCLUSIVE
+```
+
+INCONCLUSIVE **不是说 anchor→rebuild 命题被推翻**。它准确表示：
+
+> **该样本不具备验证这个命题所需要的 baseline 对照条件。**
+
+### 8.4 新登记概念：样本资格条件（sample eligibility）
+
+> KV representation 必须能够由对应 transcript/history 解释，否则
+> baseline 本身就可能进入 rebuild，无法用于判断 anchor surgery 的
+> 因果效果。
+
+S1 的复核同时完成了对**原实验样本资格问题的定位**——原 P5-1 的
+S1 是一个不合格的对照样本。
+
+### 8.5 终表述（human 原话）
+
+> **原 P5-1 命题在合格样本 S2′ 上完成复制；S1 的复核同时完成了对
+> 原实验样本资格问题的定位，因此总体按预注册规则保持
+> INCONCLUSIVE。**

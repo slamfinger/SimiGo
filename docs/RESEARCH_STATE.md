@@ -9374,6 +9374,36 @@ Next           = Day 3 P5-2-C replication 是否按原计划推进 + S1 类样�
 Blocker        = human direction
 ```
 
+### P5-1 REPLICATION — HUMAN SECOND LAYER REGISTERED — 2026-10-01
+
+Human 裁定落档（结果文档 §8，要点）：
+
+- **性质**：protocol-faithful replication with a mechanically
+  corrected control arm——对原 P5 attempt-1 封存结果的受控复核，
+  修复实验载体（baseline fullHistory 化），命题与判据零修改；
+  非 exploratory experiment
+- **定位**：P5-1 = P5 阶段的机制边界复核，窄问题=「已有 KV
+  representation 与当前可渲染 prompt anchor 无法对齐时，runtime
+  是否视为不可继续消费并进入 rebuild」
+- **INCONCLUSIVE 精确读法**：非推翻——准确含义=「该样本不具备
+  验证这个命题所需要的 baseline 对照条件」
+- **新登记概念：样本资格条件（sample eligibility）**——KV
+  representation 必须能被对应 transcript/history 解释，否则
+  baseline 自身进入 rebuild，无法判断 anchor surgery 的因果效果；
+  S1 复核同时定位了原实验的样本资格问题（原 S1=不合格对照样本）
+- **终表述（human 原话）**：「原 P5-1 命题在合格样本 S2′ 上完成
+  复制；S1 的复核同时完成了对原实验样本资格问题的定位，因此总体
+  按预注册规则保持 INCONCLUSIVE。」
+
+当前状态：
+
+```text
+P5-1 replication = REGISTERED（INCONCLUSIVE + 性质定义 + 样本资格条件）
+Next             = Day 3 P5-2-C replication 授权归 human
+                   （复制设计须先答 S1 类样本资格问题）
+Blocker          = human direction
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
