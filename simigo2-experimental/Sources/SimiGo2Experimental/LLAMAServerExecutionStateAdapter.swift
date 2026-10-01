@@ -106,10 +106,10 @@ public final class LLAMAServerExecutionStateAdapter: @unchecked Sendable {
   public func open() async throws -> String? {
     do {
       let props = try await executor.props()
-      stateLock.lock()
-      openState = true
-      openModelIdentity = props.modelPath
-      stateLock.unlock()
+      stateLock.withLock {
+        openState = true
+        openModelIdentity = props.modelPath
+      }
       return props.modelPath
     } catch let error as LLAMAServerExecutorError {
       if case .badStatus(let status) = error {
