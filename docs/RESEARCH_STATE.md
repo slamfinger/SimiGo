@@ -10030,6 +10030,45 @@ Gate   = G-δR formalization = PENDING（不自动进入）
 Blocker = human direction
 ```
 
+### G-δR FORMALIZATION GATE OPENED — DEFINITIONS FROZEN + FORMAL REPLAY EXECUTED — 2026-10-02
+
+human 指令：不开 G-δR 实验，先进入很短的 formalization gate（明确
+非 minimality validation v2）。文档：
+`docs/00-governance/SIMIGO_LAB_GDELTAR_FORMALIZATION_GATE_20261002.md`
+（零实验零模型调用）。
+
+```text
+①定义冻结 = ES_semantic={I,P,A,C}+Role 分解（P 三功能/I·A·C 主功能）；
+  representation R=(Σ_R,C_R,Inv_R,Rules_R)；Compensable_R/Derivable_R/
+  Irreducible_R 取「功能补偿」形式（可推导对象=功能的可提供性非断言
+  值——Gδ-P 双层读法在此不再冲突）；语义成员判据=X 至少提供一个角色
+  功能在某个已注册 R 上不可补偿且为 invariant 所需（形式核心，待
+  human 批准）
+②Inv_R 边界冻结 = 允许 schema/carrier semantics/封闭 Rules_R；禁止
+  偷看 carrier bytes 提取值/隐藏字段/全量重算/临时造规则；精确化=
+  carrier 对已注册断言的比对（走注册规则）允许，从 carrier 提取值
+  排除——Gδ-P 探针张力消解
+③formal replay = 四关系×双表示表：I necessity 双侧（content 子功能
+  A 部分补偿）/A Irreducible 双侧/C Irreducible 双侧/P=P-2 在
+  R_llama Compensable via A 而在 R_MLX 不可补偿（S1）⇒ replay
+  一致性 ✅ 无逻辑冲突；(relation,representation) 属性获形式化实例
+④gate 判定（倾向注明）= 形式化骨架已成立；三项收尾（角色分类学
+  附录/invariant 所需谓词操作化/Rules_R 枚举）均为形式化内部工作
+  不需要模型实验 ⇒ 本档倾向 Formalization sufficient（收尾在 G-δR
+  内以附录完成）；最终判定归 human
+禁止方向冻结 = llama necessity/第三 backend/更多模型/Qwen4Exp/性能
+  benchmark/UI branch sessions/包装成理论已成立
+```
+
+当前状态：
+
+```text
+Gate   = G-δR FORMALIZATION GATE OPENED（定义冻结+replay 完成）
+Next   = human gate 裁定（sufficient ⇒ 冻结结论不实验 / 缺口 ⇒
+         最小必要实验设计）
+Blocker = human gate 裁定
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
