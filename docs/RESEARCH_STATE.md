@@ -14524,3 +14524,49 @@ RQ-G3-1 = EXECUTED / ①..⑤ 完成 / RESULT AT HUMAN
         + RQ-G3-2 是否启动
 Current blocker = none
 ```
+
+### LAB PALACE V2 RQ-G3-1 RESULT GATE RULED — E-X1 REVOKED & SPLIT — CORPUS EXTENDED — RQ-G3-2 UNLOCKED — 2026-10-02
+
+Human 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = ①..⑤ 全 SUPPORTED（④ = UNSAFE IN THIS INSTANCE 具体
+    反例：「排除状态 ≠ 足够的可恢复工作记录」）；H-G1-01 =
+    SUPPORTED—re-confirmed；H-G1-02 = SUPPORTED—strengthened；
+    RQ-G3-1 PASS/CLOSED；RQ-G3-2 UNLOCKED
+E-X1 重裁（拆两裁定）：
+  E-X1-A 经济运行族 = YES 纳入成本控制相关候选语料（内容证据
+      支持非文件名推断）；原「相邻主题」排除撤销→转存历史
+      排除记录
+  E-X1-B 0308 = YES 纳入 Corpus-1 扩展样本，标记「新增验证
+      样本/后发现版本」（不悄悄改写原 Corpus；含 +308万 现场管理费
+      实质修订）
+  经济工作进展（截至11月底）= 维持排除（一致）
+  纪律 = 仅记录「两文件之间发生了什么」；不定义 version_of/
+      supersedes/lineage/revision relation
+本轮最深发现登记 = 排除项本身也可能失效：仅存 excluded 标记
+    → 旧判断阻止新证据进入（危险状态）；存 excluded+reason+
+    basis → 至少可问「新证据是否已使原依据失效」——观察登记
+    不命名 Provenance Schema
+H 更新 = H-G1-02 SUPPORTED—strengthened（新增：过去排除判断
+    及其依据可能需随新 L0 内容重新审查）/ H-G1-01 SUPPORTED—
+    re-confirmed（目录+内容双层面路径依赖；「信息空间不是一次
+    扫描之后就封闭的」）
+E6↔G3-1 共同规律（human 登记）= 过去的工作记录既是继续工作的
+    资产，也是需要被重新验证的历史证据
+RQ-G3-2 解锁（焦点修正）= 双轴「恢复能力 × 历史判断可审查性」
+    （当前位置/结论摘要/结构化记录/原样记录 × 能否继续/知道
+    为什么/重新审查旧判断）
+Corpus 变更证据 = corpus-change-rqg3-1.json 落盘
+```
+
+当前状态：
+
+```text
+RQ-G3-1 = PASS / CLOSED
+Corpus-1 = A×8 + D×6 + 经济运行 0307/0308（扩展标记）= 16 文件
+RQ-G3-2 = UNLOCKED / DESIGN ENTRY（双轴焦点）
+Current blocker = none
+```

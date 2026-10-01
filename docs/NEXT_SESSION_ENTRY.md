@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`RQG3_1_EXECUTED / E_X1_CONFLICT_AT_HUMAN`
+状态：`RQG3_1_CLOSED / E_X1_REVOKED_CORPUS_EXTENDED / RQG3_2_DESIGN_ENTRY`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -155,6 +155,9 @@
    - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（条件 A 不可见 E-X 历史记录；E-X4 只记观察；④ 三结果均可）
 65. 读 RQ-G3-1 结果记录（①..⑤ + E-X1 排除冲突 + 0308 孪生版发现）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_20261002.md`
+   - ✅ human 结果门裁定：RQ-G3-1 PASS/CLOSED；E-X1「相邻主题」排除撤销→历史记录；经济运行族纳入候选语料；0308 纳入扩展样本（新增验证样本/后发现版本标记）；经济工作进展维持排除；RQ-G3-2 UNLOCKED（双轴焦点）
+66. 读 RQ-G3-1 结果门裁定登记（E-X1 拆分重裁 + 只存结论的危险 + H 更新）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`
 
 ## Current snapshot
 
@@ -423,14 +426,12 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：RQ-G3-1 已执行并交付（① 重遇 = YES 含
-   0308 孪生版新发现；② 主题判断带内容证据重做；③ 条件 A 无
-   原因留存、新鲜依据与原排除方向相反；④ 仅标记不安全单实例
-   观察；⑤ E-X1 内容级复验已执行并挑战原排除 / E-X3 文件名级
-   可判 / E-X4 缺映射步骤）——等待 human：①..⑤ 验收 + E-X1
-   冲突重裁（经济运行两件是否纳入成本控制语料 + 0308 处置）+
-   RQ-G3-2 是否启动。RQ-N1/N2 已登记。纪律不变：L0 只读；不
-   命名 lineage/relation/provenance；禁止各 Schema；不写 PALACE
+1. 下一会话第一动作：起草 RQ-G3-2 设计草案（双轴焦点 = 恢复
+   能力 × 历史判断可审查性；记录谱系 = 当前位置/结论摘要/结构化
+   记录/原样记录 × 能否继续/知道为什么/重新审查旧判断；衔接
+   E6 V-5 与 G3-1 排除撤销两案例——记录既是资产也是需重验的
+   历史证据）。draft → human 冻结 → 执行。纪律不变：L0 只读；
+   不创建 version chain/lineage；禁止各 Schema；不写 PALACE
    代码。
 
 继续区分：
