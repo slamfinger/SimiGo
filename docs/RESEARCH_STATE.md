@@ -14225,3 +14225,46 @@ PALACE_V2_G2 = EXECUTED / RESULT AT HUMAN
 待裁定 = G2 验收 + OB 定性 + 下一步（G2 补充 / G3 入口）
 Current blocker = none
 ```
+
+### LAB PALACE V2 G2 RESULT GATE RULED — PASS/CLOSED — H-G1-02 UPGRADED — G3 UNLOCKED — 2026-10-02
+
+Human G2 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = G2 PASS/CLOSED（T-1/T-2/T-3 全 PASS）；OB-A..D 全
+    SUPPORTED；H-G1-01 = SUPPORTED—strengthened；H-G1-02 =
+    SUPPORTED (strong exploratory evidence)【升格】；ES 必要性
+    = UNPROVEN（L0+L1 仍可重算——控制继续有效）；新 PALACE
+    Schema = NOT AUTHORIZED；G3 = UNLOCKED
+关键判读登记（效力高于执行记录表述）：
+  OB-A  复用对象不是文件路径——是发现了什么/比较过什么/候选
+        对应/口径冲突/未闭合问题（术语纪律继续）
+  OB-B  0/26 精确映射是高价值结果——打掉「相近数字 = 同一
+        东西」危险假设；三形态（分项强候选但候选≠可确认 /
+        总量级缺口=信息层面缺口 / 范围外）；登记 Observation =
+        数字可发现性≠可解释性、相似性≠口径一致
+  OB-C  最强状态依赖证据形态——「理论上可能依赖」升级为
+        「实际直接使用」
+G3 解锁（不从数据库设计开始）：
+  第一问（human 原语冻结）= 「如果今天把当前工作停止，明天
+      重新打开，我究竟需要什么，才能真正从这里继续，而不是
+      重新做一遍？」
+  观察四类 = ①已发现过什么 ②已判断过什么 ③已排除过什么
+      （传统检索最易丢）④下一步为什么是下一步
+  现实成本 = 若明天只剩原始文件则必须重做 T-1/T-2
+SimiGo↔PALACE 边界登记 = PALACE G1/G2/G3（找到什么→能否支持
+  下一步→能否未来继续存在并支持工作）→ SimiGo（持续工作本身
+  如何成为可恢复 Execution State）——G3 不重新定义 ES，
+  让工程逼出边界
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2 = 全部 CLOSED
+G3               = UNLOCKED / DESIGN ENTRY（Durable Information）
+下一动作         = G3 设计草案起草（第一问已冻结）
+Current blocker  = none
+```
