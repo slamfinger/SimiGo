@@ -14660,3 +14660,55 @@ PALACE_V2_RQG3_2 = EXECUTED / RESULT AT HUMAN
         + RQ-G3-3 处置 + 下一方向
 Current blocker = none
 ```
+
+### LAB PALACE V2 G3 MAINLINE CLOSED — PALACE-SIMIGO BOUNDARY STUDY ENTRY — 2026-10-02
+
+Human G3 主线收束裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_
+ENTRY_20261002.md`。
+
+```text
+四问矩阵验收 = PASS / CLOSED——核心产出：「工作恢复能力
+    （continue）与过去判断可审查能力（audit/review）不是同一个
+    维度」（G3 主线目前最重要产出）
+Crown Findings 定性 = 双 HIGH VALUE / ACCEPTED：
+  CF-① 机械标签过度声称 → 结构化抽取必须保留「不确定性来源」；
+      PALACE 未来自动维护信息空间的最大风险可能是自动整理后的
+      信息更容易制造错误确定性（观察登记；RQ-OQB-2 OPEN）
+  CF-② 排除判断缺失形态 → 「发现什么」与「为什么没有继续关注
+      什么」同等重要；传统知识库易遗漏「不做什么」的价值
+G3 收束登记（human 格式）= G3 Durable Information = CLOSED；
+  RQ-G3-1 PASS / RQ-G3-2 PASS；主要发现 = 工作恢复至少包含五项：
+  当前工作位置/已发现信息/已排除信息/未解决问题/判断依据及其
+  不确定性（登记非 Schema）
+纪律 = 不写「PALACE Schema 已确定」/「ES 已证明必要」；已证 =
+  A（L0 only）≠ B（L0+工作状态记录）；未证 = B 必须由 SimiGo
+  ES 实现
+RQ-G3-3 处置 = 不沿 G3 深挖；问题转向「什么状态天然属于 PALACE，
+  什么状态属于 SimiGo Execution State」（回应「SimiGo 意义被
+  PALACE 摊薄」——有证据重新划分）
+职责划分登记 = PALACE 信息空间（文件发现/内容提炼/信息关联/
+  变化检测/历史判断可审查——「世界里有什么？过去知道什么？」）
+  / SimiGo 执行状态（任务位置/探索路径/模型工具状态/决策过程
+  ——「我正在做什么？下一步如何继续？」）；非竞争关系：
+  PALACE 提供稳定信息世界，SimiGo 保存人在其中的行动状态
+下一入口 = PALACE-SimiGo Boundary Study：研究问题（human 措辞
+  冻结）= 「当信息空间已经保存足够多历史信息后，哪些内容仍然
+  必须属于 Execution State？」；可能观察 = 同一 PALACE/两人
+  同时工作/不同任务/不同探索路径——哪些无法由 PALACE 恢复 =
+  ES 真正不可替代的位置
+总体判断（human 原文）= 这轮不是「做出了一个知识库」；通过真实
+  工程文件工作把 文件→信息→判断→工作过程→执行状态 的长期
+  模糊问题拆开了；G0-G3 证明前四层之间存在真实断裂；下一阶段
+  验证最后一层「执行状态」到底是什么
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2/G3 = 全链 CLOSED
+PALACE-SimiGo Boundary Study = ENTRY OPEN（设计草案待 human
+    发起后起草）
+Current blocker = none
+```

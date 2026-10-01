@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`RQG3_2_EXECUTED / DUAL_AXIS_SPLIT_DEMONSTRATED / RESULT_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_ENTRY_OPEN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -164,6 +164,9 @@
    - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（四档真隔离；非压缩率实验；不倾向 Tier-4；γ 最值得关注）
 68. 读 RQ-G3-2 结果记录（四问矩阵 + 双轴分离实证 + crown findings）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`
+   - ✅ human 主线收束裁定：四问矩阵 PASS/CLOSED（continue ≠ audit/review 两维度）；CF-①② 双 HIGH VALUE/ACCEPTED；G3 = CLOSED（五项工作恢复要素登记非 Schema）；RQ-G3-3 转向；PALACE-SimiGo Boundary Study ENTRY OPEN
+69. 读 G3 收束与 Boundary Study 入口登记：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`
 
 ## Current snapshot
 
@@ -432,14 +435,12 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：RQ-G3-2 已执行并交付（四问矩阵：Tier-1
-   方向可起步但全量重扫；Tier-2 α 可继续防盲目乐观但 β/γ 不可
-   审；Tier-3 β 可审 + Crown Finding ① 机械标签量级错配假候选
-   10,000×（corrections 已登记 80ca238）盲信则 α 误定位；
-   Tier-4 全保真；Crown Finding ② γ 全档缺失形态——排除判断
-   从未持久入档；双轴分离实证）——等待 human：四问矩阵验收 +
-   crown findings 定性 + G3 主线收束判定 + RQ-G3-3 处置 + 下一
-   方向。纪律不变：L0 只读；禁止各 Schema；不写 PALACE 代码。
+1. 下一会话第一动作：PALACE-SimiGo Boundary Study 设计草案
+   起草（human 发起后）——研究问题已冻结：「当信息空间已经保存
+   足够多历史信息后，哪些内容仍然必须属于 Execution State？」；
+   可能观察 = 同一 PALACE/两人同时工作/不同任务/不同探索路径
+   ——哪些无法由 PALACE 恢复 = ES 真正不可替代的位置。纪律：
+   L0 只读；不写 PALACE 代码；不改 SimiGo 冻结契约。
 
 继续区分：
 
