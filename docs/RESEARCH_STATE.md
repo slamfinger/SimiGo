@@ -10069,6 +10069,50 @@ Next   = human gate 裁定（sufficient ⇒ 冻结结论不实验 / 缺口 ⇒
 Blocker = human gate 裁定
 ```
 
+### G-δR GATE RULED FORMALIZATION_SUFFICIENT — APPENDICES CLOSED — G-δR FROZEN — 2026-10-02
+
+human 裁定：**FORMALIZATION_SUFFICIENT**——G-δR 不进入实验分支，三
+项收尾在 Gate 内以附录完成并冻结。文档：
+`SIMIGO_LAB_GDELTAR_FORMALIZATION_GATE_20261002.md` §5–§7。
+
+```text
+强制要求落实 = Required_R(f) 按反循环方向操作化（预注册 INV-XB →
+  允许 Rules_R → 移除 f → invariant 能否保持），禁止「P 重要⇒
+  invariant 需要 P」循环论证
+附录 A = Role taxonomy 完整版（I 三功能含 I-3 部分补偿注记/P 三
+  功能/A·C 单功能）
+附录 B = Required_R 实例化表（双表示×全角色，证据级标注）：
+  R_MLX 全 Required（P-1/P-2 经 S1；A-1 经 PA-2；C-1 经 INV-C；
+  I 经 ES-R1）＝R_llama（P-2 Compensable via ρ_L1[Gδ-P]；
+  P-1 Compensable via 全拷贝退化[如实标注]；P-3 N/A[值提取排除]；
+  A/C/I Required[Gδ-A/Gδ-C/Gδ-I 实测]）
+  ⇒ 语义成员判定（§1.4 判据机械应用）：I/A/C/P 全部 ∈ ES_semantic
+  （P 经 R_MLX 的 P-1/P-2 Required）——零降级
+附录 C = Rules_R 封闭集冻结（R_llama: ρ_L1 anchor-integrity/
+  ρ_L2 prefix-extension/ρ_L3 server-identity；R_MLX: ρ_M1
+  anchorHex/ρ_M2 restore fail-closed/**ρ_M3 no-bridge 显式缺席
+  规则**[S1 缺口形式化=使 P-1/P-2 于 R_MLX 不可补偿的机制]）
+G-δR    = FROZEN（FORMALIZATION_SUFFICIENT，不进 execution）
+理论结构冻结 = Execution State 正式描述方式改为「区分 semantic
+  closure 与具体 representation 的 irreducibility」——两层模型图
+  （Semantic Closure {I,P,A,C} / Representation R Inv_R·Rules_R →
+  role-level derivability → Irreducibility is R-dependent）
+冻结证据链 = P7-1 bounded cross-backend support → G-δ necessity+
+  carrier-dependent compensation → Closure Revision accepted →
+  G-δR formalization sufficient → Minimality 未证明且已
+  representation-aware 化
+下一道 Gate（不自动开）= 是否提升为正式 Execution State Contract
+  （contract formalization / abstraction freeze）
+```
+
+当前状态：
+
+```text
+Phase  = G-δR CLOSED（FORMALIZATION_SUFFICIENT + 附录收尾冻结）
+Gate   = Contract formalization / abstraction freeze 决策（human）
+Blocker = human direction
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

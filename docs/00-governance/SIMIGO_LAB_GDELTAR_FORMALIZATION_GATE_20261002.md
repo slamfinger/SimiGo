@@ -161,3 +161,156 @@ G-δR
 
 本档不产生实验结论；不改 G-δ 任何终态；「minimal」仍不可宣称；
 两层定义的正式化不等于 universal/general ES theory（仍 ⛔）。
+
+---
+
+## 5. GATE RULING（human，2026-10-02）：FORMALIZATION_SUFFICIENT
+
+四点理由登记：①Semantic layer 已定义（ES_semantic+Role 分解，relation
+不再是不可分割单一字段）；②Representation layer 已定义（R=(Σ,Carrier,
+Inv,Rules) ⇒ Compensable_R/Derivable_R/Irreducible_R 可正式表达）；
+③G-δ 结果无矛盾重放（R_llama: P-2 ∈ Compensable_R(A) / R_MLX:
+P-2 ∉ Compensable_R(A) = (relation,representation) 属性而非理论冲突）；
+④无语义缺口需要新实验——剩余三项属形式化内部闭合工作。
+
+**强制要求（human）**：「invariant 所需」不得成为事后任意谓词——
+`Required_R(f)` 必须按反循环方向操作化：
+
+```text
+预注册 invariant（INV-XB，先在）
+        ↓
+允许的 representation rules（Rules_R，先在）
+        ↓
+移除某 role function f（G-δ relation-removal 操作化）
+        ↓
+invariant 能否由 Inv_R + Rules_R + remaining relations 保持？
+        ↓
+Required / Compensable / Irreducible
+```
+
+禁止方向：「P 很重要 ⇒ invariant 需要 P ⇒ P 是 semantic relation」
+（循环论证）。
+
+## 6. 收尾附录（三项，本节完成并冻结）
+
+### 附录 A — Role taxonomy（完整版，冻结）
+
+```text
+Role(I) = { I-1 模型绑定：restore 拒绝异模型载荷,
+            I-2 谱系绑定：不同计算状态可分辨,
+            I-3 载荷完整性交叉核对：record↔carrier 失配检出
+                〔llama 上被 A 部分补偿——partial subsumption〕 }
+Role(P) = { P-1 落点断言：续算接续的计算进度点,
+            P-2 边界完整性：载体进度失配可检测,
+            P-3 进度记账：position 值 }
+Role(A) = { A-1 内容绑定：N 处上下文内容-语义对应
+            （同位置异内容状态的可分辨性） }
+Role(C) = { C-1 接续许可：未来输入的合法接续关系
+            （「continuation of THIS state」的可断言性） }
+```
+
+### 附录 B — Required_R 谓词（操作化 + 当前证据实例化）
+
+```text
+Required_R(f) := 移除 f 后，INV-XB 无法由 Inv_R + Rules_R +
+                 remaining relation assertions 保持/断言。
+```
+
+评估机械 = G-δ leave-one-out 电池（同一机制，本附录将其形式化为
+谓词）。当前实例化表（证据级标注）：
+
+```text
+R_MLX（KV 载体）：
+  Required(P-1)=YES〔S1：KV 进度不在内容原像内，落点不可断言〕
+  Required(P-2)=YES〔S1 同理：进度失配不可由 A 检出〕
+  Required(A-1)=YES〔P5-4 PA-2 原跑〕
+  Required(C-1)=YES〔INV-C 断言依赖；P7-1 C4 对照〕
+  Required(I-1/I-2)=YES〔ES-R1 restore fail-closed 原跑〕
+R_llama（full-prefix token 数组）：
+  Required(P-2)=NO——Compensable via A（ρ_L1，Gδ-P 实测）
+  Required(P-1)=NO——Compensable via carrier semantics + C
+    （全拷贝退化：附加目标=载体结构末端；如实标注为
+     full-copy 载体的退化情形）
+  Required(P-3)=N/A（值提取被排除——记账功能在本载体无独立判据）
+  Required(A-1)=YES（Gδ-A 实测）
+  Required(C-1)=YES（Gδ-C 实测）
+  Required(I-1/I-2)=YES（Gδ-I 实测：conflation+model-binding
+    无补偿；I-3 部分补偿由 A，ρ_L1）
+```
+
+**语义成员判定（按 §1.4 判据机械应用）**：
+
+```text
+I ∈ ES_semantic（I-1/I-2 双表示 Required）
+A ∈ ES_semantic（A-1 双表示 Required）
+C ∈ ES_semantic（C-1 双表示 Required）
+P ∈ ES_semantic（P-1/P-2 于 R_MLX Required）—
+    且 P-2 于 R_llama Compensable（carrier-dependent irreducibility
+    的形式化表述）
+```
+
+无任何关系满足「全功能×全表示可补偿」的降级条件 ⇒ **零降级**。
+
+### 附录 C — Rules_R 枚举（封闭集，冻结）
+
+```text
+Rules_R_llama = {
+  ρ_L1 anchor-integrity: anchorHash_R(record) = H(carrier.tokenPrefix)
+         ——注册比对规则（Gδ-P 中补偿 P-2 者）,
+  ρ_L2 prefix-extension: carrier + tokenize(Δ) = 延接载体
+         （续算力学）,
+  ρ_L3 server-identity: props.modelPath 绑定（M1 使用）,
+  排除：从 carrier 计数/提取 position；重算 transcript }
+Rules_R_MLX = {
+  ρ_M1 anchorHex: anchorHex(record) = H(canonical transcript tail)
+         ——内容级,
+  ρ_M2 restore fail-closed: representation restore 须 meta+
+         safetensors 配对（ES-R1 证据）,
+  ρ_M3 no-bridge〔显式缺席规则〕: 不存在连接 transcript 可渲染
+         计数与 KV processedTokenCount 的注册规则——正是 S1 建立
+         的缺口，形式化为「缺席」使 P-1/P-2 于 R_MLX 不可补偿,
+  排除：KV tensor 计数提值 }
+```
+
+## 7. FREEZE — G-δR CLOSED = FORMALIZATION_SUFFICIENT
+
+```text
+G-δ        CLOSED
+Closure Revision  ACCEPTED
+G-δR       FORMALIZATION_SUFFICIENT（附录 A/B/C 收尾完成，
+           不进入 execution 分支）
+Minimality 未证明——且已重定义为 representation-aware 问题
+           （semantic closure × representation-specific
+            irreducibility）
+```
+
+**理论结构（当前对 Execution State 的正式描述方式，冻结）**：
+
+```text
+                 Execution State
+                       │
+              ┌────────┴────────┐
+              │                 │
+        Semantic Closure   Representation R
+        {I, P, A, C}       Inv_R / Rules_R
+              │                 │
+              └──────┬──────────┘
+                     ↓
+             role-level derivability
+                     ↓
+          Irreducibility is R-dependent
+```
+
+SimiGo 对 ES 的表述自此为：「**区分一个 Execution State 的 semantic
+closure 与具体 representation 的 irreducibility**」，而非「寻找四个
+最小字段」。
+
+**下一道 Gate（不自动开）**：是否把两层模型提升为 SimiGo 正式的
+**Execution State Contract**（contract formalization / abstraction
+freeze）——属 contract formalization 方向，非 minimality 继续。
+
+**冻结证据链**：P7-1 → bounded cross-backend support；G-δ →
+necessity + carrier-dependent compensation；Closure Revision →
+accepted；G-δR → formalization sufficient；Minimality → 未证明且
+已 representation-aware 化。产品仓 0 commit；本档+Lab 基线 = 闭合
+证据。
