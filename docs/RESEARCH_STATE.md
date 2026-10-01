@@ -9936,6 +9936,47 @@ human 确认后 = 初始可发现性建立 → 主探针（成本控制变化溯
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 CORPUS-1 APPROVED — INITIAL DISCOVERABILITY EXPERIMENT COMPLETE — 2026-10-02
+
+Human Corpus-1 裁定：**APPROVED FOR EXECUTION（A+D，B1 暂缓为
+Corpus-1B）**；执行细节冻结：「溯源」= 实际观察任务不得预定义
+Provenance（Source/Relation/Provenance/Lineage 仍在禁止预定义范围）；
+初始可发现性 = substrate-agnostic 最简方式，先基线后内容读取
+（分辨「索引解决找文件」vs「Memory backend 解决理解内容」）。
+
+初始可发现性实验完成。基线证据：
+`docs/02-evidence/palace-v2-g1-corpus1/baseline-inventory.json`（14 文件
+五字段）；实验记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CORPUS1_INITIAL_
+DISCOVERABILITY_20261002.md`。
+
+```text
+[O] 同名×2 异目录异大小（1.15局会议修改后 1258847 vs 1247722
+    bytes）——path 消歧必要性直接证据
+[O] mtime 迁移伪迹：12/14 = 2026-04-11 归档时间；仅提质年两件
+    真实（05-06/07）
+[O] Q1 词汇命中 7/14：A 族核心 7 件（标后预算明细表）文件名不含
+    「成本」系统性漏检——主题-文件名 lexical 不一致 ⇒ 纯基线
+    可发现性依赖用词重合（Inference bounded）
+[O] Q2 「最新」= 提质年 doc（mtime 与文件名日期两依据偶然一致；
+    mtime 依据不可靠）
+[O] 基线不可答：权威版本/谁取代谁/内容差异——需内容读取（下阶段）
+H-G1-01/02 = 未验证（单轮基线查询无状态迹象；须待主探针）
+生成 RQ-D1..3（A 族主题可发现性 / 同名双件成因 / 「最新」业务锚点）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = 初始可发现性 COMPLETE / 观察记录在档
+下一步（待 human 放行）= 主探针阶段：内容读取（A 族 8 件结构级
+                        diff + D 族文本抽取）→ 成本控制变化溯源
+                        → 工作过程全记录 → H-G1-01/02 判定材料
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
