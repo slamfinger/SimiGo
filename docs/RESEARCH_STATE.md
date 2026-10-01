@@ -9495,6 +9495,47 @@ PALACE1_GATE1_CREATE_ID_RESERVATION = DESIGN FROZEN / REVIEW PASS /
 Current blocker                     = none
 ```
 
+
+### LAB PALACE DIRECTION REPLAN — LIFECYCLE STORAGE PARKED / REAL INFORMATION WORKFLOW ENTRY — 2026-10-02
+
+Human 方向裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_REAL_INFORMATION_WORKFLOW_DIRECTION_
+REGISTRATION_20261002.md`。
+
+```text
+纠偏        = PALACE 不从 Execution State→durable identity→snapshot→
+            lifecycle storage 入口开始（防变成「ES 持久化系统」）；
+            真实目标 = 让 Agent 理解/组织/关联/比较/重新利用
+            现实中已有的几千上万份个人工作资料
+新主线      = Real Personal Information Workflow（暂名，避免
+            「知识库」术语——chunk/embedding/vector DB/RAG/KG/schema
+            均为实现路线非研究起点）
+第一阶段    = 完整工程闭环：真实文件系统 → 读取 → 定位 → 跨文档
+            比较 → 综合 → 生成新成果 → 可追溯原始来源
+第一实验对象 = 真实文档目录（秦沈 6标/7标 层级例）；发现/读取/
+            理解结构/保留原始路径/保留文件名/内容可检索 =
+            第一批工程事实（暂不命名为 semantic fields）
+工程观察假设 = 「路径不是单纯 storage metadata」登记为假设，
+            由真实使用验证后才可进入 PALACE 抽象
+Lifecycle Storage 线 = FROZEN / PARKED（证据全保留；Gate① 执行
+            永不再推进直至真实应用证明需要 durable identity；
+            Gate① 不得决定 PALACE 总体方向）
+禁止        = 对象模型定义 / semantic fields 命名 / 任何实现路线
+            承诺（chunk/embedding/vector DB/RAG/KG/schema）/
+            文档复制入库设计 / Lifecycle Storage 扩展
+```
+
+当前状态：
+
+```text
+PALACE1 LIFECYCLE STORAGE = FROZEN / PARKED（既有证据保留）
+PALACE 新主线             = RIW ENTRY OPEN（下一门 = RIW opening
+                            draft：以真实文档目录为第一实验对象的
+                            工作闭环设计 → human 审查 → registration）
+Current blocker           = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common

@@ -75,16 +75,17 @@ As of the latest repository state:
 - The Execution State Runtime evidence line is consolidated with explicit harness boundaries.
 - Oversized layer work is `FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD`; it is no longer an independent research line.
 - BACKEND-1 is `ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED`.
-- PALACE-1: the E0–E3 evidence chain is `CLOSED` and the framing is
-  `REGISTERED / LINE PARKED`; the human-directed lifecycle-storage line
-  re-entered via explicit directive (2026-10-02). Its opening draft
-  (`SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_20261002.md`,
-  rev.2) passed external review `PASS / ACTIVATION_REQUIRED`
-  (`SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_EXTERNAL_REVIEW_
+- PALACE-1 Lifecycle Storage: registered opening + Gate① frozen design
+  are retained, but the line is `FROZEN / PARKED` by human direction
+  (2026-10-02); Gate① execution is not to proceed unless a real
+  application proves durable identity is needed.
+- PALACE new mainline: `Real Personal Information Workflow`
+  (engineering-scenario entry; real document directories as first
+  experiment object; retrieval/comparison/synthesis/generation/
+  provenance loop; no object model, no semantic-field naming, no
+  implementation-route commitments — see
+  `SIMIGO_LAB_PALACE_REAL_INFORMATION_WORKFLOW_DIRECTION_REGISTRATION_
   20261002.md`).
-- The next registered gate is **human registration** of that opening;
-  experiments may be applied for only after registration, one gate at a
-  time (opening §6 matrix).
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.
