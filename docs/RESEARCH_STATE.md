@@ -9441,6 +9441,50 @@ Next               = 证据链收束文档 human 审阅 → 封口缺口裁定
 Blocker            = none（收束文档已交付，待审阅）
 ```
 
+### EXECUTION STATE STAGE CONCLUSION REGISTERED — 2026-10-01
+
+Human 阶段结论登记（逐字，官方可引用表述；专用文档：
+`docs/00-governance/SIMIGO_LAB_ES_STAGE_CONCLUSION_REGISTERED_20261001.md`）：
+
+> **Execution State hypothesis is experimentally supported at MLX
+> runtime level. The evidence indicates that computational continuity
+> depends on a minimal relation closure rather than a physical carrier
+> alone. Further replication is required for minimality and
+> cross-backend generality.**
+>
+> **Execution State 假设已在 MLX runtime 层获得实验支持。现有证据
+> 表明，计算连续性依赖的是最小关系闭包，而非单一物理载体。最小性与
+> 跨 backend 通用性仍需复核。**
+
+三层支持（登记时保留复制状态）：①Carrier≠State（KV cache≠ES——
+P5-1 复制 + P5-2-C 原跑）；②{I,P,A,C} 关系集有实验依据（P5-2-C/
+P5-4 原跑；破坏任一项→reject/rebuild/语义丢失/continuation 失败）；
+③P7-R2-A runtime 层升级（真实 checkpoint→进程退出→重载→KV 命中→
+extend；ES 可脱离原进程存在并恢复未来计算）。等级差=MLX runtime
+validated vs llama contract mapping validated（非同等级）。
+
+未完全解决：最小闭包的数学复核（每项不可推导/更小集/隐藏依赖）；
+跨 backend 同不变量未建立；「所有计算系统」不可说。
+
+**问句层级变化（human 登记）**：「能不能保存大模型状态？」→「什么
+关系使未来计算能够继续？」——排除「保存对象=状态」，转向「状态=
+对象之间保持的计算关系」；价值不依赖单一模型。
+
+路线确认：Replication Audit 的意义=把强实验结果提升为**别人可重复
+验证的研究结论**（非「证明它有没有」）；暂停 Palace/Security 扩展
+先补这一层=稳态路线。缺口衔接：**G-ζ 由本结论关闭**（措辞已由
+human 提供）；G-α/G-β/G-δ/G-ε 维持。
+
+当前状态：
+
+```text
+Phase        = EVIDENCE CHAIN CONSOLIDATION / STAGE CONCLUSION REGISTERED
+G-ζ          = CLOSED（human 措辞登记即生效）
+Remaining    = G-α P4 second layer 保留 / G-β Sample-3 / G-δ 最小性
+               复核方式 / G-ε Token Ledger 数字核对——归 human
+Blocker      = none（待 human 下一方向）
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
