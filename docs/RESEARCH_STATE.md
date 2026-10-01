@@ -9292,6 +9292,62 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2-A LLAMA.EXECUTION AUDIT — DOWNGRADED — 2026-10-01
+
+Human audit finding：llama.cpp cell 未启动 llama-server，无真实推理，
+无内存压力变化。P7-R2-A llama.cpp 结果缺少执行真实性依据。
+
+#### 审计确认
+
+```text
+llama-server process: NOT RUNNING（零进程）
+port 8080: NOT BOUND
+model loaded in memory: NO
+inference performed: NO
+memory pressure change: NONE
+
+之前 P7-R2-A llama.cpp 测试实际做的事：
+  LLAMAServerExecutionStateBackend = in-memory dictionary
+  token prefix = SHA256 hash 生成的伪 token
+  "captureRepresentation" = 从 dictionary 读取
+  "restoreRepresentation" = 写入 dictionary
+  = 本质上是数据结构测试，非 runtime 验证
+```
+
+#### 降级
+
+```text
+旧结果：CONTINUATION_VALIDATED
+修正结果：BACKEND_STRUCTURE_VALIDATED（仅数据结构层面）
+
+可证明：LLAMAServerExecutionStateBackend 的字典数据结构
+       可以存储/恢复 token prefix 并支持 extend 操作
+
+不可证明：llama.cpp runtime 中 Execution State closure
+         维持真实计算连续性
+```
+
+#### 真实验证需求
+
+```text
+需要：
+  1. 启动 llama-server 进程（加载 GGUF 模型）
+  2. 通过 executor 与 server 交互
+  3. 观察进程启动 / 内存分配 / 推理执行
+
+可用资源：
+  llama-server: /Users/mr.simi/.simigo/bin/llama-server (v0.5.0-dev)
+  GGUF model: Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf (21GB)
+```
+
+Current state:
+
+```text
+P7-R2-A llama.cpp = DOWNGRADED to BACKEND_STRUCTURE_VALIDATED
+真实 runtime 验证 = PENDING（需要 llama-server 进程）
+Blocker = llama-server 启动 + GGUF model 确认
+```
+
 ### P7-R2-A LLAMA.EXECUTED — CONTINUATION_VALIDATED — 2026-10-01
 
 Harness: `Palace1P7R2LlamaCellTests.swift` @ SimiGo (public)
