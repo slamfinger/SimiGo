@@ -9632,6 +9632,54 @@ PALACE_V2_G0 = AUDIT PROTOCOL DRAFT COMPLETE /
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G0 PROTOCOL APPROVED — EXECUTION AUTHORIZED — MEMPALACE INTERMEDIATE OBSERVATION #1 DELIVERED — 2026-10-02
+
+Human 冻结审查：**PASS — DESIGN FROZEN / APPROVED**，批准进入 G0 执行
+（执行顺序 MemPalace → Mem0 → Graphiti，逐系统独立中间观察不并评）。
+执行期补充观察项（不改协议正文）：**Interaction Dependency**（能力是否
+依赖特定模型——关联 SimiGo「上层语义不绑定 backend」原则）；
+**L0/L1/L2 观察框架钉定** = L0 原始文件 / L1 机械解析结果 /
+L2 AI 加工结果（仅观察框架，不进 Contract）。
+
+MemPalace 定位：github.com/MemPalace/mempalace（org 仓库，v3.10.0，
+MIT，本地优先 verbatim 存储，克隆基线 develop `5ea40d3`）。第一份
+中间观察（静态源码级）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_OBSERVATION_
+20261002.md`。
+
+```text
+关键观察（全部源码级 Observation）
+  ① 三管线摄入：默认 mine 仅文本/代码扩展名（不含 Office）；
+     Office 走 --mode extract（MarkItDown→Markdown，rtf→striprtf）；
+     读时转换、L0 原件零触碰
+  ② 结构 = wings/rooms/drawers；drawer 级 source_file+chunk_index
+     溯源；KG triples 带 valid_from/valid_to + source_drawer_id
+     ——时间有效期与溯源在 schema 层存在
+  ③ 主检索 = Hybrid BM25+vector+metadata 范围+时间窗；KG 拓扑
+     遍历为独立 MCP 工具族、不融合主路径 → H-PALACE-G0-01 首份
+     证据（假设保持 UNVERIFIED）
+  ④ Excel 压平风险坐实为转换层问题：MarkItDown→Markdown 表，
+     Cell/Formula 保留 = Open Question（RQ-1，待 fixture 实测）
+  ⑤ layers.py 命名冲突：MemPalace 上下文加载分层（L0-L3 token
+     预算）≠ human 信息分层框架——行文须加前缀区分
+  ⑥ Interaction Dependency：核心路径模型可替换（本地 ONNX 或
+     OpenAI-compat endpoint）；closet LLM 增强 opt-in；KG 抽取
+     模型依赖 = Open Question
+生成 RQ-1…RQ-6（xlsx 转换边界 / 变更 drawer 共存语义 / 抽取
+确定性 / 拓扑检索组合 / 中文层级组织成本 / KG 模型依赖）
+```
+
+当前状态：
+
+```text
+G0 MEMPALACE = INTERMEDIATE OBSERVATION #1 DELIVERED
+               （静态源码级；运行时实测 = 下一份中间观察）
+待办          = MemPalace 运行时实测（RQ-1/RQ-3）→ Mem0 → Graphiti
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common

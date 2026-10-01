@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G0_AUDIT_PROTOCOL_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`G0_EXECUTION_ACTIVE / MEMPALACE_OBSERVATION_1_DELIVERED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -87,6 +87,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_DIRECTION_REGISTRATION_20261002.md`
 41. 读 G0 审计协议草案（仅审计设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_PROTOCOL_20261002.md`
+   - ✅ 已冻结获批（FROZEN / APPROVED，执行授权生效：MemPalace → Mem0 → Graphiti 逐系统中间观察）
+42. 读 G0 中间观察 ① — MemPalace（静态源码级）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_OBSERVATION_20261002.md`
 
 ## Current snapshot
 
@@ -100,7 +103,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 ACTIVE：G0 审计协议草案 COMPLETE（MemPalace Primary + Mem0/Graphiti 对照；矩阵 6 类 17 维；Memory Path Analysis + Database Inspection + 真实格式实测强制；H-PALACE-G0-01 寄存）——AWAITING HUMAN FREEZE REVIEW；冻结+执行授权后方审计（逐系统交付中间观察）；G1/G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G0 EXECUTION ACTIVE：协议 FROZEN/APPROVED；MemPalace 中间观察 ① 已交付（静态源码级：三管线摄入/Office 走 extract 模式/主检索 Hybrid BM25+vector 且 KG 解耦/Excel 压平风险坐实为转换层 Open Question/layers.py 命名冲突预警/RQ-1..RQ-6 生成）；待办 = MemPalace 运行时实测（RQ-1/RQ-3）→ Mem0 → Graphiti；G1/G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -355,13 +358,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G0 审计协议草案已完成
-   （`SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_PROTOCOL_20261002.md`：
-   三系统三方向 / 矩阵 6 类 17 维 / Memory Path Analysis / Database
-   Inspection 删库恢复问题 / 真实格式实测 / Evidence 三级 / 
-   H-PALACE-G0-01 寄存 / 输出九节规格）——等待 human 冻结审查；
-   通过 + 执行授权后逐系统审计（MemPalace → Mem0 → Graphiti，中间
-   观察逐系统交付）。不写 PALACE 代码、不评排名、不设计 schema。
+1. 下一会话第一动作：继续 G0 MemPalace 审计——运行时实测（四格式
+   fixture：docx/xlsx/pptx/pdf，重点 RQ-1 xlsx 转换的 Sheet/Cell/
+   Formula 保留边界 + RQ-3 重 mine 抽取确定性），交付中间观察 ②；
+   随后依序 Mem0 → Graphiti（逐系统独立观察，不并评）。观察标签
+   Interaction Dependency 持续记录（模型依赖边界）；L0/L1/L2 =
+   观察框架（L0 原始文件/L1 机械解析/L2 AI 加工），注意与
+   MemPalace layers.py 上下文分层同名异义。不写 PALACE 代码、
+   不评排名、不设计 schema。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、
