@@ -1,5 +1,10 @@
 # SimiGo 2.0 — Execution-State-oriented Runtime Experiment
 
+> **Historical package README.** The authoritative current state is
+> `../README.md`, `../docs/RESEARCH_STATE.md`, and the frozen Execution State
+> Contract. The E1–E5 ladder below records the engineering route and is not a
+> claim that those are the current active gates.
+
 This directory contains the SimiGo 2.0 experimental runtime and verification code.
 
 ## Position
