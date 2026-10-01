@@ -79,16 +79,19 @@ As of the latest repository state:
   are retained, but the line is `FROZEN / PARKED` by human direction
   (2026-10-02); Gate① execution is not to proceed unless a real
   application proves durable identity is needed.
-- PALACE V2 (current mainline): G0 CLOSED (backend survey) → G1
-  CLOSED (real 秦沈 corpus work) → G2 CLOSED (cross-document work
-  T-1/T-2/T-3 all PASS; OB-A..D all SUPPORTED; H-G1-02 SUPPORTED
-  strong exploratory — ES necessity still UNPROVEN); G3 Durable
-  Information UNLOCKED / DESIGN ENTRY — first question frozen
-  (「如果今天停止明天重新打开，需要什么才能从这里继续而不是重做？」),
-  four observation classes (discovered/judged/excluded/next-step
-  rationale), SimiGo↔PALACE boundary to be forced out by
-  engineering. See
-  `SIMIGO_LAB_PALACE_V2_G2_RESULT_GATE_20261002.md`.
+- PALACE V2 (current mainline): G0 → G1 → OQ-B → E6 → G2 → G3
+  ALL CLOSED (backend survey; real 秦沈 corpus work incl. main
+  probe/OQ-B drift/E6 validity; cross-document T-1/T-2/T-3;
+  durable-information redo-cost contrast with five-item recovery
+  matrix). G3 closure core output: recovery capability ≠
+  past-judgment reviewability (two different dimensions); CF-①②
+  HIGH VALUE/ACCEPTED; H-G1-01 SUPPORTED—strengthened / H-G1-02
+  SUPPORTED—strong exploratory; ES necessity UNPROVEN.
+  NEXT ENTRY = PALACE-SimiGo Boundary Study: 「当信息空间已经保存
+  足够多历史信息后，哪些内容仍然必须属于 Execution State？」
+  (same PALACE / two workers / different tasks / different paths —
+  what PALACE cannot recover = ES irreplaceable position). See
+  `SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.
