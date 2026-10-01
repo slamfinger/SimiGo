@@ -206,7 +206,7 @@
 				C1632ADD3028D4B700D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 				C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
-				C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */,
+				C1632B102FB5000000D1EF95 /* XCRemoteSwiftPackageReference "simigo-lab" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C138807E2FB37213009F04D2 /* Products */;
@@ -532,18 +532,15 @@
 				branch = "release/v2.0-beta-ml";
 			};
 		};
-		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../SimiGo-Lab/simigo2-experimental;
+		C1632B102FB5000000D1EF95 /* XCRemoteSwiftPackageReference "simigo-lab" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/slamfinger/SimiGo-Lab.git";
+			requirement = {
+				kind = revision;
+				revision = "25e1a790c841f48d0f3fddc762dcbff3c6d7c72a";
+			};
 		};
 /* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCLocalSwiftPackageReference section */
-		C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "simigo2-experimental" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../SimiGo-Lab/simigo2-experimental;
-		};
-/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		C1632ADF3028D4EB00D1EF95 /* Hub */ = {

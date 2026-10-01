@@ -36,3 +36,7 @@ xcodebuild test -project SimiGo.xcodeproj -scheme SimiGo \
 
 Do not commit local model paths, Hugging Face caches, device serials, signing
 team IDs, DMG files, build products, or model weights.
+
+GitHub Actions runs the open-source audit on every PR. The macOS targeted-test
+job uses `macos-26`; while the hosted SDK matrix is being validated, that job is
+allowed to fail without marking the workflow red.

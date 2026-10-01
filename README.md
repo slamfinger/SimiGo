@@ -42,6 +42,45 @@ xattr -dr com.apple.quarantine SimiGo.app
 
 不要绕过校验直接运行来源不明的副本。
 
+## Quick Start
+
+### 下载运行
+
+1. 从 [v2.1.0 Release](https://github.com/slamfinger/SimiGo/releases/tag/v2.1.0)
+   下载 `SimiGo-v2.1.0.dmg`。
+2. 校验 Release 页面的 SHA-256。
+3. 拖入 `/Applications`，打开菜单栏 SimiGo。
+4. State Graph 入口：菜单栏 → **Execution State Graph...**。
+
+### 源码构建与测试
+
+公开 App 已通过钉定的 `SimiGo-Lab` Swift package 获取 Runtime 依赖；普通源码
+构建只需要 clone 本仓：
+
+```bash
+git clone https://github.com/slamfinger/SimiGo.git
+cd SimiGo
+tools/open_source_audit.sh
+xcodebuild test \
+  -project SimiGo.xcodeproj \
+  -scheme SimiGo \
+  -configuration Debug \
+  -destination 'platform=macOS' \
+  -derivedDataPath build/test \
+  -enableCodeCoverage NO \
+  CODE_SIGNING_ALLOWED=NO \
+  -only-testing:SimiGoTests/ExecutionStateGraphTests
+xcodebuild build \
+  -project SimiGo.xcodeproj \
+  -scheme SimiGo \
+  -configuration Release \
+  -destination 'platform=macOS' \
+  -derivedDataPath build/release
+```
+
+State Graph 不需要模型。若要启用 MLX inference，请另行获取外部模型权重并遵守
+模型自身授权。
+
 ## v2.1.0 — Execution State Reference App
 
 v2.1.0 是 Frozen Execution State Contract 的第一个产品形态 reference
@@ -98,9 +137,9 @@ main 主线自 v2.0.0-beta.3 起内置两项 Execution State 能力（v1.7 全�
   Representation）尚未实现，为登记的 GA 方向。
 
 详见 [docs/RELEASE_v2.0.0-beta.md](docs/RELEASE_v2.0.0-beta.md)；
-从源码构建需与
-[SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) 双仓兄弟克隆，
-步骤见 [部署指南.md](部署指南.md) 第六节。
+Runtime 依赖通过钉定的
+[SimiGo-Lab](https://github.com/slamfinger/SimiGo-Lab) Swift package 解析；
+详细服务配置见 [部署指南.md](部署指南.md)。
 
 ## 开源边界
 

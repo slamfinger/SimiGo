@@ -35,5 +35,9 @@ check "third-party notice exists" \
   bash -c 'test -s THIRD_PARTY_NOTICES.md'
 check "trademark boundary exists" \
   bash -c 'test -s TRADEMARKS.md'
+check "security policy exists" \
+  bash -c 'test -s SECURITY.md'
+check "continuous integration workflow exists" \
+  bash -c 'test -s .github/workflows/ci.yml'
 
 exit "$fail"

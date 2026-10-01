@@ -1,0 +1,48 @@
+name: Open Source CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-hygiene:
+    name: Release hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open source audit
+        run: tools/open_source_audit.sh
+
+  macos-tests:
+    name: macOS targeted tests
+    # Apple's project requires the macOS 26.4 SDK. Keep this job visible but
+    # non-blocking until GitHub's hosted macOS runner image is confirmed to
+    # provide that SDK.
+    runs-on: macos-26
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'macosx|DriverKit' || true
+          swift --version
+      - name: Targeted Execution State tests
+        run: |
+          xcodebuild test \
+            -project SimiGo.xcodeproj \
+            -scheme SimiGo \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath .build/ci \
+            -enableCodeCoverage NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -only-testing:SimiGoTests/ExecutionStateGraphTests
