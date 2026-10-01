@@ -14423,3 +14423,49 @@ ES 必要性           = UNPROVEN（三候选 C 未验）
                       谱系）——具体设计待 human 发起
 Current blocker     = none
 ```
+
+### LAB PALACE V2 RQ-G3-1 DESIGN DRAFT COMPLETE — NEGATIVE KNOWLEDGE MINIMAL EXPERIMENT — 2026-10-02
+
+Human 方向裁定：下一入口 = RQ-G3-1 优先（排除项可能比记录格式更快
+触及 PALACE 核心）；最小路径与观察点 ①..⑤ 冻结概念；潜在价值
+仅作研究问题非结论（「工作的连续性…可能需要保存…不走这条路的
+信息」）。
+
+RQ-G3-1 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_NEGATIVE_KNOWLEDGE_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 措辞冻结）= 如果系统只保存「发现了什么」，而不
+    保存「已经排除了什么以及为什么」，它能否真正避免重复工作？
+    （工程实验；非负知识对象/Schema 定义）
+最小路径（冻结）= 候选发现→初步相关→读取依据→发现不属于当前
+    任务→排除→继续→人为停止；第二轮同停止点：条件 A 只给 L0 /
+    条件 B 给原样工作记录
+真实场景绑定（零人工构造）= 复用 Corpus-1 选族真实排除四条：
+    E-X1 经济运行汇报两件（相邻主题）/ E-X2 B1 线外便道 ×4
+    （human 裁定暂缓）/ E-X3 族 C 平行变体分类 / E-X4 T-1 口径
+    范围排除（产值/批复/收款不在标后预算表范围）——全部在原样
+    记录在案
+观察点实测 = ①重新遇到已排除物（条件 A 候选清单 ∩ E-X 原件）/
+    ②重做相同判断 / ③排除原因留存比对 / ④仅「已排除」标记
+    不给理由时的决策一致性 / ⑤排除须回原件重确认的分级
+预登记预期（可推翻）= P-E1 条件 A 重遇 E-X1 且主题判定需重读
+    内容（ lexical 邻近不可从文件名判定）/ P-E2 E-X2 存在纳入
+    压力 / P-E3 E-X4 口径排除纯 L0 下不可复现（重发现者无法
+    「排除不存在的东西」——或永不发现该缺口）
+禁止 = 负知识对象/Exclusion Schema 定义 / Provenance·Lineage·
+    Relation 命名建模 / L0 写入 / 性能基准 / 3000 扩容 /
+    预写结论 / Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_1 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：条件 A 实测 → 条件 B 恢复比对 →
+    ①..⑤ 逐项事实 → 结果门）
+Current blocker = none
+```

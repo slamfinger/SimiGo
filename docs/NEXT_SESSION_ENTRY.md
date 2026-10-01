@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_CLOSED / HG102_SUPPORTED_STRONG / NEXT_RQG3_1_2`
+状态：`RQG3_1_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -149,6 +149,9 @@
    - ✅ human 结果门裁定：G3 PASS/CLOSED；H-G1-02 升格 SUPPORTED—strong exploratory（冻结措辞在案）；ES 必要性 UNPROVEN；V1 PARKED/G2 不复测/E6·OQ-B 暂不扩展；下一入口 = RQ-G3-1/RQ-G3-2
 63. 读 G3 结果门裁定登记（含冻结措辞/证据链收束/三候选形态/负知识）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_GATE_20261002.md`
+   - ✅ human 方向裁定：RQ-G3-1 优先（排除项可能更快触及 PALACE 核心）；最小路径与观察点 ①..⑤ 冻结概念
+64. 读 RQ-G3-1 设计草案（仅设计，无执行授权）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_NEGATIVE_KNOWLEDGE_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -417,15 +420,15 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G3 结果门已裁定（PASS/CLOSED；H-G1-02
-   升格 SUPPORTED—strong exploratory，冻结措辞在案；ES 必要性
-   UNPROVEN；V1 PARKED/G2 不复测/E6·OQ-B 暂不扩展）——下一研究
-   入口 = RQ-G3-1（排除项/负知识观察：无记录则 X 重现→重判→
-   重排除；先观察不命名 Schema）与 RQ-G3-2（记录格式谱系：完整
-   日志→结构化→摘要→一句话，哪个还能真正继续——逼近 PALACE
-   Durable Information 与 SimiGo ES 边界）。具体设计草案待 human
-   发起后起草。纪律：L0 只读；不命名 lineage/relation/provenance；
-   禁止各 Schema；不写 PALACE 代码。
+1. 下一会话第一动作：RQ-G3-1 设计草案已完成（复用 Corpus-1
+   选族真实排除四条 E-X1..X4 零人工构造；条件 A 只 L0 重新发现
+   候选 vs 条件 B 原样记录恢复；观察点 ①..⑤ 实测映射 + 预登记
+   P-E1..P-E3 可推翻预期）——等待 human 冻结审查；通过 + 执行
+   授权后执行 → ①..⑤ 逐项事实 → 结果门 → human 判读（含
+   RQ-G3-2 谱系实验是否启动）。禁止：负知识对象/Exclusion Schema
+   定义 / Provenance·Lineage·Relation 命名建模 / L0 写入 / 性能
+   基准 / 3000 扩容 / 预写结论 / Gate①·V1 复活；不写 PALACE
+   代码。
 
 继续区分：
 
