@@ -9292,6 +9292,50 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-5 STATE BOUNDARY SYNTHESIS — DRAFT COMPLETE — 2026-10-01
+
+Artifact：`SIMIGO_LAB_P5_5_STATE_BOUNDARY_SYNTHESIS_20261001.md`
+
+核心产出：
+
+§1 Execution State 边界
+```text
+State = {Identity, Position, Semantic Anchor, Continuation} 最小关系闭包
+Carrier = KV tensors / file format / database / memory page（可替换）
+判定原则：替换 carrier 但保持 relations → 同一 State；
+         破坏任何 relation 即使 carrier 完好 → 不同 State
+```
+
+§2 Agent 环境归属分类
+```text
+对话历史 → Anchor（D）
+System prompt → 条件性 Anchor（进入 context 则是）
+Tool definitions → Continuation（D）
+temperature/maxTokens → Generate Parameter（R，非 State）
+UI 设置 → 外部（非 State）
+用户权限 → Security boundary（非 State）
+文件系统 → External world state（非 State）
+判定原则：进入 transformer context + 变更导致输出不同 + 属于 I/P/A/C
+```
+
+§3 Palace 接口
+```text
+共享 Relation Closure 抽象
+Palace = Knowledge Topology (past, eventual)
+ES = Computation Topology (future, transactional)
+连接 = Identity/Reference relation
+Palace 不是 ES 的存储后端
+```
+
+Current state:
+
+```text
+P5-5 = Synthesis draft complete / awaiting human review
+Palace = Interface defined, implementation deferred
+Security = Constraint track, not active
+Current blocker = human review of P5-5 boundary document
+```
+
 ### P5-4 EXECUTED — Minimal Dependency Set Identified (L1) — 2026-10-01
 
 Harness: `Palace1P54MinimalReductionTests.swift` @ SimiGo `4ab180a` (public)
