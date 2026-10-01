@@ -9782,6 +9782,42 @@ Experiments = NOT EXECUTED；产品仓零变更
 Blocker   = human authorization to enter design gate
 ```
 
+### P7-1 HARNESS DESIGN / PRE-REGISTRATION DELIVERED — 2026-10-01
+
+human 授权进入设计门。设计文档（判据/cell/失败路由/输出格式全部
+冻结，**零结论零执行**）：
+`docs/00-governance/SIMIGO_LAB_P71_HARNESS_DESIGN_PREREGISTRATION_20261001.md`。
+
+```text
+组件清单  = 全部已提交可用（simigo2-experimental/Sources/
+            SimiGo2Experimental/：Executor/Backend/Payload + MLX
+            参照实现）；harness=产品仓工作区未提交（既定纪律）+R0
+M1 冻结   = CheckpointData v2（增 modelIdentity 块：modelPath+
+            modelHash=GGUF 全字节 SHA256）；restore 前强制 J-I1/J-I2
+            核对；失败⇒I 维持 PARTIAL⇒overall INCONCLUSIVE 永不 FAIL
+M2 冻结   = 四进程分叉树（form/fork/restore-to-N/parent non-pollution）；
+            冻结常量（S₀=P7-R2-A 原文；ΔP/ΔC/ΔR 预注册；seed 42/
+            32 tokens；锚定实体表不含探针词）
+主表      = C1..C5 五 cell × 判据 × 失败路由（三分继承 P7-0 §5）；
+            核心判据 J-A1=anchor(child@fork)==anchor(parent@fork)
+            ==anchorHash_A0；J-C4 锚定=containsAny(实体表)；
+            J-PN=parent 重放逐字+payload SHA 恒等
+判读预注册 = 全 PASS⇒CONTINUATION_VALIDATED_CROSSBACKEND⇒Claim F
+            升 bounded claim（措辞锁死）+I 升格 NATIVE-EXPRESSED；
+            identity 败⇒INCONCLUSIVE；closure 败⇒FAIL=OP-6-1 否定
+            回答；implementation⇒修复重跑不计数
+执行前置  = llama-server@8080 载 Cyber-Tiel GGUF（hash 首算入册）；
+            执行须单独 human 授权
+```
+
+当前状态：
+
+```text
+Gate      = DESIGN FROZEN / PRE-REGISTERED → EXECUTION GATE
+Next      = human 执行授权 → 4 进程运行 → R0 登记 → 机械判读
+Blocker   = human execution authorization
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
