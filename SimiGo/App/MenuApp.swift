@@ -5,6 +5,7 @@ import AppKit
 struct MenuApp: App {
     @Environment(\.openWindow) private var openWindow
     @StateObject private var svc = Service()
+    @StateObject private var stateGraph = ExecutionStateGraphStore()
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
 
@@ -54,6 +55,10 @@ struct MenuApp: App {
                     openSettingsWindow()
                 }
 
+                MenuRowButton(title: "Execution State Graph...", icon: "circle.hexagongrid") {
+                    openWindow(id: "StateGraph")
+                }
+
                 Divider().padding(.vertical, 2)
 
                 MenuRowButton(title: "退出", icon: "xmark.circle") {
@@ -75,6 +80,12 @@ struct MenuApp: App {
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 420, height: 480)
+
+        WindowGroup(id: "StateGraph") {
+            ExecutionStateGraphView()
+                .environmentObject(stateGraph)
+        }
+        .defaultSize(width: 820, height: 560)
     }
 
     // MARK: - Icon
