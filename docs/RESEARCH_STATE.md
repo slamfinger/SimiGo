@@ -9292,6 +9292,118 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2-0 CONTINUATION DEPENDENCY MAP + REFRAMING — 2026-10-01
+
+Code-level audit of MLX Swift LM ChatSession + NativeMLX continuation
+dependency chain. No model execution; static analysis only.
+
+#### Root cause of P5-1 rebuild (precise code path)
+
+ChatSession.swift L1160-1179 `ledgerBootstrapPending`:
+
+```text
+cachedTokenCount = kvCache.processedTokenCount    ← 31712 (loaded KV)
+if cachedTokenCount ≤ promptTokenIds.count        ← 31712 ≤ 212 ?
+  seed ledger from rendered prompt prefix
+else
+  "cache holds more progress than rendered transcript
+   can explain" → cachedTokens.removeAll()         ← ledger invalidated
+```
+
+31712 > 212 → ledger cleared → `mainCacheIsAligned = false` →
+`PromptCacheReusePolicy.decide()` → `.rebuild` → KV cache discarded.
+
+The root cause is NOT "framework does not support KV-only" but
+"token-ledger bootstrap requires `processedTokenCount ≤ rendered
+prompt token count`. History text stripped → prompt shortened →
+alignment broken → rebuild."
+
+#### Dependency map (10 items, classified)
+
+| # | Dependency | Required condition | D/R/P/O/T | Failure mode |
+|---|---|---|---|---|
+| 1 | KV tensors (.safetensors) | file + SHA256 match | P | restore throw |
+| 2 | processedTokenCount | read from cache | R | cannot bootstrap |
+| 3 | History text → rendered prompt | prompt token count ≥ processedTokenCount | D | ledger cleared → rebuild |
+| 4 | Token ledger (cachedTokens) | bootstrap or prior generation | R | empty → unaligned |
+| 5 | kvFingerprint | config match | R | reuseMiss → cold |
+| 6 | modelId | model match | R | load throw |
+| 7 | checkpointGeneration + cacheSHA256 | nonempty + hash match | P | fail-closed |
+| 8 | storageKey | sessions pool key | D | not found |
+| 9 | GenerateParameters / KV plan | plan unchanged | R | plan change → rebuild |
+| 10 | Conversation (transcript) | created from history param | D | nil → no reuse decision |
+
+#### Dependency relation graph
+
+```text
+processedTokenCount ←── KV tensors
+       │
+       │ must be ≤
+       ▼
+rendered prompt tokens ←── history text + probe
+       │
+       │ bootstrap OK →
+       ▼
+token ledger (cachedTokens)
+       │
+       │ ledger.count == processedTokenCount
+       ▼
+mainCacheIsAligned = true
+       │
+       ▼
+PromptCacheReusePolicy
+       ├── .extend  → KV cache continued, delta-only prefill
+       ├── .rebuild → KV cache discarded, full re-prefill
+       └─ .rewind   → KV cache trimmed to common prefix
+```
+
+#### Key finding
+
+KV cache and history text are **co-dependent**. The cache provides
+computation state; history text provides the alignment anchor that
+tells the framework "these tokens correspond to this text." Without
+the anchor, the cache is rejected.
+
+Execution State for this backend is NOT any single object (KV, history,
+metadata). It is the **constraint relation set**:
+
+```text
+physical carrier (KV tensors)
+  + identity (modelId, kvFingerprint, storageKey)
+  + position (processedTokenCount ↔ ledger alignment)
+  + semantic anchor (history text ↔ prompt tokenization)
+  + continuation contract (delta ≥ 0, prefix-compatible)
+```
+
+#### Reframing for P5-2
+
+The question is no longer "can KV continue without history?" (answered:
+not in current framework). The question is:
+
+> What is the minimal dependency closure that enables continuation?
+
+P5-2 Phase 1 = Dependency Closure (code-level, no model execution):
+classify each dependency as necessary / sufficient / neither for
+continuation, and determine which belong to Execution State (D) vs
+backend implementation (R).
+
+Future P5-3 ablation axes (if activated by human):
+```text
+A: Content dependency — same position/KV, different history text
+B: Position dependency — same text, different token boundary
+C: Identity dependency — same bytes, different model/generation ID
+```
+
+Current state:
+
+```text
+P4 = PASS (S₀ topology)
+P5-1 = SEALED / INCONCLUSIVE (baseline malformed + KV carrier rejected)
+P5-2-0 = Dependency Map COMPLETE (10 items, root cause located)
+P5-2 = READY FOR OPENING DRAFT (Dependency Closure)
+Current blocker = none (analysis phase, no execution gate)
+```
+
 ### P5 ATTEMPT-1 INCONCLUSIVE + MLX KV-ONLY CONTINUATION REJECTION — 2026-10-01
 
 Harness-integrity revision (a262839) executed P5 with in-run baseline,
