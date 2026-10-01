@@ -14268,3 +14268,61 @@ G3               = UNLOCKED / DESIGN ENTRY（Durable Information）
 下一动作         = G3 设计草案起草（第一问已冻结）
 Current blocker  = none
 ```
+
+### LAB PALACE V2 OQ-B RULED PASS/CLOSED + RQ-OQB-1 ANSWERED — G3 DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human OQ-B 验收裁定：**PASS / CLOSED FOR THIS EXPERIMENT**（OB-1..4
+全 PASS；OB-4 = HIGH-VALUE EVIDENCE）；关键登记观察：「工作记录与
+世界当前状态在最小漂移场景中出现了独立性：当前 L0 可以恢复现实，
+却不能恢复过去工作者曾经观察到的状态」（强于前、不越界——替代
+方案存在：change log/版本快照/历史索引）；OB-3 裁定 = 观察事实
+不预判语义（有痕迹须问来源，无痕迹不证不需要）；OB-2 提升登记
+（Representation Change vs Semantic Change 区分——与 SimiGo
+Semantic Contract ≠ Representation Layout 方法论呼应，不升格
+原理）；RQ-OQB-1 ACCEPT → 已真机执行（f8a1c2a：Excel 原生编辑
+= 1 cell 变化，22 噪声 = openpyxl 特有）；RQ-OQB-2/3 OPEN；
+G1 CLOSE 不扩 Corpus；顺序 = RQ-OQB-1 → E6 Design Entry。
+
+Human G3 解锁确认 + 骨架裁定（比 G2 更克制：不急着定义 Durable
+Information 是什么，只设计能把「明天能不能继续」逼出来的真实
+工程实验；增加硬指标重做量；工作记录原样性保护；核心压缩 =
+「停止工作之后，哪些过去发生过的事情必须仍然存在，下一次工作
+才能不是从头开始？」）。
+
+G3 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_DURABLE_INFORMATION_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 原语冻结）= 如果今天把当前工作停止，明天重新
+    打开，我究竟需要什么，才能真正从这里继续，而不是重新做一遍？
+核心对照 = 条件 A（只有 L0：重新发现/比较/判断才能继续）
+    vs 条件 B（L0 + 工作记录原样：直接恢复继续下一步）
+硬指标重做量 = 没有工作记录时，重新达到 G2 T-3 停止状态需要：
+    重新执行多少步骤/读取多少文件/重做多少判断——「全量计算 →
+    增量计算」成为可观察工程事实
+H-G1-02 材料流向（预登记）= 重复工作/信息损失/路径丢失/无法定步
+    = 四类合格信号；单纯效率差不升格；判定归结果门
+工作记录原样性保护 = 条件 B 只用 G1/G2 实际产物原样
+    （baseline-inventory/discovery-set+corrections/
+    t1-mapping-results/观察记录文档）；禁止新整理漂亮摘要
+观察五项 = OB-R1 工作位置 / OB-R2 已有发现 / OB-R3 已排除项 /
+    OB-R4 未闭合问题 / OB-R5 直接进入下一步
+执行阶段 = R-1 停止点冻结（G2 T-3 完成时点状态原样枚举）/
+    R-2 重做量清单（从实际记录枚举，非估计）/ R-3 条件 A
+    bounded 实测 / R-4 条件 B 实测（含记录缺口复检——V-5 截断
+    教训）/ R-5 对照收束
+禁止 = Durable Information/Provenance/PALACE State/Dynamic Index
+    Schema / 知识图谱 / 提前决定必须持久化内容 / G3 等同 ES
+    必要性 / L0 写入 / 新整理摘要 / 性能基准 / Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+OQ-B = PASS / CLOSED（RQ-OQB-1 已执行答案在档）
+PALACE_V2_G3 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：R-1..R-5 → 结果门）
+Current blocker = none
+```

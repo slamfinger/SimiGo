@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G2_CLOSED / G3_UNLOCKED / DESIGN_ENTRY_NEXT`
+状态：`G3_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -140,6 +140,9 @@
    - ✅ human 结果门裁定：G2 PASS/CLOSED（T-1/T-2/T-3 全 PASS；OB-A..D 全 SUPPORTED）；H-G1-02 升格 SUPPORTED (strong exploratory)；ES 必要性 UNPROVEN 不变；G3 UNLOCKED
 60. 读 G2 结果门裁定登记（含 G3 第一问与观察四类）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_RESULT_GATE_20261002.md`
+   - ✅ human 裁定：G2 结果门通过（H-G1-02 升 SUPPORTED strong exploratory）；RQ-OQB-1 ACCEPT→已执行答案在档；G1 收束不扩 Corpus
+61. 读 G3 设计草案（仅设计，无执行授权）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_DURABLE_INFORMATION_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -408,14 +411,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：起草 G3 设计草案（Durable Information——
-   第一问已冻结：「如果今天把当前工作停止，明天重新打开，我究竟
-   需要什么，才能真正从这里继续，而不是重新做一遍？」；观察
-   四类 = 已发现/已判断/已排除/下一步为什么是下一步；现实成本
-   验证 = 只剩原始文件须重做 T-1/T-2）。G3 不重新定义 Execution
-   State——PALACE/SimiGo 边界让工程逼出。draft → human 冻结 →
-   执行。纪律：L0 只读；不命名 relation/mapping/provenance；
-   禁止各 Schema；不写 PALACE 代码。
+1. 下一会话第一动作：G3 设计草案已完成（核心 = 停止工作后哪些
+   过去发生过的事情必须仍然存在，下一次工作才能不是从头开始；
+   条件 A 只有 L0 vs 条件 B L0+工作记录原样对照；硬指标重做量 =
+   步骤/文件读取/判断计数；工作记录 = G1/G2 实际产物原样禁止新
+   整理摘要；观察五项 OB-R1..R5）——等待 human 冻结审查；通过 +
+   执行授权后 R-1..R-5 执行 → 结果门 → human 判读（含 H-G1-02
+   是否升格）。禁止：Durable Information/Provenance/PALACE State/
+   Dynamic Index Schema/知识图谱/提前决定必须持久化/G3 等同 ES
+   必要性/L0 写入/新整理摘要/性能基准/Gate①·V1 复活；不写
+   PALACE 代码。
 
 继续区分：
 
