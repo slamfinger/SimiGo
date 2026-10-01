@@ -17,7 +17,7 @@ maxTokens 128）；`tools: nil` 同 B′-2；观测 `bprime3-observations-202610
 b0-listing: text=0 字符 | toolCalls=1 | generationTokens=64 | stream=NORMAL
 b3-listing: text=0 字符 | toolCalls=1 | generationTokens=64 | stream=NORMAL
 tool_call_0（双侧逐字相同）:
-  Bash {"command":"find /Users/mr.simi/Desktop/参考文件 -type f -o -type d | sort",
+  Bash {"command":"find <LOCAL_HOME>/Desktop/参考文件 -type f -o -type d | sort",
         "description":"递归列出参考文件下所有文件和目录"}
 ```
 

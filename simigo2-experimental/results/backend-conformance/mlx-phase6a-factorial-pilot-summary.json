@@ -2,7 +2,7 @@
   "status": "PASS_WITH_BOUNDARY",
   "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6A.FACTORIAL.PILOT.V1",
   "boundary": "PREFIX_BY_TOKEN_BY_SEGMENT_SIZE_BY_ACTION_PILOT / ONE_CYCLE_PER_STRATEGY_PER_CELL / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "prefixTokenLengths": [
     8,
     64

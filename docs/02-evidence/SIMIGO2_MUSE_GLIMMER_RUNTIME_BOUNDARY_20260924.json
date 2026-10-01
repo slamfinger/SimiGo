@@ -22,7 +22,7 @@
     "switchMLP_L32_47": {"tensors": 0, "bytes": 0}
   },
   "supportChange": {
-    "repository": "/Users/mr.simi/Documents/mlx-swift-lm",
+    "repository": "<LOCAL_HOME>/Documents/mlx-swift-lm",
     "branch": "exp/execution-state-fork",
     "commit": "4ff8c19",
     "registeredModelType": "muse_glimmer_text",

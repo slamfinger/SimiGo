@@ -626,7 +626,7 @@
               "sequence" : 96
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -1239,7 +1239,7 @@
               "sequence" : 96
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -1852,7 +1852,7 @@
               "sequence" : 96
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -8892,7 +8892,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -16149,7 +16149,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -23406,7 +23406,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -30754,7 +30754,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -38011,7 +38011,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -45268,7 +45268,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
           "steps" : [
             {
               "eventCount" : 48,
@@ -45622,7 +45622,7 @@
   },
   "g19a4Scope" : "PRIMARY",
   "instrumentedModuleCount" : 48,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
   "modelType" : "Qwen3MoEModel",
   "observedScope" : "DECODER_MLP_DOWN_PROJ \/ CORE_NOT_DIRECTLY_OBSERVED",
   "pilotScope" : "INSTRUMENTATION_FEASIBILITY_IDENTITY_STABILITY_PILOT",

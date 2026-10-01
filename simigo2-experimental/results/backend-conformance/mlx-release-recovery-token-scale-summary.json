@@ -2,7 +2,7 @@
   "status": "PASS",
   "protocolVersion": "LAB.MLX.EXECSTATE.RELEASE.RECOVERY.TOKEN.SCALE.V1",
   "boundary": "RETAIN_VS_RELEASE_RESTORE_BY_TOKEN_BUDGET / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "segmentSize": 8,
   "segmentCount": 6,
   "prefixTokenLength": 64,

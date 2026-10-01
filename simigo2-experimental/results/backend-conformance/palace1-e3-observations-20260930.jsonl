@@ -15,7 +15,7 @@
 {"ts":"2026-09-30T12:03:17Z","case":"c2","anchor":"UNANCHORED"}
 {"ts":"2026-09-30T12:03:17Z","case":"c2","wall_seconds":"8.5"}
 {"ts":"2026-09-30T12:03:21Z","case":"c3","input_msgs":"2"}
-{"ts":"2026-09-30T12:03:21Z","case":"c3","response":"::code-comment{title=\"Session Context\" body=\"This is the initial turn of a new session. No prior work has been performed in this conversation.\" file=\"/Users/mr.simi/.zcode/workspace/default\" priority=0}"}
+{"ts":"2026-09-30T12:03:21Z","case":"c3","response":"::code-comment{title=\"Session Context\" body=\"This is the initial turn of a new session. No prior work has been performed in this conversation.\" file=\"<LOCAL_HOME>/.zcode/workspace/default\" priority=0}"}
 {"ts":"2026-09-30T12:03:21Z","case":"c3","anchor":"UNANCHORED"}
 {"ts":"2026-09-30T12:03:21Z","case":"c3","wall_seconds":"4.0"}
 {"ts":"2026-09-30T12:03:21Z","case":"teardown","durability_writes":"ZERO"}

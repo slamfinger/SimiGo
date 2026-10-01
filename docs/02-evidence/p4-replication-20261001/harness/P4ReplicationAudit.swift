@@ -29,11 +29,11 @@ final class P4ReplicationAudit: XCTestCase {
   // MARK: frozen constants — verbatim from the committed design 792afbc
 
   static let modelPath =
-    "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"
+    "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX/snapshots/31a0106483c94e9fbb0a6d3360ff122d47377058"
   static let work = URL(fileURLWithPath: "/tmp/simigo-p4-replication", isDirectory: true)
-  static let realCheckpoints = URL(fileURLWithPath: "/Users/mr.simi/.simigo/branch-checkpoints", isDirectory: true)
-  static let prefixPool = URL(fileURLWithPath: "/Users/mr.simi/.simigo/prefix-pool", isDirectory: true)
-  static let productRepo = "/Users/mr.simi/Documents/SimiGo"
+  static let realCheckpoints = URL(fileURLWithPath: "<LOCAL_HOME>/.simigo/branch-checkpoints", isDirectory: true)
+  static let prefixPool = URL(fileURLWithPath: "<LOCAL_HOME>/.simigo/prefix-pool", isDirectory: true)
+  static let productRepo = "<LOCAL_HOME>/Documents/SimiGo"
 
   static let s1Session = "5401315f-faa7-4984-9639-fccef06ae188"
   static let s1Fixture = URL(fileURLWithPath: "/tmp/simigo-palace1-e1/esr2/t3gateB/b0", isDirectory: true)

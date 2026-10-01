@@ -29,7 +29,7 @@ command-line self-test mode used for reproducible evidence.
 ```bash
 ./build/SimiGo2Experimental.app/Contents/MacOS/SimiGo2App \
   --self-test \
-  --model /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d \
+  --model <LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d \
   --states STATE_A,STATE_B,STATE_AB,STATE_A,STATE_ALL
 ```
 

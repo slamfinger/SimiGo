@@ -2,7 +2,7 @@
   "status": "PARTIAL_PASS_WITH_BOUNDARY",
   "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6D.DISTRIBUTION.PARTIAL.V1",
   "boundary": "TARGETED_N5_DISTRIBUTION_EXPANSION / GPU_TIMEOUT_ON_ONE_CELL / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "prefixTokenLengths": [
     8,
     64

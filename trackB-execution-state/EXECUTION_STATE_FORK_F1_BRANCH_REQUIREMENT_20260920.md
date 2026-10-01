@@ -10,7 +10,7 @@
 
 The current SimiGo workspace already resolves mlx-swift-lm from a local source-control path:
 
-`/Users/mr.simi/Documents/mlx-swift-lm`
+`<LOCAL_HOME>/Documents/mlx-swift-lm`
 
 Track B should use a separate experimental checkout/branch of that repository, with a fresh Xcode `derivedDataPath` after switching the vendor revision.
 

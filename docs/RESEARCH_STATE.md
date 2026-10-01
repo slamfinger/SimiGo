@@ -3985,7 +3985,7 @@ mlx-swift-lm path   Lab Package.swift: path dep (outside-repo relative
                     path, broke public clones) -> remote branch
                     slamfinger/mlx-swift-lm@release/v2.0-beta-ml,
                     Package.resolved pins fbfa1f4; product project: the
-                    file:///Users/... reference pinned at stale revision
+                    file://<LOCAL_HOME>/... reference pinned at stale revision
                     dc3ca619 -> same public branch (two different
                     revision requirements are a SwiftPM resolution
                     error — found by the rebuild, unified on branch);
@@ -10505,7 +10505,7 @@ memory pressure change: NONE
   3. 观察进程启动 / 内存分配 / 推理执行
 
 可用资源：
-  llama-server: /Users/mr.simi/.simigo/bin/llama-server (v0.5.0-dev)
+  llama-server: <LOCAL_HOME>/.simigo/bin/llama-server (v0.5.0-dev)
   GGUF model: Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf (21GB)
 ```
 

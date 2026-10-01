@@ -3,7 +3,7 @@
   "forwardMilliseconds" : 876.327625,
   "generatedTokens" : 16,
   "materializeSeconds" : 0.442817583,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "modelType" : "qwen3_next",
   "overallPass" : true,
   "protocolVersion" : "G1.9-O3.SKELETON.V1",

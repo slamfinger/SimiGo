@@ -12,6 +12,37 @@ SimiGo-Lab 当前不试图重新实现 MLX、Llama 等底层模型执行系统�
 **产品仓**：`github.com/slamfinger/SimiGo`（1.x 线；与本仓严格分离）。  
 **当前状态真源**：`docs/RESEARCH_STATE.md`。本 README 提供定位与工作区导览，不替代状态真源或具体 gate 文档。
 
+## 当前冻结边界
+
+Execution State Contract 已进入 **Abstraction Freeze CLOSED**。公开边界使用
+七操作生命周期：
+
+```text
+create / fork / continue / save / restore / discard / release
+```
+
+冻结的语义对象仍是：
+
+```text
+Execution State
+├── Semantic Contract: I / P / A / C
+├── Invariant Contract: INV-XB
+├── Lifecycle Contract: seven operations
+└── Representation Contract: declared per backend
+```
+
+本 README 不重述或修改 Contract 语义；权威文本见
+`docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md`
+与 `docs/RESEARCH_STATE.md`。
+
+## 开源边界
+
+研究文档与证据记录采用 **CC-BY-4.0**；runtime、adapter、conformance 与可执行
+实验材料采用 **Apache-2.0**。本仓不发布模型权重，不授予 `SimiGo` 官方品牌；
+hosted / enterprise / support / 专有集成保留独立商业边界。详见
+[OPEN_SOURCE.md](OPEN_SOURCE.md)、[NOTICE](NOTICE)、
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)、[TRADEMARKS.md](TRADEMARKS.md)。
+
 ## 当前 Runtime 实验
 
 当前工程链：

@@ -24,12 +24,12 @@
     "v4096_vs_v4096": -0.01771188861025668
   },
   "boundary": "ROW_BLOCK_NORM_AND_ROW_CORRELATION_DIAGNOSTIC / LAYOUT_NOT_RESOLVED / NO_QUANTIZER_DRIFT_CLAIM",
-  "ggufPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+  "ggufPath": "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
   "ggufTensor": "blk.1.attn_qkv.weight",
   "interpretation": "BEST_SEGMENT_ORDER_SUGGESTIVE_BUT_ROW_MAPPING_ABSENT / LAYOUT_UNRESOLVED",
   "layer": 1,
   "layoutResolved": false,
-  "mlxPath": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "mlxPath": "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
   "mlxQuantization": {
     "bits": 4,
     "groupSize": 64

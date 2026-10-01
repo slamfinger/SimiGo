@@ -1,7 +1,7 @@
 {
   "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
   "instrumentedModuleCount" : 48,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
   "modelType" : "Qwen3MoEModel",
   "preamble" : {
     "baselineText" : "pong",

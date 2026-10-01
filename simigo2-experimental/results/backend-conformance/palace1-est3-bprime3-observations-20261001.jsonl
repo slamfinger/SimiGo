@@ -9,7 +9,7 @@
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","text_chars":"0"}
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","text":""}
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","tool_call_count":"1"}
-{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","tool_call_0":"Bash {\"command\":\"find \\/Users\\/mr.simi\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
+{"ts":"2026-09-30T16:43:58Z","case":"b0-listing","tool_call_0":"Bash {\"command\":\"find <LOCAL_HOME>\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","generation_tokens":"64"}
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","prompt_tokens":"13235"}
 {"ts":"2026-09-30T16:43:58Z","case":"b0-listing","stream_end":"NORMAL"}
@@ -17,7 +17,7 @@
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","text_chars":"0"}
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","text":""}
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","tool_call_count":"1"}
-{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","tool_call_0":"Bash {\"command\":\"find \\/Users\\/mr.simi\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
+{"ts":"2026-09-30T16:44:15Z","case":"b3-listing","tool_call_0":"Bash {\"command\":\"find <LOCAL_HOME>\\/Desktop\\/参考文件 -type f -o -type d | sort\",\"description\":\"递归列出参考文件下所有文件和目录\"}"}
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","generation_tokens":"64"}
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","prompt_tokens":"13235"}
 {"ts":"2026-09-30T16:44:15Z","case":"b3-listing","stream_end":"NORMAL"}

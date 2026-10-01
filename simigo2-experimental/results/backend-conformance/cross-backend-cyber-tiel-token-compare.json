@@ -693,7 +693,7 @@
     "RESOURCE_SWAP_SAMPLES_VALID" : true
   },
   "host" : "127.0.0.1",
-  "llamaModelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "llamaModelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
   "maxTokens" : 12,
   "outputIdentity" : true,
   "overallPass" : true,

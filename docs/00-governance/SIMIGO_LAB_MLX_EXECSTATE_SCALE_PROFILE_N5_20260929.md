@@ -25,7 +25,7 @@ benchmark、生产 performance claim 或跨模型/跨硬件比较。
 
 ```bash
 simigo2-experimental/.build/debug/simigo2ctl mlx-execstate-scale \
-  /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
+  <LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
   --lengths 8,64,256 --pairs-per-length 5 --tokens 1 --segment-size 8
 ```
 

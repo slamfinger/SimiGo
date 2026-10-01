@@ -30,7 +30,7 @@
       "SWITCH_ROOT_TO_FORK_REPLAYS" : true
     },
     "host" : "127.0.0.1",
-    "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+    "modelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
     "overallPass" : true,
     "port" : 18080,
     "predictionTokens" : 2,
@@ -118,7 +118,7 @@
     },
     "maxSwapMiB" : 0,
     "maxTokens" : 2,
-    "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+    "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
     "overallPass" : true,
     "peakFootprintMiB" : 6577,
     "protocolVersion" : "LAB.UI.BRANCH.SESSIONS.MLX.V1",

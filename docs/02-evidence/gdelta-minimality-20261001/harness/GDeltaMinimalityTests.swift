@@ -38,7 +38,7 @@ final class GDeltaMinimalityTests: XCTestCase {
 
   static let serverURL = URL(string: "http://127.0.0.1:8080")!
   static let work = URL(fileURLWithPath: "/tmp/simigo-gdelta", isDirectory: true)
-  static let productRepo = "/Users/mr.simi/Documents/SimiGo"
+  static let productRepo = "<LOCAL_HOME>/Documents/SimiGo"
   static let replicationBase = GDeltaMinimalityTests.work.appendingPathComponent("results/replication-gdelta", isDirectory: true)
 
   // Session A (P7-1 frozen content)

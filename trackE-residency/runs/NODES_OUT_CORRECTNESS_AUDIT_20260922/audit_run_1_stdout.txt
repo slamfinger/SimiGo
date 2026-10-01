@@ -20,4 +20,4 @@ RUNNER AUDIT
 ├── L1 negative test: pass=True violations=1
 ├── deterministic: dd=0 violations=0
 └── FINAL: PASS=True violations=0
-artifact: /Users/mr.simi/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_RUNNER_AUDIT_20260922/runner_audit.json
+artifact: <LOCAL_HOME>/Documents/SimiGo-Lab/trackE-residency/runs/NODES_OUT_RUNNER_AUDIT_20260922/runner_audit.json

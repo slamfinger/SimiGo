@@ -6,7 +6,7 @@
     "physicalMemoryBytes" : 34359738368
   },
   "gate" : "GATE5_MULTI_STATE_REAL_DEVICE",
-  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
   "report" : {
     "allResident" : {
       "cumulativeReleasedBytes" : 0,

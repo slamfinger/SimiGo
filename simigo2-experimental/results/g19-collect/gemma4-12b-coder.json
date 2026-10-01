@@ -1,7 +1,7 @@
 {
   "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
   "instrumentedModuleCount" : 48,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
   "modelType" : "Gemma4Model",
   "preamble" : {
     "baselineText" : "ping",

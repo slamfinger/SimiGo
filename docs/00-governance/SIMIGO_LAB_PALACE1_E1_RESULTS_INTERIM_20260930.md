@@ -19,7 +19,7 @@ ExperimentTests.swift`（**未提交产品仓**，工作树保留待 human 决�
 ## 2. R2 隔离机制的穷尽记录（守卫三次按设计拦截）
 
 ```text
-M-1  TEST_RUNNER_HOME 重定向 → 测试进程 home = /Users/mr.simi
+M-1  TEST_RUNNER_HOME 重定向 → 测试进程 home = <LOCAL_HOME>
      （homeDirectoryForCurrentUser 不读 HOME env，读 pwd 数据库）→ 守卫拦截
 M-2  全量 HOME= 重定向（xcodebuild 级）→ 同样无效（同因）→ 守卫拦截
 M-3  sandbox-exec 写拒绝 profile（~/.simigo 与 HF cache deny-write）：

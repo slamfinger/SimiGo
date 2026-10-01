@@ -2,7 +2,7 @@
   "status": "PASS_WITH_BOUNDARY",
   "protocolVersion": "LAB.MLX.O6.SEGMENT.PHASE.REPLICATION.V1",
   "boundary": "PREFIX64_REPLICATED_PHASE_ATTRIBUTION / COMBINED_N3 / SMALL_SAMPLE / NO_EXECUTION_STATE_ACTION / NOT_A_PERFORMANCE_BENCHMARK",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "prefixTokenLength": 64,
   "measuredTokensPerSample": 1,
   "segmentSizes": [

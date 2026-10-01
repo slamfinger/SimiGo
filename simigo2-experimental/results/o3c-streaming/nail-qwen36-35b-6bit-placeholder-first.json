@@ -2,7 +2,7 @@
   "boundary" : "SEGMENT_WISE_EXECUTION \/ RESIDENT_SET_BOUNDARY \/ CAPACITY_FIRST \/ DETERMINISM_SECONDARY \/ NOT_A_PERFORMANCE_CLAIM",
   "capacityHeldThroughout" : true,
   "determinismIdentical" : true,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX-6bit\/snapshots\/358c6c587b289b6f2da97147268af5e0ecf9900e",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX-6bit\/snapshots\/358c6c587b289b6f2da97147268af5e0ecf9900e",
   "modelType" : "Qwen35MoEModel",
   "observations" : [
     {

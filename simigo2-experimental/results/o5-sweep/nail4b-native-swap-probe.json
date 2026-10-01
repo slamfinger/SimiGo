@@ -28,7 +28,7 @@
     }
   ],
   "loadMilliseconds" : 510.513833,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
   "modelType" : "Qwen35MoEModel",
   "notes" : [
     "selective touch skipped: shard file not found"

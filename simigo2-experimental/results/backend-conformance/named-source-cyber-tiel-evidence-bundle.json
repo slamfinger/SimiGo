@@ -27,35 +27,35 @@
   },
   "artifacts": {
     "f32ControlAudit": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-f32-control-audit.json",
       "sha256": "87eaa2ed6c689eb0bccc18cfd73b820f4d5db5cc1e88e2a740453bc80ed757eb"
     },
     "lineageAudit": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-lineage-audit.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-lineage-audit.json",
       "sha256": "121b7ee417181fe8aa5ec8dc0173db0da92a7d4a1a7155a6ae313d584d7f255a"
     },
     "marginSeed42": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all.json",
       "sha256": "986d399de2180a9f5fd72c2735bf5835e1d119ca54e395aad26ea14d3610d39f"
     },
     "marginSeed43": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-margin-compare-matrix-v2-all-seed43.json",
       "sha256": "9144057b5d7c480df79b1c348a747fc3313dca55386a8149c755bc0ce9b00a87"
     },
     "profileEvaluation": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-matrix-v2-profile-evaluation.json",
       "sha256": "dc9e27232ea22872e21a7d4a3a8b37926a7989c6678e17919feeaed730317113"
     },
     "qkvSegmentDiagnostic": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-qkv-segment-diagnostic.json",
       "sha256": "fe6af0ba24b7e762cf710ab1cd05cdf553fc8e4e258b570d74d30c2ae9959303"
     },
     "quantizedLayoutPilot": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-quantized-drift-pilot-layer1.json",
       "sha256": "11648c477d52b69d3c3ea4ab26f41654ac1ff0a61c16bade81da5716915ce674"
     },
     "tensorTopologyAudit": {
-      "path": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json",
+      "path": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/named-source-cyber-tiel-tensor-topology-audit.json",
       "sha256": "a4fc163fe51d97f23d45e97964f08c7f129a00e1c2a4d6e3e2411862a365e2d4"
     }
   },

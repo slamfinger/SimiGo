@@ -2722,7 +2722,7 @@
     "RESOURCE_SWAP_SAMPLES_VALID" : true
   },
   "maxTokens" : 24,
-  "mlxModelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "mlxModelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
   "mlxModelType" : "Qwen35MoEModel",
   "overallPass" : true,
   "protocolVersion" : "LAB.CROSSBACKEND.RAWTOKEN.RECORD.V2",

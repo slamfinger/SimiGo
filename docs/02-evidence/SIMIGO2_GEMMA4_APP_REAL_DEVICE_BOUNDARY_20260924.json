@@ -6,7 +6,7 @@
     "physicalMemoryBytes" : 34359738368
   },
   "gate" : "GATE5_MULTI_STATE_REAL_DEVICE",
-  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
   "report" : {
     "allResident" : {
       "cumulativeReleasedBytes" : 0,

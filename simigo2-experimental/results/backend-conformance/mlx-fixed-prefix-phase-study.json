@@ -1,7 +1,7 @@
 {
   "boundary" : "SAME_LEADING_TOKEN_IDS \/ TEXT_TOKENIZER_CONFOUND_CONTROLLED \/ SMALL_SAMPLE \/ NO_EXECUTION_STATE_ACTION \/ NOT_A_PERFORMANCE_BENCHMARK",
   "measuredSamplesPerSize" : 3,
-  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "overallPass" : true,
   "prefixTokenIDCount" : 64,
   "prefixTokenLengths" : [
@@ -215,7 +215,7 @@
             "sampleIndex" : 2
           }
         ],
-        "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+        "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
         "overallPass" : true,
         "peakFootprintMiB" : 7980,
         "prefixTokenIDs" : [
@@ -441,7 +441,7 @@
             "sampleIndex" : 2
           }
         ],
-        "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+        "modelDirectory" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-Next-4bit\/snapshots\/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
         "overallPass" : true,
         "peakFootprintMiB" : 7955,
         "prefixTokenIDs" : [

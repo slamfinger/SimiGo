@@ -1,7 +1,7 @@
 {
   "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
   "instrumentedModuleCount" : 40,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e\/snapshots\/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
   "modelType" : "Qwen35MoEModel",
   "preamble" : {
     "baselineText" : "ping",

@@ -18,7 +18,7 @@
   "cycles" : 2,
   "host" : "127.0.0.1",
   "longPrompt" : "Count from 1 to 500. Return only numbers separated by spaces.",
-  "modelPath" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
+  "modelPath" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP\/snapshots\/d835c87ac12ef0d02867e6e03cb6d425ddeb373b\/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf",
   "overallPass" : true,
   "port" : 18080,
   "predictionTokens" : 2,

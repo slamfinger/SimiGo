@@ -31,7 +31,7 @@ final class P71CrossBackendTests: XCTestCase {
 
   static let serverURL = URL(string: "http://127.0.0.1:8080")!
   static let work = URL(fileURLWithPath: "/tmp/simigo-p7-1", isDirectory: true)
-  static let productRepo = "/Users/mr.simi/Documents/SimiGo"
+  static let productRepo = "<LOCAL_HOME>/Documents/SimiGo"
   static let replicationBase = P71CrossBackendTests.work.appendingPathComponent("results/replication-p71", isDirectory: true)
 
   static let initialText = "I am organizing desktop files into a folder called ReferenceFiles containing project management documents."

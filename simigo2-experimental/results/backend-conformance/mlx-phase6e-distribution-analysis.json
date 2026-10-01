@@ -3,7 +3,7 @@
   "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6E.DISTRIBUTION.ANALYSIS.V1",
   "boundary": "POST_HOC_ROBUST_STATS / SMALL_N / IQR_FENCES / GPU_TIMEOUT_CELL_REMAINS_N3 / NOT_A_PERFORMANCE_BENCHMARK",
   "sourceArtifact": "simigo2-experimental/results/backend-conformance/mlx-phase6d-distribution-partial-summary.json",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "prefixTokenLengths": [
     8,
     64

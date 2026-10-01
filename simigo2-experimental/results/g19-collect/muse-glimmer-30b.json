@@ -1,7 +1,7 @@
 {
   "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
   "instrumentedModuleCount" : 52,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--RadixArk--Muse-Glimmer-q4-MLX\/snapshots\/4a4f54af27b7bc3f25351588a25335b28585cc49",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--RadixArk--Muse-Glimmer-q4-MLX\/snapshots\/4a4f54af27b7bc3f25351588a25335b28585cc49",
   "modelType" : "MuseGlimmerTextLLMModel",
   "preamble" : {
     "baselineText" : "ukukukukukukukukukukukukukukukuk",

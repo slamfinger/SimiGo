@@ -1,7 +1,7 @@
 {
   "boundary" : "ISOLATED_INSTRUMENTATION \/ LAYER_ENTERED_ONLY \/ OBSERVER_PASSIVE \/ DECLARED_LINE_IS_SCENARIO \/ MEASURED_LINE_IS_OBSERVATION \/ NOT_DEMAND \/ NOT_PREDICTION \/ EXPERT_DEMAND_NOT_INSTRUMENTED",
   "instrumentedModuleCount" : 40,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
   "modelType" : "Qwen35MoEModel",
   "preamble" : {
     "baselineText" : "ping",

@@ -2,7 +2,7 @@
   "status": "PASS_WITH_BOUNDARY",
   "protocolVersion": "LAB.MLX.EXECSTATE.PHASE6B.SEGMENT.REPLICATION.V1",
   "boundary": "TARGETED_SEGMENT_SIZE_REPLICATION / COMBINED_N3 / SMALL_SAMPLE / CACHELESS_GREEDY_RECOMPUTE / NOT_A_PERFORMANCE_BENCHMARK",
-  "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+  "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
   "prefixTokenLengths": [
     8,
     64
@@ -22,7 +22,7 @@
       "segmentSize": 8,
       "segmentCount": 6,
       "samplesPerStrategy": 3,
-      "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
       "retainActionMs": {
         "n": 3,
         "meanMs": 0.0021393333333333334,
@@ -147,7 +147,7 @@
       "segmentSize": 16,
       "segmentCount": 3,
       "samplesPerStrategy": 3,
-      "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
       "retainActionMs": {
         "n": 3,
         "meanMs": 0.006000000000000001,
@@ -272,7 +272,7 @@
       "segmentSize": 8,
       "segmentCount": 6,
       "samplesPerStrategy": 3,
-      "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
       "retainActionMs": {
         "n": 3,
         "meanMs": 0.004597333333333333,
@@ -397,7 +397,7 @@
       "segmentSize": 16,
       "segmentCount": 3,
       "samplesPerStrategy": 3,
-      "modelDirectory": "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "modelDirectory": "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5",
       "retainActionMs": {
         "n": 3,
         "meanMs": 0.009916666666666666,

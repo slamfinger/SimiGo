@@ -1206,7 +1206,7 @@
               "sequence" : 192
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -2423,7 +2423,7 @@
               "sequence" : 192
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -3640,7 +3640,7 @@
               "sequence" : 192
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -10708,7 +10708,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -17965,7 +17965,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -25222,7 +25222,7 @@
               "sequence" : 1152
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -30540,7 +30540,7 @@
               "sequence" : 816
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -35683,7 +35683,7 @@
               "sequence" : 816
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -40826,7 +40826,7 @@
               "sequence" : 816
             }
           ],
-          "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+          "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
           "steps" : [
             {
               "eventCount" : 48,
@@ -41082,7 +41082,7 @@
   },
   "g19a4Scope" : "PRIMARY",
   "instrumentedModuleCount" : 48,
-  "modelID" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+  "modelID" : "\<LOCAL_HOME>\/.cache\/huggingface\/hub\/models--mlx-community--gemma-4-12b-coder-fable5-composer2.5-4bit\/snapshots\/6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
   "modelType" : "Gemma4Model",
   "observedScope" : "DECODER_MLP_DOWN_PROJ \/ CORE_NOT_DIRECTLY_OBSERVED",
   "pilotScope" : "INSTRUMENTATION_FEASIBILITY_IDENTITY_STABILITY_PILOT",

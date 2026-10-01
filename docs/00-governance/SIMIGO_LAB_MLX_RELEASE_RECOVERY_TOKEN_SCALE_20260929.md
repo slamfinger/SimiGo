@@ -24,7 +24,7 @@ performance claim 或 release-policy recommendation。
 
 ```bash
 simigo2-experimental/.build/debug/simigo2ctl mlx-release-recovery \
-  /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
+  <LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
   --prefix-length 64 --tokens TOKENS --cycles 2 --segment-size 8
 ```
 

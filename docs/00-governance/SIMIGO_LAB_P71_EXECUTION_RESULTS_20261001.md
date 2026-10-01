@@ -21,7 +21,7 @@ Claim F 下一状态，不提前给解释性结论）
 | 5 | Adjudicate | audit-20261001-EC02BCE8 | 0.07s |
 
 - 执行前置：llama-server 由本战役启动于 127.0.0.1:8080（binary
-  `/Users/mr.simi/.simigo/bin/llama-server`，GGUF snapshot d835c87a，
+  `<LOCAL_HOME>/.simigo/bin/llama-server`，GGUF snapshot d835c87a，
   ~15s 就绪）
 - 全部目录 git=dc12a0c + dirty=True（harness 未提交，既定纪律）；
   events.jsonl 单调钟全真；r0_verify 五目录全 PASS

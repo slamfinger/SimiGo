@@ -38,12 +38,12 @@ final class P4Sample3ReplicationAudit: XCTestCase {
   // MARK: Sample-3 frozen constants (freeze precedes all computation)
 
   static let modelPath =
-    "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d"
+    "<LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d"
   static let modelName = "Qwen3-Coder-30B-A3B-Instruct-4bit@6e302ea6"
   static let work = URL(fileURLWithPath: "/tmp/simigo-p4-replication", isDirectory: true)
-  static let realCheckpoints = URL(fileURLWithPath: "/Users/mr.simi/.simigo/branch-checkpoints", isDirectory: true)
-  static let prefixPool = URL(fileURLWithPath: "/Users/mr.simi/.simigo/prefix-pool", isDirectory: true)
-  static let productRepo = "/Users/mr.simi/Documents/SimiGo"
+  static let realCheckpoints = URL(fileURLWithPath: "<LOCAL_HOME>/.simigo/branch-checkpoints", isDirectory: true)
+  static let prefixPool = URL(fileURLWithPath: "<LOCAL_HOME>/.simigo/prefix-pool", isDirectory: true)
+  static let productRepo = "<LOCAL_HOME>/Documents/SimiGo"
 
   static let s3Session = "p4-sample3-9d2e41"
   static let s3Fixture = URL(fileURLWithPath: "/tmp/simigo-p4-replication/sample3", isDirectory: true)

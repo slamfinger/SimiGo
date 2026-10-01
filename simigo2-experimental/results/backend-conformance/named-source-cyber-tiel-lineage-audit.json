@@ -20,7 +20,7 @@
     "generalFinetune": "abliterated",
     "generalName": "Huihui Ornith 1.5 35B A3B Abliterated",
     "metadataCount": 55,
-    "path": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
+    "path": "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/blobs/0bbcf3cc9be4c976bad20e641baf629dad9c178d39ebdc9cd72129179943c06a",
     "sizeBytes": 22749880640,
     "tensorCount": 753,
     "tokenizerModel": "gpt2",
@@ -46,7 +46,7 @@
   "matrixUsage": {
     "maxUsedTokenID": 248069,
     "sharedVocabLimit": 248070,
-    "sourceComparePath": "/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2.json",
+    "sourceComparePath": "<LOCAL_HOME>/Documents/SimiGo-Lab/simigo2-experimental/results/backend-conformance/cross-backend-cyber-tiel-token-compare-matrix-v2.json",
     "sourceCompareSHA256": "6e86c2c560a3994afa0b47bbd0513ed4d0ee7a4a4c34093b9751f6f47313409a",
     "usedIDsOutsideSharedVocab": [],
     "usedUniqueTokenIDCount": 294
@@ -55,7 +55,7 @@
     "architecture": "qwen3_5_moe",
     "chatTemplateJinjaSHA256": "b629ec1ffdcf88bd8b547f3eb7d5dbde61002fe2a2727c5720b2f48f5b6545e7",
     "mergesTxtSHA256": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
-    "path": "/Users/mr.simi/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
+    "path": "<LOCAL_HOME>/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-MLX-oQ4e/snapshots/b867c9dac94e521b9cabc59038fc6bf4b2f18e81",
     "readmeBaseModel": "huihui-ai/Huihui-Ornith-1.5-35B-A3B-abliterated",
     "tokenizerJsonSHA256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
     "vocabJsonSHA256": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"

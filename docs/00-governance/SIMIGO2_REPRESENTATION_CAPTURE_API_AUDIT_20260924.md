@@ -8,7 +8,7 @@ Boundary: EXPLORATORY / NO REPRESENTATION ASSERTION
 
 ```bash
 swift run --package-path simigo2-experimental simigo2ctl rep-audit \
-  /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d
+  <LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d
 ```
 
 ## Result

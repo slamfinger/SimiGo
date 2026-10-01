@@ -29,7 +29,7 @@ segment 8。本轮在 safe prefix-64 path上增加两个 replicates，使 combin
 
 ```bash
 simigo2-experimental/.build/debug/simigo2ctl mlx-segment-phase \
-  /Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
+  <LOCAL_HOME>/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-Next-4bit/snapshots/7b9321eabb85ce79625cac3f61ea691e4ea984b5 \
   --prefix-length 64 --segment-size SIZE --samples 1
 ```
 
