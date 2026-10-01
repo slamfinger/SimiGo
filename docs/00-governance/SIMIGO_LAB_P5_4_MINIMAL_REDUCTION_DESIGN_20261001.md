@@ -60,8 +60,8 @@ Level 3: Universal Execution State closure → NOT IN SCOPE
 | Arm | 保留 | 移除 | 目的 |
 |---|---|---|---|
 | **PA-1** | I + C | P + A | P+A 组合是否必要（不能区分二者） |
-| **PA-2** | I + P + C | A | Position 能否替代 Anchor |
-| **PA-3** | I + A + C | P | Anchor 能否替代 Position |
+| **PA-2** | I + P + C | A | 保持 Position 成立时，破坏 Anchor → continuation contract 是否仍成立？（关系独立性） |
+| **PA-3** | I + A + C | P | 保持 Anchor 存在时，破坏 Position → continuation contract 是否仍成立？（关系独立性） |
 | **IC** | I + C | P + A | I+C 是否足够（无状态定位） |
 | **PC** | P + C | I + A | 不可能的组合（reference only） |
 | **AC** | A + C | I + P | 不可能的组合（reference only） |
@@ -81,20 +81,27 @@ Level 3: Universal Execution State closure → NOT IN SCOPE
 但将 history 内容替换为同长度但不同文本的内容（Anchor 破坏——
 内容不匹配但 token count 匹配）。
 
-这是**最关键的 arm**。如果失败 → Anchor 不可被 Position 替代
-（二者独立）。如果成功 → Anchor 是 Position 的实现表达。
+这是**最关键的 arm**。不预设"替代关系"结论。
+测试的是：Position 条件成立（token count 匹配）时，
+Semantic Anchor 破坏（内容不匹配）是否导致 continuation
+contract 失效。
 
-预期：如果 MLX ChatSession 只检查 token count 不检查内容 →
-模型会继续但在**错误的语义上下文**上。输出会与 Full baseline
-不同但格式正常 → CLOSURE_ABLATED（语义偏移）。
+可能结果（不预设）：
+```text
+情况 1: output ≈ Full baseline → KV 语义携带 > anchor 校验
+情况 2: output ≠ Full baseline 但格式正常 → Position 满足形式对齐
+         但不足以保证 semantic continuation → A ≠ P
+情况 3: framework reject / rebuild → 当前实现检测到 semantic
+         inconsistency → VALIDATION_REJECTED（不是 closure proof）
+```
 
 #### Arm PA-3: Remove P, keep A
 
 物理 KV 完整。history 内容不变（Anchor 完整），但修改
 history 数组的消息数使其与 KV token count 不匹配（Position 破坏）。
 
-预期：与 -P 类似（rebuild），确认 Anchor 存在但 Position 缺失时
-continuation 仍失败。
+测试：Anchor 信息存在（内容不变）时，Position relation 破坏
+（count 不匹配）是否导致 continuation contract 失效。
 
 #### Arm IC: Keep only I + C
 
@@ -107,13 +114,13 @@ continuation 仍失败。
 
 ```text
 PA-2 (keep P, remove A):
-  如果 output ≠ Full baseline 且格式正常 → Anchor ⊄ Position（独立关系）
-  如果 output = Full baseline → Anchor = Position 的实现表达（合并）
-  如果 throw/rebuild → Anchor 在当前实现中不可独立于 Position 消融
+  情况 1 output ≈ baseline → KV semantic carrying sufficient
+  情况 2 output ≠ baseline → A ≠ P (semantic continuation broken)
+  情况 3 rebuild → VALIDATION_REJECTED (semantic inconsistency detected)
 
 PA-3 (keep A, remove P):
-  如果 rebuild → Position 不可被 Anchor 替代（独立关系）
-  如果 output 正常 → Position 是冗余的（被 Anchor 包含）
+  rebuild → P ≠ A (position misalignment breaks continuation)
+  output 正常 → P 冗余（被 A 包含）
 ```
 
 ## §5 预注册措辞
@@ -133,5 +140,9 @@ Level 2（如果发现 containment/equivalence）:
 
 继承 P5-2-C 全部完整性标准。新增：
 - PA-2 是核心 arm（同长度不同内容 history）
+- PA-2 必须验证 cachedTokenCount == renderedTokenCount
+  （否则退化成 P5-1 rebuild，无新信息）
+- 每 arm 必须记录：processedTokenCount, renderedTokenCount,
+  cachedTokens.count, reuse decision
 - 记录 output 与 Full baseline 的差异度（edit distance 或 hash 比较）
 - 每组合独立 fixture 目录
