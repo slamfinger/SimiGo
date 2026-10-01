@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
-登记时间：2026-09-30
-状态：`EST3_B2DIFF_EXECUTED_UNINFORMATIVE / ALTERNATIVE_DESIGN_WITH_HUMAN`
+登记时间：2026-10-02
+状态：`PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_COMPLETE / AWAITING_HUMAN_SECOND_LAYER`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -68,6 +68,10 @@
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_DRAFT_20260930.md`
 32. 读其 external review：
    - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_ARCHITECTURE_CONTRACT_V1_EXTERNAL_REVIEW_20260930.md`
+33. 读 Contract v1.0-amended（七操作 lifecycle，freeze candidate）：
+   - `docs/00-governance/SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md`
+34. 读当前活跃 gate draft（participant proposal，未注册）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -76,11 +80,12 @@ branch = codex/execution-state-research-20260929
 route = EXECUTION-STATE-CENTRIC
 runtime line = SEALED / BOUNDED CONSOLIDATION
 architecture contract = PHASE A REVIEW PASS / REGISTERED
-PALACE-1 = BOUNDARY AUDIT PASS / REGISTERED
 BACKEND-1 = ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED
 SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
+Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
+PALACE-1 = FRAMING REGISTERED / PARKED → LIFECYCLE STORAGE OPENING DRAFT COMPLETE（2026-10-02；AWAITING HUMAN SECOND-LAYER；下一门 = external review → registration；实验/实现/选型授权 = 无）
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -335,20 +340,18 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：启动 `PALACE1_DURABLE_STATE_SEMANTICS_OPENING`——
-   先 §0 并发核验，然后 participant opening/definition draft（D1–D4）→
-   external review → 停 registration 门。不写代码、不选数据库、不解决
-   OP/G、不做第二 backend。
-   核心四问（human 方向决定，2026-09-30）：
-   ```text
-   D1  什么状态必须 durable？
-   D2  什么状态可以 reconstruct？
-   D3  恢复后什么条件下仍是 SAME Execution State？
-   D4  Physical Representation 丢失后 State 如何继续存在？
-   ```
-   重新审（非解决）：OP-1 transcript equivalence / OP-2 lineage closure /
-   G-7 durable identity / G-10 durable store / RB-1…RB-8 / IC-1…IC-5 /
-   Execution Semantic Snapshot——全部对照 Contract v1.0 重锚定。
+1. 下一会话第一动作：`PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT`
+   （2026-10-02）已 DRAFT COMPLETE——等待 human 第二层判断（gate 重入
+   合法性 + 范围裁定）→ external review（六项固定：Contract fidelity /
+   lifecycle obligation 对齐 / fact-hyp 分层纪律 / F1-F2-F3 不可合并性 /
+   OP-G 台账完整性 / scope discipline）→ 停 registration 门。
+   不写代码、不选数据库、不解决 OP/G、不做第二 backend、不消费 OP-7。
+   研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
+   记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
+   restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、
+   可验证、fail-closed，且存储载体可替换可扩展。
+   事实分层纪律：EF-1…EF-11 = 已登记工程事实；CH-1…CH-4 = 契约推导
+   HYP；U-1…U-4 = 诚实 UNKNOWN（Gate B 结论外推禁止）。
 2. Maintain the Contract v1.0 standing drift-detection（C-13 双向 + S2/S6）；
    G-9/G-6/G-7/G-10 触发纪律不变；轴 d 再检验为 durable-store activation
    第一审计项（若该线后续激活）。
