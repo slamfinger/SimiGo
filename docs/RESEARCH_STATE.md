@@ -9292,6 +9292,46 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P6 ARCHITECTURE SYNTHESIS — FREEZE CANDIDATE — 2026-10-01
+
+Artifact：`SIMIGO_LAB_P6_ARCHITECTURE_SYNTHESIS_20261001.md`
+
+核心定义（冻结候选）：
+> Execution State is not a stored artifact. It is the minimal
+> relation closure that preserves computational continuity.
+
+三层模型：
+```text
+Reference Layer: Palace ←→ ES（Identity/Reference 连接）
+Closure Layer:   {I, P, A, C}（已验证 L1 minimal set）
+Carrier Layer:   物理介质（可替换，≠ Closure）
+```
+
+安全不变量入口点：
+```text
+INV-S1 possession≠capability: NOT SATISFIED（production gate）
+INV-S2 authority∉state:       SATISFIED ✓
+INV-S3 consent for transfer:  NOT SATISFIED（production gate）
+INV-S4 revocation≠deletion:   NOT SATISFIED（production gate）
+```
+
+Palace 约束：
+```text
+共享 Relation Closure 抽象
+通过 Identity/Reference 连接，不合并 schema
+Palace 不是 ES 的存储后端
+前提：P6 frozen + Security invariants acknowledged
+```
+
+Current state:
+
+```text
+P6 = FREEZE CANDIDATE / awaiting human review
+Palace = interface constrained, implementation deferred
+Security = invariants defined, mechanism deferred
+Current blocker = human review of P6 synthesis
+```
+
 ### P5-5 STATE BOUNDARY SYNTHESIS — DRAFT COMPLETE — 2026-10-01
 
 Artifact：`SIMIGO_LAB_P5_5_STATE_BOUNDARY_SYNTHESIS_20261001.md`
