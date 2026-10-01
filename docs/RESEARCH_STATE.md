@@ -9292,6 +9292,78 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P6 ARCHITECTURE SYNTHESIS — FROZEN — 2026-10-01
+
+Human review verdict：`FREEZE (Conceptual Boundary)`
+
+#### 冻结内容
+
+```text
+✅ Execution State 定义：
+   "ES is not a stored artifact. It is the minimal relation
+    closure that preserves computational continuity."
+
+✅ Relation Closure 模型：
+   {Identity, Position, Semantic Anchor, Continuation}
+
+✅ Carrier ≠ Closure 分离原则
+
+✅ 三层模型：
+   Reference Layer (Palace ←→ ES)
+   Closure Layer ({I,P,A,C})
+   Carrier Layer (physical media)
+
+✅ Palace 接口边界：
+   Palace = Knowledge/Reference Topology Layer
+   ES = Computation Topology Layer
+   连接 = Identity/Reference relation
+   Palace 不定义 ES，不替代 carrier
+
+✅ Security invariant 入口：
+   INV-S1..S4（当前 S2 satisfied，S1/S3/S4 production gate）
+   安全核心问题 = authority continuity，不是数据加密
+```
+
+#### Closure 命名精确化
+
+```text
+冻结名称：Minimal Dependency Closure for MLX-based Execution State
+（非 Universal Minimal Closure——后者需 multi-backend 验证）
+```
+
+#### 保留开放
+
+```text
+OP-6-1  Closure 是否跨 backend 保持？
+OP-6-2  是否存在更小闭包？
+OP-6-3  Palace 如何实例化 Reference Layer？
+OP-6-4  Security invariant 如何工程化？
+```
+
+#### 后续路线
+
+```text
+P6 FREEZE ← 当前
+  ↓
+P7 Cross-backend Validation（优先于 Palace）
+  ↓
+P8 Security Boundary
+  ↓
+P9 Palace Mapping
+```
+
+P7 优先于 P9 的理由：如果 closure 不能脱离 MLX 存在，
+Palace 最终只能服务一个 backend。
+
+Current state:
+
+```text
+P6 = FROZEN (Conceptual Boundary)
+研究核心问题 = "什么关系使一个计算过程仍然是同一个过程？"
+Current blocker = none
+Next = P7 Cross-backend Validation（方向归 human）
+```
+
 ### P6 ARCHITECTURE SYNTHESIS — FREEZE CANDIDATE — 2026-10-01
 
 Artifact：`SIMIGO_LAB_P6_ARCHITECTURE_SYNTHESIS_20261001.md`
