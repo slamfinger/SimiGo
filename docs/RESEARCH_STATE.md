@@ -9292,6 +9292,112 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7 OP-7-1..3 ANSWERED — CODE-LEVEL AUDIT — 2026-10-01
+
+代码级审查 `LLAMAServerExecutionStateAdapter.swift`（294 行）、
+`LLAMAServerExecutionStateBackend.swift`（90 行）、
+`LLAMAServerExecutionStateExecutor.swift`。
+
+#### OP-7-1: Closure mapping 定义方向 + adapter 支持范围
+
+```text
+映射方向已确认：Abstract Closure → 独立 backend expression
+（adapter 注释明确："Keeping that strategy separate from MLX
+  proves the contract surface is not tied to MLX types"）
+
+Adapter 对四项 closure relation 的支持状态：
+
+Identity:
+  ✅ 部分支持
+  表达 = ExecutionID (opaque) + openModelIdentity (model path)
+  缺失 = 无 kvFingerprint 等价物（config 绑定不可用）
+  差异 = MLX 有 config-level identity，llama adapter 没有
+
+Position:
+  ✅ 支持
+  表达 = ExecutionPosition (Int64) + tokenPrefix [Int] + boundPositions
+  等价 = processedTokenCount ↔ tokenPrefix.count
+  差异 = MLX 用 token count + ledger，llama 用 token prefix array
+
+Semantic Anchor:
+  ✅ 部分支持
+  表达 = nextInput (text) 在 ExecutionContinuation 中
+        + tokenPrefix（隐含语义——tokens 来自 tokenizeText(history)）
+  缺失 = 无独立 history[] 数组（历史嵌入在 token prefix 中）
+  差异 = MLX 有显式 history[] JSON 数组，llama 只有隐式 token prefix
+
+Continuation:
+  ✅ 支持
+  表达 = ExecutionContinuation (nextInput / continuationID)
+        + isPrefix 语义（token prefix 天然是前缀结构）
+  等价 = MLX isPrefix(existing, incoming) ↔ token prefix extend
+  差异 = MLX 有 PromptCacheReusePolicy（多层决策），llama 是线性 extend
+```
+
+#### OP-7-2: Identity 跨 backend 判定标准
+
+```text
+冻结标准："same model semantics + same conversation lineage"
+
+理由：
+- same model file 不可行（MLX 用 safetensors，llama 用 GGUF——
+  文件格式不同是 carrier 差异）
+- same conversation lineage 可行：两 backend 从同一初始 text
+  createExecution → 后续相同的 user turn 序列 → 确认同一 lineage
+
+验证方法：
+1. 两 backend 分别 open() → 获取 modelIdentity
+2. 两 backend 对同一 text 调用 tokenizeText → 比较 token count
+   （token IDs 可能不同——tokenizer 差异；count 应接近）
+3. 两 backend 分别 createExecution(id: 同一 ExecutionID, text: 同一初始文本)
+4. 两 backend 分别 continueTurn(同一 user text)
+5. 比较两 backend 的 position 增量是否一致
+```
+
+#### OP-7-3: Failure 归因规则
+
+```text
+冻结规则：
+
+llama.cpp 无法恢复 ≠ Execution State 不成立
+= 当前 backend mapping 未建立
+
+具体归因层次：
+1. LLAMAServerAdapterError.serverUnavailable → carrier 层（服务不可用）
+2. LLAMAServerAdapterError.adapterNotOpen → adapter 使用错误
+3. LLAMAServerAdapterError.unknownExecution → identity mapping 断裂
+4. LLAMAServerAdapterError.missingCompletionTokens → carrier 层
+5. ExecutionStateBackendError.noBoundRepresentation → position mapping 断裂
+6. ExecutionStateBackendError.representationPositionMismatch → position 不一致
+
+以上均归为 MAPPING_UNAVAILABLE，不归为 CLOSURE_PORTABILITY_LIMITED
+（后者要求 adapter 能表达 relation 但表达结果不等价）。
+```
+
+#### Adapter 当前能力总结
+
+```text
+支持的 closure operation：
+  createExecution（text → tokens → bind prefix）
+  continueTurn（extend prefix → generate → advance position）
+  forkExecution（复制 token prefix 到 child）
+  restoreExecution（回滚到 bound position）
+  discardExecution（释放 representation）
+
+不支持的 closure operation：
+  跨 checkpoint 持久化（prefix 存在内存 dict 中，不落盘）
+  多模型 identity 区分（只有 openModelIdentity 一个 string）
+  独立的 semantic anchor 存储（历史隐含在 token prefix 中）
+```
+
+Current state:
+
+```text
+P7 OP-7-1..3 = ANSWERED
+P7 design = 可进入 harness（待 human authorization）
+阻塞 = human authorization to proceed
+```
+
 ### P7 CROSS-BACKEND VALIDATION DESIGN GATE — ISSUED — 2026-10-01
 
 Artifact：`SIMIGO_LAB_P7_CROSS_BACKEND_DESIGN_GATE_20261001.md`
