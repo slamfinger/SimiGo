@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`G3_EXECUTED / REDO_COST_MEASURED / RESULT_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -143,6 +143,9 @@
    - ✅ human 裁定：G2 结果门通过（H-G1-02 升 SUPPORTED strong exploratory）；RQ-OQB-1 ACCEPT→已执行答案在档；G1 收束不扩 Corpus
 61. 读 G3 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_DURABLE_INFORMATION_DESIGN_DRAFT_20261002.md`
+   - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（三类计数口径；B 原样性执行期纪律；OB-R3/R4 重点）
+62. 读 G3 结果记录（R-1..R-5 + 重做量对照 + 五项恢复矩阵）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_20261002.md`
 
 ## Current snapshot
 
@@ -411,16 +414,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：G3 设计草案已完成（核心 = 停止工作后哪些
-   过去发生过的事情必须仍然存在，下一次工作才能不是从头开始；
-   条件 A 只有 L0 vs 条件 B L0+工作记录原样对照；硬指标重做量 =
-   步骤/文件读取/判断计数；工作记录 = G1/G2 实际产物原样禁止新
-   整理摘要；观察五项 OB-R1..R5）——等待 human 冻结审查；通过 +
-   执行授权后 R-1..R-5 执行 → 结果门 → human 判读（含 H-G1-02
-   是否升格）。禁止：Durable Information/Provenance/PALACE State/
-   Dynamic Index Schema/知识图谱/提前决定必须持久化/G3 等同 ES
-   必要性/L0 写入/新整理摘要/性能基准/Gate①·V1 复活；不写
-   PALACE 代码。
+1. 下一会话第一动作：G3 已执行并交付结果记录（R-2 重做量清单
+   = 14 阶段/≥223,356 cells/≈30+ 判断，从实际记录枚举非估计；
+   R-3 条件 A bounded 实测 119 步骤/156,543 cells 证量级真实；
+   R-4 条件 B 恢复矩阵 = R1/R2/R4/R5 直接 + R3 分散；
+   H-G1-02「重复工作」信号获实测计数）——等待 human：G3 验收 +
+   H-G1-02 是否升格 + 下一方向。RQ-G3-1..3 已生成。纪律不变：
+   L0 只读；禁止各 Schema；不写 PALACE 代码。
 
 继续区分：
 

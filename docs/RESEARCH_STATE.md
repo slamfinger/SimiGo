@@ -14326,3 +14326,45 @@ PALACE_V2_G3 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
 执行授权     = 无（冻结 + 授权后：R-1..R-5 → 结果门）
 Current blocker = none
 ```
+
+### LAB PALACE V2 G3 EXECUTED — REDO-COST CONTRAST MEASURED — FIVE-ITEM RECOVERY MATRIX — 2026-10-02
+
+Human G3 冻结审查 PASS / EXECUTION AUTHORIZED（附加执行纪律：重做量
+三类计数口径 = 步骤/读取/判断；B 原样性保护执行期不变——禁止顺手
+补记录；OB-R3 排除项与 OB-R4 未闭合问题为重点；H-G1-02 升格规则
+严格保持——单纯效率差≠升格；三结果形态不预设 C）。
+
+G3 执行完成（R-1..R-5）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_20261002.md`。
+
+```text
+R-1 停止点冻结 = G2 T-3 完成时点状态原样枚举（S1..S8/未闭合
+    S7·S8/RQ-G2-1..3/排除项/下一步指向 RQ-G2-2）
+R-2 重做量清单（从实际记录枚举非估计）= 14 主要阶段 / 8 xlsx
+    ×≥4 遍 / cell 读取 ≥223,356（156,543 结构层 + 46,972 T-1 +
+    19,841×2 diff）/ D×6 全文 / ≈30+ 项判断
+R-3 条件 A bounded 实测 = 119 步骤/8 文件/110 sheets/156,543
+    cells/1.5s——产出原始样本 18 个零判断；证实 R-2 量级真实
+R-4 条件 B 实测（记录原样恢复）= R1 工作位置 ✓直接 / R2 已有
+    发现 ✓直接（JSON 结构化）/ R3 已排除项 △分散恢复（跨选族/
+    台账/证据多文档）/ R4 未闭合 ✓直接 / R5 下一步 ✓直接；
+    记录缺口复检 = corrections 在档自愈案例 + L0 完整性复核
+    无矛盾 + 原样性保护未破
+R-5 对照 = 条件 A 重做 ≥R-2 全清单（含 ≥223,356 cells 与 ≈30+
+    判断）vs 条件 B 读 4–6 份记录文件零重做
+H-G1-02 材料登记 = 四类合格信号之一「重复工作」获实测计数
+    （重达停止点须重复 ≥R-2 全清单，bounded 于「重达完全相同
+    停止点」口径）——非单纯效率差；「过去发生过的事情必须仍然
+    存在」获工程计数级支持；ES 必要性判定归 human
+生成 RQ-G3-1..3（排除项分散聚合 / 记录格式可恢复性 / 更细粒度
+    停止点重做量曲线）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G3 = EXECUTED / RESULT AT HUMAN
+待裁定 = G3 验收 + H-G1-02 是否升格 + 下一方向
+Current blocker = none
+```
