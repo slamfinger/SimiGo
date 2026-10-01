@@ -9292,6 +9292,65 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2 WORKAROUND A ADOPTED — Cold-start boundary recorded — 2026-10-01
+
+Human decision：P7-R2-A adopted。Cold-start limitation 记录为
+environment/runtime boundary，不计为 ES failure。
+
+#### 概念区分（本次 blocker 的副产品）
+
+```text
+Initialization = 产生第一个 state（空白 → 有状态）
+Continuation   = 利用已有 state 延续计算（有状态 → 未来状态）
+
+SimiGo 当前验证的是 Continuation，不是 Initialization。
+P6 frozen definition 中的 "continuity" 天然有前态。
+```
+
+#### 命题边界收紧
+
+```text
+❌ 不声称：Execution State can initialize computation from nothing
+✅ 声称：Execution State preserves continuation of an already
+         established computation state
+```
+
+#### P7-R2 修订实验路径
+
+```text
+Existing validated S₀（来自 P5-2-C checkpoint）
+  ↓
+Native checkpoint（loadSessionCache 加载）
+  ↓
+Save checkpoint（saveSessionCache）
+  ↓
+Process termination
+  ↓
+Fresh process restore（loadSessionCache from saved checkpoint）
+  ↓
+Δ continuation（generate）
+  ↓
+Closure invariant observation
+```
+
+#### Cold-start limitation 记录
+
+```text
+NativeMLX cold-start generate → CancellationError
+影响：Phase A 不能从零创建 state
+不影响：P7-R2 核心命题（continuation，非 initialization）
+归类：environment/runtime boundary
+后续：可单独作为 P7-R3 Cold Initialization Validation（如需）
+```
+
+Current state:
+
+```text
+P7-R2-A = ADOPTED
+Blocker = 解除（使用已有 checkpoint 作为 seed）
+Next = 修改 harness → 执行
+```
+
 ### P7-R2 COLD-START BLOCKER DISCOVERED — 2026-10-01
 
 P7-R2 harness 执行发现 NativeMLX 冷启动路径系统性 CancellationError。
