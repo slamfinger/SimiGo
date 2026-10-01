@@ -9818,6 +9818,46 @@ Next      = human 执行授权 → 4 进程运行 → R0 登记 → 机械判读
 Blocker   = human execution authorization
 ```
 
+### P7-1 EXECUTED — MECHANICAL VERDICT: CONTINUATION_VALIDATED_CROSSBACKEND — 2026-10-01
+
+Human 执行授权后，P7-1 按冻结预注册（9319b40）执行完毕。结果文档：
+`docs/00-governance/SIMIGO_LAB_P71_EXECUTION_RESULTS_20261001.md`；
+工件+harness 归档：`docs/02-evidence/p71-crossbackend-20261001/`。
+
+```text
+执行      = 5 独立进程全 SUCCEEDED（form 26.6s 含 GGUF 全字节哈希/
+            fork 28.1s/restore 24.5s/pollution 5.2s/adjudicate 0.07s）；
+            llama-server 本战役启动（~15s 就绪）；R0 五目录全 PASS；
+            单调钟全真
+M1        = CheckpointData v2 modelIdentity（GGUF 全字节 SHA256
+            0bbcf3cc…）三程独立计算；J-I1/J-I2 fork+restore 双程
+            PASS ⇒ I 关系升格 NATIVE-EXPRESSED
+M2        = J-A1 anchor(child@fork)==anchor(parent@fork)==anchor_A0
+            PASS；J-A2 分叉真实；J-A3 functional；J-P2 双支精确落地
+全 cell   = C1..C5 全 PASS ⇒ 机械判读
+            CONTINUATION_VALIDATED_CROSSBACKEND（J-C4 锚定输出样例
+            "The folder is called ReferenceFiles…"；J-PN1 parent
+            重放逐字）
+失败三分  = 零 implementation 运行失败/零 mapping failure/零 closure
+            failure；编译期 ExecutionID 歧义=构建期修正（实验前，
+            设计零改动，透明登记）
+判定措辞  = 严格按 P7-0 §6：「MLX 与 llama.cpp 均能以各自
+            backend-native representation 表达同一 candidate
+            relation closure，并在 restore 后保持相同的 continuation
+            invariant」；Claim F：NOT YET → **bounded cross-backend
+            claim（有实验支持）**；边界保留=两 backend≠所有 backend；
+            禁止 backend-independent 裸表述
+```
+
+当前状态：
+
+```text
+Phase   = PHASE-2 ROUTE B / P7-1 EXECUTED（待 human second layer）
+Claim F = bounded cross-backend claim（措辞锁定，边界保留）
+Next    = human second layer 终判 → （可选）P7 线收尾或收束矩阵更新
+Blocker = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件
