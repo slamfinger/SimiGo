@@ -9292,6 +9292,55 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P7-R2-A MLX EXECUTED — CONTINUATION_VALIDATED — 2026-10-01
+
+Harness: `Palace1P7R2RealCarrierTests.swift` @ SimiGo (public)
+Phase A: 30.9s passed (runUUID B28562C5→F2017140)
+Phase B: 15.4s passed (runUUID 233C8923→07466925, separate process)
+
+#### Verdict: CONTINUATION_VALIDATED
+
+```text
+C1 Identity:     ✅ restored_history_count = 21（跨进程恢复成功）
+C2 Position:     ✅ monotonic 保持
+C3 Anchor:       ✅ hash_equal = true + functional = true
+                    （不同 Δ → 不同 output，anchor 参与计算）
+C4 Continuation: ✅ cacheHitTokens = 13370, mode = extend
+                    coldFallback = false（warm continuation）
+
+Δ 输出 = "参考文件"（正确从会话 history 中提取文件名）
+
+关键：cacheHitTokens = 13370 证明 restored KV cache 确实被
+warm 使用——不是 cold start，不是 rebuild。
+```
+
+#### 实验闭包记录
+
+```text
+Experiment Identity:
+  Phase A runUUID: F2017140-3B5B-420C-B36D-4233B3CCBD10
+  Phase B runUUID: 07466925-8ED0-46A7-8D8C-12E755924A13
+  session_id: 5401315f-faa7-4984-9639-fccef06ae188
+
+Carrier Identity:
+  model: Nail-Qwen3.6-35B-A3B-MLX
+  checkpoint_dir_sha256: 91c2dd95…
+  anchor_hash: ad0f718a…
+
+Process boundary: CONFIRMED（Phase A 和 Phase B 为独立 xcodebuild invocation）
+
+发现：RuntimeLifecycleCoordinator.register 必须在每次 generate 前调用，
+否则 CancellationError。已作为 issue 记录。
+```
+
+Current state:
+
+```text
+P7-R2-A MLX = CONTINUATION_VALIDATED ✅
+P7-R2-A llama.cpp = PENDING（Cell B）
+Blocker = none for MLX cell
+```
+
 ### P7-R2 WORKAROUND A ADOPTED — Cold-start boundary recorded — 2026-10-01
 
 Human decision：P7-R2-A adopted。Cold-start limitation 记录为
