@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`GATE1_CREATE_ID_RESERVATION_DESIGN_DRAFT_COMPLETE / AWAITING_HUMAN_FREEZE_REVIEW`
+状态：`GATE1_DESIGN_FROZEN_REVIEW_PASS / AWAITING_EXPLICIT_EXECUTION_AUTHORIZATION`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -78,6 +78,8 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_REGISTRATION_20261002.md`
 37. 读 Gate① 设计草案（仅设计，无执行授权）：
    - `docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_CREATE_IDENTITY_RESERVATION_DESIGN_20261002.md`
+38. 读 Gate① 冻结审查登记（PASS — DESIGN FROZEN / EXECUTION NOT AUTHORIZED，含 R-1/R-2/R-3 判读覆盖）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_DESIGN_FREEZE_REVIEW_20261002.md`
 
 ## Current snapshot
 
@@ -91,7 +93,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE-1 = LIFECYCLE STORAGE OPENING REGISTERED / ACTIVATED → GATE①（create durable identity reservation）设计草案 COMPLETE，AWAITING HUMAN FREEZE REVIEW（通过+批准后才执行 O-1…O-6；观测层纪律在案：禁止 identity→primary key / lineage→table / snapshot→serialization 实现先行映射）
+PALACE-1 = GATE①（create durable identity reservation）DESIGN FROZEN / REVIEW PASS / EXECUTION NOT AUTHORIZED——下一动作 = human 显式执行授权（独立状态转换；批准后构建 §11 R0 harness 跑 O-1…O-6；判读覆盖 R-1 O-4 恒 control / R-2 P-C2 fail-open-to-trace / R-3 caller 纪律闸门；结论措辞上限 = 「候选语义需求」，禁止跳到 allocator 实现）
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -346,13 +348,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：Gate① 设计草案已完成
-   （`SIMIGO_LAB_PALACE1_GATE1_CREATE_IDENTITY_RESERVATION_DESIGN_
-   20261002.md`：O-1…O-6 观测矩阵 + P-C1…P-C5 预登记 + positive/
-   negative evidence 判据 + confounders + stop conditions）——等待
-   human 冻结审查；通过 + 批准后方执行（R0 仪器化 harness，源码公开
-   采信规则）。一次一项；随后同法推进 fork lineage formation（Gate B
-   范式）。不写代码、不选数据库、不解决 OP/G、不做第二 backend、
+1. 下一会话第一动作：Gate① 设计已 FROZEN / REVIEW PASS（冻结审查
+   登记 `SIMIGO_LAB_PALACE1_GATE1_DESIGN_FREEZE_REVIEW_20261002.md`，
+   含 R-1/R-2/R-3 执行判读覆盖与结论措辞边界）——等待 human 显式
+   执行授权（独立状态转换）。授权后：构建 §11 R0 仪器化 harness
+   （源码公开采信规则）→ 执行 O-1…O-6 → 结果门 = 原始事实 + 机械
+   判读，无追加实验。一次一项；随后同法推进 fork lineage formation。
+   不写产品代码、不选数据库、不解决 OP/G、不做第二 backend、
    不消费 OP-7。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
