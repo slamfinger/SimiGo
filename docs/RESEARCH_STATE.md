@@ -9767,6 +9767,49 @@ G0 = MemPalace FROZEN（①②）；Mem0 ③ 交付（静态）；Graphiti 待�
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G0 GRAPHITI OBSERVATION ④ DELIVERED — H-PALACE-G0-01 ANSWERED-DIVERGENT — 2026-10-02
+
+Human 补充 G0 结论框架（六条工程事实收束；第 6 条「现有 Memory System
+是否存在查询状态本身可持久化并继续执行的能力」= 未决空间保留；不提前
+改 V2、不定义 Query State schema）。
+
+Graphiti 中间观察 ④（静态源码级，getzep/graphiti @ `3c42764`）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_GRAPHITI_OBSERVATION_
+20261002.md`。
+
+```text
+关键观察（源码级）
+  ① bi-temporal 边模型：created_at/expired_at（摄入时间线）+
+     valid_at/invalid_at（事实时间线）——事实失效标记保留历史
+  ② provenance：边携带 episodes[uuid] 链回源文本；episode 正文
+     存图（L1 存储化）+ LLM 建图（L2）共存 = 第三形态
+     （介于 MemPalace 纯函数重建与 Mem0 记忆即本体之间）
+  ③ 检索配方化：Node/EdgeSearchMethod（cosine/bm25/bfs）×
+     Reranker（rrf/mmr/cross_encoder/node_distance/episode_mentions）
+     正交组合；BFS = 一等方法（edge_bfs_search/node_bfs_search，
+     种子 = 相似度/全文首轮，bfs_max_depth 控深）
+  ④ ingest = LLM 工程（extract/dedupe 全链；OpenAIClient 默认）；
+     episode_body = 字符串（无文件面，同 Mem0）
+H-PALACE-G0-01 判读 = 全局「纯相似度」不成立；精确事实 = 关系
+    遍历能力存在但仅 Graphiti 融合进检索配方，另两家旁路/缺失
+    ——假设 UNVERIFIED → ANSWERED-DIVERGENT（分系统分歧即发现）
+生成 RQ-G1…4（BFS 种子质量依赖 / LLM 建图确定性 / bi-temporal
+    as-of 查询对 E6 覆盖度 / prescribed ontology 与未来 semantic
+    relations 关系——仅登记不预答）
+```
+
+当前状态：
+
+```text
+G0 三系统观察齐备 = MemPalace FROZEN（①②）/ Mem0（③）/ Graphiti（④）
+下一门            = G0 结论门（AUDIT_RESULT 九节：跨系统 Comparison
+                    + Gap 收束 RQ-PALACE-01/02/03 + H-PALACE-G0-01
+                    + 六条工程事实框架含第 6 条未决空间）
+Current blocker   = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
