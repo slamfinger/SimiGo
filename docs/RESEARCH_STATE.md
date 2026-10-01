@@ -9292,6 +9292,52 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING DRAFT COMPLETE — 2026-10-02
+
+Human 方向指令（framing PARKED 后的显式 gate 重入）：研究 PALACE——
+可灵活拓展、长期存储 Execution State、适配七操作 lifecycle。§0 并发
+核验 PASS（LOCAL=REMOTE=25e1a79、树净、framing 无消费漂移、
+Contract v1.0-amended = freeze candidate 待 final freeze）后，
+participant opening draft 完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_
+20261002.md`。
+
+内容与纪律：
+
+```text
+研究问题 = PALACE 长期 durable 存储层记录语义的最小集合，使七操作
+          lifecycle 在跨进程/时间/backend/P 丢失边界上可断言、可验证、
+          fail-closed，且存储载体可替换可扩展
+三子目标  = F1 灵活拓展（storage-agnostic Store Declaration 模式，
+          借用 Representation Contract 冻结模式）/ F2 长期存储
+          （存活边界 EF-6 已证 + U-1…U-4 未证）/ F3 七操作适配
+          （七操作 × durable 缺口逐项映射表）
+事实分层  = EF-1…EF-11 工程事实（全部引用已登记链，零新增事实）；
+          CH-1…CH-4 契约推导一律标 HYP；D1–D4「概念先行」降级教训
+          写入方法论约束
+七记录族  = identity reservation / lineage closure / continuation
+          (Tier-1 序列) / semantic snapshot / tombstone / binding
+          relation(OPTIONAL)——全部 HYP，物理 acceleration side 不收编
+UNKNOWN   = 七操作全链在 P 全丢失 + 进程死亡 + 载体迁移叠加下的
+          same-State 恢复（Gate B 外推禁止）
+禁止      = 选库 / schema / persistence API / RF-1 机制 / 产品代码 /
+          性能基准 / 改 Contract / 消费 OP-7 / 关闭任何 OP-G
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = DRAFT COMPLETE（participant proposal）
+Current blocker                   = none（重入合法性 + 范围裁定归
+                                    human 第二层）
+下一门                            = external review（六项固定）→
+                                    PASS / ACTIVATION_REQUIRED →
+                                    registration
+实验 / 实现 / 选型授权            = 无
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
