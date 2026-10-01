@@ -1,0 +1,5 @@
+{
+  "checkpoint_meta_sha256" : "c4ddf774947bee9ff18a757751f854d7913278967237853c2138d9bb1677a3f2",
+  "checkpoint_tensor_sha256" : "2a55afe9328a73d76d240b8a4284e0b34f846069d215c615425aa02aa528ce3a",
+  "model" : "Qwen3-Coder-30B-A3B-Instruct-4bit@6e302ea6;config=sha256:8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13"
+}

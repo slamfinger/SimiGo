@@ -9518,6 +9518,42 @@ Gap ledger = G-α CLOSED / G-ζ CLOSED / G-γ CLOSED
 Blocker    = none
 ```
 
+### G-β EXECUTED — P4 SAMPLE-3 REPLICATION — 承载项全 PASS / 终判 INCONCLUSIVE（F-6）— 2026-10-01
+
+Human G-β 指令执行完毕（同 protocol 同判据独立 sample，禁新增变量）。
+结果文档：`docs/00-governance/SIMIGO_LAB_P4_SAMPLE3_REPLICATION_RESULTS_20261001.md`；
+工件+harness 归档：`docs/02-evidence/p4-sample3-20261001/`。
+
+```text
+样本       = Qwen3-Coder-30B-A3B-Instruct-4bit（第二架构族，注册
+             RUNTIME_POSITIVE_CONTROL）；新冻结脚本「咖啡店开业准备」
+             8 轮（先冻结后形成）；S₀′′ pos16
+执行       = 4 独立进程全 SUCCEEDED（Form 36.3s/Run1 95.6s/
+             Run2 93.5s[真换序 B 先]/Adjudicate 0.08s）
+科学结果   = 承载项 J1..J4+J6 全 PASS——J1 身份 8/8、J3 锚定、J6 演化；
+             **全战役首次真换序 J4**（Run2 进程内 B 先 A 后，4 分支轮
+             跨独立进程逐字恒等；F-5 修复落地；原 P4/P5-1 J4 读法
+             限定为跨进程重复确定性）
+机械判读   = as-produced FAIL（唯一非 PASS=J5 pool 内容见证 CHANGED）
+           → **F-6 登记**：判定代码 allSatisfy 违反 harness 自身预
+             注册映射（「J5 失败⇒INCONCLUSIVE」）与 judgment_note
+             （recorded, not judged）
+改判       = 按冻结映射（非改判据）：checkpoints 内容级恒等+pool
+             变更=F-2 常态导出 ⇒ **Sample-3 = INCONCLUSIVE**；
+             FAIL-as-produced 原样留存工件
+边界       = 一个第二模型≠所有模型；跨 backend 不在本轮；J5 递归
+             内容见证（F-3 修复后首用）使 F-2 行为可见并归因
+```
+
+当前状态：
+
+```text
+Gap ledger = G-α CLOSED / G-β EXECUTED（承载项过，终判 INCONCLUSIVE
+             归 human 终验收）/ G-ζ CLOSED / G-γ CLOSED
+             G-δ 最小性判据先写死（下一步）/ G-ε Token Ledger 数字核对
+Blocker    = none
+```
+
 ### SECURITY INCIDENT: EXPERIMENT CODE EXPOSED ON PUBLIC REPO — CONTAINED — 2026-10-01
 
 #### 事件

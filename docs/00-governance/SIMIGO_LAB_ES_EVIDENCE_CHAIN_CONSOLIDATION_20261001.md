@@ -88,7 +88,7 @@ protocol-valid INCONCLUSIVE）
 | 缺口 | 性质 | 封口需要什么 |
 |---|---|---|
 | G-α P4 human second layer | ~~human 终判~~ → **已交付** | **CLOSED（2026-10-01）**：second-layer judgment 完成并登记（SIMIGO_LAB_P4_SECOND_LAYER_JUDGMENT_20261001.md）=NO-MISREADING；F-1 解释澄清（P4 拓扑级路径无关）+F-2 J5 限定读法（pool 计数不可见常态导出，无可观察分支读效应）+F-3 P5-1 见证勘误；human 终验收照例保留 |
-| G-β Sample-3 模型维度 | coverage gap | 第二模型可用时按同判据补样本；或明示永久边界（登记即可封） |
+| G-β Sample-3 模型维度 | ~~coverage gap~~ → **已执行** | **EXECUTED（2026-10-01）**：Qwen3-Coder（第二架构族）同 protocol 同判据复制；承载项 J1..J4+J6 全 PASS（含全战役首次**真换序** J4）；机械 as-produced FAIL 经 F-6（判定逻辑-预注册映射不一致）按冻结 J5 映射改判 **INCONCLUSIVE**（唯一非 PASS=pool 内容见证=F-2 常态导出语义）；模型维度 gap 实质收窄（SIMIGO_LAB_P4_SAMPLE3_REPLICATION_RESULTS_20261001.md）；终验收归 human |
 | G-γ P5-1 S1 | INCONCLUSIVE 终态 | 无需行动——protocol-valid INCONCLUSIVE 即终态；样本资格条件已登记 |
 | G-δ P5-2-C / P5-4 原跑未复制 | 复制计划 Day3-5 未消费 | human 裁定：按收束模式以原跑证据级引用（标注未复制），或择一补复制 |
 | G-ε Token Ledger 数字分歧 | 记录核对 | 95/95（human 地图）vs 100/100（0741da68 时代记录）——核对后钉死 |

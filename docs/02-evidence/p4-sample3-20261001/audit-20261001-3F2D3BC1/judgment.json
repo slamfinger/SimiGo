@@ -1,0 +1,17 @@
+{
+  "cells" : {
+    "J1_identity" : "PASS",
+    "J2_divergence" : "PASS",
+    "J3_anchoring" : "PASS",
+    "J4_order_independence" : "PASS",
+    "J5_isolation_content_sha" : "CHANGED(见 F-2 常态导出注记)",
+    "J5_isolation_counts" : "PASS",
+    "J6_evolution" : "PASS",
+    "verdict" : "FAIL"
+  },
+  "inputs" : {
+    "run1" : "audit-20261001-BD7E1260",
+    "run2" : "audit-20261001-6728547C"
+  },
+  "overall" : "FAIL"
+}
