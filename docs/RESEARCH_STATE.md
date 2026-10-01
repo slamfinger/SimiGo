@@ -9292,6 +9292,75 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+### P5-2-C HUMAN REVIEW — INTERPRETATION TIGHTENED — 2026-10-01
+
+Human review of P5-2-C result：
+
+#### 措辞收紧
+
+```text
+✅ 确认的结论：
+   "在当前 MLX backend 的 continuation contract 下，
+    Identity、Position、Anchor、Continuation 四类关系
+    均表现为必要依赖。"
+
+❌ 不可推出的结论：
+   "Execution State 必须包含这四项。"
+
+原因：实验对象是 MLX implementation contract，不是
+universal Execution State ontology。中间隔着
+ChatSession / PromptCacheReusePolicy / ledger 一层。
+```
+
+#### 关键发现重估
+
+**-Position（最有价值）：**
+KV carrier 保留 + Position relation 破坏 → 模型无法访问过去计算。
+这直接证明 **KV tensor 不是完整的 Execution State**。
+Execution State ≈ KV physical state + position + alignment + identity
++ continuation path，而不是 = KV cache 文件。
+
+**-Continuation（拓扑视角）：**
+输出"晴"不是报错——系统进入了一条合法的新计算路径。
+区分了三种情况：
+```text
+计算失败       → 不是（模型正常 generate）
+状态丢失       → 不是（State 存在，模型运行正常）
+状态存在但连接断开 → 是（continuation topology 断裂）
+```
+
+**-Identity（重新分类）：**
+modelId mismatch → reject 更像 authority / validity relation，
+而非 continuation 本身。这与后续 Security 研究自然连接。
+
+#### 下一步：P5-4 Minimal Closure Reduction
+
+目标不是增加关系，而是检测冗余：
+```text
+问题：四项关系之间是否存在替代关系？
+例如：Anchor ⊃ Position？
+      或 (Identity + Anchor) 可以替代 (Position + Continuation)？
+      闭包是线性列表 A+B+C+D 还是关系网络 (A+B) OR (C+D)？
+```
+
+三层分离（保持不混）：
+```text
+Palace          → 保存知识/信息拓扑
+Execution State → 保存计算连续拓扑
+Security        → 限制拓扑的转移边界
+```
+
+Current state:
+
+```text
+P4 = Common Base topology validated
+P5-1 = KV-only continuation rejected in current backend
+P5-2-C = Backend Dependency Closure validated (措辞已收紧)
+Current hypothesis = Execution State is a relation closure, not a carrier
+Next = P5-4 Minimal Closure Reduction
+Current blocker = P5-4 design pending (human direction)
+```
+
 ### P5-2-C EXECUTED — Backend Dependency Closure VALIDATED — 2026-10-01
 
 Harness: `Palace1P52CDependencyClosureTests.swift` @ SimiGo `f4803c8` (public)
