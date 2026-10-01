@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`OQB_EXECUTED / REPRESENTATION_NOISE_DISCOVERED / RESULT_AT_HUMAN`
+状态：`RQOQB1_ANSWERED_NOISE_IS_TOOLSPECIFIC / E6_DESIGN_ENTRY_OPEN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -120,6 +120,9 @@
    - ✅ 冻结审查 PASS / EXECUTION AUTHORIZED（OB-3 保持观察性质不预判；核心 = OB-4 世界变化后的继续性）
 53. 读 OQ-B 结果记录（OB-1..4 + 表示噪声发现）：
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_OQB_RESULT_20261002.md`
+   - ✅ human 验收：OQ-B PASS/CLOSED；OB-4 = HIGH-VALUE EVIDENCE（「工作记录与世界当前状态在最小漂移场景中出现独立性」登记）；RQ-OQB-1 ACCEPT
+54. 读 RQ-OQB-1 复测结果（Excel 原生编辑 = 1 cell 变化，噪声为 openpyxl 特有）：
+   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RQOQB1_NATIVE_EXCEL_RESULT_20261002.md`
 
 ## Current snapshot
 
@@ -133,7 +136,7 @@ SEAM-STABILITY = AUDIT PASS / REGISTERED / CLOSED
 ARCH-CONTRACT = OPENING REGISTERED / SYNTHESIS COMPLETE / V1 REGISTERED / UPSTREAM REFERENCE
 Contract v1.0-amended = FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION（human）
 oversized = FROZEN / ARCHITECTURE VALIDATION PAYLOAD
-PALACE = V2 G1 OQ-B EXECUTED：单 cell 漂移实验完成——【表示噪声发现】openpyxl 单 cell 编辑产生 23 cell diff（1 语义 + 22 浮点序列化噪声，max rel diff 4.2e-16 业务不可辨）+ 文件 -101KB 重压缩：工具中介编辑非表示隔离，naive diff 失效需精度感知语义 diff（RQ-OQB-1..3）；OB-3 旧值 450.29 v2 零痕迹（预期成立，双向不预判）；OB-4 记录 450.29 vs 现实 480.29 矛盾可检测、旧结论需重验、旧值仅存于工作记录——「继续工作依赖工作记录」最小实例（bounded）；H-G1-01 材料增强/H-G1-02 signal 增强；E6·V1 再激活参考观察登记——RESULT AT HUMAN；G2/G3 LOCKED；V1 = PARKED 不变
+PALACE = V2 G1 OQ-B 线完整收束：OQ-B PASS/CLOSED（OB-1..4 全 PASS，OB-4 = HIGH-VALUE：「工作记录与世界当前状态在最小漂移场景中出现独立性——L0 可恢复现实但不能恢复过去工作者观察到的状态」）；RQ-OQB-1 真机复测 ANSWERED：Excel 原生编辑 = 1 cell 变化（vs openpyxl 23）——22 噪声为 openpyxl 特有，非 Excel 工作流固有；精度感知 diff 必要性收窄为非原生工具路径前提；下一门 = E6 Design Entry（E6 问题 = 原始内容变化后 PALACE 如何知道当前工作所依据信息仍有效——低于版本管理一层抽象）；G2/G3 LOCKED；V1 = PARKED 不变
 next mode = REPLICATION_AUDIT_PHASE1_DAY1_P4_DONE（2026-10-01 下午链：安全事件处置[产品仓 force push 回滚 dc12a0c，研究内容限 Lab 仓]→Empirical Replication Audit Phase-1 签发[R0→P4→P5-1→P5-2-C→P5-4→P7-R2-A，逐步冻结]→R0 自检 ALL CHECKS PASSED→**P4 Replication 执行=机械判读 overall PASS**[判据 792afbc 逐字移植；6 独立进程；R0 runUUID 工件通道；J4 换序 8/8 逐字；隔离 204/2；S₁ 输出与原跑逐字相同=预期对照]——产物+harness 归档 docs/02-evidence/p4-replication-20261001/，结果文档 SIMIGO_LAB_P4_REPLICATION_RESULTS_20261001.md；**当前停：G-LC1+N-1..N-6 全 ACCEPT（G-LC1 附约束=save 是 representation/lifecycle transition 非 semantic closure mutation）→ Contract v1.0-amended 交付（SIMIGO_LAB_EXECUTION_STATE_CONTRACT_V1_AMENDED_20261002.md：lifecycle 扩七操作[create 补入/save 第七操作附约束/restore fail-closed/eviction 归 release 族]/N-1 INV-XB 内联/N-2 映射义务/N-5 方向性声明/N-6 版本钉定电池/N-4 附录 A·B 两份正式 Representation Declaration[R_llama/R_MLX 含 invariant→rule 映射]）→ 纯文本一致性复核 PASS（七项，含 save 约束 vs ES-D1 formation 边界相容[formation=同一 closure 转入 durable representation 非变异]）→ **FINAL FREEZE DECLARATION 归 human ⇒ SimiGo v2.0 Contract / Public Architecture Freeze**）**
 ```
 
@@ -388,15 +391,15 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：OQ-B 已执行并交付结果记录（OB-1 五字段全
-   变；OB-2 = 23 cell diff = 1 语义 + 22 工具往返表示噪声
-   max rel diff 4.2e-16——「工具中介编辑非表示隔离」发现；
-   OB-3 旧值零痕迹预期成立；OB-4 记录 vs 现实矛盾可检测、
-   继续工作依赖工作记录的最小实例）——等待 human：OB-1..4
-   验收 + RQ-OQB-1..3 处置（Excel 原生编辑复测？）+ 下一方向
-   （G1 收束 / E6 设计入口）。纪律不变：L0 只读；不命名
-   lineage/relation/provenance；禁止提前定义各 Schema；不写
-   PALACE 代码。
+1. 下一会话第一动作：RQ-OQB-1 已 ANSWERED（Excel 原生编辑 =
+   1 cell 变化零噪声；22 噪声 = openpyxl 工具特有；OQ-B 线完整
+   收束）——下一门 = E6 Design Entry：起草 E6 设计草案（human
+   措辞问题：「当信息空间中的原始内容发生变化时，PALACE 如何知道
+   当前工作所依据的信息是否仍然有效？」——低于版本管理一层
+   抽象；衔接 OQ-B/OB-4「工作记录 vs 世界当前状态独立性」观察与
+   RQ-D3「最新判据」遗留）。draft → human 冻结 → 执行。纪律：
+   L0 只读；不命名 lineage/relation/provenance；禁止提前定义
+   各 Schema；不写 PALACE 代码。
    研究问题（human 方向指令，2026-10-02）：PALACE 长期 durable 存储层
    记录语义的最小集合，使七操作 lifecycle（create/fork/continue/save/
    restore/discard/release）在跨进程/时间/backend/P 丢失边界上可断言、

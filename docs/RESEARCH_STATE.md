@@ -10128,6 +10128,52 @@ OQ-B = EXECUTED / RESULT AT HUMAN
 Current blocker = none
 ```
 
+
+### LAB PALACE V2 G1 RQ-OQB-1 EXECUTED — NATIVE EXCEL EDIT = 1 CELL CHANGE — NOISE IS TOOL-SPECIFIC — 2026-10-02
+
+Human OQ-B 验收裁定登记：OQ-B PASS/CLOSED FOR THIS EXPERIMENT；
+OB-1..4 全 PASS（OB-4 = HIGH-VALUE EVIDENCE）；关键登记观察 =
+「工作记录与世界当前状态在最小漂移场景中出现了独立性：当前 L0
+可以恢复现实，却不能恢复过去工作者曾经观察到的状态」（强于前、
+仍不越界——替代方案存在：change log/版本快照/历史索引）；
+OB-2 表示噪声保持观察（RQ-OQB-2 OPEN，与 SimiGo Semantic
+Contract ≠ Representation Layout 方法论呼应但不升格原理）；
+RQ-OQB-1 ACCEPT（极小复测）；G1 CLOSE 不扩 Corpus；顺序 =
+RQ-OQB-1 → E6 Design Entry（E6 问题低一层抽象 = 「当信息空间中
+的原始内容发生变化时，PALACE 如何知道当前工作所依据的信息是否
+仍然有效？」）。
+
+RQ-OQB-1 真机执行（本机 Microsoft Excel + AppleScript 原生驱动；
+v1 = L0 新鲜副本回滚至 450.29 基线）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RQOQB1_NATIVE_EXCEL_
+RESULT_20261002.md`。
+
+```text
+[O] Excel 原生编辑（F8 → 480.29 numeric + 原生保存）后：
+    cell 级 diff = 变更 1 / 消失 0 / 新增 0——唯一变化 =
+    附表1!r8c6 450.29→480.29（float 保留）；其余 19,840 cells
+    逐字稳定；size +1,016 bytes（Excel 内部结构/文档属性级）
+[O] 对照：openpyxl 路径 23 变化（1 语义+22 噪声，-101KB）vs
+    原生路径 1 变化（+1KB）
+=> RQ-OQB-1 答案：22 表示噪声 = openpyxl 工具往返特有，
+   非 Excel 工作流固有；工具选择决定观测污染程度；
+   RQ-OQB-2 精度感知 diff 必要性收窄为「非原生工具路径」前提
+[O] 诚实边界：字节级两条路径均大变（表示层/语义层分离的
+    工具版重演）；单 cell/本机 Excel 版本内有效，不外推
+```
+
+当前状态：
+
+```text
+OQ-B 线 = 完整收束（OB-1..4 + RQ-OQB-1 复测）
+下一门  = E6 Design Entry：起草 E6 设计（human 措辞问题 =
+          「当信息空间中的原始内容发生变化时，PALACE 如何知道
+          当前工作所依据的信息是否仍然有效？」——低于版本管理
+          一个抽象层级）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
