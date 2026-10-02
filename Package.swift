@@ -43,6 +43,11 @@ let package = Package(
             dependencies: ["InformationCore", "RelationCore"],
             path: "trackD-memory/Sources/InformationIntegration"
         ),
+        .executableTarget(
+            name: "RB1Harness",
+            dependencies: ["ExecutionCore", "InformationCore", "RelationCore"],
+            path: "tools/rb1-harness/Sources/RB1Harness"
+        ),
         .target(
             name: "SimiGoRuntimeContract",
             path: "simigo2-experimental/Sources/SimiGoRuntimeContract"
