@@ -218,3 +218,51 @@ assert(afterConflict == relation, "FAIL R4b: Relation was overwritten")
 print("PASS R4b first-write-wins on RelationStore")
 
 print("PHASE 2 RELATION BOUNDARY RUNTIME CHECKS: ALL PASS")
+
+// ===========================================================================
+// RELATION PERSISTENCE SEMANTICS GATE (R1–R6): the ruled RelationStore
+// contract, verified on TWO independent backends driven by the same
+// consumer code. R3 = first-write-wins (mirrors InformationStore S3).
+// No generic super Store exists anywhere — two parallel boundaries.
+// ===========================================================================
+
+func assertRelationContract(_ label: String, _ store: any RelationStore, _ relation: Relation) throws {
+    // R1: new RelationID → persist.
+    try store.store(relation)
+    // R4: present → Relation.
+    let present = try store.fetch(by: relation.identity)
+    assert(present == relation, "FAIL R4[\(label)]: present fetch differs")
+    // R2: same RelationID + same Relation → success no-op.
+    try store.store(relation)
+    // R3: same RelationID + conflicting Relation → success no-op,
+    // existing Relation remains authoritative (first-write-wins).
+    let conflicting = Relation(
+        identity: relation.identity,
+        subject: relation.subject,
+        predicate: RelationPredicate(value: "CONFLICTING — 不得覆盖（R3 first-write-wins）"),
+        object: relation.object,
+        provenance: Provenance(producedAt: Date(), producedBy: "r3-conflict-probe")
+    )
+    try store.store(conflicting)
+    let afterConflict = try store.fetch(by: relation.identity)
+    assert(afterConflict == relation, "FAIL R3[\(label)]: existing Relation was changed")
+    // R5: absent → nil.
+    let absent = try store.fetch(by: RelationID(rawValue: "absent-relation-000000000"))
+    assert(absent == nil, "FAIL R5[\(label)]: absence is not nil")
+    print("PASS R1–R6 contract on \(label)")
+}
+
+// Backend-1: SQLite Relation persistence.
+let sqliteRelationStore = try SQLiteRelationStore(path: databasePath + ".relations")
+try assertRelationContract("SQLiteRelationStore", sqliteRelationStore, relation)
+
+// Backend-2: In-Memory Relation persistence (existing test backend).
+try assertRelationContract("InMemoryRelationStore", relationStore, relation)
+
+// Cross-backend: one identity, two filings, one semantic fact.
+try sqliteRelationStore.store(relation)
+let relationFromSecondBackend = try sqliteRelationStore.fetch(by: relationID)
+assert(relationFromSecondBackend == relation, "FAIL: cross-backend relation diverged")
+print("PASS cross-backend: one Relation identity, two filings, one semantic fact")
+
+print("RELATION PERSISTENCE SEMANTICS R1–R6: CONTRACT VERIFIED ON BOTH BACKENDS")
