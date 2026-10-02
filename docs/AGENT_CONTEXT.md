@@ -126,6 +126,35 @@ As of the latest repository state:
   complex ones (human six-item checklist); STEP 0 = nomination
   presented (X1 0307/0308 twin-delta organization / X2 S8 gap
   closure / Y RQ-G2-1 verification), awaiting human pin.
+- EXP1-X1 EXECUTED & ACCEPTED (2026-10-02): A half-run (natural
+  completion stop, frontier = 3 external-verification items),
+  B half-run (released with ONLY the handover sentence + info
+  space; verify-then-continue mixed form; caught two defective
+  records incl. one false load-bearing judgment; extended the
+  frontier 3→12 items), Evidence Table v2 (7 rows) + truth
+  audit done, human result gate = ACCEPT. Key findings: explicit
+  to-do lists = strongest survival form; trust does not transfer
+  with information storage; credibility guarantee lives outside
+  the information itself (in X1 closable from information →
+  information side per closure test).
+- ROUTE CHANGE (human, 2026-10-02): Boundary Study narrowed —
+  X1 ACCEPT/CLOSED, four-case full matrix NOT executed (design
+  retained), Y = ES Boundary Candidate Probe REGISTERED/NOT
+  STARTED (sole purpose: can the post-tool-execution pending
+  state be legally recovered from information space alone).
+  PALACE real-carrier track OPEN: MemPalace 3.10.0 run AS-IS
+  (v0 at SimiGo-Lab/palace-v0/, gitignored; 9,311 drawers from
+  54 real corpus files + 4 EXP1 conversation records). Day-1
+  collisions C-1..C-5 registered (4 PDFs fail extraction / xlsx
+  flattening ~225 drawers per file with NaN pollution / numeric
+  known-answer queries drowned by noise / conversation records
+  outrank source docs both ways / wake-up L1 dominated by NaN
+  fragments). Presence ruling: source docx content IS in the
+  palace (0308 verified at chroma:document level) — failure is
+  ranking-layer, not missing-layer. Self-authored PALACE Schema
+  design remains prohibited — Schema comes from collisions.
+  Next-step priority (a MCP wiring / b collision observation /
+  c real-use phase / d Y probe timing) belongs to human.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

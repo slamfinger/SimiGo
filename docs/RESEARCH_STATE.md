@@ -15110,3 +15110,57 @@ EXP1-X1 = A + B 半程完成 / TRUTH AUDITED / EVIDENCE TABLE v2
 Current blocker = human 结果门判读（表 7 行归属验收 + F-1..6
     定性 + 下一步方向[四 case 全量 / 候选 Y / PALACE 设计讨论]）
 ```
+
+### LAB PALACE ROUTE CHANGED — MEMPALACE V0 INITIALIZED — DAY-1 COLLISIONS REGISTERED — 2026-10-02
+
+Human 改轨裁定（`SIMIGO_LAB_PALACE_REAL_CARRIER_ROUTE_CHANGE_
+20261002.md`，commit `b33f5ed`）：X1 结果门 ACCEPT（七行归属+
+F-1..F-6+停止点形态；「X1 完成了它最重要的事情——显式工作前沿/
+判断依据/信息可信性/未完成执行位置分层」）；两线分立不绑死；
+Boundary Study 收口为窄验证线（四 case 全量不执行，设计保留）；
+Y 降级 = ES Boundary Candidate Probe（REGISTERED / NOT STARTED，
+唯一目的 = 验证「工具执行后、下一步未发生」状态可否仅靠信息
+空间合法恢复——对应 X1 F-5(c)）；PALACE 改轨 = MemPalace 原样
+跑起来（init→真实文件→真实对话→检索→SimiGo 接入→观察碰撞→
+记录实际缺口→再决定 Schema 扩展）；G0 Substrate W 立场在 v0
+载体阶段被本指示取代；2026-09-29「不实现 Palace database/不选
+存储」硬边界由 human 方向解除（现成系统原样运行非自研；自研
+Schema 设计仍禁止）。
+
+MemPalace v0 初始化完成（`SIMIGO_LAB_PALACE_REAL_CARRIER_
+MEMPALACE_V0_INIT_20261002.md`）：
+
+```text
+载体 = mempalace 3.10.0 / palace-v0/（gitignore 隔离 HOME+DB）
+真实文件 L0 原位只读摄取 = 秦沈-标后预算 41 OK+4 PDF 提取失败
+    /9,232 drawers + 秦沈-经济商务汇报 13 OK/75 drawers
+真实对话 = EXP1-X1 A/B 会话记录 4 件（工作会话 wing）
+总量 = 9,311 drawers；re-mine 幂等
+检索烟雾测试 = 工作前沿/判断依据/证据引用类查询精确可达
+    （「遗留事项」cosine 0.682；「水稳场站」逐字证据命中）；
+    数字查源失真（313,356/2,881.34 被 xlsx 噪声挤出前五）；
+    会话/源文档排序倒挂（两面性登记）
+在场性裁定（直读 chroma.sqlite3）= 0308 内容 14 抽屉在库完整
+    （现场管理费×2/2,881.34×1）——失败在排序层非缺失层
+碰撞登记 C-1..C-5 = ①4 份 PDF 合同/调价附件摄入全灭（不在
+    空间）②xlsx 压平爆炸（~225 抽屉/文件+NaN 污染成段）
+    ③数字检索失真 ④会话压过源文档（前沿可达 vs 源层不可见
+    两面性）⑤wake-up L1 被单一工作簿 NaN 碎片占据+identity
+    未配置（SimiGo 入口面当前不可用）
+正向 = X1「显式待办/判断+依据 = 最强存活形态」在真实载体
+    检索层同向支持；幂等重建延伸到真实规模
+Next（待 human 优先序）= a SimiGo MCP 接入（与 C-5 处置合裁）
+    b 碰撞处置方向观察（不预修 MemPalace，让碰撞充分暴露）
+    c 真实使用阶段（信息空间质量本身成为实验变量）d Y 探针
+    时点
+```
+
+当前状态：
+
+```text
+PALACE = REAL CARRIER TRACK OPEN / MEMPALACE V0 INITIALIZED /
+    DAY-1 OBSERVATIONS REGISTERED
+Boundary Study = X1 ACCEPT/CLOSED；Y = REGISTERED PROBE /
+    NOT STARTED
+Current blocker = none（下一步优先序归 human：a/b/c/d）
+```

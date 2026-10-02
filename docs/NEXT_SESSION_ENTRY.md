@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_EXP1X1_COMPLETE / RESULTS_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_NARROWED_X1_ACCEPT / PALACE_REAL_CARRIER_V0_INITIALIZED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,16 +462,17 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：EXP1-X1 结果门 human 判读（A/B 半程全
-   部完成、真值已核对、Evidence Table v2 七行构建完毕——见
-   `boundary-study/exp1-x1/RESULTS.md`）。裁定项：①表七行
-   归属验收（行 5/7 = 信息侧记录缺陷归类）②F-1..F-6 定性
-   （F-2 信任不随保存传递 / F-3 记录-现实缺口 CF-① 谱系 /
-   F-4 显式待办 = 最强存活形态 / F-5 最小条件候选）③下一步
-   方向：四 case 全量（Case-2/Case-4）/ 候选 Y（「工具调用后
-   未完成态」= F-5(c) ES 候选化条件的靶点）/ 或带发现进入
-   「PALACE 到底需要保存什么」的设计讨论。纪律不变：设计封笔
-   （§14.7）；L0 原件不触碰；不增 Schema/数据库设计。
+1. 下一会话第一动作：PALACE 真实载体线下一步优先序执行（human
+   已给四个候选：a = SimiGo MCP 接入[mempalace mcp，与 C-5
+   wake-up 噪声处置合裁]；b = 碰撞处置方向观察[不预修
+   MemPalace，让碰撞充分暴露]；c = 真实使用阶段[SimiGo/Agent
+   经 palace 做一次真实工作——信息空间质量本身成为实验变量]；
+   d = Y 探针时点[REGISTERED NOT STARTED]）。现行门位：
+   Boundary Study = X1 ACCEPT/CLOSED + Y REGISTERED；
+   MemPalace v0 = INITIALIZED / 首日碰撞 C-1..C-5 在案。
+   纪律不变：不预修 MemPalace 代码；自研 Schema 设计禁止
+   （Schema 由碰撞逼出）；L0 原件不触碰；不修改 SimiGo
+   Execution State 契约与产品线。
 
 继续区分：
 
@@ -504,3 +505,7 @@ Contract v1.0 = PASS / REGISTERED
 Current blocker = none
 Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 ```
+77. 读 PALACE 改轨登记与 MemPalace v0 首日观察：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REAL_CARRIER_ROUTE_CHANGE_20261002.md`
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REAL_CARRIER_MEMPALACE_V0_INIT_20261002.md`
+    - ✅ human 改轨：X1 ACCEPT；Boundary Study 收口（Y = ES Boundary Candidate Probe，REGISTERED/NOT STARTED，四 case 全量不执行）；PALACE = MemPalace 原样跑起来；v0 初始化完成（9,311 drawers：真实语料 54 文件 + EXP1 会话 4 件；palace-v0/ gitignore 隔离）；首日碰撞 C-1..C-5（PDF 全灭/xlsx 压平爆炸/数字检索失真/会话-源文档排序倒挂/wake-up 噪声占据）；0308 在场性裁定 = 排序层失败非缺失层；**待 human 排下一步优先序（a MCP 接入 / b 碰撞处置观察 / c 真实使用 / d Y 探针）**
