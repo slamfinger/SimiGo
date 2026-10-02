@@ -170,7 +170,8 @@ final class Study {
     static func inferDirection(_ b: String, _ a: String) -> String? {
         guard let before = try? JSONSerialization.jsonObject(with: Data(b.utf8)) as? [String: Any],
               let after = try? JSONSerialization.jsonObject(with: Data(a.utf8)) as? [String: Any],
-              before.description != after.description else { return nil }
+              (try? JSONSerialization.data(withJSONObject: before, options: [.sortedKeys])) !=
+                  (try? JSONSerialization.data(withJSONObject: after, options: [.sortedKeys])) else { return nil }
         return "S0 → S1"
     }
 }
