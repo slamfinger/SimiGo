@@ -15330,3 +15330,49 @@ T1 = RUNNING（会话 sess_a9c6f830；5 records 后暂停中——
     疑似等待 UI 权限批准；后台监视器已挂）
 Current blocker = 会话恢复推进（human 侧批准/继续）
 ```
+
+### LAB T1 TERMINAL READING — BRANCH B: PALACE PRESENT BUT NEVER TOUCHED — 2026-10-02
+
+T1 终局（`SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_20261002.md`；
+交付物已固化 evidence palace-realwork-t1/，SHA256 4c1e1de3…）：
+**分支 B 成立**——fresh ZCode session 以纯重推导完成数据澄清
+函（17 条问题三级分类），PALACE 全程在场（45 工具）但零调用、
+零写回（palace 9,362 = 基线纹丝未动）；交付物方法自述
+「以该版汇报文本为唯一依据，未引用任何其他资料」——未使用
+过去被它自己声明为严谨性优点。会话用 4 个视觉 QA 子代理自查
+自身渲染缺陷（中文字形全丢，迭代两轮）——对自己工作验证纪律
+强、对过去工作意识为零。
+
+```text
+落差审计（交付物 17 条 vs B 的 12 条）：
+  独立重发现 ≈7 条 B 文本层锚点（7份vs8/价差/47.49/4.9%/
+    表2缺8/利润率矛盾/时点）——互证成立
+  B 独有缺失 = 文件名 vs 内部 2026-04-01 + TotalTime 谱系/
+    平行分支——两条都是 docx 元数据取证层产物，纯文本阅读
+    路径天然不可达：过去工作的「方法层」不随任务转移
+  交付物独有 ≈10 条（1.2 亿勾稽差/实际总工期用语/1 万尾差/
+    损耗率符号/出处→出入之误等）——独立重跑有独立广度
+七问 = ①零搜索 ②空转 ③纯源文件 ④未接触 ⑤未发生 ⑥零写回
+  ⑦palace 零增量
+F-1..F-6 = F-1「有工具 ≠ 会变成工作记忆」实证 / F-2 方法层
+  落差（工作记录价值含「怎么知道的」）/ F-3 继承与重推导
+  各有不可替代面 / F-4 C-1..C-5 全部未生效（substrate 缺陷
+  未进入 Agent 路径——真正的碰撞在更前一层）/ F-5 语义错位
+  候选：Agent 把 PALACE 当「外部资料」，而任务把本文件设为
+  唯一对象——**Information Space 尚未进入 Execution 语义，
+  只是工具列表里的陌生人**（human 前瞻第一个支撑数据）/
+  F-6 诚实限定 = 主会话 rollout 被客户端清理（中段链不可
+  重建，子代理 transcript + 交付物 + 早前截取为准）；n=1；
+  任务结构本身设「本文件为唯一对象」与 Agent 语义习惯的
+  权重本次不可分离（下轮实验变量）
+结果门候选（human）= a 对照实验（续作型任务/语义放开一格）/
+  b Y 探针解冻评估 / c PALACE 进入 Execution Runtime 语义的
+  架构讨论 / d 多跑自然任务再归纳
+```
+
+当前状态：
+
+```text
+T1 = EXECUTED / BRANCH B / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```

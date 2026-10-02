@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / T1_PINNED / AWAITING_FRESH_SESSION_EXECUTION`
+状态：`G3_MAINLINE_CLOSED / T1_EXECUTED_BRANCH_B / RESULTS_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,14 +462,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：T1 fresh 会话执行（human 已在桌面端
-   以 cwd=palace-v0/workspace 开会话并粘贴指令——登记件 §3）
-   完成后：定位新 rollout JSONL → 仪器提取 mempalace_* 动作链
-   → 七问读数 + 补充位（C-5 感知/C-1 撞上/写回形态/工具用弃）
-   → 交付物《数据澄清函》对照 B 的 12 条清单（继承 vs 重发现
-   落差）→ palace status 对照基线 9,362（第⑦问）→ 碰撞账本
-   更新 → human 判读。纪律：不修 MemPalace；不自研 Schema；
-   双向结果皆有效不预判。
+1. 下一会话第一动作：T1 结果门 human 判读（分支 B 终局——
+   见 `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_
+   20261002.md`）。裁定项：①分支 B 验收 + F-1..F-6 定性
+   ②下一步方向：a 对照实验（续作型任务或语义放开一格，测
+   palace 是否被激活）/ b Y 探针解冻评估（F-5 恰强化其靶点）/
+   c 「PALACE 进入 Execution Runtime 语义」架构讨论 / d 多跑
+   自然任务再归纳。纪律不变：不修 MemPalace；不自研 Schema；
+   L0 只读。
 
 继续区分：
 
@@ -516,3 +516,7 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 80. 读 PALACE 真实工作实验 T1 执行登记：
     - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_REGISTRATION_20261002.md`
     - ✅ human 钉定 = T1 + cwd palace-v0/workspace/ + 指令零泄漏 + 双向有效不预判；palace 基线 9,362 drawers；**待办 = human 桌面端开 fresh 会话（cwd=palace-v0/workspace，approve mempalace server，粘贴登记件 §3 指令）→ 执行后研究侧做动作链提取 + 七问读数 + 交付物审计 + palace 对照**
+81. 读 PALACE 真实工作实验 T1 终读数：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_20261002.md`
+    - 证据：`docs/02-evidence/palace-realwork-t1/`（交付物 + 全文提取）
+    - ✅ 分支 B：45 工具在场、零调用、零写回（palace 9,362 不变）；17 条问题纯重推导；B 的元数据层两条缺失（方法层落差）；~10 条新发现；**待 human 结果门判读 + 下一步方向（a 对照实验 / b Y 解冻 / c Runtime 语义架构讨论 / d 多任务归纳）**
