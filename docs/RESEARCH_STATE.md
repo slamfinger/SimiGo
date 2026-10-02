@@ -17062,3 +17062,40 @@ T4 CLOSED（强归因，任务域有界）确认为 Track D 当前阶段正式�
 
 停点维持（origin = 72eb6a7 已同步；本地 b29d419…收口记录随链
 推送）。两候选均未开 Spec；待 human 择向。
+
+### A-TASK SELECTION/DESIGN SUB-GATE EXECUTED — DESIGN DRAFT REGISTERED — 2026-10-03
+
+子 Gate 执行（human 开门授权：DESIGN ONLY——任务域选择/结构
+设计/独立性论证/混淆候选登记；T-3 零冻结零执行）。第二任务
+设计（`SIMIGO_LAB_T42_TASK_DESIGN_20261003.md`）：
+
+**任务域 = 系统配置发布（ops）**，与 T4 采购/财务域三轴天然
+独立（词汇/算子/产物范式）。结构：opaque 参数槽 SL-1…SL-4
+（channel/组件-flag 对×3/rollout 百分比序列/window 代码；具体
+值留 A-T-3 子 Gate）→ Phase-A 生成《Release Plan》（flag 过滤
++ rollout 排序派生，自然停止于待办登记）→ Phase-B cold-start
+生成《Production Activation Record》（flag 清单+阶段顺序+
+go/no-go 判定）——正确完成必须消费随机参数与排程。
+
+结构独立性审计：域/产物类型/变换形状三轴独立；换皮测试通过
+（排序+条件算子 T4 无，聚合+百分比算子 T4-2 无）；单沉淀拓扑
+为有意保持的框架控制面。B 指令结构草稿示意（pinning 阶段冻结）。
+
+混淆候选 X1–X7 登记并给排除边界（指令泄漏/工作区考古/执行者
+差异/隐藏通道/任务自证[归 A-T-3]/难度不对称[固有局限：复现 =
+方向收敛非孪生]/Relation 混入[设计决策 Information-only，可重
+开]）；移交 A-T-3 子 Gate 问题清单 4 项。
+
+当前状态：
+
+```text
+A Gate
+├── A-Spec      = PASS / REGISTERED
+├── A-Task      = DESIGN DRAFT / AWAITING HUMAN CONFIRMATION
+├── A-T-3       = NOT OPEN（移交问题清单 4 项）
+├── A-Confound  = NOT OPEN
+├── A-Pinning   = NOT OPEN
+└── A-Execution = NOT AUTHORIZED
+T4 = CLOSED（原结论零改动）
+Next = human 确认设计 → 开 A-T-3 + Confound Audit 子 Gate
+```
