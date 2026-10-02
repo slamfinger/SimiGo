@@ -15864,3 +15864,24 @@ T4 = BLOCKED（不变）
 D 列替换 = 授权下发中（受控任务动作，独立于 Y）
 Current blockers = human Phase 0 审阅（§2 分表 + §6 开放问题）
 ```
+
+### D-COLUMN CONTROLLED REPLACEMENT EXECUTED — 2026-10-02
+
+授权单独下发后 B 执行完毕（`SIMIGO_LAB_D_COLUMN_REPLACEMENT_
+EXEC_20261002.md`）：358 格规则替换 + 复验（剩余 11 种写法；
+仅 sheet2.xml/sharedStrings.xml 两部件变化，其余逐字节一致）；
+记录者独立复核 = 备份件与原输入 SHA 逐字节一致（`1dd8372a…`），
+新文件 `aa16c83f…`；truth 补封 B动作日志（`3cbc39ef…`）；
+执行记录与脚本入 evidence 归档；实验事实以备份件 + 归档为准
+未受损；palace 保持 9,398。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED（与 Y 分离的受控任务动作）
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW
+T4 = BLOCKED（不变）
+Current blocker = human Phase 0 审阅（§2 分表 + §6 开放问题）
+```

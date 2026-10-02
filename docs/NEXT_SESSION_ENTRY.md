@@ -561,3 +561,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 93. 读 Y 终裁封存：
     - `docs/00-governance/SIMIGO_LAB_PALACE_Y_RULING_20261002.md`
     - ✅ human 终裁逐字封存：**Y → BR-2 supported / no explicit counterexample observed / three open observations retained**（非证明）；三观察位单独保留 = 日志分叉（边界/归属观察）/ 导航越界（物理边界问题，未致行为改写）/ 零写回（控制/提交边界观察，符合 S2）；BR-2 获新增证据但 Phase 0 Gate 不自动改变；T4 继续 BLOCKED；D 列替换定性 = Y 之后的受控任务动作，授权单独下发、不与实验判定合并
+94. 读 D 列 358 格受控替换执行登记：
+    - `docs/00-governance/SIMIGO_LAB_D_COLUMN_REPLACEMENT_EXEC_20261002.md`
+    - ✅ 授权单独下发至 B 停靠会话（human 逐字范围 + 最小安全项：先备份/保结构/复验/报告）；B 执行 439.6s 完成：358 格规则替换（m3→m³ 321 等）、剩余 11 种写法、仅 sheet2.xml+sharedStrings.xml 两部件变化、其余逐字节一致；记录者独立复核 = 备份 SHA 与原输入逐字节一致（1dd8372a…）、新文件 aa16c83f…；truth 补封 B动作日志（3cbc39ef…）；执行记录+脚本入 evidence/ 归档；实验事实以备份件+归档为准未受损；palace 保持 9,398；**当前唯一 Gate = human Phase 0 审阅（§2 分表 + §6 开放问题）**；T4 继续 BLOCKED
