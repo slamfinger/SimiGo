@@ -16752,3 +16752,45 @@ Next gate = SIMIGORUNTIME FORMAL INTEGRATION
             （DECISIONS SEALED，最小实现中）
 T4 = BLOCKED（不因本 Gate 自动开放）
 ```
+
+### SIMIGORUNTIME FORMAL INTEGRATION GATE = PASS — 2026-10-02
+
+Gate 按 D1–D7…（1(b)/2(a)/3/4(a)/5(c)）裁定执行完毕
+（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_RESULT_20261002.md`）：
+SimiGo 仓未提交工作区 delta = Package.swift 接线（path dep →
+Lab/trackD-memory mini manifest + product SimiGoRuntimeMemory）+
+`Sources/SimiGoRuntimeMemory/RuntimeMemory.swift`（直持 any
+InformationStore 的最小消费点，persist/retrieve 直通 S1–S6，
+零 facade 零重解释）。**实现问题 1 处修复**：初版 path dep 直
+指 Lab 根包触发 mlx-swift-lm revision 双图冲突（fd5d1b4a vs
+release/v2.0-beta-ml）——改指 trackD-memory mini manifest
+（(b2)-lite，零 mlx 依赖）后消除，纯实现层零语义改动。
+
+A1–A10 全过：A1 双层编译（新 target + 全包含 MLX exit 0）；
+A2 scratch 实跑 S1–S6 经 RuntimeMemory 全 PASS；A3 InformationCore
+剥离注释零反向符号；A4 RuntimeMemory 零 backend 符号；A5 Contract
+三文件 + SimiGo2Experimental diff=0（既有 Replication 工作区
+文件 untouched 入档）；A6 语义零重解释；A7 pre-research 重跑
+P1–P4 保持；A8 编译级零回归（应用级实跑按 SPEC 环境条款注记
+缓行）；A9 两仓受保护 diff=0；A10 声明级 0 命中。证据归档
+docs/02-evidence/simigoruntime-integration/（未提交 delta 107 行
+逐字留档）。实现决策 3 项登记可重开。
+
+**登记：SimiGoRuntime × InformationCore = FORMAL INTEGRATION
+PASS。**主链更新：pre-research ✓ → T4 precondition SATISFIED →
+formal integration ✓ → T4（仍 BLOCKED，方案待单独指令）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+SimiGoRuntime = FORMAL INTEGRATION PASS
+T4 = BLOCKED（实验方案/执行待单独 human 指令）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
