@@ -95,6 +95,13 @@ As of the latest repository state:
   Boundary Study DESIGN DRAFT complete (design only, no execution
   authorization; awaiting human freeze review):
   `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`.
+  Boundary Study DESIGN FROZEN (freeze review PASS ×3, same day):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_FREEZE_REVIEW_20261002.md`;
+  EXECUTION AUTHORIZATION = FIRST MINIMAL A→B CONTINUATION
+  EXPERIMENT ONLY (four-case full matrix NOT AUTHORIZED until
+  first-experiment result gate); first product = Boundary Evidence
+  Table; attribution principle: "unrecoverable" alone never proves
+  ES — one-legitimate-record closure test first.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

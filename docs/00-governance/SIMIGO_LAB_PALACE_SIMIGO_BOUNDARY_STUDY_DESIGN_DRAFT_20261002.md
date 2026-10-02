@@ -1,12 +1,15 @@
 # PALACE-Simigo Boundary Study — 同一信息世界工作状态恢复边界 设计 Draft
 
-日期：2026-10-02  
-状态：`DRAFT / FREEZE-PENDING-HUMAN（仅设计；无执行授权）`  
+日期：2026-10-02（同日冻结修订，见 §12）  
+状态：`FROZEN / FIRST-MINIMAL-EXPERIMENT AUTHORIZED（NOT STARTED）`  
+冻结审查：`SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_FREEZE_
+REVIEW_20261002.md`（三项全 PASS）  
 Gate：`PALACE_SIMIGO_BOUNDARY_STUDY（observation only）`  
 授权来源：G3 主线收束裁定（Boundary Study ENTRY OPEN）+ 方向登记
 （`SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DIRECTION_20261002.md`）
-+ human 发起指示（本会话，2026-10-02）  
-性质：participant design draft——冻结审查通过并获执行授权后方实验
++ human 发起指示与冻结审查指令（本会话，2026-10-02）  
+性质：冻结设计——§1–§11 冻结不变；§12 = human 冻结指令修订
+（首实验最小化 + B 行为六类 + Boundary Evidence Table）
 
 ## 0. §0 并发核验（执行前须重跑）
 
@@ -218,4 +221,83 @@ Open        = 记录缺陷 vs 世界变化区分（OQ-B 纪律延续）；
            → human 判读（含 ES 必要性状态更新与下一门处置）
 ```
 
-当前无执行授权。
+当前执行授权 = 仅首实验（§12.5）；四 case 全量矩阵无授权。
+
+## 12. 修订登记（human 冻结审查指令，2026-10-02）——首实验最小化
+
+冻结审查 = 三项全 PASS（登记见文首冻结审查件）。本节按 human
+指令收窄首实验范围并新增观察产物；§1–§11 冻结不变；§11 全量
+序列保留，首实验结果门后回到 §11 全量裁定。
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY
+DESIGN STATUS: FROZEN
+EXECUTION STATUS: NOT STARTED
+EXECUTION AUTHORIZATION = FIRST MINIMAL A→B CONTINUATION
+EXPERIMENT ONLY（四 case 全量 = NOT AUTHORIZED）
+```
+
+### 12.1 首实验范围（A→停止→B 接续，单一任务）
+
+```text
+范围收窄 = 只跑 Case-1 的 A 半程 + Case-3 的 B 半程：
+  A：建立工作上下文 → 产生若干信息/文件/中间结果（沉淀自由）
+     → 登记停止点（逐字）→ 主动停止
+  B：只获得钉定信息空间（L0 + G0-G3 产物 + A 沉淀）
+     → 尝试继续工作 → 行为逐条记录
+  不跑：任务 Y（Case-2）、Agent cell（Case-4）、交叉探针
+  工作状态真值照 §4 封存，事后核对 Evidence Table 归属
+```
+
+### 12.2 B 行为观察六类（human 原语，逐字冻结）
+
+```text
+· B 能直接继续
+· B 需要重新询问
+· B 能从文件恢复
+· B 能从关系恢复
+· B 缺少过程信息
+· B 缺少 Execution State
+记录方式 = 行为记录非自评（接手探针纪律延续）
+注：「缺少 Execution State」为观察标签（= 接续在信息侧闭合
+失败处中断）；是否归属 ES 仍须经 §7 闭合测试 + 残留资格规则
+判定——类别标签不得当预设结论。
+```
+
+### 12.3 Boundary Evidence Table（首要新产物）
+
+```text
+列 = 缺失内容 / B 是否能恢复 / 缺失来源 / 初步归属
+初步归属词汇 = PALACE / PALACE 候选 / ES 候选 / ES / 待验证
+归属判读原则链（human 原文语义，冻结）：
+  恢复不了本身不能证明属于 Execution State
+  → 先问：PALACE 再多保存一条合法信息，B 是否就能继续？
+  能 → 留在 PALACE
+  信息已经充分 → 仍然无法恢复 → 不是知识缺失
+    → 才进入 ES Boundary Candidate
+  （= §7 闭合测试与残留资格规则的判读出口）
+```
+
+### 12.4 首实验禁令（§9 全部继承 + 本次新增）
+
+```text
+❌ 设计数据库 / PALACE Schema
+❌ 决定大文件归属 / 设计多个子库
+❌ 写 PALACE API / 把 PALACE 做成 RAG
+❌ 修改 SimiGo Execution State（既有契约与产品线不变）
+❌ 知识库必要性在本实验内判定（延后——第一步不是建立知识库，
+   而是用真实接续实验确定知识库究竟需要保存什么）
+```
+
+### 12.5 Gate Sequence（首实验）
+
+```text
+第 0 步 任务提名（≥2 候选 × §10 五标准核验）→ human 钉定
+→ A 半程（建上下文 → 沉淀 → 登记停止点 → 停止）
+→ B 半程（仅信息空间接续 → 行为六类记录）
+→ Boundary Evidence Table 构建 + 真值核对
+→ 结果门 = human 判读（含：是否进入 §11 四 case 全量矩阵 /
+   知识库问题是否开线）
+```
+
+首实验执行授权生效；四 case 全量仍无授权。

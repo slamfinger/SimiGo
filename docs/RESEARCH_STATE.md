@@ -14808,3 +14808,58 @@ Boundary Study = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
     → 恢复探针 → 真值对照判读 → 结果门 → human 判读）
 Current blocker = none
 ```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN FROZEN — FIRST MINIMAL A→B EXPERIMENT AUTHORIZED — 2026-10-02
+
+Human 冻结审查指令执行（只查三件事；审查阶段不增 Schema/数据
+库设计）。冻结审查登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_FREEZE_REVIEW_20261002.md`。
+
+设计草案同日修订（§12 = human 冻结指令：首实验最小化 + B 行为
+六类 + Boundary Evidence Table；§1–§11 冻结不变）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+三项审查 = ① 实验问题唯一明确 PASS（双措辞=同一问题两形态；
+    观察设计无第二问题夹带）/ ② L0+G0-G3 足以构造实验 PASS
+    （信息空间落盘可钉定；多路径可行性有 RQ-G2-2 α 先例
+    [Tier-3 扫描路线 vs Tier-2 叙事路线]；任务提名 = 执行
+    第 0 步 ≥2 候选 × 五标准 → human 钉定）/ ③ A→停止→B
+    接续能暴露信息缺口 PASS（Tier-1 全量重扫 16 文件命中 0
+    先例在案；判读面机械 = 行为六类+答案五形态+残留资格规则）
+human 方向登记 = 不继续设计 PALACE（本阶段不增 Schema/数据库
+    设计）；执行从最小实验开始（单一 A→停止→B 接续，真实但
+    边界清晰任务；不跑任务 Y/Agent cell/交叉探针）；B 行为
+    观察六类冻结（能直接继续/需要重新询问/能从文件恢复/能从
+    关系恢复/缺少过程信息/缺少 Execution State——行为记录非
+    自评；「缺少 ES」为观察标签须过闭合测试，不得当预设结论）；
+    首要新产物 = Boundary Evidence Table（缺失内容/B 是否能
+    恢复/缺失来源/初步归属 ∈ PALACE/PALACE 候选/ES 候选/ES/
+    待验证）；归属判读原则链（human 原文语义冻结）= 恢复不了
+    本身不能证明属于 Execution State → 先问「PALACE 再多保存
+    一条合法信息 B 是否就能继续」→ 能则留在 PALACE → 信息已经
+    充分/仍然无法恢复/不是知识缺失 → 才进入 ES Boundary
+    Candidate；知识库必要性延后（第一步不是建立知识库，而是
+    用真实接续实验确定知识库究竟需要保存什么）
+状态（human 格式）= DESIGN STATUS: FROZEN / EXECUTION STATUS:
+    NOT STARTED / EXECUTION AUTHORIZATION = FIRST MINIMAL A→B
+    CONTINUATION EXPERIMENT ONLY（四 case 全量 NOT AUTHORIZED
+    待首实验结果门）
+新增禁令（§9 全部继承 +）= 大文件归属决定/多个子库/PALACE API/
+    RAG 化/修改 SimiGo Execution State
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN / FIRST MINIMAL
+    EXPERIMENT AUTHORIZED / NOT STARTED
+下一动作 = 执行第 0 步任务提名（≥2 候选 × 五标准核验）→
+    human 钉定 → 首实验执行（A 半程 → B 半程 → Evidence
+    Table + 真值核对）→ 结果门
+Current blocker = none
+```

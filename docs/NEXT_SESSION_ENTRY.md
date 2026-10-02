@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_DESIGN_DRAFT_COMPLETE`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_FROZEN / FIRST_EXPERIMENT_AUTHORIZED_NOT_STARTED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -173,6 +173,9 @@
     - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`
 71. 读 Boundary Study 设计草案（仅设计，无执行授权）：
     - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`
+72. 读 Boundary Study 设计冻结审查登记（三项审查全 PASS；同日 §12 修订）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_FREEZE_REVIEW_20261002.md`
+    - ✅ human 冻结指令：DESIGN FROZEN / EXECUTION NOT STARTED / 首实验授权 = 仅最小 A→B 接续实验（四 case 全量待首实验结果门）；B 行为六类 + Boundary Evidence Table + 闭合原则链冻结；新增禁令（数据库/PALACE Schema/大文件归属/多子库/PALACE API/RAG 化/修改 SimiGo ES）
 
 ## Current snapshot
 
@@ -441,16 +444,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：Boundary Study 设计草案 human 冻结审查
-   （草案已交付：
-   `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`；
-   冻结对象 = 四情况矩阵/测试六问/停止点与恢复判据/答案五形态/
-   残留资格规则/禁令/任务提名/工作者承担方式/信息空间清单）
-   → 授权后按草案 §11 Gate Sequence 执行（信息空间钉定 →
-   四 case 真实工作 → 恢复探针 → 真值对照判读 → 结果门 →
-   human 判读）。纪律不变：L0 只读；先观察「什么必须留下」
-   再决定「叫什么」；不造 DurableInformation/WorkState/
-   Provenance/Relation 类；不写 PALACE 代码。
+1. 下一会话第一动作：Boundary Study 首实验执行（设计已 FROZEN，
+   首实验已授权 NOT STARTED；§11 全量四 case 不在授权内）。
+   第 0 步 = 任务提名：给 ≥2 个满足草案 §10 五标准（真实性/
+   多路径性≥3/未答性/Corpus-1 有界/双任务性）的真实任务候选
+   → human 钉定任务 X → A 半程（建上下文 → 沉淀 → 登记停止点
+   → 停止）→ B 半程（仅信息空间接续 → 行为六类记录）→
+   Boundary Evidence Table 构建 + 真值核对 → 结果门 human 判读。
+   纪律不变：L0 只读；行为记录非自评；「恢复不了 ≠ 属于 ES」
+   ——先过「补一条合法信息能否继续」闭合测试；不增 Schema/
+   数据库设计；不写 PALACE 代码；不修改 SimiGo Execution State。
 
 继续区分：
 
