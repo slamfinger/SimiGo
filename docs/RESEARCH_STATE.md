@@ -17200,3 +17200,39 @@ T4-2 = EXECUTED / RAW OBSERVATIONS SEALED / REPLICATION READING =
 T4 = BLOCKED→已收口（原结论不变）
 Next = human 宣告 Replication Result → 收口
 ```
+
+### T4-2 REPLICATION RESULT DECLARED — REPLICATION PASS — GATE CHAIN SEALED — 2026-10-03
+
+human 正式宣告（`SIMIGO_LAB_T42_REPLICATION_DECLARATION_20261003.md`
+逐字）：**T4-2 Replication Result = REPLICATION PASS**。四判据
+全 PASS 依据表入档（AC-1 五项完成判据含 GO 行 / AC-2
+fetch→生成→登记因果链且取回数据与冻结 SL 值逐项一致 / AC-3
+B-N 零等价续接零 SL 值零虚构 / T-3 后验 B-N 零获得冻结非可
+推导事实 N-3 未触发）；结构独立性满足 Gate 定义（任务领域/
+输出形式/计算变换结构独立）。
+
+**结论范围逐字封死**：T4-2 不是把 T4 结论扩大到所有任务，而是
+完成预注册的第二个结构独立任务复现——第二个结构独立任务域中
+同样观察到「具 Information 边界的冷启动续接可完成，无沉淀的
+C-N 无法获得等价续接结果」；两次实验共同支持 = **任务域有界
+的必要性命题**，非「对所有 Agent 任务都必然必要」的普遍命题。
+
+收口状态：T4 = CLOSED/STRONG ATTRIBUTION/TASK-DOMAIN BOUNDED；
+T4-2 = CLOSED/REPLICATION PASS；Phase 0 FROZEN / Phase 1 CLOSED /
+Phase 2 CLOSED / Y·D SEALED / T4 BLOCKED（已收口）/ Git 同步至
+宣告提交。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+Next = 等待下一阶段 Gate 指令
+```
