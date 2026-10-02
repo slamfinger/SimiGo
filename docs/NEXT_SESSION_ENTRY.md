@@ -549,3 +549,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 89. 读 Y 执行登记：
     - `docs/00-governance/SIMIGO_LAB_PALACE_Y_EXECUTION_20261002.md`
     - ✅ human：Y 解冻（真实 palace / 原 RQ-G2-1）；重定义 = 寻找 BR-2 反例（非验证 BR-2）；四观察事实 ①②③④；双轨 = Y ∥ Phase 0 源码审计；A 指令零泄漏就绪；**待办 = human 开 fresh 会话粘贴 A 指令 → A 完成后记录者归档+封存+组装 → B 放行 → 四事实+S1/S2+反例判定 → d 收敛**
+90. 读 Phase 0 源码语义审计登记（台账同步补登）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_SOURCE_SEMANTIC_AUDIT_20261002.md`
+    - ✅ Phase 0 完成：48 模块 + 真实 ChromaDB 数据语义审计登记；三分表 = drawer content/provenance/temporal + KG triples = Information 核心，Layer0/diary-framing/checkpoint/closet 指针 = Execution·Continuity，ChromaDB/embedding/BM25/MCP/miner/hallways/Layer2·3/WAL/ID 方案 = 纯机制，wing/room/hall 分类 borderline 留裁定；BR-1/2/3/5 全部代码级佐证（closet 仅排序信号非门 = BR-5 确认）；Swift Core 最小面草图已给（Information/Provenance/TemporalSemantics/InformationStore/InformationQuery）；开放问题已登记（taxonomy 归属 / diary 双层拆分 / KG 晋升 / activation 形态 / API 面）；本步未改 Contract/Swift Core/存储；**Gate = human 审阅 §2 分表 + §6 开放问题 → 冻结 Swift Core 语义面 → 写类型（审计范围不再扩展）**；Y 阻塞不变（待 human 开 Y-A fresh 会话）；T4 继续 BLOCKED（待 SimiGo）

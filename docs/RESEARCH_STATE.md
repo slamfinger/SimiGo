@@ -15703,6 +15703,66 @@ Evidence Table v2 + 反例判定 → human 判读）。
 
 ```text
 Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴）
-Phase 0 = 授权并行（源码语义审计 opening 待起草）
-Current blocker = human 开启 Y-A 会话
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（见下节）
+Current blocker = ① human 开启 Y-A 会话 ② human 审阅 Phase 0 分表
+```
+
+### PHASE 0 COMPLETE — MEMPALACE SOURCE SEMANTIC AUDIT REGISTERED — 2026-10-02
+
+Phase 0 源码语义审计已完成并登记
+（`SIMIGO_LAB_PALACE_PHASE0_SOURCE_SEMANTIC_AUDIT_20261002.md`）。
+范围 = 已安装 mempalace 包全部 48 个 .py 模块 +
+`palace-v0/palace/chroma.sqlite3` 真实数据；方法 = 直接源码通读 +
+全数据路径追踪（miner → chunk → add_drawer → ChromaDB upsert →
+searcher/closet boost → KG → layers → MCP），全部结论为
+`observed code fact` 非推断设计。
+
+语义三分表（§2）核心结论：
+
+```text
+Information 核心 = drawer.content 逐字文本 +
+    provenance（source_file/source_mtime/filed_at/added_by/
+    extract_mode/ingest_mode/line_start/line_end/chunk_index）+
+    temporal（content_date/content_date_source）+
+    KG triples（含 valid_from/valid_to/confidence/source_drawer_id）
+Execution/Continuity = Layer0 identity / Layer1 Essential Story /
+    diary 的 framing 层 / checkpoint ack / closet 指针提示
+纯机制 = ChromaDB / embeddings / BM25 / MCP 44 工具 /
+    miner·sweeper·convo_miner / hallways·tunnels / Layer2·3 /
+    WAL / 确定性 ID 方案 / normalize_version·id_recipe
+borderline = wing/room/hall 分类（归档分类法非 Information 本体，
+    现码耦合于 metadata——Swift Core 归属留开放问题）
+```
+
+代码级边界佐证：BR-1 ↔ `ingest_mode` 区分结构化/逐字通道；
+BR-2 ↔ diary `agent` 字段 + checkpoint ack + Layer0 仅服务当前
+Execution；BR-3 ↔ drawer content 恒逐字存储；BR-5 ↔ closet
+仅作排序信号永不为门——「共享空间不会自我召唤」在代码层
+得到确认。附加结构观察：metadata 呈 Group A（Information 的
+出处与时间）/ Group B（归档与实现版本）两族；diary 单文档混装
+事实与续作框架（证实 T1 发现，Swift Core 必须显式分层）；
+entities 为派生检索索引非 Information 本体。
+
+Swift Core 最小语义面草图（§5，仅为类型面非代码）：
+`Information(content/provenance/temporal/identity)`、
+`Provenance`、`TemporalSemantics`、`InformationStore`、
+`InformationQuery`；明确不进 core = ChromaBackend/Embedding/
+BM25/MCP/Miner/Closet/KG 存储/Hallway/LayerStack。
+
+§6 明确未回答（留裁定）：taxonomy 归属、diary 双层拆分设计、
+KG 三元组是否晋升一等 Information、activation 语义形态
+（BR-5 要求存在但形状开放）、Swift API 精确面。
+
+本步仅登记审计结果，未修改 Contract / Swift Core / 存储方案。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW
+    Gate = human 审阅 §2 分表 + §6 开放问题 → 冻结 Swift Core
+    语义面 → 写 Swift 类型（审计范围不再扩展）
+Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴 A 指令）
+T4 = BLOCKED（待 SimiGo，与 Y 正交，不提前）
+Current blockers = ① human 开启 Y-A 会话 ② human 审阅 Phase 0 分表
 ```
