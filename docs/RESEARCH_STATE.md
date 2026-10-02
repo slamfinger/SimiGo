@@ -15800,3 +15800,42 @@ T4 = BLOCKED（待 SimiGo，不提前）
 Current blocker = Y-B 行为读数（四事实②③④ + S1/S2 +
     Evidence Table v2）→ 反例判定 → human 判读
 ```
+
+### Y-B COMPLETE — FOUR-FACT READOUT ASSEMBLED — AWAITING HUMAN RULING — 2026-10-02
+
+Y-B 已至授权门停止点并完成读数
+（`SIMIGO_LAB_PALACE_Y_B_RESULTS_20261002.md` 全记录）：B 读向
+激活真实 palace（list_rooms → list_drawers → get_drawer×3：
+diary / 环境备忘 / 交付记录）+ 消费 workspace 双代产物，接续
+A 段待办完成 D 列单位写法审计（841 非空值、15 种原始写法 →
+标准化 11 种、358 格建议调整；原 E 列结论不变；输入 SHA 与
+A 段日志哈希均未动）；零重解、零 palace 写回。
+
+四事实读数：① 中间状态自然形成 ✓（待办以工作记录形态内嵌
+交付）② 换 executor 后仍有价值 ✓（直取待办续作，零重解）
+③ 后继需要 activation ✓（指针 = 实际入口，deposit 不自我
+召唤）④ 共享未破坏续作本身，但登记两点摩擦：动作日志惯例
+未随共享通道转移（B 新建 B动作日志.md 分叉——惯例存于 A
+指令文本）；B 导航越界读入研究治理层（登记文件/台账/前代
+实验记录——仓库内共享态与研究层无物理边界，B 未据此改写
+行为）。S1 ✓ / S2 ✓（下一合法操作 = 授权后替换 + 复验）。
+
+反例判定候选（记录者组装）：当前形态支持 BR-2（待办属产品
+层 = BR-3 一致；惯例留指令层 = BR-2 一致；指针必要 = BR-5
+一致）；未观测到明确反例；三个开放观察位待裁（日志分叉
+归因 / 越界通道含义 / 授权门前零写回）。
+
+truth 封存补齐：`truth/B动作日志.md`（ae477bfa…）；B 产物
+四件字节级入 evidence/ 归档；Y 实验封闭，palace 保持 9,398。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+Y = COMPLETE（A/B 双代执行 + truth 封存 + 读数组装）
+T4 = BLOCKED（待 SimiGo，不提前）
+Current blockers = ① human Y 反例判定（采纳候选或另裁）
+  ② human D 列 358 格替换授权（任务级，非实验输入）
+  ③ human Phase 0 审阅（§2 分表 + §6 开放问题）
+```

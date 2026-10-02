@@ -555,3 +555,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 91. 读 Y-A 停止点归档与 B 放行登记：
     - `docs/00-governance/SIMIGO_LAB_PALACE_Y_A_RESULTS_20261002.md`
     - ✅ Y-A 执行完毕（fresh 会话单轮 577s 自然停止；§3 指令零泄漏；mempalace 工具零调用；输入 SHA 未动）；结论 = 表2 E 列万元口径假设不成立（工程数量列，依据强度高）；truth 封存 = 动作日志哈希锚定（2312d4c2…）；沉淀组装 = checkpoint 9 drawers/24 chunks + 环境备忘 + diary → palace 9,373→9,398（基线修正 +1 连通性测试已查明）；原始转储类（inventory.json/e_reference_usage.tsv）不入 verbatim 信息空间，字节副本存 evidence/ 归档；**B 已放行（fresh 会话，仅续接语 + 信息空间位置）**；待办 = B 行为读数（四事实②③④ + S1/S2 + Evidence Table v2）→ 反例判定 → human 判读
+92. 读 Y-B 终读数与 Evidence Table v2：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_Y_B_RESULTS_20261002.md`
+    - ✅ Y-B 执行完毕（单轮 520s 授权门停止点；输入 SHA 未动；A 段日志哈希未动）；B 读向激活 palace（rooms→drawers→get_drawer×3）+ 消费 workspace + 接续 A 待办完成 D 列审计（841 值/15 写法→11 种/358 格建议调整），零重解、零 palace 写回；四事实 = ①✓形成 ②✓换 executor 仍有价值 ③✓指针必要（deposit 不自我召唤）④摩擦两点（动作日志惯例未随共享通道转移→B动作日志.md 分叉；研究治理层被 B 导航越界，仓库内无物理边界）；S1✓/S2✓（下一合法操作 = 授权后替换+复验）；反例判定候选 = 当前形态支持 BR-2、未观测到明确反例、三个开放观察位（日志分叉归因/越界通道/零写回）；**待 human 裁定：① Y 判定采纳或另裁 ② D 列 358 格替换是否授权**；Y 实验封闭，palace 保持 9,398
