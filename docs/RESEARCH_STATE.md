@@ -17284,3 +17284,38 @@ T4-2 = CLOSED / REPLICATION PASS
 B Gate = OPEN / B-SPEC DEFINED（AWAITING HUMAN AUDIT + FREEZE）
 Next = human Boundary Audit → Freeze → B-Design 另裁
 ```
+
+### B-SPEC BOUNDARY AUDIT PASS — Q6 CORRECTED — HUMAN FREEZE EXECUTED — 2026-10-03
+
+human 逐项审计：Q1–Q10 全 PASS（Q6 PASS* 附唯一措辞修正）；
+三 Contract 平行性 PASS（单向依赖保持：Execution 不改
+InformationCore 语义 / InformationCore 不理解 Execution State）。
+R-B1 = CANDIDATE（与 T4/T4-2 框架同构、问题转向「Execution 如何
+利用 Information 中的变化」、零新 Memory 机制；非已设计实验）。
+
+**Q6 冻结措辞修正（human 裁定采纳）**：external change 定义改
+为「**未被当前 Execution provenance 解释的可观测物理差异**」——
+成因可能为 Human/其他 Agent/程序/Excel/同步程序等，不得等价于
+「外部人工改变」；成因归属 = 后续 provenance/observation 层
+问题。
+
+**HUMAN FREEZE 已执行**：B-Spec 冻结（修正后版本，sha256 于
+提交留档）；B-Design = NOT OPEN（另行裁定）；R-B1 非已授权
+实验；总原则持续有效（候选环不得反向预埋 InformationCore）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+B Gate = OPEN / B-SPEC FROZEN（Q6 修正版）
+B-Design = NOT OPEN（待 human 另行裁定）
+Next = human 裁定 B-Design 是否开启
+```

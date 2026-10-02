@@ -83,15 +83,23 @@ Physical Space（SQLite/WAL/schema 细节）= 可替换 backend 内部
 ```text
 对声明环境内实体 E，取两个观察点 t1 < t2 的表示（含摘要）：
   rep(E, t1) ≠ rep(E, t2)
-且 t1→t2 之间本 Execution 未经边界形成过与 E 对应的
-  Information
-⇒ 该差异 = 一次 external change 观察事实，要素 =
+且该差异未被当前 Execution 的 provenance 所解释
+  （即 t1→t2 之间本 Execution 未经边界形成过与 E 对应的
+  Information）
+⇒ 该差异 = 一次未被当前 Execution provenance 解释的
+  可观测物理差异（unexplained observable physical difference），
+  观察事实要素 =
   (E, rep(E,t1), rep(E,t2), observer, observedAt)
+成因归属（Human / 其他 Agent / 程序 / 同步等）= 后续
+  provenance / observation 层问题，不在本定义内判定
 该观察事实本身 = 候选 Information 形成材料；是否形成 =
   Execution 策略（边界不自动摄取）
-「external」判据 = 变化的 formation provenance 不在本
-  Execution 的边界写入之内
 ```
+
+措辞修正记录（Boundary Audit 裁定采纳）：不用「external /
+外部人工改变」表述——成因可能为 Human / 其他 Agent / 程序 /
+Excel / 同步程序等，最严格定义 = 「未被当前 Execution
+provenance 解释的可观测物理差异」；成因归属属后续层。
 
 ### Q7 before / after 是否属于 Information 变化事实
 

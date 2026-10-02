@@ -693,3 +693,8 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 132. 读 A-Pinning / Hash Freeze Sub-Gate 结果（PASS，HASH FROZEN）：
     - `docs/00-governance/SIMIGO_LAB_T42_TASK_PINNING_PACKAGE_20261003.md`
     - ✅ **T4-2 钉定包七件组装完成 + HASH FROZEN（sha256 5bf1439c…6134e）**：P-1 T-3 事实清单（F1 REL-56ff/F2–F4 三组件 assigned/F5 rollout 14%→50%→100%/F6 MW-0a05，N-1/N-2 引 A-T-3 结果件）/ P-2 A 指令全文+期望产物要素 / P-3 停止点四条件 / P-4 B 逐字指令（C-E/C-N 同文，identity 替入登记 D-note）/ P-5 AC-2 消费证据三步对照表 / P-6 完成判据五条逐条映射 / P-7 唯一差异=沉淀有无；完整性核验 = 七节齐备+SL 值 21 处一致；**冻结纪律生效：任何改动 = F6 整轮作废**；下一步 = 执行授权（另批）；T4 继续 BLOCKED
+131. 读 B-Spec Boundary Audit（PASS）+ Q6 措辞修正采纳 + HUMAN FREEZE 执行：
+    - human 逐项审计 Q1–Q10 全 PASS（Q1 观察面与 contract 能力一致 / Q2 三分+不可改已存值=first-write-wins 一致 / Q3 负空间关键约束 / Q4 与 Phase 1/2 冻结结果一致 / Q5 per-formation 与「事实属 Information、动作序列属 Execution」分离吻合 / Q6 PASS* 建议措辞修正 / Q7 PASS 且不预埋 Change 概念——现有 Information+Relation+provenance 可组合表达、非裁定 Change 必为 Relation / Q8 负空间干净 / Q9 R-B1 = CANDIDATE 非已设计实验 / Q10 PASS；三 Contract 平行性 PASS 单向依赖保持）
+    - **Q6 冻结措辞修正（唯一修正）**：定义改为「未被当前 Execution provenance 解释的可观测物理差异」——成因归属（Human/其他 Agent/程序/同步等）= 后续 provenance/observation 层问题，不得等价于「外部人工改变」
+    - R-B1 = CANDIDATE（与 T4/T4-2 框架同构 + 问题转向「Execution 如何利用变化」+ 零新 Memory 机制；不得称已设计实验）
+    - **HUMAN FREEZE 执行**：B-Spec 冻结（sha256 见本条提交）；B-Design = NOT OPEN（另行裁定）；R-B1 非已授权实验
