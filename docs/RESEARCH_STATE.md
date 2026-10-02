@@ -17002,3 +17002,23 @@ SimiGoRuntime = FORMAL INTEGRATION PASS
 T4 = BLOCKED（实验方案/执行待单独 human 指令）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
+
+### STOP POINT — NEXT-GATE DIRECTION PENDING (HUMAN) — 2026-10-03
+
+T4 CLOSED（强归因，任务域有界）确认为 Track D 当前阶段正式闭环。
+下一步方向 = human 裁定中的两候选：
+
+```text
+候选 A = T4 Cross-Task Replication Gate
+  唯一窄问题（human 已列）= 保持 Information boundary / cold-start /
+  C-E/C-N 归因框架不变，第二个结构独立 continuation 任务能否
+  复现 T4 的必要性证据
+  纪律 = T4-2 的任务选择/T-3 设计/混淆变量不得由记录者自行
+  设计；须另开 Gate；不作为 T4 补充实验
+
+候选 B = Execution 层 Gate（不急——因果命题刚钉住，先决复现
+  与否比扩大架构范围干净）
+```
+
+停点维持（origin = 72eb6a7 已同步；本地 b29d419…收口记录随链
+推送）。两候选均未开 Spec；待 human 择向。

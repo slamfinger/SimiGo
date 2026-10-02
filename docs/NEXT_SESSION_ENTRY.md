@@ -667,3 +667,8 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_RESULT_20261002.md`
     - ✅ **GATE = PASS（A1–A10 全过）⇒ SimiGoRuntime × InformationCore = FORMAL INTEGRATION PASS**：SimiGo 仓未提交工作区 delta（Package.swift 接线 + Sources/SimiGoRuntimeMemory/RuntimeMemory.swift 直持 any InformationStore 零 facade）+ Lab 侧 trackD-memory mini manifest（(b2)-lite，解 mlx-swift-lm revision 双图冲突）；A1 双层编译过（新 target + 全包含 MLX exit 0）/ A2 scratch 实跑 S1–S6 全 PASS / A3 剥离注释 0 反向符号 / A4 RuntimeMemory 0 backend 符号 / A5 Contract 三文件+SimiGo2Experimental diff=0、既有 Replication 工作区文件 untouched（入档：pre-existing 非本 Gate 产物）/ A6 语义零重解释 / A7 pre-research 重跑全 PASS / A8 编译级零回归（应用级实跑按 SPEC 环境条款注记缓行）/ A9 两仓受保护 diff=0 / A10 声明级 0 命中；证据归档 docs/02-evidence/simigoruntime-integration/（未提交 delta 逐字留档）；实现决策 3 项登记可重开；主链更新 = formal integration ✓ → T4（仍 BLOCKED 待单独指令）；T4 继续 BLOCKED
     - ✅ 下一步 = 等待下一阶段 Gate 指令（不自行跨 Gate）；原则延续 = 先冻结语义/契约 → 再实现 → 双 backend 验证 → negative-space/dependency audit → 闭 Gate
+128. 读 T4 CLOSED 后 Gate 方向待决（human 列候选，裁定待）：
+    - human 确认 T4 CLOSED（强归因任务域有界）为 Track D 当前阶段正式闭环，不需补实验；下一步 = 先决定是否独立复现，而非立即扩 Execution 层
+    - **候选 A = T4 Cross-Task Replication Gate**（human 已列唯一窄问题：保持 Information boundary / cold-start / C-E/C-N 归因框架不变，第二个结构独立 continuation 任务能否复现必要性证据）；**纪律 = T4-2 任务选择/T-3 设计/混淆变量不得记录者现在自行设计，须另开 Gate**；且不应作为 T4 的「补充实验」存在
+    - **候选 B = Execution 层 Gate**（不急——T4 刚钉住因果命题，先决定复现与否比扩大架构范围干净）
+    - 状态 = 停点维持（72eb6a7 已同步），两候选均未开 Spec；**待 human 择向开 Gate**
