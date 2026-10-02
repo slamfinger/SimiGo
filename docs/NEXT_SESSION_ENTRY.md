@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / T2_EXECUTED_R1 / RESULTS_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / T3_DESIGN_REGISTERED / AWAITING_FRESH_SESSION_EXECUTION`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,12 +462,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：T2 结果门 human 判读（R1 成立——见
-   `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_
-   20261002.md`）。裁定项：①R1 验收 + G-1..G-6 定性（含
-   F-8 精化为「任务框架依赖」）②下一步：a 第三轮检验激活
-   必要条件 / b 并入 Y 探针设计 / c 生命周期语义架构讨论 /
-   d 多任务归纳。纪律不变。
+1. 下一会话第一动作：T3 极小对照执行（human 在桌面端开
+   fresh 会话粘贴指令——登记件 §3.1）。完成后读数：完整
+   action chain（读向/写向 + 渠道归因）→ 三分支判定
+   （T3-A 无提示进入/T3-B 不进入/T3-C 进入但浅）→ §4
+   审计基准（单调性矛盾发现/诚实出口/出处标注/编造口径
+   失败形态）→ palace 增量对照 9,369 → human 判读。纪律：
+   Agent 问资料在哪不指向 palace；不干预；不修 MemPalace；
+   不自研 Schema；L0 只读。
 
 继续区分：
 
@@ -529,3 +531,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_20261002.md`
     - 证据：`docs/02-evidence/palace-realwork-t1/收尾报告_秦沈0308数据核查_20261002.md`
     - ✅ R1 成立：读路径由任务结构自然激活（t1 定位前沿 2 搜索 + t8 定向探测 4 次 + t21 checkpoint）；palace 语义角色 = 任务框架的函数（T1 archive-only vs T2 三段全激活）——「语义在任务结构里，不在工具里」；继承质量 = 18 问题族合并无遗失 + 40 项复算全绿 + 方法层经 B 记录恢复；**待 human 结果门判读（a 激活必要条件第三轮 / b 并入 Y 探针 / c 生命周期语义架构讨论 / d 多任务归纳）**
+85. 读 T2 结果门裁定与 T3 设计：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T3_QUESTREPLY_DESIGN_20261002.md`
+    - ✅ human：R1 ACCEPT（限定措辞）；G-set 成立；F-8 更新 = 任务框架中的历史工作依赖激活（非充分/必要条件已证）；T3 = 46,338 万问询复函（客观需历史+跨文件证据，指令零历史词汇），三分支 T3-A/B/C 预注册 + 事后审计基准（失败形态 = 单文件浅答复/编造口径）；**待办 = human 开 fresh 会话粘贴 T3 指令 → 完成后读数（三分支判定 + §4 基准审计 + palace 对照 9,369）**

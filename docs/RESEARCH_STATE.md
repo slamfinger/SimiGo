@@ -15499,3 +15499,36 @@ G-6 诚实限定 = n=1；「提及过去工作」即操纵变量（by design）�
 T2 = EXECUTED / R1 / RESULTS AT HUMAN
 Current blocker = human 结果门判读 + 下一步方向
 ```
+
+### LAB T2 RESULT GATE RULED — T3 DESIGNED: OBJECTIVE HISTORY-NEED, ZERO HISTORY WORDS — 2026-10-02
+
+Human 结果门裁定：R1 ACCEPT（措辞限定 = 「在当前云端 Agent→
+MCP→MemPalace 独立环境中，历史工作依赖能够激活 Information
+Space 的主动读取，并形成读—验证—写回闭环」——不写成 ES 或
+Continuation 证明）；G-1..G-6 定性全部成立；F-8 更新为
+「Information Space 的实际使用由任务框架中的历史工作依赖
+激活」＋限定（两自然任务的当前观察，非已证充分/必要条件）；
+选 a 收紧为 T3；不选 b（Y 冻结——两问相关不同题，勿把新
+行为规律硬编码进冻结探针）；不选 c（无 SimiGo/IPAC，架构
+先行）；不选 d（判别实验优先，勿稀释信号）。纪律 = 不接
+SimiGo、不引入 IPAC、不改 MemPalace、不教 Agent 用 PALACE。
+
+T3 设计（`SIMIGO_LAB_PALACE_REALWORK_T3_QUESTREPLY_DESIGN_
+20261002.md`）：单一问题 = 客观必须依赖过去工作但任务说明
+零历史词汇时，Agent 会不会自行发现信息缺口并进入 Information
+Space？任务 = 46,338 万问询复函（上级问询恰好落在 T2 判定
+「编制人唯一定义」问题族；答好需跨文件证据[平衡报告等] +
+过去工作结论方向；指令只给 0308 一个文件路径）；三分支
+预注册 T3-A 无提示进入/T3-B 不进入[显式续作语义才是 T2
+激活来源的更强证据]/T3-C 进入但浅或被误导；事后审计基准
+预注册（发现单调性矛盾证据/诚实出口/出处渠道标注/与 T2
+登记一致度；失败形态 = 单文件浅答复/编造口径）；palace
+基线 9,369。
+
+当前状态：
+
+```text
+T3 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
+    SESSION EXECUTION
+Current blocker = human 开启 fresh 会话并粘贴 T3 指令
+```
