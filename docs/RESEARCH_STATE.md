@@ -16714,6 +16714,50 @@ Next gate = T4 EXPERIMENTAL DESIGN
 T4 = BLOCKED（execution 尚未授权）
 ```
 
+### T4 EXPERIMENTAL DESIGN GATE = SPEC CONFIRMED PASS — TASK PINNING GATE OPENED — 2026-10-02
+
+human 审阅确认（cd17b16 零修改封存）：**T4 Experimental Design
+Gate = SPEC CONFIRMED / PASS**。五点确认：T-3 命题强度开关 ✓
+（不许事后把成功解释成必要条件）；C-N 必选阴性对照 ✓（直接测
+「仅移除沉淀结果是否变」）；AC-2 消费痕迹入成功判据 ✓（否则
+只能 inconclusive，不得把「有沉淀+成功」等同于「boundary 导致
+continuation」）；F1–F6 ✓（防「找到成功案例再解释」）；唯一
+建议 = Task Pinning 时必须把 **T-3 具体化**（实验前冻结事实
+清单 + 回答「为何 cold-start 不可能仅凭 B 指令/当前环境/通用
+能力推出」）并冻结 A 沉淀全文/停止点/B 逐字指令/预期消费证据/
+客观判据/C-E-C-N 唯一差异——非改 Spec，是 S-4 已规定、钉定
+Gate 必须执行的钉定动作。
+
+层级锁定：Spec PASS ✓ → **Task Pinning（下一 Gate）** →
+Experiment Execution（NOT AUTHORIZED）→ T4 = BLOCKED。
+
+**T4 Task Pinning Gate 开启**（`SIMIGO_LAB_T4_TASK_PINNING_GATE_
+SPEC_20261002.md`）：钉定包七件（P-1 T-3 具体事实清单+
+non-derivability 论证 / P-2 A 沉淀全文 / P-3 停止点记录规则 /
+P-4 B 逐字指令零泄漏自检 / P-5 预期消费证据对照表 / P-6 客观
+判据映射 / P-7 C-E/C-N 唯一差异声明）；**T-3 论证标准**：
+N-1 来源闭包 ⊄（指令∪输入∪工作区∪通用能力可推闭包）/
+N-2 推导闭包审计显式列集 / N-3 C-N 后验兜底预注册（C-N 产出
+⇒ 该事实 T-3 不成立 ⇒ 强命题自动降级弱命题）；冻结纪律 =
+七件齐备 + human 批准 ⇒ hash 封存，改动 = F6 作废；执行授权
+≠ 本 Gate 产物；具体任务候选待 human 提供或授权起草。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Experimental Design = SPEC CONFIRMED / PASS
+Next gate = T4 TASK PINNING
+            （钉定要求已登记，具体任务包待批后冻结）
+T4 execution = NOT AUTHORIZED；T4 = BLOCKED
+```
+
 ### GATE OPENED — SIMIGORUNTIME FORMAL INTEGRATION GATE — 2026-10-02
 
 human 开启（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_
