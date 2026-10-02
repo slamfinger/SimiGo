@@ -33,6 +33,11 @@ let package = Package(
             dependencies: ["InformationCore"],
             path: "trackD-memory/Sources/RelationCore"
         ),
+        .target(
+            name: "ExecutionCore",
+            dependencies: ["InformationCore", "RelationCore"],
+            path: "trackD-memory/Sources/ExecutionCore"
+        ),
         .executableTarget(
             name: "InformationIntegration",
             dependencies: ["InformationCore", "RelationCore"],

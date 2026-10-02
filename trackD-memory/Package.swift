@@ -21,6 +21,21 @@ let package = Package(
         .target(
             name: "InformationCore",
             path: "Sources/InformationCore"
+        ),
+        .target(
+            name: "RelationCore",
+            dependencies: ["InformationCore"],
+            path: "Sources/RelationCore"
+        ),
+        .target(
+            name: "ExecutionCore",
+            dependencies: ["InformationCore", "RelationCore"],
+            path: "Sources/ExecutionCore"
+        ),
+        .testTarget(
+            name: "ExecutionCoreTests",
+            dependencies: ["ExecutionCore"],
+            path: "Tests/ExecutionCoreTests"
         )
     ]
 )
