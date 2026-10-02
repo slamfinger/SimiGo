@@ -16607,3 +16607,36 @@ Next gate = SIMIGO × INFORMATIONCORE INTEGRATION BOUNDARY
             （SPEC REGISTERED，AWAITING HUMAN RULINGS 3.1/3.2）
 T4 = BLOCKED（资格登记为本 Gate 唯一产出，不执行）
 ```
+
+### SIMIGO INTEGRATION GATE — DECISIONS SEALED — 3.1(c) / 3.2(i) — 2026-10-02
+
+human 裁定封存（`SIMIGO_LAB_SIMIGO_INTEGRATION_DECISIONS_SEALED_
+20261002.md` 逐字）：**3.1 = (c) Lab 侧 SimiGo-shaped 预研先行**
+——SimiGo 主仓零 InformationCore 依赖事实保持不变；窄边界验证
+「SimiGo 形状上层执行者仅经 InformationCore 完成 store/fetch」；
+不预判 SimiGoRuntime 正式接口；App 直连排除（记忆语义不得直接
+耦合应用层）；(c)→(a) 后续演进本 Gate 不裁；**非正式接入实现，
+仅验证正式接入所需最小边界**。**3.2 = (i) SwiftPM path
+dependency**——最小边界验证非包发布治理；真实 module/protocol
+dependency 非复制伪接入；转 (ii) 独立发布不改语义契约；vendored
+排除（双源漂移违反单一语义源）。
+
+最小实现范围 = SimiGo-shaped executor → InformationCore →
+store/fetch。四项必须证明：P1 冷启动执行者可运行 / P2 S1–S6
+形状复现 / P3 上层零 SQLite/Physical Filing 知识 / P4 零反向
+依赖+零 palace/taxonomy/activation/ExecutionState 语义。全过才
+登记 T4 experimental precondition = SATISFIED（T4 仍 BLOCKED）。
+保护条件：InformationCore 受保护文件 + RelationCore diff = 0。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+Next gate = SIMIGO INTEGRATION（DECISIONS SEALED，最小实现中）
+T4 = BLOCKED（不执行）
+```
