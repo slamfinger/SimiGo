@@ -16758,6 +16758,54 @@ Next gate = T4 TASK PINNING
 T4 execution = NOT AUTHORIZED；T4 = BLOCKED
 ```
 
+### T4 EXPERIMENTAL DESIGN CONFIRMED — TASK PINNING DRAFT + EXECUTION + RESULTS — 2026-10-03
+
+链路快进记录（三项 Gate 事件，逐件有封存文件）：
+
+**① T4 Experimental Design = SPEC CONFIRMED / PASS**（cd17b16
+零修改封存）：human 五点确认（T-3 开关 / C-N 必选 / AC-2 入
+判据 / F1–F6 / T-3 具体化转入钉定 Gate）。
+
+**② T4 Task Pinning Gate**：钉定要求登记（七件包 + T-3 论证
+标准 N-1/N-2/N-3 + hash 封存纪律）→ human 授权记录者起草 →
+草案七件齐备（`SIMIGO_LAB_T4_TASK_PINNING_DRAFT_20261002.md`）：
+任务 = 采购分配 continuation（A 建立含 /dev/urandom 随机
+opaque 事实 SUP-9b47/865671、SUP-93dc/273063、SUP-c1fa/722204
+的台账（预留 ×1.18+总额），自然停止于待办登记；B 生成合同
+摘要须消费台账并派生总额 2195906.84 与 2% 保证金 43918.14）。
+
+**③ T4 Execution = AUTHORIZED + EXECUTED**：三 run（A 70s /
+B-E 186s / B-N 239s，各 fresh 进程；B-E 库 = db-a 快照物理
+filing 迁移，B-N 空库）全过——A 台账三行算术正确+待办含
+identity；B-E fetch 待办→生成摘要（数值与冻结期望逐项一致）→
+状态登记；B-N fetch not-found→诚实阻塞零摘要零虚构。
+
+**预注册判据读数**：AC-1 完成 ✅ / AC-2 消费痕迹因果链 ✅
+（00:17:24 fetch 先于 00:18 摘要生成）/ AC-3 C-N 未达等价 ✅ /
+T-3 后验成立（C-N 零 F1–F6 产出）/ 观测附注（B-E 瞬时自校验
+混淆自行纠正；B-N 曾探测二进制字符串与工作区——声明环境内，
+T-3 后验未受影响）。归因读数 = **落入强命题格**；最终裁定 =
+human。
+
+证据归档 docs/02-evidence/t4-execution/（三 run 全量+三库哈希
+留档）；t4ctl = InformationStore S1–S6 契约薄 CLI（tools/t4ctl，
+已入 Lab 仓）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Design = PASS / Task Pinning DRAFT REGISTERED / Execution =
+            AUTHORIZED + EXECUTED（结果待 human 裁定）
+T4 = BLOCKED（裁定前不开新 Gate）
+```
+
 ### T4 TASK PINNING DRAFT REGISTERED — 2026-10-03
 
 human 授权记录者起草（仅草案，不冻结不执行）。草案七件齐备
