@@ -698,3 +698,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - **Q6 冻结措辞修正（唯一修正）**：定义改为「未被当前 Execution provenance 解释的可观测物理差异」——成因归属（Human/其他 Agent/程序/同步等）= 后续 provenance/observation 层问题，不得等价于「外部人工改变」
     - R-B1 = CANDIDATE（与 T4/T4-2 框架同构 + 问题转向「Execution 如何利用变化」+ 零新 Memory 机制；不得称已设计实验）
     - **HUMAN FREEZE 执行**：B-Spec 冻结（sha256 见本条提交）；B-Design = NOT OPEN（另行裁定）；R-B1 非已授权实验
+132. 读 B-Design（DESIGN DRAFT / AWAITING HUMAN CONFIRMATION）：
+    - `docs/00-governance/SIMIGO_LAB_B_DESIGN_20261003.md`
+    - ✅ **最小 Execution Layer 设计完成（零代码）**：新模块 ExecutionCore（→ InformationCore + RelationCore 单向依赖，Core 零改动零感知）；三组件 C1 ExecutionScope（绑定 any 两 Store 的边界消费者，observe/consume/form 直通已冻结形状）/ C2 Observation formation 规则（before 引用或未存先形成 + after 表示 → after Information + change Relation「observed-change-of」，provenance=观察事件）/ C3 机制边界声明（hash/扫描/触发器=本设计不实现）；**R-B1 最小实验结构 = 四 run**（E-run 基线 before 入库 → 真实世界外部变化 → X-run 观察者形成 after+change Relation → V-E-run fresh cold-start 仅经边界回答「E 发生了什么变化」+ V-N-run 空边界对照）；**before/after/change 充分性分析 = 四需求全落已冻结语义组合，零新 Core 类型**；V 环境约束 = 不提供 E 当前表示（禁重扫）；判据 V-AC-1/2/3 预登记；confound C-1…C-5 登记归实验期审计；与 SimiGo 三 contract 平行性声明（零接触零吸收）；**待 human 确认设计 → B-Impl 另批**；T4 继续 BLOCKED

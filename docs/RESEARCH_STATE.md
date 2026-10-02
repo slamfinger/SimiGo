@@ -17319,3 +17319,40 @@ B Gate = OPEN / B-SPEC FROZEN（Q6 修正版）
 B-Design = NOT OPEN（待 human 另行裁定）
 Next = human 裁定 B-Design 是否开启
 ```
+
+### B-DESIGN EXECUTED — MINIMAL EXECUTION LAYER DESIGN REGISTERED — 2026-10-03
+
+B-Design 执行（DESIGN ONLY 零代码，`SIMIGO_LAB_B_DESIGN_20261003.md`）：
+**最小 Execution Layer 设计**完成——新模块 ExecutionCore（单向
+依赖 InformationCore + RelationCore；两 Core 零改动零感知），
+三组件：C1 ExecutionScope（any InformationStore + any
+RelationStore 边界消费者，observe=fetch/consume=使用/form=形成，
+语义直通已冻结形状）/ C2 Observation formation 规则（before
+引用或未存先形成 + after 表示 → after Information +
+observed-change-of Relation，provenance=观察事件）/ C3 机制边界
+声明（hash/扫描/触发器不实现）。
+
+**R-B1 最小实验结构 = 四 run**：E-run（基线 before 入库）→
+真实世界外部变化 → X-run（观察者形成 after+change Relation）→
+V-E-run（**fresh cold-start 验证者仅经边界回答「E 发生了什么
+变化」**，不提供 E 当前表示=禁重扫）+ V-N-run（空/半空边界
+对照）。判据 V-AC-1/2/3 预登记。
+
+**before/after/change 充分性分析**：四需求（基线可引用/变化后
+可引用/观察关系可寻址/冷启动可按图取回）全落已冻结语义组合
+（Information + Relation + identity 寻址 fetch）⇒ 充分，零新
+Core 类型。confound C-1…C-5 登记归实验期审计。与 SimiGo 三
+contract 平行性声明（零接触零吸收）。
+
+当前状态：
+
+```text
+B Gate
+├── B-Spec    = FROZEN
+├── Audit     = PASS
+├── B-Design  = DESIGN DRAFT / AWAITING HUMAN CONFIRMATION
+├── B-Impl    = NOT AUTHORIZED
+└── B-Execute = NOT AUTHORIZED
+T4/T4-2 = CLOSED（原结论零改动）
+Next = human 确认 B-Design → B-Impl 另批
+```
