@@ -16027,3 +16027,36 @@ Swift files = 0
 T4 = BLOCKED（不变）
 Current blocker = human A2′ Identity Formation Boundary 微裁
 ```
+
+### PHASE 1 API GATE CLOSED — A2′ RULED OPTION 1 — 2026-10-02
+
+A2′ 终裁（`SIMIGO_LAB_PHASE1_API_GATE_CLOSED_20261002.md` 逐字）：
+**InformationID 在 Information 形成时成立；ID 计算机制在 Core
+之外，由机制侧铸造器产生**（选项一）。形成链 = 事实内容+形成
+上下文 → mechanism-side minter → InformationID → immutable
+Information → store。否决无身份草稿形态。三点理由：A1+A2 闭合
+（不存在等待补身份的 Draft）；B2 自然成立（store 不决定
+Information 是谁，只保存并确认幂等）；C4 双层干净（ID 属于
+Information；ID 怎么算属于机制）。服务树「写入路径现算」事实
+保留不升级语义（机制计算位置 ≠ 语义成立时点）；recipe 版本化
+登记为机制侧遗留问题（Information 不携带 recipeVersion）。
+
+**Phase 1 API Gate = CLOSED**。完整最小语义面定稿：
+Information(opaque identity/content/provenance/temporal) +
+InformationStore(store 幂等 no-op / fetch Optional) +
+SQLiteStore(实现 + 机制侧 minting + 物理归档元数据)；负空间
+完整保持。**下一道 Gate = API → 首批 Swift 文件**（human 授权
+开启；研究节点性质转变 = Swift 从探索 Information 是什么转为
+实现已裁定语义）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API CLOSED / SWIFT FILES = 0
+T4 = BLOCKED（不变）
+Next gate = human 授权开启「API → 首批 Swift 文件」
+```
