@@ -112,3 +112,36 @@ assert(fromBackend2 == retrieved, "FAIL: same identity diverged across backends"
 print("PASS cross-backend: one identity, two Physical Filings, one semantic fact")
 
 print("BACKEND INDEPENDENCE K5–K8 + CROSS-BACKEND: ALL PASS")
+
+// ===========================================================================
+// PERSISTENCE SEMANTICS GATE (S3 ruled ① first-write-wins): same identity +
+// conflicting value → success no-op, the existing fact remains
+// authoritative — identically on BOTH backends. No conflict/merge/
+// overwrite semantics exist anywhere.
+// ===========================================================================
+
+func assertFirstWriteWins(_ layer: UpperLayer, _ identity: InformationID, _ original: Information, label: String) throws {
+    let conflicting = Information(
+        identity: identity,
+        content: "CONFLICTING VALUE — 依据 S3 裁定不得覆盖既有事实",
+        provenance: Provenance(
+            producedAt: Date(timeIntervalSince1970: 1_790_960_000),
+            producedBy: "conflict-probe"
+        ),
+        temporal: nil
+    )
+    try layer.persist(conflicting) // S3: success no-op — never overwrites
+    let fact = try layer.retrieve(identity)
+    assert(fact == original, "FAIL S3[\(label)]: existing fact was changed")
+    print("PASS S3 first-write-wins on \(label): existing fact remains authoritative")
+}
+
+// S3 on Backend-1 (SQLiteStore)
+assert(retrieved != nil, "FAIL S3: SQLite chain lost its fact before conflict probe")
+try assertFirstWriteWins(upperLayer, identity, retrieved!, label: "SQLiteStore")
+
+// S3 on Backend-2 (InMemoryStore)
+assert(backend2Retrieved != nil, "FAIL S3: InMemory chain lost its fact before conflict probe")
+try assertFirstWriteWins(upperLayerOnBackend2, backend2Identity, backend2Retrieved!, label: "InMemoryStore")
+
+print("PERSISTENCE SEMANTICS S1–S6: CONTRACT VERIFIED ON BOTH BACKENDS")
