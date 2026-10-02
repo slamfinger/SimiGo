@@ -15885,3 +15885,33 @@ Phase 0 = REGISTERED / AWAITING HUMAN REVIEW
 T4 = BLOCKED（不变）
 Current blocker = human Phase 0 审阅（§2 分表 + §6 开放问题）
 ```
+
+### PHASE 0 REVIEW IN PROGRESS — RULING + EVIDENCE INDEX — 2026-10-02
+
+human 审阅裁定（`SIMIGO_LAB_PALACE_PHASE0_REVIEW_RULING_20261002.md`
+逐字）：Phase 0 = REGISTERED → **REVIEW IN PROGRESS**；§2 原则
+通过进冻结候选（四类成立，wing/room/hall 保持 borderline 不做
+归属）；§6 五项分级冻结（taxonomy = 开放设计边界不入 Core；
+diary = 原则冻/schema 开；KG = 事实冻/一等身份不冻；activation
+= 存在事实冻/形状开；Swift API = 保持开放不得提前设计）——
+可冻结的是**语义边界原则**而非最终类型/API。逐行证据索引批准
+执行（范围锁死）。
+
+证据索引完成（`SIMIGO_LAB_PALACE_PHASE0_EVIDENCE_INDEX_20261002.md`
+），并登记 **Finding-1 = 源码树锚定偏差**：审计读取 3.3.3/48
+模块树，实际服务端 = `.build/mp-venv312` 3.10.0/126 模块树
+（`.mcp.json` 实指）；content_date/id_recipe 等字段旧树零写入点、
+服务树完整写入链；§2 语义判定重锚服务树**全部成功、零反例**；
+唯一更正 = 审计件范围表述，不改变任何语义归类。FROZEN 翻转
+条件已满足，待 human 终确。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = REVIEW IN PROGRESS（证据索引完成，待 human 终确 FROZEN）
+T4 = BLOCKED（不变）
+Current blocker = human 终确 Phase 0 Semantic Surface = FROZEN
+```

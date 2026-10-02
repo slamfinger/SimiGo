@@ -564,3 +564,9 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 94. 读 D 列 358 格受控替换执行登记：
     - `docs/00-governance/SIMIGO_LAB_D_COLUMN_REPLACEMENT_EXEC_20261002.md`
     - ✅ 授权单独下发至 B 停靠会话（human 逐字范围 + 最小安全项：先备份/保结构/复验/报告）；B 执行 439.6s 完成：358 格规则替换（m3→m³ 321 等）、剩余 11 种写法、仅 sheet2.xml+sharedStrings.xml 两部件变化、其余逐字节一致；记录者独立复核 = 备份 SHA 与原输入逐字节一致（1dd8372a…）、新文件 aa16c83f…；truth 补封 B动作日志（3cbc39ef…）；执行记录+脚本入 evidence/ 归档；实验事实以备份件+归档为准未受损；palace 保持 9,398；**当前唯一 Gate = human Phase 0 审阅（§2 分表 + §6 开放问题）**；T4 继续 BLOCKED
+95. 读 Phase 0 审阅裁定：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_REVIEW_RULING_20261002.md`
+    - ✅ Phase 0 = REGISTERED → **REVIEW IN PROGRESS**（非 FROZEN）；§2 原则通过进冻结候选（Information/Continuity/Index/Persistence 四类成立；wing/room/hall 保持 borderline design decision 不做归属）；§6 五项 = taxonomy 冻结为开放设计边界不入 Core 本体 / diary 冻结原则 schema 开放 / KG 冻结事实不冻结一等身份 / activation 冻结存在事实形状开放 / Swift API 保持开放不得提前设计；可冻结的是语义边界原则非最终 API；**逐行证据索引批准执行（范围锁死：file→type/function→behavior，无新探索无 Swift 设计）**；human 声明基于贴出工作面裁定，原文接入后可逐项复核
+96. 读 Phase 0 §2 证据索引（服务树重锚完成）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_EVIDENCE_INDEX_20261002.md`
+    - ✅ **Finding-1 = 源码树锚定偏差**：审计读取 3.3.3/48 模块树（~/Library/Python/3.9），实际服务端 = .build/mp-venv312 的 **3.10.0/126 模块树**（.mcp.json 指向）；content_date/id_recipe 等字段在旧树零写入点、在服务树有完整写入链；**语义判定重锚全部成功、零反例**；服务树逐行锚点建立（_build_drawer_metadata/ids.py ID_RECIPE v3/_extract_content_date_with_source/Layer0-3/tool_diary_write/tool_memories_filed_away/_closet_boosts never-a-gate/_bm25_scores/wal._wal_log/KG add_triple provenance 回链等）；审计件范围表述更正（不改变语义归类）；**FROZEN 翻转条件已满足，待 human 终确**；T4 继续 BLOCKED
