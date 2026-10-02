@@ -16118,3 +16118,32 @@ Swift files = 3（ACCEPTED）
 T4 = BLOCKED（不变）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
+
+### GATE OPENED — PHASE 1 INTEGRATION BOUNDARY GATE — 2026-10-02
+
+human 定向下一 Gate（`SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_
+GATE_SPEC_20261002.md`）：**Integration Boundary Gate**——唯一
+目标 = 证明已验收的 Information / InformationStore / SQLiteStore
+可作为真实上层使用边界（真实调用链贯通），实现细节零回流语义
+层；通过后 SQLiteStore 记为可替换 Physical Filing backend。
+SPEC 七要素登记完毕；8 项 invariants（I1 完整落库 / I2 同值
+roundtrip / I3 absence=nil / I4 幂等 / I5 filing 物理存在语义
+不可达 / I6 上层零 SQLite 知识（结构证明）/ I7 负空间 / I8
+可替换性结构证据）；允许范围 = 独立 harness target + Package
+接线，三已验收文件零改动（违者重开裁定不静默修改）；Pass =
+I1–I8 全证 + 审计零命中。
+
+Gate 纪律：d2a1ea7 之后新功能提交**不推送**；Gate 开启 ≠ 扩展
+模型；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED
+Next gate = INTEGRATION BOUNDARY（SPEC 已登记，实现按 SPEC 执行）
+T4 = BLOCKED（不变）
+```

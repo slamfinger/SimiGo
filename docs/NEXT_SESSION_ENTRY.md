@@ -588,3 +588,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 102. 读 Phase 1 首批实现 Human Acceptance：
     - `docs/00-governance/SIMIGO_LAB_PHASE1_ACCEPTANCE_20261002.md`
     - ✅ **Human Acceptance = PASS（`6feac8c` ACCEPTED）**：17 项验收全 ✅（A1–A5/B1–B3/C1–C3 + Build 零警告 + Smoke 全过 + 负空间无越界 + 零第三方依赖 + bug 修复未动语义 + 决策已登记）；关键判词 = 无需重开 Phase 0/Phase 1 API 语义；链路达成 = Semantic Surface Frozen → Boundary Closed → API Closed → First Implementation Accepted；5 个可重开实现决策 = 保持可重开但不主动重开；负空间意义确认 = SQLite 只是 Physical Filing 的一种实现而非 Information 模型的一部分（利后续数据库替换）；**Gate 正式收口**——不在 InformationCore 顺手完善，按原 Gate 顺序进下一阶段，不因审美/性能/未来需求主动扩面；T4 继续 BLOCKED
+103. 读 Integration Boundary Gate Spec（GATE OPENED）：
+    - `docs/00-governance/SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_GATE_SPEC_20261002.md`
+    - ✅ human 定向：下一 Gate = **Integration Boundary Gate**——目标 = 证明已验收三边界可作为真实上层使用边界工作（真实调用链贯通，SQLite/WAL/事务/物理 filing 不回流语义层），通过后 SQLiteStore 方有资格记为可替换 Physical Filing backend；SPEC 七要素已登记（目的/输入/允许范围/8 项 invariants I1–I8/验证方式/负空间/Pass-Fail）；允许范围 = 独立 harness target（仅 import InformationCore，any InformationStore 绑定）+ Package 接线，三已验收文件零改动；I6 结构证明 = 上层源码零 SQLite 符号、仅组合根一处构造；**纪律 = d2a1ea7 之后新功能提交不推送；Gate 开启 ≠ 扩展模型；T4 = BLOCKED 不动**
