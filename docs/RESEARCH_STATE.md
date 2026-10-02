@@ -16671,3 +16671,46 @@ SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
 T4 = BLOCKED（实验方案/执行待单独 human 指令）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
+
+### GATE OPENED — SIMIGORUNTIME FORMAL INTEGRATION GATE — 2026-10-02
+
+human 开启（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_
+SPEC_20261002.md`，SPEC ONLY 零实现）：**SimiGoRuntime 正式接入
+Gate**——唯一问题 = SimiGoRuntime 能否把 InformationCore 正式
+纳入 runtime 层记忆边界，而不改 InformationCore/RelationCore
+已冻结语义、不带 palace/SQLite/taxonomy/activation 入 runtime。
+
+现场事实勘察入档：SimiGoRuntimeContract = 零依赖纯 contract 层
+（ExecutionContinuity/ExecutionStateBackend/RuntimeBackend 三
+contract 文件——命名与本 Gate 相邻，本 Gate 零改动其语义，防
+混淆声明入档）；SimiGo2Experimental = Contract + MLX 全栈；
+mlx-swift 已是 SimiGoRuntime 既有依赖且与 Lab 根包同 revision
+（决策 5 依赖图合并风险因此降低）。
+
+五个决策点待裁：1 消费 target（(a) Contract 直连 InformationCore
+/(b) 新薄 target 保持 Contract 零依赖/(c) SimiGo2Experimental
+直连）；2 直接绑 any InformationStore vs 薄 facade（预分析 (a)，
+facade = 新抽象须裁定）；3 InformationCore 零 SimiGo 知识
+（硬规则确认项）；4 SimiGo2Experimental 本 Gate 不接入（预分析
+(a)）；5 path dep 去留（(a) 提交本地路径/(b1) url 引 SimiGo-Lab
+/(b2) 拆独立包最干净/(c) 未提交本地过渡 + 迁移另立小 Gate）。
+
+验证目标 A1–A10 照录（含 A5 既有 contract 零变化、A8 SimiGoTests
+零回归）。硬边界：单向依赖 + 受保护文件 diff = 0 + 负空间全项 +
+ExecutionState contract 防混淆声明。PASS ⇒ 登记
+`SimiGoRuntime × InformationCore = FORMAL INTEGRATION PASS`。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+Next gate = SIMIGORUNTIME FORMAL INTEGRATION
+            （SPEC REGISTERED，AWAITING HUMAN RULINGS 1–5）
+T4 = BLOCKED（不执行）
+```
