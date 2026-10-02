@@ -16565,3 +16565,45 @@ Phase 1 = IMPLEMENTATION ACCEPTED + INTEGRATION PASS + BACKEND INDEPENDENCE PASS
 T4 = BLOCKED（不变）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
+
+### GATE OPENED — SIMIGO × INFORMATIONCORE INTEGRATION BOUNDARY GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_SIMIGO_INFORMATIONCORE_INTEGRATION_GATE_
+SPEC_20261002.md`，SPEC ONLY 零实现）：下一 Gate = **SimiGo ×
+InformationCore 接入边界**——唯一窄问题 = SimiGo 能否以
+InformationCore 为记忆边界完成接入，而不把 palace 机制、SQLite
+机制或 taxonomy/activation 等开放语义带入 Core。通过最多登记
+**T4 experimental precondition = SATISFIED**（不执行 T4，T4 仍
+BLOCKED）。
+
+现场事实勘察入档：SimiGo 仓（main）= Xcode 工程 + 应用七层源码
+（App/Inference/Lifecycle/Model/Observability/Protocol/System）+
+本地包 Packages/SimiGoRuntime（SimiGo2Experimental /
+SimiGoRuntimeContract）；InformationCore 目前未被 SimiGo 引用。
+
+决策点：3.1 接入层位（(a) SimiGoRuntime 薄 target /(b) App 直连
+/(c) Lab 侧 SimiGo-shaped 预研先行——(c) 为 T4 precondition 最小
+形态，(a) 为真实接入形态，(c)→(a) 不互斥）；3.2 跨仓策略
+（path dependency / 独立 git 包 / vendored 不推荐）；3.3 双向
+语义不泄漏审计；3.4 T4 前置资格清单（T4-P1 冷启动执行者 / P2
+边界可 store+fetch / P3 backend 零知识 / P4 零泄漏）。
+
+负空间：human ❌ 清单全项（不做 T4/不裁 taxonomy/不定 diary
+schema/不定 activation/不纳 KG 自由端点/不做 retrieval-ranking/
+不重建 palace/不定 SQLite 最终 backend/**MemoryCore 自适应内存
+线不合并**——trackD-memory README 目录语义分叉提醒在案，本 Gate
+不处理）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+Next gate = SIMIGO × INFORMATIONCORE INTEGRATION BOUNDARY
+            （SPEC REGISTERED，AWAITING HUMAN RULINGS 3.1/3.2）
+T4 = BLOCKED（资格登记为本 Gate 唯一产出，不执行）
+```
