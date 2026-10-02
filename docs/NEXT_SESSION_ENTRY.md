@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_FROZEN_REVISED / FIRST_EXPERIMENT_AUTHORIZED_NOT_STARTED`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_FROZEN_REVISED_S14 / STEP0_NOMINATED_AWAITING_PIN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -179,6 +179,9 @@
 73. 读 Boundary Study 设计修订登记（ES 语义精化，同日第二次修订；三项审查重跑 PASS×3）：
     - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_REVISION_EXEC_SEMANTICS_20261002.md`
     - ✅ human 概念精化：ES = 具有执行语义的信息（PALACE 信息空间中的特殊信息类，非对立面）；精确问 = 哪些信息仅可描述、哪些必须保持 ES 语义才能继续执行；首实验探针修订 = 完整保存 → 恢复 → 逐项语义存活观察（Evidence Table v2 取代 v1）；判别力门 = 任务须自然产生 ⑥⑦⑧ 类事件；设计草案 §13 = operative 读法
+74. 读设计草案 §14（判据精化 + 设计封笔）与 STEP 0 提名呈现：
+    - ✅ S1 可解释/S2 可继续两层（Alive = S2 ✓）；Replay Cost R0–R4 记录现象（正式定义延后）；Continuation ≠ Re-solving 最强 guard（首实质动作 = 停止点下一合法操作）；反裁剪纪律（不为实验成功设计 PALACE 擅长保存的结构）；设计封笔（再改须新 human 方向）
+    - ✅ STEP 0 提名 = X1（0307/0308 孪生差异整理）/ X2（S8 缺口闭合）/ Y（RQ-G2-1 验证执行），六项检查全过，推荐 X1；待 human 钉定任务 X + 确认 A/B 承担方式
 
 ## Current snapshot
 
@@ -447,18 +450,17 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：Boundary Study 首实验执行（设计已 FROZEN
-   且经 §13 语义精化修订，首实验已授权 NOT STARTED；§11 全量
-   四 case 不在授权内）。第 0 步 = 任务提名：给 ≥2 个满足草案
-   §10 五标准 + §13.5 判别力核验（任务须自然产生 ⑥⑦⑧ 类事件：
-   分支选择/执行位置/未完成操作）的真实任务候选 → human 钉定
-   任务 X → A 半程（真实工作 + 完整保存到信息空间，含 ⑥⑦⑧ 类）
-   → 登记停止点 → B 半程（仅信息空间恢复 + 逐项观察：可直接
-   作为信息消费 vs 须以 ES 语义恢复才能继续执行）→ Boundary
-   Evidence Table v2 构建 + 真值核对 → 结果门 human 判读。
-   纪律不变：L0 只读；行为记录非自评；「语义未存活 ≠ 属于 ES」
-   ——先过「补一条合法信息记录能否恢复语义」闭合测试；不增
-   Schema/数据库设计；不写 PALACE 代码；不修改 SimiGo
+1. 下一会话第一动作：STEP 0 收口 = human 钉定任务 X（提名在
+   案：X1 = 0307/0308 孪生版本差异整理 / X2 = S8 缺口闭合 /
+   Y = RQ-G2-1 验证执行；六项检查全过，推荐 X1）+ 确认 A/B
+   承担方式（建议 = 独立新会话、任务指令只含任务不含研究
+   框架、污染声明照记）→ A 半程（真实工作 + 完整保存到信息
+   空间，含 ⑥⑦⑧ 类）→ 登记停止点 → B 半程（仅信息空间恢复
+   + 逐项观察）→ Boundary Evidence Table v2（S1/S2 两列 +
+   Replay Cost + continuation/re-solving 判定）+ 真值核对 →
+   结果门 human 判读。设计已封笔（§14.7）；纪律不变：L0 只读；
+   行为记录非自评；「语义未存活 ≠ 属于 ES」闭合测试先行；
+   不增 Schema/数据库设计；不写 PALACE 代码；不修改 SimiGo
    Execution State。
 
 继续区分：

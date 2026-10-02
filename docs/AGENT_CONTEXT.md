@@ -112,7 +112,20 @@ As of the latest repository state:
   to full-preservation → recover → per-item semantic-survival
   observation (Boundary Evidence Table v2); discriminating-power
   gate: task must naturally produce branch/position/pending-
-  operation events or the task is swapped.
+  operation events or the task is swapped. §14 refinement (same
+  day, DESIGN CLOSED after it): semantic survival split S1
+  explainable / S2 continuable (S2 is what counts; "model
+  understood it" ≠ "ES recovered"); Replay Cost recorded per
+  lost item (R0–R4 vocabulary, formal levels deferred);
+  Continuation ≠ Re-solving is the strongest guard (B arriving
+  at the same result via another path proves nothing — first
+  substantive action must be the next legal operation at the
+  stopping point); anti-tailoring discipline: never design a
+  data structure PALACE saves well just to make the experiment
+  succeed; nomination = state-transition-natural tasks over
+  complex ones (human six-item checklist); STEP 0 = nomination
+  presented (X1 0307/0308 twin-delta organization / X2 S8 gap
+  closure / Y RQ-G2-1 verification), awaiting human pin.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

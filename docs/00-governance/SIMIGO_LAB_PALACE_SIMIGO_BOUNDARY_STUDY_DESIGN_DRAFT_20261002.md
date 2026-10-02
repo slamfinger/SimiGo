@@ -1,8 +1,9 @@
 # PALACE-Simigo Boundary Study — 同一信息世界工作状态恢复边界 设计 Draft
 
-日期：2026-10-02（同日两次修订：§12 首实验最小化；§13 ES 语义
-精化——现行 operative 读法见 §13）  
-状态：`FROZEN (REVISED §13) / FIRST-MINIMAL-EXPERIMENT AUTHORIZED（NOT STARTED）`  
+日期：2026-10-02（同日三次修订：§12 首实验最小化；§13 ES 语义
+精化；§14 判据精化+STEP 0 定版+设计封笔——现行 operative 读法
+见 §13+§14）  
+状态：`FROZEN (REVISED §13+§14) / FIRST-MINIMAL-EXPERIMENT AUTHORIZED（NOT STARTED）`  
 冻结审查：`SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_FREEZE_
 REVIEW_20261002.md`（三项全 PASS；修订后重跑亦 PASS×3）  
 修订登记：`SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_REVISION_
@@ -422,4 +423,105 @@ EXECUTION STATUS: NOT STARTED
 EXECUTION AUTHORIZATION: FIRST MINIMAL A→B EXPERIMENT ONLY
     (revised probe: full-preservation → recover →
      semantic-survival observation)
+```
+
+## 14. 第三次修订（human 方向，2026-10-02 同日）——判据精化与 STEP 0 定版；设计封笔
+
+human 判定：§13 方向正确；问题已从「PALACE 有没有保存足够的
+信息？」变为「信息已经完整保存以后，工作状态的语义是否仍然
+存活？」（更强）。补四点后**不再扩设计**。
+
+### 14.1 语义存活拆两层：S1 可解释 / S2 可继续（精化 §13.4）
+
+```text
+S1 可解释 = B 能正确理解 A 当时处于什么状态
+S2 可继续 = B 能以该状态作为当前工作状态继续执行
+真正重要的是 S2；S1 ✓ 不构成存活证据。
+示例读法（human 表，冻结）：
+  当前分支   信息可见✓  状态可解释✓  可直接继续✓ → Semantic Alive
+  执行位置   ✓          ✓            ✗          → Semantic Lost
+  未完成操作 ✓          ✓            ✗          → Semantic Lost
+防误判 = 「模型看懂了」≠「Execution State 恢复了」。
+v2 表「语义存活」列拆为 S1/S2 两列；Alive 判定 = S2 ✓。
+```
+
+### 14.2 Replay Cost 观察项（现象记录；等级正式定义延后）
+
+```text
+对每项 Semantic Lost / 部分存活，逐项记录重推导/重执行现象
+与重做量（新增读取/推理/执行计数）。等级词汇（冻结，正式
+定义延后）：
+  R0 无重建 / R1 轻微重新定位 / R2 需要重新推理 /
+  R3 需要重新执行 / R4 产生新的决策路径
+价值定位 = 「信息都在，但 B 只能 replay」= 工作状态未存活的
+定量形态，可能成为 PALACE 最重要的边界证据之一。
+```
+
+### 14.3 等价继续约束：Continuation ≠ Re-solving（最强 guard）
+
+```text
+B 通过另一条路径得到相同结果，不构成 State 恢复证据。
+实验测的不是「B 最终能不能做出类似的结果」，而是「B 是否从
+A 停止时的工作状态继续，而不是重新解决这个问题」。
+  弱证据 = B 知道 X/Y/Z 后重新计算 X→Y→Z（结果再对也不算）
+  强证据 = B 直接从 Z 后面的下一合法操作继续
+机械判定 = B 的首个实质动作是否为「停止点的下一合法操作」；
+  B 先重做 A 已完成的任何步骤 → 记为 re-solving 形态。
+（全实验最易被模型行为掩盖、必须钉死的一条。）
+配套 = 停止点的下一步须具有唯一或有限合法延续（提名检查 6）。
+```
+
+### 14.4 任务提名标准修订 + STEP 0 检查单（精化 §10/§13.5）
+
+```text
+原则 = 不找「复杂任务」，找「自然产生状态转换的任务」：
+  选择 → 状态变化 → 中间结果 → 未完成工作
+  → 下一步具有唯一或有限合法延续
+STEP 0 检查单（human 六项，冻结）：
+  1 真实  2 边界清晰  3 自然产生 ⑥⑦⑧
+  4 存在明确停止点  5 B 可只依赖 PALACE 接手
+  6 能区分 continuation / re-solving
+双候选方向（human 定）：
+  Candidate X = 真实文件信息工作（发现/关系/冲突/当前判断/
+    处理到中途停止）——信息量真实、文件关系真实、provenance
+    自然存在、⑥⑦⑧ 易自然出现、不需要人为设计玩具状态机
+  Candidate Y = 真实工具链连续操作（读→提取→中间结果→
+    修改/创建→检查→发现问题→准备下次工具调用→停止）
+    ——对「工具调用之后但下一步尚未执行的状态能否作为
+    Information 保存并让 B 继续」最敏感，对 SimiGo 边界
+    更敏感
+```
+
+### 14.5 反裁剪纪律（human 原文语义，冻结）
+
+```text
+不要为了让实验成功，专门设计一种 PALACE 当前「擅长保存」的
+数据结构。先让真实工作产生它自己的信息和状态，再问：如果
+这些东西都进入 PALACE，S2 是否仍然成立？
+```
+
+### 14.6 结果价值定位（human 原文语义，登记非承诺）
+
+```text
+若 S2 成立 → 才有资格说「Information Space 可以承载
+Execution State」。
+若 S2 不成立 → 不马上说「所以需要 SimiGo」，先过闭合测试：
+  Semantic Lost → 增加合法信息记录 → 恢复了吗？
+    是 → 仍属于 Information Space
+    否 → ES Boundary Candidate
+最终最有价值的结果（human 表述）= 找到一个最小条件：信息
+空间中的信息在什么情况下，会从「可描述的工作历史」跨越成
+「必须由 Execution State 语义维持的可继续工作状态」。
+```
+
+### 14.7 设计封笔
+
+```text
+按 human 指令：四点精化落档后设计阶段封笔，不再扩设计；
+再改设计须新 human 方向。三项冻结审查结论不受影响（判据
+精化不改变问题唯一性/构造充分性/现象可暴露性）。
+状态不变：
+  DESIGN STATUS: FROZEN (REVISED — §13+§14 operative)
+  EXECUTION STATUS: NOT STARTED
+  EXECUTION AUTHORIZATION: FIRST MINIMAL A→B EXPERIMENT ONLY
 ```

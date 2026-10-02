@@ -14926,3 +14926,75 @@ PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13) /
     （恢复+逐项观察）→ Evidence Table v2 + 真值核对 → 结果门
 Current blocker = none
 ```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY §14 CRITERIA REFINEMENT — DESIGN CLOSED — STEP 0 NOMINATION — 2026-10-02
+
+Human 判定 §13 方向正确、问题升级（「PALACE 有没有保存足够的
+信息？」→「信息已经完整保存以后，工作状态的语义是否仍然
+存活？」更强）；补四点后设计封笔。设计草案追加 §14：
+
+```text
+§14.1 语义存活拆两层 = S1 可解释（B 能正确理解 A 当时的状态）
+    / S2 可继续（B 能以该状态作为当前工作状态继续执行）——
+    真正重要的是 S2，S1 ✓ 不构成存活证据；示例读法冻结
+    （当前分支=Alive/执行位置=Lost/未完成操作=Lost）；
+    防误判 = 「模型看懂了」≠「Execution State 恢复了」；
+    v2 表语义存活列拆 S1/S2 两列，Alive = S2 ✓
+§14.2 Replay Cost 观察项 = 对每项 Lost/部分存活逐项记录重
+    推导/重执行现象与重做量；等级词汇冻结（R0 无重建/R1
+    轻微重新定位/R2 需要重新推理/R3 需要重新执行/R4 产生
+    新的决策路径）正式定义延后；「信息都在但 B 只能 replay」
+    = 工作状态未存活的定量形态，PALACE 最重要的边界证据候选
+§14.3 等价继续约束 = Continuation ≠ Re-solving（最强 guard）
+    ——B 经另一路径得到相同结果不构成 State 恢复证据；
+    弱证据 = 重算 X→Y→Z（结果再对也不算）；强证据 = 直接从
+    Z 后的下一合法操作继续；机械判定 = B 首个实质动作是否
+    为停止点的下一合法操作，先重做 A 已完成步骤 = re-solving
+    形态；配套 = 停止点下一步须唯一或有限合法延续
+§14.4 提名标准修订 = 不找复杂任务，找自然产生状态转换的任务
+    （选择→状态变化→中间结果→未完成工作→下一步唯一或有限
+    合法延续）；STEP 0 六项检查单冻结（真实/边界清晰/自然
+    产生⑥⑦⑧/明确停止点/B 只依赖 PALACE/能区分
+    continuation 与 re-solving）；双候选方向 human 定 =
+    Candidate X 真实文件信息工作 / Candidate Y 真实工具链
+    连续操作（对⑧最敏感）
+§14.5 反裁剪纪律（human 原文语义冻结）= 不为实验成功专门
+    设计 PALACE 擅长保存的数据结构；先让真实工作产生自己的
+    信息和状态，再问全都进入 PALACE 后 S2 是否仍成立
+§14.6 结果价值定位 = S2 成立 → 才有资格说 Information Space
+    可承载 Execution State；S2 不成立 → 不马上说需要 SimiGo，
+    先过闭合测试（Semantic Lost→增合法记录→恢复？是=信息
+    空间/否=ES Boundary Candidate）；最有价值结果 = 找到
+    最小条件：信息何时从「可描述的工作历史」跨越成「必须由
+    ES 语义维持的可继续工作状态」
+§14.7 设计封笔 = 四点落档后不再扩设计，再改须新 human 方向；
+    三项冻结审查结论不受影响；状态不变（FROZEN REVISED/
+    首实验授权 NOT STARTED）
+```
+
+STEP 0 提名执行（concretization 对照真实语料：baseline-inventory /
+corpus-change-rqg3-1 / G2 执行记录）：
+
+```text
+X1 = 0307/0308 孪生版本差异整理（秦沈项目经济运行情况汇报
+     _20260307.docx / _20260308.docx，均已在 Corpus-1；
+     +308万 现场管理费为在案修订锚点，全量差异整理未做）
+X2 = S8 缺口闭合（S1/S2 与 S6 口径映射；G2 执行记录在案
+     未闭合缺口）
+Y  = RQ-G2-1 验证执行（表2!E 列万口径假设验证——脚本提取→
+     中间验证表→逐项核对→排队下次调用→停止；G2 在案生成
+     问题）
+六项检查 = X1/X2/Y 全过（详见提名呈现）；推荐 = X1（①–⑧
+     覆盖最均匀 + 自然冲突锚点）
+待 human 钉定任务 X + 确认 A/B 承担方式（建议 = 独立新会话，
+     任务指令只含任务不含研究框架，污染声明照记）
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13+§14)
+    / FIRST MINIMAL EXPERIMENT AUTHORIZED / NOT STARTED
+STEP 0 = NOMINATION PRESENTED / AWAITING HUMAN PIN
+Current blocker = human pin（任务 X 钉定 + A/B 承担方式确认）
+```
