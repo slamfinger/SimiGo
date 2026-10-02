@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_ENTRY_OPEN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_DESIGN_DRAFT_COMPLETE`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -170,7 +170,9 @@
    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`
    - ✅ human 主线收束裁定：四问矩阵 PASS/CLOSED（continue ≠ audit/review 两维度）；CF-①② 双 HIGH VALUE/ACCEPTED；G3 = CLOSED（五项工作恢复要素登记非 Schema）；RQ-G3-3 转向；PALACE-SimiGo Boundary Study ENTRY OPEN
 70. 读 G3 收束与 Boundary Study 入口登记：
-   - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`
+    - `docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`
+71. 读 Boundary Study 设计草案（仅设计，无执行授权）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`
 
 ## Current snapshot
 
@@ -439,13 +441,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：起草 Boundary Study 设计草案（核心问 =
-   同一信息世界两工作者为何不能互相恢复工作状态；四情况矩阵
-   人A/任务X·Y·人B/Agent × 路径 X/Y/Z/W；ES 候选边界六问 =
-   A 已检查什么/为什么跳过/已排除什么/正在验证什么/下一步/
-   B 接手缺什么）——draft → human 冻结 → 执行。纪律：L0 只读；
-   先观察「什么必须留下」再决定「叫什么」；不造 DurableInformation/
-   WorkState/Provenance/Relation 类；不写 PALACE 代码。
+1. 下一会话第一动作：Boundary Study 设计草案 human 冻结审查
+   （草案已交付：
+   `docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`；
+   冻结对象 = 四情况矩阵/测试六问/停止点与恢复判据/答案五形态/
+   残留资格规则/禁令/任务提名/工作者承担方式/信息空间清单）
+   → 授权后按草案 §11 Gate Sequence 执行（信息空间钉定 →
+   四 case 真实工作 → 恢复探针 → 真值对照判读 → 结果门 →
+   human 判读）。纪律不变：L0 只读；先观察「什么必须留下」
+   再决定「叫什么」；不造 DurableInformation/WorkState/
+   Provenance/Relation 类；不写 PALACE 代码。
 
 继续区分：
 

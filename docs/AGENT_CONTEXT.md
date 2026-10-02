@@ -92,6 +92,9 @@ As of the latest repository state:
   (same PALACE / two workers / different tasks / different paths —
   what PALACE cannot recover = ES irreplaceable position). See
   `SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`.
+  Boundary Study DESIGN DRAFT complete (design only, no execution
+  authorization; awaiting human freeze review):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

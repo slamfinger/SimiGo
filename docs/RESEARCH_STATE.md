@@ -14751,3 +14751,60 @@ Boundary Study = DIRECTION REGISTERED / DESIGN_DRAFT_PENDING_
     HUMAN_INITIATION
 Current blocker = none
 ```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN DRAFT COMPLETE — SAME-WORLD WORK-STATE RECOVERY BOUNDARY — 2026-10-02
+
+Human 发起 Boundary Study 设计起草（G0-G3 全链 CLOSED 后下一
+动作；仅设计准备，不执行）。设计草案交付：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+核心问题（冻结双措辞）= 边界问「当信息空间已经保存足够多历史
+    信息后，哪些内容仍然必须属于 Execution State？」/ 两工作者
+    问「如果 PALACE 已经拥有足够完整的信息，两个工作者面对同一
+    个信息世界时，为什么仍然不能互相恢复对方的工作状态？」
+「同一 PALACE」操作化 = L0（Corpus-1 16 文件只读）+ G0-G3 信息
+    侧产物原样（零新整理/不写 PALACE 代码/不实现 Palace
+    database）；信息空间组成执行第一步钉定落盘，此后只读；
+    工作者沉淀自由 = 真实工作的一部分
+真值分离（可判读前提）= 信息侧沉淀 (i) vs 工作状态记录 (ii)
+    机械分；(ii) 执行期原样封存 = 恢复探针 ground truth——
+    G3 已证 A≠B 的操作化，非新 Schema/字段表
+四 case 角色 = Case-1 基准（A/X/路径X，六问主要被恢复对象）/
+    Case-2 分叉组内对照（A/Y/路径Y，同工作者换任务）/ Case-3
+    主探针发起方+被恢复对象（B/X/路径Z）/ Case-4 跨工作者种类
+    检验（Agent/X/路径W）；路径独立纪律 = case 间禁换工作状态
+    记录、只共读信息空间（独立形成非事后镜像）；工作者承担
+    方式（人A/人B = human 亲自/独立会话/混合）冻结审查时钉定
+探针 = 问答六问（主探针 B→A；答案五形态预注册：①真/②误导
+    [CF-① 量级错配假候选先例，单列]/③部分/④无答案/⑤空问对照
+    不计残留）+ 接手续作（B 仅凭信息世界从 A 停止点真实续作
+    任务 X——「缺什么」以续作行为记录非自评）
+停止点与恢复判据（设计期冻结）= 停止点逐字登记不得回改
+    （G2 T-3 先例）；残留资格 = 跨工作者种类复现 (a) 或 CF-②
+    型缺失形态 (b)，否则 = 一次性信息缺口；信息缺口 vs 工作
+    状态缺口逐条区分（「补一条合法记录能否闭合」——观察产出
+    非设计预设）；价值判定闭环两向开放（PALACE 足以回答六问 =
+    同样有效结果，ES necessity 保持 UNPROVEN 的诚实出口）
+任务提名 = 五标准冻结（真实性/多路径性≥3/未答性/Corpus-1
+    有界/双任务性）；具体提名由 human 冻结审查时钉定（防执行者
+    既提名又执行的选择偏差；示意方向[非锁定] = S8 未闭合独立
+    重查、RQ-OQB-2 整理风险实例采集）
+禁止（逐字）= 先造 DurableInformation/WorkState/Provenance/
+    Relation 类再证明 / PALACE·ES Schema/数据库/PALACE 代码 /
+    L0 写入 / 真值泄漏（含经信息侧夹带）/ 矩阵六问变产品 API /
+    Gate① 复活 / G0-G3 重做 / 性能基准 / Corpus 扩容 / 预设
+    「ES 必然必要」或「PALACE 必然足够」
+```
+
+当前状态：
+
+```text
+Boundary Study = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：信息空间钉定 → 四 case 真实工作
+    → 恢复探针 → 真值对照判读 → 结果门 → human 判读）
+Current blocker = none
+```
