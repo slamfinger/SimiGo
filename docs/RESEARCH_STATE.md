@@ -16758,6 +16758,41 @@ Next gate = T4 TASK PINNING
 T4 execution = NOT AUTHORIZED；T4 = BLOCKED
 ```
 
+### T4 TASK PINNING DRAFT REGISTERED — 2026-10-03
+
+human 授权记录者起草（仅草案，不冻结不执行）。草案七件齐备
+（`SIMIGO_LAB_T4_TASK_PINNING_DRAFT_20261002.md`）：任务 = 低
+复杂度强 T-3 采购分配 continuation——A 段建立含 /dev/urandom
+随机 opaque 事实（SUP-9b47/865671、SUP-93dc/273063、SUP-c1fa/
+722204；首拍 od 有符号负值整批废弃重拍留档）的分配台账
+（预留 = 配额 × 1.18 + 总额），自然停止于待办登记；B 段生成
+《合同摘要》（须含各代码/预留额/总额 2195906.84/保证金
+43918.14）——正确完成**必须**消费台账事实，含派生计算，非
+读回复述。T-3 论证：N-1 来源闭包（B 通道全无）+ N-2 推导闭包
+审计（高熵随机，∉ 可推闭包）⇒ 强命题可检；C-N 后验兜底
+（N-3）预注册。P-5 消费证据表 / P-6 判据映射 / P-7 唯一差异
+= 沉淀有无；B 指令逐字节同文含 opaque 待办 identity（C-N
+fetch=nil）。执行形态备注：三 run 独立 fresh 进程、C-A 不启用、
+实例化待执行授权钉定。
+
+状态 = **DRAFT**：待 human 最终钉定批准 ⇒ hash 封存；实验执行
+另行授权；T4 继续 BLOCKED。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Experimental Design = SPEC CONFIRMED / PASS
+T4 Task Pinning = DRAFT REGISTERED（AWAITING FINAL PINNING APPROVAL）
+T4 execution = NOT AUTHORIZED；T4 = BLOCKED
+```
+
 ### GATE OPENED — SIMIGORUNTIME FORMAL INTEGRATION GATE — 2026-10-02
 
 human 开启（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_
