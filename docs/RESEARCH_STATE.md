@@ -16711,6 +16711,46 @@ T4 = PASS / STRONG ATTRIBUTION (TASK-DOMAIN BOUNDED) / CLOSED
 Next = 等待下一阶段 Gate 指令
 ```
 
+### A GATE OPENED — T4 CROSS-TASK REPLICATION — SPEC REGISTERED — 2026-10-03
+
+human 择向裁定：下一 Gate = **A：T4 Cross-Task Replication**
+（候选 B Execution 层 = DEFERRED）。A Gate 开启，初始边界登记
+（`SIMIGO_LAB_T4_CROSS_TASK_REPLICATION_GATE_SPEC_20261003.md`，
+SPEC ONLY 零任务设计）。
+
+唯一研究问题：结构独立第二 continuation task 在 Information
+boundary / cold-start / C-E/C-N 归因框架不变下能否复现 T4 的
+必要性证据。边界：第二任务/任务结构/T-3/混淆变量 = 待设计；
+C-E/C-N 与 cold-start = 继承 T4 框架；InformationCore/
+RelationCore/SimiGo Integration = 冻结不修改；T4 原结论 = 不得
+修改；实验执行 = 未授权。硬约束六条：禁换皮、禁回溯改 T4、
+禁预设成功、T-3 重新审查（只继承方法原则不复制具体事实）、
+混淆变量设计期显式登记、禁新记忆机制。
+
+**阶段链与开门纪律（human 定稿）**：A-Spec → Task Selection/
+Design → T-3 + Confound Audit → Task Pinning/Hash Freeze →
+Execution Authorization → Replication Result——各子 Gate 须明确
+开门，Task Selection/T-3/Confound Design 不由当前记录状态自动
+授权。下一步 = human 开「任务选择/设计子 Gate」；记录者开门前
+零任务设计动作。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION (TASK-DOMAIN BOUNDED) / CLOSED
+A Gate = OPEN / INITIAL BOUNDARY REGISTERED
+A-Task / A-T-3 / A-Confounds = NOT DESIGNED
+A-Pinning = NOT OPEN / A-Execution = NOT AUTHORIZED
+Next = human 开「任务选择/设计子 Gate」
+```
+
 ### GATE OPENED — T4 EXPERIMENTAL DESIGN GATE — 2026-10-02
 
 human 定向（`SIMIGO_LAB_T4_EXPERIMENTAL_DESIGN_GATE_SPEC_20261002.md`，

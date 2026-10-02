@@ -672,3 +672,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - **候选 A = T4 Cross-Task Replication Gate**（human 已列唯一窄问题：保持 Information boundary / cold-start / C-E/C-N 归因框架不变，第二个结构独立 continuation 任务能否复现必要性证据）；**纪律 = T4-2 任务选择/T-3 设计/混淆变量不得记录者现在自行设计，须另开 Gate**；且不应作为 T4 的「补充实验」存在
     - **候选 B = Execution 层 Gate**（不急——T4 刚钉住因果命题，先决定复现与否比扩大架构范围干净）
     - 状态 = 停点维持（72eb6a7 已同步），两候选均未开 Spec；**待 human 择向开 Gate**
+129. 读 A Gate 开启（T4 Cross-Task Replication Spec 登记）：
+    - `docs/00-governance/SIMIGO_LAB_T4_CROSS_TASK_REPLICATION_GATE_SPEC_20261003.md`
+    - ✅ human 择向 **A = T4 Cross-Task Replication Gate** 并登记初始边界（SPEC ONLY 零任务设计）；唯一研究问题 = 结构独立第二 continuation task 在 Information boundary/cold-start/C-E-C-N 框架不变下能否复现必要性证据；边界表 = 第二任务/结构/T-3/混淆变量待设计，C-E-C-N 与 cold-start 继承 T4 框架，InformationCore/RelationCore/SimiGo Integration 冻结不修改，T4 原结论不得修改，实验执行未授权；硬约束六条（禁换皮/禁回溯改 T4/禁预设成功/T-3 重新审查只继承方法原则/混淆变量设计期显式登记/禁新记忆机制）；**阶段链与开门纪律** = A-Spec → Task Selection/Design → T-3+Confound Audit → Task Pinning/Hash Freeze → Execution Authorization → Replication Result，各子 Gate 须明确开门不自动授权；下一步 = human 开「任务选择/设计子 Gate」；记录者开门前零任务设计动作
