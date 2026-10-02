@@ -10,14 +10,11 @@ func fail(_ message: String) -> Never {
     exit(2)
 }
 
-let arguments = Array(CommandLine.arguments.dropFirst())
-var values: [String: String] = [:]
-var index = 0
-while index < arguments.count {
-    guard index + 1 < arguments.count else { fail("missing value for \(arguments[index])") }
-    values[arguments[index]] = arguments[index + 1]
-    index += 2
+let invocation = try LifecycleInvocationParser.parse(Array(CommandLine.arguments.dropFirst()))
+guard invocation.command == .continue else {
+    fail("this binary runs only 'continue'; S0/S1 establishment uses CContinuationStudy")
 }
+let values = invocation.options
 
 guard let arm = values["--arm"].flatMap(Arm.init(rawValue:)),
       let root = values["--workspace"].map({ URL(fileURLWithPath: $0, isDirectory: true) }),
@@ -31,7 +28,7 @@ do {
     let relationURL = StudyPaths.relation(root)
     let checkpoint = try StudyJSON.read(ExecutionState.self, from: checkpointURL)
     guard checkpoint.taskID == taskID else { fail("task id does not match Execution State") }
-    try checkpoint.validate(for: arm)
+    try checkpoint.validate(for: arm, stage: .final)
 
     var declaredReads = [checkpointURL.path]
     var persistenceSources = declaredReads
@@ -197,7 +194,7 @@ do {
         AuditObservation(
             check: "harness_answer_injection",
             method: "CLI receives only arm/workspace/task-id; task rule and states are read from allowed carriers",
-            observed: "argv_count=\(arguments.count)",
+            observed: "argv_count=\(invocation.arguments.count)",
             passed: true
         ),
         AuditObservation(
@@ -215,7 +212,7 @@ do {
             root: root.path,
             processID: process.processIdentifier,
             parentProcessID: Int32(getppid()),
-            arguments: arguments,
+            arguments: invocation.arguments,
             workingDirectory: FileManager.default.currentDirectoryPath,
             environmentNames: environment.keys.sorted(),
             declaredEnvironmentValues: environment.filter { ["PATH", "TMPDIR", "HOME", "SWIFT_VERSION"].contains($0.key) },

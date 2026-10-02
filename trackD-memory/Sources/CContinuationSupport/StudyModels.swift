@@ -11,6 +11,55 @@ public enum Arm: String, Codable, Sendable, CaseIterable {
     public var relationEnabled: Bool { self == .c }
 }
 
+public enum LifecycleCommand: String, Sendable, CaseIterable {
+    case old
+    case `continue`
+}
+
+public struct LifecycleInvocation: Equatable, Sendable {
+    public var command: LifecycleCommand
+    public var options: [String: String]
+    public var arguments: [String]
+
+    public init(command: LifecycleCommand, options: [String: String], arguments: [String]) {
+        self.command = command
+        self.options = options
+        self.arguments = arguments
+    }
+}
+
+public enum LifecycleInvocationParser {
+    public static func parse(_ arguments: [String]) throws -> LifecycleInvocation {
+        guard let rawCommand = arguments.first,
+              let command = LifecycleCommand(rawValue: rawCommand) else {
+            throw StudyError.argument("first argument must be old or continue")
+        }
+        let optionArguments = Array(arguments.dropFirst())
+        guard optionArguments.count % 2 == 0 else {
+            throw StudyError.argument("every option must have exactly one value")
+        }
+        var options: [String: String] = [:]
+        var index = 0
+        while index < optionArguments.count {
+            let key = optionArguments[index]
+            guard key.hasPrefix("--"), key.count > 2 else {
+                throw StudyError.argument("invalid option name: \(key)")
+            }
+            guard options[key] == nil else {
+                throw StudyError.argument("duplicate option: \(key)")
+            }
+            options[key] = optionArguments[index + 1]
+            index += 2
+        }
+        return LifecycleInvocation(command: command, options: options, arguments: arguments)
+    }
+}
+
+public enum ValidationStage: Sendable {
+    case construction
+    case final
+}
+
 public struct ExecutionState: Codable, Equatable, Sendable {
     public var schemaVersion: String
     public var taskID: String
@@ -37,20 +86,45 @@ public struct ExecutionState: Codable, Equatable, Sendable {
         self.executorIdentity = executorIdentity
     }
 
-    public func validate(for arm: Arm) throws {
+    public func validate(for arm: Arm, stage: ValidationStage = .final) throws {
         let keys = Set(carrierPointers.keys)
         switch arm {
         case .a:
             guard keys.isEmpty else { throw StudyError.invalidState("C-A carrier pointers must be empty") }
         case .b:
-            guard keys == ["task", "s0", "s1", "progress"] else {
-                throw StudyError.invalidState("C-B carrier pointer set is invalid")
+            switch stage {
+            case .construction:
+                guard validateConstruction(keys: keys, orderedFinalKeys: ["task", "s0", "s1", "progress"]) else {
+                    throw StudyError.invalidState("C-B construction pointer set is invalid")
+                }
+            case .final:
+                guard keys == ["task", "s0", "s1", "progress"] else {
+                    throw StudyError.invalidState("C-B final carrier pointer set is invalid")
+                }
             }
         case .c:
-            guard keys == ["task", "s0", "s1", "progress", "relation"] else {
-                throw StudyError.invalidState("C-C carrier pointer set is invalid")
+            switch stage {
+            case .construction:
+                let baseKeys: Set<String> = ["task", "s0", "s1", "progress"]
+                let finalKeys = baseKeys.union(["relation"])
+                guard keys == baseKeys || keys == finalKeys else {
+                    throw StudyError.invalidState("C-C construction pointer set is invalid")
+                }
+            case .final:
+                guard keys == ["task", "s0", "s1", "progress", "relation"] else {
+                    throw StudyError.invalidState("C-C final carrier pointer set is invalid")
+                }
             }
         }
+    }
+
+    private func validateConstruction(keys: Set<String>, orderedFinalKeys: [String]) -> Bool {
+        guard keys.isSubset(of: orderedFinalKeys) else { return false }
+        guard keys.isEmpty || keys.contains("task") else { return false }
+        if keys.contains("s0") { guard keys.contains("task") else { return false } }
+        if keys.contains("s1") { guard keys.contains("s0") else { return false } }
+        if keys.contains("progress") { guard keys.contains("s1") else { return false } }
+        return true
     }
 }
 

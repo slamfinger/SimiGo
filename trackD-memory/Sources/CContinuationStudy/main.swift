@@ -98,17 +98,11 @@ func makeEvidence(
 }
 
 func parseArguments() throws -> StudyInvocation {
-    let arguments = Array(CommandLine.arguments.dropFirst())
-    guard arguments.first == "old" else {
+    let invocation = try LifecycleInvocationParser.parse(Array(CommandLine.arguments.dropFirst()))
+    guard invocation.command == .old else {
         throw StudyError.argument("study binary runs only 'old'; fresh continuation is CContinuationStudyContinue")
     }
-    var values: [String: String] = [:]
-    var index = 1
-    while index < arguments.count {
-        guard index + 1 < arguments.count else { throw StudyError.argument("missing value for \(arguments[index])") }
-        values[arguments[index]] = arguments[index + 1]
-        index += 2
-    }
+    let values = invocation.options
     func requiredPath(_ key: String) throws -> URL {
         guard let value = values[key] else { throw StudyError.argument("missing \(key)") }
         return URL(fileURLWithPath: value)
@@ -158,7 +152,7 @@ struct CContinuationStudy {
             runID: UUID().uuidString,
             executorIdentity: "CContinuationStudy/old/\(invocation.arm.rawValue)"
         )
-        try state.validate(for: invocation.arm)
+        try state.validate(for: invocation.arm, stage: .construction)
         try StudyJSON.write(state, to: checkpointURL)
 
         let informationStore = try invocation.arm.informationEnabled
@@ -204,7 +198,7 @@ struct CContinuationStudy {
             pointers[label] = identity.rawValue
             state.carrierPointers = pointers
             state.lifecyclePhase = label == "s0" ? "S0_OBSERVED" : (label == "s1" ? "S1_OBSERVED" : state.lifecyclePhase)
-            try state.validate(for: invocation.arm)
+            try state.validate(for: invocation.arm, stage: .construction)
             try StudyJSON.write(state, to: checkpointURL)
         }
 
@@ -276,7 +270,7 @@ struct CContinuationStudy {
             try boundary.form(relation)
             pointers["relation"] = relation.identity.rawValue
             state.carrierPointers = pointers
-            try state.validate(for: invocation.arm)
+            try state.validate(for: invocation.arm, stage: .construction)
             try StudyJSON.write(state, to: checkpointURL)
             sequence += 1
             carrierReads.append(CarrierRead(
@@ -290,7 +284,7 @@ struct CContinuationStudy {
 
         state.lifecyclePhase = "POST_CHANGE_OBSERVED"
         state.attemptCount = 1
-        try state.validate(for: invocation.arm)
+        try state.validate(for: invocation.arm, stage: .final)
         try StudyJSON.write(state, to: checkpointURL)
 
         let physicalEvidence = PhysicalChangeEvidence(
