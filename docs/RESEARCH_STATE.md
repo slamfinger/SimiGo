@@ -16147,3 +16147,36 @@ Phase 1 = FIRST IMPLEMENTATION ACCEPTED
 Next gate = INTEGRATION BOUNDARY（SPEC 已登记，实现按 SPEC 执行）
 T4 = BLOCKED（不变）
 ```
+
+### INTEGRATION BOUNDARY GATE = PASS — 2026-10-02
+
+Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_
+GATE_RESULT_20261002.md`）：独立 harness（UpperLayer.swift 仅
+import InformationCore + main.swift 组合根）实跑真实调用链——
+上层形成 Information → `any InformationStore` 协议边界持久化 →
+identity roundtrip 同值 → absence=nil → 重复 store 幂等；
+sqlite3 CLI 物理抽查 = filing（integration/boundary-gate）在库
+且语义不可达；结构审计 = 上层零 SQLite 符号（唯一命中为注释
+行，处置在案）、负空间声明级审计 0 命中（首扫英文词命中已
+精确化消除）；三已验收文件 diff = 0 行；Build 零警告。
+
+**GATE = PASS ⇒ SQLiteStore 正式记为当前 Information 存储的
+可替换 Physical Filing backend**——上层已被证明可完全不携带
+持久化实现知识地工作（I8 结构证据：`any InformationStore`
+绑定，具体类型仅在组合根注入处）。
+
+纪律：新功能提交不推送（本地领先，推送待 human 指令）；
+T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED + INTEGRATION BOUNDARY PASS
+Swift files = 3（ACCEPTED，零改动）+ Integration harness 2 files
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```

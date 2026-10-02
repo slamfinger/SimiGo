@@ -28,6 +28,11 @@ let package = Package(
             name: "InformationCore",
             path: "trackD-memory/Sources/InformationCore"
         ),
+        .executableTarget(
+            name: "InformationIntegration",
+            dependencies: ["InformationCore"],
+            path: "trackD-memory/Sources/InformationIntegration"
+        ),
         .target(
             name: "SimiGoRuntimeContract",
             path: "simigo2-experimental/Sources/SimiGoRuntimeContract"

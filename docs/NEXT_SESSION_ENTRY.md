@@ -591,3 +591,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 103. 读 Integration Boundary Gate Spec（GATE OPENED）：
     - `docs/00-governance/SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_GATE_SPEC_20261002.md`
     - ✅ human 定向：下一 Gate = **Integration Boundary Gate**——目标 = 证明已验收三边界可作为真实上层使用边界工作（真实调用链贯通，SQLite/WAL/事务/物理 filing 不回流语义层），通过后 SQLiteStore 方有资格记为可替换 Physical Filing backend；SPEC 七要素已登记（目的/输入/允许范围/8 项 invariants I1–I8/验证方式/负空间/Pass-Fail）；允许范围 = 独立 harness target（仅 import InformationCore，any InformationStore 绑定）+ Package 接线，三已验收文件零改动；I6 结构证明 = 上层源码零 SQLite 符号、仅组合根一处构造；**纪律 = d2a1ea7 之后新功能提交不推送；Gate 开启 ≠ 扩展模型；T4 = BLOCKED 不动**
+104. 读 Integration Boundary Gate 结果（PASS）：
+    - `docs/00-governance/SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_GATE_RESULT_20261002.md`
+    - ✅ **GATE = PASS**：harness 两文件（UpperLayer.swift 上层消费者仅 import InformationCore + main.swift 组合根/invariant runner）+ Package 接线；真实调用链实跑 I1–I4 全 PASS（上层形成→协议边界持久化→同值 roundtrip/absence=nil/幂等）；I5 filing 物理在库（integration/boundary-gate）语义不可达；I6 上层零 SQLite 符号（唯一命中为注释行，处置在案）；I7 声明级审计 0 命中（首扫命中为 assert 消息英文词，精确化消除）；I8 `any InformationStore` 绑定（具体类型仅组合根注入处）；Build 零警告；三已验收文件 diff = 0 行；⇒ **SQLiteStore 正式记为可替换 Physical Filing backend**；新功能提交不推送（本地）；T4 继续 BLOCKED
