@@ -101,7 +101,18 @@ As of the latest repository state:
   EXPERIMENT ONLY (four-case full matrix NOT AUTHORIZED until
   first-experiment result gate); first product = Boundary Evidence
   Table; attribution principle: "unrecoverable" alone never proves
-  ES — one-legitimate-record closure test first.
+  ES — one-legitimate-record closure test first. Same-day REVISION
+  (human direction, §13 operative):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_REVISION_EXEC_
+  SEMANTICS_20261002.md` — ES is itself information with execution
+  semantics (special information class inside PALACE's information
+  space, not its opposite); precise question = which necessary
+  information of real work is merely describable vs must keep ES
+  semantics to continue execution; first-experiment probe revised
+  to full-preservation → recover → per-item semantic-survival
+  observation (Boundary Evidence Table v2); discriminating-power
+  gate: task must naturally produce branch/position/pending-
+  operation events or the task is swapped.
 - Execution State Contract v1.0-amended is the upstream semantic
   reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.

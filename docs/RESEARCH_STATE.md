@@ -14863,3 +14863,66 @@ PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN / FIRST MINIMAL
     Table + 真值核对）→ 结果门
 Current blocker = none
 ```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN REVISED & RE-FROZEN — EXECUTION-STATE SEMANTICS REFINEMENT — 2026-10-02
+
+Human 概念精化方向登记并据此修订设计（同日第二次修订）。
+修订登记件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_REVISION_EXEC_SEMANTICS_20261002.md`。
+
+设计草案追加 §13（现行 operative 读法；§1–§12 文本冻结保留）。
+
+```text
+概念精化（human 原语冻结）= Execution State 本身也是一种信息
+    ——具有执行语义的信息；PALACE = 信息空间，ES = 其中一种
+    特殊信息结构；区别在语义和可操作性，不一定是物理存储
+    位置；不变量 = ES 语义在存储/迁移/恢复/重组中不丢失；
+    SimiGo = 让具有 ES 语义的部分真正成为「可执行状态」
+    （fork/restore/commit/discard/cancellation/physical
+    representation——与 Contract v1.0-amended lifecycle 七操作
+    观察级呼应，SEPARATELY SCOPED）；SimiGo 不是 inference
+    engine；ES 不必然物理存放在 SimiGo 内部
+研究问题精确化 = 父问保留（PALACE 能恢复到哪里/SimiGo 从哪里
+    开始不可替代）→ 精确问（operative）=「一个真实工作的全部
+    必要信息进入 PALACE 后，其中哪些信息仅仅是可描述的，
+    哪些信息必须保持 Execution State 语义才能继续执行？」
+示例分类登记 = human ①–⑧（找到 17 文件/读 8/建关系/部分计算/
+    两数据冲突 = 信息；当前分支/执行位置/未完成操作 = ES）
+    ——性质 = 探针刺激词汇非预设答案（⑥⑦⑧ 语义能否由信息
+    承载正是实验要测的）；与 G2 T-1..T-3 真实任务形态同构
+首实验流程修订 = A 做工作 → 将工作完整保存到 PALACE 信息空间
+    （⑥⑦⑧ 类必须作为信息保存——保存是实验设置非自由变量）
+    → B 从 PALACE 恢复 → 观察哪些信息可直接作为信息消费、
+    哪些必须以 ES 语义恢复才能继续执行；观察轴从「缺什么」
+    转为「语义存活」；六问转置 = A 保存清单 + 次级问答探针
+Boundary Evidence Table v2（取代 v1 表）= 列 = 已保存项/
+    能否作为信息消费/信息形态下能否从此继续执行（语义存活，
+    机械判据 = 状态式继续 vs 事实化后重推导·重决策·重执行·
+    偏离）/语义未存活时补一条信息记录能否恢复语义（闭合测试
+    转置）/初步归属 ∈ 语义可由信息承载（留在 PALACE）/需执行
+    机制承载（ES——SimiGo 语义域）/待验证；B 行为六类照记，
+    「缺少 ES」读法转置 = 语义未存活观察标签（guard 不变）
+判别力门 = 任务须自然产生 ⑥⑦⑧ 类事件，否则换任务不硬做
+三项冻结审查重跑 = PASS×3（信息轴近饱和由 Tier-4 全保真先例
+    支持——判别轴恰在语义；语义/载体分离有 P5 KV=Representation
+    fragment 与 PA-2 Position≠Semantic Anchor 在案先例，backend
+    范围作类比级锚点非证明；CF-① 证明「记录在而语义错」风险
+    真实）→ RE-FROZEN；首实验授权延续 NOT STARTED
+收束公式（human 原文）= Execution State 不再是 PALACE 的对立面，
+    而可能是 PALACE 信息空间中最特殊、最需要语义保护的一类
+    信息（与「PALACE 负责世界/SimiGo 负责人在世界中的持续
+    行动」为精化关系非替换）
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13) /
+    FIRST MINIMAL EXPERIMENT AUTHORIZED / NOT STARTED
+下一动作 = 执行第 0 步任务提名（≥2 候选 × 五标准 + §13.5
+    判别力核验）→ human 钉定 → A 半程（完整保存）→ B 半程
+    （恢复+逐项观察）→ Evidence Table v2 + 真值核对 → 结果门
+Current blocker = none
+```
