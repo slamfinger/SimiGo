@@ -15237,3 +15237,31 @@ ZCode 会不会把 PALACE 当作「过去工作的可继续空间」而不仅是
     PRESENTED（候选见会话记录，钉定归 human）
 Current blocker = human pin（任务钉定 + 执行形态确认）
 ```
+
+### LAB PALACE REAL-WORK EXPERIMENT T1 PINNED — AWAITING FRESH-SESSION EXECUTION — 2026-10-02
+
+Human 钉定（`SIMIGO_LAB_PALACE_REALWORK_T1_REGISTRATION_
+20261002.md`）：Task = T1（0308 数据澄清函）——最能把「过去的
+信息是否真的成为当前工作的基础」撞出来（不用 PALACE 可做浅版，
+但无法自然获得 B 的 12 条遗留+28 项核查证据层，落差即实验
+结果）；cwd = palace-v0/workspace/（Lab 仓根 = 潜在信息替代源，
+会污染观察③；源文件仍允许直接访问——观察的是「PALACE 拥有
+过去工作 + 本地有原始资料时，ZCode 会不会主动把 PALACE 当
+工作记忆」）；Instruction zero leakage（只给做什么/输入/交付/
+输出位置）；双向有效不预判（用了 → PALACE 首次表现出「工作
+记忆」性质；没用 → 信息空间尚未形成足够强使用理由）。
+
+技术事实 = 子代理探针实测 NONE（MCP 会话级加载，本会话早于
+接线）+ App 无 headless CLI ⇒ fresh 会话由 human 桌面端开启
+（cwd = palace-v0/workspace/，粘贴逐字任务指令；工作区已放
+cwd 级 .mcp.json 副本，首次需 approve mempalace server）。
+palace 基线 = 9,362 drawers（标后预算 9,236 / 经济商务 75 /
+工作会话 51——第⑦问对照基线）。
+
+当前状态：
+
+```text
+T1 = PINNED / INSTRUCTION REGISTERED / WORKSPACE WIRED /
+    AWAITING HUMAN FRESH-SESSION EXECUTION
+Current blocker = human 开启 fresh 会话并执行（粘贴指令）
+```
