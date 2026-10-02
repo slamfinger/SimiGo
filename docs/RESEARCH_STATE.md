@@ -16180,3 +16180,31 @@ Swift files = 3（ACCEPTED，零改动）+ Integration harness 2 files
 T4 = BLOCKED（不变）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
+
+### GATE OPENED — PHASE 1 BACKEND INDEPENDENCE GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_GATE_SPEC_20261002.md`）：
+**Persistence Replacement / Backend Independence Gate**——核心
+命题 = **数据库是实现选择，而不是架构前提**。不是现在换掉
+SQLite，而是证明 Test/InMemoryStore（harness 侧第二 backend）
+可零改动接入：K1–K4 = Information/InformationStore/UpperLayer/
+SQLiteStore 四文件 diff 全 0；K5 = Backend-2 实现公共协议；
+K6 = 同一 UpperLayer 零改动驱动 Backend-2 全链路；K7/K8 =
+roundtrip/absence/幂等 PASS；K9 = SQLite 特有知识 0；K10 =
+新语义类型 0。架构闭环图定稿（Semantic Surface → stable
+boundary → SQLiteStore ∥ Backend-2 → Physical Filing）。
+
+Git 纪律：3 个未推送提交不 squash 不 rewrite，待本 Gate
+Spec/Result 成链后一并按节奏推送；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED + INTEGRATION BOUNDARY PASS
+Next gate = BACKEND INDEPENDENCE（SPEC 已登记，实现按 SPEC 执行）
+T4 = BLOCKED（不变）
+```

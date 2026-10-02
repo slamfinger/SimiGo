@@ -594,3 +594,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 104. 读 Integration Boundary Gate 结果（PASS）：
     - `docs/00-governance/SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_GATE_RESULT_20261002.md`
     - ✅ **GATE = PASS**：harness 两文件（UpperLayer.swift 上层消费者仅 import InformationCore + main.swift 组合根/invariant runner）+ Package 接线；真实调用链实跑 I1–I4 全 PASS（上层形成→协议边界持久化→同值 roundtrip/absence=nil/幂等）；I5 filing 物理在库（integration/boundary-gate）语义不可达；I6 上层零 SQLite 符号（唯一命中为注释行，处置在案）；I7 声明级审计 0 命中（首扫命中为 assert 消息英文词，精确化消除）；I8 `any InformationStore` 绑定（具体类型仅组合根注入处）；Build 零警告；三已验收文件 diff = 0 行；⇒ **SQLiteStore 正式记为可替换 Physical Filing backend**；新功能提交不推送（本地）；T4 继续 BLOCKED
+105. 读 Backend Independence Gate Spec（GATE OPENED）：
+    - `docs/00-governance/SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_GATE_SPEC_20261002.md`
+    - ✅ human 定向：下一 Gate = **Persistence Replacement / Backend Independence**——核心命题 = 数据库是实现选择而非架构前提；**不是现在换掉 SQLite**，而是证明第二种 InformationStore 实现（Test/InMemoryStore，harness 侧）可零改动接入：K1 Information diff=0 / K2 InformationStore diff=0 / K3 UpperLayer diff=0 / K4 SQLiteStore 不要求修改 / K5 Backend-2 实现协议 / K6 UpperLayer→Backend-2 全链路 PASS / K7 roundtrip / K8 absence+幂等 / K9 SQLite 特有知识=0 / K10 新语义类型=0；架构闭环图定稿（Semantic Surface → stable boundary → SQLiteStore ∥ Backend-2 → Physical Filing）；3 个未推送提交不 squash 不 rewrite，等本 Gate Spec/Result 一并成链再按节奏推送；T4 继续 BLOCKED
