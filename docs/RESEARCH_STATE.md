@@ -15839,3 +15839,28 @@ Current blockers = ① human Y 反例判定（采纳候选或另裁）
   ② human D 列 358 格替换授权（任务级，非实验输入）
   ③ human Phase 0 审阅（§2 分表 + §6 开放问题）
 ```
+
+### Y RULED — BR-2 SUPPORTED / NO EXPLICIT COUNTEREXAMPLE — 2026-10-02
+
+human 终裁（`SIMIGO_LAB_PALACE_Y_RULING_20261002.md` 逐字）：
+**Y → BR-2 supported / no explicit counterexample observed /
+three open observations retained**（非证明）。三观察位单独保留
+为开放项：日志分叉 = 边界/归属观察；导航越界 = 物理边界
+问题（本轮未致行为改写，不升级为反例）；授权门前零写回 =
+控制/提交边界观察（符合 S2，不反向否定 Y）。BR-2 获「支持 /
+无明确反例」新增证据，不自动改变 Phase 0 Gate。
+
+D 列 358 格替换 = Y 之后的受控任务动作（授权范围 = 仅既定
+规则替换 + 复验剩余写法数；不得借机修改实验事实/BR 判定/
+开放问题/其他列区域），授权单独下发，执行另件登记。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+T4 = BLOCKED（不变）
+D 列替换 = 授权下发中（受控任务动作，独立于 Y）
+Current blockers = human Phase 0 审阅（§2 分表 + §6 开放问题）
+```

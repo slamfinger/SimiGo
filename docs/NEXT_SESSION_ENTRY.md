@@ -558,3 +558,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 92. 读 Y-B 终读数与 Evidence Table v2：
     - `docs/00-governance/SIMIGO_LAB_PALACE_Y_B_RESULTS_20261002.md`
     - ✅ Y-B 执行完毕（单轮 520s 授权门停止点；输入 SHA 未动；A 段日志哈希未动）；B 读向激活 palace（rooms→drawers→get_drawer×3）+ 消费 workspace + 接续 A 待办完成 D 列审计（841 值/15 写法→11 种/358 格建议调整），零重解、零 palace 写回；四事实 = ①✓形成 ②✓换 executor 仍有价值 ③✓指针必要（deposit 不自我召唤）④摩擦两点（动作日志惯例未随共享通道转移→B动作日志.md 分叉；研究治理层被 B 导航越界，仓库内无物理边界）；S1✓/S2✓（下一合法操作 = 授权后替换+复验）；反例判定候选 = 当前形态支持 BR-2、未观测到明确反例、三个开放观察位（日志分叉归因/越界通道/零写回）；**待 human 裁定：① Y 判定采纳或另裁 ② D 列 358 格替换是否授权**；Y 实验封闭，palace 保持 9,398
+93. 读 Y 终裁封存：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_Y_RULING_20261002.md`
+    - ✅ human 终裁逐字封存：**Y → BR-2 supported / no explicit counterexample observed / three open observations retained**（非证明）；三观察位单独保留 = 日志分叉（边界/归属观察）/ 导航越界（物理边界问题，未致行为改写）/ 零写回（控制/提交边界观察，符合 S2）；BR-2 获新增证据但 Phase 0 Gate 不自动改变；T4 继续 BLOCKED；D 列替换定性 = Y 之后的受控任务动作，授权单独下发、不与实验判定合并
