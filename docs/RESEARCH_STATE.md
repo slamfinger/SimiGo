@@ -16316,6 +16316,43 @@ T4 = BLOCKED（不变）
 Current blocker = human D1–D7 逐项裁定（或整批裁 + 改动点）
 ```
 
+### PHASE 2 DECISIONS SEALED — D1–D7 RULED — MINIMAL IMPLEMENTATION AUTHORIZED — 2026-10-02
+
+human 整批裁定封存（`SIMIGO_LAB_PHASE2_RELATION_DECISIONS_SEALED_
+20261002.md` 逐字）：**D1(a)** Relation = 引用 InformationID 的
+有向三元组 + provenance——Relation 引用 Information 而非重新
+定义实体；自由字符串 endpoint 留外部；InformationID 不得降级
+为 String。**D2(a)** opaque RelationID、确定性派生、机制侧
+铸造；配方不进语义 API；服务树 datetime 盐反面证据采纳。
+**D3(a)** immutable；零 valid_from/to/状态回写字段；终止语义
+后置；Temporal validity 不入 Phase 2 最小面（不预埋）。**D4(a)**
+独立 RelationStore ∥ InformationStore，绝不嵌套——不为方便把
+第二种语义对象塞进已定稿 S1–S6 契约。**D5/D6** 硬约束照 Spec。
+**D7(a)** 独立 RelationCore 仅依赖 InformationCore，禁反向
+依赖。
+
+最小模型定稿：Information = immutable fact；Relation = immutable
+relation between facts——**平行语义对象，非父子**。特别负空间
+锁定：**零 Predicate taxonomy**（predicate 仅为语义位置，具体
+编码最小化+实现决策单独登记）。
+
+最小 RelationCore 实现获授权；证明清单 9 项登记（双 InformationID
+引用 / opaque deterministic RelationID / immutable / RelationStore
+独立 / 受保护五文件零 diff / 单向依赖 / 零未来语义）；仍零查询/
+遍历/排序/检索/服务树适配。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + 契约定稿）
+Phase 2 = DECISIONS SEALED / 最小 RelationCore 实现中
+T4 = BLOCKED（不变）
+```
+
 ### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
 
 Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
