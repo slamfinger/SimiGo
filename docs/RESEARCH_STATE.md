@@ -15915,3 +15915,39 @@ Phase 0 = REVIEW IN PROGRESS（证据索引完成，待 human 终确 FROZEN）
 T4 = BLOCKED（不变）
 Current blocker = human 终确 Phase 0 Semantic Surface = FROZEN
 ```
+
+### PHASE 0 SEMANTIC SURFACE = FROZEN — FINDING-1 AS STANDING AUDIT LESSON — 2026-10-02
+
+human 终确（`SIMIGO_LAB_PALACE_PHASE0_FROZEN_20261002.md` 逐字
+要点）：五点理由 = ①证据树错误被显式发现纠正（非隐瞒）②§2
+全部重锚至实际服务代码 ③重锚后语义结论零反转 ④borderline
+保持 borderline ⑤§6 冻结粒度未越界（原则非 API）。**Phase 0
+Semantic Surface = FROZEN**：§2 服务树锚点版 = 语义事实基线，
+§6 分级冻结生效。
+
+**Finding-1 升格为正式审计教训（长期纪律）**：以后一切涉及
+MemPalace 行为的研究，代码基准必须首先确认实际运行的
+service tree / environment / version；不得假设安装的 Python
+package 就是实际服务代码。判词 = 直接 Swift 重写会让旧树错误
+观察进入新架构——本次发现强化了 Phase 0 的价值。
+
+**Phase 1 Swift Core = NOT YET DESIGNED / awaiting boundary
+裁定**。下一动作 = Swift Core 最小边界裁定（非写 Swift）：依
+冻结语义面裁定必入 Core 语义（Information/identity/content/
+provenance/time·content_date/可持久化生命周期/InformationStore
+操作）vs 明确排除清单（Chroma/HNSW、BM25、entities、closet、
+hallway、taxonomy 实现、activation 机制、diary schema、KG 一等
+设计、MCP 表面、MemoryStack 历史结构）。裁定完成前零 Swift
+文件。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN（含 Finding-1 审计教训入档）
+Phase 1 = NOT YET DESIGNED / AWAITING BOUNDARY 裁定
+T4 = BLOCKED（不变）
+Current blocker = human Swift Core 最小边界裁定
+```

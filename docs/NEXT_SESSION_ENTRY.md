@@ -570,3 +570,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 96. 读 Phase 0 §2 证据索引（服务树重锚完成）：
     - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_EVIDENCE_INDEX_20261002.md`
     - ✅ **Finding-1 = 源码树锚定偏差**：审计读取 3.3.3/48 模块树（~/Library/Python/3.9），实际服务端 = .build/mp-venv312 的 **3.10.0/126 模块树**（.mcp.json 指向）；content_date/id_recipe 等字段在旧树零写入点、在服务树有完整写入链；**语义判定重锚全部成功、零反例**；服务树逐行锚点建立（_build_drawer_metadata/ids.py ID_RECIPE v3/_extract_content_date_with_source/Layer0-3/tool_diary_write/tool_memories_filed_away/_closet_boosts never-a-gate/_bm25_scores/wal._wal_log/KG add_triple provenance 回链等）；审计件范围表述更正（不改变语义归类）；**FROZEN 翻转条件已满足，待 human 终确**；T4 继续 BLOCKED
+97. 读 Phase 0 Semantic Surface = FROZEN 终裁：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_FROZEN_20261002.md`
+    - ✅ human 五点终裁理由逐字封存（证据树错误显式纠正/重锚服务树/语义结论零反转/borderline 保持 borderline/§6 粒度未越界）；**Finding-1 升格为正式审计教训（长期纪律）**：以后一切 MemPalace 行为研究必须先确认实际运行 service tree/environment/version，不得假设安装包=服务代码——判词 = 若直接 Swift 重写，旧树错误观察可能已入新架构；Phase 0 Semantic Surface = **FROZEN**（§2 服务树锚点版为语义事实基线 + §6 分级冻结生效）；**Phase 1 Swift Core = NOT YET DESIGNED / awaiting boundary 裁定**——下一动作 = Swift Core 最小边界裁定（必入 Core 语义候选 vs 明确排除清单），裁定完成前零 Swift 文件；T4 继续 BLOCKED
