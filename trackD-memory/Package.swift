@@ -16,7 +16,10 @@ let package = Package(
     ],
     products: [
         .library(name: "InformationCore", targets: ["InformationCore"]),
-        .executable(name: "CContinuationStudy", targets: ["CContinuationStudy"])
+        .library(name: "CContinuationSupport", targets: ["CContinuationSupport"]),
+        .library(name: "CContinuationEvaluatorCore", targets: ["CContinuationEvaluatorCore"]),
+        .executable(name: "CContinuationStudy", targets: ["CContinuationStudy"]),
+        .executable(name: "CContinuationEvaluator", targets: ["CContinuationEvaluator"])
     ],
     targets: [
         .target(
@@ -33,15 +36,50 @@ let package = Package(
             dependencies: ["InformationCore", "RelationCore"],
             path: "Sources/ExecutionCore"
         ),
+        .target(
+            name: "CContinuationSupport",
+            dependencies: ["InformationCore", "RelationCore"],
+            path: "Sources/CContinuationSupport"
+        ),
+        .target(
+            name: "CContinuationEvaluatorCore",
+            dependencies: ["CContinuationSupport"],
+            path: "Sources/CContinuationEvaluatorCore"
+        ),
         .executableTarget(
             name: "CContinuationStudy",
-            dependencies: ["InformationCore", "RelationCore"],
+            dependencies: [
+                "CContinuationSupport",
+                "ExecutionCore",
+                "InformationCore",
+                "RelationCore",
+            ],
             path: "Sources/CContinuationStudy"
+        ),
+        .executableTarget(
+            name: "CContinuationStudyContinue",
+            dependencies: [
+                "CContinuationSupport",
+                "ExecutionCore",
+                "InformationCore",
+                "RelationCore",
+            ],
+            path: "Sources/CContinuationStudyContinue"
+        ),
+        .executableTarget(
+            name: "CContinuationEvaluator",
+            dependencies: ["CContinuationEvaluatorCore"],
+            path: "Sources/CContinuationEvaluator"
         ),
         .testTarget(
             name: "ExecutionCoreTests",
             dependencies: ["ExecutionCore"],
             path: "Tests/ExecutionCoreTests"
+        ),
+        .testTarget(
+            name: "CContinuationTests",
+            dependencies: ["CContinuationSupport", "CContinuationEvaluatorCore"],
+            path: "Tests/CContinuationTests"
         )
     ]
 )
