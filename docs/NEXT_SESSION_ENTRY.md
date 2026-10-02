@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / T3_EXECUTED_T3A / RESULTS_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_DISCUSSION_DELIVERED / FREEZE_CANDIDATE_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,13 +462,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：T3 结果门 human 判读（T3-A 成立——
-   见 `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T3_
-   RESULTS_20261002.md`）。裁定项：①T3-A 验收（含因果链
-   限定：进入经私有记忆指针——冷启动反事实未测）②审计
-   基准四项定性 ③下一步：a T4 冷启动对照（必要条件收口）/
-   b Y 探针解冻评估 / c 私有-共享双通道边界架构讨论 /
-   d 自然任务序列收敛登记。纪律不变。
+1. 下一会话第一动作：私有—共享边界冻结裁定（讨论件已
+   交付——`SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_
+   DISCUSSION_20261002.md`）。human 裁定：①BR-1..BR-6
+   哪些升冻结边界 ②执行者可替换性判据是否采纳 ③冻结后
+   按序列 b/Y 解冻评估 → d 收敛登记（T4 待 SimiGo 接入
+   后才有资格）。纪律不变：不定义 ES；不设计 Schema；
+   不改 MemPalace；L0 只读。
 
 继续区分：
 
@@ -537,3 +537,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T3_RESULTS_20261002.md`
     - 证据：`docs/02-evidence/palace-realwork-t1/复函_*.docx`
     - ✅ T3-A 成立（经记忆生态因果链）：零历史词汇指令下 t7 尽职检索 ×3 + t24 checkpoint；palace 9,369→9,372；审计基准四项全过 + 新增文内三矛盾；三代记忆生态端到端运转（T1 沉淀→T2 指针→T3 消费核验扩展再沉淀）；冷启动反事实未测；**待 human 结果门判读（a T4 冷启动对照 / b Y 解冻 / c 双通道边界架构讨论 / d 收敛登记）**
+87. 读 T3 结果门裁定与私有—共享边界讨论件：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_DISCUSSION_20261002.md`
+    - ✅ human 选 c：从 T1-T3 真实行为裁边界（T4 缓办防「MemPalace 能力≠Information Space 成立」偷换；序列 c→冻结→b/Y→d→T4 待 SimiGo）；BR-1..6 行为规则候选 + 执行者可替换性判据提案（三代行为零冲突）+ BR-5 动态含义（ES 须携带激活语义）；**待 human 裁定冻结范围 → b/Y → d**

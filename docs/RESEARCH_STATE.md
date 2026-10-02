@@ -15571,3 +15571,53 @@ palace 9,369→9,372（数据问询复函 room 2 抽屉）。
 T3 = EXECUTED / T3-A / RESULTS AT HUMAN
 Current blocker = human 结果门判读 + 下一步方向
 ```
+
+### LAB T3 RESULT GATE RULED — PRIVATE/SHARED BOUNDARY DISCUSSION DELIVERED FROM T1-T3 BEHAVIOR — 2026-10-02
+
+Human 结果门裁定：选 c（私有—共享双通道边界架构讨论）；T4
+缓办（SimiGo 未接入，当前验证对象仍是 MemPalace 数据库结构
+——现在做 T4 易把「MemPalace 已有能力」误判成「Information
+Space 已经成立」）；序列钉死 = c → 冻结边界 → b/Y → d 收敛
+→ T4 待 SimiGo 接入后方有资格；方法 = 从真实行为裁边界不先
+设计数据库；不把 MemPalace 行为证据偷换成 Information Space
+证据。
+
+私有层清单补齐（rollout 核实）= T1 陷阱修法+MEMORY 索引 /
+T2 cross-session-work-records-locations.md（检索指针+工作史
+谱系 A→B→T1→T2）/ **T3 t23 Edit 更新指针文件（谱系延至
+T3——活文档三代持续维护）**。
+
+边界讨论件交付（`SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_
+DISCUSSION_20261002.md`）：
+
+```text
+双通道台账（T1–T3 逐条）= 私有层仅两类内容：可行动配方
+    （T1 CJK 修法）+ 纯连续性元数据（T2 指针/路由表/谱系，
+    T3 主动维护）；共享层 = 工作记录/报告/环境备忘/diary
+BR-1..BR-6 行为规则候选 = BR-1 同一事件按生命周期形态分拆
+    （可行动→私有/事实→共享，Agent 保守选择非内容被迫）/
+    BR-2 纯连续性元数据归私有 / BR-3 产物即信息（形成即
+    归属共享）/ BR-4 环境事实共享 / BR-5 读方向钥匙当前在
+    私有层（共享空间不自我召唤：T3 经指针进入、T1 无指针
+    无进入）/ BR-6 双通道写入 = 会话收尾 ritual
+核心问题初步裁定（participant 提案）= 执行者可替换性测试：
+    「换一个执行者/下一次继续仍可用且仍被需要？」通过 =
+    Information（形成即归属共享）；不通过（指针/进行中
+    状态/个人配方/「我从哪继续」）= 私有连续性层——三代
+    行为与判据零冲突
+动态含义（登记不下结论）= SimiGo 接入时 ES→Information
+    边界须含「激活语义」：ES 需携带「此处有相关历史」信号，
+    否则 Information Space 不被读（T1 形态）；T3 显示该
+    信号可由私有指针携带并跨世代传递
+非主张 = 不定义 ES/不设计 Schema/不改 MemPalace/Contract
+    SEPARATELY SCOPED；n=三代单世系单任务域；私有层持久性
+    未验证；冷启动反事实未测（T4 待 SimiGo）
+```
+
+当前状态：
+
+```text
+边界讨论 = DELIVERED / FREEZE CANDIDATE AT HUMAN
+Current blocker = human 裁定 BR-1..6 冻结范围 + 判据采纳
+    → 之后 b/Y → d 收敛（T4 待 SimiGo 接入）
+```
