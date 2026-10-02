@@ -168,8 +168,9 @@ final class Study {
                         ])
     }
     static func inferDirection(_ b: String, _ a: String) -> String? {
-        guard b.contains("\"alpha\":17") && b.contains("\"mode\":\"quiet\""),
-              a.contains("\"alpha\":42") && a.contains("\"mode\":\"active\"") else { return nil }
+        guard let before = try? JSONSerialization.jsonObject(with: Data(b.utf8)) as? [String: Any],
+              let after = try? JSONSerialization.jsonObject(with: Data(a.utf8)) as? [String: Any],
+              before.description != after.description else { return nil }
         return "S0 → S1"
     }
 }
