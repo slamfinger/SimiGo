@@ -16280,6 +16280,42 @@ T4 = BLOCKED（不变）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
 
+### PHASE 2 OPENED — RELATION BOUNDARY GATE SPEC REGISTERED — 2026-10-02
+
+Phase 1 全链正式收口（终态 = API CLOSED / FIRST IMPLEMENTATION
+ACCEPTED / INTEGRATION PASS / BACKEND INDEPENDENCE PASS /
+PERSISTENCE SEMANTICS PASS / S1–S6 FINALIZED）。
+
+human 开启 **Phase 2 — Relation Boundary Gate**，核心问题 =
+Relation 能否作为 Information 之上的独立语义层存在而不改变
+Information 本身。Spec 已登记（`SIMIGO_LAB_PHASE2_RELATION_
+BOUNDARY_GATE_SPEC_20261002.md`，**SPEC ONLY 零实现**）：
+七个决策点 D1–D7（语义对象 (a) 端点引 Information identity
+vs (b) 自由端点；RelationID 镜像模式——服务树 datetime 盐
+不采纳；不可变+终止后置；独立 RelationStore 边界；受保护五
+文件 diff=0 硬约束；既有 backend 零 Relation 知识；独立
+RelationCore 模块）+ Negative Space 全项延续 + Pass/Fail。
+服务树关键反面观测入档：triple_id 含 datetime 盐 = 非确定性
+不幂等，不采纳进 Core。
+
+节奏 = Spec → human decision → minimal implementation →
+structural audit → runtime evidence → Gate PASS → seal；
+**Spec 阶段零代码**；T4 = BLOCKED 不动；提交本地不推送。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + 契约定稿）
+Phase 2 = RELATION BOUNDARY GATE OPENED（SPEC REGISTERED，
+          AWAITING HUMAN RULINGS D1–D7）
+T4 = BLOCKED（不变）
+Current blocker = human D1–D7 逐项裁定（或整批裁 + 改动点）
+```
+
 ### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
 
 Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
