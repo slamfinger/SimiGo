@@ -156,7 +156,8 @@ private func fail(_ message: String) -> Never {
 }
 
 private func arguments(_ expected: Int) -> [String] {
-    let values = Array(CommandLine.arguments.dropFirst())
+    // Drop the executable and the mode; expected counts are mode operands.
+    let values = Array(CommandLine.arguments.dropFirst(2))
     guard values.count == expected else {
         fail("expected \(expected) arguments, got \(values.count)")
     }
@@ -170,7 +171,9 @@ private func makeScope(informationPath: String, relationPath: String) throws -> 
     )
 }
 
-private let date = Date()
+// Whole-second provenance timestamps round-trip through the frozen Core's
+// ISO-8601 persistence form without changing value equality.
+private let date = Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded())
 
 private func runBaseline() throws {
     let arguments = arguments(4)

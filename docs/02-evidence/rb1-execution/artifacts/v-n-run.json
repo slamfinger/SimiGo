@@ -1,0 +1,1 @@
+{"event":"V-run","run_id":"5FE4F7D7-1E14-4336-8FF8-A2613D309384","pid":"34960","timestamp":"2026-10-02T18:05:13Z","database":"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rb1-execution/artifacts/negative.sqlite","question":"实体 E 自上次观察以来发生了什么外部变化？","fetch_sequence":"","answer":"null","blocker":"relation-not-found"}
