@@ -15289,3 +15289,44 @@ T1 = PINNED / C-6 FIXED（接线层）/ AWAITING FRESH-SESSION
     REOPEN
 Current blocker = human 重新开启 fresh 会话并执行
 ```
+
+### LAB T1 EARLY-PHASE READING — SOURCE-FILE-FIRST, mempalace 0 — INTERPRETATION UNDETERMINED — 2026-10-02
+
+human 判读指示 = 现在不干预；首段读数最有价值处不是
+「mempalace=0」而是「ZCode 已知道 PALACE 工具存在，但拿到
+任务后仍先按普通工作流程处理源文件」——「PALACE 可用」≠
+「Agent 自然把 PALACE 当作工作记忆使用」。
+
+```text
+正式读数（human 格式）：
+  C-6 = PASS（PALACE 工具面成功进入 fresh ZCode session，
+        45 个 mempalace_* 工具在列）
+  T1 early phase = mempalace 0；ZCode 采取源文件优先策略
+    （任务进入 → TodoWrite → documents skill → 读取源文件
+    → 建立自己的分析材料 → mempalace = 0）
+  解释 = 未定
+等待的转折点（human 三分支，全部有效）=
+  A 文件分析→发现不足→MCP→PALACE→继承过去工作
+    （Information Space 被自然使用）
+  B 文件分析→发现不足→自己重新推导→完成任务
+    （Agent 未把 PALACE 当作必要工作记忆）
+  C 文件分析→发现不足→MCP→PALACE→结果质量不好→放弃/
+    绕回文件（C-1..C-5 开始产生实际影响）
+纪律 = 不提醒可用 PALACE / 不告知 B 的 12 条 / 不替它搜索；
+  若 UI 暂停，只批准它自己发起的调用；最终读数看完整
+  action chain（45 个工具被当成什么——搜索引擎/记忆/文件库/
+  工作日志/task manager/知识图谱/完全不用——比 search 次数
+  更有价值）
+前瞻（human，登记不下结论）= 若终局是「工具在列表里但很少
+  主动使用」，则问题不只是 MCP 通信——PALACE 可能需要进入
+  Execution Runtime 的语义，而非外置工具集合——与既有判断
+  接连处；待完整 action chain 才是第一轮真正的碰撞结果
+```
+
+当前状态：
+
+```text
+T1 = RUNNING（会话 sess_a9c6f830；5 records 后暂停中——
+    疑似等待 UI 权限批准；后台监视器已挂）
+Current blocker = 会话恢复推进（human 侧批准/继续）
+```
