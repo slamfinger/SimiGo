@@ -16390,6 +16390,48 @@ T4 = BLOCKED（不变）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
 
+### GATE OPENED — PHASE 2 RELATION PERSISTENCE SEMANTICS GATE — 2026-10-02
+
+human 确认 Relation Boundary Gate PASS + RelationCore 最小实现
+ACCEPTED（Phase 2 状态收口），并开启 **Relation Persistence
+Semantics Gate**（`SIMIGO_LAB_PHASE2_RELATION_PERSISTENCE_SEMANTICS_
+GATE_SPEC_20261002.md`，SPEC ONLY 零实现）：把 RelationStore 从
+「镜像 InformationStore 的实现」升格为 **backend-independent
+contract**——使命题从「RelationStore 能工作」推进到「Relation
+backend 可独立实现零漂移」（Phase 1 Persistence Semantics 的
+Relation 平移复刻）。
+
+契约面 R1–R6 提案登记（= S1–S6 的 Relation 平移，零新语义）：
+R1 new persist / R2 same+same no-op 确认 / **R3 same+conflicting
+no-op first-write-wins（existing 保持权威）** / R4 present 返回 /
+R5 absent nil / R6 failure throw。验证方案 = 双 Relation backend
+（新增 harness 侧 SQLiteRelationStore + 既有 InMemoryRelationStore
+零改动）经同一未改消费者 `any RelationStore` 驱动全项断言 +
+R3 冲突探针 + 受保护八文件 diff 全 0 + 符号/声明审计。
+
+**硬边界（human 逐字锁定）**：禁止泛型超级 Store——
+`Store<Entity>` / `PersistentObject` / `AnySemanticObjectStore` /
+统一超级协议全禁；`InformationStore` 与 `RelationStore` 保持
+平行 boundary；共同抽象若被证明稳定，**另开 Gate**。负空间：
+零查询/遍历/排序/检索/服务树适配 + RelationStore 契约外能力。
+
+Git 纪律：3 个本地提交保持原样不 squash 不 rewrite；本 Spec +
+后续实现成链；推送节奏待 human 指令；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + S1–S6 FINALIZED）
+Phase 2 = RELATION BOUNDARY PASS + RelationCore ACCEPTED
+Next gate = RELATION PERSISTENCE SEMANTICS（SPEC REGISTERED，
+            AWAITING HUMAN GO 进入实现）
+T4 = BLOCKED（不变）
+```
+
 ### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
 
 Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
