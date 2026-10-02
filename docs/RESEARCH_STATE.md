@@ -17236,3 +17236,51 @@ T4 = PASS / STRONG ATTRIBUTION / CLOSED
 T4-2 = CLOSED / REPLICATION PASS
 Next = 等待下一阶段 Gate 指令
 ```
+
+### B GATE OPENED — EXECUTION BOUNDARY SPEC (B-SPEC) DEFINED — 2026-10-03
+
+human 开启 **B Gate（Execution Layer）**，仅授权 B-Spec/Boundary
+Definition（B-Design/B-Impl/B-Execute/Core 改动全未授权）。Gate
+唯一问题：Execution State 与 Information Space 的边界，及二者
+如何形成最小可验证执行闭环。总原则（human 逐字）：候选场景
+（file hash change→before/after→external change→Information
+update）不得反向预埋 InformationCore。
+
+**B-Spec 十问定义登记**（`SIMIGO_LAB_B_GATE_EXECUTION_BOUNDARY_
+SPEC_20261003.md`）：Q1 E 观察面（自身上下文/S4 信息面/R4
+关系面/所辖实体态；不可观察 Physical 内部与他 Execution 私有）
+Q2 E 产生面（新 Information formation + 新 Relation + Core 外
+私有态；不可改已存值，first-write-wins）Q3 Information Space
+恰存两契约面值，零执行态零策略 Q4 Physical↔Information =
+identity 寻址 + first-write-wins + 可替换 backend，物理内部
+不入语义 Q5 provenance 粒度 = **per-formation 非 per-operation**
+（动作日志留 Execution 私有）Q6 external change 可观测定义
+（双观察点表示差异 + formation 不在本 Execution 边界写入内）
+Q7 **before/after 非「Information 变化」**——before=观察引用、
+after=新形成事件、change=Relation（R1–R6 语义内）⇒ 候选环
+零 Core 修改可表达 Q8 Core 外清单（动作日志/观察策略/hash
+机制/retrieval/taxonomy/activation/diary/palace/WAL/MemoryCore/
+超级 Store）Q9 最小验证问题候选 R-B1（cold-start 仅经边界回答
+「E 自上次观察以来发生了什么」，C-N 空边界下不可答）Q10 不入
+本 Gate 清单（R-B1 实现/T4 延伸/各项裁定/palace 重建/SQLite
+终局/MemoryCore/B-Design/B-Impl/B-Execute/改冻结语义）。
+
+**R-B1 登记为候选研究方向非冻结**；是否立项 = Boundary Audit +
+Human Freeze 后的 B-Design 决策。下一阶段 = Boundary Audit
+(human) → Human Freeze → B-Design 另裁。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+B Gate = OPEN / B-SPEC DEFINED（AWAITING HUMAN AUDIT + FREEZE）
+Next = human Boundary Audit → Freeze → B-Design 另裁
+```
