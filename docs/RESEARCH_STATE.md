@@ -15621,3 +15621,57 @@ BR-1..BR-6 行为规则候选 = BR-1 同一事件按生命周期形态分拆
 Current blocker = human 裁定 BR-1..6 冻结范围 + 判据采纳
     → 之后 b/Y → d 收敛（T4 待 SimiGo 接入）
 ```
+
+### LAB PRIVATE/SHARED BOUNDARY FROZEN — Y UNFREEZE REVIEW DELIVERED — 2026-10-02
+
+Human 冻结裁定（`SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_
+20261002.md` §1 逐字）：
+
+```text
+冻结 = BR-1 生命周期形态分拆（不能用「内容相同」推导
+    「必须归同一层」——T1 CJK 已证可分离）/ BR-2 纯连续性
+    元数据归私有（指针/路由/谱系/从哪里继续，主要作用为
+    维持 Execution 连续性者）/ BR-3 产物即 Information
+    （形成可供其他 Execution 复用之产物即入共享层，不要求
+    等到有人需要）/ BR-5 共享空间不自我召唤、读方向需要
+    激活语义（Information 存在 ≠ 当前 Execution 必然读取；
+    私有指针承担激活作用；SimiGo 接入时此问题必须进入
+    Execution→Information 语义边界）——BR-5 为最重要一条
+观察（不否定不冻结）= BR-4 / BR-6（三代单世系单任务域
+    证据不足）
+执行者可替换性测试 = 采纳为操作测试不升格语义定义
+    （脱离当前执行者连续性上下文仍可被另一执行者用于
+    理解/验证/继续/复用 → Information 倾向；主要价值依赖
+    「当前 Execution 如何继续」→ 私有连续性）＋ CJK 特殊性
+    guard（测试非二元内容分类器：发生了什么→共享/
+    以后怎么继续→私有；BR-1 必须保留）
+冻结关系图 = Execution ─┬─ Continuity（私有：pointer/
+    route/lineage/state）─┬─ 激活 Information（共享：
+    fact/artifact/report/history）；核心发现 = 「共享
+    Information 存在 ≠ 当前 Agent 自动知道它存在」（T1–T3
+    实证）
+三限定保留 = n=3 单世系单任务域 / 私有层长期持久性未独立
+    验证 / 冷启动反事实未验证 → T4 不提前
+```
+
+Y 解冻评估（同件 §2，participant 评审件待 human 裁定）：
+Y 冻结原题不变（pending tool state 能否仅靠 Information
+Space 合法恢复）；重估 = ①问题更锐利（BR-2 把进行中状态
+默认归私有——Y 恰测例外情形，成为「冻结边界的例外检验」）
+②防 hardcode guard = BR-2 不得作 Y 先验结论写入判读；行为
+发现只进审计基线零进 A/B 输入 ③激活语义一致（B 提示自带
+续作语义；额外观察位 = 无私有指针时显式续作语义是否足以
+激活）④任务适配 = 原 Y 候选（RQ-G2-1 工具链连续操作）即
+判别力门要求的 ⑥⑦⑧ 形态尤其 ⑧。执行环境决策待裁（推荐
+= 真实 palace 9,372 抽屉——靶状态从未入过 palace，语料
+不平凡回答它，真实载体才检验边界与 Y 的交互）。推荐裁定 =
+Y 解冻为真实 palace 上的工具链续作实验（§12–§14 冻结条款 +
+guards）；d 在 Y 后；T4 继续待 SimiGo（与 Y 正交）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = UNFREEZE REVIEW DELIVERED / AWAITING HUMAN RULING
+Current blocker = human Y 裁定（解冻+环境选项+任务钉定）
+```

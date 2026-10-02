@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_DISCUSSION_DELIVERED / FREEZE_CANDIDATE_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_FROZEN_BR135 / Y_REVIEW_DELIVERED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,13 +462,15 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：私有—共享边界冻结裁定（讨论件已
-   交付——`SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_
-   DISCUSSION_20261002.md`）。human 裁定：①BR-1..BR-6
-   哪些升冻结边界 ②执行者可替换性判据是否采纳 ③冻结后
-   按序列 b/Y 解冻评估 → d 收敛登记（T4 待 SimiGo 接入
-   后才有资格）。纪律不变：不定义 ES；不设计 Schema；
-   不改 MemPalace；L0 只读。
+1. 下一会话第一动作：Y 解冻裁定（评审已交付——
+   `SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_20261002.md`）。
+   human 裁定：①Y 是否解冻 ②执行环境（推荐 = 真实 palace
+   9,372 抽屉）③任务钉定（原候选 Y/RQ-G2-1 工具链连续操作
+   或另指）。解冻后按 §12–§14 冻结条款 + guards 执行（第 0
+   步任务钉定 → A 半程 → B 半程 → S1/S2 + Evidence Table +
+   闭合测试 → human 判读）；d 收敛登记在 Y 后；T4 继续待
+   SimiGo。纪律：零泄漏绝对项（行为发现零进 A/B 输入）；
+   不修 MemPalace；不自研 Schema；L0 只读。
 
 继续区分：
 
@@ -540,3 +542,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 87. 读 T3 结果门裁定与私有—共享边界讨论件：
     - `docs/00-governance/SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_DISCUSSION_20261002.md`
     - ✅ human 选 c：从 T1-T3 真实行为裁边界（T4 缓办防「MemPalace 能力≠Information Space 成立」偷换；序列 c→冻结→b/Y→d→T4 待 SimiGo）；BR-1..6 行为规则候选 + 执行者可替换性判据提案（三代行为零冲突）+ BR-5 动态含义（ES 须携带激活语义）；**待 human 裁定冻结范围 → b/Y → d**
+88. 读边界冻结登记与 Y 解冻评估：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_20261002.md`
+    - ✅ 冻结 = BR-1/2/3/5（BR-5 最重要：共享 Information 存在 ≠ Agent 自动知道它存在，私有指针承担激活）；BR-4/6 留观察；可替换性测试采纳为操作测试（非语义定义，CJK guard 保 BR-1）；三限定保留（T4 不提前）；Y 评审 = 问题更锐利（冻结边界的例外检验）+ 防 hardcode guard + 原候选 Y 任务适配 + 环境推荐真实 palace；**待 human Y 裁定（解冻 + 环境选项 + 任务钉定）→ d 收敛**
