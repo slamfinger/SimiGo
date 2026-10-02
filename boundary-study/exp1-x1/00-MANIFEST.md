@@ -24,9 +24,18 @@ artifacts/  G0-G3 信息侧数据产物原样副本（零新整理）
   corpus-change-rqg3-1.json    ← docs/02-evidence/palace-v2-g1-corpus1/
   t1-mapping-results.json      ← docs/02-evidence/palace-v2-g2-corpus1/
 
-a-deposits/  A 的工作沉淀（A 停止后组装；= A 工作目录全部产出
-  减去 动作日志.md——动作日志归 truth/ 封存）
+a-deposits/  A 的工作沉淀（A 停止后已组装；= A 工作目录全部
+  产出减去 动作日志.md——动作日志归 truth/ 封存）
+  版本差异报告.md（差异明细+证据+版本判断，A 主产出）
+  工作记录.md（过程/判断依据/停止状态/遗留事项）
+  extract_0307.txt / extract_0308.txt（python-docx 结构化提取）
+  extract_0307_textutil.txt / extract_0308_textutil.txt（交叉校验）
+  extract_docx.py（提取脚本）
 ```
+
+> A 停止点形态：A 于约 17 分钟到达**自然完成**（全部差异枚举 +
+> 版本判断完成），前沿 = 遗留事项 1–3，非中途差异条目——
+> 详见 RECORD.md §3 偏离登记。B 放行待 human 裁定。
 
 ## 2. 组成裁定（登记非隐藏）
 

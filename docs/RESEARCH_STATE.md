@@ -14998,3 +14998,56 @@ PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13+§14)
 STEP 0 = NOMINATION PRESENTED / AWAITING HUMAN PIN
 Current blocker = human pin（任务 X 钉定 + A/B 承担方式确认）
 ```
+
+### LAB BOUNDARY STUDY EXP1-X1 STEP 0 PINNED — A HALF-RUN COMPLETE — B RELEASE PENDING HUMAN — 2026-10-02
+
+Human 钉定（逐字登记于实验 RECORD.md）：TASK = X1（0307/0308
+孪生版本差异整理——判别结构最完整：真实文件边界天然明确/真实
+差异与冲突锚点在先/⑥⑦⑧ 自然产生/停止点可构造/Continuation ≠
+Re-solving 可严格判断，「第 k+1 条差异」结构干净）；A = 独立
+新会话（指令只含真实任务——不告知 Boundary Study/S1/S2/Replay
+Cost/ES/PALACE/六项判据）；B = 独立新会话由 Agent 扮演（仅收
+「这是一个已经进行到这里的工作，请继续。」+ 信息空间位置）；
+研究记录者 = 本会话事后行为读数 + human 终审；反泄漏纪律 = 不
+把「应从 Δk+1 开始」告诉 B；附加观察面 = 文件信息 + 对话产生的
+工作信息 + 中间 Execution State 能否共同形成可继续的
+Information Space。
+
+实验工作区 = `boundary-study/exp1-x1/`（授权 commit `e66e723`
+先于 A 工作：MANIFEST 信息空间钉定[含 SHA256、叙事治理记录不
+纳入的组成裁定及理由]/RECORD/truth 任务指令逐字）。
+
+A 半程执行完毕（spawn 13:03–完成 13:21，约 17 分钟/27 工具
+调用，fresh 子代理）：
+
+```text
+A 沉淀（information-space/a-deposits/，7 件）= 版本差异报告.md
+    （主产出：实质差异 5 条 + 非实质差异 7 类，逐条证据）+
+    工作记录.md + 4 个提取文本 + 提取脚本
+真值封存（truth/）= a-task-instruction.md + a-journal.md
+    （动作日志；Evidence Table 完成前不用于判读输入）
+A 判断 = 以 0308 为当前工作依据（5 处差异全部向前修订无一
+    回退/修订谱系 115>110/0307 无 0308 缺失内容——0307 唯一
+    独有 = 5.0384 亿精确值，引用注意在案）
+停止点形态偏离（如实登记，B 放行前交 human）= A 未停在中途
+    差异条目，约 17 分钟到达自然完成；前沿 = 遗留事项 1–3
+    （①0308「水稳场站建设3处」vs 总括「7份」加总不一致
+    [3+1+3+1=8] 需外部核实 ②文件名 0308 vs 内部修改时间
+    2026-04-01 不一致 ③「二(三)开累效益」两版均截至 2025 年
+    末未同步提示）；「任务完成减外部阻塞」= §7 自然停止点；
+    人为制造中途停 = §14.5 反裁剪纪律禁止；Continuation ≠
+    Re-solving 检验仍良定义（B 首个实质动作对照 A 记录前沿
+    vs 重做已完成步骤）；检验面变化 = ⑦「全部完成/无未读
+    区域」信任 vs 复核、⑥「0308 为当前依据」沿用 vs 重判
+    成为最尖锐读数
+B 放行 = 待 human 裁定（可先审 a-deposits 全文）
+```
+
+当前状态：
+
+```text
+EXP1-X1 = STEP 0 CLOSED / A HALF-RUN COMPLETE / TRUTH SEALED /
+    INFORMATION SPACE ASSEMBLED
+Current blocker = human B-release ruling（含停止点形态偏离
+    验收）
+```

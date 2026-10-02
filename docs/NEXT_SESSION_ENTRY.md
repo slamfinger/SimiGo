@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_FROZEN_REVISED_S14 / STEP0_NOMINATED_AWAITING_PIN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_EXP1X1_A_HALF_RUN_COMPLETE / B_RELEASE_PENDING_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -182,6 +182,12 @@
 74. 读设计草案 §14（判据精化 + 设计封笔）与 STEP 0 提名呈现：
     - ✅ S1 可解释/S2 可继续两层（Alive = S2 ✓）；Replay Cost R0–R4 记录现象（正式定义延后）；Continuation ≠ Re-solving 最强 guard（首实质动作 = 停止点下一合法操作）；反裁剪纪律（不为实验成功设计 PALACE 擅长保存的结构）；设计封笔（再改须新 human 方向）
     - ✅ STEP 0 提名 = X1（0307/0308 孪生差异整理）/ X2（S8 缺口闭合）/ Y（RQ-G2-1 验证执行），六项检查全过，推荐 X1；待 human 钉定任务 X + 确认 A/B 承担方式
+75. 读 EXP1-X1 实验记录与 A 半程结果：
+    - `boundary-study/exp1-x1/RECORD.md`（STEP 0 钉定逐字 + A 停止点逐字 + 停止点形态偏离登记）
+    - `boundary-study/exp1-x1/00-MANIFEST.md`（信息空间钉定 + SHA256 + 组成裁定）
+    - `boundary-study/exp1-x1/information-space/a-deposits/`（A 沉淀 7 件，主产出 = 版本差异报告.md）
+    - `boundary-study/exp1-x1/truth/`（封存：A 任务指令逐字 + 动作日志；Evidence Table 完成前不用于判读）
+    - ✅ human 钉定 = X1 / A 独立新会话（任务指令零框架）/ B 独立新会话由 Agent 扮演（仅收接续语 + 信息空间）；授权 commit e66e723 先于 A 工作；A 约 17 分钟自然完成（前沿 = 遗留事项 1–3 非中途差异条目——偏离已登记，检验仍良定义）；**待 human 裁定 B 放行**
 
 ## Current snapshot
 
@@ -450,18 +456,17 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：STEP 0 收口 = human 钉定任务 X（提名在
-   案：X1 = 0307/0308 孪生版本差异整理 / X2 = S8 缺口闭合 /
-   Y = RQ-G2-1 验证执行；六项检查全过，推荐 X1）+ 确认 A/B
-   承担方式（建议 = 独立新会话、任务指令只含任务不含研究
-   框架、污染声明照记）→ A 半程（真实工作 + 完整保存到信息
-   空间，含 ⑥⑦⑧ 类）→ 登记停止点 → B 半程（仅信息空间恢复
-   + 逐项观察）→ Boundary Evidence Table v2（S1/S2 两列 +
-   Replay Cost + continuation/re-solving 判定）+ 真值核对 →
-   结果门 human 判读。设计已封笔（§14.7）；纪律不变：L0 只读；
-   行为记录非自评；「语义未存活 ≠ 属于 ES」闭合测试先行；
-   不增 Schema/数据库设计；不写 PALACE 代码；不修改 SimiGo
-   Execution State。
+1. 下一会话第一动作：EXP1-X1 B 放行裁定（A 半程已完成、真值
+   已封存、信息空间已组装——见 `boundary-study/exp1-x1/`）。
+   human 裁定点：①停止点形态偏离验收（A 自然完成非中途停，
+   前沿 = 遗留事项 1–3；检验仍良定义）②是否放行 B 半程。
+   放行后：B = fresh 子代理，仅收「这是一个已经进行到这里的
+   工作，请继续。」+ 信息空间位置（不告知任务原文/Δk+1/S1S2/
+   Replay Cost/任何框架）；记录 B 首个实质动作（对照 A 前沿 =
+   Continuation vs 重做已完成步骤 = Re-solving）；B 停止后
+   构建 Boundary Evidence Table v2（S1/S2 两列 + Replay Cost
+   + 闭合测试）+ 真值核对 → 结果门 human 判读。设计已封笔；
+   纪律不变：truth/ 封存不作为判读输入；L0 原件不触碰。
 
 继续区分：
 
