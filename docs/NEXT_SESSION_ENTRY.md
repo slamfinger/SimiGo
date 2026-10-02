@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_FROZEN_BR135 / Y_REVIEW_DELIVERED`
+状态：`G3_MAINLINE_CLOSED / Y_UNFROZEN_COUNTEREXAMPLE / A_TASK_READY`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,15 +462,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：Y 解冻裁定（评审已交付——
-   `SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_20261002.md`）。
-   human 裁定：①Y 是否解冻 ②执行环境（推荐 = 真实 palace
-   9,372 抽屉）③任务钉定（原候选 Y/RQ-G2-1 工具链连续操作
-   或另指）。解冻后按 §12–§14 冻结条款 + guards 执行（第 0
-   步任务钉定 → A 半程 → B 半程 → S1/S2 + Evidence Table +
-   闭合测试 → human 判读）；d 收敛登记在 Y 后；T4 继续待
-   SimiGo。纪律：零泄漏绝对项（行为发现零进 A/B 输入）；
-   不修 MemPalace；不自研 Schema；L0 只读。
+1. 下一会话第一动作：双轨推进。轨 1 = Y-A 会话（human 桌
+   面端开 fresh 会话粘贴指令——`boundary-study/y-exp/Y-
+   EXECUTION-REGISTRATION.md` §3）：A 完成后记录者归档停止
+   点 + 真值封存 + 沉淀组装 → B 放行（仅续接语 + 信息空间）
+   → 四观察事实 + S1/S2 + Evidence Table v2（附加四事实列）
+   + 反例判定 → human 判读。轨 2 = Phase 0 MemPalace 源码
+   语义审计 opening（并行不阻塞；protocol 待起草交 human）。
+   d 收敛登记在 Y 后；T4 待 SimiGo。纪律：反例框架（禁把
+   BR-2 当待验证结论）；防硬编码绝对项；L0 只读；不修
+   MemPalace。
 
 继续区分：
 
@@ -545,3 +546,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 88. 读边界冻结登记与 Y 解冻评估：
     - `docs/00-governance/SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_20261002.md`
     - ✅ 冻结 = BR-1/2/3/5（BR-5 最重要：共享 Information 存在 ≠ Agent 自动知道它存在，私有指针承担激活）；BR-4/6 留观察；可替换性测试采纳为操作测试（非语义定义，CJK guard 保 BR-1）；三限定保留（T4 不提前）；Y 评审 = 问题更锐利（冻结边界的例外检验）+ 防 hardcode guard + 原候选 Y 任务适配 + 环境推荐真实 palace；**待 human Y 裁定（解冻 + 环境选项 + 任务钉定）→ d 收敛**
+89. 读 Y 执行登记：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_Y_EXECUTION_20261002.md`
+    - ✅ human：Y 解冻（真实 palace / 原 RQ-G2-1）；重定义 = 寻找 BR-2 反例（非验证 BR-2）；四观察事实 ①②③④；双轨 = Y ∥ Phase 0 源码审计；A 指令零泄漏就绪；**待办 = human 开 fresh 会话粘贴 A 指令 → A 完成后记录者归档+封存+组装 → B 放行 → 四事实+S1/S2+反例判定 → d 收敛**

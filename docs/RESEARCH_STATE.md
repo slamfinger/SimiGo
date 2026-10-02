@@ -15675,3 +15675,34 @@ guards）；d 在 Y 后；T4 继续待 SimiGo（与 Y 正交）。
 Y = UNFREEZE REVIEW DELIVERED / AWAITING HUMAN RULING
 Current blocker = human Y 裁定（解冻+环境选项+任务钉定）
 ```
+
+### LAB Y UNFROZEN — COUNTEREXAMPLE EXPERIMENT REGISTERED — DUAL-TRACK WITH PHASE 0 — 2026-10-02
+
+Human 裁定（`SIMIGO_LAB_PALACE_Y_EXECUTION_20261002.md` 逐字）：
+Y 解冻（不扩大）；环境 = 真实 Palace；任务 = 原 RQ-G2-1
+（表2!E 列万口径验证）不重设计；**Y 严格重定义为「寻找 BR-2
+的反例」而非「验证 BR-2」**（T1–T3 → BR-2 冻结 → Y 主动寻找
+反例；反方向则 T1–T3 结论被偷写进输入）；四个行为观察事实
+为观察登记（①中间状态是否自然形成 ②换 executor 后是否仍有
+价值 ③后继是否需要 activation[连接 BR-5：状态适合共享 ≠
+后继自动知道它存在] ④共享是否破坏 continuation 语义）；
+归档 = 当前形态→是否支持 BR-2→是否形成例外→是否不足以裁定。
+**双轨制 = Y 不再阻塞 MemPalace 源码语义审计**（Boundary
+Freeze ─┬─ Y 边界例外实验 ─┴─ Phase 0 审计 → Swift Core →
+SimiGo → T4）；T4 仍不提前；d 在 Y 后。
+
+Y 执行登记 = A 任务指令逐字（RQ-G2-1 验证表2!E 列万口径
+假设；零泄漏自检过；「登记为待办」= ⑧ 态自然产生位非强制
+中途停——反裁剪纪律）+ 冻结条款继承（§12–§14 全部）+ 新
+guards（反例框架/观察四事实列/防硬编码升级绝对项）+ 机制
+（A fresh 会话 → 停止点归档+真值封存+沉淀组装 → B 仅续接语
++ 信息空间[真实 palace 9,372 基线]→ 四事实 + S1/S2 +
+Evidence Table v2 + 反例判定 → human 判读）。
+
+当前状态：
+
+```text
+Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴）
+Phase 0 = 授权并行（源码语义审计 opening 待起草）
+Current blocker = human 开启 Y-A 会话
+```
