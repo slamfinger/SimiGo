@@ -16672,6 +16672,45 @@ T4 = BLOCKED（实验方案/执行待单独 human 指令）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
 
+### T4 RULED — STRONG PROPOSITION / TASK-DOMAIN BOUNDED — T4 CLOSED — 2026-10-03
+
+human 终裁（`SIMIGO_LAB_T4_RULING_20261003.md` 逐字）：四条件
+全 PASS（T-3 后验未击穿 / AC-1 完成 / AC-2 Information→消费→
+产物时序内容因果链 / AC-3 C-N 零摘要零虚构）⇒ **强命题格，
+T4 = PASS（限定本任务域）**。结论 = Information boundary 是本
+冻结任务域 continuation 的**必要条件**；外延封死 = 不得升级为
+一般 SimiGo continuation 普遍定理。无效触发复核 = 零（预注册
+纪律下无作废/降级触发）。T4 终态 = Design PASS / Pinning PASS+
+HASH FROZEN / Execution PASS / Attribution STRONG PROPOSITION /
+CLOSED。
+
+研究结论链登记（Track D 记忆边界线）：① 语义面（palace 三分
+剥离）② 契约面（S1–S6 ∥ R1–R6 对称、backend-independent、
+first-write-wins）③ 实现面（InformationCore/RelationCore，零
+第三方）④ 结构面（接入/backend 独立/持久化语义三 Gate 结构
+证明）⑤ 因果面（T4 强命题，任务域有界）。
+
+**数据库是实现选择，而不是架构前提；Information boundary 是
+（本任务域已证必要的）continuation 基座。**
+
+下一阶段（跨任务复现/Execution 层/其他）= 待 human 指令另行
+开 Gate；不自行跨 Gate、不扩面；Finding-1 教训与负空间纪律
+继续有效。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION (TASK-DOMAIN BOUNDED) / CLOSED
+Next = 等待下一阶段 Gate 指令
+```
+
 ### GATE OPENED — T4 EXPERIMENTAL DESIGN GATE — 2026-10-02
 
 human 定向（`SIMIGO_LAB_T4_EXPERIMENTAL_DESIGN_GATE_SPEC_20261002.md`，

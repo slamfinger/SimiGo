@@ -657,6 +657,9 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 126. 读 T4 执行结果（原始观测 + 预注册判据归因，human 裁定待）：
     - `docs/00-governance/SIMIGO_LAB_T4_EXECUTION_RESULTS_20261002.md`
     - ✅ **三 run 完成，原始观测封存**：A-run 70s（台账三行算术正确+总额 2195906.84+待办含 identity+零第二阶段产物）；B-E-run 186s（fetch 待办→生成《合同摘要》数值与冻结期望逐项一致→状态登记→自我校验一次瞬时混淆自行纠正）；B-N-run 239s（fetch not-found→工作区/工具/哨兵探测→诚实阻塞报告，零摘要零虚构）；预注册判据读数 = AC-1 ✅ / AC-2 ✅（fetch 先于摘要的时序+取回副本在位）/ AC-3 ✅（C-N 零达等价）/ T-3 后验成立（C-N 零 F1–F6 产出，N-3 未触发）/ 观测附注 4 项诚实登记（B-E 瞬时自校验混淆、B-N 二进制字符串探测与哨兵自写等均在声明环境内）；**归因读数 = 落入强命题格（预注册判据下），最终裁定 = human**；证据归档 docs/02-evidence/t4-execution/（三 run 全量+三库+哈希留档）；T4 语义裁定前不开新 Gate
+127. 读 T4 终裁（STRONG PROPOSITION / TASK-DOMAIN BOUNDED）：
+    - `docs/00-governance/SIMIGO_LAB_T4_RULING_20261003.md`
+    - ✅ **human 终裁：T4 = PASS / STRONG ATTRIBUTION（限定本任务域）**——四条件 T-3/AC-1/AC-2/AC-3 全 PASS，三证据链同时成立（T-3 后验未击穿 / Information→消费→产物 时序内容因果链 / C-N 零摘要零虚构）；结论 = **Information boundary 是本冻结任务域 continuation 的必要条件**；外延封死 = 不得升级为「InformationCore 对一般 SimiGo continuation 必要」；无效触发复核 = 零（B-E 混淆未破坏 AC、B-N 探测无产出、无 F6 触发）；研究结论链登记 = 语义面→契约面→实现面→结构面→因果面五层完整；下一阶段 = 待 human 指令另行开 Gate（跨任务复现/Execution 层等），不自行跨 Gate；T4 继续 BLOCKED→已收口
 124. 读 T4 Task Pinning 草案（DRAFT / NOT FROZEN / NOT EXECUTED）：
     - `docs/00-governance/SIMIGO_LAB_T4_TASK_PINNING_DRAFT_20261002.md`
     - ✅ human 授权记录者起草，草案七件齐备：任务 = 低复杂度强 T-3 采购分配 continuation（A 建立含随机 opaque 事实的分配台账并自然停止 → B 生成合同摘要，正确完成**必须**消费台账事实，非读回复述——B 还需总额与 2% 保证金派生计算）；随机事实 = /dev/urandom 权威批次（SUP-9b47/865671、SUP-93dc/273063、SUP-c1fa/722204；首拍 od 有符号产出负值整批废弃重拍留档）；T-3 论证 = N-1 来源闭包（F1–F6 仅存在于生成记录/A 指令/C-E 沉淀三处，B 通道全无）+ N-2 推导闭包（16-bit hex + 6 位随机整数，高熵零语义，∉ 可推闭包）⇒ **强命题可检**；B 指令逐字节同文含 opaque 待办 identity（C-N fetch=nil）；P-5 消费证据表 / P-6 判据映射（预留 1021491.78/322214.34/852200.72、总额 2195906.84、保证金 43918.14）/ P-7 唯一差异=沉淀有无；执行形态备注（三 run 独立 fresh 进程、C-A 不启用、强命题声明）；**状态 = DRAFT，待 human 最终钉定批准 ⇒ hash 封存；实验执行另行授权**；T4 继续 BLOCKED
