@@ -15951,3 +15951,40 @@ Phase 1 = NOT YET DESIGNED / AWAITING BOUNDARY 裁定
 T4 = BLOCKED（不变）
 Current blocker = human Swift Core 最小边界裁定
 ```
+
+### PHASE 1 CORE BOUNDARY CLOSED — C1–C6 RULED — 2026-10-02
+
+human 六项边缘裁定（`SIMIGO_LAB_PHASE1_CORE_BOUNDARY_RULING_20261002.md`
+逐字）：**C1** KG 三元组不作为 Information 子类型入 Core——
+Relation 语义（subject/predicate/object/provenance）进入冻结面，
+独立建模后置，防 Phase 1 偷渡 KG；**C2** Core 不定义 diary
+schema/接口，仅冻结「事实与续作分离」原则；**C3** activation
+不进 Core、连空接口不预埋（存在 activation ≠ activation 是
+Information）；**C4** identity 概念入 Core、确定性 hash/v3
+recipe 出 Core（identity 是事实，recipe 是产生事实的机制）；
+**C5** WAL 出 Core（persistence/audit 机制）；**C6** checkpoint/
+ack/Layer0-1 全部归 Execution continuity 侧，不入 Information
+Core。
+
+**Phase 1 最小边界正式闭合**：Information(identity/content/
+provenance/temporal) + InformationStore(最小持久化生命周期
+操作) + SQLiteStore(一个 persistence 实现)；排除清单全录；
+Relation/Execution State/Activation = 后续层不预埋接口；
+架构分层图定稿（Execution → Information → InformationStore →
+Persistence）。
+
+下一道门 = **最小 API 裁定**（Information/InformationStore/
+SQLiteStore 的最小 API；语义决定 API，不得反向）；API 裁定
+完成前零 Swift 文件。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API NOT YET DESIGNED
+T4 = BLOCKED（不变）
+Current blocker = human 最小 API 裁定
+```
