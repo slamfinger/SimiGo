@@ -17386,3 +17386,360 @@ B Gate
 T4/T4-2 = CLOSED（原结论零改动）
 Next = human 授权 B-Impl 后进入实现
 ```
+
+### B-RB1 EXECUTED — PREREGISTERED READING PASS — EXTERNAL AUDIT PASS — B TRACK CLOSED — 2026-10-03
+
+B-Impl 落地最小 `ExecutionCore`（单向依赖
+`InformationCore + RelationCore`；两 Core diff = 0）后，human
+授权 B-Execute。`89781f0` 钉定四步结构，`f2143dda` 封存执行
+结果：E-run 真实形成可寻址 before Information `7973612e…`；
+外部编排实施 Physical S0→S1；X-run 经 `.reference(beforeID)`
+形成 after `59d5fe62…` 与 `observed-change-of` Relation
+`869c145e…`；V-E 仅持 DB/relationID/frozen question，按
+`relation→after→before` 取回并精确回答 diff；V-N 空边界得到
+`relation-not-found` 且无法作答。V-AC-1/2/3 PASS，机器检查
+16/16 PASS，C-1…C-5 PASS。外部审计 `3016844` 封口：物理变化
+证据来自外部编排与封存 artifacts，ExecutionCore 不做检测；结论
+仅限预登记四步结构，不扩大为通用 Agent/Memory 必要性。B Track
+CLOSED。
+
+当前状态：
+
+```text
+B-Spec    = FROZEN
+B-Design  = CONFIRMED
+B-Impl    = IMPLEMENTED / AUDITED / PUSHED
+B-Execute = EXECUTED / AUTHORIZED
+R-B1      = EXECUTED / PREREGISTERED READING PASS / EXTERNAL AUDIT PASS
+B Track   = CLOSED
+```
+
+### C GATE OPENED — C-SPEC DRAFT — EXECUTION STATE × INFORMATION SPACE NECESSITY — 2026-10-03
+
+human 建议 B 不继续堆语义，转入 C 轨并先做最小问题定义。
+`SIMIGO_LAB_C_QUESTION_SPEC_20261003.md` 登记为 C-SPEC DRAFT：
+冻结候选问题 **C-Q1 = Execution State 被终止/重启/转移后，哪些
+东西必须存在于 Information Space 中才能继续工作**；最小对照 =
+C-A 只有 Execution State / C-B 加持久 Information 无 Relation /
+C-C 加 Information 加 Relation，三组承受同一 S0→外部变化→进程
+终止→cold start→继续任务骨架；结论只允许在钉定任务与环境中比较
+恢复程度与缺失承载物，禁止扩大为普遍 Agent/Memory/PALACE 必要性。
+本件明确排除 C-Design/C-Impl/C-Execute、Core 修改、Palace schema、
+数据库设计、chat/tool/API/Office 等应用集成，以及任何结果预设。
+
+当前状态：
+
+```text
+B Track    = CLOSED
+C Gate     = OPEN / C-SPEC DRAFT
+C-Q1       = REGISTERED
+C-A/B/C    = REGISTERED MINIMUM CONTROLS
+C-Design   = NOT OPEN
+C-Impl     = NOT AUTHORIZED
+C-Execute  = NOT AUTHORIZED
+Next = human audit + freeze C-SPEC → C-Design 另行授权
+```
+
+### C-SPEC HUMAN AUDIT = CONDITIONAL PASS — REVISE EXECUTED — RE-AUDIT PASS — FROZEN — 2026-10-03
+
+human audit 完成 H-1…H-6：H-1/2/3/5 均 PASS WITH CONDITION，H-6
+PASS，H-4 因原 C-Q1 宽问题提到 transfer 而公共骨架只覆盖
+termination → cold start，判 FAIL AS CURRENTLY WORDED。裁定：
+C-Q1 保留宽研究问题，但本轮实验只取
+`termination → restart → cold start` slice；transfer 显式
+OUT OF SCOPE，不得外推。C-A 可有 Execution State 自身持久化，
+但不得有持久 Information Space；C-B 可持久化任务事实、实体状态、
+执行上下文、todo/progress 与事实性变化描述，但不得有独立持久
+Relation 载体/语义机制；runtime 从多条独立 Information 推导不算
+C-C。三组必须共享任务、输入、S0/S1、外部变化、终止点、cold-start、
+继续任务与成败判据。cold-start 至少要求新进程且无旧进程内存、旧
+ExecutionCore runtime、旧模型上下文/KV 等隐式状态；具体禁止通道归
+C-Design。最小修订已写入 C-SPEC，详细裁定登记
+`SIMIGO_LAB_C_SPEC_HUMAN_AUDIT_20261003.md`。human 复审逐项
+PASS：C-Q1、lifecycle slice、C-A、C-B、公平性、cold start
+(PASS WITH CONDITION)、结论边界、C-Spec 完整性均通过；确认最小
+修订只把宽 C-Q1 与实验 lifecycle slice 分离，未引入新实验设计。
+C-SPEC 正式 FROZEN。C-Design = OPEN / READY / NOT STARTED，只处理
+已登记的 C-A/B/C、cold-start boundary、same-task fairness 与成功
+判据；不得重开 C-Q1 或扩展 PALACE schema、Remote API、Chat/File/
+Tool integration。
+
+当前状态：
+
+```text
+B Track    = CLOSED
+C Gate     = OPEN
+C-Spec     = FROZEN / HUMAN RE-AUDIT PASS
+C-A/B/C    = FROZEN MINIMUM CONTROLS
+Lifecycle  = termination → restart → cold start only
+Transfer   = OUT OF SCOPE
+C-Design   = OPEN / READY / NOT STARTED
+C-Impl     = NOT AUTHORIZED
+C-Execute  = NOT AUTHORIZED
+Next = C-DESIGN ONLY → human confirmation → C-IMPL 另行授权
+```
+
+### C-DESIGN OPENED — LIFECYCLE RECOVERY EXPERIMENT DRAFT — 2026-10-03
+
+按 frozen C-SPEC 开启 C-Design（DESIGN ONLY，零代码/零实现/零执行），
+登记 `SIMIGO_LAB_C_DESIGN_20261003.md`。设计把 C-A/B/C 变成同一
+lifecycle 实验：S0=`{"entity":"E","alpha":17,"mode":"quiet"}`，外部
+编排真实覆盖为 S1=`{"entity":"E","alpha":42,"mode":"active"}`；
+声明观察 S1 后、continuation 评估前终止进程；fresh cold start 只允许
+读取本臂声明持久载体。C-A 仅 ES checkpoint（task/phase/next step，
+禁存实体值、变化叙述、relation pair、最终答案）；C-B 另有 I-TASK、
+I-S0、I-S1、I-PROGRESS 四条独立 Information，且本设计主动不使用
+“变化描述” allowance，禁止 relation row、S0/S1 关系对、已答 diff
+report 或 ES 保存最终 action；C-C 再加 persisted
+`observed-change-of` Relation。continuation 固定评估 task identity、
+before/after state、directional change、next action 五项；禁用通道时
+run=INVALID 而非 arm failure。证据要求 PIDs、退出证明、持久快照、
+scrubbed env、fetch trace 先于 artifact、固定 evaluator 与 artifact
+hash。结论限定该任务、单次外部变化、termination→restart→cold start
+slice 与该 harness；transfer、多变化、PALACE schema、数据库、应用
+集成、Core 修改全部 out of scope。当前等待 human C-Design audit。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = DRAFT / AWAITING HUMAN AUDIT
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = human C-Design audit → CONFIRMED 后 C-Impl 另行授权
+```
+
+### C-DESIGN HUMAN AUDIT = CONDITIONAL PASS — MINIMAL REVISE EXECUTED — 2026-10-03
+
+human C-Design audit 裁定 D-1…D-4/D-7 PASS，D-5/D-6
+PASS WITH CONDITION，D-8 REVISE REQUIRED：原设计允许 C-B 由
+I-S0/I-S1 在 runtime 合法推导 directional change，因此 C-B 通过 X-4
+不能被解释为 persisted Relation 缺陷，也不能预设 C-B/C-C 在 X-4 上
+构成 Relation necessity 对照。最小修订不改 C-SPEC、不削弱 C-B 推理、
+不新增 PALACE/schema/应用集成：明确 X-4 只是 continuation capability
+observation metric；C-B PASS 表示独立 Information 在该任务上足够，
+不推广为 Relation 一般不必要；C-B FAIL 也只表示 Relation 可能贡献，
+不证明它是唯一缺失机制。primary necessity comparison =
+C-A versus C-B/C（persistent Information Space）；C-B versus C-C 在本
+固定任务上为 exploratory，若 C-B PASS 必须诚实登记 Relation 在该任务
+不必要。X-5 的正确 action token
+`REQUEST_HEALTH_CHECK` 已在执行前冻结，不得由执行后主观判断替换；
+forbidden-channel 证据必须可由 declared invocation/environment/
+persistence/carrier-read records 审计，C-Impl 可增强但不能弱化。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = REVISED / HUMAN AUDIT CONDITIONAL PASS / AWAITING RE-AUDIT
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = human C-Design re-audit → CONFIRMED 后 C-Impl 另行授权
+```
+
+### C-DESIGN RE-AUDIT = PASS WITH CONDITION — DESIGN CONFIRMED — 2026-10-03
+
+human C-Design re-audit 通过修订版：D-1 lifecycle chain、D-2
+C-A/B/C boundary、D-3 C-B 不携带预编码 Relation、D-4 C-C Relation
+carrier、D-6 X-1…X-5、D-7 X-4 interpretation、D-8 X-5
+machine-checkability、D-9 primary vs exploratory comparison、D-10 claim
+boundary 均 PASS；D-5 cold-start / forbidden channel 为
+PASS WITH CONDITION。确认结构：primary comparison =
+C-A versus C-B/C，检验 persistent Information Space 是否提供 ES-only
+缺少的恢复能力；secondary exploratory comparison = C-B versus C-C，
+检验 persisted Relation carrier 在固定任务上是否提供独立 Information
+没有的能力。C-A FAIL 且 C-B/C PASS 是合法结果，可登记 Information
+Space 为本实验关键缺失载体，但不得推广 Relation 一般必要性。
+唯一 implementation-time condition：forbidden-channel evidence 必须在
+C-Impl 中通过 declared invocation、environment、persistence、carrier-read
+records 真正可审计；Design confirmation 不等于 forbidden channels
+verified absent。设计确认件
+`SIMIGO_LAB_C_DESIGN_CONFIRMATION_20261003.md` 入档。C-Impl 仍未授权；
+若后续授权，只能实现 confirmed design，不得改变 C-A/B/C、lifecycle
+slice、X-1…X-5、success criteria 或 claim boundary。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = explicit human C-Impl authorization → implementation → C-Impl audit
+```
+
+### C-IMPL AUDIT = FAIL — REVISE REQUIRED — NO EXECUTE — 2026-10-03
+
+C-Impl authorization后，远端分支以五个 commit 实现了
+`trackD-memory/Sources/CContinuationStudy/main.swift`；audit object =
+`1771000b86d3`，audited source SHA-256 =
+`13dbf066…74332f9`。非阻塞验证：release build PASS，既有 ExecutionCore
+tests 4/4 PASS，InformationCore/RelationCore/ExecutionCore protected diff
+against `3016844` = 0 bytes。但 C-Impl Audit 发现 8 个 blocker：
+(1) C-A ES 持久化 `external S0→S1` narrative 和最终
+`REQUEST_HEALTH_CHECK`，污染 ES-only control；(2) C-B `progress`
+Information 同时携带 change narrative 与 X-5 answer，破坏 C-B/C-C
+区分；(3) Information identity 使用手写 raw IDs，绕过机制 minter；
+(4) harness 直接调用 SQLiteStore，绕过 ExecutionScope 消费边界；
+(5) forbidden-channel checks 全部硬编码 false，不满足 C-Design 唯一
+implementation-time condition；(6) prepare 与 observe-after 是不同 CLI
+process，偏离同一 old process 观察 S0/S1 后再终止的 lifecycle chain；
+(7) success 判定不是 frozen X-1…X-5 evaluator，X-2/X-3 只要求 non-nil，
+X-4 只要求任意差异标签；(8) 缺少 Physical source snapshot/hash/declared
+overwrite evidence hooks。C-Execute 未运行。一个未审计的本地 alternative
+实现已 stash 为 `unaudited local CImpl alternative`，不属于本裁决。详见
+`SIMIGO_LAB_C_IMPL_AUDIT_20261003.md` 与
+`docs/02-evidence/c-impl-audit/`。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = IMPLEMENTED / AUDIT FAIL / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+Next = revise C-Impl against confirmed C-Design → C-Impl re-audit
+```
+
+C-Impl Audit 外部 human 独立核对通过，确认
+`1771000b86d3` 的 `FAIL / REVISE REQUIRED` 与 8 blockers 全部成立；
+未纳入 stashed local alternative。最后远端 commit 只把 C-B 比较改成
+sorted JSON deterministic comparison，但仍无条件返回 `S0 → S1`，B-7
+未解决。修订约束已封存：只能增加 audit/detection capability 与 evidence
+machinery，不得新增 Change/Observation semantic type、新 Relation
+mechanism、自动 real-change inference、新 success semantics、新 C-A/B/C
+定义，也不得改变 X-1…X-5 / `REQUEST_HEALTH_CHECK`。下一轮审计对象必须是
+新的可定位 revision commit/diff；stashed implementation 不得混入。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = IMPLEMENTED / AUDIT FAIL / EXTERNALLY CONFIRMED / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = C-Impl revision → new locatable revision diff → C-Impl re-audit
+```
+
+### C-IMPL REVISION AUDIT = FAIL — TWO NEW BLOCKERS — NO EXECUTE — 2026-10-03
+
+对 `aca117163904` 执行 C-Impl Revision Audit。非阻塞机械验证 PASS：
+release build PASS；ExecutionCoreTests 4/4、CContinuationTests 4/4；
+protected Core diff = 0；continuation runtime 中无 answer constants；无
+direct Core store/fetch/raw semantic IDs。上一轮 8 blockers 中 B-1/B-2/
+B-3/B-4/B-6/B-7/B-8 已解决，B-5 的 forbidden-check 内容已改为
+method + observed + passed。但新增两个 blocker：
+R-A1 fresh process 用 `StudyJSON.write` 覆盖同一
+`invocation-evidence.jsonl`，销毁 old process 的 invocation/carrier-write/
+forbidden-channel audit trail；R-A2 C-C Relation 缺失时会 fallback 到
+independent `s0`/`s1` pointers，且 blocker 判定不检查 Relation found，
+因此 C-C 可在 Relation 缺失时仍 full success，掩盖 C-C 载体定义。
+Physical source identity、actual old-process exit、old/fresh marker 保留
+列为 C-Execute orchestration 非阻塞条件。R-C1 未运行，C-Execute 未授权。
+详见 `SIMIGO_LAB_C_IMPL_REVISION_AUDIT_20261003.md` 与
+`docs/02-evidence/c-impl-revision-audit/`。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REVISED / AUDIT FAIL / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = preserve old/fresh evidence + fail closed on missing C-C Relation
+       → C-Impl re-audit
+```
+
+### C-IMPL RE-AUDIT = PASS — EXECUTION AUTHORIZATION PENDING — NO EXECUTE — 2026-10-03
+
+对 `bae68a852cfc` 执行 C-Impl Re-audit，仅审计 R-A1/R-A2 修订与边界保持。
+release build PASS；ExecutionCoreTests 4/4、CContinuationTests 4/4；
+protected Core diff relative to `1771000` 与 `aca1171` 均 0 bytes。
+R-A1 PASS：old process 追加 `invocation-evidence.jsonl`（command=old），
+fresh process 独立写 `continuation-evidence.json`（command=continue），不再
+覆盖 old evidence；old/fresh marker 分离。R-A2 PASS：C-C 缺 Relation
+pointer 或 fetch nil 时记录 `relationMissing`，设置
+`blocker=relation_not_found`，且独立 `s0`/`s1` pointer fallback 被限定为
+`!arm.relationEnabled`；C-B 保持 Information-only。边界检查：answer
+constants 缺席；direct Core store/fetch/raw semantic IDs 缺席；
+ExecutionScope、`makeInformationID`、`RelationMinter` 存在；revision delta
+仅 `CContinuationStudyContinue` 与 `CContinuationSupport`。R-C1 未运行。
+审计 PASS 只表示 implementation 达到执行前门槛，不构成 R-C1 授权。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = AUDITED / PASS
+C-Execute = NOT AUTHORIZED / READY FOR HUMAN AUTHORIZATION REVIEW
+R-C1      = NOT RUN
+Next = explicit human C-Execute authorization gate → R-C1 or remain blocked
+```
+
+### C-IMPL CLOSED / AUDITED PASS — HUMAN IMPLEMENTATION FREEZE — 2026-10-03
+
+human 确认执行前边界并正式冻结已审计 implementation `bae68a852cfc`。
+等待 C-Execute authorization 期间不得继续修改 implementation、保护逻辑、
+logging、test semantics 或实验框架。正式状态：
+`C-Impl = CLOSED / AUDITED PASS`；`C-Execute = READY, BUT NOT AUTHORIZED`；
+`R-C1 = NOT RUN`。PASS 语义保持受限：implementation 满足执行前审计要求，
+不等于 C-Execute 已授权，不等于 forbidden channels 已被实验排除，也不等于
+R-C1 hypothesis 已验证。若后续获得显式 human C-Execute authorization，
+才允许运行 R-C1；结果必须依据 execution evidence 判定，不预设 PASS、
+partial、invariant failure 或新边界问题。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = CLOSED / AUDITED PASS
+C-Execute = READY, BUT NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = explicit human C-Execute authorization → R-C1, otherwise remain frozen
+```
+
+### C-EXECUTE AUTHORIZATION RECORD PREPARED — NOT AUTHORIZED — 2026-10-03
+
+`SIMIGO_LAB_C_EXECUTE_AUTHORIZATION_RECORD_20261003.md` 入档。该执行单锁定
+implementation baseline `bae68a852cfc`、branch
+`codex/execution-state-research-20260929`、old/fresh lifecycle separation、
+R-A1 evidence preservation、R-A2 C-C relation fail-closed、C-B Information-only
+independence、forbidden-channel runtime evidence、physical-change/carrier
+evidence、result classification 和 stop conditions。记录当前状态为
+`READY FOR HUMAN AUTHORIZATION`，`R-C1 = NOT RUN`；未填写 Human
+Authorization，因此 `C-Execute = NOT AUTHORIZED`。该授权单不预授权实验结果，
+也不允许执行期间修改 C-Spec、C-Design、implementation、X-1…X-5 或 semantic
+path。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = CLOSED / AUDITED PASS
+C-Execute = READY, BUT NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = explicit signed human authorization → C-Execute = AUTHORIZED
+```
