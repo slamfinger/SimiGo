@@ -16208,3 +16208,51 @@ Phase 1 = FIRST IMPLEMENTATION ACCEPTED + INTEGRATION BOUNDARY PASS
 Next gate = BACKEND INDEPENDENCE（SPEC 已登记，实现按 SPEC 执行）
 T4 = BLOCKED（不变）
 ```
+
+### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
+
+Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
+GATE_RESULT_20261002.md`）：Backend-2 = InMemoryStore（harness
+侧，完全位于已验收模块外，公共协议 conformance，自带独立配方
+机制侧 minting，代码层零 SQLite 符号）；同一 UpperLayer 类型
+零改动驱动 Backend-2 全链路（form → persist → retrieve →
+absence → 幂等全 PASS）；**跨 backend 交叉验证 = 同一 identity、
+两份 Physical Filing、一个语义事实**——identity 属于 Information，
+不因 backend 重释。K1–K10 全过：四文件 diff vs 5b861c8 全 0；
+K9 代码层 0 命中（4 处注释叙述命中留档处置）；K10 声明级
+审计 0 命中；Build 零警告。
+
+**架构命题获结构证据：数据库是实现选择，而不是架构前提。**
+
+```text
+          Semantic Surface
+                 │
+                 ▼
+        ┌─────────────────┐
+        │ Information     │
+        │ InformationStore│
+        └────────┬────────┘
+                 │ stable boundary
+          ┌──────┴──────┐
+          ▼             ▼
+     SQLiteStore    InMemoryStore
+          │             │
+          ▼             ▼
+     Physical       Physical
+      Filing         Filing
+```
+
+Git 纪律：5 个未推送提交不 squash 不 rewrite，待 human 指令
+成链推送；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = IMPLEMENTATION ACCEPTED + INTEGRATION PASS + BACKEND INDEPENDENCE PASS
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```

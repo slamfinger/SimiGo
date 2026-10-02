@@ -60,3 +60,55 @@ print("PASS I4 duplicate store idempotent")
 print("RUNTIME INVARIANTS I1–I4: ALL PASS")
 print("DBPATH=\(databasePath)")
 print("STRUCTURAL INVARIANTS I5–I8: verified by external audit (grep + sqlite3 CLI) — see gate record")
+
+// ===========================================================================
+// BACKEND INDEPENDENCE GATE (K5–K10): the SAME UpperLayer type, ZERO
+// changes, driving a second Physical Filing backend.
+// ===========================================================================
+
+// ——— Backend-2 composition (its own mechanism-side minting) ———
+let inMemoryStore = InMemoryStore()
+let upperLayerOnBackend2 = UpperLayer(store: inMemoryStore)
+
+let backend2Identity = inMemoryStore.makeInformationID(
+    content: "Backend Independence Gate — 同一 UpperLayer，零改动驱动第二 backend",
+    provenance: Provenance(
+        producedAt: Date(timeIntervalSince1970: 1_790_950_000),
+        producedBy: "integration-upper-layer"
+    )
+)
+
+// K6: full chain through the unchanged UpperLayer type.
+let backend2Information = upperLayerOnBackend2.formInformation(
+    identity: backend2Identity,
+    content: "Backend Independence Gate — 同一 UpperLayer，零改动驱动第二 backend",
+    provenance: Provenance(
+        producedAt: Date(timeIntervalSince1970: 1_790_950_000),
+        producedBy: "integration-upper-layer"
+    ),
+    temporal: nil
+)
+try upperLayerOnBackend2.persist(backend2Information)
+print("PASS K6 UpperLayer → Backend-2 full chain (same type, zero changes)")
+
+// K7: semantic roundtrip on Backend-2.
+let backend2Retrieved = try upperLayerOnBackend2.retrieve(backend2Identity)
+assert(backend2Retrieved == backend2Information, "FAIL K7: Backend-2 roundtrip differs")
+print("PASS K7 semantic roundtrip on Backend-2")
+
+// K8: absence = nil, duplicate store idempotent — on Backend-2.
+let backend2Absent = try upperLayerOnBackend2.retrieve(InformationID(rawValue: "absent-in-memory-000"))
+assert(backend2Absent == nil, "FAIL K8: Backend-2 absence not nil")
+try upperLayerOnBackend2.persist(backend2Information)
+let backend2Again = try upperLayerOnBackend2.retrieve(backend2Identity)
+assert(backend2Again == backend2Retrieved, "FAIL K8: Backend-2 duplicate changed the fact")
+print("PASS K8 absence=nil + idempotent on Backend-2")
+
+// Cross-check: the same Information value persists independently in
+// both backends — identity belongs to the Information, not the store.
+try upperLayerOnBackend2.persist(formed)
+let fromBackend2 = try upperLayerOnBackend2.retrieve(identity)
+assert(fromBackend2 == retrieved, "FAIL: same identity diverged across backends")
+print("PASS cross-backend: one identity, two Physical Filings, one semantic fact")
+
+print("BACKEND INDEPENDENCE K5–K8 + CROSS-BACKEND: ALL PASS")
