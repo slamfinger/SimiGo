@@ -14,6 +14,7 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
+        .library(name: "InformationCore", targets: ["InformationCore"]),
         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
     ],
@@ -23,6 +24,10 @@ let package = Package(
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
     ],
     targets: [
+        .target(
+            name: "InformationCore",
+            path: "trackD-memory/Sources/InformationCore"
+        ),
         .target(
             name: "SimiGoRuntimeContract",
             path: "simigo2-experimental/Sources/SimiGoRuntimeContract"

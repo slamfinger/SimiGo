@@ -16060,3 +16060,32 @@ Phase 1 = BOUNDARY CLOSED / API CLOSED / SWIFT FILES = 0
 T4 = BLOCKED（不变）
 Next gate = human 授权开启「API → 首批 Swift 文件」
 ```
+
+### PHASE 1 FIRST SWIFT FILES IMPLEMENTED — 2026-10-02
+
+IMPLEMENTATION GATE 执行完毕（human 授权）：首批三文件落位
+`trackD-memory/Sources/InformationCore/`——`Information.swift`
+（A1 不可变值 / A2 opaque `InformationID` / A3 provenance 事实
+分组 / A4 `ContentDate` 成对可选 / A5 负空间零预埋）、
+`InformationStore.swift`（B1 store+fetch / B2 幂等 no-op /
+B3 absence=nil 与 failure=throw 分离）、`SQLiteStore.swift`
+(C1 职责三分不暴露 WAL/事务 / C2 `PhysicalFiling` 物理列不
+回流语义 / C3 verbatim 保证 + 机制侧 minting：length-prefixed
+SHA-256 截 24，配方藏于机制层)。单模块零第三方依赖；Package
+接线 target+product。5 项实现内决策登记（可重开）；3 个纯
+实现 bug 修复零语义改动；冒烟全 PASS（mint 确定性 / absence=
+nil / verbatim roundtrip / 幂等 no-op / filing 物理列）；负
+空间复核零泄漏。Swift files = **3**。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API CLOSED / 首批实现完成
+Swift files = 3（BUILD CLEAN / SMOKE ALL PASS）
+T4 = BLOCKED（不变）
+Next gate = human 验收首批实现
+```
