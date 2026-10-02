@@ -600,3 +600,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 106. 读 Backend Independence Gate 结果（PASS）：
     - `docs/00-governance/SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_GATE_RESULT_20261002.md`
     - ✅ **GATE = PASS（K1–K10 全过）**：InMemoryStore.swift（Backend-2，完全位于已验收模块外，公共协议 conformance + 独立配方机制侧 minting + 零 SQLite 代码符号）+ main.swift 扩展 Backend-2 链路与跨 backend 交叉验证；K1–K4 四文件 diff vs 5b861c8 全 0；K6 同一 UpperLayer 类型零改动驱动 Backend-2 全链路 PASS；K7 roundtrip 同值；K8 absence=nil+幂等；**跨 backend 交叉验证 = 同一 identity 两份 Physical Filing 一个语义事实（identity 属于 Information 不因 backend 重释）**；K9 代码层 0 SQLite 符号（4 处命中全为注释叙述，处置在案）；K10 声明级审计 0 命中；Build 零警告；⇒ **架构命题获结构证据：数据库是实现选择，而不是架构前提**；5 个未推送提交待 human 指令成链推送；T4 继续 BLOCKED
+107. 读 Persistence Semantics Gate Spec（GATE OPENED）：
+    - `docs/00-governance/SIMIGO_LAB_PHASE1_PERSISTENCE_SEMANTICS_GATE_SPEC_20261002.md`
+    - ✅ human 定向：不再证明「能换数据库」（重复证据收益递减），改锁 **InformationStore 行为契约**——目标 = 未来 backend 独立实现而零语义漂移；契约面 S1–S6（new/present/absent/same-value 已证；**S3 same identity + conflicting value = 待裁核心**）；当前双 backend 行为一致属实现巧合非裁定契约，不锁定则未来漂移；裁定面 = ① first-write-wins（B2 冻结文本无条件适用，显式 codify 零重开）vs ② reject/throw（需重开修正 B2，store 变值依赖）vs ③ overwrite/merge（与 A1/C3 冲突，不在裁定面内）；记录者预分析 = identity 为自身事实确定性派生，同 identity+不同内容是语义矛盾态，① 为契约澄清、② 为语义修订，代价不对称；**待 human 裁定后实施冲突链路双 backend 验证**；不加新 backend（违反不扩面）；不推送（成链待 Gate 完成）；T4 继续 BLOCKED

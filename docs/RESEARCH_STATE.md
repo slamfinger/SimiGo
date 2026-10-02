@@ -16209,6 +16209,38 @@ Next gate = BACKEND INDEPENDENCE（SPEC 已登记，实现按 SPEC 执行）
 T4 = BLOCKED（不变）
 ```
 
+### GATE OPENED — PHASE 1 PERSISTENCE SEMANTICS GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_PHASE1_PERSISTENCE_SEMANTICS_GATE_SPEC_20261002.md`）：
+不再证明「能换数据库」，改锁 **InformationStore 行为契约**——
+命题 = 稳定边界的行为契约须明确到未来 backend 可独立实现而
+**零语义漂移**。契约面 S1–S6：new identity / same+same /
+fetch present / fetch absent / storage failure 均已证；**S3 =
+same identity + conflicting value 待裁**（当前双 backend 行为
+一致是实现巧合：INSERT OR IGNORE / 字典保留先存，非裁定契约）。
+
+裁定面：① first-write-wins（B2 冻结文本无条件适用 = 显式
+codify，零重开）② reject/throw（重开修正 B2，store 变值依赖）
+③ overwrite/merge（与 A1/C3 冲突，不在裁定面）。记录者预分析：
+identity 为自身事实的确定性派生 ⇒ 同 identity + 不同内容 =
+语义矛盾态（出现即 formation/recipe 误用）⇒ ① 是澄清、② 是
+修订，代价不对称。
+
+Gate 纪律：不加新 backend；不推送（Gate 完成后 d2a1ea7→本
+Gate 成链一次推送）；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = 三 Gate PASS + PERSISTENCE SEMANTICS OPENED（S3 待裁）
+T4 = BLOCKED（不变）
+Current blocker = human S3 冲突情形裁定（①/②/另述）
+```
+
 ### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
 
 Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
