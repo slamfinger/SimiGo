@@ -139,16 +139,28 @@ B 输入边界（human 逐字钉死）= 仅「这是一个已经进行到这里�
   FROZEN
 ```
 
-## 5. B 半程记录（spawn 后回填）
+## 5. B 半程记录（已完成）
 
 ```text
-B spawn 时间 = （回填）
-B 完成时间 = （回填）
-B 输入逐字 = （回填）
-B 首个实质动作 = （回填——自 transcript 动作链提取）
-B 动作链 = （回填——tools/extract_agent_actions.py 输出）
-B 产出清单 = （回填——b-workspace/）
-真值启封 = （回填——B 完成即恢复探针全部完成，truth/ 转入
-  归属核对可用）
+B spawn 时间 = 2026-10-02 13:34（commit 9dff5d0 后，后台 fresh 子代理）
+B 完成时间 = 2026-10-02 13:51（约 16.5 分钟 / 28 工具调用）
+B 输入逐字 =
+  「这是一个已经进行到这里的工作，请继续。
+  工作资料位于：…/exp1-x1/information-space/
+  你的工作产出目录：…/exp1-x1/b-workspace/
+  除上述工作资料与你的产出目录外，不要读取其他任何文件。」
+B 首个实质动作 = 通读空间全部 12 文件后，首个工作决策 =
+  「先独立复核存款结论的载荷部分，再做前会话没做的 0308
+  内部数字自洽性核查，最后更新遗留清单」（完整动作链见
+  observation/b-action-chain.txt）
+B 产出清单（b-workspace/）= 核查与续作报告.md / 工作记录-续.md /
+  verify_diffs.py / consistency_check.py / dump_tables_xml.py /
+  verify/（5 个证据文件）
+B 停止点 = 「文件内部可做的比对与数字核查已全部完成，无未读
+  区域、无未复核差异」+ 8 条外部核实/确认项（工作记录-续.md）
+真值启封 = B 完成 = 恢复探针全部完成；truth/（A 任务指令 +
+  A 动作日志）转入归属核对，核对结果见 RESULTS.md §4
+结果材料 = RESULTS.md（Boundary Evidence Table v2 七行 +
+  Continuation/Re-solving 判定 + F-1..F-6 发现 + 结果门待裁）
 ```
 

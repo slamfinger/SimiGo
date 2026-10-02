@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_EXP1X1_A_HALF_RUN_COMPLETE / B_RELEASE_PENDING_HUMAN`
+状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_EXP1X1_COMPLETE / RESULTS_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -188,6 +188,12 @@
     - `boundary-study/exp1-x1/information-space/a-deposits/`（A 沉淀 7 件，主产出 = 版本差异报告.md）
     - `boundary-study/exp1-x1/truth/`（封存：A 任务指令逐字 + 动作日志；Evidence Table 完成前不用于判读）
     - ✅ human 钉定 = X1 / A 独立新会话（任务指令零框架）/ B 独立新会话由 Agent 扮演（仅收接续语 + 信息空间）；授权 commit e66e723 先于 A 工作；A 约 17 分钟自然完成（前沿 = 遗留事项 1–3 非中途差异条目——偏离已登记，检验仍良定义）；**待 human 裁定 B 放行**
+76. 读 EXP1-X1 B 半程结果与 Boundary Evidence Table v2：
+    - `boundary-study/exp1-x1/RESULTS.md`（结果门材料）
+    - `boundary-study/exp1-x1/RECORD.md` §4–§5（B 放行裁定逐字 + B 运行事实）
+    - `boundary-study/exp1-x1/observation/b-action-chain.txt`（B 完整动作链，仪器先于 spawn 提交）
+    - `boundary-study/exp1-x1/b-workspace/`（B 产出：核查与续作报告.md 等 12 件）
+    - ✅ human 双裁定 = 停止点形态 ACCEPT + B RELEASED（输入 = 仅续接语 + 信息空间）；B 通读空间后「先复核存款载荷再做新核查」→ 抓到存款提取折叠缺陷 + 「须回引 0307」错误判断 → 0308 自洽核查 28 项 → 遗留清单 3→12 条；判定 = 验证式重做→真续作（混合形态）；表七行归属 + F-1..F-6 发现（F-2 信任不随保存传递 / F-4 显式待办 = 最强存活形态 / F-5 最小条件候选 (c) 可信性保证不在信息本身——本实验信息可闭合，ES 候选化条件指向候选 Y）；**待 human 结果门判读**
 
 ## Current snapshot
 
@@ -456,17 +462,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：EXP1-X1 B 放行裁定（A 半程已完成、真值
-   已封存、信息空间已组装——见 `boundary-study/exp1-x1/`）。
-   human 裁定点：①停止点形态偏离验收（A 自然完成非中途停，
-   前沿 = 遗留事项 1–3；检验仍良定义）②是否放行 B 半程。
-   放行后：B = fresh 子代理，仅收「这是一个已经进行到这里的
-   工作，请继续。」+ 信息空间位置（不告知任务原文/Δk+1/S1S2/
-   Replay Cost/任何框架）；记录 B 首个实质动作（对照 A 前沿 =
-   Continuation vs 重做已完成步骤 = Re-solving）；B 停止后
-   构建 Boundary Evidence Table v2（S1/S2 两列 + Replay Cost
-   + 闭合测试）+ 真值核对 → 结果门 human 判读。设计已封笔；
-   纪律不变：truth/ 封存不作为判读输入；L0 原件不触碰。
+1. 下一会话第一动作：EXP1-X1 结果门 human 判读（A/B 半程全
+   部完成、真值已核对、Evidence Table v2 七行构建完毕——见
+   `boundary-study/exp1-x1/RESULTS.md`）。裁定项：①表七行
+   归属验收（行 5/7 = 信息侧记录缺陷归类）②F-1..F-6 定性
+   （F-2 信任不随保存传递 / F-3 记录-现实缺口 CF-① 谱系 /
+   F-4 显式待办 = 最强存活形态 / F-5 最小条件候选）③下一步
+   方向：四 case 全量（Case-2/Case-4）/ 候选 Y（「工具调用后
+   未完成态」= F-5(c) ES 候选化条件的靶点）/ 或带发现进入
+   「PALACE 到底需要保存什么」的设计讨论。纪律不变：设计封笔
+   （§14.7）；L0 原件不触碰；不增 Schema/数据库设计。
 
 继续区分：
 
