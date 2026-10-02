@@ -15454,3 +15454,48 @@ T2 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
     SESSION EXECUTION（human 桌面端开启）
 Current blocker = human 开启 fresh 会话并粘贴 T2 指令
 ```
+
+### LAB T2 EXECUTED — R1: READ PATH ACTIVATED BY TASK STRUCTURE — PALACE LIFECYCLE ROLE IS TASK-FRAME-DEPENDENT — 2026-10-02
+
+T2 极小对照终局（`SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_
+20261002.md`；收尾报告已固化 evidence，SHA256 73f8ef6c…）：
+**R1 成立（完整形态）**——human 转交会话自述，记录者经 rollout
+逐条核实：6 次搜索两阶段（t1 定位前沿 2 次[第二轮查询由第一轮
+结果长出] + t8 定向探测 4 次[宣布「仍需编制人」前先探语料，
+其中 1 项获文外旁证：4 月平衡报告开累营收 41,348.32（3月末）<
+汇报 46,338（自称 2025 年末）单调性矛盾→palace 语料被用作
+证据来源]）+ t21 checkpoint 一次；palace 9,365→9,369（自建
+wing_zcode + 数据核查收尾 room）；混合通道 = palace 搜索 +
+直读 conversations 原文 + git 历史（自行声明并渠道归因）。
+
+```text
+单一问题答案 = 是——任务结构携带历史未完成工作依赖时读
+    路径自然激活（无人工告知查 palace）
+F-8 精化 = palace 语义角色是任务框架的函数：self-contained
+    任务 → 仅 post-hoc archive（T1）；continuation 任务 →
+    pre-execution 定位前沿 + mid-execution 定向探测 +
+    post-execution checkpoint 三段全激活（T2）——语义在
+    任务结构里，不在工具里
+继承质量 = B12 × T1 17 → 18 问题族无遗失；约 40 项复算
+    全绿（复用且核验，B/T1 结论无一需修正）；T1 缺失的
+    方法层（元数据取证）经 B 记录点名后恢复；字节链
+    d12e06ee 跨三代一致（palace 记录用于完整性对账）
+新发现 6 项 = 三层日期/质保金 2%·1.5% 重建→表2缺8方向/
+    损耗率收敛 5 行/4.9% 文内候选解释/表5 全需求口径/
+    平衡报告单调性矛盾
+G-5 透明度 = git 可见性自声明 + 逐证据渠道归因 + 未审计
+    范围自我圈定（provenance 式纪律自发出现）
+G-6 诚实限定 = n=1；「提及过去工作」即操纵变量（by design）；
+    三渠道贡献无法完全分离
+结果门候选 = a 第三轮检验激活必要条件（去「此前工作」表述）/
+    b 并入 Y 探针设计（读方向语义=续作任务函数，正是 Y 靶心）/
+    c Information Space 在 Execution 生命周期各阶段的语义地位
+    架构讨论 / d 多任务归纳
+```
+
+当前状态：
+
+```text
+T2 = EXECUTED / R1 / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```

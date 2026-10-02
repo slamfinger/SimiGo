@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / T2_DESIGN_REGISTERED / AWAITING_FRESH_SESSION_EXECUTION`
+状态：`G3_MAINLINE_CLOSED / T2_EXECUTED_R1 / RESULTS_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,14 +462,12 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：T2 极小对照执行（设计已登记，human 在
-   桌面端开 fresh 会话粘贴指令——登记件 §3）。完成后读数：
-   完整 action chain（读向 mempalace_search/get_* 与写向
-   checkpoint/add_drawer 分开统计）→ 三分支判定（R1 读激活 /
-   R2 零读=默认路径缺失强证据 / R3 读但绕回=碰撞生效）→
-   收尾报告对照 B 的 12 条与 T1 的 17 条 → palace 增量对照
-   基线 9,365 → human 判读。纪律：Agent 问清单位置不得指向
-   palace；不干预；不修 MemPalace；不自研 Schema。
+1. 下一会话第一动作：T2 结果门 human 判读（R1 成立——见
+   `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_
+   20261002.md`）。裁定项：①R1 验收 + G-1..G-6 定性（含
+   F-8 精化为「任务框架依赖」）②下一步：a 第三轮检验激活
+   必要条件 / b 并入 Y 探针设计 / c 生命周期语义架构讨论 /
+   d 多任务归纳。纪律不变。
 
 继续区分：
 
@@ -527,3 +525,7 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 83. 读 T1 结果门裁定与 T2 极小对照设计：
     - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T2_MINIMAL_CONTROL_20261002.md`
     - ✅ human：F-set 验收（F-8 头条 = post-execution archive 非 continuation substrate；「会存，不会主动取」）；问题升级（什么条件下 Information Space 成为 Execution 必要信息来源）；c 不做；T2 = 续作型任务（「接手收尾」，指令零泄漏），三分支预注册 R1/R2/R3；**待办 = human 开 fresh 会话粘贴 T2 指令 → 完成后读数（读向/写向分开 + 三分支判定 + 对照 B12/T117 + palace 基线 9,365）**
+84. 读 T2 极小对照终读数：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_20261002.md`
+    - 证据：`docs/02-evidence/palace-realwork-t1/收尾报告_秦沈0308数据核查_20261002.md`
+    - ✅ R1 成立：读路径由任务结构自然激活（t1 定位前沿 2 搜索 + t8 定向探测 4 次 + t21 checkpoint）；palace 语义角色 = 任务框架的函数（T1 archive-only vs T2 三段全激活）——「语义在任务结构里，不在工具里」；继承质量 = 18 问题族合并无遗失 + 40 项复算全绿 + 方法层经 B 记录恢复；**待 human 结果门判读（a 激活必要条件第三轮 / b 并入 Y 探针 / c 生命周期语义架构讨论 / d 多任务归纳）**
