@@ -16714,3 +16714,41 @@ Next gate = SIMIGORUNTIME FORMAL INTEGRATION
             （SPEC REGISTERED，AWAITING HUMAN RULINGS 1–5）
 T4 = BLOCKED（不执行）
 ```
+
+### SIMIGORUNTIME FORMAL INTEGRATION GATE — DECISIONS SEALED — 2026-10-02
+
+human 五项裁定封存（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_
+DECISIONS_SEALED_20261002.md` 逐字）：**1 = (b) 新薄 target
+SimiGoRuntimeMemory**（本 Gate 目标 = 正式接入而非重设计
+contract 层；SimiGoRuntimeContract 保持纯 contract 零外部依赖；
+既有 ExecutionState/Continuity/RuntimeBackend contract 不因名字
+相邻被并入——A5 更易零变化）；**2 = (a) 直接消费 any
+InformationStore**（加 facade = 新语义接口，须回答一一对应/
+错误语义/重包装 S1–S6/第二套 memory contract——均非本 Gate
+问题；正式接入只消费既有 InformationStore 不重新解释）；
+**3** InformationCore 零 SimiGo 知识（硬规则确认）；**4 = (a)**
+SimiGo2Experimental 本 Gate 零接入（防正式边界与实验线绑定）；
+**5 = (c) 未提交本地 path dependency 过渡**——(b2) 独立包终态
+另立小 Gate 重验 A1–A10/dependency integrity；**path dependency
+不得写成最终架构承诺**。
+
+最小实现六项：薄 target / path dep / 最小消费点 / 直持
+any InformationStore / S1–S6 形状验证 / 不改既有 contract。
+通过 ⇒ 登记 FORMAL INTEGRATION PASS；T4 不因本 Gate 自动开放。
+5(c) 纪律：path dependency 保持 SimiGo 仓未提交工作区态，完整
+diff 归档 Lab 证据目录。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+Next gate = SIMIGORUNTIME FORMAL INTEGRATION
+            （DECISIONS SEALED，最小实现中）
+T4 = BLOCKED（不因本 Gate 自动开放）
+```
