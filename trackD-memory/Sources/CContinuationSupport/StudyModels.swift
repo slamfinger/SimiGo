@@ -288,6 +288,7 @@ public enum StudyPaths {
     public static func information(_ root: URL) -> URL { root.appendingPathComponent("information.sqlite") }
     public static func relation(_ root: URL) -> URL { root.appendingPathComponent("relation.json") }
     public static func evidence(_ root: URL) -> URL { root.appendingPathComponent("invocation-evidence.jsonl") }
+    public static func continuationEvidence(_ root: URL) -> URL { root.appendingPathComponent("continuation-evidence.json") }
     public static func awaitingMarker(_ root: URL) -> URL { root.appendingPathComponent("awaiting-external-overwrite.json") }
     public static func terminationMarker(_ root: URL) -> URL { root.appendingPathComponent("old-process-terminated.json") }
     public static func freshProcessMarker(_ root: URL) -> URL { root.appendingPathComponent("fresh-process-started.json") }

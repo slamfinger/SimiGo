@@ -90,6 +90,7 @@ do {
     var progress: Information?
     var before: Information?
     var after: Information?
+    var relationMissing = false
 
     if arm.relationEnabled, let boundary = scope, let relationID = checkpoint.carrierPointers["relation"] {
         let identity = RelationID(rawValue: relationID)
@@ -103,7 +104,11 @@ do {
         if let relation {
             after = try observeInformation(label: "I-S1", identity: relation.subject)
             before = try observeInformation(label: "I-S0", identity: relation.object)
+        } else {
+            relationMissing = true
         }
+    } else if arm.relationEnabled {
+        relationMissing = true
     }
 
     if arm.informationEnabled, let boundary = scope {
@@ -120,11 +125,13 @@ do {
                 identity: InformationID(rawValue: identity)
             )
         }
-        if before == nil, let identity = checkpoint.carrierPointers["s0"] {
-            before = try observeInformation(label: "I-S0", identity: InformationID(rawValue: identity))
-        }
-        if after == nil, let identity = checkpoint.carrierPointers["s1"] {
-            after = try observeInformation(label: "I-S1", identity: InformationID(rawValue: identity))
+        if !arm.relationEnabled {
+            if before == nil, let identity = checkpoint.carrierPointers["s0"] {
+                before = try observeInformation(label: "I-S0", identity: InformationID(rawValue: identity))
+            }
+            if after == nil, let identity = checkpoint.carrierPointers["s1"] {
+                after = try observeInformation(label: "I-S1", identity: InformationID(rawValue: identity))
+            }
         }
     }
 
@@ -138,7 +145,10 @@ do {
     if let afterSnapshot {
         nextAction = charter?.continuationRule.action(for: afterSnapshot)
     }
-    let blocker = (charter == nil || beforeSnapshot == nil || afterSnapshot == nil) ? "missing_allowed_carrier" : "none"
+    var blocker = (charter == nil || beforeSnapshot == nil || afterSnapshot == nil) ? "missing_allowed_carrier" : "none"
+    if arm.relationEnabled && relationMissing {
+        blocker = "relation_not_found"
+    }
 
     let report = ContinuationReport(
         schemaVersion: "c-impl-report-v2",
@@ -217,13 +227,13 @@ do {
         sourceLegality: true,
         auditObservations: audit
     )
-    try StudyJSON.write(evidence, to: StudyPaths.evidence(root))
-        try StudyJSON.write(
-            ProcessMarker(
-                phase: "fresh_process_started",
-                pid: process.processIdentifier,
-                timestamp: Date()
-            ),
+    try StudyJSON.write(evidence, to: StudyPaths.continuationEvidence(root))
+    try StudyJSON.write(
+        ProcessMarker(
+            phase: "fresh_process_started",
+            pid: process.processIdentifier,
+            timestamp: Date()
+        ),
         to: StudyPaths.freshProcessMarker(root)
     )
     print(String(decoding: try StudyJSON.data(report), as: UTF8.self))
