@@ -15420,3 +15420,37 @@ F-8 自建碰撞账 = C-R1..C-R3 自发登记
 T1 = EXECUTED / REVISED READING AT HUMAN（B+终点回写）
 Current blocker = human 结果门判读 + 下一步方向
 ```
+
+### LAB T1 RESULT GATE RULED — F-8 HEADLINE — T2 MINIMAL CONTROL DESIGNED — 2026-10-02
+
+Human 结果门裁定：本轮定性 = 「实验本身产生了新信息」；F-set
+验收（F-1′/F-5′/F-7/**F-8 = PALACE 当前主要表现为 post-
+execution archive 而非 continuation substrate——本轮头条**）；
+精确表述 = 「会存，不会主动取」（post-hoc information sink ≠
+pre/mid-execution information source）；关键证据等级判定 =
+「palace used? NO for analysis…」自评比 calls=0 信息量大得多
+（知道是什么/知道可用/有意识决定不读）；问题升级 = 「什么
+条件下，Information Space 才会被 Agent 判断为当前 Execution
+的必要信息来源？」；F-7 连接 SimiGo Information Space 边界
+（个人继续执行所需 ≠ 共享空间信息）；c 不做（太早——先不要
+替它解决）；纪律 = 现在不要让 PALACE 变强，先看 Execution
+为什么只会「记下来」却不会「从那里继续」。
+
+T2 极小对照设计（`SIMIGO_LAB_PALACE_REALWORK_T2_MINIMAL_CONTROL_
+20261002.md`）：单一问题（human 冻结）= 「当任务本身明确具有
+历史未完成工作依赖时，Agent 是否会自然激活 PALACE 的读路径？」；
+T1 self-contained vs T2 NOT self-contained（current task +
+previous frontier + unresolved items）；三分支预注册（R1 读
+激活/R2 仍零读[默认路径缺失的强证据]/R3 读但质量差[substrate
+碰撞生效]）；任务指令零泄漏自检过（提及过去工作存在=实验
+变量本身；零提 palace/位置/数量）；空间前置 = 9,365 drawers
+（EXP1 会话记录含 B 12 条清单 + T1 checkpoint 沉淀）；
+纪律 = Agent 若问清单在哪，human 不得指向 palace。
+
+当前状态：
+
+```text
+T2 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
+    SESSION EXECUTION（human 桌面端开启）
+Current blocker = human 开启 fresh 会话并粘贴 T2 指令
+```
