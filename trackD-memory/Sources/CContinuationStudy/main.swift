@@ -158,11 +158,13 @@ struct CContinuationStudy {
         let informationStore = try invocation.arm.informationEnabled
             ? SQLiteStore(path: StudyPaths.information(root).path)
             : nil
-        let relationStore = try invocation.arm.relationEnabled
+        let relationStore: any RelationStore = try invocation.arm.relationEnabled
             ? RelationFileStore(path: StudyPaths.relation(root))
-            : nil
+            : DisabledRelationStore(
+                reason: "C-B is Information-only; Relation persistence is disabled"
+            )
         let scope = try invocation.arm.informationEnabled
-            ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore!)
+        ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore)
             : nil
 
         var pointers: [String: String] = [:]

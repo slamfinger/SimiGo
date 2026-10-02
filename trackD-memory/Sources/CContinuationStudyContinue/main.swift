@@ -64,11 +64,13 @@ do {
     let informationStore = try arm.informationEnabled
         ? SQLiteStore(path: informationURL.path)
         : nil
-    let relationStore = try arm.relationEnabled
-        ? RelationFileStore(path: relationURL)
-        : nil
+        let relationStore: any RelationStore = try arm.relationEnabled
+            ? RelationFileStore(path: relationURL)
+            : DisabledRelationStore(
+                reason: "C-B is Information-only; Relation persistence is disabled"
+            )
     let scope = try arm.informationEnabled
-        ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore!)
+        ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore)
         : nil
 
     func observeInformation(label: String, identity: InformationID) throws -> Information? {

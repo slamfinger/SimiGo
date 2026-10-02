@@ -490,3 +490,26 @@ public final class RelationFileStore: RelationStore {
         records[identity.rawValue]?.relation
     }
 }
+
+/// An execution-side guard for arms that must not possess a Relation carrier.
+/// Any accidental Relation use fails closed; it never persists, returns a
+/// Relation, or supplies Relation semantics.
+public final class DisabledRelationStore: RelationStore {
+    private let reason: String
+
+    public init(reason: String = "Relation persistence is disabled for this arm") {
+        self.reason = reason
+    }
+
+    public func store(_ relation: Relation) throws {
+        throw StudyError.invalidState(
+            "disabled Relation carrier refused write (\(reason)); identity=\(relation.identity.rawValue)"
+        )
+    }
+
+    public func fetch(by identity: RelationID) throws -> Relation? {
+        throw StudyError.invalidState(
+            "disabled Relation carrier refused read (\(reason)); identity=\(identity.rawValue)"
+        )
+    }
+}

@@ -78,7 +78,13 @@ let package = Package(
         ),
         .testTarget(
             name: "CContinuationTests",
-            dependencies: ["CContinuationSupport", "CContinuationEvaluatorCore"],
+            dependencies: [
+                "CContinuationSupport",
+                "CContinuationEvaluatorCore",
+                "ExecutionCore",
+                "InformationCore",
+                "RelationCore",
+            ],
             path: "Tests/CContinuationTests"
         )
     ]
