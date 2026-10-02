@@ -15376,3 +15376,47 @@ F-1..F-6 = F-1「有工具 ≠ 会变成工作记忆」实证 / F-2 方法层
 T1 = EXECUTED / BRANCH B / RESULTS AT HUMAN
 Current blocker = human 结果门判读 + 下一步方向
 ```
+
+### LAB T1 TERMINAL READING REVISED — ANALYSIS-SIDE B + END-OF-SESSION CHECKPOINT — 2026-10-02 15:46
+
+Human 提示「已完成，查看分析」后发现终局比过早收敛判定更丰富：
+会话在视觉 QA 通过后继续收尾——t8 写私有 agent memory（
+LibreOffice CJK 渲染陷阱+修法），t9 **mempalace_checkpoint 一发
+三连**（diary 会话记录 + 数据澄清函 drawer[17 条工作记录全文，
+自造 room 名] + 环境备忘 drawer[CJK 陷阱]），palace 9,362 →
+9,365。checkpoint diary **自评原语**：「palace used?NO for
+analysis (task self-contained, deliberately worked from source
+doc only) | wrote back: this record + env lesson」，并自发维护
+碰撞账 C-R1..C-R3（渲染管线缺陷，与本研究 collision ledger
+实践同构，未被告知）。
+
+修订登记：`SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_REVISION_
+20261002.md`（checkpoint 全参数存 evidence/checkpoint-content.txt）。
+
+```text
+F-1′ 终局形态 = 「B + 终点回写」：分析端从未消费 palace
+    （deliberately 自认），归档端收尾一次性 checkpoint——
+    palace 实际语义角色 = 会话终点存档柜，非可续接工作记忆
+F-5′ 语义错位精化 = Agent 知道 palace 到能在 diary 自评
+    「used? NO」并给理由——它有「可选外部存档+收尾仪式」
+    语义模型，但「开工前先查过去」的读方向从未激活；
+    行动性教训写私有 memory、共享性记录写 palace——
+    「为了继续而需要的记忆」住私有层 = 「PALACE 需进入
+    Execution Runtime 语义」的行为级支撑数据
+F-7 双通道存忆 = 同一课同时进私有 memory（可行动版）与
+    palace 环境备忘（可共享版）——「记给自己用」与
+    「记给别人看」已分离
+F-8 自建碰撞账 = C-R1..C-R3 自发登记
+七问终答 = ⑥ 改为 checkpoint 一发三连；⑦ 改为 palace 首次
+    真实增量 +3 抽屉（接手者可续）；余同前
+诚实限定增补 = pre-compaction 中段读路径无法完全排除，但
+    交付物自述与 checkpoint 自评双重自证一致指向零读取
+结果门候选不变，a 的靶点精化 = 「读方向语义的激活条件」
+```
+
+当前状态：
+
+```text
+T1 = EXECUTED / REVISED READING AT HUMAN（B+终点回写）
+Current blocker = human 结果门判读 + 下一步方向
+```

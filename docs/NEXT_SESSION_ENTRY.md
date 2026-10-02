@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / T1_EXECUTED_BRANCH_B / RESULTS_AT_HUMAN`
+状态：`G3_MAINLINE_CLOSED / T1_EXECUTED_REVISED_B_PLUS_CHECKPOINT / RESULTS_AT_HUMAN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,14 +462,14 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：T1 结果门 human 判读（分支 B 终局——
-   见 `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_
-   20261002.md`）。裁定项：①分支 B 验收 + F-1..F-6 定性
-   ②下一步方向：a 对照实验（续作型任务或语义放开一格，测
-   palace 是否被激活）/ b Y 探针解冻评估（F-5 恰强化其靶点）/
-   c 「PALACE 进入 Execution Runtime 语义」架构讨论 / d 多跑
-   自然任务再归纳。纪律不变：不修 MemPalace；不自研 Schema；
-   L0 只读。
+1. 下一会话第一动作：T1 结果门 human 判读（修订终局 =
+   B + 终点回写——见 RESULTS_REVISION）。裁定项：①修订
+   验收（checkpoint 三连写回 + diary 自评「deliberately not
+   used for analysis」）②F-1′/F-5′/F-7/F-8 定性 ③下一步：
+   a 对照实验（靶点精化 = 读方向语义的激活条件：续作型
+   任务 / 语义放开一格）/ b Y 探针解冻评估 / c「PALACE
+   进入 Execution Runtime 语义」架构讨论 / d 多跑自然任务
+   归纳。纪律不变。
 
 继续区分：
 
@@ -520,3 +520,7 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_20261002.md`
     - 证据：`docs/02-evidence/palace-realwork-t1/`（交付物 + 全文提取）
     - ✅ 分支 B：45 工具在场、零调用、零写回（palace 9,362 不变）；17 条问题纯重推导；B 的元数据层两条缺失（方法层落差）；~10 条新发现；**待 human 结果门判读 + 下一步方向（a 对照实验 / b Y 解冻 / c Runtime 语义架构讨论 / d 多任务归纳）**
+82. 读 T1 终读数修订（B + 终点回写）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_REVISION_20261002.md`
+    - 证据：`docs/02-evidence/palace-realwork-t1/checkpoint-content.txt`（checkpoint 全参数：diary 自评「palace used? NO for analysis——deliberately」+ 17 条工作记录 drawer + 环境备忘 drawer）
+    - ✅ 修正过早收敛判定：mempalace_checkpoint @15:44 一发三连，palace 9,362→9,365；双通道存忆（私有 memory 可行动版 + palace 共享版）；F-5′ = palace 语义角色 = 会话终点存档柜非工作记忆，读方向从未激活；**待 human 结果门判读（a 对照实验[靶点精化=读方向语义激活条件] / b Y 解冻 / c Runtime 语义架构讨论 / d 多任务归纳）**
