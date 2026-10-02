@@ -90,3 +90,39 @@ C-5 保留不修 = wake-up 噪声将进入 SimiGo 启动上下文 =
 
 纪律：不修 MemPalace；不自研 Schema（Schema 由碰撞逼出）；
 L0 只读；本文件不构成 PALACE Schema 设计。
+
+## 5. 修正登记（human，2026-10-02 同日）——执行主体改为 ZCode；a 收口
+
+```text
+执行主体修正 = 轨 c 不是「SimiGo 本地推理接 PALACE」，而是
+  ZCode 作为实际执行主体通过 MCP 使用 MemPalace：
+    PALACE v0 → MemPalace 3.10.0 → MCP Server → ZCode
+      → 真实工作任务
+  SimiGo（本地推理/Execution State）暂在链外——实验变量
+  更干净：先验证 PALACE 作为 Information Space 能否被一个
+  真实 Agent/编码工作环境使用
+a 收口 = handshake PASS / 44 tools 可见 / search 实调 PASS /
+  source attribution PASS / 读写面完整暴露 / .mcp.json 已
+  接线 / C-1..C-5 全部记录不修 / 44-tool schema token 成本
+  = 观察变量 —— 不再对 MCP 做接口研究
+任务提名六准则（human 冻结）=
+  ① 秦沈真实语料
+  ② 明确可验证结果
+  ③ 不知道过去发生过什么就很难自然完成
+  ④ 能让 ZCode 自己决定什么时候搜索
+  ⑤ 最好同时涉及源文件 + 已形成的工作记录/对话
+  ⑥ 不要求预先告诉它「你必须使用 PALACE」
+  第 6 条最重：真正观察 = 「一个已经拥有 MCP 的 Agent，
+  在真实工作中，会不会自然把 PALACE 当成自己的信息空间」
+  而非「让 Agent 使用 PALACE，然后证明 PALACE 有用」——
+  后者污染实验
+44 工具全暴露 = 先不判断好坏：
+  若第一次真实工作是 search → get_drawer → search → …
+  而几乎不碰其他 40 个工具，那是事实；
+  若出现 search → add_drawer → task_create → checkpoint
+  的自然工作链，也同样是事实——碰撞即观察
+深层观察（human）= 不只「ZCode 能不能完成任务」，而是
+  「它会不会开始把 PALACE 当作过去工作的可继续空间，而
+  不仅是一个搜索工具」——X1「工作前沿最容易存活」的发现
+  第一次带进真实 Information Space 使用场景
+```

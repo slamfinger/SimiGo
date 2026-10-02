@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / SIMIGO_MCP_WIRED / FIRST_REAL_WORK_NOT_STARTED`
+状态：`G3_MAINLINE_CLOSED / TRACK_C_ZCODE_EXECUTOR / STEP0_NOMINATED_AWAITING_PIN`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,16 +462,13 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：轨 c——首次真实 SimiGo 工作经 MCP 使用
-   PALACE（设计已登记：观察七问冻结；MCP 已接线验证）。第 0
-   步 = 任务提名（≥2 真实任务候选：秦沈语料范围内、答案可
-   检验、工作会自然需要 palace 信息）→ human 钉定 → fresh
-   会话真实工作（需要信息 → mempalace_search 等工具 → 推理
-   → 判断/结果 → 自主写回 add_drawer/diary_write 等）→ 观察
-   七问读数落盘 + 碰撞账本更新（哪个 C 真的妨碍工作：C-5
-   wake-up 噪声是否被感知、C-1 PDF 是否被撞上、写回形态）→
-   写回后 palace 对照（⑦）→ human 判读。纪律：a≠修C-5；
-   不修 MemPalace；不自研 Schema；L0 只读；写回格式不预设计。
+1. 下一会话第一动作：轨 c 执行（human 钉定任务后）。执行
+   形态 = fresh ZCode 会话（cwd 按钉定确认，建议 = palace-v0/
+   workspace 非 Lab 仓根）+ 任务指令只含任务（六准则第 6 条：
+   不提 PALACE/不提记忆工具）+ MCP 自动加载。观察 = 动作链
+   仪器提取（EXP1 同法）+ 七问读数 + 碰撞账本更新 + 写回后
+   palace 对照 → human 判读。纪律：a 已收口不做接口研究；
+   不修 MemPalace；不自研 Schema；L0 只读。
 
 继续区分：
 
@@ -512,3 +509,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_PALACE_MCP_WIRED_FIRST_WORK_DESIGN_20261002.md`
     - `.mcp.json`（项目级，新会话自动加载）
     - ✅ human 优先序 = a→c / b 伴随 / d 冻结 / **a≠修C-5**（wake-up NaN 原样保留）；C-1..C-5 = collision ledger 记录不修；MCP 已接线并端到端验证（44 工具全谱含写回面；search 实调命中）；轨 c 观察七问冻结；**待办 = 第 0 步任务提名 → human 钉定 → fresh 会话真实工作**
+79. 读轨 c 修正登记（执行主体 = ZCode；a 收口；提名六准则冻结）：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_MCP_WIRED_FIRST_WORK_DESIGN_20261002.md` §5
+    - ✅ human 修正 = ZCode 经 MCP 使用 MemPalace（SimiGo 暂在链外）；候选任务六准则冻结（第 6 条最重：不告知「必须使用 PALACE」）；深层观察 = PALACE 会不会被当作「过去工作的可继续空间」；**待办 = human 钉定任务 → fresh 会话执行**

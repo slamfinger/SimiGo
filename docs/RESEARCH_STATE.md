@@ -15208,3 +15208,32 @@ PALACE = MCP WIRED & VERIFIED / FIRST-WORK DESIGN REGISTERED
 轨 c = NOT STARTED（第 0 步 = 任务提名 → human 钉定）
 Current blocker = none
 ```
+
+### LAB TRACK-C CORRECTION — ZCODE IS THE EXECUTOR (SIMIGO OUT OF CHAIN) — a CLOSED — STEP-0 NOMINATION CRITERIA FROZEN — 2026-10-02
+
+Human 关键修正：轨 c = ZCode 作为实际执行主体经 MCP 使用
+MemPalace（PALACE v0 → MemPalace 3.10.0 → MCP Server → ZCode
+→ 真实工作任务）；SimiGo（本地推理/ES）暂在链外——先验证
+PALACE 作为 Information Space 能否被真实 Agent/编码工作环境
+使用，变量更干净。a 收口（handshake/44 tools/search 实调/
+源标注/读写面/.mcp.json 全 PASS；不再对 MCP 做接口研究；
+C-1..C-5 记录不修；44-tool schema 成本 = 观察变量）。
+
+任务提名六准则冻结 = ①秦沈真实语料 ②明确可验证结果 ③不知
+道过去发生过什么就很难自然完成 ④ZCode 自己决定何时搜索
+⑤最好同时涉及源文件+已形成的工作记录/对话 ⑥不预先告知
+「必须使用 PALACE」（第 6 条最重：观察 = 拥有 MCP 的 Agent
+会不会自然把 PALACE 当成自己的信息空间，而非让它用然后证明
+有用——后者污染实验）。44 工具全暴露先不判断好坏（search
+循环是事实、自然工作链也是事实——碰撞即观察）。深层观察 =
+ZCode 会不会把 PALACE 当作「过去工作的可继续空间」而不仅是
+搜索工具——X1「工作前沿最容易存活」首次进入真实信息空间
+使用场景。
+
+当前状态：
+
+```text
+轨 c = a CLOSED / DESIGN CORRECTED / STEP-0 NOMINATION
+    PRESENTED（候选见会话记录，钉定归 human）
+Current blocker = human pin（任务钉定 + 执行形态确认）
+```
