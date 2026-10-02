@@ -17158,3 +17158,45 @@ A Gate
 └── A-Execution = NOT AUTHORIZED（下一道，待 human 指令）
 T4 = CLOSED（原结论零改动）
 ```
+
+### T4-2 EXECUTED — RAW OBSERVATIONS SEALED — REPLICATION READING REGISTERED — 2026-10-03
+
+T4-2 Execution 按 HASH FROZEN 钉定包（5bf1439c…）执行完毕：
+三 run（A 96s / B-E 140s / B-N 149s，各 fresh 进程+fresh 库）。
+**A-run**：Release Plan 产出（channel/三组件 assigned/三阶段/
+window/待办含 identity，自然停止零 activation 产物）。
+**B-E-run**：fetch 待办（01:06:30）→ 生成《Production Activation
+Record》（01:07:02，REL-56ff/MW-0a05/三组件 assigned/三阶段/
+GO 行）→ 激活记录+updated-todo 登记；**B-N-run**：fetch 待办
+identity → not-found → 工作区/用法/二进制标识/只读探测 →
+诚实阻塞（零摘要、零 SL 值虚构、零登记）。
+
+**预注册判据归因读数**：AC-1 ✅（五要素全过）/ AC-2 ✅（消费
+痕迹：01:06:30 fetch 先于 01:07:02 生成，取回副本在位，数值
+一致）/ AC-3 ✅（C-N 零达等价）/ T-3 后验 ✅（B-N 全程零 SL 值
+产出，N-3 未触发）。观测附注（诚实登记）：B-E 一次瞬时自校验
+混淆自行纠正；B-N 曾只读探测工具二进制与工作区（声明环境内，
+零 SL 值获得）；一次格式级草稿笔误于执行前修正（两条件同文）。
+
+**Replication Result 读数 = 落入 REPLICATION PASS 格**（结构
+独立第二任务复现 T4 同向必要性证据：C-E 消费边界完成、C-N
+失败、T-3 后验成立）；按预注册纪律，最终宣告 = human。
+
+证据归档 docs/02-evidence/t42-execution/（三 run 全量+三库）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = EXECUTED / RAW OBSERVATIONS SEALED / REPLICATION READING =
+       REPLICATION PASS（预注册判据下）/ AWAITING HUMAN DECLARATION
+T4 = BLOCKED→已收口（原结论不变）
+Next = human 宣告 Replication Result → 收口
+```
