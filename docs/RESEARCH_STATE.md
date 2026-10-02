@@ -15532,3 +15532,42 @@ T3 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
     SESSION EXECUTION
 Current blocker = human 开启 fresh 会话并粘贴 T3 指令
 ```
+
+### LAB T3 EXECUTED — T3-A: ZERO-HISTORY-VOCABULARY ENTRY VIA MEMORY ECOLOGY — 2026-10-02
+
+T3 终局（`SIMIGO_LAB_PALACE_REALWORK_T3_RESULTS_20261002.md`；
+复函 docx 固化 evidence，SHA256 5adf5adf…）：**T3-A 成立**——
+任务说明零历史词汇、无人工提示，Agent 仍进入 Information
+Space（t7 起草前尽职检索 ×3：查询词含 T2 登记词汇「18 问题族」
++ 自有发现「41,348.32」+ 口径变体「剔税」）+ t24 checkpoint；
+palace 9,369→9,372（数据问询复函 room 2 抽屉）。
+
+```text
+因果链（本轮最重要诚实读数）= 私有记忆指针（T2 沉淀）→
+    三处记录位置 → 读 T2 收尾报告 → 自提平衡报告独立分析
+    → palace 尽职检索——进入的因果载体 = Agent 世系记忆
+    生态（F-7 双通道在 T1/T2 的沉淀被 T3 消费）；纯冷启动
+    反事实未测 = 下轮候选变量
+三代记忆生态首次端到端运转 = T1 沉淀 → T2 沉淀（指针+登记）
+    → T3 消费+核验+扩展+再沉淀——跨会话「读—验证—写回
+    闭环」自我维持（F-1′ 限定措辞继续适用）
+审计基准四项 = ①单调性矛盾发现并超越（新增对照组：计量
+    口径两文件一致→精确隔离收入线）②诚实出口（8 项编制人
+    清单+请上级提供跟踪数据）③逐条出处+当日复算声明
+    ④与 T2 登记独立复现一致
+新增发现 = 文内自相矛盾三处（0.56% vs 1.13pp / 256.54 万
+    差额 / 4.9%→6.22%——文件内两处「开累总收入」使用互斥）
+失败形态 = 零发生
+诚实限定 = n=1；私有记忆指针=混杂变量（任务结构纯净成立，
+    Agent 侧不纯净）；平衡报告桌面直接可及——palace 本次
+    增量价值 = 完整性确认而非唯一发现通道
+结果门候选 = a T4 冷启动对照 / b Y 解冻评估 / c 双通道边界
+    架构讨论 / d 收敛登记
+```
+
+当前状态：
+
+```text
+T3 = EXECUTED / T3-A / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```
