@@ -16672,6 +16672,48 @@ T4 = BLOCKED（实验方案/执行待单独 human 指令）
 Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
 ```
 
+### GATE OPENED — T4 EXPERIMENTAL DESIGN GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_T4_EXPERIMENTAL_DESIGN_GATE_SPEC_20261002.md`，
+SPEC ONLY 零代码零实验）：**T4 Experimental Design Gate**——T4 的
+新增证据 = Information boundary 对 continuation 的**贡献
+(attribution)**，非 persistence 复验（能存能取已证，那不是 T4）。
+
+Spec 预注册九要素：**S-1/S-2** cold-start 操作化（fresh 进程+DB、
+指令零历史词汇、零私有记忆通道、唯一外部记忆=InformationCore、
+禁文件考古）；**S-3** 唯一边界 = 已定稿契约面（Information S1–S6
+/ Relation R1–R6），除 A 沉淀外零内容；**S-4** 任务准入六条件
+（两段结构/A→自然停止点→B、B 指令零泄漏、**T-3 non-derivable
+facts = 命题强度开关**、客观判据+预登记事实清单、自然停止点反
+裁剪、产物可独立验证）；**S-5** 对照设计 = C-E（实验组，含沉淀）
+/ C-N（空边界阴性对照，必选）/ C-A（无边界，可选）——唯一变量 =
+沉淀内容，B 指令逐字节相同；**S-6** 成功判据 = attribution 三
+条件（AC-1 完成 ∧ AC-2 消费痕迹因果链 ∧ AC-3 C-N 未达等价）+
+三结果预注册（强命题=必要条件 [仅当 T-3 满足可 claim] / 弱命题
+= 提速保真贡献 / 无归因 = 任务自证）；**S-7** 失败判据 F1–F6
+（C-E 失败=boundary 不足 / 消费痕迹缺失=降级 inconclusive /
+C-N 等价成功=无归因 / 未声明通道=run 作废 / 沉淀回写=作废 /
+判据偏离=整轮作废）；**S-8** 偷渡零容忍清单；**S-9** 实验后才
+裁定 + 预注册纪律 + deviation log + **T4 execution 尚未授权**。
+
+本 Gate 收口 = Spec 确认 → 任务钉定授权；实验执行 = 再下一道
+单独授权。T4 继续 BLOCKED。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+Next gate = T4 EXPERIMENTAL DESIGN
+            （SPEC REGISTERED，AWAITING HUMAN CONFIRMATION）
+T4 = BLOCKED（execution 尚未授权）
+```
+
 ### GATE OPENED — SIMIGORUNTIME FORMAL INTEGRATION GATE — 2026-10-02
 
 human 开启（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_
