@@ -15766,3 +15766,37 @@ Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴 A 指令）
 T4 = BLOCKED（待 SimiGo，与 Y 正交，不提前）
 Current blockers = ① human 开启 Y-A 会话 ② human 审阅 Phase 0 分表
 ```
+
+### Y-A EXECUTED — TRUTH SEALED — DEPOSIT ASSEMBLED — B RELEASED — 2026-10-02
+
+Y-A 已按登记件 §4 机制执行完毕
+（`SIMIGO_LAB_PALACE_Y_A_RESULTS_20261002.md` 全记录）：
+fresh 会话单轮 577 秒至自然停止点；§3 指令零泄漏；输入
+SHA-256 未动（纪律达标）；结论 = 表2 E 列「万元」口径假设
+不成立（E 列 = D 列计量单位对应的工程数量列，依据强度高，
+十条证据链：表头直读 / 全表扫描 / 816 行统计 / J=G×E 量纲
+闭环 / 渗沟系数展开 / 汇总端到端 / 四版本一致）；⑧ 态自然
+产生（D 列单位写法差异待办）。观察事实登记（防预判）：A
+全程 mempalace 工具零调用——工作状态止于 workspace；读向
+曾触及 Spreadsheets 技能 + 私有 MEMORY.md（秦沈关键词）。
+
+记录侧三步完成：truth 封存（动作日志 →
+`boundary-study/y-exp/truth/`，哈希 2312d4c2… 锚定）→
+沉淀组装（checkpoint added_by=codex-desktop，wing 秦沈-标后
+预算，room 表2单位验证：交付全文 + 证据表 + 三脚本逐字 +
+环境备忘 + diary；palace 9,373→9,398；原始转储类 2 件按
+组装决定不入 verbatim 信息空间，字节副本入 git evidence
+归档）→ B 放行（fresh 会话，仅续接语 + 信息空间位置，
+提示词逐字见登记件 §5）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+Y-A = COMPLETE / ARCHIVED / TRUTH-SEALED / DEPOSIT ASSEMBLED
+Y-B = RELEASED（fresh 会话执行中）
+T4 = BLOCKED（待 SimiGo，不提前）
+Current blocker = Y-B 行为读数（四事实②③④ + S1/S2 +
+    Evidence Table v2）→ 反例判定 → human 判读
+```

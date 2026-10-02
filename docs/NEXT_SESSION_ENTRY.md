@@ -552,3 +552,6 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 90. 读 Phase 0 源码语义审计登记（台账同步补登）：
     - `docs/00-governance/SIMIGO_LAB_PALACE_PHASE0_SOURCE_SEMANTIC_AUDIT_20261002.md`
     - ✅ Phase 0 完成：48 模块 + 真实 ChromaDB 数据语义审计登记；三分表 = drawer content/provenance/temporal + KG triples = Information 核心，Layer0/diary-framing/checkpoint/closet 指针 = Execution·Continuity，ChromaDB/embedding/BM25/MCP/miner/hallways/Layer2·3/WAL/ID 方案 = 纯机制，wing/room/hall 分类 borderline 留裁定；BR-1/2/3/5 全部代码级佐证（closet 仅排序信号非门 = BR-5 确认）；Swift Core 最小面草图已给（Information/Provenance/TemporalSemantics/InformationStore/InformationQuery）；开放问题已登记（taxonomy 归属 / diary 双层拆分 / KG 晋升 / activation 形态 / API 面）；本步未改 Contract/Swift Core/存储；**Gate = human 审阅 §2 分表 + §6 开放问题 → 冻结 Swift Core 语义面 → 写类型（审计范围不再扩展）**；Y 阻塞不变（待 human 开 Y-A fresh 会话）；T4 继续 BLOCKED（待 SimiGo）
+91. 读 Y-A 停止点归档与 B 放行登记：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_Y_A_RESULTS_20261002.md`
+    - ✅ Y-A 执行完毕（fresh 会话单轮 577s 自然停止；§3 指令零泄漏；mempalace 工具零调用；输入 SHA 未动）；结论 = 表2 E 列万元口径假设不成立（工程数量列，依据强度高）；truth 封存 = 动作日志哈希锚定（2312d4c2…）；沉淀组装 = checkpoint 9 drawers/24 chunks + 环境备忘 + diary → palace 9,373→9,398（基线修正 +1 连通性测试已查明）；原始转储类（inventory.json/e_reference_usage.tsv）不入 verbatim 信息空间，字节副本存 evidence/ 归档；**B 已放行（fresh 会话，仅续接语 + 信息空间位置）**；待办 = B 行为读数（四事实②③④ + S1/S2 + Evidence Table v2）→ 反例判定 → human 判读
