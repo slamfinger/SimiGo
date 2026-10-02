@@ -88,3 +88,26 @@ palace 基线快照（第⑦问对照用）= 9,362 drawers：
   继承覆盖度 vs 重发现（落差读数）
 碰撞账本更新（哪个 C 真的妨碍工作）→ human 判读
 ```
+
+## 5. C-6 接线层碰撞（2026-10-02 14:42 实测——「一开始」）
+
+```text
+现象 = human 开启 fresh 会话（cwd = palace-v0/workspace/）后，
+  「一开始」session 内 35 个工具中 mempalace = 0（rollout
+  sess_16c9293a 首记录 tools list 实测）
+原因 = 接线格式错误：.mcp.json 是 Claude Code 约定，ZCode
+  读取 <repo>/.zcode/config.json → mcp.servers（workspace
+  作用域，新会话自动连接；.agents/mcp.json 为兼容回退）
+修正 = mempalace server 合并插入仓 .zcode/config.json
+  （保留既有 node_repl/computer-use；非 --read-only；HOME
+  隔离 env）；无效的 workspace .mcp.json 副本已删除
+登记 = 这是 collision ledger 的新条目——接线层缺陷由真实
+  使用当场暴露（本会话的 JSONRPC 直连验证无法替代会话级
+  加载验证——仪器验证 ≠ 实际装载，两层验证都必要）
+处置 = 记录、修正接线（配置层修正属于「让实验可进行」，
+  非 C-1..C-5 意义上的 substrate 预修）
+```
+
+待办更新 = human 重新开启 fresh 会话（cwd = palace-v0/
+workspace/）——mempalace 应在会话开始时自动连接（44 工具
+在列）→ 粘贴 §3 任务指令 → 实验照原设计执行。

@@ -15265,3 +15265,27 @@ T1 = PINNED / INSTRUCTION REGISTERED / WORKSPACE WIRED /
     AWAITING HUMAN FRESH-SESSION EXECUTION
 Current blocker = human 开启 fresh 会话并执行（粘贴指令）
 ```
+
+### LAB C-6 WIRING-LAYER COLLISION — .mcp.json NOT READ BY ZCODE — FIXED VIA .zcode/config.json — 2026-10-02
+
+「一开始」读数 = human 开启 fresh 会话（cwd = palace-v0/
+workspace/）后，session 首 I/O 记录（sess_16c9293a @14:41，
+6 records）tools list 实测 = 35 工具 / mempalace = 0——MCP
+未装载。原因 = 接线格式错误：.mcp.json 为 Claude Code 约定，
+ZCode 读取 <repo>/.zcode/config.json → mcp.servers（workspace
+作用域新会话自动连接）。修正 = mempalace 合并插入仓
+.zcode/config.json（保留 node_repl/computer-use）；无效
+.mcp.json 副本删除；登记为 collision ledger 新条目 C-6
+（接线层缺陷由真实使用当场暴露——JSONRPC 直连验证 ≠ 会话级
+装载验证，两层都必要；修正属「让实验可进行」的配置层修正，
+非 C-1..C-5 意义的 substrate 预修）。待办 = human 重新开启
+fresh 会话（mempalace 应自动连接 44 工具）→ 粘贴 T1 指令 →
+实验照原设计执行。
+
+当前状态：
+
+```text
+T1 = PINNED / C-6 FIXED（接线层）/ AWAITING FRESH-SESSION
+    REOPEN
+Current blocker = human 重新开启 fresh 会话并执行
+```
