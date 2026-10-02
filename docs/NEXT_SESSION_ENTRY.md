@@ -701,3 +701,8 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 132. 读 B-Design（DESIGN DRAFT / AWAITING HUMAN CONFIRMATION）：
     - `docs/00-governance/SIMIGO_LAB_B_DESIGN_20261003.md`
     - ✅ **最小 Execution Layer 设计完成（零代码）**：新模块 ExecutionCore（→ InformationCore + RelationCore 单向依赖，Core 零改动零感知）；三组件 C1 ExecutionScope（绑定 any 两 Store 的边界消费者，observe/consume/form 直通已冻结形状）/ C2 Observation formation 规则（before 引用或未存先形成 + after 表示 → after Information + change Relation「observed-change-of」，provenance=观察事件）/ C3 机制边界声明（hash/扫描/触发器=本设计不实现）；**R-B1 最小实验结构 = 四 run**（E-run 基线 before 入库 → 真实世界外部变化 → X-run 观察者形成 after+change Relation → V-E-run fresh cold-start 仅经边界回答「E 发生了什么变化」+ V-N-run 空边界对照）；**before/after/change 充分性分析 = 四需求全落已冻结语义组合，零新 Core 类型**；V 环境约束 = 不提供 E 当前表示（禁重扫）；判据 V-AC-1/2/3 预登记；confound C-1…C-5 登记归实验期审计；与 SimiGo 三 contract 平行性声明（零接触零吸收）；**待 human 确认设计 → B-Impl 另批**；T4 继续 BLOCKED
+133. 读 B-Design 确认（CONFIRMED）+ 新增冻结约束：
+    - human 审计：C1 ExecutionScope PASS（any 双 Store 绑定、无反向依赖、两 Core 零感知）/ C2 PASS（before/after Information + observed-change-of Relation 用现有 Information+Relation+provenance 可表达，零 InformationChange/Watcher/Observation 新 Core 类型）/ C3 PASS（hash/扫描/trigger 留在 Core 外零污染）/ 四-run 结构成立且有一优点 = **变化先发生于 Physical Space，再由观察过程形成 Information**——对应现实场景（人/Excel/Python/Agent 改物理文件，Information Space 随后认识变化）
+    - **新增冻结约束（关键）**：C2 的「未存先形成」不得成为 R-B1 实验捷径——R-B1 若验证「E 自上次观察以来发生了什么变化」，则 **E-run 必须真正形成可寻址的 before Information**；「未存先形成」可为 Core 语义允许能力，但事后构造的 before 只是推断/代理，非可验证历史 Information
+    - 最终确认范围：C1 ✓ / C2 before-after-change Relation ✓ / C3 机制边界 ✓ / R-B1 四-run 结构 ✓ / V-AC-1/2/3 预注册候选 ✓ / C-1…C-5 后续审计 ✓
+    - 状态：B-Design = CONFIRMED；B-Impl = NOT AUTHORIZED；B-Execute = NOT AUTHORIZED

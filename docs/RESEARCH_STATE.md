@@ -17356,3 +17356,33 @@ B Gate
 T4/T4-2 = CLOSED（原结论零改动）
 Next = human 确认 B-Design → B-Impl 另批
 ```
+
+### B-DESIGN CONFIRMED — NEW FROZEN CONSTRAINT (R-B1 BEFORE MUST BE GENUINELY FORMED) — 2026-10-03
+
+human 审计确认 B-Design = **CONFIRMED**（C1/C2/C3 全 PASS）+
+四-run 结构成立 + 关键优点确认：**变化先发生于 Physical Space，
+再由观察过程形成 Information**——精确对应现实场景（人/Excel/
+Python/Agent 改物理文件，Information Space 随后认识变化）。
+
+**新增冻结约束（R-B1 执行期生效）**：C2 的「未存先形成」不得
+成为 R-B1 实验捷径——R-B1 验证「E 自上次观察以来的变化」时，
+**E-run 必须真正形成可寻址的 before Information**；事后构造的
+before 仅为推断/代理，非可验证历史 Information。「未存先形成」
+保留为 Core 语义允许能力，禁作实验捷径。
+
+确认范围：C1 ExecutionScope / C2 before-after-change Relation /
+C3 机制边界 / R-B1 四-run 结构 / V-AC-1/2/3 预注册候选 /
+C-1…C-5 后续审计——全 PASS。
+
+当前状态：
+
+```text
+B Gate
+├── B-Spec    = FROZEN
+├── Audit     = PASS
+├── B-Design  = CONFIRMED（含新增冻结约束）
+├── B-Impl    = NOT AUTHORIZED
+└── B-Execute = NOT AUTHORIZED
+T4/T4-2 = CLOSED（原结论零改动）
+Next = human 授权 B-Impl 后进入实现
+```
