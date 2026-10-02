@@ -15988,3 +15988,42 @@ Phase 1 = BOUNDARY CLOSED / API NOT YET DESIGNED
 T4 = BLOCKED（不变）
 Current blocker = human 最小 API 裁定
 ```
+
+### PHASE 1 API RULING — 11/12 FROZEN — A2′ PENDING — 2026-10-02
+
+最小 API 全批裁定（`SIMIGO_LAB_PHASE1_API_RULING_20261002.md`
+逐字）：A1 Information = 不可变值语义（语义事实：逐字存储/
+确定性 identity/no-op 幂等 ⇒ 无 mutation）；A2 = 专用 opaque
+`InformationID`（生成算法不得出现在 API）；A3 provenance 按
+事实分组（producedAt/producedBy 必选，source/sourceTime/
+position/extractionMode 可选——不因通常存在而升必选）；A4
+temporal = date+source 成对可选（unknown 不得偷换为系统推断，
+零回溯推断）；A5 负空间零预埋；B1 = store+fetchByID（delete/
+search/list/query/rank 零语义证据不入）；B2 重复 identity =
+成功 no-op（与 A1 闭环：确认已有事实非 update）；B3 absence =
+Optional（not found ≠ storage failure）；C1 SQLiteStore 职责
+三分、不暴露 WAL/事务；C2 wing/room 仅 persistence filing
+metadata、禁止进入语义属性；C3 verbatim 保证（Store 不得为
+规范化/索引/去重改写 content）；D 负空间全部裁定为不存在
+（含 protocol/placeholder/extension hook 一切形态）。
+
+**唯一待裁 A2′ = Identity Formation Boundary**（human 发现的
+结构性缺口）：A2×B1×C1 同时成立 ⇒ 首个 Information 的 ID
+来源未定。待裁问题唯一：**InformationID 在 Information 形成
+时产生，还是在 Store 持久化时产生？**（human 倾向表述 =
+Identity 属于 Information 本身；生成算法不属于 Information；
+semantic identity 与 construction mechanism 彻底分开。）裁定
+完成 ⇒ A1–C3 无缝闭合 ⇒ 进入 API → 首批 Swift 文件 Gate。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED + API 11/12 FROZEN / A2′ PENDING
+Swift files = 0
+T4 = BLOCKED（不变）
+Current blocker = human A2′ Identity Formation Boundary 微裁
+```
