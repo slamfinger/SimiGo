@@ -15164,3 +15164,47 @@ Boundary Study = X1 ACCEPT/CLOSED；Y = REGISTERED PROBE /
     NOT STARTED
 Current blocker = none（下一步优先序归 human：a/b/c/d）
 ```
+
+### LAB SIMIGO MCP WIRED TO MEMPALACE V0 — FIRST REAL-WORK EXPERIMENT REGISTERED — 2026-10-02
+
+Human 优先序裁定：a → c；b 作为伴随观察线；d 继续冻结（Y =
+REGISTERED / NOT STARTED）；**a ≠ 修 C-5**（最重要纪律——
+wake-up NaN 噪声原样保留，让 SimiGo 自己撞上「9311 drawers
+但启动上下文是垃圾」）；C-1..C-5 = collision ledger 记录不修；
+「看起来有问题 ≠ 必须解决的问题」（C-4 可能被 SimiGo 的实际
+工作方式消解；真正优先 = 直接阻断 Execution 的）；两线不混
+（本线 = 真实信息空间能否成为 SimiGo 工作基础设施；Y 线 =
+信息空间在哪里无法承载 ES）。
+
+MCP 接入完成（`SIMIGO_LAB_PALACE_MCP_WIRED_FIRST_WORK_DESIGN_
+20261002.md`）：
+
+```text
+接入 = 项目级 .mcp.json（新会话自动加载；当前会话不生效）
+服务器 = mempalace-mcp --palace palace-v0/palace（HOME 隔离；
+    非 read-only——写回是轨 c 组成部分）
+端到端验证 = initialize OK / tools/list 44 工具全谱（search/
+    get_drawer 读 + add_drawer/diary_write/event_append/
+    task_create/kg_*/artifact_put/patch_submit 写 + kg_query/
+    traverse 图）/ mempalace_search 实调 OK（水稳+遗留命中
+    带源标注 7,127 字节）
+备选 = mempalace-light-mcp（3 工具）登记不切换；44 工具
+    schema token 成本 = 后续观察点
+```
+
+轨 c 首次真实工作实验登记（观察七问 human 原语冻结）= ①主动
+搜什么 ②搜索词谁形成 ③搜到源文件还是历史会话 ④NaN 噪声是否
+干扰模型 ⑤模型是否发现「信息在但排序不对」 ⑥哪些信息被模型
+认为值得写回 ⑦工作完成后 palace 留下的是否比原始摄取更有用；
+补充位 = C-5 是否被感知/C-1 是否被撞上/写回形态不预设计/
+44 工具实际用哪些；执行序列 = 第 0 步任务提名（≥2 候选 ×
+human 钉定）→ fresh 会话真实工作 → 观察落盘 + 碰撞账本更新
+（哪个 C 真的妨碍工作）→ 写回后 palace 对照 → human 判读。
+
+当前状态：
+
+```text
+PALACE = MCP WIRED & VERIFIED / FIRST-WORK DESIGN REGISTERED
+轨 c = NOT STARTED（第 0 步 = 任务提名 → human 钉定）
+Current blocker = none
+```

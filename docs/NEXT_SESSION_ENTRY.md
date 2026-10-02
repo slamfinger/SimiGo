@@ -1,7 +1,7 @@
 # SimiGo-Lab Next Session Entry
 
 登记时间：2026-10-02
-状态：`G3_MAINLINE_CLOSED / BOUNDARY_STUDY_NARROWED_X1_ACCEPT / PALACE_REAL_CARRIER_V0_INITIALIZED`
+状态：`G3_MAINLINE_CLOSED / SIMIGO_MCP_WIRED / FIRST_REAL_WORK_NOT_STARTED`
 
 本文件是新会话的快速入口，不替代 `docs/RESEARCH_STATE.md` 的权威状态。
 
@@ -462,17 +462,16 @@ Canonical route document:
 
 ## Next session task
 
-1. 下一会话第一动作：PALACE 真实载体线下一步优先序执行（human
-   已给四个候选：a = SimiGo MCP 接入[mempalace mcp，与 C-5
-   wake-up 噪声处置合裁]；b = 碰撞处置方向观察[不预修
-   MemPalace，让碰撞充分暴露]；c = 真实使用阶段[SimiGo/Agent
-   经 palace 做一次真实工作——信息空间质量本身成为实验变量]；
-   d = Y 探针时点[REGISTERED NOT STARTED]）。现行门位：
-   Boundary Study = X1 ACCEPT/CLOSED + Y REGISTERED；
-   MemPalace v0 = INITIALIZED / 首日碰撞 C-1..C-5 在案。
-   纪律不变：不预修 MemPalace 代码；自研 Schema 设计禁止
-   （Schema 由碰撞逼出）；L0 原件不触碰；不修改 SimiGo
-   Execution State 契约与产品线。
+1. 下一会话第一动作：轨 c——首次真实 SimiGo 工作经 MCP 使用
+   PALACE（设计已登记：观察七问冻结；MCP 已接线验证）。第 0
+   步 = 任务提名（≥2 真实任务候选：秦沈语料范围内、答案可
+   检验、工作会自然需要 palace 信息）→ human 钉定 → fresh
+   会话真实工作（需要信息 → mempalace_search 等工具 → 推理
+   → 判断/结果 → 自主写回 add_drawer/diary_write 等）→ 观察
+   七问读数落盘 + 碰撞账本更新（哪个 C 真的妨碍工作：C-5
+   wake-up 噪声是否被感知、C-1 PDF 是否被撞上、写回形态）→
+   写回后 palace 对照（⑦）→ human 判读。纪律：a≠修C-5；
+   不修 MemPalace；不自研 Schema；L0 只读；写回格式不预设计。
 
 继续区分：
 
@@ -509,3 +508,7 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
     - `docs/00-governance/SIMIGO_LAB_PALACE_REAL_CARRIER_ROUTE_CHANGE_20261002.md`
     - `docs/00-governance/SIMIGO_LAB_PALACE_REAL_CARRIER_MEMPALACE_V0_INIT_20261002.md`
     - ✅ human 改轨：X1 ACCEPT；Boundary Study 收口（Y = ES Boundary Candidate Probe，REGISTERED/NOT STARTED，四 case 全量不执行）；PALACE = MemPalace 原样跑起来；v0 初始化完成（9,311 drawers：真实语料 54 文件 + EXP1 会话 4 件；palace-v0/ gitignore 隔离）；首日碰撞 C-1..C-5（PDF 全灭/xlsx 压平爆炸/数字检索失真/会话-源文档排序倒挂/wake-up 噪声占据）；0308 在场性裁定 = 排序层失败非缺失层；**待 human 排下一步优先序（a MCP 接入 / b 碰撞处置观察 / c 真实使用 / d Y 探针）**
+78. 读 SimiGo MCP 接入记录与首次真实工作实验设计：
+    - `docs/00-governance/SIMIGO_LAB_PALACE_MCP_WIRED_FIRST_WORK_DESIGN_20261002.md`
+    - `.mcp.json`（项目级，新会话自动加载）
+    - ✅ human 优先序 = a→c / b 伴随 / d 冻结 / **a≠修C-5**（wake-up NaN 原样保留）；C-1..C-5 = collision ledger 记录不修；MCP 已接线并端到端验证（44 工具全谱含写回面；search 实调命中）；轨 c 观察七问冻结；**待办 = 第 0 步任务提名 → human 钉定 → fresh 会话真实工作**
