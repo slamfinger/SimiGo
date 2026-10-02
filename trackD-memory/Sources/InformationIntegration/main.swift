@@ -6,6 +6,7 @@
 
 import Foundation
 import InformationCore
+import RelationCore
 
 let databasePath = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "integration.sqlite"
 
@@ -145,3 +146,75 @@ assert(backend2Retrieved != nil, "FAIL S3: InMemory chain lost its fact before c
 try assertFirstWriteWins(upperLayerOnBackend2, backend2Identity, backend2Retrieved!, label: "InMemoryStore")
 
 print("PERSISTENCE SEMANTICS S1–S6: CONTRACT VERIFIED ON BOTH BACKENDS")
+
+// ===========================================================================
+// PHASE 2 — RELATION BOUNDARY (D1–D7 sealed): Relation as an independent
+// semantic layer ABOVE Information — referencing two InformationIDs,
+// carrying its own opaque deterministic RelationID, immutable, persisted
+// through its OWN RelationStore boundary. InformationCore untouched.
+// ===========================================================================
+
+// Formation facts for two real Information facts (mechanism minters at
+// the composition root, exactly as in Phase 1).
+let subjectID = physicalStore.makeInformationID(
+    content: "Relation subject fact — 信息主体事实",
+    provenance: Provenance(producedAt: Date(timeIntervalSince1970: 1_790_970_000), producedBy: "relation-probe")
+)
+let objectID = physicalStore.makeInformationID(
+    content: "Relation object fact — 信息客体事实",
+    provenance: Provenance(producedAt: Date(timeIntervalSince1970: 1_790_970_100), producedBy: "relation-probe")
+)
+
+// D2: mechanism-side Relation minting — deterministic, recipe invisible.
+let predicate = RelationPredicate(value: "references")
+let relationID = RelationMinter.makeRelationID(subject: subjectID, predicate: predicate, object: objectID)
+let relationIDAgain = RelationMinter.makeRelationID(subject: subjectID, predicate: predicate, object: objectID)
+assert(relationID == relationIDAgain, "FAIL R2: RelationID mint not deterministic")
+print("PASS R2 opaque deterministic RelationID:", relationID.rawValue)
+
+// R1 + D3: a Relation referencing two InformationIDs, immutable by
+// construction (let-bound value; no mutation/update API exists).
+let relation = Relation(
+    identity: relationID,
+    subject: subjectID,
+    predicate: predicate,
+    object: objectID,
+    provenance: Provenance(producedAt: Date(timeIntervalSince1970: 1_790_970_200), producedBy: "relation-probe")
+)
+assert(relation.subject == subjectID && relation.object == objectID, "FAIL R1: endpoint mismatch")
+print("PASS R1 Relation references two InformationID endpoints")
+
+// R4: RelationStore exists as an INDEPENDENT boundary — conformed by a
+// test backend implemented outside RelationCore, seeing only public API.
+private final class InMemoryRelationStore: RelationStore {
+    private var storage: [String: Relation] = [:]
+    func store(_ relation: Relation) throws {
+        if storage[relation.identity.rawValue] == nil {
+            storage[relation.identity.rawValue] = relation
+        }
+    }
+    func fetch(by identity: RelationID) throws -> Relation? {
+        storage[identity.rawValue]
+    }
+}
+
+let relationStore: any RelationStore = InMemoryRelationStore()
+try relationStore.store(relation)
+let fetchedRelation = try relationStore.fetch(by: relationID)
+assert(fetchedRelation == relation, "FAIL R4: Relation roundtrip differs")
+print("PASS R4 independent RelationStore boundary roundtrip")
+
+// R4b: first-write-wins mirror holds on the Relation boundary too.
+let conflictingRelation = Relation(
+    identity: relationID,
+    subject: subjectID,
+    predicate: RelationPredicate(value: "conflicting-rewrite-attempt"),
+    object: objectID,
+    provenance: Provenance(producedAt: Date(), producedBy: "conflict-probe")
+)
+try relationStore.store(conflictingRelation)
+let afterConflict = try relationStore.fetch(by: relationID)
+assert(afterConflict == relation, "FAIL R4b: Relation was overwritten")
+print("PASS R4b first-write-wins on RelationStore")
+
+print("PHASE 2 RELATION BOUNDARY RUNTIME CHECKS: ALL PASS")
