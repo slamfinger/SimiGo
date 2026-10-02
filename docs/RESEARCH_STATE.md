@@ -16640,3 +16640,34 @@ Phase 2 = CLOSED
 Next gate = SIMIGO INTEGRATION（DECISIONS SEALED，最小实现中）
 T4 = BLOCKED（不执行）
 ```
+
+### SIMIGO INTEGRATION GATE = PASS — T4 EXPERIMENTAL PRECONDITION SATISFIED — 2026-10-02
+
+Gate 执行完毕（`SIMIGO_LAB_SIMIGO_INTEGRATION_GATE_RESULT_20261002.md`）：
+按 3.1(c)/3.2(i) 交付**真实 SwiftPM path dependency 外部包**
+`pre-research/SimiGoShapedPreResearch/`（消费 product
+InformationCore；解析含根包全量依赖图成功——非复制伪接入）。
+P1–P4 全过：**P1** 独立进程冷启动执行者（fresh DB 零历史）；
+**P2** S1–S6 形状全复现（含 S3 冲突探针 first-write-wins）；
+**P3** Executor 层剥离注释后 backend 符号 0 命中（2 处 = P3
+自述注释，处置在案）；**P4** 依赖面仅 SimiGo-Lab path + Core
+模块代码层零 simigo 引用（2 处 = 治理文件名注释，处置在案）+
+零负空间声明。SimiGo 主仓零改动。
+
+**登记结论（human 定向措辞）：SimiGo + InformationCore →
+T4 experimental precondition = SATISFIED。T4 本身仍然 BLOCKED**
+——实验方案/执行需单独 human 指令。实现决策 3 项登记可重开。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 = BLOCKED（实验方案/执行待单独 human 指令）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```

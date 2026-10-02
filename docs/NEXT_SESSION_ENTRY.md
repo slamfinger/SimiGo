@@ -631,4 +631,7 @@ Next mode = DRIFT-DETECTION / CONTRACT-GATE-DISCIPLINE
 116. 读 SimiGo 接入决策封存（3.1 = (c)、3.2 = (i)）：
     - `docs/00-governance/SIMIGO_LAB_SIMIGO_INTEGRATION_DECISIONS_SEALED_20261002.md`
     - ✅ **DECISIONS SEALED**：3.1 = (c) Lab 侧 SimiGo-shaped 预研先行（SimiGo 主仓零依赖事实不变；窄边界 = SimiGo 形状上层执行者仅经 InformationCore 完成 store/fetch；不预判 SimiGoRuntime 正式接口；App 直连排除；**非正式接入实现，仅验证正式接入所需最小边界**）；3.2 = (i) SwiftPM path dependency（最小边界验证非包发布治理；真实 module/protocol dependency 非复制伪接入；转 (ii) 不改语义契约；vendored 排除）；**最小实现范围 = SimiGo-shaped executor → InformationCore → store/fetch**；四项必须证明 P1 冷启动执行者可运行 / P2 S1–S6 形状复现 / P3 上层零 SQLite/Physical Filing 知识 / P4 零反向依赖+零 palace/taxonomy/activation/ExecutionState 语义 ⇒ 全过才登记 **T4 experimental precondition = SATISFIED（T4 仍 BLOCKED）**；保护条件延续（InformationCore 五文件 + RelationCore diff=0）
+117. 读 SimiGo 接入边界 Gate 结果（PASS，T4 precondition = SATISFIED）：
+    - `docs/00-governance/SIMIGO_LAB_SIMIGO_INTEGRATION_GATE_RESULT_20261002.md`
+    - ✅ **GATE = PASS（P1–P4 全过）**：真实 SwiftPM path dependency 外部包 `pre-research/SimiGoShapedPreResearch/` 落位（消费 product InformationCore，非复制伪接入；解析成功含根包全量依赖图）；P1 独立进程冷启动执行者实跑（fresh DB 零历史）/ P2 S1–S6 形状全复现（S3 冲突探针含）/ P3 Executor.swift 剥离注释后 backend 符号 0（2 处自述注释处置）/ P4 依赖面仅 SimiGo-Lab path + Core 模块代码层零 simigo 引用（2 处治理文件名注释处置）+ 零负空间声明；**登记 T4 experimental precondition = SATISFIED（T4 仍 BLOCKED，实验方案需单独指令）**；保护条件八文件 vs HEAD diff 全 0；Build 零警告；实现决策 3 项登记；本地提交随既定节奏推送
     - ✅ 下一步 = 等待下一阶段 Gate 指令（不自行跨 Gate）；原则延续 = 先冻结语义/契约 → 再实现 → 双 backend 验证 → negative-space/dependency audit → 闭 Gate
