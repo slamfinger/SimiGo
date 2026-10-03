@@ -1,0 +1,12 @@
+{
+  "run_id": "RC1-20261002T202144Z-42754",
+  "experiment": "R-C1",
+  "authorization": "AUTHORIZED",
+  "authorized_by": "human repository owner via chat confirmation",
+  "authorization_text": "R-C1 = AUTHORIZED",
+  "authorization_time_local": "2026-10-03T04:18:37+0800",
+  "implementation_baseline": "bae68a852cfc",
+  "branch": "codex/execution-state-research-20260929",
+  "executor": "external orchestration",
+  "implementation_changes_during_run": false
+}

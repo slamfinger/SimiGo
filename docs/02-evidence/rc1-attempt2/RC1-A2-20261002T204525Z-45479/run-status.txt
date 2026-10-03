@@ -1,0 +1,5 @@
+status=ABORTED_ORCHESTRATION_FIFO_OPEN_BLOCK
+arms_executed=NONE
+protocol_change=false
+implementation_change=false
+classification=ORCHESTRATION_INVALID_NOT_R_C1_RESULT

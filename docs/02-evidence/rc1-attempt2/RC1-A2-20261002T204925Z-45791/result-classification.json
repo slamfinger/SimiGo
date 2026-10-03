@@ -1,0 +1,8 @@
+{
+  "evidence_integrity": "PARTIAL_PRESERVED",
+  "lifecycle_reconstructable": false,
+  "protocol_x1_x5_judgment": "NOT_APPLICABLE_FULL_RUN_INCOMPLETE",
+  "overall": "INVALID_INCONCLUSIVE",
+  "reason": "Attempt #2 stopped on an implementation defect before C-B continuation and C-C; no valid evidence for continuation hypothesis.",
+  "hypothesis_interpretation": "NONE"
+}

@@ -1,0 +1,404 @@
+{
+  "arms": {
+    "C-A": {
+      "blocker": null,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": false,
+        "invalidRun": false,
+        "partialSuccess": true,
+        "x1TaskIdentity": true,
+        "x2BeforeState": false,
+        "x3AfterState": false,
+        "x4DirectionalChange": false,
+        "x5NextAction": false
+      },
+      "fresh_command": "continue",
+      "fresh_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57378,
+        "timestamp": "2026-10-03T04:07:50Z"
+      },
+      "fresh_pid": 57378,
+      "old_command": "old",
+      "old_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57377,
+        "timestamp": "2026-10-03T04:07:50Z"
+      },
+      "old_pid": 57377,
+      "physical": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:50Z",
+        "observedAt": "2026-10-03T04:07:50Z",
+        "overwriteReference": "RC1-A4-C-A-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/physical/entity-E.txt"
+      },
+      "pids_distinct": true,
+      "relation": null,
+      "runtime_forbidden_checks": [
+        {
+          "check": "old_process_memory",
+          "method": "separate OS process; no IPC endpoint opened; only declared persistence/declared source paths opened",
+          "observed": "pid=57377; declared_reads=3",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "fresh SQLite/Relation handles opened from declared paths",
+          "observed": "runtime_state_paths=0",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all source/persistence file access is recorded in declaredReadPaths; no directory enumeration is called",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/declared/task-charter.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/declared/s0.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/declared/s1.json\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "only PATH/TMPDIR/HOME/SWIFT_VERSION are declared; environment values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "no answer value is accepted by the old-process CLI; task rule and states enter only through declared Information formation",
+          "observed": "argv_count=18",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened; Core handles are constructed inside this process",
+          "observed": "cache_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_process_memory",
+          "method": "fresh OS process with a new PID; no IPC endpoint opened",
+          "observed": "fresh_pid=57378",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "SQLite/Relation handles are newly constructed from declared persistence paths",
+          "observed": "declared_persistence=1",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all persistence access is through the declared checkpoint/Information/Relation paths",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-A/workspace/execution-state.json\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "environment names are recorded but values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "CLI receives only arm/workspace/task-id; task rule and states are read from allowed carriers",
+          "observed": "argv_count=7",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened",
+          "observed": "cache_paths=0",
+          "passed": true
+        }
+      ]
+    },
+    "C-B": {
+      "blocker": null,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": true,
+        "invalidRun": false,
+        "partialSuccess": false,
+        "x1TaskIdentity": true,
+        "x2BeforeState": true,
+        "x3AfterState": true,
+        "x4DirectionalChange": true,
+        "x5NextAction": true
+      },
+      "fresh_command": "continue",
+      "fresh_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57405,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "fresh_pid": 57405,
+      "old_command": "old",
+      "old_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57396,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "old_pid": 57396,
+      "physical": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:51Z",
+        "observedAt": "2026-10-03T04:07:51Z",
+        "overwriteReference": "RC1-A4-C-B-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/physical/entity-E.txt"
+      },
+      "pids_distinct": true,
+      "relation": null,
+      "runtime_forbidden_checks": [
+        {
+          "check": "old_process_memory",
+          "method": "separate OS process; no IPC endpoint opened; only declared persistence/declared source paths opened",
+          "observed": "pid=57396; declared_reads=3",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "fresh SQLite/Relation handles opened from declared paths",
+          "observed": "runtime_state_paths=0",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all source/persistence file access is recorded in declaredReadPaths; no directory enumeration is called",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/declared/task-charter.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/declared/s0.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/declared/s1.json\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "only PATH/TMPDIR/HOME/SWIFT_VERSION are declared; environment values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "no answer value is accepted by the old-process CLI; task rule and states enter only through declared Information formation",
+          "observed": "argv_count=18",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened; Core handles are constructed inside this process",
+          "observed": "cache_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_process_memory",
+          "method": "fresh OS process with a new PID; no IPC endpoint opened",
+          "observed": "fresh_pid=57405",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "SQLite/Relation handles are newly constructed from declared persistence paths",
+          "observed": "declared_persistence=2",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all persistence access is through the declared checkpoint/Information/Relation paths",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/workspace/execution-state.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-B/workspace/information.sqlite\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "environment names are recorded but values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "CLI receives only arm/workspace/task-id; task rule and states are read from allowed carriers",
+          "observed": "argv_count=7",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened",
+          "observed": "cache_paths=0",
+          "passed": true
+        }
+      ]
+    },
+    "C-C": {
+      "blocker": null,
+      "evaluation": {
+        "failedAuditChecks": [],
+        "fullContinuationSuccess": true,
+        "invalidRun": false,
+        "partialSuccess": false,
+        "x1TaskIdentity": true,
+        "x2BeforeState": true,
+        "x3AfterState": true,
+        "x4DirectionalChange": true,
+        "x5NextAction": true
+      },
+      "fresh_command": "continue",
+      "fresh_marker": {
+        "phase": "fresh_process_started",
+        "pid": 57408,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "fresh_pid": 57408,
+      "old_command": "old",
+      "old_marker": {
+        "phase": "old_process_terminated",
+        "pid": 57407,
+        "timestamp": "2026-10-03T04:07:51Z"
+      },
+      "old_pid": 57407,
+      "physical": {
+        "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+        "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+        "declaredAt": "2026-10-03T04:07:51Z",
+        "observedAt": "2026-10-03T04:07:51Z",
+        "overwriteReference": "RC1-A4-C-C-EXTERNAL-001",
+        "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/physical/entity-E.txt"
+      },
+      "pids_distinct": true,
+      "relation": {
+        "df05e39ce28da168ccba1c70": {
+          "extractionMode": "observation",
+          "object": "673e81d9dae07e94d48adf4a",
+          "predicate": "observed-change-of",
+          "producedAt": "2026-10-03T04:07:51Z",
+          "producedBy": "declared-old-process-observation",
+          "source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/physical/entity-E.txt",
+          "subject": "14b71e7168cef99af79227b9"
+        }
+      },
+      "runtime_forbidden_checks": [
+        {
+          "check": "old_process_memory",
+          "method": "separate OS process; no IPC endpoint opened; only declared persistence/declared source paths opened",
+          "observed": "pid=57407; declared_reads=3",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "fresh SQLite/Relation handles opened from declared paths",
+          "observed": "runtime_state_paths=0",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all source/persistence file access is recorded in declaredReadPaths; no directory enumeration is called",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/declared/task-charter.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/declared/s0.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/declared/s1.json\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "only PATH/TMPDIR/HOME/SWIFT_VERSION are declared; environment values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "no answer value is accepted by the old-process CLI; task rule and states enter only through declared Information formation",
+          "observed": "argv_count=18",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened; Core handles are constructed inside this process",
+          "observed": "cache_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_process_memory",
+          "method": "fresh OS process with a new PID; no IPC endpoint opened",
+          "observed": "fresh_pid=57408",
+          "passed": true
+        },
+        {
+          "check": "old_model_context",
+          "method": "no model context argument/environment/path is declared",
+          "observed": "model_context_paths=0",
+          "passed": true
+        },
+        {
+          "check": "old_execution_core_runtime",
+          "method": "SQLite/Relation handles are newly constructed from declared persistence paths",
+          "observed": "declared_persistence=3",
+          "passed": true
+        },
+        {
+          "check": "undeclared_filesystem_scan",
+          "method": "all persistence access is through the declared checkpoint/Information/Relation paths",
+          "observed": "declared_reads=[\"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/workspace/execution-state.json\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/workspace/information.sqlite\", \"/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375/runs/C-C/workspace/relation.json\"]",
+          "passed": true
+        },
+        {
+          "check": "environment_as_answer_input",
+          "method": "environment names are recorded but values are not parsed as task input",
+          "observed": "environment_names=[\"BROWSER_USE_ACCESS_VERIFYING_IDENTITY\", \"CODEX_APP_TOOLS_PIPE_PATH\", \"CODEX_CI\", \"CODEX_CLI_PATH\", \"CODEX_INTERNAL_ORIGINATOR_OVERRIDE\", \"CODEX_MCP_NODE_PATH\", \"CODEX_PERMISSION_PROFILE\", \"CODEX_SAGE_BACKFILL_TRACKER_TAB_REUSE\", \"CODEX_SESSION_ID\", \"CODEX_TASK_WORKSPACE_VERIFYING_IDENTITY\", \"CODEX_TECTONIC_PATH\", \"CODEX_THREAD_ID\", \"CODEX_VERSION\", \"COLORTERM\", \"COMMAND_MODE\", \"CPATH\", \"GH_PAGER\", \"GIT_PAGER\", \"HOME\", \"LANG\", \"LC_ALL\", \"LC_CTYPE\", \"LIBRARY_PATH\", \"LOGNAME\", \"LOG_FORMAT\", \"MANPATH\", \"MallocNanoZone\", \"NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S\", \"NO_COLOR\", \"OLDPWD\", \"OSLogRateLimit\", \"PAGER\", \"PATH\", \"PWD\", \"RUST_LOG\", \"SDKROOT\", \"SHELL\", \"SHLVL\", \"SSH_AUTH_SOCK\", \"TERM\", \"TMPDIR\", \"USER\", \"XPC_FLAGS\", \"XPC_SERVICE_NAME\", \"_\", \"__CF_USER_TEXT_ENCODING\"]",
+          "passed": true
+        },
+        {
+          "check": "harness_answer_injection",
+          "method": "CLI receives only arm/workspace/task-id; task rule and states are read from allowed carriers",
+          "observed": "argv_count=7",
+          "passed": true
+        },
+        {
+          "check": "implicit_cache",
+          "method": "no cache path is declared or opened",
+          "observed": "cache_paths=0",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "C_A_partial_only": true,
+    "C_A_x1_only": true,
+    "C_B_full_success": true,
+    "C_B_relation_artifact_absent": true,
+    "C_C_full_success": true,
+    "C_C_relation_artifact_present": true,
+    "C_C_relation_direction_correct": true,
+    "all_arms_completed": true,
+    "all_fresh_commands_continue": true,
+    "all_lifecycle_markers_present": true,
+    "all_old_commands_old": true,
+    "all_physical_hashes_present": true,
+    "all_pids_distinct": true,
+    "all_runtime_forbidden_checks_passed": true,
+    "implementation_baseline": "569fe540d1ff",
+    "run_id": "RC1-A4-20261003T040749Z-57375"
+  }
+}

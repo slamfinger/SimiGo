@@ -17743,3 +17743,1211 @@ C-Execute = READY, BUT NOT AUTHORIZED
 R-C1      = NOT RUN
 Next = explicit signed human authorization → C-Execute = AUTHORIZED
 ```
+
+### R-C1 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human 明确授权 `R-C1 = AUTHORIZED` 后，以 `bae68a852cfc` 为唯一
+implementation baseline 在 detached worktree 构建 release binaries 并开始
+执行。官方 run root =
+`docs/02-evidence/rc1-execution/RC1-20261002T202144Z-42754`。C-A old
+process 完成：S0 formation、真实外部 Physical overwrite S0→S1、S1
+formation 与 termination marker 均保留；C-A first fresh attempt 暴露
+implementation CLI parser defect（literal `continue` 被当作 option value）。
+按 execution authorization 规则记录 deviation D-1，未修改 implementation，
+使用 duplicated literal `continue` token 完成一次 fresh process；C-A
+evaluator = partial success，仅 X-1 PASS，X-2…X-5 FAIL。随后 C-B old
+process fatal error：`invalid state: C-B carrier pointer set is invalid`，
+原因是 incremental checkpoint validation 在 I-TASK/I-S0 后就要求 final
+C-B pointer set。按 stop condition 立即停止；C-B fresh 未运行，C-C 未运行。
+结果分类 = `INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`，不支持任何
+研究 hypothesis 解释。C-Impl reopened/revision required；新 C-Execute
+authorization 必须待修复并重新 audit 后另行授予。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED
+C-Execute = NOT AUTHORIZED / PRIOR AUTHORIZATION CONSUMED
+R-C1      = STOPPED / INVALID INCONCLUSIVE
+Next = fix C-Impl parser + incremental checkpoint validation → C-Impl audit
+       → new C-Execute authorization
+```
+
+### C-IMPL D-1/D-2 REVISION RE-AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+按窄修订范围完成 D-1/D-2 修复并提交
+`df7a6246c7a8`。D-1：新增 `LifecycleInvocationParser`，old/continue
+均要求 lifecycle command 为首 token，option 必须成对、以 `--` 开头且不
+重复；两个 binary 分别 guard `.old` / `.continue`。D-2：
+`ExecutionState.validate(for:stage:)` 区分 construction 与 final。C-B
+合法 construction 为空、task、task+s0、task+s0+s1、task+s0+s1+progress；
+final 才要求四 pointers。C-C construction 要求完整 base，或完整 base +
+Relation；final 要求五 pointers。old process 构造期使用 construction
+checks，POST_CHANGE 使用 final check；fresh continuation 使用 final check。
+新增 regression tests 覆盖 old/continue grammar、C-B legal/invalid
+construction、premature final rejection 与 C-C complete-base-before-relation。
+release build PASS；tests 13/13 PASS；protected Core diff 0 bytes；frozen
+C-Spec/C-Design tracked diff none；runtime answer constants/direct Core
+operations absent。R-C1 Attempt #1 保持
+`STOPPED / INVALID INCONCLUSIVE`，不作为 hypothesis evidence；Attempt #2
+未运行，必须获得新的显式 human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-1/D-2 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 Attempt #1 = STOPPED / INVALID INCONCLUSIVE
+R-C1 Attempt #2 = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 Attempt #2 authorization, otherwise remain blocked
+```
+
+### R-C1 ATTEMPT #2 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human explicit授权 Attempt #2，新 implementation baseline =
+`df7a6246c7a8`；run root =
+`docs/02-evidence/rc1-attempt2/RC1-A2-20261002T204925Z-45791`。真实执行中
+D-1 runtime 语法成立：`CContinuationStudy` 解析 `.old`，
+`CContinuationStudyContinue` 解析 `.continue`，无 deviation。C-A old/
+external overwrite/fresh/evaluator 完成，evaluator 为 partial success（仅
+X-1）。C-B old process 在 Information/Relation store 初始化后 crash：
+C-B 禁用 Relation persistence，但 old formation helper 对每个 arm 强制
+unwrap `relationStore`，触发 EXC_BREAKPOINT。checkpoint 保留
+`OLD_PROCESS_STARTED` + empty pointers；C-B fresh 未运行；C-C 未运行。
+macOS crash report、partial C-A evidence、empty C-B checkpoint 已封存。
+执行期间未修改 implementation/protocol。Attempt #2 分类 =
+`INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`；不得解释为 continuation
+hypothesis 支持或反证。C-Impl reopened/revision required；新执行需再修
+implementation 并重新 audit + 新授权。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED
+C-Execute = NOT AUTHORIZED / ATTEMPT #2 AUTHORIZATION CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+Next = fix nil optional-store force unwrap without adding C-B Relation
+       semantics → C-Impl audit → new explicit C-Execute authorization
+```
+
+### C-IMPL D-3 RE-AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+按窄范围修复 Attempt #2 暴露的 C-B isolation defect，提交
+`806dd3eea55c`。当 `relationEnabled == false` 时，old/fresh 两个 process
+均注入 `DisabledRelationStore` 而非 nil；该 disabled carrier fail-closed：
+Relation write/read 均抛错，不持久化、不返回 Relation、不提供 Relation
+semantics。C-B 仍通过 ExecutionScope 使用 SQLite Information path；C-C 仍
+使用 RelationFileStore。移除了 `relationStore!`。新增 regression：
+disabled Relation write/read fails closed；C-B Information-only
+ExecutionScope 可 form/observe Information 且不触发 disabled Relation；
+C-C complete-base-before-Relation invariant 保持。release build PASS；all
+test suites PASS；protected Core diff 0；runtime answer constants 与 direct
+Core operations absent；`relationStore!` absent。R-C1 Attempt #3 未运行，
+必须获得新的显式 human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-3 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 #3 authorization, otherwise implementation remains frozen
+```
+
+### R-C1 ATTEMPT #3 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human explicit授权 Attempt #3，新 implementation baseline =
+`806dd3eea55c`。两个 orchestration pre-run root 在 old protocol 前中止，
+分类为 orchestration invalid，不作为 R-C1 result。官方 run root =
+`docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860`。C-A old/
+external overwrite/fresh/evaluator 完成，evaluator 为 partial success（仅
+X-1）。C-B old/external overwrite/fresh/evaluator 完成，evaluator 为 full
+success X-1…X-5。C-C old process 在 awaiting marker 前停止：
+`invalid state: C-C construction pointer set is invalid`；C-C fresh 未运行。
+原因是当前 implementation 只允许 C-C construction 的 complete base 或
+complete final pointer set，未建模 legal staged C-C construction。macOS
+crash report、C-A/C-B checkpoint staging、physical overwrite hashes、fresh
+reports 与 evidence 均封存。执行期间未修改 implementation/protocol。
+Attempt #3 分类 =
+`INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`；不得解释为 continuation
+hypothesis 支持或反证。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED / D-4
+C-Execute = NOT AUTHORIZED / ATTEMPT #3 AUTHORIZATION CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+Next = diagnose/fix C-C staged construction validation → C-Impl audit
+       → new explicit C-Execute authorization
+```
+
+### C-IMPL D-4 REVISION AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+D-4 最小修订提交 `569fe540d1ff`。诊断确认 C-C construction validator 只允许
+complete base 或 complete final，未建模 frozen C-C formation 的 staged
+sequence。修订复用 ordered construction validator 允许：
+`[] → task → task+s0 → task+s0+s1 → task+s0+s1+progress`；Relation 只能
+在 complete base 后作为 complete final set 出现；final validation 不变。
+新增 tests：接受完整 staged sequence、Relation only after complete base、
+拒绝 premature/corrupt/extra Relation states。release build PASS；trackD
+tests 14/14 PASS；protected Core diff 0；frozen C-Spec/C-Design tracked diff
+none；runtime answer constants 与 direct Core operations absent。
+R-C1 Attempt #4 未运行；需新的 explicit human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-4 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #4   = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 #4 authorization, otherwise implementation remains frozen
+```
+
+### R-C1 ATTEMPT #4 = AUTHORIZED / EXECUTED / VALID — EVIDENCE PRESERVED — 2026-10-03
+
+human explicit授权 Attempt #4，implementation baseline =
+`569fe540d1ff`；run root =
+`docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375`。三臂全部完成：
+C-A 在无 persistent Information Space 时仅恢复 X-1 task identity，X-2…X-5
+FAIL；C-B 通过 independent Information path 恢复
+S0/S1/directional change/next action，X-1…X-5 FULL SUCCESS；C-C 通过 persisted
+Relation path 取得 `I-S1 ──observed-change-of──> I-S0` 及两端 Information，
+X-1…X-5 FULL SUCCESS。物理变化、old/fresh process separation、carrier
+separation、forbidden-channel runtime checks 均有 evidence；无 implementation
+或 protocol runtime change。Layer 1 = PRESERVED；Layer 2 =
+`VALID THREE-ARM EXECUTION COMPLETED`。Layer 3 bounded observation：在本任务/
+harness/lifecycle slice 内，persistent Information Space 区分了 C-A 与
+C-B/C-C；persistent Relation carrier 在该单变化任务中未表现出 beyond
+independent Information 的额外 continuation capability，但 C-C 确实实际使用了
+Relation path。此结论不外推为所有 Agent、所有 Memory System、PALACE schema
+或 Relation 普遍不必要的证明。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-4 REVISION AUDIT PASS
+C-Execute = AUTHORIZED / CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #4   = COMPLETED / VALID / EVIDENCE PRESERVED
+Next = human research interpretation gate; no automatic universal conclusion
+```
+
+### R-C1 #4 LAYER 3 BOUNDED OBSERVATIONS O1/O2 SEALED — 2026-10-03
+
+Layer 3 正式封存两条 bounded observations。O1 = bounded positive：在当前 fixed
+task / harness / lifecycle slice 中，C-A state-only restoration 仅恢复 task
+identity（X-1），不能完成 X-2…X-5；persistent Information 使 C-B 恢复
+S0/S1/directional change/next action 并通过 X-1…X-5。因此 runtime state alone
+不足以完成 full semantic continuation；persistent information outside restored
+runtime execution state enabled full continuation sequence。O2 = bounded
+negative / undifferentiated：C-B independent persistent Information 与 C-C
+Information + persisted Relation 均达到 full continuation；C-C relation path
+确实被使用，但本单变化任务未观察到 Relation carrier beyond independent
+Information 的额外 continuation capability。O2 不等于 Relation 普通不必要，
+只表示当前任务未形成 Relation 区分场景。允许表述：R-C1 #4 provides a bounded
+empirical observation that semantic continuation may depend on persistent
+information outside the runtime execution state。禁止表述：IPAC proven、PALACE
+proven necessary、Relation universally unnecessary、Execution State theory fully
+established、所有 Agent tasks require persistent Information Space。
+Engineering-discovery chain #1→D-1/D-2，#2→D-1 runtime PASS/D-3，#3→D-4，
+#4→first valid bounded research observation 继续保留为 implementation /
+execution-discovery evidence，不是 continuation-hypothesis evidence。
+
+当前状态：
+
+```text
+R-C1 #4 = COMPLETED / VALID / EVIDENCE PRESERVED
+Layer 3 = O1 bounded positive + O2 bounded negative/undifferentiated
+Claim scope = task-domain / harness / lifecycle-slice bounded only
+Next = human research interpretation gate; no automatic universal conclusion
+```
+
+### R-C1 #4 RESEARCH OBSERVATIONS / EVIDENCE AUDIT / C-DESIGN IMPACT REVIEW = SEALED PASS — 2026-10-03
+
+R-C1 #4 正式进入并完成研究解释闭合。Evidence/Result Audit 的 machine checks
+全部 PASS：run/baseline/authorization 正确；三臂 old/fresh PIDs distinct；
+old command=old、fresh command=continue；lifecycle markers齐备；physical
+before/after hashes齐备；runtime forbidden-channel checks全过；C-A
+partial/X-1-only、C-B full、C-C full；C-B relation artifact absent；C-C
+relation artifact present，且方向为 I-S1 ──observed-change-of──> I-S0。frozen
+C-Spec/C-Design 与 audited implementation均无 diff。Research Interpretation
+Record封存：O1 = SUPPORTED / TASK-DOMAIN-BOUNDED，即在该 task/harness/lifecycle
+slice内 runtime state alone不足以完成 full continuation，persistent Information
+是 preregistered continuation所需的 operational external information source；
+O2 = NOT OBSERVED / TASK-DOMAIN-BOUNDED，即单变化任务中未观察到 Relation carrier
+beyond independent Information的额外 continuation capability；不得改写为
+Relation unnecessary。C-Design Impact Review结论：NO C-DESIGN AMENDMENT；
+现有 C-A/B/C operational arms、allowed channels、lifecycle、X-1…X-5与claim
+boundary已足以表达和检验该关系；D-4属C-Impl state validation gap。Route A
+（Information dependency replication）与 Route B（Relation-discriminating task）
+仅登记为候选，均未选择、未授权。PALACE implementation仍NOT OPEN。
+
+当前状态：
+
+```text
+B Track      = CLOSED
+C Gate       = OPEN
+C-Spec       = FROZEN / HUMAN RE-AUDIT PASS
+C-Design     = CONFIRMED / IMPACT REVIEW PASS / NO AMENDMENT
+C-Impl       = D-4 REVISION AUDIT PASS
+C-Execute    = AUTHORIZATION CONSUMED
+R-C1 #1…#3  = INVALID INCONCLUSIVE
+R-C1 #4      = CLOSED / VALID / EVIDENCE PRESERVED / OBSERVATIONS SEALED
+Research O1  = SUPPORTED / TASK-DOMAIN-BOUNDED
+Research O2  = NOT OBSERVED
+Next experiment = DEFERRED BETWEEN ROUTE A AND ROUTE B
+PALACE       = NOT OPEN
+```
+
+### IPAC / EXECUTION STATE RESEARCH SYNTHESIS GATE OPENED — NO NEW EXPERIMENT — 2026-10-03
+
+按human建议进入Post-RC1 Synthesis Gate，不改代码、不改C-Spec/C-Design/
+C-Impl/Core/PALACE，不选择Route A/B。新增
+`SIMIGO_LAB_IPAC_EXECUTION_STATE_RESEARCH_SYNTHESIS_20261003.md`。合成边界：
+R-C1 #4 valid evidence支持O1（task-domain-bounded）——runtime state alone
+不足以完成full semantic continuation，persistent Information enables the
+preregistered continuation sequence；O2——单变化任务中Relation未表现beyond
+independent Information的额外continuation capability。候选模型：
+Continuation = Restored Execution State + Resolved Persistent Information +
+Satisfied Continuation Conditions；ES偏向lifecycle/control substrate，
+persistent Information偏向semantic substrate。IPAC解释保持OPEN/NONBINDING：
+候选方向不是四个字段，而是当前Execution State合法接管已结算计算结果的关系；
+candidate chain为Past Computation → Settled Result → Persistent Information /
+provenance → IPAC-style validation → Execution State adoption → Continuation。
+三个synthesis questions登记：Q1 ES内部最小内容、Q2外部persistent
+Information Space可承载内容、Q3当前State可直接adopt settled result而非重算
+的条件。Route A/B分别对应Information dependency repeatability与Relation
+irreducible role，均DEFERRED；选择应待synthesis完成后进行。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / PAUSED FOR POST-RC1 SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = NOT AUTHORIZED
+R-C1 #1…#3         = INVALID INCONCLUSIVE
+R-C1 #4            = VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / BOUNDED
+O2                 = SEALED / NOT OBSERVED / BOUNDED
+IPAC interpretation = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = NOT OPEN
+Next = complete IPAC/Execution State synthesis; no experiment until a new gate
+```
+
+### IPAC SYNTHESIS CLOSURE REVIEW PACKET CREATED — H1…H3 PENDING — 2026-10-03
+
+按human建议将synthesis收尾定义为边界闭合动作，不新增理论假设、不改代码、
+不修改frozen artifacts、不选择Route A/B、不打开PALACE。新增
+`SIMIGO_LAB_IPAC_SYNTHESIS_CLOSURE_REVIEW_20261003.md`，提出三层模型：
+Persistent Information Space提供history/provenance/settled result/relation/
+anchors，经resolve/validate进入Execution State的lifecycle/control/position/
+continuation entry conditions，再形成continuation decision：Adopt settled
+result→Continue，Cannot adopt→Recompute/Reject。IPAC仍为OPEN/NONBINDING
+candidate，研究对象是当前State为何可合法adopt settled result，而非普通
+checkpoint/cache。Human Review只审三项：H1接受ES与Persistent Information为
+不同但协作的semantic layers；H2接受continuation lawfulness为核心后续问题；
+H3接受IPAC为open/nonbinding Result Adoption/Continuation Conditions
+candidate且不冻结I/P/A/C字段。若H1…H3通过，synthesis可关闭，ES与Persistent
+Info标记SYNTHESIS MODEL ACCEPTED；IPAC/minimality/semantics保持open、
+unproven、not frozen；Route A/B继续DEFERRED；PALACE CLOSED。
+
+当前状态：
+
+```text
+B Track                 = CLOSED
+C Gate                  = OPEN / SYNTHESIS CLOSURE REVIEW PENDING
+C-Spec                  = FROZEN
+C-Design                = CONFIRMED / NO AMENDMENT
+C-Impl                  = CLOSED / D-4 AUDIT PASS
+R-C1 #4                 = CLOSED / VALID
+O1                      = SEALED / SUPPORTED / BOUNDED
+O2                      = SEALED / NOT OBSERVED / BOUNDED
+IPAC                    = OPEN / NONBINDING
+IPAC minimality         = UNPROVEN
+IPAC semantics          = NOT FROZEN
+Route A                 = DEFERRED
+Route B                 = DEFERRED
+PALACE                  = CLOSED
+Next = human H1…H3 review; no route selection before synthesis closure
+```
+
+### IPAC SYNTHESIS CLOSURE = HUMAN H1…H3 ACCEPTED — 2026-10-03
+
+human正式裁定synthesis closure review三项全部ACCEPT。H1：Execution State与
+Persistent Information Space为不同但协作的semantic layers；R-C1 #4提供边界
+证据——C-A state-only仅X-1，C-B state+persistent Information达X-1…X-5；
+Persistent Information Space仍是抽象研究层，不等同数据库/PALACE/存储实现。
+H2：后续核心问题是continuation lawfulness，而非仅memory/runtime restoration；
+模型暂定为Restored Execution State + Resolved Persistent Information +
+Satisfied Continuation Conditions → Semantic Continuation，边界仍为
+task-domain-bounded。H3：IPAC保持OPEN/NONBINDING，MINIMALITY UNPROVEN，
+SEMANTICS NOT FROZEN，I/P/A/C decomposition NONBINDING；未来Route B若证明
+Relation-like structure必要，才反过来决定IPAC是否需要relation/anchor结构，
+不得预先固定四字段。Synthesis正式CLOSED；后续分叉问题是外部信息是否仅为
+Information，或存在只有Relation能表达的lawful adoption condition。Route
+A/B仍未选择，进入新判别实验前需另开gate。
+
+当前状态：
+
+```text
+B Track             = CLOSED
+C Gate              = OPEN / SYNTHESIS CLOSED
+C-Spec              = FROZEN
+C-Design            = CONFIRMED / NO AMENDMENT
+C-Impl              = CLOSED / D-4 AUDIT PASS
+R-C1 #1…#3          = INVALID INCONCLUSIVE
+R-C1 #4             = CLOSED / VALID / EVIDENCE PRESERVED
+O1                  = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                  = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Execution State     = SEMANTIC LAYER ACCEPTED
+Persistent Info     = SEMANTIC LAYER ACCEPTED
+Continuation model  = ACCEPTED / TASK-DOMAIN-BOUNDED
+IPAC                = OPEN / NONBINDING
+IPAC minimality     = UNPROVEN
+IPAC semantics      = NOT FROZEN
+Route A             = DEFERRED
+Route B             = DEFERRED
+PALACE              = CLOSED
+Next = separate discriminating-experiment gate; no route selected by closure
+```
+
+### IPAC SYNTHESIS CLOSURE APPROVED — H1/H2/H3 ACCEPTED — 2026-10-03
+
+human完成Closure Review最终裁定：H1 ACCEPT、H2 ACCEPT、H3 ACCEPT；Synthesis
+Closure APPROVED。正式接受Execution State与Persistent Information Space为
+distinct but cooperating semantic layers；接受Continuation Model为
+ACCEPTED / TASK-DOMAIN-BOUNDED；IPAC保持OPEN/NONBINDING、SEMANTICS NOT
+FROZEN、MINIMALITY UNPROVEN。Route A/B继续DEFERRED，PALACE CLOSED。Closure
+仅关闭当前研究模型问题，不授权Route A/B，不开启PALACE，不修改C-Spec、
+C-Design、C-Impl或Core。下一动作是单独进行Route A vs Route B Experimental
+Discrimination Review，不是实验执行，也不是路由选择。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Execution State    = SEMANTIC LAYER ACCEPTED
+Persistent Info    = SEMANTIC LAYER ACCEPTED
+Continuation model = ACCEPTED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+IPAC semantics     = NOT FROZEN
+IPAC minimality    = UNPROVEN
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Research           = PAUSED
+Next = Route A vs Route B Experimental Discrimination Review; no execution
+```
+
+### ROUTE A / B EXPERIMENTAL DISCRIMINATION REVIEW SEALED — ROUTES DEFERRED — 2026-10-03
+
+进入Route A vs Route B Experimental Discrimination Review，不写代码、不设计实现、
+不授权实验、不选择路线。新增
+`SIMIGO_LAB_ROUTE_A_B_EXPERIMENTAL_DISCRIMINATION_REVIEW_20261003.md`。D1：
+R-C1 #4已排除当前task/harness/lifecycle slice内“Execution State alone is
+sufficient for full continuation”。D2：保留两个竞争解释——Hypothesis I
+Information sufficiency；Hypothesis II Relation-dependent adoption。D3：Route
+A=INFORMATION-COMPLEXITY PROBE，测试O1的Information dependency是否在更复杂
+历史/settled facts下可重复；失败难以归因。D4：Route
+B=RELATION-DISCRIMINATION PROBE，直接测试continuation合法性是否需要
+Relation(S1,S0)，理想判别为C-B FAIL/C-C PASS。D5：最大confounder是
+Information equivalence；C-B不得人为剥夺事实，只可缺Relation carrier/
+adoption condition。D6：真正的discrimination要求equivalence audit通过、C-B
+FAIL/incomplete、C-C PASS、carrier trace证明Relation→endpoint Information、
+无fallback/semantic substitution。D7：C-B/C-C双PASS仍为NOT OBSERVED；双FAIL
+为inconclusive；无equivalence audit的C-B FAIL/C-C PASS不能证明Relation
+necessity。D8：Route A/B保持DEFERRED，selected route=NONE；下一gate是所选
+路线的experimental-design review，仍需audit和新human authorization。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Route A            = DEFERRED / INFORMATION-COMPLEXITY PROBE
+Route B            = DEFERRED / RELATION-DISCRIMINATION PROBE
+Selected route     = NONE
+Open question      = Relation as independent continuation requirement vs
+                     Persistent-Information-only semantics
+Next = separate experimental-design review for chosen route; no execution
+```
+
+### ROUTE SELECTION REVIEW PACKET READY — SELECTED ROUTE NONE — 2026-10-03
+
+进入Route Selection Review，但不直接选择路线、不写代码、不开启design/impl/
+execution/PALACE。新增
+`SIMIGO_LAB_ROUTE_SELECTION_REVIEW_20261003.md`，将裁定对象限定为S1…S4：
+S1确认最高优先级未知量是否为“是否存在不可由Persistent Information单独表达的
+Relation-dependent continuation condition”；S2确认在未检验该竞争解释前，
+Route A保持DEFERRED而非因其不重要；S3确认Route B只有在后续可构造
+Same Information → C-B(I only)/C-C(I+Relation)，并auditable地控制
+Information equivalence、isolated Relation difference、identical continuation
+criterion时才可进入design，否则继续DEFERRED；S4确认即使S1…S3通过，也只是
+`Route B = SELECTED FOR EXPERIMENTAL DESIGN`，不是implementation/execution
+authorization。若S1…S4通过，Route B Design Gate需覆盖B1…B14，其中B2/B3/B5
+为关键控制。当前无selected route。
+
+当前状态：
+
+```text
+B Track                 = CLOSED
+C Gate                  = OPEN / ROUTE SELECTION REVIEW PENDING
+C-Spec                  = FROZEN
+C-Design                = CONFIRMED / NO AMENDMENT
+C-Impl                  = CLOSED / D-4 AUDIT PASS
+R-C1 #4                 = CLOSED / VALID
+O1                      = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                      = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Route A                 = DEFERRED / INFORMATION-COMPLEXITY PROBE
+Route B                 = DEFERRED / RELATION-DISCRIMINATION PROBE
+Selected route          = NONE
+Route B design          = NOT OPEN
+Route B implementation  = NOT STARTED
+Route B execution       = NOT AUTHORIZED
+PALACE                  = CLOSED
+Next = human S1…S4 route-selection ruling; no design before explicit selection
+```
+
+### IPAC MINIMAL SEMANTICS GATE OPENED — ROUTE SELECTION SUPERSEDED — 2026-10-03
+
+human裁定Route Selection Review不通过S1…S4：S1/S2/S3 DEFER，S4 NOT APPROVED。
+原因是在未定义“settled result为何可被直接采用”前，选择Information vs Relation
+为上游倒置。Route A/B保持DEFERRED；Route Selection =
+PAUSED / SUPERSEDED BY IPAC CLARIFICATION。新增
+`SIMIGO_LAB_IPAC_MINIMAL_SEMANTICS_GATE_20261003.md`，只研究最小、可检验、
+非I/P/A/C绑定的adoption semantics：
+
+```text
+Settled Result R produced under C
++ Applicability Conditions
++ Current Execution State C'
+    ↓
+applicable(C', C, R)
+    ↓
+adopt(R) → Continue
+否则 reject / recompute
+```
+
+候选定义：R为settled仅当C的declared result boundary已完成、R有defined
+semantics、可addressable/persistable、provenance连接R到C，且R与可重算
+intermediate state边界明确。Applicability condition必须能在不重执行C的情况
+下评估；candidate dimensions包括identity/scope、state compatibility、
+preconditions、temporal validity、authority、absence of invalidation，但最小
+必要集未冻结。Adoption不得mutate prior settled result。Relation可能只是
+applicability condition的一种证明/表达方式，不假设为IPAC基本概念。此gate不
+修改C-Spec/C-Design/C-Impl/Core/PALACE，不授权实验。
+
+当前状态：
+
+```text
+Route A                = DEFERRED
+Route B                = DEFERRED
+Route Selection        = PAUSED / SUPERSEDED BY IPAC CLARIFICATION
+S1…S4                  = DEFERRED / NOT APPROVED
+IPAC                   = OPEN / NONBINDING
+IPAC Minimal Semantics = OPEN / CANDIDATE / NOT FROZEN
+IPAC Minimality        = UNPROVEN
+PALACE                 = CLOSED
+C-Design               = NOT OPEN
+Implementation         = NOT STARTED
+Execution              = NOT AUTHORIZED
+Next = human audit of minimal adoption semantics; no route decision yet
+```
+
+### EXECUTION STATE × INFORMATION SPACE BOUNDARY SYNTHESIS OPENED — ROUTES STILL DEFERRED — 2026-10-03
+
+按human概念修正，Route Selection与Immediate Route B问题被进一步上移。此前模型
+`Execution State + External Information`过于接近平行模块；修正为
+`Execution State`是发生在于/对抗其Information Space中的bounded execution
+trajectory。`E ⊂ P`不是数据包含，而是semantic execution embedding：ES在P定义
+的事实、约束、历史、settled results范围内执行。ES候选维度包含internal
+trajectory（计算/position/intermediate-final state）、external trajectory
+（read/modify/invoke/observe/effect）、lifecycle restoration-validation-
+adoption-continuation。Information Space不是document/embedding/search仓库，
+而是semantic environment：facts/history/constraints/settled results/relations/
+external resources；数据库可保持passive，SimiGo/LLM是解释、判断、组织语义与
+行动主体。R-C1 #4重新解读：C-A是ES被孤立、缺其Information Space而不能完成
+continuation；C-B是ES重新进入/访问Information Space并获得continuation所需信息；
+C-C是同一Information Space access加Relation作为内部结构。因此Route B原问题
+`Information vs Information + Relation`被上移为ES×Information Space边界与耦合
+关系；Relation可能只是Information Space内部关系结构，不是与Information平行的
+额外continuation layer。新增
+`SIMIGO_LAB_EXECUTION_INFORMATION_SPACE_BOUNDARY_SYNTHESIS_20261003.md`；
+Minimal Semantics Gate与Route Selection Review均已登记addendum。Route A/B仍
+DEFERRED。
+
+当前状态：
+
+```text
+Route A              = DEFERRED
+Route B              = DEFERRED
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+IPAC Minimal Semantics = SUPERSEDED BY BOUNDARY SYNTHESIS
+Boundary Synthesis   = OPEN / NONBINDING / HUMAN AUDIT PENDING
+PALACE               = CLOSED
+C-Design             = NOT OPEN
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human audit of boundary synthesis; no route or implementation work
+```
+
+### BOUNDARY SYNTHESIS CONCEPTUAL AUDIT INPUT RECORDED — HUMAN AUDIT PENDING — 2026-10-03
+
+按human审计建议，Boundary Synthesis登记四项概念guardrails，暂不形式化、不开
+实验。①`E ⊂ P`仅为直观记号，不得当集合包含；正式候选说法是Execution State
+embedded in Information Space，未来如需才可研究`ι : E → P`。②区分两个
+boundary：Information Space boundary决定哪些facts/history/constraints/settled
+results属于当前semantic space；Execution State boundary是本次执行的state/
+observations/computation/action trajectory。bounded trajectory不暗示Information
+Space是bounded/static container。③“new Execution State enters an Information
+Space”仍是provisional说法；更精确的后续问题是给定Information Space与待执行
+Execution State，二者semantic coupling如何决定其可lawfully read/adopt/modify/
+extend哪些信息。执行也可能产生新facts/results/history/effects，因此耦合可能改
+变Information Space。④“直接adopt settled result R”从IPAC前提降级为待解释现
+象；候选解释包括R属于当前Information Space、R适用范围仍成立、当前ES与产生R的
+semantic conditions相容、且无invalidation。IPAC不被假设为解释或前提。状态保持
+Boundary Synthesis OPEN / HUMAN AUDIT PENDING；Route Selection PAUSED；IPAC
+OPEN/NONBINDING；PALACE CLOSED；implementation/execution不启动。
+
+当前状态：
+
+```text
+Boundary Synthesis   = OPEN / CONCEPTUAL AUDIT INPUT RECORDED / HUMAN AUDIT PENDING
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+PALACE               = CLOSED
+C-Design             = NOT OPEN
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human conceptual ruling on the four guardrails; no formalization or
+       experiment before that ruling
+```
+
+### BOUNDARY SYNTHESIS CONCEPTUAL RULING PACKET READY — HUMAN RULING PENDING — 2026-10-03
+
+将四项conceptual guardrails压缩为三题Human Conceptual Ruling Packet，状态为
+`CONCEPTUAL RULING PACKET READY / HUMAN RULING PENDING`。H1裁定Information
+Space是否首先表示当前执行所能获得、引用、作用于的information domain，而不是
+database/knowledge base/semantic conditions本身；可包含persisted information、
+current session information、history、settled results、externally observed
+information等。H2裁定Execution State是否主要回答“当前执行做到哪里、处于什么
+状态”，而不是“系统知道什么”；与Information Space形成What information is
+available? / Where is execution?的二分耦合。H3裁定在Goal不变、current
+Execution State identifiable、required Information仍可用时，“从当前State继续”
+是否可作为continuation基本原型；注意只是possible，不是guaranteed，资源、外部
+状态、程序版本、权限等仍属后续条件。该packet不formalize IPAC、不选Route、不
+开PALACE、不authorize execution、不改C-Spec/C-Design/C-Impl。
+
+当前状态：
+
+```text
+Boundary Synthesis   = OPEN / CONCEPTUAL RULING PACKET READY / HUMAN RULING PENDING
+H1                  = Information Space definition ruling pending
+H2                  = Execution State definition ruling pending
+H3                  = Continuation prototype ruling pending
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+PALACE               = CLOSED
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human H1…H3 conceptual ruling; no consequence review before ruling
+```
+
+### BOUNDARY SYNTHESIS HUMAN RULING ACTIVE — ORDER H1→H2→H3 — 2026-10-03
+
+Boundary Synthesis进入active Human Ruling，裁定顺序固定为H1 Information
+Space → H2 Execution State → H3 Continuation。语义链为：“哪些信息仍然可获得？”
+→“执行已经做到哪里？”→“目标不变 + 当前State可确定 + required Information仍在
+→ continuation possible？”规则：不再增加概念材料、guardrails、implementation、
+experiment、route selection、PALACE或IPAC formalization。若任一项FAIL，返回
+conceptual revision并重审；FAIL时不进入consequence review。当前等待human按序
+给出H1/H2/H3裁定。
+
+当前状态：
+
+```text
+Boundary Synthesis = HUMAN RULING ACTIVE / ORDER H1→H2→H3
+H1                = Information Space ruling pending
+H2                = Execution State ruling pending
+H3                = Continuation ruling pending
+Route Selection    = PAUSED
+IPAC               = OPEN / NONBINDING
+PALACE             = CLOSED
+Implementation     = NOT STARTED
+Execution          = NOT AUTHORIZED
+Next = ordered human H1→H2→H3 ruling; no consequence review on any failure
+```
+
+### BOUNDARY SYNTHESIS H1 ACCEPTED — STOP BEFORE H2 — 2026-10-03
+
+human按序完成H1 ruling：H1 Information Space = ACCEPTED。裁定理由：Information
+Space回答当前执行能获得、引用、作用于哪些信息，本质是information domain，而非
+具体存储结构。Database/Knowledge Base/PALACE可承载、组织或提供Information
+Space的一部分，但属于information carriers，不等于Information Space本身；
+Information Space也不被定义为semantic-condition system。其边界可随执行、信息
+获取、外部观察和持久化状态变化，无需对应固定物理数据库边界。按裁定纪律停止在
+H1之后；H2/H3 pending，不进入H2 consequence或IPAC/Route/PALACE推论。
+
+当前状态：
+
+```text
+Boundary Synthesis = H1 ACCEPTED / H2 PENDING / H3 PENDING / STOP BEFORE H2
+H1 Information Space = ACCEPTED
+H2 Execution State = PENDING
+H3 Continuation = PENDING
+Route Selection    = PAUSED
+IPAC               = OPEN / NONBINDING
+PALACE             = CLOSED
+Implementation     = NOT STARTED
+Execution          = NOT AUTHORIZED
+Next = explicit human H2 ruling only; no H2 content or consequence review
+```
+
+### BOUNDARY SYNTHESIS H2 ACCEPTED — STOP BEFORE H3 — 2026-10-03
+
+human按序完成H2 ruling：H2 Execution State = ACCEPTED。核心职责区分成立：
+Execution State回答当前goal-directed execution已经进行到哪里、处于什么状态；
+Information Space回答What information is available?二者不同。执行会产生/读取/
+改变信息，但不能将Execution State定义为“系统知道什么”。暂定描述为
+Execution State = 当前goal-directed execution的位置、阶段、控制状态与可继续
+点；其中“可继续点”是执行位置/状态属性，不提前规定完整continuation条件。二者
+可耦合但不合并：Information Space ↕ continuation ↕ Execution State。按纪律
+停止在H2之后；H3 pending，不进入Consequence Review、IPAC定义、Route选择或
+Execution authorization。
+
+当前状态：
+
+```text
+Boundary Synthesis = H1 ACCEPTED / H2 ACCEPTED / H3 PENDING / STOP BEFORE H3
+H1 Information Space = ACCEPTED
+H2 Execution State = ACCEPTED
+H3 Continuation = PENDING
+Consequence Review = NOT ENTERED
+Route Selection = PAUSED
+IPAC = OPEN / NONBINDING
+Implementation = NOT STARTED
+Execution = NOT AUTHORIZED
+Next = explicit human H3 ruling only
+```
+
+### BOUNDARY SYNTHESIS H3 ACCEPTED — CONCEPTUALLY ACCEPTED — STOP BEFORE CONSEQUENCE REVIEW — 2026-10-03
+
+human按序完成H3 ruling：H3 Continuation = ACCEPTED。接受的最小逻辑链为 Goal
+unchanged + Current Execution State identifiable + Required Information still
+available → Continuation is possible。H3是可能性条件，不是guarantee；机器资源、
+permissions、runtime/program version、external state、unavailable dependencies
+与其他execution constraints仍属后续独立条件。H3不合并Information Space与
+Execution State：Information Space回答当前可用信息；Execution State回答执行从
+哪里继续；continuation在goal、state、required information对齐时为possible。
+按裁定纪律，现在停止在Consequence Review之前；不自动进入IPAC定义、Route
+选择、PALACE或任何implementation结论。
+
+当前状态：
+
+```text
+Boundary Synthesis = CONCEPTUALLY ACCEPTED
+H1 Information Space = ACCEPTED
+H2 Execution State = ACCEPTED
+H3 Continuation = ACCEPTED
+Consequence Review = NOT ENTERED
+Route Selection = PAUSED
+IPAC = OPEN / NONBINDING
+Implementation = NOT STARTED
+Execution = NOT AUTHORIZED
+Next = Consequence Review only, if explicitly opened
+```
+
+### BOUNDARY SYNTHESIS CONSEQUENCE REVIEW COMPLETE — C GATE PAUSED FOR NEXT GATE DECISION — 2026-10-03
+
+Consequence Review完成，不改实验、不改frozen artifacts、不开PALACE、不选Route。
+结论：R-C1 #4保持VALID/EVIDENCE PRESERVED。其解释收窄为：C-A不是checkpoint
+technology failure，而是state-only restoration不足以满足preregistered semantic
+continuation；C-B证明persistent Information可支持完整continuation；C-C证明
+Relation carrier path也可完成同一continuation并实际被使用，但相对independent
+Information未观察到额外capability。IPAC保持OPEN/NONBINDING；accepted H1…H3
+模型取代“四个存储字段”读法，IPAC未来可能成为adoption relation理论，但necessary
+/sufficient semantics仍未定义。Route A DEFERRED：可测试O1随复杂度的持续性，但
+不直接区分Relation necessity。Route B DEFERRED：是直接的Relation
+discrimination probe，但必须先解决Information-equivalence audit，否则结果歧义。
+PALACE保持CLOSED；它将来可能实现/carry Persistent Information Space，但不等于
+Persistent Information Space。Implementation D-4 audited commit保持CLOSED；
+R-C1 #4暴露非blocking evidence-format观察：invocation-evidence.jsonl是pretty
+JSON object而非JSONL，对象可解析且证据保留；因no-modification rule未现场修复，
+未来如要修正需重开implementation。C Gate现在PAUSED FOR NEXT GATE DECISION；
+不自动进入Route A/B、IPAC formalization或PALACE。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-CONSEQUENCE REVIEW
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = AUTHORIZATION CONSUMED
+R-C1 #1…#3         = INVALID INCONCLUSIVE
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Next gate          = separate Human research/route decision; no automatic opening
+```
+
+### POST-CONSEQUENCE HUMAN CONFIRMATION — NO ROUTE AUTO-SELECTION — 2026-10-03
+
+human确认Consequence Review后的解释边界：Boundary Synthesis已从局部问题上升为
+共同semantic basis——Information Space ↕ Execution State ↓ Continuation；
+R-C1 #4是该模型的boundary evidence，不是其terminal theory。核心观察继续保持：
+state-only restoration ≠ full semantic continuation；C-B Information-only path
+full success；C-C Relation path full success但未显示beyond C-B的额外capability。
+O2保持bounded，不得扩展为Relation必要/不必要的普遍claim。正式状态：
+C Gate = OPEN / POST-CONSEQUENCE REVIEW；Next = separate Human research/route
+decision；不自动选择Route A/B，不自动打开PALACE。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-CONSEQUENCE REVIEW
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = AUTHORIZATION CONSUMED
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Next               = separate Human research/route decision
+```
+
+### IPAC × BOUNDARY SYNTHESIS CONTINUITY BRIDGE OPENED — NONBINDING — 2026-10-03
+
+登记新的conceptual bridge record：
+`SIMIGO_LAB_IPAC_CONTINUITY_BRIDGE_SYNTHESIS_20261003.md`。它只提出open research
+question，不是result。两条证据链相邻但未合并：Chain A为既有Execution State内部
+I/A/C候选最小语义骨架，P可能由A携带/补偿，正式状态仍OPEN/NONBINDING、
+MINIMALITY UNPROVEN；Chain B为H1 Information Space、H2 Execution State、H3
+Continuation的accepted boundary model，R-C1 #4提供bounded evidence。二者出现
+structural correspondence：内部I/A/C对应外部Information/State/Continuation；
+P compensation对应external Information Space可提供missing semantic conditions。
+但这不证明IPAC rediscovered/proven/frozen。核心open question是internal I/A/C
+continuity skeleton与external Information Space/Execution State/Continuation
+model能否统一为一个Continuation Semantics invariant，并在ES内部、ES/
+Information Space边界、settled-result adoption三种情况下同时成立。Relation暂定
+为Information Space内部可用于表达/证明applicability condition的结构，不是平行
+continuation layer；因此不能为证明Relation有用而直接选Route B。允许claim仅限
+两条链相邻且unification是open question；禁止claim IPAC proven、minimality
+established、Information Space必须满足IAC、Relation proven necessary/
+unnecessary、PALACE=Information Space、Route selected。
+
+当前状态：
+
+```text
+B Track              = CLOSED
+C Gate               = OPEN / POST-CONSEQUENCE REVIEW
+R-C1 #4              = CLOSED / VALID / EVIDENCE PRESERVED
+O1                   = SEALED / SUPPORTED / BOUNDED
+O2                   = SEALED / NOT OBSERVED / BOUNDED
+IPAC                 = OPEN / NONBINDING
+IPAC bridge question = OPEN / NONBINDING
+Route A              = DEFERRED
+Route B              = DEFERRED
+PALACE               = CLOSED
+Next = separate human review of continuity-bridge question; no route or
+       implementation work
+```
+
+### HUMAN RESEARCH DECISION PACKET READY — IAC ↔ INFORMATION SPACE CONSISTENCY — 2026-10-03
+
+新增`SIMIGO_LAB_HUMAN_RESEARCH_DECISION_IAC_INFORMATION_SPACE_CONSISTENCY_
+20261003.md`。Decision Packet状态为READY / HUMAN DECISION PENDING。核心待裁
+问题是：Execution State内部I/A/C continuation skeleton与外部Information Space
+boundary之间是否存在必须保持的一致性关系，使Information Space变化可以preserve
+或 violate lawful continuation所需semantic conditions。该packet明确不授权
+implementation/experiment/PALACE/IPAC freezing/Route A/B/C selection。
+若Human批准，顺序为：R0决定采纳该主研究问题；R1回溯旧IPAC/IAC证据，重点澄清
+“P may be carried or compensated by A”是指P redundant、P semantics representable
+by A、还是P continuation role satisfiable by A；R2在不冻结IPAC的前提下形式化
+internal/external consistency与violation问题；R3才重新审视Route A/B，并可能出
+现Route C=Information Space boundary破坏/保持IAC consistency。Route C只是可能
+future label，不预先选择。若R0–R2通过，下一gate是formal research design；否则
+C Track保持paused。
+
+当前状态：
+
+```text
+B Track              = CLOSED
+C Gate               = OPEN / HUMAN RESEARCH DECISION PENDING
+C-Spec               = FROZEN
+C-Design             = CONFIRMED / NO AMENDMENT
+C-Impl               = CLOSED / D-4 AUDIT PASS
+R-C1 #4              = CLOSED / VALID / EVIDENCE PRESERVED
+O1                   = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                   = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC                 = OPEN / NONBINDING
+Route Selection      = PAUSED / SUPERSEDED BY HUMAN RESEARCH DECISION
+S1…S4                = DEFERRED / NOT APPROVED
+Route A              = DEFERRED
+Route B              = DEFERRED
+Route C              = POSSIBLE FUTURE LABEL / NOT SELECTED
+PALACE               = CLOSED
+Next = explicit Human R0…R3 decision; no experiment/design before approval
+```
+
+### HUMAN RESEARCH DECISION APPROVED — R0 APPROVED — IAC ↔ INFORMATION SPACE CONSISTENCY ADOPTED — 2026-10-03
+
+human于2026-10-03T14:33:24+0800明确批准Decision Packet。R0 APPROVED；正式采纳
+“IAC ↔ Information Space semantic consistency”为下一阶段主研究问题。核心问题：
+internal Execution State I/A/C continuation skeleton与external Information Space
+boundary之间是否存在consistency relation，使Information Space变化可preserve或
+violate lawful continuation所需conditions。该批准仅授权研究问题采纳；不授权
+implementation、experiment、PALACE、IPAC freezing或Route A/B/C selection。
+R1 historical evidence review、R2 internal/external consistency formalization、
+R3 route decision均未开始；R3需R1–R2完成后再另行裁定。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / HUMAN RESEARCH DECISION APPROVED
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+R0                 = APPROVED
+Primary question   = ADOPTED
+R1                 = PENDING EXPLICIT HUMAN INSTRUCTION
+R2                 = PENDING EXPLICIT HUMAN INSTRUCTION
+R3                 = NOT READY / REQUIRES R1–R2 COMPLETION
+Implementation     = NOT STARTED
+Experiment         = NOT AUTHORIZED
+PALACE             = CLOSED
+Route A/B/C        = NOT SELECTED
+Next = explicit Human R1 instruction; no experiment or implementation
+```
+
+### R1 HISTORICAL EVIDENCE REVIEW COMPLETE — NO NEW THEORY — 2026-10-03
+
+R1 Historical Evidence Review完成并封存。回溯对象包括IPAC Minimality Criteria、
+G-δ Design/Execution、G-δR Formalization、Execution State Contract v1 amended、
+P5-4 reduction design。审查结论：既有研究建立的是tested conditions下的
+necessity evidence——I/A/C necessity evidence；P为semantic member retained但其
+representational necessity是carrier-dependent。具体而言，R_llama full-prefix
+token-array中P-2 boundary-integrity可由A补偿；P-1 continuation-point与P-3
+progress ledger不可由A推导；R_MLX KV中P-1/P-2 required。因此历史短语
+“P may be carried / compensated by A”只能窄读为“tested full-prefix
+representation中A补偿P-2”，不能读作P redundant、P wholly representable by A、
+A可满足整个P continuation role、或P全局可由A补偿。既有研究也未建立数学最小、
+backend-independent minimality、最终primitives、完整Role taxonomy、完整
+invariant-required function set或未来representations的Rules_R sufficiency。
+R1输出仅为historical evidence：what was established / what was not /
+P的准确历史含义；未升级为新的IPAC定义。R2仍blocked pending explicit Human
+instruction；R3 blocked by R1–R2。
+
+当前状态：
+
+```text
+R0 = APPROVED
+Primary question = ADOPTED
+R1 = COMPLETE / HISTORICAL REVIEW SEALED
+R2 = BLOCKED BY EXPLICIT HUMAN INSTRUCTION
+R3 = BLOCKED BY R1–R2
+Implementation = NOT STARTED
+Experiment = NOT AUTHORIZED
+IPAC = OPEN / NONBINDING
+Route A/B/C = NOT SELECTED
+Next = explicit Human R2 instruction only
+```
+
+### HUMAN RULING CONFIRMED — HOLD BEFORE R2 — STATE UNCHANGED — 2026-10-03
+
+human 裁定：确认。当前保持不变，不进入 R2。R0 保持 APPROVED；R1 保持
+COMPLETE / HISTORICAL REVIEW SEALED；R2 保持 BLOCKED / WAITING EXPLICIT
+HUMAN INSTRUCTION；R3 保持 BLOCKED BY R1–R2；Implementation NOT STARTED；
+Experiment NOT AUTHORIZED；IPAC OPEN / NONBINDING；Route A/B/C NOT
+SELECTED；其余门位（B Track CLOSED / C Gate OPEN / C-Spec FROZEN /
+C-Design CONFIRMED / C-Impl CLOSED D-4 AUDIT PASS / R-C1 #4 CLOSED VALID /
+O1 SEALED SUPPORTED / O2 SEALED NOT OBSERVED / PALACE CLOSED）一律不变。
+
+**当前解释边界已固定**：R1 只封存历史事实——I/A/C = necessity evidence
+under tested conditions；P = semantic member retained, carrier-dependent。
+R1 没有证明：{I,P,A,C} 数学最小；I/A/C 可取代 {I,P,A,C}；P globally
+redundant；P wholly representable by A。R1 也不重新解释这些历史结论。
+
+**R2 的前置理解已固定**：若之后显式授权 R2，它只处理：① I/A/C 与
+H1/H2/H3 各自描述什么；② 两组概念之间能否建立语义映射 / 一致性关系；
+③ Information Space 变化在什么条件下会破坏 I/A/C 所要求的 continuation
+条件。R2 不重新裁定：P 的历史含义；P 是否第四字段；IPAC 是否正确；
+Route A/B/C。
+
+**当前唯一等待项 = explicit human instruction to enter R2**。在此之前
+不做 formalization、不做实验、不改实现、不选 Route、不冻结 IPAC。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2             = BLOCKED / WAITING EXPLICIT HUMAN INSTRUCTION
+R3             = BLOCKED BY R1–R2
+
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+
+Next = explicit Human instruction to enter R2; until then no
+       formalization / experiment / implementation change / route
+       selection / IPAC freezing
+```
+
+### R2 AUTHORIZED / EXECUTED — CONSISTENCY FORMALIZATION DELIVERED — HUMAN REVIEW PENDING — 2026-10-03
+
+human 确认 HOLD 段保留（不精简、合规不重复）并显式指令进入 R2。R2 按
+HOLD 段预固定范围执行：零实验、零实现、零 PALACE、不冻结 IPAC、不重裁
+P 历史含义/P 是否第四字段/IPAC 正确性/Route A/B/C。交付
+`SIMIGO_LAB_R2_IAC_INFORMATION_SPACE_CONSISTENCY_FORMALIZATION_20261003.md`：
+
+- **Task 1（各自描述什么）**：I/A/C 引 G-δR Appendix 原文（I-1 模型绑定/
+  I-2 谱系绑定/I-3 载荷完整性；A-1 内容绑定；C-1 接续许可）=「一次延续
+  要合法，内部必须满足什么」；H1/H2/H3 引 Boundary Synthesis 裁定
+  （information domain/执行位置/延续可能）=「一次执行在外部世界处于什么
+  局面」。描述层对照三条分界：同一性≠位置（I vs H2）、绑定≠可用
+  （A vs H1）、许可≠可能（C vs H3）。
+- **Task 2（语义映射/一致性关系，candidate NONBINDING）**：映射候选
+  I↔H2 identifiable（张力：identifiable 未证蕴含 model/lineage 级拒绝）、
+  A↔H1 required Information still available（张力：available 域属性≠
+  bound 状态属性，silent substitution 风险）、C↔H3 possible∧lawful
+  合取。**候选一致性关系 Cons(ES,IS) = (a) 身份可判定 ∧ (b) 锚内容仍
+  可引用（存在/可寻址/未被静默替换） ∧ (c) 许可前置仍成立（settled
+  results/preconditions 未被废弃取代）**；评估单向=外部变化评估内部判据
+  可满足性（N-5 精神），禁止反向读作 IS 必须实现 IAC。**P 对应明确
+  声明范围外**（H2 位置侧与历史 P 的表面对应不作任何裁定）。
+- **Task 3（破坏条件）**：破坏=Cons(ES,IS) 从满足变为不满足（ES 不变
+  IS 变化）；判定对象=「I/A/C 条件是否仍可满足」非「输出是否变化」
+  （null≠mechanism null 沿用）。候选 taxonomy：a 类身份不可判定/b 类
+  锚失效（删除·移出边界·不可引用·silent substitution）/c 类许可前置
+  失效（settled result 废弃取代·precondition 不成立·invalidation）/
+  跨类边界重划；非破坏对照类（纯增量/不触及锚谱系前置/可引用性等价
+  迁移）；不可归因失败=INCONCLUSIVE。
+- **核心交付 RQ-R2 draft（可证伪，未冻结）**：是否存在 Cons(ES,IS) 使
+  (i) lawful continuation 蕴含 Cons；(ii) 保持性变化不破坏信息侧条件；
+  (iii) 破坏可归因且归因不重算历史。证伪两路径=归因失败（Cons 刻画
+  错误）/必要性失败（三条件全破坏后 lawful continuation 仍可核验成立
+  ⇒ I/A/C 相对 IS 非信息侧必要条件）。明确非主张：不预设 Relation、
+  不预设 PALACE、不涉及 P、不测性能、不授权实验。
+
+文档全内容=candidate formalization，效力止于 R3 输入；R2 判定归 human。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2             = DELIVERED / HUMAN REVIEW PENDING
+R3             = BLOCKED BY R1–R2（须 R2 review 后另行裁定）
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+PALACE         = CLOSED
+Next = human R2 review（APPROVED / REJECTED / REVISED）
+```
+
+### R2 REVIEW = REVISE REQUIRED — REV.2 APPLIED / RESUBMITTED — 2026-10-03
+
+human R2 review 判定：**REVISE REQUIRED（局部形式化修订）**——不需重新
+做 R2，不涉及实验、实现、IPAC、P 或 Route；非研究方向失败。review 指出
+的核心问题与修订要求：
+
+1. **H3 语义保护（循环风险）**：rev.1 的「C↔H3 = possible ∧ lawful」
+   把 lawful 内嵌进 H3，随后 RQ-R2 又要求 lawful ⇒ Cons，产生自包含
+   （lawful ⇒ H3 ⇒ Cons 偷偷包含研究对象），削弱可证伪性。修订=H3 保持
+   纯外部可能性语义（Goal unchanged + State identifiable + required
+   Information available → possible）；C↔H3 最多读作「外部 continuation
+   possibility vs 内部 continuation condition」的对应；lawful 不由 H3
+   定义携带。
+2. **A↔H1 降级**：rev.1 写法近似等价映射，有偷换——R1 已证 A 的历史
+   语义是 representation-dependent 的。修订=降为依赖/支撑关系：H1=外部
+   信息可获得性，A=内部锚定关系，两者不是同一命题；该差异可能正是 R2
+   要发现的 consistency relation 的内容，不得在映射阶段消掉。
+3. **RQ-R2 单向性**：显式写 LawfulContinuation(ES,IS) ⇒ Cons(ES,IS) 为
+   **必要性候选**；Cons ⇏ LawfulContinuation（非充分）；Cons=true 绝不
+   推出延续合法。
+4. **Task 2 重构（结构修正）**：component mapping（I↔H2/A↔H1/C↔H3）
+   易读成两套相同三元组，改为 correspondence relations——
+   `I ── constrains ── H2 / A ── depends on ── H1 / C ── conditions ──
+   H3`，加分层图（Information Space H1/H2/H3 ↓ support/constrain ↓
+   Execution State I/A/C ↓ lawful continuation）；不做 IAC=H123 同构
+   证明。
+5. **Cons 改写（结构修正）**：三个条件改写为**条件保持关系**
+   `Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition (ES,IS)`，
+   非 IS 自身属性——读法固定为「IS 变化→某内部条件不再成立→Cons
+   broken」，而非「IS 必须包含 I/A/C」。
+
+review 确认保留：Task 3 破坏 taxonomy（含 silent substitution 独立 b
+类情形）、「判定对象=条件是否仍可满足非输出是否变化」固定判读纪律、
+P=OUT OF SCOPE / IPAC freeze=NO / Route=NO / PALACE=NO / Implementation=
+NO / Experiment=NO。
+
+**登记洞察（review 提出，NONBINDING）**：I/A/C 与 H1/H2/H3 很可能不是
+「两套相同的三元字段」，而是「内部语义条件」与「外部信息条件」之间的
+对应关系——真正值得研究的是二者之间的 consistency relation，比同构
+假设更难但更像真正的理论问题；该洞察不冻结，其检验方式即 RQ-R2。
+
+rev.2 已应用全部修订并重新交付
+（`SIMIGO_LAB_R2_IAC_INFORMATION_SPACE_CONSISTENCY_FORMALIZATION_20261003.md`
+rev.2，含修订记录表 R-1/R-2/R-3/S-1/S-2）；重新提交 R2 review。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.1       = REVISE REQUIRED（review 判定已封存）
+R2 rev.2       = DELIVERED / HUMAN REVIEW PENDING
+R3             = BLOCKED BY R1–R2
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+PALACE         = CLOSED
+Next = human R2 review of rev.2（APPROVED / REJECTED / REVISED）
+```
+
+### R2 rev.2 REVIEW = APPROVED — FORMALIZATION SEALED — R3 BLOCKED PENDING NEW HUMAN DECISION — 2026-10-03
+
+human 复审判定：**R2 rev.2 = APPROVED**，且非暂时通过——就 R2 所规定
+范围而言已达到可封存、作为 R3 输入的程度；**正式封存 R2 rev.2，不再
+继续修改 R2**。
+
+复审确认三处关键风险已消除：
+
+1. **H3 循环定义解除**：H3 = continuation possibility，C = internal
+   continuation condition（而非两者都= lawful continuation），因此
+   `LawfulContinuation(ES, IS) ⇒ Cons(ES, IS)` 不再因 H3 预先包含
+   lawful 而循环——符合 R2 的必要性研究定位。
+2. **A 与 H1 层次区别正确保留**：H1 information availability ↓ supports
+   ↓ A internal anchoring relation，未把 availability 偷换成 Anchor；
+   Anchor 承担的是关系功能而非固定表示（与历史材料中 Anchor 跨 backend
+   不同物理表达一致）。
+3. **IAC = H123 的诱惑被正确压住（rev.2 最重要修正）**：研究对象为
+   correspondence / support / constrain 的分层关系，非同构；与当前证据
+   状态一致——历史研究至今只支持 IPAC 作为 candidate relational
+   closure，并未证明严格 minimality。
+
+**Cons 定义可作为 R3 输入**：`Cons ⟺ I-condition ∧ A-condition ∧
+C-condition (ES,IS)` + `LawfulContinuation ⇒ Cons` / `Cons ⇏
+LawfulContinuation` 边界清晰——避免偷换成充分条件，同时给 R3 明确的
+可检验问题：「**当 Information Space 发生变化时，哪些变化会使内部
+I/A/C 条件不再可满足？**」——足以形成下一阶段问题，无需现在引入实验。
+
+**Task 3 破坏定义封存**：尤其保留「判定对象是条件是否仍可满足，而不是
+输出是否变化」纪律（防滑回 output different → continuation broken）；
+a/b/c taxonomy、silent substitution、非破坏对照、INCONCLUSIVE 归因纪律
+均未发现需修改的逻辑问题。
+
+**R2 核心成果（human 最终表述）**：R2 已把「内部 Execution State 语义」
+与「外部 Information Space 条件」之间的 consistency relation 形式化为
+**可继续研究、可被证伪的候选对象**——这不是说两边已被证明是同一个三元
+结构，而正是 R2 应该达到的位置。
+
+```text
+                 Information Space
+                  H1 / H2 / H3
+                       │
+              consistency relation
+                       │
+                       ↓
+                 Execution State
+                    I / A / C
+                       │
+                       ↓
+              lawful continuation
+```
+
+**下一动作**：不自行进入 R3；按当前治理规则，R3 的研究任务与范围必须
+由 human 明确决定。
+
+当前状态：
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.1            = REVISE REQUIRED / SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = BLOCKED / REQUIRES NEW HUMAN RESEARCH DECISION
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = explicit human R3 research decision; no self-initiated R3 work
+```

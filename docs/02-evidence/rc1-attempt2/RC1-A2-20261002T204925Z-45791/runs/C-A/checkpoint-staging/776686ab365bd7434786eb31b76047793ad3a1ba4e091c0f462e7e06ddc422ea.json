@@ -1,0 +1,11 @@
+{
+  "attemptCount" : 0,
+  "carrierPointers" : {
+
+  },
+  "executorIdentity" : "CContinuationStudy\/old\/C-A",
+  "lifecyclePhase" : "OLD_PROCESS_STARTED",
+  "runID" : "BD366C68-0D59-447E-9EA1-142CFF32E399",
+  "schemaVersion" : "c-impl-execution-state-v2",
+  "taskID" : "C-T-001"
+}

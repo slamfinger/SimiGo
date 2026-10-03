@@ -1,0 +1,10 @@
+{
+  "afterState" : "alpha=42;mode=active",
+  "beforeState" : "alpha=17;mode=quiet",
+  "blocker" : "none",
+  "directionalChange" : "changed=true;before=alpha=17;mode=quiet;after=alpha=42;mode=active",
+  "nextAction" : "REQUEST_HEALTH_CHECK",
+  "schemaVersion" : "c-impl-report-v2",
+  "sourceLegality" : true,
+  "taskID" : "C-T-001"
+}

@@ -6,8 +6,9 @@
 * Experiment: R-C1
 * Implementation baseline: `bae68a852cfc`
 * Branch: `codex/execution-state-research-20260929`
-* Authorization state: **READY FOR HUMAN AUTHORIZATION**
-* Current execution state: **NOT RUN**
+* Authorization state: **AUTHORIZED / CONSUMED**
+* Current execution state: **STOPPED / IMPLEMENTATION DEFECT**
+* Attempt #2 baseline: **`df7a6246c7a8`**
 
 ---
 
@@ -481,3 +482,92 @@ Research Interpretation
 ```
 
 不得跳过中间层级。
+
+## 16. Execution Consummation Addendum — 2026-10-03
+
+Human authorization was received in chat as:
+
+```text
+R-C1 = AUTHORIZED
+```
+
+Authorization time: `2026-10-03T04:18:37+0800`.
+Authorized implementation baseline: `bae68a852cfc`.
+Authorized run root:
+`docs/02-evidence/rc1-execution/RC1-20261002T202144Z-42754`.
+
+Execution stopped at C-B because the frozen implementation raised:
+
+```text
+invalid state: C-B carrier pointer set is invalid
+```
+
+The run is classified `INVALID / INCONCLUSIVE — IMPLEMENTATION DEFECT`.
+No implementation, Core, C-Spec, C-Design, X-1…X-5, or protocol semantics
+were changed during execution. Evidence is preserved in the run root.
+C-Impl is reopened for revision. A new C-Execute authorization is required
+after C-Impl audit.
+
+## 17. Attempt #2 Consummation Addendum — 2026-10-03
+
+A new explicit authorization was issued for Attempt #2 with implementation
+baseline `df7a6246c7a8`. Run root:
+
+```text
+docs/02-evidence/rc1-attempt2/RC1-A2-20261002T204925Z-45791
+```
+
+Attempt #2 stopped at C-B because the frozen implementation force-unwrapped a
+nil `relationStore` for an arm with Information persistence enabled but
+Relation persistence disabled. Crash evidence, partial C-A evidence, and the
+empty C-B checkpoint are preserved. No implementation or protocol change was
+made during execution. Attempt #2 is classified:
+
+```text
+INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT
+```
+
+## 18. Attempt #3 Consummation Addendum — 2026-10-03
+
+A new explicit authorization was issued for Attempt #3 with implementation
+baseline `806dd3eea55c`. Two earlier orchestration roots aborted before an
+R-C1 protocol result and were preserved as orchestration-invalid. Official
+run root:
+
+```text
+docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860
+```
+
+C-A completed with partial X-1-only recovery. C-B completed with X-1…X-5.
+C-C stopped before its awaiting marker because construction validation
+rejected the legal staged C-C state. No implementation or protocol change was
+made during execution. Attempt #3 is classified:
+
+```text
+INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT
+```
+
+## 19. Attempt #4 Consummation Addendum — 2026-10-03
+
+Attempt #4 authorization was consumed at implementation baseline
+`569fe540d1ff`. Run root:
+
+```text
+docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375
+```
+
+Layer 1 = `PRESERVED`.
+Layer 2 = `VALID THREE-ARM EXECUTION COMPLETED`.
+
+Protocol observations:
+
+```text
+C-A = PARTIAL SUCCESS / X-1 only
+C-B = FULL SUCCESS / X-1…X-5
+C-C = FULL SUCCESS / X-1…X-5
+```
+
+C-C used the persisted Relation path and no fallback occurred. C-B remained
+Information-only. Runtime forbidden-channel checks all passed. No
+implementation, protocol, Core, C-Spec, or C-Design change occurred during
+execution.

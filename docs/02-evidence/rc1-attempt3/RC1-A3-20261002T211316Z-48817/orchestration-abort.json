@@ -1,0 +1,7 @@
+{
+  "phase": "before_old_process_reached_awaiting_marker",
+  "observed": "orchestrator timed out; old stderr/stdout empty and no workspace checkpoint was created",
+  "resolution": "preserve declared inputs and retry under new run id",
+  "implementation_change": false,
+  "protocol_change": false
+}

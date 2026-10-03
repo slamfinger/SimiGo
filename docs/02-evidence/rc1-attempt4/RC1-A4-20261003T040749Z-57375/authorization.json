@@ -1,0 +1,12 @@
+{
+  "attempt": 4,
+  "authorization": "AUTHORIZED",
+  "authorization_record": "docs/00-governance/SIMIGO_LAB_RC1_ATTEMPT4_AUTHORIZATION_20261003.md",
+  "authorization_time": "2026-10-03T11:54+08:00",
+  "authorization_type": "NEW_EXPLICIT_HUMAN_AUTHORIZATION",
+  "branch": "codex/execution-state-research-20260929",
+  "experiment": "R-C1",
+  "implementation_baseline": "569fe540d1ff",
+  "implementation_changes_since_authorization": false,
+  "run_id": "RC1-A4-20261003T040749Z-57375"
+}

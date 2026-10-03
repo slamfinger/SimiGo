@@ -1,0 +1,11 @@
+{
+  "arms_completed": [
+    "C-A",
+    "C-B",
+    "C-C"
+  ],
+  "attempt": 4,
+  "result_interpretation": "DEFERRED_TO_EVIDENCE_AUDIT",
+  "run_id": "RC1-A4-20261003T040749Z-57375",
+  "status": "COMPLETED_PENDING_EVIDENCE_AUDIT"
+}
