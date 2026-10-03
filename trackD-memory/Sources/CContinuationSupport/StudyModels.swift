@@ -107,8 +107,14 @@ public struct ExecutionState: Codable, Equatable, Sendable {
             case .construction:
                 let baseKeys: Set<String> = ["task", "s0", "s1", "progress"]
                 let finalKeys = baseKeys.union(["relation"])
-                guard keys == baseKeys || keys == finalKeys else {
-                    throw StudyError.invalidState("C-C construction pointer set is invalid")
+                if keys.contains("relation") {
+                    guard keys == finalKeys else {
+                        throw StudyError.invalidState("C-C Relation requires the complete base pointer set")
+                    }
+                } else {
+                    guard validateConstruction(keys: keys, orderedFinalKeys: ["task", "s0", "s1", "progress"]) else {
+                        throw StudyError.invalidState("C-C staged construction pointer set is invalid")
+                    }
                 }
             case .final:
                 guard keys == ["task", "s0", "s1", "progress", "relation"] else {
