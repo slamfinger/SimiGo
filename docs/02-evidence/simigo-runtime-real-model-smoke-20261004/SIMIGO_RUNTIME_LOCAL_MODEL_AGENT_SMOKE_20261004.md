@@ -1,7 +1,7 @@
 # SimiGo Runtime Local-Model Agent Smoke Observation
 
 Date: 2026-10-04 Asia/Shanghai  
-Status: `EXECUTED / OBSERVATION SEALED`  
+Status: `EXECUTED / OBSERVATION SEALED / MODEL-RUNTIME SMOKE ONLY`  
 Boundary: no SimiGo source, schema, API, or InformationCore code was changed.  
 Redaction rule: local absolute paths are not reproduced in this version.
 
@@ -43,6 +43,37 @@ RELEASED.
 
 This confirms that SimiGo.app, not a direct external model call, owned the local-model invocation path.
 
+## 1.1 Ownership boundary correction
+
+SimiGo did **not** own the task loop.
+
+The actual ownership was:
+
+```text
+external harness selected the task;
+external harness created the tool schemas;
+external harness sent Chat Completions requests;
+SimiGo Runtime performed local-model inference;
+SimiGo Protocol observed tool-call events;
+external harness executed the tools;
+external harness returned tool results;
+external harness decided when the task was complete.
+```
+
+Therefore this experiment proves:
+
+```text
+SimiGo.app → Runtime → Native MLX model invocation = working.
+```
+
+It does **not** prove:
+
+```text
+SimiGo.app → autonomous task agent → tool execution → completed task = working.
+```
+
+The checked app source exposed model-serving protocol behavior and execution/cache/tool-governance traces, but no built-in task orchestrator was invoked. The word “agent” in identifiers and headers marked the external caller's execution identity; it did not mean SimiGo itself became the task agent.
+
 ## 3. Session and context behavior
 
 A second request reused the same session headers but sent only a follow-up user message, not full chat history. The model did not know the prior task.
@@ -65,9 +96,9 @@ cache hit tokens = 238
 cache efficiency = 0.52
 ```
 
-## 4. Real agent tool loop
+## 4. External-agent tool loop through SimiGo model backend
 
-A small external agent harness used SimiGo as the model endpoint. The model completed a three-turn tool loop over a synthetic workspace:
+A small external agent harness used SimiGo as the model endpoint. The external harness, not SimiGo, owned the task loop. The local model completed a three-turn tool-call loop over a synthetic workspace:
 
 ```text
 turn 1: list workspace;
@@ -139,9 +170,10 @@ This run does not prove that SimiGo Runtime is unable to support Information Spa
 The corrected research judgment is:
 
 ```text
-G3 under external-agent path      = observed;
-G3 as a SimiGo Runtime defect    = not yet proven;
-missing SimiGo → Information link = observed.
+G3 under external-agent path               = observed;
+G3 as a SimiGo Runtime defect              = not yet proven;
+missing SimiGo → Information link          = observed at model-call boundary;
+missing SimiGo-owned task/agent orchestration = observed as the next boundary.
 ```
 
 ## 7. Raw evidence
