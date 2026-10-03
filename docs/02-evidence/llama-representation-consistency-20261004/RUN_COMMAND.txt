@@ -1,0 +1,9 @@
+# 1. start server
+llama-server \
+  --model "$HOME/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/snapshots/d835c87ac12ef0d02867e6e03cb6d425ddeb373b/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf" \
+  --host 127.0.0.1 --port 18080 --ctx-size 8192 --parallel 1 -ngl 999
+
+# 2. run probe
+swift run --package-path simigo2-experimental simigo2ctl llama-representation-consistency \
+  "$HOME/.cache/huggingface/hub/models--peculiar-ragdoll--Cyber-Tiel-Coder-35B-A3B-GGUF-MTP/snapshots/d835c87ac12ef0d02867e6e03cb6d425ddeb373b/Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL.gguf" \
+  --server-url http://127.0.0.1:18080 --prediction-tokens 12 --repetitions 3
