@@ -1,17 +1,29 @@
-# Track D — Adaptive Memory（独立推进）
+# Track D — Information / Relation / Execution Core
 
-**研究问题**：运行时知道"现在能安全使用多少内存"，替代静态
-`mlxMemoryLimitBytes = 22GiB` / `mlxCacheLimitBytes = 4GiB`
-（主仓 `RuntimeTuning.swift:8-12`）。
+本目录当前承载 Information Runtime 的最小 Swift 核心，不再是早期
+Adaptive Memory 占位描述。
 
-**公式链（报告 §5.4）**：Physical Memory → System Available →
-Model/KV Requirement → Runtime Working Set → **Dynamic Budget**。
+## 模块
 
-**安全边界（防自杀式自适应）**：硬性保留量（物理内存 15–25% 或固定值
-取大者）+ memory pressure 事件**主动**收缩（不等 swap 发生）。
+```text
+InformationCore  Information / InformationStore / SQLiteStore
+RelationCore     Relation / RelationStore / RelationMinter
+ExecutionCore    ExecutionScope 与 observed-change 组合
+```
 
-**落地验证**：256K prefill 实测"预算放宽不引入 swap 劣化"
-（1024 档教训的制度化）。
+## 状态
 
-**状态**：未开工。不依赖 Track A/B/C，可先行；实验室阶段做预算模拟，
-生产化随 Level 门迁回主仓 RuntimeTuning。
+```text
+Phase 0 semantic surface = FROZEN
+Phase 1 InformationCore  = IMPLEMENTED / ACCEPTED / CLOSED
+Phase 2 RelationCore     = IMPLEMENTED / ACCEPTED / CLOSED
+ExecutionCore            = implemented with boundary tests
+完整 Information Space   = NOT CLAIMED
+完整 MemPalace Runtime   = NOT CLAIMED
+```
+
+## 验证
+
+```sh
+swift test
+```

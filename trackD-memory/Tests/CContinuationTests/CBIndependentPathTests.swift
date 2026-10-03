@@ -33,7 +33,7 @@ struct CBIndependentPathTests {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let informationStore = try SQLiteStore(path: root.appendingPathComponent("information.sqlite").path)
         let disabledRelationStore = DisabledRelationStore(reason: "C-B is Information-only")
-        let scope = try ExecutionScope(
+        let scope = ExecutionScope(
             informationStore: informationStore,
             relationStore: disabledRelationStore
         )

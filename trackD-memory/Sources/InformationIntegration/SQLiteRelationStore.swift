@@ -93,16 +93,25 @@ public final class SQLiteRelationStore: RelationStore {
                 guard let cString = sqlite3_column_text(statement, column) else { return "" }
                 return String(cString: cString)
             }
-            let subject = InformationID(rawValue: text(0))
-            let predicate = RelationPredicate(value: text(1))
-            let object = InformationID(rawValue: text(2))
-            let producedAt = Self.iso8601.date(from: text(3)) ?? Date()
-            let provenance = Provenance(producedAt: producedAt, producedBy: text(4))
+            func requiredText(_ column: Int32, _ name: String) throws -> String {
+                let value = text(column)
+                guard !value.isEmpty else {
+                    throw RelationStorageError.invalidData("missing \(name)")
+                }
+                return value
+            }
+            guard let producedAt = Self.iso8601.date(from: text(3)) else {
+                throw RelationStorageError.invalidData("invalid produced_at")
+            }
+            let provenance = Provenance(
+                producedAt: producedAt,
+                producedBy: try requiredText(4, "produced_by")
+            )
             return Relation(
                 identity: identity,
-                subject: subject,
-                predicate: predicate,
-                object: object,
+                subject: InformationID(rawValue: try requiredText(0, "subject")),
+                predicate: RelationPredicate(value: try requiredText(1, "predicate")),
+                object: InformationID(rawValue: try requiredText(2, "object")),
                 provenance: provenance
             )
         }
@@ -137,6 +146,7 @@ public final class SQLiteRelationStore: RelationStore {
 /// represented by this type (R5).
 public enum RelationStorageError: Error, Hashable {
     case sqlite(code: Int, message: String)
+    case invalidData(String)
 }
 
 /// SQLite argument destructor: tells SQLite to copy bound text.

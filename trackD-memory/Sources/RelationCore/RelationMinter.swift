@@ -1,6 +1,6 @@
 // Relation Core — mechanism-side identity minting (D2).
 //
-// The minter IS the recipe: deterministic, collision-safe
+// The minter IS the recipe: deterministic, truncated 96-bit
 // (length-prefixed delimiter join), namespace-separated from the
 // Information recipe. No timestamp salt — the service tree's
 // datetime-salted triple IDs (non-deterministic, non-idempotent) are
@@ -14,7 +14,8 @@ import InformationCore
 ///
 /// Public because formation happens outside this module, exactly like
 /// the Information formation chain; the *recipe* stays invisible —
-/// callers receive identities, never algorithms.
+/// callers receive identities, never algorithms. The 24-hex digest is
+/// compact and deterministic, not collision-proof.
 public enum RelationMinter {
     /// Mints the identity for a Relation being formed.
     public static func makeRelationID(

@@ -69,7 +69,7 @@ do {
             : DisabledRelationStore(
                 reason: "C-B is Information-only; Relation persistence is disabled"
             )
-    let scope = try arm.informationEnabled
+    let scope = arm.informationEnabled
         ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore)
         : nil
 
@@ -110,7 +110,7 @@ do {
         relationMissing = true
     }
 
-    if arm.informationEnabled, let boundary = scope {
+    if arm.informationEnabled {
         if charter == nil, let identity = checkpoint.carrierPointers["task"] {
             let information = try observeInformation(
                 label: "I-TASK",

@@ -30,6 +30,7 @@ public struct PhysicalFiling: Hashable, Sendable {
 public enum StorageError: Error, Hashable {
     case openFailed(code: Int32, message: String)
     case sqlite(code: Int32, message: String)
+    case invalidData(String)
 }
 
 /// SQLite-backed `InformationStore`.
@@ -39,10 +40,11 @@ public enum StorageError: Error, Hashable {
 /// normalization, indexing or deduplication.
 ///
 /// Identity recipe note (mechanism-side): the minting recipe is fixed by
-/// this implementation (length-prefixed delimiter join + SHA-256, the
-/// collision-safe pattern of the service tree's ids recipe) and is
-/// invisible above this layer. Cross-recipe identity equivalence is a
-/// registered mechanism-side legacy concern, out of Phase 1 scope.
+/// this implementation (length-prefixed delimiter join + SHA-256
+/// truncated to 24 hex digits) and is invisible above this layer. The
+/// truncation is a registered mechanism-side tradeoff, not a
+/// collision-proof guarantee; cross-recipe identity equivalence remains
+/// out of Phase 1 scope.
 public final class SQLiteStore: InformationStore {
     /// Opaque SQLite handle. Never exposed (C1).
     private var handle: OpaquePointer?
@@ -159,7 +161,7 @@ public final class SQLiteStore: InformationStore {
         try bind(statement, index: 1, text: identity.rawValue)
         let result = sqlite3_step(statement)
         if result == SQLITE_ROW {
-            return information(from: statement)
+            return try information(from: statement)
         }
         guard result == SQLITE_DONE else {
             throw storageError(statement)
@@ -176,10 +178,9 @@ public final class SQLiteStore: InformationStore {
     /// The recipe is mechanism; callers never see how the value is
     /// computed, only receive the resulting identity.
     public func makeInformationID(content: String, provenance: Provenance) -> InformationID {
-        // Length-prefixed, delimiter-joined inputs: collision-safe by
-        // construction (the same pattern the service tree adopted for
-        // its v3 recipe), truncated to the drawer-hash length observed
-        // in the service tree.
+        // Length-prefixed, delimiter-joined inputs, then SHA-256
+        // truncated to the drawer-hash length observed in the service
+        // tree. This is deterministic and compact, but not collision-proof.
         let parts = [
             content,
             provenance.source ?? "",
@@ -265,7 +266,7 @@ public final class SQLiteStore: InformationStore {
         return StorageError.sqlite(code: code, message: message)
     }
 
-    private func information(from statement: OpaquePointer) -> Information {
+    private func information(from statement: OpaquePointer) throws -> Information {
         func text(_ column: Int32) -> String? {
             guard sqlite3_column_type(statement, column) != SQLITE_NULL else { return nil }
             guard let cString = sqlite3_column_text(statement, column) else { return nil }
@@ -275,17 +276,34 @@ public final class SQLiteStore: InformationStore {
             guard sqlite3_column_type(statement, column) != SQLITE_NULL else { return nil }
             return Int(sqlite3_column_int64(statement, column))
         }
-        func date(_ column: Int32) -> Date? {
-            text(column).flatMap { Self.iso8601.date(from: $0) }
+        func requiredText(_ column: Int32, _ name: String) throws -> String {
+            guard let value = text(column), !value.isEmpty else {
+                throw StorageError.invalidData("missing \(name)")
+            }
+            return value
+        }
+        func requiredDate(_ column: Int32, _ name: String) throws -> Date {
+            guard let raw = text(column), !raw.isEmpty,
+                  let value = Self.iso8601.date(from: raw) else {
+                throw StorageError.invalidData("invalid \(name)")
+            }
+            return value
+        }
+        func optionalDate(_ column: Int32, _ name: String) throws -> Date? {
+            guard let raw = text(column), !raw.isEmpty else { return nil }
+            guard let value = Self.iso8601.date(from: raw) else {
+                throw StorageError.invalidData("invalid \(name)")
+            }
+            return value
         }
 
-        let identity = InformationID(rawValue: text(0) ?? "")
-        let content = text(1) ?? "" // stored verbatim; returned verbatim (C3)
+        let identity = try requiredText(0, "identity")
+        let content = try requiredText(1, "content") // stored verbatim; returned verbatim (C3)
         let provenance = Provenance(
-            producedAt: date(2) ?? Date(),
-            producedBy: text(3) ?? "",
+            producedAt: try requiredDate(2, "produced_at"),
+            producedBy: try requiredText(3, "produced_by"),
             source: text(4),
-            sourceTime: date(5),
+            sourceTime: try optionalDate(5, "source_time"),
             position: integer(6).map { chunkIndex in
                 SourcePosition(chunkIndex: chunkIndex, lineStart: integer(7), lineEnd: integer(8))
             },
@@ -293,14 +311,17 @@ public final class SQLiteStore: InformationStore {
         )
         let temporal: ContentDate?
         if let recordedDate = text(10) {
-            temporal = ContentDate(iso8601: recordedDate, source: sourceFrom(name: text(11) ?? "unknown"))
+            guard let recordedSource = text(11), !recordedSource.isEmpty else {
+                throw StorageError.invalidData("content_date_source")
+            }
+            temporal = ContentDate(iso8601: recordedDate, source: sourceFrom(name: recordedSource))
         } else {
             temporal = nil
         }
         // Filing columns (12, 13) are physical metadata only; they are
         // deliberately NOT read back onto Information (C2).
         return Information(
-            identity: identity,
+            identity: InformationID(rawValue: identity),
             content: content,
             provenance: provenance,
             temporal: temporal

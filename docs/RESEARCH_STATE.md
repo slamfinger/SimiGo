@@ -2,7 +2,35 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-03
+
+## Current total status — 2026-10-03
+
+> SimiGo-Lab 当前已完成 Execution State 主线从运行时证据、跨后端
+> continuation、G-δ 最小性检验、闭包修订、G-δR 表示相关形式化到
+> Execution State Contract 冻结的核心收敛，并在其后通过 ES-D1、
+> PALACE / T1–T3 及 R-C1 等真实载体与任务研究进一步厘清 Execution
+> State 与持久 Information 的边界；R3 已封存为 bounded auxiliary
+> characterization branch，不承担核心 continuation 命题。当前
+> Information Runtime 方向已经从计划进入真实最小实现与验证阶段：
+> Phase 0 semantic surface 已冻结，InformationCore 与 RelationCore
+> 已以原生 Swift 实现并验收关闭，ExecutionCore 与 continuation
+> harness 已建立，SimiGoRuntime × InformationCore 已通过正式接入
+> Gate，T4 已以 strong proposition 在限定任务域内 PASS 并关闭，
+> T4-2 也已完成第二个结构独立任务的执行与原始证据封存，human 已
+> 依预注册判据宣告 `REPLICATION PASS` 并将 Gate Chain 封存为
+> `CLOSED`，但该结论仍限于第二个结构独立任务域，不扩为普遍命题；
+> R-C1 #4 已作为有效的 task-domain-bounded 证据关闭；IPAC 仍保持
+> OPEN / NONBINDING。由此，当前系统已经具备受控的最小
+> Execution–Information Runtime 实现与实验证据，但尚不能将其表述
+> 为完整 Information Space 或完整 MemPalace Runtime；后续不预先
+> 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
+> 决定下一研究问题。
+
+Evidence correction: T4-2 is **not** awaiting final declaration. The
+authoritative declaration is
+`SIMIGO_LAB_T42_REPLICATION_DECLARATION_20261003.md`
+(`T4-2 = CLOSED / REPLICATION PASS / GATE CHAIN SEALED`).
 
 ## Route redefinition — 2026-09-29
 

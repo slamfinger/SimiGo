@@ -163,7 +163,7 @@ struct CContinuationStudy {
             : DisabledRelationStore(
                 reason: "C-B is Information-only; Relation persistence is disabled"
             )
-        let scope = try invocation.arm.informationEnabled
+        let scope = invocation.arm.informationEnabled
         ? ExecutionScope(informationStore: informationStore!, relationStore: relationStore)
             : nil
 
