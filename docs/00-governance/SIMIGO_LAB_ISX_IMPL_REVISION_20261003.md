@@ -49,7 +49,7 @@ R32-I-Δ1  key-field(runtime-declaration, fixture_class,
             "r3-2-minimal-v1-TAMPERED")
 R32-I-Δ2  content-absent(lineage/lineage-root.json)
 R32-I-Δ3  file-present(lineage/lineage-root-conflict.json)
-          + key-resolves(lineage-root)
+          〔rev.2 精化：移除过强的 key-resolves 断言——组合稳健性原则〕
 R32-A-Δ1  key-unresolved(anchor:state-diff)
           + content-absent(objects/R-1.json)
 R32-A-Δ2  key-resolved-at(anchor:state-diff, universe/R-1.json)
@@ -80,6 +80,23 @@ R32N-Δ10  key-resolved-at(lineage-root, lineage/store-v2/lineage-root.json)
           （被删对象复活）⇒ 探针 FAIL
 无路径依赖：解析走钉定精确键规则；删除断言走字节恒等搜索；
           无隐式语义判断
+```
+
+### 1.5 组合稳健性原则（reaudit RC-1 精化，rev.2）
+
+```text
+原则：效果断言只声明 op 自身的构造效果——(i) 创建（file-present）、
+      (ii) 删除（content-absent）、(iii) 原地变更（key-field/
+      key-substituted）、(iv) 迁移目的地（key-resolved-at±
+      key-same-bytes）——不断言可被共存 op 自身声明效果合法变换的
+      状态性质（如「某键仍可解析」——共存 op 可能按其自身效果合法
+      pop 该键）。
+reaudit RC-1 首轮定位：I-Δ3 的 key-resolves 断言在 X-09 组合态被
+      I-Δ2 的声明效果合法覆盖（pop 键正是 X-09 I-NF 的产生机制）——
+      过强断言，非构造缺陷。精化：I-Δ3 保留 file-present(conflict)
+      （其创建效果，组合稳健），移除 key-resolves。
+登记：X-09 的键覆盖现象保留于 X-09 判读数据（I-NF 与朴素预测一致），
+      作为顺序依赖观察的一部分——探针精化不隐藏任何判定相关事实。
 ```
 
 ## 2. R2 — 审计包含规则（INCONCLUSIVE containment）
