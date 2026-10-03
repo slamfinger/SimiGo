@@ -37,6 +37,16 @@ same-ID / same-position / same-length / different representation content
 产生 observable output divergence。该结果不证明完整性理论，不授权新增
 hash / anchor / provenance / consistency gate。
 
+2026-10-04 收口：上述 MLX + llama-server 结果已登记为独立
+**Representation Consistency Boundary Evidence Unit**。当前可引用的有界
+结论为：在两个已测 backend 切片中，position mismatch 可被现有 backend
+boundary 拒绝（MLX C1/C3 直接观察），而同位置、同长度的 content mutation
+可穿过现有检查并进入真实执行，稳定造成 observable output divergence
+（MLX 与 llama-server replication 1/2 均观察到）。该单元
+`SEALED / CROSS-BACKEND REPLICATION PASS / BOUNDED`；不外推其他
+representation、backend 或完整 Execution State integrity 理论，也不授权
+contract revision 或 integrity mechanism implementation。
+
 Evidence correction: T4-2 is **not** awaiting final declaration. The
 authoritative declaration is
 `SIMIGO_LAB_T42_REPLICATION_DECLARATION_20261003.md`
