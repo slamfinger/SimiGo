@@ -24,6 +24,7 @@ nothing. Zero model inference; no new cells.
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
