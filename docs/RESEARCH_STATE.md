@@ -19121,3 +19121,387 @@ P                   = OUT OF SCOPE
 Route A/B/C         = NOT SELECTED
 PALACE              = CLOSED
 ```
+
+### R3-0 GIT SEAL COMPLETE — R3-1 STILL NOT AUTHORIZED — 2026-10-03
+
+按 human 明确授权「提交并推送 R3-0 封存」执行完毕。顺序=提交前 status
+复核（两条路径不变）→ 仅两条路径 `git add` → staged diff 终验（2 files /
+510 insertions / 0 deletions；恰含 RESEARCH_STATE.md 三个 R3 段 + R3-0
+设计文档本体 340 行）→ commit（amend 修正 commit message 一处笔误
+[PALICE→PALACE]；amend 发生于 push 之前、远端无副本，零风险透明登记）
+→ push `60a0acf..1c8c463` → `git ls-remote` 回验远端
+ref=`1c8c463` → 工作区清零。R3-0 封存由「已审批但仅存在工作区」转为
+正式 Git 历史基线。
+
+```text
+R3-0 Design         = APPROVED / DESIGN SEALED / GIT SEALED @ 1c8c463
+R3-1                = NOT AUTHORIZED / PENDING HUMAN GATE
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = R3-1 gate review only upon explicit human authorization
+```
+
+### R3-1 GATE REVIEW AUTHORIZED AND EXECUTED — VERDICT: NO BLOCKER / READY TO OPEN — R3-1 AUTHORIZATION STILL PENDING HUMAN — 2026-10-03
+
+human 授权「开启 R3-1 Gate Review」（授权对象=评审本身，非 R3-1 实施、
+非实验、非代码）。评审交付
+`SIMIGO_LAB_R3_1_GATE_REVIEW_20261003.md`（基于已封存文档+历史先例，
+零实验零实现零代码），六项检查逐项判定：
+
+- **Gate I = CONDITIONALLY READY**：role 分解（I-1/I-2/I-3）+「可评估/
+  不可判定」问题结构 + Gδ-I provenance conflation 与 P7-1 J-I1/I2
+  model-binding 比对的历史签名先例已备；操作性谓词（身份判据承载物
+  枚举+「不可判定」可观察签名）为 R3-1 判定规范待产内容。登记开放经验
+  问题：身份证据若全由 ES record 承载则 I 可能恒真——合法边界研究素材，
+  判定规范须允许如实登记，不得为产生破坏而构造 IS 变化。
+- **Gate A = CONDITIONALLY READY**：三子句（存在/可寻址/未静默替换）
+  + PA-2（silent substitution 原型）与 Gδ-A、ES-R2 Gate B anchor
+  tailSHA256 先例已备；**spec 决策=引用解析必须走 ES 自身存储的引用
+  路径**，观察者只读哈希仅审计不作判定输入（防平凡化+forbidden
+  channel）；比较基线=formation 时记录（no construct-then-claim）。
+- **Gate C = CONDITIONALLY READY**：R-B1 V-N relation-not-found 与
+  R-C1 #4 relation artifact presence/absence 提供最直接的机械可查签名
+  先例；**边界收窄=「仍成立」只按机械可查形态判定**（引用解析+
+  invalidation/supersession 记录+声明式 applicability），模型语义判断
+  禁作判定输入（防输出级观察回流）；语义级 C 属边界修订走 stop/revise。
+- **Gate Attribution = READY**：ES 固定/单变量 taxonomy/Control/
+  INCONCLUSIVE 归因纪律结构完备；条件级机械观察使模型非确定性被结构性
+  排除在判定通道外；R-C1 deviation 登记+物理哈希+隔离 204+forbidden-
+  channel checks 直接继承；只读观察义务需成文化。
+- **Gate Control = READY**：三层控制充分（null-change Control + 良性
+  变化对照类 + R3-N 反证方向）；Control 漂移条款需预注册（Control 臂
+  任何条件变化⇒仪器疑云⇒该批次 INCONCLUSIVE）。
+- **Gate Failure = READY**：四态出口+失败有效性+RQ3-4 反例价值在案；
+  R3-0 §4.1 已定义条件不可观察=R3-1 自身 FAIL（停止）。
+
+**总判定：NO BLOCKER / READY TO OPEN**——六项检查无原则性 blocker；
+I/A/C 的操作性谓词不是缺口而是 R3-1 判定规范的待产内容，其生产无已知
+障碍。**五项强制内容登记**（R3-1 判定规范必须包含）：①I-谓词操作化
+（含「I 恒真」如实登记义务）②A-判定立场（ES 自身引用路径；观察者哈希
+仅审计；formation 基线）③C-机械化边界（禁模型语义判断）④只读观察
+义务⑤Control 漂移条款。**边界声明：本评审不等于 R3-1 授权——R3-1
+是否开启（进入判定规范生产）归 human 依本评审裁定；R3-2…R3-4 保持
+LOCKED。**
+
+当前状态：
+
+```text
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review    = EXECUTED / NO BLOCKER / READY TO OPEN
+R3-1                = NOT AUTHORIZED / AWAITING HUMAN DECISION ON REVIEW
+R3-2…R3-4           = LOCKED
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = human decision on R3-1 gate review verdict（authorize R3-1 or
+       stop/revise）
+```
+
+### R3-1 = AUTHORIZED FOR SPECIFICATION PRODUCTION ONLY — JUDGMENT SPECIFICATION DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 接受 R3-1 Gate Review（NO BLOCKER / READY TO OPEN）并授权 R3-1，
+**授权粒度锁定为 "R3-1 = AUTHORIZED FOR SPECIFICATION PRODUCTION
+ONLY"**——不写笼统的 R3-1 = AUTHORIZED。本步被授权的仅是：I 谓词
+操作化 / A 判定规范 / C 机械化边界 / 只读观察义务 / Control 漂移条款 /
+四态出口及失败规则的规范化。**仍然不授权**：实验、代码、harness、数据
+采集、运行、R3-2、R3-3、R3-4。
+
+human 特别指令（逐字登记）：Gate Review 中「I 可能恒真」的发现**保留
+原样**——规范生产时不得为了让 I 更「有意义」而人为增加复杂条件；若
+最终证明 `I(record) ≡ TRUE`，那是有效研究结果，真正需要研究的是该事实
+对 `I ∧ A ∧ C` 候选关系意味着什么。
+
+按授权完成判定规范生产，交付
+`SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md`：
+
+- **§1 I-condition 判定规范**：身份判据承载物枚举（I-EV-1 模型绑定/
+  I-EV-2 谱系绑定/I-EV-3 载荷完整性对应材料，逐一登记所在位置 ES
+  record 内部 vs IS 内容）；评估程序（自足评估⇒SATISFIED 合法路径/
+  IS 引用解析/评估规则依赖结构缺失⇒I-UNSTRUCT）；签名类目 I-SATISFIED/
+  I-NF/I-AMBIG（provenance conflation，Gδ-I 先例）/I-MISMATCH（J-I1/
+  I2 先例）/I-UNSTRUCT；**反复杂化条款**（human 指令义务化）：I 证据
+  自足时 I≡TRUE 如实登记为 I-INVARIANT，禁止注入 IS 依赖/加设间接引用
+  /改造表征来制造「破坏」。
+- **§2 A-condition 判定规范**：判定立场=引用解析必须走 ES 自身存储的
+  引用路径，观察者只读哈希仅审计不作判定输入；比较基线=formation 时
+  记录的内容摘要（禁止事后补造，no construct-then-claim）；解析语义按
+  引用形式分派（内容寻址⇒A-SUB 结构上不可能=表征选择性质如实登记/
+  直接地址与符号名⇒A-SUB 可观测）；签名 A-SATISFIED/A-NF/A-SUB
+  （PA-2 外部化；silent vs 有记录为描述性标注不影响满足性）/
+  A-NOT-EVALUABLE（无 formation 基线）/A-UNRESOLVABLE（仪器疑云路径）。
+- **§3 C-condition 机械化边界**：机械可查形态穷尽列举=C-REF 前置引用
+  解析（R-B1 V-N 先例）+C-INV invalidation/supersession 记录存在性+
+  C-DECL 声明式 applicability 机械可评估者核对；**模型语义判断禁作
+  判定输入**；仅声明语义判断条件者记 C-NOT-EVALUABLE；语义级 C=边界
+  修订走 stop/revise，不静默扩展。
+- **§4 只读观察义务**：观察不变更 IS（写前/写后哈希+隔离计数先例）；
+  观察通道与 continuation 通道分离（forbidden-channel 先例）；未来
+  R3-2 执行的仪器化要求登记（run-UUID+独立观测文件+单调钟+判读脚本
+  与输入分离）——仅条文，零代码落地。
+- **§5 Control 漂移条款**：Control 家族三层（K-0 null-change/K-1
+  良性变化对照/K-2 R3-N 反证搜索）；K-1 双重读法（归因失败⇒
+  INCONCLUSIVE 或干净归因⇒RQ3-4 素材不改判据）；**K-0 任何条件变化⇒
+  仪器疑云⇒该批次全部 INCONCLUSIVE 不进判读**（P5 audit、b3 先例）。
+- **§6 四态出口与失败规则规范化**：per-cell 记录 schema（run_uuid/
+  ΔIS_class/I·A·C 各 {SATISFIED, BROKEN, NOT-EVALUABLE}+签名类别/
+  Cons 机械合成/IS 哈希）；NOT-EVALUABLE ≠ BROKEN（回答 R3-1 出口
+  判据问题）；四态操作化定义（SUPPORTED=定向击穿+K-1 no-break+K-0
+  稳定/PARTIALLY=部分映射成立且失败干净归因[含交叉敏感性]/NOT
+  SUPPORTED=定向变化系统性不击穿[如 I≡A≡C≡TRUE]=实质性有界发现/
+  INCONCLUSIVE=漂移·不可归因·判别力丧失）；失败有效性条款；R3-1
+  自身出口判据=三条件对所选 state 类别均可判定否则 FAIL 停止；
+  I≡TRUE 专项=逐字登记、含义分析归 R3-4。
+- **§7 Cons 判定程序摘要**：单 cell 五步（评估 I→A→C→机械合成含
+  NOT-EVALUABLE 传播→记录+只读核验）。
+
+**边界重申（规范内）**：R3-2/R3-3/R3-4 保持 LOCKED；规范生效须经
+**下一次独立审查**，审查通过后才考虑后续实验授权；全部排除清单维持。
+
+当前状态：
+
+```text
+R3                        = ADOPTED / SCOPE FIXED
+R3-0                      = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review          = ACCEPTED（human）
+R3-1                      = AUTHORIZED FOR SPECIFICATION PRODUCTION ONLY
+R3-1 Judgment Spec        = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-1 implementation       = NOT AUTHORIZED（spec 通过独立审查后另行裁定）
+R3-2…R3-4                 = LOCKED
+Implementation            = NOT STARTED
+Experiment                = NOT AUTHORIZED
+IPAC                      = OPEN / NONBINDING
+P                         = OUT OF SCOPE
+Route A/B/C               = NOT SELECTED
+PALACE                    = CLOSED
+Next = independent review of the R3-1 judgment specification; experiments
+       remain unauthorized
+```
+
+### R3-1 SPEC INDEPENDENT REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — SPEC RATIFIED — EXPERIMENTS STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-1 Judgment Specification 进行独立审查，审查焦点=「Spec
+是否忠实实现已批准的 R3-0 设计，而未在规范化过程中偷偷改变研究命题」，
+七项检查。评审交付 `SIMIGO_LAB_R3_1_SPEC_REVIEW_20261003.md`：
+
+- **Check 1 Traceability = PASS**：R3-0 全部强制约束逐项找到 Spec 条款
+  （判定规范非实现/三条件判定例/出口判据/Cons 引用不修改/单向性缺省
+  保持/排除清单/Gate Review 五项强制内容全落位）；无遗漏。发现 O-1
+  （观察）：辅助输出遥测的显式定位归 R3-2 设计门。
+- **Check 2 No semantic expansion = PASS**：C 三形态（C-REF/C-INV/
+  C-DECL）均为确定性检查，绝对禁令+C-NOT-EVALUABLE+stop/revise 通道
+  无静默扩展。发现 H-3（加固）：C-DECL「机械可评估者」枚举带「等」
+  字，须补显式分类判据。
+- **Check 3 No trivialization = PASS**：A 双向核查（ES 自身引用路径+
+  formation 基线使 A 非观察者施舍；内容寻址下 A-SUB 结构不可能但 A-NF
+  仍可触发——任何引用形式下非恒真；无人为失败模式）；I 双向（I-
+  INVARIANT 逐字落实+签名全随 formation 声明证据结构，无 manufactured
+  references）。
+- **Check 4 Four-state integrity = PASS**：NOT-EVALUABLE ≠ BROKEN 在
+  记录/合成/统计三层保持；BROKEN 签名域各条件封闭。发现 H-2（加固）：
+  仪器疑云签名（A-UNRESOLVABLE/I-UNSTRUCT）的 schema 记录位置须显式化。
+- **Check 5 Attribution/Control = PASS**：K-0 漂移⇒整批 INCONCLUSIVE
+  硬规则在位。**发现 H-1（本次评审最重要发现）**：Spec 未显式规定
+  ΔIS_class 锁定时点——存在「IS-I cell 未击穿⇒事后改判 K-1 良性⇒
+  Control 被结果反向定义」的逃逸路径，须补构造时锁定义务。
+- **Check 6 Failure/stopping = PASS**：R3-1 FAIL 真实停止；四条逃逸
+  路径逐一排查全部封闭（A-NOT-EVALUABLE 无替代程序/语义级 C 禁静默
+  扩展/I≡TRUE 禁加条件/失败有效性全覆盖）。发现 O-2（观察）：R3-2
+  状态选样须披露可判定性前提（归 R3-2 设计门）。
+- **Check 7 Scope leakage = PASS（零泄漏）**：无 R3-2 实验细节、无
+  R3-4 解释走私、IPAC/PALACE/P/Route 全部维持排除。
+- **特别聚焦条款核查 = PASS**：NOT SUPPORTED 含 I≡A≡C≡TRUE 的逻辑
+  方向正确——all-TRUE⇒NOT SUPPORTED⇒结果⇒边界解释，而非 all-TRUE⇒
+  无发现⇒改条件⇒直到有变化；与 INCONCLUSIVE 分界正确（all-TRUE 是
+  仪器正常下的干净否定）。
+
+**发现汇总**：H-1（ΔIS_class 构造时锁定义务，防 post-hoc control——
+最重要）/H-2（instrument_doubt schema 显式化）/H-3（C-DECL 机械可
+评估判据）+O-1/O-2（两项归 R3-2 设计门的观察）。三项 H 均为收紧性
+条款，零命题变更。
+
+**处置**：按 R2 rev.1→rev.2 先例，rev.2 机械补入 H-1（§5.4 构造时
+锁定）/H-2（§6.1 schema instrument_doubt 标志）/H-3（§3.2 机械可
+评估判据），修订记录入 spec 头部。**R3-1 Judgment Spec = RATIFIED
+（正式判定规则）**。**边界声明（human 原定）：评审通过 ≠ 实验开启
+——RATIFIED 仅意味着 Spec 可作为下一阶段正式判定规则；R3-2 进入
+仍须独立 human 授权（含 R3-2 设计门）。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review        = ACCEPTED
+R3-1 Spec rev.1         = REVIEWED / PASS WITH RECOMMENDATIONS
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-1 implementation     = NOT AUTHORIZED（实验进入须独立 human 授权）
+R3-2…R3-4               = LOCKED（R3-2 设计门待 human 决定是否开启）
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on whether to open the R3-2 design gate（experiments
+       remain unauthorized until then）
+```
+
+### R3-2 = AUTHORIZED FOR DESIGN GATE ONLY — DESIGN DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 裁定：不把 R3-2 设计门当「R3-1 已 RATIFIED 故当然继续」的流水线
+动作，而是回答真正有价值的问题——「R3-2 到底需要设计什么，才能把判定
+规则第一次接触到真实的 ES/IS 状态变化」；授权粒度锁定为 **R3-2 =
+AUTHORIZED FOR DESIGN GATE ONLY**（只设计：不跑实验、不写代码、不建
+harness、不采数；R3-3/R3-4 LOCKED）。human 同时登记方法论观察：H-1 的
+发现证明「必要的反复否定」不同于「过度流程化」——前者发现原来没看到的
+问题（结果反向定义 Control 的自由度），后者只增加文件不增加认识。
+
+按授权完成设计门交付 `SIMIGO_LAB_R3_2_DESIGN_20261003.md`，八问逐题
+落答：
+
+- **§1 最小实验单元**：Cell = 一次受控 `(ES,IS₀)─ΔIS→(ES,IS₁)` 转换及
+  条件级判定（构造/锁定/t₀ 评估/ΔIS/t₁ 评估/记录六步）；**cell 有效
+  性前提 = Cons(ES,IS₀)=true 于 t₀ 核验**（构造要求非结果操纵，formation
+  材料清单随构造记录先行披露——O-2 落实）；**范围声明=R3-2 全程无模型
+  推理**（判定对象是条件满足性非延续行为；条件破坏⇒延续失败的检验属
+  R2 候选关系，不在 R3-2）。
+- **§2 ES 固定**：单一 ES 工件哈希钉定贯穿全 cell（漂移=仪器疑云）；
+  真实形成（运输非构造 D6）；**formation 材料齐备义务**（I-EV 声明/A
+  锚引用+formation 摘要/C 前置引用+声明条件，缺失⇒NOT-EVALUABLE⇒S-1，
+  禁事后补造）；ES 只读；**锚引用形式=符号名**（使 A-SUB 可观测；内容
+  寻址变体登记为后续表征敏感性问题）；**研究载具声明**=Lab 仓
+  purpose-built 最小 fixture（R-B1 先例），结论 bounded 于该结构类。
+- **§3 ΔIS 冻结目录**：IS-I×3（模型声明变更/谱系目标删除/谱系目标
+  冲突复制→I-MISMATCH/I-NF/I-AMBIG）+IS-A×3（锚删除/移出边界/同址
+  异容→A-NF/A-NF/A-SUB）+IS-C×3（settled result 删除/invalidation
+  记录/supersession 记录→C-REF not-found/C-INV×2）+IS-B×2（整体边界
+  收缩/访问模式变更——作用于区域非单一对象，受影响集合构造时划定，
+  预测机械推导歧义处保留「?」）+K-1×2（纯增量/等价迁移）+K-0；**IS-X
+  目录占位**（单变量完成并确认可归因后才实例化）。适用性披露义务：
+  I-Δ 操作可执行性取决于 ES 的 I-EV 声明结构（自足⇒not-applicable
+  +I-INVARIANT 登记），只用 formation 材料判定。
+- **§4 构造时锁定（H-1 执行化）**：类别指派规则冻结（按操作机制与靶
+  指派，规则先于任何 cell 存在）；**construction record 先于评估落盘**
+  （cell_id/ES 哈希/IS₀ 哈希/操作 id/类别/构造时机械推导预测）；评估
+  只向 outcome 文件追加且与构造记录物理分离；重分类禁令（意外结果
+  本身是数据）。
+- **§5 Spec→可执行观察映射表**：每个签名类别→fixture 上的确定性
+  程序（I 证据声明读取+解析/A 引用路径解析+formation 摘要比对/C 解析
+  +invalidation 索引查询+H-3 判据核对）；观察完整性（IS 写前/写后
+  哈希）；仪器化要求固定（run-UUID/append-only/单调钟/判读分离——
+  执行期落实）；O-1 落实（无模型无输出遥测）。
+- **§6 Control 预注册**：K-0/K-1 同流程+预测先行登记；**ES 完整性
+  常设对照**（工件哈希跨 cell 恒等）；**IS₀ 钉定+per-cell 新拷贝**
+  （cell N 的 IS₁ 永不成为 cell N+1 输入，禁累积污染）；顺序登记+
+  换序重跑仪器选项（是否启用归执行授权）；漂移处置先于结果解读。
+- **§7 停止条件 S-1..S-5**：结构性不可判定（不得换 ES 凑可判定性）/
+  K-0 漂移不可定位/ES 哈希漂移/系统性不可归因/门控违反。
+- **§8 INCONCLUSIVE 条件 I-1..I-6**：K-0 漂移/instrument_doubt cell/
+  不可归因击穿/NOT-EVALUABLE 传播/观察完整性失败/setup-invalid。
+- **§9 预测登记**：预测=操作×formation 证据图的构造时机械推导，随
+  构造记录冻结；偏离原样记录含全 no-break（⇒NOT SUPPORTED=实质性
+  有界发现，禁改表征加条件）。
+- **§10 出口**：本文档后应先过独立审查（与 R3-1 同节奏：设计→对抗
+  审查→修订→RATIFIED→执行授权）；R3-2 execution 须独立 human 授权；
+  R3-3/R3-4 LOCKED。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review        = ACCEPTED
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-2 Design             = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-2 execution          = NOT AUTHORIZED
+R3-3…R3-4               = LOCKED
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = independent review of the R3-2 design; execution remains
+       unauthorized
+```
+
+### R3-2 DESIGN INDEPENDENT ADVERSARIAL REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — DESIGN RATIFIED — EXECUTION STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-2 Design 进行独立对抗审查（攻击目标=实验前的自由度、
+污染、归因漏洞，不重新证明值得做），八处攻击点+一项特别聚焦。评审交付
+`SIMIGO_LAB_R3_2_DESIGN_REVIEW_20261003.md`：
+
+- **Check 1 Cell validity — 发现 H-A（本次评审核心，human 特别聚焦的
+  选择偏差问题，生效前强制修订）**：rev.1 有「不得改 ES 或 IS₀ 凑数」
+  但未锁死 setup 程序——存在「试 IS₀₁→不满足→换 IS₀₂→直到合格」的
+  隐性 resampling 路径，且未回答「Cons 什么版本/依据什么 Spec/什么
+  时候判定」。rev.2 补入 **Campaign setup lock**：①(ES,IS₀) 一次性
+  按预登记准则选定（准则执行不依赖任何 t₀ 结果——选择在判定之前）；
+  ②t₀ 判定一次性（Cons=R2 rev.2 候选定义、依 Spec rev.2 程序、于
+  campaign setup 阶段机械评估，版本/依据/时点三要素钉死 setup 记录）；
+  ③结果二值终局——false ⇒ setup=INVALID+记录保全+STOP，重设须新
+  human authorization（失败 setup 保存为证据，R-C1 attempt 纪律）；
+  ④per-cell t₀ 重评估=仪器一致性复算，与 setup t₀ 不一致⇒整批
+  INCONCLUSIVE。t₀ 无法判定⇒S-1 停止而非换数。✓
+- **Check 2 ES fixation — 发现 H-B+O-A**：判定基线驻留规则补入（全部
+  formation 摘要/证据声明/前置声明一律 ES-artifact 驻留；IS 只含可
+  引用对象与 mutation 记录，永不含基线——否则 ΔIS 可触碰基线自身，
+  研究被倒置）；ES 工件与 IS 存储物理不相交；formation provenance
+  链入 setup 记录；fixture 组装=setup 事件非被测 ΔIS。
+- **Check 3 ΔIS classification — 发现 H-F**：类别由冻结规则从操作 id
+  **机械推导**（非人工指派，指派自由度归零）；**IS-X 词汇封闭**（X=
+  已冻结单变量操作的组合，执行期不得引入新操作类型）。H-1 完整贯彻。
+- **Check 4 IS₀ isolation — 发现 H-E**：每 cell 结束后复验 canonical
+  IS₀ 哈希+ES 哈希（双复查）；IS₁ 拷贝只读归档——「源头钉定+新拷贝+
+  事后复验」三重阻断累积污染。
+- **Check 5 Spec→observation — 发现 H-C（实质发现：I-UNSTRUCT
+  二义性）+H-D**：rev.1 映射表把「评估规则引用的 IS 结构不存在」一律
+  导向仪器疑云——但在 cell 结构内 t₀ 已干净执行⇒结构当时存在⇒t₁
+  缺失只能是 ΔIS 所致（唯一变量）⇒**这恰是 I-condition 定义主体
+  被违反=I BROKEN**（新签名 I-STRUCT-REMOVED），不是仪器疑云；仪器
+  读法仅限 setup 阶段。零命题变更（恢复 a 子句本义，Spec §5.3「非
+  ΔIS 原因」限定词本已蕴含）。A-UNRESOLVABLE 在 t₀ 干净前提下按构造
+  不可能出现于 t₁（引用形式驻留固定 ES）——其出现即观测路径缺陷真
+  信号。H-D：fixture 确定性钉定（引用解析=精确键匹配禁语义匹配/
+  C-DECL 检查类型白名单/时间参照=setup 钉定时间戳非评估时墙钟）。
+- **Check 6 Control integrity = PASS**：预测随构造记录先行冻结；ES
+  完整性对照与实验变量的耦合被物理不相交+双复查结构性排除。
+- **Check 7 Failure/INCONCLUSIVE = PASS（无逃逸通道）**：三条包装
+  路径逐一封闭——定向击穿标 instrument_doubt（H-C 修正后结构上导回
+  BROKEN；A-UNRESOLVABLE 冒用即暴露）/BROKEN 降级 NOT-EVALUABLE
+  （NOT-EVALUABLE 结构性触发 S-1 STOP，包装代价是停止而非继续，
+  无激励相容漏洞）/setup-invalid 后换料重试（H-A 锁死）。
+- **Check 8 Scope = PASS（零泄漏）**：无模型调用点；预测无提前解释；
+  IS-X 词汇封闭+内容寻址变体显式 defer。
+
+**处置**：rev.2 机械补入六项（H-A §1a campaign setup lock / H-B §2a
+基线驻留+provenance 链 / H-C §5 映射修正 / H-D §5a fixture 确定性
+钉定 / H-E §6 事后双复查 / H-F §4a 机械推导+IS-X 词汇封闭），修订
+记录入 spec 头部。**R3-2 Design = RATIFIED（正式实验设计）**。**边界
+声明：RATIFIED ≠ 执行许可——R3-2 execution（fixture 实现+cell 运行）
+须独立 human 授权。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED / 正式实验设计
+R3-2 execution          = NOT AUTHORIZED（fixture 实现+cell 运行待
+                          独立 human 授权）
+R3-3…R3-4               = LOCKED
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-2 execution authorization
+```
