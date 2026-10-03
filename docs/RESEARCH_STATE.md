@@ -18951,3 +18951,173 @@ Route A/B/C         = NOT SELECTED
 PALACE              = CLOSED
 Next = explicit human R3 research decision; no self-initiated R3 work
 ```
+
+### R3 RESEARCH DECISION APPROVED — CONSISTENCY BOUNDARY STUDY ADOPTED — 2026-10-03
+
+human 作出 R3 research decision：R3 承担一个非常明确的任务——**不是
+继续讨论 I/A/C 是什么，而是第一次把 R2 的 `Cons(ES, IS)` 变成可观察、
+可判定、可证伪的研究对象**。R3 设计为 "Information Space Change →
+Execution State Consistency" 研究，不直接进入 PALACE、IPAC 或实现。
+
+正式名称：**R3 — Information Space Change and Execution-State
+Consistency Boundary Study**（R3——Information Space 变化与 Execution
+State 一致性边界研究）。
+
+- **Primary Question**：当 Execution State 固定而 Information Space
+  发生变化时，哪些变化会使 `Cons(ES,IS)` 从 satisfied 变为 unsatisfied？
+  最小研究单元 = `IS₀ ─ΔIS→ IS₁`（ES 固定），`Cons(ES,IS₀)=true →
+  Cons(ES,IS₁)=?`；比直接问「能不能继续」更严格——直接观察输出会把
+  模型行为、实现缺陷、资源不足、随机性混进来。
+- **核心问题记号**：`(ES,IS₀) → (ES,IS₁)`；`Cons(ES,IS₀) →
+  Cons(ES,IS₁)`；`ΔIS → Δ(I/A/C conditions)`。
+- **Scope 排除（逐字登记入 R3 scope）**：P / IPAC 最小性 / IPAC 冻结 /
+  PALACE 实现 / PALACE MCP / Route A/B/C / 后端适配 / 产品实现 / 性能
+  优化 / 模型能力比较 / 完整恢复系统——**R3 不是 PALACE 实验**；R3
+  研究「Information Space 的信息变化」这个抽象对象，不因要改变
+  Information Space 就选择 PALACE 作为物理实现；PALACE 保持 CLOSED。
+- **三层次结构**：R3-1 Cons 可判定性（不依赖最终输出判断 I/A/C 条件
+  是否满足；先做判定规范非实验实现）→ R3-2 Information Space Change
+  Taxonomy（IS-I 身份 / IS-A 锚定 / IS-C 继续条件 / IS-B 边界可访问性 /
+  IS-X 复合；前三类对应 I/A/C，后两类防过度简化）→ R3-3 Consistency
+  Boundary Validation（最小实验矩阵+对照+反证）。
+- **关键纪律（human 固定措辞）**：①总判定纪律=「R3 的主要判定对象是
+  condition satisfiability，不是最终输出是否改变」（继承 R2 Task 3 并
+  升格为 R3 总纪律；输出只能作辅助观察）；②实验矩阵=「hypothesis
+  structure，不是 expected result declaration」（↓ 是待验证预测非结果
+  预设）；③必设对照 Control=(ES,IS₀)→(ES,IS₀) Cons 应不变 vs
+  Treatment=(ES,IS₀)→(ES,IS₁)；④**R3-N 反证实验必做**——不只找「IS 改
+  变→Cons 崩溃」，还必须找「IS 改变→Cons 仍然成立」，否则会得到过强
+  错误结论 ΔIS⇒¬Cons；正确候选=ΔIS⇏¬Cons、ΔIS→?Δ(I/A/C conditions)，
+  只有特定类型变化才可能破坏 Cons——R3 是边界研究非失败案例收集；
+  ⑤IS-B 只研究现象，不预先宣布为第四个 primitive（Information exists
+  ≠ belongs to current IS ≠ accessible to ES）；⑥IS-X 复合变化严格
+  排在单变量归因之后；⑦归因纪律=单变量→确认可归因→双变量→交互效应。
+- **终局四问（R3-4 才允许回答）**：RQ3-1 IS 变化能否在 ES 固定时改变
+  Cons；RQ3-2 哪些 IS change 分别影响 I/A/C；RQ3-3 哪些 IS change 不
+  影响 Cons；RQ3-4 是否存在无法由 I/A/C 解释的 Cons change——若出现
+  `IS changed ∧ Cons changed ∧ I=A=C=true` 则 R2 候选形式 Cons=I∧A∧C
+  直接受挑战（真正有研究价值的负结果）。
+- **阶段门**：R3-0 Design → human approval → R3-1 Observability →
+  gate → R3-2 Single-change boundary → gate → R3-3 Counterexample/
+  non-break → gate → R3-4 Consistency synthesis；每道 gate 须 human
+  显式授权；**一次只授权一段，不一次授权整个 R3**。可能结果=SUPPORTED /
+  PARTIALLY SUPPORTED / NOT SUPPORTED / INCONCLUSIVE，不预设成功。
+- **PALACE 定位**：R3 先研究 semantic object 侧（ES ↔ Information
+  Space）；该关系有证据后才有资格研究 PALACE 如何成为物理承载——防止
+  Information Space semantics 与 PALACE database semantics 重新混合；
+  PALACE = CLOSED 维持。
+- **授权范围**：本决定授权 R3 采纳+R3-0（设计封存）执行；**不授权任何
+  实验**；R3-1 及以后各段须另行显式授权。
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = ADOPTED / SCOPE FIXED BY HUMAN DECISION
+R3-0                = AUTHORIZED（design only; no experiment, no implementation）
+R3-1…R3-4           = PENDING GATES（各自须 human 显式授权）
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = R3-0 design delivery; then human approval gate for R3-1
+```
+
+### R3-0 RESEARCH DESIGN DELIVERED — HUMAN APPROVAL PENDING — 2026-10-03
+
+按 human 授权完成 R3-0（只设计，零实验零实现）。交付
+`SIMIGO_LAB_R3_INFORMATION_SPACE_CONSISTENCY_BOUNDARY_DESIGN_20261003.md`：
+
+- §1 Primary Question + 最小研究单元图（ES 固定，IS₀→IS₁，Cons 条件
+  满足性变化为观察对象）
+- §2 研究对象与记号（Cons 引 R2 rev.2 封存定义不修改；单向性
+  LawfulContinuation⇒Cons 继承）
+- §3 排除清单（逐字，含 PALACE 实现/MCP/Route/后端适配/产品实现/性能/
+  模型比较/完整恢复系统）
+- §4 三层次+阶段门：R3-1 判定规范（I/A/C 各配 IS 变化示例
+  I-condition/A-condition/C-condition 判定问题；出口判据=三条件可独立
+  观察、记录、判定）；R3-2 五类 taxonomy（IS-I/A/C/B/X 各配变化例与
+  目标模式；IS-B 不预设第四 primitive；IS-X 后置）；R3-3 最小实验矩阵
+  （R3-I/A/C/B/X，↓=待验证预测非预设）+Control/Treatment 因果结构
+  +R3-N 反证实验（non-break 与不可归因两搜索方向）
+- §5 总判定纪律（condition satisfiability 非 output change；输出仅
+  辅助观察）
+- §6 终局四问 RQ3-1..4（含 RQ3-4 负结果价值条款）
+- §7 PALACE 定位（semantic object/physical carrier 分侧图；PALACE=
+  CLOSED）
+- §8 可能结果四态+失败有效性
+- §9 human 状态草案逐字登记
+- §10 效力声明（R3-1 须 human 显式批准本设计；R3-2/3/4 各自另过 gate）
+
+R3-0 = DELIVERED / HUMAN APPROVAL PENDING；下一动作 = human 审批 R3-0
+设计；R3-1 只在显式批准后开启。
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = DELIVERED / HUMAN APPROVAL PENDING
+R3-1…R3-4           = PENDING GATES
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = human approval of R3-0 design; R3-1 opens only upon explicit approval
+```
+
+### R3-0 REVIEW = APPROVED / DESIGN SEALED — R3-1 NOT AUTHORIZED — GIT NOT COMMITTED — 2026-10-03
+
+human R3-0 审批判定：**R3-0 = APPROVED / DESIGN SEALED**。
+
+**审批性质与边界（逐字入档）**：审批点限定在 **R3-0 设计本身**，不扩展
+为 R3-1 授权；本次为**范围与方法层面的审批**。human 如实声明：检索到的
+文件索引未返回 R3-0 设计文档本体，因此**不假装已逐段审阅文件**；审批
+依据 = 本次交付所登记的关键条款（完整列出，足以支撑范围与方法层面
+审批）——该审批边界本身登记在案。
+
+**批准理由（human）**：设计已把 R3 从「继续讨论理论」收缩成一个明确、
+可证伪的研究对象 `(ES,IS₀) ─ΔIS→ (ES,IS₁)`，核心观察 `Cons(ES,IS₀) →
+Cons(ES,IS₁)`；并保持了研究纪律：ES 固定、IS 变化作为最小研究单元；
+先研究 I/A/C condition satisfiability 而不是最终输出；单变量变化优先、
+IS-X 后置；有不变 Control；有 R3-N 非破坏/不可归因反证方向；IS-B 不
+预设成第四 primitive；允许出现 NOT SUPPORTED / INCONCLUSIVE；PALACE
+明确 CLOSED；P、IPAC、Route A/B/C 均不被偷偷重新打开；R3-1…R3-4 保持
+独立 gate。**尤其重要（human 认定为设计成立的关键）：R3-0 没有把 R2 的
+Cons 定义当成已经证明的事实——`Cons ⟺ I ∧ A ∧ C` 被当作待检验的候选
+关系，并明确允许 RQ3-4 产生反例。**
+
+**审批后锁死的解释**：**R3-0 APPROVED ≠ R3-1 AUTHORIZED**。R3-1 的
+目标 = 下一道非常窄的门：**证明 I/A/C 三类 condition 在当前研究范围内
+能够被独立观察、记录和判定**——如果 R3-1 连这个都不能可靠做到，就不能
+继续 R3-2。
+
+**Git 处置（human 明确）**：本次审批是**研究审批，不是 Git 操作授权**。
+当前最干净状态 = `R3-0 Design = APPROVED / SEALED` + `Git = NOT
+COMMITTED` + `R3-1 = NOT AUTHORIZED` + `Experiment = NOT AUTHORIZED`。
+**不因 R3-0 获批而自动提交，更不进入 R3-1**。若 human 下一步明确下达
+「提交并推送 R3-0 封存」，届时执行：Git 核验 → staged files 检查 →
+commit → push → `ls-remote` 回验。
+
+当前状态（human 裁定块）：
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = APPROVED / DESIGN SEALED
+R3-1                = PENDING HUMAN GATE
+
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+```
