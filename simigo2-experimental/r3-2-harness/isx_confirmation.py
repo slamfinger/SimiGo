@@ -231,7 +231,7 @@ def main() -> int:
 
     # --- confirmation cells ----------------------------------------------------
     L.build_region_cache(is0)
-    setup_t0 = setup["t0_evaluation"]
+    setup_t0 = setup_record["t0_evaluation"]
     cells = {}
     for i, cell_op in enumerate(CAMPAIGN, start=1):
         if cell_op in X.PAIRS:
