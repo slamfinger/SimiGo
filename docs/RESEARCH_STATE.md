@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-03
+**Last updated**: 2026-10-04
 
 ## Current total status — 2026-10-04
 
@@ -22,8 +22,10 @@
 > `CLOSED`，但该结论仍限于第二个结构独立任务域，不扩为普遍命题；
 > 其后 T5 已在第三个结构独立的 constraint-assignment 任务域完成
 > REV.1 执行与原始证据封存，预注册归因读数为 `REPLICATION PASS`，
-> 最终 human declaration 尚待登记；R-C1 #4 已作为有效的
-> task-domain-bounded 证据关闭；IPAC 仍保持 OPEN / NONBINDING。
+> human 已依预注册判据正式宣告 `REPLICATION PASS`，并将 T5 封存为
+> `CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED / GATE CHAIN SEALED`；
+> 该结论不跨任务域、不升级为一般 continuation 定理；R-C1 #4 已作为
+> 有效的 task-domain-bounded 证据关闭；IPAC 仍保持 OPEN / NONBINDING。
 > 由此，当前系统已经具备受控的最小
 > Execution–Information Runtime 实现与实验证据，但尚不能将其表述
 > 为完整 Information Space 或完整 MemPalace Runtime；后续不预先
@@ -20892,4 +20894,39 @@ MLX Representation Consistency Boundary       = EXECUTED / SEALED
 LLAMA Representation Consistency Replication  = EXECUTED / SEALED /
                                                 CROSS-BACKEND PASS
 Integrity design authorization                = NONE
+```
+
+### T5 REPLICATION RESULT DECLARED — REPLICATION PASS — GATE CHAIN SEALED — 2026-10-04
+
+human 正式宣告：
+
+```text
+T5 Replication Result = REPLICATION PASS
+T5 = CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED / GATE CHAIN SEALED
+```
+
+边界：
+
+```text
+Attempt #1 remains INCONCLUSIVE / DESIGN INVALID。
+Conclusion remains task-domain bounded and does not generalize to all
+continuation tasks。
+“REPLICATION PASS”只是对 T5 REV.1 预注册判读的正式人工确认，
+不升级为跨任务域或一般 continuation 定理。
+```
+
+声明文件：
+
+```text
+docs/00-governance/SIMIGO_LAB_T5_REPLICATION_DECLARATION_20261004.md
+```
+
+当前状态：
+
+```text
+T5 Attempt #1 = INCONCLUSIVE / DESIGN INVALID
+T5 REV.1      = CLOSED / REPLICATION PASS
+T5            = CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED /
+                GATE CHAIN SEALED
+T4 / T4-2     = CLOSED（原结论零改动）
 ```
