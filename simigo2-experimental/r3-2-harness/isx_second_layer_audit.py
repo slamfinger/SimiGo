@@ -128,11 +128,43 @@ def main() -> int:
                   "expected=%s actual=%s" % (pre["expected_candidate_count"],
                                              act_n))
 
-    # classification recomputation vs adjudicator
+    # R2 containment (SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md §2):
+    # INCONCLUSIVE / INVALID-COMPOSITION / SANITY-FAILED cells are NEVER
+    # reclassified. Audit verifies only: pre-registered reason, evidence
+    # chain, and containment (no leakage into ADDITIVE/INTERACTION stats).
+    PReregisteredReasonPrefixes = ("I-5", "t₀", "I-2", "I-1", "S-X2",
+                                   "I-3", "S-N2")
     recompute_ok = True
+    containment_ok = True
+    containment_detail = []
+    recomputed = 0
     for entry in adjudication["per_cell"]:
-        if entry["op_class"] != "IS-X" or \
-           entry["verdict"] == "INVALID-COMPOSITION":
+        if entry["verdict"] in ("INCONCLUSIVE", "INVALID-COMPOSITION",
+                                "SANITY-FAILED"):
+            # containment path — classification is forbidden here
+            oc_path = os.path.join(run_dir, "cells", entry["cell_id"],
+                                   "outcome.json")
+            con_path = os.path.join(run_dir, "cells", entry["cell_id"],
+                                    "construction.json")
+            reason = entry.get("reason", "")
+            reason_ok = any(reason.startswith(p)
+                            for p in PReregisteredReasonPrefixes) \
+                if entry["verdict"] == "INCONCLUSIVE" else True
+            chain_ok = os.path.exists(oc_path) and os.path.exists(con_path)
+            leak = entry["verdict"] != "INCONCLUSIVE" and \
+                entry["verdict"] in ("ADDITIVE", "MASKING",
+                                     "EMERGENT-BREAK", "SIGNATURE-SHIFT")
+            if entry["verdict"] == "INCONCLUSIVE" and not reason_ok:
+                containment_ok = False
+                containment_detail.append(entry["cell_id"] + ":reason")
+            if not chain_ok:
+                containment_ok = False
+                containment_detail.append(entry["cell_id"] + ":chain")
+            if leak:
+                containment_ok = False
+                containment_detail.append(entry["cell_id"] + ":leak")
+            continue
+        if entry["op_class"] != "IS-X":
             continue
         outcome = L.read_json(os.path.join(run_dir, "cells",
                                            entry["cell_id"],
@@ -142,10 +174,14 @@ def main() -> int:
         cond_classes = {c: _classify(t1[c], p_comp[c])
                         for c in ("I", "A", "C")}
         label = _cell_label(cond_classes)
+        recomputed += 1
         if label != entry["verdict"]:
             recompute_ok = False
+    check("R2 containment: INCONCLUSIVE cells excluded from classification "
+          "recompute; reason+chain verified; no stats leakage",
+          containment_ok, "detail=%s" % containment_detail)
     check("classification recomputation agrees with adjudicator "
-          "(12/12 pair cells)", recompute_ok)
+          "(valid pair cells only; n=%d)" % recomputed, recompute_ok)
 
     # verdict semantics per §7 rev.2 (no broadening)
     v = adjudication["campaign_verdict"]

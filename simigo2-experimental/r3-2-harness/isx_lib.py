@@ -124,75 +124,164 @@ def predict_cell(cell_op: str, es: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# H-X4 construction audit invariant — per-op effect assertions
-# (path relation relative to canonical IS₀; verified on the composed IS).
+# R1 revision (SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md §1) — object/effect
+# identity based effect assertions. Replaces the path-pinned probes
+# (measurement model mismatch F-3): assertions follow the OBJECT via
+# key-identity (pinned exact-key resolution) / content-identity (byte
+# search) / manifest-field / record identity — no path dependency, no
+# semantic judgment. Derivation source = op effect definitions (general);
+# X-08/X-09 outcomes are NOT an input (independence guard G-1).
 # ---------------------------------------------------------------------------
 
-EFFECT_ASSERTIONS = {
-    "R32-I-Δ1": [("runtime/runtime-declaration.json", "differs")],
-    "R32-I-Δ2": [("lineage/lineage-root.json", "absent")],
-    "R32-I-Δ3": [("lineage/lineage-root-conflict.json", "present")],
-    "R32-A-Δ1": [("objects/R-1.json", "absent")],
-    "R32-A-Δ2": [("universe/R-1.json", "present"),
-                 ("manifest.json", "differs")],
-    "R32-A-Δ3": [("objects/R-1.json", "differs")],
-    "R32-C-Δ1": [("objects/I-S0.json", "absent")],
-    "R32-C-Δ2": [("invalidation_index.json", "differs")],
-    "R32-C-Δ3": [("invalidation_index.json", "differs")],
-    "R32-B-Δ1": [("manifest.json", "differs")],
-    "R32N-Δ6": [("objects/I-S0.json", "absent"),
-                ("objects/store-v2/I-S0.json", "present")],
-    "R32N-Δ8": [("manifest.json", "differs")],
-    "R32N-Δ9": [("extra/extra-note.json", "present"),
-                ("manifest.json", "differs")],
-    "R32N-Δ10": [("lineage/lineage-root.json", "absent"),
-                 ("lineage/store-v2/lineage-root.json", "present")],
+def _key_state(is_dir: str, is0_dir: str, key: str) -> dict:
+    status, cands = L.resolve_key(is_dir, key)
+    s0_status, s0_cands = L.resolve_key(is0_dir, key)
+    is0_bytes = s0_cands[0][1] if s0_status == "found" else None
+    resolved_bytes = cands[0][1] if status == "found" else None
+    vs = None
+    if resolved_bytes is not None and is0_bytes is not None:
+        vs = "same" if resolved_bytes == is0_bytes else "differs"
+    return {"status": status, "paths": [rel for rel, _ in cands],
+            "bytes": resolved_bytes, "bytes_vs_is0": vs}
+
+
+def _content_absent(is_dir: str, is0_dir: str, rel: str) -> dict:
+    """Byte-identity search: is the IS₀ object at rel present anywhere in
+    the composed IS? Empty hits = object absent everywhere."""
+    p0 = os.path.join(is0_dir, rel)
+    if not os.path.exists(p0):
+        return {"searched": False, "hits": [],
+                "note": "ill-formed: is0 file absent"}
+    with open(p0, "rb") as f:
+        target = f.read()
+    hits = []
+    for root, _d, files in os.walk(is_dir):
+        for f in files:
+            fp = os.path.join(root, f)
+            try:
+                with open(fp, "rb") as fh:
+                    if fh.read() == target:
+                        hits.append(os.path.relpath(fp, is_dir)
+                                    .replace(os.sep, "/"))
+            except OSError:
+                pass
+    return {"searched": True, "hits": hits}
+
+
+# Per-op declared effects (design revision §1.3) — assertion tuples.
+OP_EFFECT_SPEC = {
+    "R32-I-Δ1": [("key-field", "runtime-declaration", "fixture_class",
+                  "r3-2-minimal-v1-TAMPERED")],
+    "R32-I-Δ2": [("content-absent", "lineage/lineage-root.json")],
+    "R32-I-Δ3": [("file-present", "lineage/lineage-root-conflict.json"),
+                 ("key-resolves", "lineage-root")],
+    "R32-A-Δ1": [("key-unresolved", "anchor:state-diff"),
+                 ("content-absent", "objects/R-1.json")],
+    "R32-A-Δ2": [("key-resolved-at", "anchor:state-diff",
+                  "universe/R-1.json"),
+                 ("manifest-contains", "out_of_scope", "universe/")],
+    "R32-A-Δ3": [("key-substituted", "anchor:state-diff")],
+    "R32-C-Δ1": [("key-unresolved", "I-S0"),
+                 ("content-absent", "objects/I-S0.json")],
+    "R32-C-Δ2": [("invalidation-has", "INV-R32-C-Δ2")],
+    "R32-C-Δ3": [("invalidation-has", "SUP-R32-C-Δ3")],
+    "R32-B-Δ1": [("manifest-contains", "out_of_scope", "archive/")],
+    "R32N-Δ6": [("key-resolved-at", "I-S0", "objects/store-v2/I-S0.json"),
+                ("key-same-bytes", "I-S0")],
+    "R32N-Δ8": [("manifest-contains", "scope_tags", "r3-2-archive-scope")],
+    "R32N-Δ9": [("file-present", "extra/extra-note.json"),
+                ("manifest-contains", "in_scope", "extra/")],
+    "R32N-Δ10": [("key-resolved-at", "lineage-root",
+                  "lineage/store-v2/lineage-root.json"),
+                 ("key-same-bytes", "lineage-root")],
 }
 
 
-def _rel_state(is_dir: str, rel: str, is0_dir: str) -> str:
-    p = os.path.join(is_dir, rel)
-    p0 = os.path.join(is0_dir, rel)
-    e, e0 = os.path.exists(p), os.path.exists(p0)
-    if not e and not e0:
-        return "both-absent"
-    if not e:
-        return "absent"
-    if not e0:
-        return "present"
-    return "same" if L.sha256_file(p) == L.sha256_file(p0) else "differs"
+def eval_effect_assertion(is_dir: str, is0_dir: str, a):
+    kind = a[0]
+    if kind == "key-field":
+        _, key, field, value = a
+        st = _key_state(is_dir, is0_dir, key)
+        if st["status"] != "found":
+            return False, f"key {key} {st['status']}"
+        obj = json.loads(st["bytes"].decode("utf-8"))
+        return obj.get(field) == value, f"{field}={obj.get(field)!r}"
+    if kind == "content-absent":
+        _, rel = a
+        r = _content_absent(is_dir, is0_dir, rel)
+        if not r["searched"]:
+            return False, r["note"]
+        return len(r["hits"]) == 0, f"byte-identity hits={r['hits']}"
+    if kind == "file-present":
+        ok = os.path.exists(os.path.join(is_dir, a[1]))
+        return ok, f"{a[1]} present={ok}"
+    if kind == "key-unresolved":
+        st = _key_state(is_dir, is0_dir, a[1])
+        return st["status"] == "not-found", f"{a[1]} {st['status']}"
+    if kind == "key-resolved-at":
+        _, key, path = a
+        st = _key_state(is_dir, is0_dir, key)
+        ok = st["status"] == "found" and st["paths"] == [path]
+        return ok, f"{key} paths={st['paths']}"
+    if kind == "key-substituted":
+        st = _key_state(is_dir, is0_dir, a[1])
+        ok = st["status"] == "found" and st["bytes_vs_is0"] == "differs"
+        return ok, f"{a[1]} bytes_vs_is0={st['bytes_vs_is0']}"
+    if kind == "key-same-bytes":
+        st = _key_state(is_dir, is0_dir, a[1])
+        ok = st["status"] == "found" and st["bytes_vs_is0"] == "same"
+        return ok, f"{a[1]} bytes_vs_is0={st['bytes_vs_is0']}"
+    if kind == "key-resolves":
+        st = _key_state(is_dir, is0_dir, a[1])
+        return st["status"] == "found", f"{a[1]} {st['status']}"
+    if kind == "manifest-contains":
+        _, field, value = a
+        m = L.load_manifest(is_dir)
+        ok = value in m.get(field, [])
+        return ok, f"{field} contains {value!r}={ok}"
+    if kind == "invalidation-has":
+        _, rid = a
+        inv = L.load_invalidation(is_dir)
+        ok = any(r.get("record_id") == rid
+                 for r in inv.get("records", []))
+        return ok, f"record {rid} present={ok}"
+    raise ValueError(f"unknown assertion {a}")
+
+
+def check_effect_v2(op_id: str, is_dir: str, is0_dir: str):
+    """Object/effect identity based probe (R1). Returns failed assertions."""
+    failures = []
+    for a in OP_EFFECT_SPEC.get(op_id, []):
+        ok, detail = eval_effect_assertion(is_dir, is0_dir, a)
+        if not ok:
+            failures.append(f"{op_id}:{a} → {detail}")
+    return failures
 
 
 def check_effect(op_id: str, is_dir: str, is0_dir: str):
-    """Returns list of failed assertion strings (empty = effect present)."""
-    failures = []
-    for rel, want in EFFECT_ASSERTIONS.get(op_id, []):
-        got = _rel_state(is_dir, rel, is0_dir)
-        if got != want:
-            failures.append(f"{op_id}:{rel} want={want} got={got}")
-    return failures
+    """Deprecated path-pinned probe retained only for Attempt #1 history —
+    superseded by check_effect_v2 (R1); must not be used for new runs."""
+    return check_effect_v2(op_id, is_dir, is0_dir)
 
 
 def construction_integrity(pair_id: str, op_a: str, op_b: str,
                            is_dir: str, is0_dir: str, replay_dir: str):
-    """H-X4 CI-1..CI-5 (design §2a). Returns (pass, failures dict)."""
+    """H-X4 CI-1..CI-4 via R1 object-identity probes (CI-5 order is
+    verified from the observation sequence by the audit). Signature
+    unchanged for caller compatibility."""
     failures = {}
-    # CI-1 op presentation/registration
-    if op_a not in PAIRS[pair_id]["op_a"] and op_a != PAIRS[pair_id]["op_a"]:
+    if op_a != PAIRS[pair_id]["op_a"]:
         failures["CI-1"] = "op_a mismatch"
     if op_b != PAIRS[pair_id]["op_b"]:
         failures["CI-1"] = "op_b mismatch"
-    # CI-2/CI-3 per-op effect probes on the composed IS
-    f2 = check_effect(op_a, is_dir, is0_dir)
+    f2 = check_effect_v2(op_a, is_dir, is0_dir)
     if f2:
         failures["CI-2"] = "; ".join(f2)
-    f3 = check_effect(op_b, is_dir, is0_dir)
+    f3 = check_effect_v2(op_b, is_dir, is0_dir)
     if f3:
         failures["CI-3"] = "; ".join(f3)
-    # CI-4 no undeclared operation: composed tree == (op_a∘op_b) replay tree
     if L.sha256_dir(replay_dir) != L.sha256_dir(is_dir):
         failures["CI-4"] = "composed tree != preregistered replay tree"
-    # CI-5 order — recorded via observation sequence; runner asserts flag
     return (not failures, failures)
 
 
