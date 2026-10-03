@@ -4,7 +4,7 @@
 
 **Last updated**: 2026-10-03
 
-## Current total status — 2026-10-03
+## Current total status — 2026-10-04
 
 > SimiGo-Lab 当前已完成 Execution State 主线从运行时证据、跨后端
 > continuation、G-δ 最小性检验、闭包修订、G-δR 表示相关形式化到
@@ -29,6 +29,13 @@
 > 为完整 Information Space 或完整 MemPalace Runtime；后续不预先
 > 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
 > 决定下一研究问题。
+
+2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
+并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
+same-ID / same-position / same-length / different representation content
+可穿过现有 position/type-level checks，进入真实 backend execution，并稳定
+产生 observable output divergence。该结果不证明完整性理论，不授权新增
+hash / anchor / provenance / consistency gate。
 
 Evidence correction: T4-2 is **not** awaiting final declaration. The
 authoritative declaration is
@@ -20819,4 +20826,60 @@ T5 REV.1      = EXECUTED / RAW EVIDENCE SEALED /
                 PRE-REGISTERED READING = REPLICATION PASS
 T5            = AWAITING HUMAN FINAL DECLARATION
 T4 / T4-2     = CLOSED（原结论零改动）
+```
+
+### LLAMA REPRESENTATION CONSISTENCY REPLICATION EXECUTED — PASS — 2026-10-04
+
+在 MLX Representation Consistency Boundary Result 之后，使用既有
+llama-server full-prefix backend / executor 完成最小跨 backend
+replication。范围只保留 C0 与三次 C2，不含 C1/C3、KV cache 或 Oversized。
+
+固定条件：
+
+```text
+same Execution ID       = llama-repconsistency-single
+same logical position   = 0
+same representation pos = 0
+same prefix length      = 10 tokens
+same seed / greedy settings
+only content delta      = token index 8: 9017 -> 9018
+```
+
+raw observation：
+
+```text
+C0       = accepted / real llama-server execution
+           tokens = [198,760,2313,6025,16699,10492,5435,2313,6044,9017,13,198]
+           text   = "...project management documents."
+
+C2.rep1  = accepted / real llama-server execution
+           tokens = [198,760,2313,6025,16699,10492,5435,2313,6044,9018,13,198]
+           text   = "...project management century."
+
+C2.rep2  = C2.rep1
+C2.rep3  = C2.rep1
+```
+
+有界读法：
+
+```text
+c2StableOutputDifference = true
+```
+
+即 llama-server 切片中重复出现：
+
+```text
+same ID + same position + same length + different content
+    → backend binding accepted
+    → real llama-server execution
+    → stable observable output divergence
+```
+
+当前状态：
+
+```text
+MLX Representation Consistency Boundary       = EXECUTED / SEALED
+LLAMA Representation Consistency Replication  = EXECUTED / SEALED /
+                                                CROSS-BACKEND PASS
+Integrity design authorization                = NONE
 ```
