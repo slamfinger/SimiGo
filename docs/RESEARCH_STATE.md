@@ -40,6 +40,11 @@ RelationCore / SimiGoRuntime × InformationCore 进入更接近真实连续工�
 并记录现有 Runtime 第一次出现任务阻塞式缺口的位置。当前只登记方向；
 具体任务未选择，实验执行未授权，新 schema 未授权。
 
+2026-10-04 载体选定：Real-Task Gap Exploration 已选择
+**秦沈项目经济运行汇报数据口径澄清与后续复核**作为真实任务载体。该载体
+自然包含 17 项澄清、18 族收尾清单、46,338 万元口径复函，以及 3 月份
+balance report 这一自然变化源。当前只登记观察性章程；执行未授权。
+
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
 same-ID / same-position / same-length / different representation content
@@ -20895,6 +20900,50 @@ Task design               = NOT AUTHORIZED
 Experiment execution      = NOT AUTHORIZED
 New schema                = NOT AUTHORIZED
 Contract / IPAC / PALACE  = NO CHANGE AUTHORIZED
+```
+
+### QINSHEN REAL TASK CARRIER SELECTED — OBSERVATIONAL CHARTER — 2026-10-04
+
+已选择真实任务载体：
+
+```text
+秦沈项目经济运行汇报数据口径澄清与后续复核
+```
+
+观察序列：
+
+```text
+A = Open Question Custodian
+    输入既有 17 项澄清函、18 族收尾清单与口径复函；
+    建立未决问题工作底账并 store。
+
+B = Follow-up Drafter
+    只接收 A 底账 identity；
+    fetch 底账后生成口径问询优先级草案并 store。
+
+C = Source-Impact Reconciler
+    接收 B 草案 identity 与 3 月份 balance report；
+    比较口径问题是否受新源影响，并生成 reconciliation note。
+```
+
+观察目标：
+
+```text
+B / C 实际 fetch 什么；
+RelationCore 是否自然需要；
+哪些 Information 自然产生；
+哪些 Information 缺少存储、关系表达或定位；
+工作流第一次无法继续的位置。
+```
+
+当前状态：
+
+```text
+Task carrier             = SELECTED
+Observational charter    = REGISTERED
+Experiment execution     = NOT AUTHORIZED
+New schema / relation    = NOT AUTHORIZED
+Contract / IPAC / PALACE = NOT AUTHORIZED
 ```
 
 ### LLAMA REPRESENTATION CONSISTENCY REPLICATION EXECUTED — PASS — 2026-10-04
