@@ -1,0 +1,61 @@
+{
+  "attempt": 2,
+  "authorization_scope": {
+    "A1": "X-06 reconstruction with R1 object-identity probes",
+    "A2": "R2 audit containment scope check (adjudication-time)",
+    "A3": "X-08/X-09 core confirmation pair (fresh locks, not copied from Attempt #1)",
+    "excluded": [
+      "full 16-cell rerun",
+      "new IS-X operations",
+      "representation/concurrency/temporal extensions",
+      "R3-4 (LOCKED; no outcome auto-opens it)"
+    ],
+    "honesty_clause": "if X-08 no longer MASKING after the fix, record as-is under preregistered rules"
+  },
+  "campaign_order": [
+    "X-08",
+    "X-09",
+    "R32N-SANITY-A",
+    "R32N-SANITY-I",
+    "R32N-SANITY-C",
+    "R32-K-0"
+  ],
+  "design_source": "SIMIGO_LAB_ISX_DESIGN_GATE_20261003.md (rev.2, RATIFIED — zero diff)",
+  "es_artifact_sha256": "3f9d921d72f91865788f258fadc2ec8fa63db2abe5228fef3d6e3ec28722a537",
+  "harness": {
+    "isx_confirmation": "eb30fcdec88f67f674484392aaa03caf2f5d7836efb03b02cfc34dc23dace26f",
+    "isx_lib": "850279b3e735a377abff6d441d3cd420a9ca6cb88adfc0a475176f5828164ea0",
+    "isx_run_cells": "e7c646d866ea865808d39d44551367bf937de73c72be84c9ad42693902aeb8e0",
+    "r32_lib": "ee4762a2ece334857b3f79528782a7b834d60d41fca3c66e45e13521a60830ca",
+    "r3n_lib": "39c939504c11025dd65cbcd60608d6a0ab35a11de59dd283e7ef72a6cb280048"
+  },
+  "is0_canonical_sha256": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "revision_source": "SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md (R1/R2, reaudit PASS 9/9)",
+  "run_uuid": "R33X-A2-20261003T130744Z-70945",
+  "setup_pinned_timestamp": "2026-10-03T13:07:44Z",
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "validity": "VALID",
+  "validity_rule": "design §1a: false ⇒ INVALID + preserve + STOP"
+}

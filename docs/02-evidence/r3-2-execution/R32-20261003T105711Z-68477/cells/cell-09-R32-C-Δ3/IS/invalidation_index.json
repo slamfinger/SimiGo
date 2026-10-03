@@ -1,0 +1,11 @@
+{
+  "records": [
+    {
+      "reason": "result superseded (R32-C-Δ3)",
+      "record_id": "SUP-R32-C-Δ3",
+      "superseded_by": "R-2 (declared, not present)",
+      "target": "anchor:state-diff",
+      "type": "supersession"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "campaign_order": [
+    "R32-I-Δ1",
+    "R32-I-Δ2",
+    "R32-I-Δ3",
+    "R32-A-Δ1",
+    "R32-A-Δ2",
+    "R32-A-Δ3",
+    "R32-C-Δ1",
+    "R32-C-Δ2",
+    "R32-C-Δ3",
+    "R32-B-Δ1",
+    "R32-B-Δ2",
+    "R32-K-1a",
+    "R32-K-1b",
+    "R32-K-0"
+  ],
+  "design_source": "SIMIGO_LAB_R3_2_DESIGN_20261003.md (rev.2, RATIFIED)",
+  "es_artifact_sha256": "7cd6bfc87b04d66d540bf1f10f6add895ba32700ad44e670fc5fe85682ee422e",
+  "harness": {
+    "medium": "python3 stdlib only; zero model inference (design §1)",
+    "r32_lib_sha256": "ee4762a2ece334857b3f79528782a7b834d60d41fca3c66e45e13521a60830ca"
+  },
+  "is0_canonical_sha256": "def59cc7d300365be35fce911cd5979d4cfd33c910dd6c4d8def81b6b0e81151",
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "run_uuid": "R32-20261003T105711Z-68477",
+  "selection_criteria": {
+    "anchor_reference_form": "symbolic (design §2.5)",
+    "es_formation": "formed by r32-formation-v1 against canonical IS0 (digests computed from actual bytes; no hand-written baselines — no construct-then-claim)",
+    "formation_materials_required": [
+      "I-EV declarations",
+      "A anchor reference + formation digest",
+      "C prerequisites + declared mechanical conditions"
+    ],
+    "lineage": "transported from sealed R-C1 attempt #4 evidence (RC1-A4-20261003T040749Z-57375, C-B arm) — real prior research artifacts, transport-not-construct (D6)"
+  },
+  "setup_pinned_timestamp": "2026-10-03T10:57:11Z",
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "validity": "VALID",
+  "validity_rule": "design §1a: false ⇒ INVALID + preserve + STOP; re-setup requires new human authorization"
+}

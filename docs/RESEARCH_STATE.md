@@ -20167,3 +20167,594 @@ Route A/B/C             = NOT SELECTED
 PALACE                  = CLOSED
 Next = human decision on IS-X execution authorization
 ```
+
+### IS-X EXECUTION AUTHORIZED / EXECUTED — CAMPAIGN INCONCLUSIVE（局部化：单 cell 构造完整性探针实现缺陷）— AUDIT 9/11 — HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 IS-X execution（fixture 实现+16-cell campaign+独立结果审计）；
+设计 rev.2 零修改；执行纪律按预注册序列：harness 扩展（评估程序零改动；
+`isx_lib` 冻结 12 有序对+逐 op 效果断言+P_comp 机械合成+H-X1 resolution
+expectation；`isx_setup/run_cells/adjudicate/second_layer_audit`）→
+commit `5c3a463`（治理封存）+`cce102d`（harness）→ push+远端回验 →
+setup lock → 16-cell execution → 独立判读 → second layer 审计。
+
+**Campaign setup（§1a lock）**：run_uuid=`R33X-20261003T122818Z-70152`；
+fresh formation（零既往 run 产物读取）；t₀ 一次性判定全 SATISFIED ⇒
+validity 固定；三重 harness 哈希钉死。
+
+**Campaign 结果（16 cell）**：11/12 pair **ADDITIVE**（跨条件
+I×A/I×C/A×C 全部按预测签名击穿且互不溢出；同条件 I/A/C 双 BROKEN 的
+sig-set 并集规则全部成立——**反滑坡条款经受实证**：朴素叠加被机械
+分类为 ADDITIVE 而非「交互」）；**X-08 = MASKING（实际出现）**——
+P_comp=I BROK{I-NF,I-AMBIG}，联合态 I SATISFIED，**H-X1 resolution
+expectation 验证相等**（expected=1=actual，resolved=conflict 记录：
+预登记解析路径逐项吻合，非结果后解释）；X-09 逆序=ADDITIVE（I-NF ∈
+sig-set）；SANITY×3 OK（三路径活性）；K-0 持有；integrity 全净；
+INVALID-COMPOSITION 零。
+
+**战役判读：INCONCLUSIVE（H-2/S-N4 传染：cell-06 S-X2 构造完整性
+CI-2 违例 ⇒ 其判定不可用 ⇒ 不得宣称 ALL-ADDITIVE/INTERACTION-FOUND）**。
+
+**根因定位（字节级）**：cell-06 组合物形成正确（CI-4 replay 恒等通过）；
+A-Δ3 的替换效果在组合态存留（universe/R-1.json 摘要 5c633798… ≠ IS₀
+03332d18…）；CI-2 失败仅因**效果探针按路径钉死**（objects/R-1.json 已
+被 A-Δ2 合法迁空）——**实现层探针缺陷（路径基 vs 对象追踪），非真实
+构造交互**；按冻结规则照记 cell INCONCLUSIVE，未做现场修补。
+
+**独立审计 9/11**：两处 FAIL 均已定位——①CI 重验证同根因；②审计脚本
+自身范围缺陷（对被判 INCONCLUSIVE 的 cell-06 也重算分类）——如实登记。
+
+**实质发现（per-cell 数据，因战役 INCONCLUSIVE 不作 campaign 级宣称）**：
+F-1=X-08 MASKING candidate（两个单独可击穿 I 的操作组合后 I 恢复
+SATISFIED——组合可遮蔽击穿；解析成功≠谱系正确，机械规则按定义不判
+语义正确性——RQ3-4/操作化边界一手素材，待清洁重跑确认）；F-2=顺序
+依赖（X-08 MASKING vs X-09 ADDITIVE——同组成异顺序异联合行为，预注册
+有序对使其可见）；F-3=构造层交互现象（op_b 重定位使 op_a 效果位点
+迁移——CI 探针须对象追踪非路径钉死）。
+
+**纪律路径（全部归 human；不自动重跑）**：①本 campaign 全量保全为
+证据（INCONCLUSIVE 非失败）；②harness 探针修订（效果断言对象化）=
+implementation revision ⇒ 独立 review/reaudit；③修订后 IS-X attempt
+#2 须**新的显式 execution authorization**（本授权已消耗）；④R3-4
+LOCKED 维持——INCONCLUSIVE 战役不构成综合输入。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED
+IS-X execution          = EXECUTED（R33X-20261003T122818Z-70152）
+IS-X campaign           = INCONCLUSIVE（局部化：cell-06 CI-2 探针实现
+                          缺陷；15/16 cell 有效数据保全）
+IS-X second layer audit = 9/11（两 FAIL 已定位）
+IS-X second layer       = PENDING HUMAN REVIEW
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on IS-X results; attempt #2 authorization
+       decision（须先探针修订 review/reaudit）
+```
+
+### IS-X SECOND LAYER = HUMAN RULING REGISTERED — CAMPAIGN INCONCLUSIVE 永久保留 — X-08 = MASKING CANDIDATE（per-cell）— ATTEMPT #2 NOT AUTHORIZED — 2026-10-03
+
+human 亲自完成 IS-X second layer（结果边界审查与后续路径裁定；不授权
+attempt #2、不修改 harness、不打开 R3-4）。
+
+**核心判断（human 原话登记）**：「IS-X attempt #1 = 有效产生高信息量
+局部证据，但 campaign-level 结论必须维持 INCONCLUSIVE。X-08 MASKING
+是一个已被实际观察到、且 H-X1 resolution expectation 与实际结果一致的
+candidate interaction finding，但在 attempt #1 的 campaign-level
+INCONCLUSIVE 状态下，不能升级为正式的 IS-X INTERACTION-FOUND。
+attempt #2 有明确的必要性，但本轮不构成其执行授权。」与「失败」有本质
+区别：实验发现了原设计真正想寻找的现象，同时暴露了一个设计审查未发现
+的 **construction-observation interface defect**。
+
+**① INCONCLUSIVE 正确且必须坚持**：CI violation→cell INCONCLUSIVE→
+contagion→campaign INCONCLUSIVE 发生在构造完整性层而非普通 evaluator
+结果；即使 CI-4=PASS、A-Δ3 effect 实际存续、CI-2=probe defect 已证，
+也不能事后把 INCONCLUSIVE 改成 VALID——否则=实验完成后用根因分析撤销
+preregistered stop/contagion rule。**campaign INCONCLUSIVE 永久保留。**
+
+**② 三层证据区分（不得混层）**：Layer A campaign validity=INCONCLUSIVE
+（不可变）；Layer B individual cell validity=15/16 未受直接影响、数据
+保全、但**不得重新组合成新 campaign-level conclusion**；Layer C X-08
+独立现象=强候选证据。正确措辞=「X-08 MASKING candidate observed under
+the preregistered construction/resolution expectation」，而非「IS-X 已
+证明存在 interaction」。
+
+**③ X-08 两层限定**：不证明 Cons law 被推翻（IS-X 对象=单变量机械预测
+vs 联合观测行为，非直接证伪 Cons≡I∧A∧C）；不证明一般性 interaction
+（单实例+campaign INCONCLUSIVE）。最严格状态=**F-1 = X-08 MASKING
+CANDIDATE = high-information per-cell observation = requires clean
+confirmation**。
+
+**④ X-09 意义=顺序敏感联合行为**（精确表述：非「一般非交换性」，只=
+「当前 fixture/representation/operation pair 中发现顺序相关联合行
+为」）；**X-08/X-09 应作为 attempt #2 的核心确认对**（same operands
+different order 的天然对照——区分 operation interaction 与 specific
+construction ordering artifact）——attempt #2 不是原样重跑 16 cell。
+
+**⑤ F-3 单独登记为 instrumentation / construction-observation
+finding**：CI-2 实测的是「effect remains at this **path**」而非
+「effect remains on this **object**」=**measurement model mismatch**；
+最准确表述=「IS-X exposed a construction-integrity probe that was
+path-sensitive where the intended invariant was object/effect-
+sensitive」——非实验失败、非构造交互；副产品=发现了「构造正确性」与
+「构造效果观测」之间**原本未被显式建模的第三层边界**（正是 IS-X 首次
+进入联合构造才可能暴露的问题）。
+
+**⑥ 审计状态冻结=9/11 PASS + 2 FAIL localized，不得改写 11/11**——除
+非 audit script revised→independently reviewed→rerun→11/11。第二 FAIL
+说明 audit layer 未完全遵守 campaign-level INCONCLUSIVE containment ⇒
+attempt #2 前**不仅修 CI-2，audit scope 也必须修（R2）**。
+
+**⑦ attempt #2 必要条件（修订边界收窄）**：**R1**=CI-2 从 path-based
+断言改为 **object/effect identity based assertion**，并证明「合法迁移
+≠ effect disappearance」；**R2**=audit classification containment
+（cell.status==INCONCLUSIVE ⇒ audit 不得 classify 该 cell，只验证
+INCONCLUSIVE reason+evidence chain+containment）。两者均 implementation
+revision ⇒ revision→independent review→reaudit→**new execution
+authorization**。
+
+**⑧ attempt #2 不得悄悄变成重跑全部**：目的首先是**验证修复后的观察
+机制并重新确认 X-08/X-09**（核心确认对）；无新设计门不得加入：新
+IS-X op / representation variant / concurrency / temporal dynamics /
+PALACE·IPAC·Route / R3-4 新问题——全部排除维持。
+
+**最终裁定（human 逐字，登记为官方结论）**：「这次实验不能被宣布为成
+功，也不能被宣布为失败。最准确的研究结论是：**IS-X attempt #1 按预注
+册规则为 INCONCLUSIVE；其 INCONCLUSIVE 原因已被字节级定位为构造完整性
+探针的路径基实现缺陷，而非组合物形成错误。与此同时，X-08 在预登记
+resolution expectation 与实际解析结果一致的条件下观察到 MASKING，X-09
+提供了相同操作集不同顺序下的对照现象。两者目前均属于需要清洁复核的局
+部证据，而不是 campaign-level interaction finding。**」
+
+当前状态（human 锁定格）：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED
+IS-X Campaign #1        = INCONCLUSIVE / permanently retained
+Cell-06                 = INCONCLUSIVE / CI-2 probe implementation defect
+                          localized
+X-08                    = MASKING CANDIDATE / high-information per-cell
+                          observation / not campaign-level INTERACTION-FOUND
+X-09                    = ADDITIVE / order-sensitive contrast retained as
+                          per-cell evidence
+F-3                     = instrumentation / construction-observation finding
+Independent audit       = 9/11 / 2 localized implementation defects / not yet PASS
+R3-4                    = LOCKED
+Attempt #2              = NOT AUTHORIZED
+Next = IS-X implementation revision review（R1 object/effect tracking +
+       R2 audit INCONCLUSIVE containment）→ independent re-review/reaudit
+       → new human execution authorization；R3-4 继续 LOCKED
+```
+
+### IS-X IMPLEMENTATION REVISION DELIVERED + REAUDIT PASS（9/9）— ATTEMPT #2 仍 NOT AUTHORIZED — 2026-10-03
+
+按 human 裁定开启 **IS-X implementation revision review 门**（只修 R1+
+R2；Attempt #1 证据永久保全；不重跑不修改结果）。交付
+`SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md`（R1/R2 规格+验证闭包
+RC-1..RC-5+独立性护卫 G-1..G-4）与修订代码（commit 至远端）：
+
+- **R1（CI-2 对象/效果恒等追踪）**：效果断言从路径钉死改为三类对象
+  身份代数——key-identity（钉定精确键解析+bytes_vs_is0 比较）/
+  content-identity（IS₀ 字节全树恒等搜索）/ manifest-field·record
+  身份；逐 op 声明式 OP_EFFECT_SPEC；**合法迁移≠效果消失的机械区分**
+  （迁移=key 解析成功+位点≠IS₀+内容关系符合声明；消失=声明关系不
+  成立）；无路径依赖、无隐式语义判断。
+- **R1 精化（组合稳健性原则，reaudit RC-1 首轮定位）**：I-Δ3 的
+  key-resolves 断言在 X-09 组合态被 I-Δ2 的自身声明效果合法覆盖
+  （pop 键正是 X-09 I-NF 的产生机制）——过强断言移除，保留
+  file-present(conflict)（创建效果，组合稳健）；**原则登记**：效果
+  断言只声明 op 自身构造效果（创建/删除/原地变更/迁移目的地），不断
+  言可被共存 op 合法变换的状态性质；X-09 键覆盖数据保留于 X-09 判读
+  记录——精化不隐藏任何判定相关事实。
+- **R2（审计包含规则）**：INCONCLUSIVE/INVALID-COMPOSITION/
+  SANITY-FAILED cell **绝对排除分类重算**；审计只验证预注册 reason
+  码+证据链+containment（零统计泄漏）；分类重算仅施于有效 cell。
+
+**IMPLEMENTATION REAUDIT PASS（9/9，作用于 Attempt #1 保全证据——零新
+cell、零战役重跑、Attempt #1 工件零覆写）**：
+
+```text
+RC-1  修订探针 12/12 对全 PASS；cell-06 A-Δ3 key-substituted PASS
+      =「合法迁移≠效果消失」直接实证（此前 CI-2 误报的探针缺陷修复
+      得到验证）
+RC-2  cell-06 被包含（排除分类重算；reason/chain 验证）；零分类泄漏；
+      修订后分类重算与判读在有效 cell 上一致——原审计范围缺陷修复
+RC-3  判读确定性：cell-06=INCONCLUSIVE 维持；战役 verdict=INCONCLUSIVE
+      维持
+RC-4  IS-X Design rev.2 零 diff（研究规则/目录/预测器未触）
+RC-5  语义边界：reaudit PASS 不修改 Attempt #1 判读——只证明仪器缺陷
+      已修+包含规则生效；attempt #2 仍须新的显式 human execution
+      authorization
+```
+
+独立性护卫核验：G-1 探针规格从 op 效果定义推导（先于 reaudit 冻结于
+修订文档，X-08/X-09 outcome 非输入）；G-2 分类规则本体零改动；G-3=
+RC-4；G-4 本门零新 cell。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED / Campaign #1 INCONCLUSIVE（永久保留）
+IS-X R1/R2 revision     = DELIVERED + IMPLEMENTATION REAUDIT PASS（9/9）
+IS-X Attempt #2         = NOT AUTHORIZED（设计准备许可已登记；执行须新
+                          显式 human authorization）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on IS-X Attempt #2 execution authorization
+```
+
+### IS-X ATTEMPT #2 AUTHORIZED / EXECUTED — CONFIRMATION INTERACTION-FOUND（X-08 MASKING 复现）— AUDIT PASS（14/14）— HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 IS-X Attempt #2 execution，范围严格锁定：A1 验证 R1 修复
+（X-06 重建）/A2 验证 R2 包含修复/A3 X-08/X-09 核心确认对；不重跑
+16 cell、不新增 op、Design rev.2/P_comp/分类零 diff、R3-4 不自动开启；
+**诚实条款预注册：X-08 若不再 MASKING 必须按预注册规则如实记录**。
+
+**执行**：确认 harness（`isx_confirmation.py` @ `ea55260`，commit+push
+先于执行）→ setup lock（run=`R33X-A2-20261003T130744Z-70945`；fresh
+formation 密封字节重读；t₀ 一次性全 SATISFIED ⇒ validity 固定；四重
+harness 哈希钉死；**执行瑕疵透明登记**：首次启动因脚本变量笔误中断于
+任何 cell 运行之前，零 campaign 工件产生，修复 commit 后正式执行）→
+6-cell 确认战役 → 确认判读 → second layer 审计。
+
+**核心确认对结果**：
+
+- **X-08 (I-Δ2, I-Δ3) = MASKING 复现**——P_comp=I BROK{I-NF,I-AMBIG}，
+  联合态 I SATISFIED；**H-X1 验证相等**（expected=1=actual，resolved=
+  conflict 记录，预登记解析路径逐项吻合）；
+- **X-09 (I-Δ3, I-Δ2) = ADDITIVE 复现**（I-NF ∈ sig-set；expected=0=
+  actual）——**顺序依赖结构现象跨战役复现**：同组成异顺序异联合行为，
+  在独立 formation/独立 run-UUID/独立 t₀ 的 fresh campaign 中重复；
+- SANITY×3 全按预测 BROKEN（三路径活性）；K-0 持有；integrity 全净；
+  **零 CI 违例（R1 修复运行中生效）**。
+
+**修复验证**：A1=确认 cell 零 CI 违例+独立重建（A-Δ3∘A-Δ2）组合修订
+探针零误报（legal migration ≠ effect disappearance 机械实证）；A2=
+分类重算仅施于有效 pair cell（Attempt #1 范围缺陷不再出现）。
+
+**判读与审计**：campaign_verdict（confirmation-scoped，per design §7
+rev.2）= **INTERACTION-FOUND**；**second_layer_audit = AUDIT PASS
+（14/14）**。透明登记：审计 v1 一次 FAIL 系审计表达式布尔优先级缺陷+
+判读报告缺 interactions 字段（判读脚本省略）——均为脚本层缺陷，底层
+cell 数据零变更；interactions 字段从 per_cell 旗标机械重建（零判定变
+更）后复跑 14/14，全程透明登记。
+
+**解释边界（逐字义务）**：允许=X-08 MASKING 升格为 **confirmed
+（复现级）interaction finding**（bounded 于当前 fixture/表征/操作对）
++顺序依赖跨战役复现+机制读法（组合可遮蔽单变量击穿；**解析成功≠谱系
+正确**；机械规则按定义不判语义正确性=操作化边界一手实证）；禁止=证
+Cons law 推翻（IS-X 对象非直接检验 Cons≡I∧A∧C 且 I 操作化=可评估性）/
+证一般 interaction 或非交换性（单操作对单 fixture 单表征）/升格普遍
+Cons 或条件完备性（RQ3-4 开放）/开启 continuation·PALACE·IPAC·Route。
+
+**三层边界维持**：Attempt #1 campaign verdict=INCONCLUSIVE 永久保留；
+Attempt #2 confirmation=INTERACTION-FOUND（独立 campaign 独立判读）；
+合并读法=X-08/X-09 现象在两个独立 campaign 中一致出现。**下一门（归
+human）**：Attempt #2 结果 second layer；**R3-4 开启决定**（证据基础
+=BROKEN 侧 R3-2+HOLD 侧 R3-3+交互侧 IS-X confirmed：in-scope 结构类
+已全部受探针，综合限定词负担显著下降）或有界收官关闭 R3。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED / Campaign #1 INCONCLUSIVE（永久保留）
+IS-X R1/R2 revision     = DELIVERED + REAUDIT PASS（9/9）
+IS-X Attempt #2         = EXECUTED（R33X-A2-20261003T130744Z-70945）
+IS-X Attempt #2         = CONFIRMATION INTERACTION-FOUND（X-08 MASKING
+                          复现）/ fixture-slice bounded
+IS-X Attempt #2 audit   = AUDIT PASS（14/14）
+IS-X second layer       = PENDING HUMAN REVIEW
+R3-4                    = LOCKED（开启决定归 human；不自动开启）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on Attempt #2; R3-4 opening decision
+```
+
+### IS-X ATTEMPT #2 SECOND LAYER = PASS WITH BOUNDED CONFIRMATION — X-08 = CONFIRMED MASKING（replication-level）— R3-4 QUALIFIED TO OPEN / NOT AUTOMATICALLY OPEN — 2026-10-03
+
+human 亲自完成 IS-X Attempt #2 second layer（证据闭合+解释边界+R3-4 资
+格审查；不直接决定开启 R3-4）。裁定与登记：
+
+**① 有效性闭合（完整修复链）**：Attempt #1 → 发现 CI-2 path-based
+defect → R1/R2 implementation revision → independent implementation
+reaudit 9/9 PASS → fresh Attempt #2 → zero CI violations → X-08/X-09
+reproduced → independent audit 14/14 PASS——第二次 campaign 同时验证了
+R1 对象/效果恒等追踪/R2 INCONCLUSIVE containment/X-08 resolution
+expectation/X-09 inverse-order behavior/evaluator 三路径活性/K-0/
+fresh formation·run UUID·t₀；Attempt #2 不存在 Attempt #1 那种已知
+instrumentation defect。
+
+**② X-08 正式升格**：**X-08 = CONFIRMED INTERACTION FINDING = MASKING
+= replication-level = fixture-slice bounded**——「confirmed」指该实验
+现象已被独立确认，不指 Consistency law confirmed/disproved、不指
+general interaction law confirmed。
+
+**③ X-09 = CONFIRMED ADDITIVE / order-sensitive contrast**：same
+operands、different order、different joint behavior 且第二次独立
+campaign 复现。最严格结论=「在当前 fixture/representation/operation
+pair 中，联合行为表现出**可复现的顺序敏感性**」——不扩大为一般非交换
+性，但已非偶然 observation。
+
+**④ 机制性读法（本次最值得保留，human 压缩表述）**：
+`Δ2→I BROKEN；Δ3→I BROKEN；Δ2⊕Δ3→I SATISFIED；Δ3⊕Δ2→I BROKEN`——
+IS-X 实际发现的不是「两个操作一起改变结果」，而是：**两个单独足以触发
+I-BROKEN 的操作，在特定组合顺序下可以相互改变其可观察的联合效果；该
+联合效应不能由当前冻结的单变量机械组合规则 P_comp 独立预测**——正好
+回答 IS-X 收窄后的研究问题。
+
+**⑤ 「解析成功 ≠ 谱系正确」维持操作化边界定性**：X-08 的 I=SATISFIED
+不意味谱系语义正确——R3-1 的 I 判断本就是 identity evaluability/
+mechanical evidence condition 而非语义正确性证明。可以说「组合后的解
+析成功不能单独推出谱系关系正确」（有价值的操作化边界）；**不能说**
+「X-08 证明了系统存在错误谱系」——除非未来有独立 semantic correctness
+oracle，而当前 R3 明确没有。
+
+**⑥ 两个脚本问题的纪律处置**：首次启动变量笔误=发生在任何 cell 运行
+之前的 **pre-execution startup interruption、zero experimental
+artifact**——不影响 Attempt #2 有效性；audit 14/14 须在治理记录中明确
+为「**修复审计脚本后的最终 audit result，而非第一次运行即得到 14/14**
+」（审计链透明）。
+
+**⑦ Attempt #1/#2 三层关系（最重要的治理判断）**：禁止写「Attempt #1+
+#2 = 22 valid cells = campaign confirmed」。正确关系=Attempt #1
+（Campaign INCONCLUSIVE；15/16 usable local data；X-08=candidate）‖
+Attempt #2（Confirmation campaign=INTERACTION-FOUND；X-08=MASKING
+confirmed；X-09=ADDITIVE confirmed）。唯一合法合并读法=「Attempt #1
+首次发现 X-08 候选现象；修复 R1/R2 后，独立 Attempt #2 确认 X-08/X-09，
+复现 X-08 MASKING 与同操作集逆序 ADDITIVE 对照」。
+
+**⑧ R3-4 资格判断**：「已具备开启 R3-4 的证据基础」成立（≠「R3-4 已
+开启」）。R3 内部形成清晰三侧证据结构——R3-2 BROKEN side（9/9 targeted
+changes）↓ R3-3 HOLD side（10/10 uncovered HOLD probes）↓ IS-X
+interaction side（X-08 MASKING+X-09 order-sensitive contrast，
+independently replicated）——相比 R3-3 second layer 时**继续开启 R3-4
+已具有明确研究依据**。但 R3-4 的任务不能是「证明 R3 成功」，应是真正
+的 **bounded synthesis / boundary adjudication gate**。
+
+**⑨ 若开启 R3-4，问题收窄（human 建议）**：「在当前 fixture、
+representation 和既有 observation procedure 下，R3-2、R3-3 与 IS-X
+是否足以支持一个关于 differential sensitivity profile 的有界综合结论；
+IS-X 所发现的 interaction 是否改变此前对 Cons 条件边界的解释。」可综
+合=当前 fixture 中的 differential sensitivity profile/当前表示边界下
+的 interaction evidence/当前操作化条件的边界；不能综合=Cons 普遍定律/
+I∧A∧C 充分必要性/condition correctness·minimality·completeness/一般
+interaction law/一般非交换性/continuation implication/PALACE·IPAC·
+Route。
+
+**最终状态（human 锁定）**：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = INCONCLUSIVE / permanently retained
+IS-X R1/R2 revision     = REAUDIT PASS 9/9
+IS-X Attempt #2         = CONFIRMATION INTERACTION-FOUND / fixture-slice
+                          bounded
+X-08                    = CONFIRMED MASKING / replication-level
+                          interaction finding
+X-09                    = CONFIRMED ADDITIVE / order-sensitive contrast
+IS-X Attempt #2 audit   = PASS 14/14
+IS-X second layer       = COMPLETE / PASS WITH BOUNDED CONFIRMATION
+R3-4                    = STILL LOCKED / QUALIFIED TO OPEN,
+                          NOT AUTOMATICALLY OPEN
+Next = 若 human 决定开启 R3-4：先做 R3-4 synthesis gate（综合门），
+       不直接写收官结论；R3-4 不自动开启
+```
+
+### R3-4 OPENED / SYNTHESIS GATE DELIVERED — BOUNDED SYNTHESIS = SUPPORTED（三区画像+边界裁定三点改变）— HUMAN REVIEW PENDING — 2026-10-03
+
+human 裁定**开启 R3-4**（任务定性沿预定：bounded synthesis / boundary
+adjudication gate，非「证明 R3 成功」；问题收窄逐字锁定；可/不可综合
+清单全程生效）。综合门交付
+`SIMIGO_LAB_R3_4_SYNTHESIS_GATE_20261003.md`：
+
+- **§1 三侧证据清单**：BROKEN 侧 R3-2（SUPPORTED/closed/audit 16-16）+
+  HOLD 侧 R3-3（NO-COUNTEREXAMPLE/closed）+ 交互侧 IS-X（#1
+  INCONCLUSIVE 永久保留‖#2 CONFIRMATION INTERACTION-FOUND，复现级）；
+  各侧证据级与边界（instance-level/检出力=操作化边界/禁 22-cell 合并）
+  并列登记。
+- **§2 综合一（可综合清单内）：差分敏感性画像三区结构**——区 1 单变量
+  定向侧（R3-2：I-MISMATCH/I-NF/I-AMBIG；A-NF/A-SUB；C-REF-NOT-FOUND/
+  C-INV，9/9 定向互不溢出）；区 2 单变量 HOLD 侧（R3-3：10/10 零击
+  穿）；区 3 复合侧（IS-X：多数 ADDITIVE——朴素叠加反滑坡条款经受实证
+  ——但 **X-08 CONFIRMED MASKING + X-09 逆序 ADDITIVE**：联合行为顺序
+  敏感且不能由 P_comp 独立预测）+逐条件 profile 表（I 可被组合遮蔽；
+  A/C 本 slice 未见交互）。
+- **§3 综合二（boundary adjudication）：IS-X interaction 改变此前对
+  Cons 条件边界的解释——是，三个改变点**：①**组合非封闭**（单变量敏
+  感性刻画不充分，画像对 P_comp 机械合成不封闭，顺序进入画像）；②**顺
+  序依赖**（IS 变化效应是有序序列的函数而非集合函数）；③**操作化边界
+  具体化**（解析成功≠谱系正确从抽象限定变为有一手实例的边界——条件满
+  足性是 evidence-condition 概念非 semantic-correctness 保证）。**两
+  个不改变点**：条件级观察词汇保持有效（MASKING 本身是条件级现象，无
+  超出 I/A/C 词汇的不可归类现象；RQ3-4 形态反例未出现——X-08 中
+  Cons 全程保持 true）；判定纪律不变。
+- **§4 终局四问终答**：RQ3-1 能（定向击穿+条件级交互）；RQ3-2 单变量
+  定向映射逐一确认+复合层顺序依赖 MASKING 不由 P_comp 预测；RQ3-3 区
+  2 全部+ADDITIVE 多数；RQ3-4 本 slice 未观察到不可归类现象（附检出
+  力=操作化边界注册）。
+- **§5 判定（预注册四态）**：**主判定=SUPPORTED（bounded）**——三侧
+  证据足以支持有界综合结论；IS-X interaction 确实改变边界解释（三点
+  逐项登记）。对 R2 Cons 候选定义=作为操作化刻画获 bounded 支持（经受
+  全部探针/无反例/三侧一致）+两项注册边界（操作化边界/组合非封闭）使
+  其不得升格为正确性/最小性/完备性证明；IPAC 保持 OPEN/NONBINDING。
+- **§6 非主张清单**：Cons 普遍定律/I∧A∧C 充分必要/correctness·
+  minimality·completeness/一般 interaction law/非交换性/continuation/
+  PALACE·IPAC·Route/产品普适外推——全部不主张。
+- **§7 后续关系**：本 gate=综合与边界裁定；**收官结论另行**（待 human
+  review 后由 human 决定收官形式）；X-08 语义层追问需独立 semantic
+  correctness oracle（未来独立研究问题）；开放边界登记（内容寻址表征/
+  并发/时间动态/多操作对）；R3 全程零模型零 Relation 零 PALACE。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X                    = COMPLETE（#1 INCONCLUSIVE 永久保留 / #2
+                          CONFIRMATION INTERACTION-FOUND / second layer
+                          PASS WITH BOUNDED CONFIRMATION）
+R3-4                    = OPEN / SYNTHESIS GATE DELIVERED
+R3-4 synthesis          = SUPPORTED（bounded）/ 三区画像+边界裁定三点
+                          改变 / 两不改变点
+R3-4 收官结论           = NOT WRITTEN（待 human review 综合门后另行）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human review of the R3-4 synthesis gate; closing conclusion
+       thereafter by human decision
+```
+
+### R3-4 SYNTHESIS GATE REVIEW = SUPPORTED / BOUNDED / PASS WITH REVISIONS — REV.2 APPLIED — 收官依据就绪 — 2026-10-03
+
+human 按 synthesis gate 职责（非收官结论）完成审查。**判定=SUPPORTED /
+BOUNDED / PASS WITH REVISIONS**——措辞边界修订，非重实验、非推翻综合
+门；证据链无缺陷，但综合门有 4 处表述略超出当前实验实际支持范围，直
+接收官会有从「有界证据」滑向「普遍命题」的风险。
+
+**五项修订（rev.2 已全部机械应用）**：
+
+1. **R3-4-R1**：「组合非封闭」限定为「**单变量预测合成非封闭**」——
+   P_comp 对该复合操作实例的合成预测不封闭（当前 fixture/representation/
+   operation pair 下无法由两个单变量结果机械推出联合结果）；加显式否
+   定：「本发现不构成对 Cons 本身或条件系统的一般代数性质的陈述」。
+2. **R3-4-R2**：「顺序依赖」收紧为「**在本测试组合中，联合效应表现出
+   顺序敏感性；因此本 slice 内不能将复合变化建模为无序操作集合**」——
+   一组逆序对照不足以推出所有复合变化效应均为序列函数的一般命题。
+3. **R3-4-R3（human 认定最应修改处）**：「任何涉及复合变化的边界刻画
+   必须携带顺序参数」收紧为「**对已表现出顺序敏感性的复合变化，后续
+   边界刻画必须保留操作顺序信息；当前证据不足以证明所有复合变化均具
+   有该要求**」。
+4. **R3-4-R4**：「A/C 未见交互」固定为正式边界语言：「**在当前已测试
+   的 A/C 组合中未观察到 interaction；不能据此排除 A/C interaction**」
+   ——因为 concurrency/temporal/content-addressed/更多 op pairs/
+   semantic oracle 均已登记未测，此语应为正式边界语言而非藏在
+   limitations。
+5. **R3-4-R5**：R2 候选定义支持表述固定为「作为当前 fixture、
+   representation、operation catalog 与 observation procedure 下的操
+   作化刻画，获得 bounded empirical support；R3-2/R3-3/IS-X 未发现
+   **当前探针范围内的**反例」——「无反例」永远带探针域（R3-3 的
+   NO-COUNTEREXAMPLE 是严格 bounded result，不得在综合阶段悄悄提升为
+   unrestricted 无反例）。
+
+**human 特别肯定（登记）**：综合门没有犯容易犯的错误——未因 X-08
+MASKING 将其解释为 Cons 失败。X-08 证明的是「联合观察结果不能总由单
+变量结果的朴素组合预测」，而非「Cons ⟺ I∧A∧C 已被推翻」；X-08 中
+Cons 全程保持 true，使边界判断更干净：**交互发生在条件状态的形成/观
+测关系上，而不是出现了一个现有 Cons 判定框架无法分类的状态**。
+
+**review 审查表（human）**：三区（R3-2→区 1/R3-3→区 2/IS-X→区 3）全
+通过；X-08 可作为 confirmed bounded interaction finding；X-09 可作为
+bounded order-sensitive finding；三侧可以综合；改变 Cons 解释边界成立
+且改变点明确；不证明 Cons law（文档也未如此声称）；无当前 slice 内不
+可归类现象证据；**不可直接写 unrestricted R3 conclusion**；具备进入收
+官阶段的证据基础。
+
+**R3 最终产出定义（human 预定收官措辞）**：收官时最重要的不是宣布
+「R3 证明了 Cons」，而是明确把 R3 最终产出定义为：**一个经过单变量
+BROKEN 侧、HOLD 侧、复合交互侧三层验证的、当前实验切片下的
+differential sensitivity / interaction boundary characterization**；
+同时把 content-addressed representation、concurrency、temporal
+dynamics、additional multi-operation pairs、semantic correctness
+oracle 保持为明确未测边界。
+
+当前状态：
+
+```text
+R3-4                    = OPEN / SYNTHESIS GATE rev.2（SUPPORTED /
+                          BOUNDED / PASS WITH REVISIONS 已应用）
+R3-4 synthesis rev.2    = 收官依据就绪
+R3-4 收官结论           = NOT WRITTEN（待 human 指令；按 human 预定
+                          措辞框架写：三层验证的 differential
+                          sensitivity / interaction boundary
+                          characterization + 未测边界登记）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human 指令：以 rev.2 综合门为依据写 R3 收官声明+开放边界登记
+```
+
+### R3 CLOSING DECLARATION WRITTEN — R3 FORMALLY CLOSED — 2026-10-03
+
+human 确认全部前置条件（rev.2 综合门 SUPPORTED/BOUNDED/PASS WITH
+REVISIONS、五项修订已应用、收官依据就绪、既有判定不变、IPAC/P/Route/
+PALACE 继续排除、不将 R3 表述为 Cons 正确性/最小性/完备性证明、未测边
+界显式保留）并下达指令「写 R3 收官声明，提交并推送」。收官声明交付
+`SIMIGO_LAB_R3_CLOSING_DECLARATION_20261003.md`：
+
+- **R3 最终产出（human 措辞逐字）**：「一个经过单变量 BROKEN 侧、
+  HOLD 侧、复合交互侧三层验证的、当前实验切片下的 differential
+  sensitivity / interaction boundary characterization」——不宣布
+  「证明了 Cons」。
+- **三层验证综合结论**：R3-2（9/9 定向签名击穿+setup lock 首获实证）、
+  R3-3（10/10 HOLD 零击穿+三正控活性+NO-COUNTEREXAMPLE≠invariant
+  established）、IS-X（X-08 CONFIRMED MASKING/X-09 CONFIRMED ADDITIVE/
+  机制读法=两个单独足以触发 I-BROKEN 的操作在特定组合顺序下相互改变
+  可观察联合效果，联合效应不能由 P_comp 独立预测）+边界裁定（三改变
+  点 rev.2 措辞+两不改变点）+终局四问终答。
+- **不主张清单收官重申**：Cons 普遍定律/I∧A∧C 充分必要/correctness·
+  minimality·completeness/一般 interaction law/非交换性/continuation/
+  PALACE·IPAC·Route/产品普适外推；「无反例」永远带探针域。
+- **未测边界 UB-1..UB-7 显式登记**（content-addressed representation/
+  concurrency/temporal dynamics/additional pairs/semantic correctness
+  oracle/共享盲区 B-1..B-6/检出力边界）——登记在案的开放边界，非已否
+  定问题。
+- **未来独立研究问题登记**（NOT STARTED/无 RQ ID/未选择）：semantic
+  oracle 谱系验证/表征变体/并发一致性/条件破坏⇒continuation 反向检验
+  等——仅登记不选择。
+- **谱系与工件注册**：R3-0→R3-1→R3-2→R3-3→IS-X→R3-4 全链（commits/
+  evidence 目录/harness 全注册；三战役证据全量保全含 Attempt #1
+  INCONCLUSIVE）。
+- **关闭后状态**：R3=CLOSED；B Track=CLOSED；C Track 既有状态维持；
+  IPAC OPEN/NONBINDING；P OUT OF SCOPE；Route A/B/C NOT SELECTED；
+  PALACE CLOSED；**R3 之后研究方向全部归 human，无自动开启项**。
+- **效力声明**：全部结论 bounded 于当前实验切片；引用 R3 任何结论必须
+  携带 fixture-slice bounded 限定与相应限缩读法；本声明不授权任何后续
+  实验、实现或路线选择。
+
+当前状态（R3 关闭后）：
+
+```text
+R3                    = CLOSED / differential sensitivity / interaction
+                        boundary characterization delivered（fixture-slice
+                        bounded，三层验证）
+R3-0…R3-4             = 全链 SEALED/CLOSED（设计/规范/两侧战役/交互
+                        战役/综合门，见收官声明 §6 谱系注册）
+B Track               = CLOSED
+C Track               = 既有状态维持（C-Spec FROZEN/C-Design CONFIRMED/
+                        C-Impl CLOSED/R-C1 #4 CLOSED VALID）
+IPAC                  = OPEN / NONBINDING（minimality UNPROVEN/
+                        semantics NOT FROZEN）
+P                     = OUT OF SCOPE
+Route A/B/C           = NOT SELECTED
+PALACE                = CLOSED
+Next = R3 之后的研究方向全部归 human 决定；无自动开启项
+```

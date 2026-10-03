@@ -1,0 +1,24 @@
+{
+  "cell_id": "cell-05-R32N-SANITY-C",
+  "cell_op": "R32N-SANITY-C",
+  "es_artifact_sha256": "3f9d921d72f91865788f258fadc2ec8fa63db2abe5228fef3d6e3ec28722a537",
+  "is0_canonical_sha256": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+  "locked_at_utc": "2026-10-03T13:07:44Z",
+  "locked_before_evaluation": true,
+  "op_class": "SANITY",
+  "predicted": {
+    "A": [
+      "SATISFIED",
+      null
+    ],
+    "C": [
+      "BROKEN",
+      "C-INV"
+    ],
+    "I": [
+      "SATISFIED",
+      null
+    ]
+  },
+  "run_uuid": "R33X-A2-20261003T130744Z-70945"
+}

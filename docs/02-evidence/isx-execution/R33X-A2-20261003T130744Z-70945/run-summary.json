@@ -1,0 +1,16 @@
+{
+  "campaign_order": [
+    "X-08",
+    "X-09",
+    "R32N-SANITY-A",
+    "R32N-SANITY-I",
+    "R32N-SANITY-C",
+    "R32-K-0"
+  ],
+  "cells_run": 6,
+  "ci_failures": [],
+  "integrity_all_clean": true,
+  "invalid_compositions": [],
+  "run_uuid": "R33X-A2-20261003T130744Z-70945",
+  "t0_consistency_all": true
+}

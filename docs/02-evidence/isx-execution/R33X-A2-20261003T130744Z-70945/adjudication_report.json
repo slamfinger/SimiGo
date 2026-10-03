@@ -1,0 +1,82 @@
+{
+  "attempt": 2,
+  "campaign_order": [
+    "X-08",
+    "X-09",
+    "R32N-SANITY-A",
+    "R32N-SANITY-I",
+    "R32N-SANITY-C",
+    "R32-K-0"
+  ],
+  "campaign_reason": "confirmation: ['cell-01-X-08']",
+  "campaign_verdict": "INTERACTION-FOUND",
+  "interactions": [
+    {
+      "cell_id": "cell-01-X-08",
+      "cell_op": "X-08",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "MASKING"
+      },
+      "interaction": true,
+      "op_class": "IS-X",
+      "resolution_expectation_met": true,
+      "verdict": "MASKING"
+    }
+  ],
+  "n_inconclusive": 0,
+  "note": "Attempt #2 confirmation adjudication per design §4/§7 rev.2 rules (same classification code paths, confirmation-scoped); scope A2 (R2 containment) is verified by the second-layer audit | amendment: interactions field added (mechanically rebuilt from per_cell interaction flags; zero verdict change; the adjudication script omitted this field — transparency register)",
+  "per_cell": [
+    {
+      "cell_id": "cell-01-X-08",
+      "cell_op": "X-08",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "MASKING"
+      },
+      "interaction": true,
+      "op_class": "IS-X",
+      "resolution_expectation_met": true,
+      "verdict": "MASKING"
+    },
+    {
+      "cell_id": "cell-02-X-09",
+      "cell_op": "X-09",
+      "condition_classes": {
+        "A": "HOLD-MATCH",
+        "C": "HOLD-MATCH",
+        "I": "BROKEN-MATCH"
+      },
+      "op_class": "IS-X",
+      "verdict": "ADDITIVE"
+    },
+    {
+      "cell_id": "cell-03-R32N-SANITY-A",
+      "cell_op": "R32N-SANITY-A",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-04-R32N-SANITY-I",
+      "cell_op": "R32N-SANITY-I",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-05-R32N-SANITY-C",
+      "cell_op": "R32N-SANITY-C",
+      "op_class": "SANITY",
+      "verdict": "SANITY-OK"
+    },
+    {
+      "cell_id": "cell-06-R32-K-0",
+      "cell_op": "R32-K-0",
+      "op_class": "K-0",
+      "verdict": "CONTROL-HOLD"
+    }
+  ],
+  "run_uuid": "R33X-A2-20261003T130744Z-70945",
+  "sanity_failures": []
+}

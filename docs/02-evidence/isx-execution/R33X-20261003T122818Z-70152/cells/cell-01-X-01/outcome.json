@@ -1,0 +1,77 @@
+{
+  "cell_id": "cell-01-X-01",
+  "cell_op": "X-01",
+  "composition": "OK",
+  "composition_error": null,
+  "construction_integrity": {
+    "failures": {},
+    "pass": true
+  },
+  "doubt_signatures": [],
+  "instrument_doubt": "NO",
+  "integrity": {
+    "es_hash_after": "29939b683c20d9653c05fe06f6f9f2d4794fedd1fc0a22923d70f54b455e01dc",
+    "es_unchanged": true,
+    "is0_canonical_hash_after": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+    "is0_unchanged": true
+  },
+  "op_class": "IS-X",
+  "p_comp": {
+    "A": {
+      "sig_set": [
+        "A-NF"
+      ],
+      "state": "BROKEN"
+    },
+    "C": {
+      "sig_set": [],
+      "state": "SATISFIED"
+    },
+    "I": {
+      "sig_set": [
+        "I-NF"
+      ],
+      "state": "BROKEN"
+    }
+  },
+  "predicted": null,
+  "resolution_actual": null,
+  "resolution_expectation": null,
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "t0_matches_setup": true,
+  "t1_evaluation": {
+    "A": {
+      "detail": "anchor target not found / not referable",
+      "signature": "A-NF",
+      "state": "BROKEN"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "lineage-root not found",
+      "signature": "I-NF",
+      "state": "BROKEN"
+    },
+    "cons": "BROKEN"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "cell_id": "cell-11-R32-B-Δ2",
+  "doubt_signatures": [],
+  "instrument_doubt": "NO",
+  "integrity": {
+    "es_hash_after": "7cd6bfc87b04d66d540bf1f10f6add895ba32700ad44e670fc5fe85682ee422e",
+    "es_unchanged": true,
+    "is0_canonical_hash_after": "def59cc7d300365be35fce911cd5979d4cfd33c910dd6c4d8def81b6b0e81151",
+    "is0_unchanged": true
+  },
+  "op_class": "IS-B",
+  "op_id": "R32-B-Δ2",
+  "predicted": {
+    "A": [
+      "SATISFIED",
+      null
+    ],
+    "C": [
+      "SATISFIED",
+      null
+    ],
+    "I": [
+      "SATISFIED",
+      null
+    ]
+  },
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "t0_matches_setup": true,
+  "t1_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  }
+}
