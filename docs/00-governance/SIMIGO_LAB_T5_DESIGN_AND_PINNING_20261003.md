@@ -1,9 +1,9 @@
 # T5 Design and Pinning — Third Continuation Task
 
-Date: 2026-10-03  
-Status: `PINNED / EXECUTION AUTHORIZED BY HUMAN DIRECTION`  
-Question: 在 T4 之外，再换一个不同 continuation task，重复观察  
-`task → Information dependency`。  
+Date: 2026-10-03
+Status: `PINNED / EXECUTION AUTHORIZED BY HUMAN DIRECTION`
+Question: 在 T4 之外，再换一个不同 continuation task，重复观察
+`task → Information dependency`。
 Boundary: 本件只登记 T5；不宣称所有 continuation 都依赖 Information。
 
 ## 1. Structural independence
@@ -44,9 +44,9 @@ WS-70677C ← WS-C36165
 WIN-8B1DE7 = frozen
 ```
 
-这些值是 opaque random facts；B 指令、空工作区、通用能力均不可推导。  
-N-1/N-2： facts 不在 B prompt、空库或工具用法内；暴力枚举不构成  
-普通 continuation 路径。N-3 后验兜底：若 C-N 以未登记方式获得事实，  
+这些值是 opaque random facts；B 指令、空工作区、通用能力均不可推导。
+N-1/N-2： facts 不在 B prompt、空库或工具用法内；暴力枚举不构成
+普通 continuation 路径。N-3 后验兜底：若 C-N 以未登记方式获得事实，
 升级 confound audit，不直接计入 PASS。
 
 ## 3. Pre-registered arms
@@ -65,7 +65,7 @@ Pinned hashes:
 e591f265b2d08af98734e28da929f19a72fe29312fa3aaeca00b6d087be6067a  b-instruction-template.txt
 ```
 
-执行时 `<Dependency Plan identity>` 以 A-run 输出原样替入。B-E 与  
+执行时 `<Dependency Plan identity>` 以 A-run 输出原样替入。B-E 与
 B-N 的替入后指令必须逐字节相同；替入是 format-level D-note。
 
 ## 4. Objective completion criteria
@@ -116,7 +116,27 @@ INCONCLUSIVE    forbidden-channel / evidence-chain 混淆无法排除。
 
 ## 6. Execution discipline
 
-三 run 均为 fresh agent session / fresh workspace；只允许 workspace 内  
-文件与 `./t4ctl`。A 提交前无 B 产物；B-E 使用 A 后的 db 快照；B-N  
-空库。执行结果先做 raw observation + pre-registered reading；最终  
+三 run 均为 fresh agent session / fresh workspace；只允许 workspace 内
+文件与 `./t4ctl`。A 提交前无 B 产物；B-E 使用 A 后的 db 快照；B-N
+空库。执行结果先做 raw observation + pre-registered reading；最终
 结论须 human declaration。
+
+---
+
+# REV.1 — Feasibility Repair and Rerun Pinning
+
+Attempt #1 was invalidated before substantive attribution because the
+pinned graph needed four dependency levels but only three slots existed.
+This revision adds one fourth random slot and keeps every other fact,
+operator, arm structure and completion criterion unchanged.
+
+```text
+added pinned fact:
+SLOT-0A9332 = 16:00
+ordered slots:
+SLOT-0222 → SLOT-95D2 → SLOT-176D → SLOT-0A9332
+```
+
+Status after revision: `REV.1 PINNED / T5 RERUN AUTHORIZED`.
+Attempt #1 remains `INCONCLUSIVE / DESIGN INVALID`; it is not merged
+into any later schedule evidence.

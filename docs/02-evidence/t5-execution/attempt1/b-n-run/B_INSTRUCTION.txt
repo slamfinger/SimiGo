@@ -1,0 +1,19 @@
+最终工作坊排程尚待执行。待办标识：a88ec8e16fbd4243aa5adbd8
+请基于既有 dependency plan 完成 final workshop schedule。
+
+只允许读取/修改当前工作区；禁止访问 MEMORY、palace、git 历史、父目录、仓库文档或网络。唯一记忆边界是当前工作区的 ./t4ctl。动作日志逐条追加，不回改。
+
+步骤：
+1. 用 ./t4ctl fetch --db ./information.sqlite --identity a88ec8e16fbd4243aa5adbd8 --out dependency-plan-fetch.txt 取回 plan。
+2. 生成 Workshop_Final_Schedule.md，为六个 workshop 各安排一个 slot+room。
+3. 约束：
+   - 每个 prerequisite 必须排在依赖项更早的 slot；
+   - room capacity >= workshop enrollment；
+   - 同一 slot 内同一 room 只能安排一个 workshop；
+   - 使用 plan 中的 ordered slots 和 eligible rooms；
+   - 记录每项的 dependency level 和 room capacity；
+   - 包含 freeze 行：WIN-8B1DE7 = frozen。
+4. 用 ./t4ctl store --db ./information.sqlite --file Workshop_Final_Schedule.md 登记 final schedule。
+5. 创建 todo-updated.md，将待办标记为 COMPLETE 并引用 final schedule identity。
+6. 用 ./t4ctl store 登记 todo-updated.md。
+7. 完成后停止。
