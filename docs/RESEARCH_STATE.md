@@ -20,8 +20,11 @@
 > T4-2 也已完成第二个结构独立任务的执行与原始证据封存，human 已
 > 依预注册判据宣告 `REPLICATION PASS` 并将 Gate Chain 封存为
 > `CLOSED`，但该结论仍限于第二个结构独立任务域，不扩为普遍命题；
-> R-C1 #4 已作为有效的 task-domain-bounded 证据关闭；IPAC 仍保持
-> OPEN / NONBINDING。由此，当前系统已经具备受控的最小
+> 其后 T5 已在第三个结构独立的 constraint-assignment 任务域完成
+> REV.1 执行与原始证据封存，预注册归因读数为 `REPLICATION PASS`，
+> 最终 human declaration 尚待登记；R-C1 #4 已作为有效的
+> task-domain-bounded 证据关闭；IPAC 仍保持 OPEN / NONBINDING。
+> 由此，当前系统已经具备受控的最小
 > Execution–Information Runtime 实现与实验证据，但尚不能将其表述
 > 为完整 Information Space 或完整 MemPalace Runtime；后续不预先
 > 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
@@ -20785,4 +20788,35 @@ P                     = OUT OF SCOPE
 Route A/B/C           = NOT SELECTED
 PALACE                = CLOSED
 Next = R3 之后的研究方向全部归 human 决定；无自动开启项
+```
+
+### T5 REV.1 EXECUTED — PRE-REGISTERED READING = REPLICATION PASS — AWAITING HUMAN DECLARATION — 2026-10-03
+
+human 授权在 T4 之外以第三个不同 continuation task 观察 Information
+dependency。T5 选择 workshop prerequisite graph / capacity-constrained
+scheduling 域；与 T4 的 aggregation、T4-2 的 release mapping +
+ordered rollout + go/no-go 均不同。Attempt #1 因 pinned graph 需要
+4 个 dependency levels 但只有 3 个 ordered slots 而判定
+`DESIGN INVALID / INCONCLUSIVE`，不计作 substantive FAIL。REV.1 增加
+第四个 random slot 后重跑。
+
+REV.1 raw reading：
+
+```text
+AC-1 = PASS  B-E schedule satisfies C1..C9。
+AC-2 = PASS  fetch(plan identity) → fetched plan → schedule generation。
+AC-3 = PASS  B-N fetch = not-found；no schedule；zero pinned-fact
+             fabrication。
+Pre-registered reading = REPLICATION PASS。
+Final human declaration = PENDING。
+```
+
+当前状态：
+
+```text
+T5 Attempt #1 = INCONCLUSIVE / DESIGN INVALID
+T5 REV.1      = EXECUTED / RAW EVIDENCE SEALED /
+                PRE-REGISTERED READING = REPLICATION PASS
+T5            = AWAITING HUMAN FINAL DECLARATION
+T4 / T4-2     = CLOSED（原结论零改动）
 ```
