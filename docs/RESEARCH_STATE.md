@@ -32,6 +32,14 @@
 > 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
 > 决定下一研究问题。
 
+2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
+或继续扩展 Representation Consistency。下一阶段为
+**Real-Task Gap Exploration**：以既有 ExecutionCore / InformationCore /
+RelationCore / SimiGoRuntime × InformationCore 进入更接近真实连续工作的
+多 Execution 任务，观察 Information 生命周期与 Relation 是否被实际需要，
+并记录现有 Runtime 第一次出现任务阻塞式缺口的位置。当前只登记方向；
+具体任务未选择，实验执行未授权，新 schema 未授权。
+
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
 same-ID / same-position / same-length / different representation content
@@ -20838,6 +20846,55 @@ T5 REV.1      = EXECUTED / RAW EVIDENCE SEALED /
                 PRE-REGISTERED READING = REPLICATION PASS
 T5            = AWAITING HUMAN FINAL DECLARATION
 T4 / T4-2     = CLOSED（原结论零改动）
+```
+
+### REAL-TASK GAP EXPLORATION REGISTERED — NEXT PHASE — 2026-10-04
+
+T4/T4-2/T5 已形成三个结构不同、task-domain bounded 的 continuation
+evidence，但不支持“Information 对所有 continuation 必要”的抽象。下一阶段
+不启动 T6 replication，也不扩展 Representation Consistency；改为以真实
+连续任务观察既有 Execution–Information Runtime 的第一个真实缺口。
+
+探索对象：
+
+```text
+ExecutionCore + InformationCore + RelationCore
++ SimiGoRuntime × InformationCore integration
+```
+
+目标序列：
+
+```text
+Execution A
+    ↓ create / modify Information
+Execution B
+    ↓ continue
+Information / task state changes
+    ↓
+Execution C
+    ↓ continue
+```
+
+只观察：
+
+```text
+1. 下一次 Execution 实际需要哪些 Information；
+2. InformationCore 是否可取得；
+3. RelationCore 是否被任务实际需要；
+4. 哪些 Information 随推进自然产生；
+5. 哪些 Information 无处保存、无关系表达或无法定位；
+6. 现有 Runtime 在哪里第一次出现任务无法继续的真实缺口。
+```
+
+当前状态：
+
+```text
+Real-Task Gap Exploration = REGISTERED / NEXT PHASE
+Specific task             = NOT SELECTED
+Task design               = NOT AUTHORIZED
+Experiment execution      = NOT AUTHORIZED
+New schema                = NOT AUTHORIZED
+Contract / IPAC / PALACE  = NO CHANGE AUTHORIZED
 ```
 
 ### LLAMA REPRESENTATION CONSISTENCY REPLICATION EXECUTED — PASS — 2026-10-04
