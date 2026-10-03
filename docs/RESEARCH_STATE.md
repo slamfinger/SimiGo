@@ -19505,3 +19505,379 @@ Route A/B/C             = NOT SELECTED
 PALACE                  = CLOSED
 Next = human decision on R3-2 execution authorization
 ```
+
+### R3-2 EXECUTION AUTHORIZED / EXECUTED — CAMPAIGN SUPPORTED（fixture-slice bounded）— HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 R3-2 execution（fixture 实现 + cell 运行）。执行纪律：harness
+源码先 commit+push 后运行（证据纪律；governance 文档 R3 链与 harness
+分别为 commit `5e08370` / `5414061`，远端回验后才执行）。
+
+**Campaign setup（§1a lock 执行）**：run_uuid=`R32-20261003T105711Z-68477`；
+(ES,IS₀) 一次性按预登记准则选定（准则执行不依赖任何 t₀ 结果）；t₀ 一次性
+判定于 setup 阶段（任何 ΔIS 之前），三要素钉死 setup 记录（Cons=R2
+rev.2 candidate / 判定规则=Spec rev.2 RATIFIED / 时点=setup）；**t₀ 结果
+I/A/C 全 SATISFIED ⇒ Cons(ES,IS₀)=true ⇒ cell validity 全战役固定**；
+ES 血统=真实密封 R-C1 attempt #4 C-B 臂证据运输（S0/S1/任务书字节逐字
+来自 sealed artifacts）；formation 程序对 canonical IS₀ 实际执行、全部
+基线摘要由实际字节计算（无手写基线）；harness 哈希入 setup 记录。
+
+**Campaign 结果（14 cell 全机械判定，零偏差零重试零重分类）**：
+
+- **9/9 定向 cell PREDICTION-MATCH**——每个定向 ΔIS 以预测签名击穿其
+  定向条件且其余条件不动：IS-I×3 → I BROKEN（I-MISMATCH/I-NF/I-AMBIG
+  逐一对应声明变更/目标删除/冲突复制）；IS-A×3 → A BROKEN（A-NF/A-NF/
+  **A-SUB**——silent substitution 被机械检出）；IS-C×3 → C BROKEN
+  （C-REF-NOT-FOUND/C-INV×2——invalidation 与 supersession 记录均被
+  机械检出）；
+- IS-B×2（边界收缩/访问拒绝，未触及被引用对象）→ 全 SATISFIED，
+  与构造时推导一致（DERIVATION-CONSISTENT）；
+- K-1×2（纯增量/等价迁移——后者索引重指向但解析+摘要保持）→
+  CONTROL-HOLD；K-0 → CONTROL-HOLD 且与 setup t₀ 逐项一致；
+- 完整性：ES/canonical IS₀ 哈希跨 cell 恒等（integrity_all_clean）；
+  t₀ 复算全一致；instrument_doubt 全 NO；不可归因击穿零；RQ3-4 素材
+  零触发。
+
+**机械判读（Spec §6.2）：campaign_verdict = SUPPORTED**——在本 fixture
+结构类与单变化战役内，条件满足性对 Information Space 变化类别呈
+**差分敏感**，三条件分解对「哪些 IS 变化破坏哪个条件」给出可归因的
+差分刻画；RQ3-1/3-2/3-3 在本 slice 内答案为是/是/是。
+
+**解释边界（逐字义务）**：允许=上述差分敏感性表述（fixture-slice
+bounded）；禁止=「IPAC/Cons 已证明」（检验对象是 taxonomy 预测结构非
+充分性；Cons⇏LawfulContinuation 不变）、「适用于产品/普适」（bounded
+于 fixture 结构类：符号名锚引用、单一 ES、文件型 IS；内容寻址变体
+defer）、「Relation/PALACE/产品含义」（零模型/零 Relation/零 PALACE）、
+「预测结构普遍成立」（IS-X 未实例化，RQ3-4 零触发≠已排除）。
+
+**观察登记**：O-R1=K-1b 等价迁移下 A 保持 SATISFIED（锚定绑定
+「可解析+内容同一」非具体存储地址；与表征敏感性观察同向）；O-R2=
+IS-B 整体边界操作未破坏任何条件（RQ3-4 方向否定性素材，bounded，
+不得升格）。
+
+**下一门（全部归 human）**：R3-2 结果 second layer；R3-3（Counter-
+example/Non-break Study）是否开启；R3-4 LOCKED；IS-X 与内容寻址变体
+未实例化，开启归 human。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = AUTHORIZED / EXECUTED（run R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = PENDING HUMAN REVIEW
+R3-3…R3-4               = LOCKED（R3-3 开启归 human）
+Implementation          = harness committed @5414061（execution authorized scope）
+Experiment              = EXECUTED within authorized scope only
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on R3-2 results; R3-3 opening decision
+```
+
+### R3-2 SECOND LAYER = RESULTS AUDIT PASS（16/16 机器检查）— 结果审查 ≠ R3-3 授权 — 2026-10-03
+
+human 指令进入 R3-2 second layer（结果审计非设计重审）：审查「结果是否
+足以支持当前 SUPPORTED 判读」，八项焦点。审计工具
+`r32_second_layer_audit.py`（@`51993d8`，commit+push 先于审计——证据
+纪律），**16/16 机器检查全过，零失败零偏差零未决**：
+
+- **证据链闭合（A1+A7）**：14/14 cell 的 construction（locked_before_
+  evaluation+哈希钉定）→t₀（与 setup 逐项一致）→integrity（ES/IS₀
+  哈希不变）全链闭合；append-only 观测中每 cell 五事件完整有序、单调
+  钟非降、run_uuid 唯一、构造/结果文件物理分离。
+- **签名一一对应（A2）**：逐 cell t₁ 实际（state+signature）与
+  construction.json 内评估前锁定的 prediction 一一比对，14/14 一致
+  ——预测先于评估由文件顺序+观测序列证明，非事后解释。
+- **只击穿目标条件（A3）**：9/9 定向 cell 的 t₁ 原始记录核验——目标
+  BROKEN 带签名、其余两条件原始 detail 为 SATISFIED。
+- **IS-B 构造时证明（A4）**：从构造时 IS₀ 索引独立重算
+  region∩referenced=∅（archive/ 区仅含未被引用的 archived-note）——
+  证明独立于 t₁ 结果，非反推；IS-B outcome 与推导一致。
+- **K-1b binding invariant（A5）**：对实际 cell 树核验——锚解析至
+  objects/store-v2/R-1.json、in_boundary、内容摘要==formation 摘要；
+  原路径已腾空（迁移真实发生）。
+- **cell 独立性（A6）**：**frozen-op replay**——每 cell 从 canonical
+  IS₀ 新拷贝重放冻结操作，结果树与该 cell IS 树逐字节一致（14/14；
+  任何隐性累积/串染都会破坏重放）；K-0 cell IS 树与 canonical IS₀
+  哈希恒等。
+- **SUPPORTED 严格性（A8）**：按 §6.2 预注册规则重算（batch_inconclusive
+  =false+9/9 targeted PREDICTION-MATCH+3/3 CONTROL-HOLD）⇒SUPPORTED；
+  审计独立重算与独立判读进程 14/14 verdict 一致；记录值无加宽。
+
+**human 六点实质性结果逐项登记**：①H-A setup lock 获首次实证执行记录
+（无换 IS₀/无重试/无重分类被触发）；②差分归因结构干净（预注册签名非
+泛化全坏+对照保持）；③H-C 修正产生可观察后果（结构缺失在「既有结构
+存在+唯一变量」条件下作为 I BROKEN 被记录，非模糊化为 doubt）；④
+「零 instrument doubt」保持限缩读法（仅=本 campaign 未触发疑云路径，
+非「实验绝对可靠」一般结论——human 原话）；⑤SUPPORTED 严格 slice-
+bounded（支持=「在本次 fixture/ES 结构/符号名锚引用/文件型 IS/预注册
+ΔIS 类别与观察程序下，Cons 条件表现出预测的差分敏感性」；不支持=
+「IS 改变普遍导致 ES consistency 改变」）；⑥RQ3-4 未被提前回答（无
+BROKEN⇒continuation failure 推导、无普适定律宣称）。
+
+**边界（human 原定）：结果审查 ≠ R3-3 授权。** 审计通过不自动开启
+R3-3；待决=human 的更窄问题——「R3-2 的 bounded empirical result 是否
+足以授权进入 R3-3，以及 R3-3 应验证哪个尚未被覆盖的边界」。未覆盖边界
+登记（仅候选不预设）：R3-N 专项反证搜索未开始/IS-X 未实例化（词汇已
+封闭）/内容寻址表征敏感性 defer/「条件破坏⇒continuation failure」检验
+不在 R3 范围（属独立 gate）。R3-4 LOCKED；全部排除清单维持。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = EXECUTED（R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = AUDIT PASS（16/16）
+R3-3                    = LOCKED / OPENING DECISION PENDING HUMAN
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 opening (and its uncovered-boundary target)
+```
+
+### R3-2 FORMALLY CLOSED — SECOND LAYER ACCEPTED — R3-3 OPENING DECISION REGISTERED（CANDIDATE = R3-N）— 2026-10-03
+
+human 裁定 R3-2 **正式收口**：second layer 的 AUDIT PASS 足以证明本次
+campaign 的 `SUPPORTED / fixture-slice bounded` 判读具有证据闭合性，
+但**没有扩大 R3-2 本身的外推范围**。边界图（human 逐字登记）：
+
+```text
+R3-2 empirical result
+        │
+        ├─ evidence chain      PASS
+        ├─ pre-registered match PASS
+        ├─ attribution         PASS
+        ├─ independence        PASS
+        ├─ audit recomputation PASS
+        └─ §6.2 synthesis      PASS
+                │
+                ▼
+     SUPPORTED / bounded slice
+                │
+                X
+        不自动推出普遍 Cons
+        不推出 continuation
+        不推出 PALACE/IPAC
+        不开启 R3-4
+```
+
+**R3-2 已回答它原本要回答的那一层**：在严格限定的 fixture slice 内，
+预登记的 Information Space 变化类别表现出可重复、可归因、与预测签名
+一致的 I/A/C 差分敏感性。**继续重复同一 slice 不解决当前最大未知量
+——边界能否被突破。**
+
+**R3-3 opening 候选登记：R3-N（边界反证/负向搜索）**——寻找在当前
+R3-2 机制下按既定规则应当「不产生相应 Cons 击穿」的 Information Space
+变化，观察差分敏感性是否出现反例。价值定位（human 逐字）：直接攻击
+当前 SUPPORTED 的解释边界——反例不是「实验失败」，而是对当前
+taxonomy / condition boundary 的实质信息；无反例也只能增加当前 fixture
+slice 内的边界证据，仍不能升级为普遍规律。
+
+**三个候选边界保持独立（human 登记，含不宜混入的原因）**：
+
+| 边界 | 状态 | 不宜现在混入的原因 |
+|---|---|---|
+| R3-N 反证搜索 | **最自然的下一步候选** | 直接攻击当前支持命题 |
+| IS-X 复合变化 | 词汇已冻结、未实例化 | 会增加变量归因复杂度 |
+| 内容寻址表征敏感性 | defer | 实际是改变 representation boundary |
+| 条件破坏→continuation failure | R3 外 | 已是另一研究问题——R3-2 证明的是 condition-level observation，不是 execution continuation law，严格隔离继续 |
+
+**未来授权纪律（human 预定）**：若正式授权 R3-3 opening，第一道授权
+只开 **R3-3 Design Gate**——先锁死 R3-N 的反证对象、null expectation、
+停止条件、与 R3-2 结果的独立性；**不直接授权 R3-3 实验**。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = EXECUTED（R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = AUDIT PASS（16/16）
+R3-2 conclusion         = SUPPORTED / fixture-slice bounded / FORMALLY CLOSED
+R3-3                    = LOCKED / OPENING DECISION PENDING HUMAN
+R3-3 candidate          = R3-N negative/counterexample search（登记）
+R3-3 first gate         = Design Gate ONLY（如获授权）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 opening（如授权，第一道门=Design Gate only）
+```
+
+### R3-3 DESIGN GATE AUTHORIZED / EXECUTED — R3-N DESIGN DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 授权 R3-3 opening 的第一道门=**Design Gate ONLY**（锁四件事：
+反证对象/null expectation/停止条件/与 R3-2 结果独立性；不授权实验）。
+设计交付 `SIMIGO_LAB_R3_3_DESIGN_R3N_20261003.md`：
+
+- **§1 反证对象（冻结目录，9+1+1）**：N-catalog 推导来源=冻结规则条款
+  本身**未被 R3-2 覆盖的 HOLD 侧**（逐条注明攻击的条款）——Δ1 未引用
+  对象删除/Δ2 未引用内容改写（判定只依赖 ES 引用键）/Δ3 死索引项
+  （精确键+存在性过滤）/Δ4 被引用键**同内容**重复候选（坍缩规则；与
+  已测 I-Δ3 冲突候选相对）/Δ5 被引用对象字段保持扩展（字段域比较）/
+  Δ6 前置等价迁移（K-1b 对称未测例：可引用性=解析+边界非存储地址）/
+  Δ7 invalidation 指向未引用键（C-INV 扫描目标域）/Δ8 scope-tag 增补
+  （存在性检查方向性）/Δ9 in_scope 区域增补（边界隶属是要求侧）；
+  **R32N-SANITY 正控**=重实例化已冻结 A-Δ3（防判读器死亡：predicted-
+  BROKEN 侧必须仍可触发）+K-0 重放；排除形态预注册（改动后复原=空洞、
+  触碰被引用内容字节=R3-2 已测家族、IS-X/内容寻址/模型通道维持排除）；
+  目录设计门 seal 时冻结。
+- **§2 null expectation（预注册）**：9 反证 cell t₁ 全 SATISFIED 逐项
+  等于 setup t₀+正控 A BROKEN/A-SUB+K-0 无漂移+完整性全净；反例判定=
+  任一反证 cell 任一条件 BROKEN（可归因签名）；反例缺席只增强 slice
+  内边界证据不升格普遍；反例出现是研究对象非失败。
+- **§3 停止条件**：S-1..S-5 沿用+R3-N 特有三条——**S-N1 反例不触发
+  停止**（campaign 跑完冻结目录，反例逐 cell 登记，闭合后进边界复审
+  门）；**S-N2 正控 SATISFIED=判读器死亡⇒战役 INCONCLUSIVE+STOP**
+  （此时全 HOLD 禁读为 NO-COUNTEREXAMPLE）；S-N3 不可归因击穿⇒cell
+  INCONCLUSIVE+仪器审计。
+- **§4 与 R3-2 独立性（五不变量）**：inv-1 判读输入隔离（只读 R3-3
+  自己 run 工件；R3-2 产物零读取作判定输入）；inv-2 目录来源隔离
+  （N-catalog 从冻结规则条款推导、设计门 seal 冻结——R3-2 outcome
+  不是目录选择输入）；inv-3 形成隔离（fresh formation 新 run-UUID 重
+  执行）；inv-4 cell 内独立性沿用；inv-5 判读语义隔离（R3-N 出口类目
+  不继承 SUPPORTED 语义、不合并统计）。
+- **§5 判读规则（预注册）**：全 HOLD+正控 BROKEN⇒NO-COUNTEREXAMPLE
+  （bounded 增强）；≥1 可归因反例⇒COUNTEREXAMPLE-FOUND（逐 cell 登记
+  条件+签名+操作+被攻击条款，闭合后进边界复审门；**禁止 campaign 内
+  修补规则使反例消失**）；正控 SATISFIED⇒INCONCLUSIVE+STOP；drift/
+  doubt/unattributable⇒INCONCLUSIVE；反例若源于仪器缺陷⇒改判
+  INCONCLUSIVE 并记录（不得既算反例又算仪器故障）。
+- **§7 执行剖面（不授权）**：同 harness 家族扩展（CATALOG 增 9+1 冻结
+  操作，评估程序零改动=与 R3-2 完全同源满足 inv-2）；campaign=11 cell；
+  cell 纪律/双哈希/replay purity/second layer 审计模式沿用；execution
+  须独立 human 授权；本设计先行独立对抗审查（同节奏）。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED/fixture-slice bounded）
+R3-3                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-3 Design（R3-N）     = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-3 execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = independent review of the R3-3 R3-N design; execution remains
+       unauthorized
+```
+
+### R3-3 DESIGN INDEPENDENT ADVERSARIAL REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — DESIGN RATIFIED — EXECUTION STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-3（R3-N）设计进行独立对抗审查，八项攻击点（假反证
+防护）。评审交付 `SIMIGO_LAB_R3_3_DESIGN_REVIEW_20261003.md`：
+
+- **Check 1 N-catalog 推导纯度 = PASS**：逐 op「结果无关性检验」——
+  预测可仅从规则文本推导，在 R3-2 outcome 任意反事实取值下不变
+  （Δ4 坍缩规则/Δ5 字段域/Δ6 C-REF 规则/Δ8 存在性方向/Δ9 要求侧
+  隶属，逐一验立）；关键区分登记：目录推导输入=(a)规则文本+(b)R3-2
+  **目录覆盖图**（结构性知识）——非 outcome 知识，无倒推路径。
+- **Check 2 null expectation 解耦 = PASS**：每 op 的 HOLD 预测附独立
+  机械理由（规则条款）；预测（predict：元数据+证据图）与评估
+  （eval：实际变异后状态）**代码路径分离**，失效模式互异且各有检出
+  通道——无循环定义。
+- **Check 3 SANITY 充分性 — 发现 H-1（强制）**：单条件正控（仅 A-Δ3）
+  无法检出 I/C 评估路径死亡⇒假 NO-COUNTEREXAMPLE 风险。rev.2：SANITY
+  扩展为**逐条件三正控**（SANITY-A/I/C 重实例化 A-Δ3/I-Δ1/C-Δ2），
+  任一正控 SATISFIED⇒判读器死亡⇒战役 INCONCLUSIVE+STOP。
+- **Check 4 反例/仪器分界 — 发现 H-2+H-3（强制）**：H-2=rev.1 存在
+  吸收路径（N-cell 因 doubt 判 INCONCLUSIVE 后仍可宣称
+  NO-COUNTEREXAMPLE）⇒ rev.2 **INCONCLUSIVE 传染规则**：NO-
+  COUNTEREXAMPLE 当且仅当零 INCONCLUSIVE cell。H-3=反例资格三要件
+  （签名可归因+frozen-op replay 复现+审计未定位仪器缺陷）+run 中
+  BROKEN 先作为 candidate-counterexample 原样记录+**cell 排除仅经
+  预注册 S/I 码，反例 cell 永不排除**——`意外→doubt→INCONCLUSIVE→
+  继续`被 H-2 阻断、`缺陷计入反例`被要件(c)阻断，双向误用封闭。
+- **Check 5 无修补封闭 = PASS（after H-3）**：目录冻结+预测构造时
+  锁定+null 预注册+判读规则预注册+排除封闭；中途改代码/重跑=新
+  campaign 须新授权；post-hoc「范围外」重解释=边界修订门事项。
+- **Check 6 R3-2 数据隔离 = PASS**：inv-1 代码可核验（harness 无
+  R3-2 路径引用）；间接选择路径（outcome/cell 顺序/既有状态/既有
+  样本）逐一排查未发现。
+- **Check 7 出口语义独立 = PASS（after O-3）**：非推导声明强化——
+  NO-COUNTEREXAMPLE ≠ 证明一致性（仅=被测 HOLD 侧经受住探针，RQ3-4
+  开放）；COUNTEREXAMPLE-FOUND ≠ 普遍反例、≠ 追溯撤销 R3-2（是否
+  级联由边界复审门裁定）。
+- **Check 8 覆盖完整性 — 发现 H-4（收紧）+O-1/O-2**：HOLD 侧穷举
+  扫描无重要遗漏；H-4=补 **Δ10 谱系等价迁移**（referability 子句
+  三引用组全覆盖：锚=K-1b/前置=Δ6/谱系=Δ10）；O-1=两个未测 BROKEN
+  侧预测（scope-tag 移除/被引用区域 deny）登记为范围外开放预测；
+  O-2=结构性不可测两侧如实登记（validity-temporal 空转/I-EV-3 按
+  构造不敏感）。
+
+**处置**：rev.2 机械补入 H-1（三正控）/H-2（INCONCLUSIVE 传染）/
+H-3（反例资格三要件+排除封闭）/H-4（Δ10），修订记录入档；战役规模
+10 反证+3 正控+K-0=14 cell。**R3-3 Design（R3-N）= RATIFIED（正式
+设计）**。**边界：RATIFIED ≠ execution authorization。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED/fixture-slice bounded）
+R3-3                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-3 Design（R3-N）rev.2 = RATIFIED（10 反证+3 正控+K-0=14 cell）
+R3-3 execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 execution authorization
+```
+
+### R3-3 EXECUTION READINESS REGISTERED — EXECUTION STILL NOT AUTHORIZED — 2026-10-03
+
+human 登记三项：
+
+1. **四项修订的评价（R3-N 判读结构由此立住）**：H-1 把「判读器活着」
+   提升为 **I/A/C 三条判定路径分别活着**（否则某一条件 evaluator 死亡
+   时恰好可能把所有 N-cell 都变成 HOLD）；H-2 的
+   `NO-COUNTEREXAMPLE ⇔ 0 INCONCLUSIVE cells` 封死「排除一个疑似异常
+   cell 制造全 HOLD」；H-3 在「出现 BROKEN」与「正式认定
+   COUNTEREXAMPLE」之间建立严格证据门，同时禁止把候选反例悄悄吸收进
+   INCONCLUSIVE；H-4 使 referability 的三类引用组（锚/前置/谱系）均有
+   探针，覆盖结构完整。
+2. **执行价值评估（非流水线逻辑）**：R3-2 给出正向差分模式；R3-N 专门
+   寻找该模式的边界与反例——两者构成完整探针结构：
+   `R3-2 → 预测的 BROKEN 侧是否出现？R3-N → 预测的 HOLD 侧是否真
+   HOLD？`。R3-N 允许的关键结果保持限缩读法：**NO-COUNTEREXAMPLE 不得
+   翻译为 Consistency invariant established**；**COUNTEREXAMPLE-FOUND
+   不自动推翻 R3-2**——它首先是一个需要边界复审的局部反例。
+3. **执行纪律预注册（获授权后沿用已证明有效的序列）**：
+   `harness → commit/push → campaign setup lock → construction record →
+   cell execution → independent audit → second-layer interpretation`。
+
+**边界：获得执行授权以前，不实现、不运行 R3-N fixture。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3 Design（R3-N）rev.2 = RATIFIED
+R3-3 execution          = NOT AUTHORIZED（执行纪律已预注册）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 execution authorization
+```
