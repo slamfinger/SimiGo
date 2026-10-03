@@ -179,3 +179,18 @@ missing SimiGo-owned task/agent orchestration = observed as the next boundary.
 ## 7. Raw evidence
 
 Raw requests, responses, agent turns, harness, Runtime trace excerpts, and hashes remain local-only in this directory and are ignored by Git.
+
+## 8. Post-observation process-interruption correction
+
+A later monitoring run observed the running SimiGo process disappear while an agent turn was active. A macOS diagnostic report recorded `SIGSEGV`, which was initially interpreted as a Native MLX crash.
+
+The operator corrected this interpretation: the process disappearance was caused by replacing/updating the running SimiGo build, which killed the active process. It was not treated as evidence of a SimiGo Runtime, MLX, Metal, or agent-loop defect.
+
+Therefore:
+
+```text
+process interruption cause = build update / process replacement by operator
+MLX runtime defect claim   = retracted
+StateGraph after run       = unchanged
+Information SQLite         = unchanged
+```
