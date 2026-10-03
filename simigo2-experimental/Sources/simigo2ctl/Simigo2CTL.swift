@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|cross-backend-logit-record|cross-backend-logit-compare|cross-backend-margin-record|cross-backend-margin-compare|named-source-profile-evaluate|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths|representation-consistency-boundary> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|cross-backend-logit-record|cross-backend-logit-compare|cross-backend-margin-record|cross-backend-margin-compare|named-source-profile-evaluate|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths|representation-consistency-boundary|llama-representation-consistency> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -258,6 +258,25 @@ struct Simigo2CTL {
         maxTokens: maxTokens
       )
       print(try toJSON(report))
+    case "llama-representation-consistency":
+      let serverURL =
+        optionalOption("--server-url", rest)
+        .flatMap(URL.init(string:)) ?? URL(string: "http://127.0.0.1:18080")!
+      let predictionTokens = optionalOption("--prediction-tokens", rest).flatMap(Int.init) ?? 12
+      let repetitions = optionalOption("--repetitions", rest).flatMap(Int.init) ?? 3
+      let seedText =
+        optionalOption("--seed-text", rest)
+        ?? "The project directory ReferenceFiles contains project management documents."
+      let nextInput = optionalOption("--next-input", rest) ?? "What folder did I create?"
+      let report = try await LLAMARepresentationConsistencyExperiment.run(
+        serverURL: serverURL,
+        seedText: seedText,
+        nextInput: nextInput,
+        predictionTokens: predictionTokens,
+        repetitions: repetitions
+      )
+      print(try toJSON(report))
+
     case "representation-consistency-boundary":
       let maxTokens = optionalOption("--max-tokens", rest).flatMap(Int.init) ?? 16
       let c2Repetitions = optionalOption("--c2-repetitions", rest).flatMap(Int.init) ?? 3
