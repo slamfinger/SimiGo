@@ -51,12 +51,12 @@ balance report 这一自然变化源。当前只登记观察性章程；执行�
 resource-control substrate，因此不能作为
 `SimiGo Execution State → Information Space` 断裂的证据。Cloud smoke
 中 Information SQLite 不变，只应读作“该 forwarding 路径未形成
-Information₁”，不能外推为 Local Execution 缺少 Information 写回。
+Stored Information”，不能外推为 Local Execution 缺少 Information 写回。
 Qinshen Execution 001/002 仍是外部 Agent + Information Space 路径的
 有效观察；它们没有经过 SimiGo 本地推理 Execution State。
 
 2026-10-04 narrowed registration：Real-Task Gap Exploration 收窄为
-**Local Execution → Information₁ → Fresh Execution** 最小闭环章程。
+**Local Execution → Candidate Information → Fresh Execution** 最小闭环章程。
 必须使用 Local MLX 经 SimiGo HTTPServer 的可观察推理路径
 （route fix `82b57f6` 之后），不得使用 Cloud。第一轮禁止自动写回；
 Execution A 结束后由 observer 检查真实工作产物，再通过现有
@@ -77,6 +77,19 @@ isolation、migration、compliance、cost 等当前全部 deferred，不得反�
 或否定第一层实验。现有证据只确认两个半区分别存在：Local MLX via SimiGo
 可观察推理执行状态；InformationCore 可按 identity store/fetch。两者的
 交集尚未验证。
+
+2026-10-04 terminology correction：在闭环执行前，不得把 `Information₁`
+当作实验前提。Execution A 的自然产物只能先称为 **Residue**；observer 选择
+后可称为 **Candidate Information**；只有通过现有 `InformationCore.store()`
+成功并获得 identity 后，才称为 **Stored Information**。`Information₁` 只能
+作为事后读法，不作为实验输入。同步钉死三类边界：
+①已有能力包括 SimiGo/NativeMLX tool loop、Runtime/cache 观察、
+`InformationCore.store()/fetch(by:)`、ExecutionScope fresh-process 行为；
+②observer 动作包括保留 A 残留、选择 Candidate、调用 t4ctl/store、把
+identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→InformationCore 的
+原生写入、identity 自然发现、Information 对 fresh Agent 的自然可见性。
+当前若执行，只能先验证 observer-mediated identity closure，不能证明
+native `Execution → Information → Agent` 闭环。
 
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：

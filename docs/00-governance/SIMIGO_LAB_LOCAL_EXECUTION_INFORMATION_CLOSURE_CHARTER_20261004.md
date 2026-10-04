@@ -1,28 +1,54 @@
-# Local Execution → Information₁ → Fresh Execution Charter
+# Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
 Status: `REGISTERED / OBSERVATIONAL CHARTER / EXECUTION NOT AUTHORIZED`
 
-## 1. Purpose
+## 1. Purpose and terminology boundary
 
 The next experiment is not Cloud adaptation and not a new Execution State
-mechanism. It is the first minimal observational closure:
+mechanism. It is a minimal observational probe:
 
 ```text
 Information₀
       ↓
 Local MLX Execution A through SimiGo
       ↓
-real work residue produced by Execution A
+observe real work residue
+      ↓
+observer selects Candidate Information
       ↓
 existing InformationCore.store()
       ↓
-Information₁ identity
+Stored Information identity
       ↓
 fresh Execution B
       ↓
-does B use Information₁ without A's context?
+does B use Stored Information without A's context?
 ```
+
+`Information₁` is not an experimental premise. It may be used only as a
+post-run designation if Stored Information actually exists and a later
+reading judges it to be the first formed successor to Information₀.
+
+Three terms are deliberately separated:
+
+```text
+Residue
+= everything naturally left by Execution A:
+  transcript, tool calls, tool results, final answer,
+  trace, cache events, opened sources, intermediate files.
+
+Candidate Information
+= residue selected by the observer as possibly satisfying
+  the existing Information formation boundary.
+
+Stored Information
+= Candidate Information only after an existing
+  InformationCore.store() succeeds and returns an identity.
+```
+
+No tool result, final answer, transcript, trace, or cache event is assumed
+to be Information merely because it exists.
 
 ## 2. Causal scope correction
 
@@ -31,7 +57,7 @@ Three earlier observations must remain scoped:
 ```text
 Qinshen Execution 001 / 002
 = external Agent + Information Space
-= valid evidence that work residue did not enter Information₁
+= valid evidence that external work residue was not stored in InformationCore
 
 Local MLX smoke
 = SimiGo HTTPServer → NativeMLX
@@ -136,6 +162,62 @@ semantic retrieval. Therefore this first closure tests **explicit identity
 inheritance**, not autonomous finding. Any inability to discover Information
 without an identity must be recorded as a separate retrieval gap.
 
+## 4.1 Capability / observer / missing-capability boundary
+
+The experiment must distinguish three disjoint sets.
+
+### Existing capabilities
+
+```text
+SimiGo HTTPServer → NativeMLX execution;
+Agent / tool loop through Chat Completions;
+Runtime lifecycle and cache observation;
+tool-call and tool-result governance;
+external harness ownership of transcript and tool results;
+InformationCore.store() for already-formed Information;
+InformationCore.fetch(by identity);
+immutable first-write-wins SQLite persistence;
+ExecutionScope formation and observation in fresh processes.
+```
+
+### Observer actions
+
+These are not Runtime capabilities. They may be used only after Execution A
+stops and only if separately authorized.
+
+```text
+preserve Execution A raw artifacts;
+inventory natural residue;
+select Candidate Information without inventing content;
+package Candidate Information for t4ctl.store();
+invoke existing InformationCore.store();
+record the resulting Stored Information identity;
+give only that identity to Execution B;
+record Execution B fetches and behavior.
+```
+
+The observer may select and package residue, but must not invent, summarize
+into a new schema, add semantics, or silently convert Runtime state into
+Information.
+
+### Missing native capabilities
+
+These capabilities are not currently present and must not be assumed:
+
+```text
+Execution or Runtime emits semantic Information to InformationCore;
+harness naturally forms Information from tool results or final answers;
+Information identity is discoverable without an external identity;
+InformationCore supports search, list, ranking, or query;
+fresh Agent naturally sees relevant Information;
+ExecutionCache or ExecutionStateGraph is itself an Information Store.
+```
+
+Therefore the present charter can test only an **observer-mediated identity
+closure**. It cannot test a native
+`Execution → InformationCore → Agent` closure until such a path is later
+observed or deliberately defined.
+
 ## 5. Execution A
 
 Execution A must use the Qinshen real task and Local MLX through SimiGo.
@@ -165,8 +247,8 @@ If this residue disappeared, what would Execution B have to redo?
 
 The observer may then select actual produced material and store it through
 the existing `t4ctl store` boundary. The observer must record why each stored
-item was selected, its Information₁ identity, and what was deliberately not
-stored.
+item was selected, its Stored Information identity, and what was deliberately
+not stored.
 
 ## 6. Execution B
 
@@ -176,7 +258,7 @@ It may receive only:
 
 ```text
 the next-phase Qinshen task;
-the Information₁ identity;
+the Stored Information identity;
 a fetch tool backed by existing InformationCore;
 necessary read-only tools for the next-phase work.
 ```
@@ -188,7 +270,7 @@ Execution A's prompt;
 Execution A's transcript;
 Execution A's final answer;
 Execution A's summary;
-selected source paths or extracted facts outside Information₁;
+selected source paths or extracted facts outside Stored Information;
 the observer's selection rationale.
 ```
 
@@ -197,7 +279,7 @@ as “read the file you just read” is invalid.
 
 ## 7. Gates
 
-### G-A — Execution A → Information₁
+### G-A — Execution A → Candidate Information → Store
 
 Pass requires:
 
@@ -206,17 +288,20 @@ Local MLX execution through SimiGo;
 real Qinshen work product;
 actual residue identified after execution;
 stored through existing InformationCore without schema change;
-Information₁ identity recorded;
+Stored Information identity recorded;
 raw residue and selection rationale preserved.
 ```
 
-### G-B — Information₁ → Fresh Execution
+Read this gate as observer-mediated. Passing it does not prove that SimiGo
+Execution natively produced Information.
+
+### G-B — Stored Information → Fresh Execution
 
 Pass requires:
 
 ```text
 fresh B context;
-fetch of the explicit Information₁ identity through existing boundary;
+fetch of the explicit Stored Information identity through existing boundary;
 B demonstrably uses fetched content;
 B completes the next-phase task without A's transcript or summary;
 all fetch records and output artifacts preserved.
@@ -269,7 +354,7 @@ Local Runtime lifecycle and cache trace;
 Execution A raw work product;
 post-A residue inventory;
 selection rationale;
-stored Information₁ identity and content hash;
+Stored Information identity and content hash;
 t4ctl store/fetch records;
 Execution B fresh-context proof;
 Execution B fetch and output artifacts;
