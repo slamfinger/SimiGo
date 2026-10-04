@@ -1,0 +1,101 @@
+{
+  "rendered_at": "2026-10-04T16:55:38.247658+00:00",
+  "prompts": [
+    {
+      "cell_sample": "S1-release-config",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S1-release-config.prompt.txt",
+      "sha256": "a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2",
+      "bytes": 1738
+    },
+    {
+      "cell_sample": "S1-release-config",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S1-release-config.prompt.txt",
+      "sha256": "a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2",
+      "bytes": 1738
+    },
+    {
+      "cell_sample": "S1-release-config",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S1-release-config.prompt.txt",
+      "sha256": "a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2",
+      "bytes": 1738
+    },
+    {
+      "cell_sample": "S1-release-config",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S1-release-config.prompt.txt",
+      "sha256": "a63d561ece54b76b734cb755334513916ea8e6f98da7c2d9004973a78f24c3e2",
+      "bytes": 1738
+    },
+    {
+      "cell_sample": "S2-version-diff",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S2-version-diff.prompt.txt",
+      "sha256": "fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e",
+      "bytes": 28055
+    },
+    {
+      "cell_sample": "S2-version-diff",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S2-version-diff.prompt.txt",
+      "sha256": "fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e",
+      "bytes": 28055
+    },
+    {
+      "cell_sample": "S2-version-diff",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S2-version-diff.prompt.txt",
+      "sha256": "fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e",
+      "bytes": 28055
+    },
+    {
+      "cell_sample": "S2-version-diff",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S2-version-diff.prompt.txt",
+      "sha256": "fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e",
+      "bytes": 28055
+    },
+    {
+      "cell_sample": "S3-column-unit-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S3-column-unit-audit.prompt.txt",
+      "sha256": "0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1",
+      "bytes": 4084
+    },
+    {
+      "cell_sample": "S3-column-unit-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S3-column-unit-audit.prompt.txt",
+      "sha256": "0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1",
+      "bytes": 4084
+    },
+    {
+      "cell_sample": "S3-column-unit-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S3-column-unit-audit.prompt.txt",
+      "sha256": "0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1",
+      "bytes": 4084
+    },
+    {
+      "cell_sample": "S3-column-unit-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S3-column-unit-audit.prompt.txt",
+      "sha256": "0146cf948ea4c4417e271490592fcdcfe43ee34425ecb7100d5fde9c0bcfb6e1",
+      "bytes": 4084
+    },
+    {
+      "cell_sample": "S4-arithmetic-anomaly-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S4-arithmetic-anomaly-audit.prompt.txt",
+      "sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+      "bytes": 20838
+    },
+    {
+      "cell_sample": "S4-arithmetic-anomaly-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S4-arithmetic-anomaly-audit.prompt.txt",
+      "sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+      "bytes": 20838
+    },
+    {
+      "cell_sample": "S4-arithmetic-anomaly-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S4-arithmetic-anomaly-audit.prompt.txt",
+      "sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+      "bytes": 20838
+    },
+    {
+      "cell_sample": "S4-arithmetic-anomaly-audit",
+      "path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/rendered-prompts/S4-arithmetic-anomaly-audit.prompt.txt",
+      "sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+      "bytes": 20838
+    }
+  ]
+}

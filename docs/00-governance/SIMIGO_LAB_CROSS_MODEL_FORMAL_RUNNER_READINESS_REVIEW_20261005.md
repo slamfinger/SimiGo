@@ -121,6 +121,12 @@ Even then, execution still requires separate authorization.
 
 ## 8. Boundary
 
+Post-repair closure:
+
+```text
+docs/00-governance/SIMIGO_LAB_CROSS_MODEL_FORMAL_RUNNER_CLOSURE_20261005.md
+```
+
 ```text
 Observer                 = NOT RUN;
 InformationCore store    = NOT RUN;

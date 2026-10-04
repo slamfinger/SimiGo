@@ -98,6 +98,11 @@ normalization、stability scoring、vertical decomposition 均未授权。
 evidence 缺失，formal status enum 缺失，且 formal runner 尚未与 pilot runner /
 pilot outputs 分离。检查统计为 7 PASS、4 PARTIAL、8 FAIL。formal runtime、
 semantic normalization、stability scoring、vertical decomposition 均未授权。
+随后完成 formal runner closure：pilot runner 与 formal runner 分离；新
+formal_runner.py 单独冻结，并要求每个 cell 记录 I1–I9 isolation evidence、
+formal status enum、start/finish evidence、model/endpoint identity、input
+lineage 和 hash provenance。Post-repair readiness 为 READY（19 PASS /
+0 PARTIAL / 0 FAIL），但 runtime execution 仍未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

@@ -282,7 +282,7 @@ Human-readable record:
 docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_20261004.md
 ```
 
-## 18. Cross-model formal runner readiness
+## 18. Cross-model formal runner readiness history
 
 The cross-model static scheduling contract was reviewed against the existing
 runner. The result is:
@@ -296,6 +296,19 @@ runtime                = NOT AUTHORIZED
 Critical blockers are runner-provenance mismatch, missing isolation evidence
 fields, missing formal status enum, and unresolved formal/pilot separation.
 The existing Model-A outputs remain pilot-only.
+
+Post-repair closure:
+
+```text
+CROSS_MODEL_FORMAL_RUN = READY
+RUNTIME EXECUTION      = STILL NOT AUTHORIZED
+```
+
+Record:
+
+```text
+docs/00-governance/SIMIGO_LAB_CROSS_MODEL_FORMAL_RUNNER_CLOSURE_20261005.md
+```
 
 ## 17. Round-1 execution result
 

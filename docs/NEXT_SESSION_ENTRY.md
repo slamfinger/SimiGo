@@ -24,7 +24,7 @@
 > Round 1 runtime      = COMPLETE / 17 ARMS
 > Round 1 adjudication = COMPLETE
 > Cross-model contract = STATIC SCHEDULING FROZEN
-> Cross-model runner   = NOT READY
+> Cross-model runner   = READY
 > Cross-model runtime  = NOT AUTHORIZED
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
@@ -71,6 +71,8 @@
 > 关键 blocker 是 runner manifest mismatch、I1/I4/I5/I7/I8/I9 isolation
 > evidence 缺失、formal status enum 缺失、formal/pilot runner 未分离。
 > 不要把现有 Model-A pilot outputs 当作 formal evidence；不要执行 formal cells。
+> Formal runner closure 已完成：新 formal_runner.py 已就绪，19 / 19 checks PASS。
+> 但 runtime execution 仍未授权；不要自动运行 16 formal cells。
 
 
 登记时间：2026-10-02
