@@ -1,7 +1,7 @@
 # Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER TC-A PACKAGE FROZEN / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER TC-A PACKAGE AND RUNNER PREPARED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose and terminology boundary
 
@@ -375,7 +375,7 @@ Task package is frozen at:
 
 ```text
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/
-MANIFEST.SHA-256 = dd9b8d1c97a3d261ad1001ca0f5d2d39c5f7495f2b766a32b1034968eb81855d
+MANIFEST.SHA-256 = 0949f6686c5a465cdf8618902d05b2676f9fd5e3db6d9cecc7f38bfd56c8fa1c
 ```
 
 The package contains Phase A and B instructions, observer selection rules,

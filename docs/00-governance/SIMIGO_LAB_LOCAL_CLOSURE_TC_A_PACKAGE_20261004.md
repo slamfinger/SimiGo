@@ -1,7 +1,7 @@
 # Local Closure TC-A Task Package Registration
 
 Date: 2026-10-04  
-Status: `TASK PACKAGE FROZEN / EXECUTION NOT AUTHORIZED`
+Status: `TASK PACKAGE FROZEN / RUNNER HARNESS PREPARED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Frozen carrier
 
@@ -32,13 +32,15 @@ observer/selection-rules.md;
 runner/isolation-and-recording.md;
 runner/expected-register.json;
 runner/semantic-evaluation-rules.md;
+runner/harness.py;
+runner/RUNBOOK.md;
 MANIFEST.sha256.
 ```
 
 Manifest SHA-256:
 
 ```text
-dd9b8d1c97a3d261ad1001ca0f5d2d39c5f7495f2b766a32b1034968eb81855d
+0949f6686c5a465cdf8618902d05b2676f9fd5e3db6d9cecc7f38bfd56c8fa1c
 ```
 
 ## 3. Agent-facing boundary
@@ -91,6 +93,7 @@ checkpoint load, or execution-state reuse.
 
 ```text
 Task package               = FROZEN
+Runner harness             = PREPARED / PACKAGE VERIFIED
 Observer rules             = FROZEN
 Expected register          = RUNNER-SIDE ONLY
 Observer residue selection = NOT AUTHORIZED

@@ -1,7 +1,7 @@
 # Local Closure Task Carrier Candidates
 
 Date: 2026-10-04  
-Status: `CANDIDATES REVIEWED / TC-A SELECTED / INSTRUCTION PACKAGE FROZEN / EXECUTION NOT AUTHORIZED`
+Status: `CANDIDATES REVIEWED / TC-A SELECTED / PACKAGE AND RUNNER PREPARED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Scope
 
@@ -221,6 +221,7 @@ observable file set, deterministic checking, and no database-CRUD shape.
 Carrier candidates          = REVIEWED
 Selected carrier            = TC-A
 Prompt / task package       = FROZEN
+Runner harness              = PREPARED / PACKAGE VERIFIED
 Observer selection rules    = FROZEN
 Expected register           = RUNNER-SIDE ONLY
 InformationCore store       = NOT AUTHORIZED

@@ -103,8 +103,17 @@ constraints 形成 release decision/order/blocked reasons，禁止重读 A sourc
 files。A/B 之间必须 reload/fresh process/cache eviction 隔离 NativeMLX
 state。Expected register 与 evaluator 仅在 runner 侧。Task package manifest
 SHA-256 =
-`dd9b8d1c97a3d261ad1001ca0f5d2d39c5f7495f2b766a32b1034968eb81855d`。
+`0949f6686c5a465cdf8618902d05b2676f9fd5e3db6d9cecc7f38bfd56c8fa1c`。
 当前 package frozen；Execution A/B 与 observer store 均未授权。
+
+2026-10-04 runner preparation：TC-A offline runner/harness 已实现并通过 package
+verification。它支持 verify-package、prepare、run-a、observer、mark-isolated、
+run-b、evaluate 七个显式阶段；prepare 只复制 source 和 Information₀ copy。
+Observer 阶段才会调用 t4ctl store；B 阶段只提供 fetch_stored_information，
+并禁止 read_file。A/B runtime isolation 仍需单独外部操作与证据。
+Runner manifest SHA-256 =
+`0949f6686c5a465cdf8618902d05b2676f9fd5e3db6d9cecc7f38bfd56c8fa1c`。
+当前 runner prepared；Execution A/B、observer store、evaluation 均未授权。
 
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
