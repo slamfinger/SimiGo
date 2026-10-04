@@ -375,7 +375,7 @@ Task package is frozen at:
 
 ```text
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/
-MANIFEST.SHA-256 = 1920f30ba830c22239851b76eb751901b718f27663f02d8a521783a4aea8f95b
+MANIFEST.SHA-256 = 23ac9d20ba6f43d19ac539347364b31ddd030f6bd4e96131e6f25f65225314d9
 ```
 
 The package contains Phase A and B instructions, observer selection rules,

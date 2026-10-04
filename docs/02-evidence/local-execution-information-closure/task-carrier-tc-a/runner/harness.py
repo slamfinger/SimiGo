@@ -297,7 +297,6 @@ def cmd_verify_package(settings: Settings, _args: argparse.Namespace) -> int:
         "ok": not failures,
         "checked_at": utc_now(),
     }
-    write_json(settings.run_root / "package-verification.json", result)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["ok"] else 2
 
