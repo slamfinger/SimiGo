@@ -100,6 +100,70 @@ Does counterfactual deletion preserve continuity?
 
 If any answer may still be “yes”, reduction has not stopped.
 
+### 4.1 Candidate irreducibility protocol
+
+Non-recovery after deleting `X` is only the first condition. Before `X` may be
+called candidate irreducible, the analyst must separately exclude:
+
+```text
+current representation limitation;
+current InformationCore capability limitation;
+current fresh-B capability limitation;
+task-accidental dependence.
+```
+
+The required search sequence is:
+
+```text
+delete X;
+observe capability loss;
+search for an alternative representation of X;
+search for an alternative locator/access path;
+search for a derivation of X from remaining structures;
+exclude current representation limitations;
+exclude current InformationCore capability limitations;
+exclude current B-capability limitations;
+only then: candidate irreducible.
+```
+
+This is stronger than database field-redundancy analysis. Repeated surface
+content does not prove duplication. Analysts must distinguish:
+
+```text
+duplicated content;
+duplicated representation;
+shared reference;
+independent semantic structure.
+```
+
+It is also forbidden to collapse the current observational axes prematurely.
+The tentative grouping:
+
+```text
+persisted-object-like axes:
+  Representation, Persistence unit, Identity;
+
+access/use-relation-like axes:
+  Locator, Retrieval, Semantic reconstruction,
+  Task projection, Adoption, Behavioral effect, Continuation;
+```
+
+is only an analytic hypothesis. Later experiment may show that:
+
+```text
+Locator is a projection of Identity;
+Retrieval is an operation over Locator and Persistence unit;
+Semantic reconstruction is an interpretation of Representation;
+Task projection is an Information × Execution relation;
+Adoption is an Execution × Information relation;
+Behavior is an Execution outcome;
+Continuation is a relation between two Executions.
+```
+
+It may equally show that some process-like axes have independent cross-Execution
+existence. Therefore no premature collapse into “persisted object”, “access
+process”, and “use process” is authorized.
+
 ## 5. Engineering usability is not closure
 
 Even if the final hypothesis becomes:

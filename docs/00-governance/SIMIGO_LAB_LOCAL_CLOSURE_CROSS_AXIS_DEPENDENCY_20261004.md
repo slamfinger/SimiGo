@@ -252,6 +252,67 @@ same output reached through different continuation.
 
 These must be recorded separately.
 
+## 6.1 Candidate irreducibility qualification protocol
+
+A capability loss after removing `X` does not immediately make `X`
+irreducible. Before granting even the weaker title “candidate irreducible”,
+the runner and analyst must test or explicitly register the following
+alternative explanations:
+
+```text
+1. Representation limitation:
+   another representation of X might make the remaining structure sufficient.
+
+2. InformationCore capability limitation:
+   another existing or permitted InformationCore operation might recover
+   the capability without changing schema.
+
+3. B-capability limitation:
+   a more capable fresh B might recover the capability from the remaining
+   structure.
+
+4. Genuine absence:
+   after these alternatives are excluded, the loss remains attributable
+   to the removal of X.
+```
+
+The required search order is therefore:
+
+```text
+remove X
+      ↓
+capability disappears
+      ↓
+search for an alternative representation of X
+      ↓
+search for an alternative locator/access path
+      ↓
+search for a derivation of X from other structures
+      ↓
+exclude current representation limitations
+      ↓
+exclude current InformationCore capability limitations
+      ↓
+exclude current B-capability limitations
+      ↓
+only now: candidate irreducible
+```
+
+This protocol is stronger than ordinary database field-redundancy analysis.
+The question is not whether two stored fields look duplicated, but whether the
+structures they carry can be recovered from one another.
+
+Analysts must distinguish:
+
+```text
+duplicated content;
+duplicated representation;
+shared reference;
+independent semantic structure.
+```
+
+These are not the same thing.
+
 ### D9 — Residue ↔ Representation
 
 Hypothesis: source relation, not identity.

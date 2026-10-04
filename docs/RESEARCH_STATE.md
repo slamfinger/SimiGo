@@ -119,6 +119,20 @@ residue analysis、stage decomposition、cross-axis dependency 与后续判别�
 不授权执行、机制设计、schema/API/RelationCore 变更。详见
 `SIMIGO_LAB_LOCAL_CLOSURE_REDUCTION_METHOD_DISCIPLINE_20261004.md`。
 
+2026-10-04 candidate irreducibility protocol：删除 `X` 后能力消失，不等于
+`X` candidate irreducible。必须继续排除四类假阳性：current representation
+limitation、current InformationCore capability limitation、current B-capability
+limitation、task-accidental dependence。搜索顺序为：alternative representation
+→ alternative locator/access path → derivation from remaining structures →
+排除 representation / InformationCore / B-capability 限制 → 才可暂时标记
+candidate irreducible。同时禁止把十一轴提前坍缩成 persisted-object、access
+process、use process 三层；该分组只是分析假设。后续实验可能证明 Locator 是
+Identity 投影、Retrieval 是 Locator×Persistence unit 操作、Semantic
+reconstruction 是 Representation 解释、Task projection 是 Information×Execution
+relation、Adoption 是 Execution×Information relation、Behavior 是 Execution
+outcome、Continuation 是两次 Execution relation；也可能证明其中某些 process-like
+轴具有独立跨 Execution 存在性。
+
 2026-10-04 TC-A package freeze：TC-A 指令包已冻结。Phase A 只用
 `read_file` 读取四个本地 JSON 文件，形成 service/pair compatibility
 register；observer 只能逐字选择结构完整的 final answer，经现有
