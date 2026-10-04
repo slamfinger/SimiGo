@@ -40,7 +40,7 @@ MANIFEST.sha256.
 Manifest SHA-256:
 
 ```text
-0949f6686c5a465cdf8618902d05b2676f9fd5e3db6d9cecc7f38bfd56c8fa1c
+1920f30ba830c22239851b76eb751901b718f27663f02d8a521783a4aea8f95b
 ```
 
 ## 3. Agent-facing boundary

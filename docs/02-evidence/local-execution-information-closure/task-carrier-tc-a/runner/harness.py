@@ -718,7 +718,6 @@ def main() -> int:
         isolation_method=args.isolation_method,
         isolation_evidence=args.isolation_evidence,
     )
-    settings.run_root.mkdir(parents=True, exist_ok=True)
     commands: dict[str, Callable[[Settings, argparse.Namespace], int]] = {
         "verify-package": cmd_verify_package,
         "prepare": cmd_prepare,
