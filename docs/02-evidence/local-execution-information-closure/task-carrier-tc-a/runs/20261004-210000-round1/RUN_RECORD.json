@@ -1,0 +1,321 @@
+{
+  "phase": "ROUND1_RAW_OUTPUTS_ONLY",
+  "created_at": "2026-10-05T00:25:13+08:00",
+  "authorization": "ROUND1 COMPLETE AFTER HUMAN-AUTHORIZED RESUME OF THREE REMAINING CELLS",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "interruption": {
+    "observed_completed_cells_before_resume": 14,
+    "missing_conditions_before_resume": [
+      "RD9-TOOL-PRESENT",
+      "RD9-TOOL-ABSENT",
+      "RD9-TOOL-SUMMARY"
+    ],
+    "native_mlx_stop_evidence": [
+      "[2026-10-05 00:08:22.281] NativeMLX stopped"
+    ],
+    "auto_retry": false,
+    "human_confirmation": "resume_remaining_rd9_conditions"
+  },
+  "continuation": {
+    "resume_record": "resume-record.json",
+    "resume_runner": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/resume_rd9.py",
+    "interval_seconds": 180,
+    "runtime_backend": "NativeMLX",
+    "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+    "path_correction": {
+      "reason": "resume runner resolved RUN_ROOT one directory too high",
+      "initial_root": "docs/02-evidence/local-execution-information-closure/runs/20261004-210000-round1",
+      "final_root": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1",
+      "action": "moved three condition directories and resume-record.json intact after runner exit",
+      "performed_before_final_manifest": true
+    }
+  },
+  "conditions": [
+    {
+      "condition": "RD2-RAW",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-RAW.prompt.txt",
+      "prompt_sha256": "5561b61ee3d4d11cd351c53d76da8cc9235c0f17156b2e2aaa529d987e96a91c",
+      "http_status": 200,
+      "elapsed_seconds": 10.335352,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 21:27:33.682] [MLX] session=simigo-tc-a-rd2raw/fbded3/main messages=1 exec=ee19dd history=2 delta=1 reuse=false ttft=4118ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=735 promptTime=4.0s tps=19.2 rawEv=31 rawB=167 emitB=167"
+        ]
+      }
+    },
+    {
+      "condition": "RD2-DECODED-TEXT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-DECODED-TEXT.prompt.txt",
+      "prompt_sha256": "b2797ceae5b3f57be969fb410d3cf0b884effcc5b5888d217882d1c566dacde9",
+      "http_status": 200,
+      "elapsed_seconds": 9.75398,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 21:38:13.689] [MLX] session=simigo-tc-a-rd2decodedtext/9dbcbe/main messages=1 exec=d2fbe6 history=2 delta=1 reuse=false ttft=3454ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=714 promptTime=3.4s tps=16.3 rawEv=31 rawB=167 emitB=167"
+        ]
+      }
+    },
+    {
+      "condition": "RD2-SEMANTIC-OBJECT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-SEMANTIC-OBJECT.prompt.txt",
+      "prompt_sha256": "ca35e0332889c59101647780fd6bae35d1c59bd43e9e11818d311e1e5643ffbf",
+      "http_status": 200,
+      "elapsed_seconds": 9.368104,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 21:48:33.289] [MLX] session=simigo-tc-a-rd2semanticobject/fd601c/main messages=1 exec=0b9b24 history=2 delta=1 reuse=false ttft=3435ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=870 promptTime=3.4s tps=19.4 rawEv=31 rawB=167 emitB=167"
+        ]
+      }
+    },
+    {
+      "condition": "RD5-EXPLANATION-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD5-EXPLANATION-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "http_status": 200,
+      "elapsed_seconds": 8.545546,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 21:58:52.088] [MLX] session=simigo-tc-a-rd5explanationabsent/b1d898/main messages=1 exec=ed3b3d history=2 delta=1 reuse=false ttft=2922ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=2.8s tps=19.8 rawEv=28 rawB=145 emitB=145"
+        ]
+      }
+    },
+    {
+      "condition": "RD5-EXPLANATION-PRESENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD5-EXPLANATION-PRESENT.prompt.txt",
+      "prompt_sha256": "ef4bbc00a7f81d2aab9fd5db1f9a4bb4bc40ce3930264322be0f07f81b258895",
+      "http_status": 200,
+      "elapsed_seconds": 9.027529,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 22:09:31.638] [MLX] session=simigo-tc-a-rd5explanationpresent/ff01e8/main messages=1 exec=20a8e1 history=2 delta=1 reuse=false ttft=3328ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=684 promptTime=3.3s tps=18.9 rawEv=28 rawB=153 emitB=153"
+        ]
+      }
+    },
+    {
+      "condition": "RD1A-WHOLE-REGISTER",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD1A-WHOLE-REGISTER.prompt.txt",
+      "prompt_sha256": "ca35e0332889c59101647780fd6bae35d1c59bd43e9e11818d311e1e5643ffbf",
+      "http_status": 200,
+      "elapsed_seconds": 9.273504,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 22:20:11.159] [MLX] session=simigo-tc-a-rd1awholeregister/ebf831/main messages=1 exec=1bedb8 history=2 delta=1 reuse=false ttft=3403ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=870 promptTime=3.3s tps=19.1 rawEv=31 rawB=167 emitB=167"
+        ]
+      }
+    },
+    {
+      "condition": "RD1A-STRUCTURED-FACTS",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD1A-STRUCTURED-FACTS.prompt.txt",
+      "prompt_sha256": "d33f0edec594149e21f251f9f58133b102fbea882ab81e34ab106aba70109afa",
+      "http_status": 200,
+      "elapsed_seconds": 10.639829,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 22:30:32.116] [MLX] session=simigo-tc-a-rd1astructuredfacts/12db29/main messages=1 exec=8de9ec history=2 delta=1 reuse=false ttft=3405ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=704 promptTime=3.3s tps=19.6 rawEv=57 rawB=253 emitB=253"
+        ]
+      }
+    },
+    {
+      "condition": "RD3-M2-DELETED",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD3-M2-DELETED.prompt.txt",
+      "prompt_sha256": "30fea14b936046f28479793417ea320f23c2f5c25bdfe2a0b7f8565c318621a9",
+      "http_status": 200,
+      "elapsed_seconds": 8.59559,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 22:41:11.192] [MLX] session=simigo-tc-a-rd3m2deleted/5877fa/main messages=1 exec=72a0fe history=2 delta=1 reuse=false ttft=3094ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=531 promptTime=3.0s tps=19.7 rawEv=25 rawB=131 emitB=131"
+        ]
+      }
+    },
+    {
+      "condition": "RD4-M1-ALL",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-ALL.prompt.txt",
+      "prompt_sha256": "74a317f66aa3e86d017372ea0106861b2a21e61573948e90c769a51241ecb16b",
+      "http_status": 200,
+      "elapsed_seconds": 8.915302,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 22:52:00.565] [MLX] session=simigo-tc-a-rd4m1all/4dd070/main messages=1 exec=df4615 history=2 delta=1 reuse=false ttft=3083ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=566 promptTime=3.0s tps=18.4 rawEv=28 rawB=145 emitB=145"
+        ]
+      }
+    },
+    {
+      "condition": "RD4-M1-GAMMA-ONLY",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-GAMMA-ONLY.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "http_status": 200,
+      "elapsed_seconds": 8.964283,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 23:02:39.725] [MLX] session=simigo-tc-a-rd4m1gammaonly/2e48ec/main messages=1 exec=617033 history=2 delta=1 reuse=false ttft=2963ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=2.9s tps=16.9 rawEv=28 rawB=145 emitB=145"
+        ]
+      }
+    },
+    {
+      "condition": "RD4-M1-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-ABSENT.prompt.txt",
+      "prompt_sha256": "da1a6f374bc605d8cb7e37c46446ba898eb55a167ec4a4705a75e936e74ac83d",
+      "http_status": 200,
+      "elapsed_seconds": 9.523564,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 23:13:19.550] [MLX] session=simigo-tc-a-rd4m1absent/a9d60a/main messages=1 exec=e0e267 history=2 delta=1 reuse=false ttft=2979ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=547 promptTime=2.9s tps=19.2 rawEv=38 rawB=189 emitB=189"
+        ]
+      }
+    },
+    {
+      "condition": "RD8-HASH-VALID",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-VALID.prompt.txt",
+      "prompt_sha256": "b3ef218555aeee6747f0c642af84714d29bc64c3a74fc03092b5677b7d6cff1c",
+      "http_status": 200,
+      "elapsed_seconds": 9.279096,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 23:23:39.147] [MLX] session=simigo-tc-a-rd8hashvalid/4099a4/main messages=1 exec=e6db02 history=2 delta=1 reuse=false ttft=3924ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=833 promptTime=3.9s tps=19.7 rawEv=25 rawB=131 emitB=131"
+        ]
+      }
+    },
+    {
+      "condition": "RD8-HASH-STALE",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-STALE.prompt.txt",
+      "prompt_sha256": "60cf712d3e61332d97366e24c106d8c28cbe0ce7eb6a643a279f908be7163c22",
+      "http_status": 200,
+      "elapsed_seconds": 9.072046,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 23:33:58.672] [MLX] session=simigo-tc-a-rd8hashstale/919741/main messages=1 exec=7f6ef9 history=2 delta=1 reuse=false ttft=3582ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=832 promptTime=3.5s tps=19.9 rawEv=25 rawB=131 emitB=131"
+        ]
+      }
+    },
+    {
+      "condition": "RD8-HASH-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "http_status": 200,
+      "elapsed_seconds": 8.945899,
+      "runtime_isolation": {
+        "method": "recovered_from_native_mlx_trace",
+        "trace_byte_start": null,
+        "trace_byte_end": null,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 23:44:38.029] [MLX] session=simigo-tc-a-rd8hashabsent/945ba2/main messages=1 exec=18c513 history=2 delta=1 reuse=false ttft=3209ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=3.1s tps=19.2 rawEv=28 rawB=145 emitB=145"
+        ]
+      }
+    },
+    {
+      "condition": "RD9-TOOL-PRESENT",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-PRESENT.prompt.txt",
+      "prompt_sha256": "731a97d387ece4b95c6ec111c9ebead7aa463aa9cf5f4ca1183ebdc6bdb57612",
+      "http_status": 200,
+      "elapsed_seconds": 2.674516,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 180,
+        "trace_byte_start": 105108,
+        "trace_byte_end": 105876,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:17:42.944] [LC] STATE_TRANSITION r=ae7a3e s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:17:45.611] [MLX] session=simigo-tc-a-rd9toolpresent/0a2a68/main messages=1 exec=da68fc history=2 delta=1 reuse=false ttft=1918ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=930 promptTime=1.8s tps=41.0 rawEv=25 rawB=131 emitB=131",
+          "[2026-10-05 00:17:45.611] [LC] RELEASED r=ae7a3e s=openai reason=completed"
+        ]
+      }
+    },
+    {
+      "condition": "RD9-TOOL-ABSENT",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "http_status": 200,
+      "elapsed_seconds": 1.499906,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 180,
+        "trace_byte_start": 105876,
+        "trace_byte_end": 106586,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:20:45.623] [LC] STATE_TRANSITION r=abd6d9 s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:20:47.120] [MLX] session=simigo-tc-a-rd9toolabsent/0372a9/main messages=1 exec=26b26c history=2 delta=1 reuse=false ttft=689ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=0.7s tps=41.2 rawEv=28 rawB=145 emitB=145",
+          "[2026-10-05 00:20:47.120] [LC] RELEASED r=abd6d9 s=openai reason=completed"
+        ]
+      }
+    },
+    {
+      "condition": "RD9-TOOL-SUMMARY",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-SUMMARY.prompt.txt",
+      "prompt_sha256": "30a5e95f5147674005c0e0f5f423cd927ab684b5a90c142b4af138c9446f8843",
+      "http_status": 200,
+      "elapsed_seconds": 3.219727,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "interval_before_next_seconds": 0,
+        "trace_byte_start": 106586,
+        "trace_byte_end": 107300,
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "isolation_lines": [
+          "[2026-10-05 00:23:47.133] [LC] STATE_TRANSITION r=f32690 s=openai from=QUEUED to=RUNNING",
+          "[2026-10-05 00:23:50.351] [MLX] session=simigo-tc-a-rd9toolsummary/8f085e/main messages=1 exec=0fbdd7 history=2 delta=1 reuse=false ttft=2416ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=598 promptTime=2.4s tps=40.5 rawEv=28 rawB=145 emitB=145",
+          "[2026-10-05 00:23:50.351] [LC] RELEASED r=f32690 s=openai reason=completed"
+        ]
+      }
+    }
+  ]
+}

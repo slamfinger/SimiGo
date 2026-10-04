@@ -1,0 +1,16 @@
+{
+  "created": 1791128678,
+  "object": "chat.completion",
+  "id": "chatcmpl-45d2c9e6-a1cc-4b60-92e4-0a7c3c236bcb",
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"not baseline-compatible\"}]}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}
