@@ -94,6 +94,20 @@ identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→Informat
 当前若执行，只能先验证 observer-mediated identity closure，不能证明
 native `Execution → Information → Agent` 闭环。
 
+2026-10-04 cross-axis dependency analysis：不再新增第十二轴，转入跨轴依赖
+假设分析。当前标签仅作分析用：Residue、Representation、Persistence unit、
+Identity、Locator/selection、Retrieval、Semantic reconstruction、Task
+projection、Adoption、Behavioral effect、Continuation。已登记十组非绑定依赖
+假设：Representation↔Persistence unit、Identity↔Representation、
+Identity↔Locator、Locator↔Retrieval、Retrieval↔Semantic reconstruction、
+Semantic reconstruction↔Task projection、Task projection↔Adoption、
+Adoption↔Behavior/Continuation、Residue↔Representation，以及 Continuation
+作为 outcome relation。核心问题区分“可持久结构”与“后续 Execution 使用时产生
+的关系/过程”；不可约性问句是“删除 X 后，剩余结构能否恢复同等跨 Execution
+能力”。非恢复不立即证明最小原子，还须排除任务偶然依赖、表示依赖、缺失替代
+恢复结构与 B 能力不足。当前不宣布任何轴最小、冗余或可合并。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_CROSS_AXIS_DEPENDENCY_20261004.md`。
+
 2026-10-04 TC-A package freeze：TC-A 指令包已冻结。Phase A 只用
 `read_file` 读取四个本地 JSON 文件，形成 service/pair compatibility
 register；observer 只能逐字选择结构完整的 final answer，经现有
