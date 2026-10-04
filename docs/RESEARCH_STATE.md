@@ -230,6 +230,18 @@ Runtime evidence 和 task-carrier binding，不能由 compatibility register alo
 irreducible。详见
 `SIMIGO_LAB_LOCAL_CLOSURE_CANDIDATE_REDUCIBILITY_MAP_20261004.md`。
 
+2026-10-04 M-candidate reduction worksheet：继续把收缩后的 M1 baseline facts、
+M2 pair compatibility facts、M3 provenance/execution binding 拆成可删除子部分，
+并登记 deletion/replacement tests。关键区分：narrow release-gate task 的可见
+semantic core 可能只是 M2 pair decisions + M1 gamma baseline fact；alpha/beta
+baseline facts、issue wording、Execution A identity、tool evidence、backend/model
+binding 对当前 narrow task 可能非必需，但对 audit explanation、reproducibility、
+trust、stale-state detection 和更广任务可能必要。M3 也不得作为整体处理，需分别测
+Execution identity、source hashes、tool evidence、result hash、backend/model
+binding、task-carrier scope 的删除/替换效应。当前仍是 static worksheet；不执行、
+不 store、不启动 B、不宣布最小结构。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_M_CANDIDATE_REDUCTION_WORKSHEET_20261004.md`。
+
 2026-10-04 axis reduction refinement：已登记
 `SIMIGO_LAB_LOCAL_CLOSURE_AXIS_REDUCTION_20261004.md`。当前十一轴只是分析刀具，
 不是 Runtime 架构；不得因已有分解而停止追问更小结构。对 Identity、Persistence
