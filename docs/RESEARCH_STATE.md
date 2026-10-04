@@ -155,6 +155,18 @@ behavioral、continuation、gain；禁止把 fetch 成功等同于使用或增�
 正面 B2 只支持 task-domain-bounded 的可观察 continuation，不证明最小结构或
 正确 Information 表示。
 
+2026-10-04 stage decomposition：在条件实例化前，继续把 Candidate Structure
+拆成可观察轴：Residue、Representation、Persistence unit、Identity、Locator /
+selection、Retrieval、Semantic reconstruction、Task projection、Adoption、
+Behavioral effect、Continuation。这些只是分析轴，不是 schema、Runtime
+pipeline 或实现计划。Identity ≠ Locator；Retrieval ≠ Semantic
+reconstruction；Task projection ≠ Adoption；Behavioral effect ≠ Continuation。
+后续任何 B0/B1/B2 条件不得只写成 U1–U5，必须说明 representation、persistence
+unit、identity、locator、retrieval、reconstruction、projection、adoption、
+behavior 与 continuation 的处理方式。IPAC 仅作 I-like / P-like / A-like /
+C-like 非绑定对照，不冻结、不证明。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_STAGE_DECOMPOSITION_20261004.md`。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service

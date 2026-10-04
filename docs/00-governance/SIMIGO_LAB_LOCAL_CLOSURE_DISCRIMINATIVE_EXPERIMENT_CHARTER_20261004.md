@@ -1,7 +1,7 @@
 # TC-A Discriminative Continuation Study Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / OBSERVATIONAL DESIGN FROZEN / CONDITION INSTANTIATION NOT AUTHORIZED / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / OBSERVATIONAL DESIGN AND STAGE DECOMPOSITION FROZEN / CONDITION INSTANTIATION NOT AUTHORIZED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose
 
@@ -122,6 +122,50 @@ semantic sufficiency;
 discoverability;
 fetchability;
 usability.
+```
+
+## 4.1 Stage decomposition before condition instantiation
+
+Before any B0/B1/B2 condition is instantiated, each Candidate Structure must
+be decomposed along the following observational axes:
+
+```text
+0. Residue;
+1. Representation;
+2. Persistence unit;
+3. Identity;
+4. Locator / selection;
+5. Retrieval;
+6. Semantic reconstruction;
+7. Task projection;
+8. Adoption;
+9. Behavioral effect;
+10. Continuation.
+```
+
+These are analytical axes, not an Information schema, Runtime pipeline, or
+implementation plan. They do not imply that every stage must exist separately.
+
+For each proposed condition, the instantiation record must state:
+
+```text
+representation carried forward;
+persistence unit granularity;
+identity formation or suppression;
+locator supplied or withheld;
+retrieval shape;
+semantic reconstruction expected;
+task projection expected;
+adoption evidence;
+behavioral evidence;
+continuation evidence.
+```
+
+A condition may not be described only as “U1”, “U2”, “U3”, “U4”, or “U5”.
+Detailed axes are registered at:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_STAGE_DECOMPOSITION_20261004.md
 ```
 
 ## 5. First minimal panel
