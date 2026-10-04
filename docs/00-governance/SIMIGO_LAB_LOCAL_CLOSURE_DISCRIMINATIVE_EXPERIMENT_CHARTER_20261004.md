@@ -325,6 +325,19 @@ No Execution A retry.
 No repair of the R-A1 residue.
 ```
 
+## 9.1 Reduction method discipline
+
+This charter is subordinate to the Local Closure Reduction Method Discipline.
+No positive B2 result may be promoted to a minimal structure. Every candidate
+structure must later undergo deletion, substitution, derivation, recovery, and
+counterfactual checks.
+
+See:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_REDUCTION_METHOD_DISCIPLINE_20261004.md
+```
+
 ## 10. Authorization state
 
 ```text

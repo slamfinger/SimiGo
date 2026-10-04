@@ -108,6 +108,17 @@ Adoption↔Behavior/Continuation、Residue↔Representation，以及 Continuatio
 恢复结构与 B 能力不足。当前不宣布任何轴最小、冗余或可合并。详见
 `SIMIGO_LAB_LOCAL_CLOSURE_CROSS_AXIS_DEPENDENCY_20261004.md`。
 
+2026-10-04 reduction method discipline：登记当前最高层方法纪律。研究目标不是
+完成 Information schema/API/RelationCore/architecture，而是持续拆解、合并、
+消解、重分类、替代、恢复与反事实删除候选结构，直到已观察的 cross-Execution
+capability 无法被剩余结构进一步约化。最小不是字段少或工程可用；`X` 只有在删除
+后剩余结构无法在允许条件下恢复同等能力、且竞争恢复路径被排除时，才暂时称为
+tested-scope-bounded irreducible。即使得到 `Information = A+B+C` 且可用，仍必须
+继续问 A/B/C 是否互为派生、是否为同一深层结构的不同投影。该纪律覆盖 TC-A
+residue analysis、stage decomposition、cross-axis dependency 与后续判别实验；
+不授权执行、机制设计、schema/API/RelationCore 变更。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_REDUCTION_METHOD_DISCIPLINE_20261004.md`。
+
 2026-10-04 TC-A package freeze：TC-A 指令包已冻结。Phase A 只用
 `read_file` 读取四个本地 JSON 文件，形成 service/pair compatibility
 register；observer 只能逐字选择结构完整的 final answer，经现有
