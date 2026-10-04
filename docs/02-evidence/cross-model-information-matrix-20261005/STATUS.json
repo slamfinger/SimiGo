@@ -1,0 +1,18 @@
+{
+  "status": "SETUP_FROZEN",
+  "current_reduction_round1": "FROZEN_COMMIT_C65FC3A",
+  "authorized_now": [
+    "freeze check",
+    "prompt rendering",
+    "matrix execution after explicit model load"
+  ],
+  "not_authorized_now": [
+    "semantic normalization",
+    "stability matrix",
+    "846 remapping"
+  ],
+  "sample_count": 4,
+  "model_count": 4,
+  "expected_cells": 16,
+  "completed_cells": 0
+}
