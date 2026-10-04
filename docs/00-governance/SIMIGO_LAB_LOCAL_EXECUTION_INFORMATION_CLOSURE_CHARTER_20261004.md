@@ -1,7 +1,7 @@
 # Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER TC-A PACKAGE AND RUNNER PREPARED / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER TC-A PACKAGE AND RUNNER PREPARED / DISCRIMINATIVE CHARTER REGISTERED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose and terminology boundary
 
@@ -330,6 +330,14 @@ The observer may select and package already-produced Residue, but must not
 rewrite, interpret into a new schema, summarize, or invent content. If any
 invariant cannot be maintained, the run must stop and be classified as an
 invariant violation rather than a closure failure.
+
+The next stage is the separate TC-A Discriminative Continuation Study. It
+does not repair R-A1, select U1…U5, or implement a bridge. See:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_DISCRIMINATIVE_EXPERIMENT_CHARTER_20261004.md
+```
+
 
 ## 5. Execution A
 

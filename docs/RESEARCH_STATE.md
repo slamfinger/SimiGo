@@ -142,6 +142,19 @@ boundary、A-like semantic anchoring、C-like adoption question 的结构对应�
 不证明 IPAC、不冻结语义、不证明最小性。详细分析已封存于
 `SIMIGO_LAB_LOCAL_CLOSURE_TC_A_RESIDUE_STRUCTURAL_ANALYSIS_20261004.md`。
 
+2026-10-04 discriminative continuation charter：下一阶段登记为
+**TC-A Discriminative Continuation Study**，但条件实例化与执行均未授权。
+研究问题是 TC-A residue 中哪些结构是 fresh Execution B 完成 release-gate
+continuation 的必要条件。变量分三层：A residue representation、B access
+condition、C working transformation；locator 不许混入 residue structure。
+第一轮最小面板只设 B0 negative control、B1 candidate-present/locator-absent、
+B2 candidate-present/explicit-locator；不选择 U1–U5，不定义 Information
+schema，不实现 RelationCore/RuntimeMemory/search/automatic projection/bridge。
+观察链必须分开 located、fetched、parsed、semantic-referenced、adopted、
+behavioral、continuation、gain；禁止把 fetch 成功等同于使用或增益。
+正面 B2 只支持 task-domain-bounded 的可观察 continuation，不证明最小结构或
+正确 Information 表示。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service
