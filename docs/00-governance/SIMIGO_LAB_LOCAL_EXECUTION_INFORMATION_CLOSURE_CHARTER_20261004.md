@@ -1,7 +1,7 @@
 # Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / OBSERVATIONAL CHARTER / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / HUMAN REVIEW PASSED WITH CACHE-ISOLATION AMENDMENT / TASK CARRIER NOT DEFINED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose and terminology boundary
 
@@ -264,6 +264,68 @@ A → B result transfer       = forbidden
 Stored identity provenance  = real successful InformationCore.store()
 ```
 
+A → B NativeMLX execution-state transfer is also forbidden:
+
+```text
+A → B KV/cache reuse              = forbidden
+A → B prefix-pool reuse           = forbidden
+A → B session-state reuse         = forbidden
+A → B backend-process inheritance = forbidden
+```
+
+Unique Agent/Session/Branch headers are not sufficient to establish B
+freshness. The same NativeMLX process may retain or reuse prefix state even
+when HTTP headers differ.
+
+Between Execution A and Execution B, the runner must isolate inference state
+by one of these observable methods:
+
+```text
+stop and reload NativeMLX;
+use a fresh isolated backend process;
+or clear/evict all relevant cache and prefix-pool entries with recorded
+before/after evidence.
+```
+
+The B trace must show a cold execution path with no inherited A cache bind,
+prefix hit, checkpoint load, or execution-state reuse. Stored Information is
+the only permitted cross-execution carrier in this charter.
+
+## 4.4 Human charter review — 2026-10-04
+
+Review result:
+
+```text
+PASSED WITH CACHE-ISOLATION AMENDMENT
+```
+
+Reviewed items:
+
+```text
+1. Experiment object locked.
+   A and B must use SimiGo HTTPServer → NativeMLX.
+   The external harness may execute tools but must not perform model
+   inference. Cloud is forbidden.
+
+2. Causal chain must have independent evidence.
+   Residue → Candidate → store → identity → fresh B → fetch → use →
+   outcome may not be inferred across stages.
+
+3. Observer remains observer only.
+   No summary, rewrite, added facts, new schema, Agent decision replacement,
+   or promotion of Runtime trace/cache into Information.
+
+4. B freshness includes Runtime state, not only HTTP freshness.
+   New Agent/Session/Branch IDs are insufficient.
+   A transcript, summary, result, hidden harness state, and inherited
+   NativeMLX cache/prefix state are all forbidden.
+
+5. Interpretation thresholds remain strict.
+   fetch ≠ use ≠ continuation ≠ continuation gain.
+```
+
+The review adds no mechanism. It only strengthens isolation.
+
 The observer may select and package already-produced Residue, but must not
 rewrite, interpret into a new schema, summarize, or invent content. If any
 invariant cannot be maintained, the run must stop and be classified as an
@@ -289,6 +351,19 @@ the task is small enough for complete artifact preservation.
 The task must not be a superficial “read the file you just read” probe. It
 must produce actual work residue whose loss would force B to redo inspection
 or derivation.
+
+The task carrier is still not defined. After separate authorization to define
+it, the task should be derived backward from the existing SimiGo Agent/tool
+surface:
+
+```text
+what SimiGo + NativeMLX can already observe;
+what an external harness can already execute;
+what small real local files can create genuine work pressure;
+what next-phase result objectively depends on A's residue.
+```
+
+Do not invent a task solely to make Information formation look successful.
 
 Qinshen remains the later complex real-task carrier. It is intentionally
 deferred until this minimal observable closure has been tested.
@@ -488,8 +563,9 @@ explicit statement of which gate passed or failed.
 ## 10. Authorization state
 
 ```text
-Charter                    = REGISTERED
+Charter                    = REGISTERED / HUMAN REVIEW PASSED
 Local MLX availability     = confirmed separately
+Task carrier               = NOT DEFINED
 Execution A                = NOT AUTHORIZED
 Observer residue selection = NOT AUTHORIZED
 InformationCore store      = NOT AUTHORIZED

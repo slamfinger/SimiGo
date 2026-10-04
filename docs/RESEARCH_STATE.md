@@ -94,6 +94,14 @@ identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→Informat
 当前若执行，只能先验证 observer-mediated identity closure，不能证明
 native `Execution → Information → Agent` 闭环。
 
+2026-10-04 human charter review：最小闭环章程通过人工审查，并补充
+cache-isolation amendment。B 的 fresh 不能只用新 HTTP request 或新
+Agent/Session/Branch header 证明；A → B 的 NativeMLX KV/cache、prefix-pool、
+session-state 与 backend-process inheritance 全部禁止。A/B 之间必须通过
+reload、fresh isolated backend process 或有前后证据的 cache/pool 清理来隔离
+推理状态。Stored Information 是本章程唯一允许跨 Execution 传递的载体。
+Task carrier 仍为 NOT DEFINED；Execution 仍为 NOT AUTHORIZED。
+
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
 same-ID / same-position / same-length / different representation content
