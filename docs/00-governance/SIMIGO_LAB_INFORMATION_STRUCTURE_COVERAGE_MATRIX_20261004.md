@@ -1,7 +1,7 @@
 # Information Structure Coverage Matrix
 
 Date: 2026-10-04  
-Status: `LAYER-1 INVENTORY COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE / NEW PROBES NOT AUTHORIZED`
+Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / NEW PROBES NOT AUTHORIZED`
 
 ## 1. Purpose
 
@@ -194,4 +194,31 @@ Runtime/schema/API       = NOT CHANGED;
 M1.b deeper execution    = HALTED;
 new continuation probes  = NOT AUTHORIZED;
 minimality claim         = NOT MADE.
+```
+
+## 14. Synchronous decomposition result
+
+The 32-row layer was synchronously decomposed through eight mandatory facets.
+The static pass produced:
+
+```text
+facet cells                           = 256;
+static semantic atoms                 = 846;
+static analytic leaves                = 846;
+unique exact facet/label pairs        = 788;
+repeated exact facet/label groups     = 13;
+automatic merges                      = 0;
+experimental irreducibility claims    = 0.
+```
+
+Machine-readable record:
+
+```text
+docs/00-governance/information-structure/synchronous-decomposition-20261004.json
+```
+
+Human-readable record:
+
+```text
+docs/00-governance/information-structure/SYNCHRONOUS_DECOMPOSITION_20261004.md
 ```

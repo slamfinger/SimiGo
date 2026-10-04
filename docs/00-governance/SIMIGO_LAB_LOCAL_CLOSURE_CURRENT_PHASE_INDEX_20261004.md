@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b PAIR BRANCH HALTED / LAYER-1 INFORMATION COVERAGE MATRIX COMPLETE / NEW PROBES NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b PAIR BRANCH HALTED / 32-ROW SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / IRREDUCIBILITY OPEN`
 
 ## 1. Current objective
 
@@ -44,6 +44,7 @@ M1.b semantic role controls   = S-B1I FAIL + S-B1S FAIL / BASELINE SLOT OR DEEPE
 M1.b function fields          = F1 FAIL + F2 FAIL + F3 FAIL / NO SINGLE FIELD SUFFICIENT.
 M1.b pair combinations        = HALTED / F12 RAW OUTPUT ONLY / F13 + F23 NOT RUN.
 Information coverage          = LAYER-1 MATRIX COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE.
+Information decomposition     = 32 OBJECTS / 256 FACETS / 846 STATIC ATOMS / NO MERGES OR IRREDUCIBILITY CLAIMS.
 ```
 
 ## 3. Core sealed finding
@@ -173,6 +174,8 @@ docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTIONAL_DECOMPOSITION_2026100
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTION_RESULT_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_PAIR_BRANCH_HALT_20261004.md
 docs/00-governance/SIMIGO_LAB_INFORMATION_STRUCTURE_COVERAGE_MATRIX_20261004.md
+docs/00-governance/information-structure/SYNCHRONOUS_DECOMPOSITION_20261004.md
+docs/00-governance/information-structure/synchronous-decomposition-20261004.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt

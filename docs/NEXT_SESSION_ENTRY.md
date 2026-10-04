@@ -18,6 +18,7 @@
 > M1.b function fields = ALL FAIL
 > M1.b pair branch     = HALTED
 > Coverage matrix      = LAYER-1 COMPLETE
+> Static decomposition = 32 OBJECTS / 846 ATOMS
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -39,6 +40,9 @@
 > F12 已产出原始输出但分支按 breadth-first redirect 停止；F13/F23 未跑。
 > 当前主线是 32-row Information Structure Coverage Matrix 的横向展开，
 > 不是继续 M1.b 深挖。
+> 已完成同步静态拆解：32 objects、256 facets、846 static atoms；无自动 merge，
+> 无 irreducibility claim。每个 atom 保留 deletion/substitution/derivation/merge
+> 四类判别问题；运行实验仍未授权。
 
 
 登记时间：2026-10-02

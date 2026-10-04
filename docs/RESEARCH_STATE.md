@@ -62,7 +62,11 @@ F13/F23 未执行，F12 不做本分支判读。当前主线改为 Information S
 Coverage Matrix：11 个分析轴、5 个候选单元、16 个 M 子字段共 32 行已完成
 layer-1 inventory；大量 persistence/identity/locator/retrieval/reconstruction、
 U5/M3、U4 deletion、issue/binding 子字段仍未实验。新 probe 未授权；下一层
-必须在同一层横向展开后再进入。
+必须在同一层横向展开后再进入。随后已完成同步静态拆解：32 个同层对象全部
+展开为 256 个 mandatory facet cells 和 846 个 static semantic atoms；横向比较
+发现 13 组 exact-label repetition，但自动 merge 为 0。每个 atom 均保留删除、
+表示替代、剩余结构推导、merge/reclassification 四类判别问题。当前只到达
+static analytic leaf；experimental irreducibility 仍然开放，运行实验未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为
