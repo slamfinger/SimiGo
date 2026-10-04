@@ -23,6 +23,11 @@ MODELS = {
         "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
         "inference": {"temperature": 0, "max_tokens": 1024, "stream": False},
     },
+    "N": {
+        "model_id": "N-nail-qwen3-5-moe",
+        "repo_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+        "inference": {"temperature": 0, "max_tokens": 1024, "stream": False},
+    },
 }
 
 

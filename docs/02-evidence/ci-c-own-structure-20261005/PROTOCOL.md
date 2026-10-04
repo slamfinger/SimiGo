@@ -51,3 +51,17 @@ Do not run or retry B. Do not run or retry D.
 
 No Observer. No InformationCore store. No 846 mapping. No atom merge/delete.  
 A PASS here is frame-bounded to TC-A-like release continuation.
+
+## Post-first-round replication control
+
+After the first A/C discrimination, model N `peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX`
+was added as a post-hoc replication control. N is not a replacement for unavailable B and is
+not a retry of degenerate D. N was already proven in Reduction Round 1 and is used only to test
+whether the aligned pair survives in another effective model:
+
+```text
+K3_DELETED        -> C4 absent
+K3_PRECOMPUTED_F  -> C4 preserved
+```
+
+All seven arms are run for context, but the replication claim is limited to the aligned pair.

@@ -1,10 +1,11 @@
 {
-  "status": "CI_C_FIRST_DISCRIMINATION_COMPLETE",
+  "status": "CI_C_CRITICAL_PAIR_REPLICATED",
   "run_id": "20261005-014500-ci-c",
   "arms": 7,
   "models_run": [
     "A-qwen3-moe",
-    "C-gemma4-unified"
+    "C-gemma4-unified",
+    "N-nail-qwen3-5-moe"
   ],
   "models_not_run": {
     "B-qwen3-next": "frozen unavailable",
@@ -21,5 +22,12 @@
     "Observer run",
     "minimal Information Core claim",
     "B/D retry"
-  ]
+  ],
+  "run_ids": [
+    "20261005-014500-ci-c",
+    "20261005-021500-ci-c-nail-replication"
+  ],
+  "critical_pair": "REPLICATED",
+  "candidate_invariant": "relational executable admissibility function",
+  "surface_vs_authorized": "separated"
 }

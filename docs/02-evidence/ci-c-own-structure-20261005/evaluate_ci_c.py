@@ -1,60 +1,74 @@
 #!/usr/bin/env python3
-"""Evaluate whether the executable continuation core C4 survives each CI-C arm."""
+"""Evaluate CI-C arms, separating C4 core survival from authorization-contract validity."""
 
 import json
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent
-RUN = ROOT / "runs/20261005-014500-ci-c"
-MODELS = ("A-qwen3-moe", "C-gemma4-unified")
+RUNS = {
+    "A-qwen3-moe": ROOT / "runs/20261005-014500-ci-c/A-qwen3-moe",
+    "C-gemma4-unified": ROOT / "runs/20261005-014500-ci-c/C-gemma4-unified",
+    "N-nail-qwen3-5-moe": ROOT / "runs/20261005-021500-ci-c-nail-replication/N-nail-qwen3-5-moe",
+}
 ARMS = ("FULL", "K1_ONLY", "K2_ONLY", "GAMMA_REDUCED", "K3_DELETED", "K3_PRECOMPUTED_F", "ID_BINDING_BROKEN")
-EXPECTED_C4_LOSS = {"K1_ONLY", "K2_ONLY", "ID_BINDING_BROKEN", "K3_DELETED"}
+UNAUTHORIZED_INFERENCE_ARMS = {"K1_ONLY", "K2_ONLY", "ID_BINDING_BROKEN"}
 
 
-def core(answer):
+def read_core(path):
     try:
-        value = json.loads(answer)
+        value = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        return {"C4": "UNPARSEABLE", "error": str(exc)}
-    order = value.get("deployment_order")
-    blocked = [x.get("service_id") for x in value.get("blocked_services", []) if isinstance(x, dict)]
+        return {"raw": path.read_text(encoding="utf-8"), "parse_error": str(exc)}
+    return value
+
+
+def evaluate(answer):
+    order = answer.get("deployment_order")
+    blocked = [x.get("service_id") for x in answer.get("blocked_services", []) if isinstance(x, dict)]
     preserved = order == ["alpha", "beta"] and blocked == ["gamma"]
-    absent = order == [] and value.get("error") == "deployment_admissibility_relation_unavailable"
-    observed = "C4_PRESERVED" if preserved else ("C4_ABSENT" if absent else "C4_DEGRADED")
+    absent = order == [] and answer.get("error") == "deployment_admissibility_relation_unavailable"
+    core = "C4_PRESERVED" if preserved else ("C4_ABSENT" if absent else "C4_DEGRADED")
     return {
-        "C4": observed,
-        "release_decision": value.get("release_decision"),
+        "C4_core": core,
+        "release_decision": answer.get("release_decision"),
         "deployment_order": order,
         "blocked_service_ids": blocked,
-        "error": value.get("error"),
+        "error": answer.get("error"),
     }
 
 
 rows = []
-for model in MODELS:
+for model, run_root in RUNS.items():
     for arm in ARMS:
-        answer = (RUN / model / arm / "final-answer.txt").read_text(encoding="utf-8")
-        observed = core(answer)
-        expected = "C4_ABSENT" if arm in EXPECTED_C4_LOSS else "C4_PRESERVED"
+        answer = read_core(run_root / arm / "final-answer.txt")
+        observed = evaluate(answer)
+        core = observed["C4_core"]
+        if arm == "K3_DELETED":
+            contract = "OK_ABSENCE" if core == "C4_ABSENT" else "UNEXPECTED_PRESENCE"
+        elif arm in UNAUTHORIZED_INFERENCE_ARMS and core == "C4_PRESERVED":
+            contract = "UNAUTHORIZED_INFERENCE"
+        else:
+            contract = "OK"
         rows.append({
             "model_id": model,
             "arm": arm,
-            "expected_if_hypothesis_true": expected,
+            "C4_core": core,
+            "authorization_contract": contract,
+            "combined_status": f"{core}/{contract}",
             "observed": observed,
-            "component_necessity_reading": {
-                "C4_PRESERVED": "arm did not eliminate the executable continuation core",
-                "C4_ABSENT": "arm eliminated the executable continuation core",
-                "C4_DEGRADED": "arm changed or degraded the continuation core",
-            }[observed["C4"]],
-            "final_answer": answer,
         })
 
+summary = {}
+for model in RUNS:
+    summary[model] = {arm: next(r["combined_status"] for r in rows if r["model_id"] == model and r["arm"] == arm) for arm in ARMS}
+
 out = ROOT / "evaluation/RESULTS.json"
-out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps({
-    "c4_core_criterion": "deployment_order == [alpha,beta] AND blocked_service_ids == [gamma]",
-    "c4_absent_criterion": "deployment_order == [] AND error == deployment_admissibility_relation_unavailable",
-    "note": "release_decision wording is not part of the executable continuation core criterion",
+    "C4_core_criterion": "deployment_order == [alpha,beta] AND blocked_service_ids == [gamma]",
+    "C4_absent_criterion": "deployment_order == [] AND error == deployment_admissibility_relation_unavailable",
+    "contract_rule": "A preserved C4 in K1_ONLY/K2_ONLY/ID_BINDING_BROKEN is marked UNAUTHORIZED_INFERENCE because it requires recovering a relation/predicate explicitly marked unavailable.",
+    "release_decision_note": "blocked/partial wording is not part of the C4 core criterion.",
+    "summary": summary,
     "rows": rows,
 }, ensure_ascii=False, indent=2) + "\n")
-print(json.dumps({"rows": len(rows), "out": str(out)}))
+print(json.dumps(summary, indent=2))
