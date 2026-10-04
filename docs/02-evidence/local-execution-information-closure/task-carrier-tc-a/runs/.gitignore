@@ -34,3 +34,15 @@
 !/20261004-193100-m1b-role/S-B1I/*
 !/20261004-193100-m1b-role/S-B1S/
 !/20261004-193100-m1b-role/S-B1S/*
+!/20261004-200000-m1b-function/
+/20261004-200000-m1b-function/*
+!/20261004-200000-m1b-function/RUN_RECORD.json
+!/20261004-200000-m1b-function/artifact-hashes.sha256
+!/20261004-200000-m1b-function/behavior-adjudication.json
+!/20261004-200000-m1b-function/behavior-adjudication.sha256
+!/20261004-200000-m1b-function/S-B1F1/
+!/20261004-200000-m1b-function/S-B1F1/*
+!/20261004-200000-m1b-function/S-B1F2/
+!/20261004-200000-m1b-function/S-B1F2/*
+!/20261004-200000-m1b-function/S-B1F3/
+!/20261004-200000-m1b-function/S-B1F3/*

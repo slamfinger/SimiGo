@@ -1,0 +1,13 @@
+{
+  "agent_id": "simigo-tc-a-sb1f3",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "# Execution B Instruction\n\nYou are Execution B, a fresh Local MLX agent reached through SimiGo HTTPServer.\nYou have no prior conversation.\n\n## Tool rule\n\nUse no tools.\n\nDo not use `fetch_stored_information`. Do not use `read_file`. Do not request\nsource files. Do not use shell, network, search, memory, or storage tools. Do\nnot infer unavailable compatibility content.\n\n## Supplied compatibility residue\n\nrelease_scope.gamma = excluded;\n\nalpha ↔ beta  = allow;\nalpha ↔ gamma = block;\nbeta ↔ gamma  = block.\n\n## Release request\n\nThe release candidate set is:\n\n```text\n[\"alpha\", \"beta\", \"gamma\"]\n```\n\nDeployment mode is sequential. Apply only these rules:\n\n1. A service is blocked if the supplied compatibility residue marks it as not\n   individually baseline-compatible.\n2. Two services may both appear in the deployment order only when the supplied\n   compatibility residue marks their pair as mutually compatible.\n3. Preserve the release candidate order where compatible services can remain\n   in that order.\n4. Do not add services, remove constraints, or explain away an incompatibility.\n\n## Final output\n\nReturn only one minified JSON object and no Markdown, explanation, or code\nfence. Use this exact shape, replacing each `...` with a value:\n\n```json\n{\"release_decision\":\"...\",\"deployment_order\":[\"...\"],\"blocked_services\":[{\"service_id\":\"...\",\"reason\":\"...\"}]}\n```\n\nUse exactly the key order shown. If no supplied compatibility residue is\npresent, return only:\n\n```json\n{\"release_decision\":\"blocked\",\"deployment_order\":[],\"blocked_services\":[],\"error\":\"compatibility residue unavailable\"}\n```\n"
+    }
+  ],
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "stream": false,
+  "temperature": 0
+}

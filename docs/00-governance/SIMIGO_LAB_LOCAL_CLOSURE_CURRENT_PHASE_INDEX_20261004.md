@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b ROLE CONTROLS FAIL / BASELINE SLOT OR DEEPER DEPENDENCY RETAINED / NEXT REDUCTION NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b FUNCTION FIELDS ALL FAIL / FUNCTION DISTRIBUTED OR CONTEXT-DEPENDENT / NEXT REDUCTION NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -41,6 +41,7 @@ S-B behavior adjudication     = COMPLETE / S-B1 PASS / S-B2 FAIL.
 S-B boundary                  = LOCKED / M1.b IS FRAME-BOUNDED NECESSITY CANDIDATE.
 S-B2 representation control   = FAIL / M1.b NECESSITY HYPOTHESIS STRENGTHENED.
 M1.b semantic role controls   = S-B1I FAIL + S-B1S FAIL / BASELINE SLOT OR DEEPER DEPENDENCY RETAINED.
+M1.b function fields          = F1 FAIL + F2 FAIL + F3 FAIL / NO SINGLE FIELD SUFFICIENT.
 ```
 
 ## 3. Core sealed finding
@@ -166,6 +167,8 @@ docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B2_REPRESENTATION_CONTROL_20261004
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B2R_RESULT_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_SEMANTIC_ROLE_PANEL_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_SEMANTIC_ROLE_RESULT_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTIONAL_DECOMPOSITION_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTION_RESULT_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
@@ -175,6 +178,8 @@ docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/2026
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/behavior-adjudication.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-193100-m1b-role/RUN_RECORD.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-193100-m1b-role/behavior-adjudication.json
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-200000-m1b-function/RUN_RECORD.json
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-200000-m1b-function/behavior-adjudication.json
 ```
 
 The locked next reduction question is only to distinguish real semantic

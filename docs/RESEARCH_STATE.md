@@ -53,7 +53,11 @@ incompatible` 替换 baseline wording，S-B1S 用 pair/individual scope legend �
 baseline predicate；两者都返回有效 JSON 且只 block gamma，但都不部署 alpha/beta，
 continuation FAIL。当前 frame 内，相关功能仍绑定 baseline-compatible slot 或
 尚未隔离的更深层 dependency；这不证明普遍不可约性。Observer tool、store、
-下一 reduction 均未授权。
+下一 reduction 均未授权。后续 functional decomposition 将 M1.b 拆为
+baseline membership、baseline relation、release scope 三个单字段；三者单独
+执行都有效 JSON 且只 block gamma，但都不部署 alpha/beta，continuation FAIL。
+因此当前证据指向 M1.b 的 continuation 功能分布、依赖 pair context，或未被
+单字段捕获；组合未授权，下一 reduction 未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

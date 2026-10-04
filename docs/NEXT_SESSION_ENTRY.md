@@ -15,6 +15,7 @@
 > S-B boundary         = LOCKED
 > S-B2R control        = FAIL
 > M1.b role controls   = BOTH FAIL
+> M1.b function fields = ALL FAIL
 > Next reduction       = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -30,6 +31,9 @@
 > 唯一解释不被支持，M1.b necessity hypothesis 增强；下一 reduction 另批。
 > S-B1I/S-B1S 均有效 JSON 但 continuation FAIL：只 block gamma、不部署 alpha/beta。
 > 因此 baseline-compatible slot 或更深层 dependency 仍在；下一 reduction 另批。
+> F1/F2/F3 单独字段均 FAIL：各自只 block gamma，不部署 alpha/beta。
+> 当前证据指向 M1.b 功能分布、依赖 pair context，或未被单字段捕获；
+> 组合与下一 reduction 均未授权。
 
 
 登记时间：2026-10-02

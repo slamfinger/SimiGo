@@ -1,0 +1,68 @@
+{
+  "phase": "M1B_FUNCTIONAL_DECOMPOSITION_ADJUDICATION",
+  "adjudicated_at": "2026-10-04T20:26:00+08:00",
+  "raw_outputs_modified": false,
+  "observer_tool": "NOT RUN",
+  "store": "NOT RUN",
+  "hidden_understanding_claim": "FORBIDDEN / NOT MADE",
+  "pass_criteria": {
+    "json_valid": true,
+    "release_decision": "blocked",
+    "deployment_order": ["alpha", "beta"],
+    "blocked_services": ["gamma"]
+  },
+  "conditions": [
+    {
+      "condition": "S-B1F1",
+      "tested_field": "baseline_membership.gamma = false",
+      "prompt_sha256": "765bf224c200f7062d0c3cd0349c8966f7b76cb114610588c5c070d0b4c9dfde",
+      "final_answer_sha256": "d79fb876dfb11bd95e1e8a7d555a29fa227adda4f73213b446678a5d236fc8d9",
+      "final_answer_json_parse": "PASS",
+      "semantic_referenced": "PARTIAL / TESTED_FIELD_ONLY",
+      "adopted": "PARTIAL / GAMMA_BLOCK_ONLY",
+      "behavioral": "VALID_JSON_BUT_NO_DEPLOYMENT_ORDER",
+      "continuation": "FAIL",
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": ["gamma"]
+      }
+    },
+    {
+      "condition": "S-B1F2",
+      "tested_field": "baseline_relation.gamma = incompatible",
+      "prompt_sha256": "1b4051beb3a8532cb450401e14b4fa78fa891a907673edde1e18cd8150ba968f",
+      "final_answer_sha256": "12db5b6e814449c5356dcb1726e50e2fe979de53aa84385b2f222e304f99a3ab",
+      "final_answer_json_parse": "PASS",
+      "semantic_referenced": "PARTIAL / TESTED_FIELD_ONLY",
+      "adopted": "PARTIAL / GAMMA_BLOCK_ONLY",
+      "behavioral": "VALID_JSON_BUT_NO_DEPLOYMENT_ORDER",
+      "continuation": "FAIL",
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": ["gamma"]
+      }
+    },
+    {
+      "condition": "S-B1F3",
+      "tested_field": "release_scope.gamma = excluded",
+      "prompt_sha256": "920832bd5ea143fcc0e2b16fc47d8e5258dba38d9b4b8cbfbc3d05fbb5318a06",
+      "final_answer_sha256": "b17a724ecbc1876a9e2fef30110a0869516760335da9f9dd35cc75e45d126336",
+      "final_answer_json_parse": "PASS",
+      "semantic_referenced": "PARTIAL / TESTED_FIELD_ONLY",
+      "adopted": "PARTIAL / GAMMA_BLOCK_ONLY",
+      "behavioral": "VALID_JSON_BUT_NO_DEPLOYMENT_ORDER",
+      "continuation": "FAIL",
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": ["gamma"]
+      }
+    }
+  ],
+  "panel_reading": "ALL_F_ONLY_FAIL",
+  "bounded_reading": "In this exact TC-A prompt/model/frame, none of the three isolated semantic fields alone restored S-B1 continuation. Each preserved gamma exclusion but failed to adopt alpha-beta allow into deployment order.",
+  "bounded_attribution": "M1.b's continuation-relevant function is distributed, context-dependent with the pair decisions, or not captured by any single tested field.",
+  "non_claim": "This does not prove universal irreducibility, final Information minimality, or that no other representation could succeed."
+}
