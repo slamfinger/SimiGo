@@ -46,6 +46,7 @@ M1.b pair combinations        = HALTED / F12 RAW OUTPUT ONLY / F13 + F23 NOT RUN
 Information coverage          = LAYER-1 MATRIX COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE.
 Cross-model stability         = STATIC SCHEDULING CONTRACT FROZEN / 16 CELLS PLANNED / EXISTING MODEL-A OUTPUTS PILOT ONLY.
 Cross-model runner readiness  = READY / 19 PASS + 0 PARTIAL + 0 FAIL / RUNTIME NOT AUTHORIZED.
+Cross-model pre-runtime comparison = STATIC ONLY / candidate dimensions and phenomena registered / NO J3 OR 846 MAPPING.
 Information decomposition     = 32 OBJECTS / 256 FACETS / 846 STATIC ATOMS / NO MERGES OR IRREDUCIBILITY CLAIMS.
 Reduction design              = 846 ATOMS CLASSIFIED / 17 DISCRIMINATING DESIGNS / NO RUNTIME PROBE.
 Battery prioritization        = 19 SCHEDULING NODES / ROUND-1 SELECTION FROZEN / NO RUNTIME PROBE.
@@ -193,6 +194,8 @@ docs/00-governance/SIMIGO_LAB_CROSS_MODEL_FORMAL_RUNNER_READINESS_REVIEW_2026100
 docs/00-governance/information-structure/cross-model-formal-runner-readiness-review-20261005.json
 docs/00-governance/SIMIGO_LAB_CROSS_MODEL_FORMAL_RUNNER_CLOSURE_20261005.md
 docs/00-governance/information-structure/cross-model-formal-runner-closure-20261005.json
+docs/00-governance/SIMIGO_LAB_CROSS_MODEL_PRERUNTIME_COMPARISON_20261005.md
+docs/00-governance/information-structure/cross-model-preruntime-comparison-20261005.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
@@ -227,6 +230,11 @@ isolation evidence, implementing the formal status enum, and separating formal
 outputs from the pilot stream. Post-repair readiness is `READY`, but formal
 runtime remains unauthorized.
 
+A separate static pre-runtime comparison now registers nine observation
+dimensions and six candidate phenomena for the future formal 16-cell run. It
+assigns no J3 score, declares no stable invariant, performs no normalization,
+and performs no 846 mapping.
+
 Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store
 Candidate Information, or start Execution B until separately authorized.
 
@@ -243,6 +251,7 @@ continue M1.b pair combinations;
 start a new reduction before a breadth-first coverage pass;
 execute formal cross-model cells without runner-audit and separate authorization;
 execute formal cross-model cells without separate runtime authorization;
+let pre-runtime comparison change the frozen contract or runner;
 normalize or score cross-model stability before formal isolated cells exist;
 perform cross-model vertical decomposition before a stable functional invariant;
 select U1…U5 as final Information units;

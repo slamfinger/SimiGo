@@ -26,6 +26,7 @@
 > Cross-model contract = STATIC SCHEDULING FROZEN
 > Cross-model runner   = READY
 > Cross-model runtime  = NOT AUTHORIZED
+> Pre-runtime compare  = STATIC ONLY
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -73,6 +74,9 @@
 > 不要把现有 Model-A pilot outputs 当作 formal evidence；不要执行 formal cells。
 > Formal runner closure 已完成：新 formal_runner.py 已就绪，19 / 19 checks PASS。
 > 但 runtime execution 仍未授权；不要自动运行 16 formal cells。
+> 已完成 pre-runtime comparison：9 个 observation dimensions、6 个 candidate
+> phenomena。只用于未来 formal 16-cell 观察焦点；没有 J3 score、stability、
+> vertical decomposition 或 846 mapping。
 
 
 登记时间：2026-10-02

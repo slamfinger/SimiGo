@@ -92,6 +92,12 @@ same output、same decision、same functional behavior，并以 J3 functional
 behavior 为主判据。16 个 cells 全部 planning；现有 Model-A raw outputs 因
 runtime isolation 未 enforced 只能作为 pilot-only。formal runtime、semantic
 normalization、stability scoring、vertical decomposition 均未授权。
+随后完成 static pre-runtime comparison：比较 Round 1 formal evidence 与
+cross-model pilot raw stream，登记 9 个 observation dimensions 和 6 个 candidate
+phenomena；重点包括 relation/conjunction formation、representation compliance、
+evidence grounding、uncertainty boundary、long-input degradation。该阶段没有
+J3 scoring、没有 stability matrix、没有 vertical decomposition、没有 846
+mapping，也没有运行 runtime。
 随后完成 formal runner readiness review：结论为 `FORMAL RUNNER NOT READY`。
 冻结样本、prompt、模型身份/config、16 个唯一 cell ID 和原始判读材料均合格；
 但 runner 工作副本与 frozen manifest 不一致，I1/I4/I5/I7/I8/I9 isolation
