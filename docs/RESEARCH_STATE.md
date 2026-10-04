@@ -57,7 +57,12 @@ continuation FAIL。当前 frame 内，相关功能仍绑定 baseline-compatible
 baseline membership、baseline relation、release scope 三个单字段；三者单独
 执行都有效 JSON 且只 block gamma，但都不部署 alpha/beta，continuation FAIL。
 因此当前证据指向 M1.b 的 continuation 功能分布、依赖 pair context，或未被
-单字段捕获；组合未授权，下一 reduction 未授权。
+单字段捕获。随后 F 组合分支在 S-B1F12 后按 breadth-first redirect 停止；
+F13/F23 未执行，F12 不做本分支判读。当前主线改为 Information Structure
+Coverage Matrix：11 个分析轴、5 个候选单元、16 个 M 子字段共 32 行已完成
+layer-1 inventory；大量 persistence/identity/locator/retrieval/reconstruction、
+U5/M3、U4 deletion、issue/binding 子字段仍未实验。新 probe 未授权；下一层
+必须在同一层横向展开后再进入。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

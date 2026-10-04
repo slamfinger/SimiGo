@@ -16,7 +16,9 @@
 > S-B2R control        = FAIL
 > M1.b role controls   = BOTH FAIL
 > M1.b function fields = ALL FAIL
-> Next reduction       = NOT AUTHORIZED
+> M1.b pair branch     = HALTED
+> Coverage matrix      = LAYER-1 COMPLETE
+> New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
 >
@@ -34,6 +36,9 @@
 > F1/F2/F3 单独字段均 FAIL：各自只 block gamma，不部署 alpha/beta。
 > 当前证据指向 M1.b 功能分布、依赖 pair context，或未被单字段捕获；
 > 组合与下一 reduction 均未授权。
+> F12 已产出原始输出但分支按 breadth-first redirect 停止；F13/F23 未跑。
+> 当前主线是 32-row Information Structure Coverage Matrix 的横向展开，
+> 不是继续 M1.b 深挖。
 
 
 登记时间：2026-10-02

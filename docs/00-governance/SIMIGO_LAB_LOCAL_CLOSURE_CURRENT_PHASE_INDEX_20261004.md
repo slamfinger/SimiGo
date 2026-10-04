@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b FUNCTION FIELDS ALL FAIL / FUNCTION DISTRIBUTED OR CONTEXT-DEPENDENT / NEXT REDUCTION NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b PAIR BRANCH HALTED / LAYER-1 INFORMATION COVERAGE MATRIX COMPLETE / NEW PROBES NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -42,6 +42,8 @@ S-B boundary                  = LOCKED / M1.b IS FRAME-BOUNDED NECESSITY CANDIDA
 S-B2 representation control   = FAIL / M1.b NECESSITY HYPOTHESIS STRENGTHENED.
 M1.b semantic role controls   = S-B1I FAIL + S-B1S FAIL / BASELINE SLOT OR DEEPER DEPENDENCY RETAINED.
 M1.b function fields          = F1 FAIL + F2 FAIL + F3 FAIL / NO SINGLE FIELD SUFFICIENT.
+M1.b pair combinations        = HALTED / F12 RAW OUTPUT ONLY / F13 + F23 NOT RUN.
+Information coverage          = LAYER-1 MATRIX COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE.
 ```
 
 ## 3. Core sealed finding
@@ -169,6 +171,8 @@ docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_SEMANTIC_ROLE_PANEL_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_SEMANTIC_ROLE_RESULT_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTIONAL_DECOMPOSITION_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_FUNCTION_RESULT_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_M1B_PAIR_BRANCH_HALT_20261004.md
+docs/00-governance/SIMIGO_LAB_INFORMATION_STRUCTURE_COVERAGE_MATRIX_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
@@ -182,12 +186,12 @@ docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/2026
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-200000-m1b-function/behavior-adjudication.json
 ```
 
-The locked next reduction question is only to distinguish real semantic
-dependency of `M1.b(gamma is not baseline-compatible)` from an S-B2
-representation / prompt artifact. The S-B2R control has now failed: the
-representation artifact is not supported as the sole cause, and the M1.b
-necessity hypothesis is strengthened. Any next reduction requires separate
-authorization.
+The M1.b pair branch was halted after one raw S-B1F12 output. The active next
+step is not another local reduction. It is breadth-first normalization of the
+32-row Information Structure Coverage Matrix so uncovered axes and candidate
+subfields receive same-level treatment before any next nested layer.
+
+New probes require separate authorization.
 
 Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store
 Candidate Information, or start Execution B until separately authorized.
@@ -201,6 +205,8 @@ store Candidate Information;
 start Execution B;
 generalize S-B adjudication;
 design or execute the M1.b artifact/dependency discrimination without authorization;
+continue M1.b pair combinations;
+start a new reduction before a breadth-first coverage pass;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
