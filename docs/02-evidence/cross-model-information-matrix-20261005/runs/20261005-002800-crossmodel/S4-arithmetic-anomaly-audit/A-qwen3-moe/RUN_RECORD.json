@@ -1,0 +1,17 @@
+{
+  "sample_id": "S4-arithmetic-anomaly-audit",
+  "model_id": "A-qwen3-moe",
+  "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "architecture": "qwen3_moe",
+  "http_status": 200,
+  "elapsed_seconds": 74.521847,
+  "prompt_sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+  "request_sha256": "eb770ca5ee050c4adba17e9ae72ec426a0b789051d78064e7e6d9187c29d0fd2",
+  "response_sha256": "1659c462e3195562cd073c3a8869cf4dd0d9e39db3603453344d12975ff7a5c0",
+  "runtime_backend": "NativeMLX/MLX Swift LM",
+  "active_endpoint_models": [
+    "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit"
+  ],
+  "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+  "created_at": "2026-10-05T00:30:11.586683+08:00"
+}

@@ -4,9 +4,10 @@
   "authorized_now": [
     "freeze check",
     "prompt rendering",
-    "matrix execution after explicit model load"
+    "commit raw partial matrix"
   ],
   "not_authorized_now": [
+    "B retry without human confirmation",
     "semantic normalization",
     "stability matrix",
     "846 remapping"
@@ -14,5 +15,7 @@
   "sample_count": 4,
   "model_count": 4,
   "expected_cells": 16,
-  "completed_cells": 0
+  "completed_cells": 15,
+  "matrix_execution": "PARTIAL 15/16",
+  "blocking": "B-qwen3-next S1 timeout; retry not authorized"
 }

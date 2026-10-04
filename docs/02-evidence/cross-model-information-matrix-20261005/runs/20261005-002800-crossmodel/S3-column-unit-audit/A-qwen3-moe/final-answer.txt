@@ -1,0 +1,56 @@
+{
+  "task_id": "e_unit_summary",
+  "decision": "supported",
+  "findings": [
+    {
+      "id": "f1",
+      "statement": "The E column contains numeric values.",
+      "evidence": "E2:E4 shows numeric values in the engineering quantity column.",
+      "function": "evidence"
+    },
+    {
+      "id": "f2",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f3",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f4",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f5",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f6",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f7",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    },
+    {
+      "id": "f8",
+ "statement": "The E column contains values in units of 万元.",
+ "evidence": "The summary shows that the E column has values ranging from 0.16 to 32524518.6, and the unit summary includes '万元' as one of the units.",
+ "function": "evidence"
+    }
+  ],
+  "missing_or_uncertain": [],
+  "confidence": 0.95
+}

@@ -1,0 +1,51 @@
+{
+  "task_id": "boundary-study/exp1-x1/information-space/a-deposits",
+  "decision": "extract_0307",
+  "findings": [
+    {
+      "id": "1",
+      "statement": "Extract 0307 states that the actual cost of temporary electricity is higher than budgeted, while extract 0308 states that the actual cost of temporary electricity is higher than budgeted.",
+      "function": "evidence",
+      "evidence": "Extract 0307: '临时电力工程：现场实际变压器安装数量、型号与前期策划存在出处，导致临时电力工程实际成本增加。' Extract 0308: '临时电力工程：现场实际变压器安装数量、型号与前期策划存在出处，导致临时电力工程实际成本增加。'"
+    },
+    {
+      "id": "2",
+ "statement": "Extract 0307 states that zero material is provided in subcontracts, while extract 0308 states that zero material is provided in subcontracts.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '工程分包合同中明确约定不予提供零星材料，项目部不予垫款代购；项目部自建拌合站、车辆维修等按需提供，日常做好维修和新购经济分析对比，严控零星材料支出。'"
+    },
+    {
+      "id": "3",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '1#综合场站包含2#拌合站、1#预制梁场、1#钢筋加工场和2#钢筋加工场，标后预算总体为1,518.11万元，实际成本为1,824.09万元，较标后增加成本305.98万元，其主要原因为1#预制梁场、1#钢筋加工场和2#钢筋加工场实际施工建设与标后预算清单存在出处，导致实际成本增加。' Extract 0308: '1#综合场站包含2#拌合站、1#预制梁场、1#钢筋加工场和2#钢筋加工场，标后预算总体为1,518.11万元，实际成本为1,824.09万元，较标后增加成本305.98万元，其主要原因为1#预制梁场、1#钢筋加工场和2#钢筋加工场实际施工建设与标后预算清单存在出处，导致实际成本增加。'"
+    },
+    {
+      "id": "4",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '4#拌合站建设标后预算313.39万元，实际成本为361.18万元，较标后增加成本47.49万元，其主要原因为4#拌合站建设时使用商品混凝土，商品混凝土成本价高于标后预算单价，导致实际成本高于标后预算成本。' Extract 0308: '4#拌合站建设标后预算313.39万元，实际成本为361.18万元，较标后增加成本47.49万元，其主要原因为4#拌合站建设时使用商品混凝土，商品混凝土成本价高于标后预算单价，导致实际成本高于标后预算成本。'"
+    },
+    {
+      "id": "5",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '现场管理费累计金额为2,573.26万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。' Extract 0308: '现场管理费累计金额为2,881.34万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。'"
+    },
+    {
+      "id": "6",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '现场管理费累计金额为2,573.26万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。' Extract 0308: '现场管理费累计金额为2,881.34万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。'"
+    },
+    {
+      "id": "7",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '现场管理费累计金额为2,573.26万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。' Extract 0308: '现场管理费累计金额为2,881.34万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。'"
+    },
+    {
+      "id": "8",
+ "statement": "Extract 0307 states that the actual cost of temporary facilities is higher than budgeted, while extract 0308 states that the actual cost of temporary facilities is higher than budgeted.",
+ "function": "evidence",
+ "evidence": "Extract 0307: '现场管理费累计金额为2,573.26万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为项目部人员于2024年9月进场开展工程筹备工作，2025年5月21日正式开工，管理费实发时间与工程施工时间存在时间差，导致已完成施工产值与原计划产值存在比例差异，管理费占比提高。后期产值进度提升，管理费占比将逐步降低，预控指标为产值的2.3%以内。' Extract 0308: '现场管理费累计金额为2,881.34万元,占开累总收入4.9%，高于标后预算现场管理费比例，其主要原因为

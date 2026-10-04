@@ -1,0 +1,18 @@
+{
+  "sample_id": "S2-version-diff",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "endpoint_identity_match": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "architecture": "gemma4_unified",
+  "http_status": 200,
+  "elapsed_seconds": 92.504484,
+  "prompt_sha256": "fbd57f9eaa50f2c1a2f189ff53a82001b55320e9cebdb296b4f45f5cb6b6d50e",
+  "request_sha256": "ec334be387ec70a111e39288e29ee00c4bd9d4ac00200a4b3c687cf4be3362df",
+  "response_sha256": "ba0232f1dfc693561f3c7fa1427dac01c2839fc2c8801cf8b44095014939c23f",
+  "runtime_backend": "NativeMLX/MLX Swift LM with dense text route",
+  "active_endpoint_models": [
+    "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit"
+  ],
+  "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+  "created_at": "2026-10-05T00:52:03.916592+08:00"
+}

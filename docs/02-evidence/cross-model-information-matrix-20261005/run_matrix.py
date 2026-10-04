@@ -100,8 +100,11 @@ def main():
             (args.run_root / f"models-endpoint-{model['model_id']}.json").write_text(
                 json.dumps(active, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             active_ids = {item.get("id") for item in active.get("data", [])}
-            if model["repo_id"] not in active_ids:
-                raise RuntimeError(f"loaded model mismatch; expected {model['repo_id']}, got {sorted(active_ids)}")
+            identity_match = model["repo_id"] if model["repo_id"] in active_ids else (
+                model["snapshot_revision"] if model.get("snapshot_revision") in active_ids else None
+            )
+            if not identity_match:
+                raise RuntimeError(f"loaded model mismatch; expected {model['repo_id']} or {model.get('snapshot_revision')}, got {sorted(active_ids)}")
             cell = args.run_root / sample["sample_id"] / model["model_id"]
             done = cell / "RUN_RECORD.json"
             if args.resume and done.exists():
@@ -146,6 +149,7 @@ def main():
                 "sample_id": sample["sample_id"],
                 "model_id": model["model_id"],
                 "repo_id": model["repo_id"],
+                "endpoint_identity_match": identity_match,
                 "architecture": model["architecture"],
                 "http_status": status,
                 "elapsed_seconds": elapsed,
