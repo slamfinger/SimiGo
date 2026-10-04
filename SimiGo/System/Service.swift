@@ -517,6 +517,8 @@ private final class ProcessRuntime: Runtime, @unchecked Sendable {
 
 @MainActor
 public final class Service: ObservableObject {
+    public static let shared = Service()
+
     public enum LogLevel: Int {
         case debug
         case info
@@ -527,6 +529,18 @@ public final class Service: ObservableObject {
     @Published public var status = "已停止"
     @Published public var isRunning = false
     @Published public var modelPath = ""
+    @Published public var mlxModelPath = ""
+    @Published public var llamaModelPath = ""
+    @Published public var backendSelection: BackendSelection {
+        didSet { AppConfig.set(backendSelection.rawValue, for: .backendSelection) }
+    }
+    @Published public var cloudBaseURL: String {
+        didSet { AppConfig.set(cloudBaseURL, for: .cloudBaseURL) }
+    }
+    @Published public var cloudModel: String {
+        didSet { AppConfig.set(cloudModel, for: .cloudModel) }
+    }
+    @Published public private(set) var cloudAPIKey: String
     @Published public var memoryPressure = "normal"
     @Published public var config = ModelConfig()
     @Published public private(set) var inferenceNode = InferenceNodeConfiguration.shared
@@ -542,6 +556,16 @@ public final class Service: ObservableObject {
     public init() {
         let savedPath = AppConfig.get(.modelPath) ?? ""
         self.modelPath = savedPath
+        self.backendSelection = BackendSelection(rawValue: AppConfig.get(.backendSelection) ?? "") ?? .mlx
+        self.cloudBaseURL = Self.migratedCloudBaseURL(AppConfig.get(.cloudBaseURL) ?? CloudBackendConfiguration.defaultBaseURL)
+        self.cloudModel = AppConfig.get(.cloudModel) ?? CloudBackendConfiguration.defaultModel
+        self.cloudAPIKey = CloudKeychain.readAPIKey()
+        self.mlxModelPath = AppConfig.get(.mlxModelPath) ?? ""
+        self.llamaModelPath = AppConfig.get(.llamaModelPath) ?? ""
+
+        if savedPath.isEmpty {
+            modelPath = backendSelection == .llamaCpp ? llamaModelPath : mlxModelPath
+        }
 
         if !savedPath.isEmpty {
             self.config = resolveConfig(for: savedPath)
@@ -557,6 +581,88 @@ public final class Service: ObservableObject {
         )
 
         inferenceNode = InferenceNodeConfiguration.shared
+
+        // Resume the lightweight cloud proxy immediately. Heavy local models
+        // remain explicit because loading them costs multiple GB of memory.
+        if backendSelection == .cloud {
+            Self.log("[AUTO] resume cloud backend upstream=\(cloudBaseURL) model=\(cloudModel)")
+            Task { await startCloud() }
+        }
+    }
+
+    public var hasStartTarget: Bool {
+        switch backendSelection {
+        case .cloud: return cloudBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        case .mlx: return canStartLocal(.mlx)
+        case .llamaCpp: return canStartLocal(.gguf)
+        }
+    }
+
+    public func canStartLocal(_ expectedKind: ModelKind) -> Bool {
+        let path = expectedKind == .gguf ? llamaModelPath : mlxModelPath
+        guard !path.isEmpty, FileManager.default.fileExists(atPath: path) else { return false }
+        return ModelDetector.detect(path: path).kind == expectedKind
+    }
+
+    public var cloudProviderName: String {
+        let host = URL(string: cloudBaseURL)?.host?.lowercased() ?? ""
+        if host.contains("bigmodel") || host.contains("zhipu") { return "ZAI" }
+        if host.contains("openai") { return "OpenAI" }
+        return host.isEmpty ? "云端" : host
+    }
+
+    public func setCloudAPIKey(_ value: String) {
+        cloudAPIKey = value
+        CloudKeychain.writeAPIKey(value)
+    }
+
+    private static func migratedCloudBaseURL(_ value: String) -> String {
+        let migrated = value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(
+                of: "https://open.bigmodel.cn/api/v1",
+                with: CloudBackendConfiguration.defaultBaseURL
+            )
+
+        if migrated != value {
+            AppConfig.set(migrated, for: .cloudBaseURL)
+        }
+        return migrated
+    }
+
+    public var cloudConfiguration: CloudBackendConfiguration {
+        CloudBackendConfiguration(baseURLString: cloudBaseURL, model: cloudModel)
+    }
+
+    public var backendDisplayName: String {
+        switch backendSelection {
+        case .cloud: return ModelKind.cloudOpenAI.displayName
+        case .mlx: return ModelKind.mlx.displayName
+        case .llamaCpp: return ModelKind.gguf.displayName
+        }
+    }
+
+    public func selectModel(_ path: String) {
+        guard FileManager.default.fileExists(atPath: path) else { return }
+
+        switch ModelDetector.detect(path: path).kind {
+        case .mlx:
+            mlxModelPath = path
+            AppConfig.set(path, for: .mlxModelPath)
+        case .gguf:
+            llamaModelPath = path
+            AppConfig.set(path, for: .llamaModelPath)
+        case .cloudOpenAI:
+            return
+        }
+
+        modelPath = path
+        AppConfig.set(path, for: .modelPath)
+    }
+
+    public func start(_ selection: BackendSelection) async {
+        backendSelection = selection
+        await startSelected()
     }
 
     // MARK: Logging
@@ -692,6 +798,91 @@ public final class Service: ObservableObject {
         await internalStart(path: path)
     }
 
+    public func startSelected() async {
+        switch backendSelection {
+        case .mlx:
+            await startLocal(expectedKind: .mlx)
+        case .llamaCpp:
+            await startLocal(expectedKind: .gguf)
+        case .cloud:
+            await startCloud()
+        }
+    }
+
+    public func startMLX() async { await start(.mlx) }
+
+    public func startLLaMACpp() async { await start(.llamaCpp) }
+
+    public func startZAI() async { await start(.cloud) }
+
+    public func startCloud() async {
+        guard !isStarting, !isRestarting else {
+            Self.log("⚠️ 服务正在启动或重启中，忽略重复启动请求", level: .warning)
+            return
+        }
+
+        isStarting = true
+        defer { isStarting = false }
+        await internalStartCloud()
+    }
+
+    private func startLocal(expectedKind: ModelKind) async {
+        let path = expectedKind == .gguf ? llamaModelPath : mlxModelPath
+        backendSelection = expectedKind == .gguf ? .llamaCpp : .mlx
+
+        guard !path.isEmpty else {
+            status = "❌ 请先选择 \(expectedKind.displayName) 模型"
+            return
+        }
+
+        modelPath = path
+        await start(path: path)
+    }
+
+    public func restartSelected() async {
+        guard isRunning, !isRestarting, !isStarting else { return }
+
+        isRestarting = true
+        defer { isRestarting = false }
+
+        await stop()
+        await startSelected()
+    }
+
+    private func internalStartCloud() async {
+        if isRunning || runtimeState.withLock({ $0 != nil }) {
+            await stop()
+        }
+
+        do {
+            try cloudConfiguration.validated(apiKey: cloudAPIKey)
+        } catch {
+            Self.log("❌ \(error.localizedDescription)", level: .error)
+            status = "❌ \(error.localizedDescription)"
+            return
+        }
+
+        let node = inferenceNode
+        let info = ModelInfo(path: "simigo://cloud/openai", kind: .cloudOpenAI)
+        let runtime = RemoteOpenAIRuntime(configuration: cloudConfiguration, apiKey: cloudAPIKey)
+        runtimeState.withLock { $0 = runtime }
+        backendKind = .cloudOpenAI
+
+        do {
+            try await runtime.start(info, port: node.port)
+            isRunning = true
+            status = "● 运行中 (\(ModelKind.cloudOpenAI.displayName))"
+            Self.log("[READY] \(node.apiBaseURLString) upstream=\(cloudBaseURL) model=\(cloudModel)")
+            startHealthCheck()
+        } catch {
+            Self.log("❌ 云端 backend 启动失败: \(error.localizedDescription)", level: .error)
+            status = "❌ \(error.localizedDescription)"
+            isRunning = false
+            await runtime.stop()
+            runtimeState.withLock { $0 = nil }
+        }
+    }
+
     private func internalStart(path: String) async {
         if isRunning || runtimeState.withLock({ $0 != nil }) {
             Self.log("🔄 检测到旧模型在运行，自动卸载旧模型...", level: .warning)
@@ -717,6 +908,20 @@ public final class Service: ObservableObject {
         let info = ModelDetector.detect(path: path)
         backendKind = info.kind
 
+        let expectedKind: ModelKind?
+        switch backendSelection {
+        case .mlx: expectedKind = .mlx
+        case .llamaCpp: expectedKind = .gguf
+        case .cloud: expectedKind = nil
+        }
+
+        if let expectedKind, info.kind != expectedKind {
+            let message = "❌ 模型类型不匹配：选择的是 \(backendSelection.displayName)，但模型是 \(info.backendName)"
+            Self.log(message, level: .error)
+            status = message
+            return
+        }
+
         let node = inferenceNode
 
         Self.log("[NODE] backend=\(info.backendName) bind=\(node.bindHost):\(node.port) advertised=\(node.advertisedHost):\(node.port) lan=\(node.isLANEnabled)")
@@ -724,6 +929,10 @@ public final class Service: ObservableObject {
         let runtime: Runtime
 
         switch info.kind {
+        case .cloudOpenAI:
+            status = "❌ 云端 backend 请使用云端启动路径"
+            return
+
         case .mlx:
             runtime = NativeMLX(info: info, config: currentConfig)
 
@@ -849,17 +1058,17 @@ public final class Service: ObservableObject {
     }
 
     public func forceRestart() async {
-        guard !modelPath.isEmpty else {
-            Self.log("⚠️ 模型路径为空，跳过重启", level: .warning)
+        guard hasStartTarget else {
+            Self.log("⚠️ 没有可启动的 backend，跳过重启", level: .warning)
             return
         }
 
         guard !isStarting, !isRestarting else { return }
 
         if isRunning {
-            await restart(path: modelPath)
+            await restartSelected()
         } else {
-            await start(path: modelPath)
+            await startSelected()
         }
     }
 

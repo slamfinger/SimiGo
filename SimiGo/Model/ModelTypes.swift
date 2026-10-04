@@ -39,11 +39,13 @@ public enum RuntError: LocalizedError, Sendable {
 nonisolated public enum ModelKind: Equatable, Sendable {
     case gguf
     case mlx
+    case cloudOpenAI
 
     public var displayName: String {
         switch self {
         case .gguf: return "llama.cpp"
         case .mlx: return "MLX Native"
+        case .cloudOpenAI: return "Cloud OpenAI"
         }
     }
 

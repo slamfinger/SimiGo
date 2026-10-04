@@ -2,6 +2,11 @@ import Foundation
 
 public enum AppKey: String, CaseIterable, Sendable {
     case modelPath = "SelectedModelPath"
+    case mlxModelPath = "MLXModelPath"
+    case llamaModelPath = "LLaMAModelPath"
+    case backendSelection = "BackendSelection"
+    case cloudBaseURL = "CloudBaseURL"
+    case cloudModel = "CloudModel"
     case llamaCppRoot = "LlamaCppRoot"
     case llamaServerBin = "LlamaServerBin"
     case apiListenMode = "APIListenMode"
@@ -16,6 +21,16 @@ public enum AppKey: String, CaseIterable, Sendable {
             return "\(NSHomeDirectory())/llama.cpp/build/bin/llama-server"
         case .modelPath:
             return nil
+        case .mlxModelPath:
+            return nil
+        case .llamaModelPath:
+            return nil
+        case .backendSelection:
+            return BackendSelection.mlx.rawValue
+        case .cloudBaseURL:
+            return CloudBackendConfiguration.defaultBaseURL
+        case .cloudModel:
+            return CloudBackendConfiguration.defaultModel
         case .apiListenMode:
             return "localhost"
         case .apiPort:

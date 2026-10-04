@@ -430,7 +430,7 @@ extension HTTPServer {
     }
 
     @discardableResult
-    private func sendImmediateSSEChunk(
+    nonisolated private func sendImmediateSSEChunk(
         _ object: [String: Any],
         context: ConnectionContext
     ) -> Bool {

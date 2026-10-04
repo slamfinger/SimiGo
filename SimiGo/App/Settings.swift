@@ -4,6 +4,7 @@ import AppKit
 struct Settings: View {
     @EnvironmentObject var svc: Service
     @StateObject private var envMgr = EnvManager.shared
+    @State private var cloudAPIKeyInput = ""
 
     /// 版本脚注从 bundle 实读（CFBundleShortVersionString + CFBundleVersion），
     /// 随发版自动更新——硬编码 "SimiGo v1.3" 曾滞留四个大版本（2026-09-30）。
@@ -17,8 +18,64 @@ struct Settings: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // MARK: - 生成 / Decode 参数
-                sectionBox("生成 / Decode 参数") {
+                // MARK: - All Backends
+                sectionBox("Backend 设置") {
+                    localBackendRow(
+                        title: "MLX",
+                        path: svc.mlxModelPath,
+                        selection: .mlx
+                    )
+
+                    Divider().padding(.vertical, 6)
+
+                    localBackendRow(
+                        title: "LLaMA.cpp",
+                        path: svc.llamaModelPath,
+                        selection: .llamaCpp
+                    )
+
+                    Divider().padding(.vertical, 6)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("云端 API").font(.headline)
+                            if svc.backendSelection == .cloud {
+                                Text(svc.isRunning ? "运行中" : "已选择")
+                                    .font(.caption)
+                                    .foregroundColor(svc.isRunning ? .green : .secondary)
+                            }
+
+                            Spacer()
+
+                            Button(svc.backendSelection == .cloud && svc.isRunning ? "重启" : "启动") {
+                                Task { @MainActor in
+                                    svc.setCloudAPIKey(cloudAPIKeyInput)
+                                    await svc.startZAI()
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(cloudBaseURLInputInvalid)
+                        }
+
+                        TextField("Base URL，例如 \(CloudBackendConfiguration.defaultBaseURL)", text: $svc.cloudBaseURL)
+                            .textFieldStyle(.roundedBorder)
+
+                        SecureField("API Key", text: $cloudAPIKeyInput)
+                            .textFieldStyle(.roundedBorder)
+
+                        TextField("模型名，例如 \(CloudBackendConfiguration.defaultModel)", text: $svc.cloudModel)
+                            .textFieldStyle(.roundedBorder)
+
+                        Text("API Key 保存在本机 Keychain。")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Divider().padding(.vertical, 6)
+
+                    Text("本地推理参数 · 仅 MLX / LLaMA.cpp")
+                        .font(.subheadline)
+
                     HStack(spacing: 12) {
                         paramRow("Temp", value: $svc.config.temperature, range: 0...2, step: 0.1)
                         paramRow("Top-P", value: $svc.config.topP, range: 0...1, step: 0.05)
@@ -48,10 +105,8 @@ struct Settings: View {
                     Text("当前值：\(svc.config.specDraftNMax)")
                         .font(.caption2)
                         .foregroundColor(.secondary)
-                }
 
-                // MARK: - LLaMA.cpp
-                sectionBox("LLaMA.cpp (GGUF)") {
+                    Text("LLaMA.cpp 专用").font(.subheadline)
                     HStack {
                         intRow("GPU Layers", value: $svc.config.gpuLayers, width: 60)
                         intRow("Context", value: $svc.config.ctxSize, width: 60)
@@ -130,7 +185,7 @@ struct Settings: View {
                     Button("重启服务") {
                         svc.saveCurrentConfigAsModelDefault()
                         Task {
-                            await svc.restart(path: svc.modelPath)
+                            await svc.restartSelected()
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -150,6 +205,69 @@ struct Settings: View {
                     .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding()
+            .onAppear { cloudAPIKeyInput = svc.cloudAPIKey }
+        }
+    }
+
+    private var cloudBaseURLInputInvalid: Bool {
+        URL(string: svc.cloudBaseURL)?.host?.isEmpty ?? true
+    }
+
+    private func localBackendRow(title: String, path: String, selection: BackendSelection) -> some View {
+        let expectedKind: ModelKind = selection == .mlx ? .mlx : .gguf
+
+        return HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(title).font(.headline)
+
+                    if svc.backendSelection == selection {
+                        Text(svc.isRunning ? "运行中" : "已选择")
+                            .font(.caption)
+                            .foregroundColor(svc.isRunning ? .green : .secondary)
+                    }
+                }
+
+                Text(path.isEmpty ? "未选择模型" : path)
+                    .font(.caption)
+                    .foregroundColor(path.isEmpty ? .secondary : .primary)
+                    .lineLimit(2)
+                    .truncationMode(.head)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 8) {
+                Button("选择模型...") {
+                    chooseLocalModel(expectedKind: expectedKind, selection: selection)
+                }
+                .disabled(svc.isRunning)
+
+                Button("启动") {
+                    Task { @MainActor in
+                        await svc.start(selection)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(svc.backendSelection == selection && !svc.hasStartTarget)
+            }
+        }
+    }
+
+    private func chooseLocalModel(expectedKind: ModelKind, selection: BackendSelection) {
+        NSApp.activate(ignoringOtherApps: true)
+
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            guard ModelDetector.detect(path: url.path).kind == expectedKind else { return }
+
+            svc.selectModel(url.path)
+            svc.backendSelection = selection
         }
     }
 

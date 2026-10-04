@@ -4,10 +4,15 @@ import AppKit
 @main
 struct MenuApp: App {
     @Environment(\.openWindow) private var openWindow
-    @StateObject private var svc = Service()
+    @StateObject private var svc: Service
     @StateObject private var stateGraph = ExecutionStateGraphStore()
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
+    @State private var showBackendSwitch = false
+
+    init() {
+        _svc = StateObject(wrappedValue: Service.shared)
+    }
 
     var body: some Scene {
         MenuBarExtra {
@@ -18,12 +23,44 @@ struct MenuApp: App {
                 Divider().padding(.vertical, 2)
 
                 MenuRowButton(
-                    title: svc.isRunning ? "停止服务" : "启动服务",
-                    icon: svc.isRunning ? "stop.fill" : "play.fill",
-                    disabled: svc.modelPath.isEmpty || isChangingNetworkMode
+                    title: svc.isRunning ? "启动 / 切换（停止）" : "启动 / 切换",
+                    icon: svc.isRunning ? "stop.circle" : "arrow.2.squarepath"
                 ) {
-                    Task { @MainActor in await toggleService() }
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        showBackendSwitch.toggle()
+                    }
                 }
+
+                if showBackendSwitch {
+                    MenuRowButton(
+                        title: backendButtonTitle("MLX", selection: .mlx),
+                        icon: "cpu",
+                        leading: 12,
+                        disabled: ((!svc.isRunning || svc.backendSelection != .mlx) && !svc.canStartLocal(.mlx)) || isChangingNetworkMode
+                    ) {
+                        Task { @MainActor in await toggleBackend(.mlx) }
+                    }
+
+                    MenuRowButton(
+                        title: backendButtonTitle("LLaMA.cpp", selection: .llamaCpp),
+                        icon: "shippingbox",
+                        leading: 12,
+                        disabled: ((!svc.isRunning || svc.backendSelection != .llamaCpp) && !svc.canStartLocal(.gguf)) || isChangingNetworkMode
+                    ) {
+                        Task { @MainActor in await toggleBackend(.llamaCpp) }
+                    }
+
+                    MenuRowButton(
+                        title: backendButtonTitle(svc.cloudProviderName, selection: .cloud),
+                        icon: "cloud",
+                        leading: 12,
+                        disabled: svc.backendSelection == .cloud && !svc.hasStartTarget || isChangingNetworkMode
+                    ) {
+                        Task { @MainActor in await toggleBackend(.cloud) }
+                    }
+                }
+
+                Divider().padding(.vertical, 2)
 
                 if svc.isRunning {
                     MenuRowButton(
@@ -40,7 +77,7 @@ struct MenuApp: App {
                 MenuRowButton(
                     title: "选择模型...",
                     icon: "folder",
-                    disabled: svc.isRunning || isChangingNetworkMode
+                    disabled: svc.isRunning || svc.backendSelection == .cloud || isChangingNetworkMode
                 ) {
                     selectModel()
                 }
@@ -66,8 +103,10 @@ struct MenuApp: App {
                 }
             }
             .padding(6)
-            .frame(width: 160)
-            .onAppear { syncNetworkMode() }
+            .frame(width: 190)
+            .onAppear {
+                syncNetworkMode()
+            }
         } label: {
             Image(systemName: iconName)
                 .symbolRenderingMode(.palette)
@@ -134,7 +173,7 @@ struct MenuApp: App {
     // MARK: - Network Slider
 
     private var networkSlider: some View {
-        let containerWidth: CGFloat = 148
+        let containerWidth: CGFloat = 178
         let thumbWidth = containerWidth / 2
         let targetOffset = networkModeIsLAN ? thumbWidth : 0
 
@@ -189,8 +228,6 @@ struct MenuApp: App {
 
         let oldMode = networkModeIsLAN
         let wasRunning = svc.isRunning
-        let modelPath = svc.modelPath
-
         isChangingNetworkMode = true
         defer { isChangingNetworkMode = false }
 
@@ -216,12 +253,12 @@ struct MenuApp: App {
             return
         }
 
-        guard !modelPath.isEmpty else {
+        guard svc.hasStartTarget else {
             svc.status = toLAN ? "✅ 局域网模式已启用" : "✅ 本机模式已启用"
             return
         }
 
-        await svc.start(path: modelPath)
+            await svc.startSelected()
 
         if !svc.isRunning {
             withAnimation(.easeOut(duration: 0.16)) {
@@ -234,22 +271,26 @@ struct MenuApp: App {
     // MARK: - Service
 
     @MainActor
-    private func toggleService() async {
-        if svc.isRunning {
+    private func toggleBackend(_ selection: BackendSelection) async {
+        if svc.isRunning && svc.backendSelection == selection {
             await svc.stop()
         } else {
-            guard !svc.modelPath.isEmpty else { return }
-            await svc.start(path: svc.modelPath)
+            await svc.start(selection)
         }
+    }
+
+    private func backendButtonTitle(_ name: String, selection: BackendSelection) -> String {
+        let action = svc.isRunning && svc.backendSelection == selection ? "停止" : "启动"
+        return "\(name) · \(action)"
     }
 
     @MainActor
     private func restartService() {
-        guard !svc.modelPath.isEmpty else { return }
+        guard svc.hasStartTarget else { return }
 
         svc.status = "正在重启..."
         Task { @MainActor in
-            await svc.restart(path: svc.modelPath)
+            await svc.restartSelected()
         }
     }
 
@@ -276,8 +317,7 @@ struct MenuApp: App {
             guard response == .OK, let url = panel.url else { return }
 
             Task { @MainActor in
-                svc.modelPath = url.path
-                AppConfig.set(url.path, for: .modelPath)
+                svc.selectModel(url.path)
             }
         }
     }
@@ -320,6 +360,7 @@ struct MenuApp: App {
 private struct MenuRowButton: View {
     let title: String
     let icon: String
+    var leading: CGFloat = 0
     var disabled: Bool = false
     let action: () -> Void
 
@@ -337,7 +378,8 @@ private struct MenuRowButton: View {
 
                 Spacer()
             }
-            .padding(.horizontal, 8)
+            .padding(.leading, 8 + leading)
+            .padding(.trailing, 8)
             .frame(height: 24)
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)

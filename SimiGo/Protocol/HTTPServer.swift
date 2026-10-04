@@ -370,6 +370,7 @@ public final class HTTPServer: @unchecked Sendable {
     private let checkHealthHandler: CheckHealthHandler
     private let cancelGenerationHandler: CancelGenerationHandler?
     private let capabilitiesProvider: (() -> ModelCapabilityContract?)?
+    let remoteBackend: RemoteOpenAIBackend?
     /// UI 模型设置兜底：请求未显式指定的字段（采样/maxTokens/thinking/kvCache）
     /// 落到 UI 值而非 ModelConfig 硬编码默认——模型页参数此前对协议请求不生效。
     private let baseConfigProvider: () -> ModelConfig
@@ -400,6 +401,7 @@ public final class HTTPServer: @unchecked Sendable {
         checkHealthHandler: @escaping CheckHealthHandler,
         cancelGenerationHandler: CancelGenerationHandler? = nil,
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
+        remoteBackend: RemoteOpenAIBackend? = nil,
         baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() }
     ) {
         guard let endpointPort = NWEndpoint.Port(
@@ -429,6 +431,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.checkHealthHandler = checkHealthHandler
         self.cancelGenerationHandler = cancelGenerationHandler
         self.capabilitiesProvider = capabilitiesProvider
+        self.remoteBackend = remoteBackend
         self.baseConfigProvider = baseConfigProvider
     }
 
@@ -1048,7 +1051,24 @@ public final class HTTPServer: @unchecked Sendable {
                 context: context
             )
 
-        case ("POST", "/v1/chat/completions"):
+        case ("POST", "/v1/chat/completions"),
+             ("POST", "/chat/completions") where remoteBackend != nil:
+            try await forwardToRemote(request, context: context)
+
+        case ("POST", "/v1/completions") where remoteBackend != nil:
+            try await forwardToRemote(request, context: context)
+
+        case ("POST", "/completions") where remoteBackend != nil:
+            try await forwardToRemote(request, context: context)
+
+        case ("POST", "/v1/responses") where remoteBackend != nil:
+            try await forwardToRemote(request, context: context)
+
+        case ("GET", "/v1/models") where remoteBackend != nil:
+            try await forwardToRemote(request, context: context)
+
+        case ("POST", "/v1/chat/completions"),
+             ("POST", "/chat/completions"):
 
             let json =
                 try decodeJSONObject(
@@ -1796,6 +1816,152 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         return json
+    }
+
+    // MARK: - Remote OpenAI-compatible Backend
+
+    private func forwardToRemote(
+        _ request: HTTPRequest,
+        context: ConnectionContext
+    ) async throws {
+        guard let backend = remoteBackend else {
+            sendError("Remote backend unavailable", status: 503, on: context.connection, context: context)
+            return
+        }
+
+        let upstreamRequest: URLRequest
+        do {
+            upstreamRequest = try backend.makeRequest(
+                path: request.path,
+                method: request.method,
+                headers: request.headers,
+                body: request.body
+            )
+        } catch {
+            sendError(error.localizedDescription, status: 400, on: context.connection, context: context)
+            return
+        }
+
+        let agent = request.headers["x-agent-id"]
+            ?? request.headers["x-simigo-agent"]
+        let execution = request.headers["x-simigo-execution-id"]
+            ?? request.headers["x-request-id"]
+            ?? context.requestId
+
+        print(
+            "[SimiGo Remote] [EXECUTION] endpoint=\(request.path) " +
+            "request=\(context.requestId) agent=\(agent ?? "default") " +
+            "execution=\(execution)"
+        )
+
+        let started = Date()
+        let remoteSession = RemoteOpenAIBackend.makeURLSession()
+        defer { remoteSession.finishTasksAndInvalidate() }
+
+        if backend.isStreamingRequest(requestHeaders: request.headers, body: request.body) {
+            do {
+                let (bytes, response) = try await remoteSession.bytes(for: upstreamRequest)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw HTTPServerError.badRequest("Remote backend returned a non-HTTP response")
+                }
+
+                var head =
+                    "HTTP/1.1 \(httpResponse.statusCode) " +
+                    "\(reasonPhrase(httpResponse.statusCode))\r\n"
+                for (key, value) in backend.sanitizedResponseHeaders(httpResponse) {
+                    head += "\(key): \(value)\r\n"
+                }
+                head += "\r\n"
+                sendRaw(Data(head.utf8), context: context, close: false)
+
+                var responseBytes = 0
+                var pending = Data()
+                let separator = Data("\n\n".utf8)
+
+                for try await byte in bytes {
+                    guard !context.closed else { break }
+                    pending.append(byte)
+
+                    if pending.count >= separator.count, pending.suffix(separator.count) == separator {
+                        responseBytes += pending.count
+                        sendRaw(pending, context: context, close: false)
+                        pending.removeAll(keepingCapacity: true)
+                    }
+                }
+
+                if !pending.isEmpty {
+                    responseBytes += pending.count
+                    sendRaw(pending, context: context, close: false)
+                }
+                sendRaw(Data(), context: context, close: true)
+
+                print(
+                    "[SimiGo Remote] [STREAM_COMPLETE] endpoint=\(request.path) " +
+                    "status=\(httpResponse.statusCode) bytes=\(responseBytes) " +
+                    "duration=\(String(format: "%.3f", Date().timeIntervalSince(started)))s " +
+                    "agent=\(agent ?? "default") execution=\(execution)"
+                )
+            } catch {
+                if context.canSend() {
+                    sendError(
+                        "Remote backend failed: \(error.localizedDescription)",
+                        status: 502,
+                        on: context.connection,
+                        context: context
+                    )
+                }
+
+                print(
+                    "[SimiGo Remote] [STREAM_FAILED] endpoint=\(request.path) " +
+                    "error=\(error.localizedDescription) agent=\(agent ?? "default") " +
+                    "execution=\(execution)"
+                )
+            }
+            return
+        }
+
+        do {
+            let (data, response) = try await remoteSession.data(for: upstreamRequest)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw HTTPServerError.badRequest("Remote backend returned a non-HTTP response")
+            }
+
+            var head =
+                "HTTP/1.1 \(httpResponse.statusCode) " +
+                "\(reasonPhrase(httpResponse.statusCode))\r\n"
+            for (key, value) in backend.sanitizedResponseHeaders(httpResponse) {
+                head += "\(key): \(value)\r\n"
+            }
+            head += "\r\n"
+
+            sendRaw(Data(head.utf8), context: context, close: false)
+
+            sendRaw(data, context: context, close: false)
+            let responseBytes = data.count
+            sendRaw(Data(), context: context, close: true)
+
+            print(
+                "[SimiGo Remote] [COMPLETE] endpoint=\(request.path) " +
+                "status=\(httpResponse.statusCode) bytes=\(responseBytes) " +
+                "duration=\(String(format: "%.3f", Date().timeIntervalSince(started)))s " +
+                "agent=\(agent ?? "default") execution=\(execution)"
+            )
+        } catch {
+            if context.canSend() {
+                sendError(
+                    "Remote backend failed: \(error.localizedDescription)",
+                    status: 502,
+                    on: context.connection,
+                    context: context
+                )
+            }
+
+            print(
+                "[SimiGo Remote] [FAILED] endpoint=\(request.path) " +
+                "error=\(error.localizedDescription) agent=\(agent ?? "default") " +
+                "execution=\(execution)"
+            )
+        }
     }
 
     // MARK: - HTTP Parsing
