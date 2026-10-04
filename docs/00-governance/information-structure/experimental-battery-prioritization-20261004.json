@@ -1,0 +1,991 @@
+{
+  "document": "SimiGo-Lab Experimental Battery Prioritization",
+  "date": "2026-10-04",
+  "status": "SCHEDULING / DEPENDENCY MAP / ROUND-1 SELECTION FROZEN / PROMPT INSTANTIATION AND RUNTIME NOT AUTHORIZED",
+  "source": {
+    "path": "docs/00-governance/information-structure/reduction-design-20261004.json",
+    "sha256": "076824f1e0f295fffee95d4388e60b31168e5e4f9318f6434f09c95205a44625",
+    "designs": 17,
+    "atoms": 846
+  },
+  "scheduling_rule": {
+    "principle": "Breadth-first, dependency-aware, information-gain-first.",
+    "not_goal": "Run all seventeen designs.",
+    "goal": "Select the smallest first battery that resolves foundational ambiguities and deconfounds later designs.",
+    "freeze_scope": "Round-1 design selection only; no condition prompt, no runtime request, no Observer, and no store."
+  },
+  "round1_battery": {
+    "status": "SELECTION_FROZEN",
+    "ids": [
+      "R-D1A",
+      "R-D2",
+      "R-D3",
+      "R-D4",
+      "R-D5",
+      "R-D8",
+      "R-D9"
+    ],
+    "child_split_note": "R-D1 is split into R-D1A and R-D1B; only R-D1A is in round 1.",
+    "count": 7,
+    "prompt_instantiation": "NOT AUTHORIZED",
+    "runtime_execution": "NOT AUTHORIZED",
+    "adjudication": "NOT AUTHORIZED"
+  },
+  "round1_sequence": [
+    {
+      "stage": "1A",
+      "rationale": "Low-dependency foundational controls.",
+      "conditions": [
+        "R-D2",
+        "R-D5",
+        "R-D8",
+        "R-D9"
+      ],
+      "parallel": true
+    },
+    {
+      "stage": "1B",
+      "rationale": "Semantic-core factorial after representation and explanation controls are known.",
+      "conditions": [
+        "R-D3",
+        "R-D4"
+      ],
+      "parallel": true
+    },
+    {
+      "stage": "1C",
+      "rationale": "Aggregation probe after explanation policy is fixed and representation baseline is known.",
+      "conditions": [
+        "R-D1A"
+      ],
+      "parallel": false
+    }
+  ],
+  "candidate_reach": [
+    {
+      "battery_id": "R-D2",
+      "canonical_group": "representation_form",
+      "candidate_atoms": 68,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    },
+    {
+      "battery_id": "R-D5",
+      "canonical_group": "issue_explanation",
+      "candidate_atoms": 50,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    },
+    {
+      "battery_id": "R-D1A",
+      "canonical_group": "persistence_aggregation",
+      "candidate_atoms": 16,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    },
+    {
+      "battery_id": "R-D3/R-D4",
+      "canonical_group": "baseline_decision",
+      "candidate_atoms": 26,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    },
+    {
+      "battery_id": "R-D3/R-D4",
+      "canonical_group": "pair_decision",
+      "candidate_atoms": 24,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    },
+    {
+      "battery_id": "R-D8",
+      "canonical_group": "provenance_integrity",
+      "candidate_atoms": 94,
+      "reading": "PARTIAL_REACH_ONLY_HASH_AND_SOURCE_ATOMS"
+    },
+    {
+      "battery_id": "R-D9",
+      "canonical_group": "tool_evidence",
+      "candidate_atoms": 23,
+      "reading": "MAXIMUM_CANDIDATE_REACH_NOT_RESOLUTION"
+    }
+  ],
+  "candidate_reach_total_upper_bound": 301,
+  "candidate_reach_reading": "Upper bound only. A battery may touch a canonical group without resolving every atom.",
+  "dependency_map": [
+    {
+      "id": "R-D1",
+      "title": "Aggregation / persistence granularity — ORIGINAL DESIGN",
+      "round": null,
+      "first_battery": false,
+      "selection_status": "SPLIT_INTO_CHILD_DESIGNS",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5"
+      ],
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "SPLIT",
+      "can_be_resolved_or_deconfounded_by": []
+    },
+    {
+      "id": "R-D10",
+      "title": "Identity form probe",
+      "round": 2,
+      "first_battery": false,
+      "selection_status": "DEFERRED_HIGH_VALUE",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2A",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D11",
+      "title": "Locator / selection probe",
+      "round": 2,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D10"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2A",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D10",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D12",
+      "title": "Retrieval shape probe",
+      "round": 2,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D10",
+        "R-D11"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D10",
+        "R-D11",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D13",
+      "title": "Reconstruction probe",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D12"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "G_RECONSTRUCTION_PROJECTION",
+      "sequence_stage": "3A",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D12",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D14",
+      "title": "Task projection shift",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D12"
+      ],
+      "soft_dependencies": [
+        "R-D3",
+        "R-D4",
+        "R-D13"
+      ],
+      "parallel_group": "G_RECONSTRUCTION_PROJECTION",
+      "sequence_stage": "3B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D12",
+        "R-D13",
+        "R-D3",
+        "R-D4"
+      ]
+    },
+    {
+      "id": "R-D15",
+      "title": "Irrelevant-material adoption probe",
+      "round": 2,
+      "first_battery": false,
+      "selection_status": "DEFERRED_HIGH_VALUE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "H_ADOPTION_EFFECT",
+      "sequence_stage": "2C",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D4",
+        "R-D5",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D16",
+      "title": "Counterfactual adopted-field deletion",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D15",
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "H_ADOPTION_EFFECT",
+      "sequence_stage": "3C",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D15",
+        "R-D4",
+        "R-D5",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D17",
+      "title": "Repeated-label merge discriminator",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D2",
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D8",
+        "R-D9"
+      ],
+      "parallel_group": "I_MERGE_DISCRIMINATION",
+      "sequence_stage": "3D",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D2",
+        "R-D4",
+        "R-D5",
+        "R-D8",
+        "R-D9"
+      ]
+    },
+    {
+      "id": "R-D1A",
+      "title": "Structured aggregation probe",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "1C",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D5",
+        "R-D2"
+      ]
+    },
+    {
+      "id": "R-D1B",
+      "title": "Bare-boolean compression probe",
+      "round": 2,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D5",
+        "R-D1A"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "2B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D5",
+        "R-D1A"
+      ]
+    },
+    {
+      "id": "R-D2",
+      "title": "Representation form substitution",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [],
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "1A",
+      "can_be_resolved_or_deconfounded_by": []
+    },
+    {
+      "id": "R-D3",
+      "title": "Delete M2.b while retaining M1.b",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5",
+        "R-D4"
+      ],
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D4",
+        "R-D2",
+        "R-D5"
+      ]
+    },
+    {
+      "id": "R-D4",
+      "title": "M1 level factorial with M2.b fixed",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5",
+        "R-D3"
+      ],
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D3",
+        "R-D2",
+        "R-D5"
+      ]
+    },
+    {
+      "id": "R-D5",
+      "title": "Explanation / decision separation",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1A",
+      "can_be_resolved_or_deconfounded_by": []
+    },
+    {
+      "id": "R-D6",
+      "title": "Reference-set variation",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_LOW_DEPENDENCY_PRIORITY",
+      "information_gain": "MEDIUM",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D14",
+        "R-D4"
+      ],
+      "parallel_group": "E_REFERENCE_PROJECTION",
+      "sequence_stage": "3B",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D14",
+        "R-D4"
+      ]
+    },
+    {
+      "id": "R-D7",
+      "title": "Full versus componentwise M3 bundle",
+      "round": 3,
+      "first_battery": false,
+      "selection_status": "DEFERRED_DEPENDENCY_GATE",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D8",
+        "R-D9"
+      ],
+      "soft_dependencies": [
+        "R-D10"
+      ],
+      "parallel_group": "D_PROVENANCE",
+      "sequence_stage": "3A",
+      "can_be_resolved_or_deconfounded_by": [
+        "R-D8",
+        "R-D9",
+        "R-D10"
+      ]
+    },
+    {
+      "id": "R-D8",
+      "title": "Source validity / staleness probe",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "C_PROVENANCE",
+      "sequence_stage": "1A",
+      "can_be_resolved_or_deconfounded_by": []
+    },
+    {
+      "id": "R-D9",
+      "title": "Tool evidence probe",
+      "round": 1,
+      "first_battery": true,
+      "selection_status": "SELECTED_FROZEN",
+      "information_gain": "HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "parallel_group": "C_PROVENANCE",
+      "sequence_stage": "1A",
+      "can_be_resolved_or_deconfounded_by": []
+    }
+  ],
+  "items": [
+    {
+      "id": "R-D2",
+      "title": "Representation form substitution",
+      "objective": "Compare exact raw bytes, decoded text, and semantic object while the release task stays fixed.",
+      "family": "representation_variant",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [],
+      "enables": [
+        "R-D1A",
+        "R-D3",
+        "R-D4",
+        "R-D11",
+        "R-D13"
+      ],
+      "resolution_if_forms_equivalent": "Representation-only atoms become representation-variant candidates, not independent semantic structures.",
+      "resolution_if_forms_differ": "Representation becomes a load-bearing structure; representation atoms cannot be collapsed by serialization equivalence.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "1A",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D5",
+      "title": "Explanation / decision separation",
+      "objective": "Add or remove M1.c/M2.c explanations while baseline and pair decisions remain fixed.",
+      "family": "explanation_optional",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D1A",
+        "R-D1B",
+        "R-D3",
+        "R-D4",
+        "R-D15",
+        "R-D16"
+      ],
+      "resolution_if_no_continuation_loss": "Issue explanations become candidate reducible in this frame; bare-decision arms lose the explanation confound.",
+      "resolution_if_continuation_loss": "Explanation structure is load-bearing; R-D1 bare-decision arms must not be interpreted as aggregation failure.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1A",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D1",
+      "title": "Aggregation / persistence granularity — ORIGINAL DESIGN",
+      "objective": "Original three-arm comparison: whole decoded register, U3+U4 structured facts, and bare booleans.",
+      "family": "aggregation_variant",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5"
+      ],
+      "enables": [
+        "R-D1A",
+        "R-D1B"
+      ],
+      "scheduling_resolution": "Split into R-D1A and R-D1B because a bare-boolean arm conflates aggregation loss with explanation loss.",
+      "round": null,
+      "first_battery": false,
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "SPLIT",
+      "selection_status": "SPLIT_INTO_CHILD_DESIGNS"
+    },
+    {
+      "id": "R-D1A",
+      "title": "Structured aggregation probe",
+      "objective": "Compare whole decoded register against U3+U4 structured facts while explanation policy is fixed by R-D5.",
+      "family": "aggregation_variant",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D1B",
+        "R-D7"
+      ],
+      "resolution_if_equivalent": "Register aggregation is representation/persistence packaging, not a distinct semantic core in this frame.",
+      "resolution_if_not_equivalent": "Whole-register structure carries a non-redundant aggregation or relation boundary.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "1C",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D1B",
+      "title": "Bare-boolean compression probe",
+      "objective": "Test bare booleans after the explanation confound has been separately measured.",
+      "family": "aggregation_variant",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D5",
+        "R-D1A"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [],
+      "resolution_if_equivalent": "Bare decisions may suffice for this narrow frame; explanations remain audit-side candidates.",
+      "resolution_if_not_equivalent": "Missing explanations, ordering, or aggregation boundary causes the continuation loss.",
+      "round": 2,
+      "first_battery": false,
+      "parallel_group": "A_REPRESENTATION",
+      "sequence_stage": "2B",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D3",
+      "title": "Delete M2.b while retaining M1.b",
+      "objective": "Test whether baseline facts alone support the release-gate continuation.",
+      "family": "semantic_core",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5",
+        "R-D4"
+      ],
+      "enables": [
+        "R-D14",
+        "R-D15",
+        "R-D16"
+      ],
+      "resolution_if_pass": "M1.b may suffice without M2.b in this frame; pair decisions are not necessary for the narrow continuation.",
+      "resolution_if_fail": "Pair decisions are load-bearing when M1.b remains; M1 and M2 are not interchangeable.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1B",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D4",
+      "title": "M1 level factorial with M2.b fixed",
+      "objective": "Compare all M1 baseline predicates, gamma-only baseline predicate, and no baseline predicate while pair decisions remain fixed.",
+      "family": "semantic_core",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2",
+        "R-D5",
+        "R-D3"
+      ],
+      "enables": [
+        "R-D14",
+        "R-D15",
+        "R-D16"
+      ],
+      "resolution_if_gamma_only_pass": "Gamma-only baseline predicate is sufficient with M2.b; full M1 is reducible in this frame.",
+      "resolution_if_no_baseline_pass": "Pair decisions alone may solve the narrow task; M1.b necessity is downgraded to explanation/frame artifact.",
+      "resolution_if_baseline_required": "The baseline-compatible slot is semantically load-bearing with pair decisions.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "B_SEMANTIC_CORE",
+      "sequence_stage": "1B",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D6",
+      "title": "Reference-set variation",
+      "objective": "Vary service-id and pair-id structures only when the release rule remains solvable.",
+      "family": "reference_structure",
+      "information_gain": "MEDIUM",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D14",
+        "R-D4"
+      ],
+      "enables": [],
+      "resolution_if_stable": "Reference syntax is task projection packaging rather than independent semantic core.",
+      "resolution_if_unstable": "Reference structure is part of task-addressable Information.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "E_REFERENCE_PROJECTION",
+      "sequence_stage": "3B",
+      "selection_status": "DEFERRED_LOW_DEPENDENCY_PRIORITY"
+    },
+    {
+      "id": "R-D7",
+      "title": "Full versus componentwise M3 bundle",
+      "objective": "Compare no M3, individual M3.a-g fields, and the full provenance bundle.",
+      "family": "provenance_binding",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D8",
+        "R-D9"
+      ],
+      "soft_dependencies": [
+        "R-D10"
+      ],
+      "enables": [],
+      "resolution_if_components_explain_all": "Full-bundle effect is reducible to tested M3 components.",
+      "resolution_if_only_full_passes": "M3 has contextual/emergent provenance function beyond isolated fields.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "D_PROVENANCE",
+      "sequence_stage": "3A",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D8",
+      "title": "Source validity / staleness probe",
+      "objective": "Compare valid source hashes, stale hashes, and absent hashes.",
+      "family": "provenance_binding",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D7"
+      ],
+      "resolution_if_no_effect": "Source hashes are audit/staleness candidates, not semantic-core Information in this frame.",
+      "resolution_if_effect": "Source validity enters adoption or continuation; provenance is not merely external audit metadata.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "C_PROVENANCE",
+      "sequence_stage": "1A",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D9",
+      "title": "Tool evidence probe",
+      "objective": "Compare tool evidence present, absent, and summary-only.",
+      "family": "provenance_binding",
+      "information_gain": "HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D7"
+      ],
+      "resolution_if_no_effect": "Tool evidence is process/audit residue, not narrow-task semantic core.",
+      "resolution_if_effect": "Execution-process evidence changes adoption or continuation and is Information-relevant in this frame.",
+      "round": 1,
+      "first_battery": true,
+      "parallel_group": "C_PROVENANCE",
+      "sequence_stage": "1A",
+      "selection_status": "SELECTED_FROZEN"
+    },
+    {
+      "id": "R-D10",
+      "title": "Identity form probe",
+      "objective": "Compare no identity, non-matching sentinel identity, and correct identity with payload held fixed.",
+      "family": "identity_addressing",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D11",
+        "R-D12",
+        "R-D13",
+        "R-D14"
+      ],
+      "resolution_if_payload_only": "Identity is external addressing, not semantic Information.",
+      "resolution_if_identity_effective": "Identity changes access or adoption and cannot be collapsed into payload representation.",
+      "round": 2,
+      "first_battery": false,
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2A",
+      "selection_status": "DEFERRED_HIGH_VALUE"
+    },
+    {
+      "id": "R-D11",
+      "title": "Locator / selection probe",
+      "objective": "Compare no locator, non-A locator, correct locator, and pre-located direct payload.",
+      "family": "access_selection",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D10"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D12",
+        "R-D13",
+        "R-D14"
+      ],
+      "resolution_if_correct_locator_required": "Locator is distinct from identity and payload representation.",
+      "resolution_if_direct_payload_equivalent": "Locator is access packaging rather than cross-Execution semantic structure.",
+      "round": 2,
+      "first_battery": false,
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2A",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D12",
+      "title": "Retrieval shape probe",
+      "objective": "Compare single-object, set, relation-preserving, projection-time, and provenance-only retrieval.",
+      "family": "access_selection",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D10",
+        "R-D11"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D13",
+        "R-D14"
+      ],
+      "resolution_if_relation_preserving_required": "Relations are part of usable Information, not merely fetch packaging.",
+      "resolution_if_all_equivalent": "Retrieval shape is reducible to delivery packaging in this frame.",
+      "round": 2,
+      "first_battery": false,
+      "parallel_group": "F_IDENTITY_ACCESS",
+      "sequence_stage": "2B",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D13",
+      "title": "Reconstruction probe",
+      "objective": "After successful fetch, request reconstruction before the release decision and compare with direct release.",
+      "family": "reconstruction_projection",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D12"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D14"
+      ],
+      "resolution_if_reconstruction_needed": "Retrieved/parsed Information is not yet semantically reconstructed for use.",
+      "resolution_if_direct_equal": "Reconstruction may be implicit in task projection rather than an independent required stage.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "G_RECONSTRUCTION_PROJECTION",
+      "sequence_stage": "3A",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D14",
+      "title": "Task projection shift",
+      "objective": "Keep Information fixed while changing release constraints or the candidate set.",
+      "family": "reconstruction_projection",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D12"
+      ],
+      "soft_dependencies": [
+        "R-D3",
+        "R-D4",
+        "R-D13"
+      ],
+      "enables": [
+        "R-D6"
+      ],
+      "resolution_if_same_information_uses_change": "Task projection is an independent Information × Execution relation.",
+      "resolution_if_only_ready_to_use_works": "Information is task-ready rather than stable semantic material requiring projection.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "G_RECONSTRUCTION_PROJECTION",
+      "sequence_stage": "3B",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D15",
+      "title": "Irrelevant-material adoption probe",
+      "objective": "Add present-but-irrelevant material to distinguish fetch/reference from actual adoption.",
+      "family": "adoption_effect_continuation",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [
+        "R-D16"
+      ],
+      "resolution_if_irrelevant_not_adopted": "Fetch/reference and adoption are distinct.",
+      "resolution_if_irrelevant_material_changes_output": "Projection/adoption boundaries are unstable in this frame.",
+      "round": 2,
+      "first_battery": false,
+      "parallel_group": "H_ADOPTION_EFFECT",
+      "sequence_stage": "2C",
+      "selection_status": "DEFERRED_HIGH_VALUE"
+    },
+    {
+      "id": "R-D16",
+      "title": "Counterfactual adopted-field deletion",
+      "objective": "Delete a field already shown to be referenced or adopted, then test continuation.",
+      "family": "adoption_effect_continuation",
+      "information_gain": "VERY_HIGH",
+      "hard_dependencies": [
+        "R-D15",
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D2"
+      ],
+      "enables": [],
+      "resolution_if_loss": "Adopted field has counterfactual continuation function in this frame.",
+      "resolution_if_no_loss": "Prior adoption was reference or redundant recovery, not counterfactual dependence.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "H_ADOPTION_EFFECT",
+      "sequence_stage": "3C",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    },
+    {
+      "id": "R-D17",
+      "title": "Repeated-label merge discriminator",
+      "objective": "Test repeated normalized labels for duplicated content, shared reference, representation variant, or independent structure.",
+      "family": "structural_relation",
+      "information_gain": "HIGH",
+      "hard_dependencies": [
+        "R-D2",
+        "R-D4",
+        "R-D5"
+      ],
+      "soft_dependencies": [
+        "R-D8",
+        "R-D9"
+      ],
+      "enables": [],
+      "resolution_if_mergeable": "Repeated labels collapse into representation/context variants.",
+      "resolution_if_not_mergeable": "Repeated labels remain independent scope-bound structures.",
+      "round": 3,
+      "first_battery": false,
+      "parallel_group": "I_MERGE_DISCRIMINATION",
+      "sequence_stage": "3D",
+      "selection_status": "DEFERRED_DEPENDENCY_GATE"
+    }
+  ],
+  "round_resolution_rules": [
+    {
+      "group": "Representation",
+      "ids": [
+        "R-D2"
+      ],
+      "if_equivalent": "Collapse representation-only variants into representation packaging.",
+      "if_not_equivalent": "Treat representation form as a load-bearing structure."
+    },
+    {
+      "group": "Explanation",
+      "ids": [
+        "R-D5"
+      ],
+      "if_no_loss": "Mark issue explanations candidate-reducible in this frame and deconfound R-D1.",
+      "if_loss": "Keep explanations as load-bearing semantic or projection structure."
+    },
+    {
+      "group": "Aggregation",
+      "ids": [
+        "R-D1A"
+      ],
+      "if_equivalent": "Whole-register packaging is not an independent semantic core.",
+      "if_not_equivalent": "Register aggregation is a distinct persistence/semantic boundary."
+    },
+    {
+      "group": "Semantic core factorial",
+      "ids": [
+        "R-D3",
+        "R-D4"
+      ],
+      "possible_readings": [
+        "M1.b and M2.b both required;",
+        "M2.b sufficient;",
+        "M1.b sufficient;",
+        "neither required in this frame;",
+        "only the conjunction is sufficient."
+      ],
+      "boundary": "Every reading is frame-bounded; none proves universal minimality."
+    },
+    {
+      "group": "Provenance",
+      "ids": [
+        "R-D8",
+        "R-D9"
+      ],
+      "if_no_effect": "Treat tested provenance as validity/audit structure, not semantic-core Information.",
+      "if_effect": "Promote tested provenance into adoption/continuation-relevant Information."
+    }
+  ],
+  "boundary": {
+    "observer": "NOT RUN",
+    "information_core_store": "NOT RUN",
+    "runtime_execution": "NOT RUN",
+    "condition_prompt_instantiation": "NOT AUTHORIZED",
+    "schema_api_change": "NOT MADE",
+    "minimal_structure_claim": "NOT MADE",
+    "irreducibility_claim": "NOT MADE"
+  }
+}

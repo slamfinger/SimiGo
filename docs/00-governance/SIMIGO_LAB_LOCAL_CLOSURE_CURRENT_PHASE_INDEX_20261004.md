@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b PAIR BRANCH HALTED / 846-ATOM REDUCTION DESIGN COMPLETE / RUNTIME PROBES NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / M1.b PAIR BRANCH HALTED / ROUND-1 REDUCTION BATTERY SELECTED / RUNTIME PROBES NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -46,6 +46,7 @@ M1.b pair combinations        = HALTED / F12 RAW OUTPUT ONLY / F13 + F23 NOT RUN
 Information coverage          = LAYER-1 MATRIX COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE.
 Information decomposition     = 32 OBJECTS / 256 FACETS / 846 STATIC ATOMS / NO MERGES OR IRREDUCIBILITY CLAIMS.
 Reduction design              = 846 ATOMS CLASSIFIED / 17 DISCRIMINATING DESIGNS / NO RUNTIME PROBE.
+Battery prioritization        = 19 SCHEDULING NODES / ROUND-1 SELECTION FROZEN / NO RUNTIME PROBE.
 ```
 
 ## 3. Core sealed finding
@@ -179,6 +180,8 @@ docs/00-governance/information-structure/SYNCHRONOUS_DECOMPOSITION_20261004.md
 docs/00-governance/information-structure/synchronous-decomposition-20261004.json
 docs/00-governance/information-structure/REDUCTION_DESIGN_20261004.md
 docs/00-governance/information-structure/reduction-design-20261004.json
+docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_20261004.md
+docs/00-governance/information-structure/experimental-battery-prioritization-20261004.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt

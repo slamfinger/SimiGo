@@ -20,6 +20,7 @@
 > Coverage matrix      = LAYER-1 COMPLETE
 > Static decomposition = 32 OBJECTS / 846 ATOMS
 > Reduction design     = COMPLETE / 17 DESIGNS
+> Battery scheduling   = ROUND-1 SELECTED
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -47,6 +48,9 @@
 > 已完成 reduction design：846 atoms 全部分类为 22 canonical groups /
 > 11 reduction families；17 个 discriminating experiment designs 只登记，
 > 未运行。
+> 已完成 battery prioritization：17 个设计拆成 19 个 scheduling nodes，
+> Round 1 冻结为 R-D2、R-D5、R-D1A、R-D3、R-D4、R-D8、R-D9。只冻结选择；
+> prompt instantiation 和 runtime execution 仍未授权。
 
 
 登记时间：2026-10-02

@@ -71,6 +71,12 @@ static analytic leaf；experimental irreducibility 仍然开放，运行实验�
 11 reduction families，形成 15 个 cross-object merge-candidate groups、
 10 个 candidate relation groups，以及 17 个最小判别实验设计。此阶段无运行
 probe、无 store、无 irreducibility claim；所有实验设计仍需单独授权。
+随后完成 experimental battery prioritization：原 17 个设计被拆成 19 个
+scheduling nodes；Round 1 冻结为 R-D2、R-D5、R-D1A、R-D3、R-D4、R-D8、R-D9。
+该阶段只做 dependency map、information-gain ranking 和 selection freeze；
+不实例化 prompt、不运行 runtime、不运行 Observer、不 store。后续 Round 2 为
+identity/access 与 adoption probes，Round 3 为 reconstruction/projection、
+counterfactual deletion、merge discrimination、reference variation 与 broad M3。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

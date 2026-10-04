@@ -1,7 +1,7 @@
 # Information Structure Coverage Matrix
 
 Date: 2026-10-04  
-Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / REDUCTION DESIGN COMPLETE / RUNTIME PROBES NOT AUTHORIZED`
+Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / REDUCTION DESIGN COMPLETE / ROUND-1 BATTERY SELECTED / RUNTIME PROBES NOT AUTHORIZED`
 
 ## 1. Purpose
 
@@ -247,4 +247,37 @@ Human-readable record:
 
 ```text
 docs/00-governance/information-structure/REDUCTION_DESIGN_20261004.md
+```
+
+## 16. Experimental battery prioritization
+
+The 17 original designs were mapped into 19 scheduling nodes because `R-D1`
+was split into `R-D1A` and `R-D1B`. Round 1 is frozen at seven scheduling
+nodes:
+
+```text
+R-D2;
+R-D5;
+R-D1A;
+R-D3;
+R-D4;
+R-D8;
+R-D9.
+```
+
+The maximum candidate reach of this battery is 301 atoms, but candidate reach
+is not resolution. Round 2 contains identity/access and adoption probes. Round 3
+contains reconstruction/projection shifts, counterfactual deletion, merge tests,
+reference variation, and broad M3 comparison.
+
+Machine-readable record:
+
+```text
+docs/00-governance/information-structure/experimental-battery-prioritization-20261004.json
+```
+
+Human-readable record:
+
+```text
+docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_20261004.md
 ```
