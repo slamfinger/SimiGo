@@ -37,7 +37,10 @@
 First B Panel 已通过 narrowing review，S-B0/S-B1/S-B2 direct-inline prompt
 artifacts 已实例化并已在独立授权下执行；原始输出已按冻结观察纪律完成行为
 判读：S-B1 continuation PASS，S-B2 continuation FAIL。该读数限于当前
-TC-A prompt/model/frame，不证明一般最小性。Observer tool、store、
+TC-A prompt/model/frame，不证明一般最小性。Human review 已锁定该 observed
+boundary：M1.b(gamma baseline decision) 是当前 frame 下的 frame-bounded
+necessity candidate；下一阶段只应区分真实 semantic dependency 与 S-B2
+representation/prompt artifact，其设计与执行另批。Observer tool、store、
 Execution B、B0/B1/B2 均未授权。当前入口见
 `docs/NEXT_SESSION_ENTRY.md` 与
 `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。

@@ -12,13 +12,18 @@
 > S-B prompts          = INSTANTIATED
 > S-B raw execution    = COMPLETE
 > S-B behavior         = ADJUDICATED
+> S-B boundary         = LOCKED
+> Next discrimination design = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
 >
 > 新会话先读 phase index，再按需读 M-candidate reduction worksheet 和
 > shared discrimination plan。不要先修 R-A1，不要先跑 B0/B1/B2。
 > S-B0/S-B1/S-B2 raw outputs 已封存并完成行为判读：S-B1 PASS，S-B2 FAIL。
-> 不得推广为一般最小性结论；Observer tool、store、Execution B 仍未授权。
+> 已锁定 frame-bounded boundary：M1.b 是当前 frame 下 candidate necessity，
+> 但不得推广为一般最小性或不可约性。下一刀只应区分 semantic dependency 与
+> representation/prompt artifact；其设计与执行另批。Observer tool、store、
+> Execution B 仍未授权。
 
 
 登记时间：2026-10-02

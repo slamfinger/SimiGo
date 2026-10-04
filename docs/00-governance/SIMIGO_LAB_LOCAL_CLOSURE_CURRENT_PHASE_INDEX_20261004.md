@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B RAW EXECUTION COMPLETE / BEHAVIOR ADJUDICATED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B BOUNDARY LOCKED / NEXT DISCRIMINATION DESIGN NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -38,6 +38,7 @@ First B panel                 = REVIEWED / NARROWED TO SEMANTIC COMPRESSION.
 S-B condition prompts         = INSTANTIATED / AWAITING ARTIFACT REVIEW.
 S-B raw execution             = COMPLETE / RAW OUTPUTS ONLY.
 S-B behavior adjudication     = COMPLETE / S-B1 PASS / S-B2 FAIL.
+S-B boundary                  = LOCKED / M1.b IS FRAME-BOUNDED NECESSITY CANDIDATE.
 ```
 
 ## 3. Core sealed finding
@@ -158,12 +159,18 @@ discipline. Records:
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_CONDITION_PROMPTS_INSTANTIATED_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_RAW_EXECUTION_COMPLETE_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_BEHAVIOR_ADJUDICATION_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_BOUNDARY_LOCK_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/RUN_RECORD.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/behavior-adjudication.json
 ```
+
+The locked next reduction question is only to distinguish real semantic
+dependency of `M1.b(gamma is not baseline-compatible)` from an S-B2
+representation / prompt artifact. Its design and execution require separate
+authorization.
 
 Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store
 Candidate Information, or start Execution B until separately authorized.
@@ -176,6 +183,7 @@ run Observer;
 store Candidate Information;
 start Execution B;
 generalize S-B adjudication;
+design or execute the M1.b artifact/dependency discrimination without authorization;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
