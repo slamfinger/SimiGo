@@ -1,0 +1,147 @@
+{
+  "scope": "PARTIAL_2_SEMANTIC_MODELS_X_4_SAMPLES",
+  "raw_scope": "3_HTTP_SUCCESS_MODELS_X_4_SAMPLES",
+  "semantic_models": [
+    "A-qwen3-moe",
+    "C-gemma4-unified"
+  ],
+  "excluded_from_semantics": [
+    {
+      "model_id": "B-qwen3-next",
+      "reason": "runtime unavailable; no semantic output"
+    },
+    {
+      "model_id": "D-muse-glimmer",
+      "reason": "all four HTTP-200 outputs were degenerate repetition; excluded by mechanical screen"
+    }
+  ],
+  "thresholds": {
+    "sample_stable": "same stable_key appears in at least 3 of 4 samples among semantically usable cells",
+    "model_stable_partial": "same stable_key appears in both semantically usable models for the relevant samples; not a full 4-model claim",
+    "candidate_common": "sample_stable AND model_stable_partial"
+  },
+  "structures": [
+    {
+      "structure_id": "TASK_CONSTRAINT_BINDING",
+      "definition": "The output binds the task to a rule, scope, hypothesis, or comparison boundary taken from the supplied input.",
+      "observed_samples": [
+        "S1-release-config",
+        "S2-version-diff",
+        "S3-column-unit-audit",
+        "S4-arithmetic-anomaly-audit"
+      ],
+      "observed_models": [
+        "A-qwen3-moe",
+        "C-gemma4-unified"
+      ],
+      "sample_stable": true,
+      "model_stable_partial": true,
+      "representation_dependent": false,
+      "candidate_common": true,
+      "label": "SM_PARTIAL_CANDIDATE"
+    },
+    {
+      "structure_id": "EVIDENCE_GROUNDING",
+      "definition": "A claim is tied to identifiable supplied input evidence rather than standing alone as prose.",
+      "observed_samples": [
+        "S1-release-config",
+        "S2-version-diff",
+        "S3-column-unit-audit",
+        "S4-arithmetic-anomaly-audit"
+      ],
+      "observed_models": [
+        "A-qwen3-moe",
+        "C-gemma4-unified"
+      ],
+      "sample_stable": true,
+      "model_stable_partial": true,
+      "representation_dependent": false,
+      "candidate_common": true,
+      "label": "SM_PARTIAL_CANDIDATE"
+    },
+    {
+      "structure_id": "DECISION_COMMITMENT",
+      "definition": "The output collapses observations into an explicit task-level commitment or verdict.",
+      "observed_samples": [
+        "S1-release-config",
+        "S2-version-diff",
+        "S3-column-unit-audit",
+        "S4-arithmetic-anomaly-audit"
+      ],
+      "observed_models": [
+        "A-qwen3-moe",
+        "C-gemma4-unified"
+      ],
+      "sample_stable": true,
+      "model_stable_partial": true,
+      "representation_dependent": false,
+      "candidate_common": true,
+      "label": "SM_PARTIAL_CANDIDATE"
+    },
+    {
+      "structure_id": "NUMERIC_RELATION_CHECK",
+      "definition": "The output compares, recomputes, or dimensionally interprets numeric relations rather than merely restating numbers.",
+      "observed_samples": [
+        "S1-release-config",
+        "S2-version-diff",
+        "S3-column-unit-audit",
+        "S4-arithmetic-anomaly-audit"
+      ],
+      "observed_models": [
+        "A-qwen3-moe",
+        "C-gemma4-unified"
+      ],
+      "sample_stable": true,
+      "model_stable_partial": false,
+      "representation_dependent": false,
+      "candidate_common": false,
+      "label": "S_PARTIAL_MODEL_DIVERGENT"
+    }
+  ],
+  "sample_bound_structures": [
+    {
+      "sample_id": "S1-release-config",
+      "model_shared": [
+        "metrics_v2 constraint",
+        "alpha/beta eligibility",
+        "gamma ineligibility",
+        "sequential release form"
+      ],
+      "model_divergent": [
+        "A commits gamma to release; C blocks gamma"
+      ]
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "model_shared": [
+        "0308 onsite management expense value",
+        "existence of a version-authority decision"
+      ],
+      "model_divergent": [
+        "A selects 0307; C selects 0308",
+        "C adds several version-specific claims not shared by A"
+      ]
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "model_shared": [
+        "hypothesis framing",
+        "E header is 工程数量"
+      ],
+      "model_divergent": [
+        "A supports 万元; C rejects 万元"
+      ]
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_shared": [
+        "report-internal audit framing",
+        "table-5 anomaly reporting"
+      ],
+      "model_divergent": [
+        "A emphasizes recomputation mismatches; C emphasizes a missing saved-cost entry"
+      ]
+    }
+  ],
+  "boundary": "These are partial candidates only. They do not establish a 4-model Information Core and do not authorize 846 reduction."
+}
