@@ -2,7 +2,7 @@
 
 Date: 2026-10-04 Asia/Shanghai  
 Run ID: `20261004-152303`  
-Status: `EXECUTION A COMPLETE / OBSERVER NOT AUTHORIZED`  
+Status: `EXECUTION A COMPLETE / R-A1 SEALED / NO REPAIR / NO RETRY / OBSERVER NOT AUTHORIZED`
 Backend: `SimiGo HTTPServer → NativeMLX`  
 Model: `peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX`
 
@@ -44,6 +44,33 @@ R-A1 — Candidate representation/selection mismatch
 ```
 
 The Observer was not run. No Candidate Information was rewritten, repaired, or stored.
+
+## Sealed boundary finding
+
+```text
+Execution A semantic task      = PASS
+Residue produced               = YES
+Semantic content               = matches expected core decisions
+Residue representation         = JSON string literal wrapping a JSON object
+Current Observer compatibility = MISMATCH
+Store                          = NOT RUN
+Repair                         = FORBIDDEN
+Retry                          = FORBIDDEN
+```
+
+This is preserved as the first concrete observation of a representation
+boundary between natural Execution residue and the existing Information
+formation entry. It must not be reclassified as a mere output-parsing bug.
+
+Open research question:
+
+```text
+Does natural Execution residue require an Interpretation step before it can
+become Information, or should Information be able to carry a model's original
+representation?
+```
+
+Neither answer is predefined.
 
 ## Raw evidence
 

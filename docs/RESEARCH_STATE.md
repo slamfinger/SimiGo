@@ -115,6 +115,17 @@ Runner manifest SHA-256 =
 `23ac9d20ba6f43d19ac539347364b31ddd030f6bd4e96131e6f25f65225314d9`。
 当前 runner prepared；Execution A/B、observer store、evaluation 均未授权。
 
+2026-10-04 TC-A Execution A result：Execution A 已在 Local MLX via SimiGo 上
+完成，4 次 `read_file`，final turn stop；Information copy hash 与 row count 不变。
+A 的 semantic task PASS：alpha/beta individually compatible，alpha↔beta
+compatible，两个含 gamma pair incompatible。自然 Residue 已产生，但 final
+representation 是 JSON string literal wrapping JSON object，而冻结 Observer
+要求直接 valid JSON object。判定：
+`R-A1 = SEALED / CANDIDATE REPRESENTATION / SELECTION MISMATCH`。
+不修、不重试、不运行 Observer、不 store、不启动 B。该发现保留为第一条真实
+Execution Residue 与 Information 形成入口之间的 representation/Interpretation
+边界；不得降级为普通输出格式 bug。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service

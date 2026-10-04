@@ -538,6 +538,42 @@ why any reopened or repeated action was necessary.
 If no control run exists, `continuation gain = NOT ASSESSED`; do not infer a
 quantitative speedup or quality improvement.
 
+### 7.2 R-A1 sealed boundary observation — 2026-10-04
+
+Execution A completed its semantic task and naturally produced a nonempty
+Residue. Its core compatibility decisions matched the runner-side expected
+register. However, the final Residue was a JSON string literal wrapping a JSON
+object, while the frozen Observer boundary required a directly valid JSON
+object without repair.
+
+Result:
+
+```text
+R-A1 = SEALED / CANDIDATE REPRESENTATION / SELECTION MISMATCH
+Execution A semantic task = PASS
+Residue produced          = YES
+Observer compatibility    = MISMATCH
+Observer store            = NOT RUN
+Repair                    = FORBIDDEN
+Retry                     = FORBIDDEN
+```
+
+This is not classified as a mere output-parsing bug. It is the first concrete
+observation of a possible Interpretation boundary between natural Execution
+residue and Information:
+
+```text
+Execution Residue
+      ↓
+possible Interpretation / selection
+      ↓
+Information
+```
+
+No mechanism may be added to normalize this Residue until the next review
+decides whether this Interpretation boundary is a real research object or an
+incidental format constraint.
+
 ## 8. Non-goals
 
 ```text
