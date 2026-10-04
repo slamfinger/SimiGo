@@ -32,6 +32,12 @@
 > 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
 > 决定下一研究问题。
 
+2026-10-04 current active frontier：Local Closure / TC-A / R-A1 已成为当前
+活跃前沿。TC-A package 和 runner 已准备，Execution A 已完成并封存 R-A1；
+Observer、store、Execution B、B0/B1/B2 均未授权。当前入口见
+`docs/NEXT_SESSION_ENTRY.md` 与
+`docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。
+
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为
 **Real-Task Gap Exploration**：以既有 ExecutionCore / InformationCore /

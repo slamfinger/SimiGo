@@ -1,5 +1,21 @@
 # SimiGo-Lab Next Session Entry
 
+> **2026-10-04 current fast entry — Local Closure / TC-A / R-A1**
+> 当前最新工作入口不是旧 PALACE/Route 队列，而是：
+> `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`
+>
+> 当前状态：
+> ```text
+> Task package + runner = PREPARED
+> Execution A           = COMPLETE
+> R-A1                  = SEALED
+> Observer / store / B  = NOT AUTHORIZED
+> ```
+>
+> 新会话先读 phase index，再按需读 M-candidate reduction worksheet 和
+> shared discrimination plan。不要先修 R-A1，不要先跑 B0/B1/B2。
+
+
 登记时间：2026-10-02
 状态：`G3_MAINLINE_CLOSED / Y_UNFROZEN_COUNTEREXAMPLE / A_TASK_READY`
 
