@@ -10,12 +10,14 @@
 > Execution A           = COMPLETE
 > R-A1                  = SEALED
 > S-B prompts          = INSTANTIATED
+> S-B raw execution    = COMPLETE
 > Observer / store / B / S-B execution = NOT AUTHORIZED
 > ```
 >
 > 新会话先读 phase index，再按需读 M-candidate reduction worksheet 和
-> shared discrimination plan。不要先修 R-A1，不要先跑 B0/B1/B2 或
-> S-B0/S-B1/S-B2。下一步先审计三份 prompt artifact。
+> shared discrimination plan。不要先修 R-A1，不要先跑 B0/B1/B2。
+> S-B0/S-B1/S-B2 raw outputs 已封存；下一步须另行授权后按冻结观察纪律
+> 判读，不得临时解释、store 或运行 Observer。
 
 
 登记时间：2026-10-02

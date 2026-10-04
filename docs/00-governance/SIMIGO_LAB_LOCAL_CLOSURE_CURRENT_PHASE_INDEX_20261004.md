@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B PROMPTS INSTANTIATED / EXECUTION NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B RAW EXECUTION COMPLETE / INTERPRETATION NOT PERFORMED`
 
 ## 1. Current objective
 
@@ -36,6 +36,7 @@ Reduction method discipline   = REGISTERED;
 Shared discrimination plan    = REGISTERED;
 First B panel                 = REVIEWED / NARROWED TO SEMANTIC COMPRESSION.
 S-B condition prompts         = INSTANTIATED / AWAITING ARTIFACT REVIEW.
+S-B raw execution             = COMPLETE / RAW OUTPUTS ONLY.
 ```
 
 ## 3. Core sealed finding
@@ -147,17 +148,20 @@ docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_202610
 The First B Semantic Compression Panel has passed human review with narrowing
 amendments, and the three condition prompts are instantiated.
 
-Next step is human review of the exact prompt artifacts. Execution requires a
-further separate authorization. The registered artifacts are:
+The S-B conditions have now been executed under a separately authorized
+direct-inline runner. Raw outputs and cold-path isolation evidence are sealed
+at:
 
 ```text
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_CONDITION_PROMPTS_INSTANTIATED_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_RAW_EXECUTION_COMPLETE_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/RUN_RECORD.json
 ```
 
-Do not execute S-B0/S-B1/S-B2, run Observer, store Candidate Information, or
+Do not interpret the outputs, run Observer, store Candidate Information, or
 start Execution B until separately authorized.
 
 ## 7. Current forbidden actions
@@ -167,7 +171,7 @@ Repair or retry Execution A residue;
 run Observer;
 store Candidate Information;
 start Execution B;
-execute S-B0/S-B1/S-B2;
+interpret S-B raw outputs;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
