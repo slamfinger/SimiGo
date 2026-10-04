@@ -35,8 +35,10 @@
 2026-10-04 current active frontier：Local Closure / TC-A / R-A1 已成为当前
 活跃前沿。TC-A package 和 runner 已准备，Execution A 已完成并封存 R-A1；
 First B Panel 已通过 narrowing review，S-B0/S-B1/S-B2 direct-inline prompt
-artifacts 已实例化并已在独立授权下执行；原始输出只封存，尚未按冻结观察
-纪律判读。Observer、store、Execution B、B0/B1/B2、临时解释均未授权。当前入口见
+artifacts 已实例化并已在独立授权下执行；原始输出已按冻结观察纪律完成行为
+判读：S-B1 continuation PASS，S-B2 continuation FAIL。该读数限于当前
+TC-A prompt/model/frame，不证明一般最小性。Observer tool、store、
+Execution B、B0/B1/B2 均未授权。当前入口见
 `docs/NEXT_SESSION_ENTRY.md` 与
 `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。
 

@@ -8,6 +8,8 @@
 /20261004-173500-sb/*
 !/20261004-173500-sb/RUN_RECORD.json
 !/20261004-173500-sb/artifact-hashes.sha256
+!/20261004-173500-sb/behavior-adjudication.json
+!/20261004-173500-sb/behavior-adjudication.sha256
 !/20261004-173500-sb/S-B0/
 !/20261004-173500-sb/S-B0/*
 !/20261004-173500-sb/S-B1/

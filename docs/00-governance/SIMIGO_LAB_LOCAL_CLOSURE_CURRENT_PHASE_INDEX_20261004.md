@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B RAW EXECUTION COMPLETE / INTERPRETATION NOT PERFORMED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B RAW EXECUTION COMPLETE / BEHAVIOR ADJUDICATED`
 
 ## 1. Current objective
 
@@ -37,6 +37,7 @@ Shared discrimination plan    = REGISTERED;
 First B panel                 = REVIEWED / NARROWED TO SEMANTIC COMPRESSION.
 S-B condition prompts         = INSTANTIATED / AWAITING ARTIFACT REVIEW.
 S-B raw execution             = COMPLETE / RAW OUTPUTS ONLY.
+S-B behavior adjudication     = COMPLETE / S-B1 PASS / S-B2 FAIL.
 ```
 
 ## 3. Core sealed finding
@@ -149,20 +150,23 @@ The First B Semantic Compression Panel has passed human review with narrowing
 amendments, and the three condition prompts are instantiated.
 
 The S-B conditions have now been executed under a separately authorized
-direct-inline runner. Raw outputs and cold-path isolation evidence are sealed
-at:
+direct-inline runner. Raw outputs and cold-path isolation evidence are sealed,
+and their behavior has now been adjudicated under the frozen observation
+discipline. Records:
 
 ```text
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_CONDITION_PROMPTS_INSTANTIATED_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_RAW_EXECUTION_COMPLETE_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_BEHAVIOR_ADJUDICATION_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/RUN_RECORD.json
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/behavior-adjudication.json
 ```
 
-Do not interpret the outputs, run Observer, store Candidate Information, or
-start Execution B until separately authorized.
+Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store
+Candidate Information, or start Execution B until separately authorized.
 
 ## 7. Current forbidden actions
 
@@ -171,7 +175,7 @@ Repair or retry Execution A residue;
 run Observer;
 store Candidate Information;
 start Execution B;
-interpret S-B raw outputs;
+generalize S-B adjudication;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
