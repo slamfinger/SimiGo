@@ -1,0 +1,49 @@
+{
+  "register_version": 1,
+  "services": [
+    {
+      "service_id": "alpha",
+      "baseline_compatible": true,
+      "baseline_issues": []
+    },
+    {
+      "service_id": "beta",
+      "baseline_compatible": true,
+      "baseline_issues": []
+    },
+    {
+      "service_id": "gamma",
+      "baseline_compatible": false,
+      "baseline_issues": [
+        "required flag metrics_v2 is not true"
+      ]
+    }
+  ],
+  "pairs": [
+    {
+      "left": "alpha",
+      "right": "beta",
+      "compatible": true,
+      "issues": []
+    },
+    {
+      "left": "alpha",
+      "right": "gamma",
+      "compatible": false,
+      "issues": [
+        "gamma is not individually baseline-compatible",
+        "api_version mismatch",
+        "port conflict"
+      ]
+    },
+    {
+      "left": "beta",
+      "right": "gamma",
+      "compatible": false,
+      "issues": [
+        "gamma is not individually baseline-compatible",
+        "api_version mismatch"
+      ]
+    }
+  ]
+}

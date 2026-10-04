@@ -1,7 +1,7 @@
 # Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER SELECTED / INSTRUCTION DESIGN NOT AUTHORIZED / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER TC-A PACKAGE FROZEN / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose and terminology boundary
 
@@ -371,6 +371,17 @@ constraints, fetches only the Stored Information identity, and produces a
 release decision, deployment order, and blocked-service reasons. B must not
 reread Phase A source files.
 
+Task package is frozen at:
+
+```text
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/
+MANIFEST.SHA-256 = dd9b8d1c97a3d261ad1001ca0f5d2d39c5f7495f2b766a32b1034968eb81855d
+```
+
+The package contains Phase A and B instructions, observer selection rules,
+Runtime isolation rules, source files, expected register, and evaluation rules.
+The expected register and evaluator are runner-side only.
+
 Qinshen remains the later complex real-task carrier. It is intentionally
 deferred until this minimal observable closure has been tested.
 
@@ -572,7 +583,9 @@ explicit statement of which gate passed or failed.
 Charter                    = REGISTERED / HUMAN REVIEW PASSED
 Local MLX availability     = confirmed separately
 Task carrier               = SELECTED / TC-A
-Prompt / file design       = NOT AUTHORIZED
+Task package               = FROZEN
+Observer rules             = FROZEN
+Expected register          = RUNNER-SIDE ONLY
 Execution A                = NOT AUTHORIZED
 Observer residue selection = NOT AUTHORIZED
 InformationCore store      = NOT AUTHORIZED

@@ -94,6 +94,18 @@ identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→Informat
 当前若执行，只能先验证 observer-mediated identity closure，不能证明
 native `Execution → Information → Agent` 闭环。
 
+2026-10-04 TC-A package freeze：TC-A 指令包已冻结。Phase A 只用
+`read_file` 读取四个本地 JSON 文件，形成 service/pair compatibility
+register；observer 只能逐字选择结构完整的 final answer，经现有
+`t4ctl store` 保存并取得 identity。Phase B fresh context 只用
+`fetch_stored_information` 按 identity 取回该 register，结合新的 release
+constraints 形成 release decision/order/blocked reasons，禁止重读 A source
+files。A/B 之间必须 reload/fresh process/cache eviction 隔离 NativeMLX
+state。Expected register 与 evaluator 仅在 runner 侧。Task package manifest
+SHA-256 =
+`dd9b8d1c97a3d261ad1001ca0f5d2d39c5f7495f2b766a32b1034968eb81855d`。
+当前 package frozen；Execution A/B 与 observer store 均未授权。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service
