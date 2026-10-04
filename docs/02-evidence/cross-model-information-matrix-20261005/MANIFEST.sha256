@@ -1,7 +1,10 @@
 fd510a1c2d0e8412cd92a93ac365bfda93e8a69a80b870fff5a35919bd37157a  docs/02-evidence/cross-model-information-matrix-20261005/PARTIAL_MATRIX_REPORT.md
 27aa7791fed9c875460a00798ed55c428fc2cf172539b34dace61c700fd14329  docs/02-evidence/cross-model-information-matrix-20261005/PROTOCOL.md
 a0c625b1fb4f17dbeb81e3a8f59a127937e61ec267a6a475a11924baac7682c6  docs/02-evidence/cross-model-information-matrix-20261005/RUNBOOK.md
-2caf3456c59126e56a2628c7110a83338ada21b3fe8eb8a3d765e9e45ac83828  docs/02-evidence/cross-model-information-matrix-20261005/STATUS.json
+723a28700acf051b2082cb5cebe3d20e7c4e5bf33e7fe26609951a54b8635dc5  docs/02-evidence/cross-model-information-matrix-20261005/STATUS.json
+5fe03a51bd4d8ec59a4425b8b591d6bf0c539d30df4f24ceb67373cfbab13324  docs/02-evidence/cross-model-information-matrix-20261005/ci/CI_CANDIDATES.json
+ef9b456a297b74b25a79234afeaffc29a28f531fb8af175ab26f75e3aab9109f  docs/02-evidence/cross-model-information-matrix-20261005/ci/CI_C_DECOMPOSITION_PLAN.md
+e561e356d3479333c04cea2512dc3c840074022ee870e5905837274c3d000106  docs/02-evidence/cross-model-information-matrix-20261005/ci/PHENOMENON_MATRIX.json
 d1c6ba86c648d887a94853b54f69f89b7cf75dbabcb8c939fdcc7e08b2a3a650  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/FORMAL_RUNNER_MANIFEST.sha256
 94566d541e348f36193fc07933b91618194348de94ec335ebe45b86ebbb04021  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/formal-cell-plan.json
 337b41e1e5551a3079533aee44ffa6861f5bebe002de29c7dfd967658884fe5e  docs/02-evidence/cross-model-information-matrix-20261005/formal-artifacts/formal-runner-check.json

@@ -1,5 +1,5 @@
 {
-  "status": "PARTIAL_SEMANTIC_MATRIX_FROZEN",
+  "status": "PHENOMENON_COMPARISON_AND_CI_C_GATE_FROZEN",
   "current_reduction_round1": "FROZEN_COMMIT_C65FC3A",
   "raw_matrix": "3_HTTP_SUCCESS_MODELS_X_4_SAMPLES",
   "semantic_matrix": "2_USABLE_MODELS_X_4_SAMPLES",
@@ -20,11 +20,14 @@
     "B retry",
     "D retry",
     "full 4-model stability claim",
-    "846 remapping"
+    "846 remapping",
+    "InformationCore store write",
+    "Observer run"
   ],
   "sm_partial_candidates": [
     "TASK_CONSTRAINT_BINDING",
     "EVIDENCE_GROUNDING",
     "DECISION_COMMITMENT"
-  ]
+  ],
+  "next_stage": "CI_C_OWN_STRUCTURE_DECOMPOSITION"
 }

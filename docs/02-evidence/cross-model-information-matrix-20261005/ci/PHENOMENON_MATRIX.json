@@ -1,0 +1,51 @@
+{
+  "scope": {
+    "raw_matrix": "3_HTTP_SUCCESS_MODELS_X_4_SAMPLES",
+    "semantic_matrix": "2_USABLE_MODELS_X_4_SAMPLES",
+    "semantic_models": ["A-qwen3-moe", "C-gemma4-unified"],
+    "nonsemantic_models": {
+      "B-qwen3-next": "RUNTIME_UNAVAILABLE_ONLY",
+      "D-muse-glimmer": "HTTP_200_BUT_DEGENERATE_REPETITION"
+    },
+    "rule": "A nonresponse or degradation is never counted as a semantic negative for a CI."
+  },
+  "value_vocabulary": {
+    "YES": "phenomenon is observable in usable semantic output",
+    "PARTIAL": "phenomenon is attempted or partly formed, but not adequately applied",
+    "NO": "phenomenon is absent in usable semantic output",
+    "NA_RUNTIME": "model produced no semantic output because runtime was unavailable",
+    "NA_DEGENERATE": "model produced no usable semantic output because of degenerate repetition",
+    "STRICT_JSON_YES": "output satisfies strict JSON without repair",
+    "STRICT_JSON_NO": "semantic content exists but strict JSON contract fails"
+  },
+  "cells": [
+    {"sample_id":"S1-release-config","model_id":"A-qwen3-moe","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"PARTIAL_FORMED_BUT_MISAPPLIED","P5_strict_json":"STRICT_JSON_YES","P6_semantic_usability":"USABLE","evidence":"finds gamma constraints but commits gamma to release"},
+    {"sample_id":"S2-version-diff","model_id":"A-qwen3-moe","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"USABLE_NON_JSON","evidence":"relates versioned passages and management-fee values to a version choice"},
+    {"sample_id":"S3-column-unit-audit","model_id":"A-qwen3-moe","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"PARTIAL","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"WEAK","P5_strict_json":"STRICT_JSON_YES","P6_semantic_usability":"USABLE","evidence":"does not join header, physical units, and formula dimensions into the decision"},
+    {"sample_id":"S4-arithmetic-anomaly-audit","model_id":"A-qwen3-moe","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"USABLE_NON_JSON","evidence":"relates table rows and recomputation to anomalies"},
+
+    {"sample_id":"S1-release-config","model_id":"B-qwen3-next","P1_task_decision_skeleton":"NA_RUNTIME","P2_evidence_grounded_finding":"NA_RUNTIME","P3_explicit_decision":"NA_RUNTIME","P4_relation_conjunction_formation":"NA_RUNTIME","P5_strict_json":"NA_RUNTIME","P6_semantic_usability":"EXCLUDED_RUNTIME","evidence":"HTTP request timed out; endpoint unavailable"},
+    {"sample_id":"S2-version-diff","model_id":"B-qwen3-next","P1_task_decision_skeleton":"NA_RUNTIME","P2_evidence_grounded_finding":"NA_RUNTIME","P3_explicit_decision":"NA_RUNTIME","P4_relation_conjunction_formation":"NA_RUNTIME","P5_strict_json":"NA_RUNTIME","P6_semantic_usability":"EXCLUDED_RUNTIME","evidence":"not attempted after upstream failure"},
+    {"sample_id":"S3-column-unit-audit","model_id":"B-qwen3-next","P1_task_decision_skeleton":"NA_RUNTIME","P2_evidence_grounded_finding":"NA_RUNTIME","P3_explicit_decision":"NA_RUNTIME","P4_relation_conjunction_formation":"NA_RUNTIME","P5_strict_json":"NA_RUNTIME","P6_semantic_usability":"EXCLUDED_RUNTIME","evidence":"not attempted after upstream failure"},
+    {"sample_id":"S4-arithmetic-anomaly-audit","model_id":"B-qwen3-next","P1_task_decision_skeleton":"NA_RUNTIME","P2_evidence_grounded_finding":"NA_RUNTIME","P3_explicit_decision":"NA_RUNTIME","P4_relation_conjunction_formation":"NA_RUNTIME","P5_strict_json":"NA_RUNTIME","P6_semantic_usability":"EXCLUDED_RUNTIME","evidence":"not attempted after upstream failure"},
+
+    {"sample_id":"S1-release-config","model_id":"C-gemma4-unified","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_YES","P6_semantic_usability":"USABLE","evidence":"joins individual eligibility, pair compatibility, and sequential rule into alpha,beta/block gamma"},
+    {"sample_id":"S2-version-diff","model_id":"C-gemma4-unified","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"USABLE_FENCED_JSON","evidence":"relates versioned claims to 0308 authority choice"},
+    {"sample_id":"S3-column-unit-audit","model_id":"C-gemma4-unified","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"YES","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"USABLE_FENCED_JSON","evidence":"joins header, unit counts, and formula dimensions to reject 万元"},
+    {"sample_id":"S4-arithmetic-anomaly-audit","model_id":"C-gemma4-unified","P1_task_decision_skeleton":"YES","P2_evidence_grounded_finding":"PARTIAL","P3_explicit_decision":"YES","P4_relation_conjunction_formation":"YES","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"USABLE_FENCED_JSON","evidence":"forms one missing-entry relation but repeats it instead of broadening audit"},
+
+    {"sample_id":"S1-release-config","model_id":"D-muse-glimmer","P1_task_decision_skeleton":"NA_DEGENERATE","P2_evidence_grounded_finding":"NA_DEGENERATE","P3_explicit_decision":"NA_DEGENERATE","P4_relation_conjunction_formation":"NA_DEGENERATE","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"EXCLUDED_DEGENERATE","evidence":"HTTP 200 but repetitive token output"},
+    {"sample_id":"S2-version-diff","model_id":"D-muse-glimmer","P1_task_decision_skeleton":"NA_DEGENERATE","P2_evidence_grounded_finding":"NA_DEGENERATE","P3_explicit_decision":"NA_DEGENERATE","P4_relation_conjunction_formation":"NA_DEGENERATE","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"EXCLUDED_DEGENERATE","evidence":"HTTP 200 but repetitive token output"},
+    {"sample_id":"S3-column-unit-audit","model_id":"D-muse-glimmer","P1_task_decision_skeleton":"NA_DEGENERATE","P2_evidence_grounded_finding":"NA_DEGENERATE","P3_explicit_decision":"NA_DEGENERATE","P4_relation_conjunction_formation":"NA_DEGENERATE","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"EXCLUDED_DEGENERATE","evidence":"HTTP 200 but repetitive token output"},
+    {"sample_id":"S4-arithmetic-anomaly-audit","model_id":"D-muse-glimmer","P1_task_decision_skeleton":"NA_DEGENERATE","P2_evidence_grounded_finding":"NA_DEGENERATE","P3_explicit_decision":"NA_DEGENERATE","P4_relation_conjunction_formation":"NA_DEGENERATE","P5_strict_json":"STRICT_JSON_NO","P6_semantic_usability":"EXCLUDED_DEGENERATE","evidence":"HTTP 200 but repetitive token output"}
+  ],
+  "summary": {
+    "semantic_cells": 8,
+    "P1_task_decision_skeleton": "8/8",
+    "P2_evidence_grounded_finding": "7/8 full; 1/8 partial",
+    "P3_explicit_decision": "8/8",
+    "P4_relation_conjunction_formation": "6/8 adequate; 1/8 formed but misapplied; 1/8 weak",
+    "P5_strict_json": "3/8 strict; 5/8 semantic content exists but representation contract fails",
+    "semantic_usability": "8/8 usable after repair-free semantic reading; representation failures are not semantic failures"
+  }
+}

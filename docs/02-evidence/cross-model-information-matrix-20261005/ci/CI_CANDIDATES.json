@@ -1,0 +1,81 @@
+{
+  "selection_order": [
+    "horizontal phenomenon comparison",
+    "stability screening",
+    "only then vertical decomposition of a selected CI",
+    "later re-verify decomposition across models"
+  ],
+  "not_in_scope": ["846 mapping", "atom merging", "atom deletion", "minimal Information Core declaration"],
+  "candidates": [
+    {
+      "id": "CI-A",
+      "phenomenon": "Task-relative decision skeleton",
+      "matrix_result": {
+        "semantic_cells": "8/8",
+        "sample_stable": true,
+        "model_stable_partial": true,
+        "label": "SM_PARTIAL_CANDIDATE"
+      },
+      "decomposition_now": false,
+      "reason": "stable but too coarse; it does not identify which information produces the decision"
+    },
+    {
+      "id": "CI-B",
+      "phenomenon": "Evidence-grounded finding",
+      "matrix_result": {
+        "semantic_cells": "7/8 full plus 1/8 partial",
+        "sample_stable": true,
+        "model_stable_partial": true,
+        "label": "SM_PARTIAL_CANDIDATE"
+      },
+      "decomposition_now": false,
+      "reason": "stable but broad; evidence grounding appears in every sample while its required relation differs"
+    },
+    {
+      "id": "CI-C",
+      "phenomenon": "Relation/conjunction dependence",
+      "matrix_result": {
+        "task_requires_phenomenon": "4/4 samples",
+        "attempted_in_usable_cells": "8/8",
+        "adequately_formed": "6/8",
+        "sample_stable": true,
+        "model_stable_partial": false,
+        "label": "PRIORITY_DECOMPOSITION_CANDIDATE_PARTIAL"
+      },
+      "independent_round1_evidence": {
+        "component_A_only": "FAIL",
+        "component_B_only": "FAIL",
+        "component_A_plus_B": "PASS",
+        "refinement": "gamma-specific A plus B is sufficient in the TC-A frame; full A is not required"
+      },
+      "decomposition_now": true,
+      "decomposition_scope": "decompose the CI-C phenomenon on its own terms, not through 846 atoms"
+    },
+    {
+      "id": "CI-D",
+      "phenomenon": "Representation/semantics separation",
+      "matrix_result": {
+        "semantic_cells_with_strict_json_failure": "5/8",
+        "sample_stable": true,
+        "model_stable_partial": true,
+        "label": "META_CANDIDATE_NOT_INFORMATION_CORE_CANDIDATE"
+      },
+      "decomposition_now": false,
+      "reason": "this is a delivery-contract phenomenon, not yet a semantic-function invariant"
+    },
+    {
+      "id": "CI-E",
+      "phenomenon": "Model-specific degradation under long or complex input",
+      "matrix_result": {
+        "A": "S2/S4 strict-JSON failure",
+        "B": "runtime unavailable",
+        "C": "fence/schema drift",
+        "D": "repetition"
+      },
+      "sample_stable": false,
+      "model_stable_partial": false,
+      "label": "AVAILABILITY_OR_DEGRADATION_FACT",
+      "decomposition_now": false
+    }
+  ]
+}
