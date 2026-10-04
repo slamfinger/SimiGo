@@ -194,6 +194,17 @@ behavioral、continuation、gain；禁止把 fetch 成功等同于使用或增�
 正面 B2 只支持 task-domain-bounded 的可观察 continuation，不证明最小结构或
 正确 Information 表示。
 
+2026-10-04 shared discrimination plan：D1–D10 不应机械地逐条实验，而应优先设计
+能同时区分多个依赖假设的共享干预。已登记六类分析干预：I-R representation
+substitution、I-L locator/access manipulation、I-P persistence-unit
+decomposition、I-S reconstruction probe、I-T task projection shift、I-A adoption
+counterfactual。每类都要求保持 TC-A task/backend/fresh-context/cache isolation
+不变，只改变目标结构变量。该计划仍不选择 U1–U5、不定义 Information schema、
+不实例化 B0/B1/B2、不执行、不修改 InformationCore/RelationCore/RuntimeMemory。
+优先读法仍然是 located、fetched、parsed、semantic-referenced、adopted、
+behavioral、continuation、gain 分开。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_SHARED_DISCRIMINATION_PLAN_20261004.md`。
+
 2026-10-04 stage decomposition：在条件实例化前，继续把 Candidate Structure
 拆成可观察轴：Residue、Representation、Persistence unit、Identity、Locator /
 selection、Retrieval、Semantic reconstruction、Task projection、Adoption、

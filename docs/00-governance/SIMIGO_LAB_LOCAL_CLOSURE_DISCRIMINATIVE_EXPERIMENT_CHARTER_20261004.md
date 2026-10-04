@@ -338,6 +338,19 @@ See:
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_REDUCTION_METHOD_DISCIPLINE_20261004.md
 ```
 
+## 9.1 Shared discrimination plan
+
+D1–D10 must not be tested mechanically as ten separate experiments. A shared
+discrimination plan has been registered to prioritize interventions that
+separate multiple dependency hypotheses at once:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_SHARED_DISCRIMINATION_PLAN_20261004.md
+```
+
+It remains non-executable and does not select U1…U5 or authorize condition
+instantiation.
+
 ## 10. Authorization state
 
 ```text
