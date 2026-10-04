@@ -5,6 +5,13 @@ Status: `EXECUTED / OBSERVATION SEALED`
 Source commit: `ae16763 feat: add replaceable ZAI cloud backend`  
 Boundary: no Runtime, schema, InformationCore, RelationCore, PALACE, or API code was changed.
 
+Scope correction — 2026-10-04: this was a synthetic tool-task smoke through
+`RemoteOpenAIBackend → ZAI`, not the Qinshen real task and not a
+SimiGo-controlled local inference execution. Its unchanged Information
+database therefore proves only that this forwarding path did not create
+Information₁. It must not be cited as evidence about a Local Execution →
+Information Space break.
+
 ## 1. Running path
 
 ```text

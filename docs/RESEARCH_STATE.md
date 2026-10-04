@@ -45,6 +45,28 @@ RelationCore / SimiGoRuntime × InformationCore 进入更接近真实连续工�
 自然包含 17 项澄清、18 族收尾清单、46,338 万元口径复函，以及 3 月份
 balance report 这一自然变化源。当前只登记观察性章程；执行未授权。
 
+2026-10-04 Backend boundary correction：Cloud Backend smoke 只证明
+`RemoteOpenAIBackend → ZAI` 可完成 forwarding 和 tool-calling。该路径
+不暴露 NativeMLX 的 prefill、decode、KV/cache、checkpoint、fork 或
+resource-control substrate，因此不能作为
+`SimiGo Execution State → Information Space` 断裂的证据。Cloud smoke
+中 Information SQLite 不变，只应读作“该 forwarding 路径未形成
+Information₁”，不能外推为 Local Execution 缺少 Information 写回。
+Qinshen Execution 001/002 仍是外部 Agent + Information Space 路径的
+有效观察；它们没有经过 SimiGo 本地推理 Execution State。
+
+2026-10-04 narrowed registration：Real-Task Gap Exploration 收窄为
+**Local Execution → Information₁ → Fresh Execution** 最小闭环章程。
+必须使用 Local MLX 经 SimiGo HTTPServer 的可观察推理路径
+（route fix `82b57f6` 之后），不得使用 Cloud。第一轮禁止自动写回；
+Execution A 结束后由 observer 检查真实工作产物，再通过现有
+`t4ctl store` / `InformationCore.store()` 边界保存候选 Information。
+Execution B 必须是 fresh context，不接收 A transcript、summary、prompt
+或结果，只可按显式 identity 使用现有 `t4ctl fetch`。RelationCore 仍只作
+观察对象，不预先接入。详见
+`docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_20261004.md`。
+当前仅登记章程；实验执行未授权。
+
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
 same-ID / same-position / same-length / different representation content
