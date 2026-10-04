@@ -323,6 +323,58 @@ Do not invoke RelationCore preemptively. Record a relation need only if B's
 actual behavior shows that it has relevant Information but cannot express or
 use the connection between them.
 
+## 7.1 Separable readings and failure isolation
+
+The probe must not report a single undifferentiated pass/fail. Each boundary
+below may fail independently and must be preserved as a separate reading.
+
+```text
+R-A0  No suitable residue
+      Execution A produced no material that can form Candidate Information
+      under the existing Information boundary.
+
+R-A1  Representation failure
+      Candidate Information existed as work residue, but the existing
+      Information model could not represent it without schema change.
+
+R-A2  Store failure
+      Candidate Information was representable, but InformationCore.store()
+      failed.
+
+R-B0  Identity unavailability
+      Stored Information existed, but B did not receive or use its identity.
+      This is expected unless the observer explicitly supplies it.
+
+R-B1  Fetch failure
+      B received the identity but fetch failed or returned absence.
+
+R-B2  Fetch without use
+      B fetched Stored Information but did not use its content in work.
+
+R-B3  Use without continuation gain
+      B used Stored Information and completed or attempted the task, but no
+      observable continuation advantage was recorded.
+
+R-B4  Continuation evidence
+      B used Stored Information and avoided redoing part of A's work,
+      or otherwise demonstrated a qualitative continuation effect.
+```
+
+For this minimal charter, continuation gain is observational, not a
+performance benchmark. Record only directly observable facts:
+
+```text
+whether B fetched Stored Information;
+whether B quoted, transformed, or relied on its content;
+whether B reopened raw sources already covered by Stored Information;
+whether B repeated A's queries or calculations;
+whether B completed, partially completed, or blocked;
+why any reopened or repeated action was necessary.
+```
+
+If no control run exists, `continuation gain = NOT ASSESSED`; do not infer a
+quantitative speedup or quality improvement.
+
 ## 8. Non-goals
 
 ```text
