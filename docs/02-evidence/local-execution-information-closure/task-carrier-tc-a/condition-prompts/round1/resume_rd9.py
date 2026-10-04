@@ -10,7 +10,7 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent
 TRACE = pathlib.Path.home() / ".simigo/logs/native_mlx_trace.log"
-RUN_ROOT = ROOT.parents[2] / "runs/20261004-210000-round1"
+RUN_ROOT = ROOT.parents[1] / "runs/20261004-210000-round1"
 CONDITIONS = (
     "RD9-TOOL-PRESENT",
     "RD9-TOOL-ABSENT",

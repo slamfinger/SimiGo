@@ -77,6 +77,13 @@ scheduling nodes；Round 1 冻结为 R-D2、R-D5、R-D1A、R-D3、R-D4、R-D8、
 不实例化 prompt、不运行 runtime、不运行 Observer、不 store。后续 Round 2 为
 identity/access 与 adoption probes，Round 3 为 reconstruction/projection、
 counterfactual deletion、merge discrimination、reference variation 与 broad M3。
+Round 1 后已获授权执行并全部完成：17 个 expanded arms 均为 valid JSON、HTTP 200、
+cold path；Observer/store 未运行。判读为 R-D2 三表示全 PASS；R-D5 absent PASS /
+present FAIL；R-D1A 两聚合形态全 PASS；R-D3 FAIL；R-D4 all/gamma-only PASS /
+absent FAIL；R-D8 valid/stale FAIL / absent PASS；R-D9 present FAIL /
+absent/summary PASS。因此当前 frame 内成功窄核是 gamma-only M1.b + M2.b 的
+conjunction，而非任一单独字段。所有差异仅为单次 bounded observation，不升级为
+普遍因果或最小性结论；下一轮未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

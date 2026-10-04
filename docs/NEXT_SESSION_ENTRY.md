@@ -21,6 +21,8 @@
 > Static decomposition = 32 OBJECTS / 846 ATOMS
 > Reduction design     = COMPLETE / 17 DESIGNS
 > Battery scheduling   = ROUND-1 SELECTED
+> Round 1 runtime      = COMPLETE / 17 ARMS
+> Round 1 adjudication = COMPLETE
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -51,6 +53,11 @@
 > 已完成 battery prioritization：17 个设计拆成 19 个 scheduling nodes，
 > Round 1 冻结为 R-D2、R-D5、R-D1A、R-D3、R-D4、R-D8、R-D9。只冻结选择；
 > prompt instantiation 和 runtime execution 仍未授权。
+> Round 1 已按授权全部执行并判读：R-D2 全 PASS；R-D5 absent PASS /
+> present FAIL；R-D1A 全 PASS；R-D3 FAIL；R-D4 all/gamma-only PASS /
+> absent FAIL；R-D8 valid/stale FAIL / absent PASS；R-D9 present FAIL /
+> absent/summary PASS。成功窄核是 gamma-only M1.b + M2.b conjunction。
+> Observer/store 仍未运行；下一轮未授权。
 
 
 登记时间：2026-10-02

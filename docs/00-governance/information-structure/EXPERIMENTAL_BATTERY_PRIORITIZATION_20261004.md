@@ -1,7 +1,7 @@
 # Experimental Battery Prioritization
 
 Date: 2026-10-04  
-Status: `SCHEDULING / DEPENDENCY MAP / ROUND-1 SELECTION FROZEN / PROMPT INSTANTIATION AND RUNTIME NOT AUTHORIZED`
+Status: `ROUND-1 SELECTION EXECUTED / PROMPTS INSTANTIATED / RUNTIME RAW OUTPUTS AND ADJUDICATION COMPLETE`
 
 ## 1. Source
 
@@ -105,9 +105,14 @@ Conditional: broad M3 only after R-D8/R-D9 component effects are known.
 
 ## 9. Boundary
 
+Round 1 was later separately authorized and executed. All 17 expanded arms are
+sealed and adjudicated; Observer and store remained not run. Result record:
+
 ```text
-prompt instantiation             = NOT AUTHORIZED;
-runtime execution               = NOT RUN;
+docs/00-governance/SIMIGO_LAB_INFORMATION_ROUND1_RESULT_20261005.md
+```
+
+```text
 Observer                         = NOT RUN;
 InformationCore store            = NOT RUN;
 schema/API change                = NOT MADE;

@@ -1,7 +1,7 @@
 # Information Structure Coverage Matrix
 
 Date: 2026-10-04  
-Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / REDUCTION DESIGN COMPLETE / ROUND-1 BATTERY SELECTED / RUNTIME PROBES NOT AUTHORIZED`
+Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / REDUCTION DESIGN COMPLETE / ROUND-1 EXECUTED AND ADJUDICATED`
 
 ## 1. Purpose
 
@@ -280,4 +280,30 @@ Human-readable record:
 
 ```text
 docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_20261004.md
+```
+
+## 17. Round-1 execution result
+
+Round 1 completed all 17 expanded condition arms. All outputs were valid JSON
+and cold-path isolated. The bounded PASS readings were:
+
+```text
+R-D2 all three representation arms = PASS;
+R-D5 absence = PASS, presence = FAIL;
+R-D1A both aggregation arms = PASS;
+R-D3 M2 deleted = FAIL;
+R-D4 all/gamma-only M1 = PASS, M1 absent = FAIL;
+R-D8 valid/stale hashes = FAIL, absent = PASS;
+R-D9 tool present = FAIL, absent/summary = PASS.
+```
+
+The successful narrow continuation used the conjunction of gamma-only M1.b and
+M2.b pair decisions. M1.b alone and M2.b alone failed in their tested deletion
+arms. These readings are bounded to the current prompt/model/frame and are not
+universal minimality claims.
+
+Result record:
+
+```text
+docs/00-governance/SIMIGO_LAB_INFORMATION_ROUND1_RESULT_20261005.md
 ```
