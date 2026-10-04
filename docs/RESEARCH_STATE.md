@@ -67,6 +67,10 @@ U5/M3、U4 deletion、issue/binding 子字段仍未实验。新 probe 未授权�
 发现 13 组 exact-label repetition，但自动 merge 为 0。每个 atom 均保留删除、
 表示替代、剩余结构推导、merge/reclassification 四类判别问题。当前只到达
 static analytic leaf；experimental irreducibility 仍然开放，运行实验未授权。
+随后完成 reduction design：846 atoms 全部分类到 22 canonical groups 和
+11 reduction families，形成 15 个 cross-object merge-candidate groups、
+10 个 candidate relation groups，以及 17 个最小判别实验设计。此阶段无运行
+probe、无 store、无 irreducibility claim；所有实验设计仍需单独授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

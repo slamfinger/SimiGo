@@ -19,6 +19,7 @@
 > M1.b pair branch     = HALTED
 > Coverage matrix      = LAYER-1 COMPLETE
 > Static decomposition = 32 OBJECTS / 846 ATOMS
+> Reduction design     = COMPLETE / 17 DESIGNS
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -43,6 +44,9 @@
 > 已完成同步静态拆解：32 objects、256 facets、846 static atoms；无自动 merge，
 > 无 irreducibility claim。每个 atom 保留 deletion/substitution/derivation/merge
 > 四类判别问题；运行实验仍未授权。
+> 已完成 reduction design：846 atoms 全部分类为 22 canonical groups /
+> 11 reduction families；17 个 discriminating experiment designs 只登记，
+> 未运行。
 
 
 登记时间：2026-10-02

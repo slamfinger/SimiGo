@@ -1,7 +1,7 @@
 # Information Structure Coverage Matrix
 
 Date: 2026-10-04  
-Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / NEW PROBES NOT AUTHORIZED`
+Status: `LAYER-1 INVENTORY COMPLETE / SYNCHRONOUS STATIC DECOMPOSITION COMPLETE / REDUCTION DESIGN COMPLETE / RUNTIME PROBES NOT AUTHORIZED`
 
 ## 1. Purpose
 
@@ -221,4 +221,30 @@ Human-readable record:
 
 ```text
 docs/00-governance/information-structure/SYNCHRONOUS_DECOMPOSITION_20261004.md
+```
+
+## 15. Reduction design result
+
+All 846 static atoms were classified into canonical groups and reduction
+families without merging or executing a runtime probe.
+
+```text
+canonical groups                     = 22;
+reduction families                   = 11;
+cross-object equivalence groups      = 15;
+candidate relation groups            = 10;
+discriminating experiment designs    = 17;
+runtime executions                   = 0.
+```
+
+Machine-readable record:
+
+```text
+docs/00-governance/information-structure/reduction-design-20261004.json
+```
+
+Human-readable record:
+
+```text
+docs/00-governance/information-structure/REDUCTION_DESIGN_20261004.md
 ```
