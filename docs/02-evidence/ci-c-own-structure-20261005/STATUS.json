@@ -1,5 +1,5 @@
 {
-  "status": "CI_C_CRITICAL_PAIR_REPLICATED",
+  "status": "CI_C_BRAKE_FROZEN_AUTHORIZATION_GATE_REGISTERED",
   "run_id": "20261005-014500-ci-c",
   "arms": 7,
   "models_run": [
@@ -17,11 +17,12 @@
   ],
   "open_issue": "A FULL baseline degraded; no cross-model minimum established",
   "not_authorized": [
-    "846 mapping",
-    "InformationCore write",
+    "new model run",
+    "K1/K2 decomposition",
     "Observer run",
-    "minimal Information Core claim",
-    "B/D retry"
+    "InformationCore write",
+    "846 mapping",
+    "minimal Information Core claim"
   ],
   "run_ids": [
     "20261005-014500-ci-c",
@@ -29,5 +30,11 @@
   ],
   "critical_pair": "REPLICATED",
   "candidate_invariant": "relational executable admissibility function",
-  "surface_vs_authorized": "separated"
+  "surface_vs_authorized": "separated",
+  "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
+  "next_gate": "authorization_boundary_discrimination",
+  "authorized_next_work": [
+    "freeze question",
+    "freeze discriminator design"
+  ]
 }
