@@ -84,6 +84,14 @@ absent FAIL；R-D8 valid/stale FAIL / absent PASS；R-D9 present FAIL /
 absent/summary PASS。因此当前 frame 内成功窄核是 gamma-only M1.b + M2.b 的
 conjunction，而非任一单独字段。所有差异仅为单次 bounded observation，不升级为
 普遍因果或最小性结论；下一轮未授权。
+Cross-model 线已另行冻结 static scheduling contract：第一阶段只研究
+`4 samples × 4 models` 的现象稳定性，不研究 846 映射。冻结六类可观察指标
+（continuation outcome、key decision、information presence、relation formation、
+representation sensitivity、implementation-path variation）；判定必须区分
+same output、same decision、same functional behavior，并以 J3 functional
+behavior 为主判据。16 个 cells 全部 planning；现有 Model-A raw outputs 因
+runtime isolation 未 enforced 只能作为 pilot-only。formal runtime、semantic
+normalization、stability scoring、vertical decomposition 均未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

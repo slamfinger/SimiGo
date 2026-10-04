@@ -23,6 +23,8 @@
 > Battery scheduling   = ROUND-1 SELECTED
 > Round 1 runtime      = COMPLETE / 17 ARMS
 > Round 1 adjudication = COMPLETE
+> Cross-model contract = STATIC SCHEDULING FROZEN
+> Cross-model runtime  = NOT AUTHORIZED
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -58,6 +60,12 @@
 > absent FAIL；R-D8 valid/stale FAIL / absent PASS；R-D9 present FAIL /
 > absent/summary PASS。成功窄核是 gamma-only M1.b + M2.b conjunction。
 > Observer/store 仍未运行；下一轮未授权。
+> Cross-model 线已冻结 static scheduling contract：4 samples × 4 models = 16 cells。
+> 只观察 O1–O6；判定区分 same output / same decision /
+> same functional behavior，其中 J3 functional behavior 是主判据。
+> 9 项 isolation 证据缺一不可。现有 Model-A 四个 raw outputs 只是
+> pilot-only，不算 formal stability evidence。正式 runtime、normalization、
+> stability、vertical decomposition 均未授权。
 
 
 登记时间：2026-10-02

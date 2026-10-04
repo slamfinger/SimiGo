@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / INFORMATION REDUCTION ROUND 1 EXECUTED AND ADJUDICATED / NEXT ROUND NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / INFORMATION REDUCTION ROUND 1 EXECUTED AND ADJUDICATED / CROSS-MODEL STATIC SCHEDULING CONTRACT FROZEN / FORMAL RUNTIME NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -44,6 +44,7 @@ M1.b semantic role controls   = S-B1I FAIL + S-B1S FAIL / BASELINE SLOT OR DEEPE
 M1.b function fields          = F1 FAIL + F2 FAIL + F3 FAIL / NO SINGLE FIELD SUFFICIENT.
 M1.b pair combinations        = HALTED / F12 RAW OUTPUT ONLY / F13 + F23 NOT RUN.
 Information coverage          = LAYER-1 MATRIX COMPLETE / BREADTH-FIRST DISCIPLINE ACTIVE.
+Cross-model stability         = STATIC SCHEDULING CONTRACT FROZEN / 16 CELLS PLANNED / EXISTING MODEL-A OUTPUTS PILOT ONLY.
 Information decomposition     = 32 OBJECTS / 256 FACETS / 846 STATIC ATOMS / NO MERGES OR IRREDUCIBILITY CLAIMS.
 Reduction design              = 846 ATOMS CLASSIFIED / 17 DISCRIMINATING DESIGNS / NO RUNTIME PROBE.
 Battery prioritization        = 19 SCHEDULING NODES / ROUND-1 SELECTION FROZEN / NO RUNTIME PROBE.
@@ -185,6 +186,8 @@ docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_202
 docs/00-governance/information-structure/experimental-battery-prioritization-20261004.json
 docs/00-governance/SIMIGO_LAB_ROUND1_PROMPT_INSTANTIATION_20261004.md
 docs/00-governance/SIMIGO_LAB_INFORMATION_ROUND1_RESULT_20261005.md
+docs/00-governance/SIMIGO_LAB_CROSS_MODEL_STABILITY_SCHEDULING_CONTRACT_20261005.md
+docs/00-governance/information-structure/cross-model-stability-static-scheduling-20261005.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
@@ -205,6 +208,14 @@ subfields receive same-level treatment before any next nested layer.
 
 New probes require separate authorization.
 
+The cross-model line is now governed by a static stability-scheduling contract.
+It freezes six observable indicators, three distinct judgment standards, and
+nine isolation requirements. All 16 sample/model cells are planned, but formal
+runtime is not authorized. The four existing Model-A outputs are pilot-only
+because runtime isolation was not enforced. No reduction-framework labels are
+allowed into this scheduling layer, and vertical decomposition is forbidden
+until a stable functional invariant is observed.
+
 Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store
 Candidate Information, or start Execution B until separately authorized.
 
@@ -219,6 +230,9 @@ generalize S-B adjudication;
 design or execute the M1.b artifact/dependency discrimination without authorization;
 continue M1.b pair combinations;
 start a new reduction before a breadth-first coverage pass;
+execute formal cross-model cells without runner-audit and separate authorization;
+normalize or score cross-model stability before formal isolated cells exist;
+perform cross-model vertical decomposition before a stable functional invariant;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
