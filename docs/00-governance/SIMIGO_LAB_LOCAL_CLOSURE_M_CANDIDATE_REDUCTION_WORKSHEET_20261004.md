@@ -411,7 +411,25 @@ Which M3 parts are provenance, which are trust shortcuts,
 and which are stale-state detection?
 ```
 
-## 10. Boundary
+## 10. First B compression amendment
 
-No field, group, or binding is declared irreducible. No B0/B1/B2 condition is
-authorized. No Observer repair, store, or Execution B is performed.
+The provisional `M2.b + M1.b(gamma)` core is downgraded to a candidate
+hypothesis. Because the current B task already asks B to allow alpha/beta and
+block gamma, smaller decision-only residue may complete the same task.
+
+The first B panel is therefore narrowed to:
+
+```text
+S-B0 no prior A residue;
+S-B1 M1.b(gamma) + M2.b(pair decisions);
+S-B2 decision-only compression.
+```
+
+See:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_FIRST_B_COMPRESSION_PANEL_20261004.md
+```
+
+No field, group, or binding is declared irreducible. No S-B0/S-B1/S-B2
+condition is authorized. No Observer repair, store, or Execution B is performed.

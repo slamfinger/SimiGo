@@ -189,6 +189,14 @@ boundary、A-like semantic anchoring、C-like adoption question 的结构对应�
 
 2026-10-04 discriminative continuation charter：下一阶段登记为
 **TC-A Discriminative Continuation Study**，但条件实例化与执行均未授权。
+
+2026-10-04 first B panel narrowing：第一轮执行面板进一步收窄为 Semantic
+Compression Panel：S-B0 no prior A residue、S-B1 compatibility-decision
+residue、S-B2 decision-only residue。固定同一 TC-A release request、fresh B、
+NativeMLX cache isolation，且排除 M3 provenance/execution binding。该面板只问：
+compatibility semantics 压缩到 decision-only 后，fresh B 是否仍能完成同一
+release-gate continuation。条件实例化与执行仍未授权。原 locator 面板
+B0/B1/B2 保持登记但延后。
 研究问题是 TC-A residue 中哪些结构是 fresh Execution B 完成 release-gate
 continuation 的必要条件。变量分三层：A residue representation、B access
 condition、C working transformation；locator 不许混入 residue structure。

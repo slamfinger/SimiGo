@@ -212,6 +212,28 @@ candidate and locator exist.
 
 No higher-order matrix is authorized until B0/B1/B2 readings are preserved.
 
+## 5.1 First-panel narrowing — 2026-10-04
+
+The generic locator panel B0/B1/B2 remains registered but is deferred. The
+first executed panel, if separately authorized, is narrowed to the Semantic
+Compression Panel:
+
+```text
+S-B0 no prior A residue;
+S-B1 compatibility-decision residue;
+S-B2 decision-only residue.
+```
+
+This focuses on whether semantic compatibility distinctions are necessary, or
+whether decision-only residue is sufficient. M3 remains excluded.
+
+See:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_FIRST_B_COMPRESSION_PANEL_20261004.md
+```
+
+
 ## 6. Observation chain
 
 Every condition must record the full chain separately:
