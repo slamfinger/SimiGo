@@ -574,6 +574,16 @@ No mechanism may be added to normalize this Residue until the next review
 decides whether this Interpretation boundary is a real research object or an
 incidental format constraint.
 
+Detailed structural analysis is sealed at:
+
+```text
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_TC_A_RESIDUE_STRUCTURAL_ANALYSIS_20261004.md
+```
+
+It records representation layers, semantic structure, candidate persistence
+units, locator gaps, extraction/projection gaps, and a nonbinding IPAC
+comparison. It authorizes no mechanism.
+
 ## 8. Non-goals
 
 ```text

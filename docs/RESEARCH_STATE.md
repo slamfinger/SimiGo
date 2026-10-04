@@ -126,6 +126,22 @@ representation 是 JSON string literal wrapping JSON object，而冻结 Observer
 Execution Residue 与 Information 形成入口之间的 representation/Interpretation
 边界；不得降级为普通输出格式 bug。
 
+2026-10-04 TC-A residue structural analysis：完成不修码、不 Observer、不
+store、不 B 的结构性分析。表示层分为：raw JSON string literal → 一次 decode
+后的 compatibility-register JSON text → 二次 decode后的 object。核心
+compatibility decisions 与 runner-side expected decisions 一致；issue wording
+不同。自然语义结构包含三个 service、三个 pair relation、platform baseline
+evidence、Execution A provenance、audit phase 与 release-gate affordance。
+候选持久单元暂时记为 raw residue、unwrapped register、service facts、pair
+facts、audit provenance，均未选择。定位缺口：InformationCore 只有 identity
+fetch，无 task/execution/object/source/search locator。提取/投影缺口：
+Stored representation ≠ Agent working representation；release gate 需要
+register + release constraints → decision/order/blocked reasons 的 projection。
+IPAC 对照保持 OPEN/NONBINDING；仅观察到 I-like addressing、P-like phase
+boundary、A-like semantic anchoring、C-like adoption question 的结构对应，
+不证明 IPAC、不冻结语义、不证明最小性。详细分析已封存于
+`SIMIGO_LAB_LOCAL_CLOSURE_TC_A_RESIDUE_STRUCTURAL_ANALYSIS_20261004.md`。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service
