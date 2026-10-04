@@ -1,4 +1,4 @@
-*
-!.gitignore
-!*/.gitignore
-!**/EXECUTION_A_RECORD_20261004.md
+/*
+!/.gitignore
+!*/
+!/20261004-152303/EXECUTION_A_RECORD_20261004.md
