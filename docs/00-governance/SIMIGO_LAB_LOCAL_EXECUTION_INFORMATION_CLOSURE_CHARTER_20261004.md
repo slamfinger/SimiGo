@@ -77,6 +77,47 @@ fix                  = guard both Chat Completions remote patterns
 
 Cloud is out of scope for this experiment.
 
+## 3.1 Research-layer separation
+
+Three questions must remain separate.
+
+### Level 1 — Technical route
+
+The only question authorized for this charter is:
+
+```text
+When a controllable Local Execution State and a persistent
+Information Space are combined, does their intersection enable
+continuation capability that neither provides alone?
+```
+
+Current evidence establishes only the two separate halves:
+
+```text
+Local MLX through SimiGo can expose inference execution state.
+InformationCore can persist and fetch explicitly identified Information.
+```
+
+It does not yet establish their intersection.
+
+### Level 2 — Cloud provider adoption
+
+Whether a cloud provider can adopt this route is a separate boundary
+question. The current ZAI-compatible API exposes request/response and tool
+calling, but not the local inference substrate. Therefore it cannot be used
+to refute Level 1.
+
+Future cloud adoption would require a provider boundary that exposes enough
+Execution State control or an explicitly agreed hybrid substrate. That is
+not part of this charter.
+
+### Level 3 — Product and commercial concerns
+
+Questions such as Information ownership, privacy, tenant isolation, trust,
+migration, compliance, provider selection, and cost are deferred. They may
+later become deployment constraints, but they must not be used to reject or
+reshape the Level 1 technical experiment.
+
 ## 4. InformationCore boundary
 
 Use only the existing frozen boundary:

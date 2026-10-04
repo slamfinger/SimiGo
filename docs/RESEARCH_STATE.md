@@ -67,6 +67,17 @@ Execution B 必须是 fresh context，不接收 A transcript、summary、prompt
 `docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_20261004.md`。
 当前仅登记章程；实验执行未授权。
 
+2026-10-04 research-layer separation：后续问题分为三层，禁止混用。
+第一层是技术路线：Local controllable Execution State 与 persistent
+Information 的交集是否产生单独不存在的结构化 continuation 能力。
+第二层是 provider adoption：当前 Cloud Chat API 不暴露本地推理 substrate，
+因此不能用于否定第一层；未来是否开放 Execution State 控制面属于 provider
+边界问题。第三层是 product / commercial concerns：ownership、privacy、
+isolation、migration、compliance、cost 等当前全部 deferred，不得反向塑造
+或否定第一层实验。现有证据只确认两个半区分别存在：Local MLX via SimiGo
+可观察推理执行状态；InformationCore 可按 identity store/fetch。两者的
+交集尚未验证。
+
 2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
 并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
 same-ID / same-position / same-length / different representation content
