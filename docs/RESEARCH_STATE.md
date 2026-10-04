@@ -65,7 +65,10 @@ Execution B 必须是 fresh context，不接收 A transcript、summary、prompt
 或结果，只可按显式 identity 使用现有 `t4ctl fetch`。RelationCore 仍只作
 观察对象，不预先接入。详见
 `docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_20261004.md`。
-当前仅登记章程；实验执行未授权。
+第一刀不使用 Qinshen 全量复杂任务，而使用 **Minimal Observable Local Task
+Carrier**：小规模真实本地文件、完整可观察 request/tool/file 读取、
+A 自然留下非空工作残留、B 的下一阶段任务客观需要该残留。Qinshen 推迟到
+该最小可判读闭环通过之后。当前仅登记章程；实验执行未授权。
 
 2026-10-04 research-layer separation：后续问题分为三层，禁止混用。
 第一层是技术路线：Local controllable Execution State 与 persistent

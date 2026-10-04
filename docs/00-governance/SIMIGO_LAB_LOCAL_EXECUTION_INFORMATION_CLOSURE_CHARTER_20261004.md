@@ -218,9 +218,80 @@ closure**. It cannot test a native
 `Execution → InformationCore → Agent` closure until such a path is later
 observed or deliberately defined.
 
+## 4.2 Observation and interpretation table
+
+Before execution, the only permitted reading plan is to separate what is
+observed from what is concluded.
+
+| Phase | Observed object | Record only |
+|---|---|---|
+| A | Residue | What Execution A naturally left. |
+| Candidate | Observer action | What was selected, why it can fit the existing Information boundary, and what was not selected. |
+| Store | InformationCore | Whether `store()` succeeded and what identity returned. |
+| B | Fresh SimiGo + NativeMLX | Whether B fetched the explicit identity and what was fetched. |
+| B-use | Agent behavior | Whether B actually used the fetched content. |
+| Outcome | Task behavior | Whether an observable continuation difference appeared. |
+
+These boundaries must remain separate:
+
+```text
+B fetched successfully
+      ≠
+B used the Information
+      ≠
+B obtained a continuation effect
+```
+
+No phase may be reported as a later phase without direct behavioral evidence.
+
+## 4.3 Experimental invariants
+
+The following invariants must remain true from Execution A through Execution B.
+
+```text
+Backend                     = SimiGo HTTPServer → NativeMLX
+Execution B context         = fresh
+Information boundary        = existing InformationCore only
+Information schema          = unchanged
+RelationCore                = not invoked
+RuntimeMemory               = not added
+Search / list / query       = absent
+Automatic Information formation = absent
+Residue mutation            = forbidden
+A → B transcript transfer   = forbidden
+A → B summary transfer      = forbidden
+A → B result transfer       = forbidden
+Stored identity provenance  = real successful InformationCore.store()
+```
+
+The observer may select and package already-produced Residue, but must not
+rewrite, interpret into a new schema, summarize, or invent content. If any
+invariant cannot be maintained, the run must stop and be classified as an
+invariant violation rather than a closure failure.
+
 ## 5. Execution A
 
-Execution A must use the Qinshen real task and Local MLX through SimiGo.
+The first closure run must use a **Minimal Observable Local Task Carrier**,
+not the full Qinshen task.
+
+The carrier is valid only if:
+
+```text
+it operates on a small, finite set of real local files;
+every source file is hashed before Execution A;
+Execution A genuinely requires a read-only tool to inspect those files;
+Execution A naturally leaves a nonempty work product or decision residue;
+Execution B has a next-phase task that objectively requires that residue;
+all requests, tool calls, tool results, and file reads are observable;
+the task is small enough for complete artifact preservation.
+```
+
+The task must not be a superficial “read the file you just read” probe. It
+must produce actual work residue whose loss would force B to redo inspection
+or derivation.
+
+Qinshen remains the later complex real-task carrier. It is intentionally
+deferred until this minimal observable closure has been tested.
 
 Required conditions:
 
@@ -228,7 +299,7 @@ Required conditions:
 fresh context;
 start from a copy of Information₀;
 Local MLX via SimiGo HTTPServer;
-real physical sources may be read;
+real local sources may be read;
 read-only access to Information₀ is allowed;
 no write to the sealed Information₀;
 no automatic Information write-back;
@@ -257,7 +328,7 @@ Execution B must be a fresh context.
 It may receive only:
 
 ```text
-the next-phase Qinshen task;
+the next-phase Minimal Observable Local Task;
 the Stored Information identity;
 a fetch tool backed by existing InformationCore;
 necessary read-only tools for the next-phase work.
@@ -285,7 +356,7 @@ Pass requires:
 
 ```text
 Local MLX execution through SimiGo;
-real Qinshen work product;
+real Minimal Observable Local Task work product;
 actual residue identified after execution;
 stored through existing InformationCore without schema change;
 Stored Information identity recorded;
