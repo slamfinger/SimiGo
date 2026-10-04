@@ -94,6 +94,15 @@ identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→Informat
 当前若执行，只能先验证 observer-mediated identity closure，不能证明
 native `Execution → Information → Agent` 闭环。
 
+2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
+从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
+compatibility audit → Release gate**。Phase A 读取小规模 service
+configuration 与 platform baseline，形成 compatibility register；Phase B 在
+fresh context 中只按 Stored Information identity 取回该 register，并结合新的
+release request / deployment constraints 形成 release decision、deployment
+order 与 blocked-service reasons。B 禁止重读 Phase A source files。Prompt、
+task files、observer selection rules 仍未授权；Execution 仍未授权。
+
 2026-10-04 human charter review：最小闭环章程通过人工审查，并补充
 cache-isolation amendment。B 的 fresh 不能只用新 HTTP request 或新
 Agent/Session/Branch header 证明；A → B 的 NativeMLX KV/cache、prefix-pool、

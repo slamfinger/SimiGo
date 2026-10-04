@@ -1,7 +1,7 @@
 # Local Execution → Candidate Information → Fresh Execution Charter
 
 Date: 2026-10-04  
-Status: `REGISTERED / HUMAN REVIEW PASSED WITH CACHE-ISOLATION AMENDMENT / TASK CARRIER NOT DEFINED / EXECUTION NOT AUTHORIZED`
+Status: `REGISTERED / HUMAN REVIEW PASSED / TASK CARRIER SELECTED / INSTRUCTION DESIGN NOT AUTHORIZED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Purpose and terminology boundary
 
@@ -352,18 +352,24 @@ The task must not be a superficial “read the file you just read” probe. It
 must produce actual work residue whose loss would force B to redo inspection
 or derivation.
 
-The task carrier is still not defined. After separate authorization to define
-it, the task should be derived backward from the existing SimiGo Agent/tool
-surface:
+The task carrier has been defined from the existing SimiGo Agent/tool surface.
+See:
 
 ```text
-what SimiGo + NativeMLX can already observe;
-what an external harness can already execute;
-what small real local files can create genuine work pressure;
-what next-phase result objectively depends on A's residue.
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_TASK_CARRIER_CANDIDATES_20261004.md
 ```
 
-Do not invent a task solely to make Information formation look successful.
+Selected carrier:
+
+```text
+TC-A — Configuration compatibility audit → Release gate
+```
+
+Phase A derives a service compatibility register from a small local
+configuration set. Phase B receives a separate release request and deployment
+constraints, fetches only the Stored Information identity, and produces a
+release decision, deployment order, and blocked-service reasons. B must not
+reread Phase A source files.
 
 Qinshen remains the later complex real-task carrier. It is intentionally
 deferred until this minimal observable closure has been tested.
@@ -565,7 +571,8 @@ explicit statement of which gate passed or failed.
 ```text
 Charter                    = REGISTERED / HUMAN REVIEW PASSED
 Local MLX availability     = confirmed separately
-Task carrier               = NOT DEFINED
+Task carrier               = SELECTED / TC-A
+Prompt / file design       = NOT AUTHORIZED
 Execution A                = NOT AUTHORIZED
 Observer residue selection = NOT AUTHORIZED
 InformationCore store      = NOT AUTHORIZED
