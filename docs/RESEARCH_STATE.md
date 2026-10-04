@@ -41,7 +41,10 @@ TC-A prompt/model/frame，不证明一般最小性。Human review 已锁定该 o
 boundary：M1.b(gamma baseline decision) 是当前 frame 下的 frame-bounded
 necessity candidate；下一阶段只应区分真实 semantic dependency 与 S-B2
 representation/prompt artifact，其设计与执行另批。Observer tool、store、
-Execution B、B0/B1/B2 均未授权。当前入口见
+Execution B、B0/B1/B2 均未授权。S-B2R representation control 已执行并 FAIL：
+JSON validity 恢复，但 continuation 仍 FAIL，表现为 overblocking；因此
+representation artifact 作为唯一原因不被支持，M1.b necessity hypothesis 在
+当前 frame 内增强。下一 reduction 未授权。当前入口见
 `docs/NEXT_SESSION_ENTRY.md` 与
 `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。
 

@@ -13,7 +13,8 @@
 > S-B raw execution    = COMPLETE
 > S-B behavior         = ADJUDICATED
 > S-B boundary         = LOCKED
-> Next discrimination design = NOT AUTHORIZED
+> S-B2R control        = FAIL
+> Next reduction       = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
 >
@@ -24,6 +25,8 @@
 > 但不得推广为一般最小性或不可约性。下一刀只应区分 semantic dependency 与
 > representation/prompt artifact；其设计与执行另批。Observer tool、store、
 > Execution B 仍未授权。
+> S-B2R 已执行并 FAIL：JSON 有效但 overblocking。representation artifact 作为
+> 唯一解释不被支持，M1.b necessity hypothesis 增强；下一 reduction 另批。
 
 
 登记时间：2026-10-02

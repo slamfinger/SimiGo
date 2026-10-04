@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B BOUNDARY LOCKED / NEXT DISCRIMINATION DESIGN NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B2R CONTROL FAIL / M1.b NECESSITY STRENGTHENED / NEXT REDUCTION NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -39,6 +39,7 @@ S-B condition prompts         = INSTANTIATED / AWAITING ARTIFACT REVIEW.
 S-B raw execution             = COMPLETE / RAW OUTPUTS ONLY.
 S-B behavior adjudication     = COMPLETE / S-B1 PASS / S-B2 FAIL.
 S-B boundary                  = LOCKED / M1.b IS FRAME-BOUNDED NECESSITY CANDIDATE.
+S-B2 representation control   = FAIL / M1.b NECESSITY HYPOTHESIS STRENGTHENED.
 ```
 
 ## 3. Core sealed finding
@@ -160,16 +161,22 @@ docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_CONDITION_PROMPTS_INSTANTIATED_2
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_RAW_EXECUTION_COMPLETE_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_BEHAVIOR_ADJUDICATION_20261004.md
 docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_BOUNDARY_LOCK_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B2_REPRESENTATION_CONTROL_20261004.md
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B2R_RESULT_20261004.md
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/RUN_RECORD.json
 docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/behavior-adjudication.json
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/RUN_RECORD.json
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/behavior-adjudication.json
 ```
 
 The locked next reduction question is only to distinguish real semantic
 dependency of `M1.b(gamma is not baseline-compatible)` from an S-B2
-representation / prompt artifact. Its design and execution require separate
+representation / prompt artifact. The S-B2R control has now failed: the
+representation artifact is not supported as the sole cause, and the M1.b
+necessity hypothesis is strengthened. Any next reduction requires separate
 authorization.
 
 Do not generalize the bounded S-B1/S-B2 reading, run the Observer tool, store

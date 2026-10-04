@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the three frozen S-B prompts and preserve raw outputs only."""
+"""Run frozen S-B prompts and preserve raw outputs only."""
 
 import hashlib
 import json
@@ -33,7 +33,7 @@ def wait_for_new_suspend(start: int, timeout: int = 900) -> None:
     raise RuntimeError(f"NativeMLX suspend not observed within {timeout}s")
 
 
-def main(run_root: pathlib.Path) -> int:
+def main(run_root: pathlib.Path, conditions: tuple[str, ...]) -> int:
     if run_root.exists():
         raise RuntimeError(f"run root already exists: {run_root}")
     if TRACE.read_bytes().rstrip().rsplit(b"\n", 1)[-1].find(b"[LIFECYCLE] suspend_done") < 0:
@@ -44,7 +44,7 @@ def main(run_root: pathlib.Path) -> int:
     baseline_size = TRACE.stat().st_size
     baseline_tail = TRACE.read_bytes()[-512:].decode("utf-8", errors="replace")
 
-    for condition in CONDITIONS:
+    for condition in conditions:
         prompt_path = ROOT / f"{condition}.prompt.txt"
         condition_root = run_root / condition
         condition_root.mkdir()
@@ -125,7 +125,7 @@ def main(run_root: pathlib.Path) -> int:
         {
             "phase": "S_B_RAW_OUTPUTS_ONLY",
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
-            "authorization": "EXECUTION PREPARATION AND EXECUTION ONLY",
+            "authorization": "AUTHORIZED CONDITION EXECUTION / RAW OUTPUTS ONLY",
             "observer": "NOT RUN",
             "store": "NOT RUN",
             "interpretation": "NOT PERFORMED",
@@ -144,4 +144,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("run_root", type=pathlib.Path)
-    main(parser.parse_args().run_root)
+    parser.add_argument(
+        "--conditions",
+        default=",".join(CONDITIONS),
+        help="Comma-separated frozen condition names.",
+    )
+    args = parser.parse_args()
+    main(args.run_root, tuple(args.conditions.split(",")))
