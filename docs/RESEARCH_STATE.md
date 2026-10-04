@@ -167,6 +167,18 @@ behavior 与 continuation 的处理方式。IPAC 仅作 I-like / P-like / A-like
 C-like 非绑定对照，不冻结、不证明。详见
 `SIMIGO_LAB_LOCAL_CLOSURE_STAGE_DECOMPOSITION_20261004.md`。
 
+2026-10-04 axis reduction refinement：已登记
+`SIMIGO_LAB_LOCAL_CLOSURE_AXIS_REDUCTION_20261004.md`。当前十一轴只是分析刀具，
+不是 Runtime 架构；不得因已有分解而停止追问更小结构。对 Identity、Persistence
+unit、Locator/selection、Retrieval、Semantic reconstruction、Task projection、
+Adoption、Behavioral effect、Continuation 分别登记 reducibility、scope、
+invariance、grouping、authority、failure-semantics 与 counterfactual 追问。
+同时要求未来观察继续分类：Execution-local/cross-Execution、Runtime
+substrate/semantic Information、representation/semantic structure、
+addressable/context-dependent、necessary/convenient、stable/ephemeral、
+observable/inferred、irreducible/reducible。当前不宣布任何轴最小、不可约或
+可合并；不执行，不设计机制。
+
 2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
 从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
 compatibility audit → Release gate**。Phase A 读取小规模 service
