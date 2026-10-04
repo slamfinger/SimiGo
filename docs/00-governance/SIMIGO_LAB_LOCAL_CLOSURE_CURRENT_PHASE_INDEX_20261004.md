@@ -1,7 +1,7 @@
 # Local Closure Current Phase Index
 
 Date: 2026-10-04  
-Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / NEXT CONDITION DESIGN NOT AUTHORIZED`
+Status: `CURRENT ENTRY / TASK PACKAGE AND RUNNER PREPARED / EXECUTION A COMPLETE / R-A1 SEALED / S-B PROMPTS INSTANTIATED / EXECUTION NOT AUTHORIZED`
 
 ## 1. Current objective
 
@@ -35,6 +35,7 @@ Cross-axis dependencies       = REGISTERED;
 Reduction method discipline   = REGISTERED;
 Shared discrimination plan    = REGISTERED;
 First B panel                 = REVIEWED / NARROWED TO SEMANTIC COMPRESSION.
+S-B condition prompts         = INSTANTIATED / AWAITING ARTIFACT REVIEW.
 ```
 
 ## 3. Core sealed finding
@@ -144,20 +145,20 @@ docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_202610
 ## 6. Immediate next step
 
 The First B Semantic Compression Panel has passed human review with narrowing
-amendments.
+amendments, and the three condition prompts are instantiated.
 
-Next step is separate authorization to instantiate only:
+Next step is human review of the exact prompt artifacts. Execution requires a
+further separate authorization. The registered artifacts are:
 
 ```text
-S-B0 prompt;
-S-B1 prompt;
-S-B2 prompt.
+docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_S_B_CONDITION_PROMPTS_INSTANTIATED_20261004.md
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt
+docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt
 ```
 
-These are direct inline B-prompt variants; they do not authorize Execution
-S-B0/S-B1/S-B2, Observer, store, or Execution B.
-
-Do not jump directly to B0/B1/B2 execution.
+Do not execute S-B0/S-B1/S-B2, run Observer, store Candidate Information, or
+start Execution B until separately authorized.
 
 ## 7. Current forbidden actions
 
@@ -166,6 +167,7 @@ Repair or retry Execution A residue;
 run Observer;
 store Candidate Information;
 start Execution B;
+execute S-B0/S-B1/S-B2;
 select U1…U5 as final Information units;
 add InformationCore API/schema;
 add RelationCore integration;
