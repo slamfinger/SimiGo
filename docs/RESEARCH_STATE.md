@@ -92,6 +92,12 @@ same output、same decision、same functional behavior，并以 J3 functional
 behavior 为主判据。16 个 cells 全部 planning；现有 Model-A raw outputs 因
 runtime isolation 未 enforced 只能作为 pilot-only。formal runtime、semantic
 normalization、stability scoring、vertical decomposition 均未授权。
+随后完成 formal runner readiness review：结论为 `FORMAL RUNNER NOT READY`。
+冻结样本、prompt、模型身份/config、16 个唯一 cell ID 和原始判读材料均合格；
+但 runner 工作副本与 frozen manifest 不一致，I1/I4/I5/I7/I8/I9 isolation
+evidence 缺失，formal status enum 缺失，且 formal runner 尚未与 pilot runner /
+pilot outputs 分离。检查统计为 7 PASS、4 PARTIAL、8 FAIL。formal runtime、
+semantic normalization、stability scoring、vertical decomposition 均未授权。
 
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为

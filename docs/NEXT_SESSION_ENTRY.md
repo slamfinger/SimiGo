@@ -24,6 +24,7 @@
 > Round 1 runtime      = COMPLETE / 17 ARMS
 > Round 1 adjudication = COMPLETE
 > Cross-model contract = STATIC SCHEDULING FROZEN
+> Cross-model runner   = NOT READY
 > Cross-model runtime  = NOT AUTHORIZED
 > New probes           = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
@@ -66,6 +67,10 @@
 > 9 项 isolation 证据缺一不可。现有 Model-A 四个 raw outputs 只是
 > pilot-only，不算 formal stability evidence。正式 runtime、normalization、
 > stability、vertical decomposition 均未授权。
+> Formal runner readiness review = NOT READY：7 PASS / 4 PARTIAL / 8 FAIL。
+> 关键 blocker 是 runner manifest mismatch、I1/I4/I5/I7/I8/I9 isolation
+> evidence 缺失、formal status enum 缺失、formal/pilot runner 未分离。
+> 不要把现有 Model-A pilot outputs 当作 formal evidence；不要执行 formal cells。
 
 
 登记时间：2026-10-02

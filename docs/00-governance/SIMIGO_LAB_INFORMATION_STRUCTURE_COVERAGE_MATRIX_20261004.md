@@ -282,6 +282,21 @@ Human-readable record:
 docs/00-governance/information-structure/EXPERIMENTAL_BATTERY_PRIORITIZATION_20261004.md
 ```
 
+## 18. Cross-model formal runner readiness
+
+The cross-model static scheduling contract was reviewed against the existing
+runner. The result is:
+
+```text
+CROSS_MODEL_FORMAL_RUN = NOT READY
+checks                 = 7 PASS / 4 PARTIAL / 8 FAIL
+runtime                = NOT AUTHORIZED
+```
+
+Critical blockers are runner-provenance mismatch, missing isolation evidence
+fields, missing formal status enum, and unresolved formal/pilot separation.
+The existing Model-A outputs remain pilot-only.
+
 ## 17. Round-1 execution result
 
 Round 1 completed all 17 expanded condition arms. All outputs were valid JSON
