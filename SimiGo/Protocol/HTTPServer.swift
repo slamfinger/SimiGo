@@ -1051,7 +1051,7 @@ public final class HTTPServer: @unchecked Sendable {
                 context: context
             )
 
-        case ("POST", "/v1/chat/completions"),
+        case ("POST", "/v1/chat/completions") where remoteBackend != nil,
              ("POST", "/chat/completions") where remoteBackend != nil:
             try await forwardToRemote(request, context: context)
 
