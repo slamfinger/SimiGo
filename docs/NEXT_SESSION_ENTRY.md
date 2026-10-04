@@ -14,6 +14,7 @@
 > S-B behavior         = ADJUDICATED
 > S-B boundary         = LOCKED
 > S-B2R control        = FAIL
+> M1.b role controls   = BOTH FAIL
 > Next reduction       = NOT AUTHORIZED
 > Observer tool / store / B = NOT AUTHORIZED
 > ```
@@ -27,6 +28,8 @@
 > Execution B 仍未授权。
 > S-B2R 已执行并 FAIL：JSON 有效但 overblocking。representation artifact 作为
 > 唯一解释不被支持，M1.b necessity hypothesis 增强；下一 reduction 另批。
+> S-B1I/S-B1S 均有效 JSON 但 continuation FAIL：只 block gamma、不部署 alpha/beta。
+> 因此 baseline-compatible slot 或更深层 dependency 仍在；下一 reduction 另批。
 
 
 登记时间：2026-10-02

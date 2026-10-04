@@ -48,6 +48,13 @@ representation artifact 作为唯一原因不被支持，M1.b necessity hypothes
 `docs/NEXT_SESSION_ENTRY.md` 与
 `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。
 
+2026-10-04 M1.b semantic role controls：S-B1I 用 `gamma is individually
+incompatible` 替换 baseline wording，S-B1S 用 pair/individual scope legend 替换
+baseline predicate；两者都返回有效 JSON 且只 block gamma，但都不部署 alpha/beta，
+continuation FAIL。当前 frame 内，相关功能仍绑定 baseline-compatible slot 或
+尚未隔离的更深层 dependency；这不证明普遍不可约性。Observer tool、store、
+下一 reduction 均未授权。
+
 2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
 或继续扩展 Representation Consistency。下一阶段为
 **Real-Task Gap Exploration**：以既有 ExecutionCore / InformationCore /
