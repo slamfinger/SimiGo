@@ -1,0 +1,25 @@
+{
+  "status": "CI_C_FIRST_DISCRIMINATION_COMPLETE",
+  "run_id": "20261005-014500-ci-c",
+  "arms": 7,
+  "models_run": [
+    "A-qwen3-moe",
+    "C-gemma4-unified"
+  ],
+  "models_not_run": {
+    "B-qwen3-next": "frozen unavailable",
+    "D-muse-glimmer": "frozen degenerate"
+  },
+  "strong_aligned_findings": [
+    "K3_DELETED -> C4 absent in both",
+    "K3_PRECOMPUTED_F -> C4 preserved in both"
+  ],
+  "open_issue": "A FULL baseline degraded; no cross-model minimum established",
+  "not_authorized": [
+    "846 mapping",
+    "InformationCore write",
+    "Observer run",
+    "minimal Information Core claim",
+    "B/D retry"
+  ]
+}

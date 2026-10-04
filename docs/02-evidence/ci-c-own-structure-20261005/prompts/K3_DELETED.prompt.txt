@@ -1,0 +1,38 @@
+# Execution B Instruction
+
+You are Execution B, a fresh local model reached through an HTTP server. You have no prior conversation.
+
+## Tool rule
+
+Use no tools. Do not fetch, read, search, compute externally, or request source files.
+
+## Archival compatibility residue
+
+The following residue is archival only:
+
+```text
+gamma is not individually baseline-compatible;
+alpha ↔ beta  = allow;
+alpha ↔ gamma = block;
+beta ↔ gamma  = block.
+```
+
+No deployment-admissibility relation is supplied. You must not infer, compute, reconstruct, or apply compatibility, ordering, or admissibility from the archival residue.
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential.
+
+## Final output
+
+If no deployment-admissibility relation is supplied, return only this minified JSON object and no Markdown, explanation, or code fence:
+
+```json
+{"release_decision":"blocked","deployment_order":[],"blocked_services":[],"error":"deployment_admissibility_relation_unavailable"}
+```

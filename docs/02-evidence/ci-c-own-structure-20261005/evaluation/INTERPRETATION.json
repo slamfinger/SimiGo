@@ -1,0 +1,69 @@
+{
+  "scope": "CI_C_OWN_STRUCTURE_ONLY",
+  "models": {
+    "A-qwen3-moe": "RUN but FULL baseline failed; not a positive control for C4",
+    "C-gemma4-unified": "RUN and FULL baseline preserved C4 core",
+    "B-qwen3-next": "NOT RUN by freeze",
+    "D-muse-glimmer": "NOT RUN by freeze"
+  },
+  "c4_core": {
+    "preserved": "deployment_order=[alpha,beta] AND blocked_service_ids=[gamma]",
+    "absent": "deployment_order=[] AND error=deployment_admissibility_relation_unavailable",
+    "note": "release_decision wording such as blocked/partial is not part of the C4 core criterion"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "arm": "FULL",
+      "result": "A=C4_DEGRADED; C=C4_PRESERVED",
+      "reading": "A has no valid positive baseline for this CI-C frame, so component necessity cannot be read from A."
+    },
+    {
+      "id": "F2",
+      "arm": "K1_ONLY",
+      "result": "A=C4_DEGRADED; C=C4_DEGRADED",
+      "reading": "K2 is necessary in both runnable models; pair/coexistence component is load-bearing."
+    },
+    {
+      "id": "F3",
+      "arm": "K2_ONLY",
+      "result": "A=C4_DEGRADED; C=C4_PRESERVED",
+      "reading": "K1 necessity is model-dependent; C preserved C4 without K1, while A did not."
+    },
+    {
+      "id": "F4",
+      "arm": "GAMMA_REDUCED",
+      "result": "A=C4_DEGRADED; C=C4_PRESERVED",
+      "reading": "C supports reduction of K1 to the gamma blocker; A is inconclusive because even FULL degraded."
+    },
+    {
+      "id": "F5",
+      "arm": "K3_DELETED",
+      "result": "A=C4_ABSENT; C=C4_ABSENT",
+      "reading": "Strongest aligned result: with K1/K2 present as data but the relational admissibility operator absent, C4 disappears."
+    },
+    {
+      "id": "F6",
+      "arm": "K3_PRECOMPUTED_F",
+      "result": "A=C4_PRESERVED; C=C4_PRESERVED",
+      "reading": "Explicit K3 is not representationally unique; a precomputed higher-level F can substitute for it."
+    },
+    {
+      "id": "F7",
+      "arm": "ID_BINDING_BROKEN",
+      "result": "A=C4_DEGRADED; C=C4_PRESERVED",
+      "reading": "Identifier binding necessity is model-dependent; it is not yet part of a cross-model minimal structure."
+    }
+  ],
+  "current_minimum_candidate": {
+    "C_model_frame": "K2 + relational admissibility operator; K1 can be reduced or bypassed in observed C cells",
+    "A_model_frame": "NOT ESTABLISHED because FULL C4 baseline failed",
+    "cross_model_frame": "NOT ESTABLISHED"
+  },
+  "nonclaims": [
+    "No minimal Information Core is declared.",
+    "No 846 atom is mapped, merged, deleted, or rewritten.",
+    "No full cross-model stability is claimed.",
+    "No claim is made that C3 has a unique required representation."
+  ]
+}
