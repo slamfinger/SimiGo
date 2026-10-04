@@ -217,6 +217,19 @@ behavior 与 continuation 的处理方式。IPAC 仅作 I-like / P-like / A-like
 C-like 非绑定对照，不冻结、不证明。详见
 `SIMIGO_LAB_LOCAL_CLOSURE_STAGE_DECOMPOSITION_20261004.md`。
 
+2026-10-04 candidate reducibility map：对 TC-A 的 U1 raw residue、U2 semantic
+register、U3 baseline facts、U4 pairwise facts、U5 provenance/context 做静态
+约减映射。观察到的表示链为：exact U1 JSON string literal → U2t register text →
+U2o register object → U3/U4。语义上 U1 很可能表示可约化为 U2；U2o 可投影为
+U3+U4；U3+U4 在保留 register version/order/issue details 的条件下可重建 U2o，
+但不能恢复 exact U1 bytes。U3 与 U4 暂时表现为互相独立候选：baseline facts 不
+蕴含 pair compatibility，pair compatibility 也不蕴含各 service baseline status。
+U5 含 producer、Execution A identity、source identities、tool-call sequence、
+Runtime evidence 和 task-carrier binding，不能由 compatibility register alone
+推导，因此是独立 provenance/context 候选。当前只是静态假设，不宣布任何单元
+irreducible。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_CANDIDATE_REDUCIBILITY_MAP_20261004.md`。
+
 2026-10-04 axis reduction refinement：已登记
 `SIMIGO_LAB_LOCAL_CLOSURE_AXIS_REDUCTION_20261004.md`。当前十一轴只是分析刀具，
 不是 Runtime 架构；不得因已有分解而停止追问更小结构。对 Identity、Persistence
