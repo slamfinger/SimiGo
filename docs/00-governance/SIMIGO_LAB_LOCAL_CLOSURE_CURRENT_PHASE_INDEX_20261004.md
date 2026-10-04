@@ -33,7 +33,8 @@ Stage decomposition           = REGISTERED;
 Axis reduction questions      = REGISTERED;
 Cross-axis dependencies       = REGISTERED;
 Reduction method discipline   = REGISTERED;
-Shared discrimination plan    = REGISTERED.
+Shared discrimination plan    = REGISTERED;
+First B panel                 = REVIEWED / NARROWED TO SEMANTIC COMPRESSION.
 ```
 
 ## 3. Core sealed finding
@@ -142,18 +143,19 @@ docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_202610
 
 ## 6. Immediate next step
 
-The next step is human review of:
+The First B Semantic Compression Panel has passed human review with narrowing
+amendments.
+
+Next step is separate authorization to instantiate only:
 
 ```text
-M-candidate reduction worksheet;
-stage decomposition;
-axis reduction questions;
-cross-axis dependency hypotheses;
-shared discrimination plan.
+S-B0 prompt;
+S-B1 prompt;
+S-B2 prompt.
 ```
 
-After review, the only next authorized design step would be to instantiate a
-small number of M-based discriminative conditions.
+These are direct inline B-prompt variants; they do not authorize Execution
+S-B0/S-B1/S-B2, Observer, store, or Execution B.
 
 Do not jump directly to B0/B1/B2 execution.
 

@@ -197,6 +197,16 @@ NativeMLX cache isolation，且排除 M3 provenance/execution binding。该面�
 compatibility semantics 压缩到 decision-only 后，fresh B 是否仍能完成同一
 release-gate continuation。条件实例化与执行仍未授权。原 locator 面板
 B0/B1/B2 保持登记但延后。
+
+2026-10-04 first B panel review：人工审查通过，但作出 narrowing amendments。
+该面板不是泛化 decision-only minimization；主变量是是否删除
+`M1.b(gamma not baseline-compatible)`，同时保留 pair decisions 和 explicit
+gamma blocked decision。S-B0/S-B1/S-B2 改为直接 inline B-prompt delivery，
+不使用 InformationCore fetch、source-file access、A transcript/summary/result
+或 hidden harness state。`understood` 不得从隐藏模型状态推断；只记录
+semantic-referenced 与 adopted。若 S-B0 也完成同任务，则为 negative-control
+success，不构成 continuation gain。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_FIRST_B_PANEL_REVIEW_20261004.md`。
 研究问题是 TC-A residue 中哪些结构是 fresh Execution B 完成 release-gate
 continuation 的必要条件。变量分三层：A residue representation、B access
 condition、C working transformation；locator 不许混入 residue structure。
