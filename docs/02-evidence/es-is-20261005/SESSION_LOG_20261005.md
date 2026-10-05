@@ -522,3 +522,49 @@ not authorize implementation.
 3. Do not reopen Core / Store / carrier semantics without new evidence.
 4. No implementation, backend selection, backend-substitution run, experiment, or
    contract change is authorized.
+## Evidence Inheritance Reconciliation — DELIVERED / AWAITING HUMAN REVIEW
+
+A broader read-only reconciliation was delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md`.
+
+It confirms the Core Sufficiency result, then identifies additional omitted or
+under-inherited research assets beyond HLC-1..6:
+
+```text
+HLC-7   Execution residue → Information formation boundary
+HLC-8   Local Closure Information Reduction Round 1
+HLC-9   Palace-Simigo Boundary Study EXP1-X1
+HLC-10  Y experiment activation/pointer semantics
+HLC-11  Information validity, record spectrum, uncertainty fidelity
+HLC-12  Research estate residual gap map
+HLC-13  Security / authority boundary
+HLC-14  ES implementation / persistence debt
+HLC-15  Prepared but unexecuted studies
+HLC-16  Research-line drift-control lessons
+```
+
+Recommended next study, if accepted:
+
+```text
+Higher-Layer Evidence Inheritance Matrix
++ Continuation Semantics Scope Charter
+```
+
+```text
+Status = DELIVERED / AWAITING HUMAN REVIEW
+No implementation       = true
+No adapter              = true
+No carrier integration  = true
+No MemPalace mutation   = true
+No probe execution      = true
+No experiment           = true
+No contract change      = true
+```
+
+## Next steps (none auto-open)
+
+1. Human review the reconciliation report.
+2. On ACCEPT: authorize the Higher-Layer Evidence Inheritance Matrix and
+   Continuation Semantics Scope Charter.
+3. Do not implement, select a backend, mutate MemPalace, execute a probe, or run
+   an experiment.

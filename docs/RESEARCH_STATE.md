@@ -142,6 +142,14 @@
 > 下一入口 = **Higher-Layer Continuation Graph Semantics — Scope & Research
 > Question Charter**。该裁定只关闭当前 PRQ task domain 是否需要 Core/Store/
 > carrier semantics，不关闭 Information Space 本身，也不授权实现。
+> **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
+> 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
+> Information formation boundary、Local Closure representation reduction、
+> Palace-Simigo boundary trust semantics、activation/pointer semantics、
+> validity/record spectrum、research estate residual gap map、security/authority
+> boundary、ES implementation debt、prepared-but-unexecuted studies 与 drift
+> control lessons。建议下一阶段先做 Higher-Layer Evidence Inheritance Matrix +
+> Continuation Semantics Scope Charter；仍不实现、不选 backend、不做实验。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
