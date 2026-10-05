@@ -60,6 +60,18 @@ class ConformanceSubstrate:
         self._materialized = handle
         return handle
 
+    def continuation_object(self) -> Optional[Dict[str, Any]]:
+        """The addressable continuation object S2 as realized by this
+        substrate: the materialized surface plus the binding/position the
+        substrate holds. G-3's T2 adapter consumes THIS (IF-G3-01) — the
+        object instantiate produced, not a parallel construction."""
+        if self._materialized is None:
+            return None
+        return {"handle": dict(self._materialized),
+                "surface_bytes": self._surface_bytes,
+                "bound_weights_id": self._bound_weights_id,
+                "position_units": len(self._surface_bytes)}
+
     # readback interface (VERIFIED path for VV-2/VV-4) --------------------
     # IF-G2-08: observability is an EXPLICIT CAPABILITY, declared via the
     # capability interface below — never inferred from a class name or from

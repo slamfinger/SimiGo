@@ -1,63 +1,78 @@
-# G-3 Delivery Note — the E-run (first end-to-end auditable I-1 runtime evidence)
+# G-3 Delivery Note v2 — the E-run (first end-to-end auditable I-1 runtime evidence)
 
 Date: 2026-10-05
-Gate state: Implementation Gate OPEN — G-1 ACCEPTED/CLOSED, G-2 ACCEPTED/CLOSED; **G-3 delivered**; G-4 (per-carrier mapping + audit) queued next.
-Frozen judgment basis: C-CAP exactly as frozen in I-1d/Gate Package §4 — success = (a)+(b)+(c) together; "it stored something" is not success.
+Gate state: Implementation Gate OPEN — G-1 ACCEPTED/CLOSED, G-2 ACCEPTED/CLOSED; **G-3 re-delivered (v2, incorporating IF-G3-01/02)**; G-4 queued next.
+Frozen judgment basis: C-CAP exactly as frozen — success = (a)+(b)+(c) together; "it stored something" is not success.
 
 ---
 
-## 1. The run
+## 1. What changed from v1 (`bcbaafd`) — Human review findings, both FIXED
+
+**IF-G3-01 (MUST FIX — the core experimental problem):** v1's E2 never
+consumed the continuation object instantiate produced — it constructed CR(E2)
+in parallel, so S2 was "recorded/claimed to exist", not "actually consumed by
+the subsequent computation". **Fix:** the substrate now exposes the realized
+continuation object (`continuation_object()`: materialized surface bytes +
+handle digest + bound weights + derived position); **T2's execution adapter
+consumes THAT object** — with mechanical binding checks before use (S2
+surface ≡ resolved R2 surface; handle digest ≡ R2 surface digest; bound
+weights ≡ declared τ2★ weights; any mismatch raises and aborts the run). E2's
+result is now **derived from the S2-carried surface** (no hardcoded result
+string).
+
+**IF-G3-02 (evidence semantics tightened):** the no-recompute claim is now
+worded and structured as what the document-form evidence actually supports —
 
 ```text
-E1 executes T1 (compat analysis; consumes F1..F3 pinned at use time)
-   → R1 produced → CR(E1) written (frozen I-1 format, identity hash over
-     identity-bearing fields; provenance carries E1.seg[0..3] + weights id)
-E1.trace = { segments E1.seg[0..3]; consumed: used-item digests;
-             produced: R1 digest }                                   ← C-CAP(c) material
-resolve(CR_ref) → state RESOLVED, zero violations → R2 assembled
-instantiate(R2, τ2★, substrate) → IR(S2): COMPLETED /
-     PROCEED-WITH-ANNOTATION (single annotation: document-form carrier-absent);
-     BindingRecord = BOUND; VV-1..VV-7 entered, all VERIFIED (tier profile
-     recorded per check)                                            ← C-CAP(a)(b)
-E2 executes T2 from the reconstructed S2
-   → CR(E2) written; trace = { new segments E2.seg[0..1];
-     predecessor_references: E1.seg[0..3] (ALL inherited via R2 lineage);
-     consumed: R2 surface + pinned used items }                     ← C-CAP(c)
+C-CAP(c)-i    E2's trace references ALL inherited predecessor segments
+C-CAP(c)-ii   E2 reused NO predecessor segment identifier for new work
+              (limited mechanical support; semantic re-derivation under a
+              new id is the registered detection boundary — stated in the
+              evidence item itself)
+C-CAP(necessary) E2 consumed the resolve output (necessary, distinct)
 ```
 
-## 2. C-CAP results
+plus a new (b)-sub-item: **C-CAP(b)-s2 — "the executed object IS the
+R2-derived S2"** (surface/handle/weights mechanically matched).
+
+**Persistence fix:** `G3_ERUN_RECORD.json` now contains the **full C-CAP
+judgment record** — every `ev()` item (10 entries, pass/detail) lands in the
+machine-readable record; the verdict is no longer stdout-only.
+
+## 2. The run (v2)
+
+```text
+E1 executes T1 → CR(E1) (F1..F3 use-time pinned; provenance: E1.seg[0..3],
+     weights id)
+resolve(CR_ref) → RESOLVED, zero violations → R2
+instantiate(R2, τ2★, substrate) → IR(S2): COMPLETED / PROCEED-WITH-ANNOTATION;
+     BindingRecord = BOUND; VV-1..VV-7 entered, all VERIFIED (tier profile
+     recorded)
+T2 executes ON the S2 continuation object (mechanical binding checks pass;
+     result derived from the S2-carried surface)
+E2 → CR(E2); trace = { new segments E2.seg[0..1]; predecessor_references:
+     E1.seg[0..3]; consumed: R2 surface + pinned items; executed_on_s2: … }
+```
+
+## 3. C-CAP results (v2)
 
 | Frozen criterion | Result | Evidence |
 |---|---|---|
-| (a) clean RESOLVED | **PASS** | resolve state = RESOLVED, zero violations (V-1..V-5) |
-| (b) instantiate + continue | **PASS** | IR COMPLETED / PROCEED-WITH-ANNOTATION; E2 produced its result from the reconstructed context |
-| (c) no-recompute (document-form) | **PASS** | E2 trace references ALL of E1.seg[0..3]; E2's new segments are disjoint from E1's (no equivalent new segment); E2 consumed the resolve output (necessary condition, recorded as distinct) |
-| chain | **PASS** | CR(E1) → IR(S2) → CR(E2): E2's lineage parent is E1's CR |
+| (a) clean RESOLVED | **PASS** | RESOLVED, zero violations |
+| (b) instantiate + continue **on S2** | **PASS** | COMPLETED/PROCEED-WITH-ANNOTATION + **S2 mechanically verified as consumed** (surface/handle/weights) + result derived from the S2 surface |
+| (c) no-recompute (limited document-form support) | **PASS** | predecessor references complete + identifier-disjoint new work + resolve output consumed (boundary stated in the evidence item) |
+| (b)-s2 executed object ≡ R2-derived S2 | **PASS** | new sub-criterion per IF-G3-01 |
+| chain | **PASS** | CR(E1) → IR(S2) → CR(E2) linked |
 
-**Verdict: C-CAP SUPPORTED (document-form) — 9/9 evidence items PASS.**
-Full machine-readable record: `G3_ERUN_RECORD.json` (run parameters, IR
-verification/tiers, binding record, disposition, CR chain, verdict).
-
-## 3. Registered boundaries (carried, unchanged)
-
-- Detection boundary: a *semantically* equivalent re-derivation under a new
-  segment identifier is not caught by (c)-ii — the frozen no-oracle boundary.
-- Carrier-form no-recompute (consumed-prefix metrics) was NOT exercised —
-  document-form run; the annotation is recorded in the IR.
-- The substrate is the conformance testbed (MC-1..MC-6); this is the first
-  auditable evidence, not a claim about production substrates.
-- E2's T2 specification was an external input (τ2★); resolve inferred nothing.
+**Verdict: C-CAP SUPPORTED (document-form, limited mechanical support on (c))
+— 10/10 evidence items PASS, all persisted in `G3_ERUN_RECORD.json`.**
 
 ## 4. Regression
 
-`i1_g1_conformance.py` 19/19 PASS; `i1_g2_conformance.py` 17/17 PASS — no
-regression from the E-run additions (delivery-run results; per the registered
-provenance note, Human acceptance verifies structure, GitHub CI does not
-re-execute).
+`i1_g1_conformance.py` 19/19 PASS; `i1_g2_conformance.py` 17/17 PASS (delivery
+run results; per the registered provenance note).
 
 ## 5. Next per the fixed gate order
 
-**G-4 — per-carrier mapping table + audit**: the conformance substrate's
-mapping table formalized against I-1d §1.2, audited for full coverage; then
-the Implementation Gate closes with the G-1..G-4 evidence bundle for Human
-acceptance.
+**G-4 — per-carrier mapping table + audit**, then Implementation Gate closes
+with the G-1..G-4 evidence bundle for Human acceptance.

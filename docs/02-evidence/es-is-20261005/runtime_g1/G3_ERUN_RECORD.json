@@ -50,10 +50,51 @@
   "predecessor_weights_id": "W-testbed-1",
   "declared_weights_id": "W-testbed-1"
  },
- "ccap": {},
+ "ccap": {
+  "E1 executed T1; CR(E1) written with use-time-pinned F1..F3": {
+   "pass": true,
+   "detail": "CR ref 07cd824446da6b83…"
+  },
+  "E2 executed T2 from the reconstructed S2; CR(E2) written": {
+   "pass": true,
+   "detail": "CR ref 6c4612bb23e86696…"
+  },
+  "auditable object chain CR(E1) -> IR(S2) -> CR(E2) is linked": {
+   "pass": true,
+   "detail": "E2's lineage parent is E1's CR (resolve/instantiate provenance carried)"
+  },
+  "C-CAP(a) clean RESOLVED (V-1..V-5 pass, zero violations)": {
+   "pass": true,
+   "detail": "resolve state = RESOLVED"
+  },
+  "C-CAP(b) instantiate + continue from S2 (T2 executed ON the continuation object)": {
+   "pass": true,
+   "detail": "IR stage = COMPLETED, disposition = PROCEED-WITH-ANNOTATION, S2 consumed: 1fc961af7b04…"
+  },
+  "C-CAP(c)-i E2 trace references all inherited predecessor segments": {
+   "pass": true,
+   "detail": "['E1.seg[0]', 'E1.seg[1]', 'E1.seg[2]', 'E1.seg[3]']"
+  },
+  "C-CAP(c)-ii E2 reused no predecessor segment identifier for new work (limited mechanical support; semantic re-derivation under a new id is the registered detection boundary)": {
+   "pass": true,
+   "detail": "E2 new segments ['E2.seg[0]', 'E2.seg[1]'] are identifier-disjoint from E1's"
+  },
+  "C-CAP(necessary) E2 consumed the resolve output": {
+   "pass": true,
+   "detail": ""
+  },
+  "C-CAP(b)-s2 the executed object IS the R2-derived S2": {
+   "pass": true,
+   "detail": "surface/handle/weights all match the resolved R2"
+  },
+  "E-RUN VERDICT: C-CAP SUPPORTED (document-form)": {
+   "pass": true,
+   "detail": ""
+  }
+ },
  "cr_chain": {
   "cr1": "07cd824446da6b8301b73f638baf0599682d593f9917522b4c8d5020a012a912",
-  "cr2": "383ab8632ab65da9203fa5e2b9d1ec0bac650203f028feb71eb874e7a7c0e326"
+  "cr2": "6c4612bb23e86696db19469bee1ffe65eb73a61051b7be33404204eb813313c1"
  },
  "verdict": "SUPPORTED"
 }
