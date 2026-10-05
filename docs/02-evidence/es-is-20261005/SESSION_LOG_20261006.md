@@ -11,7 +11,7 @@ Path A default entry                 = ACTIVE
 Phase 2 recovery                     = ACCEPTED / BOUNDED PASS / CLOSED
 IS-IDLOC-SEAM-01                     = REGISTERED / OPEN / NOT FROZEN / v0.1
 PICS-01                              = ACCEPTED / BOUNDED PASS / CLOSED
-CCVS-01                              = PHASE A DELIVERED / AWAITING HUMAN REVIEW
+CCVS-01                              = PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
 Lab physical reorganization          = FROZEN
 Benchmark execution                  = NOT AUTHORIZED
 Backend selection                    = NOT AUTHORIZED
@@ -55,6 +55,14 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
 14. The benchmark protocol and safety limits are authored but not executed.
     Phase B protocol freeze and Phase C controlled validation both require
     separate Human action.
+15. Human authorized carrier-neutral interface preconstruction. A new
+    `CarrierInterface` target now defines C1-C7 protocols, C8 carrier-interface
+    facts, opaque IDs/DTOs, dependency-injected `InformationSpaceRuntime`,
+    memory fake stores, conformance suite, integrity/orphan observation,
+    benchmark harness, and P50/P95/P99 metrics collector.
+16. No backend-specific adapter, schema, storage layout, OSS integration, or
+    migration was added. The benchmark harness was not run as candidate
+    validation; only Swift build/test verification was run.
 
 ## Key documents
 
@@ -70,12 +78,15 @@ CCVS-01 charter
 
 CCVS-01 Phase A
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
+
+CCVS-01 interface preconstruction
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
 ```
 
 ## Next legal transition
 
 ```text
-Human review CCVS-01 Phase A D1-D8.
+Human review CCVS-01 Phase A D1-D8 and carrier-neutral interface preconstruction.
 
 If accepted, enter Phase B protocol freeze only by explicit Human ruling.
 Phase C benchmark execution requires another separate authorization.

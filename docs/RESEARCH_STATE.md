@@ -239,6 +239,20 @@
 > throughput 改善，或提供 Baseline A 无法合法提供的能力，否则 Baseline A 优先。
 > Phase A 报告见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`。
+> Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
+> protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
+> conformance suite、benchmark harness 与 metrics collector；禁止任何
+> SQLite/Postgres/object-store/DAG/graph 等 backend-specific adapter、schema、
+> storage layout、OSS integration、migration 或 benchmark execution。已新增
+> `CarrierInterface` target，覆盖 C1-C7 carrier protocols、C8
+> `CarrierExecutionInterface`、`CarrierComposition` /
+> `InformationSpaceRuntime`、memory fake、7 项 core conformance、orphan
+> integrity detection、metrics P50/P95/P99 与 benchmark harness。验证：
+> `swift build --target CarrierInterface` PASS；
+> `swift test --filter CarrierInterfaceTests` PASS；
+> `trackD-memory swift test` PASS。该预构建不是 carrier selection，也不是 validated carrier。
+> 交付见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

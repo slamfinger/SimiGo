@@ -1,11 +1,11 @@
 # CCVS-01 — Carrier Candidate & Performance Validation Study Charter
 
 Date: 2026-10-06  
-Status: `OPEN / PHASE A DELIVERED / AWAITING HUMAN REVIEW`
+Status: `OPEN / PHASE A DELIVERED / CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED / AWAITING HUMAN REVIEW`
 Predecessor: `PICS-01 = ACCEPTED / BOUNDED PASS / CLOSED`  
 Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
 Frozen Contracts: `UNCHANGED`  
-Scope guard: `CANDIDATE DESIGN + INVENTORY + PROTOCOL AUTHORING ONLY · NO IMPLEMENTATION · NO OSS INTEGRATION · NO BENCHMARK EXECUTION · NO DATABASE SELECTION · NO MIGRATION · NO LAB REORGANIZATION · NO CONTRACT CHANGE`
+Scope guard: `CANDIDATE DESIGN + INVENTORY + PROTOCOL AUTHORING + CARRIER-NEUTRAL INTERFACE PRECONSTRUCTION ONLY · NO BACKEND-SPECIFIC IMPLEMENTATION · NO OSS INTEGRATION · NO BENCHMARK EXECUTION · NO DATABASE SELECTION · NO MIGRATION · NO LAB REORGANIZATION · NO CONTRACT CHANGE`
 
 ## 1. Research object
 
@@ -174,7 +174,13 @@ The inventory must not become a commitment.
 ```text
 PHASE A — DESIGN & INVENTORY
   Define topologies, eligibility, workloads, metrics, and protocol.
-  Current authorized phase.
+  Delivered.
+
+PHASE A.5 — CARRIER-NEUTRAL INTERFACE PRECONSTRUCTION
+  Build only protocols, DTOs/opaque IDs, dependency-injected composition root,
+  fake implementation, conformance suite, benchmark harness, and metrics
+  collector.
+  Delivered; no backend-specific adapter is included.
 
 PHASE B — PROTOCOL FREEZE
   Human approves benchmark fixtures, success/failure bounds, datasets,
@@ -201,6 +207,9 @@ CCVS-D5 consistency/fault specification
 CCVS-D6 benchmark protocol
 CCVS-D7 resource and safety limits
 CCVS-D8 shortlist criteria
+CCVS-D9 carrier-neutral interface package
+CCVS-D10 conformance suite
+CCVS-D11 benchmark harness and metrics collector
 ```
 
 Phase A delivery:
@@ -214,7 +223,7 @@ PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 ```text
 No benchmark execution in this phase.
 No OSS integration.
-No adapter implementation.
+No backend-specific adapter implementation.
 No schema DDL or storage layout implementation.
 No production deployment.
 No migration of the Lab estate.
