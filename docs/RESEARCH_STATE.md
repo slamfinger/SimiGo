@@ -84,10 +84,18 @@
 > decoder / resolver handoff 可机械执行；③独立 Information Space carrier
 > 满足 IS-MCI-01..08 **未测试**。因此 `PRQ-ISF-01 = INDETERMINATE /
 > NO-INDEPENDENT-CARRIER-UNDER-TEST`，不得外推为 PALACE 或任何具体
-> carrier 可行。当前入口 = **explicit carrier-path decision**；无 route
-> 被自动选择。登记于 `runtime_palace/prq_isf_01_probe.py`、
-> `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json` 与
-> `runtime_palace/PRQ_ISF_01_EXECUTION_DELIVERY.md`。
+> carrier 可行。Carrier-path decision = **A /
+> MemPalace local file-backed core selected as first independent candidate
+> carrier**；但这只是 candidate selection，不表示 feasibility 或 carrier
+> validation。下一入口 = **MemPalace IS-MCI Adapter Feasibility Audit**，
+> 逐项把 IS-MCI-01..08 判为 DIRECT / ADAPTER / GAP；本阶段 read-only，
+> 不实现 adapter、不集成 carrier、不对 MemPalace 执行 probe、不改契约、
+> 不做实验。语义搜索、摘要、推断、模糊检索或补全不得替代 identity、
+> canonical content、lineage、historical pinning 或 mechanical failure。
+> 登记于 `runtime_palace/prq_isf_01_probe.py`、
+> `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json`、
+> `runtime_palace/PRQ_ISF_01_EXECUTION_DELIVERY.md` 与
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_PATH_DECISION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 

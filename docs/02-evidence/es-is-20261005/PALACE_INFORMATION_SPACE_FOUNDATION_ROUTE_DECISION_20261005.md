@@ -172,3 +172,27 @@ revise the Foundation route
 pause the Foundation route
 name another explicitly authorized action
 ```
+
+## 7. Carrier-path decision
+
+Human ruling on 2026-10-05 selected Carrier Path **A**.
+
+```text
+Carrier Path                = A / select independent candidate carrier
+Independent candidate       = MemPalace local file-backed core
+Role                        = first independent carrier under test
+Selection status            = CANDIDATE SELECTED / FEASIBILITY NOT ESTABLISHED
+Next entry                  = MemPalace IS-MCI Adapter Feasibility Audit
+```
+
+This does not validate MemPalace. It selects MemPalace as the first independent
+candidate whose native capabilities must be audited against `IS-MCI-01..08`.
+The audit must classify each obligation as `DIRECT`, `ADAPTER`, or `GAP`.
+Semantic search, LLM summaries, semantic inference, fuzzy retrieval, or automatic
+completion must not be allowed to stand in for identity, canonical content,
+lineage, historical pinning, or mechanical failure discipline.
+
+This ruling authorizes only the read-only feasibility audit. Adapter
+implementation, MemPalace modification, carrier integration, probe execution
+against MemPalace, experiments, backend integration, and Frozen Contract changes
+remain unauthorized.

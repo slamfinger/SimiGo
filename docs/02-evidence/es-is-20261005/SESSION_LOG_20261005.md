@@ -194,11 +194,37 @@ Human review accepted the three-layer boundary:
 
 The work reached (2), not (3). Therefore `13/13 MATCH` is not carrier validation.
 
+## Carrier-Path Decision — MemPalace selected as first independent candidate
+
+Human ruled Carrier Path **A** and selected **MemPalace local file-backed core**
+as the first independent candidate carrier. The decision record is
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_PATH_DECISION_20261005.md`.
+
+```text
+Carrier Path           = A / select independent candidate carrier
+Candidate              = MemPalace local file-backed core
+Role                   = first independent carrier under test
+Selection status       = CANDIDATE SELECTED / FEASIBILITY NOT ESTABLISHED
+Next entry             = MemPalace IS-MCI Adapter Feasibility Audit
+Phase guard            = READ-ONLY FEASIBILITY AUDIT ONLY
+
+No adapter implementation  = true
+No carrier integration     = true
+No MemPalace mutation      = true
+No probe execution         = true
+No contract change         = true
+No experiment              = true
+```
+
+The next audit must classify `IS-MCI-01..08` as `DIRECT`, `ADAPTER`, or `GAP`.
+Semantic search, summaries, inference, fuzzy retrieval, or completion must not be
+accepted as substitutes for identity, canonical content, lineage, historical
+pinning, or mechanical failure discipline.
+
 ## Next steps (none auto-open)
 
-1. Human make the explicit carrier-path decision.
-2. Candidate actions remain: select an independent candidate carrier for a
-   meaningful PRQ test, revise or pause the Foundation route, or name another
-   authorized action.
-3. Without that ruling, no carrier selection, new implementation, additional
-   experiment, or Frozen Contract revision follows automatically.
+1. Enter **MemPalace IS-MCI Adapter Feasibility Audit**.
+2. Pin the exact MemPalace audit specimen and read-only boundary.
+3. Classify every `IS-MCI-01..08` obligation as `DIRECT`, `ADAPTER`, or `GAP`.
+4. Return to Human review before any adapter implementation, integration,
+   probe execution, or contract change.
