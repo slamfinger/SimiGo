@@ -200,6 +200,8 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
                                       "substituted": True})
             break
         lineage_ancestors.append({"cr_ref": cur,
+                                  "weights_id":
+                                  anc.get("provenance", {}).get("weights_id"),
                                   "segments": anc.get("provenance", {})
                                   .get("segments", [])})
         nxt = anc["continues"]["parent_cr_ref"]
@@ -210,6 +212,17 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
     for a in lineage_ancestors:
         segments.extend(a.get("segments", []))
     segments.extend(node.get("provenance", {}).get("segments", []))
+    # predecessor weights identity: surfaced from the LINEAGE provenance
+    # (ancestors, nearest first) where the formation recorded it
+    # (MAY-carry rule — absent everywhere ⇒ UNBOUND)
+    predecessor_weights_id = None
+    for a in lineage_ancestors:
+        wid = a.get("weights_id")
+        if wid is not None:
+            predecessor_weights_id = wid
+            break
+    if predecessor_weights_id is None:
+        predecessor_weights_id = node.get("provenance", {}).get("weights_id")
     r2 = {
         "surface": surface_out,
         "surface_digest": surface_digest,
@@ -219,6 +232,7 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
                     "segments": segments,
                     "root_cr_ref": cr_ref},
         "formation": formation,
+        "predecessor_weights_id": predecessor_weights_id,
     }
     r2_digest = sha256_hex(
         repr(sorted(r2.items(), key=lambda kv: kv[0])).encode("utf-8"))
