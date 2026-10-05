@@ -1,12 +1,12 @@
 # InformationCore / RelationCore Sufficiency Audit
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Study: `A4 — CORE SUFFICIENCY AUDIT`  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
-Prior study: `A4 Reduction / Ownership Study` at `6ce88b9`, Human ruling `FINDINGS / REFRAME REQUIRED`  
-Gate baseline: `ab97244`  
-Frozen Contracts: `UNCHANGED`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Study: `A4 — CORE SUFFICIENCY AUDIT`
+Status: `READY FOR HUMAN RULING · NO FURTHER PRE-WORK REQUIRED`
+Prior study: `A4 Reduction / Ownership Study` at `6ce88b9`, Human ruling `FINDINGS / REFRAME REQUIRED`
+Gate baseline: `ab97244`
+Frozen Contracts: `UNCHANGED`
 Scope: `READ-ONLY SEMANTIC / CONTRACT / IMPLEMENTATION AUDIT · NO IMPLEMENTATION · NO ADAPTER · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
 
 ## 1. Reframing
@@ -246,18 +246,88 @@ This audit does not claim that:
 7. byte-content semantics should be widened;
 8. Frozen Contracts are changed.
 
-## 9. Next gate
+## 9. Final ruling candidate — READY FOR HUMAN RULING
 
-Human review of this sufficiency audit.
+No further pre-work is required. The following is the final ruling candidate.
 
 ```text
-ACCEPT TEXT-DOMAIN BOUNDARY
-  → authorize a higher-layer continuation-graph semantics/design study,
-    still without implementation.
+Human Ruling — Core Sufficiency Audit
 
-REQUIRE BYTE FIDELITY
-  → open a separate Information byte-content semantic finding first.
+1. ACCEPT / CLOSE
+   Accept and close the InformationCore / RelationCore Sufficiency Audit.
 
-FINDINGS
-  → revise this audit.
+2. ACCEPT CURRENT PRQ INFORMATION DOMAIN BOUNDARY
+   For the currently registered PRQ-ISF-01 task domain only:
+   Information domain = UTF-8 / text-bounded.
+
+   Within this registered domain,
+   InformationCore + RelationCore + Store boundary
+   are sufficient to express the required continuation-graph semantics.
+
+   This ruling does not establish a global or permanent boundary
+   for all future Information Space research.
+
+3. NEW STORE PRIMITIVE
+   = NOT REQUIRED
+
+4. CARRIER SEMANTIC LAYER
+   = NOT REQUIRED FOR CURRENT PRQ-ISF-01 DOMAIN
+
+5. O-1 ARBITRARY-BYTE FIDELITY
+   = CONDITIONAL FINDING ONLY
+
+   Arbitrary-byte fidelity is not a current semantic gap
+   within the accepted PRQ-ISF-01 text-bounded domain.
+
+   This finding shall not trigger InformationCore modification.
+
+   If future research establishes a requirement for arbitrary-byte
+   information semantics, that requirement enters a separate research
+   decision and does not retroactively alter this ruling.
+
+6. HIGHER-LAYER OBLIGATIONS
+   O-3 / O-6 / O-7 / O-8 / O-9
+   = HIGHER-LAYER ONLY
+
+   These obligations do not require new Core semantics or new Store primitives.
+   They remain resolver / verification / higher-layer semantic responsibilities.
+
+7. MEMPALACE
+   Retain the narrow finding:
+
+   MEMPALACE AS-IS NO-GO
+   only for the PRQ-ISF-01 independent semantic-carrier test.
+
+   This ruling does not reject MemPalace as:
+   - a historical information / migration source;
+   - a future persistence backend candidate;
+   - a backend-control candidate behind the existing Core / Store boundary.
+
+8. RELATION BACKEND-CONTROL ASYMMETRY
+   = IMPLEMENTATION / TEST DEBT
+
+   ≠ SEMANTIC GAP
+   ≠ CURRENT BLOCKER
+
+   No backend-substitution experiment is triggered by this finding.
+
+9. NEXT RESEARCH ENTRY
+   = Higher-Layer Continuation Graph Semantics —
+     Scope & Research Question Charter
+
+   The next study shall address higher-layer continuation semantics
+   already identified by the sufficiency audit, without reopening
+   Core / Store / carrier semantics unless new evidence requires it.
+
+10. CONTINUED GUARDS
+   Implementation = NOT AUTHORIZED
+   Backend selection = NOT AUTHORIZED
+   Backend-substitution = NOT AUTHORIZED
+   Experiment = NOT AUTHORIZED
+   Contract change = NOT AUTHORIZED
 ```
+
+Closing clarification:
+
+> This ruling closes whether the current PRQ domain requires new Core / Store /
+> carrier semantics. It does not close Information Space itself.

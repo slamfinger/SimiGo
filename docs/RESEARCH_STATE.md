@@ -133,6 +133,9 @@
 > fidelity，因为 `Information.content` 当前是 String。登记于
 > `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`
 > 与 `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`。
+> Human findings 已处理，text-domain 裁定明确限定为当前 PRQ-ISF-01 task domain，
+> 而非全局 InformationCore boundary。当前状态 = **Core Sufficiency ruling READY
+> FOR HUMAN RULING / no further pre-work required**。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

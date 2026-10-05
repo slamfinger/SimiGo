@@ -121,7 +121,8 @@ Scope & Research Question Charter = ACCEPTED / CLOSED
 Delivery                          = 2f0959b
 Baseline                          = ab97244
 Frozen Contracts                  = UNCHANGED
-A4 Conceptual Study               = DELIVERED / AWAITING HUMAN REVIEW
+A4 Conceptual Study               = FINDINGS ADDRESSED
+Core sufficiency ruling           = READY FOR HUMAN RULING
 Study questions                   = CGQ-1..CGQ-5 answered
 Study guard                       = conceptual / documentary only;
                                     no implementation or experiment
@@ -192,3 +193,15 @@ Non-carrier             = MCL-7 mechanical failure surface
 ```
 
 The study does not select a carrier or authorize implementation.
+
+## 10. Final ruling candidate registered
+
+The Core Sufficiency Audit now contains the final ruling candidate, revised to
+scope the text boundary to the currently registered PRQ-ISF-01 task domain only.
+
+```text
+Status = READY FOR HUMAN RULING / NO FURTHER PRE-WORK REQUIRED
+Next entry = Human ruling on the Core Sufficiency Audit candidate
+```
+
+It is not yet accepted.

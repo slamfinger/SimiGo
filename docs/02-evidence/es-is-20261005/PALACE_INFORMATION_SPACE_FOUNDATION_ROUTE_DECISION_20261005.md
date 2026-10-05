@@ -348,3 +348,30 @@ Conditional semantic gap:
 MemPalace is not eliminated as a future backend or migration target; it is only
 ruled out as a direct native PRQ semantic carrier without a semantics-preserving
 adapter.
+
+## 13. Core Sufficiency ruling candidate
+
+The Core Sufficiency Audit is now `READY FOR HUMAN RULING`. The final candidate
+incorporates the required scope correction:
+
+```text
+Text domain = currently registered PRQ-ISF-01 task domain only.
+Not a global or permanent Information Space boundary.
+```
+
+The candidate ruling states:
+
+```text
+Core Sufficiency Audit = ready to accept / close
+Current PRQ domain     = UTF-8 / text-bounded
+Core/Relation/Store    = sufficient for that domain
+New Store primitive    = NOT REQUIRED
+Carrier semantic layer = NOT REQUIRED for current PRQ domain
+Arbitrary-byte finding = CONDITIONAL ONLY
+Higher-layer items     = O-3/O-6/O-7/O-8/O-9
+MemPalace              = narrow AS-IS PRQ NO-GO only
+Relation asymmetry     = implementation/test debt, not current blocker
+Next research entry    = Higher-Layer Continuation Graph Semantics
+```
+
+No formal Human ruling has yet been recorded.
