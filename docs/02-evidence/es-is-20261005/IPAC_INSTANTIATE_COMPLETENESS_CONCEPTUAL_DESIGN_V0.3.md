@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `REVISED DRAFT v0.3 · INCORPORATES THE PRE-FREEZE REVIEW ON V0.2 · READY FOR HUMAN REVIEW → FREEZE DECISION · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED`
-Revision lineage: v0.1 (`b717a77`) → review (direction ACCEPT, design REVISE) → v0.2 (`9abd764`, three-axis structure + D_RS conditioning + τ2★ split + M-1 downgrade + PD-7 marking) → review (three-axis structure **ACCEPT**; D_RS handling **correct** — M-8 now has real falsification force; **two pre-freeze fixes** — IC-2 binding decidability, Axis B evidence-level downgrade; notation unified) → v0.3 (this document).
+Status: `READY FOR FREEZE DECISION (pre-freeze consistency patch applied: M-1 — State necessity ≠ binding-decidability necessity) · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED`
+Revision lineage: v0.1 (`b717a77`) → review (direction ACCEPT, design REVISE) → v0.2 (`9abd764`, three-axis structure + D_RS conditioning + τ2★ split + M-1 downgrade + PD-7 marking) → review (three-axis structure **ACCEPT**; D_RS handling **correct** — M-8 now has real falsification force; **two pre-freeze fixes** — IC-2 binding decidability, Axis B evidence-level downgrade; notation unified) → v0.3 (this document) → **pre-freeze consistency patch** (2026-10-05: M-1's Axis-A entry corrected — a weights identity is NOT a State component and is required only to DECIDE lineage-strict binding; State necessity ≠ binding-decidability necessity. No other changes.) — freeze-ready.
 
 ---
 
@@ -60,6 +60,8 @@ a missing DECIDABILITY INPUT (e.g., an uncarried weights-id) is a
 binding-decidability condition on Axis B — never a missing state component.
 ```
 
+This seam — **State necessity ≠ binding-decidability necessity** — is a standing classification boundary: every future "why must this information be persisted?" judgment passes through it (state-necessity ⇒ Axis A / persistence; decidability-necessity ⇒ binding only).
+
 **D_RS** — the rendered-surface doctrine, registered as the central assumption: *"continuation = continue the rendered context; what is not in the surface is not required for logical continuity."* Bounded by the ES line's instrument history (PA-2, P5, T3); genuinely falsification-bearing via M-8.
 
 ---
@@ -80,12 +82,13 @@ R2 does not provide: the task (τ2); the envelope (ε2); a running substrate; ca
 
 ```text
 #     Candidate component            R2?      τ2★?    Axis A (logical)?  Axis C?     Classification
-M-1   weights identity (model)       MAY¹     re-dec. YES (lineage-strict²)  YES     **BINDING-DECIDABILITY INPUT** — not a
-                                                                                 state component: where present, the spec
-                                                                                 is recoverable and IC-2 can reach BOUND/
-                                                                                 MISMATCH; where absent, IC-2 = UNBOUND.
-                                                                                 Realization = Axis-B operation (X-B).
-                                                                                 **No new R2 field.**
+M-1   weights identity (model)       MAY¹     re-dec. NO as a State component;   YES     **BINDING-DECIDABILITY INPUT** — not a
+                                                      required only to DECIDE the        state component: where present, the spec
+                                                      lineage-strict binding claim       is recoverable and IC-2 can reach BOUND/
+                                                      (PD-7)                             MISMATCH; where absent, IC-2 = UNBOUND
+                                                                                         (recorded, never inferred).
+                                                                                         Realization = Axis-B operation (X-B).
+                                                                                         **No new R2 field.**
 M-2   engine / runtime substrate     no       no      no — an OPERATION, not a       Axis-B element (X-B) behind the
                                                      state component                substrate interface
 M-3   decode position / cursor       derivable —      no — derived given M-1/M-2     —       DERIVED (PD-6); not independent state
