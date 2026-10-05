@@ -251,3 +251,20 @@ awaiting Human re-authorization for the next research direction
 ```
 
 The "cannot-do" itself is a valid research result; no sealed conclusion was sacrificed. A/B/C and the deeper question all remain behind explicit Human authorization.
+
+---
+
+## Addendum 6 — 2026-10-05: Step 3 opened (conceptual) — Evaluation-Signature boundary review delivered, verdict ES-3 (PROPOSED)
+
+Human directive: Step 3 (Evaluation-Signature) formally opened **conceptual only** — no U_c work, no instrument modification, no experiments. Note: this resolves part of the Addendum-5 fork by Human choice — the line continues (options A/C not taken; B taken in its conceptual form as Step 3).
+
+Delivered: `EXECUTION_ADMISSIBILITY_EVALUATION_SIGNATURE.md` v0.1 (committed with this addendum). Four answers in the Human's order:
+
+1. **Layering**: "evaluator cannot run" is not a stage within the functioning chain — it is a status of the chain's first link. The fork asks where this status is booked. v0.3 shown to be **over-complete, not inconsistent**: the same facts are double-entered (three-valued codomain + Level-0/1 process vocabulary); the fork picks which entry is primitive.
+2. **Codomain examination**: the fork formalized as **M3** (value reading: `Admissibility ∈ {true, false, unevaluable}` — current v0.3) vs **M2** (gap reading: `Admissibility ∈ {true, false}` + `EvaluationStatus ∈ {available, unavailable}`) — three-valued logic vs partial function / truth-value gap. Key findings: v0.2 §4's `unevaluable` definition is process-descriptive (the content was always a process fact); the only established manifestation is output *absence* (846 C4-absent), which M2 records directly while M3 must attribute; **signature-equivalence** — all established observations, and on analysis any evaluator-side-signature instrument, are accommodated identically by both readings (the fork is attribution-level: a consumer that distinguished value-vs-empty would reintroduce the same choice one level up); derivational economy tilts toward M2 (D-1 near-derivable under M2 via classical conjunction + the §4 boundary; M3 carries a partial-logic choice degree of freedom → D-1 vs D-1′) — **virtue registered as tilt, not converted to evidence**; the M2 side is not yet fully specified (status cardinality, per-condition bookkeeping). v0.2 §4's tie of three-state to Model B dissolves under M2.
+3. **Model A re-examination (reopener check)**: the reopener registered in the identifiability note was **checked and answered, not fired into reversal** — Model A stays zero-constrained under any observable expansion (its "whatever process" clause is orthogonal to observables); **Case 2 stands unmodified**. What the expansion changes is the structured landscape: the live comparison becomes M3 vs M2 (both structured; NOT an A/B discrimination). M2 is exactly the "strengthened-A" shape the identifiability note anticipated — Case 2's collapse observation confirmed from the constructive side.
+4. **Verdict: ES-3** — evidence insufficient to decide; the insufficiency is structural (signature-equivalence + unspecified M2 + virtues-are-not-evidence + v0.3's codomain was inherited for completeness under a question not yet asked). Concurs with the Human's stated lean. Pause: no experiment, no instrument change, no spec revision.
+
+Decision material registered (none pursued): D-SIG-1 evaluation-consumption divergence (the one class that could break signature-equivalence — the observation this Step is named for); D-SIG-2 Q1 resolution toward modularity; D-SIG-3 M2 specification completion.
+
+Boundary accounting: Case 2 stands; v0.3 stands (fork at interpretation layer only; ES-1-if-ever-chosen ⇒ future v0.4, not proposed); U3/Step-2 STOP untouched; ND-1 in force; Q3/Q4/Q6/Q7/Q5 untouched; all hard boundaries in force. If ES-1 chosen someday it is a codomain revision requiring explicit Human authorization.
