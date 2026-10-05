@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `DESIGN GATE EXECUTED · U_c FEASIBILITY VERDICT: CASE U3 (PROPOSED — effective upon Human confirmation) · NO EXPERIMENT · NO PROBE DESIGNED · NO U_c MANIPULATION INVENTED`
+Status: `DESIGN GATE EXECUTED · U_c FEASIBILITY VERDICT: CASE U3 — CONFIRMED EFFECTIVE 2026-10-05 (Human confirmation) · STEP 2 STOPPED · NO EXPERIMENT · NO PROBE DESIGNED · NO U_c MANIPULATION INVENTED`
 Directive: Human authorization 2026-10-05 — Step 2 Design Gate opened; **first deliverable is `U_c` operationalization feasibility, before any probe matrix**. Pre-registered decision frame: Case U1 / U2 / U3 (below).
 Predecessors: `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.3.md` (SEALED, §8 review record) + `EXECUTION_ADMISSIBILITY_MODEL_AB_IDENTIFIABILITY.md` (SEALED, Case 2) + `RESEARCH_LOG.md` Addenda 1–3.
 Evidence added: none. Experiment authorization: none. No sealed document is modified by this gate.
@@ -133,7 +133,7 @@ Per the pre-registered rule: **C-PROP-1 is currently untestable; Step 2 STOPS; n
 
 Verdict scope: **instrument-relative.** This verdict says nothing about `U_c` being unrealizable in any setup — v0.3's `U_c` remains well-defined, and the 846 fixture retains its own (Level-0) unevaluable. What is established here is only that the agent-line instrument affords no legal route for X or F.
 
-Status: **PROPOSED — the Step 2 stop takes effect upon Human confirmation.**
+Status: **CONFIRMED EFFECTIVE 2026-10-05 (Human confirmation) — Step 2 STOPPED.** See `RESEARCH_LOG.md` Addendum 5 for the fixed terminal state and the registered research fork.
 
 ---
 

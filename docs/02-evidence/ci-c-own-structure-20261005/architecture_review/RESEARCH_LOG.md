@@ -198,3 +198,56 @@ Consequences: C-PROP-1 = stateable (sealed, unchanged) / currently untestable in
 Reopeners registered (none pursued, each requiring new Human authorization): R-1 = an instrument that can represent determination-non-completion + a criterion separating genuine non-completion from evasion/instrumentation failure (adjacent to deferred Step 3 — noted, not opened); R-2 = incidental repeated no-verdict observation under fixed input; R-3 = Q1 resolution toward condition-level modularity.
 
 Q3/Q4/Q6/Q7/Q5 untouched; no frozen phase reopened; no sealed document modified.
+
+---
+
+## Addendum 5 — 2026-10-05: Human confirmation — U3 EFFECTIVE, Step 2 STOPPED (session terminal registration)
+
+Human confirmed: **the U3 verdict and the Step 2 stop take effect.** This addendum is pure registration (zero research content) — it upgrades the PROPOSED status of `MODEL_B_UNIFORMITY_PROBE_DESIGN.md` to CONFIRMED EFFECTIVE and fixes the terminal state of this session per Human direction.
+
+### Fixed formal state (Human, binding)
+
+```text
+Case U3
+X/F: no legal U_c operationalization
+C-PROP-1: stateable / currently untestable
+Step 2: STOPPED
+No U_c manipulation invented
+No experiment run
+```
+
+### Boundaries endorsed at confirmation (binding annotations)
+
+1. **Instrument-relative, not ontology.** Never write "`U_c` does not exist in principle." Only: *in the current prompt-rendering / fail-closed / output-contract instrument, X/F have no legal `U_c` construction or observation path.*
+2. **The U-slot is not a cheap fix.** Adding `COULD_NOT_DETERMINE` solves representation only; it does not answer which input state genuinely represents "evaluation did not complete" — that unresolved problem would merely move from the outcome layer to the input/determination layer. It is a new-instrument direction, not a modification of the current experiment.
+3. **C-PROP-1 is not "refuted".** Its exact status: a clearly defined B-side commitment, currently untestable in this instrument — never `C-PROP-1 false`, and never `C-PROP-1 false → Model A` (Case 2 discipline).
+
+### Research fork registered (Human; none auto-opens)
+
+```text
+Step 2  U_c feasibility → U3 → CLOSED / STOPPED
+              ↓
+        Research choice
+        A. keep current instrument, turn to B commitments that do not depend on U_c
+        B. open evaluation-signature / new-instrument research
+        C. pause Admissibility, switch research line
+```
+
+A and B (and C) all require explicit Human re-authorization.
+
+### Deeper question registered at the stop (Human; connects to deferred Step 3; NOT opened)
+
+U3 exposed that `unevaluable` is a state v0.3 introduced for theoretical completeness, while the agent-line instrument's task contract fundamentally requires a verdict. The next worthy question may therefore not be "how to manufacture U_c?" but:
+
+> **Should evaluation failure enter Admissibility's object language, or does it belong to runtime failure outside Admissibility?**
+
+This connects to the deferred Step 3 (evaluation-signature). It is registered as a candidate future question only; nothing is opened by this addendum.
+
+### Session terminal state (per Human direction)
+
+```text
+64bbc2e — Step 2 Design Gate COMPLETE → U3 → STOPPED
+awaiting Human re-authorization for the next research direction
+```
+
+The "cannot-do" itself is a valid research result; no sealed conclusion was sacrificed. A/B/C and the deeper question all remain behind explicit Human authorization.
