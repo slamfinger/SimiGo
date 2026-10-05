@@ -265,6 +265,24 @@ PALACE         = BLOCKED
 
 I-1 has moved from "Gap" to a frozen, continuable Core interface definition. The next object of study is no longer "what IPAC is" but what `R2 + τ2` still lacks to constitute a genuinely continuable `S2`.
 
+**I-1c freeze outcome (2026-10-05):** Gap I-1c's deliverable — **IPAC Instantiate Completeness Conceptual Design v0.3 — is FROZEN as the I-1c Core conceptual design baseline** (Human freeze ruling APPROVED/FROZEN after two review-revision cycles: v0.1 → three-axis restructure → v0.2 → pre-freeze consistency patch → v0.3; freeze commit **on main: `6c3cf6a`**, content = the patched `acf56e4` text + FROZEN status/lineage — verified: substance byte-identical, three ruling edits only). Frozen at freeze: the three orthogonal axes (Axis A state-component completeness — none identified under D_RS, M-8 = falsification-bearing trigger; Axis B instantiation operational closure — prescribed, not an empirical sufficiency claim; Axis C efficiency — carrier-relative); the M-table at nine entries (frozen); IC-2's three-state binding decision (BOUND / UNBOUND / MISMATCH) with the structural finding **"missing information is not necessarily a State component — it may be a binding-decidability input"** and the standing seam **State necessity ≠ binding-decidability necessity**; PD-1..PD-7 with binding notes; τ2★ = ⟨task τ2, envelope ε2⟩; no PALACE / no implementation / no experiment.
+
+**Research state:**
+
+```text
+I-1   Persistence / Resolve       = FROZEN (main 2b2e2ef)
+I-1c  Instantiate Completeness    = FROZEN (main 6c3cf6a)
+        ↓
+the runtime realization & validation design of the S2 instantiate contract
+        = the open layer (a subsequent Core gate is required to open it)
+
+Implementation = BLOCKED
+Experiment     = BLOCKED
+PALACE         = BLOCKED
+```
+
+I-1c answered **what instantiate must distinguish** (State / declaration / operation — and, via IC-2, what it may decide versus record as undecidable); it deliberately did not answer how the substrate / carrier / PALACE concretely realize and validate the contract at runtime. That is the next layer's design space, behind an explicit Core gate.
+
 ---
 
 ## 9. Synthesis gate record (G-5, five questions in order)

@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `READY FOR FREEZE DECISION (pre-freeze consistency patch applied: M-1 — State necessity ≠ binding-decidability necessity) · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED`
-Revision lineage: v0.1 (`b717a77`) → review (direction ACCEPT, design REVISE) → v0.2 (`9abd764`, three-axis structure + D_RS conditioning + τ2★ split + M-1 downgrade + PD-7 marking) → review (three-axis structure **ACCEPT**; D_RS handling **correct** — M-8 now has real falsification force; **two pre-freeze fixes** — IC-2 binding decidability, Axis B evidence-level downgrade; notation unified) → v0.3 (this document) → **pre-freeze consistency patch** (2026-10-05: M-1's Axis-A entry corrected — a weights identity is NOT a State component and is required only to DECIDE lineage-strict binding; State necessity ≠ binding-decidability necessity. No other changes.) — freeze-ready.
+Status: `FROZEN CONCEPTUAL DESIGN v0.3 · FREEZE RULING 2026-10-05 · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED PENDING SUBSEQUENT GATES`
+Revision lineage: v0.1 (`b717a77`) → review (direction ACCEPT, design REVISE) → v0.2 (`9abd764`, three-axis structure + D_RS conditioning + τ2★ split + M-1 downgrade + PD-7 marking) → review (three-axis structure **ACCEPT**; D_RS handling **correct** — M-8 now has real falsification force; **two pre-freeze fixes** — IC-2 binding decidability, Axis B evidence-level downgrade; notation unified) → v0.3 (this document) → **pre-freeze consistency patch** (2026-10-05: M-1's Axis-A entry corrected — a weights identity is NOT a State component and is required only to DECIDE lineage-strict binding; State necessity ≠ binding-decidability necessity. No other changes.) — freeze-ready → **FREEZE RULING (2026-10-05): APPROVED / FROZEN AS I-1c CONCEPTUAL DESIGN BASELINE.**
 
 ---
 
@@ -211,7 +211,7 @@ The substrate must not: judge semantics; alter the surface; supply task content;
 3. **Axis B's evidence-level downgrade** — accept ("candidate operational closure prescribed"; real sufficiency deferred to implementation/experiment).
 4. PD-5 (ε2 channel), PD-6 (derived position), PD-7 (lineage-strict policy + registered cross-model alternative) — confirm.
 5. **The M-table at nine entries, frozen** — confirm no expansion next round.
-6. **Freeze decision** — this document is submitted for it; Implementation / Experiment / PALACE remain BLOCKED through the freeze and subsequent gates.
+6. **Freeze decision** — **FROZEN by ruling 2026-10-05.** This freeze applies to the conceptual design only; Implementation / Experiment / PALACE remain BLOCKED pending subsequent I-1c gates.
 
 ## 10. Non-claims
 
