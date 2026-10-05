@@ -234,6 +234,12 @@ What has never run: **persist(R1 + provenance + relations) → resolve(R1) → S
 
 ---
 
+## Addendum — Gap selection ruling (2026-10-05)
+
+**Human ruling: Gap I-1 selected as the next Core work.** Selection ≠ implementation: no code, no experiment. First deliverable: **IPAC Persistence / Resolve Conceptual Design v0.1** (`docs/02-evidence/es-is-20261005/`), answering — if IPAC is the candidate relational closure of State↔Information, what relations must a finished Execution State persist into the Information Space, and how are they re-parsed into a continuable State? Sequence fixed: this design → Human Review → then decide Design / Implementation / Experiment. Governance discipline carried: IPAC minimality not claimed; **no PALACE commitment** (relation semantics → persistence model → resolve model → capability criterion first; carrier decided after — anti "carrier-first"). Stage capability criterion registered (Human, verbatim substance): *"not 'can save IPAC', but 'the future can re-parse a continuable Execution State from the Information Space and avoid repeating prior computation.'"*
+
+---
+
 ## 9. Synthesis gate record (G-5, five questions in order)
 
 1. **What do we understand now that we did not?** That every loop edge has some real instantiation, that they live in different systems, and that the missing thing is not more theory on any single edge but the **joining** — with the document-form loop already running as a live low-tech instance and the carrier-form loop validated at one edge.
