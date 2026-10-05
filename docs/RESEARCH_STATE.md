@@ -2,7 +2,53 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-04
+**Last updated**: 2026-10-05
+
+## Current total status — 2026-10-05 (supplements 2026-10-04 below)
+
+> 2026-10-05 的变化发生在治理层与新的 ES↔IS Core 线，2026-10-04 的
+> Execution State 主线结论（下方各节）全部不变。要点：
+>
+> **治理升级**：SimiGo Research Constitution v1.0 采纳
+> （`docs/00-governance/SIMIGO_LAB_RESEARCH_CONSTITUTION_20261005.md`，
+> 北极星=ES↔IS 持续计算闭环、五边 Core 定义、四 Gate、卫星三态、
+> 回迁证明、五行 session 头；硬门槛 Deep but disconnected ≠ Core）；
+> 随后 RESEARCH_GOVERNANCE_CONSTITUTION v0.1→v0.2 归纳式宪法
+> 采纳为 inductive/epistemological governance layer（与 operative
+> v1.0 并列不合并；G-1 Frame/Model 分层解 HR-1；回迁身份规则；
+> 治理反递归条款；Frame reopener 登记）。
+>
+> **Admissibility 线 PAUSED / SATELLITE**（完整闭环于 ES-3：Case 2
+> 结构性不可辨识 + Spec v0.3 三态语义 + U_c 仪器不可构造 +
+> M2/M3 签名等价；回迁条件已登记）。
+>
+> **新 Core 线 ES↔IS 开线并三次完整循环**：Conceptual Spec v0.1
+> → Core Reference Scenario（locality 轴被场景测试旁置）→
+> Stage Synthesis（治理首跑：Current Research Map + Evidence Map +
+> Gap Map，头号缺口 I-1）→ Human 选定 I-1 →
+> **I-1 FROZEN**（main `2b2e2ef`：IPAC Persistence/Resolve 概念设计，
+> 三级对象关系 CR→resolve→R2→instantiate(+τ2★)→S2，九条边界）→
+> **I-1c FROZEN**（main `6c3cf6a`：Instantiate Completeness，三正交轴，
+> IC-2 三态绑定，结构性发现"缺失信息≠State component，可能是
+> binding decidability input"）→ **I-1d FROZEN**（分支 `1832676`：
+> Runtime Realization/Verification，可审计三方映射 Frozen Contract↔IR↔VV，
+> 四正交层封闭，冻结后三路径=Implementation/Evidence finding/Future
+> alternative）。**概念链 Information→Resolve→Instantiate→Continue 闭合。**
+>
+> **Implementation Gate 已 OPEN（human ruling），G-1..G-4 按序执行**：
+> G-1 ACCEPTED/CLOSED（CR/IR 格式+内容寻址 store+resolve V-1..5，
+> conformance 19/19，IF-G1-01 修复）；G-2 ACCEPTED/CLOSED（instantiate
+> 管线+VV-1..7 tier+三绑定态+三处置类，三轮 IF-G2-01..08 修复，
+> conformance 17/17；capability 接口替代类名特判）；**G-3 v3 交付待验收**
+> （E-run 端到端执行：E1→CR(E1)→resolve→R2→instantiate[唯一一次]→
+> IR+S2→T2 消费 S2（result digest=sha256(S2 contents)，不可旁路数据
+> 依赖）→CR(E2)，**C-CAP SUPPORTED (document-form, limited mechanical
+> support on (c)) 10/10**，可审计对象链 CR(E1)→IR(S2)→CR(E2) 成立，
+> 完整 C-CAP 判定持久化于 `G3_ERUN_RECORD.json`；两轮 Finding
+> IF-G3-01..04 已修复）。G-4（per-carrier mapping+audit）排队；
+> PALACE 选择 / E-run 外实验 / 冻结契约修改 / backend 选择 全程 BLOCKED。
+> 实现位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
+> `codex/execution-state-research-20260929`）。
 
 ## Current total status — 2026-10-04
 
