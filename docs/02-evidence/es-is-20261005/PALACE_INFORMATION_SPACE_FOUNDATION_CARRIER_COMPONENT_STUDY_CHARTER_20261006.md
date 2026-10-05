@@ -1,14 +1,14 @@
 # Carrier Component Study — Scope & Research Question Charter
 
 Date: 2026-10-06  
-Status: `PROPOSED / AWAITING HUMAN COMMISSION`  
+Status: `ACCEPTED / COMMISSIONED / PICS-01 OPEN`
 Seam: `IS-IDLOC-SEAM-01 / v0.1`  
-Proposed study ID: `PICS-01`  
+Study ID: `PICS-01`
 Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
 Frozen Contracts: `UNCHANGED`  
 Scope guard: `CHARTER PROPOSAL ONLY · NO IMPLEMENTATION · NO OSS INTEGRATION · NO BACKEND SELECTION · NO DATABASE SCHEMA DESIGN · NO MIGRATION · NO REPOSITORY REORGANIZATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
 
-## 1. Proposed reframing
+## 1. Accepted reframing
 
 Human research judgment proposes moving from:
 
@@ -33,7 +33,7 @@ NOT
   = production Information Space implementation
 ```
 
-This proposal does not demote the Lab. It bounds the Lab as an observation and
+This reframing does not demote the Lab. It bounds the Lab as an observation and
 validation estate.
 
 ## 2. Immediate research object
@@ -93,8 +93,19 @@ CCS-C7 Availability / Access State
   representation absence must not imply Information nonexistence.
 
 CCS-C8 Execution Interface
-  resolve, consume, produce, pin, and continue;
-  reserved for later ES↔IS work.
+  carrier ↔ SimiGo interface responsibilities only:
+    expose what can be resolved, consumed, produced, pinned, or continued.
+  This is NOT a carrier-native database capability.
+  It does not require the carrier to execute SimiGo semantics.
+  Detailed ES↔IS semantics remain reserved for later work.
+```
+
+Human acceptance note:
+
+```text
+CCS-C8 remains in the responsibility model as an interface boundary,
+not as a required database capability. The carrier may store, locate, and
+make information available; it does not thereby execute SimiGo semantics.
 ```
 
 ## 4. Research questions
@@ -182,9 +193,9 @@ semantic leakage into storage
 fit with existing InformationCore substrate
 ```
 
-No numerical ranking is authorized by this proposal.
+No numerical ranking is authorized by this study charter.
 
-## 7. Deliverables if commissioned
+## 7. Commissioned deliverables
 
 ```text
 D1 Responsibility ownership matrix
@@ -225,7 +236,7 @@ Core Identity Mechanism Audit
   identity-based relations, backend protocol, and optional filing separation
   already exist.
 
-This proposal
+This charter
   studies the next physical composition layer without changing those
   boundaries.
 ```
@@ -243,7 +254,9 @@ R7 Turning the 80% infrastructure problem into a new SimiGo implementation.
 R8 Opening Higher-Layer semantics before physical composition is understood.
 ```
 
-## 11. Decision options
+## 11. Decision record
+
+Human selected option A. The original options are retained below for audit.
 
 ```text
 A  ACCEPT CHARTER
@@ -259,4 +272,4 @@ D  REJECT
    Return to Higher-Layer Continuation Graph Semantics or another route.
 ```
 
-No option is selected by this document.
+Selected by Human ruling: `A — ACCEPT CHARTER`.

@@ -191,12 +191,24 @@
 > Entity Representation Store、Information Registry、Locator/File Index、
 > Relation/History、Session Information、Derived Index/Search、Availability
 > State 与 future Execution Interface 的最小组合。已起草
-> **Carrier Component Study Charter / PICS-01 = PROPOSED / AWAITING HUMAN
-> COMMISSION**。该章程只登记研究问题、责任模型、候选类别、workload operations
-> 与未来验证设计边界；不集成 OSS、不选择 SQLite/KV/Git/object/graph、不设计
-> schema、不实现 adapter、不迁移或整理仓库、不执行实验，也不自动开启
-> Higher-Layer Charter。提案见
+> **Carrier Component Study Charter / PICS-01 = ACCEPTED / COMMISSIONED / OPEN**。
+> Human 已选择 Option A，并特别裁定 CCS-C8 只是 carrier ↔ SimiGo interface
+> responsibility，不是 carrier-native database capability；carrier 可以承载/定位/
+> 暴露 Information，但不因此执行 IPAC、applicability、validity、judgment 或
+> continuation reasoning。章程见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md`。
+> Human ruling 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CHARTER_ACCEPTANCE_RULING_20261006.md`。
+> 随后 **PICS-01 documentation-only study 已交付待复核**，完成 D1 responsibility
+> ownership、D2 system-class capability mapping、D3 candidate inventory、
+> D4 integration seams、D5 workload/observation matrix、D6 composition options
+> A/B/C、D7 validation protocol design、D8 gap/no-go register。结论是：物理
+> substrate 应复用成熟机制；SimiGo 真正要定义的是 semantic identity continuity、
+> revision/applicability、membership、availability meaning、historical pin
+> interpretation、lineage 与 ES accessibility/continuation。该研究不选择 backend、
+> 不设计 schema、不集成 OSS、不执行验证、不迁移仓库，也不修改 Frozen Contracts。
+> 研究见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

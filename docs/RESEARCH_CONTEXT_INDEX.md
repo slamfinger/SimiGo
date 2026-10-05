@@ -62,9 +62,12 @@ Physical locator                       ≠ Information Identity
 Seam refinement                        mature mechanism mapping + existing Core audit
 Seam review                            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md
 Seam audit                             docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md
-Carrier Component Study Charter        PROPOSED / AWAITING HUMAN COMMISSION
+Carrier Component Study Charter        ACCEPTED / COMMISSIONED
 Carrier charter document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md
+Carrier charter ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CHARTER_ACCEPTANCE_RULING_20261006.md
 Proposed Lab role                      carrier validation group, not production Information Space
+PICS-01                                OPEN / DOCUMENTATION-ONLY STUDY DELIVERED
+PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
 Implementation                         NOT AUTHORIZED
 Backend selection                      NOT AUTHORIZED
 Backend-substitution run               NOT AUTHORIZED
@@ -118,8 +121,8 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human ruling on Carrier Component Study Charter;
-                                   Higher-Layer Charter remains NOT AUTHORIZED.
+Next gate                        = Human review of PICS-01 documentary study;
+                                   no validation execution and no backend selection.
 ```
 
 ## 4. Completed chain
@@ -180,10 +183,12 @@ RELATION BACKEND ASYMMETRY
 Current state:
   Core sufficiency accepted for the registered PRQ task domain.
   IS-IDLOC-SEAM-01 is registered as a candidate input, not as a new route.
-  Carrier Component Study Charter is proposed, not commissioned.
+  Carrier Component Study Charter is accepted / commissioned.
+  PICS-01 documentation-only study is delivered, awaiting Human review.
 
 Candidate next transition:
-  Human ruling on Carrier Component Study Charter.
+  Human review of PICS-01 D1-D8.
+  No validation run, implementation, schema, migration, or backend selection.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
@@ -197,6 +202,8 @@ Seam guard:
   invent a new database or mutate InformationCore now.
   Carrier charter guard: no OSS integration, backend selection, schema design,
   migration, repository reorganization, probe execution, or experiment.
+  CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
+  database capability.
 
 Required before transition:
   Explicit Human ruling.
