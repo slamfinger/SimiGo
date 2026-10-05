@@ -69,8 +69,9 @@ Proposed Lab role                      carrier validation group, not production 
 PICS-01                                ACCEPTED / BOUNDED PASS / CLOSED
 PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
-CCVS-01                                OPEN / DESIGN & CANDIDATE-INVENTORY PHASE
+CCVS-01                                PHASE A DELIVERED / AWAITING HUMAN REVIEW
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
+CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Implementation                         NOT AUTHORIZED
 Backend selection                      NOT AUTHORIZED
@@ -125,7 +126,7 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of CCVS-01 Phase A design/inventory;
+Next gate                        = Human review of CCVS-01 Phase A D1-D8;
                                    benchmark execution and backend selection remain NOT AUTHORIZED.
 ```
 
@@ -191,7 +192,7 @@ Current state:
   PICS-01 is accepted, bounded-pass, and closed.
 
 Candidate next transition:
-  Complete CCVS-01 Phase A design/inventory, then Human review.
+  Human review of CCVS-01 Phase A D1-D8.
   No validation run, implementation, schema, migration, or backend selection.
 
 Previously identified transition:
@@ -212,7 +213,7 @@ Seam guard:
   migration, repository reorganization, probe execution, or experiment.
   CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
   database capability.
-  CCVS-01 guard: design/inventory only; no benchmark, implementation, integration,
+  CCVS-01 guard: Phase A delivered; no benchmark, implementation, integration,
   selection, migration, or Lab reorganization.
 
 Required before transition:

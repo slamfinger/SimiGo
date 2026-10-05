@@ -1,7 +1,7 @@
 # CCVS-01 — Carrier Candidate & Performance Validation Study Charter
 
 Date: 2026-10-06  
-Status: `OPEN / DESIGN & CANDIDATE-INVENTORY PHASE`  
+Status: `OPEN / PHASE A DELIVERED / AWAITING HUMAN REVIEW`
 Predecessor: `PICS-01 = ACCEPTED / BOUNDED PASS / CLOSED`  
 Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
 Frozen Contracts: `UNCHANGED`  
@@ -201,6 +201,12 @@ CCVS-D5 consistency/fault specification
 CCVS-D6 benchmark protocol
 CCVS-D7 resource and safety limits
 CCVS-D8 shortlist criteria
+```
+
+Phase A delivery:
+
+```text
+PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 ```
 
 ## 8. Non-goals

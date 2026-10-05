@@ -11,7 +11,7 @@ Path A default entry                 = ACTIVE
 Phase 2 recovery                     = ACCEPTED / BOUNDED PASS / CLOSED
 IS-IDLOC-SEAM-01                     = REGISTERED / OPEN / NOT FROZEN / v0.1
 PICS-01                              = ACCEPTED / BOUNDED PASS / CLOSED
-CCVS-01                              = OPEN / DESIGN & CANDIDATE-INVENTORY PHASE
+CCVS-01                              = PHASE A DELIVERED / AWAITING HUMAN REVIEW
 Lab physical reorganization          = FROZEN
 Benchmark execution                  = NOT AUTHORIZED
 Backend selection                    = NOT AUTHORIZED
@@ -40,6 +40,21 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
    protocol authoring.
 9. CCVS-01 mandates a minimum-component baseline and forbids assuming that a
    multi-component architecture is superior.
+10. CCVS-01 Phase A D1-D8 was delivered. The comparison unit is a runnable
+    architecture composition, not an isolated product capability.
+11. Four topologies were defined: Baseline A minimum components, Candidate B
+    relational registry + entity store, Candidate C content-addressed
+    representation + registry, and Candidate D server registry + object store +
+    search.
+12. Workload scale tiers are SMALL, MEDIUM, LARGE, and STRESS. Workload families
+    cover small-object, large-file, session, relation-heavy, search/rebuild,
+    mixed research, and fault/recovery behavior.
+13. Integration seams are formal measured objects: write hops, query hops,
+    serialization count, durable acknowledgement point, transaction boundary,
+    recovery boundary, disk/memory amplification, and adapter thickness.
+14. The benchmark protocol and safety limits are authored but not executed.
+    Phase B protocol freeze and Phase C controlled validation both require
+    separate Human action.
 
 ## Key documents
 
@@ -52,21 +67,18 @@ PICS-01 closure
 
 CCVS-01 charter
   PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
+
+CCVS-01 Phase A
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 ```
 
 ## Next legal transition
 
 ```text
-Complete CCVS-01 Phase A:
-  candidate inventory,
-  topology definitions,
-  workload specification,
-  performance metric specification,
-  consistency/fault protocol,
-  resource/safety limits,
-  and shortlist criteria.
+Human review CCVS-01 Phase A D1-D8.
 
-Then stop at Human review.
+If accepted, enter Phase B protocol freeze only by explicit Human ruling.
+Phase C benchmark execution requires another separate authorization.
 ```
 
 No benchmark may run until Phase B is separately approved. No backend may be

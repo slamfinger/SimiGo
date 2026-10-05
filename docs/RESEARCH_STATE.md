@@ -224,6 +224,21 @@
 > `PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md`；
 > CCVS-01 charter 见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md`。
+> CCVS-01 Phase A 已交付待复核：比较单位不是单个产品能力清单，而是可运行的
+> architecture composition。已定义 Baseline A（minimum components）、Candidate B
+> relational registry + entity store、Candidate C content-addressed representation
+> + registry、Candidate D server registry + object store + search。每类拓扑都登记
+> component count、seams、write/query hops、serialization、transaction boundary 与
+> recovery boundary。Workload 定义 small/medium/large/stress 四档，并覆盖
+> small-object、large-file、high-frequency session、relation-heavy、index-rebuild、
+> mixed research day 与 fault/recovery 七族。性能指标包含 P50/P95/P99、throughput、
+> disk/memory amplification、concurrency、startup、large/small-object、rebuild 与
+> recovery。协议禁止 benchmark 执行；所有候选必须通过同一 adapter 语义、同一
+> durable acknowledgement 规则、同一 fairness 规则。Shortlist 采用 hard gates 加
+> anti-complexity rule：若 Baseline A 已达标，复杂拓扑必须有 ≥30% P95 或 ≥50%
+> throughput 改善，或提供 Baseline A 无法合法提供的能力，否则 Baseline A 优先。
+> Phase A 报告见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、
