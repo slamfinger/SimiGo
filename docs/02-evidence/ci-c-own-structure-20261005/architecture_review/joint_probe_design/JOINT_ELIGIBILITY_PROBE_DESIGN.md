@@ -152,3 +152,67 @@ No new Information types. No E-dimension variation (E fixed at E+). No PALACE / 
 2. If approved: freeze, implement, run 8 cells.
 3. Falsification review.
 4. Update Architecture Review with results.
+
+---
+
+## Amendment 1 (Human Review, 2026-10-05)
+
+### 1. BLOCKED and suppressed are distinct phenomena
+
+`BLOCKED` = candidate eligibility boundary. `Suppressed` = behavior withheld; mechanism not yet proven to be the same as eligibility.
+
+These are **not interchangeable** in hypothesis interpretation. Any observed `suppressed` outcome must be classified separately from `BLOCKED` until further evidence links them.
+
+### 2. Hypothesis labels are candidate interpretations, not conclusions
+
+The four competing hypotheses (H-SHARED / H-INDEPENDENT / H-AUTHORIZATION-DOMINANT / H-INFORMATION-DOMINANT) are **discriminating patterns**, not established conclusions. Observing a matching pattern produces **candidate evidence** for that interpretation, not proof.
+
+Revised interpretation table:
+
+| J2 + J3 pattern (relative to J1) | Candidate interpretation |
+|---|---|
+| J2 = BLOCKED, J3 = BLOCKED | candidate evidence for shared eligibility constraint |
+| J2 = BLOCKED, J3 = DEGRADED | candidate evidence for independent pipeline stages |
+| J2 = executable, J3 = suppressed | candidate evidence for authorization-dominant |
+| J2 = BLOCKED, J3 = executable | candidate evidence for information-dominant |
+| J2 = executable, J3 = executable | no single-condition eligibility effect; interaction question only |
+
+None of these are proofs. Each requires C/N replication and Human Review before upgrade.
+
+### 3. J1 is the baseline anchor
+
+All comparisons are **relative to J1**, not absolute:
+
+```text
+Δ(J2, J1)  = effect of F-absent at X+
+Δ(J3, J1)  = effect of X- at F-present
+Δ(J4, J1)  = combined effect
+```
+
+If C and N have different J1 baselines (e.g., C COMPLETED vs N DEGRADED), the Δ comparison must be made within each model, not across models.
+
+### 4. J4 is a combined-condition / interaction probe
+
+J4 does not carry standalone interpretation. Its role is:
+
+- if `J4` matches the prediction from `J2` and `J3` independently → no additional interaction observed
+- if `J4` deviates from the prediction → interaction question is opened, not resolved
+
+J4 alone cannot establish or refute any hypothesis.
+
+### 5. Unchanged constraints
+
+- E fixed at E+.
+- C/N replication required for all candidate interpretations.
+- No expansion to 3D probe.
+- No PALACE / MCP / Memory / RAG / Observer / InformationCore / 846 / mechanistic probe.
+
+---
+
+## Revised status
+
+```text
+DESIGN STATUS: APPROVED WITH REVISION
+RUN STATUS: NOT YET AUTHORIZED
+NEXT: Human Review of this amendment → Run Authorization
+```
