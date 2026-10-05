@@ -122,7 +122,7 @@ Delivery                          = 2f0959b
 Baseline                          = ab97244
 Frozen Contracts                  = UNCHANGED
 A4 Conceptual Study               = FINDINGS ADDRESSED
-Core sufficiency ruling           = READY FOR HUMAN RULING
+Core sufficiency audit            = ACCEPTED / CLOSED
 Study questions                   = CGQ-1..CGQ-5 answered
 Study guard                       = conceptual / documentary only;
                                     no implementation or experiment
@@ -200,8 +200,26 @@ The Core Sufficiency Audit now contains the final ruling candidate, revised to
 scope the text boundary to the currently registered PRQ-ISF-01 task domain only.
 
 ```text
-Status = READY FOR HUMAN RULING / NO FURTHER PRE-WORK REQUIRED
+Status = ACCEPTED / CLOSED
 Next entry = Human ruling on the Core Sufficiency Audit candidate
 ```
 
 It is not yet accepted.
+
+## 11. Core Sufficiency ruling accepted
+
+On 2026-10-06, Human accepted the final candidate.
+
+```text
+Core Sufficiency Audit = ACCEPTED / CLOSED
+Current PRQ-ISF-01 domain = UTF-8 / text-bounded, task-domain bounded
+Core + Relation + Store = sufficient for that domain
+New Store primitive = NOT REQUIRED
+Carrier semantic layer = NOT REQUIRED for current domain
+Arbitrary-byte fidelity = conditional finding only
+Higher-layer items = O-3/O-6/O-7/O-8/O-9
+Next entry = Higher-Layer Continuation Graph Semantics —
+             Scope & Research Question Charter
+```
+
+No implementation or experiment is authorized by this closure.

@@ -3,7 +3,7 @@
 Date: 2026-10-05
 Active route: `PALACE / INFORMATION SPACE FOUNDATION`
 Study: `A4 — CORE SUFFICIENCY AUDIT`
-Status: `READY FOR HUMAN RULING · NO FURTHER PRE-WORK REQUIRED`
+Status: `ACCEPTED / CLOSED BY HUMAN RULING 2026-10-06`
 Prior study: `A4 Reduction / Ownership Study` at `6ce88b9`, Human ruling `FINDINGS / REFRAME REQUIRED`
 Gate baseline: `ab97244`
 Frozen Contracts: `UNCHANGED`
@@ -246,9 +246,9 @@ This audit does not claim that:
 7. byte-content semantics should be widened;
 8. Frozen Contracts are changed.
 
-## 9. Final ruling candidate — READY FOR HUMAN RULING
+## 9. Final ruling candidate — ACCEPTED / CLOSED BY HUMAN RULING 2026-10-06
 
-No further pre-work is required. The following is the final ruling candidate.
+No further pre-work was required. The following candidate was formally accepted.
 
 ```text
 Human Ruling — Core Sufficiency Audit
@@ -331,3 +331,27 @@ Closing clarification:
 
 > This ruling closes whether the current PRQ domain requires new Core / Store /
 > carrier semantics. It does not close Information Space itself.
+
+## 12. Human ruling record
+
+On 2026-10-06, Human formally accepted the final ruling candidate.
+
+```text
+Core Sufficiency Audit = ACCEPTED / CLOSED
+Current PRQ-ISF-01 domain = UTF-8 / text-bounded, task-domain bounded
+Core + Relation + Store = sufficient for that registered domain
+New Store primitive = NOT REQUIRED
+Carrier semantic layer = NOT REQUIRED for current PRQ-ISF-01 domain
+Arbitrary-byte fidelity = conditional finding only; not a current gap
+O-3/O-6/O-7/O-8/O-9 = higher-layer only
+MemPalace = narrow AS-IS PRQ carrier-test NO-GO only
+Relation backend asymmetry = implementation/test debt, not current blocker
+Next research entry = Higher-Layer Continuation Graph Semantics —
+                      Scope & Research Question Charter
+Frozen Contracts = UNCHANGED
+```
+
+This ruling closes only whether the current PRQ-ISF-01 task domain requires new
+Core / Store / carrier semantics. It does not close Information Space generally,
+does not establish a global text-domain boundary, and does not authorize
+implementation.

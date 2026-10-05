@@ -134,8 +134,14 @@
 > `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`
 > 与 `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`。
 > Human findings 已处理，text-domain 裁定明确限定为当前 PRQ-ISF-01 task domain，
-> 而非全局 InformationCore boundary。当前状态 = **Core Sufficiency ruling READY
-> FOR HUMAN RULING / no further pre-work required**。
+> 而非全局 InformationCore boundary。Human ruling 于 2026-10-06
+> **ACCEPT / CLOSE** 该 sufficiency audit：当前 PRQ-ISF-01 task domain =
+> UTF-8/text-bounded；Core + Relation + Store 足以表达该域 continuation graph；
+> 不需要 new Store primitive 或 carrier semantic layer；arbitrary-byte fidelity
+> 仅为 conditional finding，不是当前 gap；O-3/O-6/O-7/O-8/O-9 属 higher layer。
+> 下一入口 = **Higher-Layer Continuation Graph Semantics — Scope & Research
+> Question Charter**。该裁定只关闭当前 PRQ task domain 是否需要 Core/Store/
+> carrier semantics，不关闭 Information Space 本身，也不授权实现。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

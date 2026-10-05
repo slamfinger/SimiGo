@@ -351,7 +351,7 @@ adapter.
 
 ## 13. Core Sufficiency ruling candidate
 
-The Core Sufficiency Audit is now `READY FOR HUMAN RULING`. The final candidate
+The final candidate was subsequently accepted. It
 incorporates the required scope correction:
 
 ```text
@@ -362,7 +362,7 @@ Not a global or permanent Information Space boundary.
 The candidate ruling states:
 
 ```text
-Core Sufficiency Audit = ready to accept / close
+Core Sufficiency Audit = ACCEPTED / CLOSED
 Current PRQ domain     = UTF-8 / text-bounded
 Core/Relation/Store    = sufficient for that domain
 New Store primitive    = NOT REQUIRED
@@ -375,3 +375,26 @@ Next research entry    = Higher-Layer Continuation Graph Semantics
 ```
 
 No formal Human ruling has yet been recorded.
+
+## 14. Core Sufficiency Audit accepted
+
+On 2026-10-06, Human accepted the final ruling candidate.
+
+```text
+Core Sufficiency Audit = ACCEPTED / CLOSED
+Current PRQ-ISF-01 domain = UTF-8 / text-bounded, task-domain bounded
+Core + Relation + Store = sufficient for that registered domain
+New Store primitive = NOT REQUIRED
+Carrier semantic layer = NOT REQUIRED for current domain
+Arbitrary-byte fidelity = conditional finding only; not a current gap
+Higher-layer obligations = O-3/O-6/O-7/O-8/O-9
+MemPalace = narrow AS-IS PRQ carrier-test NO-GO only
+Relation backend asymmetry = implementation/test debt, not current blocker
+Next entry = Higher-Layer Continuation Graph Semantics —
+             Scope & Research Question Charter
+Frozen Contracts = UNCHANGED
+```
+
+This closes only the question of whether the current PRQ task domain requires new
+Core / Store / carrier semantics. It does not close Information Space generally or
+authorize implementation.

@@ -414,7 +414,7 @@ CR/canonical mapping, predicate conventions, pin resolution, succession semantic
 lineage traversal/cycle validation, and Frozen failure-family mapping.
 
 ```text
-Status = FINDINGS ADDRESSED / READY FOR HUMAN RULING
+Status = FINDINGS ADDRESSED / ACCEPTED / CLOSED
 No implementation       = true
 No adapter              = true
 No carrier integration  = true
@@ -429,11 +429,11 @@ finding is now explicitly limited to the currently registered PRQ-ISF-01 task
 domain, not a global InformationCore boundary.
 
 ```text
-Status = READY FOR HUMAN RULING / NO FURTHER PRE-WORK REQUIRED
-Next entry = Human ruling on Core Sufficiency Audit final candidate
+Status = ACCEPTED / CLOSED BY HUMAN RULING 2026-10-06
+Next entry = Higher-Layer Continuation Graph Semantics — Scope & Research Question Charter
 ```
 
-## Final candidate — READY FOR HUMAN RULING
+## Final candidate — ACCEPTED / CLOSED
 
 ```text
 1. ACCEPT / CLOSE Core Sufficiency Audit.
@@ -489,4 +489,36 @@ Closing clarification:
 2. On acceptance: open **Higher-Layer Continuation Graph Semantics — Scope &
    Research Question Charter**.
 3. No implementation, backend selection, backend-substitution run, experiment, or
+   contract change is authorized.
+## Core Sufficiency Audit — ACCEPTED / CLOSED
+
+On 2026-10-06, Human formally accepted the final candidate.
+
+```text
+Core Sufficiency Audit = ACCEPTED / CLOSED
+Current PRQ-ISF-01 domain = UTF-8 / text-bounded, task-domain bounded
+Core + Relation + Store = sufficient for that domain
+New Store primitive = NOT REQUIRED
+Carrier semantic layer = NOT REQUIRED for current domain
+Arbitrary-byte fidelity = conditional finding only; not a current gap
+Higher-layer obligations = O-3/O-6/O-7/O-8/O-9
+MemPalace = narrow AS-IS PRQ carrier-test NO-GO only
+Relation backend asymmetry = implementation/test debt, not current blocker
+Next entry = Higher-Layer Continuation Graph Semantics —
+             Scope & Research Question Charter
+Frozen Contracts = UNCHANGED
+```
+
+The ruling closes only whether the current PRQ task domain requires new Core /
+Store / carrier semantics. It does not close Information Space generally and does
+not authorize implementation.
+
+## Next steps (none auto-open)
+
+1. Enter **Higher-Layer Continuation Graph Semantics — Scope & Research Question
+   Charter**.
+2. Study only the higher-layer continuation semantics already identified by the
+   sufficiency audit.
+3. Do not reopen Core / Store / carrier semantics without new evidence.
+4. No implementation, backend selection, backend-substitution run, experiment, or
    contract change is authorized.
