@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `REVISED DRAFT v0.3 · INCORPORATES THE PRE-FREEZE REVIEW (ONE CONCEPTUAL GAP + TWO TIGHTENINGS) · READY FOR HUMAN REVIEW → FREEZE DECISION · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED`
-Revision lineage: v0.1 (`6fd02ba`) → review (direction ACCEPT, design REVISE) → v0.2 (`36b2f08`, four core revisions + three reinforcements) → review (revisions confirmed **closed**; reinforcements confirmed; **one conceptual gap + two tightenings before freeze**) → v0.3 (this document).
+Status: `READY FOR FREEZE (pre-freeze patch applied: CR self-identity folded into V-1, per Human pre-freeze review of ef3939b) · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED · AWAITING FREEZE RULING`
+Revision lineage: v0.1 (`6fd02ba`) → review (direction ACCEPT, design REVISE) → v0.2 (`36b2f08`, four core revisions + three reinforcements) → review (revisions confirmed **closed**; reinforcements confirmed; **one conceptual gap + two tightenings before freeze**) → v0.3 (this document) → **pre-freeze patch** (2026-10-05: CR self-identity check folded into V-1 as CR-ID-MISMATCH; drop test reworded to canonical-identity form — no other changes; verification ontology not expanded).
 
 ---
 
@@ -93,8 +93,10 @@ result / used / surface / continues   — candidate IPAC vocabulary
 Tripartition by the drop test:
 
 ```text
-continuation-identity-bearing   dropping it breaks same-continuation-record
-                                verification (V-3 / V-4)
+continuation-identity-bearing   dropping it CHANGES the canonical CR identity
+                                (isomorphic to §2.1's identity definition —
+                                strictly stronger than referencing any
+                                verification item)
 continuation-bearing            dropping it breaks the ability to continue at all
 provenance                      otherwise (audit-bearing; outside the identity hash)
 ```
@@ -138,11 +140,24 @@ R2  = rendered continuation surface
 
 **R2 is NOT an Execution State.** It is the **continuation reconstruction basis** — the information-side object carrying everything the Information Space can supply. The v0.2 wording that called this assembled object "S2" is withdrawn: whether a true Execution State contains components **not recoverable from R2** (carrier-side state, engine mechanics, the task binding) has not been proven omissible here, and this design does not claim it. That honesty is the whole point of the split: refusing carrier cloning (PD-3) must not curdle into declaring the rendered reference to be the complete State.
 
-### 3.4 Verification suite (retained; produces the R2 verdict)
+### 3.4 Verification suite (pre-freeze patch applied; produces the R2 verdict)
 
 ```text
-V-1 referability / V-2 content match / V-3 lineage integrity (incl. A-CYCLE) /
-V-4 surface integrity / V-5 formation-baseline hash equality (enumerated fields)
+V-1  referability        (i) CR self-identity: recomputing the canonical identity
+                         hash over the CR's identity-bearing fields (§2.1) must
+                         equal CR_ref — else CR-ID-MISMATCH
+                         (addressability self-check: "this CR, not another
+                         structurally similar CR");
+                         (ii) every referenced target must then resolve at its
+                         pinned identity — else C-REF-NOT-FOUND / I-NF
+V-2  content match       re-materialized items hash-match pinned versions
+                         else I-MISMATCH
+V-3  lineage integrity   A-chain unbroken, link-wise hash-consistent, acyclic
+                         (visited-set) — else A-SUB / A-NF / A-CYCLE
+V-4  surface integrity   rendered surface byte-identical to the recorded one
+                         else P-VIOLATION
+V-5  formation baseline  hash/field equality over the enumerated formation
+                         fields — else FORM-DRIFT
 ```
 
 Three-tier output: **RESOLVED** (clean — V-1..V-5 pass, R2 produced) / **RESOLVED-WITH-VIOLATIONS** (degradation / conditional; mechanically signed; policy external) / **UNRESOLVABLE** (capability failure). Fail-visible; no semantic judgment inside resolve.
