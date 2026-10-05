@@ -35,26 +35,24 @@
 > 四正交层封闭，冻结后三路径=Implementation/Evidence finding/Future
 > alternative）。**概念链 Information→Resolve→Instantiate→Continue 闭合。**
 >
-> **Implementation Gate 已 OPEN（human ruling），G-1..G-4 按序执行**：
-> G-1 ACCEPTED/CLOSED（CR/IR 格式+内容寻址 store+resolve V-1..5，
-> conformance 19/19，IF-G1-01 修复）；G-2 ACCEPTED/CLOSED（instantiate
-> 管线+VV-1..7 tier+三绑定态+三处置类，三轮 IF-G2-01..08 修复，
-> conformance 17/17；capability 接口替代类名特判）；**G-3 v3 ACCEPTED/CLOSED**
-> （E-run 端到端执行：E1→CR(E1)→resolve→R2→instantiate[唯一一次]→
-> IR+S2→T2 消费 S2（result digest=sha256(S2 contents)，不可旁路数据
-> 依赖）→CR(E2)，**C-CAP SUPPORTED (document-form, limited mechanical
-> support on (c)) 10/10**，可审计对象链 CR(E1)→IR(S2)→CR(E2) 成立，
-> 完整 C-CAP 判定持久化于 `G3_ERUN_RECORD.json`；两轮 Finding
-> IF-G3-01..04 已修复）。**G-4 mapping+audit 已交付待复核**：MC-1..6
-> 与 I-1d §1.2 的 13/13 行映射完成，G-1/G-2/G-3 本地复跑无失败；
-> Human 已裁定四项均为 implementation/evidence defect，不开启契约修订；
-> **G-4 v2 修复已交付**：IR 补 timestamp/actor、TaskRecord digest 改为
-> canonical supplied τ2★、precondition-block 统一 VV-1..7 = NOT ENTERED、
-> used identities 直接写入 IR。后置回归 G-1 19/19、G-2 17/17、
-> G-3 10/10，G-4 mapping 13/13；**IF-G4-01..04 FIXED，待 Human
-> closure/review 后才收口 Implementation Gate**。
-> PALACE 选择 / E-run 外实验 / 冻结契约修改 / backend 选择 全程 BLOCKED。
-> 实现位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
+> **Implementation Gate CLOSED（Human ruling 2026-10-05，基于 `d1043b8`
+> closure audit）**：G-1 ACCEPTED/CLOSED（CR/IR 格式+内容寻址
+> store+resolve V-1..5，conformance 19/19）；G-2 ACCEPTED/CLOSED
+> （instantiate 管线+VV-1..7 tier+三绑定态+三处置类，conformance
+> 17/17）；G-3 ACCEPTED/CLOSED（E-run 端到端：E1→CR(E1)→resolve→R2→
+> instantiate[唯一一次]→IR+S2→T2 消费 S2→CR(E2)；C-CAP SUPPORTED
+> document-form 10/10，持久化于 `G3_ERUN_RECORD.json`）；G-4
+> ACCEPTED/CLOSED（MC-1..6 + I-1d §1.2 mapping 13/13；后置回归
+> G-1 19/19、G-2 17/17、G-3 10/10）。IF-G1-01、IF-G2-01..08、
+> IF-G3-01..04、IF-G4-01..04 全部 CLOSED。四项 G-4 Finding 的修复为：
+> IR 补 timestamp/actor；TaskRecord digest=SHA-256(canonical supplied
+> τ2★)；precondition-block 统一 VV-1..7 = NOT ENTERED；used identities
+> 直接写入 IR。冻结契约 drift = 0。
+> **下一阶段 = Gate-close 后路线决策 PENDING；无 route 被自动选择。**
+> PALACE、backend integration、E-run 外实验、研究报告包、暂停本线等
+> 只是候选；各自仍需显式 Human commission。冻结契约修改继续需要
+> 独立理由与 contract-revision 流程，不因 Gate CLOSED 自动开启。
+> 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 
 ## Current total status — 2026-10-04
