@@ -1,0 +1,18 @@
+{
+  "sample_id": "S4-arithmetic-anomaly-audit",
+  "model_id": "D-muse-glimmer",
+  "repo_id": "RadixArk/Muse-Glimmer-q4-MLX",
+  "endpoint_identity_match": "RadixArk/Muse-Glimmer-q4-MLX",
+  "architecture": "muse_glimmer",
+  "http_status": 200,
+  "elapsed_seconds": 440.060579,
+  "prompt_sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+  "request_sha256": "da7725cc080812eef94ce0c74a76f910a1a73762e46f2b9282ba4474cba94ad0",
+  "response_sha256": "a510ed0e6ee49a5f05c6534bb993c14c8680075b66faff00c30312ae780fe5d5",
+  "runtime_backend": "NativeMLX/MLX Swift LM text route",
+  "active_endpoint_models": [
+    "RadixArk/Muse-Glimmer-q4-MLX"
+  ],
+  "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+  "created_at": "2026-10-05T01:21:08.861045+08:00"
+}

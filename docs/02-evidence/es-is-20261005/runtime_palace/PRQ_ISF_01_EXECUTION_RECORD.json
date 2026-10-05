@@ -1,0 +1,1501 @@
+{
+  "probe": "PRQ-ISF-01",
+  "design_delivery": "7b9d167",
+  "phase_1_charter": "e4c74bd",
+  "phase_1_ruling": "618ea84",
+  "gate_baseline": "ab97244",
+  "carrier_under_test": {
+    "name": "ProbeReferencePort",
+    "kind": "non-candidate in-memory probe control",
+    "storage_selection_claim": "NONE",
+    "palace_candidate_claim": "NONE"
+  },
+  "allowed_port_operations": [
+    "put_blob",
+    "get_blob",
+    "put_node",
+    "get_node",
+    "put_edge",
+    "get_edges",
+    "put_provenance",
+    "get_provenance",
+    "pin",
+    "resolve_pin",
+    "put_mutation_event",
+    "get_mutation_events"
+  ],
+  "semantic_oracle_used": false,
+  "scenarios": [
+    {
+      "scenario_id": "SC-00",
+      "expected": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "actual": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "OK",
+        "failure_reasons": [],
+        "frozen_failure_family": null,
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "PASS",
+            "observed": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-04.provenance-separate",
+            "verdict": "PASS",
+            "observed": "separate",
+            "expected": "separate",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/continuation/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/audit-v1",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          }
+        ],
+        "used_operations": [
+          "get_node",
+          "get_edges",
+          "get_provenance",
+          "get_blob",
+          "resolve_pin",
+          "get_mutation_events"
+        ],
+        "semantic_oracle_used": false
+      },
+      "resolver": {
+        "state": "RESOLVED",
+        "violations": [],
+        "r2_digest": "b83bb2fe6dd849c5af8377a219afd94e57853285cb6bcafdcf132cb5d9a169fa",
+        "used_item_digests": [
+          "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be"
+        ]
+      },
+      "used_operations": [
+        "get_node",
+        "get_edges",
+        "get_provenance",
+        "get_blob",
+        "resolve_pin",
+        "get_mutation_events"
+      ],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-01",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "BLOB-DIGEST-MISMATCH",
+        "frozen_family": "I-MISMATCH"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "BLOB-DIGEST-MISMATCH",
+        "frozen_family": "I-MISMATCH"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "BLOB-DIGEST-MISMATCH"
+        ],
+        "frozen_failure_family": "I-MISMATCH",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "FAIL",
+            "observed": "c90a090615d6c77dfdc45a02d9d18c7cebe71c0d2213efbc7dd50f7e9ea2dbd5",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-02",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-BLOB-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-BLOB-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "REQUIRED-BLOB-MISSING:used"
+        ],
+        "frozen_failure_family": "I-NF",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-present",
+            "verdict": "FAIL",
+            "observed": "MISSING",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-NF"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-03",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "CANONICAL-IDENTITY-MISMATCH",
+        "frozen_family": "CR-ID-MISMATCH"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "CANONICAL-IDENTITY-MISMATCH",
+        "frozen_family": "CR-ID-MISMATCH"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "CANONICAL-IDENTITY-MISMATCH"
+        ],
+        "frozen_failure_family": "CR-ID-MISMATCH",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "FAIL",
+            "observed": "30bc0f79df431eee27839347ad7373c834ed04deeb364c6aa5b51e2f2e37d5e6",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-04",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "CANONICAL-RECORD-MISSING",
+        "frozen_family": "C-REF-NOT-FOUND"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "CANONICAL-RECORD-MISSING",
+        "frozen_family": "C-REF-NOT-FOUND"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "CANONICAL-RECORD-MISSING"
+        ],
+        "frozen_failure_family": "C-REF-NOT-FOUND",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "FAIL",
+            "observed": "MISSING",
+            "expected": "canonical record",
+            "frozen_family": "C-REF-NOT-FOUND"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-05",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-EDGE-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-EDGE-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "REQUIRED-EDGE-MISSING:used"
+        ],
+        "frozen_failure_family": "I-NF",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "FAIL",
+            "observed": 0,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-06",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "EDGE-TYPES-FLATTENED",
+        "frozen_family": "CARRIER-OBLIGATION-FAILURE"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "EDGE-TYPES-FLATTENED",
+        "frozen_family": "CARRIER-OBLIGATION-FAILURE"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "EDGE-TYPES-FLATTENED"
+        ],
+        "frozen_failure_family": "CARRIER-OBLIGATION-FAILURE",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "FAIL",
+            "observed": [
+              "link"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-07",
+      "expected": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "actual": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "OK",
+        "failure_reasons": [],
+        "frozen_failure_family": null,
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "PASS",
+            "observed": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-04.provenance-separate",
+            "verdict": "PASS",
+            "observed": "separate",
+            "expected": "separate",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/continuation/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/audit-v1",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          }
+        ],
+        "used_operations": [
+          "get_node",
+          "get_edges",
+          "get_provenance",
+          "get_blob",
+          "resolve_pin",
+          "get_mutation_events"
+        ],
+        "semantic_oracle_used": false
+      },
+      "resolver": {
+        "state": "RESOLVED",
+        "violations": [],
+        "r2_digest": "b83bb2fe6dd849c5af8377a219afd94e57853285cb6bcafdcf132cb5d9a169fa",
+        "used_item_digests": [
+          "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be"
+        ]
+      },
+      "used_operations": [
+        "get_node",
+        "get_edges",
+        "get_provenance",
+        "get_blob",
+        "resolve_pin",
+        "get_mutation_events"
+      ],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-08",
+      "expected": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "actual": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "OK",
+        "failure_reasons": [],
+        "frozen_failure_family": null,
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "PASS",
+            "observed": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-04.provenance-separate",
+            "verdict": "PASS",
+            "observed": "separate",
+            "expected": "separate",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/continuation/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/audit-v1",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-06.event:0",
+            "verdict": "PASS",
+            "observed": {
+              "prior_present": true,
+              "new_present": true
+            },
+            "expected": {
+              "prior_present": true,
+              "new_present": true
+            },
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          }
+        ],
+        "used_operations": [
+          "get_node",
+          "get_edges",
+          "get_provenance",
+          "get_blob",
+          "resolve_pin",
+          "get_mutation_events"
+        ],
+        "semantic_oracle_used": false
+      },
+      "resolver": {
+        "state": "RESOLVED",
+        "violations": [],
+        "r2_digest": "b83bb2fe6dd849c5af8377a219afd94e57853285cb6bcafdcf132cb5d9a169fa",
+        "used_item_digests": [
+          "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be"
+        ]
+      },
+      "used_operations": [
+        "get_node",
+        "get_edges",
+        "get_provenance",
+        "get_blob",
+        "resolve_pin",
+        "get_mutation_events"
+      ],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-09",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "HISTORICAL-PIN-TARGET-MISSING",
+        "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "HISTORICAL-PIN-TARGET-MISSING",
+        "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "HISTORICAL-PIN-TARGET-MISSING"
+        ],
+        "frozen_failure_family": "HISTORICAL-RETENTION-FAILURE",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "PASS",
+            "observed": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-04.provenance-separate",
+            "verdict": "PASS",
+            "observed": "separate",
+            "expected": "separate",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/continuation/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/audit-v1",
+            "verdict": "FAIL",
+            "observed": false,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-10",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "LINEAGE-CYCLE",
+        "frozen_family": "A-CYCLE"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "LINEAGE-CYCLE",
+        "frozen_family": "A-CYCLE"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "LINEAGE-CYCLE"
+        ],
+        "frozen_failure_family": "A-CYCLE",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "FAIL",
+            "observed": "cycle",
+            "expected": "acyclic",
+            "frozen_family": "A-CYCLE"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-11",
+      "expected": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "actual": {
+        "outcome": "CLEAN_RESOLVE",
+        "decoder_code": null,
+        "frozen_family": null
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "OK",
+        "failure_reasons": [],
+        "frozen_failure_family": null,
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-immutable",
+            "verdict": "PASS",
+            "observed": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-04.provenance-separate",
+            "verdict": "PASS",
+            "observed": "separate",
+            "expected": "separate",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/continuation/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/current",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          },
+          {
+            "check_id": "IS-MCI-05.pin:pin/item/audit-v1",
+            "verdict": "PASS",
+            "observed": true,
+            "expected": true,
+            "frozen_family": "HISTORICAL-RETENTION-FAILURE"
+          }
+        ],
+        "used_operations": [
+          "get_node",
+          "get_edges",
+          "get_provenance",
+          "get_blob",
+          "resolve_pin",
+          "get_mutation_events"
+        ],
+        "semantic_oracle_used": false
+      },
+      "resolver": {
+        "state": "RESOLVED",
+        "violations": [],
+        "r2_digest": "b83bb2fe6dd849c5af8377a219afd94e57853285cb6bcafdcf132cb5d9a169fa",
+        "used_item_digests": [
+          "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be"
+        ]
+      },
+      "used_operations": [
+        "get_node",
+        "get_edges",
+        "get_provenance",
+        "get_blob",
+        "resolve_pin",
+        "get_mutation_events"
+      ],
+      "semantic_oracle_used": false
+    },
+    {
+      "scenario_id": "SC-12",
+      "expected": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-BLOB-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "actual": {
+        "outcome": "DECODE_FAILURE",
+        "decoder_code": "REQUIRED-BLOB-MISSING:used",
+        "frozen_family": "I-NF"
+      },
+      "case_pass": true,
+      "decode": {
+        "decode_state": "FAIL",
+        "failure_reasons": [
+          "REQUIRED-BLOB-MISSING:used"
+        ],
+        "frozen_failure_family": "I-NF",
+        "checks": [
+          {
+            "check_id": "IS-MCI-02.node-present",
+            "verdict": "PASS",
+            "observed": "present",
+            "expected": "present",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-03.result-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.used-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "I-NF"
+          },
+          {
+            "check_id": "IS-MCI-03.surface-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.continues-edge",
+            "verdict": "PASS",
+            "observed": 1,
+            "expected": 1,
+            "frozen_family": "P-VIOLATION"
+          },
+          {
+            "check_id": "IS-MCI-03.edge-types-preserved",
+            "verdict": "PASS",
+            "observed": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "expected": [
+              "continues",
+              "result",
+              "surface",
+              "used"
+            ],
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-07.lineage-acyclic",
+            "verdict": "PASS",
+            "observed": "acyclic",
+            "expected": "acyclic",
+            "frozen_family": null
+          },
+          {
+            "check_id": "IS-MCI-02.canonical-identity",
+            "verdict": "PASS",
+            "observed": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "expected": "8bbafc033cc469bb566df1943c53c7cfcfd97c2a2bb5bed9bc489ed4e14c3397",
+            "frozen_family": "CR-ID-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.result-blob-immutable",
+            "verdict": "PASS",
+            "observed": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "expected": "bc3bdff3cae040a612342129930c56cddc6f9012488010f0a45283210837df93",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.surface-blob-immutable",
+            "verdict": "PASS",
+            "observed": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "expected": "4c11fb79dc4eda200d35114586d769c7aa57580f9283a5517c94f585e8b6bb13",
+            "frozen_family": "I-MISMATCH"
+          },
+          {
+            "check_id": "IS-MCI-01.used-blob-present",
+            "verdict": "FAIL",
+            "observed": "MISSING",
+            "expected": "478d73260d38fdde84bebc3445031a34788b3af0297cecfe846cca8f6e4df3be",
+            "frozen_family": "I-NF"
+          }
+        ],
+        "used_operations": [],
+        "semantic_oracle_used": false
+      },
+      "resolver": null,
+      "used_operations": [],
+      "semantic_oracle_used": false
+    }
+  ],
+  "summary": {
+    "scenario_total": 13,
+    "scenario_pass": 13,
+    "scenario_fail": 0,
+    "harness_qualification": "PASS",
+    "route_prq_isf_01": "INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST",
+    "reason": "Execution used the non-candidate ProbeReferencePort control; it did not test a selected PALACE or external Information Space carrier."
+  }
+}

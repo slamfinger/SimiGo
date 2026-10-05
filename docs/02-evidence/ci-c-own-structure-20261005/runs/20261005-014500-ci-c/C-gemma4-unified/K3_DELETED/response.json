@@ -1,0 +1,16 @@
+{
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[],\"blocked_services\":[],\"error\":\"deployment_admissibility_relation_unavailable\"}"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "id": "chatcmpl-5b4ed9f9-1bee-4632-ac7a-b319c5c4973b",
+  "object": "chat.completion",
+  "created": 1791136492
+}

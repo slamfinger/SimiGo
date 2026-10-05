@@ -1,0 +1,18 @@
+{
+  "content": {
+    "basis": "substituted content injected by R32-A-Δ3",
+    "next_action": "REQUEST_SHUTDOWN",
+    "settled_diff": {
+      "alpha": {
+        "from": 42,
+        "to": 17
+      },
+      "mode": {
+        "from": "active",
+        "to": "quiet"
+      }
+    }
+  },
+  "id": "R-1",
+  "source": "R-C1-A4 C-B evaluation.json X-1..X-5 verified (sealed)"
+}

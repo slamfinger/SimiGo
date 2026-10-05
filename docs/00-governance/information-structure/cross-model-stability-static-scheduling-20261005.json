@@ -1,0 +1,150 @@
+{
+  "document": "Cross-Model Stability Static Scheduling Contract",
+  "date": "2026-10-05",
+  "status": "STATIC_SCHEDULING_CONTRACT_FROZEN / FORMAL_RUNTIME_NOT_AUTHORIZED",
+  "source_freeze_manifest_sha256": "27aa7791fed9c875460a00798ed55c428fc2cf172539b34dace61c700fd14329",
+  "observable_indicators": [
+    "O1_task_continuation_outcome",
+    "O2_key_decision_presence",
+    "O3_required_information_presence",
+    "O4_information_relation_formation",
+    "O5_representation_sensitivity",
+    "O6_implementation_path_variation"
+  ],
+  "judgment_standards": {
+    "primary": "J3_same_functional_behavior",
+    "auxiliary": [
+      "J1_same_output",
+      "J2_same_decision"
+    ],
+    "forbidden": "hidden_understanding_inference"
+  },
+  "isolation_requirements": [
+    "I1_fresh_execution_session",
+    "I2_model_endpoint_identity",
+    "I3_sample_prompt_hashes",
+    "I4_no_inherited_cache_prefix",
+    "I5_reload_or_fresh_process",
+    "I6_start_finish_evidence",
+    "I7_no_concurrent_backend_workload",
+    "I8_no_round1_residue_transcript",
+    "I9_no_other_cell_state"
+  ],
+  "existing_model_a_raw_outputs": "PILOT_ONLY_NOT_FORMAL",
+  "cells": [
+    {
+      "sample_id": "S1-release-config",
+      "model_id": "A-qwen3-moe",
+      "scheduling_status": "PILOT_ONLY_REQUIRES_FORMAL_RERUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S1-release-config",
+      "model_id": "B-qwen3-next",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S1-release-config",
+      "model_id": "C-gemma4-unified",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S1-release-config",
+      "model_id": "D-muse-glimmer",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "model_id": "A-qwen3-moe",
+      "scheduling_status": "PILOT_ONLY_REQUIRES_FORMAL_RERUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "model_id": "B-qwen3-next",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "model_id": "C-gemma4-unified",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S2-version-diff",
+      "model_id": "D-muse-glimmer",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "A-qwen3-moe",
+      "scheduling_status": "PILOT_ONLY_REQUIRES_FORMAL_RERUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "B-qwen3-next",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "C-gemma4-unified",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S3-column-unit-audit",
+      "model_id": "D-muse-glimmer",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "A-qwen3-moe",
+      "scheduling_status": "PILOT_ONLY_REQUIRES_FORMAL_RERUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "B-qwen3-next",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "C-gemma4-unified",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    },
+    {
+      "sample_id": "S4-arithmetic-anomaly-audit",
+      "model_id": "D-muse-glimmer",
+      "scheduling_status": "PLANNED_NOT_RUN",
+      "formal_runtime_authorization": "NOT_AUTHORIZED",
+      "formal_stability_status": "NOT_AVAILABLE"
+    }
+  ],
+  "gate": "RUNNER_AUDIT_AND_SEPARATE_EXECUTION_AUTHORIZATION_REQUIRED",
+  "vertical_decomposition": "FORBIDDEN_UNTIL_STABLE_J3_INVARIANT"
+}

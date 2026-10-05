@@ -1,0 +1,21 @@
+TOOL: mcp__mempalace__mempalace_checkpoint
+{
+ "added_by": "zcode",
+ "diary": {
+  "agent_name": "zcode",
+  "entry": "SESSION:2026-10-02|task=T1数据澄清函executed end-to-end|did=extracted 秦沈0308汇报(6章+5表)→full arithmetic cross-check→17 findings(4 headline勾稽:招采总额差1.2亿/材料价差正文vs表4差24.88万/利润率提高1.01%vs实际0.18pp/填料1.65%无基数;6口径时点;7细节文字)→formal 数据澄清函 docx(20页公文式,三类分级,每条:描述+两处原文+2-3候选解释+提问方式)→postcheck 0err→visual-judge pass(after 3 repair loops)|COLLISIONS:C-R1 LibreOffice26.8@macOS26 sees NO system fonts→fixed via fonts into app bundle dir,C-R2 docx-js lineRule'exactly'invalid→'exact',C-R3 LO drops line-end 全角？|palace used?NO for analysis(task self-contained,deliberately worked from source doc only)|wrote back:this record+env lesson|input untouched MD5 d12e06ee verified|★★★",
+  "topic": "T1-数据澄清函-执行记录"
+ },
+ "items": [
+  {
+   "content": "工作记录 2026-10-02：完成《数据澄清函》（秦沈项目经济运行情况汇报 2026-03-08 版）。交付物：/Users/mr.simi/Documents/SimiGo-Lab/palace-v0/workspace/数据澄清函_秦沈项目经济运行情况汇报_20260308版.docx（20页公文式，问题清单速览表+17项问题，每项含问题描述/两处原文证据/2-3个候选解释/建议提问方式，按重要程度分三类：一、主要数据勾稽4项；二、统计口径与时点6项；三、数据细节与文字7项）。要点：问题1 招采定标总金额107,697万元与分项合同额合计119,741.42万元差约12,044万元且分项和恰近标后总金额119,199万元；问题2 材料价差正文1,189.07万元 vs 表4合计1,213.95万元且正文自身不闭合；问题3 二(二)利润率提高1.01%与(一)(二)之差0.18个百分点不符；问题4 填料降本利润率增加1.65%无对应基数；问题5 管理费4.9%基数缺失、预控2.3%口径不清；问题6 效益时点2025年末vs全文2026年2月底；问题7 实际总工期893天(至2027-10-31)用语；问题8 172万/0.56%互验失败；问题9 标后盈利1,250.15万元含义；问题10 预计完工总收入312,722万vs合同额329,907.20万；问题11 分包招采7份vs8项；问题12 黑山采购438.65万方超储量400万m³、缺口300vs340；问题13 4#拌合站47.49vs47.79；问题14 标后盈利79,101vs79,100尾差；问题15 表4损耗率列符号/数值；问题16 表2缺序号8；问题17 两处存在出处→出入。复核仅以汇报文本为唯一依据，输入文件MD5 d12e06ee4211fecb73ae7c6fb5f08762 未改动。",
+   "room": "数据澄清函",
+   "wing": "经济商务汇报"
+  },
+  {
+   "content": "环境备忘 2026-10-02（本机 macOS 26 / LibreOffice 26.8 brew cask）：LibreOffice 不枚举系统字体，只识别 /Applications/LibreOffice.app/Contents/Resources/fonts/truetype/ 内捆绑字体——中文 docx 渲染需把字体文件复制到该目录（已复制 Songti.ttc、STHeiti Light/Medium.ttc）。本机可用的中文字体仅 Songti SC 与 Heiti SC，无楷体/仿宋/苹方。docx-js 的 spacing lineRule 必须传 \"exact\"（\"exactly\" 为非法 token，会被按倍数行距解释导致页数翻倍）。LibreOffice 两端对齐时行末悬挂的全角「？」可能被整体丢弃，渲染后需用 pdftotext 全局比对问号数量。",
+   "room": "环境备忘",
+   "wing": "经济商务汇报"
+  }
+ ]
+}

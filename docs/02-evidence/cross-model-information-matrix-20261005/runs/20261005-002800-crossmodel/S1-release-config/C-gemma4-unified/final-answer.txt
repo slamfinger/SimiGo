@@ -1,0 +1,56 @@
+{
+  "task_id": "task-carrier-tc-a",
+  "decision": "Release order: alpha, beta. Block gamma.",
+  "findings": [
+    {
+      "id": "f1",
+      "statement": "Deployment mode is sequential.",
+      "evidence": "deployment_rules.mode == ''sequential'",
+      "function": "task_rule"
+    },
+    {
+      "id": "f2",
+      "statement": "Required flag metrics_v2 must be true.",
+      "evidence": "required_flags.metrics_v2 == true",
+      "function": "constraint"
+    },
+    {
+      "id": "f3",
+      "statement": "Alpha is eligible for deployment.",
+      "evidence": "alpha.flags.metrics_v2 == true",
+      "function": "evidence"
+    },
+    {
+      "id": "f4",
+      "statement": "Beta is eligible for deployment.",
+      "evidence": "beta.flags.metrics_v2 == true",
+      "function": "evidence"
+    },
+    {
+      "id": "f5",
+      "statement": "Gamma is ineligible due to missing metrics_v2 flag.",
+      "evidence": "gamma.flags.metrics_v2 == false",
+      "function": "constraint"
+    },
+    {
+      "id": "f6",
+      "statement": "Alpha and Beta can be deployed together.",
+      "evidence": "allow_incompatible_pair == false and both have metrics_v2",
+      "function": "relation"
+    },
+    {
+      "id": "f7",
+      "statement": "Release order is alpha then beta.",
+      "evidence": "mode == ''sequential' and both eligible",
+      "function": "decision"
+    },
+    {
+      "id": "f8",
+      "statement": "Gamma is blocked.",
+      "evidence": "gamma.flags.metrics_v2 == false",
+      "function": "decision"
+    }
+  ],
+  "missing_or_uncertain": [],
+  "confidence": 1.0
+}

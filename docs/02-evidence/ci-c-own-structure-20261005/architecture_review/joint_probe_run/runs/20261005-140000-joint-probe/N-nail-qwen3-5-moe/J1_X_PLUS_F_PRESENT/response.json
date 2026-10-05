@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-15862eb8-d0fa-4d04-8b2b-2cb842205e17",
+  "object": "chat.completion",
+  "created": 1791174737,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":true,\"F_premise_adopted\":true,\"adoption_reason\":\"A_epistemic layer allows adoption of F as premise and evidence.\"},\"analysis\":{\"admissible_premises\":[\"F\"],\"relational_conclusion\":\"Gamma is not baseline-compatible and must be blocked. Alpha and beta are baseline-compatible and mutually compatible, allowing sequential deployment.\"},\"execution_gate\":{\"status\":\"ELIGIBLE\",\"reason\":\"A_execution layer allows adopted premises to enter the execution path.\"},\"continuation\":{\"emitted\":true,\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"NOT baseline-compatible\"}]},\"transition_status\":\"DEGRADED\",\"information_dependency\":{\"compatibility_info_available\":true,\"compatibility_info_current\":true,\"compatibility_info_consistent\":true,\"dependency_declared\":true,\"reason\":\"Transition completed with degraded status due to blocked service gamma.\"},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":false,\"reason\":\"Only adopted premises were used.\"}}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}

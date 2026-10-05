@@ -1,0 +1,89 @@
+{
+  "status": "A_EPISTEMIC_A_EXECUTION_DESIGN_FROZEN",
+  "run_id": "20261005-human-authorized-four-cell",
+  "arms": 7,
+  "models_run": [
+    "A-qwen3-moe",
+    "C-gemma4-unified",
+    "N-nail-qwen3-5-moe"
+  ],
+  "models_not_run": {
+    "B-qwen3-next": "frozen unavailable",
+    "D-muse-glimmer": "frozen degenerate"
+  },
+  "strong_aligned_findings": [
+    "K3_DELETED -> C4 absent in both",
+    "K3_PRECOMPUTED_F -> C4 preserved in both"
+  ],
+  "open_issue": "A FULL baseline degraded; no cross-model minimum established",
+  "not_authorized": [
+    "prompt implementation",
+    "runner implementation",
+    "model execution",
+    "A usage",
+    "B retry",
+    "D retry",
+    "Observer",
+    "InformationCore write",
+    "846 mapping",
+    "minimal Information Core claim"
+  ],
+  "run_ids": [
+    "20261005-014500-ci-c",
+    "20261005-021500-ci-c-nail-replication"
+  ],
+  "critical_pair": "REPLICATED",
+  "candidate_invariant": "relational executable admissibility function",
+  "surface_vs_authorized": "separated",
+  "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
+  "next_gate": "human_review_then_eight_cell_run_authorization",
+  "authorized_next_work": [
+    "human review",
+    "prompt/runner implementation after separate authorization"
+  ],
+  "primary_matrix": [
+    "C x AUTHZ_ALLOWED",
+    "C x AUTHZ_DENIED",
+    "N x AUTHZ_ALLOWED",
+    "N x AUTHZ_DENIED"
+  ],
+  "primary_result_label": "AUTHORIZATION_BOUNDARY_CLASS",
+  "authorization_boundary_class": "AMBIGUOUS",
+  "first_divergence": {
+    "C-gemma4-unified": "L1_source_admission",
+    "N-nail-qwen3-5-moe": "L1_source_admission"
+  },
+  "surface_c4_divergence": "NONE",
+  "authorization_object_split": {
+    "A_epistemic": "whether Information is allowed to be used as premise or evidence; declared/provenance layer observed",
+    "A_execution": "whether Information is allowed to enter the execution path; not controlled because denied F_content remained visible"
+  },
+  "causal_attribution": "UNRESOLVED",
+  "ares_update": "NONE",
+  "authorization_object_decision": "OPTION_C_TWO_LAYER",
+  "decision_layer_order": [
+    "Information",
+    "A_epistemic: premise/evidence adoptability",
+    "A_execution: execution-path eligibility",
+    "Relational Executable Function",
+    "Continuation"
+  ],
+  "experimental_brake": "ACTIVE_UNTIL_RUN_AUTHORIZATION",
+  "authorization_object": "OPTION_C_TWO_LAYER",
+  "design_matrix": "2 models x 4 E/X arms = 8 cells",
+  "hypotheses": [
+    "H-ORDER",
+    "H-MERGE",
+    "H-REVERSE",
+    "H-BYPASS/H-LEAK",
+    "H-AMBIGUOUS"
+  ],
+  "primary_result_labels": [
+    "ORDERED_SEPARATION_SUPPORTED",
+    "MERGED_BOUNDARY_SUPPORTED",
+    "REVERSE_DEPENDENCY_SUPPORTED",
+    "LEAK_DOMINATED",
+    "MODEL_SPECIFIC_LEAK",
+    "AMBIGUOUS"
+  ]
+}

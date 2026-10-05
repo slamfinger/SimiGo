@@ -1,0 +1,10 @@
+{
+  "cell": "P1_F_PRESENT_G_PRESENT",
+  "model_id": "N-nail-qwen3-5-moe",
+  "repo_id": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "http_status": 200,
+  "elapsed_seconds": 7.049111,
+  "prompt_sha256": "517b350e26558b9223362f5759a8e1cd820b4e65f720860659505fa35d42badd",
+  "response_sha256": "d87b2b32513bd568d4be1d621713237b7b9d225301a97e048496717a253914b7",
+  "created_at": "2026-10-05T12:18:54+08:00"
+}

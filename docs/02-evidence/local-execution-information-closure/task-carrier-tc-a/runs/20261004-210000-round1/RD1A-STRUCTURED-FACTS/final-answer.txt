@@ -1,0 +1,1 @@
+{"release_decision":"blocked","deployment_order":["alpha","beta"],"blocked_services":[{"service_id":"gamma","reason":"gamma is not individually baseline compatible; port values are not different (both 8081); api_version values are not equal (2 vs 3)"}]}

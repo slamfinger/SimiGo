@@ -1,0 +1,1 @@
+{"release_decision":"DEPLOY","deployment_order":["alpha","beta","gamma"],"blocked_services":[],"transition_status":"COMPLETED","information_dependency":{"compatibility_info_available":true,"compatibility_info_current":true,"compatibility_info_consistent":true,"dependency_declared":true,"reason":"All services are marked baseline-compatible and the record is consistent."}}

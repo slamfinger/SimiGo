@@ -1,0 +1,39 @@
+{
+  "replication_model": "N-nail-qwen3-5-moe",
+  "replication_scope": "post-first-round effective-model control; not a B replacement and not a D retry",
+  "critical_pair_result": {
+    "K3_DELETED": {
+      "A": "C4_ABSENT",
+      "C": "C4_ABSENT",
+      "N": "C4_ABSENT",
+      "status": "REPLICATED"
+    },
+    "K3_PRECOMPUTED_F": {
+      "A": "C4_PRESERVED",
+      "C": "C4_PRESERVED",
+      "N": "C4_PRESERVED",
+      "status": "REPLICATED"
+    }
+  },
+  "surface_vs_authorized": {
+    "surface_C4": "deployment_order and blocked-service shape only",
+    "authorized_C4": "surface C4 produced without recovering a relation or predicate explicitly marked unavailable"
+  },
+  "revised_component_reading": {
+    "K1": "not a surface cross-model necessity; N preserves C4 in K1_ONLY, but through unauthorized inference",
+    "K2": "not a surface cross-model necessity; C/N preserve C4 in K2_ONLY, but through unauthorized inference",
+    "K3_explicit_form": "not necessary; precomputed higher-level F preserves C4 in A/C/N",
+    "relational_executable_function": "necessary in the current frame; deleting K3 removes C4 in A/C/N"
+  },
+  "hypothesis_update": {
+    "H1_components_plus_function": "supported only for the authorized route; not as a pure component invariant",
+    "H2_K2_already_contains_relation": "not established; apparent K2-only success requires unauthorized inference",
+    "H3_relational_executable_structure": "best supported; the invariant is the authorized executable admissibility function, not a particular K1/K2/K3 representation"
+  },
+  "nonclaims": [
+    "No minimal Information Core is declared.",
+    "No 846 mapping is made.",
+    "No full cross-model universal claim is made.",
+    "A FULL remains invalid as a positive control."
+  ]
+}

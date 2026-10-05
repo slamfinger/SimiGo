@@ -1,0 +1,64 @@
+{
+  "phase": "M1B_SEMANTIC_ROLE_ADJUDICATION",
+  "adjudicated_at": "2026-10-04T19:56:00+08:00",
+  "raw_outputs_modified": false,
+  "observer_tool": "NOT RUN",
+  "store": "NOT RUN",
+  "hidden_understanding_claim": "FORBIDDEN / NOT MADE",
+  "expected_continuation": {
+    "release_decision": "blocked",
+    "deployment_order": ["alpha", "beta"],
+    "blocked_services": ["gamma"]
+  },
+  "conditions": [
+    {
+      "condition": "S-B1I",
+      "prompt_sha256": "df5a5a87b61bd99148455fd3cdbec8a2ac3733b04dcaf3ffc064b4082569e135",
+      "final_answer_sha256": "b83d5e3f40ebc4a0004b74324c41659d4f032912dec71fcf4d4933da4e968b46",
+      "final_answer_json_parse": "PASS",
+      "located": "SUPPLIED",
+      "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+      "parsed": "PASS",
+      "semantic_referenced": "PARTIAL / M1_EQUIVALENT_ONLY",
+      "adopted": "PARTIAL / GAMMA_BLOCK_ONLY",
+      "behavioral": "VALID_JSON_BUT_NO_DEPLOYMENT_ORDER",
+      "continuation": "FAIL",
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": ["gamma"]
+      },
+      "observable_basis": [
+        "gamma blocker adopts the supplied individually-incompatible predicate;",
+        "alpha-beta allow is not adopted into deployment_order;",
+        "no pair field is explicitly referenced."
+      ]
+    },
+    {
+      "condition": "S-B1S",
+      "prompt_sha256": "bdcb6c565ec810f77c8554e95287da40210548a8b25de186d0870a5b7454f0b5",
+      "final_answer_sha256": "42fdd9fab12e307d160d8171ecc06cb6a353b0c9bd2d516c5969a8ca5572b2ca",
+      "final_answer_json_parse": "PASS",
+      "located": "SUPPLIED",
+      "fetched": "NOT_APPLICABLE_DIRECT_INLINE",
+      "parsed": "PASS",
+      "semantic_referenced": "PARTIAL / INDIVIDUAL_BLOCK_ONLY",
+      "adopted": "PARTIAL / GAMMA_BLOCK_ONLY",
+      "behavioral": "VALID_JSON_BUT_NO_DEPLOYMENT_ORDER",
+      "continuation": "FAIL",
+      "observed": {
+        "release_decision": "blocked",
+        "deployment_order": [],
+        "blocked_services": ["gamma"]
+      },
+      "observable_basis": [
+        "gamma blocker adopts the supplied individual-block decision;",
+        "alpha-beta allow is not adopted into deployment_order;",
+        "pair scope legend does not produce deployment of the compatible pair."
+      ]
+    }
+  ],
+  "panel_reading": "S-B1I FAIL + S-B1S FAIL",
+  "bounded_reading": "In this exact TC-A prompt/model/frame, neither abstract individual incompatibility nor an explicit pair/individual scope legend restored the S-B1 continuation. The relevant boundary remains tied to the baseline-compatible slot or a deeper dependency not isolated by these controls.",
+  "non_claim": "This does not prove universal irreducibility of the exact wording, final Information minimality, or absence of all prompt/representation confounds."
+}

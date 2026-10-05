@@ -1,0 +1,28 @@
+{
+  "arms": [
+    "C-A",
+    "C-B",
+    "C-C"
+  ],
+  "attempt": 3,
+  "binary_build": "release",
+  "checkpoint_stage_capture": "orchestration_poll_preserved_unique_files",
+  "evaluator_binary": "CContinuationEvaluator",
+  "fresh_process_binary": "CContinuationStudyContinue",
+  "implementation_baseline": "806dd3eea55c",
+  "old_stdin_signal": "one newline after external overwrite",
+  "overwrite_mode": "external_orchestration_write_to_declared_entity_source",
+  "run_id": "RC1-A3-20261002T211316Z-48817",
+  "s0": {
+    "alpha": 17,
+    "entity": "E",
+    "mode": "quiet"
+  },
+  "s1": {
+    "alpha": 42,
+    "entity": "E",
+    "mode": "active"
+  },
+  "task_id": "C-T-001",
+  "worktree": "/private/tmp/simigo-rc1-attempt3-806dd3e"
+}

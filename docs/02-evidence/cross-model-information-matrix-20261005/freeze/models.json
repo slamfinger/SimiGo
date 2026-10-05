@@ -1,0 +1,120 @@
+{
+  "freeze_date": "2026-10-04",
+  "selection_rule": "locally proven, maximize construction-route diversity, avoid parameter-only scaling",
+  "models": [
+    {
+      "model_id": "A-qwen3-moe",
+      "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+      "architecture": "qwen3_moe",
+      "model_class": "Qwen3MoeForCausalLM",
+      "stored_weights": "16 GiB",
+      "quantization": {
+        "bits": 4,
+        "group_size": 64
+      },
+      "runtime_backend": "NativeMLX/MLX Swift LM",
+      "inference_config": {
+        "temperature": 0,
+        "max_tokens": 2048,
+        "stream": false
+      },
+      "limitations": [
+        "No tool use in this protocol",
+        "NativeMLX model switch is manual"
+      ],
+      "snapshot_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+      "config_sha256": "8200545374776769bfd5ae4a30533990c96ca1cad625a9500194f46a8549fa13",
+      "prior_local_evidence": [
+        "docs/00-governance/SIMIGO2_PHASE0_QWEN3_CODER_INVENTORY_20260923.md",
+        "docs/00-governance/SIMIGO2_PHASE1_MLX_GATE5_MULTI_STATE_RESULTS_20260924.md"
+      ]
+    },
+    {
+      "model_id": "B-qwen3-next",
+      "repo_id": "mlx-community/Qwen3-Coder-Next-4bit",
+      "architecture": "qwen3_next",
+      "model_class": "Qwen3NextForCausalLM",
+      "stored_weights": "42 GiB",
+      "quantization": {
+        "bits": 4,
+        "group_size": 64,
+        "mode": "affine"
+      },
+      "runtime_backend": "NativeMLX/MLX Swift LM",
+      "inference_config": {
+        "temperature": 0,
+        "max_tokens": 2048,
+        "stream": false
+      },
+      "limitations": [
+        "Oversized local snapshot",
+        "No tool use in this protocol",
+        "NativeMLX model switch is manual"
+      ],
+      "snapshot_revision": "7b9321eabb85ce79625cac3f61ea691e4ea984b5",
+      "config_sha256": "e8e2412abc210311363cad4396e12fc73e8142e81408ca241b2487cc80723a29",
+      "prior_local_evidence": [
+        "docs/00-governance/SIMIGO2_O2_NATIVE_BASELINE_RESULT_20260925.md",
+        "docs/00-governance/SIMIGO2_O4_FULL_VS_SEGMENTED_PERFORMANCE_DIFFERENTIAL_20260926.md"
+      ]
+    },
+    {
+      "model_id": "C-gemma4-unified",
+      "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+      "architecture": "gemma4_unified",
+      "model_class": "Gemma4UnifiedForConditionalGeneration",
+      "text_architecture": "gemma4_unified_text",
+      "stored_weights": "6.3 GiB",
+      "quantization": {
+        "bits": 4,
+        "group_size": 64,
+        "mode": "affine"
+      },
+      "runtime_backend": "NativeMLX/MLX Swift LM with dense text route",
+      "inference_config": {
+        "temperature": 0,
+        "max_tokens": 2048,
+        "stream": false
+      },
+      "limitations": [
+        "Text-only task in this protocol",
+        "No tool use",
+        "NativeMLX model switch is manual"
+      ],
+      "snapshot_revision": "6b82053fa694ac4f1a0069f27ab71f1ab0cd7fff",
+      "config_sha256": "102804498f8b3ad8ff1815cf8dce1a9573a9793c10bd510c02a99737a7eb793c",
+      "prior_local_evidence": [
+        "docs/02-evidence/SIMIGO2_GEMMA4_TEMPLATE_GATE5_20260924.json"
+      ]
+    },
+    {
+      "model_id": "D-muse-glimmer",
+      "repo_id": "RadixArk/Muse-Glimmer-q4-MLX",
+      "architecture": "muse_glimmer",
+      "model_class": "MuseGlimmerForConditionalGeneration",
+      "stored_weights": "15 GiB",
+      "quantization": {
+        "bits": 4,
+        "group_size": 64,
+        "mode": "affine"
+      },
+      "runtime_backend": "NativeMLX/MLX Swift LM text route",
+      "inference_config": {
+        "temperature": 0,
+        "max_tokens": 2048,
+        "stream": false
+      },
+      "limitations": [
+        "Text-only task in this protocol",
+        "No tool use",
+        "NativeMLX model switch is manual"
+      ],
+      "snapshot_revision": "4a4f54af27b7bc3f25351588a25335b28585cc49",
+      "config_sha256": "d51e50822af6f67b08a8aa687e54a973a47b73b273ee4907758af5d730a7e8bb",
+      "prior_local_evidence": [
+        "docs/02-evidence/SIMIGO2_MUSE_GLIMMER_RUNTIME_BOUNDARY_20260924.json",
+        "docs/02-evidence/SIMIGO2_DENSE_MLP_MUSE_GATE5_20260924.json"
+      ]
+    }
+  ]
+}

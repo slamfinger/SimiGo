@@ -1,0 +1,11 @@
+{
+  "arm": "K3_PRECOMPUTED_F",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "http_status": 200,
+  "elapsed_seconds": 2.72512,
+  "prompt_sha256": "09efa070095fe666a9be4d9645e3a6e0014f8aeb8bd03df631afd7fb9e9943ae",
+  "request_sha256": "6ae1b2acb5897a04c2ac1abf4fe5267f1495d7a58e646a880d0ffe500ae121df",
+  "response_sha256": "9c351a54ffbc41ccb3c5a712668b1a015873cf91b2da8c1f295d1a7f84e89042",
+  "created_at": "2026-10-05T01:54:55+08:00"
+}

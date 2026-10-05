@@ -1,0 +1,11 @@
+{
+  "df05e39ce28da168ccba1c70" : {
+    "extractionMode" : "observation",
+    "object" : "673e81d9dae07e94d48adf4a",
+    "predicate" : "observed-change-of",
+    "producedAt" : "2026-10-03T04:07:51Z",
+    "producedBy" : "declared-old-process-observation",
+    "source" : "\/Users\/mr.simi\/Documents\/SimiGo-Lab\/docs\/02-evidence\/rc1-attempt4\/RC1-A4-20261003T040749Z-57375\/runs\/C-C\/physical\/entity-E.txt",
+    "subject" : "14b71e7168cef99af79227b9"
+  }
+}

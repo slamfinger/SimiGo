@@ -1,0 +1,16 @@
+{
+  "created": 1791132631,
+  "object": "chat.completion",
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "message": {
+        "content": "{\n  \"task_id\": \"task-carrier-tc-a\",\n  \"decision\": \"Release order: alpha, beta. Block gamma.\",\n  \"findings\": [\n    {\n      \"id\": \"f1\",\n      \"statement\": \"Deployment mode is sequential.\",\n      \"evidence\": \"deployment_rules.mode == ''sequential'\",\n      \"function\": \"task_rule\"\n    },\n    {\n      \"id\": \"f2\",\n      \"statement\": \"Required flag metrics_v2 must be true.\",\n      \"evidence\": \"required_flags.metrics_v2 == true\",\n      \"function\": \"constraint\"\n    },\n    {\n      \"id\": \"f3\",\n      \"statement\": \"Alpha is eligible for deployment.\",\n      \"evidence\": \"alpha.flags.metrics_v2 == true\",\n      \"function\": \"evidence\"\n    },\n    {\n      \"id\": \"f4\",\n      \"statement\": \"Beta is eligible for deployment.\",\n      \"evidence\": \"beta.flags.metrics_v2 == true\",\n      \"function\": \"evidence\"\n    },\n    {\n      \"id\": \"f5\",\n      \"statement\": \"Gamma is ineligible due to missing metrics_v2 flag.\",\n      \"evidence\": \"gamma.flags.metrics_v2 == false\",\n      \"function\": \"constraint\"\n    },\n    {\n      \"id\": \"f6\",\n      \"statement\": \"Alpha and Beta can be deployed together.\",\n      \"evidence\": \"allow_incompatible_pair == false and both have metrics_v2\",\n      \"function\": \"relation\"\n    },\n    {\n      \"id\": \"f7\",\n      \"statement\": \"Release order is alpha then beta.\",\n      \"evidence\": \"mode == ''sequential' and both eligible\",\n      \"function\": \"decision\"\n    },\n    {\n      \"id\": \"f8\",\n      \"statement\": \"Gamma is blocked.\",\n      \"evidence\": \"gamma.flags.metrics_v2 == false\",\n      \"function\": \"decision\"\n    }\n  ],\n  \"missing_or_uncertain\": [],\n  \"confidence\": 1.0\n}",
+        "role": "assistant"
+      },
+      "index": 0
+    }
+  ],
+  "id": "chatcmpl-ef8047b6-7325-4fb8-b9a8-a46adb42890f"
+}

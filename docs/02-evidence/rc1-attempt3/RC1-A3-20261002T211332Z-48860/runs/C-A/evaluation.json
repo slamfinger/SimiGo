@@ -1,0 +1,13 @@
+{
+  "failedAuditChecks" : [
+
+  ],
+  "fullContinuationSuccess" : false,
+  "invalidRun" : false,
+  "partialSuccess" : true,
+  "x1TaskIdentity" : true,
+  "x2BeforeState" : false,
+  "x3AfterState" : false,
+  "x4DirectionalChange" : false,
+  "x5NextAction" : false
+}

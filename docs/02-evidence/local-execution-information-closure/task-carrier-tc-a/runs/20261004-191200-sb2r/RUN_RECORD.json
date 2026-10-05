@@ -1,0 +1,36 @@
+{
+  "phase": "S_B_RAW_OUTPUTS_ONLY",
+  "created_at": "2026-10-04T19:22:38+08:00",
+  "authorization": "AUTHORIZED CONDITION EXECUTION / RAW OUTPUTS ONLY",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "baseline_isolation": {
+    "initial_trace_tail": "LX] poolExport messages=2 refHash=2f841915cc20bc5c\n[2026-10-04 17:55:37.378] [MLX] cacheSave session=simigo-tc-a-sb2/7360a0/main history=2\n[2026-10-04 17:55:37.378] [MLX] session=simigo-tc-a-sb2/7360a0/main messages=1 exec=72fb36 history=2 delta=1 reuse=false ttft=1960ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=553 promptTime=1.9s tps=41.3 rawEv=296 rawB=1466 emitB=1466\n[2026-10-04 17:55:37.378] [LC] RELEASED r=55082a s=openai reason=completed\n[2026-10-04 18:06:06.515] [LIFECYCLE] suspend_done\n",
+    "initial_trace_size": 76455
+  },
+  "conditions": [
+    {
+      "condition": "S-B2R",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2R.prompt.txt",
+      "prompt_sha256": "ca9e133276097c90ac89465a351a24772fdf2b59b32fb095ad009873e166f73c",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/S-B2R/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/S-B2R/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-191200-sb2r/S-B2R/final-answer.txt",
+      "http_status": 200,
+      "elapsed_seconds": 11.082459,
+      "runtime_isolation": {
+        "method": "idle_suspend_with_memory_cache_clear",
+        "trace_path": "/Users/mr.simi/.simigo/logs/native_mlx_trace.log",
+        "trace_byte_start": 76455,
+        "trace_byte_end": 77311,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 19:12:02.204] [LIFECYCLE] resume_done ms=4572",
+          "[2026-10-04 19:12:08.705] [MLX] session=simigo-tc-a-sb2r/5f7b3d/main messages=1 exec=32f783 history=2 delta=1 reuse=false ttft=5117ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=552 promptTime=5.0s tps=40.4 rawEv=51 rawB=235 emitB=235",
+          "[2026-10-04 19:22:30.358] [LIFECYCLE] suspend_done"
+        ]
+      }
+    }
+  ]
+}

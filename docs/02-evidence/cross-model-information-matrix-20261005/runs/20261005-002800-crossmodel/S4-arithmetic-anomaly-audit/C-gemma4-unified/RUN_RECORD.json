@@ -1,0 +1,18 @@
+{
+  "sample_id": "S4-arithmetic-anomaly-audit",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "endpoint_identity_match": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "architecture": "gemma4_unified",
+  "http_status": 200,
+  "elapsed_seconds": 94.32902,
+  "prompt_sha256": "fec2f6fc725a4fb2300efeeb4f8849d4ac6fbb42a20096b57b9a8b6cba60ed63",
+  "request_sha256": "5268d3e88e7c11905432bf7799a981d65e0f9ffce099d6e81a1d358f92a2cdb9",
+  "response_sha256": "b0a373e7ed39ce068931e79085047860d045dcfdd96f6fd560aea9fac15bf551",
+  "runtime_backend": "NativeMLX/MLX Swift LM with dense text route",
+  "active_endpoint_models": [
+    "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit"
+  ],
+  "runtime_isolation": "NOT ENFORCED BY THIS RUNNER",
+  "created_at": "2026-10-05T00:54:37.321218+08:00"
+}

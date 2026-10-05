@@ -1,0 +1,18 @@
+{
+  "content": {
+    "basis": "task C-T-001 charter: alphaMinimum=40, requiredMode=active; S1 satisfies both",
+    "next_action": "REQUEST_HEALTH_CHECK",
+    "settled_diff": {
+      "alpha": {
+        "from": 17,
+        "to": 42
+      },
+      "mode": {
+        "from": "quiet",
+        "to": "active"
+      }
+    }
+  },
+  "id": "R-1",
+  "source": "R-C1-A4 C-B evaluation.json X-1..X-5 verified (sealed)"
+}

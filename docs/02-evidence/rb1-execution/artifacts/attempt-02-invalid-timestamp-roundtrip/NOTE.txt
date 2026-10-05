@@ -1,0 +1,1 @@
+attempt 02 is invalid: fractional provenance timestamp did not round-trip through ISO-8601 persistence, so baseline readback equality failed before E-run output; harness now uses whole-second timestamps

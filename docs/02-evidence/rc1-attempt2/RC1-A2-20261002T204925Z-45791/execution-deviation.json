@@ -1,0 +1,14 @@
+[
+  {
+    "id": "E-1",
+    "phase": "C-B old process startup",
+    "classification": "IMPLEMENTATION_DEFECT",
+    "severity": "EXECUTION_STOPPING",
+    "observed": "EXC_BREAKPOINT / Swift runtime failure: unexpectedly found nil while unwrapping an Optional value at CContinuationStudy main.swift line 165. Crash registers type metadata for SQLiteStore. C-B disables Information persistence, so relationStore is nil, but old-process formation force-unwraps relationStore for every arm.",
+    "evidence": "CContinuationStudy-crash.ips; workspace/execution-state.json remained OLD_PROCESS_STARTED with empty carrierPointers; no continuation evidence was written.",
+    "resolution": "Stop Attempt #2 without implementation modification; reopen C-Impl.",
+    "semantic_substitution": false,
+    "protocol_change": false,
+    "implementation_change": false
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mempalace": {
+      "command": "/Users/mr.simi/Documents/SimiGo-Lab/.build/mp-venv312/bin/mempalace-mcp",
+      "args": [
+        "--palace",
+        "/Users/mr.simi/Documents/SimiGo-Lab/palace-v0/palace"
+      ],
+      "env": {
+        "HOME": "/Users/mr.simi/Documents/SimiGo-Lab/palace-v0/mp-home"
+      }
+    }
+  }
+}

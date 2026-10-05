@@ -1,0 +1,81 @@
+{
+  "attempt": 2,
+  "boundary": "INTERACTION-FOUND = confirmation-scoped verdict per design §7 rev.2 on this 6-cell confirmation campaign; attempt #1 campaign-level INCONCLUSIVE remains permanently retained; no R3-4 auto-open",
+  "checks": [
+    {
+      "detail": "",
+      "name": "hygiene run_uuid uniform",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene monotonic non-decreasing",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene per-cell event sequences complete (6 cells)",
+      "pass": true
+    },
+    {
+      "detail": "a=[] b=[]",
+      "name": "A1 R1 probes on (A-Δ3∘A-Δ2) composition: zero false failure",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A1 confirmation cells: zero CI violations (R1 fix effective in-run)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "A2 containment: classification applied only to valid pair cells",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "chain closure (6/6 cells)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "replay purity (confirmation pairs byte-identical to preregistered replay)",
+      "pass": true
+    },
+    {
+      "detail": "expected=1 actual=1",
+      "name": "H-X1 cell-01-X-08 actual==preregistered expectation",
+      "pass": true
+    },
+    {
+      "detail": "expected=0 actual=0",
+      "name": "H-X1 cell-02-X-09 actual==preregistered expectation",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "honesty clause honored: X-08 recorded as-observed",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "campaign verdict within pre-registered outcome structure",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "campaign verdict backed by confirmation cell",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "R3-4 boundary: no outcome auto-opens R3-4 (boundary restated in report)",
+      "pass": true
+    }
+  ],
+  "failed": [],
+  "final_campaign_verdict": "INTERACTION-FOUND",
+  "revision_note": "v2: boolean precedence fix in verdict-backing check + adjudication_report.amendment (interactions field mechanically rebuilt from per_cell flags, zero verdict change — adjudication script omission; transparency register)",
+  "run_uuid": "R33X-A2-20261003T130744Z-70945",
+  "verdict": "AUDIT PASS"
+}

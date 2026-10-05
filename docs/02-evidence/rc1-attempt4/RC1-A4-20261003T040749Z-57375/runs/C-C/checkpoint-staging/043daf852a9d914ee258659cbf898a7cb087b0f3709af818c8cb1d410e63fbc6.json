@@ -1,0 +1,15 @@
+{
+  "attemptCount" : 1,
+  "carrierPointers" : {
+    "progress" : "4dd3879657f77c47a55dcb79",
+    "relation" : "df05e39ce28da168ccba1c70",
+    "s0" : "673e81d9dae07e94d48adf4a",
+    "s1" : "14b71e7168cef99af79227b9",
+    "task" : "c309c7ec00588a5c99d4597c"
+  },
+  "executorIdentity" : "CContinuationStudy\/old\/C-C",
+  "lifecyclePhase" : "POST_CHANGE_OBSERVED",
+  "runID" : "3189FA29-5F5E-4A75-8DE3-01E58D4DA3CC",
+  "schemaVersion" : "c-impl-execution-state-v2",
+  "taskID" : "C-T-001"
+}

@@ -1,0 +1,66 @@
+{
+  "checks": [
+    {
+      "detail": "",
+      "name": "hygiene run_uuid uniform",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene monotonic non-decreasing",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "hygiene per-cell event sequences complete (16 cells)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "CI-5 composition order observable (pairs have exactly 2 op_applied events)",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "chain closure (16/16 cells)",
+      "pass": true
+    },
+    {
+      "detail": "bad=[]",
+      "name": "CI-4 replay purity + no-undeclared-op (valid compositions byte-identical to preregistered replay)",
+      "pass": true
+    },
+    {
+      "detail": "bad=[\"cell-06-X-06:{'CI-2': 'R32-A-Δ3:objects/R-1.json want=differs got=absent'}\"]",
+      "name": "construction integrity CI-1..CI-5 re-verified (independent)",
+      "pass": false
+    },
+    {
+      "detail": "expected=1 actual=1",
+      "name": "H-X1 cell-08-X-08 actual resolution == preregistered expectation",
+      "pass": true
+    },
+    {
+      "detail": "expected=0 actual=0",
+      "name": "H-X1 cell-09-X-09 actual resolution == preregistered expectation",
+      "pass": true
+    },
+    {
+      "detail": "",
+      "name": "classification recomputation agrees with adjudicator (12/12 pair cells)",
+      "pass": false
+    },
+    {
+      "detail": "",
+      "name": "campaign verdict within pre-registered outcome structure",
+      "pass": true
+    }
+  ],
+  "failed": [
+    "construction integrity CI-1..CI-5 re-verified (independent)",
+    "classification recomputation agrees with adjudicator (12/12 pair cells)"
+  ],
+  "final_campaign_verdict": "INCONCLUSIVE",
+  "run_uuid": "R33X-20261003T122818Z-70152",
+  "verdict": "AUDIT FAIL"
+}

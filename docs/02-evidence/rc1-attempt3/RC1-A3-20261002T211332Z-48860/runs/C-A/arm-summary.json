@@ -1,0 +1,58 @@
+{
+  "arm": "C-A",
+  "checkpoint_staging_count": 2,
+  "checkpoint_staging_phases": [
+    "OLD_PROCESS_STARTED",
+    "POST_CHANGE_OBSERVED"
+  ],
+  "checkpoint_staging_pointer_keys": [
+    [],
+    []
+  ],
+  "distinct_processes": true,
+  "evaluation": {
+    "failedAuditChecks": [],
+    "fullContinuationSuccess": false,
+    "invalidRun": false,
+    "partialSuccess": true,
+    "x1TaskIdentity": true,
+    "x2BeforeState": false,
+    "x3AfterState": false,
+    "x4DirectionalChange": false,
+    "x5NextAction": false
+  },
+  "fresh_command": "continue",
+  "fresh_lifecycle_marker": {
+    "phase": "fresh_process_started",
+    "pid": 48864,
+    "timestamp": "2026-10-02T21:13:34Z"
+  },
+  "fresh_pid": 48864,
+  "full_continuation_success": false,
+  "invalid_run": false,
+  "old_command": "old",
+  "old_lifecycle_marker": {
+    "phase": "old_process_terminated",
+    "pid": 48863,
+    "timestamp": "2026-10-02T21:13:33Z"
+  },
+  "old_pid": 48863,
+  "overwrite_reference": "RC1-A3-C-A-EXTERNAL-001",
+  "physical_after_sha256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+  "physical_before_sha256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+  "physical_evidence": {
+    "afterSHA256": "cec1d7b02f402b1924a1f37ae2e193240bd17816208b0d90dc49926eeca3973a",
+    "beforeSHA256": "3ab5fbd4c17336875f0e8939cc4caa97df9731a2e6e99fb0e6d0908db6408d44",
+    "declaredAt": "2026-10-02T21:13:33Z",
+    "observedAt": "2026-10-02T21:13:33Z",
+    "overwriteReference": "RC1-A3-C-A-EXTERNAL-001",
+    "sourcePath": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860/runs/C-A/physical/entity-E.txt"
+  },
+  "physical_source": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860/runs/C-A/physical/entity-E.txt",
+  "report": {
+    "blocker": "missing_allowed_carrier",
+    "schemaVersion": "c-impl-report-v2",
+    "sourceLegality": true,
+    "taskID": "C-T-001"
+  }
+}

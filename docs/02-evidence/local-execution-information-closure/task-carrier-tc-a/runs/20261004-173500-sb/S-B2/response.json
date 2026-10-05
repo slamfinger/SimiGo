@@ -1,0 +1,16 @@
+{
+  "created": 1791107737,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "id": "chatcmpl-596f123a-311e-45bb-a039-62515ef621f0",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[\"beta\"],\"blocked_services\":[{\"service_id\":\"alpha\",\"reason\":\"alpha ↔ gamma = block; gamma is blocked individually, but alpha is blocked because it cannot coexist with gamma in a sequential deployment where gamma is excluded, and alpha's compatibility with beta is allowed but alpha is not individually baseline-compatible due to the block constraint on gamma which affects the set integrity. Actually, rule 1 says: A service is blocked if the supplied compatibility residue marks it as not individually baseline-compatible. The residue says 'gamma = block'. It does not explicitly say alpha or beta are individually blocked. However, rule 2 says two services may both appear only when their pair is mutually compatible. Alpha and Beta are compatible. Alpha and Gamma are blocked. Beta and Gamma are blocked. Gamma is individually blocked. So Gamma is out. We are left with Alpha and Beta. They are compatible. So they can be in the order. The release candidate order is alpha, beta, gamma. Gamma is removed. Alpha and Beta remain. So deployment order is [\"alpha\", \"beta\"]. Release decision is \"released\" or \"blocked\"? If all services in the order are valid, it's released. But wait, is Alpha individually baseline-compatible? The residue doesn't say \"alpha = block\". It says \"gamma = block\". So Alpha is not individually blocked. Beta is not individually blocked. So they are allowed. The decision is \"released\".}]}"
+      }
+    }
+  ],
+  "object": "chat.completion"
+}

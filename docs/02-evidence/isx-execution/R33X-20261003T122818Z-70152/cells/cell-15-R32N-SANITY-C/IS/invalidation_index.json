@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "reason": "result retired (R32-C-Δ2)",
+      "record_id": "INV-R32-C-Δ2",
+      "target": "anchor:state-diff",
+      "type": "invalidation"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Baseline compatibility record: not available in this context.
+
+Deployment metadata (required):
+
+```text
+approved maintenance window: 2026-10-05 22:00–02:00 UTC
+```

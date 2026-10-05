@@ -1,0 +1,77 @@
+{
+  "A_ev": {
+    "anchor_name": "anchor:state-diff",
+    "formation_target_content_sha256": "03332d187639d748bcf986f5ab8963c16c9c712e47c3837a9a75441dbbca81da",
+    "reference_form": "symbolic",
+    "role": "A-1 content binding"
+  },
+  "C_ev": {
+    "declared_conditions": [
+      {
+        "type": "scope-tag",
+        "value": "r3-2-campaign"
+      },
+      {
+        "not_after": "2026-11-02T11:43:01Z",
+        "type": "validity"
+      },
+      {
+        "keys": [
+          "I-S0",
+          "I-S1"
+        ],
+        "type": "dependency-reference"
+      }
+    ],
+    "prerequisite_keys": [
+      "I-S0",
+      "I-S1"
+    ],
+    "role": "C-1 continuation permission prerequisites"
+  },
+  "I_ev": {
+    "I-EV-1": {
+      "is_reference": {
+        "field": "fixture_class",
+        "key": "runtime-declaration"
+      },
+      "role": "I-1 model/fixture binding",
+      "self_declaration": {
+        "fixture_class": "r3-2-minimal-v1"
+      }
+    },
+    "I-EV-2": {
+      "is_reference": {
+        "key": "lineage-root"
+      },
+      "role": "I-2 lineage binding"
+    },
+    "I-EV-3": {
+      "payload_sha256": "7edaf1b9fc2ab4597e5124fe1889f71167550094eab2f5ae2d8b17963b2c2a90",
+      "role": "I-3 payload integrity"
+    }
+  },
+  "es_schema": "r3-2-es-v1",
+  "formation": {
+    "campaign": "R3-N (R3-3) — fresh formation per design §4 inv-3",
+    "formed_at_utc": "2026-10-03T11:43:01Z",
+    "note": "formation executed against canonical IS0; all baselines computed from actual bytes (ES-artifact-resident)",
+    "procedure": "r32-formation-v1"
+  },
+  "payload": {
+    "continuation_position": {
+      "after_state": "I-S1",
+      "basis": "R-C1 C-B staged pointer set [progress, s0, s1, task]"
+    },
+    "task": {
+      "continuationRule": {
+        "action": "REQUEST_HEALTH_CHECK",
+        "alphaMinimum": 40,
+        "requiredMode": "active"
+      },
+      "objective": "Resume after interruption and produce a continuation report for entity E using only declared persistent carriers; do not rescan the physical entity.",
+      "schemaVersion": "c-impl-task-charter-v1",
+      "taskID": "C-T-001"
+    }
+  }
+}

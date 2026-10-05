@@ -1,0 +1,60 @@
+{
+  "campaign_order": [
+    "X-01",
+    "X-02",
+    "X-03",
+    "X-04",
+    "X-05",
+    "X-06",
+    "X-07",
+    "X-08",
+    "X-09",
+    "X-10",
+    "X-11",
+    "X-12",
+    "R32N-SANITY-A",
+    "R32N-SANITY-I",
+    "R32N-SANITY-C",
+    "R32-K-0"
+  ],
+  "design_source": "SIMIGO_LAB_ISX_DESIGN_GATE_20261003.md (rev.2, RATIFIED)",
+  "es_artifact_sha256": "29939b683c20d9653c05fe06f6f9f2d4794fedd1fc0a22923d70f54b455e01dc",
+  "harness": {
+    "isx_lib_sha256": "351c6fae5e80e4feba6eb71c85d10f200d68a0a3964bba668b74aa5fff85313c",
+    "medium": "python3 stdlib only; zero model inference; evaluation procedures identical to R3-2/R3-N",
+    "r32_lib_sha256": "ee4762a2ece334857b3f79528782a7b834d60d41fca3c66e45e13521a60830ca",
+    "r3n_lib_sha256": "39c939504c11025dd65cbcd60608d6a0ab35a11de59dd283e7ef72a6cb280048"
+  },
+  "is0_canonical_sha256": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+  "judgment_rule": {
+    "cons_version": "R2 rev.2 candidate: Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition",
+    "judgment_time": "campaign setup stage, before any ΔIS exists",
+    "spec": "SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md (rev.2, RATIFIED)"
+  },
+  "run_uuid": "R33X-20261003T122818Z-70152",
+  "selection_criteria": {
+    "fixture": "identical fixture structure class to R3-2/R3-3 by design — IS-X composes frozen ops on the same slice",
+    "formation": "fresh formation (independence inv-3); sealed R-C1 bytes re-read, no prior-run artifact reads"
+  },
+  "setup_pinned_timestamp": "2026-10-03T12:28:18Z",
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "validity": "VALID",
+  "validity_rule": "design §1a: false ⇒ INVALID + preserve + STOP"
+}

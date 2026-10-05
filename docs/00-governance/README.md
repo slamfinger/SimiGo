@@ -4,6 +4,8 @@
 
 权威当前状态仍为 ../RESEARCH_STATE.md；本目录的 Register / Map 文件负责导航和治理，不复制完整状态。
 
+当前快速研究导航入口：../RESEARCH_CONTEXT_INDEX.md。该索引只提供定位、状态、边界和合法下一跳，不是权威状态或记忆库。
+
 ## Governance control plane
 - RESEARCH_PROGRAM_REGISTER_20260922.md：研究路线与当前/未来分支总表；
 - RESEARCH_DEPENDENCY_MAP_20260922.md：问题、研究线与 Gate 的依赖关系；

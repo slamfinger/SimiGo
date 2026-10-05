@@ -1,0 +1,5 @@
+A-run  = 01a1025f-8cce-73c3-a88c-3fc8ec99d039
+B-E    = 01a10261-aca8-7b33-9d86-ab97c703ee1d
+B-N    = 01a10261-ae47-7371-ad77-099c39c71505
+pin commit = b5e9eb473829c2ce28be15919333d025bcaeb673
+workspace  = /tmp/simigo-t5-rev1-20261003T232604

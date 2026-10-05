@@ -1,0 +1,50 @@
+# Execution B Instruction
+
+You are Execution B, a fresh local model reached through an HTTP server. You have no prior conversation.
+
+## Tool rule
+
+Use no tools. Do not fetch, read, search, compute externally, or request source files.
+
+## Supplied compatibility residue
+
+Service-level residue:
+
+```text
+alpha is baseline-compatible;
+beta is baseline-compatible;
+gamma is not baseline-compatible.
+```
+
+Pair residue uses internal relation ids only:
+
+```text
+R1 ↔ R2 = allow;
+R1 ↔ R3 = block;
+R2 ↔ R3 = block.
+```
+
+No mapping between `R1`, `R2`, `R3` and `alpha`, `beta`, `gamma` is supplied.
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential. Apply only these rules:
+
+1. A service is blocked if the supplied compatibility residue marks it as not individually baseline-compatible.
+2. Two services may both appear in the deployment order only when their supplied pair residue marks them as mutually compatible.
+3. Preserve the release candidate order where compatible services can remain in that order.
+4. Do not infer the missing id mapping. Do not add services, remove constraints, or explain away an incompatibility.
+
+## Final output
+
+Return only one minified JSON object and no Markdown, explanation, or code fence. Use this exact shape:
+
+```json
+{"release_decision":"...","deployment_order":["..."],"blocked_services":[{"service_id":"...","reason":"..."}]}
+```

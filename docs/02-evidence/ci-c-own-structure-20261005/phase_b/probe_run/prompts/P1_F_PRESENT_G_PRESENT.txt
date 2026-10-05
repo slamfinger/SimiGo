@@ -1,0 +1,13 @@
+Baseline compatibility record (required, effective 2026-10-01):
+
+```text
+alpha: baseline-compatible
+beta:  baseline-compatible
+gamma: NOT baseline-compatible
+```
+
+Deployment metadata (required):
+
+```text
+approved maintenance window: 2026-10-05 22:00–02:00 UTC
+```

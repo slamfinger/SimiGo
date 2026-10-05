@@ -1,0 +1,77 @@
+{
+  "cell_id": "cell-02-X-02",
+  "cell_op": "X-02",
+  "composition": "OK",
+  "composition_error": null,
+  "construction_integrity": {
+    "failures": {},
+    "pass": true
+  },
+  "doubt_signatures": [],
+  "instrument_doubt": "NO",
+  "integrity": {
+    "es_hash_after": "29939b683c20d9653c05fe06f6f9f2d4794fedd1fc0a22923d70f54b455e01dc",
+    "es_unchanged": true,
+    "is0_canonical_hash_after": "d599145cc55460274bbce09ab32b95fbdca4e5bf6a6e8cdcfff4249d2e8e2397",
+    "is0_unchanged": true
+  },
+  "op_class": "IS-X",
+  "p_comp": {
+    "A": {
+      "sig_set": [],
+      "state": "SATISFIED"
+    },
+    "C": {
+      "sig_set": [
+        "C-INV"
+      ],
+      "state": "BROKEN"
+    },
+    "I": {
+      "sig_set": [
+        "I-MISMATCH"
+      ],
+      "state": "BROKEN"
+    }
+  },
+  "predicted": null,
+  "resolution_actual": null,
+  "resolution_expectation": null,
+  "t0_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "prerequisites resolvable; no invalidation; declared conditions hold",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "I": {
+      "detail": "all identity evidence evaluable & unambiguous",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "cons": "SATISFIED"
+  },
+  "t0_matches_setup": true,
+  "t1_evaluation": {
+    "A": {
+      "detail": "anchor resolvable, in-boundary, digest match",
+      "signature": null,
+      "state": "SATISFIED"
+    },
+    "C": {
+      "detail": "invalidation record targets anchor:state-diff",
+      "signature": "C-INV",
+      "state": "BROKEN"
+    },
+    "I": {
+      "detail": "IS-side fixture_class='r3-2-minimal-v1-TAMPERED' != ES declaration 'r3-2-minimal-v1'",
+      "signature": "I-MISMATCH",
+      "state": "BROKEN"
+    },
+    "cons": "BROKEN"
+  }
+}

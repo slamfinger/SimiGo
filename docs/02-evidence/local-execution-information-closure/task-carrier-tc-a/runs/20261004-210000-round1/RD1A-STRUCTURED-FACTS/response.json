@@ -1,0 +1,16 @@
+{
+  "object": "chat.completion",
+  "id": "chatcmpl-a443d4b4-18f8-486d-b1c1-f72c60b37b36",
+  "created": 1791124232,
+  "model": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"blocked\",\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"gamma is not individually baseline compatible; port values are not different (both 8081); api_version values are not equal (2 vs 3)\"}]}"
+      },
+      "index": 0
+    }
+  ]
+}

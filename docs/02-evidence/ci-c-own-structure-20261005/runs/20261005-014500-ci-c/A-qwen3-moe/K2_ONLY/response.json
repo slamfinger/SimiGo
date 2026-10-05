@@ -1,0 +1,16 @@
+{
+  "created": 1791136448,
+  "id": "chatcmpl-114bba31-669f-4445-ae57-853d8acd9ec5",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "content": "{\"release_decision\":\"block\",\"deployment_order\":[],\"blocked_services\":[{\"service_id\":\"alpha\",\"reason\":\"incompatible with gamma\"},{\"service_id\":\"beta\",\"reason\":\"incompatible with gamma\"}]}",
+        "role": "assistant"
+      }
+    }
+  ],
+  "object": "chat.completion"
+}

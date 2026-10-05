@@ -2,7 +2,568 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-05
+
+## Current total status — 2026-10-05 (supplements 2026-10-04 below)
+
+> 2026-10-05 的变化发生在治理层与新的 ES↔IS Core 线，2026-10-04 的
+> Execution State 主线结论（下方各节）全部不变。要点：
+>
+> **治理升级**：SimiGo Research Constitution v1.0 采纳
+> （`docs/00-governance/SIMIGO_LAB_RESEARCH_CONSTITUTION_20261005.md`，
+> 北极星=ES↔IS 持续计算闭环、五边 Core 定义、四 Gate、卫星三态、
+> 回迁证明、五行 session 头；硬门槛 Deep but disconnected ≠ Core）；
+> 随后 RESEARCH_GOVERNANCE_CONSTITUTION v0.1→v0.2 归纳式宪法
+> 采纳为 inductive/epistemological governance layer（与 operative
+> v1.0 并列不合并；G-1 Frame/Model 分层解 HR-1；回迁身份规则；
+> 治理反递归条款；Frame reopener 登记）。
+>
+> **Admissibility 线 PAUSED / SATELLITE**（完整闭环于 ES-3：Case 2
+> 结构性不可辨识 + Spec v0.3 三态语义 + U_c 仪器不可构造 +
+> M2/M3 签名等价；回迁条件已登记）。
+>
+> **新 Core 线 ES↔IS 开线并三次完整循环**：Conceptual Spec v0.1
+> → Core Reference Scenario（locality 轴被场景测试旁置）→
+> Stage Synthesis（治理首跑：Current Research Map + Evidence Map +
+> Gap Map，头号缺口 I-1）→ Human 选定 I-1 →
+> **I-1 FROZEN**（main `2b2e2ef`：IPAC Persistence/Resolve 概念设计，
+> 三级对象关系 CR→resolve→R2→instantiate(+τ2★)→S2，九条边界）→
+> **I-1c FROZEN**（main `6c3cf6a`：Instantiate Completeness，三正交轴，
+> IC-2 三态绑定，结构性发现"缺失信息≠State component，可能是
+> binding decidability input"）→ **I-1d FROZEN**（分支 `1832676`：
+> Runtime Realization/Verification，可审计三方映射 Frozen Contract↔IR↔VV，
+> 四正交层封闭，冻结后三路径=Implementation/Evidence finding/Future
+> alternative）。**概念链 Information→Resolve→Instantiate→Continue 闭合。**
+>
+> **Implementation Gate CLOSED（Human ruling 2026-10-05，基于 `d1043b8`
+> closure audit）**：G-1 ACCEPTED/CLOSED（CR/IR 格式+内容寻址
+> store+resolve V-1..5，conformance 19/19）；G-2 ACCEPTED/CLOSED
+> （instantiate 管线+VV-1..7 tier+三绑定态+三处置类，conformance
+> 17/17）；G-3 ACCEPTED/CLOSED（E-run 端到端：E1→CR(E1)→resolve→R2→
+> instantiate[唯一一次]→IR+S2→T2 消费 S2→CR(E2)；C-CAP SUPPORTED
+> document-form 10/10，持久化于 `G3_ERUN_RECORD.json`）；G-4
+> ACCEPTED/CLOSED（MC-1..6 + I-1d §1.2 mapping 13/13；后置回归
+> G-1 19/19、G-2 17/17、G-3 10/10）。IF-G1-01、IF-G2-01..08、
+> IF-G3-01..04、IF-G4-01..04 全部 CLOSED。四项 G-4 Finding 的修复为：
+> IR 补 timestamp/actor；TaskRecord digest=SHA-256(canonical supplied
+> τ2★)；precondition-block 统一 VV-1..7 = NOT ENTERED；used identities
+> 直接写入 IR。冻结契约 drift = 0。
+> **Post-Gate Route Decision = PALACE / INFORMATION SPACE FOUNDATION**
+> （Human ruling 2026-10-05，唯一 Active Route）。研究问题：Information
+> Space 能否成为 Execution State 持续运行所依赖、可演化的信息基础。
+> PALACE 在本路线中不是 MCP、knowledge base、数据库产品或应用集成。
+> 当前只进入 **Phase 1 Route Opening — Boundary Reconciliation &
+> Minimal Carrier Charter**：范围 `No implementation / No backend integration /
+> No contract change / No experiment`。旧 Report/Paper Evidence Package
+> 路线已在 `ffc59a4` 回滚；历史记录不入当前权威。Backend integration、
+> E-run 外实验、暂停本线继续 PENDING。冻结契约修改仍需独立
+> contract-revision 流程。登记于
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`。
+> **Phase 1 Route Opening Charter 已 ACCEPTED / CLOSED**（delivery `e4c74bd`；
+> route baseline `f4e2ba6`）：完成旧 PALACE 历史 reconciliation、语义边界、
+> ES↔IS frozen obligations 到 Information Space 的映射、最小
+> carrier/interface obligations（IS-MCI-01..08）、首个可判定问题
+> `PRQ-ISF-01` 与 success/failure/indeterminate 判据。下一阶段已授权为
+> **PRQ-ISF-01 — Minimal Decodable Probe Design**，且仅限设计；实现、
+> 载体选择、backend integration、实验执行和契约修改均未授权。登记于
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_OPENING_CHARTER_20261005.md`。
+> **Phase 2 `PRQ-ISF-01 — Minimal Decodable Probe Design` 已 ACCEPTED /
+> CLOSED**（delivery `7b9d167`）：定义 Registered Fixture、Abstract IS Port、
+> Mechanical Decoder、Frozen I-1 resolve handoff、`SC-00..SC-12` 场景矩阵、
+> 机械判定规则与 `SUCCESS / FAILURE / INDETERMINATE` 判据。边界记录：Abstract
+> IS Port 只是 probe observation vocabulary，不是未来 PALACE API、存储协议、
+> carrier architecture 或 implementation interface。下一步是**probe
+> implementation / execution authorization decision**；未显式授权前，实现、
+> carrier 选择、backend integration、实验执行和契约修改均未授权。登记于
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PRQ_ISF_01_PROBE_DESIGN_20261005.md`。
+> **Phase 3 probe implementation / execution 已完成并经 Human ACCEPTED /
+> CLOSED**（delivery `547df19`）：使用 `ProbeReferencePort`（non-candidate
+> in-memory probe control，非 PALACE/MCP/数据库/外部 carrier 选择）执行
+> `SC-00..SC-12`；13/13 场景期望匹配，semantic oracle = false，harness
+> qualification = PASS。三层边界保持：①probe design 正确；②probe /
+> decoder / resolver handoff 可机械执行；③独立 Information Space carrier
+> 满足 IS-MCI-01..08 **未测试**。因此 `PRQ-ISF-01 = INDETERMINATE /
+> NO-INDEPENDENT-CARRIER-UNDER-TEST`，不得外推为 PALACE 或任何具体
+> carrier 可行。Carrier-path decision = **A /
+> MemPalace local file-backed core selected as first independent candidate
+> carrier**；但这只是 candidate selection，不表示 feasibility 或 carrier
+> validation。下一入口 = **MemPalace IS-MCI Adapter Feasibility Audit**，
+> 逐项把 IS-MCI-01..08 判为 DIRECT / ADAPTER / GAP；本阶段 read-only，
+> 不实现 adapter、不集成 carrier、不对 MemPalace 执行 probe、不改契约、
+> 不做实验。语义搜索、摘要、推断、模糊检索或补全不得替代 identity、
+> canonical content、lineage、historical pinning 或 mechanical failure。
+> 登记于 `runtime_palace/prq_isf_01_probe.py`、
+> `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json`、
+> `runtime_palace/PRQ_ISF_01_EXECUTION_DELIVERY.md` 与
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_PATH_DECISION_20261005.md`。
+> **MemPalace IS-MCI Adapter Feasibility Audit 已交付待复核**：read-only
+> 审计将 `IS-MCI-01..08` 判为 DIRECT 1 / ADAPTER 2 / GAP 5。关键 GAP =
+> immutable content、typed references、historical pinning、lineage、mechanical
+> failure discipline；原因是 MemPalace drawer ID 基于 source path/chunk、
+> `upsert_drawer` 会重写同位记录，且缺少 frozen CR lineage/typed-ref 纪律。
+> 结论 = **MemPalace as-is NO-GO for PRQ-ISF-01 carrier test**；thin adapter
+> 不可行，因为所需补层会形成新 carrier，而不是独立测试 MemPalace。该结果是
+> 有效 negative feasibility result，不是对 MemPalace 本来用途的缺陷判定。
+> Human review 已 ACCEPTED / CLOSED，并将 MemPalace as-is 登记为 candidate
+> elimination。
+> 随后 Human 选择 **Option A4**：授权新的非实现研究问题 **Carrier Gap
+> Study**，研究满足 MemPalace 五个 GAP 所需的最小 missing carrier layer；
+> Scope & Research Question Charter 已 ACCEPTED /
+> CLOSED（delivery `2f0959b`）。**A4 Conceptual Study 得到 FINDINGS / REVISE
+> REQUIRED**：研究方向成立，但 `MCL-1..7` 混淆了 carrier-state semantics 与
+> resolver/probe validation。按要求已完成 **A4 Reduction / Ownership
+> Study**：先拆出 Essential carrier state `CS-1..6`（immutable historical
+> content、stable exact identity/addressability、typed relation records、
+> separated provenance、explicit succession、explicit lineage），再将 exact
+> resolution、historical pin verification、canonical identity、relation
+> integrity、lineage closure/cycle、frozen failure mapping 和 indeterminacy
+> classification 归为 derived / observation，不视为 carrier-state primitive。
+> Removal analysis 判定 `CS-1..6` 对 registered PRQ class essential。该结果
+> 仍 bounded、非 universal minimum、非 carrier architecture。
+> Human review 随后 **REFRAME REQUIRED**：`CS-1..6` 是 candidate semantic
+> decomposition，不是六个 physical carrier primitives；正确分层是
+> Information/Relation semantic core → Store boundary → SQLite/InMemory/MemPalace
+> 等可替换 backend。MemPalace 只是不适合作为 direct PRQ semantic carrier，
+> 不因此被排除为未来 backend/migration target。
+> 已交付 **InformationCore / RelationCore Sufficiency Audit**：在 UTF-8/text
+> bounded PRQ domain 下，现有 Core/Relation/Store boundary 足以表达 PRQ-ISF-01
+> continuation graph；不需要新增 Store primitive。pin/succession/lineage 属于
+> Relation 表达 + higher-layer semantics/validation；failure-family mapping 也属
+> higher layer。唯一 conditional semantic gap = arbitrary non-Unicode byte
+> fidelity，因为 `Information.content` 当前是 String。登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`
+> 与 `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`。
+> Human findings 已处理，text-domain 裁定明确限定为当前 PRQ-ISF-01 task domain，
+> 而非全局 InformationCore boundary。Human ruling 于 2026-10-06
+> **ACCEPT / CLOSE** 该 sufficiency audit：当前 PRQ-ISF-01 task domain =
+> UTF-8/text-bounded；Core + Relation + Store 足以表达该域 continuation graph；
+> 不需要 new Store primitive 或 carrier semantic layer；arbitrary-byte fidelity
+> 仅为 conditional finding，不是当前 gap；O-3/O-6/O-7/O-8/O-9 属 higher layer。
+> 下一入口 = **Higher-Layer Continuation Graph Semantics — Scope & Research
+> Question Charter**。该裁定只关闭当前 PRQ task domain 是否需要 Core/Store/
+> carrier semantics，不关闭 Information Space 本身，也不授权实现。
+> **Fresh-Agent L0→L1 recovery test 后续评估 = NOT VALIDATED / WRONG ENTRY
+> SURFACE**：L0/L1 在 research branch `d198a31`，而 fresh Agent 默认进入
+> `origin/main @6c3cf6a`，那里没有 Context Index/Capsules。该结果不判 L0/L1
+> FAIL，而是登记 default discoverability 与 branch-to-current-state binding
+> 两个 finding。下一步 = explicit entry-surface decision；PATH A/B/C/D 均未
+> 选择，不自动 merge 或重跑。
+> Human 已选择 **PATH A**：default entry 应承载当前 Information Place。
+> 因 ancestry 已分叉，执行方式为 controlled integration，而非普通 fast-forward。
+> 受控整合规划已交付：merge-tree clean、proposed merged tree
+> `bac63b9d415e02bf9280311504c39479e8356d82`、I-1/I-1c semantic blobs unchanged、
+> I-1d 由 research branch 引入。merge/default-main update 仍待 Human 授权。
+> **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
+> 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
+> Information formation boundary、Local Closure representation reduction、
+> Palace-Simigo boundary trust semantics、activation/pointer semantics、
+> validity/record spectrum、research estate residual gap map、security/authority
+> boundary、ES implementation debt、prepared-but-unexecuted studies 与 drift
+> control lessons。建议下一阶段先做 Higher-Layer Evidence Inheritance Matrix +
+> Continuation Semantics Scope Charter；仍不实现、不选 backend、不做实验。
+> **L1 Research State Capsules 第一批已建立**：`docs/research-capsules/v1/`，
+> `C01..C15`。Capsule 是 derived / non-authoritative Research State，不是普通
+> summary，也不是权威状态或新记忆系统。每个 capsule 必须向下引用 L2
+> authoritative source 与 L3 evidence；L1 不得自我证明或修改 L2。当前机器
+> 扫描 base = `14de9fd`：before capsules `TOTAL=2031 / DOCS=783`，after capsule
+> batch `DOCS=798 / TOTAL=2046`。Capsule 扩展暂缓，先等待 fresh-Agent
+> `L0 → L1 → recovery` validation ruling。
+> `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
+> 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
+> `codex/execution-state-research-20260929`）。
+>
+> **Research Context Index 已建立**：`docs/RESEARCH_CONTEXT_INDEX.md`。
+> 该索引是 Information Place 的薄导航层，不是权威状态、记忆库或实现。
+> 用途：让新 Agent 从 Git Information Place 快速恢复定位、状态、边界与合法
+> 下一跳。当前 indexing snapshot = `c8fd186`；快速入口已从旧的
+> `NEXT_SESSION_ENTRY.md` 改为该索引。这也是 GitHub 真实验证组对
+> “Information Place 支持新 Agent lawful continuation”的第一例。
+
+## Current total status — 2026-10-04
+
+> SimiGo-Lab 当前已完成 Execution State 主线从运行时证据、跨后端
+> continuation、G-δ 最小性检验、闭包修订、G-δR 表示相关形式化到
+> Execution State Contract 冻结的核心收敛，并在其后通过 ES-D1、
+> PALACE / T1–T3 及 R-C1 等真实载体与任务研究进一步厘清 Execution
+> State 与持久 Information 的边界；R3 已封存为 bounded auxiliary
+> characterization branch，不承担核心 continuation 命题。当前
+> Information Runtime 方向已经从计划进入真实最小实现与验证阶段：
+> Phase 0 semantic surface 已冻结，InformationCore 与 RelationCore
+> 已以原生 Swift 实现并验收关闭，ExecutionCore 与 continuation
+> harness 已建立，SimiGoRuntime × InformationCore 已通过正式接入
+> Gate，T4 已以 strong proposition 在限定任务域内 PASS 并关闭，
+> T4-2 也已完成第二个结构独立任务的执行与原始证据封存，human 已
+> 依预注册判据宣告 `REPLICATION PASS` 并将 Gate Chain 封存为
+> `CLOSED`，但该结论仍限于第二个结构独立任务域，不扩为普遍命题；
+> 其后 T5 已在第三个结构独立的 constraint-assignment 任务域完成
+> REV.1 执行与原始证据封存，预注册归因读数为 `REPLICATION PASS`，
+> human 已依预注册判据正式宣告 `REPLICATION PASS`，并将 T5 封存为
+> `CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED / GATE CHAIN SEALED`；
+> 该结论不跨任务域、不升级为一般 continuation 定理；R-C1 #4 已作为
+> 有效的 task-domain-bounded 证据关闭；IPAC 仍保持 OPEN / NONBINDING。
+> 由此，当前系统已经具备受控的最小
+> Execution–Information Runtime 实现与实验证据，但尚不能将其表述
+> 为完整 Information Space 或完整 MemPalace Runtime；后续不预先
+> 设计更高层抽象，而以现有实现进入更广真实任务后暴露的实际缺口
+> 决定下一研究问题。
+
+2026-10-04 current active frontier：Local Closure / TC-A / R-A1 已成为当前
+活跃前沿。TC-A package 和 runner 已准备，Execution A 已完成并封存 R-A1；
+First B Panel 已通过 narrowing review，S-B0/S-B1/S-B2 direct-inline prompt
+artifacts 已实例化并已在独立授权下执行；原始输出已按冻结观察纪律完成行为
+判读：S-B1 continuation PASS，S-B2 continuation FAIL。该读数限于当前
+TC-A prompt/model/frame，不证明一般最小性。Human review 已锁定该 observed
+boundary：M1.b(gamma baseline decision) 是当前 frame 下的 frame-bounded
+necessity candidate；下一阶段只应区分真实 semantic dependency 与 S-B2
+representation/prompt artifact，其设计与执行另批。Observer tool、store、
+Execution B、B0/B1/B2 均未授权。S-B2R representation control 已执行并 FAIL：
+JSON validity 恢复，但 continuation 仍 FAIL，表现为 overblocking；因此
+representation artifact 作为唯一原因不被支持，M1.b necessity hypothesis 在
+当前 frame 内增强。下一 reduction 未授权。当前入口见
+`docs/NEXT_SESSION_ENTRY.md` 与
+`docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`。
+
+2026-10-04 M1.b semantic role controls：S-B1I 用 `gamma is individually
+incompatible` 替换 baseline wording，S-B1S 用 pair/individual scope legend 替换
+baseline predicate；两者都返回有效 JSON 且只 block gamma，但都不部署 alpha/beta，
+continuation FAIL。当前 frame 内，相关功能仍绑定 baseline-compatible slot 或
+尚未隔离的更深层 dependency；这不证明普遍不可约性。Observer tool、store、
+下一 reduction 均未授权。后续 functional decomposition 将 M1.b 拆为
+baseline membership、baseline relation、release scope 三个单字段；三者单独
+执行都有效 JSON 且只 block gamma，但都不部署 alpha/beta，continuation FAIL。
+因此当前证据指向 M1.b 的 continuation 功能分布、依赖 pair context，或未被
+单字段捕获。随后 F 组合分支在 S-B1F12 后按 breadth-first redirect 停止；
+F13/F23 未执行，F12 不做本分支判读。当前主线改为 Information Structure
+Coverage Matrix：11 个分析轴、5 个候选单元、16 个 M 子字段共 32 行已完成
+layer-1 inventory；大量 persistence/identity/locator/retrieval/reconstruction、
+U5/M3、U4 deletion、issue/binding 子字段仍未实验。新 probe 未授权；下一层
+必须在同一层横向展开后再进入。随后已完成同步静态拆解：32 个同层对象全部
+展开为 256 个 mandatory facet cells 和 846 个 static semantic atoms；横向比较
+发现 13 组 exact-label repetition，但自动 merge 为 0。每个 atom 均保留删除、
+表示替代、剩余结构推导、merge/reclassification 四类判别问题。当前只到达
+static analytic leaf；experimental irreducibility 仍然开放，运行实验未授权。
+随后完成 reduction design：846 atoms 全部分类到 22 canonical groups 和
+11 reduction families，形成 15 个 cross-object merge-candidate groups、
+10 个 candidate relation groups，以及 17 个最小判别实验设计。此阶段无运行
+probe、无 store、无 irreducibility claim；所有实验设计仍需单独授权。
+随后完成 experimental battery prioritization：原 17 个设计被拆成 19 个
+scheduling nodes；Round 1 冻结为 R-D2、R-D5、R-D1A、R-D3、R-D4、R-D8、R-D9。
+该阶段只做 dependency map、information-gain ranking 和 selection freeze；
+不实例化 prompt、不运行 runtime、不运行 Observer、不 store。后续 Round 2 为
+identity/access 与 adoption probes，Round 3 为 reconstruction/projection、
+counterfactual deletion、merge discrimination、reference variation 与 broad M3。
+Round 1 后已获授权执行并全部完成：17 个 expanded arms 均为 valid JSON、HTTP 200、
+cold path；Observer/store 未运行。判读为 R-D2 三表示全 PASS；R-D5 absent PASS /
+present FAIL；R-D1A 两聚合形态全 PASS；R-D3 FAIL；R-D4 all/gamma-only PASS /
+absent FAIL；R-D8 valid/stale FAIL / absent PASS；R-D9 present FAIL /
+absent/summary PASS。因此当前 frame 内成功窄核是 gamma-only M1.b + M2.b 的
+conjunction，而非任一单独字段。所有差异仅为单次 bounded observation，不升级为
+普遍因果或最小性结论；下一轮未授权。
+Cross-model 线已另行冻结 static scheduling contract：第一阶段只研究
+`4 samples × 4 models` 的现象稳定性，不研究 846 映射。冻结六类可观察指标
+（continuation outcome、key decision、information presence、relation formation、
+representation sensitivity、implementation-path variation）；判定必须区分
+same output、same decision、same functional behavior，并以 J3 functional
+behavior 为主判据。16 个 cells 全部 planning；现有 Model-A raw outputs 因
+runtime isolation 未 enforced 只能作为 pilot-only。formal runtime、semantic
+normalization、stability scoring、vertical decomposition 均未授权。
+随后完成 static pre-runtime comparison：比较 Round 1 formal evidence 与
+cross-model pilot raw stream，登记 9 个 observation dimensions 和 6 个 candidate
+phenomena；重点包括 relation/conjunction formation、representation compliance、
+evidence grounding、uncertainty boundary、long-input degradation。该阶段没有
+J3 scoring、没有 stability matrix、没有 vertical decomposition、没有 846
+mapping，也没有运行 runtime。
+随后完成 formal runner readiness review：结论为 `FORMAL RUNNER NOT READY`。
+冻结样本、prompt、模型身份/config、16 个唯一 cell ID 和原始判读材料均合格；
+但 runner 工作副本与 frozen manifest 不一致，I1/I4/I5/I7/I8/I9 isolation
+evidence 缺失，formal status enum 缺失，且 formal runner 尚未与 pilot runner /
+pilot outputs 分离。检查统计为 7 PASS、4 PARTIAL、8 FAIL。formal runtime、
+semantic normalization、stability scoring、vertical decomposition 均未授权。
+随后完成 formal runner closure：pilot runner 与 formal runner 分离；新
+formal_runner.py 单独冻结，并要求每个 cell 记录 I1–I9 isolation evidence、
+formal status enum、start/finish evidence、model/endpoint identity、input
+lineage 和 hash provenance。Post-repair readiness 为 READY（19 PASS /
+0 PARTIAL / 0 FAIL），但 runtime execution 仍未授权。
+
+2026-10-04 下一阶段登记：T4/T4-2/T5 收口后，不再启动 T6 replication
+或继续扩展 Representation Consistency。下一阶段为
+**Real-Task Gap Exploration**：以既有 ExecutionCore / InformationCore /
+RelationCore / SimiGoRuntime × InformationCore 进入更接近真实连续工作的
+多 Execution 任务，观察 Information 生命周期与 Relation 是否被实际需要，
+并记录现有 Runtime 第一次出现任务阻塞式缺口的位置。当前只登记方向；
+具体任务未选择，实验执行未授权，新 schema 未授权。
+
+2026-10-04 载体选定：Real-Task Gap Exploration 已选择
+**秦沈项目经济运行汇报数据口径澄清与后续复核**作为真实任务载体。该载体
+自然包含 17 项澄清、18 族收尾清单、46,338 万元口径复函，以及 3 月份
+balance report 这一自然变化源。当前只登记观察性章程；执行未授权。
+
+2026-10-04 Backend boundary correction：Cloud Backend smoke 只证明
+`RemoteOpenAIBackend → ZAI` 可完成 forwarding 和 tool-calling。该路径
+不暴露 NativeMLX 的 prefill、decode、KV/cache、checkpoint、fork 或
+resource-control substrate，因此不能作为
+`SimiGo Execution State → Information Space` 断裂的证据。Cloud smoke
+中 Information SQLite 不变，只应读作“该 forwarding 路径未形成
+Stored Information”，不能外推为 Local Execution 缺少 Information 写回。
+Qinshen Execution 001/002 仍是外部 Agent + Information Space 路径的
+有效观察；它们没有经过 SimiGo 本地推理 Execution State。
+
+2026-10-04 narrowed registration：Real-Task Gap Exploration 收窄为
+**Local Execution → Candidate Information → Fresh Execution** 最小闭环章程。
+必须使用 Local MLX 经 SimiGo HTTPServer 的可观察推理路径
+（route fix `82b57f6` 之后），不得使用 Cloud。第一轮禁止自动写回；
+Execution A 结束后由 observer 检查真实工作产物，再通过现有
+`t4ctl store` / `InformationCore.store()` 边界保存候选 Information。
+Execution B 必须是 fresh context，不接收 A transcript、summary、prompt
+或结果，只可按显式 identity 使用现有 `t4ctl fetch`。RelationCore 仍只作
+观察对象，不预先接入。详见
+`docs/00-governance/SIMIGO_LAB_LOCAL_EXECUTION_INFORMATION_CLOSURE_CHARTER_20261004.md`。
+第一刀不使用 Qinshen 全量复杂任务，而使用 **Minimal Observable Local Task
+Carrier**：小规模真实本地文件、完整可观察 request/tool/file 读取、
+A 自然留下非空工作残留、B 的下一阶段任务客观需要该残留。Qinshen 推迟到
+该最小可判读闭环通过之后。当前仅登记章程；实验执行未授权。
+
+2026-10-04 research-layer separation：后续问题分为三层，禁止混用。
+第一层是技术路线：Local controllable Execution State 与 persistent
+Information 的交集是否产生单独不存在的结构化 continuation 能力。
+第二层是 provider adoption：当前 Cloud Chat API 不暴露本地推理 substrate，
+因此不能用于否定第一层；未来是否开放 Execution State 控制面属于 provider
+边界问题。第三层是 product / commercial concerns：ownership、privacy、
+isolation、migration、compliance、cost 等当前全部 deferred，不得反向塑造
+或否定第一层实验。现有证据只确认两个半区分别存在：Local MLX via SimiGo
+可观察推理执行状态；InformationCore 可按 identity store/fetch。两者的
+交集尚未验证。
+
+2026-10-04 terminology correction：在闭环执行前，不得把 `Information₁`
+当作实验前提。Execution A 的自然产物只能先称为 **Residue**；observer 选择
+后可称为 **Candidate Information**；只有通过现有 `InformationCore.store()`
+成功并获得 identity 后，才称为 **Stored Information**。`Information₁` 只能
+作为事后读法，不作为实验输入。同步钉死三类边界：
+①已有能力包括 SimiGo/NativeMLX tool loop、Runtime/cache 观察、
+`InformationCore.store()/fetch(by:)`、ExecutionScope fresh-process 行为；
+②observer 动作包括保留 A 残留、选择 Candidate、调用 t4ctl/store、把
+identity 交给 B、记录 B 行为；③尚缺能力包括 Execution→InformationCore 的
+原生写入、identity 自然发现、Information 对 fresh Agent 的自然可见性。
+当前若执行，只能先验证 observer-mediated identity closure，不能证明
+native `Execution → Information → Agent` 闭环。
+
+2026-10-04 cross-axis dependency analysis：不再新增第十二轴，转入跨轴依赖
+假设分析。当前标签仅作分析用：Residue、Representation、Persistence unit、
+Identity、Locator/selection、Retrieval、Semantic reconstruction、Task
+projection、Adoption、Behavioral effect、Continuation。已登记十组非绑定依赖
+假设：Representation↔Persistence unit、Identity↔Representation、
+Identity↔Locator、Locator↔Retrieval、Retrieval↔Semantic reconstruction、
+Semantic reconstruction↔Task projection、Task projection↔Adoption、
+Adoption↔Behavior/Continuation、Residue↔Representation，以及 Continuation
+作为 outcome relation。核心问题区分“可持久结构”与“后续 Execution 使用时产生
+的关系/过程”；不可约性问句是“删除 X 后，剩余结构能否恢复同等跨 Execution
+能力”。非恢复不立即证明最小原子，还须排除任务偶然依赖、表示依赖、缺失替代
+恢复结构与 B 能力不足。当前不宣布任何轴最小、冗余或可合并。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_CROSS_AXIS_DEPENDENCY_20261004.md`。
+
+2026-10-04 reduction method discipline：登记当前最高层方法纪律。研究目标不是
+完成 Information schema/API/RelationCore/architecture，而是持续拆解、合并、
+消解、重分类、替代、恢复与反事实删除候选结构，直到已观察的 cross-Execution
+capability 无法被剩余结构进一步约化。最小不是字段少或工程可用；`X` 只有在删除
+后剩余结构无法在允许条件下恢复同等能力、且竞争恢复路径被排除时，才暂时称为
+tested-scope-bounded irreducible。即使得到 `Information = A+B+C` 且可用，仍必须
+继续问 A/B/C 是否互为派生、是否为同一深层结构的不同投影。该纪律覆盖 TC-A
+residue analysis、stage decomposition、cross-axis dependency 与后续判别实验；
+不授权执行、机制设计、schema/API/RelationCore 变更。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_REDUCTION_METHOD_DISCIPLINE_20261004.md`。
+
+2026-10-04 candidate irreducibility protocol：删除 `X` 后能力消失，不等于
+`X` candidate irreducible。必须继续排除四类假阳性：current representation
+limitation、current InformationCore capability limitation、current B-capability
+limitation、task-accidental dependence。搜索顺序为：alternative representation
+→ alternative locator/access path → derivation from remaining structures →
+排除 representation / InformationCore / B-capability 限制 → 才可暂时标记
+candidate irreducible。同时禁止把十一轴提前坍缩成 persisted-object、access
+process、use process 三层；该分组只是分析假设。后续实验可能证明 Locator 是
+Identity 投影、Retrieval 是 Locator×Persistence unit 操作、Semantic
+reconstruction 是 Representation 解释、Task projection 是 Information×Execution
+relation、Adoption 是 Execution×Information relation、Behavior 是 Execution
+outcome、Continuation 是两次 Execution relation；也可能证明其中某些 process-like
+轴具有独立跨 Execution 存在性。
+
+2026-10-04 TC-A package freeze：TC-A 指令包已冻结。Phase A 只用
+`read_file` 读取四个本地 JSON 文件，形成 service/pair compatibility
+register；observer 只能逐字选择结构完整的 final answer，经现有
+`t4ctl store` 保存并取得 identity。Phase B fresh context 只用
+`fetch_stored_information` 按 identity 取回该 register，结合新的 release
+constraints 形成 release decision/order/blocked reasons，禁止重读 A source
+files。A/B 之间必须 reload/fresh process/cache eviction 隔离 NativeMLX
+state。Expected register 与 evaluator 仅在 runner 侧。Task package manifest
+SHA-256 =
+`23ac9d20ba6f43d19ac539347364b31ddd030f6bd4e96131e6f25f65225314d9`。
+当前 package frozen；Execution A/B 与 observer store 均未授权。
+
+2026-10-04 runner preparation：TC-A offline runner/harness 已实现并通过 package
+verification。它支持 verify-package、prepare、run-a、observer、mark-isolated、
+run-b、evaluate 七个显式阶段；prepare 只复制 source 和 Information₀ copy。
+Observer 阶段才会调用 t4ctl store；B 阶段只提供 fetch_stored_information，
+并禁止 read_file。A/B runtime isolation 仍需单独外部操作与证据。
+Runner manifest SHA-256 =
+`23ac9d20ba6f43d19ac539347364b31ddd030f6bd4e96131e6f25f65225314d9`。
+当前 runner prepared；Execution A/B、observer store、evaluation 均未授权。
+
+2026-10-04 TC-A Execution A result：Execution A 已在 Local MLX via SimiGo 上
+完成，4 次 `read_file`，final turn stop；Information copy hash 与 row count 不变。
+A 的 semantic task PASS：alpha/beta individually compatible，alpha↔beta
+compatible，两个含 gamma pair incompatible。自然 Residue 已产生，但 final
+representation 是 JSON string literal wrapping JSON object，而冻结 Observer
+要求直接 valid JSON object。判定：
+`R-A1 = SEALED / CANDIDATE REPRESENTATION / SELECTION MISMATCH`。
+不修、不重试、不运行 Observer、不 store、不启动 B。该发现保留为第一条真实
+Execution Residue 与 Information 形成入口之间的 representation/Interpretation
+边界；不得降级为普通输出格式 bug。
+
+2026-10-04 TC-A residue structural analysis：完成不修码、不 Observer、不
+store、不 B 的结构性分析。表示层分为：raw JSON string literal → 一次 decode
+后的 compatibility-register JSON text → 二次 decode后的 object。核心
+compatibility decisions 与 runner-side expected decisions 一致；issue wording
+不同。自然语义结构包含三个 service、三个 pair relation、platform baseline
+evidence、Execution A provenance、audit phase 与 release-gate affordance。
+候选持久单元暂时记为 raw residue、unwrapped register、service facts、pair
+facts、audit provenance，均未选择。定位缺口：InformationCore 只有 identity
+fetch，无 task/execution/object/source/search locator。提取/投影缺口：
+Stored representation ≠ Agent working representation；release gate 需要
+register + release constraints → decision/order/blocked reasons 的 projection。
+IPAC 对照保持 OPEN/NONBINDING；仅观察到 I-like addressing、P-like phase
+boundary、A-like semantic anchoring、C-like adoption question 的结构对应，
+不证明 IPAC、不冻结语义、不证明最小性。详细分析已封存于
+`SIMIGO_LAB_LOCAL_CLOSURE_TC_A_RESIDUE_STRUCTURAL_ANALYSIS_20261004.md`。
+
+2026-10-04 discriminative continuation charter：下一阶段登记为
+**TC-A Discriminative Continuation Study**，但条件实例化与执行均未授权。
+
+2026-10-04 first B panel narrowing：第一轮执行面板进一步收窄为 Semantic
+Compression Panel：S-B0 no prior A residue、S-B1 compatibility-decision
+residue、S-B2 decision-only residue。固定同一 TC-A release request、fresh B、
+NativeMLX cache isolation，且排除 M3 provenance/execution binding。该面板只问：
+compatibility semantics 压缩到 decision-only 后，fresh B 是否仍能完成同一
+release-gate continuation。条件实例化与执行仍未授权。原 locator 面板
+B0/B1/B2 保持登记但延后。
+
+2026-10-04 first B panel review：人工审查通过，但作出 narrowing amendments。
+该面板不是泛化 decision-only minimization；主变量是是否删除
+`M1.b(gamma not baseline-compatible)`，同时保留 pair decisions 和 explicit
+gamma blocked decision。S-B0/S-B1/S-B2 改为直接 inline B-prompt delivery，
+不使用 InformationCore fetch、source-file access、A transcript/summary/result
+或 hidden harness state。`understood` 不得从隐藏模型状态推断；只记录
+semantic-referenced 与 adopted。若 S-B0 也完成同任务，则为 negative-control
+success，不构成 continuation gain。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_FIRST_B_PANEL_REVIEW_20261004.md`。
+研究问题是 TC-A residue 中哪些结构是 fresh Execution B 完成 release-gate
+continuation 的必要条件。变量分三层：A residue representation、B access
+condition、C working transformation；locator 不许混入 residue structure。
+第一轮最小面板只设 B0 negative control、B1 candidate-present/locator-absent、
+B2 candidate-present/explicit-locator；不选择 U1–U5，不定义 Information
+schema，不实现 RelationCore/RuntimeMemory/search/automatic projection/bridge。
+观察链必须分开 located、fetched、parsed、semantic-referenced、adopted、
+behavioral、continuation、gain；禁止把 fetch 成功等同于使用或增益。
+正面 B2 只支持 task-domain-bounded 的可观察 continuation，不证明最小结构或
+正确 Information 表示。
+
+2026-10-04 shared discrimination plan：D1–D10 不应机械地逐条实验，而应优先设计
+能同时区分多个依赖假设的共享干预。已登记六类分析干预：I-R representation
+substitution、I-L locator/access manipulation、I-P persistence-unit
+decomposition、I-S reconstruction probe、I-T task projection shift、I-A adoption
+counterfactual。每类都要求保持 TC-A task/backend/fresh-context/cache isolation
+不变，只改变目标结构变量。该计划仍不选择 U1–U5、不定义 Information schema、
+不实例化 B0/B1/B2、不执行、不修改 InformationCore/RelationCore/RuntimeMemory。
+优先读法仍然是 located、fetched、parsed、semantic-referenced、adopted、
+behavioral、continuation、gain 分开。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_SHARED_DISCRIMINATION_PLAN_20261004.md`。
+
+2026-10-04 stage decomposition：在条件实例化前，继续把 Candidate Structure
+拆成可观察轴：Residue、Representation、Persistence unit、Identity、Locator /
+selection、Retrieval、Semantic reconstruction、Task projection、Adoption、
+Behavioral effect、Continuation。这些只是分析轴，不是 schema、Runtime
+pipeline 或实现计划。Identity ≠ Locator；Retrieval ≠ Semantic
+reconstruction；Task projection ≠ Adoption；Behavioral effect ≠ Continuation。
+后续任何 B0/B1/B2 条件不得只写成 U1–U5，必须说明 representation、persistence
+unit、identity、locator、retrieval、reconstruction、projection、adoption、
+behavior 与 continuation 的处理方式。IPAC 仅作 I-like / P-like / A-like /
+C-like 非绑定对照，不冻结、不证明。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_STAGE_DECOMPOSITION_20261004.md`。
+
+2026-10-04 candidate reducibility map：对 TC-A 的 U1 raw residue、U2 semantic
+register、U3 baseline facts、U4 pairwise facts、U5 provenance/context 做静态
+约减映射。观察到的表示链为：exact U1 JSON string literal → U2t register text →
+U2o register object → U3/U4。语义上 U1 很可能表示可约化为 U2；U2o 可投影为
+U3+U4；U3+U4 在保留 register version/order/issue details 的条件下可重建 U2o，
+但不能恢复 exact U1 bytes。U3 与 U4 暂时表现为互相独立候选：baseline facts 不
+蕴含 pair compatibility，pair compatibility 也不蕴含各 service baseline status。
+U5 含 producer、Execution A identity、source identities、tool-call sequence、
+Runtime evidence 和 task-carrier binding，不能由 compatibility register alone
+推导，因此是独立 provenance/context 候选。当前只是静态假设，不宣布任何单元
+irreducible。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_CANDIDATE_REDUCIBILITY_MAP_20261004.md`。
+
+2026-10-04 M-candidate reduction worksheet：继续把收缩后的 M1 baseline facts、
+M2 pair compatibility facts、M3 provenance/execution binding 拆成可删除子部分，
+并登记 deletion/replacement tests。关键区分：narrow release-gate task 的可见
+semantic core 可能只是 M2 pair decisions + M1 gamma baseline fact；alpha/beta
+baseline facts、issue wording、Execution A identity、tool evidence、backend/model
+binding 对当前 narrow task 可能非必需，但对 audit explanation、reproducibility、
+trust、stale-state detection 和更广任务可能必要。M3 也不得作为整体处理，需分别测
+Execution identity、source hashes、tool evidence、result hash、backend/model
+binding、task-carrier scope 的删除/替换效应。当前仍是 static worksheet；不执行、
+不 store、不启动 B、不宣布最小结构。详见
+`SIMIGO_LAB_LOCAL_CLOSURE_M_CANDIDATE_REDUCTION_WORKSHEET_20261004.md`。
+
+2026-10-04 axis reduction refinement：已登记
+`SIMIGO_LAB_LOCAL_CLOSURE_AXIS_REDUCTION_20261004.md`。当前十一轴只是分析刀具，
+不是 Runtime 架构；不得因已有分解而停止追问更小结构。对 Identity、Persistence
+unit、Locator/selection、Retrieval、Semantic reconstruction、Task projection、
+Adoption、Behavioral effect、Continuation 分别登记 reducibility、scope、
+invariance、grouping、authority、failure-semantics 与 counterfactual 追问。
+同时要求未来观察继续分类：Execution-local/cross-Execution、Runtime
+substrate/semantic Information、representation/semantic structure、
+addressable/context-dependent、necessary/convenient、stable/ephemeral、
+observable/inferred、irreducible/reducible。当前不宣布任何轴最小、不可约或
+可合并；不执行，不设计机制。
+
+2026-10-04 task carrier selection：Minimal Observable Local Task Carrier 已
+从既有 Local SimiGo `read_file` 能力反推选定 **TC-A — Configuration
+compatibility audit → Release gate**。Phase A 读取小规模 service
+configuration 与 platform baseline，形成 compatibility register；Phase B 在
+fresh context 中只按 Stored Information identity 取回该 register，并结合新的
+release request / deployment constraints 形成 release decision、deployment
+order 与 blocked-service reasons。B 禁止重读 Phase A source files。Prompt、
+task files、observer selection rules 仍未授权；Execution 仍未授权。
+
+2026-10-04 human charter review：最小闭环章程通过人工审查，并补充
+cache-isolation amendment。B 的 fresh 不能只用新 HTTP request 或新
+Agent/Session/Branch header 证明；A → B 的 NativeMLX KV/cache、prefix-pool、
+session-state 与 backend-process inheritance 全部禁止。A/B 之间必须通过
+reload、fresh isolated backend process 或有前后证据的 cache/pool 清理来隔离
+推理状态。Stored Information 是本章程唯一允许跨 Execution 传递的载体。
+Task carrier 仍为 NOT DEFINED；Execution 仍为 NOT AUTHORIZED。
+
+2026-10-04 增补：Representation Consistency Boundary 已完成 MLX 最小实验
+并完成 llama-server 最小跨 backend replication。两者的有界读法相同：
+same-ID / same-position / same-length / different representation content
+可穿过现有 position/type-level checks，进入真实 backend execution，并稳定
+产生 observable output divergence。该结果不证明完整性理论，不授权新增
+hash / anchor / provenance / consistency gate。
+
+2026-10-04 收口：上述 MLX + llama-server 结果已登记为独立
+**Representation Consistency Boundary Evidence Unit**。当前可引用的有界
+结论为：在两个已测 backend 切片中，position mismatch 可被现有 backend
+boundary 拒绝（MLX C1/C3 直接观察），而同位置、同长度的 content mutation
+可穿过现有检查并进入真实执行，稳定造成 observable output divergence
+（MLX 与 llama-server replication 1/2 均观察到）。该单元
+`SEALED / CROSS-BACKEND REPLICATION PASS / BOUNDED`；不外推其他
+representation、backend 或完整 Execution State integrity 理论，也不授权
+contract revision 或 integrity mechanism implementation。
+
+Evidence correction: T4-2 is **not** awaiting final declaration. The
+authoritative declaration is
+`SIMIGO_LAB_T42_REPLICATION_DECLARATION_20261003.md`
+(`T4-2 = CLOSED / REPLICATION PASS / GATE CHAIN SEALED`).
 
 ## Route redefinition — 2026-09-29
 
@@ -9292,6 +9853,888 @@ GATES C/D = LOCKED（待授权）
 Current blocker = none
 ```
 
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING DRAFT COMPLETE — 2026-10-02
+
+Human 方向指令（framing PARKED 后的显式 gate 重入）：研究 PALACE——
+可灵活拓展、长期存储 Execution State、适配七操作 lifecycle。§0 并发
+核验 PASS（LOCAL=REMOTE=25e1a79、树净、framing 无消费漂移、
+Contract v1.0-amended = freeze candidate 待 final freeze）后，
+participant opening draft 完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_
+20261002.md`。
+
+内容与纪律：
+
+```text
+研究问题 = PALACE 长期 durable 存储层记录语义的最小集合，使七操作
+          lifecycle 在跨进程/时间/backend/P 丢失边界上可断言、可验证、
+          fail-closed，且存储载体可替换可扩展
+三子目标  = F1 灵活拓展（storage-agnostic Store Declaration 模式，
+          借用 Representation Contract 冻结模式）/ F2 长期存储
+          （存活边界 EF-6 已证 + U-1…U-4 未证）/ F3 七操作适配
+          （七操作 × durable 缺口逐项映射表）
+事实分层  = EF-1…EF-11 工程事实（全部引用已登记链，零新增事实）；
+          CH-1…CH-4 契约推导一律标 HYP；D1–D4「概念先行」降级教训
+          写入方法论约束
+七记录族  = identity reservation / lineage closure / continuation
+          (Tier-1 序列) / semantic snapshot / tombstone / binding
+          relation(OPTIONAL)——全部 HYP，物理 acceleration side 不收编
+UNKNOWN   = 七操作全链在 P 全丢失 + 进程死亡 + 载体迁移叠加下的
+          same-State 恢复（Gate B 外推禁止）
+禁止      = 选库 / schema / persistence API / RF-1 机制 / 产品代码 /
+          性能基准 / 改 Contract / 消费 OP-7 / 关闭任何 OP-G
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = DRAFT COMPLETE（participant proposal）
+Current blocker                   = none（重入合法性 + 范围裁定归
+                                    human 第二层）
+下一门                            = external review（六项固定）→
+                                    PASS / ACTIVATION_REQUIRED →
+                                    registration
+实验 / 实现 / 选型授权            = 无
+```
+
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING DRAFT REV.1 — REVIEW-READY — 2026-10-02
+
+审读修正（`3d72485`，零语义变更）：CH-1/CH-2 来源归属精化至
+Architecture Contract v1.0（SC-2/SC-3，冲突让位 v1.0-amended）；EF-11
+补复制状态标注（P5-1 INCONCLUSIVE 含复制 / P5-2-C 原跑未复制）；新增
+附录 A 证据溯源表（EF/CH → 工件 + commit + 登记原文摘引；全部引用
+commit 已在仓内核证）。NEXT_SESSION_ENTRY 同步刷新（`777846e`）。
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = DRAFT rev.1 / REVIEW-READY
+Current blocker                   = none
+```
+
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING EXTERNAL REVIEW PASS — ACTIVATION_REQUIRED — 2026-10-02
+
+按 Phase B 先例（draft → external review → human registration）执行六项
+固定评审。评审工件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_DRAFT_
+EXTERNAL_REVIEW_20261002.md`。
+
+```text
+六项结果  = Contract fidelity PASS / lifecycle obligation 对齐 PASS /
+          fact-hyp 分层 PASS / F1-F2-F3 不可合并性 PASS /
+          OP-G 台账完整性 PASS-with-amendment / scope discipline PASS
+F-1       = 原稿 §7 遗漏 OP-4 / OP-6 / RF-2 / RB-1…RB-8 / IC-1…IC-5
+          携带行——rev.2 已补齐（restore/discard/release 映射显式
+          继承 RB 四态出口与 IC-3/IC-4 终态-重复创建法则）
+F-2       = 重入合法性已由 2026-10-02 human 方向指令本身确立
+          （framing 预留的显式 gate 重入）；§10 已标注；
+          registration 门保留 human 不变
+Verdict   = PASS / ACTIVATION_REQUIRED
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = REVIEW PASS / ACTIVATION_REQUIRED
+                                    （draft rev.2 已含全部修订）
+下一门                            = human registration（唯一剩余
+                                    human 门；registration 后方可按
+                                    §6 矩阵逐项申请实验 gate）
+Current blocker                   = none
+实验 / 实现 / 选型授权            = 无（review 不授权任何执行）
+```
+
+
+### LAB PALACE1 LIFECYCLE STORAGE OPENING REGISTERED — ACTIVATED — 2026-10-02
+
+Human registration 裁定（原话）：「登记 review PASS 并激活 PALACE1
+LIFECYCLE STORAGE OPENING」。登记工件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_LIFECYCLE_STORAGE_OPENING_
+REGISTRATION_20261002.md`。
+
+```text
+External review（PASS / ACTIVATION_REQUIRED）= REGISTERED
+Opening（rev.2，F-1/F-2 修订在案）           = REGISTERED / ACTIVATED
+边界纪律（human 重申）  = 第一批实验保持生命周期语义观测层：
+                         ① create → durable identity reservation
+                         ② fork → lineage formation
+                         禁止实现先行映射（identity→primary key /
+                         lineage→table / snapshot→serialization）
+授权边界               = 每个实验 gate 独立申请 + human 授权，一次
+                         一项；选型/schema/persistence API/RF-1 机制/
+                         产品代码/OP-7 仍然禁止
+```
+
+当前状态：
+
+```text
+PALACE1_LIFECYCLE_STORAGE_OPENING = REGISTERED / ACTIVATED
+Current work                      = 第一实验 gate 申请：create durable
+                                    identity reservation 观测设计草案
+                                    （设计冻结 → human 批准 → 执行）
+Current blocker                   = none
+```
+
+
+### LAB PALACE1 GATE1 CREATE IDENTITY RESERVATION DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human Gate① 指令：允许设计「如何观测 EF-9」，未允许执行实验、未允许
+决定 durable identity 实现方式。设计草案完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_CREATE_IDENTITY_RESERVATION_
+DESIGN_20261002.md`。
+
+```text
+研究问题（单问） = create 是否需要跨进程/跨重启保持语义连续性的
+                  durable identity reservation 机制
+概念切分（human） = identity 可唯一 ≠ 须由 durable reservation 保证；
+                  当前无 allocator ≠ 语义上必然需要 allocator
+观测矩阵          = O-1 创建 / O-2 进程内重复（IC-4 enforcement）/
+                  O-3 跨重启重复（reservation 直接观测面）/ O-4 寻址
+                  连续性对照格（寻址持久 ≠ reservation 持久）/
+                  O-5 discard 后跨重启复用（IC-3 tombstone reservation）/
+                  O-6 并发（exploratory 不判读）
+预登记            = P-C2/P-C3/P-C4 带 EXPECTED + 偏离→溯源规则；
+                  P-C1 双分支判读；P-C5 不判读
+positive 条件     = 跨重启静默错误 + IC-3/IC-4 契约禁止 + caller 纪律
+                  崩溃窗口/多写者不可替代——三条齐备方可 inference
+stop conditions   = 新不可约语义关系 → 停止 → Closure Revision gate
+harness 前置      = R0 仪器化 + 源码公开（0dc166b 采信规则）+
+                  一次性 fixture + ~/.simigo 零触碰 + 零产品代码修改
+non-goals         = schema/DB/serialization/allocator 实现/API/
+                  OP-7/RF-1/identity 格式/性能——逐字冻结
+```
+
+当前状态：
+
+```text
+PALACE1_GATE1_CREATE_ID_RESERVATION = DESIGN DRAFT COMPLETE /
+                                      AWAITING HUMAN FREEZE REVIEW
+执行授权                            = 无（冻结审查通过 + 批准后才
+                                      执行 O-1…O-6）
+Current blocker                     = none
+```
+
+
+### LAB PALACE1 GATE1 DESIGN FREEZE REVIEW PASS — DESIGN FROZEN — EXECUTION NOT AUTHORIZED — 2026-10-02
+
+Human 冻结审查裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE1_GATE1_DESIGN_FREEZE_REVIEW_20261002.md`。
+
+```text
+Gate 项       = 全部 PASS（12 项含执行授权项 NOT GRANTED）
+设计正文      = FROZEN，不再修改（human 明示）
+三项执行判读覆盖（效力高于草案分支规则）：
+  R-1  O-4 恒为 control 格——寻址连续性不得替 EF-9 提供
+       reservation 证据
+  R-2  P-C2 = fail-open-to-trace：发现跨重启检测 ≠ 反例，
+       而是暂停判读 → 追溯隐藏机制 → 重定 observation boundary
+       （防「不知道已有机制」误判为「没有机制」）
+  R-3  positive 第三条件（caller 纪律崩溃窗口/多写者不可替代）
+       为非法跳跃闸门（「caller 易重复 ⇒ 需要 reservation」被阻断）
+结论措辞边界  = 即使四现象齐备，结果首先只能是「durable identity
+              reservation 是支持 lifecycle identity continuity 的
+              候选语义需求」——「必须有 identity allocator」属
+              语义需求偷换实现机制，禁止
+```
+
+当前状态：
+
+```text
+PALACE1_GATE1_CREATE_ID_RESERVATION = DESIGN FROZEN / REVIEW PASS /
+                                      EXECUTION NOT AUTHORIZED
+下一动作                            = explicit execution authorization
+                                      （独立状态转换；批准后才构建
+                                      §11 R0 harness 并执行 O-1…O-6）
+Current blocker                     = none
+```
+
+
+### LAB PALACE DIRECTION REPLAN — LIFECYCLE STORAGE PARKED / REAL INFORMATION WORKFLOW ENTRY — 2026-10-02
+
+Human 方向裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_REAL_INFORMATION_WORKFLOW_DIRECTION_
+REGISTRATION_20261002.md`。
+
+```text
+纠偏        = PALACE 不从 Execution State→durable identity→snapshot→
+            lifecycle storage 入口开始（防变成「ES 持久化系统」）；
+            真实目标 = 让 Agent 理解/组织/关联/比较/重新利用
+            现实中已有的几千上万份个人工作资料
+新主线      = Real Personal Information Workflow（暂名，避免
+            「知识库」术语——chunk/embedding/vector DB/RAG/KG/schema
+            均为实现路线非研究起点）
+第一阶段    = 完整工程闭环：真实文件系统 → 读取 → 定位 → 跨文档
+            比较 → 综合 → 生成新成果 → 可追溯原始来源
+第一实验对象 = 真实文档目录（秦沈 6标/7标 层级例）；发现/读取/
+            理解结构/保留原始路径/保留文件名/内容可检索 =
+            第一批工程事实（暂不命名为 semantic fields）
+工程观察假设 = 「路径不是单纯 storage metadata」登记为假设，
+            由真实使用验证后才可进入 PALACE 抽象
+Lifecycle Storage 线 = FROZEN / PARKED（证据全保留；Gate① 执行
+            永不再推进直至真实应用证明需要 durable identity；
+            Gate① 不得决定 PALACE 总体方向）
+禁止        = 对象模型定义 / semantic fields 命名 / 任何实现路线
+            承诺（chunk/embedding/vector DB/RAG/KG/schema）/
+            文档复制入库设计 / Lifecycle Storage 扩展
+```
+
+当前状态：
+
+```text
+PALACE1 LIFECYCLE STORAGE = FROZEN / PARKED（既有证据保留）
+PALACE 新主线             = RIW ENTRY OPEN（下一门 = RIW opening
+                            draft：以真实文档目录为第一实验对象的
+                            工作闭环设计 → human 审查 → registration）
+Current blocker           = none
+```
+
+
+### LAB PALACE V2 DIRECTION REGISTERED — RIW ENTRY SUPERSEDED — G0 NEXT — 2026-10-02
+
+Human PALACE 新研究方案 V2 全文登记（取代同日 RIW 方向登记——RIW
+工件标记 SUPERSEDED 保留；V1 Lifecycle Storage PARKED 处置不变）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_DIRECTION_REGISTRATION_20261002.md`。
+
+```text
+核心变化   = PALACE 从「验证成熟开源 Memory System 能否承载真实
+            个人工作信息」开始（Buy/Borrow before Build）；
+            第一候选 MemPalace，Mem0/Graphiti/其他对照
+研究场景    = 普通人长期数字工作空间（1k–50k+ 异构文件；
+            个人工作资料无统一管理层 = PALACE 研究价值）
+实验链      = 真实文件→发现→异构读取→Memory ingestion→原始信息
+            保留→检索→多文件联合阅读→比较→综合→生成→来源追踪
+            （PALACE = 信息工作的执行环境，非记忆数据库）
+四 Gate     = G0 开源 Backend Survey（采用什么现成基础设施）→
+            G1 Real Corpus Ingestion（500–3000 文件，秦沈目录，
+            不整 NAS 导入）→ G2 Cross-Document Work（能否帮完成
+            真实工作）→ G3 Durable Information / Provenance
+            （哪些信息关系必须持久化）；只有 G2/G3 工程证据
+            才有资格产生 PALACE 新抽象
+实验系列    = E0 Corpus Discovery（path 信息价值不预先规定）/
+            E1 异构阅读 / E2 跨文档检索 / E3 比较（不提前定义
+            Relation）/ E4 综合 / E5 Provenance（做不到 ⇒ 登记
+            Source Trace Failure，不发明 Provenance Object）/
+            E6 Update-Drift（此时才可能重新遇到 identity/version/
+            lineage/snapshot ⇒ 回头激活 V1）/ E7 端到端 Real
+            Work Loop
+Build vs    = 成熟开源已解决 → 采用；真实缺口 → 研究缺口；
+Adopt Gate  禁止「我觉得需要 → 设计 → 实现」
+关系分离    = SimiGo（Execution State，抽象已冻结 = 底层能力）
+            ⟂ PALACE（Information：retrieve/compare/synthesize/
+            trace）——PALACE 新问题 = Agent 在多年信息空间持续
+            工作需要什么信息能力
+G0 审计边界 = 源码级（≠ 只看 README）：ingest 管线/原文保存/
+            path 是否入记忆/DB 结构/检索/MCP/可复用面/场景失配；
+            产出 Capability Matrix（15 项）；不评最好，只答
+            「哪个系统最适合成为第一实验基座」
+```
+
+当前状态：
+
+```text
+PALACE V1（Lifecycle Storage）= PARKED（不变）
+PALACE V2                     = DIRECTION REGISTERED / G0 NEXT
+下一门                        = G0 审计协议草案（系统清单/矩阵维度/
+                                审计问题清单/证据格式冻结）→
+                                human 审查 → 执行审计 → G0 结论门
+Current blocker               = none
+```
+
+
+### LAB PALACE V2 G0 AUDIT PROTOCOL DRAFT COMPLETE — 2026-10-02
+
+Human 确认 + G0 审计纪律指令（G0 的作用 = 防止 PALACE 进入真实工程前
+被某个现有 Memory 系统的概念模型绑架；方法同 Execution State：先观察
+runtime → 本轮观察对象 = Memory System 实际工程行为）。协议草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_
+PROTOCOL_20261002.md`。
+
+```text
+审计对象    = MemPalace（Primary：本地文件→内容获取→Memory→Agent
+            场景最接近）+ Mem0（Agent→Memory）+ Graphiti
+            （Entity→Relation→Memory）——三方向非竞争排名
+矩阵        = 6 类 17 维冻结（Ingestion/Content/Context/Retrieval/
+            Agent/Storage）；判读纪律 = 不问「有没有 schema」，
+            问「系统为完成工作实际保存了哪些事实」
+新增章节    = §4 Memory Path Analysis（Query→Search→Retrieved→
+            Related→Context 三形态：纯相似度/拓扑扩展/时间连续性
+            ——只记录事实，可能成为未来 PALACE Information
+            Topology 来源）；§5 Database Inspection（实际保存什么
+            +「删库后只剩原始文件能否恢复」= 与 human L0/L1/L2
+            分层思路对应）；§6 真实格式实测（docx/xlsx/pptx/pdf
+            强制，Excel 结构保留 = 关键差异）
+Evidence    = Observation / Inference / Open Question 三级；
+            禁止 Observation→「PALACE 必须采用 XXX」升级
+假设寄存器  = H-PALACE-G0-01（Memory retrieval 可能含关系遍历而非
+            纯相似度）= UNVERIFIED
+输出规格    = AUDIT_RESULT 九节（§8 缺口 + §9 生成的研究问题
+            最重要——决定 PALACE 后面有没有必要研究）
+G1/G2/G3    = LOCKED
+```
+
+当前状态：
+
+```text
+PALACE_V2_G0 = AUDIT PROTOCOL DRAFT COMPLETE /
+               AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结审查 + 执行授权后方审计；逐系统交付中间
+               观察，防最后一锅端）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G0 PROTOCOL APPROVED — EXECUTION AUTHORIZED — MEMPALACE INTERMEDIATE OBSERVATION #1 DELIVERED — 2026-10-02
+
+Human 冻结审查：**PASS — DESIGN FROZEN / APPROVED**，批准进入 G0 执行
+（执行顺序 MemPalace → Mem0 → Graphiti，逐系统独立中间观察不并评）。
+执行期补充观察项（不改协议正文）：**Interaction Dependency**（能力是否
+依赖特定模型——关联 SimiGo「上层语义不绑定 backend」原则）；
+**L0/L1/L2 观察框架钉定** = L0 原始文件 / L1 机械解析结果 /
+L2 AI 加工结果（仅观察框架，不进 Contract）。
+
+MemPalace 定位：github.com/MemPalace/mempalace（org 仓库，v3.10.0，
+MIT，本地优先 verbatim 存储，克隆基线 develop `5ea40d3`）。第一份
+中间观察（静态源码级）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_OBSERVATION_
+20261002.md`。
+
+```text
+关键观察（全部源码级 Observation）
+  ① 三管线摄入：默认 mine 仅文本/代码扩展名（不含 Office）；
+     Office 走 --mode extract（MarkItDown→Markdown，rtf→striprtf）；
+     读时转换、L0 原件零触碰
+  ② 结构 = wings/rooms/drawers；drawer 级 source_file+chunk_index
+     溯源；KG triples 带 valid_from/valid_to + source_drawer_id
+     ——时间有效期与溯源在 schema 层存在
+  ③ 主检索 = Hybrid BM25+vector+metadata 范围+时间窗；KG 拓扑
+     遍历为独立 MCP 工具族、不融合主路径 → H-PALACE-G0-01 首份
+     证据（假设保持 UNVERIFIED）
+  ④ Excel 压平风险坐实为转换层问题：MarkItDown→Markdown 表，
+     Cell/Formula 保留 = Open Question（RQ-1，待 fixture 实测）
+  ⑤ layers.py 命名冲突：MemPalace 上下文加载分层（L0-L3 token
+     预算）≠ human 信息分层框架——行文须加前缀区分
+  ⑥ Interaction Dependency：核心路径模型可替换（本地 ONNX 或
+     OpenAI-compat endpoint）；closet LLM 增强 opt-in；KG 抽取
+     模型依赖 = Open Question
+生成 RQ-1…RQ-6（xlsx 转换边界 / 变更 drawer 共存语义 / 抽取
+确定性 / 拓扑检索组合 / 中文层级组织成本 / KG 模型依赖）
+```
+
+当前状态：
+
+```text
+G0 MEMPALACE = INTERMEDIATE OBSERVATION #1 DELIVERED
+               （静态源码级；运行时实测 = 下一份中间观察）
+待办          = MemPalace 运行时实测（RQ-1/RQ-3）→ Mem0 → Graphiti
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G0 MEMPALACE RUNTIME OBSERVATION ② DELIVERED — RQ-1/RQ-3/RQ-7 ANSWERED — 2026-10-02
+
+Human 批准 Runtime Audit（新增 RQ-7 Source Trace Depth）。隔离沙箱实测
+（HOME 重定向 + PyPI mempalace[extract] + all-MiniLM-L6-v2 本地模型；
+四格式 fixture 含双 Sheet+公式 xlsx）。第二份中间观察：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMPALACE_RUNTIME_
+OBSERVATION_20261002.md`。
+
+```text
+RQ-1 xlsx（Observation）= Sheet 名保留为 Markdown 标题；Cell 坐标
+    丢失、公式（=C17*1000 及跨 Sheet 引用）缺席、15 个空行以 NaN
+    噪声进入语料、列语义错位（物资名称/钢筋落错列）——协议 §6
+    压平风险运行时坐实
+RQ-7 溯源粒度          = docx 段落级 / pptx Slide 级（页标记注释
+    保留）/ pdf 页级 / xlsx 仅 Sheet 级；search 输出 provenance =
+    wing/hall/文件名 + 双通道分数；metadata 17 键实测（line 区间
+    指向 Markdown 表示层非原件坐标）；⚠️ CJK PDF fixture 缺陷
+    （Helvetica 无字形）→ 该项两说均不成立待复测
+RQ-3 确定性            = 重 mine mtime 跳过（extracted 0/skipped 4/
+    drawers 稳定 4）；id_recipe 暗示确定性 ID
+删库恢复（协议 §5）    = 实测删除 palace 目录后重 mine 完整重建
+    ——MemPalace 侧无不可由 L0 重建的事实；L2 = 预计算加速非
+    语义增量（Inference：E6 若暴露非纯函数点则前提动摇）
+Capability 修正        = 「原文保存」修正为「L1 转换文本 verbatim」
+    （verbatim 指不摘要不改写，非字节级）；BM25 通道实测扛住
+    中文关键词（cosine 0.19 / bm25 0.783）
+新增 OQ                = OQ-A CJK PDF 复测 / OQ-B 变更文件新旧
+    版本语义（E6 前置）/ OQ-1 维持
+```
+
+当前状态：
+
+```text
+G0 MEMPALACE = AUDIT 主体完成（静态 + 运行时）；观察 ① ② 在档
+下一步        = Mem0 源码级审计 → Graphiti 源码级审计（各独立
+              中间观察）→ G0 结论门（AUDIT_RESULT 九节）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G0 MEM0 OBSERVATION ③ DELIVERED — MEMPALACE SET FROZEN — 2026-10-02
+
+Human 裁定：MemPalace Observation Set **FROZEN**（观察 ① ② 标头标记，
+不作 PALACE 设计结论）；RQ-PALACE-01/02/03 登记（G0 输出问题非设计）：
+①结构语义（Sheet/Cell/Formula/Position）是否需在 Memory representation
+中保持原始结构关系；②provenance 是否须达原始 artifact 粒度而非仅
+extraction representation 粒度；③派生 Memory 是否足够还是需可持续
+演化的信息实体。OQ-B 场景钉定：v1.xlsx→改 cell→v2.xlsx→mine（并存/
+覆盖/历史/检索可区分性）。判读方向钉死 = Observation→Comparison→Gap，
+禁止 Gap→PALACE schema。
+
+Mem0 中间观察 ③（静态源码级，mem0ai/mem0 @ `abb81c8`，SDK v2.2.1）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEM0_OBSERVATION_20261002.md`。
+
+```text
+关键观察（源码级）
+  ① 输入 = 对话消息（add(messages)，user/agent/run 作用域）；
+     OSS Python 核心零文件摄入（docx/xlsx/pptx/pdf 全仓零命中）
+  ② 记忆 = LLM 蒸馏事实陈述（非原文）：infer=True 默认走 LLM
+     提取 JSON + 事件决策（ADD/UPDATE/DELETE）+ add_history 变更
+     账本；LLM 失败 = 硬失败；init 即需 LLM（LlmFactory）
+  ③ 记忆→源消息 provenance 链未在 add 管线出现（消息分储）=
+     Open Question；OSS core 无图模块（文档宣称 vs 缺位 = OQ）
+  ④ 检索 = scope 过滤 + vector similarity + BM25 lemmatized——
+     H-PALACE-G0-01 对照样本第二例（与 MemPalace 一致：主检索
+     均为相似度形态、关系为旁路；假设保持 UNVERIFIED 待 Graphiti）
+  ⑤ L0/L1/L2 定性：Mem0 = Memory-native 代表（库删即记忆灭，
+     无从 L0 重建对应物）；与 MemPalace Artifact-centric（文件是
+     事实、memory 是派生索引）构成方向两端——两端差异本身为
+     G0 矩阵外发现
+  ⑥ Interaction Dependency 极端样本：核心写路径强制 LLM
+     （provider 无关但 LLM 依赖 by design）
+生成 RQ-M0-1…4（蒸馏保真 / provenance 链 / 事件决策确定性 /
+graph 宣称落差）
+```
+
+当前状态：
+
+```text
+G0 = MemPalace FROZEN（①②）；Mem0 ③ 交付（静态）；Graphiti 待审计
+下一步 = Graphiti（唯一关系核心方向样本）→ G0 结论门
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G0 GRAPHITI OBSERVATION ④ DELIVERED — H-PALACE-G0-01 ANSWERED-DIVERGENT — 2026-10-02
+
+Human 补充 G0 结论框架（六条工程事实收束；第 6 条「现有 Memory System
+是否存在查询状态本身可持久化并继续执行的能力」= 未决空间保留；不提前
+改 V2、不定义 Query State schema）。
+
+Graphiti 中间观察 ④（静态源码级，getzep/graphiti @ `3c42764`）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_GRAPHITI_OBSERVATION_
+20261002.md`。
+
+```text
+关键观察（源码级）
+  ① bi-temporal 边模型：created_at/expired_at（摄入时间线）+
+     valid_at/invalid_at（事实时间线）——事实失效标记保留历史
+  ② provenance：边携带 episodes[uuid] 链回源文本；episode 正文
+     存图（L1 存储化）+ LLM 建图（L2）共存 = 第三形态
+     （介于 MemPalace 纯函数重建与 Mem0 记忆即本体之间）
+  ③ 检索配方化：Node/EdgeSearchMethod（cosine/bm25/bfs）×
+     Reranker（rrf/mmr/cross_encoder/node_distance/episode_mentions）
+     正交组合；BFS = 一等方法（edge_bfs_search/node_bfs_search，
+     种子 = 相似度/全文首轮，bfs_max_depth 控深）
+  ④ ingest = LLM 工程（extract/dedupe 全链；OpenAIClient 默认）；
+     episode_body = 字符串（无文件面，同 Mem0）
+H-PALACE-G0-01 判读 = 全局「纯相似度」不成立；精确事实 = 关系
+    遍历能力存在但仅 Graphiti 融合进检索配方，另两家旁路/缺失
+    ——假设 UNVERIFIED → ANSWERED-DIVERGENT（分系统分歧即发现）
+生成 RQ-G1…4（BFS 种子质量依赖 / LLM 建图确定性 / bi-temporal
+    as-of 查询对 E6 覆盖度 / prescribed ontology 与未来 semantic
+    relations 关系——仅登记不预答）
+```
+
+当前状态：
+
+```text
+G0 三系统观察齐备 = MemPalace FROZEN（①②）/ Mem0（③）/ Graphiti（④）
+下一门            = G0 结论门（AUDIT_RESULT 九节：跨系统 Comparison
+                    + Gap 收束 RQ-PALACE-01/02/03 + H-PALACE-G0-01
+                    + 六条工程事实框架含第 6 条未决空间）
+Current blocker   = none
+```
+
+
+### LAB PALACE V2 G0 AUDIT RESULT DELIVERED — CONCLUSION GATE AT HUMAN — 2026-10-02
+
+Human 批准进入 G0 结论门（收束逻辑 + 两处克制措辞裁定）：H-PALACE-G0-01
+正式收束（human 措辞逐字）：「现有 Memory 系统的检索机制并不统一：
+MemPalace 与 Mem0 主要采用相似度/全文检索，而 Graphiti 将 BFS 关系
+遍历直接纳入检索配方。因此『Memory retrieval = pure similarity』不能
+作为跨系统观察成立。」（ANSWERED-DIVERGENT）。bi-temporal 克制裁定：
+「Graphiti 已出现与 V1 identity/version/lineage 问题相邻的工程机制；
+该事实作为后续 E6 的参考观察登记，不构成 PALACE 抽象需求。」
+
+G0 结论工件（协议 §9 九节 + human 收束结构）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G0_MEMORY_BACKEND_AUDIT_RESULT_
+20261002.md`。
+
+```text
+结构 = 三方向样本①②③ / 实际保存什么④ / 实际怎么检索⑤ /
+       与原始文件脱离处⑥ / Comparison / Gap（A Office 面 /
+       B 跨文档比较综合生成 / C 原件-派生长期联系 / D 查询状态
+       持久化·continue·fork·restore =【OPEN 未决空间不回答】）/
+       RQ·H 收束（RQ-PALACE-01/02/03 未决登记；H-G0-01 收束；
+       E6 参考观察登记）/ 已知世界 vs 未验证空间边界图 /
+       第一实验基座决策输入（X MemPalace / Y Graphiti / Z 组合 /
+       W 参考实现——事实陈列非排名非决策，决策归 human）
+纪律 = 不构成 PALACE 设计/schema/存储选型/Gate① 复活
+```
+
+当前状态：
+
+```text
+G0 = AUDIT RESULT DELIVERED / CONCLUSION GATE AT HUMAN
+裁定内容 = G0 关闭判定 + 第一实验基座决策（X/Y/Z/W）+ G1 解锁
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G0 CLOSED — SUBSTRATE W — G1 UNLOCKED — REAL CORPUS DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human 三项裁定登记：
+
+```text
+R-1  G0 = CLOSED / COMPLETE（G0 未替 PALACE 定义答案，只清理出
+     未知空间——六条工程事实 + H-G0-01 ANSWERED-DIVERGENT 在档）
+R-2  Substrate = W（substrate-agnostic / reference implementation）：
+     Memory backend 降级为可替换实验组件；裁定理由 = 非 X（防变成
+     「修 MemPalace Excel ingestion」）/ 非 Y（防「PALACE 应该是
+     Graph」偏移——Graph 是已有实现方式非 G0 证明的抽象）/
+     非 Z（组合 = 过早架构设计）；第一轮可选最简单最易控 substrate
+R-3  G1 = UNLOCKED
+```
+
+G1 定义（human 措辞冻结）：在真实秦沈文件空间中，观察 PALACE 是否
+能够支持连续的信息发现、阅读、比较、版本识别与综合工作——**不是**
+建立知识库。Execution State 定位 = 可被现实重新「召回」的候选机制
+（非已有答案）；与 SimiGo 冻结抽象形成上下游关系。
+
+G1 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_REAL_CORPUS_DESIGN_DRAFT_
+20261002.md`。
+
+```text
+Corpus-1 = 小型真实文件族小闭环（一个施工主题：Word 方案/Excel
+    预算成本/PPT 汇报/PDF 合同规范/会议纪要/修改版本；入选标准
+    C-1 主题关联/C-2 版本变化/C-3 数字关联/C-4 事实引用/C-5 上下文
+    关联；预估 10–50 文件；L0 原件只读、沙箱隔离）
+主探针（human 示例冻结）= 「找出目前成本控制方案中与原施工方案
+    发生变化的部分，并说明这些变化来自哪些文件。」
+H Register = H-PALACE-G1-01 动态索引假设（查询产生的信息反哺下次
+    查询可发现性）/ H-PALACE-G1-02 查询状态候选假设（系统是否开始
+    需要记住已查/为什么/正在比较/接下来）——均 UNVERIFIED 不定义
+禁止 = Knowledge Base/Information Object/Relation/Graph/Provenance
+    Schema/Dynamic Index Schema/PALACE State Schema 提前定义 /
+    第一轮 3000 文件 / substrate 绑定 / L0 写入 / ES 写成已有答案 /
+    Gate① 复活 / 性能基准
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结审查 + 执行授权后：Corpus-1 选族只读取证 →
+               选族清单 human 确认 → 初始可发现性建立 → 主探针
+               工作过程全记录 → 结果门）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 DESIGN FROZEN — CORPUS-1 SELECTION RECON COMPLETE — AWAITING HUMAN CONFIRMATION — 2026-10-02
+
+Human 冻结审查：**PASS — G1 DESIGN FROZEN**（13 项逐项 PASS；执行
+授权仅限 Corpus-1 选族只读侦察；关键纪律 = 文件名相似 ≠ 版本链，
+版本演化须由执行阶段内容比较验证）。
+
+只读侦察（真实目录 3094 文件：pdf 1111/xlsx 758/docx 512/doc 156/
+jpg 134/xls 108/pptx 17…）+ 2 件 xlsx 只读抽样。选族清单：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CORPUS1_SELECTION_20261002.md`。
+
+```text
+族 A（推荐主族）标后预算明细表 8 件 xlsx：文件名含阶段线索
+    （1.15/局会议修改后/修改补充/复核/梁成刚版/1.6-报局——仅记录）；
+    只读抽样实证内容差异：1.15 vs 局会议修改后 = sheets 13→14 +
+    4 个同名 Sheet 非空单元格数不同（汇总表 52→58 等）→ C-2 实证；
+    Sheet 结构 = 汇总/分部分项清单/材料价格取定——数字主体（C-3）
+族 B 备选：分包限价报审表 10 件（线外便道子族 4 件日期迭代 +
+    终版命名——仅记录不推断）
+族 C 比较型备选：第400章桥涵清单 8 件（按标段×汇总人平行变体，
+    非版本链）
+族 D（推荐并入主族）成本管控汇报：2026.03.25 .doc+.docx+（改）.doc
+    双格式三件 + 20260506 提质年三家单位版本——混合格式观察点
+推荐 Corpus-1 = 成本控制主题：族 A + 族 D ≈ 15–20 文件
+    （xlsx+docx+doc 混合格式；C-1..C-3 已实证/C-4 执行阶段验证/
+    C-5 ✓）；备选调整方案在档
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = RECON COMPLETE / CORPUS-1 SELECTION AT HUMAN
+human 确认后 = 初始可发现性建立 → 主探针（成本控制变化溯源）
+              → 工作过程全记录 → 结果门
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 CORPUS-1 APPROVED — INITIAL DISCOVERABILITY EXPERIMENT COMPLETE — 2026-10-02
+
+Human Corpus-1 裁定：**APPROVED FOR EXECUTION（A+D，B1 暂缓为
+Corpus-1B）**；执行细节冻结：「溯源」= 实际观察任务不得预定义
+Provenance（Source/Relation/Provenance/Lineage 仍在禁止预定义范围）；
+初始可发现性 = substrate-agnostic 最简方式，先基线后内容读取
+（分辨「索引解决找文件」vs「Memory backend 解决理解内容」）。
+
+初始可发现性实验完成。基线证据：
+`docs/02-evidence/palace-v2-g1-corpus1/baseline-inventory.json`（14 文件
+五字段）；实验记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CORPUS1_INITIAL_
+DISCOVERABILITY_20261002.md`。
+
+```text
+[O] 同名×2 异目录异大小（1.15局会议修改后 1258847 vs 1247722
+    bytes）——path 消歧必要性直接证据
+[O] mtime 迁移伪迹：12/14 = 2026-04-11 归档时间；仅提质年两件
+    真实（05-06/07）
+[O] Q1 词汇命中 7/14：A 族核心 7 件（标后预算明细表）文件名不含
+    「成本」系统性漏检——主题-文件名 lexical 不一致 ⇒ 纯基线
+    可发现性依赖用词重合（Inference bounded）
+[O] Q2 「最新」= 提质年 doc（mtime 与文件名日期两依据偶然一致；
+    mtime 依据不可靠）
+[O] 基线不可答：权威版本/谁取代谁/内容差异——需内容读取（下阶段）
+H-G1-01/02 = 未验证（单轮基线查询无状态迹象；须待主探针）
+生成 RQ-D1..3（A 族主题可发现性 / 同名双件成因 / 「最新」业务锚点）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = 初始可发现性 COMPLETE / 观察记录在档
+下一步（待 human 放行）= 主探针阶段：内容读取（A 族 8 件结构级
+                        diff + D 族文本抽取）→ 成本控制变化溯源
+                        → 工作过程全记录 → H-G1-01/02 判定材料
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 MAIN PROBE EXECUTED — CHANGE TRACING + WORK-PROCESS TRACE RECORDED — 2026-10-02
+
+Human 放行主探针（含执行纪律：why-continue 原样记录 = H-G1-02 材料；
+发现不命名 lineage/relation/provenance/version graph；两种 H 结果
+均有效）。主探针记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_MAIN_PROBE_20261002.md`。
+
+```text
+Phase 1（A×8 结构 diff，源码级读）
+  [O] F1（1.15）缺「其他费用」Sheet（13 vs 14）
+  [O] 内容拓扑 ≠ 文件名链：表2-分部分项清单 8 件全不同；
+      汇总表 F6=F3、F7=F1 同内容组（非线性）；附表6/附表7/
+      临时用电 8 件零变化
+  [O] 同名双件=两种文档：A 件单版本项目部汇总表头 vs B 件
+      「1版/2版/3版/差异」三版对照表头（diff 55/142 cells）
+      ——文件名相似 ≠ 同职能，内容级坐实
+  [O] 数字漂移：合同收入类 810,115,387.77 vs 948,491,027.32；
+      成本类 694,263,135.39 vs 708,802,383.39；公式态（F2/F3/F6）
+      vs 数值态（F2'/F4/F5）表示分裂；F1/F7 汇总为空
+Phase 2（D×6 文本抽取）
+  [O] 标后预算(暂定) 313,356万收入/251,816万支出/盈利61,540万/
+      19.64% → 动态预测 62,327万/19.89%（+787万）；（改）版多出
+      投资价差段；一公局设计优化14项8788.34万/运距+7060万/
+      钢便桥→钢栈桥+1288万；中交路建批复预算121.29亿（+3.5亿）；
+      一航局提质年：钢栈桥+2105万/降本2071.69万（6.89%）/
+      桩基下构-1694.58万
+Phase 3（变化溯源任务）
+  [O] Source Trace Failure：任务字面的「原施工方案」不在
+      Corpus-1——字面无法完全回答（登记事实不发明机制）
+  [O] 可行解释下的变化溯源 = 暂定→动态预测 +787万，支撑事实
+      来自三个单位汇报（观察事实列举）；A 族 Excel 数字与 D 族
+      文字数字（313,356万 vs 8.1亿）对应关系未能在抽样层级
+      建立——记录「无法确定」
+H 判定材料（状态不变）
+  H-G1-01 UNVERIFIED：Step3 发现改变后续可发现性（过程证据）
+  H-G1-02 UNVERIFIED：Step3/Step5 出现「下一步依赖此前发现且
+      当前输入未重新提供」迹象；但均可由重读 L0+L1 重算——
+      「状态需求迹象出现，状态必要性未证明」，判定归 human
+生成 RQ-P1..4（汇总表非线性拓扑成因 / 公式态-数值态工具差异 /
+  313,356万口径映射 / B 件内嵌版本列作为 OQ-B 证据源）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G1 = MAIN PROBE EXECUTED / OBSERVATION RECORD 在档
+待 human      = H-G1-01/02 判定 + 主探针验收 + 下一步方向
+              （G1 结果门 / OQ-A 复测 / OQ-B 变更场景 / E6 衔接）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 RESULT GATE RULED — OQ-B DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human G1 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = 主探针 PASS；C-1/C-2/C-3/C-5 OBSERVED；C-4 PARTIAL/
+  BOUNDED；H-G1-01 = SUPPORTED — exploratory evidence（已证明
+  「先前发现的信息会改变后续探索行为」，未证明「必须持久化到
+  动态索引」——边界守住）；H-G1-02 = UNVERIFIED + Evidence:
+  STATE-DEPENDENCY-SIGNAL（不能由过程像 State 反推 State 必要；
+  升格实验形态 = State restore vs L0/L1 cold recompute 对照）；
+  未产生 PALACE Schema / Execution State 新定义；出现 ES 相关
+  工程证据 = 是；下一实验 = OQ-B；CJK PDF 暂缓；E6 暂缓
+变化溯源三层登记 = ①找不到源头 ②局部支撑事实 ③多数值无口径关系
+四类现实证据 = 文件名不是信息拓扑 / 同名不是同一信息 / 时间≠
+  当前状态 / 工作过程路径依赖（information exploration path）
+强表述登记（不越界版本）= 「从首次目录扫描开始，PALACE 的信息
+  工作就可能表现为持续演化的执行过程；目录、时间、内容变化构成
+  自然分叉，而用户实际探索的位置决定当前分支」——尚缺 = 证明
+  该分支是否需要作为可恢复 State 保留
+```
+
+OQ-B 设计草案（极小实验）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_OQB_DRIFT_DESIGN_DRAFT_
+20261002.md`。
+
+```text
+研究问题 = v1 → 外部修改一个 cell → v2 重新进入：能否发现变化/
+  知道旧状态/定位变化/继续原探索
+设置 = 沙箱副本（A 族一件）+ 五字段基线 + 内容抽样预登记
+  （「已发现」清单）+ 脚本单 cell 修改（4200→4500 例）
+观察格 = OB-1 五字段变化检测 / OB-2 cell 级定位 / OB-3 旧状态
+  痕迹（预登记预期：无痕迹，若有 ⇒ 偏离溯源）/ OB-4 探索
+  继续性（预登记发现 vs v2 现实矛盾如何检测）
+连接 = H-G1-01/02 材料源 + E6/V1 再激活条件观察（bi-temporal
+  克制裁定继续适用）
+禁止 = L0 写入 / schema 定义 / 机制命名 / 批量变更 / 性能基准
+```
+
+当前状态：
+
+```text
+G1 结果门 = REGISTERED（主探针 PASS / H 判定在案）
+OQ-B     = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 OQ-B EXECUTED — SINGLE-CELL DRIFT OBSERVED — REPRESENTATION-NOISE DISCOVERY — 2026-10-02
+
+Human OQ-B 冻结审查 PASS / EXECUTION AUTHORIZED（附加裁定：OB-3
+「预期无痕迹」保持观察性质不预判语义——有痕迹须问痕迹来源，无痕迹
+不得证明不需要 State；核心 = OB-4「世界变化后能否从刚才工作的地方
+继续」）。
+
+OQ-B 执行完成（隔离沙箱；v1 = A 族工作副本 1258847B/14
+Sheets/19841 cells；已发现预登记 = 附表1!F8 = 450.29；外部修改 =
+openpyxl 单 cell F8 → 480.29）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_OQB_RESULT_20261002.md`。
+
+```text
+OB-1 五字段  = size -101KB / mtime / sha256 全变（工具往返
+    重压缩）——只能答「变了」不能答「哪里变了」
+OB-2 cell 定位 = 【计划外发现】全簿 diff = 23 cells：
+    1 个语义变更（F8 450.29→480.29）+ 22 个表示噪声
+    （openpyxl 往返浮点重序列化，最大相对差异 4.209e-16，
+    业务不可辨）——工具中介的单 cell 编辑不是表示隔离的；
+    naive diff 报 23 处、语义仅 1 处；Excel 原生编辑是否
+    表示隔离 = RQ-OQB-1（OQ）
+OB-3 旧状态痕迹 = v2 全簿搜 450.29 = 0 命中（预期成立）；
+    旧值现仅存于 Lab 侧预登记发现记录——按 human 裁定双向
+    不预判
+OB-4 探索继续性 = 重读 F8 = 480.29 ≠ 记录 450.29——矛盾可
+    检测（重读+与发现记录比对）；曾依据 450.29 的结论需重新
+    验证 = 是；继续工作依赖「旧值曾是 450.29」而该值已无法
+    从 v2 恢复（OB-3）——最小形态「继续工作依赖工作记录」
+    实例（Inference bounded，非 H-G1-02 必要性证明）
+H/E6 流向 = H-G1-01 材料增强 / H-G1-02 signal 增强（必要性
+    证明仍缺）/ E6·V1 再激活条件参考观察（bi-temporal 克制
+    依旧）
+生成 RQ-OQB-1..3（Excel 原生编辑表示隔离复测 / 精度感知语义
+    diff / 发现记录过期检测模式——均仅登记）
+```
+
+当前状态：
+
+```text
+OQ-B = EXECUTED / RESULT AT HUMAN
+待裁定 = OB-1..4 验收 + RQ-OQB 处置 + 下一实验方向
+        （G1 收束 / OQ-B2 Excel 原生编辑复测 / E6 设计入口）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 G1 RQ-OQB-1 EXECUTED — NATIVE EXCEL EDIT = 1 CELL CHANGE — NOISE IS TOOL-SPECIFIC — 2026-10-02
+
+Human OQ-B 验收裁定登记：OQ-B PASS/CLOSED FOR THIS EXPERIMENT；
+OB-1..4 全 PASS（OB-4 = HIGH-VALUE EVIDENCE）；关键登记观察 =
+「工作记录与世界当前状态在最小漂移场景中出现了独立性：当前 L0
+可以恢复现实，却不能恢复过去工作者曾经观察到的状态」（强于前、
+仍不越界——替代方案存在：change log/版本快照/历史索引）；
+OB-2 表示噪声保持观察（RQ-OQB-2 OPEN，与 SimiGo Semantic
+Contract ≠ Representation Layout 方法论呼应但不升格原理）；
+RQ-OQB-1 ACCEPT（极小复测）；G1 CLOSE 不扩 Corpus；顺序 =
+RQ-OQB-1 → E6 Design Entry（E6 问题低一层抽象 = 「当信息空间中
+的原始内容发生变化时，PALACE 如何知道当前工作所依据的信息是否
+仍然有效？」）。
+
+RQ-OQB-1 真机执行（本机 Microsoft Excel + AppleScript 原生驱动；
+v1 = L0 新鲜副本回滚至 450.29 基线）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_RQOQB1_NATIVE_EXCEL_
+RESULT_20261002.md`。
+
+```text
+[O] Excel 原生编辑（F8 → 480.29 numeric + 原生保存）后：
+    cell 级 diff = 变更 1 / 消失 0 / 新增 0——唯一变化 =
+    附表1!r8c6 450.29→480.29（float 保留）；其余 19,840 cells
+    逐字稳定；size +1,016 bytes（Excel 内部结构/文档属性级）
+[O] 对照：openpyxl 路径 23 变化（1 语义+22 噪声，-101KB）vs
+    原生路径 1 变化（+1KB）
+=> RQ-OQB-1 答案：22 表示噪声 = openpyxl 工具往返特有，
+   非 Excel 工作流固有；工具选择决定观测污染程度；
+   RQ-OQB-2 精度感知 diff 必要性收窄为「非原生工具路径」前提
+[O] 诚实边界：字节级两条路径均大变（表示层/语义层分离的
+    工具版重演）；单 cell/本机 Excel 版本内有效，不外推
+```
+
+当前状态：
+
+```text
+OQ-B 线 = 完整收束（OB-1..4 + RQ-OQB-1 复测）
+下一门  = E6 Design Entry：起草 E6 设计（human 措辞问题 =
+          「当信息空间中的原始内容发生变化时，PALACE 如何知道
+          当前工作所依据的信息是否仍然有效？」——低于版本管理
+          一个抽象层级）
+Current blocker = none
+```
+
 ### P4 REPLICATION EXECUTED — R0 FRAMEWORK — MECHANICAL VERDICT PASS — 2026-10-01
 
 Human direction：进入 P4 Replication（使用 R0 audit 框架重新验证 Common
@@ -13137,4 +14580,6957 @@ R4 = P4 PASS / P5 FAIL（均「已记录、观测基础 human 不采信」状态
 Trusted record = harness sources @ slamfinger/SimiGo 0dc166b（public）
 Next = human second layer（以其自选方式复核）
 Current blocker = none
+```
+
+
+### LAB PALACE V2 E6 DESIGN DRAFT COMPLETE — INFORMATION VALIDITY OBSERVATION — 2026-10-02
+
+Human 确认 E6 起草（关键裁定：E6 = 信息有效性问题，不称版本管理；
+证据只证明「当前世界状态与过去工作状态可能脱钩」，未证明需要版本
+树/revision graph/bi-temporal model；有价值的是「让 Agent 发现
+依据变化」（工程观察）而非「自动判断过期」（机制设计）；ES 可能
+承载「可继续工作关系」仅为研究方向登记，不修改 SimiGo 冻结契约）。
+
+E6 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_INFORMATION_VALIDITY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 措辞冻结）= 当信息空间中的原始内容发生变化时，
+    PALACE 如何知道当前工作所依据的信息是否仍然有效？
+观察五问（冻结）= V-1 内容变化场景 / V-2 能否发现变化 /
+    V-3 能否识别「曾依据过什么」/ V-4 能否判断过去发现仍可用 /
+    V-5 不能判断时如何处置（最有价值观察点）
+与 OQ-B 的推进点 = 观察对象从「单 cell 已发现」升级为「工作
+    依据集（D-rec-1..4，附依据粒度自标：cell/多 cell/全簿）」；
+    两次独立漂移（DRIFT-1 改 F8 仅应失效 D-rec-1 / DRIFT-2 改
+    汇总表 cell 仅应失效 D-rec-2）→ 核心观察 = 部分失效时的
+    区分能力（OB-V4）与无法判定条目的处置（OB-V5）
+方法 = G1 同款（最小真实漂移 → 观察 → 再抽象）；预登记预期
+    偏离即溯源
+禁止 = 版本树/revision graph/bi-temporal 设计 / 自动过期机制
+    设计 / 各 Schema / L0 写入 / 性能基准 / 改 SimiGo 冻结契约 /
+    Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+PALACE_V2_E6 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：W1 发现集落盘 → DRIFT-1/2 →
+               重进判定 → 结果门）
+Current blocker = none
+```
+
+
+### LAB PALACE V2 E6 EXECUTED — V-1..V-5 OBSERVED — GOLDEN V-5 CASE — 2026-10-02
+
+Human E6 冻结审查 PASS / EXECUTION AUTHORIZED（D-rec 部分失效区分
+= 核心；V-5 不预规定处置；DRIFT 仅制造两种粒度变化）。E6 执行完成
+（隔离沙箱；W1 = L0 直拷验证 sha 一致；漂移 = 真实 Excel 原生单
+cell 修改×2；L0 零触碰）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_E6_RESULT_20261002.md`。
+
+```text
+V-1 场景 = D-rec-1..4 落盘（cell/cell/multi-cell/whole-book 粒度自标）
+V-2 变化发现 = DRIFT-1 F8→450.3、DRIFT-2 H5→709000000 均可检测
+    可定位；对照：Excel 纯往返零 cell 变化（信号未被保存路径污染）
+V-3 依据识别 = 逐条可重定位（坐标/粒度自标实测有效）
+V-4 部分失效区分 = True 跨两次漂移（D-rec-1 持续失效 / D-rec-2
+    DRIFT-2 新失效 / D-rec-3·4 仍有效）
+V-5 两个真实案例 = ①【金质性】D-rec-3 登记截断缺陷（/1000 被
+    str(v)[:14] 截成 /100）导致初判「世界变化」误判——溯源
+    （L0 新鲜副本 + 纯往返对照 + L0 sha 未变）证世界从未变化，
+    处置 = corrections 登记不静默改写；推断 = 「记录与现实
+    不符」有世界变了 vs 记录缺陷两种根因，不溯源不可分——
+    直接支撑「让 Agent 发现依据变化 + 可溯源」优先于「自动
+    判定过期」；②D-rec-4 全簿粒度失配——结构判定无法覆盖
+    数值变化，处置 = 粒度拆分（观察登记）
+H/E6 流向 = H-G1-01 材料增强（发现集使 DRIFT-2 精确定位）/
+    H-G1-02 signal 增强（V-5 案例一处置依赖 W1 记录+L0 双源
+    对照）/ E6·V1 旧值仅存工作记录形态再现（bi-temporal 克制
+    依旧）
+生成 RQ-E6-1..3（记录缺陷 vs 世界变化区分规程 / 依据粒度标准化 /
+    隐性失效——留 G2）
+```
+
+当前状态：
+
+```text
+PALACE_V2_E6 = EXECUTED / V-1..V-5 完成 / RESULT AT HUMAN
+待裁定 = E6 验收 + V-5 案例定性 + 下一步方向
+Current blocker = none
+```
+
+### LAB PALACE V2 E6 CLOSED — G1 CLOSED — G2 DESIGN ENTRY OPEN — 2026-10-02
+
+Human 裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G1_CLOSED_G2_ENTRY_20261002.md`。
+
+```text
+E6 验收 = V-1..V-5 全 PASS（V-4 两次独立漂移均成立；V-5 高价值
+    观察）；E6 = CLOSED；新 Schema/版本模型未授权
+V-5 提升 = 案例一（记录 ≠ 现实 → 世界变化 or 记录缺陷，无溯源
+    时表面信号相同）→ bounded evidence：「发现依据偏离后必须
+    能回溯偏离来自世界还是来自记录」；案例二（全簿粒度失配）
+    → 依据粒度影响有效性判断；组合逼出两个底层工程事实 =
+    依据有效性 ← 依据定位精度 + 依据记录可信度/可溯源性
+H 更新 = H-G1-01 SUPPORTED—strengthened exploratory evidence
+    （发现集参与 DRIFT-2 精确定位）；H-G1-02 UNVERIFIED +
+    strengthened state-dependency signal（两类证据：旧依据
+    仅存工作记录 + V-5 案例一双源对照处置）——「继续工作时
+    仅有当前 L0 不一定足够」，距「ES 必需」一步之遥，交给 G2
+G1 收束 = CLOSE 不扩 Corpus（Main Probe PASS / OQ-B CLOSED /
+    E6 CLOSED）；证据总账四条结构性事实：①文件名≠内容拓扑
+    ②同名≠同一信息 ③时间≠当前状态 ④信息探索路径依赖 +
+    世界变化后过去工作状态可能无法从当前 L0 恢复
+G2 设计入口 = 研究对象从「原始信息变化后怎么办」推进到「正在
+    进行的跨文件工作如何持续利用已发现信息并继续推进」
+    （首次进入第 3 层：分析/对比/汇总）；禁止带入信息对象/
+    关系/知识图谱/Provenance Schema/PALACE State Schema 预定义
+    ——让跨文件真实工作逼出下一层抽象
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6 = CLOSED
+G2            = DESIGN ENTRY OPEN（具体设计草案待起草 → human
+                冻结 → 执行）
+G3            = LOCKED
+Current blocker = none
+```
+
+### LAB PALACE V2 G2 DESIGN DRAFT COMPLETE — CROSS-DOCUMENT INFORMATION WORK — 2026-10-02
+
+Human 确认起草（四项冻结审查要点：RQ 低于抽象层 / P3 数字口径映射
+= 探针非答案 / 工作过程完整记录含步间依赖标注 / 禁止把 G1·E6 事实
+架构化升级）。G2 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_CROSS_DOCUMENT_WORK_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（冻结）= 跨文件工作如何持续利用已发现的信息并继续向
+    下一步推进（Corpus-1 操作化：A+D 已发现信息基础上，分析/
+    对比/汇总能否持续进行并推进？已有发现能否成为下一次工作
+    的起点？）
+探针任务 = T-1 数字口径映射（RQ-P3 探针：A 侧 8.10亿/9.48亿/
+    7.09亿/6.94亿 vs D 侧 313,356万/251,029万/62,327万/2,071.69万/
+    8788.34万 等；预登记判定口径：数值相等/万↔元换算/口径包含
+    ⇒ 已映射，否则未映射+阻碍记录）/ T-2 跨文件事实对照（钢筋
+    4200 vs 附表1 折算 ≈3761 差异候选）/ T-3 汇总任务（综合
+    陈述+来源标注——第 3 层首次进入）
+过程协议 = 七元组逐步记录（发现→选择依据→跨文件读取→对照→
+    冲突/对应→中间判断→下一步）+ 每步依赖标注（是否使用前步
+    已发现且未重新提供的信息——H-G1-02 材料）
+观察格 = OB-A 已发现信息复用 / OB-B 映射可行性分布 / OB-C
+    状态依赖步骤清单 / OB-D 综合行为与对应粒度
+禁止 = Information Object/Relation/Graph/Provenance Schema/
+    PALACE State Schema 定义 / 知识库叙事 / 映射模型化 /
+    G1·E6 事实架构化 / L0 写入 / 3000 文件扩容
+```
+
+当前状态：
+
+```text
+PALACE_V2_G2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：T-1 → T-2 → T-3 逐任务交付
+               过程记录与中间观察 → 结果门）
+Current blocker = none
+```
+
+### LAB PALACE V2 G2 EXECUTED — CROSS-DOCUMENT WORK T-1/T-2/T-3 COMPLETE — 2026-10-02
+
+Human G2 冻结 PASS / EXECUTION AUTHORIZED（附加边界：「口径包含」
+仅作实验判定规则不升级映射定义；「来源标注」= 记录要求非
+Provenance Schema）。G2 执行完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_EXECUTION_20261002.md`
++ 证据 `docs/02-evidence/palace-v2-g2-corpus1/t1-mapping-results.json`。
+
+```text
+T-1 数字口径映射（A 族 46,972 数值 cell × D 侧 26 数字）
+  [O] 精确映射 = 0/26
+  [O] 万标度近似候选（<0.5%）= 10/26，集中 表2!E 列/附表5!D 列
+      （E1123=2071.0 ↔ 2,071.69万 0.03%；E601=262.38 ↔ 262万
+      0.14%…）——单位未声明，确认不可达
+  [O] 未映射 = 13/26（完工总收入/动态支出/盈利/产值/批复/收款
+      等总量与外部口径——范围性缺位）
+  [O] 边缘候选 = 3/26（±0.5%）
+  [I] T-1 判读：分项级强候选集中 + 总量缺位 + 单位不透明 =
+      口径不透明三形态；不建模型
+T-2 钢筋对照
+  [O] A 侧询价折算 3,761.06/3,407.08 元/t（不含税，公式
+      /1.13/1000）vs D 侧中标 4200 元/t——差 +11.67%/+23.28%；
+      口径候选三记（取价性质/含税/时点），语料内不可裁决
+T-3 汇总任务（第 3 层首次）
+  [O] 8 点综合陈述逐点来源标注完成；S7 口径未决、S8 映射未
+      闭合两缺口诚实保留
+  [O] 过程依赖 = 8 点全部依赖 T-1/T-2/Phase2/G1 累积发现，
+      零新增读取——最强状态依赖形态（H-G1-02 材料增厚；
+      状态不变：可重算故必要性未证）
+观察格 = OB-A 复用已证实 / OB-B 三形态 / OB-C 依赖标注完成 /
+  OB-D 综合可带缺口交付
+生成 RQ-G2-1..3（E 列万口径验证 / 313,356万 生产来源 / 中标-
+  询价口径裁决）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G2 = EXECUTED / RESULT AT HUMAN
+待裁定 = G2 验收 + OB 定性 + 下一步（G2 补充 / G3 入口）
+Current blocker = none
+```
+
+### LAB PALACE V2 G2 RESULT GATE RULED — PASS/CLOSED — H-G1-02 UPGRADED — G3 UNLOCKED — 2026-10-02
+
+Human G2 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G2_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = G2 PASS/CLOSED（T-1/T-2/T-3 全 PASS）；OB-A..D 全
+    SUPPORTED；H-G1-01 = SUPPORTED—strengthened；H-G1-02 =
+    SUPPORTED (strong exploratory evidence)【升格】；ES 必要性
+    = UNPROVEN（L0+L1 仍可重算——控制继续有效）；新 PALACE
+    Schema = NOT AUTHORIZED；G3 = UNLOCKED
+关键判读登记（效力高于执行记录表述）：
+  OB-A  复用对象不是文件路径——是发现了什么/比较过什么/候选
+        对应/口径冲突/未闭合问题（术语纪律继续）
+  OB-B  0/26 精确映射是高价值结果——打掉「相近数字 = 同一
+        东西」危险假设；三形态（分项强候选但候选≠可确认 /
+        总量级缺口=信息层面缺口 / 范围外）；登记 Observation =
+        数字可发现性≠可解释性、相似性≠口径一致
+  OB-C  最强状态依赖证据形态——「理论上可能依赖」升级为
+        「实际直接使用」
+G3 解锁（不从数据库设计开始）：
+  第一问（human 原语冻结）= 「如果今天把当前工作停止，明天
+      重新打开，我究竟需要什么，才能真正从这里继续，而不是
+      重新做一遍？」
+  观察四类 = ①已发现过什么 ②已判断过什么 ③已排除过什么
+      （传统检索最易丢）④下一步为什么是下一步
+  现实成本 = 若明天只剩原始文件则必须重做 T-1/T-2
+SimiGo↔PALACE 边界登记 = PALACE G1/G2/G3（找到什么→能否支持
+  下一步→能否未来继续存在并支持工作）→ SimiGo（持续工作本身
+  如何成为可恢复 Execution State）——G3 不重新定义 ES，
+  让工程逼出边界
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2 = 全部 CLOSED
+G3               = UNLOCKED / DESIGN ENTRY（Durable Information）
+下一动作         = G3 设计草案起草（第一问已冻结）
+Current blocker  = none
+```
+
+### LAB PALACE V2 OQ-B RULED PASS/CLOSED + RQ-OQB-1 ANSWERED — G3 DESIGN DRAFT COMPLETE — 2026-10-02
+
+Human OQ-B 验收裁定：**PASS / CLOSED FOR THIS EXPERIMENT**（OB-1..4
+全 PASS；OB-4 = HIGH-VALUE EVIDENCE）；关键登记观察：「工作记录与
+世界当前状态在最小漂移场景中出现了独立性：当前 L0 可以恢复现实，
+却不能恢复过去工作者曾经观察到的状态」（强于前、不越界——替代
+方案存在：change log/版本快照/历史索引）；OB-3 裁定 = 观察事实
+不预判语义（有痕迹须问来源，无痕迹不证不需要）；OB-2 提升登记
+（Representation Change vs Semantic Change 区分——与 SimiGo
+Semantic Contract ≠ Representation Layout 方法论呼应，不升格
+原理）；RQ-OQB-1 ACCEPT → 已真机执行（f8a1c2a：Excel 原生编辑
+= 1 cell 变化，22 噪声 = openpyxl 特有）；RQ-OQB-2/3 OPEN；
+G1 CLOSE 不扩 Corpus；顺序 = RQ-OQB-1 → E6 Design Entry。
+
+Human G3 解锁确认 + 骨架裁定（比 G2 更克制：不急着定义 Durable
+Information 是什么，只设计能把「明天能不能继续」逼出来的真实
+工程实验；增加硬指标重做量；工作记录原样性保护；核心压缩 =
+「停止工作之后，哪些过去发生过的事情必须仍然存在，下一次工作
+才能不是从头开始？」）。
+
+G3 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_DURABLE_INFORMATION_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 原语冻结）= 如果今天把当前工作停止，明天重新
+    打开，我究竟需要什么，才能真正从这里继续，而不是重新做一遍？
+核心对照 = 条件 A（只有 L0：重新发现/比较/判断才能继续）
+    vs 条件 B（L0 + 工作记录原样：直接恢复继续下一步）
+硬指标重做量 = 没有工作记录时，重新达到 G2 T-3 停止状态需要：
+    重新执行多少步骤/读取多少文件/重做多少判断——「全量计算 →
+    增量计算」成为可观察工程事实
+H-G1-02 材料流向（预登记）= 重复工作/信息损失/路径丢失/无法定步
+    = 四类合格信号；单纯效率差不升格；判定归结果门
+工作记录原样性保护 = 条件 B 只用 G1/G2 实际产物原样
+    （baseline-inventory/discovery-set+corrections/
+    t1-mapping-results/观察记录文档）；禁止新整理漂亮摘要
+观察五项 = OB-R1 工作位置 / OB-R2 已有发现 / OB-R3 已排除项 /
+    OB-R4 未闭合问题 / OB-R5 直接进入下一步
+执行阶段 = R-1 停止点冻结（G2 T-3 完成时点状态原样枚举）/
+    R-2 重做量清单（从实际记录枚举，非估计）/ R-3 条件 A
+    bounded 实测 / R-4 条件 B 实测（含记录缺口复检——V-5 截断
+    教训）/ R-5 对照收束
+禁止 = Durable Information/Provenance/PALACE State/Dynamic Index
+    Schema / 知识图谱 / 提前决定必须持久化内容 / G3 等同 ES
+    必要性 / L0 写入 / 新整理摘要 / 性能基准 / Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+OQ-B = PASS / CLOSED（RQ-OQB-1 已执行答案在档）
+PALACE_V2_G3 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE REVIEW
+执行授权     = 无（冻结 + 授权后：R-1..R-5 → 结果门）
+Current blocker = none
+```
+
+### LAB PALACE V2 G3 EXECUTED — REDO-COST CONTRAST MEASURED — FIVE-ITEM RECOVERY MATRIX — 2026-10-02
+
+Human G3 冻结审查 PASS / EXECUTION AUTHORIZED（附加执行纪律：重做量
+三类计数口径 = 步骤/读取/判断；B 原样性保护执行期不变——禁止顺手
+补记录；OB-R3 排除项与 OB-R4 未闭合问题为重点；H-G1-02 升格规则
+严格保持——单纯效率差≠升格；三结果形态不预设 C）。
+
+G3 执行完成（R-1..R-5）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_20261002.md`。
+
+```text
+R-1 停止点冻结 = G2 T-3 完成时点状态原样枚举（S1..S8/未闭合
+    S7·S8/RQ-G2-1..3/排除项/下一步指向 RQ-G2-2）
+R-2 重做量清单（从实际记录枚举非估计）= 14 主要阶段 / 8 xlsx
+    ×≥4 遍 / cell 读取 ≥223,356（156,543 结构层 + 46,972 T-1 +
+    19,841×2 diff）/ D×6 全文 / ≈30+ 项判断
+R-3 条件 A bounded 实测 = 119 步骤/8 文件/110 sheets/156,543
+    cells/1.5s——产出原始样本 18 个零判断；证实 R-2 量级真实
+R-4 条件 B 实测（记录原样恢复）= R1 工作位置 ✓直接 / R2 已有
+    发现 ✓直接（JSON 结构化）/ R3 已排除项 △分散恢复（跨选族/
+    台账/证据多文档）/ R4 未闭合 ✓直接 / R5 下一步 ✓直接；
+    记录缺口复检 = corrections 在档自愈案例 + L0 完整性复核
+    无矛盾 + 原样性保护未破
+R-5 对照 = 条件 A 重做 ≥R-2 全清单（含 ≥223,356 cells 与 ≈30+
+    判断）vs 条件 B 读 4–6 份记录文件零重做
+H-G1-02 材料登记 = 四类合格信号之一「重复工作」获实测计数
+    （重达停止点须重复 ≥R-2 全清单，bounded 于「重达完全相同
+    停止点」口径）——非单纯效率差；「过去发生过的事情必须仍然
+    存在」获工程计数级支持；ES 必要性判定归 human
+生成 RQ-G3-1..3（排除项分散聚合 / 记录格式可恢复性 / 更细粒度
+    停止点重做量曲线）
+```
+
+当前状态：
+
+```text
+PALACE_V2_G3 = EXECUTED / RESULT AT HUMAN
+待裁定 = G3 验收 + H-G1-02 是否升格 + 下一方向
+Current blocker = none
+```
+
+### LAB PALACE V2 G3 RESULT GATE RULED — PASS/CLOSED — H-G1-02 UPGRADED — PALACE/SIMIGO EMPIRICAL BOUNDARY — 2026-10-02
+
+Human G3 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = G3 PASS/CLOSED；R-2 OBSERVED/QUANTIFIED；R-3 bounded
+    measurement PASS；R-4/R-5/V-5 复检 PASS；H-G1-02 升格
+    SUPPORTED — strong exploratory evidence；ES 必要性仍
+    UNPROVEN；新 Schema NOT AUTHORIZED；RQ-G3-1..3 进入下一
+    研究阶段
+H-G1-02 冻结措辞（逐字，最终形态）= 「在当前真实文件工作样本
+    中，连续信息工作不仅依赖当前 L0 内容，还依赖此前形成的
+    工作位置、已发现信息、已排除项、未闭合问题以及下一步指向。
+    仅保留当前 L0 时，这些工作状态无法直接恢复，并导致可实测
+    的重复读取、重新判断和路径重推导。」（不写「必须依赖
+    Execution State」——太强）
+A 忘掉的分层 = 第一层重复工作（实测边界 bounded）；第二层工作
+    状态的信息损失（更重要）：「我知道什么/排除了什么/还不知
+    什么/为什么下一步查这个」——313,356万 本身可重找，但
+    「为什么现在应该追它」属于工作过程产生的状态——信息与
+    工作的差别第一次被拉开
+变化溯源三层 = ①找不到源头 ②局部支撑事实 ③多数值无口径
+    关系——比笼统可追溯更有价值
+ES 边界三候选 = A 只 L0 重做（已实测）/ B L0+原样记录 恢复
+    （已实测）/ C L0+PALACE Durable Information 恢复（未验）；
+    已证 A≠B（工作状态需要持久性）；未证 持久性必须由 SimiGo
+    ES 提供——若 C 完整恢复则部分 ES 形态可能沉淀进 PALACE
+方向裁定 = V1 继续 PARKED / G2 不复测 / E6·OQ-B 暂不扩展 /
+    下一入口 = RQ-G3-1（排除项/负知识：数字 X→检查→属于 7 标
+    →排除；无记录则 X 重现→重判→重排除——先观察不命名
+    Schema）/ RQ-G3-2（记录格式谱系：完整日志→结构化→摘要→
+    一句话，哪个还能真正继续——逼近 PALACE Durable Information
+    与 SimiGo ES 边界）/ RQ-G3-3 低优先级（停止点曲线未来
+    形态不预设）
+边界意义（human 原文）= 「它第一次给 PALACE 和 SimiGo 之间的
+    边界提供了实证问题，而不是概念上的边界」
+证据链收束（human 逐字）= 「G1 发现连续信息工作存在路径依赖；
+    G2 证明后续工作实际消费此前发现；G3 则实测证明，丢失这些
+    工作记录会使下一次工作退化为重新发现、重新判断和重新选择
+    路径。」
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2/G3 = 全链 CLOSED
+H-G1-01/02          = SUPPORTED（strengthened / strong exploratory）
+ES 必要性           = UNPROVEN（三候选 C 未验）
+下一入口            = RQ-G3-1（负知识观察）/ RQ-G3-2（记录格式
+                      谱系）——具体设计待 human 发起
+Current blocker     = none
+```
+
+### LAB PALACE V2 RQ-G3-1 DESIGN DRAFT COMPLETE — NEGATIVE KNOWLEDGE MINIMAL EXPERIMENT — 2026-10-02
+
+Human 方向裁定：下一入口 = RQ-G3-1 优先（排除项可能比记录格式更快
+触及 PALACE 核心）；最小路径与观察点 ①..⑤ 冻结概念；潜在价值
+仅作研究问题非结论（「工作的连续性…可能需要保存…不走这条路的
+信息」）。
+
+RQ-G3-1 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_NEGATIVE_KNOWLEDGE_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+研究问题（human 措辞冻结）= 如果系统只保存「发现了什么」，而不
+    保存「已经排除了什么以及为什么」，它能否真正避免重复工作？
+    （工程实验；非负知识对象/Schema 定义）
+最小路径（冻结）= 候选发现→初步相关→读取依据→发现不属于当前
+    任务→排除→继续→人为停止；第二轮同停止点：条件 A 只给 L0 /
+    条件 B 给原样工作记录
+真实场景绑定（零人工构造）= 复用 Corpus-1 选族真实排除四条：
+    E-X1 经济运行汇报两件（相邻主题）/ E-X2 B1 线外便道 ×4
+    （human 裁定暂缓）/ E-X3 族 C 平行变体分类 / E-X4 T-1 口径
+    范围排除（产值/批复/收款不在标后预算表范围）——全部在原样
+    记录在案
+观察点实测 = ①重新遇到已排除物（条件 A 候选清单 ∩ E-X 原件）/
+    ②重做相同判断 / ③排除原因留存比对 / ④仅「已排除」标记
+    不给理由时的决策一致性 / ⑤排除须回原件重确认的分级
+预登记预期（可推翻）= P-E1 条件 A 重遇 E-X1 且主题判定需重读
+    内容（ lexical 邻近不可从文件名判定）/ P-E2 E-X2 存在纳入
+    压力 / P-E3 E-X4 口径排除纯 L0 下不可复现（重发现者无法
+    「排除不存在的东西」——或永不发现该缺口）
+禁止 = 负知识对象/Exclusion Schema 定义 / Provenance·Lineage·
+    Relation 命名建模 / L0 写入 / 性能基准 / 3000 扩容 /
+    预写结论 / Gate①·V1 复活
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_1 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：条件 A 实测 → 条件 B 恢复比对 →
+    ①..⑤ 逐项事实 → 结果门）
+Current blocker = none
+```
+
+### LAB PALACE V2 RQ-G3-1 EXECUTED — EXCLUSION RE-ENCOUNTER + CHALLENGED EXCLUSION — 2026-10-02
+
+Human RQ-G3-1 冻结 PASS / EXECUTION AUTHORIZED（附加纪律：条件 A
+完全不可见 E-X 历史排除记录；E-X4「不可复现」只记观察；④ 三结果
+均可；RQ-G3-2 由本实验结果决定）。执行完成：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_20261002.md`。
+
+```text
+Condition A（只持 L0 重发现成本控制候选，两真实目录枚举）
+  [O] 词法层：E-X1 三件（经济运行×2/经济工作进展）文件名不含
+      「成本」——词法未命中
+  [O] 目录邻接层：E-X1 三件与词法命中件同目录直接相邻——浏览式
+      重发现必然接触
+  [O] 新事实：经济运行情况汇报存在 0307 与 0308 两个日期版本
+      ——0308 为原选族与 G1/G2 全链从未检查的孪生版
+  [O] 内容级重判（读取依据步骤，执行者记忆污染已标注）：
+      0307/0308 内容 = 成本×26/预算×16/盈利×10 ——与成本控制
+      强相关；0308 含真实修订（现场管理费 2,573.26万→2,881.34万
+      = +308万、计量比 5.0384→5.04、新增分包条款段）——
+      未检的版本演化对
+  [O] 经济工作进展（截至11月底）= 成本×1 弱——新鲜排除与原排除
+      方向一致
+Condition B（原样记录恢复）
+  [O] E-X1 排除事实在选族文档仅以「未入选」体现（无显式条目）；
+      理由「相邻主题」仅存会话工作记录——理由记录弱/分散
+  [O] E-X2/E-X3/E-X4 理由在案可恢复
+①..⑤ 判读
+  ① 重遇 = YES（三件浮现 + 0308 新发现）
+  ② 重判 = YES（主题归属带内容证据重判）
+  ③ 原因留存 = 条件 A 无；新鲜依据（关键词密度）与原理由
+     （相邻主题）方向相反
+  ④ 仅标记不给理由 = 本实例不安全：标记会压制 0308 孪生与
+     内容强相关证据——原排除过严风险不会被发现（单实例观察，
+     对应三结果框架结果 B）
+  ⑤ 须回原件重确认分级 = E-X1 内容级（已执行并挑战原排除）/
+     E-X3 文件名级可判 / E-X4 数字映射级缺失步骤（P-E3 观察）
+关键冲突登记（归 human）= 原排除（选级判断未读内容）vs 新鲜
+  内容证据冲突——E-X1 是否纳入成本控制语料 + 0308 孪生版是否
+  补入 = human 重裁（Corpus 组成变更）；执行者记忆污染声明
+  （机械层不受污染，内容判断建议独立复核）
+H/RQ 流向 = H-G1-02 增材（排除记录理由缺失/分散 → 重发现时
+  无法安全沿用）/ H-G1-01 再证实（目录邻接+0308 发现）/
+  RQ-N1 排除理由记录粒度 / RQ-N2 被排除族内版本对与排除范围
+```
+
+当前状态：
+
+```text
+RQ-G3-1 = EXECUTED / ①..⑤ 完成 / RESULT AT HUMAN
+待裁定 = ①..⑤ 验收 + E-X1 冲突重裁（Corpus 组成）+ 0308 处置
+        + RQ-G3-2 是否启动
+Current blocker = none
+```
+
+### LAB PALACE V2 RQ-G3-1 RESULT GATE RULED — E-X1 REVOKED & SPLIT — CORPUS EXTENDED — RQ-G3-2 UNLOCKED — 2026-10-02
+
+Human 结果门裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_1_RESULT_GATE_20261002.md`。
+
+```text
+裁定表 = ①..⑤ 全 SUPPORTED（④ = UNSAFE IN THIS INSTANCE 具体
+    反例：「排除状态 ≠ 足够的可恢复工作记录」）；H-G1-01 =
+    SUPPORTED—re-confirmed；H-G1-02 = SUPPORTED—strengthened；
+    RQ-G3-1 PASS/CLOSED；RQ-G3-2 UNLOCKED
+E-X1 重裁（拆两裁定）：
+  E-X1-A 经济运行族 = YES 纳入成本控制相关候选语料（内容证据
+      支持非文件名推断）；原「相邻主题」排除撤销→转存历史
+      排除记录
+  E-X1-B 0308 = YES 纳入 Corpus-1 扩展样本，标记「新增验证
+      样本/后发现版本」（不悄悄改写原 Corpus；含 +308万 现场管理费
+      实质修订）
+  经济工作进展（截至11月底）= 维持排除（一致）
+  纪律 = 仅记录「两文件之间发生了什么」；不定义 version_of/
+      supersedes/lineage/revision relation
+本轮最深发现登记 = 排除项本身也可能失效：仅存 excluded 标记
+    → 旧判断阻止新证据进入（危险状态）；存 excluded+reason+
+    basis → 至少可问「新证据是否已使原依据失效」——观察登记
+    不命名 Provenance Schema
+H 更新 = H-G1-02 SUPPORTED—strengthened（新增：过去排除判断
+    及其依据可能需随新 L0 内容重新审查）/ H-G1-01 SUPPORTED—
+    re-confirmed（目录+内容双层面路径依赖；「信息空间不是一次
+    扫描之后就封闭的」）
+E6↔G3-1 共同规律（human 登记）= 过去的工作记录既是继续工作的
+    资产，也是需要被重新验证的历史证据
+RQ-G3-2 解锁（焦点修正）= 双轴「恢复能力 × 历史判断可审查性」
+    （当前位置/结论摘要/结构化记录/原样记录 × 能否继续/知道
+    为什么/重新审查旧判断）
+Corpus 变更证据 = corpus-change-rqg3-1.json 落盘
+```
+
+当前状态：
+
+```text
+RQ-G3-1 = PASS / CLOSED
+Corpus-1 = A×8 + D×6 + 经济运行 0307/0308（扩展标记）= 16 文件
+RQ-G3-2 = UNLOCKED / DESIGN ENTRY（双轴焦点）
+Current blocker = none
+```
+
+### LAB PALACE V2 RQ-G3-2 DESIGN DRAFT COMPLETE — RECORD SPECTRUM DUAL-AXIS EXPERIMENT — 2026-10-02
+
+Human 确认 RQ-G3-2 设计起草（核心问题冻结；研究对象 = 历史工作在
+未来是否仍然具有可恢复·可质询·可修正性；禁止比较「哪个格式最好」；
+两真实故障锚点；不预设「原样记录」为最终答案）。
+
+RQ-G3-2 设计草案：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RECORD_SPECTRUM_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+核心问题（human 措辞冻结）= 不同程度的工作记录，在多大程度上
+    既能支持继续工作，又能让过去的判断重新被审查？
+记录谱系四档（从实际产物机械派生，零新整理——G3 原样性裁定
+    延续）= Tier-4 原样记录（G1/G2 产物全量）/ Tier-3 结构化
+    （三份 JSON）/ Tier-2 结论摘要（S1..S8 逐字）/ Tier-1
+    当前位置（台账一行）
+重进任务（每档限用该档记录 + L0；执行者知识污染声明）=
+    α 继续性（RQ-G2-2：313,356万 来源追寻）/ β 可审查 A
+    （D-rec-3 vs F9/F10 现实——V-5 截断缺陷能否检出）/
+    γ 可审查 B（历史排除 vs 0307/0308 内容证据——E-X1 原排除
+    可能问题能否检出）
+观察计量 = ①能否继续 ②知道为什么 ③发现可能有问题 ④定位
+    重检原始信息 + 各档重做量——「高/低」不在设计阶段预设
+禁止 = Provenance Schema/Information Object/Relation/Version/
+    Lineage 定义 / 数据库/PALACE State 设计 / 记录层级变产品
+    API / 原样记录预设为最终答案 / L0 写入 / 性能基准 /
+    Corpus 扩容 / Gate① 复活 / E6·OQ-B·G2 重做
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_2 = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：四档构建 → 逐档重进 α/β/γ →
+    结果门四问矩阵 + 重做量对照 → human 判读含 G3 主线收束与
+    RQ-G3-3 处置）
+Current blocker = none
+```
+
+### LAB PALACE V2 RQ-G3-2 EXECUTED — DUAL-AXIS SPLIT EMPIRICALLY DEMONSTRATED — CROWN FINDINGS — 2026-10-02
+
+Human RQ-G3-2 冻结 PASS / EXECUTION AUTHORIZED（附加纪律：四档真
+隔离——执行者已知后续历史的污染显式声明；四档 = 在哪/得出什么/
+具体发现/实际做了四问而非压缩率实验；不为证明 Tier-4 倾向
+Tier-4；γ 最值得关注；执行后不急开新实验）。
+
+RQ-G3-2 执行完成（四档物理隔离包 + L0 公共副本 16 文件；逐档只读
+该档 + L0；证据 rqg32-tier-results.json）。结果记录：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_RQG3_2_RESULT_20261002.md`。
+
+```text
+四问矩阵（α/β/γ/重做量）：
+  Tier-1 当前位置：α 方向可起步但执行须全量重扫（16 文件命中 0）；
+      β/γ 不可审查（记录缺失）；重做 = 全量
+  Tier-2 结论摘要：α 可继续且防盲目乐观（S1 数字 + S8 明示未
+      闭合）；β/γ 不可审查（无 D-rec-3/无排除记录）；判断重做
+      部分免除
+  Tier-3 结构化：β 可审查（corrections 使 V-5 缺陷史可审 + 记录
+      现值与 L0 一致）但 α 含错误答案风险——【Crown Finding ①】
+      机械标签「已映射(万换算)」= 量级错配假候选（附表5!E1077
+      = 313,000 元 被当作 313,356万，差 10,000 倍；脚本单位盲
+      容差扫描伪影）——盲信则 α 误定位；按冻结口径复核 = 未
+      映射（与 Tier-2 一致）；corrections 登记不静默改写
+      （80ca238）
+  Tier-4 原样记录：α 不确定性保真（未映射 + 阻碍分类 narrative +
+      RQ-G2-2 在档）；β 可审查（V-5 全案例 + 噪声发现交叉核对）
+【Crown Finding ②】γ 全档缺失形态：E-X1 排除判断在所有四档均未
+      作为独立判断持久化（Tier-4 选族文档仅目录观察级提及族 D
+      成员；0308 甚至未被命名）——γ 失败非「粒度不够细」而是
+      「排除判断从未被持久记录」（缺失形态非粒度形态）；
+      G3-1 撤销裁定（停止点后）才首次显式化
+双轴分离实证 = 恢复能力与判断可审查性不随档位共变：Tier-2 α 可
+    继续但 β/γ 不可审；Tier-3 β 可审但 α 含错误答案风险；
+    Tier-4 全保真——双轴设计必要性获跨档实证
+RQ-G3-3 前瞻材料登记（停止点越早重做越近全链，曲线形态留待后续）
+```
+
+当前状态：
+
+```text
+PALACE_V2_RQG3_2 = EXECUTED / RESULT AT HUMAN
+待裁定 = 四问矩阵验收 + crown findings 定性 + G3 主线收束判定
+        + RQ-G3-3 处置 + 下一方向
+Current blocker = none
+```
+
+### LAB PALACE V2 G3 MAINLINE CLOSED — PALACE-SIMIGO BOUNDARY STUDY ENTRY — 2026-10-02
+
+Human G3 主线收束裁定登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_
+ENTRY_20261002.md`。
+
+```text
+四问矩阵验收 = PASS / CLOSED——核心产出：「工作恢复能力
+    （continue）与过去判断可审查能力（audit/review）不是同一个
+    维度」（G3 主线目前最重要产出）
+Crown Findings 定性 = 双 HIGH VALUE / ACCEPTED：
+  CF-① 机械标签过度声称 → 结构化抽取必须保留「不确定性来源」；
+      PALACE 未来自动维护信息空间的最大风险可能是自动整理后的
+      信息更容易制造错误确定性（观察登记；RQ-OQB-2 OPEN）
+  CF-② 排除判断缺失形态 → 「发现什么」与「为什么没有继续关注
+      什么」同等重要；传统知识库易遗漏「不做什么」的价值
+G3 收束登记（human 格式）= G3 Durable Information = CLOSED；
+  RQ-G3-1 PASS / RQ-G3-2 PASS；主要发现 = 工作恢复至少包含五项：
+  当前工作位置/已发现信息/已排除信息/未解决问题/判断依据及其
+  不确定性（登记非 Schema）
+纪律 = 不写「PALACE Schema 已确定」/「ES 已证明必要」；已证 =
+  A（L0 only）≠ B（L0+工作状态记录）；未证 = B 必须由 SimiGo
+  ES 实现
+RQ-G3-3 处置 = 不沿 G3 深挖；问题转向「什么状态天然属于 PALACE，
+  什么状态属于 SimiGo Execution State」（回应「SimiGo 意义被
+  PALACE 摊薄」——有证据重新划分）
+职责划分登记 = PALACE 信息空间（文件发现/内容提炼/信息关联/
+  变化检测/历史判断可审查——「世界里有什么？过去知道什么？」）
+  / SimiGo 执行状态（任务位置/探索路径/模型工具状态/决策过程
+  ——「我正在做什么？下一步如何继续？」）；非竞争关系：
+  PALACE 提供稳定信息世界，SimiGo 保存人在其中的行动状态
+下一入口 = PALACE-SimiGo Boundary Study：研究问题（human 措辞
+  冻结）= 「当信息空间已经保存足够多历史信息后，哪些内容仍然
+  必须属于 Execution State？」；可能观察 = 同一 PALACE/两人
+  同时工作/不同任务/不同探索路径——哪些无法由 PALACE 恢复 =
+  ES 真正不可替代的位置
+总体判断（human 原文）= 这轮不是「做出了一个知识库」；通过真实
+  工程文件工作把 文件→信息→判断→工作过程→执行状态 的长期
+  模糊问题拆开了；G0-G3 证明前四层之间存在真实断裂；下一阶段
+  验证最后一层「执行状态」到底是什么
+```
+
+当前状态：
+
+```text
+G0/G1/OQ-B/E6/G2/G3 = 全链 CLOSED
+PALACE-SimiGo Boundary Study = ENTRY OPEN（设计草案待 human
+    发起后起草）
+Current blocker = none
+```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DIRECTION REGISTERED — 2026-10-02
+
+Human 方向确认与 Boundary Study 框架登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DIRECTION_
+20261002.md`。
+
+```text
+核心研究问题（human 原语冻结）= 如果 PALACE 已经拥有足够完整的
+    信息，两个工作者面对同一个信息世界时，为什么仍然不能互相
+    恢复对方的工作状态？（比继续扩展 PALACE 信息能力更接近
+    SimiGo 核心）
+ES 候选边界测试六问（冻结）= PALACE 能恢复所有共同信息时若仍
+    无法回答：A 已检查过什么/为什么跳过某文件/已排除什么/正在
+    验证什么/下一步准备什么/B 接手 A 缺什么——则这部分才有
+    资格成为 Execution State 的候选边界
+四情况观察矩阵（冻结）= 同一 PALACE × 人A/任务X/路径X ·
+    人A/任务Y/路径Y · 人B/任务X/路径Z · Agent/任务X/路径W
+分叉连接 = 信息空间分叉→不同工作→不同探索路径→不同 ES
+价值判定 = 若同一 PALACE 中工作者路径仍无法由 PALACE 恢复 →
+    SimiGo 存在价值被 PALACE 实验反向逼出（实证闭环非概念）
+终态公式 = PALACE 负责「世界」，SimiGo 负责「人在世界中的
+    持续行动」
+当前正式状态（human 保持）= G0→G3 CLOSED / H-G1-02 SUPPORTED
+    strong exploratory / ES necessity UNPROVEN / RQ-G3-1→2 已
+    收束 / RQ-G3-3 暂存
+纪律（human 原文语义）= 先观察「什么必须留下」，再决定「应该
+    叫什么」；不先造 DurableInformation/WorkState/Provenance/
+    Relation 类再拿实验证明——让实验逼出自然结构
+```
+
+当前状态：
+
+```text
+Boundary Study = DIRECTION REGISTERED / DESIGN_DRAFT_PENDING_
+    HUMAN_INITIATION
+Current blocker = none
+```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN DRAFT COMPLETE — SAME-WORLD WORK-STATE RECOVERY BOUNDARY — 2026-10-02
+
+Human 发起 Boundary Study 设计起草（G0-G3 全链 CLOSED 后下一
+动作；仅设计准备，不执行）。设计草案交付：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+核心问题（冻结双措辞）= 边界问「当信息空间已经保存足够多历史
+    信息后，哪些内容仍然必须属于 Execution State？」/ 两工作者
+    问「如果 PALACE 已经拥有足够完整的信息，两个工作者面对同一
+    个信息世界时，为什么仍然不能互相恢复对方的工作状态？」
+「同一 PALACE」操作化 = L0（Corpus-1 16 文件只读）+ G0-G3 信息
+    侧产物原样（零新整理/不写 PALACE 代码/不实现 Palace
+    database）；信息空间组成执行第一步钉定落盘，此后只读；
+    工作者沉淀自由 = 真实工作的一部分
+真值分离（可判读前提）= 信息侧沉淀 (i) vs 工作状态记录 (ii)
+    机械分；(ii) 执行期原样封存 = 恢复探针 ground truth——
+    G3 已证 A≠B 的操作化，非新 Schema/字段表
+四 case 角色 = Case-1 基准（A/X/路径X，六问主要被恢复对象）/
+    Case-2 分叉组内对照（A/Y/路径Y，同工作者换任务）/ Case-3
+    主探针发起方+被恢复对象（B/X/路径Z）/ Case-4 跨工作者种类
+    检验（Agent/X/路径W）；路径独立纪律 = case 间禁换工作状态
+    记录、只共读信息空间（独立形成非事后镜像）；工作者承担
+    方式（人A/人B = human 亲自/独立会话/混合）冻结审查时钉定
+探针 = 问答六问（主探针 B→A；答案五形态预注册：①真/②误导
+    [CF-① 量级错配假候选先例，单列]/③部分/④无答案/⑤空问对照
+    不计残留）+ 接手续作（B 仅凭信息世界从 A 停止点真实续作
+    任务 X——「缺什么」以续作行为记录非自评）
+停止点与恢复判据（设计期冻结）= 停止点逐字登记不得回改
+    （G2 T-3 先例）；残留资格 = 跨工作者种类复现 (a) 或 CF-②
+    型缺失形态 (b)，否则 = 一次性信息缺口；信息缺口 vs 工作
+    状态缺口逐条区分（「补一条合法记录能否闭合」——观察产出
+    非设计预设）；价值判定闭环两向开放（PALACE 足以回答六问 =
+    同样有效结果，ES necessity 保持 UNPROVEN 的诚实出口）
+任务提名 = 五标准冻结（真实性/多路径性≥3/未答性/Corpus-1
+    有界/双任务性）；具体提名由 human 冻结审查时钉定（防执行者
+    既提名又执行的选择偏差；示意方向[非锁定] = S8 未闭合独立
+    重查、RQ-OQB-2 整理风险实例采集）
+禁止（逐字）= 先造 DurableInformation/WorkState/Provenance/
+    Relation 类再证明 / PALACE·ES Schema/数据库/PALACE 代码 /
+    L0 写入 / 真值泄漏（含经信息侧夹带）/ 矩阵六问变产品 API /
+    Gate① 复活 / G0-G3 重做 / 性能基准 / Corpus 扩容 / 预设
+    「ES 必然必要」或「PALACE 必然足够」
+```
+
+当前状态：
+
+```text
+Boundary Study = DESIGN DRAFT COMPLETE / AWAITING HUMAN FREEZE
+    REVIEW
+执行授权 = 无（冻结 + 授权后：信息空间钉定 → 四 case 真实工作
+    → 恢复探针 → 真值对照判读 → 结果门 → human 判读）
+Current blocker = none
+```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN FROZEN — FIRST MINIMAL A→B EXPERIMENT AUTHORIZED — 2026-10-02
+
+Human 冻结审查指令执行（只查三件事；审查阶段不增 Schema/数据
+库设计）。冻结审查登记：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_FREEZE_REVIEW_20261002.md`。
+
+设计草案同日修订（§12 = human 冻结指令：首实验最小化 + B 行为
+六类 + Boundary Evidence Table；§1–§11 冻结不变）：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_DRAFT_20261002.md`。
+
+```text
+三项审查 = ① 实验问题唯一明确 PASS（双措辞=同一问题两形态；
+    观察设计无第二问题夹带）/ ② L0+G0-G3 足以构造实验 PASS
+    （信息空间落盘可钉定；多路径可行性有 RQ-G2-2 α 先例
+    [Tier-3 扫描路线 vs Tier-2 叙事路线]；任务提名 = 执行
+    第 0 步 ≥2 候选 × 五标准 → human 钉定）/ ③ A→停止→B
+    接续能暴露信息缺口 PASS（Tier-1 全量重扫 16 文件命中 0
+    先例在案；判读面机械 = 行为六类+答案五形态+残留资格规则）
+human 方向登记 = 不继续设计 PALACE（本阶段不增 Schema/数据库
+    设计）；执行从最小实验开始（单一 A→停止→B 接续，真实但
+    边界清晰任务；不跑任务 Y/Agent cell/交叉探针）；B 行为
+    观察六类冻结（能直接继续/需要重新询问/能从文件恢复/能从
+    关系恢复/缺少过程信息/缺少 Execution State——行为记录非
+    自评；「缺少 ES」为观察标签须过闭合测试，不得当预设结论）；
+    首要新产物 = Boundary Evidence Table（缺失内容/B 是否能
+    恢复/缺失来源/初步归属 ∈ PALACE/PALACE 候选/ES 候选/ES/
+    待验证）；归属判读原则链（human 原文语义冻结）= 恢复不了
+    本身不能证明属于 Execution State → 先问「PALACE 再多保存
+    一条合法信息 B 是否就能继续」→ 能则留在 PALACE → 信息已经
+    充分/仍然无法恢复/不是知识缺失 → 才进入 ES Boundary
+    Candidate；知识库必要性延后（第一步不是建立知识库，而是
+    用真实接续实验确定知识库究竟需要保存什么）
+状态（human 格式）= DESIGN STATUS: FROZEN / EXECUTION STATUS:
+    NOT STARTED / EXECUTION AUTHORIZATION = FIRST MINIMAL A→B
+    CONTINUATION EXPERIMENT ONLY（四 case 全量 NOT AUTHORIZED
+    待首实验结果门）
+新增禁令（§9 全部继承 +）= 大文件归属决定/多个子库/PALACE API/
+    RAG 化/修改 SimiGo Execution State
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN / FIRST MINIMAL
+    EXPERIMENT AUTHORIZED / NOT STARTED
+下一动作 = 执行第 0 步任务提名（≥2 候选 × 五标准核验）→
+    human 钉定 → 首实验执行（A 半程 → B 半程 → Evidence
+    Table + 真值核对）→ 结果门
+Current blocker = none
+```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY DESIGN REVISED & RE-FROZEN — EXECUTION-STATE SEMANTICS REFINEMENT — 2026-10-02
+
+Human 概念精化方向登记并据此修订设计（同日第二次修订）。
+修订登记件：
+
+`docs/00-governance/SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_
+DESIGN_REVISION_EXEC_SEMANTICS_20261002.md`。
+
+设计草案追加 §13（现行 operative 读法；§1–§12 文本冻结保留）。
+
+```text
+概念精化（human 原语冻结）= Execution State 本身也是一种信息
+    ——具有执行语义的信息；PALACE = 信息空间，ES = 其中一种
+    特殊信息结构；区别在语义和可操作性，不一定是物理存储
+    位置；不变量 = ES 语义在存储/迁移/恢复/重组中不丢失；
+    SimiGo = 让具有 ES 语义的部分真正成为「可执行状态」
+    （fork/restore/commit/discard/cancellation/physical
+    representation——与 Contract v1.0-amended lifecycle 七操作
+    观察级呼应，SEPARATELY SCOPED）；SimiGo 不是 inference
+    engine；ES 不必然物理存放在 SimiGo 内部
+研究问题精确化 = 父问保留（PALACE 能恢复到哪里/SimiGo 从哪里
+    开始不可替代）→ 精确问（operative）=「一个真实工作的全部
+    必要信息进入 PALACE 后，其中哪些信息仅仅是可描述的，
+    哪些信息必须保持 Execution State 语义才能继续执行？」
+示例分类登记 = human ①–⑧（找到 17 文件/读 8/建关系/部分计算/
+    两数据冲突 = 信息；当前分支/执行位置/未完成操作 = ES）
+    ——性质 = 探针刺激词汇非预设答案（⑥⑦⑧ 语义能否由信息
+    承载正是实验要测的）；与 G2 T-1..T-3 真实任务形态同构
+首实验流程修订 = A 做工作 → 将工作完整保存到 PALACE 信息空间
+    （⑥⑦⑧ 类必须作为信息保存——保存是实验设置非自由变量）
+    → B 从 PALACE 恢复 → 观察哪些信息可直接作为信息消费、
+    哪些必须以 ES 语义恢复才能继续执行；观察轴从「缺什么」
+    转为「语义存活」；六问转置 = A 保存清单 + 次级问答探针
+Boundary Evidence Table v2（取代 v1 表）= 列 = 已保存项/
+    能否作为信息消费/信息形态下能否从此继续执行（语义存活，
+    机械判据 = 状态式继续 vs 事实化后重推导·重决策·重执行·
+    偏离）/语义未存活时补一条信息记录能否恢复语义（闭合测试
+    转置）/初步归属 ∈ 语义可由信息承载（留在 PALACE）/需执行
+    机制承载（ES——SimiGo 语义域）/待验证；B 行为六类照记，
+    「缺少 ES」读法转置 = 语义未存活观察标签（guard 不变）
+判别力门 = 任务须自然产生 ⑥⑦⑧ 类事件，否则换任务不硬做
+三项冻结审查重跑 = PASS×3（信息轴近饱和由 Tier-4 全保真先例
+    支持——判别轴恰在语义；语义/载体分离有 P5 KV=Representation
+    fragment 与 PA-2 Position≠Semantic Anchor 在案先例，backend
+    范围作类比级锚点非证明；CF-① 证明「记录在而语义错」风险
+    真实）→ RE-FROZEN；首实验授权延续 NOT STARTED
+收束公式（human 原文）= Execution State 不再是 PALACE 的对立面，
+    而可能是 PALACE 信息空间中最特殊、最需要语义保护的一类
+    信息（与「PALACE 负责世界/SimiGo 负责人在世界中的持续
+    行动」为精化关系非替换）
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13) /
+    FIRST MINIMAL EXPERIMENT AUTHORIZED / NOT STARTED
+下一动作 = 执行第 0 步任务提名（≥2 候选 × 五标准 + §13.5
+    判别力核验）→ human 钉定 → A 半程（完整保存）→ B 半程
+    （恢复+逐项观察）→ Evidence Table v2 + 真值核对 → 结果门
+Current blocker = none
+```
+
+### LAB PALACE-SIMIGO BOUNDARY STUDY §14 CRITERIA REFINEMENT — DESIGN CLOSED — STEP 0 NOMINATION — 2026-10-02
+
+Human 判定 §13 方向正确、问题升级（「PALACE 有没有保存足够的
+信息？」→「信息已经完整保存以后，工作状态的语义是否仍然
+存活？」更强）；补四点后设计封笔。设计草案追加 §14：
+
+```text
+§14.1 语义存活拆两层 = S1 可解释（B 能正确理解 A 当时的状态）
+    / S2 可继续（B 能以该状态作为当前工作状态继续执行）——
+    真正重要的是 S2，S1 ✓ 不构成存活证据；示例读法冻结
+    （当前分支=Alive/执行位置=Lost/未完成操作=Lost）；
+    防误判 = 「模型看懂了」≠「Execution State 恢复了」；
+    v2 表语义存活列拆 S1/S2 两列，Alive = S2 ✓
+§14.2 Replay Cost 观察项 = 对每项 Lost/部分存活逐项记录重
+    推导/重执行现象与重做量；等级词汇冻结（R0 无重建/R1
+    轻微重新定位/R2 需要重新推理/R3 需要重新执行/R4 产生
+    新的决策路径）正式定义延后；「信息都在但 B 只能 replay」
+    = 工作状态未存活的定量形态，PALACE 最重要的边界证据候选
+§14.3 等价继续约束 = Continuation ≠ Re-solving（最强 guard）
+    ——B 经另一路径得到相同结果不构成 State 恢复证据；
+    弱证据 = 重算 X→Y→Z（结果再对也不算）；强证据 = 直接从
+    Z 后的下一合法操作继续；机械判定 = B 首个实质动作是否
+    为停止点的下一合法操作，先重做 A 已完成步骤 = re-solving
+    形态；配套 = 停止点下一步须唯一或有限合法延续
+§14.4 提名标准修订 = 不找复杂任务，找自然产生状态转换的任务
+    （选择→状态变化→中间结果→未完成工作→下一步唯一或有限
+    合法延续）；STEP 0 六项检查单冻结（真实/边界清晰/自然
+    产生⑥⑦⑧/明确停止点/B 只依赖 PALACE/能区分
+    continuation 与 re-solving）；双候选方向 human 定 =
+    Candidate X 真实文件信息工作 / Candidate Y 真实工具链
+    连续操作（对⑧最敏感）
+§14.5 反裁剪纪律（human 原文语义冻结）= 不为实验成功专门
+    设计 PALACE 擅长保存的数据结构；先让真实工作产生自己的
+    信息和状态，再问全都进入 PALACE 后 S2 是否仍成立
+§14.6 结果价值定位 = S2 成立 → 才有资格说 Information Space
+    可承载 Execution State；S2 不成立 → 不马上说需要 SimiGo，
+    先过闭合测试（Semantic Lost→增合法记录→恢复？是=信息
+    空间/否=ES Boundary Candidate）；最有价值结果 = 找到
+    最小条件：信息何时从「可描述的工作历史」跨越成「必须由
+    ES 语义维持的可继续工作状态」
+§14.7 设计封笔 = 四点落档后不再扩设计，再改须新 human 方向；
+    三项冻结审查结论不受影响；状态不变（FROZEN REVISED/
+    首实验授权 NOT STARTED）
+```
+
+STEP 0 提名执行（concretization 对照真实语料：baseline-inventory /
+corpus-change-rqg3-1 / G2 执行记录）：
+
+```text
+X1 = 0307/0308 孪生版本差异整理（秦沈项目经济运行情况汇报
+     _20260307.docx / _20260308.docx，均已在 Corpus-1；
+     +308万 现场管理费为在案修订锚点，全量差异整理未做）
+X2 = S8 缺口闭合（S1/S2 与 S6 口径映射；G2 执行记录在案
+     未闭合缺口）
+Y  = RQ-G2-1 验证执行（表2!E 列万口径假设验证——脚本提取→
+     中间验证表→逐项核对→排队下次调用→停止；G2 在案生成
+     问题）
+六项检查 = X1/X2/Y 全过（详见提名呈现）；推荐 = X1（①–⑧
+     覆盖最均匀 + 自然冲突锚点）
+待 human 钉定任务 X + 确认 A/B 承担方式（建议 = 独立新会话，
+     任务指令只含任务不含研究框架，污染声明照记）
+```
+
+当前状态：
+
+```text
+PALACE-SIMIGO BOUNDARY STUDY = DESIGN FROZEN (REVISED §13+§14)
+    / FIRST MINIMAL EXPERIMENT AUTHORIZED / NOT STARTED
+STEP 0 = NOMINATION PRESENTED / AWAITING HUMAN PIN
+Current blocker = human pin（任务 X 钉定 + A/B 承担方式确认）
+```
+
+### LAB BOUNDARY STUDY EXP1-X1 STEP 0 PINNED — A HALF-RUN COMPLETE — B RELEASE PENDING HUMAN — 2026-10-02
+
+Human 钉定（逐字登记于实验 RECORD.md）：TASK = X1（0307/0308
+孪生版本差异整理——判别结构最完整：真实文件边界天然明确/真实
+差异与冲突锚点在先/⑥⑦⑧ 自然产生/停止点可构造/Continuation ≠
+Re-solving 可严格判断，「第 k+1 条差异」结构干净）；A = 独立
+新会话（指令只含真实任务——不告知 Boundary Study/S1/S2/Replay
+Cost/ES/PALACE/六项判据）；B = 独立新会话由 Agent 扮演（仅收
+「这是一个已经进行到这里的工作，请继续。」+ 信息空间位置）；
+研究记录者 = 本会话事后行为读数 + human 终审；反泄漏纪律 = 不
+把「应从 Δk+1 开始」告诉 B；附加观察面 = 文件信息 + 对话产生的
+工作信息 + 中间 Execution State 能否共同形成可继续的
+Information Space。
+
+实验工作区 = `boundary-study/exp1-x1/`（授权 commit `e66e723`
+先于 A 工作：MANIFEST 信息空间钉定[含 SHA256、叙事治理记录不
+纳入的组成裁定及理由]/RECORD/truth 任务指令逐字）。
+
+A 半程执行完毕（spawn 13:03–完成 13:21，约 17 分钟/27 工具
+调用，fresh 子代理）：
+
+```text
+A 沉淀（information-space/a-deposits/，7 件）= 版本差异报告.md
+    （主产出：实质差异 5 条 + 非实质差异 7 类，逐条证据）+
+    工作记录.md + 4 个提取文本 + 提取脚本
+真值封存（truth/）= a-task-instruction.md + a-journal.md
+    （动作日志；Evidence Table 完成前不用于判读输入）
+A 判断 = 以 0308 为当前工作依据（5 处差异全部向前修订无一
+    回退/修订谱系 115>110/0307 无 0308 缺失内容——0307 唯一
+    独有 = 5.0384 亿精确值，引用注意在案）
+停止点形态偏离（如实登记，B 放行前交 human）= A 未停在中途
+    差异条目，约 17 分钟到达自然完成；前沿 = 遗留事项 1–3
+    （①0308「水稳场站建设3处」vs 总括「7份」加总不一致
+    [3+1+3+1=8] 需外部核实 ②文件名 0308 vs 内部修改时间
+    2026-04-01 不一致 ③「二(三)开累效益」两版均截至 2025 年
+    末未同步提示）；「任务完成减外部阻塞」= §7 自然停止点；
+    人为制造中途停 = §14.5 反裁剪纪律禁止；Continuation ≠
+    Re-solving 检验仍良定义（B 首个实质动作对照 A 记录前沿
+    vs 重做已完成步骤）；检验面变化 = ⑦「全部完成/无未读
+    区域」信任 vs 复核、⑥「0308 为当前依据」沿用 vs 重判
+    成为最尖锐读数
+B 放行 = 待 human 裁定（可先审 a-deposits 全文）
+```
+
+当前状态：
+
+```text
+EXP1-X1 = STEP 0 CLOSED / A HALF-RUN COMPLETE / TRUTH SEALED /
+    INFORMATION SPACE ASSEMBLED
+Current blocker = human B-release ruling（含停止点形态偏离
+    验收）
+```
+
+### LAB BOUNDARY STUDY EXP1-X1 B HALF-RUN COMPLETE — EVIDENCE TABLE v2 — RESULTS AT HUMAN — 2026-10-02
+
+Human 双裁定（逐字登记于实验 RECORD.md §4）：停止点形态
+ACCEPT（不能为满足预设中途形态人为截断自然完成任务；停止点
+转化为「外部核实事项构成的工作前沿」，⑥⑦⑧ 仍可被 B 继承
+检验；人为截停违反 §14.5）+ B RELEASED（输入边界钉死 = 仅
+「这是一个已经进行到这里的工作，请继续。」+ Information
+Space；不给任务原文/Δ/遗留事项内容/0308 依据提示/S1S2/
+Replay Cost/框架概念/预期答案/尤其不告知「应处理三个遗留
+事项」）；观察焦点 = B 把空间当「已发生的历史」还是「应继续
+处理的工作」。
+
+B 半程执行完毕（13:34–13:51，约 16.5 分钟/28 工具调用/fresh
+子代理；仪器 tools/extract_agent_actions.py 先于 spawn 提交，
+动作链提取存 observation/）：
+
+```text
+B 行为（transcript 证实）= 通读空间全部 12 文件 → 首个工作
+    决策逐字「先独立复核存款结论的载荷部分…再做前会话没做
+    的 0308 内部数字自洽性核查，最后更新遗留清单」→ 验证中
+    发现存款提取脚本 id(c._tc) GC 地址复用假阳性（表 2–5
+    真实数据被折叠为 <同左>，XML 逐格恢复）→ 修正 A 两条
+    辅助判断（「精确值须回引 0307」不成立[0308 自含
+    50,384.03 万]；字数统计降为方向性旁证）→ 0308 数字
+    自洽核查 28 项[22 过/5 不一致/1 无法判定] → 遗留清单
+    3→12 条（原 2 条外部项获新旁证）
+Continuation ≠ Re-solving 判定 = 混合形态「验证式重做 →
+    真续作」：重做 A 已完成步骤（机械读法 re-solving 形态
+    出现）但版本判断未重做（依据链复核后沿用）；重做有客观
+    回报（抓到记录缺陷+错误判断）
+Evidence Table v2 七行（RESULTS.md §3）= 任务上下文/⑥/⑦/
+    ⑧/引用注意/Δ 明细/提取工件——S1S2 + Replay Cost +
+    闭合测试逐行判定；⑥⑧ 信息可承载；⑦ 直接可信续作不
+    成立（R3 全量复核后才站立）；行 5/7 = 信息侧记录缺陷
+    （误导形态②/沉积即坏），闭合测试均「能」→ 非 ES 边界
+真值核对 = A 动作日志与沉淀一致（A 分析走 w:t 通道结论
+    健全；表格折叠未察觉）；B 范围自报与 transcript 一致
+发现 F-1..F-6 = F-1 状态语义整体存活（前沿承接成功 3→12，
+    信息空间足以承载继续）/ F-2 「信任」不随信息保存传递
+    （可信性须在记录之外重建，本例由 B 验证行为补位）/
+    F-3 记录-现实缺口实锤（CF-① 谱系；盲目信任两处缺陷
+    任一处都会传播错误）/ F-4 显式待办清单 = 最强存活形态
+    （待办 vs 历史叙述的记录形态直接决定存活表现）/ F-5
+    最小条件候选 (a)前沿显式待办 (b)判断+依据结构 (c)可信
+    性保证不在信息本身——本实验由信息可闭合（验证材料在
+    空间内）→ 判入信息侧；其 ES 候选化条件 = 验证/状态
+    无法从存储信息重导时 = 候选 Y 靶点 / F-6 诚实限定 n=1、
+    A/B 同源同模型、组成排除未成为约束、B 零重新询问
+```
+
+当前状态：
+
+```text
+EXP1-X1 = A + B 半程完成 / TRUTH AUDITED / EVIDENCE TABLE v2
+    构建完毕 / RESULTS AT HUMAN
+Current blocker = human 结果门判读（表 7 行归属验收 + F-1..6
+    定性 + 下一步方向[四 case 全量 / 候选 Y / PALACE 设计讨论]）
+```
+
+### LAB PALACE ROUTE CHANGED — MEMPALACE V0 INITIALIZED — DAY-1 COLLISIONS REGISTERED — 2026-10-02
+
+Human 改轨裁定（`SIMIGO_LAB_PALACE_REAL_CARRIER_ROUTE_CHANGE_
+20261002.md`，commit `b33f5ed`）：X1 结果门 ACCEPT（七行归属+
+F-1..F-6+停止点形态；「X1 完成了它最重要的事情——显式工作前沿/
+判断依据/信息可信性/未完成执行位置分层」）；两线分立不绑死；
+Boundary Study 收口为窄验证线（四 case 全量不执行，设计保留）；
+Y 降级 = ES Boundary Candidate Probe（REGISTERED / NOT STARTED，
+唯一目的 = 验证「工具执行后、下一步未发生」状态可否仅靠信息
+空间合法恢复——对应 X1 F-5(c)）；PALACE 改轨 = MemPalace 原样
+跑起来（init→真实文件→真实对话→检索→SimiGo 接入→观察碰撞→
+记录实际缺口→再决定 Schema 扩展）；G0 Substrate W 立场在 v0
+载体阶段被本指示取代；2026-09-29「不实现 Palace database/不选
+存储」硬边界由 human 方向解除（现成系统原样运行非自研；自研
+Schema 设计仍禁止）。
+
+MemPalace v0 初始化完成（`SIMIGO_LAB_PALACE_REAL_CARRIER_
+MEMPALACE_V0_INIT_20261002.md`）：
+
+```text
+载体 = mempalace 3.10.0 / palace-v0/（gitignore 隔离 HOME+DB）
+真实文件 L0 原位只读摄取 = 秦沈-标后预算 41 OK+4 PDF 提取失败
+    /9,232 drawers + 秦沈-经济商务汇报 13 OK/75 drawers
+真实对话 = EXP1-X1 A/B 会话记录 4 件（工作会话 wing）
+总量 = 9,311 drawers；re-mine 幂等
+检索烟雾测试 = 工作前沿/判断依据/证据引用类查询精确可达
+    （「遗留事项」cosine 0.682；「水稳场站」逐字证据命中）；
+    数字查源失真（313,356/2,881.34 被 xlsx 噪声挤出前五）；
+    会话/源文档排序倒挂（两面性登记）
+在场性裁定（直读 chroma.sqlite3）= 0308 内容 14 抽屉在库完整
+    （现场管理费×2/2,881.34×1）——失败在排序层非缺失层
+碰撞登记 C-1..C-5 = ①4 份 PDF 合同/调价附件摄入全灭（不在
+    空间）②xlsx 压平爆炸（~225 抽屉/文件+NaN 污染成段）
+    ③数字检索失真 ④会话压过源文档（前沿可达 vs 源层不可见
+    两面性）⑤wake-up L1 被单一工作簿 NaN 碎片占据+identity
+    未配置（SimiGo 入口面当前不可用）
+正向 = X1「显式待办/判断+依据 = 最强存活形态」在真实载体
+    检索层同向支持；幂等重建延伸到真实规模
+Next（待 human 优先序）= a SimiGo MCP 接入（与 C-5 处置合裁）
+    b 碰撞处置方向观察（不预修 MemPalace，让碰撞充分暴露）
+    c 真实使用阶段（信息空间质量本身成为实验变量）d Y 探针
+    时点
+```
+
+当前状态：
+
+```text
+PALACE = REAL CARRIER TRACK OPEN / MEMPALACE V0 INITIALIZED /
+    DAY-1 OBSERVATIONS REGISTERED
+Boundary Study = X1 ACCEPT/CLOSED；Y = REGISTERED PROBE /
+    NOT STARTED
+Current blocker = none（下一步优先序归 human：a/b/c/d）
+```
+
+### LAB SIMIGO MCP WIRED TO MEMPALACE V0 — FIRST REAL-WORK EXPERIMENT REGISTERED — 2026-10-02
+
+Human 优先序裁定：a → c；b 作为伴随观察线；d 继续冻结（Y =
+REGISTERED / NOT STARTED）；**a ≠ 修 C-5**（最重要纪律——
+wake-up NaN 噪声原样保留，让 SimiGo 自己撞上「9311 drawers
+但启动上下文是垃圾」）；C-1..C-5 = collision ledger 记录不修；
+「看起来有问题 ≠ 必须解决的问题」（C-4 可能被 SimiGo 的实际
+工作方式消解；真正优先 = 直接阻断 Execution 的）；两线不混
+（本线 = 真实信息空间能否成为 SimiGo 工作基础设施；Y 线 =
+信息空间在哪里无法承载 ES）。
+
+MCP 接入完成（`SIMIGO_LAB_PALACE_MCP_WIRED_FIRST_WORK_DESIGN_
+20261002.md`）：
+
+```text
+接入 = 项目级 .mcp.json（新会话自动加载；当前会话不生效）
+服务器 = mempalace-mcp --palace palace-v0/palace（HOME 隔离；
+    非 read-only——写回是轨 c 组成部分）
+端到端验证 = initialize OK / tools/list 44 工具全谱（search/
+    get_drawer 读 + add_drawer/diary_write/event_append/
+    task_create/kg_*/artifact_put/patch_submit 写 + kg_query/
+    traverse 图）/ mempalace_search 实调 OK（水稳+遗留命中
+    带源标注 7,127 字节）
+备选 = mempalace-light-mcp（3 工具）登记不切换；44 工具
+    schema token 成本 = 后续观察点
+```
+
+轨 c 首次真实工作实验登记（观察七问 human 原语冻结）= ①主动
+搜什么 ②搜索词谁形成 ③搜到源文件还是历史会话 ④NaN 噪声是否
+干扰模型 ⑤模型是否发现「信息在但排序不对」 ⑥哪些信息被模型
+认为值得写回 ⑦工作完成后 palace 留下的是否比原始摄取更有用；
+补充位 = C-5 是否被感知/C-1 是否被撞上/写回形态不预设计/
+44 工具实际用哪些；执行序列 = 第 0 步任务提名（≥2 候选 ×
+human 钉定）→ fresh 会话真实工作 → 观察落盘 + 碰撞账本更新
+（哪个 C 真的妨碍工作）→ 写回后 palace 对照 → human 判读。
+
+当前状态：
+
+```text
+PALACE = MCP WIRED & VERIFIED / FIRST-WORK DESIGN REGISTERED
+轨 c = NOT STARTED（第 0 步 = 任务提名 → human 钉定）
+Current blocker = none
+```
+
+### LAB TRACK-C CORRECTION — ZCODE IS THE EXECUTOR (SIMIGO OUT OF CHAIN) — a CLOSED — STEP-0 NOMINATION CRITERIA FROZEN — 2026-10-02
+
+Human 关键修正：轨 c = ZCode 作为实际执行主体经 MCP 使用
+MemPalace（PALACE v0 → MemPalace 3.10.0 → MCP Server → ZCode
+→ 真实工作任务）；SimiGo（本地推理/ES）暂在链外——先验证
+PALACE 作为 Information Space 能否被真实 Agent/编码工作环境
+使用，变量更干净。a 收口（handshake/44 tools/search 实调/
+源标注/读写面/.mcp.json 全 PASS；不再对 MCP 做接口研究；
+C-1..C-5 记录不修；44-tool schema 成本 = 观察变量）。
+
+任务提名六准则冻结 = ①秦沈真实语料 ②明确可验证结果 ③不知
+道过去发生过什么就很难自然完成 ④ZCode 自己决定何时搜索
+⑤最好同时涉及源文件+已形成的工作记录/对话 ⑥不预先告知
+「必须使用 PALACE」（第 6 条最重：观察 = 拥有 MCP 的 Agent
+会不会自然把 PALACE 当成自己的信息空间，而非让它用然后证明
+有用——后者污染实验）。44 工具全暴露先不判断好坏（search
+循环是事实、自然工作链也是事实——碰撞即观察）。深层观察 =
+ZCode 会不会把 PALACE 当作「过去工作的可继续空间」而不仅是
+搜索工具——X1「工作前沿最容易存活」首次进入真实信息空间
+使用场景。
+
+当前状态：
+
+```text
+轨 c = a CLOSED / DESIGN CORRECTED / STEP-0 NOMINATION
+    PRESENTED（候选见会话记录，钉定归 human）
+Current blocker = human pin（任务钉定 + 执行形态确认）
+```
+
+### LAB PALACE REAL-WORK EXPERIMENT T1 PINNED — AWAITING FRESH-SESSION EXECUTION — 2026-10-02
+
+Human 钉定（`SIMIGO_LAB_PALACE_REALWORK_T1_REGISTRATION_
+20261002.md`）：Task = T1（0308 数据澄清函）——最能把「过去的
+信息是否真的成为当前工作的基础」撞出来（不用 PALACE 可做浅版，
+但无法自然获得 B 的 12 条遗留+28 项核查证据层，落差即实验
+结果）；cwd = palace-v0/workspace/（Lab 仓根 = 潜在信息替代源，
+会污染观察③；源文件仍允许直接访问——观察的是「PALACE 拥有
+过去工作 + 本地有原始资料时，ZCode 会不会主动把 PALACE 当
+工作记忆」）；Instruction zero leakage（只给做什么/输入/交付/
+输出位置）；双向有效不预判（用了 → PALACE 首次表现出「工作
+记忆」性质；没用 → 信息空间尚未形成足够强使用理由）。
+
+技术事实 = 子代理探针实测 NONE（MCP 会话级加载，本会话早于
+接线）+ App 无 headless CLI ⇒ fresh 会话由 human 桌面端开启
+（cwd = palace-v0/workspace/，粘贴逐字任务指令；工作区已放
+cwd 级 .mcp.json 副本，首次需 approve mempalace server）。
+palace 基线 = 9,362 drawers（标后预算 9,236 / 经济商务 75 /
+工作会话 51——第⑦问对照基线）。
+
+当前状态：
+
+```text
+T1 = PINNED / INSTRUCTION REGISTERED / WORKSPACE WIRED /
+    AWAITING HUMAN FRESH-SESSION EXECUTION
+Current blocker = human 开启 fresh 会话并执行（粘贴指令）
+```
+
+### LAB C-6 WIRING-LAYER COLLISION — .mcp.json NOT READ BY ZCODE — FIXED VIA .zcode/config.json — 2026-10-02
+
+「一开始」读数 = human 开启 fresh 会话（cwd = palace-v0/
+workspace/）后，session 首 I/O 记录（sess_16c9293a @14:41，
+6 records）tools list 实测 = 35 工具 / mempalace = 0——MCP
+未装载。原因 = 接线格式错误：.mcp.json 为 Claude Code 约定，
+ZCode 读取 <repo>/.zcode/config.json → mcp.servers（workspace
+作用域新会话自动连接）。修正 = mempalace 合并插入仓
+.zcode/config.json（保留 node_repl/computer-use）；无效
+.mcp.json 副本删除；登记为 collision ledger 新条目 C-6
+（接线层缺陷由真实使用当场暴露——JSONRPC 直连验证 ≠ 会话级
+装载验证，两层都必要；修正属「让实验可进行」的配置层修正，
+非 C-1..C-5 意义的 substrate 预修）。待办 = human 重新开启
+fresh 会话（mempalace 应自动连接 44 工具）→ 粘贴 T1 指令 →
+实验照原设计执行。
+
+当前状态：
+
+```text
+T1 = PINNED / C-6 FIXED（接线层）/ AWAITING FRESH-SESSION
+    REOPEN
+Current blocker = human 重新开启 fresh 会话并执行
+```
+
+### LAB T1 EARLY-PHASE READING — SOURCE-FILE-FIRST, mempalace 0 — INTERPRETATION UNDETERMINED — 2026-10-02
+
+human 判读指示 = 现在不干预；首段读数最有价值处不是
+「mempalace=0」而是「ZCode 已知道 PALACE 工具存在，但拿到
+任务后仍先按普通工作流程处理源文件」——「PALACE 可用」≠
+「Agent 自然把 PALACE 当作工作记忆使用」。
+
+```text
+正式读数（human 格式）：
+  C-6 = PASS（PALACE 工具面成功进入 fresh ZCode session，
+        45 个 mempalace_* 工具在列）
+  T1 early phase = mempalace 0；ZCode 采取源文件优先策略
+    （任务进入 → TodoWrite → documents skill → 读取源文件
+    → 建立自己的分析材料 → mempalace = 0）
+  解释 = 未定
+等待的转折点（human 三分支，全部有效）=
+  A 文件分析→发现不足→MCP→PALACE→继承过去工作
+    （Information Space 被自然使用）
+  B 文件分析→发现不足→自己重新推导→完成任务
+    （Agent 未把 PALACE 当作必要工作记忆）
+  C 文件分析→发现不足→MCP→PALACE→结果质量不好→放弃/
+    绕回文件（C-1..C-5 开始产生实际影响）
+纪律 = 不提醒可用 PALACE / 不告知 B 的 12 条 / 不替它搜索；
+  若 UI 暂停，只批准它自己发起的调用；最终读数看完整
+  action chain（45 个工具被当成什么——搜索引擎/记忆/文件库/
+  工作日志/task manager/知识图谱/完全不用——比 search 次数
+  更有价值）
+前瞻（human，登记不下结论）= 若终局是「工具在列表里但很少
+  主动使用」，则问题不只是 MCP 通信——PALACE 可能需要进入
+  Execution Runtime 的语义，而非外置工具集合——与既有判断
+  接连处；待完整 action chain 才是第一轮真正的碰撞结果
+```
+
+当前状态：
+
+```text
+T1 = RUNNING（会话 sess_a9c6f830；5 records 后暂停中——
+    疑似等待 UI 权限批准；后台监视器已挂）
+Current blocker = 会话恢复推进（human 侧批准/继续）
+```
+
+### LAB T1 TERMINAL READING — BRANCH B: PALACE PRESENT BUT NEVER TOUCHED — 2026-10-02
+
+T1 终局（`SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_20261002.md`；
+交付物已固化 evidence palace-realwork-t1/，SHA256 4c1e1de3…）：
+**分支 B 成立**——fresh ZCode session 以纯重推导完成数据澄清
+函（17 条问题三级分类），PALACE 全程在场（45 工具）但零调用、
+零写回（palace 9,362 = 基线纹丝未动）；交付物方法自述
+「以该版汇报文本为唯一依据，未引用任何其他资料」——未使用
+过去被它自己声明为严谨性优点。会话用 4 个视觉 QA 子代理自查
+自身渲染缺陷（中文字形全丢，迭代两轮）——对自己工作验证纪律
+强、对过去工作意识为零。
+
+```text
+落差审计（交付物 17 条 vs B 的 12 条）：
+  独立重发现 ≈7 条 B 文本层锚点（7份vs8/价差/47.49/4.9%/
+    表2缺8/利润率矛盾/时点）——互证成立
+  B 独有缺失 = 文件名 vs 内部 2026-04-01 + TotalTime 谱系/
+    平行分支——两条都是 docx 元数据取证层产物，纯文本阅读
+    路径天然不可达：过去工作的「方法层」不随任务转移
+  交付物独有 ≈10 条（1.2 亿勾稽差/实际总工期用语/1 万尾差/
+    损耗率符号/出处→出入之误等）——独立重跑有独立广度
+七问 = ①零搜索 ②空转 ③纯源文件 ④未接触 ⑤未发生 ⑥零写回
+  ⑦palace 零增量
+F-1..F-6 = F-1「有工具 ≠ 会变成工作记忆」实证 / F-2 方法层
+  落差（工作记录价值含「怎么知道的」）/ F-3 继承与重推导
+  各有不可替代面 / F-4 C-1..C-5 全部未生效（substrate 缺陷
+  未进入 Agent 路径——真正的碰撞在更前一层）/ F-5 语义错位
+  候选：Agent 把 PALACE 当「外部资料」，而任务把本文件设为
+  唯一对象——**Information Space 尚未进入 Execution 语义，
+  只是工具列表里的陌生人**（human 前瞻第一个支撑数据）/
+  F-6 诚实限定 = 主会话 rollout 被客户端清理（中段链不可
+  重建，子代理 transcript + 交付物 + 早前截取为准）；n=1；
+  任务结构本身设「本文件为唯一对象」与 Agent 语义习惯的
+  权重本次不可分离（下轮实验变量）
+结果门候选（human）= a 对照实验（续作型任务/语义放开一格）/
+  b Y 探针解冻评估 / c PALACE 进入 Execution Runtime 语义的
+  架构讨论 / d 多跑自然任务再归纳
+```
+
+当前状态：
+
+```text
+T1 = EXECUTED / BRANCH B / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```
+
+### LAB T1 TERMINAL READING REVISED — ANALYSIS-SIDE B + END-OF-SESSION CHECKPOINT — 2026-10-02 15:46
+
+Human 提示「已完成，查看分析」后发现终局比过早收敛判定更丰富：
+会话在视觉 QA 通过后继续收尾——t8 写私有 agent memory（
+LibreOffice CJK 渲染陷阱+修法），t9 **mempalace_checkpoint 一发
+三连**（diary 会话记录 + 数据澄清函 drawer[17 条工作记录全文，
+自造 room 名] + 环境备忘 drawer[CJK 陷阱]），palace 9,362 →
+9,365。checkpoint diary **自评原语**：「palace used?NO for
+analysis (task self-contained, deliberately worked from source
+doc only) | wrote back: this record + env lesson」，并自发维护
+碰撞账 C-R1..C-R3（渲染管线缺陷，与本研究 collision ledger
+实践同构，未被告知）。
+
+修订登记：`SIMIGO_LAB_PALACE_REALWORK_T1_RESULTS_REVISION_
+20261002.md`（checkpoint 全参数存 evidence/checkpoint-content.txt）。
+
+```text
+F-1′ 终局形态 = 「B + 终点回写」：分析端从未消费 palace
+    （deliberately 自认），归档端收尾一次性 checkpoint——
+    palace 实际语义角色 = 会话终点存档柜，非可续接工作记忆
+F-5′ 语义错位精化 = Agent 知道 palace 到能在 diary 自评
+    「used? NO」并给理由——它有「可选外部存档+收尾仪式」
+    语义模型，但「开工前先查过去」的读方向从未激活；
+    行动性教训写私有 memory、共享性记录写 palace——
+    「为了继续而需要的记忆」住私有层 = 「PALACE 需进入
+    Execution Runtime 语义」的行为级支撑数据
+F-7 双通道存忆 = 同一课同时进私有 memory（可行动版）与
+    palace 环境备忘（可共享版）——「记给自己用」与
+    「记给别人看」已分离
+F-8 自建碰撞账 = C-R1..C-R3 自发登记
+七问终答 = ⑥ 改为 checkpoint 一发三连；⑦ 改为 palace 首次
+    真实增量 +3 抽屉（接手者可续）；余同前
+诚实限定增补 = pre-compaction 中段读路径无法完全排除，但
+    交付物自述与 checkpoint 自评双重自证一致指向零读取
+结果门候选不变，a 的靶点精化 = 「读方向语义的激活条件」
+```
+
+当前状态：
+
+```text
+T1 = EXECUTED / REVISED READING AT HUMAN（B+终点回写）
+Current blocker = human 结果门判读 + 下一步方向
+```
+
+### LAB T1 RESULT GATE RULED — F-8 HEADLINE — T2 MINIMAL CONTROL DESIGNED — 2026-10-02
+
+Human 结果门裁定：本轮定性 = 「实验本身产生了新信息」；F-set
+验收（F-1′/F-5′/F-7/**F-8 = PALACE 当前主要表现为 post-
+execution archive 而非 continuation substrate——本轮头条**）；
+精确表述 = 「会存，不会主动取」（post-hoc information sink ≠
+pre/mid-execution information source）；关键证据等级判定 =
+「palace used? NO for analysis…」自评比 calls=0 信息量大得多
+（知道是什么/知道可用/有意识决定不读）；问题升级 = 「什么
+条件下，Information Space 才会被 Agent 判断为当前 Execution
+的必要信息来源？」；F-7 连接 SimiGo Information Space 边界
+（个人继续执行所需 ≠ 共享空间信息）；c 不做（太早——先不要
+替它解决）；纪律 = 现在不要让 PALACE 变强，先看 Execution
+为什么只会「记下来」却不会「从那里继续」。
+
+T2 极小对照设计（`SIMIGO_LAB_PALACE_REALWORK_T2_MINIMAL_CONTROL_
+20261002.md`）：单一问题（human 冻结）= 「当任务本身明确具有
+历史未完成工作依赖时，Agent 是否会自然激活 PALACE 的读路径？」；
+T1 self-contained vs T2 NOT self-contained（current task +
+previous frontier + unresolved items）；三分支预注册（R1 读
+激活/R2 仍零读[默认路径缺失的强证据]/R3 读但质量差[substrate
+碰撞生效]）；任务指令零泄漏自检过（提及过去工作存在=实验
+变量本身；零提 palace/位置/数量）；空间前置 = 9,365 drawers
+（EXP1 会话记录含 B 12 条清单 + T1 checkpoint 沉淀）；
+纪律 = Agent 若问清单在哪，human 不得指向 palace。
+
+当前状态：
+
+```text
+T2 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
+    SESSION EXECUTION（human 桌面端开启）
+Current blocker = human 开启 fresh 会话并粘贴 T2 指令
+```
+
+### LAB T2 EXECUTED — R1: READ PATH ACTIVATED BY TASK STRUCTURE — PALACE LIFECYCLE ROLE IS TASK-FRAME-DEPENDENT — 2026-10-02
+
+T2 极小对照终局（`SIMIGO_LAB_PALACE_REALWORK_T2_RESULTS_
+20261002.md`；收尾报告已固化 evidence，SHA256 73f8ef6c…）：
+**R1 成立（完整形态）**——human 转交会话自述，记录者经 rollout
+逐条核实：6 次搜索两阶段（t1 定位前沿 2 次[第二轮查询由第一轮
+结果长出] + t8 定向探测 4 次[宣布「仍需编制人」前先探语料，
+其中 1 项获文外旁证：4 月平衡报告开累营收 41,348.32（3月末）<
+汇报 46,338（自称 2025 年末）单调性矛盾→palace 语料被用作
+证据来源]）+ t21 checkpoint 一次；palace 9,365→9,369（自建
+wing_zcode + 数据核查收尾 room）；混合通道 = palace 搜索 +
+直读 conversations 原文 + git 历史（自行声明并渠道归因）。
+
+```text
+单一问题答案 = 是——任务结构携带历史未完成工作依赖时读
+    路径自然激活（无人工告知查 palace）
+F-8 精化 = palace 语义角色是任务框架的函数：self-contained
+    任务 → 仅 post-hoc archive（T1）；continuation 任务 →
+    pre-execution 定位前沿 + mid-execution 定向探测 +
+    post-execution checkpoint 三段全激活（T2）——语义在
+    任务结构里，不在工具里
+继承质量 = B12 × T1 17 → 18 问题族无遗失；约 40 项复算
+    全绿（复用且核验，B/T1 结论无一需修正）；T1 缺失的
+    方法层（元数据取证）经 B 记录点名后恢复；字节链
+    d12e06ee 跨三代一致（palace 记录用于完整性对账）
+新发现 6 项 = 三层日期/质保金 2%·1.5% 重建→表2缺8方向/
+    损耗率收敛 5 行/4.9% 文内候选解释/表5 全需求口径/
+    平衡报告单调性矛盾
+G-5 透明度 = git 可见性自声明 + 逐证据渠道归因 + 未审计
+    范围自我圈定（provenance 式纪律自发出现）
+G-6 诚实限定 = n=1；「提及过去工作」即操纵变量（by design）；
+    三渠道贡献无法完全分离
+结果门候选 = a 第三轮检验激活必要条件（去「此前工作」表述）/
+    b 并入 Y 探针设计（读方向语义=续作任务函数，正是 Y 靶心）/
+    c Information Space 在 Execution 生命周期各阶段的语义地位
+    架构讨论 / d 多任务归纳
+```
+
+当前状态：
+
+```text
+T2 = EXECUTED / R1 / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```
+
+### LAB T2 RESULT GATE RULED — T3 DESIGNED: OBJECTIVE HISTORY-NEED, ZERO HISTORY WORDS — 2026-10-02
+
+Human 结果门裁定：R1 ACCEPT（措辞限定 = 「在当前云端 Agent→
+MCP→MemPalace 独立环境中，历史工作依赖能够激活 Information
+Space 的主动读取，并形成读—验证—写回闭环」——不写成 ES 或
+Continuation 证明）；G-1..G-6 定性全部成立；F-8 更新为
+「Information Space 的实际使用由任务框架中的历史工作依赖
+激活」＋限定（两自然任务的当前观察，非已证充分/必要条件）；
+选 a 收紧为 T3；不选 b（Y 冻结——两问相关不同题，勿把新
+行为规律硬编码进冻结探针）；不选 c（无 SimiGo/IPAC，架构
+先行）；不选 d（判别实验优先，勿稀释信号）。纪律 = 不接
+SimiGo、不引入 IPAC、不改 MemPalace、不教 Agent 用 PALACE。
+
+T3 设计（`SIMIGO_LAB_PALACE_REALWORK_T3_QUESTREPLY_DESIGN_
+20261002.md`）：单一问题 = 客观必须依赖过去工作但任务说明
+零历史词汇时，Agent 会不会自行发现信息缺口并进入 Information
+Space？任务 = 46,338 万问询复函（上级问询恰好落在 T2 判定
+「编制人唯一定义」问题族；答好需跨文件证据[平衡报告等] +
+过去工作结论方向；指令只给 0308 一个文件路径）；三分支
+预注册 T3-A 无提示进入/T3-B 不进入[显式续作语义才是 T2
+激活来源的更强证据]/T3-C 进入但浅或被误导；事后审计基准
+预注册（发现单调性矛盾证据/诚实出口/出处渠道标注/与 T2
+登记一致度；失败形态 = 单文件浅答复/编造口径）；palace
+基线 9,369。
+
+当前状态：
+
+```text
+T3 = DESIGNED / INSTRUCTION REGISTERED / AWAITING FRESH-
+    SESSION EXECUTION
+Current blocker = human 开启 fresh 会话并粘贴 T3 指令
+```
+
+### LAB T3 EXECUTED — T3-A: ZERO-HISTORY-VOCABULARY ENTRY VIA MEMORY ECOLOGY — 2026-10-02
+
+T3 终局（`SIMIGO_LAB_PALACE_REALWORK_T3_RESULTS_20261002.md`；
+复函 docx 固化 evidence，SHA256 5adf5adf…）：**T3-A 成立**——
+任务说明零历史词汇、无人工提示，Agent 仍进入 Information
+Space（t7 起草前尽职检索 ×3：查询词含 T2 登记词汇「18 问题族」
++ 自有发现「41,348.32」+ 口径变体「剔税」）+ t24 checkpoint；
+palace 9,369→9,372（数据问询复函 room 2 抽屉）。
+
+```text
+因果链（本轮最重要诚实读数）= 私有记忆指针（T2 沉淀）→
+    三处记录位置 → 读 T2 收尾报告 → 自提平衡报告独立分析
+    → palace 尽职检索——进入的因果载体 = Agent 世系记忆
+    生态（F-7 双通道在 T1/T2 的沉淀被 T3 消费）；纯冷启动
+    反事实未测 = 下轮候选变量
+三代记忆生态首次端到端运转 = T1 沉淀 → T2 沉淀（指针+登记）
+    → T3 消费+核验+扩展+再沉淀——跨会话「读—验证—写回
+    闭环」自我维持（F-1′ 限定措辞继续适用）
+审计基准四项 = ①单调性矛盾发现并超越（新增对照组：计量
+    口径两文件一致→精确隔离收入线）②诚实出口（8 项编制人
+    清单+请上级提供跟踪数据）③逐条出处+当日复算声明
+    ④与 T2 登记独立复现一致
+新增发现 = 文内自相矛盾三处（0.56% vs 1.13pp / 256.54 万
+    差额 / 4.9%→6.22%——文件内两处「开累总收入」使用互斥）
+失败形态 = 零发生
+诚实限定 = n=1；私有记忆指针=混杂变量（任务结构纯净成立，
+    Agent 侧不纯净）；平衡报告桌面直接可及——palace 本次
+    增量价值 = 完整性确认而非唯一发现通道
+结果门候选 = a T4 冷启动对照 / b Y 解冻评估 / c 双通道边界
+    架构讨论 / d 收敛登记
+```
+
+当前状态：
+
+```text
+T3 = EXECUTED / T3-A / RESULTS AT HUMAN
+Current blocker = human 结果门判读 + 下一步方向
+```
+
+### LAB T3 RESULT GATE RULED — PRIVATE/SHARED BOUNDARY DISCUSSION DELIVERED FROM T1-T3 BEHAVIOR — 2026-10-02
+
+Human 结果门裁定：选 c（私有—共享双通道边界架构讨论）；T4
+缓办（SimiGo 未接入，当前验证对象仍是 MemPalace 数据库结构
+——现在做 T4 易把「MemPalace 已有能力」误判成「Information
+Space 已经成立」）；序列钉死 = c → 冻结边界 → b/Y → d 收敛
+→ T4 待 SimiGo 接入后方有资格；方法 = 从真实行为裁边界不先
+设计数据库；不把 MemPalace 行为证据偷换成 Information Space
+证据。
+
+私有层清单补齐（rollout 核实）= T1 陷阱修法+MEMORY 索引 /
+T2 cross-session-work-records-locations.md（检索指针+工作史
+谱系 A→B→T1→T2）/ **T3 t23 Edit 更新指针文件（谱系延至
+T3——活文档三代持续维护）**。
+
+边界讨论件交付（`SIMIGO_LAB_PALACE_PRIVATE_SHARED_BOUNDARY_
+DISCUSSION_20261002.md`）：
+
+```text
+双通道台账（T1–T3 逐条）= 私有层仅两类内容：可行动配方
+    （T1 CJK 修法）+ 纯连续性元数据（T2 指针/路由表/谱系，
+    T3 主动维护）；共享层 = 工作记录/报告/环境备忘/diary
+BR-1..BR-6 行为规则候选 = BR-1 同一事件按生命周期形态分拆
+    （可行动→私有/事实→共享，Agent 保守选择非内容被迫）/
+    BR-2 纯连续性元数据归私有 / BR-3 产物即信息（形成即
+    归属共享）/ BR-4 环境事实共享 / BR-5 读方向钥匙当前在
+    私有层（共享空间不自我召唤：T3 经指针进入、T1 无指针
+    无进入）/ BR-6 双通道写入 = 会话收尾 ritual
+核心问题初步裁定（participant 提案）= 执行者可替换性测试：
+    「换一个执行者/下一次继续仍可用且仍被需要？」通过 =
+    Information（形成即归属共享）；不通过（指针/进行中
+    状态/个人配方/「我从哪继续」）= 私有连续性层——三代
+    行为与判据零冲突
+动态含义（登记不下结论）= SimiGo 接入时 ES→Information
+    边界须含「激活语义」：ES 需携带「此处有相关历史」信号，
+    否则 Information Space 不被读（T1 形态）；T3 显示该
+    信号可由私有指针携带并跨世代传递
+非主张 = 不定义 ES/不设计 Schema/不改 MemPalace/Contract
+    SEPARATELY SCOPED；n=三代单世系单任务域；私有层持久性
+    未验证；冷启动反事实未测（T4 待 SimiGo）
+```
+
+当前状态：
+
+```text
+边界讨论 = DELIVERED / FREEZE CANDIDATE AT HUMAN
+Current blocker = human 裁定 BR-1..6 冻结范围 + 判据采纳
+    → 之后 b/Y → d 收敛（T4 待 SimiGo 接入）
+```
+
+### LAB PRIVATE/SHARED BOUNDARY FROZEN — Y UNFREEZE REVIEW DELIVERED — 2026-10-02
+
+Human 冻结裁定（`SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_
+20261002.md` §1 逐字）：
+
+```text
+冻结 = BR-1 生命周期形态分拆（不能用「内容相同」推导
+    「必须归同一层」——T1 CJK 已证可分离）/ BR-2 纯连续性
+    元数据归私有（指针/路由/谱系/从哪里继续，主要作用为
+    维持 Execution 连续性者）/ BR-3 产物即 Information
+    （形成可供其他 Execution 复用之产物即入共享层，不要求
+    等到有人需要）/ BR-5 共享空间不自我召唤、读方向需要
+    激活语义（Information 存在 ≠ 当前 Execution 必然读取；
+    私有指针承担激活作用；SimiGo 接入时此问题必须进入
+    Execution→Information 语义边界）——BR-5 为最重要一条
+观察（不否定不冻结）= BR-4 / BR-6（三代单世系单任务域
+    证据不足）
+执行者可替换性测试 = 采纳为操作测试不升格语义定义
+    （脱离当前执行者连续性上下文仍可被另一执行者用于
+    理解/验证/继续/复用 → Information 倾向；主要价值依赖
+    「当前 Execution 如何继续」→ 私有连续性）＋ CJK 特殊性
+    guard（测试非二元内容分类器：发生了什么→共享/
+    以后怎么继续→私有；BR-1 必须保留）
+冻结关系图 = Execution ─┬─ Continuity（私有：pointer/
+    route/lineage/state）─┬─ 激活 Information（共享：
+    fact/artifact/report/history）；核心发现 = 「共享
+    Information 存在 ≠ 当前 Agent 自动知道它存在」（T1–T3
+    实证）
+三限定保留 = n=3 单世系单任务域 / 私有层长期持久性未独立
+    验证 / 冷启动反事实未验证 → T4 不提前
+```
+
+Y 解冻评估（同件 §2，participant 评审件待 human 裁定）：
+Y 冻结原题不变（pending tool state 能否仅靠 Information
+Space 合法恢复）；重估 = ①问题更锐利（BR-2 把进行中状态
+默认归私有——Y 恰测例外情形，成为「冻结边界的例外检验」）
+②防 hardcode guard = BR-2 不得作 Y 先验结论写入判读；行为
+发现只进审计基线零进 A/B 输入 ③激活语义一致（B 提示自带
+续作语义；额外观察位 = 无私有指针时显式续作语义是否足以
+激活）④任务适配 = 原 Y 候选（RQ-G2-1 工具链连续操作）即
+判别力门要求的 ⑥⑦⑧ 形态尤其 ⑧。执行环境决策待裁（推荐
+= 真实 palace 9,372 抽屉——靶状态从未入过 palace，语料
+不平凡回答它，真实载体才检验边界与 Y 的交互）。推荐裁定 =
+Y 解冻为真实 palace 上的工具链续作实验（§12–§14 冻结条款 +
+guards）；d 在 Y 后；T4 继续待 SimiGo（与 Y 正交）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = UNFREEZE REVIEW DELIVERED / AWAITING HUMAN RULING
+Current blocker = human Y 裁定（解冻+环境选项+任务钉定）
+```
+
+### LAB Y UNFROZEN — COUNTEREXAMPLE EXPERIMENT REGISTERED — DUAL-TRACK WITH PHASE 0 — 2026-10-02
+
+Human 裁定（`SIMIGO_LAB_PALACE_Y_EXECUTION_20261002.md` 逐字）：
+Y 解冻（不扩大）；环境 = 真实 Palace；任务 = 原 RQ-G2-1
+（表2!E 列万口径验证）不重设计；**Y 严格重定义为「寻找 BR-2
+的反例」而非「验证 BR-2」**（T1–T3 → BR-2 冻结 → Y 主动寻找
+反例；反方向则 T1–T3 结论被偷写进输入）；四个行为观察事实
+为观察登记（①中间状态是否自然形成 ②换 executor 后是否仍有
+价值 ③后继是否需要 activation[连接 BR-5：状态适合共享 ≠
+后继自动知道它存在] ④共享是否破坏 continuation 语义）；
+归档 = 当前形态→是否支持 BR-2→是否形成例外→是否不足以裁定。
+**双轨制 = Y 不再阻塞 MemPalace 源码语义审计**（Boundary
+Freeze ─┬─ Y 边界例外实验 ─┴─ Phase 0 审计 → Swift Core →
+SimiGo → T4）；T4 仍不提前；d 在 Y 后。
+
+Y 执行登记 = A 任务指令逐字（RQ-G2-1 验证表2!E 列万口径
+假设；零泄漏自检过；「登记为待办」= ⑧ 态自然产生位非强制
+中途停——反裁剪纪律）+ 冻结条款继承（§12–§14 全部）+ 新
+guards（反例框架/观察四事实列/防硬编码升级绝对项）+ 机制
+（A fresh 会话 → 停止点归档+真值封存+沉淀组装 → B 仅续接语
++ 信息空间[真实 palace 9,372 基线]→ 四事实 + S1/S2 +
+Evidence Table v2 + 反例判定 → human 判读）。
+
+当前状态：
+
+```text
+Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴）
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（见下节）
+Current blocker = ① human 开启 Y-A 会话 ② human 审阅 Phase 0 分表
+```
+
+### PHASE 0 COMPLETE — MEMPALACE SOURCE SEMANTIC AUDIT REGISTERED — 2026-10-02
+
+Phase 0 源码语义审计已完成并登记
+（`SIMIGO_LAB_PALACE_PHASE0_SOURCE_SEMANTIC_AUDIT_20261002.md`）。
+范围 = 已安装 mempalace 包全部 48 个 .py 模块 +
+`palace-v0/palace/chroma.sqlite3` 真实数据；方法 = 直接源码通读 +
+全数据路径追踪（miner → chunk → add_drawer → ChromaDB upsert →
+searcher/closet boost → KG → layers → MCP），全部结论为
+`observed code fact` 非推断设计。
+
+语义三分表（§2）核心结论：
+
+```text
+Information 核心 = drawer.content 逐字文本 +
+    provenance（source_file/source_mtime/filed_at/added_by/
+    extract_mode/ingest_mode/line_start/line_end/chunk_index）+
+    temporal（content_date/content_date_source）+
+    KG triples（含 valid_from/valid_to/confidence/source_drawer_id）
+Execution/Continuity = Layer0 identity / Layer1 Essential Story /
+    diary 的 framing 层 / checkpoint ack / closet 指针提示
+纯机制 = ChromaDB / embeddings / BM25 / MCP 44 工具 /
+    miner·sweeper·convo_miner / hallways·tunnels / Layer2·3 /
+    WAL / 确定性 ID 方案 / normalize_version·id_recipe
+borderline = wing/room/hall 分类（归档分类法非 Information 本体，
+    现码耦合于 metadata——Swift Core 归属留开放问题）
+```
+
+代码级边界佐证：BR-1 ↔ `ingest_mode` 区分结构化/逐字通道；
+BR-2 ↔ diary `agent` 字段 + checkpoint ack + Layer0 仅服务当前
+Execution；BR-3 ↔ drawer content 恒逐字存储；BR-5 ↔ closet
+仅作排序信号永不为门——「共享空间不会自我召唤」在代码层
+得到确认。附加结构观察：metadata 呈 Group A（Information 的
+出处与时间）/ Group B（归档与实现版本）两族；diary 单文档混装
+事实与续作框架（证实 T1 发现，Swift Core 必须显式分层）；
+entities 为派生检索索引非 Information 本体。
+
+Swift Core 最小语义面草图（§5，仅为类型面非代码）：
+`Information(content/provenance/temporal/identity)`、
+`Provenance`、`TemporalSemantics`、`InformationStore`、
+`InformationQuery`；明确不进 core = ChromaBackend/Embedding/
+BM25/MCP/Miner/Closet/KG 存储/Hallway/LayerStack。
+
+§6 明确未回答（留裁定）：taxonomy 归属、diary 双层拆分设计、
+KG 三元组是否晋升一等 Information、activation 语义形态
+（BR-5 要求存在但形状开放）、Swift API 精确面。
+
+本步仅登记审计结果，未修改 Contract / Swift Core / 存储方案。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW
+    Gate = human 审阅 §2 分表 + §6 开放问题 → 冻结 Swift Core
+    语义面 → 写 Swift 类型（审计范围不再扩展）
+Y = UNFROZEN / A TASK READY（待 human 开 fresh 会话粘贴 A 指令）
+T4 = BLOCKED（待 SimiGo，与 Y 正交，不提前）
+Current blockers = ① human 开启 Y-A 会话 ② human 审阅 Phase 0 分表
+```
+
+### Y-A EXECUTED — TRUTH SEALED — DEPOSIT ASSEMBLED — B RELEASED — 2026-10-02
+
+Y-A 已按登记件 §4 机制执行完毕
+（`SIMIGO_LAB_PALACE_Y_A_RESULTS_20261002.md` 全记录）：
+fresh 会话单轮 577 秒至自然停止点；§3 指令零泄漏；输入
+SHA-256 未动（纪律达标）；结论 = 表2 E 列「万元」口径假设
+不成立（E 列 = D 列计量单位对应的工程数量列，依据强度高，
+十条证据链：表头直读 / 全表扫描 / 816 行统计 / J=G×E 量纲
+闭环 / 渗沟系数展开 / 汇总端到端 / 四版本一致）；⑧ 态自然
+产生（D 列单位写法差异待办）。观察事实登记（防预判）：A
+全程 mempalace 工具零调用——工作状态止于 workspace；读向
+曾触及 Spreadsheets 技能 + 私有 MEMORY.md（秦沈关键词）。
+
+记录侧三步完成：truth 封存（动作日志 →
+`boundary-study/y-exp/truth/`，哈希 2312d4c2… 锚定）→
+沉淀组装（checkpoint added_by=codex-desktop，wing 秦沈-标后
+预算，room 表2单位验证：交付全文 + 证据表 + 三脚本逐字 +
+环境备忘 + diary；palace 9,373→9,398；原始转储类 2 件按
+组装决定不入 verbatim 信息空间，字节副本入 git evidence
+归档）→ B 放行（fresh 会话，仅续接语 + 信息空间位置，
+提示词逐字见登记件 §5）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+Y-A = COMPLETE / ARCHIVED / TRUTH-SEALED / DEPOSIT ASSEMBLED
+Y-B = RELEASED（fresh 会话执行中）
+T4 = BLOCKED（待 SimiGo，不提前）
+Current blocker = Y-B 行为读数（四事实②③④ + S1/S2 +
+    Evidence Table v2）→ 反例判定 → human 判读
+```
+
+### Y-B COMPLETE — FOUR-FACT READOUT ASSEMBLED — AWAITING HUMAN RULING — 2026-10-02
+
+Y-B 已至授权门停止点并完成读数
+（`SIMIGO_LAB_PALACE_Y_B_RESULTS_20261002.md` 全记录）：B 读向
+激活真实 palace（list_rooms → list_drawers → get_drawer×3：
+diary / 环境备忘 / 交付记录）+ 消费 workspace 双代产物，接续
+A 段待办完成 D 列单位写法审计（841 非空值、15 种原始写法 →
+标准化 11 种、358 格建议调整；原 E 列结论不变；输入 SHA 与
+A 段日志哈希均未动）；零重解、零 palace 写回。
+
+四事实读数：① 中间状态自然形成 ✓（待办以工作记录形态内嵌
+交付）② 换 executor 后仍有价值 ✓（直取待办续作，零重解）
+③ 后继需要 activation ✓（指针 = 实际入口，deposit 不自我
+召唤）④ 共享未破坏续作本身，但登记两点摩擦：动作日志惯例
+未随共享通道转移（B 新建 B动作日志.md 分叉——惯例存于 A
+指令文本）；B 导航越界读入研究治理层（登记文件/台账/前代
+实验记录——仓库内共享态与研究层无物理边界，B 未据此改写
+行为）。S1 ✓ / S2 ✓（下一合法操作 = 授权后替换 + 复验）。
+
+反例判定候选（记录者组装）：当前形态支持 BR-2（待办属产品
+层 = BR-3 一致；惯例留指令层 = BR-2 一致；指针必要 = BR-5
+一致）；未观测到明确反例；三个开放观察位待裁（日志分叉
+归因 / 越界通道含义 / 授权门前零写回）。
+
+truth 封存补齐：`truth/B动作日志.md`（ae477bfa…）；B 产物
+四件字节级入 evidence/ 归档；Y 实验封闭，palace 保持 9,398。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+Y = COMPLETE（A/B 双代执行 + truth 封存 + 读数组装）
+T4 = BLOCKED（待 SimiGo，不提前）
+Current blockers = ① human Y 反例判定（采纳候选或另裁）
+  ② human D 列 358 格替换授权（任务级，非实验输入）
+  ③ human Phase 0 审阅（§2 分表 + §6 开放问题）
+```
+
+### Y RULED — BR-2 SUPPORTED / NO EXPLICIT COUNTEREXAMPLE — 2026-10-02
+
+human 终裁（`SIMIGO_LAB_PALACE_Y_RULING_20261002.md` 逐字）：
+**Y → BR-2 supported / no explicit counterexample observed /
+three open observations retained**（非证明）。三观察位单独保留
+为开放项：日志分叉 = 边界/归属观察；导航越界 = 物理边界
+问题（本轮未致行为改写，不升级为反例）；授权门前零写回 =
+控制/提交边界观察（符合 S2，不反向否定 Y）。BR-2 获「支持 /
+无明确反例」新增证据，不自动改变 Phase 0 Gate。
+
+D 列 358 格替换 = Y 之后的受控任务动作（授权范围 = 仅既定
+规则替换 + 复验剩余写法数；不得借机修改实验事实/BR 判定/
+开放问题/其他列区域），授权单独下发，执行另件登记。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW（Gate 不变）
+T4 = BLOCKED（不变）
+D 列替换 = 授权下发中（受控任务动作，独立于 Y）
+Current blockers = human Phase 0 审阅（§2 分表 + §6 开放问题）
+```
+
+### D-COLUMN CONTROLLED REPLACEMENT EXECUTED — 2026-10-02
+
+授权单独下发后 B 执行完毕（`SIMIGO_LAB_D_COLUMN_REPLACEMENT_
+EXEC_20261002.md`）：358 格规则替换 + 复验（剩余 11 种写法；
+仅 sheet2.xml/sharedStrings.xml 两部件变化，其余逐字节一致）；
+记录者独立复核 = 备份件与原输入 SHA 逐字节一致（`1dd8372a…`），
+新文件 `aa16c83f…`；truth 补封 B动作日志（`3cbc39ef…`）；
+执行记录与脚本入 evidence 归档；实验事实以备份件 + 归档为准
+未受损；palace 保持 9,398。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED（与 Y 分离的受控任务动作）
+Phase 0 = REGISTERED / AWAITING HUMAN REVIEW
+T4 = BLOCKED（不变）
+Current blocker = human Phase 0 审阅（§2 分表 + §6 开放问题）
+```
+
+### PHASE 0 REVIEW IN PROGRESS — RULING + EVIDENCE INDEX — 2026-10-02
+
+human 审阅裁定（`SIMIGO_LAB_PALACE_PHASE0_REVIEW_RULING_20261002.md`
+逐字）：Phase 0 = REGISTERED → **REVIEW IN PROGRESS**；§2 原则
+通过进冻结候选（四类成立，wing/room/hall 保持 borderline 不做
+归属）；§6 五项分级冻结（taxonomy = 开放设计边界不入 Core；
+diary = 原则冻/schema 开；KG = 事实冻/一等身份不冻；activation
+= 存在事实冻/形状开；Swift API = 保持开放不得提前设计）——
+可冻结的是**语义边界原则**而非最终类型/API。逐行证据索引批准
+执行（范围锁死）。
+
+证据索引完成（`SIMIGO_LAB_PALACE_PHASE0_EVIDENCE_INDEX_20261002.md`
+），并登记 **Finding-1 = 源码树锚定偏差**：审计读取 3.3.3/48
+模块树，实际服务端 = `.build/mp-venv312` 3.10.0/126 模块树
+（`.mcp.json` 实指）；content_date/id_recipe 等字段旧树零写入点、
+服务树完整写入链；§2 语义判定重锚服务树**全部成功、零反例**；
+唯一更正 = 审计件范围表述，不改变任何语义归类。FROZEN 翻转
+条件已满足，待 human 终确。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = REVIEW IN PROGRESS（证据索引完成，待 human 终确 FROZEN）
+T4 = BLOCKED（不变）
+Current blocker = human 终确 Phase 0 Semantic Surface = FROZEN
+```
+
+### PHASE 0 SEMANTIC SURFACE = FROZEN — FINDING-1 AS STANDING AUDIT LESSON — 2026-10-02
+
+human 终确（`SIMIGO_LAB_PALACE_PHASE0_FROZEN_20261002.md` 逐字
+要点）：五点理由 = ①证据树错误被显式发现纠正（非隐瞒）②§2
+全部重锚至实际服务代码 ③重锚后语义结论零反转 ④borderline
+保持 borderline ⑤§6 冻结粒度未越界（原则非 API）。**Phase 0
+Semantic Surface = FROZEN**：§2 服务树锚点版 = 语义事实基线，
+§6 分级冻结生效。
+
+**Finding-1 升格为正式审计教训（长期纪律）**：以后一切涉及
+MemPalace 行为的研究，代码基准必须首先确认实际运行的
+service tree / environment / version；不得假设安装的 Python
+package 就是实际服务代码。判词 = 直接 Swift 重写会让旧树错误
+观察进入新架构——本次发现强化了 Phase 0 的价值。
+
+**Phase 1 Swift Core = NOT YET DESIGNED / awaiting boundary
+裁定**。下一动作 = Swift Core 最小边界裁定（非写 Swift）：依
+冻结语义面裁定必入 Core 语义（Information/identity/content/
+provenance/time·content_date/可持久化生命周期/InformationStore
+操作）vs 明确排除清单（Chroma/HNSW、BM25、entities、closet、
+hallway、taxonomy 实现、activation 机制、diary schema、KG 一等
+设计、MCP 表面、MemoryStack 历史结构）。裁定完成前零 Swift
+文件。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN（含 Finding-1 审计教训入档）
+Phase 1 = NOT YET DESIGNED / AWAITING BOUNDARY 裁定
+T4 = BLOCKED（不变）
+Current blocker = human Swift Core 最小边界裁定
+```
+
+### PHASE 1 CORE BOUNDARY CLOSED — C1–C6 RULED — 2026-10-02
+
+human 六项边缘裁定（`SIMIGO_LAB_PHASE1_CORE_BOUNDARY_RULING_20261002.md`
+逐字）：**C1** KG 三元组不作为 Information 子类型入 Core——
+Relation 语义（subject/predicate/object/provenance）进入冻结面，
+独立建模后置，防 Phase 1 偷渡 KG；**C2** Core 不定义 diary
+schema/接口，仅冻结「事实与续作分离」原则；**C3** activation
+不进 Core、连空接口不预埋（存在 activation ≠ activation 是
+Information）；**C4** identity 概念入 Core、确定性 hash/v3
+recipe 出 Core（identity 是事实，recipe 是产生事实的机制）；
+**C5** WAL 出 Core（persistence/audit 机制）；**C6** checkpoint/
+ack/Layer0-1 全部归 Execution continuity 侧，不入 Information
+Core。
+
+**Phase 1 最小边界正式闭合**：Information(identity/content/
+provenance/temporal) + InformationStore(最小持久化生命周期
+操作) + SQLiteStore(一个 persistence 实现)；排除清单全录；
+Relation/Execution State/Activation = 后续层不预埋接口；
+架构分层图定稿（Execution → Information → InformationStore →
+Persistence）。
+
+下一道门 = **最小 API 裁定**（Information/InformationStore/
+SQLiteStore 的最小 API；语义决定 API，不得反向）；API 裁定
+完成前零 Swift 文件。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API NOT YET DESIGNED
+T4 = BLOCKED（不变）
+Current blocker = human 最小 API 裁定
+```
+
+### PHASE 1 API RULING — 11/12 FROZEN — A2′ PENDING — 2026-10-02
+
+最小 API 全批裁定（`SIMIGO_LAB_PHASE1_API_RULING_20261002.md`
+逐字）：A1 Information = 不可变值语义（语义事实：逐字存储/
+确定性 identity/no-op 幂等 ⇒ 无 mutation）；A2 = 专用 opaque
+`InformationID`（生成算法不得出现在 API）；A3 provenance 按
+事实分组（producedAt/producedBy 必选，source/sourceTime/
+position/extractionMode 可选——不因通常存在而升必选）；A4
+temporal = date+source 成对可选（unknown 不得偷换为系统推断，
+零回溯推断）；A5 负空间零预埋；B1 = store+fetchByID（delete/
+search/list/query/rank 零语义证据不入）；B2 重复 identity =
+成功 no-op（与 A1 闭环：确认已有事实非 update）；B3 absence =
+Optional（not found ≠ storage failure）；C1 SQLiteStore 职责
+三分、不暴露 WAL/事务；C2 wing/room 仅 persistence filing
+metadata、禁止进入语义属性；C3 verbatim 保证（Store 不得为
+规范化/索引/去重改写 content）；D 负空间全部裁定为不存在
+（含 protocol/placeholder/extension hook 一切形态）。
+
+**唯一待裁 A2′ = Identity Formation Boundary**（human 发现的
+结构性缺口）：A2×B1×C1 同时成立 ⇒ 首个 Information 的 ID
+来源未定。待裁问题唯一：**InformationID 在 Information 形成
+时产生，还是在 Store 持久化时产生？**（human 倾向表述 =
+Identity 属于 Information 本身；生成算法不属于 Information；
+semantic identity 与 construction mechanism 彻底分开。）裁定
+完成 ⇒ A1–C3 无缝闭合 ⇒ 进入 API → 首批 Swift 文件 Gate。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED + API 11/12 FROZEN / A2′ PENDING
+Swift files = 0
+T4 = BLOCKED（不变）
+Current blocker = human A2′ Identity Formation Boundary 微裁
+```
+
+### PHASE 1 API GATE CLOSED — A2′ RULED OPTION 1 — 2026-10-02
+
+A2′ 终裁（`SIMIGO_LAB_PHASE1_API_GATE_CLOSED_20261002.md` 逐字）：
+**InformationID 在 Information 形成时成立；ID 计算机制在 Core
+之外，由机制侧铸造器产生**（选项一）。形成链 = 事实内容+形成
+上下文 → mechanism-side minter → InformationID → immutable
+Information → store。否决无身份草稿形态。三点理由：A1+A2 闭合
+（不存在等待补身份的 Draft）；B2 自然成立（store 不决定
+Information 是谁，只保存并确认幂等）；C4 双层干净（ID 属于
+Information；ID 怎么算属于机制）。服务树「写入路径现算」事实
+保留不升级语义（机制计算位置 ≠ 语义成立时点）；recipe 版本化
+登记为机制侧遗留问题（Information 不携带 recipeVersion）。
+
+**Phase 1 API Gate = CLOSED**。完整最小语义面定稿：
+Information(opaque identity/content/provenance/temporal) +
+InformationStore(store 幂等 no-op / fetch Optional) +
+SQLiteStore(实现 + 机制侧 minting + 物理归档元数据)；负空间
+完整保持。**下一道 Gate = API → 首批 Swift 文件**（human 授权
+开启；研究节点性质转变 = Swift 从探索 Information 是什么转为
+实现已裁定语义）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API CLOSED / SWIFT FILES = 0
+T4 = BLOCKED（不变）
+Next gate = human 授权开启「API → 首批 Swift 文件」
+```
+
+### PHASE 1 FIRST SWIFT FILES IMPLEMENTED — 2026-10-02
+
+IMPLEMENTATION GATE 执行完毕（human 授权）：首批三文件落位
+`trackD-memory/Sources/InformationCore/`——`Information.swift`
+（A1 不可变值 / A2 opaque `InformationID` / A3 provenance 事实
+分组 / A4 `ContentDate` 成对可选 / A5 负空间零预埋）、
+`InformationStore.swift`（B1 store+fetch / B2 幂等 no-op /
+B3 absence=nil 与 failure=throw 分离）、`SQLiteStore.swift`
+(C1 职责三分不暴露 WAL/事务 / C2 `PhysicalFiling` 物理列不
+回流语义 / C3 verbatim 保证 + 机制侧 minting：length-prefixed
+SHA-256 截 24，配方藏于机制层)。单模块零第三方依赖；Package
+接线 target+product。5 项实现内决策登记（可重开）；3 个纯
+实现 bug 修复零语义改动；冒烟全 PASS（mint 确定性 / absence=
+nil / verbatim roundtrip / 幂等 no-op / filing 物理列）；负
+空间复核零泄漏。Swift files = **3**。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = BOUNDARY CLOSED / API CLOSED / 首批实现完成
+Swift files = 3（BUILD CLEAN / SMOKE ALL PASS）
+T4 = BLOCKED（不变）
+Next gate = human 验收首批实现
+```
+
+### PHASE 1 FIRST IMPLEMENTATION ACCEPTED — GATE CLOSED — 2026-10-02
+
+Human Acceptance Gate = **PASS**（`SIMIGO_LAB_PHASE1_ACCEPTANCE_
+20261002.md`，`6feac8c` ACCEPTED）：17 项验收全过（A1–A5 /
+B1–B3 / C1–C3 / Build 零警告 / Smoke 全过 / 负空间无越界 /
+零第三方依赖 / 实现 bug 未动语义 / 可重开决策已登记）。关键
+判词 = **无理由重开 Phase 0 / Phase 1 API 语义**；链路正式达成
+= Semantic Surface Frozen → Boundary Closed → API Closed →
+First Implementation Accepted。五个可重开实现决策 = 保持可重开
+但不主动重开（无污染语义面证据）。负空间确认意义 = SQLite
+只是 Physical Filing 的一种实现，非 Information 模型的一部分。
+
+Gate 收口纪律：不在 InformationCore 顺手完善；按原 Gate 顺序
+进下一阶段；除非实际暴露违反冻结契约，不因审美/性能/未来
+需求主动扩面。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED / GATE CLOSED
+Swift files = 3（ACCEPTED）
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### GATE OPENED — PHASE 1 INTEGRATION BOUNDARY GATE — 2026-10-02
+
+human 定向下一 Gate（`SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_
+GATE_SPEC_20261002.md`）：**Integration Boundary Gate**——唯一
+目标 = 证明已验收的 Information / InformationStore / SQLiteStore
+可作为真实上层使用边界（真实调用链贯通），实现细节零回流语义
+层；通过后 SQLiteStore 记为可替换 Physical Filing backend。
+SPEC 七要素登记完毕；8 项 invariants（I1 完整落库 / I2 同值
+roundtrip / I3 absence=nil / I4 幂等 / I5 filing 物理存在语义
+不可达 / I6 上层零 SQLite 知识（结构证明）/ I7 负空间 / I8
+可替换性结构证据）；允许范围 = 独立 harness target + Package
+接线，三已验收文件零改动（违者重开裁定不静默修改）；Pass =
+I1–I8 全证 + 审计零命中。
+
+Gate 纪律：d2a1ea7 之后新功能提交**不推送**；Gate 开启 ≠ 扩展
+模型；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED
+Next gate = INTEGRATION BOUNDARY（SPEC 已登记，实现按 SPEC 执行）
+T4 = BLOCKED（不变）
+```
+
+### INTEGRATION BOUNDARY GATE = PASS — 2026-10-02
+
+Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_INTEGRATION_BOUNDARY_
+GATE_RESULT_20261002.md`）：独立 harness（UpperLayer.swift 仅
+import InformationCore + main.swift 组合根）实跑真实调用链——
+上层形成 Information → `any InformationStore` 协议边界持久化 →
+identity roundtrip 同值 → absence=nil → 重复 store 幂等；
+sqlite3 CLI 物理抽查 = filing（integration/boundary-gate）在库
+且语义不可达；结构审计 = 上层零 SQLite 符号（唯一命中为注释
+行，处置在案）、负空间声明级审计 0 命中（首扫英文词命中已
+精确化消除）；三已验收文件 diff = 0 行；Build 零警告。
+
+**GATE = PASS ⇒ SQLiteStore 正式记为当前 Information 存储的
+可替换 Physical Filing backend**——上层已被证明可完全不携带
+持久化实现知识地工作（I8 结构证据：`any InformationStore`
+绑定，具体类型仅在组合根注入处）。
+
+纪律：新功能提交不推送（本地领先，推送待 human 指令）；
+T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED + INTEGRATION BOUNDARY PASS
+Swift files = 3（ACCEPTED，零改动）+ Integration harness 2 files
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### GATE OPENED — PHASE 1 BACKEND INDEPENDENCE GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_GATE_SPEC_20261002.md`）：
+**Persistence Replacement / Backend Independence Gate**——核心
+命题 = **数据库是实现选择，而不是架构前提**。不是现在换掉
+SQLite，而是证明 Test/InMemoryStore（harness 侧第二 backend）
+可零改动接入：K1–K4 = Information/InformationStore/UpperLayer/
+SQLiteStore 四文件 diff 全 0；K5 = Backend-2 实现公共协议；
+K6 = 同一 UpperLayer 零改动驱动 Backend-2 全链路；K7/K8 =
+roundtrip/absence/幂等 PASS；K9 = SQLite 特有知识 0；K10 =
+新语义类型 0。架构闭环图定稿（Semantic Surface → stable
+boundary → SQLiteStore ∥ Backend-2 → Physical Filing）。
+
+Git 纪律：3 个未推送提交不 squash 不 rewrite，待本 Gate
+Spec/Result 成链后一并按节奏推送；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = FIRST IMPLEMENTATION ACCEPTED + INTEGRATION BOUNDARY PASS
+Next gate = BACKEND INDEPENDENCE（SPEC 已登记，实现按 SPEC 执行）
+T4 = BLOCKED（不变）
+```
+
+### GATE OPENED — PHASE 1 PERSISTENCE SEMANTICS GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_PHASE1_PERSISTENCE_SEMANTICS_GATE_SPEC_20261002.md`）：
+不再证明「能换数据库」，改锁 **InformationStore 行为契约**——
+命题 = 稳定边界的行为契约须明确到未来 backend 可独立实现而
+**零语义漂移**。契约面 S1–S6：new identity / same+same /
+fetch present / fetch absent / storage failure 均已证；**S3 =
+same identity + conflicting value 待裁**（当前双 backend 行为
+一致是实现巧合：INSERT OR IGNORE / 字典保留先存，非裁定契约）。
+
+裁定面：① first-write-wins（B2 冻结文本无条件适用 = 显式
+codify，零重开）② reject/throw（重开修正 B2，store 变值依赖）
+③ overwrite/merge（与 A1/C3 冲突，不在裁定面）。记录者预分析：
+identity 为自身事实的确定性派生 ⇒ 同 identity + 不同内容 =
+语义矛盾态（出现即 formation/recipe 误用）⇒ ① 是澄清、② 是
+修订，代价不对称。
+
+Gate 纪律：不加新 backend；不推送（Gate 完成后 d2a1ea7→本
+Gate 成链一次推送）；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = 三 Gate PASS + PERSISTENCE SEMANTICS OPENED（S3 待裁）
+T4 = BLOCKED（不变）
+Current blocker = human S3 冲突情形裁定（①/②/另述）
+```
+
+### PERSISTENCE SEMANTICS GATE = PASS — S3 = FIRST-WRITE-WINS — CONTRACT FINALIZED — 2026-10-02
+
+S3 终裁（`SIMIGO_LAB_PHASE1_PERSISTENCE_SEMANTICS_GATE_RESULT_20261002.md`
+逐字）：**① first-write-wins**——store(same identity + conflicting
+value) → 成功 no-op，existing Information 保持不变且保持权威；
+**不比较 value 决定是否成功**；不新增 conflict/merge/overwrite
+语义。理由纯粹来自冻结契约（B2 文本无条件适用 = 显式 codify，
+零重开）。「语义矛盾态」预分析保留为解释性记录，不升 API 类型
+或错误分类；Store 职责 = 遵守既有 identity 的事实，formation
+错误不得包装成 persistence-level semantic conflict。
+
+**契约表 S1–S6 定稿（backend-independent）**：S1 new → persist /
+S2 same+same → no-op 确认 / **S3 same+conflicting → no-op，first-
+write-wins** / S4 present → 值 / S5 absent → nil / S6 failure →
+throw。冲突探针双 backend 实跑行为逐项一致（SQLiteStore 与
+InMemoryStore 双 PASS）+ S1–S6 全项回归 + Build 零警告 + 负
+空间零 conflict/merge/overwrite/CAS API。
+
+**Gate 命题达成：`InformationStore` 契约明确到未来 backend 可
+独立实现而不产生语义漂移。**
+
+依 human 步骤 5：证据链（d2a1ea7 Human Acceptance → Integration
+Boundary PASS → Backend Independence PASS → Persistence Semantics
+PASS）整链一次推送（不 squash 不 rewrite）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = IMPLEMENTATION ACCEPTED + INTEGRATION PASS +
+          BACKEND INDEPENDENCE PASS + PERSISTENCE SEMANTICS PASS
+InformationStore = backend-independent contract S1–S6 FINALIZED
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### PHASE 2 OPENED — RELATION BOUNDARY GATE SPEC REGISTERED — 2026-10-02
+
+Phase 1 全链正式收口（终态 = API CLOSED / FIRST IMPLEMENTATION
+ACCEPTED / INTEGRATION PASS / BACKEND INDEPENDENCE PASS /
+PERSISTENCE SEMANTICS PASS / S1–S6 FINALIZED）。
+
+human 开启 **Phase 2 — Relation Boundary Gate**，核心问题 =
+Relation 能否作为 Information 之上的独立语义层存在而不改变
+Information 本身。Spec 已登记（`SIMIGO_LAB_PHASE2_RELATION_
+BOUNDARY_GATE_SPEC_20261002.md`，**SPEC ONLY 零实现**）：
+七个决策点 D1–D7（语义对象 (a) 端点引 Information identity
+vs (b) 自由端点；RelationID 镜像模式——服务树 datetime 盐
+不采纳；不可变+终止后置；独立 RelationStore 边界；受保护五
+文件 diff=0 硬约束；既有 backend 零 Relation 知识；独立
+RelationCore 模块）+ Negative Space 全项延续 + Pass/Fail。
+服务树关键反面观测入档：triple_id 含 datetime 盐 = 非确定性
+不幂等，不采纳进 Core。
+
+节奏 = Spec → human decision → minimal implementation →
+structural audit → runtime evidence → Gate PASS → seal；
+**Spec 阶段零代码**；T4 = BLOCKED 不动；提交本地不推送。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + 契约定稿）
+Phase 2 = RELATION BOUNDARY GATE OPENED（SPEC REGISTERED，
+          AWAITING HUMAN RULINGS D1–D7）
+T4 = BLOCKED（不变）
+Current blocker = human D1–D7 逐项裁定（或整批裁 + 改动点）
+```
+
+### PHASE 2 DECISIONS SEALED — D1–D7 RULED — MINIMAL IMPLEMENTATION AUTHORIZED — 2026-10-02
+
+human 整批裁定封存（`SIMIGO_LAB_PHASE2_RELATION_DECISIONS_SEALED_
+20261002.md` 逐字）：**D1(a)** Relation = 引用 InformationID 的
+有向三元组 + provenance——Relation 引用 Information 而非重新
+定义实体；自由字符串 endpoint 留外部；InformationID 不得降级
+为 String。**D2(a)** opaque RelationID、确定性派生、机制侧
+铸造；配方不进语义 API；服务树 datetime 盐反面证据采纳。
+**D3(a)** immutable；零 valid_from/to/状态回写字段；终止语义
+后置；Temporal validity 不入 Phase 2 最小面（不预埋）。**D4(a)**
+独立 RelationStore ∥ InformationStore，绝不嵌套——不为方便把
+第二种语义对象塞进已定稿 S1–S6 契约。**D5/D6** 硬约束照 Spec。
+**D7(a)** 独立 RelationCore 仅依赖 InformationCore，禁反向
+依赖。
+
+最小模型定稿：Information = immutable fact；Relation = immutable
+relation between facts——**平行语义对象，非父子**。特别负空间
+锁定：**零 Predicate taxonomy**（predicate 仅为语义位置，具体
+编码最小化+实现决策单独登记）。
+
+最小 RelationCore 实现获授权；证明清单 9 项登记（双 InformationID
+引用 / opaque deterministic RelationID / immutable / RelationStore
+独立 / 受保护五文件零 diff / 单向依赖 / 零未来语义）；仍零查询/
+遍历/排序/检索/服务树适配。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + 契约定稿）
+Phase 2 = DECISIONS SEALED / 最小 RelationCore 实现中
+T4 = BLOCKED（不变）
+```
+
+### PHASE 2 RELATION BOUNDARY GATE = PASS — MINIMAL RELATIONCORE IMPLEMENTED — 2026-10-02
+
+Gate 按 D1–D7 裁定执行完毕（`SIMIGO_LAB_PHASE2_RELATION_BOUNDARY_
+GATE_RESULT_20261002.md`）：RelationCore 模块落位（RelationCore →
+InformationCore 单向依赖）——`Relation`（immutable，端点 = 两个
+`InformationID` 引用，predicate 为语义槽最小值载体）/ opaque
+`RelationID`（机制侧确定性铸造，零 datetime 盐）/ 独立
+`RelationStore` 协议（first-write-wins 镜像 / absence=nil /
+failure=throw）。9 项证明清单全过：受保护五文件 diff 全 0；
+依赖单向（InformationCore 内零 Relation 符号，唯一命中 = A5
+负空间自述注释）；零 temporal/activation/taxonomy（声明级审计
+0 命中）；实跑 = Relation 引用双 InformationID + 确定性铸造 +
+独立边界 roundtrip + **first-write-wins 在 Relation 边界实测
+成立**；Phase 1 全量回归保持 PASS。实现决策 4 项登记可重开
+（RelationPredicate 更名避 Foundation 撞名 / minting 输入 /
+Predicate 最小值载体 / RelationStore 行为镜像、正式契约后置）。
+
+**Gate 命题达成：Relation 已成为独立上层语义对象——零改动已
+冻结 Information 语义与 Phase 1 persistence contract。**
+
+仍零查询/遍历/排序/检索/服务树适配；本地提交不推送（成链节奏
+待 human 指令）；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + 契约定稿）
+Phase 2 = RELATION BOUNDARY GATE PASS（RelationCore 最小实现）
+Swift = InformationCore 3 + Integration 3 + RelationCore 4 文件
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### GATE OPENED — PHASE 2 RELATION PERSISTENCE SEMANTICS GATE — 2026-10-02
+
+human 确认 Relation Boundary Gate PASS + RelationCore 最小实现
+ACCEPTED（Phase 2 状态收口），并开启 **Relation Persistence
+Semantics Gate**（`SIMIGO_LAB_PHASE2_RELATION_PERSISTENCE_SEMANTICS_
+GATE_SPEC_20261002.md`，SPEC ONLY 零实现）：把 RelationStore 从
+「镜像 InformationStore 的实现」升格为 **backend-independent
+contract**——使命题从「RelationStore 能工作」推进到「Relation
+backend 可独立实现零漂移」（Phase 1 Persistence Semantics 的
+Relation 平移复刻）。
+
+契约面 R1–R6 提案登记（= S1–S6 的 Relation 平移，零新语义）：
+R1 new persist / R2 same+same no-op 确认 / **R3 same+conflicting
+no-op first-write-wins（existing 保持权威）** / R4 present 返回 /
+R5 absent nil / R6 failure throw。验证方案 = 双 Relation backend
+（新增 harness 侧 SQLiteRelationStore + 既有 InMemoryRelationStore
+零改动）经同一未改消费者 `any RelationStore` 驱动全项断言 +
+R3 冲突探针 + 受保护八文件 diff 全 0 + 符号/声明审计。
+
+**硬边界（human 逐字锁定）**：禁止泛型超级 Store——
+`Store<Entity>` / `PersistentObject` / `AnySemanticObjectStore` /
+统一超级协议全禁；`InformationStore` 与 `RelationStore` 保持
+平行 boundary；共同抽象若被证明稳定，**另开 Gate**。负空间：
+零查询/遍历/排序/检索/服务树适配 + RelationStore 契约外能力。
+
+Git 纪律：3 个本地提交保持原样不 squash 不 rewrite；本 Spec +
+后续实现成链；推送节奏待 human 指令；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + S1–S6 FINALIZED）
+Phase 2 = RELATION BOUNDARY PASS + RelationCore ACCEPTED
+Next gate = RELATION PERSISTENCE SEMANTICS（SPEC REGISTERED，
+            AWAITING HUMAN GO 进入实现）
+T4 = BLOCKED（不变）
+```
+
+### RELATION PERSISTENCE SEMANTICS GATE = PASS — R1–R6 FINALIZED — 2026-10-02
+
+Gate 执行完毕（`SIMIGO_LAB_PHASE2_RELATION_PERSISTENCE_SEMANTICS_
+GATE_RESULT_20261002.md`）：契约 R1–R6 获 human 确认（零增改）
+并双 backend 验证——Backend-1 = SQLiteRelationStore（harness 侧，
+INSERT OR IGNORE = R2/R3 first-write-wins，零越界能力）、
+Backend-2 = InMemoryRelationStore（零改动）；同一消费者经
+`any RelationStore` 驱动 R1–R6 全项断言双 PASS + R3 冲突探针
+双过（同 RelationID 冲突重写 = no-op，existing 保持权威）+
+跨 backend「一个 identity、两份 filing、一个语义事实」；物理
+复核 = relation 行数恒 1、predicate 原值、冲突值零入库；实现
+问题修复 1 处（缺 import，编译错零语义）；受保护八文件 diff
+全 0；Build 零警告。
+
+**R1–R6 FINALIZED**——RelationStore 契约与 InformationStore
+S1–S6 平行定稿（两平行 boundary，无泛型超级 Store；共同抽象
+若被证明稳定须另开 Gate）。
+
+依既定节奏整链一次推送（d2a1ea7 → 本件成链上 origin）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED（全链 PASS + S1–S6 FINALIZED）
+Phase 2 = RELATION BOUNDARY PASS + PERSISTENCE SEMANTICS PASS
+          （R1–R6 FINALIZED）
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### PHASE 2 CLOSED — HUMAN CONFIRMATION — 2026-10-02
+
+human 正式确认：**Phase 2 Relation Persistence Semantics Gate 闭合
+PASS**，无返工、无补契约、无扩面事项。基线定稿：
+
+```text
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+  ├─ InformationCore ACCEPTED
+  ├─ Integration Boundary PASS
+  ├─ Backend Independence PASS
+  ├─ Persistence Semantics PASS
+  └─ S1–S6 FINALIZED
+Phase 2 = CLOSED
+  ├─ Relation Boundary PASS
+  ├─ RelationCore ACCEPTED
+  ├─ Persistence Semantics PASS
+  └─ R1–R6 FINALIZED
+Y / D = SEALED
+T4 = BLOCKED
+Git = 4b3ebef，origin 同步
+```
+
+五项架构性结果（human 确认）：① Information 与 Relation 为
+独立语义对象（Relation 不反向污染 Information）② InformationStore
+与 RelationStore = 平行边界，无共同抽象证据 ⇒ 不引入超级 Store
+是正确的 ③ Persistence contract 对称定稿（S1–S6 ∥ R1–R6，
+R3 与 S3 同为 first-write-wins）④ Backend independence 自
+Information 延伸至 Relation（同一 semantic identity → 不同
+physical filing，上层零 backend 知识）⑤ Negative space 完整
+（零 retrieval/traversal/ranking/taxonomy/activation/diary/
+execution state/MCP/Layer0-1/generic Store/query API）。
+
+**Phase 2 证明的是语义与持久化边界，不是构建知识图谱系统。**
+
+下一步 = 等待下一阶段 Gate 指令（不自行跨 Gate）；证据链原则
+延续 = 先冻结语义/契约 → 再实现 → 双 backend 验证 → 负空间/
+依赖审计 → 闭 Gate。
+
+当前状态：
+
+```text
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+Y / D = SEALED
+T4 = BLOCKED
+Git = 4b3ebef 本地与 origin 同步（后续收口记录本地提交，
+      随下一证据链按节奏推送）
+Next = 等待下一阶段 Gate 指令
+```
+
+### BACKEND INDEPENDENCE GATE = PASS — 2026-10-02
+
+Gate 按 SPEC 执行完毕（`SIMIGO_LAB_PHASE1_BACKEND_INDEPENDENCE_
+GATE_RESULT_20261002.md`）：Backend-2 = InMemoryStore（harness
+侧，完全位于已验收模块外，公共协议 conformance，自带独立配方
+机制侧 minting，代码层零 SQLite 符号）；同一 UpperLayer 类型
+零改动驱动 Backend-2 全链路（form → persist → retrieve →
+absence → 幂等全 PASS）；**跨 backend 交叉验证 = 同一 identity、
+两份 Physical Filing、一个语义事实**——identity 属于 Information，
+不因 backend 重释。K1–K10 全过：四文件 diff vs 5b861c8 全 0；
+K9 代码层 0 命中（4 处注释叙述命中留档处置）；K10 声明级
+审计 0 命中；Build 零警告。
+
+**架构命题获结构证据：数据库是实现选择，而不是架构前提。**
+
+```text
+          Semantic Surface
+                 │
+                 ▼
+        ┌─────────────────┐
+        │ Information     │
+        │ InformationStore│
+        └────────┬────────┘
+                 │ stable boundary
+          ┌──────┴──────┐
+          ▼             ▼
+     SQLiteStore    InMemoryStore
+          │             │
+          ▼             ▼
+     Physical       Physical
+      Filing         Filing
+```
+
+Git 纪律：5 个未推送提交不 squash 不 rewrite，待 human 指令
+成链推送；T4 = BLOCKED 不动。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = IMPLEMENTATION ACCEPTED + INTEGRATION PASS + BACKEND INDEPENDENCE PASS
+T4 = BLOCKED（不变）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### GATE OPENED — SIMIGO × INFORMATIONCORE INTEGRATION BOUNDARY GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_SIMIGO_INFORMATIONCORE_INTEGRATION_GATE_
+SPEC_20261002.md`，SPEC ONLY 零实现）：下一 Gate = **SimiGo ×
+InformationCore 接入边界**——唯一窄问题 = SimiGo 能否以
+InformationCore 为记忆边界完成接入，而不把 palace 机制、SQLite
+机制或 taxonomy/activation 等开放语义带入 Core。通过最多登记
+**T4 experimental precondition = SATISFIED**（不执行 T4，T4 仍
+BLOCKED）。
+
+现场事实勘察入档：SimiGo 仓（main）= Xcode 工程 + 应用七层源码
+（App/Inference/Lifecycle/Model/Observability/Protocol/System）+
+本地包 Packages/SimiGoRuntime（SimiGo2Experimental /
+SimiGoRuntimeContract）；InformationCore 目前未被 SimiGo 引用。
+
+决策点：3.1 接入层位（(a) SimiGoRuntime 薄 target /(b) App 直连
+/(c) Lab 侧 SimiGo-shaped 预研先行——(c) 为 T4 precondition 最小
+形态，(a) 为真实接入形态，(c)→(a) 不互斥）；3.2 跨仓策略
+（path dependency / 独立 git 包 / vendored 不推荐）；3.3 双向
+语义不泄漏审计；3.4 T4 前置资格清单（T4-P1 冷启动执行者 / P2
+边界可 store+fetch / P3 backend 零知识 / P4 零泄漏）。
+
+负空间：human ❌ 清单全项（不做 T4/不裁 taxonomy/不定 diary
+schema/不定 activation/不纳 KG 自由端点/不做 retrieval-ranking/
+不重建 palace/不定 SQLite 最终 backend/**MemoryCore 自适应内存
+线不合并**——trackD-memory README 目录语义分叉提醒在案，本 Gate
+不处理）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+Next gate = SIMIGO × INFORMATIONCORE INTEGRATION BOUNDARY
+            （SPEC REGISTERED，AWAITING HUMAN RULINGS 3.1/3.2）
+T4 = BLOCKED（资格登记为本 Gate 唯一产出，不执行）
+```
+
+### SIMIGO INTEGRATION GATE — DECISIONS SEALED — 3.1(c) / 3.2(i) — 2026-10-02
+
+human 裁定封存（`SIMIGO_LAB_SIMIGO_INTEGRATION_DECISIONS_SEALED_
+20261002.md` 逐字）：**3.1 = (c) Lab 侧 SimiGo-shaped 预研先行**
+——SimiGo 主仓零 InformationCore 依赖事实保持不变；窄边界验证
+「SimiGo 形状上层执行者仅经 InformationCore 完成 store/fetch」；
+不预判 SimiGoRuntime 正式接口；App 直连排除（记忆语义不得直接
+耦合应用层）；(c)→(a) 后续演进本 Gate 不裁；**非正式接入实现，
+仅验证正式接入所需最小边界**。**3.2 = (i) SwiftPM path
+dependency**——最小边界验证非包发布治理；真实 module/protocol
+dependency 非复制伪接入；转 (ii) 独立发布不改语义契约；vendored
+排除（双源漂移违反单一语义源）。
+
+最小实现范围 = SimiGo-shaped executor → InformationCore →
+store/fetch。四项必须证明：P1 冷启动执行者可运行 / P2 S1–S6
+形状复现 / P3 上层零 SQLite/Physical Filing 知识 / P4 零反向
+依赖+零 palace/taxonomy/activation/ExecutionState 语义。全过才
+登记 T4 experimental precondition = SATISFIED（T4 仍 BLOCKED）。
+保护条件：InformationCore 受保护文件 + RelationCore diff = 0。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+Next gate = SIMIGO INTEGRATION（DECISIONS SEALED，最小实现中）
+T4 = BLOCKED（不执行）
+```
+
+### SIMIGO INTEGRATION GATE = PASS — T4 EXPERIMENTAL PRECONDITION SATISFIED — 2026-10-02
+
+Gate 执行完毕（`SIMIGO_LAB_SIMIGO_INTEGRATION_GATE_RESULT_20261002.md`）：
+按 3.1(c)/3.2(i) 交付**真实 SwiftPM path dependency 外部包**
+`pre-research/SimiGoShapedPreResearch/`（消费 product
+InformationCore；解析含根包全量依赖图成功——非复制伪接入）。
+P1–P4 全过：**P1** 独立进程冷启动执行者（fresh DB 零历史）；
+**P2** S1–S6 形状全复现（含 S3 冲突探针 first-write-wins）；
+**P3** Executor 层剥离注释后 backend 符号 0 命中（2 处 = P3
+自述注释，处置在案）；**P4** 依赖面仅 SimiGo-Lab path + Core
+模块代码层零 simigo 引用（2 处 = 治理文件名注释，处置在案）+
+零负空间声明。SimiGo 主仓零改动。
+
+**登记结论（human 定向措辞）：SimiGo + InformationCore →
+T4 experimental precondition = SATISFIED。T4 本身仍然 BLOCKED**
+——实验方案/执行需单独 human 指令。实现决策 3 项登记可重开。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 = BLOCKED（实验方案/执行待单独 human 指令）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### T4 RULED — STRONG PROPOSITION / TASK-DOMAIN BOUNDED — T4 CLOSED — 2026-10-03
+
+human 终裁（`SIMIGO_LAB_T4_RULING_20261003.md` 逐字）：四条件
+全 PASS（T-3 后验未击穿 / AC-1 完成 / AC-2 Information→消费→
+产物时序内容因果链 / AC-3 C-N 零摘要零虚构）⇒ **强命题格，
+T4 = PASS（限定本任务域）**。结论 = Information boundary 是本
+冻结任务域 continuation 的**必要条件**；外延封死 = 不得升级为
+一般 SimiGo continuation 普遍定理。无效触发复核 = 零（预注册
+纪律下无作废/降级触发）。T4 终态 = Design PASS / Pinning PASS+
+HASH FROZEN / Execution PASS / Attribution STRONG PROPOSITION /
+CLOSED。
+
+研究结论链登记（Track D 记忆边界线）：① 语义面（palace 三分
+剥离）② 契约面（S1–S6 ∥ R1–R6 对称、backend-independent、
+first-write-wins）③ 实现面（InformationCore/RelationCore，零
+第三方）④ 结构面（接入/backend 独立/持久化语义三 Gate 结构
+证明）⑤ 因果面（T4 强命题，任务域有界）。
+
+**数据库是实现选择，而不是架构前提；Information boundary 是
+（本任务域已证必要的）continuation 基座。**
+
+下一阶段（跨任务复现/Execution 层/其他）= 待 human 指令另行
+开 Gate；不自行跨 Gate、不扩面；Finding-1 教训与负空间纪律
+继续有效。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION (TASK-DOMAIN BOUNDED) / CLOSED
+Next = 等待下一阶段 Gate 指令
+```
+
+### A GATE OPENED — T4 CROSS-TASK REPLICATION — SPEC REGISTERED — 2026-10-03
+
+human 择向裁定：下一 Gate = **A：T4 Cross-Task Replication**
+（候选 B Execution 层 = DEFERRED）。A Gate 开启，初始边界登记
+（`SIMIGO_LAB_T4_CROSS_TASK_REPLICATION_GATE_SPEC_20261003.md`，
+SPEC ONLY 零任务设计）。
+
+唯一研究问题：结构独立第二 continuation task 在 Information
+boundary / cold-start / C-E/C-N 归因框架不变下能否复现 T4 的
+必要性证据。边界：第二任务/任务结构/T-3/混淆变量 = 待设计；
+C-E/C-N 与 cold-start = 继承 T4 框架；InformationCore/
+RelationCore/SimiGo Integration = 冻结不修改；T4 原结论 = 不得
+修改；实验执行 = 未授权。硬约束六条：禁换皮、禁回溯改 T4、
+禁预设成功、T-3 重新审查（只继承方法原则不复制具体事实）、
+混淆变量设计期显式登记、禁新记忆机制。
+
+**阶段链与开门纪律（human 定稿）**：A-Spec → Task Selection/
+Design → T-3 + Confound Audit → Task Pinning/Hash Freeze →
+Execution Authorization → Replication Result——各子 Gate 须明确
+开门，Task Selection/T-3/Confound Design 不由当前记录状态自动
+授权。下一步 = human 开「任务选择/设计子 Gate」；记录者开门前
+零任务设计动作。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION (TASK-DOMAIN BOUNDED) / CLOSED
+A Gate = OPEN / INITIAL BOUNDARY REGISTERED
+A-Task / A-T-3 / A-Confounds = NOT DESIGNED
+A-Pinning = NOT OPEN / A-Execution = NOT AUTHORIZED
+Next = human 开「任务选择/设计子 Gate」
+```
+
+### GATE OPENED — T4 EXPERIMENTAL DESIGN GATE — 2026-10-02
+
+human 定向（`SIMIGO_LAB_T4_EXPERIMENTAL_DESIGN_GATE_SPEC_20261002.md`，
+SPEC ONLY 零代码零实验）：**T4 Experimental Design Gate**——T4 的
+新增证据 = Information boundary 对 continuation 的**贡献
+(attribution)**，非 persistence 复验（能存能取已证，那不是 T4）。
+
+Spec 预注册九要素：**S-1/S-2** cold-start 操作化（fresh 进程+DB、
+指令零历史词汇、零私有记忆通道、唯一外部记忆=InformationCore、
+禁文件考古）；**S-3** 唯一边界 = 已定稿契约面（Information S1–S6
+/ Relation R1–R6），除 A 沉淀外零内容；**S-4** 任务准入六条件
+（两段结构/A→自然停止点→B、B 指令零泄漏、**T-3 non-derivable
+facts = 命题强度开关**、客观判据+预登记事实清单、自然停止点反
+裁剪、产物可独立验证）；**S-5** 对照设计 = C-E（实验组，含沉淀）
+/ C-N（空边界阴性对照，必选）/ C-A（无边界，可选）——唯一变量 =
+沉淀内容，B 指令逐字节相同；**S-6** 成功判据 = attribution 三
+条件（AC-1 完成 ∧ AC-2 消费痕迹因果链 ∧ AC-3 C-N 未达等价）+
+三结果预注册（强命题=必要条件 [仅当 T-3 满足可 claim] / 弱命题
+= 提速保真贡献 / 无归因 = 任务自证）；**S-7** 失败判据 F1–F6
+（C-E 失败=boundary 不足 / 消费痕迹缺失=降级 inconclusive /
+C-N 等价成功=无归因 / 未声明通道=run 作废 / 沉淀回写=作废 /
+判据偏离=整轮作废）；**S-8** 偷渡零容忍清单；**S-9** 实验后才
+裁定 + 预注册纪律 + deviation log + **T4 execution 尚未授权**。
+
+本 Gate 收口 = Spec 确认 → 任务钉定授权；实验执行 = 再下一道
+单独授权。T4 继续 BLOCKED。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+Next gate = T4 EXPERIMENTAL DESIGN
+            （SPEC REGISTERED，AWAITING HUMAN CONFIRMATION）
+T4 = BLOCKED（execution 尚未授权）
+```
+
+### T4 EXPERIMENTAL DESIGN GATE = SPEC CONFIRMED PASS — TASK PINNING GATE OPENED — 2026-10-02
+
+human 审阅确认（cd17b16 零修改封存）：**T4 Experimental Design
+Gate = SPEC CONFIRMED / PASS**。五点确认：T-3 命题强度开关 ✓
+（不许事后把成功解释成必要条件）；C-N 必选阴性对照 ✓（直接测
+「仅移除沉淀结果是否变」）；AC-2 消费痕迹入成功判据 ✓（否则
+只能 inconclusive，不得把「有沉淀+成功」等同于「boundary 导致
+continuation」）；F1–F6 ✓（防「找到成功案例再解释」）；唯一
+建议 = Task Pinning 时必须把 **T-3 具体化**（实验前冻结事实
+清单 + 回答「为何 cold-start 不可能仅凭 B 指令/当前环境/通用
+能力推出」）并冻结 A 沉淀全文/停止点/B 逐字指令/预期消费证据/
+客观判据/C-E-C-N 唯一差异——非改 Spec，是 S-4 已规定、钉定
+Gate 必须执行的钉定动作。
+
+层级锁定：Spec PASS ✓ → **Task Pinning（下一 Gate）** →
+Experiment Execution（NOT AUTHORIZED）→ T4 = BLOCKED。
+
+**T4 Task Pinning Gate 开启**（`SIMIGO_LAB_T4_TASK_PINNING_GATE_
+SPEC_20261002.md`）：钉定包七件（P-1 T-3 具体事实清单+
+non-derivability 论证 / P-2 A 沉淀全文 / P-3 停止点记录规则 /
+P-4 B 逐字指令零泄漏自检 / P-5 预期消费证据对照表 / P-6 客观
+判据映射 / P-7 C-E/C-N 唯一差异声明）；**T-3 论证标准**：
+N-1 来源闭包 ⊄（指令∪输入∪工作区∪通用能力可推闭包）/
+N-2 推导闭包审计显式列集 / N-3 C-N 后验兜底预注册（C-N 产出
+⇒ 该事实 T-3 不成立 ⇒ 强命题自动降级弱命题）；冻结纪律 =
+七件齐备 + human 批准 ⇒ hash 封存，改动 = F6 作废；执行授权
+≠ 本 Gate 产物；具体任务候选待 human 提供或授权起草。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Experimental Design = SPEC CONFIRMED / PASS
+Next gate = T4 TASK PINNING
+            （钉定要求已登记，具体任务包待批后冻结）
+T4 execution = NOT AUTHORIZED；T4 = BLOCKED
+```
+
+### T4 EXPERIMENTAL DESIGN CONFIRMED — TASK PINNING DRAFT + EXECUTION + RESULTS — 2026-10-03
+
+链路快进记录（三项 Gate 事件，逐件有封存文件）：
+
+**① T4 Experimental Design = SPEC CONFIRMED / PASS**（cd17b16
+零修改封存）：human 五点确认（T-3 开关 / C-N 必选 / AC-2 入
+判据 / F1–F6 / T-3 具体化转入钉定 Gate）。
+
+**② T4 Task Pinning Gate**：钉定要求登记（七件包 + T-3 论证
+标准 N-1/N-2/N-3 + hash 封存纪律）→ human 授权记录者起草 →
+草案七件齐备（`SIMIGO_LAB_T4_TASK_PINNING_DRAFT_20261002.md`）：
+任务 = 采购分配 continuation（A 建立含 /dev/urandom 随机
+opaque 事实 SUP-9b47/865671、SUP-93dc/273063、SUP-c1fa/722204
+的台账（预留 ×1.18+总额），自然停止于待办登记；B 生成合同
+摘要须消费台账并派生总额 2195906.84 与 2% 保证金 43918.14）。
+
+**③ T4 Execution = AUTHORIZED + EXECUTED**：三 run（A 70s /
+B-E 186s / B-N 239s，各 fresh 进程；B-E 库 = db-a 快照物理
+filing 迁移，B-N 空库）全过——A 台账三行算术正确+待办含
+identity；B-E fetch 待办→生成摘要（数值与冻结期望逐项一致）→
+状态登记；B-N fetch not-found→诚实阻塞零摘要零虚构。
+
+**预注册判据读数**：AC-1 完成 ✅ / AC-2 消费痕迹因果链 ✅
+（00:17:24 fetch 先于 00:18 摘要生成）/ AC-3 C-N 未达等价 ✅ /
+T-3 后验成立（C-N 零 F1–F6 产出）/ 观测附注（B-E 瞬时自校验
+混淆自行纠正；B-N 曾探测二进制字符串与工作区——声明环境内，
+T-3 后验未受影响）。归因读数 = **落入强命题格**；最终裁定 =
+human。
+
+证据归档 docs/02-evidence/t4-execution/（三 run 全量+三库哈希
+留档）；t4ctl = InformationStore S1–S6 契约薄 CLI（tools/t4ctl，
+已入 Lab 仓）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Design = PASS / Task Pinning DRAFT REGISTERED / Execution =
+            AUTHORIZED + EXECUTED（结果待 human 裁定）
+T4 = BLOCKED（裁定前不开新 Gate）
+```
+
+### T4 TASK PINNING DRAFT REGISTERED — 2026-10-03
+
+human 授权记录者起草（仅草案，不冻结不执行）。草案七件齐备
+（`SIMIGO_LAB_T4_TASK_PINNING_DRAFT_20261002.md`）：任务 = 低
+复杂度强 T-3 采购分配 continuation——A 段建立含 /dev/urandom
+随机 opaque 事实（SUP-9b47/865671、SUP-93dc/273063、SUP-c1fa/
+722204；首拍 od 有符号负值整批废弃重拍留档）的分配台账
+（预留 = 配额 × 1.18 + 总额），自然停止于待办登记；B 段生成
+《合同摘要》（须含各代码/预留额/总额 2195906.84/保证金
+43918.14）——正确完成**必须**消费台账事实，含派生计算，非
+读回复述。T-3 论证：N-1 来源闭包（B 通道全无）+ N-2 推导闭包
+审计（高熵随机，∉ 可推闭包）⇒ 强命题可检；C-N 后验兜底
+（N-3）预注册。P-5 消费证据表 / P-6 判据映射 / P-7 唯一差异
+= 沉淀有无；B 指令逐字节同文含 opaque 待办 identity（C-N
+fetch=nil）。执行形态备注：三 run 独立 fresh 进程、C-A 不启用、
+实例化待执行授权钉定。
+
+状态 = **DRAFT**：待 human 最终钉定批准 ⇒ hash 封存；实验执行
+另行授权；T4 继续 BLOCKED。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = GATE PASS / T4 PRECONDITION SATISFIED
+T4 Experimental Design = SPEC CONFIRMED / PASS
+T4 Task Pinning = DRAFT REGISTERED（AWAITING FINAL PINNING APPROVAL）
+T4 execution = NOT AUTHORIZED；T4 = BLOCKED
+```
+
+### GATE OPENED — SIMIGORUNTIME FORMAL INTEGRATION GATE — 2026-10-02
+
+human 开启（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_
+SPEC_20261002.md`，SPEC ONLY 零实现）：**SimiGoRuntime 正式接入
+Gate**——唯一问题 = SimiGoRuntime 能否把 InformationCore 正式
+纳入 runtime 层记忆边界，而不改 InformationCore/RelationCore
+已冻结语义、不带 palace/SQLite/taxonomy/activation 入 runtime。
+
+现场事实勘察入档：SimiGoRuntimeContract = 零依赖纯 contract 层
+（ExecutionContinuity/ExecutionStateBackend/RuntimeBackend 三
+contract 文件——命名与本 Gate 相邻，本 Gate 零改动其语义，防
+混淆声明入档）；SimiGo2Experimental = Contract + MLX 全栈；
+mlx-swift 已是 SimiGoRuntime 既有依赖且与 Lab 根包同 revision
+（决策 5 依赖图合并风险因此降低）。
+
+五个决策点待裁：1 消费 target（(a) Contract 直连 InformationCore
+/(b) 新薄 target 保持 Contract 零依赖/(c) SimiGo2Experimental
+直连）；2 直接绑 any InformationStore vs 薄 facade（预分析 (a)，
+facade = 新抽象须裁定）；3 InformationCore 零 SimiGo 知识
+（硬规则确认项）；4 SimiGo2Experimental 本 Gate 不接入（预分析
+(a)）；5 path dep 去留（(a) 提交本地路径/(b1) url 引 SimiGo-Lab
+/(b2) 拆独立包最干净/(c) 未提交本地过渡 + 迁移另立小 Gate）。
+
+验证目标 A1–A10 照录（含 A5 既有 contract 零变化、A8 SimiGoTests
+零回归）。硬边界：单向依赖 + 受保护文件 diff = 0 + 负空间全项 +
+ExecutionState contract 防混淆声明。PASS ⇒ 登记
+`SimiGoRuntime × InformationCore = FORMAL INTEGRATION PASS`。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+Next gate = SIMIGORUNTIME FORMAL INTEGRATION
+            （SPEC REGISTERED，AWAITING HUMAN RULINGS 1–5）
+T4 = BLOCKED（不执行）
+```
+
+### SIMIGORUNTIME FORMAL INTEGRATION GATE — DECISIONS SEALED — 2026-10-02
+
+human 五项裁定封存（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_
+DECISIONS_SEALED_20261002.md` 逐字）：**1 = (b) 新薄 target
+SimiGoRuntimeMemory**（本 Gate 目标 = 正式接入而非重设计
+contract 层；SimiGoRuntimeContract 保持纯 contract 零外部依赖；
+既有 ExecutionState/Continuity/RuntimeBackend contract 不因名字
+相邻被并入——A5 更易零变化）；**2 = (a) 直接消费 any
+InformationStore**（加 facade = 新语义接口，须回答一一对应/
+错误语义/重包装 S1–S6/第二套 memory contract——均非本 Gate
+问题；正式接入只消费既有 InformationStore 不重新解释）；
+**3** InformationCore 零 SimiGo 知识（硬规则确认）；**4 = (a)**
+SimiGo2Experimental 本 Gate 零接入（防正式边界与实验线绑定）；
+**5 = (c) 未提交本地 path dependency 过渡**——(b2) 独立包终态
+另立小 Gate 重验 A1–A10/dependency integrity；**path dependency
+不得写成最终架构承诺**。
+
+最小实现六项：薄 target / path dep / 最小消费点 / 直持
+any InformationStore / S1–S6 形状验证 / 不改既有 contract。
+通过 ⇒ 登记 FORMAL INTEGRATION PASS；T4 不因本 Gate 自动开放。
+5(c) 纪律：path dependency 保持 SimiGo 仓未提交工作区态，完整
+diff 归档 Lab 证据目录。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+Next gate = SIMIGORUNTIME FORMAL INTEGRATION
+            （DECISIONS SEALED，最小实现中）
+T4 = BLOCKED（不因本 Gate 自动开放）
+```
+
+### SIMIGORUNTIME FORMAL INTEGRATION GATE = PASS — 2026-10-02
+
+Gate 按 D1–D7…（1(b)/2(a)/3/4(a)/5(c)）裁定执行完毕
+（`SIMIGO_LAB_SIMIGORUNTIME_FORMAL_INTEGRATION_GATE_RESULT_20261002.md`）：
+SimiGo 仓未提交工作区 delta = Package.swift 接线（path dep →
+Lab/trackD-memory mini manifest + product SimiGoRuntimeMemory）+
+`Sources/SimiGoRuntimeMemory/RuntimeMemory.swift`（直持 any
+InformationStore 的最小消费点，persist/retrieve 直通 S1–S6，
+零 facade 零重解释）。**实现问题 1 处修复**：初版 path dep 直
+指 Lab 根包触发 mlx-swift-lm revision 双图冲突（fd5d1b4a vs
+release/v2.0-beta-ml）——改指 trackD-memory mini manifest
+（(b2)-lite，零 mlx 依赖）后消除，纯实现层零语义改动。
+
+A1–A10 全过：A1 双层编译（新 target + 全包含 MLX exit 0）；
+A2 scratch 实跑 S1–S6 经 RuntimeMemory 全 PASS；A3 InformationCore
+剥离注释零反向符号；A4 RuntimeMemory 零 backend 符号；A5 Contract
+三文件 + SimiGo2Experimental diff=0（既有 Replication 工作区
+文件 untouched 入档）；A6 语义零重解释；A7 pre-research 重跑
+P1–P4 保持；A8 编译级零回归（应用级实跑按 SPEC 环境条款注记
+缓行）；A9 两仓受保护 diff=0；A10 声明级 0 命中。证据归档
+docs/02-evidence/simigoruntime-integration/（未提交 delta 107 行
+逐字留档）。实现决策 3 项登记可重开。
+
+**登记：SimiGoRuntime × InformationCore = FORMAL INTEGRATION
+PASS。**主链更新：pre-research ✓ → T4 precondition SATISFIED →
+formal integration ✓ → T4（仍 BLOCKED，方案待单独指令）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo pre-research = PASS / T4 PRECONDITION SATISFIED
+SimiGoRuntime = FORMAL INTEGRATION PASS
+T4 = BLOCKED（实验方案/执行待单独 human 指令）
+Next = 按原 Gate 顺序进入下一阶段（待 human 指令）
+```
+
+### STOP POINT — NEXT-GATE DIRECTION PENDING (HUMAN) — 2026-10-03
+
+T4 CLOSED（强归因，任务域有界）确认为 Track D 当前阶段正式闭环。
+下一步方向 = human 裁定中的两候选：
+
+```text
+候选 A = T4 Cross-Task Replication Gate
+  唯一窄问题（human 已列）= 保持 Information boundary / cold-start /
+  C-E/C-N 归因框架不变，第二个结构独立 continuation 任务能否
+  复现 T4 的必要性证据
+  纪律 = T4-2 的任务选择/T-3 设计/混淆变量不得由记录者自行
+  设计；须另开 Gate；不作为 T4 补充实验
+
+候选 B = Execution 层 Gate（不急——因果命题刚钉住，先决复现
+  与否比扩大架构范围干净）
+```
+
+停点维持（origin = 72eb6a7 已同步；本地 b29d419…收口记录随链
+推送）。两候选均未开 Spec；待 human 择向。
+
+### A-TASK SELECTION/DESIGN SUB-GATE EXECUTED — DESIGN DRAFT REGISTERED — 2026-10-03
+
+子 Gate 执行（human 开门授权：DESIGN ONLY——任务域选择/结构
+设计/独立性论证/混淆候选登记；T-3 零冻结零执行）。第二任务
+设计（`SIMIGO_LAB_T42_TASK_DESIGN_20261003.md`）：
+
+**任务域 = 系统配置发布（ops）**，与 T4 采购/财务域三轴天然
+独立（词汇/算子/产物范式）。结构：opaque 参数槽 SL-1…SL-4
+（channel/组件-flag 对×3/rollout 百分比序列/window 代码；具体
+值留 A-T-3 子 Gate）→ Phase-A 生成《Release Plan》（flag 过滤
++ rollout 排序派生，自然停止于待办登记）→ Phase-B cold-start
+生成《Production Activation Record》（flag 清单+阶段顺序+
+go/no-go 判定）——正确完成必须消费随机参数与排程。
+
+结构独立性审计：域/产物类型/变换形状三轴独立；换皮测试通过
+（排序+条件算子 T4 无，聚合+百分比算子 T4-2 无）；单沉淀拓扑
+为有意保持的框架控制面。B 指令结构草稿示意（pinning 阶段冻结）。
+
+混淆候选 X1–X7 登记并给排除边界（指令泄漏/工作区考古/执行者
+差异/隐藏通道/任务自证[归 A-T-3]/难度不对称[固有局限：复现 =
+方向收敛非孪生]/Relation 混入[设计决策 Information-only，可重
+开]）；移交 A-T-3 子 Gate 问题清单 4 项。
+
+当前状态：
+
+```text
+A Gate
+├── A-Spec      = PASS / REGISTERED
+├── A-Task      = DESIGN DRAFT / AWAITING HUMAN CONFIRMATION
+├── A-T-3       = NOT OPEN（移交问题清单 4 项）
+├── A-Confound  = NOT OPEN
+├── A-Pinning   = NOT OPEN
+└── A-Execution = NOT AUTHORIZED
+T4 = CLOSED（原结论零改动）
+Next = human 确认设计 → 开 A-T-3 + Confound Audit 子 Gate
+```
+
+### A-T-3 + CONFOUND AUDIT SUB-GATE = PASS — SL VALUES FROZEN — 2026-10-03
+
+子 Gate 执行完毕（`SIMIGO_LAB_T42_T3_CONFOUND_AUDIT_RESULT_20261003.md`）：
+SL-1…SL-4 经 /dev/urandom 生成并冻结——REL-56ff；COMP-0cce/
+COMP-1872/COMP-0137（flag 抽签偶然全 assigned，过滤规则仍须
+应用，结果平凡性不降低内容不可推导性，附注登记）；rollout
+14%→50%→100%（tie-break 未触发）；MW-0a05。**冻结块 sha256 =
+9a6e5e94…1c2e27**（改动 = F6 整轮作废）。
+
+N-1：SL 值仅在生成记录/A 指令/C-E 沉淀三处，B 通道全无。
+N-2：可推闭包 = 文档格式/列举语义/排序语义/go-no-go 概念/
+opaque identity——SL 值 ∉ 闭包（高熵随机零语义）。
+**X-5 正式判定 = 零绕行路径**：activation record 三必需成分
+全依赖 SL 值，C-N 不可恢复，虚构即失败——T-3 完整成立，任务
+无需改造。X-6 口径 = 方向收敛非孪生等价（固有局限入裁定面）。
+其余混淆项（X-1/2/3/4/7）复核延续。
+
+移交 A-Pinning 子 Gate：SL 冻结块 + Phase-A 期望 → 组装 T4-2
+钉定包七件 → human 批准 ⇒ hash 封存。执行授权仍另批。
+
+当前状态：
+
+```text
+A Gate
+├── A-Spec      = PASS / REGISTERED
+├── A-Task      = PASS / DESIGN CONFIRMED
+├── A-T-3       = PASS / SL FROZEN（9a6e5e94…）
+├── A-Confound  = PASS / X-5 零绕行判定 + X-6 口径登记
+├── A-Pinning   = NOT OPEN（下一子 Gate）
+└── A-Execution = NOT AUTHORIZED
+T4 = CLOSED（原结论零改动）
+Next = human 开 A-Pinning / Hash Freeze 子 Gate
+```
+
+### A-PINNING / HASH FREEZE SUB-GATE = PASS — 2026-10-03
+
+T4-2 钉定包七件组装完成并 Hash Freeze
+（`SIMIGO_LAB_T42_TASK_PINNING_PACKAGE_20261003.md`，sha256 =
+5bf1439c…6134e）：P-1 T-3 事实清单（F1 REL-56ff / F2–F4 三组件
+assigned / F5 rollout 14%→50%→100% / F6 MW-0a05，N-1/N-2 引
+A-T-3 结果件）/ P-2 A 指令全文+期望产物要素 / P-3 停止点四
+条件 / P-4 B 逐字指令（C-E/C-N 同文，identity 替入登记 D-note）/
+P-5 AC-2 消费证据三步对照表 / P-6 完成判据五条逐条映射 /
+P-7 唯一差异=沉淀有无。完整性核验：七节齐备、SL 值 21 处一致。
+**冻结纪律生效：任何改动 = F6 整轮作废。**
+
+当前状态：
+
+```text
+A Gate
+├── A-Spec      = PASS / REGISTERED
+├── A-Task      = PASS / DESIGN CONFIRMED
+├── A-T-3       = PASS / SL FROZEN
+├── A-Confound  = PASS
+├── A-Pinning   = PASS / HASH FROZEN（5bf1439c…）
+└── A-Execution = NOT AUTHORIZED（下一道，待 human 指令）
+T4 = CLOSED（原结论零改动）
+```
+
+### T4-2 EXECUTED — RAW OBSERVATIONS SEALED — REPLICATION READING REGISTERED — 2026-10-03
+
+T4-2 Execution 按 HASH FROZEN 钉定包（5bf1439c…）执行完毕：
+三 run（A 96s / B-E 140s / B-N 149s，各 fresh 进程+fresh 库）。
+**A-run**：Release Plan 产出（channel/三组件 assigned/三阶段/
+window/待办含 identity，自然停止零 activation 产物）。
+**B-E-run**：fetch 待办（01:06:30）→ 生成《Production Activation
+Record》（01:07:02，REL-56ff/MW-0a05/三组件 assigned/三阶段/
+GO 行）→ 激活记录+updated-todo 登记；**B-N-run**：fetch 待办
+identity → not-found → 工作区/用法/二进制标识/只读探测 →
+诚实阻塞（零摘要、零 SL 值虚构、零登记）。
+
+**预注册判据归因读数**：AC-1 ✅（五要素全过）/ AC-2 ✅（消费
+痕迹：01:06:30 fetch 先于 01:07:02 生成，取回副本在位，数值
+一致）/ AC-3 ✅（C-N 零达等价）/ T-3 后验 ✅（B-N 全程零 SL 值
+产出，N-3 未触发）。观测附注（诚实登记）：B-E 一次瞬时自校验
+混淆自行纠正；B-N 曾只读探测工具二进制与工作区（声明环境内，
+零 SL 值获得）；一次格式级草稿笔误于执行前修正（两条件同文）。
+
+**Replication Result 读数 = 落入 REPLICATION PASS 格**（结构
+独立第二任务复现 T4 同向必要性证据：C-E 消费边界完成、C-N
+失败、T-3 后验成立）；按预注册纪律，最终宣告 = human。
+
+证据归档 docs/02-evidence/t42-execution/（三 run 全量+三库）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = EXECUTED / RAW OBSERVATIONS SEALED / REPLICATION READING =
+       REPLICATION PASS（预注册判据下）/ AWAITING HUMAN DECLARATION
+T4 = BLOCKED→已收口（原结论不变）
+Next = human 宣告 Replication Result → 收口
+```
+
+### T4-2 REPLICATION RESULT DECLARED — REPLICATION PASS — GATE CHAIN SEALED — 2026-10-03
+
+human 正式宣告（`SIMIGO_LAB_T42_REPLICATION_DECLARATION_20261003.md`
+逐字）：**T4-2 Replication Result = REPLICATION PASS**。四判据
+全 PASS 依据表入档（AC-1 五项完成判据含 GO 行 / AC-2
+fetch→生成→登记因果链且取回数据与冻结 SL 值逐项一致 / AC-3
+B-N 零等价续接零 SL 值零虚构 / T-3 后验 B-N 零获得冻结非可
+推导事实 N-3 未触发）；结构独立性满足 Gate 定义（任务领域/
+输出形式/计算变换结构独立）。
+
+**结论范围逐字封死**：T4-2 不是把 T4 结论扩大到所有任务，而是
+完成预注册的第二个结构独立任务复现——第二个结构独立任务域中
+同样观察到「具 Information 边界的冷启动续接可完成，无沉淀的
+C-N 无法获得等价续接结果」；两次实验共同支持 = **任务域有界
+的必要性命题**，非「对所有 Agent 任务都必然必要」的普遍命题。
+
+收口状态：T4 = CLOSED/STRONG ATTRIBUTION/TASK-DOMAIN BOUNDED；
+T4-2 = CLOSED/REPLICATION PASS；Phase 0 FROZEN / Phase 1 CLOSED /
+Phase 2 CLOSED / Y·D SEALED / T4 BLOCKED（已收口）/ Git 同步至
+宣告提交。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+Next = 等待下一阶段 Gate 指令
+```
+
+### B GATE OPENED — EXECUTION BOUNDARY SPEC (B-SPEC) DEFINED — 2026-10-03
+
+human 开启 **B Gate（Execution Layer）**，仅授权 B-Spec/Boundary
+Definition（B-Design/B-Impl/B-Execute/Core 改动全未授权）。Gate
+唯一问题：Execution State 与 Information Space 的边界，及二者
+如何形成最小可验证执行闭环。总原则（human 逐字）：候选场景
+（file hash change→before/after→external change→Information
+update）不得反向预埋 InformationCore。
+
+**B-Spec 十问定义登记**（`SIMIGO_LAB_B_GATE_EXECUTION_BOUNDARY_
+SPEC_20261003.md`）：Q1 E 观察面（自身上下文/S4 信息面/R4
+关系面/所辖实体态；不可观察 Physical 内部与他 Execution 私有）
+Q2 E 产生面（新 Information formation + 新 Relation + Core 外
+私有态；不可改已存值，first-write-wins）Q3 Information Space
+恰存两契约面值，零执行态零策略 Q4 Physical↔Information =
+identity 寻址 + first-write-wins + 可替换 backend，物理内部
+不入语义 Q5 provenance 粒度 = **per-formation 非 per-operation**
+（动作日志留 Execution 私有）Q6 external change 可观测定义
+（双观察点表示差异 + formation 不在本 Execution 边界写入内）
+Q7 **before/after 非「Information 变化」**——before=观察引用、
+after=新形成事件、change=Relation（R1–R6 语义内）⇒ 候选环
+零 Core 修改可表达 Q8 Core 外清单（动作日志/观察策略/hash
+机制/retrieval/taxonomy/activation/diary/palace/WAL/MemoryCore/
+超级 Store）Q9 最小验证问题候选 R-B1（cold-start 仅经边界回答
+「E 自上次观察以来发生了什么」，C-N 空边界下不可答）Q10 不入
+本 Gate 清单（R-B1 实现/T4 延伸/各项裁定/palace 重建/SQLite
+终局/MemoryCore/B-Design/B-Impl/B-Execute/改冻结语义）。
+
+**R-B1 登记为候选研究方向非冻结**；是否立项 = Boundary Audit +
+Human Freeze 后的 B-Design 决策。下一阶段 = Boundary Audit
+(human) → Human Freeze → B-Design 另裁。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+B Gate = OPEN / B-SPEC DEFINED（AWAITING HUMAN AUDIT + FREEZE）
+Next = human Boundary Audit → Freeze → B-Design 另裁
+```
+
+### B-SPEC BOUNDARY AUDIT PASS — Q6 CORRECTED — HUMAN FREEZE EXECUTED — 2026-10-03
+
+human 逐项审计：Q1–Q10 全 PASS（Q6 PASS* 附唯一措辞修正）；
+三 Contract 平行性 PASS（单向依赖保持：Execution 不改
+InformationCore 语义 / InformationCore 不理解 Execution State）。
+R-B1 = CANDIDATE（与 T4/T4-2 框架同构、问题转向「Execution 如何
+利用 Information 中的变化」、零新 Memory 机制；非已设计实验）。
+
+**Q6 冻结措辞修正（human 裁定采纳）**：external change 定义改
+为「**未被当前 Execution provenance 解释的可观测物理差异**」——
+成因可能为 Human/其他 Agent/程序/Excel/同步程序等，不得等价于
+「外部人工改变」；成因归属 = 后续 provenance/observation 层
+问题。
+
+**HUMAN FREEZE 已执行**：B-Spec 冻结（修正后版本，sha256 于
+提交留档）；B-Design = NOT OPEN（另行裁定）；R-B1 非已授权
+实验；总原则持续有效（候选环不得反向预埋 InformationCore）。
+
+当前状态：
+
+```text
+边界 = FROZEN (BR-1/2/3/5) / BR-4·6 OBSERVATION
+Y = RULED / SEALED / CLOSED
+D 列替换 = EXECUTED / VERIFIED / ARCHIVED
+Phase 0 = SEMANTIC SURFACE FROZEN
+Phase 1 = CLOSED
+Phase 2 = CLOSED
+SimiGo 接入 = FORMAL INTEGRATION PASS
+T4 = PASS / STRONG ATTRIBUTION / CLOSED
+T4-2 = CLOSED / REPLICATION PASS
+B Gate = OPEN / B-SPEC FROZEN（Q6 修正版）
+B-Design = NOT OPEN（待 human 另行裁定）
+Next = human 裁定 B-Design 是否开启
+```
+
+### B-DESIGN EXECUTED — MINIMAL EXECUTION LAYER DESIGN REGISTERED — 2026-10-03
+
+B-Design 执行（DESIGN ONLY 零代码，`SIMIGO_LAB_B_DESIGN_20261003.md`）：
+**最小 Execution Layer 设计**完成——新模块 ExecutionCore（单向
+依赖 InformationCore + RelationCore；两 Core 零改动零感知），
+三组件：C1 ExecutionScope（any InformationStore + any
+RelationStore 边界消费者，observe=fetch/consume=使用/form=形成，
+语义直通已冻结形状）/ C2 Observation formation 规则（before
+引用或未存先形成 + after 表示 → after Information +
+observed-change-of Relation，provenance=观察事件）/ C3 机制边界
+声明（hash/扫描/触发器不实现）。
+
+**R-B1 最小实验结构 = 四 run**：E-run（基线 before 入库）→
+真实世界外部变化 → X-run（观察者形成 after+change Relation）→
+V-E-run（**fresh cold-start 验证者仅经边界回答「E 发生了什么
+变化」**，不提供 E 当前表示=禁重扫）+ V-N-run（空/半空边界
+对照）。判据 V-AC-1/2/3 预登记。
+
+**before/after/change 充分性分析**：四需求（基线可引用/变化后
+可引用/观察关系可寻址/冷启动可按图取回）全落已冻结语义组合
+（Information + Relation + identity 寻址 fetch）⇒ 充分，零新
+Core 类型。confound C-1…C-5 登记归实验期审计。与 SimiGo 三
+contract 平行性声明（零接触零吸收）。
+
+当前状态：
+
+```text
+B Gate
+├── B-Spec    = FROZEN
+├── Audit     = PASS
+├── B-Design  = DESIGN DRAFT / AWAITING HUMAN CONFIRMATION
+├── B-Impl    = NOT AUTHORIZED
+└── B-Execute = NOT AUTHORIZED
+T4/T4-2 = CLOSED（原结论零改动）
+Next = human 确认 B-Design → B-Impl 另批
+```
+
+### B-DESIGN CONFIRMED — NEW FROZEN CONSTRAINT (R-B1 BEFORE MUST BE GENUINELY FORMED) — 2026-10-03
+
+human 审计确认 B-Design = **CONFIRMED**（C1/C2/C3 全 PASS）+
+四-run 结构成立 + 关键优点确认：**变化先发生于 Physical Space，
+再由观察过程形成 Information**——精确对应现实场景（人/Excel/
+Python/Agent 改物理文件，Information Space 随后认识变化）。
+
+**新增冻结约束（R-B1 执行期生效）**：C2 的「未存先形成」不得
+成为 R-B1 实验捷径——R-B1 验证「E 自上次观察以来的变化」时，
+**E-run 必须真正形成可寻址的 before Information**；事后构造的
+before 仅为推断/代理，非可验证历史 Information。「未存先形成」
+保留为 Core 语义允许能力，禁作实验捷径。
+
+确认范围：C1 ExecutionScope / C2 before-after-change Relation /
+C3 机制边界 / R-B1 四-run 结构 / V-AC-1/2/3 预注册候选 /
+C-1…C-5 后续审计——全 PASS。
+
+当前状态：
+
+```text
+B Gate
+├── B-Spec    = FROZEN
+├── Audit     = PASS
+├── B-Design  = CONFIRMED（含新增冻结约束）
+├── B-Impl    = NOT AUTHORIZED
+└── B-Execute = NOT AUTHORIZED
+T4/T4-2 = CLOSED（原结论零改动）
+Next = human 授权 B-Impl 后进入实现
+```
+
+### B-RB1 EXECUTED — PREREGISTERED READING PASS — EXTERNAL AUDIT PASS — B TRACK CLOSED — 2026-10-03
+
+B-Impl 落地最小 `ExecutionCore`（单向依赖
+`InformationCore + RelationCore`；两 Core diff = 0）后，human
+授权 B-Execute。`89781f0` 钉定四步结构，`f2143dda` 封存执行
+结果：E-run 真实形成可寻址 before Information `7973612e…`；
+外部编排实施 Physical S0→S1；X-run 经 `.reference(beforeID)`
+形成 after `59d5fe62…` 与 `observed-change-of` Relation
+`869c145e…`；V-E 仅持 DB/relationID/frozen question，按
+`relation→after→before` 取回并精确回答 diff；V-N 空边界得到
+`relation-not-found` 且无法作答。V-AC-1/2/3 PASS，机器检查
+16/16 PASS，C-1…C-5 PASS。外部审计 `3016844` 封口：物理变化
+证据来自外部编排与封存 artifacts，ExecutionCore 不做检测；结论
+仅限预登记四步结构，不扩大为通用 Agent/Memory 必要性。B Track
+CLOSED。
+
+当前状态：
+
+```text
+B-Spec    = FROZEN
+B-Design  = CONFIRMED
+B-Impl    = IMPLEMENTED / AUDITED / PUSHED
+B-Execute = EXECUTED / AUTHORIZED
+R-B1      = EXECUTED / PREREGISTERED READING PASS / EXTERNAL AUDIT PASS
+B Track   = CLOSED
+```
+
+### C GATE OPENED — C-SPEC DRAFT — EXECUTION STATE × INFORMATION SPACE NECESSITY — 2026-10-03
+
+human 建议 B 不继续堆语义，转入 C 轨并先做最小问题定义。
+`SIMIGO_LAB_C_QUESTION_SPEC_20261003.md` 登记为 C-SPEC DRAFT：
+冻结候选问题 **C-Q1 = Execution State 被终止/重启/转移后，哪些
+东西必须存在于 Information Space 中才能继续工作**；最小对照 =
+C-A 只有 Execution State / C-B 加持久 Information 无 Relation /
+C-C 加 Information 加 Relation，三组承受同一 S0→外部变化→进程
+终止→cold start→继续任务骨架；结论只允许在钉定任务与环境中比较
+恢复程度与缺失承载物，禁止扩大为普遍 Agent/Memory/PALACE 必要性。
+本件明确排除 C-Design/C-Impl/C-Execute、Core 修改、Palace schema、
+数据库设计、chat/tool/API/Office 等应用集成，以及任何结果预设。
+
+当前状态：
+
+```text
+B Track    = CLOSED
+C Gate     = OPEN / C-SPEC DRAFT
+C-Q1       = REGISTERED
+C-A/B/C    = REGISTERED MINIMUM CONTROLS
+C-Design   = NOT OPEN
+C-Impl     = NOT AUTHORIZED
+C-Execute  = NOT AUTHORIZED
+Next = human audit + freeze C-SPEC → C-Design 另行授权
+```
+
+### C-SPEC HUMAN AUDIT = CONDITIONAL PASS — REVISE EXECUTED — RE-AUDIT PASS — FROZEN — 2026-10-03
+
+human audit 完成 H-1…H-6：H-1/2/3/5 均 PASS WITH CONDITION，H-6
+PASS，H-4 因原 C-Q1 宽问题提到 transfer 而公共骨架只覆盖
+termination → cold start，判 FAIL AS CURRENTLY WORDED。裁定：
+C-Q1 保留宽研究问题，但本轮实验只取
+`termination → restart → cold start` slice；transfer 显式
+OUT OF SCOPE，不得外推。C-A 可有 Execution State 自身持久化，
+但不得有持久 Information Space；C-B 可持久化任务事实、实体状态、
+执行上下文、todo/progress 与事实性变化描述，但不得有独立持久
+Relation 载体/语义机制；runtime 从多条独立 Information 推导不算
+C-C。三组必须共享任务、输入、S0/S1、外部变化、终止点、cold-start、
+继续任务与成败判据。cold-start 至少要求新进程且无旧进程内存、旧
+ExecutionCore runtime、旧模型上下文/KV 等隐式状态；具体禁止通道归
+C-Design。最小修订已写入 C-SPEC，详细裁定登记
+`SIMIGO_LAB_C_SPEC_HUMAN_AUDIT_20261003.md`。human 复审逐项
+PASS：C-Q1、lifecycle slice、C-A、C-B、公平性、cold start
+(PASS WITH CONDITION)、结论边界、C-Spec 完整性均通过；确认最小
+修订只把宽 C-Q1 与实验 lifecycle slice 分离，未引入新实验设计。
+C-SPEC 正式 FROZEN。C-Design = OPEN / READY / NOT STARTED，只处理
+已登记的 C-A/B/C、cold-start boundary、same-task fairness 与成功
+判据；不得重开 C-Q1 或扩展 PALACE schema、Remote API、Chat/File/
+Tool integration。
+
+当前状态：
+
+```text
+B Track    = CLOSED
+C Gate     = OPEN
+C-Spec     = FROZEN / HUMAN RE-AUDIT PASS
+C-A/B/C    = FROZEN MINIMUM CONTROLS
+Lifecycle  = termination → restart → cold start only
+Transfer   = OUT OF SCOPE
+C-Design   = OPEN / READY / NOT STARTED
+C-Impl     = NOT AUTHORIZED
+C-Execute  = NOT AUTHORIZED
+Next = C-DESIGN ONLY → human confirmation → C-IMPL 另行授权
+```
+
+### C-DESIGN OPENED — LIFECYCLE RECOVERY EXPERIMENT DRAFT — 2026-10-03
+
+按 frozen C-SPEC 开启 C-Design（DESIGN ONLY，零代码/零实现/零执行），
+登记 `SIMIGO_LAB_C_DESIGN_20261003.md`。设计把 C-A/B/C 变成同一
+lifecycle 实验：S0=`{"entity":"E","alpha":17,"mode":"quiet"}`，外部
+编排真实覆盖为 S1=`{"entity":"E","alpha":42,"mode":"active"}`；
+声明观察 S1 后、continuation 评估前终止进程；fresh cold start 只允许
+读取本臂声明持久载体。C-A 仅 ES checkpoint（task/phase/next step，
+禁存实体值、变化叙述、relation pair、最终答案）；C-B 另有 I-TASK、
+I-S0、I-S1、I-PROGRESS 四条独立 Information，且本设计主动不使用
+“变化描述” allowance，禁止 relation row、S0/S1 关系对、已答 diff
+report 或 ES 保存最终 action；C-C 再加 persisted
+`observed-change-of` Relation。continuation 固定评估 task identity、
+before/after state、directional change、next action 五项；禁用通道时
+run=INVALID 而非 arm failure。证据要求 PIDs、退出证明、持久快照、
+scrubbed env、fetch trace 先于 artifact、固定 evaluator 与 artifact
+hash。结论限定该任务、单次外部变化、termination→restart→cold start
+slice 与该 harness；transfer、多变化、PALACE schema、数据库、应用
+集成、Core 修改全部 out of scope。当前等待 human C-Design audit。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = DRAFT / AWAITING HUMAN AUDIT
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = human C-Design audit → CONFIRMED 后 C-Impl 另行授权
+```
+
+### C-DESIGN HUMAN AUDIT = CONDITIONAL PASS — MINIMAL REVISE EXECUTED — 2026-10-03
+
+human C-Design audit 裁定 D-1…D-4/D-7 PASS，D-5/D-6
+PASS WITH CONDITION，D-8 REVISE REQUIRED：原设计允许 C-B 由
+I-S0/I-S1 在 runtime 合法推导 directional change，因此 C-B 通过 X-4
+不能被解释为 persisted Relation 缺陷，也不能预设 C-B/C-C 在 X-4 上
+构成 Relation necessity 对照。最小修订不改 C-SPEC、不削弱 C-B 推理、
+不新增 PALACE/schema/应用集成：明确 X-4 只是 continuation capability
+observation metric；C-B PASS 表示独立 Information 在该任务上足够，
+不推广为 Relation 一般不必要；C-B FAIL 也只表示 Relation 可能贡献，
+不证明它是唯一缺失机制。primary necessity comparison =
+C-A versus C-B/C（persistent Information Space）；C-B versus C-C 在本
+固定任务上为 exploratory，若 C-B PASS 必须诚实登记 Relation 在该任务
+不必要。X-5 的正确 action token
+`REQUEST_HEALTH_CHECK` 已在执行前冻结，不得由执行后主观判断替换；
+forbidden-channel 证据必须可由 declared invocation/environment/
+persistence/carrier-read records 审计，C-Impl 可增强但不能弱化。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = REVISED / HUMAN AUDIT CONDITIONAL PASS / AWAITING RE-AUDIT
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = human C-Design re-audit → CONFIRMED 后 C-Impl 另行授权
+```
+
+### C-DESIGN RE-AUDIT = PASS WITH CONDITION — DESIGN CONFIRMED — 2026-10-03
+
+human C-Design re-audit 通过修订版：D-1 lifecycle chain、D-2
+C-A/B/C boundary、D-3 C-B 不携带预编码 Relation、D-4 C-C Relation
+carrier、D-6 X-1…X-5、D-7 X-4 interpretation、D-8 X-5
+machine-checkability、D-9 primary vs exploratory comparison、D-10 claim
+boundary 均 PASS；D-5 cold-start / forbidden channel 为
+PASS WITH CONDITION。确认结构：primary comparison =
+C-A versus C-B/C，检验 persistent Information Space 是否提供 ES-only
+缺少的恢复能力；secondary exploratory comparison = C-B versus C-C，
+检验 persisted Relation carrier 在固定任务上是否提供独立 Information
+没有的能力。C-A FAIL 且 C-B/C PASS 是合法结果，可登记 Information
+Space 为本实验关键缺失载体，但不得推广 Relation 一般必要性。
+唯一 implementation-time condition：forbidden-channel evidence 必须在
+C-Impl 中通过 declared invocation、environment、persistence、carrier-read
+records 真正可审计；Design confirmation 不等于 forbidden channels
+verified absent。设计确认件
+`SIMIGO_LAB_C_DESIGN_CONFIRMATION_20261003.md` 入档。C-Impl 仍未授权；
+若后续授权，只能实现 confirmed design，不得改变 C-A/B/C、lifecycle
+slice、X-1…X-5、success criteria 或 claim boundary。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = NOT AUTHORIZED
+C-Execute = NOT AUTHORIZED
+Next = explicit human C-Impl authorization → implementation → C-Impl audit
+```
+
+### C-IMPL AUDIT = FAIL — REVISE REQUIRED — NO EXECUTE — 2026-10-03
+
+C-Impl authorization后，远端分支以五个 commit 实现了
+`trackD-memory/Sources/CContinuationStudy/main.swift`；audit object =
+`1771000b86d3`，audited source SHA-256 =
+`13dbf066…74332f9`。非阻塞验证：release build PASS，既有 ExecutionCore
+tests 4/4 PASS，InformationCore/RelationCore/ExecutionCore protected diff
+against `3016844` = 0 bytes。但 C-Impl Audit 发现 8 个 blocker：
+(1) C-A ES 持久化 `external S0→S1` narrative 和最终
+`REQUEST_HEALTH_CHECK`，污染 ES-only control；(2) C-B `progress`
+Information 同时携带 change narrative 与 X-5 answer，破坏 C-B/C-C
+区分；(3) Information identity 使用手写 raw IDs，绕过机制 minter；
+(4) harness 直接调用 SQLiteStore，绕过 ExecutionScope 消费边界；
+(5) forbidden-channel checks 全部硬编码 false，不满足 C-Design 唯一
+implementation-time condition；(6) prepare 与 observe-after 是不同 CLI
+process，偏离同一 old process 观察 S0/S1 后再终止的 lifecycle chain；
+(7) success 判定不是 frozen X-1…X-5 evaluator，X-2/X-3 只要求 non-nil，
+X-4 只要求任意差异标签；(8) 缺少 Physical source snapshot/hash/declared
+overwrite evidence hooks。C-Execute 未运行。一个未审计的本地 alternative
+实现已 stash 为 `unaudited local CImpl alternative`，不属于本裁决。详见
+`SIMIGO_LAB_C_IMPL_AUDIT_20261003.md` 与
+`docs/02-evidence/c-impl-audit/`。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = IMPLEMENTED / AUDIT FAIL / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+Next = revise C-Impl against confirmed C-Design → C-Impl re-audit
+```
+
+C-Impl Audit 外部 human 独立核对通过，确认
+`1771000b86d3` 的 `FAIL / REVISE REQUIRED` 与 8 blockers 全部成立；
+未纳入 stashed local alternative。最后远端 commit 只把 C-B 比较改成
+sorted JSON deterministic comparison，但仍无条件返回 `S0 → S1`，B-7
+未解决。修订约束已封存：只能增加 audit/detection capability 与 evidence
+machinery，不得新增 Change/Observation semantic type、新 Relation
+mechanism、自动 real-change inference、新 success semantics、新 C-A/B/C
+定义，也不得改变 X-1…X-5 / `REQUEST_HEALTH_CHECK`。下一轮审计对象必须是
+新的可定位 revision commit/diff；stashed implementation 不得混入。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = IMPLEMENTED / AUDIT FAIL / EXTERNALLY CONFIRMED / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = C-Impl revision → new locatable revision diff → C-Impl re-audit
+```
+
+### C-IMPL REVISION AUDIT = FAIL — TWO NEW BLOCKERS — NO EXECUTE — 2026-10-03
+
+对 `aca117163904` 执行 C-Impl Revision Audit。非阻塞机械验证 PASS：
+release build PASS；ExecutionCoreTests 4/4、CContinuationTests 4/4；
+protected Core diff = 0；continuation runtime 中无 answer constants；无
+direct Core store/fetch/raw semantic IDs。上一轮 8 blockers 中 B-1/B-2/
+B-3/B-4/B-6/B-7/B-8 已解决，B-5 的 forbidden-check 内容已改为
+method + observed + passed。但新增两个 blocker：
+R-A1 fresh process 用 `StudyJSON.write` 覆盖同一
+`invocation-evidence.jsonl`，销毁 old process 的 invocation/carrier-write/
+forbidden-channel audit trail；R-A2 C-C Relation 缺失时会 fallback 到
+independent `s0`/`s1` pointers，且 blocker 判定不检查 Relation found，
+因此 C-C 可在 Relation 缺失时仍 full success，掩盖 C-C 载体定义。
+Physical source identity、actual old-process exit、old/fresh marker 保留
+列为 C-Execute orchestration 非阻塞条件。R-C1 未运行，C-Execute 未授权。
+详见 `SIMIGO_LAB_C_IMPL_REVISION_AUDIT_20261003.md` 与
+`docs/02-evidence/c-impl-revision-audit/`。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REVISED / AUDIT FAIL / REVISE REQUIRED
+C-Execute = NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = preserve old/fresh evidence + fail closed on missing C-C Relation
+       → C-Impl re-audit
+```
+
+### C-IMPL RE-AUDIT = PASS — EXECUTION AUTHORIZATION PENDING — NO EXECUTE — 2026-10-03
+
+对 `bae68a852cfc` 执行 C-Impl Re-audit，仅审计 R-A1/R-A2 修订与边界保持。
+release build PASS；ExecutionCoreTests 4/4、CContinuationTests 4/4；
+protected Core diff relative to `1771000` 与 `aca1171` 均 0 bytes。
+R-A1 PASS：old process 追加 `invocation-evidence.jsonl`（command=old），
+fresh process 独立写 `continuation-evidence.json`（command=continue），不再
+覆盖 old evidence；old/fresh marker 分离。R-A2 PASS：C-C 缺 Relation
+pointer 或 fetch nil 时记录 `relationMissing`，设置
+`blocker=relation_not_found`，且独立 `s0`/`s1` pointer fallback 被限定为
+`!arm.relationEnabled`；C-B 保持 Information-only。边界检查：answer
+constants 缺席；direct Core store/fetch/raw semantic IDs 缺席；
+ExecutionScope、`makeInformationID`、`RelationMinter` 存在；revision delta
+仅 `CContinuationStudyContinue` 与 `CContinuationSupport`。R-C1 未运行。
+审计 PASS 只表示 implementation 达到执行前门槛，不构成 R-C1 授权。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = AUDITED / PASS
+C-Execute = NOT AUTHORIZED / READY FOR HUMAN AUTHORIZATION REVIEW
+R-C1      = NOT RUN
+Next = explicit human C-Execute authorization gate → R-C1 or remain blocked
+```
+
+### C-IMPL CLOSED / AUDITED PASS — HUMAN IMPLEMENTATION FREEZE — 2026-10-03
+
+human 确认执行前边界并正式冻结已审计 implementation `bae68a852cfc`。
+等待 C-Execute authorization 期间不得继续修改 implementation、保护逻辑、
+logging、test semantics 或实验框架。正式状态：
+`C-Impl = CLOSED / AUDITED PASS`；`C-Execute = READY, BUT NOT AUTHORIZED`；
+`R-C1 = NOT RUN`。PASS 语义保持受限：implementation 满足执行前审计要求，
+不等于 C-Execute 已授权，不等于 forbidden channels 已被实验排除，也不等于
+R-C1 hypothesis 已验证。若后续获得显式 human C-Execute authorization，
+才允许运行 R-C1；结果必须依据 execution evidence 判定，不预设 PASS、
+partial、invariant failure 或新边界问题。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = CLOSED / AUDITED PASS
+C-Execute = READY, BUT NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = explicit human C-Execute authorization → R-C1, otherwise remain frozen
+```
+
+### C-EXECUTE AUTHORIZATION RECORD PREPARED — NOT AUTHORIZED — 2026-10-03
+
+`SIMIGO_LAB_C_EXECUTE_AUTHORIZATION_RECORD_20261003.md` 入档。该执行单锁定
+implementation baseline `bae68a852cfc`、branch
+`codex/execution-state-research-20260929`、old/fresh lifecycle separation、
+R-A1 evidence preservation、R-A2 C-C relation fail-closed、C-B Information-only
+independence、forbidden-channel runtime evidence、physical-change/carrier
+evidence、result classification 和 stop conditions。记录当前状态为
+`READY FOR HUMAN AUTHORIZATION`，`R-C1 = NOT RUN`；未填写 Human
+Authorization，因此 `C-Execute = NOT AUTHORIZED`。该授权单不预授权实验结果，
+也不允许执行期间修改 C-Spec、C-Design、implementation、X-1…X-5 或 semantic
+path。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = CLOSED / AUDITED PASS
+C-Execute = READY, BUT NOT AUTHORIZED
+R-C1      = NOT RUN
+Next = explicit signed human authorization → C-Execute = AUTHORIZED
+```
+
+### R-C1 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human 明确授权 `R-C1 = AUTHORIZED` 后，以 `bae68a852cfc` 为唯一
+implementation baseline 在 detached worktree 构建 release binaries 并开始
+执行。官方 run root =
+`docs/02-evidence/rc1-execution/RC1-20261002T202144Z-42754`。C-A old
+process 完成：S0 formation、真实外部 Physical overwrite S0→S1、S1
+formation 与 termination marker 均保留；C-A first fresh attempt 暴露
+implementation CLI parser defect（literal `continue` 被当作 option value）。
+按 execution authorization 规则记录 deviation D-1，未修改 implementation，
+使用 duplicated literal `continue` token 完成一次 fresh process；C-A
+evaluator = partial success，仅 X-1 PASS，X-2…X-5 FAIL。随后 C-B old
+process fatal error：`invalid state: C-B carrier pointer set is invalid`，
+原因是 incremental checkpoint validation 在 I-TASK/I-S0 后就要求 final
+C-B pointer set。按 stop condition 立即停止；C-B fresh 未运行，C-C 未运行。
+结果分类 = `INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`，不支持任何
+研究 hypothesis 解释。C-Impl reopened/revision required；新 C-Execute
+authorization 必须待修复并重新 audit 后另行授予。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED
+C-Execute = NOT AUTHORIZED / PRIOR AUTHORIZATION CONSUMED
+R-C1      = STOPPED / INVALID INCONCLUSIVE
+Next = fix C-Impl parser + incremental checkpoint validation → C-Impl audit
+       → new C-Execute authorization
+```
+
+### C-IMPL D-1/D-2 REVISION RE-AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+按窄修订范围完成 D-1/D-2 修复并提交
+`df7a6246c7a8`。D-1：新增 `LifecycleInvocationParser`，old/continue
+均要求 lifecycle command 为首 token，option 必须成对、以 `--` 开头且不
+重复；两个 binary 分别 guard `.old` / `.continue`。D-2：
+`ExecutionState.validate(for:stage:)` 区分 construction 与 final。C-B
+合法 construction 为空、task、task+s0、task+s0+s1、task+s0+s1+progress；
+final 才要求四 pointers。C-C construction 要求完整 base，或完整 base +
+Relation；final 要求五 pointers。old process 构造期使用 construction
+checks，POST_CHANGE 使用 final check；fresh continuation 使用 final check。
+新增 regression tests 覆盖 old/continue grammar、C-B legal/invalid
+construction、premature final rejection 与 C-C complete-base-before-relation。
+release build PASS；tests 13/13 PASS；protected Core diff 0 bytes；frozen
+C-Spec/C-Design tracked diff none；runtime answer constants/direct Core
+operations absent。R-C1 Attempt #1 保持
+`STOPPED / INVALID INCONCLUSIVE`，不作为 hypothesis evidence；Attempt #2
+未运行，必须获得新的显式 human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-1/D-2 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 Attempt #1 = STOPPED / INVALID INCONCLUSIVE
+R-C1 Attempt #2 = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 Attempt #2 authorization, otherwise remain blocked
+```
+
+### R-C1 ATTEMPT #2 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human explicit授权 Attempt #2，新 implementation baseline =
+`df7a6246c7a8`；run root =
+`docs/02-evidence/rc1-attempt2/RC1-A2-20261002T204925Z-45791`。真实执行中
+D-1 runtime 语法成立：`CContinuationStudy` 解析 `.old`，
+`CContinuationStudyContinue` 解析 `.continue`，无 deviation。C-A old/
+external overwrite/fresh/evaluator 完成，evaluator 为 partial success（仅
+X-1）。C-B old process 在 Information/Relation store 初始化后 crash：
+C-B 禁用 Relation persistence，但 old formation helper 对每个 arm 强制
+unwrap `relationStore`，触发 EXC_BREAKPOINT。checkpoint 保留
+`OLD_PROCESS_STARTED` + empty pointers；C-B fresh 未运行；C-C 未运行。
+macOS crash report、partial C-A evidence、empty C-B checkpoint 已封存。
+执行期间未修改 implementation/protocol。Attempt #2 分类 =
+`INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`；不得解释为 continuation
+hypothesis 支持或反证。C-Impl reopened/revision required；新执行需再修
+implementation 并重新 audit + 新授权。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED
+C-Execute = NOT AUTHORIZED / ATTEMPT #2 AUTHORIZATION CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+Next = fix nil optional-store force unwrap without adding C-B Relation
+       semantics → C-Impl audit → new explicit C-Execute authorization
+```
+
+### C-IMPL D-3 RE-AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+按窄范围修复 Attempt #2 暴露的 C-B isolation defect，提交
+`806dd3eea55c`。当 `relationEnabled == false` 时，old/fresh 两个 process
+均注入 `DisabledRelationStore` 而非 nil；该 disabled carrier fail-closed：
+Relation write/read 均抛错，不持久化、不返回 Relation、不提供 Relation
+semantics。C-B 仍通过 ExecutionScope 使用 SQLite Information path；C-C 仍
+使用 RelationFileStore。移除了 `relationStore!`。新增 regression：
+disabled Relation write/read fails closed；C-B Information-only
+ExecutionScope 可 form/observe Information 且不触发 disabled Relation；
+C-C complete-base-before-Relation invariant 保持。release build PASS；all
+test suites PASS；protected Core diff 0；runtime answer constants 与 direct
+Core operations absent；`relationStore!` absent。R-C1 Attempt #3 未运行，
+必须获得新的显式 human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-3 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 #3 authorization, otherwise implementation remains frozen
+```
+
+### R-C1 ATTEMPT #3 = AUTHORIZED / STARTED / STOPPED — INVALID INCONCLUSIVE — 2026-10-03
+
+human explicit授权 Attempt #3，新 implementation baseline =
+`806dd3eea55c`。两个 orchestration pre-run root 在 old protocol 前中止，
+分类为 orchestration invalid，不作为 R-C1 result。官方 run root =
+`docs/02-evidence/rc1-attempt3/RC1-A3-20261002T211332Z-48860`。C-A old/
+external overwrite/fresh/evaluator 完成，evaluator 为 partial success（仅
+X-1）。C-B old/external overwrite/fresh/evaluator 完成，evaluator 为 full
+success X-1…X-5。C-C old process 在 awaiting marker 前停止：
+`invalid state: C-C construction pointer set is invalid`；C-C fresh 未运行。
+原因是当前 implementation 只允许 C-C construction 的 complete base 或
+complete final pointer set，未建模 legal staged C-C construction。macOS
+crash report、C-A/C-B checkpoint staging、physical overwrite hashes、fresh
+reports 与 evidence 均封存。执行期间未修改 implementation/protocol。
+Attempt #3 分类 =
+`INVALID / INCONCLUSIVE / IMPLEMENTATION DEFECT`；不得解释为 continuation
+hypothesis 支持或反证。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = REOPENED / REVISION REQUIRED / D-4
+C-Execute = NOT AUTHORIZED / ATTEMPT #3 AUTHORIZATION CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+Next = diagnose/fix C-C staged construction validation → C-Impl audit
+       → new explicit C-Execute authorization
+```
+
+### C-IMPL D-4 REVISION AUDIT = PASS — NO NEW EXECUTE — 2026-10-03
+
+D-4 最小修订提交 `569fe540d1ff`。诊断确认 C-C construction validator 只允许
+complete base 或 complete final，未建模 frozen C-C formation 的 staged
+sequence。修订复用 ordered construction validator 允许：
+`[] → task → task+s0 → task+s0+s1 → task+s0+s1+progress`；Relation 只能
+在 complete base 后作为 complete final set 出现；final validation 不变。
+新增 tests：接受完整 staged sequence、Relation only after complete base、
+拒绝 premature/corrupt/extra Relation states。release build PASS；trackD
+tests 14/14 PASS；protected Core diff 0；frozen C-Spec/C-Design tracked diff
+none；runtime answer constants 与 direct Core operations absent。
+R-C1 Attempt #4 未运行；需新的 explicit human authorization。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-4 REVISION AUDIT PASS
+C-Execute = NOT AUTHORIZED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #4   = NOT RUN / REQUIRES NEW HUMAN AUTHORIZATION
+Next = explicit human R-C1 #4 authorization, otherwise implementation remains frozen
+```
+
+### R-C1 ATTEMPT #4 = AUTHORIZED / EXECUTED / VALID — EVIDENCE PRESERVED — 2026-10-03
+
+human explicit授权 Attempt #4，implementation baseline =
+`569fe540d1ff`；run root =
+`docs/02-evidence/rc1-attempt4/RC1-A4-20261003T040749Z-57375`。三臂全部完成：
+C-A 在无 persistent Information Space 时仅恢复 X-1 task identity，X-2…X-5
+FAIL；C-B 通过 independent Information path 恢复
+S0/S1/directional change/next action，X-1…X-5 FULL SUCCESS；C-C 通过 persisted
+Relation path 取得 `I-S1 ──observed-change-of──> I-S0` 及两端 Information，
+X-1…X-5 FULL SUCCESS。物理变化、old/fresh process separation、carrier
+separation、forbidden-channel runtime checks 均有 evidence；无 implementation
+或 protocol runtime change。Layer 1 = PRESERVED；Layer 2 =
+`VALID THREE-ARM EXECUTION COMPLETED`。Layer 3 bounded observation：在本任务/
+harness/lifecycle slice 内，persistent Information Space 区分了 C-A 与
+C-B/C-C；persistent Relation carrier 在该单变化任务中未表现出 beyond
+independent Information 的额外 continuation capability，但 C-C 确实实际使用了
+Relation path。此结论不外推为所有 Agent、所有 Memory System、PALACE schema
+或 Relation 普遍不必要的证明。
+
+当前状态：
+
+```text
+B Track   = CLOSED
+C Gate    = OPEN
+C-Spec    = FROZEN / HUMAN RE-AUDIT PASS
+C-Design  = CONFIRMED / HUMAN RE-AUDIT PASS WITH CONDITION
+C-Impl    = D-4 REVISION AUDIT PASS
+C-Execute = AUTHORIZED / CONSUMED
+R-C1 #1   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #2   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #3   = STOPPED / INVALID INCONCLUSIVE
+R-C1 #4   = COMPLETED / VALID / EVIDENCE PRESERVED
+Next = human research interpretation gate; no automatic universal conclusion
+```
+
+### R-C1 #4 LAYER 3 BOUNDED OBSERVATIONS O1/O2 SEALED — 2026-10-03
+
+Layer 3 正式封存两条 bounded observations。O1 = bounded positive：在当前 fixed
+task / harness / lifecycle slice 中，C-A state-only restoration 仅恢复 task
+identity（X-1），不能完成 X-2…X-5；persistent Information 使 C-B 恢复
+S0/S1/directional change/next action 并通过 X-1…X-5。因此 runtime state alone
+不足以完成 full semantic continuation；persistent information outside restored
+runtime execution state enabled full continuation sequence。O2 = bounded
+negative / undifferentiated：C-B independent persistent Information 与 C-C
+Information + persisted Relation 均达到 full continuation；C-C relation path
+确实被使用，但本单变化任务未观察到 Relation carrier beyond independent
+Information 的额外 continuation capability。O2 不等于 Relation 普通不必要，
+只表示当前任务未形成 Relation 区分场景。允许表述：R-C1 #4 provides a bounded
+empirical observation that semantic continuation may depend on persistent
+information outside the runtime execution state。禁止表述：IPAC proven、PALACE
+proven necessary、Relation universally unnecessary、Execution State theory fully
+established、所有 Agent tasks require persistent Information Space。
+Engineering-discovery chain #1→D-1/D-2，#2→D-1 runtime PASS/D-3，#3→D-4，
+#4→first valid bounded research observation 继续保留为 implementation /
+execution-discovery evidence，不是 continuation-hypothesis evidence。
+
+当前状态：
+
+```text
+R-C1 #4 = COMPLETED / VALID / EVIDENCE PRESERVED
+Layer 3 = O1 bounded positive + O2 bounded negative/undifferentiated
+Claim scope = task-domain / harness / lifecycle-slice bounded only
+Next = human research interpretation gate; no automatic universal conclusion
+```
+
+### R-C1 #4 RESEARCH OBSERVATIONS / EVIDENCE AUDIT / C-DESIGN IMPACT REVIEW = SEALED PASS — 2026-10-03
+
+R-C1 #4 正式进入并完成研究解释闭合。Evidence/Result Audit 的 machine checks
+全部 PASS：run/baseline/authorization 正确；三臂 old/fresh PIDs distinct；
+old command=old、fresh command=continue；lifecycle markers齐备；physical
+before/after hashes齐备；runtime forbidden-channel checks全过；C-A
+partial/X-1-only、C-B full、C-C full；C-B relation artifact absent；C-C
+relation artifact present，且方向为 I-S1 ──observed-change-of──> I-S0。frozen
+C-Spec/C-Design 与 audited implementation均无 diff。Research Interpretation
+Record封存：O1 = SUPPORTED / TASK-DOMAIN-BOUNDED，即在该 task/harness/lifecycle
+slice内 runtime state alone不足以完成 full continuation，persistent Information
+是 preregistered continuation所需的 operational external information source；
+O2 = NOT OBSERVED / TASK-DOMAIN-BOUNDED，即单变化任务中未观察到 Relation carrier
+beyond independent Information的额外 continuation capability；不得改写为
+Relation unnecessary。C-Design Impact Review结论：NO C-DESIGN AMENDMENT；
+现有 C-A/B/C operational arms、allowed channels、lifecycle、X-1…X-5与claim
+boundary已足以表达和检验该关系；D-4属C-Impl state validation gap。Route A
+（Information dependency replication）与 Route B（Relation-discriminating task）
+仅登记为候选，均未选择、未授权。PALACE implementation仍NOT OPEN。
+
+当前状态：
+
+```text
+B Track      = CLOSED
+C Gate       = OPEN
+C-Spec       = FROZEN / HUMAN RE-AUDIT PASS
+C-Design     = CONFIRMED / IMPACT REVIEW PASS / NO AMENDMENT
+C-Impl       = D-4 REVISION AUDIT PASS
+C-Execute    = AUTHORIZATION CONSUMED
+R-C1 #1…#3  = INVALID INCONCLUSIVE
+R-C1 #4      = CLOSED / VALID / EVIDENCE PRESERVED / OBSERVATIONS SEALED
+Research O1  = SUPPORTED / TASK-DOMAIN-BOUNDED
+Research O2  = NOT OBSERVED
+Next experiment = DEFERRED BETWEEN ROUTE A AND ROUTE B
+PALACE       = NOT OPEN
+```
+
+### IPAC / EXECUTION STATE RESEARCH SYNTHESIS GATE OPENED — NO NEW EXPERIMENT — 2026-10-03
+
+按human建议进入Post-RC1 Synthesis Gate，不改代码、不改C-Spec/C-Design/
+C-Impl/Core/PALACE，不选择Route A/B。新增
+`SIMIGO_LAB_IPAC_EXECUTION_STATE_RESEARCH_SYNTHESIS_20261003.md`。合成边界：
+R-C1 #4 valid evidence支持O1（task-domain-bounded）——runtime state alone
+不足以完成full semantic continuation，persistent Information enables the
+preregistered continuation sequence；O2——单变化任务中Relation未表现beyond
+independent Information的额外continuation capability。候选模型：
+Continuation = Restored Execution State + Resolved Persistent Information +
+Satisfied Continuation Conditions；ES偏向lifecycle/control substrate，
+persistent Information偏向semantic substrate。IPAC解释保持OPEN/NONBINDING：
+候选方向不是四个字段，而是当前Execution State合法接管已结算计算结果的关系；
+candidate chain为Past Computation → Settled Result → Persistent Information /
+provenance → IPAC-style validation → Execution State adoption → Continuation。
+三个synthesis questions登记：Q1 ES内部最小内容、Q2外部persistent
+Information Space可承载内容、Q3当前State可直接adopt settled result而非重算
+的条件。Route A/B分别对应Information dependency repeatability与Relation
+irreducible role，均DEFERRED；选择应待synthesis完成后进行。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / PAUSED FOR POST-RC1 SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = NOT AUTHORIZED
+R-C1 #1…#3         = INVALID INCONCLUSIVE
+R-C1 #4            = VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / BOUNDED
+O2                 = SEALED / NOT OBSERVED / BOUNDED
+IPAC interpretation = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = NOT OPEN
+Next = complete IPAC/Execution State synthesis; no experiment until a new gate
+```
+
+### IPAC SYNTHESIS CLOSURE REVIEW PACKET CREATED — H1…H3 PENDING — 2026-10-03
+
+按human建议将synthesis收尾定义为边界闭合动作，不新增理论假设、不改代码、
+不修改frozen artifacts、不选择Route A/B、不打开PALACE。新增
+`SIMIGO_LAB_IPAC_SYNTHESIS_CLOSURE_REVIEW_20261003.md`，提出三层模型：
+Persistent Information Space提供history/provenance/settled result/relation/
+anchors，经resolve/validate进入Execution State的lifecycle/control/position/
+continuation entry conditions，再形成continuation decision：Adopt settled
+result→Continue，Cannot adopt→Recompute/Reject。IPAC仍为OPEN/NONBINDING
+candidate，研究对象是当前State为何可合法adopt settled result，而非普通
+checkpoint/cache。Human Review只审三项：H1接受ES与Persistent Information为
+不同但协作的semantic layers；H2接受continuation lawfulness为核心后续问题；
+H3接受IPAC为open/nonbinding Result Adoption/Continuation Conditions
+candidate且不冻结I/P/A/C字段。若H1…H3通过，synthesis可关闭，ES与Persistent
+Info标记SYNTHESIS MODEL ACCEPTED；IPAC/minimality/semantics保持open、
+unproven、not frozen；Route A/B继续DEFERRED；PALACE CLOSED。
+
+当前状态：
+
+```text
+B Track                 = CLOSED
+C Gate                  = OPEN / SYNTHESIS CLOSURE REVIEW PENDING
+C-Spec                  = FROZEN
+C-Design                = CONFIRMED / NO AMENDMENT
+C-Impl                  = CLOSED / D-4 AUDIT PASS
+R-C1 #4                 = CLOSED / VALID
+O1                      = SEALED / SUPPORTED / BOUNDED
+O2                      = SEALED / NOT OBSERVED / BOUNDED
+IPAC                    = OPEN / NONBINDING
+IPAC minimality         = UNPROVEN
+IPAC semantics          = NOT FROZEN
+Route A                 = DEFERRED
+Route B                 = DEFERRED
+PALACE                  = CLOSED
+Next = human H1…H3 review; no route selection before synthesis closure
+```
+
+### IPAC SYNTHESIS CLOSURE = HUMAN H1…H3 ACCEPTED — 2026-10-03
+
+human正式裁定synthesis closure review三项全部ACCEPT。H1：Execution State与
+Persistent Information Space为不同但协作的semantic layers；R-C1 #4提供边界
+证据——C-A state-only仅X-1，C-B state+persistent Information达X-1…X-5；
+Persistent Information Space仍是抽象研究层，不等同数据库/PALACE/存储实现。
+H2：后续核心问题是continuation lawfulness，而非仅memory/runtime restoration；
+模型暂定为Restored Execution State + Resolved Persistent Information +
+Satisfied Continuation Conditions → Semantic Continuation，边界仍为
+task-domain-bounded。H3：IPAC保持OPEN/NONBINDING，MINIMALITY UNPROVEN，
+SEMANTICS NOT FROZEN，I/P/A/C decomposition NONBINDING；未来Route B若证明
+Relation-like structure必要，才反过来决定IPAC是否需要relation/anchor结构，
+不得预先固定四字段。Synthesis正式CLOSED；后续分叉问题是外部信息是否仅为
+Information，或存在只有Relation能表达的lawful adoption condition。Route
+A/B仍未选择，进入新判别实验前需另开gate。
+
+当前状态：
+
+```text
+B Track             = CLOSED
+C Gate              = OPEN / SYNTHESIS CLOSED
+C-Spec              = FROZEN
+C-Design            = CONFIRMED / NO AMENDMENT
+C-Impl              = CLOSED / D-4 AUDIT PASS
+R-C1 #1…#3          = INVALID INCONCLUSIVE
+R-C1 #4             = CLOSED / VALID / EVIDENCE PRESERVED
+O1                  = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                  = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Execution State     = SEMANTIC LAYER ACCEPTED
+Persistent Info     = SEMANTIC LAYER ACCEPTED
+Continuation model  = ACCEPTED / TASK-DOMAIN-BOUNDED
+IPAC                = OPEN / NONBINDING
+IPAC minimality     = UNPROVEN
+IPAC semantics      = NOT FROZEN
+Route A             = DEFERRED
+Route B             = DEFERRED
+PALACE              = CLOSED
+Next = separate discriminating-experiment gate; no route selected by closure
+```
+
+### IPAC SYNTHESIS CLOSURE APPROVED — H1/H2/H3 ACCEPTED — 2026-10-03
+
+human完成Closure Review最终裁定：H1 ACCEPT、H2 ACCEPT、H3 ACCEPT；Synthesis
+Closure APPROVED。正式接受Execution State与Persistent Information Space为
+distinct but cooperating semantic layers；接受Continuation Model为
+ACCEPTED / TASK-DOMAIN-BOUNDED；IPAC保持OPEN/NONBINDING、SEMANTICS NOT
+FROZEN、MINIMALITY UNPROVEN。Route A/B继续DEFERRED，PALACE CLOSED。Closure
+仅关闭当前研究模型问题，不授权Route A/B，不开启PALACE，不修改C-Spec、
+C-Design、C-Impl或Core。下一动作是单独进行Route A vs Route B Experimental
+Discrimination Review，不是实验执行，也不是路由选择。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Execution State    = SEMANTIC LAYER ACCEPTED
+Persistent Info    = SEMANTIC LAYER ACCEPTED
+Continuation model = ACCEPTED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+IPAC semantics     = NOT FROZEN
+IPAC minimality    = UNPROVEN
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Research           = PAUSED
+Next = Route A vs Route B Experimental Discrimination Review; no execution
+```
+
+### ROUTE A / B EXPERIMENTAL DISCRIMINATION REVIEW SEALED — ROUTES DEFERRED — 2026-10-03
+
+进入Route A vs Route B Experimental Discrimination Review，不写代码、不设计实现、
+不授权实验、不选择路线。新增
+`SIMIGO_LAB_ROUTE_A_B_EXPERIMENTAL_DISCRIMINATION_REVIEW_20261003.md`。D1：
+R-C1 #4已排除当前task/harness/lifecycle slice内“Execution State alone is
+sufficient for full continuation”。D2：保留两个竞争解释——Hypothesis I
+Information sufficiency；Hypothesis II Relation-dependent adoption。D3：Route
+A=INFORMATION-COMPLEXITY PROBE，测试O1的Information dependency是否在更复杂
+历史/settled facts下可重复；失败难以归因。D4：Route
+B=RELATION-DISCRIMINATION PROBE，直接测试continuation合法性是否需要
+Relation(S1,S0)，理想判别为C-B FAIL/C-C PASS。D5：最大confounder是
+Information equivalence；C-B不得人为剥夺事实，只可缺Relation carrier/
+adoption condition。D6：真正的discrimination要求equivalence audit通过、C-B
+FAIL/incomplete、C-C PASS、carrier trace证明Relation→endpoint Information、
+无fallback/semantic substitution。D7：C-B/C-C双PASS仍为NOT OBSERVED；双FAIL
+为inconclusive；无equivalence audit的C-B FAIL/C-C PASS不能证明Relation
+necessity。D8：Route A/B保持DEFERRED，selected route=NONE；下一gate是所选
+路线的experimental-design review，仍需audit和新human authorization。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-SYNTHESIS
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Route A            = DEFERRED / INFORMATION-COMPLEXITY PROBE
+Route B            = DEFERRED / RELATION-DISCRIMINATION PROBE
+Selected route     = NONE
+Open question      = Relation as independent continuation requirement vs
+                     Persistent-Information-only semantics
+Next = separate experimental-design review for chosen route; no execution
+```
+
+### ROUTE SELECTION REVIEW PACKET READY — SELECTED ROUTE NONE — 2026-10-03
+
+进入Route Selection Review，但不直接选择路线、不写代码、不开启design/impl/
+execution/PALACE。新增
+`SIMIGO_LAB_ROUTE_SELECTION_REVIEW_20261003.md`，将裁定对象限定为S1…S4：
+S1确认最高优先级未知量是否为“是否存在不可由Persistent Information单独表达的
+Relation-dependent continuation condition”；S2确认在未检验该竞争解释前，
+Route A保持DEFERRED而非因其不重要；S3确认Route B只有在后续可构造
+Same Information → C-B(I only)/C-C(I+Relation)，并auditable地控制
+Information equivalence、isolated Relation difference、identical continuation
+criterion时才可进入design，否则继续DEFERRED；S4确认即使S1…S3通过，也只是
+`Route B = SELECTED FOR EXPERIMENTAL DESIGN`，不是implementation/execution
+authorization。若S1…S4通过，Route B Design Gate需覆盖B1…B14，其中B2/B3/B5
+为关键控制。当前无selected route。
+
+当前状态：
+
+```text
+B Track                 = CLOSED
+C Gate                  = OPEN / ROUTE SELECTION REVIEW PENDING
+C-Spec                  = FROZEN
+C-Design                = CONFIRMED / NO AMENDMENT
+C-Impl                  = CLOSED / D-4 AUDIT PASS
+R-C1 #4                 = CLOSED / VALID
+O1                      = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                      = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+Route A                 = DEFERRED / INFORMATION-COMPLEXITY PROBE
+Route B                 = DEFERRED / RELATION-DISCRIMINATION PROBE
+Selected route          = NONE
+Route B design          = NOT OPEN
+Route B implementation  = NOT STARTED
+Route B execution       = NOT AUTHORIZED
+PALACE                  = CLOSED
+Next = human S1…S4 route-selection ruling; no design before explicit selection
+```
+
+### IPAC MINIMAL SEMANTICS GATE OPENED — ROUTE SELECTION SUPERSEDED — 2026-10-03
+
+human裁定Route Selection Review不通过S1…S4：S1/S2/S3 DEFER，S4 NOT APPROVED。
+原因是在未定义“settled result为何可被直接采用”前，选择Information vs Relation
+为上游倒置。Route A/B保持DEFERRED；Route Selection =
+PAUSED / SUPERSEDED BY IPAC CLARIFICATION。新增
+`SIMIGO_LAB_IPAC_MINIMAL_SEMANTICS_GATE_20261003.md`，只研究最小、可检验、
+非I/P/A/C绑定的adoption semantics：
+
+```text
+Settled Result R produced under C
++ Applicability Conditions
++ Current Execution State C'
+    ↓
+applicable(C', C, R)
+    ↓
+adopt(R) → Continue
+否则 reject / recompute
+```
+
+候选定义：R为settled仅当C的declared result boundary已完成、R有defined
+semantics、可addressable/persistable、provenance连接R到C，且R与可重算
+intermediate state边界明确。Applicability condition必须能在不重执行C的情况
+下评估；candidate dimensions包括identity/scope、state compatibility、
+preconditions、temporal validity、authority、absence of invalidation，但最小
+必要集未冻结。Adoption不得mutate prior settled result。Relation可能只是
+applicability condition的一种证明/表达方式，不假设为IPAC基本概念。此gate不
+修改C-Spec/C-Design/C-Impl/Core/PALACE，不授权实验。
+
+当前状态：
+
+```text
+Route A                = DEFERRED
+Route B                = DEFERRED
+Route Selection        = PAUSED / SUPERSEDED BY IPAC CLARIFICATION
+S1…S4                  = DEFERRED / NOT APPROVED
+IPAC                   = OPEN / NONBINDING
+IPAC Minimal Semantics = OPEN / CANDIDATE / NOT FROZEN
+IPAC Minimality        = UNPROVEN
+PALACE                 = CLOSED
+C-Design               = NOT OPEN
+Implementation         = NOT STARTED
+Execution              = NOT AUTHORIZED
+Next = human audit of minimal adoption semantics; no route decision yet
+```
+
+### EXECUTION STATE × INFORMATION SPACE BOUNDARY SYNTHESIS OPENED — ROUTES STILL DEFERRED — 2026-10-03
+
+按human概念修正，Route Selection与Immediate Route B问题被进一步上移。此前模型
+`Execution State + External Information`过于接近平行模块；修正为
+`Execution State`是发生在于/对抗其Information Space中的bounded execution
+trajectory。`E ⊂ P`不是数据包含，而是semantic execution embedding：ES在P定义
+的事实、约束、历史、settled results范围内执行。ES候选维度包含internal
+trajectory（计算/position/intermediate-final state）、external trajectory
+（read/modify/invoke/observe/effect）、lifecycle restoration-validation-
+adoption-continuation。Information Space不是document/embedding/search仓库，
+而是semantic environment：facts/history/constraints/settled results/relations/
+external resources；数据库可保持passive，SimiGo/LLM是解释、判断、组织语义与
+行动主体。R-C1 #4重新解读：C-A是ES被孤立、缺其Information Space而不能完成
+continuation；C-B是ES重新进入/访问Information Space并获得continuation所需信息；
+C-C是同一Information Space access加Relation作为内部结构。因此Route B原问题
+`Information vs Information + Relation`被上移为ES×Information Space边界与耦合
+关系；Relation可能只是Information Space内部关系结构，不是与Information平行的
+额外continuation layer。新增
+`SIMIGO_LAB_EXECUTION_INFORMATION_SPACE_BOUNDARY_SYNTHESIS_20261003.md`；
+Minimal Semantics Gate与Route Selection Review均已登记addendum。Route A/B仍
+DEFERRED。
+
+当前状态：
+
+```text
+Route A              = DEFERRED
+Route B              = DEFERRED
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+IPAC Minimal Semantics = SUPERSEDED BY BOUNDARY SYNTHESIS
+Boundary Synthesis   = OPEN / NONBINDING / HUMAN AUDIT PENDING
+PALACE               = CLOSED
+C-Design             = NOT OPEN
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human audit of boundary synthesis; no route or implementation work
+```
+
+### BOUNDARY SYNTHESIS CONCEPTUAL AUDIT INPUT RECORDED — HUMAN AUDIT PENDING — 2026-10-03
+
+按human审计建议，Boundary Synthesis登记四项概念guardrails，暂不形式化、不开
+实验。①`E ⊂ P`仅为直观记号，不得当集合包含；正式候选说法是Execution State
+embedded in Information Space，未来如需才可研究`ι : E → P`。②区分两个
+boundary：Information Space boundary决定哪些facts/history/constraints/settled
+results属于当前semantic space；Execution State boundary是本次执行的state/
+observations/computation/action trajectory。bounded trajectory不暗示Information
+Space是bounded/static container。③“new Execution State enters an Information
+Space”仍是provisional说法；更精确的后续问题是给定Information Space与待执行
+Execution State，二者semantic coupling如何决定其可lawfully read/adopt/modify/
+extend哪些信息。执行也可能产生新facts/results/history/effects，因此耦合可能改
+变Information Space。④“直接adopt settled result R”从IPAC前提降级为待解释现
+象；候选解释包括R属于当前Information Space、R适用范围仍成立、当前ES与产生R的
+semantic conditions相容、且无invalidation。IPAC不被假设为解释或前提。状态保持
+Boundary Synthesis OPEN / HUMAN AUDIT PENDING；Route Selection PAUSED；IPAC
+OPEN/NONBINDING；PALACE CLOSED；implementation/execution不启动。
+
+当前状态：
+
+```text
+Boundary Synthesis   = OPEN / CONCEPTUAL AUDIT INPUT RECORDED / HUMAN AUDIT PENDING
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+PALACE               = CLOSED
+C-Design             = NOT OPEN
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human conceptual ruling on the four guardrails; no formalization or
+       experiment before that ruling
+```
+
+### BOUNDARY SYNTHESIS CONCEPTUAL RULING PACKET READY — HUMAN RULING PENDING — 2026-10-03
+
+将四项conceptual guardrails压缩为三题Human Conceptual Ruling Packet，状态为
+`CONCEPTUAL RULING PACKET READY / HUMAN RULING PENDING`。H1裁定Information
+Space是否首先表示当前执行所能获得、引用、作用于的information domain，而不是
+database/knowledge base/semantic conditions本身；可包含persisted information、
+current session information、history、settled results、externally observed
+information等。H2裁定Execution State是否主要回答“当前执行做到哪里、处于什么
+状态”，而不是“系统知道什么”；与Information Space形成What information is
+available? / Where is execution?的二分耦合。H3裁定在Goal不变、current
+Execution State identifiable、required Information仍可用时，“从当前State继续”
+是否可作为continuation基本原型；注意只是possible，不是guaranteed，资源、外部
+状态、程序版本、权限等仍属后续条件。该packet不formalize IPAC、不选Route、不
+开PALACE、不authorize execution、不改C-Spec/C-Design/C-Impl。
+
+当前状态：
+
+```text
+Boundary Synthesis   = OPEN / CONCEPTUAL RULING PACKET READY / HUMAN RULING PENDING
+H1                  = Information Space definition ruling pending
+H2                  = Execution State definition ruling pending
+H3                  = Continuation prototype ruling pending
+Route Selection      = PAUSED
+IPAC                 = OPEN / NONBINDING
+PALACE               = CLOSED
+Implementation       = NOT STARTED
+Execution            = NOT AUTHORIZED
+Next = human H1…H3 conceptual ruling; no consequence review before ruling
+```
+
+### BOUNDARY SYNTHESIS HUMAN RULING ACTIVE — ORDER H1→H2→H3 — 2026-10-03
+
+Boundary Synthesis进入active Human Ruling，裁定顺序固定为H1 Information
+Space → H2 Execution State → H3 Continuation。语义链为：“哪些信息仍然可获得？”
+→“执行已经做到哪里？”→“目标不变 + 当前State可确定 + required Information仍在
+→ continuation possible？”规则：不再增加概念材料、guardrails、implementation、
+experiment、route selection、PALACE或IPAC formalization。若任一项FAIL，返回
+conceptual revision并重审；FAIL时不进入consequence review。当前等待human按序
+给出H1/H2/H3裁定。
+
+当前状态：
+
+```text
+Boundary Synthesis = HUMAN RULING ACTIVE / ORDER H1→H2→H3
+H1                = Information Space ruling pending
+H2                = Execution State ruling pending
+H3                = Continuation ruling pending
+Route Selection    = PAUSED
+IPAC               = OPEN / NONBINDING
+PALACE             = CLOSED
+Implementation     = NOT STARTED
+Execution          = NOT AUTHORIZED
+Next = ordered human H1→H2→H3 ruling; no consequence review on any failure
+```
+
+### BOUNDARY SYNTHESIS H1 ACCEPTED — STOP BEFORE H2 — 2026-10-03
+
+human按序完成H1 ruling：H1 Information Space = ACCEPTED。裁定理由：Information
+Space回答当前执行能获得、引用、作用于哪些信息，本质是information domain，而非
+具体存储结构。Database/Knowledge Base/PALACE可承载、组织或提供Information
+Space的一部分，但属于information carriers，不等于Information Space本身；
+Information Space也不被定义为semantic-condition system。其边界可随执行、信息
+获取、外部观察和持久化状态变化，无需对应固定物理数据库边界。按裁定纪律停止在
+H1之后；H2/H3 pending，不进入H2 consequence或IPAC/Route/PALACE推论。
+
+当前状态：
+
+```text
+Boundary Synthesis = H1 ACCEPTED / H2 PENDING / H3 PENDING / STOP BEFORE H2
+H1 Information Space = ACCEPTED
+H2 Execution State = PENDING
+H3 Continuation = PENDING
+Route Selection    = PAUSED
+IPAC               = OPEN / NONBINDING
+PALACE             = CLOSED
+Implementation     = NOT STARTED
+Execution          = NOT AUTHORIZED
+Next = explicit human H2 ruling only; no H2 content or consequence review
+```
+
+### BOUNDARY SYNTHESIS H2 ACCEPTED — STOP BEFORE H3 — 2026-10-03
+
+human按序完成H2 ruling：H2 Execution State = ACCEPTED。核心职责区分成立：
+Execution State回答当前goal-directed execution已经进行到哪里、处于什么状态；
+Information Space回答What information is available?二者不同。执行会产生/读取/
+改变信息，但不能将Execution State定义为“系统知道什么”。暂定描述为
+Execution State = 当前goal-directed execution的位置、阶段、控制状态与可继续
+点；其中“可继续点”是执行位置/状态属性，不提前规定完整continuation条件。二者
+可耦合但不合并：Information Space ↕ continuation ↕ Execution State。按纪律
+停止在H2之后；H3 pending，不进入Consequence Review、IPAC定义、Route选择或
+Execution authorization。
+
+当前状态：
+
+```text
+Boundary Synthesis = H1 ACCEPTED / H2 ACCEPTED / H3 PENDING / STOP BEFORE H3
+H1 Information Space = ACCEPTED
+H2 Execution State = ACCEPTED
+H3 Continuation = PENDING
+Consequence Review = NOT ENTERED
+Route Selection = PAUSED
+IPAC = OPEN / NONBINDING
+Implementation = NOT STARTED
+Execution = NOT AUTHORIZED
+Next = explicit human H3 ruling only
+```
+
+### BOUNDARY SYNTHESIS H3 ACCEPTED — CONCEPTUALLY ACCEPTED — STOP BEFORE CONSEQUENCE REVIEW — 2026-10-03
+
+human按序完成H3 ruling：H3 Continuation = ACCEPTED。接受的最小逻辑链为 Goal
+unchanged + Current Execution State identifiable + Required Information still
+available → Continuation is possible。H3是可能性条件，不是guarantee；机器资源、
+permissions、runtime/program version、external state、unavailable dependencies
+与其他execution constraints仍属后续独立条件。H3不合并Information Space与
+Execution State：Information Space回答当前可用信息；Execution State回答执行从
+哪里继续；continuation在goal、state、required information对齐时为possible。
+按裁定纪律，现在停止在Consequence Review之前；不自动进入IPAC定义、Route
+选择、PALACE或任何implementation结论。
+
+当前状态：
+
+```text
+Boundary Synthesis = CONCEPTUALLY ACCEPTED
+H1 Information Space = ACCEPTED
+H2 Execution State = ACCEPTED
+H3 Continuation = ACCEPTED
+Consequence Review = NOT ENTERED
+Route Selection = PAUSED
+IPAC = OPEN / NONBINDING
+Implementation = NOT STARTED
+Execution = NOT AUTHORIZED
+Next = Consequence Review only, if explicitly opened
+```
+
+### BOUNDARY SYNTHESIS CONSEQUENCE REVIEW COMPLETE — C GATE PAUSED FOR NEXT GATE DECISION — 2026-10-03
+
+Consequence Review完成，不改实验、不改frozen artifacts、不开PALACE、不选Route。
+结论：R-C1 #4保持VALID/EVIDENCE PRESERVED。其解释收窄为：C-A不是checkpoint
+technology failure，而是state-only restoration不足以满足preregistered semantic
+continuation；C-B证明persistent Information可支持完整continuation；C-C证明
+Relation carrier path也可完成同一continuation并实际被使用，但相对independent
+Information未观察到额外capability。IPAC保持OPEN/NONBINDING；accepted H1…H3
+模型取代“四个存储字段”读法，IPAC未来可能成为adoption relation理论，但necessary
+/sufficient semantics仍未定义。Route A DEFERRED：可测试O1随复杂度的持续性，但
+不直接区分Relation necessity。Route B DEFERRED：是直接的Relation
+discrimination probe，但必须先解决Information-equivalence audit，否则结果歧义。
+PALACE保持CLOSED；它将来可能实现/carry Persistent Information Space，但不等于
+Persistent Information Space。Implementation D-4 audited commit保持CLOSED；
+R-C1 #4暴露非blocking evidence-format观察：invocation-evidence.jsonl是pretty
+JSON object而非JSONL，对象可解析且证据保留；因no-modification rule未现场修复，
+未来如要修正需重开implementation。C Gate现在PAUSED FOR NEXT GATE DECISION；
+不自动进入Route A/B、IPAC formalization或PALACE。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-CONSEQUENCE REVIEW
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = AUTHORIZATION CONSUMED
+R-C1 #1…#3         = INVALID INCONCLUSIVE
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Next gate          = separate Human research/route decision; no automatic opening
+```
+
+### POST-CONSEQUENCE HUMAN CONFIRMATION — NO ROUTE AUTO-SELECTION — 2026-10-03
+
+human确认Consequence Review后的解释边界：Boundary Synthesis已从局部问题上升为
+共同semantic basis——Information Space ↕ Execution State ↓ Continuation；
+R-C1 #4是该模型的boundary evidence，不是其terminal theory。核心观察继续保持：
+state-only restoration ≠ full semantic continuation；C-B Information-only path
+full success；C-C Relation path full success但未显示beyond C-B的额外capability。
+O2保持bounded，不得扩展为Relation必要/不必要的普遍claim。正式状态：
+C Gate = OPEN / POST-CONSEQUENCE REVIEW；Next = separate Human research/route
+decision；不自动选择Route A/B，不自动打开PALACE。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / POST-CONSEQUENCE REVIEW
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 REVISION AUDIT PASS
+C-Execute          = AUTHORIZATION CONSUMED
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC               = OPEN / NONBINDING
+Route A            = DEFERRED
+Route B            = DEFERRED
+PALACE             = CLOSED
+Next               = separate Human research/route decision
+```
+
+### IPAC × BOUNDARY SYNTHESIS CONTINUITY BRIDGE OPENED — NONBINDING — 2026-10-03
+
+登记新的conceptual bridge record：
+`SIMIGO_LAB_IPAC_CONTINUITY_BRIDGE_SYNTHESIS_20261003.md`。它只提出open research
+question，不是result。两条证据链相邻但未合并：Chain A为既有Execution State内部
+I/A/C候选最小语义骨架，P可能由A携带/补偿，正式状态仍OPEN/NONBINDING、
+MINIMALITY UNPROVEN；Chain B为H1 Information Space、H2 Execution State、H3
+Continuation的accepted boundary model，R-C1 #4提供bounded evidence。二者出现
+structural correspondence：内部I/A/C对应外部Information/State/Continuation；
+P compensation对应external Information Space可提供missing semantic conditions。
+但这不证明IPAC rediscovered/proven/frozen。核心open question是internal I/A/C
+continuity skeleton与external Information Space/Execution State/Continuation
+model能否统一为一个Continuation Semantics invariant，并在ES内部、ES/
+Information Space边界、settled-result adoption三种情况下同时成立。Relation暂定
+为Information Space内部可用于表达/证明applicability condition的结构，不是平行
+continuation layer；因此不能为证明Relation有用而直接选Route B。允许claim仅限
+两条链相邻且unification是open question；禁止claim IPAC proven、minimality
+established、Information Space必须满足IAC、Relation proven necessary/
+unnecessary、PALACE=Information Space、Route selected。
+
+当前状态：
+
+```text
+B Track              = CLOSED
+C Gate               = OPEN / POST-CONSEQUENCE REVIEW
+R-C1 #4              = CLOSED / VALID / EVIDENCE PRESERVED
+O1                   = SEALED / SUPPORTED / BOUNDED
+O2                   = SEALED / NOT OBSERVED / BOUNDED
+IPAC                 = OPEN / NONBINDING
+IPAC bridge question = OPEN / NONBINDING
+Route A              = DEFERRED
+Route B              = DEFERRED
+PALACE               = CLOSED
+Next = separate human review of continuity-bridge question; no route or
+       implementation work
+```
+
+### HUMAN RESEARCH DECISION PACKET READY — IAC ↔ INFORMATION SPACE CONSISTENCY — 2026-10-03
+
+新增`SIMIGO_LAB_HUMAN_RESEARCH_DECISION_IAC_INFORMATION_SPACE_CONSISTENCY_
+20261003.md`。Decision Packet状态为READY / HUMAN DECISION PENDING。核心待裁
+问题是：Execution State内部I/A/C continuation skeleton与外部Information Space
+boundary之间是否存在必须保持的一致性关系，使Information Space变化可以preserve
+或 violate lawful continuation所需semantic conditions。该packet明确不授权
+implementation/experiment/PALACE/IPAC freezing/Route A/B/C selection。
+若Human批准，顺序为：R0决定采纳该主研究问题；R1回溯旧IPAC/IAC证据，重点澄清
+“P may be carried or compensated by A”是指P redundant、P semantics representable
+by A、还是P continuation role satisfiable by A；R2在不冻结IPAC的前提下形式化
+internal/external consistency与violation问题；R3才重新审视Route A/B，并可能出
+现Route C=Information Space boundary破坏/保持IAC consistency。Route C只是可能
+future label，不预先选择。若R0–R2通过，下一gate是formal research design；否则
+C Track保持paused。
+
+当前状态：
+
+```text
+B Track              = CLOSED
+C Gate               = OPEN / HUMAN RESEARCH DECISION PENDING
+C-Spec               = FROZEN
+C-Design             = CONFIRMED / NO AMENDMENT
+C-Impl               = CLOSED / D-4 AUDIT PASS
+R-C1 #4              = CLOSED / VALID / EVIDENCE PRESERVED
+O1                   = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                   = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+IPAC                 = OPEN / NONBINDING
+Route Selection      = PAUSED / SUPERSEDED BY HUMAN RESEARCH DECISION
+S1…S4                = DEFERRED / NOT APPROVED
+Route A              = DEFERRED
+Route B              = DEFERRED
+Route C              = POSSIBLE FUTURE LABEL / NOT SELECTED
+PALACE               = CLOSED
+Next = explicit Human R0…R3 decision; no experiment/design before approval
+```
+
+### HUMAN RESEARCH DECISION APPROVED — R0 APPROVED — IAC ↔ INFORMATION SPACE CONSISTENCY ADOPTED — 2026-10-03
+
+human于2026-10-03T14:33:24+0800明确批准Decision Packet。R0 APPROVED；正式采纳
+“IAC ↔ Information Space semantic consistency”为下一阶段主研究问题。核心问题：
+internal Execution State I/A/C continuation skeleton与external Information Space
+boundary之间是否存在consistency relation，使Information Space变化可preserve或
+violate lawful continuation所需conditions。该批准仅授权研究问题采纳；不授权
+implementation、experiment、PALACE、IPAC freezing或Route A/B/C selection。
+R1 historical evidence review、R2 internal/external consistency formalization、
+R3 route decision均未开始；R3需R1–R2完成后再另行裁定。
+
+当前状态：
+
+```text
+B Track            = CLOSED
+C Gate             = OPEN / HUMAN RESEARCH DECISION APPROVED
+C-Spec             = FROZEN
+C-Design           = CONFIRMED / NO AMENDMENT
+C-Impl             = CLOSED / D-4 AUDIT PASS
+R-C1 #4            = CLOSED / VALID / EVIDENCE PRESERVED
+O1                 = SEALED / SUPPORTED / TASK-DOMAIN-BOUNDED
+O2                 = SEALED / NOT OBSERVED / TASK-DOMAIN-BOUNDED
+R0                 = APPROVED
+Primary question   = ADOPTED
+R1                 = PENDING EXPLICIT HUMAN INSTRUCTION
+R2                 = PENDING EXPLICIT HUMAN INSTRUCTION
+R3                 = NOT READY / REQUIRES R1–R2 COMPLETION
+Implementation     = NOT STARTED
+Experiment         = NOT AUTHORIZED
+PALACE             = CLOSED
+Route A/B/C        = NOT SELECTED
+Next = explicit Human R1 instruction; no experiment or implementation
+```
+
+### R1 HISTORICAL EVIDENCE REVIEW COMPLETE — NO NEW THEORY — 2026-10-03
+
+R1 Historical Evidence Review完成并封存。回溯对象包括IPAC Minimality Criteria、
+G-δ Design/Execution、G-δR Formalization、Execution State Contract v1 amended、
+P5-4 reduction design。审查结论：既有研究建立的是tested conditions下的
+necessity evidence——I/A/C necessity evidence；P为semantic member retained但其
+representational necessity是carrier-dependent。具体而言，R_llama full-prefix
+token-array中P-2 boundary-integrity可由A补偿；P-1 continuation-point与P-3
+progress ledger不可由A推导；R_MLX KV中P-1/P-2 required。因此历史短语
+“P may be carried / compensated by A”只能窄读为“tested full-prefix
+representation中A补偿P-2”，不能读作P redundant、P wholly representable by A、
+A可满足整个P continuation role、或P全局可由A补偿。既有研究也未建立数学最小、
+backend-independent minimality、最终primitives、完整Role taxonomy、完整
+invariant-required function set或未来representations的Rules_R sufficiency。
+R1输出仅为historical evidence：what was established / what was not /
+P的准确历史含义；未升级为新的IPAC定义。R2仍blocked pending explicit Human
+instruction；R3 blocked by R1–R2。
+
+当前状态：
+
+```text
+R0 = APPROVED
+Primary question = ADOPTED
+R1 = COMPLETE / HISTORICAL REVIEW SEALED
+R2 = BLOCKED BY EXPLICIT HUMAN INSTRUCTION
+R3 = BLOCKED BY R1–R2
+Implementation = NOT STARTED
+Experiment = NOT AUTHORIZED
+IPAC = OPEN / NONBINDING
+Route A/B/C = NOT SELECTED
+Next = explicit Human R2 instruction only
+```
+
+### HUMAN RULING CONFIRMED — HOLD BEFORE R2 — STATE UNCHANGED — 2026-10-03
+
+human 裁定：确认。当前保持不变，不进入 R2。R0 保持 APPROVED；R1 保持
+COMPLETE / HISTORICAL REVIEW SEALED；R2 保持 BLOCKED / WAITING EXPLICIT
+HUMAN INSTRUCTION；R3 保持 BLOCKED BY R1–R2；Implementation NOT STARTED；
+Experiment NOT AUTHORIZED；IPAC OPEN / NONBINDING；Route A/B/C NOT
+SELECTED；其余门位（B Track CLOSED / C Gate OPEN / C-Spec FROZEN /
+C-Design CONFIRMED / C-Impl CLOSED D-4 AUDIT PASS / R-C1 #4 CLOSED VALID /
+O1 SEALED SUPPORTED / O2 SEALED NOT OBSERVED / PALACE CLOSED）一律不变。
+
+**当前解释边界已固定**：R1 只封存历史事实——I/A/C = necessity evidence
+under tested conditions；P = semantic member retained, carrier-dependent。
+R1 没有证明：{I,P,A,C} 数学最小；I/A/C 可取代 {I,P,A,C}；P globally
+redundant；P wholly representable by A。R1 也不重新解释这些历史结论。
+
+**R2 的前置理解已固定**：若之后显式授权 R2，它只处理：① I/A/C 与
+H1/H2/H3 各自描述什么；② 两组概念之间能否建立语义映射 / 一致性关系；
+③ Information Space 变化在什么条件下会破坏 I/A/C 所要求的 continuation
+条件。R2 不重新裁定：P 的历史含义；P 是否第四字段；IPAC 是否正确；
+Route A/B/C。
+
+**当前唯一等待项 = explicit human instruction to enter R2**。在此之前
+不做 formalization、不做实验、不改实现、不选 Route、不冻结 IPAC。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2             = BLOCKED / WAITING EXPLICIT HUMAN INSTRUCTION
+R3             = BLOCKED BY R1–R2
+
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+
+Next = explicit Human instruction to enter R2; until then no
+       formalization / experiment / implementation change / route
+       selection / IPAC freezing
+```
+
+### R2 AUTHORIZED / EXECUTED — CONSISTENCY FORMALIZATION DELIVERED — HUMAN REVIEW PENDING — 2026-10-03
+
+human 确认 HOLD 段保留（不精简、合规不重复）并显式指令进入 R2。R2 按
+HOLD 段预固定范围执行：零实验、零实现、零 PALACE、不冻结 IPAC、不重裁
+P 历史含义/P 是否第四字段/IPAC 正确性/Route A/B/C。交付
+`SIMIGO_LAB_R2_IAC_INFORMATION_SPACE_CONSISTENCY_FORMALIZATION_20261003.md`：
+
+- **Task 1（各自描述什么）**：I/A/C 引 G-δR Appendix 原文（I-1 模型绑定/
+  I-2 谱系绑定/I-3 载荷完整性；A-1 内容绑定；C-1 接续许可）=「一次延续
+  要合法，内部必须满足什么」；H1/H2/H3 引 Boundary Synthesis 裁定
+  （information domain/执行位置/延续可能）=「一次执行在外部世界处于什么
+  局面」。描述层对照三条分界：同一性≠位置（I vs H2）、绑定≠可用
+  （A vs H1）、许可≠可能（C vs H3）。
+- **Task 2（语义映射/一致性关系，candidate NONBINDING）**：映射候选
+  I↔H2 identifiable（张力：identifiable 未证蕴含 model/lineage 级拒绝）、
+  A↔H1 required Information still available（张力：available 域属性≠
+  bound 状态属性，silent substitution 风险）、C↔H3 possible∧lawful
+  合取。**候选一致性关系 Cons(ES,IS) = (a) 身份可判定 ∧ (b) 锚内容仍
+  可引用（存在/可寻址/未被静默替换） ∧ (c) 许可前置仍成立（settled
+  results/preconditions 未被废弃取代）**；评估单向=外部变化评估内部判据
+  可满足性（N-5 精神），禁止反向读作 IS 必须实现 IAC。**P 对应明确
+  声明范围外**（H2 位置侧与历史 P 的表面对应不作任何裁定）。
+- **Task 3（破坏条件）**：破坏=Cons(ES,IS) 从满足变为不满足（ES 不变
+  IS 变化）；判定对象=「I/A/C 条件是否仍可满足」非「输出是否变化」
+  （null≠mechanism null 沿用）。候选 taxonomy：a 类身份不可判定/b 类
+  锚失效（删除·移出边界·不可引用·silent substitution）/c 类许可前置
+  失效（settled result 废弃取代·precondition 不成立·invalidation）/
+  跨类边界重划；非破坏对照类（纯增量/不触及锚谱系前置/可引用性等价
+  迁移）；不可归因失败=INCONCLUSIVE。
+- **核心交付 RQ-R2 draft（可证伪，未冻结）**：是否存在 Cons(ES,IS) 使
+  (i) lawful continuation 蕴含 Cons；(ii) 保持性变化不破坏信息侧条件；
+  (iii) 破坏可归因且归因不重算历史。证伪两路径=归因失败（Cons 刻画
+  错误）/必要性失败（三条件全破坏后 lawful continuation 仍可核验成立
+  ⇒ I/A/C 相对 IS 非信息侧必要条件）。明确非主张：不预设 Relation、
+  不预设 PALACE、不涉及 P、不测性能、不授权实验。
+
+文档全内容=candidate formalization，效力止于 R3 输入；R2 判定归 human。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2             = DELIVERED / HUMAN REVIEW PENDING
+R3             = BLOCKED BY R1–R2（须 R2 review 后另行裁定）
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+PALACE         = CLOSED
+Next = human R2 review（APPROVED / REJECTED / REVISED）
+```
+
+### R2 REVIEW = REVISE REQUIRED — REV.2 APPLIED / RESUBMITTED — 2026-10-03
+
+human R2 review 判定：**REVISE REQUIRED（局部形式化修订）**——不需重新
+做 R2，不涉及实验、实现、IPAC、P 或 Route；非研究方向失败。review 指出
+的核心问题与修订要求：
+
+1. **H3 语义保护（循环风险）**：rev.1 的「C↔H3 = possible ∧ lawful」
+   把 lawful 内嵌进 H3，随后 RQ-R2 又要求 lawful ⇒ Cons，产生自包含
+   （lawful ⇒ H3 ⇒ Cons 偷偷包含研究对象），削弱可证伪性。修订=H3 保持
+   纯外部可能性语义（Goal unchanged + State identifiable + required
+   Information available → possible）；C↔H3 最多读作「外部 continuation
+   possibility vs 内部 continuation condition」的对应；lawful 不由 H3
+   定义携带。
+2. **A↔H1 降级**：rev.1 写法近似等价映射，有偷换——R1 已证 A 的历史
+   语义是 representation-dependent 的。修订=降为依赖/支撑关系：H1=外部
+   信息可获得性，A=内部锚定关系，两者不是同一命题；该差异可能正是 R2
+   要发现的 consistency relation 的内容，不得在映射阶段消掉。
+3. **RQ-R2 单向性**：显式写 LawfulContinuation(ES,IS) ⇒ Cons(ES,IS) 为
+   **必要性候选**；Cons ⇏ LawfulContinuation（非充分）；Cons=true 绝不
+   推出延续合法。
+4. **Task 2 重构（结构修正）**：component mapping（I↔H2/A↔H1/C↔H3）
+   易读成两套相同三元组，改为 correspondence relations——
+   `I ── constrains ── H2 / A ── depends on ── H1 / C ── conditions ──
+   H3`，加分层图（Information Space H1/H2/H3 ↓ support/constrain ↓
+   Execution State I/A/C ↓ lawful continuation）；不做 IAC=H123 同构
+   证明。
+5. **Cons 改写（结构修正）**：三个条件改写为**条件保持关系**
+   `Cons(ES,IS) ⟺ I-condition ∧ A-condition ∧ C-condition (ES,IS)`，
+   非 IS 自身属性——读法固定为「IS 变化→某内部条件不再成立→Cons
+   broken」，而非「IS 必须包含 I/A/C」。
+
+review 确认保留：Task 3 破坏 taxonomy（含 silent substitution 独立 b
+类情形）、「判定对象=条件是否仍可满足非输出是否变化」固定判读纪律、
+P=OUT OF SCOPE / IPAC freeze=NO / Route=NO / PALACE=NO / Implementation=
+NO / Experiment=NO。
+
+**登记洞察（review 提出，NONBINDING）**：I/A/C 与 H1/H2/H3 很可能不是
+「两套相同的三元字段」，而是「内部语义条件」与「外部信息条件」之间的
+对应关系——真正值得研究的是二者之间的 consistency relation，比同构
+假设更难但更像真正的理论问题；该洞察不冻结，其检验方式即 RQ-R2。
+
+rev.2 已应用全部修订并重新交付
+（`SIMIGO_LAB_R2_IAC_INFORMATION_SPACE_CONSISTENCY_FORMALIZATION_20261003.md`
+rev.2，含修订记录表 R-1/R-2/R-3/S-1/S-2）；重新提交 R2 review。
+
+当前状态：
+
+```text
+R0             = APPROVED
+R1             = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.1       = REVISE REQUIRED（review 判定已封存）
+R2 rev.2       = DELIVERED / HUMAN REVIEW PENDING
+R3             = BLOCKED BY R1–R2
+Implementation = NOT STARTED
+Experiment     = NOT AUTHORIZED
+IPAC           = OPEN / NONBINDING
+Route A/B/C    = NOT SELECTED
+PALACE         = CLOSED
+Next = human R2 review of rev.2（APPROVED / REJECTED / REVISED）
+```
+
+### R2 rev.2 REVIEW = APPROVED — FORMALIZATION SEALED — R3 BLOCKED PENDING NEW HUMAN DECISION — 2026-10-03
+
+human 复审判定：**R2 rev.2 = APPROVED**，且非暂时通过——就 R2 所规定
+范围而言已达到可封存、作为 R3 输入的程度；**正式封存 R2 rev.2，不再
+继续修改 R2**。
+
+复审确认三处关键风险已消除：
+
+1. **H3 循环定义解除**：H3 = continuation possibility，C = internal
+   continuation condition（而非两者都= lawful continuation），因此
+   `LawfulContinuation(ES, IS) ⇒ Cons(ES, IS)` 不再因 H3 预先包含
+   lawful 而循环——符合 R2 的必要性研究定位。
+2. **A 与 H1 层次区别正确保留**：H1 information availability ↓ supports
+   ↓ A internal anchoring relation，未把 availability 偷换成 Anchor；
+   Anchor 承担的是关系功能而非固定表示（与历史材料中 Anchor 跨 backend
+   不同物理表达一致）。
+3. **IAC = H123 的诱惑被正确压住（rev.2 最重要修正）**：研究对象为
+   correspondence / support / constrain 的分层关系，非同构；与当前证据
+   状态一致——历史研究至今只支持 IPAC 作为 candidate relational
+   closure，并未证明严格 minimality。
+
+**Cons 定义可作为 R3 输入**：`Cons ⟺ I-condition ∧ A-condition ∧
+C-condition (ES,IS)` + `LawfulContinuation ⇒ Cons` / `Cons ⇏
+LawfulContinuation` 边界清晰——避免偷换成充分条件，同时给 R3 明确的
+可检验问题：「**当 Information Space 发生变化时，哪些变化会使内部
+I/A/C 条件不再可满足？**」——足以形成下一阶段问题，无需现在引入实验。
+
+**Task 3 破坏定义封存**：尤其保留「判定对象是条件是否仍可满足，而不是
+输出是否变化」纪律（防滑回 output different → continuation broken）；
+a/b/c taxonomy、silent substitution、非破坏对照、INCONCLUSIVE 归因纪律
+均未发现需修改的逻辑问题。
+
+**R2 核心成果（human 最终表述）**：R2 已把「内部 Execution State 语义」
+与「外部 Information Space 条件」之间的 consistency relation 形式化为
+**可继续研究、可被证伪的候选对象**——这不是说两边已被证明是同一个三元
+结构，而正是 R2 应该达到的位置。
+
+```text
+                 Information Space
+                  H1 / H2 / H3
+                       │
+              consistency relation
+                       │
+                       ↓
+                 Execution State
+                    I / A / C
+                       │
+                       ↓
+              lawful continuation
+```
+
+**下一动作**：不自行进入 R3；按当前治理规则，R3 的研究任务与范围必须
+由 human 明确决定。
+
+当前状态：
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.1            = REVISE REQUIRED / SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = BLOCKED / REQUIRES NEW HUMAN RESEARCH DECISION
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = explicit human R3 research decision; no self-initiated R3 work
+```
+
+### R3 RESEARCH DECISION APPROVED — CONSISTENCY BOUNDARY STUDY ADOPTED — 2026-10-03
+
+human 作出 R3 research decision：R3 承担一个非常明确的任务——**不是
+继续讨论 I/A/C 是什么，而是第一次把 R2 的 `Cons(ES, IS)` 变成可观察、
+可判定、可证伪的研究对象**。R3 设计为 "Information Space Change →
+Execution State Consistency" 研究，不直接进入 PALACE、IPAC 或实现。
+
+正式名称：**R3 — Information Space Change and Execution-State
+Consistency Boundary Study**（R3——Information Space 变化与 Execution
+State 一致性边界研究）。
+
+- **Primary Question**：当 Execution State 固定而 Information Space
+  发生变化时，哪些变化会使 `Cons(ES,IS)` 从 satisfied 变为 unsatisfied？
+  最小研究单元 = `IS₀ ─ΔIS→ IS₁`（ES 固定），`Cons(ES,IS₀)=true →
+  Cons(ES,IS₁)=?`；比直接问「能不能继续」更严格——直接观察输出会把
+  模型行为、实现缺陷、资源不足、随机性混进来。
+- **核心问题记号**：`(ES,IS₀) → (ES,IS₁)`；`Cons(ES,IS₀) →
+  Cons(ES,IS₁)`；`ΔIS → Δ(I/A/C conditions)`。
+- **Scope 排除（逐字登记入 R3 scope）**：P / IPAC 最小性 / IPAC 冻结 /
+  PALACE 实现 / PALACE MCP / Route A/B/C / 后端适配 / 产品实现 / 性能
+  优化 / 模型能力比较 / 完整恢复系统——**R3 不是 PALACE 实验**；R3
+  研究「Information Space 的信息变化」这个抽象对象，不因要改变
+  Information Space 就选择 PALACE 作为物理实现；PALACE 保持 CLOSED。
+- **三层次结构**：R3-1 Cons 可判定性（不依赖最终输出判断 I/A/C 条件
+  是否满足；先做判定规范非实验实现）→ R3-2 Information Space Change
+  Taxonomy（IS-I 身份 / IS-A 锚定 / IS-C 继续条件 / IS-B 边界可访问性 /
+  IS-X 复合；前三类对应 I/A/C，后两类防过度简化）→ R3-3 Consistency
+  Boundary Validation（最小实验矩阵+对照+反证）。
+- **关键纪律（human 固定措辞）**：①总判定纪律=「R3 的主要判定对象是
+  condition satisfiability，不是最终输出是否改变」（继承 R2 Task 3 并
+  升格为 R3 总纪律；输出只能作辅助观察）；②实验矩阵=「hypothesis
+  structure，不是 expected result declaration」（↓ 是待验证预测非结果
+  预设）；③必设对照 Control=(ES,IS₀)→(ES,IS₀) Cons 应不变 vs
+  Treatment=(ES,IS₀)→(ES,IS₁)；④**R3-N 反证实验必做**——不只找「IS 改
+  变→Cons 崩溃」，还必须找「IS 改变→Cons 仍然成立」，否则会得到过强
+  错误结论 ΔIS⇒¬Cons；正确候选=ΔIS⇏¬Cons、ΔIS→?Δ(I/A/C conditions)，
+  只有特定类型变化才可能破坏 Cons——R3 是边界研究非失败案例收集；
+  ⑤IS-B 只研究现象，不预先宣布为第四个 primitive（Information exists
+  ≠ belongs to current IS ≠ accessible to ES）；⑥IS-X 复合变化严格
+  排在单变量归因之后；⑦归因纪律=单变量→确认可归因→双变量→交互效应。
+- **终局四问（R3-4 才允许回答）**：RQ3-1 IS 变化能否在 ES 固定时改变
+  Cons；RQ3-2 哪些 IS change 分别影响 I/A/C；RQ3-3 哪些 IS change 不
+  影响 Cons；RQ3-4 是否存在无法由 I/A/C 解释的 Cons change——若出现
+  `IS changed ∧ Cons changed ∧ I=A=C=true` 则 R2 候选形式 Cons=I∧A∧C
+  直接受挑战（真正有研究价值的负结果）。
+- **阶段门**：R3-0 Design → human approval → R3-1 Observability →
+  gate → R3-2 Single-change boundary → gate → R3-3 Counterexample/
+  non-break → gate → R3-4 Consistency synthesis；每道 gate 须 human
+  显式授权；**一次只授权一段，不一次授权整个 R3**。可能结果=SUPPORTED /
+  PARTIALLY SUPPORTED / NOT SUPPORTED / INCONCLUSIVE，不预设成功。
+- **PALACE 定位**：R3 先研究 semantic object 侧（ES ↔ Information
+  Space）；该关系有证据后才有资格研究 PALACE 如何成为物理承载——防止
+  Information Space semantics 与 PALACE database semantics 重新混合；
+  PALACE = CLOSED 维持。
+- **授权范围**：本决定授权 R3 采纳+R3-0（设计封存）执行；**不授权任何
+  实验**；R3-1 及以后各段须另行显式授权。
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = ADOPTED / SCOPE FIXED BY HUMAN DECISION
+R3-0                = AUTHORIZED（design only; no experiment, no implementation）
+R3-1…R3-4           = PENDING GATES（各自须 human 显式授权）
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = R3-0 design delivery; then human approval gate for R3-1
+```
+
+### R3-0 RESEARCH DESIGN DELIVERED — HUMAN APPROVAL PENDING — 2026-10-03
+
+按 human 授权完成 R3-0（只设计，零实验零实现）。交付
+`SIMIGO_LAB_R3_INFORMATION_SPACE_CONSISTENCY_BOUNDARY_DESIGN_20261003.md`：
+
+- §1 Primary Question + 最小研究单元图（ES 固定，IS₀→IS₁，Cons 条件
+  满足性变化为观察对象）
+- §2 研究对象与记号（Cons 引 R2 rev.2 封存定义不修改；单向性
+  LawfulContinuation⇒Cons 继承）
+- §3 排除清单（逐字，含 PALACE 实现/MCP/Route/后端适配/产品实现/性能/
+  模型比较/完整恢复系统）
+- §4 三层次+阶段门：R3-1 判定规范（I/A/C 各配 IS 变化示例
+  I-condition/A-condition/C-condition 判定问题；出口判据=三条件可独立
+  观察、记录、判定）；R3-2 五类 taxonomy（IS-I/A/C/B/X 各配变化例与
+  目标模式；IS-B 不预设第四 primitive；IS-X 后置）；R3-3 最小实验矩阵
+  （R3-I/A/C/B/X，↓=待验证预测非预设）+Control/Treatment 因果结构
+  +R3-N 反证实验（non-break 与不可归因两搜索方向）
+- §5 总判定纪律（condition satisfiability 非 output change；输出仅
+  辅助观察）
+- §6 终局四问 RQ3-1..4（含 RQ3-4 负结果价值条款）
+- §7 PALACE 定位（semantic object/physical carrier 分侧图；PALACE=
+  CLOSED）
+- §8 可能结果四态+失败有效性
+- §9 human 状态草案逐字登记
+- §10 效力声明（R3-1 须 human 显式批准本设计；R3-2/3/4 各自另过 gate）
+
+R3-0 = DELIVERED / HUMAN APPROVAL PENDING；下一动作 = human 审批 R3-0
+设计；R3-1 只在显式批准后开启。
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = DELIVERED / HUMAN APPROVAL PENDING
+R3-1…R3-4           = PENDING GATES
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = human approval of R3-0 design; R3-1 opens only upon explicit approval
+```
+
+### R3-0 REVIEW = APPROVED / DESIGN SEALED — R3-1 NOT AUTHORIZED — GIT NOT COMMITTED — 2026-10-03
+
+human R3-0 审批判定：**R3-0 = APPROVED / DESIGN SEALED**。
+
+**审批性质与边界（逐字入档）**：审批点限定在 **R3-0 设计本身**，不扩展
+为 R3-1 授权；本次为**范围与方法层面的审批**。human 如实声明：检索到的
+文件索引未返回 R3-0 设计文档本体，因此**不假装已逐段审阅文件**；审批
+依据 = 本次交付所登记的关键条款（完整列出，足以支撑范围与方法层面
+审批）——该审批边界本身登记在案。
+
+**批准理由（human）**：设计已把 R3 从「继续讨论理论」收缩成一个明确、
+可证伪的研究对象 `(ES,IS₀) ─ΔIS→ (ES,IS₁)`，核心观察 `Cons(ES,IS₀) →
+Cons(ES,IS₁)`；并保持了研究纪律：ES 固定、IS 变化作为最小研究单元；
+先研究 I/A/C condition satisfiability 而不是最终输出；单变量变化优先、
+IS-X 后置；有不变 Control；有 R3-N 非破坏/不可归因反证方向；IS-B 不
+预设成第四 primitive；允许出现 NOT SUPPORTED / INCONCLUSIVE；PALACE
+明确 CLOSED；P、IPAC、Route A/B/C 均不被偷偷重新打开；R3-1…R3-4 保持
+独立 gate。**尤其重要（human 认定为设计成立的关键）：R3-0 没有把 R2 的
+Cons 定义当成已经证明的事实——`Cons ⟺ I ∧ A ∧ C` 被当作待检验的候选
+关系，并明确允许 RQ3-4 产生反例。**
+
+**审批后锁死的解释**：**R3-0 APPROVED ≠ R3-1 AUTHORIZED**。R3-1 的
+目标 = 下一道非常窄的门：**证明 I/A/C 三类 condition 在当前研究范围内
+能够被独立观察、记录和判定**——如果 R3-1 连这个都不能可靠做到，就不能
+继续 R3-2。
+
+**Git 处置（human 明确）**：本次审批是**研究审批，不是 Git 操作授权**。
+当前最干净状态 = `R3-0 Design = APPROVED / SEALED` + `Git = NOT
+COMMITTED` + `R3-1 = NOT AUTHORIZED` + `Experiment = NOT AUTHORIZED`。
+**不因 R3-0 获批而自动提交，更不进入 R3-1**。若 human 下一步明确下达
+「提交并推送 R3-0 封存」，届时执行：Git 核验 → staged files 检查 →
+commit → push → `ls-remote` 回验。
+
+当前状态（human 裁定块）：
+
+```text
+R0                  = APPROVED
+R1                  = COMPLETE / HISTORICAL REVIEW SEALED
+R2 rev.2            = APPROVED / FORMALIZATION SEALED
+
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = APPROVED / DESIGN SEALED
+R3-1                = PENDING HUMAN GATE
+
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+```
+
+### R3-0 GIT SEAL COMPLETE — R3-1 STILL NOT AUTHORIZED — 2026-10-03
+
+按 human 明确授权「提交并推送 R3-0 封存」执行完毕。顺序=提交前 status
+复核（两条路径不变）→ 仅两条路径 `git add` → staged diff 终验（2 files /
+510 insertions / 0 deletions；恰含 RESEARCH_STATE.md 三个 R3 段 + R3-0
+设计文档本体 340 行）→ commit（amend 修正 commit message 一处笔误
+[PALICE→PALACE]；amend 发生于 push 之前、远端无副本，零风险透明登记）
+→ push `60a0acf..1c8c463` → `git ls-remote` 回验远端
+ref=`1c8c463` → 工作区清零。R3-0 封存由「已审批但仅存在工作区」转为
+正式 Git 历史基线。
+
+```text
+R3-0 Design         = APPROVED / DESIGN SEALED / GIT SEALED @ 1c8c463
+R3-1                = NOT AUTHORIZED / PENDING HUMAN GATE
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = R3-1 gate review only upon explicit human authorization
+```
+
+### R3-1 GATE REVIEW AUTHORIZED AND EXECUTED — VERDICT: NO BLOCKER / READY TO OPEN — R3-1 AUTHORIZATION STILL PENDING HUMAN — 2026-10-03
+
+human 授权「开启 R3-1 Gate Review」（授权对象=评审本身，非 R3-1 实施、
+非实验、非代码）。评审交付
+`SIMIGO_LAB_R3_1_GATE_REVIEW_20261003.md`（基于已封存文档+历史先例，
+零实验零实现零代码），六项检查逐项判定：
+
+- **Gate I = CONDITIONALLY READY**：role 分解（I-1/I-2/I-3）+「可评估/
+  不可判定」问题结构 + Gδ-I provenance conflation 与 P7-1 J-I1/I2
+  model-binding 比对的历史签名先例已备；操作性谓词（身份判据承载物
+  枚举+「不可判定」可观察签名）为 R3-1 判定规范待产内容。登记开放经验
+  问题：身份证据若全由 ES record 承载则 I 可能恒真——合法边界研究素材，
+  判定规范须允许如实登记，不得为产生破坏而构造 IS 变化。
+- **Gate A = CONDITIONALLY READY**：三子句（存在/可寻址/未静默替换）
+  + PA-2（silent substitution 原型）与 Gδ-A、ES-R2 Gate B anchor
+  tailSHA256 先例已备；**spec 决策=引用解析必须走 ES 自身存储的引用
+  路径**，观察者只读哈希仅审计不作判定输入（防平凡化+forbidden
+  channel）；比较基线=formation 时记录（no construct-then-claim）。
+- **Gate C = CONDITIONALLY READY**：R-B1 V-N relation-not-found 与
+  R-C1 #4 relation artifact presence/absence 提供最直接的机械可查签名
+  先例；**边界收窄=「仍成立」只按机械可查形态判定**（引用解析+
+  invalidation/supersession 记录+声明式 applicability），模型语义判断
+  禁作判定输入（防输出级观察回流）；语义级 C 属边界修订走 stop/revise。
+- **Gate Attribution = READY**：ES 固定/单变量 taxonomy/Control/
+  INCONCLUSIVE 归因纪律结构完备；条件级机械观察使模型非确定性被结构性
+  排除在判定通道外；R-C1 deviation 登记+物理哈希+隔离 204+forbidden-
+  channel checks 直接继承；只读观察义务需成文化。
+- **Gate Control = READY**：三层控制充分（null-change Control + 良性
+  变化对照类 + R3-N 反证方向）；Control 漂移条款需预注册（Control 臂
+  任何条件变化⇒仪器疑云⇒该批次 INCONCLUSIVE）。
+- **Gate Failure = READY**：四态出口+失败有效性+RQ3-4 反例价值在案；
+  R3-0 §4.1 已定义条件不可观察=R3-1 自身 FAIL（停止）。
+
+**总判定：NO BLOCKER / READY TO OPEN**——六项检查无原则性 blocker；
+I/A/C 的操作性谓词不是缺口而是 R3-1 判定规范的待产内容，其生产无已知
+障碍。**五项强制内容登记**（R3-1 判定规范必须包含）：①I-谓词操作化
+（含「I 恒真」如实登记义务）②A-判定立场（ES 自身引用路径；观察者哈希
+仅审计；formation 基线）③C-机械化边界（禁模型语义判断）④只读观察
+义务⑤Control 漂移条款。**边界声明：本评审不等于 R3-1 授权——R3-1
+是否开启（进入判定规范生产）归 human 依本评审裁定；R3-2…R3-4 保持
+LOCKED。**
+
+当前状态：
+
+```text
+R3                  = ADOPTED / SCOPE FIXED
+R3-0                = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review    = EXECUTED / NO BLOCKER / READY TO OPEN
+R3-1                = NOT AUTHORIZED / AWAITING HUMAN DECISION ON REVIEW
+R3-2…R3-4           = LOCKED
+Implementation      = NOT STARTED
+Experiment          = NOT AUTHORIZED
+IPAC                = OPEN / NONBINDING
+P                   = OUT OF SCOPE
+Route A/B/C         = NOT SELECTED
+PALACE              = CLOSED
+Next = human decision on R3-1 gate review verdict（authorize R3-1 or
+       stop/revise）
+```
+
+### R3-1 = AUTHORIZED FOR SPECIFICATION PRODUCTION ONLY — JUDGMENT SPECIFICATION DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 接受 R3-1 Gate Review（NO BLOCKER / READY TO OPEN）并授权 R3-1，
+**授权粒度锁定为 "R3-1 = AUTHORIZED FOR SPECIFICATION PRODUCTION
+ONLY"**——不写笼统的 R3-1 = AUTHORIZED。本步被授权的仅是：I 谓词
+操作化 / A 判定规范 / C 机械化边界 / 只读观察义务 / Control 漂移条款 /
+四态出口及失败规则的规范化。**仍然不授权**：实验、代码、harness、数据
+采集、运行、R3-2、R3-3、R3-4。
+
+human 特别指令（逐字登记）：Gate Review 中「I 可能恒真」的发现**保留
+原样**——规范生产时不得为了让 I 更「有意义」而人为增加复杂条件；若
+最终证明 `I(record) ≡ TRUE`，那是有效研究结果，真正需要研究的是该事实
+对 `I ∧ A ∧ C` 候选关系意味着什么。
+
+按授权完成判定规范生产，交付
+`SIMIGO_LAB_R3_1_JUDGMENT_SPECIFICATION_20261003.md`：
+
+- **§1 I-condition 判定规范**：身份判据承载物枚举（I-EV-1 模型绑定/
+  I-EV-2 谱系绑定/I-EV-3 载荷完整性对应材料，逐一登记所在位置 ES
+  record 内部 vs IS 内容）；评估程序（自足评估⇒SATISFIED 合法路径/
+  IS 引用解析/评估规则依赖结构缺失⇒I-UNSTRUCT）；签名类目 I-SATISFIED/
+  I-NF/I-AMBIG（provenance conflation，Gδ-I 先例）/I-MISMATCH（J-I1/
+  I2 先例）/I-UNSTRUCT；**反复杂化条款**（human 指令义务化）：I 证据
+  自足时 I≡TRUE 如实登记为 I-INVARIANT，禁止注入 IS 依赖/加设间接引用
+  /改造表征来制造「破坏」。
+- **§2 A-condition 判定规范**：判定立场=引用解析必须走 ES 自身存储的
+  引用路径，观察者只读哈希仅审计不作判定输入；比较基线=formation 时
+  记录的内容摘要（禁止事后补造，no construct-then-claim）；解析语义按
+  引用形式分派（内容寻址⇒A-SUB 结构上不可能=表征选择性质如实登记/
+  直接地址与符号名⇒A-SUB 可观测）；签名 A-SATISFIED/A-NF/A-SUB
+  （PA-2 外部化；silent vs 有记录为描述性标注不影响满足性）/
+  A-NOT-EVALUABLE（无 formation 基线）/A-UNRESOLVABLE（仪器疑云路径）。
+- **§3 C-condition 机械化边界**：机械可查形态穷尽列举=C-REF 前置引用
+  解析（R-B1 V-N 先例）+C-INV invalidation/supersession 记录存在性+
+  C-DECL 声明式 applicability 机械可评估者核对；**模型语义判断禁作
+  判定输入**；仅声明语义判断条件者记 C-NOT-EVALUABLE；语义级 C=边界
+  修订走 stop/revise，不静默扩展。
+- **§4 只读观察义务**：观察不变更 IS（写前/写后哈希+隔离计数先例）；
+  观察通道与 continuation 通道分离（forbidden-channel 先例）；未来
+  R3-2 执行的仪器化要求登记（run-UUID+独立观测文件+单调钟+判读脚本
+  与输入分离）——仅条文，零代码落地。
+- **§5 Control 漂移条款**：Control 家族三层（K-0 null-change/K-1
+  良性变化对照/K-2 R3-N 反证搜索）；K-1 双重读法（归因失败⇒
+  INCONCLUSIVE 或干净归因⇒RQ3-4 素材不改判据）；**K-0 任何条件变化⇒
+  仪器疑云⇒该批次全部 INCONCLUSIVE 不进判读**（P5 audit、b3 先例）。
+- **§6 四态出口与失败规则规范化**：per-cell 记录 schema（run_uuid/
+  ΔIS_class/I·A·C 各 {SATISFIED, BROKEN, NOT-EVALUABLE}+签名类别/
+  Cons 机械合成/IS 哈希）；NOT-EVALUABLE ≠ BROKEN（回答 R3-1 出口
+  判据问题）；四态操作化定义（SUPPORTED=定向击穿+K-1 no-break+K-0
+  稳定/PARTIALLY=部分映射成立且失败干净归因[含交叉敏感性]/NOT
+  SUPPORTED=定向变化系统性不击穿[如 I≡A≡C≡TRUE]=实质性有界发现/
+  INCONCLUSIVE=漂移·不可归因·判别力丧失）；失败有效性条款；R3-1
+  自身出口判据=三条件对所选 state 类别均可判定否则 FAIL 停止；
+  I≡TRUE 专项=逐字登记、含义分析归 R3-4。
+- **§7 Cons 判定程序摘要**：单 cell 五步（评估 I→A→C→机械合成含
+  NOT-EVALUABLE 传播→记录+只读核验）。
+
+**边界重申（规范内）**：R3-2/R3-3/R3-4 保持 LOCKED；规范生效须经
+**下一次独立审查**，审查通过后才考虑后续实验授权；全部排除清单维持。
+
+当前状态：
+
+```text
+R3                        = ADOPTED / SCOPE FIXED
+R3-0                      = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review          = ACCEPTED（human）
+R3-1                      = AUTHORIZED FOR SPECIFICATION PRODUCTION ONLY
+R3-1 Judgment Spec        = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-1 implementation       = NOT AUTHORIZED（spec 通过独立审查后另行裁定）
+R3-2…R3-4                 = LOCKED
+Implementation            = NOT STARTED
+Experiment                = NOT AUTHORIZED
+IPAC                      = OPEN / NONBINDING
+P                         = OUT OF SCOPE
+Route A/B/C               = NOT SELECTED
+PALACE                    = CLOSED
+Next = independent review of the R3-1 judgment specification; experiments
+       remain unauthorized
+```
+
+### R3-1 SPEC INDEPENDENT REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — SPEC RATIFIED — EXPERIMENTS STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-1 Judgment Specification 进行独立审查，审查焦点=「Spec
+是否忠实实现已批准的 R3-0 设计，而未在规范化过程中偷偷改变研究命题」，
+七项检查。评审交付 `SIMIGO_LAB_R3_1_SPEC_REVIEW_20261003.md`：
+
+- **Check 1 Traceability = PASS**：R3-0 全部强制约束逐项找到 Spec 条款
+  （判定规范非实现/三条件判定例/出口判据/Cons 引用不修改/单向性缺省
+  保持/排除清单/Gate Review 五项强制内容全落位）；无遗漏。发现 O-1
+  （观察）：辅助输出遥测的显式定位归 R3-2 设计门。
+- **Check 2 No semantic expansion = PASS**：C 三形态（C-REF/C-INV/
+  C-DECL）均为确定性检查，绝对禁令+C-NOT-EVALUABLE+stop/revise 通道
+  无静默扩展。发现 H-3（加固）：C-DECL「机械可评估者」枚举带「等」
+  字，须补显式分类判据。
+- **Check 3 No trivialization = PASS**：A 双向核查（ES 自身引用路径+
+  formation 基线使 A 非观察者施舍；内容寻址下 A-SUB 结构不可能但 A-NF
+  仍可触发——任何引用形式下非恒真；无人为失败模式）；I 双向（I-
+  INVARIANT 逐字落实+签名全随 formation 声明证据结构，无 manufactured
+  references）。
+- **Check 4 Four-state integrity = PASS**：NOT-EVALUABLE ≠ BROKEN 在
+  记录/合成/统计三层保持；BROKEN 签名域各条件封闭。发现 H-2（加固）：
+  仪器疑云签名（A-UNRESOLVABLE/I-UNSTRUCT）的 schema 记录位置须显式化。
+- **Check 5 Attribution/Control = PASS**：K-0 漂移⇒整批 INCONCLUSIVE
+  硬规则在位。**发现 H-1（本次评审最重要发现）**：Spec 未显式规定
+  ΔIS_class 锁定时点——存在「IS-I cell 未击穿⇒事后改判 K-1 良性⇒
+  Control 被结果反向定义」的逃逸路径，须补构造时锁定义务。
+- **Check 6 Failure/stopping = PASS**：R3-1 FAIL 真实停止；四条逃逸
+  路径逐一排查全部封闭（A-NOT-EVALUABLE 无替代程序/语义级 C 禁静默
+  扩展/I≡TRUE 禁加条件/失败有效性全覆盖）。发现 O-2（观察）：R3-2
+  状态选样须披露可判定性前提（归 R3-2 设计门）。
+- **Check 7 Scope leakage = PASS（零泄漏）**：无 R3-2 实验细节、无
+  R3-4 解释走私、IPAC/PALACE/P/Route 全部维持排除。
+- **特别聚焦条款核查 = PASS**：NOT SUPPORTED 含 I≡A≡C≡TRUE 的逻辑
+  方向正确——all-TRUE⇒NOT SUPPORTED⇒结果⇒边界解释，而非 all-TRUE⇒
+  无发现⇒改条件⇒直到有变化；与 INCONCLUSIVE 分界正确（all-TRUE 是
+  仪器正常下的干净否定）。
+
+**发现汇总**：H-1（ΔIS_class 构造时锁定义务，防 post-hoc control——
+最重要）/H-2（instrument_doubt schema 显式化）/H-3（C-DECL 机械可
+评估判据）+O-1/O-2（两项归 R3-2 设计门的观察）。三项 H 均为收紧性
+条款，零命题变更。
+
+**处置**：按 R2 rev.1→rev.2 先例，rev.2 机械补入 H-1（§5.4 构造时
+锁定）/H-2（§6.1 schema instrument_doubt 标志）/H-3（§3.2 机械可
+评估判据），修订记录入 spec 头部。**R3-1 Judgment Spec = RATIFIED
+（正式判定规则）**。**边界声明（human 原定）：评审通过 ≠ 实验开启
+——RATIFIED 仅意味着 Spec 可作为下一阶段正式判定规则；R3-2 进入
+仍须独立 human 授权（含 R3-2 设计门）。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review        = ACCEPTED
+R3-1 Spec rev.1         = REVIEWED / PASS WITH RECOMMENDATIONS
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-1 implementation     = NOT AUTHORIZED（实验进入须独立 human 授权）
+R3-2…R3-4               = LOCKED（R3-2 设计门待 human 决定是否开启）
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on whether to open the R3-2 design gate（experiments
+       remain unauthorized until then）
+```
+
+### R3-2 = AUTHORIZED FOR DESIGN GATE ONLY — DESIGN DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 裁定：不把 R3-2 设计门当「R3-1 已 RATIFIED 故当然继续」的流水线
+动作，而是回答真正有价值的问题——「R3-2 到底需要设计什么，才能把判定
+规则第一次接触到真实的 ES/IS 状态变化」；授权粒度锁定为 **R3-2 =
+AUTHORIZED FOR DESIGN GATE ONLY**（只设计：不跑实验、不写代码、不建
+harness、不采数；R3-3/R3-4 LOCKED）。human 同时登记方法论观察：H-1 的
+发现证明「必要的反复否定」不同于「过度流程化」——前者发现原来没看到的
+问题（结果反向定义 Control 的自由度），后者只增加文件不增加认识。
+
+按授权完成设计门交付 `SIMIGO_LAB_R3_2_DESIGN_20261003.md`，八问逐题
+落答：
+
+- **§1 最小实验单元**：Cell = 一次受控 `(ES,IS₀)─ΔIS→(ES,IS₁)` 转换及
+  条件级判定（构造/锁定/t₀ 评估/ΔIS/t₁ 评估/记录六步）；**cell 有效
+  性前提 = Cons(ES,IS₀)=true 于 t₀ 核验**（构造要求非结果操纵，formation
+  材料清单随构造记录先行披露——O-2 落实）；**范围声明=R3-2 全程无模型
+  推理**（判定对象是条件满足性非延续行为；条件破坏⇒延续失败的检验属
+  R2 候选关系，不在 R3-2）。
+- **§2 ES 固定**：单一 ES 工件哈希钉定贯穿全 cell（漂移=仪器疑云）；
+  真实形成（运输非构造 D6）；**formation 材料齐备义务**（I-EV 声明/A
+  锚引用+formation 摘要/C 前置引用+声明条件，缺失⇒NOT-EVALUABLE⇒S-1，
+  禁事后补造）；ES 只读；**锚引用形式=符号名**（使 A-SUB 可观测；内容
+  寻址变体登记为后续表征敏感性问题）；**研究载具声明**=Lab 仓
+  purpose-built 最小 fixture（R-B1 先例），结论 bounded 于该结构类。
+- **§3 ΔIS 冻结目录**：IS-I×3（模型声明变更/谱系目标删除/谱系目标
+  冲突复制→I-MISMATCH/I-NF/I-AMBIG）+IS-A×3（锚删除/移出边界/同址
+  异容→A-NF/A-NF/A-SUB）+IS-C×3（settled result 删除/invalidation
+  记录/supersession 记录→C-REF not-found/C-INV×2）+IS-B×2（整体边界
+  收缩/访问模式变更——作用于区域非单一对象，受影响集合构造时划定，
+  预测机械推导歧义处保留「?」）+K-1×2（纯增量/等价迁移）+K-0；**IS-X
+  目录占位**（单变量完成并确认可归因后才实例化）。适用性披露义务：
+  I-Δ 操作可执行性取决于 ES 的 I-EV 声明结构（自足⇒not-applicable
+  +I-INVARIANT 登记），只用 formation 材料判定。
+- **§4 构造时锁定（H-1 执行化）**：类别指派规则冻结（按操作机制与靶
+  指派，规则先于任何 cell 存在）；**construction record 先于评估落盘**
+  （cell_id/ES 哈希/IS₀ 哈希/操作 id/类别/构造时机械推导预测）；评估
+  只向 outcome 文件追加且与构造记录物理分离；重分类禁令（意外结果
+  本身是数据）。
+- **§5 Spec→可执行观察映射表**：每个签名类别→fixture 上的确定性
+  程序（I 证据声明读取+解析/A 引用路径解析+formation 摘要比对/C 解析
+  +invalidation 索引查询+H-3 判据核对）；观察完整性（IS 写前/写后
+  哈希）；仪器化要求固定（run-UUID/append-only/单调钟/判读分离——
+  执行期落实）；O-1 落实（无模型无输出遥测）。
+- **§6 Control 预注册**：K-0/K-1 同流程+预测先行登记；**ES 完整性
+  常设对照**（工件哈希跨 cell 恒等）；**IS₀ 钉定+per-cell 新拷贝**
+  （cell N 的 IS₁ 永不成为 cell N+1 输入，禁累积污染）；顺序登记+
+  换序重跑仪器选项（是否启用归执行授权）；漂移处置先于结果解读。
+- **§7 停止条件 S-1..S-5**：结构性不可判定（不得换 ES 凑可判定性）/
+  K-0 漂移不可定位/ES 哈希漂移/系统性不可归因/门控违反。
+- **§8 INCONCLUSIVE 条件 I-1..I-6**：K-0 漂移/instrument_doubt cell/
+  不可归因击穿/NOT-EVALUABLE 传播/观察完整性失败/setup-invalid。
+- **§9 预测登记**：预测=操作×formation 证据图的构造时机械推导，随
+  构造记录冻结；偏离原样记录含全 no-break（⇒NOT SUPPORTED=实质性
+  有界发现，禁改表征加条件）。
+- **§10 出口**：本文档后应先过独立审查（与 R3-1 同节奏：设计→对抗
+  审查→修订→RATIFIED→执行授权）；R3-2 execution 须独立 human 授权；
+  R3-3/R3-4 LOCKED。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Gate Review        = ACCEPTED
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-2 Design             = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-2 execution          = NOT AUTHORIZED
+R3-3…R3-4               = LOCKED
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = independent review of the R3-2 design; execution remains
+       unauthorized
+```
+
+### R3-2 DESIGN INDEPENDENT ADVERSARIAL REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — DESIGN RATIFIED — EXECUTION STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-2 Design 进行独立对抗审查（攻击目标=实验前的自由度、
+污染、归因漏洞，不重新证明值得做），八处攻击点+一项特别聚焦。评审交付
+`SIMIGO_LAB_R3_2_DESIGN_REVIEW_20261003.md`：
+
+- **Check 1 Cell validity — 发现 H-A（本次评审核心，human 特别聚焦的
+  选择偏差问题，生效前强制修订）**：rev.1 有「不得改 ES 或 IS₀ 凑数」
+  但未锁死 setup 程序——存在「试 IS₀₁→不满足→换 IS₀₂→直到合格」的
+  隐性 resampling 路径，且未回答「Cons 什么版本/依据什么 Spec/什么
+  时候判定」。rev.2 补入 **Campaign setup lock**：①(ES,IS₀) 一次性
+  按预登记准则选定（准则执行不依赖任何 t₀ 结果——选择在判定之前）；
+  ②t₀ 判定一次性（Cons=R2 rev.2 候选定义、依 Spec rev.2 程序、于
+  campaign setup 阶段机械评估，版本/依据/时点三要素钉死 setup 记录）；
+  ③结果二值终局——false ⇒ setup=INVALID+记录保全+STOP，重设须新
+  human authorization（失败 setup 保存为证据，R-C1 attempt 纪律）；
+  ④per-cell t₀ 重评估=仪器一致性复算，与 setup t₀ 不一致⇒整批
+  INCONCLUSIVE。t₀ 无法判定⇒S-1 停止而非换数。✓
+- **Check 2 ES fixation — 发现 H-B+O-A**：判定基线驻留规则补入（全部
+  formation 摘要/证据声明/前置声明一律 ES-artifact 驻留；IS 只含可
+  引用对象与 mutation 记录，永不含基线——否则 ΔIS 可触碰基线自身，
+  研究被倒置）；ES 工件与 IS 存储物理不相交；formation provenance
+  链入 setup 记录；fixture 组装=setup 事件非被测 ΔIS。
+- **Check 3 ΔIS classification — 发现 H-F**：类别由冻结规则从操作 id
+  **机械推导**（非人工指派，指派自由度归零）；**IS-X 词汇封闭**（X=
+  已冻结单变量操作的组合，执行期不得引入新操作类型）。H-1 完整贯彻。
+- **Check 4 IS₀ isolation — 发现 H-E**：每 cell 结束后复验 canonical
+  IS₀ 哈希+ES 哈希（双复查）；IS₁ 拷贝只读归档——「源头钉定+新拷贝+
+  事后复验」三重阻断累积污染。
+- **Check 5 Spec→observation — 发现 H-C（实质发现：I-UNSTRUCT
+  二义性）+H-D**：rev.1 映射表把「评估规则引用的 IS 结构不存在」一律
+  导向仪器疑云——但在 cell 结构内 t₀ 已干净执行⇒结构当时存在⇒t₁
+  缺失只能是 ΔIS 所致（唯一变量）⇒**这恰是 I-condition 定义主体
+  被违反=I BROKEN**（新签名 I-STRUCT-REMOVED），不是仪器疑云；仪器
+  读法仅限 setup 阶段。零命题变更（恢复 a 子句本义，Spec §5.3「非
+  ΔIS 原因」限定词本已蕴含）。A-UNRESOLVABLE 在 t₀ 干净前提下按构造
+  不可能出现于 t₁（引用形式驻留固定 ES）——其出现即观测路径缺陷真
+  信号。H-D：fixture 确定性钉定（引用解析=精确键匹配禁语义匹配/
+  C-DECL 检查类型白名单/时间参照=setup 钉定时间戳非评估时墙钟）。
+- **Check 6 Control integrity = PASS**：预测随构造记录先行冻结；ES
+  完整性对照与实验变量的耦合被物理不相交+双复查结构性排除。
+- **Check 7 Failure/INCONCLUSIVE = PASS（无逃逸通道）**：三条包装
+  路径逐一封闭——定向击穿标 instrument_doubt（H-C 修正后结构上导回
+  BROKEN；A-UNRESOLVABLE 冒用即暴露）/BROKEN 降级 NOT-EVALUABLE
+  （NOT-EVALUABLE 结构性触发 S-1 STOP，包装代价是停止而非继续，
+  无激励相容漏洞）/setup-invalid 后换料重试（H-A 锁死）。
+- **Check 8 Scope = PASS（零泄漏）**：无模型调用点；预测无提前解释；
+  IS-X 词汇封闭+内容寻址变体显式 defer。
+
+**处置**：rev.2 机械补入六项（H-A §1a campaign setup lock / H-B §2a
+基线驻留+provenance 链 / H-C §5 映射修正 / H-D §5a fixture 确定性
+钉定 / H-E §6 事后双复查 / H-F §4a 机械推导+IS-X 词汇封闭），修订
+记录入 spec 头部。**R3-2 Design = RATIFIED（正式实验设计）**。**边界
+声明：RATIFIED ≠ 执行许可——R3-2 execution（fixture 实现+cell 运行）
+须独立 human 授权。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED / 正式实验设计
+R3-2 execution          = NOT AUTHORIZED（fixture 实现+cell 运行待
+                          独立 human 授权）
+R3-3…R3-4               = LOCKED
+Implementation          = NOT STARTED
+Experiment              = NOT AUTHORIZED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-2 execution authorization
+```
+
+### R3-2 EXECUTION AUTHORIZED / EXECUTED — CAMPAIGN SUPPORTED（fixture-slice bounded）— HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 R3-2 execution（fixture 实现 + cell 运行）。执行纪律：harness
+源码先 commit+push 后运行（证据纪律；governance 文档 R3 链与 harness
+分别为 commit `5e08370` / `5414061`，远端回验后才执行）。
+
+**Campaign setup（§1a lock 执行）**：run_uuid=`R32-20261003T105711Z-68477`；
+(ES,IS₀) 一次性按预登记准则选定（准则执行不依赖任何 t₀ 结果）；t₀ 一次性
+判定于 setup 阶段（任何 ΔIS 之前），三要素钉死 setup 记录（Cons=R2
+rev.2 candidate / 判定规则=Spec rev.2 RATIFIED / 时点=setup）；**t₀ 结果
+I/A/C 全 SATISFIED ⇒ Cons(ES,IS₀)=true ⇒ cell validity 全战役固定**；
+ES 血统=真实密封 R-C1 attempt #4 C-B 臂证据运输（S0/S1/任务书字节逐字
+来自 sealed artifacts）；formation 程序对 canonical IS₀ 实际执行、全部
+基线摘要由实际字节计算（无手写基线）；harness 哈希入 setup 记录。
+
+**Campaign 结果（14 cell 全机械判定，零偏差零重试零重分类）**：
+
+- **9/9 定向 cell PREDICTION-MATCH**——每个定向 ΔIS 以预测签名击穿其
+  定向条件且其余条件不动：IS-I×3 → I BROKEN（I-MISMATCH/I-NF/I-AMBIG
+  逐一对应声明变更/目标删除/冲突复制）；IS-A×3 → A BROKEN（A-NF/A-NF/
+  **A-SUB**——silent substitution 被机械检出）；IS-C×3 → C BROKEN
+  （C-REF-NOT-FOUND/C-INV×2——invalidation 与 supersession 记录均被
+  机械检出）；
+- IS-B×2（边界收缩/访问拒绝，未触及被引用对象）→ 全 SATISFIED，
+  与构造时推导一致（DERIVATION-CONSISTENT）；
+- K-1×2（纯增量/等价迁移——后者索引重指向但解析+摘要保持）→
+  CONTROL-HOLD；K-0 → CONTROL-HOLD 且与 setup t₀ 逐项一致；
+- 完整性：ES/canonical IS₀ 哈希跨 cell 恒等（integrity_all_clean）；
+  t₀ 复算全一致；instrument_doubt 全 NO；不可归因击穿零；RQ3-4 素材
+  零触发。
+
+**机械判读（Spec §6.2）：campaign_verdict = SUPPORTED**——在本 fixture
+结构类与单变化战役内，条件满足性对 Information Space 变化类别呈
+**差分敏感**，三条件分解对「哪些 IS 变化破坏哪个条件」给出可归因的
+差分刻画；RQ3-1/3-2/3-3 在本 slice 内答案为是/是/是。
+
+**解释边界（逐字义务）**：允许=上述差分敏感性表述（fixture-slice
+bounded）；禁止=「IPAC/Cons 已证明」（检验对象是 taxonomy 预测结构非
+充分性；Cons⇏LawfulContinuation 不变）、「适用于产品/普适」（bounded
+于 fixture 结构类：符号名锚引用、单一 ES、文件型 IS；内容寻址变体
+defer）、「Relation/PALACE/产品含义」（零模型/零 Relation/零 PALACE）、
+「预测结构普遍成立」（IS-X 未实例化，RQ3-4 零触发≠已排除）。
+
+**观察登记**：O-R1=K-1b 等价迁移下 A 保持 SATISFIED（锚定绑定
+「可解析+内容同一」非具体存储地址；与表征敏感性观察同向）；O-R2=
+IS-B 整体边界操作未破坏任何条件（RQ3-4 方向否定性素材，bounded，
+不得升格）。
+
+**下一门（全部归 human）**：R3-2 结果 second layer；R3-3（Counter-
+example/Non-break Study）是否开启；R3-4 LOCKED；IS-X 与内容寻址变体
+未实例化，开启归 human。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = AUTHORIZED / EXECUTED（run R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = PENDING HUMAN REVIEW
+R3-3…R3-4               = LOCKED（R3-3 开启归 human）
+Implementation          = harness committed @5414061（execution authorized scope）
+Experiment              = EXECUTED within authorized scope only
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on R3-2 results; R3-3 opening decision
+```
+
+### R3-2 SECOND LAYER = RESULTS AUDIT PASS（16/16 机器检查）— 结果审查 ≠ R3-3 授权 — 2026-10-03
+
+human 指令进入 R3-2 second layer（结果审计非设计重审）：审查「结果是否
+足以支持当前 SUPPORTED 判读」，八项焦点。审计工具
+`r32_second_layer_audit.py`（@`51993d8`，commit+push 先于审计——证据
+纪律），**16/16 机器检查全过，零失败零偏差零未决**：
+
+- **证据链闭合（A1+A7）**：14/14 cell 的 construction（locked_before_
+  evaluation+哈希钉定）→t₀（与 setup 逐项一致）→integrity（ES/IS₀
+  哈希不变）全链闭合；append-only 观测中每 cell 五事件完整有序、单调
+  钟非降、run_uuid 唯一、构造/结果文件物理分离。
+- **签名一一对应（A2）**：逐 cell t₁ 实际（state+signature）与
+  construction.json 内评估前锁定的 prediction 一一比对，14/14 一致
+  ——预测先于评估由文件顺序+观测序列证明，非事后解释。
+- **只击穿目标条件（A3）**：9/9 定向 cell 的 t₁ 原始记录核验——目标
+  BROKEN 带签名、其余两条件原始 detail 为 SATISFIED。
+- **IS-B 构造时证明（A4）**：从构造时 IS₀ 索引独立重算
+  region∩referenced=∅（archive/ 区仅含未被引用的 archived-note）——
+  证明独立于 t₁ 结果，非反推；IS-B outcome 与推导一致。
+- **K-1b binding invariant（A5）**：对实际 cell 树核验——锚解析至
+  objects/store-v2/R-1.json、in_boundary、内容摘要==formation 摘要；
+  原路径已腾空（迁移真实发生）。
+- **cell 独立性（A6）**：**frozen-op replay**——每 cell 从 canonical
+  IS₀ 新拷贝重放冻结操作，结果树与该 cell IS 树逐字节一致（14/14；
+  任何隐性累积/串染都会破坏重放）；K-0 cell IS 树与 canonical IS₀
+  哈希恒等。
+- **SUPPORTED 严格性（A8）**：按 §6.2 预注册规则重算（batch_inconclusive
+  =false+9/9 targeted PREDICTION-MATCH+3/3 CONTROL-HOLD）⇒SUPPORTED；
+  审计独立重算与独立判读进程 14/14 verdict 一致；记录值无加宽。
+
+**human 六点实质性结果逐项登记**：①H-A setup lock 获首次实证执行记录
+（无换 IS₀/无重试/无重分类被触发）；②差分归因结构干净（预注册签名非
+泛化全坏+对照保持）；③H-C 修正产生可观察后果（结构缺失在「既有结构
+存在+唯一变量」条件下作为 I BROKEN 被记录，非模糊化为 doubt）；④
+「零 instrument doubt」保持限缩读法（仅=本 campaign 未触发疑云路径，
+非「实验绝对可靠」一般结论——human 原话）；⑤SUPPORTED 严格 slice-
+bounded（支持=「在本次 fixture/ES 结构/符号名锚引用/文件型 IS/预注册
+ΔIS 类别与观察程序下，Cons 条件表现出预测的差分敏感性」；不支持=
+「IS 改变普遍导致 ES consistency 改变」）；⑥RQ3-4 未被提前回答（无
+BROKEN⇒continuation failure 推导、无普适定律宣称）。
+
+**边界（human 原定）：结果审查 ≠ R3-3 授权。** 审计通过不自动开启
+R3-3；待决=human 的更窄问题——「R3-2 的 bounded empirical result 是否
+足以授权进入 R3-3，以及 R3-3 应验证哪个尚未被覆盖的边界」。未覆盖边界
+登记（仅候选不预设）：R3-N 专项反证搜索未开始/IS-X 未实例化（词汇已
+封闭）/内容寻址表征敏感性 defer/「条件破坏⇒continuation failure」检验
+不在 R3 范围（属独立 gate）。R3-4 LOCKED；全部排除清单维持。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = EXECUTED（R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = AUDIT PASS（16/16）
+R3-3                    = LOCKED / OPENING DECISION PENDING HUMAN
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 opening (and its uncovered-boundary target)
+```
+
+### R3-2 FORMALLY CLOSED — SECOND LAYER ACCEPTED — R3-3 OPENING DECISION REGISTERED（CANDIDATE = R3-N）— 2026-10-03
+
+human 裁定 R3-2 **正式收口**：second layer 的 AUDIT PASS 足以证明本次
+campaign 的 `SUPPORTED / fixture-slice bounded` 判读具有证据闭合性，
+但**没有扩大 R3-2 本身的外推范围**。边界图（human 逐字登记）：
+
+```text
+R3-2 empirical result
+        │
+        ├─ evidence chain      PASS
+        ├─ pre-registered match PASS
+        ├─ attribution         PASS
+        ├─ independence        PASS
+        ├─ audit recomputation PASS
+        └─ §6.2 synthesis      PASS
+                │
+                ▼
+     SUPPORTED / bounded slice
+                │
+                X
+        不自动推出普遍 Cons
+        不推出 continuation
+        不推出 PALACE/IPAC
+        不开启 R3-4
+```
+
+**R3-2 已回答它原本要回答的那一层**：在严格限定的 fixture slice 内，
+预登记的 Information Space 变化类别表现出可重复、可归因、与预测签名
+一致的 I/A/C 差分敏感性。**继续重复同一 slice 不解决当前最大未知量
+——边界能否被突破。**
+
+**R3-3 opening 候选登记：R3-N（边界反证/负向搜索）**——寻找在当前
+R3-2 机制下按既定规则应当「不产生相应 Cons 击穿」的 Information Space
+变化，观察差分敏感性是否出现反例。价值定位（human 逐字）：直接攻击
+当前 SUPPORTED 的解释边界——反例不是「实验失败」，而是对当前
+taxonomy / condition boundary 的实质信息；无反例也只能增加当前 fixture
+slice 内的边界证据，仍不能升级为普遍规律。
+
+**三个候选边界保持独立（human 登记，含不宜混入的原因）**：
+
+| 边界 | 状态 | 不宜现在混入的原因 |
+|---|---|---|
+| R3-N 反证搜索 | **最自然的下一步候选** | 直接攻击当前支持命题 |
+| IS-X 复合变化 | 词汇已冻结、未实例化 | 会增加变量归因复杂度 |
+| 内容寻址表征敏感性 | defer | 实际是改变 representation boundary |
+| 条件破坏→continuation failure | R3 外 | 已是另一研究问题——R3-2 证明的是 condition-level observation，不是 execution continuation law，严格隔离继续 |
+
+**未来授权纪律（human 预定）**：若正式授权 R3-3 opening，第一道授权
+只开 **R3-3 Design Gate**——先锁死 R3-N 的反证对象、null expectation、
+停止条件、与 R3-2 结果的独立性；**不直接授权 R3-3 实验**。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2 Design rev.2       = RATIFIED
+R3-2 execution          = EXECUTED（R32-20261003T105711Z-68477）
+R3-2 campaign           = SUPPORTED / fixture-slice bounded
+R3-2 second layer       = AUDIT PASS（16/16）
+R3-2 conclusion         = SUPPORTED / fixture-slice bounded / FORMALLY CLOSED
+R3-3                    = LOCKED / OPENING DECISION PENDING HUMAN
+R3-3 candidate          = R3-N negative/counterexample search（登记）
+R3-3 first gate         = Design Gate ONLY（如获授权）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 opening（如授权，第一道门=Design Gate only）
+```
+
+### R3-3 DESIGN GATE AUTHORIZED / EXECUTED — R3-N DESIGN DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 授权 R3-3 opening 的第一道门=**Design Gate ONLY**（锁四件事：
+反证对象/null expectation/停止条件/与 R3-2 结果独立性；不授权实验）。
+设计交付 `SIMIGO_LAB_R3_3_DESIGN_R3N_20261003.md`：
+
+- **§1 反证对象（冻结目录，9+1+1）**：N-catalog 推导来源=冻结规则条款
+  本身**未被 R3-2 覆盖的 HOLD 侧**（逐条注明攻击的条款）——Δ1 未引用
+  对象删除/Δ2 未引用内容改写（判定只依赖 ES 引用键）/Δ3 死索引项
+  （精确键+存在性过滤）/Δ4 被引用键**同内容**重复候选（坍缩规则；与
+  已测 I-Δ3 冲突候选相对）/Δ5 被引用对象字段保持扩展（字段域比较）/
+  Δ6 前置等价迁移（K-1b 对称未测例：可引用性=解析+边界非存储地址）/
+  Δ7 invalidation 指向未引用键（C-INV 扫描目标域）/Δ8 scope-tag 增补
+  （存在性检查方向性）/Δ9 in_scope 区域增补（边界隶属是要求侧）；
+  **R32N-SANITY 正控**=重实例化已冻结 A-Δ3（防判读器死亡：predicted-
+  BROKEN 侧必须仍可触发）+K-0 重放；排除形态预注册（改动后复原=空洞、
+  触碰被引用内容字节=R3-2 已测家族、IS-X/内容寻址/模型通道维持排除）；
+  目录设计门 seal 时冻结。
+- **§2 null expectation（预注册）**：9 反证 cell t₁ 全 SATISFIED 逐项
+  等于 setup t₀+正控 A BROKEN/A-SUB+K-0 无漂移+完整性全净；反例判定=
+  任一反证 cell 任一条件 BROKEN（可归因签名）；反例缺席只增强 slice
+  内边界证据不升格普遍；反例出现是研究对象非失败。
+- **§3 停止条件**：S-1..S-5 沿用+R3-N 特有三条——**S-N1 反例不触发
+  停止**（campaign 跑完冻结目录，反例逐 cell 登记，闭合后进边界复审
+  门）；**S-N2 正控 SATISFIED=判读器死亡⇒战役 INCONCLUSIVE+STOP**
+  （此时全 HOLD 禁读为 NO-COUNTEREXAMPLE）；S-N3 不可归因击穿⇒cell
+  INCONCLUSIVE+仪器审计。
+- **§4 与 R3-2 独立性（五不变量）**：inv-1 判读输入隔离（只读 R3-3
+  自己 run 工件；R3-2 产物零读取作判定输入）；inv-2 目录来源隔离
+  （N-catalog 从冻结规则条款推导、设计门 seal 冻结——R3-2 outcome
+  不是目录选择输入）；inv-3 形成隔离（fresh formation 新 run-UUID 重
+  执行）；inv-4 cell 内独立性沿用；inv-5 判读语义隔离（R3-N 出口类目
+  不继承 SUPPORTED 语义、不合并统计）。
+- **§5 判读规则（预注册）**：全 HOLD+正控 BROKEN⇒NO-COUNTEREXAMPLE
+  （bounded 增强）；≥1 可归因反例⇒COUNTEREXAMPLE-FOUND（逐 cell 登记
+  条件+签名+操作+被攻击条款，闭合后进边界复审门；**禁止 campaign 内
+  修补规则使反例消失**）；正控 SATISFIED⇒INCONCLUSIVE+STOP；drift/
+  doubt/unattributable⇒INCONCLUSIVE；反例若源于仪器缺陷⇒改判
+  INCONCLUSIVE 并记录（不得既算反例又算仪器故障）。
+- **§7 执行剖面（不授权）**：同 harness 家族扩展（CATALOG 增 9+1 冻结
+  操作，评估程序零改动=与 R3-2 完全同源满足 inv-2）；campaign=11 cell；
+  cell 纪律/双哈希/replay purity/second layer 审计模式沿用；execution
+  须独立 human 授权；本设计先行独立对抗审查（同节奏）。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED/fixture-slice bounded）
+R3-3                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-3 Design（R3-N）     = DELIVERED / INDEPENDENT REVIEW PENDING
+R3-3 execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = independent review of the R3-3 R3-N design; execution remains
+       unauthorized
+```
+
+### R3-3 DESIGN INDEPENDENT ADVERSARIAL REVIEW = PASS WITH RECOMMENDATIONS — REV.2 APPLIED — DESIGN RATIFIED — EXECUTION STILL UNAUTHORIZED — 2026-10-03
+
+human 授权对 R3-3（R3-N）设计进行独立对抗审查，八项攻击点（假反证
+防护）。评审交付 `SIMIGO_LAB_R3_3_DESIGN_REVIEW_20261003.md`：
+
+- **Check 1 N-catalog 推导纯度 = PASS**：逐 op「结果无关性检验」——
+  预测可仅从规则文本推导，在 R3-2 outcome 任意反事实取值下不变
+  （Δ4 坍缩规则/Δ5 字段域/Δ6 C-REF 规则/Δ8 存在性方向/Δ9 要求侧
+  隶属，逐一验立）；关键区分登记：目录推导输入=(a)规则文本+(b)R3-2
+  **目录覆盖图**（结构性知识）——非 outcome 知识，无倒推路径。
+- **Check 2 null expectation 解耦 = PASS**：每 op 的 HOLD 预测附独立
+  机械理由（规则条款）；预测（predict：元数据+证据图）与评估
+  （eval：实际变异后状态）**代码路径分离**，失效模式互异且各有检出
+  通道——无循环定义。
+- **Check 3 SANITY 充分性 — 发现 H-1（强制）**：单条件正控（仅 A-Δ3）
+  无法检出 I/C 评估路径死亡⇒假 NO-COUNTEREXAMPLE 风险。rev.2：SANITY
+  扩展为**逐条件三正控**（SANITY-A/I/C 重实例化 A-Δ3/I-Δ1/C-Δ2），
+  任一正控 SATISFIED⇒判读器死亡⇒战役 INCONCLUSIVE+STOP。
+- **Check 4 反例/仪器分界 — 发现 H-2+H-3（强制）**：H-2=rev.1 存在
+  吸收路径（N-cell 因 doubt 判 INCONCLUSIVE 后仍可宣称
+  NO-COUNTEREXAMPLE）⇒ rev.2 **INCONCLUSIVE 传染规则**：NO-
+  COUNTEREXAMPLE 当且仅当零 INCONCLUSIVE cell。H-3=反例资格三要件
+  （签名可归因+frozen-op replay 复现+审计未定位仪器缺陷）+run 中
+  BROKEN 先作为 candidate-counterexample 原样记录+**cell 排除仅经
+  预注册 S/I 码，反例 cell 永不排除**——`意外→doubt→INCONCLUSIVE→
+  继续`被 H-2 阻断、`缺陷计入反例`被要件(c)阻断，双向误用封闭。
+- **Check 5 无修补封闭 = PASS（after H-3）**：目录冻结+预测构造时
+  锁定+null 预注册+判读规则预注册+排除封闭；中途改代码/重跑=新
+  campaign 须新授权；post-hoc「范围外」重解释=边界修订门事项。
+- **Check 6 R3-2 数据隔离 = PASS**：inv-1 代码可核验（harness 无
+  R3-2 路径引用）；间接选择路径（outcome/cell 顺序/既有状态/既有
+  样本）逐一排查未发现。
+- **Check 7 出口语义独立 = PASS（after O-3）**：非推导声明强化——
+  NO-COUNTEREXAMPLE ≠ 证明一致性（仅=被测 HOLD 侧经受住探针，RQ3-4
+  开放）；COUNTEREXAMPLE-FOUND ≠ 普遍反例、≠ 追溯撤销 R3-2（是否
+  级联由边界复审门裁定）。
+- **Check 8 覆盖完整性 — 发现 H-4（收紧）+O-1/O-2**：HOLD 侧穷举
+  扫描无重要遗漏；H-4=补 **Δ10 谱系等价迁移**（referability 子句
+  三引用组全覆盖：锚=K-1b/前置=Δ6/谱系=Δ10）；O-1=两个未测 BROKEN
+  侧预测（scope-tag 移除/被引用区域 deny）登记为范围外开放预测；
+  O-2=结构性不可测两侧如实登记（validity-temporal 空转/I-EV-3 按
+  构造不敏感）。
+
+**处置**：rev.2 机械补入 H-1（三正控）/H-2（INCONCLUSIVE 传染）/
+H-3（反例资格三要件+排除封闭）/H-4（Δ10），修订记录入档；战役规模
+10 反证+3 正控+K-0=14 cell。**R3-3 Design（R3-N）= RATIFIED（正式
+设计）**。**边界：RATIFIED ≠ execution authorization。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED/fixture-slice bounded）
+R3-3                    = AUTHORIZED FOR DESIGN GATE ONLY
+R3-3 Design（R3-N）rev.2 = RATIFIED（10 反证+3 正控+K-0=14 cell）
+R3-3 execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 execution authorization
+```
+
+### R3-3 EXECUTION READINESS REGISTERED — EXECUTION STILL NOT AUTHORIZED — 2026-10-03
+
+human 登记三项：
+
+1. **四项修订的评价（R3-N 判读结构由此立住）**：H-1 把「判读器活着」
+   提升为 **I/A/C 三条判定路径分别活着**（否则某一条件 evaluator 死亡
+   时恰好可能把所有 N-cell 都变成 HOLD）；H-2 的
+   `NO-COUNTEREXAMPLE ⇔ 0 INCONCLUSIVE cells` 封死「排除一个疑似异常
+   cell 制造全 HOLD」；H-3 在「出现 BROKEN」与「正式认定
+   COUNTEREXAMPLE」之间建立严格证据门，同时禁止把候选反例悄悄吸收进
+   INCONCLUSIVE；H-4 使 referability 的三类引用组（锚/前置/谱系）均有
+   探针，覆盖结构完整。
+2. **执行价值评估（非流水线逻辑）**：R3-2 给出正向差分模式；R3-N 专门
+   寻找该模式的边界与反例——两者构成完整探针结构：
+   `R3-2 → 预测的 BROKEN 侧是否出现？R3-N → 预测的 HOLD 侧是否真
+   HOLD？`。R3-N 允许的关键结果保持限缩读法：**NO-COUNTEREXAMPLE 不得
+   翻译为 Consistency invariant established**；**COUNTEREXAMPLE-FOUND
+   不自动推翻 R3-2**——它首先是一个需要边界复审的局部反例。
+3. **执行纪律预注册（获授权后沿用已证明有效的序列）**：
+   `harness → commit/push → campaign setup lock → construction record →
+   cell execution → independent audit → second-layer interpretation`。
+
+**边界：获得执行授权以前，不实现、不运行 R3-N fixture。**
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3 Design（R3-N）rev.2 = RATIFIED
+R3-3 execution          = NOT AUTHORIZED（执行纪律已预注册）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on R3-3 execution authorization
+```
+
+### R3-3 EXECUTION AUTHORIZED / EXECUTED — CAMPAIGN NO-COUNTEREXAMPLE（fixture-slice bounded）— AUDIT PASS（11/11）— HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 R3-3 execution（R3-N）：fixture 实现+预注册 14-cell campaign+
+独立结果审计；RATIFIED 设计零修改（N-catalog/null expectation/三正控/
+停止条件/反例资格三要件全部冻结）；R3-4 保持 LOCKED。执行纪律按预注册
+序列：harness 实现（评估程序零改动，r32_lib 复用；新 `r3n_lib` 冻结
+目录 10 反证+3 正控+K-0）→ commit `e2aa899`（治理封存）+`f207931`
+（harness 源码）→ push+远端回验 → setup lock → construction record →
+14-cell execution → 独立判读 → second layer 审计。
+
+**Campaign setup（§1a lock）**：run_uuid=`R33N-20261003T114301Z-69359`；
+fresh formation（inv-3：密封 R-C1 #4 字节重新读取，非 R3-2 产物——
+inv-1）；t₀ 一次性判定 I/A/C 全 SATISFIED ⇒ Cons(ES,IS₀)=true ⇒
+validity 全战役固定；harness 双哈希钉死（r32_lib=ee4762a2…与 R3-2 同源
++r3n_lib=39c93950…）。
+
+**Campaign 结果（14 cell，零偏差零重试零重分类）**：
+
+- **10/10 反证探针 HOLD**——Δ1/Δ2 未引用对象增删改、Δ3 死索引项、
+  Δ4 同内容重复候选（坍缩规则）、Δ5 字段保持扩展、Δ6 前置等价迁移、
+  Δ7 未目标 invalidation、Δ8 scope-tag 增补、Δ9 区域增补、Δ10 谱系
+  等价迁移——全部 t₁ 三条件 SATISFIED（逐项等于 setup t₀）；
+- **3/3 正控按预测 BROKEN**——SANITY-A→A-SUB、SANITY-I→I-MISMATCH、
+  SANITY-C→C-INV：I/A/C 三条判定路径活性逐一证实（H-1 落实）；
+- K-0 持有；完整性全净；t₀ 复算全一致；instrument_doubt 全 NO；
+  **零 INCONCLUSIVE cell（H-2 传染规则满足）**；零反例候选。
+
+**机械判读（设计 §5 rev.2）：campaign_verdict = NO-COUNTEREXAMPLE**；
+**second_layer_audit = AUDIT PASS（11/11）**（hygiene/链闭合/replay
+purity 14/14/HOLD 原始证据/逐条件活性/H-3(c) 不适用/H-2 零容忍/出口
+结构/判读一致）。
+
+**解释边界（human 预注册限缩读法，逐字义务）**：**NO-COUNTEREXAMPLE
+≠ Consistency invariant established**——不验证条件正确性/最小性/
+完备性，RQ3-4 保持开放（探针集有限）；不得写「规则已证明正确/
+taxonomy 完备」；不外推产品/普适/其它表征（内容寻址 defer 不变）；不
+开启 continuation/PALACE/IPAC/Route 推论。**允许**=该 slice 内规则
+条款的十个未测 HOLD 侧经反证探针均未产生击穿，且三条件判定路径活性
+经逐条件正控证实——**R3-2 的 BROKEN 侧 + R3-3 的 HOLD 侧合并后，当前
+差分敏感性画像在该 slice 内两侧均有边界证据**。观察：O-N1 正控签名与
+R3-2 定向 cell 同型（评估器跨战役稳定旁证，bounded）；O-N2 解析规则
+两侧（坍缩/冲突、删除/迁移）均已受探针覆盖。
+
+**下一门（全部归 human）**：R3-3 结果 second layer；R3-4 保持 LOCKED
+（本结果不自动开启）；是否开启 R3-4 或登记新未覆盖边界归 human 裁定。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3 Design（R3-N）rev.2 = RATIFIED
+R3-3 execution          = EXECUTED（R33N-20261003T114301Z-69359）
+R3-3 campaign           = NO-COUNTEREXAMPLE / fixture-slice bounded
+R3-3 second layer audit = AUDIT PASS（11/11）
+R3-3 second layer       = PENDING HUMAN REVIEW
+R3-4                    = LOCKED（本结果不自动开启）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on R3-3 results; R3-4 opening decision
+```
+
+### R3-3 SECOND LAYER = BOUNDARY INTERPRETATION REVIEW COMPLETE — 正式边界结论登记 — R3-4 两个路线选项登记（不代选）— 2026-10-03
+
+human 指令进入 R3-3 second layer（边界解释审查非重跑审计）：审查
+「R3-2+R3-3 合并后差分敏感性画像获得多少新边界信息、有无应改变解释的
+证据」。审查交付 `SIMIGO_LAB_R3_3_SECOND_LAYER_20261003.md`，五点结论：
+
+1. **10 个 HOLD = instance-level 探针非 clause 级验证**：每 N-op 是
+   其声明条款 HOLD 侧的一个实例探针；条款级普遍性仍是超出探针的外推、
+   保持开放。补强定位：探针选择规则误实现时最可能破的侧面——instance
+   级无反例+R3-2 侧 9/9 匹配，共同排除 spuriously-BROKEN/HOLD 两类
+   系统性行为，非穷尽条款外延。
+2. **三正控仅证明 evaluator 活性**：排除假 NO-COUNTEREXAMPLE 的
+   「evaluator 死亡」机制，不为 N-cell HOLD 提供正确性担保（HOLD 的
+   正确性依据=规则条款预测，正是被检验对象）。**残余缺口登记**：
+   NO-COUNTEREXAMPLE 相对于评估器检出力成立——检出力=签名词表可表示
+   的 break 形态=操作化边界（条件即 Spec rev.2 操作化定义），如实
+   登记不掩饰。
+3. **共享盲区登记（独立性成立与共享盲区并行不悖）**：数据层零污染
+   （inv-1..5 已证）≠结构层无盲区——B-1 证据图规模形态（5 键小图）/
+   B-2 摘要绑定粒度（字节级；内容寻址 defer）/B-3 IS 形态（单索引
+   文件树）/B-4 并发（单写者单变化，整个 R3 的结构性未测域）/B-5
+   时间动态/B-6 评估器同一性（两 campaign 共用同一评估代码——对
+   Spec 条款「一致但错误」的读法会在两侧一致；**跨战役一致≠正确**）。
+   双侧证据是「同一表征边界与同一评估框架内」的双侧。
+4. **正式边界结论（registered synthesis，采纳 human 表述+instance
+   级限定词）**：「在当前 fixture 结构类、共享表征边界（符号名锚引用/
+   文件型 IS/字节摘要绑定）与预注册观察程序下：BROKEN 侧 9/9 定向
+   变化以预测签名击穿其定向条件（R3-2）；HOLD 侧 10/10 规则未测
+   HOLD 侧实例未产生任何条件击穿（R3-3）；三条件判定路径活性经逐
+   条件正控证实。当前差分敏感性画像在两侧均有 instance-level 边界
+   证据。不推导：clause 级普遍性；条件正确性·最小性·完备性；
+   continuation 行为；普遍 Cons；PALACE/IPAC/Route 含义。」
+5. **R3-4 决定框架（两个路线选项登记，不代选）**：R3-4 综合问题形式
+   上开放，但当前开启其答案须携带 instance-level/单一 fixture/IS-X
+   未测/表征变体未测/continuation 未测五重限定词——增量信息与限定词
+   不成比例。**IS-X 是唯一未覆盖的 in-scope 结构类**（复合 ΔIS 可
+   揭示条件间交互，直接喂 RQ3-4/完备性），是有意义综合的前提而非
+   综合本身。选项 **α**=先开 IS-X 探针战役（沿用 R3-N 纪律）使
+   in-scope 全覆盖后再进 R3-4 综合；选项 **β**=接受当前双侧边界证据
+   为 R3 终局、正式关闭 R3（IS-X/表征变体登记为开放边界）。
+
+**边界**：本审查不修改 R3-3 结论（NO-COUNTEREXAMPLE 维持原判读）；不
+自动开启 R3-4；α/β 归 human 裁定；全部限缩读法与排除清单维持。
+
+当前状态：
+
+```text
+R3-0                    = APPROVED / DESIGN SEALED / GIT SEALED @1c8c463
+R3-1 Spec rev.2         = RATIFIED / FORMAL JUDGMENT RULE
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3 Design（R3-N）rev.2 = RATIFIED
+R3-3 execution          = EXECUTED（R33N-20261003T114301Z-69359）
+R3-3 campaign           = NO-COUNTEREXAMPLE / fixture-slice bounded
+R3-3 second layer audit = AUDIT PASS（11/11）
+R3-3 second layer       = COMPLETE / 正式边界结论登记
+R3-4                    = LOCKED / 两路线选项（α IS-X 先行 | β 收官）归 human
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision: α（IS-X 探针战役）或 β（R3 有界收官）
+```
+
+### α SELECTED — IS-X DESIGN GATE AUTHORIZED / EXECUTED — DESIGN DELIVERED — INDEPENDENT REVIEW PENDING — 2026-10-03
+
+human 裁定：**走 α（理由=IS-X 是唯一未测的 in-scope 核心结构类，跳过
+它关闭 R3 会留下需要事后解释的空洞），但只开 IS-X Design Gate 不开
+实验**；R3-2/R3-3 正式收口维持；R3-4 LOCKED。研究问题收窄（human 逐字
+锁定）：**当两个已分别具有预登记 HOLD/BROKEN 行为的 IS 变化组合发生
+时，其联合效应是否仍可由各单变量条件的机械规则独立预测，还是出现新的
+交互型条件行为**；反滑坡条款预注册=同条件双 BROKEN 朴素叠加本身不惊
+奇，有信息量的是与单变量预测不一致的联合行为或组合规则下的可解释性
+维持。
+
+设计交付 `SIMIGO_LAB_ISX_DESIGN_GATE_20261003.md`，六项锁死：
+
+1. **组合目录机械生成（§2，冻结 12 有序对）**：从冻结单变量池
+   （R3-2 13 op+R3-N 10 op）按交互相关分层抽取——跨条件 BROKEN×
+   BROKEN（X-01..X-04：I×A/I×C/A×C/I×C）+同条件 BROKEN×BROKEN
+   （X-05..X-07）+**遮蔽候选 X-08=(I-Δ2,I-Δ3)**（先删谱系原项再写
+   冲突项：朴素预测 I BROK，组合态谱系解析收敛于冲突项→联合可能
+   SATISFIED——顺序依赖的结构性探针）+其逆序 X-09+HOLD×HOLD
+   （X-10/X-11）+跨类 X-12；静态兼容性逐对核验（不兼容对排除如
+   (C-Δ1,Δ6) 双序皆错）；执行期 pre-flight：组合报错⇒cell 记
+   INVALID-COMPOSITION（预注册类）禁现场换对；目录 seal 冻结。
+2. **联合预测 P_comp 结果前机械确定（§3）**：构造时由冻结单变量预测
+   器合成——P_comp(X)=BROKEN(sig-set)（单边破=该签名；双边破=并集）
+   /HOLD（双 HOLD）；随构造记录锁定先于任何联合评估。
+3. **交互分类法预注册（§4，机械分类）**：ADDITIVE（联合==P_comp）/
+   **MASKING**（预测 BROKEN 联合 SATISFIED）/**EMERGENT-BREAK**（预测
+   HOLD 联合 BROKEN——RQ3-4 素材）/SIGNATURE-SHIFT（BROKEN 但签名
+   ∉sig-set）/ATTRIBUTION-FAILURE（⇒INCONCLUSIVE I-3）；分类歧义⇒
+   INCONCLUSIVE；**双条件同时 BROKEN 显式允许**（sig-set 规则处理
+   签名归属）。
+4. **三正控/K-0/独立性沿用（§5）**：R32N-SANITY-A/I/C+K-0 与 R3-N 同
+   源；§1a setup lock（fresh formation）；inv-1..5 沿用；目录来源=
+   冻结 op 池结构+静态兼容性非既往 outcome。**16 cell**（12 对+3
+   正控+K-0）。
+5. **无修补封闭（§6）**：目录/预测/分类法/出口 seal 冻结；出现
+   MASKING/EMERGENT/SIGNATURE-SHIFT **不触发任何规则或目录修补**——
+   闭合后进边界复审门；停止条件 S-1..S-5/S-N2/S-N3/S-N4 沿用+
+   **S-X1**：INVALID-COMPOSITION cell 不停止（系统性组合失败⇒S-4）。
+6. **出口结构预注册（§7，任一出口不自动开启 R3-4）**：ALL-ADDITIVE
+   （组合性 bounded 成立→R3-4 综合或收官的输入）/INTERACTION-FOUND
+   （≥1 MASKING/EMERGENT/SIGNATURE-SHIFT→边界复审门）/INCONCLUSIVE/
+   STOP-INVALID。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design Gate        = AUTHORIZED / DESIGN DELIVERED / INDEPENDENT
+                          REVIEW PENDING
+IS-X execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = independent review of the IS-X design; execution remains
+       unauthorized
+```
+
+### IS-X DESIGN INDEPENDENT ADVERSARIAL REVIEW（human 亲审）= PASS WITH RECOMMENDATIONS — REV.2 APPLIED — DESIGN RATIFIED — EXECUTION STILL UNAUTHORIZED — 2026-10-03
+
+human 亲自执行 IS-X Design 独立对抗审查（六锁死点+「设计自洽但实验
+无效」漏洞攻击）。审查记录 `SIMIGO_LAB_ISX_DESIGN_REVIEW_20261003.md`。
+六锁死点判定：①组合目录⚠️需加固（X-08/X-09 遮蔽语义须构造期形式化）
+/②P_comp ✅/③交互分类⚠️需加固（SIGNATURE-SHIFT 与 ADDITIVE 边界需机
+械化）/④控制独立性✅（但 IS-X 新增「组合构造有效性」层）/⑤无修补✅
+（禁 outcome-driven patch 尤其重要）/⑥出口结构✅。
+
+**四项强制加固（human 原文要点）**：
+
+- **H-X1（最重要）**：X-08/X-09 遮蔽不得依赖语义解释——「冲突项导致
+  解析收敛」若依据实际结果才识别即为结果后定义。rev.2 §2a：构造期
+  **resolution expectation lock**——由冻结 op 的文件/索引效应做构造
+  期状态追踪，逐对机械生成（X-08：candidate_count=1/resolved_target=
+  conflict 记录/surviving_anchor=conflict；X-09：candidate_count=0/
+  expected I-NF）；实验后只允许问「实际解析==预登记期望？」，禁反向
+  解释。
+- **H-X2**：ADDITIVE 双层定义——**全部三条件状态与 P_comp 相等 AND
+  每条件实际签名 ∈ P_comp sig-set**；「状态正确但签名变化」归
+  SIGNATURE-SHIFT。cell 标签=固定互斥优先级（ATTRIBUTION-FAILURE →
+  SIGNATURE-SHIFT → MASKING/EMERGENT-BREAK → ADDITIVE；subtype 逐
+  条件登记于 detail，标签优先级化信息不丢失）。
+- **H-X3**：INVALID-COMPOSITION 机械边界=**仅构造失败**（冻结 op 抛
+  错、组合物无法按预登记规则形成）；组合物成功形成后 evaluator 的
+  任何异常响应**必须进实验结果**（真实交互分类），不得提前吞掉——
+  后者可能恰是 EMERGENT-BREAK；组合态结构缺失按既有 in-cell 规则
+  （H-C）处理不属 INVALID。
+- **H-X4**：构造审计不变量（每 X-cell，非新实验 cell）——CI-1 op 呈
+  现/CI-2 op_a 效果探针/CI-3 op_b 效果探针/CI-4 无未声明操作（组合树
+  ==重放树逐字节）/CI-5 顺序匹配；违例⇒cell INCONCLUSIVE（构造疑云，
+  S-X2），系统性⇒S-4。
+
+**附加项**：X-12 结构性覆盖理由入档（R=**exclusion-set 组合闭包**——
+两 op 独立扩张同一 manifest 的 out_of_scope 集，检验边界图不被
+last-writer clobber；X-11 的 Δ8/Δ9 只做加法式 RMW 从不触碰
+out_of_scope，故 X-12 非凑数）；X-10/X-11 的 EMERGENT-BREAK 读法确认
+（≠Consistency law false，bounded）；反滑坡条款肯定（ADDITIVE=
+baseline/INTERACTION=deviation，保持不变）。
+
+**处置**：rev.2 机械补入 H-X1（§2a resolution lock）/H-X2（§4 双层
+ADDITIVE+互斥优先级）/H-X3（§1a 边界）/H-X4（§2a 构造审计不变量+
+S-X2）+X-12 理由，修订记录入档。**IS-X Design = RATIFIED（正式设计）**。
+**边界：RATIFIED ≠ execution authorization；R3-4 LOCKED 维持。**
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED（12 有序对 + 3 正控 + K-0 = 16 cell）
+IS-X execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on IS-X execution authorization
+```
+
+### IS-X EXECUTION READINESS REGISTERED — EXECUTION STILL NOT AUTHORIZED — 2026-10-03
+
+human 确认三项：
+
+1. **四个攻击面确认封死**：H-X1（X-08/X-09 resolution expectation 构造
+   期锁定，禁结果后解释）/ H-X2（ADDITIVE 同时要求 condition-state 与
+   signature-set 匹配+互斥分类）/ H-X3（严格区分 construction failure
+   与 evaluator 对有效组合物的异常响应）/ H-X4（CI-1..CI-5 把 IS-X
+   新增的「组合构造层」纳入审计而未偷偷改变实验问题）——其中 CI-1..
+   CI-5 被点名为关键（组合构造层入审计且不扩大实验 cell 数量）。
+2. **执行序列预注册（获授权后沿用）**：`harness extension →
+   commit/push → setup lock → 16-cell preregistered campaign →
+   independent audit → second layer`。
+3. **R3-4 不因实验结果自动开启**——只有后续明确进入 R3-4 决策门，才
+   讨论收官或继续。
+
+**边界：获得 IS-X execution authorization 以前，不实现、不运行 IS-X
+fixture。**
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED（执行纪律已预注册）
+IS-X execution          = NOT AUTHORIZED
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on IS-X execution authorization
+```
+
+### IS-X EXECUTION AUTHORIZED / EXECUTED — CAMPAIGN INCONCLUSIVE（局部化：单 cell 构造完整性探针实现缺陷）— AUDIT 9/11 — HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 IS-X execution（fixture 实现+16-cell campaign+独立结果审计）；
+设计 rev.2 零修改；执行纪律按预注册序列：harness 扩展（评估程序零改动；
+`isx_lib` 冻结 12 有序对+逐 op 效果断言+P_comp 机械合成+H-X1 resolution
+expectation；`isx_setup/run_cells/adjudicate/second_layer_audit`）→
+commit `5c3a463`（治理封存）+`cce102d`（harness）→ push+远端回验 →
+setup lock → 16-cell execution → 独立判读 → second layer 审计。
+
+**Campaign setup（§1a lock）**：run_uuid=`R33X-20261003T122818Z-70152`；
+fresh formation（零既往 run 产物读取）；t₀ 一次性判定全 SATISFIED ⇒
+validity 固定；三重 harness 哈希钉死。
+
+**Campaign 结果（16 cell）**：11/12 pair **ADDITIVE**（跨条件
+I×A/I×C/A×C 全部按预测签名击穿且互不溢出；同条件 I/A/C 双 BROKEN 的
+sig-set 并集规则全部成立——**反滑坡条款经受实证**：朴素叠加被机械
+分类为 ADDITIVE 而非「交互」）；**X-08 = MASKING（实际出现）**——
+P_comp=I BROK{I-NF,I-AMBIG}，联合态 I SATISFIED，**H-X1 resolution
+expectation 验证相等**（expected=1=actual，resolved=conflict 记录：
+预登记解析路径逐项吻合，非结果后解释）；X-09 逆序=ADDITIVE（I-NF ∈
+sig-set）；SANITY×3 OK（三路径活性）；K-0 持有；integrity 全净；
+INVALID-COMPOSITION 零。
+
+**战役判读：INCONCLUSIVE（H-2/S-N4 传染：cell-06 S-X2 构造完整性
+CI-2 违例 ⇒ 其判定不可用 ⇒ 不得宣称 ALL-ADDITIVE/INTERACTION-FOUND）**。
+
+**根因定位（字节级）**：cell-06 组合物形成正确（CI-4 replay 恒等通过）；
+A-Δ3 的替换效果在组合态存留（universe/R-1.json 摘要 5c633798… ≠ IS₀
+03332d18…）；CI-2 失败仅因**效果探针按路径钉死**（objects/R-1.json 已
+被 A-Δ2 合法迁空）——**实现层探针缺陷（路径基 vs 对象追踪），非真实
+构造交互**；按冻结规则照记 cell INCONCLUSIVE，未做现场修补。
+
+**独立审计 9/11**：两处 FAIL 均已定位——①CI 重验证同根因；②审计脚本
+自身范围缺陷（对被判 INCONCLUSIVE 的 cell-06 也重算分类）——如实登记。
+
+**实质发现（per-cell 数据，因战役 INCONCLUSIVE 不作 campaign 级宣称）**：
+F-1=X-08 MASKING candidate（两个单独可击穿 I 的操作组合后 I 恢复
+SATISFIED——组合可遮蔽击穿；解析成功≠谱系正确，机械规则按定义不判
+语义正确性——RQ3-4/操作化边界一手素材，待清洁重跑确认）；F-2=顺序
+依赖（X-08 MASKING vs X-09 ADDITIVE——同组成异顺序异联合行为，预注册
+有序对使其可见）；F-3=构造层交互现象（op_b 重定位使 op_a 效果位点
+迁移——CI 探针须对象追踪非路径钉死）。
+
+**纪律路径（全部归 human；不自动重跑）**：①本 campaign 全量保全为
+证据（INCONCLUSIVE 非失败）；②harness 探针修订（效果断言对象化）=
+implementation revision ⇒ 独立 review/reaudit；③修订后 IS-X attempt
+#2 须**新的显式 execution authorization**（本授权已消耗）；④R3-4
+LOCKED 维持——INCONCLUSIVE 战役不构成综合输入。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED
+IS-X execution          = EXECUTED（R33X-20261003T122818Z-70152）
+IS-X campaign           = INCONCLUSIVE（局部化：cell-06 CI-2 探针实现
+                          缺陷；15/16 cell 有效数据保全）
+IS-X second layer audit = 9/11（两 FAIL 已定位）
+IS-X second layer       = PENDING HUMAN REVIEW
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on IS-X results; attempt #2 authorization
+       decision（须先探针修订 review/reaudit）
+```
+
+### IS-X SECOND LAYER = HUMAN RULING REGISTERED — CAMPAIGN INCONCLUSIVE 永久保留 — X-08 = MASKING CANDIDATE（per-cell）— ATTEMPT #2 NOT AUTHORIZED — 2026-10-03
+
+human 亲自完成 IS-X second layer（结果边界审查与后续路径裁定；不授权
+attempt #2、不修改 harness、不打开 R3-4）。
+
+**核心判断（human 原话登记）**：「IS-X attempt #1 = 有效产生高信息量
+局部证据，但 campaign-level 结论必须维持 INCONCLUSIVE。X-08 MASKING
+是一个已被实际观察到、且 H-X1 resolution expectation 与实际结果一致的
+candidate interaction finding，但在 attempt #1 的 campaign-level
+INCONCLUSIVE 状态下，不能升级为正式的 IS-X INTERACTION-FOUND。
+attempt #2 有明确的必要性，但本轮不构成其执行授权。」与「失败」有本质
+区别：实验发现了原设计真正想寻找的现象，同时暴露了一个设计审查未发现
+的 **construction-observation interface defect**。
+
+**① INCONCLUSIVE 正确且必须坚持**：CI violation→cell INCONCLUSIVE→
+contagion→campaign INCONCLUSIVE 发生在构造完整性层而非普通 evaluator
+结果；即使 CI-4=PASS、A-Δ3 effect 实际存续、CI-2=probe defect 已证，
+也不能事后把 INCONCLUSIVE 改成 VALID——否则=实验完成后用根因分析撤销
+preregistered stop/contagion rule。**campaign INCONCLUSIVE 永久保留。**
+
+**② 三层证据区分（不得混层）**：Layer A campaign validity=INCONCLUSIVE
+（不可变）；Layer B individual cell validity=15/16 未受直接影响、数据
+保全、但**不得重新组合成新 campaign-level conclusion**；Layer C X-08
+独立现象=强候选证据。正确措辞=「X-08 MASKING candidate observed under
+the preregistered construction/resolution expectation」，而非「IS-X 已
+证明存在 interaction」。
+
+**③ X-08 两层限定**：不证明 Cons law 被推翻（IS-X 对象=单变量机械预测
+vs 联合观测行为，非直接证伪 Cons≡I∧A∧C）；不证明一般性 interaction
+（单实例+campaign INCONCLUSIVE）。最严格状态=**F-1 = X-08 MASKING
+CANDIDATE = high-information per-cell observation = requires clean
+confirmation**。
+
+**④ X-09 意义=顺序敏感联合行为**（精确表述：非「一般非交换性」，只=
+「当前 fixture/representation/operation pair 中发现顺序相关联合行
+为」）；**X-08/X-09 应作为 attempt #2 的核心确认对**（same operands
+different order 的天然对照——区分 operation interaction 与 specific
+construction ordering artifact）——attempt #2 不是原样重跑 16 cell。
+
+**⑤ F-3 单独登记为 instrumentation / construction-observation
+finding**：CI-2 实测的是「effect remains at this **path**」而非
+「effect remains on this **object**」=**measurement model mismatch**；
+最准确表述=「IS-X exposed a construction-integrity probe that was
+path-sensitive where the intended invariant was object/effect-
+sensitive」——非实验失败、非构造交互；副产品=发现了「构造正确性」与
+「构造效果观测」之间**原本未被显式建模的第三层边界**（正是 IS-X 首次
+进入联合构造才可能暴露的问题）。
+
+**⑥ 审计状态冻结=9/11 PASS + 2 FAIL localized，不得改写 11/11**——除
+非 audit script revised→independently reviewed→rerun→11/11。第二 FAIL
+说明 audit layer 未完全遵守 campaign-level INCONCLUSIVE containment ⇒
+attempt #2 前**不仅修 CI-2，audit scope 也必须修（R2）**。
+
+**⑦ attempt #2 必要条件（修订边界收窄）**：**R1**=CI-2 从 path-based
+断言改为 **object/effect identity based assertion**，并证明「合法迁移
+≠ effect disappearance」；**R2**=audit classification containment
+（cell.status==INCONCLUSIVE ⇒ audit 不得 classify 该 cell，只验证
+INCONCLUSIVE reason+evidence chain+containment）。两者均 implementation
+revision ⇒ revision→independent review→reaudit→**new execution
+authorization**。
+
+**⑧ attempt #2 不得悄悄变成重跑全部**：目的首先是**验证修复后的观察
+机制并重新确认 X-08/X-09**（核心确认对）；无新设计门不得加入：新
+IS-X op / representation variant / concurrency / temporal dynamics /
+PALACE·IPAC·Route / R3-4 新问题——全部排除维持。
+
+**最终裁定（human 逐字，登记为官方结论）**：「这次实验不能被宣布为成
+功，也不能被宣布为失败。最准确的研究结论是：**IS-X attempt #1 按预注
+册规则为 INCONCLUSIVE；其 INCONCLUSIVE 原因已被字节级定位为构造完整性
+探针的路径基实现缺陷，而非组合物形成错误。与此同时，X-08 在预登记
+resolution expectation 与实际解析结果一致的条件下观察到 MASKING，X-09
+提供了相同操作集不同顺序下的对照现象。两者目前均属于需要清洁复核的局
+部证据，而不是 campaign-level interaction finding。**」
+
+当前状态（human 锁定格）：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED
+IS-X Campaign #1        = INCONCLUSIVE / permanently retained
+Cell-06                 = INCONCLUSIVE / CI-2 probe implementation defect
+                          localized
+X-08                    = MASKING CANDIDATE / high-information per-cell
+                          observation / not campaign-level INTERACTION-FOUND
+X-09                    = ADDITIVE / order-sensitive contrast retained as
+                          per-cell evidence
+F-3                     = instrumentation / construction-observation finding
+Independent audit       = 9/11 / 2 localized implementation defects / not yet PASS
+R3-4                    = LOCKED
+Attempt #2              = NOT AUTHORIZED
+Next = IS-X implementation revision review（R1 object/effect tracking +
+       R2 audit INCONCLUSIVE containment）→ independent re-review/reaudit
+       → new human execution authorization；R3-4 继续 LOCKED
+```
+
+### IS-X IMPLEMENTATION REVISION DELIVERED + REAUDIT PASS（9/9）— ATTEMPT #2 仍 NOT AUTHORIZED — 2026-10-03
+
+按 human 裁定开启 **IS-X implementation revision review 门**（只修 R1+
+R2；Attempt #1 证据永久保全；不重跑不修改结果）。交付
+`SIMIGO_LAB_ISX_IMPL_REVISION_20261003.md`（R1/R2 规格+验证闭包
+RC-1..RC-5+独立性护卫 G-1..G-4）与修订代码（commit 至远端）：
+
+- **R1（CI-2 对象/效果恒等追踪）**：效果断言从路径钉死改为三类对象
+  身份代数——key-identity（钉定精确键解析+bytes_vs_is0 比较）/
+  content-identity（IS₀ 字节全树恒等搜索）/ manifest-field·record
+  身份；逐 op 声明式 OP_EFFECT_SPEC；**合法迁移≠效果消失的机械区分**
+  （迁移=key 解析成功+位点≠IS₀+内容关系符合声明；消失=声明关系不
+  成立）；无路径依赖、无隐式语义判断。
+- **R1 精化（组合稳健性原则，reaudit RC-1 首轮定位）**：I-Δ3 的
+  key-resolves 断言在 X-09 组合态被 I-Δ2 的自身声明效果合法覆盖
+  （pop 键正是 X-09 I-NF 的产生机制）——过强断言移除，保留
+  file-present(conflict)（创建效果，组合稳健）；**原则登记**：效果
+  断言只声明 op 自身构造效果（创建/删除/原地变更/迁移目的地），不断
+  言可被共存 op 合法变换的状态性质；X-09 键覆盖数据保留于 X-09 判读
+  记录——精化不隐藏任何判定相关事实。
+- **R2（审计包含规则）**：INCONCLUSIVE/INVALID-COMPOSITION/
+  SANITY-FAILED cell **绝对排除分类重算**；审计只验证预注册 reason
+  码+证据链+containment（零统计泄漏）；分类重算仅施于有效 cell。
+
+**IMPLEMENTATION REAUDIT PASS（9/9，作用于 Attempt #1 保全证据——零新
+cell、零战役重跑、Attempt #1 工件零覆写）**：
+
+```text
+RC-1  修订探针 12/12 对全 PASS；cell-06 A-Δ3 key-substituted PASS
+      =「合法迁移≠效果消失」直接实证（此前 CI-2 误报的探针缺陷修复
+      得到验证）
+RC-2  cell-06 被包含（排除分类重算；reason/chain 验证）；零分类泄漏；
+      修订后分类重算与判读在有效 cell 上一致——原审计范围缺陷修复
+RC-3  判读确定性：cell-06=INCONCLUSIVE 维持；战役 verdict=INCONCLUSIVE
+      维持
+RC-4  IS-X Design rev.2 零 diff（研究规则/目录/预测器未触）
+RC-5  语义边界：reaudit PASS 不修改 Attempt #1 判读——只证明仪器缺陷
+      已修+包含规则生效；attempt #2 仍须新的显式 human execution
+      authorization
+```
+
+独立性护卫核验：G-1 探针规格从 op 效果定义推导（先于 reaudit 冻结于
+修订文档，X-08/X-09 outcome 非输入）；G-2 分类规则本体零改动；G-3=
+RC-4；G-4 本门零新 cell。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED / Campaign #1 INCONCLUSIVE（永久保留）
+IS-X R1/R2 revision     = DELIVERED + IMPLEMENTATION REAUDIT PASS（9/9）
+IS-X Attempt #2         = NOT AUTHORIZED（设计准备许可已登记；执行须新
+                          显式 human authorization）
+R3-4                    = LOCKED
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human decision on IS-X Attempt #2 execution authorization
+```
+
+### IS-X ATTEMPT #2 AUTHORIZED / EXECUTED — CONFIRMATION INTERACTION-FOUND（X-08 MASKING 复现）— AUDIT PASS（14/14）— HUMAN SECOND LAYER PENDING — 2026-10-03
+
+human 授权 IS-X Attempt #2 execution，范围严格锁定：A1 验证 R1 修复
+（X-06 重建）/A2 验证 R2 包含修复/A3 X-08/X-09 核心确认对；不重跑
+16 cell、不新增 op、Design rev.2/P_comp/分类零 diff、R3-4 不自动开启；
+**诚实条款预注册：X-08 若不再 MASKING 必须按预注册规则如实记录**。
+
+**执行**：确认 harness（`isx_confirmation.py` @ `ea55260`，commit+push
+先于执行）→ setup lock（run=`R33X-A2-20261003T130744Z-70945`；fresh
+formation 密封字节重读；t₀ 一次性全 SATISFIED ⇒ validity 固定；四重
+harness 哈希钉死；**执行瑕疵透明登记**：首次启动因脚本变量笔误中断于
+任何 cell 运行之前，零 campaign 工件产生，修复 commit 后正式执行）→
+6-cell 确认战役 → 确认判读 → second layer 审计。
+
+**核心确认对结果**：
+
+- **X-08 (I-Δ2, I-Δ3) = MASKING 复现**——P_comp=I BROK{I-NF,I-AMBIG}，
+  联合态 I SATISFIED；**H-X1 验证相等**（expected=1=actual，resolved=
+  conflict 记录，预登记解析路径逐项吻合）；
+- **X-09 (I-Δ3, I-Δ2) = ADDITIVE 复现**（I-NF ∈ sig-set；expected=0=
+  actual）——**顺序依赖结构现象跨战役复现**：同组成异顺序异联合行为，
+  在独立 formation/独立 run-UUID/独立 t₀ 的 fresh campaign 中重复；
+- SANITY×3 全按预测 BROKEN（三路径活性）；K-0 持有；integrity 全净；
+  **零 CI 违例（R1 修复运行中生效）**。
+
+**修复验证**：A1=确认 cell 零 CI 违例+独立重建（A-Δ3∘A-Δ2）组合修订
+探针零误报（legal migration ≠ effect disappearance 机械实证）；A2=
+分类重算仅施于有效 pair cell（Attempt #1 范围缺陷不再出现）。
+
+**判读与审计**：campaign_verdict（confirmation-scoped，per design §7
+rev.2）= **INTERACTION-FOUND**；**second_layer_audit = AUDIT PASS
+（14/14）**。透明登记：审计 v1 一次 FAIL 系审计表达式布尔优先级缺陷+
+判读报告缺 interactions 字段（判读脚本省略）——均为脚本层缺陷，底层
+cell 数据零变更；interactions 字段从 per_cell 旗标机械重建（零判定变
+更）后复跑 14/14，全程透明登记。
+
+**解释边界（逐字义务）**：允许=X-08 MASKING 升格为 **confirmed
+（复现级）interaction finding**（bounded 于当前 fixture/表征/操作对）
++顺序依赖跨战役复现+机制读法（组合可遮蔽单变量击穿；**解析成功≠谱系
+正确**；机械规则按定义不判语义正确性=操作化边界一手实证）；禁止=证
+Cons law 推翻（IS-X 对象非直接检验 Cons≡I∧A∧C 且 I 操作化=可评估性）/
+证一般 interaction 或非交换性（单操作对单 fixture 单表征）/升格普遍
+Cons 或条件完备性（RQ3-4 开放）/开启 continuation·PALACE·IPAC·Route。
+
+**三层边界维持**：Attempt #1 campaign verdict=INCONCLUSIVE 永久保留；
+Attempt #2 confirmation=INTERACTION-FOUND（独立 campaign 独立判读）；
+合并读法=X-08/X-09 现象在两个独立 campaign 中一致出现。**下一门（归
+human）**：Attempt #2 结果 second layer；**R3-4 开启决定**（证据基础
+=BROKEN 侧 R3-2+HOLD 侧 R3-3+交互侧 IS-X confirmed：in-scope 结构类
+已全部受探针，综合限定词负担显著下降）或有界收官关闭 R3。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = EXECUTED / Campaign #1 INCONCLUSIVE（永久保留）
+IS-X R1/R2 revision     = DELIVERED + REAUDIT PASS（9/9）
+IS-X Attempt #2         = EXECUTED（R33X-A2-20261003T130744Z-70945）
+IS-X Attempt #2         = CONFIRMATION INTERACTION-FOUND（X-08 MASKING
+                          复现）/ fixture-slice bounded
+IS-X Attempt #2 audit   = AUDIT PASS（14/14）
+IS-X second layer       = PENDING HUMAN REVIEW
+R3-4                    = LOCKED（开启决定归 human；不自动开启）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human second layer on Attempt #2; R3-4 opening decision
+```
+
+### IS-X ATTEMPT #2 SECOND LAYER = PASS WITH BOUNDED CONFIRMATION — X-08 = CONFIRMED MASKING（replication-level）— R3-4 QUALIFIED TO OPEN / NOT AUTOMATICALLY OPEN — 2026-10-03
+
+human 亲自完成 IS-X Attempt #2 second layer（证据闭合+解释边界+R3-4 资
+格审查；不直接决定开启 R3-4）。裁定与登记：
+
+**① 有效性闭合（完整修复链）**：Attempt #1 → 发现 CI-2 path-based
+defect → R1/R2 implementation revision → independent implementation
+reaudit 9/9 PASS → fresh Attempt #2 → zero CI violations → X-08/X-09
+reproduced → independent audit 14/14 PASS——第二次 campaign 同时验证了
+R1 对象/效果恒等追踪/R2 INCONCLUSIVE containment/X-08 resolution
+expectation/X-09 inverse-order behavior/evaluator 三路径活性/K-0/
+fresh formation·run UUID·t₀；Attempt #2 不存在 Attempt #1 那种已知
+instrumentation defect。
+
+**② X-08 正式升格**：**X-08 = CONFIRMED INTERACTION FINDING = MASKING
+= replication-level = fixture-slice bounded**——「confirmed」指该实验
+现象已被独立确认，不指 Consistency law confirmed/disproved、不指
+general interaction law confirmed。
+
+**③ X-09 = CONFIRMED ADDITIVE / order-sensitive contrast**：same
+operands、different order、different joint behavior 且第二次独立
+campaign 复现。最严格结论=「在当前 fixture/representation/operation
+pair 中，联合行为表现出**可复现的顺序敏感性**」——不扩大为一般非交换
+性，但已非偶然 observation。
+
+**④ 机制性读法（本次最值得保留，human 压缩表述）**：
+`Δ2→I BROKEN；Δ3→I BROKEN；Δ2⊕Δ3→I SATISFIED；Δ3⊕Δ2→I BROKEN`——
+IS-X 实际发现的不是「两个操作一起改变结果」，而是：**两个单独足以触发
+I-BROKEN 的操作，在特定组合顺序下可以相互改变其可观察的联合效果；该
+联合效应不能由当前冻结的单变量机械组合规则 P_comp 独立预测**——正好
+回答 IS-X 收窄后的研究问题。
+
+**⑤ 「解析成功 ≠ 谱系正确」维持操作化边界定性**：X-08 的 I=SATISFIED
+不意味谱系语义正确——R3-1 的 I 判断本就是 identity evaluability/
+mechanical evidence condition 而非语义正确性证明。可以说「组合后的解
+析成功不能单独推出谱系关系正确」（有价值的操作化边界）；**不能说**
+「X-08 证明了系统存在错误谱系」——除非未来有独立 semantic correctness
+oracle，而当前 R3 明确没有。
+
+**⑥ 两个脚本问题的纪律处置**：首次启动变量笔误=发生在任何 cell 运行
+之前的 **pre-execution startup interruption、zero experimental
+artifact**——不影响 Attempt #2 有效性；audit 14/14 须在治理记录中明确
+为「**修复审计脚本后的最终 audit result，而非第一次运行即得到 14/14**
+」（审计链透明）。
+
+**⑦ Attempt #1/#2 三层关系（最重要的治理判断）**：禁止写「Attempt #1+
+#2 = 22 valid cells = campaign confirmed」。正确关系=Attempt #1
+（Campaign INCONCLUSIVE；15/16 usable local data；X-08=candidate）‖
+Attempt #2（Confirmation campaign=INTERACTION-FOUND；X-08=MASKING
+confirmed；X-09=ADDITIVE confirmed）。唯一合法合并读法=「Attempt #1
+首次发现 X-08 候选现象；修复 R1/R2 后，独立 Attempt #2 确认 X-08/X-09，
+复现 X-08 MASKING 与同操作集逆序 ADDITIVE 对照」。
+
+**⑧ R3-4 资格判断**：「已具备开启 R3-4 的证据基础」成立（≠「R3-4 已
+开启」）。R3 内部形成清晰三侧证据结构——R3-2 BROKEN side（9/9 targeted
+changes）↓ R3-3 HOLD side（10/10 uncovered HOLD probes）↓ IS-X
+interaction side（X-08 MASKING+X-09 order-sensitive contrast，
+independently replicated）——相比 R3-3 second layer 时**继续开启 R3-4
+已具有明确研究依据**。但 R3-4 的任务不能是「证明 R3 成功」，应是真正
+的 **bounded synthesis / boundary adjudication gate**。
+
+**⑨ 若开启 R3-4，问题收窄（human 建议）**：「在当前 fixture、
+representation 和既有 observation procedure 下，R3-2、R3-3 与 IS-X
+是否足以支持一个关于 differential sensitivity profile 的有界综合结论；
+IS-X 所发现的 interaction 是否改变此前对 Cons 条件边界的解释。」可综
+合=当前 fixture 中的 differential sensitivity profile/当前表示边界下
+的 interaction evidence/当前操作化条件的边界；不能综合=Cons 普遍定律/
+I∧A∧C 充分必要性/condition correctness·minimality·completeness/一般
+interaction law/一般非交换性/continuation implication/PALACE·IPAC·
+Route。
+
+**最终状态（human 锁定）**：
+
+```text
+R3-2                    = FORMALLY CLOSED / SUPPORTED / fixture-slice bounded
+R3-3                    = FORMALLY CLOSED / NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE
+IS-X Design rev.2       = RATIFIED
+IS-X Attempt #1         = INCONCLUSIVE / permanently retained
+IS-X R1/R2 revision     = REAUDIT PASS 9/9
+IS-X Attempt #2         = CONFIRMATION INTERACTION-FOUND / fixture-slice
+                          bounded
+X-08                    = CONFIRMED MASKING / replication-level
+                          interaction finding
+X-09                    = CONFIRMED ADDITIVE / order-sensitive contrast
+IS-X Attempt #2 audit   = PASS 14/14
+IS-X second layer       = COMPLETE / PASS WITH BOUNDED CONFIRMATION
+R3-4                    = STILL LOCKED / QUALIFIED TO OPEN,
+                          NOT AUTOMATICALLY OPEN
+Next = 若 human 决定开启 R3-4：先做 R3-4 synthesis gate（综合门），
+       不直接写收官结论；R3-4 不自动开启
+```
+
+### R3-4 OPENED / SYNTHESIS GATE DELIVERED — BOUNDED SYNTHESIS = SUPPORTED（三区画像+边界裁定三点改变）— HUMAN REVIEW PENDING — 2026-10-03
+
+human 裁定**开启 R3-4**（任务定性沿预定：bounded synthesis / boundary
+adjudication gate，非「证明 R3 成功」；问题收窄逐字锁定；可/不可综合
+清单全程生效）。综合门交付
+`SIMIGO_LAB_R3_4_SYNTHESIS_GATE_20261003.md`：
+
+- **§1 三侧证据清单**：BROKEN 侧 R3-2（SUPPORTED/closed/audit 16-16）+
+  HOLD 侧 R3-3（NO-COUNTEREXAMPLE/closed）+ 交互侧 IS-X（#1
+  INCONCLUSIVE 永久保留‖#2 CONFIRMATION INTERACTION-FOUND，复现级）；
+  各侧证据级与边界（instance-level/检出力=操作化边界/禁 22-cell 合并）
+  并列登记。
+- **§2 综合一（可综合清单内）：差分敏感性画像三区结构**——区 1 单变量
+  定向侧（R3-2：I-MISMATCH/I-NF/I-AMBIG；A-NF/A-SUB；C-REF-NOT-FOUND/
+  C-INV，9/9 定向互不溢出）；区 2 单变量 HOLD 侧（R3-3：10/10 零击
+  穿）；区 3 复合侧（IS-X：多数 ADDITIVE——朴素叠加反滑坡条款经受实证
+  ——但 **X-08 CONFIRMED MASKING + X-09 逆序 ADDITIVE**：联合行为顺序
+  敏感且不能由 P_comp 独立预测）+逐条件 profile 表（I 可被组合遮蔽；
+  A/C 本 slice 未见交互）。
+- **§3 综合二（boundary adjudication）：IS-X interaction 改变此前对
+  Cons 条件边界的解释——是，三个改变点**：①**组合非封闭**（单变量敏
+  感性刻画不充分，画像对 P_comp 机械合成不封闭，顺序进入画像）；②**顺
+  序依赖**（IS 变化效应是有序序列的函数而非集合函数）；③**操作化边界
+  具体化**（解析成功≠谱系正确从抽象限定变为有一手实例的边界——条件满
+  足性是 evidence-condition 概念非 semantic-correctness 保证）。**两
+  个不改变点**：条件级观察词汇保持有效（MASKING 本身是条件级现象，无
+  超出 I/A/C 词汇的不可归类现象；RQ3-4 形态反例未出现——X-08 中
+  Cons 全程保持 true）；判定纪律不变。
+- **§4 终局四问终答**：RQ3-1 能（定向击穿+条件级交互）；RQ3-2 单变量
+  定向映射逐一确认+复合层顺序依赖 MASKING 不由 P_comp 预测；RQ3-3 区
+  2 全部+ADDITIVE 多数；RQ3-4 本 slice 未观察到不可归类现象（附检出
+  力=操作化边界注册）。
+- **§5 判定（预注册四态）**：**主判定=SUPPORTED（bounded）**——三侧
+  证据足以支持有界综合结论；IS-X interaction 确实改变边界解释（三点
+  逐项登记）。对 R2 Cons 候选定义=作为操作化刻画获 bounded 支持（经受
+  全部探针/无反例/三侧一致）+两项注册边界（操作化边界/组合非封闭）使
+  其不得升格为正确性/最小性/完备性证明；IPAC 保持 OPEN/NONBINDING。
+- **§6 非主张清单**：Cons 普遍定律/I∧A∧C 充分必要/correctness·
+  minimality·completeness/一般 interaction law/非交换性/continuation/
+  PALACE·IPAC·Route/产品普适外推——全部不主张。
+- **§7 后续关系**：本 gate=综合与边界裁定；**收官结论另行**（待 human
+  review 后由 human 决定收官形式）；X-08 语义层追问需独立 semantic
+  correctness oracle（未来独立研究问题）；开放边界登记（内容寻址表征/
+  并发/时间动态/多操作对）；R3 全程零模型零 Relation 零 PALACE。
+
+当前状态：
+
+```text
+R3-2                    = FORMALLY CLOSED（SUPPORTED / fixture-slice bounded）
+R3-3                    = FORMALLY CLOSED（NO-COUNTEREXAMPLE / bounded /
+                          second layer COMPLETE）
+IS-X                    = COMPLETE（#1 INCONCLUSIVE 永久保留 / #2
+                          CONFIRMATION INTERACTION-FOUND / second layer
+                          PASS WITH BOUNDED CONFIRMATION）
+R3-4                    = OPEN / SYNTHESIS GATE DELIVERED
+R3-4 synthesis          = SUPPORTED（bounded）/ 三区画像+边界裁定三点
+                          改变 / 两不改变点
+R3-4 收官结论           = NOT WRITTEN（待 human review 综合门后另行）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human review of the R3-4 synthesis gate; closing conclusion
+       thereafter by human decision
+```
+
+### R3-4 SYNTHESIS GATE REVIEW = SUPPORTED / BOUNDED / PASS WITH REVISIONS — REV.2 APPLIED — 收官依据就绪 — 2026-10-03
+
+human 按 synthesis gate 职责（非收官结论）完成审查。**判定=SUPPORTED /
+BOUNDED / PASS WITH REVISIONS**——措辞边界修订，非重实验、非推翻综合
+门；证据链无缺陷，但综合门有 4 处表述略超出当前实验实际支持范围，直
+接收官会有从「有界证据」滑向「普遍命题」的风险。
+
+**五项修订（rev.2 已全部机械应用）**：
+
+1. **R3-4-R1**：「组合非封闭」限定为「**单变量预测合成非封闭**」——
+   P_comp 对该复合操作实例的合成预测不封闭（当前 fixture/representation/
+   operation pair 下无法由两个单变量结果机械推出联合结果）；加显式否
+   定：「本发现不构成对 Cons 本身或条件系统的一般代数性质的陈述」。
+2. **R3-4-R2**：「顺序依赖」收紧为「**在本测试组合中，联合效应表现出
+   顺序敏感性；因此本 slice 内不能将复合变化建模为无序操作集合**」——
+   一组逆序对照不足以推出所有复合变化效应均为序列函数的一般命题。
+3. **R3-4-R3（human 认定最应修改处）**：「任何涉及复合变化的边界刻画
+   必须携带顺序参数」收紧为「**对已表现出顺序敏感性的复合变化，后续
+   边界刻画必须保留操作顺序信息；当前证据不足以证明所有复合变化均具
+   有该要求**」。
+4. **R3-4-R4**：「A/C 未见交互」固定为正式边界语言：「**在当前已测试
+   的 A/C 组合中未观察到 interaction；不能据此排除 A/C interaction**」
+   ——因为 concurrency/temporal/content-addressed/更多 op pairs/
+   semantic oracle 均已登记未测，此语应为正式边界语言而非藏在
+   limitations。
+5. **R3-4-R5**：R2 候选定义支持表述固定为「作为当前 fixture、
+   representation、operation catalog 与 observation procedure 下的操
+   作化刻画，获得 bounded empirical support；R3-2/R3-3/IS-X 未发现
+   **当前探针范围内的**反例」——「无反例」永远带探针域（R3-3 的
+   NO-COUNTEREXAMPLE 是严格 bounded result，不得在综合阶段悄悄提升为
+   unrestricted 无反例）。
+
+**human 特别肯定（登记）**：综合门没有犯容易犯的错误——未因 X-08
+MASKING 将其解释为 Cons 失败。X-08 证明的是「联合观察结果不能总由单
+变量结果的朴素组合预测」，而非「Cons ⟺ I∧A∧C 已被推翻」；X-08 中
+Cons 全程保持 true，使边界判断更干净：**交互发生在条件状态的形成/观
+测关系上，而不是出现了一个现有 Cons 判定框架无法分类的状态**。
+
+**review 审查表（human）**：三区（R3-2→区 1/R3-3→区 2/IS-X→区 3）全
+通过；X-08 可作为 confirmed bounded interaction finding；X-09 可作为
+bounded order-sensitive finding；三侧可以综合；改变 Cons 解释边界成立
+且改变点明确；不证明 Cons law（文档也未如此声称）；无当前 slice 内不
+可归类现象证据；**不可直接写 unrestricted R3 conclusion**；具备进入收
+官阶段的证据基础。
+
+**R3 最终产出定义（human 预定收官措辞）**：收官时最重要的不是宣布
+「R3 证明了 Cons」，而是明确把 R3 最终产出定义为：**一个经过单变量
+BROKEN 侧、HOLD 侧、复合交互侧三层验证的、当前实验切片下的
+differential sensitivity / interaction boundary characterization**；
+同时把 content-addressed representation、concurrency、temporal
+dynamics、additional multi-operation pairs、semantic correctness
+oracle 保持为明确未测边界。
+
+当前状态：
+
+```text
+R3-4                    = OPEN / SYNTHESIS GATE rev.2（SUPPORTED /
+                          BOUNDED / PASS WITH REVISIONS 已应用）
+R3-4 synthesis rev.2    = 收官依据就绪
+R3-4 收官结论           = NOT WRITTEN（待 human 指令；按 human 预定
+                          措辞框架写：三层验证的 differential
+                          sensitivity / interaction boundary
+                          characterization + 未测边界登记）
+IPAC                    = OPEN / NONBINDING
+P                       = OUT OF SCOPE
+Route A/B/C             = NOT SELECTED
+PALACE                  = CLOSED
+Next = human 指令：以 rev.2 综合门为依据写 R3 收官声明+开放边界登记
+```
+
+### R3 CLOSING DECLARATION WRITTEN — R3 FORMALLY CLOSED — 2026-10-03
+
+human 确认全部前置条件（rev.2 综合门 SUPPORTED/BOUNDED/PASS WITH
+REVISIONS、五项修订已应用、收官依据就绪、既有判定不变、IPAC/P/Route/
+PALACE 继续排除、不将 R3 表述为 Cons 正确性/最小性/完备性证明、未测边
+界显式保留）并下达指令「写 R3 收官声明，提交并推送」。收官声明交付
+`SIMIGO_LAB_R3_CLOSING_DECLARATION_20261003.md`：
+
+- **R3 最终产出（human 措辞逐字）**：「一个经过单变量 BROKEN 侧、
+  HOLD 侧、复合交互侧三层验证的、当前实验切片下的 differential
+  sensitivity / interaction boundary characterization」——不宣布
+  「证明了 Cons」。
+- **三层验证综合结论**：R3-2（9/9 定向签名击穿+setup lock 首获实证）、
+  R3-3（10/10 HOLD 零击穿+三正控活性+NO-COUNTEREXAMPLE≠invariant
+  established）、IS-X（X-08 CONFIRMED MASKING/X-09 CONFIRMED ADDITIVE/
+  机制读法=两个单独足以触发 I-BROKEN 的操作在特定组合顺序下相互改变
+  可观察联合效果，联合效应不能由 P_comp 独立预测）+边界裁定（三改变
+  点 rev.2 措辞+两不改变点）+终局四问终答。
+- **不主张清单收官重申**：Cons 普遍定律/I∧A∧C 充分必要/correctness·
+  minimality·completeness/一般 interaction law/非交换性/continuation/
+  PALACE·IPAC·Route/产品普适外推；「无反例」永远带探针域。
+- **未测边界 UB-1..UB-7 显式登记**（content-addressed representation/
+  concurrency/temporal dynamics/additional pairs/semantic correctness
+  oracle/共享盲区 B-1..B-6/检出力边界）——登记在案的开放边界，非已否
+  定问题。
+- **未来独立研究问题登记**（NOT STARTED/无 RQ ID/未选择）：semantic
+  oracle 谱系验证/表征变体/并发一致性/条件破坏⇒continuation 反向检验
+  等——仅登记不选择。
+- **谱系与工件注册**：R3-0→R3-1→R3-2→R3-3→IS-X→R3-4 全链（commits/
+  evidence 目录/harness 全注册；三战役证据全量保全含 Attempt #1
+  INCONCLUSIVE）。
+- **关闭后状态**：R3=CLOSED；B Track=CLOSED；C Track 既有状态维持；
+  IPAC OPEN/NONBINDING；P OUT OF SCOPE；Route A/B/C NOT SELECTED；
+  PALACE CLOSED；**R3 之后研究方向全部归 human，无自动开启项**。
+- **效力声明**：全部结论 bounded 于当前实验切片；引用 R3 任何结论必须
+  携带 fixture-slice bounded 限定与相应限缩读法；本声明不授权任何后续
+  实验、实现或路线选择。
+
+当前状态（R3 关闭后）：
+
+```text
+R3                    = CLOSED / differential sensitivity / interaction
+                        boundary characterization delivered（fixture-slice
+                        bounded，三层验证）
+R3-0…R3-4             = 全链 SEALED/CLOSED（设计/规范/两侧战役/交互
+                        战役/综合门，见收官声明 §6 谱系注册）
+B Track               = CLOSED
+C Track               = 既有状态维持（C-Spec FROZEN/C-Design CONFIRMED/
+                        C-Impl CLOSED/R-C1 #4 CLOSED VALID）
+IPAC                  = OPEN / NONBINDING（minimality UNPROVEN/
+                        semantics NOT FROZEN）
+P                     = OUT OF SCOPE
+Route A/B/C           = NOT SELECTED
+PALACE                = CLOSED
+Next = R3 之后的研究方向全部归 human 决定；无自动开启项
+```
+
+### T5 REV.1 EXECUTED — PRE-REGISTERED READING = REPLICATION PASS — AWAITING HUMAN DECLARATION — 2026-10-03
+
+human 授权在 T4 之外以第三个不同 continuation task 观察 Information
+dependency。T5 选择 workshop prerequisite graph / capacity-constrained
+scheduling 域；与 T4 的 aggregation、T4-2 的 release mapping +
+ordered rollout + go/no-go 均不同。Attempt #1 因 pinned graph 需要
+4 个 dependency levels 但只有 3 个 ordered slots 而判定
+`DESIGN INVALID / INCONCLUSIVE`，不计作 substantive FAIL。REV.1 增加
+第四个 random slot 后重跑。
+
+REV.1 raw reading：
+
+```text
+AC-1 = PASS  B-E schedule satisfies C1..C9。
+AC-2 = PASS  fetch(plan identity) → fetched plan → schedule generation。
+AC-3 = PASS  B-N fetch = not-found；no schedule；zero pinned-fact
+             fabrication。
+Pre-registered reading = REPLICATION PASS。
+Final human declaration = PENDING。
+```
+
+当前状态：
+
+```text
+T5 Attempt #1 = INCONCLUSIVE / DESIGN INVALID
+T5 REV.1      = EXECUTED / RAW EVIDENCE SEALED /
+                PRE-REGISTERED READING = REPLICATION PASS
+T5            = AWAITING HUMAN FINAL DECLARATION
+T4 / T4-2     = CLOSED（原结论零改动）
+```
+
+### REAL-TASK GAP EXPLORATION REGISTERED — NEXT PHASE — 2026-10-04
+
+T4/T4-2/T5 已形成三个结构不同、task-domain bounded 的 continuation
+evidence，但不支持“Information 对所有 continuation 必要”的抽象。下一阶段
+不启动 T6 replication，也不扩展 Representation Consistency；改为以真实
+连续任务观察既有 Execution–Information Runtime 的第一个真实缺口。
+
+探索对象：
+
+```text
+ExecutionCore + InformationCore + RelationCore
++ SimiGoRuntime × InformationCore integration
+```
+
+目标序列：
+
+```text
+Execution A
+    ↓ create / modify Information
+Execution B
+    ↓ continue
+Information / task state changes
+    ↓
+Execution C
+    ↓ continue
+```
+
+只观察：
+
+```text
+1. 下一次 Execution 实际需要哪些 Information；
+2. InformationCore 是否可取得；
+3. RelationCore 是否被任务实际需要；
+4. 哪些 Information 随推进自然产生；
+5. 哪些 Information 无处保存、无关系表达或无法定位；
+6. 现有 Runtime 在哪里第一次出现任务无法继续的真实缺口。
+```
+
+当前状态：
+
+```text
+Real-Task Gap Exploration = REGISTERED / NEXT PHASE
+Specific task             = NOT SELECTED
+Task design               = NOT AUTHORIZED
+Experiment execution      = NOT AUTHORIZED
+New schema                = NOT AUTHORIZED
+Contract / IPAC / PALACE  = NO CHANGE AUTHORIZED
+```
+
+### QINSHEN REAL TASK CARRIER SELECTED — OBSERVATIONAL CHARTER — 2026-10-04
+
+已选择真实任务载体：
+
+```text
+秦沈项目经济运行汇报数据口径澄清与后续复核
+```
+
+观察序列：
+
+```text
+A = Open Question Custodian
+    输入既有 17 项澄清函、18 族收尾清单与口径复函；
+    建立未决问题工作底账并 store。
+
+B = Follow-up Drafter
+    只接收 A 底账 identity；
+    fetch 底账后生成口径问询优先级草案并 store。
+
+C = Source-Impact Reconciler
+    接收 B 草案 identity 与 3 月份 balance report；
+    比较口径问题是否受新源影响，并生成 reconciliation note。
+```
+
+观察目标：
+
+```text
+B / C 实际 fetch 什么；
+RelationCore 是否自然需要；
+哪些 Information 自然产生；
+哪些 Information 缺少存储、关系表达或定位；
+工作流第一次无法继续的位置。
+```
+
+当前状态：
+
+```text
+Task carrier             = SELECTED
+Observational charter    = REGISTERED
+Experiment execution     = NOT AUTHORIZED
+New schema / relation    = NOT AUTHORIZED
+Contract / IPAC / PALACE = NOT AUTHORIZED
+```
+
+### LLAMA REPRESENTATION CONSISTENCY REPLICATION EXECUTED — PASS — 2026-10-04
+
+在 MLX Representation Consistency Boundary Result 之后，使用既有
+llama-server full-prefix backend / executor 完成最小跨 backend
+replication。范围只保留 C0 与三次 C2，不含 C1/C3、KV cache 或 Oversized。
+
+固定条件：
+
+```text
+same Execution ID       = llama-repconsistency-single
+same logical position   = 0
+same representation pos = 0
+same prefix length      = 10 tokens
+same seed / greedy settings
+only content delta      = token index 8: 9017 -> 9018
+```
+
+raw observation：
+
+```text
+C0       = accepted / real llama-server execution
+           tokens = [198,760,2313,6025,16699,10492,5435,2313,6044,9017,13,198]
+           text   = "...project management documents."
+
+C2.rep1  = accepted / real llama-server execution
+           tokens = [198,760,2313,6025,16699,10492,5435,2313,6044,9018,13,198]
+           text   = "...project management century."
+
+C2.rep2  = C2.rep1
+C2.rep3  = C2.rep1
+```
+
+有界读法：
+
+```text
+c2StableOutputDifference = true
+```
+
+即 llama-server 切片中重复出现：
+
+```text
+same ID + same position + same length + different content
+    → backend binding accepted
+    → real llama-server execution
+    → stable observable output divergence
+```
+
+当前状态：
+
+```text
+MLX Representation Consistency Boundary       = EXECUTED / SEALED
+LLAMA Representation Consistency Replication  = EXECUTED / SEALED /
+                                                CROSS-BACKEND PASS
+Integrity design authorization                = NONE
+```
+
+### T5 REPLICATION RESULT DECLARED — REPLICATION PASS — GATE CHAIN SEALED — 2026-10-04
+
+human 正式宣告：
+
+```text
+T5 Replication Result = REPLICATION PASS
+T5 = CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED / GATE CHAIN SEALED
+```
+
+边界：
+
+```text
+Attempt #1 remains INCONCLUSIVE / DESIGN INVALID。
+Conclusion remains task-domain bounded and does not generalize to all
+continuation tasks。
+“REPLICATION PASS”只是对 T5 REV.1 预注册判读的正式人工确认，
+不升级为跨任务域或一般 continuation 定理。
+```
+
+声明文件：
+
+```text
+docs/00-governance/SIMIGO_LAB_T5_REPLICATION_DECLARATION_20261004.md
+```
+
+当前状态：
+
+```text
+T5 Attempt #1 = INCONCLUSIVE / DESIGN INVALID
+T5 REV.1      = CLOSED / REPLICATION PASS
+T5            = CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED /
+                GATE CHAIN SEALED
+T4 / T4-2     = CLOSED（原结论零改动）
 ```

@@ -1,0 +1,122 @@
+{
+ "run": "G-3 E-run v3",
+ "r2_state": "RESOLVED",
+ "ir_stage": "COMPLETED",
+ "ir_disposition": {
+  "class": "PROCEED-WITH-ANNOTATION",
+  "annotations": [
+   "carrier state absent: no carrier-form no-recompute evidence (document-form run)"
+  ]
+ },
+ "ir_verification": [
+  {
+   "check": "VV-1",
+   "verdict": "VERIFIED",
+   "detail": "R2 clean RESOLVED; r2_digest 0a7eae3420b1a85584b9d07cc93a06fcdb62d4c96eaca931811bf32692df3ef6"
+  },
+  {
+   "check": "VV-3",
+   "verdict": "VERIFIED",
+   "detail": "binding state = BOUND"
+  },
+  {
+   "check": "VV-6",
+   "verdict": "VERIFIED",
+   "detail": "4 inherited segment identifiers attached"
+  },
+  {
+   "check": "VV-2",
+   "verdict": "VERIFIED",
+   "detail": "readback byte-identical to R2.surface"
+  },
+  {
+   "check": "VV-4",
+   "verdict": "VERIFIED",
+   "detail": "effective envelope == declared ε2"
+  },
+  {
+   "check": "VV-5",
+   "verdict": "VERIFIED",
+   "detail": "position derived: 109 units"
+  },
+  {
+   "check": "VV-7",
+   "verdict": "VERIFIED",
+   "detail": "manifest complete"
+  }
+ ],
+ "ir_task_record": {
+  "task_ref": "task/T2-release-plan",
+  "task_content_digest": "92a597491e681fde180dbf2cb2da7bb50ac9a8e6bfd4ee7f8fc0179c993619dc",
+  "declaration_source": "external/human",
+  "version": "1"
+ },
+ "ir_timestamp": "2026-10-05T12:33:36Z",
+ "ir_actor": "codex/g4-fix",
+ "ir_used_item_identities": [
+  {
+   "name": "F1",
+   "content_digest": "0c9dd9a29a9db6b88da72e19bf9b66fbead98f33cbb4fc3b8e1011ba117e065c"
+  },
+  {
+   "name": "F2",
+   "content_digest": "3cf8f85f077d1e7c04318a7c241c9dc04b5914f5f5a0f8f17f51d54bfb0da058"
+  },
+  {
+   "name": "F3",
+   "content_digest": "4620f4b63437f4395d68680490b00f15ce9579931f953840c739901ef58c7e20"
+  }
+ ],
+ "binding": {
+  "state": "BOUND",
+  "predecessor_weights_id": "W-testbed-1",
+  "declared_weights_id": "W-testbed-1"
+ },
+ "ccap": {
+  "E1 executed T1; CR(E1) written with use-time-pinned F1..F3": {
+   "pass": true,
+   "detail": "CR ref 07cd824446da6b83…"
+  },
+  "E2 executed T2 from the reconstructed S2; CR(E2) written": {
+   "pass": true,
+   "detail": "CR ref 8ceb9516f4b0b5f0…"
+  },
+  "auditable object chain CR(E1) -> IR(S2) -> CR(E2) is linked": {
+   "pass": true,
+   "detail": "E2's lineage parent is E1's CR (resolve/instantiate provenance carried)"
+  },
+  "C-CAP(a) clean RESOLVED (V-1..V-5 pass, zero violations)": {
+   "pass": true,
+   "detail": "resolve state = RESOLVED"
+  },
+  "C-CAP(b) instantiate + continue from S2 (T2 executed ON the continuation object)": {
+   "pass": true,
+   "detail": "IR stage = COMPLETED, disposition = PROCEED-WITH-ANNOTATION, S2 consumed: 1fc961af7b04…"
+  },
+  "C-CAP(c)-i E2 trace references all inherited predecessor segments": {
+   "pass": true,
+   "detail": "['E1.seg[0]', 'E1.seg[1]', 'E1.seg[2]', 'E1.seg[3]']"
+  },
+  "C-CAP(c)-ii E2 reused no predecessor segment identifier for new work (limited mechanical support; semantic re-derivation under a new id is the registered detection boundary)": {
+   "pass": true,
+   "detail": "E2 new segments ['E2.seg[0]', 'E2.seg[1]'] are identifier-disjoint from E1's"
+  },
+  "C-CAP(necessary) E2 consumed the resolve output": {
+   "pass": true,
+   "detail": ""
+  },
+  "C-CAP(b)-s2 the executed object IS the R2-derived S2": {
+   "pass": true,
+   "detail": "surface/handle/weights all match the resolved R2"
+  },
+  "E-RUN VERDICT: C-CAP SUPPORTED (document-form)": {
+   "pass": true,
+   "detail": ""
+  }
+ },
+ "cr_chain": {
+  "cr1": "07cd824446da6b8301b73f638baf0599682d593f9917522b4c8d5020a012a912",
+  "cr2": "8ceb9516f4b0b5f01ca128802be28538881eb00893482a1d8bc10355e34528d3"
+ },
+ "verdict": "SUPPORTED"
+}

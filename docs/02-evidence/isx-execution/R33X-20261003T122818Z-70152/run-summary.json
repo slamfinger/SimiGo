@@ -1,0 +1,28 @@
+{
+  "campaign_order": [
+    "cell-01-X-01",
+    "cell-02-X-02",
+    "cell-03-X-03",
+    "cell-04-X-04",
+    "cell-05-X-05",
+    "cell-06-X-06",
+    "cell-07-X-07",
+    "cell-08-X-08",
+    "cell-09-X-09",
+    "cell-10-X-10",
+    "cell-11-X-11",
+    "cell-12-X-12",
+    "cell-13-R32N-SANITY-A",
+    "cell-14-R32N-SANITY-I",
+    "cell-15-R32N-SANITY-C",
+    "cell-16-R32-K-0"
+  ],
+  "cells_run": 16,
+  "ci_failures": [
+    "cell-06-X-06"
+  ],
+  "integrity_all_clean": true,
+  "invalid_compositions": [],
+  "run_uuid": "R33X-20261003T122818Z-70152",
+  "t0_consistency_all": true
+}

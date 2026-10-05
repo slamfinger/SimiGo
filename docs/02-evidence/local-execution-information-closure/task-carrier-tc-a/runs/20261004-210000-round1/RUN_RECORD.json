@@ -1,0 +1,283 @@
+{
+  "phase": "ROUND1_EXECUTION_COMPLETE",
+  "created_at": "2026-10-05T00:40:00+08:00",
+  "authorization": "ROUND1 INSTANTIATION AND EXECUTION ONLY; ADJUDICATION TO FOLLOW",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "execution_note": "Original run completed 14/17 then was interrupted after external NativeMLX unload/restart; final 3 RD9 arms resumed under separately authorized 180s interval.",
+  "conditions": [
+    {
+      "condition": "RD2-RAW",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-RAW.prompt.txt",
+      "prompt_sha256": "5561b61ee3d4d11cd351c53d76da8cc9235c0f17156b2e2aaa529d987e96a91c",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-RAW/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-RAW/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-RAW/final-answer.txt",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD2-DECODED-TEXT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-DECODED-TEXT.prompt.txt",
+      "prompt_sha256": "b2797ceae5b3f57be969fb410d3cf0b884effcc5b5888d217882d1c566dacde9",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-DECODED-TEXT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-DECODED-TEXT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-DECODED-TEXT/final-answer.txt",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD2-SEMANTIC-OBJECT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD2-SEMANTIC-OBJECT.prompt.txt",
+      "prompt_sha256": "ca35e0332889c59101647780fd6bae35d1c59bd43e9e11818d311e1e5643ffbf",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-SEMANTIC-OBJECT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-SEMANTIC-OBJECT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD2-SEMANTIC-OBJECT/final-answer.txt",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD5-EXPLANATION-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD5-EXPLANATION-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-ABSENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-ABSENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-ABSENT/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD5-EXPLANATION-PRESENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD5-EXPLANATION-PRESENT.prompt.txt",
+      "prompt_sha256": "ef4bbc00a7f81d2aab9fd5db1f9a4bb4bc40ce3930264322be0f07f81b258895",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-PRESENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-PRESENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD5-EXPLANATION-PRESENT/final-answer.txt",
+      "final_answer_sha256": "44efcaa32e64c2fb6a3be1d9a8d21dc0ec9d2c575d9ab79ea644a29f6b6076f5",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD1A-WHOLE-REGISTER",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD1A-WHOLE-REGISTER.prompt.txt",
+      "prompt_sha256": "ca35e0332889c59101647780fd6bae35d1c59bd43e9e11818d311e1e5643ffbf",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-WHOLE-REGISTER/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-WHOLE-REGISTER/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-WHOLE-REGISTER/final-answer.txt",
+      "final_answer_sha256": "a6d4f9f18b8ecc555c028effe18148aa6e94f20fa0fb144b34a5f006f384ca0f",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD1A-STRUCTURED-FACTS",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD1A-STRUCTURED-FACTS.prompt.txt",
+      "prompt_sha256": "d33f0edec594149e21f251f9f58133b102fbea882ab81e34ab106aba70109afa",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-STRUCTURED-FACTS/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-STRUCTURED-FACTS/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD1A-STRUCTURED-FACTS/final-answer.txt",
+      "final_answer_sha256": "40befae2ebd175c5e3e522b7b84e82af3b91ae55dfef9136fca2102839769ea0",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD3-M2-DELETED",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD3-M2-DELETED.prompt.txt",
+      "prompt_sha256": "30fea14b936046f28479793417ea320f23c2f5c25bdfe2a0b7f8565c318621a9",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD3-M2-DELETED/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD3-M2-DELETED/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD3-M2-DELETED/final-answer.txt",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD4-M1-ALL",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-ALL.prompt.txt",
+      "prompt_sha256": "74a317f66aa3e86d017372ea0106861b2a21e61573948e90c769a51241ecb16b",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ALL/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ALL/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ALL/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD4-M1-GAMMA-ONLY",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-GAMMA-ONLY.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-GAMMA-ONLY/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-GAMMA-ONLY/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-GAMMA-ONLY/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD4-M1-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD4-M1-ABSENT.prompt.txt",
+      "prompt_sha256": "da1a6f374bc605d8cb7e37c46446ba898eb55a167ec4a4705a75e936e74ac83d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ABSENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ABSENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD4-M1-ABSENT/final-answer.txt",
+      "final_answer_sha256": "910325a04c19f6c03f1a1f8a0923f3b185ddc7fc38e19a118133f6ec29bd4ded",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD8-HASH-VALID",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-VALID.prompt.txt",
+      "prompt_sha256": "b3ef218555aeee6747f0c642af84714d29bc64c3a74fc03092b5677b7d6cff1c",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-VALID/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-VALID/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-VALID/final-answer.txt",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD8-HASH-STALE",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-STALE.prompt.txt",
+      "prompt_sha256": "60cf712d3e61332d97366e24c106d8c28cbe0ce7eb6a643a279f908be7163c22",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-STALE/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-STALE/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-STALE/final-answer.txt",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD8-HASH-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD8-HASH-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-ABSENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-ABSENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD8-HASH-ABSENT/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "idle_suspend_before_next_condition",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Original runner verified a fresh suspend and cold mode before proceeding; runner later interrupted before aggregate RUN_RECORD creation."
+      }
+    },
+    {
+      "condition": "RD9-TOOL-PRESENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-PRESENT.prompt.txt",
+      "prompt_sha256": "731a97d387ece4b95c6ec111c9ebead7aa463aa9cf5f4ca1183ebdc6bdb57612",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-PRESENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-PRESENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-PRESENT/final-answer.txt",
+      "final_answer_sha256": "18ddf63a3b91688211118687a9b04f788149a9d27c13c795c80f8f4ac4819364",
+      "http_status": 200,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Authorized Round-1 resume after external NativeMLX unload/restart interrupted the original 900s idle-suspend loop."
+      }
+    },
+    {
+      "condition": "RD9-TOOL-ABSENT",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-ABSENT.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-ABSENT/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-ABSENT/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-ABSENT/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Authorized Round-1 resume after external NativeMLX unload/restart interrupted the original 900s idle-suspend loop."
+      }
+    },
+    {
+      "condition": "RD9-TOOL-SUMMARY",
+      "prompt_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/round1/RD9-TOOL-SUMMARY.prompt.txt",
+      "prompt_sha256": "30a5e95f5147674005c0e0f5f423cd927ab684b5a90c142b4af138c9446f8843",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-SUMMARY/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-SUMMARY/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-210000-round1/RD9-TOOL-SUMMARY/final-answer.txt",
+      "final_answer_sha256": "3dbc0fcb054a2acf6de5029bc1edb35d836aa460374abf74beaedeca699aaae5",
+      "http_status": 200,
+      "isolation": {
+        "method": "180s_inter_condition_interval_with_cold_path_assertion",
+        "cold_path_observed": true,
+        "cache_reuse_observed": false,
+        "note": "Authorized Round-1 resume after external NativeMLX unload/restart interrupted the original 900s idle-suspend loop."
+      }
+    }
+  ]
+}

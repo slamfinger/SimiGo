@@ -1,0 +1,80 @@
+{
+  "phase": "S_B_RAW_OUTPUTS_ONLY",
+  "created_at": "2026-10-04T18:06:07+08:00",
+  "authorization": "EXECUTION PREPARATION AND EXECUTION ONLY",
+  "observer": "NOT RUN",
+  "store": "NOT RUN",
+  "interpretation": "NOT PERFORMED",
+  "baseline_isolation": {
+    "initial_trace_tail": "23:27.655] [MLX] poolExport messages=7 refHash=29ddbbddb6f3344e\n[2026-10-04 15:23:27.718] [MLX] cacheSave session=f058b1/main history=7\n[2026-10-04 15:23:27.719] [MLX] session=f058b1/main messages=6 exec=58e875 history=7 delta=4 reuse=true ttft=971ms cacheTokens=1039 cacheHitTokens=1039 cacheEff=0.54 mode=restore promptTokens=880 promptTime=1.0s tps=40.4 rawEv=189 rawB=803 emitB=803\n[2026-10-04 15:23:27.719] [LC] RELEASED r=8360b6 s=openai reason=completed\n[2026-10-04 15:33:33.580] [LIFECYCLE] suspend_done\n",
+    "initial_trace_size": 73891
+  },
+  "conditions": [
+    {
+      "condition": "S-B0",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B0.prompt.txt",
+      "prompt_sha256": "19c31ffa77349cf7285bab58951e3207413d3fea4a6f0f290826c3f686f945f4",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B0/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B0/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B0/final-answer.txt",
+      "http_status": 200,
+      "elapsed_seconds": 12.129013,
+      "runtime_isolation": {
+        "method": "idle_suspend_with_memory_cache_clear",
+        "trace_path": "/Users/mr.simi/.simigo/logs/native_mlx_trace.log",
+        "trace_byte_start": 73891,
+        "trace_byte_end": 74745,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 17:34:28.960] [LIFECYCLE] resume_done ms=4738",
+          "[2026-10-04 17:34:36.333] [MLX] session=simigo-tc-a-sb0/f25b0e/main messages=1 exec=66e030 history=2 delta=1 reuse=false ttft=6725ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=518 promptTime=6.7s tps=39.0 rawEv=21 rawB=118 emitB=118",
+          "[2026-10-04 17:45:05.489] [LIFECYCLE] suspend_done"
+        ]
+      }
+    },
+    {
+      "condition": "S-B1",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B1.prompt.txt",
+      "prompt_sha256": "531a71657557918f7a32b60b3e06a1921f9b5d985967924ae31f9551ca1a1d7d",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B1/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B1/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B1/final-answer.txt",
+      "http_status": 200,
+      "elapsed_seconds": 7.005113,
+      "runtime_isolation": {
+        "method": "idle_suspend_with_memory_cache_clear",
+        "trace_path": "/Users/mr.simi/.simigo/logs/native_mlx_trace.log",
+        "trace_byte_start": 74745,
+        "trace_byte_end": 75598,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 17:45:10.955] [LIFECYCLE] resume_done ms=4267",
+          "[2026-10-04 17:45:13.690] [MLX] session=simigo-tc-a-sb1/ad551e/main messages=1 exec=1498f3 history=2 delta=1 reuse=false ttft=1924ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=554 promptTime=1.8s tps=40.1 rawEv=28 rawB=145 emitB=145",
+          "[2026-10-04 17:55:20.497] [LIFECYCLE] suspend_done"
+        ]
+      }
+    },
+    {
+      "condition": "S-B2",
+      "prompt_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/condition-prompts/S-B2.prompt.txt",
+      "prompt_sha256": "756b1f0907e15b7c68c4c3c9450c2bf511f73de117cc48eb2f5cb5c3a6478f4f",
+      "request_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B2/request.json",
+      "response_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B2/response.json",
+      "final_answer_path": "docs/02-evidence/local-execution-information-closure/task-carrier-tc-a/runs/20261004-173500-sb/S-B2/final-answer.txt",
+      "http_status": 200,
+      "elapsed_seconds": 13.353435,
+      "runtime_isolation": {
+        "method": "idle_suspend_with_memory_cache_clear",
+        "trace_path": "/Users/mr.simi/.simigo/logs/native_mlx_trace.log",
+        "trace_byte_start": 75598,
+        "trace_byte_end": 76455,
+        "cold_path_observed": true,
+        "isolation_lines": [
+          "[2026-10-04 17:55:28.141] [LIFECYCLE] resume_done ms=4112",
+          "[2026-10-04 17:55:37.378] [MLX] session=simigo-tc-a-sb2/7360a0/main messages=1 exec=72fb36 history=2 delta=1 reuse=false ttft=1960ms cacheHitTokens=0 cacheEff=0.00 mode=cold promptTokens=553 promptTime=1.9s tps=41.3 rawEv=296 rawB=1466 emitB=1466",
+          "[2026-10-04 18:06:06.515] [LIFECYCLE] suspend_done"
+        ]
+      }
+    }
+  ]
+}

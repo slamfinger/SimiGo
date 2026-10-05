@@ -13,3 +13,7 @@ __pycache__/
 
 # Local AI-chat sync drafts are not public research artifacts
 .tmp-chatgpt-sync/
+palace-v0/
+
+# Pre-research runtime artifacts
+pre-research/**/*.sqlite

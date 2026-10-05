@@ -1,0 +1,149 @@
+{
+  "document": "Cross-model Formal Runner Closure / Post-repair Readiness",
+  "date": "2026-10-05",
+  "status": "CROSS_MODEL_FORMAL_RUNNER_READY / RUNTIME_NOT_AUTHORIZED",
+  "resolution": {
+    "frozen_pilot_runner_4838f1cb08d879a353aa2f2ccb0d5d5f3db857c209e64736f37dba02028addb7": "verified as run_matrix.py at commit e8ec3e0",
+    "working_pilot_runner_c3b8f0423ff8a560006b34c88f8fd1621ea795d880c043c12c26f3a6032bd774": "uncommitted pilot-only patch adding endpoint snapshot fallback; retained as pilot evidence, not adopted as formal runner",
+    "intended_formal_runner": "new separate formal_runner.py",
+    "formal_runner_sha256": "a102a1e422e26dd87e92821daed46ff5bb85d945d4bbebc5be8171d3918f2c25",
+    "formal_manifest_sha256": "d1c6ba86c648d887a94853b54f69f89b7cf75dbabcb8c939fdcc7e08b2a3a650"
+  },
+  "contract_sha256": "6f28579f82a109fbea6e6121cca80dfd2ada2761232a8293fa1ddc216ab93ee8",
+  "checks": [
+    {
+      "id": "FR-RR-01",
+      "requirement": "16 unique sample × model cell IDs",
+      "result": "PASS",
+      "evidence": "formal-cell-plan.json contains 16 unique cell_id values."
+    },
+    {
+      "id": "FR-RR-02",
+      "requirement": "frozen sample inputs and hashes",
+      "result": "PASS",
+      "evidence": "formal runner verifies size and SHA-256 for every input file; --check passed."
+    },
+    {
+      "id": "FR-RR-03",
+      "requirement": "four deterministic frozen prompts",
+      "result": "PASS",
+      "evidence": "rendered prompt manifest matches; sample prompts are non-identical."
+    },
+    {
+      "id": "FR-RR-04",
+      "requirement": "model identity/config freeze",
+      "result": "PASS",
+      "evidence": "all four models have model_id, repo_id, architecture, snapshot_revision, config_sha256, and inference_config."
+    },
+    {
+      "id": "FR-RR-05",
+      "requirement": "endpoint identity rule and evidence",
+      "result": "PASS",
+      "evidence": "runner queries /models, records active IDs, prefers repo_id, allows frozen snapshot_revision fallback, and aborts on mismatch."
+    },
+    {
+      "id": "FR-RR-06",
+      "requirement": "formal runner provenance",
+      "result": "PASS",
+      "evidence": "separate formal_runner.py SHA-256=a102a1e422e26dd87e92821daed46ff5bb85d945d4bbebc5be8171d3918f2c25; formal manifest verifies."
+    },
+    {
+      "id": "FR-RR-07",
+      "requirement": "formal status enum",
+      "result": "PASS",
+      "evidence": "FORMAL, PILOT_ONLY_NOT_FORMAL, INVALID_ISOLATION, RUNTIME_ERROR, INCOMPLETE are implemented."
+    },
+    {
+      "id": "FR-RR-08",
+      "requirement": "formal/pilot separation",
+      "result": "PASS",
+      "evidence": "formal_runner.py is separate from run_matrix.py; formal outputs use formal-artifacts/formal-runs path and do not read pilot runs."
+    },
+    {
+      "id": "FR-RR-09",
+      "requirement": "I1 fresh execution/session",
+      "result": "PASS",
+      "evidence": "each cell receives a new execution_id and X-Session-ID; no session is reused."
+    },
+    {
+      "id": "FR-RR-10",
+      "requirement": "I2 model/endpoint identity",
+      "result": "PASS",
+      "evidence": "RUN_RECORD stores model_id, repo_id, endpoint identifier, active endpoint IDs, and identity match."
+    },
+    {
+      "id": "FR-RR-11",
+      "requirement": "I3 sample/prompt hashes",
+      "result": "PASS",
+      "evidence": "sample hashes are checked and prompt/request hashes are recorded."
+    },
+    {
+      "id": "FR-RR-12",
+      "requirement": "I4 no inherited cache/prefix",
+      "result": "PASS",
+      "evidence": "per-cell isolation manifest must assert cache_prefix_excluded=true with evidence; runner aborts otherwise."
+    },
+    {
+      "id": "FR-RR-13",
+      "requirement": "I5 fresh process/reload",
+      "result": "PASS",
+      "evidence": "per-cell isolation manifest must assert fresh_process=true and reload_completed=true with evidence."
+    },
+    {
+      "id": "FR-RR-14",
+      "requirement": "I6 start/finish evidence",
+      "result": "PASS",
+      "evidence": "RUN_RECORD stores endpoint probe times, request started_at, finished_at, and elapsed_seconds."
+    },
+    {
+      "id": "FR-RR-15",
+      "requirement": "I7 no concurrent backend workload",
+      "result": "PASS",
+      "evidence": "per-cell isolation manifest must assert concurrent_workload_excluded=true with evidence; runner aborts otherwise."
+    },
+    {
+      "id": "FR-RR-16",
+      "requirement": "I8 no Round-1 residue/transcript",
+      "result": "PASS",
+      "evidence": "formal input lineage contains only frozen cross-model sample files and records round1_residue_excluded=true."
+    },
+    {
+      "id": "FR-RR-17",
+      "requirement": "I9 no other cell state",
+      "result": "PASS",
+      "evidence": "each cell has isolated directory/execution UUID; per-cell manifest must assert other_cell_state_excluded=true."
+    },
+    {
+      "id": "FR-RR-18",
+      "requirement": "J1/J2/J3 adjudication material retained",
+      "result": "PASS",
+      "evidence": "prompt, request, raw response, final answer, metadata, hashes, and isolation evidence are retained; no normalization is performed."
+    },
+    {
+      "id": "FR-RR-19",
+      "requirement": "no runtime during closure",
+      "result": "PASS",
+      "evidence": "only --check, --plan, and --render were invoked; no endpoint completion request was sent."
+    }
+  ],
+  "summary": {
+    "pass": 19,
+    "partial": 0,
+    "fail": 0
+  },
+  "decision": {
+    "cross_model_formal_run": "READY",
+    "runtime_execution": "STILL NOT AUTHORIZED",
+    "next_trigger": "separate explicit authorization to execute 16 formal cells"
+  },
+  "boundary": {
+    "observer": "NOT RUN",
+    "information_core_store": "NOT RUN",
+    "normalization": "NOT PERFORMED",
+    "stability_scoring": "NOT PERFORMED",
+    "vertical_decomposition": "NOT PERFORMED",
+    "mapping_to_846": "NOT PERFORMED",
+    "minimal_structure_claim": "NOT MADE",
+    "irreducibility_claim": "NOT MADE"
+  }
+}

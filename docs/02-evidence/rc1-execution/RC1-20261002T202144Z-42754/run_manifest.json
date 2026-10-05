@@ -1,0 +1,13 @@
+{
+  "run_id": "RC1-20261002T202144Z-42754",
+  "implementation_baseline": "bae68a852cfc",
+  "binary_build": "release",
+  "task_id": "C-T-001",
+  "arms": ["C-A", "C-B", "C-C"],
+  "s0": {"entity":"E","alpha":17,"mode":"quiet"},
+  "s1": {"entity":"E","alpha":42,"mode":"active"},
+  "overwrite_mode": "external_orchestration_write_to_declared_entity_source",
+  "old_stdin_signal": "one newline after external overwrite",
+  "fresh_process_binary": "CContinuationStudyContinue",
+  "evaluator_binary": "CContinuationEvaluator"
+}

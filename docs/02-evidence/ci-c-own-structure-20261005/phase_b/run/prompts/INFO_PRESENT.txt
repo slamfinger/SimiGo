@@ -1,0 +1,7 @@
+The current baseline compatibility record (effective 2026-10-01):
+
+```text
+alpha: baseline-compatible
+beta:  baseline-compatible
+gamma: NOT baseline-compatible
+```

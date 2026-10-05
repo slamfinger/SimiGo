@@ -74,8 +74,89 @@ As of the latest repository state:
 
 - The Execution State Runtime evidence line is consolidated with explicit harness boundaries.
 - Oversized layer work is `FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD`; it is no longer an independent research line.
-- PALACE-1 and BACKEND-1 are both `RESEARCH OPEN / AUDIT FIRST`.
-- The next registered entry is a PALACE-1 minimal-persistence-unit code audit.
+- BACKEND-1 is `ENGINEERING ROUND1 COMPLETE / PASS / REGISTERED / CLOSED`.
+- PALACE-1 Lifecycle Storage: registered opening + Gate① frozen design
+  are retained, but the line is `FROZEN / PARKED` by human direction
+  (2026-10-02); Gate① execution is not to proceed unless a real
+  application proves durable identity is needed.
+- PALACE V2 (current mainline): G0 → G1 → OQ-B → E6 → G2 → G3
+  ALL CLOSED (backend survey; real 秦沈 corpus work incl. main
+  probe/OQ-B drift/E6 validity; cross-document T-1/T-2/T-3;
+  durable-information redo-cost contrast with five-item recovery
+  matrix). G3 closure core output: recovery capability ≠
+  past-judgment reviewability (two different dimensions); CF-①②
+  HIGH VALUE/ACCEPTED; H-G1-01 SUPPORTED—strengthened / H-G1-02
+  SUPPORTED—strong exploratory; ES necessity UNPROVEN.
+  NEXT ENTRY = PALACE-SimiGo Boundary Study: 「当信息空间已经保存
+  足够多历史信息后，哪些内容仍然必须属于 Execution State？」
+  (same PALACE / two workers / different tasks / different paths —
+  what PALACE cannot recover = ES irreplaceable position). See
+  `SIMIGO_LAB_PALACE_V2_G3_CLOSED_BOUNDARY_STUDY_ENTRY_20261002.md`.
+  Boundary Study DESIGN DRAFT complete (design only, no execution
+  authorization; awaiting human freeze review):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_DRAFT_20261002.md`.
+  Boundary Study DESIGN FROZEN (freeze review PASS ×3, same day):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_FREEZE_REVIEW_20261002.md`;
+  EXECUTION AUTHORIZATION = FIRST MINIMAL A→B CONTINUATION
+  EXPERIMENT ONLY (four-case full matrix NOT AUTHORIZED until
+  first-experiment result gate); first product = Boundary Evidence
+  Table; attribution principle: "unrecoverable" alone never proves
+  ES — one-legitimate-record closure test first. Same-day REVISION
+  (human direction, §13 operative):
+  `SIMIGO_LAB_PALACE_SIMIGO_BOUNDARY_STUDY_DESIGN_REVISION_EXEC_
+  SEMANTICS_20261002.md` — ES is itself information with execution
+  semantics (special information class inside PALACE's information
+  space, not its opposite); precise question = which necessary
+  information of real work is merely describable vs must keep ES
+  semantics to continue execution; first-experiment probe revised
+  to full-preservation → recover → per-item semantic-survival
+  observation (Boundary Evidence Table v2); discriminating-power
+  gate: task must naturally produce branch/position/pending-
+  operation events or the task is swapped. §14 refinement (same
+  day, DESIGN CLOSED after it): semantic survival split S1
+  explainable / S2 continuable (S2 is what counts; "model
+  understood it" ≠ "ES recovered"); Replay Cost recorded per
+  lost item (R0–R4 vocabulary, formal levels deferred);
+  Continuation ≠ Re-solving is the strongest guard (B arriving
+  at the same result via another path proves nothing — first
+  substantive action must be the next legal operation at the
+  stopping point); anti-tailoring discipline: never design a
+  data structure PALACE saves well just to make the experiment
+  succeed; nomination = state-transition-natural tasks over
+  complex ones (human six-item checklist); STEP 0 = nomination
+  presented (X1 0307/0308 twin-delta organization / X2 S8 gap
+  closure / Y RQ-G2-1 verification), awaiting human pin.
+- EXP1-X1 EXECUTED & ACCEPTED (2026-10-02): A half-run (natural
+  completion stop, frontier = 3 external-verification items),
+  B half-run (released with ONLY the handover sentence + info
+  space; verify-then-continue mixed form; caught two defective
+  records incl. one false load-bearing judgment; extended the
+  frontier 3→12 items), Evidence Table v2 (7 rows) + truth
+  audit done, human result gate = ACCEPT. Key findings: explicit
+  to-do lists = strongest survival form; trust does not transfer
+  with information storage; credibility guarantee lives outside
+  the information itself (in X1 closable from information →
+  information side per closure test).
+- ROUTE CHANGE (human, 2026-10-02): Boundary Study narrowed —
+  X1 ACCEPT/CLOSED, four-case full matrix NOT executed (design
+  retained), Y = ES Boundary Candidate Probe REGISTERED/NOT
+  STARTED (sole purpose: can the post-tool-execution pending
+  state be legally recovered from information space alone).
+  PALACE real-carrier track OPEN: MemPalace 3.10.0 run AS-IS
+  (v0 at SimiGo-Lab/palace-v0/, gitignored; 9,311 drawers from
+  54 real corpus files + 4 EXP1 conversation records). Day-1
+  collisions C-1..C-5 registered (4 PDFs fail extraction / xlsx
+  flattening ~225 drawers per file with NaN pollution / numeric
+  known-answer queries drowned by noise / conversation records
+  outrank source docs both ways / wake-up L1 dominated by NaN
+  fragments). Presence ruling: source docx content IS in the
+  palace (0308 verified at chroma:document level) — failure is
+  ranking-layer, not missing-layer. Self-authored PALACE Schema
+  design remains prohibited — Schema comes from collisions.
+  Next-step priority (a MCP wiring / b collision observation /
+  c real-use phase / d Y probe timing) belongs to human.
+- Execution State Contract v1.0-amended is the upstream semantic
+  reference (`FREEZE CANDIDATE / AWAITING FINAL FREEZE DECLARATION`).
 - Storage technology selection and backend adapter implementation are not authorized.
 
 Therefore an Agent must not jump directly to Palace database implementation, Llama adapter implementation, new oversized harness expansion, or performance benchmarking.
