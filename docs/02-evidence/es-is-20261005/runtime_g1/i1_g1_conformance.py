@@ -279,6 +279,29 @@ def main() -> int:
           ir3["disposition"]["class"] == "BLOCK"
           and ir3["stage"] == "CLOSED")
 
+    # 17 — result blob missing -> V-1 / C-REF-NOT-FOUND (IF-G1-01) ------------
+    root = tmp / "17"
+    store, cr0, cr1, _ = build_chain(root)
+    r_digest = store.get_node(cr1)["result"]["content_digest"]
+    (store.root / "blobs" / r_digest).unlink()
+    res = resolve(cr1, store)
+    check("17 result blob missing -> V-1 / C-REF-NOT-FOUND (UNRESOLVABLE)",
+          res["state"] == "UNRESOLVABLE"
+          and any(v["signature"] == "C-REF-NOT-FOUND" and v["check"] == "V-1"
+                  for v in res["violations"]))
+
+    # 18 — result content substituted -> V-2 / I-MISMATCH (IF-G1-01) ----------
+    root = tmp / "18"
+    store, cr0, cr1, _ = build_chain(root)
+    r_digest = store.get_node(cr1)["result"]["content_digest"]
+    (store.root / "blobs" / r_digest).write_bytes(b"SUBSTITUTED RESULT")
+    res = resolve(cr1, store)
+    check("18 result content substituted -> V-2 / I-MISMATCH "
+          "(RESOLVED-WITH-VIOLATIONS)",
+          res["state"] == "RESOLVED-WITH-VIOLATIONS"
+          and any(v["signature"] == "I-MISMATCH" and v["check"] == "V-2"
+                  for v in res["violations"]))
+
     shutil.rmtree(tmp, ignore_errors=True)
 
     print("\n".join(RESULTS))

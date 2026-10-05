@@ -7,10 +7,12 @@ signatures, the three-state output, and R2 assembly:
   V-1  referability        (i) CR self-identity: canonical identity hash over
                              the record's identity-bearing fields must equal
                              CR_ref — else CR-ID-MISMATCH;
-                          (ii) every referenced target must resolve at its
-                             pinned identity — else C-REF-NOT-FOUND / I-NF
-  V-2  content match       re-materialized items hash-match pinned versions
-                             — else I-MISMATCH
+                          (ii) every referenced target (result, used items)
+                             must EXIST at its pinned address
+                             — else C-REF-NOT-FOUND / I-NF
+  V-2  content match       re-materialized items AND the result hash-match
+                             their pinned versions — else I-MISMATCH
+                             (IF-G1-01 applied: result content-match is V-2)
   V-3  lineage integrity   A-chain unbroken, link-wise hash-consistent, acyclic
                              (visited-set) — else A-SUB / A-NF / A-CYCLE
   V-4  surface integrity   stored surface digest equals the recorded digest
@@ -78,7 +80,8 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
                                           "does not equal CR_ref")],
                 "r2": None}
 
-    # ---- V-1(ii): the result edge must resolve (the resolution target) ----
+    # ---- V-1(ii): the result edge must be REFERABLE (resolution target) ----
+    # IF-G1-01 applied: V-1 owns existence only; result content-match is V-2.
     result_digest = node["result"]["content_digest"]
     result_bytes = store.get_blob(result_digest)
     if result_bytes is None:
@@ -86,13 +89,6 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
                 "violations": [_violation("V-1", "C-REF-NOT-FOUND",
                                           f"result blob {result_digest} "
                                           f"not found")],
-                "r2": None}
-    if sha256_hex(result_bytes) != result_digest:
-        return {"state": "UNRESOLVABLE",
-                "violations": [_violation("V-1", "I-MISMATCH",
-                                          f"result blob content hash "
-                                          f"{sha256_hex(result_bytes)} does not "
-                                          f"match pinned {result_digest}")],
                 "r2": None}
 
     # ---- V-1(ii)/V-2: used items — referability and content match ---------
@@ -123,6 +119,19 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
                          "pinned_digest": u["content_digest"],
                          "present": True, "actual_digest": actual,
                          "bytes": blob})
+
+    # ---- V-2: result content match (moved from V-1 per IF-G1-01) ----------
+    result_actual = sha256_hex(result_bytes)
+    if result_actual != result_digest:
+        violations.append(_violation(
+            "V-2", "I-MISMATCH",
+            f"result content hash {result_actual} does not match pinned "
+            f"{result_digest}"))
+        result_out = {"content_digest": result_digest, "present": True,
+                      "actual_digest": result_actual, "bytes": result_bytes}
+    else:
+        result_out = {"content_digest": result_digest, "present": True,
+                      "actual_digest": result_digest, "bytes": result_bytes}
 
     # ---- V-4: surface integrity -------------------------------------------
     surface_digest = node["surface"]["content_digest"]
@@ -204,7 +213,7 @@ def resolve(cr_ref: str, store: ContentStore, max_chain: int = 64,
     r2 = {
         "surface": surface_out,
         "surface_digest": surface_digest,
-        "result": {"content_digest": result_digest, "bytes": result_bytes},
+        "result": result_out,
         "used_items": used_out,
         "lineage": {"ancestors": lineage_ancestors,
                     "segments": segments,
