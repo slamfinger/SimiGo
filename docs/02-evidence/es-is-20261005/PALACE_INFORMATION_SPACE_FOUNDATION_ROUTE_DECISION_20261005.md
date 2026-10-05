@@ -196,3 +196,37 @@ This ruling authorizes only the read-only feasibility audit. Adapter
 implementation, MemPalace modification, carrier integration, probe execution
 against MemPalace, experiments, backend integration, and Frozen Contract changes
 remain unauthorized.
+
+## 8. MemPalace outcome and Option A4
+
+Human review accepted the MemPalace feasibility audit:
+
+```text
+MemPalace IS-MCI Adapter Feasibility Audit = ACCEPTED / CLOSED
+Delivery                                   = 1540cae
+Candidate                                  = MemPalace local file-backed core
+Classification                             = DIRECT 1 / ADAPTER 2 / GAP 5
+Verdict                                    = MEMPALACE AS-IS NO-GO
+Thin adapter                               = NOT FEASIBLE
+Frozen Contracts                           = UNCHANGED
+```
+
+MemPalace is eliminated **as-is** from the current independent-carrier test. The
+negative result is preserved as a valid candidate elimination, not as a failed
+experiment.
+
+Human then selected **Option A4**: commission a new non-implementation research
+question into the minimal missing carrier layer.
+
+```text
+A4 study        = Carrier Gap Study
+Core question   = What minimal carrier layer is required to satisfy the
+                  MemPalace GAP areas without semantic inference, hidden
+                  completion, candidate mutation, or Frozen Contract change?
+Status          = COMMISSIONED / SCOPE CHARTER PENDING
+Next entry      = Carrier Gap Study — Scope & Research Question Charter
+```
+
+This authorizes conceptual / documentary study only. Adapter implementation,
+carrier implementation, MemPalace mutation, integration, probe execution,
+experiments, backend integration, and Frozen Contract changes remain unauthorized.

@@ -247,13 +247,41 @@ Reason          = closing the five GAPs would build a new carrier layer,
 No MemPalace data was mutated. The audit used read-only MCP inspection, source
 reading, and read-only SQLite checks.
 
+## MemPalace Feasibility Audit ACCEPTED / CLOSED
+
+Human review accepted the negative feasibility result at delivery `1540cae`.
+MemPalace is eliminated **as-is** from the current independent-carrier test; the
+result is preserved as a valid candidate elimination.
+
+```text
+MemPalace audit = ACCEPTED / CLOSED
+Verdict         = MEMPALACE AS-IS NO-GO
+Thin adapter    = NOT FEASIBLE
+PRQ-ISF-01      = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
+```
+
+## Option A4 — Carrier Gap Study COMMISSIONED
+
+Human selected **A4**: authorize a new non-implementation research question into
+the minimal missing carrier layer.
+
+```text
+A4 study      = Carrier Gap Study
+Core question = What minimal carrier layer is required to satisfy the
+                MemPalace GAP areas without semantic inference, hidden
+                completion, candidate mutation, or Frozen Contract change?
+Status        = COMMISSIONED / SCOPE CHARTER PENDING
+Next entry    = Carrier Gap Study — Scope & Research Question Charter
+```
+
 ## Next steps (none auto-open)
 
-1. Human review the negative feasibility result.
-2. Then explicitly choose one: define a composite-carrier research question,
-   search for another independent candidate, pause the Foundation route, or
-   authorize a non-implementation study of the missing carrier layer.
-3. Do not modify MemPalace merely to make it pass `PRQ-ISF-01`.
+1. Enter **Carrier Gap Study — Scope & Research Question Charter**.
+2. Define the exact GAP taxonomy and minimal carrier-layer primitives.
+3. Register non-claims and forbidden shortcuts.
+4. No adapter implementation, carrier implementation, MemPalace mutation,
+   integration, probe execution, experiment, or Frozen Contract change is
+   authorized.
 2. Pin the exact MemPalace audit specimen and read-only boundary.
 3. Classify every `IS-MCI-01..08` obligation as `DIRECT`, `ADAPTER`, or `GAP`.
 4. Return to Human review before any adapter implementation, integration,

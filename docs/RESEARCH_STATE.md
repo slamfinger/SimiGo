@@ -104,8 +104,15 @@
 > 结论 = **MemPalace as-is NO-GO for PRQ-ISF-01 carrier test**；thin adapter
 > 不可行，因为所需补层会形成新 carrier，而不是独立测试 MemPalace。该结果是
 > 有效 negative feasibility result，不是对 MemPalace 本来用途的缺陷判定。
-> 登记于
-> `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md`。
+> Human review 已 ACCEPTED / CLOSED，并将 MemPalace as-is 登记为 candidate
+> elimination。
+> 随后 Human 选择 **Option A4**：授权新的非实现研究问题 **Carrier Gap
+> Study**，研究满足 MemPalace 五个 GAP 所需的最小 missing carrier layer；
+> 当前状态 = COMMISSIONED / SCOPE CHARTER PENDING。范围仍为 conceptual /
+> documentary study；不实现 adapter/carrier、不集成、不执行 probe、不改
+> MemPalace、不做实验、不改契约。登记于
+> `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 
