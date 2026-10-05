@@ -20,6 +20,7 @@ Run:  python3 i1_g2_conformance.py   (exit 0 = all checks pass)
 """
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -77,8 +78,8 @@ def disposition(ir):
 
 def entered(ir):
     """The VV surface was ENTERED = at least one check carries a real
-    verdict tier (VERIFIED/COVENANTED/FAILED). A NOT-APPLICABLE record is
-    the applicability fact of non-entry, not entry."""
+    verdict tier (VERIFIED/COVENANTED/FAILED). A `NOT ENTERED` record is
+    the uniform applicability fact of non-entry, not a fourth tier."""
     return any(v.get("verdict") in ("VERIFIED", "COVENANTED", "FAILED")
                for v in ir["verification"])
 
@@ -112,10 +113,12 @@ def main() -> int:
     cls, sub_t = disposition(ir)
     check("02 degraded chain -> BLOCK / PRECONDITION-BLOCK",
           cls == "BLOCK" and sub_t == "PRECONDITION-BLOCK")
-    check("02b VV-1..7 NOT ENTERED (applicability fact recorded, no tier "
-          "emitted)",
+    expected_vvs = [f"VV-{i}" for i in range(1, 8)]
+    check("02b VV-1..7 all record uniform NOT ENTERED (no tier and no "
+          "NOT-APPLICABLE variant)",
           not entered(ir)
-          and any(v["check"] == "VV-1" and v["verdict"] == "NOT-APPLICABLE"
+          and [v["check"] for v in ir["verification"]] == expected_vvs
+          and all(v["verdict"] == "NOT ENTERED"
                   for v in ir["verification"]))
     check("02c IR closed (attempt record exists, lifecycle = CLOSED)",
           ir["stage"] == "CLOSED" and ir["task_record"]["task_ref"] != "")
@@ -253,10 +256,20 @@ def main() -> int:
     # 07 — IR lifecycle on the happy path: ESTABLISHED -> COMPLETED ----------
     store, cr0, cr1, sub = build_world()
     ir = instantiate(cr1, store, base_tau(), sub, "att-07")
-    check("07 happy-path IR lifecycle: established at step 0 (attempt id + "
-          "TaskRecord) and completed at step 5",
+    tau = base_tau()
+    expected_task_digest = sha256_hex(json.dumps(
+        tau, sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False).encode("utf-8"))
+    expected_used = store.get_node(cr1)["used"]
+    check("07 happy-path IR completion: canonical tau digest, actor/time, "
+          "direct used identities, and frozen lifecycle",
           ir["stage"] == "COMPLETED"
-          and ir["task_record"]["task_content_digest"] is not None
+          and ir["task_record"]["task_content_digest"] == expected_task_digest
+          and bool(ir["timestamp"]) and bool(ir["actor"])
+          and ir["used_item_identities"] == [
+              {"name": u.get("name", ""),
+               "content_digest": u["content_digest"]}
+              for u in expected_used]
           and ir["r2_digest"] is not None
           and ir["substrate_manifest"] is not None
           and ir["position_record"]["method"] == "derived"
@@ -289,7 +302,7 @@ def main() -> int:
     ir = instantiate(cr1, store, base_tau(), sub, "att-10")
     mechanical = all(
         v["verdict"] in ("VERIFIED", "COVENANTED", "FAILED",
-                         "NOT-APPLICABLE")
+                         "NOT ENTERED")
         for v in ir["verification"])
     check("10 VV verdicts confined to the frozen vocabulary "
           "(no semantic tier)", mechanical)

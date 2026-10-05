@@ -1,9 +1,9 @@
 # G-4 Delivery — Per-Carrier Mapping + Audit
 
-Date: 2026-10-05
-Gate state: Implementation Gate OPEN — G-1 / G-2 ACCEPTED/CLOSED; **G-3 ACCEPTED/CLOSED at `397fbca` by Human review**; G-4 delivered, awaiting Human review.
+Date: 2026-10-05 (v2 post-fix audit)
+Gate state: Implementation Gate OPEN — G-1 / G-2 / G-3 ACCEPTED/CLOSED; **G-4 v2 fixes delivered, IF-G4-01..04 fixed but awaiting Human closure/review**.
 Carrier: `ConformanceSubstrate` (`i1_instantiate.py`) — a readback-capable, document-form conformance carrier. No PALACE, backend, or production substrate is selected.
-Basis: source audit of `397fbca`, the machine-readable `G3_ERUN_RECORD.json`, and local re-execution on 2026-10-05: G-1 19/19, G-2 17/17, G-3 10/10.
+Basis: source audit plus local post-fix re-execution on 2026-10-05: G-1 19/19, G-2 17/17, G-3 10/10.
 
 ## 1. Carrier requirements
 
@@ -20,7 +20,7 @@ Basis: source audit of `397fbca`, the machine-readable `G3_ERUN_RECORD.json`, an
 
 | Frozen clause | Carrier object / field / operation | Mechanical verification | E-run result |
 |---|---|---|---|
-| IC-1 information completeness | `R2.surface` → `feed_surface()` / `materialize()`; used identities are reachable only by dereferencing `ir.cr_ref` → R2 (see IF-G4-04) | VV-1 clean/digest gate; VV-2 byte readback; resolved used-item checks upstream | VERIFIED / PASS |
+| IC-1 information completeness | `R2.surface` → `feed_surface()` / `materialize()`; used identities are now written directly to `ir.used_item_identities` (IF-G4-04 FIXED) | VV-1 clean/digest gate; VV-2 byte readback; G-2 equality lock against the CR used set | VERIFIED / PASS |
 | IC-2 binding | `decide_binding()` → `BindingRecord` | mechanical equality of predecessor and declared weights identity; three-state output | BOUND; VV-3 VERIFIED |
 | IC-3 envelope | declared envelope in `tau_star`; captured by `bind()`; read by `envelope_readback()` | VV-4 declared/effective equality | VERIFIED |
 | IC-4 lineage | inherited `R2.lineage.segments` → `ir.attached_segment_provenance`; IR references CR(R1) | VV-6 attachment completeness; CR lineage and E2 parent link | VERIFIED / linked |
@@ -31,7 +31,7 @@ Basis: source audit of `397fbca`, the machine-readable `G3_ERUN_RECORD.json`, an
 | SC-2 substrate bound | `BindingRecord` from `decide_binding()` | three-state mechanical decision | BOUND / VERIFIED |
 | SC-3 envelope active | VV-4 readback versus declared envelope | declared/effective equality | VERIFIED |
 | SC-4 lineage attached | `ir.attached_segment_provenance` | VV-6 completeness | VERIFIED |
-| SC-5 task declared | `ir.task_record` from supplied `tau_star` | task record presence and task digest check | **PRESENT, but see IF-G4-02** |
+| SC-5 task declared | `ir.task_record` from supplied `tau_star` | SHA-256 over canonical supplied `tau_star`; independently recomputed in G-2 (IF-G4-02 FIXED) | PRESENT / digest MATCH |
 | SC-6 position derivable | `PositionRecord` | VV-5 derivation under bound tokenizer | VERIFIED |
 
 Coverage count: 13/13 frozen rows mapped; no row is omitted and no row claims a stronger tier than its recorded evidence.
@@ -39,14 +39,14 @@ Coverage count: 13/13 frozen rows mapped; no row is omitted and no row claims a 
 ## 3. I-1d §5 audit
 
 ```text
-(a) IR per attempt                  PASS for pipeline/evidence structure,
-                                    with IF-G4-01 OPEN on exact §1.1 fields
-(b) VV surface applicability        PARTIAL — success path enters after precondition,
-                                    but precondition-block records VV-1 =
-                                    NOT-APPLICABLE (or, for a missing task_ref,
-                                    no VV result) instead of one explicit
-                                    VV-1..7 = NOT ENTERED fact; IF-G4-03 OPEN
-(c) mapping coverage                13/13 rows mapped above
+(a) IR per attempt                  PASS — exact §1.1 fields, including
+                                    timestamp/actor and direct used identities
+                                    (IF-G4-01/04 FIXED)
+(b) VV surface applicability        PASS — every precondition block records
+                                    uniform VV-1..7 = NOT ENTERED
+                                    (IF-G4-03 FIXED)
+(c) mapping coverage                13/13 rows mapped; SC-5 canonical digest match
+                                    (IF-G4-02 FIXED)
 (d) failure taxonomy                PASS — G-2 exercises BLOCK subtypes,
                                     PROCEED-WITH-ANNOTATION, DECLARED-ALTERNATIVE,
                                     and POST-CREATION-ANOMALY without reclassification
@@ -55,24 +55,26 @@ Coverage count: 13/13 frozen rows mapped; no row is omitted and no row claims a 
 
 C-CAP remains accepted as **SUPPORTED (document-form, limited mechanical support on (c)) — 10/10**. The regression suites were re-run during this G-4 audit with no failure.
 
-## 4. Findings and evidence hygiene
+## 4. IF-G4-01..04 — post-ruling fixes (frozen contracts unchanged)
 
-- **Non-blocking typo, FIXED here:** `G3_ERUN_RECORD.json` identified the accepted v3 delivery as `"G-3 E-run v1"`. The source and persisted record now say `"G-3 E-run v3"`. This changes evidence metadata only.
-- **IF-G4-01 OPEN:** I-1d §1.1 includes `timestamp` and `actor` in a completed IR, but the realized IR has neither field and `ir_validate_completed()` does not check them. This is an exact-field compliance gap, not a silent semantic downgrade; it requires Human resolution.
-- **IF-G4-02 OPEN:** SC-5 requires the TaskRecord digest to match the supplied `tau_star`. The implementation defaults to SHA-256 over `task_ref`, and the E-run does not pass an explicit task digest or verify equality against canonical supplied `tau_star` bytes. Thus TaskRecord presence is proven, but the stronger digest-match claim is not yet mechanically realized.
-- **IF-G4-03 OPEN:** the frozen applicability boundary says a precondition block records `VV-1..VV-7 = NOT ENTERED` as one applicability fact, not a verdict tier. The realized block path writes `{"check":"VV-1","verdict":"NOT-APPLICABLE"}` for a degraded resolve, and no VV result for a missing `task_ref`. This makes the applicability fact non-uniform and resembles an out-of-vocabulary verdict.
-- **IF-G4-04 OPEN:** the frozen IC-1 row puts used-item identities in the IR. The realized IR stores only `cr_ref`; used identities are reached indirectly by resolving that reference to R2. This is an auditable indirection, but not a literal realization of the frozen row's stated IR field.
+Human ruling: treat all four as implementation/evidence defects; no contract revision.
 
-No silent degradation was found: all open items are explicit registered deviations, not hidden contract rewrites. Frozen contracts remain unchanged.
+- **IF-G4-01 FIXED:** completed IRs now carry `timestamp` and `actor`; the completed-IR validator rejects either missing field. G-1/G-2 lock the format.
+- **IF-G4-02 FIXED:** the TaskRecord digest is now SHA-256 over the supplied `tau_star` after canonical JSON serialization (`sort_keys=True`, compact separators, UTF-8). The old `hash(task_ref)` proxy and caller-supplied digest bypass were removed. G-2 independently recomputes and compares the expected digest; the refreshed `G3_ERUN_RECORD.json` persists the resulting `ir_task_record`.
+- **IF-G4-03 FIXED:** every precondition-block path records exactly `VV-1..VV-7` with uniform `NOT ENTERED`; no `NOT-APPLICABLE` variant remains. G-2 checks exact IDs/order, absence of tier values, and absence of the old variant.
+- **IF-G4-04 FIXED:** the IR now carries `used_item_identities` directly (`name` + pinned `content_digest`) from the resolved R2; the validator requires the field, and G-2 compares it to the CR's used set.
 
-## 5. Gate state after G-4 delivery
+The earlier evidence-metadata typo (`v1` → `v3`) remains fixed.
+
+## 5. Post-fix regression and Gate state
 
 ```text
-G-1  ACCEPTED / CLOSED
-G-2  ACCEPTED / CLOSED
-G-3  ACCEPTED / CLOSED
-G-4  DELIVERED — 4 OPEN IMPLEMENTATION FINDINGS
-
-Implementation Gate close is BLOCKED until Human resolves IF-G4-01..04.
-PALACE / backend / extra experiments / frozen-contract changes remain BLOCKED.
+G-1                19/19 PASS
+G-2                17/17 PASS
+G-3                10/10 PASS
+G-4 mapping        13/13 PASS
+IF-G4-01..04       FIXED / implementation+test evidence complete
+Implementation Gate  close pending Human review/closure of G-4 v2
 ```
+
+No silent degradation was found or introduced. Frozen contracts remain unchanged. PALACE / backend / extra experiments / frozen-contract changes remain BLOCKED.

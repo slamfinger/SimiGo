@@ -156,6 +156,7 @@ def recompute_cr_identity(node: Dict[str, Any]) -> str:
 IR_STAGES = ("ESTABLISHED", "CREATED", "COMPLETED", "CLOSED", "ANOMALY")
 
 def ir_new(attempt_id: str, cr_ref: str, task_record: Dict[str, Any],
+           timestamp: str, actor: str,
            meta: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Step-0 attempt record (frozen I-1d §1.1 field list). The TaskRecord
     carries the τ2 identity: task-ref / task-content-digest / declaration
@@ -172,7 +173,10 @@ def ir_new(attempt_id: str, cr_ref: str, task_record: Dict[str, Any],
             "declaration_source": task_record["declaration_source"],
             "version": task_record.get("version"),
         },
+        "timestamp": timestamp,
+        "actor": actor,
         "r2_digest": None,
+        "used_item_identities": None,
         "binding_record": None,        # step 1 (G-2)
         "execution_envelope": None,    # step 1 (G-2)
         "substrate_manifest": None,    # step 7/VV-7 (G-2)
@@ -196,9 +200,11 @@ def ir_validate_completed(ir: Dict[str, Any]) -> List[str]:
     findings: List[str] = []
     if ir.get("stage") != "COMPLETED":
         findings.append("STAGE-NOT-COMPLETED")
-    for field in ("r2_digest", "binding_record", "execution_envelope",
-                  "substrate_manifest", "position_record",
-                  "attached_segment_provenance", "verification"):
+    for field in ("timestamp", "actor", "r2_digest",
+                  "used_item_identities", "binding_record",
+                  "execution_envelope", "substrate_manifest",
+                  "position_record", "attached_segment_provenance",
+                  "verification"):
         if ir.get(field) is None:
             findings.append(f"FIELD-INCOMPLETE:{field}")
     if ir.get("task_record", {}).get("task_content_digest") is None:

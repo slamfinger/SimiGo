@@ -47,11 +47,12 @@
 > 完整 C-CAP 判定持久化于 `G3_ERUN_RECORD.json`；两轮 Finding
 > IF-G3-01..04 已修复）。**G-4 mapping+audit 已交付待复核**：MC-1..6
 > 与 I-1d §1.2 的 13/13 行映射完成，G-1/G-2/G-3 本地复跑无失败；
-> 但 **IF-G4-01..04 OPEN**（IR 缺 timestamp/actor；TaskRecord digest
-> 未证明等于 supplied τ2★；precondition-block 的 VV applicability
-> 表示不符合冻结单点 NOT ENTERED 语义；used identities 仅经
-> `cr_ref` 间接可达而非直接在 IR），
-> Implementation Gate 暂不可收口。
+> Human 已裁定四项均为 implementation/evidence defect，不开启契约修订；
+> **G-4 v2 修复已交付**：IR 补 timestamp/actor、TaskRecord digest 改为
+> canonical supplied τ2★、precondition-block 统一 VV-1..7 = NOT ENTERED、
+> used identities 直接写入 IR。后置回归 G-1 19/19、G-2 17/17、
+> G-3 10/10，G-4 mapping 13/13；**IF-G4-01..04 FIXED，待 Human
+> closure/review 后才收口 Implementation Gate**。
 > PALACE 选择 / E-run 外实验 / 冻结契约修改 / backend 选择 全程 BLOCKED。
 > 实现位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。

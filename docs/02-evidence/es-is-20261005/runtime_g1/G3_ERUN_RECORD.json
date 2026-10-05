@@ -45,6 +45,28 @@
    "detail": "manifest complete"
   }
  ],
+ "ir_task_record": {
+  "task_ref": "task/T2-release-plan",
+  "task_content_digest": "92a597491e681fde180dbf2cb2da7bb50ac9a8e6bfd4ee7f8fc0179c993619dc",
+  "declaration_source": "external/human",
+  "version": "1"
+ },
+ "ir_timestamp": "2026-10-05T12:33:36Z",
+ "ir_actor": "codex/g4-fix",
+ "ir_used_item_identities": [
+  {
+   "name": "F1",
+   "content_digest": "0c9dd9a29a9db6b88da72e19bf9b66fbead98f33cbb4fc3b8e1011ba117e065c"
+  },
+  {
+   "name": "F2",
+   "content_digest": "3cf8f85f077d1e7c04318a7c241c9dc04b5914f5f5a0f8f17f51d54bfb0da058"
+  },
+  {
+   "name": "F3",
+   "content_digest": "4620f4b63437f4395d68680490b00f15ce9579931f953840c739901ef58c7e20"
+  }
+ ],
  "binding": {
   "state": "BOUND",
   "predecessor_weights_id": "W-testbed-1",

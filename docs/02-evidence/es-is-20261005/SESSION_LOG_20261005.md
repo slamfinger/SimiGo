@@ -32,9 +32,9 @@ Key frozen structures: three-level object relation CR → resolve → **R2 (Cont
 | G-1 CR/IR formats + resolve | **ACCEPTED / CLOSED** | `1af023d` + IF-G1-01 fix `3b8b0ba` | 19/19 |
 | G-2 instantiate pipeline + VV-1..7 | **ACCEPTED / CLOSED** | `95bde40` → `17d2ff5` → `e3cde56` | 17/17 |
 | G-3 the E-run | **ACCEPTED / CLOSED** | `bcbaafd` → `aa0eb12` → **`397fbca`** | 10/10 evidence items |
-| G-4 per-carrier mapping + audit | **DELIVERED, awaiting Human review**; IF-G4-01..04 OPEN | see `runtime_g1/G4_DELIVERY.md` | mapping 13/13; local rerun G-1 19/19, G-2 17/17, G-3 10/10 |
+| G-4 per-carrier mapping + audit | **v2 post-fix delivery, awaiting Human closure**; IF-G4-01..04 FIXED | `runtime_g1/G4_DELIVERY.md` | mapping 13/13; post-fix G-1 19/19, G-2 17/17, G-3 10/10 |
 
-**IF ledger (all registered, all fixed, all closed by review):**
+**IF ledger (registered and fixed; G-1..G-3 closed by review, G-4 fixes awaiting Human closure):**
 IF-G1-01 (result attribution V-1 vs V-2) · IF-G2-01 (MISMATCH disposition) ·
 IF-G2-02 (substrate.bind never invoked) · IF-G2-03 (MISMATCH early return) ·
 IF-G2-04 (VV-restore invented an 8th check) · IF-G2-05 (post-creation FAILED
@@ -44,11 +44,10 @@ private state instead of readback capability) · IF-G3-01 (S2 not actually
 consumed by E2) · IF-G3-02 (no-recompute evidence overstated + C-CAP record
 incomplete) · IF-G3-03 (S2 was a guard, not a data source) · IF-G3-04 (two
 instantiate lifecycles) · **IF-G4-01 (IR missing `timestamp`/`actor`;
-OPEN)** · **IF-G4-02 (TaskRecord digest defaults to `task_ref`, not the
-supplied `tau_star`; OPEN)** · **IF-G4-03 (precondition-block VV
-applicability is non-uniform and uses an out-of-vocabulary verdict;
-OPEN)** · **IF-G4-04 (used-item identities are only indirect through
-`cr_ref`, not literally in IR; OPEN)**.
+FIXED)** · **IF-G4-02 (TaskRecord digest now SHA-256 over canonical
+supplied `tau_star`; FIXED)** · **IF-G4-03 (precondition blocks now record
+uniform `VV-1..7 = NOT ENTERED`; FIXED)** · **IF-G4-04 (used identities now written directly into IR;
+FIXED)**.
 
 ## G-3 E-run v3 — ACCEPTED / CLOSED
 
@@ -73,17 +72,16 @@ The delivery is `runtime_g1/G4_DELIVERY.md`. It maps the document-form
 I-1d §1.2. The audit re-ran G-1/G-2/G-3 locally with no failure and fixed the
 non-blocking evidence-metadata typo `"G-3 E-run v1"` → `"G-3 E-run v3"`.
 
-Four explicit Implementation Findings remain OPEN and block Gate close:
+All four G-4 findings are now FIXED with regression locks:
 
-1. **IF-G4-01** — completed IR lacks frozen §1.1 `timestamp` and `actor` fields.
-2. **IF-G4-02** — SC-5's task digest is currently derived from `task_ref`;
-   the implementation does not prove equality with the supplied canonical
-   `tau_star` bytes.
-3. **IF-G4-03** — precondition-block IR records `VV-1 / NOT-APPLICABLE` or
-   no VV entry, rather than the frozen single `VV-1..7 = NOT ENTERED`
-   applicability fact.
-4. **IF-G4-04** — IC-1's used-item identities are reachable through
-   `ir.cr_ref` → R2, but are not stored directly in the IR.
+1. **IF-G4-01 FIXED** — completed IR carries and validates `timestamp`/`actor`.
+2. **IF-G4-02 FIXED** — task digest is SHA-256 over canonical supplied
+   `tau_star`; the old `task_ref` proxy was removed and the digest is
+   independently recomputed in G-2.
+3. **IF-G4-03 FIXED** — precondition blocks record exactly `VV-1..VV-7 =
+   NOT ENTERED`; no `NOT-APPLICABLE` variant remains.
+4. **IF-G4-04 FIXED** — `used_item_identities` is stored directly in IR and
+   compared against the CR used set.
 
 ## Boundaries (standing)
 
@@ -91,6 +89,6 @@ PALACE selection / backend selection / experiments beyond the single E-run / Fro
 
 ## Next steps (none auto-open)
 
-1. **Human resolution of IF-G4-01..04** — fix implementation or rule on contract revision; frozen text is never changed to accommodate implementation.
-2. After all findings close: Human review of **G-4** → Implementation Gate close with the G-1..G-4 bundle.
+1. **Human closure/review of G-4 v2** and IF-G4-01..04 based on the post-fix evidence.
+2. On acceptance: Implementation Gate close with the G-1..G-4 bundle.
 3. Possible after Gate close (Human decision): carrier-form extension (restore + consumed-prefix metrics, P7 assets), carrier evaluation incl. PALACE candidacy, next-candidate research via a new Stage Synthesis.

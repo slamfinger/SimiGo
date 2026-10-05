@@ -25,6 +25,8 @@ run, per the gate package).
 from __future__ import annotations
 
 import hashlib
+import json
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from i1_records import ContentStore, sha256_hex
@@ -141,14 +143,17 @@ def decide_binding(r2: Dict[str, Any], tau_star: Dict[str, Any]) -> Dict[str, An
 def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
                 substrate: ConformanceSubstrate,
                 attempt_id: str,
-                task_digest: Optional[str] = None,
-                verify_lineage_identity: bool = True) -> Dict[str, Any]:
+                verify_lineage_identity: bool = True,
+                actor: str = "codex/g4-fix") -> Dict[str, Any]:
     """The full pipeline. Returns the final IR dict (completed, or closed on
     block). One primary disposition per outcome; lifecycle recorded."""
+    # IF-G4-02: the digest is over the supplied canonical tau_star object —
+    # never a convenience proxy such as task_ref.
+    canonical_tau = json.dumps(tau_star, sort_keys=True,
+                               separators=(",", ":"), ensure_ascii=False)
     task_record = {
         "task_ref": tau_star.get("task_ref", ""),
-        "task_content_digest": task_digest or sha256_hex(
-            tau_star.get("task_ref", "").encode("utf-8")),
+        "task_content_digest": sha256_hex(canonical_tau.encode("utf-8")),
         "declaration_source": tau_star.get("declaration_source", "external"),
         "version": tau_star.get("version"),
     }
@@ -158,7 +163,11 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
         "stage": "ESTABLISHED",
         "cr_ref": cr_ref,
         "task_record": task_record,
+        "timestamp": datetime.now(timezone.utc).isoformat(
+            timespec="seconds").replace("+00:00", "Z"),
+        "actor": actor,
         "r2_digest": None,
+        "used_item_identities": None,
         "binding_record": None,
         "execution_envelope": tau_star.get("envelope"),
         "substrate_manifest": None,
@@ -169,6 +178,14 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
         "lifecycle": {"anomaly": None, "recovery_of": None},
         "meta": {},
     }
+
+    def record_not_entered(reason: str) -> None:
+        # IF-G4-03: one uniform applicability fact per frozen VV id; this is
+        # not a fourth verdict tier.
+        for check_id in (f"VV-{i}" for i in range(1, 8)):
+            ir["verification"].append({
+                "check": check_id, "verdict": "NOT ENTERED",
+                "detail": f"precondition gate failed: {reason}"})
 
     def finish(block_class: Optional[str] = None, subtype: str = "",
                signatures: Optional[List[str]] = None,
@@ -186,21 +203,24 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
     # ---- step 0: precondition gate (R2 must be clean RESOLVED; τ2 present) -
     res = resolve(cr_ref, store, verify_lineage_identity=verify_lineage_identity)
     if res["state"] != "RESOLVED":
-        ir["verification"].append({
-            "check": "VV-1", "verdict": "NOT-APPLICABLE",
-            "detail": f"precondition gate: resolve state = {res['state']}"})
+        record_not_entered(f"resolve state = {res['state']}")
         ir["disposition"] = {"class": "BLOCK", "subtype": "PRECONDITION-BLOCK",
                              "signatures": [v["signature"]
                                             for v in res["violations"]]}
         return finish(state="CLOSED")
     if not tau_star.get("task_ref"):
+        record_not_entered("tau2-star task_ref missing")
         ir["disposition"] = {"class": "BLOCK", "subtype": "PRECONDITION-BLOCK",
                              "signatures": ["TASK-MISSING"]}
         return finish(state="CLOSED")
-    ir["r2_digest"] = res["r2"]["r2_digest"]
-
-    # ---- VV surface ENTERED from here (precondition passed) ---------------
     r2 = res["r2"]
+    ir["r2_digest"] = r2["r2_digest"]
+    # IF-G4-04: used-item identities are recorded directly in the IR, not
+    # left to an implicit cr_ref -> R2 lookup.
+    ir["used_item_identities"] = [
+        {"name": u.get("name", ""), "content_digest": u["pinned_digest"]}
+        for u in r2["used_items"]
+    ]
 
     # ---- step 1: bind (IC-2/IC-3; BindingRecord) ---------------------------
     binding = decide_binding(r2, tau_star)

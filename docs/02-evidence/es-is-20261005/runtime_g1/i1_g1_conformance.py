@@ -236,7 +236,8 @@ def main() -> int:
                 task_record={"task_ref": "task/T2",
                              "task_content_digest": sha256_hex(b"T2 spec"),
                              "declaration_source": "external/human",
-                             "version": "1"})
+                             "version": "1"},
+                timestamp="2026-10-05T00:00:00Z", actor="test/g1")
     ir_set_stage(ir, "COMPLETED")
     ir["r2_digest"] = "r2-digest"
     ir["binding_record"] = {"state": "BOUND"}
@@ -244,16 +245,20 @@ def main() -> int:
     ir["substrate_manifest"] = {"engine-id": "testbed"}
     ir["position_record"] = {"method": "derived"}
     ir["attached_segment_provenance"] = ["E1.seg[0..3]"]
+    ir["used_item_identities"] = []
     ir["verification"] = [{"check": "VV-1", "verdict": "VERIFIED"}]
     findings = ir_validate_completed(ir)
-    check("13 IR lifecycle: ESTABLISHED -> COMPLETED, clean audit",
-          findings == [])
+    check("13 IR lifecycle: ESTABLISHED -> COMPLETED, clean audit "
+          "(timestamp/actor included)",
+          findings == [] and ir["timestamp"] == "2026-10-05T00:00:00Z"
+          and ir["actor"] == "test/g1")
 
     # 14 — IR: incomplete completed record -> audit findings ------------------
     ir2 = ir_new("attempt-2", cr_ref="cr-ref-y",
                  task_record={"task_ref": "task/T2b",
                               "task_content_digest": sha256_hex(b"x"),
-                              "declaration_source": "external/human"})
+                              "declaration_source": "external/human"},
+                 timestamp="2026-10-05T00:00:01Z", actor="test/g1")
     ir_set_stage(ir2, "COMPLETED")  # fields left pending
     findings = ir_validate_completed(ir2)
     check("14 IR completed with pending fields -> audit findings",
@@ -270,7 +275,8 @@ def main() -> int:
     ir3 = ir_new("attempt-3", cr_ref="cr-ref-z",
                  task_record={"task_ref": "task/T3",
                               "task_content_digest": sha256_hex(b"y"),
-                              "declaration_source": "external/human"})
+                              "declaration_source": "external/human"},
+                 timestamp="2026-10-05T00:00:02Z", actor="test/g1")
     ir_set_stage(ir3, "CLOSED")
     ir3["disposition"] = {"class": "BLOCK",
                           "subtype": "PRECONDITION-BLOCK",
