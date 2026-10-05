@@ -268,3 +268,35 @@ Delivered: `EXECUTION_ADMISSIBILITY_EVALUATION_SIGNATURE.md` v0.1 (committed wit
 Decision material registered (none pursued): D-SIG-1 evaluation-consumption divergence (the one class that could break signature-equivalence — the observation this Step is named for); D-SIG-2 Q1 resolution toward modularity; D-SIG-3 M2 specification completion.
 
 Boundary accounting: Case 2 stands; v0.3 stands (fork at interpretation layer only; ES-1-if-ever-chosen ⇒ future v0.4, not proposed); U3/Step-2 STOP untouched; ND-1 in force; Q3/Q4/Q6/Q7/Q5 untouched; all hard boundaries in force. If ES-1 chosen someday it is a codomain revision requiring explicit Human authorization.
+
+---
+
+## Addendum 7 — 2026-10-05: Human seal — ES-3 confirmed; line closed loop (terminal registration)
+
+Human sealed the ES-3 verdict — **no revisions**. Three registered grounds:
+
+1. **M2/M3 correctly placed at the predication layer** — `unevaluable`'s content was always process-factual; no evidence forces elevating the process fact into a third property value.
+2. **Signature-equivalence = the round's most important finding** — enhanced evaluator-side instrumentation will not by itself resolve the fork; *"we can observe evaluation failure"* must never be written as *"therefore unevaluable is Admissibility's third value"* (a predication choice, not an observation).
+3. **Case 2 reinforced, not overturned** — the live comparison is now M3 vs M2, both structured explanatory models; the discipline asks when a distinguishing structural commitment appears, not which label is prettier. Currently none.
+
+Preserved verbatim as a standing research formulation (Human):
+
+> **M3 与 M2 当前在 observation/signature level 上等价，差异位于 predication / ontological accounting，而非已观察到的行为差异。**
+
+This is a genuine **non-identifiability boundary**, not a failed experiment.
+
+Fixed terminal state (binding):
+
+```text
+Case 2                 SEALED
+Spec v0.3              SEALED
+U3 / Step 2            STOPPED
+Step 3                 COMPLETE / ES-3
+M2 vs M3               observationally unresolved
+Model A reopener       NOT TRIGGERED
+New experiment         NOT AUTHORIZED
+```
+
+Standing prohibitions: no further `U_c` work; no M2/M3 continuation; no consumer-trick design aimed at breaking the signature-equivalence.
+
+**Line closed loop**: identifiability analysis → Case 2 (sealed) → Spec v0.3 (sealed) → Step 2 U_c feasibility → U3 (Step 2 STOPPED) → Step 3 Evaluation-Signature → ES-3 (sealed). All open items — D-SIG-1..3, Q1/Q3/Q4/Q6/Q7/Q5, any future v0.4 codomain revision — remain behind explicit Human authorization. Nothing auto-opens.

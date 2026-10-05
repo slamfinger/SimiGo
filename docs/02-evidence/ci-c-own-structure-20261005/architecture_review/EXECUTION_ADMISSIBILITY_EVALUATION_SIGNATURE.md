@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `CONCEPTUAL BOUNDARY REVIEW · NO EXPERIMENT · NO INSTRUMENT CHANGE · NO U_c WORK · VERDICT: ES-3 (PROPOSED — concurs with Human lean) · PENDING HUMAN REVIEW`
+Status: `CONCEPTUAL BOUNDARY REVIEW · NO EXPERIMENT · NO INSTRUMENT CHANGE · NO U_c WORK · VERDICT: ES-3 — SEALED 2026-10-05 (Human Review; no revisions) · LINE CLOSED LOOP`
 Directive: Human ruling 2026-10-05 — **Step 3 (Evaluation-Signature) opened CONCEPTUAL ONLY**, following the U3 stop. Do not continue U_c work; do not modify the probe instrument; do not run experiments. Deliverable: this boundary review, answering four questions, landing exactly one case.
 Predecessors: `MODEL_B_UNIFORMITY_PROBE_DESIGN.md` (Case U3, CONFIRMED EFFECTIVE) + `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.3.md` (SEALED) + `EXECUTION_ADMISSIBILITY_MODEL_AB_IDENTIFIABILITY.md` (SEALED, Case 2) + `RESEARCH_LOG.md` Addenda 1–5.
 Evidence added: none. Experiment authorization: none. No sealed document is modified by this review.
@@ -185,3 +185,33 @@ None of the three is opened, designed, or scheduled by this document.
 | Hard boundaries (RESEARCH_LOG) | All in force |
 
 **Non-claims**: this review does not prove, refute, or revise Model B or M3; does not adopt M2; does not reinterpret 846 or any frozen finding; does not authorize any experiment, instrument change, code, or data collection; does not claim `unevaluable` "does not exist" (instrument-relative lessons of U3 carried over: nothing here is an ontology claim); does not reopen any sealed document or frozen phase. Its sole deliverable is the four answers above and the ES-3 hold.
+
+---
+
+## 6. Human Review record (2026-10-05)
+
+**Verdict: SEALED — ES-3 confirmed, no revisions.** The Human review registered three grounds:
+
+1. **The M2/M3 distinction is correctly placed at the predication layer.** `unevaluable`'s content was always process-factual ("determination cannot be completed"); no current evidence forces elevating that process fact into a third value of Admissibility itself.
+2. **Signature-equivalence is this round's most important finding.** Since 846-style output-absence and any future evaluator-side no-verdict channel produce identical observable channel behavior under both readings, enhanced evaluator-side instrumentation will **not by itself** resolve the fork. It must never be written: *"we can finally observe evaluation failure, therefore unevaluable is Admissibility's third value"* — that is a **predication choice, not an observation**.
+3. **This reinforces Case 2 rather than overturning it.** The live comparison has moved from Model A vs Model B to **M3 vs M2** — both already structured explanatory models. The standing discipline continues: do not ask which label is more elegant; ask **when a concrete structural commitment that distinguishes them appears**. Currently none exists.
+
+Preserved as a standing research formulation of this line (Human, verbatim):
+
+> **M3 与 M2 当前在 observation/signature level 上等价，差异位于 predication / ontological accounting，而非已观察到的行为差异。**
+
+This is not "an experiment that failed to produce a result" — it is a genuine **non-identifiability boundary**.
+
+### Fixed terminal state at seal (Human, binding)
+
+```text
+Case 2                 SEALED
+Spec v0.3              SEALED
+U3 / Step 2            STOPPED
+Step 3                 COMPLETE / ES-3
+M2 vs M3               observationally unresolved
+Model A reopener       NOT TRIGGERED
+New experiment         NOT AUTHORIZED
+```
+
+Standing prohibitions at closure: no further `U_c` work; no M2/M3 continuation; no consumer-trick design aimed at breaking the signature-equivalence. The line hereby forms a **complete closed loop** (identifiability → Case 2 → v0.3 → U3 → ES-3), with every open item behind explicit Human authorization.
