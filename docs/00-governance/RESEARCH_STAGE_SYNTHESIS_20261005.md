@@ -238,6 +238,23 @@ What has never run: **persist(R1 + provenance + relations) → resolve(R1) → S
 
 **Human ruling: Gap I-1 selected as the next Core work.** Selection ≠ implementation: no code, no experiment. First deliverable: **IPAC Persistence / Resolve Conceptual Design v0.1** (`docs/02-evidence/es-is-20261005/`), answering — if IPAC is the candidate relational closure of State↔Information, what relations must a finished Execution State persist into the Information Space, and how are they re-parsed into a continuable State? Sequence fixed: this design → Human Review → then decide Design / Implementation / Experiment. Governance discipline carried: IPAC minimality not claimed; **no PALACE commitment** (relation semantics → persistence model → resolve model → capability criterion first; carrier decided after — anti "carrier-first"). Stage capability criterion registered (Human, verbatim substance): *"not 'can save IPAC', but 'the future can re-parse a continuable Execution State from the Information Space and avoid repeating prior computation.'"*
 
+**Freeze outcome (2026-10-05):** Gap I-1's first deliverable — **IPAC Persistence / Resolve Conceptual Design v0.3 — is FROZEN as the I-1 Core conceptual design baseline** (Human freeze ruling APPROVED/FROZEN; freeze commit **on main: `2b2e2ef`**, whose content = the pre-freeze-patched `7824955` text + FROZEN status/lineage — verified: substance byte-identical, three ruling edits only). Frozen boundaries locked at freeze: R1 ≠ CR (CR_ref = the resolve handle); A-chain lineage-bearing only (State identity open); V-1 includes CR self-identity (CR-ID-MISMATCH); RESOLVED-WITH-VIOLATIONS ≠ success; no-recompute independent of "consume R2", with the semantic-equivalence escape registered as a detection boundary; τ2 externally supplied — resolve does not infer future tasks; edge vocabulary frozen at three; **R2 not declared an Execution State — instantiate completeness formally left to I-1c**; no PALACE binding, no implementation, no experiment.
+
+**Research state after freeze:**
+
+```text
+I-1 Persistence / Resolve Conceptual Design = FROZEN
+        ↓
+I-1c Instantiate Completeness = the next Core design space
+        (stage question: "R2 + τ2 到底还缺什么，才能构成真正可连续执行的 S2？")
+
+Implementation = BLOCKED
+Experiment     = BLOCKED
+PALACE         = BLOCKED
+```
+
+I-1 has moved from "Gap" to a frozen, continuable Core interface definition. The next object of study is no longer "what IPAC is" but what `R2 + τ2` still lacks to constitute a genuinely continuable `S2`.
+
 ---
 
 ## 9. Synthesis gate record (G-5, five questions in order)

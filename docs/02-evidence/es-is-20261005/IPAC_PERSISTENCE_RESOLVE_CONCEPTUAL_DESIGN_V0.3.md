@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `READY FOR FREEZE (pre-freeze patch applied: CR self-identity folded into V-1, per Human pre-freeze review of ef3939b) · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED · AWAITING FREEZE RULING`
-Revision lineage: v0.1 (`6fd02ba`) → review (direction ACCEPT, design REVISE) → v0.2 (`36b2f08`, four core revisions + three reinforcements) → review (revisions confirmed **closed**; reinforcements confirmed; **one conceptual gap + two tightenings before freeze**) → v0.3 (this document) → **pre-freeze patch** (2026-10-05: CR self-identity check folded into V-1 as CR-ID-MISMATCH; drop test reworded to canonical-identity form — no other changes; verification ontology not expanded).
+Status: `FROZEN CONCEPTUAL DESIGN v0.3 · FREEZE RULING 2026-10-05 · IMPLEMENTATION / EXPERIMENT / PALACE REMAIN BLOCKED PENDING SUBSEQUENT GATES`
+Revision lineage: v0.1 (`6fd02ba`) → review (direction ACCEPT, design REVISE) → v0.2 (`36b2f08`, four core revisions + three reinforcements) → review (revisions confirmed **closed**; reinforcements confirmed; **one conceptual gap + two tightenings before freeze**) → v0.3 (this document) → **pre-freeze patch** (2026-10-05: CR self-identity check folded into V-1 as CR-ID-MISMATCH; drop test reworded to canonical-identity form — no other changes; verification ontology not expanded) → **FREEZE RULING (2026-10-05): APPROVED / FROZEN AS CONCEPTUAL DESIGN BASELINE.**
 
 ---
 
@@ -242,7 +242,7 @@ The full `instantiate` design — what must be supplied beyond R2, with what car
 3. **State identity**: open by design (may partly live in the instantiate step).
 4. **Edge-vocabulary sufficiency**: left to next-stage evidence.
 5. PD-1..PD-4: retained with binding notes.
-6. **Freeze decision**: this document is submitted for it; Implementation / Experiment / PALACE remain BLOCKED until the freeze ruling and subsequent gates.
+6. **Freeze decision**: **FROZEN by ruling 2026-10-05.** This freeze applies to the conceptual design only. Implementation, experiment, and PALACE selection remain blocked pending the subsequent I-1c / gate decisions.
 
 ## 8. Non-claims
 
