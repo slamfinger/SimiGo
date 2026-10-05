@@ -103,13 +103,15 @@ Reason                           = Agent entered default main @6c3cf6a;
                                    before L0/L1 were integrated into default entry.
 Path A integration               = fd56946.
 Phase 2 restricted default-entry recovery
-                                 = PASS / DELIVERED / AWAITING HUMAN REVIEW
+                                 = ACCEPTED / BOUNDED PASS / CLOSED
 Phase 2 evidence                 = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_VALIDATION_20261006.md
+Phase 2 ruling                   = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_HUMAN_RULING_20261006.md
 Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of Phase 2 recovery evidence.
+Next gate                        = explicit Human commission only;
+                                   Higher-Layer Charter remains NOT AUTHORIZED.
 ```
 
 ## 4. Completed chain

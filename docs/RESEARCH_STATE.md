@@ -155,11 +155,17 @@
 > I-1d 由 research branch 引入。Human 已批准受控整合；two-parent no-ff merge
 > `fd56946` 已完成，随后 L0 更新并推进 default `main` 至 `2268512`。
 > Frozen Contracts blobs unchanged。Path A 后的 **Phase 2 restricted
-> default-entry recovery** 已登记为 `PASS / DELIVERED / AWAITING HUMAN REVIEW`：
+> default-entry recovery** 已由 Human 裁定为
+> `ACCEPTED / BOUNDED PASS / CLOSED`：
 > 从 `origin/main @2268512` 的 L0 出发，沿 C07/C10/C11/C13/C14 恢复当前路线、
 > 边界与合法下一跳，未进入实现/实验。该结果不是 fully isolated fresh-agent
 > proof；raw trace 未持久化。证据见
-> `PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_VALIDATION_20261006.md`。
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_VALIDATION_20261006.md`，
+> Human ruling 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_HUMAN_RULING_20261006.md`。
+> 该裁定只关闭 Path A default-entry recovery validation；Capsule expansion
+> 保持 paused，Higher-Layer Charter、implementation、experiment、carrier/backend
+> work 与 Frozen Contract change 均保持 NOT AUTHORIZED。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、
