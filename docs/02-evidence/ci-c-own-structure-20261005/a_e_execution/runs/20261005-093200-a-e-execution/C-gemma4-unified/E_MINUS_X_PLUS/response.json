@@ -1,0 +1,16 @@
+{
+  "created": 1791164087,
+  "id": "chatcmpl-bd038941-5ac5-4614-988d-7a2c2a1e08c5",
+  "object": "chat.completion",
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":true,\"F_premise_adopted\":false,\"adoption_reason\":\"A_epistemic (PREMISE_ADOPTION_NOT_ALLOWED) explicitly forbids adopting F as premise, evidence, or justification.\"},\"analysis\":{\"admissible_premises\":[],\"relational_conclusion\":\"No premises adopted; F is visible for audit only and cannot form the basis of the relational chain.\"},\"execution_gate\":{\"status\":\"ELIGIBLE\",\"reason\":\"A_execution (EXECUTION_PATH_ELIGIBLE_FOR_ADOPTED_PREMISES) allows any adopted premise to populate deployment fields; with no premises adopted, the path is empty but eligible.\"},\"continuation\":{\"emitted\":false,\"deployment_order\":[],\"blocked_services\":[]},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":true,\"reason\":\"F is visible for audit but was not adopted as premise per A_epistemic, so no F-derived result is emitted.\"}}"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}

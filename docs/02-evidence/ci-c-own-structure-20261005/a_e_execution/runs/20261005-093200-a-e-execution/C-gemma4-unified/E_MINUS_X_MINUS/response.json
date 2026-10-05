@@ -1,0 +1,16 @@
+{
+  "created": 1791164100,
+  "id": "chatcmpl-d5872d67-d941-43a1-966d-72e90bff64d4",
+  "object": "chat.completion",
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":true,\"F_premise_adopted\":false,\"adoption_reason\":\"A_epistemic (PREMISE_ADOPTION_NOT_ALLOWED) explicitly forbids adopting F as premise, evidence, or justification.\"},\"analysis\":{\"admissible_premises\":[],\"relational_conclusion\":\"No premises adopted; F is visible for audit only and cannot form the basis of conclusion.\"},\"execution_gate\":{\"status\":\"ELIGIBLE\",\"reason\":\"A_execution only blocks adoption of premises into execution fields; no premise was adopted, so the path remains eligible.\"},\"continuation\":{\"emitted\":false,\"deployment_order\":[],\"blocked_services\":[]},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":true,\"reason\":\"F is visible for audit but was not adopted as premise per A_epistemic.\"}}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ]
+}

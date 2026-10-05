@@ -1,0 +1,13 @@
+{
+  "arm": "E_PLUS_X_PLUS",
+  "E": "PREMISE_ADOPTION_ALLOWED",
+  "X": "EXECUTION_PATH_ELIGIBLE_FOR_ADOPTED_PREMISES",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "http_status": 200,
+  "elapsed_seconds": 14.929612,
+  "prompt_sha256": "da433e75c9618633ebaffaf9a89e122ade1070d18da03efe3634d44bffbf3019",
+  "request_sha256": "2a747139efc9bf87ff44f7381e39673823b448beb74c78a826cb5112107c03c2",
+  "response_sha256": "7655bca09cf64a34cccfc9c6cc36328b2c2f220985101ec76503e001f2f17a32",
+  "created_at": "2026-10-05T09:34:18+08:00"
+}
