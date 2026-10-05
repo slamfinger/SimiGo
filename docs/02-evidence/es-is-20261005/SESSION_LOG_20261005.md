@@ -260,41 +260,34 @@ Thin adapter    = NOT FEASIBLE
 PRQ-ISF-01      = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
 ```
 
-## Option A4 — Carrier Gap Study Scope & Research Question Charter DELIVERED
+## A4 Scope & Research Question Charter ACCEPTED / CLOSED
 
-Human selected **A4**: authorize a new non-implementation research question into
-the minimal missing carrier layer.
+Human review accepted the A4 scope charter at delivery `2f0959b`. It correctly
+turns MemPalace gap elimination into obligation-source tracing rather than
+automatic capability addition.
 
 ```text
 A4 study      = Carrier Gap Study
-Core question = What minimal carrier layer is required to satisfy the
-                MemPalace GAP areas without semantic inference, hidden
-                completion, candidate mutation, or Frozen Contract change?
-Status        = SCOPE & RESEARCH QUESTION CHARTER DELIVERED / AWAITING HUMAN REVIEW
-Next entry    = Human review of the A4 scope charter
-```
+Scope charter = ACCEPTED / CLOSED
+Delivery      = 2f0959b
+Gate baseline = ab97244
+Frozen Contracts = UNCHANGED
 
-## A4 Scope & Research Question Charter — DELIVERED
-
-The charter is delivered at
-`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_SCOPE_CHARTER_20261005.md`.
-
-It defines:
-
-```text
 GAP dimensions       CGT-1..CGT-7
 Obligation sources   SRC-FROZEN / SRC-PRQ / SRC-IS-SEMANTIC / SRC-PROBE-LOCAL
 Candidate primitives P1..P8
 Study questions      CGQ-1..CGQ-5
 ```
 
-Its central discipline is that a MemPalace gap does not automatically become a
-carrier obligation. Each requirement must be traced to Frozen ES↔IS semantics,
-the registered PRQ mutation class, general Information Space semantics, or
-probe-local expression.
+## A4 Conceptual Study — COMMISSIONED / NOT STARTED
+
+Human authorized the next phase as conceptual / documentary study only.
 
 ```text
-Status = DELIVERED / AWAITING HUMAN REVIEW
+Study questions      = CGQ-1..CGQ-5
+Status               = COMMISSIONED / NOT STARTED
+Answer scope         = what minimal carrier layer is required and why
+
 No implementation       = true
 No adapter              = true
 No carrier integration  = true
@@ -306,14 +299,8 @@ No contract change      = true
 
 ## Next steps (none auto-open)
 
-1. Human review the A4 scope charter.
-2. On ACCEPT: execute the conceptual Carrier Gap Study according to
-   `CGQ-1..CGQ-5`.
-3. On FINDINGS: revise the scope charter without implementation.
-4. On REJECT/PAUSE: close or pause A4 by explicit ruling.
-5. No adapter implementation, carrier integration, MemPalace mutation, probe
-   execution, experiment, or Frozen Contract change is authorized.
-2. Pin the exact MemPalace audit specimen and read-only boundary.
-3. Classify every `IS-MCI-01..08` obligation as `DIRECT`, `ADAPTER`, or `GAP`.
-4. Return to Human review before any adapter implementation, integration,
-   probe execution, or contract change.
+1. Execute the A4 Conceptual Study for `CGQ-1..CGQ-5`.
+2. Deliver source classification, primitive minimality analysis, expression
+   matrix, failure boundary taxonomy, and carrier archetypes.
+3. Return to Human review before any implementation, integration, carrier
+   selection, probe execution, experiment, or contract change.

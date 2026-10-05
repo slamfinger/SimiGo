@@ -1,13 +1,15 @@
 # Carrier Gap Study — Scope & Research Question Charter
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Study: `A4 — CARRIER GAP STUDY`  
-Phase: `SCOPE & RESEARCH QUESTION CHARTER`  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
-Prior ruling: `639f0ab`  
-MemPalace audit: `ACCEPTED / CLOSED` at `1540cae`  
-Gate baseline: `ab97244`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Study: `A4 — CARRIER GAP STUDY`
+Phase: `SCOPE & RESEARCH QUESTION CHARTER`
+Status: `ACCEPTED / CLOSED BY HUMAN REVIEW`
+Conceptual study: `COMMISSIONED / NOT STARTED`
+Study guard: `CONCEPTUAL / DOCUMENTARY ONLY · NO IMPLEMENTATION · NO ADAPTER · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
+Prior ruling: `639f0ab`
+MemPalace audit: `ACCEPTED / CLOSED` at `1540cae`
+Gate baseline: `ab97244`
 Scope guard: `CONCEPTUAL / DOCUMENTARY STUDY ONLY · NO IMPLEMENTATION · NO ADAPTER · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
 
 ## 1. Purpose
@@ -244,12 +246,21 @@ This charter does not claim that:
 6. implementation or experiment is authorized;
 7. Frozen Contracts authorize a carrier schema.
 
-## 11. Next gate
+## 11. Human review and next gate
 
-Human review of this charter.
+Human review on 2026-10-05:
 
 ```text
-ACCEPT        → execute the A4 conceptual study according to CGQ-1..CGQ-5
-FINDINGS      → revise scope without implementation
-REJECT/PAUSE  → close or pause A4 by explicit ruling
+A4 Scope & Research Question Charter = ACCEPTED / CLOSED
+Delivery                             = 2f0959b
+Baseline                             = ab97244
+Frozen Contracts                     = UNCHANGED
+Next phase                           = A4 Conceptual Study
+Study questions                      = CGQ-1..CGQ-5
+Study status                         = COMMISSIONED / NOT STARTED
 ```
+
+The commissioned study is conceptual / documentary only. It may answer
+`CGQ-1..CGQ-5` and classify candidate primitives, but it must not produce an
+adapter, carrier implementation, integration, probe execution, experiment, or
+Frozen Contract change.

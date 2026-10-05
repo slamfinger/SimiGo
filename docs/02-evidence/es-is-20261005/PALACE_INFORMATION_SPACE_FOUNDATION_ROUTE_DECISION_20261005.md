@@ -224,10 +224,21 @@ Core question   = What minimal carrier layer is required to satisfy the
                   MemPalace GAP areas without semantic inference, hidden
                   completion, candidate mutation, or Frozen Contract change?
 Status          = COMMISSIONED / SCOPE CHARTER PENDING
-Next entry      = Human review of Carrier Gap Study scope charter
+Next entry      = A4 Conceptual Study according to CGQ-1..CGQ-5
 ```
 
-This authorizes conceptual / documentary study only. Adapter implementation,
+Human review accepted the scope charter and commissioned the A4 conceptual study:
+
+```text
+A4 Scope & Research Question Charter = ACCEPTED / CLOSED
+Delivery                             = 2f0959b
+Gate baseline                        = ab97244
+Frozen Contracts                     = UNCHANGED
+A4 Conceptual Study                  = COMMISSIONED / NOT STARTED
+Study questions                      = CGQ-1..CGQ-5
+```
+
+The commissioned study is conceptual / documentary only. Adapter implementation,
 carrier implementation, MemPalace mutation, integration, probe execution,
 experiments, backend integration, and Frozen Contract changes remain unauthorized.
 

@@ -1,7 +1,7 @@
 # PALACE / Information Space Foundation — Carrier Gap Study Commission
 
 Date: 2026-10-05
-Status: `HUMAN RULING COMPLETE · OPTION A4 SELECTED · SCOPE & RESEARCH QUESTION CHARTER DELIVERED / AWAITING HUMAN REVIEW`
+Status: `HUMAN RULING COMPLETE · SCOPE CHARTER ACCEPTED / CLOSED · A4 CONCEPTUAL STUDY COMMISSIONED / NOT STARTED`
 MemPalace audit: `ACCEPTED / CLOSED` at delivery `1540cae`
 MemPalace verdict: `AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST`
 Thin adapter: `NOT FEASIBLE`
@@ -112,7 +112,22 @@ backend integration
 Frozen Contract change
 ```
 
-## 7. Scope & Research Question Charter result
+## 7. Scope charter review and A4 study commission
+
+Human review accepted the scope charter and commissioned the A4 conceptual study.
+
+```text
+Scope & Research Question Charter = ACCEPTED / CLOSED
+Delivery                          = 2f0959b
+Baseline                          = ab97244
+Frozen Contracts                  = UNCHANGED
+A4 Conceptual Study               = COMMISSIONED / NOT STARTED
+Study questions                   = CGQ-1..CGQ-5
+Study guard                       = conceptual / documentary only;
+                                    no implementation or experiment
+```
+
+## 8. Scope & Research Question Charter result
 
 The A4 scope charter is delivered at
 `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_SCOPE_CHARTER_20261005.md`.
@@ -131,6 +146,6 @@ CGQ-5  carrier archetypes
 ```
 
 The charter explicitly separates minimal semantic obligations from probe-local or
-implementation incidental requirements. It authorizes only the conceptual A4
-study after Human review; no implementation, adapter, carrier integration,
-MemPalace mutation, probe execution, experiment, or contract change follows.
+implementation incidental requirements. Human review authorized only the
+conceptual A4 study. No implementation, adapter, carrier integration, MemPalace
+mutation, probe execution, experiment, or contract change follows.

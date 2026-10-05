@@ -108,14 +108,13 @@
 > elimination。
 > 随后 Human 选择 **Option A4**：授权新的非实现研究问题 **Carrier Gap
 > Study**，研究满足 MemPalace 五个 GAP 所需的最小 missing carrier layer；
-> 当前状态 = **Scope & Research Question Charter 已交付待复核**。
-> 该 charter 定义 GAP dimensions `CGT-1..7`、obligation sources
-> `SRC-FROZEN / SRC-PRQ / SRC-IS-SEMANTIC / SRC-PROBE-LOCAL`、候选 carrier-layer
-> primitives `P1..P8`，以及研究问题 `CGQ-1..5`；核心纪律是 MemPalace GAP
-> 不得自动变成 carrier obligation，必须区分为 Frozen semantic、PRQ-bounded、
-> general IS semantic 或 probe-local expression。范围仍为 conceptual /
-> documentary study；不实现 adapter/carrier、不集成、不执行 probe、不改
-> MemPalace、不做实验、不改契约。登记于
+> Scope & Research Question Charter 已 ACCEPTED /
+> CLOSED（delivery `2f0959b`）。A4 Conceptual Study 已授权且尚未开始，必须按
+> `CGQ-1..5` 回答：哪些 IS-MCI 要求来自 Frozen semantics、哪些来自 PRQ
+> mutation class、哪些是 general IS semantic、哪些只是 probe-local；并分析
+> 最小候选 carrier primitives。该阶段仍为 conceptual / documentary study；
+> 不实现 adapter/carrier、不集成、不执行 probe、不改 MemPalace、不做实验、
+> 不改契约。登记于
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
