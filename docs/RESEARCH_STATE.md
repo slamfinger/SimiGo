@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-05
+**Last updated**: 2026-10-06
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 
@@ -152,7 +152,14 @@
 > 因 ancestry 已分叉，执行方式为 controlled integration，而非普通 fast-forward。
 > 受控整合规划已交付：merge-tree clean、proposed merged tree
 > `bac63b9d415e02bf9280311504c39479e8356d82`、I-1/I-1c semantic blobs unchanged、
-> I-1d 由 research branch 引入。merge/default-main update 仍待 Human 授权。
+> I-1d 由 research branch 引入。Human 已批准受控整合；two-parent no-ff merge
+> `fd56946` 已完成，随后 L0 更新并推进 default `main` 至 `2268512`。
+> Frozen Contracts blobs unchanged。Path A 后的 **Phase 2 restricted
+> default-entry recovery** 已登记为 `PASS / DELIVERED / AWAITING HUMAN REVIEW`：
+> 从 `origin/main @2268512` 的 L0 出发，沿 C07/C10/C11/C13/C14 恢复当前路线、
+> 边界与合法下一跳，未进入实现/实验。该结果不是 fully isolated fresh-agent
+> proof；raw trace 未持久化。证据见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_VALIDATION_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、
@@ -173,10 +180,10 @@
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 >
-> **Research Context Index 已建立**：`docs/RESEARCH_CONTEXT_INDEX.md`。
+> **Research Context Index 已建立并进入 default entry**：`docs/RESEARCH_CONTEXT_INDEX.md`。
 > 该索引是 Information Place 的薄导航层，不是权威状态、记忆库或实现。
 > 用途：让新 Agent 从 Git Information Place 快速恢复定位、状态、边界与合法
-> 下一跳。当前 indexing snapshot = `c8fd186`；快速入口已从旧的
+> 下一跳。Path A integration = `fd56946`，L0 update = `2268512`；快速入口已从旧的
 > `NEXT_SESSION_ENTRY.md` 改为该索引。这也是 GitHub 真实验证组对
 > “Information Place 支持新 Agent lawful continuation”的第一例。
 

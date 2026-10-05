@@ -102,8 +102,14 @@ First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
                                    before L0/L1 were integrated into default entry.
 Path A integration               = fd56946.
+Phase 2 restricted default-entry recovery
+                                 = PASS / DELIVERED / AWAITING HUMAN REVIEW
+Phase 2 evidence                 = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_PHASE2_RECOVERY_VALIDATION_20261006.md
+Phase 2 boundary                 = not fully isolated-agent validation;
+                                   raw trace not persisted;
+                                   actual continuation not entered.
 Capsule expansion                = still paused.
-Next validation                  = rerun fresh-Agent recovery from default entry.
+Next gate                        = Human review of Phase 2 recovery evidence.
 ```
 
 ## 4. Completed chain
