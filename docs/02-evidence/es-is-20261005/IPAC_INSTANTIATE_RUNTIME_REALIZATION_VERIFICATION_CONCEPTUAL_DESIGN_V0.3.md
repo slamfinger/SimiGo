@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `REVISED DRAFT v0.3 · INCORPORATES THE HUMAN REVIEW VERDICT ON V0.2 · READY FOR HUMAN REVIEW → FREEZE DECISION · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND BLOCKED`
-Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document).
+Status: `READY FOR FREEZE DECISION (final classification patch applied: POST-CREATION-ANOMALY primary disposition = PROCEED-WITH-ANNOTATION; recovery attempt independently dispositioned) · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND REMAIN BLOCKED`
+Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document) → **final classification patch** (2026-10-05: POST-CREATION-ANOMALY's primary disposition = PROCEED-WITH-ANNOTATION, annotation = IR-INCOMPLETE/POST-CREATION-ANOMALY; recovery attempt independently dispositioned — orthogonality now formal) — freeze-ready.
 
 ---
 
@@ -82,7 +82,7 @@ Unchanged from v0.2 §1.2, including the coverage rule (every row realized, ever
  5. record          IR completed with VV-1..VV-7 → Instantiate Verdict
 ```
 
-POST-CREATION-ANOMALY default recovery: conservative re-instantiation from the same RESOLVED R2; **idempotence not claimed** (per the frozen v0.2 fix).
+POST-CREATION-ANOMALY default recovery: conservative re-instantiation from the same RESOLVED R2; **idempotence not claimed** (per the frozen v0.2 fix). The original attempt's primary disposition is PROCEED-WITH-ANNOTATION (annotation: IR-INCOMPLETE / POST-CREATION-ANOMALY); the recovery attempt independently receives its own disposition.
 
 ---
 
@@ -139,15 +139,23 @@ DISPOSITION CLASS 3 — DECLARED-ALTERNATIVE
                                      (per PD-7 policy); blocks iff the envelope
                                      declares `lineage-strict: required`
 
-LIFECYCLE STATE (not a disposition class)
-    └─ POST-CREATION-ANOMALY        S2 exists but the IR is not completed;
-                                     default recovery: conservative
-                                     re-instantiation from the same RESOLVED R2
-                                     (idempotence not claimed); may coexist with
-                                     the recovery attempt's own disposition
+LIFECYCLE STATE (orthogonal to the disposition classes)
+    └─ POST-CREATION-ANOMALY        S2 exists but the IR is not completed.
+         primary disposition        = PROCEED-WITH-ANNOTATION — the object
+                                      lifecycle continues, with this attempt's
+                                      auditability degraded (not BLOCK: S2
+                                      exists; not DECLARED-ALTERNATIVE: no
+                                      alternative semantics was declared)
+         annotation                 = IR-INCOMPLETE / POST-CREATION-ANOMALY
+         recovery                   = conservative re-instantiation from the same
+                                      RESOLVED R2 (idempotence not claimed); the
+                                      recovery attempt independently receives its
+                                      own disposition (BLOCK /
+                                      PROCEED-WITH-ANNOTATION /
+                                      DECLARED-ALTERNATIVE)
 ```
 
-**Forbidden everywhere: silent degradation** — every deviation is a recorded annotation, a declared alternative, or a block; nothing is unrecorded convenience. **Exhaustiveness now holds formally**: every instantiate outcome maps to exactly one disposition class (with subtype), and the lifecycle state is orthogonal to them.
+**Forbidden everywhere: silent degradation** — every deviation is a recorded annotation, a declared alternative, or a block; nothing is unrecorded convenience. **Exhaustiveness now holds formally, including the anomalous path**: every instantiate outcome maps to exactly one primary disposition class (with subtype) — the POST-CREATION-ANOMALY outcome's primary disposition is PROCEED-WITH-ANNOTATION (annotation: IR-INCOMPLETE / POST-CREATION-ANOMALY), with POST-CREATION-ANOMALY recorded as its orthogonal lifecycle state; recovery attempts are independent attempts and receive their own dispositions.
 
 ---
 
@@ -157,7 +165,10 @@ An implementation claims I-1d compliance iff:
 
 ```text
 (a) an IR exists for every instantiate attempt (established at step 0; completed
-    or closed per the lifecycle) with exactly the §1.1 fields at their verdict tiers;
+    at step 5 on success; closed with its failure disposition on earlier failure;
+    or — under POST-CREATION-ANOMALY — left incomplete with that annotation and
+    the primary disposition PROCEED-WITH-ANNOTATION) with exactly the §1.1 fields
+    at their verdict tiers;
 (b) the verification results VV-1..VV-7 (with tiers) appear in the runtime trace;
 (c) the mapping table is fully covered — no clause without object+check;
 (d) the failure taxonomy is honored — no failure class silently reclassified;
