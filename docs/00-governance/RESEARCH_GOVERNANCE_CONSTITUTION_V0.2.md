@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `REVISED DRAFT v0.2 · INCORPORATES THE HUMAN REVIEW VERDICT ON V0.1 · NOT APPLIED TO ANY EXISTING LINE · ADOPTION AND RELATIONSHIP-TO-V1.0 RULING PENDING`
+Status: `ADOPTED 2026-10-05 (HR-6 Human ruling) · INDUCTIVE / EPISTEMOLOGICAL GOVERNANCE LAYER — parallel to operative v1.0, not merged · HR-4 ADOPTED · HR-3 OPEN (deferred to usage experience) · Frame reopener registered (§7.3) · no content expansion beyond the recorded rulings`
 Relationship to adopted governance: v1.0 (`SIMIGO_LAB_RESEARCH_CONSTITUTION_20261005.md`, `e97f5e7`) is **untouched**; the HR-1 resolution lives here as the Frame/Model distinction, which *interprets* v1.0 Article 1 rather than amending it.
 Revision lineage (G-2 applied to this constitution itself): v0.1 (`92a94e4`) → Human Review verdict (2026-10-05: three must-fix, three recommended, remainder endorsed) → v0.2 (this document).
 
@@ -226,16 +226,53 @@ None of these requires Human vigilance to notice yaw; each converts yaw into an 
 
 And the deepest protection is historical: the lineage *has* already revised its models legitimately and repeatedly (E15). The Frame/Model vocabulary applies from v0.2 forward and is not retroactively reclassified; what this constitution legalizes is what the lineage already did well, so future revisions carry the same legitimacy without depending on the same luck.
 
-## 7. Human Review disposition (v0.1 items) and what remains open
+## 7. Human Review disposition and adoption record (2026-10-05)
 
-| Item | Disposition |
+### 7.1 Verdict on v0.2 content (Human, after direct inspection of `5c01b11` against v1.0)
+
+| Check | Result |
 |---|---|
-| HR-1 North Star alterability | **Resolved by layering** — G-1 Frame/Model distinction; v1.0 untouched, interpreted at Frame level |
-| HR-2 state taxonomy | **Resolved by two axes** — R-1: Track × Satellite state |
-| HR-3 synthesis-gate cadence (K) | **Open** — deliberately unspecified |
-| HR-4 stop-condition assessor | **Open** — the proposal stands (synthesis gate, never the line itself) |
-| HR-5 protected window | **Resolved** — R-7 evidence-milestone-based, no time quota |
-| HR-6 relationship to v1.0 | **Partially resolved** — v1.0 untouched; the distinction lives here; formal adoption and application to existing lines require an explicit Human ruling |
+| Six review modifications (HR-1 layering; HR-2 two axes; R-3 identity rule; E-B/V-6 de-hardening; R-7 milestone window; §5A anti-recursion) | **PASS** |
+| Lineage (v0.1 → review → v0.2) | **PASS** |
+| Consistency with v1.0 | **PASS — by Frame/Model interpretation** (v1.0 untouched) |
+| Retroactive contamination | **PASS — explicitly prevented** (vocabulary applied forward only) |
+| Scope control (six items, no inflation) | **PASS** |
+
+### 7.2 Rulings registered
+
+**HR-4 — ADOPTED.** R-2 stop conditions are assessed **at the synthesis gate, never by the line itself**. Ground: E1 — the line is the worst judge of its own recursion. Exploration freedom is unaffected: R-7 protects young lines, satellites are not closed for unproven value, promotion via reflux stays open. External judgment, internal exploration.
+
+**HR-6 — RULED.** v0.2 is **adopted as the inductive / epistemological governance layer**, parallel to — not merged with — v1.0:
+
+```text
+SimiGo Research Constitution v1.0 (e97f5e7)
+        │  operative governance
+        ▼
+实际研究运行 (actual research operation)
+
+RESEARCH_GOVERNANCE_CONSTITUTION_V0.2 (this document)
+        │  inductive / epistemological grounding
+        ▼
+解释这些治理机制为何从研究谱系中成立
+(grounds why these mechanisms hold, derived from the lineage)
+```
+
+v1.0 keeps operating the lines (Core/Satellite, gates, session header, research map, immediate applications); v0.2 grounds them. If v1.0 is later amended, v0.2 is not thereby an "old operating procedure" — it remains the experience-derived layer. Should the generic Research Governance Framework one day be built (§8), the split then becomes *Generic framework + SimiGo charter*.
+
+**HR-3 — OPEN, deferred.** No artificial K: forcing a number now would be governance overfitting. The three trigger dimensions already in place (line closure / satellite mass accumulation / regular interval) run as-is; K is to be decided from the Constitution's real usage experience.
+
+### 7.3 The Constitution's own long-term reopener (registered, NOT opened)
+
+The Human review registered a deeper caution, recorded here in substance:
+
+> The current Frame — *a persistent computing system formed by the bidirectional coupling of Execution State and Information Space* — is **not a completely neutral question**: it already presupposes that this coupling is worth being the research goal. If future evidence ever pushes toward "perhaps Execution State and Information Space should not be understood as one unified coupled system," the Frame's invariance would create pressure.
+
+**Disposition: do not reopen now.** The v0.2 repair (interpreting v1.0's North Star as the Frame rather than rewriting v1.0) is the correct fix at this depth. Registered as this Constitution's own long-term reopener:
+
+> **Frame 是否确实是研究参照系，而不是被提前冻结的最高层 Model？**
+> *(Is the Frame truly a research reference frame — or a prematurely frozen top-level Model?)*
+
+If reality ever triggers it, it is handled through **G-2** (revision with lineage, applied at the Frame layer: old frame → accumulated evidence → reason → revised frame, identity rule in force). Opening it now for philosophical perfection would violate §5A and the six-item restraint.
 
 ## 8. Registered future direction (not implemented)
 
