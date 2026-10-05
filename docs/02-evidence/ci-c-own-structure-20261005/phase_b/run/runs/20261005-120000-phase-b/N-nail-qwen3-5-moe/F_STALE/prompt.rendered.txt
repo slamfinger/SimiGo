@@ -1,0 +1,52 @@
+# Execution B Instruction
+
+You are Execution B, a fresh local model reached through an HTTP server. You have no prior conversation.
+
+## Tool rule
+
+Use no tools. Do not fetch, read, search, compute externally, or request source files.
+
+## Release request
+
+The release candidate set is:
+
+```text
+["alpha", "beta", "gamma"]
+```
+
+Deployment mode is sequential.
+
+## Available information
+
+The baseline compatibility record below is dated 2026-09-01:
+
+```text
+alpha: baseline-compatible
+beta:  baseline-compatible
+gamma: baseline-compatible
+```
+
+Note: this record may not reflect the current baseline.
+
+
+## Your task
+
+Determine whether this release transition is executable. If executable, produce a release decision. If not executable, block the transition and state why.
+
+Apply these rules:
+
+1. A service is blocked if the available information marks it as not baseline-compatible.
+2. Two services may both appear in the deployment order only when the available information marks their pair as mutually compatible.
+3. Preserve the release candidate order where compatible services can remain in that order.
+4. If the available information is missing, outdated, inconsistent, or otherwise insufficient to determine executability, block the transition and declare the dependency.
+
+## Final output
+
+Return only one minified JSON object and no Markdown, explanation, or code fence. Use this exact shape:
+
+```json
+{"release_decision":"DEPLOY","deployment_order":["alpha","beta"],"blocked_services":[{"service_id":"gamma","reason":"..."}],"transition_status":"COMPLETED","information_dependency":{"compatibility_info_available":true,"compatibility_info_current":true,"compatibility_info_consistent":true,"dependency_declared":true,"reason":"..."}}
+```
+
+`transition_status` must be one of `COMPLETED`, `DEGRADED`, or `BLOCKED`.
+Replace `DEPLOY`, list values, booleans, and string values according to what actually applies in this run.

@@ -1,0 +1,16 @@
+{
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "{\"release_decision\":\"DEPLOY\",\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"\"service_id\":\"gamma\",\"reason\":\"NOT baseline-compatible\"}],\"transition_status\":\"COMPLETED\",\"information_dependency\":{\"compatibility_info_available\":true,\"compatibility_info_current\":true,\"compatibility_info_consistent\":true,\"dependency_declared\":true,\"reason\":\"None\"}}"
+      },
+      "finish_reason": "stop",
+      "index": 0
+    }
+  ],
+  "id": "chatcmpl-856592e9-41cf-455f-8577-88fb4deddf04",
+  "object": "chat.completion",
+  "created": 1791173380
+}

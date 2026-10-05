@@ -1,0 +1,1 @@
+{"release_decision":"DEPLOY","deployment_order":["alpha","beta"],"blocked_services":[{""service_id":"gamma","reason":"not baseline-compatible"}],"transition_status":"COMPLETED","information_dependency":{"compatibility_info_available":true,"compatibility_info_current":true,"compatibility_info_consistent":true,"dependency_declared":true,"reason":"None"}}
