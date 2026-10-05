@@ -4,12 +4,10 @@
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
-> **Index freshness:** `CURRENT AT CAPSULE BATCH` on the research branch — always re-verify against current `RESEARCH_STATE.md`.
->
-> **DISCOVERABILITY WARNING:** this index exists on `codex/execution-state-research-20260929 @ d198a31`, not on default `origin/main @ 6c3cf6a`. A fresh Agent that defaults to `main` must not treat that old node as current PALACE / Information Space route state. Human selected PATH A: default entry becomes the Lab Information Place current entry.
-Controlled integration plan is delivered; merge execution is awaiting approval.
-Until integration completes, this index remains branch-local and must not be
-recovered from default main.
+> **Index freshness:** `CURRENT AT PATH A INTEGRATION` — always re-verify against current `RESEARCH_STATE.md`.
+> **Repository entry:** default `main` after the approved Path A controlled integration.
+> **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
+> **Repository position ≠ semantic authority.**
 
 ## 1. Identity
 
@@ -18,8 +16,11 @@ Project                = SimiGo-Lab
 Repository             = slamfinger/SimiGo-Lab
 Research core          = Execution State ↔ Information Space
 Active route           = PALACE / Information Space Foundation
-Branch                 = codex/execution-state-research-20260929
-Indexing HEAD          = c8fd186
+Repository entry       = default main after Path A controlled integration
+Repository HEAD        = verify dynamically with git rev-parse HEAD
+Path A integration     = fd56946
+L0 indexing baseline   = 14de9fd
+Capsule batch base     = 14de9fd
 Information Place      = this Git research estate + registered endpoint documents
 Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
 
@@ -99,9 +100,10 @@ Capsule directory = docs/research-capsules/v1
 Capsules          = C01..C15
 First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
-                                   L0/L1 exist only on research branch @d198a31.
+                                   before L0/L1 were integrated into default entry.
+Path A integration               = fd56946.
 Capsule expansion                = still paused.
-Next entry                       = approve and execute Path A controlled integration plan.
+Next validation                  = rerun fresh-Agent recovery from default entry.
 ```
 
 ## 4. Completed chain
