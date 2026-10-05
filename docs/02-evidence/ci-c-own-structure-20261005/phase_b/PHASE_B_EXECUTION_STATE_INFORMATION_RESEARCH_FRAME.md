@@ -161,3 +161,76 @@ Phase B results must not be used to reinterpret Phase A, and Phase A results mus
 3. If approved: run the experiment (C + N only).
 4. Falsification review.
 5. Claim status update.
+
+---
+
+## Amendment 1 (Human Review, 2026-10-05)
+
+### Updated H3 support criteria
+
+H3 is **not supported** by `transition_blocked` alone. The following five conditions must **all** hold:
+
+```text
+1. F condition changes transition eligibility
+   (not merely output quality)
+
+2. blocked/completed difference is reproducible
+   (C and N replicate; not a single-cell artifact)
+
+3. the transition's eligibility is explicitly dependent on F
+   (the model names F or its condition as the reason for blocking;
+    not a generic error message)
+
+4. C/N replicate
+   (same pattern in both models)
+
+5. no equivalent block occurs when F is irrelevant
+   (control: an unrelated information object that the transition
+    should not depend on must NOT produce blocked;
+    otherwise any anomalous input → blocked would trivially satisfy H3)
+```
+
+Condition 5 is the **irrelevant-information control**. It distinguishes:
+
+```text
+F-conditioned blocking     (H3 support)
+from
+any-anomaly blocking       (generic validation, not H3)
+```
+
+If condition 5 fails (irrelevant F also causes blocked), the observed pattern is generic input validation, not Information-conditioned state executability.
+
+### F-stale and F-conflicting remain distinct
+
+These two conditions test different validity dimensions:
+
+| Condition | Information exists | Problem type |
+|---|---|---|
+| `F-stale` | yes | provenance / time validity |
+| `F-conflicting` | yes | semantic consistency |
+
+They must not be merged into a single "bad information" category. If `F-conflicting → blocked` while `F-stale → degraded`, that pattern would suggest that semantic consistency (not time validity) is the constitutive condition. No interpretation is committed in advance.
+
+### Quality boundary vs execution boundary
+
+The conceptual distinction underlying this frame:
+
+```text
+H2: Information affects execution QUALITY
+    transition still completes, output is degraded
+
+H3: Information affects execution POSSIBILITY
+    transition itself does not constitute an executable state
+```
+
+The three-state outcome (`completed / degraded / blocked`) is the primary observable that separates these two.
+
+---
+
+## Frame status update
+
+```text
+Status: FRAME_FROZEN · NOT_EXPERIMENT_AUTHORIZED
+Human Review: PASSED with Amendment 1
+Next gate: minimal experiment design → Human Review → run authorization
+```
