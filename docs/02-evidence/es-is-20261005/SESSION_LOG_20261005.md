@@ -108,14 +108,30 @@ PALACE is not an MCP server, knowledge base, database schema, storage product,
 or application integration in this route. Historical PALACE artifacts must be
 reconciled before any is treated as background support.
 
+## PALACE / Information Space Foundation — Phase 1 Charter DELIVERED
+
+The Route Opening Charter is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_OPENING_CHARTER_20261005.md`.
+
+It reconciles old Palace history, fixes the semantic boundary against
+MCP/knowledge-base/database/storage/product misreadings, maps frozen ES↔IS
+semantics to Information Space obligations, defines minimal carrier/interface
+obligations `IS-MCI-01..08`, and preregisters `PRQ-ISF-01` with
+success/failure/indeterminate criteria.
+
+```text
+Status = PHASE 1 DELIVERED / AWAITING HUMAN REVIEW
+No implementation = true
+No carrier selection = true
+No backend integration = true
+No contract change = true
+No experiment = true
+```
+
 ## Next steps (none auto-open)
 
-1. Enter **PALACE / Information Space Foundation — Boundary Reconciliation &
-   Minimal Carrier Charter**.
-2. Reconcile prior PALACE history with the new Information Space foundation
-   question.
-3. Map frozen ES↔IS objects to candidate Information Space obligations.
-4. Define minimal carrier/interface obligations without selecting storage,
-   schema, backend, or product.
-5. Pre-register the first decodable question, judgment criteria, and non-claims.
-6. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Human review the Route Opening Charter.
+2. On ACCEPT: design the minimal decodable probe for `PRQ-ISF-01`.
+3. On FINDINGS: revise the charter without implementation.
+4. On REJECT/PAUSE: close or pause the Foundation route by explicit ruling.
+5. Frozen Contract revision remains non-automatic and requires its own gate.

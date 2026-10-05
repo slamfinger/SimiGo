@@ -59,6 +59,12 @@
 > E-run 外实验、暂停本线继续 PENDING。冻结契约修改仍需独立
 > contract-revision 流程。登记于
 > `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`。
+> **Phase 1 Route Opening Charter 已交付待复核**：完成旧 PALACE 历史
+> reconciliation、语义边界、ES↔IS frozen obligations 到 Information Space
+> 的映射、最小 carrier/interface obligations（IS-MCI-01..08）、首个可判定
+> 问题 `PRQ-ISF-01` 与 success/failure/indeterminate 判据；结论只授权
+> Human review，不授权实现、载体选择、backend、实验或契约修改。登记于
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_OPENING_CHARTER_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 
