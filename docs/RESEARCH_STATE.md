@@ -119,9 +119,20 @@
 > integrity、lineage closure/cycle、frozen failure mapping 和 indeterminacy
 > classification 归为 derived / observation，不视为 carrier-state primitive。
 > Removal analysis 判定 `CS-1..6` 对 registered PRQ class essential。该结果
-> 仍 bounded、非 universal minimum、非 carrier architecture；不选 carrier，
-> 不授权实现。登记于
-> `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`。
+> 仍 bounded、非 universal minimum、非 carrier architecture。
+> Human review 随后 **REFRAME REQUIRED**：`CS-1..6` 是 candidate semantic
+> decomposition，不是六个 physical carrier primitives；正确分层是
+> Information/Relation semantic core → Store boundary → SQLite/InMemory/MemPalace
+> 等可替换 backend。MemPalace 只是不适合作为 direct PRQ semantic carrier，
+> 不因此被排除为未来 backend/migration target。
+> 已交付 **InformationCore / RelationCore Sufficiency Audit**：在 UTF-8/text
+> bounded PRQ domain 下，现有 Core/Relation/Store boundary 足以表达 PRQ-ISF-01
+> continuation graph；不需要新增 Store primitive。pin/succession/lineage 属于
+> Relation 表达 + higher-layer semantics/validation；failure-family mapping 也属
+> higher layer。唯一 conditional semantic gap = arbitrary non-Unicode byte
+> fidelity，因为 `Information.content` 当前是 String。登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`
+> 与 `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

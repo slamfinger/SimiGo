@@ -224,7 +224,7 @@ Core question   = What minimal carrier layer is required to satisfy the
                   MemPalace GAP areas without semantic inference, hidden
                   completion, candidate mutation, or Frozen Contract change?
 Status          = COMMISSIONED / SCOPE CHARTER PENDING
-Next entry      = Human review of A4 Reduction / Ownership Study
+Next entry      = Human review of InformationCore / RelationCore Sufficiency Audit
 ```
 
 Human review accepted the scope charter and commissioned the A4 conceptual study:
@@ -305,3 +305,46 @@ Non-carrier                    mechanical failure surface as a carrier primitive
 
 The study does not select an archetype, authorize implementation, select a
 carrier, or modify Frozen Contracts.
+
+## 12. Human reframe and Core Sufficiency Audit
+
+Human review reframed the A4 result. The prior reduction remains a candidate
+semantic decomposition, not six physical carrier primitives. The corrected chain
+is:
+
+```text
+Frozen ES↔IS semantics
+        ↓
+PRQ-ISF-01 obligations
+        ↓
+Information / Relation semantic core
+        ↓
+Store boundary
+        ↓
+SQLite / InMemory / MemPalace / other backends
+```
+
+The Core Sufficiency Audit is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`.
+
+Its result is:
+
+```text
+For UTF-8/text-bounded PRQ:
+  InformationCore + RelationCore + Store boundaries are sufficient to express
+  PRQ-ISF-01 continuation graph semantics.
+
+No new Store primitive is currently required.
+
+Higher-layer work:
+  CR/canonical mapping, predicate conventions, historical pin resolution,
+  succession semantics, lineage traversal/cycle validation, and frozen
+  failure-family mapping.
+
+Conditional semantic gap:
+  arbitrary non-Unicode byte fidelity in Information.content.
+```
+
+MemPalace is not eliminated as a future backend or migration target; it is only
+ruled out as a direct native PRQ semantic carrier without a semantics-preserving
+adapter.

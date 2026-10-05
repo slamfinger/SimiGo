@@ -1,12 +1,13 @@
 # A4 Reduction / Ownership Study
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Study: `A4 — CARRIER GAP STUDY / REDUCTION & OWNERSHIP`  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
-Prior A4 conceptual study: `eae0b02`, ruled `FINDINGS / REVISE REQUIRED`  
-Gate baseline: `ab97244`  
-Frozen Contracts: `UNCHANGED`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Study: `A4 — CARRIER GAP STUDY / REDUCTION & OWNERSHIP`
+Status: `FINDINGS / REFRAME REQUIRED BY HUMAN REVIEW`
+Reframe audit: `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`
+Prior A4 conceptual study: `eae0b02`, ruled `FINDINGS / REVISE REQUIRED`
+Gate baseline: `ab97244`
+Frozen Contracts: `UNCHANGED`
 Scope guard: `CONCEPTUAL / DOCUMENTARY ONLY · NO IMPLEMENTATION · NO ADAPTER · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
 
 ## 1. Purpose
@@ -26,6 +27,11 @@ carrier-state reduction.
 
 This study does **not** claim a final minimal carrier, select an archetype,
 authorize implementation, or revise MemPalace.
+
+Human review subsequently reframed the result: `CS-1..CS-6` are candidate
+semantic decomposition artifacts, not six physical carrier primitives. The next
+study is `InformationCore / RelationCore Sufficiency Audit`, separating semantic
+Core, Store boundary, backend, and validation layer.
 
 ## 2. Ownership vocabulary
 

@@ -323,7 +323,25 @@ No experiment           = true
 No contract change      = true
 ```
 
-## A4 Reduction / Ownership Study — DELIVERED / AWAITING HUMAN REVIEW
+## A4 Reduction / Ownership Study — FINDINGS / REFRAME REQUIRED
+
+Human review accepted the decomposition as analysis material but rejected the
+interpretation that `CS-1..CS-6` were physical carrier primitives. The corrected
+layering is:
+
+```text
+Information Space semantic object
+        ↓
+Information / Relation semantic core
+        ↓
+Store boundary
+        ↓
+SQLite / InMemory / MemPalace / other backends
+```
+
+The prior study remains useful, but is demoted to candidate semantic
+decomposition. The MemPalace result is also reframed: it is NO-GO as a direct PRQ
+semantic carrier, not eliminated as a possible future backend or migration target.
 
 The required reduction study is delivered at
 `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`.
@@ -364,12 +382,54 @@ No experiment           = true
 No contract change      = true
 ```
 
+## InformationCore / RelationCore Sufficiency Audit — DELIVERED
+
+The reframe audit is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md`.
+
+For the UTF-8/text-bounded PRQ domain, the existing semantic boundary is
+sufficient to express the PRQ-ISF-01 continuation graph:
+
+```text
+O-1 exact content                   SATISFIED BY CORE (text domain)
+O-2 exact reference resolution      SATISFIED BY CORE
+O-3 canonical record integrity      SATISFIED BY CORE + HIGHER-LAYER
+O-4 typed relation preservation     SATISFIED BY RELATION
+O-5 provenance separation           SATISFIED BY CORE
+O-6 historical pin stability        RELATION + HIGHER-LAYER ONLY
+O-7 explicit succession             RELATION + HIGHER-LAYER ONLY
+O-8 lineage closure / acyclicity    RELATION + HIGHER-LAYER ONLY
+O-9 failure visibility              HIGHER-LAYER ONLY
+```
+
+One conditional semantic gap is registered:
+
+```text
+Information.content is String/UTF-8 text.
+Arbitrary non-Unicode byte fidelity would require a separate semantic finding.
+```
+
+No new Store primitive is currently required. Required next work is higher-layer:
+CR/canonical mapping, predicate conventions, pin resolution, succession semantics,
+lineage traversal/cycle validation, and Frozen failure-family mapping.
+
+```text
+Status = DELIVERED / AWAITING HUMAN REVIEW
+No implementation       = true
+No adapter              = true
+No carrier integration  = true
+No MemPalace mutation   = true
+No probe execution      = true
+No experiment           = true
+No contract change      = true
+```
+
 ## Next steps (none auto-open)
 
-1. Human review the A4 Reduction / Ownership Study.
-2. On ACCEPT: authorize a narrow follow-up to define a decodable observation
-   contract for `CS-1..CS-6`, without selecting a carrier.
-3. On FINDINGS: revise the ownership/dependency analysis.
-4. On REJECT/PAUSE: close or pause the Foundation route by explicit ruling.
-5. No implementation, carrier selection, integration, experiment, or Frozen
-   Contract change is authorized.
+1. Human review the Core Sufficiency Audit.
+2. Choose whether to accept the UTF-8/text-domain boundary or open a byte-content
+   semantic finding.
+3. On ACCEPT: authorize a higher-layer continuation-graph semantics/design study,
+   still without implementation.
+4. No backend selection, MemPalace mutation, probe execution, experiment, or
+   Frozen Contract change is authorized.

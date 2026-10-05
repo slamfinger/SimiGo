@@ -2,7 +2,8 @@
 
 Date: 2026-10-05
 Status: `HUMAN RULING COMPLETE · CARRIER PATH A SELECTED · MEMPALACE = FIRST INDEPENDENT CANDIDATE CARRIER`
-Feasibility audit: `DELIVERED / AWAITING HUMAN REVIEW · MEMPALACE AS-IS = NO-GO FOR PRQ-ISF-01 CARRIER TEST`
+Feasibility audit: `ACCEPTED / CLOSED · MEMPALACE AS-IS NO-GO AS DIRECT PRQ SEMANTIC CARRIER`
+Reframe: `MemPalace is not eliminated as a future backend/migration target; audit moved to InformationCore / RelationCore sufficiency`
 Prior PRQ-ISF-01 execution: `ACCEPTED / CLOSED` at `547df19`
 Route research question: still `INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST` until the selected candidate is tested
 Frozen Contracts: `UNCHANGED`
@@ -147,3 +148,31 @@ pass the probe.
 
 Audit record:
 `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md`.
+
+## 8. Human reframe
+
+Human review accepted the audit but rejected the broader interpretation that
+MemPalace was eliminated from the Information Space route. The corrected layering
+is:
+
+```text
+Information Space semantic object
+        ↓
+Information / Relation semantic core
+        ↓
+Store boundary
+        ↓
+SQLite / InMemory / MemPalace / other backends
+```
+
+Therefore:
+
+```text
+MemPalace native schema not directly exposing PRQ semantics
+≠
+MemPalace cannot be a persistence backend or migration target.
+```
+
+Carrier Path A is reframed as candidate evaluation behind the existing
+Core/Store boundary. The next study is
+`InformationCore / RelationCore Sufficiency Audit`.
