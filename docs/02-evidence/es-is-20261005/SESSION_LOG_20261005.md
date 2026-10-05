@@ -136,11 +136,28 @@ No contract change      = true
 No experiment execution = true
 ```
 
+## PRQ-ISF-01 — Minimal Decodable Probe Design DELIVERED
+
+The Phase 2 design is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_PRQ_ISF_01_PROBE_DESIGN_20261005.md`.
+
+It defines a symbolic registered fixture, an abstract IS Port limited to
+`IS-MCI-01..08`, a mechanical decoder with no semantic rescue, handoff to frozen
+I-1 `resolve(CR_ref)` semantics, and scenarios `SC-00..SC-12`. It also
+preregisters route-level `SUCCESS / FAILURE / INDETERMINATE` judgments.
+
+```text
+Status = DESIGN DELIVERED / AWAITING HUMAN REVIEW
+Implementation = NOT AUTHORIZED
+Carrier selection = NOT AUTHORIZED
+Backend integration = NOT AUTHORIZED
+Experiment execution = NOT AUTHORIZED
+Contract change = NOT AUTHORIZED
+```
+
 ## Next steps (none auto-open)
 
-1. Enter **PRQ-ISF-01 — Minimal Decodable Probe Design** when commissioned.
-2. The design objective is the smallest mechanically decodable probe for
-   `PRQ-ISF-01`, not a PALACE architecture proposal.
-3. Implementation, carrier selection, backend integration, and experiment
-   execution remain unauthorized.
+1. Human review the probe design.
+2. On ACCEPT: a separate commission may authorize implementation and execution.
+3. On FINDINGS: revise the design without implementation.
 4. Frozen Contract revision remains non-automatic and requires its own gate.
