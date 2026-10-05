@@ -1,0 +1,59 @@
+{
+ "run": "G-3 E-run v1",
+ "r2_state": "RESOLVED",
+ "ir_stage": "COMPLETED",
+ "ir_disposition": {
+  "class": "PROCEED-WITH-ANNOTATION",
+  "annotations": [
+   "carrier state absent: no carrier-form no-recompute evidence (document-form run)"
+  ]
+ },
+ "ir_verification": [
+  {
+   "check": "VV-1",
+   "verdict": "VERIFIED",
+   "detail": "R2 clean RESOLVED; r2_digest 0a7eae3420b1a85584b9d07cc93a06fcdb62d4c96eaca931811bf32692df3ef6"
+  },
+  {
+   "check": "VV-3",
+   "verdict": "VERIFIED",
+   "detail": "binding state = BOUND"
+  },
+  {
+   "check": "VV-6",
+   "verdict": "VERIFIED",
+   "detail": "4 inherited segment identifiers attached"
+  },
+  {
+   "check": "VV-2",
+   "verdict": "VERIFIED",
+   "detail": "readback byte-identical to R2.surface"
+  },
+  {
+   "check": "VV-4",
+   "verdict": "VERIFIED",
+   "detail": "effective envelope == declared ε2"
+  },
+  {
+   "check": "VV-5",
+   "verdict": "VERIFIED",
+   "detail": "position derived: 109 units"
+  },
+  {
+   "check": "VV-7",
+   "verdict": "VERIFIED",
+   "detail": "manifest complete"
+  }
+ ],
+ "binding": {
+  "state": "BOUND",
+  "predecessor_weights_id": "W-testbed-1",
+  "declared_weights_id": "W-testbed-1"
+ },
+ "ccap": {},
+ "cr_chain": {
+  "cr1": "07cd824446da6b8301b73f638baf0599682d593f9917522b4c8d5020a012a912",
+  "cr2": "383ab8632ab65da9203fa5e2b9d1ec0bac650203f028feb71eb874e7a7c0e326"
+ },
+ "verdict": "SUPPORTED"
+}

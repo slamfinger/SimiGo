@@ -13,7 +13,7 @@ runtime_g1/i1_instantiate.py       the pipeline (steps 0-5) + Verification
                                    Surface VV-1..VV-7 with tiers + BindingRecord
                                    three-state decision + dispositions/lifecycle
                                    + OpaqueSubstrate (IF-G2-06 path)
-runtime_g1/i1_g2_conformance.py    16 implementation self-checks proving the
+runtime_g1/i1_g2_conformance.py    17 implementation self-checks proving the
                                    frozen semantics hold TOGETHER inside one
                                    instantiate lifecycle (no drift)
 ```
@@ -97,6 +97,10 @@ IF-G2-08 (MUST FIX)  VV-4's VERIFIED/COVENANTED decision relied on
 **No Frozen Contract conflict in either round.** Remaining self-check corrections were conformance defects (annotation expectation; `entered()` semantics = verdict tiers, not entry existence), not implementation or contract issues.
 
 ## 4. Conformance results
+
+**Provenance note (registered per Human review of v2):** the counts below are
+the delivery's own run results; the Human acceptance verified the source and
+test structure (GitHub CI/status did not re-execute them).
 
 `python3 i1_g2_conformance.py` → **17/17 PASS**; `i1_g1_conformance.py` →
 19/19 PASS (no regression). Coverage: all three BLOCK subtypes (incl. the
