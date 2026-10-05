@@ -27,7 +27,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from i1_records import sha256_hex
-from i1_instantiate import ConformanceSubstrate, instantiate
+from i1_instantiate import (ConformanceSubstrate, OpaqueSubstrate,
+                            instantiate)
 
 RESULTS = []
 
@@ -133,14 +134,18 @@ def main() -> int:
           and any("UNDECIDABLE" in a
                   for a in ir["disposition"]["annotations"]))
 
-    # 04 — MISMATCH + cross-model allowed -> DECLARED-ALTERNATIVE ------------
+    # 04 — MISMATCH + allowed -> DECLARED-ALTERNATIVE recorded with a
+    #      COMPLETED IR (full lifecycle continues — IF-G2-03) ---------------
     store, cr0, cr1, sub = build_world()
     ir = instantiate(cr1, store,
                      base_tau(weights_id="W-other-model"), sub, "att-04")
     cls, _ = disposition(ir)
-    check("04 MISMATCH + allowed -> DECLARED-ALTERNATIVE",
+    check("04 MISMATCH + allowed -> DECLARED-ALTERNATIVE on a COMPLETED IR "
+          "(steps 2-5 executed; no early return)",
           cls == "DECLARED-ALTERNATIVE"
           and ir["binding_record"]["state"] == "MISMATCH"
+          and ir["stage"] == "COMPLETED"
+          and ir["substrate_manifest"] is not None
           and any("MISMATCH" in a
                   for a in ir["disposition"]["annotations"]))
 
@@ -155,17 +160,62 @@ def main() -> int:
     check("05 MISMATCH + lineage-strict required -> BLOCK / POLICY-BLOCK",
           cls == "BLOCK" and sub_t == "POLICY-BLOCK")
 
-    # 06 — every path: exactly one primary disposition ------------------------
+    # 06 — every EXERCISED outcome carries exactly one primary disposition
+    #      (coverage note: anomaly + recovery transitions land at G-3) ------
     store, cr0, cr1, sub = build_world()
-    irs = [instantiate(cr1, store, base_tau(), sub, f"att-06-{i}")
-           for i in range(1)]
+    outcomes = [
+        instantiate(cr1, store, base_tau(), sub, "att-06-a"),      # BOUND
+        instantiate(cr1, store, base_tau(weights_id="W-other"),
+                    sub, "att-06-b"),                              # MISMATCH
+    ]
+    node = store.get_node(cr0)
+    node["provenance"].pop("weights_id")
+    store.overwrite_node(node, cr0)
+    outcomes.append(instantiate(cr1, store, base_tau(), sub, "att-06-c"))
     count_ok = all(
-        (ir["disposition"]["class"] in
-         ("BLOCK", "PROCEED-WITH-ANNOTATION", "DECLARED-ALTERNATIVE"))
-        and ir["disposition"].get("lifecycle_only") is None
-        for ir in irs)
-    check("06 every outcome carries exactly one primary disposition class",
-          count_ok)
+        o["disposition"]["class"] in
+        ("BLOCK", "PROCEED-WITH-ANNOTATION", "DECLARED-ALTERNATIVE")
+        for o in outcomes)
+    seen = {o["disposition"]["class"] for o in outcomes}
+    check("06 exercised outcomes (BOUND/MISMATCH/UNBOUND) each carry exactly "
+          "one primary disposition",
+          count_ok and seen == {"PROCEED-WITH-ANNOTATION",
+                                "DECLARED-ALTERNATIVE"})
+
+    # 06b — opaque substrate: VV-2/VV-4 land COVENANTED, never ENVELOPE-DRIFT
+    #      (IF-G2-06: the three-tier discipline proven on an unobservable
+    #       substrate path) --------------------------------------------------
+    store, cr0, cr1, _ = build_world()
+    opaque = OpaqueSubstrate("opaque-engine", "tokenizer-v1", "W-testbed-1")
+    ir = instantiate(cr1, store, base_tau(), opaque, "att-06b")
+    vv2 = next(v for v in ir["verification"] if v["check"] == "VV-2")
+    vv4 = next(v for v in ir["verification"] if v["check"] == "VV-4")
+    check("06b opaque substrate -> VV-2/VV-4 COVENANTED (explicit covenant; "
+          "ENVELOPE-DRIFT not claimable)",
+          vv2["verdict"] == "COVENANTED" and vv4["verdict"] == "COVENANTED"
+          and all("ENVELOPE-DRIFT" != v.get("signature")
+                  for v in ir["verification"])
+          and ir["stage"] == "COMPLETED")
+
+    # 06c — POST-CREATION-ANOMALY: a FAILED check past the creation point is
+    #      a lifecycle state + PROCEED-WITH-ANNOTATION, never CREATE-BLOCK
+    #      (IF-G2-05) ----------------------------------------------------------
+    store, cr0, cr1, sub = build_world()
+    # an unfaithful substrate: materialize succeeds (creation point crossed),
+    # then readback observes surface infidelity
+    class UnfaithfulSubstrate(ConformanceSubstrate):
+        def readback_surface(self) -> bytes:
+            return b"[UNFAITHFUL READBACK]"
+    unfaithful = UnfaithfulSubstrate("bad-engine", "tokenizer-v1",
+                                     "W-testbed-1")
+    ir = instantiate(cr1, store, base_tau(), unfaithful, "att-06c")
+    check("06c post-creation FAILED check -> ANOMALY lifecycle + "
+          "PROCEED-WITH-ANNOTATION (never CREATE-BLOCK)",
+          ir["stage"] == "ANOMALY"
+          and ir["lifecycle"]["anomaly"]["state"] == "POST-CREATION-ANOMALY"
+          and ir["disposition"]["class"] == "PROCEED-WITH-ANNOTATION"
+          and any("POST-CREATION-ANOMALY" in a
+                  for a in ir["disposition"]["annotations"]))
 
     # 07 — IR lifecycle on the happy path: ESTABLISHED -> COMPLETED ----------
     store, cr0, cr1, sub = build_world()

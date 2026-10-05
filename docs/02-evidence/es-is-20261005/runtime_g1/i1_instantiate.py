@@ -32,9 +32,9 @@ from i1_resolve import resolve
 
 
 class ConformanceSubstrate:
-    """MC-1..MC-6 minimal testbed substrate. Realizes bind / materialize /
-    attach surface readback (VV-2 VERIFIED path); restore is available but
-    not taken (document-form)."""
+    """MC-1..MC-6 minimal testbed substrate (readback-capable). Realizes
+    bind / materialize / attach surface readback (VV-2/VV-4 VERIFIED path);
+    restore is available but not taken (document-form)."""
 
     def __init__(self, engine_id: str, tokenizer_id: str,
                  weights_id: str) -> None:
@@ -78,6 +78,18 @@ class ConformanceSubstrate:
         data = hashlib.sha256(carrier_state).digest()
         return {"consumed_prefix_units": int.from_bytes(data[:4], "big") % 1024,
                 "taken": True}
+
+
+class OpaqueSubstrate(ConformanceSubstrate):
+    """IF-G2-06: an opaque substrate — NO readback interface. VV-2/VV-4
+    cannot observe the property on it: the checks land COVENANTED (explicit
+    trust boundary recorded), never VERIFIED and never ENVELOPE-DRIFT."""
+
+    def readback_surface(self) -> bytes:
+        raise NotImplementedError("opaque substrate: surface unobservable")
+
+    def envelope_readback(self) -> Dict[str, Any]:
+        raise NotImplementedError("opaque substrate: envelope unobservable")
 
 
 def decide_binding(r2: Dict[str, Any], tau_star: Dict[str, Any]) -> Dict[str, Any]:
@@ -175,28 +187,29 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
             ir["disposition"] = {"class": "BLOCK", "subtype": "POLICY-BLOCK",
                                  "signatures": ["MISMATCH-LINEAGE-STRICT-REQUIRED"]}
             return finish(state="CLOSED")
-        # frozen final patch: the envelope decides the primary disposition —
-        # MISMATCH + cross-model allowed => DECLARED-ALTERNATIVE (no side-branch)
-        annotations = ["MISMATCH: declared cross-model continuation"]
-        if tau_star.get("carrier_state") is None:
-            annotations.append("carrier state absent: no carrier-form "
-                               "no-recompute evidence (document-form run)")
-        ir["disposition"] = {"class": "DECLARED-ALTERNATIVE",
-                             "annotations": annotations}
-        ir["stage"] = "COMPLETED"
-        return ir
+        # IF-G2-03: DECLARED-ALTERNATIVE is the PRIMARY DISPOSITION recorded
+        # with the completed IR — NOT a lifecycle termination. The pipeline
+        # continues through steps 2-5 (the declared cross-model continuation
+        # is still instantiated, attached, recorded).
+        disposition_primary: Dict[str, Any] = {
+            "class": "DECLARED-ALTERNATIVE",
+            "annotations": ["MISMATCH: declared cross-model continuation"]}
+        annotations: List[str] = []
     else:
+        disposition_primary = None
         annotations = []
         if binding["state"] == "UNBOUND":
             annotations.append("UNBOUND: lineage-strict status UNDECIDABLE")
 
     # ---- step 2: restore (optional; document-form does NOT take it) --------
+    # IF-G2-04: restore metrics are LIFECYCLE INSTRUMENTATION (IR annotation),
+    # never a Verification check — the VV numbering is frozen at VV-1..VV-7.
     restore_note = None
     if tau_star.get("carrier_state") is not None:
         m = substrate.restore(tau_star["carrier_state"])
-        ir["verification"].append(
-            {"check": "VV-restore", "verdict": "VERIFIED",
-             "detail": f"consumed-prefix {m['consumed_prefix_units']}"})
+        restore_note = (f"restore taken: consumed-prefix "
+                        f"{m['consumed_prefix_units']} units "
+                        f"(instrumentation, not a VV check)")
     else:
         restore_note = ("carrier state absent: no carrier-form no-recompute "
                         "evidence (document-form run)")
@@ -220,37 +233,68 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
          "detail": f"{len(attached)} inherited segment identifiers attached"})
 
     # ---- step 5: record — Verification Surface ------------------------------
+    # IF-G2-05: past the creation point, a FAILED check is a
+    # POST-CREATION-ANOMALY (lifecycle state; primary disposition
+    # PROCEED-WITH-ANNOTATION with anomaly annotation + conservative
+    # re-instantiation as recovery) — never rewritten into CREATE-BLOCK.
+
+    def post_creation_anomaly(signature: str, detail: str) -> Dict[str, Any]:
+        ir["verification"].append(
+            {"check": signature.split("-")[0], "verdict": "FAILED",
+             "signature": signature, "detail": detail})
+        ir["lifecycle"]["anomaly"] = {
+            "state": "POST-CREATION-ANOMALY", "signature": signature,
+            "recovery": "conservative re-instantiation from the same "
+                        "RESOLVED R2 (idempotence not claimed)"}
+        ir["disposition"] = {
+            "class": "PROCEED-WITH-ANNOTATION",
+            "annotations": (annotations
+                            + [f"IR-INCOMPLETE / POST-CREATION-ANOMALY "
+                               f"({signature})"])}
+        ir["stage"] = "ANOMALY"
+        return ir
+
     # VV-1: input precondition (R2 clean + digest match)
     ir["verification"].insert(0, {
         "check": "VV-1", "verdict": "VERIFIED",
         "detail": f"R2 clean RESOLVED; r2_digest {r2['r2_digest']}"})
-    # VV-2: surface faithfulness (readback-verified on this substrate)
+    # VV-2: surface faithfulness — readback-verified, or COVENANTED on an
+    # opaque substrate (IF-G2-06); FAILED past creation = anomaly (IF-G2-05)
     substrate.feed_surface(r2["surface"])
-    rb = substrate.readback_surface()
-    if rb == r2["surface"]:
+    try:
+        rb = substrate.readback_surface()
+    except NotImplementedError:
         ir["verification"].append(
-            {"check": "VV-2", "verdict": "VERIFIED",
-             "detail": "readback byte-identical to R2.surface"})
+            {"check": "VV-2", "verdict": "COVENANTED",
+             "detail": "surface unobservable on this substrate — explicit "
+                       "trust boundary recorded (covenant, not verification)"})
+    else:
+        if rb == r2["surface"]:
+            ir["verification"].append(
+                {"check": "VV-2", "verdict": "VERIFIED",
+                 "detail": "readback byte-identical to R2.surface"})
+        else:
+            return post_creation_anomaly(
+                "SURFACE-INFIDELITY", "readback differs from R2.surface")
+    # VV-4: envelope equality — readback-verified, or COVENANTED when the
+    # effective envelope is unobservable (never "ENVELOPE-DRIFT": not
+    # knowing whether there is a violation != discovering a violation)
+    envelope_observable = not isinstance(substrate, OpaqueSubstrate)
+    if envelope_observable:
+        eff = substrate._envelope
+        if eff == tau_star.get("envelope"):
+            ir["verification"].append(
+                {"check": "VV-4", "verdict": "VERIFIED",
+                 "detail": "effective envelope == declared ε2"})
+        else:
+            return post_creation_anomaly(
+                "ENVELOPE-DRIFT", "readback mismatch")
     else:
         ir["verification"].append(
-            {"check": "VV-2", "verdict": "FAILED",
-             "signature": "SURFACE-INFIDELITY",
-             "detail": "readback differs from R2.surface"})
-        return finish(block_class="BLOCK", subtype="CREATE-BLOCK",
-                      signatures=["SURFACE-INFIDELITY"])
-    # VV-4: envelope equality (readback on this substrate)
-    eff = substrate._envelope
-    if eff == tau_star.get("envelope"):
-        ir["verification"].append(
-            {"check": "VV-4", "verdict": "VERIFIED",
-             "detail": "effective envelope == declared ε2"})
-    else:
-        ir["verification"].append(
-            {"check": "VV-4", "verdict": "FAILED",
-             "signature": "ENVELOPE-DRIFT",
-             "detail": "readback mismatch"})
-        return finish(block_class="BLOCK", subtype="CREATE-BLOCK",
-                      signatures=["ENVELOPE-DRIFT"])
+            {"check": "VV-4", "verdict": "COVENANTED",
+             "detail": "effective envelope unobservable on this substrate — "
+                       "explicit trust boundary recorded (covenant, not "
+                       "verification); ENVELOPE-DRIFT not claimable"})
     # VV-5: position derivation (PD-6 derived)
     pos_units = substrate.tokenize_position(r2["surface"])
     ir["position_record"] = {"method": "derived", "tokenizer_id":
@@ -270,7 +314,13 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
     # ---- annotations + disposition ------------------------------------------
     if restore_note:
         annotations.append(restore_note)
-    ir["disposition"] = {"class": "PROCEED-WITH-ANNOTATION",
-                         "annotations": annotations}
+    if disposition_primary is not None:
+        # MISMATCH + cross-model allowed: primary = DECLARED-ALTERNATIVE,
+        # recorded with the COMPLETED IR (full lifecycle, IF-G2-03)
+        disposition_primary["annotations"].extend(annotations)
+        ir["disposition"] = disposition_primary
+    else:
+        ir["disposition"] = {"class": "PROCEED-WITH-ANNOTATION",
+                             "annotations": annotations}
     ir["stage"] = "COMPLETED"
     return ir
