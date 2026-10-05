@@ -1,7 +1,7 @@
 # Research Log — Execution Admissibility
 
 Date: 2026-10-05
-Terminal commit: `5f8bf23`
+Terminal commit: `5f8bf23` (handoff snapshot; post-review state in Addendum at end of file)
 Branch: `codex/execution-state-research-20260929`
 Worktree: clean
 
@@ -114,3 +114,23 @@ No Eligible(T | S, C) extension without S definition + manipulation + interactio
    - Or pause and begin a new research thread
 3. Do NOT re-run existing experiments or re-open frozen phases.
 4. All claims and their evidence levels are documented in the referenced commits.
+
+---
+
+## Addendum — 2026-10-05: Human direction after log review (Identifiability Analysis v0.1)
+
+Human reviewed this log and Spec v0.2 and directed: settle **Model A/B identifiability before any discriminating experiment** (no code, no experiments).
+
+Delivered: `EXECUTION_ADMISSIBILITY_MODEL_AB_IDENTIFIABILITY.md` (v0.1, committed with this addendum).
+
+Verdict (PROPOSED — pending Human Review seal): **Case 2.** Model A (result label, as stated in v0.2) entails no outcome constraints, so A/B strict identifiability fails **by construction**, not by an evidence gap; A and B are observationally equivalent over the current observable space. Key registrations:
+
+- **ND-1**: any newly established condition (D-absent → BLOCKED) is A/B-neutral evidence — it counts toward Q8 only, never as conjunction-structure evidence, and never as evidence for Model A.
+- Model B retained as **productive hypothesis / explanatory model**; its empirical content relocates to its own falsifiable commitments: no-rescue necessity, mixed-state propagation semantics, uniform three-state behavior across conditions (Q8 re-scoped as B-testing, not A/B discrimination).
+- Spec gap registered: v0.2 does not define mixed-state propagation (e.g., X `false` + F `unevaluable` → output class undefined). This is the precondition gap for any future mixed-configuration test.
+
+Human priority order registered: Q2 (settled by this note, pending seal) > Q8 (re-scoped) > Q3/Q4. Q6 stays unresolved; Q7 stays uninterpreted; Q5 stays closed.
+
+Next-step candidates (Human Review required; nothing auto-opens): ① Spec v0.3 — complete B's mixed-state propagation semantics (conceptual only); ② re-scoped Multiple Necessary Conditions Probe (design-gated, B-uniformity framing under ND-1); ③ evaluation-signature observable question (new, open — would re-pose identifiability on a wider observable space).
+
+This addendum supersedes the "Next session" section above.
