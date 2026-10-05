@@ -85,12 +85,31 @@ All four G-4 findings are CLOSED by Human review after implementation and indepe
 4. **IF-G4-04 CLOSED** — `used_item_identities` is stored directly in IR and
    compared against the CR used set.
 
-## Post-Gate boundaries
+## Post-Gate Route Decision — CLOSED
 
-Implementation Gate is CLOSED. PALACE, backend integration, experiments beyond the single E-run, a paper/report evidence package, or pausing this line are now **route candidates eligible for evaluation**, but **BLOCKED → ELIGIBLE ≠ AUTO-START**. None is selected. Implementation deviations still enter as Implementation Findings first; Frozen Contract modification still requires an independent reason and contract-revision process. The v0.2 Constitution's §5A applies to governance itself.
+Human selected **REPORT / PAPER EVIDENCE PACKAGE** as the唯一 Active Route at
+baseline `ab97244`. The ruling and comparative-assessment record are in
+`POST_GATE_ROUTE_DECISION_20261005.md`.
+
+```text
+Active route = REPORT / PAPER EVIDENCE PACKAGE
+PALACE       = PENDING
+Backend      = PENDING
+External E-run = PENDING
+Pause ES↔IS  = PENDING
+No code      = true
+No contract  = true
+No experiment = true
+```
+
+The goal is to transform the machine-recheckable implementation closure into an
+externally reviewable, citable, reproducible evidence package—not to start
+carrier, backend, or experimental work.
 
 ## Next steps (none auto-open)
 
-1. **Gate-close route decision only** — Human selects among external verification, PALACE/Information Space, backend/runtime integration, report/paper packaging, pausing this line, or another explicitly named route.
-2. Do not start code, carrier selection, integration, or new experiments until that explicit commission.
-3. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Enter **Report/Paper Evidence Package — Claim Ledger & Evidence Audit**.
+2. Build the Research Claim Ledger and audit provenance claim by claim.
+3. State C-CAP `SUPPORTED` and its non-claims exactly.
+4. Keep PALACE, backend integration, and external E-run as future routes only.
+5. Frozen Contract revision remains non-automatic and requires its own gate.

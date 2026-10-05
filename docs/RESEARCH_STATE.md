@@ -48,10 +48,14 @@
 > IR 补 timestamp/actor；TaskRecord digest=SHA-256(canonical supplied
 > τ2★)；precondition-block 统一 VV-1..7 = NOT ENTERED；used identities
 > 直接写入 IR。冻结契约 drift = 0。
-> **下一阶段 = Gate-close 后路线决策 PENDING；无 route 被自动选择。**
-> PALACE、backend integration、E-run 外实验、研究报告包、暂停本线等
-> 只是候选；各自仍需显式 Human commission。冻结契约修改继续需要
-> 独立理由与 contract-revision 流程，不因 Gate CLOSED 自动开启。
+> **Post-Gate Route Decision = REPORT / PAPER EVIDENCE PACKAGE**
+> （Human ruling 2026-10-05，唯一 Active Route；baseline `ab97244`）。
+> 路线范围：`No code / No contract / No experiment`；目标不是泛泛写论文，
+> 而是把 G-1..G-4 机器可复验闭环转成外部可审查、可引用、可复验的证据包。
+> PALACE、Backend integration、E-run 外实验、暂停本线全部保持 PENDING。
+> 下一入口：**Claim Ledger & Evidence Audit**；登记于
+> `docs/02-evidence/es-is-20261005/POST_GATE_ROUTE_DECISION_20261005.md`。
+> 冻结契约修改继续需要独立理由与 contract-revision 流程。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 
