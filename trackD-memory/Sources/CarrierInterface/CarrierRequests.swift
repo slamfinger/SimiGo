@@ -167,3 +167,91 @@ public struct CarrierSessionAppendRequest: Hashable, Sendable {
         self.provenance = provenance
     }
 }
+
+public struct CarrierCopyRequest: Hashable, Sendable {
+    public let sourceInformationID: CarrierInformationID
+    public let targetInformationID: CarrierInformationID
+    public let revisionID: CarrierRevisionID
+    public let representationID: CarrierRepresentationID
+    public let locatorID: CarrierLocatorID
+    public let locator: CarrierLocator
+    public let payload: CarrierPayload?
+    public let provenance: CarrierProvenance
+    public let recordCopyRelation: Bool
+    public let searchableText: String?
+
+    public init(
+        sourceInformationID: CarrierInformationID,
+        targetInformationID: CarrierInformationID,
+        revisionID: CarrierRevisionID,
+        representationID: CarrierRepresentationID,
+        locatorID: CarrierLocatorID,
+        locator: CarrierLocator,
+        payload: CarrierPayload? = nil,
+        provenance: CarrierProvenance,
+        recordCopyRelation: Bool = true,
+        searchableText: String? = nil
+    ) {
+        self.sourceInformationID = sourceInformationID
+        self.targetInformationID = targetInformationID
+        self.revisionID = revisionID
+        self.representationID = representationID
+        self.locatorID = locatorID
+        self.locator = locator
+        self.payload = payload
+        self.provenance = provenance
+        self.recordCopyRelation = recordCopyRelation
+        self.searchableText = searchableText
+    }
+}
+
+public struct CarrierSplitRequest: Hashable, Sendable {
+    public let sourceInformationID: CarrierInformationID
+    public let targets: [CarrierCreateRequest]
+    public let provenance: CarrierProvenance
+    public let recordLineage: Bool
+
+    public init(
+        sourceInformationID: CarrierInformationID,
+        targets: [CarrierCreateRequest],
+        provenance: CarrierProvenance,
+        recordLineage: Bool = true
+    ) {
+        self.sourceInformationID = sourceInformationID
+        self.targets = targets
+        self.provenance = provenance
+        self.recordLineage = recordLineage
+    }
+}
+
+public struct CarrierMergeRequest: Hashable, Sendable {
+    public let target: CarrierCreateRequest
+    public let sourceInformationIDs: [CarrierInformationID]
+    public let relationIDs: [CarrierRelationID]
+    public let provenance: CarrierProvenance
+    public let recordLineage: Bool
+
+    public init(
+        target: CarrierCreateRequest,
+        sourceInformationIDs: [CarrierInformationID],
+        relationIDs: [CarrierRelationID],
+        provenance: CarrierProvenance,
+        recordLineage: Bool = true
+    ) {
+        self.target = target
+        self.sourceInformationIDs = sourceInformationIDs
+        self.relationIDs = relationIDs
+        self.provenance = provenance
+        self.recordLineage = recordLineage
+    }
+}
+
+public struct CarrierLineageOperationResult: Hashable, Sendable {
+    public let created: [CarrierCreateResult]
+    public let relations: [CarrierRelation]
+
+    public init(created: [CarrierCreateResult], relations: [CarrierRelation]) {
+        self.created = created
+        self.relations = relations
+    }
+}

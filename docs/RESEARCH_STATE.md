@@ -253,6 +253,11 @@
 > `trackD-memory swift test` PASS。该预构建不是 carrier selection，也不是 validated carrier。
 > 交付见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md`。
+> 该预构建已扩到 v0.2：runtime 增加 carrier-neutral copy/split/merge、restore、
+> rebuild 与 integrity-report 操作；harness 覆盖 registered workload 全词表，并
+> 支持每 phase resource delta、optional crash-recovery probe、relation traversal、
+> session summary、delete/restore、pin 与 index rebuild。Conformance 从 7 项扩到
+> 10 项。仍无 backend-specific adapter/schema/OSS integration/benchmark execution。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

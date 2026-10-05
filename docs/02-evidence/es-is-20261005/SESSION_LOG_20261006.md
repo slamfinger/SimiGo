@@ -63,6 +63,15 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
 16. No backend-specific adapter, schema, storage layout, OSS integration, or
     migration was added. The benchmark harness was not run as candidate
     validation; only Swift build/test verification was run.
+17. The preconstruction was expanded to v0.2. `InformationSpaceRuntime` now has
+    carrier-neutral copy, split, merge, availability restore, search rebuild,
+    and integrity-report operations. The harness covers the complete registered
+    workload vocabulary, per-phase resource deltas, optional crash-recovery
+    probes, relation traversal, session summary, delete/restore, pin, and index
+    rebuild.
+18. Conformance expanded to 10 checks: locator identity, historical revision,
+    delete availability, restore observation, pin stability, copy lineage,
+    split/merge lineage, session order, search rebuild, and C8 boundary.
 
 ## Key documents
 

@@ -9,6 +9,7 @@ public struct CarrierComposition: Sendable {
     public let sessions: any SessionInformationStore
     public let search: any DerivedSearchIndex
     public let availability: any AvailabilityStore
+    public let integrity: (any CarrierIntegrityReporter)?
 
     public init(
         registry: any InformationRegistry,
@@ -19,6 +20,28 @@ public struct CarrierComposition: Sendable {
         search: any DerivedSearchIndex,
         availability: any AvailabilityStore
     ) {
+        self.init(
+            registry: registry,
+            representations: representations,
+            locators: locators,
+            relations: relations,
+            sessions: sessions,
+            search: search,
+            availability: availability,
+            integrity: nil
+        )
+    }
+
+    public init(
+        registry: any InformationRegistry,
+        representations: any EntityRepresentationStore,
+        locators: any LocatorIndex,
+        relations: any RelationHistoryStore,
+        sessions: any SessionInformationStore,
+        search: any DerivedSearchIndex,
+        availability: any AvailabilityStore,
+        integrity: (any CarrierIntegrityReporter)?
+    ) {
         self.registry = registry
         self.representations = representations
         self.locators = locators
@@ -26,6 +49,7 @@ public struct CarrierComposition: Sendable {
         self.sessions = sessions
         self.search = search
         self.availability = availability
+        self.integrity = integrity
     }
 }
 
@@ -188,6 +212,93 @@ public struct InformationSpaceRuntime {
         )
         try await composition.availability.record(record)
         return record
+    }
+
+    public func copy(_ request: CarrierCopyRequest) async throws -> CarrierCreateResult {
+        let source = try await resolve(CarrierResolveRequest(informationID: request.sourceInformationID))
+        let result = try await create(
+            CarrierCreateRequest(
+                informationID: request.targetInformationID,
+                revisionID: request.revisionID,
+                representationID: request.representationID,
+                payload: request.payload ?? source.content.payload,
+                locatorID: request.locatorID,
+                locator: request.locator,
+                provenance: request.provenance,
+                searchableText: request.searchableText
+            )
+        )
+
+        if request.recordCopyRelation {
+            _ = try await relate(
+                relationID: CarrierRelationID(rawValue: "copy:\(request.targetInformationID.rawValue):\(request.sourceInformationID.rawValue)"),
+                subject: request.targetInformationID,
+                predicate: "copy-of",
+                object: request.sourceInformationID,
+                provenance: request.provenance
+            )
+        }
+        return result
+    }
+
+    public func split(_ request: CarrierSplitRequest) async throws -> CarrierLineageOperationResult {
+        guard !request.targets.isEmpty else {
+            throw CarrierInterfaceError.invalidOperation("split requires at least one target")
+        }
+
+        var created: [CarrierCreateResult] = []
+        var relations: [CarrierRelation] = []
+        for target in request.targets {
+            let result = try await create(target)
+            created.append(result)
+            if request.recordLineage {
+                let relation = try await relate(
+                    relationID: CarrierRelationID(rawValue: "split-from:\(target.informationID.rawValue):\(request.sourceInformationID.rawValue)"),
+                    subject: target.informationID,
+                    predicate: "split-from",
+                    object: request.sourceInformationID,
+                    provenance: request.provenance
+                )
+                relations.append(relation)
+            }
+        }
+        return CarrierLineageOperationResult(created: created, relations: relations)
+    }
+
+    public func merge(_ request: CarrierMergeRequest) async throws -> CarrierLineageOperationResult {
+        guard request.sourceInformationIDs.count == request.relationIDs.count else {
+            throw CarrierInterfaceError.invalidOperation("merge source and relation counts differ")
+        }
+        guard !request.sourceInformationIDs.isEmpty else {
+            throw CarrierInterfaceError.invalidOperation("merge requires at least one source")
+        }
+
+        let created = try await create(request.target)
+        var relations: [CarrierRelation] = []
+        if request.recordLineage {
+            for (source, relationID) in zip(request.sourceInformationIDs, request.relationIDs) {
+                let relation = try await relate(
+                    relationID: relationID,
+                    subject: request.target.informationID,
+                    predicate: "merged-from",
+                    object: source,
+                    provenance: request.provenance
+                )
+                relations.append(relation)
+            }
+        }
+        return CarrierLineageOperationResult(created: [created], relations: relations)
+    }
+
+    public func rebuildSearch(with documents: [CarrierSearchDocument]) async throws -> CarrierRebuildReport {
+        try await composition.search.rebuild(with: documents)
+    }
+
+    public func integrityReport() async throws -> CarrierIntegrityReport {
+        guard let integrity = composition.integrity else {
+            throw CarrierInterfaceError.unsupported("integrity reporter")
+        }
+        return try await integrity.integrityReport()
     }
 
     public func relate(

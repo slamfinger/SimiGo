@@ -38,7 +38,8 @@ public struct MemoryCarrierFactory: Sendable {
                     relations: relations,
                     sessions: sessions,
                     search: search,
-                    availability: availability
+                    availability: availability,
+                    integrity: integrity
                 )
             ),
             registry: registry,

@@ -9,7 +9,7 @@ struct CarrierInterfaceTests {
         let report = try await CarrierConformanceSuite(factory: MemoryCarrierRuntimeFactory()).run()
 
         #expect(report.passed)
-        #expect(report.results.count == 7)
+        #expect(report.results.count == 10)
         #expect(!report.results.contains { !$0.passed })
     }
 

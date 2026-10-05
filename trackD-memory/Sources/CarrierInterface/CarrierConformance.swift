@@ -52,6 +52,9 @@ public struct CarrierConformanceSuite {
         results.append(try await checkLocatorMovePreservesIdentity())
         results.append(try await checkRevisionDoesNotEraseHistory())
         results.append(try await checkDeleteChangesAvailabilityOnly())
+        results.append(try await checkRestorePreservesDeleteObservation())
+        results.append(try await checkCopyRecordsDistinctInformation())
+        results.append(try await checkSplitAndMergeLineage())
         results.append(try await checkHistoricalPinStaysStable())
         results.append(try await checkSessionOrdering())
         results.append(try await checkSearchRebuildEquivalence())
@@ -161,6 +164,93 @@ public struct CarrierConformanceSuite {
         let fetched = try await runtime.composition.relations.pin(pin.pinID)
         let passed = fetched == pin
         return CarrierConformanceResult(name: "historical pin remains stable", passed: passed)
+    }
+
+    private func checkRestorePreservesDeleteObservation() async throws -> CarrierConformanceResult {
+        let runtime = try await factory.make()
+        let info = CarrierInformationID(rawValue: "conf-info-restore")
+        _ = try await createObject(info, on: runtime)
+        _ = try await runtime.recordAvailability(
+            CarrierAvailabilityRequest(informationID: info, state: .deleted, reason: "before restore", observedAt: date)
+        )
+        _ = try await runtime.recordAvailability(
+            CarrierAvailabilityRequest(informationID: info, state: .restored, reason: "after restore", observedAt: date.addingTimeInterval(1))
+        )
+        let history = try await runtime.composition.availability.history(for: info)
+        let states = history.map(\.state)
+        let passed = states.contains(.deleted) && states.contains(.restored)
+        return CarrierConformanceResult(name: "restore does not erase delete observation", passed: passed)
+    }
+
+    private func checkCopyRecordsDistinctInformation() async throws -> CarrierConformanceResult {
+        let runtime = try await factory.make()
+        let source = CarrierInformationID(rawValue: "conf-copy-source")
+        let target = CarrierInformationID(rawValue: "conf-copy-target")
+        _ = try await createObject(source, on: runtime)
+        _ = try await runtime.copy(
+            CarrierCopyRequest(
+                sourceInformationID: source,
+                targetInformationID: target,
+                revisionID: CarrierRevisionID(rawValue: "conf-copy-rev"),
+                representationID: CarrierRepresentationID(rawValue: "conf-copy-rep"),
+                locatorID: CarrierLocatorID(rawValue: "conf-copy-loc"),
+                locator: CarrierLocator(scheme: "memory", value: "copy"),
+                provenance: CarrierProvenance(producedAt: date, producedBy: "conformance")
+            )
+        )
+        let relation = try await runtime.composition.relations.relation(
+            CarrierRelationID(rawValue: "copy:\(target.rawValue):\(source.rawValue)")
+        )
+        let passed = relation?.subject == target && relation?.object == source && relation?.predicate == "copy-of"
+        return CarrierConformanceResult(name: "copy records distinct identity and lineage", passed: passed)
+    }
+
+    private func checkSplitAndMergeLineage() async throws -> CarrierConformanceResult {
+        let runtime = try await factory.make()
+        let source = CarrierInformationID(rawValue: "conf-lineage-source")
+        _ = try await createObject(source, on: runtime)
+
+        let splitTarget = CarrierCreateRequest(
+            informationID: CarrierInformationID(rawValue: "conf-split-target"),
+            revisionID: CarrierRevisionID(rawValue: "conf-split-rev"),
+            representationID: CarrierRepresentationID(rawValue: "conf-split-rep"),
+            payload: CarrierPayload(bytes: Data("split".utf8)),
+            locatorID: CarrierLocatorID(rawValue: "conf-split-loc"),
+            locator: CarrierLocator(scheme: "memory", value: "split"),
+            provenance: CarrierProvenance(producedAt: date, producedBy: "conformance")
+        )
+        let split = try await runtime.split(
+            CarrierSplitRequest(
+                sourceInformationID: source,
+                targets: [splitTarget],
+                provenance: CarrierProvenance(producedAt: date, producedBy: "conformance")
+            )
+        )
+
+        let mergeTarget = CarrierCreateRequest(
+            informationID: CarrierInformationID(rawValue: "conf-merge-target"),
+            revisionID: CarrierRevisionID(rawValue: "conf-merge-rev"),
+            representationID: CarrierRepresentationID(rawValue: "conf-merge-rep"),
+            payload: CarrierPayload(bytes: Data("merge".utf8)),
+            locatorID: CarrierLocatorID(rawValue: "conf-merge-loc"),
+            locator: CarrierLocator(scheme: "memory", value: "merge"),
+            provenance: CarrierProvenance(producedAt: date, producedBy: "conformance")
+        )
+        let merge = try await runtime.merge(
+            CarrierMergeRequest(
+                target: mergeTarget,
+                sourceInformationIDs: [source, splitTarget.informationID],
+                relationIDs: [
+                    CarrierRelationID(rawValue: "conf-merge-from-source"),
+                    CarrierRelationID(rawValue: "conf-merge-from-split"),
+                ],
+                provenance: CarrierProvenance(producedAt: date, producedBy: "conformance")
+            )
+        )
+
+        let passed = split.relations.first?.predicate == "split-from" &&
+            merge.relations.map(\.predicate) == ["merged-from", "merged-from"]
+        return CarrierConformanceResult(name: "split and merge preserve lineage", passed: passed)
     }
 
     private func checkSessionOrdering() async throws -> CarrierConformanceResult {

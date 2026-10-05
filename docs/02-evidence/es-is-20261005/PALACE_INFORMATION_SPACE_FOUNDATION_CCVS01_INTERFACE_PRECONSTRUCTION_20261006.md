@@ -1,7 +1,7 @@
 # CCVS-01 — Carrier-Neutral Interface Preconstruction
 
 Date: 2026-10-06  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
+Status: `DELIVERED / v0.2 / AWAITING HUMAN REVIEW`
 Study: `CCVS-01 — Carrier Candidate & Performance Validation Study`  
 Predecessor deliverable: `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`  
 Frozen Contracts: `UNCHANGED`  
@@ -93,7 +93,30 @@ candidate backend, production implementation, or database selection.
 They allow the interface, conformance suite, and harness to compile and run
 without choosing a real carrier.
 
-## 5. Conformance suite
+## 5. Runtime operations and conformance suite
+
+`InformationSpaceRuntime` now exposes carrier-neutral operations for the full
+registered workload vocabulary:
+
+```text
+create
+move / rename
+modify / revise
+copy
+split
+merge
+delete / restore availability
+historical pin
+session append
+session summary
+relation append and traversal
+search
+index rebuild
+integrity / orphan report
+```
+
+These are interface and composition operations only. They do not implement any
+backend storage engine.
 
 `CarrierConformanceSuite` currently checks:
 
@@ -107,6 +130,16 @@ search rebuild preserves retrieval equivalence;
 C8 exposes continuation facts without semantic judgment.
 ```
 
+The suite has been expanded to:
+
+```text
+restore does not erase delete observation;
+copy records a distinct target identity and copy-of lineage;
+split and merge preserve explicit lineage.
+```
+
+The current conformance count is `10`.
+
 A separate integrity test checks that an orphan representation is detected and
 that adding locator plus availability clears the fake-carrier integrity report.
 
@@ -119,14 +152,29 @@ runtime:
 create
 move
 revise
+copy
+split
+merge
+delete
+restore
+pin
 session append
+session summary
 relation append
+relation traversal
 search
+index rebuild
+integrity report
+crash-recovery probe when the candidate supplies a tester
 ```
 
 `CarrierBenchmarkPlan` defines `SMALL`, `MEDIUM`, `LARGE`, and `STRESS`
-recommended sizes. `CarrierMetricsCollector` records operation latency samples
-and computes count, errors, P50, P95, P99, max, and total.
+recommended sizes. `CarrierResourceObserver` allows a Phase B implementation to
+provide memory, disk, CPU, and file-descriptor samples without embedding a
+platform-specific dependency in the interface package.
+`CarrierCrashRecoveryTester` allows each candidate to expose its own recovery
+boundary. `CarrierMetricsCollector` records operation latency samples and
+computes count, errors, P50, P95, P99, max, and total.
 
 No benchmark was executed for candidate validation. Swift tests only exercised
 interface correctness and metrics arithmetic.
@@ -141,6 +189,14 @@ swift test (trackD-memory)                  = PASS
 
 No backend-specific term, adapter, schema, or storage layout appears in
 `Sources/CarrierInterface` or `Tests/CarrierInterfaceTests`.
+
+Interface package source and test size:
+
+```text
+11 Swift source files
+1 Swift test file
+2,622 total Swift source/test lines at v0.2
+```
 
 ## 8. Non-claims
 
