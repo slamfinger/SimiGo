@@ -57,6 +57,11 @@ Active Carrier                         NONE
 PRQ-ISF-01                             INDETERMINATE /
                                        NO-INDEPENDENT-CARRIER-UNDER-TEST
 Higher-layer semantics                 NEXT COMMISSIONED ENTRY
+Registered research seam               IS-IDLOC-SEAM-01 / OPEN / NOT FROZEN
+Physical locator                       ≠ Information Identity
+Seam refinement                        mature mechanism mapping + existing Core audit
+Seam review                            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md
+Seam audit                             docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md
 Implementation                         NOT AUTHORIZED
 Backend selection                      NOT AUTHORIZED
 Backend-substitution run               NOT AUTHORIZED
@@ -171,11 +176,19 @@ RELATION BACKEND ASYMMETRY
 ```text
 Current state:
   Core sufficiency accepted for the registered PRQ task domain.
+  IS-IDLOC-SEAM-01 is registered as a candidate input, not as a new route.
 
 Legal next transition:
   Human ruling / commission to open:
   Higher-Layer Continuation Graph Semantics —
   Scope & Research Question Charter
+
+Seam guard:
+  IS-IDLOC-SEAM-01 may enter that charter only as registered input.
+  It does not authorize implementation, migration, reorganization, probe
+  execution, or experiment by itself.
+  Current review/audit conclusion: reuse mature substrate concepts; do not
+  invent a new database or mutate InformationCore now.
 
 Required before transition:
   Explicit Human ruling.

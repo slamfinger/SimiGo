@@ -166,6 +166,25 @@
 > 该裁定只关闭 Path A default-entry recovery validation；Capsule expansion
 > 保持 paused，Higher-Layer Charter、implementation、experiment、carrier/backend
 > work 与 Frozen Contract change 均保持 NOT AUTHORIZED。
+> **IS-IDLOC-SEAM-01 已登记为 OPEN / NOT FROZEN research seam，并按 Human review 收窄**：物理路径
+> 只能作为 locator，不能等价为 Information Identity。候选区分
+> `Information Identity / Representation Identity / Physical Locator /
+> Historical Pin`；Git blob/digest 只能支持 representation 级身份，rename
+> detection 只是 heuristic，不是语义 identity assignment。研究任务不是新建
+> correspondence theory 或数据库，而是映射成熟系统的
+> identity/revision/locator/history 机制，并只读审计现有
+> InformationCore/RelationCore/Store。当前 audit 发现：opaque InformationID、
+> immutable Information、identity-based Relation、backend protocol 与可选
+> PhysicalFiling 已是可用 substrate；revision succession、general locator
+> resolver、first-class historical pin、availability/tombstone 与 semantic
+> applicability/membership 仍属 higher layer。因此当前不改 InformationCore、
+> 不新增 Store primitive、不选择 backend、不迁移、不整理仓库、不执行 probe、
+> 不实验，也不修改 Frozen Contracts 或开启 Higher-Layer Charter。登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_IS_IDLOC_SEAM_REGISTRATION_20261006.md`。
+> 外部系统 review 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md`；
+> Core mechanism audit 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、
