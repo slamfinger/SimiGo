@@ -1,5 +1,5 @@
 {
-  "status": "AUTHORIZATION_BOUNDARY_FOUR_CELL_COMPLETE",
+  "status": "AUTHORIZATION_RESULT_FROZEN_CAUSAL_BRAKE",
   "run_id": "20261005-human-authorized-four-cell",
   "arms": 7,
   "models_run": [
@@ -21,6 +21,8 @@
     "Observer",
     "InformationCore write",
     "minimal Information Core claim",
+    "leakage/fallback probe design",
+    "leakage/fallback probe run",
     "follow-up run without human authorization"
   ],
   "run_ids": [
@@ -31,7 +33,7 @@
   "candidate_invariant": "relational executable admissibility function",
   "surface_vs_authorized": "separated",
   "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
-  "next_gate": "human_review_of_denied_F_visibility_and_leakage_probe",
+  "next_gate": "human_conceptual_decision_epistemic_vs_execution_authorization",
   "authorized_next_work": [
     "human review",
     "prompt/runner implementation after separate authorization"
@@ -48,5 +50,11 @@
     "C-gemma4-unified": "L1_source_admission",
     "N-nail-qwen3-5-moe": "L1_source_admission"
   },
-  "surface_c4_divergence": "NONE"
+  "surface_c4_divergence": "NONE",
+  "authorization_object_split": {
+    "A_epistemic": "whether Information is allowed to be used as premise or evidence; declared/provenance layer observed",
+    "A_execution": "whether Information is allowed to enter the execution path; not controlled because denied F_content remained visible"
+  },
+  "causal_attribution": "UNRESOLVED",
+  "ares_update": "NONE"
 }

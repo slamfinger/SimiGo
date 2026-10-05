@@ -126,3 +126,42 @@ No Observer was run.
 No InformationCore write occurred.  
 No B retry or D retry occurred.  
 No minimal Information Core was declared.
+
+## Post-run brake
+
+The result is frozen as `AMBIGUOUS` with no follow-up probe design.
+
+The authorization object must not yet be treated as one thing. The run touched only a
+declared/provenance layer:
+
+```text
+A-epistemic:
+    “Is this Information allowed to be used as premise or evidence?”
+```
+
+It did not establish control over:
+
+```text
+A-execution:
+    “Is this Information allowed to enter the execution path?”
+```
+
+Observed separation:
+
+```text
+Declared admission / provenance:
+    DIVERGED at L1.
+
+Actual information consumption:
+    UNRESOLVED.
+
+Execution-path constraint:
+    NOT CONTROLLED, because denied F_content remained visible.
+
+Surface C4:
+    DID NOT DIVERGE.
+```
+
+Therefore ARES is neither strengthened nor weakened. The next gate is a human conceptual
+decision about which authorization object the research line is studying. No leakage or
+fallback experiment is authorized by this brake.
