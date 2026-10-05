@@ -31,8 +31,8 @@ Key frozen structures: three-level object relation CR → resolve → **R2 (Cont
 |---|---|---|---|
 | G-1 CR/IR formats + resolve | **ACCEPTED / CLOSED** | `1af023d` + IF-G1-01 fix `3b8b0ba` | 19/19 |
 | G-2 instantiate pipeline + VV-1..7 | **ACCEPTED / CLOSED** | `95bde40` → `17d2ff5` → `e3cde56` | 17/17 |
-| G-3 the E-run | **v3 delivered, awaiting Human review** | `bcbaafd` → `aa0eb12` → **`397fbca`** | 10/10 evidence items |
-| G-4 per-carrier mapping + audit | QUEUED (blocked until G-3 accepted) | — | — |
+| G-3 the E-run | **ACCEPTED / CLOSED** | `bcbaafd` → `aa0eb12` → **`397fbca`** | 10/10 evidence items |
+| G-4 per-carrier mapping + audit | **DELIVERED, awaiting Human review**; IF-G4-01..04 OPEN | see `runtime_g1/G4_DELIVERY.md` | mapping 13/13; local rerun G-1 19/19, G-2 17/17, G-3 10/10 |
 
 **IF ledger (all registered, all fixed, all closed by review):**
 IF-G1-01 (result attribution V-1 vs V-2) · IF-G2-01 (MISMATCH disposition) ·
@@ -43,9 +43,14 @@ check-id derived from signature prefix) · IF-G2-08 (class-name boundary +
 private state instead of readback capability) · IF-G3-01 (S2 not actually
 consumed by E2) · IF-G3-02 (no-recompute evidence overstated + C-CAP record
 incomplete) · IF-G3-03 (S2 was a guard, not a data source) · IF-G3-04 (two
-instantiate lifecycles).
+instantiate lifecycles) · **IF-G4-01 (IR missing `timestamp`/`actor`;
+OPEN)** · **IF-G4-02 (TaskRecord digest defaults to `task_ref`, not the
+supplied `tau_star`; OPEN)** · **IF-G4-03 (precondition-block VV
+applicability is non-uniform and uses an out-of-vocabulary verdict;
+OPEN)** · **IF-G4-04 (used-item identities are only indirect through
+`cr_ref`, not literally in IR; OPEN)**.
 
-## G-3 E-run v3 — current state (awaiting Human review)
+## G-3 E-run v3 — ACCEPTED / CLOSED
 
 ```text
 E1 executes T1 → CR(E1) (F1..F3 use-time pinned; provenance: E1.seg[0..3] + weights id)
@@ -58,8 +63,27 @@ T2 consumes S2   ← IF-G3-03: result digest = sha256(S2 surface + position + we
 E2 → CR(E2) (lineage parent = CR(E1))
 ```
 
-**Verdict: C-CAP SUPPORTED (document-form, limited mechanical support on (c)) — 10/10 evidence items, ALL persisted in `G3_ERUN_RECORD.json` (10 ccap entries).**
+**Verdict: C-CAP SUPPORTED (document-form, limited mechanical support on (c)) — 10/10 evidence items, ALL persisted in `G3_ERUN_RECORD.json` (10 ccap entries). Human accepted this at `397fbca` on 2026-10-05.**
 Evidence semantics per IF-G3-02: (c) is finite document-form mechanical support (predecessor references complete / identifier-disjoint new work / resolve output consumed); a semantically-equivalent re-derivation under a new id is the registered detection boundary. Carrier-form metrics not exercised (document-form; annotation recorded). Substrate = conformance testbed (MC-1..MC-6), not a production claim. Regression: G-1 19/19, G-2 17/17.
+
+## G-4 per-carrier mapping + audit — DELIVERED / AWAITING HUMAN REVIEW
+
+The delivery is `runtime_g1/G4_DELIVERY.md`. It maps the document-form
+`ConformanceSubstrate` to MC-1..MC-6 and covers all 13 rows of frozen
+I-1d §1.2. The audit re-ran G-1/G-2/G-3 locally with no failure and fixed the
+non-blocking evidence-metadata typo `"G-3 E-run v1"` → `"G-3 E-run v3"`.
+
+Four explicit Implementation Findings remain OPEN and block Gate close:
+
+1. **IF-G4-01** — completed IR lacks frozen §1.1 `timestamp` and `actor` fields.
+2. **IF-G4-02** — SC-5's task digest is currently derived from `task_ref`;
+   the implementation does not prove equality with the supplied canonical
+   `tau_star` bytes.
+3. **IF-G4-03** — precondition-block IR records `VV-1 / NOT-APPLICABLE` or
+   no VV entry, rather than the frozen single `VV-1..7 = NOT ENTERED`
+   applicability fact.
+4. **IF-G4-04** — IC-1's used-item identities are reachable through
+   `ir.cr_ref` → R2, but are not stored directly in the IR.
 
 ## Boundaries (standing)
 
@@ -67,6 +91,6 @@ PALACE selection / backend selection / experiments beyond the single E-run / Fro
 
 ## Next steps (none auto-open)
 
-1. **Human review of G-3 v3** (`397fbca`) → accept or Findings.
-2. On G-3 acceptance: **G-4** (per-carrier mapping table against I-1d §1.2 + full-coverage audit) → Implementation Gate close with the G-1..G-4 bundle for Human acceptance.
+1. **Human resolution of IF-G4-01..04** — fix implementation or rule on contract revision; frozen text is never changed to accommodate implementation.
+2. After all findings close: Human review of **G-4** → Implementation Gate close with the G-1..G-4 bundle.
 3. Possible after Gate close (Human decision): carrier-form extension (restore + consumed-prefix metrics, P7 assets), carrier evaluation incl. PALACE candidacy, next-candidate research via a new Stage Synthesis.

@@ -256,7 +256,7 @@ def main() -> int:
 
     # ---- evidence record (persisted alongside the run) -----------------------
     record = {
-        "run": "G-3 E-run v1",
+        "run": "G-3 E-run v3",
         "r2_state": res["state"],
         "ir_stage": ir["stage"],
         "ir_disposition": ir["disposition"],

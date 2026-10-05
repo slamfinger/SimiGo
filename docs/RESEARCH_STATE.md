@@ -39,13 +39,19 @@
 > G-1 ACCEPTED/CLOSED（CR/IR 格式+内容寻址 store+resolve V-1..5，
 > conformance 19/19，IF-G1-01 修复）；G-2 ACCEPTED/CLOSED（instantiate
 > 管线+VV-1..7 tier+三绑定态+三处置类，三轮 IF-G2-01..08 修复，
-> conformance 17/17；capability 接口替代类名特判）；**G-3 v3 交付待验收**
+> conformance 17/17；capability 接口替代类名特判）；**G-3 v3 ACCEPTED/CLOSED**
 > （E-run 端到端执行：E1→CR(E1)→resolve→R2→instantiate[唯一一次]→
 > IR+S2→T2 消费 S2（result digest=sha256(S2 contents)，不可旁路数据
 > 依赖）→CR(E2)，**C-CAP SUPPORTED (document-form, limited mechanical
 > support on (c)) 10/10**，可审计对象链 CR(E1)→IR(S2)→CR(E2) 成立，
 > 完整 C-CAP 判定持久化于 `G3_ERUN_RECORD.json`；两轮 Finding
-> IF-G3-01..04 已修复）。G-4（per-carrier mapping+audit）排队；
+> IF-G3-01..04 已修复）。**G-4 mapping+audit 已交付待复核**：MC-1..6
+> 与 I-1d §1.2 的 13/13 行映射完成，G-1/G-2/G-3 本地复跑无失败；
+> 但 **IF-G4-01..04 OPEN**（IR 缺 timestamp/actor；TaskRecord digest
+> 未证明等于 supplied τ2★；precondition-block 的 VV applicability
+> 表示不符合冻结单点 NOT ENTERED 语义；used identities 仅经
+> `cr_ref` 间接可达而非直接在 IR），
+> Implementation Gate 暂不可收口。
 > PALACE 选择 / E-run 外实验 / 冻结契约修改 / backend 选择 全程 BLOCKED。
 > 实现位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。

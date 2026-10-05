@@ -1,7 +1,7 @@
 # G-3 Delivery Note v3 — the E-run (first end-to-end auditable I-1 runtime evidence)
 
 Date: 2026-10-05
-Gate state: Implementation Gate OPEN — G-1 ACCEPTED/CLOSED, G-2 ACCEPTED/CLOSED; **G-3 re-delivered (v3, incorporating IF-G3-03/04)**; G-4 queued next.
+Gate state: Implementation Gate OPEN — G-1 ACCEPTED/CLOSED, G-2 ACCEPTED/CLOSED; **G-3 v3 ACCEPTED/CLOSED by Human review (2026-10-05)**; G-4 mapping + audit next.
 Frozen judgment basis: C-CAP exactly as frozen — success = (a)+(b)+(c) together; "it stored something" is not success.
 
 ---
