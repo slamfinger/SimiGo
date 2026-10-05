@@ -193,9 +193,10 @@ Current state:
   IS-IDLOC-SEAM-01 is registered as a candidate input, not as a new route.
   Carrier Component Study Charter is accepted / commissioned.
   PICS-01 is accepted, bounded-pass, and closed.
+  CCVS-01 Phase A and carrier-neutral interface preconstruction are delivered.
 
 Candidate next transition:
-  Human review of CCVS-01 Phase A D1-D8.
+  Human review of CCVS-01 Phase A D1-D8 and interface preconstruction.
   No validation run, implementation, schema, migration, or backend selection.
 
 Previously identified transition:
