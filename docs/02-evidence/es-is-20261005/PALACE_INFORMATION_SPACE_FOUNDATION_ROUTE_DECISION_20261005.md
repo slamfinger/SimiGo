@@ -5,10 +5,12 @@ Status: `HUMAN RULING COMPLETE · PALACE / INFORMATION SPACE FOUNDATION = UNIQUE
 Accepted Implementation Gate baseline: `ab97244`
 Rollback of the prior Report/Paper route: `ffc59a4`
 Frozen Contracts: `UNCHANGED`
-Current phase guard: `NO IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT EXECUTION`
+Current phase guard: `NO FURTHER IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT BEYOND COMPLETED REGISTERED PROBE SCENARIOS`
 Phase 1 status: `ACCEPTED / CLOSED` (Human review; delivery `e4c74bd`)
 Phase 2 design: `PRQ-ISF-01 — MINIMAL DECODABLE PROBE DESIGN ACCEPTED / CLOSED`
-Next entry: `AUTHORIZATION DECISION FOR PROBE IMPLEMENTATION / EXECUTION (NOT AUTO-STARTED)`
+Probe implementation / execution: `AUTHORIZED AND COMPLETE — NON-CANDIDATE PROBE CONTROL ONLY`
+Execution verdict: `PRQ-ISF-01 = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST`
+Next entry: `HUMAN REVIEW OF EXECUTION RECORD + CARRIER-PATH DECISION`
 
 ## 1. Ruling
 
@@ -130,6 +132,15 @@ Next entry                             = Authorization decision for probe
 Boundary note: the Abstract IS Port (`put_blob / get_blob / put_node / ...`) is
 probe observation vocabulary only. It is not a future PALACE API, storage
 protocol, carrier architecture, or implementation interface.
+
+Implementation and execution were subsequently authorized. The executed carrier
+was `ProbeReferencePort`, a non-candidate in-memory probe control. It exercised
+the decoder, frozen I-1 resolver handoff, and judge without selecting PALACE,
+MCP, a database, a graph store, a file format, or any external carrier. All 13
+preregistered scenario expectations matched. Therefore the harness is qualified,
+but `PRQ-ISF-01` is `INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST`; it does
+not support a claim that PALACE or any concrete Information Space carrier can
+satisfy the route.
 
 Acceptance of the design does **not** authorize implementation or execution.
 Until a separate explicit ruling says otherwise:

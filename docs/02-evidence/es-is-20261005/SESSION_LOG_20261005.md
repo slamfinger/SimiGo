@@ -164,10 +164,35 @@ Experiment execution = NOT AUTHORIZED
 Contract change      = NOT AUTHORIZED
 ```
 
+## PRQ-ISF-01 — Probe Implementation / Execution COMPLETE (CONTROL ONLY)
+
+Human authorized probe implementation / execution. The implementation used
+`ProbeReferencePort`, a non-candidate in-memory probe control, to exercise the
+accepted design without selecting a PALACE or external Information Space
+carrier.
+
+```text
+Scenarios executed        = SC-00..SC-12
+Scenario expectations     = 13/13 MATCH
+Semantic oracle used      = false
+Harness qualification     = PASS
+Route PRQ-ISF-01          = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
+Carrier selection         = NONE
+Backend integration       = NONE
+Contract change           = NONE
+```
+
+The result qualifies the decoder / resolver handoff / judge. It does **not**
+support a claim that PALACE or any concrete Information Space carrier can satisfy
+the route.
+
 ## Next steps (none auto-open)
 
-1. Human make the separate authorization decision for probe implementation /
-   execution.
+1. Human review the execution record.
+2. Then explicitly choose one: select an independent candidate carrier for a
+   meaningful PRQ test, revise or pause the Foundation route, or name another
+   authorized action.
+3. No carrier selection or additional experiment follows automatically.
 2. Without that ruling, do not write probe code, select a carrier, integrate a
    backend, or execute `SC-00..SC-12`.
 3. Frozen Contract revision remains non-automatic and requires its own gate.
