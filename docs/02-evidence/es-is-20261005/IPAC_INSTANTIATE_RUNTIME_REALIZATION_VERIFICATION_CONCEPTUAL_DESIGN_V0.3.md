@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `READY FOR FREEZE DECISION (final classification patch applied: POST-CREATION-ANOMALY primary disposition = PROCEED-WITH-ANNOTATION; recovery attempt independently dispositioned) · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND REMAIN BLOCKED`
-Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document) → **final classification patch** (2026-10-05: POST-CREATION-ANOMALY's primary disposition = PROCEED-WITH-ANNOTATION, annotation = IR-INCOMPLETE/POST-CREATION-ANOMALY; recovery attempt independently dispositioned — orthogonality now formal) — freeze-ready.
+Status: `READY FOR FREEZE DECISION (final pre-freeze patches applied: VV applicability boundary pinned; MISMATCH primary disposition decided by the envelope) · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND REMAIN BLOCKED`
+Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document) → **final classification patch** (2026-10-05: POST-CREATION-ANOMALY's primary disposition = PROCEED-WITH-ANNOTATION, annotation = IR-INCOMPLETE/POST-CREATION-ANOMALY; recovery attempt independently dispositioned — orthogonality now formal) → **final pre-freeze patch** (2026-10-05: VV applicability boundary pinned — precondition BLOCK = NOT ENTERED, not a verdict tier; MISMATCH primary disposition decided by the envelope, no side-branch) — freeze-ready.
 
 ---
 
@@ -63,7 +63,7 @@ Compliance clause (a) now reads: **an IR exists for every instantiate attempt �
 
 ### 1.2 The mapping table (retained; SC-5 row carries TaskRecord)
 
-Unchanged from v0.2 §1.2, including the coverage rule (every row realized, every check result recorded in the IR at its verdict tier) — with the ENVELOPE-DRIFT row's failure signature now readback-scoped per §4, and the IR-column interpreted under the new lifecycle.
+Unchanged from v0.2 §1.2, including the coverage rule (every row realized, every check result recorded in the IR at its verdict tier) — with the ENVELOPE-DRIFT row's failure signature now readback-scoped per §4, and the IR-column interpreted under the new lifecycle. **Per-run applicability: the Verification Surface applies only after the precondition gate passes (§3); on PRECONDITION-BLOCK the IR records the precondition result and the VV checks are NOT ENTERED (an applicability fact, not a verdict tier).**
 
 ---
 
@@ -104,6 +104,16 @@ FAILED      the mechanical check observed a violation
 
 **COVENANTED is a verification state, never a failure signature.** Failure signatures exist only under FAILED. Concrete case: with readback, a declared/effective envelope mismatch is **observed** → the check is FAILED with signature ENVELOPE-DRIFT; without readback, the effective envelope is **unobservable** → the check is COVENANTED — and ENVELOPE-DRIFT is not claimable. The v0.2 sentence that surfaced drift "as COVENANTED-class audit findings" is corrected accordingly: what the audit finds there is the *covenant*, not the drift.
 
+**Applicability boundary (pre-freeze fix 1):** the Verification Surface is applicable only after the instantiate precondition gate (step 0) passes.
+
+```text
+precondition BLOCK → the IR records the precondition result;
+                     VV-1..VV-7 = NOT ENTERED / NOT APPLICABLE
+                     (a pipeline fact — NOT a fourth verdict tier)
+precondition PASS  → the Verification Surface is entered; VV-1..VV-7 must
+                     produce their declared verdict states
+```
+
 ---
 
 ## 4. Runtime failure taxonomy (layered — fix 3)
@@ -117,11 +127,14 @@ DISPOSITION CLASS 1 — BLOCK
     │                                signatures carry: CR-ID-MISMATCH, I-NF,
     │                                I-MISMATCH, A-SUB, A-CYCLE, P-VIOLATION,
     │                                FORM-DRIFT, TASK-MISSING)
-    └─ subtype CREATE-BLOCK         (substrate bind/materialize error;
+    ├─ subtype CREATE-BLOCK         (substrate bind/materialize error;
                                      VV-2 FAILED = SURFACE-INFIDELITY;
                                      VV-4 FAILED = ENVELOPE-DRIFT [readback];
                                      VV-5 FAILED = POSITION-DERIV-FAIL;
                                      VV-6 FAILED = LINEAGE-ATTACH-FAIL)
+    └─ subtype POLICY-BLOCK         (policy-gated: BINDING = MISMATCH ∧ the
+                                     envelope requires lineage-strict — decided
+                                     at step 1, BEFORE materialize; no S2 exists)
 
 DISPOSITION CLASS 2 — PROCEED-WITH-ANNOTATION
     (the proceed family; the annotation set may be EMPTY — the clean BOUND
@@ -135,9 +148,10 @@ DISPOSITION CLASS 2 — PROCEED-WITH-ANNOTATION
     └─ MANIFEST-INCOMPLETE          → annotation + audit finding
 
 DISPOSITION CLASS 3 — DECLARED-ALTERNATIVE
-    └─ BINDING = MISMATCH           → declared cross-model continuation
-                                     (per PD-7 policy); blocks iff the envelope
-                                     declares `lineage-strict: required`
+    └─ BINDING = MISMATCH AND the envelope allows cross-model continuation
+                                     → primary disposition = DECLARED-ALTERNATIVE
+                                     (declared cross-model continuation, per
+                                     PD-7 policy)
 
 LIFECYCLE STATE (orthogonal to the disposition classes)
     └─ POST-CREATION-ANOMALY        S2 exists but the IR is not completed.
@@ -153,6 +167,13 @@ LIFECYCLE STATE (orthogonal to the disposition classes)
                                       own disposition (BLOCK /
                                       PROCEED-WITH-ANNOTATION /
                                       DECLARED-ALTERNATIVE)
+
+BINDING = MISMATCH — the envelope decides the primary disposition (no side-branch):
+    the envelope allows cross-model continuation
+        → primary disposition = DECLARED-ALTERNATIVE (class 3, above)
+    the envelope requires lineage-strict
+        → primary disposition = BLOCK (CREATE-BLOCK, policy-gated subtype
+          POLICY-BLOCK; decided at step 1, BEFORE materialize — no S2 exists)
 ```
 
 **Forbidden everywhere: silent degradation** — every deviation is a recorded annotation, a declared alternative, or a block; nothing is unrecorded convenience. **Exhaustiveness now holds formally, including the anomalous path**: every instantiate outcome maps to exactly one primary disposition class (with subtype) — the POST-CREATION-ANOMALY outcome's primary disposition is PROCEED-WITH-ANNOTATION (annotation: IR-INCOMPLETE / POST-CREATION-ANOMALY), with POST-CREATION-ANOMALY recorded as its orthogonal lifecycle state; recovery attempts are independent attempts and receive their own dispositions.
@@ -169,7 +190,10 @@ An implementation claims I-1d compliance iff:
     or — under POST-CREATION-ANOMALY — left incomplete with that annotation and
     the primary disposition PROCEED-WITH-ANNOTATION) with exactly the §1.1 fields
     at their verdict tiers;
-(b) the verification results VV-1..VV-7 (with tiers) appear in the runtime trace;
+(b) the Verification Surface was ENTERED (the precondition gate passed) and the
+    verification results VV-1..VV-7 (with tiers) appear in the runtime trace —
+    on PRECONDITION-BLOCK the IR records the precondition result with
+    VV-1..VV-7 = NOT ENTERED (an applicability fact, not a verdict tier);
 (c) the mapping table is fully covered — no clause without object+check;
 (d) the failure taxonomy is honored — no failure class silently reclassified;
 (e) the mapping table carries this design's freeze lineage.
