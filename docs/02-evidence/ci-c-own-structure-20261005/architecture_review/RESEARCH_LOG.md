@@ -152,3 +152,27 @@ Human accepted the Case 2 framing and registered, in order:
 v0.3 summary: two-level evaluation vocabulary (Level 0 = mechanism operability, 846-grounded; Level 1 = per-condition determination {true, false, U_c}, U_c = registered posit with source taxonomy deliberately open) + total order-independent propagation rule; **spec decision D-1 = false-dominant over per-condition unevaluable** (alternative D-1′ U-dominant registered; decision marked falsifiable, not derived); new commitments C-PROP-1..4; back-compatibility with all established findings verified (no cell changed); Q3/Q4/Q6/Q7/Q5 untouched; identifiability verdict (Case 2) and ND-1 unaffected; no experiment authorized.
 
 State after this commit: Step 1 delivered pending Human Review; Step 2 / Step 3 NOT started; nothing auto-opens.
+
+---
+
+## Addendum 3 — 2026-10-05: Human Review seal (Case 2 + Spec v0.3)
+
+Human review verdict: **SEALED — no revisions required**, both the identifiability analysis v0.1 (Case 2, sealed at identifiability level) and Spec v0.3. Full review record captured in `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.3.md` §8. Three **binding** review annotations:
+
+1. **Level 0→1 layering confirmed** — the structural core of v0.3; Level-0 generality stays a commitment (C-PROP-2), not an established fact.
+2. **D-1 language discipline** — D-1 (false-dominant) and D-1′ (U-dominant) are both internally consistent under current evidence; D-1 is a specification choice and falsifiable commitment of B, never "proven three-valued logic". Observation `X=false, F=U_c → BLOCKED` licenses only "C-PROP-1/D-1 supported by the observation" — never "Model B proven". An `unevaluable` outcome licenses only "D-1 refuted / B formulation needs revision" — never evidence for Model A.
+3. **`U_c` operationalization stays in Step 2** — no spec may assume a manipulation realizing `U_c` exists; otherwise v0.3 slides from conceptual semantics into an unproven experimental state.
+
+Formal research state at seal:
+
+```text
+Step 1  Spec v0.3              COMPLETE / SEALED
+Case 2  A/B non-identifiable   SEALED AT IDENTIFIABILITY LEVEL
+Model B                        explanatory model → concrete falsifiable commitments
+Step 2  Uniformity Probe       DESIGN GATE — NOT AUTHORIZED
+Step 3  Evaluation-Signature   DEFERRED
+```
+
+Next-gate condition: Step 2's design gate requires explicit Human authorization; if opened, the design's FIRST question — before any experiment matrix — is **whether X or F can legitimately be manipulated to `U_c`** (this determines whether C-PROP-1 is an actually testable commitment).
+
+Line reframe registered at seal: conjunction is an explanatory hypothesis; the research object is whether it can sustainably honor a definite set of structural commitments.

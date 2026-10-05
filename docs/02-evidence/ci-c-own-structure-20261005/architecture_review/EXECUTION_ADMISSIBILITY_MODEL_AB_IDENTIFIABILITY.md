@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `IDENTIFIABILITY ANALYSIS · CONCEPTUAL/ANALYTIC · NO_NEW_CLAIM · NO_EXPERIMENT · PENDING HUMAN REVIEW`
+Status: `IDENTIFIABILITY ANALYSIS · CONCEPTUAL/ANALYTIC · NO_NEW_CLAIM · NO_EXPERIMENT · SEALED 2026-10-05 (Human Review — Case 2 verdict accepted; sealed at identifiability level)`
 Predecessor: `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.2.md` (`5f8bf23`) — whose §8 deferred discriminating-experiment design until review
 Directive: Human review of `RESEARCH_LOG.md` + Spec v0.2 (2026-10-05) directed that Model A/B identifiability be settled **before** any discriminating experiment is designed. No code, no experiments, no new data.
 Evidence added: none. Claim status change: none. Experiment authorization: none.

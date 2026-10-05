@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `CONCEPTUAL SPECIFICATION · SEMANTIC COMPLETION · SPEC DECISIONS REGISTERED · NO EMPIRICAL CLAIM · NO EXPERIMENT · PENDING HUMAN REVIEW`
+Status: `CONCEPTUAL SPECIFICATION · SEMANTIC COMPLETION · SPEC DECISIONS REGISTERED · NO EMPIRICAL CLAIM · NO EXPERIMENT · SEALED 2026-10-05 (Human Review — no revisions required; three binding annotations, §8)`
 Predecessors: `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.2.md` (`5f8bf23`) + `EXECUTION_ADMISSIBILITY_MODEL_AB_IDENTIFIABILITY.md` v0.1 (`f8840fd`)
 Directive: Human ruling 2026-10-05 (after identifiability review) — **Step 1 of three**: complete the mixed-state propagation semantics. Concept closure only; no code, no experiments.
 Evidence added: none. Experiment authorization: none.
@@ -218,6 +218,55 @@ BACK-COMPAT: every established finding maps to an unchanged cell
 NEW:         commitments C-PROP-1..4 (all failure-revises-B, never proves A)
 UNTOUCHED:   Q3/Q4/Q6/Q7/Q5 statuses; Phase A/B claims; 846 findings;
              identifiability verdict (Case 2); ND-1; all hard boundaries
-NEXT:        Human Review of this spec → Step 2 (Model-B Uniformity /
-             Necessary-Condition Probe) requires separate design gate + authorization
+REVIEW:      SEALED 2026-10-05 (Human Review; no revisions required) — see §8
+NEXT:        Step 2 (Model-B Uniformity / Necessary-Condition Probe) requires
+             separate design gate + authorization; its FIRST question is
+             U_c operationalizability (§8)
 ```
+
+---
+
+## 8. Human Review record (2026-10-05)
+
+**Verdict: SEALED — no revisions required.** The Human review confirmed the layering:
+identifiability → Case 2 → Model B as explanatory model → v0.3 completes B into a
+computable three-valued propagation structure → concrete falsifiable commitments →
+Step 2 tests only those commitments.
+
+Three standing review annotations (binding on all future work in this line):
+
+1. **Level 0 → Level 1 layering.** Separating "the evaluation mechanism cannot run"
+   from "evaluation ran and a condition failed" is v0.3's structural core. Level 0's
+   generality currently rests mainly on the 846 evidence — holding it as a commitment
+   (C-PROP-2: established instance, decision as generalization) rather than an
+   established fact is correct and must be preserved.
+2. **D-1 must not be weakened in language.** D-1 (false-dominant) and D-1′
+   (U-dominant) are both internally consistent under current evidence; D-1 is a
+   specification choice, now a falsifiable commitment of B — never "proven three-valued
+   logic". If Step 2 ever observes `X = false, F = U_c → BLOCKED`, the only licensed
+   statement is **"C-PROP-1 / D-1 is supported by the observation"** — never "Model B
+   is proven". Conversely, an `unevaluable` outcome licenses only **"D-1 refuted / B
+   formulation needs revision"** — never conversion into evidence for Model A.
+3. **`U_c` operationalization stays in Step 2.** Whether a manipulation exists that
+   legitimately realizes `U_c` for X or F must not be assumed by any specification.
+   Assuming it would slide v0.3 from conceptual propagation semantics into an unproven
+   experimental state. Currently no such slide occurs; keep it that way.
+
+Formal research state at seal:
+
+```text
+Step 1  Spec v0.3              COMPLETE / SEALED
+Case 2  A/B non-identifiable   SEALED AT IDENTIFIABILITY LEVEL
+Model B                        explanatory model → concrete falsifiable commitments
+Step 2  Uniformity Probe       DESIGN GATE — NOT AUTHORIZED
+Step 3  Evaluation-Signature   DEFERRED
+```
+
+Next-gate condition: Step 2's design gate requires explicit Human authorization.
+When (and if) opened, the design's FIRST question — before any experiment matrix —
+is: **can X or F be legitimately manipulated to `U_c`?** This determines whether
+C-PROP-1 is an actually testable commitment.
+
+Line-level reframe registered at seal: conjunction is an explanatory hypothesis; the
+research object is whether it can sustainably honor a definite set of structural
+commitments.
