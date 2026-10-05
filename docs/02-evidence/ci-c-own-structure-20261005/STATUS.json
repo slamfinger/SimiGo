@@ -1,6 +1,6 @@
 {
-  "status": "AUTHORIZATION_BOUNDARY_DESIGN_FROZEN",
-  "run_id": "20261005-014500-ci-c",
+  "status": "AUTHORIZATION_BOUNDARY_FOUR_CELL_COMPLETE",
+  "run_id": "20261005-human-authorized-four-cell",
   "arms": 7,
   "models_run": [
     "A-qwen3-moe",
@@ -17,14 +17,11 @@
   ],
   "open_issue": "A FULL baseline degraded; no cross-model minimum established",
   "not_authorized": [
-    "run implementation now",
-    "model execution",
-    "B retry",
-    "D retry",
+    "846 mapping",
     "Observer",
     "InformationCore write",
-    "846 mapping",
-    "minimal Information Core claim"
+    "minimal Information Core claim",
+    "follow-up run without human authorization"
   ],
   "run_ids": [
     "20261005-014500-ci-c",
@@ -34,7 +31,7 @@
   "candidate_invariant": "relational executable admissibility function",
   "surface_vs_authorized": "separated",
   "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
-  "next_gate": "human_review_then_four_cell_authorization_run",
+  "next_gate": "human_review_of_denied_F_visibility_and_leakage_probe",
   "authorized_next_work": [
     "human review",
     "prompt/runner implementation after separate authorization"
@@ -45,5 +42,11 @@
     "N x AUTHZ_ALLOWED",
     "N x AUTHZ_DENIED"
   ],
-  "primary_result_label": "AUTHORIZATION_BOUNDARY_CLASS"
+  "primary_result_label": "AUTHORIZATION_BOUNDARY_CLASS",
+  "authorization_boundary_class": "AMBIGUOUS",
+  "first_divergence": {
+    "C-gemma4-unified": "L1_source_admission",
+    "N-nail-qwen3-5-moe": "L1_source_admission"
+  },
+  "surface_c4_divergence": "NONE"
 }

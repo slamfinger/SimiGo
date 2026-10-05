@@ -1,0 +1,48 @@
+{
+  "health": {
+    "status": "ok",
+    "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit"
+  },
+  "models": {
+    "object": "list",
+    "data": [
+      {
+        "architecture": "gemma4_unified",
+        "id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+        "backend": "NativeMLX",
+        "owned_by": "simigo",
+        "capabilities": {
+          "chat": "supported",
+          "reasoning": "unverified",
+          "streaming": "supported",
+          "vision": "unsupported",
+          "toolCalling": "unverified",
+          "structuredOutput": "unverified"
+        },
+        "object": "model",
+        "created": 1791159802,
+        "runtime": {
+          "cacheInvalidation": "kvFingerprint mismatch → 旧缓存失效，全量 prefill",
+          "constraints": [
+            "serializeGeneration=true：并发生成跨 session 单飞（qwen3_5_moe 编译锁互堵缓解，2026-09-11 实测）"
+          ],
+          "concurrency": "global single-flight (serializeGeneration=true)"
+        },
+        "protocolEndpoints": {
+          "chatCompletions": "supported",
+          "responses": "unverified",
+          "textCompletions": "supported"
+        }
+      }
+    ]
+  },
+  "selected": {
+    "model_id": "C-gemma4-unified",
+    "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+    "inference": {
+      "temperature": 0,
+      "max_tokens": 1024,
+      "stream": false
+    }
+  }
+}
