@@ -176,3 +176,25 @@ Step 3  Evaluation-Signature   DEFERRED
 Next-gate condition: Step 2's design gate requires explicit Human authorization; if opened, the design's FIRST question — before any experiment matrix — is **whether X or F can legitimately be manipulated to `U_c`** (this determines whether C-PROP-1 is an actually testable commitment).
 
 Line reframe registered at seal: conjunction is an explanatory hypothesis; the research object is whether it can sustainably honor a definite set of structural commitments.
+
+---
+
+## Addendum 4 — 2026-10-05: Step 2 Design Gate executed — U_c feasibility verdict CASE U3 (PROPOSED)
+
+Human authorized the Step 2 Design Gate with the first question fixed: **can X or F be legitimately manipulated to `U_c`?** — before any probe matrix. Pre-registered case rule: U1 (both constructible → C-PROP-1 probe) / U2 (one → single-condition probe) / U3 (neither → C-PROP-1 untestable, **Step 2 stops, no U_c manipulation invented**).
+
+Delivered: `MODEL_B_UNIFORMITY_PROBE_DESIGN.md` (committed with this addendum). Gates 2.1 + 2.2 executed; Gate 2.3 not reached.
+
+**Verdict: Case U3 — neither X nor F admits a legal, operationalizable, non-smuggled `U_c` manipulation.** Three independent blockers, grounded in the actual instrument (prompt-rendered conditions, `TEMPLATE_J` + mandated JSON output contract):
+
+- **B-1 construction**: no input-side operation forces determination-non-completion; the instrument instructs fail-closed resolution (template rule 4) and every producible input state (absent/partial/stale/conflicting/corrupt) resolves to a completed determination (established classes: absent→false, stale→quality, conflicting→model-dependent completed).
+- **B-2 identification**: the output contract forces verdicts (`transition_status` enum + mandatory booleans) — **no representable non-verdict**; the 846 C4-absent signature belongs to the CI-C fixture's channel and is not mappable onto the agent line; contract violations are confounded with instrumentation failure. The instrument-fix route (adding a COULD_NOT_DETERMINE slot) was analyzed and rejected: new instrument, B-1 untouched, and the slot invites strategic use — the identification problem recurs one level up.
+- **B-3 well-formedness**: `U_c` presupposes per-condition determinations as isolable occurrences = condition-level modularity, which is open Q1 (J3's BLOCKED-not-DEGRADED pattern is registered as Q1's existing candidate evidence leaning shared — cited as evidence state, not resolved). U_c feasibility is downstream of Q1.
+
+Four-way distinction enforced (Gate 2.1): absent/irrelevant/corrupt = input states; true/false/U_c = determination outcomes; a "U_c manipulation" would be an input state forcing a non-outcome — a category that is empty in this instrument. Stipulation routes (declaring "UNDETERMINED" as input text; relabeling corruption as U_c) explicitly identified as the smuggling forms and rejected.
+
+Consequences: C-PROP-1 = stateable (sealed, unchanged) / currently untestable in the agent-line instrument; **Step 2 stopped per the pre-registered rule, pending Human confirmation of the U3 verdict**; uniformity-without-C-PROP-1 (ND-1-bound new-condition hunt) remains registered, NOT pursued — independent Human decision required if ever desired. Verdict scope = instrument-relative (no claim about U_c realizability in principle or other setups).
+
+Reopeners registered (none pursued, each requiring new Human authorization): R-1 = an instrument that can represent determination-non-completion + a criterion separating genuine non-completion from evasion/instrumentation failure (adjacent to deferred Step 3 — noted, not opened); R-2 = incidental repeated no-verdict observation under fixed input; R-3 = Q1 resolution toward condition-level modularity.
+
+Q3/Q4/Q6/Q7/Q5 untouched; no frozen phase reopened; no sealed document modified.
