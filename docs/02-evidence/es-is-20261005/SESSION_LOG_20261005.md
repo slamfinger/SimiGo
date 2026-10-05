@@ -85,54 +85,12 @@ All four G-4 findings are CLOSED by Human review after implementation and indepe
 4. **IF-G4-04 CLOSED** — `used_item_identities` is stored directly in IR and
    compared against the CR used set.
 
-## Post-Gate Route Decision — CLOSED
+## Post-Gate boundaries
 
-Human selected **REPORT / PAPER EVIDENCE PACKAGE** as the唯一 Active Route at
-baseline `ab97244`. The ruling and comparative-assessment record are in
-`POST_GATE_ROUTE_DECISION_20261005.md`.
-
-```text
-Active route = REPORT / PAPER EVIDENCE PACKAGE
-PALACE       = PENDING
-Backend      = PENDING
-External E-run = PENDING
-Pause ES↔IS  = PENDING
-No code      = true
-No contract  = true
-No experiment = true
-```
-
-The goal is to transform the machine-recheckable implementation closure into an
-externally reviewable, citable, reproducible evidence package—not to start
-carrier, backend, or experimental work.
-
-## Report/Paper Evidence Package — Claim Ledger & Evidence Audit
-
-Semantic correction: this is the **Evidence-Package Route**, not a paper-writing
-task. “Report/Paper” remains only the historical route label. The next object is
-structured evidence compilation.
-
-The first active-route phase is delivered at
-`REPORT_PACKAGE_CLAIM_LEDGER_AUDIT_20261005.md`. It registers 13 claims, the
-full G-1..G-4/IF evidence chain, C-CAP supported/non-supported boundaries,
-reproducibility invariants, and 10 gap/overclaim risks.
-
-Audit verdict:
-
-```text
-READY TO PROCEED TO EVIDENCE PACKAGE STRUCTURED COMPILATION
-No blocking overclaim found.
-No blocking evidence gap found.
-Mandatory qualifiers remain: document-form conformance substrate; single E-run;
-selected-path conformance; limited mechanical support on (c); no
-production/backend/PALACE claim; no hidden-code proof; no universal State claim.
-```
-
-Status: `DELIVERED / AWAITING HUMAN REVIEW`.
+Implementation Gate is CLOSED. PALACE, backend integration, experiments beyond the single E-run, a paper/report evidence package, or pausing this line are now **route candidates eligible for evaluation**, but **BLOCKED → ELIGIBLE ≠ AUTO-START**. None is selected. Implementation deviations still enter as Implementation Findings first; Frozen Contract modification still requires an independent reason and contract-revision process. The v0.2 Constitution's §5A applies to governance itself.
 
 ## Next steps (none auto-open)
 
-1. Human review the delivered Claim Ledger & Evidence Audit.
-2. On acceptance, enter **Evidence Package Drafting — Structured Evidence Compilation**, not manuscript writing.
-3. Keep PALACE, backend integration, and external E-run as future routes only.
-4. Frozen Contract revision remains non-automatic and requires its own gate.
+1. **Gate-close route decision only** — Human selects among external verification, PALACE/Information Space, backend/runtime integration, report/paper packaging, pausing this line, or another explicitly named route.
+2. Do not start code, carrier selection, integration, or new experiments until that explicit commission.
+3. Frozen Contract revision remains non-automatic and requires its own gate.
