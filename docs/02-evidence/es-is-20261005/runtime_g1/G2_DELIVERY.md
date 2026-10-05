@@ -71,15 +71,40 @@ IF-G2-06 (MUST FIX before acceptance)  COVENANTED was never exercised — the
 
 **Coverage downgrade per Human review (registered):** v1's case 06 claimed "every outcome" while exercising one path — corrected to "every **exercised** outcome (BOUND/MISMATCH/UNBOUND)". POST-CREATION-ANOMALY coverage in v1 was field-presence only — now the anomaly transition itself is exercised (06c); the **recovery-attempt transition** remains G-3 scope and is stated as such.
 
+Round 3 (Human review of v2): two Findings registered, **both FIXED** in this delivery:
+
+```text
+IF-G2-07 (MUST FIX)  post_creation_anomaly() derived the check id from the
+                     signature prefix ("SURFACE-INFIDELITY" -> check
+                     "SURFACE"), drifting the VV-2/VV-4 ownership. Fix: the
+                     helper takes the VV check id EXPLICITLY; the anomaly
+                     record and lifecycle carry check="VV-2"/"VV-4".
+                     Conformance: case 06c asserts the ownership field.
+
+IF-G2-08 (MUST FIX)  VV-4's VERIFIED/COVENANTED decision relied on
+                     isinstance(OpaqueSubstrate) + private-state reads
+                     (_envelope) — a class-name boundary, not a capability
+                     boundary. Fix: substrates declare readback observability
+                     via an explicit capability interface
+                     (surface_readback_available() / envelope_readback());
+                     the pipeline follows the declared capability. Opaque
+                     behavior without the OpaqueSubstrate class is proven by
+                     case 06d (CapabilityRevokedSubstrate: same readback-
+                     capable class, capability declared absent -> VV-2/VV-4
+                     COVENANTED).
+```
+
 **No Frozen Contract conflict in either round.** Remaining self-check corrections were conformance defects (annotation expectation; `entered()` semantics = verdict tiers, not entry existence), not implementation or contract issues.
 
 ## 4. Conformance results
 
-`python3 i1_g2_conformance.py` → **16/16 PASS**; `i1_g1_conformance.py` →
+`python3 i1_g2_conformance.py` → **17/17 PASS**; `i1_g1_conformance.py` →
 19/19 PASS (no regression). Coverage: all three BLOCK subtypes (incl. the
 policy-gated POLICY-BLOCK at step 1), all three binding states, both
-non-BLOCK classes, the COVENANTED tier on an opaque substrate, the anomaly
-lifecycle transition, tier-profile recording, the VV applicability boundary,
+non-BLOCK classes, the COVENANTED tier on TWO substrate paths (OpaqueSubstrate
+and the capability-revoked same-class substrate — proving the decision follows
+the declared capability, not the class), the anomaly lifecycle transition with
+explicit VV ownership, tier-profile recording, the VV applicability boundary,
 and single-primary-disposition on every exercised path.
 
 ## 5. Next per the fixed gate order

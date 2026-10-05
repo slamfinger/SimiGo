@@ -198,8 +198,9 @@ def main() -> int:
           and ir["stage"] == "COMPLETED")
 
     # 06c — POST-CREATION-ANOMALY: a FAILED check past the creation point is
-    #      a lifecycle state + PROCEED-WITH-ANNOTATION, never CREATE-BLOCK
-    #      (IF-G2-05) ----------------------------------------------------------
+    #      a lifecycle state + PROCEED-WITH-ANNOTATION, never CREATE-BLOCK;
+    #      the verification record keeps its explicit VV ownership
+    #      (IF-G2-07) ----------------------------------------------------------
     store, cr0, cr1, sub = build_world()
     # an unfaithful substrate: materialize succeeds (creation point crossed),
     # then readback observes surface infidelity
@@ -209,13 +210,45 @@ def main() -> int:
     unfaithful = UnfaithfulSubstrate("bad-engine", "tokenizer-v1",
                                      "W-testbed-1")
     ir = instantiate(cr1, store, base_tau(), unfaithful, "att-06c")
+    vv2_rec = next(v for v in ir["verification"] if v.get("signature")
+                   == "SURFACE-INFIDELITY")
     check("06c post-creation FAILED check -> ANOMALY lifecycle + "
-          "PROCEED-WITH-ANNOTATION (never CREATE-BLOCK)",
+          "PROCEED-WITH-ANNOTATION; record owned by VV-2 (IF-G2-07)",
           ir["stage"] == "ANOMALY"
           and ir["lifecycle"]["anomaly"]["state"] == "POST-CREATION-ANOMALY"
+          and ir["lifecycle"]["anomaly"]["check"] == "VV-2"
+          and vv2_rec["check"] == "VV-2"
+          and vv2_rec["verdict"] == "FAILED"
           and ir["disposition"]["class"] == "PROCEED-WITH-ANNOTATION"
           and any("POST-CREATION-ANOMALY" in a
                   for a in ir["disposition"]["annotations"]))
+
+    # 06d — capability boundary, not class boundary (IF-G2-08): a substrate
+    #      of the READBACK-CAPABLE class whose surface_readback_available()
+    #      returns False gets COVENANTED — the decision follows the declared
+    #      capability, never the type ------------------------------------------
+    store, cr0, cr1, _ = build_world()
+
+    class CapabilityRevokedSubstrate(ConformanceSubstrate):
+        def surface_readback_available(self) -> bool:
+            return False
+
+        def readback_surface(self) -> bytes:
+            return b"[WOULD BE READBACK]"  # must never be consulted
+
+        def envelope_readback(self) -> Dict[str, Any]:
+            raise NotImplementedError("capability revoked")
+    revoked = CapabilityRevokedSubstrate("revoked-engine", "tokenizer-v1",
+                                         "W-testbed-1")
+    ir = instantiate(cr1, store, base_tau(), revoked, "att-06d")
+    vv2 = next(v for v in ir["verification"] if v["check"] == "VV-2")
+    vv4 = next(v for v in ir["verification"] if v["check"] == "VV-4")
+    check("06d capability-revoked substrate (same class as readback) -> "
+          "VV-2/VV-4 COVENANTED — decision follows the capability, not the "
+          "class",
+          ir["stage"] == "COMPLETED"
+          and vv2["verdict"] == "COVENANTED"
+          and vv4["verdict"] == "COVENANTED")
 
     # 07 — IR lifecycle on the happy path: ESTABLISHED -> COMPLETED ----------
     store, cr0, cr1, sub = build_world()

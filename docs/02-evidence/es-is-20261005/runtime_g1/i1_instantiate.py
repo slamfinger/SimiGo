@@ -61,10 +61,23 @@ class ConformanceSubstrate:
         return handle
 
     # readback interface (VERIFIED path for VV-2/VV-4) --------------------
+    # IF-G2-08: observability is an EXPLICIT CAPABILITY, declared via the
+    # capability interface below — never inferred from a class name or from
+    # internal state.
+    def surface_readback_available(self) -> bool:
+        """Can this substrate expose the materialized surface for byte
+        comparison? Capability declaration — the caller never guesses."""
+        return True
+
     def readback_surface(self) -> bytes:
         # The conformance substrate is surface-faithful by construction; a
         # real engine exposes this or the check lands COVENANTED.
         return self._surface_bytes
+
+    def envelope_readback(self) -> Dict[str, Any]:
+        """Effective-envelope readback. Raising NotImplementedError = the
+        capability is absent (the caller then records COVENANTED)."""
+        return dict(self._envelope)
 
     def feed_surface(self, surface: bytes) -> None:
         self._surface_bytes = surface
@@ -81,9 +94,14 @@ class ConformanceSubstrate:
 
 
 class OpaqueSubstrate(ConformanceSubstrate):
-    """IF-G2-06: an opaque substrate — NO readback interface. VV-2/VV-4
-    cannot observe the property on it: the checks land COVENANTED (explicit
-    trust boundary recorded), never VERIFIED and never ENVELOPE-DRIFT."""
+    """IF-G2-06/08: an opaque substrate — the readback CAPABILITY is absent,
+    declared via the capability interface (not a class-name special case in
+    the caller). VV-2/VV-4 cannot observe the property on it: the checks
+    land COVENANTED (explicit trust boundary recorded), never VERIFIED and
+    never ENVELOPE-DRIFT."""
+
+    def surface_readback_available(self) -> bool:
+        return False
 
     def readback_surface(self) -> bytes:
         raise NotImplementedError("opaque substrate: surface unobservable")
@@ -237,20 +255,24 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
     # POST-CREATION-ANOMALY (lifecycle state; primary disposition
     # PROCEED-WITH-ANNOTATION with anomaly annotation + conservative
     # re-instantiation as recovery) — never rewritten into CREATE-BLOCK.
+    # IF-G2-07: the anomaly helper takes the VV check id EXPLICITLY — the
+    # VV-2/VV-4 ownership never drifts into signature-prefix derivation.
 
-    def post_creation_anomaly(signature: str, detail: str) -> Dict[str, Any]:
+    def post_creation_anomaly(vv_check: str, signature: str,
+                              detail: str) -> Dict[str, Any]:
         ir["verification"].append(
-            {"check": signature.split("-")[0], "verdict": "FAILED",
+            {"check": vv_check, "verdict": "FAILED",
              "signature": signature, "detail": detail})
         ir["lifecycle"]["anomaly"] = {
-            "state": "POST-CREATION-ANOMALY", "signature": signature,
+            "state": "POST-CREATION-ANOMALY", "check": vv_check,
+            "signature": signature,
             "recovery": "conservative re-instantiation from the same "
                         "RESOLVED R2 (idempotence not claimed)"}
         ir["disposition"] = {
             "class": "PROCEED-WITH-ANNOTATION",
             "annotations": (annotations
                             + [f"IR-INCOMPLETE / POST-CREATION-ANOMALY "
-                               f"({signature})"])}
+                               f"({vv_check} / {signature})"])}
         ir["stage"] = "ANOMALY"
         return ir
 
@@ -258,43 +280,45 @@ def instantiate(cr_ref: str, store: ContentStore, tau_star: Dict[str, Any],
     ir["verification"].insert(0, {
         "check": "VV-1", "verdict": "VERIFIED",
         "detail": f"R2 clean RESOLVED; r2_digest {r2['r2_digest']}"})
-    # VV-2: surface faithfulness — readback-verified, or COVENANTED on an
-    # opaque substrate (IF-G2-06); FAILED past creation = anomaly (IF-G2-05)
+    # VV-2: surface faithfulness — readback-verified (capability-gated),
+    # or COVENANTED on an opaque substrate (IF-G2-06/08); FAILED past
+    # creation = anomaly (IF-G2-05)
     substrate.feed_surface(r2["surface"])
-    try:
+    if substrate.surface_readback_available():
         rb = substrate.readback_surface()
-    except NotImplementedError:
-        ir["verification"].append(
-            {"check": "VV-2", "verdict": "COVENANTED",
-             "detail": "surface unobservable on this substrate — explicit "
-                       "trust boundary recorded (covenant, not verification)"})
-    else:
         if rb == r2["surface"]:
             ir["verification"].append(
                 {"check": "VV-2", "verdict": "VERIFIED",
                  "detail": "readback byte-identical to R2.surface"})
         else:
             return post_creation_anomaly(
-                "SURFACE-INFIDELITY", "readback differs from R2.surface")
-    # VV-4: envelope equality — readback-verified, or COVENANTED when the
-    # effective envelope is unobservable (never "ENVELOPE-DRIFT": not
-    # knowing whether there is a violation != discovering a violation)
-    envelope_observable = not isinstance(substrate, OpaqueSubstrate)
-    if envelope_observable:
-        eff = substrate._envelope
+                "VV-2", "SURFACE-INFIDELITY", "readback differs from R2.surface")
+    else:
+        ir["verification"].append(
+            {"check": "VV-2", "verdict": "COVENANTED",
+             "detail": "surface unobservable on this substrate — explicit "
+                       "trust boundary recorded (covenant, not verification)"})
+    # VV-4: envelope equality — readback-verified (capability-gated, per
+    # IF-G2-08: explicit readback capability, not class identity or private
+    # state), or COVENANTED when the effective envelope is unobservable
+    # (never "ENVELOPE-DRIFT": not knowing whether there is a violation !=
+    # discovering a violation)
+    try:
+        eff = substrate.envelope_readback()
+    except NotImplementedError:
+        ir["verification"].append(
+            {"check": "VV-4", "verdict": "COVENANTED",
+             "detail": "effective envelope unobservable on this substrate — "
+                       "explicit trust boundary recorded (covenant, not "
+                       "verification); ENVELOPE-DRIFT not claimable"})
+    else:
         if eff == tau_star.get("envelope"):
             ir["verification"].append(
                 {"check": "VV-4", "verdict": "VERIFIED",
                  "detail": "effective envelope == declared ε2"})
         else:
             return post_creation_anomaly(
-                "ENVELOPE-DRIFT", "readback mismatch")
-    else:
-        ir["verification"].append(
-            {"check": "VV-4", "verdict": "COVENANTED",
-             "detail": "effective envelope unobservable on this substrate — "
-                       "explicit trust boundary recorded (covenant, not "
-                       "verification); ENVELOPE-DRIFT not claimable"})
+                "VV-4", "ENVELOPE-DRIFT", "readback mismatch")
     # VV-5: position derivation (PD-6 derived)
     pos_units = substrate.tokenize_position(r2["surface"])
     ir["position_record"] = {"method": "derived", "tokenizer_id":
