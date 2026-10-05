@@ -106,10 +106,29 @@ The goal is to transform the machine-recheckable implementation closure into an
 externally reviewable, citable, reproducible evidence package—not to start
 carrier, backend, or experimental work.
 
+## Report/Paper Evidence Package — Claim Ledger & Evidence Audit
+
+The first active-route phase is delivered at
+`REPORT_PACKAGE_CLAIM_LEDGER_AUDIT_20261005.md`. It registers 13 claims, the
+full G-1..G-4/IF evidence chain, C-CAP supported/non-supported boundaries,
+reproducibility invariants, and 10 gap/overclaim risks.
+
+Audit verdict:
+
+```text
+READY TO PROCEED TO REPORT PACKAGE DRAFTING
+No blocking overclaim found.
+No blocking evidence gap found.
+Mandatory qualifiers remain: document-form conformance substrate; single E-run;
+selected-path conformance; limited mechanical support on (c); no
+production/backend/PALACE claim; no hidden-code proof; no universal State claim.
+```
+
+Status: `DELIVERED / AWAITING HUMAN REVIEW`.
+
 ## Next steps (none auto-open)
 
-1. Enter **Report/Paper Evidence Package — Claim Ledger & Evidence Audit**.
-2. Build the Research Claim Ledger and audit provenance claim by claim.
-3. State C-CAP `SUPPORTED` and its non-claims exactly.
-4. Keep PALACE, backend integration, and external E-run as future routes only.
-5. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Human review the delivered Claim Ledger & Evidence Audit.
+2. On acceptance, proceed only to report-package drafting with the registered mandatory qualifiers.
+3. Keep PALACE, backend integration, and external E-run as future routes only.
+4. Frozen Contract revision remains non-automatic and requires its own gate.

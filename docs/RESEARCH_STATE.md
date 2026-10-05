@@ -53,8 +53,13 @@
 > 路线范围：`No code / No contract / No experiment`；目标不是泛泛写论文，
 > 而是把 G-1..G-4 机器可复验闭环转成外部可审查、可引用、可复验的证据包。
 > PALACE、Backend integration、E-run 外实验、暂停本线全部保持 PENDING。
-> 下一入口：**Claim Ledger & Evidence Audit**；登记于
-> `docs/02-evidence/es-is-20261005/POST_GATE_ROUTE_DECISION_20261005.md`。
+> 第一阶段 **Claim Ledger & Evidence Audit 已交付待复核**（13 条 claim、
+> G-1..G-4/IF 证据链、C-CAP 支持/不支持边界、复现不变量、10 项 gap/overclaim
+> 风险）；结论为可进入报告包起草，但必须保留 document-form、conformance
+> substrate、single E-run、selected-path conformance、limited mechanical
+> support on (c) 等限定。登记于
+> `docs/02-evidence/es-is-20261005/POST_GATE_ROUTE_DECISION_20261005.md`
+> 与 `REPORT_PACKAGE_CLAIM_LEDGER_AUDIT_20261005.md`。
 > 冻结契约修改继续需要独立理由与 contract-revision 流程。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
