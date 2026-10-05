@@ -1,7 +1,7 @@
 # PALACE / Information Space Foundation — Carrier Gap Study Commission
 
 Date: 2026-10-05
-Status: `HUMAN RULING COMPLETE · SCOPE CHARTER ACCEPTED / CLOSED · A4 CONCEPTUAL STUDY COMMISSIONED / NOT STARTED`
+Status: `HUMAN RULING COMPLETE · A4 CONCEPTUAL STUDY DELIVERED / AWAITING HUMAN REVIEW`
 MemPalace audit: `ACCEPTED / CLOSED` at delivery `1540cae`
 MemPalace verdict: `AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST`
 Thin adapter: `NOT FEASIBLE`
@@ -121,8 +121,8 @@ Scope & Research Question Charter = ACCEPTED / CLOSED
 Delivery                          = 2f0959b
 Baseline                          = ab97244
 Frozen Contracts                  = UNCHANGED
-A4 Conceptual Study               = COMMISSIONED / NOT STARTED
-Study questions                   = CGQ-1..CGQ-5
+A4 Conceptual Study               = DELIVERED / AWAITING HUMAN REVIEW
+Study questions                   = CGQ-1..CGQ-5 answered
 Study guard                       = conceptual / documentary only;
                                     no implementation or experiment
 ```
@@ -149,3 +149,26 @@ The charter explicitly separates minimal semantic obligations from probe-local o
 implementation incidental requirements. Human review authorized only the
 conceptual A4 study. No implementation, adapter, carrier integration, MemPalace
 mutation, probe execution, experiment, or contract change follows.
+
+## 9. A4 conceptual study result
+
+The conceptual study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_CONCEPTUAL_STUDY_20261005.md`.
+
+It answers `CGQ-1..CGQ-5` and reduces the eight candidate primitives to seven
+bounded carrier-layer primitives:
+
+```text
+MCL-1  Immutable Content Datum
+MCL-2  Exact Identity / Pin Resolution
+MCL-3  Typed Relation Record
+MCL-4  Separated Provenance Record
+MCL-5  Succession Relation
+MCL-6  Lineage Closure
+MCL-7  Mechanical Failure Surface
+```
+
+Canonical records are reinterpreted as a composite structural expression rather
+than an eighth semantic primitive. The study also defines eight failure families
+and four conceptual carrier archetypes. It does not select a carrier, authorize
+implementation, or claim universal minimality.

@@ -109,12 +109,13 @@
 > 随后 Human 选择 **Option A4**：授权新的非实现研究问题 **Carrier Gap
 > Study**，研究满足 MemPalace 五个 GAP 所需的最小 missing carrier layer；
 > Scope & Research Question Charter 已 ACCEPTED /
-> CLOSED（delivery `2f0959b`）。A4 Conceptual Study 已授权且尚未开始，必须按
-> `CGQ-1..5` 回答：哪些 IS-MCI 要求来自 Frozen semantics、哪些来自 PRQ
-> mutation class、哪些是 general IS semantic、哪些只是 probe-local；并分析
-> 最小候选 carrier primitives。该阶段仍为 conceptual / documentary study；
-> 不实现 adapter/carrier、不集成、不执行 probe、不改 MemPalace、不做实验、
-> 不改契约。登记于
+> CLOSED（delivery `2f0959b`）。**A4 Conceptual Study 已交付待复核**：
+> 逐项回答 `CGQ-1..5`，并把候选 primitive 收敛为七项 bounded carrier-layer
+> semantics：immutable content、exact identity/pin resolution、typed relation
+> record、separated provenance、succession relation、lineage closure、mechanical
+> failure surface。同时定义八个 failure family 与四个 conceptual carrier
+> archetype。结论 bounded 于 registered PRQ mutation class，不声称 universal
+> minimality，不选 carrier，不授权实现。登记于
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

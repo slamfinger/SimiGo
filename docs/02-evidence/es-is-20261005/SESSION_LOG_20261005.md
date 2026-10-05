@@ -279,15 +279,36 @@ Candidate primitives P1..P8
 Study questions      CGQ-1..CGQ-5
 ```
 
-## A4 Conceptual Study — COMMISSIONED / NOT STARTED
+## A4 Conceptual Study — DELIVERED / AWAITING HUMAN REVIEW
 
-Human authorized the next phase as conceptual / documentary study only.
+The A4 conceptual study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_CONCEPTUAL_STUDY_20261005.md`.
+
+It answers `CGQ-1..CGQ-5`.
 
 ```text
-Study questions      = CGQ-1..CGQ-5
-Status               = COMMISSIONED / NOT STARTED
-Answer scope         = what minimal carrier layer is required and why
+CGQ-1  traced obligations to Frozen / PRQ / IS-semantic / probe-local sources
+CGQ-2  reduced P1..P8 to seven bounded primitives MCL-1..MCL-7
+CGQ-3  expressed each primitive semantically, structurally, mechanically,
+       and implementation-incidentally
+CGQ-4  defined eight failure families and forbidden rescues
+CGQ-5  defined four conceptual carrier archetypes
+```
 
+Final bounded result:
+
+```text
+MCL-1  Immutable Content Datum
+MCL-2  Exact Identity / Pin Resolution
+MCL-3  Typed Relation Record
+MCL-4  Separated Provenance Record
+MCL-5  Succession Relation
+MCL-6  Lineage Closure
+MCL-7  Mechanical Failure Surface
+```
+
+```text
+Status = DELIVERED / AWAITING HUMAN REVIEW
 No implementation       = true
 No adapter              = true
 No carrier integration  = true
@@ -299,8 +320,10 @@ No contract change      = true
 
 ## Next steps (none auto-open)
 
-1. Execute the A4 Conceptual Study for `CGQ-1..CGQ-5`.
-2. Deliver source classification, primitive minimality analysis, expression
-   matrix, failure boundary taxonomy, and carrier archetypes.
-3. Return to Human review before any implementation, integration, carrier
-   selection, probe execution, experiment, or contract change.
+1. Human review the A4 conceptual study.
+2. On ACCEPT: Human may authorize a separate carrier-path or decodable-study
+   decision based on `MCL-1..MCL-7`.
+3. On FINDINGS: revise the conceptual study without implementation.
+4. On REJECT/PAUSE: close or pause the Foundation route by explicit ruling.
+5. No implementation, carrier selection, integration, experiment, or Frozen
+   Contract change is authorized.

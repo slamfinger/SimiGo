@@ -224,7 +224,7 @@ Core question   = What minimal carrier layer is required to satisfy the
                   MemPalace GAP areas without semantic inference, hidden
                   completion, candidate mutation, or Frozen Contract change?
 Status          = COMMISSIONED / SCOPE CHARTER PENDING
-Next entry      = A4 Conceptual Study according to CGQ-1..CGQ-5
+Next entry      = Human review of A4 Conceptual Study
 ```
 
 Human review accepted the scope charter and commissioned the A4 conceptual study:
@@ -262,3 +262,26 @@ It explicitly separates minimal semantic obligations from probe-local expression
 and carrier implementation details. Human review is the next gate; no
 implementation, adapter, carrier integration, MemPalace mutation, probe execution,
 experiment, or contract change follows automatically.
+
+## 10. A4 conceptual study
+
+The A4 conceptual study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_CONCEPTUAL_STUDY_20261005.md`.
+
+It answers `CGQ-1..CGQ-5` and reduces the candidate primitives to seven bounded
+carrier-layer semantics:
+
+```text
+MCL-1  Immutable Content Datum
+MCL-2  Exact Identity / Pin Resolution
+MCL-3  Typed Relation Record
+MCL-4  Separated Provenance Record
+MCL-5  Succession Relation
+MCL-6  Lineage Closure
+MCL-7  Mechanical Failure Surface
+```
+
+It also defines eight failure families and four carrier archetypes. The result is
+bounded to the registered PRQ-ISF-01 mutation class; it does not claim universal
+minimality, select a carrier, authorize implementation, or modify Frozen
+Contracts.
