@@ -283,6 +283,19 @@ PALACE         = BLOCKED
 
 I-1c answered **what instantiate must distinguish** (State / declaration / operation — and, via IC-2, what it may decide versus record as undecidable); it deliberately did not answer how the substrate / carrier / PALACE concretely realize and validate the contract at runtime. That is the next layer's design space, behind an explicit Core gate.
 
+**Gate proposal registered (2026-10-05): I-1d — Instantiate Runtime Realization & Verification Conceptual Design.** Human proposal (rationale registered): I-1 and I-1c have respectively frozen `IS → resolve → R2` and `R2 + τ2★ → instantiate → S2`; the remaining gap is *how the frozen Instantiate Contract obtains an executable, verifiable realization in a real Execution State runtime*. Proposed deliverable: **I-1d — Instantiate Runtime Realization & Verification Conceptual Design v0.1** — still purely conceptual (no implementation, no experiment, no PALACE selection). Registered scope — the design answers exactly four things:
+
+1. **Contract → runtime object**: what real objects, fields, and operations do IC-1..IC-7 / SC-1..SC-6 correspond to at runtime?
+2. **Instantiate boundary**: within R2 + τ2★ → S2, which step truly creates S2 — which are bind / materialize / restore / attach?
+3. **Mechanical verification**: how to check, without a semantic oracle, that a post-instantiate S2 satisfies the frozen SC / IC?
+4. **Runtime failure taxonomy**: BOUND / UNBOUND / MISMATCH, carrier absent, substrate mismatch, position failure, etc. — which are runtime-visible failures; which allow continuation, which block?
+
+**The gate's key criterion (Human, registered):** I-1d must prove not *"instantiate can run"* but **"the runtime realization has not silently changed the frozen instantiate semantics"** — blocking the drift path `conceptual IC → runtime implementation → quietly modified IC`. I-1d's core deliverable is therefore the auditable three-way mapping: **Frozen Contract ↔ Runtime trace/object ↔ Mechanical verification.**
+
+Order of things after I-1d: `I-1 = IS persistence / resolve; I-1c = instantiate semantics; I-1d = runtime realization + verification` → only then **Implementation gate → Experiment**.
+
+**Formal status: I-1d = NOT YET COMMISSIONED** (deliberately). The Human's next act is the explicit commissioning; no design document is drafted and no code is opened before that ruling.
+
 ---
 
 ## 9. Synthesis gate record (G-5, five questions in order)
