@@ -89,11 +89,11 @@ def run_e1(store: ContentStore) -> Dict[str, Any]:
 def run_e2(store: ContentStore, cr_ref: str, substrate,
            tau_star: Dict[str, Any], e1_trace: Dict[str, Any],
            r2: Dict[str, Any]) -> Dict[str, Any]:
-    """E2: T2's execution adapter CONSUMES the S2 continuation object that
-    instantiate produced (IF-G3-01) — the task derives its result from the
-    object's own contents (surface + bound position), not from a parallel
-    construction. The trace records predecessor references (E1.seg) and the
-    resolved inputs consumed — C-CAP(c)'s document-form evidence."""
+    """E2: THE SINGLE instantiate of the E-run happens here; its S2 is the
+    object T2 consumes (IF-G3-04: one lifecycle, one IR, one S2, throughout).
+    IF-G3-03: T2's result is DERIVED FROM the S2-carried contents — the
+    result digest is computed over the S2 surface bytes + position + bound
+    weights, so the data flow is S2 → result, un-bypassable."""
     ir = instantiate(cr_ref, store, tau_star, substrate, attempt_id="E2-att-1")
     if ir["stage"] != "COMPLETED":
         raise RuntimeError(f"instantiate did not complete: {ir['disposition']}")
@@ -111,12 +111,19 @@ def run_e2(store: ContentStore, cr_ref: str, substrate,
     if s2["bound_weights_id"] != tau_star["weights_id"]:
         raise RuntimeError("S2 bound to an unexpected weights identity")
 
-    # T2's computation reads the SURFACE carried by S2 (the continuation
-    # context) and derives its result from it — no hardcoded result string.
-    r1_digest = res_r1_digest(r2)
-    result = b"R2-result: from S2 surface [R1 digest " + \
-        r1_digest.encode()[:16] + b"] release plan issued per continuation " \
-        b"context; gamma held"
+    # IF-G3-03: T2's result digest is computed OVER THE S2 CONTENTS
+    # (surface bytes + position + bound weights read from the S2 object) —
+    # a direct, un-bypassable data dependency: change any S2 field and the
+    # result changes. R2 supplies only the R1 item referenced in CR(E2).
+    s2_material = (s2["surface_bytes"]
+                   + str(s2["position_units"]).encode("utf-8")
+                   + s2["bound_weights_id"].encode("utf-8"))
+    result_digest = sha256_hex(s2_material)
+    result = (b"R2-result [digest " + result_digest.encode()[:24]
+              + b"] derived from S2 surface " +
+              s2["handle"]["surface_digest"].encode()[:16] + b" at position "
+              + str(s2["position_units"]).encode() + b" on "
+              + s2["bound_weights_id"].encode())
     e2_segments = ["E2.seg[0]", "E2.seg[1]"]
     consumed = [r2["surface_digest"]] + \
                [u["actual_digest"] for u in r2["used_items"]]
@@ -127,7 +134,8 @@ def run_e2(store: ContentStore, cr_ref: str, substrate,
         "consumed": consumed,
         "executed_on_s2": {"surface_digest": s2["handle"]["surface_digest"],
                            "position_units": s2["position_units"],
-                           "bound_weights_id": s2["bound_weights_id"]},
+                           "bound_weights_id": s2["bound_weights_id"],
+                           "result_digest": result_digest},
         "produced": None,
     }
     cr2 = write_cr(
@@ -145,13 +153,8 @@ def run_e2(store: ContentStore, cr_ref: str, substrate,
                     "backend": "testbed"},
     )
     trace["produced"] = cr2["result"]["content_digest"]
-    return {"ir": ir, "trace": trace, "cr2": cr2, "s2": s2}
-
-
-def res_r1_digest(r2: Dict[str, Any]) -> str:
-    """The R1 content identity carried by the resolved R2 (no oracle: read
-    from the resolution output)."""
-    return r2["result"]["content_digest"]
+    return {"ir": ir, "trace": trace, "cr2": cr2, "s2": s2,
+            "result_digest": result_digest}
 
 
 # ===========================================================================
@@ -229,10 +232,11 @@ def main() -> int:
        e1["cr"]["cr_ref"] is not None and len(e1["cr"]["used"]) == 3,
        f"CR ref {e1['cr']['cr_ref'][:16]}…")
     res = resolve(e1["cr"]["cr_ref"], store)
-    ir = instantiate(e1["cr"]["cr_ref"], store, tau_star, substrate,
-                     attempt_id="E2-att-1")
+    # IF-G3-04: ONE instantiate for the whole E-run — run_e2 performs it,
+    # and the SAME IR and SAME S2 flow through T2 into CR(E2).
     e2 = run_e2(store, e1["cr"]["cr_ref"], substrate, tau_star,
                 e1["trace"], res["r2"])
+    ir = e2["ir"]
     ev("E2 executed T2 from the reconstructed S2; CR(E2) written",
        e2["cr2"]["cr_ref"] is not None,
        f"CR ref {e2['cr2']['cr_ref'][:16]}…")

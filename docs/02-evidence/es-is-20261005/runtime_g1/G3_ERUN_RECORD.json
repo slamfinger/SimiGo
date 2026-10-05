@@ -57,7 +57,7 @@
   },
   "E2 executed T2 from the reconstructed S2; CR(E2) written": {
    "pass": true,
-   "detail": "CR ref 6c4612bb23e86696…"
+   "detail": "CR ref 8ceb9516f4b0b5f0…"
   },
   "auditable object chain CR(E1) -> IR(S2) -> CR(E2) is linked": {
    "pass": true,
@@ -94,7 +94,7 @@
  },
  "cr_chain": {
   "cr1": "07cd824446da6b8301b73f638baf0599682d593f9917522b4c8d5020a012a912",
-  "cr2": "6c4612bb23e86696db19469bee1ffe65eb73a61051b7be33404204eb813313c1"
+  "cr2": "8ceb9516f4b0b5f01ca128802be28538881eb00893482a1d8bc10355e34528d3"
  },
  "verdict": "SUPPORTED"
 }
