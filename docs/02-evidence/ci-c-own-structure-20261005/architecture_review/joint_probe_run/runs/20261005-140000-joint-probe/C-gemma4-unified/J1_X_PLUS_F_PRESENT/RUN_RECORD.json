@@ -1,0 +1,12 @@
+{
+  "cell": "J1_X_PLUS_F_PRESENT",
+  "X": "ELIGIBLE",
+  "F": "present",
+  "model_id": "C-gemma4-unified",
+  "repo_id": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit",
+  "http_status": 200,
+  "elapsed_seconds": 16.575157,
+  "prompt_sha256": "16d336503123fafdd814a6c1a8d25c5ca64ac319d942dae6050d3ab6191eb52c",
+  "response_sha256": "0a33bea0934911007d56cb4607a55aefa01449a9a3e5baa5e66fe53d69d815b0",
+  "created_at": "2026-10-05T12:34:20+08:00"
+}

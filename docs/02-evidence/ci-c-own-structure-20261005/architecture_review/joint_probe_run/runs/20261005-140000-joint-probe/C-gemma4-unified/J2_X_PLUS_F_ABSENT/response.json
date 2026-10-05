@@ -1,0 +1,16 @@
+{
+  "id": "chatcmpl-8f74ce92-95c7-4a62-9756-595c54cd63d9",
+  "created": 1791174876,
+  "object": "chat.completion",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"source_ledger\":{\"F_content_visible\":true,\"F_premise_adopted\":true,\"adoption_reason\":\"A_epistemic allows F as premise\"},\"analysis\":{\"admissible_premises\":[\"F\"],\"relational_conclusion\":\"F is adopted as premise\"},\"execution_gate\":{\"status\":\"ELIGIBLE\",\"reason\":\"A_execution allows adopted premise in execution path\"},\"continuation\":{\"emitted\":true,\"deployment_order\":[\"alpha\",\"beta\"],\"blocked_services\":[{\"service_id\":\"gamma\",\"reason\":\"Missing baseline compatibility record for sequential deployment of three services\"}]},\"transition_status\":\"BLOCKED\",\"information_dependency\":{\"compatibility_info_available\":false,\"compatibility_info_current\":false,\"compatibility_info_consistent\":false,\"dependency_declared\":true,\"reason\":\"Baseline compatibility record not available; cannot verify pair/sequence compatibility\"},\"provenance\":{\"used_model_prior\":false,\"used_visible_but_nonadopted_F\":false,\"reason\":\"No prior conversation; F adopted via A_epistemic\"}}}"
+      }
+    }
+  ],
+  "model": "mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit"
+}
