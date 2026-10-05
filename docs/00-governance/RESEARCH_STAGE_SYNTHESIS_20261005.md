@@ -283,6 +283,20 @@ PALACE         = BLOCKED
 
 I-1c answered **what instantiate must distinguish** (State / declaration / operation — and, via IC-2, what it may decide versus record as undecidable); it deliberately did not answer how the substrate / carrier / PALACE concretely realize and validate the contract at runtime. That is the next layer's design space, behind an explicit Core gate.
 
+**I-1d freeze outcome (2026-10-05):** the commissioned Gate I-1d deliverable — **Instantiate Runtime Realization & Verification Conceptual Design v0.3 — is FROZEN as the I-1d Core conceptual design baseline** (Human freeze ruling APPROVED/FROZEN after one review-revision cycle: v0.1 → four-fix review → v0.2 → consistency review → v0.3 + two final pre-freeze patches; freeze registered on the research branch). Frozen at freeze: the auditable three-way mapping **Frozen Instantiate Contract (IC-1..7) ↔ Runtime Instantiate Record (IR, incl. TaskRecord/BindingRecord/Envelope/Manifest/Position) ↔ Mechanical Verification Surface (VV-1..7, tiers VERIFIED/COVENANTED/FAILED, applicability gated on the precondition)**; the runtime pipeline with the **creation point at materialize success**; the failure taxonomy with three exhaustive disposition classes (BLOCK{PRECONDITION-BLOCK, CREATE-BLOCK, POLICY-BLOCK} / PROCEED-WITH-ANNOTATION / DECLARED-ALTERNATIVE) plus POST-CREATION-ANOMALY as an orthogonal lifecycle state; the narrowed anti-drift guarantee (four detectable classes; the hidden-code universal negative explicitly not claimed); idempotence not claimed; no PALACE / no backend / no implementation / no experiment.
+
+**The four orthogonal layers are closed** — Runtime Object / Verification State / Disposition / Lifecycle no longer borrow each other's definitions; the three historical drift paths are structurally blocked. Post-freeze finding paths: Implementation finding / Evidence finding / Future alternative — nothing writes back into the frozen objects.
+
+**Research chain state:**
+
+```text
+I-1   Persistence / Resolve               FROZEN (main 2b2e2ef)
+I-1c  Instantiate Completeness            FROZEN (main 6c3cf6a)
+I-1d  Runtime Realization / Verification  FROZEN (branch registration)
+```
+
+**The conceptual chain Information → Resolve → Instantiate → Continue is closed.** Declared next stage (Human direction): map the three frozen contracts onto a **minimal real run carrier** and begin obtaining the first auditable I-1 runtime evidence — behind the Implementation gate and an explicit Human commission.
+
 **Gate proposal registered (2026-10-05): I-1d — Instantiate Runtime Realization & Verification Conceptual Design.** Human proposal (rationale registered): I-1 and I-1c have respectively frozen `IS → resolve → R2` and `R2 + τ2★ → instantiate → S2`; the remaining gap is *how the frozen Instantiate Contract obtains an executable, verifiable realization in a real Execution State runtime*. Proposed deliverable: **I-1d — Instantiate Runtime Realization & Verification Conceptual Design v0.1** — still purely conceptual (no implementation, no experiment, no PALACE selection). Registered scope — the design answers exactly four things:
 
 1. **Contract → runtime object**: what real objects, fields, and operations do IC-1..IC-7 / SC-1..SC-6 correspond to at runtime?

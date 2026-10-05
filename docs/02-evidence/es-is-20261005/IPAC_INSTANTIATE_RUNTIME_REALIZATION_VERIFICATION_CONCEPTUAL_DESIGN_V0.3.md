@@ -2,8 +2,8 @@
 
 Date: 2026-10-05
 Branch: `codex/execution-state-research-20260929`
-Status: `READY FOR FREEZE DECISION (final pre-freeze patches applied: VV applicability boundary pinned; MISMATCH primary disposition decided by the envelope) · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND REMAIN BLOCKED`
-Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document) → **final classification patch** (2026-10-05: POST-CREATION-ANOMALY's primary disposition = PROCEED-WITH-ANNOTATION, annotation = IR-INCOMPLETE/POST-CREATION-ANOMALY; recovery attempt independently dispositioned — orthogonality now formal) → **final pre-freeze patch** (2026-10-05: VV applicability boundary pinned — precondition BLOCK = NOT ENTERED, not a verdict tier; MISMATCH primary disposition decided by the envelope, no side-branch) — freeze-ready.
+Status: `FROZEN CONCEPTUAL DESIGN v0.3 · FREEZE RULING 2026-10-05 (APPROVED/FROZEN as I-1d Core conceptual design baseline) · IMPLEMENTATION / EXPERIMENT / PALACE / BACKEND REMAIN BLOCKED PENDING SUBSEQUENT GATES`
+Revision lineage: v0.1 (`4b2f42d`) → review (four mandatory fixes) → v0.2 (`6590dd6`, TaskRecord + verdict tiers + narrowed anti-drift + idempotence withdrawn) → review (fixes confirmed; three local consistency patches before freeze) → v0.3 (this document) → **final classification patch** (2026-10-05: POST-CREATION-ANOMALY's primary disposition = PROCEED-WITH-ANNOTATION, annotation = IR-INCOMPLETE/POST-CREATION-ANOMALY; recovery attempt independently dispositioned — orthogonality now formal) → **final pre-freeze patch** (2026-10-05: VV applicability boundary pinned — precondition BLOCK = NOT ENTERED, not a verdict tier; MISMATCH primary disposition decided by the envelope, no side-branch) → **FREEZE RULING (2026-10-05): APPROVED / FROZEN AS I-1d CORE CONCEPTUAL DESIGN BASELINE.**
 
 ---
 
@@ -217,3 +217,49 @@ No substrate/backend implementation or selection; no carrier choice (PALACE unto
 ## 8. Non-claims
 
 No substrate/backend implementation or selection; no carrier choice (PALACE untouched); nothing implemented or run; no idempotence claim; no claim that mapping coverage proves the absence of hidden semantic logic; no claim that COVENANTED checks verify anything; no expansion of the M-table, VV numbering, edge vocabulary, or runtime ontology; no semantic judgment in the Verification Surface; the Implementation gate remains closed behind Human Review of this design and a subsequent ruling.
+
+---
+
+## 9. Freeze record (2026-10-05)
+
+**Ruling: APPROVED / FROZEN** — this design is frozen as the **I-1d Core conceptual design baseline**.
+
+**Frozen normative objects (fixed at freeze):**
+
+```text
+Frozen Instantiate Contract (IC-1..IC-7)
+        ↕
+Runtime Instantiate Record (IR, incl. TaskRecord / BindingRecord /
+        ExecutionEnvelope / SubstrateManifest / PositionRecord)
+        ↕
+Mechanical Verification Surface (VV-1..VV-7, tiers VERIFIED / COVENANTED / FAILED,
+        applicability gated on the precondition)
+        ↕
+Disposition (BLOCK{PRECONDITION-BLOCK, CREATE-BLOCK, POLICY-BLOCK} /
+        PROCEED-WITH-ANNOTATION / DECLARED-ALTERNATIVE)
+        + Lifecycle semantics (attempt / creation / anomaly / recovery)
+```
+
+**The four orthogonal layers are closed** — Runtime Object, Verification State, Disposition, Lifecycle no longer borrow each other's definitions; the three historical drift paths (verification failure smuggled as disposition failure; non-entry smuggled as a fourth verdict; anomaly state smuggled as primary disposition) are structurally blocked.
+
+**Post-freeze rules:** this conceptual design shall not be written back to for runtime convenience, backend characteristics, implementation details, or experiment results. New findings may only enter via:
+
+```text
+1. Implementation finding — the realization deviates from the Frozen Contract
+2. Evidence finding        — the Frozen Contract conflicts with reality within
+                             its declared boundaries
+3. Future alternative      — a new candidate semantics, formed without
+                             modifying the frozen objects
+```
+
+**Non-claims carried into freeze:** no proof about hidden code; no proof of R2 completeness outside D_RS; no proof of Axis B empirical sufficiency; lineage-strict policy is not a theorem; no backend/carrier/PALACE binding; COVENANTED ≠ VERIFIED.
+
+**Chain state after freeze:**
+
+```text
+I-1   Persistence / Resolve               FROZEN (main 2b2e2ef)
+I-1c  Instantiate Completeness            FROZEN (main 6c3cf6a)
+I-1d  Runtime Realization / Verification  FROZEN
+```
+
+The conceptual chain **Information → Resolve → Instantiate → Continue is closed.** The declared next stage: map the three frozen contracts onto a **minimal real run carrier** and begin obtaining the first auditable I-1 runtime evidence — behind the Implementation gate and an explicit Human commission.
