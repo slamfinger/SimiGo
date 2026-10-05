@@ -224,7 +224,7 @@ Core question   = What minimal carrier layer is required to satisfy the
                   MemPalace GAP areas without semantic inference, hidden
                   completion, candidate mutation, or Frozen Contract change?
 Status          = COMMISSIONED / SCOPE CHARTER PENDING
-Next entry      = Human review of A4 Conceptual Study
+Next entry      = Human review of A4 Reduction / Ownership Study
 ```
 
 Human review accepted the scope charter and commissioned the A4 conceptual study:
@@ -285,3 +285,23 @@ It also defines eight failure families and four carrier archetypes. The result i
 bounded to the registered PRQ-ISF-01 mutation class; it does not claim universal
 minimality, select a carrier, authorize implementation, or modify Frozen
 Contracts.
+
+## 11. A4 reduction / ownership study
+
+Human review returned `FINDINGS / REVISE REQUIRED` on the prior A4 conceptual
+study. The required reduction study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`.
+
+It separates:
+
+```text
+Carrier-state semantics        CS-1..CS-6
+Derived observation            deterministic resolution, pin verification,
+                               canonical identity, relation integrity,
+                               lineage closure, frozen failure mapping,
+                               indeterminacy classification
+Non-carrier                    mechanical failure surface as a carrier primitive
+```
+
+The study does not select an archetype, authorize implementation, select a
+carrier, or modify Frozen Contracts.

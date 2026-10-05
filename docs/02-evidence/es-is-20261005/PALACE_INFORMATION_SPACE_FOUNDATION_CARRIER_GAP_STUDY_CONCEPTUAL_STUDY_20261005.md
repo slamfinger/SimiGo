@@ -1,12 +1,13 @@
 # Carrier Gap Study — A4 Conceptual Study
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Study: `A4 — CARRIER GAP STUDY / CONCEPTUAL STUDY`  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
-Accepted scope charter: `2f0959b`  
-Gate baseline: `ab97244`  
-Frozen Contracts: `UNCHANGED`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Study: `A4 — CARRIER GAP STUDY / CONCEPTUAL STUDY`
+Status: `FINDINGS / REVISE REQUIRED BY HUMAN REVIEW`
+Replacement study: `A4 Reduction / Ownership Study` — `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`
+Accepted scope charter: `2f0959b`
+Gate baseline: `ab97244`
+Frozen Contracts: `UNCHANGED`
 Scope guard: `CONCEPTUAL / DOCUMENTARY ONLY · NO IMPLEMENTATION · NO ADAPTER · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT · NO CONTRACT CHANGE`
 
 ## 1. Study question
@@ -201,7 +202,7 @@ typed relation records
 lineage closure
 ```
 
-Strength: direct fit to MCL-1, MCL-2, MCL-3, MCL-6.  
+Strength: direct fit to MCL-1, MCL-2, MCL-3, MCL-6.
 Risk: succession and provenance may become afterthoughts unless MCL-4/MCL-5 are
 first-class.
 
@@ -217,7 +218,7 @@ typed lineage relations
 failure records
 ```
 
-Strength: natural fit for MCL-5 and historical retention.  
+Strength: natural fit for MCL-5 and historical retention.
 Risk: event richness may hide whether exact content and typed relations remain
 mechanically retrievable.
 
@@ -233,14 +234,14 @@ provenance sidecars
 lineage closure validator
 ```
 
-Strength: closest fit to the Frozen CR/IR vocabulary.  
+Strength: closest fit to the Frozen CR/IR vocabulary.
 Risk: graph layer may introduce semantic inference if edges are derived rather
 than explicitly registered.
 
 ### Archetype D — Composite carrier
 
 Two or more carriers cooperate, with one owning immutable content and another
-owning relations or events.  
+owning relations or events.
 This is not an independent single-carrier test. It requires a separate composite
 route and must not be presented as MemPalace validation.
 
@@ -290,3 +291,20 @@ REJECT/PAUSE  → close or pause the Foundation route by explicit ruling
 
 No implementation, carrier selection, integration, experiment, or Frozen Contract
 change follows automatically.
+
+## 12. Human review findings and supersession
+
+Human review ruled this study `FINDINGS / REVISE REQUIRED`. The direction was
+accepted, but `MCL-1..7` mixed carrier-state semantics with resolver and probe
+observation capabilities.
+
+Required replacement study:
+`A4 Reduction / Ownership Study`.
+
+Key findings preserved:
+
+1. Split stable carrier-state facts from deterministic resolution.
+2. Split explicit lineage preservation from closure/cycle validation.
+3. Split failure-as-information from failure reporting/classification.
+4. Treat `MCL-1..7` as a candidate closure, not a proven minimal carrier layer.
+5. Perform ownership, dependency, and removal analysis before carrier selection.

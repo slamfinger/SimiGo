@@ -1,7 +1,7 @@
 # PALACE / Information Space Foundation — Carrier Gap Study Commission
 
 Date: 2026-10-05
-Status: `HUMAN RULING COMPLETE · A4 CONCEPTUAL STUDY DELIVERED / AWAITING HUMAN REVIEW`
+Status: `HUMAN RULING COMPLETE · A4 CONCEPTUAL STUDY FINDINGS / REVISE REQUIRED · REDUCTION / OWNERSHIP STUDY DELIVERED / AWAITING HUMAN REVIEW`
 MemPalace audit: `ACCEPTED / CLOSED` at delivery `1540cae`
 MemPalace verdict: `AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST`
 Thin adapter: `NOT FEASIBLE`
@@ -172,3 +172,23 @@ Canonical records are reinterpreted as a composite structural expression rather
 than an eighth semantic primitive. The study also defines eight failure families
 and four conceptual carrier archetypes. It does not select a carrier, authorize
 implementation, or claim universal minimality.
+
+## 10. Human review and reduction study
+
+Human review returned `FINDINGS / REVISE REQUIRED` on the conceptual study. The
+review accepted the direction but found that `MCL-1..7` mixed carrier-state
+semantics with resolver/probe validation. The required A4 Reduction / Ownership
+Study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`.
+
+Its provisional reduction is:
+
+```text
+Essential carrier state = CS-1..CS-6
+Derived / observation   = exact resolution, historical pin, canonical identity,
+                          relation integrity, lineage closure, frozen failure
+                          families, indeterminacy classification
+Non-carrier             = MCL-7 mechanical failure surface
+```
+
+The study does not select a carrier or authorize implementation.

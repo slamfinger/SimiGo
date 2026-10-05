@@ -109,13 +109,19 @@
 > 随后 Human 选择 **Option A4**：授权新的非实现研究问题 **Carrier Gap
 > Study**，研究满足 MemPalace 五个 GAP 所需的最小 missing carrier layer；
 > Scope & Research Question Charter 已 ACCEPTED /
-> CLOSED（delivery `2f0959b`）。**A4 Conceptual Study 已交付待复核**：
-> 逐项回答 `CGQ-1..5`，并把候选 primitive 收敛为七项 bounded carrier-layer
-> semantics：immutable content、exact identity/pin resolution、typed relation
-> record、separated provenance、succession relation、lineage closure、mechanical
-> failure surface。同时定义八个 failure family 与四个 conceptual carrier
-> archetype。结论 bounded 于 registered PRQ mutation class，不声称 universal
-> minimality，不选 carrier，不授权实现。登记于
+> CLOSED（delivery `2f0959b`）。**A4 Conceptual Study 得到 FINDINGS / REVISE
+> REQUIRED**：研究方向成立，但 `MCL-1..7` 混淆了 carrier-state semantics 与
+> resolver/probe validation。按要求已完成 **A4 Reduction / Ownership
+> Study**：先拆出 Essential carrier state `CS-1..6`（immutable historical
+> content、stable exact identity/addressability、typed relation records、
+> separated provenance、explicit succession、explicit lineage），再将 exact
+> resolution、historical pin verification、canonical identity、relation
+> integrity、lineage closure/cycle、frozen failure mapping 和 indeterminacy
+> classification 归为 derived / observation，不视为 carrier-state primitive。
+> Removal analysis 判定 `CS-1..6` 对 registered PRQ class essential。该结果
+> 仍 bounded、非 universal minimum、非 carrier architecture；不选 carrier，
+> 不授权实现。登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

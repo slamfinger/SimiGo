@@ -279,7 +279,12 @@ Candidate primitives P1..P8
 Study questions      CGQ-1..CGQ-5
 ```
 
-## A4 Conceptual Study — DELIVERED / AWAITING HUMAN REVIEW
+## A4 Conceptual Study — FINDINGS / REVISE REQUIRED
+
+Human review accepted the research direction but returned findings: `MCL-1..7`
+mixed carrier-state semantics with resolver/probe validation. It was not accepted
+as a minimal carrier layer and did not authorize archetype selection or a new
+candidate search.
 
 The A4 conceptual study is delivered at
 `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_CONCEPTUAL_STUDY_20261005.md`.
@@ -318,12 +323,53 @@ No experiment           = true
 No contract change      = true
 ```
 
+## A4 Reduction / Ownership Study — DELIVERED / AWAITING HUMAN REVIEW
+
+The required reduction study is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_A4_REDUCTION_OWNERSHIP_STUDY_20261005.md`.
+
+It separates prior `MCL-1..7` into:
+
+```text
+Essential carrier state =
+  CS-1 Immutable historical content
+  CS-2 Stable exact identity / addressability
+  CS-3 Typed relation records
+  CS-4 Separated provenance records
+  CS-5 Explicit succession relations
+  CS-6 Explicit lineage relations
+
+Derived / observation =
+  exact reference resolution, historical pin verification, canonical identity
+  verification, relation integrity, lineage closure/cycle checks, frozen
+  failure-family reporting, indeterminacy classification
+
+Non-carrier =
+  MCL-7 mechanical failure surface
+```
+
+Removal analysis found `CS-1..CS-6` essential for the registered PRQ-ISF-01
+mutation class. The result is a registered-bounded candidate carrier-state set,
+not a proven universal minimum and not a carrier architecture.
+
+```text
+Status = DELIVERED / AWAITING HUMAN REVIEW
+No implementation       = true
+No adapter              = true
+No carrier selection    = true
+No carrier integration  = true
+No MemPalace mutation   = true
+No probe execution      = true
+No experiment           = true
+No contract change      = true
+```
+
 ## Next steps (none auto-open)
 
-1. Human review the A4 conceptual study.
-2. On ACCEPT: Human may authorize a separate carrier-path or decodable-study
-   decision based on `MCL-1..MCL-7`.
-3. On FINDINGS: revise the conceptual study without implementation.
+1. Human review the A4 Reduction / Ownership Study.
+2. On ACCEPT: authorize a narrow follow-up to define a decodable observation
+   contract for `CS-1..CS-6`, without selecting a carrier.
+3. On FINDINGS: revise the ownership/dependency analysis.
 4. On REJECT/PAUSE: close or pause the Foundation route by explicit ruling.
 5. No implementation, carrier selection, integration, experiment, or Frozen
    Contract change is authorized.
