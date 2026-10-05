@@ -605,9 +605,39 @@ New Agent lawful continuation
 No implementation, carrier selection, backend integration, experiment, or
 contract change is authorized.
 
+## Fresh-Agent Recovery — NOT VALIDATED / WRONG ENTRY SURFACE
+
+Human review accepted the boundary finding: the first fresh-Agent run did not
+enter the accepted L0/L1 surface.
+
+```text
+Intended branch     = codex/execution-state-research-20260929 @ d198a31
+Intended L0         = docs/RESEARCH_CONTEXT_INDEX.md
+Actual default node = origin/main @6c3cf6a
+Index on main       = absent
+Capsules on main    = absent
+Result              = NOT VALIDATED / WRONG ENTRY SURFACE
+```
+
+The Agent correctly recovered an older main-node view, but not the current
+PALACE / Information Space route state. This is a discoverability and
+branch-binding finding, not an L0/L1 content failure.
+
+Candidate entry-surface paths are registered, none selected:
+
+```text
+PATH A  integrate current research state into default entry surface
+PATH B  preserve branch isolation but require explicit branch binding
+PATH C  branch-independent current-context pointer
+PATH D  another explicit mechanism
+```
+
 ## Next steps (none auto-open)
 
-1. Use `docs/RESEARCH_CONTEXT_INDEX.md` as the current fast entry.
+1. Human make the explicit entry-surface decision.
+2. Do not merge, rewrite L0/L1, expand capsules, or rerun the test without that
+   ruling.
+3. Frozen Contract revision remains non-automatic and requires its own gate.
 2. Human review the index and its HLC-7..HLC-16 inheritance queue.
 3. Any Higher-Layer study still requires explicit Human commission.
 4. Do not promote the index to authority or convert it into a memory system.

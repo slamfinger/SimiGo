@@ -4,7 +4,9 @@
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
-> **Index freshness:** `CURRENT AT CAPSULE BATCH` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT CAPSULE BATCH` on the research branch — always re-verify against current `RESEARCH_STATE.md`.
+>
+> **DISCOVERABILITY WARNING:** this index exists on `codex/execution-state-research-20260929 @ d198a31`, not on default `origin/main @ 6c3cf6a`. A fresh Agent that defaults to `main` must not treat that old node as current PALACE / Information Space route state. Explicit entry-surface decision is pending.
 
 ## 1. Identity
 
@@ -92,8 +94,11 @@ First batch:
 ```text
 Capsule directory = docs/research-capsules/v1
 Capsules          = C01..C15
-Validation        = awaiting fresh-Agent recovery test
-No capsule expansion until the L0/L1 recovery test is ruled.
+First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
+Reason                           = Agent entered default main @6c3cf6a;
+                                   L0/L1 exist only on research branch @d198a31.
+Capsule expansion                = still paused.
+Next entry                       = explicit entry-surface decision.
 ```
 
 ## 4. Completed chain

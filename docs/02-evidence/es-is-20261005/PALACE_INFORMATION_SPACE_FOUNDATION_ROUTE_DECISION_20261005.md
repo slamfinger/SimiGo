@@ -398,3 +398,32 @@ Frozen Contracts = UNCHANGED
 This closes only the question of whether the current PRQ task domain requires new
 Core / Store / carrier semantics. It does not close Information Space generally or
 authorize implementation.
+
+## 15. Fresh-Agent recovery evaluation
+
+Human review evaluated the first fresh-Agent recovery run as:
+
+```text
+Fresh-Agent L0→L1 Recovery Test = NOT VALIDATED / WRONG ENTRY SURFACE
+Evaluation delivery             = PALACE_INFORMATION_SPACE_FOUNDATION_FRESH_AGENT_RECOVERY_EVALUATION_20261006.md
+```
+
+The intended L0/L1 surface exists on research branch `d198a31`:
+
+```text
+docs/RESEARCH_CONTEXT_INDEX.md
+docs/research-capsules/v1/C01..C15
+```
+
+But a fresh Agent entering the default repository surface recovered
+`origin/main @6c3cf6a`, where those files are absent. Therefore the run did not
+test L0/L1 quality or recovery capability. It exposed two findings:
+
+```text
+default-repository discoverability failed;
+branch-to-current-state binding failed.
+```
+
+No branch merge, carrier selection, implementation, experiment, or contract
+change is authorized. Human must explicitly choose PATH A/B/C/D from the
+evaluation report.

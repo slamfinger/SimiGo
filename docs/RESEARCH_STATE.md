@@ -142,6 +142,12 @@
 > 下一入口 = **Higher-Layer Continuation Graph Semantics — Scope & Research
 > Question Charter**。该裁定只关闭当前 PRQ task domain 是否需要 Core/Store/
 > carrier semantics，不关闭 Information Space 本身，也不授权实现。
+> **Fresh-Agent L0→L1 recovery test 后续评估 = NOT VALIDATED / WRONG ENTRY
+> SURFACE**：L0/L1 在 research branch `d198a31`，而 fresh Agent 默认进入
+> `origin/main @6c3cf6a`，那里没有 Context Index/Capsules。该结果不判 L0/L1
+> FAIL，而是登记 default discoverability 与 branch-to-current-state binding
+> 两个 finding。下一步 = explicit entry-surface decision；PATH A/B/C/D 均未
+> 选择，不自动 merge 或重跑。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、
