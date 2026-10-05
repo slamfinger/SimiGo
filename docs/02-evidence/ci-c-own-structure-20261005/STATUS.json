@@ -1,5 +1,5 @@
 {
-  "status": "AUTHORIZATION_OBJECT_DECIDED_TWO_LAYER",
+  "status": "A_EPISTEMIC_A_EXECUTION_DESIGN_FROZEN",
   "run_id": "20261005-human-authorized-four-cell",
   "arms": 7,
   "models_run": [
@@ -17,12 +17,15 @@
   ],
   "open_issue": "A FULL baseline degraded; no cross-model minimum established",
   "not_authorized": [
-    "two-layer experiment design",
-    "leakage/fallback probe design",
-    "model run",
-    "846 mapping",
+    "prompt implementation",
+    "runner implementation",
+    "model execution",
+    "A usage",
+    "B retry",
+    "D retry",
     "Observer",
     "InformationCore write",
+    "846 mapping",
     "minimal Information Core claim"
   ],
   "run_ids": [
@@ -33,7 +36,7 @@
   "candidate_invariant": "relational executable admissibility function",
   "surface_vs_authorized": "separated",
   "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
-  "next_gate": "separate_human_decision_on_whether_to_design_two_layer_experiment",
+  "next_gate": "human_review_then_eight_cell_run_authorization",
   "authorized_next_work": [
     "human review",
     "prompt/runner implementation after separate authorization"
@@ -65,5 +68,22 @@
     "Relational Executable Function",
     "Continuation"
   ],
-  "experimental_brake": "ACTIVE"
+  "experimental_brake": "ACTIVE_UNTIL_RUN_AUTHORIZATION",
+  "authorization_object": "OPTION_C_TWO_LAYER",
+  "design_matrix": "2 models x 4 E/X arms = 8 cells",
+  "hypotheses": [
+    "H-ORDER",
+    "H-MERGE",
+    "H-REVERSE",
+    "H-BYPASS/H-LEAK",
+    "H-AMBIGUOUS"
+  ],
+  "primary_result_labels": [
+    "ORDERED_SEPARATION_SUPPORTED",
+    "MERGED_BOUNDARY_SUPPORTED",
+    "REVERSE_DEPENDENCY_SUPPORTED",
+    "LEAK_DOMINATED",
+    "MODEL_SPECIFIC_LEAK",
+    "AMBIGUOUS"
+  ]
 }
