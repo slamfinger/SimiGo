@@ -191,7 +191,7 @@
 > Entity Representation Store、Information Registry、Locator/File Index、
 > Relation/History、Session Information、Derived Index/Search、Availability
 > State 与 future Execution Interface 的最小组合。已起草
-> **Carrier Component Study Charter / PICS-01 = ACCEPTED / COMMISSIONED / OPEN**。
+> **Carrier Component Study Charter / PICS-01 = ACCEPTED / COMMISSIONED; later CLOSED**。
 > Human 已选择 Option A，并特别裁定 CCS-C8 只是 carrier ↔ SimiGo interface
 > responsibility，不是 carrier-native database capability；carrier 可以承载/定位/
 > 暴露 Information，但不因此执行 IPAC、applicability、validity、judgment 或
@@ -209,6 +209,21 @@
 > 不设计 schema、不集成 OSS、不执行验证、不迁移仓库，也不修改 Frozen Contracts。
 > 研究见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md`。
+> Human 已复核 `eab7b5d` 的 D1-D8，并裁定
+> **PICS-01 = ACCEPTED / BOUNDED PASS / CLOSED**。接受范围是文档研究：把数据库
+> 选型降解为 responsibility → system class → seam → workload → protocol。
+> 唯一登记缺口是 D5/D7 未把性能作为正式验收维度；该缺口不重开 PICS-01，而是
+> 转入下一阶段。下一研究对象为
+> **CCVS-01 — Carrier Candidate & Performance Validation Study**，当前处于
+> `OPEN / DESIGN & CANDIDATE-INVENTORY PHASE`。CCVS-01 强制包含 minimum-component
+> baseline，禁止默认多组件更优；必须比较 consistency、performance、interface
+> cost、fault recovery 与 operational complexity。当前只允许 candidate design /
+> inventory / protocol authoring；benchmark execution、backend selection、OSS
+> integration、schema implementation、migration、Lab physical reorganization
+> 均保持 NOT AUTHORIZED。PICS-01 closure 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md`；
+> CCVS-01 charter 见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

@@ -1,7 +1,7 @@
 # PICS-01 — Carrier Component Study
 
 Date: 2026-10-06  
-Status: `DELIVERED / AWAITING HUMAN REVIEW`  
+Status: `ACCEPTED / BOUNDED PASS / CLOSED`
 Charter status: `ACCEPTED / COMMISSIONED`  
 Seam: `IS-IDLOC-SEAM-01 / v0.1`  
 Frozen Contracts: `UNCHANGED`  
@@ -275,4 +275,25 @@ Therefore:
   do not select a backend from this document;
   do not implement a carrier from this document;
   use D1-D8 as the boundary for a separately authorized validation design.
+```
+
+## 11. Human closure addendum
+
+Human accepted D1-D8 as a bounded documentary study:
+
+```text
+PICS-01 = ACCEPTED / BOUNDED PASS / CLOSED
+D1-D8   = ACCEPTED
+CCS-C8  = ACCEPTED
+```
+
+The registered gap is that D5/D7 covered semantic and consistency observations
+but did not make performance a formal acceptance dimension. Performance is not
+a reason to reopen PICS-01; it becomes a central obligation of the successor
+Carrier Candidate & Performance Validation Study.
+
+Successor:
+
+```text
+CCVS-01 — Carrier Candidate & Performance Validation Study
 ```

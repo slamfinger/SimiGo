@@ -66,8 +66,12 @@ Carrier Component Study Charter        ACCEPTED / COMMISSIONED
 Carrier charter document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md
 Carrier charter ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CHARTER_ACCEPTANCE_RULING_20261006.md
 Proposed Lab role                      carrier validation group, not production Information Space
-PICS-01                                OPEN / DOCUMENTATION-ONLY STUDY DELIVERED
+PICS-01                                ACCEPTED / BOUNDED PASS / CLOSED
 PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
+PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
+CCVS-01                                OPEN / DESIGN & CANDIDATE-INVENTORY PHASE
+CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
+Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Implementation                         NOT AUTHORIZED
 Backend selection                      NOT AUTHORIZED
 Backend-substitution run               NOT AUTHORIZED
@@ -121,8 +125,8 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of PICS-01 documentary study;
-                                   no validation execution and no backend selection.
+Next gate                        = Human review of CCVS-01 Phase A design/inventory;
+                                   benchmark execution and backend selection remain NOT AUTHORIZED.
 ```
 
 ## 4. Completed chain
@@ -184,15 +188,19 @@ Current state:
   Core sufficiency accepted for the registered PRQ task domain.
   IS-IDLOC-SEAM-01 is registered as a candidate input, not as a new route.
   Carrier Component Study Charter is accepted / commissioned.
-  PICS-01 documentation-only study is delivered, awaiting Human review.
+  PICS-01 is accepted, bounded-pass, and closed.
 
 Candidate next transition:
-  Human review of PICS-01 D1-D8.
+  Complete CCVS-01 Phase A design/inventory, then Human review.
   No validation run, implementation, schema, migration, or backend selection.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
   It remains closed and must not be opened automatically.
+
+Physical Lab reorganization:
+  FROZEN until a carrier architecture is separately selected and migration is
+  explicitly authorized.
 
 Seam guard:
   IS-IDLOC-SEAM-01 may enter that charter only as registered input.
@@ -204,6 +212,8 @@ Seam guard:
   migration, repository reorganization, probe execution, or experiment.
   CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
   database capability.
+  CCVS-01 guard: design/inventory only; no benchmark, implementation, integration,
+  selection, migration, or Lab reorganization.
 
 Required before transition:
   Explicit Human ruling.
