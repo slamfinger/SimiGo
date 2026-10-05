@@ -185,6 +185,18 @@
 > `PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md`；
 > Core mechanism audit 见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md`。
+> Human 研究判断进一步提出：不应继续把 GitHub/Git Lab 当作最终 Information
+> Space carrier，而应将其定位为 research execution/evidence/capsules/index/
+> carrier validation group。下一研究对象改为 Physical Carrier Composition：
+> Entity Representation Store、Information Registry、Locator/File Index、
+> Relation/History、Session Information、Derived Index/Search、Availability
+> State 与 future Execution Interface 的最小组合。已起草
+> **Carrier Component Study Charter / PICS-01 = PROPOSED / AWAITING HUMAN
+> COMMISSION**。该章程只登记研究问题、责任模型、候选类别、workload operations
+> 与未来验证设计边界；不集成 OSS、不选择 SQLite/KV/Git/object/graph、不设计
+> schema、不实现 adapter、不迁移或整理仓库、不执行实验，也不自动开启
+> Higher-Layer Charter。提案见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md`。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

@@ -62,6 +62,9 @@ Physical locator                       ≠ Information Identity
 Seam refinement                        mature mechanism mapping + existing Core audit
 Seam review                            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md
 Seam audit                             docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md
+Carrier Component Study Charter        PROPOSED / AWAITING HUMAN COMMISSION
+Carrier charter document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md
+Proposed Lab role                      carrier validation group, not production Information Space
 Implementation                         NOT AUTHORIZED
 Backend selection                      NOT AUTHORIZED
 Backend-substitution run               NOT AUTHORIZED
@@ -115,7 +118,7 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = explicit Human commission only;
+Next gate                        = Human ruling on Carrier Component Study Charter;
                                    Higher-Layer Charter remains NOT AUTHORIZED.
 ```
 
@@ -177,11 +180,14 @@ RELATION BACKEND ASYMMETRY
 Current state:
   Core sufficiency accepted for the registered PRQ task domain.
   IS-IDLOC-SEAM-01 is registered as a candidate input, not as a new route.
+  Carrier Component Study Charter is proposed, not commissioned.
 
-Legal next transition:
-  Human ruling / commission to open:
-  Higher-Layer Continuation Graph Semantics —
-  Scope & Research Question Charter
+Candidate next transition:
+  Human ruling on Carrier Component Study Charter.
+
+Previously identified transition:
+  Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
+  It remains closed and must not be opened automatically.
 
 Seam guard:
   IS-IDLOC-SEAM-01 may enter that charter only as registered input.
@@ -189,6 +195,8 @@ Seam guard:
   execution, or experiment by itself.
   Current review/audit conclusion: reuse mature substrate concepts; do not
   invent a new database or mutate InformationCore now.
+  Carrier charter guard: no OSS integration, backend selection, schema design,
+  migration, repository reorganization, probe execution, or experiment.
 
 Required before transition:
   Explicit Human ruling.

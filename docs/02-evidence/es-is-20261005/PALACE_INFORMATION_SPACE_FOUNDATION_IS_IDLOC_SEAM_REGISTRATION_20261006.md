@@ -30,6 +30,7 @@ SEAM ID = IS-IDLOC-SEAM-01
 STATUS  = REGISTERED / OPEN / NOT FROZEN / v0.1
 REVIEW  = PALACE_INFORMATION_SPACE_FOUNDATION_EXISTING_SYSTEMS_IDENTITY_REVIEW_20261006.md
 AUDIT   = PALACE_INFORMATION_SPACE_FOUNDATION_CORE_IDENTITY_MECHANISM_AUDIT_20261006.md
+NEXT PROPOSAL = PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_COMPONENT_STUDY_CHARTER_20261006.md
 ```
 
 ## 2. Candidate distinctions
@@ -149,4 +150,8 @@ IS-IDLOC-SEAM-01 remains a registered candidate input.
 It may later enter a Higher-Layer scope charter only by explicit Human ruling.
 Until then, implementation, migration, reorganization, probe execution, and
 experiment remain NOT AUTHORIZED.
+
+A separate Carrier Component Study Charter is proposed for Human ruling. It
+does not authorize OSS integration, backend selection, database schema design,
+migration, repository reorganization, probe execution, or experiment.
 ```
