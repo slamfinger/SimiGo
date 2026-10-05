@@ -427,3 +427,29 @@ branch-to-current-state binding failed.
 No branch merge, carrier selection, implementation, experiment, or contract
 change is authorized. Human must explicitly choose PATH A/B/C/D from the
 evaluation report.
+
+## 16. Path A controlled integration plan
+
+Human selected PATH A. The controlled integration plan is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_INTEGRATION_PLAN_20261006.md`.
+
+Machine probe result:
+
+```text
+origin/main          = 6c3cf6a
+research tip         = 3f467d3
+merge base           = dd61b495
+divergence           = 2 / 327
+merge-tree           = CLEAN
+proposed merged tree = bac63b9d415e02bf9280311504c39479e8356d82
+I-1 / I-1c blobs     = unchanged
+I-1d                 = introduced by research branch
+```
+
+The plan requires a two-parent, no-ff integration commit and forbids squash,
+force-reset, and hand-rewriting Frozen Contract conflicts. It also requires
+post-merge validation of L0/L1 presence, all 15 capsules, protected semantic
+blobs, default-entry discoverability, and a fresh-Agent rerun.
+
+Merge execution, default-main update, and rerun remain unauthorized until Human
+approves the plan.

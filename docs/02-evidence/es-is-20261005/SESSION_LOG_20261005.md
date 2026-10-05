@@ -674,3 +674,29 @@ become a memory system.
 3. Do not expand capsules until that recovery test is ruled.
 4. No implementation, backend selection, experiment, or contract change is
    authorized.
+## Path A Controlled Integration Plan — DELIVERED / MERGE AWAITING APPROVAL
+
+Human selected PATH A. Controlled integration planning is complete.
+
+```text
+Target base        = origin/main @6c3cf6a
+Research tip       = codex/execution-state-research-20260929 @3f467d3
+Merge base         = dd61b495
+Divergence         = 2 / 327
+merge-tree         = CLEAN
+Proposed tree      = bac63b9d415e02bf9280311504c39479e8356d82
+Frozen blobs       = I-1 and I-1c unchanged; I-1d introduced by research branch
+Merge execution    = AWAITING APPROVAL
+```
+
+The plan requires a two-parent no-ff integration commit, post-merge assertions
+for L0/L1 and all 15 capsules, protected blob verification, default-main update
+only after assertions pass, and a fresh-Agent rerun. It forbids squash,
+force-reset, semantic rewriting, and silent conflict resolution.
+
+## Next steps (none auto-open)
+
+1. Human approve controlled integration execution.
+2. On approval: execute the planned no-ff integration and post-merge assertions.
+3. On pass: update default main and rerun fresh-Agent recovery.
+4. On any failure or Frozen Contract drift: stop and return to Human.

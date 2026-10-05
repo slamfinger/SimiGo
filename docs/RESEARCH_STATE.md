@@ -148,6 +148,11 @@
 > FAIL，而是登记 default discoverability 与 branch-to-current-state binding
 > 两个 finding。下一步 = explicit entry-surface decision；PATH A/B/C/D 均未
 > 选择，不自动 merge 或重跑。
+> Human 已选择 **PATH A**：default entry 应承载当前 Information Place。
+> 因 ancestry 已分叉，执行方式为 controlled integration，而非普通 fast-forward。
+> 受控整合规划已交付：merge-tree clean、proposed merged tree
+> `bac63b9d415e02bf9280311504c39479e8356d82`、I-1/I-1c semantic blobs unchanged、
+> I-1d 由 research branch 引入。merge/default-main update 仍待 Human 授权。
 > **Evidence Inheritance Reconciliation 已交付待复核**：除 HLC-1..6 外，又
 > 登记 HLC-7..16 共十组被低估/未充分继承资产，包括 Execution residue →
 > Information formation boundary、Local Closure representation reduction、

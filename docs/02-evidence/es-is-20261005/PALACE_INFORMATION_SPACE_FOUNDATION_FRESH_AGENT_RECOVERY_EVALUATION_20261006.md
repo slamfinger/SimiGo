@@ -150,9 +150,21 @@ PATH D
   Define another explicit mechanism, subject to separate Human ruling.
 ```
 
-PATH A appears most aligned with the goal that a fresh Agent can recover current
-state without external memory. But merging is a repository/routing decision and
-requires separate authorization.
+Human selected PATH A. Because `origin/main` and the research branch have diverged,
+execution must use controlled integration, not a plain overwrite or assumed
+fast-forward. The controlled integration plan is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_PATH_A_INTEGRATION_PLAN_20261006.md`.
+
+Machine probe result:
+
+```text
+Proposed merged tree = bac63b9d415e02bf9280311504c39479e8356d82
+Conflicts            = NONE
+I-1 / I-1c blobs     = unchanged from semantic authority
+I-1d                 = introduced by research branch
+```
+
+Merge execution and default-main update still require explicit approval.
 
 ## 8. Non-claims
 

@@ -6,7 +6,10 @@
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Index freshness:** `CURRENT AT CAPSULE BATCH` on the research branch — always re-verify against current `RESEARCH_STATE.md`.
 >
-> **DISCOVERABILITY WARNING:** this index exists on `codex/execution-state-research-20260929 @ d198a31`, not on default `origin/main @ 6c3cf6a`. A fresh Agent that defaults to `main` must not treat that old node as current PALACE / Information Space route state. Explicit entry-surface decision is pending.
+> **DISCOVERABILITY WARNING:** this index exists on `codex/execution-state-research-20260929 @ d198a31`, not on default `origin/main @ 6c3cf6a`. A fresh Agent that defaults to `main` must not treat that old node as current PALACE / Information Space route state. Human selected PATH A: default entry becomes the Lab Information Place current entry.
+Controlled integration plan is delivered; merge execution is awaiting approval.
+Until integration completes, this index remains branch-local and must not be
+recovered from default main.
 
 ## 1. Identity
 
@@ -98,7 +101,7 @@ First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
                                    L0/L1 exist only on research branch @d198a31.
 Capsule expansion                = still paused.
-Next entry                       = explicit entry-surface decision.
+Next entry                       = approve and execute Path A controlled integration plan.
 ```
 
 ## 4. Completed chain
