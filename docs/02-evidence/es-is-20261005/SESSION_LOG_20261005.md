@@ -611,3 +611,36 @@ contract change is authorized.
 2. Human review the index and its HLC-7..HLC-16 inheritance queue.
 3. Any Higher-Layer study still requires explicit Human commission.
 4. Do not promote the index to authority or convert it into a memory system.
+## L1 Research State Capsules — DELIVERED / AWAITING HUMAN REVIEW
+
+The revised Information Place proposal was adopted. A first batch of 15 Research
+State Capsules was created under `docs/research-capsules/v1/`.
+
+```text
+Capsules               = C01..C15
+Capsule type           = Research State Capsule, not ordinary summary
+Coverage               = Core semantic chain, current PALACE/PRQ/A4 route,
+                         existing real capabilities, Local Closure reduction
+Machine scan base      = 14de9fd
+TOTAL_MARKDOWN         = 2031 before capsule batch
+DOCS_MARKDOWN          = 783 before capsule batch
+POST-BATCH DOCS        = 798
+POST-BATCH TOTAL       = 2046
+Semantic oracle        = none
+Implementation         = NONE
+Backend selection      = NONE
+Experiment             = NONE
+Contract change        = NONE
+```
+
+The capsule layer is derived and non-authoritative. Each capsule must cite L2
+authoritative documents and L3 evidence. L1 must not self-prove, modify L2, or
+become a memory system.
+
+## Next steps (none auto-open)
+
+1. Human review the first capsule batch.
+2. Then separately authorize a fresh-Agent L0→L1 recovery test.
+3. Do not expand capsules until that recovery test is ruled.
+4. No implementation, backend selection, experiment, or contract change is
+   authorized.

@@ -3,7 +3,8 @@
 > **Purpose:** thin navigation index for the SimiGo-Lab Information Place.  
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
-> **Index snapshot:** commit `c8fd186`; always re-verify against current `RESEARCH_STATE.md`.
+> **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
+> **Index freshness:** `CURRENT AT CAPSULE BATCH` — always re-verify against current `RESEARCH_STATE.md`.
 
 ## 1. Identity
 
@@ -16,6 +17,13 @@ Branch                 = codex/execution-state-research-20260929
 Indexing HEAD          = c8fd186
 Information Place      = this Git research estate + registered endpoint documents
 Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
+
+Machine scan at capsule batch base `14de9fd`:
+TOTAL_MARKDOWN = 2031
+DOCS_MARKDOWN  = 783
+CAPSULE_COUNT  = 15
+POST-BATCH DOCS_MARKDOWN = 798
+POST-BATCH TOTAL_MARKDOWN = 2046
 ```
 
 Semantic authority is separate from repository position:
@@ -50,7 +58,45 @@ Experiment                             NOT AUTHORIZED
 Contract change                        NOT AUTHORIZED
 ```
 
-## 3. Completed chain
+## 3. Information Place layer model
+
+```text
+L0  Context Index
+    Where am I? What is legal now?
+
+L1  Research State Capsules
+    What did this research node establish, bound, and not prove?
+
+L2  Authoritative Source Documents
+    What is the formal ruling/design/contract?
+
+L3  Raw Evidence
+    Why should it be believed?
+```
+
+Rules:
+
+```text
+L0 → L1 → L2 → L3.
+Direction is downward.
+L1 is derived and non-authoritative.
+L1 must cite L2.
+L2 must be supported by L3.
+If L1 conflicts with L2, L2 wins.
+If L2 conflicts with Frozen Contracts, Frozen Contracts win.
+L1 must not self-prove, modify L2, or become a new memory system.
+```
+
+First batch:
+
+```text
+Capsule directory = docs/research-capsules/v1
+Capsules          = C01..C15
+Validation        = awaiting fresh-Agent recovery test
+No capsule expansion until the L0/L1 recovery test is ruled.
+```
+
+## 4. Completed chain
 
 ```text
 A4 Reduction / Ownership Study
@@ -74,7 +120,7 @@ Core Sufficiency Audit
   = ACCEPTED / CLOSED
 ```
 
-## 4. Current boundary rulings
+## 5. Current boundary rulings
 
 ```text
 TEXT DOMAIN
@@ -102,7 +148,7 @@ RELATION BACKEND ASYMMETRY
   Not a semantic gap and not a current blocker.
 ```
 
-## 5. Legal next transition
+## 6. Legal next transition
 
 ```text
 Current state:
@@ -128,7 +174,7 @@ Illegal transitions:
   Frozen Contract change
 ```
 
-## 6. Evidence inheritance queue
+## 7. Evidence inheritance queue
 
 The prior Higher-Layer plan covered HLC-1..HLC-6. The reconciliation report added
 HLC-7..HLC-16. These must enter the next scope charter as bounded evidence, not as
@@ -159,7 +205,7 @@ Consolidated report:
 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
 ```
 
-## 7. Why here
+## 8. Why here
 
 The route moved upward because:
 
@@ -172,12 +218,12 @@ The route moved upward because:
 6. Therefore unresolved obligations are higher-layer semantics, not new Store or
    carrier primitives.
 
-## 8. Reading order
+## 9. Reading order
 
 ```text
 1. This index
-2. docs/RESEARCH_STATE.md — current authority
-3. Current route decision
+2. Relevant L1 capsule(s)
+3. docs/RESEARCH_STATE.md — current authority
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md
 4. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md
@@ -188,7 +234,7 @@ The route moved upward because:
 7. Only then endpoint/evidence documents named by the selected question
 ```
 
-## 9. Index discipline
+## 10. Index discipline
 
 ```text
 This index stores navigation, not research content.
@@ -197,4 +243,5 @@ Do not promote probe-local forms to carrier semantics.
 Do not treat latest commit as semantic authority.
 Do not reopen closed routes without Human ruling.
 Do not turn HLC items into implementation tasks without Human commission.
+Do not expand capsules before the L0→L1→fresh-Agent recovery test is ruled.
 ```

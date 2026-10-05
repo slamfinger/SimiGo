@@ -150,6 +150,13 @@
 > boundary、ES implementation debt、prepared-but-unexecuted studies 与 drift
 > control lessons。建议下一阶段先做 Higher-Layer Evidence Inheritance Matrix +
 > Continuation Semantics Scope Charter；仍不实现、不选 backend、不做实验。
+> **L1 Research State Capsules 第一批已建立**：`docs/research-capsules/v1/`，
+> `C01..C15`。Capsule 是 derived / non-authoritative Research State，不是普通
+> summary，也不是权威状态或新记忆系统。每个 capsule 必须向下引用 L2
+> authoritative source 与 L3 evidence；L1 不得自我证明或修改 L2。当前机器
+> 扫描 base = `14de9fd`：before capsules `TOTAL=2031 / DOCS=783`，after capsule
+> batch `DOCS=798 / TOTAL=2046`。Capsule 扩展暂缓，先等待 fresh-Agent
+> `L0 → L1 → recovery` validation ruling。
 > `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
