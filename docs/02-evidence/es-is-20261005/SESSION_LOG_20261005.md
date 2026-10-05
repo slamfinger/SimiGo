@@ -108,6 +108,10 @@ carrier, backend, or experimental work.
 
 ## Report/Paper Evidence Package — Claim Ledger & Evidence Audit
 
+Semantic correction: this is the **Evidence-Package Route**, not a paper-writing
+task. “Report/Paper” remains only the historical route label. The next object is
+structured evidence compilation.
+
 The first active-route phase is delivered at
 `REPORT_PACKAGE_CLAIM_LEDGER_AUDIT_20261005.md`. It registers 13 claims, the
 full G-1..G-4/IF evidence chain, C-CAP supported/non-supported boundaries,
@@ -116,7 +120,7 @@ reproducibility invariants, and 10 gap/overclaim risks.
 Audit verdict:
 
 ```text
-READY TO PROCEED TO REPORT PACKAGE DRAFTING
+READY TO PROCEED TO EVIDENCE PACKAGE STRUCTURED COMPILATION
 No blocking overclaim found.
 No blocking evidence gap found.
 Mandatory qualifiers remain: document-form conformance substrate; single E-run;
@@ -129,6 +133,6 @@ Status: `DELIVERED / AWAITING HUMAN REVIEW`.
 ## Next steps (none auto-open)
 
 1. Human review the delivered Claim Ledger & Evidence Audit.
-2. On acceptance, proceed only to report-package drafting with the registered mandatory qualifiers.
+2. On acceptance, enter **Evidence Package Drafting — Structured Evidence Compilation**, not manuscript writing.
 3. Keep PALACE, backend integration, and external E-run as future routes only.
 4. Frozen Contract revision remains non-automatic and requires its own gate.
