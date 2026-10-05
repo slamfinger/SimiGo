@@ -48,10 +48,17 @@
 > IR 补 timestamp/actor；TaskRecord digest=SHA-256(canonical supplied
 > τ2★)；precondition-block 统一 VV-1..7 = NOT ENTERED；used identities
 > 直接写入 IR。冻结契约 drift = 0。
-> **下一阶段 = Gate-close 后路线决策 PENDING；无 route 被自动选择。**
-> PALACE、backend integration、E-run 外实验、研究报告包、暂停本线等
-> 只是候选；各自仍需显式 Human commission。冻结契约修改继续需要
-> 独立理由与 contract-revision 流程，不因 Gate CLOSED 自动开启。
+> **Post-Gate Route Decision = PALACE / INFORMATION SPACE FOUNDATION**
+> （Human ruling 2026-10-05，唯一 Active Route）。研究问题：Information
+> Space 能否成为 Execution State 持续运行所依赖、可演化的信息基础。
+> PALACE 在本路线中不是 MCP、knowledge base、数据库产品或应用集成。
+> 当前只进入 **Phase 1 Route Opening — Boundary Reconciliation &
+> Minimal Carrier Charter**：范围 `No implementation / No backend integration /
+> No contract change / No experiment`。旧 Report/Paper Evidence Package
+> 路线已在 `ffc59a4` 回滚；历史记录不入当前权威。Backend integration、
+> E-run 外实验、暂停本线继续 PENDING。冻结契约修改仍需独立
+> contract-revision 流程。登记于
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 

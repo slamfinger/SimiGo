@@ -85,12 +85,37 @@ All four G-4 findings are CLOSED by Human review after implementation and indepe
 4. **IF-G4-04 CLOSED** — `used_item_identities` is stored directly in IR and
    compared against the CR used set.
 
-## Post-Gate boundaries
+## Post-Gate Route Decision — PALACE / Information Space Foundation ACTIVE
 
-Implementation Gate is CLOSED. PALACE, backend integration, experiments beyond the single E-run, a paper/report evidence package, or pausing this line are now **route candidates eligible for evaluation**, but **BLOCKED → ELIGIBLE ≠ AUTO-START**. None is selected. Implementation deviations still enter as Implementation Findings first; Frozen Contract modification still requires an independent reason and contract-revision process. The v0.2 Constitution's §5A applies to governance itself.
+The prior Report/Paper Evidence Package route was rolled back at `ffc59a4`.
+Human then selected **PALACE / Information Space Foundation** as the唯一 Active
+Route. The ruling and Phase 1 charter boundary are in
+`PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`.
+
+```text
+Active route        = PALACE / Information Space Foundation
+Research question   = Can Information Space become the evolvable information
+                      foundation on which Execution State depends?
+Phase 1             = Route Opening — Boundary Reconciliation &
+                      Minimal Carrier Charter
+No implementation   = true
+No backend integration = true
+No contract change  = true
+No experiment       = true
+```
+
+PALACE is not an MCP server, knowledge base, database schema, storage product,
+or application integration in this route. Historical PALACE artifacts must be
+reconciled before any is treated as background support.
 
 ## Next steps (none auto-open)
 
-1. **Gate-close route decision only** — Human selects among external verification, PALACE/Information Space, backend/runtime integration, report/paper packaging, pausing this line, or another explicitly named route.
-2. Do not start code, carrier selection, integration, or new experiments until that explicit commission.
-3. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Enter **PALACE / Information Space Foundation — Boundary Reconciliation &
+   Minimal Carrier Charter**.
+2. Reconcile prior PALACE history with the new Information Space foundation
+   question.
+3. Map frozen ES↔IS objects to candidate Information Space obligations.
+4. Define minimal carrier/interface obligations without selecting storage,
+   schema, backend, or product.
+5. Pre-register the first decodable question, judgment criteria, and non-claims.
+6. Frozen Contract revision remains non-automatic and requires its own gate.
