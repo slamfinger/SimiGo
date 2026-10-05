@@ -1,11 +1,13 @@
 # PALACE / Information Space Foundation — Route Decision
 
-Date: 2026-10-05  
-Status: `HUMAN RULING COMPLETE · PALACE / INFORMATION SPACE FOUNDATION = UNIQUE ACTIVE ROUTE`  
-Accepted Implementation Gate baseline: `ab97244`  
-Rollback of the prior Report/Paper route: `ffc59a4`  
-Frozen Contracts: `UNCHANGED`  
-Current phase guard: `NO IMPLEMENTATION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT`
+Date: 2026-10-05
+Status: `HUMAN RULING COMPLETE · PALACE / INFORMATION SPACE FOUNDATION = UNIQUE ACTIVE ROUTE`
+Accepted Implementation Gate baseline: `ab97244`
+Rollback of the prior Report/Paper route: `ffc59a4`
+Frozen Contracts: `UNCHANGED`
+Current phase guard: `NO IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT EXECUTION`
+Phase 1 status: `ACCEPTED / CLOSED` (Human review; delivery `e4c74bd`)
+Next phase: `PRQ-ISF-01 — MINIMAL DECODABLE PROBE DESIGN (DESIGN ONLY / NOT STARTED)`
 
 ## 1. Ruling
 
@@ -99,8 +101,20 @@ No output of Phase 1 may claim that:
 Phase 1 success means only that the route opening charter is precise enough for
 Human review. It does not establish PALACE viability.
 
-## 6. Next gate
+## 6. Phase 1 review and next gate
 
-After Phase 1 delivery, the next action is Human review of the charter. Any
-implementation, prototype, carrier selection, experiment, backend work, or
-contract implication requires a separate explicit commission.
+Human review on 2026-10-05 ruled:
+
+```text
+Phase 1 Route Opening Charter = ACCEPTED / CLOSED
+Delivery                      = e4c74bd
+Route baseline                = f4e2ba6
+Gate baseline                 = ab97244
+Frozen Contracts              = UNCHANGED
+Next phase                    = PRQ-ISF-01 — Minimal Decodable Probe Design
+```
+
+The next phase is design-only. It may define the smallest mechanically decodable
+probe for `PRQ-ISF-01`; it must not implement the probe, select a carrier,
+integrate a backend, execute an experiment, or imply a contract change. Any such
+step requires a separate explicit commission.

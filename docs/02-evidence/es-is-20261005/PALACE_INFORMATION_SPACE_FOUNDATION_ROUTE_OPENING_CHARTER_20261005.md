@@ -1,11 +1,11 @@
 # PALACE / Information Space Foundation — Route Opening Charter
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Decision record: `PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`  
-Accepted Gate baseline: `ab97244`  
-Charter repository state: `f4e2ba6`, clean and synced  
-Status: `PHASE 1 DELIVERED / AWAITING HUMAN REVIEW`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Decision record: `PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md`
+Accepted Gate baseline: `ab97244`
+Charter repository state: `f4e2ba6`, clean and synced
+Status: `PHASE 1 ACCEPTED / CLOSED BY HUMAN REVIEW`
 Scope: `STUDY ONLY · NO IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT`
 
 ## 1. Purpose
@@ -298,15 +298,19 @@ Phase 1 is complete when a Human reviewer can determine from this charter:
 7. what success, failure, and indeterminate mean;
 8. why no implementation is yet authorized.
 
-## 11. Next gate
+## 11. Human review and next gate
 
-The next action after this charter is Human review:
+Human review on 2026-10-05:
 
 ```text
-ACCEPT              → design the minimal decodable probe for PRQ-ISF-01
-FINDINGS            → revise this charter without implementation
-REJECT / PAUSE      → close or pause the Foundation route by explicit ruling
+Phase 1 = ACCEPTED / CLOSED
+Delivery = e4c74bd
+Route baseline = f4e2ba6
+Gate baseline = ab97244
+Frozen Contracts = UNCHANGED
+Next phase = PRQ-ISF-01 — Minimal Decodable Probe Design
 ```
 
-No implementation, carrier selection, backend integration, experiment, or
-Frozen Contract change follows automatically.
+The next phase is design-only. No implementation, carrier selection, backend
+integration, experiment execution, or Frozen Contract change follows
+automatically.

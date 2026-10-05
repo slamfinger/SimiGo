@@ -108,7 +108,7 @@ PALACE is not an MCP server, knowledge base, database schema, storage product,
 or application integration in this route. Historical PALACE artifacts must be
 reconciled before any is treated as background support.
 
-## PALACE / Information Space Foundation — Phase 1 Charter DELIVERED
+## PALACE / Information Space Foundation — Phase 1 Charter ACCEPTED / CLOSED
 
 The Route Opening Charter is delivered at
 `PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_OPENING_CHARTER_20261005.md`.
@@ -119,19 +119,28 @@ semantics to Information Space obligations, defines minimal carrier/interface
 obligations `IS-MCI-01..08`, and preregisters `PRQ-ISF-01` with
 success/failure/indeterminate criteria.
 
+Human review ruled Phase 1 `ACCEPTED / CLOSED`. No blocking finding was raised.
+
 ```text
-Status = PHASE 1 DELIVERED / AWAITING HUMAN REVIEW
-No implementation = true
-No carrier selection = true
-No backend integration = true
-No contract change = true
-No experiment = true
+Phase 1 delivery   = e4c74bd
+Route baseline     = f4e2ba6
+Gate baseline      = ab97244
+Frozen Contracts   = UNCHANGED
+Next phase         = PRQ-ISF-01 — Minimal Decodable Probe Design
+Phase status       = COMMISSIONED / DESIGN ONLY / NOT STARTED
+
+No implementation       = true
+No carrier selection    = true
+No backend integration  = true
+No contract change      = true
+No experiment execution = true
 ```
 
 ## Next steps (none auto-open)
 
-1. Human review the Route Opening Charter.
-2. On ACCEPT: design the minimal decodable probe for `PRQ-ISF-01`.
-3. On FINDINGS: revise the charter without implementation.
-4. On REJECT/PAUSE: close or pause the Foundation route by explicit ruling.
-5. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Enter **PRQ-ISF-01 — Minimal Decodable Probe Design** when commissioned.
+2. The design objective is the smallest mechanically decodable probe for
+   `PRQ-ISF-01`, not a PALACE architecture proposal.
+3. Implementation, carrier selection, backend integration, and experiment
+   execution remain unauthorized.
+4. Frozen Contract revision remains non-automatic and requires its own gate.
