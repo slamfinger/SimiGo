@@ -1,10 +1,11 @@
 # PALACE / Information Space Foundation — Carrier Path Decision
 
-Date: 2026-10-05  
-Status: `HUMAN RULING COMPLETE · CARRIER PATH A SELECTED · MEMPALACE LOCAL FILE-BACKED CORE = FIRST INDEPENDENT CANDIDATE CARRIER`  
-Prior PRQ-ISF-01 execution: `ACCEPTED / CLOSED` at `547df19`  
-Route research question: still `INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST` until the selected candidate is tested  
-Frozen Contracts: `UNCHANGED`  
+Date: 2026-10-05
+Status: `HUMAN RULING COMPLETE · CARRIER PATH A SELECTED · MEMPALACE = FIRST INDEPENDENT CANDIDATE CARRIER`
+Feasibility audit: `DELIVERED / AWAITING HUMAN REVIEW · MEMPALACE AS-IS = NO-GO FOR PRQ-ISF-01 CARRIER TEST`
+Prior PRQ-ISF-01 execution: `ACCEPTED / CLOSED` at `547df19`
+Route research question: still `INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST` until the selected candidate is tested
+Frozen Contracts: `UNCHANGED`
 Current phase guard: `READ-ONLY FEASIBILITY AUDIT ONLY · NO ADAPTER IMPLEMENTATION · NO CARRIER INTEGRATION · NO PROBE EXECUTION AGAINST MEMPALACE · NO CONTRACT CHANGE · NO EXPERIMENT`
 
 ## 1. Ruling
@@ -124,3 +125,25 @@ Frozen Contract change
 
 After the audit, Human review decides whether the route proceeds, is revised, or
 is paused.
+
+## 7. Feasibility audit result
+
+The read-only IS-MCI feasibility audit returned:
+
+```text
+DIRECT   = 1 / 8   separated provenance
+ADAPTER  = 2 / 8   canonical records, evolution events
+GAP      = 5 / 8   immutable content, typed references,
+                   historical pinning, lineage,
+                   mechanical failure discipline
+Verdict  = MEMPALACE AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST
+```
+
+The decisive issue is that a thin adapter cannot close the five gaps. A layer
+capable of immutable canonical records, typed references, historical pins,
+lineage traversal, and frozen failure discipline would be a new carrier; it would
+not be an independent MemPalace test. MemPalace must not be modified merely to
+pass the probe.
+
+Audit record:
+`MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md`.

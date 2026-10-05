@@ -221,9 +221,39 @@ Semantic search, summaries, inference, fuzzy retrieval, or completion must not b
 accepted as substitutes for identity, canonical content, lineage, historical
 pinning, or mechanical failure discipline.
 
+## MemPalace IS-MCI Adapter Feasibility Audit DELIVERED
+
+The read-only audit is delivered at
+`MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md`.
+
+It classified the selected MemPalace candidate as:
+
+```text
+DIRECT   = 1 / 8   provenance separation
+ADAPTER  = 2 / 8   canonical records, evolution events
+GAP      = 5 / 8   immutable content, typed references,
+                   historical pinning, lineage, mechanical failure discipline
+```
+
+Verdict:
+
+```text
+MEMPALACE AS-IS = NO-GO FOR PRQ-ISF-01 CARRIER TEST
+THIN ADAPTER    = NOT FEASIBLE
+Reason          = closing the five GAPs would build a new carrier layer,
+                  not independently test MemPalace
+```
+
+No MemPalace data was mutated. The audit used read-only MCP inspection, source
+reading, and read-only SQLite checks.
+
 ## Next steps (none auto-open)
 
-1. Enter **MemPalace IS-MCI Adapter Feasibility Audit**.
+1. Human review the negative feasibility result.
+2. Then explicitly choose one: define a composite-carrier research question,
+   search for another independent candidate, pause the Foundation route, or
+   authorize a non-implementation study of the missing carrier layer.
+3. Do not modify MemPalace merely to make it pass `PRQ-ISF-01`.
 2. Pin the exact MemPalace audit specimen and read-only boundary.
 3. Classify every `IS-MCI-01..08` obligation as `DIRECT`, `ADAPTER`, or `GAP`.
 4. Return to Human review before any adapter implementation, integration,

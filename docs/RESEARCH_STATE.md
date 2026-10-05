@@ -96,6 +96,16 @@
 > `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json`、
 > `runtime_palace/PRQ_ISF_01_EXECUTION_DELIVERY.md` 与
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_PATH_DECISION_20261005.md`。
+> **MemPalace IS-MCI Adapter Feasibility Audit 已交付待复核**：read-only
+> 审计将 `IS-MCI-01..08` 判为 DIRECT 1 / ADAPTER 2 / GAP 5。关键 GAP =
+> immutable content、typed references、historical pinning、lineage、mechanical
+> failure discipline；原因是 MemPalace drawer ID 基于 source path/chunk、
+> `upsert_drawer` 会重写同位记录，且缺少 frozen CR lineage/typed-ref 纪律。
+> 结论 = **MemPalace as-is NO-GO for PRQ-ISF-01 carrier test**；thin adapter
+> 不可行，因为所需补层会形成新 carrier，而不是独立测试 MemPalace。该结果是
+> 有效 negative feasibility result，不是对 MemPalace 本来用途的缺陷判定。
+> 登记于
+> `MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 
