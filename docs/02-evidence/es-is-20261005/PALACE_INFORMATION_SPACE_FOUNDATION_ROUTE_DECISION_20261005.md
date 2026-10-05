@@ -224,9 +224,30 @@ Core question   = What minimal carrier layer is required to satisfy the
                   MemPalace GAP areas without semantic inference, hidden
                   completion, candidate mutation, or Frozen Contract change?
 Status          = COMMISSIONED / SCOPE CHARTER PENDING
-Next entry      = Carrier Gap Study — Scope & Research Question Charter
+Next entry      = Human review of Carrier Gap Study scope charter
 ```
 
 This authorizes conceptual / documentary study only. Adapter implementation,
 carrier implementation, MemPalace mutation, integration, probe execution,
 experiments, backend integration, and Frozen Contract changes remain unauthorized.
+
+## 9. A4 scope charter
+
+The Carrier Gap Study scope and research question charter is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_SCOPE_CHARTER_20261005.md`.
+
+It defines:
+
+```text
+GAP dimensions                 CGT-1..CGT-7
+Obligation sources             SRC-FROZEN / SRC-PRQ /
+                               SRC-IS-SEMANTIC / SRC-PROBE-LOCAL
+Candidate primitives           P1..P8
+Study questions                CGQ-1..CGQ-5
+Completion criteria            nine-point A4 delivery standard
+```
+
+It explicitly separates minimal semantic obligations from probe-local expression
+and carrier implementation details. Human review is the next gate; no
+implementation, adapter, carrier integration, MemPalace mutation, probe execution,
+experiment, or contract change follows automatically.

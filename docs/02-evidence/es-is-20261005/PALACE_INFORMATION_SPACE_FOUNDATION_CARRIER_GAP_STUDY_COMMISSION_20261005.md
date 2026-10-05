@@ -1,11 +1,11 @@
 # PALACE / Information Space Foundation — Carrier Gap Study Commission
 
-Date: 2026-10-05  
-Status: `HUMAN RULING COMPLETE · OPTION A4 SELECTED · CARRIER GAP STUDY COMMISSIONED / SCOPE CHARTER PENDING`  
-MemPalace audit: `ACCEPTED / CLOSED` at delivery `1540cae`  
-MemPalace verdict: `AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST`  
-Thin adapter: `NOT FEASIBLE`  
-Frozen Contracts: `UNCHANGED`  
+Date: 2026-10-05
+Status: `HUMAN RULING COMPLETE · OPTION A4 SELECTED · SCOPE & RESEARCH QUESTION CHARTER DELIVERED / AWAITING HUMAN REVIEW`
+MemPalace audit: `ACCEPTED / CLOSED` at delivery `1540cae`
+MemPalace verdict: `AS-IS NO-GO FOR PRQ-ISF-01 CARRIER TEST`
+Thin adapter: `NOT FEASIBLE`
+Frozen Contracts: `UNCHANGED`
 Current guard: `NO IMPLEMENTATION · NO ADAPTER IMPLEMENTATION · NO CARRIER INTEGRATION · NO MEMPALACE MUTATION · NO PROBE EXECUTION · NO EXPERIMENT`
 
 ## 1. Human review of MemPalace feasibility audit
@@ -111,3 +111,26 @@ new experiments
 backend integration
 Frozen Contract change
 ```
+
+## 7. Scope & Research Question Charter result
+
+The A4 scope charter is delivered at
+`PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_SCOPE_CHARTER_20261005.md`.
+
+It defines seven underlying dimensions (`CGT-1..7`), four obligation-source
+classes (`SRC-FROZEN`, `SRC-PRQ`, `SRC-IS-SEMANTIC`, `SRC-PROBE-LOCAL`), and
+eight candidate carrier-layer primitives (`P1..P8`). It also preregisters five
+study questions:
+
+```text
+CGQ-1  derivation of IS-MCI obligations
+CGQ-2  minimal candidate primitive set
+CGQ-3  semantic / structural / mechanical / implementation expression
+CGQ-4  failure-boundary taxonomy
+CGQ-5  carrier archetypes
+```
+
+The charter explicitly separates minimal semantic obligations from probe-local or
+implementation incidental requirements. It authorizes only the conceptual A4
+study after Human review; no implementation, adapter, carrier integration,
+MemPalace mutation, probe execution, experiment, or contract change follows.
