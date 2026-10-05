@@ -154,6 +154,13 @@
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_GAP_STUDY_COMMISSION_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
+>
+> **Research Context Index 已建立**：`docs/RESEARCH_CONTEXT_INDEX.md`。
+> 该索引是 Information Place 的薄导航层，不是权威状态、记忆库或实现。
+> 用途：让新 Agent 从 Git Information Place 快速恢复定位、状态、边界与合法
+> 下一跳。当前 indexing snapshot = `c8fd186`；快速入口已从旧的
+> `NEXT_SESSION_ENTRY.md` 改为该索引。这也是 GitHub 真实验证组对
+> “Information Place 支持新 Agent lawful continuation”的第一例。
 
 ## Current total status — 2026-10-04
 

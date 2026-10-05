@@ -568,3 +568,46 @@ No contract change      = true
    Continuation Semantics Scope Charter.
 3. Do not implement, select a backend, mutate MemPalace, execute a probe, or run
    an experiment.
+## Research Context Index / Information Place — DELIVERED
+
+The adopted navigation proposal was implemented as a thin Git-native Information
+Place entry: `docs/RESEARCH_CONTEXT_INDEX.md`.
+
+```text
+Purpose                = Research Context State / Research Navigation State
+Not authority          = true
+Not memory             = true
+Not carrier            = true
+Indexing snapshot      = c8fd186
+Supplemented assets    = HLC-7..HLC-16
+Old NEXT_SESSION_ENTRY = superseded as fast entry; retained as historical
+                         Local Closure continuity
+```
+
+The index answers identity, current Research Context State, completed chain,
+boundary rulings, legal next transition, evidence inheritance queue, why-here,
+reading order, and index discipline.
+
+This is also the first self-validation case for the route:
+
+```text
+GitHub Information Place
+        ↓
+Research Context Index
+        ↓
+Current Research State
+        ↓
+Current Node / Guards
+        ↓
+New Agent lawful continuation
+```
+
+No implementation, carrier selection, backend integration, experiment, or
+contract change is authorized.
+
+## Next steps (none auto-open)
+
+1. Use `docs/RESEARCH_CONTEXT_INDEX.md` as the current fast entry.
+2. Human review the index and its HLC-7..HLC-16 inheritance queue.
+3. Any Higher-Layer study still requires explicit Human commission.
+4. Do not promote the index to authority or convert it into a memory system.

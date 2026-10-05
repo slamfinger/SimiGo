@@ -1,0 +1,200 @@
+# SimiGo-Lab Research Context Index
+
+> **Purpose:** thin navigation index for the SimiGo-Lab Information Place.  
+> **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
+> **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
+> **Index snapshot:** commit `c8fd186`; always re-verify against current `RESEARCH_STATE.md`.
+
+## 1. Identity
+
+```text
+Project                = SimiGo-Lab
+Repository             = slamfinger/SimiGo-Lab
+Research core          = Execution State ↔ Information Space
+Active route           = PALACE / Information Space Foundation
+Branch                 = codex/execution-state-research-20260929
+Indexing HEAD          = c8fd186
+Information Place      = this Git research estate + registered endpoint documents
+Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
+```
+
+Semantic authority is separate from repository position:
+
+```text
+I-1   Persistence / Resolve               main/2b2e2ef
+I-1c  Instantiate Completeness            main/6c3cf6a
+I-1d  Runtime Realization / Verification  branch registration/1832676
+Repository position ≠ semantic authority.
+```
+
+## 2. Research Context State
+
+```text
+Implementation Gate                    CLOSED
+Frozen Contracts                       UNCHANGED
+PALACE / Information Space Foundation  ACTIVE ROUTE
+Core Sufficiency Audit                 ACCEPTED / CLOSED
+Current PRQ-ISF-01 domain              UTF-8 / text-bounded, task-domain bounded
+Core + Relation + Store sufficiency    SUFFICIENT for current PRQ domain
+New Store primitive                    NOT REQUIRED
+Carrier semantic layer                 NOT REQUIRED for current PRQ domain
+Independent carrier under test         NONE
+Active Carrier                         NONE
+PRQ-ISF-01                             INDETERMINATE /
+                                       NO-INDEPENDENT-CARRIER-UNDER-TEST
+Higher-layer semantics                 NEXT COMMISSIONED ENTRY
+Implementation                         NOT AUTHORIZED
+Backend selection                      NOT AUTHORIZED
+Backend-substitution run               NOT AUTHORIZED
+Experiment                             NOT AUTHORIZED
+Contract change                        NOT AUTHORIZED
+```
+
+## 3. Completed chain
+
+```text
+A4 Reduction / Ownership Study
+  = FINDINGS / REFRAME REQUIRED
+  = useful candidate semantic decomposition
+  = CS-1..CS-6 are not physical carrier primitives
+
+A4 Conceptual Study
+  = FINDINGS ADDRESSED
+  = CGQ-1..CGQ-5 answered
+
+PRQ-ISF-01 Probe Design
+  = ACCEPTED / CLOSED
+
+PRQ-ISF-01 Probe Implementation / Execution
+  = ACCEPTED / CLOSED
+  = ProbeReferencePort control only
+  = no independent carrier tested
+
+Core Sufficiency Audit
+  = ACCEPTED / CLOSED
+```
+
+## 4. Current boundary rulings
+
+```text
+TEXT DOMAIN
+  Accepted only for the currently registered PRQ-ISF-01 task domain.
+  Not a global or permanent InformationCore boundary.
+
+NEW STORE PRIMITIVE
+  Not required for current PRQ domain.
+
+CARRIER SEMANTIC LAYER
+  Not required for current PRQ domain.
+
+ARBITRARY-BYTE FIDELITY
+  Conditional finding only.
+  Not a current semantic gap in the accepted text domain.
+  Shall not trigger InformationCore modification.
+  Future byte requirements require a separate research decision.
+
+MEMPALACE
+  AS-IS NO-GO only as direct PRQ-ISF-01 independent semantic carrier.
+  Not rejected as historical/migration source or future backend candidate.
+
+RELATION BACKEND ASYMMETRY
+  Implementation / test debt.
+  Not a semantic gap and not a current blocker.
+```
+
+## 5. Legal next transition
+
+```text
+Current state:
+  Core sufficiency accepted for the registered PRQ task domain.
+
+Legal next transition:
+  Human ruling / commission to open:
+  Higher-Layer Continuation Graph Semantics —
+  Scope & Research Question Charter
+
+Required before transition:
+  Explicit Human ruling.
+
+Illegal transitions:
+  adapter implementation
+  carrier implementation
+  carrier integration
+  backend selection
+  backend-substitution execution
+  MemPalace mutation
+  probe execution
+  experiment
+  Frozen Contract change
+```
+
+## 6. Evidence inheritance queue
+
+The prior Higher-Layer plan covered HLC-1..HLC-6. The reconciliation report added
+HLC-7..HLC-16. These must enter the next scope charter as bounded evidence, not as
+automatic implementation requirements.
+
+| ID | Asset | Primary source |
+|---|---|---|
+| HLC-1 | Information dependency | T4 / T4-2 / R-C1 #4 |
+| HLC-2 | Work-state persistence | Palace G1 / G2 / G3 |
+| HLC-3 | Judgment revisability | Palace RQ-G3-1 / RQ-G3-2 |
+| HLC-4 | Semantic applicability | IPAC / R2 |
+| HLC-5 | Information-space boundary | H1 / R3 |
+| HLC-6 | Semantic absence visibility | RF-1 |
+| HLC-7 | Execution residue → Information formation boundary | Local Closure TC-A residue analysis |
+| HLC-8 | Local reduction / representation equivalence | Information Reduction Round 1 |
+| HLC-9 | Boundary trust, verification, and frontier semantics | EXP1-X1 results/record |
+| HLC-10 | Activation / pointer semantics | Palace Y experiment |
+| HLC-11 | Validity, granularity, record spectrum | E6 / RQ-G3-1 / RQ-G3-2 |
+| HLC-12 | Research estate residual gap map | Research Stage Synthesis 2026-10-05 |
+| HLC-13 | Security / authority boundary | P6 §4 / P5-2-ER |
+| HLC-14 | ES implementation / persistence debt | Phase A / O6 / RQ3 / Backend-1 audits |
+| HLC-15 | Prepared but unexecuted studies | QinShen A→B→C; cross-model runner; EXP1-X1 |
+| HLC-16 | Research drift-control lessons | Research line review / object alignment / drift record |
+
+Consolidated report:
+
+```text
+docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
+```
+
+## 7. Why here
+
+The route moved upward because:
+
+1. ES↔IS is the only Core line.
+2. I-1, I-1c, and I-1d are Frozen.
+3. G-1..G-4 implemented and closed the accepted I-1 runtime realization chain.
+4. PRQ-ISF-01 proved the probe mechanism but no independent carrier was tested.
+5. Core Sufficiency Audit found no current semantic gap for the UTF-8/text-bounded
+   PRQ domain.
+6. Therefore unresolved obligations are higher-layer semantics, not new Store or
+   carrier primitives.
+
+## 8. Reading order
+
+```text
+1. This index
+2. docs/RESEARCH_STATE.md — current authority
+3. Current route decision
+   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md
+4. Core Sufficiency Audit
+   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md
+5. Evidence Inheritance Reconciliation
+   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
+6. Research Stage Synthesis
+   docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
+7. Only then endpoint/evidence documents named by the selected question
+```
+
+## 9. Index discipline
+
+```text
+This index stores navigation, not research content.
+Do not copy full state here.
+Do not promote probe-local forms to carrier semantics.
+Do not treat latest commit as semantic authority.
+Do not reopen closed routes without Human ruling.
+Do not turn HLC items into implementation tasks without Human commission.
+```

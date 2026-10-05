@@ -1,6 +1,14 @@
 # SimiGo-Lab Next Session Entry
 
-> **2026-10-04 current fast entry — Local Closure / TC-A / R-A1**
+> **SUPERSEDED AS FAST ENTRY — 2026-10-06**
+> The current fast navigation entry is now:
+> `docs/RESEARCH_CONTEXT_INDEX.md`.
+>
+> The material below is retained as a historical Local Closure continuity record.
+> Do not follow it as the current PALACE / Information Space route without first
+> reading `docs/RESEARCH_CONTEXT_INDEX.md` and current `RESEARCH_STATE.md`.
+
+> **2026-10-04 historical fast entry — Local Closure / TC-A / R-A1**
 > 当前最新工作入口不是旧 PALACE/Route 队列，而是：
 > `docs/00-governance/SIMIGO_LAB_LOCAL_CLOSURE_CURRENT_PHASE_INDEX_20261004.md`
 >
