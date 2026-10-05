@@ -164,7 +164,7 @@ Experiment execution = NOT AUTHORIZED
 Contract change      = NOT AUTHORIZED
 ```
 
-## PRQ-ISF-01 — Probe Implementation / Execution COMPLETE (CONTROL ONLY)
+## PRQ-ISF-01 — Probe Implementation / Execution ACCEPTED / CLOSED
 
 Human authorized probe implementation / execution. The implementation used
 `ProbeReferencePort`, a non-candidate in-memory probe control, to exercise the
@@ -176,23 +176,29 @@ Scenarios executed        = SC-00..SC-12
 Scenario expectations     = 13/13 MATCH
 Semantic oracle used      = false
 Harness qualification     = PASS
+Execution delivery        = 547df19
+Execution review          = ACCEPTED / CLOSED
 Route PRQ-ISF-01          = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
 Carrier selection         = NONE
 Backend integration       = NONE
 Contract change           = NONE
 ```
 
-The result qualifies the decoder / resolver handoff / judge. It does **not**
-support a claim that PALACE or any concrete Information Space carrier can satisfy
-the route.
+Human review accepted the three-layer boundary:
+
+```text
+1. Probe design is correct.
+2. Probe / decoder / resolver handoff is mechanically executable.
+3. An independent Information Space carrier satisfies IS-MCI-01..08.
+```
+
+The work reached (2), not (3). Therefore `13/13 MATCH` is not carrier validation.
 
 ## Next steps (none auto-open)
 
-1. Human review the execution record.
-2. Then explicitly choose one: select an independent candidate carrier for a
+1. Human make the explicit carrier-path decision.
+2. Candidate actions remain: select an independent candidate carrier for a
    meaningful PRQ test, revise or pause the Foundation route, or name another
    authorized action.
-3. No carrier selection or additional experiment follows automatically.
-2. Without that ruling, do not write probe code, select a carrier, integrate a
-   backend, or execute `SC-00..SC-12`.
-3. Frozen Contract revision remains non-automatic and requires its own gate.
+3. Without that ruling, no carrier selection, new implementation, additional
+   experiment, or Frozen Contract revision follows automatically.

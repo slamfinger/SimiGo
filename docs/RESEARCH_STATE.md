@@ -76,14 +76,18 @@
 > implementation / execution authorization decision**；未显式授权前，实现、
 > carrier 选择、backend integration、实验执行和契约修改均未授权。登记于
 > `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PRQ_ISF_01_PROBE_DESIGN_20261005.md`。
-> **Phase 3 probe implementation / execution 已由 Human 显式授权并完成**：
-> 使用 `ProbeReferencePort`（non-candidate in-memory probe control，非 PALACE/
-> MCP/数据库/外部 carrier 选择）执行 `SC-00..SC-12`；13/13 场景期望匹配，
-> semantic oracle = false，harness qualification = PASS。因未测试独立候选
-> carrier，`PRQ-ISF-01 = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST`。
-> 不得外推为 PALACE 或任何具体 Information Space carrier 可行。登记于
-> `runtime_palace/prq_isf_01_probe.py` 与
-> `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json`。
+> **Phase 3 probe implementation / execution 已完成并经 Human ACCEPTED /
+> CLOSED**（delivery `547df19`）：使用 `ProbeReferencePort`（non-candidate
+> in-memory probe control，非 PALACE/MCP/数据库/外部 carrier 选择）执行
+> `SC-00..SC-12`；13/13 场景期望匹配，semantic oracle = false，harness
+> qualification = PASS。三层边界保持：①probe design 正确；②probe /
+> decoder / resolver handoff 可机械执行；③独立 Information Space carrier
+> 满足 IS-MCI-01..08 **未测试**。因此 `PRQ-ISF-01 = INDETERMINATE /
+> NO-INDEPENDENT-CARRIER-UNDER-TEST`，不得外推为 PALACE 或任何具体
+> carrier 可行。当前入口 = **explicit carrier-path decision**；无 route
+> 被自动选择。登记于 `runtime_palace/prq_isf_01_probe.py`、
+> `runtime_palace/PRQ_ISF_01_EXECUTION_RECORD.json` 与
+> `runtime_palace/PRQ_ISF_01_EXECUTION_DELIVERY.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支
 > `codex/execution-state-research-20260929`）。
 

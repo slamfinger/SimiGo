@@ -8,9 +8,10 @@ Frozen Contracts: `UNCHANGED`
 Current phase guard: `NO FURTHER IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT BEYOND COMPLETED REGISTERED PROBE SCENARIOS`
 Phase 1 status: `ACCEPTED / CLOSED` (Human review; delivery `e4c74bd`)
 Phase 2 design: `PRQ-ISF-01 — MINIMAL DECODABLE PROBE DESIGN ACCEPTED / CLOSED`
-Probe implementation / execution: `AUTHORIZED AND COMPLETE — NON-CANDIDATE PROBE CONTROL ONLY`
+Probe implementation / execution: `AUTHORIZED / COMPLETE / ACCEPTED / CLOSED`
+Execution delivery: `547df19`
 Execution verdict: `PRQ-ISF-01 = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST`
-Next entry: `HUMAN REVIEW OF EXECUTION RECORD + CARRIER-PATH DECISION`
+Next entry: `EXPLICIT CARRIER-PATH DECISION (NO AUTO-START)`
 
 ## 1. Ruling
 
@@ -142,13 +143,32 @@ but `PRQ-ISF-01` is `INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST`; it does
 not support a claim that PALACE or any concrete Information Space carrier can
 satisfy the route.
 
-Acceptance of the design does **not** authorize implementation or execution.
-Until a separate explicit ruling says otherwise:
+Human review on 2026-10-05 accepted the execution with that boundary:
 
 ```text
-Implementation       = NOT AUTHORIZED
-Carrier selection    = NOT AUTHORIZED
-Backend integration  = NOT AUTHORIZED
-Experiment execution = NOT AUTHORIZED
-Contract change      = NOT AUTHORIZED
+PRQ-ISF-01 Execution = ACCEPTED / CLOSED
+Delivery             = 547df19
+Probe Design         = 7b9d167
+Gate baseline        = ab97244
+Frozen Contracts     = UNCHANGED
+Route verdict        = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
+Next entry           = explicit carrier-path decision
+```
+
+The accepted distinction is:
+
+```text
+1. Probe design is correct.
+2. Probe / decoder / resolver handoff is mechanically executable.
+3. An independent Information Space carrier satisfies IS-MCI-01..08.
+```
+
+The completed work reached (2), not (3). No carrier path is selected. Candidate
+actions remain pending explicit Human ruling:
+
+```text
+select an independent candidate carrier for a meaningful PRQ test
+revise the Foundation route
+pause the Foundation route
+name another explicitly authorized action
 ```

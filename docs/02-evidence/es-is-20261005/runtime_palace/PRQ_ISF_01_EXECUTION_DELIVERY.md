@@ -1,11 +1,11 @@
 # PRQ-ISF-01 — Probe Implementation / Execution Delivery
 
-Date: 2026-10-05  
-Status: `EXECUTION COMPLETE / AWAITING HUMAN REVIEW`  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Design delivery: `7b9d167`  
-Execution authorization: Human ruling, 2026-10-05  
-Carrier selection: `NONE`  
+Date: 2026-10-05
+Status: `EXECUTION COMPLETE / ACCEPTED / CLOSED BY HUMAN REVIEW`
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Design delivery: `7b9d167`
+Execution authorization: Human ruling, 2026-10-05
+Carrier selection: `NONE`
 Contract change: `NONE`
 
 ## Delivered artifacts
@@ -53,7 +53,22 @@ Space Foundation obligations. It establishes that the accepted probe design is
 mechanically executable and that its decoder/judge discipline holds on the
 control path.
 
+## Human review
+
+Human review accepted the execution and its boundary:
+
+```text
+PRQ-ISF-01 Execution = ACCEPTED / CLOSED
+Delivery             = 547df19
+Route verdict        = INDETERMINATE / NO-INDEPENDENT-CARRIER-UNDER-TEST
+Next entry           = explicit carrier-path decision
+```
+
+The result proves probe-design correctness and mechanical executability only. It
+does not prove that an independent Information Space carrier satisfies
+`IS-MCI-01..08`.
+
 ## Next gate
 
-Human review of the execution record, followed by an explicit carrier-path
-decision. No carrier selection or additional experiment follows automatically.
+An explicit carrier-path decision is required. No carrier selection or additional
+experiment follows automatically.
