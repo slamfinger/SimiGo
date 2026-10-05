@@ -300,3 +300,23 @@ New experiment         NOT AUTHORIZED
 Standing prohibitions: no further `U_c` work; no M2/M3 continuation; no consumer-trick design aimed at breaking the signature-equivalence.
 
 **Line closed loop**: identifiability analysis → Case 2 (sealed) → Spec v0.3 (sealed) → Step 2 U_c feasibility → U3 (Step 2 STOPPED) → Step 3 Evaluation-Signature → ES-3 (sealed). All open items — D-SIG-1..3, Q1/Q3/Q4/Q6/Q7/Q5, any future v0.4 codomain revision — remain behind explicit Human authorization. Nothing auto-opens.
+
+---
+
+## Addendum 8 — 2026-10-05: ES-3 seal confirmed; freezes registered; **Admissibility line PAUSED**; new line opened (ES ↔ Information Space)
+
+Human confirmed the ES-3 seal (registered at `65e4cdc`) and ordered the following freezes, registered verbatim:
+
+```text
+M2 vs M3      observationally unresolved
+D-SIG-1       未出现 (not occurred)
+D-SIG-2       未解决 (unresolved)
+D-SIG-3       未规格化 (unspecified)
+Admissibility 研究线暂停 (Admissibility line PAUSED)
+```
+
+**Standing prohibition: no D-SIG experiments.** The line does not close (its open items remain registered and citable with their boundings); it is **PAUSED** — no further work without explicit Human re-authorization.
+
+**New line opened (Human directive): Execution State ↔ Information Space (ES↔IS)** — conceptual only, no experiments, PALACE explicitly excluded until the concept stands. First deliverable: `docs/02-evidence/es-is-20261005/EXECUTION_STATE_INFORMATION_SPACE_CONCEPTUAL_SPECIFICATION_V0.1.md` (committed with this addendum) — triad I1/I2/I3 formalized and completed into a 2×2 (locality × role) with the implicit fourth cell; four dependency relations (R-id/R-an/R-res/R-adm) provisionally defined ("anchor" flagged per the ES line's H3 lesson); interpretive/necessary partition adopted with criterion hypothesis (relation-holding = role axis); five-outcome mutation→continuity taxonomy adopted with mechanizability and level-discipline requirements; bounded shadows mapped, nothing established; lodestar question adopted: *what information relations must an Execution State depend on to be identifiable, restorable, and continuable?*
+
+This line (Admissibility) handed off to ES↔IS: the F phenomenon enters the new line as relation R-adm at transition level (bounded citation); Case 2 / ES-3 disciplines carry forward.
