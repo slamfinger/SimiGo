@@ -1,12 +1,12 @@
 # PRQ-ISF-01 — Minimal Decodable Probe Design
 
-Date: 2026-10-05  
-Active route: `PALACE / INFORMATION SPACE FOUNDATION`  
-Phase: `2 — MINIMAL DECODABLE PROBE DESIGN`  
-Design status: `DELIVERED / AWAITING HUMAN REVIEW`  
-Execution status: `NOT AUTHORIZED`  
-Baseline: `ab97244`  
-Prior accepted charter: `e4c74bd`  
+Date: 2026-10-05
+Active route: `PALACE / INFORMATION SPACE FOUNDATION`
+Phase: `2 — MINIMAL DECODABLE PROBE DESIGN`
+Design status: `ACCEPTED / CLOSED BY HUMAN REVIEW`
+Execution status: `NOT AUTHORIZED`
+Baseline: `ab97244`
+Prior accepted charter: `e4c74bd`
 Scope: `DESIGN ONLY · NO IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT EXECUTION`
 
 ## 1. Design question
@@ -61,8 +61,13 @@ pin / resolve_pin
 put_mutation_event / get_mutation_events
 ```
 
-These are behavioral obligations, not API designs. No storage technology is
-implied.
+These are behavioral obligations and probe observation vocabulary only. They are
+not a future PALACE API, storage protocol, carrier architecture, or implementation
+interface. No storage technology is implied.
+
+Human boundary note (2026-10-05): this vocabulary is accepted only as the minimum
+observable surface needed by the probe. Treating it as an implementation API would
+be an unregistered route deviation.
 
 ### 2.3 Mechanical decoder
 

@@ -67,10 +67,13 @@
 > **PRQ-ISF-01 — Minimal Decodable Probe Design**，且仅限设计；实现、
 > 载体选择、backend integration、实验执行和契约修改均未授权。登记于
 > `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_OPENING_CHARTER_20261005.md`。
-> **Phase 2 `PRQ-ISF-01 — Minimal Decodable Probe Design` 已交付待复核**：
-> 定义 Registered Fixture、Abstract IS Port、Mechanical Decoder、Frozen I-1
-> resolve handoff、`SC-00..SC-12` 场景矩阵、机械判定规则与
-> `SUCCESS / FAILURE / INDETERMINATE` 判据。范围仍为 design only；实现、
+> **Phase 2 `PRQ-ISF-01 — Minimal Decodable Probe Design` 已 ACCEPTED /
+> CLOSED**（delivery `7b9d167`）：定义 Registered Fixture、Abstract IS Port、
+> Mechanical Decoder、Frozen I-1 resolve handoff、`SC-00..SC-12` 场景矩阵、
+> 机械判定规则与 `SUCCESS / FAILURE / INDETERMINATE` 判据。边界记录：Abstract
+> IS Port 只是 probe observation vocabulary，不是未来 PALACE API、存储协议、
+> carrier architecture 或 implementation interface。下一步是**probe
+> implementation / execution authorization decision**；未显式授权前，实现、
 > carrier 选择、backend integration、实验执行和契约修改均未授权。登记于
 > `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PRQ_ISF_01_PROBE_DESIGN_20261005.md`。
 > 实现证据位于 `docs/02-evidence/es-is-20261005/runtime_g1/`（研究分支

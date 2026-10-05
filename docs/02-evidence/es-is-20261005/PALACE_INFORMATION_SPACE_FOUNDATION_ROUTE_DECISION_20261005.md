@@ -7,7 +7,8 @@ Rollback of the prior Report/Paper route: `ffc59a4`
 Frozen Contracts: `UNCHANGED`
 Current phase guard: `NO IMPLEMENTATION · NO CARRIER SELECTION · NO BACKEND INTEGRATION · NO CONTRACT CHANGE · NO EXPERIMENT EXECUTION`
 Phase 1 status: `ACCEPTED / CLOSED` (Human review; delivery `e4c74bd`)
-Phase 2 design: `PRQ-ISF-01 — MINIMAL DECODABLE PROBE DESIGN DELIVERED / AWAITING HUMAN REVIEW`
+Phase 2 design: `PRQ-ISF-01 — MINIMAL DECODABLE PROBE DESIGN ACCEPTED / CLOSED`
+Next entry: `AUTHORIZATION DECISION FOR PROBE IMPLEMENTATION / EXECUTION (NOT AUTO-STARTED)`
 
 ## 1. Ruling
 
@@ -114,7 +115,29 @@ Frozen Contracts              = UNCHANGED
 Next phase                    = PRQ-ISF-01 — Minimal Decodable Probe Design
 ```
 
-The next phase is design-only. It may define the smallest mechanically decodable
-probe for `PRQ-ISF-01`; it must not implement the probe, select a carrier,
-integrate a backend, execute an experiment, or imply a contract change. Any such
-step requires a separate explicit commission.
+Human review subsequently accepted the Phase 2 probe design:
+
+```text
+Phase 2 Minimal Decodable Probe Design = ACCEPTED / CLOSED
+Delivery                               = 7b9d167
+Phase 1 ruling                         = 618ea84
+Gate baseline                          = ab97244
+Frozen Contracts                       = UNCHANGED
+Next entry                             = Authorization decision for probe
+                                         implementation / execution
+```
+
+Boundary note: the Abstract IS Port (`put_blob / get_blob / put_node / ...`) is
+probe observation vocabulary only. It is not a future PALACE API, storage
+protocol, carrier architecture, or implementation interface.
+
+Acceptance of the design does **not** authorize implementation or execution.
+Until a separate explicit ruling says otherwise:
+
+```text
+Implementation       = NOT AUTHORIZED
+Carrier selection    = NOT AUTHORIZED
+Backend integration  = NOT AUTHORIZED
+Experiment execution = NOT AUTHORIZED
+Contract change      = NOT AUTHORIZED
+```

@@ -136,7 +136,7 @@ No contract change      = true
 No experiment execution = true
 ```
 
-## PRQ-ISF-01 — Minimal Decodable Probe Design DELIVERED
+## PRQ-ISF-01 — Minimal Decodable Probe Design ACCEPTED / CLOSED
 
 The Phase 2 design is delivered at
 `PALACE_INFORMATION_SPACE_FOUNDATION_PRQ_ISF_01_PROBE_DESIGN_20261005.md`.
@@ -146,18 +146,28 @@ It defines a symbolic registered fixture, an abstract IS Port limited to
 I-1 `resolve(CR_ref)` semantics, and scenarios `SC-00..SC-12`. It also
 preregisters route-level `SUCCESS / FAILURE / INDETERMINATE` judgments.
 
+Human review ruled the design `ACCEPTED / CLOSED`, with one non-blocking boundary
+note: the Abstract IS Port is probe observation vocabulary only—not a future
+PALACE API, storage protocol, carrier architecture, or implementation interface.
+
 ```text
-Status = DESIGN DELIVERED / AWAITING HUMAN REVIEW
-Implementation = NOT AUTHORIZED
-Carrier selection = NOT AUTHORIZED
-Backend integration = NOT AUTHORIZED
+Phase 2 delivery = 7b9d167
+Phase 1 ruling   = 618ea84
+Gate baseline    = ab97244
+Frozen Contracts = UNCHANGED
+Next entry       = Authorization decision for probe implementation / execution
+
+Implementation       = NOT AUTHORIZED
+Carrier selection    = NOT AUTHORIZED
+Backend integration  = NOT AUTHORIZED
 Experiment execution = NOT AUTHORIZED
-Contract change = NOT AUTHORIZED
+Contract change      = NOT AUTHORIZED
 ```
 
 ## Next steps (none auto-open)
 
-1. Human review the probe design.
-2. On ACCEPT: a separate commission may authorize implementation and execution.
-3. On FINDINGS: revise the design without implementation.
-4. Frozen Contract revision remains non-automatic and requires its own gate.
+1. Human make the separate authorization decision for probe implementation /
+   execution.
+2. Without that ruling, do not write probe code, select a carrier, integrate a
+   backend, or execute `SC-00..SC-12`.
+3. Frozen Contract revision remains non-automatic and requires its own gate.
