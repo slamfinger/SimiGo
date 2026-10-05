@@ -240,10 +240,20 @@ What has never run: **persist(R1 + provenance + relations) → resolve(R1) → S
 
 **Freeze outcome (2026-10-05):** Gap I-1's first deliverable — **IPAC Persistence / Resolve Conceptual Design v0.3 — is FROZEN as the I-1 Core conceptual design baseline** (Human freeze ruling APPROVED/FROZEN; freeze commit **on main: `2b2e2ef`**, whose content = the pre-freeze-patched `7824955` text + FROZEN status/lineage — verified: substance byte-identical, three ruling edits only). Frozen boundaries locked at freeze: R1 ≠ CR (CR_ref = the resolve handle); A-chain lineage-bearing only (State identity open); V-1 includes CR self-identity (CR-ID-MISMATCH); RESOLVED-WITH-VIOLATIONS ≠ success; no-recompute independent of "consume R2", with the semantic-equivalence escape registered as a detection boundary; τ2 externally supplied — resolve does not infer future tasks; edge vocabulary frozen at three; **R2 not declared an Execution State — instantiate completeness formally left to I-1c**; no PALACE binding, no implementation, no experiment.
 
+**Topology registration (Human reconciliation, 2026-10-05):** the freeze is recorded on two branches whose ancestry has **diverged** — this is not a linear sync and must not be described as one:
+
+- **main `2b2e2ef` = the authoritative freeze anchor** (design blob `48c00abde2be019d3557fda7ab488f121d509680`).
+- **research branch `76825ad` = a synchronized research-state mirror** — its I-1 design blob is identical (`48c00ab`), but it is not a main-descendant sync commit.
+
+Content sync: YES. Registration sync: YES. Ancestry: diverged — **and deliberately left so**: the semantic baseline anchors on main's freeze commit; the research branch holds a content copy and research-state registration only.
+
 **Research state after freeze:**
 
 ```text
-I-1 Persistence / Resolve Conceptual Design = FROZEN
+I-1 Persistence / Resolve
+        = FROZEN
+        authoritative anchor = main/2b2e2ef
+        mirrored in branch   = 76825ad (blob 48c00ab, identical)
         ↓
 I-1c Instantiate Completeness = the next Core design space
         (stage question: "R2 + τ2 到底还缺什么，才能构成真正可连续执行的 S2？")
