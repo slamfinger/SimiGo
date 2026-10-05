@@ -1,5 +1,5 @@
 {
-  "status": "AUTHORIZATION_RESULT_FROZEN_CAUSAL_BRAKE",
+  "status": "AUTHORIZATION_OBJECT_DECIDED_TWO_LAYER",
   "run_id": "20261005-human-authorized-four-cell",
   "arms": 7,
   "models_run": [
@@ -17,13 +17,13 @@
   ],
   "open_issue": "A FULL baseline degraded; no cross-model minimum established",
   "not_authorized": [
+    "two-layer experiment design",
+    "leakage/fallback probe design",
+    "model run",
     "846 mapping",
     "Observer",
     "InformationCore write",
-    "minimal Information Core claim",
-    "leakage/fallback probe design",
-    "leakage/fallback probe run",
-    "follow-up run without human authorization"
+    "minimal Information Core claim"
   ],
   "run_ids": [
     "20261005-014500-ci-c",
@@ -33,7 +33,7 @@
   "candidate_invariant": "relational executable admissibility function",
   "surface_vs_authorized": "separated",
   "candidate_invariant_hypothesis": "Authorized Relational Executable Structure (ARES)",
-  "next_gate": "human_conceptual_decision_epistemic_vs_execution_authorization",
+  "next_gate": "separate_human_decision_on_whether_to_design_two_layer_experiment",
   "authorized_next_work": [
     "human review",
     "prompt/runner implementation after separate authorization"
@@ -56,5 +56,14 @@
     "A_execution": "whether Information is allowed to enter the execution path; not controlled because denied F_content remained visible"
   },
   "causal_attribution": "UNRESOLVED",
-  "ares_update": "NONE"
+  "ares_update": "NONE",
+  "authorization_object_decision": "OPTION_C_TWO_LAYER",
+  "decision_layer_order": [
+    "Information",
+    "A_epistemic: premise/evidence adoptability",
+    "A_execution: execution-path eligibility",
+    "Relational Executable Function",
+    "Continuation"
+  ],
+  "experimental_brake": "ACTIVE"
 }
