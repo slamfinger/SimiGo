@@ -134,3 +134,21 @@ Human priority order registered: Q2 (settled by this note, pending seal) > Q8 (r
 Next-step candidates (Human Review required; nothing auto-opens): ① Spec v0.3 — complete B's mixed-state propagation semantics (conceptual only); ② re-scoped Multiple Necessary Conditions Probe (design-gated, B-uniformity framing under ND-1); ③ evaluation-signature observable question (new, open — would re-pose identifiability on a wider observable space).
 
 This addendum supersedes the "Next session" section above.
+
+---
+
+## Addendum 2 — 2026-10-05: Human ruling on next steps; Spec v0.3 delivered (Step 1)
+
+Human accepted the Case 2 framing and registered, in order:
+
+**Binding discipline**: no experiment may ever be recorded as "supports Model B". Experiments test **specific commitments** of B; a commitment failure means "current B formulation refuted / needs revision" — never "Model A proven". "D- → BLOCKED" licenses only "D is a candidate necessary condition", never "therefore Admissibility is conjunction".
+
+**Three-step order**:
+
+- **Step 1 (immediate)** — Spec v0.3: complete mixed-state propagation semantics. Concept closure only. → **DELIVERED**: `EXECUTION_ADMISSIBILITY_CONCEPTUAL_SPECIFICATION_V0.3.md` (committed with this addendum; PENDING HUMAN REVIEW).
+- **Step 2 (after Step 1; separate design gate + Human Review)** — Multiple Necessary Conditions Probe, renamed **Model-B Uniformity / Necessary-Condition Probe**: tests whether new conditions exhibit the same necessary-condition structure as X and F. Never an A/B discriminator (ND-1 in force).
+- **Step 3 (kept at distance)** — Evaluation-Signature question: whether a new observable dimension (evaluation-side signature separable from transition-side result) can shrink Model A's hypothesis space and re-pose identifiability. NOT started.
+
+v0.3 summary: two-level evaluation vocabulary (Level 0 = mechanism operability, 846-grounded; Level 1 = per-condition determination {true, false, U_c}, U_c = registered posit with source taxonomy deliberately open) + total order-independent propagation rule; **spec decision D-1 = false-dominant over per-condition unevaluable** (alternative D-1′ U-dominant registered; decision marked falsifiable, not derived); new commitments C-PROP-1..4; back-compatibility with all established findings verified (no cell changed); Q3/Q4/Q6/Q7/Q5 untouched; identifiability verdict (Case 2) and ND-1 unaffected; no experiment authorized.
+
+State after this commit: Step 1 delivered pending Human Review; Step 2 / Step 3 NOT started; nothing auto-opens.
