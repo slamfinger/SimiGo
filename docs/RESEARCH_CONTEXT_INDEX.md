@@ -92,7 +92,7 @@ CCVS-01 U-1 revision ruling            docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 U-0                            RETAINED
 CCVS-01 U-1 structural revision        DELIVERED AS v0.2 / AWAITING REVIEW
 CCVS-01 U-1 v0.2 document              docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
-CCVS-01 Canonical Logical Model gate   REQUIRED BEFORE U-2
+CCVS-01 U-2 precondition               UA v0.2 (Unified Carrier Contract) Human Review — NOT a new semantic model (revision ruling message 2 supersedes the "Canonical Logical Model" framing)
 CCVS-01 U-2 implementation             NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
