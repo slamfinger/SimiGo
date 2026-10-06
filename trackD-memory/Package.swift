@@ -17,6 +17,7 @@ let package = Package(
     products: [
         .library(name: "InformationCore", targets: ["InformationCore"]),
         .library(name: "CarrierInterface", targets: ["CarrierInterface"]),
+        .library(name: "CarrierSQLite", targets: ["CarrierSQLite"]),
         .library(name: "CContinuationSupport", targets: ["CContinuationSupport"]),
         .library(name: "CContinuationEvaluatorCore", targets: ["CContinuationEvaluatorCore"]),
         .executable(name: "CContinuationStudy", targets: ["CContinuationStudy"]),
@@ -30,6 +31,11 @@ let package = Package(
         .target(
             name: "CarrierInterface",
             path: "Sources/CarrierInterface"
+        ),
+        .target(
+            name: "CarrierSQLite",
+            dependencies: ["CarrierInterface"],
+            path: "Sources/CarrierSQLite"
         ),
         .target(
             name: "RelationCore",
@@ -85,6 +91,11 @@ let package = Package(
             name: "CarrierInterfaceTests",
             dependencies: ["CarrierInterface"],
             path: "Tests/CarrierInterfaceTests"
+        ),
+        .testTarget(
+            name: "CarrierSQLiteTests",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Tests/CarrierSQLiteTests"
         ),
         .testTarget(
             name: "CContinuationTests",

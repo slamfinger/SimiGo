@@ -149,6 +149,25 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     `CarrierSQLite` depending only on CarrierInterface). Next step is A1
     adapter implementation, then conformance, then Baseline A runs first
     (PV1) with per-bound ACTIVE/UNCALIBRATED classification.
+29. Human authorized A1 implementation. `CarrierSQLite` delivered as a new
+    trackD-memory target: `SQLiteCore` actor (single connection, WAL,
+    synchronous=FULL, frozen A1 schema, paired retire/assign IMMEDIATE
+    transaction so a runtime MOVE is one atomic locator transition), 
+    `POSIXEntityStore` (temp write + fsync + rename + directory fsync +
+    digest re-read verification; content addressed by SHA-256 shards),
+    SQLite registry/locators/relations/pins/sessions/availability stores,
+    FTS5 derived-only search with registry as rebuild authority, integrity
+    reporter covering locator/availability cross-checks and orphan entity
+    files, and `SQLiteCarrierFactory` / `SQLiteTemporaryRuntimeFactory`
+    composition roots. During bring-up one real defect was found and fixed:
+    a double `sqlite3_finalize` in the statement wrapper caused SIGSEGV;
+    finalize is now idempotent. `latestRevision` orders by insertion rowid
+    after the conformance suite exposed produced_at tie instability. Result:
+    conformance 10/10 PASS on the real SQLite composition; reopen-persistence,
+    atomic-move, and orphan-detection tests PASS; full package test suite PASS
+    with no regression. No new semantic behavior, no schema beyond the
+    manifest, no caching, no ES<->IS coupling. Next: admission gates, then
+    Baseline A runs first (PV1).
 
 ## Key documents
 
@@ -182,6 +201,9 @@ CCVS-01 Phase B freeze + Phase C authorization ruling
 
 CCVS-01 Phase C kickoff + A1 manifest
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
+
+CCVS-01 A1 adapter code
+  trackD-memory/Sources/CarrierSQLite/ (CarrierSQLite target)
 ```
 
 ## Next legal transition

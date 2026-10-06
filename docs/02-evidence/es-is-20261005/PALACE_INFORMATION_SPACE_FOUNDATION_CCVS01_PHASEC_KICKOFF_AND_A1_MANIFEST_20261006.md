@@ -132,5 +132,18 @@ forbidden  = no InformationCore/RelationCore API change; no semantic
 
 ```text
 PC-1 manifest  = DELIVERED (this document).
-PC-2 implement = NEXT.
+PC-2 implement = DELIVERED.
+                 Target `CarrierSQLite` in trackD-memory package
+                 (SQLiteCore actor + WAL/synchronous=FULL + frozen schema;
+                 POSIXEntityStore with fsync + rename + directory fsync +
+                 digest re-read; locator retire/assign paired IMMEDIATE
+                 transaction = atomic move; FTS5 derived search; availability,
+                 relations, pins, sessions, integrity reporter incl. orphan
+                 entity-file scan; SQLiteCarrierFactory composition).
+PC-3 conformance = PASS 10/10 via SQLiteTemporaryRuntimeFactory.
+                 Additional tests PASS: durable state survives reopen
+                 (resolve + FTS5 search after re-composition), stray move
+                 handoff self-commits, integrity detects orphan entity file.
+                 Full trackD-memory test suite PASS (no regression).
+PC-4 admission  = NEXT (resource gates, quiescence, environment record).
 ```
