@@ -80,6 +80,36 @@ public struct SQLiteCarrierIntegrityReporter: CarrierIntegrityReporter {
     }
 }
 
+extension SQLiteCarrierFactory {
+    /// Smoke-level backup (G8): consistent DB snapshot + entity copy.
+    /// F8 trap fires after the DB snapshot, before the entity copy.
+    public func backup(from: SQLiteCarrierBundle, to dest: URL) async throws {
+        try FileManager.default.createDirectory(at: dest, withIntermediateDirectories: true)
+        try await from.core.run("VACUUM INTO ?", bind: { $0.bindText(1, dest.appendingPathComponent("registry.sqlite").path) })
+        CrashGate.trap("F8")
+        let entities = rootURL.appendingPathComponent("entities")
+        let destEntities = dest.appendingPathComponent("entities")
+        if FileManager.default.fileExists(atPath: entities.path) {
+            try FileManager.default.copyItem(at: entities, to: destEntities)
+        }
+        try? "".write(to: dest.appendingPathComponent("BACKUP_COMPLETE"), atomically: true, encoding: .utf8)
+    }
+
+    /// Restore a completed backup into a fresh root. F9 trap fires after the
+    /// entity copy, before the completion marker.
+    public func restore(from backup: URL, to target: URL) throws {
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: backup.appendingPathComponent("registry.sqlite"),
+                                         to: target.appendingPathComponent("registry.sqlite"))
+        if FileManager.default.fileExists(atPath: backup.appendingPathComponent("entities").path) {
+            try FileManager.default.copyItem(at: backup.appendingPathComponent("entities"),
+                                             to: target.appendingPathComponent("entities"))
+        }
+        CrashGate.trap("F9")
+        try? "".write(to: target.appendingPathComponent("RESTORE_COMPLETE"), atomically: true, encoding: .utf8)
+    }
+}
+
 /// A1 composition root: SQLite registry + FTS5 search + POSIX entity store,
 /// composed into the shared carrier-neutral runtime.
 public struct SQLiteCarrierBundle: Sendable {

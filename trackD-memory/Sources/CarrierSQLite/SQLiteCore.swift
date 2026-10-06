@@ -5,6 +5,16 @@ import CarrierInterface
 
 let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
+/// P8 crash-injection gate. Inert unless env CCVS_CRASH matches the point
+/// name; fires exactly once at the named durable boundary (process SIGKILL).
+public enum CrashGate {
+    public static func trap(_ name: String) {
+        if ProcessInfo.processInfo.environment["CCVS_CRASH"] == name {
+            kill(getpid(), SIGKILL)
+        }
+    }
+}
+
 enum SQLiteCarrierError: Error {
     case openFailed(String)
     case sqlFailed(String)
@@ -18,6 +28,12 @@ public actor SQLiteCore {
     let db: OpaquePointer
     private var inTransaction = false
     private var moveRetirePending = false
+    private var relationBatchCount = 0
+    private var sessionBatchCount = 0
+    public var relationCount: Int { relationBatchCount }
+    public var sessionCount: Int { sessionBatchCount }
+    public func bumpRelation() { relationBatchCount += 1 }
+    public func bumpSession() { sessionBatchCount += 1 }
 
     public init(path: String) throws {
         var handle: OpaquePointer?
@@ -172,6 +188,7 @@ public actor SQLiteCore {
             stmt.bindDouble(1, retiredAt.timeIntervalSince1970)
             stmt.bindText(2, locatorID)
             _ = try stmt.step()
+            CrashGate.trap("F3")
         } catch {
             rollbackIfNeeded()
             throw error
