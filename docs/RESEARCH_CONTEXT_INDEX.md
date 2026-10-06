@@ -80,7 +80,7 @@ PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_IN
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
 CCVS-01                                PHASE B ACCEPTED / FROZEN (v1.2)
-CCVS-01                                PHASE C AUTHORIZED / FILE SIDE EXECUTED AND VALID / UNIFIED U-2 NOT STARTED
+CCVS-01                                PHASE C AUTHORIZED / FILE SIDE EXECUTED AND VALID / UNIFIED U-2 AUTHORIZED / U-A EXECUTING
 CCVS-01 Phase C kickoff + A1 manifest  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
 CCVS-01 A1 CarrierSQLite adapter       IMPLEMENTED / CONFORMANCE 10/10 PASS
 CCVS-01 PV1 Baseline A                 SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED
@@ -109,9 +109,11 @@ CCVS-01 Gate B                          ACCEPT / FREEZE
 CCVS-01 UA v1.0                        FROZEN
 CCVS-01 UA v1.0 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V1.0_20261006.md
 CCVS-01 Gate B ruling                  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 U-2 precondition               UA v1.0 FROZEN; separate Human U-2 authorization still required — first deliverable = U-A Unified Minimal composition manifest — NOT a new semantic model
-CCVS-01 U-2 implementation             NOT STARTED / NOT AUTHORIZED
-CCVS-01 Unified benchmark              NOT AUTHORIZED
+CCVS-01 U-2 precondition               UA v1.0 FROZEN — MET
+CCVS-01 Gate C                          STARTED (U-2 AUTHORIZED by Human 2026-10-06)
+CCVS-01 U-2 implementation              AUTHORIZED / U-A EXECUTING — manifest DELIVERED; mechanisms → conformance → admission → MA-DS-1 next; Gate C closure = separate Human action
+CCVS-01 U-A manifest                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 CCVS-01 interface preconstruction      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
@@ -121,11 +123,11 @@ CCVS-01 Phase B revision ruling 2      docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 freeze + Phase C authorization docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md
 Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Carrier-neutral interface              AUTHORIZED / DELIVERED
-Backend-specific implementation        NOT AUTHORIZED
-Implementation                         NOT AUTHORIZED
-Backend selection                      NOT AUTHORIZED
+Backend-specific implementation        A1 CarrierSQLite IMPLEMENTED under Phase C authorization; U-A mechanism implementation AUTHORIZED under U-2 (on the A1 base, per the U-A manifest)
+Implementation                         U-A AUTHORIZED (U-2); no scope beyond the U-A manifest chains
+Backend selection                      NOT AUTHORIZED (Phase E gate)
 Backend-substitution run               NOT AUTHORIZED
-Experiment                             NOT AUTHORIZED
+Experiment                             MA-DS-1 execution AUTHORIZED within U-A (correctness scenario; no PB-U* calibration, no larger benchmark — U-3 scope); no other experiment
 Contract change                        NOT AUTHORIZED
 ```
 
@@ -284,14 +286,24 @@ Current next transition:
   state hygiene standing) are incorporated into the frozen UA v1.0
   text. UA v1.0 = FROZEN. Ruling =
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md.
-  Gate C = NOT STARTED: Unified U-2 — first
-  deliverable = U-A Unified Minimal composition manifest (FILE +
-  SESSION + mapping + provenance + CC-MA on the A1 base; MA-3/MA-4/
-  MA-6/MA-7/MA-9/MA-10 as verifiable mechanisms), then first Unified
-  validation answering whether the minimal SQLite + POSIX Unified
-  Carrier withstands MA-DS-1 "Multi-Agent Research Day"; NO horizontal
-  carrier-topology comparison in round one; requires its own separate
-  Human authorization. File-side Phase C results stand as
+  Gate C = STARTED: Unified U-2 AUTHORIZED by Human 2026-10-06. The
+  U-A Unified Minimal Composition Manifest is DELIVERED
+  (PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md):
+  identity minting (A-1), mapping/locator/provenance closed loop, the
+  six mandated chains (MA-3/MA-4/MA-6/MA-7/MA-9/MA-10 as
+  requirement → mechanism → observable evidence → pass/fail criterion
+  → MA-DS-1 exercise, plus MA-1/2/5/8 short form), the 13-step MA-DS-1
+  operationalization with pre-registered I19-I25 mapping, and layered
+  verdicts with no total score. Authorized U-A sequence: manifest
+  (done) → mechanism implementation on the A1 base → conformance
+  (A1 10/10 must not regress) → admission → MA-DS-1 execution →
+  evidence chain packaged for Human audit. Round-one exclusions: NO
+  horizontal carrier-topology comparison, no PB-U* calibration or
+  larger benchmark (U-3 scope), no backend selection, no migration,
+  no MemPalace, no UA v1.0/PB v1.2/Frozen Contract change. Gate C
+  closure is a separate Human action after the evidence-chain audit;
+  no experiment results exist yet and none are predicted.
+  File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered
   reason. Final backend selection remains NOT AUTHORIZED until the
   Phase E gate.

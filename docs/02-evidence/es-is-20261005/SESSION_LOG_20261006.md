@@ -11,14 +11,15 @@ Path A default entry                 = ACTIVE
 Phase 2 recovery                     = ACCEPTED / BOUNDED PASS / CLOSED
 IS-IDLOC-SEAM-01                     = REGISTERED / OPEN / NOT FROZEN / v0.1
 PICS-01                              = ACCEPTED / BOUNDED PASS / CLOSED
-CCVS-01                              = PB v1.2 FROZEN / PHASE C FILE SIDE EXECUTED AND VALID / UNIFIED U-2 NOT STARTED
+CCVS-01                              = PB v1.2 FROZEN / PHASE C FILE SIDE EXECUTED AND VALID / UNIFIED U-2 AUTHORIZED / U-A EXECUTING
 CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PASS (delivered evidence, inherited)
 CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
 CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 Unified U-2                  = NOT STARTED / NOT AUTHORIZED
+CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A COMPOSITION MANIFEST DELIVERED — mechanisms → conformance → admission → MA-DS-1 next within the authorization; Gate C closure = separate Human action
+CCVS-01 U-A manifest                 = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
@@ -503,6 +504,12 @@ CCVS-01 U-1 v0.3 targeted conformance review (NO BLOCK)
 CCVS-01 UA v0.3 freeze review (FIVE CONDITIONS REGISTERED)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md
 
+CCVS-01 UA v1.0 freeze ruling (Gate B ACCEPT / FREEZE)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
+
+CCVS-01 U-A Unified Minimal Composition Manifest (CURRENT — U-2 execution basis)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+
 CCVS-01 U-1 v0.2 conformance review (REVISE, R-1..R-11)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 
@@ -529,37 +536,44 @@ CCVS-01 A1 adapter code
 
 ```text
 CCVS-01-PB v1.2 remains FROZEN.
+UA v1.0 remains FROZEN (Gate B ACCEPT / FREEZE, five conditions
+incorporated; protocol + ruling documents registered).
 
 GATE SEPARATION (do not conflate):
-  Gate A (CLOSED):   CCVS-01 Phase C FILE SIDE — A1 CarrierSQLite
-                     implemented, conformance 10/10, Baseline A SMALL
-                     5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 F1-F9
-                     executed (G2 PASS), D-A/D-B/D-C calibration.
-                     Delivered evidence, inherited; nothing here is
-                     re-opened.
-  Gate B (OPEN):     UA v0.3 Unified Carrier Contract FREEZE — targeted
-                     review NO BLOCK; Human Freeze Review registered
-                     FIVE conditions (UA-P7 split / I20 narrowed /
-                     unified concurrency = one contract not one
-                     algorithm / U-A rebuild completeness gate from P8
-                     F7 / state hygiene DONE). On ACCEPT/FREEZE the
-                     conditions are incorporated into the frozen UA
-                     v1.0 text.
-  Gate C (NOT STARTED): Unified U-2 — first deliverable = U-A Unified
-                     Minimal composition manifest (FILE + SESSION +
-                     mapping + provenance + CC-MA on the A1 base;
-                     MA-3/MA-4/MA-6/MA-7/MA-9/MA-10 as verifiable
-                     mechanisms, not slogans), then the first Unified
-                     validation round answering: "Can the Unified
-                     Carrier itself, on the minimal SQLite + POSIX
-                     substrate, put File and Session into one Carrier
-                     contract and withstand Multi-Agent Research Day?"
-                     NO horizontal carrier-topology comparison in round
-                     one. Requires its own Human authorization after
-                     Gate B closes.
+  Gate A (CLOSED):    CCVS-01 Phase C FILE SIDE — A1 CarrierSQLite
+                      implemented, conformance 10/10, Baseline A SMALL
+                      5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 F1-F9
+                      executed (G2 PASS), D-A/D-B/D-C calibration.
+                      Delivered evidence, inherited; nothing here is
+                      re-opened.
+  Gate B (CLOSED):    UA v0.3 ruled ACCEPT / FREEZE as UA v1.0; five
+                      freeze conditions incorporated into the frozen
+                      text; R-1..R-11 CLOSED; A-1..A-3 disposed;
+                      CC-MA compatible; File/Session isomorphic.
+  Gate C (STARTED):   Unified U-2 AUTHORIZED by Human 2026-10-06.
+                      U-A Unified Minimal Composition Manifest
+                      DELIVERED (requirement → mechanism → observable
+                      evidence → pass/fail criterion → MA-DS-1
+                      exercise chains for MA-3/MA-4/MA-6/MA-7/MA-9/
+                      MA-10 + MA-1/2/5/8; identity minting A-1;
+                      mapping/locator/provenance closed loop; rebuild
+                      completeness hard gate; MA-DS-1 13-step round-
+                      one operationalization; layered verdicts, no
+                      total score; UA-DF-n defect protocol).
+                      Authorized U-A sequence: manifest (done) →
+                      mechanism implementation on the A1 base →
+                      conformance (A1 10/10 must not regress) →
+                      admission → MA-DS-1 execution → evidence chain
+                      packaged for Human audit.
+                      NOT done and NOT claimable: Gate C closure —
+                      a separate Human action after the evidence
+                      chain audit. No experiment results exist yet;
+                      none are predicted or pre-announced.
 
-Option at Gate B: A = ACCEPT/FREEZE as UA v1.0 (five conditions
-incorporated); B = REVISE; C = PARK.
+Round-one exclusions (standing): no horizontal carrier-topology
+comparison; no backend selection; no carrier migration; no MemPalace
+integration; no UA v1.0 / PB v1.2 / Frozen Contract modification; no
+PB-U* calibration or larger benchmark (U-3 scope).
 
 Standing restrictions: no final backend selection (Phase E gate), no
 migration, no Lab reorganization, no ES<->IS opening, no Frozen Contract
@@ -594,3 +608,79 @@ research lines.
 
 Research gate status is unchanged:
 UA v1.0 = FROZEN by Gate B ACCEPT / FREEZE; U-2 = NOT AUTHORIZED; Unified benchmark = NOT AUTHORIZED.
+
+## U-2 authorization and U-A manifest delivery — 2026-10-06
+
+The Human formally authorized U-2 (status changed from
+`NOT STARTED / NOT AUTHORIZED` to `AUTHORIZED / READY TO EXECUTE`),
+immediately after confirming the Gate B baseline at `232680a`. The
+authorization is bounded:
+
+```text
+IN SCOPE (U-A round one):
+  FILE + SESSION + mapping + provenance + CC-MA
+    → SQLite + POSIX minimal substrate
+    → MA-DS-1 "Multi-Agent Research Day"
+
+EXCLUDED (round one):
+  horizontal carrier-topology comparison; backend selection; carrier
+  migration; MemPalace; UA v1.0 modification; PB v1.2 modification;
+  Frozen Contract modification; larger-scale benchmark.
+```
+
+Execution principle fixed by the Human: **manifest first, then
+mechanisms, then experiment** — every requirement mapped as
+`Requirement → Mechanism → Observable Evidence → Pass/Fail Criterion →
+MA-DS-1 Exercise` so the post-experiment audit targets the evidence
+chain, not unevaluable code.
+
+Delivered this round:
+
+```text
+U-A Unified Minimal Composition Manifest v1.0
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+```
+
+Manifest content summary:
+
+1. Composition definition: one SQLite carrier database + POSIX entity
+   store; FILE and SESSION instance families beneath ONE Carrier
+   contract and ONE concurrency guarantee set; derived access L1 exact
+   + L2 FTS mandatory, L3 semantic absent with registered reason.
+2. Identity model: three separate namespaces with separate minting —
+   Information Identity (frozen A2′ semantics, untouched), logical
+   Carrier Identity (registry-minted opaque CarrierID, never derived
+   from path/name/digest), Representation Identity (content digest +
+   revision); the CC-8 ≠ chain enforced at clause level; I20 narrowed
+   duplicate-registration rule as a registry constraint.
+3. Mapping / locator / provenance closed loop: walkable chain
+   Information → CC-5 mapping → carrier → representation → bytes and
+   back, provenance-bearing at every hop; compound-operation order
+   fixed as formation-before-registration with one operation_id
+   spanning both sides (UA-P7 mechanism decision).
+4. Six mandated chains (MA-3/4/6/7/9/10) plus short-form chains for
+   MA-1/2/5/8: each requirement mapped to a concrete SQLite/POSIX
+   mechanism (CAS via expected_revision; single-transaction compound
+   operations with entity-fsync-then-commit durable acknowledgement;
+   carrier-side sequence allocation with client_event_ref idempotency;
+   unique operation ledger replay; IndexSource + build_version with
+   rebuild-compare over identity AND searchable-content coverage;
+   single-read-version snapshot views), each with observable evidence
+   and a decidable pass/fail criterion and a named MA-DS-1 step.
+5. MA-DS-1 operationalized as a deterministic 13-step two-actor
+   scenario with clock-skew, three crash points, and retry episodes;
+   step-to-bound mapping pre-registered (I19-I25 coverage: 4.1→I19,
+   identity model→I20, 4.2/4.7→I21, 4.6→I22, 4.3→I23, 4.4→I24,
+   4.5→I25).
+6. Verdict structure: layered per-mechanism / per-bound / conformance
+   (A1 10/10 must not regress) / rebuild-completeness (PASS or
+   INCOMPLETE) / scenario verdicts; NO weighted total; crash verdicts
+   PASS / REPAIR / DETACHED; UA-DF-n typed defect protocol — real UA
+   v1.0 gaps are recorded as defects, never explained into a PASS.
+
+Not done in this round, deliberately: no mechanism code, no
+conformance run, no MA-DS-1 execution, no result claims of any kind.
+Gate C is STARTED, not passed. The next authorized steps are U-A
+mechanism implementation on the A1 base, then conformance, admission,
+and MA-DS-1 execution, after which the evidence chain is packaged for
+the Human audit.
