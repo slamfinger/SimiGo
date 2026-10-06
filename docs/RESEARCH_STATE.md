@@ -241,6 +241,15 @@
 > closure，证明 declared semantic inputs 等于所有 semantically necessary external
 > inputs，才能冻结和观察比对。
 >
+> Human independent review裁定 **Run/Implementation Manifest v0.4 = REVISE**。
+> Manifest v0.5 新增 M10/M11/M12：required semantic closure、authorized
+> implementation semantic closure、observed implementation semantic mapping 与
+> expected semantic read closure 必须三方一致；所有输入必须 disjoint 分类为
+> SEMANTIC_INPUT / GOVERNANCE_AUTHORITY_INPUT / OBSERVATION_CONTROL_INPUT，只有
+> SEMANTIC_INPUT 可进入 predicate closure；M9 closure verifier 必须独立于
+> T-IMPL-01、implementation subject、manifest generator、fixture builder、
+> expected-read generator 与 Observer，并使用 non-circular root-backed chain。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
@@ -251,7 +260,8 @@
 > Manifest Contract v0.1 = REVISE / SUPERSEDED BY V0.2
 > Manifest Contract v0.2 = REVISE / SUPERSEDED BY V0.3
 > Manifest Contract v0.3 = REVISE / SUPERSEDED BY V0.4
-> Current object = Run/Implementation Manifest v0.4 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v0.4 = REVISE / SUPERSEDED BY V0.5
+> Current object = Run/Implementation Manifest v0.5 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -284,7 +294,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.4**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.5**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

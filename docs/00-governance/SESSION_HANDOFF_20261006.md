@@ -387,6 +387,16 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > completeness closure to derive the expected read set from every semantically
 > necessary binding. Implementation, fixture, execution, and IS mutation remain
 > NOT AUTHORIZED.
+> **UPDATE 40 (2026-10-07)：Run/Implementation Manifest v0.4 = REVISE；v0.5 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M10 requires required semantic closure, exact implementation
+> semantic closure, observed implementation semantic mapping, and expected semantic
+> read closure to agree. M11 partitions inputs into disjoint SEMANTIC_INPUT,
+> GOVERNANCE_AUTHORITY_INPUT, and OBSERVATION_CONTROL_INPUT categories; only
+> semantic inputs may enter the predicate closure. M12 requires the M9 closure
+> verifier to have independent, root-backed, non-circular separation from
+> T-IMPL-01, implementation, manifest generation, fixture building, expected-read
+> generation, and observation. Implementation, fixture, execution, and IS mutation
+> remain NOT AUTHORIZED.
 > **UPDATE 33 (2026-10-07)：Authorization Package v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Correction: v0.6 adds the missing frozen decision-state closure. It defines
 > REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and RECOMPUTE_AUTHORIZATION_PATH; makes
