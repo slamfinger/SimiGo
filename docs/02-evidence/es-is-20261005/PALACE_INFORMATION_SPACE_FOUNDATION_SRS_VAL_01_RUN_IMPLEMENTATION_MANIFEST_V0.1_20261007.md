@@ -1,11 +1,13 @@
 # SRS-VAL-01 Run/Implementation Manifest Contract v0.1
 
-> **Status:** MANIFEST CONTRACT V0.1 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY / NO STAGE AUTHORIZED
+> **Status:** MANIFEST CONTRACT V0.1 REVISE — SUPERSEDED BY V0.2 — DESIGN ONLY / NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen predicate basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`, accepted at `6089f0b`
 > **Frozen implementation boundary:** Implementation Boundary Audit v0.1 at `cb95c09`
 > **Purpose:** convert the frozen T-IMPL-01 boundary and Authorization Package v0.6 obligations into a reviewable stage-separated manifest contract.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.1_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.2_20261007.md`.
 
 ## 1. Scope and authority
 

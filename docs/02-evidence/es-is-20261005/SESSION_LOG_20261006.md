@@ -2190,6 +2190,57 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Run/Implementation Manifest v0.1 REVISE; v0.2 closure gates delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.1 at `541dfb5`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+Manifest H1/H2/H3 direction         PASS
+Predicate Rule semantic basis       REVISE
+Rule materialization in Invocation  REVISE
+Read-instance exact closure         REVISE
+
+Run/Implementation Manifest v0.1    REVISE
+```
+
+Required v0.2 gates:
+
+```text
+M1  Predicate Rule Artifact exact-binds frozen SRS-VAL-01 Design v0.8 through a
+    content-bound normative extraction and fidelity verdict.
+
+M2  Resolved Predicate Rule semantic content is materialized inside the closed
+    immutable Invocation Record; pointer/hash alone is not closure.
+
+M3  Expected Read Instance, Observed Read Instance, and consumed immutable
+    content map exactly and produce a semantic read-closure verdict.
+```
+
+Manifest Contract v0.2 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.2_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.1 REVISE / SUPERSEDED BY V0.2
+Run/Implementation Manifest v0.2 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Implementation Boundary Audit v0.1 ACCEPT / FROZEN; Manifest Contract v0.1 delivered — 2026-10-07
 
 The Human independently accepted Implementation Boundary Audit v0.1 at `cb95c09`.

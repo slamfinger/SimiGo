@@ -402,6 +402,14 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > observer-authoritative evidence; Invocation Record must be a closed immutable
 > value graph. The manifest is design-only and authorizes no implementation,
 > fixture, execution, or IS mutation.
+> **UPDATE 37 (2026-10-07)：Run/Implementation Manifest v0.1 = REVISE；v0.2 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M1 exact-binds each Predicate Rule Artifact to frozen SRS-VAL v0.8
+> through content-addressed semantic-basis and normative-extraction bindings plus
+> a fidelity verdict; M2 materializes the resolved Predicate Rule semantic value
+> inside the closed Invocation Record instead of accepting a pointer/digest alone;
+> M3 requires exact expected-to-observed read-instance/content mapping and a
+> semantic read-closure verdict. Implementation, fixture, execution, and IS
+> mutation remain NOT AUTHORIZED.
 > **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: I-16 now explicitly includes I-14, I-15, and the exact
 > predicate-rule binding as decision-critical inputs in one observation
