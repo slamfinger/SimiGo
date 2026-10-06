@@ -29,8 +29,8 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-VAL-01 Implementation / Fixture / Execution Authorization Package V0.2 DELIVERED FOR HUMAN REVIEW
-Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.2_20261007.md
+Current active closure task        = SRS-VAL-01 Implementation / Fixture / Execution / Information-Space Mutation Authorization Package V0.3 DELIVERED FOR HUMAN REVIEW
+Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.3_20261007.md
 Next dependency after SRS-VAL-01   = separately reviewed implementation/fixture plan — NOT AUTHORIZED
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
@@ -183,7 +183,7 @@ Settled Relation State                   NEW CANONICAL COMPOSITE / NOT IMPLEMENT
 Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMULATED STRUCTURE
 Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
 Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
-Current central review object             SRS-VAL-01 Authorization Package v0.2
+Current central review object             SRS-VAL-01 Authorization Package v0.3
 Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
 Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
 Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.4 DELIVERED FOR REVIEW
@@ -214,13 +214,13 @@ SRS-VAL-01 v0.2 review ruling               REVISE — docs/00-governance/PALACE
 Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.8 ACCEPT / FROZEN
 SRS-VAL-01 design document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md
 Superseded SRS-VAL-01 lineage                V0.1..V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS
-Current SRS-VAL authorization package object  Implementation / Fixture / Execution Authorization Package v0.2
-Current SRS-VAL authorization package document docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.2_20261007.md
+Current SRS-VAL authorization package object  Implementation / Fixture / Execution / Information-Space Mutation Authorization Package v0.3
+Current SRS-VAL authorization package document docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.3_20261007.md
 SRS-VAL-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
 SRS-VAL-01 Design v0.2                       DELIVERED FOR HUMAN REVIEW
 SRS-VAL-01 v0.2 document                     docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
 SRS-VAL-01 v0.2 delivery record               docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.2_DELIVERY_20261007.md
-Current SRS-VAL-01 review object             Authorization Package v0.2
+Current SRS-VAL-01 review object             Authorization Package v0.3
 SRS-VAL-01 implementation                   NOT AUTHORIZED
 SRS-VAL-01 fixture                          NOT AUTHORIZED
 SRS-VAL-01 experiment                       NOT AUTHORIZED
@@ -413,15 +413,17 @@ Gate separation status (do not conflate):
 
 Current next transition:
   HUMAN REVIEW OF SRS-VAL-01 IMPLEMENTATION / FIXTURE / EXECUTION
-  AUTHORIZATION PACKAGE V0.2 ONLY.
+  / INFORMATION-SPACE MUTATION AUTHORIZATION PACKAGE V0.3 ONLY.
   SRS-SEM-01 is ACCEPT / FROZEN. Human review of SRS-VAL-01 Design v0.1 was
   REVISE, v0.2 through v0.7 were REVISE, and Design v0.8 was then reviewed
   with state-space completeness and mutual-exclusivity attack and ruled
-  ACCEPT / FROZEN. The current review object is separately reviewed
-  Authorization Package v0.2. It defines implementation faithfulness,
-  Execution-State independence, side-channel exclusion, REUSE no-recompute
-  proof, exact I-14 / envelope-gated RECOMPUTE proof, boundary-case coverage,
-  and immutable Stage Authorization Records. Package review
+  ACCEPT / FROZEN. The current review object is self-contained Authorization
+  Package v0.3. It defines Human-authentic Stage Authorization Records,
+  independent IS_MUTATION authority, exact EXECUTION artifact binding,
+  Execution-State independence, ES2 input/read provenance closure,
+  termination-default ES1 boundary, REUSE no-recompute proof, exact I-14 /
+  envelope-gated RECOMPUTE proof, and bypass-focused boundary coverage. Package
+  review
   does not authorize implementation,
   fixture creation, experiment, or IS mutation.
   The prior audit-package conclusion remains:

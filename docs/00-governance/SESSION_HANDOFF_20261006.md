@@ -406,3 +406,11 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > Authorization Record; one stage never implies another, and invalid or
 > out-of-scope authorization stops the runner. Implementation, fixture,
 > execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 30 (2026-10-07)：Authorization Package v0.2 = REVISE；v0.3 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: v0.3 is self-contained and adds Human Ruling Approval exact
+> binding for authorization authenticity; IS_MUTATION is a separate stage/type;
+> EXECUTION binds exact repository commit, implementation artifact content
+> address, and runtime artifact identity; ES-IND-01 adds expected/observed
+> read-set and channel closure; ES1 termination is default, with quiescence only
+> as evidenced exception. Implementation, fixture, execution, and IS mutation
+> remain NOT AUTHORIZED.

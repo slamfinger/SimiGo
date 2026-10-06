@@ -1,10 +1,12 @@
 # SRS-VAL-01 Implementation / Fixture / Execution Authorization Package v0.2
 
-> **Status:** PACKAGE V0.2 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / FIXTURE / EXECUTION NOT AUTHORIZED
+> **Status:** PACKAGE V0.2 REVISE — SUPERSEDED BY V0.3 — IMPLEMENTATION / FIXTURE / EXECUTION NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen semantic basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Review basis:** Human REVISE ruling on Authorization Package v0.1 at `43bcb7e`
 > **Purpose:** upgrade fixture isolation to verifiable Execution-State independence and make stage authorization a scope-bound immutable object.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.2_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.3_20261007.md`.
 
 ## 1. Effect of v0.2
 

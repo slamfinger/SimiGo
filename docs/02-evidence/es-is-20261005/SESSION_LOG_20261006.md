@@ -2190,6 +2190,70 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Authorization Package v0.2 REVISE; v0.3 authenticity and provenance closure delivered — 2026-10-07
+
+The Human independently reviewed Authorization Package v0.2 at `a4446e8`.
+
+Ruling:
+
+```text
+Frozen SRS-VAL-01 v0.8                    PASS / UNCHANGED
+ES-IND-01 direction                       PASS
+ES1/ES2 shared-runtime prohibitions       PASS
+Declared IS/SRS-only direction            PASS
+Stage separation intent                   PASS
+Immutable authorization-record intent     PASS
+
+Authorization authenticity                REVISE
+IS mutation authority separation          REVISE
+Exact EXECUTION code binding              REVISE
+ES2 input/read provenance closure         REVISE
+Quiescence default and exception          REVISE
+Self-contained governance text            REVISE
+Authorization/evidence boundary matrix    REVISE
+
+Authorization Package v0.2                REVISE
+```
+
+Required v0.3 corrections:
+
+```text
+R1  Bind every authorization record to issuer identity and an exact Human
+    Ruling Approval.
+
+R2  Make IS_MUTATION an independent stage/type; EXECUTION never grants it.
+
+R3  Bind EXECUTION to exact repository commit, implementation artifact content
+    address, and runtime artifact identity.
+
+R4  Require ES2 expected/observed read-set and channel closure.
+
+R5  Make ES1 termination the default; allow only evidenced QUIESCENT_EXCEPTION.
+
+R6  Make the package self-contained and mark unenumerated superseded prose
+    non-normative.
+
+R7  Extend the boundary matrix for the registered bypasses.
+```
+
+Authorization Package v0.3 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.3_20261007.md
+```
+
+Current state:
+
+```text
+Authorization Package v0.2 REVISE / SUPERSEDED BY V0.3
+Authorization Package v0.3 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Authorization Package v0.1 REVISE; v0.2 ES independence and authorization records delivered — 2026-10-07
 
 The Human independently reviewed Authorization Package v0.1 at `43bcb7e`.
