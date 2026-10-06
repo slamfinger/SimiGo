@@ -140,8 +140,16 @@ R01 S1 completion record                docs/02-evidence/es-is-20261005/ES_CSP_R
 R01 S2 fixture manifest review          PASS
 R01 S2/S3 ruling                        docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_S2_PASS_S3_AUTHORIZATION_20261006.md
 R01 S3 execution completion record       docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md
-R01 S3 execution verdict                 PASS — CONTINUATION SUFFICIENT / bounded to ES-CSP-RUN-01
-R01 post-run next phase                  NOT OPENED BY RUN
+R01 S3 execution verdict                 PASS — CONTINUATION SUFFICIENT / BOUNDED
+R01 final status                         CLOSED / ACCEPTED
+R01 final closure / PIR registration     docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CSP_R01_FINAL_CLOSURE_AND_PIR_GAP_REGISTRATION_20261006.md
+R01 non-blocking finding                 ES-CSP-MF-01 — distinct-target uniqueness did not cover multiple pointers to same boundary; not triggered; no rerun/v0.3 authorized
+Next research gap                        PIR — Physical–Information Reconciliation / REGISTERED
+PIR Design v0.1                          DELIVERED FOR HUMAN REVIEW
+PIR Design document                      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.1_20261006.md
+PIR implementation                       NOT AUTHORIZED
+PIR experiment                           NOT AUTHORIZED
+SimiGo code change for PIR               NOT AUTHORIZED
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
@@ -329,14 +337,17 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF ES-CSP-RUN-01 EVIDENCE AND NEXT-STAGE RULING ONLY.
-  R01 Rev1 was accepted; S1 completed; S2 passed; S3 was explicitly
-  authorized and executed. Bounded run verdict =
-  PASS — CONTINUATION SUFFICIENT for the prepared task lineage under I-1/I-2.
-  C3 was not performed and did not contribute to PASS. This verdict does not
-  select or open the next research phase. Do not open U-3, U-4, U-5, U-6,
-  Phase D ranking, Phase E backend selection, carrier migration, MemPalace
-  integration, or any Frozen Contract / UA v1.0 modification.
+  HUMAN REVIEW OF PIR DESIGN V0.1 ONLY. R01 is CLOSED / ACCEPTED with bounded verdict
+  PASS — CONTINUATION SUFFICIENT. PIR is registered as the next research gap,
+  but implementation, experiment, and SimiGo code change are NOT AUTHORIZED.
+  PIR Design v0.1 is the current review object. It is bounded to physical
+  change taxonomy, query-time freshness, constrained Reconciliation Sub-Agent
+  responsibility, and typed reconciliation outputs/boundaries. Approval would
+  not authorize implementation; a minimal probe design would require separate
+  review. Do not open
+  U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection, carrier
+  migration, MemPalace integration, or any Frozen Contract / UA v1.0
+  modification.
   File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered
   reason. Final backend selection remains NOT AUTHORIZED until the

@@ -90,6 +90,24 @@
 > matches = true；C3 未执行且不参与 PASS。证据见
 > `docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md`。
 > 该结论只限本次 prepared task lineage 和 I-1/I-2 边界，不开启下一阶段。
+>
+> **R01 = CLOSED / ACCEPTED（Human final independent review）。**
+> Non-blocking finding `ES-CSP-MF-01` 已登记：C2 使用 distinct pointer target
+> set 判定唯一性，未覆盖“多条 pointer 指向同一 boundary”的异常形态；R01 未触发
+> 该缺陷，因此 PASS 仍有效，但不得外推为所有 continuation-pointer anomaly。
+>
+> **下一研究缺口 = PIR — Physical–Information Reconciliation。**
+> R01 只回答“已注册 Closure 存在时 ES 可否恢复/判定 continuation”；PIR 处理
+> “物理世界变化后，Information Space 可能在查询时过期”的问题。PIR
+> implementation、experiment、SimiGo code change 均 NOT AUTHORIZED。当前合法
+> 产物只是 PIR Design v0.1，供 Human design review。
+>
+> **PIR Design v0.1 = DELIVERED FOR HUMAN REVIEW。**
+> 文档：
+> `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.1_20261006.md`。
+> v0.1 只定义 bounded local-file domain 的 create/modify/delete/move-rename、
+> query-time freshness verdicts/policy、受约束 Reconciliation Sub-Agent 职责、
+> typed output/hard boundaries；不实现、不实验、不改用户文件、不启动新阶段。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

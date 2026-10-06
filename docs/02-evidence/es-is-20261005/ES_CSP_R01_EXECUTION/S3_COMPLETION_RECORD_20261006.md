@@ -1,12 +1,13 @@
 # ES-CSP-RUN-01 — S3 Execution Completion Record
 
-> **Status:** S3 EXECUTED — RESEARCH VERDICT `PASS — CONTINUATION SUFFICIENT`
+> **Status:** S3 EXECUTED — RESEARCH VERDICT `PASS — CONTINUATION SUFFICIENT` — FINAL REVIEW CLOSED / ACCEPTED
 > **Date:** 2026-10-06
 > **Authorization:** explicit Human S3 authorization after S2 PASS
 > **Frozen design baseline:** `39c1031`
 > **Fixture evidence basis:** `d193556`
 > **Run label:** `ES-CSP-RUN-01`
 > **Claim boundary:** one task lineage, three prepared fixtures, I-1/I-2; no universal or production claim
+> **Final review:** Human independent review accepted this run and closed R01; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CSP_R01_FINAL_CLOSURE_AND_PIR_GAP_REGISTRATION_20261006.md`.
 
 ## 1. Execution result
 
@@ -147,7 +148,8 @@ authorize migration or MemPalace integration.
 
 ```text
 S3 execution              COMPLETE
-research verdict          PASS — CONTINUATION SUFFICIENT
-next governance action    Human review of S3 evidence / next-stage ruling
+research verdict          PASS — CONTINUATION SUFFICIENT / BOUNDED
+R01                       CLOSED / ACCEPTED
+next registered gap       PIR — Physical–Information Reconciliation
 next phase                NOT OPENED BY THIS RUN
 ```

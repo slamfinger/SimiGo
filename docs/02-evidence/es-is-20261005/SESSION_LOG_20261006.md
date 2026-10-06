@@ -1498,3 +1498,101 @@ docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/s3-control-comparison.json
 ```
 
 The bounded run verdict does not open the next research phase.
+
+## R01 final closure and PIR gap registration — 2026-10-06
+
+The Human independently reviewed the S2→S3 authorization chain, S3 completion
+record, control comparison, reconstruction source, I-1 outputs, and the
+`d193556..ee59150` change scope.
+
+Final ruling:
+
+```text
+R01                        CLOSED / ACCEPTED
+research verdict           PASS — CONTINUATION SUFFICIENT
+claim scope                BOUNDED / registered closure only
+rerun                      NOT WARRANTED
+Probe v0.3                 NOT WARRANTED
+C3 makeup run              NOT AUTHORIZED
+```
+
+Accepted checks:
+
+```text
+Governance                 PASS
+Blinding                   PASS
+Deterministic entry point  PASS
+P-POS / N-A / N-B          PASS
+I-1 / I-2                  PASS
+C3                         OBSERVATION ONLY
+```
+
+Registered non-blocking finding:
+
+```text
+ES-CSP-MF-01
+  C2 uniqueness uses the set of distinct pointer targets. Multiple pointer
+  records pointing to the same boundary could therefore appear unique.
+  R01 did not trigger this form because N-B used P1a→B1 and P1b→B2.
+  R01 remains valid, but must not be generalized to all continuation-pointer
+  anomalies.
+```
+
+The accepted claim is limited to a registered, lawful, structurally complete,
+provenance-bearing Information Closure. It does not cover arbitrary real-world
+Agent continuation, physical-world changes after registration, production
+readiness, or semantic-retrieval quality.
+
+Next research gap:
+
+```text
+PIR    Physical–Information Reconciliation
+status REGISTERED / NEXT RESEARCH GAP
+```
+
+PIR asks whether, after physical files change and before treating stale
+Information as current, SimiGo can use a constrained query-time Reconciliation
+Sub-Agent to verify relevant physical objects and bring Information Space to a
+prescribed freshness requirement.
+
+PIR implementation, experiment, and SimiGo code change remain NOT AUTHORIZED.
+
+## PIR Design v0.1 delivered — 2026-10-06
+
+Following R01 closure, the local agent delivered PIR Design v0.1 for Human
+design review:
+
+```text
+status      DESIGN V0.1 DELIVERED FOR HUMAN REVIEW
+document    docs/02-evidence/es-is-20261005/
+            PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.1_20261006.md
+implementation   NOT AUTHORIZED
+experiment       NOT AUTHORIZED
+code change      NOT AUTHORIZED
+```
+
+The design addresses the four required first-version subjects:
+
+```text
+PIR-D1  physical change classes: create, modify, delete, move/rename
+PIR-D2  query-time freshness policy and typed verdicts, not continuous sync
+PIR-D3  responsibility split among Main Agent/ES, constrained Reconciliation
+        Sub-Agent, passive Information Space, and Physical World
+PIR-D4  typed outputs and hard boundaries; no business judgment, no user-file
+        mutation, no semantic guess over physical fact, no Execution State
+        expansion
+```
+
+The first bounded physical domain is local filesystem regular files under one
+registered observation root. No backend, MCP, remote API, filesystem watcher,
+continuous synchronization, or implementation path is authorized.
+
+Current state:
+
+```text
+R01                CLOSED / ACCEPTED
+PIR gap            REGISTERED
+PIR Design v0.1    SUBMITTED FOR HUMAN REVIEW
+PIR implementation NOT AUTHORIZED
+PIR experiment     NOT AUTHORIZED
+```
