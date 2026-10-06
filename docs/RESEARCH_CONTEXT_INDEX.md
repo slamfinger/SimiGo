@@ -70,9 +70,11 @@ PICS-01                                ACCEPTED / BOUNDED PASS / CLOSED
 PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
+CCVS-01                                PHASE B PROTOCOL FREEZE DELIVERED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 CCVS-01 interface preconstruction      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
+CCVS-01 Phase B protocol freeze        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md
 Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Carrier-neutral interface              AUTHORIZED / DELIVERED
 Backend-specific implementation        NOT AUTHORIZED
@@ -129,8 +131,8 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of CCVS-01 Phase A and interface preconstruction;
-                                   benchmark execution and backend selection remain NOT AUTHORIZED.
+Next gate                        = Human review of CCVS-01 Phase B frozen protocol;
+                                   Phase C benchmark execution and backend selection remain NOT AUTHORIZED.
 ```
 
 ## 4. Completed chain
@@ -194,10 +196,16 @@ Current state:
   Carrier Component Study Charter is accepted / commissioned.
   PICS-01 is accepted, bounded-pass, and closed.
   CCVS-01 Phase A and carrier-neutral interface preconstruction are delivered.
+  CCVS-01 Phase B protocol freeze is delivered as CCVS-01-PB v1.0
+  (baseline 0a23fb0), freezing datasets, fixtures, binding workload WL6 on
+  MEDIUM cold runs, correctness gates, performance bounds PB-B1..B14,
+  repetition counts, resource limits, result classes, and the anti-complexity
+  rule. Post-freeze change requires an explicit Human ruling.
 
 Candidate next transition:
-  Human review of CCVS-01 Phase A D1-D8 and interface preconstruction.
+  Human review of the CCVS-01 Phase B frozen protocol.
   No validation run, implementation, schema, migration, or backend selection.
+  Phase C requires a separate explicit Human authorization.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
@@ -217,7 +225,7 @@ Seam guard:
   migration, repository reorganization, probe execution, or experiment.
   CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
   database capability.
-  CCVS-01 guard: Phase A delivered; no benchmark, backend-specific implementation, integration,
+  CCVS-01 guard: Phase B protocol freeze delivered; no benchmark, backend-specific implementation, integration,
   selection, migration, or Lab reorganization.
 
 Required before transition:

@@ -72,6 +72,23 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
 18. Conformance expanded to 10 checks: locator identity, historical revision,
     delete availability, restore observation, pin stability, copy lineage,
     split/merge lineage, session order, search rebuild, and C8 boundary.
+19. Human reviewed Phase A D1-D8 and the interface preconstruction and issued
+    the instruction `进行phase b`. Per charter §10 option A this authorized
+    Phase B protocol freeze. Phase B remains documentation only; no benchmark
+    was executed.
+20. Phase B protocol freeze delivered as CCVS-01-PB v1.0 against baseline
+    `0a23fb0`. Frozen: scale tiers without adjustment; deterministic synthetic
+    fixture rules (master seed 20261006, UTF-8 text-bounded content, declared
+    size bands, relation degree, session order, generator hash recording);
+    binding workload WL6 on MEDIUM cold runs; correctness bounds G1-G8 with
+    I1-I13 and F1-F9; performance bound set PB-B1..PB-B14 (P95 latency,
+    amplification, rebuild, restart, integrity ceilings); repetition counts;
+    Phase A §7 resource limits frozen verbatim; run/crash/candidate result
+    classes; composition-manifest requirement with a recommended roster;
+    frozen anti-complexity rule with concrete thresholds.
+21. Any post-freeze protocol change requires an explicit Human ruling. Phase C
+    controlled validation requires a separate later authorization. Phase D
+    ranks qualified architectures only; Phase E remains the selection gate.
 
 ## Key documents
 
@@ -90,15 +107,18 @@ CCVS-01 Phase A
 
 CCVS-01 interface preconstruction
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
+
+CCVS-01 Phase B protocol freeze
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md
 ```
 
 ## Next legal transition
 
 ```text
-Human review CCVS-01 Phase A D1-D8 and carrier-neutral interface preconstruction.
+Human review the CCVS-01 Phase B frozen protocol.
 
-If accepted, enter Phase B protocol freeze only by explicit Human ruling.
-Phase C benchmark execution requires another separate authorization.
+If accepted, the protocol becomes CCVS-01-PB v1.0 FROZEN. Phase C controlled
+validation still requires a separate explicit Human authorization.
 ```
 
 No benchmark may run until Phase B is separately approved. No backend may be

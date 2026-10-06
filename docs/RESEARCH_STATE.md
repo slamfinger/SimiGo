@@ -239,6 +239,20 @@
 > throughput 改善，或提供 Baseline A 无法合法提供的能力，否则 Baseline A 优先。
 > Phase A 报告见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`。
+> CCVS-01 Phase B protocol freeze 已交付待复核：Human 于 2026-10-06 指令
+> `进行phase b`（charter §10 option A），授权进入 Phase B protocol freeze。
+> 冻结版本 = CCVS-01-PB v1.0（baseline `0a23fb0`）。冻结内容包括：SMALL/
+> MEDIUM/LARGE/STRESS 数据规模档（Phase A 数字原样冻结）；确定性合成 fixture
+> 规则（master seed 20261006、UTF-8 text-bounded、尺寸带、relation 出度、
+> session 顺序、generator hash 记录）；binding workload = WL6，在 MEDIUM cold
+> run 上判定；正确性硬门槛 = G1–G8 + I1–I13 + F1–F9（FAIL 禁止）；性能 bound
+> 集 PB-B1..B14（P95 延迟、ingest 放大倍数、rebuild/restart/integrity 上限）；
+> repetition 计数；Phase A §7 资源与安全限制原样冻结；run/crash/candidate 三层
+> result class；composition manifest 必填字段与推荐 roster（仅为代表性实例，
+> 非选择承诺）；含具体阈值的 anti-complexity rule。冻结后任何修改需显式
+> Human ruling；Phase C controlled validation 仍需后续单独授权。Phase B
+> 文档见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md`。
 > Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
 > protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
 > conformance suite、benchmark harness 与 metrics collector；禁止任何
