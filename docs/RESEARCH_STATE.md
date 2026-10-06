@@ -186,11 +186,19 @@
 > IMPOSSIBLE；semantic dependency 必须 exact equality，mechanical dependency 才能
 > subset allowlist；read binding 区分 content digest 与 immutable revision。
 >
+> Human independent review裁定 **Authorization Package v0.5 = REVISE**。
+> v0.6 已无损重述 frozen decision-state space：`REUSE_PATH`、
+> `BLOCKED_NON_RECOMPUTE_PATH`、`RECOMPUTE_AUTHORIZATION_PATH` 均有明确条件；
+> `I14_NOT_USED_NO_RECOMPUTE_PATH` 只有 no-failure、higher-precedence resolution、
+> classification-complete-and-none-eligible 三种合法状态。incomplete
+> classification + not-used marker 必须 `BLOCK /
+> PREDICATE_RULE_CLASSIFICATION_REQUIRED`。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
 > SRS-VAL-01 Implementation / Fixture / Execution / Information-Space Mutation Authorization Package
-> Status = COMMISSIONED / PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6 DELIVERED FOR HUMAN REVIEW
 > Frozen basis = SRS-VAL-01 Design v0.8 ACCEPT / FROZEN
 > ```
 >
@@ -224,7 +232,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Authorization Package v0.5**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Authorization Package v0.6**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

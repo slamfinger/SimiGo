@@ -2190,6 +2190,66 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Authorization Package v0.5 REVISE; v0.6 decision-state closure delivered — 2026-10-07
+
+The Human independently reviewed Authorization Package v0.5 at `53dc314`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8                  PASS / UNCHANGED
+Runner Trust Anchor                     PASS
+Authorization Authority Root            PASS
+Human → issuer → record chain           PASS
+Observer Authorization                  PASS
+Observer Integrity Boundary             PASS
+Channel Universe / Environment Closure  PASS
+Semantic runtime dependency closure     PASS
+Mechanical dependency closure           PASS
+IS_MUTATION executor closure            PASS
+Read-instance binding                   PASS
+
+Normative SRS-VAL restatement           REVISE
+Decision-state completeness             REVISE
+
+Authorization Package v0.5              REVISE
+```
+
+Required v0.6 corrections:
+
+```text
+R1  Define REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and
+    RECOMPUTE_AUTHORIZATION_PATH.
+
+R2  Make blocked-non-recompute lawful only after higher-precedence resolution or
+    completed classification with no RECOMPUTE_ELIGIBLE result.
+
+R3  Restrict I14_NOT_USED_NO_RECOMPUTE_PATH to no-failure,
+    higher-precedence-resolved, or classification-complete-none-eligible states.
+
+R4  Require B-BLOCK-04 expected primary decision BLOCK.
+
+R5  Add incomplete-classification plus not-used-marker stop case.
+```
+
+Authorization Package v0.6 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.6_20261007.md
+```
+
+Current state:
+
+```text
+Authorization Package v0.5 REVISE / SUPERSEDED BY V0.6
+Authorization Package v0.6 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Authorization Package v0.4 REVISE; v0.5 trust and normative closure delivered — 2026-10-07
 
 The Human independently reviewed Authorization Package v0.4 at `0678fbf`.

@@ -1,10 +1,12 @@
 # SRS-VAL-01 Implementation / Fixture / Execution / Information-Space Mutation Authorization Package v0.5
 
-> **Status:** PACKAGE V0.5 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / FIXTURE / EXECUTION / IS MUTATION NOT AUTHORIZED
+> **Status:** PACKAGE V0.5 REVISE — SUPERSEDED BY V0.6 — IMPLEMENTATION / FIXTURE / EXECUTION / IS MUTATION NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen semantic basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Review basis:** Human REVISE ruling on Authorization Package v0.4 at `0678fbf`
 > **Purpose:** provide the final pre-execution trust closure: immutable authority, authorized observation, complete channel universe, exact runtime semantics, and immutable inputs.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.5_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.6_20261007.md`.
 
 ## 1. Governance status and normative closure
 

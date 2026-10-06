@@ -369,6 +369,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > missing/unstable predicate-rule binding forces BLOCK; Context Index all current
 > navigation fields unified to v0.4. Implementation, fixture, experiment, and IS
 > mutation remain NOT AUTHORIZED.
+> **UPDATE 33 (2026-10-07)：Authorization Package v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
+> Correction: v0.6 adds the missing frozen decision-state closure. It defines
+> REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and RECOMPUTE_AUTHORIZATION_PATH; makes
+> blocked-non-recompute lawful only after higher-precedence resolution or
+> completed classification with no eligible failure; and restricts
+> I14_NOT_USED_NO_RECOMPUTE_PATH to the three lawful states. Incomplete
+> classification with the marker stops as
+> PREDICATE_RULE_CLASSIFICATION_REQUIRED. Implementation, fixture, execution, and
+> IS mutation remain NOT AUTHORIZED.
 > **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: I-16 now explicitly includes I-14, I-15, and the exact
 > predicate-rule binding as decision-critical inputs in one observation
