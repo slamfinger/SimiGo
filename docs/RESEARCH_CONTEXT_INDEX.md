@@ -28,15 +28,20 @@ Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
 Branch topology (consolidation ruling 2026-10-06, see
 docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md):
 main                                  = SOLE CANONICAL Research State
-                                        (no-ff consolidation complete @ 7f7e049)
-codex/research-recovery-layer-v0.1    = MERGED SOURCE BRANCH; no longer
-                                        operative current-state surface
+                                        (topology consolidation complete @ 7f7e049; historical-branch ancestry consolidation @ 6ad8104)
+codex/research-recovery-layer-v0.1    = MERGED HISTORICAL BRANCH; its stale
+                                        post-merge docs commit is history-only
+                                        and is not part of the current tree
 integration/path-a-information-place  = ARCHIVED historical backup (strict
                                         ancestor of the codex line; no further
                                         commits)
-codex/execution-state-research-20260929, research/es-reuse-program-20260930
-                                      = historical lines, frozen/archived,
-                                        not part of the current PALACE mainline
+codex/execution-state-research-20260929
+                                      = historical line, fully behind main
+research/es-reuse-program-20260930  = historical ES-reuse line; its commit
+                                      history is now reachable from main via
+                                      topology-only consolidation @ 6ad8104;
+                                      its artifacts are NOT imported into the
+                                      current PALACE tree
 
 Machine scan at capsule batch base `14de9fd`:
 TOTAL_MARKDOWN = 2031
@@ -413,3 +418,22 @@ Do not reopen closed routes without Human ruling.
 Do not turn HLC items into implementation tasks without Human commission.
 Do not expand capsules before the L0→L1→fresh-Agent recovery test is ruled.
 ```
+
+
+## Branch topology update — 2026-10-06
+
+Current canonical branch remains `main`.
+
+The following historical branch histories have now been consolidated into the
+main commit graph without changing the current research tree:
+
+- codex/research-recovery-layer-v0.1 — topology merge at `772d1225`;
+- research/es-reuse-program-20260930 — topology merge at `6ad81046`;
+- integration/path-a-information-place and codex/execution-state-research-20260929
+  were already fully behind/ancestral and required no content merge.
+
+Important boundary:
+historical ES-reuse artifacts remain historical evidence only. They are not
+restored into the current PALACE mainline file tree.
+
+UA v0.3 Freeze Gate remains OPEN; U-2 remains NOT AUTHORIZED.
