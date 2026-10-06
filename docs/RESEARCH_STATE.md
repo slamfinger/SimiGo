@@ -225,6 +225,14 @@
 > expected read instance、observed read instance 与 consumed content 必须精确映射
 > 并产出 semantic read closure verdict。
 >
+> Human independent review裁定 **Run/Implementation Manifest v0.2 = REVISE**。
+> Manifest v0.3 新增 M4/M5/M6：future manifest 必须 exact-bind accepted/frozen
+> contract identity，禁止引用 superseded contract；Predicate Rule 的 representation
+> format、language spec、grammar 与 interpreter semantics 必须 immutable binding，
+> interpreter 属于 T-IMPL-01 fidelity 而不是隐含 runtime dependency；expected
+> semantic read set 必须独立产生、root-backed Human 授权、content-bound，并在
+> subject start 前冻结，observed reads 不得反向定义 expected reads。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
@@ -233,7 +241,8 @@
 > Frozen basis = SRS-VAL-01 Design v0.8 ACCEPT / FROZEN
 > Authorization Package v0.6 = ACCEPT / FROZEN
 > Manifest Contract v0.1 = REVISE / SUPERSEDED BY V0.2
-> Current object = Run/Implementation Manifest v0.2 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v0.2 = REVISE / SUPERSEDED BY V0.3
+> Current object = Run/Implementation Manifest v0.3 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -266,7 +275,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.2**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.3**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

@@ -369,6 +369,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > missing/unstable predicate-rule binding forces BLOCK; Context Index all current
 > navigation fields unified to v0.4. Implementation, fixture, experiment, and IS
 > mutation remain NOT AUTHORIZED.
+> **UPDATE 38 (2026-10-07)：Run/Implementation Manifest v0.2 = REVISE；v0.3 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M4 requires a future manifest to exact-bind the accepted/frozen
+> Manifest Contract identity and integrity; superseded references stop the
+> runner. M5 exact-binds rule representation format, language spec, grammar, and
+> interpreter semantics, with interpreter fidelity inside T-IMPL-01 rather than an
+> implicit runtime dependency. M6 requires the expected semantic read set to be
+> independently produced, root-backed Human-authorized, content-bound, and frozen
+> before subject start; observed reads cannot define expected reads.
+> Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 33 (2026-10-07)：Authorization Package v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Correction: v0.6 adds the missing frozen decision-state closure. It defines
 > REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and RECOMPUTE_AUTHORIZATION_PATH; makes
