@@ -181,9 +181,11 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Phase C controlled validation under frozen
-                                   protocol CCVS-01-PB v1.2; final backend
-                                   selection remains the Phase E gate.
+Next gate                        = Gate C (U-2) executing: U-A manifest
+                                   delivered; mechanisms → conformance →
+                                   admission → MA-DS-1 within the U-2
+                                   authorization; final backend selection
+                                   remains the Phase E gate.
 ```
 
 Unnumbered recovery aids:
