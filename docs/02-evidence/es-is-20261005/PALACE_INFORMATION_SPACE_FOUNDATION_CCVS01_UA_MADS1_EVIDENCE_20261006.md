@@ -411,3 +411,20 @@ The two audit blockers are corrected and regression-covered. The U-A
 implementation is RESUBMITTED for the Human's code-level audit. Gate C
 remains STARTED / OPEN — closure is a separate Human action and is not
 claimed.
+
+## 10. Run-10 retraction (Human ruling, 2026-10-06)
+
+Campaign run 10's step-8 UA-DF is RETRACTED as a protocol/implementation
+defect and re-registered as a **verification harness stale expectation /
+runner defect**: the runner still expected the `.replayed` marker after
+the round-4 ruling had fixed the canonical replay semantics (retry
+returns the RECORDED terminal outcome `.applied`).
+
+```text
+run 10  = INVALID / runner-error
+run 11  = VALID (13/13 within manifest semantics; runner aligned)
+```
+
+The underlying MA-7 evidence was identical in both runs (event count
+unchanged, authority fingerprint byte-identical across retry); no
+MA-DS-1 protocol defect was ever observed at step 8.

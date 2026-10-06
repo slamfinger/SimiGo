@@ -18,14 +18,15 @@ CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded 
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / MA-DS-1 workload VALID (Human-confirmed) / U-A implementation audit was BLOCKED by Human code-level audit → UA-IF-3 (MA-9 carrier-scoped searchable representation, BLOCKER) + UA-IF-4 (Representation Identity typed conflict) CORRECTED with targeted regressions 13/13 UA tests + targeted MA-DS-1 re-run VALID → implementation RESUBMITTED for Human audit; Gate C NOT CLOSED
+CCVS-01 Unified U-2                  = EXECUTED AND ACCEPTED (Human ruling 2026-10-06: U-A Correctness Acceptance — Ownership/Visibility/Effect boundaries closed; A/B/C all ACCEPT; 32/32 tests; MA-DS-1 run 11 VALID) / Gate C = STARTED / OPEN → READY FOR CLOSURE REVIEW (closure package submitted; closure = separate Human action)
 CCVS-01 U-A manifest                 = v1.1 (self-audited) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
 CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) / SA-4 CLEAN — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
 CCVS-01 U-A implementation findings  = UA-IF-1/2/3/3b/3c/4 + round-4 ruling applied: MA-7 zero-effect boundary extends to the POSIX entity layer — replay/CAS/identity admission ALL precede any durable external effect inside one write transaction; deterministic rejections leave ZERO external side effects (crash-only MA-4 orphan window preserved, UA-C2 gate inside the open transaction after entity durability); session replay returns the RECORDED terminal outcome (.applied, no .replayed demotion); A (legacy ownership) ACCEPTED by Human; manifest §4.2 divergence flagged for acceptance review (Manifest unmodified per directive)
-CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six focus areas + rounds 3-4; UAVerificationTests 12/12 incl. C1/C2/C3 verification + deterministic interleave; 32/32 target tests)
+CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six focus areas + rounds 3-5; round 5 = acceptance ruling with layered MA-4 table + run-10 retraction + B proof boundary)
+CCVS-01 Gate C closure package       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md (acceptance evidence + research results R1-R5 + layered MA-4 record + acceptance conditions AC-1..4 + run ledger + closure-meaning boundaries; closure = separate Human action)
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -1065,3 +1066,51 @@ U-A manifest §4.2 mechanism sentence describes the pre-correction
 entity-write ordering; folding it into a manifest v1.2 is the Human's
 call at acceptance review. Gate C remains STARTED / OPEN; acceptance
 consideration is the Human's next action.
+
+## U-A Correctness Acceptance + Gate C closure package — 2026-10-06
+
+The Human's final review of `b9d2ac1` ruled mechanism correctness and
+frozen-document consistency SEPARATELY:
+
+```text
+A  legacy ownership         ACCEPT
+B  atomic visibility        ACCEPT (proof boundary registered: controlled
+                            interleave, not scheduler-complete; no
+                            artificial test seams in production)
+C  MA-7 zero-effect replay  ACCEPT (entity layer included; C1's
+                            entity-inclusive fingerprint H1==H2 is the
+                            real MA-7 evidence)
+C3 session replay           ACCEPT (recorded-outcome convention; no UA
+                            v1.0 or Manifest change needed)
+U-A implementation          ACCEPTED — "U-A Correctness Acceptance":
+                            Ownership → Visibility → Effect boundaries
+                            closed
+Manifest v1.1               UNCHANGED (explicit ruling): divergence is
+                            an acceptance condition entering future v1.2
+                            documentation reconciliation (not forced for
+                            Gate C)
+Run 10 UA-DF                RETRACTED as protocol defect → registered as
+                            verification harness stale expectation /
+                            runner defect (run 10 INVALID/runner-error;
+                            run 11 VALID)
+Gate C                      STARTED / OPEN → ready for closure review;
+                            closure remains a separate Human action
+```
+
+Layered MA-4 wording registered (prevents future "did v1.2 change MA-4?"
+ambiguity): MA-4 guarantee unchanged; orphan classification unchanged/
+crash-only; deterministic rejection semantics strengthened; physical
+write ordering changed; Manifest §4.2 mechanism wording temporarily
+stale.
+
+Delivered: **Gate C Closure Package**
+(`PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md`)
+— unified acceptance evidence, research results R1-R5, layered MA-4
+record, acceptance conditions AC-1..AC-4, full campaign run ledger, and
+the closure-meaning boundaries (closure opens nothing: U-3..U-6, Phase
+D/E, migration, selection all remain separately gated).
+
+Next: the Human's Gate C closure ruling — CLOSED, or held with
+registered reasons. No further U-A repair work is authorized or needed;
+the line moves from "implementation candidate" to "acceptable
+implementation" per the Human's own wording.

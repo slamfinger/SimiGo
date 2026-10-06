@@ -424,3 +424,88 @@ U-A implementation    RESUBMITTED — per the round-3 review, passing this
                       round is the precondition for acceptance
                       consideration; acceptance remains the Human's call
 ```
+
+## 11. Round 5 — Human acceptance ruling (2026-10-06): U-A Correctness Acceptance
+
+The Human reviewed `b9d2ac1` (code level, against the frozen Manifest) and
+ruled on mechanism correctness and frozen-document consistency SEPARATELY:
+
+```text
+A  legacy ownership            = ACCEPT (unchanged)
+B  atomic visibility           = ACCEPT (with proof-boundary wording, §11.3)
+C  MA-7 zero-effect replay     = ACCEPT
+C3 session replay              = ACCEPT
+U-A implementation             = ACCEPTED
+Manifest v1.1                  = NOT modified (explicit ruling, §11.4)
+Gate C                         = STARTED / OPEN → ready for closure review
+```
+
+定性（Human）：**U-A Correctness Acceptance achieved** — three boundaries
+closed:
+
+```text
+Ownership  → legacy / U-A destructive operations do not cross-erase
+Visibility → concurrent rebuild never half-visible
+Effect     → replay / deterministic rejection produce no external
+             side effects
+```
+
+### 11.1 Layered wording record (Human-mandated, for v1.2 non-ambiguity)
+
+| Layer | Status |
+|---|---|
+| MA-4 guarantee | **unchanged** (registry all-or-nothing; complete provenance; no half-committed authoritative state) |
+| orphan classification | **unchanged / crash-only** |
+| deterministic rejection semantics | **strengthened** (zero external effect) |
+| physical write ordering | **changed** (admission-inside-transaction → entity write → commit) |
+| Manifest §4.2 mechanism wording | **temporarily stale** (v1.2 reconciliation item) |
+
+### 11.2 Run 10 UA-DF retraction (evidence-chain hygiene)
+
+Run 10's step-8 UA-DF is formally RETRACTED as a protocol/implementation
+defect. Root cause: the runner's step-8 expectation still asserted the
+`.replayed` marker after the round-4 ruling had fixed the canonical
+semantics (retry returns the recorded terminal outcome `.applied`).
+
+```text
+run 10  = INVALID / runner-error (stale verification-harness expectation)
+run 11  = VALID (13/13 within manifest semantics, aligned runner)
+```
+
+The classification history stands as: no MA-DS-1 protocol defect was ever
+observed at step 8; the MA-7 evidence in both runs (event count unchanged,
+authority fingerprint byte-identical across retry) was identical.
+
+### 11.3 B proof boundary (registered wording)
+
+The interleave instrumentation proves **atomic visibility under a
+controlled interleave** (readers forced inside the open rebuild
+transaction via a second connection). It does NOT claim a
+scheduler-complete proof over all possible interleavings. As correctness
+evidence for the derived-index visibility boundary this suffices; it must
+not be cited as exhaustive scheduling verification. The registered
+instrumentation boundary stands: single-connection self-observation has
+no mechanism seam, and no artificial seam may be added to production
+mechanisms for testing purposes.
+
+### 11.4 Manifest divergence → acceptance condition (v1.2 reconciliation)
+
+The Human explicitly ruled the frozen Manifest v1.1 stays UNCHANGED:
+
+```text
+v1.1 frozen
+       ↓
+implementation proved stronger / more precise
+       ↓
+accept implementation
+       ↓
+record documentation divergence (acceptance condition)
+       ↓
+future v1.2 reconciliation (NOT to be forced for Gate C)
+```
+
+Guarantee semantics did not regress — deterministic rejection semantics
+were strengthened. The §10.4 layered table above prevents any future
+"did v1.2 change MA-4?" ambiguity: MA-4 guarantee and orphan
+classification are unchanged; only the physical write ordering sentence
+in §4.2 is stale.
