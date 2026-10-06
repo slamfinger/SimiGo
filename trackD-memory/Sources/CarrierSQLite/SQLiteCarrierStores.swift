@@ -352,8 +352,11 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
 
     public func upsert(_ document: CarrierSearchDocument) async throws {
         CrashGate.trap("F2")
+        // UA-IF-3b: the legacy (pre-U-A) path owns ONLY its NULL-carrier_id
+        // rows — a legacy upsert must never erase U-A carrier-scoped
+        // searchable representations of the same information.
         try await core.run(
-            "DELETE FROM search_fts WHERE information_id=?",
+            "DELETE FROM search_fts WHERE information_id=? AND carrier_id IS NULL",
             bind: { $0.bindText(1, document.informationID.rawValue) }
         )
         try await core.run(
@@ -368,8 +371,9 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
     }
 
     public func delete(informationID: CarrierInformationID) async throws {
+        // UA-IF-3b: legacy scope only (NULL carrier_id rows).
         try await core.run(
-            "DELETE FROM search_fts WHERE information_id=?",
+            "DELETE FROM search_fts WHERE information_id=? AND carrier_id IS NULL",
             bind: { $0.bindText(1, informationID.rawValue) }
         )
     }

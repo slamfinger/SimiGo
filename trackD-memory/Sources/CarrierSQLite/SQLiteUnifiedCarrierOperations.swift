@@ -909,7 +909,10 @@ extension SQLiteCore {
             read: {
                 UASearchHit(
                     informationID: $0.text(0),
-                    carrierID: $0.text(1),
+                    // NULL carrier_id = legacy pre-U-A row (A1 runtime
+                    // path). Visible only in unscoped (carrierID: nil)
+                    // reads as an empty scope; scoped queries never match.
+                    carrierID: $0.textOpt(1) ?? "",
                     revisionID: $0.text(2),
                     score: -$0.double(3)
                 )

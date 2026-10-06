@@ -24,7 +24,8 @@ CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
-CCVS-01 U-A implementation findings  = UA-IF-1 (per-carrier watermark) + UA-IF-2 (staleness vs rebuild-compare separation) + UA-IF-3 (carrier-scoped searchable representation — Human audit BLOCKER, search_fts v2 with carrier_id, per-pair index writes, scoped search API) + UA-IF-4 (Representation Identity duplicate = idempotent-if-identical else typed conflicting duplicate; INSERT OR IGNORE removed) — all manifest-driven, zero protocol change
+CCVS-01 U-A implementation findings  = UA-IF-1 (per-carrier watermark) + UA-IF-2 (staleness vs rebuild-compare separation) + UA-IF-3 + UA-IF-3b (audit round 2: carrier_id full-chain completion — legacy runtime upsert/delete confined to NULL-carrier rows; campaign coverage carrier-scoped; NULL-safe unscoped search read) + UA-IF-4 (Representation Identity duplicate = idempotent-if-identical else typed conflicting duplicate) — all manifest-driven, zero protocol change
+CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10)
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -914,3 +915,58 @@ Targeted MA-DS-1 regression 13/13 within manifest semantics, overall
 
 Status: U-A implementation RESUBMITTED for the Human's code-level audit.
 Gate C remains STARTED / OPEN — closure is a separate Human action.
+
+## Code-level verification round (audit round 2) — 2026-10-06
+
+The Human ruled: Gate C stays OPEN; U-A implementation RESUBMITTED;
+UA-IF-3/UA-IF-4 = FIXED/VERIFY. Directive: no new mechanisms — code-level
+verification only, with six focus areas (carrier_id full chain, FTS v2
+migration CC-7, replay boundary, conflict atomicity, legacy NULL
+boundary, concurrency).
+
+Verification performed (report:
+PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md;
+instruments: UAVerificationTests 10 tests + full FTS touchpoint trace):
+
+```text
+Focus 1  full-chain trace found TWO second-layer defects exactly of the
+         predicted class:
+   F-1  campaign coverageOf was information-scoped (unscoped search) →
+         fixed to (information|carrier) aggregation;
+   F-2/UA-IF-3b  legacy runtime upsert/delete deleted by information_id
+         alone (would erase U-A carrier-scoped rows) → confined to their
+         own NULL-carrier rows.
+Focus 2  migration verified CC-7-legal: authority fingerprint
+         byte-identical; old derived state discarded with no ghosts; the
+         EMPTY index does NOT pass rebuild-compare (no free clean PASS);
+         rebuild restores promised coverage. Legacy searchable-text loss
+         on whole-index loss = registered P8 F7 property (INCOMPLETE
+         rebuild capability for the legacy path under the U-A gate).
+Focus 3  replay boundary verified: six-field strictness (same R + same
+         digest + different media_type = typed conflict, NOT digest-only
+         replay); effects bounded to the attempt's own append-only ledger
+         row — object provenance singular, entity bytes/carrier revision/
+         mappings/representation row unchanged.
+Focus 4  conflict atomicity verified: evidence row committed in its own
+         transaction (outside the rolled-back work); state machine
+         continues after conflict; dangling provenance 0.
+Focus 5  legacy NULL boundary verified: scoped queries never match NULL;
+         unscoped reads surface legacy rows as EMPTY carrier scope
+         (explicit marker); staleness/rebuild never attribute NULL to a
+         carrier; NULL-safe read fix applied (crash caught pre-commit).
+Focus 6  concurrency battery (5 scenarios): rebuild vs scoped indexing
+         (legal linearizations only), two carriers same information
+         (coexistence), conflict racing normal revision (one bump, both
+         ledger outcomes, provenance complete), replay racing new
+         operation (no duplicates), search during rebuild (only complete
+         committed states). Composition note: actor-owned single
+         connection; the battery verifies legal linearization, not
+         multi-connection parallelism.
+```
+
+Test status: 27/27 target tests (4 + 13 + 10); A1 conformance 10/10
+no-regression; targeted MA-DS-1 re-run 13/13 VALID (classifications
+unchanged). Artifacts refreshed (mads1-report.json).
+
+Gate C remains STARTED / OPEN. The verified package is resubmitted for
+the Human's code-level review; no acceptance claimed.

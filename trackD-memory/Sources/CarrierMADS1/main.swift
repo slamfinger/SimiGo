@@ -472,10 +472,18 @@ func step9Recover(_ root: URL, killed: Bool) async throws {
                "residual": "orphan entity transient existed between crash and retry; resolved by the retry itself. A1-reporter locator/availability findings on UA-path representations are a registered composition bookkeeping boundary, not a CC-MA bound violation"], to: evidenceDir(root).appendingPathComponent("step09.json"))
 }
 
+/// Coverage is compared at (information, carrier) granularity — the same
+/// scope the index writes use (UA-IF-3 second-layer verification, audit
+/// focus 1). An information-scoped comparison could mask a missing
+/// carrier-scoped row behind the other carrier's row.
 func coverageOf(_ ops: SQLiteUnifiedCarrierOperations) async throws -> [String: [String]] {
-    let quantum = try await ops.search("quantum", limit: 50).map { $0.informationID.rawValue }
-    let timeline = try await ops.search("timeline", limit: 50).map { $0.informationID.rawValue }
-    return ["quantum": quantum.sorted(), "timeline": timeline.sorted()]
+    let quantum = try await ops.searchScoped("quantum", limit: 50)
+        .map { "\($0.informationID)|\($0.carrierID)" }
+        .sorted()
+    let timeline = try await ops.searchScoped("timeline", limit: 50)
+        .map { "\($0.informationID)|\($0.carrierID)" }
+        .sorted()
+    return ["quantum": quantum, "timeline": timeline]
 }
 
 func step10Prep(_ root: URL) async throws {
