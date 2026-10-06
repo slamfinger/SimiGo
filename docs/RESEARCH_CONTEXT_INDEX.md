@@ -150,6 +150,7 @@ Capsules          = C01..C15
 Capsule index     = docs/research-capsules/v1/INDEX.md
 Global summary    = docs/RESEARCH_ESTATES_SUMMARY.md
 Coverage map      = docs/RESEARCH_ESTATE_COVERAGE.md
+Design inheritance = docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
                                    before L0/L1 were integrated into default entry.
@@ -348,17 +349,19 @@ The route moved upward because:
 1. This index
 2. docs/RESEARCH_ESTATES_SUMMARY.md — historical orientation
 3. docs/RESEARCH_STATE.md — current authority
-4. Relevant L1 capsule(s), selected through docs/research-capsules/v1/INDEX.md
-5. Coverage and estate navigation only if the selected line is unclear
+4. Current-design inheritance only for Information Space / Carrier questions
+   docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
+5. Relevant L1 capsule(s), selected through docs/research-capsules/v1/INDEX.md
+6. Coverage and estate navigation only if the selected line is unclear
    docs/RESEARCH_ESTATE_COVERAGE.md
-6. Core Sufficiency Audit
+7. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md
-7. Evidence Inheritance Reconciliation
+8. Evidence Inheritance Reconciliation
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
-8. Research Stage Synthesis
+9. Research Stage Synthesis
    docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
-9. Only then endpoint/evidence documents named by the selected question
+10. Only then endpoint/evidence documents named by the selected question
 ```
 
 ## 10. Index discipline

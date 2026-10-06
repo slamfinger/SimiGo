@@ -33,10 +33,14 @@ Orphan-candidate review      = REQUIRED for 2427 paths flagged in the census
 The census gives whole-estate visibility. It does not mean every file has a
 dedicated summary; the orphan column deliberately preserves that gap.
 
+Current-design qualification is covered by
+`docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md`.
+
 ## 3. Major-area coverage matrix
 
 | Research area | Raw | L2 | L1 | Global summary | Current state | Recovery |
 |---|---|---|---|---|---|---|
+| Current design inheritance | ✓ | ✓ | PARTIAL | ✓ | recovery aid | ✓ |
 | ES ↔ IS core route | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Constitution / governance map | ✓ | ✓ | C01 | ✓ | ✓ | ✓ |
 | Core reference scenario | ✓ | ✓ | C02 | ✓ | historical input | ✓ |

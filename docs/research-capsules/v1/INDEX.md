@@ -37,10 +37,10 @@ SUPERSEDED      historical input; later route or ruling changed direction
 | [C09](C09-prq-isf-01-execution.md) | PRQ-ISF-01 execution | EXECUTED / ACCEPTED / CLOSED | COMPLETE NODE | HISTORICAL / REQUIRED CONTEXT | Recover why no independent-carrier claim is legal. |
 | [C10](C10-a4-core-sufficiency-audit.md) | A4 / core sufficiency audit | DELIVERED / ACCEPTED / CLOSED | COMPLETE NODE | CURRENT BOUNDARY | Recover text-domain sufficiency and carrier-layer reframe. |
 | [C11](C11-evidence-inheritance-reconciliation.md) | Evidence inheritance HLC-1..16 | DELIVERED / AWAITING HUMAN REVIEW | COMPLETE NODE | CURRENT ORIENTATION | Recover undervalued evidence and inherited obligations. |
-| [C12](C12-folder-information-initialization.md) | Folder Information / InformationCore experiment | IMPLEMENTED / TESTED / REAL-RUN EXECUTED | COMPLETE NODE / HISTORICAL | STOPPED AS LAB-WIDE DATABASE | Recover bounded experiment; do not resume as a new memory system. |
+| [C12](C12-folder-information-initialization.md) | Folder Information / InformationCore experiment | IMPLEMENTED / TESTED / REAL-RUN EXECUTED | COMPLETE NODE / HISTORICAL | PRIOR FILE-CARRIER EVIDENCE; STOPPED AS LAB-WIDE DATABASE | Recover bounded File Carrier starting capability and measured gaps; not backend selection. |
 | [C13](C13-t4-t42-rc1-continuation-evidence.md) | T4 / T4-2 / R-C1 continuation evidence | TASK-DOMAIN BOUNDED PASS/CLOSED | COMPLETE NODE | SEALED EVIDENCE | Recover why continuation claims remain task-domain bounded. |
 | [C14](C14-palace-g0-g3-durable-information.md) | Palace V2 G0-G3 durable information | G0-G3 CLOSED / BOUNDED | COMPLETE NODE | HISTORICAL INPUT | Recover durable-information findings without reopening Palace. |
-| [C15](C15-local-closure-information-reduction.md) | Local Closure / information reduction | PARTIALLY SEALED / ROUND 1 EXECUTED | PARTIAL NODE | HISTORICAL BOUNDARY | Recover bounded reduction results; no general-minimality claim. |
+| [C15](C15-local-closure-information-reduction.md) | Local Closure / information reduction | PARTIALLY SEALED / ROUND 1 EXECUTED | PARTIAL NODE | REPRESENTATION/REDUCTION EVIDENCE | Recover 17/17 bounded equivalence/composite result; no schema or universal-minimality claim. |
 
 ## Known capsule coverage gaps
 

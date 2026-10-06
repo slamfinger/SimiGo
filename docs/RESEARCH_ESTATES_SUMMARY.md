@@ -133,6 +133,20 @@ Primary entries = C04, C05, C06,
                   docs/02-evidence/es-is-20261005/runtime_g1/
 ```
 
+A later Information/Relation persistence baseline must also be inherited:
+
+```text
+Information and Relation = independent semantic objects
+InformationStore ∥ RelationStore = parallel boundaries, not a Super Store
+S1-S6 ∥ R1-R6 = symmetric persistence contracts; both first-write-wins
+Backend evidence = SQLiteStore + InMemoryStore; database remains an
+                  implementation choice, not an architecture premise
+Disposition       = Phase 2 closed/PASS; semantic/persistence boundary only
+Primary entries   = docs/RESEARCH_STATE.md Phase 0-2 records,
+                    commit b29d4198,
+                    docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
+```
+
 ## 8. Palace / Information Space Foundation route
 
 The current route asks whether Information Space can become the information
@@ -188,6 +202,8 @@ protocol and authorized Phase C.
 PICS-01         = ACCEPTED / BOUNDED PASS / CLOSED
 CCVS-01-PB v1.2 = ACCEPTED / FROZEN
 CCVS-01 Phase C = AUTHORIZED / IN PROGRESS
+File prior evidence = Folder Initialization real run; bounded text-domain
+                      substrate plus measured gaps; not backend selection
 U-1 v0.1        = REVISED / direction confirmed / structural revision gate
 U-1 v0.2        = DELIVERED / AWAITING HUMAN REVIEW
 Final backend   = NOT SELECTED / Phase E gate
@@ -208,7 +224,8 @@ Carrier implementation permission  = NONE without a new ruling
 Primary entries = C10-a4-core-sufficiency-audit.md,
                   C12-folder-information-initialization.md,
                   docs/02-evidence/es-is-20261005/,
-                  docs/02-evidence/folder-information-initialization-20261004/
+                  docs/02-evidence/folder-information-initialization-20261004/,
+                  docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 ```
 
 This disposition does not declare the general information direction failed. It
@@ -224,9 +241,12 @@ candidates but did not prove general minimality.
 ```text
 Established     = bounded Round 1 observations and narrowed candidates
 Not established = formal cross-model runtime and general minimality
-Disposition     = partially sealed; later ES↔IS route has priority
+Disposition     = partially sealed; representation/reduction evidence only;
+                  later ES↔IS route has priority
 Primary entries = C15-local-closure-information-reduction.md,
-                  docs/02-evidence/local-execution-information-closure/
+                  docs/02-evidence/local-execution-information-closure/,
+                  docs/00-governance/SIMIGO_LAB_INFORMATION_ROUND1_RESULT_20261005.md,
+                  docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 ```
 
 ## 13. Cross-model / continuation evidence
@@ -255,15 +275,28 @@ Not established = no complete production Information Space claim
 Disposition     = CLOSED / historical
 Primary entries = C14-palace-g0-g3-durable-information.md,
                   docs/02-evidence/palace-realwork-t1/,
-                  docs/02-evidence/palace-v2-*/
+                  docs/02-evidence/palace-v2-*/,
+                  docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 ```
 
 ## 15. Boundary Study / EXP1-X1 / Y
 
 Boundary Study and EXP1-X1 examined trust, verification, frontier, and real
-work boundaries; Y was registered to seek a boundary counterexample. Some
-material is work-position history or prepared/observed rather than a completed
-core verdict.
+work boundaries. X1 was accepted/closed with the bounded findings that explicit
+work frontiers survived strongly, judgment+basis was the load-bearing record
+form, and trust did not transfer automatically with stored information.
+
+The private/shared chain adds stronger constraints:
+
+```text
+BR-1 = lifecycle-form split; same content does not imply same layer
+BR-2 = pure continuity metadata defaults private
+BR-3 = formed reusable products enter shared Information
+BR-5 = shared Information existence does not summon itself; read/activation
+       semantics are separate
+T1-T3 = behavioral deposit → pointer → consume evidence
+Y    = BR-2 supported / no explicit counterexample / sealed closed
+```
 
 ```text
 Current recovery disposition = PAUSED / HISTORICAL / NEEDS CONNECTED RECOVERY
@@ -271,7 +304,10 @@ Forbidden action             = infer completion or reopen without ruling
 Primary entries = boundary-study/,
                   boundary-study/exp1-x1/{00-MANIFEST,RECORD,RESULTS}.md,
                   boundary-study/y-exp/Y-EXECUTION-REGISTRATION.md,
-                  docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
+                  docs/00-governance/SIMIGO_LAB_PALACE_BOUNDARY_FROZEN_Y_REVIEW_20261002.md,
+                  docs/00-governance/SIMIGO_LAB_PALACE_Y_RULING_20261002.md,
+                  docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md,
+                  docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 ```
 
 ## 16. Other registered lines
@@ -298,6 +334,7 @@ At this snapshot the lawful recovery order is:
 L0      docs/RESEARCH_CONTEXT_INDEX.md
 Global  docs/RESEARCH_ESTATES_SUMMARY.md
 Coverage docs/RESEARCH_ESTATE_COVERAGE.md
+Design inheritance docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 State   docs/RESEARCH_STATE.md
 L1      relevant docs/research-capsules/v1/C*.md
 L2      cited ruling/contract/decision
