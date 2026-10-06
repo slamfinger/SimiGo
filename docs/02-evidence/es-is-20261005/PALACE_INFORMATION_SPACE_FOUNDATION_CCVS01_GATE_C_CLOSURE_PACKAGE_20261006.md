@@ -1,6 +1,6 @@
 # CCVS-01 — Gate C Closure Package
 
-> **Status:** PACKAGE COMPLETE — SUBMITTED FOR THE HUMAN'S CLOSURE RULING
+> **Status:** PACKAGE COMPLETE — CLOSURE RECOMMENDED (ADVISORY, NOT A RULING) — SUBMITTED FOR THE HUMAN'S CLOSURE RULING
 > **Date:** 2026-10-06
 > **Purpose:** unify the acceptance evidence, the run-10 runner-defect retraction, the Manifest v1.1 divergence, and the run-11 VALID result into ONE closure input. Gate C closure remains a separate Human action (UA v1.0 §14; every governing document repeats it) — this package does not close anything.
 > **Basis commit:** `b9d2ac1` (all evidence chains reference this state)
@@ -143,10 +143,28 @@ Closure would NOT authorize (all remain separately gated):
   MemPalace integration
 ```
 
-## 8. Closure decision
+## 8. Advisory closure recommendation
+
+```text
+Frozen Contract modified?                             NO
+Gate B reopened?                                      NO
+U-A satisfies the Manifest guarantee?                 YES
+Key negative cases covered?                           YES
+MA-7 covers the complete external-effect surface?     YES
+MA-4 orphan remains crash/unknown-window only?        YES
+Verification report explains run 10 / run 11?         YES
+
+Advisory result: Gate C → CLOSURE RECOMMENDED
+```
+
+This is an audit recommendation, not the Gate C ruling. Gate C remains
+OPEN pending the Human's independent CLOSE / HOLD decision.
+
+## 9. Closure decision
 
 ```text
 This package is the closure input. The closure ruling — Gate C CLOSED or
 Gate C held with registered reasons — is a separate Human action and is
-NOT claimed, predicted, or pre-announced here.
+not claimed or performed here. The advisory recommendation in §8 does
+not substitute for that ruling.
 ```
