@@ -270,6 +270,19 @@
 > process-crash/SIGKILL，禁止 power-loss durability 声明；candidate 判定改为
 > Correctness/Capability/Pareto evidence/Anti-complexity 分层，无加权总分。
 > v1.1 待 Human review；Phase C 仍 NOT AUTHORIZED。
+> Human 随后接受 v1.1 全部 protocol constants（2× non-regression、500/100、
+> 10/20/100、2× invalid budget、<20% quiescence），并裁定 **B / narrow
+> revision（仅 R4 统计定义）**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md`）。
+> 据此交付 **CCVS-01-PB v1.2**：percentile 在每个 valid run 内独立计算；
+> observation 最小值 per-run 而非 pooled；candidate-level = valid run-level
+> percentiles 的 median；pooled 值降级为明确标注的 supplemental diagnostic，
+> 不进入 primary 链；INVALID 仅可由预定义 protocol/environment violation 触发
+>（性能差绝不构成 invalid，封死 2× attempt budget 的 cherry-picking 漏洞）；
+> quiescence = 3 个连续 5s 窗口，仅为 run admission condition。Human 预期裁定
+> = v1.2 ACCEPT / FROZEN，且 Phase C NOT AUTHORIZED、backend NOT SELECTED、
+> benchmark NOT EXECUTED、ES↔IS higher-layer opening CLOSED。v1.2 待 Human
+> review。
 > Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
 > protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
 > conformance suite、benchmark harness 与 metrics collector；禁止任何

@@ -1,10 +1,10 @@
 # CCVS-01 Phase B — Benchmark Protocol Freeze
 
 Date: 2026-10-06  
-Status: `REVISED v1.1 PER HUMAN RULING / AWAITING HUMAN REVIEW`  
+Status: `REVISED v1.2 PER HUMAN RULING / AWAITING HUMAN REVIEW`  
 Study: `CCVS-01 — Carrier Candidate & Performance Validation Study`  
 Phase: `B / PROTOCOL FREEZE`  
-Governing ruling: `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md` (B / narrow protocol revision)  
+Governing rulings: `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md` (B / narrow protocol revision); `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md` (B / narrow R4-only revision)  
 Predecessor deliverables:  
 `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`;  
 `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md`  
@@ -19,10 +19,14 @@ preconstruction (D9–D11, v0.2) and issued the instruction `进行phase b`
 explicit approval to enter Phase B protocol freeze.
 
 Human then reviewed the v1.0 draft and ruled `B — REVISE / narrow protocol
-revision` on 2026-10-06. This v1.1 revision implements mandatory items R1–R7
-of that ruling. It does not redesign Phase A, does not add candidates, does
-not select a backend, does not execute benchmarks, does not change Frozen
-Contracts, and does not touch the carrier-neutral implementation.
+revision` on 2026-10-06. The v1.1 revision implements mandatory items R1–R7
+of that ruling. Human then accepted the v1.1 protocol constants (2×
+non-regression line, 500/100 observation minima, 10/20/100 percentile minima,
+2× invalid budget, <20% quiescence) and ordered one final narrow R4-only
+revision to close the remaining statistical-semantics ambiguity. This v1.2
+revision implements exactly that. No revision redesigns Phase A, adds
+candidates, selects a backend, executes benchmarks, changes Frozen Contracts,
+or touches the carrier-neutral implementation.
 
 This document freezes the benchmark protocol. Phase C controlled validation
 requires a separate, later Human authorization. Nothing in this document
@@ -31,7 +35,7 @@ executes, schedules, or enables any benchmark run by itself.
 Freeze semantics:
 
 ```text
-Frozen protocol version = CCVS-01-PB v1.1
+Frozen protocol version = CCVS-01-PB v1.2
 Freeze baseline commit  = 0a23fb0 (Phase A + interface preconstruction v0.2)
 Any post-freeze change   = requires an explicit Human ruling that amends
                            this document; silent drift is invalid.
@@ -189,7 +193,7 @@ STRESS = minimum 1 valid run; 2 preferred
 Invalid runs are retained and explained, never silently discarded.
 ```
 
-### 3.5 Statistical protocol (ruling R4)
+### 3.5 Statistical protocol (rulings R4 and R4.2)
 
 Run definition:
 
@@ -215,29 +219,63 @@ Expensive operations (large-file create/read, startup/open, index rebuild,
   observation; no minimum count beyond the workload definition.
 ```
 
-Aggregation (frozen):
+Aggregation (frozen per the second ruling; the statistical chain is closed
+end to end):
 
 ```text
-Headline percentile for an operation
-  = median of that percentile across all valid runs at the tier.
-Pooled across-run values are reported as secondary diagnostics.
-PB bound checks and anti-complexity comparisons use headline values only.
+Step 1  Within each valid run, percentiles are computed independently:
+          P50(run), P95(run), P99(run).
+Step 2  Candidate-level metric for an operation
+          = median of the valid run-level metrics at the tier:
+            P50 = median over valid runs of P50(run);
+            P95 = median over valid runs of P95(run);
+            P99 = median over valid runs of P99(run).
+Step 3  PB bound checks and anti-complexity comparisons use the
+        candidate-level metrics of Step 2 only.
+
+The statistical chain is strictly:
+  observation -> run-level percentile -> median-of-runs -> candidate result.
+
+Pooled across-run percentiles are not part of this chain. They may be
+reported only as clearly-labelled supplemental diagnostics and must never
+be mixed with, substituted for, or averaged into candidate-level metrics.
 ```
 
 Percentile validity conditions:
 
 ```text
-P99 reported only if ≥ 100 pooled samples for that operation at the tier;
-  otherwise P99 = NOT-REPORTED (never fabricated or extrapolated).
-P95 requires ≥ 20 pooled samples; P50 requires ≥ 10.
+All observation minimums are PER RUN, not pooled:
+  P99(run) is computed only if that run contains ≥ 100 observations of the
+    operation; otherwise P99(run) = NOT-REPORTED for that run.
+  P95(run) requires ≥ 20 observations; P50(run) requires ≥ 10.
+A candidate-level percentile exists only when at least one valid run
+  reports it; it is the median of the valid run-level values that exist.
+Insufficient samples produce NOT-REPORTED, never estimation, extrapolation,
+or substitution by pooled values.
 ```
 
 Run disposition:
 
 ```text
-A run is INVALID if an invariant fails, the harness errors, required samples
-  are missing, or config differs from the declared topology. INVALID runs
-  are retained with a required explanation and contribute no samples.
+INVALID can be triggered ONLY by a predefined protocol/environment
+  violation, declared before runs:
+    harness or instrumentation failure;
+    resource-observer failure;
+    fixture corruption;
+    carrier crash outside a designated F-point;
+    quiescence/admission violation;
+    background interference;
+    config mismatch with the declared topology;
+    missing required samples caused by one of the above.
+  INVALID runs are retained with a required explanation and contribute no
+  samples.
+
+Performance quality NEVER invalidates a run. Poor P95/P99, low throughput,
+long rebuild time, high amplification, or any other weak result is always a
+valid, reportable measurement. Marking a run invalid because its results
+look bad is forbidden; this closes the cherry-picking hole in the 2×
+attempt budget.
+
 Statistical outliers among valid runs are never discarded; all valid runs
   count. The median-of-runs rule is the declared robustness mechanism.
 Attempt budget = 2 × required valid runs per tier. If valid runs cannot be
@@ -254,6 +292,11 @@ Before each run: resource gates of §4 must pass; host must be on AC power;
   no pending OS updates; record host load as three consecutive 5 s CPU
   samples with < 20% non-benchmark CPU before the run starts. If the
   quiescence check fails, wait and re-check; record every re-check.
+
+Clarification (second ruling): the quiescence check is THREE CONSECUTIVE
+5-second windows, all of which must satisfy < 20% non-benchmark CPU. It is a
+RUN ADMISSION CONDITION, not a performance metric, and it never enters any
+candidate comparison.
 ```
 
 ## 4. PB-F4 — Frozen resource limits and safety rules

@@ -111,6 +111,21 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     explicit claim boundary versus power-loss durability; candidate verdicts
     became a layered rule with no weighted total score. v1.1 returns to
     AWAITING HUMAN REVIEW; Phase C remains NOT AUTHORIZED.
+24. Human reviewed v1.1 and ruled `B / narrow revision, R4 statistical
+    definitions only`: all v1.1 protocol constants accepted (2x
+    non-regression, 500/100, 10/20/100, 2x invalid budget, <20% quiescence);
+    one statistical ambiguity closed. Registered as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md`.
+25. Protocol revised to CCVS-01-PB v1.2: percentiles computed independently
+    per valid run; observation minimums per-run, not pooled; candidate-level
+    metrics = median of valid run-level percentiles; pooled values demoted to
+    clearly-labelled supplemental diagnostics outside the primary chain;
+    INVALID restricted to predefined protocol/environment violations with an
+    explicit prohibition on invalidating runs for poor performance; quiescence
+    defined as three consecutive 5 s windows, an admission condition only.
+    v1.2 returns to AWAITING HUMAN REVIEW. Human's stated expected ruling is
+    v1.2 = ACCEPT / FROZEN with Phase C NOT AUTHORIZED, backend NOT SELECTED,
+    benchmark NOT EXECUTED, ES<->IS opening CLOSED.
 
 ## Key documents
 
@@ -135,6 +150,9 @@ CCVS-01 Phase B protocol freeze
 
 CCVS-01 Phase B revision ruling
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md
+
+CCVS-01 Phase B revision ruling 2
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md
 ```
 
 ## Next legal transition
