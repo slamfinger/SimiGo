@@ -139,6 +139,16 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     (embedded registry + embedded search + POSIX entity store) with a
     PB-F6 composition manifest, then adapter implementation, conformance,
     and controlled runs under the frozen admission/statistical rules.
+28. Phase C kickoff delivered with the A1 composition manifest (seam map =
+    zero cross-process seams; durable acknowledgement = fsync + digest check
+    for entities and WAL/synchronous=FULL COMMIT for registry; MOVE =
+    new-locator + retire in one transaction; pin/availability/identity rules
+    per I1/I3/I4/I6/I7/I8; FTS5 derived-only with registry authority rebuild;
+    SIGKILL crash model with WAL recovery and explicit repair records;
+    SQLite backup API + entity copy smoke boundary; adapter target
+    `CarrierSQLite` depending only on CarrierInterface). Next step is A1
+    adapter implementation, then conformance, then Baseline A runs first
+    (PV1) with per-bound ACTIVE/UNCALIBRATED classification.
 
 ## Key documents
 
@@ -169,17 +179,24 @@ CCVS-01 Phase B revision ruling 2
 
 CCVS-01 Phase B freeze + Phase C authorization ruling
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md
+
+CCVS-01 Phase C kickoff + A1 manifest
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
 ```
 
 ## Next legal transition
 
 ```text
-Human review the CCVS-01 Phase B frozen protocol.
+CCVS-01-PB v1.2 is FROZEN and Phase C controlled validation is AUTHORIZED.
 
-If accepted, the protocol becomes CCVS-01-PB v1.0 FROZEN. Phase C controlled
-validation still requires a separate explicit Human authorization.
+Current step: implement the A1 composition (CarrierSQLite target), pass
+CarrierConformanceSuite, then run Baseline A first under the frozen
+admission/statistical rules.
+
+Standing restrictions: no final backend selection (Phase E gate), no
+migration, no Lab reorganization, no ES<->IS opening, no Frozen Contract
+change, no mid-run protocol change.
 ```
 
-No benchmark may run until Phase B is separately approved. No backend may be
-selected until the later selection gate. No code, adapter, schema DDL, migration,
-or Lab reorganization is authorized.
+Any suspected protocol defect during Phase C stops the affected judgment and
+requires a new Human ruling before the affected results are classified.
