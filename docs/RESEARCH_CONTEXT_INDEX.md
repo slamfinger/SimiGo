@@ -211,13 +211,13 @@ Current SRS-SEM-01 status                   CLOSED / ACCEPT / FROZEN
 SRS-VAL-01 v0.2 status                     REVISE / SUPERSEDED BY V0.3
 SRS-VAL-01 v0.2 document                    docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
 SRS-VAL-01 v0.2 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.2_REVIEW_RULING_20261007.md
-Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.3
-SRS-VAL-01 design document                   docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.3_20261007.md
+Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.4
+SRS-VAL-01 design document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.4_20261007.md
 SRS-VAL-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
 SRS-VAL-01 Design v0.2                       DELIVERED FOR HUMAN REVIEW
 SRS-VAL-01 v0.2 document                     docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
 SRS-VAL-01 v0.2 delivery record               docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.2_DELIVERY_20261007.md
-Current SRS-VAL-01 review object             Design v0.3
+Current SRS-VAL-01 review object             Design v0.4
 SRS-VAL-01 implementation                   NOT AUTHORIZED
 SRS-VAL-01 fixture                          NOT AUTHORIZED
 SRS-VAL-01 experiment                       NOT AUTHORIZED

@@ -71,7 +71,9 @@
 > Design v0.2 review = REVISE
 > Design v0.3 = DELIVERED FOR HUMAN REVIEW
 > Design v0.3 review = REVISE
+> Design v0.3 review = REVISE
 > Design v0.4 = DELIVERED FOR HUMAN REVIEW
+> Design v0.4 review = PENDING
 > Design v0.4 review = REVISE
 > Design v0.5 = DELIVERED FOR HUMAN REVIEW
 > Design v0.5 review = ACCEPT / FROZEN
@@ -144,7 +146,14 @@
 > ③ Context Index current design pointer 已改为 v0.3，v0.1/v0.2 只是
 > superseded lineage。
 >
-> 当前 review object = **SRS-VAL-01 Design v0.3**。`SRS-VAL-01` 仍未授权。
+> Human 独立复审裁定 **v0.3 = REVISE**。v0.4 已冻结 RECOMPUTE semantic envelope：
+> ① covered recomputation target semantic class；
+> ② covered result-target identity/derivation boundary；
+> ③ canonical relation-identity generation rule 以 `EXACT_RULE_VERSION` 绑定；
+> ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
+> ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
+>
+> 当前 review object = **SRS-VAL-01 Design v0.4**。implementation / fixture / experiment 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

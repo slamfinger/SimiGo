@@ -23,7 +23,7 @@
 >
 > **当前唯一 active closure task：**
 > `SRS-VAL-01 Settled Relation State Reuse Validation Predicate`
-> Status = `COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW`。
+> Status = `V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 DELIVERED FOR HUMAN REVIEW`。
 > Implementation / fixture / experiment remain NOT AUTHORIZED。
 >
 > **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
@@ -66,6 +66,14 @@
 > primary decision; outcomes mutually exclusive. Context Index current design
 > pointer corrected to v0.3. Implementation, fixture, experiment, and IS mutation
 > remain NOT AUTHORIZED.
+> **UPDATE 23 (2026-10-07)：SRS-VAL-01 v0.3 = REVISE；v0.4 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: I-14 now requires an exact immutable RECOMPUTE semantic envelope;
+> covered target semantic class, result-target identity/derivation boundary, and
+> canonical relation-identity generation rule binding. Canonical identity rule
+> binds EXACT_RULE_VERSION; authorization cannot implicitly change it. Every
+> remaining failure must first be classified RECOMPUTE_ELIGIBLE by a registered
+> predicate rule; I-14 coverage alone cannot upgrade an unclassified failure.
+> Implementation, fixture, experiment, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 19 (2026-10-07)：SRS-SEM-01 v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: canonical identity-generation rule binds EXACT_RULE_VERSION;
 > canonical semantic changes require a new rule identity/version; existing SRS
