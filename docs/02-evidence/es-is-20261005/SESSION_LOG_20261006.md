@@ -570,3 +570,27 @@ separate concurrency database layer, no Universal Lock Manager.
 
 Any suspected protocol defect during Phase C stops the affected judgment and
 requires a new Human ruling before the affected results are classified.
+
+
+## Branch consolidation update — 2026-10-06
+
+The Human's latest instruction was to consolidate the Lab repository branch
+history into `main`.
+
+Result:
+- `main` now points to `6ad810466695ed0703c5291c1039736185465248`.
+- `codex/research-recovery-layer-v0.1` is reachable from `main` via
+  topology-only consolidation; its stale post-merge documentation is not
+  reintroduced into the current tree.
+- `research/es-reuse-program-20260930` is also reachable from `main) via
+  topology-only consolidation; its historical ES-reuse documents are not
+  imported into the current PALACE tree.
+- `integration/path-a-information-place` and
+  `codex/execution-state-research-20260929` were already fully behind
+  `main` and contain no current-only content.
+
+This is repository-history consolidation, not semantic adoption of the old
+research lines.
+
+Research gate status is unchanged:
+UA v0.3 Freeze Gate = OPEN; U-2 = NOT AUTHORIZED; Unified benchmark = NOT AUTHORIZED.
