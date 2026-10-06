@@ -3,12 +3,16 @@ import Darwin
 import SQLite3
 import CarrierInterface
 import CarrierSQLite
+import CryptoKit
 
 // CCVS-01 Phase C controlled benchmark driver (frozen protocol CCVS-01-PB v1.2).
 // Admission (resource gate, 3x5s quiescence, environment manifest) then cold
 // serial runs: P0 integrity baseline, P1 cold startup, WL1..WL6 families,
 // P9 final integrity + JSON export. Crash suites (P8) are separate fresh runs.
 
+func sha256Hex(_ data: Data) -> String {
+    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+}
 struct Metrics {
     var samples: [String: [Double]] = [:]
     var errors: [String: Int] = [:]
@@ -56,7 +60,7 @@ func largeFixtureBytes(_ rng: inout SplitMix64, _ bytes: Int) -> Data {
         let t = rng.next()
         let words = ["information", "space", "continuation", "carrier", "lineage", "revision", "locator", "pin"]
         out += words[Int(t % 8)] + "-"
-        for _ in 0..<12 { out += String(hex[Int(rng.next() % 16)]) }
+        for _ in 0..<12 { out += String(hex[hex.index(hex.startIndex, offsetBy: Int(rng.next() % 16))]) }
         out += " "
     }
     return Data(String(out.prefix(bytes)).utf8)
