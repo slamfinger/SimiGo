@@ -4,6 +4,74 @@
 
 **Last updated**: 2026-10-06
 
+## Restored research state / memory anchor — 2026-10-06
+
+> **Recovery anchor:** `docs/00-governance/SIMIGO_LAB_RESEARCH_STATE_MEMORY_RECOVERY_ANCHOR_20261006.md`。
+> Canonical source = GitHub `slamfinger/SimiGo-Lab@main`，恢复基线 = `0508e26`。
+> 本节是新会话的第一恢复入口；旧 UPDATE 段落如与本节冲突，以本节和 anchor 为准。
+>
+> **全局研究目标：**
+> 研究 Execution State 能否与持久 Information Space 形成真实计算耦合，使
+> ES₁ settlement 的 relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，
+> 从而只计算真正新增的 delta；依赖失效时必须 block 或重新计算。
+>
+> **Canonical loop：**
+>
+> ```text
+> ES₁ → compute relation → Settled Relation State → Information Space →
+> independent ES₂ → validate dependency / revision / freshness / provenance →
+> reuse settled relation → compute only Δ → new Settled Relation State →
+> Information Space → ES₃ ...
+> ```
+>
+> **Canonical definitions：**
+>
+> ```text
+> ES = Execution State
+> IS = Information Space
+> SRS = Settled Relation State
+> SRS ≠ cache / bare result / mutable relation / checkpoint / generic graph edge
+> Information Topology = Information nodes + Relation/SRS edges +
+> dependency/revision/freshness/provenance validity, accumulated by ES
+> ```
+>
+> **已建立：**
+>
+> ```text
+> ES↔IS constitutional core;
+> immutable Information / Information Identity;
+> immutable Relation semantic edge and bounded persistence;
+> U-A FILE+SESSION carrier correctness, Gate C CLOSED / ACCEPT;
+> R01 bounded continuation PASS — CONTINUATION SUFFICIENT;
+> PIR v0.2 accepted freshness prerequisite design.
+> ```
+>
+> **未证明核心：**
+>
+> ```text
+> ES₁ → IS → independent ES₂ Settled Relation Reuse is NOT ESTABLISHED.
+> ```
+>
+> 具体未证明：lawful adoption、dependency/revision/freshness/provenance
+> validation、真正避免重复执行、只计算 Δ、stale dependency 强制 block/recompute、
+> missing provenance 不能通过 validation、bare result 不能单独授权 reuse、
+> Information Topology 能跨 independent ES 持续积累并复用。
+>
+> **当前唯一 active closure task：**
+>
+> ```text
+> SRS-SEM-01 Minimal Settled Relation State Semantic Boundary
+> Status = SELECTED / NOT STARTED
+> ```
+>
+> `SRS-SEM-01` 之后才是 `SRS-VAL-01`；当前不得提前冻结 validation algorithm、
+> PIR implementation、carrier schema 或实验设计。
+>
+> **恢复纪律：**
+> 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被
+> supersede 的段落判断状态；必须回到 main 上的 rulings、frozen contracts、
+> governance/evidence artifacts、audit package 和 research state artifacts。
+
 ## Current total status — 2026-10-06 (supplements 2026-10-05 below)
 
 > **CCVS-01 Gate C = CLOSED / ACCEPT**（Human independent ruling）。

@@ -1,5 +1,28 @@
 # SimiGo-Lab 新会话研究任务交接基线
 
+> **🔴 CURRENT RECOVERY ANCHOR — READ FIRST (2026-10-06, baseline `0508e26`)**
+> Recovery anchor: `docs/00-governance/SIMIGO_LAB_RESEARCH_STATE_MEMORY_RECOVERY_ANCHOR_20261006.md`.
+> Authoritative restored state: `docs/RESEARCH_STATE.md` → “Restored research state / memory anchor”.
+> Canonical source: GitHub `slamfinger/SimiGo-Lab@main`.
+>
+> **当前全局目标：** 研究 ES 是否能与持久 IS 形成真实计算耦合，使 ES₁ settled
+> relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
+> dependency invalid 时 block / recompute。
+>
+> **当前状态：** R01 bounded continuation PASS；U-A Gate C CLOSED / ACCEPT；
+> PIR v0.2 accepted freshness-prerequisite design；SRS/Information Topology
+> architecture clarified but NOT demonstrated。核心未证明：
+> `ES₁ → IS → independent ES₂ Settled Relation Reuse`。
+>
+> **当前唯一 active closure task：**
+> `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
+> Status = `SELECTED / NOT STARTED`。
+> 下一个依赖是 `SRS-VAL-01`，但当前不得启动。
+>
+> **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
+> 或 `docs/RESEARCH_STATE.md` 的 restored section 冲突，以 Recovery Anchor 和
+> restored section 为准。不要根据旧 UPDATE、已删除 branch 或对话记忆恢复状态。
+
 > **⚠️ STATE UPDATE 2026-10-06（晚，终 2）——本文档 §5-§8 的门位与“等 stage-transition review”状态均已过期，当前状态以下为准：**
 > **Gate A CLOSED；Gate B CLOSED（UA v1.0 FROZEN）；Gate C = CLOSED / ACCEPT（Human independent ruling）。**
 > U-A mechanism implementation = **ACCEPTED**（"U-A Correctness Acceptance"：Ownership/Visibility/Effect 三边界闭合；A/B/C 全 ACCEPT；32/32 测试；MA-DS-1 run 11 VALID；run 10 撤销为 runner defect）。

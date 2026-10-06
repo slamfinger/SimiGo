@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — POST-CCVS-01 STAGE TRANSITION ACCEPTED; PROBE V0.2 DESIGN FROZEN (2026-10-06)` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT MAIN — RESEARCH STATE / MEMORY RECOVERY ANCHOR (2026-10-06, baseline 0508e26)` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -24,6 +24,14 @@ L0 indexing baseline   = 14de9fd
 Capsule batch base     = 14de9fd
 Information Place      = this Git research estate + registered endpoint documents
 Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
+
+Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE_MEMORY_RECOVERY_ANCHOR_20261006.md
+Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
+Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
+                                     reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
+Current active closure task        = SRS-SEM-01 Minimal Settled Relation State Semantic Boundary — SELECTED, NOT STARTED
+Next dependency after SRS-SEM-01   = SRS-VAL-01 Reuse Validation Predicate — NOT STARTED
+Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
 main                                  = SOLE CANONICAL Research State
@@ -366,11 +374,13 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF ISSUE #2 DECOMPOSITION CONTROL ARTIFACT ONLY.
+  HUMAN REVIEW OF THE RESTORED RESEARCH STATE / MEMORY RECOVERY ANCHOR AND
+  ISSUE #2 DECOMPOSITION CONTROL ARTIFACT ONLY.
   It selects one smallest next closure task: SRS-SEM-01 Minimal Settled Relation
   State Semantic Boundary. If accepted, the next artifact is a design-only
   SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
   code change is authorized. Do not start SRS-VAL-01 or later tasks by default.
+  Do not treat this recovery artifact as authorization to continue SRS-SEM-01.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite
