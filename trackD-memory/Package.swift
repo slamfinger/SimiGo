@@ -22,7 +22,8 @@ let package = Package(
         .library(name: "CContinuationEvaluatorCore", targets: ["CContinuationEvaluatorCore"]),
         .executable(name: "CContinuationStudy", targets: ["CContinuationStudy"]),
         .executable(name: "CContinuationEvaluator", targets: ["CContinuationEvaluator"]),
-        .executable(name: "CarrierSQLiteBenchmark", targets: ["CarrierSQLiteBenchmark"])
+        .executable(name: "CarrierSQLiteBenchmark", targets: ["CarrierSQLiteBenchmark"]),
+        .executable(name: "CarrierSQLiteCalibration", targets: ["CarrierSQLiteCalibration"])
     ],
     targets: [
         .target(
@@ -42,6 +43,11 @@ let package = Package(
             name: "CarrierSQLiteBenchmark",
             dependencies: ["CarrierInterface", "CarrierSQLite"],
             path: "Sources/CarrierSQLiteBenchmark"
+        ),
+        .executableTarget(
+            name: "CarrierSQLiteCalibration",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Sources/CarrierSQLiteCalibration"
         ),
         .target(
             name: "RelationCore",
