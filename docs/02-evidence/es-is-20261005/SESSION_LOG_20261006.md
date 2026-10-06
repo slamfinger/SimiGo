@@ -1596,3 +1596,75 @@ PIR Design v0.1    SUBMITTED FOR HUMAN REVIEW
 PIR implementation NOT AUTHORIZED
 PIR experiment     NOT AUTHORIZED
 ```
+
+## Query-Priority Reconciliation direction and PIR Design v0.2 — 2026-10-06
+
+The Human accepted a PIR design principle:
+
+```text
+Query-Priority Reconciliation
+  SimiGo does not require whole-Information-Space continuous synchronization.
+  On request, it first resolves Query Scope and prioritizes verification/update
+  of physical objects in that scope that affect the current Information Closure.
+  Unrelated or lower-priority Information may defer reconciliation.
+```
+
+Required path:
+
+```text
+Query → Scope → Candidate Index → Relevant Objects → Physical Check → Fresh
+Closure
+```
+
+The forbidden anti-pattern is full scan / full reindex / full update before
+answering.
+
+The Human also established a two-level logical model:
+
+```text
+HOT / QUERY PATH
+  Index, Summary, Identity/Revision, scope-relevant Relations, Physical
+  Reconciliation, Query-Scoped Closure.
+
+COLD / BACKGROUND
+  stale, historical, unrelated, pending, or low-priority Information.
+```
+
+This is not a new backend, store, schema, or consistency protocol.
+
+New metric direction:
+
+```text
+ICAC = Information Closure Acquisition Cost
+      Scope Resolution Cost
+    + Candidate Retrieval Cost
+    + Physical Reconciliation Cost
+    + IS Update Cost
+    + Closure Reconstruction Cost
+```
+
+The key PIR question is whether cost depends primarily on Query Scope rather
+than total Information Space size.
+
+PIR Design v0.2 was delivered to record this principle. It also pre-registers a
+future experiment shape:
+
+```text
+10,000 Information objects;
+20 objects in Query Scope;
+5 relevant physical changes;
+fixed freshness window;
+query-priority reconciliation only.
+```
+
+That shape is NOT COMMISSIONED. No fixture, dataset, implementation, harness,
+database, or run is authorized.
+
+Current state:
+
+```text
+PIR Design v0.1    SUPERSEDED / RETAINED
+PIR Design v0.2    SUBMITTED FOR HUMAN REVIEW
+PIR implementation NOT AUTHORIZED
+PIR experiment     NOT AUTHORIZED
+```

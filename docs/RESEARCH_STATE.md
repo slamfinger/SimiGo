@@ -108,6 +108,29 @@
 > v0.1 只定义 bounded local-file domain 的 create/modify/delete/move-rename、
 > query-time freshness verdicts/policy、受约束 Reconciliation Sub-Agent 职责、
 > typed output/hard boundaries；不实现、不实验、不改用户文件、不启动新阶段。
+>
+> Human 随后给出 PIR design direction：**Query-Priority Reconciliation**。
+> PIR 不要求全库实时同步；请求到达时先解析 Query Scope，再优先验证/更新影响
+> 当前 Information Closure 的相关物理对象，非相关/低优先级信息允许延迟
+> reconciliation。Index/Summary 的作用是缩小 Physical Reconciliation 范围，
+> 不是替代物理证据或业务判断。
+>
+> 新增 metric direction = **ICAC — Information Closure Acquisition Cost**：
+>
+> ```text
+> ICAC = Scope Resolution Cost
+>      + Candidate Retrieval Cost
+>      + Physical Reconciliation Cost
+>      + IS Update Cost
+>      + Closure Reconstruction Cost
+> ```
+>
+> PIR 关键问题是 acquisition cost 主要随 Query Scope 增长，而不是随全库规模
+> 增长。future minimal shape（10,000 objects / 20-object scope / 5 relevant
+> changes）仅登记为设计方向，NOT COMMISSIONED。
+>
+> **PIR Design v0.1 = SUPERSEDED BY V0.2 / RETAINED。**
+> **PIR Design v0.2 = DELIVERED FOR HUMAN REVIEW。**
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

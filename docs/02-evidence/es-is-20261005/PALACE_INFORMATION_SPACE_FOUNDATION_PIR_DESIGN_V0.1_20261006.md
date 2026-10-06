@@ -1,6 +1,7 @@
 # Physical–Information Reconciliation — v0.1 Design
 
-> **Status:** DESIGN V0.1 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.1 SUPERSEDED BY V0.2 — RETAINED AS AUDIT INPUT; IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_20261006.md`
 > **Date:** 2026-10-06
 > **Registered predecessor gap:** R01 closure registered PIR as the next research gap
 > **Immediate predecessor result:** ES-CSP-RUN-01 = PASS — CONTINUATION SUFFICIENT / BOUNDED

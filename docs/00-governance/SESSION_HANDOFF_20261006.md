@@ -16,6 +16,7 @@
 > **UPDATE 6：ES-CSP-RUN-01 EXECUTED；bounded verdict = `PASS — CONTINUATION SUFFICIENT`**。完成记录：`docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md`。P-POS passed；N-A blocked on unresolved reference；N-B blocked on ambiguous pointer set；C3 not performed；fixtures unchanged。下一阶段未被 run 开启。
 > **UPDATE 7：R01 CLOSED / ACCEPTED；verdict BOUNDED PASS。** Non-blocking `ES-CSP-MF-01` 登记为 distinct-target uniqueness 边界。下一研究缺口 = **PIR — Physical–Information Reconciliation**；PIR implementation/experiment/code change NOT AUTHORIZED。
 > **UPDATE 8：PIR Design v0.1 已提交 Human design review**：`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.1_20261006.md`。仅设计；PIR implementation/experiment/code change NOT AUTHORIZED。
+> **UPDATE 9：Query-Priority Reconciliation direction ACCEPTED；PIR Design v0.2 已提交 Human review**。核心原则 = query scope 优先 reconciliation，而非全库同步；ICAC 为 metric direction；10k/20/5 future shape 仅设计方向，NOT COMMISSIONED。
 > 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
 > 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
 
