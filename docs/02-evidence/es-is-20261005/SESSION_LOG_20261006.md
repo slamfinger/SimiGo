@@ -2190,6 +2190,65 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Authorization Package v0.1 REVISE; v0.2 ES independence and authorization records delivered — 2026-10-07
+
+The Human independently reviewed Authorization Package v0.1 at `43bcb7e`.
+
+Ruling:
+
+```text
+Frozen predicate inheritance                PASS
+Implementation faithfulness                 PASS
+REUSE no-recompute proof structure          PASS
+RECOMPUTE exact I-14 proof                  PASS
+RECOMPUTE semantic envelope                 PASS
+Boundary-case coverage                      PASS
+Hidden side-channel intent                  PASS
+Stage separation                            PASS
+Runner-stop principle                       PASS
+Context navigation                          PASS
+
+Fixture independence as ES independence     REVISE
+Verifiable Stage Authorization Record       REVISE
+
+Authorization Package v0.1                  REVISE
+```
+
+Required v0.2 corrections:
+
+```text
+R1  Upgrade fixture isolation to ES-IND-01 Execution-State Independence.
+
+R2  ES1/ES2 must not share process, runtime/model memory, singleton/static
+    state, conversation memory, object graph, undeclared IPC/shared memory, or
+    hidden runner cache.
+
+R3  ES2 may use only declared IS/SRS artifacts and immutable inputs.
+
+R4  Every stage requires an immutable scope-bound Stage Authorization Record.
+
+R5  One stage's authorization never implies another; invalid or out-of-scope
+    authorization stops the runner.
+```
+
+Authorization Package v0.2 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.2_20261007.md
+```
+
+Current state:
+
+```text
+Authorization Package v0.1 REVISE / SUPERSEDED BY V0.2
+Authorization Package v0.2 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.8 ACCEPT / FROZEN; authorization package v0.1 delivered — 2026-10-07
 
 The Human completed the freeze-preceding state-space attack on

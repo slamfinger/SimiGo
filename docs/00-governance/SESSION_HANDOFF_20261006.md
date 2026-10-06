@@ -398,3 +398,11 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > warranted. The next object is the separately reviewed Implementation /
 > Fixture / Execution Authorization Package v0.1. Its review does not authorize
 > implementation, fixture preparation, execution, or IS mutation.
+> **UPDATE 29 (2026-10-07)：Authorization Package v0.1 = REVISE；v0.2 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: ES-IND-01 now requires independent ES1/ES2 process, runtime,
+> memory, singleton/static, conversation, object-graph, IPC/shared-memory, and
+> runner-cache boundaries; ES2 may use only declared IS/SRS artifacts and
+> immutable inputs. Every stage now requires an immutable scope-bound Stage
+> Authorization Record; one stage never implies another, and invalid or
+> out-of-scope authorization stops the runner. Implementation, fixture,
+> execution, and IS mutation remain NOT AUTHORIZED.

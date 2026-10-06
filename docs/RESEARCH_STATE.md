@@ -151,11 +151,20 @@
 > **SRS-VAL-01 Implementation / Fixture / Execution Authorization Package
 > v0.1**，其本身不授权 implementation、fixture 或 execution。
 >
+> Human independent review裁定 **Authorization Package v0.1 = REVISE**。
+> v0.2 已把 fixture isolation 升级为 `ES-IND-01` Execution-State Independence
+> Boundary：ES1/ES2 不得共享 process、runtime/model memory、singleton/static
+> state、conversation memory、object graph、undeclared IPC/shared memory 或
+> hidden runner cache；ES2 只能使用 declared IS/SRS artifacts 和 declared
+> immutable inputs。v0.2 还要求 immutable scope-bound Stage Authorization
+> Record；一个 stage 授权不得推导另一个 stage，invalid/overbroad/out-of-scope
+> authorization 必须 runner stop。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
 > SRS-VAL-01 Implementation / Fixture / Execution Authorization Package
-> Status = COMMISSIONED / PACKAGE V0.1 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / PACKAGE V0.1 REVISE / PACKAGE V0.2 DELIVERED FOR HUMAN REVIEW
 > Frozen basis = SRS-VAL-01 Design v0.8 ACCEPT / FROZEN
 > ```
 >
@@ -189,7 +198,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Authorization Package v0.1**。implementation / fixture / experiment 仍未授权。
+> 当前 review object = **SRS-VAL-01 Authorization Package v0.2**。implementation / fixture / experiment 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

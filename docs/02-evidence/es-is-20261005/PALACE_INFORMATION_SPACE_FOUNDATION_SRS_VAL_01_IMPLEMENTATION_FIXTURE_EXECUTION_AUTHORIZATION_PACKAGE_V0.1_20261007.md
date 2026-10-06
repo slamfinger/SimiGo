@@ -1,9 +1,11 @@
 # SRS-VAL-01 Implementation / Fixture / Execution Authorization Package v0.1
 
-> **Status:** PACKAGE V0.1 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / FIXTURE / EXECUTION NOT AUTHORIZED
+> **Status:** PACKAGE V0.1 REVISE — SUPERSEDED BY V0.2 — IMPLEMENTATION / FIXTURE / EXECUTION NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen semantic basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Purpose:** define the separately reviewed package that may later request implementation, fixture, and execution authorization.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.1_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.2_20261007.md`.
 
 ## 1. Scope and authority
 
