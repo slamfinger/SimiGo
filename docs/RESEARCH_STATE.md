@@ -114,7 +114,8 @@
 > ⑤ mutable/unversioned evidence 不足以支持 determinate reusable SRS；
 > ⑥ missing/unstable provenance 或 lifecycle evidence 会阻断 lawful reuse。
 >
-> Human independent review裁定 **Design v0.5 = ACCEPT / FROZEN**。SRS-SEM-01 正式收口。>
+> Human independent review裁定 **Design v0.5 = ACCEPT / FROZEN**。SRS-SEM-01 正式收口。
+>
 > Human independent review裁定 **SRS-VAL-01 v0.4 = REVISE**。v0.5 已补齐
 > predicate-rule immutable binding：每个 RECOMPUTE_ELIGIBLE classification 必须绑定
 > exact immutable predicate-rule identity/version；必须包含 integrity/content-address
@@ -123,11 +124,18 @@
 > bases；missing/unstable predicate-rule binding 必须 BLOCK。Context Index 所有
 > current navigation 已统一到 v0.4。
 >
+> Human independent review裁定 **SRS-VAL-01 v0.5 = REVISE**。v0.6 已把
+> I-14 governing authorization、I-15 current reuse request 和 exact
+> predicate-rule binding 显式纳入同一个 I-16 validation observation boundary；
+> omission / ambiguity / instability / mixed-boundary 均返回
+> `VALIDATION_INPUT_STATE_INCONSISTENT` 并 BLOCK。Context Index current /
+> design / review / next-transition 已统一到 v0.6。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
 > SRS-VAL-01 Settled Relation State Reuse Validation Predicate
-> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE / V0.5 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE / V0.5 REVISE / V0.6 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -160,7 +168,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Design v0.4**。implementation / fixture / experiment 仍未授权。
+> 当前 review object = **SRS-VAL-01 Design v0.6**。implementation / fixture / experiment 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

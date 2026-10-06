@@ -277,7 +277,11 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 SRS-VAL-01
 Settled Relation State Reuse Validation Predicate
 
-Status = COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW
+Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE /
+         V0.5 REVISE / DESIGN V0.6 DELIVERED FOR HUMAN REVIEW
+
+Current design document =
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.6_20261007.md
 ```
 
 Dependency chain:

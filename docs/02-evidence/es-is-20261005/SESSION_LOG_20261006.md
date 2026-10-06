@@ -2190,6 +2190,62 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.5 REVISE; v0.6 decision-boundary inclusion delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.5 at `440b28a`.
+
+Ruling:
+
+```text
+Predicate-rule identity/version binding       PASS
+Predicate-rule integrity binding              PASS
+Failure-classification non-retroactivity      PASS
+Unclassified failure guard                    PASS
+
+RECOMPUTE semantic envelope                   PASS
+Canonical identity rule                       PASS
+I-14 exact authorization                      PASS
+Decision precedence                           PASS
+Lifecycle precedence                          PASS
+
+I-16 inclusion of decision dependencies       REVISE
+Context Index current-object consistency      REVISE
+
+SRS-VAL-01 Design v0.5                        REVISE
+```
+
+Required v0.6 corrections:
+
+```text
+R1  I-16 explicitly includes I-14, I-15, and the exact predicate-rule binding
+    in the same lawful validation observation boundary.
+
+R2  Every decision-critical semantic input belongs to that boundary; omission,
+    ambiguity, instability, or mixed-boundary evidence produces
+    BLOCK / VALIDATION_INPUT_STATE_INCONSISTENT.
+
+R3  Context Index current / design / review / next-transition fields identify
+    the current submitted review object, not a superseded design.
+```
+
+SRS-VAL-01 Design v0.6 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.6_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.5     REVISE / SUPERSEDED BY V0.6
+SRS-VAL-01 v0.6     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.2 REVISE; v0.3 decision precedence delivered — 2026-10-07
 
 The Human independently reviewed SRS-VAL-01 Design v0.2 at `7b4989b`.

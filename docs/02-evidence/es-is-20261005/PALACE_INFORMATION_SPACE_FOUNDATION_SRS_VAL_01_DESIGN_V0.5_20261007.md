@@ -1,10 +1,12 @@
 # Settled Relation State Reuse Validation Predicate — SRS-VAL-01 Design v0.5
 
-> **Status:** DESIGN V0.5 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.5 REVISE — SUPERSEDED BY V0.6 — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-VAL-01 Design v0.4 for current review
 > **Review basis:** Human REVISE ruling on v0.4 at `e205f6d`
 > **Revision purpose:** bind predicate-rule classification to exact immutable rule identity/version/integrity and correct Context Index recovery consistency.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.5_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.6_20261007.md`.
 
 ## 1. Effect of v0.5
 

@@ -369,3 +369,10 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > missing/unstable predicate-rule binding forces BLOCK; Context Index all current
 > navigation fields unified to v0.4. Implementation, fixture, experiment, and IS
 > mutation remain NOT AUTHORIZED.
+> **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: I-16 now explicitly includes I-14, I-15, and the exact
+> predicate-rule binding as decision-critical inputs in one observation
+> boundary; omission, ambiguity, instability, or mixed-boundary evidence
+> forces BLOCK / VALIDATION_INPUT_STATE_INCONSISTENT. Context Index current,
+> design, review, and next-transition fields now identify v0.6. Implementation,
+> fixture, experiment, and IS mutation remain NOT AUTHORIZED.
