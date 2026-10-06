@@ -67,7 +67,9 @@ Real Carrier / U-0 / U-1:
   docs/RESEARCH_STATE.md C-6 wiring-layer record,
   docs/02-evidence/es-is-20261005/MEMPALACE_ISMCI_ADAPTER_FEASIBILITY_AUDIT_20261005.md,
   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md,
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md,
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md,
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md
 ```
 
 ## 4. Matrix
@@ -94,7 +96,8 @@ Real Carrier / U-0 / U-1:
 | MemPalace real-carrier C-1..C-6 | Observed collision ledger; C-6 was wiring-layer and fixed at that layer | C | C-1 PDF ingestion, C-2 XLSX flattening/NaN, C-3 numeric retrieval noise, C-4 ordering/ranking inversion, C-5 wake-up pollution, and C-6 wiring separation motivate U-0 obligations. | Do not read as MemPalace universally unsuitable; do not repair or select MemPalace now. |
 | MemPalace IS-MCI audit | AS-IS NO-GO for direct independent PRQ semantic carrier | D | Preserve as strict-carrier negative feasibility evidence. | Do not generalize to rejection of MemPalace for every historical/migration/backend role. |
 | U-0 inheritance | Delivered; maps real-carrier failures to RepresentationLocator, exact layer, ordering, IndexSource, and upper-layer activation boundaries | C | Treat as the current bridge from observed failures to Unified Carrier obligations. | Do not add wake-up/MCP/UI interpretation to carrier correctness. |
-| U-1 v0.2 Unified Carrier Contract | Proposed/awaiting review; four layers; existing semantics unchanged | C | Use as current contract draft, not approved implementation authorization. | Do not begin U-2 or alter PB v1.2 before Human review. |
+| U-1 v0.2 Unified Carrier Contract | Conformance review REVISE with zero BLOCK; Human ruling B = REVISE; direction and semantic anchoring accepted, v0.2 not frozen | C | Use as accepted direction and semantic anchoring, but not as a frozen contract. | Do not begin U-2 or alter PB v1.2 before UA v0.3 review/freeze. |
+| UA v0.3 mandate and CC-MA | Mandated: R-1..R-11, A-1..A-3 dispositions, and Multi-Agent Carrier Consistency | C | Treat multi-agent concurrency, operation identity, stale-write detection, atomicity, provenance, snapshots, and index rebuild as mandatory carrier design constraints. | Do not treat the real Agent A/Agent B scenario as completed concurrency validation or model Agent as an Information semantic entity. |
 | Real multi-source convergence: files, sessions, research material, judgments, private continuity | Registered design direction | B | Treat as the real workload context for Unified Carrier design. | Do not create a new theoretical model disconnected from existing evidence. |
 | General R3 interaction law | Explicitly not claimed | F | Preserve R3 only with fixture-slice bounds. | Do not use R3 as a universal non-commutativity or interaction law. |
 | Universal Local Closure minimality | Explicitly not established | F | Use Round 1 only as bounded representation evidence. | Do not derive a universal Information schema. |
@@ -115,6 +118,9 @@ Real Carrier / U-0 / U-1:
    records, judgments, exclusions, open questions, and private continuity are
    converging; Unified Carrier should inherit that reality rather than restart
    from abstract schema design.
+5. **Concurrency is a carrier design constraint, not a new semantic object.**
+   Agents may be actors and provenance subjects, but not `AgentInformation`,
+   `AgentRelation`, or an AgentStore.
 
 ## 6. Non-adoption list
 
@@ -127,6 +133,8 @@ NO SQLite backend selection from bounded experiments
 NO activation semantics inside Carrier DB
 NO Session-as-second-class-Information model
 NO automatic SessionEvent→Information conversion
+NO Agent semantic entity / AgentStore
+NO claim that the real parallel-agent day is completed validation
 ```
 
 If a source and this matrix conflict, the source and current State win.
