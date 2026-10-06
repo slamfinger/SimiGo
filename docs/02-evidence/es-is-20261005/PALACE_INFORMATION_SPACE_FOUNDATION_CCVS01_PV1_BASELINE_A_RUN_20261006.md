@@ -1,7 +1,7 @@
 # CCVS-01 PV1 — Baseline A (A1) Controlled Run Record
 
 Date: 2026-10-06  
-Status: `SMALL COMPLETE (5/5 VALID) / MEDIUM RUNNING`  
+Status: `PV1 BASELINE A COMPLETE / SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED`  
 Frozen protocol: `CCVS-01-PB v1.2`  
 Data roots (outside Lab, PB-F4): `/Users/mr.simi/Documents/CCVS01-Bench/{SMALL,MEDIUM}`  
 Master seed: `20261006` (PB-F2)  
@@ -69,3 +69,45 @@ write produced an exact 104857600-byte counter delta.
 Raw artifacts: result.json per run, aggregate.json (median-of-runs),
 environment.json per tier under the data roots.
 ```
+
+## MEDIUM ×5 — all VALID (binding tier)
+
+Median-of-valid-runs, WL6 segment (bound basis):
+
+| PB | Operation | P95 | Bound | Class |
+|---|---|---:|---:|---|
+| B1 | create | 14.4 ms | ≤25 ms | ACTIVE / MET |
+| B2 | lookup | 0.21 ms | ≤10 ms | ACTIVE / MET |
+| B3 | move | 0.14 ms | ≤25 ms | ACTIVE / MET |
+| B4 | revise | 16.3 ms | ≤50 ms | ACTIVE / MET |
+| B5 | pin read | 0.014 ms | ≤25 ms | ACTIVE / MET |
+| B6 | session append | 0.115 ms | ≤10 ms | ACTIVE / MET |
+| B7 | relation insert | 0.112 ms | ≤20 ms | ACTIVE / MET |
+| B8 | 2-hop traversal | 0.045 ms | ≤100 ms | ACTIVE / MET |
+| B9 | search query | 0.15 ms | ≤150 ms | ACTIVE / MET |
+| B12 | index rebuild | 0.72 s | ≤10 min | ACTIVE / MET |
+| B13 | startup/open | 3.6 ms | ≤30 s | ACTIVE / MET |
+| B14 | integrity check | 30.8 s | ≤10 min | ACTIVE / MET |
+| B10 | wl1 ingest amplification | 6.31× | ≤3.0× | UNCALIBRATED → PROTOCOL-VALIDITY-FLAGGED |
+| B11 | large-file amplification | 0.023× (<1×) | ≤1.2× | NOT-COMPARABLE (accounting anomaly) |
+
+All runs: final integrity clean, no invariant violations, no performance-based
+invalidations (none triggered). RSS median ≈ 23.7 MB (MEDIUM run 1).
+
+## PV2 outcome for Baseline A (per frozen PV1–PV4)
+
+```text
+Baseline A = G-gate candidate pending crash suite (P8 separate fresh runs).
+PB-B1..B9, B12..B14 = ACTIVE and met; usable for later candidate comparison.
+PB-B10 = UNCALIBRATED → PROTOCOL-VALIDITY-FLAGGED; candidates must NOT be
+         eliminated by it; resolution requires a Human ruling (bound adjustment
+         or retirement for this environment), examining the temp+rename
+         durability double-write and synchronous=FULL per-txn WAL/FTS cost.
+PB-B11 = NOT-COMPARABLE for this methodology (windowed device-writeback
+         accounting is asynchronous and unreliable for large-file windows on
+         this host); per frozen §4.1 recorded without approximation; needs a
+         Human methodology ruling.
+```
+
+No mid-run protocol change was made. Baseline A ran first (PV1); other
+candidates are not yet interpreted.
