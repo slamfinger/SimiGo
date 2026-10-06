@@ -1,0 +1,249 @@
+{
+  "class_counts" : {
+    "PASS" : 12,
+    "REPAIR" : 1
+  },
+  "crash_model" : "process SIGKILL (gates UA-C1\/C2\/C3)",
+  "overall" : "VALID (no bound violation; all classifications within manifest semantics)",
+  "protocol" : "CCVS-01 U-A \/ MA-DS-1 (manifest §5, 13 pre-registered steps)",
+  "steps" : [
+    {
+      "bound" : "CC-1\/CC-2 identity minting + durable acknowledgement",
+      "classification" : "PASS",
+      "injected" : "none",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "carrier_id_minted" : "3E059170-821F-4D21-8DC6-145E3883C613",
+        "create_outcome" : "APPLIED",
+        "dangling_provenance" : 0,
+        "entity_digest_verified" : true,
+        "rev1_outcome" : "APPLIED",
+        "revision" : 1
+      },
+      "residual" : null,
+      "step" : 1
+    },
+    {
+      "bound" : "CC-5 mapping closed loop \/ I17-I18 reviewability basis",
+      "classification" : "PASS",
+      "injected" : "none",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "events" : 2,
+        "evidence_link_payload" : "evidence: F1@f1-rev-1 digest b362c8addb2d7042d2cc206a5c1f34b7e70aa4326034bdb677185d7575ef075b",
+        "kinds" : [
+          "JUDGMENT",
+          "EVIDENCE_LINK"
+        ],
+        "mappings_on_s1" : 2,
+        "sequences" : [
+          0,
+          1
+        ]
+      },
+      "residual" : null,
+      "step" : 2
+    },
+    {
+      "bound" : "MA-1 concurrent read",
+      "classification" : "PASS",
+      "injected" : "concurrent dual read (MA-1)",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "f1_read_revision" : 1,
+        "s1_read_events" : 2,
+        "s1_sequences_contiguous" : true
+      },
+      "residual" : null,
+      "step" : 3
+    },
+    {
+      "bound" : "MA-2 concurrent write \/ MA-5 identity stability (MOVE)",
+      "classification" : "PASS",
+      "injected" : "cross-family concurrent write (MA-2)",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "cross_family_append_sequence" : 2,
+        "identity_unchanged" : true,
+        "locator_after_move" : "archive\/2026\/q3-notes.md",
+        "locator_before" : "research\/q3-notes.md",
+        "revision" : 2
+      },
+      "residual" : null,
+      "step" : 4
+    },
+    {
+      "bound" : "MA-3 \/ I19 no lost update",
+      "classification" : "PASS",
+      "injected" : "stale base write (expected=1, current=2)",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "conflict_error" : "stale(1,2)",
+        "conflict_ledger_outcome" : "CONFLICT",
+        "conflict_observed_revision" : 2,
+        "conflict_typed" : true,
+        "locator_unchanged" : true,
+        "state_unchanged" : true
+      },
+      "residual" : null,
+      "step" : 5
+    },
+    {
+      "bound" : "MA-3 rebase path \/ MA-8 provenance",
+      "classification" : "PASS",
+      "injected" : "rebase after conflict (new operation id)",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "content_verified" : true,
+        "from_version_provenance" : "rebase-from-rev-2",
+        "outcome" : "APPLIED",
+        "revision" : 3
+      },
+      "residual" : null,
+      "step" : 6
+    },
+    {
+      "bound" : "MA-6 \/ I23 session ordering under concurrency",
+      "classification" : "PASS",
+      "injected" : "6 concurrent appends, reversed clock skew",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "all_applied" : true,
+        "allocation_order_differs_from_timestamp_order" : true,
+        "contiguous" : true,
+        "read_version" : 11,
+        "sequences" : [
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      },
+      "residual" : null,
+      "step" : 7
+    },
+    {
+      "bound" : "MA-7 \/ I24 idempotent retry",
+      "classification" : "PASS",
+      "injected" : "UA-C1 SIGKILL after append commit (unknown outcome)",
+      "killed_by_sigkill" : true,
+      "observed" : {
+        "committed_before_crash" : true,
+        "durable_facts_established_before_crash" : "event + ledger APPLIED committed (synchronous=FULL)",
+        "event_count_unchanged_by_retry" : true,
+        "fingerprint_unchanged_by_retry" : true,
+        "killed_by_sigkill" : true,
+        "retry_outcome" : "REPLAYED"
+      },
+      "residual" : null,
+      "step" : 8
+    },
+    {
+      "bound" : "MA-4 atomicity \/ I21 no dangling provenance",
+      "classification" : "PASS (expected orphan state, explicitly detected; recovery via prescribed idempotent retry)",
+      "injected" : "UA-C2 SIGKILL between entity fsync and registry transaction",
+      "killed_by_sigkill" : true,
+      "observed" : {
+        "content_verified" : true,
+        "crash_dangling_provenance" : 0,
+        "crash_ledger_absent" : true,
+        "crash_orphan_entity_detected" : true,
+        "crash_registry_unchanged" : true,
+        "crash_representation_absent" : true,
+        "durable_facts_established_before_crash" : "entity bytes durable (fsync+rename+dir-fsync+digest re-read)",
+        "durable_facts_NOT_established_before_crash" : "representation row, carrier revision bump, ledger\/provenance row",
+        "final_entity_orphans" : 0,
+        "final_integrity_clean" : false,
+        "integrity_note" : "isClean includes A1-runtime locator\/availability invariants that do not bind the UA operation path",
+        "killed_by_sigkill" : true,
+        "retry_outcome" : "APPLIED",
+        "retry_revision" : 4
+      },
+      "orphan_evidence" : [
+        "entity file 87a31aab07e3bd1f0f13603476c71feb1f55e562bec1f91659eb7551af0296bb is not referenced by the registry"
+      ],
+      "residual" : "orphan entity transient existed between crash and retry; resolved by the retry itself. A1-reporter locator\/availability findings on UA-path representations are a registered composition bookkeeping boundary, not a CC-MA bound violation",
+      "step" : 9
+    },
+    {
+      "bound" : "MA-9 \/ I25 derived-index isolation + rebuild completeness gate",
+      "classification" : "REPAIR (prescribed recovery: rebuild re-run from authority; authority byte-identical; coverage restored)",
+      "injected" : "UA-C3 SIGKILL inside rebuild transaction (after DELETEs)",
+      "killed_by_sigkill" : true,
+      "observed" : {
+        "crash_authority_unchanged" : true,
+        "crash_index_intact_atomic_rollback" : true,
+        "crash_stale_detectable" : true,
+        "durable_facts_established_before_crash" : "authority untouched throughout (rebuild is a derived-layer transaction)",
+        "durable_facts_NOT_established_before_crash" : "new index build rows (rolled back with the transaction)",
+        "final_authority_unchanged" : true,
+        "final_coverage_matches" : true,
+        "final_staleness_clear" : true,
+        "killed_by_sigkill" : true,
+        "rebuild_documents" : 2
+      },
+      "residual" : "index was stale-but-intact between crash and recovery (atomic rollback); rebuild-compare covered identity AND searchable-content coverage",
+      "step" : 10
+    },
+    {
+      "bound" : "MA-10 \/ I22 snapshot \/ recovery consistency",
+      "classification" : "PASS",
+      "injected" : "concurrent commits + repeated multi-object reads",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "all_single_version_coherent" : true,
+        "monotone_across_increasing_versions" : true,
+        "read_versions_observed" : [
+          12,
+          13,
+          14,
+          15,
+          16,
+          16,
+          16,
+          16
+        ],
+        "snapshots_taken" : 8
+      },
+      "residual" : null,
+      "step" : 11
+    },
+    {
+      "bound" : "CC-4 ordering stability \/ I14 (F13 vocabulary: summary is derived, raw events intact)",
+      "classification" : "PASS",
+      "injected" : "summary materialization mid-stream",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "post_summary_append_sequence" : 14,
+        "raw_events_intact" : true,
+        "sequences_contiguous" : true,
+        "summary_rows" : 1,
+        "summary_through_sequence" : 13
+      },
+      "residual" : null,
+      "step" : 12
+    },
+    {
+      "bound" : "MA-5 \/ I20 \/ I17 \/ I18",
+      "classification" : "PASS",
+      "injected" : "full-day audit (rename+revision+reindex+summary replayed)",
+      "killed_by_sigkill" : false,
+      "observed" : {
+        "dangling_provenance" : 0,
+        "entity_orphans" : 0,
+        "historical_judgment_reviewable" : true,
+        "identity_sets_stable" : true,
+        "integrity_note" : "isClean includes A1-runtime locator\/availability invariants that do not bind the UA operation path",
+        "locator_after_move" : "archive\/2026\/q3-notes.md",
+        "representation_identities_distinct" : true,
+        "review_path" : "S1 EVIDENCE_LINK record -> CC-5 mapping -> F1@f1-rep-1 content",
+        "single_carrier_create_per_instance" : true,
+        "staleness_entries" : 0
+      },
+      "residual" : null,
+      "step" : 13
+    }
+  ]
+}

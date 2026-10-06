@@ -18,10 +18,13 @@ CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded 
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A MANIFEST v1.1 APPROVED FOR IMPLEMENTATION (Human) / MECHANISM IMPLEMENTATION DELIVERED + CONFORMANCE 11/11 + A1 REGRESSION 10/10 — MA-DS-1 execution NEXT; Gate C closure = separate Human action
+CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A MECHANISM ACCEPTED (Human) / MA-DS-1 EXECUTED — 13/13 within manifest semantics (11 PASS + 1 PASS expected-orphan + 1 REPAIR), UA-DF 0, bound violations 0, two consecutive VALID runs — evidence chain submitted for Human independent audit; Gate C closure = separate Human action
 CCVS-01 U-A manifest                 = v1.1 (self-audited) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
 CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) / SA-4 CLEAN — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
+CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
+CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
+CCVS-01 U-A implementation findings  = UA-IF-1 (index watermark per carrier+information pair, manifest §4.5 per-carrier watermark) + UA-IF-2 (staleness = built-but-outdated; missing coverage belongs to rebuild-compare gate) — both manifest-driven implementation corrections, zero protocol change
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -783,3 +786,66 @@ property); no performance measurements (PB-U* stays UNCALIBRATED).
 Next within the authorization: MA-DS-1 execution (13 pre-registered
 steps), then evidence chain packaged for the Human audit. Gate C
 closure remains a separate Human action.
+
+## MA-DS-1 execution — 2026-10-06
+
+The Human accepted the mechanism implementation (UAOperationTests 11/11,
+A1 10/10 regression) and authorized MA-DS-1 with three disciplines: no
+new mechanisms; the 13-step workload unchanged as pre-registered; outcome
+classification strictly per manifest semantics (DETACHED ≠ automatic
+failure; REPAIR ≠ mechanism failure), never a PASS-only script.
+
+Executed via a new P8-pattern runner (`Sources/CarrierMADS1`): 17 phases,
+of which three are real process-SIGKILL episodes at the wired gates
+UA-C1 (after session-append commit), UA-C2 (between entity fsync and the
+registry transaction), UA-C3 (inside the rebuild transaction). Dual
+actors, clock-skew injection via a creation/clock-decoupling permutation,
+operation ledger, authority fingerprints, provenance-completeness
+queries, rebuild-compare, and a final state reconstruction are all
+captured per step.
+
+Results (two consecutive campaign runs, identical classifications):
+
+```text
+S1-S7   PASS (identity minting, closed-loop mapping, concurrent reads,
+        cross-family MOVE+revise, stale-write CONFLICT typed with no
+        overwrite, rebase with from-version provenance, gapless concurrent
+        session ordering under reversed clock skew)
+S8      PASS  — UA-C1: commit durable, same-operation_id retry = REPLAYED,
+        zero state delta (MA-7/I24)
+S9      PASS (expected orphan state, explicitly detected; recovery via
+        prescribed idempotent retry) — UA-C2: entity durable, registry
+        all-or-nothing, orphan typed and resolved by the retry (MA-4/I21)
+S10     REPAIR (prescribed recovery: rebuild re-run from authority) —
+        UA-C3: atomic rollback left the old index intact and stale-
+        detectable; authority byte-identical; coverage restored (MA-9/I25)
+S11-S13 PASS (single-version snapshots, summary materialization with raw
+        events intact, full-day identity audit + historical judgment
+        reviewable against F1@rev-1 via the CC-5 mapping)
+Overall: VALID — no bound violation; all classifications within manifest
+semantics. Gate C NOT closed; evidence chain submitted for the Human's
+independent audit.
+```
+
+Registered implementation findings (manifest-driven corrections, zero
+protocol change; both documented in the MA-DS-1 evidence document §3):
+
+```text
+UA-IF-1  index-build watermark granularity: ua_index_builds keyed per
+         (information_id, carrier_id) — the CC-5 mapping is N:M and
+         manifest §4.5 prescribes a per-carrier revision watermark.
+UA-IF-2  staleness = built-but-outdated (inner join over existing build
+         rows); missing coverage belongs to the rebuild-compare gate, not
+         the staleness join.
+```
+
+Honest boundaries registered: in-process concurrency rides the
+actor-owned single connection (composition property); crash model is
+process SIGKILL only; A1-reporter locator/availability invariants do not
+bind UA-path representations (composition bookkeeping boundary, residual,
+not silently reconciled); no performance measurements.
+
+Artifacts: `trackD-memory/mads1-report.json`,
+`trackD-memory/mads1-final-state.json`,
+evidence document
+`PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md`.

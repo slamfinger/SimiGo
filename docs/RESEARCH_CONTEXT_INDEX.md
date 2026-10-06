@@ -111,10 +111,12 @@ CCVS-01 UA v1.0 document               docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 Gate B ruling                  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
 CCVS-01 U-2 precondition               UA v1.0 FROZEN — MET
 CCVS-01 Gate C                          STARTED (U-2 AUTHORIZED by Human 2026-10-06)
-CCVS-01 U-2 implementation              AUTHORIZED / U-A EXECUTING — manifest v1.1 APPROVED FOR IMPLEMENTATION (Human); MECHANISM IMPLEMENTATION DELIVERED + conformance 11/11 + A1 regression 10/10; MA-DS-1 execution NEXT; Gate C closure = separate Human action
+CCVS-01 U-2 implementation              AUTHORIZED / U-A EXECUTED — mechanism ACCEPTED (Human); MA-DS-1 EXECUTED 13/13 within manifest semantics (11 PASS + 1 PASS expected-orphan + 1 REPAIR; UA-DF 0; I19-I25 violations 0; two consecutive VALID runs) — evidence chain submitted for Human independent audit; Gate C closure = separate Human action
 CCVS-01 U-A manifest                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md (v1.1, self-audited)
 CCVS-01 U-A manifest self-audit         COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 U-A mechanism evidence          docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
+CCVS-01 U-A MA-DS-1 evidence            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md (artifacts: trackD-memory/mads1-report.json + mads1-final-state.json)
+CCVS-01 U-A implementation findings     UA-IF-1 (per-carrier+information watermark, manifest §4.5 basis) + UA-IF-2 (staleness = built-but-outdated; missing coverage = rebuild-compare domain) — manifest-driven, zero protocol change
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md

@@ -149,8 +149,9 @@ public actor SQLiteCore {
         """)
         try exec("""
         CREATE TABLE IF NOT EXISTS ua_index_builds(
-          information_id TEXT PRIMARY KEY, carrier_id TEXT,
-          indexed_revision TEXT NOT NULL, build_version INTEGER NOT NULL, built_at REAL NOT NULL)
+          information_id TEXT NOT NULL, carrier_id TEXT NOT NULL,
+          indexed_revision TEXT NOT NULL, build_version INTEGER NOT NULL, built_at REAL NOT NULL,
+          PRIMARY KEY(information_id, carrier_id))
         """)
     }
 

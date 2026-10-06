@@ -747,17 +747,25 @@ extension SQLiteCore {
     }
 
     /// MA-9 staleness detection: a carrier's index is stale when the
-    /// carrier revision has advanced past the build version of any indexed
-    /// document mapped to it (or a mapped information has no build row).
+    /// carrier revision has advanced past the build version of an indexed
+    /// document. Watermark granularity is per (carrier, information) pair —
+    /// the CC-5 mapping is N:M by default, so one information may be
+    /// indexed for several carriers, each with its own revision watermark
+    /// (manifest §4.5 "per-carrier revision watermark"; correction
+    /// registered when MA-DS-1 exposed the single-key under-implementation).
+    /// Mapping pairs without any build row are NOT staleness facts —
+    /// "indexed revision" presupposes an indexed document; missing coverage
+    /// is the rebuild-completeness gate's domain (rebuild-compare).
     func uaIndexStaleness() async throws -> [UAStaleIndexEntry] {
         try query(
             """
             SELECT m.carrier_id, m.information_id, c.revision, b.build_version
-            FROM ua_mapping m
-            JOIN carriers c ON c.carrier_id = m.carrier_id
-            LEFT JOIN ua_index_builds b ON b.information_id = m.information_id
-            WHERE b.build_version IS NULL OR b.build_version < c.revision
-            GROUP BY m.carrier_id, m.information_id
+            FROM ua_index_builds b
+            JOIN carriers c ON c.carrier_id = b.carrier_id
+            JOIN ua_mapping m ON m.information_id = b.information_id
+                AND m.carrier_id = b.carrier_id
+            WHERE b.build_version < c.revision
+            GROUP BY b.carrier_id, b.information_id
             """,
             read: {
                 UAStaleIndexEntry(
