@@ -288,6 +288,16 @@
 > Record；EXTERNAL_READ 使用 observer-authoritative read evidence；NOT_USED 使用
 > closed negative realization evidence 加 observer negative read closure。
 >
+>
+> Human independent review裁定 **Run/Implementation Manifest v0.9 = REVISE**。
+> Manifest v1.0 补上最后的分权边界：Observer 只提供 observed read facts；
+> independent root-backed Classification Verifier 决定 read 属于 SEMANTIC、
+> MECHANICAL 或 FORBIDDEN；Observer 不得单独把 semantic read 降级为 mechanical。
+> NON_SEMANTIC_MECHANICAL_READ 必须基于 frozen semantic-input universe、category
+> assignment、predicate semantic basis 与 authorization/observation boundaries
+> 完成独立验证。该 classification 只针对 subject consumable read universe；
+> governance/observation control inputs 不被隐式归入 mechanical。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
@@ -303,7 +313,8 @@
 > Manifest Contract v0.6 = REVISE / SUPERSEDED BY V0.7
 > Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8
 > Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9
-> Current object = Run/Implementation Manifest v0.9 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0
+> Current object = Run/Implementation Manifest v1.0 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -336,7 +347,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.9**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v1.0**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

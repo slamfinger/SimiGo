@@ -1,12 +1,14 @@
 # SRS-VAL-01 Run/Implementation Manifest Contract v0.9
 
-> **Status:** MANIFEST CONTRACT V0.9 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY / NO STAGE AUTHORIZED
+> **Status:** MANIFEST CONTRACT V0.9 REVISE — SUPERSEDED BY V1.0 — DESIGN ONLY / NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen predicate basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`, accepted at `6089f0b`
 > **Frozen implementation boundary:** Implementation Boundary Audit v0.1 at `cb95c09`
 > **Review basis:** Human REVISE ruling on Manifest Contract v0.8 at `d707cd3`
 > **Purpose:** keep semantic-input, expected-read, and observed-read identity types distinct and assign disposition-specific realization-evidence authority.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.9_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md`.
 
 ## 1. Scope and authority
 

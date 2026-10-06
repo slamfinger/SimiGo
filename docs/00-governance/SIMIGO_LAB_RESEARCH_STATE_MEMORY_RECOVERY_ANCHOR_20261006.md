@@ -245,7 +245,7 @@ After iterative review, Design v0.5 is ACCEPT / FROZEN.
 Accepted design artifact:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 Current commissioned design:
-`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.9_20261007.md`.
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md`.
 Authorization package status = ACCEPT / FROZEN; next stage NOT OPENED.
 Implementation Boundary Audit v0.1 = ACCEPT / FROZEN.
 Manifest Contract v0.1 = REVISE / SUPERSEDED BY V0.2.
@@ -256,7 +256,8 @@ Manifest Contract v0.5 = REVISE / SUPERSEDED BY V0.6.
 Manifest Contract v0.6 = REVISE / SUPERSEDED BY V0.7.
 Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8.
 Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9.
-Current manifest contract = Run/Implementation Manifest v0.9 DELIVERED FOR HUMAN REVIEW.
+Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0.
+Current manifest contract = Run/Implementation Manifest v1.0 DELIVERED FOR HUMAN REVIEW.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
@@ -295,7 +296,7 @@ Run/Implementation Manifest Contract
 
 Status = MANIFEST V0.1 REVISE / MANIFEST V0.2 REVISE / MANIFEST V0.3 REVISE /
          MANIFEST V0.4 REVISE / MANIFEST V0.5 REVISE / MANIFEST V0.6 REVISE /
-         MANIFEST V0.7 REVISE / MANIFEST V0.8 REVISE / MANIFEST V0.9 DELIVERED
+         MANIFEST V0.7 REVISE / MANIFEST V0.8 REVISE / MANIFEST V0.9 REVISE / MANIFEST V1.0 DELIVERED
          FOR HUMAN REVIEW — DESIGN ONLY
        + PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE
          V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6
@@ -303,10 +304,10 @@ Status = MANIFEST V0.1 REVISE / MANIFEST V0.2 REVISE / MANIFEST V0.3 REVISE /
        + SRS-VAL Design v0.8 ACCEPT / FROZEN
 
 Next lawful object =
-  Human review of Run/Implementation Manifest v0.9; no stage authorized
+  Human review of Run/Implementation Manifest v1.0; no stage authorized
 
 Current design document =
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.9_20261007.md
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md
 ```
 
 Dependency chain:

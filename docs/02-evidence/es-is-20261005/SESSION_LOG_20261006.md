@@ -3799,3 +3799,61 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## Run/Implementation Manifest v0.9 REVISE; v1.0 read-role classification authority delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.9 at `0a8a693`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+M18 typed identity relations         PASS
+M18 disposition-specific authority   PASS
+M16/M17 regression                   NONE FOUND
+
+Observed-read semantic-role
+classification authority             REVISE
+
+Run/Implementation Manifest v0.9     REVISE
+```
+
+Required v1.0 correction:
+
+```text
+R1  Add a root-backed observed-read classification verifier and immutable
+    classification record.
+
+R2  Observer provides observed read facts only.
+
+R3  Independent Classification Verifier assigns semantic, mechanical, or
+    forbidden-undeclared roles.
+
+R4  Observer cannot alone downgrade a semantic read to mechanical.
+
+R5  Mechanical classification requires independent verification against frozen
+    semantic universe, category assignment, predicate semantic basis, and
+    authorization/observation boundaries.
+```
+
+Manifest Contract v1.0 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.9 REVISE / SUPERSEDED BY V1.0
+Run/Implementation Manifest v1.0 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```

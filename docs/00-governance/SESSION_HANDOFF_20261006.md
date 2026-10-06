@@ -537,3 +537,14 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > read evidence, and NOT_USED uses closed negative-realization evidence plus
 > observer negative-read closure. Implementation, fixture, execution, and IS
 > mutation remain NOT AUTHORIZED.
+> **UPDATE 45 (2026-10-07)：Run/Implementation Manifest v0.9 = REVISE；v1.0 DELIVERED FOR DESIGN REVIEW.**
+> Correction: M18 now separates observed-read fact authority from semantic-role
+> classification authority. Observer provides observed read facts only. An
+> independent root-backed Classification Verifier assigns SEMANTIC,
+> NON_SEMANTIC_MECHANICAL, or FORBIDDEN_UNDECLARED_SEMANTIC roles using frozen
+> semantic-input universe, category assignment, predicate semantic basis, and
+> authorization/observation boundaries. Observer cannot alone downgrade a
+> decision-relevant read to mechanical. Classification applies to subject
+> consumable read universe; governance/observation control inputs are not
+> implicitly mechanical. Implementation, fixture, execution, and IS mutation
+> remain NOT AUTHORIZED.
