@@ -1,10 +1,12 @@
 # Settled Relation State Semantic Boundary — SRS-SEM-01 Design v0.5
 
-> **Status:** DESIGN V0.5 DELIVERED FOR HUMAN REVIEW — SRS-VAL-01 NOT AUTHORIZED
+> **Status:** DESIGN V0.5 ACCEPT / FROZEN — SRS-VAL-01 DESIGN COMMISSIONED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-SEM-01 Design v0.4 for current review
 > **Review basis:** Human REVISE ruling on v0.4 at `79fc37a`
 > **Revision purpose:** extend the SRS stability axiom to canonical identity-generation rules and provenance/lifecycle evidence references.
+> **Acceptance ruling:** ACCEPT / FROZEN; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_ACCEPTANCE_AND_SRS_VAL_COMMISSION_20261007.md`.
+> **Commissioned next design:** `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md`.
 
 ## 1. Stability axiom — completed
 

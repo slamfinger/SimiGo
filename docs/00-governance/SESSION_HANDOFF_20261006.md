@@ -19,10 +19,12 @@
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
-> Status = `OPENED / V0.1 REVISE / V0.2 DELIVERED FOR HUMAN REVIEW`。
-> Status = `V0.2 REVISE / V0.3 REVISE / V0.4 DELIVERED FOR HUMAN REVIEW`。
-> Status = `V0.4 REVISE / V0.5 DELIVERED FOR HUMAN REVIEW`。
-> 下一个依赖是 `SRS-VAL-01`，但当前不得启动。
+> Status = `ACCEPT / FROZEN`。
+>
+> **当前唯一 active closure task：**
+> `SRS-VAL-01 Settled Relation State Reuse Validation Predicate`
+> Status = `COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW`。
+> Implementation / fixture / experiment remain NOT AUTHORIZED。
 >
 > **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
 > 或 `docs/RESEARCH_STATE.md` 的 restored section 冲突，以 Recovery Anchor 和
@@ -45,6 +47,9 @@
 > rule identity/version; exact immutable policy/semantic version binding;
 > recomputation prohibition moved to reuse validation. `SRS-VAL-01`,
 > implementation, fixture, and experiment remain NOT AUTHORIZED.
+> **UPDATE 20 (2026-10-07)：SRS-SEM-01 v0.5 = ACCEPT / FROZEN；SRS-VAL-01 Design v0.1 COMMISSIONED AND DELIVERED FOR REVIEW.**
+> SRS-VAL-01 defines REUSE / BLOCK / RECOMPUTE semantic predicate only.
+> Implementation, fixture, experiment, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 19 (2026-10-07)：SRS-SEM-01 v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: canonical identity-generation rule binds EXACT_RULE_VERSION;
 > canonical semantic changes require a new rule identity/version; existing SRS

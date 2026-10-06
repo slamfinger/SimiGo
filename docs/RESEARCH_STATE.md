@@ -74,6 +74,7 @@
 > Design v0.4 = DELIVERED FOR HUMAN REVIEW
 > Design v0.4 review = REVISE
 > Design v0.5 = DELIVERED FOR HUMAN REVIEW
+> Design v0.5 review = ACCEPT / FROZEN
 > ```
 >
 > Human 已明确授权进入 `SRS-SEM-01`；v0.1 独立审查为 REVISE。v0.2 已修正：
@@ -111,7 +112,17 @@
 > ⑤ mutable/unversioned evidence 不足以支持 determinate reusable SRS；
 > ⑥ missing/unstable provenance 或 lifecycle evidence 会阻断 lawful reuse。
 >
-> 当前 review object = **SRS-SEM-01 Design v0.5**。`SRS-VAL-01` 仍未授权。
+> Human independent review裁定 **Design v0.5 = ACCEPT / FROZEN**。SRS-SEM-01 正式收口。
+>
+> **当前唯一 active closure task：**
+>
+> ```text
+> SRS-VAL-01 Settled Relation State Reuse Validation Predicate
+> Status = COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW
+> ```
+>
+> `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
+> implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。
 >
 > **恢复纪律：**
 > 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被

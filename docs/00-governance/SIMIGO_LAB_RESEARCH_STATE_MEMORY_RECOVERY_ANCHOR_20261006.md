@@ -9,6 +9,7 @@
 > **Canonical source:** GitHub `slamfinger/SimiGo-Lab@main`
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
+> **Post-anchor update:** Human later opened, reviewed, and froze `SRS-SEM-01`; `SRS-VAL-01` design is now the active design-only task.
 
 ## 1. Canonical recovery order
 
@@ -235,16 +236,20 @@ not SRS-reuse evidence.
 
 ### 7.1 Settled Relation State
 
-The SRS semantic boundary is clarified but not finally closed.
+The SRS semantic boundary is clarified, accepted, and frozen.
 
 ```text
 SRS-SEM-01 was originally SELECTED / NOT STARTED.
 Human later explicitly opened it after Recovery Anchor closure.
-Current design artifact:
-`docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md`.
+After iterative review, Design v0.5 is ACCEPT / FROZEN.
+Accepted design artifact:
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
+Current commissioned design:
+`docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md`.
 ```
 
-It must not be advanced without explicit Human instruction and acceptance.
+Only SRS-VAL-01 design is active. Implementation and experiment remain
+unauthorized.
 
 ### 7.2 Information Topology
 
@@ -269,10 +274,10 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 ## 9. Current active closure task
 
 ```text
-SRS-SEM-01
-Minimal Settled Relation State Semantic Boundary
+SRS-VAL-01
+Settled Relation State Reuse Validation Predicate
 
-Status = SELECTED / NOT STARTED
+Status = COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW
 ```
 
 Dependency chain:
@@ -290,23 +295,25 @@ carrier-binding boundary
   ↓
 minimal ES₁ → IS → ES₂ experiment design
   ↓
-separate execution authorization
+separate implementation / fixture / experiment authorization
 ```
 
-`SRS-SEM-01` must remain sufficiently abstract:
+`SRS-VAL-01` remains design-only:
 
 ```text
-do not freeze full validation algorithm;
-do not freeze PIR implementation;
-do not freeze carrier schema;
-do not start experiment design.
+do not implement validation;
+do not create fixtures;
+do not run experiment;
+do not mutate IS.
 ```
 
 ## 10. Immediately forbidden actions
 
 ```text
-do not continue SRS-SEM-01 beyond the explicitly authorized semantic-boundary design;
-do not start SRS-VAL-01;
+do not continue SRS-VAL-01 beyond the explicitly authorized design;
+do not implement SRS-VAL-01;
+do not create SRS-VAL fixtures;
+do not run SRS-VAL experiment;
 do not create SRS fixtures;
 do not run ES₁→IS→ES₂ experiment;
 do not modify RelationCore or InformationCore;

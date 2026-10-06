@@ -2114,6 +2114,82 @@ SRS fixture         NOT AUTHORIZED
 SRS experiment      NOT AUTHORIZED
 ```
 
+## SRS-SEM-01 v0.5 ACCEPT / FROZEN; SRS-VAL-01 design commissioned and delivered — 2026-10-07
+
+The Human independently reviewed SRS-SEM-01 Design v0.5 at `c7192f0` by
+attacking its stability axiom:
+
+```text
+immutable SRS
+  → every external semantic dependency that can change interpretation/reuse
+  → immutable identity / exact immutable version / immutable content address
+```
+
+Final ruling:
+
+```text
+SRS-SEM-01 Design v0.5     ACCEPT / FROZEN
+
+v0.1 findings              PASS
+v0.2 findings              PASS
+v0.3 findings              PASS
+v0.4 findings              PASS
+
+Source identity stability  PASS
+Result target stability    PASS
+Resolution-rule stability  PASS
+Policy/version stability   PASS
+Canonical identity-rule stability PASS
+Provenance evidence stability PASS
+Lifecycle evidence stability PASS
+Exact revision / freshness separation PASS
+SRS / validation separation PASS
+Carrier neutrality         PASS
+Scope discipline           PASS
+```
+
+Frozen coverage:
+
+```text
+source relation identity;
+canonical identity-generation rule;
+result target;
+resolution rule;
+policy / semantic rule;
+provenance evidence;
+lifecycle evidence.
+```
+
+The Human confirmed the separation:
+
+```text
+SRS-SEM-01 = immutable settled semantic state.
+SRS-VAL-01 = REUSE / BLOCK / RECOMPUTE predicate.
+```
+
+SRS-VAL-01 Design v0.1 was commissioned and delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md
+```
+
+It defines validation input groups G-V1..G-V7, exact-binding checks,
+lifecycle/provenance/freshness checks, REUSE/BLOCK/RECOMPUTE semantics,
+non-recomputation evidence boundary, independence requirements, negative and
+positive validation scenarios, evidence output, and failure taxonomy.
+
+Current state:
+
+```text
+SRS-SEM-01 v0.5     ACCEPT / FROZEN
+SRS-VAL-01 v0.1     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-SEM-01 v0.4 REVISE; v0.5 identity/evidence stability delivered — 2026-10-07
 
 The Human independently reviewed SRS-SEM-01 Design v0.4 at `79fc37a`.

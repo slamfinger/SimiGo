@@ -29,9 +29,9 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-SEM-01 — DESIGN V0.5 DELIVERED FOR HUMAN REVIEW
-Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md
-Next dependency after SRS-SEM-01   = SRS-VAL-01 Reuse Validation Predicate — NOT STARTED
+Current active closure task        = SRS-VAL-01 — Reuse Validation Predicate Design V0.1 DELIVERED FOR HUMAN REVIEW
+Current design document            = docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md
+Next dependency after SRS-VAL-01   = separately reviewed implementation/fixture plan — NOT AUTHORIZED
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
@@ -183,7 +183,7 @@ Settled Relation State                   NEW CANONICAL COMPOSITE / NOT IMPLEMENT
 Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMULATED STRUCTURE
 Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
 Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
-Current central review object             SRS-SEM-01 Design v0.5
+Current central review object             SRS-VAL-01 Design v0.1
 Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
 Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
 Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.4 DELIVERED FOR REVIEW
@@ -204,10 +204,15 @@ SRS-SEM-01 v0.3 document                    docs/02-evidence/es-is-20261005/PALA
 SRS-SEM-01 v0.3 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_DELIVERY_20261007.md
 SRS-SEM-01 Design v0.4                      DELIVERED FOR HUMAN REVIEW
 SRS-SEM-01 v0.4 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.4_20261007.md
-SRS-SEM-01 Design v0.5                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 Design v0.5                      ACCEPT / FROZEN
 SRS-SEM-01 v0.5 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md
-Current SRS-SEM-01 review object            Design v0.5
-Next dependency after SRS-SEM-01           SRS-VAL-01 — Reuse Validation Predicate
+SRS-SEM-01 acceptance / SRS-VAL commission    docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_ACCEPTANCE_AND_SRS_VAL_COMMISSION_20261007.md
+Current SRS-SEM-01 status                   CLOSED / ACCEPT / FROZEN
+Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.1
+SRS-VAL-01 design document                   docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md
+SRS-VAL-01 implementation                   NOT AUTHORIZED
+SRS-VAL-01 fixture                          NOT AUTHORIZED
+SRS-VAL-01 experiment                       NOT AUTHORIZED
 Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
@@ -396,18 +401,14 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF THE RESTORED RESEARCH STATE / MEMORY RECOVERY ANCHOR AND
-  ISSUE #2 DECOMPOSITION CONTROL ARTIFACT ONLY.
+  HUMAN REVIEW OF SRS-VAL-01 DESIGN V0.1 ONLY.
   It selects one smallest next closure task: SRS-SEM-01 Minimal Settled Relation
   State Semantic Boundary. If accepted, the next artifact is a design-only
   SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
-  code change is authorized. Do not start SRS-VAL-01 or later tasks by default.
-  Human later reviewed SRS-SEM-01 Design v0.1 as REVISE, v0.2 as REVISE, v0.3
-  as REVISE, and v0.4 as REVISE. SRS-SEM-01 Design v0.5 is now the current
-  review object. It extends immutable-reference stability to canonical
-  identity-generation rules and provenance/lifecycle evidence references.
-  Do not treat this design work as permission to start SRS-VAL-01,
-  implementation, fixture creation, or experiment.
+  code change is authorized. SRS-SEM-01 is ACCEPT / FROZEN. Human later
+  commissioned SRS-VAL-01 Design v0.1. It defines REUSE / BLOCK / RECOMPUTE semantic
+  predicate checks without implementation. Do not treat this design work as
+  permission to start implementation, fixture creation, experiment, or IS mutation.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite
