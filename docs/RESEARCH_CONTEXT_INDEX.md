@@ -175,6 +175,9 @@ Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMU
 Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
 Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
 Current central review object             Settled Relation Coupling Audit Package
+Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
+Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
+Next dependency after SRS-SEM-01           SRS-VAL-01 — Reuse Validation Predicate
 Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
@@ -363,7 +366,12 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF ES–IS SETTLED RELATION COUPLING AUDIT PACKAGE ONLY.
+  HUMAN REVIEW OF ISSUE #2 DECOMPOSITION CONTROL ARTIFACT ONLY.
+  It selects one smallest next closure task: SRS-SEM-01 Minimal Settled Relation
+  State Semantic Boundary. If accepted, the next artifact is a design-only
+  SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
+  code change is authorized. Do not start SRS-VAL-01 or later tasks by default.
+  The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite
   design, but Minimal PIR Probe v0.2 is paused pending central architecture

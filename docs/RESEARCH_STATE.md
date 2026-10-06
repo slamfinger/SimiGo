@@ -162,6 +162,35 @@
 >
 > **Minimal PIR Probe Design v0.2 = DELIVERED FOR HUMAN REVIEW。**
 >
+> **Issue #2 decomposition/control artifact = DELIVERED FOR HUMAN REVIEW。**
+> 当前研究位置被分解为：Established / prerequisite evidence /
+> architecture-clarified-but-unproven / open gaps。没有建立新 task tree。
+>
+> 剩余逻辑 gap：
+>
+> ```text
+> G1 SRS minimal semantic boundary
+> G2 SRS reuse validation predicate
+> G3 ES→IS settlement contract
+> G4 IS→ES reuse contract
+> G5 durable SRS carrier-binding boundary
+> G6 minimal ES₁→IS→ES₂ experiment design
+> G7 experiment execution
+> ```
+>
+> 只选择一个最小下一封口任务：
+>
+> ```text
+> SRS-SEM-01 Minimal Settled Relation State Semantic Boundary
+> Status = SELECTED, NOT STARTED
+> ```
+>
+> 理由：validation predicate、ES→IS settlement、IS→ES reuse、carrier binding
+> 和最终实验都依赖 SRS semantic boundary 先封口。SRS-SEM-01 完成判据是专门
+> design artifact 获得 Human ACCEPTED；它仍不得实现、建 schema、改
+> RelationCore/InformationCore、授权 IS mutation 或运行实验。下一个依赖是
+> `SRS-VAL-01 Reuse Validation Predicate`。
+>
 > **ES–IS Settled Relation Coupling audit package = DELIVERED FOR HUMAN REVIEW。**
 > Human commission `ca3d606` 要求全库审计后确立核心架构。结论：
 > `Settled Relation State` 是由 IPAC adoption、Relation edge、U-A

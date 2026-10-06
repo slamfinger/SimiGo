@@ -21,6 +21,7 @@
 > **UPDATE 11：PIR v0.2 + Clarification Addendum ACCEPTED；Minimal PIR Probe Design v0.1 COMMISSIONED AND DELIVERED FOR REVIEW**。仅设计；implementation/experiment/fixture/code change 均 NOT AUTHORIZED。
 > **UPDATE 12：Minimal PIR Probe v0.1 = CONDITIONAL PASS；v0.2 已提交 Human review**。四项修订：`W_obs_age`、non-circular scope boundedness、phase scaling attribution、MOVE/RENAME protocol。Fixture/implementation/experiment 均 NOT AUTHORIZED。
 > **UPDATE 13：ES–IS Settled Relation Coupling audit package 已交付待审**。`Settled Relation State` = 新 canonical composite，不是 cache/bare result/checkpoint；`Information Topology` = ES 累积形成的 Information/Relation/SRS 结构。核心缺口 = **ES₁→IS→ES₂ Settled Relation Reuse**，NOT ESTABLISHED。PIR v0.2 保持 accepted freshness prerequisite design，但 Minimal PIR Probe v0.2 暂停，等待 central architecture ruling。SRS implementation/experiment/code change NOT AUTHORIZED。
+> **UPDATE 14：Issue #2 decomposition/control artifact 已交付待审**。只选择一个最小下一封口任务：`SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`，status = SELECTED / NOT STARTED。通过后才允许单独准备 SRS-SEM-01 design；后续依赖是 `SRS-VAL-01`。没有实现、fixture、实验、IS mutation 或 code change 授权。
 > 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
 > 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
 

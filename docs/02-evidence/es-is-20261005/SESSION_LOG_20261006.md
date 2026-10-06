@@ -1681,6 +1681,97 @@ SRS experiment             NOT AUTHORIZED
 SimiGo code change         NOT AUTHORIZED
 ```
 
+## Issue #2 decomposition/control artifact delivered — 2026-10-06
+
+Human opened GitHub Issue #2 to require decomposition of the ES–IS architecture
+research position without creating a new task tree, implementation, fixture, or
+experiment.
+
+Delivered control artifact:
+
+```text
+docs/00-governance/
+  SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
+```
+
+The artifact preserves historical lineage:
+
+```text
+Phase 2 Relation → IPAC adoption question → Boundary Synthesis →
+Research Constitution / Core Reference Scenario → R01 → PIR v0.2 →
+Settled Relation Audit Package → Issue #2 decomposition.
+```
+
+It classifies:
+
+```text
+ESTABLISHED:
+  ES↔IS constitutional loop;
+  Core Scenario;
+  immutable Information;
+  immutable Relation edge;
+  bounded Relation persistence;
+  U-A durable carrier/revision/provenance machinery;
+  R01 bounded continuation from prepared closure;
+  PIR v0.2 as accepted prerequisite design.
+
+PREREQUISITE EVIDENCE:
+  IPAC, R01, PIR, U-A, RelationCore support future SRS work but do not prove
+  SRS reuse.
+
+ARCHITECTURE-CLARIFIED BUT UNPROVEN:
+  Settled Relation State;
+  Information Topology;
+  ES₁→IS→ES₂ reuse loop;
+  lawful reuse predicate;
+  invalidation behavior;
+  bare-result insufficiency.
+
+OPEN GAPS:
+  G1 SRS semantic boundary;
+  G2 SRS reuse validation predicate;
+  G3 ES→IS settlement contract;
+  G4 IS→ES reuse contract;
+  G5 durable SRS carrier-binding boundary;
+  G6 minimal reuse experiment design;
+  G7 experiment execution.
+```
+
+Only one smallest next closure task was selected:
+
+```text
+SRS-SEM-01 Minimal Settled Relation State Semantic Boundary
+Status = SELECTED, NOT STARTED
+```
+
+It is prior to validation, settlement, reuse, carrier binding, and experiment
+because those tasks cannot define lawful inputs/outputs until SRS semantics are
+frozen.
+
+Completion requires a dedicated design-only artifact,
+`SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1.md`, plus Human ACCEPTED. It
+must not define Swift/SQLite structures, select a backend, modify cores, or run
+anything.
+
+Next dependency after acceptance:
+
+```text
+SRS-VAL-01 Settled Relation State Reuse Validation Predicate
+```
+
+Current state:
+
+```text
+Issue #2 output             DELIVERED FOR HUMAN REVIEW
+Selected task               SRS-SEM-01 / SELECTED, NOT STARTED
+Minimal PIR Probe v0.2      PAUSED pending central architecture ruling
+PIR implementation          NOT AUTHORIZED
+PIR experiment              NOT AUTHORIZED
+SRS implementation          NOT AUTHORIZED
+SRS experiment              NOT AUTHORIZED
+SimiGo code change          NOT AUTHORIZED
+```
+
 ## Query-Priority Reconciliation direction and PIR Design v0.2 — 2026-10-06
 
 The Human accepted a PIR design principle:
