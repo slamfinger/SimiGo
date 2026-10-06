@@ -133,9 +133,12 @@ Probe v0.3                              NOT WARRANTED
 Experiment authorization package         R01 REV1 SUBMITTED FOR SECOND REVIEW; FIRST REVIEW = REVISE BEFORE S1
 Experiment authorization document        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md
 R01 first-review ruling                  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md
+R01 Rev1 second-review ruling            docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REV1_SECOND_REVIEW_RULING_20261006.md
 Candidate run                           ES-CSP-RUN-01 / NOT AUTHORIZED
-R01 S1 fixture preparation              NOT APPROVED
-Fixture preparation                      NOT STARTED
+R01 S1 fixture preparation              APPROVED / COMPLETE
+R01 S1 completion record                docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md
+R01 S2 fixture manifest review          REQUIRED
+R01 S3 experiment execution             NOT AUTHORIZED
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)

@@ -10,6 +10,8 @@
 > **当前停 = Experiment Authorization Package / Run Manifest 审查之前。Experiment NOT AUTHORIZED；Execution Authorization NOT YET REQUESTED。禁止实现、fixture 执行、U-3/U-4/U-5/U-6、Phase D/E、migration、MemPalace integration 或 Frozen Contract/UA v1.0 修改。**
 > **UPDATE：Experiment Authorization Package / Run Manifest R01 已提交待审**：`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md`。Candidate run = `ES-CSP-RUN-01`。提交不等于授权；fixture preparation / database / run 均 NOT STARTED。
 > **UPDATE 2：R01 first review = REVISE BEFORE S1；R01 Rev1 已提交第二审**。裁定：`docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md`。已修正 N-B dual-pointer schema、reconstruction role blinding、opaque stable session locator。S1 NOT APPROVED；Experiment NOT AUTHORIZED。
+> **UPDATE 3：R01 Rev1 second review = ACCEPTED；S1 APPROVED**。裁定：`docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REV1_SECOND_REVIEW_RULING_20261006.md`。可准备三套 fixture manifests/checksums；S2 REQUIRED；S3 NOT AUTHORIZED；Experiment NOT AUTHORIZED。
+> **UPDATE 4：S1 COMPLETE**。P-POS / N-A / N-B 三套独立 fixture 已物化且 G-R/G-C PASS；完成记录：`docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md`。当前停 = S2 Human fixture review。S3 NOT AUTHORIZED。
 > 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
 > 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
 

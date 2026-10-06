@@ -1377,3 +1377,59 @@ Experiment    NOT AUTHORIZED
 Fixture prep  NOT STARTED
 Probe run     NOT STARTED
 ```
+
+## R01 Rev1 accepted; S1 fixture preparation complete — 2026-10-06
+
+The Human's second independent review accepted R01 Rev1 at `bce3dc4` and
+approved S1 only:
+
+```text
+R01 Rev1       ACCEPTED
+S0 review     PASS
+S1            APPROVED / COMPLETE
+S2            REQUIRED
+S3            NOT AUTHORIZED
+Experiment    NOT AUTHORIZED
+```
+
+Formal record:
+
+```text
+second-review ruling docs/00-governance/
+  PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REV1_SECOND_REVIEW_RULING_20261006.md
+S1 completion record docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md
+```
+
+Three independent fixtures were materialized outside the repository using the
+accepted U-A SQLite surface:
+
+```text
+P-POS  E3645CE9-F8E3-4DF5-8644-33CD96143F9C  G-R PASS / G-C PASS
+N-A    DCC93C19-02B9-4E6C-BDD8-DF3371DF9871  G-R PASS / G-C PASS
+N-B    2F204D32-02A4-416E-BEE2-965CD5A626CE  G-R PASS / G-C PASS
+```
+
+Each has actual U-A session records, CC-5 mappings, provenance, revision
+fields, stable opaque session locator, and SHA-256 payload/manifest evidence.
+No `CarrierRelation` or hidden semantic growth was introduced. No C1, C2, C3,
+I-1, I-2, Probe Run, or execution result was produced.
+
+Two earlier preparation attempts were aborted by preparer validation and
+quarantined as failed attempts:
+
+```text
+missing-pointer-records
+pointer-target-harness-defect
+```
+
+Neither failed attempt was reconstructed, evaluated, or used as an accepted
+fixture.
+
+Current state:
+
+```text
+S2 fixture manifest review  REQUIRED
+S3 execution               NOT AUTHORIZED
+Experiment                 NOT AUTHORIZED
+Probe run                  NOT STARTED
+```

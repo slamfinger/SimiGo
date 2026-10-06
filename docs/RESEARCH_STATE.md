@@ -64,7 +64,7 @@
 > ```text
 > Experiment                 NOT AUTHORIZED
 > Execution Authorization    NOT REQUESTED
-> Fixture preparation        NOT STARTED
+> Fixture preparation        COMPLETE AFTER LATER R01 Rev1 APPROVAL
 > Probe run                  NOT STARTED
 > ```
 >
@@ -73,7 +73,10 @@
 > records（`P1a → B1`、`P1b → B2`），禁止多值 pointer；fresh reconstruction
 > 改用 opaque fixture instance ID，不知晓 fixture role；新增 pre-registered
 > opaque stable session locator 作为 deterministic entry point，不做扫描或
-> semantic discovery。R01 Rev1 已提交第二审。当前 `S1 NOT APPROVED`。
+> semantic discovery。R01 Rev1 已通过第二审；`S1 fixture preparation COMPLETE`。
+> P-POS / N-A / N-B 三套独立 fixture 均已物化，G-R/G-C 全 PASS；证据见
+> `docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md`。
+> 当前 `S2 REQUIRED`、`S3 NOT AUTHORIZED`、`Experiment NOT AUTHORIZED`。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 
