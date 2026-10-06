@@ -7,7 +7,10 @@
 ## Restored research state / memory anchor — 2026-10-06
 
 > **Recovery anchor:** `docs/00-governance/SIMIGO_LAB_RESEARCH_STATE_MEMORY_RECOVERY_ANCHOR_20261006.md`。
-> Canonical source = GitHub `slamfinger/SimiGo-Lab@main`，恢复基线 = `0508e26`。
+> Canonical source = GitHub `slamfinger/SimiGo-Lab@main`。
+> Recovery baseline = `0508e26`。
+> Research-state content revision = `bcc6b81`。
+> Current `main` = verify dynamically with `git rev-parse HEAD`。
 > 本节是新会话的第一恢复入口；旧 UPDATE 段落如与本节冲突，以本节和 anchor 为准。
 >
 > **全局研究目标：**

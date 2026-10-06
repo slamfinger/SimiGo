@@ -1,6 +1,9 @@
 # SimiGo-Lab Research State / Memory Recovery Anchor
 
-> **Status:** RECOVERY ANCHOR — CURRENT AS OF MAIN `0508e26`
+> **Status:** RECOVERY ANCHOR
+> **Recovery baseline:** GitHub `slamfinger/SimiGo-Lab@main` = `0508e26`
+> **Research-state content revision:** `bcc6b81`
+> **Metadata correction:** this commit; verify current `main` dynamically with `git rev-parse HEAD`
 > **Date:** 2026-10-06
 > **Canonical source:** GitHub `slamfinger/SimiGo-Lab@main`
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.

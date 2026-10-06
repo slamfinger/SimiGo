@@ -1,6 +1,9 @@
 # SimiGo-Lab 新会话研究任务交接基线
 
-> **🔴 CURRENT RECOVERY ANCHOR — READ FIRST (2026-10-06, baseline `0508e26`)**
+> **🔴 CURRENT RECOVERY ANCHOR — READ FIRST (2026-10-06)**
+> Recovery baseline = `0508e26`。
+> Research-state content revision = `bcc6b81`。
+> Current `main` = verify dynamically with `git rev-parse HEAD`。
 > Recovery anchor: `docs/00-governance/SIMIGO_LAB_RESEARCH_STATE_MEMORY_RECOVERY_ANCHOR_20261006.md`.
 > Authoritative restored state: `docs/RESEARCH_STATE.md` → “Restored research state / memory anchor”.
 > Canonical source: GitHub `slamfinger/SimiGo-Lab@main`.

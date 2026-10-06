@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — RESEARCH STATE / MEMORY RECOVERY ANCHOR (2026-10-06, baseline 0508e26)` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT MAIN — RESEARCH STATE / MEMORY RECOVERY ANCHOR (2026-10-06)` — Recovery baseline `0508e26`; Research-state content revision `bcc6b81`; always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
