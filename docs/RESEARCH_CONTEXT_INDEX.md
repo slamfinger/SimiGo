@@ -77,6 +77,16 @@ CCVS-01 A1 CarrierSQLite adapter       IMPLEMENTED / CONFORMANCE 10/10 PASS
 CCVS-01 PV1 Baseline A                 SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED
 CCVS-01 PV1 bounds                     PB-B1..B14 ALL ACTIVE / MET (Q1 primary; D-A/D-B/D-C closure)
 CCVS-01 P8 crash/recovery              COMPLETE / G2 PASS (SIGKILL scope; F4=N/A; F7=REPAIR; F8/F9=DETACHED)
+CCVS-01 Unified direction              ACCEPTED BY HUMAN RULING (File + Session first-class carrier workloads)
+CCVS-01 Unified rebaseline proposal    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_REBASELINE_PROPOSAL_20261006.md
+CCVS-01 Unified direction ruling       docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_DIRECTION_RULING_20261006.md
+CCVS-01 Candidate B1                   SUSPENDED (registered reason; superseded by Unified scope)
+CCVS-01 U-0 session evidence           DELIVERED
+CCVS-01 U-0 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
+CCVS-01 U-1 addendum protocol          PROPOSED / AWAITING HUMAN REVIEW
+CCVS-01 U-1 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
+CCVS-01 U-2 implementation             NOT AUTHORIZED
+CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 CCVS-01 interface preconstruction      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
@@ -221,10 +231,13 @@ Current state:
   quiescence as three consecutive 5 s admission windows.
 
 Candidate next transition:
-  Execute Phase C under the frozen protocol: candidate composition manifests
-  (PB-F6), adapter implementation for declared compositions, conformance
-  pass, then controlled runs under frozen admission/statistical rules.
-  Final backend selection remains NOT AUTHORIZED until the Phase E gate.
+  Human review of the U-1 Unified Addendum Protocol v0.1 (Unified File +
+  Session scope accepted by ruling): ACCEPT/FREEZE, REVISE, or PARK.
+  U-2 implementation and Unified benchmark execution remain NOT AUTHORIZED
+  until separately ruled. File-side Phase C results (Baseline A + P8) stand
+  as delivered evidence; candidate B1 is suspended with a registered
+  reason. Final backend selection remains NOT AUTHORIZED until the Phase E
+  gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.

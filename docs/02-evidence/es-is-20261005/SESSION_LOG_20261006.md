@@ -11,10 +11,16 @@ Path A default entry                 = ACTIVE
 Phase 2 recovery                     = ACCEPTED / BOUNDED PASS / CLOSED
 IS-IDLOC-SEAM-01                     = REGISTERED / OPEN / NOT FROZEN / v0.1
 PICS-01                              = ACCEPTED / BOUNDED PASS / CLOSED
-CCVS-01                              = PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
+CCVS-01                              = PB v1.2 FROZEN / PHASE C EXECUTING (File side VALID)
+CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PASS
+CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
+CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
+CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
+CCVS-01 U-1                          = PROPOSED / AWAITING HUMAN REVIEW
+CCVS-01 U-2 implementation           = NOT AUTHORIZED
+CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
-Benchmark execution                  = NOT AUTHORIZED
-Backend selection                    = NOT AUTHORIZED
+Backend selection                    = NOT AUTHORIZED (Phase E gate)
 OSS integration                      = NOT AUTHORIZED
 Migration                            = NOT AUTHORIZED
 Higher-Layer ES↔IS semantics         = NOT OPENED
@@ -169,6 +175,73 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     manifest, no caching, no ES<->IS coupling. Next: admission gates, then
     Baseline A runs first (PV1).
 
+30. Human supplied the Unified File + Session Information Carrier rebaseline
+    proposal and ruled `按这个设计方向执行。` in response to its registered
+    decision point. The proposal was archived verbatim as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_REBASELINE_PROPOSAL_20261006.md`
+    and the ruling registered as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_DIRECTION_RULING_20261006.md`.
+    Governance consequences: CCVS-01 scope extended with the Unified
+    File + Session object (File and Session = equal first-class carrier
+    workloads); PB v1.2 unchanged and still governing the File side; all
+    File-side evidence inherited without re-proof (Baseline A conformance
+    10/10, PV1 SMALL+MEDIUM VALID, PB-B1..B14 MET with D-A/D-B/D-C
+    classification, P8 G2 PASS with F7 carried as a design obligation);
+    candidate B1 SUSPENDED before any manifest/run with a registered
+    reason per the PB-F6 roster rule; first Unified candidate = U-A
+    Unified Minimal (evolution of A1); MemPalace capability parity =
+    behavioral acceptance reference, not schema; U-0 + U-1 documentation
+    work AUTHORIZED; U-2 implementation, Unified benchmarks, MemPalace
+    integration (U-B), backend selection, migration, Lab reorganization,
+    ES<->IS opening all NOT AUTHORIZED.
+
+31. U-0 delivered:
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md`.
+    Twelve sources inventoried (G0 static+runtime, Real Carrier v0, G1,
+    G2, G3, RQ-G3-1, RQ-G3-2, T1/T2/T3, Y ruling + BR freeze, ISMCI
+    audit, P8, PB v1.2). Eight established facts registered with
+    bounding (coexistence; work-frontier retrieval value; session =
+    process state; zero-new-read continuation; excluded ≠ safe
+    historical state; continue ≠ re-audit; activation is not storage;
+    raw ≠ summary ≠ index ≠ semantic state). Five inherited failure
+    modes mapped to design obligations: XLSX flattening ->
+    RepresentationLocator; numeric retrieval noise -> mandatory
+    exact/structured search layer; session/source ordering inversion ->
+    (SessionID, sequence) invariant; derived-index contamination + P8
+    F7 -> IndexSource deterministic rebuild; wake-up/context pollution
+    -> upper-layer negative space. Session Information Record kinds
+    mapped to their supporting evidence. No experiment, no schema
+    freeze, no code.
+
+32. U-1 delivered as UA v0.1 PROPOSED / AWAITING HUMAN REVIEW:
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md`.
+    Contents: conflict/precedence rules (additive only; PB v1.2
+    identifiers never redefined); UIS-01 research object; nine logical
+    structures frozen as logical schema only (Universal Information
+    with opaque kind, Representation, Locator, first-class Session,
+    SessionEvent with the hard (SessionID, sequence) invariant, Session
+    Information Record kinds, typed File<->Session relations,
+    RepresentationLocator structured provenance, IndexSource);
+    raw/derived boundary; additive correctness bounds I14-I18, hard
+    gates G9-G12, crash points F10-F14 (same verdict vocabulary);
+    workload families S1-S8 (new), F family inherited, X1-X8 (new),
+    with WL6-U "Unified Research Day" (16 frozen steps) as the primary
+    binding workload; mandatory real-corpus diagnostic realism tier
+    (archive-organizer as File producer; G1-G3/MemPalace records as
+    session source; never entering synthetic fixtures); performance
+    bounds PB-U1..PB-U11 starting UNCALIBRATED with the D-A Q1
+    amplification discipline; statistical protocol inherited verbatim
+    from v1.2 §3.5; candidate compositions U-A/U-B/U-C/U-D with U-A
+    first and U-D excluded AS-IS; MemPalace capability parity
+    reference; extended seam-cost objects; phase sequence U-2..U-6 with
+    explicit gates; negative space; next-gate options A/B/C.
+
+33. Standing restrictions unchanged: no U-2 implementation, no Unified
+    benchmark execution, no MemPalace integration, no backend selection
+    (Phase E gate), no migration, no Lab physical reorganization, no
+    ES<->IS opening, no Frozen Contract change, no PB v1.2 change, no
+    mid-run protocol change.
+
 ## Key documents
 
 ```text
@@ -202,6 +275,18 @@ CCVS-01 Phase B freeze + Phase C authorization ruling
 CCVS-01 Phase C kickoff + A1 manifest
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
 
+CCVS-01 U-0 consolidation
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
+
+CCVS-01 U-1 addendum protocol v0.1
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
+
+CCVS-01 Unified rebaseline proposal (archived verbatim)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_REBASELINE_PROPOSAL_20261006.md
+
+CCVS-01 Unified direction ruling
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_DIRECTION_RULING_20261006.md
+
 CCVS-01 A1 adapter code
   trackD-memory/Sources/CarrierSQLite/ (CarrierSQLite target)
 ```
@@ -209,15 +294,19 @@ CCVS-01 A1 adapter code
 ## Next legal transition
 
 ```text
-CCVS-01-PB v1.2 is FROZEN and Phase C controlled validation is AUTHORIZED.
+CCVS-01-PB v1.2 remains FROZEN. The Unified direction ruling extended the
+CCVS-01 scope: File Information and Session Information are equal
+first-class carrier workloads, with the archived rebaseline proposal as
+design basis.
 
-Current step: implement the A1 composition (CarrierSQLite target), pass
-CarrierConformanceSuite, then run Baseline A first under the frozen
-admission/statistical rules.
+Current step: Human review of the U-1 Unified Addendum Protocol v0.1 ->
+ruling (option A ACCEPT/FREEZE, option B REVISE, or option C PARK).
+U-2 implementation and Unified benchmark execution remain NOT AUTHORIZED
+until separately ruled.
 
 Standing restrictions: no final backend selection (Phase E gate), no
 migration, no Lab reorganization, no ES<->IS opening, no Frozen Contract
-change, no mid-run protocol change.
+change, no PB v1.2 change, no mid-run protocol change.
 ```
 
 Any suspected protocol defect during Phase C stops the affected judgment and
