@@ -11,13 +11,14 @@ Path A default entry                 = ACTIVE
 Phase 2 recovery                     = ACCEPTED / BOUNDED PASS / CLOSED
 IS-IDLOC-SEAM-01                     = REGISTERED / OPEN / NOT FROZEN / v0.1
 PICS-01                              = ACCEPTED / BOUNDED PASS / CLOSED
-CCVS-01                              = PB v1.2 FROZEN / PHASE C EXECUTING (File side VALID)
-CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PASS
+CCVS-01                              = PB v1.2 FROZEN / PHASE C FILE SIDE EXECUTED AND VALID / UNIFIED U-2 NOT STARTED
+CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PASS (delivered evidence, inherited)
 CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
 CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
-CCVS-01 U-1                          = v0.3 DELIVERED (R-1..R-11 + A-1..A-3 + CC-MA) / TARGETED REVIEW: NO BLOCK / AWAITING HUMAN FREEZE GATE
-CCVS-01 U-2 implementation           = NOT AUTHORIZED
+CCVS-01 U-1                          = v0.3 DELIVERED (R-1..R-11 + A-1..A-3 + CC-MA) / TARGETED REVIEW: NO BLOCK / FREEZE GATE OPEN WITH FIVE CONDITIONS
+CCVS-01 UA v0.3 freeze review        = REGISTERED (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate / state hygiene)
+CCVS-01 Unified U-2                  = NOT STARTED / NOT AUTHORIZED
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
 Backend selection                    = NOT AUTHORIZED (Phase E gate)
@@ -392,6 +393,35 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     implicit). Per ruling E the protocol returns to the **HUMAN REVIEW
     / FREEZE GATE**. U-2 remains NOT AUTHORIZED.
 
+40. Human Freeze Review on UA v0.3 registered (verbatim in
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md`):
+    design mainline ACCEPTED, no re-architecture, no v0.4, no U-2
+    entry; freeze gate OPEN with FIVE CONDITIONS — (1) UA-P7 reworded
+    to split "no new semantic concurrency contract" from
+    compound-operation atomicity (MA-4 governs the compound case);
+    (2) I20 narrowed to "No unintended duplicate Carrier identity or
+    conflicting duplicate registration for one logical Carrier
+    instance"; (3) unified concurrency frozen as ONE CONTRACT /
+    guarantees, NOT one physical algorithm (CAS / atomic sequence
+    allocation / SQLite transactions / build-version+swap all
+    admissible; Universal Lock Manager forbidden); (4) P8 F7 feedback
+    elevated to a U-A must-pass rebuild completeness gate (authority
+    must hold searchable source content sufficient for the index's
+    promised coverage; otherwise only INCOMPLETE rebuild capability may
+    be declared) — A1's F7 stays a valid File-side baseline result but
+    is NOT the U-A implementation template; (5) state hygiene (this
+    commit). Standing recording requirement FR-7: future crash-boundary
+    PASSes carry "PASS (expected detached/orphan state, explicitly
+    detected)" or ExpectedPostCrashState = DETACHED_OR_ORPHAN_DETECTED;
+    the existing P8 record is not retroactively modified. State
+    correction sharpened everywhere: Phase C FILE SIDE = EXECUTED AND
+    VALID; Unified U-2 = NOT STARTED.
+    HYGIENE NOTE: Progress items 1..39 are append-only historical
+    narrative (item 14 reflects its own date, later superseded by
+    items 26-29); the three canonical sections (Current state / Key
+    documents / Next legal transition) are the ONLY current-truth
+    surfaces and have been made unique and conflict-free.
+
 ## Key documents
 
 ```text
@@ -437,13 +467,16 @@ CCVS-01 U-1 addendum protocol v0.3 (CURRENT)
 CCVS-01 U-1 v0.3 targeted conformance review (NO BLOCK)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
 
+CCVS-01 UA v0.3 freeze review (FIVE CONDITIONS REGISTERED)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md
+
 CCVS-01 U-1 v0.2 conformance review (REVISE, R-1..R-11)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 
 CCVS-01 U-1 revision ruling (two messages, second operative)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
 
-CCVS-01 U-1 addendum protocol v0.2 (CURRENT)
+CCVS-01 U-1 addendum protocol v0.2 (SUPERSEDED by v0.3, history)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
 
 CCVS-01 U-1 addendum protocol v0.1 (SUPERSEDED, history)
@@ -462,24 +495,44 @@ CCVS-01 A1 adapter code
 ## Next legal transition
 
 ```text
-CCVS-01-PB v1.2 remains FROZEN. CCVS-01 scope: Unified File + Session
-Carrier (File and Session = Carrier instance families, equal first-class
-workloads) over the EXISTING SimiGo Information Space semantics. The v0.2
-conformance review found zero semantic conflicts (REVISE, R-1..R-11);
-the review ruling accepted the direction, mandated UA v0.3 with the
-fixes plus the NEW CC-MA Multi-Agent Carrier Consistency surface
-(MA-1..MA-10 from the C1-C10 catalog, I19-I25, MA-DS-1 binding design
-scenario, Agent = actor only).
+CCVS-01-PB v1.2 remains FROZEN.
 
-Current step: HUMAN REVIEW / FREEZE GATE on UA v0.3 (targeted review:
-NO BLOCK). Option A = ACCEPT/FREEZE as UA v1.0, then U-2 authorization
-separately; option B = REVISE; option C = PARK.
+GATE SEPARATION (do not conflate):
+  Gate A (CLOSED):   CCVS-01 Phase C FILE SIDE — A1 CarrierSQLite
+                     implemented, conformance 10/10, Baseline A SMALL
+                     5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 F1-F9
+                     executed (G2 PASS), D-A/D-B/D-C calibration.
+                     Delivered evidence, inherited; nothing here is
+                     re-opened.
+  Gate B (OPEN):     UA v0.3 Unified Carrier Contract FREEZE — targeted
+                     review NO BLOCK; Human Freeze Review registered
+                     FIVE conditions (UA-P7 split / I20 narrowed /
+                     unified concurrency = one contract not one
+                     algorithm / U-A rebuild completeness gate from P8
+                     F7 / state hygiene DONE). On ACCEPT/FREEZE the
+                     conditions are incorporated into the frozen UA
+                     v1.0 text.
+  Gate C (NOT STARTED): Unified U-2 — first deliverable = U-A Unified
+                     Minimal composition manifest (FILE + SESSION +
+                     mapping + provenance + CC-MA on the A1 base;
+                     MA-3/MA-4/MA-6/MA-7/MA-9/MA-10 as verifiable
+                     mechanisms, not slogans), then the first Unified
+                     validation round answering: "Can the Unified
+                     Carrier itself, on the minimal SQLite + POSIX
+                     substrate, put File and Session into one Carrier
+                     contract and withstand Multi-Agent Research Day?"
+                     NO horizontal carrier-topology comparison in round
+                     one. Requires its own Human authorization after
+                     Gate B closes.
+
+Option at Gate B: A = ACCEPT/FREEZE as UA v1.0 (five conditions
+incorporated); B = REVISE; C = PARK.
 
 Standing restrictions: no final backend selection (Phase E gate), no
 migration, no Lab reorganization, no ES<->IS opening, no Frozen Contract
 change, no PB v1.2 change, no mid-run protocol change, no Agent
 semantic entity / AgentStore / two-family concurrency split, no
-separate concurrency database layer.
+separate concurrency database layer, no Universal Lock Manager.
 ```
 
 Any suspected protocol defect during Phase C stops the affected judgment and

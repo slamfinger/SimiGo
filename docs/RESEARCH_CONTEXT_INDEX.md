@@ -74,7 +74,7 @@ PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_IN
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
 CCVS-01                                PHASE B ACCEPTED / FROZEN (v1.2)
-CCVS-01                                PHASE C AUTHORIZED / IN PROGRESS
+CCVS-01                                PHASE C AUTHORIZED / FILE SIDE EXECUTED AND VALID / UNIFIED U-2 NOT STARTED
 CCVS-01 Phase C kickoff + A1 manifest  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
 CCVS-01 A1 CarrierSQLite adapter       IMPLEMENTED / CONFORMANCE 10/10 PASS
 CCVS-01 PV1 Baseline A                 SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED
@@ -99,8 +99,10 @@ CCVS-01 UA v0.3                        DELIVERED (R-1..R-11 closed + A-1..A-3 di
 CCVS-01 UA v0.3 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md
 CCVS-01 UA v0.3 targeted review        NO BLOCK — RETURNED TO HUMAN FREEZE GATE
 CCVS-01 UA v0.3 targeted review doc    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
-CCVS-01 U-2 precondition               Human ACCEPT/FREEZE of UA v0.3, then U-2 authorization separately — U-2 manifest must include CC-MA mechanisms as mandatory check items — NOT a new semantic model
-CCVS-01 U-2 implementation             NOT AUTHORIZED
+CCVS-01 UA v0.3 freeze review          REGISTERED / FREEZE GATE OPEN WITH FIVE CONDITIONS (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate from P8 F7 / state hygiene DONE)
+CCVS-01 UA v0.3 freeze review doc      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md
+CCVS-01 U-2 precondition               Human ACCEPT/FREEZE of UA v0.3 with the five conditions incorporated into UA v1.0, then U-2 authorization separately — first deliverable = U-A Unified Minimal composition manifest (CC-MA mechanisms as verifiable implementations, mandatory check items) — NOT a new semantic model
+CCVS-01 U-2 implementation             NOT STARTED / NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
@@ -261,18 +263,29 @@ Current state:
   quiescence as three consecutive 5 s admission windows.
 
 Current next transition:
-  UA v0.3 is delivered and its mandated targeted conformance review found
-  NO BLOCK (R-1..R-11 closed; A-1..A-3 dispositions given as decision
-  inputs; CC-MA added — MA-1..10, I19-I25, MA-DS-1 "Multi-Agent Research
-  Day" as binding DESIGN scenario, Agent = actor only; family isomorphism
-  and identity boundaries verified). The protocol is back at the HUMAN
-  REVIEW / FREEZE GATE: option A = ACCEPT/FREEZE as UA v1.0 (then U-2
-  authorization separately; the U-2 manifest must include CC-MA
-  mechanisms as mandatory check items), option B = REVISE, option C =
-  PARK. U-2 implementation and Unified benchmark execution remain NOT
-  AUTHORIZED. File-side Phase C results (Baseline A + P8) stand as
-  delivered evidence; candidate B1 is suspended with a registered reason.
-  Final backend selection remains NOT AUTHORIZED until the Phase E gate.
+  GATE SEPARATION (do not conflate). Gate A = CLOSED: CCVS-01 Phase C
+  FILE SIDE executed and valid (A1 conformance 10/10, Baseline A SMALL
+  5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 G2 PASS, D-A/D-B/D-C) —
+  delivered evidence, inherited. Gate B = OPEN: UA v0.3 Unified Carrier
+  Contract FREEZE — targeted review NO BLOCK and the Human Freeze
+  Review registered FIVE conditions (UA-P7 split: no new semantic
+  concurrency contract ≠ compound operations exempt from MA-4
+  atomicity; I20 narrowed to unintended duplicate Carrier identity /
+  conflicting registration; unified concurrency = ONE CONTRACT, not
+  one physical algorithm; U-A rebuild completeness gate from P8 F7;
+  state hygiene done). On ACCEPT/FREEZE the five conditions are
+  incorporated into the frozen UA v1.0 text; option B = REVISE,
+  option C = PARK. Gate C = NOT STARTED: Unified U-2 — first
+  deliverable = U-A Unified Minimal composition manifest (FILE +
+  SESSION + mapping + provenance + CC-MA on the A1 base; MA-3/MA-4/
+  MA-6/MA-7/MA-9/MA-10 as verifiable mechanisms), then first Unified
+  validation answering whether the minimal SQLite + POSIX Unified
+  Carrier withstands MA-DS-1 "Multi-Agent Research Day"; NO horizontal
+  carrier-topology comparison in round one; requires its own Human
+  authorization after Gate B closes. File-side Phase C results stand as
+  delivered evidence; candidate B1 is suspended with a registered
+  reason. Final backend selection remains NOT AUTHORIZED until the
+  Phase E gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
