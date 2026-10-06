@@ -1668,3 +1668,63 @@ PIR Design v0.2    SUBMITTED FOR HUMAN REVIEW
 PIR implementation NOT AUTHORIZED
 PIR experiment     NOT AUTHORIZED
 ```
+
+## PIR v0.2 conditional pass and clarification addendum — 2026-10-06
+
+The Human independently reviewed PIR Query-Priority direction and Design v0.2
+at `ce10827`.
+
+Ruling:
+
+```text
+PIR Query-Priority Direction              PASS / ACCEPTED
+Architecture Principle                    PASS
+Passive Information Space                 PASS
+Query-Priority Reconciliation             PASS
+HOT/COLD logical model                    PASS
+ICAC direction                            PASS
+No-new-backend boundary                   PASS
+Governance separation                     PASS
+R01 compatibility                         PASS
+
+PIR Design v0.2                           CONDITIONAL PASS
+```
+
+Five required clarifications were registered and answered in a clarification
+addendum:
+
+```text
+F1  Query Scope = Information Scope + Physical Scope.
+    Physical Scope is required to discover create / move / rename /
+    unregistered relevant objects.
+
+F2  Scope Resolution and Physical Reconciliation must be measured separately.
+    An evaluation oracle may know planted relevant objects, but must not feed
+    them into the lawfully measured reconciliation path.
+
+F3  ICAC is a cost vector / decomposition, not a scalar formed by adding
+    heterogeneous units. Weighted ICAC is forbidden until separately
+    pre-registered.
+
+F4  Freshness Window splits into:
+    W_age     physical observation age bound
+    W_latency query-to-fresh-closure latency budget
+
+F5  HOT/COLD is request-relative. HOT = required by effective Query Scope.
+    COLD = not required. Historical Information is not inherently COLD.
+```
+
+The clarification addendum also defines bounded Physical Scope rules: declared
+roots/filters/exclusions only; no global filesystem scan, watching, or
+unrestricted recursive search.
+
+Current state:
+
+```text
+PIR Design v0.2                 CONDITIONAL PASS
+Clarification Addendum          DELIVERED FOR HUMAN REVIEW
+Minimal PIR Probe Design        NOT COMMISSIONED
+PIR implementation              NOT AUTHORIZED
+PIR experiment                  NOT AUTHORIZED
+SimiGo code change              NOT AUTHORIZED
+```

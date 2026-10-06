@@ -131,6 +131,18 @@
 >
 > **PIR Design v0.1 = SUPERSEDED BY V0.2 / RETAINED。**
 > **PIR Design v0.2 = DELIVERED FOR HUMAN REVIEW。**
+>
+> Human independent review裁定 **PIR Query-Priority Direction PASS**，
+> **PIR Design v0.2 = CONDITIONAL PASS**。五个 clarification 已交付：
+> ① Query Scope 分为 Information Scope + Physical Scope，可发现
+> create/move/rename/unregistered objects；② Scope Resolution 与 Physical
+> Reconciliation 必须分开测量；③ ICAC 是 cost vector，不得把不同单位相加成
+> scalar；④ Freshness Window 拆成 `W_age` 与 `W_latency`；⑤ HOT/COLD 是
+> request-relative，不是永久属性，historical 不天然 COLD。
+>
+> 当前 review object = **PIR v0.2 + Clarification Addendum**。Minimal PIR Probe
+> Design 未 commission；PIR implementation / experiment / SimiGo code change
+> 均 NOT AUTHORIZED。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

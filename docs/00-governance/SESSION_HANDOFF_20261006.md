@@ -17,6 +17,7 @@
 > **UPDATE 7：R01 CLOSED / ACCEPTED；verdict BOUNDED PASS。** Non-blocking `ES-CSP-MF-01` 登记为 distinct-target uniqueness 边界。下一研究缺口 = **PIR — Physical–Information Reconciliation**；PIR implementation/experiment/code change NOT AUTHORIZED。
 > **UPDATE 8：PIR Design v0.1 已提交 Human design review**：`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.1_20261006.md`。仅设计；PIR implementation/experiment/code change NOT AUTHORIZED。
 > **UPDATE 9：Query-Priority Reconciliation direction ACCEPTED；PIR Design v0.2 已提交 Human review**。核心原则 = query scope 优先 reconciliation，而非全库同步；ICAC 为 metric direction；10k/20/5 future shape 仅设计方向，NOT COMMISSIONED。
+> **UPDATE 10：PIR v0.2 = CONDITIONAL PASS；Clarification Addendum 已交付**。五项定义已锁死：Information Scope + Physical Scope、Scope Resolution 与 Reconciliation 分测、ICAC cost vector、`W_age`/`W_latency` 分离、request-relative HOT/COLD。Minimal PIR Probe Design NOT COMMISSIONED；PIR implementation/experiment/code change NOT AUTHORIZED。
 > 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
 > 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
 

@@ -1,11 +1,13 @@
 # Physical–Information Reconciliation — v0.2 Design
 
-> **Status:** DESIGN V0.2 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.2 CONDITIONAL PASS — CLARIFICATION ADDENDUM DELIVERED — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-06
 > **Supersedes:** PIR Design v0.1, retained as audit input
 > **Human direction incorporated:** Query-Priority Reconciliation; two-level freshness priority; ICAC metric direction
 > **Immediate predecessor result:** ES-CSP-RUN-01 = PASS — CONTINUATION SUFFICIENT / BOUNDED
 > **Scope guard:** design only. No SimiGo code change, no U-A change, no Frozen Contract change, no implementation, no fixture, no experiment, no user-file access or mutation.
+> **Review ruling:** `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_REVIEW_RULING_20261006.md`
+> **Clarification addendum:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_CLARIFICATION_ADDENDUM_20261006.md`
 
 ## 1. Core principle
 

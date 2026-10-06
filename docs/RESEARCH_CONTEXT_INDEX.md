@@ -152,6 +152,10 @@ PIR Design v0.2                          DELIVERED FOR HUMAN REVIEW
 PIR Design v0.2 document                  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_20261006.md
 PIR principle                             Query-Priority Reconciliation / scope-bound freshness / deferred non-scope reconciliation
 PIR metric direction                      ICAC — Information Closure Acquisition Cost
+PIR v0.2 review ruling                    CONDITIONAL PASS — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_REVIEW_RULING_20261006.md
+PIR v0.2 clarification addendum           docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_CLARIFICATION_ADDENDUM_20261006.md
+PIR current review object                 PIR Design v0.2 + Clarification Addendum
+Minimal PIR Probe Design                  NOT COMMISSIONED / NEXT ONLY AFTER ADDENDUM ACCEPTANCE
 PIR future experiment shape               10,000 objects / 20-object scope / 5 relevant changes — DESIGN DIRECTION ONLY, NOT COMMISSIONED
 PIR implementation                       NOT AUTHORIZED
 PIR experiment                           NOT AUTHORIZED
@@ -343,14 +347,15 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF PIR DESIGN V0.2 ONLY. R01 is CLOSED / ACCEPTED with bounded verdict
-  PASS — CONTINUATION SUFFICIENT. PIR is registered as the next research gap,
-  but implementation, experiment, and SimiGo code change are NOT AUTHORIZED.
-  PIR Design v0.2 is the current review object. It is bounded to physical
+  HUMAN REVIEW OF PIR V0.2 + CLARIFICATION ADDENDUM ONLY. R01 is CLOSED /
+  ACCEPTED with bounded verdict PASS — CONTINUATION SUFFICIENT. PIR is
+  registered as the next research gap, but implementation, experiment, and
+  SimiGo code change are NOT AUTHORIZED. The current review object is
+  PIR Design v0.2 plus its clarification addendum. It is bounded to physical
   change taxonomy, query-time freshness, constrained Reconciliation Sub-Agent
   responsibility, and typed reconciliation outputs/boundaries. Approval would
-  not authorize implementation; a minimal probe design would require separate
-  review. Do not open
+  not authorize implementation; a Minimal PIR Probe Design would require
+  separate commission and review. Do not open
   U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection, carrier
   migration, MemPalace integration, or any Frozen Contract / UA v1.0
   modification.
