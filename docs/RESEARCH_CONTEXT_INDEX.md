@@ -70,13 +70,15 @@ PICS-01                                ACCEPTED / BOUNDED PASS / CLOSED
 PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
-CCVS-01                                PHASE B PROTOCOL FREEZE REVISED v1.2
+CCVS-01                                PHASE B ACCEPTED / FROZEN (v1.2)
+CCVS-01                                PHASE C AUTHORIZED / IN PROGRESS
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 CCVS-01 interface preconstruction      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
 CCVS-01 Phase B protocol freeze        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md
 CCVS-01 Phase B revision ruling        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md
 CCVS-01 Phase B revision ruling 2      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md
+CCVS-01 freeze + Phase C authorization docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md
 Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Carrier-neutral interface              AUTHORIZED / DELIVERED
 Backend-specific implementation        NOT AUTHORIZED
@@ -133,8 +135,9 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of CCVS-01 Phase B v1.2 revised protocol;
-                                   Phase C benchmark execution and backend selection remain NOT AUTHORIZED.
+Next gate                        = Phase C controlled validation under frozen
+                                   protocol CCVS-01-PB v1.2; final backend
+                                   selection remains the Phase E gate.
 ```
 
 ## 4. Completed chain
@@ -213,9 +216,10 @@ Current state:
   quiescence as three consecutive 5 s admission windows.
 
 Candidate next transition:
-  Human review of the CCVS-01 Phase B v1.2 revised protocol.
-  No validation run, implementation, schema, migration, or backend selection.
-  Phase C requires a separate explicit Human authorization.
+  Execute Phase C under the frozen protocol: candidate composition manifests
+  (PB-F6), adapter implementation for declared compositions, conformance
+  pass, then controlled runs under frozen admission/statistical rules.
+  Final backend selection remains NOT AUTHORIZED until the Phase E gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
@@ -235,7 +239,8 @@ Seam guard:
   migration, repository reorganization, probe execution, or experiment.
   CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
   database capability.
-  CCVS-01 guard: Phase B protocol freeze delivered; no benchmark, backend-specific implementation, integration,
+  CCVS-01 guard: Phase B frozen (v1.2); Phase C authorized and in progress;
+  no final backend selection, migration, or Lab reorganization; mid-run protocol change forbidden.
   selection, migration, or Lab reorganization.
 
 Required before transition:

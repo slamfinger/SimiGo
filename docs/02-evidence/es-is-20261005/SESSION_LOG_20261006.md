@@ -126,6 +126,19 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     v1.2 returns to AWAITING HUMAN REVIEW. Human's stated expected ruling is
     v1.2 = ACCEPT / FROZEN with Phase C NOT AUTHORIZED, backend NOT SELECTED,
     benchmark NOT EXECUTED, ES<->IS opening CLOSED.
+26. Human issued the final ruling `A — ACCEPT / FROZEN` for CCVS-01-PB v1.2
+    and, in the same ruling's operative final line, authorized Phase C
+    Controlled Validation. Registered as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md`.
+    Governance consequence: Phase B is an executable protocol; mid-run rule
+    changes are forbidden — a suspected protocol defect stops the affected
+    judgment and requires a new Human ruling. Standing restrictions remain:
+    final backend selection (Phase E), migration, Lab reorganization, ES<->IS
+    opening, Frozen Contract changes.
+27. Phase C started under the frozen protocol: first target is Baseline A
+    (embedded registry + embedded search + POSIX entity store) with a
+    PB-F6 composition manifest, then adapter implementation, conformance,
+    and controlled runs under the frozen admission/statistical rules.
 
 ## Key documents
 
@@ -153,6 +166,9 @@ CCVS-01 Phase B revision ruling
 
 CCVS-01 Phase B revision ruling 2
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md
+
+CCVS-01 Phase B freeze + Phase C authorization ruling
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md
 ```
 
 ## Next legal transition

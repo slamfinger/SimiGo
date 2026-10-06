@@ -283,6 +283,19 @@
 > = v1.2 ACCEPT / FROZEN，且 Phase C NOT AUTHORIZED、backend NOT SELECTED、
 > benchmark NOT EXECUTED、ES↔IS higher-layer opening CLOSED。v1.2 待 Human
 > review。
+> Human 最终裁定 **A — ACCEPT / FROZEN**：CCVS-01-PB v1.2 达到冻结条件，统计链
+> 封闭（observation → per-run percentile → median-of-valid-runs → candidate
+> metric → bound/anti-complexity evaluation），performance failure ≠ INVALID、
+> pooled ≠ primary、quiescence = admission condition，不存在通过 invalid
+> budget/pooling/口径切换选择性取利的路径。治理结果：Phase B 成为可执行协议；
+> 执行开始后不得临场改 percentile/invalid/baseline/anti-complexity/ranking
+> 规则，发现协议缺陷必须先停止相关判定并走新 Human ruling。同一裁定的操作末句
+> **授权 Phase C Controlled Validation**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md`）。
+> 持续限制：最终 backend 选择仍属 Phase E gate；migration、Lab reorganization、
+> ES↔IS opening、Frozen Contract change 均关闭。Phase C 在冻结协议下启动：
+> 首个目标 = Baseline A（embedded registry + embedded search + POSIX entity
+> store）的 PB-F6 composition manifest、adapter 实现、conformance 与受控运行。
 > Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
 > protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
 > conformance suite、benchmark harness 与 metrics collector；禁止任何
