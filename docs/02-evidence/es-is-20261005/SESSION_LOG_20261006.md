@@ -16,8 +16,7 @@ CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PAS
 CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
 CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
-CCVS-01 U-1                          = REVISED BY RULING (B = REVISE, tightened: Unified Carrier Contract over existing semantics)
-CCVS-01 U-1 v0.2                     = PROPOSED / AWAITING HUMAN REVIEW
+CCVS-01 U-1                          = v0.3 DELIVERED (R-1..R-11 + A-1..A-3 + CC-MA) / TARGETED REVIEW: NO BLOCK / AWAITING HUMAN FREEZE GATE
 CCVS-01 U-2 implementation           = NOT AUTHORIZED
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
@@ -326,6 +325,73 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     AUTHORIZED until Human accepts the contract; suggested next step =
     UA v0.3 implementing R-1..R-11 after Human ruling on this review.
 
+37. Human ruled on the v0.2 conformance review in three messages (all
+    archived verbatim in
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md`):
+    **B = REVISE** — direction and the review's semantic-anchoring
+    conclusion ACCEPTED (no conflicts; no Canonical Logical Model; no
+    return to Information/Relation/Store basics); v0.2 NOT frozen;
+    UA v0.3 mandated with R-1..R-11 fixes, A-1..A-3 dispositions, and a
+    NEW mandatory contract surface **CC-MA — Multi-Agent Carrier
+    Consistency** (multi-agent parallel work = high-frequency future
+    scenario = first-class database-design constraint NOW, not later).
+    Message 1 supplied the C1–C10 capability catalog verbatim, the
+    concurrency design objects (Object Version / Operation Identity /
+    Write Intent / Idempotency Key / Snapshot-Read Version / Index
+    Build Version / ...), the Multi-Agent Research Day binding design
+    scenario, unified-concurrency-model-across-families, and
+    Agent-as-actor-only positioning (no AgentInformation/AgentRelation/
+    AgentStore). Message 2 supplied the honest capability-gap table of
+    the current preconstruction (architecture compatible, capability
+    not yet fully covered; InformationSpaceRuntime deliberately does
+    not unify cross-component transaction semantics) and its
+    verification boundary (CarrierSQLite local implementation not
+    assessed). Message 3 = formal instruction with B.1-B.3 special
+    preserves (record deletion ≠ Information deletion;
+    Information.Provenance vs carrier-operation provenance; identity
+    formation input vs identity stability rule) and D-prohibitions
+    (incl. not promoting the real parallel scenario to a completed
+    concurrency validation).
+
+38. UA v0.3 delivered:
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md`.
+    R-1..R-11 all closed (R-1/B.1 authoritative-carrier-content-loss
+    wording; R-2 residue removed; R-3/B.2 carrier_provenance two-layer
+    distinction; R-4 CCS-C8 relationship; R-5/A-1 carrier-identity
+    minting deferred to U-2 manifest; R-6/A-2 N:M default flagged for
+    Human confirmation; R-7 A1-adapter citation; R-8/B.3
+    formation-input vs stability-rule; R-9/A-3 FILE-kind open decision
+    input; R-10 Representation Identity as explicit CC-8 row #7;
+    R-11 workload-label pinning). **CC-MA added (§3A)**: MA-1..MA-10 =
+    C1-C10 verbatim; concurrency design objects (never semantic
+    objects); ONE unified concurrency model across both families (no
+    FileConcurrencyStore/SessionConcurrencyStore split); Agent =
+    actor only; **MA-DS-1 "Multi-Agent Research Day"** binding design
+    scenario (explicitly NOT a completed validation) with additive
+    correctness bounds **I19-I25** (no lost update / no identity
+    duplication / no dangling provenance / no invalid cross-version
+    relation / no session reorder / no duplicate retry / no
+    derived-index corruption); honest capability-status table of the
+    current preconstruction recorded as design basis; UA-P7 added
+    (concurrency = carrier-layer correctness mechanisms; layer ① needs
+    no concurrency protocol beyond S1-S6/R1-R6). CC-MA mechanisms are
+    mandatory U-2 composition-manifest check items. v0.2 marked
+    SUPERSEDED with full review lineage.
+
+39. Targeted Conformance Review delivered (per ruling E, five points
+    only):
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md`.
+    Every verification evidence-based (grep/inspection of v0.3 text).
+    **FINAL: NO BLOCK** — (1) R-1..R-11 closed; (2) A-1..A-3 explicit
+    dispositions without self-deciding; (3) CC-MA compatible with
+    frozen semantics (UA-P6/P7 clean; no MA clause implies Information
+    mutation; MA-5 forbidden equivalences reinforce frozen identity);
+    (4) family isomorphism retained under one concurrency model;
+    (5) identity boundaries now fully explicit (≠ chain stated in
+    full; Representation Identity and dual provenance no longer
+    implicit). Per ruling E the protocol returns to the **HUMAN REVIEW
+    / FREEZE GATE**. U-2 remains NOT AUTHORIZED.
+
 ## Key documents
 
 ```text
@@ -362,7 +428,16 @@ CCVS-01 Phase C kickoff + A1 manifest
 CCVS-01 U-0 consolidation
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
 
-CCVS-01 U-1 v0.2 conformance review
+CCVS-01 review ruling + CC-MA mandate (three messages)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md
+
+CCVS-01 U-1 addendum protocol v0.3 (CURRENT)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md
+
+CCVS-01 U-1 v0.3 targeted conformance review (NO BLOCK)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
+
+CCVS-01 U-1 v0.2 conformance review (REVISE, R-1..R-11)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 
 CCVS-01 U-1 revision ruling (two messages, second operative)
@@ -387,22 +462,24 @@ CCVS-01 A1 adapter code
 ## Next legal transition
 
 ```text
-CCVS-01-PB v1.2 remains FROZEN. The Unified direction ruling extended the
-CCVS-01 scope: File Information and Session Information are equal
-first-class carrier workloads, with the archived rebaseline proposal as
-design basis. The U-1 revision ruling (B = REVISE, tightened) fixed the
-revision target: the Unified Carrier Contract over the EXISTING SimiGo
-Information Space semantics — File and Session are Carrier instance
-families, not semantic branches.
+CCVS-01-PB v1.2 remains FROZEN. CCVS-01 scope: Unified File + Session
+Carrier (File and Session = Carrier instance families, equal first-class
+workloads) over the EXISTING SimiGo Information Space semantics. The v0.2
+conformance review found zero semantic conflicts (REVISE, R-1..R-11);
+the review ruling accepted the direction, mandated UA v0.3 with the
+fixes plus the NEW CC-MA Multi-Agent Carrier Consistency surface
+(MA-1..MA-10 from the C1-C10 catalog, I19-I25, MA-DS-1 binding design
+scenario, Agent = actor only).
 
-Current step: Human review of UA v0.2 (Unified Carrier Contract) ->
-ruling (option A ACCEPT/FREEZE, option B REVISE, or option C PARK).
-U-2 implementation and Unified benchmark execution remain NOT AUTHORIZED
-until separately ruled.
+Current step: HUMAN REVIEW / FREEZE GATE on UA v0.3 (targeted review:
+NO BLOCK). Option A = ACCEPT/FREEZE as UA v1.0, then U-2 authorization
+separately; option B = REVISE; option C = PARK.
 
 Standing restrictions: no final backend selection (Phase E gate), no
 migration, no Lab reorganization, no ES<->IS opening, no Frozen Contract
-change, no PB v1.2 change, no mid-run protocol change.
+change, no PB v1.2 change, no mid-run protocol change, no Agent
+semantic entity / AgentStore / two-family concurrency split, no
+separate concurrency database layer.
 ```
 
 Any suspected protocol defect during Phase C stops the affected judgment and

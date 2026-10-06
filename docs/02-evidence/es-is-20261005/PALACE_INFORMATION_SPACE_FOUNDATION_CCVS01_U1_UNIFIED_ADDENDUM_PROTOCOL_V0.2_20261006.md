@@ -1,5 +1,16 @@
 # CCVS-01 Unified Addendum Protocol — UA v0.2
 
+> **Status: SUPERSEDED — 2026-10-06**
+> **Superseded by:** `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md`
+> **Superseded by ruling:** `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md`
+> (B = REVISE on the conformance review outcome: v0.2 direction and
+> semantic anchoring ACCEPTED, freeze NOT granted; v0.3 = R-1..R-11 fixes +
+> A-1..A-3 dispositions + new CC-MA Multi-Agent Carrier Consistency surface).
+> **Review lineage:** UA v0.2 was reviewed in
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md`
+> (REVISE, R-1..R-11, zero BLOCK). All eleven findings are closed in v0.3.
+> Content below retained as revision history; do not use for review.
+
 > **Status:** PROPOSED / AWAITING HUMAN REVIEW
 > **Date:** 2026-10-06
 > **Revision lineage:** v0.1 (PROPOSED) → Human ruling **B = REVISE**

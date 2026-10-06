@@ -95,8 +95,11 @@ CCVS-01 U-1 v0.2 document              docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 U-1 v0.2 conformance review    REVISE (11 precision findings, zero BLOCK) / record: docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 CCVS-01 U-1 v0.2 ruling                docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md
 CCVS-01 U-1 v0.2 ruling                B = REVISE / direction + semantic anchoring ACCEPTED / v0.2 NOT FROZEN
-CCVS-01 UA v0.3                        MANDATED (R-1..R-11 + A-1..A-3 + CC-MA)
-CCVS-01 U-2 precondition               UA v0.3 targeted conformance review + Human acceptance/freeze — NOT a new semantic model
+CCVS-01 UA v0.3                        DELIVERED (R-1..R-11 closed + A-1..A-3 dispositions + CC-MA MA-1..10 / I19-I25 / MA-DS-1)
+CCVS-01 UA v0.3 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md
+CCVS-01 UA v0.3 targeted review        NO BLOCK — RETURNED TO HUMAN FREEZE GATE
+CCVS-01 UA v0.3 targeted review doc    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
+CCVS-01 U-2 precondition               Human ACCEPT/FREEZE of UA v0.3, then U-2 authorization separately — U-2 manifest must include CC-MA mechanisms as mandatory check items — NOT a new semantic model
 CCVS-01 U-2 implementation             NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
@@ -258,14 +261,18 @@ Current state:
   quiescence as three consecutive 5 s admission windows.
 
 Current next transition:
-  Deliver UA v0.3 under the v0.2 review ruling: apply R-1..R-11, give
-  A-1..A-3 explicit dispositions, and add CC-MA Multi-Agent Carrier
-  Consistency. Then run the mandated targeted conformance review. U-0 is
-  retained. U-2 implementation and Unified benchmark
-  execution remain NOT AUTHORIZED. File-side Phase C results (Baseline A +
-  P8) stand as delivered evidence; candidate B1 is suspended with a
-  registered reason. Final backend selection remains NOT AUTHORIZED until
-  the Phase E gate.
+  UA v0.3 is delivered and its mandated targeted conformance review found
+  NO BLOCK (R-1..R-11 closed; A-1..A-3 dispositions given as decision
+  inputs; CC-MA added — MA-1..10, I19-I25, MA-DS-1 "Multi-Agent Research
+  Day" as binding DESIGN scenario, Agent = actor only; family isomorphism
+  and identity boundaries verified). The protocol is back at the HUMAN
+  REVIEW / FREEZE GATE: option A = ACCEPT/FREEZE as UA v1.0 (then U-2
+  authorization separately; the U-2 manifest must include CC-MA
+  mechanisms as mandatory check items), option B = REVISE, option C =
+  PARK. U-2 implementation and Unified benchmark execution remain NOT
+  AUTHORIZED. File-side Phase C results (Baseline A + P8) stand as
+  delivered evidence; candidate B1 is suspended with a registered reason.
+  Final backend selection remains NOT AUTHORIZED until the Phase E gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
