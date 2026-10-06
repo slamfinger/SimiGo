@@ -19,7 +19,8 @@ CCVS-01 U-0                          = DELIVERED (session evidence consolidation
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
 CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A COMPOSITION MANIFEST DELIVERED — mechanisms → conformance → admission → MA-DS-1 next within the authorization; Gate C closure = separate Human action
-CCVS-01 U-A manifest                 = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+CCVS-01 U-A manifest                 = v1.1 (self-audited) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) / SA-4 CLEAN — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
@@ -684,3 +685,49 @@ Gate C is STARTED, not passed. The next authorized steps are U-A
 mechanism implementation on the A1 base, then conformance, admission,
 and MA-DS-1 execution, after which the evidence chain is packaged for
 the Human audit.
+
+## U-A manifest self-audit — 2026-10-06
+
+The Human ruled the U-A manifest `REVIEWABLE / NO BLOCK` and set a
+manifest self-audit as the next checkpoint before mechanism
+implementation — the audit question: did the manifest wrongly
+"implement-ize" the frozen protocol or silently add new semantics?
+
+Four Human risk points audited clause-by-clause against UA v1.0:
+
+```text
+SA-1  MA-4 entity-fsync-then-commit order
+      = WORDING RISK CONFIRMED → AMENDMENT A1: the order is a U-A
+      composition mechanism for the durable acknowledgement point on
+      SQLite + POSIX; UA v1.0 requires the explicit atomic boundary,
+      not this physical order.
+SA-2  expected_revision / client_event_ref / operation_id /
+      build_version / read_version
+      = PARTIAL COVERAGE → AMENDMENT A2: §4 SCOPE BOUNDING paragraph —
+      the five handles are layer ②③④ implementation/evidence fields
+      only; never Information/Relation fields (Information carries NO
+      revision field — frozen), never Frozen Contract vocabulary,
+      never obligations on other candidates.
+SA-3  Representation Identity = SHA-256 + revision
+      = WORDING RISK CONFIRMED → AMENDMENT A3: identity rows split
+      into REGISTERED PROPERTY (content-derived / carrier-side /
+      immutable per version — IS-IDLOC-SEAM-01 / CC-8 #7) vs U-A
+      RECIPE (SHA-256 + per-carrier revision; UUIDv4 CarrierID also
+      marked a recipe under the CC-1/A-1 obligation).
+SA-4  MA-DS-1 as conformance/failure exercise, not benchmark
+      = CLEAN, no amendment: manifest §5 already declares it not a
+      performance benchmark and not completed validation; no timing/
+      percentile/throughput vocabulary in §5/§6; PB-U* calibration
+      excluded to U-3.
+```
+
+Additional sweep: agent-as-actor only; no new semantic objects; layer ①
+untouched; CC-9 honored; FILE record kinds opaque pending A-3; PB v1.2
+cited not modified; negative space restated — all PASS.
+
+Result: **NO SEMANTIC UPGRADE FOUND; three bounding amendments applied;
+manifest → v1.1.** Zero guarantee changes, zero frozen-text changes,
+zero changes to evidence, criteria, or MA-DS-1 step mapping. The audit
+does NOT declare "APPROVED FOR IMPLEMENTATION" (a Human action) and
+makes no Gate C progress claim. Per the Human's flow, the next step
+after this checkpoint is A1 mechanism implementation.

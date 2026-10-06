@@ -112,7 +112,8 @@ CCVS-01 Gate B ruling                  docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 U-2 precondition               UA v1.0 FROZEN — MET
 CCVS-01 Gate C                          STARTED (U-2 AUTHORIZED by Human 2026-10-06)
 CCVS-01 U-2 implementation              AUTHORIZED / U-A EXECUTING — manifest DELIVERED; mechanisms → conformance → admission → MA-DS-1 next; Gate C closure = separate Human action
-CCVS-01 U-A manifest                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
+CCVS-01 U-A manifest                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md (v1.1, self-audited)
+CCVS-01 U-A manifest self-audit         COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md

@@ -1,6 +1,7 @@
 # CCVS-01 U-A — Unified Minimal Composition Manifest
 
-> **Status:** U-A COMPOSITION MANIFEST v1.0 — EXECUTION BASIS FOR THE AUTHORIZED U-2
+> **Status:** U-A COMPOSITION MANIFEST v1.1 — EXECUTION BASIS FOR THE AUTHORIZED U-2
+> **Self-audit:** COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) — PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 > **Date:** 2026-10-06
 > **Authorization:** Human U-2 authorization 2026-10-06 (after Gate B ACCEPT / FREEZE, UA v1.0 FROZEN, ruling `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md`)
 > **Governing protocol:** UA v1.0 (`PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V1.0_20261006.md`) — §3 UA-CC, §3A CC-MA, §11 candidate U-A, §14 phase sequence
@@ -68,8 +69,8 @@ Information Identity ≠ Carrier Identity ≠ Representation Identity
 | Kind | Minting (mechanism-side, U-2 manifest obligation A-1) | Storage | Mutability |
 |---|---|---|---|
 | Information Identity | EXISTING frozen semantics (A2′): formed AT FORMATION by the existing mechanism-side recipe (registered first-implementation input = content + source + chunkIndex; digest MAY participate). U-A adds NO recipe change. | InformationCore (unchanged) | immutable forever; never changes due to path/name/carrier/revision |
-| Carrier Identity (logical) | minted ONCE by the carrier registry at carrier creation: opaque random `CarrierID` (UUIDv4); NEVER derived from path, name, digest, or Information identity | `carriers.carrier_id` | stable for the carrier's life; locator and content revision are mutable attributes, not identity |
-| Representation Identity | content-derived: `SHA-256(bytes)` + per-carrier revision number; a new revision of the same carrier is a NEW representation identity and the SAME carrier identity | `representations(rep_digest, revision)` | immutable once recorded; append-only |
+| Carrier Identity (logical) | minted ONCE by the carrier registry at carrier creation: opaque random `CarrierID` (UUIDv4 = U-A RECIPE; the frozen obligation is opaque + carrier-side + stable per CC-1/A-1 — alternative opaque minting schemes may serve future compositions); NEVER derived from path, name, digest, or Information identity | `carriers.carrier_id` | stable for the carrier's life; locator and content revision are mutable attributes, not identity |
+| Representation Identity | REGISTERED PROPERTY (IS-IDLOC-SEAM-01 / CC-8 #7, frozen): content-derived, carrier-side, immutable once recorded. U-A RECIPE (composition decision, NOT a universal definition): `SHA-256(bytes)` digest + per-carrier revision number. A new revision of the same carrier is a NEW representation identity and the SAME carrier identity | `representations(rep_digest, revision)` | immutable once recorded; append-only |
 | Record/Event Identity | carrier-internal: FILE = (carrier_id, record_id, revision); SESSION = (SessionID, sequence) | per-family record tables | SESSION append-only, never renumbered; FILE stable under representation revision |
 
 Same-carrier-across-MOVE/RENAME/REVISION (FILE family, the A-1
@@ -120,7 +121,8 @@ RULES:
     semantics per UA v1.0 §5.
 ```
 
-**Compound-operation order (UA-P7 mechanism decision):** within one
+**Compound-operation order (UA-P7 mechanism decision, U-A composition
+level — not a universal Carrier rule):** within one
 logical operation that spans semantic persistence and carrier state,
 FORMATION PRECEDES CARRIER REGISTRATION: (1) form Information through
 existing semantics (idempotent, first-write-wins); (2) carrier
@@ -137,6 +139,29 @@ making the semantic layer transaction-aware (layer ① stays untouched).
 Each chain: **Requirement → Mechanism → Observable Evidence →
 Pass/Fail Criterion → MA-DS-1 Exercise.** Mechanisms are U-2
 mechanism-side decisions under UA v1.0 §3/§3A; none modifies layer ①.
+
+```text
+SCOPE BOUNDING (self-audit amendments A1/A2 — SA-1/SA-2):
+
+UA v1.0 freezes the GUARANTEES (MA-1..MA-10, I19-I25, one contract /
+two families, the CC-8 ≠ chain); THIS manifest selects ONE concrete
+mechanism set that delivers those guarantees on SQLite + POSIX. The
+mechanisms below are U-A composition mechanisms, NOT universal Carrier
+requirements and NOT new semantic vocabulary; future compositions may
+deliver the same frozen guarantees with different mechanisms without
+violating UA v1.0.
+
+In particular, the five evidence handles used throughout §4 —
+
+    expected_revision / client_event_ref / operation_id /
+    build_version / read_version
+
+— are U-A implementation and evidence fields at layers ②③④ ONLY.
+They NEVER enter Information or Relation objects (Information carries
+NO revision field — UA v1.0 §3A concurrency design objects, frozen),
+never become Frozen Contract vocabulary, and impose no obligation on
+any other candidate.
+```
 
 ### 4.1 MA-3 — Lost-Update Prevention
 
@@ -177,7 +202,13 @@ Mechanism         ONE SQLite transaction per compound carrier operation:
                  digest re-read) — durable acknowledgement point =
                  entity fsync THEN registry commit; a crash between
                  leaves an orphan entity detected by the integrity
-                 reporter, never a half-committed registry.
+                 reporter — typed and reported, never a half-committed
+                 registry. The entity-fsync-then-commit order is a U-A
+                 COMPOSITION MECHANISM for the durable acknowledgement
+                 point on SQLite + POSIX; UA v1.0 requires the EXPLICIT
+                 ATOMIC BOUNDARY (MA-4), not this physical order, and
+                 other compositions may realize the boundary
+                 differently. (self-audit A1 / SA-1)
                  Cross-layer order per §3: formation first, carrier
                  transaction second, one operation_id spanning both.
 Evidence         per-operation transaction record; integrity report
@@ -464,4 +495,18 @@ semantic search absent with registered reason.
 v1.0 (2026-10-06): initial manifest under the Human U-2 authorization.
 All mechanism decisions herein are U-2 mechanism-side decisions under
 UA v1.0 §3/§3A; zero Frozen Contract change; zero protocol change.
+
+v1.1 (2026-10-06): self-audit amendments A1-A3 (record:
+PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md)
+— A1: MA-4 entity-fsync-then-commit order marked a U-A composition
+mechanism (UA v1.0 requires the atomic boundary, not this physical
+order); A2: §4 SCOPE BOUNDING paragraph — §4 mechanisms deliver the
+frozen guarantees on SQLite + POSIX, are not universal Carrier
+requirements, and the five evidence handles are layer ②③④
+implementation/evidence fields only, never Information/Relation
+fields, never Frozen Contract vocabulary; A3: §2 identity rows split
+into REGISTERED PROPERTY (frozen) vs U-A RECIPE for Representation
+Identity and Carrier Identity minting. Zero guarantee changes; zero
+frozen-text changes; zero changes to evidence, criteria, or MA-DS-1
+step mapping.
 ```
