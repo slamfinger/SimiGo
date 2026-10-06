@@ -16,10 +16,10 @@ CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PAS
 CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
 CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
-CCVS-01 U-1                          = v0.3 DELIVERED (R-1..R-11 + A-1..A-3 + CC-MA) / TARGETED REVIEW: NO BLOCK / FREEZE GATE OPEN WITH FIVE CONDITIONS
-CCVS-01 UA v0.3 freeze review        = REGISTERED (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate / state hygiene)
+CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
+CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
 CCVS-01 Unified U-2                  = NOT STARTED / NOT AUTHORIZED
-Branch governance                    = CONSOLIDATION RULING REGISTERED (integration ARCHIVED, no further commits; codex branch = current working branch; post-freeze no-ff merge into main as separate action)
+Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
 Backend selection                    = NOT AUTHORIZED (Phase E gate)
@@ -593,4 +593,4 @@ This is repository-history consolidation, not semantic adoption of the old
 research lines.
 
 Research gate status is unchanged:
-UA v0.3 Freeze Gate = OPEN; U-2 = NOT AUTHORIZED; Unified benchmark = NOT AUTHORIZED.
+UA v1.0 = FROZEN by Gate B ACCEPT / FREEZE; U-2 = NOT AUTHORIZED; Unified benchmark = NOT AUTHORIZED.
