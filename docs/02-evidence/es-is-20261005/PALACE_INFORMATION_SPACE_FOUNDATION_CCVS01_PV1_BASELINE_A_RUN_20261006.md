@@ -88,8 +88,19 @@ Median-of-valid-runs, WL6 segment (bound basis):
 | B12 | index rebuild | 0.72 s | ≤10 min | ACTIVE / MET |
 | B13 | startup/open | 3.6 ms | ≤30 s | ACTIVE / MET |
 | B14 | integrity check | 30.8 s | ≤10 min | ACTIVE / MET |
-| B10 | wl1 ingest amplification | 6.31× | ≤3.0× | UNCALIBRATED → PROTOCOL-VALIDITY-FLAGGED |
-| B11 | large-file amplification | 0.023× (<1×) | ≤1.2× | NOT-COMPARABLE (accounting anomaly) |
+
+Post-calibration closure (rulings D-A/D-B/D-C): PB-B10 = 1.11× Q1 ACTIVE/MET
+(6.31× was Q3 write traffic, superseded as measurement invalidity correction);
+PB-B11 = 1.006× Q1 ACTIVE/MET via compliant seed-derived UTF-8 fixture v2
+(generator ccvs-fixturegen-v2-hexmix, largeFixture0Sha256 =
+d73d56e0e8615b3e2ce5a4a5cf1232ee821f0361e07657e91bc77f1be60ad65b); zero-fill
+large fixture fixed pre-run as fixture-generation defect (D-C). Reporting
+language: "Q1 steady-state durable allocated-footprint amplification under the
+specified filesystem/fixture conditions". Q3 = diagnostic only. Candidate
+performance comparison HOLD lifted once this B11 classification is recorded
+(it now is). P8 crash/recovery authorized next.
+| B10 | wl1 ingest amplification | **1.11× (Q1 primary, per D-A)** | ≤3.0× | ACTIVE / MET |
+| B11 | large-file amplification | **1.006× (Q1, compliant fixture v2, per D-B)** | ≤1.2× | ACTIVE / MET (supersedes NOT-COMPARABLE; reason = fixture non-conformance / superseded measurement) |
 
 All runs: final integrity clean, no invariant violations, no performance-based
 invalidations (none triggered). RSS median ≈ 23.7 MB (MEDIUM run 1).
