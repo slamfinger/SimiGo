@@ -1,12 +1,14 @@
 # SRS-VAL-01 Run/Implementation Manifest Contract v0.8
 
-> **Status:** MANIFEST CONTRACT V0.8 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY / NO STAGE AUTHORIZED
+> **Status:** MANIFEST CONTRACT V0.8 REVISE — SUPERSEDED BY V0.9 — DESIGN ONLY / NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen predicate basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`, accepted at `6089f0b`
 > **Frozen implementation boundary:** Implementation Boundary Audit v0.1 at `cb95c09`
 > **Review basis:** Human REVISE ruling on Manifest Contract v0.7 at `407e003`
 > **Purpose:** close declaration-to-execution realization with phased read mappings, observer-authoritative dispositions, and complete read-instance records.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.8_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.9_20261007.md`.
 
 ## 1. Scope and authority
 

@@ -527,3 +527,13 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > semantic read. Mapped identities must resolve to complete immutable
 > read-instance records. Implementation, fixture, execution, and IS mutation
 > remain NOT AUTHORIZED.
+> **UPDATE 44 (2026-10-07)：Run/Implementation Manifest v0.8 = REVISE；v0.9 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M18 now defines RequiredExternalSemanticInputSet,
+> ExpectedReadInstanceSet, and ObservedReadInstanceSet with distinct identity
+> types; closure is verified through semantic-to-expected and
+> expected-to-observed domains/codomains and a composed relation, not cross-type
+> set equality. Realization evidence is disposition-specific: MATERIALIZED uses
+> closed Invocation Record evidence, EXTERNAL_READ uses observer-authoritative
+> read evidence, and NOT_USED uses closed negative-realization evidence plus
+> observer negative-read closure. Implementation, fixture, execution, and IS
+> mutation remain NOT AUTHORIZED.

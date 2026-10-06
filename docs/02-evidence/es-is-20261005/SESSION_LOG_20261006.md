@@ -3735,3 +3735,67 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## Run/Implementation Manifest v0.8 REVISE; v0.9 typed realization relations delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.8 at `d707cd3`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+M16 disposition closure              PASS
+M17 phased temporal split            PASS
+M17 totality/one-to-one mapping      PASS
+M18 hidden semantic-read closure     PASS
+M18 complete read-instance binding   PASS
+
+M18 semantic-set/read-set typing     REVISE
+M18 realization-evidence typing      REVISE
+
+Run/Implementation Manifest v0.8     REVISE
+```
+
+Required v0.9 corrections:
+
+```text
+R1  Define RequiredExternalSemanticInputSet as
+    Set<semantic_input_identity>,
+    ExpectedReadInstanceSet as
+    Set<expected_read_instance_identity>, and
+    ObservedReadInstanceSet as
+    Set<observed_read_instance_identity>.
+
+R2  Verify semantic-to-expected and expected-to-observed domains/codomains instead
+    of cross-type set equality.
+
+R3  Prove every required external semantic input has exactly one expected and one
+    observed realization through composed mapping.
+
+R4  Use disposition-specific evidence sources for MATERIALIZED, EXTERNAL_READ, and
+    NOT_USED.
+
+R5  Do not require observer authority for all realization types.
+```
+
+Manifest Contract v0.9 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.9_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.8 REVISE / SUPERSEDED BY V0.9
+Run/Implementation Manifest v0.9 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
