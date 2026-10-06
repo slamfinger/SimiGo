@@ -2190,6 +2190,58 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Run/Implementation Manifest v0.3 REVISE; v0.4 authority and completeness gates delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.3 at `cfe1004`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+Manifest M4/M5/M6 direction         PASS
+Fidelity verdict authority          REVISE
+Executed interpreter binding        REVISE
+Semantic input completeness         REVISE
+
+Run/Implementation Manifest v0.3    REVISE
+```
+
+Required v0.4 gates:
+
+```text
+M7  Fidelity PASS must come from a pre-authorized external verifier and immutable
+    verification record frozen before T-IMPL-01.
+
+M8  Authorized Decision Core, interpreter component, executed interpreter,
+    interpreter semantics, language/grammar, and rule must form one observed
+    execution chain.
+
+M9  A pre-authorized semantic-input completeness closure must account for every
+    semantically necessary binding before the expected read set is frozen.
+```
+
+Manifest Contract v0.4 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.4_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.3 REVISE / SUPERSEDED BY V0.4
+Run/Implementation Manifest v0.4 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Run/Implementation Manifest v0.2 REVISE; v0.3 interpretation and pre-registration gates delivered — 2026-10-07
 
 The Human independently reviewed Manifest Contract v0.2 at `45b98f4`.

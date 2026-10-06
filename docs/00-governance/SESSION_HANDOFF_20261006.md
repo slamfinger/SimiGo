@@ -378,6 +378,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > independently produced, root-backed Human-authorized, content-bound, and frozen
 > before subject start; observed reads cannot define expected reads.
 > Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 39 (2026-10-07)：Run/Implementation Manifest v0.3 = REVISE；v0.4 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M7 requires rule/language/interpreter fidelity PASS from a
+> pre-authorized external verifier, with an immutable verification record frozen
+> before T-IMPL-01; M8 requires exact binding among the executed Decision Core
+> artifact, authorized interpreter component, interpreter semantics,
+> language/grammar, and rule; M9 requires a pre-authorized semantic-input
+> completeness closure to derive the expected read set from every semantically
+> necessary binding. Implementation, fixture, execution, and IS mutation remain
+> NOT AUTHORIZED.
 > **UPDATE 33 (2026-10-07)：Authorization Package v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Correction: v0.6 adds the missing frozen decision-state closure. It defines
 > REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and RECOMPUTE_AUTHORIZATION_PATH; makes
