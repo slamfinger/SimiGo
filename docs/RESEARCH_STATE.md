@@ -4,6 +4,38 @@
 
 **Last updated**: 2026-10-06
 
+## Current total status — 2026-10-06 (supplements 2026-10-05 below)
+
+> **CCVS-01 Gate C = CLOSED / ACCEPT**（Human independent ruling）。
+> Ruling basis = `c91a20c`（Gate C Closure Package + advisory
+> recommendation）；implementation basis = `b9d2ac1`。正式裁定登记于
+> `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md`。
+>
+> 当前门位：
+>
+> ```text
+> Gate A   CLOSED
+> Gate B   CLOSED / ACCEPT / FREEZE
+> Gate C   CLOSED / ACCEPT
+>
+> UA v1.0        FROZEN
+> Manifest v1.1  FROZEN / UNCHANGED
+> U-A            ACCEPTED
+> MA-DS-1        run 11 VALID
+> ```
+>
+> 裁定要点：A Ownership、B Visibility、C Effect 三边界全部 PASS；
+> C 边界明确覆盖 POSIX entity layer。Run 10 保留为
+> `INVALID / runner-error / RETRACTED`，Run 11 为 closure object。
+> Manifest §4.2 不因收口修改，登记为 implementation/documentation
+> divergence，留给未来 v1.2 documentation reconciliation。
+>
+> **Gate C CLOSED 只关闭 CCVS-01 correctness question，不开启下一阶段。**
+> U-3 calibration/performance、U-4 realism、U-5 U-B、U-6 U-C、
+> Phase D ranking、Phase E backend selection、carrier migration、
+> MemPalace integration、Frozen Contract / UA v1.0 修改均仍
+> NOT AUTHORIZED。当前合法下一跳只是独立的 **stage-transition review**。
+
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 
 > 2026-10-05 的变化发生在治理层与新的 ES↔IS Core 线，2026-10-04 的

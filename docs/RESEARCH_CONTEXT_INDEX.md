@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN AFTER CONSOLIDATION` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT MAIN — CCVS-01 GATE C CLOSED (2026-10-06)` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -80,7 +80,7 @@ PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_IN
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
 CCVS-01                                PHASE B ACCEPTED / FROZEN (v1.2)
-CCVS-01                                PHASE C AUTHORIZED / FILE SIDE EXECUTED AND VALID / UNIFIED U-2 AUTHORIZED / U-A EXECUTING
+CCVS-01                                PHASE C FILE SIDE VALID; U-A ACCEPTED; GATE C CLOSED / ACCEPT
 CCVS-01 Phase C kickoff + A1 manifest  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
 CCVS-01 A1 CarrierSQLite adapter       IMPLEMENTED / CONFORMANCE 10/10 PASS
 CCVS-01 PV1 Baseline A                 SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED
@@ -110,15 +110,16 @@ CCVS-01 UA v1.0                        FROZEN
 CCVS-01 UA v1.0 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V1.0_20261006.md
 CCVS-01 Gate B ruling                  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
 CCVS-01 U-2 precondition               UA v1.0 FROZEN — MET
-CCVS-01 Gate C                          STARTED (U-2 AUTHORIZED by Human 2026-10-06)
-CCVS-01 U-2 implementation              EXECUTED AND ACCEPTED (Human 2026-10-06: U-A Correctness Acceptance — Ownership/Visibility/Effect boundaries closed; A/B/C ACCEPT; 32/32 tests; MA-DS-1 run 11 VALID; run 10 retracted as runner defect) — Gate C = OPEN → READY FOR CLOSURE REVIEW; closure = separate Human action
+CCVS-01 Gate C                          CLOSED / ACCEPT (Human independent ruling, 2026-10-06; ruling basis c91a20c; implementation basis b9d2ac1)
+CCVS-01 Gate C ruling                   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md
+CCVS-01 U-2 implementation              EXECUTED AND ACCEPTED (Human 2026-10-06: U-A Correctness Acceptance — Ownership/Visibility/Effect boundaries closed; A/B/C ACCEPT; 32/32 tests; MA-DS-1 run 11 VALID; run 10 retracted as runner defect)
 CCVS-01 U-A manifest                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md (v1.1, self-audited)
 CCVS-01 U-A manifest self-audit         COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 U-A mechanism evidence          docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md (artifacts: trackD-memory/mads1-report.json + mads1-final-state.json)
 CCVS-01 U-A implementation findings     UA-IF-1..UA-IF-4 + UA-IF-3b/3c (legacy destructive-op ownership, Human-ACCEPTED) + round-4 MA-7 entity-layer zero-effect boundary (admission-before-external-effect; crash-only orphan window) — manifest-driven, zero protocol change
 CCVS-01 U-A round-4 flag               U-A manifest §4.2 mechanism wording temporarily stale (v1.2 documentation-reconciliation item; layered MA-4 record: guarantee unchanged / orphan crash-only / rejection semantics strengthened / write ordering changed) — v1.2 NOT to be forced for Gate C
-CCVS-01 Gate C closure package         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md — acceptance evidence + research results R1-R5 + acceptance conditions AC-1..4 + run ledger + closure-meaning boundaries; closure ruling = separate Human action
+CCVS-01 Gate C closure package         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md — acceptance evidence + research results R1-R5 + acceptance conditions AC-1..4 + run ledger + closure-meaning boundaries; §8 remains advisory; final ruling = Gate C CLOSED / ACCEPT
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
@@ -282,8 +283,8 @@ Current state:
   to predefined protocol/environment violations (never poor performance), and
   quiescence as three consecutive 5 s admission windows.
 
-Current next transition:
-  GATE SEPARATION (do not conflate). Gate A = CLOSED: CCVS-01 Phase C
+Gate separation status (do not conflate):
+  Gate A = CLOSED: CCVS-01 Phase C
   FILE SIDE executed and valid (A1 conformance 10/10, Baseline A SMALL
   5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 G2 PASS, D-A/D-B/D-C) —
   delivered evidence, inherited. Gate B = CLOSED: UA v0.3 Unified
@@ -296,23 +297,21 @@ Current next transition:
   state hygiene standing) are incorporated into the frozen UA v1.0
   text. UA v1.0 = FROZEN. Ruling =
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md.
-  Gate C = STARTED: Unified U-2 AUTHORIZED by Human 2026-10-06. The
-  U-A Unified Minimal Composition Manifest is DELIVERED
-  (PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md):
-  identity minting (A-1), mapping/locator/provenance closed loop, the
-  six mandated chains (MA-3/MA-4/MA-6/MA-7/MA-9/MA-10 as
-  requirement → mechanism → observable evidence → pass/fail criterion
-  → MA-DS-1 exercise, plus MA-1/2/5/8 short form), the 13-step MA-DS-1
-  operationalization with pre-registered I19-I25 mapping, and layered
-  verdicts with no total score. Authorized U-A sequence: manifest
-  (done) → mechanism implementation on the A1 base → conformance
-  (A1 10/10 must not regress) → admission → MA-DS-1 execution →
-  evidence chain packaged for Human audit. Round-one exclusions: NO
-  horizontal carrier-topology comparison, no PB-U* calibration or
-  larger benchmark (U-3 scope), no backend selection, no migration,
-  no MemPalace, no UA v1.0/PB v1.2/Frozen Contract change. Gate C
-  closure is a separate Human action after the evidence-chain audit;
-  no experiment results exist yet and none are predicted.
+  Gate C = CLOSED / ACCEPT: Human independently reviewed c91a20c and
+  ruled the package sufficient for closure; implementation basis is
+  b9d2ac1. Ownership, Visibility, and Effect are closed. Run 10 remains
+  INVALID / runner-error / RETRACTED; run 11 is VALID and is the closure
+  object. Manifest v1.1 remains FROZEN / unchanged; §4.2 is a registered
+  implementation/documentation divergence for future v1.2 documentation
+  reconciliation. The ruling is
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
+
+Current next transition:
+  STAGE-TRANSITION REVIEW ONLY. Do not open U-3, U-4, U-5, U-6, Phase D
+  ranking, Phase E backend selection, carrier migration, MemPalace
+  integration, or any Frozen Contract / UA v1.0 modification. The closure
+  records CCVS-01 correctness only; it does not select or open the next
+  research phase.
   File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered
   reason. Final backend selection remains NOT AUTHORIZED until the

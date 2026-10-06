@@ -1114,3 +1114,72 @@ Next: the Human's Gate C closure ruling — CLOSED, or held with
 registered reasons. No further U-A repair work is authorized or needed;
 the line moves from "implementation candidate" to "acceptable
 implementation" per the Human's own wording.
+
+## Gate C closure ruling — 2026-10-06
+
+The Human independently reviewed the Gate C Closure Package at `c91a20c`
+and ruled:
+
+```text
+Gate A   CLOSED
+Gate B   CLOSED / ACCEPT / FREEZE
+Gate C   CLOSED / ACCEPT
+
+UA v1.0        FROZEN
+Manifest v1.1  FROZEN / UNCHANGED
+U-A            ACCEPTED
+MA-DS-1        run 11 VALID
+```
+
+Ruling basis / implementation basis:
+
+```text
+ruling basis        c91a20c — closure package + advisory recommendation
+implementation      b9d2ac1
+formal record       docs/00-governance/
+                    PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md
+```
+
+The Human did not merely adopt the package's `CLOSURE RECOMMENDED`
+status: §8 remains advisory, while this section and the ruling document
+register the separate final Human ruling.
+
+Boundary findings:
+
+```text
+A Ownership    PASS — legacy / U-A destructive operations preserve
+               carrier ownership; no unscoped DELETE FROM search_fts.
+B Visibility   PASS — controlled interleave shows complete BEFORE or
+               AFTER committed snapshots, never an intermediate state.
+C Effect       PASS — replay, stale, and identity conflict have zero
+               new POSIX entity effect; MA-7 covers the complete
+               external-effect surface.
+```
+
+The accepted effect chain is:
+
+```text
+replay / stale / identity conflict → zero external effect
+
+entity durable
+  → process crash / unknown outcome
+  → MA-4 orphan
+```
+
+Run handling and documentation state remain:
+
+```text
+Run 10      INVALID / runner-error / RETRACTED (stale step-8
+            expectation; audit trail retained)
+Run 11      VALID / 13/13 — closure object
+Manifest    v1.1 FROZEN / unchanged; §4.2 temporarily stale and
+            registered as implementation/documentation divergence for
+            future v1.2 documentation reconciliation
+```
+
+Closure scope: Gate C CLOSED closes only the CCVS-01 correctness
+question. It does not open U-3 PB-U* calibration/performance, U-4
+realism diagnostics, U-5 U-B, U-6 U-C, Phase D ranking, Phase E backend
+selection, carrier migration, MemPalace integration, or any Frozen
+Contract / UA v1.0 modification. The next legal action is a separate
+stage-transition review to select the post-CCVS-01 research question.

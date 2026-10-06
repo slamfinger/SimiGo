@@ -2,6 +2,7 @@
 
 > **Status:** PACKAGE COMPLETE — CLOSURE RECOMMENDED (ADVISORY, NOT A RULING) — SUBMITTED FOR THE HUMAN'S CLOSURE RULING
 > **Date:** 2026-10-06
+> **Final ruling (after this package):** Gate C = CLOSED / ACCEPT on 2026-10-06; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md`. §8 below remains advisory.
 > **Purpose:** unify the acceptance evidence, the run-10 runner-defect retraction, the Manifest v1.1 divergence, and the run-11 VALID result into ONE closure input. Gate C closure remains a separate Human action (UA v1.0 §14; every governing document repeats it) — this package does not close anything.
 > **Basis commit:** `b9d2ac1` (all evidence chains reference this state)
 
