@@ -245,13 +245,15 @@ After iterative review, Design v0.5 is ACCEPT / FROZEN.
 Accepted design artifact:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 Current commissioned design:
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.1_20261007.md`.
+Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
 V0.1 through V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS.
 ```
 
-Only SRS-VAL-01 design is active. Implementation and experiment remain
-unauthorized.
+Only the SRS-VAL authorization-package design is active. Implementation,
+fixture preparation, and experiment remain unauthorized.
 
 ### 7.2 Information Topology
 
@@ -277,14 +279,13 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 
 ```text
 SRS-VAL-01
-Settled Relation State Reuse Validation Predicate
+Implementation / Fixture / Execution Authorization Package
 
-Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE /
-         V0.5 REVISE / V0.6 REVISE / V0.7 REVISE / DESIGN V0.8 DELIVERED FOR
-         HUMAN REVIEW
+Status = COMMISSIONED / PACKAGE V0.1 DELIVERED FOR HUMAN REVIEW
+       + SRS-VAL Design v0.8 ACCEPT / FROZEN
 
 Current design document =
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.1_20261007.md
 ```
 
 Dependency chain:
@@ -293,6 +294,8 @@ Dependency chain:
 SRS-SEM-01
   ↓
 SRS-VAL-01
+  ↓
+implementation / fixture / execution authorization package
   ↓
 settlement contract
   ↓

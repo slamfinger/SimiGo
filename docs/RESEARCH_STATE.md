@@ -143,11 +143,20 @@
 > lawful no-RECOMPUTE-path，不表示跳过 classification。Recovery Anchor 的
 > current commissioned design 已统一到 v0.8，v0.1..v0.7 只是 lineage。
 >
+> Human independent review完成 SRS-VAL-01 v0.8 冻结前状态空间攻击，裁定
+> **v0.8 = ACCEPT / FROZEN**。REUSE / BLOCK / RECOMPUTE 完备且互斥；
+> G-CLASS 关闭 classification bypass；pure REUSE 不需要 I-14；
+> RECOMPUTE 只能在 exact predicate rule + exact I-14 + exact semantic envelope
+> 下进入。v0.9 NOT WARRANTED。下一合法对象是单独审查的
+> **SRS-VAL-01 Implementation / Fixture / Execution Authorization Package
+> v0.1**，其本身不授权 implementation、fixture 或 execution。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
-> SRS-VAL-01 Settled Relation State Reuse Validation Predicate
-> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE / V0.5 REVISE / V0.6 REVISE / V0.7 REVISE / V0.8 DELIVERED FOR HUMAN REVIEW
+> SRS-VAL-01 Implementation / Fixture / Execution Authorization Package
+> Status = COMMISSIONED / PACKAGE V0.1 DELIVERED FOR HUMAN REVIEW
+> Frozen basis = SRS-VAL-01 Design v0.8 ACCEPT / FROZEN
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -180,7 +189,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Design v0.8**。implementation / fixture / experiment 仍未授权。
+> 当前 review object = **SRS-VAL-01 Authorization Package v0.1**。implementation / fixture / experiment 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

@@ -1,10 +1,11 @@
 # Settled Relation State Reuse Validation Predicate — SRS-VAL-01 Design v0.8
 
-> **Status:** DESIGN V0.8 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.8 ACCEPT / FROZEN — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-VAL-01 Design v0.7 for current review
 > **Review basis:** Human REVISE ruling on v0.7 at `33f24cd`
 > **Revision purpose:** make predicate classification unavoidable for surviving failures and close Recovery Anchor current-object drift.
+> **Review ruling:** ACCEPT / FROZEN; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_ACCEPTANCE_20261007.md`.
 
 ## 1. Effect of v0.8
 

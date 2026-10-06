@@ -2190,6 +2190,63 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.8 ACCEPT / FROZEN; authorization package v0.1 delivered — 2026-10-07
+
+The Human completed the freeze-preceding state-space attack on
+SRS-VAL-01 Design v0.8 at `1170208`.
+
+Ruling:
+
+```text
+SRS-SEM-01 inheritance                      PASS
+Source invalidation precedence              PASS
+Decision precedence DP-0..DP-4              PASS
+Mutual exclusivity                          PASS
+Lifecycle precedence                        PASS
+
+Predicate-rule immutable binding            PASS
+Predicate-rule non-retroactivity            PASS
+Mandatory classification                    PASS
+Classification bypass                       CLOSED
+I-14 conditional semantics                  PASS
+Pure REUSE without I-14                     PASS
+Exact I-14 on RECOMPUTE path                PASS
+RECOMPUTE semantic envelope                 PASS
+Canonical identity rule                     PASS
+
+I-16 decision-critical completeness         PASS
+Observation-boundary consistency            PASS
+
+Context Index navigation                    PASS
+Recovery Anchor navigation                  PASS
+
+STATE-SPACE COMPLETENESS                    PASS
+STATE-SPACE MUTUAL EXCLUSIVITY              PASS
+STATE-SPACE UNRESOLVED PATH                 NONE FOUND
+
+SRS-VAL-01 Design v0.8                      ACCEPT / FROZEN
+```
+
+The Human ruled that SRS-VAL-01 v0.9 is not warranted. The next lawful object
+is a separately reviewed Implementation / Fixture / Execution Authorization
+Package. Package v0.1 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.1_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 Design v0.8     ACCEPT / FROZEN
+Authorization Package v0.1 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.7 REVISE; v0.8 classification non-bypassability delivered — 2026-10-07
 
 The Human independently reviewed SRS-VAL-01 Design v0.7 at `33f24cd`.

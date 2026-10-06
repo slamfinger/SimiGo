@@ -391,3 +391,10 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > means skipped classification; the Recovery Anchor commissioned-design field
 > now identifies v0.8 and v0.1..v0.7 are superseded lineage. Implementation,
 > fixture, experiment, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 28 (2026-10-07)：SRS-VAL-01 v0.8 = ACCEPT / FROZEN；Authorization Package v0.1 DELIVERED FOR HUMAN REVIEW.**
+> The Human state-space attack found no unresolved path. G-CLASS closes
+> classification bypass; pure REUSE needs no I-14; RECOMPUTE requires exact
+> predicate rule, exact I-14, and exact semantic envelope. v0.9 is not
+> warranted. The next object is the separately reviewed Implementation /
+> Fixture / Execution Authorization Package v0.1. Its review does not authorize
+> implementation, fixture preparation, execution, or IS mutation.
