@@ -423,3 +423,11 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > IS_MUTATION closes exact executor, environment, dependencies, states, and
 > effects; semantic input requires read-instance immutability. Implementation,
 > fixture, execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 32 (2026-10-07)：Authorization Package v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: v0.5 is genuinely self-contained and restates frozen predicate,
+> G-V, DP, G-CLASS, exclusivity, and faithfulness obligations. It adds an
+> immutable Runner Trust Anchor above the authority root, root-backed Observer
+> Authorization, Human-approved Channel Universe with COVERED/IMPOSSIBLE-only
+> closure, exact semantic dependency equality with mechanical allowlist subset,
+> and revision-to-digest read binding. Implementation, fixture, execution, and IS
+> mutation remain NOT AUTHORIZED.

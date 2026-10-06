@@ -2190,6 +2190,70 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Authorization Package v0.4 REVISE; v0.5 trust and normative closure delivered — 2026-10-07
+
+The Human independently reviewed Authorization Package v0.4 at `0678fbf`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8                 PASS / UNCHANGED
+Observation Integrity direction        PASS
+Authorization Authority Root           PASS / BOOTSTRAP GAP
+Runtime dependency closure             PASS / PRECISION GAP
+IS_MUTATION executor closure           PASS
+Read-instance immutability             PASS / PRECISION GAP
+Semantic/mechanical read separation    PASS
+
+Self-contained normative closure       REVISE
+Observer authorization closure         REVISE
+Trust-root bootstrap closure           REVISE
+Channel-universe/coverage closure      REVISE
+Semantic dependency exactness          REVISE
+Read-binding schema precision          REVISE
+
+Authorization Package v0.4             REVISE
+```
+
+Required v0.5 corrections:
+
+```text
+R1  Fully restate all necessary normative predicate, validation, authorization,
+    observation, and execution obligations.
+
+R2  Add an immutable Runner Trust Anchor above the Authorization Authority Root.
+
+R3  Authorize the observer, artifact, runtime, environment, scope, and coverage
+    contract through the same root-backed chain.
+
+R4  Prebind a Channel Universe; every relevant channel must be COVERED or
+    evidenced IMPOSSIBLE.
+
+R5  Require exact equality for semantic dependencies and subset-only closure for
+    mechanical dependencies.
+
+R6  Distinguish content digest from immutable revision and require an exact
+    revision-to-digest binding when needed.
+```
+
+Authorization Package v0.5 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.5_20261007.md
+```
+
+Current state:
+
+```text
+Authorization Package v0.4 REVISE / SUPERSEDED BY V0.5
+Authorization Package v0.5 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Authorization Package v0.3 REVISE; v0.4 observation and trust-root closure delivered — 2026-10-07
 
 The Human independently reviewed Authorization Package v0.3 at `12678e2`.
