@@ -9,6 +9,7 @@
 > **Stage Transition = ACCEPTED；Probe v0.2 / Representation Contract = ACCEPTED / DESIGN FROZEN**（basis `9b9da6c`）。正式裁定：`docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_V0_2_ACCEPTANCE_RULING_20261006.md`。
 > **当前停 = Experiment Authorization Package / Run Manifest 审查之前。Experiment NOT AUTHORIZED；Execution Authorization NOT YET REQUESTED。禁止实现、fixture 执行、U-3/U-4/U-5/U-6、Phase D/E、migration、MemPalace integration 或 Frozen Contract/UA v1.0 修改。**
 > **UPDATE：Experiment Authorization Package / Run Manifest R01 已提交待审**：`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md`。Candidate run = `ES-CSP-RUN-01`。提交不等于授权；fixture preparation / database / run 均 NOT STARTED。
+> **UPDATE 2：R01 first review = REVISE BEFORE S1；R01 Rev1 已提交第二审**。裁定：`docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md`。已修正 N-B dual-pointer schema、reconstruction role blinding、opaque stable session locator。S1 NOT APPROVED；Experiment NOT AUTHORIZED。
 > 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
 > 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
 

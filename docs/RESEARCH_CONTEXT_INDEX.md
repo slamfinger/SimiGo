@@ -130,9 +130,11 @@ Experiment                              NOT AUTHORIZED
 Execution authorization                 NOT YET REQUESTED
 Further design revision                 NOT REQUIRED
 Probe v0.3                              NOT WARRANTED
-Experiment authorization package         SUBMITTED FOR HUMAN REVIEW (R01; package only, not authorization)
+Experiment authorization package         R01 REV1 SUBMITTED FOR SECOND REVIEW; FIRST REVIEW = REVISE BEFORE S1
 Experiment authorization document        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md
+R01 first-review ruling                  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md
 Candidate run                           ES-CSP-RUN-01 / NOT AUTHORIZED
+R01 S1 fixture preparation              NOT APPROVED
 Fixture preparation                      NOT STARTED
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
@@ -321,13 +323,14 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF SUBMITTED EXPERIMENT AUTHORIZATION PACKAGE R01 ONLY. Post-CCVS-01
+  HUMAN SECOND REVIEW OF R01 REV1 ONLY. Post-CCVS-01
   Stage Transition is ACCEPTED; Probe v0.2 and its Representation Contract
   are ACCEPTED / FROZEN. The next review object must mechanically establish:
   (1) positive E0 uses only existing UA/U-A primitives, (2) G-R/G-C are
   decidable before C1/C2, (3) N-A/N-B are pre-registered fixture variants,
   and (4) I-1/I-2 do not retest CCVS-01. Preparing or submitting that package
-  does not authorize implementation or execution. Do not open U-3, U-4, U-5,
+  does not authorize implementation or execution, and does not approve S1 by
+  itself. Do not open U-3, U-4, U-5,
   U-6, Phase D ranking, Phase E backend selection, carrier migration,
   MemPalace integration, or any Frozen Contract / UA v1.0 modification.
   File-side Phase C results stand as

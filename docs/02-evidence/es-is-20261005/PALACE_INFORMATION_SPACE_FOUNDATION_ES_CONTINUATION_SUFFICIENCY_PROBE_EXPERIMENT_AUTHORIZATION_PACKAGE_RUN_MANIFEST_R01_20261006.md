@@ -1,6 +1,6 @@
 # ES Continuation Sufficiency Probe — Experiment Authorization Package / Run Manifest R01
 
-> **Status:** PACKAGE / RUN MANIFEST CANDIDATE SUBMITTED FOR HUMAN REVIEW — EXPERIMENT NOT AUTHORIZED
+> **Status:** PACKAGE / RUN MANIFEST R01 REV1 SUBMITTED FOR SECOND HUMAN REVIEW — S1 NOT APPROVED; EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-06
 > **Frozen design baseline:** `39c1031`
 > **Accepted design:** Probe v0.2 + Probe Representation Contract
@@ -8,7 +8,25 @@
 > **Execution authorization:** NOT REQUESTED BY SUBMISSION ALONE
 > **Implementation status:** none; no fixture directory, database, fixture artifact, or run result is created by this document
 
+> **First review ruling:** REVISE BEFORE S1; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md`.
+> **Reviewed R01 basis:** `f42762f`
+> **Revision scope:** execution packaging / experimental control only; no Probe v0.2 redesign.
+
 ## 1. Purpose and authorization boundary
+
+This is R01 Rev1. It resolves the Human's first-review findings while
+preserving the accepted Probe v0.2 boundary.
+
+```text
+R1  N-B remains two independent NEXT_ACTION records: P1a → B1 and
+    P1b → B2. target_slot remains scalar; no multi-target pointer
+    structure is introduced.
+R2  Fresh reconstruction is blinded to fixture role. It receives an
+    opaque fixture instance ID, not P-POS / N-A / N-B.
+R3  Fresh reconstruction receives a pre-registered opaque stable
+    session locator as the deterministic entry point. It does not scan
+    for the session or discover it semantically.
+```
 
 This package converts the frozen Probe v0.2 design into a reviewable run
 manifest. It does not authorize implementation or execution.
@@ -72,6 +90,12 @@ Immediate stop conditions:
 ```text
 carrier source baseline `trackD-memory/` differs from 39c1031;
 frozen Probe v0.2 text changes;
+a `target_slot` value becomes an array, set, ranked list, or other
+multi-target pointer structure;
+the reconstruction process receives fixture role, deficiency description, or
+expected C1/C2;
+the reconstruction process discovers the session by scanning, semantic search,
+ranking, embedding, or fixture-generator content;
 a new semantic entity, CarrierRecord kind, RelationCore rule, relation engine,
 Super Store, embedding path, MCP path, remote API, or backend is introduced;
 a negative fixture is derived by mutating a materialized positive fixture at
@@ -143,6 +167,8 @@ G-R-4  no new CarrierRecord kind is introduced;
 G-R-5  no CarrierRelation or RelationCore extension is introduced;
 G-R-6  continuation payload names exactly one boundary in the positive case;
 G-R-7  provenance and revision fields are carried by existing U-A structures.
+G-R-8  N-B contains exactly two scalar-pointer NEXT_ACTION records,
+       P1a → B1 and P1b → B2; no multi-target pointer structure exists.
 ```
 
 Any mismatch is:
@@ -208,11 +234,14 @@ Canonical payload schema:
 ```json
 {
   "schema": "es-csp/e0-slot-v1",
-  "slot": "<O1|I1|D1|A1|B1|P1>",
+  "slot": "<O1|I1|D1|A1|B1|B2|P1|P1a|P1b>",
   "content": "<exact UTF-8 fixture text>",
-  "target_slot": "<required only for P1; must equal B1>"
+  "target_slot": "<single scalar boundary slot; required only for P1 / P1a / P1b>"
 }
 ```
+
+`target_slot` is always a scalar. Arrays, sets, ranked alternatives, and any
+other multi-target pointer structure are forbidden.
 
 Rules:
 
@@ -255,21 +284,21 @@ by deleting or editing a materialized `P-POS` at runtime.
 `N-B` is an independently defined fixture: continuation boundary ambiguity.
 
 ```text
-slots         O1, I1, D1, A1, B1, B2, P1
-deficiency    P1.target_slot names two registered boundary candidates,
-              B1 and B2
+slots         O1, I1, D1, A1, B1, B2, P1a, P1b
+deficiency    the lawful pointer set contains two independent NEXT_ACTION
+              records: P1a → B1 and P1b → B2
+cardinality   exactly 2
 forbidden     confidence, recency, ranking, similarity, or model preference
 expected      typed ambiguous-continuation finding
 decision      BLOCK_INSUFFICIENT
 if violated   FAIL — UNSAFE CONTINUATION
 ```
 
-To preserve the accepted v0.2 schema, ambiguity is represented by two
-`NEXT_ACTION` records: one names `B1`, one names `B2`. The N-B canonical
-payload schema therefore permits slot values
-`<O1|I1|D1|A1|B1|B2|P1>`. The C2 result is ambiguous because the lawful
-pointer set does not identify exactly one boundary. No new pointer semantics
-is introduced.
+Ambiguity is represented only by the observed cardinality of two independent
+`NEXT_ACTION` records. It is not represented by a multi-valued `target_slot`,
+new pointer object, new relation type, or carrier-side interpretation. C2
+fails continuation certainty because the lawful pointer set does not identify
+exactly one boundary.
 
 `N-B` must have its own fixture manifest and checksums. It must not be produced
 by adding a record to a materialized `P-POS` at runtime.
@@ -291,7 +320,11 @@ schema version                 es-csp/fixture-manifest-v1
 package baseline               39c1031
 design baseline                Probe v0.2 / FROZEN
 run label                      ES-CSP-RUN-01
+fixture instance ID            ASSIGNED AT FIXTURE PREPARATION
 fixture role                   P-POS | N-A | N-B
+role mapping location          CONTROL-SIDE ONLY / WITHHELD FROM RECONSTRUCTION
+reconstruction entry point     OPAQUE STABLE SESSION LOCATOR / RECORDED AT
+                               FIXTURE PREPARATION
 canonicalization               UTF-8; exact payload bytes; SHA-256 checksums
 carrier label                  pre-registered logical label only
 actual carrier identity        MINTED/RECORDED AT FIXTURE PREPARATION
@@ -308,8 +341,24 @@ independence declaration       proves this fixture was not derived from
                                another materialized fixture
 ```
 
+The fixture instance ID and stable session locator must be opaque and
+role-nonrevealing. They must not encode `P-POS`, `N-A`, `N-B`, positive/
+negative status, fixture order, or deficiency type. Assign them only after the
+control-side role/expectation mapping has been sealed.
+
 Fixture preparation is complete only when all three manifests exist and all
 `MINTED/RECORDED AT FIXTURE PREPARATION` fields are filled.
+
+The control side, not the reconstruction process, owns the mapping:
+
+```text
+fixture instance ID → fixture role
+fixture instance ID → expected C1/C2 result
+fixture instance ID → deficiency description
+```
+
+These mappings must be sealed in the control-side evidence ledger before
+reconstruction and must not be passed to the fresh process.
 
 ## 13. Reconstruction process
 
@@ -318,18 +367,24 @@ A fresh reconstruction process may receive only:
 ```text
 source baseline identifier       39c1031
 run label                        ES-CSP-RUN-01
-fixture role                     P-POS | N-A | N-B
+opaque fixture instance ID       ASSIGNED AT FIXTURE PREPARATION
 isolated carrier data root path
+opaque stable session locator    REGISTERED NON-SEMANTIC ENTRY POINT
 Reconstruction Manifest schema version
 ```
 
 It must not receive:
 
 ```text
+fixture role                    P-POS / N-A / N-B
+deficiency description
+expected C1 result
+expected C2 result
+control-side instance mapping
+fixture generator content
 prior process memory
 conversation history
 agent notes
-expected answers
 semantic search results
 embedding data
 MCP context
@@ -342,7 +397,9 @@ Procedure:
 
 ```text
 R1  Open only the registered isolated carrier root.
-R2  Enumerate the registered session by stable addressing.
+R2  Resolve the pre-registered opaque stable session locator to exactly one
+    registered session. Do not scan carriers, sessions, tables, or indexes to
+    discover it.
 R3  Read existing mappings and provenance; do not use derived search as
     authority.
 R4  Build the Reconstruction Manifest from resolved slots.
@@ -354,7 +411,21 @@ R7  Emit one typed result:
 R8  Emit C3 as OBSERVATION ONLY if action execution is externally observed.
 ```
 
-For N-A and N-B, `BLOCK_INSUFFICIENT` is the required C2 result.
+The reconstruction process emits only its observed result. The control side
+later joins the opaque fixture instance ID to its sealed role and expected
+result, then classifies the run. For N-A and N-B, the pre-registered expected
+C2 result is `BLOCK_INSUFFICIENT`; this expectation is not revealed to the
+reconstruction process.
+
+If the entry locator does not resolve to exactly one registered session, the
+run is:
+
+```text
+INVALID — RECONSTRUCTION ENTRY POINT DEFECT
+```
+
+The process must not fall back to semantic search, full enumeration to discover
+the session, ranking, or fixture-generator content.
 
 ## 14. I-1 / I-2 interruption boundaries
 

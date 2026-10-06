@@ -55,7 +55,7 @@
 > 下一跳是单独的 **Experiment Authorization Package / Run Manifest**
 > 文档审查对象；本裁定本身不授权实现、fixture 执行或任何实验。
 >
-> **Experiment Authorization Package / Run Manifest R01 = SUBMITTED FOR HUMAN REVIEW。**
+> **Experiment Authorization Package / Run Manifest R01 = REV1 SUBMITTED FOR SECOND REVIEW。**
 > Candidate run label = `ES-CSP-RUN-01`；package baseline = `39c1031`。
 > 该包只做 representation / G-R/G-C / positive + N-A/N-B / I-1/I-2 /
 > EV-R1..EV-R7 的可审计预登记，不授权 fixture 准备、数据库创建或执行。
@@ -67,6 +67,13 @@
 > Fixture preparation        NOT STARTED
 > Probe run                  NOT STARTED
 > ```
+>
+> Human first review裁定 `R01 = REVISE BEFORE S1`，修正三项 execution
+> packaging / experimental-control 问题：N-B 保持两个独立 `NEXT_ACTION`
+> records（`P1a → B1`、`P1b → B2`），禁止多值 pointer；fresh reconstruction
+> 改用 opaque fixture instance ID，不知晓 fixture role；新增 pre-registered
+> opaque stable session locator 作为 deterministic entry point，不做扫描或
+> semantic discovery。R01 Rev1 已提交第二审。当前 `S1 NOT APPROVED`。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

@@ -1330,3 +1330,50 @@ Fixture preparation        NOT STARTED
 Database creation          NOT STARTED
 Probe run                  NOT STARTED
 ```
+
+## R01 first review = REVISE BEFORE S1; R01 Rev1 submitted — 2026-10-06
+
+The Human independently reviewed submitted R01 at `f42762f` and ruled that its
+governance boundary, experiment structure, and evidence design were qualified,
+but execution packaging required revision before S1.
+
+Formal record:
+
+```text
+R01 review    REVISE BEFORE S1
+review basis  f42762f
+formal ruling docs/00-governance/
+              PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_R01_REVIEW_RULING_20261006.md
+S1           NOT APPROVED
+Experiment   NOT AUTHORIZED
+```
+
+The Human confirmed as correct: frozen baseline `39c1031`; no Probe v0.2
+change; `S1 ≠ S3`; no database/fixture/result; no hidden semantic entity;
+`NEXT_ACTION → CC-5 → Information`; `G-R/G-C` before `C1/C2`; independent
+N-A/N-B; I-1/I-2 outside CCVS-01/MA-4; mandatory `EV-R5`; C3 observation only;
+and no embedding/MCP/remote-API/Super-Store bypass.
+
+Three required revisions were:
+
+```text
+R1  N-B must remain two independent NEXT_ACTION records:
+    P1a → B1 and P1b → B2. target_slot remains scalar; no multi-target
+    pointer structure is allowed.
+R2  Fresh reconstruction must be blinded to fixture role. It receives an
+    opaque fixture instance ID; control-side metadata retains
+    instance → role and expected result.
+R3  Fresh reconstruction must receive a pre-registered opaque stable
+    session locator as its deterministic entry point. It must not scan for
+    the session or discover it through semantic search / ranking.
+```
+
+R01 Rev1 now records those fixes. It remains documentation-only:
+
+```text
+R01 Rev1       SUBMITTED FOR SECOND HUMAN REVIEW
+S1            NOT APPROVED
+Experiment    NOT AUTHORIZED
+Fixture prep  NOT STARTED
+Probe run     NOT STARTED
+```
