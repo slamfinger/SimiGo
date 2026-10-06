@@ -114,6 +114,44 @@ public actor SQLiteCore {
         CREATE VIRTUAL TABLE IF NOT EXISTS search_fts USING fts5(
           information_id UNINDEXED, revision_id UNINDEXED, title, text)
         """)
+        // U-A composition mechanisms (Unified Minimal Composition Manifest
+        // §2-§4). Composition-level evidence handles only — never
+        // Information/Relation fields, never Frozen Contract vocabulary.
+        try exec("""
+        CREATE TABLE IF NOT EXISTS carriers(
+          carrier_id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('FILE','SESSION')),
+          locator_scheme TEXT, locator_value TEXT,
+          revision INTEGER NOT NULL DEFAULT 0,
+          created_at REAL NOT NULL, created_by TEXT NOT NULL)
+        """)
+        try exec("""
+        CREATE TABLE IF NOT EXISTS ua_operations(
+          operation_id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, carrier_id TEXT,
+          subject_id TEXT, kind TEXT NOT NULL,
+          base_revision INTEGER, observed_revision INTEGER,
+          outcome TEXT NOT NULL CHECK(outcome IN ('APPLIED','CONFLICT','REPLAYED')),
+          from_version TEXT, resulting_version TEXT, recorded_at REAL NOT NULL)
+        """)
+        try exec("""
+        CREATE TABLE IF NOT EXISTS ua_mapping(
+          mapping_id TEXT PRIMARY KEY, information_id TEXT NOT NULL,
+          carrier_id TEXT NOT NULL, record_id TEXT NOT NULL, representation_id TEXT,
+          actor_id TEXT NOT NULL, operation_id TEXT NOT NULL, from_version TEXT,
+          mapped_at REAL NOT NULL)
+        """)
+        try exec("CREATE INDEX IF NOT EXISTS ua_mapping_info ON ua_mapping(information_id)")
+        try exec("CREATE INDEX IF NOT EXISTS ua_mapping_carrier ON ua_mapping(carrier_id)")
+        try exec("""
+        CREATE TABLE IF NOT EXISTS ua_session_client_refs(
+          session_id TEXT NOT NULL, client_ref TEXT NOT NULL,
+          event_id TEXT NOT NULL, sequence INTEGER NOT NULL,
+          PRIMARY KEY(session_id, client_ref))
+        """)
+        try exec("""
+        CREATE TABLE IF NOT EXISTS ua_index_builds(
+          information_id TEXT PRIMARY KEY, carrier_id TEXT,
+          indexed_revision TEXT NOT NULL, build_version INTEGER NOT NULL, built_at REAL NOT NULL)
+        """)
     }
 
     // MARK: Transactions
@@ -227,6 +265,59 @@ public actor SQLiteCore {
         _ = try stmt.step()
     }
 
+    // MARK: Compound-operation scopes (U-A MA-4 / MA-10)
+
+    /// Run `body` inside one IMMEDIATE transaction: everything the body
+    /// writes commits together or not at all (MA-4 atomic boundary).
+    /// The body must be synchronous and use `statement(_:bind:)` /
+    /// `query(_:bind:read:)` only — never `run(_:)`, which manages its
+    /// own transaction edges.
+    func withTransaction<T>(_ body: () throws -> T) throws -> T {
+        try closeStrayMoveHandoff()
+        guard !inTransaction else { return try body() }
+        try exec("BEGIN IMMEDIATE")
+        inTransaction = true
+        do {
+            let result = try body()
+            try commitIfNeeded()
+            return result
+        } catch {
+            rollbackIfNeeded()
+            throw error
+        }
+    }
+
+    /// Run `body` inside one DEFERRED (read) transaction: every query in
+    /// the body observes one committed WAL snapshot (MA-10). Body must be
+    /// synchronous and read-only.
+    func withReadSnapshot<T>(_ body: () throws -> T) throws -> T {
+        guard !inTransaction else { return try body() }
+        try exec("BEGIN DEFERRED")
+        do {
+            let result = try body()
+            try exec("COMMIT")
+            return result
+        } catch {
+            try? exec("ROLLBACK")
+            throw error
+        }
+    }
+
+    /// Single statement without transaction management — for use inside
+    /// `withTransaction` scopes only.
+    func statement(_ sql: String, bind: (Stmt) throws -> Void = { _ in }) throws {
+        let stmt = try Stmt(db: db, sql: sql)
+        defer { stmt.finalize() }
+        try bind(stmt)
+        _ = try stmt.step()
+    }
+
+    /// Rows changed by the most recent statement on this connection
+    /// (CAS verification).
+    func changes() -> Int {
+        Int(sqlite3_changes(db))
+    }
+
     // MARK: Raw execution
 
     nonisolated func exec(_ sql: String) throws {
@@ -241,7 +332,7 @@ public actor SQLiteCore {
 
 /// Prepared statement wrapper.
 final class Stmt {
-    private let handle: OpaquePointer?
+    let handle: OpaquePointer?
     private var finalized = false
 
     init(db: OpaquePointer, sql: String) throws {
@@ -271,6 +362,9 @@ final class Stmt {
         if rc == SQLITE_DONE { return false }
         throw SQLiteCarrierError.sqlFailed(String(cString: sqlite3_errmsg(sqlite3_db_handle(handle))))
     }
+
+    /// Raw handle for column-count introspection (fingerprinting).
+    var handlePointer: OpaquePointer? { handle }
 
     func bindText(_ index: Int32, _ value: String) {
         sqlite3_bind_text(handle, index, value, -1, SQLITE_TRANSIENT)

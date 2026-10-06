@@ -117,6 +117,8 @@ public struct SQLiteCarrierBundle: Sendable {
     public let core: SQLiteCore
     public let representations: POSIXEntityStore
     public let integrity: SQLiteCarrierIntegrityReporter
+    /// U-A composition mechanisms (Unified Minimal Composition Manifest §4).
+    public let operations: SQLiteUnifiedCarrierOperations
 }
 
 public struct SQLiteCarrierFactory: Sendable {
@@ -150,7 +152,8 @@ public struct SQLiteCarrierFactory: Sendable {
             runtime: runtime,
             core: core,
             representations: representations,
-            integrity: integrity
+            integrity: integrity,
+            operations: SQLiteUnifiedCarrierOperations(core: core, entities: representations)
         )
     }
 }

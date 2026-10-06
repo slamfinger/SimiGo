@@ -18,9 +18,11 @@ CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded 
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A COMPOSITION MANIFEST DELIVERED — mechanisms → conformance → admission → MA-DS-1 next within the authorization; Gate C closure = separate Human action
+CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A MANIFEST v1.1 APPROVED FOR IMPLEMENTATION (Human) / MECHANISM IMPLEMENTATION DELIVERED + CONFORMANCE 11/11 + A1 REGRESSION 10/10 — MA-DS-1 execution NEXT; Gate C closure = separate Human action
 CCVS-01 U-A manifest                 = v1.1 (self-audited) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
 CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) / SA-4 CLEAN — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
+CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
+CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
@@ -731,3 +733,53 @@ zero changes to evidence, criteria, or MA-DS-1 step mapping. The audit
 does NOT declare "APPROVED FOR IMPLEMENTATION" (a Human action) and
 makes no Gate C progress claim. Per the Human's flow, the next step
 after this checkpoint is A1 mechanism implementation.
+
+## U-A mechanism implementation + conformance + admission — 2026-10-06
+
+The Human ruled the manifest self-audit APPROVED and authorized **A1
+mechanism implementation** with the standing order: do not skip
+conformance to reach MA-DS-1, and stop-and-report (never re-write
+criteria) if implementation and manifest semantics ever conflict.
+
+Delivered (commit on main, pushed):
+
+```text
+Sources/CarrierSQLite/SQLiteCore.swift                  ua_* schema +
+  withTransaction / withReadSnapshot / statement / changes primitives
+Sources/CarrierSQLite/SQLiteUnifiedCarrierOperations.swift  NEW — the
+  §4 mechanisms: identity minting (I20-guarded), CAS revise (MA-3),
+  compound entity-then-transaction revise (MA-4), carrier-side session
+  allocation with client_ref + operation_id idempotency (MA-6/MA-7),
+  CC-5 mapping, consistent snapshot (MA-10), index build tracking +
+  staleness + rebuild (MA-9), authority fingerprint + dangling-
+  provenance evidence queries; crash gates UA-C1/C2/C3 registered
+Sources/CarrierSQLite/POSIXEntityStore.swift            module-internal
+  exposure of durableWrite (no protocol change)
+Sources/CarrierSQLite/SQLiteCarrierFactory.swift        bundle.operations
+Tests/CarrierSQLiteTests/UAOperationTests.swift         NEW — 11 tests
+```
+
+Results:
+
+```text
+UAOperationTests 11/11 PASS (3 consecutive runs)
+A1 conformance regression  10/10 PASS (frozen A1 surface unchanged)
+Full package suite         stable green across repeated runs
+```
+
+Registered finding (reverse anti-pattern check): the first MA-2 test
+draft retried a conflicted CAS revise REUSING the operation id and got
+the recorded CONFLICT replayed. Manifest §4.1 says "rebase = new
+operation with new expected_revision after re-read" — CONFLICT is
+terminal; MA-7 replay covers unknown-outcome re-drive only. Mechanism
+confirmed correct against the manifest; the TEST was fixed (fresh
+operation_id per rebase attempt). No manifest semantics changed.
+
+Honest boundaries: crash gates wired but multi-process SIGKILL
+exercises belong to MA-DS-1 (P8 crash-runner pattern); in-process
+concurrency serializes on the single connection (composition
+property); no performance measurements (PB-U* stays UNCALIBRATED).
+
+Next within the authorization: MA-DS-1 execution (13 pre-registered
+steps), then evidence chain packaged for the Human audit. Gate C
+closure remains a separate Human action.

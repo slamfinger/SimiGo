@@ -10,19 +10,29 @@ public struct POSIXEntityStore: EntityRepresentationStore {
     let core: SQLiteCore
     let rootURL: URL
 
+    /// Entity-file root (sharded by digest prefix) — used by the U-A
+    /// authority fingerprint audit.
+    var entitiesRoot: URL {
+        rootURL.appendingPathComponent("entities", isDirectory: true)
+    }
+
     public init(core: SQLiteCore, rootURL: URL) {
         self.core = core
         self.rootURL = rootURL
     }
 
-    private func fileURL(for digest: String) -> URL {
+    func fileURL(for digest: String) -> URL {
         let prefix = String(digest.prefix(2))
         return rootURL.appendingPathComponent("entities", isDirectory: true)
             .appendingPathComponent(prefix, isDirectory: true)
             .appendingPathComponent(digest)
     }
 
-    private func durableWrite(digest: String, bytes: Data) throws -> Bool {
+    /// Durable entity write (temp + fsync + rename + dir fsync) with no
+    /// registry write — used by the U-A compound operations, which commit
+    /// registry rows in their own single transaction afterwards
+    /// (entity-fsync-then-commit, U-A manifest §4.2).
+    func durableWrite(digest: String, bytes: Data) throws -> Bool {
         let url = fileURL(for: digest)
         if FileManager.default.fileExists(atPath: url.path) { return false }
         let dir = url.deletingLastPathComponent()
