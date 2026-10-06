@@ -28,6 +28,21 @@ Migration                            = NOT AUTHORIZED
 Higher-Layer ES↔IS semantics         = NOT OPENED
 ```
 
+## Branch state after immediate consolidation
+
+```text
+main @ 7f7e049                                 = SOLE CANONICAL Research State
+codex/research-recovery-layer-v0.1 @ 0078379  = merged source branch; no longer operative
+integration/path-a-information-place @ 27bc805 = archived historical subset
+codex/execution-state-research-20260929       = historical / not merged
+research/es-reuse-program-20260930            = historical / not merged
+```
+
+The Human subsequently ordered immediate consolidation because the remaining
+branch count was judged excessive. This supersedes the earlier merge timing
+instruction only. UA v0.3 remains in HUMAN REVIEW / FREEZE GATE; U-2 remains
+NOT AUTHORIZED.
+
 ## Progress
 
 1. Path A made the current Information Place the default repository entry.
@@ -423,7 +438,7 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     documents / Next legal transition) are the ONLY current-truth
     surfaces and have been made unique and conflict-free.
 
-41. Human Branch Consolidation Ruling registered (verbatim in
+41. Human Branch Consolidation Ruling registered; later superseded in part by an immediate-merge instruction. 
     `docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md`;
     verified ancestry: integration @ 27bc805 is a STRICT ANCESTOR of the
     codex line — 0 commits unique to integration). Consequences BR-1..BR-6:
