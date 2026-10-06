@@ -2,13 +2,11 @@
 
 > **Status:** **FROZEN / UA v1.0**
 > **Date:** 2026-10-06
-> **Revision lineage:** v0.1 (PROPOSED) → ruling B = REVISE (tightened:
-> Unified Carrier Contract over existing semantics) → **v0.2** → Conformance
-> Review (REVISE, R-1..R-11, zero BLOCK) → ruling **B = REVISE + CC-MA
-> mandate** (`PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md`)
-> → **v0.3 (this document)**.
+> **Revision lineage:** v0.1 → v0.2 → v0.3 → **UA v1.0 FROZEN by Gate B ACCEPT / FREEZE**.
+> The v0.3 targeted conformance review returned NO BLOCK; the five registered
+> freeze conditions were incorporated into this frozen v1.0 text.
 > **Authorization basis:** Unified direction ruling; U-1 revision ruling;
-> review ruling and CC-MA mandate.
+> review ruling, CC-MA mandate, and Gate B freeze ruling.
 > **Relationship to CCVS-01-PB v1.2:** ADDITIVE ONLY (unchanged).
 > **U-2 remains NOT AUTHORIZED.**
 > **Freeze ruling:** Gate B = ACCEPT / FREEZE; five registered conditions incorporated.
@@ -54,7 +52,7 @@ FIXED R-11  §2: pinning sentence added — "File Information / Session
 
 NEW  CC-MA  Multi-Agent Carrier Consistency (§3A): MA-1..MA-10
             incorporating the Human's C1-C10 catalog verbatim; the
-            concurrency design objects; one unified concurrency model
+            concurrency design objects; one unified concurrency contract / guarantee set
             across both families; Agent positioned as actor only;
             binding design scenario MA-DS-1 "Multi-Agent Research Day";
             additive correctness bounds I19-I25; CC-MA mechanisms are
@@ -116,7 +114,7 @@ UA-P7  NEW. Multi-agent concurrency obligations (CC-MA) are database-
 │    FILE:    path / bytes / representation / segment ...         │
 │    SESSION: event / sequence / summary / turn ...               │
 │    Physical difference allowed; ONE Carrier Contract governs    │
-│    both (§3); ONE concurrency model governs both (§3A)          │
+│    both (§3); ONE concurrency contract / guarantee set governs both (§3A)          │
 ├─────────────────────────────────────────────────────────────────┤
 │ ④ Derived Access Layer                                          │
 │    exact lookup / index / ranking / semantic retrieval          │
@@ -544,8 +542,10 @@ MA-DS-1 must be able to verify (additive correctness bounds, I19–I25):
 
 ```text
 I19  No lost update          (MA-3; stale detection + no blind overwrite)
-I20  No identity duplication (MA-5; concurrency never mints a second
-                             identity for the same object)
+I20  No unintended duplicate Carrier identity or conflicting duplicate
+     registration for one logical Carrier instance (MA-5); legitimate
+     distinct Information identities and Representation identities are
+     outside this bound
 I21  No dangling provenance  (MA-4/MA-8; every committed operation has
                              complete provenance — no half-commit)
 I22  No invalid cross-version relation (MA-10; no never-existed mixed
@@ -671,7 +671,7 @@ I16  IndexSource determinism (CC-7)
 I17  cross-domain relation integrity (CC-6 + CC-5)
 I18  historical judgment reviewability (CC-5 + CC-6)
 I19  no lost update (MA-3)                    [new, §3A]
-I20  no identity duplication (MA-5)           [new, §3A]
+I20  no unintended duplicate Carrier identity / conflicting duplicate registration (MA-5) [new, §3A]
 I21  no dangling provenance (MA-4/MA-8)       [new, §3A]
 I22  no invalid cross-version relation (MA-10)[new, §3A]
 I23  no session reorder under concurrency (MA-6) [new, §3A]
