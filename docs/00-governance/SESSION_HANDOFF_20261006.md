@@ -1,5 +1,14 @@
 # SimiGo-Lab 新会话研究任务交接基线
 
+> **⚠️ STATE UPDATE 2026-10-06（晚）——本文档 §5-§8 的门位已过期，当前状态以下为准：**
+> **Gate A CLOSED；Gate B CLOSED（UA v1.0 FROZEN）；Gate C = STARTED / OPEN → READY FOR CLOSURE REVIEW。**
+> U-A mechanism implementation = **ACCEPTED**（"U-A Correctness Acceptance"：Ownership/Visibility/Effect 三边界闭合；A/B/C 全 ACCEPT；32/32 测试；MA-DS-1 run 11 VALID；run 10 撤销为 runner defect）。
+> Manifest v1.1 = FROZEN / unchanged（§4.2 divergence = acceptance condition，进未来 v1.2 文档收敛）。
+> **Gate C Closure Package 已交付**：`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md`。
+> **当前停 = 等 Human 的 Gate C closure ruling（CLOSED 或 hold 带登记理由）。U-A 修复工作不再继续。**
+> 权威现状面 = `docs/RESEARCH_CONTEXT_INDEX.md` + `docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md`。
+> 本文档其余部分（接管原则/核心定义/禁止清单 §11）仍然有效。
+
 交接日期：2026-10-06
 更新：旧分支已在 GitHub 网页端删除核验；当前远端只保留 `main`。
 
