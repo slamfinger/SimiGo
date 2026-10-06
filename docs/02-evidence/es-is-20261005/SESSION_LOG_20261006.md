@@ -2113,3 +2113,65 @@ SRS implementation  NOT AUTHORIZED
 SRS fixture         NOT AUTHORIZED
 SRS experiment      NOT AUTHORIZED
 ```
+
+## SRS-SEM-01 v0.2 REVISE; v0.3 delivered — 2026-10-07
+
+The Human independently reviewed SRS-SEM-01 Design v0.2 at `253a23f`.
+
+Ruling:
+
+```text
+v0.1 six findings closed                  PASS
+Scope discipline                          PASS
+Carrier neutrality                        PASS
+DECLARED_SETTLED boundary                 PASS
+EXACT_REVISION boundary                   PASS
+Result identity separation                PASS
+Provenance boundary                       PASS
+Freshness/verdict separation              PASS
+
+Concrete source-relation identity         REVISE
+Result resolvability                      REVISE
+FRESHNESS_RECHECK_REQUIRED lifecycle      REVISE
+Lifecycle evidence minimum                SHOULD-FIX
+revision-current wording                  CLARIFY
+Research Context Index consistency        GOVERNANCE FIX
+
+SRS-SEM-01 Design v0.2                    REVISE
+SRS-VAL-01                                NOT AUTHORIZED
+```
+
+SRS-SEM-01 Design v0.3 was delivered with these corrections:
+
+```text
+M1  source_relation must uniquely identify the concrete relation instance:
+    PERSISTED_RELATION_ID or UNAMBIGUOUS_SOURCE_DESCRIPTION.
+
+M2  reusable result must be RESULT_VALUE directly consumable, or
+    RESULT_REFERENCE / RESULT_STATE_DESCRIPTOR lawfully resolvable without
+    recomputation. Non-resolvable descriptor alone is insufficient.
+
+M3  FRESHNESS_RECHECK_REQUIRED is blocking/non-reusable until separately defined
+    freshness evidence clears it.
+
+S1  lifecycle records require kind, target settlement, authority/event, reason,
+    evidence, ordering/time, successor when SUPERSEDED, and affected dependency/
+    freshness requirement. Incomplete evidence yields
+    INDETERMINATE_LIFECYCLE_EVIDENCE and blocks reuse.
+
+C1  exact revision equality is separate from freshness; revision-current is
+    forbidden as a freshness class.
+
+G1  Context Index stale v0.1/v0.2 current-state navigation is corrected to v0.3.
+```
+
+Current state:
+
+```text
+SRS-SEM-01 v0.2     REVISE / SUPERSEDED BY V0.3
+SRS-SEM-01 v0.3     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL-01          NOT AUTHORIZED
+SRS implementation  NOT AUTHORIZED
+SRS fixture         NOT AUTHORIZED
+SRS experiment      NOT AUTHORIZED
+```

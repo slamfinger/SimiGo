@@ -37,6 +37,12 @@
 > result identity ≠ SRS identity; minimum provenance obligations; freshness
 > requirements rather than verdicts. `SRS-VAL-01`, implementation, fixture, and
 > experiment remain NOT AUTHORIZED.
+> **UPDATE 17 (2026-10-07)：SRS-SEM-01 v0.2 = REVISE；v0.3 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: concrete source-relation instance identity; reusable result must
+> be directly consumable or lawfully resolvable; `FRESHNESS_RECHECK_REQUIRED`
+> blocks reuse; minimum lifecycle evidence; exact revision equality separate
+> from freshness; Context Index stale navigation corrected. `SRS-VAL-01`,
+> implementation, fixture, and experiment remain NOT AUTHORIZED.
 
 > **⚠️ STATE UPDATE 2026-10-06（晚，终 2）——本文档 §5-§8 的门位与“等 stage-transition review”状态均已过期，当前状态以下为准：**
 > **Gate A CLOSED；Gate B CLOSED（UA v1.0 FROZEN）；Gate C = CLOSED / ACCEPT（Human independent ruling）。**

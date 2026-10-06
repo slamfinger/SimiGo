@@ -68,6 +68,8 @@
 > Design v0.1 = DELIVERED FOR HUMAN REVIEW
 > Design v0.1 review = REVISE
 > Design v0.2 = DELIVERED FOR HUMAN REVIEW
+> Design v0.2 review = REVISE
+> Design v0.3 = DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human 已明确授权进入 `SRS-SEM-01`；v0.1 独立审查为 REVISE。v0.2 已修正：
@@ -78,7 +80,15 @@
 > 只冻结 minimum proof obligations；⑥ SRS 保存 freshness requirements，不保存
 > freshness verdicts。
 >
-> 当前 review object = **SRS-SEM-01 Design v0.2**。`SRS-VAL-01` 仍未授权。
+> Human 独立复审裁定 **v0.2 = REVISE**。v0.3 已修正：
+> ① `source_relation` 必须唯一绑定 concrete relation instance；若无 persisted
+> Relation，则必须有 unambiguous source description；② result 必须直接可消费或
+> 可 lawfully resolve，不能只靠 descriptor；③ `FRESHNESS_RECHECK_REQUIRED`
+> 是 blocking/non-reusable lifecycle state；④ lifecycle record 必须有 minimum
+> evidence；⑤ exact revision equality 与 freshness 正交，禁止
+> `revision-current` freshness class；⑥ Context Index 新旧状态冲突已修。
+>
+> 当前 review object = **SRS-SEM-01 Design v0.3**。`SRS-VAL-01` 仍未授权。
 >
 > **恢复纪律：**
 > 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被

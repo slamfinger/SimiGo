@@ -189,10 +189,16 @@ Selected next closure task                 SRS-SEM-01 — Minimal Settled Relati
 Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.1 DELIVERED
 SRS-SEM-01 design document                 docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md
 SRS-SEM-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
+SRS-SEM-01 v0.1 status                     REVISE / SUPERSEDED BY V0.2
 SRS-SEM-01 Design v0.2                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 v0.2 status                     REVISE / SUPERSEDED BY V0.3
 SRS-SEM-01 v0.2 document                    docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.2_20261007.md
 SRS-SEM-01 v0.2 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.2_DELIVERY_20261007.md
-Current SRS-SEM-01 review object            Design v0.2
+SRS-SEM-01 v0.2 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.2_REVIEW_RULING_20261007.md
+SRS-SEM-01 Design v0.3                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 v0.3 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_20261007.md
+SRS-SEM-01 v0.3 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_DELIVERY_20261007.md
+Current SRS-SEM-01 review object            Design v0.3
 Next dependency after SRS-SEM-01           SRS-VAL-01 — Reuse Validation Predicate
 Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
