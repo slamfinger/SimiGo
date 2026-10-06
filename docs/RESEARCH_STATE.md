@@ -66,12 +66,19 @@
 > SRS-SEM-01 Minimal Settled Relation State Semantic Boundary
 > Status = OPENED AFTER RECOVERY CLOSURE
 > Design v0.1 = DELIVERED FOR HUMAN REVIEW
+> Design v0.1 review = REVISE
+> Design v0.2 = DELIVERED FOR HUMAN REVIEW
 > ```
 >
-> Human 已明确授权进入 `SRS-SEM-01` 的最小语义边界设计；该设计只冻结语义字段、
-> 不可变/append-only/supersession 规则、依赖表示和边界区分。
-> `SRS-SEM-01` 之后才是 `SRS-VAL-01`；当前不得提前冻结 validation algorithm、
-> PIR implementation、carrier schema 或实验设计。
+> Human 已明确授权进入 `SRS-SEM-01`；v0.1 独立审查为 REVISE。v0.2 已修正：
+> ① SRS 只记录 `DECLARED_SETTLED` declaration，不在 SEM 内定义 settlement
+> operational lawfulness；② dependency 只允许 exact immutable revision binding，
+> 删除 semantic-equivalence 后门；③ lifecycle unresolved conflict 不得产生
+> determinate reusable status；④ result identity ≠ SRS identity；⑤ provenance
+> 只冻结 minimum proof obligations；⑥ SRS 保存 freshness requirements，不保存
+> freshness verdicts。
+>
+> 当前 review object = **SRS-SEM-01 Design v0.2**。`SRS-VAL-01` 仍未授权。
 >
 > **恢复纪律：**
 > 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被

@@ -2052,3 +2052,64 @@ PIR Fixture                      NOT AUTHORIZED
 PIR Implementation               NOT AUTHORIZED
 PIR Experiment                   NOT AUTHORIZED
 ```
+
+## SRS-SEM-01 v0.1 REVISE; v0.2 semantic correction delivered — 2026-10-07
+
+The Human independently reviewed SRS-SEM-01 Design v0.1 at `a80577f`.
+
+Ruling:
+
+```text
+SRS-SEM-01 Design v0.1     REVISE
+Overall direction          PASS
+Scope discipline           PASS
+SRS vs cache               PASS
+SRS vs Relation            PASS
+Immutable SRS              PASS
+Append-only lifecycle      PASS
+Carrier neutrality         PASS
+SRS-VAL-01                 NOT AUTHORIZED
+```
+
+Required corrections:
+
+```text
+R1  Remove lawful-settlement circularity.
+R2  Restrict revision_binding to exact immutable revision identity.
+R3  Conservative lifecycle derivation; unresolved conflict blocks reuse.
+C4  result / Information identity is not SRS identity.
+C5  Provenance is minimum semantic proof obligation, not a new taxonomy.
+C6  SRS stores freshness requirements, not freshness verdicts.
+```
+
+SRS-SEM-01 Design v0.2 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.2_20261007.md
+```
+
+Key corrections:
+
+```text
+Birth status        DECLARED_SETTLED
+Settlement meaning  records an ES settlement declaration under governing
+                    settlement semantics; does not define operational lawfulness
+Revision binding    EXACT_REVISION only; no semantic-equivalence upgrade
+Lifecycle conflict  UNRESOLVED_LIFECYCLE_CONFLICT and CONTESTED are not
+                    determinate reusable statuses
+Result boundary     result identity ≠ SRS identity
+Provenance          minimum semantic proof obligations only
+Freshness           requirements/conditions only, not verdicts
+```
+
+Current state:
+
+```text
+SRS-SEM-01 v0.1     REVISE / SUPERSEDED BY V0.2
+SRS-SEM-01 v0.2     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL-01          NOT AUTHORIZED
+SRS implementation  NOT AUTHORIZED
+SRS fixture         NOT AUTHORIZED
+SRS experiment      NOT AUTHORIZED
+```

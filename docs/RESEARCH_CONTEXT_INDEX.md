@@ -188,6 +188,11 @@ Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHI
 Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
 Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.1 DELIVERED
 SRS-SEM-01 design document                 docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md
+SRS-SEM-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
+SRS-SEM-01 Design v0.2                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 v0.2 document                    docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.2_20261007.md
+SRS-SEM-01 v0.2 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.2_DELIVERY_20261007.md
+Current SRS-SEM-01 review object            Design v0.2
 Next dependency after SRS-SEM-01           SRS-VAL-01 — Reuse Validation Predicate
 Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
@@ -383,9 +388,9 @@ Current next transition:
   State Semantic Boundary. If accepted, the next artifact is a design-only
   SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
   code change is authorized. Do not start SRS-VAL-01 or later tasks by default.
-  Human later explicitly authorized SRS-SEM-01; its Design v0.1 is now the
-  current review object. Do not treat that authorization as permission to start
-  SRS-VAL-01 or implementation.
+  Human later reviewed SRS-SEM-01 Design v0.1 as REVISE. SRS-SEM-01 Design v0.2
+  is now the current review object. Do not treat this design work as permission
+  to start SRS-VAL-01, implementation, fixture creation, or experiment.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite

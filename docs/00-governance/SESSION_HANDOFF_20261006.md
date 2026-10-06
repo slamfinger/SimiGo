@@ -19,7 +19,7 @@
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
-> Status = `SELECTED / NOT STARTED`。
+> Status = `OPENED / V0.1 REVISE / V0.2 DELIVERED FOR HUMAN REVIEW`。
 > 下一个依赖是 `SRS-VAL-01`，但当前不得启动。
 >
 > **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
@@ -31,6 +31,12 @@
 > Status = `SRS-SEM-01 DESIGN DELIVERED FOR HUMAN REVIEW`. This authorizes only
 > semantic-boundary design review; it does not authorize implementation, fixture,
 > experiment, IS mutation, SRS-VAL-01, or code change.
+> **UPDATE 16 (2026-10-07)：SRS-SEM-01 v0.1 = REVISE；v0.2 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: `DECLARED_SETTLED` rather than circular lawful-settlement definition;
+> exact revision binding only; conservative lifecycle conflict handling;
+> result identity ≠ SRS identity; minimum provenance obligations; freshness
+> requirements rather than verdicts. `SRS-VAL-01`, implementation, fixture, and
+> experiment remain NOT AUTHORIZED.
 
 > **⚠️ STATE UPDATE 2026-10-06（晚，终 2）——本文档 §5-§8 的门位与“等 stage-transition review”状态均已过期，当前状态以下为准：**
 > **Gate A CLOSED；Gate B CLOSED（UA v1.0 FROZEN）；Gate C = CLOSED / ACCEPT（Human independent ruling）。**
