@@ -161,6 +161,29 @@
 > `physical_observations` 与 `physical_changes`。
 >
 > **Minimal PIR Probe Design v0.2 = DELIVERED FOR HUMAN REVIEW。**
+>
+> **ES–IS Settled Relation Coupling audit package = DELIVERED FOR HUMAN REVIEW。**
+> Human commission `ca3d606` 要求全库审计后确立核心架构。结论：
+> `Settled Relation State` 是由 IPAC adoption、Relation edge、U-A
+> revision/provenance、PIR freshness、ES continuation 等既有前置件组成的新
+> canonical composite；不是 cache、bare result、runtime checkpoint 或单个既有
+> Relation。`Information Topology` 是 ES 计算在 IS 中累积形成的
+> Information nodes + Relation/SRS edges + dependency/revision/freshness/provenance
+> validity conditions。
+>
+> 核心未证明缺口：
+>
+> ```text
+> ES₁ → IS → ES₂ Settled Relation Reuse
+> 独立 ES₂ 验证并消费 ES₁ settled relation，
+> 只计算 Δ，不得重复计算已结算 relation；
+> stale/invalid dependency 必须拒绝或重算。
+> ```
+>
+> R01 只证明 prepared closure 可 continuation；PIR v0.2 只是 accepted design；
+> 两者不得被重新解释为已证明 SRS reuse。audit package 内含最小 next experiment
+> outline，但 implementation / experiment / fixture / IS mutation / code change
+> 均 NOT AUTHORIZED。Minimal PIR Probe v0.2 暂停，等待 central architecture ruling。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

@@ -169,6 +169,13 @@ PIR future experiment shape               10,000 objects / 20-object scope / 5 r
 PIR implementation                       NOT AUTHORIZED
 PIR experiment                           NOT AUTHORIZED
 SimiGo code change for PIR               NOT AUTHORIZED
+ES–IS Settled Relation Coupling          AUDIT PACKAGE DELIVERED FOR HUMAN REVIEW
+Settled Relation State                   NEW CANONICAL COMPOSITE / NOT IMPLEMENTED OR DEMONSTRATED
+Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMULATED STRUCTURE
+Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
+Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
+Current central review object             Settled Relation Coupling Audit Package
+Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
@@ -356,18 +363,18 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF MINIMAL PIR PROBE DESIGN V0.2 ONLY. PIR Design v0.2 and its
-  Clarification Addendum are ACCEPTED. R01 remains CLOSED / ACCEPTED with
-  bounded verdict PASS — CONTINUATION SUFFICIENT. The current probe-design
-  review object is v0.2, which revises observable observation-age semantics,
-  non-circular scope boundedness, phase scaling attribution, MOVE/RENAME
-  discovery, and observations-versus-changes accounting. Approval would not
-  authorize implementation, fixture creation, or execution.
-  Do not open
-  Approval would not authorize implementation, fixture creation, or execution.
-  Do not open
-  U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection, carrier
-  migration, MemPalace integration, or any Frozen Contract / UA v1.0
+  HUMAN REVIEW OF ES–IS SETTLED RELATION COUPLING AUDIT PACKAGE ONLY.
+  R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
+  SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite
+  design, but Minimal PIR Probe v0.2 is paused pending central architecture
+  ruling. The audit package defines Settled Relation State, Information
+  Topology, and the central missing claim:
+  ES₁ → IS → ES₂ lawful reuse without recomputation. It does not authorize
+  implementation, fixture creation, experiment, IS mutation, or code change.
+  Approval would only permit a separately reviewed Minimal ES₁→IS→ES₂
+  Settled Relation Reuse Experiment Design.
+  Do not open U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection,
+  carrier migration, MemPalace integration, or any Frozen Contract / UA v1.0
   modification.
   File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered

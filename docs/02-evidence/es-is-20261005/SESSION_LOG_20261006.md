@@ -1597,6 +1597,90 @@ PIR implementation NOT AUTHORIZED
 PIR experiment     NOT AUTHORIZED
 ```
 
+## ES–IS Settled Relation Coupling audit package delivered — 2026-10-06
+
+Human commission `ca3d606` ordered a corpus audit before any implementation.
+The local agent fast-forwarded to `ca3d606`, inspected constitutional, IPAC,
+boundary-synthesis, Relation, U-A, R01, PIR, and source-level material, and
+delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
+```
+
+Core audit conclusion:
+
+```text
+Settled Relation State is a new canonical composite over existing parts.
+It is not a renaming of Relation, IPAC, checkpoint, or cache.
+Information Topology is the accumulated ES-produced structure of Information
+nodes and Relation/Settled Relation State edges with dependency, revision,
+freshness, and provenance validity conditions.
+```
+
+The corpus already contains prerequisites:
+
+```text
+Constitution ES↔IS closure loop;
+Core Reference Scenario T1→R1→T2 without recomputing T1;
+IPAC Q3 adoption conditions;
+Boundary Synthesis adopt/recompute gate;
+RelationCore D1–D3 and R1–R6;
+U-A CC-5/CC-8/MA-7/MA-8 provenance/revision/mapping;
+R01 continuation closure PASS;
+PIR freshness design acceptance.
+```
+
+The central missing claim is:
+
+```text
+An independent ES₂ can validate and consume a Settled Relation State produced
+by ES₁, avoid recomputation of the settled relation, compute only Δ, and
+correctly reject stale/invalid dependencies.
+```
+
+This is NOT ESTABLISHED.
+
+The package defines:
+
+```text
+SRS minimum fields:
+  result + source relation + dependency revisions + provenance + freshness +
+  relation semantics + settlement status.
+
+Information Topology:
+  Information nodes + Relation/SRS edges + validity conditions, accumulated by
+  Execution State.
+
+Falsifiable hypotheses:
+  H1 lawful reuse after validation;
+  H2 stale/invalid dependency forces recompute or block;
+  H3 bare result without SRS bundle cannot authorize lawful reuse.
+
+Minimum experiment outline:
+  ARM-A valid reuse;
+  ARM-B stale dependency;
+  ARM-C missing provenance;
+  ARM-D bare-result control;
+  ARM-E independent Execution State control.
+```
+
+The package explicitly forbids reinterpreting R01 or PIR as SRS reuse evidence.
+
+Current state:
+
+```text
+Audit package              SUBMITTED FOR HUMAN REVIEW
+PIR Design v0.2            ACCEPTED / freshness prerequisite design
+Minimal PIR Probe v0.2     PAUSED pending central architecture ruling
+PIR implementation         NOT AUTHORIZED
+PIR experiment             NOT AUTHORIZED
+SRS implementation         NOT AUTHORIZED
+SRS experiment             NOT AUTHORIZED
+SimiGo code change         NOT AUTHORIZED
+```
+
 ## Query-Priority Reconciliation direction and PIR Design v0.2 — 2026-10-06
 
 The Human accepted a PIR design principle:
