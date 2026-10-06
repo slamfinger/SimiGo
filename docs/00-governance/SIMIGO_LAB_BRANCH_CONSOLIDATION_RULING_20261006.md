@@ -303,3 +303,39 @@ BR-6  State documents updated in the same commit: INDEX and
       ARCHIVED; main = canonical target; codex = current working
       branch; merge = post-freeze, no-ff, separate action).
 ```
+
+
+## Superseding Human ruling — immediate consolidation
+
+The Human subsequently superseded BR-1 and the timing portion of BR-2 by
+explicitly ordering immediate consolidation into `main` because the remaining
+branch count was judged excessive.
+
+Effective ruling:
+
+```text
+SR-1  The current codex branch state is merged into `main` NOW.
+
+SR-2  The merge is no-ff. It is a repository-topology consolidation action
+      only; it does NOT freeze UA v0.3 and does NOT authorize U-2.
+
+SR-3  `main` is the sole canonical Research State immediately after the merge.
+
+SR-4  `integration/path-a-information-place` remains historical and receives
+      no new work; it is a strict ancestor/subset of the merged codex line.
+
+SR-5  The old ES branch and the ES-reuse research line remain historical
+      references and are not merged merely for branch-count reduction.
+
+SR-6  All current work and state updates now target `main`; the superseded
+      codex branch is no longer an operative current-state surface.
+
+```
+
+Substantive research gate remains unchanged:
+
+```text
+UA v0.3 Freeze Gate = OPEN
+U-2                  = NOT AUTHORIZED
+Unified benchmark    = NOT AUTHORIZED
+```
