@@ -339,3 +339,40 @@ UA v0.3 Freeze Gate = OPEN
 U-2                  = NOT AUTHORIZED
 Unified benchmark    = NOT AUTHORIZED
 ```
+
+
+## Superseding consolidation instruction — 2026-10-06
+
+The Human subsequently instructed that the Lab repository itself should be consolidated now.
+
+Operational consequence:
+
+    main = sole canonical Research State
+
+    codex/research-recovery-layer-v0.1
+      -> topology-only merge into main @ 772d1225
+      -> stale post-merge governance commit remains historical only
+
+    research/es-reuse-program-20260930
+      -> topology-only merge into main @ 6ad81046
+      -> historical ES-reuse artifacts are NOT imported into the current tree
+
+    integration/path-a-information-place
+      -> already fully behind / ancestral; no additional content merge required
+
+    codex/execution-state-research-20260929
+      -> already fully behind / ancestral; no additional content merge required
+
+This is repository-history consolidation, not semantic adoption of the old
+ES-reuse research line and not authorization of any new ES work.
+
+The current research tree remains unchanged by the topology-only merges.
+
+    UA v0.3 Freeze Gate = OPEN
+    U-2                  = NOT AUTHORIZED
+    Unified benchmark    = NOT AUTHORIZED
+    Backend selection    = NOT AUTHORIZED
+
+Remote branch refs are still present because the current GitHub connector does
+not expose branch-ref deletion. They are historical / non-operative and must
+not be treated as current-state entry points.
