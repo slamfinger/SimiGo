@@ -384,3 +384,10 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > same I-16 boundary. I-15 remains mandatory, predicate-rule conditionality is
 > unchanged, and navigation identifies v0.7. Implementation, fixture,
 > experiment, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 27 (2026-10-07)：SRS-VAL-01 v0.7 = REVISE；v0.8 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: surviving failures not already resolved by higher precedence must
+> undergo registered predicate-rule classification before
+> BLOCKED_NON_RECOMPUTE_PATH or RECOMPUTE; I14_NOT_USED_NO_RECOMPUTE_PATH never
+> means skipped classification; the Recovery Anchor commissioned-design field
+> now identifies v0.8 and v0.1..v0.7 are superseded lineage. Implementation,
+> fixture, experiment, and IS mutation remain NOT AUTHORIZED.

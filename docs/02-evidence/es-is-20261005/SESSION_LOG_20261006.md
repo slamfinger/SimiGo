@@ -2190,6 +2190,64 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.7 REVISE; v0.8 classification non-bypassability delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.7 at `33f24cd`.
+
+Ruling:
+
+```text
+I-14 conditional path semantics              PASS
+Pure REUSE without I-14                      PASS
+RECOMPUTE requires exact I-14                PASS
+I-15 universal requirement                   PASS
+Predicate-rule immutable binding             PASS
+RECOMPUTE semantic envelope                  PASS
+I-16 boundary semantics                      PASS
+Decision precedence                          PASS
+Lifecycle precedence                         PASS
+Context Index current object                 PASS
+
+Failure classification bypass                REVISE
+Recovery Anchor current-object drift         REVISE
+
+SRS-VAL-01 Design v0.7                       REVISE
+```
+
+Required v0.8 corrections:
+
+```text
+R1  A surviving failure not already resolved by higher precedence must undergo
+    registered predicate-rule classification before
+    BLOCKED_NON_RECOMPUTE_PATH or RECOMPUTE.
+
+R2  I14_NOT_USED_NO_RECOMPUTE_PATH never represents skipped classification.
+
+R3  The marker is lawful only after the invocation lawfully establishes that no
+    RECOMPUTE authorization path is entered.
+
+R4  Recovery Anchor Current commissioned design identifies v0.8; v0.1..v0.7
+    remain only as superseded lineage.
+```
+
+SRS-VAL-01 Design v0.8 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.7     REVISE / SUPERSEDED BY V0.8
+SRS-VAL-01 v0.8     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.6 REVISE; v0.7 conditional I-14 path separation delivered — 2026-10-07
 
 The Human independently reviewed SRS-VAL-01 Design v0.6 at `979bb02`.

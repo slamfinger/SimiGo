@@ -245,7 +245,9 @@ After iterative review, Design v0.5 is ACCEPT / FROZEN.
 Accepted design artifact:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 Current commissioned design:
-`docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md`.
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
+Superseded SRS-VAL-01 design lineage:
+V0.1 through V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS.
 ```
 
 Only SRS-VAL-01 design is active. Implementation and experiment remain
@@ -278,10 +280,11 @@ SRS-VAL-01
 Settled Relation State Reuse Validation Predicate
 
 Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE /
-         V0.5 REVISE / V0.6 REVISE / DESIGN V0.7 DELIVERED FOR HUMAN REVIEW
+         V0.5 REVISE / V0.6 REVISE / V0.7 REVISE / DESIGN V0.8 DELIVERED FOR
+         HUMAN REVIEW
 
 Current design document =
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.7_20261007.md
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md
 ```
 
 Dependency chain:
