@@ -1,11 +1,11 @@
 # SRS-VAL-01 Design v0.1 Review Ruling
 
-> **Status:** SRS-VAL-01 Design v0.1 = **REVISE / SUPERSEDED BY V0.2**
+> **Status:** SRS-VAL-01 Design v0.1 = **REVISE / SUPERSEDED BY V0.3**
 > **Review date:** 2026-10-07
 > **Review authority:** Human independent review
 > **Reviewed basis:** `f733457`
 > **Required follow-up:** v0.2 predicate decision-boundary correction
-> **Superseded by:** `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.3_20261007.md`.
 > **SRS-VAL implementation / fixture / experiment:** NOT AUTHORIZED
 > **IS mutation:** NOT AUTHORIZED
 

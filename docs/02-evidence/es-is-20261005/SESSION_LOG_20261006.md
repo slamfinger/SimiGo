@@ -2190,6 +2190,72 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.2 REVISE; v0.3 decision precedence delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.2 at `7b4989b`.
+
+Ruling:
+
+```text
+SRS-SEM-01 inheritance                 PASS
+I-14 recompute authorization           PASS
+I-15 exact reuse request               PASS
+I-16 observation consistency           PASS
+Freshness clearing                     PASS
+SRS never authorizes recompute         PASS
+Failure alone never means recompute    PASS
+Independence boundary                  PASS
+Non-recomputation boundary             PASS
+Typed failure taxonomy                 PASS
+
+Source invalidation precedence         REVISE
+Decision mutual exclusivity            REVISE
+Context Index current document pointer REVISE
+
+SRS-VAL-01 Design v0.2                 REVISE
+```
+
+Required v0.3 corrections:
+
+```text
+R1  source-relation invalidation records are evaluated under the same
+    failure-classification rules. An invalidation is HARD_BLOCK unless exact
+    I-14 authorization explicitly covers that invalidation class.
+    I-14 authorization never overrides INVALIDATED / CONTESTED /
+    UNRESOLVED_LIFECYCLE_CONFLICT lifecycle blockers.
+
+R2  formal decision precedence:
+    DP-0 observation inconsistency → BLOCK;
+    DP-1 any structural/provenance/resolution/policy/source/lifecycle
+         HARD_BLOCK → BLOCK;
+    DP-2 applicability NOT_APPLICABLE / INDETERMINATE → BLOCK;
+    DP-3 all remaining failures explicitly covered by I-14 → RECOMPUTE;
+    DP-4 no failure remains → REUSE.
+    Exactly one primary decision is returned. REUSE, BLOCK, and RECOMPUTE are
+    mutually exclusive.
+
+R3  Context Index current design pointer corrected to v0.3; v0.1 remains only
+    superseded lineage.
+```
+
+SRS-VAL-01 Design v0.3 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.3_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.2     REVISE / SUPERSEDED BY V0.3
+SRS-VAL-01 v0.3     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.1 REVISE; v0.2 decision-boundary correction delivered — 2026-10-07
 
 The Human independently reviewed SRS-VAL-01 Design v0.1 at `f733457`.

@@ -118,7 +118,7 @@
 >
 > ```text
 > SRS-VAL-01 Settled Relation State Reuse Validation Predicate
-> Status = COMMISSIONED / V0.1 REVISE / V0.2 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -129,6 +129,22 @@
 > 仅当 exact governing authorization 显式覆盖该 invalidation class 时才
 > RECOMPUTE，否则 BLOCK；⑤ FRESHNESS_RECHECK_REQUIRED 使用 positive clearing
 > semantics。
+>
+> Human 独立复审裁定 **v0.2 = REVISE**。v0.3 已冻结：
+> ① source-relation invalidation 按 failure classification 处理，是 HARD_BLOCK，
+> 除非 exact I-14 显式覆盖该 invalidation class；I-14 不得覆盖 INVALIDATED /
+> CONTESTED / UNRESOLVED_LIFECYCLE_CONFLICT lifecycle blockers。
+> ② formal decision precedence:
+> DP-0 observation inconsistency → BLOCK；
+> DP-1 any HARD_BLOCK → BLOCK；
+> DP-2 applicability NOT_APPLICABLE / INDETERMINATE → BLOCK；
+> DP-3 all remaining failures explicitly covered by I-14 → RECOMPUTE；
+> DP-4 no failure → REUSE。
+> Exactly one primary decision；REUSE/BLOCK/RECOMPUTE mutually exclusive。
+> ③ Context Index current design pointer 已改为 v0.3，v0.1/v0.2 只是
+> superseded lineage。
+>
+> 当前 review object = **SRS-VAL-01 Design v0.3**。`SRS-VAL-01` 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

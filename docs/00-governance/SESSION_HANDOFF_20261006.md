@@ -57,6 +57,15 @@
 > failure-to-RECOMPUTE now requires explicit invalidation-class authorization;
 > positive freshness-clearing semantics registered. Implementation, fixture,
 > experiment, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 22 (2026-10-07)：SRS-VAL-01 v0.2 = REVISE；v0.3 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: source-relation invalidation uses failure classification and is
+> HARD_BLOCK unless exact I-14 covers the class; I-14 never overrides lifecycle
+> blockers. Formal decision precedence frozen: observation inconsistency /
+> HARD_BLOCK / applicability failure / all-remaining-failures-covered /
+> no-failure map to BLOCK / BLOCK / BLOCK / RECOMPUTE / REUSE. Exactly one
+> primary decision; outcomes mutually exclusive. Context Index current design
+> pointer corrected to v0.3. Implementation, fixture, experiment, and IS mutation
+> remain NOT AUTHORIZED.
 > **UPDATE 19 (2026-10-07)：SRS-SEM-01 v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: canonical identity-generation rule binds EXACT_RULE_VERSION;
 > canonical semantic changes require a new rule identity/version; existing SRS
