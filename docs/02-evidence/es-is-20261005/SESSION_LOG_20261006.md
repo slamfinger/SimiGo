@@ -291,6 +291,41 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     defects recorded. UA v0.2 returns to AWAITING HUMAN REVIEW; U-2
     remains NOT AUTHORIZED.
 
+36. Human commissioned the UA v0.2 Unified Carrier Contract Conformance
+    Review (review-only; no implementation, no PB v1.2 change, no
+    RESEARCH_STATE.md change). Delivered as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md`.
+    Method: every UA-CC/UA-F clause tested against UA-P6 (frozen
+    artifacts win), the tightening test (Session as second class of
+    Information), and the identity-boundary chain, with anchors verified
+    against current code (Information.swift: identity + verbatim
+    content + Provenance + optional ContentDate; NO kind/title/summary/
+    status). **Final status: REVISE** — eleven precision/boundary
+    findings R-1..R-11 (deletion-wording "Information loss" imprecise
+    under CC-5; §8 residual term "Session Information Record";
+    Carrier-provenance vs frozen A3 Provenance name collision; CC-2 vs
+    CCS-C8 relationship unstated; carrier-identity minting unmarked as
+    U-2 manifest obligation; mapping cardinality N:M; "inherited A1
+    semantic" ambiguous ruling-vs-adapter; CC-8 #1 "digest" wording
+    vs registered minting input content+source+chunkIndex; FILE-family
+    record_kind gap; Representation Identity implicit vs
+    IS-IDLOC-SEAM-01; workload-term pinning). **Zero BLOCK, zero
+    CONTRADICTION** — no clause redefines Information/Relation
+    semantics; CC-6/CC-7/CC-9 and UA-F1/F4..F13 pass clean. Symmetry:
+    only one live residue (§8 line 407); no core-store split language.
+    Real-workload mapping registered six cases from the actual Agent
+    A/Agent B parallel round (authoring, external modification +
+    re-read-before-write, estate reorganization with content-addressed
+    stability, rename/move = contract-composed but not yet observed
+    [honest boundary], derived-index staleness corrected against
+    authority, dual-producer provenance) — all explainable by UA-CC
+    composition without a second semantic model, and registered as
+    diagnostic only, not promoted to semantics. Three unresolved
+    ambiguities (carrier-identity minting, mapping cardinality,
+    FILE-family kinds) registered as decision inputs. U-2 remains NOT
+    AUTHORIZED until Human accepts the contract; suggested next step =
+    UA v0.3 implementing R-1..R-11 after Human ruling on this review.
+
 ## Key documents
 
 ```text
@@ -326,6 +361,9 @@ CCVS-01 Phase C kickoff + A1 manifest
 
 CCVS-01 U-0 consolidation
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
+
+CCVS-01 U-1 v0.2 conformance review
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 
 CCVS-01 U-1 revision ruling (two messages, second operative)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
