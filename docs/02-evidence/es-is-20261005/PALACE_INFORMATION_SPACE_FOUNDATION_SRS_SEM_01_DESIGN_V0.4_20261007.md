@@ -1,10 +1,12 @@
 # Settled Relation State Semantic Boundary — SRS-SEM-01 Design v0.4
 
-> **Status:** DESIGN V0.4 DELIVERED FOR HUMAN REVIEW — SRS-VAL-01 NOT AUTHORIZED
+> **Status:** DESIGN V0.4 REVISE — SUPERSEDED BY V0.5 — SRS-VAL-01 NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-SEM-01 Design v0.3 for current review
 > **Review basis:** Human REVISE ruling on v0.3 at `d2b6a93`
 > **Revision purpose:** freeze external-reference stability for source identity, result target, resolution rule, and semantic/policy versions; remove recomputation prohibition from SRS semantics.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.4_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 
 ## 1. Stability axiom
 

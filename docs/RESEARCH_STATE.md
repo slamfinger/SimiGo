@@ -72,6 +72,8 @@
 > Design v0.3 = DELIVERED FOR HUMAN REVIEW
 > Design v0.3 review = REVISE
 > Design v0.4 = DELIVERED FOR HUMAN REVIEW
+> Design v0.4 review = REVISE
+> Design v0.5 = DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human 已明确授权进入 `SRS-SEM-01`；v0.1 独立审查为 REVISE。v0.2 已修正：
@@ -99,7 +101,17 @@
 > 从 SRS 字段移入 SRS-VAL/reuse validation invariant；⑤ 影响 reuse 的 semantic
 > rule/policy 必须绑定 exact immutable version/identity。
 >
-> 当前 review object = **SRS-SEM-01 Design v0.4**。`SRS-VAL-01` 仍未授权。
+> Human 独立复审裁定 **v0.4 = REVISE**。v0.5 已把稳定性公理补齐到：
+> ① `CANONICAL_DERIVED_RELATION_ID` 必须以 `EXACT_RULE_VERSION` 绑定 canonical
+> identity-generation rule；规则语义变更必须新建 rule identity/version；
+> ② existing SRS source identity 不得被后续 rule 重新解释；
+> ③ provenance evidence references 必须绑定 immutable evidence identity、
+> exact immutable evidence revision 或 immutable content address；
+> ④ lifecycle evidence references 遵守同一 immutable-binding rule；
+> ⑤ mutable/unversioned evidence 不足以支持 determinate reusable SRS；
+> ⑥ missing/unstable provenance 或 lifecycle evidence 会阻断 lawful reuse。
+>
+> 当前 review object = **SRS-SEM-01 Design v0.5**。`SRS-VAL-01` 仍未授权。
 >
 > **恢复纪律：**
 > 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被

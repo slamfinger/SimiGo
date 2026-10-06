@@ -2114,6 +2114,63 @@ SRS fixture         NOT AUTHORIZED
 SRS experiment      NOT AUTHORIZED
 ```
 
+## SRS-SEM-01 v0.4 REVISE; v0.5 identity/evidence stability delivered — 2026-10-07
+
+The Human independently reviewed SRS-SEM-01 Design v0.4 at `79fc37a`.
+
+Ruling:
+
+```text
+v0.3 source identity scope independence       PASS
+v0.3 result target immutability               PASS
+v0.3 resolution-rule exact version            PASS
+v0.3 recomputation prohibition relocation     PASS
+v0.3 policy/semantic version stability        PASS
+v0.3 Context Index consistency                PASS
+
+Canonical identity-rule exact version binding REVISE
+Provenance evidence immutable binding         REVISE
+Lifecycle evidence immutable binding          REVISE
+
+SRS-SEM-01 Design v0.4                        REVISE
+SRS-VAL-01                                    NOT AUTHORIZED
+```
+
+SRS-SEM-01 Design v0.5 was delivered with these corrections:
+
+```text
+R1  CANONICAL_DERIVED_RELATION_ID binds its canonical identity-generation rule
+    by EXACT_RULE_VERSION.
+
+R2  Changing canonical identity-generation semantics requires a new rule
+    identity/version.
+
+R3  Existing SRS source identity is never reinterpreted under a later canonical
+    rule.
+
+R4  Provenance or lifecycle evidence references that can affect SRS
+    interpretation or reuse must bind to immutable evidence identity, exact
+    immutable evidence revision, or immutable content address.
+
+R5  Mutable or unversioned evidence references are insufficient for determinate
+    reusable SRS.
+
+R6  Missing or unstable required evidence produces
+    PROVENANCE_EVIDENCE_UNSTABLE_OR_MISSING or
+    LIFECYCLE_EVIDENCE_UNSTABLE_OR_MISSING and blocks lawful reuse.
+```
+
+Current state:
+
+```text
+SRS-SEM-01 v0.4     REVISE / SUPERSEDED BY V0.5
+SRS-SEM-01 v0.5     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL-01          NOT AUTHORIZED
+SRS implementation  NOT AUTHORIZED
+SRS fixture         NOT AUTHORIZED
+SRS experiment      NOT AUTHORIZED
+```
+
 ## SRS-SEM-01 v0.3 REVISE; v0.4 external-reference stability delivered — 2026-10-07
 
 The Human independently reviewed SRS-SEM-01 Design v0.3 at `d2b6a93`.
