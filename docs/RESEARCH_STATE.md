@@ -114,13 +114,20 @@
 > ⑤ mutable/unversioned evidence 不足以支持 determinate reusable SRS；
 > ⑥ missing/unstable provenance 或 lifecycle evidence 会阻断 lawful reuse。
 >
-> Human independent review裁定 **Design v0.5 = ACCEPT / FROZEN**。SRS-SEM-01 正式收口。
+> Human independent review裁定 **Design v0.5 = ACCEPT / FROZEN**。SRS-SEM-01 正式收口。>
+> Human independent review裁定 **SRS-VAL-01 v0.4 = REVISE**。v0.5 已补齐
+> predicate-rule immutable binding：每个 RECOMPUTE_ELIGIBLE classification 必须绑定
+> exact immutable predicate-rule identity/version；必须包含 integrity/content-address
+> evidence；classification 只能使用 invocation 绑定的 exact predicate-rule version；
+> later predicate-rule revisions 不得 retroactively reinterpret earlier validation
+> bases；missing/unstable predicate-rule binding 必须 BLOCK。Context Index 所有
+> current navigation 已统一到 v0.4。
 >
 > **当前唯一 active closure task：**
 >
 > ```text
 > SRS-VAL-01 Settled Relation State Reuse Validation Predicate
-> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 REVISE / V0.5 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：

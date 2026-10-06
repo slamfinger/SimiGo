@@ -361,3 +361,11 @@ File + Session 的 Unified Carrier Contract UA v0.3 设计主线已接受但仍�
 File-side Phase C 已完成有效证据；
 U-2、Unified benchmark、backend selection、migration 均未授权；
 下一合法动作是 Human 对 UA v0.3 五个 freeze conditions 做正式裁决。
+> **UPDATE 24 (2026-10-07)：SRS-VAL-01 v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: every RECOMPUTE_ELIGIBLE classification requires an exact immutable
+> registered predicate-rule identity/version and integrity/content-address
+> binding; classification uses only the exact bound predicate-rule version;
+> later revisions cannot retroactively reinterpret earlier validation bases;
+> missing/unstable predicate-rule binding forces BLOCK; Context Index all current
+> navigation fields unified to v0.4. Implementation, fixture, experiment, and IS
+> mutation remain NOT AUTHORIZED.

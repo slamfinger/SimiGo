@@ -1,10 +1,12 @@
 # Settled Relation State Reuse Validation Predicate — SRS-VAL-01 Design v0.4
 
-> **Status:** DESIGN V0.4 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.4 REVISE — SUPERSEDED BY V0.5 — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-VAL-01 Design v0.3 for current review
 > **Review basis:** Human REVISE ruling on v0.3 at `d2b6a93`
 > **Revision purpose:** freeze the RECOMPUTE semantic envelope, canonical identity-generation rule binding, and unclassified-failure guard.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.4_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.5_20261007.md`.
 
 ## 1. Effect of v0.4
 

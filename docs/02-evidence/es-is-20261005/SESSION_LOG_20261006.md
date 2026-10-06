@@ -2595,3 +2595,68 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## SRS-VAL-01 v0.4 REVISE; v0.5 predicate-rule binding delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.4 at `e205f6d`.
+
+Ruling:
+
+```text
+v0.3 RECOMPUTE semantic envelope             PASS
+Result target / derivation boundary           PASS
+Canonical rule EXACT_RULE_VERSION             PASS
+No implicit canonical rule replacement        PASS
+Unclassified failure guard                    PASS
+DP-0..DP-4                                    PASS
+Mutual exclusivity                            PASS
+Lifecycle precedence                          PASS
+Freshness semantics                           PASS
+
+Predicate-rule immutable binding              REVISE
+Context Index recovery consistency            REVISE
+
+SRS-VAL-01 Design v0.4                        REVISE
+```
+
+Required v0.5 corrections:
+
+```text
+R1  Every remaining failure classified RECOMPUTE_ELIGIBLE must be evaluated
+    under an exact registered predicate-rule binding.
+
+R2  The binding includes:
+      predicate_rule_identity;
+      exact predicate_rule_version;
+      integrity/content-address binding.
+
+R3  Failure classification is evaluated only under the exact bound
+    predicate-rule version.
+
+R4  Later predicate-rule revisions do not retroactively reinterpret earlier
+    validation bases.
+
+R5  Missing, mutable, unversioned, unstable, or failed predicate-rule binding
+    prevents RECOMPUTE_ELIGIBLE classification and forces BLOCK.
+
+R6  Context Index all current / next-transition / recovery-entry pointers are
+    unified to v0.4; no competing current object remains.
+```
+
+SRS-VAL-01 Design v0.5 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.5_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.4     REVISE / SUPERSEDED BY V0.5
+SRS-VAL-01 v0.5     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
