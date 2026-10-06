@@ -582,7 +582,7 @@ Result:
 - `codex/research-recovery-layer-v0.1` is reachable from `main` via
   topology-only consolidation; its stale post-merge documentation is not
   reintroduced into the current tree.
-- `research/es-reuse-program-20260930` is also reachable from `main) via
+- `research/es-reuse-program-20260930` is also reachable from `main` via
   topology-only consolidation; its historical ES-reuse documents are not
   imported into the current PALACE tree.
 - `integration/path-a-information-place` and
