@@ -38,6 +38,11 @@ codex/execution-state-research-20260929, research/es-reuse-program-20260930
                                       = historical lines, frozen/archived,
                                         not part of the current PALACE mainline
 
+Commit anchors (Human-designated convention):
+cc2912b = UA v0.3 + targeted review delivery
+0078379 = topology consolidation + current state
+Protocol-delivery and governance commits are distinct state points.
+
 Machine scan at capsule batch base `14de9fd`:
 TOTAL_MARKDOWN = 2031
 DOCS_MARKDOWN  = 783

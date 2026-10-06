@@ -440,6 +440,19 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     State -> next legal step, no guessing between 27bc805 and the codex
     tip.
 
+42. Human VERIFIED the consolidation via remote refs (main @ 0a23fb0
+    unchanged / codex @ 0078379 / integration @ 27bc805 ARCHIVED) and
+    confirmed it formally complete — confirmation appended verbatim to
+    the Branch Consolidation Ruling (registered additions BR-7..BR-9):
+    commit-anchor convention fixed (cc2912b = UA v0.3 + targeted review
+    DELIVERY anchor; 0078379 = consolidation + current state anchor;
+    protocol-delivery vs governance commits must not be conflated);
+    main intentionally stays at 0a23fb0 as the governance statement
+    that the Unified Carrier contract sits at the Freeze Gate (no
+    pre-merge to "look latest"); no further research branches for now.
+    Gate position unchanged: UA v0.3 Freeze awaiting Human ruling;
+    merge NOT YET; U-2 NOT AUTHORIZED; Unified experiment NOT STARTED.
+
 ## Key documents
 
 ```text

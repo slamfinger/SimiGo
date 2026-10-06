@@ -303,3 +303,126 @@ BR-6  State documents updated in the same commit: INDEX and
       ARCHIVED; main = canonical target; codex = current working
       branch; merge = post-freeze, no-ff, separate action).
 ```
+
+---
+
+## Verification and confirmation (Human, 2026-10-06, verbatim)
+
+核验通过，当前盘面与这次收口裁定一致。
+
+### 当前远端真实状态
+
+```text
+main
+  @ 0a23fb0
+  唯一权威主线
+  未移动
+
+codex/research-recovery-layer-v0.1
+  @ 0078379
+  当前唯一工作分支
+
+integration/path-a-information-place
+  @ 27bc805
+  ARCHIVED，未推进
+
+codex/execution-state-research-20260929
+  旧 ES 历史分支，未推进
+
+research/es-reuse-program-20260930
+  独立旧研究线，未推进
+```
+
+我直接通过远端 ref 回验了：
+
+* `main` = `0a23fb01167c...`
+* `codex/research-recovery-layer-v0.1` = `00783798e98f...`
+* `integration/path-a-information-place` = `27bc8053e341...`
+
+而 `0078379` 的提交信息正是：
+
+> `governance: branch consolidation ruling — integration archived, codex = working branch, post-freeze no-ff merge into main`
+
+所以这次治理动作已经真正落到远端，不只是状态文档里的说法。
+
+### 这次收口是正确的
+
+现在应该把结构理解成：
+
+```text
+main
+  │
+  └── 当前正式 Research State
+          ↑
+          │ 未来 freeze 后 --no-ff
+          │
+codex/research-recovery-layer-v0.1
+  │
+  ├── 当前 UA v0.3 / Freeze Review
+  └── 后续唯一工作面
+
+integration/path-a-information-place
+  └── 历史锚点 27bc805，停止维护
+```
+
+这比之前清楚很多。
+
+尤其重要的是，**现在不要再为了"让 main 看起来最新"而提前 merge**。`main` 保持 `0a23fb0`，本身就是一种明确的治理状态：当前 Unified Carrier 契约还处于 Freeze Gate，没有被伪装成正式冻结。
+
+### 还有一个值得注意的小点
+
+当前工作分支已经是 `0078379`，不再是之前的 `cc2912b`。所以从现在开始，**`cc2912b` 是 UA v0.3 交付锚点，`0078379` 是当前工作状态锚点**。
+
+之后引用时最好区分：
+
+```text
+cc2912b = UA v0.3 + targeted review delivery
+0078379 = branch topology consolidation + current state
+```
+
+这样以后回溯时不会把"协议交付提交"和"仓库治理提交"混成一个状态点。
+
+### 当前门位
+
+没有变化：
+
+**UA v0.3 → Freeze Review → Human ACCEPT/FREEZE → no-ff merge → U-2 独立授权**
+
+目前：
+
+```text
+UA v0.3 Freeze       = 待 Human 裁定
+merge to main         = NOT YET
+U-2                   = NOT AUTHORIZED
+Unified experiment    = NOT STARTED
+integration branch    = ARCHIVED
+main                  = canonical target
+```
+
+这次可以正式认为**分支拓扑已经收口，研究内容暂时不要再扩分支**。
+
+---
+
+## Registered additions
+
+```text
+BR-7  COMMIT-ANCHOR CONVENTION (Human-designated):
+        cc2912b = UA v0.3 + targeted review DELIVERY anchor
+        0078379 = branch topology consolidation + current state anchor
+      Protocol-delivery commits and repository-governance commits are
+      distinct state points; citations must distinguish them.
+
+BR-8  CONSOLIDATION VERIFIED COMPLETE: Human verified via remote refs
+      (main @ 0a23fb0 / codex @ 0078379 / integration @ 27bc805
+      ARCHIVED, all three lines confirmed). main intentionally stays at
+      0a23fb0 — that IS the governance statement that the Unified
+      Carrier contract sits at the Freeze Gate and is not disguised as
+      frozen. No pre-merge to "make main look latest". Branch topology
+      consolidation is formally complete; no further research branches
+      for now.
+
+BR-9  Gate position unchanged: UA v0.3 Freeze = awaiting Human ruling;
+      merge to main = NOT YET; U-2 = NOT AUTHORIZED; Unified experiment
+      = NOT STARTED.
+```
+
