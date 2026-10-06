@@ -85,7 +85,7 @@ extension SQLiteCarrierFactory {
     /// F8 trap fires after the DB snapshot, before the entity copy.
     public func backup(from: SQLiteCarrierBundle, to dest: URL) async throws {
         try FileManager.default.createDirectory(at: dest, withIntermediateDirectories: true)
-        try await from.core.run("VACUUM INTO ?", bind: { $0.bindText(1, dest.appendingPathComponent("registry.sqlite").path) })
+        try await from.core.runOutsideTransaction("VACUUM INTO ?", bind: { $0.bindText(1, dest.appendingPathComponent("registry.sqlite").path) })
         CrashGate.trap("F8")
         let entities = rootURL.appendingPathComponent("entities")
         let destEntities = dest.appendingPathComponent("entities")

@@ -90,6 +90,7 @@ public struct POSIXEntityStore: EntityRepresentationStore {
            sha256Hex(written) != representation.digest {
             throw CarrierInterfaceError.integrityIssue("post-write digest reread mismatch for \(representation.digest)")
         }
+        CrashGate.trap("F1")
         // 2) registry row commit (F1 exposure lives between 1 and 2).
         try await core.run("""
           INSERT OR IGNORE INTO representations(representation_id, information_id, revision_id,

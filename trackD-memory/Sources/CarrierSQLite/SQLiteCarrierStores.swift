@@ -117,6 +117,8 @@ public struct SQLiteRelationHistoryStore: RelationHistoryStore {
     let core: SQLiteCore
 
     public func append(_ relation: CarrierRelation) async throws {
+        await core.bumpRelation()
+        CrashGate.trap("F5-\(await core.relationCount())")
         try await core.run(
             "INSERT INTO relations(relation_id, subject, predicate, object, produced_at, produced_by, source) VALUES (?,?,?,?,?,?,?)",
             bind: { stmt in
@@ -214,6 +216,8 @@ public struct SQLiteSessionInformationStore: SessionInformationStore {
     let core: SQLiteCore
 
     public func append(_ event: CarrierSessionEvent) async throws {
+        await core.bumpSession()
+        CrashGate.trap("F6-\(await core.sessionCount())")
         try await core.run(
             "INSERT INTO session_events(session_id, sequence, event_id, kind, payload, occurred_at, produced_at, produced_by, source) VALUES (?,?,?,?,?,?,?,?,?)",
             bind: { stmt in
@@ -347,6 +351,7 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
     let core: SQLiteCore
 
     public func upsert(_ document: CarrierSearchDocument) async throws {
+        CrashGate.trap("F2")
         try await core.run(
             "DELETE FROM search_fts WHERE information_id=?",
             bind: { $0.bindText(1, document.informationID.rawValue) }
@@ -395,6 +400,7 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
 
     public func rebuild(with documents: [CarrierSearchDocument]) async throws -> CarrierRebuildReport {
         try await core.run("DELETE FROM search_fts")
+        CrashGate.trap("F7")
         for document in documents {
             try await core.run(
                 "INSERT INTO search_fts(information_id, revision_id, title, text) VALUES (?,?,?,?)",

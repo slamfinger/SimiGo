@@ -9,7 +9,7 @@ let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 /// name; fires exactly once at the named durable boundary (process SIGKILL).
 public enum CrashGate {
     public static func trap(_ name: String) {
-        if ProcessInfo.processInfo.environment["CCVS_CRASH"] == name {
+        if let v = getenv("CCVS_CRASH"), String(cString: v) == name {
             kill(getpid(), SIGKILL)
         }
     }
@@ -30,8 +30,8 @@ public actor SQLiteCore {
     private var moveRetirePending = false
     private var relationBatchCount = 0
     private var sessionBatchCount = 0
-    public var relationCount: Int { relationBatchCount }
-    public var sessionCount: Int { sessionBatchCount }
+    public func relationCount() -> Int { relationBatchCount }
+    public func sessionCount() -> Int { sessionBatchCount }
     public func bumpRelation() { relationBatchCount += 1 }
     public func bumpSession() { sessionBatchCount += 1 }
 
@@ -217,6 +217,14 @@ public actor SQLiteCore {
             rollbackIfNeeded()
             throw error
         }
+    }
+
+    /// Run outside the managed transaction (VACUUM etc.).
+    func runOutsideTransaction(_ sql: String, bind: (Stmt) throws -> Void = { _ in }) throws {
+        let stmt = try Stmt(db: db, sql: sql)
+        defer { stmt.finalize() }
+        try bind(stmt)
+        _ = try stmt.step()
     }
 
     // MARK: Raw execution
