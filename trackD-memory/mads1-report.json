@@ -13,7 +13,7 @@
       "injected" : "none",
       "killed_by_sigkill" : false,
       "observed" : {
-        "carrier_id_minted" : "3E059170-821F-4D21-8DC6-145E3883C613",
+        "carrier_id_minted" : "D01CFA29-6FAB-4CBE-AE78-7C290950A22A",
         "create_outcome" : "APPLIED",
         "dangling_provenance" : 0,
         "entity_digest_verified" : true,
@@ -198,7 +198,7 @@
         "read_versions_observed" : [
           12,
           13,
-          14,
+          15,
           15,
           16,
           16,

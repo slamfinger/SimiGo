@@ -493,4 +493,125 @@ struct UAOperationTests {
             $0.outcome == .applied || $0.outcome == .conflict || $0.outcome == .replayed
         })
     }
+
+    // MARK: UA-IF-3 regression — carrier-scoped searchable representations (MA-9/I25)
+
+    @Test
+    func ma9CarrierScopedSearchableRepresentations() async throws {
+        let ops = try freshFactory().make().operations
+        // Information I1 carried by TWO carriers (CC-5 N:M default).
+        let carrierA = try await makeFileCarrier(ops, "scoped-a")
+        let carrierB = try await ops.createCarrier(
+            kind: .session, locatorScheme: nil, locatorValue: nil,
+            actorID: "agent-B", operationID: "op-scoped-b").carrier
+        let infoA = CarrierInformationID(rawValue: "info-shared")
+        _ = try await ops.recordMapping(
+            informationID: infoA, carrierID: carrierA.carrierID,
+            recordID: "rec-a", representationID: nil, fromVersion: nil,
+            actorID: "agent-A", operationID: "op-scoped-map-a")
+        _ = try await ops.recordMapping(
+            informationID: infoA, carrierID: carrierB.carrierID,
+            recordID: "rec-b", representationID: nil, fromVersion: nil,
+            actorID: "agent-B", operationID: "op-scoped-map-b")
+        let docA = (informationID: infoA, carrierID: carrierA.carrierID,
+                    revisionID: CarrierRevisionID(rawValue: "scoped-rev-a"),
+                    title: "file-view" as String?,
+                    text: "file searchable representation of shared info" as String)
+        let docB = (informationID: infoA, carrierID: carrierB.carrierID,
+                    revisionID: CarrierRevisionID(rawValue: "scoped-rev-b"),
+                    title: "session-view" as String?,
+                    text: "session searchable representation of shared info" as String)
+        try await ops.indexDocument(
+            informationID: docA.informationID, carrierID: docA.carrierID,
+            revisionID: docA.revisionID, title: docA.title, text: docA.text)
+        // Indexing B must NOT erase A's searchable representation.
+        try await ops.indexDocument(
+            informationID: docB.informationID, carrierID: docB.carrierID,
+            revisionID: docB.revisionID, title: docB.title, text: docB.text)
+        let aHits = try await ops.searchScoped("file searchable", carrierID: carrierA.carrierID)
+        let bHits = try await ops.searchScoped("session searchable", carrierID: carrierB.carrierID)
+        #expect(aHits.count == 1 && aHits.first?.carrierID == carrierA.carrierID)
+        #expect(bHits.count == 1 && bHits.first?.carrierID == carrierB.carrierID)
+        // Re-indexing A again must not erase B (the UA-IF-3 defect: a
+        // DELETE by information_id alone erased the other carrier's row).
+        try await ops.indexDocument(
+            informationID: docA.informationID, carrierID: docA.carrierID,
+            revisionID: docA.revisionID, title: docA.title, text: docA.text)
+        let bAfterAReindex = try await ops.searchScoped("session searchable", carrierID: carrierB.carrierID)
+        #expect(bAfterAReindex.count == 1)
+        // Staleness is independently detectable per pair.
+        _ = try await ops.recordMapping(
+            informationID: infoA, carrierID: carrierA.carrierID,
+            recordID: "rec-a2", representationID: nil, fromVersion: nil,
+            actorID: "agent-A", operationID: "op-scoped-advance-a")
+        let stale = try await ops.indexStaleness()
+        #expect(stale.contains { $0.carrierID == carrierA.carrierID && $0.informationID == "info-shared" })
+        #expect(!stale.contains { $0.carrierID == carrierB.carrierID })
+        // Full rebuild restores BOTH carrier-scoped representations.
+        let report = try await ops.rebuildIndex(documents: [docA, docB])
+        #expect(report.documentsIndexed == 2)
+        let aFinal = try await ops.searchScoped("shared info", carrierID: carrierA.carrierID)
+        let bFinal = try await ops.searchScoped("shared info", carrierID: carrierB.carrierID)
+        #expect(aFinal.count == 1 && aFinal.first?.carrierID == carrierA.carrierID)
+        #expect(bFinal.count == 1 && bFinal.first?.carrierID == carrierB.carrierID)
+        #expect(try await ops.indexStaleness().isEmpty)
+    }
+
+    // MARK: UA-IF-4 regression — Representation Identity conflict is typed
+
+    @Test
+    func representationIdentityConflictIsTyped() async throws {
+        let ops = try freshFactory().make().operations
+        let carrier = try await makeFileCarrier(ops, "repconf")
+        let d1 = Data("immutable bytes version one".utf8)
+        // First registration: APPLIED.
+        let (first, firstOutcome) = try await ops.reviseCarrierWithRepresentation(
+            carrierID: carrier.carrierID,
+            informationID: CarrierInformationID(rawValue: "repconf-info"),
+            revisionID: CarrierRevisionID(rawValue: "repconf-rev-1"),
+            representationID: CarrierRepresentationID(rawValue: "R1"),
+            payload: d1, mediaType: "text/plain",
+            expectedRevision: carrier.revision, fromVersion: nil,
+            actorID: "agent-A", operationID: "op-rep-1")
+        #expect(firstOutcome == .applied && first.revision == 1)
+        let revisionAfterFirst = first.revision
+        // Same R1 + same digest: IDEMPOTENT/replay semantics — no duplicate
+        // row, no double revision bump, no false APPLIED.
+        let (second, secondOutcome) = try await ops.reviseCarrierWithRepresentation(
+            carrierID: carrier.carrierID,
+            informationID: CarrierInformationID(rawValue: "repconf-info"),
+            revisionID: CarrierRevisionID(rawValue: "repconf-rev-1"),
+            representationID: CarrierRepresentationID(rawValue: "R1"),
+            payload: d1, mediaType: "text/plain",
+            expectedRevision: revisionAfterFirst, fromVersion: nil,
+            actorID: "agent-A", operationID: "op-rep-1-again")
+        #expect(secondOutcome == .replayed)
+        #expect(second.revision == revisionAfterFirst)
+        // Same R1 + DIFFERENT digest: typed conflicting duplicate —
+        // rejected, carrier state unchanged, evidence row recorded.
+        let d2 = Data("different immutable bytes".utf8)
+        await #expect(throws: UAOperationError.conflictingDuplicateRepresentation("R1")) {
+            try await ops.reviseCarrierWithRepresentation(
+                carrierID: carrier.carrierID,
+                informationID: CarrierInformationID(rawValue: "repconf-info"),
+                revisionID: CarrierRevisionID(rawValue: "repconf-rev-1"),
+                representationID: CarrierRepresentationID(rawValue: "R1"),
+                payload: d2, mediaType: "text/plain",
+                expectedRevision: revisionAfterFirst, fromVersion: nil,
+                actorID: "agent-A", operationID: "op-rep-conflict")
+        }
+        let after = try await ops.carrier(carrierID: carrier.carrierID)
+        #expect(after?.revision == revisionAfterFirst)
+        let ledger = try await ops.operationLedger()
+        #expect(ledger.contains {
+            $0.operationID == "op-rep-conflict" && $0.outcome == .conflict
+        })
+        #expect(!ledger.contains {
+            $0.operationID == "op-rep-conflict" && $0.outcome == .applied
+        })
+        // The stored representation still holds D1 (no silent overwrite).
+        let ledgerRowsForR1 = ledger.filter { $0.subjectID == "R1" && $0.kind == "CARRIER_REPRESENTATION_REVISE" }
+        #expect(ledgerRowsForR1.filter { $0.outcome == .applied }.count == 1)
+        #expect(try await ops.danglingProvenanceCount() == 0)
+    }
 }

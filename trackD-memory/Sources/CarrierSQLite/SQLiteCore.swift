@@ -110,9 +110,19 @@ public actor SQLiteCore {
           state TEXT NOT NULL, reason TEXT, observed_at REAL NOT NULL)
         """)
         try exec("CREATE INDEX IF NOT EXISTS availability_info ON availability(information_id)")
+        // search_fts v2 (UA-IF-3): carrier-scoped searchable
+        // representations. Under the CC-5 N:M default, one Information may
+        // be indexed FOR several carriers, so the derived searchable layer
+        // must express Information x Carrier. FTS is derived (CC-7): a
+        // stale-schema table is dropped and recreated — rebuildable from
+        // authority by design.
+        if let existing = try Self.tableSQL(db, name: "search_fts"),
+           !existing.contains("carrier_id") {
+            try exec("DROP TABLE search_fts")
+        }
         try exec("""
         CREATE VIRTUAL TABLE IF NOT EXISTS search_fts USING fts5(
-          information_id UNINDEXED, revision_id UNINDEXED, title, text)
+          information_id UNINDEXED, carrier_id UNINDEXED, revision_id UNINDEXED, title, text)
         """)
         // U-A composition mechanisms (Unified Minimal Composition Manifest
         // §2-§4). Composition-level evidence handles only — never
@@ -320,6 +330,14 @@ public actor SQLiteCore {
     }
 
     // MARK: Raw execution
+
+    nonisolated private static func tableSQL(_ db: OpaquePointer, name: String) throws -> String? {
+        let stmt = try Stmt(db: db, sql: "SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
+        defer { stmt.finalize() }
+        stmt.bindText(1, name)
+        if try stmt.step() { return stmt.textOpt(0) }
+        return nil
+    }
 
     nonisolated func exec(_ sql: String) throws {
         var errorPointer: UnsafeMutablePointer<CChar>?

@@ -272,3 +272,142 @@ Observed: PASS x12 (one with expected-orphan episode), REPAIR x1,
   DETACHED x0, INCOMPLETE x0, UA-DF x0.
 Two consecutive campaign runs produced identical classifications.
 ```
+
+## 6. Correction round — Human code-level audit (2026-10-06)
+
+The Human performed a CODE-LEVEL independent audit (commit `d98d5c1`:
+runner, SQLiteCore, SQLiteUnifiedCarrierOperations, machine-readable
+results — not the evidence summary). Verdict:
+
+```text
+MA-DS-1 workload       = VALID (13/13 within registered semantics, 0 UA-DF,
+                         0 bound violation observed)
+U-A implementation     = BLOCKED (two gaps; Gate C NOT closed)
+```
+
+Both gaps are implementation-vs-manifest mismatches and were handled by
+the agreed discipline (Manifest → implementation mismatch → code
+correction → targeted conformance → targeted MA-DS-1 regression). The
+Manifest was not modified. Neither finding was re-labelled a "boundary
+residual".
+
+### UA-IF-3 (BLOCKER, MA-9/I25) — carrier-scoped searchable representations
+
+```text
+Audit finding: UA-IF-1 fixed the build-watermark granularity to
+  (information_id, carrier_id) but the derived searchable layer remained
+  information-scoped: search_fts had no carrier_id and uaIndexDocument
+  deleted by information_id alone — indexing Information I for Carrier B
+  erased I's searchable representation for Carrier A. The implementation
+  did not fully deliver the N:M / per-carrier rebuild semantics the
+  manifest already writes.
+Correction:
+  - search_fts v2: carrier_id UNINDEXED column added (Information x
+    Carrier); a stale-schema table is dropped and recreated — legitimate
+    because FTS is derived and rebuildable from authority (CC-7).
+  - uaIndexDocument deletes/inserts per (information_id, carrier_id)
+    pair; uaRebuildIndex inserts carrier-scoped rows.
+  - New scoped read surface: searchScoped(query, carrierID) ->
+    UASearchHit (the carrier-neutral CarrierSearchResult type is
+    unchanged). Runtime-path (pre-U-A) FTS writes use NULL carrier_id.
+Targeted regression (new, manifest §4.5 semantics):
+  ma9CarrierScopedSearchableRepresentations — I1 indexed for carriers A
+  and B: both representations exist; re-indexing A does not erase B;
+  staleness independently detectable per pair; full rebuild restores both.
+Status: corrected; regression PASS; targeted MA-DS-1 re-run VALID.
+```
+
+### UA-IF-4 (HIGH) — Representation Identity conflict was silently swallowed
+
+```text
+Audit finding: uaReviseCarrierWithRepresentation used INSERT OR IGNORE:
+a second registration of representation R with a DIFFERENT digest would
+be silently ignored while the carrier revision still advanced and the
+ledger recorded APPLIED — an impossible state (operation APPLIED, stored
+bytes old), conflicting with CC-8 #7 (each recorded representation
+version is immutable).
+Correction:
+  duplicate registration is now classified explicitly:
+    same R + identical immutable properties (information_id, revision_id,
+      digest, byte_count, media_type)
+        -> idempotent/replay semantics: ledger row outcome REPLAYED, no
+           revision bump, no duplicate row;
+    same R + any different immutable property
+        -> typed error conflictingDuplicateRepresentation(R), ledger
+           CONFLICT evidence row in its own committed transaction,
+           carrier state unchanged.
+Targeted regression (new):
+  representationIdentityConflictIsTyped — R1+D1 APPLIED; R1+D1 again ->
+  REPLAYED (revision unchanged); R1+D2 -> typed conflict, carrier state
+  unchanged, no silent IGNORE, no false APPLIED, provenance complete.
+Status: corrected; regression PASS; targeted MA-DS-1 re-run VALID.
+```
+
+### Correction-process note (registered honestly)
+
+While implementing UA-IF-3, the runtime-path FTS re-binding was initially
+mis-aligned (three binds for four parameters), which crashed text reads
+on NULL columns under the full parallel test suite. Caught by the suite
+itself before any commit; binding fixed; recorded here because the
+correction process is part of the evidence chain.
+
+## 7. Precise MA-4 statement (audit item 3, adopted)
+
+What the UA-C2 episode establishes is exactly:
+
+> The SQLite authority/registry side of the compound operation is atomic
+> (all-or-nothing per operation), and between the POSIX entity durable
+> write and the registry transaction there is an ALLOWED, TYPED,
+> DETECTABLE orphan window whose recovery path is prescribed by the
+> manifest (idempotent retry with the same operation_id).
+
+It does NOT claim more than that (e.g., not "MA-4 atomicity is proven
+for all compositions"). The manifest itself reserves this
+composition-specific boundary (§4.2: the entity-fsync-then-commit order
+is a U-A composition mechanism; UA v1.0 requires the explicit atomic
+boundary, not this physical order).
+
+## 8. MA-3 / MA-7 operation state machine (audit item 5 — retained as research evidence)
+
+Verified jointly by the code and the conformance tests; adopted as a
+U-A research result:
+
+```text
+operation_id
+     │
+     ├── first attempt
+     │       ├── APPLIED  → terminal (durable effects, ledger APPLIED)
+     │       └── CONFLICT → terminal (no carrier-state change; ledger
+     │                        CONFLICT evidence row)
+     │
+     └── retry with the SAME operation_id
+             └── REPLAYED (recorded outcome returned verbatim; zero new
+                 effects — covers the unknown-outcome window after crash)
+
+CONFLICT recovery
+    ↓  new operation_id (rebase = new operation with new expected_revision
+    ↓  after re-read — manifest §4.1)
+    new attempt
+```
+
+The boundary this pins: MA-7 idempotent replay covers re-driving an
+operation with UNKNOWN outcome; a CONFLICT is a terminal outcome, and
+re-execution requires a NEW operation identity.
+
+## 9. Post-correction verification status
+
+```text
+UAOperationTests            13/13 PASS (11 original + 2 targeted)
+CarrierSQLite target        17/17 PASS — includes A1 conformance 10/10
+                            (NO REGRESSION) and full-suite parallel run
+Full package                green (4 + 17 + 4 + 15)
+Targeted MA-DS-1 regression 13/13 within manifest semantics — overall
+                            VALID (run 6; classifications unchanged from
+                            the audited run)
+Artifacts refreshed         trackD-memory/mads1-report.json
+```
+
+The two audit blockers are corrected and regression-covered. The U-A
+implementation is RESUBMITTED for the Human's code-level audit. Gate C
+remains STARTED / OPEN — closure is a separate Human action and is not
+claimed.

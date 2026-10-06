@@ -18,13 +18,13 @@ CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded 
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
 CCVS-01 U-1                          = UA v1.0 FROZEN (Gate B ACCEPT / FREEZE; R-1..R-11 + A-1..A-3 + CC-MA + five freeze conditions incorporated)
 CCVS-01 UA v1.0 freeze ruling        = ACCEPT / FREEZE — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
-CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / U-A MECHANISM ACCEPTED (Human) / MA-DS-1 EXECUTED — 13/13 within manifest semantics (11 PASS + 1 PASS expected-orphan + 1 REPAIR), UA-DF 0, bound violations 0, two consecutive VALID runs — evidence chain submitted for Human independent audit; Gate C closure = separate Human action
+CCVS-01 Unified U-2                  = AUTHORIZED (Human 2026-10-06) / Gate C STARTED / MA-DS-1 workload VALID (Human-confirmed) / U-A implementation audit was BLOCKED by Human code-level audit → UA-IF-3 (MA-9 carrier-scoped searchable representation, BLOCKER) + UA-IF-4 (Representation Identity typed conflict) CORRECTED with targeted regressions 13/13 UA tests + targeted MA-DS-1 re-run VALID → implementation RESUBMITTED for Human audit; Gate C NOT CLOSED
 CCVS-01 U-A manifest                 = v1.1 (self-audited) — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_UNIFIED_MINIMAL_COMPOSITION_MANIFEST_20261006.md
 CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 BOUNDING AMENDMENTS (A1-A3) / SA-4 CLEAN — docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MANIFEST_SELF_AUDIT_20261006.md
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
-CCVS-01 U-A implementation findings  = UA-IF-1 (index watermark per carrier+information pair, manifest §4.5 per-carrier watermark) + UA-IF-2 (staleness = built-but-outdated; missing coverage belongs to rebuild-compare gate) — both manifest-driven implementation corrections, zero protocol change
+CCVS-01 U-A implementation findings  = UA-IF-1 (per-carrier watermark) + UA-IF-2 (staleness vs rebuild-compare separation) + UA-IF-3 (carrier-scoped searchable representation — Human audit BLOCKER, search_fts v2 with carrier_id, per-pair index writes, scoped search API) + UA-IF-4 (Representation Identity duplicate = idempotent-if-identical else typed conflicting duplicate; INSERT OR IGNORE removed) — all manifest-driven, zero protocol change
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -849,3 +849,68 @@ Artifacts: `trackD-memory/mads1-report.json`,
 `trackD-memory/mads1-final-state.json`,
 evidence document
 `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md`.
+
+## Human code-level audit + correction round — 2026-10-06
+
+The Human performed a code-level independent audit of `d98d5c1` (not a
+review of the evidence summary) and ruled:
+
+```text
+MA-DS-1 workload        = VALID (13/13, 0 UA-DF, 0 bound violation observed)
+U-A implementation      = BLOCKED — two gaps:
+  1. BLOCKER (MA-9/I25): UA-IF-1 fixed the build-watermark granularity
+     but search_fts stayed information-scoped (no carrier_id column;
+     uaIndexDocument deleted by information_id) — indexing Information I
+     for Carrier B erased I's searchable representation for Carrier A.
+     The N:M / per-carrier rebuild semantics the manifest already writes
+     were not fully implemented.
+  2. HIGH: INSERT OR IGNORE in the compound revise silently swallowed a
+     Representation Identity conflict — same R with a different digest
+     would leave operation=APPLIED, revision advanced, stored bytes old
+     (violates CC-8 #7 immutability semantics).
+Also adopted: precise MA-4 statement (SQLite registry-side compound
+transaction atomic; allowed typed detectable orphan window between
+entity durable write and registry transaction, with prescribed recovery
+path — not "MA-4 proven universally"); UA-C3 REPAIR accepted; the
+MA-3/MA-7 operation state machine (APPLIED/CONFLICT terminal; same-id
+retry = REPLAYED; rebase = new operation_id) retained as research
+evidence.
+Explicit discipline: neither finding may be re-labelled "boundary
+residual"; no Manifest modification; correction path = manifest →
+implementation mismatch → code correction → targeted conformance →
+targeted MA-DS-1 regression.
+```
+
+Corrections delivered (this round):
+
+```text
+UA-IF-3  search_fts v2 with carrier_id (stale-schema drop/recreate is
+         legitimate: FTS is derived, CC-7); per-(information, carrier)
+         index writes; scoped search API (searchScoped -> UASearchHit;
+         neutral CarrierSearchResult unchanged); runtime-path FTS writes
+         use NULL carrier_id.
+UA-IF-4  duplicate representation registration classified explicitly:
+         identical immutable properties -> idempotent REPLAYED (no bump,
+         no duplicate row); different properties -> typed
+         conflictingDuplicateRepresentation + ledger CONFLICT evidence
+         row; carrier state unchanged; INSERT OR IGNORE removed.
+Correction-process note: the runtime FTS re-binding was initially
+         mis-aligned (3 binds / 4 parameters) and crashed NULL text reads
+         under the full parallel suite — caught by the suite before any
+         commit, fixed, registered.
+```
+
+Targeted verification:
+
+```text
+UAOperationTests            13/13 PASS (11 original + 2 new targeted
+                            regressions: ma9CarrierScopedSearchableRepresen
+                            tations, representationIdentityConflictIsTyped)
+CarrierSQLite target        17/17 PASS incl. A1 conformance 10/10 (no
+                            regression), full parallel suite green
+Targeted MA-DS-1 regression 13/13 within manifest semantics, overall
+                            VALID (classifications unchanged)
+```
+
+Status: U-A implementation RESUBMITTED for the Human's code-level audit.
+Gate C remains STARTED / OPEN — closure is a separate Human action.

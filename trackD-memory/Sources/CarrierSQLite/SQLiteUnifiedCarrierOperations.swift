@@ -92,10 +92,25 @@ public struct UARebuildReport: Sendable {
     public let completedAt: Date
 }
 
+/// Carrier-scoped search hit (UA-IF-3): the searchable layer expresses
+/// Information x Carrier, matching the CC-5 N:M mapping default.
+public struct UASearchHit: Sendable, Equatable {
+    public let informationID: String
+    public let carrierID: String
+    public let revisionID: String
+    public let score: Double
+}
+
 public enum UAOperationError: Error, Equatable, Sendable {
     /// I20 (narrowed form): a second registration claiming an existing
     /// logical Carrier instance.
     case conflictingDuplicateCarrierIdentity(String)
+    /// Representation Identity integrity (UA-IF-4): the representation id
+    /// is already recorded with DIFFERENT immutable properties (CC-8 #7:
+    /// each representation version is immutable once recorded). The
+    /// duplicate registration is rejected as a typed conflict — never
+    /// silently ignored, never falsely APPLIED.
+    case conflictingDuplicateRepresentation(String)
     case carrierNotFound(String)
     case entityStoreUnavailable
     /// MA-3 CONFLICT: current revision differs from the base the actor
@@ -228,6 +243,13 @@ public struct SQLiteUnifiedCarrierOperations: Sendable {
 
     public func search(_ query: String, limit: Int = 20) async throws -> [CarrierSearchResult] {
         try await core.uaSearch(query, limit: limit)
+    }
+
+    /// Carrier-scoped search (UA-IF-3): `carrierID` nil = across carriers.
+    public func searchScoped(
+        _ query: String, limit: Int = 20, carrierID: String? = nil
+    ) async throws -> [UASearchHit] {
+        try await core.uaSearchScoped(query, limit: limit, carrierID: carrierID)
     }
 
     public func operationLedger() async throws -> [UAOperationRecord] {
@@ -425,6 +447,7 @@ extension SQLiteCore {
             case applied(UACarrier)
             case replayed(UACarrier, UAOperationOutcome)
             case conflict(observed: Int)
+            case representationConflict(String, observed: Int)
         }
         let casResult: CASResult = try withTransaction {
             if let prior = try uaLedgerRow(operationID: operationID) {
@@ -440,8 +463,42 @@ extension SQLiteCore {
             guard current.revision == expectedRevision else {
                 return .conflict(observed: current.revision)
             }
+            // UA-IF-4: a duplicate representation registration is either
+            // IDEMPOTENT (identical immutable properties — the frozen CC-8
+            // #7 rule is that each recorded version is immutable, so the
+            // identical row IS the same object) or a TYPED CONFLICTING
+            // DUPLICATE (same id, different properties). INSERT OR IGNORE
+            // must never swallow the difference: a silent ignore followed
+            // by a revision bump would record APPLIED while the stored
+            // bytes stay old.
+            let existing = try query(
+                """
+                SELECT information_id, revision_id, digest, byte_count, media_type
+                FROM representations WHERE representation_id=?
+                """,
+                bind: { $0.bindText(1, representationID.rawValue) },
+                read: { ($0.text(0), $0.text(1), $0.text(2), $0.int(3), $0.textOpt(4)) }
+            ).first
+            if let existing {
+                let identical = existing.0 == informationID.rawValue
+                    && existing.1 == revisionID.rawValue
+                    && existing.2 == digest
+                    && existing.3 == payload.count
+                    && existing.4 == mediaType
+                if identical {
+                    try uaLedgerInsert(
+                        operationID: operationID, actorID: actorID, carrierID: carrierID,
+                        subjectID: representationID.rawValue,
+                        kind: "CARRIER_REPRESENTATION_REVISE",
+                        baseRevision: current.revision, observedRevision: current.revision,
+                        outcome: .replayed, fromVersion: fromVersion,
+                        resultingVersion: String(current.revision))
+                    return .replayed(current, .replayed)
+                }
+                return .representationConflict(representationID.rawValue, observed: current.revision)
+            }
             try statement("""
-              INSERT OR IGNORE INTO representations(representation_id, information_id,
+              INSERT INTO representations(representation_id, information_id,
                 revision_id, digest, byte_count, media_type, created_at) VALUES (?,?,?,?,?,?,?)
             """, bind: {
                 $0.bindText(1, representationID.rawValue)
@@ -489,6 +546,16 @@ extension SQLiteCore {
                 )
             }
             throw UAOperationError.staleRevision(expected: expectedRevision, observed: observed)
+        case .representationConflict(let repID, let observed):
+            try withTransaction {
+                try uaLedgerInsert(
+                    operationID: operationID, actorID: actorID, carrierID: carrierID,
+                    subjectID: repID, kind: "CARRIER_REPRESENTATION_REVISE",
+                    baseRevision: expectedRevision, observedRevision: observed,
+                    outcome: .conflict, fromVersion: fromVersion, resultingVersion: nil
+                )
+            }
+            throw UAOperationError.conflictingDuplicateRepresentation(repID)
         }
     }
 
@@ -720,17 +787,25 @@ extension SQLiteCore {
     ) async throws {
         try withTransaction {
             let buildVersion = try uaCarrierRow(carrierID: carrierID)?.revision ?? 0
+            // Carrier-scoped (UA-IF-3): the searchable representation of
+            // Information x Carrier replaces only that pair's document —
+            // another carrier's searchable representation of the same
+            // information is never erased.
             try statement(
-                "DELETE FROM search_fts WHERE information_id=?",
-                bind: { $0.bindText(1, informationID.rawValue) }
-            )
-            try statement(
-                "INSERT INTO search_fts(information_id, revision_id, title, text) VALUES (?,?,?,?)",
+                "DELETE FROM search_fts WHERE information_id=? AND carrier_id=?",
                 bind: {
                     $0.bindText(1, informationID.rawValue)
-                    $0.bindText(2, revisionID.rawValue)
-                    $0.bindTextOpt(3, title)
-                    $0.bindText(4, text)
+                    $0.bindText(2, carrierID)
+                }
+            )
+            try statement(
+                "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,?,?,?,?)",
+                bind: {
+                    $0.bindText(1, informationID.rawValue)
+                    $0.bindText(2, carrierID)
+                    $0.bindText(3, revisionID.rawValue)
+                    $0.bindTextOpt(4, title)
+                    $0.bindText(5, text)
                 }
             )
             try statement("""
@@ -792,12 +867,13 @@ extension SQLiteCore {
             for document in documents {
                 let buildVersion = try uaCarrierRow(carrierID: document.carrierID)?.revision ?? 0
                 try statement(
-                    "INSERT INTO search_fts(information_id, revision_id, title, text) VALUES (?,?,?,?)",
+                    "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,?,?,?,?)",
                     bind: {
                         $0.bindText(1, document.informationID.rawValue)
-                        $0.bindText(2, document.revisionID.rawValue)
-                        $0.bindTextOpt(3, document.title)
-                        $0.bindText(4, document.text)
+                        $0.bindText(2, document.carrierID)
+                        $0.bindText(3, document.revisionID.rawValue)
+                        $0.bindTextOpt(4, document.title)
+                        $0.bindText(5, document.text)
                     }
                 )
                 try statement("""
@@ -813,6 +889,32 @@ extension SQLiteCore {
             }
         }
         return UARebuildReport(documentsIndexed: documents.count, completedAt: Date())
+    }
+
+    func uaSearchScoped(
+        _ queryText: String, limit: Int, carrierID: String?
+    ) async throws -> [UASearchHit] {
+        let sql = """
+            SELECT information_id, carrier_id, revision_id, bm25(search_fts) AS rank
+            FROM search_fts WHERE search_fts MATCH ?\(carrierID != nil ? " AND carrier_id=?" : "")
+            ORDER BY rank LIMIT ?
+            """
+        return try query(
+            sql,
+            bind: {
+                $0.bindText(1, queryText)
+                if let carrierID { $0.bindText(2, carrierID) }
+                $0.bindInt(carrierID != nil ? 3 : 2, limit)
+            },
+            read: {
+                UASearchHit(
+                    informationID: $0.text(0),
+                    carrierID: $0.text(1),
+                    revisionID: $0.text(2),
+                    score: -$0.double(3)
+                )
+            }
+        )
     }
 
     func uaSearch(_ queryText: String, limit: Int) async throws -> [CarrierSearchResult] {

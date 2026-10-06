@@ -357,7 +357,7 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
             bind: { $0.bindText(1, document.informationID.rawValue) }
         )
         try await core.run(
-            "INSERT INTO search_fts(information_id, revision_id, title, text) VALUES (?,?,?,?)",
+            "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,NULL,?,?,?)",
             bind: { stmt in
                 stmt.bindText(1, document.informationID.rawValue)
                 stmt.bindText(2, document.revisionID.rawValue)
@@ -403,7 +403,7 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
         CrashGate.trap("F7")
         for document in documents {
             try await core.run(
-                "INSERT INTO search_fts(information_id, revision_id, title, text) VALUES (?,?,?,?)",
+                "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,NULL,?,?,?)",
                 bind: { stmt in
                     stmt.bindText(1, document.informationID.rawValue)
                     stmt.bindText(2, document.revisionID.rawValue)
