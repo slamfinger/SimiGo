@@ -1,11 +1,12 @@
 # SimiGo-Lab 新会话研究任务交接基线
 
 交接日期：2026-10-06
+更新：旧分支已在 GitHub 网页端删除核验；当前远端只保留 `main`。
 
 研究仓库：
 - slamfinger/SimiGo-Lab
 - 当前唯一 canonical Research State：main
-- 当前 main HEAD：603285cb70ce3b5c1695f718e47ccf8d037b0151
+- 当前 main HEAD：以 GitHub 当前 `main` 动态核验为准
 - 最近 topology merge：6ad810466695ed0703c5291c1039736185465248
 
 ## 1. 接管原则
@@ -195,36 +196,31 @@ docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 
 ## 10. 分支状态与本轮收口结果
 
-当前研究仓分支 refs 仍可能显示为历史分支，但只认 main 为入口。
+当前 GitHub 远端分支已核验为：
 
-已完成的 topology consolidation：
+```text
+main
+```
 
-1. codex/research-recovery-layer-v0.1
-   - 唯一未进入 main 的最后提交是 stale post-merge governance note。
-   - 已通过 topology-only merge 进入 main 历史：
-     772d1225
-   - stale 内容没有重新进入当前 main tree。
+旧分支已删除：
+- codex/research-recovery-layer-v0.1
+- integration/path-a-information-place
+- codex/execution-state-research-20260929
+- research/es-reuse-program-20260930
 
-2. research/es-reuse-program-20260930
-   - 有 9 个独立旧 ES-reuse commits。
-   - 已通过 topology-only merge 进入 main 历史：
-     6ad81046
-   - 旧 ES-reuse 文件没有导入当前 PALACE main tree。
-   - 该研究线仍是历史 evidence，不等于重新打开 ES research。
+历史信息仍通过 main 的 commit graph 保留：
+- codex 历史通过 772d1225 进入 main 历史；
+- ES-reuse 历史通过 6ad81046 进入 main 历史；
+- 旧分支删除不等于历史 commit 丢失。
 
-3. integration/path-a-information-place
-   - 已完全落后/为历史祖先，不含 main-only current content。
-   - 无需再次内容合并。
-
-4. codex/execution-state-research-20260929
-   - 已完全落后/历史祖先。
-   - 无需再次内容合并。
+重要边界：
+- 旧 ES-reuse 文件没有导入当前 PALACE main tree；
+- 删除旧分支不会重新打开 ES research；
+- 新会话只能以 main 作为当前研究入口；
+- 不应从已删除分支名称推断当前研究状态。
 
 本轮 branch consolidation 的本质：
-“合并 repository history”，不是“重新采用历史研究内容”。
-
-远端 branch refs 尚未物理删除，因为当前 GitHub connector 不提供 branch-ref delete 操作。
-这些 refs 是 historical / non-operative surface，不得作为当前研究入口。
+“合并 repository history + 删除无用 branch refs”，不是“重新采用历史研究内容”。
 
 ## 11. 严格禁止的自动动作
 
