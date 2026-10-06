@@ -861,7 +861,10 @@ extension SQLiteCore {
                      revisionID: CarrierRevisionID, title: String?, text: String)]
     ) async throws -> UARebuildReport {
         try withTransaction {
-            try statement("DELETE FROM search_fts")
+            // UA-IF-3c mirror: the U-A rebuild owns ONLY carrier-scoped
+            // rows — legacy NULL-carrier rows (A1 runtime path) are never
+            // deleted by a U-A operation.
+            try statement("DELETE FROM search_fts WHERE carrier_id IS NOT NULL")
             try statement("DELETE FROM ua_index_builds")
             CrashGate.trap("UA-C3")
             for document in documents {

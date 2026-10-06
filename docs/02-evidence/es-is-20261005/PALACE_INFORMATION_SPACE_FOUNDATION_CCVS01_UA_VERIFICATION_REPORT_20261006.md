@@ -215,3 +215,101 @@ No new mechanisms         — this round added verification instruments,
                           two scoping corrections inside the UA-IF-3
                           envelope, and one NULL-read crash fix.
 ```
+
+## 9. Correction round 3 — Human code-level re-audit (2026-10-06)
+
+The Human's second code-level review found one more substantive
+second-layer scope gap and two verification-strength weaknesses. This
+round executed tasks A–D exactly: no new mechanisms, no Manifest change.
+
+### 9.1 Result 1 — legacy clear/rebuild ownership (was BLOCKER): FIXED
+
+```text
+Audit finding: F-2 covered upsert/delete only; legacy clear() and
+  rebuild() still executed `DELETE FROM search_fts` unscoped — a legacy
+  rebuild would erase every U-A carrier-scoped row while rebuilding its
+  own NULL-scope documents.
+Fix (UA-IF-3c):
+  legacy clear()     → DELETE … WHERE carrier_id IS NULL
+  legacy rebuild()   → DELETE … WHERE carrier_id IS NULL (replaces only
+                       the legacy portion of the index)
+  uaRebuildIndex     → DELETE … WHERE carrier_id IS NOT NULL (mirror
+                       symmetry: a U-A rebuild never erases legacy rows)
+Regression (new):
+  focus1ALegacyClearAndRebuildNeverEraseCarrierScopedRows — UA rows
+  (I1×A, I1×B) survive legacy upsert, legacy delete, legacy CLEAR and
+  legacy REBUILD; after a legacy rebuild the legacy portion is exactly
+  the rebuilt result; after a UA rebuild the legacy portion survives
+  (mirror). PASS.
+Complete unscoped-DELETE sweep: `DELETE FROM search_fts` now has ZERO
+  unscoped occurrences across both paths.
+```
+
+### 9.2 Result 2 — replay external side-effect: PROBED (characterized; Human ruling required, no solution designed)
+
+`focusCReplayAndConflictEntitySideEffectProbe` characterizes the code
+order `durableWrite → ledger/revision/identity checks`:
+
+```text
+Probe 1  OP1(P1) → APPLIED;  OP1(P2) → REPLAYED semantics
+  registry delta: revision unchanged; ledger for OP1 unchanged (one
+    APPLIED row; no duplicate); mappings unchanged;
+  EXTERNAL side effect: entity bytes of P2 ARE durably written and
+    remain as an UNREFERENCED entity (integrity-report orphan detail
+    matches digest(P2)).
+Probe 2  stale-revision attempt with fresh payload P3
+  → typed staleRevision; EXTERNAL side effect: P3 entity orphan present.
+Probe 3  representation-conflict attempt with fresh payload P4
+  → typed conflictingDuplicateRepresentation; EXTERNAL side effect: P4
+    entity orphan present.
+Registry-side invariants strict across all three probes (dangling
+  provenance 0).
+```
+
+ADDITIONAL FINDING (caught by the probe): the two replay paths report
+retries inconsistently —
+
+```text
+compound revise, same operation_id → returns the RECORDED outcome
+  (.applied) — literal manifest §4.1 "returns the RECORDED outcome";
+session append, same operation_id → returns an explicit .replayed
+  marker (ma7 regression).
+```
+
+Registry delta is zero under both conventions. Which convention is
+canonical (and whether replay preflight should precede the durable
+entity write, or the orphan window is allowed with prescribed cleanup
+semantics) is a HUMAN RULING — deliberately not designed this round.
+
+### 9.3 Result 3 — concurrency oracle strength: STRENGTHENED
+
+```text
+focus6SearchDuringRebuildSeesOnlyOldCompleteOrNewComplete — strict
+  atomic-visibility oracle: BEFORE = {I1×A, I2×C}, AFTER = {I1×A, I3×C}
+  (distinguishable); every concurrent reader observation must equal
+  BEFORE or AFTER exactly — ∅, partial (one pair) and mixed (three
+  pairs) all fail. PASS after fixing the instrument itself: the rebuild
+  task's placeholder empty-set return was being counted as an
+  observation (a test-construction bug, registered honestly — it was
+  the ORACLE that was wrong, not the mechanism).
+focus6RebuildAndScopedIndexInterleaveLegally — racing writes now
+  content/revision-distinguishable (v1 by rebuild, v2 by racing index);
+  exactly one row survives, revision identifies the linearization; the
+  weak `staleness.isEmpty || count <= 2` assertion replaced by a strict
+  close-out (final rebuild → staleness MUST be empty).
+```
+
+### 9.4 Verification status after round 3
+
+```text
+UAVerificationTests   12/12 PASS (10 + ownership regression + probe)
+UAOperationTests      13/13 PASS
+CarrierSQLiteTests     4/4 PASS — A1 conformance 10/10 no-regression
+Full package          29/29 target tests green
+Targeted MA-DS-1      13/13 within manifest semantics — overall VALID
+                      (run 9; classifications unchanged)
+Gate C                STARTED / OPEN — not closed
+U-A implementation    NOT ACCEPTED (pending Human review of: UA-IF-3c
+                      fix, replay side-effect ruling, strengthened
+                      oracles)
+```

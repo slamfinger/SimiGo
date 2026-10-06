@@ -24,8 +24,8 @@ CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
-CCVS-01 U-A implementation findings  = UA-IF-1 (per-carrier watermark) + UA-IF-2 (staleness vs rebuild-compare separation) + UA-IF-3 + UA-IF-3b (audit round 2: carrier_id full-chain completion — legacy runtime upsert/delete confined to NULL-carrier rows; campaign coverage carrier-scoped; NULL-safe unscoped search read) + UA-IF-4 (Representation Identity duplicate = idempotent-if-identical else typed conflicting duplicate) — all manifest-driven, zero protocol change
-CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10)
+CCVS-01 U-A implementation findings  = UA-IF-1/2/3/3b/4 + UA-IF-3c (audit round 3: legacy clear/rebuild ownership — legacy destructive ops confined to NULL-carrier rows, UA rebuild mirror-symmetric) + replay-side-effect characterization (registry delta zero; EXTERNAL entity orphans from replay/stale/conflict paths = audited gap; replay-convention inconsistency found: compound revise returns recorded outcome vs session append returns .replayed marker — Human ruling pending, no solution designed) — zero protocol change
+CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six focus areas + round-3 correction section; UAVerificationTests 12/12; 29/29 target tests)
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -970,3 +970,44 @@ unchanged). Artifacts refreshed (mads1-report.json).
 
 Gate C remains STARTED / OPEN. The verified package is resubmitted for
 the Human's code-level review; no acceptance claimed.
+
+## Correction round 3 (Human second code-level re-audit) — 2026-10-06
+
+Human re-audit verdict: legacy clear/rebuild isolation BLOCKED (upsert/
+delete were fixed but the destructive legacy rebuild/clear still wiped
+U-A rows); Focus 6 oracle insufficient (identical "legal" sets + weak
+staleness allowance); replay external side-effect required a probe
+(test first, no solution). Tasks A–D executed:
+
+```text
+A  UA-IF-3c ownership fix: legacy clear()/rebuild() now delete ONLY
+   carrier_id IS NULL rows; uaRebuildIndex mirror-symmetric (only
+   carrier_id IS NOT NULL). Zero unscoped `DELETE FROM search_fts`
+   remain. Regression: UA rows survive legacy upsert/delete/clear/
+   rebuild; legacy portion exactly rebuilt; mirror verified. PASS.
+B  Focus 6 oracles strengthened: strict atomic-visibility (BEFORE/
+   AFTER distinguishable sets; ∅/partial/mixed all fail) — one
+   test-construction bug found by the strengthened oracle (the rebuild
+   task's placeholder empty set counted as an observation) fixed;
+   racing writes made linearization-distinguishable (v1/v2 revision);
+   weak staleness allowance replaced by strict close-out.
+C  Replay side-effect probe (characterization only): registry delta
+   zero in all three probes (replay/stale/identity-conflict), BUT the
+   EXTERNAL entity side effect is non-zero — P2/P3/P4 entities are
+   durably written before the replay/revision/identity checks and
+   remain as unreferenced orphans. ADDITIONAL FINDING: replay
+   convention inconsistency (compound revise returns the recorded
+   .applied outcome; session append returns an explicit .replayed
+   marker). Both registered for a Human ruling — no solution designed,
+   per directive.
+D  Re-run: UAVerificationTests 12/12; UAOperationTests 13/13;
+   CarrierSQLiteTests 4/4 (A1 conformance 10/10 no-regression);
+   targeted MA-DS-1 campaign 13/13 VALID (run 9). Results reported
+   with legacy clear/rebuild, replay side-effect, and oracle strength
+   as separate sections (verification report §9.1–§9.3).
+```
+
+Gate C remains STARTED / OPEN. U-A implementation NOT ACCEPTED — the
+three items above are submitted for the Human's next review, with the
+replay-semantics ruling (canonical convention + entity-write ordering)
+explicitly reserved for the Human.

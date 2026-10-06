@@ -16,6 +16,10 @@ struct UAVerificationTests {
         return SQLiteCarrierFactory(rootURL: root)
     }
 
+    private func digest(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
     private func makeFileCarrier(
         _ ops: SQLiteUnifiedCarrierOperations, _ name: String
     ) async throws -> UACarrier {
@@ -172,6 +176,71 @@ struct UAVerificationTests {
         #expect(try await reopened.operations.indexStaleness().isEmpty)
     }
 
+    // MARK: Focus 1/A — legacy DESTRUCTIVE operations (clear/rebuild) ownership
+
+    @Test
+    func focus1ALegacyClearAndRebuildNeverEraseCarrierScopedRows() async throws {
+        let b = try freshFactory().make()
+        let ops = b.operations
+        let a = try await makeFileCarrier(ops, "own-a")
+        let c = try await ops.createCarrier(
+            kind: .session, locatorScheme: nil, locatorValue: nil,
+            actorID: "agent-B", operationID: "op-own-b").carrier
+        let infoA = CarrierInformationID(rawValue: "own-info-a")
+        let infoB = CarrierInformationID(rawValue: "own-info-b")
+        try await ops.indexDocument(
+            informationID: infoA, carrierID: a.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "own-rev-a"),
+            title: nil, text: "ua scoped text alpha")
+        try await ops.indexDocument(
+            informationID: infoB, carrierID: c.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "own-rev-b"),
+            title: nil, text: "ua scoped text beta")
+        func uaRowsAlive(_ label: String) async throws {
+            #expect(try await ops.searchScoped(
+                "ua scoped text alpha", carrierID: a.carrierID).count == 1, "\(label): alpha row")
+            #expect(try await ops.searchScoped(
+                "ua scoped text beta", carrierID: c.carrierID).count == 1, "\(label): beta row")
+        }
+        // Legacy upsert + delete (already NULL-scoped) — A/B remain.
+        let infoL = CarrierInformationID(rawValue: "own-info-legacy")
+        try await b.runtime.composition.search.upsert(CarrierSearchDocument(
+            informationID: infoL,
+            revisionID: CarrierRevisionID(rawValue: "own-rev-l"),
+            title: nil, text: "legacy text one"))
+        try await uaRowsAlive("after legacy upsert")
+        try await b.runtime.composition.search.delete(informationID: infoL)
+        try await uaRowsAlive("after legacy delete")
+        // Legacy CLEAR — must not erase U-A rows (the audited blocker).
+        try await b.runtime.composition.search.clear()
+        try await uaRowsAlive("after legacy clear")
+        // Legacy REBUILD — replaces only the legacy portion; A/B remain and
+        // the legacy portion becomes exactly the rebuilt result.
+        try await b.runtime.composition.search.rebuild(with: [
+            CarrierSearchDocument(
+                informationID: infoL,
+                revisionID: CarrierRevisionID(rawValue: "own-rev-l2"),
+                title: nil, text: "legacy text rebuilt")
+        ])
+        try await uaRowsAlive("after legacy rebuild")
+        let legacyPortion = try await ops.searchScoped("legacy text", carrierID: nil)
+            .filter { $0.carrierID.isEmpty }
+        #expect(legacyPortion.count == 1
+                && legacyPortion.first?.informationID == "own-info-legacy")
+        // UA rebuild (mirror symmetry): owns only carrier-scoped rows —
+        // the legacy portion survives a U-A rebuild.
+        _ = try await ops.rebuildIndex(documents: [
+            (infoA, a.carrierID, CarrierRevisionID(rawValue: "own-rev-a"), nil,
+             "ua scoped text alpha"),
+            (infoB, c.carrierID, CarrierRevisionID(rawValue: "own-rev-b"), nil,
+             "ua scoped text beta")
+        ])
+        try await uaRowsAlive("after UA rebuild")
+        let legacyAfterUARebuild = try await ops.searchScoped("legacy text rebuilt", carrierID: nil)
+            .filter { $0.carrierID.isEmpty }
+        #expect(legacyAfterUARebuild.count == 1)
+    }
+
     // MARK: Focus 3 — replay boundary (six fields; effects exactly bounded)
 
     @Test
@@ -315,34 +384,49 @@ struct UAVerificationTests {
             informationID: infoB, carrierID: b.carrierID, recordID: "r",
             representationID: nil, fromVersion: nil,
             actorID: "agent-B", operationID: "op-conc-map-b")
-        let docA = (informationID: infoA, carrierID: a.carrierID,
-                    revisionID: CarrierRevisionID(rawValue: "conc-rev-a"),
-                    title: nil as String?, text: "alpha concurrent text" as String)
+        // The rebuild writes v1 for pair (A, infoA); the racing
+        // indexDocument writes v2 for the SAME pair — the final content
+        // must be EXACTLY ONE of them, decided by the linearization.
+        let docA_v1 = (informationID: infoA, carrierID: a.carrierID,
+                       revisionID: CarrierRevisionID(rawValue: "conc-rev-a"),
+                       title: nil as String?, text: "alpha v1 concurrent" as String)
+        let docA_v2 = (informationID: infoA, carrierID: a.carrierID,
+                       revisionID: CarrierRevisionID(rawValue: "conc-rev-a-v2"),
+                       title: nil as String?, text: "alpha v2 concurrent" as String)
         let docB = (informationID: infoB, carrierID: b.carrierID,
                     revisionID: CarrierRevisionID(rawValue: "conc-rev-b"),
                     title: nil as String?, text: "beta concurrent text" as String)
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await ops.indexDocument(
-                informationID: docA.informationID, carrierID: docA.carrierID,
-                revisionID: docA.revisionID, title: docA.title, text: docA.text) }
-            group.addTask { _ = try await ops.rebuildIndex(documents: [docA, docB]) }
+                informationID: docA_v2.informationID, carrierID: docA_v2.carrierID,
+                revisionID: docA_v2.revisionID, title: docA_v2.title, text: docA_v2.text) }
+            group.addTask { _ = try await ops.rebuildIndex(documents: [docA_v1, docB]) }
             group.addTask { try await ops.indexDocument(
                 informationID: docB.informationID, carrierID: docB.carrierID,
                 revisionID: docB.revisionID, title: docB.title, text: docB.text) }
             try await group.waitForAll()
         }
-        // Legal linearization: the full rebuild replaces the whole index;
-        // whatever the order, the surviving set is exactly one of the two
-        // legal states and every surviving row is pair-consistent.
-        let hits = try await ops.searchScoped("concurrent text", carrierID: nil)
-        let pairs = Set(hits.map { "\($0.informationID)|\($0.carrierID)" })
-        let legalAfterRebuildLast: Set<String> = [
-            "\(infoA.rawValue)|\(a.carrierID)", "\(infoB.rawValue)|\(b.carrierID)"]
-        let legalAfterIndexLast: Set<String> = [
-            "\(infoA.rawValue)|\(a.carrierID)", "\(infoB.rawValue)|\(b.carrierID)"]
-        #expect(pairs == legalAfterRebuildLast || pairs == legalAfterIndexLast)
-        let residualStale = try await ops.indexStaleness()
-        #expect(residualStale.isEmpty || residualStale.count <= 2)
+        let aHits = try await ops.searchScoped("alpha", carrierID: a.carrierID)
+        #expect(aHits.count == 1)
+        #expect(aHits.first?.informationID == "conc-info-a")
+        // The surviving revision distinguishes the linearization: rebuild-
+        // last -> "conc-rev-a"; index-last -> "conc-rev-a-v2". Exactly one
+        // row survives either way.
+        let alphaVariants = try await ops.searchScoped("concurrent", carrierID: a.carrierID)
+        #expect(alphaVariants.count == 1)
+        #expect(["conc-rev-a", "conc-rev-a-v2"].contains(alphaVariants.first?.revisionID ?? ""))
+        let bHits = try await ops.searchScoped("beta", carrierID: b.carrierID)
+        #expect(bHits.count == 1)
+        // Strict staleness close-out: a final full rebuild over the current
+        // pairs MUST clear staleness completely (decidable invariant, no
+        // weak "count <= 2" allowance).
+        _ = try await ops.rebuildIndex(documents: [
+            (infoA, a.carrierID, CarrierRevisionID(rawValue: "conc-rev-a"), nil,
+             "alpha v1 concurrent"),
+            (infoB, b.carrierID, CarrierRevisionID(rawValue: "conc-rev-b"), nil,
+             "beta concurrent text")
+        ])
+        #expect(try await ops.indexStaleness().isEmpty)
     }
 
     @Test
@@ -474,40 +558,72 @@ struct UAVerificationTests {
     }
 
     @Test
-    func focus6SearchDuringRebuildNeverSeesPartialState() async throws {
+    func focus6SearchDuringRebuildSeesOnlyOldCompleteOrNewComplete() async throws {
         let ops = try freshFactory().make().operations
         let a = try await makeFileCarrier(ops, "sr-a")
-        let info = CarrierInformationID(rawValue: "sr-info")
+        let c = try await ops.createCarrier(
+            kind: .session, locatorScheme: nil, locatorValue: nil,
+            actorID: "agent-B", operationID: "op-sr-b").carrier
+        let info1 = CarrierInformationID(rawValue: "sr-info-1")
+        let info2 = CarrierInformationID(rawValue: "sr-info-2")
+        let info3 = CarrierInformationID(rawValue: "sr-info-3")
         _ = try await ops.recordMapping(
-            informationID: info, carrierID: a.carrierID, recordID: "r",
+            informationID: info1, carrierID: a.carrierID, recordID: "r1",
             representationID: nil, fromVersion: nil,
-            actorID: "agent-A", operationID: "op-sr-map")
+            actorID: "agent-A", operationID: "op-sr-map-1")
+        _ = try await ops.recordMapping(
+            informationID: info2, carrierID: c.carrierID, recordID: "r2",
+            representationID: nil, fromVersion: nil,
+            actorID: "agent-B", operationID: "op-sr-map-2")
+        _ = try await ops.recordMapping(
+            informationID: info3, carrierID: c.carrierID, recordID: "r3",
+            representationID: nil, fromVersion: nil,
+            actorID: "agent-B", operationID: "op-sr-map-3")
+        // BEFORE state: {I1 x A, I2 x C}. AFTER state: {I1 x A, I3 x C}.
+        // The two sets are distinguishable (I2 swapped for I3) and BOTH
+        // documents share the probe term so one MATCH query observes the
+        // whole snapshot.
         try await ops.indexDocument(
-            informationID: info, carrierID: a.carrierID,
-            revisionID: CarrierRevisionID(rawValue: "sr-rev"),
-            title: nil, text: "searchable during rebuild")
-        let docs: [(informationID: CarrierInformationID, carrierID: String,
-                    revisionID: CarrierRevisionID, title: String?, text: String)] = [
-            (info, a.carrierID, CarrierRevisionID(rawValue: "sr-rev"), nil,
-             "searchable during rebuild")
+            informationID: info1, carrierID: a.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "sr-rev-1"),
+            title: nil, text: "oracle shared old one")
+        try await ops.indexDocument(
+            informationID: info2, carrierID: c.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "sr-rev-2"),
+            title: nil, text: "oracle shared old two")
+        let before: Set<String> = ["sr-info-1|\(a.carrierID)", "sr-info-2|\(c.carrierID)"]
+        let after: Set<String> = ["sr-info-1|\(a.carrierID)", "sr-info-3|\(c.carrierID)"]
+        let rebuildDocs: [(informationID: CarrierInformationID, carrierID: String,
+                           revisionID: CarrierRevisionID, title: String?, text: String)] = [
+            (info1, a.carrierID, CarrierRevisionID(rawValue: "sr-rev-1"), nil,
+             "oracle shared new one"),
+            (info3, c.carrierID, CarrierRevisionID(rawValue: "sr-rev-3"), nil,
+             "oracle shared new two")
         ]
-        try await withThrowingTaskGroup(of: [UASearchHit].self) { group in
-            group.addTask { _ = try await ops.rebuildIndex(documents: docs)
-                return [] }
-            for _ in 0..<6 {
-                group.addTask { try await ops.searchScoped("searchable", limit: 50) }
-            }
-            for try await hits in group {
-                // Every observed view is a complete committed state: either
-                // the document is present or the index is momentarily empty
-                // (pre-insert state) — never a partial row set.
-                for hit in hits {
-                    #expect(hit.informationID == "sr-info")
-                    #expect(hit.carrierID == a.carrierID)
+        try await withThrowingTaskGroup(of: Set<String>.self) { group in
+            group.addTask { _ = try await ops.rebuildIndex(documents: rebuildDocs)
+                // The rebuild task's own post-condition is the AFTER set —
+                // returned so the homogeneous group can collect it without
+                // polluting the observation oracle with a placeholder
+                // empty set.
+                return after }
+            for _ in 0..<8 {
+                group.addTask {
+                    let hits = try await ops.searchScoped("oracle shared", limit: 50)
+                    return Set(hits.map { "\($0.informationID)|\($0.carrierID)" })
                 }
             }
+            for try await observed in group {
+                // STRICT atomic-visibility oracle: every concurrent reader
+                // sees OLD COMPLETE or NEW COMPLETE — never empty, never
+                // partial (one pair), never mixed (three pairs).
+                #expect(observed == before || observed == after,
+                        "observed \(observed) — expected before \(before) or after \(after)")
+            }
         }
-        #expect(try await ops.searchScoped("searchable", carrierID: nil).count == 1)
+        let final = Set(try await ops.searchScoped("oracle shared", limit: 50)
+            .map { "\($0.informationID)|\($0.carrierID)" })
+        #expect(final == after)
     }
 
     private func appendEvent(
@@ -519,5 +635,123 @@ struct UAVerificationTests {
             carrierID: carrierID, kind: kind, payload: Data(payload.utf8),
             occurredAt: Date(timeIntervalSince1970: occurredAt),
             actorID: actor, operationID: op, clientRef: ref)
+    }
+
+    // MARK: Focus C — replay/conflict EXTERNAL side-effect probe
+    // (audit round 3, task C: TEST ONLY — no solution designed here. This
+    // probe CHARACTERIZES current behavior for a Human ruling on where the
+    // durable entity write belongs relative to the replay/conflict
+    // preflight checks.)
+
+    @Test
+    func focusCReplayAndConflictEntitySideEffectProbe() async throws {
+        let b = try freshFactory().make()
+        let ops = b.operations
+        let carrier = try await makeFileCarrier(ops, "probe")
+        let p1 = Data("probe payload one".utf8)
+        _ = try await ops.reviseCarrierWithRepresentation(
+            carrierID: carrier.carrierID,
+            informationID: CarrierInformationID(rawValue: "probe-info"),
+            revisionID: CarrierRevisionID(rawValue: "probe-rev"),
+            representationID: CarrierRepresentationID(rawValue: "R-probe"),
+            payload: p1, mediaType: nil,
+            expectedRevision: carrier.revision, fromVersion: nil,
+            actorID: "agent-A", operationID: "OP1")
+        func entityExists(_ data: Data) -> Bool {
+            FileManager.default.fileExists(
+                atPath: b.representations.fileURL(for: digest(data)).path)
+        }
+        func entityOrphanDetail(_ data: Data) async throws -> String? {
+            let report = try await b.runtime.integrityReport()
+            let d = digest(data)
+            return report.issues.first {
+                $0.kind == .orphanRepresentation && $0.detail.contains(d)
+            }?.detail
+        }
+        let revisionAfterOP1 = (try await ops.carrier(carrierID: carrier.carrierID))?.revision
+        let ledgerRowsOP1AfterApply = try await ops.operationLedger()
+            .filter { $0.operationID == "OP1" }.count
+        // PROBE 1: same operation_id, DIFFERENT payload — code order is
+        // durableWrite FIRST, ledger replay check SECOND.
+        let p2 = Data("probe payload two (never registered)".utf8)
+        let (afterReplay, replayOutcome) = try await ops.reviseCarrierWithRepresentation(
+            carrierID: carrier.carrierID,
+            informationID: CarrierInformationID(rawValue: "probe-info"),
+            revisionID: CarrierRevisionID(rawValue: "probe-rev"),
+            representationID: CarrierRepresentationID(rawValue: "R-probe"),
+            payload: p2, mediaType: nil,
+            expectedRevision: revisionAfterOP1 ?? 0, fromVersion: nil,
+            actorID: "agent-A", operationID: "OP1")
+        let ledgerRowsOP1AfterReplay = try await ops.operationLedger()
+            .filter { $0.operationID == "OP1" }.count
+        let p2EntityExists = entityExists(p2)
+        let p2OrphanDetail = try await entityOrphanDetail(p2)
+        // CHARACTERIZATION (semantic inconsistency found by this probe):
+        // the compound-revise replay returns the RECORDED outcome
+        // (.applied — literal manifest §4.1 "returns the RECORDED outcome"),
+        // while the session-append replay path returns an explicit
+        // .replayed marker (ma7 test). The two replay conventions differ;
+        // which one is canonical is a Human ruling. Registry delta is zero
+        // under BOTH conventions.
+        #expect(replayOutcome == .applied)
+        #expect(afterReplay.revision == revisionAfterOP1)
+        #expect(ledgerRowsOP1AfterReplay == ledgerRowsOP1AfterApply)
+        #expect((try await ops.mappings()).isEmpty)
+        // CHARACTERIZATION (audited gap): the P2 entity WAS durably written
+        // before the replay check and remains as an unreferenced entity.
+        #expect(p2EntityExists)
+        #expect(p2OrphanDetail != nil)
+        // PROBE 2: stale-revision attempt with a fresh payload.
+        let p3 = Data("probe payload three (stale attempt)".utf8)
+        await #expect(throws: UAOperationError.staleRevision(expected: 99, observed: revisionAfterOP1 ?? 0)) {
+            try await ops.reviseCarrierWithRepresentation(
+                carrierID: carrier.carrierID,
+                informationID: CarrierInformationID(rawValue: "probe-info"),
+                revisionID: CarrierRevisionID(rawValue: "probe-rev-stale"),
+                representationID: CarrierRepresentationID(rawValue: "R-stale"),
+                payload: p3, mediaType: nil,
+                expectedRevision: 99, fromVersion: nil,
+                actorID: "agent-A", operationID: "OP-stale")
+        }
+        let p3EntityExists = entityExists(p3)
+        let p3OrphanDetail = try await entityOrphanDetail(p3)
+        // CHARACTERIZATION: the P3 entity was written before the CAS check.
+        #expect(p3EntityExists)
+        #expect(p3OrphanDetail != nil)
+        // PROBE 3: representation-conflict attempt with a fresh payload.
+        let p4 = Data("probe payload four (identity conflict)".utf8)
+        await #expect(throws: UAOperationError.conflictingDuplicateRepresentation("R-probe")) {
+            try await ops.reviseCarrierWithRepresentation(
+                carrierID: carrier.carrierID,
+                informationID: CarrierInformationID(rawValue: "probe-info"),
+                revisionID: CarrierRevisionID(rawValue: "probe-rev"),
+                representationID: CarrierRepresentationID(rawValue: "R-probe"),
+                payload: p4, mediaType: nil,
+                expectedRevision: revisionAfterOP1 ?? 0, fromVersion: nil,
+                actorID: "agent-A", operationID: "OP-repconflict")
+        }
+        let p4EntityExists = entityExists(p4)
+        let p4OrphanDetail = try await entityOrphanDetail(p4)
+        // CHARACTERIZATION: the P4 entity was written before the identity
+        // check.
+        #expect(p4EntityExists)
+        #expect(p4OrphanDetail != nil)
+        // CHARACTERIZATION summary (for the evidence chain):
+        // replayOutcome(compound revise, same operation_id, new payload)
+        //   = .applied  (recorded-outcome convention)
+        // session-append replay (same operation_id)
+        //   = .replayed (marker convention — see ma7 regression)
+        // → the two replay paths report the retry differently; registry
+        //   delta is zero in both; the EXTERNAL entity side effect is
+        //   non-zero in both (P2 orphan above).
+        // Registry-side invariants stay strict across all three probes.
+        #expect((try await ops.carrier(carrierID: carrier.carrierID))?.revision == revisionAfterOP1)
+        #expect(try await ops.danglingProvenanceCount() == 0)
+        // Recorded summary for the evidence chain (registry delta zero in
+        // all three probes; EXTERNAL entity side effect non-zero).
+        let ledgerFinal = try await ops.operationLedger()
+        #expect(ledgerFinal.filter { $0.operationID == "OP1" }.count == 1)
+        #expect(ledgerFinal.contains { $0.operationID == "OP-stale" && $0.outcome == .conflict })
+        #expect(ledgerFinal.contains { $0.operationID == "OP-repconflict" && $0.outcome == .conflict })
     }
 }

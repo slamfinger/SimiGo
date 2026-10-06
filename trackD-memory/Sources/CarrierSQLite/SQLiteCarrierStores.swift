@@ -399,11 +399,17 @@ public struct SQLiteDerivedSearchIndex: DerivedSearchIndex {
     }
 
     public func clear() async throws {
-        try await core.run("DELETE FROM search_fts")
+        // UA-IF-3c: the legacy path owns ONLY its NULL-carrier_id rows —
+        // clear() must never erase U-A carrier-scoped searchable
+        // representations.
+        try await core.run("DELETE FROM search_fts WHERE carrier_id IS NULL")
     }
 
     public func rebuild(with documents: [CarrierSearchDocument]) async throws -> CarrierRebuildReport {
-        try await core.run("DELETE FROM search_fts")
+        // UA-IF-3c: the legacy rebuild replaces ONLY the legacy portion
+        // (NULL carrier_id rows) — U-A carrier-scoped rows are never
+        // deleted by a legacy operation.
+        try await core.run("DELETE FROM search_fts WHERE carrier_id IS NULL")
         CrashGate.trap("F7")
         for document in documents {
             try await core.run(
