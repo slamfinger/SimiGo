@@ -77,6 +77,19 @@
 > P-POS / N-A / N-B 三套独立 fixture 均已物化，G-R/G-C 全 PASS；证据见
 > `docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md`。
 > 当前 `S2 REQUIRED`、`S3 NOT AUTHORIZED`、`Experiment NOT AUTHORIZED`。
+>
+> Human S2 review = PASS；P-POS / N-A / N-B fixture 均 VALID；fixture
+> independence、blinding、deterministic entry point 均 PASS。Human 随后单独
+> 给出 **S3 explicit authorization**，仅限执行 `ES-CSP-RUN-01`。C3 仍只是
+> observation，不参与 PASS；fixture/Probe/UA/Manifest/Frozen Contract 未修改。
+>
+> **ES-CSP-RUN-01 = EXECUTED；bounded research verdict = `PASS — CONTINUATION
+> SUFFICIENT`。** P-POS I-1/I-2 均 `C1 PASS + C2 CONTINUE_CERTAIN`；N-A 因
+> unresolved input reference 均 `C1 FAIL + C2 BLOCK_INSUFFICIENT`；N-B 因
+> `P1a→B1` / `P1b→B2` 均 `C1 PASS + C2 BLOCK_INSUFFICIENT`。所有 expected
+> matches = true；C3 未执行且不参与 PASS。证据见
+> `docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md`。
+> 该结论只限本次 prepared task lineage 和 I-1/I-2 边界，不开启下一阶段。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

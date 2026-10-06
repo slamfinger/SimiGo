@@ -2,6 +2,7 @@
 
 > **Status:** PACKAGE / RUN MANIFEST R01 REV1 SUBMITTED FOR SECOND HUMAN REVIEW — S1 NOT APPROVED; EXPERIMENT NOT AUTHORIZED
 > **Post-review outcome:** R01 Rev1 ACCEPTED; S1 APPROVED / COMPLETE; S2 REQUIRED; S3 NOT AUTHORIZED. Completion record: `docs/02-evidence/es-is-20261005/ES_CSP_R01_FIXTURE_PREPARATION/S1_COMPLETION_RECORD_20261006.md`. The body below is the reviewed R01 Rev1 historical submission.
+> **Final outcome:** S2 PASS; explicit Human S3 authorization; `ES-CSP-RUN-01` EXECUTED with bounded verdict `PASS — CONTINUATION SUFFICIENT`. See `docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md`.
 > **Date:** 2026-10-06
 > **Frozen design baseline:** `39c1031`
 > **Accepted design:** Probe v0.2 + Probe Representation Contract

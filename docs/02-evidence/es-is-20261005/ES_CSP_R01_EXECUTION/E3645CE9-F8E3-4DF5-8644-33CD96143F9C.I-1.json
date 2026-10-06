@@ -1,0 +1,175 @@
+{
+  "c1" : {
+    "boundary_cardinality" : 1,
+    "defects" : [
+
+    ],
+    "observed_slots" : [
+      "O1",
+      "D1",
+      "A1",
+      "B1",
+      "I1",
+      "P1"
+    ],
+    "pointer_cardinality" : 1,
+    "required_base_slots" : [
+      "O1",
+      "I1",
+      "D1",
+      "A1"
+    ],
+    "status" : "PASS"
+  },
+  "c2" : {
+    "authority" : "NEXT_ACTION records only",
+    "boundary" : "B1",
+    "decision" : "CONTINUE_CERTAIN",
+    "invalid_pointer_targets" : [
+
+    ],
+    "pointer_target_cardinality" : 1,
+    "pointer_targets" : [
+      "B1"
+    ],
+    "reason" : "EXACTLY_ONE_REGISTERED_BOUNDARY"
+  },
+  "c3" : {
+    "contributes_to_pass" : false,
+    "role" : "OBSERVATION_ONLY",
+    "status" : "NOT_PERFORMED"
+  },
+  "entry_point" : {
+    "input" : "uasession:BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+    "resolution" : "EXACT_NON_SEMANTIC",
+    "resolved_carrier_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03"
+  },
+  "events" : [
+    {
+      "event_id" : "C757AFBA-E085-4BBC-A969-C952159B6406",
+      "information_id" : "DCD80AD2-C6E8-4D70-BDC0-D41C12EA22D4",
+      "mapping_from_version" : "1",
+      "mapping_id" : "2B9228FE-F841-40DF-AFDB-D1A682AF4465",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 116,
+      "payload_sha256" : "8a775a684dc98bc9d4eaaec977f02812df3cf3f1a9741b813b245fe52fb0dffe",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"O1\",\"content\":\"Continue the bounded research note without adding new claims.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RAW",
+      "sequence" : 0,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "O1"
+    },
+    {
+      "event_id" : "BCD6C885-42CA-4AA0-A56D-6E62A0D89D52",
+      "information_id" : "9172F4C6-6819-4FDC-81DC-40D0AB94E3FB",
+      "mapping_from_version" : "3",
+      "mapping_id" : "FAE6BAE9-671A-4773-AB5A-233F31847495",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 118,
+      "payload_sha256" : "bb056822624587171d62a840b32e3efae818837eb4119146aed157542f8c62d7",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"D1\",\"content\":\"The bounded note is ready for boundary-registered continuation.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "JUDGMENT",
+      "sequence" : 1,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "D1"
+    },
+    {
+      "event_id" : "94F5E95C-FDDC-43D4-8E0E-F00D2CFFCD90",
+      "information_id" : "A7AD7962-C288-4803-8F7B-F9960A861BDE",
+      "mapping_from_version" : "5",
+      "mapping_id" : "A99B69AF-2957-422A-9186-DF248E4804E1",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 91,
+      "payload_sha256" : "ab6c28da3b98f642a60bd476f8e2480da0d16da02d7e4401feeed46340482c8b",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"A1\",\"content\":\"Artifact reference: bounded-note-v1.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 2,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "A1"
+    },
+    {
+      "event_id" : "4D1BCA2E-D3B6-4AE3-8298-037FDEB69A50",
+      "information_id" : "9E3EBC52-0A6B-4532-88EC-8B9CDBE6B793",
+      "mapping_from_version" : "7",
+      "mapping_id" : "DBADF5A7-D1FA-41AA-A810-717A326A3042",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 128,
+      "payload_sha256" : "d8c33d590165dcc06d59cd794166ffd0dee48a0d890e0cd66ef7266430d33069",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"B1\",\"content\":\"Boundary state: prior work complete; one registered continuation remains.\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "RESULT",
+      "sequence" : 3,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "B1"
+    },
+    {
+      "event_id" : "FD3A7C84-B2C8-4FA3-BF91-E5A3E63133EE",
+      "information_id" : "0C03F601-6585-48E6-9EA6-3A30EE0F7441",
+      "mapping_from_version" : "9",
+      "mapping_id" : "EA71DF16-B8EC-439F-A8F2-B4EC3DECDA90",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 57,
+      "payload_sha256" : "72b8a86174566f406c4f722dea34a2f2ee5a8461379e9b45a566a297d7fe6f89",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"I1\",\"content\":\"A1\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "EVIDENCE_LINK",
+      "sequence" : 4,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "I1"
+    },
+    {
+      "event_id" : "B1788305-A2C4-4AA8-8DA6-3C58A5B8E056",
+      "information_id" : "C11ECC94-F445-42D3-A28E-F13AF45E3AB9",
+      "mapping_from_version" : "11",
+      "mapping_id" : "4B1E13E9-ADB3-4C77-9CA2-65CA754D5B54",
+      "occurred_at" : "2026-10-06T13:14:12Z",
+      "payload_byte_count" : 110,
+      "payload_sha256" : "740a68913487c2929d2b326e41b6f8d080ffd61bb6bb03cd595da68ebaaf9f7b",
+      "payload_utf8" : "{\"schema\":\"es-csp/e0-slot-v1\",\"slot\":\"P1\",\"content\":\"Continue at the registered boundary.\",\"target_slot\":\"B1\"}",
+      "provenance_produced_by" : "es-csp-fixture-preparer",
+      "record_kind" : "NEXT_ACTION",
+      "sequence" : 5,
+      "session_id" : "BB4710A0-F50B-46D3-A6B4-911BF0705B03",
+      "slot" : "P1",
+      "target_slot" : "B1"
+    }
+  ],
+  "evidence" : {
+    "EV-6_reconstruction_manifest" : true,
+    "EV-7_c1_status" : true,
+    "EV-8_c2_status" : true,
+    "EV-9_carrier_precondition" : true,
+    "EV-R3_pointer_path" : "NEXT_ACTION only",
+    "stable_addressing_only" : true
+  },
+  "interruption_kind" : "I-1",
+  "opaque_fixture_instance_id" : "E3645CE9-F8E3-4DF5-8644-33CD96143F9C",
+  "payload_errors" : [
+
+  ],
+  "run_label" : "ES-CSP-RUN-01",
+  "schema_version" : "es-csp/reconstruction-manifest-v1",
+  "side_channel_exclusions" : {
+    "agent_notes" : true,
+    "conversation_history" : true,
+    "deficiency_description" : true,
+    "embedding" : true,
+    "expected_c1" : true,
+    "expected_c2" : true,
+    "fixture_role" : true,
+    "mcp" : true,
+    "prior_process_memory" : true,
+    "ranking" : true,
+    "remote_api" : true,
+    "semantic_search" : true
+  },
+  "snapshot" : {
+    "event_count" : 6,
+    "mapping_count" : 6,
+    "read_version" : 12
+  },
+  "source_baseline_identifier" : "39c1031"
+}

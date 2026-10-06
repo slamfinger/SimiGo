@@ -1433,3 +1433,68 @@ S3 execution               NOT AUTHORIZED
 Experiment                 NOT AUTHORIZED
 Probe run                  NOT STARTED
 ```
+
+## S2 PASS, explicit S3 authorization, and ES-CSP-RUN-01 executed — 2026-10-06
+
+The Human independently reviewed S1 evidence at `d193556` and ruled:
+
+```text
+S2 fixture manifest review    PASS
+P-POS fixture                VALID
+N-A fixture                  VALID
+N-B fixture                  VALID
+G-R                          PASS
+G-C                          PASS
+fixture independence         PASS
+reconstruction blinding      PASS
+deterministic entry point    PASS
+```
+
+The Human preserved an evidence boundary: S2 was manifest/evidence-level
+review, not a second physical copy audit of the external fixture roots.
+
+The Human then gave an explicit S3 authorization for `ES-CSP-RUN-01` only.
+The local agent registered the authorization and executed the run.
+
+Execution method:
+
+```text
+blinded reconstruction inputs  baseline + run label + opaque instance ID +
+                               isolated root + opaque stable session locator
+randomized fixture order       recorded in s3-run-order.txt
+C1                            mechanical reconstruction checks
+C2                            NEXT_ACTION records only
+C3                            NOT_PERFORMED / OBSERVATION_ONLY
+I-1                           clean process stop, then fresh reconstruction
+I-2                           durable-acknowledgement witness process loss,
+                              then fresh reconstruction
+```
+
+Unblinded control comparison produced:
+
+```text
+P-POS  I-1/I-2  C1 PASS  C2 CONTINUE_CERTAIN / B1
+N-A    I-1/I-2  C1 FAIL  C2 BLOCK_INSUFFICIENT
+N-B    I-1/I-2  C1 PASS  C2 BLOCK_INSUFFICIENT
+all expected matches  TRUE
+research verdict      PASS — CONTINUATION SUFFICIENT
+EV-R5                 NOT_APPLICABLE_NO_RESEARCH_FAILURE
+```
+
+The N-A failure reason was exactly `input reference
+CSP-MISSING-SLOT-00000000 does not resolve`. The N-B reason was exactly
+`AMBIGUOUS_POINTER_SET` with pointer targets `B1` and `B2`.
+
+The three registry databases were unchanged by reconstruction; SHA-256 values
+matched the S1 completion record. C3 was not performed and did not contribute
+to PASS. No fixture, Probe v0.2, U-A code, Manifest, UA, PB, or Frozen Contract
+was modified.
+
+Primary evidence:
+
+```text
+docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/S3_COMPLETION_RECORD_20261006.md
+docs/02-evidence/es-is-20261005/ES_CSP_R01_EXECUTION/s3-control-comparison.json
+```
+
+The bounded run verdict does not open the next research phase.
