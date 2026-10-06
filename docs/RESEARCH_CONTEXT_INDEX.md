@@ -101,13 +101,15 @@ CCVS-01 U-1 v0.2 document              docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 U-1 v0.2 conformance review    REVISE (11 precision findings, zero BLOCK) / record: docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
 CCVS-01 U-1 v0.2 ruling                docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md
 CCVS-01 U-1 v0.2 ruling                B = REVISE / direction + semantic anchoring ACCEPTED / v0.2 NOT FROZEN
-CCVS-01 UA v0.3                        DELIVERED (R-1..R-11 closed + A-1..A-3 dispositions + CC-MA MA-1..10 / I19-I25 / MA-DS-1)
+CCVS-01 UA v0.3                        REVIEW ARTIFACT / SUPERSEDED BY UA v1.0
 CCVS-01 UA v0.3 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md
-CCVS-01 UA v0.3 targeted review        NO BLOCK — RETURNED TO HUMAN FREEZE GATE
+CCVS-01 UA v0.3 targeted review        NO BLOCK / CLOSED AS FREEZE PRECONDITION
 CCVS-01 UA v0.3 targeted review doc    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
-CCVS-01 UA v0.3 freeze review          REGISTERED / FREEZE GATE OPEN WITH FIVE CONDITIONS (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate from P8 F7 / state hygiene DONE)
-CCVS-01 UA v0.3 freeze review doc      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md
-CCVS-01 U-2 precondition               Human ACCEPT/FREEZE of UA v0.3 with the five conditions incorporated into UA v1.0, then U-2 authorization separately — first deliverable = U-A Unified Minimal composition manifest (CC-MA mechanisms as verifiable implementations, mandatory check items) — NOT a new semantic model
+CCVS-01 Gate B                          ACCEPT / FREEZE
+CCVS-01 UA v1.0                        FROZEN
+CCVS-01 UA v1.0 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V1.0_20261006.md
+CCVS-01 Gate B ruling                  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md
+CCVS-01 U-2 precondition               UA v1.0 FROZEN; separate Human U-2 authorization still required — first deliverable = U-A Unified Minimal composition manifest — NOT a new semantic model
 CCVS-01 U-2 implementation             NOT STARTED / NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
