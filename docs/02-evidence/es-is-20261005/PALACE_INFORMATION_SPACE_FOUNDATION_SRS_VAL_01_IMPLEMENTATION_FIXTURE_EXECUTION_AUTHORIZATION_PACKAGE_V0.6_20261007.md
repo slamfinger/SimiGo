@@ -1,10 +1,11 @@
 # SRS-VAL-01 Implementation / Fixture / Execution / Information-Space Mutation Authorization Package v0.6
 
-> **Status:** PACKAGE V0.6 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / FIXTURE / EXECUTION / IS MUTATION NOT AUTHORIZED
+> **Status:** PACKAGE V0.6 ACCEPT / FROZEN — IMPLEMENTATION / FIXTURE / EXECUTION / IS MUTATION NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen semantic basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Review basis:** Human REVISE ruling on Authorization Package v0.5 at `53dc314`
 > **Purpose:** complete the frozen decision-state closure for REUSE, blocked non-recompute, RECOMPUTE authorization, and exact I-14 not-used validity.
+> **Review ruling:** ACCEPT / FROZEN; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.6_ACCEPTANCE_20261007.md`.
 
 ## 1. Governance status and normative closure
 
@@ -15,7 +16,7 @@ SimiGo code.
 ```text
 SRS-VAL-01 Design v0.8        ACCEPT / FROZEN / IMMUTABLE BASIS
 Authorization Package v0.5    REVISE / SUPERSEDED BY V0.6
-Authorization Package v0.6    SUBMITTED FOR HUMAN REVIEW
+Authorization Package v0.6    ACCEPT / FROZEN
 Implementation                NOT AUTHORIZED
 Fixture preparation           NOT AUTHORIZED
 Execution                     NOT AUTHORIZED

@@ -2190,6 +2190,68 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Authorization Package v0.6 ACCEPT / FROZEN — 2026-10-07
+
+The Human completed the final freeze-before-execution state-space attack on
+Authorization Package v0.6 at `047b221`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8                  ACCEPT / FROZEN / UNCHANGED
+
+Normative SRS-VAL restatement           PASS
+Decision-state completeness             PASS
+I-14 conditional semantics              PASS
+G-CLASS non-bypassability               PASS
+REUSE/BLOCK/RECOMPUTE exclusivity       PASS
+
+Runner Trust Anchor                     PASS
+Authorization Authority Root            PASS
+Human → issuer → record chain           PASS
+Stage separation                        PASS
+Observer Authorization                  PASS
+Observation Integrity Boundary          PASS
+Channel Universe / Environment Closure  PASS
+Semantic runtime dependency closure     PASS
+Mechanical dependency closure           PASS
+IS_MUTATION executor closure            PASS
+Read-instance immutability              PASS
+TOCTOU / drift handling                 PASS
+Boundary-case coverage                  PASS
+
+Authorization Package v0.6              ACCEPT / FROZEN
+```
+
+The state-space attack covered no-failure REUSE, higher-precedence BLOCK,
+non-eligible failure, eligible failure with exact I-14, mixed failures, skipped
+classification, fake not-used marker, unauthorized observer, incomplete channel
+universe, semantic dependency substitution, read-time drift, unauthorized IS
+mutation, trust-root replacement, and authorization TOCTOU. No bypass was found.
+
+Two non-blocking implementation-contract obligations were registered:
+
+```text
+1.  Preserve mutation operation identity, order, transaction/atomicity boundary,
+    and observed trace; unordered mutation-set equality is not full mutation
+    equivalence.
+
+2.  Keep SEMANTIC and MECHANICAL runtime dependency evidence separate.
+```
+
+Current state:
+
+```text
+SRS-VAL-01 Design v0.8      ACCEPT / FROZEN
+Authorization Package v0.6  ACCEPT / FROZEN
+Next lawful object          separate Authorization Request and
+                            Run/Implementation Manifest — NOT OPENED
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Authorization Package v0.5 REVISE; v0.6 decision-state closure delivered — 2026-10-07
 
 The Human independently reviewed Authorization Package v0.5 at `53dc314`.

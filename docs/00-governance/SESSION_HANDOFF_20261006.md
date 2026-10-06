@@ -378,6 +378,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > classification with the marker stops as
 > PREDICATE_RULE_CLASSIFICATION_REQUIRED. Implementation, fixture, execution, and
 > IS mutation remain NOT AUTHORIZED.
+> **UPDATE 34 (2026-10-07)：Authorization Package v0.6 = ACCEPT / FROZEN.**
+> Final freeze-before-execution state-space attack passed normative restatement,
+> decision-state completeness, G-CLASS non-bypassability, trust chain, observer
+> authorization/integrity, channel universe, runtime dependency closure,
+> IS_MUTATION executor closure, read-instance immutability, TOCTOU/drift, and
+> boundary coverage. The package grants no authority. Next lawful object is a
+> separate Implementation / Fixture / Execution Authorization Request and
+> Run/Implementation Manifest; it is NOT OPENED. Implementation, fixture,
+> execution, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: I-16 now explicitly includes I-14, I-15, and the exact
 > predicate-rule binding as decision-critical inputs in one observation

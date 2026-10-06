@@ -246,14 +246,15 @@ Accepted design artifact:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 Current commissioned design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.6_20261007.md`.
+Authorization package status = ACCEPT / FROZEN; next stage NOT OPENED.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
 V0.1 through V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS.
 ```
 
-Only the SRS-VAL authorization-package design is active. Implementation,
-fixture preparation, and experiment remain unauthorized.
+The SRS-VAL authorization-package governance closure is complete. Implementation,
+fixture preparation, execution, and experiment remain unauthorized.
 
 ### 7.2 Information Topology
 
@@ -279,12 +280,16 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 
 ```text
 SRS-VAL-01
-Implementation / Fixture / Execution Authorization Package
+Implementation / Fixture / Execution / Information-Space Mutation Authorization Package
 
 Status = COMMISSIONED / PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE
          V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6
-         DELIVERED FOR HUMAN REVIEW
+         ACCEPT / FROZEN
        + SRS-VAL Design v0.8 ACCEPT / FROZEN
+
+Next lawful object =
+  separate Implementation / Fixture / Execution Authorization Request and
+  Run/Implementation Manifest — NOT OPENED
 
 Current design document =
   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_FIXTURE_EXECUTION_AUTHORIZATION_PACKAGE_V0.6_20261007.md
