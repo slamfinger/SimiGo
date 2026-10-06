@@ -250,6 +250,15 @@
 > T-IMPL-01、implementation subject、manifest generator、fixture builder、
 > expected-read generator 与 Observer，并使用 non-circular root-backed chain。
 >
+> Human independent review裁定 **Run/Implementation Manifest v0.5 = REVISE**。
+> Manifest v0.6 修正 closure algebra：SEMANTIC_INPUT 必须先 partition 为
+> INVOCATION_MATERIALIZED_VALUE、EXTERNAL_SEMANTIC_READ 与 NOT_USED；只有
+> EXTERNAL_SEMANTIC_READ partition 进入 expected/observed read closure；
+> materialized-value closure 与 read closure 分开验证。classification scope 限于
+> 可影响 predicate result、authorization validity 或 observation validity 的
+> input，纯 NON_DECISION_METADATA 不进入 closure；category assignment 必须由
+> independent root-backed external verifier 完成并禁止循环授权。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
@@ -261,7 +270,8 @@
 > Manifest Contract v0.2 = REVISE / SUPERSEDED BY V0.3
 > Manifest Contract v0.3 = REVISE / SUPERSEDED BY V0.4
 > Manifest Contract v0.4 = REVISE / SUPERSEDED BY V0.5
-> Current object = Run/Implementation Manifest v0.5 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v0.5 = REVISE / SUPERSEDED BY V0.6
+> Current object = Run/Implementation Manifest v0.6 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -294,7 +304,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.5**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.6**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

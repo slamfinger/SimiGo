@@ -2190,6 +2190,58 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Run/Implementation Manifest v0.5 REVISE; v0.6 typed closure algebra delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.5 at `956a5ac`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+Manifest M10/M11/M12 direction      PASS
+Semantic input/read closure algebra REVISE
+Classification scope                REVISE
+Category verifier independence      REVISE
+
+Run/Implementation Manifest v0.5    REVISE
+```
+
+Required v0.6 gates:
+
+```text
+M13  Use typed semantic-input partitioning:
+     INVOCATION_MATERIALIZED_VALUE, EXTERNAL_SEMANTIC_READ, and NOT_USED.
+     Only the external-read partition enters expected/observed read closure.
+
+M14  Classify only decision-relevant or evidence-authority-relevant inputs; pure
+     NON_DECISION_METADATA remains outside closure.
+
+M15  Require category assignment by an independent root-backed external verifier
+     with immutable record and non-circular separation.
+```
+
+Manifest Contract v0.6 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.6_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.5 REVISE / SUPERSEDED BY V0.6
+Run/Implementation Manifest v0.6 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Run/Implementation Manifest v0.4 REVISE; v0.5 orthogonality and closure gates delivered — 2026-10-07
 
 The Human independently reviewed Manifest Contract v0.4 at `bdb7797`.

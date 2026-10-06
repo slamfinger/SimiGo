@@ -397,6 +397,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > T-IMPL-01, implementation, manifest generation, fixture building, expected-read
 > generation, and observation. Implementation, fixture, execution, and IS mutation
 > remain NOT AUTHORIZED.
+> **UPDATE 41 (2026-10-07)：Run/Implementation Manifest v0.5 = REVISE；v0.6 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M13 replaces direct semantic-input/read-set equality with a typed
+> partition into materialized values, external semantic reads, and not-used
+> dispositions; only the external-read partition enters expected/observed read
+> closure. M14 limits classification to inputs capable of affecting predicate
+> result, authorization validity, or observation validity; pure
+> NON_DECISION_METADATA stays outside closure. M15 requires category assignment by
+> an independent root-backed external verifier with non-circular separation.
+> Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 33 (2026-10-07)：Authorization Package v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Correction: v0.6 adds the missing frozen decision-state closure. It defines
 > REUSE_PATH, BLOCKED_NON_RECOMPUTE_PATH, and RECOMPUTE_AUTHORIZATION_PATH; makes
