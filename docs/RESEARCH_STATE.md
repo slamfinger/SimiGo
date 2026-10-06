@@ -143,6 +143,14 @@
 > 当前 review object = **PIR v0.2 + Clarification Addendum**。Minimal PIR Probe
 > Design 未 commission；PIR implementation / experiment / SimiGo code change
 > 均 NOT AUTHORIZED。
+>
+> Human后续裁定 **PIR v0.2 + Clarification Addendum = ACCEPTED**，并正式
+> commission **Minimal PIR Probe Design v0.1**。该设计已交付待审，仅定义协议：
+> paired `E-L N=10k,R=20,M=5` / `E-S N=20,R=20,M=5` controls、oracle isolation、
+> phase-separated ICAC、observable `W_age`、显式 `W_latency`、typed physical
+> verdicts、Fresh Closure、failure taxonomy 与 PASS/INDETERMINATE 条件。
+> PIR implementation / experiment / fixture creation / SimiGo code change 均
+> NOT AUTHORIZED。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

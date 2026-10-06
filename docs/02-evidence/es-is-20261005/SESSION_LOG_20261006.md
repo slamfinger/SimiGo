@@ -1728,3 +1728,70 @@ PIR implementation              NOT AUTHORIZED
 PIR experiment                  NOT AUTHORIZED
 SimiGo code change              NOT AUTHORIZED
 ```
+
+## PIR v0.2 accepted; Minimal PIR Probe Design v0.1 commissioned — 2026-10-06
+
+The Human independently reviewed `c50978a` and accepted:
+
+```text
+Query-Priority Reconciliation       PASS
+PIR Design v0.2                     PASS / ACCEPTED
+Clarification Addendum              PASS / ACCEPTED
+F1 Query Scope                      RESOLVED
+F2 Scope/Reconciliation separation  RESOLVED
+F3 ICAC cost vector                 RESOLVED
+F4 W_age / W_latency                RESOLVED
+F5 HOT/COLD request-relative        RESOLVED
+```
+
+No architecture redesign, R01 reopening, implementation, or experiment was
+authorized. The Human noted a non-blocking probe-design requirement: `W_age`
+must later be operationalized as an observable controlled timestamp difference,
+not as unknowable absolute physical-world age.
+
+Formal commission:
+
+```text
+PIR v0.2 + Addendum      ACCEPTED
+commissioned artifact    Minimal PIR Probe Design v0.1
+implementation           NOT AUTHORIZED
+experiment               NOT AUTHORIZED
+fixture creation         NOT AUTHORIZED
+```
+
+Commission ruling:
+
+```text
+docs/00-governance/
+  PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_ACCEPTANCE_AND_MINIMAL_PROBE_COMMISSION_20261006.md
+```
+
+Delivered probe design:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_20261006.md
+```
+
+The probe design is documentation-only. It defines paired controls:
+
+```text
+E-L  N=10,000, R=20, M=5
+E-S  N=20,     R=20, M=5
+```
+
+It also defines oracle isolation, planted-change rules, separate Scope Resolution
+and Physical Reconciliation measurement, observable `W_age`, explicit
+`W_latency`, ICAC cost vectors, Fresh Closure criteria, false-positive/false-
+negative evaluation, side-channel prohibitions, failure taxonomy, and
+INDETERMINATE conditions.
+
+Current state:
+
+```text
+Minimal PIR Probe Design v0.1    SUBMITTED FOR HUMAN REVIEW
+PIR implementation               NOT AUTHORIZED
+PIR experiment                   NOT AUTHORIZED
+Fixture creation                 NOT AUTHORIZED
+SimiGo code change               NOT AUTHORIZED
+```

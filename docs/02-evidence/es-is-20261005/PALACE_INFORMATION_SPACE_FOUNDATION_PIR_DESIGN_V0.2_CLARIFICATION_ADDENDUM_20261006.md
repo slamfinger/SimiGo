@@ -1,6 +1,6 @@
 # PIR Design v0.2 — Clarification Addendum
 
-> **Status:** CLARIFICATION ADDENDUM DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** CLARIFICATION ADDENDUM ACCEPTED — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-06
 > **Clarifies:** PIR Design v0.2 at `ce10827`
 > **Review basis:** Human CONDITIONAL PASS ruling
@@ -11,7 +11,8 @@
 This addendum does not replace PIR Design v0.2. It locks the five definitions
 required by the Human review and must be read together with v0.2.
 
-PIR v0.2 remains CONDITIONAL PASS until this addendum is accepted.
+The Human accepted this addendum together with PIR Design v0.2. Minimal PIR
+Probe Design v0.1 was commissioned as a separate design-only artifact.
 
 ## 2. F1 — Query Scope has two components
 

@@ -1,12 +1,13 @@
 # PIR Query-Priority Design Direction Ruling
 
-> **Status:** Human design direction ACCEPTED; PIR Design v0.2 DELIVERED FOR REVIEW
+> **Status:** Human design direction ACCEPTED; PIR Design v0.2 + Clarification Addendum ACCEPTED; Minimal PIR Probe Design v0.1 COMMISSIONED
 > **Date:** 2026-10-06
 > **Review authority:** Human
-> **Design basis:** PIR Design v0.1
+> **Design basis:** PIR Design v0.1; Human acceptance of v0.2 + Clarification Addendum at `c50978a`
 > **Implementation:** NOT AUTHORIZED
 > **Experiment:** NOT AUTHORIZED
 > **SimiGo code change:** NOT AUTHORIZED
+> **Probe design commission:** ISSUED
 
 ## 1. Direction
 
