@@ -118,8 +118,17 @@
 >
 > ```text
 > SRS-VAL-01 Settled Relation State Reuse Validation Predicate
-> Status = COMMISSIONED / DESIGN V0.1 DELIVERED FOR HUMAN REVIEW
+> Status = COMMISSIONED / V0.1 REVISE / V0.2 DELIVERED FOR HUMAN REVIEW
 > ```
+>
+> Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
+> ① SRS 永不授权 RECOMPUTE，必须使用独立 exact governing
+> recompute/reuse authorization binding；② 增加 exact current reuse request
+> binding；applicability indeterminate 即 BLOCK；③ 所有 validation inputs 必须属于
+> 同一 lawful validation observation boundary，不一致即 BLOCK；④ failure 先分类，
+> 仅当 exact governing authorization 显式覆盖该 invalidation class 时才
+> RECOMPUTE，否则 BLOCK；⑤ FRESHNESS_RECHECK_REQUIRED 使用 positive clearing
+> semantics。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

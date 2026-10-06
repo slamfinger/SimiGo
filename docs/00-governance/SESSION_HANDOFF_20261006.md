@@ -50,6 +50,13 @@
 > **UPDATE 20 (2026-10-07)：SRS-SEM-01 v0.5 = ACCEPT / FROZEN；SRS-VAL-01 Design v0.1 COMMISSIONED AND DELIVERED FOR REVIEW.**
 > SRS-VAL-01 defines REUSE / BLOCK / RECOMPUTE semantic predicate only.
 > Implementation, fixture, experiment, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 21 (2026-10-07)：SRS-VAL-01 v0.1 = REVISE；v0.2 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: SRS never authorizes RECOMPUTE; separate exact governing
+> recompute/reuse authorization binding added; exact current reuse request
+> binding added; single lawful validation observation boundary required;
+> failure-to-RECOMPUTE now requires explicit invalidation-class authorization;
+> positive freshness-clearing semantics registered. Implementation, fixture,
+> experiment, and IS mutation remain NOT AUTHORIZED.
 > **UPDATE 19 (2026-10-07)：SRS-SEM-01 v0.4 = REVISE；v0.5 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: canonical identity-generation rule binds EXACT_RULE_VERSION;
 > canonical semantic changes require a new rule identity/version; existing SRS

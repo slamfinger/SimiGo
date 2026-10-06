@@ -2190,6 +2190,92 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.1 REVISE; v0.2 decision-boundary correction delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.1 at `f733457`.
+
+Ruling:
+
+```text
+SRS-SEM-01 inheritance              PASS
+Exact-binding validation            PASS
+G-V1..G-V7 structure                PASS
+REUSE semantics                     PASS / boundary completion needed
+BLOCK semantics                     PARTIAL
+RECOMPUTE semantics                 REVISE
+Applicability input                 REVISE
+Freshness recheck wording           SHOULD-FIX
+Validation observation consistency  REVISE
+Independence boundary               PASS
+Non-recomputation boundary          PASS
+Failure taxonomy                    PASS / additions needed
+
+SRS-VAL-01 Design v0.1              REVISE
+```
+
+Required v0.2 corrections:
+
+```text
+B1  RECOMPUTE authorization source conflict:
+    SRS never authorizes RECOMPUTE. Add explicit governing
+    recompute/reuse authorization binding I-14. RECOMPUTE is possible only when
+    that separately bound governing semantic contract/policy explicitly
+    authorizes the current invalidation class.
+
+B2  Current reuse request input:
+    Add non-natural-language current_reuse_request binding I-15, or conservatively
+    BLOCK whenever applicability cannot be exactly determined.
+
+B3  BLOCK versus RECOMPUTE must become a complete decision relation:
+    every validation failure is classified; RECOMPUTE occurs only when a
+    separately bound governing rule explicitly authorizes that invalidation
+    class. RECOMPUTE does not mean “validation failed, so compute again.”
+
+B4  Validation observation consistency:
+    all inputs for one decision belong to one lawful validation observation
+    boundary. If cross-input consistency cannot be established, return BLOCK
+    with a typed consistency reason.
+
+C1  Freshness V7.6 positive clearing semantics:
+    present + uncleared → BLOCK; explicitly cleared by lawful evidence →
+    continue evaluation.
+```
+
+SRS-VAL-01 Design v0.2 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
+```
+
+Key additions:
+
+```text
+I-14  governing recompute/reuse authorization binding
+I-15  exact current reuse request binding
+I-16  validation observation boundary binding
+
+FT-V26 VALIDATION_INPUT_STATE_INCONSISTENT
+FT-V27 GOVERNING_RECOMPUTE_AUTHORIZATION_MISSING_OR_INVALID
+FT-V28 APPLICABILITY_INDETERMINATE
+FT-V29 CURRENT_REUSE_REQUEST_BINDING_MISSING_OR_INVALID
+FT-V30 UNAUTHORIZED_RECOMPUTE_REQUEST
+FT-V31 GOVERNING_AUTHORIZATION_OUTSIDE_REQUEST_SCOPE
+FT-V32 GOVERNING_AUTHORIZATION_EXPIRED
+FT-V33 GOVERNING_AUTHORIZATION_CONTRADICTS_LIFECYCLE
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.1     REVISE / SUPERSEDED BY V0.2
+SRS-VAL-01 v0.2     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-SEM-01 v0.4 REVISE; v0.5 identity/evidence stability delivered — 2026-10-07
 
 The Human independently reviewed SRS-SEM-01 Design v0.4 at `79fc37a`.

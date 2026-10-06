@@ -29,8 +29,8 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-VAL-01 — Reuse Validation Predicate Design V0.1 DELIVERED FOR HUMAN REVIEW
-Current design document            = docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md
+Current active closure task        = SRS-VAL-01 — Reuse Validation Predicate Design V0.2 DELIVERED FOR HUMAN REVIEW
+Current design document            = docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
 Next dependency after SRS-VAL-01   = separately reviewed implementation/fixture plan — NOT AUTHORIZED
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
@@ -208,8 +208,13 @@ SRS-SEM-01 Design v0.5                      ACCEPT / FROZEN
 SRS-SEM-01 v0.5 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md
 SRS-SEM-01 acceptance / SRS-VAL commission    docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_ACCEPTANCE_AND_SRS_VAL_COMMISSION_20261007.md
 Current SRS-SEM-01 status                   CLOSED / ACCEPT / FROZEN
-Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.1
+Current SRS-VAL-01 design object             Reuse Validation Predicate Design v0.2
 SRS-VAL-01 design document                   docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.1_20261007.md
+SRS-VAL-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
+SRS-VAL-01 Design v0.2                       DELIVERED FOR HUMAN REVIEW
+SRS-VAL-01 v0.2 document                     docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
+SRS-VAL-01 v0.2 delivery record               docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.2_DELIVERY_20261007.md
+Current SRS-VAL-01 review object             Design v0.2
 SRS-VAL-01 implementation                   NOT AUTHORIZED
 SRS-VAL-01 fixture                          NOT AUTHORIZED
 SRS-VAL-01 experiment                       NOT AUTHORIZED
@@ -401,13 +406,12 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF SRS-VAL-01 DESIGN V0.1 ONLY.
-  It selects one smallest next closure task: SRS-SEM-01 Minimal Settled Relation
-  State Semantic Boundary. If accepted, the next artifact is a design-only
-  SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
-  code change is authorized. SRS-SEM-01 is ACCEPT / FROZEN. Human later
-  commissioned SRS-VAL-01 Design v0.1. It defines REUSE / BLOCK / RECOMPUTE semantic
-  predicate checks without implementation. Do not treat this design work as
+  HUMAN REVIEW OF SRS-VAL-01 DESIGN V0.2 ONLY.
+  SRS-SEM-01 is ACCEPT / FROZEN. Human review of SRS-VAL-01 Design v0.1 was
+  REVISE; Design v0.2 is now the current review object. It defines REUSE / BLOCK /
+  RECOMPUTE semantic predicate checks with governing recompute authorization,
+  exact current reuse request binding, one validation observation boundary, and
+  conservative failure classification. Do not treat this design work as
   permission to start implementation, fixture creation, experiment, or IS mutation.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION

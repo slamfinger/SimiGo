@@ -1,11 +1,13 @@
 # Settled Relation State Reuse Validation Predicate — SRS-VAL-01 Design v0.1
 
-> **Status:** DESIGN V0.1 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.1 REVISE — SUPERSEDED BY V0.2 — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen semantic basis:** SRS-SEM-01 Design v0.5 = ACCEPT / FROZEN
 > **Commission:** Human accepted SRS-SEM-01 and commissioned SRS-VAL-01 design.
 > **Purpose:** define the semantic reuse-validation predicate that maps a validated SRS and current binding state to `REUSE`, `BLOCK`, or `RECOMPUTE`.
 > **Scope guard:** design only. No implementation, fixture, experiment, IS mutation, user-file mutation, RelationCore/InformationCore change, U-A change, or Frozen Contract change.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.1_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md`.
 
 ## 1. Research object
 
