@@ -376,3 +376,11 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > forces BLOCK / VALIDATION_INPUT_STATE_INCONSISTENT. Context Index current,
 > design, review, and next-transition fields now identify v0.6. Implementation,
 > fixture, experiment, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 26 (2026-10-07)：SRS-VAL-01 v0.6 = REVISE；v0.7 DELIVERED FOR HUMAN REVIEW.**
+> Correction: I-14 is a conditional RECOMPUTE-path authorization, not an
+> every-invocation prerequisite. Pure REUSE records
+> I14_NOT_USED_NO_RECOMPUTE_PATH and is not blocked for lacking recomputation
+> authorization; RECOMPUTE_ELIGIBLE still requires exact immutable I-14 in the
+> same I-16 boundary. I-15 remains mandatory, predicate-rule conditionality is
+> unchanged, and navigation identifies v0.7. Implementation, fixture,
+> experiment, and IS mutation remain NOT AUTHORIZED.

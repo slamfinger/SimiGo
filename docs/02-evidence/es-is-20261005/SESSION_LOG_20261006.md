@@ -2190,6 +2190,64 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## SRS-VAL-01 v0.6 REVISE; v0.7 conditional I-14 path separation delivered — 2026-10-07
+
+The Human independently reviewed SRS-VAL-01 Design v0.6 at `979bb02`.
+
+Ruling:
+
+```text
+I-16 explicit inclusion                      PASS
+Boundary completeness mechanism              PASS
+Conditional predicate-rule marker            PASS
+Context Index navigation                     PASS
+
+Predicate-rule immutable binding             PASS
+RECOMPUTE semantic envelope                  PASS
+Canonical rule binding                       PASS
+DP-0..DP-4                                   PASS
+Lifecycle / freshness precedence             PASS
+
+I-14 applicability to REUSE path             REVISE
+I-14 conditional presence semantics          REVISE
+
+SRS-VAL-01 Design v0.6                       REVISE
+```
+
+Required v0.7 corrections:
+
+```text
+R1  I-14 is mandatory only when a remaining validation failure requires
+    RECOMPUTE classification / authorization.
+
+R2  A valid REUSE invocation may explicitly record
+    I14_NOT_USED_NO_RECOMPUTE_PATH.
+
+R3  I-14 absence on a pure REUSE path must not cause
+    VALIDATION_INPUT_STATE_INCONSISTENT.
+
+R4  I-14 absence or invalidity on a RECOMPUTE-eligible path remains BLOCK
+    under the appropriate authorization failure reason.
+```
+
+SRS-VAL-01 Design v0.7 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.7_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 v0.6     REVISE / SUPERSEDED BY V0.7
+SRS-VAL-01 v0.7     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## SRS-VAL-01 v0.5 REVISE; v0.6 decision-boundary inclusion delivered — 2026-10-07
 
 The Human independently reviewed SRS-VAL-01 Design v0.5 at `440b28a`.

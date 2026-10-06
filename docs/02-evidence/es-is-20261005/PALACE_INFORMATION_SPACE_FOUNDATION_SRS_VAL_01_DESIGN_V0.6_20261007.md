@@ -1,10 +1,12 @@
 # Settled Relation State Reuse Validation Predicate — SRS-VAL-01 Design v0.6
 
-> **Status:** DESIGN V0.6 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.6 REVISE — SUPERSEDED BY V0.7 — IMPLEMENTATION / EXPERIMENT NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Supersedes:** SRS-VAL-01 Design v0.5 for current review
 > **Review basis:** Human REVISE ruling on v0.5 at `440b28a`
 > **Revision purpose:** bind every decision-critical input into I-16 and correct current-object navigation.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.6_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.7_20261007.md`.
 
 ## 1. Effect of v0.6
 
