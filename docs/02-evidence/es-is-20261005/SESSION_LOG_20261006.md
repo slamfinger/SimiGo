@@ -19,6 +19,7 @@ CCVS-01 U-0                          = DELIVERED (session evidence consolidation
 CCVS-01 U-1                          = v0.3 DELIVERED (R-1..R-11 + A-1..A-3 + CC-MA) / TARGETED REVIEW: NO BLOCK / FREEZE GATE OPEN WITH FIVE CONDITIONS
 CCVS-01 UA v0.3 freeze review        = REGISTERED (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate / state hygiene)
 CCVS-01 Unified U-2                  = NOT STARTED / NOT AUTHORIZED
+Branch governance                    = CONSOLIDATION RULING REGISTERED (integration ARCHIVED, no further commits; codex branch = current working branch; post-freeze no-ff merge into main as separate action)
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
 Backend selection                    = NOT AUTHORIZED (Phase E gate)
@@ -421,6 +422,23 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     items 26-29); the three canonical sections (Current state / Key
     documents / Next legal transition) are the ONLY current-truth
     surfaces and have been made unique and conflict-free.
+
+41. Human Branch Consolidation Ruling registered (verbatim in
+    `docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md`;
+    verified ancestry: integration @ 27bc805 is a STRICT ANCESTOR of the
+    codex line — 0 commits unique to integration). Consequences BR-1..BR-6:
+    no immediate merge into main; codex/research-recovery-layer-v0.1 stays
+    the current working branch until UA v0.3 freeze; AFTER the Human
+    ACCEPT/FREEZE ruling the whole codex branch merges into main with
+    --no-ff as a SEPARATE governance action (merge = "this research round
+    is official Lab state"), never mixed with experiment progression
+    (freeze -> U-2 authorization -> implementation -> experiments -> new
+    evidence -> separate stage merge); integration = ARCHIVED historical
+    backup from now on (no further commits, not deleted); target end-state
+    = main as sole canonical Research State with old ES and es-reuse
+    branches as frozen history; future agent entry = main -> Research
+    State -> next legal step, no guessing between 27bc805 and the codex
+    tip.
 
 ## Key documents
 
