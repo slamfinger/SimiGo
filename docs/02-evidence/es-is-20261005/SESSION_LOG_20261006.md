@@ -89,6 +89,28 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
 21. Any post-freeze protocol change requires an explicit Human ruling. Phase C
     controlled validation requires a separate later authorization. Phase D
     ranks qualified architectures only; Phase E remains the selection gate.
+22. Human reviewed the v1.0 freeze and ruled `B / narrow protocol revision`:
+    not a Phase A return, not PARK, no new candidate, no backend selection,
+    no benchmark execution, no Frozen Contract change, no ES<->IS opening, no
+    carrier-neutral implementation change. The ruling was registered as
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md`
+    with mandatory items R1-R7.
+23. The protocol freeze was revised to CCVS-01-PB v1.1 implementing R1-R7:
+    PB-B1..B14 reclassified as frozen evaluation bounds (not hard elimination
+    gates) with a Baseline-A feasibility/protocol-validity check (ACTIVE vs
+    UNCALIBRATED, PROTOCOL-VALIDITY-FLAGGED); anti-complexity rule now requires
+    end-to-end architecture-level gains, mandatory no-failure conditions, and a
+    frozen 2x non-regression line over amplification/RSS/startup/recovery/
+    rebuild unless justified in writing; WL6 fixed as primary binding workload
+    with WL1..WL7 as mandatory diagnostic/capability evidence; a statistical
+    protocol layer froze run definition, per-operation observation minimums,
+    serial cold-run policy, median-of-runs aggregation, P99 >= 100-sample
+    validity, invalid-run budget, and quiescence checks; amplification
+    numerator/denominator and four variants were frozen with steady-state as
+    primary; crash semantics were fixed to process-crash/SIGKILL with an
+    explicit claim boundary versus power-loss durability; candidate verdicts
+    became a layered rule with no weighted total score. v1.1 returns to
+    AWAITING HUMAN REVIEW; Phase C remains NOT AUTHORIZED.
 
 ## Key documents
 
@@ -110,6 +132,9 @@ CCVS-01 interface preconstruction
 
 CCVS-01 Phase B protocol freeze
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md
+
+CCVS-01 Phase B revision ruling
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md
 ```
 
 ## Next legal transition

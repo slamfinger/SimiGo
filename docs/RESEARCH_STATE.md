@@ -253,6 +253,23 @@
 > Human ruling；Phase C controlled validation 仍需后续单独授权。Phase B
 > 文档见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md`。
+> Human 随后对 v1.0 冻结裁定 **B / narrow protocol revision**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md`，
+> 强制项 R1–R7；不退回 Phase A、不 PARK、不加 candidate、不选 backend、不执行
+> benchmark、不改契约、不开 ES↔IS、不触碰 carrier-neutral implementation）。
+> 据此交付 **CCVS-01-PB v1.1 定向修订**：PB-B1..B14 改为 frozen evaluation
+> bounds（非硬淘汰门槛），新增 Baseline-A feasibility/protocol-validity check
+>（ACTIVE / UNCALIBRATED → PROTOCOL-VALIDITY-FLAGGED，须 Human ruling 解决）；
+> anti-complexity rule 改为端到端架构级收益 + 强制无失败条件 + 关键资源/恢复
+> 2× non-regression line（超出须书面正当化）；WL6 = primary binding workload，
+> WL1..WL7 = mandatory diagnostic/capability evidence；新增统计协议层（run
+> 定义、per-operation observation 最小值、串行 cold-run、median-of-runs 聚合、
+> P99 ≥100 样本有效性、invalid-run 预算、quiescence 检查）；amplification
+> 分子/分母冻结（含 WAL/index/temporary/duplicate/object-store overhead），区分
+> steady-state（primary）/peak/rebuild/crash-recovery 变体；crash 语义限定为
+> process-crash/SIGKILL，禁止 power-loss durability 声明；candidate 判定改为
+> Correctness/Capability/Pareto evidence/Anti-complexity 分层，无加权总分。
+> v1.1 待 Human review；Phase C 仍 NOT AUTHORIZED。
 > Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
 > protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
 > conformance suite、benchmark harness 与 metrics collector；禁止任何
