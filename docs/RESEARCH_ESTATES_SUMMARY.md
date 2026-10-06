@@ -189,6 +189,7 @@ PICS-01         = ACCEPTED / BOUNDED PASS / CLOSED
 CCVS-01-PB v1.2 = ACCEPTED / FROZEN
 CCVS-01 Phase C = AUTHORIZED / IN PROGRESS
 U-1 v0.1        = REVISED / direction confirmed / structural revision gate
+U-1 v0.2        = DELIVERED / AWAITING HUMAN REVIEW
 Final backend   = NOT SELECTED / Phase E gate
 Primary entries = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_*,
                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_*,
@@ -308,8 +309,8 @@ Current active research object:
 ```text
 ES ↔ Information Space carrier validation.
 CCVS-01 is in Phase C under frozen protocol.
-U-1 v0.1 was ruled B = REVISE. The current legal surface is the narrow
-Canonical Logical Model revision, followed by Human review. U-2 remains
+U-1 v0.1 was ruled B = REVISE. The resulting Unified Carrier Contract
+revision is delivered as U-1 v0.2 and awaits Human review. U-2 remains
 blocked.
 ```
 

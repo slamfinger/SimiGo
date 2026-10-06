@@ -167,16 +167,19 @@ Next recovery improvement   = only under a separately authorized rule
 ## 6. Post-validation current-state update
 
 After the recovery walk, an authoritative U-1 revision ruling appeared in the
-working tree. It is preserved unchanged. Its effect on navigation is:
+working tree, followed by the requested v0.2 delivery. Both are preserved
+unchanged. Their effect on navigation is:
 
 ```text
 U-1 v0.1 verdict       = B / REVISE
 U-0                    = RETAINED
 Direction              = Unified File + Session confirmed
-Required next          = narrow Canonical Logical Model revision
-Before U-2             = revised model must pass Human review
+Current delivery       = U-1 v0.2 / AWAITING HUMAN REVIEW
+Before U-2             = v0.2 must pass Human review
 MemPalace/PB v1.2      = not reopened / unchanged
 ```
 
 Source:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md`.
+U-1 v0.2:
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md`.

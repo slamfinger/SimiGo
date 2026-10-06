@@ -47,7 +47,7 @@ SUPERSEDED      historical input; later route or ruling changed direction
 ```text
 PICS-01                          = no dedicated capsule; see Coverage and L2/L3
 CCVS-01 Phase A/B/C              = no dedicated capsule; active route in State
-U-0/U-1 unified direction        = no dedicated capsule; U-1 revision required
+U-0/U-1 unified direction        = no dedicated capsule; U-1 v0.2 awaits review
 Boundary Study / EXP1-X1 / Y     = no complete L1 node
 Track E / Architecture 2.0       = no capsule; historical registers remain authority
 ```

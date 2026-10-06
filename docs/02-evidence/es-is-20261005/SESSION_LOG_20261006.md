@@ -16,7 +16,8 @@ CCVS-01 File side                    = Baseline A PB-B1..B14 ALL MET + P8 G2 PAS
 CCVS-01 Unified direction            = ACCEPTED BY HUMAN RULING (File + Session first-class)
 CCVS-01 Candidate B1                 = SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0                          = DELIVERED (session evidence consolidation)
-CCVS-01 U-1                          = PROPOSED / AWAITING HUMAN REVIEW
+CCVS-01 U-1                          = REVISED BY RULING (B = REVISE, tightened: Unified Carrier Contract over existing semantics)
+CCVS-01 U-1 v0.2                     = PROPOSED / AWAITING HUMAN REVIEW
 CCVS-01 U-2 implementation           = NOT AUTHORIZED
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
 Lab physical reorganization          = FROZEN
@@ -242,6 +243,54 @@ Higher-Layer ES↔IS semantics         = NOT OPENED
     ES<->IS opening, no Frozen Contract change, no PB v1.2 change, no
     mid-run protocol change.
 
+34. Human ruled on the U-1 v0.1 delivery in two messages, the second being
+    a self-issued TIGHTENING of the first (both archived verbatim in
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md`).
+    Verdict: B = REVISE. Direction confirmed (Unified File + Session
+    continues; U-0 retained; MemPalace stays closed; PB v1.2 untouched).
+    Message 1 designated a ruling block proposing a "Canonical Information
+    Space Logical Model" (five layers incl. redefined
+    InformationCore/RelationCore/Store). Message 2 tightened it: NOT a
+    redesign of Information Space semantics — the work is the **Unified
+    Carrier Contract** built ON TOP of the existing, already-defined
+    SimiGo Information Space semantics, in four layers: ① semantic layer
+    (existing, unchanged) / ② Unified Carrier layer (the current core
+    work) / ③ Carrier Representation/Record layer (physical difference
+    allowed, one contract) / ④ Derived Access layer (all derived, never
+    defines Information). Frozen principle designated by the Human: File
+    and Session are two instance families of Carrier, not two semantic
+    branches of Information Space; "Session is not a second class of
+    Information". Registered consequences R-1..R-5, including the
+    required v0.1 corrections (drop Information.kind; remove "a Session
+    is an Information"; Session/SessionEvent become Carrier/
+    CarrierRecord instances) and the honesty note that the Human
+    reviewed the report, not the remote commits (verification commit:
+    27bc805).
+
+35. UA v0.2 delivered:
+    `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md`.
+    Scope exactly per ruling: NEW Unified Carrier Contract UA-CC
+    (CC-1 Carrier object with FILE/SESSION instance families; CC-2
+    common capability surface discover/locate/read/exact-retrieve/
+    enumerate/summarize/reconstruct; CC-3 CarrierRecord with opaque
+    work-record kinds; CC-4 carrier-internal ordering stability
+    generalizing (SessionID, sequence) and RepresentationLocator;
+    CC-5 Information↔CarrierRecord mapping — record existence never
+    creates Information, formation only through existing semantics;
+    CC-6 relations Information-to-Information only, existing
+    RelationCore semantics, no relation semantics in carrier metadata;
+    CC-7 derived access layer with IndexSource; CC-8 the six identity
+    relations with lifecycle/mutability boundaries — #1 and #5 cited
+    from frozen artifacts, not re-specified; CC-9 hard constraints
+    from the ruling). Layer ① cited with verified frozen surfaces
+    (InformationCore A1-A5/B1-B3/S1-S6/A2′; RelationCore
+    D1(a)/D2(a)/D3(a)/R1-R6). All v0.1 verification content retained
+    and re-labelled as contract verification (I14-I18, G9-G12, F10-F14,
+    S/X families, WL6-U, PB-U1..U11); zero new workload/fixture/gate
+    definitions. v0.1 file marked SUPERSEDED with the three corrected
+    defects recorded. UA v0.2 returns to AWAITING HUMAN REVIEW; U-2
+    remains NOT AUTHORIZED.
+
 ## Key documents
 
 ```text
@@ -278,7 +327,13 @@ CCVS-01 Phase C kickoff + A1 manifest
 CCVS-01 U-0 consolidation
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
 
-CCVS-01 U-1 addendum protocol v0.1
+CCVS-01 U-1 revision ruling (two messages, second operative)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
+
+CCVS-01 U-1 addendum protocol v0.2 (CURRENT)
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
+
+CCVS-01 U-1 addendum protocol v0.1 (SUPERSEDED, history)
   PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
 
 CCVS-01 Unified rebaseline proposal (archived verbatim)
@@ -297,9 +352,12 @@ CCVS-01 A1 adapter code
 CCVS-01-PB v1.2 remains FROZEN. The Unified direction ruling extended the
 CCVS-01 scope: File Information and Session Information are equal
 first-class carrier workloads, with the archived rebaseline proposal as
-design basis.
+design basis. The U-1 revision ruling (B = REVISE, tightened) fixed the
+revision target: the Unified Carrier Contract over the EXISTING SimiGo
+Information Space semantics — File and Session are Carrier instance
+families, not semantic branches.
 
-Current step: Human review of the U-1 Unified Addendum Protocol v0.1 ->
+Current step: Human review of UA v0.2 (Unified Carrier Contract) ->
 ruling (option A ACCEPT/FREEZE, option B REVISE, or option C PARK).
 U-2 implementation and Unified benchmark execution remain NOT AUTHORIZED
 until separately ruled.

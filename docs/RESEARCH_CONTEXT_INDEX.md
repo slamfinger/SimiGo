@@ -90,7 +90,8 @@ CCVS-01 U-1 addendum protocol v0.1     REVISED BY HUMAN RULING B = REVISE
 CCVS-01 U-1 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
 CCVS-01 U-1 revision ruling            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
 CCVS-01 U-0                            RETAINED
-CCVS-01 U-1 structural revision        REQUIRED / PENDING DELIVERY
+CCVS-01 U-1 structural revision        DELIVERED AS v0.2 / AWAITING REVIEW
+CCVS-01 U-1 v0.2 document              docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
 CCVS-01 Canonical Logical Model gate   REQUIRED BEFORE U-2
 CCVS-01 U-2 implementation             NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
@@ -252,9 +253,8 @@ Current state:
   quiescence as three consecutive 5 s admission windows.
 
 Current next transition:
-  Deliver the narrow U-1 structural revision defined by Human ruling
-  B = REVISE, then submit the resulting Canonical Logical Model for Human
-  review. U-0 is retained. U-2 implementation and Unified benchmark
+  Human review of U-1 Unified Addendum Protocol v0.2, delivered in
+  response to ruling B = REVISE. U-0 is retained. U-2 implementation and Unified benchmark
   execution remain NOT AUTHORIZED. File-side Phase C results (Baseline A +
   P8) stand as delivered evidence; candidate B1 is suspended with a
   registered reason. Final backend selection remains NOT AUTHORIZED until

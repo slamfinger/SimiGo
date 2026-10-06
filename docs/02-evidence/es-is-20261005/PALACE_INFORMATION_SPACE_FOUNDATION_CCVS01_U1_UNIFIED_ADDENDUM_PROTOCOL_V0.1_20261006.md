@@ -1,5 +1,18 @@
 # CCVS-01 Unified Addendum Protocol — UA v0.1
 
+> **Status: SUPERSEDED — 2026-10-06**
+> **Superseded by:** `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md`
+> **Superseded by ruling:** `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md`
+> (B = REVISE, tightened by the Human's second message: not a new semantic
+> model — the Unified Carrier Contract over the EXISTING SimiGo Information
+> Space semantics).
+> **Known defects in this version, corrected in v0.2:** universal `kind`
+> field on Information (violates layer-① immutability); "a Session is an
+> Information" (violates formation-through-existing-semantics); Session/
+> SessionEvent defined as separate first-class logical objects (now
+> Carrier/CarrierRecord instance families).
+> Content below retained as revision history; do not use for review.
+
 > **Status:** PROPOSED / AWAITING HUMAN REVIEW
 > **Date:** 2026-10-06
 > **Authorization basis:** `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_DIRECTION_RULING_20261006.md`
