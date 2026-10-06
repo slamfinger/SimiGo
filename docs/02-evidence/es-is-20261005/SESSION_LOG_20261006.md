@@ -2190,6 +2190,60 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Implementation Boundary Audit v0.1 ACCEPT / FROZEN; Manifest Contract v0.1 delivered — 2026-10-07
+
+The Human independently accepted Implementation Boundary Audit v0.1 at `cb95c09`.
+
+Ruling:
+
+```text
+T-IMPL-01 SRS-VAL Decision Core      ACCEPT / FROZEN
+Minimal Implementation Boundary      ACCEPT / FROZEN
+Carrier/SQLite/ExecutionCore/MLX-LLM/
+observer/runner/fixture-builder/
+IS-mutation-executor                 OUT OF MINIMAL TARGET
+Four-stage separation                PRESERVED
+
+Implementation                       NOT AUTHORIZED
+Fixture preparation                  NOT AUTHORIZED
+Execution                            NOT AUTHORIZED
+IS mutation                          NOT AUTHORIZED
+```
+
+The Human required three manifest hard constraints:
+
+```text
+H1  Registered Predicate Rule Artifact and Decision Core must be separately
+    bound immutable artifacts; the Decision Core cannot self-register a rule.
+
+H2  Decision Core output is DETERMINISTIC_SEMANTIC_DERIVATION_TRACE, not
+    OBSERVER_AUTHORITATIVE_EXECUTION_EVIDENCE.
+
+H3  Invocation Record must be a closed immutable value graph with no lazy
+    resolver, handle, callback, environment lookup, clock, registry, or mutable
+    reference.
+```
+
+Run/Implementation Manifest Contract v0.1 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.1_20261007.md
+```
+
+Current state:
+
+```text
+SRS-VAL-01 Design v0.8      ACCEPT / FROZEN
+Authorization Package v0.6  ACCEPT / FROZEN
+Implementation Boundary Audit v0.1 ACCEPT / FROZEN
+Run/Implementation Manifest v0.1 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Implementation Boundary Audit v0.1 delivered — 2026-10-07
 
 After Authorization Package v0.6 acceptance, the Human directed a design-only

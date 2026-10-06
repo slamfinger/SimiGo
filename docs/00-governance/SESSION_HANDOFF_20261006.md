@@ -395,6 +395,13 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > model/runtime, execution harness, and IS mutation executor. It maps fixture,
 > manifest, stage-separation, mutation/runtime evidence, and adversarial
 > pre-review requirements. No code, fixture, run, or IS mutation is authorized.
+> **UPDATE 36 (2026-10-07)：Implementation Boundary Audit v0.1 = ACCEPT / FROZEN；Run/Implementation Manifest v0.1 DELIVERED FOR DESIGN REVIEW.**
+> T-IMPL-01 SRS-VAL Decision Core is fixed as the minimum implementation boundary.
+> Manifest v0.1 adds three binding constraints: Registered Predicate Rule Artifact
+> is separate from Decision Core; deterministic semantic derivation trace is not
+> observer-authoritative evidence; Invocation Record must be a closed immutable
+> value graph. The manifest is design-only and authorizes no implementation,
+> fixture, execution, or IS mutation.
 > **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: I-16 now explicitly includes I-14, I-15, and the exact
 > predicate-rule binding as decision-critical inputs in one observation

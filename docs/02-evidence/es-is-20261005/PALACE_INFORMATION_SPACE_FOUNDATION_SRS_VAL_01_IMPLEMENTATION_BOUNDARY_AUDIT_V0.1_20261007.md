@@ -1,11 +1,12 @@
 # SRS-VAL-01 Implementation Boundary Audit v0.1
 
-> **Status:** AUDIT V0.1 DELIVERED FOR HUMAN REVIEW — DESIGN / AUDIT ONLY
+> **Status:** AUDIT V0.1 ACCEPT / FROZEN — DESIGN / AUDIT ONLY
 > **Date:** 2026-10-07
 > **Audit basis:** `6089f0b`
 > **Frozen semantic basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`; acceptance registered at `6089f0b`
 > **Boundary question:** what is the minimal lawfully authorizable Implementation Target for SRS-VAL-01?
+> **Review ruling:** ACCEPT / FROZEN; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_BOUNDARY_AUDIT_V0.1_ACCEPTANCE_20261007.md`.
 > **Implementation / fixture / experiment:** NOT AUTHORIZED
 > **IS mutation:** NOT AUTHORIZED
 > **SimiGo code change:** NOT AUTHORIZED

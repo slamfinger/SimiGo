@@ -245,9 +245,10 @@ After iterative review, Design v0.5 is ACCEPT / FROZEN.
 Accepted design artifact:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.5_20261007.md`.
 Current commissioned design:
-`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_BOUNDARY_AUDIT_V0.1_20261007.md`.
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.1_20261007.md`.
 Authorization package status = ACCEPT / FROZEN; next stage NOT OPENED.
-Current boundary audit = Implementation Boundary Audit v0.1 DELIVERED FOR HUMAN REVIEW.
+Implementation Boundary Audit v0.1 = ACCEPT / FROZEN.
+Current manifest contract = Run/Implementation Manifest v0.1 DELIVERED FOR HUMAN REVIEW.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
@@ -255,8 +256,8 @@ V0.1 through V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS.
 ```
 
 The SRS-VAL authorization-package governance closure is complete. The current
-object is the Implementation Boundary Audit. Implementation, fixture preparation,
-execution, and experiment remain unauthorized.
+object is the Run/Implementation Manifest contract. Implementation, fixture
+preparation, execution, and experiment remain unauthorized.
 
 ### 7.2 Information Topology
 
@@ -282,20 +283,19 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 
 ```text
 SRS-VAL-01
-Implementation Boundary Audit
+Run/Implementation Manifest Contract
 
-Status = AUDIT V0.1 DELIVERED FOR HUMAN REVIEW
+Status = MANIFEST V0.1 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY
        + PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE
          V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6
          ACCEPT / FROZEN
        + SRS-VAL Design v0.8 ACCEPT / FROZEN
 
 Next lawful object =
-  Human review of Implementation Boundary Audit v0.1; Run/Implementation
-  Manifest remains NOT OPENED
+  Human review of Run/Implementation Manifest v0.1; no stage authorized
 
 Current design document =
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_IMPLEMENTATION_BOUNDARY_AUDIT_V0.1_20261007.md
+  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.1_20261007.md
 ```
 
 Dependency chain:
