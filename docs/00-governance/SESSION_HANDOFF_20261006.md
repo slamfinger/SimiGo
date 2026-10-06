@@ -25,6 +25,12 @@
 > **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
 > 或 `docs/RESEARCH_STATE.md` 的 restored section 冲突，以 Recovery Anchor 和
 > restored section 为准。不要根据旧 UPDATE、已删除 branch 或对话记忆恢复状态。
+> **UPDATE 15：Recovery Anchor CLOSED；Human authorized SRS-SEM-01.**
+> Design v0.1 delivered:
+> `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md`.
+> Status = `SRS-SEM-01 DESIGN DELIVERED FOR HUMAN REVIEW`. This authorizes only
+> semantic-boundary design review; it does not authorize implementation, fixture,
+> experiment, IS mutation, SRS-VAL-01, or code change.
 
 > **⚠️ STATE UPDATE 2026-10-06（晚，终 2）——本文档 §5-§8 的门位与“等 stage-transition review”状态均已过期，当前状态以下为准：**
 > **Gate A CLOSED；Gate B CLOSED（UA v1.0 FROZEN）；Gate C = CLOSED / ACCEPT（Human independent ruling）。**

@@ -64,9 +64,12 @@
 >
 > ```text
 > SRS-SEM-01 Minimal Settled Relation State Semantic Boundary
-> Status = SELECTED / NOT STARTED
+> Status = OPENED AFTER RECOVERY CLOSURE
+> Design v0.1 = DELIVERED FOR HUMAN REVIEW
 > ```
 >
+> Human 已明确授权进入 `SRS-SEM-01` 的最小语义边界设计；该设计只冻结语义字段、
+> 不可变/append-only/supersession 规则、依赖表示和边界区分。
 > `SRS-SEM-01` 之后才是 `SRS-VAL-01`；当前不得提前冻结 validation algorithm、
 > PIR implementation、carrier schema 或实验设计。
 >

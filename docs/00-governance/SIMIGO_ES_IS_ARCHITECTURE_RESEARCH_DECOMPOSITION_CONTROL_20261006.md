@@ -123,7 +123,7 @@ Task ID       SRS-SEM-01
 Name          Minimal Settled Relation State Semantic Boundary
 Selection     ONE smallest next closure task
 Type          design / governance clarification only
-Status        SELECTED — NOT STARTED
+Status        OPENED BY HUMAN AFTER RECOVERY CLOSURE — DESIGN V0.1 DELIVERED FOR REVIEW
 ```
 
 ### 4.1 Task statement
@@ -272,9 +272,10 @@ Its own acceptance will still require Human review.
 The active central queue is:
 
 ```text
-NOW      Human review of this decomposition/control artifact.
-NEXT     If accepted, prepare SRS-SEM-01 design only.
-THEN     Human review SRS-SEM-01.
+NOW      Human review of Recovery Anchor closure and this control artifact.
+DONE     Human authorized SRS-SEM-01 after Recovery Anchor closure.
+DELIVERED SRS-SEM-01 Design v0.1.
+NEXT     Human review SRS-SEM-01 Design v0.1.
 THEN     If accepted, prepare SRS-VAL-01 design only.
 LATER    Settlement, reuse, carrier, and experiment designs remain gated.
 ```

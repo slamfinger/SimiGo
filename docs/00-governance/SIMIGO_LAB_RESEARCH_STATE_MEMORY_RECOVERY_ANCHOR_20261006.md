@@ -4,6 +4,7 @@
 > **Recovery baseline:** GitHub `slamfinger/SimiGo-Lab@main` = `0508e26`
 > **Research-state content revision:** `bcc6b81`
 > **Metadata correction:** this commit; verify current `main` dynamically with `git rev-parse HEAD`
+> **Post-closure authorization:** Human later opened `SRS-SEM-01`; verify current state dynamically. See `SRS-SEM-01 Design v0.1`.
 > **Date:** 2026-10-06
 > **Canonical source:** GitHub `slamfinger/SimiGo-Lab@main`
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
@@ -237,7 +238,10 @@ not SRS-reuse evidence.
 The SRS semantic boundary is clarified but not finally closed.
 
 ```text
-SRS-SEM-01 = SELECTED / NOT STARTED.
+SRS-SEM-01 was originally SELECTED / NOT STARTED.
+Human later explicitly opened it after Recovery Anchor closure.
+Current design artifact:
+`docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md`.
 ```
 
 It must not be advanced without explicit Human instruction and acceptance.
@@ -301,7 +305,7 @@ do not start experiment design.
 ## 10. Immediately forbidden actions
 
 ```text
-do not continue SRS-SEM-01 without explicit Human instruction;
+do not continue SRS-SEM-01 beyond the explicitly authorized semantic-boundary design;
 do not start SRS-VAL-01;
 do not create SRS fixtures;
 do not run ES₁→IS→ES₂ experiment;
