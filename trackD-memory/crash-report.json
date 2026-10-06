@@ -1,0 +1,157 @@
+{
+  "class_counts" : {
+    "DETACHED" : 2,
+    "N\/A" : 1,
+    "PASS" : 5,
+    "REPAIR" : 1
+  },
+  "crash_model" : "process SIGKILL",
+  "G2" : "PASS",
+  "protocol" : "CCVS-01-PB v1.2 P8",
+  "results" : [
+    {
+      "final_classification" : "PASS",
+      "final_integrity" : "ISSUES",
+      "injection_point" : "F1",
+      "integrity" : "ISSUES",
+      "integrity_issues" : [
+        "orphanRepresentation: entity file d754ab9e3fab2f5adeaa140eaf7d861c7c54ffa6d4965d515ec0de5b2f7cf1e2 is not referenced by the registry"
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+        "entity file d754ab9e3fab2f5adeaa140eaf7d861c7c54ffa6d4965d515ec0de5b2f7cf1e2 is not referenced by the registry"
+      ],
+      "post_restart_observed" : "revisionRow=true representationRows=0 orphans=1",
+      "pre_crash_expected" : "A1 create order: revision row committed first, then entity durable, then representation row; F1 crash leaves revision visible + representation row absent + orphan entity file explicitly visible",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "PASS",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F2",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "crashDocIndexed=false baseDocsIndexed=20",
+      "pre_crash_expected" : "registry complete; derived index missing the new document",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "PASS",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F3",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "movedVisible=false historyCount=1",
+      "pre_crash_expected" : "open locator transaction rolls back; move invisible",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "N\/A",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F4",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : false,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "boundary does not exist in this topology",
+      "pre_crash_expected" : "N\/A: no independent archival boundary exists in Baseline A; MOVE is one SQLite transaction covering locator retirement and new locator assignment",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "PASS",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F5",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "committedRelations=4",
+      "pre_crash_expected" : "committed prefix (5 or 6 of 10) visible; batch remainder absent",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "PASS",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F6",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "sequences=[0, 1]",
+      "pre_crash_expected" : "committed ordered prefix with no gaps",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "REPAIR",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F7",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "authorityDocs=20 postRepairHits=20",
+      "pre_crash_expected" : "authority intact; partial derived index discarded\/rebuilt from registry authority",
+      "repair_action" : "re-run index rebuild from registry authority; identity coverage re-verified (diagnostic: FTS full-text content is not reconstructable from authority; searchable text provenance lives only in the derived index)"
+    },
+    {
+      "final_classification" : "DETACHED",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F8",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+        "partial backup dir without BACKUP_COMPLETE"
+      ],
+      "post_restart_observed" : "completionMarker=false",
+      "pre_crash_expected" : "partial backup exists, explicitly not adoptable (no completion marker)",
+      "repair_action" : null
+    },
+    {
+      "final_classification" : "DETACHED",
+      "final_integrity" : "CLEAN",
+      "injection_point" : "F9",
+      "integrity" : "CLEAN",
+      "integrity_issues" : [
+
+      ],
+      "killed_by_sigkill" : true,
+      "orphan_evidence" : [
+
+      ],
+      "post_restart_observed" : "completionMarker=false restoredIntegrityClean=false",
+      "pre_crash_expected" : "incomplete restore stays explicitly unavailable; completed restore must be integrity-clean",
+      "repair_action" : null
+    }
+  ]
+}

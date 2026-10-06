@@ -4,6 +4,7 @@
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
+> **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
 > **Index freshness:** `CURRENT AT PATH A INTEGRATION` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
@@ -24,12 +25,27 @@ Capsule batch base     = 14de9fd
 Information Place      = this Git research estate + registered endpoint documents
 Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
 
+Branch topology (consolidation ruling 2026-10-06, see
+docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md):
+main                                  = canonical target; sole authoritative
+                                        board AFTER the post-freeze no-ff merge
+codex/research-recovery-layer-v0.1    = CURRENT working branch (operative
+                                        current-state surface until the merge)
+integration/path-a-information-place  = ARCHIVED historical backup (strict
+                                        ancestor of the codex line; no further
+                                        commits)
+codex/execution-state-research-20260929, research/es-reuse-program-20260930
+                                      = historical lines, frozen/archived,
+                                        not part of the current PALACE mainline
+
 Machine scan at capsule batch base `14de9fd`:
 TOTAL_MARKDOWN = 2031
 DOCS_MARKDOWN  = 783
 CAPSULE_COUNT  = 15
 POST-BATCH DOCS_MARKDOWN = 798
 POST-BATCH TOTAL_MARKDOWN = 2046
+
+2026-10-06 whole-estate census: docs/RESEARCH_ESTATE_CENSUS_20261006.md
 ```
 
 Semantic authority is separate from repository position:
@@ -70,9 +86,44 @@ PICS-01                                ACCEPTED / BOUNDED PASS / CLOSED
 PICS-01 result                         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CARRIER_COMPONENT_STUDY_20261006.md
 PICS-01 closure ruling                 docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PICS01_CLOSURE_RULING_20261006.md
 CCVS-01                                PHASE A + CARRIER-NEUTRAL PRECONSTRUCTION DELIVERED
+CCVS-01                                PHASE B ACCEPTED / FROZEN (v1.2)
+CCVS-01                                PHASE C AUTHORIZED / FILE SIDE EXECUTED AND VALID / UNIFIED U-2 NOT STARTED
+CCVS-01 Phase C kickoff + A1 manifest  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEC_KICKOFF_AND_A1_MANIFEST_20261006.md
+CCVS-01 A1 CarrierSQLite adapter       IMPLEMENTED / CONFORMANCE 10/10 PASS
+CCVS-01 PV1 Baseline A                 SMALL 5/5 + MEDIUM 5/5 VALID / PV2 CLASSIFIED
+CCVS-01 PV1 bounds                     PB-B1..B14 ALL ACTIVE / MET (Q1 primary; D-A/D-B/D-C closure)
+CCVS-01 P8 crash/recovery              COMPLETE / G2 PASS (SIGKILL scope; F4=N/A; F7=REPAIR; F8/F9=DETACHED)
+CCVS-01 Unified direction              ACCEPTED BY HUMAN RULING (File + Session first-class carrier workloads)
+CCVS-01 Unified rebaseline proposal    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_REBASELINE_PROPOSAL_20261006.md
+CCVS-01 Unified direction ruling       docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UNIFIED_DIRECTION_RULING_20261006.md
+CCVS-01 Candidate B1                   SUSPENDED (registered reason; superseded by Unified scope)
+CCVS-01 U-0 session evidence           DELIVERED
+CCVS-01 U-0 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
+CCVS-01 U-1 addendum protocol v0.1     REVISED BY HUMAN RULING B = REVISE
+CCVS-01 U-1 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
+CCVS-01 U-1 revision ruling            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
+CCVS-01 U-0                            RETAINED
+CCVS-01 U-1 structural revision        DELIVERED AS v0.2 / REVIEWED REVISE
+CCVS-01 U-1 v0.2 document              docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.2_20261006.md
+CCVS-01 U-1 v0.2 conformance review    REVISE (11 precision findings, zero BLOCK) / record: docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_2_CONFORMANCE_REVIEW_20261006.md
+CCVS-01 U-1 v0.2 ruling                docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_REVIEW_RULING_AND_CCMA_MANDATE_20261006.md
+CCVS-01 U-1 v0.2 ruling                B = REVISE / direction + semantic anchoring ACCEPTED / v0.2 NOT FROZEN
+CCVS-01 UA v0.3                        DELIVERED (R-1..R-11 closed + A-1..A-3 dispositions + CC-MA MA-1..10 / I19-I25 / MA-DS-1)
+CCVS-01 UA v0.3 document               docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.3_20261006.md
+CCVS-01 UA v0.3 targeted review        NO BLOCK — RETURNED TO HUMAN FREEZE GATE
+CCVS-01 UA v0.3 targeted review doc    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_V0_3_TARGETED_CONFORMANCE_REVIEW_20261006.md
+CCVS-01 UA v0.3 freeze review          REGISTERED / FREEZE GATE OPEN WITH FIVE CONDITIONS (UA-P7 split / I20 narrowed / contract-not-algorithm / U-A rebuild completeness gate from P8 F7 / state hygiene DONE)
+CCVS-01 UA v0.3 freeze review doc      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V0_3_FREEZE_REVIEW_20261006.md
+CCVS-01 U-2 precondition               Human ACCEPT/FREEZE of UA v0.3 with the five conditions incorporated into UA v1.0, then U-2 authorization separately — first deliverable = U-A Unified Minimal composition manifest (CC-MA mechanisms as verifiable implementations, mandatory check items) — NOT a new semantic model
+CCVS-01 U-2 implementation             NOT STARTED / NOT AUTHORIZED
+CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
 CCVS-01 Phase A                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md
 CCVS-01 interface preconstruction      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_INTERFACE_PRECONSTRUCTION_20261006.md
+CCVS-01 Phase B protocol freeze        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md
+CCVS-01 Phase B revision ruling        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md
+CCVS-01 Phase B revision ruling 2      docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md
+CCVS-01 freeze + Phase C authorization docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md
 Session progress                       docs/02-evidence/es-is-20261005/SESSION_LOG_20261006.md
 Carrier-neutral interface              AUTHORIZED / DELIVERED
 Backend-specific implementation        NOT AUTHORIZED
@@ -117,6 +168,10 @@ First batch:
 ```text
 Capsule directory = docs/research-capsules/v1
 Capsules          = C01..C15
+Capsule index     = docs/research-capsules/v1/INDEX.md
+Global summary    = docs/RESEARCH_ESTATES_SUMMARY.md
+Coverage map      = docs/RESEARCH_ESTATE_COVERAGE.md
+Design inheritance = docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
 First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
                                    before L0/L1 were integrated into default entry.
@@ -129,8 +184,20 @@ Phase 2 boundary                 = not fully isolated-agent validation;
                                    raw trace not persisted;
                                    actual continuation not entered.
 Capsule expansion                = still paused.
-Next gate                        = Human review of CCVS-01 Phase A and interface preconstruction;
-                                   benchmark execution and backend selection remain NOT AUTHORIZED.
+Next gate                        = Phase C controlled validation under frozen
+                                   protocol CCVS-01-PB v1.2; final backend
+                                   selection remains the Phase E gate.
+```
+
+Unnumbered recovery aids:
+
+```text
+Global Research Estate Summary = historical orientation, not authority
+Research Estate Coverage       = layer coverage and known gaps, not authority
+Capsule INDEX                  = L1 coverage navigation, not a new capsule
+
+Do not number these aids as L4.
+The formal Information Place model remains L0-L3.
 ```
 
 ## 4. Completed chain
@@ -194,10 +261,44 @@ Current state:
   Carrier Component Study Charter is accepted / commissioned.
   PICS-01 is accepted, bounded-pass, and closed.
   CCVS-01 Phase A and carrier-neutral interface preconstruction are delivered.
+  CCVS-01 Phase B protocol freeze v1.0 was ruled REVISE (narrow protocol
+  revision). v1.1 implements ruling items R1-R7: PB-B1..B14 as frozen
+  evaluation bounds with Baseline-A protocol-validity classification;
+  end-to-end anti-complexity with a 2x non-regression line; WL6 primary with
+  WL1..WL7 mandatory diagnostics; frozen statistical protocol; amplification
+  numerator/denominator with steady-state primary; process-crash-only claim
+  boundary; layered candidate verdict with no total score.
+  v1.1 protocol constants were accepted; revision ruling 2 ordered one final
+  R4-only fix. v1.2 closes the statistical chain: per-run independent
+  percentiles, per-run observation minimums, median-of-runs candidate
+  metrics, pooled values as supplemental diagnostics only, INVALID restricted
+  to predefined protocol/environment violations (never poor performance), and
+  quiescence as three consecutive 5 s admission windows.
 
-Candidate next transition:
-  Human review of CCVS-01 Phase A D1-D8 and interface preconstruction.
-  No validation run, implementation, schema, migration, or backend selection.
+Current next transition:
+  GATE SEPARATION (do not conflate). Gate A = CLOSED: CCVS-01 Phase C
+  FILE SIDE executed and valid (A1 conformance 10/10, Baseline A SMALL
+  5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 G2 PASS, D-A/D-B/D-C) —
+  delivered evidence, inherited. Gate B = OPEN: UA v0.3 Unified Carrier
+  Contract FREEZE — targeted review NO BLOCK and the Human Freeze
+  Review registered FIVE conditions (UA-P7 split: no new semantic
+  concurrency contract ≠ compound operations exempt from MA-4
+  atomicity; I20 narrowed to unintended duplicate Carrier identity /
+  conflicting registration; unified concurrency = ONE CONTRACT, not
+  one physical algorithm; U-A rebuild completeness gate from P8 F7;
+  state hygiene done). On ACCEPT/FREEZE the five conditions are
+  incorporated into the frozen UA v1.0 text; option B = REVISE,
+  option C = PARK. Gate C = NOT STARTED: Unified U-2 — first
+  deliverable = U-A Unified Minimal composition manifest (FILE +
+  SESSION + mapping + provenance + CC-MA on the A1 base; MA-3/MA-4/
+  MA-6/MA-7/MA-9/MA-10 as verifiable mechanisms), then first Unified
+  validation answering whether the minimal SQLite + POSIX Unified
+  Carrier withstands MA-DS-1 "Multi-Agent Research Day"; NO horizontal
+  carrier-topology comparison in round one; requires its own Human
+  authorization after Gate B closes. File-side Phase C results stand as
+  delivered evidence; candidate B1 is suspended with a registered
+  reason. Final backend selection remains NOT AUTHORIZED until the
+  Phase E gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
@@ -217,7 +318,8 @@ Seam guard:
   migration, repository reorganization, probe execution, or experiment.
   CCS-C8 is a carrier ↔ SimiGo interface responsibility, not a carrier-native
   database capability.
-  CCVS-01 guard: Phase A delivered; no benchmark, backend-specific implementation, integration,
+  CCVS-01 guard: Phase B frozen (v1.2); Phase C authorized and in progress;
+  no final backend selection, migration, or Lab reorganization; mid-run protocol change forbidden.
   selection, migration, or Lab reorganization.
 
 Required before transition:
@@ -283,16 +385,21 @@ The route moved upward because:
 
 ```text
 1. This index
-2. Relevant L1 capsule(s)
+2. docs/RESEARCH_ESTATES_SUMMARY.md — historical orientation
 3. docs/RESEARCH_STATE.md — current authority
+4. Current-design inheritance only for Information Space / Carrier questions
+   docs/00-governance/EVIDENCE_INHERITANCE_DESIGN_MATRIX_20261006.md
+5. Relevant L1 capsule(s), selected through docs/research-capsules/v1/INDEX.md
+6. Coverage and estate navigation only if the selected line is unclear
+   docs/RESEARCH_ESTATE_COVERAGE.md
+7. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md
-4. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md
-5. Evidence Inheritance Reconciliation
+8. Evidence Inheritance Reconciliation
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
-6. Research Stage Synthesis
+9. Research Stage Synthesis
    docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
-7. Only then endpoint/evidence documents named by the selected question
+10. Only then endpoint/evidence documents named by the selected question
 ```
 
 ## 10. Index discipline

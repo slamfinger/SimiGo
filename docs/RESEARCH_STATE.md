@@ -239,6 +239,63 @@
 > throughput 改善，或提供 Baseline A 无法合法提供的能力，否则 Baseline A 优先。
 > Phase A 报告见
 > `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEA_DESIGN_20261006.md`。
+> CCVS-01 Phase B protocol freeze 已交付待复核：Human 于 2026-10-06 指令
+> `进行phase b`（charter §10 option A），授权进入 Phase B protocol freeze。
+> 冻结版本 = CCVS-01-PB v1.0（baseline `0a23fb0`）。冻结内容包括：SMALL/
+> MEDIUM/LARGE/STRESS 数据规模档（Phase A 数字原样冻结）；确定性合成 fixture
+> 规则（master seed 20261006、UTF-8 text-bounded、尺寸带、relation 出度、
+> session 顺序、generator hash 记录）；binding workload = WL6，在 MEDIUM cold
+> run 上判定；正确性硬门槛 = G1–G8 + I1–I13 + F1–F9（FAIL 禁止）；性能 bound
+> 集 PB-B1..B14（P95 延迟、ingest 放大倍数、rebuild/restart/integrity 上限）；
+> repetition 计数；Phase A §7 资源与安全限制原样冻结；run/crash/candidate 三层
+> result class；composition manifest 必填字段与推荐 roster（仅为代表性实例，
+> 非选择承诺）；含具体阈值的 anti-complexity rule。冻结后任何修改需显式
+> Human ruling；Phase C controlled validation 仍需后续单独授权。Phase B
+> 文档见
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_PROTOCOL_FREEZE_20261006.md`。
+> Human 随后对 v1.0 冻结裁定 **B / narrow protocol revision**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION_RULING_20261006.md`，
+> 强制项 R1–R7；不退回 Phase A、不 PARK、不加 candidate、不选 backend、不执行
+> benchmark、不改契约、不开 ES↔IS、不触碰 carrier-neutral implementation）。
+> 据此交付 **CCVS-01-PB v1.1 定向修订**：PB-B1..B14 改为 frozen evaluation
+> bounds（非硬淘汰门槛），新增 Baseline-A feasibility/protocol-validity check
+>（ACTIVE / UNCALIBRATED → PROTOCOL-VALIDITY-FLAGGED，须 Human ruling 解决）；
+> anti-complexity rule 改为端到端架构级收益 + 强制无失败条件 + 关键资源/恢复
+> 2× non-regression line（超出须书面正当化）；WL6 = primary binding workload，
+> WL1..WL7 = mandatory diagnostic/capability evidence；新增统计协议层（run
+> 定义、per-operation observation 最小值、串行 cold-run、median-of-runs 聚合、
+> P99 ≥100 样本有效性、invalid-run 预算、quiescence 检查）；amplification
+> 分子/分母冻结（含 WAL/index/temporary/duplicate/object-store overhead），区分
+> steady-state（primary）/peak/rebuild/crash-recovery 变体；crash 语义限定为
+> process-crash/SIGKILL，禁止 power-loss durability 声明；candidate 判定改为
+> Correctness/Capability/Pareto evidence/Anti-complexity 分层，无加权总分。
+> v1.1 待 Human review；Phase C 仍 NOT AUTHORIZED。
+> Human 随后接受 v1.1 全部 protocol constants（2× non-regression、500/100、
+> 10/20/100、2× invalid budget、<20% quiescence），并裁定 **B / narrow
+> revision（仅 R4 统计定义）**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_REVISION2_RULING_20261006.md`）。
+> 据此交付 **CCVS-01-PB v1.2**：percentile 在每个 valid run 内独立计算；
+> observation 最小值 per-run 而非 pooled；candidate-level = valid run-level
+> percentiles 的 median；pooled 值降级为明确标注的 supplemental diagnostic，
+> 不进入 primary 链；INVALID 仅可由预定义 protocol/environment violation 触发
+>（性能差绝不构成 invalid，封死 2× attempt budget 的 cherry-picking 漏洞）；
+> quiescence = 3 个连续 5s 窗口，仅为 run admission condition。Human 预期裁定
+> = v1.2 ACCEPT / FROZEN，且 Phase C NOT AUTHORIZED、backend NOT SELECTED、
+> benchmark NOT EXECUTED、ES↔IS higher-layer opening CLOSED。v1.2 待 Human
+> review。
+> Human 最终裁定 **A — ACCEPT / FROZEN**：CCVS-01-PB v1.2 达到冻结条件，统计链
+> 封闭（observation → per-run percentile → median-of-valid-runs → candidate
+> metric → bound/anti-complexity evaluation），performance failure ≠ INVALID、
+> pooled ≠ primary、quiescence = admission condition，不存在通过 invalid
+> budget/pooling/口径切换选择性取利的路径。治理结果：Phase B 成为可执行协议；
+> 执行开始后不得临场改 percentile/invalid/baseline/anti-complexity/ranking
+> 规则，发现协议缺陷必须先停止相关判定并走新 Human ruling。同一裁定的操作末句
+> **授权 Phase C Controlled Validation**（登记于
+> `PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_PHASEB_FREEZE_AND_PHASEC_AUTHORIZATION_RULING_20261006.md`）。
+> 持续限制：最终 backend 选择仍属 Phase E gate；migration、Lab reorganization、
+> ES↔IS opening、Frozen Contract change 均关闭。Phase C 在冻结协议下启动：
+> 首个目标 = Baseline A（embedded registry + embedded search + POSIX entity
+> store）的 PB-F6 composition manifest、adapter 实现、conformance 与受控运行。
 > Human 又授权 **Carrier-Neutral Interface Preconstruction**：可预构建
 > protocols、DTO/opaque IDs、dependency-injected composition root、memory fake、
 > conformance suite、benchmark harness 与 metrics collector；禁止任何

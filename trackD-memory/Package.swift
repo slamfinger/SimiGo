@@ -17,10 +17,14 @@ let package = Package(
     products: [
         .library(name: "InformationCore", targets: ["InformationCore"]),
         .library(name: "CarrierInterface", targets: ["CarrierInterface"]),
+        .library(name: "CarrierSQLite", targets: ["CarrierSQLite"]),
         .library(name: "CContinuationSupport", targets: ["CContinuationSupport"]),
         .library(name: "CContinuationEvaluatorCore", targets: ["CContinuationEvaluatorCore"]),
         .executable(name: "CContinuationStudy", targets: ["CContinuationStudy"]),
-        .executable(name: "CContinuationEvaluator", targets: ["CContinuationEvaluator"])
+        .executable(name: "CContinuationEvaluator", targets: ["CContinuationEvaluator"]),
+        .executable(name: "CarrierSQLiteBenchmark", targets: ["CarrierSQLiteBenchmark"]),
+        .executable(name: "CarrierSQLiteCalibration", targets: ["CarrierSQLiteCalibration"]),
+        .executable(name: "CarrierSQLiteCrash", targets: ["CarrierSQLiteCrash"])
     ],
     targets: [
         .target(
@@ -30,6 +34,26 @@ let package = Package(
         .target(
             name: "CarrierInterface",
             path: "Sources/CarrierInterface"
+        ),
+        .target(
+            name: "CarrierSQLite",
+            dependencies: ["CarrierInterface"],
+            path: "Sources/CarrierSQLite"
+        ),
+        .executableTarget(
+            name: "CarrierSQLiteBenchmark",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Sources/CarrierSQLiteBenchmark"
+        ),
+        .executableTarget(
+            name: "CarrierSQLiteCalibration",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Sources/CarrierSQLiteCalibration"
+        ),
+        .executableTarget(
+            name: "CarrierSQLiteCrash",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Sources/CarrierSQLiteCrash"
         ),
         .target(
             name: "RelationCore",
@@ -85,6 +109,11 @@ let package = Package(
             name: "CarrierInterfaceTests",
             dependencies: ["CarrierInterface"],
             path: "Tests/CarrierInterfaceTests"
+        ),
+        .testTarget(
+            name: "CarrierSQLiteTests",
+            dependencies: ["CarrierInterface", "CarrierSQLite"],
+            path: "Tests/CarrierSQLiteTests"
         ),
         .testTarget(
             name: "CContinuationTests",
