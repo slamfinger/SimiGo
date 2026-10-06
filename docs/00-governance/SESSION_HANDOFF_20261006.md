@@ -387,6 +387,14 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > separate Implementation / Fixture / Execution Authorization Request and
 > Run/Implementation Manifest; it is NOT OPENED. Implementation, fixture,
 > execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 35 (2026-10-07)：Implementation Boundary Audit v0.1 DELIVERED FOR HUMAN REVIEW.**
+> Human directed a design-only audit of the minimal authorizable implementation
+> target. Audit v0.1 proposes T-IMPL-01 SRS-VAL Decision Core: a pure
+> invocation-record predicate returning REUSE/BLOCK/RECOMPUTE plus typed evidence
+> trace. It excludes carrier, persistence, runner, observer, fixture builder,
+> model/runtime, execution harness, and IS mutation executor. It maps fixture,
+> manifest, stage-separation, mutation/runtime evidence, and adversarial
+> pre-review requirements. No code, fixture, run, or IS mutation is authorized.
 > **UPDATE 25 (2026-10-07)：SRS-VAL-01 v0.5 = REVISE；v0.6 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: I-16 now explicitly includes I-14, I-15, and the exact
 > predicate-rule binding as decision-critical inputs in one observation

@@ -203,13 +203,22 @@
 > mutation。下一合法对象是单独提交并审查 Implementation / Fixture / Execution
 > Authorization Request 和 Run/Implementation Manifest；该对象尚未开启。
 >
+> Human direction在冻结后开启 design-only **Implementation Boundary Audit v0.1**，
+> 回答“最小可授权 Implementation Target 是什么”。审计建议：
+> `T-IMPL-01 SRS-VAL Decision Core` 是唯一最小实现目标，形态为
+> invocation record → REUSE/BLOCK/RECOMPUTE + typed evidence trace；carrier、
+> persistence、runner、observer、fixture builder、model/runtime、execution
+> harness 与 IS mutation executor 都不属于最小目标。该审计不授权代码、fixture、
+> execution 或 IS mutation。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
-> SRS-VAL-01 Implementation / Fixture / Execution / Information-Space Mutation Authorization Package
-> Status = PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6 ACCEPT / FROZEN
+> SRS-VAL-01 Implementation Boundary Audit
+> Status = AUDIT V0.1 DELIVERED FOR HUMAN REVIEW
 > Frozen basis = SRS-VAL-01 Design v0.8 ACCEPT / FROZEN
-> Next stage = NOT OPENED
+> Authorization Package v0.6 = ACCEPT / FROZEN
+> Run/Implementation Manifest = NOT OPENED
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -242,7 +251,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **NONE / SRS-VAL Authorization Package v0.6 FROZEN**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Implementation Boundary Audit v0.1**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

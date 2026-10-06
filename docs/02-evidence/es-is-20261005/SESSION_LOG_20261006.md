@@ -2190,6 +2190,59 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Implementation Boundary Audit v0.1 delivered — 2026-10-07
+
+After Authorization Package v0.6 acceptance, the Human directed a design-only
+audit of the minimal authorizable SRS-VAL implementation target.
+
+Audit result:
+
+```text
+Minimal proposed Implementation Target =
+  T-IMPL-01 SRS-VAL Decision Core
+
+Shape =
+  exact validation invocation record
+    → REUSE | BLOCK | RECOMPUTE
+    + typed failure/evidence trace.
+
+Included =
+  G-V1..G-V7;
+  I-14/I-15/I-16 handling;
+  exact predicate-rule classification;
+  G-CLASS;
+  DP-0..DP-4;
+  decision paths;
+  typed output.
+
+Excluded =
+  carrier;
+  persistence;
+  runner;
+  observer;
+  fixture builder;
+  model/runtime;
+  execution harness;
+  IS mutation executor.
+```
+
+The audit also maps Fixture Target, Run/Implementation Manifest fields, stage
+separation, ordered mutation evidence, semantic/mechanical runtime evidence, and
+ten adversarial pre-review attacks.
+
+Current state:
+
+```text
+SRS-VAL-01 Design v0.8      ACCEPT / FROZEN
+Authorization Package v0.6  ACCEPT / FROZEN
+Implementation Boundary Audit v0.1 SUBMITTED FOR HUMAN REVIEW
+Run/Implementation Manifest NOT OPENED
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Authorization Package v0.6 ACCEPT / FROZEN — 2026-10-07
 
 The Human completed the final freeze-before-execution state-space attack on
