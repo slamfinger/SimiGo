@@ -414,3 +414,12 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > read-set and channel closure; ES1 termination is default, with quiescence only
 > as evidenced exception. Implementation, fixture, execution, and IS mutation
 > remain NOT AUTHORIZED.
+> **UPDATE 31 (2026-10-07)：Authorization Package v0.3 = REVISE；v0.4 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: observations require an independent, prebound, tamper-resistant,
+> coverage-complete Observation Integrity Boundary; ES2 cannot authoritatively
+> define its own observed read-set. Authorization now descends from an immutable
+> Authorization Authority Root through Human Ruling and authorized issuer to the
+> Stage Authorization Record. EXECUTION closes actual loaded runtime dependencies;
+> IS_MUTATION closes exact executor, environment, dependencies, states, and
+> effects; semantic input requires read-instance immutability. Implementation,
+> fixture, execution, and IS mutation remain NOT AUTHORIZED.
