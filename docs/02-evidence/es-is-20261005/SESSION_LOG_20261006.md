@@ -2190,6 +2190,56 @@ SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
 
+## Run/Implementation Manifest v0.6 REVISE; v0.7 disposition and mapping algebra delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.6 at `c37aebc`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+Manifest M13/M14/M15 direction      PASS
+Disposition closure algebra         REVISE
+Semantic-input/read-instance binding REVISE
+
+Run/Implementation Manifest v0.6    REVISE
+```
+
+Required v0.7 gates:
+
+```text
+M16  Use path-sensitive disposition closure:
+     required_disposition[input] == actual_disposition[input].
+     NOT_USED requires no semantic read and exact frozen justification;
+     MATERIALIZED requires the exact materialized value;
+     EXTERNAL_READ requires exactly one expected read-instance binding.
+
+M17  Bind required external semantic inputs to expected and observed read
+     instances with total, one-to-one, non-inventive, immutable mappings.
+```
+
+Manifest Contract v0.7 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.7_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.6 REVISE / SUPERSEDED BY V0.7
+Run/Implementation Manifest v0.7 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
+
 ## Run/Implementation Manifest v0.5 REVISE; v0.6 typed closure algebra delivered — 2026-10-07
 
 The Human independently reviewed Manifest Contract v0.5 at `956a5ac`.

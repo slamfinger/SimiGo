@@ -29,9 +29,9 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-VAL-01 Run/Implementation Manifest V0.6 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY
-Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.6_20261007.md
-Next dependency after SRS-VAL-01   = Human review of Manifest Contract v0.6; no stage authorized
+Current active closure task        = SRS-VAL-01 Run/Implementation Manifest V0.7 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY
+Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.7_20261007.md
+Next dependency after SRS-VAL-01   = Human review of Manifest Contract v0.7; no stage authorized
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
@@ -183,7 +183,7 @@ Settled Relation State                   NEW CANONICAL COMPOSITE / NOT IMPLEMENT
 Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMULATED STRUCTURE
 Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
 Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
-Current central review object             SRS-VAL-01 Run/Implementation Manifest v0.6
+Current central review object             SRS-VAL-01 Run/Implementation Manifest v0.7
 Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
 Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
 Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.4 DELIVERED FOR REVIEW
@@ -220,7 +220,7 @@ SRS-VAL-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE
 SRS-VAL-01 Design v0.2                       DELIVERED FOR HUMAN REVIEW
 SRS-VAL-01 v0.2 document                     docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_VAL_01_REUSE_VALIDATION_PREDICATE_DESIGN_V0.2_20261007.md
 SRS-VAL-01 v0.2 delivery record               docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.2_DELIVERY_20261007.md
-Current SRS-VAL-01 review object             Run/Implementation Manifest v0.6
+Current SRS-VAL-01 review object             Run/Implementation Manifest v0.7
 SRS-VAL-01 implementation                   NOT AUTHORIZED
 SRS-VAL-01 fixture                          NOT AUTHORIZED
 SRS-VAL-01 experiment                       NOT AUTHORIZED
@@ -412,7 +412,7 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF SRS-VAL-01 RUN/IMPLEMENTATION MANIFEST CONTRACT V0.6 ONLY.
+  HUMAN REVIEW OF SRS-VAL-01 RUN/IMPLEMENTATION MANIFEST CONTRACT V0.7 ONLY.
   SRS-SEM-01 is ACCEPT / FROZEN. Human review of SRS-VAL-01 Design v0.1 was
   REVISE, v0.2 through v0.7 were REVISE, and Design v0.8 was then reviewed
   with state-space completeness and mutual-exclusivity attack and ruled
@@ -420,13 +420,12 @@ Current next transition:
   ACCEPT / FROZEN after the final freeze-before-execution state-space attack.
   Implementation Boundary Audit v0.1 is also ACCEPT / FROZEN, fixing T-IMPL-01
   SRS-VAL Decision Core as the minimum target. The current review object is
-  design-only Run/Implementation Manifest Contract v0.6. It retains prior
-  contract/version, rule/input, and interpreter closures and replaces broad
-  semantic/read set equality with typed materialized-value and external-read
-  partitions, limits classification to decision/evidence-relevant inputs, and
-  requires independent root-backed category verification. The manifest grants no
-  authority and does not authorize implementation, fixture creation, experiment,
-  or IS mutation.
+  design-only Run/Implementation Manifest Contract v0.7. It retains prior
+  typed partitioning and bounded classification and adds path-sensitive
+  disposition closure plus explicit total one-to-one non-inventive mappings from
+  required external semantic inputs to expected and observed read instances. The
+  manifest grants no authority and does not authorize implementation, fixture
+  creation, experiment, or IS mutation.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite
