@@ -1,12 +1,14 @@
 # SRS-VAL-01 Run/Implementation Manifest Contract v0.7
 
-> **Status:** MANIFEST CONTRACT V0.7 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY / NO STAGE AUTHORIZED
+> **Status:** MANIFEST CONTRACT V0.7 REVISE — SUPERSEDED BY V0.8 — DESIGN ONLY / NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen predicate basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`, accepted at `6089f0b`
 > **Frozen implementation boundary:** Implementation Boundary Audit v0.1 at `cb95c09`
 > **Review basis:** Human REVISE ruling on Manifest Contract v0.6 at `c37aebc`
 > **Purpose:** close the remaining typed algebra with path-sensitive disposition closure and explicit semantic-input to read-instance mappings.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.7_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.8_20261007.md`.
 
 ## 1. Scope and authority
 

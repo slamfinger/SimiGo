@@ -517,3 +517,13 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > closure, exact semantic dependency equality with mechanical allowlist subset,
 > and revision-to-digest read binding. Implementation, fixture, execution, and IS
 > mutation remain NOT AUTHORIZED.
+> **UPDATE 43 (2026-10-07)：Run/Implementation Manifest v0.7 = REVISE；v0.8 DELIVERED FOR DESIGN REVIEW.**
+> Corrections: M17 mappings are phased. PRE-RUN freezes semantic input to
+> expected read instance; POST-RUN Observer freezes expected read instance to
+> observed read instance; final composition is immutable only after Observation
+> Integrity closure. M18 requires observer-authoritative realization for every
+> required disposition and exact equality between observed semantic reads and
+> required external-read realizations, with no undeclared, missing, or invented
+> semantic read. Mapped identities must resolve to complete immutable
+> read-instance records. Implementation, fixture, execution, and IS mutation
+> remain NOT AUTHORIZED.

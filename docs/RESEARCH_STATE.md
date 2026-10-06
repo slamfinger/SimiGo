@@ -60,6 +60,16 @@
 > missing provenance 不能通过 validation、bare result 不能单独授权 reuse、
 > Information Topology 能跨 independent ES 持续积累并复用。
 >
+>
+> Human independent review裁定 **Run/Implementation Manifest v0.6 = REVISE**。
+> Manifest v0.7 新增 M16/M17：不使用 raw identity-set equality，而使用
+> path-sensitive disposition closure，要求
+> `required_disposition[input] == actual_disposition[input]`；NOT_USED 必须有无
+> semantic read 和 exact frozen justification，MATERIALIZED 必须有 exact value，
+> EXTERNAL_READ 必须有 exactly one expected read instance。M17 另建
+> semantic input ↔ expected read instance ↔ observed read instance 的 total、
+> one-to-one、non-inventive、immutable mapping。
+>
 > **当前唯一 active closure task：**
 >
 > ```text
@@ -259,14 +269,14 @@
 > input，纯 NON_DECISION_METADATA 不进入 closure；category assignment 必须由
 > independent root-backed external verifier 完成并禁止循环授权。
 >
-> Human independent review裁定 **Run/Implementation Manifest v0.6 = REVISE**。
-> Manifest v0.7 新增 M16/M17：不使用 raw identity-set equality，而使用
-> path-sensitive disposition closure，要求
-> `required_disposition[input] == actual_disposition[input]`；NOT_USED 必须有无
-> semantic read 和 exact frozen justification，MATERIALIZED 必须有 exact value，
-> EXTERNAL_READ 必须有 exactly one expected read instance。M17 另建
-> semantic input ↔ expected read instance ↔ observed read instance 的 total、
-> one-to-one、non-inventive、immutable mapping。
+> Human independent review裁定 **Run/Implementation Manifest v0.7 = REVISE**。
+> Manifest v0.8 补上最后一层：PRE-RUN 只冻结 semantic input ↔ expected read
+> instance；POST-RUN 由 authorized Observer 冻结 expected read instance ↔ observed
+> read instance；最终 composition 只能在 observation closure 后 immutable。
+> M18 还要求每个 required disposition 有 observer-authoritative realization，并
+> 证明 observed semantic read set == required external-read realization set，禁止
+> undeclared / missing / invented semantic read。所有 mapped identities 必须解析到
+> complete immutable read-instance record。
 >
 > **当前唯一 active closure task：**
 >
@@ -281,7 +291,8 @@
 > Manifest Contract v0.4 = REVISE / SUPERSEDED BY V0.5
 > Manifest Contract v0.5 = REVISE / SUPERSEDED BY V0.6
 > Manifest Contract v0.6 = REVISE / SUPERSEDED BY V0.7
-> Current object = Run/Implementation Manifest v0.7 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8
+> Current object = Run/Implementation Manifest v0.8 DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -314,7 +325,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.7**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v0.8**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

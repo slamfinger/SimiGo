@@ -3679,3 +3679,59 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## Run/Implementation Manifest v0.7 REVISE; v0.8 realization and phased mappings delivered — 2026-10-07
+
+The Human independently reviewed Manifest Contract v0.7 at `407e003`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+M16 typed disposition design         PASS
+M17 identity/type separation         PASS
+M17 totality/one-to-one intent       PASS
+M17 temporal closure                 REVISE
+Observed disposition closure         REVISE
+Read-instance evidence binding       REVISE
+
+Run/Implementation Manifest v0.7     REVISE
+```
+
+Required v0.8 gates:
+
+```text
+M17  PRE-RUN freezes semantic input ↔ expected read instance.
+     POST-RUN Observer freezes expected read instance ↔ observed read instance.
+     Final composition is immutable only after observation closure.
+
+M18  Every required disposition must have observer-authoritative realization.
+     Observed semantic reads must equal required external-read realizations with
+     no undeclared, missing, or invented semantic read.
+
+M18  Mapped identities must resolve to complete immutable read-instance records
+     containing digest, channel, access mode, boundary, snapshot/atomicity,
+     observer authority, and consumed-content evidence.
+```
+
+Manifest Contract v0.8 was delivered:
+
+```text
+docs/02-evidence/es-is-20261005/
+  PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V0.8_20261007.md
+```
+
+Current state:
+
+```text
+Run/Implementation Manifest v0.7 REVISE / SUPERSEDED BY V0.8
+Run/Implementation Manifest v0.8 SUBMITTED FOR HUMAN REVIEW
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
