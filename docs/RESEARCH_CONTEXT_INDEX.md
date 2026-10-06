@@ -274,23 +274,24 @@ Current next transition:
   GATE SEPARATION (do not conflate). Gate A = CLOSED: CCVS-01 Phase C
   FILE SIDE executed and valid (A1 conformance 10/10, Baseline A SMALL
   5/5 + MEDIUM 5/5 VALID, PB-B1..B14 MET, P8 G2 PASS, D-A/D-B/D-C) —
-  delivered evidence, inherited. Gate B = OPEN: UA v0.3 Unified Carrier
-  Contract FREEZE — targeted review NO BLOCK and the Human Freeze
-  Review registered FIVE conditions (UA-P7 split: no new semantic
+  delivered evidence, inherited. Gate B = CLOSED: UA v0.3 Unified
+  Carrier Contract ruled ACCEPT / FREEZE (targeted review NO BLOCK);
+  the five Human Freeze Review conditions (UA-P7 split: no new semantic
   concurrency contract ≠ compound operations exempt from MA-4
   atomicity; I20 narrowed to unintended duplicate Carrier identity /
   conflicting registration; unified concurrency = ONE CONTRACT, not
   one physical algorithm; U-A rebuild completeness gate from P8 F7;
-  state hygiene done). On ACCEPT/FREEZE the five conditions are
-  incorporated into the frozen UA v1.0 text; option B = REVISE,
-  option C = PARK. Gate C = NOT STARTED: Unified U-2 — first
+  state hygiene standing) are incorporated into the frozen UA v1.0
+  text. UA v1.0 = FROZEN. Ruling =
+  PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_V1_0_FREEZE_RULING_20261006.md.
+  Gate C = NOT STARTED: Unified U-2 — first
   deliverable = U-A Unified Minimal composition manifest (FILE +
   SESSION + mapping + provenance + CC-MA on the A1 base; MA-3/MA-4/
   MA-6/MA-7/MA-9/MA-10 as verifiable mechanisms), then first Unified
   validation answering whether the minimal SQLite + POSIX Unified
   Carrier withstands MA-DS-1 "Multi-Agent Research Day"; NO horizontal
-  carrier-topology comparison in round one; requires its own Human
-  authorization after Gate B closes. File-side Phase C results stand as
+  carrier-topology comparison in round one; requires its own separate
+  Human authorization. File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered
   reason. Final backend selection remains NOT AUTHORIZED until the
   Phase E gate.
@@ -426,4 +427,4 @@ Important boundary:
 historical ES-reuse artifacts remain historical evidence only. They are not
 restored into the current PALACE mainline file tree.
 
-UA v0.3 Freeze Gate remains OPEN; U-2 remains NOT AUTHORIZED.
+UA v1.0 is FROZEN by Gate B ACCEPT / FREEZE; U-2 remains NOT AUTHORIZED.
