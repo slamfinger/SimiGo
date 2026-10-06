@@ -1,10 +1,12 @@
 # Minimal PIR Probe — v0.1 Design
 
-> **Status:** DESIGN V0.1 DELIVERED FOR HUMAN REVIEW — IMPLEMENTATION / EXPERIMENT / FIXTURE NOT AUTHORIZED
+> **Status:** DESIGN V0.1 CONDITIONAL PASS — SUPERSEDED BY V0.2 — IMPLEMENTATION / EXPERIMENT / FIXTURE NOT AUTHORIZED
 > **Date:** 2026-10-06
 > **Commissioned by:** PIR Design v0.2 + Clarification Addendum acceptance
 > **Accepted design basis:** PIR Design v0.2 + Clarification Addendum at `c50978a`
 > **Core question:** with large Information Space and small effective Query Scope, can SimiGo complete scope-bound reconciliation and form a Fresh Closure within `W_latency` without paying whole-Information-Space cost?
+> **Review ruling:** CONDITIONAL PASS; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_REVIEW_RULING_20261006.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.2_20261006.md`.
 
 ## 1. Commission boundary
 

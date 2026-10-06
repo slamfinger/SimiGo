@@ -151,6 +151,16 @@
 > verdicts、Fresh Closure、failure taxonomy 与 PASS/INDETERMINATE 条件。
 > PIR implementation / experiment / fixture creation / SimiGo code change 均
 > NOT AUTHORIZED。
+>
+> Human independent review裁定 **Minimal PIR Probe v0.1 = CONDITIONAL PASS**，
+> 并要求四项方法学修订：`W_age` 改为 `W_obs_age`（observable observation-age，
+> 不是 physical-change age）；physical boundedness 拆成 non-circular
+> Scope membership + no-global-expansion；E-L/E-S scaling attribution 按 phase
+> 预注册；MOVE/RENAME 必须锁死 declared candidate pool + deterministic
+> identity-correlation + ambiguity policy。Run Manifest 还须区分
+> `physical_observations` 与 `physical_changes`。
+>
+> **Minimal PIR Probe Design v0.2 = DELIVERED FOR HUMAN REVIEW。**
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

@@ -1795,3 +1795,85 @@ PIR experiment                   NOT AUTHORIZED
 Fixture creation                 NOT AUTHORIZED
 SimiGo code change               NOT AUTHORIZED
 ```
+
+## Minimal PIR Probe v0.1 conditional pass; v0.2 delivered — 2026-10-06
+
+The Human independently reviewed Minimal PIR Probe Design v0.1 at `c029b89`.
+
+Ruling:
+
+```text
+Minimal PIR Probe Design v0.1     CONDITIONAL PASS
+Research question                 PASS
+Paired E-L / E-S                  PASS
+Scope / reconciliation split      PASS
+Oracle isolation                  PASS
+ICAC vector                       PASS
+Change pattern                    PASS
+CREATE deferral                   PASS
+Negative controls                 PASS
+Move / rename protocol            NEEDS REVISION
+Scaling attribution               NEEDS REVISION
+Physical-check boundedness        NEEDS REVISION
+W_age semantics                   NEEDS REVISION
+```
+
+Formal ruling:
+
+```text
+docs/00-governance/
+  PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_REVIEW_RULING_20261006.md
+```
+
+The Human confirmed that CREATE should remain deferred and `C-NOCHANGE` should
+remain. Future Run Manifest must distinguish physical observations from
+physical changes.
+
+Four required revisions were:
+
+```text
+MR-1  W_age → W_obs_age:
+      current reconciliation time - previous lawful physical observation time.
+      This is observable observation staleness, not physical-world change age.
+
+MR-2  Physical boundedness must be non-circular:
+      physical_check_targets ⊆ declared Physical Scope;
+      unrelated_physical_touches = 0;
+      P is actually materialized by declared Physical Scope, not merely derived
+      from R.
+
+MR-3  E-L/E-S scaling attribution must be pre-registered by phase:
+      N-dependent growth may belong to Scope Resolution / Index / declared
+      structural overhead, never to whole-N Physical Reconciliation.
+
+MR-4  MOVE / RENAME discovery must be locked by a declared candidate pool,
+      allowed file class, deterministic identity-correlation rule, bounded
+      directory scope, maximum candidate count, ambiguity policy, and evidence
+      requirements. No semantic fallback.
+```
+
+Minimal PIR Probe Design v0.2 was delivered with these revisions and updated
+PASS/Evidence rules:
+
+```text
+PC-9A  declared Physical Scope membership
+PC-9B  unrelated_physical_touches = 0
+PC-9C  separate P_materialized / targets / observations / changes
+PC-13A phase-separated scaling attribution
+PC-13B Physical Reconciliation bounded by P_materialized + allowance
+PC-13C no whole-N scan growth
+FT-P14 N-dependent Physical Reconciliation expansion
+EV-P16 MOVE/RENAME protocol
+EV-P17 P / check-target provenance
+EV-P18 observations versus changes
+```
+
+Current state:
+
+```text
+Minimal PIR Probe Design v0.1    CONDITIONAL PASS / SUPERSEDED BY V0.2
+Minimal PIR Probe Design v0.2    SUBMITTED FOR HUMAN REVIEW
+PIR Fixture                      NOT AUTHORIZED
+PIR Implementation               NOT AUTHORIZED
+PIR Experiment                   NOT AUTHORIZED
+```

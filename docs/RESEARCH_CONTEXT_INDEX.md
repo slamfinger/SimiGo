@@ -157,6 +157,11 @@ PIR v0.2 clarification addendum           docs/02-evidence/es-is-20261005/PALACE
 PIR v0.2 acceptance / probe commission     docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_ACCEPTANCE_AND_MINIMAL_PROBE_COMMISSION_20261006.md
 PIR current design object                  Minimal PIR Probe Design v0.1 — DELIVERED FOR HUMAN REVIEW
 Minimal PIR Probe Design document          docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_20261006.md
+Minimal PIR Probe v0.1 review ruling       CONDITIONAL PASS — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_REVIEW_RULING_20261006.md
+Minimal PIR Probe v0.1 required revisions  W_obs_age semantics; non-circular physical boundedness; phase scaling attribution; MOVE/RENAME protocol
+Minimal PIR Probe Design v0.2              DELIVERED FOR HUMAN REVIEW
+Minimal PIR Probe Design v0.2 document     docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.2_20261006.md
+Current Minimal PIR Probe review object    Minimal PIR Probe Design v0.2
 Minimal PIR Probe implementation           NOT AUTHORIZED
 Minimal PIR Probe experiment               NOT AUTHORIZED
 Minimal PIR Probe fixture creation         NOT AUTHORIZED
@@ -351,12 +356,14 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN REVIEW OF MINIMAL PIR PROBE DESIGN V0.1 ONLY. PIR Design v0.2 and its
+  HUMAN REVIEW OF MINIMAL PIR PROBE DESIGN V0.2 ONLY. PIR Design v0.2 and its
   Clarification Addendum are ACCEPTED. R01 remains CLOSED / ACCEPTED with
-  bounded verdict PASS — CONTINUATION SUFFICIENT. The commissioned probe design
-  is documentation-only and is bounded to paired scale controls, separate scope
-  and reconciliation measurements, oracle isolation, observable W_age, explicit
-  W_latency, ICAC vectors, typed physical verdicts, and Fresh Closure criteria.
+  bounded verdict PASS — CONTINUATION SUFFICIENT. The current probe-design
+  review object is v0.2, which revises observable observation-age semantics,
+  non-circular scope boundedness, phase scaling attribution, MOVE/RENAME
+  discovery, and observations-versus-changes accounting. Approval would not
+  authorize implementation, fixture creation, or execution.
+  Do not open
   Approval would not authorize implementation, fixture creation, or execution.
   Do not open
   U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection, carrier
