@@ -1183,3 +1183,81 @@ realism diagnostics, U-5 U-B, U-6 U-C, Phase D ranking, Phase E backend
 selection, carrier migration, MemPalace integration, or any Frozen
 Contract / UA v1.0 modification. The next legal action is a separate
 stage-transition review to select the post-CCVS-01 research question.
+
+## Post-CCVS-01 stage transition and Probe v0.2 acceptance — 2026-10-06
+
+The Human accepted the post-CCVS-01 stage transition and then independently
+reviewed Probe v0.1, Probe v0.2, and the U-A Manifest v1.1 boundary.
+
+Current research status:
+
+```text
+Stage Transition                       ACCEPTED
+Probe v0.1                             ACCEPT IN PRINCIPLE
+Probe v0.2                             ACCEPTED
+Probe Representation Contract          ACCEPTED
+Experiment                             NOT AUTHORIZED
+Execution Authorization                NOT YET REQUESTED
+```
+
+Design basis:
+
+```text
+accepted design       Probe v0.2 at 9b9da6c
+v0.1 input            PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_DESIGN_V0.1_20261006.md
+v0.2 design           PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_DESIGN_V0.2_20261006.md
+formal ruling         docs/00-governance/
+                      PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_V0_2_ACCEPTANCE_RULING_20261006.md
+```
+
+The Human confirmed that v0.2 separates:
+
+```text
+L-C  carrier capability absence
+L-R  probe representation / harness failure
+L-S  continuation sufficiency failure
+```
+
+`L-C` is a current accepted-surface capability finding. It must not be
+reported as research-level continuation insufficiency; only `L-S` may carry
+that meaning.
+
+The accepted gate order is:
+
+```text
+G-R Representation Gate
+G-C Capability Gate
+  → C1 Reconstruction
+  → C2 Continuation Determination
+```
+
+If `G-R` or `G-C` fails, C1/C2 must not be evaluated as continuation failure.
+The continuation-pointer path is restricted to `NEXT_ACTION` + CC-5 mapping +
+Information + existing Information-to-Information Relation semantics when
+needed. No `ContinuationPointer` primitive, store, engine, new CarrierRecord
+kind, new RelationCore semantics, or Agent semantic entity is authorized.
+
+N-A and N-B are mandatory pre-registered negative controls:
+
+```text
+N-A  required reference unresolved / ambiguous → BLOCK_INSUFFICIENT
+N-B  continuation boundary ambiguous → BLOCK_INSUFFICIENT
+```
+
+`C1 + C2` remains the only necessary success surface. `C3 Action Execution`
+is observation only and never contributes to PASS.
+
+Design governance result:
+
+```text
+Probe v0.2         ACCEPTED / DESIGN FROZEN
+Probe v0.3         NOT WARRANTED
+Further revision   NOT REQUIRED
+Experiment         NOT AUTHORIZED
+```
+
+The next review object is a separate Experiment Authorization Package / Run
+Manifest. It must show before execution that: positive E0 uses only existing
+UA/U-A primitives; G-R/G-C are mechanically decidable before C1/C2; N-A/N-B
+are pre-registered fixture variants; and I-1/I-2 do not secretly retest
+CCVS-01. Preparing or submitting that package does not authorize execution.

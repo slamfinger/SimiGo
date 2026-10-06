@@ -1,8 +1,9 @@
 # ES Continuation Sufficiency Probe — v0.2 Design
 
-> **Status:** DESIGN V0.2 DELIVERED FOR FINAL HUMAN DESIGN REVIEW — EXPERIMENT NOT AUTHORIZED
+> **Status:** DESIGN V0.2 ACCEPTED / FROZEN — EXPERIMENT NOT AUTHORIZED; EXECUTION AUTHORIZATION NOT YET REQUESTED
 > **Date:** 2026-10-06
-> **Human ruling reflected here:** Probe v0.1 ACCEPT IN PRINCIPLE; v0.2 REQUIRED; experiment remains NOT AUTHORIZED.
+> **Human ruling reflected here:** Probe v0.1 ACCEPT IN PRINCIPLE; v0.2 ACCEPTED / FROZEN; no v0.3 required; experiment remains NOT AUTHORIZED.
+> **Acceptance ruling:** `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_V0_2_ACCEPTANCE_RULING_20261006.md`
 > **Version input:** `PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_DESIGN_V0.1_20261006.md` at `59d71f2`
 > **Revision purpose:** representation / decidability clarification only
 > **Frozen boundary:** no U-A code, U-A Manifest, UA v1.0, PB v1.2, InformationCore, RelationCore, or Frozen Contract change

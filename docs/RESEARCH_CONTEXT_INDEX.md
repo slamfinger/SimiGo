@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — CCVS-01 GATE C CLOSED (2026-10-06)` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT MAIN — POST-CCVS-01 STAGE TRANSITION ACCEPTED; PROBE V0.2 DESIGN FROZEN (2026-10-06)` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -120,6 +120,16 @@ CCVS-01 U-A MA-DS-1 evidence            docs/02-evidence/es-is-20261005/PALACE_I
 CCVS-01 U-A implementation findings     UA-IF-1..UA-IF-4 + UA-IF-3b/3c (legacy destructive-op ownership, Human-ACCEPTED) + round-4 MA-7 entity-layer zero-effect boundary (admission-before-external-effect; crash-only orphan window) — manifest-driven, zero protocol change
 CCVS-01 U-A round-4 flag               U-A manifest §4.2 mechanism wording temporarily stale (v1.2 documentation-reconciliation item; layered MA-4 record: guarantee unchanged / orphan crash-only / rejection semantics strengthened / write ordering changed) — v1.2 NOT to be forced for Gate C
 CCVS-01 Gate C closure package         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_PACKAGE_20261006.md — acceptance evidence + research results R1-R5 + acceptance conditions AC-1..4 + run ledger + closure-meaning boundaries; §8 remains advisory; final ruling = Gate C CLOSED / ACCEPT
+Post-CCVS-01 stage transition           ACCEPTED
+ES Continuation Sufficiency Probe v0.1  ACCEPT IN PRINCIPLE
+ES Continuation Sufficiency Probe v0.2  ACCEPTED / DESIGN FROZEN (basis 9b9da6c)
+Probe Representation Contract           ACCEPTED
+Probe v0.2 document                     docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_DESIGN_V0.2_20261006.md
+Probe v0.2 acceptance ruling            docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_V0_2_ACCEPTANCE_RULING_20261006.md
+Experiment                              NOT AUTHORIZED
+Execution authorization                 NOT YET REQUESTED
+Further design revision                 NOT REQUIRED
+Probe v0.3                              NOT WARRANTED
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
@@ -307,11 +317,15 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  STAGE-TRANSITION REVIEW ONLY. Do not open U-3, U-4, U-5, U-6, Phase D
-  ranking, Phase E backend selection, carrier migration, MemPalace
-  integration, or any Frozen Contract / UA v1.0 modification. The closure
-  records CCVS-01 correctness only; it does not select or open the next
-  research phase.
+  EXPERIMENT AUTHORIZATION PACKAGE / RUN MANIFEST REVIEW ONLY. Post-CCVS-01
+  Stage Transition is ACCEPTED; Probe v0.2 and its Representation Contract
+  are ACCEPTED / FROZEN. The next review object must mechanically establish:
+  (1) positive E0 uses only existing UA/U-A primitives, (2) G-R/G-C are
+  decidable before C1/C2, (3) N-A/N-B are pre-registered fixture variants,
+  and (4) I-1/I-2 do not retest CCVS-01. Preparing or submitting that package
+  does not authorize implementation or execution. Do not open U-3, U-4, U-5,
+  U-6, Phase D ranking, Phase E backend selection, carrier migration,
+  MemPalace integration, or any Frozen Contract / UA v1.0 modification.
   File-side Phase C results stand as
   delivered evidence; candidate B1 is suspended with a registered
   reason. Final backend selection remains NOT AUTHORIZED until the

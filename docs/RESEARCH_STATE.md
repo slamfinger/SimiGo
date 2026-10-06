@@ -34,7 +34,26 @@
 > U-3 calibration/performance、U-4 realism、U-5 U-B、U-6 U-C、
 > Phase D ranking、Phase E backend selection、carrier migration、
 > MemPalace integration、Frozen Contract / UA v1.0 修改均仍
-> NOT AUTHORIZED。当前合法下一跳只是独立的 **stage-transition review**。
+> NOT AUTHORIZED。
+>
+> **Post-CCVS-01 Stage Transition = ACCEPTED。**
+> ES Continuation Sufficiency Probe v0.1 = ACCEPT IN PRINCIPLE；
+> Probe v0.2 = **ACCEPTED / DESIGN FROZEN**；Probe Representation Contract =
+> ACCEPTED。正式裁定登记于
+> `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_V0_2_ACCEPTANCE_RULING_20261006.md`。
+> 设计基础 = Probe v0.2 at `9b9da6c`。
+>
+> 当前边界：
+>
+> ```text
+> Experiment                 NOT AUTHORIZED
+> Execution Authorization    NOT YET REQUESTED
+> Further design revision    NOT REQUIRED
+> Probe v0.3                 NOT WARRANTED
+> ```
+>
+> 下一跳是单独的 **Experiment Authorization Package / Run Manifest**
+> 文档审查对象；本裁定本身不授权实现、fixture 执行或任何实验。
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 
