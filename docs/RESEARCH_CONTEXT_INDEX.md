@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT PATH A INTEGRATION` — always re-verify against current `RESEARCH_STATE.md`.
+> **Index freshness:** `CURRENT AT MAIN AFTER CONSOLIDATION` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -27,10 +27,10 @@ Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
 
 Branch topology (consolidation ruling 2026-10-06, see
 docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md):
-main                                  = canonical target; sole authoritative
-                                        board AFTER the post-freeze no-ff merge
-codex/research-recovery-layer-v0.1    = CURRENT working branch (operative
-                                        current-state surface until the merge)
+main                                  = SOLE CANONICAL Research State
+                                        (no-ff consolidation complete @ 7f7e049)
+codex/research-recovery-layer-v0.1    = MERGED SOURCE BRANCH; no longer
+                                        operative current-state surface
 integration/path-a-information-place  = ARCHIVED historical backup (strict
                                         ancestor of the codex line; no further
                                         commits)
