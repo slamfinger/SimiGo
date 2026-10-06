@@ -54,6 +54,19 @@
 >
 > 下一跳是单独的 **Experiment Authorization Package / Run Manifest**
 > 文档审查对象；本裁定本身不授权实现、fixture 执行或任何实验。
+>
+> **Experiment Authorization Package / Run Manifest R01 = SUBMITTED FOR HUMAN REVIEW。**
+> Candidate run label = `ES-CSP-RUN-01`；package baseline = `39c1031`。
+> 该包只做 representation / G-R/G-C / positive + N-A/N-B / I-1/I-2 /
+> EV-R1..EV-R7 的可审计预登记，不授权 fixture 准备、数据库创建或执行。
+> 当前：
+>
+> ```text
+> Experiment                 NOT AUTHORIZED
+> Execution Authorization    NOT REQUESTED
+> Fixture preparation        NOT STARTED
+> Probe run                  NOT STARTED
+> ```
 
 ## Current total status — 2026-10-05 (supplements 2026-10-04 below)
 

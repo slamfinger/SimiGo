@@ -130,6 +130,10 @@ Experiment                              NOT AUTHORIZED
 Execution authorization                 NOT YET REQUESTED
 Further design revision                 NOT REQUIRED
 Probe v0.3                              NOT WARRANTED
+Experiment authorization package         SUBMITTED FOR HUMAN REVIEW (R01; package only, not authorization)
+Experiment authorization document        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md
+Candidate run                           ES-CSP-RUN-01 / NOT AUTHORIZED
+Fixture preparation                      NOT STARTED
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
 CCVS-01 U-A mechanisms                  DELIVERED — carriers/ledger/mapping/client-ref/index-builds schema; CAS revise; compound entity-then-transaction; carrier-side session allocation; snapshot read-version; index staleness + rebuild; UA-C1/C2/C3 crash gates; zero Frozen Contract change
 CCVS-01 Unified benchmark               NOT AUTHORIZED (round one = MA-DS-1 correctness scenario only; PB-U* calibration = U-3)
@@ -317,7 +321,7 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  EXPERIMENT AUTHORIZATION PACKAGE / RUN MANIFEST REVIEW ONLY. Post-CCVS-01
+  HUMAN REVIEW OF SUBMITTED EXPERIMENT AUTHORIZATION PACKAGE R01 ONLY. Post-CCVS-01
   Stage Transition is ACCEPTED; Probe v0.2 and its Representation Contract
   are ACCEPTED / FROZEN. The next review object must mechanically establish:
   (1) positive E0 uses only existing UA/U-A primitives, (2) G-R/G-C are

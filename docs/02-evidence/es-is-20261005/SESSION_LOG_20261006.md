@@ -1261,3 +1261,72 @@ Manifest. It must show before execution that: positive E0 uses only existing
 UA/U-A primitives; G-R/G-C are mechanically decidable before C1/C2; N-A/N-B
 are pre-registered fixture variants; and I-1/I-2 do not secretly retest
 CCVS-01. Preparing or submitting that package does not authorize execution.
+
+## Experiment Authorization Package / Run Manifest R01 submitted — 2026-10-06
+
+At frozen governance baseline `39c1031`, the local agent submitted a
+documentation-only authorization package for Human review:
+
+```text
+package       Experiment Authorization Package / Run Manifest R01
+run label     ES-CSP-RUN-01
+status        SUBMITTED FOR HUMAN REVIEW — NOT AUTHORIZED
+document      docs/02-evidence/es-is-20261005/
+              PALACE_INFORMATION_SPACE_FOUNDATION_ES_CONTINUATION_SUFFICIENCY_PROBE_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_R01_20261006.md
+```
+
+The package does not create a fixture directory, database, fixture artifact, or
+run result. It does not request execution by submission alone.
+
+Pre-registered review structure:
+
+```text
+S0  Human reviews this package.
+S1  If separately approved, prepare independent P-POS / N-A / N-B fixture
+    manifests and checksums.
+S2  Human reviews the completed fixture manifests.
+S3  Only explicit Human run authorization starts ES-CSP-RUN-01.
+S4  Human reviews evidence and L-C/L-R/L-S attribution.
+```
+
+Representation choices:
+
+```text
+objective             RAW + CC-5 mapping
+input reference       EVIDENCE_LINK + CC-5 mapping
+decision/work record  JUDGMENT + CC-5 mapping
+artifact reference    RESULT + CC-5 mapping
+boundary state        RESULT + CC-5 mapping
+continuation pointer  NEXT_ACTION + CC-5 mapping
+```
+
+No `CarrierRelation` is used. No Task/Objective/Artifact/BoundaryState/
+ContinuationPointer semantic entity, new CarrierRecord kind, new RelationCore
+rule, relation engine, Super Store, embedding, MCP, remote API, or backend is
+introduced.
+
+The package fixes:
+
+```text
+positive slots      O1, I1, D1, A1, B1, P1
+positive pointer    P1 → B1; expected C2 = CONTINUE_CERTAIN
+N-A                 independently defined unresolved-reference deficiency
+N-B                 independently defined ambiguous-boundary deficiency
+negative result     BLOCK_INSUFFICIENT
+success surface     C1 + C2 only
+C3                  OBSERVATION ONLY
+```
+
+Opaque runtime identities, revisions, locators, and checksums are deliberately
+marked `MINTED/RECORDED AT FIXTURE PREPARATION`; none is invented in this
+package.
+
+Current state:
+
+```text
+Experiment                 NOT AUTHORIZED
+Execution Authorization    NOT REQUESTED
+Fixture preparation        NOT STARTED
+Database creation          NOT STARTED
+Probe run                  NOT STARTED
+```
