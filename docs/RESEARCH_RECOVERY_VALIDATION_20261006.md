@@ -163,3 +163,20 @@ Unknown preservation        = PASS
 Full final acceptance       = PENDING fully isolated fresh-agent run
 Next recovery improvement   = only under a separately authorized rule
 ```
+
+## 6. Post-validation current-state update
+
+After the recovery walk, an authoritative U-1 revision ruling appeared in the
+working tree. It is preserved unchanged. Its effect on navigation is:
+
+```text
+U-1 v0.1 verdict       = B / REVISE
+U-0                    = RETAINED
+Direction              = Unified File + Session confirmed
+Required next          = narrow Canonical Logical Model revision
+Before U-2             = revised model must pass Human review
+MemPalace/PB v1.2      = not reopened / unchanged
+```
+
+Source:
+`docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md`.

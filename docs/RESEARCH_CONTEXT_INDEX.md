@@ -86,8 +86,12 @@ CCVS-01 Unified direction ruling       docs/02-evidence/es-is-20261005/PALACE_IN
 CCVS-01 Candidate B1                   SUSPENDED (registered reason; superseded by Unified scope)
 CCVS-01 U-0 session evidence           DELIVERED
 CCVS-01 U-0 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U0_SESSION_EVIDENCE_CONSOLIDATION_20261006.md
-CCVS-01 U-1 addendum protocol          PROPOSED / AWAITING HUMAN REVIEW
+CCVS-01 U-1 addendum protocol v0.1     REVISED BY HUMAN RULING B = REVISE
 CCVS-01 U-1 document                   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_UNIFIED_ADDENDUM_PROTOCOL_V0.1_20261006.md
+CCVS-01 U-1 revision ruling            docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_U1_REVISION_RULING_20261006.md
+CCVS-01 U-0                            RETAINED
+CCVS-01 U-1 structural revision        REQUIRED / PENDING DELIVERY
+CCVS-01 Canonical Logical Model gate   REQUIRED BEFORE U-2
 CCVS-01 U-2 implementation             NOT AUTHORIZED
 CCVS-01 Unified benchmark              NOT AUTHORIZED
 CCVS-01 charter                        docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CARRIER_CANDIDATE_PERFORMANCE_VALIDATION_CHARTER_20261006.md
@@ -247,14 +251,14 @@ Current state:
   to predefined protocol/environment violations (never poor performance), and
   quiescence as three consecutive 5 s admission windows.
 
-Candidate next transition:
-  Human review of the U-1 Unified Addendum Protocol v0.1 (Unified File +
-  Session scope accepted by ruling): ACCEPT/FREEZE, REVISE, or PARK.
-  U-2 implementation and Unified benchmark execution remain NOT AUTHORIZED
-  until separately ruled. File-side Phase C results (Baseline A + P8) stand
-  as delivered evidence; candidate B1 is suspended with a registered
-  reason. Final backend selection remains NOT AUTHORIZED until the Phase E
-  gate.
+Current next transition:
+  Deliver the narrow U-1 structural revision defined by Human ruling
+  B = REVISE, then submit the resulting Canonical Logical Model for Human
+  review. U-0 is retained. U-2 implementation and Unified benchmark
+  execution remain NOT AUTHORIZED. File-side Phase C results (Baseline A +
+  P8) stand as delivered evidence; candidate B1 is suspended with a
+  registered reason. Final backend selection remains NOT AUTHORIZED until
+  the Phase E gate.
 
 Previously identified transition:
   Human ruling / commission to open Higher-Layer Continuation Graph Semantics.
