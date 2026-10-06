@@ -4,6 +4,7 @@
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
+> **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
 > **Index freshness:** `CURRENT AT PATH A INTEGRATION` — always re-verify against current `RESEARCH_STATE.md`.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
@@ -30,6 +31,8 @@ DOCS_MARKDOWN  = 783
 CAPSULE_COUNT  = 15
 POST-BATCH DOCS_MARKDOWN = 798
 POST-BATCH TOTAL_MARKDOWN = 2046
+
+2026-10-06 whole-estate census: docs/RESEARCH_ESTATE_CENSUS_20261006.md
 ```
 
 Semantic authority is separate from repository position:
@@ -138,6 +141,9 @@ First batch:
 ```text
 Capsule directory = docs/research-capsules/v1
 Capsules          = C01..C15
+Capsule index     = docs/research-capsules/v1/INDEX.md
+Global summary    = docs/RESEARCH_ESTATES_SUMMARY.md
+Coverage map      = docs/RESEARCH_ESTATE_COVERAGE.md
 First fresh-Agent recovery test = NOT VALIDATED / WRONG ENTRY SURFACE
 Reason                           = Agent entered default main @6c3cf6a;
                                    before L0/L1 were integrated into default entry.
@@ -153,6 +159,17 @@ Capsule expansion                = still paused.
 Next gate                        = Phase C controlled validation under frozen
                                    protocol CCVS-01-PB v1.2; final backend
                                    selection remains the Phase E gate.
+```
+
+Unnumbered recovery aids:
+
+```text
+Global Research Estate Summary = historical orientation, not authority
+Research Estate Coverage       = layer coverage and known gaps, not authority
+Capsule INDEX                  = L1 coverage navigation, not a new capsule
+
+Do not number these aids as L4.
+The formal Information Place model remains L0-L3.
 ```
 
 ## 4. Completed chain
@@ -324,16 +341,19 @@ The route moved upward because:
 
 ```text
 1. This index
-2. Relevant L1 capsule(s)
+2. docs/RESEARCH_ESTATES_SUMMARY.md — historical orientation
 3. docs/RESEARCH_STATE.md — current authority
+4. Relevant L1 capsule(s), selected through docs/research-capsules/v1/INDEX.md
+5. Coverage and estate navigation only if the selected line is unclear
+   docs/RESEARCH_ESTATE_COVERAGE.md
+6. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_ROUTE_DECISION_20261005.md
-4. Core Sufficiency Audit
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CORE_SUFFICIENCY_AUDIT_20261005.md
-5. Evidence Inheritance Reconciliation
+7. Evidence Inheritance Reconciliation
    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_EVIDENCE_INHERITANCE_RECONCILIATION_20261006.md
-6. Research Stage Synthesis
+8. Research Stage Synthesis
    docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
-7. Only then endpoint/evidence documents named by the selected question
+9. Only then endpoint/evidence documents named by the selected question
 ```
 
 ## 10. Index discipline
