@@ -29,8 +29,8 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-SEM-01 — OPENED BY HUMAN / DESIGN V0.1 DELIVERED FOR REVIEW
-Current design document            = docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md
+Current active closure task        = SRS-SEM-01 — DESIGN V0.4 DELIVERED FOR HUMAN REVIEW
+Current design document            = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.4_20261007.md
 Next dependency after SRS-SEM-01   = SRS-VAL-01 Reuse Validation Predicate — NOT STARTED
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
@@ -164,13 +164,13 @@ PIR metric direction                      ICAC — Information Closure Acquisiti
 PIR v0.2 review ruling                    CONDITIONAL PASS — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_REVIEW_RULING_20261006.md
 PIR v0.2 clarification addendum           docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_CLARIFICATION_ADDENDUM_20261006.md
 PIR v0.2 acceptance / probe commission     docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_V0.2_ACCEPTANCE_AND_MINIMAL_PROBE_COMMISSION_20261006.md
-PIR current design object                  Minimal PIR Probe Design v0.1 — DELIVERED FOR HUMAN REVIEW
+PIR paused design object                  Minimal PIR Probe Design v0.1 — SUPERSEDED BY V0.2
 Minimal PIR Probe Design document          docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_20261006.md
 Minimal PIR Probe v0.1 review ruling       CONDITIONAL PASS — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.1_REVIEW_RULING_20261006.md
 Minimal PIR Probe v0.1 required revisions  W_obs_age semantics; non-circular physical boundedness; phase scaling attribution; MOVE/RENAME protocol
 Minimal PIR Probe Design v0.2              DELIVERED FOR HUMAN REVIEW
 Minimal PIR Probe Design v0.2 document     docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.2_20261006.md
-Current Minimal PIR Probe review object    Minimal PIR Probe Design v0.2
+Minimal PIR Probe paused review object     Minimal PIR Probe Design v0.2
 Minimal PIR Probe implementation           NOT AUTHORIZED
 Minimal PIR Probe experiment               NOT AUTHORIZED
 Minimal PIR Probe fixture creation         NOT AUTHORIZED
@@ -183,10 +183,10 @@ Settled Relation State                   NEW CANONICAL COMPOSITE / NOT IMPLEMENT
 Information Topology                     CANONICAL ARCHITECTURE TERM / ES-ACCUMULATED STRUCTURE
 Core next gap                            ES₁ → IS → ES₂ Settled Relation Reuse / NOT ESTABLISHED
 Settled Relation audit package            docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SETTLED_RELATION_COUPLING_ARCHITECTURE_AUDIT_PACKAGE_20261006.md
-Current central review object             Settled Relation Coupling Audit Package
+Current central review object             SRS-SEM-01 Design v0.4
 Issue #2 decomposition control             docs/00-governance/SIMIGO_ES_IS_ARCHITECTURE_RESEARCH_DECOMPOSITION_CONTROL_20261006.md
 Selected next closure task                 SRS-SEM-01 — Minimal Settled Relation State Semantic Boundary / SELECTED, NOT STARTED
-Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.1 DELIVERED
+Selected task status                       OPENED BY HUMAN AFTER RECOVERY CLOSURE / DESIGN V0.4 DELIVERED FOR REVIEW
 SRS-SEM-01 design document                 docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md
 SRS-SEM-01 v0.1 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.1_REVIEW_RULING_20261007.md
 SRS-SEM-01 v0.1 status                     REVISE / SUPERSEDED BY V0.2
@@ -195,10 +195,14 @@ SRS-SEM-01 v0.2 status                     REVISE / SUPERSEDED BY V0.3
 SRS-SEM-01 v0.2 document                    docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.2_20261007.md
 SRS-SEM-01 v0.2 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.2_DELIVERY_20261007.md
 SRS-SEM-01 v0.2 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.2_REVIEW_RULING_20261007.md
+SRS-SEM-01 v0.3 status                     REVISE / SUPERSEDED BY V0.4
 SRS-SEM-01 Design v0.3                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 v0.3 review ruling               REVISE — docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_REVIEW_RULING_20261007.md
 SRS-SEM-01 v0.3 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_20261007.md
 SRS-SEM-01 v0.3 delivery record              docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_DELIVERY_20261007.md
-Current SRS-SEM-01 review object            Design v0.3
+SRS-SEM-01 Design v0.4                      DELIVERED FOR HUMAN REVIEW
+SRS-SEM-01 v0.4 document                    docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.4_20261007.md
+Current SRS-SEM-01 review object            Design v0.4
 Next dependency after SRS-SEM-01           SRS-VAL-01 — Reuse Validation Predicate
 Minimal PIR Probe Design v0.2             PAUSED PENDING CENTRAL ARCHITECTURE RULING
 CCVS-01 U-A verification report         docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six audit focus areas; UAVerificationTests 10/10; 27/27 target tests; MA-DS-1 targeted re-run VALID)
@@ -394,9 +398,13 @@ Current next transition:
   State Semantic Boundary. If accepted, the next artifact is a design-only
   SRS-SEM-01 document; no implementation, fixture, experiment, IS mutation, or
   code change is authorized. Do not start SRS-VAL-01 or later tasks by default.
-  Human later reviewed SRS-SEM-01 Design v0.1 as REVISE. SRS-SEM-01 Design v0.2
-  is now the current review object. Do not treat this design work as permission
-  to start SRS-VAL-01, implementation, fixture creation, or experiment.
+  Human later reviewed SRS-SEM-01 Design v0.1 as REVISE, v0.2 as REVISE, and
+  v0.3 as REVISE. SRS-SEM-01 Design v0.4 is now the current review object.
+  It adds context-independent source-relation identity, immutable result-target
+  binding, exact immutable resolution-rule version, immutable policy/semantic
+  version binding, and moves recomputation prohibition into reuse validation.
+  Do not treat this design work as permission to start SRS-VAL-01,
+  implementation, fixture creation, or experiment.
   The prior audit-package conclusion remains:
   R01 remains CLOSED / ACCEPTED with bounded verdict PASS — CONTINUATION
   SUFFICIENT. PIR v0.2 + Addendum are ACCEPTED as freshness-prerequisite

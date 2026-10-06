@@ -70,6 +70,8 @@
 > Design v0.2 = DELIVERED FOR HUMAN REVIEW
 > Design v0.2 review = REVISE
 > Design v0.3 = DELIVERED FOR HUMAN REVIEW
+> Design v0.3 review = REVISE
+> Design v0.4 = DELIVERED FOR HUMAN REVIEW
 > ```
 >
 > Human 已明确授权进入 `SRS-SEM-01`；v0.1 独立审查为 REVISE。v0.2 已修正：
@@ -88,7 +90,16 @@
 > evidence；⑤ exact revision equality 与 freshness 正交，禁止
 > `revision-current` freshness class；⑥ Context Index 新旧状态冲突已修。
 >
-> 当前 review object = **SRS-SEM-01 Design v0.3**。`SRS-VAL-01` 仍未授权。
+> Human 独立复审裁定 **v0.3 = REVISE**。v0.4 已冻结外部引用稳定性：
+> ① source-relation identity 必须 context-independent immutable；declared scope
+> 只能验证 uniqueness，不能作为 identity authority；② result target 必须绑定
+> exact immutable result-state identity 或 exact immutable result revision，
+> mutable/latest target 不足；③ resolution rule 必须绑定 exact immutable rule
+> identity/version，语义变更必须新 rule identity；④ `recomputation_prohibition`
+> 从 SRS 字段移入 SRS-VAL/reuse validation invariant；⑤ 影响 reuse 的 semantic
+> rule/policy 必须绑定 exact immutable version/identity。
+>
+> 当前 review object = **SRS-SEM-01 Design v0.4**。`SRS-VAL-01` 仍未授权。
 >
 > **恢复纪律：**
 > 不使用当前对话记忆、本地 agent 猜测、已删除 branch 名称或旧 handoff 中被

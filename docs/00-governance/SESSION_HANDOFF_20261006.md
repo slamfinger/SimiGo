@@ -20,6 +20,7 @@
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
 > Status = `OPENED / V0.1 REVISE / V0.2 DELIVERED FOR HUMAN REVIEW`。
+> Status = `V0.2 REVISE / V0.3 REVISE / V0.4 DELIVERED FOR HUMAN REVIEW`。
 > 下一个依赖是 `SRS-VAL-01`，但当前不得启动。
 >
 > **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
@@ -37,6 +38,12 @@
 > result identity ≠ SRS identity; minimum provenance obligations; freshness
 > requirements rather than verdicts. `SRS-VAL-01`, implementation, fixture, and
 > experiment remain NOT AUTHORIZED.
+> **UPDATE 18 (2026-10-07)：SRS-SEM-01 v0.3 = REVISE；v0.4 DELIVERED FOR HUMAN REVIEW.**
+> Corrections: context-independent immutable source-relation identity; exact
+> immutable result-state identity/revision target; exact immutable resolution
+> rule identity/version; exact immutable policy/semantic version binding;
+> recomputation prohibition moved to reuse validation. `SRS-VAL-01`,
+> implementation, fixture, and experiment remain NOT AUTHORIZED.
 > **UPDATE 17 (2026-10-07)：SRS-SEM-01 v0.2 = REVISE；v0.3 DELIVERED FOR HUMAN REVIEW.**
 > Corrections: concrete source-relation instance identity; reusable result must
 > be directly consumable or lawfully resolvable; `FRESHNESS_RECHECK_REQUIRED`

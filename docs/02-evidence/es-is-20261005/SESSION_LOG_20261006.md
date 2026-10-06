@@ -2114,6 +2114,76 @@ SRS fixture         NOT AUTHORIZED
 SRS experiment      NOT AUTHORIZED
 ```
 
+## SRS-SEM-01 v0.3 REVISE; v0.4 external-reference stability delivered — 2026-10-07
+
+The Human independently reviewed SRS-SEM-01 Design v0.3 at `d2b6a93`.
+
+Ruling:
+
+```text
+v0.2 required semantic gaps              CLOSED
+Concrete relation-instance identity      PARTIAL PASS
+Result resolvability                     PARTIAL PASS
+FRESHNESS_RECHECK_REQUIRED blocking      PASS
+Lifecycle evidence minimum               PASS
+Exact revision vs freshness               PASS
+
+Source identity scope dependence         REVISE
+Result target immutability               REVISE
+Resolution-rule stability                REVISE
+Recomputation prohibition as SRS field   SHOULD-FIX
+Policy / semantic-version binding        SHOULD-CLARIFY
+Context Index canonical consistency      REVISE
+
+SRS-SEM-01 Design v0.3                   REVISE
+SRS-VAL-01                               NOT AUTHORIZED
+```
+
+SRS-SEM-01 Design v0.4 was delivered with these corrections:
+
+```text
+R1  source-relation identity is context-independent and immutable.
+    Declared Scope validates uniqueness but is not identity authority.
+
+R2  RESULT_REFERENCE / DESCRIPTOR must bind to exact immutable result-state
+    identity or exact immutable result revision.
+
+R3  resolution_rule_id becomes resolution_rule_binding to exact immutable rule
+    identity/version.
+
+S1  recomputation_prohibition is removed as an SRS field. The no-recompute rule
+    belongs to SRS-VAL-01 / reuse validation.
+
+S2  semantic rules and policies affecting reuse bind to exact immutable
+    policy/semantic versions.
+
+G1  Context Index current-state navigation is corrected.
+```
+
+Key stability invariants:
+
+```text
+INV-SRS-SEM-21 context-independent immutable source-relation identity
+INV-SRS-SEM-22 declared scope is validation context, not identity authority
+INV-SRS-SEM-23 exact immutable result-state identity/revision binding
+INV-SRS-SEM-24 mutable/latest result targets cannot support lawful reuse
+INV-SRS-SEM-25 exact immutable resolution-rule identity/version binding
+INV-SRS-SEM-26 resolution semantic changes require new rule identity/version
+INV-SRS-SEM-27 exact immutable policy/semantic version binding
+INV-SRS-SEM-28 recomputation prohibition is reuse-validation invariant
+```
+
+Current state:
+
+```text
+SRS-SEM-01 v0.3     REVISE / SUPERSEDED BY V0.4
+SRS-SEM-01 v0.4     SUBMITTED FOR HUMAN REVIEW
+SRS-VAL-01          NOT AUTHORIZED
+SRS implementation  NOT AUTHORIZED
+SRS fixture         NOT AUTHORIZED
+SRS experiment      NOT AUTHORIZED
+```
+
 ## SRS-SEM-01 v0.2 REVISE; v0.3 delivered — 2026-10-07
 
 The Human independently reviewed SRS-SEM-01 Design v0.2 at `253a23f`.

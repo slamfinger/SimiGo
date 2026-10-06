@@ -1,10 +1,12 @@
 # Settled Relation State Semantic Boundary — SRS-SEM-01 Design v0.3
 
-> **Status:** DESIGN V0.3 DELIVERED FOR HUMAN REVIEW — SRS-VAL-01 NOT AUTHORIZED
+> **Status:** DESIGN V0.3 REVISE — SUPERSEDED BY V0.4 — SRS-VAL-01 NOT AUTHORIZED
 > **Date:** 2026-10-07
 > **Amends:** SRS-SEM-01 Design v0.2, retained as immediate predecessor
 > **Review basis:** Human REVISE ruling on v0.2 at `253a23f`
 > **Revision purpose:** close concrete relation identity, result resolvability, freshness-blocking lifecycle, lifecycle evidence, revision/freshness disambiguation, and Context Index consistency.
+> **Review ruling:** REVISE; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.3_REVIEW_RULING_20261007.md`.
+> **Superseded by:** `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_SEM_01_DESIGN_V0.4_20261007.md`.
 
 ## 1. Effect of v0.3
 
