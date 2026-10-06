@@ -1,10 +1,11 @@
 {
   "class_counts" : {
-    "PASS" : 12,
-    "REPAIR" : 1
+    "PASS" : 11,
+    "REPAIR" : 1,
+    "UA-DF" : 1
   },
   "crash_model" : "process SIGKILL (gates UA-C1\/C2\/C3)",
-  "overall" : "VALID (no bound violation; all classifications within manifest semantics)",
+  "overall" : "UA-DF",
   "protocol" : "CCVS-01 U-A \/ MA-DS-1 (manifest §5, 13 pre-registered steps)",
   "steps" : [
     {
@@ -13,7 +14,7 @@
       "injected" : "none",
       "killed_by_sigkill" : false,
       "observed" : {
-        "carrier_id_minted" : "B7097B33-A4CE-4CCA-AB8F-C74996A065C2",
+        "carrier_id_minted" : "BA7E2169-A9E4-456F-ACE3-96D94F48FAB8",
         "create_outcome" : "APPLIED",
         "dangling_provenance" : 0,
         "entity_digest_verified" : true,
@@ -126,7 +127,7 @@
     },
     {
       "bound" : "MA-7 \/ I24 idempotent retry",
-      "classification" : "PASS",
+      "classification" : "UA-DF-8",
       "injected" : "UA-C1 SIGKILL after append commit (unknown outcome)",
       "killed_by_sigkill" : true,
       "observed" : {
@@ -135,7 +136,7 @@
         "event_count_unchanged_by_retry" : true,
         "fingerprint_unchanged_by_retry" : true,
         "killed_by_sigkill" : true,
-        "retry_outcome" : "REPLAYED"
+        "retry_outcome" : "APPLIED"
       },
       "residual" : null,
       "step" : 8
@@ -198,7 +199,7 @@
         "read_versions_observed" : [
           12,
           13,
-          15,
+          14,
           15,
           16,
           16,

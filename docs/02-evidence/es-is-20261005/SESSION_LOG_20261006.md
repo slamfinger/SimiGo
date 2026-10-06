@@ -24,8 +24,8 @@ CCVS-01 U-A manifest self-audit      = COMPLETE / NO SEMANTIC UPGRADE FOUND / 3 
 CCVS-01 U-A mechanism evidence       = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MECHANISM_IMPLEMENTATION_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 evidence         = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_MADS1_EVIDENCE_20261006.md
 CCVS-01 U-A MA-DS-1 artifacts        = trackD-memory/mads1-report.json + trackD-memory/mads1-final-state.json (runner: Sources/CarrierMADS1)
-CCVS-01 U-A implementation findings  = UA-IF-1/2/3/3b/4 + UA-IF-3c (audit round 3: legacy clear/rebuild ownership — legacy destructive ops confined to NULL-carrier rows, UA rebuild mirror-symmetric) + replay-side-effect characterization (registry delta zero; EXTERNAL entity orphans from replay/stale/conflict paths = audited gap; replay-convention inconsistency found: compound revise returns recorded outcome vs session append returns .replayed marker — Human ruling pending, no solution designed) — zero protocol change
-CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six focus areas + round-3 correction section; UAVerificationTests 12/12; 29/29 target tests)
+CCVS-01 U-A implementation findings  = UA-IF-1/2/3/3b/3c/4 + round-4 ruling applied: MA-7 zero-effect boundary extends to the POSIX entity layer — replay/CAS/identity admission ALL precede any durable external effect inside one write transaction; deterministic rejections leave ZERO external side effects (crash-only MA-4 orphan window preserved, UA-C2 gate inside the open transaction after entity durability); session replay returns the RECORDED terminal outcome (.applied, no .replayed demotion); A (legacy ownership) ACCEPTED by Human; manifest §4.2 divergence flagged for acceptance review (Manifest unmodified per directive)
+CCVS-01 U-A verification report      = docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_UA_VERIFICATION_REPORT_20261006.md (six focus areas + rounds 3-4; UAVerificationTests 12/12 incl. C1/C2/C3 verification + deterministic interleave; 32/32 target tests)
 CCVS-01 U-A mechanisms               = carriers + ua_operations ledger + ua_mapping + client_ref idempotency + ua_index_builds; CAS revise / compound entity-then-transaction / carrier-side session allocation / snapshot read-version / index build tracking; crash gates UA-C1/C2/C3 registered for MA-DS-1
 Branch governance                    = FINAL CLEANUP VERIFIED; main is sole canonical remote branch; historical refs deleted; history retained in main
 CCVS-01 Unified benchmark            = NOT AUTHORIZED
@@ -1011,3 +1011,57 @@ Gate C remains STARTED / OPEN. U-A implementation NOT ACCEPTED — the
 three items above are submitted for the Human's next review, with the
 replay-semantics ruling (canonical convention + entity-write ordering)
 explicitly reserved for the Human.
+
+## Correction round 4 (Human ruling on replay semantics + entity-layer MA-7) — 2026-10-06
+
+Human round-3 review: A = ACCEPT (legacy ownership boundary closed); B
+oracle PASS but interleave observation coverage insufficient; C = BLOCKER
+and DECIDABLE — frozen MA-7 already fixes the canonical semantics: retry
+returns the RECORDED terminal outcome and performs NO new effects, and
+"no new effects" includes the POSIX entity layer. The P2/P3/P4 orphans
+were deterministic rejection side effects, not crash orphans — not
+legalizable by MA-4.
+
+Corrections delivered (no Manifest change, no mechanism expansion):
+
+```text
+C-core   compound revise restructured: admission (operation replay → CAS
+         revision → representation identity) ALL inside the write
+         transaction BEFORE any durable external effect; deterministic
+         rejections leave zero external side effects; rejection evidence
+         rows commit with the admission transaction; entity durable write
+         happens only after ALL checks pass; UA-C2 gate now sits inside
+         the open transaction = the MA-4 crash-only orphan window.
+C3       session append same-operation retry returns the recorded
+         terminal outcome (.applied); no .replayed terminal outcome.
+B        deterministic interleave instrumentation: a second connection
+         holds the exact rebuild transaction open; readers forced inside
+         the critical section observe exactly BEFORE (WAL snapshot);
+         COMMIT → AFTER. Single-connection self-observation is
+         impossible without a mechanism seam (out of scope).
+Runner   MA-DS-1 step 8 expectation aligned to the recorded-outcome
+         convention; MA-7 evidence = zero-effect checks (event count,
+         fingerprint).
+```
+
+Verification:
+
+```text
+focusC1  H1 (fingerprint INCLUDING entity files) == H2 after OP1(P2)
+         replay; P2 entity does not exist; one OP1 ledger row.
+focusC2  stale rejection → P3 entity absent; state unchanged; one
+         terminal CONFLICT row.
+focusC3  identity conflict → P4 entity absent; fingerprint delta =
+         evidence row only.
+focusB   readers inside the forced rebuild critical section see exactly
+         BEFORE; after COMMIT, AFTER.
+Tests    32/32 target tests green (4 + 13 + 12 + legacy); A1 conformance
+         10/10 no-regression; MA-DS-1 run 11 = 13/13 VALID under the
+         round-4 semantics.
+```
+
+Registered divergence (flagged, Manifest unmodified per directive): the
+U-A manifest §4.2 mechanism sentence describes the pre-correction
+entity-write ordering; folding it into a manifest v1.2 is the Human's
+call at acceptance review. Gate C remains STARTED / OPEN; acceptance
+consideration is the Human's next action.

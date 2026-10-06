@@ -313,3 +313,114 @@ U-A implementation    NOT ACCEPTED (pending Human review of: UA-IF-3c
                       fix, replay side-effect ruling, strengthened
                       oracles)
 ```
+
+## 10. Correction round 4 — Human ruling on C (MA-7) + B instrumentation (2026-10-06)
+
+Human round-3 review: A = ACCEPT (closed); B oracle = PASS but observation
+coverage insufficient; C = BLOCKER, now DECIDABLE from frozen MA-7 text —
+retry returns the RECORDED terminal outcome and performs NO new effects,
+and "no new effects" extends to the POSIX entity layer. Deterministic
+rejections are NOT crash orphans and are not legalizable by MA-4.
+
+### 10.1 C — MA-7 zero-effect boundary now includes the entity layer: FIXED
+
+```text
+Ruling applied: replay preflight happens BEFORE any durable external
+effect. New admission order inside ONE write transaction:
+
+  begin carrier write transaction
+    (1) operation_id lookup  → exists: return recorded outcome
+                               (no entity write, no registry mutation,
+                                no new ledger row)
+    (2) CAS revision check   → stale: evidence row commits with THIS
+                               transaction; typed error after commit;
+                               no entity write
+    (3) representation identity check (six properties; identical =
+        idempotent replay; different = typed conflicting duplicate)
+                               → conflict: evidence row commits with
+                               THIS transaction; no entity write
+    (4) all admission passed → ONLY NOW durable entity write
+                               → representation + CAS bump + provenance
+                               → COMMIT
+  crash between (4)'s entity durability and COMMIT = the MA-4 crash-only
+  orphan window (UA-C2 gate sits exactly there).
+
+Deterministic rejections (replay/stale/identity-conflict) now leave ZERO
+external side effects. Evidence rows for rejections commit with the
+admission transaction (nothing rolls back on rejection paths — the
+round-1 evidence-rollback bug pattern remains structurally absent).
+```
+
+Session replay (C3): same-operation retry returns the recorded terminal
+outcome (`.applied`), no longer demoted to `.replayed`; "was this a
+replay" is observation metadata, not a terminal outcome. The ma7
+regression now asserts `.applied` with zero event-count and fingerprint
+delta.
+
+### 10.2 C verification (probe → verification, per directive)
+
+```text
+focusC1ReplayPreflightLeavesZeroExternalEffect:
+  OP1(P1) → APPLIED; H1 = authority fingerprint INCLUDING entity files;
+  OP1(P2) → .applied (recorded outcome); H2 == H1; P2 entity DOES NOT
+  exist; exactly one OP1 ledger row.
+focusC2StaleRejectionLeavesNoEntity:
+  stale attempt with fresh payload → typed staleRevision; P3 entity
+  absent; carrier/mappings unchanged; provenance complete; exactly one
+  terminal CONFLICT ledger row for the attempt.
+focusC3IdentityConflictLeavesNoEntity:
+  conflicting duplicate with fresh payload → typed conflict; P4 entity
+  absent; no registry/mapping mutation; fingerprint delta = the evidence
+  row only.
+```
+
+### 10.3 B — deterministic interleave instrumentation: ADDED
+
+```text
+focusBDeterministicInterleaveReaderInsideRebuildCriticalSection:
+  a second SQLite connection holds the EXACT rebuild transaction open
+  (BEGIN IMMEDIATE + the same DELETE/INSERT statements); readers on the
+  main connection execute INSIDE the forced critical section and must
+  observe exactly BEFORE (WAL snapshot) — then COMMIT → AFTER. This is
+  the "reader forced into the critical window" evidence the round-3
+  review required; single-connection self-observation is impossible
+  without a mechanism seam (out of scope by directive).
+Concurrent-task search-during-rebuild test retained as supplementary
+  (non-forced) coverage.
+```
+
+### 10.4 Runner alignment + registered divergence flag
+
+```text
+MA-DS-1 step 8 runner expectation updated to the round-4 convention
+  (retry returns recorded outcome .applied; the MA-7 evidence remains
+  the zero-effect checks: event count unchanged, authority fingerprint
+  byte-identical). Run 11: 13/13 within manifest semantics, overall
+  VALID.
+REGISTERED DIVERGENCE (flagged for acceptance review; Manifest NOT
+  modified per directive): U-A manifest §4.2's mechanism sentence
+  describes the pre-correction ordering ("entity bytes written BEFORE
+  the transaction"). The implemented mechanism is now
+  admission-inside-transaction-then-entity-write-then-commit. MA-4
+  crash semantics are preserved (crash-only orphan window between
+  entity durability and COMMIT; registry all-or-nothing). Whether to
+  fold this mechanism-sentence update into a manifest v1.2 is the
+  Human's call at acceptance review.
+```
+
+### 10.5 Verification status after round 4
+
+```text
+UAVerificationTests   12/12 PASS (C1/C2/C3 verification + B instrumentation
+                      replace the round-3 probe)
+UAOperationTests      13/13 PASS (ma7 updated to recorded-outcome ruling)
+CarrierSQLiteTests     4/4 PASS — A1 conformance 10/10 no-regression
+Full package          32/32 target tests green
+Targeted MA-DS-1      13/13 within manifest semantics — overall VALID
+                      (run 11, round-4 semantics)
+Manifest v1.1         UNCHANGED (divergence flagged, §10.4)
+Gate C                STARTED / OPEN
+U-A implementation    RESUBMITTED — per the round-3 review, passing this
+                      round is the precondition for acceptance
+                      consideration; acceptance remains the Human's call
+```

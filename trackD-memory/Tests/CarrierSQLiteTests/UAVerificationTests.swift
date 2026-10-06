@@ -535,14 +535,15 @@ struct UAVerificationTests {
         let before = try await ops.consistentSnapshot(carrierID: carrier.carrierID)
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
-                // Retry of the committed operation (unknown-outcome replay).
+                // Retry of the committed operation: returns the RECORDED
+                // terminal outcome (round-4 ruling).
                 let replay = try await ops.appendSessionEvent(
                     carrierID: carrier.carrierID, kind: "NOTE",
                     payload: Data("committed before race".utf8),
                     occurredAt: Date(timeIntervalSince1970: 100),
                     actorID: "agent-A", operationID: "op-f6-known",
                     clientRef: "ref-f6-known")
-                #expect(replay.outcome == .replayed)
+                #expect(replay.outcome == .applied)
             }
             group.addTask {
                 _ = try await appendEvent(
@@ -637,121 +638,204 @@ struct UAVerificationTests {
             actorID: actor, operationID: op, clientRef: ref)
     }
 
-    // MARK: Focus C — replay/conflict EXTERNAL side-effect probe
-    // (audit round 3, task C: TEST ONLY — no solution designed here. This
-    // probe CHARACTERIZES current behavior for a Human ruling on where the
-    // durable entity write belongs relative to the replay/conflict
-    // preflight checks.)
+    // MARK: Focus C — MA-7 zero-effect boundary includes the entity layer
+    // (round-4 ruling, corrected from the round-3 probe into verification)
 
     @Test
-    func focusCReplayAndConflictEntitySideEffectProbe() async throws {
+    func focusC1ReplayPreflightLeavesZeroExternalEffect() async throws {
         let b = try freshFactory().make()
         let ops = b.operations
-        let carrier = try await makeFileCarrier(ops, "probe")
-        let p1 = Data("probe payload one".utf8)
+        let carrier = try await makeFileCarrier(ops, "c1")
+        let p1 = Data("c1 payload one".utf8)
         _ = try await ops.reviseCarrierWithRepresentation(
             carrierID: carrier.carrierID,
-            informationID: CarrierInformationID(rawValue: "probe-info"),
-            revisionID: CarrierRevisionID(rawValue: "probe-rev"),
-            representationID: CarrierRepresentationID(rawValue: "R-probe"),
+            informationID: CarrierInformationID(rawValue: "c1-info"),
+            revisionID: CarrierRevisionID(rawValue: "c1-rev"),
+            representationID: CarrierRepresentationID(rawValue: "R-c1"),
             payload: p1, mediaType: nil,
             expectedRevision: carrier.revision, fromVersion: nil,
             actorID: "agent-A", operationID: "OP1")
-        func entityExists(_ data: Data) -> Bool {
-            FileManager.default.fileExists(
-                atPath: b.representations.fileURL(for: digest(data)).path)
-        }
-        func entityOrphanDetail(_ data: Data) async throws -> String? {
-            let report = try await b.runtime.integrityReport()
-            let d = digest(data)
-            return report.issues.first {
-                $0.kind == .orphanRepresentation && $0.detail.contains(d)
-            }?.detail
-        }
-        let revisionAfterOP1 = (try await ops.carrier(carrierID: carrier.carrierID))?.revision
-        let ledgerRowsOP1AfterApply = try await ops.operationLedger()
-            .filter { $0.operationID == "OP1" }.count
-        // PROBE 1: same operation_id, DIFFERENT payload — code order is
-        // durableWrite FIRST, ledger replay check SECOND.
-        let p2 = Data("probe payload two (never registered)".utf8)
-        let (afterReplay, replayOutcome) = try await ops.reviseCarrierWithRepresentation(
+        // State hash H1 — INCLUDES the entity store (authority fingerprint
+        // hashes authority tables + entity files).
+        let h1 = try await ops.authorityFingerprint()
+        let p2 = Data("c1 payload two (must never be written)".utf8)
+        // Same operation_id, different payload: the recorded outcome is
+        // returned and NO external effect occurs.
+        let (after, outcome) = try await ops.reviseCarrierWithRepresentation(
             carrierID: carrier.carrierID,
-            informationID: CarrierInformationID(rawValue: "probe-info"),
-            revisionID: CarrierRevisionID(rawValue: "probe-rev"),
-            representationID: CarrierRepresentationID(rawValue: "R-probe"),
+            informationID: CarrierInformationID(rawValue: "c1-info"),
+            revisionID: CarrierRevisionID(rawValue: "c1-rev"),
+            representationID: CarrierRepresentationID(rawValue: "R-c1"),
             payload: p2, mediaType: nil,
-            expectedRevision: revisionAfterOP1 ?? 0, fromVersion: nil,
+            expectedRevision: carrier.revision, fromVersion: nil,
             actorID: "agent-A", operationID: "OP1")
-        let ledgerRowsOP1AfterReplay = try await ops.operationLedger()
-            .filter { $0.operationID == "OP1" }.count
-        let p2EntityExists = entityExists(p2)
-        let p2OrphanDetail = try await entityOrphanDetail(p2)
-        // CHARACTERIZATION (semantic inconsistency found by this probe):
-        // the compound-revise replay returns the RECORDED outcome
-        // (.applied — literal manifest §4.1 "returns the RECORDED outcome"),
-        // while the session-append replay path returns an explicit
-        // .replayed marker (ma7 test). The two replay conventions differ;
-        // which one is canonical is a Human ruling. Registry delta is zero
-        // under BOTH conventions.
-        #expect(replayOutcome == .applied)
-        #expect(afterReplay.revision == revisionAfterOP1)
-        #expect(ledgerRowsOP1AfterReplay == ledgerRowsOP1AfterApply)
-        #expect((try await ops.mappings()).isEmpty)
-        // CHARACTERIZATION (audited gap): the P2 entity WAS durably written
-        // before the replay check and remains as an unreferenced entity.
-        #expect(p2EntityExists)
-        #expect(p2OrphanDetail != nil)
-        // PROBE 2: stale-revision attempt with a fresh payload.
-        let p3 = Data("probe payload three (stale attempt)".utf8)
-        await #expect(throws: UAOperationError.staleRevision(expected: 99, observed: revisionAfterOP1 ?? 0)) {
+        let h2 = try await ops.authorityFingerprint()
+        #expect(outcome == .applied)
+        #expect(after.revision == 1)
+        #expect(h2 == h1)
+        // P2 entity does NOT exist (round-3 probe showed it did — the
+        // replay preflight now precedes any durable external effect).
+        #expect(!FileManager.default.fileExists(
+            atPath: b.representations.fileURL(for: digest(p2)).path))
+        // Exactly one OP1 ledger row.
+        #expect(try await ops.operationLedger()
+            .filter { $0.operationID == "OP1" }.count == 1)
+    }
+
+    @Test
+    func focusC2StaleRejectionLeavesNoEntity() async throws {
+        let b = try freshFactory().make()
+        let ops = b.operations
+        let carrier = try await makeFileCarrier(ops, "c2")
+        let p3 = Data("c2 payload three (stale attempt)".utf8)
+        let fingerprintBefore = try await ops.authorityFingerprint()
+        await #expect(throws: UAOperationError.staleRevision(expected: 99, observed: carrier.revision)) {
             try await ops.reviseCarrierWithRepresentation(
                 carrierID: carrier.carrierID,
-                informationID: CarrierInformationID(rawValue: "probe-info"),
-                revisionID: CarrierRevisionID(rawValue: "probe-rev-stale"),
-                representationID: CarrierRepresentationID(rawValue: "R-stale"),
+                informationID: CarrierInformationID(rawValue: "c2-info"),
+                revisionID: CarrierRevisionID(rawValue: "c2-rev-stale"),
+                representationID: CarrierRepresentationID(rawValue: "R-c2-stale"),
                 payload: p3, mediaType: nil,
                 expectedRevision: 99, fromVersion: nil,
                 actorID: "agent-A", operationID: "OP-stale")
         }
-        let p3EntityExists = entityExists(p3)
-        let p3OrphanDetail = try await entityOrphanDetail(p3)
-        // CHARACTERIZATION: the P3 entity was written before the CAS check.
-        #expect(p3EntityExists)
-        #expect(p3OrphanDetail != nil)
-        // PROBE 3: representation-conflict attempt with a fresh payload.
-        let p4 = Data("probe payload four (identity conflict)".utf8)
-        await #expect(throws: UAOperationError.conflictingDuplicateRepresentation("R-probe")) {
+        // No P3 entity; carrier/mapping/provenance unchanged; exactly one
+        // terminal conflict record for the rejected attempt.
+        #expect(!FileManager.default.fileExists(
+            atPath: b.representations.fileURL(for: digest(p3)).path))
+        #expect((try await ops.carrier(carrierID: carrier.carrierID))?.revision == carrier.revision)
+        #expect(try await ops.mappings().isEmpty)
+        #expect(try await ops.danglingProvenanceCount() == 0)
+        let ledger = try await ops.operationLedger()
+        #expect(ledger.filter { $0.operationID == "OP-stale" }.count == 1)
+        #expect(ledger.first { $0.operationID == "OP-stale" }?.outcome == .conflict)
+        // The conflict evidence row is the ONLY delta beyond the baseline
+        // carrier setup — the ledger is append-only by design, so the
+        // fingerprint delta is exactly that row.
+        #expect(try await ops.authorityFingerprint() != fingerprintBefore)
+    }
+
+    @Test
+    func focusC3IdentityConflictLeavesNoEntity() async throws {
+        let b = try freshFactory().make()
+        let ops = b.operations
+        let carrier = try await makeFileCarrier(ops, "c3")
+        let p1 = Data("c3 payload one".utf8)
+        _ = try await ops.reviseCarrierWithRepresentation(
+            carrierID: carrier.carrierID,
+            informationID: CarrierInformationID(rawValue: "c3-info"),
+            revisionID: CarrierRevisionID(rawValue: "c3-rev"),
+            representationID: CarrierRepresentationID(rawValue: "R-c3"),
+            payload: p1, mediaType: nil,
+            expectedRevision: carrier.revision, fromVersion: nil,
+            actorID: "agent-A", operationID: "OP-c3-1")
+        let p4 = Data("c3 payload four (identity conflict)".utf8)
+        let fingerprintBefore = try await ops.authorityFingerprint()
+        await #expect(throws: UAOperationError.conflictingDuplicateRepresentation("R-c3")) {
             try await ops.reviseCarrierWithRepresentation(
                 carrierID: carrier.carrierID,
-                informationID: CarrierInformationID(rawValue: "probe-info"),
-                revisionID: CarrierRevisionID(rawValue: "probe-rev"),
-                representationID: CarrierRepresentationID(rawValue: "R-probe"),
+                informationID: CarrierInformationID(rawValue: "c3-info"),
+                revisionID: CarrierRevisionID(rawValue: "c3-rev"),
+                representationID: CarrierRepresentationID(rawValue: "R-c3"),
                 payload: p4, mediaType: nil,
-                expectedRevision: revisionAfterOP1 ?? 0, fromVersion: nil,
-                actorID: "agent-A", operationID: "OP-repconflict")
+                expectedRevision: 1, fromVersion: nil,
+                actorID: "agent-A", operationID: "OP-c3-conflict")
         }
-        let p4EntityExists = entityExists(p4)
-        let p4OrphanDetail = try await entityOrphanDetail(p4)
-        // CHARACTERIZATION: the P4 entity was written before the identity
-        // check.
-        #expect(p4EntityExists)
-        #expect(p4OrphanDetail != nil)
-        // CHARACTERIZATION summary (for the evidence chain):
-        // replayOutcome(compound revise, same operation_id, new payload)
-        //   = .applied  (recorded-outcome convention)
-        // session-append replay (same operation_id)
-        //   = .replayed (marker convention — see ma7 regression)
-        // → the two replay paths report the retry differently; registry
-        //   delta is zero in both; the EXTERNAL entity side effect is
-        //   non-zero in both (P2 orphan above).
-        // Registry-side invariants stay strict across all three probes.
-        #expect((try await ops.carrier(carrierID: carrier.carrierID))?.revision == revisionAfterOP1)
+        #expect(!FileManager.default.fileExists(
+            atPath: b.representations.fileURL(for: digest(p4)).path))
+        #expect((try await ops.carrier(carrierID: carrier.carrierID))?.revision == 1)
+        #expect(try await ops.mappings().isEmpty)
         #expect(try await ops.danglingProvenanceCount() == 0)
-        // Recorded summary for the evidence chain (registry delta zero in
-        // all three probes; EXTERNAL entity side effect non-zero).
-        let ledgerFinal = try await ops.operationLedger()
-        #expect(ledgerFinal.filter { $0.operationID == "OP1" }.count == 1)
-        #expect(ledgerFinal.contains { $0.operationID == "OP-stale" && $0.outcome == .conflict })
-        #expect(ledgerFinal.contains { $0.operationID == "OP-repconflict" && $0.outcome == .conflict })
+        let ledger = try await ops.operationLedger()
+        #expect(ledger.first { $0.operationID == "OP-c3-conflict" }?.outcome == .conflict)
+        // Fingerprint delta = the conflict evidence row only (append-only
+        // ledger); no representation row, no entity file, no mapping.
+        let conflicts = ledger.filter { $0.outcome == .conflict }
+        #expect(conflicts.count == 1 && conflicts.first?.operationID == "OP-c3-conflict")
+    }
+
+    // MARK: Focus B — deterministic interleave instrumentation
+    // (round-4 ruling: readers must be FORCED into the rebuild critical
+    // section. A second connection holds the exact rebuild transaction
+    // open; readers on the main connection run inside the critical
+    // window and must observe ONLY BEFORE or AFTER — WAL snapshot
+    // isolation, the same guarantee uaRebuildIndex relies on when
+    // concurrent readers exist on other connections. Single-connection
+    // self-observation is impossible without a mechanism seam, which is
+    // out of scope.)
+
+    @Test
+    func focusBDeterministicInterleaveReaderInsideRebuildCriticalSection() async throws {
+        let factory = freshFactory()
+        let b = try factory.make()
+        let ops = b.operations
+        let a = try await makeFileCarrier(ops, "il-a")
+        let c = try await ops.createCarrier(
+            kind: .session, locatorScheme: nil, locatorValue: nil,
+            actorID: "agent-B", operationID: "op-il-b").carrier
+        let info1 = CarrierInformationID(rawValue: "il-info-1")
+        let info2 = CarrierInformationID(rawValue: "il-info-2")
+        let info3 = CarrierInformationID(rawValue: "il-info-3")
+        _ = try await ops.recordMapping(
+            informationID: info1, carrierID: a.carrierID, recordID: "r1",
+            representationID: nil, fromVersion: nil,
+            actorID: "agent-A", operationID: "op-il-map-1")
+        _ = try await ops.recordMapping(
+            informationID: info2, carrierID: c.carrierID, recordID: "r2",
+            representationID: nil, fromVersion: nil,
+            actorID: "agent-B", operationID: "op-il-map-2")
+        _ = try await ops.recordMapping(
+            informationID: info3, carrierID: c.carrierID, recordID: "r3",
+            representationID: nil, fromVersion: nil,
+            actorID: "agent-B", operationID: "op-il-map-3")
+        // BEFORE = {I1×A, I2×C}; AFTER = {I1×A, I3×C}; both documents in
+        // either state share the probe term.
+        try await ops.indexDocument(
+            informationID: info1, carrierID: a.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "il-rev-1"),
+            title: nil, text: "interleave oracle old one")
+        try await ops.indexDocument(
+            informationID: info2, carrierID: c.carrierID,
+            revisionID: CarrierRevisionID(rawValue: "il-rev-2"),
+            title: nil, text: "interleave oracle old two")
+        let before: Set<String> = ["il-info-1|\(a.carrierID)", "il-info-2|\(c.carrierID)"]
+        let after: Set<String> = ["il-info-1|\(a.carrierID)", "il-info-3|\(c.carrierID)"]
+        // Second connection holds the EXACT rebuild transaction open
+        // (same statements uaRebuildIndex executes).
+        let registryPath = factory.rootURL.appendingPathComponent("registry.sqlite").path
+        let writer = try SQLiteCore(path: registryPath)
+        try await writer.runOutsideTransaction("BEGIN IMMEDIATE")
+        try await writer.runOutsideTransaction("DELETE FROM search_fts WHERE carrier_id IS NOT NULL")
+        try await writer.runOutsideTransaction("DELETE FROM ua_index_builds")
+        try await writer.runOutsideTransaction(
+            "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,?,?,?,?)",
+            bind: {
+                $0.bindText(1, "il-info-1")
+                $0.bindText(2, a.carrierID)
+                $0.bindText(3, "il-rev-1")
+                $0.bindTextOpt(4, nil)
+                $0.bindText(5, "interleave oracle new one")
+            })
+        try await writer.runOutsideTransaction(
+            "INSERT INTO search_fts(information_id, carrier_id, revision_id, title, text) VALUES (?,?,?,?,?)",
+            bind: {
+                $0.bindText(1, "il-info-3")
+                $0.bindText(2, c.carrierID)
+                $0.bindText(3, "il-rev-3")
+                $0.bindTextOpt(4, nil)
+                $0.bindText(5, "interleave oracle new two")
+            })
+        // Readers INSIDE the open critical section (WAL readers proceed).
+        for _ in 0..<4 {
+            let observed = Set(try await ops.searchScoped("interleave oracle", limit: 50)
+                .map { "\($0.informationID)|\($0.carrierID)" })
+            #expect(observed == before,
+                    "inside critical section the reader must see the BEFORE snapshot; got \(observed)")
+        }
+        // Commit → AFTER.
+        try await writer.runOutsideTransaction("COMMIT")
+        let final = Set(try await ops.searchScoped("interleave oracle", limit: 50)
+            .map { "\($0.informationID)|\($0.carrierID)" })
+        #expect(final == after)
     }
 }

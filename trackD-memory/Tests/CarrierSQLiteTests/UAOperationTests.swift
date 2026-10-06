@@ -91,12 +91,15 @@ struct UAOperationTests {
         #expect(first.outcome == .applied)
         let fingerprintBefore = try await ops.authorityFingerprint()
         // Retry with the SAME operation id after "unknown outcome".
+        // Round-4 ruling: a retry returns the RECORDED terminal outcome
+        // (.applied) — it does not demote to a .replayed terminal outcome;
+        // "was this a replay" is observation metadata, not an outcome.
         let retry = try await ops.appendSessionEvent(
             carrierID: carrier.carrierID, kind: "JUDGMENT",
             payload: Data("r1".utf8), occurredAt: Date(timeIntervalSince1970: 100),
             actorID: "agent-A", operationID: "op-append-1", clientRef: "client-ref-1"
         )
-        #expect(retry.outcome == .replayed)
+        #expect(retry.outcome == .applied)
         #expect(retry.event.eventID == first.event.eventID)
         #expect(retry.event.sequence == first.event.sequence)
         // Zero state delta: the authority fingerprint is byte-identical

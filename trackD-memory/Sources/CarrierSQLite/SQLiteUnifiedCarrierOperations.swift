@@ -412,11 +412,14 @@ extension SQLiteCore {
 
     // MARK: MA-4 compound revise — entity + registry in one boundary
 
-    /// Compound FILE-carrier revise: entity bytes are durably written
-    /// FIRST (temp+fsync+rename+dir-fsync+digest re-read), then ONE
-    /// transaction commits representation row + carrier CAS bump + ledger.
-    /// Crash between the two steps leaves a typed orphan entity (detected
-    /// by the integrity reporter), never a half-committed registry.
+    /// Compound FILE-carrier revise — round-4 ruling: ALL admission
+    /// checks (operation replay, CAS revision, representation identity)
+    /// run inside the write transaction BEFORE any durable external
+    /// effect. Deterministic rejections leave ZERO external side effects
+    /// (no entity write at all); evidence rows commit with the admission
+    /// transaction itself. Only a crash between the entity durable write
+    /// and the registry commit produces an orphan — the MA-4 crash-only
+    /// orphan window.
     func uaReviseCarrierWithRepresentation(
         entities: POSIXEntityStore?,
         carrierID: String,
@@ -433,23 +436,18 @@ extension SQLiteCore {
         guard let entities else {
             throw UAOperationError.entityStoreUnavailable
         }
-        let digest = sha256Hex(payload)
-        // 1) durable entity write with digest re-read verification.
-        try entities.durableWrite(digest: digest, bytes: payload)
-        if let written = FileManager.default.contents(atPath: entities.fileURL(for: digest).path),
-           sha256Hex(written) != digest {
-            throw CarrierInterfaceError.integrityIssue("post-write digest reread mismatch for \(digest)")
-        }
-        // Durable-acknowledgement boundary (P8 F1 exposure point, U-A).
-        CrashGate.trap("UA-C2")
-        // 2) one transaction: representation + CAS + provenance.
-        enum CASResult {
+        let payloadDigest = sha256Hex(payload)
+        enum AdmissionResult {
             case applied(UACarrier)
             case replayed(UACarrier, UAOperationOutcome)
             case conflict(observed: Int)
             case representationConflict(String, observed: Int)
         }
-        let casResult: CASResult = try withTransaction {
+        let admission: AdmissionResult = try withTransaction {
+            // (1) operation-id replay: return the RECORDED terminal
+            // outcome — NO entity write, NO registry mutation, NO new
+            // ledger row. MA-7 zero-effect boundary includes the POSIX
+            // entity layer.
             if let prior = try uaLedgerRow(operationID: operationID) {
                 guard let id = prior.carrierID,
                       let carrier = try uaCarrierRow(carrierID: id) else {
@@ -460,17 +458,21 @@ extension SQLiteCore {
             guard let current = try uaCarrierRow(carrierID: carrierID) else {
                 throw UAOperationError.carrierNotFound(carrierID)
             }
+            // (2) CAS revision check. Evidence row commits with THIS
+            // transaction; no external effect.
             guard current.revision == expectedRevision else {
+                try uaLedgerInsert(
+                    operationID: operationID, actorID: actorID, carrierID: carrierID,
+                    subjectID: representationID.rawValue, kind: "CARRIER_REPRESENTATION_REVISE",
+                    baseRevision: expectedRevision, observedRevision: current.revision,
+                    outcome: .conflict, fromVersion: fromVersion, resultingVersion: nil
+                )
                 return .conflict(observed: current.revision)
             }
-            // UA-IF-4: a duplicate representation registration is either
-            // IDEMPOTENT (identical immutable properties — the frozen CC-8
-            // #7 rule is that each recorded version is immutable, so the
-            // identical row IS the same object) or a TYPED CONFLICTING
-            // DUPLICATE (same id, different properties). INSERT OR IGNORE
-            // must never swallow the difference: a silent ignore followed
-            // by a revision bump would record APPLIED while the stored
-            // bytes stay old.
+            // (3) representation identity check (UA-IF-4: six immutable
+            // properties; identical = idempotent replay, different = typed
+            // conflicting duplicate). Evidence rows commit with THIS
+            // transaction; no external effect.
             let existing = try query(
                 """
                 SELECT information_id, revision_id, digest, byte_count, media_type
@@ -482,10 +484,13 @@ extension SQLiteCore {
             if let existing {
                 let identical = existing.0 == informationID.rawValue
                     && existing.1 == revisionID.rawValue
-                    && existing.2 == digest
+                    && existing.2 == payloadDigest
                     && existing.3 == payload.count
                     && existing.4 == mediaType
                 if identical {
+                    // Idempotent duplicate registration: the identical
+                    // entity already exists under the same digest — no
+                    // external effect.
                     try uaLedgerInsert(
                         operationID: operationID, actorID: actorID, carrierID: carrierID,
                         subjectID: representationID.rawValue,
@@ -495,8 +500,24 @@ extension SQLiteCore {
                         resultingVersion: String(current.revision))
                     return .replayed(current, .replayed)
                 }
+                try uaLedgerInsert(
+                    operationID: operationID, actorID: actorID, carrierID: carrierID,
+                    subjectID: representationID.rawValue, kind: "CARRIER_REPRESENTATION_REVISE",
+                    baseRevision: expectedRevision, observedRevision: current.revision,
+                    outcome: .conflict, fromVersion: fromVersion, resultingVersion: nil
+                )
                 return .representationConflict(representationID.rawValue, observed: current.revision)
             }
+            // (4) ALL admission checks passed — only NOW the durable
+            // external effect. A crash from here until COMMIT is the
+            // MA-4 crash-only orphan window.
+            try entities.durableWrite(digest: payloadDigest, bytes: payload)
+            if let written = FileManager.default.contents(atPath: entities.fileURL(for: payloadDigest).path),
+               sha256Hex(written) != payloadDigest {
+                throw CarrierInterfaceError.integrityIssue("post-write digest reread mismatch for \(payloadDigest)")
+            }
+            // Durable-acknowledgement boundary (crash-only orphan window).
+            CrashGate.trap("UA-C2")
             try statement("""
               INSERT INTO representations(representation_id, information_id,
                 revision_id, digest, byte_count, media_type, created_at) VALUES (?,?,?,?,?,?,?)
@@ -504,7 +525,7 @@ extension SQLiteCore {
                 $0.bindText(1, representationID.rawValue)
                 $0.bindText(2, informationID.rawValue)
                 $0.bindText(3, revisionID.rawValue)
-                $0.bindText(4, digest)
+                $0.bindText(4, payloadDigest)
                 $0.bindInt(5, payload.count)
                 $0.bindTextOpt(6, mediaType)
                 $0.bindDouble(7, Date().timeIntervalSince1970)
@@ -531,30 +552,14 @@ extension SQLiteCore {
             }
             return .applied(updated)
         }
-        switch casResult {
+        switch admission {
         case .applied(let carrier):
             return (carrier, .applied)
         case .replayed(let carrier, let outcome):
             return (carrier, outcome)
         case .conflict(let observed):
-            try withTransaction {
-                try uaLedgerInsert(
-                    operationID: operationID, actorID: actorID, carrierID: carrierID,
-                    subjectID: representationID.rawValue, kind: "CARRIER_REPRESENTATION_REVISE",
-                    baseRevision: expectedRevision, observedRevision: observed,
-                    outcome: .conflict, fromVersion: fromVersion, resultingVersion: nil
-                )
-            }
             throw UAOperationError.staleRevision(expected: expectedRevision, observed: observed)
         case .representationConflict(let repID, let observed):
-            try withTransaction {
-                try uaLedgerInsert(
-                    operationID: operationID, actorID: actorID, carrierID: carrierID,
-                    subjectID: repID, kind: "CARRIER_REPRESENTATION_REVISE",
-                    baseRevision: expectedRevision, observedRevision: observed,
-                    outcome: .conflict, fromVersion: fromVersion, resultingVersion: nil
-                )
-            }
             throw UAOperationError.conflictingDuplicateRepresentation(repID)
         }
     }
@@ -578,13 +583,16 @@ extension SQLiteCore {
     ) async throws -> UASessionAppendResult {
         let eventID = UUID().uuidString
         let result: UASessionAppendResult = try withTransaction {
-            // 1) operation-id replay (MA-7): return the recorded outcome.
+            // 1) operation-id replay (MA-7, round-4 ruling): return the
+            // RECORDED terminal outcome — a retry does not demote
+            // .applied to .replayed. Zero new effects (no event, no
+            // ledger row, no revision bump).
             if let prior = try uaLedgerRow(operationID: operationID) {
                 if let subject = prior.subjectID,
                    let event = try uaSessionEvent(sessionID: subject, operationID: operationID) {
                     let carrier = try uaCarrierRow(carrierID: carrierID)
                     return UASessionAppendResult(
-                        event: event, outcome: .replayed, carrierRevision: carrier?.revision ?? 0
+                        event: event, outcome: prior.outcome, carrierRevision: carrier?.revision ?? 0
                     )
                 }
             }

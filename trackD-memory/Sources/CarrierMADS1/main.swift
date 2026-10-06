@@ -366,13 +366,14 @@ func step8Recover(_ root: URL, killed: Bool) async throws {
                                 "event + ledger APPLIED committed (synchronous=FULL)",
                             "committed_before_crash": committedBeforeCrash,
                             "retry_outcome": retry.outcome.rawValue,
+                            "retry_returns_recorded_outcome": retry.outcome == .applied,
                             "event_count_unchanged_by_retry":
                                 before.events.count == after.events.count,
                             "fingerprint_unchanged_by_retry":
                                 fingerprintBefore == fingerprintAfter],
-               "bound": "MA-7 / I24 idempotent retry",
+               "bound": "MA-7 / I24 idempotent retry (round-4 ruling: retry returns the RECORDED terminal outcome; zero-effect boundary = no new event, no new ledger row, entity layer untouched)",
                "classification": (killed && committedBeforeCrash
-                                  && retry.outcome == .replayed
+                                  && retry.outcome == .applied
                                   && before.events.count == after.events.count
                                   && fingerprintBefore == fingerprintAfter)
                                    ? "PASS" : "UA-DF-8",
