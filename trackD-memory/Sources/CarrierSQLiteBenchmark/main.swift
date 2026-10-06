@@ -45,6 +45,22 @@ func timed<T>(_ metrics: inout Metrics, _ op: String, _ body: () async throws ->
 
 // MARK: Deterministic fixtures (PB-F2: SplitMix64, seed-derived)
 
+/// Fixture generator v2 for large files: seed-derived deterministic valid
+/// UTF-8 text (word + random hex tokens), low compressibility bias.
+/// Same master seed + this version => identical fixtures (ruling D-B).
+let FIXTURE_GENERATOR_VERSION = "ccvs-fixturegen-v2-hexmix"
+func largeFixtureBytes(_ rng: inout SplitMix64, _ bytes: Int) -> Data {
+    var out = ""
+    let hex = "0123456789abcdef"
+    while out.utf8.count < bytes {
+        let t = rng.next()
+        let words = ["information", "space", "continuation", "carrier", "lineage", "revision", "locator", "pin"]
+        out += words[Int(t % 8)] + "-"
+        for _ in 0..<12 { out += String(hex[Int(rng.next() % 16)]) }
+        out += " "
+    }
+    return Data(String(out.prefix(bytes)).utf8)
+}
 struct SplitMix64 {
     var state: UInt64
     init(seed: UInt64) { state = seed }
@@ -315,9 +331,11 @@ func runBenchmark(tier: String, runIndex: Int, masterSeed: UInt64, rootURL: URL)
 
     // WL2 — large files (all occurrences are observations)
     let dwStart2 = rusageV2()?.dw ?? 0
+    var fixtureHash = ""
     for i in 0..<largeCount {
         let info = CarrierInformationID(rawValue: "large-\(i)")
-        let bytes = Data(count: 10 * 1024 * 1024) // zero-filled 10MiB, deterministic
+        let bytes = largeFixtureBytes(&rng, 10 * 1024 * 1024) // PB-F2 UTF-8 text (D-C fix)
+        if i == 0 { fixtureHash = sha256Hex(bytes) }
         try await timed(&m, "large_create") {
             _ = try await bundle.runtime.create(CarrierCreateRequest(
                 informationID: info, revisionID: CarrierRevisionID(rawValue: "large-rev-\(i)"),
@@ -485,7 +503,9 @@ func runBenchmark(tier: String, runIndex: Int, masterSeed: UInt64, rootURL: URL)
         "finalIntegrityClean": finalReport.isClean,
         "wl1Amplification": Double(wl1Disk) / Double(max(1, wl1Logical)),
         "largeAmplification": Double(largeDisk) / Double(max(1, largeLogical)),
-        "wl1WindowSeconds": wl1Window
+        "wl1WindowSeconds": wl1Window,
+        "fixtureGeneratorVersion": FIXTURE_GENERATOR_VERSION,
+        "largeFixture0Sha256": fixtureHash
     ]
     for (name, list) in m.samples {
         var sorted = list; sorted.sort()

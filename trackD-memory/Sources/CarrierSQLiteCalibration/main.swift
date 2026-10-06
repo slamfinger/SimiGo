@@ -1,6 +1,7 @@
 import Foundation
 import Darwin
 import CarrierInterface
+import CryptoKit
 import CarrierSQLite
 
 // CCVS-01 Amplification Measurement Calibration Study (ruling-mandated, narrow).
@@ -56,6 +57,9 @@ func footprintDetailed(_ dir: URL) -> (logicalBytes: UInt64, allocatedBytes: UIn
     return (logical, allocated, files)
 }
 
+func sha256Hex(_ data: Data) -> String {
+    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+}
 struct SplitMix64 { var s: UInt64; init(_ seed: UInt64) { s = seed }
     mutating func next() -> UInt64 { s &+= 0x9E3779B97F4A7C15; var z = s; z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9; z = (z ^ (z >> 27)) &* 0x94D049BB133111EB; return z ^ (z >> 31) }
     mutating func int(_ r: ClosedRange<Int>) -> Int { r.lowerBound + Int(next() % UInt64(r.count)) }
@@ -116,8 +120,19 @@ print("footprint_steady_closed=\(footprintClosed) amp_closed=\(Double(footprintC
 let bundle2 = try factory.make()
 var logicalLarge: UInt64 = 0
 let dw1 = diskWritten()
+let hex = "0123456789abcdef"
+var fixtureHash = ""
 for i in 0..<10 {
-    let bytes = Data(rng.text(10 * 1024 * 1024).utf8) // PB-F2 compliant deterministic text
+    var out = ""
+    while out.utf8.count < 10 * 1024 * 1024 {
+        let t = rng.next()
+        let words = ["information", "space", "continuation", "carrier", "lineage", "revision", "locator", "pin"]
+        out += words[Int(t % 8)] + "-"
+        for _ in 0..<12 { out += String(hex[hex.index(hex.startIndex, offsetBy: Int(rng.next() % 16))]) }
+        out += " "
+    }
+    let bytes = Data(String(out.prefix(10 * 1024 * 1024)).utf8)
+    if i == 0 { fixtureHash = sha256Hex(bytes) }
     logicalLarge += UInt64(bytes.count)
     _ = try await bundle2.runtime.create(CarrierCreateRequest(
         informationID: CarrierInformationID(rawValue: "large-\(i)"),
@@ -139,4 +154,5 @@ print("logical_payload_bytes=\(logicalLarge)")
 print("entity_allocated_total=\(entL.allocatedBytes) wal_allocated=\(walL)")
 print("footprint_steady_delta_approx=\(footprintLargeOpen - footprintClosed) amp_delta=\(Double(footprintLargeOpen - footprintClosed)/Double(logicalLarge))")
 print("write_traffic_diagnostic=\(dwTraffic2) amp_write_traffic=\(Double(dwTraffic2)/Double(logicalLarge))")
+print("fixture_generator=ccvs-fixturegen-v2-hexmix largeFixture0Sha256=\(fixtureHash)")
 try? FileManager.default.removeItem(at: root)
