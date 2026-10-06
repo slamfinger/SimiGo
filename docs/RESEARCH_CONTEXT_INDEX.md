@@ -25,23 +25,11 @@ Capsule batch base     = 14de9fd
 Information Place      = this Git research estate + registered endpoint documents
 Current PRQ domain     = PRQ-ISF-01, UTF-8 / text-bounded, task-domain bounded
 
-Branch topology (consolidation ruling 2026-10-06, see
-docs/00-governance/SIMIGO_LAB_BRANCH_CONSOLIDATION_RULING_20261006.md):
+Branch topology (final cleanup verified 2026-10-06):
 main                                  = SOLE CANONICAL Research State
-                                        (topology consolidation complete @ 7f7e049; historical-branch ancestry consolidation @ 6ad8104)
-codex/research-recovery-layer-v0.1    = MERGED HISTORICAL BRANCH; its stale
-                                        post-merge docs commit is history-only
-                                        and is not part of the current tree
-integration/path-a-information-place  = ARCHIVED historical backup (strict
-                                        ancestor of the codex line; no further
-                                        commits)
-codex/execution-state-research-20260929
-                                      = historical line, fully behind main
-research/es-reuse-program-20260930  = historical ES-reuse line; its commit
-                                      history is now reachable from main via
-                                      topology-only consolidation @ 6ad8104;
-                                      its artifacts are NOT imported into the
-                                      current PALACE tree
+                                        and ONLY REMOTE BRANCH
+historical branch refs                = DELETED
+historical commit graph              = retained in main history where merged
 
 Machine scan at capsule batch base `14de9fd`:
 TOTAL_MARKDOWN = 2031
