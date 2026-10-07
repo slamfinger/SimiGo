@@ -10,15 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Corrected Request v0.9 at
-> 51e6fd8 supersedes Request v0.8 under Human REVISE. Schema Authority v1 is
-> canonical; v0.9 corrects predecessor/fixture baseline to fef0b2f / Manifest
-> v4 / Completion Record v4 / completed τN1 and proposes scoped alignment plus
-> records 006/campaign only after approval. The Research Focus Reset
+> **Current recovery override — 2026-10-08:** Database-Carrier Replication
+> Design Package v0.1 is ACCEPTED at 9ac5320. Acceptance is design-only; no
+> implementation, initialization, campaign, IS mutation, or broader claim is
+> authorized. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.9 opening)
+## 0. Current recovery status — 2026-10-08 (updated after Design Package v0.1 acceptance)
 
 ```text
 Governance track:
