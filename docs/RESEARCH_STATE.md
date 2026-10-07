@@ -97,6 +97,17 @@ Completed (canonical on main):
     authorized.
   Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
+  Human APPROVE S+E executed scoped τN1 schema alignment at 69b2227 and
+    instantiated records 006 at 1224535, exact-binding post-alignment commit
+    fef0b2f. Campaign exec-006-69b2227 passed step0, EPR004 exact
+    repository/cwd/input enforcement, adapter e88c996b, environment identity
+    ad2abb68, materialize, ES1, ES2 REUSE plus continuation, mutate-n1 D'
+    revision-2 mapping, ESN BLOCK, and observer bounded checks. E1–E6 and N1
+    established. Evidence is canonical at cb365a4. Bounded result:
+    ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED under
+    round-1 scope, pending Human evidence audit.
+  Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
+    records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Campaign exec-005-fef0b2f passed step0, EPR004 exact repository/cwd/input
     enforcement, adapter e88c996b, and environment identity ad2abb68.
     Materialize/es1/es2 passed with observed ES2 REUSE; mutate-n1 failed
@@ -126,18 +137,17 @@ Completed (canonical on main):
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: τN1 modification, EPR004 execution, EXECUTION rerun,
-IS_MUTATION, Observer authorization, tau/runner/fixture repair, old-record
-reuse, implementation changes; governance expansion (maintenance-only).
+NOT AUTHORIZED: campaign rerun, semantic reinterpretation, τN1/runner/fixture
+repair, EPR004 execution, EXECUTION, IS_MUTATION, Observer authorization,
+old-record reuse, implementation changes; governance expansion
+(maintenance-only).
 
 Next lawful object:
-  Human authorization review of Request v0.8. If APPROVE S+E, execute scoped
-  τN1 schema alignment, instantiate records 006 exact-binding the immutable
-  post-alignment commit, run one frozen campaign through EPR004, and STOP for
-  evidence audit. If APPROVE S ONLY, stop after alignment. If REVISE/DENY, no
-  alignment or campaign. No unrequested τ modification, rerun, old-record
-  reuse, environment normalization, IS mutation, or observer action is
-  authorized before that. Core claim remains NOT ESTABLISHED.
+  Human evidence audit of VALID campaign evidence. Bounded result:
+  ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED under round-1
+  instrumented form; deterministic substrate; document-form IS; registered
+  detection boundary. No broader claim is authorized. No rerun, repair, or
+  semantic reinterpretation is authorized before that audit.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

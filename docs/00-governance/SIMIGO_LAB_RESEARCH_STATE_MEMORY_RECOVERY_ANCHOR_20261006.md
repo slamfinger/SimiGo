@@ -142,20 +142,30 @@ Governance track:
     Manifest/Completion to v5, then instantiate records 006 and run one EPR004
     campaign only after approval. No implementation or campaign is authorized
     yet.
+    Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
+    records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
+    Human APPROVE S+E executed scoped τN1 schema alignment at 69b2227 and
+    instantiated records 006 at 1224535, exact-binding post-alignment commit
+    fef0b2f. Campaign exec-006-69b2227 passed step0, EPR004 exact
+    repository/cwd/input enforcement, adapter e88c996b, corrected environment
+    identity ad2abb68, materialize, ES1, ES2 REUSE plus continuation,
+    mutate-n1 D' revision-2 mapping, ESN BLOCK, and observer bounded checks.
+    E1–E6 and N1 established. Evidence is canonical at cb365a4. Bounded
+    result: ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED
+    under round-1 scope, pending Human evidence audit.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human authorization review of Request v0.8. If APPROVE
-  S+E, execute scoped τN1 schema alignment, instantiate records 006
-  exact-binding the immutable post-alignment commit, run one frozen campaign
-  through EPR004, and STOP for evidence audit. If APPROVE S ONLY, stop after
-  alignment. If REVISE/DENY, no alignment or campaign. No unrequested τ
-  modification, rerun, old-record reuse, environment normalization, IS
-  mutation, or observer action is authorized before that. Core claim remains
-  NOT ESTABLISHED.
+  Next lawful object = Human evidence audit of VALID campaign evidence. The
+  bounded result is ES1 -> IS(SRS) -> independent ES2 lawful reuse =
+  ESTABLISHED under round-1 instrumented form; deterministic substrate;
+  document-form IS; registered detection boundary. No broader claim is
+  authorized. No rerun, semantic reinterpretation, τ/runner/fixture repair,
+  EPR004 execution, EXECUTION, IS_MUTATION, or Observer action is authorized
+  before that audit.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
