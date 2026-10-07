@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** EXECUTION campaign
-> `exec-001-edf7d4a` 已在 step-0 environment closure INVALID 并 STOP。
-> 唯一 execution campaign budget 已消耗；IS mutation / observer budgets
-> 未消耗。Evidence = `6b511da`。当前停点 = Human evidence audit 和
-> next-authorization decision；不得重跑或文字修复。
+> **当前状态（2026-10-07 override）：** EXEC-001 已完成 post-campaign
+> audit 并定性为 authorization contract defect；canonical audit =
+> `fa597bc`。campaign 仍 INVALID，semantic stages 未运行；唯一 execution
+> budget 已消耗。当前停点 = Human 决定是否授权 corrected EXECUTION
+> Request；不得重跑或重用旧 records。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -677,3 +677,18 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > canonical at `6b511da`. Execution budget is consumed; automatic renewal is
 > forbidden. Next requires Human evidence audit and a new explicit
 > authorization decision.
+> **UPDATE 55 (2026-10-07)：EXEC-001 audit closed；root cause = authorization contract defect.**
+> Post-campaign audit is canonical at `fa597bc`, blob `3fe6c4f4…`, SHA256
+> `d1fe112a…`. Recomputation confirms measured environment identity
+> `ad2abb68…` and expected `9048aed2…`; sole differing field is
+> `swiftc_version`. Request v0.3 expected swift-driver wording, while its own
+> ENV-PROBE-V1 faithfully stored `/usr/bin/swiftc --version` output. Thus the
+> root cause is pre-authorization environment-binding inconsistency, not
+> runtime drift. Fixture REVISION 002, T-IMPL-01, and adapter runtime are
+> non-defective. The campaign remains INVALID; semantic stages did not run;
+> execution budget is consumed; IS mutation and observer budgets are
+> unconsumed; c454687 records cannot be reused. Next lawful object is Human
+> decision on a corrected EXECUTION Request. A future minimal correction
+> should preserve the probe and align expected swiftc_version with its actual
+> output semantics, but no corrected Request is drafted or authorized here.
+> Core claim remains NOT ESTABLISHED.

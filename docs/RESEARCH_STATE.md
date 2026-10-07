@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXECUTION campaign exec-001-edf7d4a INVALID at step-0 environment closure; awaiting Human evidence audit / next-authorization decision
+> **Status:** STOPPED — EXEC-001 INVALID audit closed: authorization contract defect identified; awaiting Human decision on corrected Request
 
 ```text
 Completed (canonical on main):
@@ -36,6 +36,10 @@ Completed (canonical on main):
     INVALID at ENV-PROBE-V1: measured identity ad2abb68 versus expected
     9048aed2; sole differing field was swiftc_version wording. No ES/IS/
     observer stage ran; evidence is canonical at 6b511da.
+  Post-campaign audit fa597bc recomputed both identities and classified the
+    root cause as pre-authorization environment-binding inconsistency, not
+    runtime drift. Fixture/T-IMPL/adapter runtime are non-defective; the
+    step-0 gate correctly prevented entry to materialize/ES1.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -44,10 +48,12 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human audit of INVALID evidence and an explicit new-authorization decision.
-  No rerun, Request text repair, environment normalization, fixture repair,
-  IS mutation, or observer action is authorized. Core claim remains NOT
-  ESTABLISHED.
+  Human decision whether to authorize a corrected EXECUTION Request. If
+  separately authorized, the minimal contract correction should preserve
+  ENV-PROBE-V1 and align expected swiftc_version with the probe's actual
+  output semantics. No rerun, old-record reuse, environment normalization,
+  fixture repair, IS mutation, or observer action is authorized. Core claim
+  remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

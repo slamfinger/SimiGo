@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — EXECUTION CAMPAIGN INVALID EVIDENCE (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXEC-001 POST-CAMPAIGN AUDIT CLOSED (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -30,11 +30,12 @@ Restored state section             = docs/RESEARCH_STATE.md — “Restored rese
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
 Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-001-edf7d4a` = INVALID at step-0 environment closure. Authorization records are canonical at c454687; evidence package is canonical at 6b511da. The one execution campaign budget is consumed; no semantic stage ran.
+Current post-campaign audit       = fa597bc (blob 3fe6c4f4…, sha256 d1fe112a…). Root cause = pre-authorization environment-binding inconsistency: Request expected swift-driver wording while ENV-PROBE-V1 faithfully recorded `/usr/bin/swiftc --version` output; sole differing field was swiftc_version. Fixture, T-IMPL-01, and adapter runtime are non-defective; INVALID verdict remains binding.
 Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-001-edf7d4a/EXECUTION_EVIDENCE_PACKAGE.md. Fixture/artifact/runtime checks passed, then ENV-PROBE-V1 measured identity ad2abb68… failed against Request expected identity 9048aed2…; sole differing field was swiftc_version wording.
-Current governance track           = STOPPED FOR HUMAN EVIDENCE AUDIT / NEXT-AUTHORIZATION DECISION. No rerun, request-text repair, environment normalization, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. IS mutation and observer budgets remain unconsumed; automatic renewal forbidden.
+Current governance track           = AWAITING HUMAN DECISION whether to authorize a new corrected EXECUTION Request. No rerun, old-record reuse, request-text repair, environment normalization, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. IS mutation and observer budgets remain unconsumed; automatic renewal forbidden.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = Human audit of INVALID evidence and explicit choice whether to authorize a new corrected Request/records. There is no automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
+Next dependency                    = Human choice whether to authorize a corrected EXECUTION Request. A future minimal correction should preserve ENV-PROBE-V1 and align expected swiftc_version with the probe's actual output semantics, but this record does not draft or authorize it. Core claim remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
