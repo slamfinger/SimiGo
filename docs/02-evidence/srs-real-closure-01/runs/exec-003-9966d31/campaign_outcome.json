@@ -1,0 +1,65 @@
+{
+  "authorization": {
+    "execution_sar": "SRS_REAL_CLOSURE_01_SAR_EXECUTION_003",
+    "is_mutation_sar": "SRS_REAL_CLOSURE_01_SAR_IS_MUTATION_003",
+    "observer_authorization_record": "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_003",
+    "provenance_binding_closure_record": "SRS_REAL_CLOSURE_01_EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_003",
+    "records_commit": "bda782913e719b0a465c8679fca4681429eb726f",
+    "request_commit": "888a6a75022ffd2a84f5126055cef883c303c111",
+    "request_sha256": "bb3b9e427bbc07d1ee60c0bcb22df223b61d6d513607a4607c316fbd8b3a0a21"
+  },
+  "boundary": {
+    "E1": "ABSENT",
+    "E2": "ABSENT",
+    "E3": "ABSENT",
+    "E4": "ABSENT",
+    "E5": "ABSENT",
+    "E6": "ABSENT",
+    "N1_BLOCK": "ABSENT",
+    "core_claim": "NOT_ESTABLISHED",
+    "positive_REUSE": "ABSENT",
+    "repair_requires_new_human_authorization": true,
+    "results_interpretable": false
+  },
+  "budget_effect": {
+    "automatic_renewal": "forbidden",
+    "execution_campaign_budget_consumed": true,
+    "is_mutation_budget_consumed": false,
+    "observer_use_budget_consumed": false,
+    "provenance_closure_record_consumed": true
+  },
+  "exact_execution_repository_commit": "9966d311e7e52ab3f5ca828e593ea569cddb008e",
+  "not_performed": [
+    "es1",
+    "es2",
+    "mutate-n1",
+    "esn",
+    "observer",
+    "semantic evidence evaluation"
+  ],
+  "outcome": "INVALID",
+  "pre_stop_facts": {
+    "adapter_runtime_sha256": "e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7",
+    "driver_returncode": 0,
+    "environment_measurement_sha256": "a10eafdef13d6f9f25e84a8d11d2038f6242aa24490dd1c1bbe48e6a0a0d7812",
+    "expected_environment_identity": "ad2abb6809ead5a4d198f35d6f1b8a06624a803c6fc7e161dbb06f1f0838f15a",
+    "materialize_completed": false,
+    "materialize_events_lines": 1,
+    "materialize_returncode": 1,
+    "measured_environment_identity": "ad2abb6809ead5a4d198f35d6f1b8a06624a803c6fc7e161dbb06f1f0838f15a",
+    "provenance_manifest_written": false,
+    "provenance_plan_output_path": "<run_dir> (directory)"
+  },
+  "primary_failure": {
+    "class": "EXECUTION_PROVENANCE_RECORDER_OUTPUT_PATH_INVALID",
+    "detail": "EPR003 completed the driver invocation, computed command facts, then attempted to write its manifest to the run directory instead of a JSON file and exited 1."
+  },
+  "run_id": "exec-003-9966d31",
+  "secondary_failure": {
+    "class": "CAMPAIGN_CWD_SEED_PATH_MISMATCH",
+    "detail": "Driver cwd was the host canonical repository root, while exact execution state was the detached 9966d31 worktree; tau1 seed_path=fixture/inputs/D.md therefore resolved against the wrong tree. materialize emitted process_start then exited 1 before any IS write."
+  },
+  "step0": "PASS",
+  "stop_code": "EXECUTION_PROVENANCE_RECORDER_OUTPUT_PATH_INVALID",
+  "stop_point": "POST_DRIVER_PROVENANCE_COMPLETENESS_CHECK"
+}
