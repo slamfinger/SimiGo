@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.7 已
-> 开启并提交审查：`e721f7a`。EXEC-004 audit closed，root cause =
-> bilateral fixture-runner τ interface contract defect。v0.7 提议先完成
-> scoped τN1 interface，再实例化 records 005 和 corrected campaign。当前停点
-> = Human authorization review；不得未经批准修改 τ、创建 records 或运行。
+> **当前状态（2026-10-07 override）：** Request v0.7 已获 `APPROVE T+E`；
+> τN1 interface completion canonical @ `fef0b2f`，records 005 canonical @
+> `afca0d0`。Campaign `exec-005-fef0b2f` 已在 post-sequence audit
+> INVALID/STOP；evidence @ `5c5fcc4`。当前停点 = Human evidence audit /
+> next-authorization decision；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -819,3 +819,22 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > OAR 005 exact-binding the post-completion commit; run one frozen campaign
 > through EPR004 and STOP. APPROVE T ONLY stops after completion. No stage is
 > authorized; core claim remains NOT ESTABLISHED.
+> **UPDATE 64 (2026-10-07)：APPROVE T+E completed τN1 interface；records 005 instantiated；EXEC-005 = INVALID.**
+> Human ruling exact form = “批准`APPROVE T+E`”. Part T completed at
+> `fef0b2f`: τN1 replaced with exact schema SHA256 `156fa091…`, adding
+> dependencies and D' path/SHA256/revision; Manifest/Completion advanced
+> solely to v4. Four records 005 were canonical at `afca0d0`, exact-binding
+> post-completion commit `fef0b2f`. Campaign `exec-005-fef0b2f` passed
+> step0, EPR004 exact repository/cwd/input enforcement, adapter `e88c996b`,
+> and corrected environment identity `ad2abb68`. Materialize/es1/es2 passed
+> and es2 observed REUSE, but mutate-n1 failed `KeyError:
+> d_prime_seed_path`: completed τN1 placed D' fields under
+> `dependencies[0]`, while exact runner expects top-level. D' mutation and
+> revision-2 mapping were absent; ESN invalidly returned REUSE instead of
+> BLOCK. EPR004 manifest was written and recorded command/process facts, with
+> overall false solely due driver failure. Evidence is canonical at
+> `5c5fcc4`. Campaign remains INVALID; semantic experiment partially launched
+> but not validly completed; positive REUSE is not campaign evidence; E1–E6
+> incomplete; N1 BLOCK absent; hypothesis neither supported nor refuted; core
+> claim remains NOT ESTABLISHED. Next requires Human evidence audit and a new
+> explicit authorization decision.

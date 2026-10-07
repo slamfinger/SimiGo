@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Corrected Request v0.7 at
-> e721f7a supersedes the EXEC-004 audit-closed state. It proposes scoped τN1
-> interface completion plus a separately instantiated corrected campaign; no
-> implementation is authorized yet. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Invalid EXEC-005 evidence at
+> 5c5fcc4 supersedes Request v0.7 waiting state. EPR004 provenance closure
+> succeeded; campaign stopped INVALID at residual τ field-placement mismatch.
+> The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.7 opening)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-005 INVALID evidence)
 
 ```text
 Governance track:
@@ -114,19 +114,26 @@ Governance track:
     IS_MUTATION SAR 005, and OAR 005 exact-binding the post-completion commit
     and run one campaign through EPR004. No implementation or campaign is
     authorized yet.
+    Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
+    records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
+    Campaign exec-005-fef0b2f passed step0, EPR004 exact
+    repository/cwd/input enforcement, adapter e88c996b, and environment
+    identity ad2abb68. Materialize/es1/es2 passed with observed ES2 REUSE;
+    mutate-n1 failed `KeyError: d_prime_seed_path` because completed τN1
+    nested D' fields under dependencies[0] while runner expected top-level;
+    D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE
+    instead of BLOCK. Evidence is canonical at 5c5fcc4.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human authorization review of Request v0.7. If APPROVE
-  T+E, execute scoped τN1 completion, instantiate records 005 exact-binding
-  the post-completion commit, run one frozen campaign through EPR004, and
-  STOP for evidence audit. If APPROVE T ONLY, stop after completion. If
-  REVISE/DENY, no completion or campaign. No unrequested τ modification,
-  rerun, old-record reuse, environment normalization, IS mutation, or observer
-  action is authorized before that. Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human evidence audit of EXEC-005 and explicit decision
+  whether to authorize a further corrected Request/records. No rerun, τN1
+  repair, runner/fixture repair, old-record reuse, environment normalization,
+  IS mutation, or observer action is authorized before that. Core claim
+  remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

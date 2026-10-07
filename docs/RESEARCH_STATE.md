@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-004 audit closed; corrected EXECUTION Request v0.7 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — EXEC-005 INVALID at post-sequence audit; evidence canonical at 5c5fcc4; awaiting Human evidence audit / next-authorization decision
 
 ```text
 Completed (canonical on main):
@@ -95,23 +95,28 @@ Completed (canonical on main):
     SAR 005, IS_MUTATION SAR 005, and OAR 005 exact-binding the post-completion
     commit and one campaign through EPR004. No implementation or campaign is
     authorized.
+  Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
+    records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
+    Campaign exec-005-fef0b2f passed step0, EPR004 exact repository/cwd/input
+    enforcement, adapter e88c996b, and environment identity ad2abb68.
+    Materialize/es1/es2 passed with observed ES2 REUSE; mutate-n1 failed
+    `KeyError: d_prime_seed_path` because completed τN1 nested D' fields under
+    `dependencies[0]` while runner expected top-level; D' mutation/revision-2
+    mapping absent; ESN invalidly returned REUSE instead of BLOCK. Evidence is
+    canonical at 5c5fcc4.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: τN1 modification, EXECUTION rerun, IS_MUTATION, Observer
-authorization, tau/runner/fixture repair beyond the proposed scoped completion,
-old-record reuse, implementation changes; governance expansion
-(maintenance-only).
+NOT AUTHORIZED: τN1 repair, EXECUTION rerun, IS_MUTATION, Observer
+authorization, tau/runner/fixture repair, old-record reuse, implementation
+changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human authorization review of Request v0.7. If APPROVE T+E, execute the
-  scoped τN1 completion, then instantiate records 005 exact-binding the
-  post-completion commit and run one frozen campaign through EPR004. If
-  APPROVE T ONLY, stop after τ completion. If REVISE/DENY, no completion or
-  campaign. No unrequested τ modification, rerun, old-record reuse,
-  environment normalization, IS mutation, or observer action is authorized
-  before that. Core claim remains NOT ESTABLISHED.
+  Human evidence audit of EXEC-005 and explicit choice whether to authorize a
+  further corrected Request/records. No rerun, τN1 repair, runner/fixture
+  repair, old-record reuse, environment normalization, IS mutation, or observer
+  action is authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse
