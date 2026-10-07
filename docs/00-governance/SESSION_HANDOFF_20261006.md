@@ -12,10 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** Request v0.6 已获 `APPROVE A+B+C`；
-> 四条 004 records canonical @ `b80c17a`。Campaign `exec-004-9966d31` 已在
-> post-sequence audit INVALID/STOP；evidence @ `4238529`。当前停点 = Human
-> evidence audit / next-authorization decision；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** EXEC-004 Human evidence audit 已关闭，
+> canonical audit = `df508d4`。Ruling =
+> `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT`（shared/bilateral）。
+> N1 mutation 未发生；ESN REUSE 是 invalid derived behavior。当前停点 =
+> Human decision 是否授权 corrected Request/records；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -787,3 +788,20 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > evidence; hypothesis is neither supported nor refuted; core claim remains
 > NOT ESTABLISHED. Next requires Human evidence audit and a new explicit
 > authorization decision.
+> **UPDATE 62 (2026-10-07)：EXEC-004 Human evidence audit CLOSED；root cause = bilateral fixture-runner τ interface contract defect.**
+> Read-only audit is canonical at `df508d4`, blob `6ce66e4f…`, SHA256
+> `1aa8e6e0…`. Exact runner consumed undeclared top-level
+> `d_prime_seed_path` and `dependencies`; bound τN1 runtime under-declared
+> both. No authoritative τ schema assigned these fields. Therefore the defect
+> is shared/bilateral, not one-sided τ or runner blame. N1 D' addition and
+> revision-2 mapping were absent; ESN then read revision-1, returned REUSE
+> instead of expected BLOCK, and that REUSE is invalid derived behavior rather
+> than semantic evidence or refutation. Campaign remains INVALID; semantic
+> experiment partially launched but not validly completed; E1–E6 incomplete;
+> execution/observer/partial IS budgets consumed; no rerun, tau repair,
+> runner repair, fixture repair, or automatic renewal authorized. Next lawful
+> object is Human decision on a corrected Request/records addressing explicit
+> τN1 interface schema, mutate-n1 required fields including D' binding and
+> dependency ID source, preflight τ field validation, and the open
+> `_001/V1` cross-binding finding if in scope. Core claim remains NOT
+> ESTABLISHED.

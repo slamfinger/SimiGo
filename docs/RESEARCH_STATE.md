@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-004 INVALID at post-sequence audit; evidence canonical at 4238529; awaiting Human evidence audit / next-authorization decision
+> **Status:** STOPPED — EXEC-004 INVALID; read-only Human evidence audit closed with bilateral fixture-runner τ interface contract defect
 
 ```text
 Completed (canonical on main):
@@ -82,6 +82,12 @@ Completed (canonical on main):
     d_prime_seed_path`; D' mutation/revision-2 mapping was absent; ESN
     invalidly returned REUSE rather than BLOCK. Evidence is canonical at
     4238529.
+  Read-only Human evidence audit df508d4 closed contract responsibility as
+    `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT` (shared/bilateral): exact
+    runner consumed undeclared top-level `d_prime_seed_path` and
+    `dependencies`, while bound τN1 runtime under-declared both. N1 D'
+    addition and revision-2 mapping were absent; ESN REUSE was invalid
+    derived behavior and neither semantic evidence nor refutation.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -91,10 +97,13 @@ tau/runner/fixture repair, old-record reuse, implementation changes;
 governance expansion (maintenance-only).
 
 Next lawful object:
-  Human audit of INVALID evidence and explicit choice whether to authorize a
-  new corrected Request/records. No rerun, tau/runner/fixture repair,
-  old-record reuse, environment normalization, IS mutation, or observer action
-  is authorized before that. Core claim remains NOT ESTABLISHED.
+  Human decision whether to authorize a corrected Request/records. A future
+  correction must address explicit τN1 interface schema, mutate-n1 required
+  fields including D' binding/dependency ID source, preflight τ field
+  validation, and the still-open `_001/V1` cross-binding finding if in scope.
+  No rerun, tau/runner/fixture repair, old-record reuse, environment
+  normalization, IS mutation, or observer action is authorized before that.
+  Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

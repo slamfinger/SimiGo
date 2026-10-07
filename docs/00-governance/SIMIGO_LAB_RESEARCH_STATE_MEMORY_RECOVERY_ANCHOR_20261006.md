@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Invalid EXEC-004 evidence at
-> 4238529 supersedes Request v0.6 waiting state. EPR004 provenance closure
-> succeeded; campaign stopped INVALID at mutate-n1 τ binding. The Research
-> Focus Reset
+> **Current recovery override — 2026-10-07:** EXEC-004 Human evidence audit at
+> df508d4 supersedes generic INVALID-evidence state. Root cause is a bilateral
+> fixture-runner τ interface contract defect; N1 mutation never occurred and
+> ESN REUSE was invalid derived behavior. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-004 INVALID evidence)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-004 audit closure)
 
 ```text
 Governance track:
@@ -100,17 +100,25 @@ Governance track:
     mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation/revision-2
     mapping was absent; ESN invalidly returned REUSE rather than BLOCK.
     Evidence is canonical at 4238529.
+    Read-only Human evidence audit df508d4 closed contract responsibility as
+    `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT` (shared/bilateral): exact
+    runner consumed undeclared top-level `d_prime_seed_path` and
+    `dependencies`, while bound τN1 runtime under-declared both. N1 D'
+    addition and revision-2 mapping were absent; ESN REUSE was invalid
+    derived behavior and neither semantic evidence nor refutation.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human audit of INVALID evidence and explicit decision
-  whether to authorize a new corrected Request/records. No rerun, tau/runner/
-  fixture repair, old-record reuse, environment normalization, IS mutation, or
-  observer action is authorized before that. Core claim remains NOT
-  ESTABLISHED.
+  Next lawful object = Human decision whether to authorize a corrected
+  Request/records. A future correction must address explicit τN1 interface
+  schema, mutate-n1 required fields including D' binding/dependency ID source,
+  preflight τ field validation, and the still-open `_001/V1` cross-binding
+  finding if in scope. No rerun, tau/runner/fixture repair, old-record reuse,
+  environment normalization, IS mutation, or observer action is authorized
+  before that. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

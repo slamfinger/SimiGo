@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — EXEC-004 INVALID EVIDENCE (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXEC-004 HUMAN EVIDENCE AUDIT CLOSED (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -31,13 +31,13 @@ Current global goal                = ES₁ settled relation becomes lawful, vali
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
 Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-004-9966d31` = INVALID at post-sequence audit. Request v0.6 was APPROVED; four records 004 are canonical at b80c17a; evidence package is canonical at 4238529. The v0.6 execution/observer/IS campaign budget is consumed.
 Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-004-9966d31/EXECUTION_EVIDENCE_PACKAGE.md. Step0, EPR004 exact cwd/input/provenance enforcement, adapter e88c996b…, and environment identity ad2abb68… passed. Materialize, es1, and es2 REUSE passed. `mutate-n1` failed `KeyError: d_prime_seed_path`; D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE instead of BLOCK.
-Current failure class             = `MUTATE_N1_TAU_D_PRIME_SEED_PATH_BINDING_DEFECT`. This is a fixture/runner τ contract mismatch, not runtime drift, EPR004 failure, or semantic refutation.
 Current human evidence audit       = 266e953 (blob dfb54c7a…, sha256 b13280a4…) = CLOSED. Audit A accepted `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`; Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The defects are independent; seed-path failure was causally earlier, while manifest failure is the registered primary stop. Root cause deeper than these mechanical contracts remains unresolved.
+Current failure ruling             = `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT` = CLOSED / shared-bilateral. Exact runner consumed undeclared top-level `d_prime_seed_path` and `dependencies`; bound τN1 runtime under-declared both. N1 D' addition and revision-2 mapping were absent; ESN REUSE was invalid derived behavior.
 Current authorization request      = CORRECTED EXECUTION Request v0.6 @ 8704c75 (blob 8cc67786…, sha256 a6f0e2c3…), OPENED / SUBMITTED; no stage authorized. It preserves execution state 9966d31 and all inherited bindings. R-A closure adds EPR004 with output-path preflight, exact executable/argv/artifact provenance, and fail-closed behavior. R-B closure adds cross-binding record 004 mapping legacy `_001/V1` to OAR 004/CHANNEL-UNIVERSE-V2 without runner modification.
-Current governance track           = STOPPED FOR HUMAN EVIDENCE AUDIT / NEXT-AUTHORIZATION DECISION. No rerun, tau repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. Execution, observer, and partial IS campaign budgets are consumed; automatic renewal forbidden.
+Current governance track           = AWAITING HUMAN DECISION whether to authorize a corrected Request/records. No rerun, tau repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. Execution, observer, and partial IS campaign budgets are consumed; automatic renewal forbidden.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = Human audit of INVALID evidence and explicit choice whether to authorize a new corrected Request/records. There is no automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
+Next dependency                    = Human decision whether to authorize a corrected Request/records. A future correction must address explicit τN1 interface schema, mutate-n1 required fields including D' binding/dependency ID source, preflight τ field validation, and the still-open `_001/V1` cross-binding finding if in scope. No automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
