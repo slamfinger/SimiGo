@@ -315,7 +315,9 @@
 > Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9
 > Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0
 > Manifest Contract v1.0 = ACCEPT / FROZEN
-> Current object = AUTH-REQ-01 Human Authorization Request v0.1 plus IMPLEMENTATION-only Filled Manifest Instance v0.1 OPENED — NO STAGE AUTHORIZED
+> Manifest Contract v0.1 = REVISE / SUPERSEDED BY V0.2
+> AUTH-REQ-01 Request v0.1 = REVISE REQUEST / SUPERSEDED BY V0.2
+> Current object = AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled Manifest Instance v0.2 OPENED — NO STAGE AUTHORIZED
 > Human independent review完成 Manifest Contract v1.0 final adversarial review，
 > 裁定 **Run/Implementation Manifest v1.0 = ACCEPT / FROZEN**。Observer fact、
 > independent semantic-role classification、phased read mapping、typed
@@ -362,7 +364,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **AUTH-REQ-01 Human Authorization Request v0.1 plus IMPLEMENTATION-only Filled Manifest Instance v0.1 — NO STAGE AUTHORIZED**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled Manifest Instance v0.2 — NO STAGE AUTHORIZED**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

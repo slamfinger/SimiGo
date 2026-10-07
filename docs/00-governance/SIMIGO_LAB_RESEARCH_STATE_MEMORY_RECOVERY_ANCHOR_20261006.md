@@ -258,8 +258,8 @@ Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8.
 Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9.
 Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0.
 Manifest Contract v1.0 = ACCEPT / FROZEN.
-AUTH-REQ-01 Human Authorization Request v0.1 and IMPLEMENTATION-only Filled
-Manifest Instance v0.1 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
+AUTH-REQ-01 Human Authorization Request v0.2 and IMPLEMENTATION-only Filled
+Manifest Instance v0.2 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
 no Stage Authorization Record exists and no stage is authorized.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
@@ -312,13 +312,13 @@ Frozen bases =
   + Run/Implementation Manifest Contract v1.0 ACCEPT / FROZEN
 
 Next lawful action =
-  Human authorization review of AUTH-REQ-01; no stage authorized
+  Human authorization review of AUTH-REQ-01 v0.2; no stage authorized
 
 Current request document =
-  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_HUMAN_AUTHORIZATION_REQUEST_V0.1_20261007.md
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_HUMAN_AUTHORIZATION_REQUEST_V0.2_20261007.md
 
 Current filled manifest instance =
-  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMPLEMENTATION_ONLY_FILLED_MANIFEST_INSTANCE_V0.1_20261007.md
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMPLEMENTATION_ONLY_FILLED_MANIFEST_INSTANCE_V0.2_20261007.md
 
 Immutable bindings =
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMMUTABLE_BINDINGS_20261007.md

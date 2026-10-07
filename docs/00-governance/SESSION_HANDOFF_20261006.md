@@ -569,3 +569,9 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > SHA256 =
 > 8ef4912167cd374146e491c89194981940d8e505ef458f56cbf9950b8aa60a73.
 > Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 48 (2026-10-07)：AUTH-REQ-01 v0.1 = REVISE REQUEST；v0.2 OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW.**
+> Correction: Request, Filled Manifest Instance, and Immutable Bindings now
+> exact-bind all four frozen bases with commit, Git blob content address, Git blob
+> SHA1 integrity binding, and SHA256. Request v0.2 and Manifest Instance v0.2 also
+> receive exact content bindings. requested_stage_set remains { IMPLEMENTATION },
+> no Stage Authorization Record exists, and no stage is authorized.

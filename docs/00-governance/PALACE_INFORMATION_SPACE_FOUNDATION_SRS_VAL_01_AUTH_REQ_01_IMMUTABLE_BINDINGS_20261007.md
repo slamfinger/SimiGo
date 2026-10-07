@@ -4,6 +4,7 @@
 > **Date:** 2026-10-07
 > **Binding purpose:** immutable content bindings for the opened Authorization
 > Request and IMPLEMENTATION-only Filled Manifest Instance.
+> **Status note:** SUPERSEDED BY AUTH-REQ-01 Immutable Bindings v0.2.
 > **Authorization:** NOT AUTHORIZED
 
 ## 1. Request binding

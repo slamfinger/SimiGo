@@ -3975,3 +3975,66 @@ FIXTURE_PREPARATION NOT AUTHORIZED
 EXECUTION NOT AUTHORIZED
 IS_MUTATION NOT AUTHORIZED
 ```
+
+## AUTH-REQ-01 v0.1 REVISE REQUEST; v0.2 exact bindings opened — 2026-10-07
+
+The Human independently reviewed AUTH-REQ-01 v0.1 at `400e228`.
+
+Ruling:
+
+```text
+IMPLEMENTATION-only requested stage set       PASS
+authorized repository revision eef3d24        PASS
+T-IMPL-01 target                              PASS
+finite writable path set                      PASS
+Package.swift target-registration-only        PASS
+standard-library-only target dependency       PASS
+zero execution/fixture/mutation budget        PASS
+future artifact not pre-invented              PASS
+no later-stage implication                    PASS
+Request immutable binding                     PASS
+Request → Manifest instance identity          PASS
+four-stage separation                         PASS
+Phase 1 Boundary Directive                    PASS
+
+Frozen-baseline content/integrity exact binding REVISE
+
+AUTH-REQ-01 v0.1                              REVISE REQUEST
+```
+
+AUTH-REQ-01 Request v0.2, IMPLEMENTATION-only Filled Manifest Instance v0.2, and
+Immutable Bindings v0.2 were delivered. They exact-bind:
+
+```text
+SRS-VAL Design v0.8
+  commit 1170208bee91faf34bed5eb0f3359ab6009372ba
+  Git blob dbbeb5cb4c5aa3a78ea9bf39029a21579d2244d4
+  SHA256 1f661bdabcb511f811c9b653e27f1d2242241fca76ca7f2d7614c56ad5b30fd2
+
+Authorization Package v0.6
+  commit 6089f0bf630af6e85e705fe42f8de2d2327e5200
+  Git blob fb05a60dc950f2f592580cfbc079dff2aa0f91db
+  SHA256 e16ca843999959c7583a1b34199c14ea083e456747a86bbb607c342bc493fe37
+
+Implementation Boundary Audit v0.1
+  commit cb95c095eb5ceddc3d6d0f7c6b85290e167e8a9d
+  Git blob 71064a237c1c79db7547f5d551f7b334998dda4b
+  SHA256 a6499c00f050b76356c3df56d4acb103184fcac05fde17a77c06b8dd53a5c251
+
+Manifest Contract v1.0
+  commit f69a0e2506ae94707fd19f85de975b03d5d25c5f
+  Git blob 9d8853aaac98851ae5e4365d035a141efd5a6e60
+  SHA256 46c4eb4d44a9868c9668da92169a39bbc437a1071e7644eb1db7d3ab8d1e60ff
+```
+
+Current state:
+
+```text
+AUTH-REQ-01 Request v0.2 OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW
+IMPLEMENTATION-only Filled Manifest Instance v0.2 OPENED / SUBMITTED
+No Stage Authorization Record exists
+IMPLEMENTATION NOT AUTHORIZED
+FIXTURE_PREPARATION NOT AUTHORIZED
+EXECUTION NOT AUTHORIZED
+IS_MUTATION NOT AUTHORIZED
+```

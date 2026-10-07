@@ -3,6 +3,7 @@
 > **Status:** OPENED / SUBMITTED WITH AUTH-REQ-01 — NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Manifest instance:** AUTH-REQ-01 IMPLEMENTATION-only Filled Manifest Instance v0.1
+> **Status note:** SUPERSEDED BY v0.2.
 > **Manifest contract:** Run/Implementation Manifest Contract v1.0 at `f69a0e2`
 > **Authorization request:** AUTH-REQ-01 Human Authorization Request v0.1
 > **Requested stage set:** `{ IMPLEMENTATION }`
