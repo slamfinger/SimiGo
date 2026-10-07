@@ -1,8 +1,8 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v4
+# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v5
 
-> **Status:** τN1 INTERFACE COMPLETION WORK CYCLE DELIVERED — ARTIFACT BINDINGS (v4 supersedes v3)
+> **Status:** τN1 SCHEMA ALIGNMENT WORK CYCLE DELIVERED — ARTIFACT BINDINGS (v5 supersedes v4 @ post-τN1-completion state)
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_SAR_005 under Request v0.7 APPROVE T+E
+> **Authorization:** TAU_N1_INTERFACE_SCHEMA_ALIGNMENT_RECORD_006 / EXECUTION SAR 006 under Request v0.9 APPROVE S+E
 > **Bound design:** SRS-REAL-CLOSURE-01 Design v0.2 (blob `a28e8d9b…`, sha256 `d43792b5…`) — unchanged
 > **Bound implementation artifact:** T-IMPL-01 SettledRelationValidationCore
 > (canonical components per completion record §2; re-verified byte-identical
@@ -10,16 +10,16 @@
 
 ## 1. Fixture artifact bindings
 
-### Changed by this completion (τN1 interface schema only)
+### Changed by this alignment (τN1 schema authority alignment only)
 
 ```text
 fixture/tau/tauN1.json
-  git:blob:0d5434ec8ef2de497f52f0605e4fe8c09d524315
-  sha256:156fa091f6f0093f384fcc863a2532d7c8750619584fbca351f50632a677089b
-  (supersedes v3 git:blob:eda97c2a… / sha256:fe211518…)
+  git:blob:39426cf0c20c782dd9c87dbbd9d87c1648f8a5e3
+  sha256:a78de04d4197841907f09e5927d070f20f7da126fa2750ddb0c2ba527a11fd39
+  (supersedes v4 git:blob:0d5434ec… / sha256:156fa091…)
 ```
 
-### Carried unchanged from manifest v3 (verified byte-identical this cycle)
+### Carried unchanged from manifest v4 (verified byte-identical this cycle)
 
 ```text
 fixture/adapter/srsval_adapter.swift
@@ -84,15 +84,16 @@ append-only writer invariant audited SV-4c-1b). Declaration only.
 exported from `07176ec`, SHA256-verified before compilation, compiled
 together with the adapter (same compilation unit).
 
-## 5. Revision changelog (v3 → v4)
+## 5. Revision changelog (v4 → v5)
 
 ```text
-tauN1.json changes are limited to the bilateral τ interface defect:
-  adds dependencies[0].dependency_id = D-1;
-  adds dependencies[0].d_prime_seed_path = fixture/inputs/D_prime.md;
-  adds dependencies[0].d_prime_expected_sha256 =
+tauN1.json aligns to τN1 Interface Schema Authority v1:
+  moves D' binding fields from dependencies[0] to top level;
+  top-level d_prime_seed_path = fixture/inputs/D_prime.md;
+  top-level d_prime_expected_sha256 =
     8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955;
-  adds dependencies[0].d_prime_revision = 2.
+  top-level d_prime_revision = 2;
+  dependencies[0] retains dependency_id = D-1.
 No runner, semantic decision, frozen contract, or other fixture artifact
 changes.
 ```

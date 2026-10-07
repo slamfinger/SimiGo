@@ -1,35 +1,35 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v4
+# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v5
 
-> **Status:** τN1 INTERFACE COMPLETION WORK CYCLE CONSUMED — DELIVERED FOR CANONICAL VERIFICATION
+> **Status:** τN1 SCHEMA ALIGNMENT WORK CYCLE CONSUMED — DELIVERED FOR CANONICAL VERIFICATION
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_SAR_005
-> under Request v0.7 APPROVE T+E.
-> **Supersedes:** Completion Record v3 solely for τN1 interface completion;
-> all v3 semantic and artifact bindings remain otherwise unchanged.
+> **Authorization:** TAU_N1_INTERFACE_SCHEMA_ALIGNMENT_RECORD_006 / EXECUTION
+> SAR 006 under Request v0.9 APPROVE S+E.
+> **Supersedes:** Completion Record v4 solely for τN1 schema alignment; all v4
+> semantic and artifact bindings remain otherwise unchanged.
 
 ## 1. Completion identity
 
 ```text
 fixture_stage_completion_record_identity =
-  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V4;
+  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V5;
 
 fixture_stage_completion_record_content_address =
   registered by the governing commit that introduces this record on main
   (this file lives inside the authorized fixture subtree per R3);
 
 authorized_request_identity =
-  SRS_REAL_CLOSURE_01_EXECUTION_AUTHORIZATION_REQUEST_V0_7
-  (git:blob:e04a1219… @ e721f7a);
+  SRS_REAL_CLOSURE_01_EXECUTION_AUTHORIZATION_REQUEST_V0_9
+  (git:blob:c47e3c02… @ 51e6fd8);
 ```
 
 ## 2. Fixture manifest binding
 
 ```text
-fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v4);
+fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v5);
 fixture_manifest_content_address / integrity binding =
   registered in the same governing commit;
-  the manifest v3 re-binds the changed artifact (es_runner.py) and carries
-  all ten unchanged artifacts with their original bindings (verified
+  the manifest v5 re-binds the changed artifact (tauN1.json) and carries all
+  ten unchanged artifacts with their original bindings (verified
   byte-identical this cycle).
 ```
 
@@ -37,33 +37,34 @@ fixture_manifest_content_address / integrity binding =
 
 ```text
 execution_fixture_changed_path_set (this revision cycle) = {
-  docs/02-evidence/srs-real-closure-01/fixture/tau/tauN1.json (τN1 schema completion)
-  docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_MANIFEST.md   (v4)
+  docs/02-evidence/srs-real-closure-01/fixture/tau/tauN1.json (τN1 schema alignment)
+  docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_MANIFEST.md   (v5)
   docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_PREPARATION_COMPLETION_RECORD.md  (this file)
 };
 
 authorization_chain_history (governance commits, not work-cycle artifacts):
-  … → 6ace05a (Request v0.7 navigation state) → f78b874 (τN1 Completion
-  SAR 005) → this governing commit;
+  … → 51e6fd8 (Request v0.9 OPENED/SUBMITTED) → records 006 governing
+  commit → this governing commit;
 
 forbidden_path_violation_count = 0;
 forbidden_dependency_violation_count = 0;
 scope_compliance_verdict = PASS;
-completion_validity_boundary = τN1 interface work cycle consumed. Manifest v4
-  is the exact fixture artifact any later execution records must exact-bind.
+completion_validity_boundary = τN1 schema alignment work cycle consumed.
+  Manifest v5 is the exact fixture artifact any later execution records must
+  exact-bind.
   Automatic renewal/extension forbidden.
 ```
 
-## 4. Completion applied (τN1 interface schema only)
+## 4. Alignment applied (τN1 schema authority only)
 
 ```text
-tauN1.json now declares dependencies[0].dependency_id = D-1,
-  dependencies[0].d_prime_seed_path = fixture/inputs/D_prime.md,
-  dependencies[0].d_prime_expected_sha256 =
-    8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955, and
-  dependencies[0].d_prime_revision = 2.
-This closes the bilateral fixture-runner τ interface contract defect recorded
-by EXEC-004 Human Evidence Audit df508d4. No runner, semantic decision, or
+tauN1.json now aligns to τN1 Interface Schema Authority v1. D' binding fields
+  move from dependencies[0] to top level:
+    d_prime_seed_path = fixture/inputs/D_prime.md;
+    d_prime_expected_sha256 =
+      8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955;
+    d_prime_revision = 2.
+dependencies[0].dependency_id remains D-1. No runner, semantic decision, or
 other fixture artifact changes.
 ```
 
@@ -129,7 +130,7 @@ dependency_policy_compliance = Python 3 stdlib only; swiftc used solely
 ```text
 EXECUTION              NOT AUTHORIZED (no campaign sequence may run until an
                        EXECUTION authorization request exact-binds THIS
-                       manifest v4 and declares the scoped IS_MUTATION
+                       manifest v5 and declares the scoped IS_MUTATION
                        effect set per Design v0.2 §9)
 IS_MUTATION            NOT AUTHORIZED
 IMPLEMENTATION         NOT AUTHORIZED (T-IMPL-01 canonical artifact untouched)
