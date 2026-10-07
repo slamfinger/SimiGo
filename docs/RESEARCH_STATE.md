@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-001 INVALID audit closed: authorization contract defect identified; awaiting Human decision on corrected Request
+> **Status:** STOPPED — EXEC-001 audit closed; corrected EXECUTION Request v0.4 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -40,6 +40,11 @@ Completed (canonical on main):
     root cause as pre-authorization environment-binding inconsistency, not
     runtime drift. Fixture/T-IMPL/adapter runtime are non-defective; the
     step-0 gate correctly prevented entry to materialize/ES1.
+  Human “授权 corrected EXECUTION Request” opened corrected Request v0.4 at
+    79ce4e3. It preserves ENV-PROBE-V1, aligns expected swiftc_version to
+    `/usr/bin/swiftc --version` semantics, uses expected environment identity
+    ad2abb68, exact-binds execution commit 9966d31, and requests new records
+    002 with a new budget. No stage is authorized.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -48,12 +53,12 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human decision whether to authorize a corrected EXECUTION Request. If
-  separately authorized, the minimal contract correction should preserve
-  ENV-PROBE-V1 and align expected swiftc_version with the probe's actual
-  output semantics. No rerun, old-record reuse, environment normalization,
-  fixture repair, IS mutation, or observer action is authorized. Core claim
-  remains NOT ESTABLISHED.
+  Human authorization review of Request v0.4. If APPROVE A+B+C, create new
+  EXECUTION SAR 002, IS_MUTATION SAR 002, and OBSERVER AUTHORIZATION RECORD
+  002 exact-binding 9966d31; run one frozen campaign and STOP for evidence
+  audit. No rerun, old-record reuse, environment normalization, fixture
+  repair, IS mutation, or observer action is authorized before that. Core
+  claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

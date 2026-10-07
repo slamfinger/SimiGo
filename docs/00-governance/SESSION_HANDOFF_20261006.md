@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** EXEC-001 已完成 post-campaign
-> audit 并定性为 authorization contract defect；canonical audit =
-> `fa597bc`。campaign 仍 INVALID，semantic stages 未运行；唯一 execution
-> budget 已消耗。当前停点 = Human 决定是否授权 corrected EXECUTION
-> Request；不得重跑或重用旧 records。
+> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.4 已
+> 开启并提交审查：`79ce4e3`。EXEC-001 audit closed，root cause =
+> authorization contract defect；campaign 仍 INVALID，semantic stages 未
+> 运行。v0.4 只保留 ENV-PROBE-V1 并修正 expected `swiftc_version`；当前
+> 停点 = Human authorization review。不得创建 SAR/OAR 或重用旧 records。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -692,3 +692,16 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > should preserve the probe and align expected swiftc_version with its actual
 > output semantics, but no corrected Request is drafted or authorized here.
 > Core claim remains NOT ESTABLISHED.
+> **UPDATE 56 (2026-10-07)：Human authorized corrected Request；EXECUTION Request v0.4 OPENED/SUBMITTED.**
+> Human ruling exact form = “授权 corrected EXECUTION Request”. This opened
+> corrected Request v0.4 only; it did not approve A+B+C, create records, or
+> revive old budgets. Request v0.4 is canonical at `79ce4e3`, blob
+> `0b892d66…`, SHA256 `d64e4ebc…`. It supersedes consumed Request v0.3 and
+> makes the sole contract correction: ENV-PROBE-V1 remains byte-for-byte
+> unchanged; expected `swiftc_version` is aligned to `/usr/bin/swiftc
+> --version` output semantics; corrected expected environment identity is
+> `ad2abb68…`. Exact execution repository commit is `9966d31`; later
+> governance commits are not execution state. If approved, it requires new
+> EXECUTION SAR 002, IS_MUTATION SAR 002, and OBSERVER AUTHORIZATION RECORD
+> 002 with a new independent campaign budget. No stage is authorized; core
+> claim remains NOT ESTABLISHED.
