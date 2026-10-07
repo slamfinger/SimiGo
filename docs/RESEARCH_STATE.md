@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-005 audit closed; corrected EXECUTION Request v0.8 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -109,6 +109,12 @@ Completed (canonical on main):
     fixture preparation introduced both exact runner top-level consumption and
     τN1 without that field; no authoritative τN1 interface schema existed.
     One-sided Request-schema or runner-defect attribution is rejected.
+  Human REVISE ruling on Request v0.8 opened corrected Request v0.9 at
+    51e6fd8. Sole revision corrects predecessor/fixture baseline to current
+    canonical fef0b2f / Manifest v4 / Completion Record v4 / completed τN1;
+    Schema Authority v1, EPR004, scoped v4→v5 alignment, records 006, frozen
+    decisions, and stop doctrine remain unchanged. No implementation or
+    campaign is authorized.
   Human “授权‘Schema Authority + 新 Request 起草’” opened corrected Request
     v0.8 at cfa514c. It exact-binds Schema Authority v1 and proposes scoped
     τN1 schema alignment: remove deprecated nested D' fields, add required

@@ -12,12 +12,12 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** Schema Authority v1 已 canonical，
-> corrected EXECUTION Request v0.8 已开启并提交审查：`cfa514c`。EXEC-005
-> audit closed，root cause = shared/bilateral
-> `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`。v0.8 提议 scoped τN1 schema
-> alignment 和 records 006/campaign。当前停点 = Human authorization review；
->不得未经批准修改 τN1、创建 records 或运行。
+> **当前状态（2026-10-07 override）：** Request v0.8 已被 Human
+> `REVISE REQUEST`；corrected Request v0.9 已开启并提交审查：`51e6fd8`。
+> 唯一修正是 predecessor/fixture baseline 明确为 fef0b2f / Manifest v4 /
+> Completion Record v4 / completed τN1。Schema Authority v1、EPR004、scoped
+> v4→v5 alignment、records 006/campaign 边界不变。当前停点 = Human
+> authorization review；不得未经批准实施 alignment、创建 records 或运行。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -871,3 +871,15 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > EPR004 campaign only after separate approval. Exact post-alignment execution
 > commit shall be instantiated before records 006. No stage is authorized;
 > core claim remains NOT ESTABLISHED.
+> **UPDATE 67 (2026-10-07)：Request v0.8 REVISED；EXECUTION Request v0.9 OPENED/SUBMITTED.**
+> Human ruling exact form = “REVISE REQUEST”. Revised Request v0.9 is
+> canonical at `51e6fd8`, blob `c47e3c02…`, SHA256 `01f55dc1…`. Sole revision
+> corrects v0.8's predecessor binding ambiguity: current fixture baseline is
+> explicitly `fef0b2f` / Manifest v4 (blob `34c0c66c…`, SHA256 `abbc342e…`) /
+> Completion Record v4 (blob `a1d4eb6f…`, SHA256 `ef4728bb…`) / completed
+> τN1 (blob `0d5434ec…`, SHA256 `156fa091…`). Manifest v3 is historical
+> provenance only. Schema Authority v1 @ `a3e449c`, EPR004 @ SHA256
+> `c0aff998…`, scoped v4→v5 alignment limited to τN1/Manifest/Completion,
+> records 006 exact-binding the immutable post-alignment commit, frozen
+> decisions, and stop doctrine remain unchanged. No stage is authorized; core
+> claim remains NOT ESTABLISHED.

@@ -10,14 +10,15 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Corrected Request v0.8 at
-> cfa514c supersedes the EXEC-005 audit-closed waiting state. Schema Authority
-> v1 is canonical; v0.8 proposes scoped τN1 schema alignment plus records 006
-> and campaign only after approval. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Corrected Request v0.9 at
+> 51e6fd8 supersedes Request v0.8 under Human REVISE. Schema Authority v1 is
+> canonical; v0.9 corrects predecessor/fixture baseline to fef0b2f / Manifest
+> v4 / Completion Record v4 / completed τN1 and proposes scoped alignment plus
+> records 006/campaign only after approval. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.8 opening)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.9 opening)
 
 ```text
 Governance track:
@@ -128,6 +129,12 @@ Governance track:
     fixture preparation introduced both exact runner top-level consumption and
     τN1 without that field; no authoritative τN1 interface schema existed.
     One-sided Request-schema or runner-defect attribution is rejected.
+    Human REVISE ruling on Request v0.8 opened Request v0.9 at 51e6fd8. Sole
+    revision corrects predecessor/fixture baseline to current canonical
+    fef0b2f / Manifest v4 / Completion Record v4 / completed τN1; Schema
+    Authority v1, EPR004, scoped v4→v5 alignment, records 006, frozen
+    decisions, and stop doctrine remain unchanged. No implementation or
+    campaign is authorized yet.
     Human “授权‘Schema Authority + 新 Request 起草’” opened Request v0.8 at
     cfa514c. It exact-binds Schema Authority v1 and proposes scoped τN1 schema
     alignment: remove deprecated nested D' fields, add required top-level
