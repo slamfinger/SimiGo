@@ -10,12 +10,13 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Request v0.7 supersedes the
-> claim that `e729e32` closed FIXTURE_PREPARATION. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** SAR 002 work state @ 5eb1ec0
+> supersedes the Request-v0.7 waiting state. It does NOT claim final
+> FIXTURE_PREPARATION acceptance. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.7 opening)
+## 0. Current recovery status — 2026-10-07 (updated after SAR 002 work cycle)
 
 ```text
 Governance track:
@@ -35,19 +36,23 @@ Governance track:
     mechanism, writer invariant, and claimed SV result PASS; final closure
     FAILS on RF-4.5 IMMUTABLE_REVISION payload and RF-4.6
     mapping_snapshot_seal_boundary.
+    Human approved Request v0.7 → REVISION SAR 002 (5296d9f) → exactly one
+    work cycle at 5eb1ec0 closed RF-4.5/RF-4.6/RF-4.6m; SV-1..SV-6 with
+    SV-4.5/4.6/4.6m field-level assertions = 33/33 PASS in discarded
+    sandbox; manifest v3, completion record v3, es_runner.py
+    875cb1d9/bc393362 delivered and pushed. Final closure remains pending
+    fresh Human acceptance.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human ruling on FIXTURE_PREPARATION REVISION
-  Authorization Request v0.7. If approved, the only work path is a fresh
-  exact-binding REVISION SAR 002, repair RF-4.5/RF-4.6 (including RF-4.6m),
-  rerun SV-1..SV-6 with field-level assertions, deliver manifest v3 and
-  completion record v3, push/verify/STOP, then obtain fresh Human acceptance.
-  EXECUTION Authorization Request v0.3 remains NOT OPEN until the fixture
-  revision is accepted.
+  Next lawful object = fresh Human acceptance review of work state 5eb1ec0.
+  If ACCEPT, draft EXECUTION Authorization Request v0.3 exact-binding
+  FIXTURE_MANIFEST v3 and completion record v3. If REJECT/REVISE, no
+  automatic renewal or repair cycle may begin. EXECUTION Authorization
+  Request v0.3 remains NOT OPEN.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

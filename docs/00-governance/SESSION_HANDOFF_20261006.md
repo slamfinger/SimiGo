@@ -12,11 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** SRS-REAL-CLOSURE-01 活跃。
-> `e729e32` canonical 但不被接受为 fixture revision final state；Human
-> acceptance audit = `B = REVISE`。当前唯一合法对象是
-> `FIXTURE_PREPARATION REVISION Authorization Request v0.7`（`5cfcc16`，
-> OPENED / SUBMITTED）。EXECUTION / IS_MUTATION / Observer 均未授权。
+> **当前状态（2026-10-07 override）：** Request v0.7 已获 Human 批准；
+> REVISION SAR 002 恰好消耗一个工作周期，canonical work state =
+> `5eb1ec0`。当前停点 = fresh Human acceptance review；不得把 SV PASS
+> 解释为 fixture final acceptance 或 EXECUTION 授权。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -635,3 +634,18 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > and completion record v3, then STOP for fresh Human acceptance review.
 > EXECUTION, IS_MUTATION, Observer campaign, and core claim remain NOT
 > AUTHORIZED / NOT ESTABLISHED.
+> **UPDATE 52 (2026-10-07)：Request v0.7 APPROVED；REVISION SAR 002 work cycle consumed；STOP for acceptance review.**
+> Human approved Request v0.7 (`5cfcc16`) with the directive to proceed.
+> REVISION SAR 002 was created at `5296d9f`, exact-binding Request v0.7 and
+> authorizing exactly one fixture revision work cycle. The work commit is
+> `5eb1ec0`, scoped only to `es_runner.py`, `FIXTURE_MANIFEST.md`, and
+> `FIXTURE_PREPARATION_COMPLETION_RECORD.md`. It closes RF-4.5 with complete
+> IMMUTABLE_REVISION payload fields, RF-4.6 with explicit
+> `mapping_snapshot_seal_boundary`, and RF-4.6m with pre-close FD-level
+> fstat checks plus separate path identity. SV-1..SV-6 field-level
+> revalidation = 33/33 PASS in a discarded temporary sandbox. Manifest v3,
+> completion record v3, and runner blob `875cb1d9` / SHA256 `bc393362` are
+> canonical; ten unchanged artifacts were byte-verified. This is DELIVERED
+> FOR FRESH HUMAN ACCEPTANCE REVIEW, not final acceptance. EXECUTION,
+> IS_MUTATION, Observer campaign, and core claim remain NOT AUTHORIZED /
+> NOT ESTABLISHED.

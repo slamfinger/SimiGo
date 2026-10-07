@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** ACTIVE — fixture revision NOT YET CLOSED; Request v0.7 submitted for Human authorization review
+> **Status:** ACTIVE — SAR 002 work cycle consumed and pushed; delivered for fresh Human acceptance review, final fixture closure NOT claimed
 
 ```text
 Completed (canonical on main):
@@ -20,6 +20,10 @@ Completed (canonical on main):
   Human acceptance audit ruled B=REVISE on final completion: F-1..F-3,
     snapshot mechanism, writer invariant, and SV result PASS; §9
     IMMUTABLE_REVISION payload and mapping_snapshot_seal_boundary FAIL.
+  Request v0.7 APPROVED → REVISION SAR 002 (5296d9f) consumed exactly one
+    work cycle → RF-4.5/RF-4.6/RF-4.6m repaired → SV-1..SV-6 with field-
+    level assertions 33/33 PASS → manifest v3, completion record v3, and
+    es_runner.py blob 875cb1d9/bc393362 delivered at 5eb1ec0.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -28,15 +32,10 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  FIXTURE_PREPARATION REVISION Authorization Request v0.7 (5cfcc16) —
-  exact-repair RF-4.5 (IMMUTABLE_REVISION fields:
-  declared_immutable_revision, revision_to_content_digest_binding,
-  resolved_declared_content_digest) and RF-4.6 (explicit
-  mapping_snapshot_seal_boundary), including RF-4.6m pre-close FD-level
-  metadata checks. No direct work is authorized; approval must create a
-  fresh exact-binding REVISION SAR 002, followed by SV with field-level
-  assertions, manifest v3/completion record v3, push/verify, and fresh
-  Human acceptance review. EXECUTION Request v0.3 remains not open.
+  Fresh Human acceptance review of canonical work state 5eb1ec0. If
+  ACCEPT, EXECUTION Authorization Request v0.3 may then be drafted to
+  exact-bind FIXTURE_MANIFEST v3 and completion record v3. If REJECT or
+  REVISE, no automatic renewal or repair work is authorized.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse
