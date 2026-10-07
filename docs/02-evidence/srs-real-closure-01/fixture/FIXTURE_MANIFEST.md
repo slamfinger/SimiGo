@@ -1,8 +1,8 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v2
+# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v3
 
-> **Status:** FIXTURE PREPARATION REVISION COMPLETE — ARTIFACT BINDINGS (v2 supersedes v1 @ d6507ff)
+> **Status:** FIXTURE REVISION WORK CYCLE DELIVERED FOR HUMAN ACCEPTANCE — ARTIFACT BINDINGS (v3 supersedes canonical-but-not-accepted v2 @ e729e32)
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_001 @ `fdf45ea`
+> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_002 @ `5296d9f`
 > **Bound design:** SRS-REAL-CLOSURE-01 Design v0.2 (blob `a28e8d9b…`, sha256 `d43792b5…`) — unchanged
 > **Bound implementation artifact:** T-IMPL-01 SettledRelationValidationCore
 > (canonical components per completion record §2; re-verified byte-identical
@@ -10,16 +10,16 @@
 
 ## 1. Fixture artifact bindings
 
-### Changed by this revision (repair F-1..F-4, Defect Register D-6/D-7/D-8/D-9)
+### Changed by this revision (RF-4.5 / RF-4.6 / RF-4.6m)
 
 ```text
 fixture/runner/es_runner.py
-  git:blob:689b0401e305c16a2bed9905bb71c57e8798875b
-  sha256:ea8e64ebe2e71d92815051cd6e42685b4e9e2706a50bc448c00780d39a76fb5a
-  (supersedes git:blob:93e99a25… / sha256:68899010…)
+  git:blob:875cb1d9577940e65fa507bf8228d477b2e171ff
+  sha256:bc393362a5693527196b71149d59df53ad27aef58fd30255718ded831d669833
+  (supersedes v2 git:blob:689b0401… / sha256:ea8e64eb…)
 ```
 
-### Carried unchanged from manifest v1 (verified byte-identical this cycle)
+### Carried unchanged from manifest v2 (and originally v1; verified byte-identical this cycle)
 
 ```text
 fixture/adapter/srsval_adapter.swift
@@ -84,25 +84,20 @@ append-only writer invariant audited SV-4c-1b). Declaration only.
 exported from `07176ec`, SHA256-verified before compilation, compiled
 together with the adapter (same compilation unit).
 
-## 5. Revision changelog (v1 → v2)
+## 5. Revision changelog (v2 → v3)
 
 ```text
-es_runner.py changes (each mapped to its Defect Register ID):
-  F-1/D-6   mapping resolution is now LAST-entry-per-dependency_id via
-            sealed snapshots (seal_mapping_snapshot);
-  F-2/D-7   run_step passes env=env (SRSVAL_ADAPTER_BIN / PYTHONPATH /
-            PYTHONDONTWRITEBYTECODE=1 reach ES subprocesses);
-  F-3/D-8   driver substitutes the actual srs_identity into runtime τ
-            copies after es1; es2/esn consume the runtime copies; fixture
-            τ originals untouched;
-  F-4/D-9   §9 read-instance instrument: seal_mapping_snapshot (open FD →
-            st_dev/st_ino + start_size → exact [0, start_size) capture →
-            sha256 seal → LAST-entry parse from sealed bytes only →
-            metadata-only post-snapshot checks); READ_INSTANCE records
-            with all eleven §9 fields (+ mapping snapshot seal as
-            supplementary); IMMUTABLE_SNAPSHOT_PRESEALED proof form;
-            §9 failure vocabulary wired (READ_INSTANCE_NOT_IMMUTABLE /
-            READ_TIME_CONTENT_MISMATCH / REVISION_TO_DIGEST_BINDING_
-            INVALID); append-only writer invariant documented at
-            mapping_update and audited (SV-4c-1b).
+es_runner.py changes are limited to Request v0.7 RF items:
+  RF-4.5     every IMMUTABLE_REVISION record now carries
+             declared_immutable_revision,
+             revision_to_content_digest_binding, and
+             resolved_declared_content_digest, all resolved only from the
+             sealed LAST mapping entry; malformed/digest-invalid/mismatched
+             resolution raises REVISION_TO_DIGEST_BINDING_INVALID;
+  RF-4.6     every mapping seal and MAPPING_SNAPSHOT_SEALED event carries
+             mapping_snapshot_seal_boundary as the exact closed interval
+             [0, start_size) with its mechanical acquisition order;
+  RF-4.6m    FD-level post-snapshot fstat identity and size checks are
+             evaluated before FD close; the separate post-close path
+             identity check remains metadata-only.
 ```

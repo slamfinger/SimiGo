@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-"""SRS-REAL-CLOSURE-01 ES process runner (fixture instrument, revision 2).
+"""SRS-REAL-CLOSURE-01 ES process runner (fixture instrument, revision 3).
 
-Revision cycle under SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_001:
-  F-1  mapping_read LAST-entry-per-dependency_id semantics (D-6);
-  F-2  run_step env propagation (D-7);
-  F-3  driver tau runtime-copy substitution (D-8);
-  F-4  Auth Package §9 read-instance instrument: IMMUTABLE_SNAPSHOT_PRESEALED
-       with mapping snapshot boundary (start_size + exact prefix capture),
-       metadata-only post-snapshot checks, closed-world append-only writer
-       invariant, eleven-record fields, §9 failure vocabulary.
+RF-4.5/RF-4.6 cycle under SARS ..._REVISION_002:
+  complete binding-kind-specific IMMUTABLE_REVISION §9 payload and make the
+  mapping snapshot seal boundary explicit; keep all accepted F-1..F-4
+  mechanics unchanged.
 
 Deterministic single-purpose runner. One process per invocation; every mode
 appends events to its own process-local event log with monotonic ordinals.
@@ -57,6 +53,11 @@ class MappingNotImmutable(Exception):
     """READ_INSTANCE_NOT_IMMUTABLE — mapping snapshot boundary violation
     (identity replaced, prefix not exactly obtainable, append-only
     invariant violated)."""
+
+
+class RevisionBindingInvalid(Exception):
+    """REVISION_TO_DIGEST_BINDING_INVALID — malformed or digest-invalid
+    revision→content-digest resolution from the sealed mapping entry."""
 
 
 def sha256_hex(data: bytes) -> str:
@@ -124,8 +125,8 @@ def seal_mapping_snapshot(is_dir: str) -> tuple:
       outside this read instance.
 
     Raises MappingNotImmutable (READ_INSTANCE_NOT_IMMUTABLE) on: identity
-    replacement detectable via path stat mismatch, short read (non-append
-    mutation), or post-snapshot metadata check failure.
+    replacement, short read (non-append mutation), or post-snapshot
+    metadata-check failure.
     """
     path = os.path.join(is_dir, IS_CURRENT)
     fd = os.open(path, os.O_RDONLY)
@@ -143,6 +144,14 @@ def seal_mapping_snapshot(is_dir: str) -> tuple:
             chunks.append(chunk)
             remaining -= len(chunk)
         prefix = b"".join(chunks)
+        st_after_capture = os.fstat(fd)
+        post_fd = {
+            "same_identity": (st_after_capture.st_dev,
+                              st_after_capture.st_ino) ==
+                             (st.st_dev, st.st_ino),
+            "current_size_ge_start_size":
+                st_after_capture.st_size >= start_size,
+        }
     finally:
         os.close(fd)
     snapshot_digest = sha256_hex(prefix)
@@ -154,11 +163,15 @@ def seal_mapping_snapshot(is_dir: str) -> tuple:
             continue
         e = json.loads(line)
         last_entries[e["dependency_id"]] = e
-    # metadata-only post-snapshot checks (content never re-read)
+    # Post-close path identity is separate from the required FD-level check.
     st_path = os.stat(path)
-    post = {"same_identity": (st_path.st_dev, st_path.st_ino) == (st.st_dev, st.st_ino),
-            "current_size_ge_start_size": st_path.st_size >= start_size}
-    if not (post["same_identity"] and post["current_size_ge_start_size"]):
+    post = {
+        "fd_level": post_fd,
+        "path_identity_same": (st_path.st_dev,
+                               st_path.st_ino) == (st.st_dev, st.st_ino),
+    }
+    if not (post_fd["same_identity"] and
+            post_fd["current_size_ge_start_size"] and post["path_identity_same"]):
         raise MappingNotImmutable(READ_INSTANCE_NOT_IMMUTABLE +
                                   ": post-snapshot metadata check failed")
     seal = {
@@ -166,6 +179,16 @@ def seal_mapping_snapshot(is_dir: str) -> tuple:
         "mapping_snapshot_file_identity": file_identity,
         "mapping_snapshot_start_size": start_size,
         "mapping_snapshot_digest": snapshot_digest,
+        "mapping_snapshot_seal_boundary": {
+            "boundary_type": "BYTE_PREFIX_CLOSED",
+            "start_offset": 0,
+            "end_offset_exclusive": start_size,
+            "acquisition_order": [
+                "OPEN_FD", "FSTAT_IDENTITY_AND_START_SIZE",
+                "EXACT_PREFIX_CAPTURE", "SHA256_SEAL",
+            ],
+            "content_re_read_after_boundary": False,
+        },
     }
     return seal, last_entries, post
 
@@ -173,10 +196,25 @@ def seal_mapping_snapshot(is_dir: str) -> tuple:
 def read_instance_record(log: EventLog, ri_id: str, declared_input_identity: str,
                          binding_kind: str, declared_digest: str,
                          read_time_digest: str, begin_ordinal: int,
-                         mapping_seal=None, extra=None) -> dict:
+                         mapping_seal=None, extra=None,
+                         sealed_mapping_entry=None) -> dict:
     """Auth Package §9 record: ALL ELEVEN fields, plus SUPPLEMENTARY
     instrumentation fields (additive, never substituting)."""
     consumed = declared_digest == read_time_digest
+    if binding_kind == "IMMUTABLE_REVISION":
+        if (not isinstance(sealed_mapping_entry, dict) or
+                not isinstance(sealed_mapping_entry.get("revision"), int) or
+                sealed_mapping_entry.get("revision") < 0 or
+                not isinstance(sealed_mapping_entry.get("content_address"), str)):
+            raise RevisionBindingInvalid(REVISION_TO_DIGEST_BINDING_INVALID +
+                                         ": malformed sealed revision binding")
+        resolved = sealed_mapping_entry["content_address"]
+        if len(resolved) != 64 or any(c not in "0123456789abcdef" for c in resolved):
+            raise RevisionBindingInvalid(REVISION_TO_DIGEST_BINDING_INVALID +
+                                         ": digest-invalid revision binding")
+        if declared_digest != resolved or read_time_digest != resolved:
+            raise RevisionBindingInvalid(REVISION_TO_DIGEST_BINDING_INVALID +
+                                         ": revision binding mismatch")
     rec = {
         "event": "READ_INSTANCE",
         "read_instance_identity": ri_id,
@@ -194,6 +232,16 @@ def read_instance_record(log: EventLog, ri_id: str, declared_input_identity: str
     }
     if mapping_seal is not None:
         rec["mapping_snapshot_seal"] = mapping_seal
+    if binding_kind == "IMMUTABLE_REVISION":
+        resolved = sealed_mapping_entry["content_address"]
+        revision = sealed_mapping_entry["revision"]
+        rec["declared_immutable_revision"] = revision
+        rec["revision_to_content_digest_binding"] = {
+            "revision": revision,
+            "content_digest": resolved,
+            "binding_source": "MAPPING_SNAPSHOT_LAST_ENTRY",
+        }
+        rec["resolved_declared_content_digest"] = resolved
     if extra:
         rec.update(extra)
     rec["read_end_boundary"] = log._ordinal  # the ordinal this record will take
@@ -359,7 +407,7 @@ def mode_es1(is_dir: str, tau: dict, log: EventLog, run_id: str) -> int:
     read_instance_record(
         log, "RI-ES1-MAPPING", dep["dependency_id"], "IMMUTABLE_REVISION",
         current["content_address"], current["content_address"], begin,
-        mapping_seal=seal)
+        mapping_seal=seal, sealed_mapping_entry=current)
     # read the D object with §9 digest verification
     dependency_content = is_read_object_verified(
         is_dir, current["content_address"], current["content_address"],
@@ -425,7 +473,8 @@ def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str,
         read_instance_record(
             log, "RI-ES-MAPPING", pinned["dependency_id"],
             "IMMUTABLE_REVISION", current["content_address"],
-            current["content_address"], begin_m, mapping_seal=seal)
+            current["content_address"], begin_m, mapping_seal=seal,
+            sealed_mapping_entry=current)
     resolved = (current is not None
                 and current["content_address"] == pinned["content_address"])
     log.event("DEPENDENCY_COMPARISON", dependency_id=pinned["dependency_id"],

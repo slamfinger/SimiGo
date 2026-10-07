@@ -1,35 +1,35 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v2
+# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v3
 
-> **Status:** FIXTURE REVISION COMPLETE — SINGLE REVISION WORK CYCLE CONSUMED
+> **Status:** SINGLE REVISION WORK CYCLE CONSUMED — DELIVERED FOR HUMAN ACCEPTANCE REVIEW
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_001
-> @ `fdf45ea` (FIXTURE_PREPARATION revision cycle only, under Human ruling
-> HUMAN_RULING_20261007_FIXTURE_REVISION_APPROVE)
-> **Supersedes:** Completion Record v1 @ `d6507ff` (v1 remains the record of
-> the original preparation cycle; this v2 records the revision cycle)
+> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_002
+> @ `5296d9f` (FIXTURE_PREPARATION revision cycle only, under Human approval
+> of Request v0.7)
+> **Supersedes:** Completion Record v2 @ `e729e32`; v2 remains canonical
+> history but is NOT accepted as final fixture revision state.
 
 ## 1. Completion identity
 
 ```text
 fixture_stage_completion_record_identity =
-  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V2;
+  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V3;
 
 fixture_stage_completion_record_content_address =
   registered by the governing commit that introduces this record on main
   (this file lives inside the authorized fixture subtree per R3);
 
 authorized_request_identity =
-  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_REVISION_AUTHORIZATION_REQUEST_V0_6
-  (git:blob:d6eee39f… @ c01f0bf);
+  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_REVISION_AUTHORIZATION_REQUEST_V0_7
+  (git:blob:77bc0c4f… @ 5cfcc16);
 ```
 
 ## 2. Fixture manifest binding
 
 ```text
-fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v2);
+fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v3);
 fixture_manifest_content_address / integrity binding =
   registered in the same governing commit;
-  the manifest v2 re-binds the changed artifact (es_runner.py) and carries
+  the manifest v3 re-binds the changed artifact (es_runner.py) and carries
   all ten unchanged artifacts with their original bindings (verified
   byte-identical this cycle).
 ```
@@ -44,41 +44,41 @@ execution_fixture_changed_path_set (this revision cycle) = {
 };
 
 authorization_chain_history (governance commits, not work-cycle artifacts):
-  … → c01f0bf (Revision Request v0.6 ACCEPT basis) → fdf45ea (this SAR) →
+  … → 5cfcc16 (Request v0.7 OPENED/SUBMITTED) → 5296d9f (REVISION SAR 002) →
   this governing commit;
 
 forbidden_path_violation_count = 0;
 forbidden_dependency_violation_count = 0;
 scope_compliance_verdict = PASS;
-completion_validity_boundary = final for the single revision work cycle;
-  the manifest v2 is the exact fixture artifact any later stage request
-  must exact-bind; automatic renewal/extension forbidden.
+completion_validity_boundary = work-cycle consumed; NOT final until fresh
+  Human acceptance review. If accepted, the manifest v3 is the exact fixture
+  artifact any later stage request must exact-bind. Automatic renewal/
+  extension forbidden.
 ```
 
-## 4. Repairs applied (F-1..F-4, mapped to Defect Register)
+## 4. Repairs applied (RF-4.5 / RF-4.6 / RF-4.6m)
 
 ```text
-F-1/D-6  mapping resolution = LAST-entry-per-dependency_id via sealed
-         snapshots; N1 semantics now mechanically reachable (post-mutation
-         reads resolve D'/rev2 against the SRS-pinned D/rev1);
-F-2/D-7  run_step env propagation; SRSVAL_ADAPTER_BIN / PYTHONPATH /
-         PYTHONDONTWRITEBYTECODE=1 reach ES subprocesses;
-F-3/D-8  driver tau runtime-copy substitution after es1; runtime copies
-         under runs/<run_id>/; fixture τ originals byte-unchanged;
-F-4/D-9  §9 read-instance instrument: IMMUTABLE_SNAPSHOT_PRESEALED with
-         mapping snapshot boundary (open FD → identity+start_size → exact
-         [0, start_size) capture → sha256 seal → LAST-entry parse from
-         sealed bytes only → metadata-only post-snapshot checks — mapping
-         content never re-read); eleven §9 record fields; IMMUTABLE_
-         REVISION vs CONTENT_ADDRESS binding kinds (revision never
-         compared as a digest); §9 failure vocabulary wired; append-only
-         writer invariant registered at mapping_update and audited.
+RF-4.5   IMMUTABLE_REVISION records now carry the complete binding-kind-
+         specific §9 payload: declared_immutable_revision,
+         revision_to_content_digest_binding, and
+         resolved_declared_content_digest. Resolution comes only from the
+         sealed LAST entry; the revision is never compared as a digest;
+         malformed/digest-invalid/mismatched resolution is typed
+         REVISION_TO_DIGEST_BINDING_INVALID.
+RF-4.6   Mapping seals and MAPPING_SNAPSHOT_SEALED events now explicitly
+         record mapping_snapshot_seal_boundary as BYTE_PREFIX_CLOSED over
+         exactly [0, start_size), including acquisition order and
+         content_re_read_after_boundary=false.
+RF-4.6m  Post-snapshot identity/size checks are evaluated on the original
+         FD before close; the separate path identity check remains
+         metadata-only.
 ```
 
 ## 5. Instrument self-validation results (SV-1..SV-6; sandbox, discarded)
 
 ```text
-SV SELF-VALIDATION: 30/30 PASS
+SV SELF-VALIDATION: 33/33 PASS
 
 SV-1  LAST-entry semantics + single-revision fallback + per-state seals;
 SV-2  env propagation via trivial probe child (all three variables);
@@ -99,6 +99,13 @@ SV-4c-1b closed-world writer audit: append-only open mode; no truncate /
       audit pattern matched the runner's own docstring prose "no pwrite" —
       corrected to call-site patterns during the cycle);
 SV-4d failure vocabulary produced by fault injections;
+SV-4.5 field-level assertions for all three IMMUTABLE_REVISION payload
+      fields, sealed-entry binding equality, revision≠digest, and typed
+      malformed/digest-invalid/mismatch failures;
+SV-4.6 field-level equality assertions for the explicit closed byte-prefix
+      boundary on every seal and record;
+SV-4.6m assertion that FD fstat precedes close, plus FD-level and separate
+      path-level metadata result assertions;
 SV-5  canonical sources hash-verified (three bindings vs completion record
       §2); adapter build OK; synthetic positive → REUSE and N1-shape →
       BLOCK with the pre-registered typed failure;
