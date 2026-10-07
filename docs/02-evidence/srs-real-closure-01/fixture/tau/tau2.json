@@ -1,0 +1,10 @@
+{
+  "task": "ES2 resolve, validate, and continue on REUSE",
+  "srs_identity": "RESOLVED_FROM_IS_INDEX_BY_ES1_OUTPUT",
+  "request_id": "req-es2-continuation-1",
+  "request_class": "R1-continuation",
+  "boundary_id": "B-ES2",
+  "run_order": "after-es1-exit",
+  "tau_content_ref": "TO_BE_BOUND_AT_EXECUTION",
+  "delta": {"procedure": "sha256(result_digest || task_nonce)", "task_nonce": "delta-nonce-001"}
+}
