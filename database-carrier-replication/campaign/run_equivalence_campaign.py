@@ -428,6 +428,20 @@ def run(expected_head: str, output: Path) -> int:
             fh.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
 
     work_db = output / "CAMPAIGN_DATABASE.sqlite"
+    require(not work_db.exists() and not work_db.is_symlink(), "working database already exists")
+    shutil.copy2(ROOT / SOURCE_DATABASE_PATH, work_db)
+    working_copy_sha256 = sha256_path(work_db)
+    require(working_copy_sha256 == SOURCE_DATABASE_SHA256, "working database copy mismatch")
+    working_copy_binding = {
+        "copy_complete": True,
+        "open_allowed_after_verification": True,
+        "source_commit": ACCEPTED_FRESH_DB_COMMIT,
+        "source_path": str(ROOT / SOURCE_DATABASE_PATH),
+        "source_sha256": SOURCE_DATABASE_SHA256,
+        "working_copy_path": str(work_db),
+        "working_copy_sha256_before_open": working_copy_sha256,
+    }
+    write_json(output / "working_copy_binding.json", working_copy_binding)
     carrier = DatabaseBackedIS(work_db)
     observations = {}
     checks = {}

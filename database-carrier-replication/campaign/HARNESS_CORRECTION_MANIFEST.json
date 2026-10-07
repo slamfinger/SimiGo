@@ -1,0 +1,25 @@
+{
+  "artifact_kind": "NON_SEMANTIC_HARNESS_WORKING_COPY_BINDING_CORRECTION",
+  "corrected_artifacts": {
+    "run_equivalence_campaign.py": {
+      "sha256": "f09d8fd9ce896449595ba4104c1c1321bd2403e45d8363734c5bb6b2c245fec6"
+    },
+    "working_copy_binding.json": {
+      "artifact_kind": "RUNTIME_EVIDENCE",
+      "binding": "source_database_to_campaign_working_database"
+    }
+  },
+  "corrected_behavior": {
+    "accepted_source_database_to_o0_copy": "VERIFY_BYTE_IDENTITY",
+    "accepted_source_database_to_working_copy": "EXPLICIT_COPY_THEN_VERIFY_BYTE_IDENTITY_BEFORE_OPEN",
+    "carrier_open": "ALLOWED_ONLY_AFTER_WORKING_COPY_HASH_MATCH",
+    "existing_working_database": "FAIL_CLOSED"
+  },
+  "corrects_commit": "8ec72ba51c039e5420b9fb3f5cdc0f970dbd2e3c",
+  "corrects_defect": "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
+  "governing_request_commit": "0fe3321f6230fbccd0c94a71ce92f579492c7758",
+  "manifest_identity": "DATABASE_CARRIER_HARNESS_CORRECTION_MANIFEST_002",
+  "previous_campaign_evidence_commit": "bc7aaa0793d7f3e6b6ff0a76c9137ef3bcb9645b",
+  "previous_harness_sha256": "7874ff5a44b5036564b505f532afa14b2fa9dbd5f91e58e6016e81888dcd1222",
+  "semantic_change": false
+}
