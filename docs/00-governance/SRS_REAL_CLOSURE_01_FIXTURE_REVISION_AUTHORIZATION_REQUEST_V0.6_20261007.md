@@ -1,0 +1,297 @@
+# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION REVISION Authorization Request v0.6
+
+> **Status:** OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW — NO STAGE AUTHORIZED
+> **Date:** 2026-10-07
+> **Supersedes:** FIXTURE_PREPARATION REVISION Authorization Request v0.5
+> @ `a45d4c1` (superseded lineage)
+> **Review basis:** Human independent audit of v0.5 ruled **B = REVISE** on a
+> single internal-consistency conflict plus one coverage gap (everything
+> else PASS: snapshot start boundary, exact [0, start_size), same-instance
+> no-drift, new-instance freshness, revision≠digest, §9 proof form):
+> **Conflict** — F-4.3b simultaneously required "the mapping file is NEVER
+> re-read by this read instance" and "the captured prefix matched against
+> the file state at read-instance end". The latter would re-read mapping
+> content. Fixed: **after snapshot acquisition the mapping content is never
+> re-read**; post-snapshot checks are metadata-only (fstat(FD) same
+> identity; current_size >= start_size). With the frozen append-only
+> semantics, same inode + size >= start_size + the sole lawful writer
+> appending suffices to place later appends outside this read instance.
+> **Coverage** — same-inode same-size in-place rewrite is not detectable
+> by snapshot runtime fields alone. Adopted **Option A** (Human-preferred):
+> the append-only writer invariant is a frozen fixture closed-world
+> mechanical invariant — mapping mutation authority = the bound runner
+> only; mapping mutation operation = append-only; no truncate / pwrite /
+> seek-and-overwrite / in-place rewrite path exists in the bound runner —
+> established by closed-world code audit (SV-4c-1b), NOT by locks (no new
+> IPC/locking channel). The §9 immutability proof for mapping reads now
+> rests on four legs: snapshot boundary + append-only writer invariant +
+> exact prefix capture + content-address verification.
+> **SV-4c-1 split**: SV-4c-1a (runtime truncate/replacement detection) vs
+> SV-4c-1b (closed-world writer audit) — runtime findings and code proof
+> no longer conflated.
+> Proof form unchanged: IMMUTABLE_SNAPSHOT_PRESEALED. Everything else
+> carried unchanged from v0.5.
+> **Requested stage set:** `{ FIXTURE_PREPARATION (revision cycle) }`
+> **Execution / IS mutation / experiment:** NOT AUTHORIZED
+> **Design change:** NONE
+> **SimiGo code change / Package.swift / Frozen Contracts:** NOT AUTHORIZED
+
+## 1. Exact bindings
+
+```text
+defect_register =
+  SRS_REAL_CLOSURE_01_EXECUTION_READINESS_DEFECT_REGISTER_20261007
+  (D-SEC-1 binding semantics standing alone; unchanged in this cycle);
+
+frozen_predicate_design =
+  SRS_VAL_01_DESIGN_V0_8 @ 1170208,
+  git:blob:dbbeb5cb4c5aa3a78ea9bf39029a21579d2244d4,
+  sha256 1f661bdabcb511f811c9b653e27f1d2242241fca76ca7f2d7614c56ad5b30fd2;
+
+frozen_governance_package =
+  SRS_VAL_01_AUTHORIZATION_PACKAGE_V0_6 @ 6089f0b,
+  git:blob:fb05a60dc950f2f592580cfbc079dff2aa0f91db,
+  sha256 e16ca843999959c7583a1b34199c14ea083e456747a86bbb607c342bc493fe37
+  (§9 read-instance immutability; before/after equality alone invalid;
+  revision number never compared as a digest);
+
+experiment_design =
+  SRS_REAL_CLOSURE_01_DESIGN_…_V0_2 @ 050b918,
+  git:blob:a28e8d9b95b35bb287644a0bc04175e7e800e18e,
+  sha256 d43792b53ce6830cf19bac387be6bc24fd1e0205e3b96f78a695e5976917b6fe;
+
+fixture_manifest (to be superseded by manifest v2 of this revision) =
+  FIXTURE_MANIFEST @ d6507ff,
+  git:blob:b700942737fdf89ccc102b1f1629139c378e80c7,
+  sha256 8d240a70d3397b7f60923463e28af9071deddfe3063229f5a5b48f078843169e;
+
+t_impl_01_components (canonical, unchanged, @ 07176ec):
+  SRSVALInvocation.swift  git:blob:0fd65bdf40b7c9885de2ada491d66348ebfa28fa
+                          sha256 6583a80444848a3b42b55ea82f9de6cc1350af6154f6f23c3c3ab61427226c75
+  SRSVALDecision.swift    git:blob:cbd24721a97f3c06e012fb02649feb19c2b9cb8b
+                          sha256 e219aeeadceb74a2d37cb20fdb76ee18d23ee739a743ecf6309e7384b58b15de
+  SRSVALCore.swift        git:blob:9f11ef1af45be6bc9450e0fbdc0117211f99a74a
+                          sha256 9725217063b9aa560752e8485dac64aae41a314c429f6b9aa1d8808a4860d56e
+```
+
+## 2. Revision scope (exact; no other change permitted)
+
+```text
+F-1  es_runner.py mapping_read(): LAST-entry-per-dependency_id resolution
+     semantics, exactly as IS_LAYOUT.md (frozen) declares. Repairs D-6.
+
+F-2  es_runner.py run_step(): pass env=env to subprocess.run so that
+     SRSVAL_ADAPTER_BIN, PYTHONPATH, and PYTHONDONTWRITEBYTECODE=1 reach
+     the ES subprocesses. Repairs D-7.
+
+F-3  es_runner.py mode_driver(): after es1 completes, read the ES₁ event
+     log's SRS_SETTLED_AND_PERSISTED event, extract the actual
+     srs_identity, and write runtime τ copies (tau2-runtime.json,
+     tauN1-runtime.json) into runs/<run_id>/ with the placeholder
+     substituted; es2/esn are invoked with the runtime copies; the
+     substitution is recorded as a driver event; fixture τ originals are
+     never modified. Repairs D-8.
+
+F-4  es_runner.py READ-INSTANCE INSTRUMENT implementing Auth Package §9
+     with the registered proof mechanism IMMUTABLE_SNAPSHOT_PRESEALED:
+
+     F-4.1  OBJECT reads (unchanged from v0.3/v0.5): content-addressed
+            objects; tmp+fsync+rename with overwrite refusal as the seal;
+            seal precedes the read instance; read-time digest
+            verification; divergence → READ_INSTANCE_NOT_IMMUTABLE /
+            READ_TIME_CONTENT_MISMATCH → abort → campaign INVALID.
+
+     F-4.2  per-read record: ALL ELEVEN §9 fields, plus SUPPLEMENTARY
+            instrumentation fields (additive, never substituting),
+            including the five mapping snapshot boundary fields below
+            for mapping-derived reads.
+
+     F-4.3  binding kinds: τ runtime copies and fixture seeds →
+            CONTENT_ADDRESS; IS objects → CONTENT_ADDRESS; dependency
+            current state via the resolution mapping → IMMUTABLE_REVISION
+            (a revision number is never compared as if it were a digest).
+
+     F-4.3b MAPPING READ-INSTANCE SEALING — v0.6 CONSISTENCY FIX:
+            procedure (in order):
+              1. at read-instance start, open the mapping file and obtain
+                 an FD;
+              2. capture file identity (st_dev/st_ino of the FD) and
+                 start_size = fstat(FD).st_size;
+              3. capture EXACTLY bytes [0, start_size) from that FD — a
+                 short read is a failure, not a smaller snapshot;
+              4. seal: mapping_snapshot_digest = sha256(prefix bytes);
+              5. parse the LAST entry per dependency_id FROM THE SEALED
+                 PREFIX ONLY;
+              6. resolve declared_immutable_revision and the
+                 revision→content-digest binding from the sealed entry;
+              7. read the object at the resolved content address and
+                 verify read_time_content_digest ==
+                 resolved_declared_content_digest.
+
+            POST-SNAPSHOT RULE (v0.6 — resolves the never-reread/match
+            conflict): after snapshot acquisition the mapping CONTENT is
+            never re-read by this read instance. The only permitted
+            post-snapshot checks are METADATA-ONLY:
+              - fstat(FD): same st_dev/st_ino as captured;
+              - fstat size: current_size >= start_size;
+              - path identity check: the path still resolves to the same
+                file identity.
+            With the frozen append-only semantics, same inode +
+            current_size >= start_size + the sole lawful writer appending
+            place later appends outside this read instance. NO end-of-
+            instance prefix re-comparison exists or is required.
+
+            APPEND-ONLY WRITER INVARIANT (v0.6 — closes the same-inode
+            same-size in-place rewrite gap, Option A per Human ruling):
+              mapping mutation authority = the bound runner only;
+              mapping mutation operation = append-only;
+              no truncate, pwrite, seek-and-overwrite, or in-place rewrite
+              path exists in the bound runner;
+              established by CLOSED-WORLD CODE AUDIT (SV-4c-1b), not by
+              runtime detection and not by locks (no new IPC/locking
+              channel is introduced).
+
+            failure rules → READ_INSTANCE_NOT_IMMUTABLE (runtime
+            class): file identity replaced (path resolves to a different
+            st_dev/st_ino); prefix not exactly obtainable (short read —
+            file shrank below start_size); post-snapshot metadata check
+            failure (identity mismatch or current_size < start_size).
+
+            The §9 immutability proof for mapping reads rests on FOUR
+            legs: snapshot boundary + append-only writer invariant
+            (closed-world audit) + exact prefix capture + content-address
+            verification.
+
+     F-4.4  failure vocabulary wired: READ_INSTANCE_NOT_IMMUTABLE /
+            READ_TIME_CONTENT_MISMATCH / REVISION_TO_DIGEST_BINDING_
+            INVALID → typed abort → campaign INVALID.
+
+F-5  FIXTURE_MANIFEST v2 + FIXTURE_PREPARATION_COMPLETION_RECORD v2
+     (inside the fixture subtree per R3 precedent): changed artifacts
+     re-bound by git blob + SHA256; unchanged artifacts carried with
+     original bindings; revision changelog mapping each change to its
+     defect ID; violation counts and scope verdict fields as before.
+```
+
+## 3. Instrument self-validation (SV-1..SV-6; no campaign sequence)
+
+Temporary directory outside the repository; synthetic inputs; outputs
+discarded. SV-1, SV-2, SV-3, SV-5, SV-6 carried unchanged:
+
+```text
+SV-1  mapping semantics (LAST entry; single-revision fallback);
+SV-2  environment propagation (trivial probe child; three variables);
+SV-3  tau substitution (synthetic ES₁ log; exact identity; originals
+      byte-unchanged);
+SV-5  adapter integration (synthetic positive + N1-shaped graphs);
+SV-6  channel hygiene (no __pycache__ or other generated cache anywhere
+      under the fixture subtree after SV-1..SV-5).
+```
+
+SV-4 — validates the §9 mechanism including the snapshot boundary and the
+writer invariant:
+
+```text
+SV-4a  seal-then-read happy path (object): create object via the
+       write-once path (seal), read via the instrumented path; assert the
+       record carries ALL ELEVEN §9 fields, proof form
+       IMMUTABLE_SNAPSHOT_PRESEALED, read_time digest == sealed address,
+       consumed = true;
+
+SV-4b  tamper case: attempt divergent content under an existing address
+       → write-once refusal; attempt a read whose content does not hash
+       to the sealed address → READ_TIME_CONTENT_MISMATCH recorded and
+       consumed = false;
+
+SV-4c  IMMUTABLE_REVISION + drift test: pre-seal mapping = rev1→addrA;
+       establish the read instance's immutable mapping snapshot; THEN
+       append rev2→addrB; the SAME read instance must continue resolving
+       the sealed snapshot's declared revision/content digest
+       (declared_immutable_revision = 1; resolved digest = addrA;
+       read_time digest = addrA; revision "1" never compared as a
+       digest); then, in a NEW read instance (fresh FD, fresh
+       start_size), assert resolution yields rev2→addrB;
+
+SV-4c-0  SNAPSHOT BOUNDARY test: start_size = mapping size containing
+         rev1 only; append rev2 BEFORE or DURING the acquisition attempt;
+         assert the sealed snapshot contains exactly bytes [0, start_size)
+         — rev2's bytes are NOT part of the sealed snapshot; declared
+         revision = 1; resolved digest = addrA;
+
+SV-4c-1a  RUNTIME BOUNDARY VIOLATION test: truncate the mapping below
+          start_size, or replace the file (different inode) → assert
+          READ_INSTANCE_NOT_IMMUTABLE is produced by the metadata-only
+          post-snapshot checks (short read / identity mismatch /
+          current_size < start_size) — with NO mapping content re-read;
+
+SV-4c-1b  WRITER AUDIT test (closed-world code proof, runtime-free):
+          audit the bound runner source and assert: the ONLY write
+          operation to the mapping is the append-mode open/write/fsync in
+          mapping_update(); no truncate, no pwrite, no seek-and-
+          overwrite, no in-place rewrite path exists anywhere in the
+          bound runner; the audit result is recorded as the establishment
+          evidence for the append-only writer invariant;
+
+SV-4d  failure-vocabulary assertions: the three §9 failure codes are
+       produced by the constructed fault injections.
+```
+
+**Boundary statement (binding, carried):** none of SV-1..SV-6 runs the full
+or partial campaign sequence; no observer campaign run; no IS
+materialization; no evidence artifact is produced; sandbox outputs are
+discarded. Fixture revision proves fixture mechanics — the campaign remains
+exclusively behind EXECUTION Request v0.3 and its three authorization
+records.
+
+## 4. Out of scope (explicitly)
+
+```text
+- any change to Design v0.2, frozen contracts, T-IMPL-01 canonical
+  artifact, Package.swift, or repository sources;
+- any change to adapter/BUILD.md, schema/validate_srs.py, is_layout,
+  inputs, tau originals, or observer.py (expected: none change);
+- any full or partial campaign sequence under any name;
+- any locking/versioning mechanism for the mapping (Option A adopted:
+  closed-world writer audit instead);
+- any governance-track expansion;
+- the §6.2 classification and channel-universe reclassification decisions
+  (EXECUTION Request v0.3 scope, per the binding D-SEC-1/D-SEC-2
+  semantics).
+```
+
+## 5. Authorized writable path set
+
+```text
+docs/02-evidence/srs-real-closure-01/fixture/
+  (runner/es_runner.py; FIXTURE_MANIFEST.md;
+   FIXTURE_PREPARATION_COMPLETION_RECORD.md);
+plus the temporary self-validation directory outside the repository
+(discarded after SV-1..SV-6).
+```
+
+## 6. Budgets and validity
+
+```text
+fixture_revision_work_cycle_budget = 1;
+execution_run_budget = 0;
+is_mutation_budget = 0;
+implementation_work_cycle_budget = 0;
+automatic_renewal = forbidden;
+validity_boundary = from Human approval until completion record v2,
+  withdrawal, or expiry.
+```
+
+## 7. Required Human decision
+
+```text
+APPROVE FIXTURE_PREPARATION REVISION ONLY
+      create the revision SAR; apply F-1..F-4; run SV-1..SV-6; deliver
+      the F-5 manifest v2 and completion record v2 outputs; push +
+      ls-remote verify; STOP. EXECUTION Request v0.3 then exact-binds the
+      revised manifest.
+
+REVISE REQUEST     return with registered defects.
+DENY REQUEST       no fixture revision (execution remains blocked).
+```
+
+No stage is authorized by opening this Request.
