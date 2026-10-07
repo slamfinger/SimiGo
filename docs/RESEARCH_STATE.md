@@ -2,7 +2,58 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-06
+**Last updated**: 2026-10-07
+
+## Research focus reset — 2026-10-07
+
+> **Status:** ACTIVE RESEARCH DIRECTION
+>
+> ```text
+> Governance track:
+>   AUTH-REQ-01 v0.2 = pending Human authorization review;
+>   no further governance-design expansion.
+>
+> Research track:
+>   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
+>
+> Core research gap:
+>   ES₁ → IS(SRS) → independent ES₂ lawful reuse
+>   = NOT ESTABLISHED.
+>
+> Authorization boundary:
+>   Implementation       NOT AUTHORIZED
+>   Fixture              NOT AUTHORIZED
+>   Execution            NOT AUTHORIZED
+>   IS mutation          NOT AUTHORIZED
+> ```
+>
+> **Primary question:**
+> Can an independently created ES₂ lawfully reuse an ES₁-settled relation
+> persisted in Information Space without recomputing ES₁?
+>
+> **P0 evidence target:**
+> ES₁ → persistent SRS → independent ES₂ → validated reuse → continuation
+> without recomputation.
+>
+> Qin-Shen 0308, R01, U-A, Relation persistence, and PIR remain bounded prior
+> evidence. None establishes ES₁-generated SRS consumption and lawful reuse by
+> independent ES₂.
+>
+> **Priority order:**
+> P0 real ES₁ → IS → ES₂ reuse evidence;
+> P1 negative mutation / BLOCK / RECOMPUTE evidence;
+> P2 non-recomputation / independence evidence;
+> P3 Reality Mapping / carrier scale;
+> P4 D_RS / topology fourth quadrant / X-08 / multi-backend;
+> P5 governance refinement.
+>
+> SRS-VAL governance work is maintenance-only. AUTH-REQ-01 v0.3 is not a goal
+> unless a real experiment exposes a necessary blocker.
+>
+> Registered governance artifacts:
+> `docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md`,
+> `docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md`,
+> `docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md`.
 
 ## Restored research state / memory anchor — 2026-10-06
 

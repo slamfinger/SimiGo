@@ -30,6 +30,9 @@ Restored state section             = docs/RESEARCH_STATE.md — “Restored rese
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
 Current active closure task        = AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled Manifest Instance v0.2 OPENED — NO STAGE AUTHORIZED
+Current governance track           = AUTH-REQ-01 v0.2 pending Human authorization review; no governance-design expansion
+Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY
+Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED
 Current design document            = docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_HUMAN_AUTHORIZATION_REQUEST_V0.2_20261007.md
 Next dependency after SRS-VAL-01   = Human authorization review of AUTH-REQ-01 v0.2; only IMPLEMENTATION is requested and remains NOT AUTHORIZED
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
@@ -62,6 +65,17 @@ Repository position ≠ semantic authority.
 ## 2. Research Context State
 
 ```text
+Research focus reset                   2026-10-07 / SRS-REAL-CLOSURE-01 ACTIVE
+Primary research question              ES₁ → IS(SRS) → independent ES₂ lawful reuse
+Core research gap                      NOT ESTABLISHED
+Research priority                      P0 real reuse; P1 negatives; P2 non-recomputation;
+                                       P3 carrier scale; P4 topology/multi-backend;
+                                       P5 governance refinement
+Governance expansion                   MAINTENANCE-ONLY
+SRS-REAL-CLOSURE-01                    ACTIVE RESEARCH PRIORITY / PLANNING ONLY
+SRS-REAL-CLOSURE reorientation         docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
+SRS-REAL-CLOSURE critical path         docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
+SRS-REAL-CLOSURE commission            docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
 Implementation Gate                    CLOSED
 Frozen Contracts                       UNCHANGED
 PALACE / Information Space Foundation  ACTIVE ROUTE
@@ -412,7 +426,11 @@ Gate separation status (do not conflate):
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_CCVS01_GATE_C_CLOSURE_RULING_20261006.md.
 
 Current next transition:
-  HUMAN AUTHORIZATION REVIEW OF AUTH-REQ-01 V0.2 ONLY.
+  1. FINAL AUTH-REQ-01 V0.2 AUTHORIZATION-CHAIN AUDIT ONLY
+     — PASS or minimal defect repair; no governance redesign.
+  2. SRS-REAL-CLOSURE-01 RESEARCH DESIGN / EVIDENCE PLANNING
+     — active research priority; still no implementation, fixture, execution,
+       or IS mutation.
   requested_stage_set = { IMPLEMENTATION }.
   No Stage Authorization Record exists. No code, fixture, execution, or IS
   mutation is authorized.
@@ -438,6 +456,10 @@ Current next transition:
   Topology, and the central missing claim:
   ES₁ → IS → ES₂ lawful reuse without recomputation. It does not authorize
   implementation, fixture creation, experiment, IS mutation, or code change.
+  Research focus reset artifacts:
+  docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md;
+  docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md;
+  docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md.
   Approval would only permit a separately reviewed Minimal ES₁→IS→ES₂
   Settled Relation Reuse Experiment Design.
   Do not open U-3, U-4, U-5, U-6, Phase D ranking, Phase E backend selection,

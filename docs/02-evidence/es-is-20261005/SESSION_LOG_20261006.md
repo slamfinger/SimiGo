@@ -4038,3 +4038,71 @@ FIXTURE_PREPARATION NOT AUTHORIZED
 EXECUTION NOT AUTHORIZED
 IS_MUTATION NOT AUTHORIZED
 ```
+
+## Research focus reset and SRS-REAL-CLOSURE-01 commission — 2026-10-07
+
+The Human formally redirected the Lab from further governance expansion to the
+real empirical closure question.
+
+New direction:
+
+```text
+Governance track:
+  AUTH-REQ-01 v0.2 pending Human authorization review;
+  maintenance-only.
+
+Research track:
+  SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY.
+
+Core gap:
+  ES₁ → IS(SRS) → independent ES₂ lawful reuse
+  = NOT ESTABLISHED.
+```
+
+Registered artifacts:
+
+```text
+docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
+docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
+docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
+```
+
+Positive critical path:
+
+```text
+SRS-01 ES₁ produces and settles SRS        NOT ESTABLISHED
+SRS-02 SRS persists in Information Space    NOT ESTABLISHED
+SRS-03 independent ES₂ resolves/validates   NOT ESTABLISHED
+SRS-04 ES₂ legitimately REUSEs              NOT ESTABLISHED
+SRS-05 proves no silent recomputation       NOT ESTABLISHED
+```
+
+Required negative tests:
+
+```text
+SRS-N1 dependency mutation
+SRS-N2 relation/semantic binding mutation
+SRS-N3 freshness/validity failure
+```
+
+Research priority order:
+
+```text
+P0 real ES₁ → IS → ES₂ reuse evidence
+P1 negative BLOCK/RECOMPUTE evidence
+P2 non-recomputation/independence evidence
+P3 carrier scale/Reality Mapping
+P4 topology/multi-backend
+P5 governance refinement
+```
+
+Current boundary:
+
+```text
+AUTH-REQ-01 v0.2 pending Human authorization review
+SRS-REAL-CLOSURE-01 ACTIVE / PLANNING ONLY
+Implementation NOT AUTHORIZED
+Fixture preparation NOT AUTHORIZED
+Execution NOT AUTHORIZED
+IS mutation NOT AUTHORIZED
+```

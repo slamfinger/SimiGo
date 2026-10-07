@@ -261,6 +261,15 @@ Manifest Contract v1.0 = ACCEPT / FROZEN.
 AUTH-REQ-01 Human Authorization Request v0.2 and IMPLEMENTATION-only Filled
 Manifest Instance v0.2 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
 no Stage Authorization Record exists and no stage is authorized.
+Research focus reset 2026-10-07:
+Governance track = AUTH-REQ-01 v0.2 pending Human authorization review,
+maintenance-only;
+Research track = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY;
+Core gap = ES₁ → IS(SRS) → independent ES₂ lawful reuse, NOT ESTABLISHED.
+Reset artifacts:
+`docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md`;
+`docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md`;
+`docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md`.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:

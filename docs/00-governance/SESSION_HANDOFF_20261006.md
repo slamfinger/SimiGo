@@ -575,3 +575,14 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > SHA1 integrity binding, and SHA256. Request v0.2 and Manifest Instance v0.2 also
 > receive exact content bindings. requested_stage_set remains { IMPLEMENTATION },
 > no Stage Authorization Record exists, and no stage is authorized.
+> **UPDATE 49 (2026-10-07)：Research focus reset；SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.**
+> Frozen governance objects remain unchanged and are now frozen research governance
+> infrastructure. AUTH-REQ-01 v0.2 remains pending Human authorization review with
+> only a final authorization-chain audit allowed (PASS or minimal defect repair).
+> Governance refinement is maintenance-only and may not become P0. New research
+> priority order: P0 real ES₁ → IS → ES₂ reuse evidence; P1 negative
+> mutation/BLOCK/RECOMPUTE evidence; P2 non-recomputation/independence evidence;
+> P3 carrier scale/Reality Mapping; P4 topology/multi-backend; P5 governance
+> refinement. Registered SRS-REAL-CLOSURE-01 reorientation, critical path, and
+> commission artifacts. No implementation, fixture, execution, or IS mutation is
+> authorized.
