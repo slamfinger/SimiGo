@@ -1,12 +1,13 @@
 # SRS-VAL-01 Run/Implementation Manifest Contract v1.0
 
-> **Status:** MANIFEST CONTRACT V1.0 DELIVERED FOR HUMAN REVIEW — DESIGN ONLY / NO STAGE AUTHORIZED
+> **Status:** MANIFEST CONTRACT V1.0 ACCEPT / FROZEN — DESIGN ONLY / NO STAGE AUTHORIZED
 > **Date:** 2026-10-07
 > **Frozen predicate basis:** SRS-VAL-01 Design v0.8 at `1170208`
 > **Frozen governance basis:** Authorization Package v0.6 at `047b221`, accepted at `6089f0b`
 > **Frozen implementation boundary:** Implementation Boundary Audit v0.1 at `cb95c09`
 > **Review basis:** Human REVISE ruling on Manifest Contract v0.9 at `0a8a693`
 > **Purpose:** separate observed read facts from independent semantic-role classification authority.
+> **Review ruling:** ACCEPT / FROZEN; see `docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_ACCEPTANCE_20261007.md`.
 
 ## 1. Scope and authority
 
@@ -18,7 +19,7 @@ Information-Space mutation.
 SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / IMMUTABLE BASIS
 Authorization Package v0.6          ACCEPT / FROZEN / IMMUTABLE GOVERNANCE BASIS
 Implementation Boundary Audit v0.1  ACCEPT / FROZEN / T-IMPL-01 MINIMUM TARGET
-Run/Implementation Manifest v1.0    SUBMITTED FOR HUMAN REVIEW
+Run/Implementation Manifest v1.0    ACCEPT / FROZEN
 Implementation                      NOT AUTHORIZED
 Fixture preparation                 NOT AUTHORIZED
 Execution                           NOT AUTHORIZED

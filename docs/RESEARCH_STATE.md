@@ -314,7 +314,15 @@
 > Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8
 > Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9
 > Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0
-> Current object = Run/Implementation Manifest v1.0 DELIVERED FOR HUMAN REVIEW
+> Manifest Contract v1.0 = ACCEPT / FROZEN
+> Human independent review完成 Manifest Contract v1.0 final adversarial review，
+> 裁定 **Run/Implementation Manifest v1.0 = ACCEPT / FROZEN**。Observer fact、
+> independent semantic-role classification、phased read mapping、typed
+> realization relation、disposition-specific evidence authority、hidden-read
+> closure 与 negative-read closure 均 PASS。冻结包不授权 implementation、
+> fixture、execution 或 IS mutation。下一合法对象是 separately reviewed Human
+> Authorization Request plus filled Manifest Instance；该对象尚未开启。
+>
 > ```
 >
 > Human review裁定 v0.1 = REVISE。v0.2 已修正 predicate decision boundary：
@@ -347,7 +355,7 @@
 > ④ RECOMPUTE authorization 不得隐式更换 canonical identity-generation rule；
 > ⑤ every remaining failure 必须先由 registered predicate rule 分类为 `RECOMPUTE_ELIGIBLE`；I-14 coverage alone 不得升级 unclassified failure。
 >
-> 当前 review object = **SRS-VAL-01 Run/Implementation Manifest v1.0**。implementation / fixture / experiment / IS mutation 仍未授权。
+> 当前 review object = **NONE / SRS-VAL Manifest Contract v1.0 FROZEN**。implementation / fixture / experiment / IS mutation 仍未授权。
 >
 > `SRS-VAL-01` 只定义 REUSE / BLOCK / RECOMPUTE semantic predicate；其
 > implementation、fixture、experiment、IS mutation 仍 NOT AUTHORIZED。

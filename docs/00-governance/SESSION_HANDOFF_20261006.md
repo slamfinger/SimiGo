@@ -548,3 +548,13 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > consumable read universe; governance/observation control inputs are not
 > implicitly mechanical. Implementation, fixture, execution, and IS mutation
 > remain NOT AUTHORIZED.
+> **UPDATE 46 (2026-10-07)：Run/Implementation Manifest Contract v1.0 = ACCEPT / FROZEN.**
+> Final review passed M16 path-sensitive disposition, M17 phased read mapping,
+> M18 typed realization relations, disposition-specific evidence authority,
+> observed-read role authority, hidden semantic-read closure, and negative-read
+> closure. Non-blocking execution-stage obligation: if an external read consumes a
+> semantic value that should have been INVOCATION_MATERIALIZED_VALUE, it must be
+> classified FORBIDDEN_UNDECLARED_SEMANTIC_READ and must not count as a lawful
+> EXTERNAL_READ realization. Next lawful object is a separately reviewed Human
+> Authorization Request plus filled Manifest Instance; it is NOT OPENED.
+> Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.

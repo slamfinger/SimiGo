@@ -257,16 +257,18 @@ Manifest Contract v0.6 = REVISE / SUPERSEDED BY V0.7.
 Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8.
 Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9.
 Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0.
-Current manifest contract = Run/Implementation Manifest v1.0 DELIVERED FOR HUMAN REVIEW.
+Manifest Contract v1.0 = ACCEPT / FROZEN.
+Current manifest contract status = FROZEN; Human Authorization Request and filled
+Manifest Instance remain NOT OPENED.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
 V0.1 through V0.7 = REVISE / SUPERSEDED BY SUCCESSIVE REVISIONS.
 ```
 
-The SRS-VAL authorization-package governance closure is complete. The current
-object is the Run/Implementation Manifest contract. Implementation, fixture
-preparation, execution, and experiment remain unauthorized.
+The SRS-VAL authorization-package and Manifest Contract governance closures are
+complete. Implementation, fixture preparation, execution, and experiment remain
+unauthorized.
 
 ### 7.2 Information Topology
 
@@ -296,15 +298,15 @@ Run/Implementation Manifest Contract
 
 Status = MANIFEST V0.1 REVISE / MANIFEST V0.2 REVISE / MANIFEST V0.3 REVISE /
          MANIFEST V0.4 REVISE / MANIFEST V0.5 REVISE / MANIFEST V0.6 REVISE /
-         MANIFEST V0.7 REVISE / MANIFEST V0.8 REVISE / MANIFEST V0.9 REVISE / MANIFEST V1.0 DELIVERED
-         FOR HUMAN REVIEW — DESIGN ONLY
+         MANIFEST V0.7 REVISE / MANIFEST V0.8 REVISE / MANIFEST V0.9 REVISE /
+         MANIFEST V1.0 ACCEPT / FROZEN
        + PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE
          V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6
          ACCEPT / FROZEN
        + SRS-VAL Design v0.8 ACCEPT / FROZEN
 
 Next lawful object =
-  Human review of Run/Implementation Manifest v1.0; no stage authorized
+  separate Human Authorization Request plus filled Manifest Instance — NOT OPENED
 
 Current design document =
   docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md

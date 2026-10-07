@@ -3857,3 +3857,73 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## Run/Implementation Manifest Contract v1.0 ACCEPT / FROZEN — 2026-10-07
+
+The Human completed final freeze-before-authorization review of Manifest Contract
+v1.0 at `f69a0e2`.
+
+Ruling:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN / UNCHANGED
+Authorization Package v0.6          ACCEPT / FROZEN / UNCHANGED
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN / UNCHANGED
+T-IMPL-01 SRS-VAL Decision Core     ACCEPT / FROZEN / UNCHANGED
+
+M16 path-sensitive disposition      PASS
+M17 phased read mapping             PASS
+M18 typed realization relations     PASS
+M18 disposition evidence authority  PASS
+M18 observed-read role authority    PASS
+M18 hidden semantic-read closure    PASS
+M18 negative-read closure           PASS
+
+Run/Implementation Manifest v1.0    ACCEPT / FROZEN
+```
+
+The accepted chain is:
+
+```text
+Observer
+  → proves what read occurred only.
+
+Independent Classification Verifier
+  → independently proves the semantic role of that read.
+
+M17
+  semantic_input → expected_read → observed_read.
+
+M18
+  observed read classification → realization closure → disposition closure.
+```
+
+Non-blocking execution-stage fixture obligation:
+
+```text
+If an external read consumes a semantic value that should have been
+INVOCATION_MATERIALIZED_VALUE, the Independent Classification Verifier must
+classify it FORBIDDEN_UNDECLARED_SEMANTIC_READ and it must not be accepted as a
+lawful EXTERNAL_READ realization.
+```
+
+Next lawful object:
+
+```text
+Human Authorization Request
+plus filled Manifest Instance
+STATUS = NOT OPENED
+```
+
+Current state:
+
+```text
+SRS-VAL-01 Design v0.8              ACCEPT / FROZEN
+Authorization Package v0.6          ACCEPT / FROZEN
+Implementation Boundary Audit v0.1  ACCEPT / FROZEN
+Run/Implementation Manifest v1.0    ACCEPT / FROZEN
+SRS-VAL implementation NOT AUTHORIZED
+SRS-VAL fixture       NOT AUTHORIZED
+SRS-VAL experiment    NOT AUTHORIZED
+IS mutation           NOT AUTHORIZED
+```
