@@ -558,3 +558,14 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > EXTERNAL_READ realization. Next lawful object is a separately reviewed Human
 > Authorization Request plus filled Manifest Instance; it is NOT OPENED.
 > Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.
+> **UPDATE 47 (2026-10-07)：AUTH-REQ-01 Human Authorization Request v0.1 + IMPLEMENTATION-only Filled Manifest Instance v0.1 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW.**
+> requested_stage_set = { IMPLEMENTATION }. Authorized repository revision =
+> eef3d24901e23b734bb887841528c0c7b4b42aa0. Authorized writable paths are limited
+> to trackD-memory/Sources/SettledRelationValidationCore/ and a bounded root
+> Package.swift target-registration edit. Execution_run_budget = 0,
+> fixture_preparation_budget = 0, and is_mutation_budget = 0. No Stage
+> Authorization Record exists. Request SHA256 =
+> 0e2e55dec2c9c19291fa98b701838949ee0ecf866392ba5ee7051536684e9a11. Instance
+> SHA256 =
+> 8ef4912167cd374146e491c89194981940d8e505ef458f56cbf9950b8aa60a73.
+> Implementation, fixture, execution, and IS mutation remain NOT AUTHORIZED.

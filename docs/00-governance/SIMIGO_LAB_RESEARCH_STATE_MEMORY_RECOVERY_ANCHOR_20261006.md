@@ -258,8 +258,9 @@ Manifest Contract v0.7 = REVISE / SUPERSEDED BY V0.8.
 Manifest Contract v0.8 = REVISE / SUPERSEDED BY V0.9.
 Manifest Contract v0.9 = REVISE / SUPERSEDED BY V1.0.
 Manifest Contract v1.0 = ACCEPT / FROZEN.
-Current manifest contract status = FROZEN; Human Authorization Request and filled
-Manifest Instance remain NOT OPENED.
+AUTH-REQ-01 Human Authorization Request v0.1 and IMPLEMENTATION-only Filled
+Manifest Instance v0.1 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
+no Stage Authorization Record exists and no stage is authorized.
 Accepted and frozen SRS-VAL design:
 `docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_DESIGN_V0.8_20261007.md`.
 Superseded SRS-VAL-01 design lineage:
@@ -293,23 +294,34 @@ These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 ## 9. Current active closure task
 
 ```text
-SRS-VAL-01
-Run/Implementation Manifest Contract
+AUTH-REQ-01
+Human Authorization Request v0.1
++
+IMPLEMENTATION-only Filled Manifest Instance v0.1
 
-Status = MANIFEST V0.1 REVISE / MANIFEST V0.2 REVISE / MANIFEST V0.3 REVISE /
-         MANIFEST V0.4 REVISE / MANIFEST V0.5 REVISE / MANIFEST V0.6 REVISE /
-         MANIFEST V0.7 REVISE / MANIFEST V0.8 REVISE / MANIFEST V0.9 REVISE /
-         MANIFEST V1.0 ACCEPT / FROZEN
-       + PACKAGE V0.1 REVISE / PACKAGE V0.2 REVISE / PACKAGE
-         V0.3 REVISE / PACKAGE V0.4 REVISE / PACKAGE V0.5 REVISE / PACKAGE V0.6
-         ACCEPT / FROZEN
-       + SRS-VAL Design v0.8 ACCEPT / FROZEN
+Status = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW
+Requested stage set = { IMPLEMENTATION }
+Stage Authorization Record = NOT_CREATED_PENDING_HUMAN_RULING
+Authorized repository revision = eef3d24901e23b734bb887841528c0c7b4b42aa0
 
-Next lawful object =
-  separate Human Authorization Request plus filled Manifest Instance — NOT OPENED
+Frozen bases =
+  SRS-VAL Design v0.8 ACCEPT / FROZEN
+  + Authorization Package v0.6 ACCEPT / FROZEN
+  + Implementation Boundary Audit v0.1 ACCEPT / FROZEN
+  + T-IMPL-01 ACCEPT / FROZEN
+  + Run/Implementation Manifest Contract v1.0 ACCEPT / FROZEN
 
-Current design document =
-  docs/02-evidence/es-is-20261005/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_RUN_IMPLEMENTATION_MANIFEST_V1.0_20261007.md
+Next lawful action =
+  Human authorization review of AUTH-REQ-01; no stage authorized
+
+Current request document =
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_HUMAN_AUTHORIZATION_REQUEST_V0.1_20261007.md
+
+Current filled manifest instance =
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMPLEMENTATION_ONLY_FILLED_MANIFEST_INSTANCE_V0.1_20261007.md
+
+Immutable bindings =
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMMUTABLE_BINDINGS_20261007.md
 ```
 
 Dependency chain:

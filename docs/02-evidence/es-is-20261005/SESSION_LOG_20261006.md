@@ -3927,3 +3927,51 @@ SRS-VAL fixture       NOT AUTHORIZED
 SRS-VAL experiment    NOT AUTHORIZED
 IS mutation           NOT AUTHORIZED
 ```
+
+## AUTH-REQ-01 opened for Human authorization review — 2026-10-07
+
+AUTH-REQ-01 Human Authorization Request v0.1 and its IMPLEMENTATION-only Filled
+Manifest Instance v0.1 were opened. The request is content-bound, but no Stage
+Authorization Record exists and no stage is authorized.
+
+Request:
+
+```text
+requested_stage_set = { IMPLEMENTATION }
+authorized_repository_revision =
+  eef3d24901e23b734bb887841528c0c7b4b42aa0
+target_module = SettledRelationValidationCore
+authorized_writable_path_set = {
+  trackD-memory/Sources/SettledRelationValidationCore/;
+  Package.swift
+}
+Package.swift constraint =
+  target registration only; no external dependency; no unrelated target change
+execution_run_budget = 0
+fixture_preparation_budget = 0
+is_mutation_budget = 0
+Stage Authorization Record = NOT_CREATED_PENDING_HUMAN_RULING
+```
+
+Immutable bindings:
+
+```text
+Request SHA256 =
+  0e2e55dec2c9c19291fa98b701838949ee0ecf866392ba5ee7051536684e9a11
+Request Git blob =
+  429136260ba0e6a5c7ddb5bcf1cb52f3868a39d7
+Manifest Instance SHA256 =
+  8ef4912167cd374146e491c89194981940d8e505ef458f56cbf9950b8aa60a73
+Manifest Instance Git blob =
+  709a52f75270caf55c3f56d54850fcdd015942ab
+```
+
+Current state:
+
+```text
+AUTH-REQ-01 OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW
+IMPLEMENTATION NOT AUTHORIZED
+FIXTURE_PREPARATION NOT AUTHORIZED
+EXECUTION NOT AUTHORIZED
+IS_MUTATION NOT AUTHORIZED
+```
