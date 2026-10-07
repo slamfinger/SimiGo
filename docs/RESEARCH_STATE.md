@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-005 INVALID; schema authority forensic audit closed with shared/bilateral τN1-runner schema authority absence
+> **Status:** STOPPED — EXEC-005 audit closed; corrected EXECUTION Request v0.8 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -109,21 +109,29 @@ Completed (canonical on main):
     fixture preparation introduced both exact runner top-level consumption and
     τN1 without that field; no authoritative τN1 interface schema existed.
     One-sided Request-schema or runner-defect attribution is rejected.
+  Human “授权‘Schema Authority + 新 Request 起草’” opened corrected Request
+    v0.8 at cfa514c. It exact-binds Schema Authority v1 and proposes scoped
+    τN1 schema alignment: remove deprecated nested D' fields, add required
+    top-level path/SHA256/revision, preserve dependencies[0].dependency_id,
+    advance Manifest/Completion to v5, then instantiate records 006 and run
+    one EPR004 campaign only after approval. No implementation or campaign is
+    authorized.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: τN1 repair, EXECUTION rerun, IS_MUTATION, Observer
-authorization, tau/runner/fixture repair, old-record reuse, implementation
-changes; governance expansion (maintenance-only).
+NOT AUTHORIZED: τN1 modification, EPR004 execution, EXECUTION rerun,
+IS_MUTATION, Observer authorization, tau/runner/fixture repair, old-record
+reuse, implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human decision whether to authorize a corrected Request/records. Any future
-  correction must first establish an authoritative τN1 interface schema,
-  reconcile it with exact runner consumption, and add fail-closed schema
-  validation. No rerun, τN1 repair, runner/fixture repair, old-record reuse,
-  environment normalization, IS mutation, or observer action is authorized
-  before that. Core claim remains NOT ESTABLISHED.
+  Human authorization review of Request v0.8. If APPROVE S+E, execute scoped
+  τN1 schema alignment, instantiate records 006 exact-binding the immutable
+  post-alignment commit, run one frozen campaign through EPR004, and STOP for
+  evidence audit. If APPROVE S ONLY, stop after alignment. If REVISE/DENY, no
+  alignment or campaign. No unrequested τ modification, rerun, old-record
+  reuse, environment normalization, IS mutation, or observer action is
+  authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

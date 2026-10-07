@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** EXEC-005 schema authority audit
-> at 9616133 supersedes generic INVALID-evidence state. Root cause is shared/
-> bilateral `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`; no authoritative τN1
-> schema existed. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Corrected Request v0.8 at
+> cfa514c supersedes the EXEC-005 audit-closed waiting state. Schema Authority
+> v1 is canonical; v0.8 proposes scoped τN1 schema alignment plus records 006
+> and campaign only after approval. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-005 schema authority audit)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.8 opening)
 
 ```text
 Governance track:
@@ -128,18 +128,27 @@ Governance track:
     fixture preparation introduced both exact runner top-level consumption and
     τN1 without that field; no authoritative τN1 interface schema existed.
     One-sided Request-schema or runner-defect attribution is rejected.
+    Human “授权‘Schema Authority + 新 Request 起草’” opened Request v0.8 at
+    cfa514c. It exact-binds Schema Authority v1 and proposes scoped τN1 schema
+    alignment: remove deprecated nested D' fields, add required top-level
+    path/SHA256/revision, preserve dependencies[0].dependency_id, advance
+    Manifest/Completion to v5, then instantiate records 006 and run one EPR004
+    campaign only after approval. No implementation or campaign is authorized
+    yet.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human decision whether to authorize a corrected
-  Request/records. Any future correction must first establish an authoritative
-  τN1 interface schema, reconcile it with exact runner consumption, and add
-  fail-closed schema validation. No rerun, τN1 repair, runner/fixture repair,
-  old-record reuse, environment normalization, IS mutation, or observer action
-  is authorized before that. Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human authorization review of Request v0.8. If APPROVE
+  S+E, execute scoped τN1 schema alignment, instantiate records 006
+  exact-binding the immutable post-alignment commit, run one frozen campaign
+  through EPR004, and STOP for evidence audit. If APPROVE S ONLY, stop after
+  alignment. If REVISE/DENY, no alignment or campaign. No unrequested τ
+  modification, rerun, old-record reuse, environment normalization, IS
+  mutation, or observer action is authorized before that. Core claim remains
+  NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

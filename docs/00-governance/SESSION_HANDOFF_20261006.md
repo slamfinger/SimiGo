@@ -12,11 +12,12 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** EXEC-005 schema authority audit 已关
-> 闭，canonical audit = `9616133`。Ruling =
-> `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`（shared/bilateral）。Campaign 仍
-> INVALID/STOP；当前停点 = Human decision 是否授权 corrected
-> Request/records；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** Schema Authority v1 已 canonical，
+> corrected EXECUTION Request v0.8 已开启并提交审查：`cfa514c`。EXEC-005
+> audit closed，root cause = shared/bilateral
+> `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`。v0.8 提议 scoped τN1 schema
+> alignment 和 records 006/campaign。当前停点 = Human authorization review；
+>不得未经批准修改 τN1、创建 records 或运行。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -856,3 +857,17 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > whether to authorize a corrected Request/records that first establishes an
 > authoritative τN1 interface schema, reconciles it with exact runner
 > consumption, and adds fail-closed schema validation.
+> **UPDATE 66 (2026-10-07)：Human authorized Schema Authority + Request drafting；EXECUTION Request v0.8 OPENED/SUBMITTED.**
+> Human ruling exact form = “授权‘Schema Authority + 新 Request 起草’”. This
+> established Schema Authority v1 at `a3e449c` and opened Request v0.8 only;
+> it did not approve S+E, modify τN1, execute EPR004, create records, run a
+> campaign, or revive budgets. Schema Authority v1 is canonical at `a3e449c`,
+> blob `e180f305…`, SHA256 `8bf913d9…`; it requires top-level D' path/SHA256/
+> revision, `dependencies[0].dependency_id = D-1`, marks nested D' fields
+> deprecated/forbidden post-alignment, and prescribes fail-closed
+> repository/cwd/schema/path/hash validation. Request v0.8 is canonical at
+> `cfa514c`, blob `25b36a51…`, SHA256 `bc738e8c…`; it proposes scoped τN1
+> schema alignment to Manifest/Completion v5, followed by records 006 and one
+> EPR004 campaign only after separate approval. Exact post-alignment execution
+> commit shall be instantiated before records 006. No stage is authorized;
+> core claim remains NOT ESTABLISHED.
