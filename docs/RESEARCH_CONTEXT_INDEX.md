@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — RESEARCH STATE / MEMORY RECOVERY ANCHOR (2026-10-06)` — Recovery baseline `0508e26`; Research-state content revision `bcc6b81`; always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — FIXTURE REVISION REQUEST v0.7 (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -29,12 +29,13 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 EXECUTION Authorization Request v0.3 = NEXT LAWFUL OBJECT (to be drafted; not yet opened). Fixture revision cycle COMPLETE at e729e32 (F-1..F-4 repairs + SV-1..SV-6 30/30 + manifest v2 + completion record v2 under FIXTURE_PREPARATION REVISION SAR 001 fdf45ea)
-Current governance track           = maintenance-only; EXECUTION / IS_MUTATION / Observer authorization NOT YET REQUESTED (v0.2 was ruled B=REVISE with three-layer audit findings, all registered in the Defect Register and closed by the revision cycle or carried into v0.3)
-Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY — experiment design v0.2 ACCEPT; fixture prepared and revised; Execution Request v0.3 to exact-bind FIXTURE_MANIFEST v2 (blob 689b0401… es_runner re-bound; ten artifacts carried UNCHANGED) and completion record v2
+Current active closure task        = SRS-REAL-CLOSURE-01 FIXTURE_PREPARATION REVISION Authorization Request v0.7 = OPENED / SUBMITTED FOR HUMAN REVIEW. SAR 001 was correctly consumed and e729e32 is canonical, but Human acceptance audit ruled B=REVISE: fixture revision cycle NOT YET CLOSED.
+Current authorization request      = docs/00-governance/SRS_REAL_CLOSURE_01_FIXTURE_REVISION_AUTHORIZATION_REQUEST_V0.7_20261007.md
+Current governance track           = maintenance-only; EXECUTION / IS_MUTATION / Observer authorization NOT AUTHORIZED. Accepted baseline: authorization chain/path/event order, F-1..F-3, snapshot mechanism, writer invariant, and claimed SV-1..SV-6 30/30. Rejected as final: IMMUTABLE_REVISION §9 payload completeness and mapping_snapshot_seal_boundary.
+Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY — experiment design v0.2 ACCEPT; fixture revision reopened only for RF-4.5/RF-4.6 (including RF-4.6m FD-level closure); a fresh Human approval and REVISION SAR 002 must precede any work cycle.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = draft EXECUTION Authorization Request v0.3 (three-record structure: EXECUTION SAR 001 + IS_MUTATION SAR 001 scoped to run IS dir + OBSERVER AUTHORIZATION RECORD 001 supplemental-class per binding D-SEC-1; Channel Universe with capture pipes COVERED per D-SEC-2 exact coverage; §9 read-instance binding plan — instrument implemented; pre-registered expected decisions judged never tuned) → Human ruling → three SARs → single frozen campaign → evidence package → Human audit of the core claim
+Next dependency                    = Human ruling on Request v0.7 → if APPROVE, exact-binding FIXTURE_PREPARATION REVISION SAR 002 → RF-4.5/RF-4.6 repair → SV-1..SV-6 with field-level assertions → manifest v3 + completion record v3 → push/verify/STOP → fresh Human acceptance review. Only after that may EXECUTION Authorization Request v0.3 reopen.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):

@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** ACTIVE — fixture revision complete; next lawful object = EXECUTION Authorization Request v0.3
+> **Status:** ACTIVE — fixture revision NOT YET CLOSED; Request v0.7 submitted for Human authorization review
 
 ```text
 Completed (canonical on main):
@@ -14,9 +14,12 @@ Completed (canonical on main):
     completion record with exact artifact bindings);
   SRS-REAL-CLOSURE-01 Design v0.2 ACCEPT (R1 N1 write-once-preserving
     mutation semantics; R2 E1 closed-world downgrade);
-  FIXTURE_PREPARATION complete + revised (manifest v2: es_runner.py
-    re-bound 689b0401/ea8e64eb; ten artifacts UNCHANGED; SV-1..SV-6 30/30;
-    zero violations; scope PASS);
+  FIXTURE_PREPARATION REVISION SAR 001 correctly consumed (fdf45ea →
+    e729e32; manifest v2: es_runner.py re-bound 689b0401/ea8e64eb; ten
+    artifacts UNCHANGED; SV-1..SV-6 30/30; zero path violations);
+  Human acceptance audit ruled B=REVISE on final completion: F-1..F-3,
+    snapshot mechanism, writer invariant, and SV result PASS; §9
+    IMMUTABLE_REVISION payload and mapping_snapshot_seal_boundary FAIL.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -25,15 +28,15 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  EXECUTION Authorization Request v0.3 — exact-binds FIXTURE_MANIFEST v2 +
-  completion record v2; three-record structure (EXECUTION SAR 001 +
-  IS_MUTATION SAR 001 scoped to run IS dir + OBSERVER AUTHORIZATION RECORD
-  001 supplemental-class per binding D-SEC-1); Channel Universe with
-  capture pipes COVERED per D-SEC-2; §9 read-instance binding plan
-  (instrument implemented in the runner); pre-registered expected decisions
-  (positive = REUSE; N1 = BLOCK via DP-1 dependencyBlockingInvalidation)
-  judged never tuned; single frozen campaign → evidence package → Human
-  audit of the core claim under the bounded wording of Design §10.
+  FIXTURE_PREPARATION REVISION Authorization Request v0.7 (5cfcc16) —
+  exact-repair RF-4.5 (IMMUTABLE_REVISION fields:
+  declared_immutable_revision, revision_to_content_digest_binding,
+  resolved_declared_content_digest) and RF-4.6 (explicit
+  mapping_snapshot_seal_boundary), including RF-4.6m pre-close FD-level
+  metadata checks. No direct work is authorized; approval must create a
+  fresh exact-binding REVISION SAR 002, followed by SV with field-level
+  assertions, manifest v3/completion record v3, push/verify, and fresh
+  Human acceptance review. EXECUTION Request v0.3 remains not open.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

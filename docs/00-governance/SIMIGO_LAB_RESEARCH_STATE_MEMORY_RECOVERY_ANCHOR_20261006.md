@@ -10,11 +10,12 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** the Research Focus Reset supersedes
-> the older “SRS-VAL design is active” orientation. Read “Current recovery
+> **Current recovery override — 2026-10-07:** Request v0.7 supersedes the
+> claim that `e729e32` closed FIXTURE_PREPARATION. The Research Focus Reset
+> supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after fixture revision completion)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.7 opening)
 
 ```text
 Governance track:
@@ -27,23 +28,26 @@ Governance track:
     closure / channel closure / runner semantics) → Defect Register
     (D-1..D-9 + D-SEC-1/D-SEC-2 binding semantics) → FIXTURE_PREPARATION
     REVISION Request v0.1..v0.6 six-round closure → v0.6 ACCEPT →
-    Revision SAR 001 (fdf45ea) → revision work cycle COMPLETE (e729e32:
+    Revision SAR 001 (fdf45ea) → canonical revision work state (e729e32:
     F-1..F-4 repairs, SV-1..SV-6 30/30, FIXTURE_MANIFEST v2, completion
-    record v2, zero violations, scope PASS).
+    record v2, zero path violations) → Human acceptance audit B=REVISE →
+    Request v0.7 opened at 5cfcc16. SAR 001 chain/scope, F-1..F-3, snapshot
+    mechanism, writer invariant, and claimed SV result PASS; final closure
+    FAILS on RF-4.5 IMMUTABLE_REVISION payload and RF-4.6
+    mapping_snapshot_seal_boundary.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = EXECUTION Authorization Request v0.3 (to be
-  drafted): exact-binds FIXTURE_MANIFEST v2 (es_runner.py re-bound
-  689b0401/ea8e64eb; ten artifacts UNCHANGED) and completion record v2;
-  three-record structure (EXECUTION SAR 001 + IS_MUTATION SAR 001 scoped
-  to run IS dir + OBSERVER AUTHORIZATION RECORD 001 supplemental-class per
-  binding D-SEC-1); Channel Universe with capture pipes COVERED per
-  D-SEC-2; §9 read-instance binding plan (instrument implemented in the
-  runner); pre-registered expected decisions judged never tuned.
+  Next lawful object = Human ruling on FIXTURE_PREPARATION REVISION
+  Authorization Request v0.7. If approved, the only work path is a fresh
+  exact-binding REVISION SAR 002, repair RF-4.5/RF-4.6 (including RF-4.6m),
+  rerun SV-1..SV-6 with field-level assertions, deliver manifest v3 and
+  completion record v3, push/verify/STOP, then obtain fresh Human acceptance.
+  EXECUTION Authorization Request v0.3 remains NOT OPEN until the fixture
+  revision is accepted.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
@@ -58,6 +62,7 @@ Frozen experiment contract:
   repair of failed results).
 
 Current reset artifacts (2026-10-07):
+  docs/00-governance/SRS_REAL_CLOSURE_01_FIXTURE_REVISION_AUTHORIZATION_REQUEST_V0.7_20261007.md
   docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
   docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
   docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
@@ -67,7 +72,9 @@ Current reset artifacts (2026-10-07):
 Standing disciplines (registered 2026-10-07): governance-critical commits
 are pushed to canonical main and ls-remote verified immediately (local
 completion ≠ canonical state); declared changes must be re-verified before
-commit; governance text cannot repair instrument semantics; authorization
+commit; governance text cannot repair instrument semantics; self-validation
+PASS proves only its asserted coverage, never an unstated contract payload;
+authorization
 boundaries guard against disguised execution via validation as well as
 open execution.
 

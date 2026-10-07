@@ -12,10 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态：** R01 bounded continuation PASS；U-A Gate C CLOSED / ACCEPT；
-> PIR v0.2 accepted freshness-prerequisite design；SRS/Information Topology
-> architecture clarified but NOT demonstrated。核心未证明：
-> `ES₁ → IS → independent ES₂ Settled Relation Reuse`。
+> **当前状态（2026-10-07 override）：** SRS-REAL-CLOSURE-01 活跃。
+> `e729e32` canonical 但不被接受为 fixture revision final state；Human
+> acceptance audit = `B = REVISE`。当前唯一合法对象是
+> `FIXTURE_PREPARATION REVISION Authorization Request v0.7`（`5cfcc16`，
+> OPENED / SUBMITTED）。EXECUTION / IS_MUTATION / Observer 均未授权。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -26,9 +27,9 @@
 > Status = `V0.1 REVISE / V0.2 REVISE / V0.3 REVISE / V0.4 DELIVERED FOR HUMAN REVIEW`。
 > Implementation / fixture / experiment remain NOT AUTHORIZED。
 >
-> **Supersession rule：** 下方 UPDATE 1–14 是历史层。若与当前 Recovery Anchor
-> 或 `docs/RESEARCH_STATE.md` 的 restored section 冲突，以 Recovery Anchor 和
-> restored section 为准。不要根据旧 UPDATE、已删除 branch 或对话记忆恢复状态。
+> **Supersession rule：** 下方历史层与旧状态若与 2026-10-07 override、当前
+> Recovery Anchor 或 `docs/RESEARCH_STATE.md` 冲突，以后者为准。不要根据旧
+> UPDATE、已删除 branch 或对话记忆恢复状态。
 > **UPDATE 15：Recovery Anchor CLOSED；Human authorized SRS-SEM-01.**
 > Design v0.1 delivered:
 > `docs/02-evidence/es-is-20261005/SIMIGO_ES_IS_SRS_SEMANTIC_BOUNDARY_DESIGN_V0.1_20261006.md`.
@@ -616,3 +617,21 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > changes re-verified before commit; governance text cannot repair instrument
 > semantics; authorization boundaries guard against disguised execution via
 > validation.
+> **UPDATE 51 (2026-10-07)：e729e32 = canonical but NOT accepted final fixture revision state；Request v0.7 opened.**
+> Request path:
+> `docs/00-governance/SRS_REAL_CLOSURE_01_FIXTURE_REVISION_AUTHORIZATION_REQUEST_V0.7_20261007.md`.
+> Human acceptance audit confirms SAR 001 (`fdf45ea`) authorization chain,
+> single-commit scope (`e729e32` touching only `es_runner.py`, manifest v2,
+> completion record v2), event order, F-1/F-2/F-3, snapshot boundary
+> mechanism, writer invariant, and claimed SV-1..SV-6 30/30. It rejects final
+> closure because `IMMUTABLE_REVISION` records omit
+> `declared_immutable_revision`, `revision_to_content_digest_binding`, and
+> `resolved_declared_content_digest`; mapping seals/events omit
+> `mapping_snapshot_seal_boundary`; and the metadata post-check happens on a
+> path stat after FD close rather than the original FD before close.
+> Request v0.7 is canonical at `5cfcc16` and registers RF-4.5/RF-4.6/RF-4.6m.
+> It permits no direct repair. Approval must create exact-binding REVISION
+> SAR 002 with one work-cycle budget, field-level SV assertions, manifest v3,
+> and completion record v3, then STOP for fresh Human acceptance review.
+> EXECUTION, IS_MUTATION, Observer campaign, and core claim remain NOT
+> AUTHORIZED / NOT ESTABLISHED.
