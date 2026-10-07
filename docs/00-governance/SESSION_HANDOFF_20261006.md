@@ -586,3 +586,33 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > refinement. Registered SRS-REAL-CLOSURE-01 reorientation, critical path, and
 > commission artifacts. No implementation, fixture, execution, or IS mutation is
 > authorized.
+> **UPDATE 50 (2026-10-07)：SRS-REAL-CLOSURE-01 execution chain advanced through implementation, fixture, and fixture revision; next lawful object = EXECUTION Authorization Request v0.3.**
+> Same-day chain (all canonical on main): AUTH-REQ-01 v0.2 audit PASS (cd0de60)
+> → Human APPROVE IMPLEMENTATION ONLY → SAR IMPLEMENTATION 001 (5119616) →
+> T-IMPL-01 SettledRelationValidationCore implemented and completion record
+> registered (07176ec; SV 11/11) → Design v0.2 ACCEPT after R1/R2 revisions
+> (050b918/2be3477) → FIXTURE_PREPARATION Request v0.2 ACCEPT after R3 (7d590d7)
+> → FIXTURE_PREPARATION SAR 001 (4c3def8) → fixture complete (d6507ff, manifest
+> v1, 11 artifacts) → EXECUTION Request v0.1/v0.2 both B=REVISE (three-layer
+> audit: authorization closure / channel closure / runner semantics; Defect
+> Register D-1..D-9 registered) → FIXTURE_PREPARATION REVISION Request
+> v0.1..v0.6 six-round closure (F-5 campaign-backdoor rejected; register
+> D-SEC-1 strict wording; IMMUTABLE_SNAPSHOT_PRESEALED selected; mapping
+> snapshot sealing; snapshot start boundary; never-reread consistency +
+> writer audit Option A) → v0.6 ACCEPT → Revision SAR 001 (fdf45ea) → revision
+> cycle COMPLETE (e729e32: F-1..F-4 repairs D-6/D-7/D-8/D-9; SV-1..SV-6 30/30;
+> FIXTURE_MANIFEST v2 with es_runner.py re-bound 689b0401/ea8e64eb and ten
+> artifacts UNCHANGED; completion record v2, zero violations, scope PASS).
+> Binding semantics registered: Observer Authorization Record 001 =
+> supplemental-observation authorization, NOT a §6 authoritative OIB (post-exit
+> observer is not §6-compliant; authoritative-observation claim NOT AVAILABLE
+> in round 1); capture pipes COVERED with exact coverage definition deferred to
+> v0.3. Core claim ES₁ → IS(SRS) → independent ES₂ lawful reuse remains NOT
+> ESTABLISHED (instrument ready ≠ reuse established). Next lawful object:
+> EXECUTION Authorization Request v0.3 exact-binding FIXTURE_MANIFEST v2 and
+> completion record v2, three-record structure (EXECUTION + scoped IS_MUTATION
+> + Observer Authorization), pre-registered expected decisions judged never
+> tuned. Standing disciplines: push + ls-remote verify immediately; declared
+> changes re-verified before commit; governance text cannot repair instrument
+> semantics; authorization boundaries guard against disguised execution via
+> validation.

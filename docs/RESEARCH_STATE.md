@@ -4,6 +4,43 @@
 
 **Last updated**: 2026-10-07
 
+## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
+
+> **Status:** ACTIVE — fixture revision complete; next lawful object = EXECUTION Authorization Request v0.3
+
+```text
+Completed (canonical on main):
+  T-IMPL-01 SettledRelationValidationCore implemented (07176ec, SV 11/11,
+    completion record with exact artifact bindings);
+  SRS-REAL-CLOSURE-01 Design v0.2 ACCEPT (R1 N1 write-once-preserving
+    mutation semantics; R2 E1 closed-world downgrade);
+  FIXTURE_PREPARATION complete + revised (manifest v2: es_runner.py
+    re-bound 689b0401/ea8e64eb; ten artifacts UNCHANGED; SV-1..SV-6 30/30;
+    zero violations; scope PASS);
+  Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
+    authorization closure → channel closure → actual runner semantics —
+    governance text cannot repair instrument semantics).
+
+NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
+implementation changes; governance expansion (maintenance-only).
+
+Next lawful object:
+  EXECUTION Authorization Request v0.3 — exact-binds FIXTURE_MANIFEST v2 +
+  completion record v2; three-record structure (EXECUTION SAR 001 +
+  IS_MUTATION SAR 001 scoped to run IS dir + OBSERVER AUTHORIZATION RECORD
+  001 supplemental-class per binding D-SEC-1); Channel Universe with
+  capture pipes COVERED per D-SEC-2; §9 read-instance binding plan
+  (instrument implemented in the runner); pre-registered expected decisions
+  (positive = REUSE; N1 = BLOCK via DP-1 dependencyBlockingInvalidation)
+  judged never tuned; single frozen campaign → evidence package → Human
+  audit of the core claim under the bounded wording of Design §10.
+
+Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
+(T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse
+established).
+
+```
+
 ## Research focus reset — 2026-10-07
 
 > **Status:** ACTIVE RESEARCH DIRECTION

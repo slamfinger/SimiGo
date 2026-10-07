@@ -14,27 +14,62 @@
 > the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07
+## 0. Current recovery status — 2026-10-07 (updated after fixture revision completion)
 
 ```text
 Governance track:
-  AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled
-  Manifest Instance v0.2 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
-  no Stage Authorization Record exists;
-  governance work is maintenance-only.
+  maintenance-only. Completed this line (all canonical on main):
+    T-IMPL-01 implemented (07176ec, completion record registered);
+    SRS-REAL-CLOSURE-01 Design v0.2 ACCEPT;
+    FIXTURE_PREPARATION Request v0.2 ACCEPT → SAR 001 (4c3def8) →
+    fixture complete (d6507ff, manifest v1);
+    EXECUTION Request v0.2 ruled B=REVISE (three-layer audit: authorization
+    closure / channel closure / runner semantics) → Defect Register
+    (D-1..D-9 + D-SEC-1/D-SEC-2 binding semantics) → FIXTURE_PREPARATION
+    REVISION Request v0.1..v0.6 six-round closure → v0.6 ACCEPT →
+    Revision SAR 001 (fdf45ea) → revision work cycle COMPLETE (e729e32:
+    F-1..F-4 repairs, SV-1..SV-6 30/30, FIXTURE_MANIFEST v2, completion
+    record v2, zero violations, scope PASS).
+
+  NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
+  (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
+  Next lawful object = EXECUTION Authorization Request v0.3 (to be
+  drafted): exact-binds FIXTURE_MANIFEST v2 (es_runner.py re-bound
+  689b0401/ea8e64eb; ten artifacts UNCHANGED) and completion record v2;
+  three-record structure (EXECUTION SAR 001 + IS_MUTATION SAR 001 scoped
+  to run IS dir + OBSERVER AUTHORIZATION RECORD 001 supplemental-class per
+  binding D-SEC-1); Channel Universe with capture pipes COVERED per
+  D-SEC-2; §9 read-instance binding plan (instrument implemented in the
+  runner); pre-registered expected decisions judged never tuned.
 
 Core gap:
-  ES₁ → IS(SRS) → independent ES₂ lawful reuse
-  = NOT ESTABLISHED.
+  ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
+  (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse
+  established).
 
-Current reset artifacts:
+Frozen experiment contract:
+  docs/02-evidence/es-is-20261005/
+  SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md
+  (= ACCEPT; pre-registered expected decisions; E1–E6 + SRS-N1 evidence
+  chain; four-state stop conditions; failure doctrine: no governance-text
+  repair of failed results).
+
+Current reset artifacts (2026-10-07):
   docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
   docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
   docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
+  docs/00-governance/SRS_REAL_CLOSURE_01_EXECUTION_READINESS_DEFECT_REGISTER_20261007.md
 ```
+
+Standing disciplines (registered 2026-10-07): governance-critical commits
+are pushed to canonical main and ls-remote verified immediately (local
+completion ≠ canonical state); declared changes must be re-verified before
+commit; governance text cannot repair instrument semantics; authorization
+boundaries guard against disguised execution via validation as well as
+open execution.
 
 The older “SRS-VAL design is active” statement below is superseded by this
 status. SRS-VAL Design v0.8, Authorization Package v0.6, Implementation Boundary
