@@ -129,6 +129,12 @@ Completed (canonical on main):
     non-goals. Acceptance does not establish CarrierSQLite equivalence and
     does not authorize implementation, initialization, campaign, IS mutation,
     runner/fixture/τ repair, semantic reinterpretation, or broader claims.
+  Human approved IMPLEMENTATION + INITIALIZATION. Scoped work cycle completed
+    at 4588a9c: implemented db_is.py/schema.sql/selfcheck.py/README and
+    initialization tool/design/audit requirements/observation plan/manifest.
+    Storage selfcheck 18/18 PASS. Empty SQLite-backed IS initialized with
+    three logical stores and zero rows; DB hashed then intentionally not
+    committed. No equivalence campaign/adjudication/logical import/IS mutation.
   Human direction opened Database-Carrier Implementation & Initialization
     Request v1.0 at ef3c681. It requests one scoped work cycle to implement
     accepted Design Package v0.1 interface/schema using Python stdlib and
