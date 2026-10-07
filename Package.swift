@@ -38,6 +38,10 @@ let package = Package(
             dependencies: ["InformationCore", "RelationCore"],
             path: "trackD-memory/Sources/ExecutionCore"
         ),
+        .target(
+            name: "SettledRelationValidationCore",
+            path: "trackD-memory/Sources/SettledRelationValidationCore"
+        ),
         .executableTarget(
             name: "InformationIntegration",
             dependencies: ["InformationCore", "RelationCore"],
