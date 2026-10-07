@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
-"""SRS-REAL-CLOSURE-01 ES process runner (fixture instrument).
+"""SRS-REAL-CLOSURE-01 ES process runner (fixture instrument, revision 2).
 
-Deterministic single-purpose runner for the minimal ES1 -> IS(SRS) ->
-independent ES2 lawful-reuse experiment (Design v0.2). One process per
-invocation; every mode appends events to its own process-local event log.
+Revision cycle under SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_001:
+  F-1  mapping_read LAST-entry-per-dependency_id semantics (D-6);
+  F-2  run_step env propagation (D-7);
+  F-3  driver tau runtime-copy substitution (D-8);
+  F-4  Auth Package §9 read-instance instrument: IMMUTABLE_SNAPSHOT_PRESEALED
+       with mapping snapshot boundary (start_size + exact prefix capture),
+       metadata-only post-snapshot checks, closed-world append-only writer
+       invariant, eleven-record fields, §9 failure vocabulary.
+
+Deterministic single-purpose runner. One process per invocation; every mode
+appends events to its own process-local event log with monotonic ordinals.
 
 Subcommands (each = one process lifetime):
   materialize   write the D object + initial current-dependency resolution
-                mapping into IS            (IS_MUTATION, execution stage only)
-  es1           read tau1; run expensive unit U once (write-before-return
-                ledger entry); settle SRS; persist into IS; exit
+                mapping entry                            (IS_MUTATION, exec)
+  es1           read tau1; sealed-read D; run expensive unit U once
+                (write-before-return ledger); settle SRS; persist; exit
   es2           read tau2; resolve SRS from IS; hash-verify; schema-validate;
-                read current dependency; compare pinned vs current; build
-                closed SRS-VAL invocation graph; invoke T-IMPL-01 via the
-                compiled adapter; on REUSE compute the delta continuation;
-                write continuation record into IS; exit
-  esn           same as es2 with tau2-N1 (same srs_identity, negative control)
+                sealed mapping read; dependency comparison; build closed
+                SRS-VAL invocation graph; invoke T-IMPL-01 via the compiled
+                adapter; on REUSE compute the delta continuation; write
+                continuation record into IS; exit
+  esn           same as es2 with tauN1 (negative control; expected BLOCK)
   mutate-n1     add D' as a NEW immutable object and update ONLY the
-                current-dependency resolution mapping  (IS_MUTATION, exec only)
-  driver        orchestrates es1 -> es2 -> mutate-n1 -> esn with recorded
-                spawn/exit ordering, then invokes the observer separately
+                current-dependency resolution mapping   (IS_MUTATION, exec)
+  driver        orchestrates materialize → es1 → [tau substitution] → es2 →
+                mutate-n1 → esn with campaign-level ordering evidence, then
+                invokes the observer separately
 
-Nothing in this file executes unless invoked; fixture preparation only
-syntax-checks it (py_compile). Execution itself is a later authorized stage.
+Nothing in this file executes unless invoked; fixture self-validation
+(SV-1..SV-6) exercises the units in isolation in a temporary directory.
 """
 
 import hashlib
@@ -35,6 +44,20 @@ IS_OBJECTS = "objects"
 IS_INDEX = "index.jsonl"
 IS_CURRENT = os.path.join("current", "dependencies.jsonl")
 
+OBSERVER_AUTHORIZATION_IDENTITY = "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_001"
+CHANNEL_UNIVERSE_IDENTITY = "SRS-REAL-CLOSURE-01-CHANNEL-UNIVERSE-V1"
+
+# §9 failure vocabulary
+READ_INSTANCE_NOT_IMMUTABLE = "READ_INSTANCE_NOT_IMMUTABLE"
+READ_TIME_CONTENT_MISMATCH = "READ_TIME_CONTENT_MISMATCH"
+REVISION_TO_DIGEST_BINDING_INVALID = "REVISION_TO_DIGEST_BINDING_INVALID"
+
+
+class MappingNotImmutable(Exception):
+    """READ_INSTANCE_NOT_IMMUTABLE — mapping snapshot boundary violation
+    (identity replaced, prefix not exactly obtainable, append-only
+    invariant violated)."""
+
 
 def sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -46,8 +69,7 @@ def canonical_json(record) -> str:
 
 class EventLog:
     """Per-process append-only event log with write-before-return semantics.
-    Every line carries a monotonic `ordinal` (0-based per process) so the
-    observer can mechanically verify temporal ordering (C4)."""
+    Every line carries a monotonic `ordinal` (0-based per process)."""
 
     def __init__(self, path: str, run_id: str, mode: str, pid: int):
         self.path = path
@@ -67,10 +89,10 @@ class EventLog:
         self._emit({"event": event, **fields})
 
     def ledger_u_entry(self, run_id: str, ordinal: int, input_digest: str, output_digest: str) -> None:
-        """The expensive-unit invocation ledger entry. Flushed BEFORE the
-        result value is returned to the caller (write-before-return)."""
+        """Expensive-unit invocation ledger entry. Flushed BEFORE the result
+        value is returned to the caller (write-before-return)."""
         self._emit({"event": "U_INVOCATION_LEDGER", "run_id": run_id,
-                    "ordinal": ordinal, "input_digest": input_digest,
+                    "ordinal_in_ledger": ordinal, "input_digest": input_digest,
                     "output_digest": output_digest, "ledger_type": "U"})
 
     def close(self, event: str, **fields) -> None:
@@ -78,14 +100,120 @@ class EventLog:
         self._fh.close()
 
 
+# ---------------------------------------------------------------------------
+# F-4.3b: mapping read-instance sealing (IMMUTABLE_SNAPSHOT_PRESEALED)
+# ---------------------------------------------------------------------------
+
+def seal_mapping_snapshot(is_dir: str) -> tuple:
+    """Seal the mapping state at read-instance start.
+
+    Procedure (Auth Package §9; Revision Request v0.6 F-4.3b):
+      1. open the mapping file, obtain an FD;
+      2. capture file identity (st_dev/st_ino) and start_size = fstat size;
+      3. capture EXACTLY bytes [0, start_size) from that FD — a short read
+         is a failure (file shrank below start_size = non-append mutation),
+         not a smaller snapshot;
+      4. seal: mapping_snapshot_digest = sha256(prefix bytes);
+      5. parse the LAST entry per dependency_id FROM THE SEALED PREFIX
+         ONLY — the mapping path is never re-read inside this read
+         instance;
+      post-snapshot checks are METADATA-ONLY (fstat same identity;
+      current_size >= start_size) — the mapping CONTENT is never re-read.
+      With the frozen append-only semantics, same inode + size >=
+      start_size + the sole lawful writer appending place later appends
+      outside this read instance.
+
+    Raises MappingNotImmutable (READ_INSTANCE_NOT_IMMUTABLE) on: identity
+    replacement detectable via path stat mismatch, short read (non-append
+    mutation), or post-snapshot metadata check failure.
+    """
+    path = os.path.join(is_dir, IS_CURRENT)
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        st = os.fstat(fd)
+        file_identity = {"st_dev": st.st_dev, "st_ino": st.st_ino}
+        start_size = st.st_size
+        chunks = []
+        remaining = start_size
+        while remaining > 0:
+            chunk = os.read(fd, remaining)
+            if not chunk:
+                raise MappingNotImmutable(READ_INSTANCE_NOT_IMMUTABLE +
+                                          ": short read — file shrank below start_size")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        prefix = b"".join(chunks)
+    finally:
+        os.close(fd)
+    snapshot_digest = sha256_hex(prefix)
+    # parse LAST entry per dependency_id from the sealed prefix ONLY
+    last_entries = {}
+    for line in prefix.decode("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        e = json.loads(line)
+        last_entries[e["dependency_id"]] = e
+    # metadata-only post-snapshot checks (content never re-read)
+    st_path = os.stat(path)
+    post = {"same_identity": (st_path.st_dev, st_path.st_ino) == (st.st_dev, st.st_ino),
+            "current_size_ge_start_size": st_path.st_size >= start_size}
+    if not (post["same_identity"] and post["current_size_ge_start_size"]):
+        raise MappingNotImmutable(READ_INSTANCE_NOT_IMMUTABLE +
+                                  ": post-snapshot metadata check failed")
+    seal = {
+        "mapping_snapshot_identity": "MAPPING-SNAPSHOT-" + snapshot_digest[:16],
+        "mapping_snapshot_file_identity": file_identity,
+        "mapping_snapshot_start_size": start_size,
+        "mapping_snapshot_digest": snapshot_digest,
+    }
+    return seal, last_entries, post
+
+
+def read_instance_record(log: EventLog, ri_id: str, declared_input_identity: str,
+                         binding_kind: str, declared_digest: str,
+                         read_time_digest: str, begin_ordinal: int,
+                         mapping_seal=None, extra=None) -> dict:
+    """Auth Package §9 record: ALL ELEVEN fields, plus SUPPLEMENTARY
+    instrumentation fields (additive, never substituting)."""
+    consumed = declared_digest == read_time_digest
+    rec = {
+        "event": "READ_INSTANCE",
+        "read_instance_identity": ri_id,
+        "declared_input_identity": declared_input_identity,
+        "declared_input_binding_kind": binding_kind,
+        "declared_content_digest": declared_digest,
+        "declared_digest_algorithm": "sha256",
+        "read_time_content_digest": read_time_digest,
+        "read_instance_snapshot_or_atomicity_proof": "IMMUTABLE_SNAPSHOT_PRESEALED",
+        "observer_authorization_identity": OBSERVER_AUTHORIZATION_IDENTITY,
+        "channel_universe_identity": CHANNEL_UNIVERSE_IDENTITY,
+        "read_begin_boundary": begin_ordinal,
+        "read_end_boundary": None,  # filled below with this record's ordinal
+        "consumed_content_matches_declaration": consumed,
+    }
+    if mapping_seal is not None:
+        rec["mapping_snapshot_seal"] = mapping_seal
+    if extra:
+        rec.update(extra)
+    rec["read_end_boundary"] = log._ordinal  # the ordinal this record will take
+    log._emit(rec)
+    return rec
+
+
+# ---------------------------------------------------------------------------
+# IS primitives
+# ---------------------------------------------------------------------------
+
 def is_write_object(is_dir: str, content: bytes) -> str:
-    """Write-once content-addressed object. Refuses to overwrite."""
+    """Write-once content-addressed object. The seal operation: tmp+fsync+
+    rename; an existing address REFUSES divergent content."""
     addr = sha256_hex(content)
     path = os.path.join(is_dir, IS_OBJECTS, addr)
     if os.path.exists(path):
         with open(path, "rb") as fh:
             if fh.read() != content:
-                raise RuntimeError("content-address collision")
+                raise RuntimeError("READ_INSTANCE_NOT_IMMUTABLE: content-address collision")
         return addr
     tmp = path + ".tmp"
     with open(tmp, "wb") as fh:
@@ -116,26 +244,35 @@ def is_read_index(is_dir: str, srs_identity: str):
     return None
 
 
-def is_read_object(is_dir: str, address: str) -> bytes:
-    with open(os.path.join(is_dir, IS_OBJECTS, address), "rb") as fh:
-        return fh.read()
+def is_read_object_verified(is_dir: str, address: str, declared_digest: str,
+                            binding_kind: str, ri_id: str,
+                            declared_input_identity: str,
+                            log: EventLog, mapping_seal=None) -> bytes:
+    """Content-addressed object read with §9 digest verification.
+    IMMUTABLE_SNAPSHOT_PRESEALED: the seal is the write-once content
+    addressing; the read verifies read_time digest == declared digest."""
+    begin = log._ordinal
+    log.event("READ_INSTANCE_BEGIN", read_instance_identity=ri_id)
+    path = os.path.join(is_dir, IS_OBJECTS, address)
+    with open(path, "rb") as fh:
+        content = fh.read()
+    read_time_digest = sha256_hex(content)
+    rec = read_instance_record(
+        log, ri_id, declared_input_identity, binding_kind,
+        declared_digest, read_time_digest, begin, mapping_seal=mapping_seal,
+        extra={"object_address": address})
+    if read_time_digest != declared_digest:
+        raise RuntimeError(READ_TIME_CONTENT_MISMATCH + ": " + ri_id)
+    if not rec["consumed_content_matches_declaration"]:
+        raise RuntimeError(READ_INSTANCE_NOT_IMMUTABLE + ": " + ri_id)
+    return content
 
 
-def mapping_read(is_dir: str, dependency_id: str):
-    path = os.path.join(is_dir, IS_CURRENT)
-    with open(path, "r", encoding="utf-8") as fh:
-        for line in fh:
-            line = line.strip()
-            if not line:
-                continue
-            entry = json.loads(line)
-            if entry.get("dependency_id") == dependency_id:
-                return entry
-    return None
-
-
-def mapping_update(is_dir: str, dependency_id: str, content_address: str, revision: int, reason: str) -> None:
-    """Append a new current-resolution entry (the ONLY mutable fixture state)."""
+def mapping_update(is_dir: str, dependency_id: str, content_address: str,
+                   revision: int, reason: str) -> None:
+    """The ONLY mapping write path: append-mode open/write/fsync.
+    Append-only writer invariant (closed-world, audited by SV-4c-1b):
+    no truncate, no pwrite, no seek-and-overwrite, no in-place rewrite."""
     path = os.path.join(is_dir, IS_CURRENT)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as fh:
@@ -147,11 +284,14 @@ def mapping_update(is_dir: str, dependency_id: str, content_address: str, revisi
         os.fsync(fh.fileno())
 
 
-def expensive_unit_u(dependency_content: bytes, procedure: dict, log: EventLog, run_id: str) -> str:
-    """U = iterated hash chain sha256^N(digest(D) || identity(P)).
+# ---------------------------------------------------------------------------
+# Expensive unit U
+# ---------------------------------------------------------------------------
 
-    Exactly one ledger entry is written and flushed BEFORE the result is
-    returned (Design v0.2 section 1, write-before-return)."""
+def expensive_unit_u(dependency_content: bytes, procedure: dict,
+                     log: EventLog, run_id: str) -> str:
+    """U = iterated hash chain sha256^N(digest(D) || identity(P)).
+    Exactly one ledger entry, flushed BEFORE the result is returned."""
     n = int(procedure["iterations"])
     proc_id = procedure["identity"] + "@" + procedure["version"]
     digest_d = sha256_hex(dependency_content)
@@ -164,15 +304,19 @@ def expensive_unit_u(dependency_content: bytes, procedure: dict, log: EventLog, 
     return h
 
 
+# ---------------------------------------------------------------------------
+# Modes
+# ---------------------------------------------------------------------------
+
 def mode_materialize(is_dir: str, tau: dict, log: EventLog, run_id: str) -> int:
-    deps = tau["dependencies"]
-    for dep in deps:
+    for dep in tau["dependencies"]:
         with open(dep["seed_path"], "rb") as fh:
             content = fh.read()
         addr = is_write_object(is_dir, content)
         mapping_update(is_dir, dep["dependency_id"], addr, 1, "initial materialization")
         log.event("OBJECT_MATERIALIZED", dependency_id=dep["dependency_id"],
                   content_address=addr, revision=1)
+    log.close("PROCESS_EXIT", exit_code=0)
     return 0
 
 
@@ -203,11 +347,24 @@ def build_srs_record(tau: dict, dependency_addr: str, revision: int,
 
 def mode_es1(is_dir: str, tau: dict, log: EventLog, run_id: str) -> int:
     dep = tau["dependencies"][0]
-    current = mapping_read(is_dir, dep["dependency_id"])
+    # F-4.3b: sealed mapping read (new read instance)
+    begin = log._ordinal
+    log.event("READ_INSTANCE_BEGIN", read_instance_identity="RI-ES1-MAPPING")
+    seal, entries, post = seal_mapping_snapshot(is_dir)
+    current = entries.get(dep["dependency_id"])
+    log.event("MAPPING_SNAPSHOT_SEALED", **seal, post_metadata_checks=post)
     if current is None:
         log.close("ABORT", reason="dependency not materialized")
         return 2
-    dependency_content = is_read_object(is_dir, current["content_address"])
+    read_instance_record(
+        log, "RI-ES1-MAPPING", dep["dependency_id"], "IMMUTABLE_REVISION",
+        current["content_address"], current["content_address"], begin,
+        mapping_seal=seal)
+    # read the D object with §9 digest verification
+    dependency_content = is_read_object_verified(
+        is_dir, current["content_address"], current["content_address"],
+        "CONTENT_ADDRESS", "RI-ES1-DOBJECT", dep["dependency_id"], log,
+        mapping_seal=seal)
     result = expensive_unit_u(dependency_content, tau["procedure"], log, run_id)
     srs = build_srs_record(tau, current["content_address"], current["revision"],
                            result, run_id, "U:" + run_id + ":1")
@@ -218,7 +375,8 @@ def mode_es1(is_dir: str, tau: dict, log: EventLog, run_id: str) -> int:
                              "record_object": record_addr})
     log.event("SRS_SETTLED_AND_PERSISTED", srs_identity=srs["srs_identity"],
               record_object=record_addr, result_identity=result,
-              pinned_dependency_address=current["content_address"])
+              pinned_dependency_address=current["content_address"],
+              pinned_dependency_revision=current["revision"])
     log.close("PROCESS_EXIT", exit_code=0)
     return 0
 
@@ -229,18 +387,20 @@ def exact_binding_json(identity: str, version: str, content_address: str) -> dic
             "integrityBinding": "sha256:" + content_address}
 
 
-def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str, negative: bool) -> int:
-    import validate_srs  # noqa: E402  (sys.path includes fixture/schema)
+def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str,
+             negative: bool) -> int:
+    import validate_srs  # via PYTHONPATH (fixture/schema), env-propagated
 
     srs_identity = tau["srs_identity"]
     entry = is_read_index(is_dir, srs_identity)
     if entry is None:
         log.close("ABORT", reason="srs_identity not found in IS index")
         return 2
-    record_bytes = is_read_object(is_dir, entry["record_object"])
-    if sha256_hex(record_bytes) != entry["record_object"]:
-        log.close("ABORT", reason="resolved bytes do not hash to object address")
-        return 2
+    begin = log._ordinal
+    log.event("READ_INSTANCE_BEGIN", read_instance_identity="RI-ES-SRS")
+    record_bytes = is_read_object_verified(
+        is_dir, entry["record_object"], entry["record_object"],
+        "CONTENT_ADDRESS", "RI-ES-SRS", srs_identity, log)
     srs = json.loads(record_bytes.decode("utf-8"))
     ok, reason = validate_srs.validate(srs)
     log.event("SRS_RESOLVED", srs_identity=srs_identity,
@@ -251,16 +411,39 @@ def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str, negative: bool)
         log.close("ABORT", reason="schema invalid: " + str(reason))
         return 2
 
-    # E3 instrument: compare pinned dependency binding vs current state.
+    # F-4.3b: sealed mapping read (new read instance) + F-1 LAST-entry
+    begin_m = log._ordinal
+    log.event("READ_INSTANCE_BEGIN", read_instance_identity="RI-ES-MAPPING")
+    seal, entries, post = seal_mapping_snapshot(is_dir)
     pinned = srs["dependencies"][0]
-    current = mapping_read(is_dir, pinned["dependency_id"])
-    resolved = current is not None and current["content_address"] == pinned["content_address"]
+    current = entries.get(pinned["dependency_id"])
+    log.event("MAPPING_SNAPSHOT_SEALED", **seal, post_metadata_checks=post)
+    # F-4.4: a revision number is never compared as if it were a digest —
+    # the IMMUTABLE_REVISION binding resolves revision → content digest via
+    # the sealed snapshot entry; the digest is what is compared.
+    if current is not None:
+        read_instance_record(
+            log, "RI-ES-MAPPING", pinned["dependency_id"],
+            "IMMUTABLE_REVISION", current["content_address"],
+            current["content_address"], begin_m, mapping_seal=seal)
+    resolved = (current is not None
+                and current["content_address"] == pinned["content_address"])
     log.event("DEPENDENCY_COMPARISON", dependency_id=pinned["dependency_id"],
               pinned_address=pinned["content_address"],
+              pinned_revision=pinned["revision"],
               current_address=(current or {}).get("content_address"),
+              current_revision=(current or {}).get("revision"),
               resolved=resolved)
 
-    invocation = build_invocation_graph(tau, srs, current, resolved, negative)
+    # read the current dependency object with §9 digest verification
+    if current is not None:
+        dep_obj_addr = current["content_address"]
+        dep_obj = is_read_object_verified(
+            is_dir, dep_obj_addr, dep_obj_addr, "CONTENT_ADDRESS",
+            "RI-ES-DEPOBJ", pinned["dependency_id"], log, mapping_seal=seal)
+        del dep_obj  # content consumed only through its verified digest
+
+    invocation = build_invocation_graph(tau, srs, current, resolved)
     inv_name = "invocation_graph-esn.json" if negative else "invocation_graph-es2.json"
     inv_path = os.path.normpath(os.path.join(log.path, "..", inv_name))
     with open(inv_path, "w", encoding="utf-8") as fh:
@@ -277,8 +460,6 @@ def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str, negative: bool)
               actual=decision.get("primaryDecision"), match=match)
 
     if not negative and decision.get("primaryDecision") == "REUSE":
-        # E5/E6.3: the continuation output is a direct data function of the
-        # SRS result content (delta consumes the result digest).
         delta_input = srs["result"]["identity"] + "|" + tau["delta"]["task_nonce"]
         continuation_output = sha256_hex(delta_input.encode("utf-8"))
         cont_record = {"continuation_record": "CR-ES2-" + run_id,
@@ -294,7 +475,7 @@ def mode_es2(is_dir: str, tau: dict, log: EventLog, run_id: str, negative: bool)
     return 0
 
 
-def build_invocation_graph(tau: dict, srs: dict, current, resolved: bool, negative: bool) -> dict:
+def build_invocation_graph(tau: dict, srs: dict, current, resolved: bool) -> dict:
     pinned = srs["dependencies"][0]
     dep = {
         "boundaryIdentity": tau["boundary_id"],
@@ -393,9 +574,42 @@ def mode_mutate_n1(is_dir: str, tau: dict, log: EventLog, run_id: str) -> int:
     return 0
 
 
-def run_step(args, log: EventLog, label: str) -> int:
+# ---------------------------------------------------------------------------
+# F-3: tau runtime-copy substitution (driver)
+# ---------------------------------------------------------------------------
+
+def substitute_tau(tau_path: str, srs_identity: str, out_path: str) -> dict:
+    """Read a fixture τ original (read-only), substitute the actual
+    srs_identity for the placeholder, and write the runtime τ copy to the
+    run directory. Fixture originals are never modified."""
+    with open(tau_path, "r", encoding="utf-8") as fh:
+        tau = json.load(fh)
+    tau["srs_identity"] = srs_identity
+    with open(out_path, "w", encoding="utf-8") as fh:
+        fh.write(canonical_json(tau))
+        fh.flush()
+        os.fsync(fh.fileno())
+    return {"runtime_tau_path": os.path.abspath(out_path),
+            "substituted_srs_identity": srs_identity,
+            "source_tau": os.path.abspath(tau_path)}
+
+
+def extract_srs_identity_from_es1_log(log_path: str) -> str:
+    with open(log_path, "r", encoding="utf-8") as fh:
+        for line in fh:
+            rec = json.loads(line.strip() or "{}")
+            if rec.get("event") == "SRS_SETTLED_AND_PERSISTED":
+                return rec["srs_identity"]
+    raise RuntimeError("no SRS_SETTLED_AND_PERSISTED event in es1 log")
+
+
+# ---------------------------------------------------------------------------
+# Driver
+# ---------------------------------------------------------------------------
+
+def run_step(args, log: EventLog, label: str, env: dict) -> int:
     log.event("SPAWN", target=label, argv=args[0:2])
-    proc = subprocess.run(args, capture_output=True, text=True)
+    proc = subprocess.run(args, capture_output=True, text=True, env=env)
     log.event("EXIT", target=label, exit_code=proc.returncode)
     if proc.returncode != 0:
         log.event("STEP_STDERR", target=label, tail=proc.stderr[-800:])
@@ -404,13 +618,13 @@ def run_step(args, log: EventLog, label: str) -> int:
 
 def mode_driver(tau_dir: str, run_dir: str, is_dir: str, adapter_bin: str) -> int:
     """Sequential orchestration with campaign-level ordering evidence in ONE
-    log (driver-events.jsonl). Temporal separation (Design v0.2 §4) is proven
-    by event order IN THIS FILE: es1 EXIT precedes es2 SPAWN, etc."""
+    log. Temporal separation is proven by event order IN THIS FILE."""
     log = EventLog(os.path.join(run_dir, "driver-events.jsonl"),
                    "driver", "driver", os.getpid())
     here = os.path.dirname(os.path.abspath(__file__))
     env = dict(os.environ, SRSVAL_ADAPTER_BIN=adapter_bin,
-               PYTHONPATH=os.path.abspath(os.path.join(here, "..", "schema")))
+               PYTHONPATH=os.path.abspath(os.path.join(here, "..", "schema")),
+               PYTHONDONTWRITEBYTECODE="1")
     runner = os.path.abspath(__file__)
     steps = [
         ("materialize", [sys.executable, runner, "materialize", "r1",
@@ -431,9 +645,31 @@ def mode_driver(tau_dir: str, run_dir: str, is_dir: str, adapter_bin: str) -> in
     ]
     failed = []
     for label, args in steps:
-        if run_step(args, log, label) != 0:
+        if label == "es1":
+            # F-3: after es1, substitute the actual srs_identity into
+            # runtime τ copies (fixture τ originals untouched).
+            if run_step(args, log, label, env) != 0:
+                failed.append(label)
+                break
+            srs_id = extract_srs_identity_from_es1_log(
+                os.path.join(run_dir, "es1-events.jsonl"))
+            runtime_taus = {}
+            for name, src in (("tau2", os.path.join(tau_dir, "tau2.json")),
+                              ("tauN1", os.path.join(tau_dir, "tauN1.json"))):
+                out = os.path.join(run_dir, name + "-runtime.json")
+                info = substitute_tau(src, srs_id, out)
+                runtime_taus[name] = info["runtime_tau_path"]
+            log.event("TAU_RUNTIME_COPIES_SUBSTITUTED", srs_identity=srs_id,
+                      tau2_runtime=runtime_taus["tau2"],
+                      tauN1_runtime=runtime_taus["tauN1"],
+                      fixture_tau_originals_untouched=True)
+            # point es2/esn at the runtime copies
+            steps[2][1][5] = runtime_taus["tau2"]
+            steps[4][1][5] = runtime_taus["tauN1"]
+            continue
+        if run_step(args, log, label, env) != 0:
             failed.append(label)
-            if label in ("materialize", "es1"):
+            if label == "materialize":
                 break
     log.event("OBSERVER_NEXT", note="observer runs as a separate process after driver exit")
     log.close("DRIVER_EXIT", failed_steps=failed)
@@ -442,11 +678,11 @@ def mode_driver(tau_dir: str, run_dir: str, is_dir: str, adapter_bin: str) -> in
 
 def main() -> int:
     if len(sys.argv) >= 6 and sys.argv[1] == "driver":
-        # driver RUN_DIR TAU_DIR IS_DIR ADAPTER_BIN
         return mode_driver(sys.argv[3], sys.argv[2], sys.argv[4], sys.argv[5])
     if len(sys.argv) < 4:
         print("usage: es_runner.py MODE RUN_ID EVENT_LOG_PATH TAU_JSON [IS_DIR]\n"
-              "       es_runner.py driver RUN_DIR TAU_DIR IS_DIR ADAPTER_BIN", file=sys.stderr)
+              "       es_runner.py driver RUN_DIR TAU_DIR IS_DIR ADAPTER_BIN",
+              file=sys.stderr)
         return 64
     mode, run_id, log_path, tau_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
     is_dir = sys.argv[5] if len(sys.argv) > 5 else "."
