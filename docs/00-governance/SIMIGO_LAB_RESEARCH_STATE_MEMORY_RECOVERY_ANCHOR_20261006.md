@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** EXEC-003 Human evidence audit at
-> 266e953 supersedes generic INVALID-evidence waiting state. Two independent
-> mechanical defects are accepted; deeper OS-level mechanism remains
-> unresolved. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Corrected Request v0.6 at
+> 8704c75 supersedes the EXEC-003 audit-closed waiting state. The two
+> accepted mechanical defects remain closed attribution, but no correction is
+> implemented. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-003 audit closure)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.6 opening)
 
 ```text
 Governance track:
@@ -85,16 +85,24 @@ Governance track:
     and `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. B was causally earlier;
     A is the registered primary stop. Deeper OS-level mechanism remains
     unresolved.
+    Human “授权新的 corrected Request / records” opened Request v0.6 at
+    8704c75. It preserves execution commit 9966d31 and inherited bindings.
+    EPR004 adds output-path preflight, exact repository-commit/cwd
+    verification, repository-contained D/D' SHA256 input checks, executable
+    identity/argv/process facts, and fail-closed outputs. Cross-binding
+    record 004 maps `_001/V1` to OAR 004/V2 without runner modification. It
+    requests four new records and one new budget only after approval.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human decision whether to authorize a corrected
-  Request/records addressing EPR003 output-path preflight, exact cwd/seed-path
-  resolution, and separately registered `_001/V1` cross-binding finding if in
-  scope. No rerun, recorder repair, runner modification, fixture repair,
+  Next lawful object = Human authorization review of Request v0.6. If APPROVE
+  A+B+C, create Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004,
+  and OBSERVER AUTHORIZATION RECORD 004 exact-binding 9966d31; run one frozen
+  campaign through EPR004 and STOP for Human evidence audit. No rerun, EPR004
+  implementation or execution, runner modification, fixture repair,
   old-record reuse, environment normalization, IS mutation, or observer action
   is authorized before that. Core claim remains NOT ESTABLISHED.
 

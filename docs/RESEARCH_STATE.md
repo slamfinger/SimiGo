@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-003 INVALID; read-only Human evidence audit closed with two independent mechanical defects
+> **Status:** STOPPED — EXEC-003 audit closed; corrected EXECUTION Request v0.6 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -65,21 +65,30 @@ Completed (canonical on main):
     Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The
     defects are independent; B was causally earlier and A is the registered
     primary stop. Deeper OS-level mechanism remains unresolved.
+  Human “授权新的 corrected Request / records” opened corrected Request v0.6
+    at 8704c75. It preserves execution commit 9966d31 and all inherited
+    bindings. EPR004 adds output-path preflight requiring absent regular
+    `execution_provenance.json`, exact repository-commit verification, exact
+    cwd `<worktree>/docs/02-evidence/srs-real-closure-01`, repository-
+    contained D/D' input resolution and SHA256 checks, executable identity,
+    argv/process facts, and fail-closed required outputs. Cross-binding record
+    004 maps `_001/V1` to OAR 004/CHANNEL-UNIVERSE-V2 without runner change.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
 NOT AUTHORIZED: EXECUTION rerun, IS_MUTATION, Observer authorization,
-EPR003/runner/fixture repair, implementation changes; governance expansion
-(maintenance-only).
+EPR004 implementation/execution, runner/fixture repair, old-record reuse,
+implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human decision whether to authorize a corrected Request/records addressing
-  EPR003 output-path preflight, exact cwd/seed-path resolution, and the
-  separately registered `_001/V1` cross-binding finding if in scope. No rerun,
-  recorder repair, runner repair, fixture repair, old-record reuse,
-  environment normalization, IS mutation, or observer action is authorized
-  before that. Core claim remains NOT ESTABLISHED.
+  Human authorization review of Request v0.6. If APPROVE A+B+C, create
+  Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004, and OBSERVER
+  AUTHORIZATION RECORD 004 exact-binding 9966d31; run one frozen campaign
+  through EPR004 and STOP for evidence audit. No rerun, EPR004 implementation
+  or execution, runner repair, fixture repair, old-record reuse, environment
+  normalization, IS mutation, or observer action is authorized before that.
+  Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

@@ -12,10 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** EXEC-003 Human evidence audit 已关闭，
-> canonical audit = `266e953`。Campaign 仍 INVALID/STOP；两个独立机械缺陷已
-> 接受，但更深 OS 级机制未解决。当前停点 = Human decision 是否授权 corrected
-> Request/records；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.6 已
+> 开启并提交审查：`8704c75`。EXEC-003 audit closed，两个机械缺陷已归因；
+> 当前停点 = Human authorization review。不得创建 SAR/OAR、实施 EPR004、
+> rerun、repair 或重用旧 records。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -755,3 +755,18 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > decision on a corrected Request/records addressing EPR003 output-path
 > preflight, exact cwd/seed-path resolution, and `_001/V1` cross-binding if in
 > scope. Core claim remains NOT ESTABLISHED.
+> **UPDATE 60 (2026-10-07)：Human authorized corrected Request；EXECUTION Request v0.6 OPENED/SUBMITTED.**
+> Human ruling exact form = “授权新的 corrected Request / records”. This
+> opened Request v0.6 only; it did not approve A+B+C, create records, execute
+> EPR004, revive budgets, or modify runner/fixture. Request v0.6 is canonical
+> at `8704c75`, blob `8cc67786…`, SHA256 `a6f0e2c3…`. It supersedes consumed
+> v0.5/records 003 and closes both EXEC-003 defects contractually: EPR004
+> requires absent regular `execution_provenance.json`, exact repository commit
+> `9966d31`, exact cwd
+> `<worktree>/docs/02-evidence/srs-real-closure-01`, repository-contained
+> D/D' input bindings with SHA256 checks, executable identity/argv/process
+> facts, and fail-closed outputs; Closure Record 004 maps `_001/V1` to OAR
+> 004/CHANNEL-UNIVERSE-V2 without runner modification. If approved, create
+> Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004, and OAR 004,
+> then run one frozen campaign through EPR004 and STOP. No stage is
+> authorized; core claim remains NOT ESTABLISHED.
