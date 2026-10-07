@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.4 已
-> 开启并提交审查：`79ce4e3`。EXEC-001 audit closed，root cause =
-> authorization contract defect；campaign 仍 INVALID，semantic stages 未
-> 运行。v0.4 只保留 ENV-PROBE-V1 并修正 expected `swiftc_version`；当前
-> 停点 = Human authorization review。不得创建 SAR/OAR 或重用旧 records。
+> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.5 已
+> 开启并提交审查：`888a6a7`。EXEC-001/EXEC-002 audits closed；semantic
+> campaign 未运行。v0.5 保留 execution state `9966d31`，新增 exact-artifact
+> provenance recorder 和 cross-binding closure。当前停点 = Human
+> authorization review。不得创建 SAR/OAR 或重用旧 records。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -705,3 +705,19 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > EXECUTION SAR 002, IS_MUTATION SAR 002, and OBSERVER AUTHORIZATION RECORD
 > 002 with a new independent campaign budget. No stage is authorized; core
 > claim remains NOT ESTABLISHED.
+> **UPDATE 57 (2026-10-07)：Human authorized corrected Request drafting；EXECUTION Request v0.5 OPENED/SUBMITTED.**
+> Human ruling exact form = “授权起草一份新的 corrected EXECUTION Request /
+> record set，以处理 A 类 exact-artifact provenance 问题及 B 类
+> cross-binding mismatch”. This opened Request v0.5 only; no stage, campaign,
+> SAR/OAR, runner repair, or old-record reuse was authorized. Request v0.5 is
+> canonical at `888a6a7`, blob `45baf0b8…`, SHA256 `bb3b9e42…`. It keeps exact
+> execution repository commit `9966d31` and inherits Manifest v3/Completion
+> v3/artifact/T-IMPL/D-SEC/§9/environment/decision bindings. For R-A it adds
+> mandatory `EXECUTION_PROVENANCE_RECORDER_003` (SHA256 `492f6f0e…`) to record
+> exact executable identity/argv/process timing/stdout/stderr and fail closed
+> on missing artifacts. For R-B it adds
+> `EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_003`, mapping legacy runner
+> `_001/V1` constants to authorized OAR 003 / CHANNEL-UNIVERSE-V2 without
+> runner modification. If approved, create four records and one new campaign
+> budget, then run one frozen campaign through the recorder and STOP. No stage
+> is authorized; core claim remains NOT ESTABLISHED.

@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-001 audit closed; corrected EXECUTION Request v0.4 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — EXEC-001/EXEC-002 audits closed; corrected EXECUTION Request v0.5 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -45,6 +45,14 @@ Completed (canonical on main):
     `/usr/bin/swiftc --version` semantics, uses expected environment identity
     ad2abb68, exact-binds execution commit 9966d31, and requests new records
     002 with a new budget. No stage is authorized.
+  Human “授权起草 corrected EXECUTION Request / record set” opened Request
+    v0.5 at 888a6a7. It preserves execution commit 9966d31 and all inherited
+    bindings; adds mandatory EXECUTION_PROVENANCE_RECORDER_003 for exact
+    executable identity/argv/process timing/stdout/stderr and fail-closed
+    artifact completeness; adds a cross-binding closure record mapping legacy
+    runner _001/V1 constants to OAR 003/CHANNEL-UNIVERSE-V2 without runner
+    modification. It requests four new records and a new budget only after
+    approval.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -53,12 +61,13 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human authorization review of Request v0.4. If APPROVE A+B+C, create new
-  EXECUTION SAR 002, IS_MUTATION SAR 002, and OBSERVER AUTHORIZATION RECORD
-  002 exact-binding 9966d31; run one frozen campaign and STOP for evidence
-  audit. No rerun, old-record reuse, environment normalization, fixture
-  repair, IS mutation, or observer action is authorized before that. Core
-  claim remains NOT ESTABLISHED.
+  Human authorization review of Request v0.5. If APPROVE A+B+C, create
+  EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_003, EXECUTION SAR 003,
+  IS_MUTATION SAR 003, and OBSERVER AUTHORIZATION RECORD 003 exact-binding
+  9966d31; run one frozen campaign through the provenance recorder and STOP
+  for evidence audit. No rerun, old-record reuse, environment normalization,
+  fixture repair, runner modification, IS mutation, or observer action is
+  authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse
