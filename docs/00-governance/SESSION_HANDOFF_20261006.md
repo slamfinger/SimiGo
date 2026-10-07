@@ -935,3 +935,17 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > mutation/observer budgets remain zero. After canonical design outputs,
 > STOP for Human review; implementation or campaign requires a new explicit
 > Human decision.
+> **UPDATE 71 (2026-10-07)：Database-Carrier Replication Design Package v0.1 DELIVERED.**
+> Design Package v0.1 is canonical at `21acba4`, blob `582c9b85…`, SHA256
+> `73f80c26…`. It defines the carrier-independent IS logical model: immutable
+> SHA256 objects, append-only SRS/continuation index, LAST-entry dependency
+> resolution, and explicit logical reads. It specifies the authoritative
+> database-backed interface/schema/transactions, prohibits database-side
+> semantic additions, maps document objects/index/dependency history to
+> database rows, defines EQ-1…EQ-8 equivalence assertions and REJ-1…REJ-14
+> reject conditions, designs empty initialization and optional logical import,
+> and requires provenance/anti-side-channel controls and explicit non-goals.
+> This is DESIGN ONLY. No database implementation/initialization, campaign,
+> IS mutation, runner/fixture/τ modification, semantic reinterpretation, or
+> broader claim is authorized. Next lawful object is Human review; accepted
+> design does not automatically authorize implementation or campaign.

@@ -181,6 +181,15 @@ Research track:
     and explicit non-goals. No database implementation/initialization,
     campaign, IS mutation, runner/fixture/τ repair, or broader claim is
     authorized.
+  Human-directed Database-Carrier Replication Design Authorization Record 001
+    at e19fa0b authorized design/schema-authority/carrier-equivalence-criteria
+    only. Design Package v0.1 is delivered at 21acba4 (blob 582c9b85…,
+    SHA256 73f80c26…). It defines carrier-independent IS logical model,
+    database-backed interface/schema/transactions, document-to-database
+    mapping, EQ-1…EQ-8 equivalence assertions, REJ-1…REJ-14 rejection
+    conditions, empty initialization and optional logical import design, and
+    provenance/anti-side-channel requirements/non-goals. No database
+    implementation/initialization or campaign is authorized.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

@@ -121,6 +121,15 @@ Completed (canonical on main):
     initialization/migration design, provenance/audit requirements, and
     explicit non-goals. No database implementation/initialization, campaign,
     IS mutation, runner/fixture/τ repair, or broader claim is authorized.
+  Human-directed Database-Carrier Replication Design Authorization Record 001
+    at e19fa0b authorized design/schema-authority/carrier-equivalence-criteria
+    only. Design Package v0.1 is now delivered at 21acba4 (blob 582c9b85…,
+    SHA256 73f80c26…). It defines carrier-independent IS logical model,
+    database-backed interface/schema and transactions, document-to-database
+    mapping, EQ-1…EQ-8 equivalence assertions, REJ-1…REJ-14 rejection
+    conditions, empty initialization and optional logical import design, and
+    provenance/anti-side-channel requirements/non-goals. No database
+    implementation/initialization or campaign is authorized.
   Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Campaign exec-005-fef0b2f passed step0, EPR004 exact repository/cwd/input
@@ -158,8 +167,9 @@ IS_MUTATION, Observer authorization, old-record reuse, implementation changes;
 governance expansion (maintenance-only).
 
 Next lawful object:
-  one scoped Database-Carrier Replication design work cycle, then STOP for
-  Human review. The accepted finding remains bounded to round-1 instrumented
+  Human review of Design Package v0.1. If accepted, a new explicit
+  authorization is required before database implementation/initialization or
+  campaign. The accepted finding remains bounded to round-1 instrumented
   form; deterministic substrate; document-form IS; registered detection
   boundary.
 
