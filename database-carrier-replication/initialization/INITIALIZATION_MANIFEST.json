@@ -1,0 +1,26 @@
+{
+  "campaign_state": "NOT_AUTHORIZED",
+  "created_at_utc": "2026-10-07T16:21:22.400197+00:00",
+  "database_byte_size": 24576,
+  "database_path": "/Users/mr.simi/Documents/SimiGo-Lab/database-carrier-replication/initialization/empty_is.sqlite",
+  "database_sha256": "6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d",
+  "engine": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python_version": "3.9.6",
+    "sqlite_version": "3.51.0"
+  },
+  "exact_execution_repository_commit": "177ca64fd6b6e4d3ff2e81b2a131b936ab9bd6af",
+  "implementation_artifact_sha256": {
+    "README.md": "edc1f9ff667d282008fc85e741d5b3469e279471ec4f1c8f60f66a2e27bee364",
+    "db_is.py": "6be1a48c874e504886b48c7d960e410ee97a51c2018e69c29168ddf3fa2ccf43",
+    "schema.sql": "06ff8f976f436860d004b02ae032246e97021bed7280834c9a8bd904cf3d649a",
+    "selfcheck.py": "96d6e26e776e1dbae439d05d0f669bc90134be023e41b6e56991c5a0df9f131a"
+  },
+  "logical_import": false,
+  "logical_row_counts": {
+    "dependency_entries": 0,
+    "is_index_entries": 0,
+    "is_objects": 0
+  },
+  "manifest_identity": "DATABASE_IS_EMPTY_INITIALIZATION_MANIFEST_005"
+}
