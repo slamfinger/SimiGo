@@ -899,3 +899,19 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > document-form IS, with registered detection boundary. No broader claim is
 > authorized; no rerun, semantic reinterpretation, repair, EXECUTION,
 > IS_MUTATION, or Observer action is authorized before that audit.
+> **UPDATE 69 (2026-10-07)：EXEC-006 Human evidence audit ACCEPTED；bounded research finding accepted.**
+> Read-only audit is canonical at `615a665`, blob `8441d95d…`, SHA256
+> `5ac4afe3…`. It accepted E1–E6 and N1 with exact artifact/event/hash
+> closure. It accepted persisted-IS causal attribution for ES2 REUSE and
+> continuation: τ2/IS was the declared input boundary; SRS came from index
+> object `26025863…`; adapter received only the derived invocation graph; no
+> database/carrier/ES1-memory/network/alternate injection path existed in the
+> exact runner source. Observer C1–C4 passed as independent bounded
+> re-derivation and remains non-authoritative. Accepted bounded finding:
+> `ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED` in round-1
+> instrumented form, deterministic substrate, document-form IS, with
+> registered detection boundary. Broader PALACE, CarrierSQLite, arbitrary
+> database/ES, LLM autonomy, production SimiGo, and general theorem claims
+> remain NOT ESTABLISHED. Campaign budgets are consumed; no rerun, semantic
+> reinterpretation, repair, or follow-on stage is authorized without a new
+> Human-directed scope/Request.

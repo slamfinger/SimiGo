@@ -106,6 +106,12 @@ Completed (canonical on main):
     established. Evidence is canonical at cb365a4. Bounded result:
     ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED under
     round-1 scope, pending Human evidence audit.
+  Human evidence audit 615a665 accepted campaign exec-006-69b2227 and the
+    bounded result. E1–E6 and N1 accepted with exact artifact/event/hash
+    closure. Persisted-IS causal attribution for ES2 REUSE accepted; observer
+    C1–C4 accepted as independent bounded checks. Audit record is canonical at
+    615a665. Bounded result: ES1 -> IS(SRS) -> independent ES2 lawful reuse =
+    ESTABLISHED under round-1 scope. No broader claim is authorized.
   Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Campaign exec-005-fef0b2f passed step0, EPR004 exact repository/cwd/input
@@ -143,11 +149,10 @@ old-record reuse, implementation changes; governance expansion
 (maintenance-only).
 
 Next lawful object:
-  Human evidence audit of VALID campaign evidence. Bounded result:
-  ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED under round-1
-  instrumented form; deterministic substrate; document-form IS; registered
-  detection boundary. No broader claim is authorized. No rerun, repair, or
-  semantic reinterpretation is authorized before that audit.
+  No automatic follow-on stage. Future work requires a new Human-directed
+  scope/Request. The accepted finding remains bounded to round-1 instrumented
+  form; deterministic substrate; document-form IS; registered detection
+  boundary.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

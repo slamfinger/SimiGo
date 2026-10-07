@@ -153,19 +153,24 @@ Governance track:
     E1–E6 and N1 established. Evidence is canonical at cb365a4. Bounded
     result: ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED
     under round-1 scope, pending Human evidence audit.
+    Human evidence audit 615a665 accepted VALID campaign exec-006-69b2227,
+    the bounded result, E1–E6, N1 BLOCK, persisted-IS causal attribution, and
+    observer C1–C4 bounded checks. The accepted bounded finding is:
+    ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED under
+    round-1 instrumented form; deterministic substrate; document-form IS;
+    registered detection boundary. No broader claim is authorized.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human evidence audit of VALID campaign evidence. The
-  bounded result is ES1 -> IS(SRS) -> independent ES2 lawful reuse =
-  ESTABLISHED under round-1 instrumented form; deterministic substrate;
-  document-form IS; registered detection boundary. No broader claim is
-  authorized. No rerun, semantic reinterpretation, τ/runner/fixture repair,
-  EPR004 execution, EXECUTION, IS_MUTATION, or Observer action is authorized
-  before that audit.
+  No automatic follow-on stage is authorized. Future work requires a new
+  Human-directed scope/Request. The accepted finding remains bounded to
+  round-1 instrumented form; deterministic substrate; document-form IS;
+  registered detection boundary. Broader PALACE, CarrierSQLite, arbitrary
+  carrier/ES, LLM autonomy, production SimiGo, and general theorem claims
+  remain NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
