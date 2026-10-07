@@ -142,6 +142,14 @@ Governance track:
     Manifest/Completion to v5, then instantiate records 006 and run one EPR004
     campaign only after approval. No implementation or campaign is authorized
     yet.
+    Human ACCEPT ruling accepted Database-Carrier Replication Design Package
+    v0.1 at 21acba4. Acceptance Record 001 is canonical at 9ac5320 and records
+    that the design-only contract is accepted: carrier-independent IS logical
+    model, database-backed interface/schema, document-to-database mapping,
+    EQ-1…EQ-8 equivalence assertions, REJ-1…REJ-14 rejection classes,
+    initialization/import design, and non-goals. CarrierSQLite equivalence
+    remains NOT ESTABLISHED; no implementation, initialization, campaign, IS
+    mutation, or broader claim is authorized.
     Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Human APPROVE S+E executed scoped τN1 schema alignment at 69b2227 and

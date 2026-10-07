@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — CORRECTED EXECUTION REQUEST v0.9 (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — DATABASE-CARRIER DESIGN PACKAGE V0.1 ACCEPTED (2026-10-08)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -42,9 +42,9 @@ Current human evidence audit       = 615a665 (blob 8441d95d…, sha256 5ac4afe3�
 Current governance track           = STOPPED AFTER ACCEPTED BOUNDED FINDING. No rerun, campaign, semantic reinterpretation, runner/fixture/τ repair, EXECUTION, IS_MUTATION, or Observer action is authorized. v0.3–v0.8 opportunities, budgets, and records 001–005 remain consumed/non-reusable; records 006 and v0.6 campaign budget are consumed.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Current design deliverable          = Database-Carrier Replication Design Package v0.1 @ 21acba4 (blob 582c9b85…, sha256 73f80c26…), DELIVERED / STOP FOR HUMAN REVIEW. It defines carrier-independent IS logical model, database-backed interface/schema, document-to-database mapping, EQ-1…EQ-8 equivalence assertions, REJ-1…REJ-14 rejection conditions, empty-initialization and optional logical import design, provenance/anti-side-channel requirements, and non-goals.
-Current governance track           = STOPPED AFTER DATABASE-CARRIER DESIGN DELIVERY. No database implementation/initialization, campaign, IS mutation, runner/fixture/τ repair, semantic reinterpretation, or broader claim is authorized.
-Next dependency                    = Human review of Design Package v0.1. If accepted, a new explicit authorization is required before any database implementation, initialization, campaign, IS mutation, or broader claim.
+Current design acceptance          = Database-Carrier Replication Design Package v0.1 ACCEPTED @ 21acba4 (blob 582c9b85…, sha256 73f80c26…). Acceptance Record 001 is canonical @ 9ac5320 (blob 1a96670f…, sha256 63f896c1…). It accepts the design-only contract: carrier-independent IS logical model, database-backed interface/schema, document-to-database mapping, EQ-1…EQ-8 equivalence assertions, REJ-1…REJ-14 rejection conditions, empty-initialization and optional logical import design, provenance/anti-side-channel requirements, and non-goals.
+Current governance track           = STOPPED AFTER DESIGN ACCEPTANCE. No database implementation/initialization, campaign, IS mutation, runner/fixture/τ repair, semantic reinterpretation, or broader claim is authorized. Any next stage requires a new explicit Human authorization exact-binding accepted Design Package v0.1 and its implementation provenance.
+Next dependency                    = No automatic follow-on. Any implementation/initialization/campaign requires a new Human-directed Request and explicit authorization; CarrierSQLite equivalence remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):

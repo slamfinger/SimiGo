@@ -121,6 +121,14 @@ Completed (canonical on main):
     initialization/migration design, provenance/audit requirements, and
     explicit non-goals. No database implementation/initialization, campaign,
     IS mutation, runner/fixture/τ repair, or broader claim is authorized.
+  Human ACCEPT ruling accepted Design Package v0.1. Acceptance Record 001 at
+    9ac5320 records that the package establishes the design-only contract:
+    carrier-independent IS logical model, database-backed interface/schema,
+    document-to-database mapping, EQ-1…EQ-8 equivalence assertions,
+    REJ-1…REJ-14 rejection classes, initialization/import design, and
+    non-goals. Acceptance does not establish CarrierSQLite equivalence and
+    does not authorize implementation, initialization, campaign, IS mutation,
+    runner/fixture/τ repair, semantic reinterpretation, or broader claims.
   Human-directed Database-Carrier Replication Design Authorization Record 001
     at e19fa0b authorized design/schema-authority/carrier-equivalence-criteria
     only. Design Package v0.1 is now delivered at 21acba4 (blob 582c9b85…,

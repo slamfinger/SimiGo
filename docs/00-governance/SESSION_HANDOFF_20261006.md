@@ -949,3 +949,18 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > IS mutation, runner/fixture/τ modification, semantic reinterpretation, or
 > broader claim is authorized. Next lawful object is Human review; accepted
 > design does not automatically authorize implementation or campaign.
+> **UPDATE 72 (2026-10-08)：Database-Carrier Replication Design Package v0.1 ACCEPTED.**
+> Human ruling exact form = “批准Design Package v0.1” = ACCEPT. Acceptance
+> Record 001 is canonical at `9ac5320`, blob `1a96670f…`, SHA256
+> `63f896c1…`. It accepts the design-only contract at Design Package v0.1
+> (`21acba4`, blob `582c9b85…`, SHA256 `73f80c26…`), including
+> carrier-independent IS logical model, authoritative database-backed
+> interface/schema, document-to-database mapping, EQ-1…EQ-8 equivalence
+> assertions, REJ-1…REJ-14 rejection classes, initialization/import design,
+> provenance/anti-side-channel requirements, and explicit non-goals. ACCEPT
+> does not establish CarrierSQLite equivalence and does not authorize
+> implementation, initialization, campaign, IS mutation, runner/fixture/τ
+> modification, semantic reinterpretation, PALACE/production/LLM integration,
+> or broader claims. Any next stage requires a new Human-directed Request and
+> explicit authorization exact-binding accepted Design Package v0.1 and all
+> implementation provenance.
