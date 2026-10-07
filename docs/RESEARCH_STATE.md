@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** ACTIVE — fixture REVISION 002 ACCEPTED/FROZEN; EXECUTION Request v0.3 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — EXECUTION campaign exec-001-edf7d4a INVALID at step-0 environment closure; awaiting Human evidence audit / next-authorization decision
 
 ```text
 Completed (canonical on main):
@@ -30,6 +30,12 @@ Completed (canonical on main):
     Completion Record v3, all eleven artifacts, deterministic adapter
     runtime e88c996b, D-SEC-1/D-SEC-2 closure, ENV-PROBE-V1 pre-run
     environment closure, and §9 v3 contract with ACCP-1 boundary.
+  Human APPROVE A+B+C instantiated three authorization records at c454687,
+    all exact-binding execution commit edf7d4a.
+  Campaign exec-001-edf7d4a consumed the execution budget and stopped
+    INVALID at ENV-PROBE-V1: measured identity ad2abb68 versus expected
+    9048aed2; sole differing field was swiftc_version wording. No ES/IS/
+    observer stage ran; evidence is canonical at 6b511da.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -38,10 +44,10 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Human authorization review of EXECUTION Request v0.3. If APPROVE A+B+C,
-  create EXECUTION SAR 001, IS_MUTATION SAR 001, and OBSERVER AUTHORIZATION
-  RECORD 001 separately; run the single frozen campaign and STOP for Human
-  evidence audit. If REVISE/DENY, no campaign or automatic renewal.
+  Human audit of INVALID evidence and an explicit new-authorization decision.
+  No rerun, Request text repair, environment normalization, fixture repair,
+  IS mutation, or observer action is authorized. Core claim remains NOT
+  ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

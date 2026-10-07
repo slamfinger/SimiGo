@@ -12,10 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** FIXTURE_REVISION 002 已由 Human
-> “acceptance，继续” 接受并冻结；Acceptance Record = `d56ff1b`。当前唯一
-> active 请求 = EXECUTION Authorization Request v0.3（`1088a0c`，
-> OPENED / SUBMITTED）。EXECUTION / IS_MUTATION / Observer 均未授权。
+> **当前状态（2026-10-07 override）：** EXECUTION campaign
+> `exec-001-edf7d4a` 已在 step-0 environment closure INVALID 并 STOP。
+> 唯一 execution campaign budget 已消耗；IS mutation / observer budgets
+> 未消耗。Evidence = `6b511da`。当前停点 = Human evidence audit 和
+> next-authorization decision；不得重跑或文字修复。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -663,3 +664,16 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > It requests three separate cross-bound records and authorizes no stage.
 > EXECUTION, IS_MUTATION, Observer campaign, and core claim remain NOT
 > AUTHORIZED / NOT ESTABLISHED.
+> **UPDATE 54 (2026-10-07)：Human APPROVE A+B+C instantiated three records；campaign exec-001-edf7d4a = INVALID.**
+> Human ruling exact form = “批准”. Three records were canonical at
+> `c454687` and all exact-bound `edf7d4a` as execution repository commit,
+> excluding later governance commits. Step 0 used a detached exact checkout,
+> passed Request/Manifest/Completion/Acceptance, eleven fixture artifacts,
+> T-IMPL sources, and deterministic adapter build `e88c996b`. ENV-PROBE-V1
+> then measured identity `ad2abb68` versus expected `9048aed2`; sole differing
+> field was `swiftc_version` wording. STOP code =
+> `ENVIRONMENT_CLOSED_UNIVERSE_MISMATCH`. No materialize, ES1, ES2,
+> mutate-n1, ESN, observer, or core-claim evaluation ran. Evidence is
+> canonical at `6b511da`. Execution budget is consumed; automatic renewal is
+> forbidden. Next requires Human evidence audit and a new explicit
+> authorization decision.

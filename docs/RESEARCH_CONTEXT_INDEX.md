@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — EXECUTION AUTHORIZATION REQUEST v0.3 (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXECUTION CAMPAIGN INVALID EVIDENCE (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -29,12 +29,12 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 EXECUTION Authorization Request v0.3 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW. Fixture REVISION SAR 002 work state @ 5eb1ec0 is ACCEPTED / FROZEN under Human ruling “acceptance，继续”; acceptance record is @ d56ff1b.
-Current authorization request      = docs/00-governance/SRS_REAL_CLOSURE_01_EXECUTION_AUTHORIZATION_REQUEST_V0.3_20261007.md @ 1088a0c (blob a3760c8d…, sha256 b63c71aa…).
-Current governance track           = maintenance-only; EXECUTION / IS_MUTATION / Observer remain NOT AUTHORIZED. Request v0.3 exact-binds Manifest v3, Completion Record v3, eleven fixture artifacts, deterministic adapter runtime e88c996b…, D-SEC-1/D-SEC-2 closure, ENV-PROBE-V1 pre-run environment closure, and v3 §9 contract including ACCP-1 coverage boundary.
+Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-001-edf7d4a` = INVALID at step-0 environment closure. Authorization records are canonical at c454687; evidence package is canonical at 6b511da. The one execution campaign budget is consumed; no semantic stage ran.
+Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-001-edf7d4a/EXECUTION_EVIDENCE_PACKAGE.md. Fixture/artifact/runtime checks passed, then ENV-PROBE-V1 measured identity ad2abb68… failed against Request expected identity 9048aed2…; sole differing field was swiftc_version wording.
+Current governance track           = STOPPED FOR HUMAN EVIDENCE AUDIT / NEXT-AUTHORIZATION DECISION. No rerun, request-text repair, environment normalization, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. IS mutation and observer budgets remain unconsumed; automatic renewal forbidden.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = Human authorization review of Request v0.3. If APPROVE A+B+C, create EXECUTION SAR 001, IS_MUTATION SAR 001, and OBSERVER AUTHORIZATION RECORD 001 separately, then run the single frozen campaign and STOP for evidence audit. If REVISE/DENY, no campaign or automatic renewal.
+Next dependency                    = Human audit of INVALID evidence and explicit choice whether to authorize a new corrected Request/records. There is no automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):

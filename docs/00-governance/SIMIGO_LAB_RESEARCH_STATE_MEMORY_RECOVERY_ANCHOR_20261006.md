@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Request v0.3 @ 1088a0c
-> supersedes the SAR 002 acceptance-waiting state. FIXTURE_REVISION 002 is
-> ACCEPTED/FROZEN, but EXECUTION/IS_MUTATION/Observer remain unauthorized.
-> The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Invalid campaign evidence at
+> 6b511da supersedes the Request v0.3 approval-waiting state. The one
+> execution campaign is consumed and INVALID; no semantic stage ran. The
+> Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.3 opening)
+## 0. Current recovery status — 2026-10-07 (updated after INVALID campaign)
 
 ```text
 Governance track:
@@ -49,17 +49,22 @@ Governance track:
     EXECUTION Request v0.3 opened at 1088a0c with exact Manifest v3 /
     Completion v3 / eleven-artifact / deterministic runtime e88c996b /
     D-SEC-1 / D-SEC-2 / ENV-PROBE-V1 / §9 ACCP-1 bindings.
+    Human APPROVE A+B+C instantiated EXECUTION SAR 001, IS_MUTATION SAR 001,
+    and OBSERVER AUTHORIZATION RECORD 001 at c454687, all exact-binding
+    execution commit edf7d4a. Campaign exec-001-edf7d4a stopped INVALID at
+    step-0 ENV-PROBE-V1: measured ad2abb68 versus expected 9048aed2; sole
+    differing field swiftc_version wording. No materialize/ES/observer stage
+    ran. Evidence canonical at 6b511da; execution budget consumed.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human authorization review of EXECUTION Request
-  v0.3. If APPROVE A+B+C, create EXECUTION SAR 001, IS_MUTATION SAR 001,
-  and OBSERVER AUTHORIZATION RECORD 001 separately; run the single frozen
-  campaign and STOP for Human evidence audit. If REVISE/DENY, no campaign
-  or automatic renewal. Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human audit of INVALID evidence and explicit decision
+  whether to authorize a new corrected Request/records. No rerun, request-text
+  repair, environment normalization, fixture repair, IS mutation, or observer
+  action is authorized. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
