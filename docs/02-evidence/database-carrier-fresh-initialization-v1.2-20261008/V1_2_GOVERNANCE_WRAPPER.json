@@ -1,0 +1,68 @@
+{
+  "automatic_follow_on": "FORBIDDEN",
+  "campaign_state": "NOT_AUTHORIZED",
+  "captured_artifacts": {
+    "database": "FRESH_EMPTY_IS.sqlite",
+    "embedded_initialization_manifest": "INITIALIZATION_MANIFEST.json",
+    "initialization_stdout": "INITIALIZATION_STDOUT.txt",
+    "selfcheck_output": "SELFCHECK_OUTPUT.txt"
+  },
+  "carrier_sqlite_equivalence": "NOT_ESTABLISHED",
+  "embedded_manifest_request_commit": "94caee8093ee2341c60dda05e2f25e7d703dd69e",
+  "embedded_manifest_request_identity": "SRS_REAL_CLOSURE_01_DATABASE_CARRIER_IMPLEMENTATION_CORRECTION_AND_REINITIALIZATION_REQUEST_V1_1",
+  "engine": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "python_version": "3.9.6",
+    "sqlite_version": "3.51.0"
+  },
+  "exact_execution_clean_detached_worktree": true,
+  "exact_execution_repository_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+  "governing_request_blob": "8b5c85755dc12395ee8eb75694a6fd51a8b8f859",
+  "governing_request_commit": "4588696313a65749f1eda6f8fdb1fd1d311ac1a5",
+  "governing_request_sha256": "378937da62ed27509896a74ba3e171f1a24a09c99cc41928f301636ae686131b",
+  "governing_vs_embedded_relationship": {
+    "embedded_v1_1_identity": "immutable implementation artifact produced by unchanged initialize_empty_db.py",
+    "governing_request_v1_2": "authorizes this exact fresh invocation",
+    "implementation_modification": false
+  },
+  "initialization": {
+    "argv": [
+      "python3",
+      "database-carrier-replication/initialization/initialize_empty_db.py",
+      "FRESH_EMPTY_IS.sqlite"
+    ],
+    "cwd": "/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T//srs-db-fresh-init-2rK4EUxj/worktree",
+    "ended_at_utc": "2026-10-07T17:05:03.398107+00:00",
+    "ended_wall_ns": 1791392703398105000,
+    "returncode": 0,
+    "started_at_utc": "2026-10-07T17:05:03.388780+00:00",
+    "started_wall_ns": 1791392703388778000
+  },
+  "runtime_capture_utc": "2026-10-07T17:05:03.449458+00:00",
+  "selfcheck": {
+    "argv": [
+      "python3",
+      "database-carrier-replication/implementation/selfcheck.py"
+    ],
+    "cwd": "/var/folders/sn/h53_ytcn1svgzylg7_3b4j8m0000gn/T//srs-db-fresh-init-2rK4EUxj/worktree",
+    "output_artifact": "SELFCHECK_OUTPUT.txt",
+    "returncode": 0
+  },
+  "verification": {
+    "database_sha256_matches_manifest": true,
+    "final_schema_sha256": "06ff8f976f436860d004b02ae032246e97021bed7280834c9a8bd904cf3d649a",
+    "integrity_check": "ok",
+    "logical_import": false,
+    "logical_row_counts": {
+      "dependency_entries": 0,
+      "is_index_entries": 0,
+      "is_objects": 0
+    },
+    "logical_table_set": [
+      "dependency_entries",
+      "is_index_entries",
+      "is_objects"
+    ]
+  },
+  "wrapper_identity": "DATABASE_IS_FRESH_INITIALIZATION_PROVENANCE_REGENERATION_V1_2"
+}
