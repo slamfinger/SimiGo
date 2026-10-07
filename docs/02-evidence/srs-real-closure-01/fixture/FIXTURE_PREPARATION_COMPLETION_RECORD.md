@@ -1,32 +1,31 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v3
+# SRS-REAL-CLOSURE-01 — FIXTURE_PREPARATION Completion Record v4
 
-> **Status:** SINGLE REVISION WORK CYCLE CONSUMED — DELIVERED FOR HUMAN ACCEPTANCE REVIEW
+> **Status:** τN1 INTERFACE COMPLETION WORK CYCLE CONSUMED — DELIVERED FOR CANONICAL VERIFICATION
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_002
-> @ `5296d9f` (FIXTURE_PREPARATION revision cycle only, under Human approval
-> of Request v0.7)
-> **Supersedes:** Completion Record v2 @ `e729e32`; v2 remains canonical
-> history but is NOT accepted as final fixture revision state.
+> **Authorization:** SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_SAR_005
+> under Request v0.7 APPROVE T+E.
+> **Supersedes:** Completion Record v3 solely for τN1 interface completion;
+> all v3 semantic and artifact bindings remain otherwise unchanged.
 
 ## 1. Completion identity
 
 ```text
 fixture_stage_completion_record_identity =
-  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V3;
+  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_COMPLETION_RECORD_V4;
 
 fixture_stage_completion_record_content_address =
   registered by the governing commit that introduces this record on main
   (this file lives inside the authorized fixture subtree per R3);
 
 authorized_request_identity =
-  SRS_REAL_CLOSURE_01_FIXTURE_PREPARATION_REVISION_AUTHORIZATION_REQUEST_V0_7
-  (git:blob:77bc0c4f… @ 5cfcc16);
+  SRS_REAL_CLOSURE_01_EXECUTION_AUTHORIZATION_REQUEST_V0_7
+  (git:blob:e04a1219… @ e721f7a);
 ```
 
 ## 2. Fixture manifest binding
 
 ```text
-fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v3);
+fixture_manifest_identity = SRS_REAL_CLOSURE_01_FIXTURE_MANIFEST (v4);
 fixture_manifest_content_address / integrity binding =
   registered in the same governing commit;
   the manifest v3 re-binds the changed artifact (es_runner.py) and carries
@@ -38,41 +37,34 @@ fixture_manifest_content_address / integrity binding =
 
 ```text
 execution_fixture_changed_path_set (this revision cycle) = {
-  docs/02-evidence/srs-real-closure-01/fixture/runner/es_runner.py   (repaired)
-  docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_MANIFEST.md   (v2)
+  docs/02-evidence/srs-real-closure-01/fixture/tau/tauN1.json (τN1 schema completion)
+  docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_MANIFEST.md   (v4)
   docs/02-evidence/srs-real-closure-01/fixture/FIXTURE_PREPARATION_COMPLETION_RECORD.md  (this file)
 };
 
 authorization_chain_history (governance commits, not work-cycle artifacts):
-  … → 5cfcc16 (Request v0.7 OPENED/SUBMITTED) → 5296d9f (REVISION SAR 002) →
-  this governing commit;
+  … → 6ace05a (Request v0.7 navigation state) → f78b874 (τN1 Completion
+  SAR 005) → this governing commit;
 
 forbidden_path_violation_count = 0;
 forbidden_dependency_violation_count = 0;
 scope_compliance_verdict = PASS;
-completion_validity_boundary = work-cycle consumed; NOT final until fresh
-  Human acceptance review. If accepted, the manifest v3 is the exact fixture
-  artifact any later stage request must exact-bind. Automatic renewal/
-  extension forbidden.
+completion_validity_boundary = τN1 interface work cycle consumed. Manifest v4
+  is the exact fixture artifact any later execution records must exact-bind.
+  Automatic renewal/extension forbidden.
 ```
 
-## 4. Repairs applied (RF-4.5 / RF-4.6 / RF-4.6m)
+## 4. Completion applied (τN1 interface schema only)
 
 ```text
-RF-4.5   IMMUTABLE_REVISION records now carry the complete binding-kind-
-         specific §9 payload: declared_immutable_revision,
-         revision_to_content_digest_binding, and
-         resolved_declared_content_digest. Resolution comes only from the
-         sealed LAST entry; the revision is never compared as a digest;
-         malformed/digest-invalid/mismatched resolution is typed
-         REVISION_TO_DIGEST_BINDING_INVALID.
-RF-4.6   Mapping seals and MAPPING_SNAPSHOT_SEALED events now explicitly
-         record mapping_snapshot_seal_boundary as BYTE_PREFIX_CLOSED over
-         exactly [0, start_size), including acquisition order and
-         content_re_read_after_boundary=false.
-RF-4.6m  Post-snapshot identity/size checks are evaluated on the original
-         FD before close; the separate path identity check remains
-         metadata-only.
+tauN1.json now declares dependencies[0].dependency_id = D-1,
+  dependencies[0].d_prime_seed_path = fixture/inputs/D_prime.md,
+  dependencies[0].d_prime_expected_sha256 =
+    8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955, and
+  dependencies[0].d_prime_revision = 2.
+This closes the bilateral fixture-runner τ interface contract defect recorded
+by EXEC-004 Human Evidence Audit df508d4. No runner, semantic decision, or
+other fixture artifact changes.
 ```
 
 ## 5. Instrument self-validation results (SV-1..SV-6; sandbox, discarded)
@@ -137,7 +129,7 @@ dependency_policy_compliance = Python 3 stdlib only; swiftc used solely
 ```text
 EXECUTION              NOT AUTHORIZED (no campaign sequence may run until an
                        EXECUTION authorization request exact-binds THIS
-                       manifest v2 and declares the scoped IS_MUTATION
+                       manifest v4 and declares the scoped IS_MUTATION
                        effect set per Design v0.2 §9)
 IS_MUTATION            NOT AUTHORIZED
 IMPLEMENTATION         NOT AUTHORIZED (T-IMPL-01 canonical artifact untouched)

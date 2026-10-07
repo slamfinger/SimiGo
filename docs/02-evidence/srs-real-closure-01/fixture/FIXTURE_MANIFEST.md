@@ -1,8 +1,8 @@
-# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v3
+# SRS-REAL-CLOSURE-01 — FIXTURE_MANIFEST v4
 
-> **Status:** FIXTURE REVISION WORK CYCLE DELIVERED FOR HUMAN ACCEPTANCE — ARTIFACT BINDINGS (v3 supersedes canonical-but-not-accepted v2 @ e729e32)
+> **Status:** τN1 INTERFACE COMPLETION WORK CYCLE DELIVERED — ARTIFACT BINDINGS (v4 supersedes v3)
 > **Date:** 2026-10-07
-> **Authorization:** SRS_REAL_CLOSURE_01_SAR_FIXTURE_PREPARATION_REVISION_002 @ `5296d9f`
+> **Authorization:** SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_COMPLETION_SAR_005 under Request v0.7 APPROVE T+E
 > **Bound design:** SRS-REAL-CLOSURE-01 Design v0.2 (blob `a28e8d9b…`, sha256 `d43792b5…`) — unchanged
 > **Bound implementation artifact:** T-IMPL-01 SettledRelationValidationCore
 > (canonical components per completion record §2; re-verified byte-identical
@@ -10,16 +10,16 @@
 
 ## 1. Fixture artifact bindings
 
-### Changed by this revision (RF-4.5 / RF-4.6 / RF-4.6m)
+### Changed by this completion (τN1 interface schema only)
 
 ```text
-fixture/runner/es_runner.py
-  git:blob:875cb1d9577940e65fa507bf8228d477b2e171ff
-  sha256:bc393362a5693527196b71149d59df53ad27aef58fd30255718ded831d669833
-  (supersedes v2 git:blob:689b0401… / sha256:ea8e64eb…)
+fixture/tau/tauN1.json
+  git:blob:0d5434ec8ef2de497f52f0605e4fe8c09d524315
+  sha256:156fa091f6f0093f384fcc863a2532d7c8750619584fbca351f50632a677089b
+  (supersedes v3 git:blob:eda97c2a… / sha256:fe211518…)
 ```
 
-### Carried unchanged from manifest v2 (and originally v1; verified byte-identical this cycle)
+### Carried unchanged from manifest v3 (verified byte-identical this cycle)
 
 ```text
 fixture/adapter/srsval_adapter.swift
@@ -84,20 +84,15 @@ append-only writer invariant audited SV-4c-1b). Declaration only.
 exported from `07176ec`, SHA256-verified before compilation, compiled
 together with the adapter (same compilation unit).
 
-## 5. Revision changelog (v2 → v3)
+## 5. Revision changelog (v3 → v4)
 
 ```text
-es_runner.py changes are limited to Request v0.7 RF items:
-  RF-4.5     every IMMUTABLE_REVISION record now carries
-             declared_immutable_revision,
-             revision_to_content_digest_binding, and
-             resolved_declared_content_digest, all resolved only from the
-             sealed LAST mapping entry; malformed/digest-invalid/mismatched
-             resolution raises REVISION_TO_DIGEST_BINDING_INVALID;
-  RF-4.6     every mapping seal and MAPPING_SNAPSHOT_SEALED event carries
-             mapping_snapshot_seal_boundary as the exact closed interval
-             [0, start_size) with its mechanical acquisition order;
-  RF-4.6m    FD-level post-snapshot fstat identity and size checks are
-             evaluated before FD close; the separate post-close path
-             identity check remains metadata-only.
+tauN1.json changes are limited to the bilateral τ interface defect:
+  adds dependencies[0].dependency_id = D-1;
+  adds dependencies[0].d_prime_seed_path = fixture/inputs/D_prime.md;
+  adds dependencies[0].d_prime_expected_sha256 =
+    8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955;
+  adds dependencies[0].d_prime_revision = 2.
+No runner, semantic decision, frozen contract, or other fixture artifact
+changes.
 ```
