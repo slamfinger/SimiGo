@@ -29,7 +29,7 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 FIXTURE_PREPARATION Authorization Request v0.1 OPENED — SUBMITTED FOR HUMAN AUTHORIZATION REVIEW (fixture-only; execution/IS-mutation NOT requested)
+Current active closure task        = SRS-REAL-CLOSURE-01 FIXTURE_PREPARATION Authorization Request v0.2 OPENED — SUBMITTED FOR HUMAN AUTHORIZATION REVIEW (v0.1 = REVISE by Human audit at f3c3e43: R3 completion record must live inside the authorized fixture subtree; no other defects)
 Current governance track           = FIXTURE_PREPARATION authorization pending Human review; maintenance-only; no governance-design expansion
 Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY — Design Package v0.2 DELIVERED FOR HUMAN REVIEW (v0.1 = REVISE by Human audit at 38bda97: R1 N1 write-once-preserving mutation semantics, R2 E1 closed-world downgrade; superseded lineage)
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; anti-smuggling constraint registered in design §0)
