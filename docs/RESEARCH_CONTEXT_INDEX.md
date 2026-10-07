@@ -29,12 +29,12 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled Manifest Instance v0.2 OPENED — NO STAGE AUTHORIZED
-Current governance track           = AUTH-REQ-01 v0.2 pending Human authorization review; no governance-design expansion
-Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY
-Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED
-Current design document            = docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_HUMAN_AUTHORIZATION_REQUEST_V0.2_20261007.md
-Next dependency after SRS-VAL-01   = Human authorization review of AUTH-REQ-01 v0.2; only IMPLEMENTATION is requested and remains NOT AUTHORIZED
+Current active closure task        = AUTH-REQ-01 CLOSED (audit PASS cd0de60; Human ruling APPROVE IMPLEMENTATION ONLY; SAR IMPLEMENTATION 001 5119616; T-IMPL-01 implemented 07176ec, completion record registered) — governance expansion STOPPED
+Current governance track           = maintenance-only; fixture/execution/IS-mutation NOT AUTHORIZED
+Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY — Design/Evidence Planning Package v0.1 DELIVERED FOR HUMAN REVIEW
+Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; anti-smuggling constraint registered in design §0)
+Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.1_20261007.md
+Next dependency                    = Human review of SRS-REAL-CLOSURE-01 design v0.1 (A=accept → fixture-preparation authorization request / B=revise / C=deny); execution requires separate stage authorization with explicitly scoped IS_MUTATION effect
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
