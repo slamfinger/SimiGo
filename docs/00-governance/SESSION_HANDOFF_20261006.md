@@ -964,3 +964,18 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > or broader claims. Any next stage requires a new Human-directed Request and
 > explicit authorization exact-binding accepted Design Package v0.1 and all
 > implementation provenance.
+> **UPDATE 73 (2026-10-08)：Database-Carrier Implementation & Initialization Request v1.0 OPENED/SUBMITTED.**
+> Human direction requested the next implementation/initialization stage.
+> Request v1.0 is canonical at `ef3c681`, blob `c9f0dfa0…`, SHA256
+> `8d2f553d…`. It requests one scoped work cycle to faithfully implement
+> accepted Design Package v0.1 database-backed interface/schema using Python
+> stdlib and sqlite3, initialize one auditable empty database-backed IS with
+> zero logical rows and no logical import, and prepare EQ/REJ audit
+> requirements plus an observation plan draft. It excludes equivalence
+> campaign, equivalence adjudication, logical import, IS mutation beyond empty
+> schema initialization, runner/fixture/τ modification, PALACE/LLM
+> integration, network, third-party dependencies, semantic reinterpretation,
+> and broader claims. Opening the Request authorizes no stage. If approved,
+> IMPLEMENTATION + INITIALIZATION executes the scoped cycle and STOPs for
+> review; APPROVE IMPLEMENTATION ONLY stops after implementation. Carrier
+> equivalence remains NOT ESTABLISHED.

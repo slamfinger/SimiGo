@@ -129,6 +129,12 @@ Completed (canonical on main):
     non-goals. Acceptance does not establish CarrierSQLite equivalence and
     does not authorize implementation, initialization, campaign, IS mutation,
     runner/fixture/τ repair, semantic reinterpretation, or broader claims.
+  Human direction opened Database-Carrier Implementation & Initialization
+    Request v1.0 at ef3c681. It requests one scoped work cycle to implement
+    accepted Design Package v0.1 interface/schema using Python stdlib and
+    sqlite3; initialize one auditable empty database-backed IS with no logical
+    rows/import; and prepare EQ/REJ audit requirements and observation plan.
+    No stage is authorized. CarrierSQLite equivalence remains NOT ESTABLISHED.
   Human-directed Database-Carrier Replication Design Authorization Record 001
     at e19fa0b authorized design/schema-authority/carrier-equivalence-criteria
     only. Design Package v0.1 is now delivered at 21acba4 (blob 582c9b85…,
