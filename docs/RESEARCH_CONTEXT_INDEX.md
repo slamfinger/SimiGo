@@ -29,8 +29,8 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 EXECUTION Authorization Request v0.2 OPENED — three-record approval structure (EXECUTION SAR 001 + IS_MUTATION SAR 001 + OBSERVER AUTHORIZATION RECORD 001), Channel Universe pre-authorized with unclassified={}, eleven FULL artifact bindings; v0.1 = REVISE (R1/R2/R3)
-Current governance track           = EXECUTION + scoped IS_MUTATION + Observer authorization pending Human review; maintenance-only; no governance-design expansion
+Current active closure task        = SRS-REAL-CLOSURE-01 FIXTURE_PREPARATION REVISION Authorization Request v0.1 OPENED — Execution Request v0.2 ruled B=REVISE with Layer-3 runner-semantics defects (D-6 mapping first-entry, D-7 env propagation, D-8 tau substitution unimplemented, D-9 verification-scope gap); defect register + ownership split registered; sandbox campaign validation required before any EXECUTION
+Current governance track           = fixture revision pending Human review; EXECUTION blocked until fixture is runtime-correct; no governance-design expansion
 Current research track             = SRS-REAL-CLOSURE-01 ACTIVE RESEARCH PRIORITY — Design Package v0.2 DELIVERED FOR HUMAN REVIEW (v0.1 = REVISE by Human audit at 38bda97: R1 N1 write-once-preserving mutation semantics, R2 E1 closed-world downgrade; superseded lineage)
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; anti-smuggling constraint registered in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT by Human 2026-10-07)
