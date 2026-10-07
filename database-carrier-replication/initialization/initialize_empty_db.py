@@ -14,6 +14,7 @@ import platform
 import sqlite3
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -45,6 +46,10 @@ def main() -> int:
     )
     args = parser.parse_args()
     output = Path(args.output).resolve()
+    started_wall_ns = time.time_ns()
+    started_utc = datetime.now(timezone.utc).isoformat()
+    command_argv = sys.argv.copy()
+    command_cwd = os.getcwd()
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to overwrite: {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -82,9 +87,25 @@ def main() -> int:
     carrier.close()
 
     implementation_commit = git_output("rev-parse", "HEAD")
+    schema_path = IMPLEMENTATION_DIR / "schema.sql"
+    schema_sha256 = sha256_file(schema_path)
+    ended_wall_ns = time.time_ns()
+    ended_utc = datetime.now(timezone.utc).isoformat()
     manifest = {
-        "manifest_identity": "DATABASE_IS_EMPTY_INITIALIZATION_MANIFEST_005",
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "manifest_identity": "DATABASE_IS_EMPTY_INITIALIZATION_MANIFEST_006",
+        "request_identity":
+          "SRS_REAL_CLOSURE_01_DATABASE_CARRIER_IMPLEMENTATION_CORRECTION_AND_REINITIALIZATION_REQUEST_V1_1",
+        "request_commit": "94caee8093ee2341c60dda05e2f25e7d703dd69e",
+        "request_sha256": "250c2bf3760e9910ff80540a32b3b439d4d5e3d7b0e8f43cf5a7fb5d97a06c78",
+        "authorization_identity":
+          "SRS_REAL_CLOSURE_01_DATABASE_CARRIER_CORRECTION_AND_REINITIALIZATION_AUTHORIZATION_RECORD_001",
+        "created_at_utc": ended_utc,
+        "started_at_utc": started_utc,
+        "started_wall_ns": started_wall_ns,
+        "ended_wall_ns": ended_wall_ns,
+        "initialization_command_argv": command_argv,
+        "initialization_cwd": command_cwd,
+        "initialization_returncode": 0,
         "exact_execution_repository_commit": implementation_commit,
         "database_path": str(output),
         "database_sha256": sha256_file(output),
@@ -94,6 +115,7 @@ def main() -> int:
             "sqlite_version": sqlite3.sqlite_version,
             "platform": platform.platform(),
         },
+        "final_schema_sha256": schema_sha256,
         "implementation_artifact_sha256": artifact_hashes,
         "logical_row_counts": counts,
         "logical_import": False,

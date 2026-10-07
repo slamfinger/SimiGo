@@ -1,7 +1,9 @@
 # Database-Carrier Implementation & Initialization Completion Record
 
-> **Status:** REQUEST v1.0 SCOPED WORK CYCLE COMPLETE
+> **Status:** REQUEST v1.1 CORRECTIVE WORK CYCLE COMPLETE
 > **Date:** 2026-10-08
+> **Authorization:** Database-Carrier Correction & Re-initialization
+> Authorization Record 001 under Human APPROVE CORRECTION + REINITIALIZATION.
 > **Boundary:** implementation + empty initialization + provenance/audit
 > preparation only. No equivalence campaign, equivalence adjudication, logical
 > import, IS mutation beyond empty schema initialization, runner modification,
@@ -25,7 +27,7 @@ initialization/empty_is.sqlite
 
 ## 2. Implementation result
 
-The Python standard-library + SQLite carrier implements:
+The corrected Python standard-library + SQLite carrier implements:
 
 ```text
 init_empty;
@@ -52,6 +54,19 @@ dependency history = append-only;
 no carrier mutation API.
 ```
 
+Corrective additions:
+
+```text
+atomic_dependency_materialization writes object + dependency mapping as one
+  fail-closed logical write group;
+atomic_write_group is reentrant, allowing composed logical groups without
+  nested BEGIN failure;
+get_dependency_history is the canonical dependency-history interface;
+dependency_history remains a non-semantic compatibility alias;
+a fail-closed SQLite authorizer denies UPDATE, DELETE, ALTER TABLE and
+  DROP TABLE against accepted logical stores through carrier connections.
+```
+
 ## 3. Initialization result
 
 A fresh SQLite database was initialized with the exact accepted schema:
@@ -73,6 +88,11 @@ dependency_entries = 0.
 SQLite integrity check = `ok`. The database file was hashed and recorded in
 `INITIALIZATION_MANIFEST.json`; the database file itself is not committed.
 
+Initialization provenance records exact command argv/cwd, UTC and monotonic
+timing, returncode, Python/SQLite versions, exact repaired implementation
+commit `6a095ec…`, final schema SHA256, implementation artifact hashes,
+database hash/size, and zero logical row counts.
+
 ## 4. Selfcheck
 
 The storage selfcheck passed all checks for:
@@ -89,7 +109,12 @@ append-order preservation;
 LAST dependency resolution;
 dependency history;
 transaction rollback;
-no UPDATE/DELETE logical SQL;
+fail-closed logical-group rollback;
+canonical get_dependency_history behavior;
+compatibility alias equivalence;
+UPDATE denial;
+DELETE denial;
+DROP logical-table denial;
 closed database integrity/schema.
 ```
 

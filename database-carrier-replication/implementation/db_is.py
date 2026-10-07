@@ -56,6 +56,8 @@ _REQUIRED_TABLES = {
     },
 }
 
+_LOGICAL_TABLES = frozenset(_REQUIRED_TABLES)
+
 
 class DatabaseCarrierError(RuntimeError):
     """Base error for violations of the accepted database-backed IS contract."""
@@ -125,9 +127,28 @@ class DatabaseBackedIS:
 
     def __init__(self, database_path: str | os.PathLike[str]):
         self.database_path = os.fspath(database_path)
+        self._transaction_depth = 0
         self.connection = sqlite3.connect(self.database_path)
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
+        self.connection.set_authorizer(self._authorizer)
+
+    def _authorizer(
+        self,
+        action: int,
+        arg1: str | None,
+        arg2: str | None,
+        database_name: str | None,
+        trigger_name: str | None,
+    ) -> int:
+        # SQLite action codes used here:
+        # DELETE=9, UPDATE=23, ALTER_TABLE=29, DROP_TABLE=32.
+        if action not in (9, 23, 29, 32):
+            return sqlite3.SQLITE_OK
+        names = {str(arg1 or ""), str(arg2 or "")}
+        if names & _LOGICAL_TABLES:
+            return sqlite3.SQLITE_DENY
+        return sqlite3.SQLITE_OK
 
     @classmethod
     def init_empty(cls, database_path: str | os.PathLike[str]) -> "DatabaseBackedIS":
@@ -154,6 +175,7 @@ class DatabaseBackedIS:
     def transaction(self) -> Iterator[None]:
         """Provide one atomic logical write group."""
         self.connection.execute("BEGIN IMMEDIATE")
+        self._transaction_depth += 1
         try:
             yield
         except BaseException:
@@ -161,6 +183,20 @@ class DatabaseBackedIS:
             raise
         else:
             self.connection.commit()
+        finally:
+            self._transaction_depth -= 1
+
+    @contextlib.contextmanager
+    def atomic_write_group(self) -> Iterator[None]:
+        """Compose multiple append-only writes as one atomic logical group.
+
+        Reentrant use joins the surrounding accepted logical write group.
+        """
+        if self._transaction_depth:
+            yield
+            return
+        with self.transaction():
+            yield
 
     def validate_schema(self) -> None:
         rows = self.connection.execute(
@@ -200,24 +236,42 @@ class DatabaseBackedIS:
             raise TypeError("object content must be bytes")
         object_id = sha256_hex(content)
         byte_size = len(content)
-        with self.transaction():
-            existing = self.connection.execute(
-                "SELECT content FROM is_objects WHERE object_id = ?",
-                (object_id,),
-            ).fetchone()
-            if existing is not None:
-                stored = bytes(existing["content"])
-                if stored != content:
-                    raise ObjectByteMismatch(object_id)
-                return object_id
-            created_order = self._next_created_order()
-            self.connection.execute(
-                "INSERT INTO is_objects "
-                "(object_id, byte_size, content, created_order) "
-                "VALUES (?, ?, ?, ?)",
-                (object_id, byte_size, content, created_order),
-            )
+        with self.atomic_write_group():
+            self._write_object_in_txn(content, object_id, byte_size)
         return object_id
+
+    def _write_object_in_txn(self, content: bytes, object_id: str, byte_size: int):
+        existing = self.connection.execute(
+            "SELECT content FROM is_objects WHERE object_id = ?",
+            (object_id,),
+        ).fetchone()
+        if existing is not None:
+            stored = bytes(existing["content"])
+            if stored != content:
+                raise ObjectByteMismatch(object_id)
+            return
+        created_order = self._next_created_order()
+        self.connection.execute(
+            "INSERT INTO is_objects "
+            "(object_id, byte_size, content, created_order) VALUES (?, ?, ?, ?)",
+            (object_id, byte_size, content, created_order),
+        )
+
+    def atomic_dependency_materialization(
+        self,
+        content: bytes,
+        dependency_entry: Mapping[str, object],
+    ) -> tuple[str, int]:
+        """Write one D/D' object and dependency mapping as one atomic group."""
+        if not isinstance(content, bytes):
+            raise TypeError("object content must be bytes")
+        object_id = sha256_hex(content)
+        with self.atomic_write_group():
+            self._write_object_in_txn(content, object_id, len(content))
+            append_order = self._append_dependency_in_txn(
+                dependency_entry, content_address=object_id
+            )
+        return object_id, append_order
 
     def get_object(self, object_id: str) -> bytes:
         row = self.connection.execute(
@@ -262,18 +316,22 @@ class DatabaseBackedIS:
             raise InvalidEntry("srs_identity must be a nonempty string")
         if not isinstance(record_object, str) or len(record_object) != 64:
             raise InvalidEntry("record_object must be a 64-character object id")
-        with self.transaction():
-            if self.connection.execute(
-                "SELECT 1 FROM is_objects WHERE object_id = ?",
-                (record_object,),
-            ).fetchone() is None:
-                raise MissingObject(record_object)
-            append_order = self._next_append_order("is_index_entries")
-            self.connection.execute(
-                "INSERT INTO is_index_entries "
-                "(append_order, srs_identity, record_object) VALUES (?, ?, ?)",
-                (append_order, srs_identity, record_object),
-            )
+        with self.atomic_write_group():
+            append_order = self._append_index_in_txn(srs_identity, record_object)
+        return append_order
+
+    def _append_index_in_txn(self, srs_identity: str, record_object: str) -> int:
+        if self.connection.execute(
+            "SELECT 1 FROM is_objects WHERE object_id = ?",
+            (record_object,),
+        ).fetchone() is None:
+            raise MissingObject(record_object)
+        append_order = self._next_append_order("is_index_entries")
+        self.connection.execute(
+            "INSERT INTO is_index_entries "
+            "(append_order, srs_identity, record_object) VALUES (?, ?, ?)",
+            (append_order, srs_identity, record_object),
+        )
         return append_order
 
     def resolve_srs_identity(self, srs_identity: str) -> IndexRecord:
@@ -322,19 +380,33 @@ class DatabaseBackedIS:
             raise InvalidEntry("revision must be a positive integer")
         if not isinstance(reason, str) or not reason:
             raise InvalidEntry("reason must be a nonempty string")
-        with self.transaction():
-            if self.connection.execute(
-                "SELECT 1 FROM is_objects WHERE object_id = ?",
-                (content_address,),
-            ).fetchone() is None:
-                raise MissingObject(content_address)
-            append_order = self._next_append_order("dependency_entries")
-            self.connection.execute(
-                "INSERT INTO dependency_entries "
-                "(append_order, dependency_id, content_address, revision, reason) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (append_order, dependency_id, content_address, revision, reason),
+        with self.atomic_write_group():
+            append_order = self._append_dependency_in_txn(
+                entry, content_address=content_address
             )
+        return append_order
+
+    def _append_dependency_in_txn(
+        self,
+        entry: Mapping[str, object],
+        *,
+        content_address: str,
+    ) -> int:
+        dependency_id = entry["dependency_id"]
+        revision = entry["revision"]
+        reason = entry["reason"]
+        if self.connection.execute(
+            "SELECT 1 FROM is_objects WHERE object_id = ?",
+            (content_address,),
+        ).fetchone() is None:
+            raise MissingObject(content_address)
+        append_order = self._next_append_order("dependency_entries")
+        self.connection.execute(
+            "INSERT INTO dependency_entries "
+            "(append_order, dependency_id, content_address, revision, reason) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (append_order, dependency_id, content_address, revision, reason),
+        )
         return append_order
 
     def resolve_current_dependency(
@@ -357,7 +429,7 @@ class DatabaseBackedIS:
             reason=row["reason"],
         )
 
-    def dependency_history(self, dependency_id: str) -> list[DependencyRecord]:
+    def get_dependency_history(self, dependency_id: str) -> list[DependencyRecord]:
         rows = self.connection.execute(
             "SELECT append_order, dependency_id, content_address, revision, reason "
             "FROM dependency_entries "
@@ -374,3 +446,7 @@ class DatabaseBackedIS:
             )
             for row in rows
         ]
+
+    def dependency_history(self, dependency_id: str) -> list[DependencyRecord]:
+        """Compatibility alias for get_dependency_history."""
+        return self.get_dependency_history(dependency_id)

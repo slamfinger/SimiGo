@@ -47,8 +47,12 @@ carrier.close()
 - SRS identity resolution is first match in append order.
 - Dependency current resolution is LAST match in append order.
 - Dependency history is append-only.
-- API transactions provide atomic logical write groups.
-- The carrier exposes no update/delete methods.
+- `get_dependency_history(dependency_id)` is the canonical interface;
+  `dependency_history(dependency_id)` is a compatibility alias.
+- `atomic_write_group()` composes multiple append-only writes as one atomic
+  logical write group and is reentrant inside an existing group.
+- A fail-closed SQLite authorizer denies UPDATE, DELETE, ALTER TABLE and
+  DROP TABLE against committed logical stores through the carrier connection.
 
 ## Non-goals
 
