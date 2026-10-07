@@ -12,10 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** Request v0.5 已获 `APPROVE A+B+C`；
-> 四条 003 records canonical @ `bda7829`。Campaign `exec-003-9966d31` 已在
-> driver 后 INVALID/STOP；evidence @ `a50ff8b`。当前停点 = Human evidence
-> audit / next-authorization decision；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** EXEC-003 Human evidence audit 已关闭，
+> canonical audit = `266e953`。Campaign 仍 INVALID/STOP；两个独立机械缺陷已
+> 接受，但更深 OS 级机制未解决。当前停点 = Human decision 是否授权 corrected
+> Request/records；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -737,3 +737,21 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > `a50ff8b`. Execution/provenance budgets consumed; IS mutation and observer
 > budgets unconsumed; no rerun or repair authorized; core claim remains NOT
 > ESTABLISHED.
+> **UPDATE 59 (2026-10-07)：EXEC-003 Human evidence audit CLOSED；two independent mechanical defects accepted.**
+> Read-only audit is canonical at `266e953`, blob `dfb54c7a…`, SHA256
+> `b13280a4…`. Audit A accepted
+> `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`: Request v0.5 required
+> `execution_provenance.json`, but plan set `output_path` to the run directory;
+> EPR003 failed closed with `IsADirectoryError` and did not fabricate a
+> manifest. Audit B accepted
+> `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`: frozen `tau1.seed_path` was
+> repository-layout-relative and absent under both host repository root and
+> detached worktree root, so materialize exited 1 before any IS write. The
+> defects are independent; B was causally earlier, while A is the registered
+> primary stop. Deeper OS-level mechanism remains unresolved. Campaign remains
+> INVALID; semantic experiment NOT RUN; E1–E6, positive REUSE, N1 BLOCK absent;
+> execution/provenance budgets consumed; IS mutation and observer budgets
+> unconsumed; no rerun or repair authorized. Next lawful object is Human
+> decision on a corrected Request/records addressing EPR003 output-path
+> preflight, exact cwd/seed-path resolution, and `_001/V1` cross-binding if in
+> scope. Core claim remains NOT ESTABLISHED.

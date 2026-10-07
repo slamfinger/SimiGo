@@ -10,13 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Invalid EXEC-003 evidence at
-> a50ff8b supersedes Request v0.5 waiting state. The v0.5 campaign/provenance
-> budget is consumed and STOPPED INVALID. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** EXEC-003 Human evidence audit at
+> 266e953 supersedes generic INVALID-evidence waiting state. Two independent
+> mechanical defects are accepted; deeper OS-level mechanism remains
+> unresolved. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-003 INVALID evidence)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-003 audit closure)
 
 ```text
 Governance track:
@@ -79,17 +80,23 @@ Governance track:
     tau seed path resolved against host root. EPR003 then failed writing its
     manifest because plan output_path was the run directory. Evidence is
     canonical at a50ff8b.
+    Read-only Human evidence audit 266e953 closed attribution as two
+    independent defects: `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`
+    and `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. B was causally earlier;
+    A is the registered primary stop. Deeper OS-level mechanism remains
+    unresolved.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human audit of INVALID evidence and explicit decision
-  whether to authorize a new corrected Request/records. No rerun, recorder
-  repair, runner modification, fixture repair, old-record reuse, environment
-  normalization, IS mutation, or observer action is authorized before that.
-  Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human decision whether to authorize a corrected
+  Request/records addressing EPR003 output-path preflight, exact cwd/seed-path
+  resolution, and separately registered `_001/V1` cross-binding finding if in
+  scope. No rerun, recorder repair, runner modification, fixture repair,
+  old-record reuse, environment normalization, IS mutation, or observer action
+  is authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

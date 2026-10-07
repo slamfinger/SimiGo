@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-003 INVALID after driver launch; evidence canonical at a50ff8b; awaiting Human evidence audit / next-authorization decision
+> **Status:** STOPPED — EXEC-003 INVALID; read-only Human evidence audit closed with two independent mechanical defects
 
 ```text
 Completed (canonical on main):
@@ -60,20 +60,26 @@ Completed (canonical on main):
     tau seed path resolved against host root. EPR003 then failed writing its
     manifest because plan output_path was the run directory. Evidence is
     canonical at a50ff8b.
+  Read-only Human evidence audit 266e953 closed root-cause attribution:
+    Audit A accepted `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`;
+    Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The
+    defects are independent; B was causally earlier and A is the registered
+    primary stop. Deeper OS-level mechanism remains unresolved.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
 NOT AUTHORIZED: EXECUTION rerun, IS_MUTATION, Observer authorization,
-recorder/runner/fixture repair, implementation changes; governance expansion
+EPR003/runner/fixture repair, implementation changes; governance expansion
 (maintenance-only).
 
 Next lawful object:
-  Human audit of INVALID evidence and explicit choice whether to authorize a
-  new corrected Request/records. No rerun, recorder repair, runner repair,
-  fixture repair, old-record reuse, environment normalization, IS mutation, or
-  observer action is authorized before that. Core claim remains NOT
-  ESTABLISHED.
+  Human decision whether to authorize a corrected Request/records addressing
+  EPR003 output-path preflight, exact cwd/seed-path resolution, and the
+  separately registered `_001/V1` cross-binding finding if in scope. No rerun,
+  recorder repair, runner repair, fixture repair, old-record reuse,
+  environment normalization, IS mutation, or observer action is authorized
+  before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

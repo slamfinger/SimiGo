@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — EXEC-003 INVALID EVIDENCE (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXEC-003 HUMAN EVIDENCE AUDIT CLOSED (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -32,10 +32,11 @@ Current global goal                = ES₁ settled relation becomes lawful, vali
 Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-003-9966d31` = INVALID after driver launch. Request v0.5 was APPROVED; four records 003 are canonical at bda7829; evidence package is canonical at a50ff8b. The v0.5 execution/provenance budget is consumed; no semantic stage completed.
 Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-003-9966d31/EXECUTION_EVIDENCE_PACKAGE.md. Step0, adapter e88c996b…, and corrected environment identity ad2abb68… passed. Driver ran through EPR003, but materialize exited 1 because repository-relative seed path resolved against host root instead of detached exact worktree; EPR003 then failed because plan output_path was the run directory rather than a JSON file.
 Current failure classes            = primary `EXECUTION_PROVENANCE_RECORDER_OUTPUT_PATH_INVALID`; secondary `CAMPAIGN_CWD_SEED_PATH_MISMATCH`. These are evidence-backed mechanical launch/plan failures, not semantic results.
-Current governance track           = STOPPED FOR HUMAN EVIDENCE AUDIT / NEXT-AUTHORIZATION DECISION. No rerun, recorder repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. The v0.5 execution/provenance budget is consumed; IS mutation and observer budgets remain unconsumed; automatic renewal forbidden.
+Current human evidence audit       = 266e953 (blob dfb54c7a…, sha256 b13280a4…) = CLOSED. Audit A accepted `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`; Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The defects are independent; seed-path failure was causally earlier, while manifest failure is the registered primary stop. Root cause deeper than these mechanical contracts remains unresolved.
+Current governance track           = AWAITING HUMAN DECISION whether to authorize a new corrected Request/records. No rerun, EPR003 repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. The v0.5 execution/provenance budget is consumed; IS mutation and observer budgets remain unconsumed; automatic renewal forbidden.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = Human audit of INVALID evidence and explicit choice whether to authorize a new corrected Request/records. There is no automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
+Next dependency                    = Human decision whether to authorize a corrected Request/records addressing EPR003 output-path preflight, exact cwd/seed-path resolution, and the separately registered `_001/V1` cross-binding finding if in scope. No automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
