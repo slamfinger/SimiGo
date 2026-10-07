@@ -125,6 +125,15 @@ D-SEC-1 (§6.2 choice, for EXECUTION Request v0.3):
   post-exit observer; B is consistent with the accepted design and with
   §6.2's own vocabulary (subject self-logs supplementary; here the entire
   round-1 observation is declared supplemental-class).
+  CORRECTION (Human ruling on the register, 2026-10-07 — wording binding
+  for EXECUTION Request v0.3): the earlier sentence "the §10 joint gate is
+  satisfied by a valid record FOR THAT DECLARED SCOPE" is REJECTED. The
+  strict semantics are: Observer Authorization Record 001 = valid
+  SUPPLEMENTAL-observation authorization, NOT a §6 authoritative
+  Observation Integrity Boundary; a post-exit observer is not a
+  §6-compliant observer; the round-1 bounded claim may use supplemental
+  post-exit re-derivation, and a stronger authoritative-observation claim
+  is NOT AVAILABLE in round 1.
 
 D-SEC-2 (pipe classification):
   Reclassify driver↔child capture pipes and their file descriptors as
