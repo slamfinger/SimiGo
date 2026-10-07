@@ -995,3 +995,23 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > authorized. Next requires Human review and a new explicit authorization
 > exact-binding implementation commit `4588a9c`, Manifest v5 lineage, and
 > fresh initialization provenance.
+> **UPDATE 75 (2026-10-08)：Request v1.1 corrective work cycle COMPLETE; STOP for Human review.**
+> Human approved `APPROVE CORRECTION + REINITIALIZATION`. Corrective
+> implementation completed at `7392fcb`: `atomic_dependency_materialization`
+> and reentrant `atomic_write_group` remove nested BEGIN failure;
+> `get_dependency_history` is canonical with `dependency_history` as a
+> non-semantic compatibility alias; and a fail-closed SQLite authorizer denies
+> UPDATE/DELETE/ALTER/DROP on accepted logical stores. Selfcheck is 23/23
+> PASS, including committed group visibility, rollback absence, authorizer
+> denials and closed DB integrity. Fresh empty SQLite-backed IS was
+> reinitialized with three logical stores and zero rows. Exact provenance
+> records request/authorization @ `94caee8`, repaired implementation commit
+> `7392fcb`, final schema SHA256 `06ff8f97`, implementation artifact hashes,
+> exact argv/cwd, UTC/monotonic timing, returncode, Python/SQLite versions,
+> database hash/size, zero row counts, logical_import=false and
+> campaign_state=NOT_AUTHORIZED. This is READY FOR EQUIVALENCE CAMPAIGN
+> AUTHORIZATION only; it is NOT CarrierSQLite equivalence and NOT a semantic
+> result. No equivalence campaign/adjudication/logical import/IS mutation/
+> runner-fixture-tau repair/old-database reuse is authorized. Next lawful
+> object is Human review, then a separate new Request/authorization for any
+> equivalence campaign.

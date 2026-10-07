@@ -141,6 +141,15 @@ Completed (canonical on main):
     sqlite3; initialize one auditable empty database-backed IS with no logical
     rows/import; and prepare EQ/REJ audit requirements and observation plan.
     No stage is authorized. CarrierSQLite equivalence remains NOT ESTABLISHED.
+  Human APPROVE CORRECTION + REINITIALIZATION authorized Request v1.1
+    corrective work cycle. Corrected implementation completed at 7392fcb:
+    atomic dependency materialization/reentrant atomic write group, canonical
+    get_dependency_history plus compatibility alias, and fail-closed SQLite
+    authorizer denying UPDATE/DELETE/ALTER/DROP on logical stores. Fresh empty
+    SQLite-backed IS reinitialized with zero logical rows and exact provenance:
+    argv/cwd/timing/returncode, repaired implementation commit 7392fcb, final
+    schema SHA256 06ff8f97, artifact hashes and DB hash/size. No equivalence
+    campaign/adjudication/logical import/IS mutation occurred.
   Human-directed Database-Carrier Replication Design Authorization Record 001
     at e19fa0b authorized design/schema-authority/carrier-equivalence-criteria
     only. Design Package v0.1 is now delivered at 21acba4 (blob 582c9b85…,

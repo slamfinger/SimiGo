@@ -10,14 +10,15 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-08:** Database-Carrier Implementation
-> & Initialization Request v1.0 at ef3c681 supersedes the design-accepted
-> waiting state. It is opened/submitted but no stage is authorized. The
-> Research Focus Reset
+> **Current recovery override — 2026-10-08:** Request v1.1 correction/
+> reinitialization work cycle is COMPLETE at 7392fcb. It fixes atomic logical
+> groups, canonical dependency-history interface, fail-closed authorizer, and
+> exact fresh initialization provenance. No equivalence campaign is authorized.
+> The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-08 (updated after Request v1.0 opening)
+## 0. Current recovery status — 2026-10-08 (updated after Request v1.1 corrective work cycle)
 
 ```text
 Governance track:
@@ -162,6 +163,15 @@ Governance track:
     sqlite3; initialize one auditable empty database-backed IS with no logical
     rows/import; and prepare EQ/REJ audit requirements and observation plan.
     No stage is authorized. CarrierSQLite equivalence remains NOT ESTABLISHED.
+    Human APPROVE CORRECTION + REINITIALIZATION authorized Request v1.1
+    corrective work cycle. Corrected implementation completed at 7392fcb:
+    atomic dependency materialization/reentrant atomic write group, canonical
+    get_dependency_history plus compatibility alias, and fail-closed SQLite
+    authorizer denying UPDATE/DELETE/ALTER/DROP on logical stores. Fresh empty
+    SQLite-backed IS reinitialized with zero logical rows and exact provenance:
+    argv/cwd/timing/returncode, repaired implementation commit 7392fcb, final
+    schema SHA256 06ff8f97, artifact hashes and DB hash/size. No equivalence
+    campaign/adjudication/logical import/IS mutation occurred.
     Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Human APPROVE S+E executed scoped τN1 schema alignment at 69b2227 and
