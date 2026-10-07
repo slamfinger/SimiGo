@@ -21,6 +21,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from evidence_paths import EvidencePaths, load_and_preflight
+
 ROOT = Path(subprocess.check_output(
     ["git", "rev-parse", "--show-toplevel"], text=True
 ).strip())
@@ -182,7 +184,7 @@ def verify_reference_inputs() -> dict[str, bytes]:
     return objects
 
 
-def extract_invocations(output: Path) -> dict[str, dict]:
+def extract_invocations(paths: EvidencePaths) -> dict[str, dict]:
     result = {}
     for decision, filename in {
         "ES2": "invocation_graph-es2.json",
@@ -193,16 +195,14 @@ def extract_invocations(output: Path) -> dict[str, dict]:
             f"docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/{filename}",
         )
         require(sha256(raw) == INVOCATION_HASHES[decision], f"{decision} invocation mismatch")
-        path = output / "adapter" / f"{decision.lower()}-input.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = paths.resolve(f"ADAPTER_{decision}_INPUT")
         path.write_bytes(raw)
         result[decision] = json.loads(raw)
     return result
 
 
-def build_adapter(output: Path) -> tuple[Path, dict]:
-    build = output / "adapter" / "build"
-    build.mkdir(parents=True, exist_ok=True)
+def build_adapter(paths: EvidencePaths) -> tuple[Path, dict]:
+    build = paths.resolve("ADAPTER_BUILD_DIRECTORY")
     hashes = {}
     for filename, expected in CANONICAL_SOURCES.items():
         if filename == "main.swift":
@@ -226,13 +226,13 @@ def build_adapter(output: Path) -> tuple[Path, dict]:
     binary = build / "srsval_adapter"
     runtime_hash = sha256_path(binary)
     require(runtime_hash == ADAPTER_RUNTIME_SHA256, f"adapter runtime mismatch: {runtime_hash}")
-    write_json(output / "adapter" / "build_command.json", {
+    write_json(paths.resolve("ADAPTER_BUILD_COMMAND"), {
         "command": command,
         "returncode": proc.returncode,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
     })
-    write_json(output / "adapter" / "source_sha256.json", hashes)
+    write_json(paths.resolve("ADAPTER_SOURCE_HASHES"), hashes)
     return binary, {"runtime_artifact_sha256": runtime_hash, "build_returncode": 0}
 
 
@@ -374,9 +374,10 @@ def validate_adapter_input(decision: str, invocation: dict, carrier) -> dict:
     }
 
 
-def invoke_adapter(binary: Path, output: Path, decision: str) -> dict:
-    input_path = output / "adapter" / f"{decision.lower()}-input.json"
-    output_path = output / "adapter" / f"{decision.lower()}-output.json"
+def invoke_adapter(paths: EvidencePaths, decision: str) -> dict:
+    binary = paths.resolve("ADAPTER_BINARY")
+    input_path = paths.resolve(f"ADAPTER_{decision}_INPUT")
+    output_path = paths.resolve(f"ADAPTER_{decision}_OUTPUT")
     proc = subprocess.run([str(binary), str(input_path)], capture_output=True, text=True)
     require(proc.returncode == 0, f"{decision} adapter failed: {proc.stderr}")
     output_path.write_text(proc.stdout, encoding="utf-8")
@@ -395,16 +396,19 @@ def invoke_adapter(binary: Path, output: Path, decision: str) -> dict:
     }
 
 
-def write_sha_sums(output: Path) -> None:
+def write_sha_sums(paths: EvidencePaths) -> None:
     lines = []
-    for path in sorted(p for p in output.rglob("*") if p.is_file() and p.name != "SHA256SUMS"):
+    output = paths.output_root
+    sums_path = paths.resolve("SHA256SUMS")
+    for path in sorted(p for p in output.rglob("*") if p.is_file() and p != sums_path):
         lines.append(f"{sha256_path(path)}  {path.relative_to(output)}")
-    (output / "SHA256SUMS").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    sums_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def run(expected_head: str, output: Path) -> int:
     require(not output.exists(), f"campaign output already exists: {output}")
     output.mkdir(parents=True)
+    evidence_paths = load_and_preflight(ROOT, output)
     started_utc = utcnow()
     started_ns = time.time_ns()
     repository = verify_execution_repository(expected_head)
@@ -413,21 +417,22 @@ def run(expected_head: str, output: Path) -> int:
         "accepted fresh database mismatch",
     )
     reference = verify_reference_inputs()
-    shutil.copy2(ROOT / SOURCE_DATABASE_PATH, output / "O0_DATABASE.sqlite")
-    require(sha256_path(output / "O0_DATABASE.sqlite") == SOURCE_DATABASE_SHA256, "O0 database copy mismatch")
+    source_database_copy = evidence_paths.resolve("O0_DATABASE")
+    shutil.copy2(ROOT / SOURCE_DATABASE_PATH, source_database_copy)
+    require(sha256_path(source_database_copy) == SOURCE_DATABASE_SHA256, "O0 database copy mismatch")
     sys.path.insert(0, str(ROOT / "database-carrier-replication" / "implementation"))
     from db_is import DatabaseBackedIS
 
-    adapter_binary, adapter_build = build_adapter(output)
-    invocations = extract_invocations(output)
-    transaction_log = output / "transaction_log.jsonl"
+    adapter_build_record = build_adapter(evidence_paths)
+    invocations = extract_invocations(evidence_paths)
+    transaction_log = evidence_paths.resolve("TRANSACTION_LOG")
 
     def log_event(event: str, **fields: object) -> None:
         record = {"event": event, "time_ns": time.time_ns(), "utc": utcnow(), **fields}
         with transaction_log.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
 
-    work_db = output / "CAMPAIGN_DATABASE.sqlite"
+    work_db = evidence_paths.resolve("CAMPAIGN_DATABASE")
     require(not work_db.exists() and not work_db.is_symlink(), "working database already exists")
     shutil.copy2(ROOT / SOURCE_DATABASE_PATH, work_db)
     working_copy_sha256 = sha256_path(work_db)
@@ -441,7 +446,7 @@ def run(expected_head: str, output: Path) -> int:
         "working_copy_path": str(work_db),
         "working_copy_sha256_before_open": working_copy_sha256,
     }
-    write_json(output / "working_copy_binding.json", working_copy_binding)
+    write_json(evidence_paths.resolve("WORKING_COPY_BINDING"), working_copy_binding)
     carrier = DatabaseBackedIS(work_db)
     observations = {}
     checks = {}
@@ -471,7 +476,7 @@ def run(expected_head: str, output: Path) -> int:
                 log_event("TRANSACTION_COMMIT", index_order=index_order, object_id=object_id, operation_classes=["INSERT is_objects", "INSERT is_index_entries"], stage="es1")
             if point == "O3":
                 db_state = validate_adapter_input("ES2", invocations["ES2"], carrier)
-                adapter_results = {"ES2": invoke_adapter(adapter_binary, output, "ES2")}
+                adapter_results = {"ES2": invoke_adapter(evidence_paths, "ES2")}
                 log_event("TRANSACTION_BEGIN", operation_classes=["INSERT is_objects", "INSERT is_index_entries"], stage="es2_continuation")
                 with carrier.atomic_write_group():
                     object_id = carrier.write_object(reference["CR"])
@@ -494,17 +499,18 @@ def run(expected_head: str, output: Path) -> int:
                 log_event("TRANSACTION_COMMIT", dependency_order=dependency_order, object_id=object_id, operation_classes=["INSERT is_objects", "INSERT dependency_entries"], stage="mutate_n1")
             if point == "O5":
                 db_state_esn = validate_adapter_input("ESN", invocations["ESN"], carrier)
-                adapter_results["ESN"] = invoke_adapter(adapter_binary, output, "ESN")
+                adapter_results["ESN"] = invoke_adapter(evidence_paths, "ESN")
             observations[point] = snapshot(carrier)
             checks[point] = compare_snapshot(point, observations[point])
             require(all(checks[point].values()), f"{point} observation mismatch: {checks[point]}")
-            (output / "observations" / f"{point}.json").write_text(
+            evidence_paths.resolve(f"OBSERVATION_{point}").write_text(
                 json.dumps(observations[point], sort_keys=True, indent=2) + "\n", encoding="utf-8"
             )
     finally:
         carrier.close()
 
-    shutil.copy2(work_db, output / "O5_DATABASE.sqlite")
+    final_database = evidence_paths.resolve("O5_DATABASE")
+    shutil.copy2(work_db, final_database)
     immutability = {
         logical: all(
             any(item["object_id"] == OBJECT_IDS[logical] and item["content_sha256"] == OBJECT_IDS[logical]
@@ -529,7 +535,7 @@ def run(expected_head: str, output: Path) -> int:
         },
     }
     require(observer["C3"], "C3 mismatch")
-    write_json(output / "observer_verdict.json", observer)
+    write_json(evidence_paths.resolve("OBSERVER_VERDICT"), observer)
     eq_matrix = {
         "EQ-1": all(checks[p]["EQ-1_object_set_bytes_hashes"] for p in checks),
         "EQ-2": all(immutability.values()),
@@ -542,6 +548,13 @@ def run(expected_head: str, output: Path) -> int:
     }
     require(all(eq_matrix.values()), f"EQ matrix failure: {eq_matrix}")
     rej_matrix = {f"REJ-{number}": False for number in range(1, 15)}
+    eq_rej_matrix = {
+        "eq": eq_matrix,
+        "overall_pass": all(eq_matrix.values()) and not any(rej_matrix.values()),
+        "rej": rej_matrix,
+    }
+    require(eq_rej_matrix["overall_pass"], f"EQ/REJ matrix failure: {eq_rej_matrix}")
+    write_json(evidence_paths.resolve("EQ_REJ_MATRIX"), eq_rej_matrix)
     outcome = {
         "adapter": {
             "ES2": {
@@ -577,16 +590,16 @@ def run(expected_head: str, output: Path) -> int:
         "stop_code": "CAMPAIGN_VALID_EVIDENCE_COMPLETE",
         "stop_point": "POST_FROZEN_SEQUENCE_HUMAN_EVIDENCE_AUDIT_HANDOFF",
     }
-    write_json(output / "campaign_outcome.json", outcome)
-    write_json(output / "campaign_db_validation.json", {
-        "final_database_sha256": sha256_path(output / "O5_DATABASE.sqlite"),
-        "initial_database_sha256": sha256_path(output / "O0_DATABASE.sqlite"),
+    write_json(evidence_paths.resolve("CAMPAIGN_OUTCOME"), outcome)
+    write_json(evidence_paths.resolve("CAMPAIGN_DB_VALIDATION"), {
+        "final_database_sha256": sha256_path(final_database),
+        "initial_database_sha256": sha256_path(source_database_copy),
         "source_database_sha256": SOURCE_DATABASE_SHA256,
     })
     ended_utc = utcnow()
     ended_ns = time.time_ns()
     preflight = {
-        "adapter_build": adapter_build,
+        "adapter_build": adapter_build_record,
         "exact_reference_inputs": {key: sha256(value) for key, value in reference.items()},
         "fresh_database_binding": {
             "accepted_commit": ACCEPTED_FRESH_DB_COMMIT,
@@ -606,15 +619,22 @@ def run(expected_head: str, output: Path) -> int:
             "started_wall_ns": started_ns,
         },
     }
-    write_json(output / "preflight_verification.json", preflight)
-    write_json(output / "campaign_process_result.json", {
+    write_json(evidence_paths.resolve("RUNTIME_PROVENANCE"), {
+        "authoritative_path_map_consumed": True,
+        "independent_artifact_path_derivation": False,
+        "repository": repository,
+        "runtime": preflight["runtime"],
+    })
+    write_json(evidence_paths.resolve("PREFLIGHT_VERIFICATION"), preflight)
+    process_result_path = evidence_paths.resolve("CAMPAIGN_PROCESS_RESULT")
+    write_json(process_result_path, {
         "campaign_cwd": str(Path.cwd()),
         "campaign_returncode": 0,
         "campaign_stderr": "",
         "campaign_stdout": f"campaign evidence complete: {output}",
         "harness_argv": [sys.executable, str(Path(__file__).resolve()), "--expected-head", expected_head, "--output", str(output)],
     })
-    write_sha_sums(output)
+    write_sha_sums(evidence_paths)
     return 0
 
 
@@ -628,3 +648,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+    evidence_paths.resolve("CAMPAIGN_STDERR").write_text("", encoding="utf-8")
