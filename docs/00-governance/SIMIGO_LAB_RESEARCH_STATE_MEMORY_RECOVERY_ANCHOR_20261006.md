@@ -10,13 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** SAR 002 work state @ 5eb1ec0
-> supersedes the Request-v0.7 waiting state. It does NOT claim final
-> FIXTURE_PREPARATION acceptance. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Request v0.3 @ 1088a0c
+> supersedes the SAR 002 acceptance-waiting state. FIXTURE_REVISION 002 is
+> ACCEPTED/FROZEN, but EXECUTION/IS_MUTATION/Observer remain unauthorized.
+> The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after SAR 002 work cycle)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.3 opening)
 
 ```text
 Governance track:
@@ -42,17 +43,23 @@ Governance track:
     sandbox; manifest v3, completion record v3, es_runner.py
     875cb1d9/bc393362 delivered and pushed. Final closure remains pending
     fresh Human acceptance.
+    Human ruling “acceptance，继续” produced Acceptance Record 002 at
+    d56ff1b: 5eb1ec0 = ACCEPTED/FROZEN; ACCP-1 pre-call gap and ACCP-2
+    documentation residue are carried checkpoints, not silently erased.
+    EXECUTION Request v0.3 opened at 1088a0c with exact Manifest v3 /
+    Completion v3 / eleven-artifact / deterministic runtime e88c996b /
+    D-SEC-1 / D-SEC-2 / ENV-PROBE-V1 / §9 ACCP-1 bindings.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = fresh Human acceptance review of work state 5eb1ec0.
-  If ACCEPT, draft EXECUTION Authorization Request v0.3 exact-binding
-  FIXTURE_MANIFEST v3 and completion record v3. If REJECT/REVISE, no
-  automatic renewal or repair cycle may begin. EXECUTION Authorization
-  Request v0.3 remains NOT OPEN.
+  Next lawful object = Human authorization review of EXECUTION Request
+  v0.3. If APPROVE A+B+C, create EXECUTION SAR 001, IS_MUTATION SAR 001,
+  and OBSERVER AUTHORIZATION RECORD 001 separately; run the single frozen
+  campaign and STOP for Human evidence audit. If REVISE/DENY, no campaign
+  or automatic renewal. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

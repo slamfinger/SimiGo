@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** ACTIVE — SAR 002 work cycle consumed and pushed; delivered for fresh Human acceptance review, final fixture closure NOT claimed
+> **Status:** ACTIVE — fixture REVISION 002 ACCEPTED/FROZEN; EXECUTION Request v0.3 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -24,6 +24,12 @@ Completed (canonical on main):
     work cycle → RF-4.5/RF-4.6/RF-4.6m repaired → SV-1..SV-6 with field-
     level assertions 33/33 PASS → manifest v3, completion record v3, and
     es_runner.py blob 875cb1d9/bc393362 delivered at 5eb1ec0.
+  Human acceptance d56ff1b accepted 5eb1ec0 with ACCP-1 pre-call gap and
+    ACCP-2 documentation residue carried as checkpoints; fixture frozen.
+  EXECUTION Request v0.3 opened at 1088a0c exact-binding Manifest v3,
+    Completion Record v3, all eleven artifacts, deterministic adapter
+    runtime e88c996b, D-SEC-1/D-SEC-2 closure, ENV-PROBE-V1 pre-run
+    environment closure, and §9 v3 contract with ACCP-1 boundary.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
@@ -32,10 +38,10 @@ NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
 implementation changes; governance expansion (maintenance-only).
 
 Next lawful object:
-  Fresh Human acceptance review of canonical work state 5eb1ec0. If
-  ACCEPT, EXECUTION Authorization Request v0.3 may then be drafted to
-  exact-bind FIXTURE_MANIFEST v3 and completion record v3. If REJECT or
-  REVISE, no automatic renewal or repair work is authorized.
+  Human authorization review of EXECUTION Request v0.3. If APPROVE A+B+C,
+  create EXECUTION SAR 001, IS_MUTATION SAR 001, and OBSERVER AUTHORIZATION
+  RECORD 001 separately; run the single frozen campaign and STOP for Human
+  evidence audit. If REVISE/DENY, no campaign or automatic renewal.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

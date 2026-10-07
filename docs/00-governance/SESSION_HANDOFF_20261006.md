@@ -12,10 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** Request v0.7 已获 Human 批准；
-> REVISION SAR 002 恰好消耗一个工作周期，canonical work state =
-> `5eb1ec0`。当前停点 = fresh Human acceptance review；不得把 SV PASS
-> 解释为 fixture final acceptance 或 EXECUTION 授权。
+> **当前状态（2026-10-07 override）：** FIXTURE_REVISION 002 已由 Human
+> “acceptance，继续” 接受并冻结；Acceptance Record = `d56ff1b`。当前唯一
+> active 请求 = EXECUTION Authorization Request v0.3（`1088a0c`，
+> OPENED / SUBMITTED）。EXECUTION / IS_MUTATION / Observer 均未授权。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -649,3 +649,17 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > FOR FRESH HUMAN ACCEPTANCE REVIEW, not final acceptance. EXECUTION,
 > IS_MUTATION, Observer campaign, and core claim remain NOT AUTHORIZED /
 > NOT ESTABLISHED.
+> **UPDATE 53 (2026-10-07)：Fixture REVISION 002 ACCEPTED/FROZEN；EXECUTION Request v0.3 OPENED/SUBMITTED.**
+> Human ruling exact form = “acceptance，继续”. Acceptance Record 002 is
+> canonical at `d56ff1b`; it accepts `5eb1ec0`, Manifest v3, Completion
+> Record v3, runner `875cb1d9 / bc393362`, and SV 33/33. ACCP-1
+> `current["content_address"]` pre-call gap and ACCP-2 Completion Record v2
+> wording residue are carried checkpoints, not silently erased. Request v0.3
+> is canonical at `1088a0c`, blob `a3760c8d…`, SHA256 `b63c71aa…`. It
+> replaces deferred runtime registration with deterministic adapter runtime
+> SHA256 `e88c996b…`, exact-build/toolchain verification, D-SEC-1 Option B,
+> D-SEC-2 capture pipes COVERED, ENV-PROBE-V1 pre-run environment closure,
+> full eleven-artifact bindings, and the v3 §9 field contract with ACCP-1.
+> It requests three separate cross-bound records and authorizes no stage.
+> EXECUTION, IS_MUTATION, Observer campaign, and core claim remain NOT
+> AUTHORIZED / NOT ESTABLISHED.

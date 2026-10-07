@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — FIXTURE REVISION SAR 002 WORK STATE (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXECUTION AUTHORIZATION REQUEST v0.3 (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -29,12 +29,12 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 FIXTURE_PREPARATION REVISION SAR 002 work state @ 5eb1ec0 = DELIVERED FOR FRESH HUMAN ACCEPTANCE REVIEW. Request v0.7 was approved, SAR 002 consumed exactly one work cycle, and the RF-4.5/RF-4.6/RF-4.6m repairs are canonical; final fixture closure is NOT claimed until Human acceptance.
-Current work deliverable           = FIXTURE_MANIFEST v3 (blob a715b850…, sha256 19fe1a70…) + completion record v3 + es_runner.py (blob 875cb1d9…, sha256 bc393362…); ten artifacts carried byte-identical; SV-1..SV-6 field-level revalidation = 33/33 PASS in discarded sandbox.
-Current governance track           = maintenance-only; EXECUTION / IS_MUTATION / Observer authorization NOT AUTHORIZED. RF-4.5, RF-4.6, and RF-4.6m are repaired canonically, but no acceptance or campaign authorization is inferred from SV PASS.
+Current active closure task        = SRS-REAL-CLOSURE-01 EXECUTION Authorization Request v0.3 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW. Fixture REVISION SAR 002 work state @ 5eb1ec0 is ACCEPTED / FROZEN under Human ruling “acceptance，继续”; acceptance record is @ d56ff1b.
+Current authorization request      = docs/00-governance/SRS_REAL_CLOSURE_01_EXECUTION_AUTHORIZATION_REQUEST_V0.3_20261007.md @ 1088a0c (blob a3760c8d…, sha256 b63c71aa…).
+Current governance track           = maintenance-only; EXECUTION / IS_MUTATION / Observer remain NOT AUTHORIZED. Request v0.3 exact-binds Manifest v3, Completion Record v3, eleven fixture artifacts, deterministic adapter runtime e88c996b…, D-SEC-1/D-SEC-2 closure, ENV-PROBE-V1 pre-run environment closure, and v3 §9 contract including ACCP-1 coverage boundary.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = fresh Human acceptance review of work state 5eb1ec0. If ACCEPT, the next lawful object is EXECUTION Authorization Request v0.3 exact-binding FIXTURE_MANIFEST v3 and completion record v3. If REJECT/REVISE, no automatic repair cycle may begin.
+Next dependency                    = Human authorization review of Request v0.3. If APPROVE A+B+C, create EXECUTION SAR 001, IS_MUTATION SAR 001, and OBSERVER AUTHORIZATION RECORD 001 separately, then run the single frozen campaign and STOP for evidence audit. If REVISE/DENY, no campaign or automatic renewal.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):
