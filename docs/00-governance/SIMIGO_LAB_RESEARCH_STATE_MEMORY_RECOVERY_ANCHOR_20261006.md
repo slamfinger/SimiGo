@@ -171,6 +171,16 @@ Research track:
   registered detection boundary. Broader PALACE, CarrierSQLite, arbitrary
   carrier/ES, LLM autonomy, production SimiGo, and general theorem claims
   remain NOT ESTABLISHED.
+  Human-directed Database-Carrier Replication Design Authorization Record 001
+    at e19fa0b authorizes design/schema-authority/carrier-equivalence-criteria
+    only. It freezes ES semantics/behavior, τ contracts, decision/detection
+    boundaries, IS logical content/order, and write-once/append-only
+    semantics. Authorized outputs are Design Package v0.1, database-backed IS
+    interface/schema, document-to-database mapping, equivalence/rejection
+    criteria, initialization/migration design, provenance/audit requirements,
+    and explicit non-goals. No database implementation/initialization,
+    campaign, IS mutation, runner/fixture/τ repair, or broader claim is
+    authorized.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED

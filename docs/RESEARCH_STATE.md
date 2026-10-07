@@ -112,6 +112,15 @@ Completed (canonical on main):
     C1–C4 accepted as independent bounded checks. Audit record is canonical at
     615a665. Bounded result: ES1 -> IS(SRS) -> independent ES2 lawful reuse =
     ESTABLISHED under round-1 scope. No broader claim is authorized.
+  Human-directed Database-Carrier Replication Design Authorization Record 001
+    at e19fa0b authorizes design/schema-authority/carrier-equivalence-criteria
+    only. It freezes ES semantics/behavior, τ contracts, decision/detection
+    boundaries, IS logical content/order, and write-once/append-only semantics.
+    Authorized outputs are Design Package v0.1, database-backed IS interface/
+    schema, document-to-database mapping, equivalence/rejection criteria,
+    initialization/migration design, provenance/audit requirements, and
+    explicit non-goals. No database implementation/initialization, campaign,
+    IS mutation, runner/fixture/τ repair, or broader claim is authorized.
   Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated
     records 005 at afca0d0, exact-binding post-completion commit fef0b2f.
     Campaign exec-005-fef0b2f passed step0, EPR004 exact repository/cwd/input
@@ -143,14 +152,14 @@ Completed (canonical on main):
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: campaign rerun, semantic reinterpretation, τN1/runner/fixture
-repair, EPR004 execution, EXECUTION, IS_MUTATION, Observer authorization,
-old-record reuse, implementation changes; governance expansion
-(maintenance-only).
+NOT AUTHORIZED: database implementation/initialization, campaign, semantic
+reinterpretation, τN1/runner/fixture repair, EPR004 execution, EXECUTION,
+IS_MUTATION, Observer authorization, old-record reuse, implementation changes;
+governance expansion (maintenance-only).
 
 Next lawful object:
-  No automatic follow-on stage. Future work requires a new Human-directed
-  scope/Request. The accepted finding remains bounded to round-1 instrumented
+  one scoped Database-Carrier Replication design work cycle, then STOP for
+  Human review. The accepted finding remains bounded to round-1 instrumented
   form; deterministic substrate; document-form IS; registered detection
   boundary.
 

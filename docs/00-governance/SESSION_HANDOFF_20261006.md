@@ -915,3 +915,23 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > remain NOT ESTABLISHED. Campaign budgets are consumed; no rerun, semantic
 > reinterpretation, repair, or follow-on stage is authorized without a new
 > Human-directed scope/Request.
+> **UPDATE 70 (2026-10-07)：Human directed Database-Carrier Replication Design Authorization Record 001.**
+> Human ruling exact form = “选 **Database-Carrier Replication**，但第一步
+> 只授权 **design / schema authority**，不要直接授权 execution campaign。”
+> Authorization Record 001 is canonical at `e19fa0b`, blob `e4331a94…`,
+> SHA256 `30550d0e…`. Baseline is accepted EXEC-006 bounded finding at
+> `feb0a61`. Authorized objective is a controlled carrier-substitution study
+> from document-form IS to database-backed IS while freezing ES semantics/
+> behavior, τ contracts, decision/detection boundaries, IS logical content/
+> order, and write-once/append-only semantics. Authorized outputs are Design
+> Package v0.1, database-backed IS interface/schema, document-to-database
+> mapping, equivalence/rejection criteria, initialization/migration design,
+> provenance/audit requirements, and explicit non-goals. SQLite may be
+> designed as the initial reference candidate but is not an established
+> broader claim. Forbidden: database implementation/initialization, campaign
+> execution, IS mutation, runner/fixture/τ modification, semantic
+> reinterpretation, PALACE/production/LLM integration, or broadening the
+> accepted finding. Budget: one design work cycle; execution/IS
+> mutation/observer budgets remain zero. After canonical design outputs,
+> STOP for Human review; implementation or campaign requires a new explicit
+> Human decision.
