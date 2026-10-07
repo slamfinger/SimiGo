@@ -9,7 +9,36 @@
 > **Canonical source:** GitHub `slamfinger/SimiGo-Lab@main`
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
-> **Current state update (2026-10-07):** Governance track = `AUTH-REQ-01 v0.2` pending Human authorization review; governance work is maintenance-only. Research track = `SRS-REAL-CLOSURE-01` ACTIVE RESEARCH PRIORITY / planning only. Core research gap = `ES₁ → IS(SRS) → independent ES₂ lawful reuse` — NOT ESTABLISHED.
+
+> **Current recovery override — 2026-10-07:** the Research Focus Reset supersedes
+> the older “SRS-VAL design is active” orientation. Read “Current recovery
+> status — 2026-10-07” immediately below before using any later section.
+
+## 0. Current recovery status — 2026-10-07
+
+```text
+Governance track:
+  AUTH-REQ-01 Human Authorization Request v0.2 plus IMPLEMENTATION-only Filled
+  Manifest Instance v0.2 = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW;
+  no Stage Authorization Record exists;
+  governance work is maintenance-only.
+
+Research track:
+  SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
+
+Core gap:
+  ES₁ → IS(SRS) → independent ES₂ lawful reuse
+  = NOT ESTABLISHED.
+
+Current reset artifacts:
+  docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
+  docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
+  docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
+```
+
+The older “SRS-VAL design is active” statement below is superseded by this
+status. SRS-VAL Design v0.8, Authorization Package v0.6, Implementation Boundary
+Audit v0.1, and Manifest Contract v1.0 are frozen governance infrastructure.
 
 ## 1. Canonical recovery order
 
@@ -300,25 +329,20 @@ across independent Execution States.
 
 These claims must not be inferred from R01, PIR, U-A, or RelationCore.
 
-## 9. Current active closure task
+## 9. Current governance / research tracks
+
+### 9.1 Governance track — pending Human authorization review
 
 ```text
 AUTH-REQ-01
-Human Authorization Request v0.1
+Human Authorization Request v0.2
 +
-IMPLEMENTATION-only Filled Manifest Instance v0.1
+IMPLEMENTATION-only Filled Manifest Instance v0.2
 
 Status = OPENED / SUBMITTED FOR HUMAN AUTHORIZATION REVIEW
 Requested stage set = { IMPLEMENTATION }
 Stage Authorization Record = NOT_CREATED_PENDING_HUMAN_RULING
 Authorized repository revision = eef3d24901e23b734bb887841528c0c7b4b42aa0
-
-Frozen bases =
-  SRS-VAL Design v0.8 ACCEPT / FROZEN
-  + Authorization Package v0.6 ACCEPT / FROZEN
-  + Implementation Boundary Audit v0.1 ACCEPT / FROZEN
-  + T-IMPL-01 ACCEPT / FROZEN
-  + Run/Implementation Manifest Contract v1.0 ACCEPT / FROZEN
 
 Next lawful action =
   Human authorization review of AUTH-REQ-01 v0.2; no stage authorized
@@ -330,55 +354,21 @@ Current filled manifest instance =
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMPLEMENTATION_ONLY_FILLED_MANIFEST_INSTANCE_V0.2_20261007.md
 
 Immutable bindings =
-  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMMUTABLE_BINDINGS_20261007.md
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_SRS_VAL_01_AUTH_REQ_01_IMMUTABLE_BINDINGS_V0.2_20261007.md
 ```
 
-Dependency chain:
+### 9.2 Research track — active priority
 
 ```text
-SRS-SEM-01
-  ↓
-SRS-VAL-01
-  ↓
-implementation / fixture / execution authorization package
-  ↓
-settlement contract
-  ↓
-reuse contract
-  ↓
-carrier-binding boundary
-  ↓
-minimal ES₁ → IS → ES₂ experiment design
-  ↓
-separate implementation / fixture / experiment authorization
+SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY
+STATUS = PLANNING ONLY; no implementation, fixture, execution, or IS mutation is
+authorized.
+
+Core gap:
+ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED.
+
+Critical-path artifacts:
+docs/00-governance/SIMIGO_RESEARCH_FOCUS_REORIENTATION_20261007.md
+docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_CRITICAL_PATH_V0.1_20261007.md
+docs/00-governance/SIMIGO_SRS_REAL_CLOSURE_COMMISSION_20261007.md
 ```
-
-`SRS-VAL-01` remains design-only:
-
-```text
-do not implement validation;
-do not create fixtures;
-do not run experiment;
-do not mutate IS.
-```
-
-## 10. Immediately forbidden actions
-
-```text
-do not continue SRS-VAL-01 beyond the explicitly authorized design;
-do not implement SRS-VAL-01;
-do not create SRS-VAL fixtures;
-do not run SRS-VAL experiment;
-do not create SRS fixtures;
-do not run ES₁→IS→ES₂ experiment;
-do not modify RelationCore or InformationCore;
-do not modify U-A, Manifest v1.1, UA v1.0, PB v1.2, or Frozen Contracts;
-do not reinterpret R01 / PIR / U-A as SRS-reuse proof;
-do not revive deleted branches as current state.
-```
-
-## 11. Supersession rule for old handoff text
-
-`SESSION_HANDOFF_20261006.md` contains many chronological UPDATE paragraphs.
-They are historical. If any older UPDATE conflicts with this anchor, this anchor
-and the current `docs/RESEARCH_STATE.md` restored section win.
