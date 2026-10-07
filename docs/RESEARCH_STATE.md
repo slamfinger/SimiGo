@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-004 INVALID; read-only Human evidence audit closed with bilateral fixture-runner τ interface contract defect
+> **Status:** STOPPED — EXEC-004 audit closed; corrected EXECUTION Request v0.7 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
@@ -88,22 +88,30 @@ Completed (canonical on main):
     `dependencies`, while bound τN1 runtime under-declared both. N1 D'
     addition and revision-2 mapping were absent; ESN REUSE was invalid
     derived behavior and neither semantic evidence nor refutation.
+  Human “授权新的 corrected Request / records” opened corrected Request v0.7
+    at e721f7a. It proposes one τN1 interface completion work cycle to replace
+    τN1 with exact schema SHA256 156fa091…, adding dependencies and
+    d_prime_seed_path/D' SHA256/revision; then Closure Record 005, EXECUTION
+    SAR 005, IS_MUTATION SAR 005, and OAR 005 exact-binding the post-completion
+    commit and one campaign through EPR004. No implementation or campaign is
+    authorized.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: EXECUTION rerun, IS_MUTATION, Observer authorization,
-tau/runner/fixture repair, old-record reuse, implementation changes;
-governance expansion (maintenance-only).
+NOT AUTHORIZED: τN1 modification, EXECUTION rerun, IS_MUTATION, Observer
+authorization, tau/runner/fixture repair beyond the proposed scoped completion,
+old-record reuse, implementation changes; governance expansion
+(maintenance-only).
 
 Next lawful object:
-  Human decision whether to authorize a corrected Request/records. A future
-  correction must address explicit τN1 interface schema, mutate-n1 required
-  fields including D' binding/dependency ID source, preflight τ field
-  validation, and the still-open `_001/V1` cross-binding finding if in scope.
-  No rerun, tau/runner/fixture repair, old-record reuse, environment
-  normalization, IS mutation, or observer action is authorized before that.
-  Core claim remains NOT ESTABLISHED.
+  Human authorization review of Request v0.7. If APPROVE T+E, execute the
+  scoped τN1 completion, then instantiate records 005 exact-binding the
+  post-completion commit and run one frozen campaign through EPR004. If
+  APPROVE T ONLY, stop after τ completion. If REVISE/DENY, no completion or
+  campaign. No unrequested τ modification, rerun, old-record reuse,
+  environment normalization, IS mutation, or observer action is authorized
+  before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

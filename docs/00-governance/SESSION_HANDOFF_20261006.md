@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** EXEC-004 Human evidence audit 已关闭，
-> canonical audit = `df508d4`。Ruling =
-> `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT`（shared/bilateral）。
-> N1 mutation 未发生；ESN REUSE 是 invalid derived behavior。当前停点 =
-> Human decision 是否授权 corrected Request/records；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.7 已
+> 开启并提交审查：`e721f7a`。EXEC-004 audit closed，root cause =
+> bilateral fixture-runner τ interface contract defect。v0.7 提议先完成
+> scoped τN1 interface，再实例化 records 005 和 corrected campaign。当前停点
+> = Human authorization review；不得未经批准修改 τ、创建 records 或运行。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -805,3 +805,17 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > dependency ID source, preflight τ field validation, and the open
 > `_001/V1` cross-binding finding if in scope. Core claim remains NOT
 > ESTABLISHED.
+> **UPDATE 63 (2026-10-07)：Human authorized corrected Request；EXECUTION Request v0.7 OPENED/SUBMITTED.**
+> Human ruling exact form = “授权新的 corrected Request / records”. This
+> opened Request v0.7 only; it did not approve T+E, modify τN1, create
+> records, execute EPR004, or revive budgets. Request v0.7 is canonical at
+> `e721f7a`, blob `e04a1219…`, SHA256 `fa393cab…`. It supersedes consumed
+> v0.6/records 004 and closes the bilateral τ interface defect by proposing
+> one scoped τN1 interface completion work cycle. Completed τN1 schema is
+> exact-bound at SHA256 `156fa091…`, adding `dependencies` and
+> `d_prime_seed_path` / D' SHA256 / revision. Manifest/Completion advance
+> solely to v4 for rebinding. If approved, T+E creates Completion SAR/Record
+> 005, then Closure Record 005, EXECUTION SAR 005, IS_MUTATION SAR 005, and
+> OAR 005 exact-binding the post-completion commit; run one frozen campaign
+> through EPR004 and STOP. APPROVE T ONLY stops after completion. No stage is
+> authorized; core claim remains NOT ESTABLISHED.

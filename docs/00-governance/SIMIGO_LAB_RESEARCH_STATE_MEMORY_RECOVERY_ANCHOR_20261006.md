@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** EXEC-004 Human evidence audit at
-> df508d4 supersedes generic INVALID-evidence state. Root cause is a bilateral
-> fixture-runner τ interface contract defect; N1 mutation never occurred and
-> ESN REUSE was invalid derived behavior. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Corrected Request v0.7 at
+> e721f7a supersedes the EXEC-004 audit-closed state. It proposes scoped τN1
+> interface completion plus a separately instantiated corrected campaign; no
+> implementation is authorized yet. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-004 audit closure)
+## 0. Current recovery status — 2026-10-07 (updated after Request v0.7 opening)
 
 ```text
 Governance track:
@@ -106,19 +106,27 @@ Governance track:
     `dependencies`, while bound τN1 runtime under-declared both. N1 D'
     addition and revision-2 mapping were absent; ESN REUSE was invalid
     derived behavior and neither semantic evidence nor refutation.
+    Human “授权新的 corrected Request / records” opened Request v0.7 at
+    e721f7a. It proposes one scoped τN1 interface completion work cycle:
+    replace τN1 with exact schema SHA256 156fa091…, adding dependencies and
+    d_prime_seed_path/D' SHA256/revision; update Manifest/Completion solely
+    for rebinding; then create Closure Record 005, EXECUTION SAR 005,
+    IS_MUTATION SAR 005, and OAR 005 exact-binding the post-completion commit
+    and run one campaign through EPR004. No implementation or campaign is
+    authorized yet.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human decision whether to authorize a corrected
-  Request/records. A future correction must address explicit τN1 interface
-  schema, mutate-n1 required fields including D' binding/dependency ID source,
-  preflight τ field validation, and the still-open `_001/V1` cross-binding
-  finding if in scope. No rerun, tau/runner/fixture repair, old-record reuse,
-  environment normalization, IS mutation, or observer action is authorized
-  before that. Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human authorization review of Request v0.7. If APPROVE
+  T+E, execute scoped τN1 completion, instantiate records 005 exact-binding
+  the post-completion commit, run one frozen campaign through EPR004, and
+  STOP for evidence audit. If APPROVE T ONLY, stop after completion. If
+  REVISE/DENY, no completion or campaign. No unrequested τ modification,
+  rerun, old-record reuse, environment normalization, IS mutation, or observer
+  action is authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
