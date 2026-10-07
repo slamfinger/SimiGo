@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-003 audit closed; corrected EXECUTION Request v0.6 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — EXEC-004 INVALID at post-sequence audit; evidence canonical at 4238529; awaiting Human evidence audit / next-authorization decision
 
 ```text
 Completed (canonical on main):
@@ -73,22 +73,28 @@ Completed (canonical on main):
     contained D/D' input resolution and SHA256 checks, executable identity,
     argv/process facts, and fail-closed required outputs. Cross-binding record
     004 maps `_001/V1` to OAR 004/CHANNEL-UNIVERSE-V2 without runner change.
+  Human APPROVE A+B+C instantiated Closure Record 004, EXECUTION SAR 004,
+    IS_MUTATION SAR 004, and OBSERVER AUTHORIZATION RECORD 004 at b80c17a,
+    all exact-binding execution commit 9966d31. Campaign exec-004-9966d31
+    passed step0, EPR004 exact cwd/input/provenance enforcement, adapter
+    e88c996b, and environment identity ad2abb68. Materialize, es1, and es2
+    passed; es2 observed REUSE. But mutate-n1 failed `KeyError:
+    d_prime_seed_path`; D' mutation/revision-2 mapping was absent; ESN
+    invalidly returned REUSE rather than BLOCK. Evidence is canonical at
+    4238529.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
 NOT AUTHORIZED: EXECUTION rerun, IS_MUTATION, Observer authorization,
-EPR004 implementation/execution, runner/fixture repair, old-record reuse,
-implementation changes; governance expansion (maintenance-only).
+tau/runner/fixture repair, old-record reuse, implementation changes;
+governance expansion (maintenance-only).
 
 Next lawful object:
-  Human authorization review of Request v0.6. If APPROVE A+B+C, create
-  Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004, and OBSERVER
-  AUTHORIZATION RECORD 004 exact-binding 9966d31; run one frozen campaign
-  through EPR004 and STOP for evidence audit. No rerun, EPR004 implementation
-  or execution, runner repair, fixture repair, old-record reuse, environment
-  normalization, IS mutation, or observer action is authorized before that.
-  Core claim remains NOT ESTABLISHED.
+  Human audit of INVALID evidence and explicit choice whether to authorize a
+  new corrected Request/records. No rerun, tau/runner/fixture repair,
+  old-record reuse, environment normalization, IS mutation, or observer action
+  is authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

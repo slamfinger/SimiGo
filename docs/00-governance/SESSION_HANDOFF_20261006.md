@@ -12,10 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.6 已
-> 开启并提交审查：`8704c75`。EXEC-003 audit closed，两个机械缺陷已归因；
-> 当前停点 = Human authorization review。不得创建 SAR/OAR、实施 EPR004、
-> rerun、repair 或重用旧 records。
+> **当前状态（2026-10-07 override）：** Request v0.6 已获 `APPROVE A+B+C`；
+> 四条 004 records canonical @ `b80c17a`。Campaign `exec-004-9966d31` 已在
+> post-sequence audit INVALID/STOP；evidence @ `4238529`。当前停点 = Human
+> evidence audit / next-authorization decision；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -770,3 +770,20 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004, and OAR 004,
 > then run one frozen campaign through EPR004 and STOP. No stage is
 > authorized; core claim remains NOT ESTABLISHED.
+> **UPDATE 61 (2026-10-07)：Request v0.6 APPROVED；four records instantiated；EXEC-004 = INVALID.**
+> Human ruling exact form = “批准APPROVE A+B+C”. Four records were canonical
+> at `b80c17a`: Provenance/Binding Closure Record 004, EXECUTION SAR 004,
+> IS_MUTATION SAR 004, and OAR 004; all exact-bound execution commit
+> `9966d31`. Campaign `exec-004-9966d31` used a detached exact checkout.
+> Step0, EPR004 exact cwd/repository/input/provenance enforcement, adapter
+> `e88c996b`, and corrected environment identity `ad2abb68` passed.
+> Materialize, es1, and es2 passed; es2 observed the pre-registered REUSE.
+> However, mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation and
+> revision-2 mapping were absent; ESN subsequently invalidly returned REUSE
+> rather than BLOCK. Observer bounded checks passed, but campaign is INVALID
+> because the frozen sequence did not complete. Evidence is canonical at
+> `4238529`. Execution, observer, and partial IS campaign budgets are
+> consumed; automatic renewal forbidden. Positive REUSE is not campaign
+> evidence; hypothesis is neither supported nor refuted; core claim remains
+> NOT ESTABLISHED. Next requires Human evidence audit and a new explicit
+> authorization decision.

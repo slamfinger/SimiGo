@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Corrected Request v0.6 at
-> 8704c75 supersedes the EXEC-003 audit-closed waiting state. The two
-> accepted mechanical defects remain closed attribution, but no correction is
-> implemented. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Invalid EXEC-004 evidence at
+> 4238529 supersedes Request v0.6 waiting state. EPR004 provenance closure
+> succeeded; campaign stopped INVALID at mutate-n1 τ binding. The Research
+> Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.6 opening)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-004 INVALID evidence)
 
 ```text
 Governance track:
@@ -92,19 +92,25 @@ Governance track:
     identity/argv/process facts, and fail-closed outputs. Cross-binding
     record 004 maps `_001/V1` to OAR 004/V2 without runner modification. It
     requests four new records and one new budget only after approval.
+    Human APPROVE A+B+C instantiated Closure Record 004, EXECUTION SAR 004,
+    IS_MUTATION SAR 004, and OAR 004 at b80c17a, all exact-binding execution
+    commit 9966d31. Campaign exec-004-9966d31 passed step0, EPR004 exact
+    cwd/input/provenance enforcement, adapter e88c996b, and environment
+    identity ad2abb68. Materialize, es1, and es2 passed; es2 observed REUSE.
+    mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation/revision-2
+    mapping was absent; ESN invalidly returned REUSE rather than BLOCK.
+    Evidence is canonical at 4238529.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human authorization review of Request v0.6. If APPROVE
-  A+B+C, create Closure Record 004, EXECUTION SAR 004, IS_MUTATION SAR 004,
-  and OBSERVER AUTHORIZATION RECORD 004 exact-binding 9966d31; run one frozen
-  campaign through EPR004 and STOP for Human evidence audit. No rerun, EPR004
-  implementation or execution, runner modification, fixture repair,
-  old-record reuse, environment normalization, IS mutation, or observer action
-  is authorized before that. Core claim remains NOT ESTABLISHED.
+  Next lawful object = Human audit of INVALID evidence and explicit decision
+  whether to authorize a new corrected Request/records. No rerun, tau/runner/
+  fixture repair, old-record reuse, environment normalization, IS mutation, or
+  observer action is authorized before that. Core claim remains NOT
+  ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
