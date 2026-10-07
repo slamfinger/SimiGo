@@ -2,11 +2,88 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-07
+**Last updated**: 2026-10-08
 
-## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
+## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — E3 Human Evidence Audit CLOSED; raw O0–O5 sequence
+> accepted as fact, but campaign remains INVALID / NON-ADJUDICATIVE. No
+> repair, rerun, fourth-campaign drafting, or automatic follow-on is
+> authorized.
+
+```text
+Canonical stop:
+  b19bab444993eabbb146230c3c1fdf39eb987f41
+
+Accepted baselines:
+  EXEC-006 bounded document-form finding = feb0a61…;
+  Database-Carrier Design Package v0.1   = 21acba4…;
+  corrected implementation              = 7392fcb…;
+  accepted fresh empty DB SHA256 =
+    6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d.
+
+Database-carrier campaign history:
+  EXEC-DB-001    INVALID before mutation (working DB binding defect);
+  EXEC-DB-002    INVALID before mutation (observation path defect);
+  EXEC-DB-003    executed raw O0–O5, then INVALID at post-O5 observer
+                 verdict persistence.
+
+E3 exact governance chain:
+  Request v1.5                       = 0798228…;
+  R2 + conditional E3 authorization  = 9119530…;
+  evidence-path release review       = 712aee5…;
+  E3 execution authorization         = 1163eb1…;
+  exact execution base               = c6c8b6f…;
+  authoritative path map SHA256 =
+    b1adc52cdfb152f17d941d6214d24f393bdfc2fcdd9a7858bd37fe9c0b27ebb7.
+
+E3 result:
+  evidence commit = 1ac081b…;
+  audit commit    = b19bab4…;
+  29/29 evidence-path preflight destinations PASS;
+  O0 logical state      = 0 objects / 0 index / 0 dependencies;
+  O5 logical state      = 4 objects / 2 index / 2 dependencies;
+  SQLite integrity      = OK;
+  ES2 raw output        = REUSE / REUSE_PATH;
+  ESN raw output        = BLOCK / BLOCKED_NON_RECOMPUTE_PATH;
+  observer_verdict.json = ABSENT;
+  stop code             = CAMPAIGN_OBSERVER_VERDICT_KEY_BINDING_DEFECT;
+  root cause class =
+    HARNESS_POST_SEQUENCE_EVIDENCE_KEY_BINDING_DEFECT.
+
+Evidence disposition:
+  raw O0–O5 facts                = ACCEPTED;
+  raw ES2 REUSE                  = NON-AUTHORITATIVE;
+  raw ESN BLOCK                  = NON-AUTHORITATIVE;
+  EQ-1..EQ-8 adjudication        = NOT ESTABLISHED;
+  REJ-1..REJ-14 adjudication     = NOT ESTABLISHED;
+  CarrierSQLite equivalence      = NOT ESTABLISHED;
+  broader SimiGo/ES claim        = NOT ESTABLISHED.
+
+Budgets:
+  database equivalence campaigns 001, 002 and 003 = CONSUMED;
+  associated IS-mutation/observer budgets         = CONSUMED;
+  harness repair                                  = NOT AUTHORIZED;
+  rerun                                           = NOT AUTHORIZED;
+  automatic renewal                               = FORBIDDEN;
+  old campaign/evidence reuse                     = FORBIDDEN.
+
+Next lawful object:
+  explicit Human decision to authorize a new independently budgeted
+  Request scoped to post-O5 observer/evidence persistence closure and a
+  potential fourth frozen campaign. This state does not authorize drafting
+  that Request or any implementation work.
+
+Authoritative path map:
+  database-carrier-replication/campaign/EVIDENCE_PATH_BINDING_MANIFEST.json.
+
+Primary evidence:
+  docs/02-evidence/database-carrier-equivalence-campaign-v1.5-20261008.
+```
+
+## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
+
+> **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
 
 ```text
 Completed (canonical on main):
