@@ -114,21 +114,20 @@ D-SEC-1 (§6.2 choice, for EXECUTION Request v0.3):
   evidence, permanently for this campaign. The campaign makes NO
   §6-authoritative observation claim; the Observer Authorization Record's
   authorized_observation_scope is exactly "supplemental evidence
-  re-derivation (post-exit)"; the §10 joint gate is satisfied by a valid
-  record FOR THAT DECLARED SCOPE, with the observation-class limitation
-  carried by every claim. A §6-compliant prebound tamper-resistant OIB
+  re-derivation (post-exit)". A §6-compliant prebound tamper-resistant OIB
   remains the prerequisite for any stronger-form reuse claim (carrier
-  form, P3 Reality Mapping).
+  form, P3 Reality Mapping); the §10 joint-gate items that require
+  authoritative observation are NOT CLAIMED in round 1 (see BINDING
+  SEMANTICS below).
   Rationale: Option A would require redesigning the instrument mid-stream
   (watcher channels, sentinel coordination) against the minimality
   doctrine and against the ACCEPTED Design v0.2 §6, which specifies the
   post-exit observer; B is consistent with the accepted design and with
   §6.2's own vocabulary (subject self-logs supplementary; here the entire
   round-1 observation is declared supplemental-class).
-  CORRECTION (Human ruling on the register, 2026-10-07 — wording binding
-  for EXECUTION Request v0.3): the earlier sentence "the §10 joint gate is
-  satisfied by a valid record FOR THAT DECLARED SCOPE" is REJECTED. The
-  strict semantics are: Observer Authorization Record 001 = valid
+  BINDING SEMANTICS (Human rulings of 2026-10-07; an earlier draft wording
+  claiming §10-gate satisfaction via a scoped record was REJECTED and
+  REMOVED from this register): Observer Authorization Record 001 = valid
   SUPPLEMENTAL-observation authorization, NOT a §6 authoritative
   Observation Integrity Boundary; a post-exit observer is not a
   §6-compliant observer; the round-1 bounded claim may use supplemental
