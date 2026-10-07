@@ -1,0 +1,1 @@
+{"consumed_srs_identity":"5e01d6ce03526c6ba6bf988a9caf6505af169c3155fe7bf4716ea717f893de8f","continuation_output":"cb59e0f52f7ce1e6d4d08b0c76280ed140f80af626faf012672b1cb0006a4eb6","continuation_record":"CR-ES2-r2","delta_procedure":"sha256(result_digest || task_nonce)"}

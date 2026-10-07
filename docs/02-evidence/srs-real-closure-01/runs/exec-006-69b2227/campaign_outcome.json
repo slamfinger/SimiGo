@@ -1,0 +1,102 @@
+{
+  "artifact_sha256": {
+    "driver-events.jsonl": "b54459208716241dc748adb3cf35c08a527e4e8ef2faabb4cce5c226f1ab095f",
+    "environment_measurement.json": "a10eafdef13d6f9f25e84a8d11d2038f6242aa24490dd1c1bbe48e6a0a0d7812",
+    "es1-events.jsonl": "79f23a5bcd9c3354ff09b3f9f1a0db1ec68484ccca344c23ed14a127ddfb4a83",
+    "es2-events.jsonl": "e4ad2718336e3a9043af193b2359e52d332449d871c7cdf385e3e20ca3cbae85",
+    "esn-events.jsonl": "4c792b12cf330d8f1d580537835f71f87fd914d690e4ad481b9bb5fa237b1a29",
+    "execution_provenance.json": "497a9dee538c031631c1065d0e6670615462489b6f598c3c34ae6b1a9c5bf083",
+    "invocation_graph-es2.json": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1",
+    "invocation_graph-esn.json": "315816a7d10c776641fa011210cc301ff483899a5e1bf54ac7e8a7b42287049c",
+    "is/current/dependencies.jsonl": "0d958cbfdac47a5a63c53dd3448b33119c04d4d70b1865a8601deb449adf997b",
+    "is/index.jsonl": "4eb0cc7101c9f6bafd6cc68e96630199c2a3442be887a14632f92d086e82809f",
+    "is/objects/1703f2d664c58d4fe88032b7b3750ab885522c1a5a73e04570be108f7c6bf026": "1703f2d664c58d4fe88032b7b3750ab885522c1a5a73e04570be108f7c6bf026",
+    "is/objects/26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9": "26025863df8311f536b067718e8c8466fb9dafa7924c629429e6766f2926c3f9",
+    "is/objects/806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c": "806fffadef09d3ad491d75c6b42738e99626ee1961ed1aecf2d593aefd55980c",
+    "is/objects/8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955": "8553f52449b67de21021bb50ad6380c455bf686ee2a06cc77ed51e9f30060955",
+    "materialize-events.jsonl": "3c13556e60701adcf76973daada03875e043e75737636d14501564b5a12c1c31",
+    "mutate-n1-events.jsonl": "7c9bea463a899fb1eac31ea73e47ed2aa1953a654c56aad32817e546e8e654c8",
+    "observer_verdict.json": "de21064e41bd1f6fdde074517c8933aee08b77373407d9ebcc8aec196ac53459",
+    "provenance_plan.json": "2b4753c81d37c69320df4059956cf0c70f86bf4f3678ae182788a96141208445",
+    "runtime_binding.json": "8239a272aa30274a95de5c6a2ab0e1567fad6c37936f26fad7e2daf6f0047928",
+    "step0_verification.json": "9dc8c8a6a0a76934cd4d21940216f469a54cfbe5799c123e0a128b50faa20c1e",
+    "tau2-runtime.json": "260fd15c41c07b712b6ed11ae55be84a68fdcc56327a5c5560050dbaec3e2570",
+    "tauN1-runtime.json": "b2ccac61a1f38fee4a0402eb52e86d3f7ccd792a955743c8fab59f28cd5f47e8"
+  },
+  "authorization": {
+    "execution_sar": "SRS_REAL_CLOSURE_01_SAR_EXECUTION_006",
+    "is_mutation_sar": "SRS_REAL_CLOSURE_01_SAR_IS_MUTATION_006",
+    "observer_authorization_record": "SRS_REAL_CLOSURE_01_OBSERVER_AUTHORIZATION_RECORD_006",
+    "provenance_binding_closure_record": "SRS_REAL_CLOSURE_01_EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_006",
+    "records_commit": "1224535eacd2a61b041181da67a3efba166110b6",
+    "request_commit": "51e6fd80a6435d566ba2a06ddd814e0945c46fce",
+    "request_sha256": "01f55dc164e6980b5dec8edf1a067fe57bc37219387126f6fb7565995cc06afe",
+    "schema_alignment_record": "SRS_REAL_CLOSURE_01_TAU_N1_INTERFACE_SCHEMA_ALIGNMENT_RECORD_006"
+  },
+  "boundary": {
+    "observer_evidence": "bounded supplemental re-derivation; NOT authoritative OIB",
+    "repair_requires_new_human_authorization": true,
+    "results_interpretable_for_core_claim": true
+  },
+  "bounded_semantic_result": {
+    "claim": "ES1 -> IS(SRS) -> independent ES2 lawful reuse = ESTABLISHED",
+    "human_evidence_audit": "PENDING",
+    "scope": "round-1 instrumented form; deterministic substrate; document-form IS; registered detection boundary"
+  },
+  "evidence_chain": {
+    "E1_established": true,
+    "E2_established": true,
+    "E3_established": true,
+    "E4_established": true,
+    "E5_established": true,
+    "E6_established": true,
+    "N1_BLOCK_established": true
+  },
+  "exact_execution_repository_commit": "69b2227dbd9ec7bfc8ad744d65efe46e3a9ab33a",
+  "ledger_counts": {
+    "ES1_U_entries": 1,
+    "ES2_U_entries": 0,
+    "ESN_U_entries": 0
+  },
+  "outcome": "VALID",
+  "provenance": {
+    "driver_command_ok": true,
+    "driver_returncode": 0,
+    "exact_cwd_enforced": true,
+    "exact_repository_commit_enforced": true,
+    "input_bindings_verified": true,
+    "manifest": "execution_provenance.json",
+    "observer_command_ok": true,
+    "observer_returncode": 0,
+    "overall_ok": true,
+    "recorder_identity": "SRS-REAL-CLOSURE-01-EXECUTION_PROVENANCE_RECORDER_004",
+    "recorder_sha256": "c0aff998aabada80c87d6eec1cebdf35292e16f455e72389ec36e71ea99ee262",
+    "required_artifacts_verified": true
+  },
+  "run_id": "exec-006-69b2227",
+  "semantic_sequence": {
+    "es1": "PASS",
+    "es2": "PASS",
+    "es2_continuation_completed": true,
+    "es2_decision_path": "REUSE_PATH",
+    "es2_expected_decision": "REUSE",
+    "es2_expected_vs_actual_match": true,
+    "es2_primary_decision": "REUSE",
+    "esn": "PASS",
+    "esn_decision_path": "BLOCKED_NON_RECOMPUTE_PATH",
+    "esn_expected_decision": "BLOCK",
+    "esn_expected_vs_actual_match": true,
+    "esn_primary_decision": "BLOCK",
+    "esn_typed_failures": [
+      "HARD_BLOCK.dependencyUnresolved(D-1)",
+      "HARD_BLOCK.dependencyBlockingInvalidation(D-1)"
+    ],
+    "materialize": "PASS",
+    "mutate_n1": "PASS",
+    "n1_D_prime_object_created": true,
+    "n1_revision_2_mapping_written": true
+  },
+  "step0": "PASS",
+  "stop_code": "CAMPAIGN_VALID_EVIDENCE_COMPLETE",
+  "stop_point": "POST_FROZEN_SEQUENCE_EVIDENCE_AUDIT_HANDOFF"
+}
