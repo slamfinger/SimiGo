@@ -12,11 +12,11 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** Request v0.7 已获 `APPROVE T+E`；
-> τN1 interface completion canonical @ `fef0b2f`，records 005 canonical @
-> `afca0d0`。Campaign `exec-005-fef0b2f` 已在 post-sequence audit
-> INVALID/STOP；evidence @ `5c5fcc4`。当前停点 = Human evidence audit /
-> next-authorization decision；不得 rerun 或 repair。
+> **当前状态（2026-10-07 override）：** EXEC-005 schema authority audit 已关
+> 闭，canonical audit = `9616133`。Ruling =
+> `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`（shared/bilateral）。Campaign 仍
+> INVALID/STOP；当前停点 = Human decision 是否授权 corrected
+> Request/records；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -838,3 +838,21 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > incomplete; N1 BLOCK absent; hypothesis neither supported nor refuted; core
 > claim remains NOT ESTABLISHED. Next requires Human evidence audit and a new
 > explicit authorization decision.
+> **UPDATE 65 (2026-10-07)：EXEC-005 schema authority forensic audit CLOSED；root cause = shared/bilateral TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE.**
+> Read-only audit is canonical at `9616133`, blob `2cec807c…`, SHA256
+> `b77d4d41…`. Exact runner consumes top-level `d_prime_seed_path` and
+> `dependencies[0].dependency_id`; completed Request v0.7 τN1 schema instead
+> placed `d_prime_seed_path` under `dependencies[0]`. History shows original
+> fixture preparation `d6507ff` introduced both sides simultaneously. No
+> Design/Manifest/fixture Request/completion record declared an authoritative
+> τN1 interface schema. Therefore Candidate C is accepted: responsibility is
+> shared/bilateral, and one-sided Request-schema or runner-defect attribution
+> is rejected. Campaign remains INVALID; semantic experiment partially
+> launched but not validly completed; ES2 REUSE is not campaign evidence;
+> N1 mutation/BLOCK absent; E1–E6 incomplete; hypothesis neither supported
+> nor refuted; core claim remains NOT ESTABLISHED. Execution/observer/partial
+> IS budgets consumed; no rerun, τN1 repair, runner repair, fixture repair, or
+> automatic next Request authorized. Next lawful object is Human decision
+> whether to authorize a corrected Request/records that first establishes an
+> authoritative τN1 interface schema, reconciles it with exact runner
+> consumption, and adds fail-closed schema validation.

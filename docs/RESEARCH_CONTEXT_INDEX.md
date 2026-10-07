@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — EXEC-005 INVALID EVIDENCE (2026-10-07)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT AT MAIN — EXEC-005 SCHEMA AUTHORITY AUDIT CLOSED (2026-10-07)` — always verify current `main` dynamically.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
@@ -37,10 +37,11 @@ Current authorization request      = CORRECTED EXECUTION Request v0.7 @ e721f7a 
 Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-005-fef0b2f` = INVALID at post-sequence audit. Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated records 005 at afca0d0. Step0, EPR004 exact cwd/repository/input enforcement, adapter e88c996b…, and environment identity ad2abb68… passed. Materialize/es1/es2 REUSE passed, but mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE instead of BLOCK.
 Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/EXECUTION_EVIDENCE_PACKAGE.md. EPR004 manifest overall_ok=false solely because driver returncode=1; exact cwd/repository/input/artifact provenance succeeded.
 Current failure class             = `TAU_N1_D_PRIME_FIELD_PLACEMENT_MISMATCH`. Completed τN1 placed D' fields under `dependencies[0]`, while exact runner expects top-level `d_prime_seed_path`. This is residual bilateral τ interface mismatch, not runtime drift, EPR004 failure, or semantic refutation.
-Current governance track           = STOPPED FOR HUMAN EVIDENCE AUDIT / NEXT-AUTHORIZATION DECISION. No rerun, τN1 repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. v0.3–v0.7 opportunities, budgets, and records 001–005 remain consumed/non-reusable; automatic renewal forbidden.
+Current forensic audit            = 9616133 (blob 2cec807c…, sha256 b77d4d41…) = CLOSED. Ruling = `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`, shared/bilateral. Original fixture preparation introduced both exact runner top-level consumption and τN1 without that field; no Design/Manifest/Request/completion record declared an authoritative τN1 schema. One-sided Request-schema or runner-defect attribution is rejected.
+Current governance track           = AWAITING HUMAN DECISION whether to authorize a corrected Request/records. No rerun, τN1 repair, runner repair, fixture repair, EXECUTION, IS_MUTATION, or Observer action is authorized. v0.3–v0.7 opportunities, budgets, and records 001–005 remain consumed/non-reusable; automatic renewal forbidden.
 Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
-Next dependency                    = Human evidence audit of EXEC-005 and explicit choice whether to authorize a further corrected Request/records. There is no automatic rerun, τN1 repair, or governance-text repair. Core claim remains NOT ESTABLISHED.
+Next dependency                    = Human decision whether to authorize a corrected Request/records. Any future correction must first establish an authoritative τN1 interface schema, reconcile it with exact runner consumption, and add fail-closed schema validation. No automatic rerun or governance-text repair. Core claim remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
 Branch topology (final cleanup verified 2026-10-06):

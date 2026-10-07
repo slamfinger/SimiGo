@@ -10,14 +10,14 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Invalid EXEC-005 evidence at
-> 5c5fcc4 supersedes Request v0.7 waiting state. EPR004 provenance closure
-> succeeded; campaign stopped INVALID at residual τ field-placement mismatch.
-> The Research Focus Reset
+> **Current recovery override — 2026-10-07:** EXEC-005 schema authority audit
+> at 9616133 supersedes generic INVALID-evidence state. Root cause is shared/
+> bilateral `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`; no authoritative τN1
+> schema existed. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after EXEC-005 INVALID evidence)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-005 schema authority audit)
 
 ```text
 Governance track:
@@ -123,17 +123,23 @@ Governance track:
     nested D' fields under dependencies[0] while runner expected top-level;
     D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE
     instead of BLOCK. Evidence is canonical at 5c5fcc4.
+    Read-only schema authority forensic audit 9616133 closed responsibility as
+    shared/bilateral `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`. Original
+    fixture preparation introduced both exact runner top-level consumption and
+    τN1 without that field; no authoritative τN1 interface schema existed.
+    One-sided Request-schema or runner-defect attribution is rejected.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human evidence audit of EXEC-005 and explicit decision
-  whether to authorize a further corrected Request/records. No rerun, τN1
-  repair, runner/fixture repair, old-record reuse, environment normalization,
-  IS mutation, or observer action is authorized before that. Core claim
-  remains NOT ESTABLISHED.
+  Next lawful object = Human decision whether to authorize a corrected
+  Request/records. Any future correction must first establish an authoritative
+  τN1 interface schema, reconcile it with exact runner consumption, and add
+  fail-closed schema validation. No rerun, τN1 repair, runner/fixture repair,
+  old-record reuse, environment normalization, IS mutation, or observer action
+  is authorized before that. Core claim remains NOT ESTABLISHED.
 
 Core gap:
   ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
