@@ -12,11 +12,10 @@
 > relation 成为独立 ES₂ 的合法、可验证、可复用计算状态，只计算真正 Δ，并在
 > dependency invalid 时 block / recompute。
 >
-> **当前状态（2026-10-07 override）：** corrected EXECUTION Request v0.5 已
-> 开启并提交审查：`888a6a7`。EXEC-001/EXEC-002 audits closed；semantic
-> campaign 未运行。v0.5 保留 execution state `9966d31`，新增 exact-artifact
-> provenance recorder 和 cross-binding closure。当前停点 = Human
-> authorization review。不得创建 SAR/OAR 或重用旧 records。
+> **当前状态（2026-10-07 override）：** Request v0.5 已获 `APPROVE A+B+C`；
+> 四条 003 records canonical @ `bda7829`。Campaign `exec-003-9966d31` 已在
+> driver 后 INVALID/STOP；evidence @ `a50ff8b`。当前停点 = Human evidence
+> audit / next-authorization decision；不得 rerun 或 repair。
 >
 > **当前唯一 active closure task：**
 > `SRS-SEM-01 Minimal Settled Relation State Semantic Boundary`
@@ -721,3 +720,20 @@ U-2、Unified benchmark、backend selection、migration 均未授权；
 > runner modification. If approved, create four records and one new campaign
 > budget, then run one frozen campaign through the recorder and STOP. No stage
 > is authorized; core claim remains NOT ESTABLISHED.
+> **UPDATE 58 (2026-10-07)：Request v0.5 APPROVED；four records instantiated；EXEC-003 = INVALID.**
+> Human ruling exact form = “批准APPROVE A+B+C”. Four records were canonical
+> at `bda7829`: Provenance/Binding Closure Record 003, EXECUTION SAR 003,
+> IS_MUTATION SAR 003, and OAR 003; all exact-bound execution commit
+> `9966d31`. Campaign `exec-003-9966d31` used a detached exact checkout.
+> Step0, adapter `e88c996b`, and corrected environment identity `ad2abb68`
+> passed. EPR003 launched driver, but materialize emitted only
+> `process_start` and exited 1: provenance plan used host repository root as
+> cwd while exact execution state was the detached worktree, so
+> `fixture/inputs/D.md` resolved against the wrong tree; no IS write occurred.
+> EPR003 then failed writing its manifest because plan `output_path` was the
+> run directory rather than a JSON file. Stop classes:
+> `EXECUTION_PROVENANCE_RECORDER_OUTPUT_PATH_INVALID` primary and
+> `CAMPAIGN_CWD_SEED_PATH_MISMATCH` secondary. Evidence is canonical at
+> `a50ff8b`. Execution/provenance budgets consumed; IS mutation and observer
+> budgets unconsumed; no rerun or repair authorized; core claim remains NOT
+> ESTABLISHED.

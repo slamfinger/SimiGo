@@ -6,7 +6,7 @@
 
 ## Execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
-> **Status:** STOPPED — EXEC-001/EXEC-002 audits closed; corrected EXECUTION Request v0.5 OPENED/SUBMITTED, no stage authorized
+> **Status:** STOPPED — EXEC-003 INVALID after driver launch; evidence canonical at a50ff8b; awaiting Human evidence audit / next-authorization decision
 
 ```text
 Completed (canonical on main):
@@ -53,21 +53,27 @@ Completed (canonical on main):
     runner _001/V1 constants to OAR 003/CHANNEL-UNIVERSE-V2 without runner
     modification. It requests four new records and a new budget only after
     approval.
+  Human APPROVE A+B+C instantiated four records 003 at bda7829, all
+    exact-binding execution commit 9966d31. Campaign exec-003-9966d31 passed
+    step0, adapter e88c996b, and environment identity ad2abb68; EPR003
+    launched driver, but materialize exited 1 because repository-relative
+    tau seed path resolved against host root. EPR003 then failed writing its
+    manifest because plan output_path was the run directory. Evidence is
+    canonical at a50ff8b.
   Defect Register D-1..D-9 closed or carried (three-layer audit lesson:
     authorization closure → channel closure → actual runner semantics —
     governance text cannot repair instrument semantics).
 
-NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization;
-implementation changes; governance expansion (maintenance-only).
+NOT AUTHORIZED: EXECUTION rerun, IS_MUTATION, Observer authorization,
+recorder/runner/fixture repair, implementation changes; governance expansion
+(maintenance-only).
 
 Next lawful object:
-  Human authorization review of Request v0.5. If APPROVE A+B+C, create
-  EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_003, EXECUTION SAR 003,
-  IS_MUTATION SAR 003, and OBSERVER AUTHORIZATION RECORD 003 exact-binding
-  9966d31; run one frozen campaign through the provenance recorder and STOP
-  for evidence audit. No rerun, old-record reuse, environment normalization,
-  fixture repair, runner modification, IS mutation, or observer action is
-  authorized before that. Core claim remains NOT ESTABLISHED.
+  Human audit of INVALID evidence and explicit choice whether to authorize a
+  new corrected Request/records. No rerun, recorder repair, runner repair,
+  fixture repair, old-record reuse, environment normalization, IS mutation, or
+  observer action is authorized before that. Core claim remains NOT
+  ESTABLISHED.
 
 Core gap: ES₁ → IS(SRS) → independent ES₂ lawful reuse = NOT ESTABLISHED
 (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse

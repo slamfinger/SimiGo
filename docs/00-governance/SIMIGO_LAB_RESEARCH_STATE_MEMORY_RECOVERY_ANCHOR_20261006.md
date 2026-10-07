@@ -10,13 +10,13 @@
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
 
-> **Current recovery override — 2026-10-07:** Corrected Request v0.5 at
-> 888a6a7 supersedes Request v0.4. EXEC-001/EXEC-002 audits are closed; v0.5
-> is opened but no stage is authorized. The Research Focus Reset
+> **Current recovery override — 2026-10-07:** Invalid EXEC-003 evidence at
+> a50ff8b supersedes Request v0.5 waiting state. The v0.5 campaign/provenance
+> budget is consumed and STOPPED INVALID. The Research Focus Reset
 > supersedes the older “SRS-VAL design is active” orientation. Read “Current recovery
 > status — 2026-10-07” immediately below before using any later section.
 
-## 0. Current recovery status — 2026-10-07 (updated after Request v0.5 opening)
+## 0. Current recovery status — 2026-10-07 (updated after EXEC-003 INVALID evidence)
 
 ```text
 Governance track:
@@ -72,19 +72,23 @@ Governance track:
     artifact completeness, plus a cross-binding closure record mapping legacy
     runner _001/V1 to OAR 003/CHANNEL-UNIVERSE-V2 without runner modification.
     It requests four new records and one new budget only after approval.
+    Human APPROVE A+B+C instantiated four records 003 at bda7829, all
+    exact-binding execution commit 9966d31. Campaign exec-003-9966d31 passed
+    step0, adapter e88c996b, and environment identity ad2abb68; EPR003
+    launched driver, but materialize exited 1 because repository-relative
+    tau seed path resolved against host root. EPR003 then failed writing its
+    manifest because plan output_path was the run directory. Evidence is
+    canonical at a50ff8b.
 
   NOT AUTHORIZED: EXECUTION, IS_MUTATION, Observer authorization
   (no request opened yet); implementation changes; governance expansion.
 
 Research track:
   SRS-REAL-CLOSURE-01 = ACTIVE RESEARCH PRIORITY.
-  Next lawful object = Human authorization review of Request v0.5. If APPROVE
-  A+B+C, create EXECUTION_PROVENANCE_AND_BINDING_CLOSURE_RECORD_003,
-  EXECUTION SAR 003, IS_MUTATION SAR 003, and OBSERVER AUTHORIZATION RECORD
-  003 exact-binding 9966d31; run one frozen campaign through the provenance
-  recorder and STOP for Human evidence audit. No rerun, old-record reuse,
-  request-text repair, environment normalization, fixture repair, runner
-  modification, IS mutation, or observer action is authorized before that.
+  Next lawful object = Human audit of INVALID evidence and explicit decision
+  whether to authorize a new corrected Request/records. No rerun, recorder
+  repair, runner modification, fixture repair, old-record reuse, environment
+  normalization, IS mutation, or observer action is authorized before that.
   Core claim remains NOT ESTABLISHED.
 
 Core gap:
