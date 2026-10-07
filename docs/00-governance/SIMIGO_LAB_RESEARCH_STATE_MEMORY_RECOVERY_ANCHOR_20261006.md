@@ -9,7 +9,7 @@
 > **Canonical source:** GitHub `slamfinger/SimiGo-Lab@main`
 > **Purpose:** restore research state and research-memory entry without relying on chat memory, deleted branches, or superseded handoff paragraphs.
 > **Boundary:** recovery only. This anchor does not start `SRS-SEM-01`, create a new mission/task tree, authorize implementation, fixture creation, experiment, IS mutation, or code change.
-> **Post-anchor update:** Human later opened, reviewed, and froze `SRS-SEM-01`; `SRS-VAL-01` design is now the active design-only task.
+> **Current state update (2026-10-07):** Governance track = `AUTH-REQ-01 v0.2` pending Human authorization review; governance work is maintenance-only. Research track = `SRS-REAL-CLOSURE-01` ACTIVE RESEARCH PRIORITY / planning only. Core research gap = `ES₁ → IS(SRS) → independent ES₂ lawful reuse` — NOT ESTABLISHED.
 
 ## 1. Canonical recovery order
 
