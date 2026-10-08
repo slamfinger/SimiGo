@@ -2,9 +2,9 @@
 
 > 用于新会话恢复研究上下文；权威语义以 `docs/RESEARCH_STATE.md` 为准。本文件是连续性索引，不覆盖 RESEARCH_STATE。
 
-**保存时间**：2026-09-29
+**保存时间**：2026-10-08
 
-**最新入口**：`docs/NEXT_SESSION_ENTRY.md`。新会话应先读该文件，再按需读取下方历史连续性索引。
+**最新入口**：`docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_SESSION_CONTINUITY_AND_EXPERIMENT_RECORD_20261008.md`。新会话应先读取 `docs/RESEARCH_STATE.md` 中 Partition D 最新状态，再读取该记录；不得用旧会话记忆覆盖仓库权威状态。
 
 ## 项目身份与仓库边界
 
@@ -13,7 +13,20 @@
 - 本阶段只推进 SimiGo-Lab 的研究状态，不将研究声明直接转化为产品实现。
 - 新会话恢复入口：先读取 `docs/RESEARCH_STATE.md`，再读取本文件；不得用旧会话记忆覆盖仓库权威状态。
 
-## 当前研究阶段 — 2026-09-29
+## 当前研究阶段 — 2026-10-08
+
+- Phase：Partition D — Integrated SimiGo Execution State + PALACE validation
+- D v1.1：`ACCEPT / DESIGN FROZEN`
+- Implementation / Fixture Preparation Request v1.0：`OPENED — PACKAGE ONLY`
+- 当前 deliverable：Implementation / Fixture Preparation Authorization Package + Run Manifest
+- E8：bounded CarrierSQLite equivalence `ESTABLISHED / BOUNDED`
+- R01：continuation sufficiency `PASS / BOUNDED`
+- PIR：`CLOSED / VALIDATION DEFERRED`
+- 禁止：implementation artifact creation、fixture creation/mutation、experiment execution、canonical IS mutation、PIR reopening、E9、EXP-004、PALACE equivalence claim、Integrated SimiGo proof
+
+详细入口见 `docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_SESSION_CONTINUITY_AND_EXPERIMENT_RECORD_20261008.md`；权威状态见 `docs/RESEARCH_STATE.md`。
+
+## 历史研究阶段 — 2026-09-29
 
 - Phase：Execution State architecture consolidation → PALACE-1 / BACKEND-1 audit-first
 - Execution State Runtime：evidence consolidated with harness boundary

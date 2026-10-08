@@ -1266,6 +1266,37 @@ Primary evidence:
   docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_IMPLEMENTATION_FIXTURE_PREPARATION_REQUEST_V1.0_20261008.md.
 ```
 
+## Partition D Session Continuity and Experiment Record — 2026-10-08
+
+> **Status:** CONTINUITY SNAPSHOT / NO NEW EXPERIMENT. The record preserves the
+> canonical Partition D state and next lawful deliverable for new-session
+> recovery. It consumes no campaign budget and authorizes no new stage.
+
+```text
+pre-registration canonical main   = ebfa484…;
+record binding                    = canonical commit introducing this record;
+worktree at snapshot              = CLEAN;
+D v1.1                            = ACCEPT / DESIGN FROZEN;
+Implementation/Fixture Request    = OPENED — PACKAGE ONLY;
+next deliverable                  = Implementation / Fixture Preparation
+                                    Authorization Package + Run Manifest;
+implementation                    = NOT AUTHORIZED;
+fixture creation                  = NOT AUTHORIZED;
+experiment                        = NOT AUTHORIZED;
+canonical IS mutation             = NOT AUTHORIZED;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+E8 bounded equivalence            = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency      = PASS / BOUNDED;
+PALACE equivalence theorem        = NOT ESTABLISHED;
+general ES theorem                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED.
+
+Primary evidence:
+  docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_SESSION_CONTINUITY_AND_EXPERIMENT_RECORD_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
