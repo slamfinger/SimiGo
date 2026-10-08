@@ -24049,3 +24049,65 @@ Next lawful action:
 STOP. Any follow-on requires a separate explicit Human authorization. No
 automatic equivalence, E9, EXP-004, mutation or campaign renewal is permitted.
 ```
+
+## Integrated ES–PALACE D-001 Closure and D-002 Package Delivery — 2026-10-08
+
+> **Status:** D-001 CLOSED / BOUNDED PASS. D-002 Authorization Package v1.0 is
+> DELIVERED FOR HUMAN REVIEW. No D-002 implementation, snapshot, fixture,
+> experiment, canonical IS mutation, or equivalence claim is authorized.
+
+```text
+D-001 semantic decision harness   = CLOSED / BOUNDED PASS;
+Attempt-001                       = FAIL / RETAINED / comparator defect;
+Attempt-002                       = PASS;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED;
+general Execution State theorem   = NOT ESTABLISHED;
+production SimiGo validity        = NOT ESTABLISHED;
+LLM autonomy                      = NOT ESTABLISHED;
+canonical IS mutation             = NOT AUTHORIZED;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+D-001 rerun                       = NOT AUTHORIZED.
+```
+
+D-001 closure evidence:
+
+```text
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_D001_CLOSURE_RECORD_20261008.md.
+```
+
+The next proposed object is:
+
+```text
+D-002 / Integrated Information-Space Consumption.
+```
+
+Its single question is whether a real PALACE Information Space primitive can be
+converted, under closed auditable conditions without hidden semantic input, into
+the D-001 typed ES reconstruction input and then produce the frozen decision
+vector.
+
+D-002 review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-20261008/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INFORMATION_SPACE_CONSUMPTION_AUTHORIZATION_PACKAGE_V1.0_20261008.md.
+```
+
+Observed real-source binding:
+
+```text
+palace-v0/palace/chroma.sqlite3 SHA256 =
+  3f790600bfa0ebb0eb7bd4e9f28ac1b6353bd6802d5eeb8f964e7edb8861bf0a.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for D-002 Package v1.0.
+ACCEPT may permit only a separately recorded D-002 implementation / snapshot /
+fixture preparation stage. Integrated experiment remains a separate explicit
+Human decision.
+```
