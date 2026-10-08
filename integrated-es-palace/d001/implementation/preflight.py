@@ -12,9 +12,7 @@ from schemas import canonical_bytes, digest_bytes, exact_fields, load_json
 ROOT = Path(__file__).resolve().parents[3]
 IMPLEMENTATION = ROOT / "integrated-es-palace/d001/implementation"
 FIXTURES = ROOT / "integrated-es-palace/d001/fixtures"
-EVIDENCE = ROOT / "docs/02-evidence/integrated-es-palace-d001-validation-v1"
 CASES = ["P-LAWFUL", "P-SETTLED", "P-BLOCKED", "N-MISSING", "N-STALE", "N-AMBIGUOUS", "N-ILLEGAL"]
-EVIDENCE_OBJECTS = ["RUN_MANIFEST_INSTANCE.json", "PREFLIGHT.json", "IMPLEMENTATION_SELF_CHECK.json", "FIXTURE_PREPARATION.json", "PREPARATION_VALIDATION_RECORD.json", "CARRIER_LIFECYCLE_RECORD.json", "NEGATIVE_DECISIONS.json", "IDENTITY_CHECKS.json", "EVIDENCE_SHA256SUMS"]
 ALLOWED_IMPORTS = {"argparse", "ast", "contextlib", "datetime", "hashlib", "json", "pathlib", "sqlite3", "subprocess", "tempfile", "typing", "__future__", "inventory", "reconstruction", "schemas", "continuation", "carrier"}
 
 
@@ -54,7 +52,8 @@ def main() -> int:
     checks["PF-3"] = bool(governance_ok)
     actual_files = sorted(path.name for path in IMPLEMENTATION.iterdir() if path.is_file() and not path.is_symlink())
     checks["PF-4"] = actual_files == sorted(manifest["implementation_binding"]["artifacts"]) and (not FIXTURES.exists() or sorted(path.name for path in FIXTURES.iterdir()) == CASES)
-    existing = sorted(path.name for path in EVIDENCE.iterdir() if path.name != "RUN_MANIFEST_INSTANCE.json")
+    evidence = ROOT / manifest["evidence_binding"]["parent"]
+    existing = sorted(path.name for path in evidence.iterdir() if path.name != "RUN_MANIFEST_INSTANCE.json")
     checks["PF-5"] = existing == []
     checks["PF-6"] = not FIXTURES.exists() or all(not (FIXTURES / case).is_symlink() for case in CASES)
     checks["PF-7"] = (IMPLEMENTATION / "IMPLEMENTATION_MANIFEST.json").is_file()
@@ -76,7 +75,7 @@ def main() -> int:
                 source_ok &= node.func.attr != "getenv"
     checks["STATIC_SOURCE"] = source_ok
     result = {"schema_id": "D001-S0-PREFLIGHT-V1", "manifest_instance_id": manifest["manifest_instance_id"], "stage": "S0-PREFLIGHT", "checks": checks, "result": "PASS" if all(checks.values()) else "FAIL"}
-    atomic_write(EVIDENCE / "PREFLIGHT.json", result)
+    atomic_write(evidence / "PREFLIGHT.json", result)
     print(result["result"])
     return 0 if result["result"] == "PASS" else 1
 

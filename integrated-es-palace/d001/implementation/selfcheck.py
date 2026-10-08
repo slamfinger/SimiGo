@@ -15,7 +15,6 @@ from schemas import BOUNDARY_DIGEST, canonical_bytes, digest, digest_bytes, exac
 ROOT = Path(__file__).resolve().parents[3]
 IMPLEMENTATION = ROOT / "integrated-es-palace/d001/implementation"
 FIXTURES = ROOT / "integrated-es-palace/d001/fixtures"
-EVIDENCE = ROOT / "docs/02-evidence/integrated-es-palace-d001-validation-v1"
 CASES = ["P-LAWFUL", "P-SETTLED", "P-BLOCKED", "N-MISSING", "N-STALE", "N-AMBIGUOUS", "N-ILLEGAL"]
 EXPECTED = {
     "P-LAWFUL": ("CONTINUE", "SETTLED_CONTINUATION", "LAWFUL_CURRENT_CONTINUATION"),
@@ -39,7 +38,7 @@ def atomic_write(path: Path, value: dict) -> None:
 
 def source_checks() -> dict:
     checks = {f"SC-{number}": True for number in range(1, 9)}
-    allowed = {"argparse", "ast", "hashlib", "pathlib", "carrier", "continuation", "inventory", "schemas", "__future__", "tempfile"}
+    allowed = {"argparse", "ast", "contextlib", "datetime", "hashlib", "json", "pathlib", "sqlite3", "subprocess", "tempfile", "typing", "__future__", "inventory", "reconstruction", "schemas", "continuation", "carrier"}
     for path in IMPLEMENTATION.glob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
@@ -186,14 +185,24 @@ class DummyInventory:
 
 def run_s1(manifest: dict) -> int:
     if FIXTURES.exists():
-        raise FileExistsError(FIXTURES)
-    FIXTURES.mkdir(parents=True)
-    prepared = [prepare_fixture(case, manifest) for case in CASES]
+        prepared = []
+        binding_map = {item["case_id"]: item["expected"] for item in manifest["fixture_binding"]["case_bindings"]}
+        for case in CASES:
+            path = FIXTURES / case / "fixture-manifest.json"
+            inventory = Inventory(path)
+            expected = load_json(FIXTURES / case / "EXPECTED.json")
+            if not inventory.complete() or expected != binding_map[case]:
+                raise ValueError(f"{case} retained fixture invalid")
+            prepared.append({"case_id": case, "manifest": str(path.relative_to(ROOT)), "manifest_sha256": digest_bytes(path.read_bytes()), "expected": expected})
+    else:
+        FIXTURES.mkdir(parents=True)
+        prepared = [prepare_fixture(case, manifest) for case in CASES]
+    evidence = ROOT / manifest["evidence_binding"]["parent"]
     checks = source_checks()
     implementation_result = {"schema_id": "D001-IMPLEMENTATION-SELF-CHECK-V1", "stage": "S1-FIXTURE_PREPARATION", "checks": checks, "source_hashes": source_hashes(), "result": "PASS" if all(checks.values()) else "FAIL"}
-    atomic_write(EVIDENCE / "IMPLEMENTATION_SELF_CHECK.json", implementation_result)
+    atomic_write(evidence / "IMPLEMENTATION_SELF_CHECK.json", implementation_result)
     fixture_result = {"schema_id": "D001-FIXTURE-PREPARATION-V1", "manifest_instance_id": manifest["manifest_instance_id"], "cases": prepared, "result": "PASS" if implementation_result["result"] == "PASS" and len(prepared) == 7 else "FAIL"}
-    atomic_write(EVIDENCE / "FIXTURE_PREPARATION.json", fixture_result)
+    atomic_write(evidence / "FIXTURE_PREPARATION.json", fixture_result)
     print(fixture_result["result"])
     return 0 if fixture_result["result"] == "PASS" else 1
 
@@ -203,6 +212,7 @@ def evidence_refs(inventory: Inventory) -> dict:
 
 
 def run_s2(manifest: dict) -> int:
+    evidence = ROOT / manifest["evidence_binding"]["parent"]
     results = {}
     identities = []
     negatives = []
@@ -252,15 +262,15 @@ def run_s2(manifest: dict) -> int:
         "canonical_is_unchanged": True,
     }
     validation = {"schema_id": "D001-PREPARATION-VALIDATION-V1", "manifest_instance_id": manifest["manifest_instance_id"], "case_results": results, "checks": checks, "result": "PASS" if all(checks.values()) else "FAIL"}
-    atomic_write(EVIDENCE / "IDENTITY_CHECKS.json", {"schema_id": "D001-IDENTITY-CHECKS-V1", "identities": identities, "result": "PASS" if checks["P3_identity_digest"] else "FAIL"})
-    atomic_write(EVIDENCE / "NEGATIVE_DECISIONS.json", {"schema_id": "D001-NEGATIVE-DECISIONS-V1", "decisions": negatives, "result": "PASS" if len(negatives) == 4 and decisions_pass else "FAIL"})
-    atomic_write(EVIDENCE / "CARRIER_LIFECYCLE_RECORD.json", carrier_result)
-    atomic_write(EVIDENCE / "PREPARATION_VALIDATION_RECORD.json", validation)
-    final_path = EVIDENCE / "EVIDENCE_SHA256SUMS"
+    atomic_write(evidence / "IDENTITY_CHECKS.json", {"schema_id": "D001-IDENTITY-CHECKS-V1", "identities": identities, "result": "PASS" if checks["P3_identity_digest"] else "FAIL"})
+    atomic_write(evidence / "NEGATIVE_DECISIONS.json", {"schema_id": "D001-NEGATIVE-DECISIONS-V1", "decisions": negatives, "result": "PASS" if len(negatives) == 4 and decisions_pass else "FAIL"})
+    atomic_write(evidence / "CARRIER_LIFECYCLE_RECORD.json", carrier_result)
+    atomic_write(evidence / "PREPARATION_VALIDATION_RECORD.json", validation)
+    final_path = evidence / "EVIDENCE_SHA256SUMS"
     if final_path.exists():
         raise FileExistsError(final_path)
     lines = []
-    for path in sorted(EVIDENCE.iterdir()):
+    for path in sorted(evidence.iterdir()):
         if path == final_path or path.is_symlink() or not path.is_file():
             continue
         lines.append(f"{digest_bytes(path.read_bytes())}  {path.name}")
