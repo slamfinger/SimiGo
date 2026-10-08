@@ -1,6 +1,6 @@
 {
   "authoritative_path_map": true,
-  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.7-20261008",
+  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008",
   "consumption_contract": {
     "artifact_path_derivation_by_campaign": "FORBIDDEN",
     "exact_path_identity_consumption": "REQUIRED",
@@ -12,7 +12,8 @@
     "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
     "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT",
     "HARNESS_POST_SEQUENCE_OBSERVER_KEY_BINDING_DEFECT",
-    "HARNESS_POST_SEQUENCE_PREFLIGHT_JSON_PATH_SERIALIZATION_DEFECT"
+    "HARNESS_POST_SEQUENCE_PREFLIGHT_JSON_PATH_SERIALIZATION_DEFECT",
+    "HARNESS_ADAPTER_OUTPUT_PERSISTENCE_RETURN_TYPE_BINDING_DEFECT"
   ],
   "created_directories": [
     {
@@ -25,10 +26,10 @@
     }
   ],
   "destination_count": 31,
-  "destination_version": 3,
-  "governing_authorization_record_commit": "1b518c822b586dc3a6a900327267f5e3512a7e49",
-  "governing_request_commit": "1b518c822b586dc3a6a900327267f5e3512a7e49",
-  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_005",
+  "destination_version": 4,
+  "governing_authorization_record_commit": "f7429fea79ebbcfa82f7d52088271d822730ba80",
+  "governing_request_commit": "f7429fea79ebbcfa82f7d52088271d822730ba80",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_006",
   "source_database": {
     "accepted_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
     "output_destination_id": "O0_DATABASE",

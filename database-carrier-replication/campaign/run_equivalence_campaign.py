@@ -536,7 +536,8 @@ def invoke_adapter(paths: EvidencePaths, decision: str) -> dict:
     output_path = paths.resolve(f"ADAPTER_{decision}_OUTPUT")
     proc = subprocess.run([str(binary), str(input_path)], capture_output=True)
     require(proc.returncode == 0, f"{decision} adapter failed: {proc.stderr.decode('utf-8', errors='replace')}")
-    result = json.loads(persist_exact_json(output_path, proc.stdout))
+    persist_exact_json(output_path, proc.stdout)
+    result = json.loads(output_path.read_bytes())
     expected = "REUSE" if decision == "ES2" else "BLOCK"
     require(result["primaryDecision"] == expected, f"{decision} decision mismatch")
     return {
