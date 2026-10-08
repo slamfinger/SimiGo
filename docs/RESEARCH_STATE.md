@@ -729,6 +729,62 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP002_HUMAN_EVIDENCE_AUDIT_RECORD_035_20261008.md.
 ```
 
+## PIR fixture pre-change snapshot correction — 2026-10-08 (PALACE / ES)
+
+> **Status:** COMPLETE — Fixture Correction PASS; Targeted Validation PASS.
+> EXP-003 and any experiment execution remain NOT AUTHORIZED.
+
+```text
+Governing Request v2.7              = afa3d2e…;
+correction commit                   = 1536fa6…;
+completion record                   = registered by this section's preceding commit;
+corrected fixture builder           = PASS;
+targeted prechange snapshot test    = PASS;
+zero/one/many ambiguity test        = PASS;
+EV-P01..EV-P18 bindings             = PRESERVED;
+PIR v0.2 design                     = UNCHANGED;
+RM-001 shapes/thresholds/attribution = UNCHANGED;
+reconciler semantic rules           = UNCHANGED;
+deterministic MOVE/RENAME protocol  = UNCHANGED;
+oracle semantics                    = UNCHANGED;
+IS mutation                         = NONE;
+CarrierSQLite/E8 bounded ruling     = UNCHANGED;
+E7 evidence reuse                   = NONE;
+EXP-003                             = NOT AUTHORIZED;
+experiment execution                = NOT AUTHORIZED.
+
+Correction invariant:
+  pre-change:
+    old_locator = L_old;
+    object_id = O;
+  post-change:
+    new_locator = L_new;
+    object_id = O;
+  measured registry:
+    L_old preserved;
+    L_new discoverable;
+    O stable;
+    digest/size unchanged across move.
+
+Targeted results:
+  old locator preserved and absent post-move = PASS;
+  new locator discoverable = PASS;
+  stable object ID preserved = PASS;
+  zero candidates → PHYSICALLY_DELETED = PASS;
+  one candidate → PHYSICALLY_MOVED = PASS;
+  many candidates → CONFLICT = PASS;
+  exact match → FRESH_WITHIN_WINDOW = PASS;
+  mismatch → PHYSICALLY_CHANGED = PASS.
+
+Next lawful object:
+  explicit Human Experiment Launch Review for a future corrected PIR run.
+  This state does not authorize EXP-003, execution, fixture reuse, or any PIR
+  equivalence claim.
+
+Primary evidence:
+  docs/00-governance/PALACE_MINIMAL_PIR_FIXTURE_PRECHANGE_SNAPSHOT_CORRECTION_COMPLETION_RECORD_036_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
