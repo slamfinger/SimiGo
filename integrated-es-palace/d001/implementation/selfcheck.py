@@ -101,6 +101,7 @@ def prepare_fixture(case: str, manifest: dict) -> dict:
         "stage": "S2-PREPARATION_VALIDATION",
         "schema_version": manifest["schema_version"],
         "opaque_locator": f"d001://fixture/{case}",
+        "schema_id": "APPROVED-INVOCATION-D001-V1",
     }
     provenance_records = {
         "provenance": {"revision": "R1", "status": "CURRENT", "provenance_digest": digest({"object_id": "provenance"})},
