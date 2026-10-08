@@ -23992,3 +23992,60 @@ Next lawful action:
 STOP. A new explicit Human authorization is required for comparator correction
 and one new bounded campaign instance/evidence parent. No rerun is authorized.
 ```
+
+## Integrated ES–PALACE D-001 Bounded Experiment Attempt 002 — 2026-10-08
+
+> **Status:** COMPLETE / BOUNDED EXPERIMENT + OBSERVER CAMPAIGN PASS. The
+> comparator was corrected only at the campaign comparison/reconciliation layer;
+> frozen fixtures, expected vectors, Decision Core semantics and observer
+> semantics were preserved.
+
+```text
+manifest instance                = 22A88D7B-E036-4578-9616-CB66DFD649CB;
+execution head                   = 9676db65…;
+EXPERIMENT_RECORD                = PASS;
+OBSERVER_RECORD                  = PASS;
+RECONCILIATION_RECORD            = PASS;
+CLAIM_RECORD                     = PASS;
+seven-case reconciliation        = PASS;
+Carrier persistence              = PERSISTED / 7 records;
+forbidden channels observed      = NONE;
+canonical IS mutation            = NONE;
+attempt budget                   = 1 experiment + 1 observer campaign CONSUMED;
+rerun                            = NOT AUTHORIZED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED;
+general Execution State theorem  = NOT ESTABLISHED;
+production SimiGo validity       = NOT ESTABLISHED;
+LLM autonomy                     = NOT ESTABLISHED.
+```
+
+Bounded result vector:
+
+```text
+P-LAWFUL     = CONTINUE / SETTLED_CONTINUATION / LAWFUL_CURRENT_CONTINUATION;
+P-SETTLED    = REUSE   / SETTLED_CONTINUATION / REUSE_PREDICATE_COMPLETE;
+P-BLOCKED    = BLOCK   / BLOCKED_LAWFUL_CONTINUATION / REGISTERED_BLOCKING_CONDITION;
+N-MISSING    = BLOCK   / BLOCKED_DEFECT / MANDATORY_OBJECT_UNRESOLVABLE;
+N-STALE      = BLOCK   / BLOCKED_DEFECT / MANDATORY_EVIDENCE_SUPERSEDED;
+N-AMBIGUOUS  = BLOCK   / BLOCKED_DEFECT / CONFLICTING_VALID_POINTERS;
+N-ILLEGAL    = BLOCK   / BLOCKED_DEFECT / REGISTERED_BOUNDARY_VIOLATION_PROVEN.
+```
+
+Primary evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d001-bounded-experiment-attempt-002/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D001_BOUNDED_EXPERIMENT_ATTEMPT_002_COMPLETION_RECORD_20261008.md.
+```
+
+Next lawful action:
+
+```text
+STOP. Any follow-on requires a separate explicit Human authorization. No
+automatic equivalence, E9, EXP-004, mutation or campaign renewal is permitted.
+```
