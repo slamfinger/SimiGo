@@ -24493,3 +24493,56 @@ STOP. The non-executable correction proposal requires a new Human-directed
 instrumentation/redesign package before any further execution or implementation
 mutation.
 ```
+
+## D-002 Instrumentation / Redesign Baseline and Package Opening — 2026-10-09
+
+> **Status:** BASELINE FROZEN — DESIGN PACKAGE DELIVERED FOR HUMAN REVIEW. The
+> package designs structured adapter instrumentation and future redesign; it
+> authorizes no implementation or execution.
+
+```text
+D-001 Decision Core               = CLOSED / BOUNDED PASS;
+D-002 real PALACE consumption     = FAIL / STOP;
+D-002 Postmortem Audit            = COMPLETE / FIRST FAULT LOCALIZED / FROZEN;
+primary fault                     = EVIDENCE_INFRASTRUCTURE_DEFECT;
+secondary label                   = D002_REPLAY_ADAPTER_UNRESOLVED_INPUT_DEFECT;
+exact adapter exception           = NOT ESTABLISHED;
+70-row trace                      = 69 VALIDATION_REJECTION +
+                                    1 INTENTIONAL_UNRESOLVED_ENCODING;
+next object                       = INSTRUMENTATION / REDESIGN DESIGN REVIEW;
+instrumentation implementation    = NOT AUTHORIZED;
+adapter redesign implementation   = NOT AUTHORIZED;
+D-002 rerun / new campaign        = NOT AUTHORIZED;
+D-001 Decision Core execution     = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+The design package requires future adapter stages S0–S13, structured
+`AdapterStageRecord` evidence, exception type/message/stack digests rather than
+semantic reliance on exception text, D-001 exact-field preflight, and proof that
+the D-001 core remains byte-identical.
+
+Review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.0_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for the design-only package.
+ACCEPT would freeze the design only; implementation, dry materialization,
+validation, and any new campaign require separate explicit Human authorizations.
+```
