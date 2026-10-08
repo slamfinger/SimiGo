@@ -624,6 +624,111 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP002_INVALID_COMPLETION_RECORD_034_20261008.md.
 ```
 
+## MINIMAL-PIR-EXP-002 Human Evidence Audit closure — 2026-10-08 (PALACE / ES)
+
+> **Status:** CLOSED — FOUR-POINT Human Evidence Audit PASS WITH ONE ISOLATED
+> FIXTURE SNAPSHOT DEFECT; experiment remains INVALID / NON-ADJUDICATIVE. No
+> repair, EXP-003, fixture regeneration, execution or equivalence claim is
+> authorized.
+
+```text
+MINIMAL-PIR-EXP-002                 = INVALID / NON-ADJUDICATIVE;
+EV-P08 recorder regression          = NONE / 20 compact observations PASS;
+W_obs_age                           = PASS;
+W_latency                           = 140ms / PASS / limit 5,000ms;
+Fresh Closure structure             = COMPLETE / NON-AUTHORITATIVE;
+false-positive physical changes     = 0;
+oracle leakage                      = NONE;
+IS mutation                         = NONE;
+PC-MOVE                             = FALSE NEGATIVE;
+PIR effectiveness                   = NOT ESTABLISHED;
+MOVE/RENAME proof                   = NOT ESTABLISHED;
+PIR performance theorem             = NOT ESTABLISHED;
+PALACE equivalence                  = NOT ESTABLISHED;
+integrated SimiGo proof             = NOT ESTABLISHED;
+E8 bounded CarrierSQLite equivalence = ESTABLISHED / UNCHANGED.
+
+Audit/governance chain:
+  Human audit record             = registered by this section's preceding commit;
+  invalid completion record      = 8bdf99f…;
+  authorization commit           = ff05148…;
+  audit base                     = 530ab75….
+
+Audit point 1 — EV-P08 regression:
+  20/20 observations persisted;
+  compact JSONL physical-line contract = PASS;
+  EXP-001 bytes-to-text defect did not recur.
+
+Audit point 2 — MOVE causal chain:
+  fixture builder created the pre-change record;
+  fixture builder performed the planted move in current physical state;
+  fixture builder updated record.locator to the destination;
+  fixture builder then constructed measured_registry from mutated records;
+  measured path received only the post-change destination;
+  reconciliation classified destination FRESH_WITHIN_WINDOW;
+  expected typed verdict = PHYSICALLY_MOVED.
+
+Root-cause class =
+  HARNESS_FIXTURE_MEASURED_REGISTRY_POST_CHANGE_SNAPSHOT_DEFECT.
+The lost fact was the pre-change locator. Candidate discovery did not fail;
+deterministic correlation was unnecessary because no missing old locator was
+visible; oracle did not leak; freshness did not misclassify a digest/size
+mismatch.
+
+Audit point 3 — defect isolation:
+  PC-MODIFY content #1/#2 = detected PHYSICALLY_CHANGED;
+  PC-MODIFY metadata      = detected PHYSICALLY_CHANGED;
+  PC-DELETE               = detected PHYSICALLY_DELETED;
+  PC-MOVE                 = FALSE NEGATIVE;
+  PC-CREATE               = NOT EXERCISED / DEFERRED BY FROZEN DESIGN;
+  measured registry forbidden keys = NONE;
+  unrelated physical touches = 0;
+  broader fixture/oracle pollution = NONE.
+
+Audit point 4 — evidence discipline:
+  20 observations and four correct raw outcomes = ACCEPTED FACTS ONLY;
+  Fresh Closure structure = COMPLETE / NON-AUTHORITATIVE;
+  PC-MOVE = NOT ADJUDICATED;
+  PIR effectiveness/proof = NOT ESTABLISHED;
+  four correct outcomes cannot repair or substitute for MOVE.
+
+Root-cause classification:
+  fixture preparation mutated the authoritative object record before constructing
+  measured_registry, erasing the pre-change locator required for old-to-new
+  movement adjudication.
+
+Artifact bindings:
+  EV-P08 observations SHA256 =
+    36ae035cc92256fdd57f024432873f6fa702d91b3def0cdddea9043c4ff549e1;
+  W_obs age calculations SHA256 =
+    9668ba6b2dd9dc2d1fce432b2f922f3c4c2a9a15c51e544fe31b4fcfee1473d7;
+  W_latency calculations SHA256 =
+    9adc99a7570ee5f45c47948790e9a22959c5a1d9b7c29dc2956b488a5871c37b;
+  Fresh Closure SHA256 =
+    b0e0731ebb82f081d5ede8b583ae466de596ce3c990010962e23d684512f2eae;
+  evaluation join SHA256 =
+    032804fe941119e690778644be225d0779f3e0ff4db60bd31cde49d38494f6f8;
+  MOVE correlation evidence SHA256 =
+    ba95784a30f52fc7c7ee7389affa08fd45ae4ae1be373afc038c8fba7b552051;
+  authorized fixture measured input SHA256 =
+    a0e136dc9c144fc6f80c25be6ca8335ba6431a8c25b364a72474cff8d4539124;
+  oracle ledger SHA256 =
+    b70a953db032e81d9d62d88c65dedc1aff6958e076e6c48b544df7e2f35aedb3.
+
+Next lawful object:
+  explicit Human strategic decision:
+    DENY further PIR work; or
+    authorize a new independently budgeted Request scoped to
+    fixture/measured-registry pre-change snapshot preservation and targeted
+    fixture validation.
+  A future corrected run would require fresh fixtures and separate Experiment
+  Launch Review. This audit does not authorize repair, EXP-003, fixture
+  regeneration, execution or scope broadening.
+
+Primary evidence:
+  docs/00-governance/PALACE_MINIMAL_PIR_EXP002_HUMAN_EVIDENCE_AUDIT_RECORD_035_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
