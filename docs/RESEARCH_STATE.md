@@ -241,6 +241,57 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_V0.2_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_RM001_20261008.md.
 ```
 
+## PIR RM-001 package review — 2026-10-08 (PALACE / ES)
+
+> **Status:** COMPLETE — RM-001 ACCEPT PACKAGE. Implementation, fixture
+> creation, experiment execution and IS mutation remain NOT AUTHORIZED.
+
+```text
+RM-001 Package / Run Manifest       ACCEPT PACKAGE;
+governing Request v2.4              01108b2…;
+package review ruling               registered by this section's preceding commit;
+package SHA256                      4df7ba8f…c18d71bfc0;
+frozen Minimal PIR Probe v0.2       94667081…edff23bd1;
+E-L                                 N=10,000, R=20, M=5;
+E-S                                 N=20, R=20, M=5;
+C-NOCHANGE                          paired R=20, M=0;
+W_obs_age                           60,000 ms;
+W_latency                           5,000 ms;
+oracle isolation                    PASS;
+run-shape legality                  PASS;
+EV-P01..EV-P18 lifecycle coverage   PASS;
+phase/attribution separation        PASS;
+Implementation                      NOT AUTHORIZED;
+Fixture creation                    NOT AUTHORIZED;
+MINIMAL-PIR-EXP-001 execution       NOT AUTHORIZED;
+IS mutation                         NOT AUTHORIZED;
+E9                                  NOT AUTHORIZED;
+performance/complexity theorem      NOT ESTABLISHED.
+
+Four-layer package review:
+  1 run-shape legality              PASS;
+  2 oracle legality                 PASS;
+  3 evidence closure EV-P01..P18    PASS;
+  4 attribution separation          PASS.
+
+Accepted constraints:
+  E-L/E-S verify bounded reconciliation and phase attribution, not a PIR
+  performance or complexity theorem.
+  N-dependent growth may be attributed only to Scope Resolution / Index,
+  Candidate Retrieval or declared structural overhead, never Physical
+  Reconciliation.
+  MOVE/RENAME uses deterministic content SHA256 + byte size + stable opaque ID.
+  Zero candidates = DELETED; multiple candidates = CONFLICT.
+
+Next lawful object:
+  explicit Human decision whether to authorize a separate implementation /
+  fixture preparation stage. Even if that stage is later authorized,
+  MINIMAL-PIR-EXP-001 execution requires another explicit Human authorization.
+
+Primary evidence:
+  docs/00-governance/PALACE_MINIMAL_PIR_V0.2_RM001_HUMAN_PACKAGE_REVIEW_RULING_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
