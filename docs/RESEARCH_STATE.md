@@ -23881,3 +23881,67 @@ ACCEPT may permit only a separately recorded implementation / fixture
 preparation stage. Integrated experiment execution remains a separate explicit
 Human decision.
 ```
+
+## Integrated ES–PALACE S0–S2 Preparation Completion — 2026-10-08
+
+> **Status:** S0–S2 COMPLETE / PREPARATION_VALIDATION PASS. This closes only the
+> separately authorized implementation / fixture preparation stage. It is not an
+> integrated experiment result.
+
+```text
+Authorization state              = S0–S2 COMPLETE / HARD STOP;
+final manifest instance          = 12DE7CBF-E5CE-4E34-B26A-0E975C008DE1;
+S2 execution commit              = 1c044db9;
+final evidence commit            = 304ba370;
+S0                              = PASS;
+S1                              = PASS;
+S2                              = PASS;
+P1 inventory                     = PASS;
+P2 typed schema / authority      = PASS;
+P3 deterministic identity        = PASS;
+P5 seven-decision vector         = PASS;
+P6 Carrier lifecycle             = PASS;
+P7 non-composition               = PASS;
+SC-1..SC-8                       = PASS;
+canonical IS mutation            = NONE;
+integrated experiment            = NOT AUTHORIZED;
+observer campaign                = NOT AUTHORIZED;
+canonical IS mutation authority  = NOT AUTHORIZED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency     = PASS / BOUNDED;
+PALACE equivalence               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+```
+
+Observed preparation vector:
+
+```text
+P-LAWFUL     = CONTINUE / SETTLED_CONTINUATION;
+P-SETTLED    = REUSE   / SETTLED_CONTINUATION;
+P-BLOCKED    = BLOCK   / BLOCKED_LAWFUL_CONTINUATION;
+N-MISSING    = BLOCK   / BLOCKED_DEFECT / MANDATORY_OBJECT_UNRESOLVABLE;
+N-STALE      = BLOCK   / BLOCKED_DEFECT / MANDATORY_EVIDENCE_SUPERSEDED;
+N-AMBIGUOUS  = BLOCK   / BLOCKED_DEFECT / CONFLICTING_VALID_POINTERS;
+N-ILLEGAL    = BLOCK   / BLOCKED_DEFECT / REGISTERED_BOUNDARY_VIOLATION_PROVEN.
+```
+
+Failed correction attempts were retained write-once. The final evidence parent
+is `docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-005/`.
+Its `EVIDENCE_SHA256SUMS` verified all eight preceding evidence objects.
+
+Completion evidence:
+
+```text
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_S0_S2_PREPARATION_COMPLETION_RECORD_20261008.md.
+```
+
+Next lawful action:
+
+```text
+STOP. A separate explicit Human decision is required before any integrated
+experiment. No automatic transition is permitted.
+```
