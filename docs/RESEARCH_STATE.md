@@ -24210,3 +24210,55 @@ Next lawful action:
 STOP. A separate explicit Human decision is required before D-002 decision
 replay, experiment, or observer campaign. No automatic transition is permitted.
 ```
+
+## D-002 Consumption Attempt 001 — 2026-10-09
+
+> **Status:** EXECUTED / FAIL / WRITE-ONCE EVIDENCE RETAINED. Replay,
+> experiment, and observer budgets were consumed exactly once. Failure is
+> isolated to evidence-infrastructure adapters, not PALACE, Decision Core, or
+> Carrier semantics.
+
+```text
+manifest instance                 = A77A50E2-A9F9-445C-882F-6475474900F4;
+execution head                    = 214661ad…;
+decision replay budget            = 1 / 1 CONSUMED;
+experiment budget                 = 1 / 1 CONSUMED;
+observer campaign budget          = 1 / 1 CONSUMED;
+DECISION_REPLAY_RECORD            = PASS / EXECUTED;
+EXPERIMENT_RECORD                 = FAIL;
+CARRIER_LIFECYCLE_RECORD          = PASS / 7 RECORDS;
+OBSERVER_RECORD                   = PASS / EXECUTED;
+RECONCILIATION_RECORD             = FAIL;
+CLAIM_RECORD                      = FAIL;
+PALACE source mutation            = NONE;
+canonical IS mutation             = NONE;
+forbidden channels observed       = NONE;
+E9                                = NOT AUTHORIZED / NOT EXECUTED;
+EXP-004                           = NOT AUTHORIZED / NOT EXECUTED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+rerun                             = NOT AUTHORIZED;
+PALACE equivalence                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+Failure classes:
+
+```text
+D002_REPLAY_ADAPTER_CLOSURE_DIGEST_BINDING_DEFECT;
+D002_OBSERVER_BOUNDARY_DIGEST_COMPARATOR_DEFECT.
+```
+
+Primary evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-consumption-v1/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_CONSUMPTION_ATTEMPT_001_FAILURE_RECORD_20261009.md.
+```
+
+Next lawful action:
+
+```text
+STOP. A new explicit Human authorization is required for adapter/observer
+correction and any new campaign instance/evidence parent. No rerun is authorized.
+```
