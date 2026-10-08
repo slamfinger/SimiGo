@@ -48,7 +48,19 @@ def _output(input_record: dict, decision: str, continuation_class: str, reason: 
 
 
 def decide(inventory: Inventory) -> dict:
-    closure, recovered, authority, actions, provenance = _base(inventory)
+    try:
+        closure, recovered, authority, actions, provenance = _base(inventory)
+    except Exception as exc:
+        case = inventory.manifest["case_id"]
+        closure = {"schema_id": SCHEMAS["closure"], "closure_id": f"UNRESOLVED-{case}", "closure_revision": "UNRESOLVED", "members": [], "closure_digest": digest({"case": case, "state": "UNRESOLVED"})}
+        recovered = {"schema_id": SCHEMAS["recovered"], "closure_id": closure["closure_id"], "closure_revision": closure["closure_revision"], "recovered_objects": [], "context_digest": digest({"case": case, "state": "UNRECOVERED"})}
+        authority = {"schema_id": SCHEMAS["authority"], "closure_id": closure["closure_id"], "closure_revision": closure["closure_revision"], "recovered_context_digest": recovered["context_digest"], "authority_objects": [], "next_action": None, "boundary_digest": BOUNDARY_DIGEST}
+        actions, provenance = [], {"records": {}}
+        input_record = _input(closure, recovered, None)
+        output = _output(input_record, "BLOCK", "BLOCKED_DEFECT", "MISSING_INFORMATION_BLOCK", [type(exc).__name__])
+        output["continuation_output_digest"] = digest({key: output[key] for key in output if key != "continuation_output_digest"})
+        identity = {"identity_version": "D001-CONTINUATION-IDENTITY-V1", "closure_id": closure["closure_id"], "closure_revision": closure["closure_revision"], "recovered_context_digest": recovered["context_digest"], "next_action_id": None, "target_digest": None, "continuation_class": "BLOCKED_DEFECT", "authorization_boundary": "D001-PACKAGE-V1.0", "continuation_output_digest": output["continuation_output_digest"]}
+        return {"closure": closure, "recovered": recovered, "authority": authority, "input": input_record, "output": output, "identity": identity, "identity_digest": digest(identity), "typed_decision": "MISSING_INFORMATION_BLOCK", "precedence_reason": "MANDATORY_OBJECT_UNRESOLVABLE", "carrier_snapshot": None}
 
     def negative(decision_type: str, reason: str, secondary: list[str]) -> dict:
         selected = actions[0] if len(actions) == 1 else None

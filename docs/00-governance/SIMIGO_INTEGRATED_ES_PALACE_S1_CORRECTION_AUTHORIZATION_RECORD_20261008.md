@@ -71,3 +71,11 @@ manifest_instance_id = 95B0B101-F717-4541-933F-48D750736ABB;
 evidence parent =
   docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-002.
 ```
+
+## 6. Registered S2 readiness retry
+
+Correction-002 S1 passed. Its S2 entry exposed an uncaught missing-pointer
+exception before any S2 evidence object was written. This is precisely the
+N-MISSING path and must return typed `MISSING_INFORMATION_BLOCK`, not raise.
+Correction-003 is registered without expanding authority and retains all prior
+evidence.
