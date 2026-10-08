@@ -6,79 +6,65 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — E3 Human Evidence Audit CLOSED; raw O0–O5 sequence
-> accepted as fact, but campaign remains INVALID / NON-ADJUDICATIVE. No
-> repair, rerun, fourth-campaign drafting, or automatic follow-on is
+> **Status:** STOPPED — E4 attempt INVALID / NON-ADJUDICATIVE; Human Evidence
+> Audit NOT OPEN. The prior observer persistence defect was corrected and
+> passed, but a new post-sequence preflight serialization defect consumed the
+> fourth budget. No repair, rerun, evidence reuse, or automatic renewal is
 > authorized.
 
 ```text
-Canonical stop:
-  b19bab444993eabbb146230c3c1fdf39eb987f41
+Canonical E4 invalid record:
+  5ca190c…
 
-Accepted baselines:
-  EXEC-006 bounded document-form finding = feb0a61…;
-  Database-Carrier Design Package v0.1   = 21acba4…;
-  corrected implementation              = 7392fcb…;
-  accepted fresh empty DB SHA256 =
-    6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d.
+Governance chain:
+  Request v1.6 Human authorization = b5f15cb…;
+  R3 corrected execution base      = 8c7aca5…;
+  E4 evidence/invalid record       = 5ca190c….
 
-Database-carrier campaign history:
-  EXEC-DB-001    INVALID before mutation (working DB binding defect);
-  EXEC-DB-002    INVALID before mutation (observation path defect);
-  EXEC-DB-003    executed raw O0–O5, then INVALID at post-O5 observer
-                 verdict persistence.
+E4 raw result:
+  campaign ID                    = exec-dbcarrier-004-8c7aca5;
+  initial path preflight         = 30/30 PASS;
+  O0 logical state               = 0 objects / 0 index / 0 dependencies;
+  O5 logical state               = 4 objects / 2 index / 2 dependencies;
+  SQLite integrity               = OK;
+  canonical C3 observer key      = PERSISTED / BYTE+PARSED SELF-CHECK PASS;
+  raw ES2 output                 = REUSE / REUSE_PATH;
+  raw ESN output                 = BLOCK / BLOCKED_NON_RECOMPUTE_PATH;
+  stop code =
+    CAMPAIGN_PREFLIGHT_VERIFICATION_JSON_SERIALIZATION_DEFECT;
+  root-cause class =
+    HARNESS_POST_SEQUENCE_PREFLIGHT_JSON_PATH_SERIALIZATION_DEFECT.
 
-E3 exact governance chain:
-  Request v1.5                       = 0798228…;
-  R2 + conditional E3 authorization  = 9119530…;
-  evidence-path release review       = 712aee5…;
-  E3 execution authorization         = 1163eb1…;
-  exact execution base               = c6c8b6f…;
-  authoritative path map SHA256 =
-    b1adc52cdfb152f17d941d6214d24f393bdfc2fcdd9a7858bd37fe9c0b27ebb7.
-
-E3 result:
-  evidence commit = 1ac081b…;
-  audit commit    = b19bab4…;
-  29/29 evidence-path preflight destinations PASS;
-  O0 logical state      = 0 objects / 0 index / 0 dependencies;
-  O5 logical state      = 4 objects / 2 index / 2 dependencies;
-  SQLite integrity      = OK;
-  ES2 raw output        = REUSE / REUSE_PATH;
-  ESN raw output        = BLOCK / BLOCKED_NON_RECOMPUTE_PATH;
-  observer_verdict.json = ABSENT;
-  stop code             = CAMPAIGN_OBSERVER_VERDICT_KEY_BINDING_DEFECT;
-  root cause class =
-    HARNESS_POST_SEQUENCE_EVIDENCE_KEY_BINDING_DEFECT.
+Missing complete-chain artifacts at stop:
+  preflight_verification.json;
+  campaign_process_result.json;
+  campaign_stderr.txt;
+  SHA256SUMS.
+Post-stop process/stderr captures are non-authoritative.
 
 Evidence disposition:
-  raw O0–O5 facts                = ACCEPTED;
-  raw ES2 REUSE                  = NON-AUTHORITATIVE;
-  raw ESN BLOCK                  = NON-AUTHORITATIVE;
-  EQ-1..EQ-8 adjudication        = NOT ESTABLISHED;
-  REJ-1..REJ-14 adjudication     = NOT ESTABLISHED;
-  CarrierSQLite equivalence      = NOT ESTABLISHED;
-  broader SimiGo/ES claim        = NOT ESTABLISHED.
+  raw O0–O5 facts              = ACCEPTED;
+  raw ES2 REUSE                = NON-AUTHORITATIVE;
+  raw ESN BLOCK                = NON-AUTHORITATIVE;
+  EQ-1..EQ-8 adjudication      = NOT ESTABLISHED;
+  REJ-1..REJ-14 adjudication   = NOT ESTABLISHED;
+  CarrierSQLite equivalence    = NOT ESTABLISHED;
+  broader SimiGo/ES claim      = NOT ESTABLISHED.
 
 Budgets:
-  database equivalence campaigns 001, 002 and 003 = CONSUMED;
-  associated IS-mutation/observer budgets         = CONSUMED;
-  harness repair                                  = NOT AUTHORIZED;
-  rerun                                           = NOT AUTHORIZED;
-  automatic renewal                               = FORBIDDEN;
-  old campaign/evidence reuse                     = FORBIDDEN.
+  fourth campaign / IS-mutation / observer budgets = CONSUMED;
+  repair                                           = NOT AUTHORIZED;
+  rerun                                            = NOT AUTHORIZED;
+  old campaign/evidence reuse                      = FORBIDDEN;
+  automatic renewal                                = FORBIDDEN.
 
 Next lawful object:
-  explicit Human decision to authorize a new independently budgeted
-  Request scoped to post-O5 observer/evidence persistence closure and a
-  potential fourth frozen campaign. This state does not authorize drafting
-  that Request or any implementation work.
-
-Authoritative path map:
-  database-carrier-replication/campaign/EVIDENCE_PATH_BINDING_MANIFEST.json.
+  explicit Human evidence audit of INVALID E4. If further correction is
+  desired, it then requires a new independently budgeted Human-directed
+  Request. This state authorizes neither repair nor rerun.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-equivalence-campaign-v1.5-20261008.
+  docs/02-evidence/database-carrier-equivalence-campaign-v1.6-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
