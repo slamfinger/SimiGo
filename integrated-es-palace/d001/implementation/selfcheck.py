@@ -229,7 +229,7 @@ def run_s2(manifest: dict) -> int:
                 inventory.read(family)
         deterministic = digest(first["output"]) == digest(second["output"]) and first["identity_digest"] == second["identity_digest"]
         expected = EXPECTED[case]
-        observed = (first["output"]["decision"], first["output"]["continuation_class"], first["typed_decision"])
+        observed = (first["output"]["decision"], first["output"]["continuation_class"], first["precedence_reason"])
         passed = deterministic and observed == expected
         results[case] = {"observed": observed, "expected": expected, "identity_digest": first["identity_digest"], "output_digest": first["output"]["continuation_output_digest"], "passed": passed}
         identity_record = {"record_key": first["identity_digest"], "case_id": case, "identity": first["identity"], "identity_digest": first["identity_digest"], "closure_digest": first["closure"]["closure_digest"]}

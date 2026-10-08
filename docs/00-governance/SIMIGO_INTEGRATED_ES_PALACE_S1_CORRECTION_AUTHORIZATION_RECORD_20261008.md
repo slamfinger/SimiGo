@@ -79,3 +79,17 @@ exception before any S2 evidence object was written. This is precisely the
 N-MISSING path and must return typed `MISSING_INFORMATION_BLOCK`, not raise.
 Correction-003 is registered without expanding authority and retains all prior
 evidence.
+
+## 7. Registered terminal-label retry
+
+Correction-003 S2 compared the positive observed label to `typed_decision` while
+the pre-registered third vector component is `precedence_reason`. All seven
+decisions, identities, and Carrier persistence were otherwise produced. Failed
+S2 evidence is retained. Correction-004 is registered without expanding
+authority:
+
+```text
+manifest_instance_id = 1DACEDBD-6269-42E7-90ED-69276DCAE64B;
+evidence parent =
+  docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-004.
+```
