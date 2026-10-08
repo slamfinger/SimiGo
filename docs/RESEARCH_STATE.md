@@ -195,6 +195,52 @@ Primary evidence:
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.2_HUMAN_REVIEW_RULING_20261008.md.
 ```
 
+## PIR Experiment Package RM-001 — 2026-10-08 (PALACE / ES)
+
+> **Status:** PACKAGE / RUN MANIFEST SUBMITTED FOR HUMAN REVIEW. Implementation,
+> fixture creation, experiment and IS mutation remain NOT AUTHORIZED.
+
+```text
+package / manifest ID = MINIMAL-PIR-V0.2-EXP-PKG-RM-001;
+governing Request v2.4 = 01108b2…;
+candidate future run ID = MINIMAL-PIR-EXP-001 / NOT AUTHORIZED;
+frozen design = Minimal PIR Probe v0.2 ACCEPT / DESIGN FROZEN;
+W_obs_age = 60,000 ms / submitted for review;
+W_latency = 5,000 ms / submitted for review;
+E-L = N=10,000, R=20, M=5 / submitted for review;
+E-S = N=20, R=20, M=5 / submitted for review;
+C-NOCHANGE = paired R=20, M=0 / submitted for review;
+implementation = NOT AUTHORIZED;
+fixture creation = NOT AUTHORIZED;
+experiment = NOT AUTHORIZED;
+IS mutation = NOT AUTHORIZED;
+E9 = NOT AUTHORIZED.
+
+Package locks:
+  Information Scope + Physical Scope separation;
+  bounded non-semantic candidate discovery;
+  P_declared / P_materialized / check-target / observation / change separation;
+  W_obs_age and W_latency independence;
+  exact typed physical verdicts;
+  deterministic content+size+stable-ID MOVE/RENAME correlation;
+  zero/one/many ambiguity policy;
+  Fresh Closure required fields;
+  phase-separated ICAC vector;
+  oracle and side-channel isolation;
+  negative and ambiguity cases;
+  evidence destinations EV-P01..EV-P18;
+  fail-closed stop rules.
+
+Next lawful object:
+  explicit Human package review:
+    ACCEPT PACKAGE / REVISE PACKAGE / REJECT PACKAGE.
+  Acceptance would not authorize implementation, fixture creation, experiment,
+  IS mutation, budget consumption or E9.
+
+Primary evidence:
+  docs/00-governance/PALACE_MINIMAL_PIR_V0.2_EXPERIMENT_AUTHORIZATION_PACKAGE_RUN_MANIFEST_RM001_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
