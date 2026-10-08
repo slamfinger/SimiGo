@@ -66,7 +66,7 @@ def main() -> int:
             "output_digest": result["output"]["continuation_output_digest"],
             "expected_decision": expected["decision"],
             "expected_class": expected["continuation_class"],
-            "passed": result["typed_decision"] == expected["decision"] and result["output"]["continuation_class"] == expected["continuation_class"],
+            "passed": result["output"]["decision"] == expected["decision"] and result["output"]["continuation_class"] == expected["continuation_class"] and result["precedence_reason"] == expected["precedence_reason"],
         }
         identities.append({
             "record_key": result["identity_digest"], "case_id": case, "identity": result["identity"],
