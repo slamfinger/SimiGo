@@ -24440,3 +24440,56 @@ Human review returns ACCEPT / REVISE / REJECT for the read-only postmortem
 audit package. ACCEPT may authorize only the bounded postmortem outputs; no
 repair, rerun, campaign, or equivalence claim is authorized.
 ```
+
+## D-002 Postmortem Replay-Adapter Audit Completion — 2026-10-09
+
+> **Status:** READ-ONLY POSTMORTEM AUDIT COMPLETE / FIRST FAULT LOCALIZED. The
+> unchanged D-001 Decision Core was not executed during the audit.
+
+```text
+audit package v1.0                = ACCEPT;
+audit mode                        = READ_ONLY_STATIC_AND_EVIDENCE;
+D002_MANIFEST_ADAPTER_CLOSURE     = PASS / retained from Attempt-003;
+field trace rows                  = 70;
+VALIDATION_REJECTION rows         = 69;
+INTENTIONAL_UNRESOLVED_ENCODING   = 1 / N-MISSING:R-I5;
+EVIDENCE_CAPTURE_DEFECT           = 1 / exact adapter exception not captured;
+exact adapter exception           = NOT ESTABLISHED;
+primary fault                     = EVIDENCE_INFRASTRUCTURE_DEFECT;
+secondary label                   = D002_REPLAY_ADAPTER_UNRESOLVED_INPUT_DEFECT;
+PALACE representation implicated  = false;
+typed mapping semantics implicated = not proven;
+D-001 Decision Core implicated    = false;
+Carrier implicated                = false;
+Observer implicated               = false;
+D-002 rerun                       = FORBIDDEN;
+repair-run                        = NOT AUTHORIZED;
+canonical/PALACE mutation         = NONE / FORBIDDEN;
+Correction Proposal               = NON-EXECUTABLE.
+```
+
+Audit conclusion:
+
+```text
+The sealed Attempt-003 replay adapter caused all seven real-source cases to
+enter D-001's unresolved fallback encoding. D-001 correctly fail-closed those
+inputs. N-MISSING matched only because its frozen vector required that result.
+The exact adapter exception was not captured and cannot be recovered without a
+new authorized instrumentation object.
+```
+
+Audit evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-postmortem-audit-v1/;
+AUDIT_EVIDENCE_SHA256SUMS SHA256 =
+  d156b4095825ad8026137361e32aa5cad8e0cc32d8b509576e5d7cd13b058a1f.
+```
+
+Next lawful action:
+
+```text
+STOP. The non-executable correction proposal requires a new Human-directed
+instrumentation/redesign package before any further execution or implementation
+mutation.
+```
