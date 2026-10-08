@@ -24262,3 +24262,57 @@ Next lawful action:
 STOP. A new explicit Human authorization is required for adapter/observer
 correction and any new campaign instance/evidence parent. No rerun is authorized.
 ```
+
+## D-002 Consumption Attempt 002 — 2026-10-09
+
+> **Status:** EXECUTED / FAIL / WRITE-ONCE EVIDENCE RETAINED. All four新增 entry
+> gates passed; corrected observer classified all seven cases correctly. The
+> remaining failure is a Run Manifest package-binding omission.
+
+```text
+manifest instance                 = D1326CC7-6A02-43B6-A169-717EBB777864;
+execution head                    = 3b34eaac…;
+decision replay budget            = 1 / 1 CONSUMED;
+experiment budget                 = 1 / 1 CONSUMED;
+observer campaign budget          = 1 / 1 CONSUMED;
+correction_scope_clean            = true;
+D001_CORE_DIGESTS_UNCHANGED       = true;
+FIXTURE_EXPECTED_UNCHANGED        = true;
+SNAPSHOT_SOURCE_BINDINGS          = true;
+DECISION_REPLAY_RECORD            = PASS / EXECUTED;
+EXPERIMENT_RECORD                 = FAIL;
+CARRIER_LIFECYCLE_RECORD          = PASS / 7 RECORDS;
+OBSERVER_RECORD                   = PASS / ALL SEVEN CORRECT;
+RECONCILIATION_RECORD             = FAIL;
+CLAIM_RECORD                      = FAIL;
+PALACE source mutation            = NONE;
+canonical IS mutation             = NONE;
+forbidden channels observed       = NONE;
+E9                                = NOT AUTHORIZED / NOT EXECUTED;
+EXP-004                           = NOT AUTHORIZED / NOT EXECUTED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+rerun                             = NOT AUTHORIZED;
+PALACE equivalence                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+Failure class:
+
+```text
+D002_RUN_MANIFEST_PACKAGE_BINDING_OMISSION_DEFECT.
+```
+
+Primary evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-consumption-attempt-002/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_CONSUMPTION_ATTEMPT_002_FAILURE_RECORD_20261009.md.
+```
+
+Next lawful action:
+
+```text
+STOP. A new explicit Human authorization is required for manifest-binding
+correction and any new campaign instance/evidence parent. No rerun is authorized.
+```
