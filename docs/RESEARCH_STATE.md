@@ -785,6 +785,84 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_FIXTURE_PRECHANGE_SNAPSHOT_CORRECTION_COMPLETION_RECORD_036_20261008.md.
 ```
 
+## MINIMAL-PIR-EXP-003 invalid stop — 2026-10-08 (PALACE / ES)
+
+> **Status:** INVALID / NON-ADJUDICATIVE — Human Evidence Audit NOT OPEN. The
+> corrected EV-P08 recorder worked and E-L completed 20/20 bounded physical
+> observations with passing windows, but fail-closed because the committed
+> measured fixture was stale and lacked the corrected pre-change locator. No
+> repair, rerun, EXP-004 or equivalence claim is authorized.
+
+```text
+MINIMAL-PIR-EXP-003               = INVALID / NON-ADJUDICATIVE;
+authorization/execution commit    = 515ae2…;
+invalid completion record         = registered by this section's preceding commit;
+experiment budget                 = CONSUMED;
+physical observation budget       = CONSUMED;
+evidence budget                   = CONSUMED BY FAIL-CLOSED ATTEMPT;
+E-S / no-change execution         = NOT REACHED;
+IS mutation                       = NONE;
+repair                            = NONE;
+rerun                             = NONE.
+
+Run facts:
+  accepted Information Scope       = 20/20;
+  physical observations            = 20;
+  W_obs_age                        = PASS;
+  W_latency                        = PASS;
+  oracle planted changes           = 5;
+  true-positive changes            = 4;
+  false-negative changes           = 1 (PC-MOVE);
+  false-positive changes           = 0;
+  Fresh Closure structure          = COMPLETE / NON-AUTHORITATIVE.
+
+Missed MOVE:
+  stable object =
+    dcaacd34cd0835802e3b218f2520d9d3b5377df3dfe950aed701a120c8ac6d0d;
+  observed destination =
+    objects/dcaacd34cd0835802e3b218f2520d9d3b5377df3dfe950aed701a120c8ac6d0d.moved.json;
+  observed verdict =
+    FRESH_WITHIN_WINDOW;
+  expected verdict =
+    PHYSICALLY_MOVED.
+
+Root-cause class =
+  HARNESS_FIXTURE_STALE_PRECHANGE_SNAPSHOT_ARTIFACT_DEFECT.
+The v2.7 correction implementation existed, but the committed measured fixture
+was not regenerated after that correction. Therefore measured_input lacked
+pre_change_locator and the reconciler treated the moved destination as current.
+
+Defect attribution:
+  PIR semantic model               = NOT DEFECTIVE IN THIS STOP;
+  Physical Scope discovery         = NOT DEFECTIVE IN THIS STOP;
+  deterministic correlation        = NOT DEFECTIVE IN THIS STOP;
+  freshness rule                   = NOT DEFECTIVE IN THIS STOP;
+  oracle                           = NO LEAKAGE;
+  IS mutation                      = NONE;
+  CarrierSQLite/E8 bounded ruling  = UNCHANGED;
+  EQ/REJ criteria                  = UNCHANGED.
+
+Evidence disposition:
+  E-L observations/Fresh Closure   = RAW / NON-AUTHORITATIVE;
+  PC-MOVE                          = NOT ADJUDICATED;
+  PIR effectiveness                = NOT ESTABLISHED;
+  MOVE/RENAME proof                = NOT ESTABLISHED;
+  PIR performance theorem          = NOT ESTABLISHED;
+  PALACE equivalence               = NOT ESTABLISHED;
+  integrated SimiGo proof          = NOT ESTABLISHED.
+
+Next lawful object:
+  explicit Human evidence audit of INVALID EXP-003, followed by a strategic
+  stop/continue decision. Given repeated evidence-infrastructure failures, the
+  Human may reasonably choose to stop. If continuing, any release-process
+  correction must be a new independently budgeted Request and any future
+  execution a separate explicit authorization.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_EXP003_CORRECTED;
+  docs/00-governance/PALACE_MINIMAL_PIR_EXP003_INVALID_COMPLETION_RECORD_038_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
