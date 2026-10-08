@@ -94,6 +94,7 @@ def prepare_fixture(case: str, manifest: dict) -> dict:
     root.mkdir(parents=True)
     target = "lawful-next" if case.startswith("P-") else "registered-target"
     actions = action_for(case, case, target)
+    actions["schema_id"] = "NEXT-ACTION-D001-V1"
     invocation = {
         "manifest_instance_id": manifest["manifest_instance_id"],
         "package_id": manifest["package_id"],
