@@ -137,9 +137,13 @@ def load_existing(manifest: dict, binding: dict) -> tuple[dict, list[dict]]:
         seen_ids.append(record["source_internal_id"])
         for family, item in record["primitives"].items():
             object_path = root / item["path"]
+            if item["sha256"] is None:
+                if family == "R-I5" and item["registered_trigger"] == "N-MISSING" and not object_path.exists():
+                    continue
+                raise ValueError(f"retained fixture object unexpectedly missing: {case}:{family}")
             if object_path.is_symlink() or not object_path.is_file():
                 raise ValueError(f"retained fixture object missing: {case}:{family}")
-            if item["sha256"] is not None and digest_bytes(object_path.read_bytes()) != item["sha256"]:
+            if digest_bytes(object_path.read_bytes()) != item["sha256"]:
                 raise ValueError(f"retained fixture digest drift: {case}:{family}")
         if not expected["no_fallback_guess"] or not expected["no_partial_continuation"] or not expected["no_silent_recompute"] or not expected["no_stale_success"]:
             raise ValueError(f"retained fixture fail-closed flags drift: {case}")

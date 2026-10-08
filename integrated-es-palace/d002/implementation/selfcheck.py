@@ -49,8 +49,12 @@ def validate_fixtures() -> list[dict]:
         passed = sorted(manifest["primitives"]) == sorted(required)
         for item in manifest["primitives"].values():
             item_path = case_dir / item["path"]
-            passed &= not item_path.is_symlink() and item_path.is_file()
-            if item["sha256"] is not None:
+            if item["sha256"] is None:
+                if family == "R-I5" and item["registered_trigger"] == "N-MISSING" and not item_path.exists():
+                    continue
+                passed = False
+            else:
+                passed &= not item_path.is_symlink() and item_path.is_file()
                 passed &= digest_bytes(item_path.read_bytes()) == item["sha256"]
         expected = json.loads((case_dir / "EXPECTED.json").read_text())
         passed &= expected["no_fallback_guess"] and expected["no_partial_continuation"] and expected["no_silent_recompute"] and expected["no_stale_success"]
