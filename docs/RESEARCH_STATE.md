@@ -505,6 +505,52 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP001_HUMAN_EVIDENCE_AUDIT_RECORD_031_20261008.md.
 ```
 
+## PIR recorder correction / validation closure — 2026-10-08 (PALACE / ES)
+
+> **Status:** COMPLETE — Recorder Correction PASS; targeted regression and
+> fresh experiment-entry validation PASS. `MINIMAL-PIR-EXP-002` and any
+> experiment execution remain NOT AUTHORIZED.
+
+```text
+Governing Request v2.6            = 6af9217…;
+correction commit                 = a11f637…;
+completion record                 = 14a7eba…;
+regression guard                  = validate_recorder_correction.py;
+validation result                 = RECORDER_CORRECTION_VALIDATION_PASS / 4/4;
+EV-P08 persistence                = Path.write_bytes / exact canonical JSONL;
+negative bytes → write_text guard = PASS;
+positive bytes → write_bytes guard = PASS;
+byte-exact persistence/reread/parse = PASS;
+JSONL physical-line contract      = PASS;
+fresh experiment-entry validation = PASS;
+oracle leakage                    = NONE;
+fixture mutation                  = NONE;
+IS mutation                       = ZERO;
+stale-success recurrence          = NONE;
+PIR semantic change               = NONE;
+MINIMAL-PIR-EXP-002               = NOT AUTHORIZED;
+experiment execution              = NOT AUTHORIZED.
+
+Boundary preservation:
+  Probe v0.2 design               = UNCHANGED;
+  RM-001 run shapes               = UNCHANGED;
+  W_obs_age                       = UNCHANGED;
+  W_latency                       = UNCHANGED;
+  attribution rules               = UNCHANGED;
+  JSONL semantic contract         = UNCHANGED;
+  CarrierSQLite/E8 bounded ruling = UNCHANGED;
+  E9                              = NOT AUTHORIZED.
+
+Next lawful object:
+  explicit Human Experiment Launch Review for a future corrected PIR run.
+  This state does not authorize execution, EXP-002, a new budget, fixture reuse
+  or scope broadening.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/RECORDER_CORRECTION_VALIDATION.json;
+  docs/00-governance/PALACE_MINIMAL_PIR_RECORDER_CORRECTION_COMPLETION_RECORD_032_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
