@@ -129,7 +129,7 @@ Query-Priority Reconciliation       ACCEPTED;
 PIR Design v0.2                     CONDITIONAL PASS → ACCEPTED;
 Clarification Addendum              ACCEPTED;
 Minimal PIR Probe v0.1              CONDITIONAL PASS;
-Minimal PIR Probe v0.2              DELIVERED FOR HUMAN REVIEW / PAUSED;
+Minimal PIR Probe v0.2              ACCEPT / DESIGN FROZEN;
 PIR implementation                  NOT AUTHORIZED;
 PIR experiment                      NOT AUTHORIZED;
 PIR fixture creation                NOT AUTHORIZED;
@@ -152,12 +152,47 @@ Relation to completed lines:
   the three results are complementary and must not be conflated.
 
 Current PIR gate:
-  explicit Human decision required to resume review of
-  Minimal PIR Probe Design v0.2, or keep PIR paused.
-This state does not make that decision.
+  Minimal PIR Probe v0.2              ACCEPT / DESIGN FROZEN;
+  next object = separate Experiment Authorization Package / Run Manifest,
+                 only if separately authorized;
+  implementation / fixture / experiment remain NOT AUTHORIZED.
+This state does not authorize that package or experiment.
 
 Primary evidence:
   docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_REVIEW_RECONCILIATION_RECORD_20261008.md.
+```
+
+## Minimal PIR Probe v0.2 review — 2026-10-08 (PALACE / ES)
+
+> **Status:** COMPLETE — Minimal PIR Probe Design v0.2 ACCEPT / DESIGN FROZEN.
+> Implementation, fixture creation, experiment and IS mutation remain NOT
+> AUTHORIZED.
+
+```text
+Minimal PIR Probe v0.1              ACCEPTED / SUPERSEDED;
+Minimal PIR Probe v0.2              ACCEPT / DESIGN FROZEN;
+MR-1 W_obs_age semantics            PASS;
+MR-2 bounded physical scope          PASS;
+MR-3 phase-separated attribution     PASS;
+MR-4 deterministic MOVE/RENAME       PASS;
+Observation ≠ interpretation         PASS;
+Scope ≠ whole-space synchronization  PASS;
+Freshness ≠ existence                PASS;
+PIR ≠ Information Space mutation     PASS;
+Experiment Authorization Package     NOT AUTHORIZED;
+Run Manifest                         NOT AUTHORIZED;
+Implementation                       NOT AUTHORIZED;
+Fixture creation                     NOT AUTHORIZED;
+Experiment                           NOT AUTHORIZED;
+IS mutation                          NOT AUTHORIZED.
+
+Next lawful object:
+  separate Experiment Authorization Package / Run Manifest only if the Human
+  explicitly authorizes it. That package review would not imply experiment
+  authorization.
+
+Primary evidence:
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_MINIMAL_PIR_PROBE_DESIGN_V0.2_HUMAN_REVIEW_RULING_20261008.md.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
