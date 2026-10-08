@@ -270,17 +270,17 @@ def readiness_checks(report: Report, manifest: dict) -> dict:
     exists = root.exists() and any(root.iterdir())
     version = manifest.get("destination_version")
     path = manifest.get("campaign_output_root_repository_relative", "")
-    version_ok = version == 5
-    path_ok = "v2.0-e7-reserved" in path
+    version_ok = version == 6
+    path_ok = "v2.1-e8-reserved" in path
     fresh = version_ok and path_ok and not exists
-    report.check("fresh_e7_path_map_established", fresh, {
+    report.check("fresh_e8_path_map_established", fresh, {
         "destination_version": version,
         "output_root": path,
-        "version_5": version_ok,
-        "independent_e7_reserved_root": path_ok,
+        "version_6": version_ok,
+        "independent_e8_reserved_root": path_ok,
         "root_absent_before_campaign": not exists,
     })
-    return {"output_root": str(root), "version_5": version_ok, "root_absent": not exists, "fresh": fresh}
+    return {"output_root": str(root), "version_6": version_ok, "root_absent": not exists, "fresh": fresh}
 
 
 def main() -> int:
@@ -300,8 +300,8 @@ def main() -> int:
     ready = not report.blockers
 
     result = {
-        "request": "Campaign Evidence-Lifecycle Closure Request v2.1",
-        "human_ruling": "继续，但只继续到 Evidence-Lifecycle Closure；暂不授权 E8。",
+        "request": "Database-Carrier E8 Path-Map Establishment Request v2.2",
+        "human_ruling": "继续，但只授权建立全新的 E8 path map；不要把 path-map authorization 与 E8 execution 合并。",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "repository_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "manifest_identity": manifest["manifest_identity"],
@@ -319,14 +319,14 @@ def main() -> int:
         "campaign_budget_consumed": False,
         "e7_authorized": False,
         "e7_draft_authorized": False,
+        "e8_path_map_authorized": True,
         "e8_authorized": False,
         "e8_draft_authorized": False,
-        "ready_for_e7_launch_review": ready,
-        "ready_for_e7_execution": False,
-        "e8_authorized": False,
+        "ready_for_e8_launch_review": ready,
+        "ready_for_e8_execution": False,
         "evidence_lifecycle_closure_pass": lifecycle_ready,
         "lifecycle_blockers": lifecycle_blockers,
-        "decision": "EVIDENCE_LIFECYCLE_CLOSURE_PASS" if lifecycle_ready else "EVIDENCE_LIFECYCLE_CLOSURE_FAIL",
+        "decision": "E8_PATH_MAP_ESTABLISHED" if readiness_details["fresh"] else "E8_PATH_MAP_NOT_ESTABLISHED",
         "e6_evidence_read_only_check": {"before": before, "after": after, "unchanged": before == after},
         "details": {"static": static_details, "runtime": runtime_details, "readiness": readiness_details},
     }

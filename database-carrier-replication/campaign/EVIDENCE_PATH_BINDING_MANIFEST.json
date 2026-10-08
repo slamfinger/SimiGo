@@ -1,6 +1,6 @@
 {
   "authoritative_path_map": true,
-  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008",
+  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008",
   "consumption_contract": {
     "artifact_path_derivation_by_campaign": "FORBIDDEN",
     "exact_path_identity_consumption": "REQUIRED",
@@ -27,10 +27,10 @@
     }
   ],
   "destination_count": 31,
-  "destination_version": 5,
-  "governing_authorization_record_commit": "d961440ddb0d230c4e69ee7b8abc8ceb026318b7",
-  "governing_request_commit": "d961440ddb0d230c4e69ee7b8abc8ceb026318b7",
-  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_007",
+  "destination_version": 6,
+  "governing_authorization_record_commit": "124bc805e92e5bebc826fd9e6aea7f22ae0eecce",
+  "governing_request_commit": "124bc805e92e5bebc826fd9e6aea7f22ae0eecce",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_008",
   "source_database": {
     "accepted_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
     "output_destination_id": "O0_DATABASE",
