@@ -79,6 +79,36 @@ def write_json(path: Path, value: object) -> None:
     )
 
 
+def persist_observer_verdict(paths: EvidencePaths, observer: dict) -> dict:
+    canonical_key = "C3_persisted_vs_resolved_byte_equality"
+    require(canonical_key in observer, "canonical C3 observer key absent")
+    require(observer[canonical_key] is True, "canonical C3 observer mismatch")
+    serialized = (
+        json.dumps(observer, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    verdict_path = paths.resolve("OBSERVER_VERDICT")
+    with verdict_path.open("xb") as handle:
+        handle.write(serialized)
+    persisted = verdict_path.read_bytes()
+    require(persisted == serialized, "observer verdict byte persistence mismatch")
+    parsed = json.loads(persisted)
+    require(parsed == observer, "observer verdict parsed-object mismatch")
+    binding = {
+        "canonical_c3_key": canonical_key,
+        "canonical_c3_value": True,
+        "observer_path": verdict_path.relative_to(paths.output_root).as_posix(),
+        "parsed_object_exact": True,
+        "persistence_self_check": "PASS",
+        "serialized_canonicalization": (
+            "json.dumps(sort_keys=True, separators=(',', ':')) + LF"
+        ),
+        "verdict_byte_length": len(persisted),
+        "verdict_sha256": sha256(persisted),
+    }
+    write_json(paths.resolve("OBSERVER_PERSISTENCE_BINDING"), binding)
+    return binding
+
+
 def git_bytes(commit: str, path: str) -> bytes:
     return subprocess.check_output(["git", "-C", str(ROOT), "show", f"{commit}:{path}"])
 
@@ -534,8 +564,7 @@ def run(expected_head: str, output: Path) -> int:
             "n1_mutation_before_esn_invocation": True,
         },
     }
-    require(observer["C3"], "C3 mismatch")
-    write_json(evidence_paths.resolve("OBSERVER_VERDICT"), observer)
+    observer_binding = persist_observer_verdict(evidence_paths, observer)
     eq_matrix = {
         "EQ-1": all(checks[p]["EQ-1_object_set_bytes_hashes"] for p in checks),
         "EQ-2": all(immutability.values()),
@@ -581,6 +610,9 @@ def run(expected_head: str, output: Path) -> int:
         "exact_campaign_repository_commit": repository["campaign_repository_commit"],
         "implementation_commit": IMPLEMENTATION_COMMIT,
         "ledger_counts": ledger_counts,
+        "observer_persistence_binding_sha256": sha256_path(
+            evidence_paths.resolve("OBSERVER_PERSISTENCE_BINDING")
+        ),
         "outcome": "VALID",
         "rej_matrix": rej_matrix,
         "reference": {

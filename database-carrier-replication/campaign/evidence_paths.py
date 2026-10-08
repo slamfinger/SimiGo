@@ -76,6 +76,18 @@ def load_and_preflight(repository_root: Path, output_root: Path) -> EvidencePath
     _require(output_root.exists() and not output_root.is_symlink(), "invalid campaign output root")
     _require(output_root.is_dir(), "campaign output root is not a directory")
 
+    entries = _destination_entries(manifest)
+    _require(
+        manifest.get("destination_count") == len(entries),
+        "manifest destination count mismatch",
+    )
+    _require(manifest.get("destination_version") == 2, "unsupported path-map version")
+    destination_ids = [entry["destination_id"] for entry in entries]
+    output_paths = [entry["output_relative_path"] for entry in entries]
+    _require(len(destination_ids) == len(set(destination_ids)), "duplicate destination id")
+    _require(len(output_paths) == len(set(output_paths)), "duplicate destination path")
+    _require("OBSERVER_PERSISTENCE_BINDING" in destination_ids, "observer persistence binding destination absent")
+
     managed_paths: dict[str, Path] = {}
     for entry in manifest["created_directories"]:
         path = output_root / entry["output_relative_path"]

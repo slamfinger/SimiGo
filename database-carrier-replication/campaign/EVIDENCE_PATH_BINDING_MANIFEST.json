@@ -1,6 +1,6 @@
 {
   "authoritative_path_map": true,
-  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.5-20261008",
+  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.6-20261008",
   "consumption_contract": {
     "artifact_path_derivation_by_campaign": "FORBIDDEN",
     "exact_path_identity_consumption": "REQUIRED",
@@ -10,7 +10,8 @@
   },
   "corrects_defects": [
     "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
-    "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT"
+    "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT",
+    "HARNESS_POST_SEQUENCE_OBSERVER_KEY_BINDING_DEFECT"
   ],
   "created_directories": [
     {
@@ -22,11 +23,11 @@
       "output_relative_path": "observations"
     }
   ],
-  "destination_count": 29,
-  "destination_version": 1,
-  "governing_authorization_record_commit": "9119530459d27b56c586c591dcf27a41f2a9b710",
-  "governing_request_commit": "079822841b3c1a482251fd24c9311e0242ae345",
-  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_003",
+  "destination_count": 30,
+  "destination_version": 2,
+  "governing_authorization_record_commit": "b5f15cb5309d7619ba2e03eefaeac74712890462",
+  "governing_request_commit": "b5f15cb5309d7619ba2e03eefaeac74712890462",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_004",
   "source_database": {
     "accepted_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
     "output_destination_id": "O0_DATABASE",
@@ -169,6 +170,12 @@
     {
       "destination_id": "OBSERVER_VERDICT",
       "output_relative_path": "observer_verdict.json",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "OBSERVER_PERSISTENCE_BINDING",
+      "output_relative_path": "observer_persistence_binding.json",
       "required_stage": "POST_SEQUENCE",
       "type": "file"
     },
