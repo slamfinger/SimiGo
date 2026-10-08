@@ -292,6 +292,54 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_V0.2_RM001_HUMAN_PACKAGE_REVIEW_RULING_20261008.md.
 ```
 
+## PIR RM-001 implementation / fixture completion — 2026-10-08 (PALACE / ES)
+
+> **Status:** COMPLETE — Implementation PASS; Fixture Preparation PASS;
+> `MINIMAL-PIR-EXP-001` remains NOT AUTHORIZED and NOT EXECUTED.
+
+```text
+Governing Request v2.5             = 057b431…;
+completion record                  = registered by this section's preceding commit;
+RM-001 package                     = ACCEPT PACKAGE;
+frozen probe design                = Minimal PIR Probe v0.2 / DESIGN FROZEN;
+implementation self-check          = PASS;
+fixture legality                   = PASS;
+oracle isolation                   = PASS;
+attribution separation             = PASS;
+physical observations generated    = 0;
+IS mutations                       = 0;
+experiment output leak             = NONE;
+MINIMAL-PIR-EXP-001 execution      = NOT AUTHORIZED / NOT EXECUTED;
+E9 / Database-Carrier campaign     = NOT AUTHORIZED.
+
+Prepared fixtures:
+  E-L               N=10,000, R=20, M=5;
+  E-S               N=20,     R=20, M=5;
+  C-NOCHANGE-L      N=10,000, R=20, M=0;
+  C-NOCHANGE-S      N=20,     R=20, M=0.
+
+Fixture guarantees:
+  isolated synthetic post-change physical-state archives;
+  measured input excludes fixture role, planted-change ledger, ground truth,
+    expected verdicts, oracle output and control-side cost;
+  sealed oracle ledger is separated from measured input;
+  opaque stable object IDs and registered information identities;
+  deterministic MOVE/RENAME evidence;
+  EV-P01..EV-P18 destination binding = RESERVED_NOT_GENERATED;
+  implementation and fixture preparation produced no physical observations.
+
+Next lawful object:
+  explicit Experiment Launch Review. The Human may DENY
+  `MINIMAL-PIR-EXP-001` or separately authorize its execution using accepted
+  RM-001 boundaries and prepared fixtures. Implementation success does not
+  imply experiment authorization.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/IMPLEMENTATION_SELF_CHECK.json;
+  docs/00-governance/...IMPLEMENTATION_FIXTURE_PREPARATION_COMPLETION_RECORD_028...;
+  docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/pir_probe.py.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
