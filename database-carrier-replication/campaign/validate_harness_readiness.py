@@ -129,6 +129,32 @@ def static_checks(report: Report, manifest: dict) -> dict:
         "unreferenced_destinations": unreferenced,
         "unauthorized_destinations": unauthorized,
     })
+    all_functions = {n.name: n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)}
+    required_functions = {
+        "transaction_json_line_bytes",
+        "discard_premature_success_state",
+        "validate_mandatory_evidence_closure",
+        "validate_final_success_state",
+        "write_failure_process_result",
+    }
+    missing_functions = sorted(required_functions - set(all_functions))
+    log_function = all_functions.get("log_event")
+    log_uses_jsonl_helper = log_function is not None and "transaction_json_line_bytes" in ast.unparse(log_function)
+    log_uses_pretty_helper = log_function is not None and "canonical_json_bytes" in ast.unparse(log_function)
+    success_tuple = next(
+        (n for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "SUCCESS_STATE_DESTINATIONS" for t in n.targets)),
+        None,
+    )
+    process_result_in_success_state = success_tuple is not None and "CAMPAIGN_PROCESS_RESULT" in ast.unparse(success_tuple)
+    report.check("transaction_jsonl_producer_contract", not missing_functions and log_uses_jsonl_helper and not log_uses_pretty_helper, {
+        "missing_functions": missing_functions,
+        "log_event_uses_jsonl_helper": log_uses_jsonl_helper,
+        "log_event_uses_pretty_helper": log_uses_pretty_helper,
+    })
+    report.check("process_result_success_state_invariant", process_result_in_success_state and not missing_functions, {
+        "process_result_registered_as_success_state": process_result_in_success_state,
+        "lifecycle_functions_present": not missing_functions,
+    })
     return {"build_return": build_return, "whole_tuple_assignments": len(caller_assignments)}
 
 
@@ -178,6 +204,64 @@ def runtime_checks(report: Report, harness) -> dict:
         "graph": "preflight.adapter_build = tuple[Path, dict]",
         "rejected_pre_write": simulated_rejected,
     })
+
+    jsonl_values = [
+        {"event": "TRANSACTION_BEGIN", "time_ns": 1},
+        {"event": "TRANSACTION_COMMIT", "time_ns": 2, "nested": {"safe": True}},
+    ]
+    jsonl_payload = b"".join(harness.transaction_json_line_bytes(value) for value in jsonl_values)
+    jsonl_lines = jsonl_payload.splitlines()
+    jsonl_ok = (
+        len(jsonl_lines) == 2
+        and all(line.count(b"\n") == 0 for line in jsonl_lines)
+        and [json.loads(line) for line in jsonl_lines] == jsonl_values
+    )
+    report.check("transaction_jsonl_compact_record_contract", jsonl_ok, {
+        "records": len(jsonl_values),
+        "physical_lines": len(jsonl_lines),
+        "parsed_exact": jsonl_ok,
+    })
+
+    lifecycle_root = Path(directory) / "lifecycle"
+    lifecycle_root.mkdir(parents=True)
+    mapping = {}
+    for destination_id in harness.SUCCESS_STATE_DESTINATIONS:
+        path = lifecycle_root / f"{destination_id}.artifact"
+        path.write_bytes(b"premature-success")
+        mapping[destination_id] = path
+    lifecycle_paths = harness.EvidencePaths(ROOT, lifecycle_root, {}, mapping)
+    harness.discard_premature_success_state(lifecycle_paths)
+    discarded = not any(path.exists() for path in mapping.values())
+    harness.write_failure_process_result(lifecycle_paths, RuntimeError("synthetic lifecycle failure"))
+    failure_path = mapping["CAMPAIGN_PROCESS_RESULT"]
+    failure_value = json.loads(failure_path.read_bytes())
+    failure_ok = (
+        discarded
+        and failure_value["artifact_state"] == "FAILURE"
+        and failure_value["campaign_returncode"] == 1
+        and failure_value["premature_success_state_discarded"] is True
+    )
+    report.check("failure_discards_success_and_persists_failure_result", failure_ok, {
+        "success_state_discarded": discarded,
+        "failure_result_state": failure_value.get("artifact_state"),
+        "failure_returncode": failure_value.get("campaign_returncode"),
+    })
+
+    for path in mapping.values():
+        path.write_bytes(json.dumps({"synthetic": True}, sort_keys=True).encode("utf-8"))
+    sha_path = mapping["SHA256SUMS"]
+    sha_path.write_text(
+        "".join(
+            f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
+            for destination_id, path in sorted(mapping.items()) if destination_id != "SHA256SUMS"
+        ),
+        encoding="utf-8",
+    )
+    harness.validate_final_success_state(lifecycle_paths)
+    report.check("final_success_state_validation", True, {
+        "validated_success_destinations": len(harness.SUCCESS_STATE_DESTINATIONS),
+        "sha_coverage": "PASS",
+    })
     return {}
 
 
@@ -211,11 +295,13 @@ def main() -> int:
     readiness_details = readiness_checks(report, manifest)
     before = tree_state(E6_ROOT)
     after = tree_state(E6_ROOT)
+    lifecycle_blockers = [name for name in report.blockers if name != "fresh_e7_path_map_established"]
+    lifecycle_ready = not lifecycle_blockers
     ready = not report.blockers
 
     result = {
-        "request": "Adapter-Build Tuple-Unpack Repair & Fresh E7 Path Map Request v2.0",
-        "human_ruling": "授权 adapter-build tuple-unpack binding correction + fresh E7 path-map establishment；E7 execution not authorized",
+        "request": "Campaign Evidence-Lifecycle Closure Request v2.1",
+        "human_ruling": "继续，但只继续到 Evidence-Lifecycle Closure；暂不授权 E8。",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "repository_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "manifest_identity": manifest["manifest_identity"],
@@ -228,14 +314,19 @@ def main() -> int:
             "E3_observer_key_binding": "fixed; no regression found",
             "E4_provenance_path_serialization": "boundary active; E6 exposed upstream tuple graph",
             "E5_adapter_output_return_type": "fixed and exercised without recurrence",
-            "E6_adapter_build_tuple_unpack": "fixed by caller-side unpack; regression check PASS" if ready else "OPEN BLOCKER",
+            "E6_adapter_build_tuple_unpack": "fixed by caller-side unpack; regression check PASS" if "adapter_build_tuple_unpack_binding" not in report.blockers else "OPEN BLOCKER",
         },
         "campaign_budget_consumed": False,
         "e7_authorized": False,
         "e7_draft_authorized": False,
+        "e8_authorized": False,
+        "e8_draft_authorized": False,
         "ready_for_e7_launch_review": ready,
         "ready_for_e7_execution": False,
-        "decision": "READY_FOR_E7_LAUNCH_REVIEW" if ready else "NOT_READY_FOR_E7_LAUNCH_REVIEW",
+        "e8_authorized": False,
+        "evidence_lifecycle_closure_pass": lifecycle_ready,
+        "lifecycle_blockers": lifecycle_blockers,
+        "decision": "EVIDENCE_LIFECYCLE_CLOSURE_PASS" if lifecycle_ready else "EVIDENCE_LIFECYCLE_CLOSURE_FAIL",
         "e6_evidence_read_only_check": {"before": before, "after": after, "unchanged": before == after},
         "details": {"static": static_details, "runtime": runtime_details, "readiness": readiness_details},
     }
@@ -243,6 +334,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False) + "\n")
     print(f"HARNESS_READINESS={result['decision']}")
     print(f"BLOCKERS={len(report.blockers)}")
+    print(f"LIFECYCLE_BLOCKERS={len(lifecycle_blockers)}")
     print(f"E6_EVIDENCE_UNCHANGED={before == after}")
     print(f"OUTPUT={args.output}")
     return 0

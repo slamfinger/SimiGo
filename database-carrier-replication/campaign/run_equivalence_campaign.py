@@ -65,6 +65,14 @@ SERIALIZATION_CANONICALIZATION = (
     "allow_nan=False) + LF"
 )
 serialization_checks: list[dict[str, object]] = []
+SUCCESS_STATE_DESTINATIONS = (
+    "EQ_REJ_MATRIX",
+    "CAMPAIGN_OUTCOME",
+    "CAMPAIGN_DB_VALIDATION",
+    "EVIDENCE_SERIALIZATION_SELF_CHECK",
+    "CAMPAIGN_PROCESS_RESULT",
+    "SHA256SUMS",
+)
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -84,6 +92,26 @@ def canonical_json_bytes(value: object) -> bytes:
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
         raise CampaignFailure(
             f"evidence object is not canonically serializable: {exc}"
+        ) from exc
+
+
+def transaction_json_line_bytes(value: object) -> bytes:
+    try:
+        text = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ) + "\n"
+        parsed = json.loads(text)
+        require(parsed == value, "transaction JSONL round-trip mismatch")
+        return text.encode("utf-8")
+    except CampaignFailure:
+        raise
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise CampaignFailure(
+            f"transaction event is not valid JSON Lines: {exc}"
         ) from exc
 
 
@@ -561,6 +589,80 @@ def write_sha_sums(paths: EvidencePaths) -> None:
     sums_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def discard_premature_success_state(paths: EvidencePaths) -> None:
+    for destination_id in SUCCESS_STATE_DESTINATIONS:
+        paths.resolve(destination_id).unlink(missing_ok=True)
+
+
+def validate_artifact_file(path: Path) -> None:
+    require(
+        path.exists() and path.is_file() and not path.is_symlink() and path.stat().st_size > 0,
+        f"mandatory evidence artifact invalid: {path}",
+    )
+    if path.suffix == ".json":
+        json.loads(path.read_bytes())
+
+
+def validate_mandatory_evidence_closure(paths: EvidencePaths) -> None:
+    deferred = {
+        "EQ_REJ_MATRIX",
+        "CAMPAIGN_OUTCOME",
+        "CAMPAIGN_PROCESS_RESULT",
+        "CAMPAIGN_STDERR",
+        "SHA256SUMS",
+    }
+    for destination_id, path in paths.paths.items():
+        if destination_id in deferred:
+            continue
+        if path.is_dir():
+            require(path.is_dir() and not path.is_symlink(), f"mandatory evidence directory invalid: {destination_id}")
+        else:
+            validate_artifact_file(path)
+    transaction_log = paths.resolve("TRANSACTION_LOG")
+    records = [json.loads(line) for line in transaction_log.read_text(encoding="utf-8").splitlines()]
+    require(bool(records), "transaction JSONL closure has no records")
+    self_check = json.loads(paths.resolve("EVIDENCE_SERIALIZATION_SELF_CHECK").read_bytes())
+    require(self_check.get("all_canonical_artifacts_pass") is True, "serialization closure self-check failed")
+
+
+def validate_final_success_state(paths: EvidencePaths) -> None:
+    for destination_id in SUCCESS_STATE_DESTINATIONS:
+        validate_artifact_file(paths.resolve(destination_id))
+    sha_sums_path = paths.resolve("SHA256SUMS")
+    recorded = {
+        line.split("  ", 1)[1]
+        for line in sha_sums_path.read_text(encoding="utf-8").splitlines()
+        if line
+    }
+    output = paths.output_root
+    expected = {
+        path.relative_to(output).as_posix()
+        for path in output.rglob("*")
+        if path.is_file() and path != sha_sums_path
+    }
+    require(recorded == expected, "final SHA256SUMS coverage mismatch")
+
+
+def write_failure_process_result(paths: EvidencePaths, exc: Exception) -> None:
+    path = paths.resolve("CAMPAIGN_PROCESS_RESULT")
+    payload = json.dumps(
+        {
+            "artifact_state": "FAILURE",
+            "campaign_returncode": 1,
+            "premature_success_state_discarded": True,
+            "stop_code": "CAMPAIGN_EVIDENCE_LIFECYCLE_CLOSURE_FAILURE",
+            "failure_class": type(exc).__name__,
+            "failure_message": str(exc),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ) + "\n"
+    with path.open("xb") as handle:
+        handle.write(payload.encode("utf-8"))
+
+
 def run(expected_head: str, output: Path) -> int:
     require(not output.exists(), f"campaign output already exists: {output}")
     output.mkdir(parents=True)
@@ -585,9 +687,9 @@ def run(expected_head: str, output: Path) -> int:
 
     def log_event(event: str, **fields: object) -> None:
         record = {"event": event, "time_ns": time.time_ns(), "utc": utcnow(), **fields}
-        line = canonical_json_bytes(record).decode("utf-8")
-        with transaction_log.open("a", encoding="utf-8") as fh:
-            fh.write(line)
+        record_line = transaction_json_line_bytes(record)
+        with transaction_log.open("ab") as fh:
+            fh.write(record_line)
 
     work_db = evidence_paths.resolve("CAMPAIGN_DATABASE")
     require(not work_db.exists() and not work_db.is_symlink(), "working database already exists")
@@ -708,7 +810,6 @@ def run(expected_head: str, output: Path) -> int:
         "rej": rej_matrix,
     }
     require(eq_rej_matrix["overall_pass"], f"EQ/REJ matrix failure: {eq_rej_matrix}")
-    write_json(evidence_paths.resolve("EQ_REJ_MATRIX"), eq_rej_matrix)
     outcome = {
         "adapter": {
             "ES2": {
@@ -747,7 +848,6 @@ def run(expected_head: str, output: Path) -> int:
         "stop_code": "CAMPAIGN_VALID_EVIDENCE_COMPLETE",
         "stop_point": "POST_FROZEN_SEQUENCE_HUMAN_EVIDENCE_AUDIT_HANDOFF",
     }
-    write_json(evidence_paths.resolve("CAMPAIGN_OUTCOME"), outcome)
     write_json(evidence_paths.resolve("CAMPAIGN_DB_VALIDATION"), {
         "final_database_sha256": sha256_path(final_database),
         "initial_database_sha256": sha256_path(source_database_copy),
@@ -783,23 +883,34 @@ def run(expected_head: str, output: Path) -> int:
         "runtime": preflight["runtime"],
     })
     write_json(evidence_paths.resolve("PREFLIGHT_VERIFICATION"), preflight)
-    process_result_path = evidence_paths.resolve("CAMPAIGN_PROCESS_RESULT")
-    write_json(process_result_path, {
-        "campaign_cwd": Path.cwd().relative_to(ROOT).as_posix(),
-        "campaign_returncode": 0,
-        "campaign_stderr": "",
-        "campaign_stdout": f"campaign evidence complete: {output.relative_to(ROOT).as_posix()}",
-        "harness_argv": [
-            sys.executable,
-            Path(__file__).resolve().relative_to(ROOT).as_posix(),
-            "--expected-head",
-            expected_head,
-            "--output",
-            output.relative_to(ROOT).as_posix(),
-        ],
-    })
     write_serialization_self_check(evidence_paths)
-    write_sha_sums(evidence_paths)
+    validate_mandatory_evidence_closure(evidence_paths)
+    try:
+        write_json(evidence_paths.resolve("EQ_REJ_MATRIX"), eq_rej_matrix)
+        write_json(evidence_paths.resolve("CAMPAIGN_OUTCOME"), outcome)
+        write_json(evidence_paths.resolve("CAMPAIGN_PROCESS_RESULT"), {
+            "artifact_state": "FINAL_SUCCESS",
+            "campaign_cwd": Path.cwd().relative_to(ROOT).as_posix(),
+            "campaign_returncode": 0,
+            "campaign_stderr": "",
+            "campaign_stdout": f"campaign evidence complete: {output.relative_to(ROOT).as_posix()}",
+            "closure_validation": "PASS",
+            "harness_argv": [
+                sys.executable,
+                Path(__file__).resolve().relative_to(ROOT).as_posix(),
+                "--expected-head",
+                expected_head,
+                "--output",
+                output.relative_to(ROOT).as_posix(),
+            ],
+        })
+        evidence_paths.resolve("CAMPAIGN_STDERR").write_text("", encoding="utf-8")
+        write_sha_sums(evidence_paths)
+        validate_final_success_state(evidence_paths)
+    except Exception as exc:
+        discard_premature_success_state(evidence_paths)
+        write_failure_process_result(evidence_paths, exc)
+        raise
     return 0
 
 
