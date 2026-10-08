@@ -27,8 +27,9 @@ E6 evidence                           = UNCHANGED.
 
 Governance chain:
   Request v2.0                  = d961440…;
-  R6 correction/path-map commit = 3f8b33a…;
+  R6 caller correction commit   = 3f8b33a…;
   R6 completion record          = 7a919fe…;
+  E7 path-map addendum          = registered by next canonical commit;
   readiness closure             = cc315fd…;
   E6 audit                      = bedd50a…;
   E6 invalid record             = d861968….
