@@ -1,0 +1,13 @@
+POST-STOP CAPTURE — NOT PART OF SUCCESSFUL MEASURED EVIDENCE
+MINIMAL-PIR-EXP-003 fail-closed at evaluation assertion.
+E-L accepted scope = 20/20.
+Physical observations = 20.
+W_obs_age = PASS.
+W_latency = PASS.
+Oracle planted changes = 5.
+True positives = 4.
+False negatives = 1 (PC-MOVE).
+False positives = 0.
+Fresh Closure structure = COMPLETE but non-authoritative after failed assertion.
+Root cause = corrected pre-change locator fixture artifacts were not regenerated
+before execution; measured_input lacked pre_change_locator for the MOVE record.
