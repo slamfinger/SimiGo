@@ -1218,6 +1218,54 @@ Acceptance evidence:
   docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_PACKAGE_001_REVISION_V1.1_ACCEPTANCE_RULING_20261008.md.
 ```
 
+## Integrated ES–PALACE Implementation / Fixture Preparation Request v1.0
+
+> **Status:** OPENED — IMPLEMENTATION / FIXTURE PREPARATION PACKAGE ONLY.
+> The Request authorizes only drafting a separate Human-reviewable
+> Implementation / Fixture Preparation Authorization Package + Run Manifest.
+> Actual implementation, fixture creation, experiment execution, IS mutation
+> and equivalence claims remain unauthorized.
+
+```text
+Governing frozen design          = Integrated ES–PALACE Design Package 001 v1.1;
+design state                     = ACCEPT / DESIGN FROZEN;
+frozen revision commit           = bae6999…;
+predecessor canonical main       = 88a34c2…;
+research partition               = D;
+authorized object                = package + manifest creation only;
+implementation                   = NOT AUTHORIZED;
+fixture creation                 = NOT AUTHORIZED;
+experiment                       = NOT AUTHORIZED;
+canonical IS mutation            = NOT AUTHORIZED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency     = PASS / BOUNDED;
+PALACE equivalence theorem       = NOT ESTABLISHED;
+general ES theorem               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+
+Required package object:
+  Integrated ES–PALACE Implementation / Fixture Preparation
+  Authorization Package + Run Manifest.
+
+Required package boundary:
+  bind frozen P1–P7;
+  bind P-LAWFUL / P-SETTLED / P-BLOCKED;
+  bind N-MISSING / N-STALE / N-AMBIGUOUS / N-ILLEGAL;
+  define implementation scope, fixture roots, self-checks,
+  side-channel denial checks, Carrier lifecycle checks,
+  evidence destinations, fresh entry preflight and stop rules.
+
+Next lawful object:
+  deliver the package + manifest for Human review.
+  ACCEPT does not automatically authorize experiment execution.
+
+Primary evidence:
+  docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_IMPLEMENTATION_FIXTURE_PREPARATION_REQUEST_V1.0_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
