@@ -1,0 +1,24 @@
+{
+  "authorized_destinations": {
+    "EV-P01": "fixture_manifests_and_checksums.json",
+    "EV-P02": "query_freshness_policy.json",
+    "EV-P03": "blinded_measured_path_input.json",
+    "EV-P04": "sealed_oracle_ledger.json",
+    "EV-P05": "phase_separated_icac_vectors.json",
+    "EV-P06": "information_scope_resolution.json",
+    "EV-P07": "physical_scope_resolution.json",
+    "EV-P08": "physical_reconciliation_observations.jsonl",
+    "EV-P09": "w_obs_age_calculations.json",
+    "EV-P10": "w_latency_calculations.json",
+    "EV-P11": "fresh_closure.json",
+    "EV-P12": "evaluation_join.json",
+    "EV-P13": "false_positives_false_negatives.json",
+    "EV-P14": "paired_e_l_e_s_comparison.json",
+    "EV-P15": "side_channel_denial_record.json",
+    "EV-P16": "raw_object_touch_audit.jsonl",
+    "EV-P17": "move_rename_correlation_evidence.json",
+    "EV-P18": "observations_versus_changes_counts.json"
+  },
+  "is_update_authorized": false,
+  "state": "RESERVED_NOT_GENERATED"
+}
