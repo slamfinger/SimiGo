@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import ast
 import subprocess
 import tempfile
 from pathlib import Path
@@ -37,6 +38,38 @@ def atomic(path: Path, value) -> None:
     temporary.replace(path)
 
 
+def manifest_adapter_closure(manifest: dict) -> tuple[bool, dict]:
+    reasons = []
+    for path in manifest["completeness_binding"]["required_paths"]:
+        value = manifest
+        for key in path:
+            if not isinstance(value, dict) or key not in value:
+                reasons.append(".".join(path))
+                break
+            value = value[key]
+    if manifest.get("package_binding", {}).get("package_id") != manifest.get("package_id"):
+        reasons.append("package_id_mismatch")
+    frozen_evidence_objects = [
+        "RUN_MANIFEST_INSTANCE.json", "DECISION_REPLAY_RECORD.json", "EXPERIMENT_RECORD.json",
+        "CARRIER_LIFECYCLE_RECORD.json", "OBSERVER_RECORD.json", "RECONCILIATION_RECORD.json",
+        "CLAIM_RECORD.json", "EVIDENCE_SHA256SUMS",
+    ]
+    if manifest["evidence_binding"]["exact_objects"] != frozen_evidence_objects:
+        reasons.append("evidence_objects_mismatch")
+    if manifest["campaign_binding"]["cases"] != CASES:
+        reasons.append("campaign_cases_mismatch")
+    if manifest["fixture_binding"]["cases"] != CASES or manifest["fixture_binding"]["fixtures_parent"] != "integrated-es-palace/d002/fixtures":
+        reasons.append("fixture_binding_mismatch")
+    replay_source = (ROOT / "integrated-es-palace/d002/implementation/decision_replay.py").read_text(encoding="utf-8")
+    tree = ast.parse(replay_source)
+    literals = {node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
+    required_literals = {"package_binding", "package_id", "manifest_instance_id", "schema_version", "evidence_binding", "exact_objects", "campaign_binding", "cases", "fixture_binding", "fixtures_parent", "snapshot_binding"}
+    missing_literals = sorted(required_literals - literals)
+    if missing_literals:
+        reasons.append("adapter_literal_access_missing:" + ",".join(missing_literals))
+    return not reasons, {"schema_id": "D002-MANIFEST-ADAPTER-CLOSURE-V1", "gate_id": manifest["completeness_binding"]["gate_id"], "reasons": reasons, "result": "PASS" if not reasons else "FAIL"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", required=True)
@@ -60,7 +93,9 @@ def main() -> int:
         "D001_CORE_DIGESTS_UNCHANGED": all(digest_bytes((ROOT / "integrated-es-palace/d001/implementation" / name).read_bytes()) == digest for name, digest in manifest["baseline_binding"]["d001_core_sha256"].items()),
         "FIXTURE_EXPECTED_UNCHANGED": all(digest_bytes((ROOT / "integrated-es-palace/d002/fixtures" / case / filename).read_bytes()) == digest for case, bindings in manifest["baseline_binding"]["expected_and_manifest_sha256"].items() for filename, digest in bindings.items()),
         "SNAPSHOT_SOURCE_BINDINGS": digest_bytes((ROOT / manifest["snapshot_binding"]["source"]["path"]).read_bytes()) == manifest["baseline_binding"]["source_sha256"] and digest_bytes((ROOT / manifest["snapshot_binding"]["prepared_snapshot"]["path"]).read_bytes()) == manifest["baseline_binding"]["snapshot_sha256"],
+        "D002_MANIFEST_ADAPTER_CLOSURE": manifest_closure[0],
     }
+    manifest_closure_record = manifest_closure[1]
     if not all(checks.values()):
         raise RuntimeError(f"D002 campaign preflight failed: {checks}")
 
@@ -83,7 +118,8 @@ def main() -> int:
         carrier = persist_records(Path(temporary) / "carrier.sqlite", records)
     experiment = {
         "schema_id": "D002-EXPERIMENT-RECORD-V1", "manifest_instance_id": manifest["manifest_instance_id"],
-        "execution_head": git("rev-parse", "HEAD"), "checks": checks, "replay_result": replay["vector_result"],
+        "execution_head": git("rev-parse", "HEAD"), "checks": checks,
+        "manifest_adapter_closure": manifest_closure_record, "replay_result": replay["vector_result"],
         "carrier_state": carrier, "result": "PASS" if replay["result"] == "PASS" and replay["vector_result"] == "PASS" and carrier["state"] == "PERSISTED" else "FAIL",
     }
     observer_output = subprocess.check_output([
