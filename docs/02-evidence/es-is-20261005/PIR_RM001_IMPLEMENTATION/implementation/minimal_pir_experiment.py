@@ -257,12 +257,13 @@ def execute_fixture(shape: str, fixture_dir: Path, output_dir: Path) -> dict:
             move_evidence.append(observation)
     meter.finish()
     phase_meters["S4_physical_reconciliation"] = meter.vector()
-    observations_path = output_dir / "EV-P08_physical_reconciliation_observations.jsonl"
-    observations_path.write_text(
-        b"".join(json.dumps(x, sort_keys=True, separators=(",", ":"),
-                            ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
-                 for x in observations)
+    observations_payload = b"".join(
+        json.dumps(x, sort_keys=True, separators=(",", ":"),
+                   ensure_ascii=False, allow_nan=False).encode("utf-8") + b"\n"
+        for x in observations
     )
+    observations_path = output_dir / "EV-P08_physical_reconciliation_observations.jsonl"
+    observations_path.write_bytes(observations_payload)
     reconciliation_current_ns = max_previous_ns + 1_000_000
 
     closure_meter = PhaseMeter.start()
