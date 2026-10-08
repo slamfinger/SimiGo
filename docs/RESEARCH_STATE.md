@@ -6,91 +6,76 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — E6 Human Evidence Audit CLOSED; campaign remains
-> CONFIRMED INVALID / NON-ADJUDICATIVE. R5 passed without regression. The R4
-> path boundary correctly rejected a residual `PosixPath`; audit refined its
-> source to an adapter-build tuple-unpack binding defect. No repair, rerun, E7
-> drafting, old-evidence reuse, or equivalence establishment is authorized.
+> **Status:** STOPPED — Campaign Harness Readiness Validation v1.9 CLOSED;
+> result `NOT_READY_FOR_E7`. E6 remains INVALID / NON-ADJUDICATIVE. No repair,
+> rerun, E7 launch, path-map creation, old-evidence reuse, or equivalence
+> establishment is authorized.
 
 ```text
-E6 Human Evidence Audit = CLOSED;
-EXEC-DB-006             INVALID / NON-ADJUDICATIVE;
-R5 caller correction    = VERIFIED EFFECTIVE / NO REGRESSION;
-R4 path boundary        = CORRECTLY FAIL-CLOSED PRE-WRITE;
-raw sequence            = O0–O5 COMPLETE;
-raw ES2                 = REUSE / NON-AUTHORITATIVE;
-raw ESN                 = BLOCK / NON-AUTHORITATIVE;
-mechanical observer     = PASS / NON-AUTHORITATIVE;
-mechanical EQ/REJ       = NON-AUTHORITATIVE;
-EQ-1..EQ-8              = NOT ESTABLISHED;
-REJ-1..REJ-14           = NOT ESTABLISHED;
-CarrierSQLite equivalence = NOT ESTABLISHED;
-broader SimiGo/ES claim   = NOT ESTABLISHED.
+Harness Readiness Validation = CLOSED;
+decision                     = NOT_READY_FOR_E7;
+ready_for_E7                 = false;
+campaign budget consumed     = false;
+E6 evidence                  = unchanged;
+E6 campaign/IS/observer      = INVALID / CONSUMED / NON-ADJUDICATIVE;
+EQ-1..EQ-8                   = NOT ESTABLISHED;
+REJ-1..REJ-14                = NOT ESTABLISHED;
+CarrierSQLite equivalence    = NOT ESTABLISHED;
+broader SimiGo/ES claim      = NOT ESTABLISHED.
 
-Audit/governance chain:
-  E6 audit record             = bedd50a…;
-  E6 invalid completion       = d861968…;
-  E6 authorization/execution  = 66f3c1e…;
-  R5 completion               = c9b572c…;
-  R5 correction               = e98734a…;
-  Request v1.8                = f7429fe…;
-  E5 audit closure            = cd02228….
+Governance chain:
+  Request v1.9                  = 8b22c15…;
+  validation completion record  = db92d31…;
+  E6 audit                      = bedd50a…;
+  E6 invalid record             = d861968…;
+  E6 execution authorization    = 66f3c1e…;
+  R5 correction                 = e98734a…;
+  R5 completion                 = c9b572c…;
+  Request v1.8                  = f7429fe….
 
-Refined E6 root cause:
-  broad prior class =
-    HARNESS_PREFLIGHT_PROVENANCE_PATH_NORMALIZATION_RESIDUAL_DEFECT;
-  precise audited class =
-    HARNESS_ADAPTER_BUILD_RECORD_TUPLE_UNPACK_BINDING_DEFECT;
-  build_adapter contract = tuple[Path, dict];
-  build_adapter return = (binary, runtime/build record);
-  campaign caller = adapter_build_record = build_adapter(...);
-  forbidden graph position = preflight.adapter_build[0];
-  R4 canonical JSON boundary = correctly rejected pre-write.
+Blocking findings:
+  1. adapter-build tuple-unpack binding defect remains open;
+     caller binds whole tuple[Path, dict] as adapter_build_record;
+     forbidden PosixPath reaches preflight.adapter_build[0].
+  2. authoritative v1.8 path map is occupied by INVALID E6;
+     no fresh, independently authorized E7 path map exists.
 
-R5 finding:
-  persist_exact_json contract = UNCHANGED;
-  ES2 exact persistence/caller parse = PASS;
-  ESN exact persistence/caller parse = PASS;
-  ES2 raw = REUSE / REUSE_PATH / NON-AUTHORITATIVE;
-  ESN raw = BLOCK / BLOCKED_NON_RECOMPUTE_PATH / NON-AUTHORITATIVE;
-  no R5 regression observed.
+Passing findings:
+  adapter-output exact persistence contract = PASS;
+  canonical JSON path/nonfinite boundary    = PASS;
+  producer/consumer path inventory          = PASS 31/31;
+  canonical write/reread/parse              = PASS;
+  E6 tuple graph guard simulation           = PASS;
+  E6 evidence unchanged by validation       = PASS.
 
-R4 finding:
-  fresh path preflight = 31/31 PASS;
-  forbidden path-like JSON boundary = enforced;
-  campaign stopped before preflight_verification.json creation;
-  preflight_verification.json = ABSENT;
-  serialization self-check = ABSENT;
-  process/stderr closure = ABSENT AT HARNESS STOP;
-  SHA256SUMS = ABSENT.
-
-Raw facts and non-authoritative artifacts:
-  O0–O5 observations = ACCEPTED AS FACTS ONLY;
-  O5 state = 4 objects / 2 index / 2 dependencies;
-  O0/O5 SQLite integrity = OK;
-  observer = mechanically PASS / NON-AUTHORITATIVE;
-  EQ-1..EQ-8 = mechanically true / NOT ESTABLISHED;
-  REJ-1..REJ-14 = mechanically false / NOT ESTABLISHED;
-  campaign outcome = mechanically VALID / NON-AUTHORITATIVE.
+Known-defect status:
+  E3 observer key binding               = fixed / no regression found;
+  E4 provenance path serialization      = guard active / E6 exposed upstream tuple graph;
+  E5 adapter-output return-type         = fixed / no recurrence;
+  E6 adapter-build tuple unpack         = OPEN BLOCKER.
 
 Budgets:
-  sixth campaign / IS-mutation / observer budgets = CONSUMED;
-  repair                                          = NOT AUTHORIZED;
-  rerun                                           = NOT AUTHORIZED;
-  old campaign/evidence reuse                     = FORBIDDEN;
-  automatic renewal                               = FORBIDDEN;
-  E6 conversion to VALID                          = FORBIDDEN.
+  harness validation budget        = CONSUMED;
+  seventh campaign budget          = NOT AUTHORIZED;
+  seventh IS-mutation budget       = NOT AUTHORIZED;
+  seventh observer budget          = NOT AUTHORIZED;
+  E6 repair                        = NOT AUTHORIZED;
+  old campaign/evidence reuse      = FORBIDDEN;
+  automatic renewal                = FORBIDDEN;
+  E6 conversion to VALID           = FORBIDDEN.
 
 Next lawful object:
   explicit Human decision:
     DENY further work; or
-    authorize a new independently budgeted Request.
-  This audit does not draft, design, authorize, or scope E7. It does not
-  authorize adapter-record repair, serializer change, evidence reconstruction,
-  equivalence adjudication, or renewal.
+    authorize a new independently budgeted Request with two separately governed
+    objectives: repair the adapter-build tuple-unpack binding and establish a
+    fresh E7 path map. Even then, E7 launch requires a later explicit Human
+    authorization after validated harness readiness.
+  This state does not authorize drafting that Request, repair, path-map creation,
+  E7, equivalence adjudication, or renewal.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008.
+  docs/02-evidence/database-carrier-harness-readiness-validation-v1.9-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
