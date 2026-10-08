@@ -117,6 +117,49 @@ Primary evidence:
   docs/03-findings/...POST_ADJUDICATION_SYNTHESIS_001....
 ```
 
+## PIR branch reconciliation — 2026-10-08 (PALACE / ES)
+
+> **Status:** RECONCILED — PIR design review was already completed; no new PIR
+> design review is required. PIR implementation, experiment and fixture creation
+> remain NOT AUTHORIZED.
+
+```text
+PIR Design v0.1                    SUPERSEDED / RETAINED;
+Query-Priority Reconciliation       ACCEPTED;
+PIR Design v0.2                     CONDITIONAL PASS → ACCEPTED;
+Clarification Addendum              ACCEPTED;
+Minimal PIR Probe v0.1              CONDITIONAL PASS;
+Minimal PIR Probe v0.2              DELIVERED FOR HUMAN REVIEW / PAUSED;
+PIR implementation                  NOT AUTHORIZED;
+PIR experiment                      NOT AUTHORIZED;
+PIR fixture creation                NOT AUTHORIZED;
+automatic resumption                FORBIDDEN.
+
+Accepted PIR boundary:
+  Query Scope = Information Scope + Physical Scope;
+  physical changes = CREATE / MODIFY / DELETE / MOVE-RENAME;
+  freshness = query-time, typed, bounded by W_obs_age and W_latency;
+  reconciliation is scope-priority, not whole-space synchronization;
+  Information Space remains passive;
+  Reconciliation Sub-Agent has no business-judgment authority;
+  no semantic guess may replace physical evidence;
+  no unrelated-object touch is permitted.
+
+Relation to completed lines:
+  E8 bounded CarrierSQLite equivalence = ESTABLISHED;
+  ES-CSP-RUN-01 continuation sufficiency = PASS / BOUNDED;
+  PIR addresses physical state changes after a previously lawful closure;
+  the three results are complementary and must not be conflated.
+
+Current PIR gate:
+  explicit Human decision required to resume review of
+  Minimal PIR Probe Design v0.2, or keep PIR paused.
+This state does not make that decision.
+
+Primary evidence:
+  docs/00-governance/PALACE_INFORMATION_SPACE_FOUNDATION_PIR_DESIGN_REVIEW_RECONCILIATION_RECORD_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
