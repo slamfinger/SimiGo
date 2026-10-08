@@ -6,76 +6,103 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — Campaign Harness Readiness Validation v1.9 CLOSED;
-> result `NOT_READY_FOR_E7`. E6 remains INVALID / NON-ADJUDICATIVE. No repair,
-> rerun, E7 launch, path-map creation, old-evidence reuse, or equivalence
-> establishment is authorized.
+> **Status:** STOPPED — Request v2.0 COMPLETE. R6 adapter-build tuple-unpack
+> correction PASS; fresh independent E7 path map established; fresh preflight
+> 31/31 PASS. The canonical state is now at E7 launch review only. E7 execution
+> is NOT authorized and NOT launched.
 
 ```text
-Harness Readiness Validation = CLOSED;
-decision                     = NOT_READY_FOR_E7;
-ready_for_E7                 = false;
-campaign budget consumed     = false;
-E6 evidence                  = unchanged;
-E6 campaign/IS/observer      = INVALID / CONSUMED / NON-ADJUDICATIVE;
-EQ-1..EQ-8                   = NOT ESTABLISHED;
-REJ-1..REJ-14                = NOT ESTABLISHED;
-CarrierSQLite equivalence    = NOT ESTABLISHED;
-broader SimiGo/ES claim      = NOT ESTABLISHED.
+R6 adapter-build tuple-unpack repair = COMPLETE / PASS;
+build_adapter tuple contract         = UNCHANGED;
+caller unpack                         = PASS;
+persist_exact_json contract           = UNCHANGED;
+targeted AST regression self-check    = PASS;
+fresh E7 path map                     = ESTABLISHED / RESERVED;
+path-map destination count/version    = 31/5;
+fresh preflight                       = 31/31 PASS;
+E7-reserved root after preflight      = FRESH / ABSENT;
+E7 execution                          = NOT AUTHORIZED / NOT LAUNCHED;
+campaign/IS-mutation/observer budget  = 0 CONSUMED BY THIS REQUEST;
+E6 evidence                           = UNCHANGED.
 
 Governance chain:
-  Request v1.9                  = 8b22c15…;
-  validation completion record  = db92d31…;
+  Request v2.0                  = d961440…;
+  R6 correction/path-map commit = 3f8b33a…;
+  R6 completion record          = 7a919fe…;
+  readiness closure             = cc315fd…;
   E6 audit                      = bedd50a…;
-  E6 invalid record             = d861968…;
-  E6 execution authorization    = 66f3c1e…;
-  R5 correction                 = e98734a…;
-  R5 completion                 = c9b572c…;
-  Request v1.8                  = f7429fe….
+  E6 invalid record             = d861968….
 
-Blocking findings:
-  1. adapter-build tuple-unpack binding defect remains open;
-     caller binds whole tuple[Path, dict] as adapter_build_record;
-     forbidden PosixPath reaches preflight.adapter_build[0].
-  2. authoritative v1.8 path map is occupied by INVALID E6;
-     no fresh, independently authorized E7 path map exists.
+R6 correction:
+  prior forbidden graph =
+    preflight.adapter_build = tuple[PosixPath, dict];
+  repaired caller =
+    _, adapter_build_record = build_adapter(evidence_paths);
+  retained evidence record = dict only;
+  discarded binary path = not serialized.
 
-Passing findings:
-  adapter-output exact persistence contract = PASS;
-  canonical JSON path/nonfinite boundary    = PASS;
-  producer/consumer path inventory          = PASS 31/31;
-  canonical write/reread/parse              = PASS;
-  E6 tuple graph guard simulation           = PASS;
-  E6 evidence unchanged by validation       = PASS.
+Fresh E7 path map:
+  manifest identity =
+    DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_007;
+  output root =
+    docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008;
+  independent E7-reserved root = yes;
+  root used by any campaign = no.
 
-Known-defect status:
-  E3 observer key binding               = fixed / no regression found;
-  E4 provenance path serialization      = guard active / E6 exposed upstream tuple graph;
-  E5 adapter-output return-type         = fixed / no recurrence;
-  E6 adapter-build tuple unpack         = OPEN BLOCKER.
+Validation result:
+  adapter-build tuple binding              = PASS;
+  adapter-output exact persistence         = PASS;
+  canonical JSON serializer boundary       = PASS;
+  producer/consumer path inventory         = PASS 31/31;
+  synthetic path/nonfinite rejection       = PASS;
+  canonical write/reread/parse             = PASS;
+  E6 tuple graph guard simulation          = PASS;
+  fresh E7 path-map preflight              = PASS 31/31;
+  decision                                 = READY_FOR_E7_LAUNCH_REVIEW;
+  ready_for_e7_launch_review               = true;
+  ready_for_e7_execution                   = false.
+
+Protected baselines:
+  CarrierSQLite semantics       = UNCHANGED;
+  DB schema/transactions        = UNCHANGED;
+  ES2/ESN semantics             = UNCHANGED;
+  decision boundary             = UNCHANGED;
+  tau/fixture                   = UNCHANGED;
+  runner semantic sequence      = UNCHANGED;
+  EQ/REJ criteria               = UNCHANGED;
+  persist_exact_json contract   = UNCHANGED.
+
+Standing adjudication status:
+  E6                              = INVALID / NON-ADJUDICATIVE;
+  raw O0–O5 facts                 = ACCEPTED;
+  raw ES2 REUSE                   = NON-AUTHORITATIVE;
+  raw ESN BLOCK                   = NON-AUTHORITATIVE;
+  mechanical observer/EQ/REJ      = NON-AUTHORITATIVE;
+  EQ-1..EQ-8                      = NOT ESTABLISHED;
+  REJ-1..REJ-14                   = NOT ESTABLISHED;
+  CarrierSQLite equivalence       = NOT ESTABLISHED;
+  broader SimiGo/ES claim         = NOT ESTABLISHED.
 
 Budgets:
-  harness validation budget        = CONSUMED;
-  seventh campaign budget          = NOT AUTHORIZED;
-  seventh IS-mutation budget       = NOT AUTHORIZED;
-  seventh observer budget          = NOT AUTHORIZED;
-  E6 repair                        = NOT AUTHORIZED;
-  old campaign/evidence reuse      = FORBIDDEN;
-  automatic renewal                = FORBIDDEN;
-  E6 conversion to VALID           = FORBIDDEN.
+  R6 repair budget                = CONSUMED;
+  E7 path-map establishment       = CONSUMED;
+  E7 campaign budget              = NOT AUTHORIZED;
+  E7 IS-mutation budget           = NOT AUTHORIZED;
+  E7 observer budget              = NOT AUTHORIZED;
+  old campaign/evidence reuse     = FORBIDDEN;
+  automatic E7 launch             = FORBIDDEN;
+  automatic equivalence           = FORBIDDEN.
 
 Next lawful object:
-  explicit Human decision:
-    DENY further work; or
-    authorize a new independently budgeted Request with two separately governed
-    objectives: repair the adapter-build tuple-unpack binding and establish a
-    fresh E7 path map. Even then, E7 launch requires a later explicit Human
-    authorization after validated harness readiness.
-  This state does not authorize drafting that Request, repair, path-map creation,
-  E7, equivalence adjudication, or renewal.
+  explicit Human E7 launch review. The Human must separately either:
+    DENY E7; or
+    authorize E7 as a new independent frozen campaign with fresh campaign,
+    IS-mutation and observer budgets.
+  R6 success does not authorize E7 by implication.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-harness-readiness-validation-v1.9-20261008.
+  docs/02-evidence/database-carrier-harness-correction-v2.0-20261008;
+  docs/00-governance/...R6...COMPLETION_RECORD_016_20261008.md.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
