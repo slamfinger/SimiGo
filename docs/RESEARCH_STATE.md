@@ -23945,3 +23945,50 @@ Next lawful action:
 STOP. A separate explicit Human decision is required before any integrated
 experiment. No automatic transition is permitted.
 ```
+
+## Integrated ES–PALACE D-001 Bounded Experiment Attempt 001 — 2026-10-08
+
+> **Status:** EXECUTED / FAIL / WRITE-ONCE EVIDENCE RETAINED. The independent
+> observer reconciled all seven decisions, but the experiment comparator used
+> coarse `BLOCK` for negative cases instead of their specific typed labels.
+
+```text
+manifest instance                = 76F0DD14-3FFF-4B1F-B56C-2EE71321A5B8;
+execution head                   = 1023b133…;
+experiment budget                = 1 / 1 CONSUMED;
+observer campaign budget         = 1 / 1 CONSUMED;
+EXPERIMENT_RECORD                = FAIL;
+OBSERVER_RECORD                  = PASS;
+RECONCILIATION_RECORD            = FAIL;
+CLAIM_RECORD                     = FAIL;
+observer disagreement            = NONE;
+forbidden channels observed      = NONE;
+canonical IS mutation            = NONE;
+E9                               = NOT AUTHORIZED / NOT EXECUTED;
+EXP-004                          = NOT AUTHORIZED / NOT EXECUTED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+rerun                            = NOT AUTHORIZED;
+PALACE equivalence               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+```
+
+Failure class:
+
+```text
+D001_CAMPAIGN_NEGATIVE_DECISION_COMPARATOR_DEFECT.
+```
+
+Primary evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d001-bounded-experiment-v1/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D001_BOUNDED_EXPERIMENT_ATTEMPT_001_FAILURE_RECORD_20261008.md.
+```
+
+Next lawful action:
+
+```text
+STOP. A new explicit Human authorization is required for comparator correction
+and one new bounded campaign instance/evidence parent. No rerun is authorized.
+```
