@@ -1165,10 +1165,10 @@ Primary evidence:
 
 ## Integrated ES–PALACE Validation Design Package 001 — Targeted Revision v1.1
 
-> **Status:** REVISED FOR HUMAN REVIEW. Package 001 was ruled `REVISE
-> PACKAGE`; this targeted revision remains within the same governing Request
-> and is now the active design-review object. No implementation, fixture,
-> experiment, IS mutation or equivalence claim is authorized.
+> **Status:** ACCEPT / DESIGN FROZEN. Package 001 was first ruled `REVISE
+> PACKAGE`; targeted Revision v1.1 then completed the required semantic
+> contracts and is now frozen. No implementation, fixture, experiment, IS
+> mutation or equivalence claim is authorized.
 
 ```text
 Governing Request                = Integrated ES–PALACE Validation Design v1.0;
@@ -1176,7 +1176,10 @@ parent Package 001               = a2c9101… local revision candidate;
 revision base                    = a2c9101…;
 origin canonical predecessor     = 612738a…;
 research partition               = D;
-active review object             = Revision v1.1;
+design state                     = ACCEPT / DESIGN FROZEN;
+acceptance ruling                = Revision v1.1 Acceptance Ruling;
+revision commit                  = bae6999…;
+revision SHA256                  = 3c28c469…;
 E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
 R01 continuation sufficiency     = PASS / BOUNDED;
 PIR                              = CLOSED / VALIDATION DEFERRED;
@@ -1205,12 +1208,14 @@ Core predecessor boundary:
   D = NEW integrated semantic-closure object;
   E8 + R01 do not compose into integrated SimiGo proof.
 
-Next lawful step after Human ACCEPT:
+Next lawful object if separately authorized:
   separately reviewed implementation / fixture / Run Manifest Request.
   Experiment execution remains a separate explicit Human decision.
 
 Primary evidence:
   docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_PACKAGE_001_REVISION_V1.1_20261008.md.
+Acceptance evidence:
+  docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_PACKAGE_001_REVISION_V1.1_ACCEPTANCE_RULING_20261008.md.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
