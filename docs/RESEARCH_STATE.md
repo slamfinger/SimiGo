@@ -24373,3 +24373,70 @@ Next lawful action:
 STOP. No rerun or repair-run is authorized. A new Human-directed research object
 is required before any further execution.
 ```
+
+## D-002 Closure and Postmortem Audit Opening — 2026-10-09
+
+> **Status:** D-002 CLOSED / FAIL / STOP. The next object is a read-only
+> D-002 Postmortem / Replay-Adapter Audit. No rerun, repair-run, evidence
+> overwrite, Decision Core invocation, or equivalence claim is authorized.
+
+```text
+D-002 Package v1.0                = ACCEPT / DESIGN FROZEN;
+D-002 Preparation                 = PASS / COMPLETE;
+D-002 Attempt-001                 = FAIL / RETAINED;
+D-002 Attempt-002                 = FAIL / RETAINED;
+D-002 Attempt-003                 = FAIL / RETAINED / FINAL BUDGET;
+D-002 overall                     = FAIL / STOP;
+D-002 rerun                       = NOT AUTHORIZED;
+repair-run                        = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+D-001                             = CLOSED / BOUNDED PASS;
+E8                                = BOUNDED / PRESERVED;
+R01                               = BOUNDED / PRESERVED;
+real PALACE → ES bridge           = FAIL / UNPROVEN;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED;
+general Execution State theorem   = NOT ESTABLISHED;
+production SimiGo validity        = NOT ESTABLISHED;
+LLM autonomy                      = NOT ESTABLISHED;
+canonical IS mutation             = NONE / NOT AUTHORIZED;
+PALACE mutation                   = NONE / NOT AUTHORIZED;
+E9                                = NOT AUTHORIZED / NOT EXECUTED;
+EXP-004                           = NOT AUTHORIZED / NOT EXECUTED;
+PIR                               = CLOSED / VALIDATION DEFERRED.
+```
+
+Final observed boundary:
+
+```text
+PALACE source
+  → closed structural extraction
+  → D-002 replay adapter
+  → unresolved materialization
+  → unchanged D-001 Decision Core
+  → correct fail-closed rejection.
+```
+
+The negative result is:
+
+```text
+Under the current D-002 replay adapter implementation, real PALACE primitives
+were not reliably materialized as resolved typed D-001 ES reconstruction inputs.
+```
+
+This does not overturn D-001 and does not prove PALACE insufficiency.
+
+Postmortem review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-postmortem-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_POSTMORTEM_REPLAY_ADAPTER_AUDIT_PACKAGE_V1.0_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for the read-only postmortem
+audit package. ACCEPT may authorize only the bounded postmortem outputs; no
+repair, rerun, campaign, or equivalence claim is authorized.
+```
