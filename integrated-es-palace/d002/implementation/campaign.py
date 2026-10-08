@@ -95,6 +95,7 @@ def main() -> int:
         "SNAPSHOT_SOURCE_BINDINGS": digest_bytes((ROOT / manifest["snapshot_binding"]["source"]["path"]).read_bytes()) == manifest["baseline_binding"]["source_sha256"] and digest_bytes((ROOT / manifest["snapshot_binding"]["prepared_snapshot"]["path"]).read_bytes()) == manifest["baseline_binding"]["snapshot_sha256"],
         "D002_MANIFEST_ADAPTER_CLOSURE": manifest_closure[0],
     }
+    manifest_closure = manifest_adapter_closure(manifest)
     manifest_closure_record = manifest_closure[1]
     if not all(checks.values()):
         raise RuntimeError(f"D002 campaign preflight failed: {checks}")
