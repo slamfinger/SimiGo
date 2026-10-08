@@ -9,6 +9,8 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+import sys
+sys.path.insert(0, str(ROOT / "integrated-es-palace/d001/implementation"))
 CASES = ["P-LAWFUL", "P-SETTLED", "P-BLOCKED", "N-MISSING", "N-STALE", "N-AMBIGUOUS", "N-ILLEGAL"]
 PROTECTED = ("database-carrier-replication", "boundary-study", "docs/02-evidence/es-is-20261005", "palace-v0", "integrated-es-palace/d001/fixtures")
 
