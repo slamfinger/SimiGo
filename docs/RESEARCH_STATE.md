@@ -1101,6 +1101,68 @@ Primary evidence:
   docs/00-governance/SIMIGO_INTEGRATED_FOUNDATION_REVIEW_001_20261008.md.
 ```
 
+## Integrated ES–PALACE Validation Design Request — 2026-10-08 (Partition D)
+
+> **Status:** OPENED — DESIGN / AUTHORIZATION PACKAGE ONLY. No implementation,
+> fixture creation, experiment execution, IS mutation or equivalence claim is
+> authorized.
+
+```text
+Governing Request                = Integrated ES–PALACE Validation Design v1.0;
+request commit                   = 0f2d714…;
+research partition               = D;
+prior Integrated Foundation Review = a50edba… / state f2f4aff…;
+E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency     = PASS / BOUNDED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+implementation                   = NOT AUTHORIZED;
+fixture creation                 = NOT AUTHORIZED;
+experiment                       = NOT AUTHORIZED;
+IS mutation                      = NOT AUTHORIZED;
+PALACE equivalence theorem       = NOT ESTABLISHED;
+general ES theorem               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+
+Authorized design object:
+  SimiGo Integrated ES–PALACE Validation Design / Authorization Package.
+
+Required design boundary:
+  Execution State = continuation semantics / obligations / orchestration;
+  PALACE Information Space = representation / provenance / context;
+  Carrier = persistence / integrity;
+  Model = inference / semantic interpretation only.
+
+Required minimal loop:
+  ES reconstruction
+    → PALACE / Information Space context recovery
+    → NEXT_ACTION / continuation determination
+    → ES continuation
+    → bounded carrier persistence
+    → next lawful continuation.
+
+Required positive design contracts:
+  lawful closure → reconstruction → continuation;
+  already-settled continuation → reuse without recompute;
+  blocked-but-lawful continuation → explicit BLOCK state preserved.
+
+Required negative design contracts:
+  missing information;
+  stale information;
+  ambiguous information;
+  illegal continuation boundary.
+
+Next lawful object:
+  deliver the design / authorization package for Human review.
+  This Request does not authorize implementation, fixture creation,
+  experiment execution, IS mutation, PIR reopening, E9, equivalence broadening
+  or automatic campaign authorization.
+
+Primary evidence:
+  docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_REQUEST_V1.0_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
