@@ -7,9 +7,10 @@
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
 > **Status:** BOUNDED EQUIVALENCE ESTABLISHED — E8 four-layer Human Evidence
-> Audit PASS and formal ruling issued. The ruling is strictly limited to the
-> exact E8 implementation/configuration. General, arbitrary-DB, arbitrary-IS,
-> arbitrary-ES, production, LLM-autonomy and future-change claims remain
+> Audit PASS, formal ruling issued, and read-only Post-Adjudication Synthesis
+> COMPLETE. The ruling is strictly limited to the exact E8
+> implementation/configuration. General, arbitrary-DB, arbitrary-IS,
+> arbitrary-ES, PALACE, production, LLM-autonomy and future-change claims remain
 > NOT ESTABLISHED. E9 is NOT AUTHORIZED.
 
 ```text
@@ -19,6 +20,8 @@ EQ-1..EQ-8                      = ADJUDICATED TRUE;
 REJ-1..REJ-14                   = ADJUDICATED FALSE / NO REJECTION TRIGGER;
 E9                              = NOT AUTHORIZED;
 general/unbounded equivalence    = NOT ESTABLISHED.
+Post-Adjudication Synthesis      = COMPLETE / FINDING 001;
+follow-on partitions A-E         = IDENTIFIED / NONE AUTHORIZED.
 
 Governance chain:
   E8 authorization/execution   = 7585cc4…;
@@ -102,13 +105,16 @@ Budgets:
   scope broadening                 = FORBIDDEN.
 
 Next lawful object:
-  no automatic follow-on. Any extension beyond the bounded ruling requires a
-  new independently authorized Request and evidence. E9 remains unauthorized.
+  no automatic follow-on. Future work must be partitioned into separate
+  independently authorized Requests (broader carrier, broader IS/ES, PALACE,
+  integrated SimiGo, production/runtime). None is authorized. E9 remains
+  unauthorized.
 
 Primary evidence:
   docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008;
   docs/00-governance/...E8_HUMAN_EVIDENCE_AUDIT_RECORD_025...;
-  docs/00-governance/...BOUNDED_CARRIERSQLITE_EQUIVALENCE_FORMAL_RULING_026....
+  docs/00-governance/...BOUNDED_CARRIERSQLITE_EQUIVALENCE_FORMAL_RULING_026...;
+  docs/03-findings/...POST_ADJUDICATION_SYNTHESIS_001....
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
