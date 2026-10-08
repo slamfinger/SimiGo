@@ -23824,3 +23824,60 @@ T5            = CLOSED / REPLICATION PASS / TASK-DOMAIN BOUNDED /
                 GATE CHAIN SEALED
 T4 / T4-2     = CLOSED（原结论零改动）
 ```
+
+## Integrated ES–PALACE Implementation / Fixture Package + Run Manifest Delivery — 2026-10-08
+
+> **Status:** PACKAGE + MANIFEST CONTRACT DELIVERED FOR HUMAN REVIEW. This
+> delivery answers Request v1.0 only. It authorizes no stage execution.
+
+```text
+Governing Request                = Implementation / Fixture Preparation Request v1.0;
+frozen design                    = Integrated ES–PALACE Design Package 001 v1.1;
+canonical base                   = d4b02b2…;
+authorized delivery              = Authorization Package + Run Manifest Contract;
+implementation                   = NOT AUTHORIZED;
+fixture creation or mutation     = NOT AUTHORIZED;
+integrated experiment            = NOT AUTHORIZED;
+canonical IS mutation            = NOT AUTHORIZED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+automatic Run Manifest approval  = DENIED;
+automatic experiment transition  = DENIED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency     = PASS / BOUNDED;
+PALACE equivalence               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+```
+
+Delivered review objects:
+
+```text
+Authorization Package v1.0 =
+  docs/02-evidence/integrated-es-palace-d001-20261008/
+  SIMIGO_INTEGRATED_ES_PALACE_IMPLEMENTATION_FIXTURE_AUTHORIZATION_PACKAGE_V1.0_20261008.md;
+  SHA256 = 3ef5967074b2231e9c8c65f093a51464893320f0bf2a74914d35e6f9b6800f43.
+
+Run Manifest Contract v1.0 =
+  docs/02-evidence/integrated-es-palace-d001-20261008/
+  SIMIGO_INTEGRATED_ES_PALACE_RUN_MANIFEST_CONTRACT_V1.0_20261008.md;
+  SHA256 = cea455699055761b7ed14919249c3a1724552c929251a7bb57acc2c82fa07340.
+
+Delivery record =
+  docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_IMPLEMENTATION_FIXTURE_AUTHORIZATION_PACKAGE_AND_RUN_MANIFEST_V1.0_DELIVERY_20261008.md.
+```
+
+The package binds P1–P7 unchanged; primitive families I1–I10; typed P2 views;
+P3 identity and digest rules; SC-1 through SC-8; negative precedence;
+Carrier lifecycle; seven fixture cases; S0–S2 preparation gates and STOP; and
+nine write-once evidence objects.
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT.
+ACCEPT may permit only a separately recorded implementation / fixture
+preparation stage. Integrated experiment execution remains a separate explicit
+Human decision.
+```
