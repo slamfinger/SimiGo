@@ -6,98 +6,104 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — E7 Human Evidence Audit CLOSED; E7 remains
-> INVALID / NON-ADJUDICATIVE. Audit identified two independent evidence-layer
-> defects: (1) transaction-log JSONL producer emitted canonical pretty JSON
-> instead of one compact object per line; (2) `campaign_process_result.json`
-> prematurely persisted success before final closure. No repair, rerun, E8
-> drafting, evidence reconstruction, or equivalence establishment is authorized.
+> **Status:** STOPPED — Evidence-Lifecycle Closure Request v2.1 COMPLETE with
+> lifecycle validation PASS. E7 remains INVALID / NON-ADJUDICATIVE. No E8 path
+> map has been established, E8 is NOT AUTHORIZED, and no campaign/IS-mutation/
+> observer budget was consumed.
 
 ```text
+Evidence-Lifecycle Closure v2.1 = COMPLETE / PASS;
+E7                              = INVALID / NON-ADJUDICATIVE;
 E7 Human Evidence Audit         = CLOSED;
-EXEC-DB-007                     INVALID / NON-ADJUDICATIVE;
-primary stop defect             = TRANSACTION_LOG_JSONL_PRETTY_SERIALIZATION_PRODUCER;
-secondary defect                = PROCESS_RESULT_PREMATURE_SUCCESS_PERSISTENCE;
-R5 adapter-output correction    = NO REGRESSION;
-R6 adapter-build tuple unpack   = NO REGRESSION;
-fresh path preflight            = 31/31 PASS;
-raw sequence                    = O0–O5 COMPLETE;
-O5 logical state                = 4 objects / 2 index / 2 dependencies;
-O0/O5 SQLite integrity          = OK;
-raw ES2                         = REUSE / NON-AUTHORITATIVE;
-raw ESN                         = BLOCK / NON-AUTHORITATIVE;
-mechanical observer             = PASS / NON-AUTHORITATIVE;
-mechanical EQ-1..EQ-8           = true / NOT ESTABLISHED;
-mechanical REJ-1..REJ-14        = false / NOT ESTABLISHED;
+transaction-log JSONL producer  = CORRECTED / VALIDATED;
+process-result lifecycle        = CORRECTED / VALIDATED;
+success-state discard invariant = ESTABLISHED / TESTED;
+failure process-result state    = ESTABLISHED / TESTED;
+E7/V2.0 evidence                = UNCHANGED;
+campaign budget consumed        = false;
+E8 path map                     = NOT ESTABLISHED;
+E8 campaign/IS/observer budget  = NOT AUTHORIZED;
+E8 execution                    = NOT AUTHORIZED / NOT LAUNCHED;
+EQ-1..EQ-8                      = NOT ESTABLISHED;
+REJ-1..REJ-14                   = NOT ESTABLISHED;
 CarrierSQLite equivalence       = NOT ESTABLISHED;
 broader SimiGo/ES claim         = NOT ESTABLISHED.
 
-Audit/governance chain:
-  E7 audit record             = 2a7fe47…;
-  E7 invalid record           = 01670a8…;
-  E7 authorization/execution  = c315442…;
-  E7 launch review            = d783dc3…;
-  path-map addendum           = b8146e9…;
-  R6 completion               = 7a919fe…;
-  R6 correction               = 3f8b33a…;
-  Request v2.0                = d961440….
+Governance chain:
+  Request v2.1                   = 42db62c…;
+  correction/validation commit   = c294d92…;
+  completion record              = 3ba94c0…;
+  E7 audit                       = 2a7fe47…;
+  E7 invalid record              = 01670a8…;
+  E7 authorization/execution     = c315442…;
+  Request v2.0                   = d961440…;
+  R6 correction                  = 3f8b33a…;
+  R6 completion                  = 7a919fe…;
+  path-map addendum              = b8146e9….
 
-Finding 1 — primary JSONL defect:
-  canonical_json_bytes helper uses sort_keys=True and indent=2;
-  transaction-log producer reused that standalone-JSON helper for .jsonl;
-  aggregate file therefore became concatenated pretty JSON;
-  88 physical lines contained 8 independently valid JSON objects;
-  stream parsing succeeded for 8 BEGIN/COMMIT records;
-  required per-line parsing failed at line 1;
-  consumer correctly rejected the aggregate stream;
-  classification = producer-side transaction-log serialization contract defect.
+E7 retained facts:
+  fresh v2.0 preflight           = 31/31 PASS;
+  raw sequence                   = O0–O5 COMPLETE;
+  O5 state                       = 4 objects / 2 index / 2 dependencies;
+  SQLite integrity               = OK;
+  R5/R6 corrections              = NO REGRESSION;
+  raw ES2                        = REUSE / NON-AUTHORITATIVE;
+  raw ESN                        = BLOCK / NON-AUTHORITATIVE;
+  stop defect A                  = JSONL pretty-serialization producer;
+  stop defect B                  = premature success process-result persistence;
+  serialization self-check       = ABSENT;
+  stderr closure                 = ABSENT;
+  SHA256SUMS                     = ABSENT;
+  stale process result           = NON-AUTHORITATIVE.
 
-Finding 2 — secondary process-result defect:
-  campaign_process_result.json was written at source line 787;
-  it recorded returncode=0, stderr="", and success stdout;
-  serialization self-check ran later at source line 801;
-  SHA256SUMS ran later at source line 802;
-  the self-check then failed and the process exited nonzero;
-  no code refreshed or invalidated the earlier success artifact;
-  classification =
-    CAMPAIGN_PROCESS_RESULT_PREMATURE_SUCCESS_PERSISTENCE_DEFECT;
-  relationship = exposed by same failed run; independent root defect.
+V2.1 corrections:
+  transaction_log producer       = compact one-record-per-line JSONL;
+  producer rejects               = path-like, non-finite, non-serializable graphs;
+  self-check consumer contract   = retained;
+  mandatory closure validation   = ADDED;
+  premature success-state discard = ADDED;
+  failure process-result state   = ADDED;
+  final success-state validation = ADDED;
+  SHA256SUMS coverage check      = ADDED.
 
-Complete-chain absence:
-  evidence_serialization_self_check.json = ABSENT;
-  campaign_stderr.txt                    = ABSENT;
-  SHA256SUMS                             = ABSENT;
-  campaign_process_result.json           = STALE / NON-AUTHORITATIVE.
+V2.1 validation:
+  transaction JSONL compact record contract = PASS;
+  process-result success-state invariant    = PASS;
+  synthetic path/nonfinite rejection        = PASS;
+  canonical write/reread/parse              = PASS;
+  exact persistence contract                = PASS;
+  E6 tuple graph guard                      = PASS;
+  failure discard + failure record          = PASS;
+  final success-state validation            = PASS;
+  evidence_lifecycle_closure_pass           = true;
+  lifecycle blockers                        = 0.
+
+Readiness boundary:
+  existing v2.0/E7 path map      = OCCUPIED BY INVALID E7;
+  fresh E8 path map              = NOT ESTABLISHED / NOT AUTHORIZED;
+  ready_for_e7_launch_review     = false;
+  ready_for_E8_launch_review     = false;
+  E8 campaign/IS/observer budget = NOT AUTHORIZED.
 
 Defect attribution:
-  CarrierSQLite semantics       = NOT DEFECTIVE IN THIS STOP;
-  DB schema/transactions        = NOT DEFECTIVE IN THIS STOP;
-  ES2/ESN semantics             = NOT DEFECTIVE IN THIS STOP;
-  decision boundary             = NOT DEFECTIVE IN THIS STOP;
-  tau/fixture                   = NOT DEFECTIVE IN THIS STOP;
-  runner semantic sequence      = NOT DEFECTIVE IN THIS STOP;
-  EQ/REJ criteria               = NOT DEFECTIVE IN THIS STOP.
-
-Budgets:
-  seventh campaign / IS-mutation / observer budgets = CONSUMED;
-  repair                                            = NOT AUTHORIZED;
-  rerun                                             = NOT AUTHORIZED;
-  old campaign/evidence reuse                       = FORBIDDEN;
-  automatic renewal                                 = FORBIDDEN;
-  E7 conversion to VALID                            = FORBIDDEN;
-  E8 drafting/authorization                         = NOT AUTHORIZED.
+  CarrierSQLite semantics       = NOT DEFECTIVE;
+  DB schema/transactions        = NOT DEFECTIVE;
+  ES2/ESN semantics             = NOT DEFECTIVE;
+  decision boundary             = NOT DEFECTIVE;
+  tau/fixture                   = NOT DEFECTIVE;
+  runner semantic sequence      = NOT DEFECTIVE;
+  EQ/REJ criteria               = NOT DEFECTIVE.
 
 Next lawful object:
-  explicit Human strategic decision:
+  explicit Human strategy decision:
     DENY further work; or
-    authorize a new independently budgeted Request.
-  If authorized, audit-identified candidate scope would require both
-  transaction-log JSONL producer/consumer contract correction and a separate
-  process-result freshness/lifecycle invariant, followed by fresh harness
-  validation. This state neither drafts nor authorizes that Request or E8.
+    authorize a separate Request to establish a fresh E8 path map.
+  A fresh path map would not authorize E8 execution. Any E8 campaign/IS/
+  observer budget and launch would require later explicit Human authorization
+  after validated readiness.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008.
+  docs/02-evidence/database-carrier-harness-evidence-lifecycle-closure-v2.1-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
