@@ -6,104 +6,85 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — Evidence-Lifecycle Closure Request v2.1 COMPLETE with
-> lifecycle validation PASS. E7 remains INVALID / NON-ADJUDICATIVE. No E8 path
-> map has been established, E8 is NOT AUTHORIZED, and no campaign/IS-mutation/
-> observer budget was consumed.
+> **Status:** STOPPED — Request v2.2 COMPLETE; fresh independent E8 path map
+> established and preflight 31/31 PASS. E8 execution is NOT authorized and NOT
+> launched. No campaign/IS-mutation/observer budget was consumed.
 
 ```text
-Evidence-Lifecycle Closure v2.1 = COMPLETE / PASS;
-E7                              = INVALID / NON-ADJUDICATIVE;
-E7 Human Evidence Audit         = CLOSED;
-transaction-log JSONL producer  = CORRECTED / VALIDATED;
-process-result lifecycle        = CORRECTED / VALIDATED;
-success-state discard invariant = ESTABLISHED / TESTED;
-failure process-result state    = ESTABLISHED / TESTED;
-E7/V2.0 evidence                = UNCHANGED;
-campaign budget consumed        = false;
-E8 path map                     = NOT ESTABLISHED;
+E8 Path-Map Establishment       = COMPLETE / PASS;
+path-map identity               = ..._MANIFEST_008;
+path-map version/destinations   = 6 / 31;
+E8-reserved root                =
+  docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008;
+post-preflight root state       = FRESH / ABSENT;
+ready_for_e8_launch_review      = true;
+ready_for_e8_execution          = false;
 E8 campaign/IS/observer budget  = NOT AUTHORIZED;
 E8 execution                    = NOT AUTHORIZED / NOT LAUNCHED;
+E7                              = INVALID / NON-ADJUDICATIVE;
 EQ-1..EQ-8                      = NOT ESTABLISHED;
 REJ-1..REJ-14                   = NOT ESTABLISHED;
 CarrierSQLite equivalence       = NOT ESTABLISHED;
 broader SimiGo/ES claim         = NOT ESTABLISHED.
 
 Governance chain:
-  Request v2.1                   = 42db62c…;
-  correction/validation commit   = c294d92…;
-  completion record              = 3ba94c0…;
-  E7 audit                       = 2a7fe47…;
-  E7 invalid record              = 01670a8…;
-  E7 authorization/execution     = c315442…;
-  Request v2.0                   = d961440…;
-  R6 correction                  = 3f8b33a…;
-  R6 completion                  = 7a919fe…;
-  path-map addendum              = b8146e9….
+  Request v2.2                     = 124bc80…;
+  path-map establishment commit    = 8e41d42…;
+  E8 completion record             = c372b04…;
+  Evidence-Lifecycle Closure PASS  = 5ff5d78…;
+  E7 audit                         = 2a7fe47…;
+  E7 invalid record                = 01670a8…;
+  E7 authorization/execution       = c315442….
 
-E7 retained facts:
-  fresh v2.0 preflight           = 31/31 PASS;
-  raw sequence                   = O0–O5 COMPLETE;
+Path-map checks:
+  adapter-build tuple unpack        = PASS;
+  adapter-output exact persistence  = PASS;
+  canonical serializer boundary     = PASS;
+  producer/consumer inventory       = PASS;
+  transaction JSONL producer        = PASS;
+  process-result lifecycle          = PASS;
+  path/nonfinite rejection          = PASS;
+  canonical write/reread/parse      = PASS;
+  exact persistence contract        = PASS;
+  E6 tuple graph guard              = PASS;
+  compact JSONL record contract     = PASS;
+  failure discard + failure result  = PASS;
+  final success-state validation    = PASS;
+  fresh E8 path map                 = PASS.
+
+Standing E7 facts:
+  raw O0–O5 sequence             = COMPLETE / ACCEPTED AS FACTS;
   O5 state                       = 4 objects / 2 index / 2 dependencies;
-  SQLite integrity               = OK;
-  R5/R6 corrections              = NO REGRESSION;
-  raw ES2                        = REUSE / NON-AUTHORITATIVE;
-  raw ESN                        = BLOCK / NON-AUTHORITATIVE;
-  stop defect A                  = JSONL pretty-serialization producer;
-  stop defect B                  = premature success process-result persistence;
-  serialization self-check       = ABSENT;
-  stderr closure                 = ABSENT;
-  SHA256SUMS                     = ABSENT;
-  stale process result           = NON-AUTHORITATIVE.
+  raw ES2 REUSE                  = NON-AUTHORITATIVE;
+  raw ESN BLOCK                  = NON-AUTHORITATIVE;
+  complete campaign evidence     = NOT CLOSED;
+  mechanical EQ/REJ/observer     = NON-AUTHORITATIVE.
 
-V2.1 corrections:
-  transaction_log producer       = compact one-record-per-line JSONL;
-  producer rejects               = path-like, non-finite, non-serializable graphs;
-  self-check consumer contract   = retained;
-  mandatory closure validation   = ADDED;
-  premature success-state discard = ADDED;
-  failure process-result state   = ADDED;
-  final success-state validation = ADDED;
-  SHA256SUMS coverage check      = ADDED.
+Protected boundaries:
+  CarrierSQLite semantics       = UNCHANGED;
+  DB schema/transactions        = UNCHANGED;
+  ES2/ESN semantics             = UNCHANGED;
+  decision boundary             = UNCHANGED;
+  tau/fixture                   = UNCHANGED;
+  runner semantic sequence      = UNCHANGED;
+  EQ/REJ criteria               = UNCHANGED.
 
-V2.1 validation:
-  transaction JSONL compact record contract = PASS;
-  process-result success-state invariant    = PASS;
-  synthetic path/nonfinite rejection        = PASS;
-  canonical write/reread/parse              = PASS;
-  exact persistence contract                = PASS;
-  E6 tuple graph guard                      = PASS;
-  failure discard + failure record          = PASS;
-  final success-state validation            = PASS;
-  evidence_lifecycle_closure_pass           = true;
-  lifecycle blockers                        = 0.
-
-Readiness boundary:
-  existing v2.0/E7 path map      = OCCUPIED BY INVALID E7;
-  fresh E8 path map              = NOT ESTABLISHED / NOT AUTHORIZED;
-  ready_for_e7_launch_review     = false;
-  ready_for_E8_launch_review     = false;
-  E8 campaign/IS/observer budget = NOT AUTHORIZED.
-
-Defect attribution:
-  CarrierSQLite semantics       = NOT DEFECTIVE;
-  DB schema/transactions        = NOT DEFECTIVE;
-  ES2/ESN semantics             = NOT DEFECTIVE;
-  decision boundary             = NOT DEFECTIVE;
-  tau/fixture                   = NOT DEFECTIVE;
-  runner semantic sequence      = NOT DEFECTIVE;
-  EQ/REJ criteria               = NOT DEFECTIVE.
+Budgets:
+  E8 path-map establishment      = CONSUMED;
+  E8 campaign budget             = NOT AUTHORIZED;
+  E8 IS-mutation budget          = NOT AUTHORIZED;
+  E8 observer budget             = NOT AUTHORIZED;
+  E7 evidence reuse              = FORBIDDEN;
+  automatic E8 launch            = FORBIDDEN;
+  automatic equivalence          = FORBIDDEN.
 
 Next lawful object:
-  explicit Human strategy decision:
-    DENY further work; or
-    authorize a separate Request to establish a fresh E8 path map.
-  A fresh path map would not authorize E8 execution. Any E8 campaign/IS/
-  observer budget and launch would require later explicit Human authorization
-  after validated readiness.
+  explicit Human E8 launch review. The Human may DENY E8 or separately authorize
+  E8 as a new independent frozen campaign with fresh campaign, IS-mutation and
+  observer budgets. Path-map success does not imply E8 authorization.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-harness-evidence-lifecycle-closure-v2.1-20261008.
+  docs/02-evidence/database-carrier-e8-path-map-establishment-v2.2-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
