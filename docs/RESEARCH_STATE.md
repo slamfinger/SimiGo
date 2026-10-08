@@ -959,6 +959,77 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP003_HUMAN_EVIDENCE_AUDIT_RECORD_039_20261008.md.
 ```
 
+## PIR campaign closure — 2026-10-08 (PALACE / ES)
+
+> **Status:** CLOSED — STRATEGIC STOP / VALIDATION DEFERRED. PIR effectiveness,
+> MOVE/RENAME proof, performance theorem, PALACE equivalence and integrated
+> SimiGo proof remain NOT ESTABLISHED. EXP-004 is NOT AUTHORIZED.
+
+```text
+PIR campaign line                 = CLOSED / VALIDATION DEFERRED;
+PIR Design v0.2                   = ACCEPT / FROZEN;
+RM-001                            = ACCEPTED;
+Implementation / Fixtures         = VALIDATED;
+EXP-001                           = INVALID;
+EXP-002                           = INVALID;
+EXP-003                           = INVALID;
+EXP-004                           = NOT AUTHORIZED;
+PIR effectiveness                 = NOT ESTABLISHED;
+MOVE/RENAME proof                 = NOT ESTABLISHED;
+PIR performance theorem           = NOT ESTABLISHED;
+PALACE equivalence                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED;
+E8 bounded CarrierSQLite equivalence = ESTABLISHED / UNCHANGED;
+R01 bounded continuation sufficiency = PASS / UNCHANGED.
+
+Strategic reason:
+  EXP-001 recorder bytes/text persistence defect;
+  EXP-002 measured-registry pre-change snapshot defect;
+  EXP-003 stale committed fixture / release-selection defect.
+All were fail-closed evidence-production infrastructure failures.
+None breached PIR semantics, candidate discovery, deterministic MOVE/RENAME,
+freshness rules, oracle isolation, IS mutation boundary, CarrierSQLite semantics
+or EQ/REJ criteria.
+
+Retained diagnostics:
+  EXP-001 bounded in-memory reconciliation occurred, but EV-P08 was not closed;
+  EXP-002 20/20 observations persisted, four raw true positives and one MOVE
+    false negative caused by lost pre-change locator;
+  EXP-003 20/20 observations persisted, v2.7 corrected builder was correct, but
+    stale committed fixture was selected and MOVE remained a false negative.
+These are diagnostics only and may not be stitched into a future run.
+
+Preserved non-defective boundaries:
+  PIR semantic/design principles = NOT DISPROVED;
+  candidate discovery            = NOT DISPROVED;
+  deterministic MOVE/RENAME      = NOT DISPROVED;
+  freshness rules                = NOT DISPROVED;
+  oracle isolation               = PRESERVED;
+  IS mutation boundary           = PRESERVED;
+  CarrierSQLite semantics        = NOT IMPLICATED;
+  EQ/REJ criteria                = UNCHANGED.
+
+Deferred reopening conditions:
+  A new independently authorized Human-directed Request must first address
+  release-process fixture selection/provenance maturity, then independent
+  readiness validation. A future execution would still require separate explicit
+  authorization and a fresh independent budget.
+
+Prohibited now:
+  EXP-004 authorization/drafting/execution;
+  PIR implementation or fixture creation;
+  reuse of EXP-001..003 evidence as adjudicative evidence;
+  automatic continuation to integrated SimiGo;
+  PALACE equivalence claim;
+  production SimiGo claim;
+  LLM autonomy claim;
+  general Execution State theorem;
+  scope broadening.
+
+Closure evidence:
+  docs/00-governance/PALACE_MINIMAL_PIR_RESEARCH_CLOSURE_AND_DEFERRED_VALIDATION_RECORD_040_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
