@@ -6,104 +6,92 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — Request v2.0 COMPLETE. R6 adapter-build tuple-unpack
-> correction PASS; fresh independent E7 path map established; fresh preflight
-> 31/31 PASS. The canonical state is now at E7 launch review only. E7 execution
-> is NOT authorized and NOT launched.
+> **Status:** STOPPED — E7 Human Evidence Audit NOT OPEN; campaign is
+> INVALID / NON-ADJUDICATIVE. E7 passed fresh v2.0 preflight, completed O0–O5,
+> and held both R5/R6 corrections, then fail-closed because
+> `transaction_log.jsonl` was written as concatenated pretty JSON objects
+> rather than one compact JSON object per line. No repair, rerun, E8 drafting,
+> evidence reconstruction, or equivalence establishment is authorized.
 
 ```text
-R6 adapter-build tuple-unpack repair = COMPLETE / PASS;
-build_adapter tuple contract         = UNCHANGED;
-caller unpack                         = PASS;
-persist_exact_json contract           = UNCHANGED;
-targeted AST regression self-check    = PASS;
-fresh E7 path map                     = ESTABLISHED / RESERVED;
-path-map destination count/version    = 31/5;
-fresh preflight                       = 31/31 PASS;
-E7-reserved root after preflight      = FRESH / ABSENT;
-E7 execution                          = NOT AUTHORIZED / NOT LAUNCHED;
-campaign/IS-mutation/observer budget  = 0 CONSUMED BY THIS REQUEST;
-E6 evidence                           = UNCHANGED.
+E7 execution authorization      = c315442…;
+E7 evidence/invalid record      = 01670a8…;
+Governing Request v2.0          = d961440…;
+R6 correction                   = 3f8b33a…;
+R6 completion                   = 7a919fe…;
+path-map addendum               = b8146e9…;
+E7 launch review                = d783dc3….
 
-Governance chain:
-  Request v2.0                  = d961440…;
-  R6 caller correction commit   = 3f8b33a…;
-  R6 completion record          = 7a919fe…;
-  E7 path-map addendum          = registered by next canonical commit;
-  readiness closure             = cc315fd…;
-  E6 audit                      = bedd50a…;
-  E6 invalid record             = d861968….
+campaign ID                     = exec-dbcarrier-007-c315442;
+fresh path map                  = v2.0 / version 5 / 31 destinations;
+initial path preflight          = 31/31 PASS;
+raw sequence                    = O0–O5 COMPLETE;
+O5 logical state                = 4 objects / 2 index / 2 dependencies;
+O0/O5 SQLite integrity          = OK;
+R5 adapter-output correction    = NO RECURRENCE;
+R6 adapter-build tuple unpack   = NO RECURRENCE;
+raw ES2                         = REUSE / NON-AUTHORITATIVE;
+raw ESN                         = BLOCK / NON-AUTHORITATIVE;
+mechanical observer             = PASS / NON-AUTHORITATIVE;
+mechanical EQ-1..EQ-8           = true / NOT ESTABLISHED;
+mechanical REJ-1..REJ-14        = false / NOT ESTABLISHED.
 
-R6 correction:
-  prior forbidden graph =
-    preflight.adapter_build = tuple[PosixPath, dict];
-  repaired caller =
-    _, adapter_build_record = build_adapter(evidence_paths);
-  retained evidence record = dict only;
-  discarded binary path = not serialized.
+E7 stop code =
+  CAMPAIGN_TRANSACTION_LOG_JSONL_RECORD_FORMAT_DEFECT;
+root-cause class =
+  HARNESS_TRANSACTION_LOG_JSONL_RECORD_SERIALIZATION_FORMAT_DEFECT.
 
-Fresh E7 path map:
-  manifest identity =
-    DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_007;
-  output root =
-    docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008;
-  independent E7-reserved root = yes;
-  root used by any campaign = no.
+Precise cause:
+  producer used canonical pretty JSON for each transaction event;
+  each event was independently valid JSON;
+  aggregate transaction_log.jsonl became a concatenated pretty-JSON stream;
+  serialization self-check correctly required one compact JSON object per line;
+  line 1 parse failed at character 1;
+  campaign fail-closed before serialization self-check and SHA256SUMS.
 
-Validation result:
-  adapter-build tuple binding              = PASS;
-  adapter-output exact persistence         = PASS;
-  canonical JSON serializer boundary       = PASS;
-  producer/consumer path inventory         = PASS 31/31;
-  synthetic path/nonfinite rejection       = PASS;
-  canonical write/reread/parse             = PASS;
-  E6 tuple graph guard simulation          = PASS;
-  fresh E7 path-map preflight              = PASS 31/31;
-  decision                                 = READY_FOR_E7_LAUNCH_REVIEW;
-  ready_for_e7_launch_review               = true;
-  ready_for_e7_execution                   = false.
+Defect attribution:
+  CarrierSQLite semantics       = NOT DEFECTIVE IN THIS STOP;
+  DB schema/transactions        = NOT DEFECTIVE IN THIS STOP;
+  ES2/ESN semantics             = NOT DEFECTIVE IN THIS STOP;
+  decision boundary             = NOT DEFECTIVE IN THIS STOP;
+  tau/fixture                   = NOT DEFECTIVE IN THIS STOP;
+  runner semantic sequence      = NOT DEFECTIVE IN THIS STOP;
+  EQ/REJ criteria               = NOT DEFECTIVE IN THIS STOP.
 
-Protected baselines:
-  CarrierSQLite semantics       = UNCHANGED;
-  DB schema/transactions        = UNCHANGED;
-  ES2/ESN semantics             = UNCHANGED;
-  decision boundary             = UNCHANGED;
-  tau/fixture                   = UNCHANGED;
-  runner semantic sequence      = UNCHANGED;
-  EQ/REJ criteria               = UNCHANGED;
-  persist_exact_json contract   = UNCHANGED.
+Missing complete-chain artifacts:
+  evidence_serialization_self_check.json = ABSENT;
+  campaign_stderr.txt                    = ABSENT;
+  SHA256SUMS                             = ABSENT.
+campaign_process_result.json exists but its returncode=0 field is stale and
+non-authoritative because the process exited nonzero before closure.
 
-Standing adjudication status:
-  E6                              = INVALID / NON-ADJUDICATIVE;
-  raw O0–O5 facts                 = ACCEPTED;
-  raw ES2 REUSE                   = NON-AUTHORITATIVE;
-  raw ESN BLOCK                   = NON-AUTHORITATIVE;
-  mechanical observer/EQ/REJ      = NON-AUTHORITATIVE;
-  EQ-1..EQ-8                      = NOT ESTABLISHED;
-  REJ-1..REJ-14                   = NOT ESTABLISHED;
-  CarrierSQLite equivalence       = NOT ESTABLISHED;
-  broader SimiGo/ES claim         = NOT ESTABLISHED.
+Evidence disposition:
+  raw O0–O5 facts              = ACCEPTED;
+  raw ES2 REUSE                = NON-AUTHORITATIVE;
+  raw ESN BLOCK                = NON-AUTHORITATIVE;
+  observer/provenance/EQ/REJ   = NON-AUTHORITATIVE;
+  EQ-1..EQ-8 adjudication      = NOT ESTABLISHED;
+  REJ-1..REJ-14 adjudication   = NOT ESTABLISHED;
+  CarrierSQLite equivalence    = NOT ESTABLISHED;
+  broader SimiGo/ES claim      = NOT ESTABLISHED.
 
 Budgets:
-  R6 repair budget                = CONSUMED;
-  E7 path-map establishment       = CONSUMED;
-  E7 campaign budget              = NOT AUTHORIZED;
-  E7 IS-mutation budget           = NOT AUTHORIZED;
-  E7 observer budget              = NOT AUTHORIZED;
-  old campaign/evidence reuse     = FORBIDDEN;
-  automatic E7 launch             = FORBIDDEN;
-  automatic equivalence           = FORBIDDEN.
+  seventh campaign / IS-mutation / observer budgets = CONSUMED;
+  repair                                            = NOT AUTHORIZED;
+  rerun                                             = NOT AUTHORIZED;
+  old campaign/evidence reuse                       = FORBIDDEN;
+  automatic renewal                                 = FORBIDDEN;
+  E7 conversion to VALID                            = FORBIDDEN.
 
 Next lawful object:
-  explicit Human E7 launch review. The Human must separately either:
-    DENY E7; or
-    authorize E7 as a new independent frozen campaign with fresh campaign,
-    IS-mutation and observer budgets.
-  R6 success does not authorize E7 by implication.
+  explicit Human evidence audit of INVALID E7. If further work is considered,
+  the Human must separately decide whether to authorize a new independently
+  budgeted Request for transaction-log JSONL producer/consumer contract
+  correction and a potential eighth campaign, or stop without equivalence
+  adjudication. This state does not authorize repair, rerun, E8, or renewal.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-harness-correction-v2.0-20261008;
-  docs/00-governance/...R6...COMPLETION_RECORD_016_20261008.md.
+  docs/02-evidence/database-carrier-equivalence-campaign-v2.0-e7-reserved-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
