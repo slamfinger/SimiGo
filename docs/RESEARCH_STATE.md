@@ -414,6 +414,97 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP001_INVALID_COMPLETION_RECORD_030_20261008.md.
 ```
 
+## MINIMAL-PIR-EXP-001 Human Evidence Audit closure — 2026-10-08 (PALACE / ES)
+
+> **Status:** CLOSED — FOUR-POINT Human Evidence Audit PASS; experiment remains
+> INVALID / NON-ADJUDICATIVE. The defect is an isolated recorder bytes/text
+> persistence contract violation. No repair, EXP-002, new fixture, E9 or scope
+> broadening is authorized.
+
+```text
+MINIMAL-PIR-EXP-001                = INVALID / NON-ADJUDICATIVE;
+E7 premature-success pattern       = DID NOT RECUR;
+primary defect                     = EV-P08 bytes passed to Path.write_text;
+classification =
+  HARNESS_EXPERIMENT_EVIDENCE_BYTES_TO_TEXT_PERSISTENCE_DEFECT;
+bounded in-memory reconciliation   = OCCURRED / NOT EVIDENCE-CLOSED;
+persisted physical verdict payload = NONE;
+PIR effectiveness                  = NOT ESTABLISHED;
+PIR performance theorem            = NOT ESTABLISHED;
+PALACE equivalence                 = NOT ESTABLISHED;
+integrated SimiGo proof            = NOT ESTABLISHED;
+E8 bounded CarrierSQLite equivalence = ESTABLISHED / UNCHANGED.
+
+Audit/governance chain:
+  Human audit record              = registered by this section's preceding commit;
+  invalid completion record       = 60cb35b…;
+  authorization/execution commit  = 36dc1de…;
+  runner commit                   = 86cbfa…;
+  audit base                      = 056f9a7….
+
+Audit point 1 — recorder contract:
+  EV-P08 payload was canonical JSONL bytes;
+  caller used Path.write_text(bytes);
+  Path.write_text requires str;
+  lawful alternative was Path.write_bytes(bytes);
+  classification = caller-side bytes/text API contract violation.
+
+Audit point 2 — execution/evidence separation:
+  source order proves all 20 accepted-object reconciliations were appended in
+    memory before persistence was attempted;
+  crash occurred at EV-P08 write;
+  physical reconciliation occurred in memory but verdict payloads were not saved;
+  post-stop captures cannot substitute for EV-P08;
+  evidence closure = NOT ESTABLISHED.
+
+Audit point 3 — boundary integrity:
+  E-L is_update_authorized = false;
+  measured-path forbidden keys = NONE;
+  accepted Information Scope = 20/20;
+  registered N = 10,000;
+  side-channel denial fields = all false;
+  fixture tree unchanged since execution commit;
+  no IS mutation, oracle leakage, semantic inference, backend selection or E9
+    work found.
+
+Audit point 4 — lifecycle integrity:
+  POST_STOP_PROCESS_RESULT = explicitly FAILURE_POST_STOP_CAPTURE;
+  POST_STOP_STDERR = explicitly post-stop capture;
+  campaign_returncode = 1;
+  repair/rerun = false;
+  premature success artifact = NONE.
+
+Artifact bindings:
+  E-L policy SHA256 =
+    d2ab029c7e56e092283cb4df6deec026b26d32251420c9687d918e29e7e0c1bd;
+  E-L side-channel denial SHA256 =
+    389ae228652d9426867bdfbf4685297c90b26e5ab1cd445249fabeb4c4f961bf;
+  POST_STOP_PROCESS_RESULT SHA256 =
+    ce5f834c502be6f7abad93ffbe1d6d55d2066462937ddc16d2f1c03dd94710fd;
+  POST_STOP_STDERR SHA256 =
+    8ce3afcd4cb8a43b8294eb85fc08228c483db4344bff36fcf3d40dd2de7a9765.
+
+Budgets:
+  experiment/observation/evidence budgets = CONSUMED;
+  IS mutation                             = NONE;
+  repair                                  = NOT AUTHORIZED;
+  rerun                                   = NOT AUTHORIZED;
+  EXP-002                                 = NOT AUTHORIZED / NOT DRAFTED;
+  PIR/PALACE/integrated claims broadening = FORBIDDEN.
+
+Next lawful object:
+  explicit Human strategic decision:
+    DENY further PIR work; or
+    authorize a new independently budgeted Request scoped to
+    experiment-recorder bytes/text persistence correction, targeted regression,
+    fresh experiment-entry validation and a potential future execution.
+  Even if corrected, any future execution remains a separate Human decision.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_EXPERIMENT;
+  docs/00-governance/PALACE_MINIMAL_PIR_EXP001_HUMAN_EVIDENCE_AUDIT_RECORD_031_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
