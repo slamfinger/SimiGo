@@ -6,68 +6,72 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — E6 was launched once under Human `授权 E6` and is
-> INVALID / NON-ADJUDICATIVE; Human Evidence Audit NOT OPEN. R5 successfully
-> corrected and exercised adapter-output return-type binding, but the canonical
-> serializer then fail-closed pre-write on a residual PosixPath while creating
-> preflight provenance. No repair, rerun, E7 authorization, evidence reuse, or
-> equivalence establishment is authorized.
+> **Status:** STOPPED — E6 Human Evidence Audit CLOSED; campaign remains
+> CONFIRMED INVALID / NON-ADJUDICATIVE. R5 passed without regression. The R4
+> path boundary correctly rejected a residual `PosixPath`; audit refined its
+> source to an adapter-build tuple-unpack binding defect. No repair, rerun, E7
+> drafting, old-evidence reuse, or equivalence establishment is authorized.
 
 ```text
-E6 execution authorization       = 66f3c1e…;
-E6 evidence/invalid record       = d861968…;
-governing Request v1.8           = f7429fe…;
-R5 correction commit             = e98734a…;
-R5 completion record             = c9b572c…;
-E5 audit closure                 = cd02228….
+E6 Human Evidence Audit = CLOSED;
+EXEC-DB-006             INVALID / NON-ADJUDICATIVE;
+R5 caller correction    = VERIFIED EFFECTIVE / NO REGRESSION;
+R4 path boundary        = CORRECTLY FAIL-CLOSED PRE-WRITE;
+raw sequence            = O0–O5 COMPLETE;
+raw ES2                 = REUSE / NON-AUTHORITATIVE;
+raw ESN                 = BLOCK / NON-AUTHORITATIVE;
+mechanical observer     = PASS / NON-AUTHORITATIVE;
+mechanical EQ/REJ       = NON-AUTHORITATIVE;
+EQ-1..EQ-8              = NOT ESTABLISHED;
+REJ-1..REJ-14           = NOT ESTABLISHED;
+CarrierSQLite equivalence = NOT ESTABLISHED;
+broader SimiGo/ES claim   = NOT ESTABLISHED.
 
-campaign ID                      = exec-dbcarrier-006-66f3c1e;
-fresh path preflight             = 31/31 PASS;
-raw sequence                     = O0–O5 COMPLETE;
-O5 logical state                 = 4 objects / 2 index / 2 dependencies;
-O0/O5 SQLite integrity           = OK;
-R5 target behavior               = VERIFIED IN E6;
-persist_exact_json contract      = UNCHANGED;
-raw ES2                          = REUSE / REUSE_PATH;
-raw ESN                          = BLOCK / BLOCKED_NON_RECOMPUTE_PATH;
-mechanical observer              = ALL PASS / NON-AUTHORITATIVE;
-mechanical EQ/REJ                = 8 PASS + 14 NO-REJECT / NON-AUTHORITATIVE.
+Audit/governance chain:
+  E6 audit record             = bedd50a…;
+  E6 invalid completion       = d861968…;
+  E6 authorization/execution  = 66f3c1e…;
+  R5 completion               = c9b572c…;
+  R5 correction               = e98734a…;
+  Request v1.8                = f7429fe…;
+  E5 audit closure            = cd02228….
 
-E6 stop code =
-  CAMPAIGN_PREFLIGHT_VERIFICATION_POSIXPATH_SERIALIZATION_DEFECT;
-root-cause class =
-  HARNESS_PREFLIGHT_PROVENANCE_PATH_NORMALIZATION_RESIDUAL_DEFECT.
+Refined E6 root cause:
+  broad prior class =
+    HARNESS_PREFLIGHT_PROVENANCE_PATH_NORMALIZATION_RESIDUAL_DEFECT;
+  precise audited class =
+    HARNESS_ADAPTER_BUILD_RECORD_TUPLE_UNPACK_BINDING_DEFECT;
+  build_adapter contract = tuple[Path, dict];
+  build_adapter return = (binary, runtime/build record);
+  campaign caller = adapter_build_record = build_adapter(...);
+  forbidden graph position = preflight.adapter_build[0];
+  R4 canonical JSON boundary = correctly rejected pre-write.
 
-Failure interpretation:
-  R5 corrected the E5 adapter-output return-type defect;
-  that defect did not recur;
-  E6 exposed a residual E4-class PosixPath normalization site;
-  canonical writer correctly rejected it before writing;
+R5 finding:
+  persist_exact_json contract = UNCHANGED;
+  ES2 exact persistence/caller parse = PASS;
+  ESN exact persistence/caller parse = PASS;
+  ES2 raw = REUSE / REUSE_PATH / NON-AUTHORITATIVE;
+  ESN raw = BLOCK / BLOCKED_NON_RECOMPUTE_PATH / NON-AUTHORITATIVE;
+  no R5 regression observed.
+
+R4 finding:
+  fresh path preflight = 31/31 PASS;
+  forbidden path-like JSON boundary = enforced;
+  campaign stopped before preflight_verification.json creation;
   preflight_verification.json = ABSENT;
-  evidence_serialization_self_check.json = ABSENT;
-  campaign_process_result.json and campaign_stderr.txt = ABSENT AT STOP;
+  serialization self-check = ABSENT;
+  process/stderr closure = ABSENT AT HARNESS STOP;
   SHA256SUMS = ABSENT.
 
-Defect attribution:
-  CarrierSQLite semantics         = NOT DEFECTIVE IN THIS STOP;
-  DB schema/transactions          = NOT DEFECTIVE IN THIS STOP;
-  ES2/ESN semantics               = NOT DEFECTIVE IN THIS STOP;
-  decision boundary               = NOT DEFECTIVE IN THIS STOP;
-  tau/fixture                     = NOT DEFECTIVE IN THIS STOP;
-  runner semantic sequence        = NOT DEFECTIVE IN THIS STOP;
-  EQ/REJ criteria                 = NOT DEFECTIVE IN THIS STOP.
-
-Evidence disposition:
-  raw O0–O5 facts                = ACCEPTED;
-  raw ES2 REUSE                  = NON-AUTHORITATIVE;
-  raw ESN BLOCK                  = NON-AUTHORITATIVE;
-  mechanical observer            = NON-AUTHORITATIVE;
-  mechanical EQ/REJ matrix       = NON-AUTHORITATIVE;
-  campaign outcome/provenance    = NON-AUTHORITATIVE;
-  EQ-1..EQ-8 adjudication        = NOT ESTABLISHED;
-  REJ-1..REJ-14 adjudication     = NOT ESTABLISHED;
-  CarrierSQLite equivalence      = NOT ESTABLISHED;
-  broader SimiGo/ES claim        = NOT ESTABLISHED.
+Raw facts and non-authoritative artifacts:
+  O0–O5 observations = ACCEPTED AS FACTS ONLY;
+  O5 state = 4 objects / 2 index / 2 dependencies;
+  O0/O5 SQLite integrity = OK;
+  observer = mechanically PASS / NON-AUTHORITATIVE;
+  EQ-1..EQ-8 = mechanically true / NOT ESTABLISHED;
+  REJ-1..REJ-14 = mechanically false / NOT ESTABLISHED;
+  campaign outcome = mechanically VALID / NON-AUTHORITATIVE.
 
 Budgets:
   sixth campaign / IS-mutation / observer budgets = CONSUMED;
@@ -78,11 +82,12 @@ Budgets:
   E6 conversion to VALID                          = FORBIDDEN.
 
 Next lawful object:
-  explicit Human evidence audit of INVALID E6. If further work is considered,
-  the Human must separately decide whether residual harness evidence risk
-  justifies a new independently budgeted Request and potential seventh campaign,
-  or whether stopping without equivalence adjudication is the lawful research
-  outcome. This state authorizes neither repair nor rerun.
+  explicit Human decision:
+    DENY further work; or
+    authorize a new independently budgeted Request.
+  This audit does not draft, design, authorize, or scope E7. It does not
+  authorize adapter-record repair, serializer change, evidence reconstruction,
+  equivalence adjudication, or renewal.
 
 Primary evidence:
   docs/02-evidence/database-carrier-equivalence-campaign-v1.8-20261008.
