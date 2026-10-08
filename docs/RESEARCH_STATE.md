@@ -6,84 +6,109 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED AT HUMAN EVIDENCE AUDIT — E8 completed O0–O5 and closed
-> the complete mechanical evidence chain. The campaign is mechanically VALID but
-> remains only `CANDIDATE_EQUIVALENCE_PENDING_HUMAN_AUDIT`. CarrierSQLite
-> equivalence, EQ/REJ adjudication, and broader claims are NOT ESTABLISHED.
+> **Status:** BOUNDED EQUIVALENCE ESTABLISHED — E8 four-layer Human Evidence
+> Audit PASS and formal ruling issued. The ruling is strictly limited to the
+> exact E8 implementation/configuration. General, arbitrary-DB, arbitrary-IS,
+> arbitrary-ES, production, LLM-autonomy and future-change claims remain
+> NOT ESTABLISHED. E9 is NOT AUTHORIZED.
 
 ```text
-E8 execution authorization       = 7585cc4…;
-E8 completion record             = f3eda8e…;
-campaign ID                      = exec-dbcarrier-008-7585cc4;
-Governing Request v2.2           = 124bc80…;
-E8 path-map establishment        = 8e41d42…;
-E8 completion                    = c372b04…;
-Evidence-Lifecycle Closure PASS  = 5ff5d78…;
-E7 audit                         = 2a7fe47…;
-E7 invalid record                = 01670a8….
+E8 Human Evidence Audit         = CLOSED / FOUR-LAYER PASS;
+Formal Ruling                   = BOUNDED CarrierSQLite equivalence ESTABLISHED;
+EQ-1..EQ-8                      = ADJUDICATED TRUE;
+REJ-1..REJ-14                   = ADJUDICATED FALSE / NO REJECTION TRIGGER;
+E9                              = NOT AUTHORIZED;
+general/unbounded equivalence    = NOT ESTABLISHED.
 
-E8 campaign result:
-  fresh path preflight           = 31/31 PASS;
-  raw sequence                   = O0–O5 COMPLETE;
-  O0 state                       = 0 objects / 0 index / 0 dependencies;
-  O5 state                       = 4 objects / 2 index / 2 dependencies;
-  O0/campaign/O5 SQLite integrity = OK;
-  repair                         = none;
-  rerun                          = none;
-  process state                  = FINAL_SUCCESS;
-  closure validation             = PASS;
-  serialization self-check       = PASS / 20 checks;
-  SHA256SUMS                     = COMPLETE / 33 lines;
-  mechanical observer            = ALL PASS;
-  mechanical EQ-1..EQ-8          = true;
-  mechanical REJ-1..REJ-14       = false;
-  outcome                        = VALID / CANDIDATE_PENDING_HUMAN_AUDIT;
-  stop code                      = CAMPAIGN_VALID_EVIDENCE_COMPLETE.
+Governance chain:
+  E8 authorization/execution   = 7585cc4…;
+  E8 completion record         = f3eda8e…;
+  E8 audit record              = registered by formal-ruling commit;
+  bounded formal ruling        = registered by same formal-ruling commit;
+  canonical audit base         = 15d3214…;
+  execution run commit         = 7585cc4…;
+  implementation commit        = 7392fcb…;
+  accepted fresh DB SHA256     =
+    6baa7afa8b5c623c75b3111af267e270d76d663547e730af5e7ca62b7602d14d.
 
-R3–R7 regression guards:
-  E3 observer canonical C3 key    = PASS;
-  E4 provenance path normalization = PASS;
-  E5 adapter-output return contract = PASS;
-  E6 adapter-build tuple unpack     = PASS;
-  E7 transaction JSONL producer     = PASS;
-  E7 process-result lifecycle       = FINAL_SUCCESS AFTER CLOSURE.
+Layer 1 — evidence/provenance closure:
+  path map                     = ..._MANIFEST_008 / version 6 / 31 destinations;
+  fresh path preflight         = 31/31 PASS;
+  all authorized destinations  = PRESENT / NON-SYMLINK;
+  JSON artifacts               = ALL PARSE;
+  transaction JSONL            = 8 compact records / 8 physical lines;
+  serialization self-check     = PASS / 20 checks;
+  process result               = FINAL_SUCCESS / closure validation PASS;
+  SHA256SUMS                   = 33 entries / exact whole-tree coverage;
+  implementation tree          = UNCHANGED;
+  governance ancestry          = Request v2.2 → R6 → E7 auth → E8 auth → run.
 
-Raw observations:
-  raw ES2 = REUSE / REUSE_PATH / NON-AUTHORITATIVE;
-  raw ESN = BLOCK / BLOCKED_NON_RECOMPUTE_PATH / NON-AUTHORITATIVE.
+Layer 2 — observer integrity:
+  C1 object write-once         = PASS;
+  C2 ledger rederivation       = ES1=1, ES2=0, ESN=0;
+  C3 persisted-vs-resolved     = PASS / 939 bytes / SHA256 equals object ID;
+  C4 temporal separation       = PASS;
+  observer persistence binding = PASS.
 
-Protected boundaries:
-  CarrierSQLite semantics       = UNCHANGED;
-  DB schema/transactions        = UNCHANGED;
-  ES2/ESN semantics             = UNCHANGED;
-  decision boundary             = UNCHANGED;
-  tau/fixture                   = UNCHANGED;
-  runner semantic sequence      = UNCHANGED;
-  EQ/REJ criteria               = UNCHANGED.
+Layer 3 — semantic attribution:
+  adapter source hashes        = EXACT;
+  adapter runtime SHA256       =
+    e88c996b9a64df10dd03f7622ffa8757551baf352908e4d7bf8704295eaffcc7;
+  ES2 input/output/decision    = REUSE / REUSE_PATH;
+  ESN input/output/decision    = BLOCK / BLOCKED_NON_RECOMPUTE_PATH;
+  O5 carrier state             = 4 objects / 2 index / 2 dependencies;
+  extra observable entities    = none;
+  implementation tree          = UNCHANGED.
 
-Formal adjudication status:
-  EQ-1..EQ-8                    = NOT ESTABLISHED;
-  REJ-1..REJ-14                 = NOT ESTABLISHED;
-  CarrierSQLite equivalence     = NOT ESTABLISHED;
-  broader SimiGo/ES claim       = NOT ESTABLISHED.
+Layer 4 — EQ/REJ adjudication:
+  EQ-1 object set/byte hashes  = TRUE;
+  EQ-2 write-once immutability = TRUE;
+  EQ-3 index order/entries     = TRUE;
+  EQ-4 dependency history      = TRUE;
+  EQ-5 last-entry resolution   = TRUE;
+  EQ-6 read results            = TRUE;
+  EQ-7 ES2 REUSE / ESN BLOCK   = TRUE;
+  EQ-8 no extra observable     = TRUE;
+  REJ-1..REJ-14                = FALSE / NO REJECTION TRIGGER.
+
+R3–R7 regression status:
+  E3 observer C3 key           = PASS;
+  E4 provenance normalization  = PASS;
+  E5 adapter-output contract   = PASS;
+  E6 adapter-build unpack      = PASS;
+  E7 transaction JSONL         = PASS;
+  E7 process-result lifecycle  = PASS.
+
+E8 raw observations:
+  ES2 = REUSE / REUSE_PATH;
+  ESN = BLOCK / BLOCKED_NON_RECOMPUTE_PATH.
+
+Ruling scope exclusions:
+  arbitrary DB engines/schemas;
+  arbitrary initial/imported IS states;
+  arbitrary Execution State configurations;
+  general Execution State theorem;
+  PALACE / production SimiGo / LLM autonomy;
+  future schema/code changes;
+  crash-recovery beyond registered E8 criteria;
+  performance/concurrency/scale/durability claims.
 
 Budgets:
-  E8 campaign / IS-mutation / observer budgets = CONSUMED;
-  repair                                       = none;
-  rerun                                        = none;
-  renewal                                      = FORBIDDEN;
-  old campaign/evidence reuse                  = FORBIDDEN;
-  automatic adjudication                       = FORBIDDEN.
+  E8 campaign/IS-mutation/observer = CONSUMED;
+  repair                           = none;
+  rerun                            = none;
+  E9                               = NOT AUTHORIZED;
+  old-evidence reconstruction      = FORBIDDEN;
+  scope broadening                 = FORBIDDEN.
 
 Next lawful object:
-  explicit Human evidence audit of the complete E8 chain. The audit must
-  independently verify provenance, hashes, ancestry, observer C1–C4, transaction
-  JSONL contract, serialization closure, process-result freshness, SHA256SUMS
-  coverage and unchanged semantic/criteria boundaries before deciding whether
-  mechanical EQ/REJ may be promoted to formal adjudication.
+  no automatic follow-on. Any extension beyond the bounded ruling requires a
+  new independently authorized Request and evidence. E9 remains unauthorized.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008.
+  docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008;
+  docs/00-governance/...E8_HUMAN_EVIDENCE_AUDIT_RECORD_025...;
+  docs/00-governance/...BOUNDED_CARRIERSQLITE_EQUIVALENCE_FORMAL_RULING_026....
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
