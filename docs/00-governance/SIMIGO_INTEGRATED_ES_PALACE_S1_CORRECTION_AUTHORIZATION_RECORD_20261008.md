@@ -58,3 +58,16 @@ equivalence broadening      = FORBIDDEN.
 
 This correction is registered by the canonical commit introducing it. The
 failed S1 evidence is not rewritten.
+
+## 5. Registered retry
+
+Correction-001 S0 stopped because PF-4 compared sorted fixture-root names with
+an unsorted constant. This was an implementation self-check ordering defect, not
+a fixture defect. The failed PREFLIGHT is retained. Correction-002 is registered
+without expanding authority:
+
+```text
+manifest_instance_id = 95B0B101-F717-4541-933F-48D750736ABB;
+evidence parent =
+  docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-002.
+```

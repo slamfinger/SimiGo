@@ -51,7 +51,7 @@ def main() -> int:
         governance_ok &= path.is_file() and not path.is_symlink() and digest_bytes(path.read_bytes()) == record["sha256"]
     checks["PF-3"] = bool(governance_ok)
     actual_files = sorted(path.name for path in IMPLEMENTATION.iterdir() if path.is_file() and not path.is_symlink())
-    checks["PF-4"] = actual_files == sorted(manifest["implementation_binding"]["artifacts"]) and (not FIXTURES.exists() or sorted(path.name for path in FIXTURES.iterdir()) == CASES)
+    checks["PF-4"] = actual_files == sorted(manifest["implementation_binding"]["artifacts"]) and (not FIXTURES.exists() or sorted(path.name for path in FIXTURES.iterdir()) == sorted(CASES))
     evidence = ROOT / manifest["evidence_binding"]["parent"]
     existing = sorted(path.name for path in evidence.iterdir() if path.name != "RUN_MANIFEST_INSTANCE.json")
     checks["PF-5"] = existing == []
