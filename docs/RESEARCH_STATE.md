@@ -6,62 +6,75 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — E5 was launched once under Human `APPROVE E5` and is
-> INVALID / NON-ADJUDICATIVE; Human Evidence Audit NOT OPEN. The fresh 31-path
-> preflight passed and O0–O2 were recorded, but the campaign fail-closed while
-> binding the persisted ES2 adapter output. No repair, rerun, evidence reuse,
-> or automatic renewal is authorized.
+> **Status:** STOPPED — E5 Human Evidence Audit CLOSED; campaign remains
+> CONFIRMED INVALID / NON-ADJUDICATIVE. The defect is a third independent
+> harness evidence-chain boundary issue: adapter-output persistence-binding
+> return type was mis-consumed. No repair, rerun, E6 drafting, evidence reuse,
+> or equivalence establishment is authorized.
 
 ```text
-E5 execution authorization     = 2a3b358…;
-E5 evidence/invalid record     = 2f21a13…;
-governing Request v1.7         = 1b518c8…;
-R4 instrumentation commit      = 4451411…;
-R4 completion record           = 9c65746…;
-post-R4 review base            = 3d0e754….
+E5 Human Evidence Audit = CLOSED;
+EXEC-DB-005             INVALID / NON-ADJUDICATIVE;
+R4 instrumentation      = PRESENT AND UNCHANGED THROUGH EXECUTION;
+fresh path preflight    = 31/31 PASS;
+executed raw prefix     = O0–O2 ACCEPTED;
+ES2 adapter             = INVOKED ONCE / OUTPUT PERSISTED;
+ES2 raw REUSE           = NON-AUTHORITATIVE;
+ESN raw BLOCK           = NOT OBSERVED;
+R4 aggregate self-check = NOT REACHED IN E5;
+EQ/REJ adjudication     = NOT ESTABLISHED;
+CarrierSQLite equivalence = NOT ESTABLISHED;
+broader SimiGo/ES claim   = NOT ESTABLISHED.
 
-campaign ID                    = exec-dbcarrier-005-2a3b358;
-fresh destination preflight    = 31/31 PASS;
-raw sequence through stop      = O0, O1, O2 PRESENT;
-ES2 adapter                    = INVOKED ONCE / OUTPUT PERSISTED;
-ESN adapter                    = NOT REACHED;
-O3–O5 observations             = ABSENT;
-O5 database                    = ABSENT;
-campaign database state        = 2 objects / 1 index / 1 dependency;
-SQLite integrity               = OK.
+Audit/governance chain:
+  E5 audit record               = cd02228…;
+  E5 invalid completion record  = 2f21a13…;
+  E5 authorization/execution    = 2a3b358…;
+  post-R4 review base           = 3d0e754…;
+  R4 completion record          = 9c65746…;
+  R4 instrumentation commit     = 4451411…;
+  governing Request v1.7        = 1b518c8…;
+  E4 audit closure              = c126bd9….
 
-stop code =
-  CAMPAIGN_ES2_OUTPUT_JSON_PARSE_BINDING_DEFECT;
-root-cause class =
-  HARNESS_ADAPTER_OUTPUT_PERSISTENCE_RETURN_TYPE_BINDING_DEFECT.
+E5 stop defect:
+  stop_code =
+    CAMPAIGN_ES2_OUTPUT_JSON_PARSE_BINDING_DEFECT;
+  root_cause_class =
+    HARNESS_ADAPTER_OUTPUT_PERSISTENCE_RETURN_TYPE_BINDING_DEFECT;
+  exact call locus =
+    json.loads(persist_exact_json(output_path, proc.stdout));
+  explicit code contract =
+    persist_exact_json(path: Path, payload: bytes) -> dict;
+  classification =
+    CALLER VIOLATED PERSISTENCE-BINDING RETURN CONTRACT.
 
-Failure attribution:
-  CarrierSQLite semantics     = NOT DEFECTIVE IN THIS STOP;
-  DB schema                   = NOT DEFECTIVE IN THIS STOP;
-  ES2/ESN semantics           = NOT DEFECTIVE IN THIS STOP;
-  decision boundary           = NOT DEFECTIVE IN THIS STOP;
-  fixture                     = NOT DEFECTIVE IN THIS STOP;
-  runner                      = NOT DEFECTIVE IN THIS STOP;
-  EQ/REJ criteria             = NOT DEFECTIVE IN THIS STOP.
+Independence finding:
+  E3 = canonical observer C3 key binding;
+  E4 = PosixPath post-sequence provenance serialization;
+  E5 = persistence binding return value mis-consumed as adapter JSON.
+  These are three distinct harness evidence-chain boundary defects.
+
+R4 effectiveness and limit:
+  R4 code unchanged from its instrumentation commit through E5 execution;
+  authoritative v1.7 path map = version 3 / 31 destinations;
+  fresh preflight = 31/31 PASS;
+  O0–O2, working binding, adapter build records and ES2 output were persisted;
+  EVIDENCE_SERIALIZATION_SELF_CHECK = ABSENT because E5 stopped before it;
+  R4 standalone completion remains valid but is not retroactively attached to E5.
 
 Evidence disposition:
-  raw O0–O2 facts             = ACCEPTED;
-  raw ES2 REUSE               = NON-AUTHORITATIVE;
-  raw ESN BLOCK               = NOT OBSERVED;
-  EQ-1..EQ-8 adjudication     = NOT ESTABLISHED;
-  REJ-1..REJ-14 adjudication  = NOT ESTABLISHED;
-  CarrierSQLite equivalence   = NOT ESTABLISHED;
-  broader SimiGo/ES claim     = NOT ESTABLISHED.
+  O0/O1/O2 observations = ACCEPTED AS FACTS ONLY;
+  ES2 output = RAW / NON-AUTHORITATIVE;
+  ESN = NOT OBSERVED;
+  post-stop process/stderr captures = NON-AUTHORITATIVE;
+  O3–O5 = ABSENT;
+  complete campaign chain = NOT ESTABLISHED.
 
-Missing complete-chain evidence:
-  O3/O4/O5 observations and database;
-  observer verdict and persistence binding;
-  preflight/runtime provenance;
-  serialization self-check;
-  EQ/REJ matrix, outcome and DB validation;
-  process result/stderr at harness stop;
-  SHA256SUMS.
-Post-stop process/stderr captures are non-authoritative.
+Stop-state facts:
+  O0 database = 0 objects / 0 index / 0 dependencies;
+  campaign database = 2 objects / 1 index / 1 dependency;
+  SQLite integrity = OK;
+  O5 database = ABSENT.
 
 Budgets:
   fifth campaign / IS-mutation / observer budgets = CONSUMED;
@@ -69,13 +82,16 @@ Budgets:
   rerun                                           = NOT AUTHORIZED;
   old campaign/evidence reuse                     = FORBIDDEN;
   automatic renewal                               = FORBIDDEN;
-  conversion of E5 to VALID                       = FORBIDDEN.
+  E5 conversion to VALID                          = FORBIDDEN.
 
 Next lawful object:
-  explicit Human evidence audit of INVALID E5. If correction is desired, it
-  then requires a new independently budgeted Human-directed Request scoped to
-  adapter-output persistence return-type binding and a potential sixth frozen
-  campaign.
+  explicit Human decision:
+    DENY further work; or
+    authorize a new independently budgeted Request scoped only to adapter-output
+    persistence return-type binding correction, followed by fresh preflight and
+    a potential sixth frozen campaign.
+  This state does not authorize drafting that Request, repair, rerun, E6, or
+  equivalence adjudication.
 
 Primary evidence:
   docs/02-evidence/database-carrier-equivalence-campaign-v1.7-20261008.
