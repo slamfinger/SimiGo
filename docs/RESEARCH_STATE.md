@@ -24161,3 +24161,52 @@ E9                                = NOT AUTHORIZED;
 EXP-004                           = NOT AUTHORIZED;
 PIR                               = CLOSED / VALIDATION DEFERRED.
 ```
+
+## D-002 Preparation Completion — 2026-10-09
+
+> **Status:** D-002 PREPARATION COMPLETE / PREPARATION_VALIDATION PASS. The
+> transaction-consistent real PALACE snapshot and seven real-source fixture cases
+> are sealed. No decision replay, experiment, or observer campaign ran.
+
+```text
+final manifest instance           = 9738BD56-3C65-4262-80C3-9CC4FA395CD3;
+validation execution head         = 71b0ac33…;
+SOURCE_SNAPSHOT_BINDING           = PASS;
+PRIMITIVE_INVENTORY               = PASS;
+FIXTURE_PREPARATION               = PASS;
+TYPED_MAPPING_RECORD              = PASS;
+IMPLEMENTATION_SELF_CHECK         = PASS;
+PREPARATION_VALIDATION_RECORD     = PASS;
+EVIDENCE_SHA256SUMS               = PASS;
+source SHA256                     = 3f790600…;
+snapshot SHA256                   = 8b3856e2…;
+snapshot integrity                = ok;
+transaction consistency           = true;
+source unchanged                  = true;
+real-source fixture IDs           = 1,2,3,4,5,6,7;
+experiment executed               = false;
+observer campaign executed        = false;
+D-002 experiment                  = NOT AUTHORIZED;
+D-002 observer campaign           = NOT AUTHORIZED;
+canonical/PALACE mutation         = NONE / NOT AUTHORIZED;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+Completion evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-preparation-correction-003/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_PREPARATION_COMPLETION_RECORD_20261009.md.
+```
+
+Next lawful action:
+
+```text
+STOP. A separate explicit Human decision is required before D-002 decision
+replay, experiment, or observer campaign. No automatic transition is permitted.
+```
