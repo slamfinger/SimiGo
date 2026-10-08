@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute the accepted MINIMAL-PIR-EXP-001 fixture set under RM-001."""
+"""Execute an authorized Minimal PIR Probe fixture set under RM-001."""
 from __future__ import annotations
 
 import argparse
@@ -400,6 +400,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixtures", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--experiment-id", required=True)
     args = parser.parse_args()
     results = {}
     overall = True
@@ -411,7 +412,7 @@ def main() -> int:
         if not overall:
             break
     summary = {
-        "experiment_id": "MINIMAL-PIR-EXP-001",
+        "experiment_id": args.experiment_id,
         "results": results,
         "overall_outcome": "PASS" if overall else "FAIL_CLOSED",
         "candidate_equivalence_pending_human_audit": overall,
