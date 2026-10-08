@@ -6,83 +6,79 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — R4 serialization/provenance correction COMPLETE with
-> independent preflight and self-check; the fifth campaign E5 is NOT LAUNCHED
-> and remains gated by explicit post-R4 Human review. No repair, rerun, old
-> evidence reuse, or automatic renewal is authorized.
+> **Status:** STOPPED — E5 was launched once under Human `APPROVE E5` and is
+> INVALID / NON-ADJUDICATIVE; Human Evidence Audit NOT OPEN. The fresh 31-path
+> preflight passed and O0–O2 were recorded, but the campaign fail-closed while
+> binding the persisted ES2 adapter output. No repair, rerun, evidence reuse,
+> or automatic renewal is authorized.
 
 ```text
-R4 Human-directed correction   = COMPLETE;
-independent fresh preflight    = 31/31 PASS;
-canonical JSON self-check      = PASS;
-exact reference JSON check     = PASS;
-Path-like JSON boundary        = REJECTED PRE-WRITE;
-implementation tree            = UNCHANGED;
-forbidden-scope diff           = EMPTY;
-E5 fifth campaign              = NOT LAUNCHED.
+E5 execution authorization     = 2a3b358…;
+E5 evidence/invalid record     = 2f21a13…;
+governing Request v1.7         = 1b518c8…;
+R4 instrumentation commit      = 4451411…;
+R4 completion record           = 9c65746…;
+post-R4 review base            = 3d0e754….
 
-Governance chain:
-  Request v1.7 authorization     = 1b518c8…;
-  R4 instrumentation commit      = 4451411…;
-  R4 completion record           = 9c65746…;
-  E4 audit closure               = c126bd9…;
-  E4 invalid evidence record     = 5ca190c…;
-  E4 R3 correction               = 8c7aca5…;
-  Request v1.6                   = b5f15cb…;
-  audit base                     = 1dbae93….
+campaign ID                    = exec-dbcarrier-005-2a3b358;
+fresh destination preflight    = 31/31 PASS;
+raw sequence through stop      = O0, O1, O2 PRESENT;
+ES2 adapter                    = INVOKED ONCE / OUTPUT PERSISTED;
+ESN adapter                    = NOT REACHED;
+O3–O5 observations             = ABSENT;
+O5 database                    = ABSENT;
+campaign database state        = 2 objects / 1 index / 1 dependency;
+SQLite integrity               = OK.
 
-Fresh evidence target:
-  docs/02-evidence/database-carrier-equivalence-campaign-v1.7-20261008
-  path map = EVIDENCE_PATH_BINDING_MANIFEST v3;
-  destinations = 31, including EVIDENCE_SERIALIZATION_SELF_CHECK.
+stop code =
+  CAMPAIGN_ES2_OUTPUT_JSON_PARSE_BINDING_DEFECT;
+root-cause class =
+  HARNESS_ADAPTER_OUTPUT_PERSISTENCE_RETURN_TYPE_BINDING_DEFECT.
 
-R4 invariant:
-  canonical evidence object
-    → pre-write recursive serialization check
-    → exclusive write
-    → reread
-    → byte equality
-    → parse
-    → parsed-object equality
-    → authorized persistence binding
-    → chain continuation.
+Failure attribution:
+  CarrierSQLite semantics     = NOT DEFECTIVE IN THIS STOP;
+  DB schema                   = NOT DEFECTIVE IN THIS STOP;
+  ES2/ESN semantics           = NOT DEFECTIVE IN THIS STOP;
+  decision boundary           = NOT DEFECTIVE IN THIS STOP;
+  fixture                     = NOT DEFECTIVE IN THIS STOP;
+  runner                      = NOT DEFECTIVE IN THIS STOP;
+  EQ/REJ criteria             = NOT DEFECTIVE IN THIS STOP.
 
-Protected baselines:
-  CarrierSQLite semantics       = UNCHANGED;
-  DB schema/transactions        = UNCHANGED;
-  ES2/ESN                       = UNCHANGED;
-  decision boundary             = UNCHANGED;
-  fixture                       = UNCHANGED;
-  runner semantic sequence      = UNCHANGED;
-  EQ/REJ criteria               = UNCHANGED.
+Evidence disposition:
+  raw O0–O2 facts             = ACCEPTED;
+  raw ES2 REUSE               = NON-AUTHORITATIVE;
+  raw ESN BLOCK               = NOT OBSERVED;
+  EQ-1..EQ-8 adjudication     = NOT ESTABLISHED;
+  REJ-1..REJ-14 adjudication  = NOT ESTABLISHED;
+  CarrierSQLite equivalence   = NOT ESTABLISHED;
+  broader SimiGo/ES claim     = NOT ESTABLISHED.
 
-Formal status inherited from E4:
-  raw O0–O5 facts              = ACCEPTED;
-  raw ES2 REUSE                = NON-AUTHORITATIVE;
-  raw ESN BLOCK                = NON-AUTHORITATIVE;
-  EQ/REJ mechanical matrix     = NON-AUTHORITATIVE;
-  EQ-1..EQ-8 adjudication      = NOT ESTABLISHED;
-  REJ-1..REJ-14 adjudication   = NOT ESTABLISHED;
-  CarrierSQLite equivalence    = NOT ESTABLISHED;
-  broader SimiGo/ES claim      = NOT ESTABLISHED.
+Missing complete-chain evidence:
+  O3/O4/O5 observations and database;
+  observer verdict and persistence binding;
+  preflight/runtime provenance;
+  serialization self-check;
+  EQ/REJ matrix, outcome and DB validation;
+  process result/stderr at harness stop;
+  SHA256SUMS.
+Post-stop process/stderr captures are non-authoritative.
 
 Budgets:
-  R4 serialization/provenance correction = CONSUMED;
-  fifth campaign / IS-mutation / observer = RESERVED CONDITIONAL 1;
-  old campaign/evidence reuse             = FORBIDDEN;
-  automatic E5 launch                     = FORBIDDEN;
-  automatic equivalence                   = FORBIDDEN.
+  fifth campaign / IS-mutation / observer budgets = CONSUMED;
+  repair                                          = NOT AUTHORIZED;
+  rerun                                           = NOT AUTHORIZED;
+  old campaign/evidence reuse                     = FORBIDDEN;
+  automatic renewal                               = FORBIDDEN;
+  conversion of E5 to VALID                       = FORBIDDEN.
 
 Next lawful object:
-  explicit Human post-R4 review with exactly one ruling:
-    APPROVE E5;
-    REVISE R4;
-    DENY E5.
-  This state does not authorize drafting into execution, implementation,
-  repair, rerun, or E5 launch.
+  explicit Human evidence audit of INVALID E5. If correction is desired, it
+  then requires a new independently budgeted Human-directed Request scoped to
+  adapter-output persistence return-type binding and a potential sixth frozen
+  campaign.
 
-Primary governance:
-  docs/00-governance/SRS_REAL_CLOSURE_01_DATABASE_CARRIER_R4_SERIALIZATION_CLOSURE_COMPLETION_RECORD_006_20261008.md.
+Primary evidence:
+  docs/02-evidence/database-carrier-equivalence-campaign-v1.7-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
