@@ -1163,6 +1163,56 @@ Primary evidence:
   docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_REQUEST_V1.0_20261008.md.
 ```
 
+## Integrated ES–PALACE Validation Design Package 001 — Targeted Revision v1.1
+
+> **Status:** REVISED FOR HUMAN REVIEW. Package 001 was ruled `REVISE
+> PACKAGE`; this targeted revision remains within the same governing Request
+> and is now the active design-review object. No implementation, fixture,
+> experiment, IS mutation or equivalence claim is authorized.
+
+```text
+Governing Request                = Integrated ES–PALACE Validation Design v1.0;
+parent Package 001               = a2c9101… local revision candidate;
+revision base                    = a2c9101…;
+origin canonical predecessor     = 612738a…;
+research partition               = D;
+active review object             = Revision v1.1;
+E8 bounded equivalence           = ESTABLISHED / UNCHANGED;
+R01 continuation sufficiency     = PASS / BOUNDED;
+PIR                              = CLOSED / VALIDATION DEFERRED;
+implementation                   = NOT AUTHORIZED;
+fixture creation                 = NOT AUTHORIZED;
+experiment                       = NOT AUTHORIZED;
+IS mutation                      = NOT AUTHORIZED;
+E9                               = NOT AUTHORIZED;
+EXP-004                          = NOT AUTHORIZED;
+PALACE equivalence theorem       = NOT ESTABLISHED;
+general ES theorem               = NOT ESTABLISHED;
+integrated SimiGo proof          = NOT ESTABLISHED.
+
+Revision contracts:
+  P1 Primitive Inventory;
+  P2 PALACE → ES Typed Mapping;
+  P3 Continuation Identity Contract;
+  P4 Side-Channel Denial Matrix;
+  P5 Negative Decision Precedence;
+  P6 Carrier Lifecycle Contract;
+  P7 Integrated-vs-Predecessor Boundary.
+
+Core predecessor boundary:
+  E8 = bounded carrier evidence;
+  R01 = bounded continuation-sufficiency evidence;
+  D = NEW integrated semantic-closure object;
+  E8 + R01 do not compose into integrated SimiGo proof.
+
+Next lawful step after Human ACCEPT:
+  separately reviewed implementation / fixture / Run Manifest Request.
+  Experiment execution remains a separate explicit Human decision.
+
+Primary evidence:
+  docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_VALIDATION_DESIGN_PACKAGE_001_REVISION_V1.1_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
