@@ -56,6 +56,10 @@ def main() -> int:
         "seven_retained_fixtures": sorted(item.name for item in (ROOT / manifest["fixture_binding"]["fixtures_parent"]).iterdir()) == sorted(CASES),
         "write_once_targets_absent": sorted(item.name for item in evidence.iterdir() if item.name != "RUN_MANIFEST_INSTANCE.json") == [],
         "no_mutation_paths_touched": git("status", "--porcelain", "--", *PROTECTED) == "",
+        "correction_scope_clean": (ROOT / manifest["authorization_binding"]["path"]).is_file() and git("status", "--porcelain") == "" and git("status", "--porcelain", "--", "integrated-es-palace/d001", "palace-v0", "integrated-es-palace/d002/fixtures") == "",
+        "D001_CORE_DIGESTS_UNCHANGED": all(digest_bytes((ROOT / "integrated-es-palace/d001/implementation" / name).read_bytes()) == digest for name, digest in manifest["baseline_binding"]["d001_core_sha256"].items()),
+        "FIXTURE_EXPECTED_UNCHANGED": all(digest_bytes((ROOT / "integrated-es-palace/d002/fixtures" / case / filename).read_bytes()) == digest for case, bindings in manifest["baseline_binding"]["expected_and_manifest_sha256"].items() for filename, digest in bindings.items()),
+        "SNAPSHOT_SOURCE_BINDINGS": digest_bytes((ROOT / manifest["snapshot_binding"]["source"]["path"]).read_bytes()) == manifest["baseline_binding"]["source_sha256"] and digest_bytes((ROOT / manifest["snapshot_binding"]["prepared_snapshot"]["path"]).read_bytes()) == manifest["baseline_binding"]["snapshot_sha256"],
     }
     if not all(checks.values()):
         raise RuntimeError(f"D002 campaign preflight failed: {checks}")

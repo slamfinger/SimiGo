@@ -7,7 +7,13 @@ import json
 from pathlib import Path
 
 CASES = ["P-LAWFUL", "P-SETTLED", "P-BLOCKED", "N-MISSING", "N-STALE", "N-AMBIGUOUS", "N-ILLEGAL"]
-BOUNDARY = hashlib.sha256(b"D002-PACKAGE-V1.0").hexdigest()
+def canonical_structured_digest(value) -> str:
+    payload = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+REGISTERED_BOUNDARY_DIGEST = canonical_structured_digest({"boundary": "D002-PACKAGE-V1.0"})
+ILLEGAL_BOUNDARY_DIGEST = canonical_structured_digest({"boundary": "ILLEGAL"})
 
 
 def classify(root: Path, case: str) -> dict:
@@ -31,7 +37,7 @@ def classify(root: Path, case: str) -> dict:
         elif len(actions) != 1:
             decision = "AMBIGUOUS_INFORMATION_BLOCK"
             reason = "mandatory pointers are not unique"
-        elif actions[0]["boundary"] != "D002-PACKAGE-V1.0" or actions[0]["boundary_digest"] != BOUNDARY:
+        elif actions[0]["boundary"] != "D002-PACKAGE-V1.0" or actions[0]["boundary_digest"] != REGISTERED_BOUNDARY_DIGEST:
             decision = "ILLEGAL_CONTINUATION_BLOCK"
             reason = "registered boundary is violated"
         elif actions[0]["continuation_class"] == "BLOCKED_LAWFUL_CONTINUATION":

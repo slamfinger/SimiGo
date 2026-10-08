@@ -31,9 +31,10 @@ class ReplayInventory:
             translated = {
                 "schema_id": "LAWFUL-INFORMATION-CLOSURE-D001-V1",
                 "closure_id": source["closure_id"], "closure_revision": source["closure_revision"],
-                "members": source["members"], "closure_digest": "",
+                "members": source["members"],
             }
-            translated["closure_digest"] = hashlib.sha256(json.dumps(translated, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+            digest_payload = {key: translated[key] for key in ("schema_id", "closure_id", "closure_revision", "members")}
+            translated["closure_digest"] = hashlib.sha256(json.dumps(digest_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
             return translated
         if family == "I4":
             source = self.load(self.manifest["provenance"])
