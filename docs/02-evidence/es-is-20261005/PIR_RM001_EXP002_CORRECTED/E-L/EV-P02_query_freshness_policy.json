@@ -1,0 +1,9 @@
+{
+  "clock_mode": "CONTROLLED_FIXTURE_CLOCK_FOR_SYNTHETIC_OBSERVATION_AGE",
+  "policy": {
+    "is_update_authorized": false,
+    "w_latency_ms": 5000,
+    "w_obs_age_ms": 60000
+  },
+  "shape": "E-L"
+}
