@@ -24316,3 +24316,60 @@ Next lawful action:
 STOP. A new explicit Human authorization is required for manifest-binding
 correction and any new campaign instance/evidence parent. No rerun is authorized.
 ```
+
+## D-002 Final Consumption Attempt — 2026-10-09
+
+> **Status:** FINAL CAMPAIGN EXECUTED / FAIL / WRITE-ONCE EVIDENCE RETAINED.
+> `D002_MANIFEST_ADAPTER_CLOSURE` passed, observer classified all seven cases
+> correctly, and Carrier persisted seven records; replay adapter still produced
+> unresolved inputs for all cases.
+
+```text
+manifest instance                 = 18FE111C-C258-4A12-B6F6-C184A2078625;
+execution head                    = ed3985d6…;
+decision replay budget            = 1 / 1 CONSUMED;
+experiment budget                 = 1 / 1 CONSUMED;
+observer campaign budget          = 1 / 1 CONSUMED;
+D002_MANIFEST_ADAPTER_CLOSURE     = PASS;
+DECISION_REPLAY_RECORD            = PASS / EXECUTED;
+EXPERIMENT_RECORD                 = FAIL;
+CARRIER_LIFECYCLE_RECORD          = PASS / 7 RECORDS;
+OBSERVER_RECORD                   = PASS / ALL SEVEN CORRECT;
+RECONCILIATION_RECORD             = FAIL;
+CLAIM_RECORD                      = FAIL;
+source SHA256                     = 3f790600…;
+snapshot SHA256                   = 8b3856e2…;
+D001 core                         = UNCHANGED;
+D002 fixtures / expected vectors  = UNCHANGED;
+PALACE source mutation            = NONE;
+canonical IS mutation             = NONE;
+forbidden channels observed       = NONE;
+E9                                = NOT AUTHORIZED / NOT EXECUTED;
+EXP-004                           = NOT AUTHORIZED / NOT EXECUTED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+rerun                             = NOT AUTHORIZED;
+PALACE equivalence                = NOT ESTABLISHED;
+integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+Final classification:
+
+```text
+primary_class = EVIDENCE_INFRASTRUCTURE_DEFECT;
+secondary_label = D002_REPLAY_ADAPTER_UNRESOLVED_INPUT_DEFECT.
+```
+
+Primary evidence:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-consumption-attempt-003/;
+docs/00-governance/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_FINAL_CONSUMPTION_ATTEMPT_FAILURE_RECORD_20261009.md.
+```
+
+Next lawful action:
+
+```text
+STOP. No rerun or repair-run is authorized. A new Human-directed research object
+is required before any further execution.
+```
