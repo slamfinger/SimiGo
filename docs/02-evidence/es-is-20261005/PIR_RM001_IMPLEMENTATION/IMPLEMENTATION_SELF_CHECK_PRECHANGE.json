@@ -1,0 +1,96 @@
+{
+  "attribution_separation": "PASS",
+  "experiment_output_leak": "NONE",
+  "fixture_legality": "PASS",
+  "fixtures": {
+    "C-NOCHANGE-L": {
+      "evidence_destination_binding": "PASS",
+      "fixture_instance_id": "22a1e78024c4ce256cff4731d7652692187a1f5dc322f4922ade2cd2317217ad",
+      "fixture_legality": "PASS",
+      "is_mutations": 0,
+      "m": 0,
+      "member_count": 10000,
+      "n": 10000,
+      "oracle_isolation": "PASS",
+      "physical_changes_in_fixture": 0,
+      "physical_observations": 0,
+      "prechange_snapshot_validation": {
+        "pass": true,
+        "validated_moves": []
+      },
+      "r": 20,
+      "shape": "C-NOCHANGE-L"
+    },
+    "C-NOCHANGE-S": {
+      "evidence_destination_binding": "PASS",
+      "fixture_instance_id": "525502d856a646786f43f97d2722a4fbbb1b240a9cdbb37d168d76ebcee41bb9",
+      "fixture_legality": "PASS",
+      "is_mutations": 0,
+      "m": 0,
+      "member_count": 20,
+      "n": 20,
+      "oracle_isolation": "PASS",
+      "physical_changes_in_fixture": 0,
+      "physical_observations": 0,
+      "prechange_snapshot_validation": {
+        "pass": true,
+        "validated_moves": []
+      },
+      "r": 20,
+      "shape": "C-NOCHANGE-S"
+    },
+    "E-L": {
+      "evidence_destination_binding": "PASS",
+      "fixture_instance_id": "58a158bbe144309d370941eb74e676da4caebca078e0f61830eb757c1faa73c1",
+      "fixture_legality": "PASS",
+      "is_mutations": 0,
+      "m": 5,
+      "member_count": 9999,
+      "n": 10000,
+      "oracle_isolation": "PASS",
+      "physical_changes_in_fixture": 5,
+      "physical_observations": 0,
+      "prechange_snapshot_validation": {
+        "pass": true,
+        "validated_moves": [
+          {
+            "post_change_locator": "objects/dcaacd34cd0835802e3b218f2520d9d3b5377df3dfe950aed701a120c8ac6d0d.moved.json",
+            "pre_change_locator": "objects/f70fc1c8823ef46a448f55f2466df123e15e2bf911e03989be4a9948c0841f55.json",
+            "stable_object_id": "dcaacd34cd0835802e3b218f2520d9d3b5377df3dfe950aed701a120c8ac6d0d"
+          }
+        ]
+      },
+      "r": 20,
+      "shape": "E-L"
+    },
+    "E-S": {
+      "evidence_destination_binding": "PASS",
+      "fixture_instance_id": "4248fb36d5ce01c85a2ced39cae42551d6ffb643fc425f49c9001337962bd92e",
+      "fixture_legality": "PASS",
+      "is_mutations": 0,
+      "m": 5,
+      "member_count": 19,
+      "n": 20,
+      "oracle_isolation": "PASS",
+      "physical_changes_in_fixture": 5,
+      "physical_observations": 0,
+      "prechange_snapshot_validation": {
+        "pass": true,
+        "validated_moves": [
+          {
+            "post_change_locator": "objects/e42d7624f796cb0af65e8ffb5ef83bec107c17f4095675d40743df7087b9c030.moved.json",
+            "pre_change_locator": "objects/062d9de75b828c63b958a480771baa022a8f128496c38ec4ff75f1d5cdd3f42e.json",
+            "stable_object_id": "e42d7624f796cb0af65e8ffb5ef83bec107c17f4095675d40743df7087b9c030"
+          }
+        ]
+      },
+      "r": 20,
+      "shape": "E-S"
+    }
+  },
+  "implementation_self_check": "PASS",
+  "is_mutations": 0,
+  "oracle_isolation": "PASS",
+  "physical_observations": 0,
+  "probe_contract": "Minimal PIR Probe v0.2 / DESIGN FROZEN"
+}
