@@ -24111,3 +24111,53 @@ ACCEPT may permit only a separately recorded D-002 implementation / snapshot /
 fixture preparation stage. Integrated experiment remains a separate explicit
 Human decision.
 ```
+
+## D-002 Preparation Attempt 001 and Correction 001 — 2026-10-09
+
+> **Status:** ATTEMPT-001 RETAINED / CORRECTION-001 AUTHORIZED. Snapshot,
+> inventory, and fixture preparation passed; typed mapping stopped before
+> completion on a manifest field-access defect.
+
+```text
+attempt manifest instance         = 45E2228A-8095-48F0-803E-4E25AF03C4B3;
+correction manifest instance      = 440F21BF-D038-4468-857B-E9A59D960D25;
+SOURCE_SNAPSHOT_BINDING           = PASS;
+PRIMITIVE_INVENTORY               = PASS;
+FIXTURE_PREPARATION               = PASS;
+TYPED_MAPPING_RECORD              = NOT WRITTEN / FAIL;
+failure class                     = D002_TYPED_MAPPING_MANIFEST_FIELD_ACCESS_DEFECT;
+snapshot integrity                = ok;
+transaction consistency           = true;
+snapshot byte equality to source  = false / expected for SQLite backup;
+experiment                        = NOT EXECUTED;
+observer campaign                 = NOT EXECUTED;
+canonical/PALACE mutation         = NONE.
+```
+
+The retained snapshot is:
+
+```text
+integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite SHA256 =
+  8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444.
+```
+
+Correction-001 may reuse the verified snapshot and seven generated fixture roots,
+fix only typed mapping field access, validate existing artifacts, and write to:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-preparation-correction-001/.
+```
+
+Continuing boundaries:
+
+```text
+D-002 experiment                  = NOT AUTHORIZED;
+observer campaign                 = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED.
+```
