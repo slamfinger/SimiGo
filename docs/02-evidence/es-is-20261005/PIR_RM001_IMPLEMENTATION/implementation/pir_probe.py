@@ -114,6 +114,7 @@ class ObjectRecord:
     metadata_revision: int
     last_lawful_observation: str
     required_checks: List[str]
+    pre_change_locator: Optional[str] = None
 
     def public(self) -> dict:
         value = asdict(self)
@@ -144,7 +145,8 @@ def _object_payload(index: int, metadata_revision: int) -> bytes:
 
 
 def _record_for(instance_id: str, index: int, locator: str, payload: bytes,
-                metadata_revision: int, observation: str) -> ObjectRecord:
+                metadata_revision: int, observation: str,
+                pre_change_locator: Optional[str] = None) -> ObjectRecord:
     stable_id = opaque(f"{instance_id}:stable-object:{index}")
     info_id = opaque(f"{instance_id}:information:{index}")
     return ObjectRecord(
@@ -160,6 +162,7 @@ def _record_for(instance_id: str, index: int, locator: str, payload: bytes,
             "identity_locator_correspondence", "content_digest",
             "policy_required_metadata_comparison",
         ],
+        pre_change_locator=pre_change_locator,
     )
 
 
@@ -244,6 +247,7 @@ def build_fixture(shape: str, output_dir: Path,
         new_locator = f"objects/{record.stable_object_id}.moved.json"
         current[new_locator] = payload
         record.locator = new_locator
+        record.pre_change_locator = old_locator
         oracle_changes.append({
             "change_id": "PC-MOVE-RENAME",
             "change_class": "PC-MOVE",
@@ -365,6 +369,30 @@ def load_member(archive_path: Path, name: str) -> bytes:
         return handle.read()
 
 
+def validate_prechange_snapshot(fixture_dir: Path, measured: dict,
+                                members: Dict[str, bytes],
+                                oracle_moves: List[dict]) -> dict:
+    registered = measured["registered_non_semantic_object_registry"]
+    validated = []
+    for move in oracle_moves:
+        stable_id = move["stable_object_id"]
+        record = registered[stable_id]
+        pre_change = record.get("pre_change_locator")
+        current = record["locator"]
+        require(bool(pre_change), f"preserved pre-change locator missing: {stable_id}")
+        require(pre_change not in members, f"pre-change locator still exists: {pre_change}")
+        require(current in members, f"post-change locator missing: {current}")
+        require(current != pre_change, f"post-change equals pre-change: {stable_id}")
+        require(record["stable_object_id"] == stable_id, "stable object ID changed")
+        validated.append({
+            "stable_object_id": stable_id,
+            "pre_change_locator": pre_change,
+            "post_change_locator": current,
+        })
+    require(len(validated) == len(oracle_moves), "pre-change validation count mismatch")
+    return {"validated_moves": validated, "pass": True}
+
+
 def verify_fixture(fixture_dir: Path) -> dict:
     manifest_path = fixture_dir / "fixture_manifest.json"
     manifest = json.loads(manifest_path.read_bytes())
@@ -419,6 +447,10 @@ def verify_fixture(fixture_dir: Path) -> dict:
     require(len(oracle["planted_changes"]) == spec["m"], "planted M mismatch")
     require(oracle["expected_no_change"] is (not spec["changes"]),
             "no-change expectation mismatch")
+    prechange_validation = validate_prechange_snapshot(
+        fixture_dir, measured, members,
+        [x for x in oracle["planted_changes"] if x["change_class"] == "PC-MOVE"],
+    )
 
     for stable_id, record in measured["registered_non_semantic_object_registry"].items():
         require(record["stable_object_id"] == stable_id, "stable ID mismatch")
@@ -474,6 +506,7 @@ def verify_fixture(fixture_dir: Path) -> dict:
         "physical_changes_in_fixture": len(oracle["planted_changes"]),
         "is_mutations": 0,
         "oracle_isolation": "PASS",
+        "prechange_snapshot_validation": prechange_validation,
         "fixture_legality": "PASS",
         "evidence_destination_binding": "PASS",
     }

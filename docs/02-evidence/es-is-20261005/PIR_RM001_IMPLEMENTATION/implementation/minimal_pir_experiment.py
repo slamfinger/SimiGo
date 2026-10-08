@@ -93,22 +93,46 @@ def parse_metadata(payload: bytes) -> Optional[dict]:
         return None
 
 
+def classify_candidate_set(old_exists: bool, current_locator: str,
+                           candidates: List[str],
+                           pre_change_locator: Optional[str],
+                           exact_match: bool) -> str:
+    if not old_exists and not candidates:
+        return "PHYSICALLY_DELETED"
+    if len(candidates) > 1:
+        return "CONFLICT"
+    if (
+        not old_exists
+        and len(candidates) == 1
+        and candidates[0] == current_locator
+        and bool(pre_change_locator)
+        and exact_match
+    ):
+        return "PHYSICALLY_MOVED"
+    if exact_match:
+        return "FRESH_WITHIN_WINDOW"
+    return "PHYSICALLY_CHANGED"
+
+
 def reconcile_accepted_object(record: dict, members: Dict[str, bytes],
                               previous_ns: int, current_ns: int,
                               w_obs_age_ms: int, meter: PhaseMeter) -> dict:
-    old_locator = record["locator"]
+    old_locator = record.get("pre_change_locator") or record["locator"]
+    current_locator = record["locator"]
     meter.syscalls["stat"] += 1
-    exists = old_locator in members
+    old_exists = old_locator in members
+    current_exists = current_locator in members
     candidates: List[str] = []
-    if exists:
+    if old_exists:
         candidates.append(old_locator)
+    elif current_exists:
+        candidates.append(current_locator)
     else:
-        # The registered record is the only lawful deterministic correlation
-        # source. The updated locator is accepted only when its content and size
-        # exactly match the registered object facts.
-        updated_locator = record.get("updated_locator")
-        if updated_locator and updated_locator in members:
-            candidates.append(updated_locator)
+        # A separately pre-registered fallback locator is lawful only when it is
+        # present and exact matching is performed later.
+        fallback_locator = record.get("fallback_locator")
+        if fallback_locator and fallback_locator in members:
+            candidates.append(fallback_locator)
     meter.objects["physical_candidates"] += len(candidates)
     meter.objects["physical_checks"] += 1
     observation_age_ms = max(0, (current_ns - previous_ns) // 1_000_000)
@@ -124,6 +148,12 @@ def reconcile_accepted_object(record: dict, members: Dict[str, bytes],
         "observation_age_ms": observation_age_ms,
         "w_obs_age_pass": obs_age_pass,
     }
+    moved = (
+        not old_exists
+        and len(candidates) == 1
+        and candidates[0] == current_locator
+        and bool(record.get("pre_change_locator"))
+    )
     if not candidates:
         verdict = "PHYSICALLY_DELETED"
     elif len(candidates) > 1:
@@ -144,7 +174,9 @@ def reconcile_accepted_object(record: dict, members: Dict[str, bytes],
         same_digest = digest == record["content_sha256"]
         same_size = len(payload) == record["byte_size"]
         same_revision = observed_revision == record["metadata_revision"]
-        if not (same_digest and same_size and same_revision):
+        if moved:
+            verdict = "PHYSICALLY_MOVED"
+        elif not (same_digest and same_size and same_revision):
             verdict = "PHYSICALLY_CHANGED"
         elif not obs_age_pass:
             verdict = "STALE_BEYOND_WINDOW"
