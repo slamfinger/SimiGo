@@ -81,12 +81,15 @@ def load_and_preflight(repository_root: Path, output_root: Path) -> EvidencePath
         manifest.get("destination_count") == len(entries),
         "manifest destination count mismatch",
     )
-    _require(manifest.get("destination_version") == 2, "unsupported path-map version")
+    _require(manifest.get("destination_version") == 3, "unsupported path-map version")
     destination_ids = [entry["destination_id"] for entry in entries]
     output_paths = [entry["output_relative_path"] for entry in entries]
     _require(len(destination_ids) == len(set(destination_ids)), "duplicate destination id")
     _require(len(output_paths) == len(set(output_paths)), "duplicate destination path")
-    _require("OBSERVER_PERSISTENCE_BINDING" in destination_ids, "observer persistence binding destination absent")
+    _require(
+        {"OBSERVER_PERSISTENCE_BINDING", "EVIDENCE_SERIALIZATION_SELF_CHECK"}.issubset(destination_ids),
+        "observer/serialization binding destinations absent",
+    )
 
     managed_paths: dict[str, Path] = {}
     for entry in manifest["created_directories"]:
@@ -149,7 +152,19 @@ def load_and_preflight(repository_root: Path, output_root: Path) -> EvidencePath
         "results": results,
     }
     record_path = paths["EVIDENCE_PATH_BINDING_EXECUTION"]
-    record_path.write_text(
-        json.dumps(execution_record, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+    payload = (
+        json.dumps(
+            execution_record,
+            sort_keys=True,
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n"
     )
+    _require(json.loads(payload) == execution_record, "path-map execution record serialization mismatch")
+    with record_path.open("xb") as handle:
+        handle.write(payload.encode("utf-8"))
+    _require(record_path.read_bytes() == payload.encode("utf-8"), "path-map execution record persistence mismatch")
+    _require(json.loads(record_path.read_bytes()) == execution_record, "path-map execution record parse mismatch")
     return EvidencePaths(repository_root, output_root, manifest, paths)

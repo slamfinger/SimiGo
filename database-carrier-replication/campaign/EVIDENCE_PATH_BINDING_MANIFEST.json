@@ -1,6 +1,6 @@
 {
   "authoritative_path_map": true,
-  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.6-20261008",
+  "campaign_output_root_repository_relative": "docs/02-evidence/database-carrier-equivalence-campaign-v1.7-20261008",
   "consumption_contract": {
     "artifact_path_derivation_by_campaign": "FORBIDDEN",
     "exact_path_identity_consumption": "REQUIRED",
@@ -11,7 +11,8 @@
   "corrects_defects": [
     "HARNESS_WORKING_DATABASE_COPY_BINDING_DEFECT",
     "HARNESS_OBSERVATION_OUTPUT_DIRECTORY_BINDING_DEFECT",
-    "HARNESS_POST_SEQUENCE_OBSERVER_KEY_BINDING_DEFECT"
+    "HARNESS_POST_SEQUENCE_OBSERVER_KEY_BINDING_DEFECT",
+    "HARNESS_POST_SEQUENCE_PREFLIGHT_JSON_PATH_SERIALIZATION_DEFECT"
   ],
   "created_directories": [
     {
@@ -23,11 +24,11 @@
       "output_relative_path": "observations"
     }
   ],
-  "destination_count": 30,
-  "destination_version": 2,
-  "governing_authorization_record_commit": "b5f15cb5309d7619ba2e03eefaeac74712890462",
-  "governing_request_commit": "b5f15cb5309d7619ba2e03eefaeac74712890462",
-  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_004",
+  "destination_count": 31,
+  "destination_version": 3,
+  "governing_authorization_record_commit": "1b518c822b586dc3a6a900327267f5e3512a7e49",
+  "governing_request_commit": "1b518c822b586dc3a6a900327267f5e3512a7e49",
+  "manifest_identity": "DATABASE_CARRIER_EQUIVALENCE_EVIDENCE_PATH_BINDING_MANIFEST_005",
   "source_database": {
     "accepted_commit": "32ef3b06a4af808917cf7f4e248e9539c684b35f",
     "output_destination_id": "O0_DATABASE",
@@ -206,6 +207,12 @@
     {
       "destination_id": "CAMPAIGN_STDERR",
       "output_relative_path": "campaign_stderr.txt",
+      "required_stage": "POST_SEQUENCE",
+      "type": "file"
+    },
+    {
+      "destination_id": "EVIDENCE_SERIALIZATION_SELF_CHECK",
+      "output_relative_path": "evidence_serialization_self_check.json",
       "required_stage": "POST_SEQUENCE",
       "type": "file"
     },

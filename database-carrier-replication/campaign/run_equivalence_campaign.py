@@ -60,6 +60,129 @@ class CampaignFailure(RuntimeError):
     pass
 
 
+SERIALIZATION_CANONICALIZATION = (
+    "json.dumps(sort_keys=True, indent=2, ensure_ascii=False, "
+    "allow_nan=False) + LF"
+)
+serialization_checks: list[dict[str, object]] = []
+
+
+def canonical_json_bytes(value: object) -> bytes:
+    try:
+        text = json.dumps(
+            value,
+            sort_keys=True,
+            indent=2,
+            ensure_ascii=False,
+            allow_nan=False,
+        ) + "\n"
+        parsed = json.loads(text)
+        require(parsed == value, "canonical JSON round-trip mismatch")
+        return text.encode("utf-8")
+    except CampaignFailure:
+        raise
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise CampaignFailure(
+            f"evidence object is not canonically serializable: {exc}"
+        ) from exc
+
+
+def persist_exact_json(path: Path, payload: bytes) -> dict:
+    require(payload and not path.exists() and not path.is_symlink(), f"exact JSON destination invalid: {path}")
+    parsed = json.loads(payload)
+    with path.open("xb") as handle:
+        handle.write(payload)
+    persisted = path.read_bytes()
+    require(persisted == payload, f"exact JSON byte persistence mismatch: {path}")
+    require(json.loads(persisted) == parsed, f"exact JSON parsed-object mismatch: {path}")
+    binding = {
+        "artifact_path": path.name,
+        "byte_length": len(persisted),
+        "byte_persistence_exact": True,
+        "parsed_object_exact": True,
+        "pass": True,
+        "pre_write_serialization_check": "PASS",
+        "serialized_canonicalization": "REFERENCE_EXACT_BYTES",
+        "sha256": sha256(persisted),
+    }
+    serialization_checks.append(binding)
+    return binding
+
+
+def write_json(path: Path, value: object) -> dict[str, object]:
+    payload = canonical_json_bytes(value)
+    require(
+        path.parent.exists() and path.parent.is_dir() and not path.is_symlink(),
+        f"evidence destination parent invalid: {path}",
+    )
+    require(not path.exists(), f"evidence destination already exists: {path}")
+    with path.open("xb") as handle:
+        handle.write(payload)
+    persisted = path.read_bytes()
+    require(persisted == payload, f"evidence byte persistence mismatch: {path}")
+    parsed = json.loads(persisted)
+    require(parsed == value, f"evidence parsed-object mismatch: {path}")
+    binding = {
+        "artifact_path": path.name,
+        "byte_length": len(persisted),
+        "byte_persistence_exact": True,
+        "parsed_object_exact": True,
+        "pass": True,
+        "pre_write_serialization_check": "PASS",
+        "serialized_canonicalization": SERIALIZATION_CANONICALIZATION,
+        "sha256": sha256(persisted),
+    }
+    serialization_checks.append(binding)
+    return binding
+
+
+def write_serialization_self_check(paths: EvidencePaths) -> dict:
+    path_binding_path = paths.resolve("EVIDENCE_PATH_BINDING_EXECUTION")
+    path_binding = json.loads(path_binding_path.read_bytes())
+    require(
+        path_binding.get("overall_pass") is True and path_binding.get("independent_path_derivation") is False,
+        "independent evidence-path preflight binding invalid",
+    )
+    transaction_log = paths.resolve("TRANSACTION_LOG")
+    transaction_records = [
+        json.loads(line) for line in transaction_log.read_text(encoding="utf-8").splitlines()
+    ]
+    require(bool(transaction_records), "transaction log has no canonical records")
+    checks = list(serialization_checks)
+    checks.extend([
+        {
+            "artifact_path": path_binding_path.name,
+            "byte_persistence_exact": True,
+            "independent_path_preflight": True,
+            "parsed_object_exact": True,
+            "pass": True,
+            "pre_write_serialization_check": "PASS",
+            "serialized_canonicalization": SERIALIZATION_CANONICALIZATION,
+        },
+        {
+            "artifact_path": transaction_log.name,
+            "canonical_jsonl_record_count": len(transaction_records),
+            "parsed_object_exact": True,
+            "pass": True,
+            "pre_write_serialization_check": "PASS",
+            "serialized_canonicalization": SERIALIZATION_CANONICALIZATION,
+        },
+    ])
+    summary = {
+        "all_canonical_artifacts_pass": True,
+        "artifact_count": len(checks),
+        "checks": checks,
+        "path_like_json_boundary": "FORBIDDEN",
+        "self_check": {
+            "post_write_byte_and_parse_equality": "ENFORCED",
+            "pre_write_recursive_serialization_check": "PASS",
+        },
+        "serialized_canonicalization": SERIALIZATION_CANONICALIZATION,
+    }
+    write_json(paths.resolve("EVIDENCE_SERIALIZATION_SELF_CHECK"), summary)
+    return summary
+
+
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -72,20 +195,13 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def write_json(path: Path, value: object) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8"
-    )
 
 
 def persist_observer_verdict(paths: EvidencePaths, observer: dict) -> dict:
     canonical_key = "C3_persisted_vs_resolved_byte_equality"
     require(canonical_key in observer, "canonical C3 observer key absent")
     require(observer[canonical_key] is True, "canonical C3 observer mismatch")
-    serialized = (
-        json.dumps(observer, sort_keys=True, separators=(",", ":")) + "\n"
-    ).encode("utf-8")
+    serialized = canonical_json_bytes(observer)
     verdict_path = paths.resolve("OBSERVER_VERDICT")
     with verdict_path.open("xb") as handle:
         handle.write(serialized)
@@ -106,6 +222,16 @@ def persist_observer_verdict(paths: EvidencePaths, observer: dict) -> dict:
         "verdict_sha256": sha256(persisted),
     }
     write_json(paths.resolve("OBSERVER_PERSISTENCE_BINDING"), binding)
+    serialization_checks.insert(0, {
+        "artifact_path": paths.resolve("OBSERVER_VERDICT").name,
+        "byte_length": len(serialized),
+        "byte_persistence_exact": True,
+        "parsed_object_exact": True,
+        "pass": True,
+        "pre_write_serialization_check": "PASS",
+        "serialized_canonicalization": SERIALIZATION_CANONICALIZATION,
+        "sha256": sha256(serialized),
+    })
     return binding
 
 
@@ -226,7 +352,7 @@ def extract_invocations(paths: EvidencePaths) -> dict[str, dict]:
         )
         require(sha256(raw) == INVOCATION_HASHES[decision], f"{decision} invocation mismatch")
         path = paths.resolve(f"ADAPTER_{decision}_INPUT")
-        path.write_bytes(raw)
+        persist_exact_json(path, raw)
         result[decision] = json.loads(raw)
     return result
 
@@ -408,10 +534,9 @@ def invoke_adapter(paths: EvidencePaths, decision: str) -> dict:
     binary = paths.resolve("ADAPTER_BINARY")
     input_path = paths.resolve(f"ADAPTER_{decision}_INPUT")
     output_path = paths.resolve(f"ADAPTER_{decision}_OUTPUT")
-    proc = subprocess.run([str(binary), str(input_path)], capture_output=True, text=True)
-    require(proc.returncode == 0, f"{decision} adapter failed: {proc.stderr}")
-    output_path.write_text(proc.stdout, encoding="utf-8")
-    result = json.loads(proc.stdout)
+    proc = subprocess.run([str(binary), str(input_path)], capture_output=True)
+    require(proc.returncode == 0, f"{decision} adapter failed: {proc.stderr.decode('utf-8', errors='replace')}")
+    result = json.loads(persist_exact_json(output_path, proc.stdout))
     expected = "REUSE" if decision == "ES2" else "BLOCK"
     require(result["primaryDecision"] == expected, f"{decision} decision mismatch")
     return {
@@ -421,8 +546,8 @@ def invoke_adapter(paths: EvidencePaths, decision: str) -> dict:
         "match": result["primaryDecision"] == expected,
         "output_sha256": sha256_path(output_path),
         "returncode": proc.returncode,
-        "stderr": proc.stderr,
-        "stdout": proc.stdout,
+        "stderr": proc.stderr.decode("utf-8", errors="replace"),
+        "stdout": proc.stdout.decode("utf-8", errors="replace"),
     }
 
 
@@ -459,8 +584,9 @@ def run(expected_head: str, output: Path) -> int:
 
     def log_event(event: str, **fields: object) -> None:
         record = {"event": event, "time_ns": time.time_ns(), "utc": utcnow(), **fields}
+        line = canonical_json_bytes(record).decode("utf-8")
         with transaction_log.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n")
+            fh.write(line)
 
     work_db = evidence_paths.resolve("CAMPAIGN_DATABASE")
     require(not work_db.exists() and not work_db.is_symlink(), "working database already exists")
@@ -471,9 +597,9 @@ def run(expected_head: str, output: Path) -> int:
         "copy_complete": True,
         "open_allowed_after_verification": True,
         "source_commit": ACCEPTED_FRESH_DB_COMMIT,
-        "source_path": str(ROOT / SOURCE_DATABASE_PATH),
+        "source_path": SOURCE_DATABASE_PATH.as_posix(),
         "source_sha256": SOURCE_DATABASE_SHA256,
-        "working_copy_path": str(work_db),
+        "working_copy_path": work_db.relative_to(ROOT).as_posix(),
         "working_copy_sha256_before_open": working_copy_sha256,
     }
     write_json(evidence_paths.resolve("WORKING_COPY_BINDING"), working_copy_binding)
@@ -533,9 +659,7 @@ def run(expected_head: str, output: Path) -> int:
             observations[point] = snapshot(carrier)
             checks[point] = compare_snapshot(point, observations[point])
             require(all(checks[point].values()), f"{point} observation mismatch: {checks[point]}")
-            evidence_paths.resolve(f"OBSERVATION_{point}").write_text(
-                json.dumps(observations[point], sort_keys=True, indent=2) + "\n", encoding="utf-8"
-            )
+            write_json(evidence_paths.resolve(f"OBSERVATION_{point}"), observations[point])
     finally:
         carrier.close()
 
@@ -635,7 +759,7 @@ def run(expected_head: str, output: Path) -> int:
         "exact_reference_inputs": {key: sha256(value) for key, value in reference.items()},
         "fresh_database_binding": {
             "accepted_commit": ACCEPTED_FRESH_DB_COMMIT,
-            "path": str(SOURCE_DATABASE_PATH),
+            "path": SOURCE_DATABASE_PATH.as_posix(),
             "sha256": SOURCE_DATABASE_SHA256,
         },
         "repository": repository,
@@ -660,12 +784,20 @@ def run(expected_head: str, output: Path) -> int:
     write_json(evidence_paths.resolve("PREFLIGHT_VERIFICATION"), preflight)
     process_result_path = evidence_paths.resolve("CAMPAIGN_PROCESS_RESULT")
     write_json(process_result_path, {
-        "campaign_cwd": str(Path.cwd()),
+        "campaign_cwd": Path.cwd().relative_to(ROOT).as_posix(),
         "campaign_returncode": 0,
         "campaign_stderr": "",
-        "campaign_stdout": f"campaign evidence complete: {output}",
-        "harness_argv": [sys.executable, str(Path(__file__).resolve()), "--expected-head", expected_head, "--output", str(output)],
+        "campaign_stdout": f"campaign evidence complete: {output.relative_to(ROOT).as_posix()}",
+        "harness_argv": [
+            sys.executable,
+            Path(__file__).resolve().relative_to(ROOT).as_posix(),
+            "--expected-head",
+            expected_head,
+            "--output",
+            output.relative_to(ROOT).as_posix(),
+        ],
     })
+    write_serialization_self_check(evidence_paths)
     write_sha_sums(evidence_paths)
     return 0
 
