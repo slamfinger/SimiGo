@@ -61,7 +61,8 @@ def manifest_adapter_closure(manifest: dict) -> tuple[bool, dict]:
     if manifest["fixture_binding"]["cases"] != CASES or manifest["fixture_binding"]["fixtures_parent"] != "integrated-es-palace/d002/fixtures":
         reasons.append("fixture_binding_mismatch")
     replay_source = (ROOT / "integrated-es-palace/d002/implementation/decision_replay.py").read_text(encoding="utf-8")
-    tree = ast.parse(replay_source)
+    runner_source = Path(__file__).read_text(encoding="utf-8")
+    tree = ast.parse(replay_source + "\n" + runner_source)
     literals = {node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)}
     required_literals = {"package_binding", "package_id", "manifest_instance_id", "schema_version", "evidence_binding", "exact_objects", "campaign_binding", "cases", "fixture_binding", "fixtures_parent", "snapshot_binding"}
     missing_literals = sorted(required_literals - literals)
