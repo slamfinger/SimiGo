@@ -1,0 +1,64 @@
+{
+  "adapter": {
+    "ES2": {
+      "expected": "REUSE",
+      "input_sha256": "0c3c547af76ef386dfce65bc2d31cf2348eea2873b300cd23041eeae1c4df5e1",
+      "match": true,
+      "output_sha256": "370396506039ff1b92845e5f902375f784ee7af7e4729cfae3f80be1d8409ee7",
+      "primaryDecision": "REUSE"
+    },
+    "ESN": {
+      "expected": "BLOCK",
+      "input_sha256": "315816a7d10c776641fa011210cc301ff483899a5e1bf54ac7e8a7b42287049c",
+      "match": true,
+      "output_sha256": "c35ea6826e14cd79c5fa61c09dba0660d3af73ac0fc686baa2467a923b502bf4",
+      "primaryDecision": "BLOCK"
+    }
+  },
+  "boundary": {
+    "carrier_sqlite_equivalence": "CANDIDATE_EQUIVALENCE_PENDING_HUMAN_AUDIT",
+    "core_broader_claim": "NOT_ESTABLISHED",
+    "observer_evidence": "bounded harness re-derivation; NOT authoritative Human audit"
+  },
+  "eq_matrix": {
+    "EQ-1": true,
+    "EQ-2": true,
+    "EQ-3": true,
+    "EQ-4": true,
+    "EQ-5": true,
+    "EQ-6": true,
+    "EQ-7": true,
+    "EQ-8": true
+  },
+  "exact_campaign_repository_commit": "c31544210fcfef4a3a48dad16c5ec1a5ea024db6",
+  "implementation_commit": "7392fcb79fb7e8465b73f9e1837c4634e56c0409",
+  "ledger_counts": {
+    "ES1_U_entries": 1,
+    "ES2_U_entries": 0,
+    "ESN_U_entries": 0
+  },
+  "observer_persistence_binding_sha256": "cb2c08921ff998cb702fd4b086ead86ee3f90552a58f7ed99e3d6df803dbd2cb",
+  "outcome": "VALID",
+  "reference": {
+    "document_reference_evidence_commit": "cb365a44c48d4b7b90b4cc2155fcae00d3e01572",
+    "document_reference_execution_state": "69b2227dbd9ec7bfc8ad744d65efe46e3a9ab33a"
+  },
+  "rej_matrix": {
+    "REJ-1": false,
+    "REJ-10": false,
+    "REJ-11": false,
+    "REJ-12": false,
+    "REJ-13": false,
+    "REJ-14": false,
+    "REJ-2": false,
+    "REJ-3": false,
+    "REJ-4": false,
+    "REJ-5": false,
+    "REJ-6": false,
+    "REJ-7": false,
+    "REJ-8": false,
+    "REJ-9": false
+  },
+  "stop_code": "CAMPAIGN_VALID_EVIDENCE_COMPLETE",
+  "stop_point": "POST_FROZEN_SEQUENCE_HUMAN_EVIDENCE_AUDIT_HANDOFF"
+}
