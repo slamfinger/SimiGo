@@ -81,7 +81,7 @@ def load_and_preflight(repository_root: Path, output_root: Path) -> EvidencePath
         manifest.get("destination_count") == len(entries),
         "manifest destination count mismatch",
     )
-    _require(manifest.get("destination_version") == 4, "unsupported path-map version")
+    _require(manifest.get("destination_version") == 5, "unsupported path-map version")
     destination_ids = [entry["destination_id"] for entry in entries]
     output_paths = [entry["output_relative_path"] for entry in entries]
     _require(len(destination_ids) == len(set(destination_ids)), "duplicate destination id")

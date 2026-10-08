@@ -579,7 +579,7 @@ def run(expected_head: str, output: Path) -> int:
     sys.path.insert(0, str(ROOT / "database-carrier-replication" / "implementation"))
     from db_is import DatabaseBackedIS
 
-    adapter_build_record = build_adapter(evidence_paths)
+    _, adapter_build_record = build_adapter(evidence_paths)
     invocations = extract_invocations(evidence_paths)
     transaction_log = evidence_paths.resolve("TRANSACTION_LOG")
 

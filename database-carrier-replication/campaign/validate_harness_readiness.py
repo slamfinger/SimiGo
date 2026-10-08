@@ -184,13 +184,19 @@ def runtime_checks(report: Report, harness) -> dict:
 def readiness_checks(report: Report, manifest: dict) -> dict:
     root = ROOT / manifest["campaign_output_root_repository_relative"]
     exists = root.exists() and any(root.iterdir())
-    report.check("authoritative_path_map_is_fresh_for_next_campaign", not exists, {
-        "path": manifest["campaign_output_root_repository_relative"],
-        "occupied_by_completed_invalid_e6": exists,
-        "fresh_e7_path_map_present": False,
-        "blocker": "E7 requires a new independently authorized path map",
+    version = manifest.get("destination_version")
+    path = manifest.get("campaign_output_root_repository_relative", "")
+    version_ok = version == 5
+    path_ok = "v2.0-e7-reserved" in path
+    fresh = version_ok and path_ok and not exists
+    report.check("fresh_e7_path_map_established", fresh, {
+        "destination_version": version,
+        "output_root": path,
+        "version_5": version_ok,
+        "independent_e7_reserved_root": path_ok,
+        "root_absent_before_campaign": not exists,
     })
-    return {"occupied_root": str(root), "occupied": exists}
+    return {"output_root": str(root), "version_5": version_ok, "root_absent": not exists, "fresh": fresh}
 
 
 def main() -> int:
@@ -208,8 +214,8 @@ def main() -> int:
     ready = not report.blockers
 
     result = {
-        "request": "Campaign Harness Readiness Validation Request v1.9",
-        "human_ruling": "授权 Campaign Harness Readiness Validation Request",
+        "request": "Adapter-Build Tuple-Unpack Repair & Fresh E7 Path Map Request v2.0",
+        "human_ruling": "授权 adapter-build tuple-unpack binding correction + fresh E7 path-map establishment；E7 execution not authorized",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "repository_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
         "manifest_identity": manifest["manifest_identity"],
@@ -217,21 +223,19 @@ def main() -> int:
         "manifest_destination_version": manifest["destination_version"],
         "checks": report.checks,
         "blockers": report.blockers,
-        "blocking_defects": [
-            "E6 adapter-build tuple-unpack binding defect remains unrepaired by authorization",
-            "no fresh, independently authorized E7 evidence-path map exists",
-        ],
+        "blocking_defects": report.blockers,
         "known_defect_regression_status": {
             "E3_observer_key_binding": "fixed; no regression found",
             "E4_provenance_path_serialization": "boundary active; E6 exposed upstream tuple graph",
             "E5_adapter_output_return_type": "fixed and exercised without recurrence",
-            "E6_adapter_build_tuple_unpack": "OPEN BLOCKER",
+            "E6_adapter_build_tuple_unpack": "fixed by caller-side unpack; regression check PASS" if ready else "OPEN BLOCKER",
         },
         "campaign_budget_consumed": False,
         "e7_authorized": False,
         "e7_draft_authorized": False,
-        "ready_for_e7": ready,
-        "decision": "NOT_READY_FOR_E7",
+        "ready_for_e7_launch_review": ready,
+        "ready_for_e7_execution": False,
+        "decision": "READY_FOR_E7_LAUNCH_REVIEW" if ready else "NOT_READY_FOR_E7_LAUNCH_REVIEW",
         "e6_evidence_read_only_check": {"before": before, "after": after, "unchanged": before == after},
         "details": {"static": static_details, "runtime": runtime_details, "readiness": readiness_details},
     }
