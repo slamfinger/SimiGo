@@ -340,6 +340,80 @@ Primary evidence:
   docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/pir_probe.py.
 ```
 
+## MINIMAL-PIR-EXP-001 invalid stop — 2026-10-08 (PALACE / ES)
+
+> **Status:** INVALID / NON-ADJUDICATIVE — Human Evidence Audit NOT OPEN. The
+> authorized one-shot execution fail-closed before persisting physical
+> reconciliation observations. No repair, rerun, E8 reconstruction, PIR
+> implementation or equivalence claim is authorized.
+
+```text
+MINIMAL-PIR-EXP-001              = INVALID / NON-ADJUDICATIVE;
+authorization/execution commit   = 36dc1de…;
+runner commit                    = 86cbfa…;
+invalid completion record        = registered by this section's preceding commit;
+experiment budget                = CONSUMED;
+physical observation budget      = CONSUMED BY FAIL-CLOSED ATTEMPT;
+evidence budget                  = CONSUMED BY FAIL-CLOSED ATTEMPT;
+IS mutation                      = NONE;
+repair                           = NONE;
+rerun                            = NONE;
+E9 / Database-Carrier campaign   = NOT AUTHORIZED.
+
+Accepted pre-run state:
+  PIR Design v0.2 + Addendum      = ACCEPTED;
+  Minimal PIR Probe v0.2          = ACCEPT / DESIGN FROZEN;
+  RM-001                          = ACCEPT PACKAGE;
+  implementation/fixture          = PASS;
+  four prepaid fixtures           = E-L, E-S, C-NOCHANGE-L, C-NOCHANGE-S;
+  W_obs_age                       = 60,000 ms;
+  W_latency                       = 5,000 ms.
+
+Execution result:
+  E-L policy artifact             = PERSISTED;
+  E-L side-channel denial         = PERSISTED;
+  bounded in-memory reconciliation = REACHED;
+  EV-P08 observations persistence = FAIL-CLOSED;
+  Fresh Closure                   = NOT PERSISTED;
+  evaluation join                 = NOT PERSISTED;
+  phase vectors                   = NOT PERSISTED;
+  experiment summary              = NOT PERSISTED;
+  SHA256SUMS                      = NOT APPLICABLE / NOT REACHED.
+
+stop code =
+  MINIMAL_PIR_OBSERVATION_JSONL_BYTES_TO_TEXT_PERSISTENCE_DEFECT;
+root-cause class =
+  HARNESS_EXPERIMENT_EVIDENCE_BYTES_TO_TEXT_PERSISTENCE_DEFECT;
+precise cause =
+  execution recorder passed bytes to Path.write_text while persisting EV-P08.
+
+Defect attribution:
+  PIR semantic model              = NOT DEFECTIVE IN THIS STOP;
+  fixture semantics               = NOT DEFECTIVE IN THIS STOP;
+  oracle semantics                = NOT DEFECTIVE IN THIS STOP;
+  IS mutation                     = NONE;
+  CarrierSQLite/E8 ruling         = UNCHANGED;
+  EQ/REJ criteria                 = UNCHANGED.
+
+Evidence disposition:
+  policy and side-channel denial  = RAW FAILURE FACTS / NON-AUTHORITATIVE;
+  post-stop captures              = FAILURE EVIDENCE / NON-AUTHORITATIVE;
+  PIR effectiveness               = NOT ESTABLISHED;
+  PIR performance theorem         = NOT ESTABLISHED;
+  PALACE equivalence              = NOT ESTABLISHED;
+  integrated SimiGo proof         = NOT ESTABLISHED.
+
+Next lawful object:
+  explicit Human evidence audit of INVALID MINIMAL-PIR-EXP-001. If further work
+  is proposed, it requires a new independently budgeted Human-directed Request
+  scoped to experiment-recorder bytes/text persistence correction and any
+  potential future execution. Stopping without further PIR work is also lawful.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_EXPERIMENT;
+  docs/00-governance/PALACE_MINIMAL_PIR_EXP001_INVALID_COMPLETION_RECORD_030_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
