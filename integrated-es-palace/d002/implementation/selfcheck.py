@@ -78,13 +78,14 @@ def main() -> int:
     if not all(checks.values()):
         raise RuntimeError(f"D002 preparation preflight failed: {checks}")
 
+    reuse_fixtures = bool(manifest.get("correction_binding", {}).get("reuse_generated_artifacts", False))
     binding, _ = snapshot(manifest, manifest["package_binding"]["sha256"])
     evidence = ROOT / manifest["evidence_binding"]["parent"]
     atomic(evidence / "SOURCE_SNAPSHOT_BINDING.json", binding)
     if binding["result"] != "PASS":
         raise RuntimeError("snapshot gate failed")
 
-    inventory, fixtures = build_inventory(manifest, binding, SNAPSHOT)
+    inventory, fixtures = build_inventory(manifest, binding, SNAPSHOT, reuse_fixtures=reuse_fixtures)
     atomic(evidence / "PRIMITIVE_INVENTORY.json", inventory)
     fixture_result = {"schema_id": "D002-FIXTURE-PREPARATION-V1", "manifest_instance_id": manifest["manifest_instance_id"], "cases": fixtures, "synthetic_palace_records": False, "result": "PASS" if len(fixtures) == 7 and inventory["result"] == "PASS" else "FAIL"}
     atomic(evidence / "FIXTURE_PREPARATION.json", fixture_result)

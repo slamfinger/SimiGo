@@ -27,7 +27,7 @@ def map_fixtures(fixtures: list[dict], manifest: dict) -> dict:
         mappings.append({
             "case_id": record["case_id"], "source_internal_id": record["source_internal_id"],
             "es_input": es_input, "input_digest": digest(es_input),
-            "input_schema": record["schemas"]["I8"]["path"], "frozen_expected": fixture["expected"],
+            "input_schema": "schemas.json", "frozen_expected": fixture["expected"],
         })
     d001_core = {name: digest_bytes((ROOT / "integrated-es-palace/d001/implementation" / name).read_bytes()) for name in ["schemas.py", "inventory.py", "reconstruction.py", "continuation.py"]}
     return {

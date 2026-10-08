@@ -48,7 +48,9 @@ def ordered_records(snapshot: Path) -> list[dict]:
         connection.close()
 
 
-def build_inventory(manifest: dict, binding: dict, snapshot: Path) -> tuple[dict, list[dict]]:
+def build_inventory(manifest: dict, binding: dict, snapshot: Path, reuse_fixtures: bool = False) -> tuple[dict, list[dict]]:
+    if reuse_fixtures:
+        return load_existing(manifest, binding)
     records = ordered_records(snapshot)
     if len(records) != 7:
         raise ValueError(f"need seven ordered records, got {len(records)}")
@@ -115,4 +117,33 @@ def build_inventory(manifest: dict, binding: dict, snapshot: Path) -> tuple[dict
         fixtures.append({"case_id": case, "source_internal_id": record["internal_id"], "manifest": f"integrated-es-palace/d002/fixtures/{case}/fixture-manifest.json", "manifest_sha256": digest_bytes((root / "fixture-manifest.json").read_bytes()), "expected": expected_record})
         inventory_rows.append({"case_id": case, "source_internal_id": record["internal_id"], "record_digest": record["record_digest"], "families": sorted(primitives)})
     inventory = {"schema_id": "D002-PRIMITIVE-INVENTORY-V1", "snapshot_sha256": binding["snapshot_sha256"], "records": inventory_rows, "synthetic_palace_records": False, "result": "PASS" if len(fixtures) == 7 else "FAIL"}
+    return inventory, fixtures
+
+
+def load_existing(manifest: dict, binding: dict) -> tuple[dict, list[dict]]:
+    actual_cases = sorted(path.name for path in (ROOT / "integrated-es-palace/d002/fixtures").iterdir() if path.is_dir())
+    if actual_cases != sorted(CASES):
+        raise ValueError(f"retained fixture roots drift: {actual_cases}")
+    fixtures = []
+    rows = []
+    seen_ids = []
+    for case in CASES:
+        root = ROOT / "integrated-es-palace/d002/fixtures" / case
+        manifest_path = root / "fixture-manifest.json"
+        record = json.loads(manifest_path.read_text())
+        expected = json.loads((root / "EXPECTED.json").read_text())
+        if record["case_id"] != case or record["source_internal_id"] in seen_ids:
+            raise ValueError(f"retained fixture identity drift: {case}")
+        seen_ids.append(record["source_internal_id"])
+        for family, item in record["primitives"].items():
+            object_path = root / item["path"]
+            if object_path.is_symlink() or not object_path.is_file():
+                raise ValueError(f"retained fixture object missing: {case}:{family}")
+            if item["sha256"] is not None and digest_bytes(object_path.read_bytes()) != item["sha256"]:
+                raise ValueError(f"retained fixture digest drift: {case}:{family}")
+        if not expected["no_fallback_guess"] or not expected["no_partial_continuation"] or not expected["no_silent_recompute"] or not expected["no_stale_success"]:
+            raise ValueError(f"retained fixture fail-closed flags drift: {case}")
+        fixtures.append({"case_id": case, "source_internal_id": record["source_internal_id"], "manifest": f"integrated-es-palace/d002/fixtures/{case}/fixture-manifest.json", "manifest_sha256": digest_bytes(manifest_path.read_bytes()), "expected": expected})
+        rows.append({"case_id": case, "source_internal_id": record["source_internal_id"], "record_digest": record["source_record_digest"], "families": sorted(record["primitives"])})
+    inventory = {"schema_id": "D002-PRIMITIVE-INVENTORY-V1", "snapshot_sha256": binding["snapshot_sha256"], "records": rows, "synthetic_palace_records": False, "reused_generated_fixtures": True, "result": "PASS" if len(fixtures) == 7 else "FAIL"}
     return inventory, fixtures
