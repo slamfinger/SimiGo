@@ -1,0 +1,11 @@
+POST-STOP CAPTURE — NOT PART OF SUCCESSFUL MEASURED EVIDENCE
+Traceback (most recent call last):
+  File "docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/minimal_pir_experiment.py", line 430, in <module>
+    raise SystemExit(main())
+  File "docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/minimal_pir_experiment.py", line 406, in main
+    result = execute_fixture(shape, args.fixtures / shape, args.output / shape)
+  File "docs/02-evidence/es-is-20261005/PIR_RM001_IMPLEMENTATION/implementation/minimal_pir_experiment.py", line 261, in execute_fixture
+    observations_path.write_text(
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1273, in write_text
+    raise TypeError('data must be str, not %s' %
+TypeError: data must be str, not bytes
