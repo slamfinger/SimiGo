@@ -100,3 +100,16 @@ PIR reopening                     = NOT AUTHORIZED.
 
 Attempt-001 evidence and artifacts are write-once. This correction is registered
 by the canonical commit introducing it.
+
+## 6. Correction-002 registration
+
+Correction-001 verified the retained snapshot, but its fixture validator treated
+the pre-registered absent `N-MISSING:R-I5` object as a generic defect. The failed
+attempt retained `SOURCE_SNAPSHOT_BINDING.json = PASS`; no experiment or observer
+campaign ran. Correction-002 is registered without expanding authority:
+
+```text
+manifest instance = AE245B69-35FA-403B-BB1A-206E24CE2BB7;
+evidence parent =
+  docs/02-evidence/integrated-es-palace-d002-preparation-correction-002/.
+```
