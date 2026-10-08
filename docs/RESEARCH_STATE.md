@@ -863,6 +863,102 @@ Primary evidence:
   docs/00-governance/PALACE_MINIMAL_PIR_EXP003_INVALID_COMPLETION_RECORD_038_20261008.md.
 ```
 
+## MINIMAL-PIR-EXP-003 Human Evidence Audit closure — 2026-10-08 (PALACE / ES)
+
+> **Status:** CLOSED — THREE-POINT Human Evidence Audit PASS WITH RELEASE-SELECTION
+> DEFECT; experiment remains INVALID / NON-ADJUDICATIVE. No repair, EXP-004,
+> fixture correction, execution or equivalence claim is authorized.
+
+```text
+MINIMAL-PIR-EXP-003                  = INVALID / NON-ADJUDICATIVE;
+v2.7 correction regression           = NONE;
+targeted validation regression       = NONE;
+failure classification               =
+  HARNESS_FIXTURE_RELEASE_SELECTION_STALE_MEASURED_SNAPSHOT_DEFECT;
+PIR effectiveness                    = NOT ESTABLISHED;
+MOVE/RENAME proof                    = NOT ESTABLISHED;
+PIR performance theorem              = NOT ESTABLISHED;
+PALACE equivalence                   = NOT ESTABLISHED;
+integrated SimiGo proof              = NOT ESTABLISHED;
+E8 bounded CarrierSQLite equivalence = ESTABLISHED / UNCHANGED.
+
+Audit/governance chain:
+  Human audit record              = registered by this section's preceding commit;
+  invalid completion record       = 7b228ec…;
+  authorization/execution commit  = 515ae2…;
+  audit base                      = eea90e6…;
+  v2.7 correction                 = 1536fa6…;
+  v2.7 validation artifact        = f383b9f….
+
+Audit point 1 — v2.7 correction/validation:
+  v2.7 correction scope           = pir_probe.py + minimal_pir_experiment.py only;
+  source retains corrected pre-change snapshot behavior;
+  targeted validation implementation self-check = PASS;
+  oracle isolation = PASS;
+  preparation physical observations = 0;
+  IS mutations = 0;
+  E-L/E-S pre-change/post-change MOVE snapshots = PASS.
+
+Audit point 2 — release selection:
+  EXP-003 selected committed E-L measured_input lacking pre_change_locator;
+  selected registered locator = post-change destination;
+  corrected builder produces both pre-change and post-change locators;
+  therefore intended corrected fixture ≠ selected committed fixture;
+  defect = stale fixture release selection, not fixture builder regeneration.
+
+Audit point 3 — causal consequence:
+  measured path no longer carried pre-change locator;
+  reconciler saw moved destination as current registered object;
+  observed FRESH_WITHIN_WINDOW instead of PHYSICALLY_MOVED;
+  candidate discovery, deterministic correlation, PIR semantic rule and
+  freshness window were not the failure.
+
+Raw facts:
+  E-L accepted Information Scope = 20/20;
+  physical observations = 20;
+  W_obs_age = PASS all objects;
+  W_latency = 137ms / PASS / 5,000ms;
+  oracle changes = 5;
+  true positives = 4 (3 PC-MODIFY + 1 PC-DELETE);
+  false negatives = 1 (PC-MOVE);
+  false positives = 0;
+  Fresh Closure structure = COMPLETE / NON-AUTHORITATIVE;
+  PC-CREATE = NOT EXERCISED / DEFERRED.
+
+Evidence disposition:
+  E-L observations/Fresh Closure   = RAW / NON-AUTHORITATIVE;
+  PC-MOVE                          = NOT ADJUDICATED;
+  PIR effectiveness                = NOT ESTABLISHED;
+  MOVE/RENAME proof                = NOT ESTABLISHED;
+  PIR performance theorem          = NOT ESTABLISHED;
+  PALACE equivalence               = NOT ESTABLISHED;
+  integrated SimiGo proof          = NOT ESTABLISHED;
+  four correct outcomes cannot substitute for MOVE.
+
+Budgets:
+  EXP-003 experiment budget        = CONSUMED;
+  physical observation budget      = CONSUMED;
+  evidence budget                  = CONSUMED;
+  E-S/no-change execution          = NOT REACHED;
+  IS mutation                      = NONE;
+  repair                           = NOT AUTHORIZED;
+  rerun                            = NOT AUTHORIZED;
+  renewal                          = FORBIDDEN.
+
+Next lawful object:
+  explicit Human strategic decision:
+    STOP, retaining PIR = NOT ESTABLISHED and treating E3–EXP-003 raw execution
+    facts as diagnostics; or
+    authorize a new independently budgeted Request scoped only to
+    release-process / fixture provenance correction and targeted validation.
+  Any future execution remains a separate explicit authorization. This audit
+  does not authorize EXP-004, correction, rerun or equivalence.
+
+Primary evidence:
+  docs/02-evidence/es-is-20261005/PIR_RM001_EXP003_CORRECTED;
+  docs/00-governance/PALACE_MINIMAL_PIR_EXP003_HUMAN_EVIDENCE_AUDIT_RECORD_039_20261008.md.
+```
+
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
 
 > **Historical status at 2026-10-07:** STOPPED — Request v0.8 REVISED; corrected EXECUTION Request v0.9 OPENED/SUBMITTED, no stage authorized
