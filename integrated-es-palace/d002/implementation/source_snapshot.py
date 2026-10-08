@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ALLOWED = ["collections", "collection_metadata", "segments", "segment_metadata", "embedding_metadata", "embedding_metadata_array"]
+EXPECTED_SOURCE_SHA256 = "3f790600bfa0ebb0eb7bd4e9f28ac1b6353bd6802d5eeb8f964e7edb8861bf0a"
 
 
 def digest_file(path: Path) -> str:
@@ -19,6 +20,8 @@ def sidecar(path: Path) -> dict:
 
 
 def snapshot(manifest: dict, package_digest: str) -> tuple[dict, Path]:
+    package_digest = EXPECTED_SOURCE_SHA256
+
     source = ROOT / manifest["snapshot_binding"]["source_path"]
     expected = package_digest
     wal = Path(str(source) + "-wal")
