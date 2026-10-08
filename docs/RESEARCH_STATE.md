@@ -6,59 +6,51 @@
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
-> **Status:** STOPPED — Request v2.2 COMPLETE; fresh independent E8 path map
-> established and preflight 31/31 PASS. E8 execution is NOT authorized and NOT
-> launched. No campaign/IS-mutation/observer budget was consumed.
+> **Status:** STOPPED AT HUMAN EVIDENCE AUDIT — E8 completed O0–O5 and closed
+> the complete mechanical evidence chain. The campaign is mechanically VALID but
+> remains only `CANDIDATE_EQUIVALENCE_PENDING_HUMAN_AUDIT`. CarrierSQLite
+> equivalence, EQ/REJ adjudication, and broader claims are NOT ESTABLISHED.
 
 ```text
-E8 Path-Map Establishment       = COMPLETE / PASS;
-path-map identity               = ..._MANIFEST_008;
-path-map version/destinations   = 6 / 31;
-E8-reserved root                =
-  docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008;
-post-preflight root state       = FRESH / ABSENT;
-ready_for_e8_launch_review      = true;
-ready_for_e8_execution          = false;
-E8 campaign/IS/observer budget  = NOT AUTHORIZED;
-E8 execution                    = NOT AUTHORIZED / NOT LAUNCHED;
-E7                              = INVALID / NON-ADJUDICATIVE;
-EQ-1..EQ-8                      = NOT ESTABLISHED;
-REJ-1..REJ-14                   = NOT ESTABLISHED;
-CarrierSQLite equivalence       = NOT ESTABLISHED;
-broader SimiGo/ES claim         = NOT ESTABLISHED.
+E8 execution authorization       = 7585cc4…;
+E8 completion record             = f3eda8e…;
+campaign ID                      = exec-dbcarrier-008-7585cc4;
+Governing Request v2.2           = 124bc80…;
+E8 path-map establishment        = 8e41d42…;
+E8 completion                    = c372b04…;
+Evidence-Lifecycle Closure PASS  = 5ff5d78…;
+E7 audit                         = 2a7fe47…;
+E7 invalid record                = 01670a8….
 
-Governance chain:
-  Request v2.2                     = 124bc80…;
-  path-map establishment commit    = 8e41d42…;
-  E8 completion record             = c372b04…;
-  Evidence-Lifecycle Closure PASS  = 5ff5d78…;
-  E7 audit                         = 2a7fe47…;
-  E7 invalid record                = 01670a8…;
-  E7 authorization/execution       = c315442….
-
-Path-map checks:
-  adapter-build tuple unpack        = PASS;
-  adapter-output exact persistence  = PASS;
-  canonical serializer boundary     = PASS;
-  producer/consumer inventory       = PASS;
-  transaction JSONL producer        = PASS;
-  process-result lifecycle          = PASS;
-  path/nonfinite rejection          = PASS;
-  canonical write/reread/parse      = PASS;
-  exact persistence contract        = PASS;
-  E6 tuple graph guard              = PASS;
-  compact JSONL record contract     = PASS;
-  failure discard + failure result  = PASS;
-  final success-state validation    = PASS;
-  fresh E8 path map                 = PASS.
-
-Standing E7 facts:
-  raw O0–O5 sequence             = COMPLETE / ACCEPTED AS FACTS;
+E8 campaign result:
+  fresh path preflight           = 31/31 PASS;
+  raw sequence                   = O0–O5 COMPLETE;
+  O0 state                       = 0 objects / 0 index / 0 dependencies;
   O5 state                       = 4 objects / 2 index / 2 dependencies;
-  raw ES2 REUSE                  = NON-AUTHORITATIVE;
-  raw ESN BLOCK                  = NON-AUTHORITATIVE;
-  complete campaign evidence     = NOT CLOSED;
-  mechanical EQ/REJ/observer     = NON-AUTHORITATIVE.
+  O0/campaign/O5 SQLite integrity = OK;
+  repair                         = none;
+  rerun                          = none;
+  process state                  = FINAL_SUCCESS;
+  closure validation             = PASS;
+  serialization self-check       = PASS / 20 checks;
+  SHA256SUMS                     = COMPLETE / 33 lines;
+  mechanical observer            = ALL PASS;
+  mechanical EQ-1..EQ-8          = true;
+  mechanical REJ-1..REJ-14       = false;
+  outcome                        = VALID / CANDIDATE_PENDING_HUMAN_AUDIT;
+  stop code                      = CAMPAIGN_VALID_EVIDENCE_COMPLETE.
+
+R3–R7 regression guards:
+  E3 observer canonical C3 key    = PASS;
+  E4 provenance path normalization = PASS;
+  E5 adapter-output return contract = PASS;
+  E6 adapter-build tuple unpack     = PASS;
+  E7 transaction JSONL producer     = PASS;
+  E7 process-result lifecycle       = FINAL_SUCCESS AFTER CLOSURE.
+
+Raw observations:
+  raw ES2 = REUSE / REUSE_PATH / NON-AUTHORITATIVE;
+  raw ESN = BLOCK / BLOCKED_NON_RECOMPUTE_PATH / NON-AUTHORITATIVE.
 
 Protected boundaries:
   CarrierSQLite semantics       = UNCHANGED;
@@ -69,22 +61,29 @@ Protected boundaries:
   runner semantic sequence      = UNCHANGED;
   EQ/REJ criteria               = UNCHANGED.
 
+Formal adjudication status:
+  EQ-1..EQ-8                    = NOT ESTABLISHED;
+  REJ-1..REJ-14                 = NOT ESTABLISHED;
+  CarrierSQLite equivalence     = NOT ESTABLISHED;
+  broader SimiGo/ES claim       = NOT ESTABLISHED.
+
 Budgets:
-  E8 path-map establishment      = CONSUMED;
-  E8 campaign budget             = NOT AUTHORIZED;
-  E8 IS-mutation budget          = NOT AUTHORIZED;
-  E8 observer budget             = NOT AUTHORIZED;
-  E7 evidence reuse              = FORBIDDEN;
-  automatic E8 launch            = FORBIDDEN;
-  automatic equivalence          = FORBIDDEN.
+  E8 campaign / IS-mutation / observer budgets = CONSUMED;
+  repair                                       = none;
+  rerun                                        = none;
+  renewal                                      = FORBIDDEN;
+  old campaign/evidence reuse                  = FORBIDDEN;
+  automatic adjudication                       = FORBIDDEN.
 
 Next lawful object:
-  explicit Human E8 launch review. The Human may DENY E8 or separately authorize
-  E8 as a new independent frozen campaign with fresh campaign, IS-mutation and
-  observer budgets. Path-map success does not imply E8 authorization.
+  explicit Human evidence audit of the complete E8 chain. The audit must
+  independently verify provenance, hashes, ancestry, observer C1–C4, transaction
+  JSONL contract, serialization closure, process-result freshness, SHA256SUMS
+  coverage and unchanged semantic/criteria boundaries before deciding whether
+  mechanical EQ/REJ may be promoted to formal adjudication.
 
 Primary evidence:
-  docs/02-evidence/database-carrier-e8-path-map-establishment-v2.2-20261008.
+  docs/02-evidence/database-carrier-equivalence-campaign-v2.1-e8-reserved-20261008.
 ```
 
 ## Historical execution chain status — 2026-10-07 (SRS-REAL-CLOSURE-01)
