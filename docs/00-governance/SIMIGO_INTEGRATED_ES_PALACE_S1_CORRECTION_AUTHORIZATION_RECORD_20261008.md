@@ -93,3 +93,16 @@ manifest_instance_id = 1DACEDBD-6269-42E7-90ED-69276DCAE64B;
 evidence parent =
   docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-004.
 ```
+
+## 8. Registered precedence-label retry
+
+Correction-004 S2 retained the correct semantic decisions but compared negative
+cases against typed decision labels instead of the pre-registered precedence
+reasons. Correction-005 aligns the validation comparator with the manifest
+without changing decisions, P1–P7, or authority:
+
+```text
+manifest_instance_id = 12DE7CBF-E5CE-4E34-B26A-0E975C008DE1;
+evidence parent =
+  docs/02-evidence/integrated-es-palace-d001-validation-v1-correction-005.
+```
