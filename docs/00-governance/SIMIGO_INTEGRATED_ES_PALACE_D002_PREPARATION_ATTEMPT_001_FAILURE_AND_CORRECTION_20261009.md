@@ -113,3 +113,17 @@ manifest instance = AE245B69-35FA-403B-BB1A-206E24CE2BB7;
 evidence parent =
   docs/02-evidence/integrated-es-palace-d002-preparation-correction-002/.
 ```
+
+## 7. Correction-003 registration
+
+Correction-002 completed snapshot, inventory, fixture, and typed mapping records,
+then stopped in implementation self-check because the fixture validator loop did
+not bind `family`. All four partial records were PASS. The defect was reproduced
+locally and fixed without running a new stage before registration. Correction-003
+is registered without expanding authority:
+
+```text
+manifest instance = 9738BD56-3C65-4262-80C3-9CC4FA395CD3;
+evidence parent =
+  docs/02-evidence/integrated-es-palace-d002-preparation-correction-003/.
+```

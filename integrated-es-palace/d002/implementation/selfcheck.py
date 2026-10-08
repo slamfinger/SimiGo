@@ -47,7 +47,7 @@ def validate_fixtures() -> list[dict]:
         import json
         manifest = json.loads((case_dir / "fixture-manifest.json").read_text())
         passed = sorted(manifest["primitives"]) == sorted(required)
-        for item in manifest["primitives"].values():
+        for family, item in manifest["primitives"].items():
             item_path = case_dir / item["path"]
             if item["sha256"] is None:
                 if family == "R-I5" and item["registered_trigger"] == "N-MISSING" and not item_path.exists():
