@@ -1,0 +1,1 @@
+{"carrier_state":{"database_sha256":"8880a7b1e8b1bda2d62ea39a22790942a11c7d7c1d1cc8c63223a13954bee39f","record_count":7,"state":"PERSISTED"},"result":"PASS","schema_id":"D001-CARRIER-LIFECYCLE-V1","semantic_decisions_by_carrier":0,"success_and_failure_separate":true,"write_once":true}
