@@ -72,3 +72,35 @@ python3 execution-information-loop/verify_production_runtime_integration.py
 This proves the authorized bounded runtime integration only. It does not prove
 production deployment, PALACE equivalence, PALACE-supplied validity policy,
 automatic background source discovery, or Integrated SimiGo.
+
+## 6. V2 revision — stale-validity fail-closed gate
+
+Review identified a production-path gap: an expired source validity window was
+being recomputed and then settled without refreshed validity authorization. The
+bounded bridge now preflights every required source before executing the
+calculator or carrier settlement.
+
+```text
+source valid until = 2020-01-01T00:00:00Z;
+evaluated at       = 2026-10-09T00:00:00Z;
+verdict            = BLOCKED_STALE_VALIDITY;
+blocked items      = 9;
+calculator calls   = 0;
+new settlements    = 0;
+ES advancement     = false.
+```
+
+V2 evidence:
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V2.json
+  SHA256 = 678e56fd883ba2f8a0fa95d4e6a090965d3b188f2a1811d52cc2f61c07acec89;
+
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V2.json
+  SHA256 = 973abbb02d2a30cae40f475f306f3c1944045cb382a51e9b5556632ed6b63d65.
+```
+
+The V1 evidence is retained unchanged. The verifier is bound by the current
+review commit instead of embedding its own hash in the manifest.

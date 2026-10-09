@@ -16,7 +16,7 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "execution-information-loop"))
 
-from carrier_loop import CarrierInformationLoop, digest  # noqa: E402
+from carrier_loop import CarrierInformationLoop, digest, parse_utc  # noqa: E402
 from real_palace_loop import RealPalaceConsumptionLoop, RealPalaceSource  # noqa: E402
 
 SNAPSHOT_PATH = ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
@@ -103,6 +103,7 @@ def status(args: argparse.Namespace) -> None:
 
 def execute(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
+    evaluated_at = parse_utc(args.evaluated_at)
     prior_state = loop.latest_execution_state(CONTINUATION_POINT)
     if prior_state is None:
         demand = loop.current_demand(CONTINUATION_POINT)
@@ -113,6 +114,38 @@ def execute(args: argparse.Namespace) -> None:
         restored = loop.restore_continuation(CONTINUATION_POINT)
         prior_state = restored["state"]
         required = restored["required_item_ids"]
+    stale_item_ids: list[str] = []
+    for item_id in required:
+        item = loop.current_item(item_id)
+        valid_until = item.get("valid_until_utc") if item else None
+        if valid_until is None:
+            continue
+        if evaluated_at > parse_utc(valid_until):
+            stale_item_ids.append(item_id)
+    if stale_item_ids:
+        result = {
+            "demand_id": CONTINUATION_POINT,
+            "state": "BLOCKED_STALE_VALIDITY",
+            "validity_failure_item_ids": stale_item_ids,
+            "actions": [
+                {
+                    "item_id": item_id,
+                    "action": "BLOCKED_STALE_VALIDITY",
+                }
+                for item_id in stale_item_ids
+            ],
+            "advanced": False,
+            "failure_reason": "source validity expired without refreshed authorization",
+        }
+        emit({
+            "ok": True,
+            "command": "execute",
+            "prior_execution_state": prior_state,
+            "restored_required_item_ids": required,
+            "result": result,
+        })
+        close_loop(loop, source)
+        return
     result = source.execute_real_demand(
         CONTINUATION_POINT,
         args.advancement,

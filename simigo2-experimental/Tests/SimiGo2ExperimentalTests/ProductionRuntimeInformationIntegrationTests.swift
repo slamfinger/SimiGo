@@ -112,14 +112,14 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
         database: database,
         handle: nil,
         advancementID: "blocked-phase",
-      evaluatedAtUTC: "not-a-time"
+      evaluatedAtUTC: "2026-10-09T00:00:00Z"
       )
       XCTFail("expired information demand must block")
     } catch let error as ProductionRuntimeInformationError {
       guard case .blockedInformationDemand(_, let state) = error else {
         return XCTFail("unexpected production error: \(error)")
       }
-      XCTAssertEqual(state, "BLOCKED_VALIDITY_FAILURE")
+      XCTAssertEqual(state, "BLOCKED_STALE_VALIDITY")
     }
 
     let status = try integration.status(database: database)

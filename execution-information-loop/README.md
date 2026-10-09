@@ -155,6 +155,11 @@ basis. Each demand supplies `evaluated_at_utc`. Reuse requires source/version/
 dependency identity and a still-valid settlement window. Expired items recompute;
 malformed validity input blocks without a calculator call.
 
+For the bounded production-runtime bridge, an expired source validity window is
+additionally a preflight rejection: `BLOCKED_STALE_VALIDITY` occurs before any
+calculator call or new settlement. Refreshing the source's validity window is
+required before continuation.
+
 ## Explicit invalidation
 
 `CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement

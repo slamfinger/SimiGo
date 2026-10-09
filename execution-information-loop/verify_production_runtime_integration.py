@@ -13,7 +13,7 @@ LAB_ROOT = ROOT
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/production-runtime-integration-20261009/"
-    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V1.json"
+    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V2.json"
 )
 ACCEPTED_TAG = "simigo-es-is-final-acceptance-20261009-v1"
 ACCEPTED_COMMIT = "bb09a55ef980ac4af3f1605ccf8de928abf6cc23"
@@ -23,7 +23,6 @@ REQUIRED_FILES = [
     "execution-information-loop/carrier_loop.py",
     "execution-information-loop/real_palace_loop.py",
     "execution-information-loop/production_runtime_bridge.py",
-    "execution-information-loop/verify_production_runtime_integration.py",
     "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
     "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeInformationIntegrationTests.swift",
 ]
@@ -68,7 +67,7 @@ def main() -> int:
     recorded_hashes = manifest.get("implementation_sha256", {})
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V1",
+        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V2",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": (
             set(recorded_hashes) == set(REQUIRED_FILES)
@@ -96,6 +95,7 @@ def main() -> int:
     }
     report = {
         "schema_id": "PRODUCTION-RUNTIME-INTEGRATION-VERIFIER-V1",
+        "verifier_binding": "CURRENT_REVIEW_COMMIT",
         "result": "PASS" if all(checks.values()) else "FAIL",
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
