@@ -5,6 +5,7 @@ import CryptoKit
 public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
   case bridgeFailed(command: String, exitCode: Int32, message: String)
   case invalidBridgeResponse(command: String)
+  case launchConfigurationInvalid(path: String, message: String)
   case blockedInformationDemand(
     command: String,
     state: String,
@@ -87,11 +88,39 @@ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
   }
 }
 
+public struct ProductionRuntimeLaunchConfiguration: Equatable, Sendable {
+  public let runtimeRoot: URL
+  public let pythonExecutable: URL
+  public let snapshotPath: URL
+  public let validityPolicyPath: URL
+
+  public init(
+    runtimeRoot: URL,
+    pythonExecutable: URL,
+    snapshotPath: URL,
+    validityPolicyPath: URL
+  ) {
+    self.runtimeRoot = runtimeRoot.standardizedFileURL
+    self.pythonExecutable = pythonExecutable.standardizedFileURL
+    self.snapshotPath = snapshotPath.standardizedFileURL
+    self.validityPolicyPath = validityPolicyPath.standardizedFileURL
+  }
+
+  public var environment: [String: String] {
+    [
+      "SIMIGO_RUNTIME_ROOT": runtimeRoot.path,
+      "SIMIGO_INFO_SNAPSHOT_PATH": snapshotPath.path,
+      "SIMIGO_INFO_VALIDITY_POLICY_PATH": validityPolicyPath.path,
+    ]
+  }
+}
+
 public final class ProductionRuntimeInformationIntegration: @unchecked Sendable {
   public static let continuationPoint = "bounded-production-runtime-integration"
   public static let executionID = ExecutionID("PRODUCTION-REAL-PALACE")
 
   private let labRoot: URL
+  private let launchConfiguration: ProductionRuntimeLaunchConfiguration?
   private let backend = MLXExecutionStateBackend()
   private lazy var runtime = ExecutionContinuityCoordinator(backend: backend)
 
@@ -106,16 +135,42 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         .deletingLastPathComponent()
         .deletingLastPathComponent()
     }
+    launchConfiguration = nil
+  }
+
+  public init(configuration: ProductionRuntimeLaunchConfiguration) {
+    launchConfiguration = configuration
+    labRoot = configuration.runtimeRoot
   }
 
   private var bridgeURL: URL {
-    labRoot.appendingPathComponent("execution-information-loop/production_runtime_bridge.py")
+    if let launchConfiguration {
+      return launchConfiguration.runtimeRoot.appendingPathComponent("production_runtime_bridge.py")
+    }
+    return labRoot.appendingPathComponent("execution-information-loop/production_runtime_bridge.py")
   }
   private var pythonURL: URL {
-    labRoot.appendingPathComponent(".build/mp-venv312/bin/python")
+    if let launchConfiguration {
+      return launchConfiguration.pythonExecutable
+    }
+    return labRoot.appendingPathComponent(".build/mp-venv312/bin/python")
   }
 
   private func runBridge(_ command: String, arguments: [String]) throws -> [String: Any] {
+    if let launchConfiguration {
+      let required = [
+        launchConfiguration.pythonExecutable,
+        launchConfiguration.runtimeRoot.appendingPathComponent("production_runtime_bridge.py"),
+        launchConfiguration.snapshotPath,
+        launchConfiguration.validityPolicyPath,
+      ]
+      for path in required where !FileManager.default.fileExists(atPath: path.path) {
+        throw ProductionRuntimeInformationError.launchConfigurationInvalid(
+          path: path.path,
+          message: "required production runtime file is missing"
+        )
+      }
+    }
     let pythonExecutable = FileManager.default.fileExists(atPath: pythonURL.path)
       ? pythonURL
       : URL(fileURLWithPath: "/usr/bin/env")
@@ -126,6 +181,13 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     let process = Process()
     process.executableURL = pythonExecutable
     process.arguments = processArguments
+    if let launchConfiguration {
+      var environment = process.environment ?? ProcessInfo.processInfo.environment
+      environment = environment.merging(
+        launchConfiguration.environment
+      ) { _, deployed in deployed }
+      process.environment = environment
+    }
     let output = Pipe()
     let error = Pipe()
     process.standardOutput = output
@@ -170,6 +232,47 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
 
   public func audit(database: URL) throws -> [String: Any] {
     try runBridge("audit", arguments: ["--database", database.path])
+  }
+
+  public func diagnostics(
+    database: URL,
+    evaluatedAtUTC: String
+  ) throws -> [String: Any] {
+    try runBridge("diagnostics", arguments: [
+      "--database", database.path,
+      "--evaluated-at", evaluatedAtUTC,
+    ])
+  }
+
+  @discardableResult
+  public func recordBlockedExecutionState(
+    database: URL,
+    stateID: String,
+    priorStateID: String?,
+    reason: String
+  ) throws -> [String: Any] {
+    var arguments = [
+      "--database", database.path,
+      "--state-id", stateID,
+      "--reason", reason,
+    ]
+    if let priorStateID {
+      arguments += ["--prior-state-id", priorStateID]
+    }
+    return try runBridge("record-blocked", arguments: arguments)
+  }
+
+  @discardableResult
+  public func rollbackToExecutionState(
+    database: URL,
+    targetStateID: String,
+    newStateID: String
+  ) throws -> [String: Any] {
+    try runBridge("rollback-to-state", arguments: [
+      "--database", database.path,
+      "--target-state-id", targetStateID,
+      "--new-state-id", newStateID,
+    ])
   }
 
   public func invalidate(

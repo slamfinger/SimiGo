@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the authorized isolated Integrated SimiGo proof run."""
+"""Verify Integrated SimiGo proof plus production readiness preparation."""
 from __future__ import annotations
 
 import hashlib
@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/integrated-simigo-proof-20261009/"
-    "INTEGRATED_SIMIGO_PROOF_MANIFEST_V1.json"
+    "INTEGRATED_SIMIGO_PROOF_PRODUCTION_READINESS_MANIFEST_V2.json"
 )
 PRIMARY_EVIDENCE = ROOT / (
     "docs/02-evidence/integrated-simigo-proof-20261009/"
-    "INTEGRATED_SIMIGO_PROOF_E2E_RECORD_V1.json"
+    "INTEGRATED_SIMIGO_PROOF_PRODUCTION_READINESS_E2E_RECORD_V2.json"
 )
 SEALED_SNAPSHOT = ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
 SEALED_SNAPSHOT_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
@@ -28,6 +28,8 @@ REQUIRED_FILES = [
     "execution-information-loop/production_runtime_bridge.py",
     "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
     "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedSimigoProofE2ETests.swift",
+    "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionReadinessDeploymentPreparationTests.swift",
+    "execution-information-loop/verify_integrated_simigo_proof.py",
 ]
 
 
@@ -57,7 +59,7 @@ def main() -> int:
         evidence = {}
 
     swift_test = subprocess.run(
-        ["swift", "test", "--filter", "IntegratedSimigoProofE2ETests"],
+        ["swift", "test", "--filter", "IntegratedSimigoProofE2ETests|ProductionRuntimeInformationIntegrationTests|ProductionReadinessDeploymentPreparationTests"],
         cwd=PACKAGE_ROOT,
         text=True,
         capture_output=True,
@@ -80,7 +82,7 @@ def main() -> int:
     ).returncode == 0
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "INTEGRATED-SIMIGO-PROOF-MANIFEST-V1",
+        "manifest_schema_current": manifest.get("schema_id") == "INTEGRATED-SIMIGO-PROOF-PRODUCTION-READINESS-MANIFEST-V2",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": set(recorded_hashes) == set(REQUIRED_FILES),
         "manifest_hashes_valid": bool(recorded_hashes) and all(
@@ -98,18 +100,25 @@ def main() -> int:
         "primary_evidence_no_model_cloud": evidence.get("information_path", {}).get("model_or_cloud_access") is False,
         "primary_evidence_all_objects_verify": evidence.get("verification", {}).get("carrier_all_objects_verify") is True,
         "failure_safety_complete": all(evidence.get("failure_safety", {}).values()),
+        "production_launch_policy_bound": evidence.get("production_readiness", {}).get("validity_policy_explicit") is True,
+        "production_launch_no_development_layout": evidence.get("production_readiness", {}).get("development_build_layout_required") is False,
+        "production_startup_failure_fail_closed": evidence.get("production_readiness", {}).get("missing_bridge_startup_fail_closed") is True,
+        "production_diagnostics_operable": evidence.get("production_readiness", {}).get("diagnostics_operable") is True,
+        "production_append_only_rollback_operable": evidence.get("production_readiness", {}).get("append_only_rollback_operable") is True,
         "accepted_integration_commit_bound": accepted_target == ACCEPTANCE_COMMIT and review_ancestor,
         "sealed_palace_snapshot_digest": (
             SEALED_SNAPSHOT.is_file() and sha256(SEALED_SNAPSHOT) == SEALED_SNAPSHOT_SHA256
         ),
-        "swift_proof_tests_pass": (
+        "swift_integration_and_readiness_tests_pass": (
             swift_test.returncode == 0
             and "Test Suite 'IntegratedSimigoProofE2ETests' passed" in swift_output
-            and "Executed 1 test, with 0 failures" in swift_output
+            and "Test Suite 'ProductionRuntimeInformationIntegrationTests' passed" in swift_output
+            and "Test Suite 'ProductionReadinessDeploymentPreparationTests' passed" in swift_output
+            and "Executed 8 tests, with 0 failures" in swift_output
         ),
     }
     report = {
-        "schema_id": "INTEGRATED-SIMIGO-PROOF-VERIFIER-V1",
+        "schema_id": "INTEGRATED-SIMIGO-PROOF-PRODUCTION-READINESS-VERIFIER-V2",
         "result": "PASS" if all(checks.values()) else "FAIL",
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),

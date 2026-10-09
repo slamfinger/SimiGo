@@ -178,6 +178,18 @@ Execution State recovery, persistent carrier reuse, explicit invalidation,
 source-change recompute, stale/missing/malformed failure safety, corrupted
 lifecycle rejection, and full carrier object verification.
 
+## Production readiness / deployment preparation
+
+```bash
+python3 execution-information-loop/verify_integrated_simigo_proof.py
+```
+
+This command runs isolated proof, production integration, and production
+readiness Swift suites. The readiness suite stages an explicit runtime bundle,
+uses the system Python, rejects a missing bridge/snapshot/policy file, loads a
+deployment-owned validity policy, records a blocked state, performs append-only
+rollback to the last good ADVANCED state, and verifies rollback compatibility.
+
 ## Explicit invalidation
 
 `CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement

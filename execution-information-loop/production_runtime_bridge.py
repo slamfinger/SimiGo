@@ -9,18 +9,35 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "execution-information-loop"))
+BRIDGE_ROOT = Path(__file__).resolve().parent
+RUNTIME_ROOT = Path(
+    os.environ.get(
+        "SIMIGO_RUNTIME_ROOT",
+        BRIDGE_ROOT.parent,
+    )
+).resolve()
+sys.path.insert(0, str(RUNTIME_ROOT / "execution-information-loop"))
+sys.path.insert(0, str(RUNTIME_ROOT / "database-carrier-replication" / "implementation"))
+sys.path.insert(0, str(RUNTIME_ROOT / "lib"))
 
 from carrier_loop import CarrierInformationLoop, digest, parse_utc  # noqa: E402
 from real_palace_loop import RealPalaceConsumptionLoop, RealPalaceSource  # noqa: E402
 
-SNAPSHOT_PATH = ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+SNAPSHOT_PATH = Path(
+    os.environ.get(
+        "SIMIGO_INFO_SNAPSHOT_PATH",
+        RUNTIME_ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+    )
+).resolve()
 SNAPSHOT_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
+VALIDITY_POLICY_PATH = Path(
+    os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH", "")
+).expanduser()
 CONTINUATION_POINT = "bounded-production-runtime-integration"
 REQUIRED_ITEMS = [
     "REAL-COLLECTION",
@@ -31,6 +48,27 @@ REQUIRED_ITEMS = [
 
 def emit(value: dict) -> None:
     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+
+
+def deployment_default_validity() -> str:
+    """Load the deployment validity authority; production mode requires it."""
+    if not VALIDITY_POLICY_PATH.is_file():
+        raise ValueError(
+            f"validity policy file missing: {VALIDITY_POLICY_PATH}"
+        )
+    try:
+        policy = json.loads(VALIDITY_POLICY_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"invalid validity policy: {error}") from error
+    if policy.get("schema_id") != "SIMIGO-INFO-VALIDITY-POLICY-V1":
+        raise ValueError("validity policy schema must be SIMIGO-INFO-VALIDITY-POLICY-V1")
+    if policy.get("missing_policy") != "REJECT":
+        raise ValueError("validity policy missing_policy must be REJECT")
+    if policy.get("dependency_propagation") != "ALL_TRANSITIVE":
+        raise ValueError("validity policy dependency_propagation must be ALL_TRANSITIVE")
+    valid_until = policy.get("default_valid_until_utc")
+    parse_utc(valid_until)
+    return valid_until
 
 
 def open_loop(database_path: str) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
@@ -48,13 +86,24 @@ def close_loop(
 
 
 def initialize(args: argparse.Namespace) -> None:
+    policy_valid_until = (
+        deployment_default_validity()
+        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
+        else None
+    )
+    if policy_valid_until:
+        if args.valid_until and args.valid_until != policy_valid_until:
+            raise ValueError("command validity conflicts with deployment validity policy")
+        valid_until = policy_valid_until
+    else:
+        valid_until = args.valid_until
     loop = CarrierInformationLoop.create(args.database)
     source = RealPalaceSource(str(SNAPSHOT_PATH), SNAPSHOT_SHA256)
     consumption = RealPalaceConsumptionLoop(loop, source)
     consumption.materialize_sources(
         CONTINUATION_POINT,
         count=7,
-        valid_until_utc=args.valid_until,
+        valid_until_utc=valid_until,
     )
     loop.define_demand(
         CONTINUATION_POINT,
@@ -330,6 +379,120 @@ def source_change(args: argparse.Namespace) -> None:
     emit(value)
 
 
+def record_blocked(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    loop.record_execution_state(
+        args.state_id,
+        continuation_point=CONTINUATION_POINT,
+        prior_state_id=args.prior_state_id or None,
+        demand_id=CONTINUATION_POINT,
+        status="BLOCKED",
+        pending_obligations=[args.reason],
+        next_continuation_point="await-operator-rollback-or-repair",
+        result_digest=digest({"blocked_reason": args.reason}),
+    )
+    state = loop.latest_execution_state(CONTINUATION_POINT)
+    value = {
+        "ok": True,
+        "command": "record-blocked",
+        "execution_state": state,
+    }
+    loop.commit()
+    close_loop(loop, source)
+    emit(value)
+
+
+def find_execution_state(loop: CarrierInformationLoop, state_id: str):
+    row = loop.carrier.connection.execute(
+        "SELECT record_object FROM is_index_entries "
+        "WHERE srs_identity = ? "
+        "ORDER BY append_order DESC LIMIT 1",
+        (f"execution_state:{CONTINUATION_POINT}:{state_id}",),
+    ).fetchone()
+    if row is None:
+        return None
+    return json.loads(loop.carrier.get_object(row["record_object"]))
+
+
+def rollback_to_state(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    target = find_execution_state(loop, args.target_state_id)
+    if target is None:
+        raise ValueError(f"unknown rollback state: {args.target_state_id}")
+    if target.get("status") != "ADVANCED":
+        raise ValueError("rollback target is not an ADVANCED execution state")
+    if target.get("demand_id") != CONTINUATION_POINT:
+        raise ValueError("rollback target demand mismatch")
+    prior = loop.latest_execution_state(CONTINUATION_POINT)
+    loop.record_execution_state(
+        args.new_state_id,
+        continuation_point=CONTINUATION_POINT,
+        prior_state_id=prior["state_id"] if prior else None,
+        demand_id=CONTINUATION_POINT,
+        status="ADVANCED",
+        pending_obligations=target["pending_obligations"],
+        next_continuation_point=target["next_continuation_point"],
+        result_digest=target["result_digest"],
+    )
+    after = loop.latest_execution_state(CONTINUATION_POINT)
+    value = {
+        "ok": True,
+        "command": "rollback-to-state",
+        "target": target,
+        "prior_execution_state": prior,
+        "execution_state": after,
+    }
+    loop.commit()
+    close_loop(loop, source)
+    emit(value)
+
+
+def diagnostics(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    evaluated_at = parse_utc(args.evaluated_at)
+    state = loop.latest_execution_state(CONTINUATION_POINT)
+    settlements = {}
+    missing_validity = []
+    stale_validity = []
+    invalid_validity = []
+    for item_id in REQUIRED_ITEMS:
+        item = loop.current_item(item_id)
+        settlement = loop.current_settlement(item_id)
+        settlements[item_id] = settlement.get("state") if settlement else None
+        valid_until = item.get("valid_until_utc") if item else None
+        if valid_until is None:
+            missing_validity.append(item_id)
+            continue
+        try:
+            if evaluated_at > parse_utc(valid_until):
+                stale_validity.append(item_id)
+        except ValueError:
+            invalid_validity.append(item_id)
+    object_rows = loop.carrier.connection.execute(
+        "SELECT object_id FROM is_objects ORDER BY created_order"
+    ).fetchall()
+    integrity = loop.carrier.connection.execute("PRAGMA integrity_check").fetchone()[0]
+    value = {
+        "ok": True,
+        "command": "diagnostics",
+        "database_integrity": integrity,
+        "execution_state": state,
+        "current_settlement_states": settlements,
+        "missing_validity_item_ids": missing_validity,
+        "stale_validity_item_ids": stale_validity,
+        "invalid_validity_item_ids": invalid_validity,
+        "carrier_object_count": len(object_rows),
+        "carrier_all_objects_verify": all(
+            loop.carrier.verify_object(row["object_id"]) for row in object_rows
+        ),
+        "rollback_policy": (
+            "APPEND_LAST_GOOD_ADVANCED_STATE; never mutate or delete history"
+        ),
+    }
+    close_loop(loop, source)
+    emit(value)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -370,6 +533,24 @@ def main() -> int:
     missing_parser.add_argument("--database", required=True)
     missing_parser.add_argument("--evaluated-at", required=True)
     missing_parser.set_defaults(handler=probe_missing)
+
+    blocked_parser = subparsers.add_parser("record-blocked")
+    blocked_parser.add_argument("--database", required=True)
+    blocked_parser.add_argument("--state-id", required=True)
+    blocked_parser.add_argument("--prior-state-id")
+    blocked_parser.add_argument("--reason", required=True)
+    blocked_parser.set_defaults(handler=record_blocked)
+
+    rollback_parser = subparsers.add_parser("rollback-to-state")
+    rollback_parser.add_argument("--database", required=True)
+    rollback_parser.add_argument("--target-state-id", required=True)
+    rollback_parser.add_argument("--new-state-id", required=True)
+    rollback_parser.set_defaults(handler=rollback_to_state)
+
+    diagnostics_parser = subparsers.add_parser("diagnostics")
+    diagnostics_parser.add_argument("--database", required=True)
+    diagnostics_parser.add_argument("--evaluated-at", required=True)
+    diagnostics_parser.set_defaults(handler=diagnostics)
 
     args = parser.parse_args()
     try:
