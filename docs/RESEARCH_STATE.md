@@ -24777,3 +24777,63 @@ freeze the design only; implementation, dry materialization, validation, D001
 handoff, observer, and any new campaign require separate explicit Human
 authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.5 Revision — 2026-10-09
+
+> **Status:** v1.4 = REVISE / RETAINED. Package v1.5 is DELIVERED FOR HUMAN
+> REVIEW. It remains design-only and authorizes no implementation or execution.
+
+```text
+v1.4 status                       = REVISE / RETAINED;
+v1.5 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / repair-run          = FORBIDDEN;
+new campaign                      = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 handoff                     = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.5 closes the Human-identified gaps:
+
+```text
+R1 one exact PASS/FAIL StageRecordCoreV5 schema, including conditional failure
+    evidence fields and exact-field rejection of unknown fields.
+R2 predecessor identity is `previous_stage_core_digest`, pointing only to the
+    prior StageRecordCoreV5 digest; Full digest is external integrity metadata.
+R3 path access uses frozen root identity, directory-descriptor component opens,
+    O_NOFOLLOW, descriptor revalidation and conservative regular-file
+    hard-link rejection.
+R4 independent PRIMARY_EVIDENCE_CHANNEL and TERMINATION_WITNESS_CHANNEL are
+    separated; primary closure failure emits a minimal witness, and missing
+    evidence remains auditable without reconstruction.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-v1.5-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.5_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.5. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, D001
+handoff, observer, and any new campaign require separate explicit Human
+authorizations.
+```
