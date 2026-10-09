@@ -98,13 +98,22 @@ class CarrierInformationLoop:
         return value
 
     def _put_index_object(self, identity: str, value: dict) -> str:
-        content = canonical(value)
-        object_id = self.carrier.write_object(content)
-        self.carrier.append_index_entry({
-            "srs_identity": identity,
-            "record_object": object_id,
-        })
-        return object_id
+        with self.carrier.atomic_write_group():
+            content = canonical(value)
+            object_id = self.carrier.write_object(content)
+            self.carrier.append_index_entry({
+                "srs_identity": identity,
+                "record_object": object_id,
+            })
+            return object_id
+
+    def current_demand_digest(self, demand_id: str) -> str:
+        demand = self.current_demand(demand_id)
+        if demand is None:
+            raise MissingLogicalEntry(f"demand:{demand_id}")
+        demand.pop("_identity", None)
+        demand.pop("_object_id", None)
+        return digest(demand)
 
     def define_demand(
         self,
@@ -166,19 +175,20 @@ class CarrierInformationLoop:
         dependency_id = f"dependency:{item_id}"
         history = self.carrier.get_dependency_history(dependency_id)
         revision = len(history) + 1
-        object_id, dependency_order = self.carrier.atomic_dependency_materialization(
-            content,
-            {
-                "dependency_id": dependency_id,
-                "content_address": "",  # filled by atomic helper
-                "revision": revision,
-                "reason": "source version",
-            },
-        )
-        self.carrier.append_index_entry({
-            "srs_identity": f"item:{item_id}",
-            "record_object": object_id,
-        })
+        with self.carrier.atomic_write_group():
+            object_id, dependency_order = self.carrier.atomic_dependency_materialization(
+                content,
+                {
+                    "dependency_id": dependency_id,
+                    "content_address": "",  # filled by atomic helper
+                    "revision": revision,
+                    "reason": "source version",
+                },
+            )
+            self.carrier.append_index_entry({
+                "srs_identity": f"item:{item_id}",
+                "record_object": object_id,
+            })
         return {
             "item_id": item_id,
             "object_id": object_id,
@@ -215,19 +225,20 @@ class CarrierInformationLoop:
         content = canonical(value)
         dependency_id = f"dependency:{item_id}"
         revision = len(self.carrier.get_dependency_history(dependency_id)) + 1
-        object_id, dependency_order = self.carrier.atomic_dependency_materialization(
-            content,
-            {
-                "dependency_id": dependency_id,
-                "content_address": "",
-                "revision": revision,
-                "reason": reason,
-            },
-        )
-        self.carrier.append_index_entry({
-            "srs_identity": f"item:{item_id}",
-            "record_object": object_id,
-        })
+        with self.carrier.atomic_write_group():
+            object_id, dependency_order = self.carrier.atomic_dependency_materialization(
+                content,
+                {
+                    "dependency_id": dependency_id,
+                    "content_address": "",
+                    "revision": revision,
+                    "reason": reason,
+                },
+            )
+            self.carrier.append_index_entry({
+                "srs_identity": f"item:{item_id}",
+                "record_object": object_id,
+            })
         return {
             "item_id": item_id,
             "object_id": object_id,
@@ -253,19 +264,20 @@ class CarrierInformationLoop:
         content = canonical(value)
         dependency_id = f"settlement:{item_id}"
         revision = len(self.carrier.get_dependency_history(dependency_id)) + 1
-        object_id, dependency_order = self.carrier.atomic_dependency_materialization(
-            content,
-            {
-                "dependency_id": dependency_id,
-                "content_address": "",
-                "revision": revision,
-                "reason": "settled result",
-            },
-        )
-        self.carrier.append_index_entry({
-            "srs_identity": f"settlement:{item_id}",
-            "record_object": object_id,
-        })
+        with self.carrier.atomic_write_group():
+            object_id, dependency_order = self.carrier.atomic_dependency_materialization(
+                content,
+                {
+                    "dependency_id": dependency_id,
+                    "content_address": "",
+                    "revision": revision,
+                    "reason": "settled result",
+                },
+            )
+            self.carrier.append_index_entry({
+                "srs_identity": f"settlement:{item_id}",
+                "record_object": object_id,
+            })
         return {
             "item_id": item_id,
             "object_id": object_id,
@@ -417,12 +429,14 @@ class CarrierInformationLoop:
         identity = f"execution_state:{continuation_point}:{state_id}"
         if self._current_index_object(identity) is not None:
             raise FileExistsError(identity)
+        demand_digest = self.current_demand_digest(demand_id)
         value = {
             "schema_id": "EINFO-EXECUTION-STATE-V1",
             "state_id": state_id,
             "continuation_point": continuation_point,
             "prior_state_id": prior_state_id,
             "demand_id": demand_id,
+            "demand_digest": demand_digest,
             "status": status,
             "pending_obligations": pending_obligations,
             "next_continuation_point": next_continuation_point,
@@ -465,6 +479,8 @@ class CarrierInformationLoop:
             raise MissingLogicalEntry(f"demand:{state['demand_id']}")
         if demand["continuation_point"] != continuation_point:
             raise ValueError("execution state and demand continuation points disagree")
+        if state.get("demand_digest") != self.current_demand_digest(state["demand_id"]):
+            raise ValueError("execution state demand contract digest mismatch")
         return {
             "state": state,
             "demand": demand,

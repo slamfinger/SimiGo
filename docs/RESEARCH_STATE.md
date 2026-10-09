@@ -25416,6 +25416,8 @@ docs/02-evidence/execution-information-loop-vertical-slice-20261009/
 ```text
 real structural graph = PASS;
 state-derived demand = PASS;
+state-bound demand contract digest = PASS;
+same-ID demand drift after checkpoint = rejected;
 valid reuse = PASS;
 explicit/dependency/source/validity invalidation = PASS;
 restart recovery = PASS;
@@ -25435,7 +25437,7 @@ Primary evidence:
 ```text
 docs/00-governance/SIMIGO_EXECUTION_INFORMATION_CLOSED_LOOP_FINAL_ACCEPTANCE_PACKAGE_20261009.md;
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
-  REAL_PALACE_CRASH_SAFE_COMPLETE_E2E_RECORD.json.
+  REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json.
 ```
 
 Reviewer tooling:
@@ -25443,5 +25445,6 @@ Reviewer tooling:
 ```text
 Multi-step ES/invalidation writes = atomic write group;
 one-command verifier = execution-information-loop/verify_acceptance.py;
-FINAL_ACCEPTANCE_REVIEW_MANIFEST.json = READY_FOR_HUMAN_REVIEW.
+FINAL_ACCEPTANCE_REVIEW_MANIFEST_V2.json = READY_FOR_HUMAN_REVIEW;
+primary evidence = REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json / 19 checks PASS.
 ```

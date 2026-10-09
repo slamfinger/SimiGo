@@ -11,8 +11,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/02-evidence/execution-information-loop-vertical-slice-20261009"
-PRIMARY_EVIDENCE = EVIDENCE / "REAL_PALACE_ATOMIC_REVIEW_COMPLETE_E2E_RECORD.json"
-PRIMARY_SHA256 = "14ec0e488b213000b15f622f60504db3953fbc9767ccb37e54ebd068d3d3d693"
+PRIMARY_EVIDENCE = EVIDENCE / "REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json"
+PRIMARY_SHA256 = "6121384bd54ab0462cd1eae0525b23e23a2a8efba08f4b2fe01a40822eba2e66"
 TESTS = [
     "selftest.py",
     "carrier_selftest.py",

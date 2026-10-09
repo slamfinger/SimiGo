@@ -115,6 +115,41 @@ def run() -> dict:
             and continuation["required_item_ids"][0] == "REAL-COLLECTION"
             and continuation["required_item_ids"][-1] == "REAL-7"
         )
+        carrier.define_demand(
+            "demand-drift-probe",
+            continuation_point="state-demand-drift-probe",
+            pending_obligations=["bind demand contract"],
+            continuation_conditions=["REAL-1 is required"],
+            required_item_ids=["REAL-1"],
+        )
+        carrier.record_execution_state(
+            "state-drift-probe",
+            continuation_point="state-demand-drift-probe",
+            prior_state_id=None,
+            demand_id="demand-drift-probe",
+            status="ADVANCED",
+            pending_obligations=["detect demand drift"],
+            next_continuation_point="reject-contract-drift",
+            result_digest=digest({"bound": "REAL-1"}),
+        )
+        carrier.define_demand(
+            "demand-drift-probe",
+            continuation_point="state-demand-drift-probe",
+            pending_obligations=["attempt unlawful contract drift"],
+            continuation_conditions=["REAL-2 has silently replaced REAL-1"],
+            required_item_ids=["REAL-2"],
+        )
+        try:
+            carrier.restore_continuation("state-demand-drift-probe")
+            drift_blocked = False
+            drift_error = ""
+        except ValueError as error:
+            drift_blocked = True
+            drift_error = str(error)
+        checks["restored_demand_contract_drift_rejected"] = (
+            drift_blocked
+            and drift_error == "execution state demand contract digest mismatch"
+        )
         second = loop.execute_real_demand(
             continuation["demand"]["demand_id"], "advance-002", count=7,
             evaluated_at_utc="2026-10-09T00:01:00Z",

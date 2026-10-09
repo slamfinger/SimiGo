@@ -2,7 +2,7 @@
 
 > **Status:** READY FOR HUMAN REVIEW — ISOLATED REAL-SOURCE CLOSED LOOP COMPLETE  
 > **Date:** 2026-10-09  
-> **Implementation base:** `5e849a7a` plus final crash/ambiguity/missing-information, atomic-write-group and review-manifest extensions  
+> **Implementation base:** `5e849a7a` plus final crash/ambiguity/missing-information, contract-bound-state, atomic-write-group and review-manifest extensions  
 > **Overall ruling:** PENDING HUMAN REVIEW
 
 ## 1. Review object
@@ -24,8 +24,8 @@ and canonical Information Space are not mutated.
 Primary evidence:
 
 ```text
-REAL_PALACE_CRASH_SAFE_COMPLETE_E2E_RECORD.json
-SHA256 = 14ec0e488b213000b15f622f60504db3953fbc9767ccb37e54ebd068d3d3d693
+REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json
+SHA256 = 6121384bd54ab0462cd1eae0525b23e23a2a8efba08f4b2fe01a40822eba2e66
 ```
 
 The same database and real-source-copy flow proves:
@@ -34,6 +34,8 @@ The same database and real-source-copy flow proves:
 first compute = nine real structural graph items;
 restart recovery = PASS;
 state-derived demand = PASS;
+demand contract digest binding = PASS;
+same-ID demand drift after checkpoint = rejected;
 valid settlements = all nine REUSE;
 explicit REAL-3 invalidation = REAL-3/REAL-4 selective COMPUTE;
 REAL-1 source change = only REAL-1 COMPUTE;
@@ -53,6 +55,7 @@ latest Execution State = restorable.
 | --- | --- |
 | Information and settlement persistence / verification | PASS |
 | ES-derived minimal information demand | PASS |
+| State-bound demand contract / drift rejection | PASS |
 | Source/version/dependency/validity maintenance | PASS |
 | Unaffected incremental reuse | PASS |
 | Missing, stale, invalid, dependency-changed selective recompute | PASS |
@@ -80,8 +83,8 @@ SHA256 = dfcaca97b00f801579d47bcef17e9a83d23f0a203058b24780d9df9eee427296
 Review manifest:
 
 ```text
-FINAL_ACCEPTANCE_REVIEW_MANIFEST.json
-SHA256 = 01da2bdbe879b592ef038e8b907b3efa63b2766098a6c7c1175e62397fca5c34
+FINAL_ACCEPTANCE_REVIEW_MANIFEST_V2.json
+SHA256 = 8c475dcb410a35ec88952856e07c9b8bc222254e1e716363d056c398c06df211
 ```
 
 One-command reviewer check:
@@ -95,6 +98,8 @@ primary evidence SHA-256, and requires every integrated check to be true.
 Multi-step Execution State and explicit invalidation writes are now enclosed in
 the carrier's reentrant atomic write group; a later write failure cannot leave a
 half-recorded transition.
+Execution State also binds the canonical demand digest; a same-ID demand rewrite
+after checkpoint cannot silently change the restored continuation contract.
 
 ## 4. Human review questions
 
