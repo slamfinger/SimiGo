@@ -37,6 +37,14 @@ sealed Instrumentation packages.
 python3 execution-information-loop/selftest.py
 ```
 
+## Final acceptance check
+
+```bash
+python3 execution-information-loop/verify_acceptance.py
+```
+
+This reruns all five selftests and verifies the primary evidence digest.
+
 ## D002 carrier integration
 
 `carrier_loop.py` reuses the existing D002 `DatabaseBackedIS` append-only carrier.

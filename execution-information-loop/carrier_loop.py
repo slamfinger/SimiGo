@@ -278,6 +278,17 @@ class CarrierInformationLoop:
         reason: str,
         include_dependents: bool = True,
     ) -> dict:
+        with self.carrier.atomic_write_group():
+            return self._invalidate_settlement_in_group(
+                target_item_id, reason, include_dependents
+            )
+
+    def _invalidate_settlement_in_group(
+        self,
+        target_item_id: str,
+        reason: str,
+        include_dependents: bool = True,
+    ) -> dict:
         """Append explicit invalidation records for an item and its dependents."""
         items = {}
         for row in self.carrier.connection.execute(
@@ -368,6 +379,29 @@ class CarrierInformationLoop:
         return value
 
     def record_execution_state(
+        self,
+        state_id: str,
+        continuation_point: str,
+        prior_state_id: Optional[str],
+        demand_id: str,
+        status: str,
+        pending_obligations: list[str],
+        next_continuation_point: str,
+        result_digest: str,
+    ) -> dict:
+        with self.carrier.atomic_write_group():
+            return self._record_execution_state_in_group(
+                state_id,
+                continuation_point,
+                prior_state_id,
+                demand_id,
+                status,
+                pending_obligations,
+                next_continuation_point,
+                result_digest,
+            )
+
+    def _record_execution_state_in_group(
         self,
         state_id: str,
         continuation_point: str,

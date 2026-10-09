@@ -25437,3 +25437,11 @@ docs/00-governance/SIMIGO_EXECUTION_INFORMATION_CLOSED_LOOP_FINAL_ACCEPTANCE_PAC
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_CRASH_SAFE_COMPLETE_E2E_RECORD.json.
 ```
+
+Reviewer tooling:
+
+```text
+Multi-step ES/invalidation writes = atomic write group;
+one-command verifier = execution-information-loop/verify_acceptance.py;
+FINAL_ACCEPTANCE_REVIEW_MANIFEST.json = READY_FOR_HUMAN_REVIEW.
+```

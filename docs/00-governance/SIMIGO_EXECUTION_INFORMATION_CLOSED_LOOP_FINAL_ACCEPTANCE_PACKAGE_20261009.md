@@ -2,7 +2,7 @@
 
 > **Status:** READY FOR HUMAN REVIEW — ISOLATED REAL-SOURCE CLOSED LOOP COMPLETE  
 > **Date:** 2026-10-09  
-> **Implementation base:** `5e849a7a` plus the final crash/ambiguity/missing-information extension in this package commit  
+> **Implementation base:** `5e849a7a` plus final crash/ambiguity/missing-information, atomic-write-group and review-manifest extensions  
 > **Overall ruling:** PENDING HUMAN REVIEW
 
 ## 1. Review object
@@ -76,6 +76,25 @@ State-driven evidence:
 REAL_PALACE_STATE_DRIVEN_CLOSED_LOOP_E2E_RECORD.json
 SHA256 = dfcaca97b00f801579d47bcef17e9a83d23f0a203058b24780d9df9eee427296
 ```
+
+Review manifest:
+
+```text
+FINAL_ACCEPTANCE_REVIEW_MANIFEST.json
+SHA256 = 01da2bdbe879b592ef038e8b907b3efa63b2766098a6c7c1175e62397fca5c34
+```
+
+One-command reviewer check:
+
+```bash
+python3 execution-information-loop/verify_acceptance.py
+```
+
+This verifier reruns all five selftests, parses each PASS report, binds the
+primary evidence SHA-256, and requires every integrated check to be true.
+Multi-step Execution State and explicit invalidation writes are now enclosed in
+the carrier's reentrant atomic write group; a later write failure cannot leave a
+half-recorded transition.
 
 ## 4. Human review questions
 
