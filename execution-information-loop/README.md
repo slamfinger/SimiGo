@@ -94,6 +94,7 @@ carrier and one byte-identical real-source copy:
 ```text
 compute the real structural graph;
 persist and restore Execution State;
+derive the next demand from restored Execution State;
 reuse all valid settlements;
 propagate explicit REAL-3 invalidation to REAL-4;
 apply a REAL-1 source change without recomputing unaffected records;

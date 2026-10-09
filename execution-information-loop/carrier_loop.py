@@ -419,6 +419,24 @@ class CarrierInformationLoop:
             value.pop("_object_id", None)
         return value
 
+    def restore_continuation(self, continuation_point: str) -> dict:
+        """Restore the latest lawful state and its ES-derived information demand."""
+        state = self.latest_execution_state(continuation_point)
+        if state is None:
+            raise MissingLogicalEntry(f"execution state:{continuation_point}")
+        if state["status"] == "BLOCKED":
+            raise ValueError("blocked execution state cannot continue without repair")
+        demand = self.current_demand(state["demand_id"])
+        if demand is None:
+            raise MissingLogicalEntry(f"demand:{state['demand_id']}")
+        if demand["continuation_point"] != continuation_point:
+            raise ValueError("execution state and demand continuation points disagree")
+        return {
+            "state": state,
+            "demand": demand,
+            "required_item_ids": list(demand["required_item_ids"]),
+        }
+
     def execute_demand(
         self,
         demand_id: str,

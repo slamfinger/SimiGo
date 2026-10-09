@@ -47,7 +47,28 @@ REAL_PALACE_INTEGRATED_CLOSED_LOOP_E2E_RECORD.json
   SHA256 = ce40eed5ca520b9dbd66808900afee2c2508c522fb6933afccf1aaed6895873e.
 ```
 
-## 3. Remaining boundaries
+## 3. State-driven extension
+
+The flow was then strengthened so reopen does not rely on a hardcoded demand id.
+The new `restore_continuation()` API reads the latest Execution State, rejects a
+blocked state, loads its bound demand, checks continuation-point agreement, and
+exposes only that demand's required item closure. The same real-source flow then
+continues from that restored demand.
+
+Additional check:
+
+```text
+demand_derived_from_restored_execution_state = PASS.
+```
+
+Second write-once evidence:
+
+```text
+REAL_PALACE_STATE_DRIVEN_CLOSED_LOOP_E2E_RECORD.json
+  SHA256 = dfcaca97b00f801579d47bcef17e9a83d23f0a203058b24780d9df9eee427296.
+```
+
+## 4. Remaining boundaries
 
 ```text
 canonical PALACE mutation = false;

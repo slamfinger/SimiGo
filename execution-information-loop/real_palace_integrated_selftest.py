@@ -98,16 +98,22 @@ def run() -> dict:
         source.close()
 
         carrier, loop = open_loop(database, snapshot, snapshot_sha256)
-        restored = carrier.latest_execution_state(
+        continuation = carrier.restore_continuation(
             "real-palace-integrated-closed-loop"
         )
+        restored = continuation["state"]
         checks["execution_state_restored"] = (
             restored is not None
             and restored["state_id"] == "state-001-initial"
             and restored["status"] == "ADVANCED"
         )
+        checks["demand_derived_from_restored_execution_state"] = (
+            continuation["demand"]["demand_id"] == "demand-real-001"
+            and continuation["required_item_ids"][0] == "REAL-COLLECTION"
+            and continuation["required_item_ids"][-1] == "REAL-7"
+        )
         second = loop.execute_real_demand(
-            "demand-real-001", "advance-002", count=7,
+            continuation["demand"]["demand_id"], "advance-002", count=7,
             evaluated_at_utc="2026-10-09T00:01:00Z",
         )
         run_results["second"] = second
@@ -252,7 +258,7 @@ def run() -> dict:
             final.carrier.verify_object(row["object_id"]) for row in object_rows
         )
         checks["execution_state_chain_latest_restorable"] = (
-            final.latest_execution_state("real-palace-integrated-closed-loop")["state_id"]
+            final.restore_continuation("real-palace-integrated-closed-loop")["state"]["state_id"]
             == "state-005-expiration"
         )
         final.close()

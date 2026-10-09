@@ -25392,3 +25392,17 @@ docs/00-governance/SIMIGO_REAL_PALACE_INTEGRATED_CLOSED_LOOP_PASS_20261009.md;
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_INTEGRATED_CLOSED_LOOP_E2E_RECORD.json.
 ```
+
+State-driven extension:
+
+```text
+restore_continuation() loads latest Execution State;
+blocked state cannot continue automatically;
+bound demand and continuation point are validated;
+demand_derived_from_restored_execution_state = PASS.
+```
+
+```text
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_STATE_DRIVEN_CLOSED_LOOP_E2E_RECORD.json.
+```
