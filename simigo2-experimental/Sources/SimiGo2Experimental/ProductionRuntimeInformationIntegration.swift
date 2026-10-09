@@ -153,7 +153,7 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     if let launchConfiguration {
       return launchConfiguration.pythonExecutable
     }
-    return labRoot.appendingPathComponent(".build/mp-venv312/bin/python")
+    return URL(fileURLWithPath: "/usr/bin/python3")
   }
 
   private func runBridge(_ command: String, arguments: [String]) throws -> [String: Any] {
@@ -171,15 +171,16 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         )
       }
     }
-    let pythonExecutable = FileManager.default.fileExists(atPath: pythonURL.path)
-      ? pythonURL
-      : URL(fileURLWithPath: "/usr/bin/env")
-    let processArguments = pythonExecutable.lastPathComponent == "python"
-      ? [bridgeURL.path, command] + arguments
-      : [bridgeURL.path, command] + arguments
+    guard FileManager.default.fileExists(atPath: pythonURL.path) else {
+      throw ProductionRuntimeInformationError.launchConfigurationInvalid(
+        path: pythonURL.path,
+        message: "Python executable is missing"
+      )
+    }
+    let processArguments = [bridgeURL.path, command] + arguments
 
     let process = Process()
-    process.executableURL = pythonExecutable
+    process.executableURL = pythonURL
     process.arguments = processArguments
     if let launchConfiguration {
       var environment = process.environment ?? ProcessInfo.processInfo.environment

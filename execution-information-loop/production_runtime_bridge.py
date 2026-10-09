@@ -8,6 +8,7 @@ append-only Information Space carrier.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -50,7 +51,7 @@ def emit(value: dict) -> None:
     print(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
 
 
-def deployment_default_validity() -> str:
+def load_deployment_validity_policy() -> dict:
     """Load the deployment validity authority; production mode requires it."""
     if not VALIDITY_POLICY_PATH.is_file():
         raise ValueError(
@@ -66,9 +67,18 @@ def deployment_default_validity() -> str:
         raise ValueError("validity policy missing_policy must be REJECT")
     if policy.get("dependency_propagation") != "ALL_TRANSITIVE":
         raise ValueError("validity policy dependency_propagation must be ALL_TRANSITIVE")
-    valid_until = policy.get("default_valid_until_utc")
-    parse_utc(valid_until)
-    return valid_until
+    for field in ["policy_version", "policy_source"]:
+        if not isinstance(policy.get(field), str) or not policy.get(field):
+            raise ValueError(f"validity policy {field} must be a nonempty string")
+    parse_utc(policy["default_valid_until_utc"])
+    policy["policy_sha256"] = hashlib.sha256(
+        json.dumps(policy, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return policy
+
+
+def deployment_default_validity(policy: dict) -> str:
+    return policy["default_valid_until_utc"]
 
 
 def open_loop(database_path: str) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
@@ -86,12 +96,13 @@ def close_loop(
 
 
 def initialize(args: argparse.Namespace) -> None:
-    policy_valid_until = (
-        deployment_default_validity()
+    validity_policy = (
+        load_deployment_validity_policy()
         if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
         else None
     )
-    if policy_valid_until:
+    if validity_policy:
+        policy_valid_until = deployment_default_validity(validity_policy)
         if args.valid_until and args.valid_until != policy_valid_until:
             raise ValueError("command validity conflicts with deployment validity policy")
         valid_until = policy_valid_until
@@ -104,6 +115,7 @@ def initialize(args: argparse.Namespace) -> None:
         CONTINUATION_POINT,
         count=7,
         valid_until_utc=valid_until,
+        validity_policy=validity_policy,
     )
     loop.define_demand(
         CONTINUATION_POINT,
@@ -187,7 +199,6 @@ def audit(args: argparse.Namespace) -> None:
 
 def execute(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
-    evaluated_at = parse_utc(args.evaluated_at)
     prior_state = loop.latest_execution_state(CONTINUATION_POINT)
     if prior_state is None:
         demand = loop.current_demand(CONTINUATION_POINT)
@@ -198,111 +209,12 @@ def execute(args: argparse.Namespace) -> None:
         restored = loop.restore_continuation(CONTINUATION_POINT)
         prior_state = restored["state"]
         required = restored["required_item_ids"]
-    stale_item_ids: list[str] = []
-    missing_validity_item_ids: list[str] = []
-    invalid_validity_item_ids: list[str] = []
-    for item_id in required:
-        item = loop.current_item(item_id)
-        valid_until = item.get("valid_until_utc") if item else None
-        if valid_until is None:
-            missing_validity_item_ids.append(item_id)
-            continue
-        try:
-            if evaluated_at > parse_utc(valid_until):
-                stale_item_ids.append(item_id)
-        except ValueError:
-            invalid_validity_item_ids.append(item_id)
-    if missing_validity_item_ids:
-        result = {
-            "demand_id": CONTINUATION_POINT,
-            "state": "BLOCKED_VALIDITY_POLICY_MISSING",
-            "validity_failure_item_ids": missing_validity_item_ids,
-            "actions": [
-                {
-                    "item_id": item_id,
-                    "action": "BLOCKED_VALIDITY_POLICY_MISSING",
-                }
-                for item_id in missing_validity_item_ids
-            ],
-            "advanced": False,
-            "failure_reason": "validity policy is undefined; fail closed",
-        }
-        emit({
-            "ok": True,
-            "command": "execute",
-            "prior_execution_state": prior_state,
-            "restored_required_item_ids": required,
-            "result": result,
-        })
-        close_loop(loop, source)
-        return
-    if invalid_validity_item_ids:
-        result = {
-            "demand_id": CONTINUATION_POINT,
-            "state": "BLOCKED_INVALID_VALIDITY",
-            "validity_failure_item_ids": invalid_validity_item_ids,
-            "actions": [
-                {
-                    "item_id": item_id,
-                    "action": "BLOCKED_INVALID_VALIDITY",
-                }
-                for item_id in invalid_validity_item_ids
-            ],
-            "advanced": False,
-            "failure_reason": "validity policy is malformed; fail closed",
-        }
-        emit({
-            "ok": True,
-            "command": "execute",
-            "prior_execution_state": prior_state,
-            "restored_required_item_ids": required,
-            "result": result,
-        })
-        close_loop(loop, source)
-        return
-    if stale_item_ids:
-        result = {
-            "demand_id": CONTINUATION_POINT,
-            "state": "BLOCKED_STALE_VALIDITY",
-            "validity_failure_item_ids": stale_item_ids,
-            "actions": [
-                {
-                    "item_id": item_id,
-                    "action": "BLOCKED_STALE_VALIDITY",
-                }
-                for item_id in stale_item_ids
-            ],
-            "advanced": False,
-            "failure_reason": "source validity expired without refreshed authorization",
-        }
-        emit({
-            "ok": True,
-            "command": "execute",
-            "prior_execution_state": prior_state,
-            "restored_required_item_ids": required,
-            "result": result,
-        })
-        close_loop(loop, source)
-        return
     result = source.execute_real_demand(
         CONTINUATION_POINT,
         args.advancement,
         count=7,
         evaluated_at_utc=args.evaluated_at,
     )
-    if result["advanced"]:
-        loop.record_execution_state(
-            args.advancement,
-            continuation_point=CONTINUATION_POINT,
-            prior_state_id=prior_state["state_id"] if prior_state else None,
-            demand_id=CONTINUATION_POINT,
-            status="ADVANCED",
-            pending_obligations=[
-                "continue after production-runtime information reconciliation"
-            ],
-            next_continuation_point="await-next-production-runtime-demand",
-            result_digest=digest(result["result"]),
-        )
     value = {
         "ok": True,
         "command": "execute",

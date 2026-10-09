@@ -25649,3 +25649,35 @@ docs/00-governance/SIMIGO_INTEGRATED_SIMIGO_PROOF_ISOLATED_E2E_PASS_20261009.md;
 docs/02-evidence/integrated-simigo-proof-20261009/
   INTEGRATED_SIMIGO_PROOF_E2E_RECORD_V1.json.
 ```
+
+## Controlled Production Pilot v2 Code-Audit Revision — 2026-10-10
+
+> **Status:** BOUNDED PILOT REVISION COMPLETE. Local verification PASS;
+> production deployment remains NOT AUTHORIZED.
+
+```text
+settlement + durable ES intent = same carrier transaction;
+runtime application status = PENDING_SWIFT;
+transitive validity gate = complete dependency closure preflight;
+real blocked path = BLOCKED state appended with prior state;
+validity policy identity = version/source required and settlement-bound;
+Swift Python fallback = removed / explicit system Python;
+stale validity executable probe = REAL-6 BLOCKED, no settlement;
+malformed time probe = BLOCKED state persisted, no settlement;
+carrier selftest = PASS / 17 checks;
+selected Swift tests = PASS / 9 tests / 0 failures;
+production traffic/public release = none;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+D-002 rerun/repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+full Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V2_CODE_AUDIT_REVISION_20261010.md;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V2_E2E_RECORD.json.
+```

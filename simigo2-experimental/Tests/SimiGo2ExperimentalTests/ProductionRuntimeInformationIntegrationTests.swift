@@ -140,7 +140,9 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     }
 
     let status = try integration.status(database: database)
-    XCTAssertEqual(status["execution_state"] as? String ?? "null", "null")
+    let staleStatus = status["execution_state"] as? [String: Any]
+    XCTAssertEqual(staleStatus?["state_id"] as? String, "blocked-phase")
+    XCTAssertEqual(staleStatus?["status"] as? String, "BLOCKED")
   }
 
   func testMissingValidityPolicyBlocksRealRuntimeWithoutExecution() async throws {
@@ -164,13 +166,15 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
       ) = error else {
         return XCTFail("unexpected production error: \(error)")
       }
-      XCTAssertEqual(state, "BLOCKED_VALIDITY_POLICY_MISSING")
+      XCTAssertEqual(state, "BLOCKED_MISSING_VALIDITY")
       XCTAssertEqual(validityFailureItemIDs.count, 9)
       XCTAssertEqual(validityFailureItemIDs.count, Set(validityFailureItemIDs).count)
     }
 
     let status = try integration.status(database: database)
-    XCTAssertEqual(status["execution_state"] as? String ?? "null", "null")
+    let missingStatus = status["execution_state"] as? [String: Any]
+    XCTAssertEqual(missingStatus?["state_id"] as? String, "missing-validity-phase")
+    XCTAssertEqual(missingStatus?["status"] as? String, "BLOCKED")
   }
 
   func testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement() async throws {

@@ -32,6 +32,10 @@ def actions(result: dict) -> dict:
 
 def run() -> dict:
     checks = {}
+    validity_policy = {
+        "policy_version": "carrier-selftest-v1",
+        "policy_source": "ISOLATED_SELFTEST",
+    }
     with tempfile.TemporaryDirectory(prefix="simigo-einfo-carrier-") as temporary:
         database = str(Path(temporary) / "carrier_information_space.sqlite")
 
@@ -50,8 +54,12 @@ def run() -> dict:
         loop.put_source(
             "demand-001", "B", "derived_input", "v1", {"input": 5}, ["A"],
             valid_until_utc="2026-10-09T00:01:30Z",
+            validity_policy=validity_policy,
         )
-        loop.put_source("demand-001", "C", "derived_input", "v1", {"factor": 3}, ["B"])
+        loop.put_source(
+            "demand-001", "C", "derived_input", "v1", {"factor": 3}, ["B"],
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
         loop.commit()
         loop.close()
 
@@ -65,6 +73,15 @@ def run() -> dict:
             "A": "COMPUTE", "B": "COMPUTE", "C": "COMPUTE"
         }
         checks["first_run_advances_es"] = first["advanced"] is True
+        checks["settlement_and_es_intent_commit_atomically"] = (
+            first["execution_state"]["runtime_application_status"] == "PENDING_SWIFT"
+        )
+        settlement = restored.current_settlement("B")
+        checks["validity_policy_bound_to_settlement"] = (
+            settlement is not None
+            and settlement["result"]["validity_policy"] == validity_policy
+            and settlement["basis"]["validity_policy"] == validity_policy
+        )
         restored.commit()
         restored.close()
 
@@ -110,11 +127,16 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:02:00Z",
         )
         run_results["stale"] = stale_result
-        checks["expired_settlement_recomputes_B_and_dependent_C"] = (
-            actions(stale_result) == {
-                "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
-            }
-            and stale_result["actions"][1]["reason"] == "VALIDITY_EXPIRED"
+        stale_state = stale.latest_execution_state("report-generation")
+        checks["expired_transitive_dependency_fails_closed"] = (
+            stale_result["state"] == "BLOCKED_STALE_VALIDITY"
+            and stale_result["validity_failure_item_ids"] == ["B"]
+            and stale_result["advanced"] is False
+            and stale_state["status"] == "BLOCKED"
+            and stale_state["prior_state_id"] == "state-after-advance-002"
+            and stale_state["pending_obligations"] == [
+                "source validity expired without refreshed authorization"
+            ]
         )
         stale.commit()
         stale.close()
@@ -155,12 +177,24 @@ def run() -> dict:
             and blocked["missing_item_ids"] == ["D"]
             and blocked["advanced"] is False
         )
+        blocked_state = missing.latest_execution_state("blocked-report")
+        checks["blocked_state_is_persisted"] = (
+            blocked_state is not None
+            and blocked_state["state_id"] == "advance-blocked"
+            and blocked_state["status"] == "BLOCKED"
+        )
         missing.commit()
         missing.close()
 
         rollback = CarrierInformationLoop.open(database)
-        rollback.put_source("demand-001", "D", "manual_input", "v1", {"input": 9})
-        rollback.put_source("demand-001", "E", "manual_input", "v1", {"input": 10})
+        rollback.put_source(
+            "demand-001", "D", "manual_input", "v1", {"input": 9},
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
+        rollback.put_source(
+            "demand-001", "E", "manual_input", "v1", {"input": 10},
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
         rollback.define_demand(
             "demand-rollback",
             continuation_point="atomic-rollback-check",

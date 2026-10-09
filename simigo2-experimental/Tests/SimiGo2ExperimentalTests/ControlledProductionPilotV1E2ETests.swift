@@ -138,6 +138,67 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     XCTAssertEqual(reuse.report.reusedItemIDs, requiredItems)
     try persist(reuse.handle, to: pilot.handleFile)
 
+    // A transitive source-window expiration must persist a real BLOCKED
+    // state without adding a settlement or advancing the Swift runtime.
+    let beforeStaleAudit = try restarted.audit(database: pilot.database)
+    try restarted.applyIsolatedSourceRevision(
+      database: pilot.database,
+      itemID: "REAL-6",
+      version: "controlled-pilot-v1-expired-revision",
+      validUntil: "2020-01-01T00:00:00Z"
+    )
+    do {
+      _ = try await restarted.continueWithRealInformation(
+        database: pilot.database,
+        handle: reuse.handle,
+        advancementID: "pilot-stale",
+        evaluatedAtUTC: "2026-10-09T00:01:30Z"
+      )
+      XCTFail("expired source validity must block")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .blockedInformationDemand(
+        "pilot-stale",
+        "BLOCKED_STALE_VALIDITY",
+        let staleItems
+      ) = error else {
+        return XCTFail("unexpected production error: \(error)")
+      }
+      XCTAssertEqual(staleItems, ["REAL-6"])
+    }
+    let staleDiagnostics = try restarted.diagnostics(
+      database: pilot.database,
+      evaluatedAtUTC: "2026-10-09T00:01:30Z"
+    )
+    let staleState = staleDiagnostics["execution_state"] as? [String: Any]
+    XCTAssertEqual(staleState?["state_id"] as? String, "pilot-stale")
+    XCTAssertEqual(staleState?["status"] as? String, "BLOCKED")
+    XCTAssertEqual(staleState?["prior_state_id"] as? String, "pilot-reuse")
+    let afterStaleAudit = try restarted.audit(database: pilot.database)
+    XCTAssertEqual(
+      afterStaleAudit["settlement_dependency_count"] as? Int,
+      beforeStaleAudit["settlement_dependency_count"] as? Int
+    )
+
+    // Refresh the expired source, then append a lawful recovery state before
+    // continuing the remaining pilot phases.
+    try restarted.applyIsolatedSourceRevision(
+      database: pilot.database,
+      itemID: "REAL-6",
+      version: "controlled-pilot-v1-refreshed-revision"
+    )
+    _ = try restarted.rollbackToExecutionState(
+      database: pilot.database,
+      targetStateID: "pilot-reuse",
+      newStateID: "pilot-recovery-before-invalidation"
+    )
+    let refreshed = try await restarted.continueWithRealInformation(
+      database: pilot.database,
+      handle: reuse.handle,
+      advancementID: "pilot-refresh-expired",
+      evaluatedAtUTC: "2026-10-09T00:01:40Z"
+    )
+    try persist(refreshed.handle, to: pilot.handleFile)
+
     // REAL-3 invalidation must propagate to dependent REAL-4.
     try restarted.invalidate(
       database: pilot.database,
@@ -146,7 +207,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     )
     let selective = try await restarted.continueWithRealInformation(
       database: pilot.database,
-      handle: reuse.handle,
+      handle: refreshed.handle,
       advancementID: "pilot-invalidation",
       evaluatedAtUTC: "2026-10-09T00:02:00Z"
     )
@@ -212,6 +273,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     XCTAssertEqual(missingResult?["advanced"] as? Bool, false)
 
     // Malformed observation time fails closed.
+    let beforeMalformedAudit = try restarted.audit(database: pilot.database)
     do {
       _ = try await restarted.continueWithRealInformation(
         database: pilot.database,
@@ -220,9 +282,32 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
         evaluatedAtUTC: "not-a-time"
       )
       XCTFail("malformed observation time must fail closed")
-    } catch {
-      // The Swift/Python boundary must reject the demand without committing.
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .blockedInformationDemand(
+        "pilot-malformed",
+        "BLOCKED_VALIDITY_FAILURE",
+        _
+      ) = error else {
+        return XCTFail("unexpected production error: \(error)")
+      }
+      let malformedDiagnostics = try restarted.diagnostics(
+        database: pilot.database,
+        evaluatedAtUTC: "2026-10-09T00:05:00Z"
+      )
+      let malformedState = malformedDiagnostics["execution_state"] as? [String: Any]
+      XCTAssertEqual(malformedState?["state_id"] as? String, "pilot-malformed")
+      XCTAssertEqual(malformedState?["status"] as? String, "BLOCKED")
+      let afterMalformedAudit = try restarted.audit(database: pilot.database)
+      XCTAssertEqual(
+        afterMalformedAudit["settlement_dependency_count"] as? Int,
+        beforeMalformedAudit["settlement_dependency_count"] as? Int
+      )
     }
+    _ = try restarted.rollbackToExecutionState(
+      database: pilot.database,
+      targetStateID: "pilot-source-revision",
+      newStateID: "pilot-post-malformed-good"
+    )
 
     // Corrupted persisted lifecycle cannot be silently restored as active.
     let goodRecord = SerializedProductionExecutionState(handle: revised.handle)
@@ -250,7 +335,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     XCTAssertEqual(finalAudit["carrier_all_objects_verify"] as? Bool, true)
     XCTAssertGreaterThan(finalAudit["carrier_object_count"] as? Int ?? 0, 0)
     let finalState = finalAudit["execution_state"] as? [String: Any]
-    XCTAssertEqual(finalState?["state_id"] as? String, "pilot-rollback-good")
+    XCTAssertEqual(finalState?["state_id"] as? String, "pilot-post-malformed-good")
     XCTAssertEqual(finalState?["status"] as? String, "ADVANCED")
   }
 }

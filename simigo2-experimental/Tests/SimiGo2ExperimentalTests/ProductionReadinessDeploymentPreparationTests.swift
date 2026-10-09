@@ -42,6 +42,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
     let policy = bundle.appendingPathComponent("validity-policy.json")
     let policyObject: [String: Any] = [
       "schema_id": "SIMIGO-INFO-VALIDITY-POLICY-V1",
+      "policy_version": "production-readiness-v1",
       "policy_source": "DEPLOYMENT_VALIDITY_POLICY",
       "missing_policy": "REJECT",
       "dependency_propagation": "ALL_TRANSITIVE",
@@ -108,6 +109,45 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
         return XCTFail("unexpected production error: \(error)")
       }
       XCTAssertTrue(message.contains("required production runtime file"))
+    }
+  }
+
+  func testPackagedRuntimeRejectsIncompleteValidityPolicyIdentity() throws {
+    let (bundle, policy) = try stageRuntimeBundle()
+    let configuration = ProductionRuntimeLaunchConfiguration(
+      runtimeRoot: bundle,
+      pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
+      snapshotPath: bundle.appendingPathComponent("PALACE_SNAPSHOT.sqlite"),
+      validityPolicyPath: policy
+    )
+    let integration = ProductionRuntimeInformationIntegration(configuration: configuration)
+
+    let basePolicyObject = try JSONSerialization.jsonObject(
+      with: Data(contentsOf: policy)
+    ) as! [String: Any]
+    for missingField in ["policy_version", "policy_source"] {
+      var policyObject = basePolicyObject
+      policyObject.removeValue(forKey: missingField)
+      try JSONSerialization.data(
+        withJSONObject: policyObject,
+        options: [.sortedKeys]
+      ).write(to: policy, options: .atomic)
+
+      do {
+        try integration.initialize(
+          database: bundle.appendingPathComponent("runtime.sqlite"),
+          validUntil: nil
+        )
+        XCTFail("\(missingField) must be required")
+      } catch let error as ProductionRuntimeInformationError {
+        guard case .bridgeFailed(_, _, let message) = error else {
+          return XCTFail("unexpected production error: \(error)")
+        }
+        XCTAssertTrue(
+          message.contains(missingField),
+          "missing \(missingField) produced: \(message)"
+        )
+      }
     }
   }
 

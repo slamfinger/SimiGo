@@ -146,6 +146,7 @@ class RealPalaceConsumptionLoop:
         demand_id: str,
         count: int = 7,
         valid_until_utc: Optional[str] = None,
+        validity_policy: Optional[dict] = None,
     ) -> list[dict]:
         source = self.source.structural_records(count)
         self.carrier.put_source(
@@ -156,6 +157,7 @@ class RealPalaceConsumptionLoop:
             source_payload=source["collection"],
             dependencies=[],
             valid_until_utc=valid_until_utc,
+            validity_policy=validity_policy,
         )
         self.carrier.put_source(
             demand_id=demand_id,
@@ -165,6 +167,7 @@ class RealPalaceConsumptionLoop:
             source_payload=source["segment"],
             dependencies=["REAL-COLLECTION"],
             valid_until_utc=valid_until_utc,
+            validity_policy=validity_policy,
         )
         records = source["embeddings"]
         item_by_parent: dict[str, str] = {}
@@ -182,6 +185,7 @@ class RealPalaceConsumptionLoop:
                 source_payload=record,
                 dependencies=dependencies,
                 valid_until_utc=valid_until_utc,
+                validity_policy=validity_policy,
             )
             if parent:
                 item_by_parent[parent] = item_id

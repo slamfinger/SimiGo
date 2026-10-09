@@ -145,6 +145,7 @@ class CarrierInformationLoop:
         source_payload: dict,
         dependencies: Optional[list[str]] = None,
         valid_until_utc: Optional[str] = None,
+        validity_policy: Optional[dict] = None,
     ) -> dict:
         if valid_until_utc is not None:
             parse_utc(valid_until_utc)
@@ -170,6 +171,7 @@ class CarrierInformationLoop:
             "source_payload": source_payload,
             "dependencies": dependencies,
             "valid_until_utc": valid_until_utc,
+            "validity_policy": validity_policy,
         }
         content = canonical(value)
         dependency_id = f"dependency:{item_id}"
@@ -204,6 +206,7 @@ class CarrierInformationLoop:
         source_payload: dict,
         reason: str,
         valid_until_utc: Optional[str] = None,
+        validity_policy: Optional[dict] = None,
     ) -> dict:
         old = self._current_index_object(f"item:{item_id}")
         if old is None:
@@ -220,6 +223,9 @@ class CarrierInformationLoop:
             "dependencies": old["dependencies"],
             "valid_until_utc": (
                 old.get("valid_until_utc") if valid_until_utc is None else valid_until_utc
+            ),
+            "validity_policy": (
+                old.get("validity_policy") if validity_policy is None else validity_policy
             ),
         }
         content = canonical(value)
@@ -400,6 +406,7 @@ class CarrierInformationLoop:
         pending_obligations: list[str],
         next_continuation_point: str,
         result_digest: str,
+        runtime_application_status: Optional[str] = None,
     ) -> dict:
         with self.carrier.atomic_write_group():
             return self._record_execution_state_in_group(
@@ -411,6 +418,7 @@ class CarrierInformationLoop:
                 pending_obligations,
                 next_continuation_point,
                 result_digest,
+                runtime_application_status,
             )
 
     def _record_execution_state_in_group(
@@ -423,6 +431,7 @@ class CarrierInformationLoop:
         pending_obligations: list[str],
         next_continuation_point: str,
         result_digest: str,
+        runtime_application_status: Optional[str] = None,
     ) -> dict:
         if status not in {"RESTORED", "ADVANCED", "BLOCKED"}:
             raise ValueError("invalid execution state")
@@ -441,6 +450,7 @@ class CarrierInformationLoop:
             "pending_obligations": pending_obligations,
             "next_continuation_point": next_continuation_point,
             "result_digest": result_digest,
+            "runtime_application_status": runtime_application_status,
         }
         object_id = self._put_index_object(identity, value)
         dependency_id = f"execution_state:{state_id}"
@@ -496,6 +506,9 @@ class CarrierInformationLoop:
         evaluated_at_utc: str,
     ) -> dict:
         result: Optional[dict] = None
+        prior_state = self.latest_execution_state(
+            self.current_demand(demand_id)["continuation_point"]
+        )
         try:
             with self.carrier.transaction():
                 result = self._execute_demand_in_transaction(
@@ -505,6 +518,18 @@ class CarrierInformationLoop:
                 if not result["advanced"]:
                     raise _DemandNotAdvanced(result)
         except _DemandNotAdvanced as error:
+            if error.result.get("state", "").startswith("BLOCKED_"):
+                with self.carrier.atomic_write_group():
+                    self.record_execution_state(
+                        advancement_id,
+                        continuation_point=self.current_demand(demand_id)["continuation_point"],
+                        prior_state_id=prior_state["state_id"] if prior_state else None,
+                        demand_id=demand_id,
+                        status="BLOCKED",
+                        pending_obligations=[error.result.get("failure_reason", "information demand blocked")],
+                        next_continuation_point="await-operator-or-refreshed-information",
+                        result_digest=digest(error.result),
+                    )
             return error.result
         assert result is not None
         return result
@@ -534,11 +559,85 @@ class CarrierInformationLoop:
         required = demand["required_item_ids"]
         actions: list[dict] = []
         missing: list[str] = []
+        missing_validity: list[str] = []
         invalid_validity: list[str] = []
         stale_item_ids: list[str] = []
         computed: list[str] = []
         reused: list[str] = []
         resolved: dict[str, dict] = {}
+
+        # Preflight the complete dependency closure before any calculator or
+        # settlement can run. This prevents a stale transitive dependency from
+        # being settled merely because it was omitted from required_item_ids.
+        closure: dict[str, dict] = {}
+        pending_items = list(required)
+        while pending_items:
+            item_id = pending_items.pop(0)
+            if item_id in closure:
+                continue
+            item = self.current_item(item_id)
+            if item is None:
+                missing.append(item_id)
+                continue
+            closure[item_id] = item
+            pending_items.extend(item["dependencies"])
+            valid_until = item.get("valid_until_utc")
+            if valid_until is None:
+                missing_validity.append(item_id)
+                continue
+            try:
+                if evaluated_at > parse_utc(valid_until):
+                    stale_item_ids.append(item_id)
+            except ValueError:
+                invalid_validity.append(item_id)
+
+        if missing:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_MISSING_INFORMATION",
+                "missing_item_ids": missing,
+                "actions": [
+                    {"item_id": item_id, "action": "BLOCKED_MISSING"}
+                    for item_id in missing
+                ],
+                "advanced": False,
+            }
+        if missing_validity:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_MISSING_VALIDITY",
+                "validity_failure_item_ids": missing_validity,
+                "actions": [
+                    {"item_id": item_id, "action": "BLOCKED_MISSING_VALIDITY"}
+                    for item_id in missing_validity
+                ],
+                "advanced": False,
+                "failure_reason": "validity policy is undefined; fail closed",
+            }
+        if invalid_validity:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_INVALID_VALIDITY",
+                "validity_failure_item_ids": invalid_validity,
+                "actions": [
+                    {"item_id": item_id, "action": "BLOCKED_INVALID_VALIDITY"}
+                    for item_id in invalid_validity
+                ],
+                "advanced": False,
+                "failure_reason": "source validity is malformed; fail closed",
+            }
+        if stale_item_ids:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_STALE_VALIDITY",
+                "validity_failure_item_ids": stale_item_ids,
+                "actions": [
+                    {"item_id": item_id, "action": "BLOCKED_STALE_VALIDITY"}
+                    for item_id in stale_item_ids
+                ],
+                "advanced": False,
+                "failure_reason": "source validity expired without refreshed authorization",
+            }
 
         def resolve(item_id: str, visiting: set[str]) -> Optional[dict]:
             if item_id in resolved:
@@ -602,6 +701,8 @@ class CarrierInformationLoop:
                         and basis["dependency_object_ids"] == dependency_object_ids
                         and settlement["result"]["valid_until_utc"] == settlement_valid_until
                         and valid_until_utc == settlement_valid_until
+                        and settlement["result"]["validity_policy"] == item.get("validity_policy")
+                        and basis.get("validity_policy") == item.get("validity_policy")
                         and parse_utc(settlement["result"]["evaluated_at_utc"]) <= evaluated_at
                         and settlement_time_valid
                         and (
@@ -640,6 +741,7 @@ class CarrierInformationLoop:
                         },
                         "evaluated_at_utc": evaluated_at_utc,
                         "valid_until_utc": valid_until_utc,
+                        "validity_policy": item.get("validity_policy"),
                     },
                     {
                         "source_payload_sha256": payload_digest,
@@ -649,6 +751,7 @@ class CarrierInformationLoop:
                         },
                         "evaluated_at_utc": evaluated_at_utc,
                         "valid_until_utc": valid_until_utc,
+                        "validity_policy": item.get("validity_policy"),
                     },
                 )
             resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
@@ -679,6 +782,28 @@ class CarrierInformationLoop:
             "continuation_point": demand["continuation_point"],
             "resolved_items": {key: value["value"] for key, value in resolved.items()},
         }
+        if required:
+            prior_state = self.latest_execution_state(
+                demand["continuation_point"]
+            )
+            self.record_execution_state(
+                advancement_id,
+                continuation_point=demand["continuation_point"],
+                prior_state_id=prior_state["state_id"] if prior_state else None,
+                demand_id=demand_id,
+                status="ADVANCED",
+                pending_obligations=[
+                    "apply runtime continuation and representation binding"
+                ],
+                next_continuation_point="await-runtime-application-completion",
+                result_digest=digest(result_payload),
+                runtime_application_status="PENDING_SWIFT",
+            )
+            execution_state = self.latest_execution_state(
+                demand["continuation_point"]
+            )
+        else:
+            execution_state = None
         return {
             "demand_id": demand_id,
             "state": "ADVANCED",
@@ -687,4 +812,5 @@ class CarrierInformationLoop:
             "reused_item_ids": reused,
             "result": result_payload,
             "advanced": True,
+            "execution_state": execution_state,
         }
