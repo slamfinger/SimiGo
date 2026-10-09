@@ -178,6 +178,19 @@ Execution State recovery, persistent carrier reuse, explicit invalidation,
 source-change recompute, stale/missing/malformed failure safety, corrupted
 lifecycle rejection, and full carrier object verification.
 
+## Controlled production pilot v1
+
+```bash
+python3 execution-information-loop/verify_controlled_production_pilot_v1.py
+```
+
+`ControlledProductionPilotV1E2ETests` deploys the verified runtime bundle to an
+isolated temporary pilot environment, uses an explicit versioned validity
+policy, and validates startup, restart/recovery, settlement reuse, invalidation
+propagation, source-change recompute, fail-closed boundaries, diagnostics,
+append-only rollback, and full carrier object verification. It does not authorize
+production deployment.
+
 ## Production readiness / deployment preparation
 
 ```bash

@@ -25552,6 +25552,42 @@ Primary acceptance record:
 docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_INTEGRATION_V3_REV2_ACCEPT_20261009.md.
 ```
 
+## Controlled Production Pilot v1 PASS — 2026-10-09
+
+> **Status:** AUTHORIZED CONTROLLED PRODUCTION PILOT V1 PASS. Isolated pilot
+> only; production deployment remains NOT AUTHORIZED.
+
+```text
+base = 6259ffd9de7a4356d1da2e90dfc4b7db473644e0;
+prerequisite = production-readiness-v1-pass;
+accepted isolated proof = 6a36c928c50021ec4c754eb4c8006306125bc35b;
+initial real-source compute = 9 COMPUTE;
+restart/recovery = 9 REUSE;
+REAL-3 invalidation = REAL-3/REAL-4 COMPUTE, 7 REUSE;
+REAL-1 source revision = REAL-1 COMPUTE, 8 REUSE;
+blocked-state observability = PASS;
+append-only rollback = PASS;
+stale validity = BLOCKED_STALE_VALIDITY / no calculator / no settlement / no advance;
+missing information = BLOCKED_MISSING_INFORMATION;
+malformed observation time = fail closed;
+corrupt persisted lifecycle = restore rejected;
+carrier all objects verify = true;
+production traffic/public release = none;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+D-002 rerun/repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+full Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V1_PASS_20261009.md;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V1_E2E_RECORD.json.
+```
+
 ## Production Readiness / Deployment Preparation PASS — 2026-10-09
 
 > **Status:** AUTHORIZED PRODUCTION READINESS / DEPLOYMENT PREPARATION PASS.
