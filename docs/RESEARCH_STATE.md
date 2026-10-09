@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-10
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
@@ -25680,4 +25680,24 @@ Primary evidence:
 docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V2_CODE_AUDIT_REVISION_20261010.md;
 docs/02-evidence/controlled-production-pilot-20261009/
   CONTROLLED_PRODUCTION_PILOT_V2_E2E_RECORD.json.
+```
+
+### Canonical continuity — 2026-10-10
+
+```text
+canonical commit = 5b1ebed200ac2a5348d3e3b5b444b160b0e7e936;
+branch state = main == origin/main / clean;
+pilot verifier = PASS / all checks true;
+pilot manifest SHA256 =
+  0a30143a564f845c4bad24764cdc60718c70dd258c1745568ecce9f5dfb077b3;
+pilot primary evidence SHA256 =
+  055d6445696aaab8513eb1971e922b534fdf5b9178bba7d23d273b540e5f0726;
+sealed PALACE snapshot SHA256 =
+  8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444;
+next human review = controlled production pilot v2 holistic acceptance;
+next authorized engineering object = NONE until that review;
+production deployment = NOT AUTHORIZED;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair-run = FORBIDDEN;
+Integrated SimiGo production proof = NOT ESTABLISHED.
 ```
