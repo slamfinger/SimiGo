@@ -37,6 +37,11 @@ def parse_utc(value: str) -> datetime:
     return parsed.replace(tzinfo=timezone.utc)
 
 
+class _DemandNotAdvanced(Exception):
+    def __init__(self, result: dict):
+        self.result = result
+
+
 class CarrierInformationLoop:
     """Minimal ES/IS continuation loop over DatabaseBackedIS."""
 
@@ -422,6 +427,28 @@ class CarrierInformationLoop:
         *,
         evaluated_at_utc: str,
     ) -> dict:
+        result: Optional[dict] = None
+        try:
+            with self.carrier.transaction():
+                result = self._execute_demand_in_transaction(
+                    demand_id, advancement_id, calculator,
+                    evaluated_at_utc=evaluated_at_utc,
+                )
+                if not result["advanced"]:
+                    raise _DemandNotAdvanced(result)
+        except _DemandNotAdvanced as error:
+            return error.result
+        assert result is not None
+        return result
+
+    def _execute_demand_in_transaction(
+        self,
+        demand_id: str,
+        advancement_id: str,
+        calculator: Callable[[str, dict, dict], dict],
+        *,
+        evaluated_at_utc: str,
+    ) -> dict:
         demand = self.current_demand(demand_id)
         if demand is None:
             raise ValueError(f"unknown demand: {demand_id}")
@@ -486,6 +513,7 @@ class CarrierInformationLoop:
                 actions.append({"item_id": item_id, "action": "BLOCKED_DEPENDENCY_MISSING"})
                 return None
 
+            valid_until_utc = item.get("valid_until_utc")
             settlement = self.current_settlement(item_id)
             reusable = False
             if settlement is not None and settlement.get("state") != "SETTLED":
@@ -505,14 +533,18 @@ class CarrierInformationLoop:
                         and basis["source_version"] == item["source_version"]
                         and basis["dependency_object_ids"] == dependency_object_ids
                         and settlement["result"]["valid_until_utc"] == settlement_valid_until
+                        and valid_until_utc == settlement_valid_until
                         and parse_utc(settlement["result"]["evaluated_at_utc"]) <= evaluated_at
                         and settlement_time_valid
+                        and (
+                            valid_until_utc is None
+                            or evaluated_at <= parse_utc(valid_until_utc)
+                        )
                     )
                 except (KeyError, TypeError, ValueError):
                     reusable = False
             basis = settlement.get("basis") if settlement is not None else None
             payload_digest = digest(item["source_payload"])
-            valid_until_utc = item.get("valid_until_utc")
             if reusable:
                 result = settlement["result"]["value"]
                 action = "REUSE"

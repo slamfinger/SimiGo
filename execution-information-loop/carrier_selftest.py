@@ -158,6 +158,44 @@ def run() -> dict:
         missing.commit()
         missing.close()
 
+        rollback = CarrierInformationLoop.open(database)
+        rollback.put_source("demand-001", "D", "manual_input", "v1", {"input": 9})
+        rollback.put_source("demand-001", "E", "manual_input", "v1", {"input": 10})
+        rollback.define_demand(
+            "demand-rollback",
+            continuation_point="atomic-rollback-check",
+            pending_obligations=["prove partial demand writes do not persist"],
+            continuation_conditions=["D computes, then planned failure occurs"],
+            required_item_ids=["D", "E"],
+        )
+
+        def failing_calculator(item_id: str, source_payload: dict, dependencies: dict) -> dict:
+            if item_id == "D":
+                return {"item": "D", "value": source_payload["input"]}
+            raise RuntimeError("planned mid-demand failure")
+
+        object_count_before = rollback.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
+        try:
+            rollback.execute_demand(
+                "demand-rollback", "advance-rollback", failing_calculator,
+                evaluated_at_utc="2026-10-09T00:05:00Z",
+            )
+            raised = False
+        except RuntimeError:
+            raised = True
+        object_count_after = rollback.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
+        d_settlement_absent = rollback.current_settlement("D") is None
+        object_count_unchanged = object_count_before == object_count_after
+        checks["mid_demand_failure_rolls_back_partial_settlement"] = (
+            raised and d_settlement_absent and object_count_unchanged
+        )
+        rollback.commit()
+        rollback.close()
+
         malformed = CarrierInformationLoop.open(database)
         malformed_result = malformed.execute_demand(
             "demand-001", "advance-malformed", calculator,

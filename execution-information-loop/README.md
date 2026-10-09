@@ -86,6 +86,23 @@ collection/segment and REAL-2..REAL-7 remain reused;
 the sealed canonical snapshot is untouched.
 ```
 
+## Integrated real-source acceptance
+
+`real_palace_integrated_selftest.py` runs all core behaviors against one SQLite
+carrier and one byte-identical real-source copy:
+
+```text
+compute the real structural graph;
+persist and restore Execution State;
+reuse all valid settlements;
+propagate explicit REAL-3 invalidation to REAL-4;
+apply a REAL-1 source change without recomputing unaffected records;
+expire REAL-3 and propagate to REAL-4;
+block malformed observation time in the same loop;
+roll back a mid-demand failure atomically;
+verify every carrier object.
+```
+
 ## Persisted Execution State recovery
 
 The carrier-backed loop now records explicit Execution State transitions. After a

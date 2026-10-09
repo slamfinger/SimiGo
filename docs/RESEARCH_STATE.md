@@ -25356,3 +25356,39 @@ docs/00-governance/SIMIGO_REAL_PALACE_SOURCE_CHANGE_LOOP_PASS_20261009.md;
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_SOURCE_CHANGE_E2E_RECORD.json.
 ```
+
+## Real PALACE Integrated Closed-Loop PASS — 2026-10-09
+
+> **Status:** ISOLATED REAL-SOURCE INTEGRATED CLOSED-LOOP PASS. One carrier and
+> one byte-identical real-source copy executed recovery, reuse, invalidation,
+> source change, validity propagation, failure safety and object verification in
+> one ordered flow.
+
+```text
+information persistence and verification = PASS;
+ES-defined minimal demand = PASS;
+validity maintenance = PASS;
+unaffected reuse = PASS;
+selective invalidation/recompute = PASS;
+restart recovery = PASS;
+missing/malformed/mid-demand failure safety = PASS;
+one auditable closed-loop record = PASS;
+current validity-window change = invalidates older settlement basis;
+sealed canonical PALACE mutation = false;
+D-001 execution = false;
+D-002 campaign rerun = false;
+model/cloud/vector/full-text participation = false;
+PALACE-supplied validity = NOT ESTABLISHED;
+automatic source discovery = NOT ESTABLISHED;
+production runtime integration = NOT ESTABLISHED;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Evidence:
+
+```text
+docs/00-governance/SIMIGO_REAL_PALACE_INTEGRATED_CLOSED_LOOP_PASS_20261009.md;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_INTEGRATED_CLOSED_LOOP_E2E_RECORD.json.
+```
