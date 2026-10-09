@@ -25076,3 +25076,48 @@ Continue hardening this vertical slice toward real assets only under a separate
 implementation/experiment authorization. Do not reopen D-002 or mutate sealed
 evidence.
 ```
+
+## Execution–Information Loop D002 Carrier Integration PASS — 2026-10-09
+
+> **Status:** ISOLATED CARRIER INTEGRATION PASS. The loop now reuses the
+> existing D002 `DatabaseBackedIS` append-only carrier without modifying D-002
+> evidence, canonical PALACE, or D-001 Decision Core.
+
+```text
+carrier = existing D002 DatabaseBackedIS;
+first run = COMPUTE A/B/C;
+restored run = REUSE A/B/C;
+B source update = COMPUTE B/C while A reused;
+missing D = BLOCKED_MISSING_INFORMATION;
+carrier objects verify = true;
+carrier schema = PASS;
+D-002 campaign rerun = false;
+D-001 executed = false;
+canonical/PALACE mutation = false;
+production/PALACE integration = NOT AUTHORIZED.
+```
+
+Fixed defects:
+
+```text
+1 current index resolution now selects latest source version;
+2 REUSE no longer creates duplicate settlement entries;
+3 dependency object identity is checked against recorded settlement basis.
+```
+
+Evidence:
+
+```text
+execution-information-loop/carrier_loop.py;
+execution-information-loop/carrier_selftest.py;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/CARRIER_INTEGRATION_E2E_RECORD_FIXED.json;
+docs/00-governance/SIMIGO_EXECUTION_INFORMATION_LOOP_CARRIER_INTEGRATION_FIX_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Continue hardening the vertical slice under isolated authorization. Real PALACE
+integration, production runtime integration, and any new campaign require
+separate explicit Human authorization.
+```
