@@ -24980,3 +24980,57 @@ Next lawful deliverable:
 Execution–Information Closed-Loop Research Specification / Authorization
 Package v1.0, for Human review and separate authorization.
 ```
+
+## Execution–Information Closed-Loop Research Specification v1.0 Delivery — 2026-10-09
+
+> **Status:** DELIVERED FOR HUMAN REVIEW — RESEARCH SPECIFICATION ONLY. No
+> implementation, experiment, canonical Information Space mutation, PALACE
+> mutation, D-001 decide(), observer execution, or D-002 rerun is authorized.
+
+```text
+package ID = SIMIGO-ES-IS-CLOSED-LOOP-RESEARCH-SPEC-AUTH-PACKAGE-V1.0;
+canonical base = 4af033be…;
+package SHA256 = cabddf9e37cc719b73ebd677c838e0a8c2088ea47a8134851e62ecee16a8b802;
+specification parts =
+  S1 Execution-State continuation-demand semantics;
+  S2 Information-Space record and settlement-state model;
+  S3 source/version/provenance/dependency bindings;
+  S4 persistence/reuse/invalidation transitions;
+  S5 minimal closed-loop architecture specification.
+
+central research question =
+  Can Execution State correctly derive continuation demand, Information Space
+  preserve and expose required source/settled information, physical persistence
+  support later reuse, and invalidation propagate correctly without treating
+  SETTLED as permanent truth?
+
+review questions =
+  RQ1 Is ES continuation semantics complete?
+  RQ2 Is Information Space sufficient for restoration and evaluation?
+  RQ3 Is a stored result eligible for reuse?
+  RQ4 Does invalidation propagate correctly to dependents?
+
+implementation = NOT AUTHORIZED;
+experiment execution = NOT AUTHORIZED;
+canonical Information Space mutation = NOT AUTHORIZED;
+PALACE mutation = NOT AUTHORIZED;
+D-001 decide() = NOT AUTHORIZED;
+observer execution = NOT AUTHORIZED;
+D-002 rerun / repair-run = FORBIDDEN;
+evidence overwrite = FORBIDDEN.
+```
+
+Review object:
+
+```text
+docs/02-evidence/execution-information-closed-loop-research-spec-20261009/
+  EXECUTION_INFORMATION_CLOSED_LOOP_RESEARCH_SPECIFICATION_AUTHORIZATION_PACKAGE_V1.0_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT. ACCEPT would freeze the research
+specification and permit only preparation of a separate implementation or
+experiment authorization proposal.
+```
