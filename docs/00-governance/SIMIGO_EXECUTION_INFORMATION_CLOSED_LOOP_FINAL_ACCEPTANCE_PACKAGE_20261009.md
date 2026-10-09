@@ -83,8 +83,8 @@ SHA256 = dfcaca97b00f801579d47bcef17e9a83d23f0a203058b24780d9df9eee427296
 Review manifest:
 
 ```text
-FINAL_ACCEPTANCE_REVIEW_MANIFEST_V2.json
-SHA256 = 8c475dcb410a35ec88952856e07c9b8bc222254e1e716363d056c398c06df211
+FINAL_ACCEPTANCE_REVIEW_MANIFEST_V3.json
+SHA256 = 5042f725d228ad4b720d6dc1d784929bbff5e7951549911faca0e35a7c1a20dd
 ```
 
 One-command reviewer check:
@@ -95,6 +95,9 @@ python3 execution-information-loop/verify_acceptance.py
 
 This verifier reruns all five selftests, parses each PASS report, binds the
 primary evidence SHA-256, and requires every integrated check to be true.
+It also binds the implementation hashes recorded by the review manifest and the
+sealed PALACE snapshot digest. The running verifier does not self-bind its own
+bytes; that file is bound by the package commit and external review.
 Multi-step Execution State and explicit invalidation writes are now enclosed in
 the carrier's reentrant atomic write group; a later write failure cannot leave a
 half-recorded transition.

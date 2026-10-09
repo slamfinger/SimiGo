@@ -13,6 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "docs/02-evidence/execution-information-loop-vertical-slice-20261009"
 PRIMARY_EVIDENCE = EVIDENCE / "REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json"
 PRIMARY_SHA256 = "6121384bd54ab0462cd1eae0525b23e23a2a8efba08f4b2fe01a40822eba2e66"
+MANIFEST = EVIDENCE / "FINAL_ACCEPTANCE_REVIEW_MANIFEST_V3.json"
+SEALED_SNAPSHOT = ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+SEALED_SNAPSHOT_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
+VERIFIER_PATH = "execution-information-loop/verify_acceptance.py"
 TESTS = [
     "selftest.py",
     "carrier_selftest.py",
@@ -33,6 +37,12 @@ def main() -> int:
 
     evidence_hash = sha256(PRIMARY_EVIDENCE)
     evidence = json.loads(PRIMARY_EVIDENCE.read_text(encoding="utf-8"))
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    implementation_hash_checks = {
+        path: sha256(ROOT / path) == expected
+        for path, expected in manifest["implementation_sha256"].items()
+        if path != VERIFIER_PATH  # the running verifier cannot bind its own bytes
+    }
     results = {}
     if not args.skip_tests:
         for name in TESTS:
@@ -53,11 +63,21 @@ def main() -> int:
         "primary_evidence_sha256": evidence_hash == PRIMARY_SHA256,
         "primary_evidence_result": evidence.get("result") == "PASS",
         "primary_evidence_all_checks": all(evidence.get("checks", {}).values()),
+        "manifest_ready_for_human_review": (
+            manifest.get("status") == "READY_FOR_HUMAN_REVIEW"
+        ),
+        "implementation_hashes_match_manifest": all(implementation_hash_checks.values()),
+        "sealed_palace_snapshot_digest": (
+            sha256(SEALED_SNAPSHOT) == SEALED_SNAPSHOT_SHA256
+        ),
         **{name: result == "PASS" for name, result in results.items()},
     }
     report = {
         "schema_id": "EINFO-FINAL-ACCEPTANCE-VERIFIER-V1",
         "primary_evidence_sha256": evidence_hash,
+        "manifest": str(MANIFEST.relative_to(ROOT)),
+        "implementation_hash_checks": implementation_hash_checks,
+        "sealed_palace_snapshot_sha256": sha256(SEALED_SNAPSHOT),
         "tests": results,
         "checks": checks,
         "result": "PASS" if all(checks.values()) else "FAIL",
