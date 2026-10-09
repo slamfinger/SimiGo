@@ -93,7 +93,12 @@ class RealPalaceConsumptionLoop:
         self.carrier = carrier
         self.source = source
 
-    def materialize_sources(self, demand_id: str, count: int = 7) -> list[dict]:
+    def materialize_sources(
+        self,
+        demand_id: str,
+        count: int = 7,
+        valid_until_utc: Optional[str] = None,
+    ) -> list[dict]:
         records = self.source.first_metadata_records(count)
         previous: Optional[str] = None
         for index, record in enumerate(records):
@@ -106,6 +111,7 @@ class RealPalaceConsumptionLoop:
                 source_version=record["metadata"]["last_modified"]["string"] or "unknown",
                 source_payload=record,
                 dependencies=dependencies,
+                valid_until_utc=valid_until_utc,
             )
             previous = item_id
         return records
@@ -118,6 +124,8 @@ class RealPalaceConsumptionLoop:
         demand_id: str,
         advancement_id: str,
         count: int = 7,
+        *,
+        evaluated_at_utc: str,
     ) -> dict:
         def deterministic_consumer(item_id, source_payload, dependencies):
             metadata = source_payload["metadata"]
@@ -142,5 +150,8 @@ class RealPalaceConsumptionLoop:
                 },
             }
         return self.carrier.execute_demand(
-            demand_id, advancement_id, deterministic_consumer
+            demand_id,
+            advancement_id,
+            deterministic_consumer,
+            evaluated_at_utc=evaluated_at_utc,
         )

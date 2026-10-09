@@ -30,7 +30,11 @@ def run() -> dict:
         )
         loop = RealPalaceConsumptionLoop(carrier, source)
 
-        records = loop.materialize_sources("demand-real-001", count=7)
+        records = loop.materialize_sources(
+            "demand-real-001",
+            count=7,
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
         checks["seven_real_sources"] = len(records) == 7
         checks["all_real_records"] = all(
             item["source"] == "REAL_PALACE_SNAPSHOT" for item in records
@@ -56,7 +60,10 @@ def run() -> dict:
             required_item_ids=required,
         )
         first = reopened_loop.execute_real_demand(
-            "demand-real-001", "advance-real-001", count=7
+            "demand-real-001",
+            "advance-real-001",
+            count=7,
+            evaluated_at_utc="2026-10-09T00:00:00Z",
         )
         run_results["first"] = first
         checks["first_run_computes_all_seven"] = actions(first) == {
@@ -72,7 +79,10 @@ def run() -> dict:
         )
         reuse_loop = RealPalaceConsumptionLoop(reuse_carrier, reuse_source)
         second = reuse_loop.execute_real_demand(
-            "demand-real-001", "advance-real-002", count=7
+            "demand-real-001",
+            "advance-real-002",
+            count=7,
+            evaluated_at_utc="2026-10-09T00:01:00Z",
         )
         run_results["second"] = second
         checks["second_run_reuses_all_seven"] = actions(second) == {
@@ -93,7 +103,10 @@ def run() -> dict:
             "REAL-2", "explicit authorized invalidation"
         )
         third = invalidation_loop.execute_real_demand(
-            "demand-real-001", "advance-real-003", count=7
+            "demand-real-001",
+            "advance-real-003",
+            count=7,
+            evaluated_at_utc="2026-10-09T00:02:00Z",
         )
         run_results["third"] = third
         checks["explicit_invalidation_recomputes_B_and_all_dependents"] = (
@@ -126,6 +139,7 @@ def run() -> dict:
         "vector_or_fulltext_reads": False,
         "model_or_cloud_calls": False,
         "palace_mutation": False,
+        "validity_condition_origin": "ISOLATED_TEST_DECLARED_WINDOW",
         "d002_campaign_rerun": False,
         "d001_executed": False,
         "checks": checks,

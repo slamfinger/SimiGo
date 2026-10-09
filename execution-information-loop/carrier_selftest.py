@@ -43,14 +43,23 @@ def run() -> dict:
             continuation_conditions=["A and B are current", "C can be derived"],
             required_item_ids=["A", "B", "C"],
         )
-        loop.put_source("demand-001", "A", "manual_input", "v1", {"input": 21})
-        loop.put_source("demand-001", "B", "derived_input", "v1", {"input": 5}, ["A"])
+        loop.put_source(
+            "demand-001", "A", "manual_input", "v1", {"input": 21},
+            valid_until_utc="2030-12-31T23:59:59Z",
+        )
+        loop.put_source(
+            "demand-001", "B", "derived_input", "v1", {"input": 5}, ["A"],
+            valid_until_utc="2026-10-09T00:01:30Z",
+        )
         loop.put_source("demand-001", "C", "derived_input", "v1", {"factor": 3}, ["B"])
         loop.commit()
         loop.close()
 
         restored = CarrierInformationLoop.open(database)
-        first = restored.execute_demand("demand-001", "advance-001", calculator)
+        first = restored.execute_demand(
+            "demand-001", "advance-001", calculator,
+            evaluated_at_utc="2026-10-09T00:00:00Z",
+        )
         run_results = {"first": first}
         checks["first_run_computes_all_three"] = actions(first) == {
             "A": "COMPUTE", "B": "COMPUTE", "C": "COMPUTE"
@@ -60,7 +69,10 @@ def run() -> dict:
         restored.close()
 
         reused = CarrierInformationLoop.open(database)
-        second = reused.execute_demand("demand-001", "advance-002", calculator)
+        second = reused.execute_demand(
+            "demand-001", "advance-002", calculator,
+            evaluated_at_utc="2026-10-09T00:01:00Z",
+        )
         run_results["second"] = second
         checks["second_run_reuses_all_three"] = actions(second) == {
             "A": "REUSE", "B": "REUSE", "C": "REUSE"
@@ -92,14 +104,33 @@ def run() -> dict:
         )
         recovered.close()
 
+        stale = CarrierInformationLoop.open(database)
+        stale_result = stale.execute_demand(
+            "demand-001", "advance-stale", calculator,
+            evaluated_at_utc="2026-10-09T00:02:00Z",
+        )
+        run_results["stale"] = stale_result
+        checks["expired_settlement_recomputes_B_and_dependent_C"] = (
+            actions(stale_result) == {
+                "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
+            }
+            and stale_result["actions"][1]["reason"] == "VALIDITY_EXPIRED"
+        )
+        stale.commit()
+        stale.close()
+
         changed = CarrierInformationLoop.open(database)
         changed.update_source(
             "B",
             "v2",
             {"input": 8},
             "upstream source version changed",
+            valid_until_utc="2030-12-31T23:59:59Z",
         )
-        third = changed.execute_demand("demand-001", "advance-003", calculator)
+        third = changed.execute_demand(
+            "demand-001", "advance-003", calculator,
+            evaluated_at_utc="2026-10-09T00:03:00Z",
+        )
         run_results["third"] = third
         checks["source_change_recomputes_B_and_C"] = actions(third) == {
             "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
@@ -115,7 +146,10 @@ def run() -> dict:
             continuation_conditions=["D must be present"],
             required_item_ids=["D"],
         )
-        blocked = missing.execute_demand("demand-missing", "advance-blocked", calculator)
+        blocked = missing.execute_demand(
+            "demand-missing", "advance-blocked", calculator,
+            evaluated_at_utc="2026-10-09T00:04:00Z",
+        )
         checks["missing_information_blocks_without_guess"] = (
             blocked["state"] == "BLOCKED_MISSING_INFORMATION"
             and blocked["missing_item_ids"] == ["D"]
@@ -123,6 +157,30 @@ def run() -> dict:
         )
         missing.commit()
         missing.close()
+
+        malformed = CarrierInformationLoop.open(database)
+        malformed_result = malformed.execute_demand(
+            "demand-001", "advance-malformed", calculator,
+            evaluated_at_utc="not-a-time",
+        )
+        checks["malformed_observation_time_blocks_without_guess"] = (
+            malformed_result["state"] == "BLOCKED_VALIDITY_FAILURE"
+            and malformed_result["advanced"] is False
+            and malformed_result["actions"] == []
+        )
+        try:
+            malformed.put_source(
+                "demand-001", "E", "manual_input", "v1", {},
+                valid_until_utc="not-a-time",
+            )
+            invalid_source_validity_rejected = False
+        except ValueError:
+            invalid_source_validity_rejected = True
+        checks["invalid_source_validity_rejected_before_persistence"] = (
+            invalid_source_validity_rejected
+        )
+        malformed.commit()
+        malformed.close()
 
         final = CarrierInformationLoop.open(database)
         checks["carrier_schema_passes"] = True

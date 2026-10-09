@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-09
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
@@ -25262,5 +25262,38 @@ Evidence:
 
 ```text
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
-  REAL_PALACE_INVALIDATION_E2E_RECORD.json.
+  REAL_PALACE_INVALIDATION_E2E_RECORD_FIXED.json.
+```
+
+## Execution–Information Loop Validity Gate PASS — 2026-10-09
+
+> **Status:** ISOLATED VALIDITY / SELECTIVE RECOMPUTE PASS. The earlier
+> invalidation PASS evidence binding is corrected to the retained `_FIXED.json`
+> object; no evidence is overwritten.
+
+```text
+valid settlement = REUSE;
+expired settlement = COMPUTE;
+dependent downstream = selective COMPUTE;
+unaffected item = REUSE;
+malformed observation = BLOCKED_VALIDITY_FAILURE / no calculator call;
+invalid source validity = rejected before persistence;
+real PALACE snapshot = read-only;
+PALACE-supplied validity = NOT ESTABLISHED;
+real PALACE dependency graph = NOT ESTABLISHED;
+D-002 campaign rerun = false;
+D-001 executed = false;
+model/cloud participation = false;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Evidence:
+
+```text
+docs/00-governance/SIMIGO_EXECUTION_INFORMATION_LOOP_VALIDITY_GATE_PASS_20261009.md;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  VALIDITY_E2E_RECORD.json;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_VALIDITY_E2E_RECORD.json.
 ```

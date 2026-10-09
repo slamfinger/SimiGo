@@ -11,9 +11,11 @@ Execution-State-driven Information Space closed loop.
 3 Restored execution reads persisted state through SQLite only.
 4 Valid settlements are reused without recomputation.
 5 Source/dependency invalidation selectively recomputes affected items.
-6 Missing information fails closed without guessing.
-7 Payload digest mismatch fails closed without settlement.
-8 Every transition is appended to a SHA-256 hash-chained audit log.
+6 Expired settlements recompute instead of being treated as permanent truth.
+7 Missing information fails closed without guessing.
+8 Malformed validity input fails closed without guessing.
+9 Payload digest mismatch fails closed without settlement.
+10 Every transition is appended to a SHA-256 hash-chained audit log.
 ```
 
 ## Isolated scope
@@ -48,7 +50,9 @@ settlements to recompute while unaffected settlements remain reused.
 first run computes A/B/C;
 restored second run reuses A/B/C;
 B source update recomputes B/C while A remains reused;
+expired B recomputes dependent C while A remains reused;
 missing D fails closed;
+malformed observation time fails closed;
 carrier schema and all objects verify.
 ```
 
@@ -59,7 +63,7 @@ successful demand run, it can close/reopen the database and restore the latest
 state for a continuation point. Source updates then invalidate dependent
 settlements while unaffected settlements remain reused.
 
-`carrier_selftest.py` verifies this full sequence:
+The full carrier selftest sequence is:
 
 ```text
 first run computes A/B/C;
@@ -68,11 +72,13 @@ Execution State is persisted and restored after restart;
 B source update recomputes B/C while A remains reused.
 ```
 
-## Explicit invalidation
+## Validity gates
 
-`CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement
-records for a target and all transitive dependents. The next demand run reuses
-unaffected settlements and recomputes the invalidated dependency closure.
+`put_source()` and `update_source()` persist an optional `valid_until_utc` on
+the information item. Every settlement records that condition in its result and
+basis. Each demand supplies `evaluated_at_utc`. Reuse requires source/version/
+dependency identity and a still-valid settlement window. Expired items recompute;
+malformed validity input blocks without a calculator call.
 
 ## Explicit invalidation
 

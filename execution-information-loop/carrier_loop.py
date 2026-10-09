@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -24,6 +25,16 @@ def canonical(value: Any) -> bytes:
 
 def digest(value: Any) -> str:
     return hashlib.sha256(canonical(value)).hexdigest()
+
+
+def parse_utc(value: str) -> datetime:
+    if not isinstance(value, str):
+        raise ValueError("UTC timestamp must use the YYYY-MM-DDTHH:MM:SSZ form")
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError as error:
+        raise ValueError("UTC timestamp must use the YYYY-MM-DDTHH:MM:SSZ form") from error
+    return parsed.replace(tzinfo=timezone.utc)
 
 
 class CarrierInformationLoop:
@@ -119,7 +130,10 @@ class CarrierInformationLoop:
         source_version: str,
         source_payload: dict,
         dependencies: Optional[list[str]] = None,
+        valid_until_utc: Optional[str] = None,
     ) -> dict:
+        if valid_until_utc is not None:
+            parse_utc(valid_until_utc)
         dependencies = list(dependencies or [])
         if len(set(dependencies)) != len(dependencies):
             raise ValueError("dependency ids must be unique")
@@ -141,6 +155,7 @@ class CarrierInformationLoop:
             "source_version": source_version,
             "source_payload": source_payload,
             "dependencies": dependencies,
+            "valid_until_utc": valid_until_utc,
         }
         content = canonical(value)
         dependency_id = f"dependency:{item_id}"
@@ -173,10 +188,13 @@ class CarrierInformationLoop:
         source_version: str,
         source_payload: dict,
         reason: str,
+        valid_until_utc: Optional[str] = None,
     ) -> dict:
         old = self._current_index_object(f"item:{item_id}")
         if old is None:
             raise MissingLogicalEntry(f"item:{item_id}")
+        if valid_until_utc is not None:
+            parse_utc(valid_until_utc)
         value = {
             "schema_id": "EINFO-INFORMATION-ITEM-V1",
             "demand_id": old["demand_id"],
@@ -185,6 +203,9 @@ class CarrierInformationLoop:
             "source_version": source_version,
             "source_payload": source_payload,
             "dependencies": old["dependencies"],
+            "valid_until_utc": (
+                old.get("valid_until_utc") if valid_until_utc is None else valid_until_utc
+            ),
         }
         content = canonical(value)
         dependency_id = f"dependency:{item_id}"
@@ -398,13 +419,28 @@ class CarrierInformationLoop:
         demand_id: str,
         advancement_id: str,
         calculator: Callable[[str, dict, dict], dict],
+        *,
+        evaluated_at_utc: str,
     ) -> dict:
         demand = self.current_demand(demand_id)
         if demand is None:
             raise ValueError(f"unknown demand: {demand_id}")
+        try:
+            evaluated_at = parse_utc(evaluated_at_utc)
+        except ValueError as error:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_VALIDITY_FAILURE",
+                "validity_failure_item_ids": list(demand["required_item_ids"]),
+                "actions": [],
+                "advanced": False,
+                "failure_reason": str(error),
+            }
         required = demand["required_item_ids"]
         actions: list[dict] = []
         missing: list[str] = []
+        invalid_validity: list[str] = []
+        stale_item_ids: list[str] = []
         computed: list[str] = []
         reused: list[str] = []
         resolved: dict[str, dict] = {}
@@ -420,6 +456,20 @@ class CarrierInformationLoop:
                 missing.append(item_id)
                 actions.append({"item_id": item_id, "action": "BLOCKED_MISSING"})
                 return None
+            source_valid_until = item.get("valid_until_utc")
+            if source_valid_until is not None:
+                try:
+                    source_expired = evaluated_at > parse_utc(source_valid_until)
+                except ValueError:
+                    invalid_validity.append(item_id)
+                    actions.append({
+                        "item_id": item_id,
+                        "action": "BLOCKED_INVALID_VALIDITY",
+                        "valid_until_utc": source_valid_until,
+                    })
+                    return None
+                if source_expired:
+                    stale_item_ids.append(item_id)
             dependencies = item["dependencies"]
             dependency_values: dict[str, dict] = {}
             dependency_object_ids: dict[str, str] = {}
@@ -443,6 +493,10 @@ class CarrierInformationLoop:
             elif settlement is not None:
                 basis = settlement["basis"]
                 try:
+                    settlement_valid_until = basis["valid_until_utc"]
+                    settlement_time_valid = True
+                    if settlement_valid_until is not None:
+                        settlement_time_valid = evaluated_at <= parse_utc(settlement_valid_until)
                     reusable = (
                         settlement["result"]["payload_digest"] == digest(item["source_payload"])
                         and settlement["result"]["source_version"] == item["source_version"]
@@ -450,11 +504,15 @@ class CarrierInformationLoop:
                         and basis["source_payload_sha256"] == digest(item["source_payload"])
                         and basis["source_version"] == item["source_version"]
                         and basis["dependency_object_ids"] == dependency_object_ids
+                        and settlement["result"]["valid_until_utc"] == settlement_valid_until
+                        and parse_utc(settlement["result"]["evaluated_at_utc"]) <= evaluated_at
+                        and settlement_time_valid
                     )
-                except KeyError:
+                except (KeyError, TypeError, ValueError):
                     reusable = False
             basis = settlement.get("basis") if settlement is not None else None
             payload_digest = digest(item["source_payload"])
+            valid_until_utc = item.get("valid_until_utc")
             if reusable:
                 result = settlement["result"]["value"]
                 action = "REUSE"
@@ -463,6 +521,10 @@ class CarrierInformationLoop:
                     "object_id": settlement["_object_id"],
                 }
             else:
+                action_reason = (
+                    "VALIDITY_EXPIRED" if item_id in stale_item_ids
+                    else "MISSING_OR_SUPERSEDED_SETTLEMENT"
+                )
                 result = calculator(item_id, item["source_payload"], dependency_values)
                 action = "COMPUTE"
                 computed.append(item_id)
@@ -476,6 +538,8 @@ class CarrierInformationLoop:
                         "dependency_object_ids": {
                             key: dependency_object_ids[key] for key in dependency_values
                         },
+                        "evaluated_at_utc": evaluated_at_utc,
+                        "valid_until_utc": valid_until_utc,
                     },
                     {
                         "source_payload_sha256": payload_digest,
@@ -483,12 +547,15 @@ class CarrierInformationLoop:
                         "dependency_object_ids": {
                             key: dependency_object_ids[key] for key in dependency_values
                         },
+                        "evaluated_at_utc": evaluated_at_utc,
+                        "valid_until_utc": valid_until_utc,
                     },
                 )
             resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
             actions.append({
                 "item_id": item_id,
                 "action": action,
+                "reason": None if action == "REUSE" else action_reason,
                 "result_digest": digest(result),
                 "settlement_object_id": settlement_record["object_id"],
                 "source_payload_digest": payload_digest,
