@@ -24895,3 +24895,88 @@ freeze the design only; implementation, dry materialization, validation, D001
 handoff, observer, and any new campaign require separate explicit Human
 authorizations.
 ```
+
+## Execution–Information Closed-Loop Architecture Review and Active Research Direction — 2026-10-09
+
+> **Status:** CANONICAL ARCHITECTURE REVIEW / ACTIVE RESEARCH DIRECTION REVISED.
+> D-001 and D-002 rulings are unchanged. No new experiment, implementation, or
+> mutation is authorized.
+
+```text
+architecture interpretation =
+  Execution State + Information Space form one inherently coupled
+  execution–information closed loop, not two independently founded systems
+  joined by a bridge;
+
+Execution State role =
+  derive continuation position, obligations, dependencies, minimal information
+  demand, reuse decisions and next lawful continuation;
+
+Information Space role =
+  carry source-derived information, computation results, settled reusable
+  results, provenance, dependency and settlement/invalidation state;
+
+physical database role =
+  persist enough Information Space content to support later restoration,
+  validity checking, selective recomputation and incremental continuation;
+
+IAC / external correspondence =
+  subordinate operational/provenance relation inside the loop;
+  not the foundational architecture;
+
+settlement principle =
+  reuse valid settled results;
+  recompute only missing, unsettled, stale, ambiguous, invalid or
+  dependency-changed information;
+  settled does not mean “never inspect again”.
+
+D-001 =
+  CLOSED / BOUNDED PASS;
+  proves only bounded structured-input decision semantics;
+  does not prove real PALACE consumption or the full closed loop.
+
+D-002 =
+  FAIL / STOP;
+  proves the current real PALACE-to-ES consumption bridge is unvalidated;
+  does not reject the closed-loop architecture.
+
+Instrumentation v1.6 =
+  DELIVERED FOR HUMAN REVIEW / DEPRIORITIZED BY THIS ARCHITECTURE REVIEW;
+  no repair, rerun, implementation or campaign is authorized.
+
+active research direction =
+  EXECUTION-STATE-DRIVEN INFORMATION-SPACE CLOSED LOOP WITH PHYSICAL
+  PERSISTENCE AND INCREMENTAL CONTINUATION.
+
+priority order =
+  1 ES continuation-demand semantics;
+  2 Information-Space record/settlement-state model;
+  3 source/version/provenance and dependency bindings;
+  4 persistence/reuse/invalidation transitions;
+  5 minimal closed-loop architecture specification;
+  6 separate decision on implementation/experiment only after review.
+
+E9 / EXP-004 / PIR =
+  NOT AUTHORIZED / NOT AUTHORIZED / CLOSED.
+```
+
+Canonical architecture review:
+
+```text
+docs/05-architecture/
+  SIMIGO_EXECUTION_INFORMATION_CLOSED_LOOP_ARCHITECTURE_REVIEW_20261009.md.
+```
+
+Active research direction:
+
+```text
+docs/00-governance/
+  SIMIGO_RESEARCH_DIRECTION_EXECUTION_INFORMATION_CLOSED_LOOP_20261009.md.
+```
+
+Next lawful deliverable:
+
+```text
+Execution–Information Closed-Loop Research Specification / Authorization
+Package v1.0, for Human review and separate authorization.
+```
