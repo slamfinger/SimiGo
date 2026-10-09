@@ -25209,3 +25209,33 @@ execution-information-loop/real_palace_selftest.py;
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_CONSUMPTION_E2E_RECORD.json.
 ```
+
+## Real PALACE Invalidation Propagation PASS — 2026-10-09
+
+> **Status:** ISOLATED INVALIDATION / SELECTIVE RECOMPUTE PASS. Explicit
+> invalidation of REAL-2 propagated through REAL-3..REAL-7 while unaffected
+> REAL-1 remained reused.
+
+```text
+invalidated target = REAL-2;
+propagated dependents = REAL-3..REAL-7;
+unaffected reused = REAL-1;
+carrier append-only records = preserved;
+PALACE mutation = false;
+canonical Information Space mutation = false;
+D-001 executed = false;
+D-002 campaign rerun = false;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Evidence:
+
+```text
+execution-information-loop/carrier_loop.py;
+execution-information-loop/real_palace_loop.py;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_INVALIDATION_E2E_RECORD_FIXED.json;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_INVALIDATION_ACCEPTANCE_MATRIX.md.
+```

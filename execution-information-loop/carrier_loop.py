@@ -218,6 +218,7 @@ class CarrierInformationLoop:
     ) -> dict:
         value = {
             "schema_id": "EINFO-SETTLEMENT-V1",
+            "state": "SETTLED",
             "advancement_id": advancement_id,
             "item_id": item_id,
             "result": result,
@@ -243,6 +244,78 @@ class CarrierInformationLoop:
             "item_id": item_id,
             "object_id": object_id,
             "dependency_order": dependency_order,
+        }
+
+    def invalidate_settlement(
+        self,
+        target_item_id: str,
+        reason: str,
+        include_dependents: bool = True,
+    ) -> dict:
+        """Append explicit invalidation records for an item and its dependents."""
+        items = {}
+        for row in self.carrier.connection.execute(
+            "SELECT append_order,srs_identity,record_object "
+            "FROM is_index_entries WHERE srs_identity LIKE 'item:%' "
+            "ORDER BY append_order ASC"
+        ):
+            item_id = row["srs_identity"][len("item:"):]
+            value = json.loads(self.carrier.get_object(row["record_object"]))
+            items[item_id] = value["dependencies"]
+        dependents: dict[str, list[str]] = {
+            item_id: [] for item_id in items
+        }
+        for dependent_id, dependencies in items.items():
+            for dependency_id in dependencies:
+                dependents.setdefault(dependency_id, []).append(dependent_id)
+
+        affected: list[str] = [target_item_id] if include_dependents else []
+        stack = list(dependents.get(target_item_id, []))
+        while stack:
+            dependent_id = stack.pop()
+            if dependent_id not in affected:
+                affected.append(dependent_id)
+                stack.extend(dependents.get(dependent_id, []))
+
+        invalidated = []
+        for affected_id in sorted(affected):
+            settlement = self.current_settlement(affected_id)
+            if settlement is None or settlement.get("state") == "INVALID":
+                continue
+            value = {
+                "schema_id": "EINFO-SETTLEMENT-INVALID-V1",
+                "item_id": affected_id,
+                "state": "INVALID",
+                "reason": reason,
+                "invalidated_by": target_item_id if affected_id != target_item_id else None,
+                "prior_result": settlement.get("result"),
+            }
+            content = canonical(value)
+            dependency_id = f"settlement:{affected_id}"
+            history = self.carrier.get_dependency_history(dependency_id)
+            revision = len(history) + 1
+            object_id, dependency_order = self.carrier.atomic_dependency_materialization(
+                content,
+                {
+                    "dependency_id": dependency_id,
+                    "content_address": "",
+                    "revision": revision,
+                    "reason": "explicit invalidation",
+                },
+            )
+            self.carrier.append_index_entry({
+                "srs_identity": f"settlement:{affected_id}",
+                "record_object": object_id,
+            })
+            invalidated.append({
+                "item_id": affected_id,
+                "object_id": object_id,
+                "dependency_order": dependency_order,
+            })
+        return {
+            "invalidated_item_ids": sorted(affected),
+            "invalidated_records": invalidated,
+            "reason": reason,
         }
 
     def current_demand(self, demand_id: str) -> Optional[dict]:
@@ -365,7 +438,9 @@ class CarrierInformationLoop:
 
             settlement = self.current_settlement(item_id)
             reusable = False
-            if settlement is not None:
+            if settlement is not None and settlement.get("state") != "SETTLED":
+                reusable = False
+            elif settlement is not None:
                 basis = settlement["basis"]
                 try:
                     reusable = (
@@ -378,7 +453,7 @@ class CarrierInformationLoop:
                     )
                 except KeyError:
                     reusable = False
-            basis = settlement["basis"] if settlement is not None else None
+            basis = settlement.get("basis") if settlement is not None else None
             payload_digest = digest(item["source_payload"])
             if reusable:
                 result = settlement["result"]["value"]

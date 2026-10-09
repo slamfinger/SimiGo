@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import tempfile
 from pathlib import Path
@@ -19,6 +20,7 @@ def actions(result):
 
 def run() -> dict:
     checks = {}
+    run_results = {}
     with tempfile.TemporaryDirectory(prefix="real-palace-loop-") as temporary:
         database = str(Path(temporary) / "real_palace_information_space.sqlite")
         carrier = CarrierInformationLoop.create(database)
@@ -56,6 +58,7 @@ def run() -> dict:
         first = reopened_loop.execute_real_demand(
             "demand-real-001", "advance-real-001", count=7
         )
+        run_results["first"] = first
         checks["first_run_computes_all_seven"] = actions(first) == {
             item_id: "COMPUTE" for item_id in required
         }
@@ -71,11 +74,39 @@ def run() -> dict:
         second = reuse_loop.execute_real_demand(
             "demand-real-001", "advance-real-002", count=7
         )
+        run_results["second"] = second
         checks["second_run_reuses_all_seven"] = actions(second) == {
             item_id: "REUSE" for item_id in required
         }
         reuse_carrier.commit()
         reuse_carrier.close()
+
+        invalidation_carrier = CarrierInformationLoop.open(database)
+        invalidation_loop = RealPalaceConsumptionLoop(
+            invalidation_carrier,
+            RealPalaceSource(
+                "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+                EXPECTED_SNAPSHOT_SHA256,
+            ),
+        )
+        invalidation = invalidation_loop.invalidate_settlement(
+            "REAL-2", "explicit authorized invalidation"
+        )
+        third = invalidation_loop.execute_real_demand(
+            "demand-real-001", "advance-real-003", count=7
+        )
+        run_results["third"] = third
+        checks["explicit_invalidation_recomputes_B_and_all_dependents"] = (
+            actions(third)["REAL-2"] == "COMPUTE"
+            and actions(third)["REAL-3"] == "COMPUTE"
+            and actions(third)["REAL-4"] == "COMPUTE"
+            and actions(third)["REAL-5"] == "COMPUTE"
+            and actions(third)["REAL-6"] == "COMPUTE"
+            and actions(third)["REAL-7"] == "COMPUTE"
+            and actions(third)["REAL-1"] == "REUSE"
+        )
+        invalidation_carrier.commit()
+        invalidation_carrier.close()
 
         final = CarrierInformationLoop.open(database)
         final.carrier.validate_schema()
@@ -98,6 +129,8 @@ def run() -> dict:
         "d002_campaign_rerun": False,
         "d001_executed": False,
         "checks": checks,
+        "invalidation": invalidation,
+        "run_results": run_results,
         "result": "PASS" if checks["closed_loop_real_source_mapping"] else "FAIL",
     }
 

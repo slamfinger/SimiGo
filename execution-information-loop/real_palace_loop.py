@@ -110,6 +110,9 @@ class RealPalaceConsumptionLoop:
             previous = item_id
         return records
 
+    def invalidate_settlement(self, item_id: str, reason: str) -> dict:
+        return self.carrier.invalidate_settlement(item_id, reason)
+
     def execute_real_demand(
         self,
         demand_id: str,
