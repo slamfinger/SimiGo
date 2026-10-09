@@ -33,3 +33,21 @@ sealed Instrumentation packages.
 ```bash
 python3 execution-information-loop/selftest.py
 ```
+
+## D002 carrier integration
+
+`carrier_loop.py` reuses the existing D002 `DatabaseBackedIS` append-only carrier.
+Current item versions are resolved from the latest index entry; settlements are
+current dependency objects. Reused settlements no longer create duplicate
+settlement entries. Source updates append a new version and force dependent
+settlements to recompute while unaffected settlements remain reused.
+
+`carrier_selftest.py` verifies:
+
+```text
+first run computes A/B/C;
+restored second run reuses A/B/C;
+B source update recomputes B/C while A remains reused;
+missing D fails closed;
+carrier schema and all objects verify.
+```

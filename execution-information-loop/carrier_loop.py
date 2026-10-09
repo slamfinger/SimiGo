@@ -62,11 +62,15 @@ class CarrierInformationLoop:
         self.close()
 
     def _current_index_object(self, identity: str) -> Optional[dict]:
-        try:
-            record = self.carrier.resolve_srs_identity(identity)
-        except MissingLogicalEntry:
+        row = self.carrier.connection.execute(
+            "SELECT append_order,srs_identity,record_object "
+            "FROM is_index_entries WHERE srs_identity=? "
+            "ORDER BY append_order DESC LIMIT 1",
+            (identity,),
+        ).fetchone()
+        if row is None:
             return None
-        return json.loads(self.carrier.get_object(record.record_object))
+        return json.loads(self.carrier.get_object(row["record_object"]))
 
     def _current_dependency_object(self, dependency_id: str) -> Optional[dict]:
         try:
@@ -309,39 +313,37 @@ class CarrierInformationLoop:
                 except KeyError:
                     reusable = False
             basis = settlement["basis"] if settlement is not None else None
+            payload_digest = digest(item["source_payload"])
             if reusable:
                 result = settlement["result"]["value"]
                 action = "REUSE"
                 reused.append(item_id)
+                settlement_record = {
+                    "object_id": settlement["_object_id"],
+                }
             else:
                 result = calculator(item_id, item["source_payload"], dependency_values)
                 action = "COMPUTE"
                 computed.append(item_id)
-            payload_digest = digest(item["source_payload"])
-            print('DEBUG_SETTLE_CALL',item['item_id'],{
-                'payload':payload_digest,
-                'version':item['source_version'],
-                'dependency_ids':dependency_object_ids,
-            },file=__import__('sys').stderr)
-            settlement_record = self.settle(
-                advancement_id,
-                item_id,
-                {
-                    "value": result,
-                    "payload_digest": payload_digest,
-                    "source_version": item["source_version"],
-                    "dependency_object_ids": {
-                        key: dependency_object_ids[key] for key in dependency_values
+                settlement_record = self.settle(
+                    advancement_id,
+                    item_id,
+                    {
+                        "value": result,
+                        "payload_digest": payload_digest,
+                        "source_version": item["source_version"],
+                        "dependency_object_ids": {
+                            key: dependency_object_ids[key] for key in dependency_values
+                        },
                     },
-                },
-                {
-                    "source_payload_sha256": payload_digest,
-                    "source_version": item["source_version"],
-                    "dependency_object_ids": {
-                        key: dependency_object_ids[key] for key in dependency_values
+                    {
+                        "source_payload_sha256": payload_digest,
+                        "source_version": item["source_version"],
+                        "dependency_object_ids": {
+                            key: dependency_object_ids[key] for key in dependency_values
+                        },
                     },
-                },
-            )
+                )
             resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
             actions.append({
                 "item_id": item_id,
