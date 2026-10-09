@@ -50,6 +50,7 @@ def run() -> dict:
 
         restored = CarrierInformationLoop.open(database)
         first = restored.execute_demand("demand-001", "advance-001", calculator)
+        run_results = {"first": first}
         checks["first_run_computes_all_three"] = actions(first) == {
             "A": "COMPUTE", "B": "COMPUTE", "C": "COMPUTE"
         }
@@ -59,6 +60,7 @@ def run() -> dict:
 
         reused = CarrierInformationLoop.open(database)
         second = reused.execute_demand("demand-001", "advance-002", calculator)
+        run_results["second"] = second
         checks["second_run_reuses_all_three"] = actions(second) == {
             "A": "REUSE", "B": "REUSE", "C": "REUSE"
         }
@@ -73,6 +75,7 @@ def run() -> dict:
             "upstream source version changed",
         )
         third = changed.execute_demand("demand-001", "advance-003", calculator)
+        run_results["third"] = third
         checks["source_change_recomputes_B_and_C"] = actions(third) == {
             "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
         }
@@ -124,6 +127,7 @@ def run() -> dict:
         "d002_campaign_rerun": False,
         "d001_executed": False,
         "checks": checks,
+        "run_results": run_results,
         "result": "PASS" if checks["closed_loop_end_to_end"] else "FAIL",
     }
 
