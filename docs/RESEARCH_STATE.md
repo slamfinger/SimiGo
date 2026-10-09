@@ -25178,3 +25178,34 @@ execution-information-loop/real_palace_selftest.py;
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_CONSUMPTION_E2E_RECORD.json.
 ```
+
+## Real PALACE Snapshot Consumption Loop PASS — 2026-10-09
+
+> **Status:** ISOLATED REAL-SOURCE METADATA CONSUMPTION PASS. Seven real records
+> from the sealed D002 PALACE snapshot were materialized and reused without
+> vector/full-text traversal, model/cloud participation, or PALACE mutation.
+
+```text
+source snapshot = integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite;
+snapshot SHA256 = 8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444;
+source records = REAL-1..REAL-7;
+first run = COMPUTE REAL-1..REAL-7;
+restored run = REUSE REAL-1..REAL-7;
+carrier objects verify = true;
+D-001 executed = false;
+D-002 campaign rerun = false;
+PALACE mutation = false;
+vector/full-text traversal = false;
+model/cloud participation = false;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Evidence:
+
+```text
+execution-information-loop/real_palace_loop.py;
+execution-information-loop/real_palace_selftest.py;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_CONSUMPTION_E2E_RECORD.json.
+```
