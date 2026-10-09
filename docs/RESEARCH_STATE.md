@@ -25451,3 +25451,34 @@ one-command verifier = binds implementation hashes and sealed PALACE snapshot.
 skip-tests = NOT_ACCEPTED_VERIFICATION_INCOMPLETE / never acceptance PASS;
 review anchor = annotated tag / non-circular containing-commit binding.
 ```
+
+## Bounded Production SimiGo Runtime Integration PASS — 2026-10-09
+
+> **Status:** ACCEPTED isolated real-source closed loop is integrated with the
+> real `ExecutionContinuityCoordinator` runtime under bounded isolation.
+> Production deployment remains NOT AUTHORIZED.
+
+```text
+runtime lifecycle authority = ExecutionContinuityCoordinator;
+representation backend = MLXExecutionStateBackend / MLXPrefixPayload;
+real PALACE path = sealed D002 snapshot structural metadata only;
+information carrier = isolated D002 append-only SQLite carrier;
+initial compute = 9 COMPUTE;
+restart/reuse = 9 REUSE;
+explicit invalidation = REAL-3/REAL-4 COMPUTE, 7 REUSE;
+isolated source revision = REAL-1 COMPUTE, 8 REUSE;
+invalid information = BLOCKED_VALIDITY_FAILURE / no ES advance;
+vector/full-text/model/cloud access = false;
+canonical PALACE mutation = false;
+canonical IS mutation = false;
+production deployment = NOT AUTHORIZED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_BOUNDED_PRODUCTION_RUNTIME_INTEGRATION_PASS_20261009.md;
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD.json.
+```

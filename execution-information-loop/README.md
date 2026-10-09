@@ -48,6 +48,18 @@ With `--skip-tests`, it performs static checks only and returns
 `NOT_ACCEPTED_VERIFICATION_INCOMPLETE`; skipped tests cannot produce acceptance
 `PASS`.
 
+## Bounded production runtime integration
+
+```bash
+python3 execution-information-loop/verify_production_runtime_integration.py
+```
+
+The integration test drives real PALACE structural metadata through the real
+Swift `ExecutionContinuityCoordinator`, reuses persisted settlements after
+runtime restart, propagates invalidation, selectively recomputes an isolated
+source revision, and blocks invalid information. Production deployment remains
+unauthorized.
+
 ## D002 carrier integration
 
 `carrier_loop.py` reuses the existing D002 `DatabaseBackedIS` append-only carrier.
