@@ -24718,3 +24718,62 @@ freeze the design only; implementation, dry materialization, validation, D001
 handoff, observer, and any new campaign require separate explicit Human
 authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.4 Revision — 2026-10-09
+
+> **Status:** v1.3 = REVISE / RETAINED. Package v1.4 is DELIVERED FOR HUMAN
+> REVIEW. It remains design-only and authorizes no implementation or execution.
+
+```text
+v1.3 status                       = REVISE / RETAINED;
+v1.4 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / repair-run          = FORBIDDEN;
+new campaign                      = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 handoff                     = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.4 closes the Human-identified gaps:
+
+```text
+R1 StageRecord completeness follows entered stages; early-failure chains end at
+    the first FAIL and unentered stages have no records.
+R2 FailureAnchorCore → FailureCapture → StageRecordCoreFinal → StageRecordFull
+    removes circular digest binding and is independently verifiable.
+R3 The complete per-case genesis/stage/failure chain algorithm and invalid-chain
+    classes are restated inside v1.4.
+R4 A universal eight-step read-path guard applies before every path read in
+    S1–S12, including lexical, containment, symlink/type, approval, TOCTOU,
+    descriptor and digest checks.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-v1.4-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.4_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.4. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, D001
+handoff, observer, and any new campaign require separate explicit Human
+authorizations.
+```
