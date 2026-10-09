@@ -51,12 +51,16 @@ def run() -> dict:
                 EXPECTED_SNAPSHOT_SHA256,
             ),
         )
-        required = [f"REAL-{index}" for index in range(1, 8)]
+        required = ["REAL-COLLECTION", "REAL-SEGMENT"] + [
+            f"REAL-{index}" for index in range(1, 8)
+        ]
         reopened_carrier.define_demand(
             "demand-real-001",
             continuation_point="real-palace-structural-consumption",
-            pending_obligations=["consume seven real source records"],
-            continuation_conditions=["metadata digest and source snapshot are stable"],
+            pending_obligations=["consume one real collection, segment and seven records"],
+            continuation_conditions=[
+                "collection/segment/embedding structural relations are stable"
+            ],
             required_item_ids=required,
         )
         first = reopened_loop.execute_real_demand(
@@ -66,7 +70,7 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:00:00Z",
         )
         run_results["first"] = first
-        checks["first_run_computes_all_seven"] = actions(first) == {
+        checks["first_run_computes_real_structural_graph"] = actions(first) == {
             item_id: "COMPUTE" for item_id in required
         }
         reopened_carrier.commit()
@@ -85,7 +89,7 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:01:00Z",
         )
         run_results["second"] = second
-        checks["second_run_reuses_all_seven"] = actions(second) == {
+        checks["second_run_reuses_real_structural_graph"] = actions(second) == {
             item_id: "REUSE" for item_id in required
         }
         reuse_carrier.commit()
@@ -100,7 +104,7 @@ def run() -> dict:
             ),
         )
         invalidation = invalidation_loop.invalidate_settlement(
-            "REAL-2", "explicit authorized invalidation"
+            "REAL-SEGMENT", "explicit structural segment invalidation"
         )
         third = invalidation_loop.execute_real_demand(
             "demand-real-001",
@@ -109,14 +113,10 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:02:00Z",
         )
         run_results["third"] = third
-        checks["explicit_invalidation_recomputes_B_and_all_dependents"] = (
-            actions(third)["REAL-2"] == "COMPUTE"
-            and actions(third)["REAL-3"] == "COMPUTE"
-            and actions(third)["REAL-4"] == "COMPUTE"
-            and actions(third)["REAL-5"] == "COMPUTE"
-            and actions(third)["REAL-6"] == "COMPUTE"
-            and actions(third)["REAL-7"] == "COMPUTE"
-            and actions(third)["REAL-1"] == "REUSE"
+        checks["structural_invalidation_propagates_segment_closure"] = (
+            actions(third)["REAL-COLLECTION"] == "REUSE"
+            and actions(third)["REAL-SEGMENT"] == "COMPUTE"
+            and all(actions(third)[f"REAL-{index}"] == "COMPUTE" for index in range(1, 8))
         )
         invalidation_carrier.commit()
         invalidation_carrier.close()
@@ -135,6 +135,8 @@ def run() -> dict:
     return {
         "schema_id": "D002-REAL-PALACE-CONSUMPTION-SELFTEST-V1",
         "scope": "ISOLATED_REAL_SNAPSHOT_READONLY_METADATA",
+        "dependency_graph_origin": "REAL_PALACE_COLLECTION_SEGMENT_PARENT_METADATA",
+        "vector_column_reads": False,
         "snapshot_sha256": EXPECTED_SNAPSHOT_SHA256,
         "vector_or_fulltext_reads": False,
         "model_or_cloud_calls": False,

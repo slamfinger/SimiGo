@@ -12,10 +12,11 @@ Execution-State-driven Information Space closed loop.
 4 Valid settlements are reused without recomputation.
 5 Source/dependency invalidation selectively recomputes affected items.
 6 Expired settlements recompute instead of being treated as permanent truth.
-7 Missing information fails closed without guessing.
-8 Malformed validity input fails closed without guessing.
-9 Payload digest mismatch fails closed without settlement.
-10 Every transition is appended to a SHA-256 hash-chained audit log.
+7 Real PALACE collection/segment/embedding relations are consumed structurally.
+8 Missing information fails closed without guessing.
+9 Malformed validity input fails closed without guessing.
+10 Payload digest mismatch fails closed without settlement.
+11 Every transition is appended to a SHA-256 hash-chained audit log.
 ```
 
 ## Isolated scope
@@ -55,6 +56,23 @@ missing D fails closed;
 malformed observation time fails closed;
 carrier schema and all objects verify.
 ```
+
+## Real PALACE structural graph
+
+`real_palace_loop.py` reads only structural columns and metadata tables from the
+sealed D002 snapshot. It materializes:
+
+```text
+REAL-COLLECTION
+REAL-SEGMENT
+REAL-1..REAL-7
+```
+
+Each metadata record depends on its physical `embeddings.segment_id`; chunk
+records additionally use an already-seen declared `parent_drawer_id`. It does
+not synthesize a linear chain from row order. Invalidation of the metadata
+segment propagates to all seven metadata records while the collection remains
+reused.
 
 ## Persisted Execution State recovery
 

@@ -25297,3 +25297,33 @@ docs/02-evidence/execution-information-loop-vertical-slice-20261009/
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_VALIDITY_E2E_RECORD.json.
 ```
+
+## Real PALACE Structural Dependency Loop PASS — 2026-10-09
+
+> **Status:** ISOLATED REAL-SOURCE STRUCTURAL GRAPH PASS. The earlier row-order
+> chain is superseded by physical collection/segment/embedding relations and an
+> explicit already-selected parent relation.
+
+```text
+materialized items = REAL-COLLECTION, REAL-SEGMENT, REAL-1..REAL-7;
+first run = COMPUTE all nine;
+restored run = REUSE all nine;
+segment invalidation = selective COMPUTE segment plus REAL-1..REAL-7;
+unaffected collection = REUSE;
+vector/full-text/queue/model reads = false;
+PALACE mutation = false;
+PALACE-supplied validity = NOT ESTABLISHED;
+dynamic source-change observation = NOT ESTABLISHED;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED;
+D-002 campaign rerun = false;
+D-001 executed = false.
+```
+
+Evidence:
+
+```text
+docs/00-governance/SIMIGO_REAL_PALACE_STRUCTURAL_DEPENDENCY_LOOP_PASS_20261009.md;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_STRUCTURAL_DEPENDENCY_E2E_RECORD.json.
+```
