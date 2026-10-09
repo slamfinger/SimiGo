@@ -5,7 +5,11 @@ import CryptoKit
 public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
   case bridgeFailed(command: String, exitCode: Int32, message: String)
   case invalidBridgeResponse(command: String)
-  case blockedInformationDemand(command: String, state: String)
+  case blockedInformationDemand(
+    command: String,
+    state: String,
+    validityFailureItemIDs: [String]
+  )
   case invalidPersistedExecutionState
 }
 
@@ -196,7 +200,8 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     guard result["advanced"] as? Bool == true, state == "ADVANCED" else {
       throw ProductionRuntimeInformationError.blockedInformationDemand(
         command: advancementID,
-        state: state
+        state: state,
+        validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
       )
     }
 

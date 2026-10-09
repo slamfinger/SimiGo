@@ -25498,3 +25498,18 @@ V3 undefined-policy revision:
 docs/02-evidence/production-runtime-integration-20261009/
   PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3.json.
 ```
+
+V3 REV1 human-review revision:
+
+```text
+stale item IDs = exact REAL-COLLECTION/SEGMENT + REAL-1..REAL-7;
+duplicate IDs = 0;
+primary evidence digest independently verifier-bound;
+V3 REV1 review anchor = annotated tag targeting review HEAD;
+Swift tests = 3 PASS / 0 FAIL.
+```
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV1.json.
+```

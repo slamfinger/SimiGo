@@ -100,6 +100,17 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
   }
 
   func testInvalidValidityBlocksRealRuntimeWithoutAdvancingState() async throws {
+    let expectedStaleItems = [
+      "REAL-COLLECTION",
+      "REAL-SEGMENT",
+      "REAL-1",
+      "REAL-2",
+      "REAL-3",
+      "REAL-4",
+      "REAL-5",
+      "REAL-6",
+      "REAL-7",
+    ]
     let database = try makeTemporaryDatabase()
     let integration = ProductionRuntimeInformationIntegration()
     try integration.initialize(
@@ -116,10 +127,16 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
       )
       XCTFail("expired information demand must block")
     } catch let error as ProductionRuntimeInformationError {
-      guard case .blockedInformationDemand(_, let state) = error else {
+      guard case .blockedInformationDemand(
+        _,
+        let state,
+        let validityFailureItemIDs
+      ) = error else {
         return XCTFail("unexpected production error: \(error)")
       }
       XCTAssertEqual(state, "BLOCKED_STALE_VALIDITY")
+      XCTAssertEqual(validityFailureItemIDs, expectedStaleItems)
+      XCTAssertEqual(validityFailureItemIDs.count, Set(validityFailureItemIDs).count)
     }
 
     let status = try integration.status(database: database)
@@ -140,10 +157,16 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
       )
       XCTFail("undefined validity policy must block")
     } catch let error as ProductionRuntimeInformationError {
-      guard case .blockedInformationDemand(_, let state) = error else {
+      guard case .blockedInformationDemand(
+        _,
+        let state,
+        let validityFailureItemIDs
+      ) = error else {
         return XCTFail("unexpected production error: \(error)")
       }
       XCTAssertEqual(state, "BLOCKED_VALIDITY_POLICY_MISSING")
+      XCTAssertEqual(validityFailureItemIDs.count, 9)
+      XCTAssertEqual(validityFailureItemIDs.count, Set(validityFailureItemIDs).count)
     }
 
     let status = try integration.status(database: database)

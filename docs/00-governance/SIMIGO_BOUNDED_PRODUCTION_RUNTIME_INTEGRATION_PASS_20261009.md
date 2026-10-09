@@ -145,3 +145,36 @@ Swift regression:
 ProductionRuntimeInformationIntegrationTests
 Executed 3 tests, with 0 failures.
 ```
+
+## 8. V3 REV1 revision — duplicate-free stale set and verifier binding
+
+Human review identified two V3 issues: residual stale-item append logic could
+duplicate or falsely broaden the stale set, and the production verifier did not
+independently bind the primary E2E evidence digest or V3 review commit.
+
+V3 REV1 fixes both without rerunning the integration design:
+
+```text
+stale validity failure item IDs =
+  REAL-COLLECTION, REAL-SEGMENT,
+  REAL-1..REAL-7;
+duplicate IDs                   = 0;
+Swift tests                     = 3 PASS / 0 FAIL;
+primary evidence SHA256         = d87a3b021fa68037daac493df2749f337c74ec662698026e1d89a96e09918bb8;
+manifest SHA256                 = 83b5f1c9915e2f718da19068ffe692da6b262c33541e9875ee6278a52db2910b;
+review anchor                   = annotated tag targeting the V3 REV1 review commit.
+```
+
+The verifier now checks primary evidence digest/result, exact stale item set,
+manifest implementation hashes, sealed snapshot digest, Swift tests, worktree
+cleanliness, and a non-circular annotated V3 REV1 review tag targeting HEAD.
+
+V3 REV1 evidence:
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV1.json;
+
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3_REV1.json.
+```

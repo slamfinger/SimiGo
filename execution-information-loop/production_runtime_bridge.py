@@ -177,8 +177,6 @@ def execute(args: argparse.Namespace) -> None:
         close_loop(loop, source)
         return
     if stale_item_ids:
-            stale_item_ids.append(item_id)
-    if stale_item_ids:
         result = {
             "demand_id": CONTINUATION_POINT,
             "state": "BLOCKED_STALE_VALIDITY",
