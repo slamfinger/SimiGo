@@ -24601,3 +24601,60 @@ Human review returns ACCEPT / REVISE / REJECT for Package v1.1. ACCEPT would
 freeze the design only; implementation, dry materialization, validation, and
 any new campaign require separate explicit Human authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.2 Revision — 2026-10-09
+
+> **Status:** v1.1 = REVISE / RETAINED. Package v1.2 is DELIVERED FOR HUMAN
+> REVIEW. It remains design-only and authorizes no implementation or execution.
+
+```text
+v1.1 status                       = REVISE / RETAINED;
+v1.2 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / repair-run          = FORBIDDEN;
+new campaign                      = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.2 closes the Human-identified gaps:
+
+```text
+R1 S13 is historical fallback static audit, not decision_replay::replay;
+    active FailureCapture is terminal and D001 handoff remains separate.
+R2 EXPECTED vectors are comparator-only; map_fixtures is non-causal auxiliary;
+    causal materialization interfaces reject expected-vector inputs.
+R3 S2 is read-only verify_existing; snapshot creation/replacement is out of
+    scope; S1 uses embedding_metadata.id and audits retained ordering.
+R4 digest materialization and verification are separate; nested I1/I3/I4/I5/I6/
+    I8/I10 contracts are explicit; trace-chain canonical encoding is fixed; all
+    five D001 files bind content SHA-256 and Git blob ID.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.2_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.2. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, D001
+handoff, and any new campaign require separate explicit Human authorizations.
+```
