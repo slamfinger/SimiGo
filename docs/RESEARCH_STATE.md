@@ -24837,3 +24837,61 @@ freeze the design only; implementation, dry materialization, validation, D001
 handoff, observer, and any new campaign require separate explicit Human
 authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.6 Limit-of-Scope Revision — 2026-10-09
+
+> **Status:** v1.5 = REVISE / RETAINED. Package v1.6 is DELIVERED FOR HUMAN
+> REVIEW. It is a limit-of-scope design correction and authorizes no
+> implementation or execution.
+
+```text
+v1.5 status                       = REVISE / RETAINED;
+v1.6 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / repair-run          = FORBIDDEN;
+new campaign                      = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 handoff                     = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.6 corrects only:
+
+```text
+R1 every non-initial PASS successor cites prior trace_chain_digest_after_stage;
+    FAIL uses after_capture only as its terminal chain and has no successor.
+R2 MODE B WITNESS_ONLY_TERMINATION_CLOSED is independently verifiable when the
+    primary channel fails; primary chain remains INCOMPLETE_PRIMARY_CHAIN and is
+    not reconstructed.
+R3 PATH_IDENTITY_NOT_FROZEN is a formal PATH_GUARD_IDENTITY_NOT_FROZEN_REJECTION
+    with fixed precedence and CASE_TERMINATED behavior.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-v1.6-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.6_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.6. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, D001
+handoff, observer, and any new campaign require separate explicit Human
+authorizations.
+```
