@@ -25469,6 +25469,7 @@ explicit invalidation = REAL-3/REAL-4 COMPUTE, 7 REUSE;
 isolated source revision = REAL-1 COMPUTE, 8 REUSE;
 invalid information = BLOCKED_VALIDITY_FAILURE / no ES advance;
 stale validity preflight = BLOCKED_STALE_VALIDITY / no calculator or settlement;
+undefined validity policy = BLOCKED_VALIDITY_POLICY_MISSING / no calculator or settlement;
 vector/full-text/model/cloud access = false;
 canonical PALACE mutation = false;
 canonical IS mutation = false;
@@ -25489,4 +25490,11 @@ V2 stale-validity revision:
 ```text
 docs/02-evidence/production-runtime-integration-20261009/
   PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V2.json.
+```
+
+V3 undefined-policy revision:
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3.json.
 ```

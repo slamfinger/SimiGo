@@ -118,16 +118,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
 
   public func initialize(
     database: URL,
-    validUntil: String
+    validUntil: String?
   ) throws {
     try FileManager.default.createDirectory(
       at: database.deletingLastPathComponent(),
       withIntermediateDirectories: true
     )
-    _ = try runBridge("initialize", arguments: [
-      "--database", database.path,
-      "--valid-until", validUntil,
-    ])
+    var arguments = ["--database", database.path]
+    if let validUntil {
+      arguments += ["--valid-until", validUntil]
+    }
+    _ = try runBridge("initialize", arguments: arguments)
   }
 
   public func status(database: URL) throws -> [String: Any] {

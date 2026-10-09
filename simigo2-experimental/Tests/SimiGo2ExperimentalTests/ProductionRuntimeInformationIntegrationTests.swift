@@ -125,4 +125,28 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     let status = try integration.status(database: database)
     XCTAssertEqual(status["execution_state"] as? String ?? "null", "null")
   }
+
+  func testMissingValidityPolicyBlocksRealRuntimeWithoutExecution() async throws {
+    let database = try makeTemporaryDatabase()
+    let integration = ProductionRuntimeInformationIntegration()
+    try integration.initialize(database: database, validUntil: nil)
+
+    do {
+      _ = try await integration.continueWithRealInformation(
+        database: database,
+        handle: nil,
+        advancementID: "missing-validity-phase",
+        evaluatedAtUTC: "2026-10-09T00:00:00Z"
+      )
+      XCTFail("undefined validity policy must block")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .blockedInformationDemand(_, let state) = error else {
+        return XCTFail("unexpected production error: \(error)")
+      }
+      XCTAssertEqual(state, "BLOCKED_VALIDITY_POLICY_MISSING")
+    }
+
+    let status = try integration.status(database: database)
+    XCTAssertEqual(status["execution_state"] as? String ?? "null", "null")
+  }
 }

@@ -115,12 +115,68 @@ def execute(args: argparse.Namespace) -> None:
         prior_state = restored["state"]
         required = restored["required_item_ids"]
     stale_item_ids: list[str] = []
+    missing_validity_item_ids: list[str] = []
+    invalid_validity_item_ids: list[str] = []
     for item_id in required:
         item = loop.current_item(item_id)
         valid_until = item.get("valid_until_utc") if item else None
         if valid_until is None:
+            missing_validity_item_ids.append(item_id)
             continue
-        if evaluated_at > parse_utc(valid_until):
+        try:
+            if evaluated_at > parse_utc(valid_until):
+                stale_item_ids.append(item_id)
+        except ValueError:
+            invalid_validity_item_ids.append(item_id)
+    if missing_validity_item_ids:
+        result = {
+            "demand_id": CONTINUATION_POINT,
+            "state": "BLOCKED_VALIDITY_POLICY_MISSING",
+            "validity_failure_item_ids": missing_validity_item_ids,
+            "actions": [
+                {
+                    "item_id": item_id,
+                    "action": "BLOCKED_VALIDITY_POLICY_MISSING",
+                }
+                for item_id in missing_validity_item_ids
+            ],
+            "advanced": False,
+            "failure_reason": "validity policy is undefined; fail closed",
+        }
+        emit({
+            "ok": True,
+            "command": "execute",
+            "prior_execution_state": prior_state,
+            "restored_required_item_ids": required,
+            "result": result,
+        })
+        close_loop(loop, source)
+        return
+    if invalid_validity_item_ids:
+        result = {
+            "demand_id": CONTINUATION_POINT,
+            "state": "BLOCKED_INVALID_VALIDITY",
+            "validity_failure_item_ids": invalid_validity_item_ids,
+            "actions": [
+                {
+                    "item_id": item_id,
+                    "action": "BLOCKED_INVALID_VALIDITY",
+                }
+                for item_id in invalid_validity_item_ids
+            ],
+            "advanced": False,
+            "failure_reason": "validity policy is malformed; fail closed",
+        }
+        emit({
+            "ok": True,
+            "command": "execute",
+            "prior_execution_state": prior_state,
+            "restored_required_item_ids": required,
+            "result": result,
+        })
+        close_loop(loop, source)
+        return
+    if stale_item_ids:
             stale_item_ids.append(item_id)
     if stale_item_ids:
         result = {
@@ -222,7 +278,7 @@ def main() -> int:
 
     initialize_parser = subparsers.add_parser("initialize")
     initialize_parser.add_argument("--database", required=True)
-    initialize_parser.add_argument("--valid-until", required=True)
+    initialize_parser.add_argument("--valid-until")
     initialize_parser.set_defaults(handler=initialize)
 
     status_parser = subparsers.add_parser("status")

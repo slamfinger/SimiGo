@@ -104,3 +104,44 @@ docs/02-evidence/production-runtime-integration-20261009/
 
 The V1 evidence is retained unchanged. The verifier is bound by the current
 review commit instead of embedding its own hash in the manifest.
+
+## 7. V3 revision — undefined validity policy fail-closed
+
+V2 covered expired windows, but a required source with no validity policy was
+still allowed to enter the accepted carrier execution path. V3 closes that gap
+before calculator execution.
+
+```text
+validity policy = undefined;
+verdict         = BLOCKED_VALIDITY_POLICY_MISSING;
+blocked items   = 9;
+calculator      = not executed;
+settlement      = not created;
+ES advancement  = false.
+```
+
+V3 also retains expired and malformed gates:
+
+```text
+expired  = BLOCKED_STALE_VALIDITY;
+malformed = BLOCKED_INVALID_VALIDITY.
+```
+
+V3 evidence:
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3.json
+  SHA256 = 033c61d48d25079ec135f617fb7fc4149282d0bc8eea7554955a7d502fb3ffa1;
+
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3.json
+  SHA256 = 4b2a61f5b911891104a53ef3a8ede8da0ae388feb2e81f55aeaa1509abb331ac.
+```
+
+Swift regression:
+
+```text
+ProductionRuntimeInformationIntegrationTests
+Executed 3 tests, with 0 failures.
+```

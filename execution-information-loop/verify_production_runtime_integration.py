@@ -13,7 +13,7 @@ LAB_ROOT = ROOT
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/production-runtime-integration-20261009/"
-    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V2.json"
+    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3.json"
 )
 ACCEPTED_TAG = "simigo-es-is-final-acceptance-20261009-v1"
 ACCEPTED_COMMIT = "bb09a55ef980ac4af3f1605ccf8de928abf6cc23"
@@ -67,7 +67,7 @@ def main() -> int:
     recorded_hashes = manifest.get("implementation_sha256", {})
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V2",
+        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V3",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": (
             set(recorded_hashes) == set(REQUIRED_FILES)
@@ -90,7 +90,7 @@ def main() -> int:
         "swift_integration_tests_pass": (
             swift_test.returncode == 0
             and "Test Suite 'ProductionRuntimeInformationIntegrationTests' passed" in swift_output
-            and "Executed 2 tests, with 0 failures" in swift_output
+            and "Executed 3 tests, with 0 failures" in swift_output
         ),
     }
     report = {

@@ -160,6 +160,10 @@ additionally a preflight rejection: `BLOCKED_STALE_VALIDITY` occurs before any
 calculator call or new settlement. Refreshing the source's validity window is
 required before continuation.
 
+A missing or malformed validity policy is also a production preflight rejection;
+undefined validity is `BLOCKED_VALIDITY_POLICY_MISSING`, and malformed validity is
+`BLOCKED_INVALID_VALIDITY`.
+
 ## Explicit invalidation
 
 `CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement
