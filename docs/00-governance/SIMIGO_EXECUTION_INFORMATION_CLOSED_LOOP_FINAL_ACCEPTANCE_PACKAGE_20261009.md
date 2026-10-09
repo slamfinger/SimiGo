@@ -1,8 +1,8 @@
 # Execution–Information Closed Loop Final Acceptance Package
 
-> **Status:** READY FOR HUMAN REVIEW — ISOLATED REAL-SOURCE CLOSED LOOP COMPLETE  
+> **Status:** REVISED — FINAL ACCEPTANCE INTEGRITY REPAIR COMPLETE / READY FOR HUMAN REVIEW  
 > **Date:** 2026-10-09  
-> **Implementation base:** `5e849a7a` plus final crash/ambiguity/missing-information, contract-bound-state, atomic-write-group and review-manifest extensions  
+> **Implementation base:** `5e849a7a` plus final crash/ambiguity/missing-information, contract-bound-state, atomic-write-group, manifest-integrity and non-circular review-anchor extensions  
 > **Overall ruling:** PENDING HUMAN REVIEW
 
 ## 1. Review object
@@ -83,8 +83,23 @@ SHA256 = dfcaca97b00f801579d47bcef17e9a83d23f0a203058b24780d9df9eee427296
 Review manifest:
 
 ```text
-FINAL_ACCEPTANCE_REVIEW_MANIFEST_V3.json
-SHA256 = 5042f725d228ad4b720d6dc1d784929bbff5e7951549911faca0e35a7c1a20dd
+FINAL_ACCEPTANCE_REVIEW_MANIFEST_V4.json
+SHA256 = 0bdc96ec04eb35e3a99b19a0a373cb9af7c1d404bdc44f6339682fe6c4dbb198
+```
+
+The V4 manifest binds the exact ten-file implementation set, five selftests,
+primary evidence, sealed snapshot digest, and review constraints. It names an
+annotated Git tag as the non-circular immutable review anchor. Neither the
+manifest nor verifier embeds its own containing commit hash; the tag is created
+after the review commit and resolves that commit exactly.
+
+Skip-mode evidence:
+
+```text
+FINAL_ACCEPTANCE_VERIFIER_SKIP_TESTS_AUDIT.json
+SHA256 = 5a1b9f591f07c11681e625f86d1451f0233d1830b006f98a01e2c5f133b2b93b
+verdict = NOT_ACCEPTED_VERIFICATION_INCOMPLETE
+acceptance_pass = false
 ```
 
 One-command reviewer check:
@@ -97,7 +112,10 @@ This verifier reruns all five selftests, parses each PASS report, binds the
 primary evidence SHA-256, and requires every integrated check to be true.
 It also binds the implementation hashes recorded by the review manifest and the
 sealed PALACE snapshot digest. The running verifier does not self-bind its own
-bytes; that file is bound by the package commit and external review.
+bytes are bound both by the V4 manifest and by the immutable annotated review
+tag. `--skip-tests` performs static integrity checks only and necessarily
+returns `NOT_ACCEPTED_VERIFICATION_INCOMPLETE`; it can never return acceptance
+`PASS`.
 Multi-step Execution State and explicit invalidation writes are now enclosed in
 the carrier's reentrant atomic write group; a later write failure cannot leave a
 half-recorded transition.

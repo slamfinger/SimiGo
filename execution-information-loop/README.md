@@ -44,6 +44,9 @@ python3 execution-information-loop/verify_acceptance.py
 ```
 
 This reruns all five selftests and verifies the primary evidence digest.
+With `--skip-tests`, it performs static checks only and returns
+`NOT_ACCEPTED_VERIFICATION_INCOMPLETE`; skipped tests cannot produce acceptance
+`PASS`.
 
 ## D002 carrier integration
 

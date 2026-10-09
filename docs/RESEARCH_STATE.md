@@ -25445,7 +25445,9 @@ Reviewer tooling:
 ```text
 Multi-step ES/invalidation writes = atomic write group;
 one-command verifier = execution-information-loop/verify_acceptance.py;
-FINAL_ACCEPTANCE_REVIEW_MANIFEST_V3.json = READY_FOR_HUMAN_REVIEW;
+FINAL_ACCEPTANCE_REVIEW_MANIFEST_V4.json = READY_FOR_HUMAN_REVIEW;
 primary evidence = REAL_PALACE_CONTRACT_BOUND_ATOMIC_E2E_RECORD.json / 19 checks PASS.
 one-command verifier = binds implementation hashes and sealed PALACE snapshot.
+skip-tests = NOT_ACCEPTED_VERIFICATION_INCOMPLETE / never acceptance PASS;
+review anchor = annotated tag / non-circular containing-commit binding.
 ```
