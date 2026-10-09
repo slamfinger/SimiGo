@@ -25034,3 +25034,45 @@ Human review returns ACCEPT / REVISE / REJECT. ACCEPT would freeze the research
 specification and permit only preparation of a separate implementation or
 experiment authorization proposal.
 ```
+
+## Execution–Information Loop Vertical Slice Implementation and E2E PASS — 2026-10-09
+
+> **Status:** ISOLATED IMPLEMENTATION / END-TO-END SELFTEST PASS. This is the
+> first goal-driven vertical proof of the newly agreed ES-driven Information
+> Space loop. It is synthetic and isolated; it does not rerun D-002 or mutate
+> PALACE/canonical data.
+
+```text
+implementation path = execution-information-loop/;
+physical carrier = isolated SQLite database;
+ES demand = explicit continuation point, obligations, conditions and A/B/C closure;
+first run = COMPUTE A/B/C;
+restored run = REUSE A/B/C;
+invalidation B = selective recompute B/C while A reused;
+missing D = BLOCKED_MISSING_INFORMATION;
+payload digest mismatch = BLOCKED_VALIDITY_FAILURE;
+audit chain = PASS;
+real PALACE touched = false;
+D-002 rerun = false;
+D-001 executed = false;
+canonical/PALACE mutation = false;
+implementation authorization = Human-directed isolated vertical slice;
+production/PALACE integration = NOT AUTHORIZED.
+```
+
+Evidence:
+
+```text
+execution-information-loop/loop.py;
+execution-information-loop/selftest.py;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/E2E_SELFTEST_RECORD.json;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/ACCEPTANCE_MATRIX.md.
+```
+
+Next lawful action:
+
+```text
+Continue hardening this vertical slice toward real assets only under a separate
+implementation/experiment authorization. Do not reopen D-002 or mutate sealed
+evidence.
+```
