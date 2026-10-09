@@ -74,6 +74,18 @@ not synthesize a linear chain from row order. Invalidation of the metadata
 segment propagates to all seven metadata records while the collection remains
 reused.
 
+`real_palace_source_change_selftest.py` verifies source-change behavior on an
+isolated byte-identical copy:
+
+```text
+first run computes nine items;
+restored run reuses nine items;
+REAL-1 metadata changes on the copy;
+only REAL-1 recomputes;
+collection/segment and REAL-2..REAL-7 remain reused;
+the sealed canonical snapshot is untouched.
+```
+
 ## Persisted Execution State recovery
 
 The carrier-backed loop now records explicit Execution State transitions. After a

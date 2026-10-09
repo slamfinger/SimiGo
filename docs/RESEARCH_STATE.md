@@ -25327,3 +25327,32 @@ docs/00-governance/SIMIGO_REAL_PALACE_STRUCTURAL_DEPENDENCY_LOOP_PASS_20261009.m
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_STRUCTURAL_DEPENDENCY_E2E_RECORD.json.
 ```
+
+## Real PALACE Source-Change Loop PASS — 2026-10-09
+
+> **Status:** ISOLATED REAL-SOURCE COPY CHANGE PASS. A byte-identical temporary
+> copy was changed; the sealed canonical snapshot was untouched.
+
+```text
+first run = COMPUTE all nine;
+restored run = REUSE all nine;
+REAL-1 metadata change = COMPUTE REAL-1 only;
+unaffected = REUSE collection, segment and REAL-2..REAL-7;
+changed source version = persisted;
+sealed canonical snapshot mutation = false;
+automatic background source discovery = NOT ESTABLISHED;
+production runtime integration = NOT ESTABLISHED;
+PALACE-supplied validity = NOT ESTABLISHED;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED;
+D-002 campaign rerun = false;
+D-001 executed = false.
+```
+
+Evidence:
+
+```text
+docs/00-governance/SIMIGO_REAL_PALACE_SOURCE_CHANGE_LOOP_PASS_20261009.md;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_SOURCE_CHANGE_E2E_RECORD.json.
+```
