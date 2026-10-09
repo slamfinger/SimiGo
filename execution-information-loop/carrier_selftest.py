@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import tempfile
 from pathlib import Path
 
-from carrier_loop import CarrierInformationLoop
+from carrier_loop import CarrierInformationLoop, digest
 
 
 def canonical(value) -> str:
-    import json
+    import hashlib, json
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
@@ -66,6 +67,30 @@ def run() -> dict:
         }
         reused.commit()
         reused.close()
+
+        restored_state = CarrierInformationLoop.open(database)
+        state_record = restored_state.record_execution_state(
+            "state-after-advance-002",
+            continuation_point="report-generation",
+            prior_state_id=None,
+            demand_id="demand-001",
+            status="ADVANCED",
+            pending_obligations=["advance workflow"],
+            next_continuation_point="await-source-or-invalidation",
+            result_digest=digest(second["result"]),
+        )
+        restored_state.commit()
+        restored_state.close()
+
+        recovered = CarrierInformationLoop.open(database)
+        latest_state = recovered.latest_execution_state("report-generation")
+        checks["execution_state_restored"] = (
+            latest_state is not None
+            and latest_state["state_id"] == "state-after-advance-002"
+            and latest_state["status"] == "ADVANCED"
+            and latest_state["demand_id"] == "demand-001"
+        )
+        recovered.close()
 
         changed = CarrierInformationLoop.open(database)
         changed.update_source(
@@ -127,6 +152,7 @@ def run() -> dict:
         "d002_campaign_rerun": False,
         "d001_executed": False,
         "checks": checks,
+        "restored_execution_state": latest_state,
         "run_results": run_results,
         "result": "PASS" if checks["closed_loop_end_to_end"] else "FAIL",
     }

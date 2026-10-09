@@ -254,6 +254,72 @@ class CarrierInformationLoop:
     def current_settlement(self, item_id: str) -> Optional[dict]:
         return self._current_dependency_object(f"settlement:{item_id}")
 
+    def _latest_index_object_with_identity(self, prefix: str) -> Optional[dict]:
+        row = self.carrier.connection.execute(
+            "SELECT append_order,srs_identity,record_object "
+            "FROM is_index_entries WHERE srs_identity LIKE ? || '%'"
+            " ORDER BY append_order DESC LIMIT 1",
+            (prefix,),
+        ).fetchone()
+        if row is None:
+            return None
+        value = json.loads(self.carrier.get_object(row["record_object"]))
+        value["_identity"] = row["srs_identity"]
+        value["_object_id"] = row["record_object"]
+        return value
+
+    def record_execution_state(
+        self,
+        state_id: str,
+        continuation_point: str,
+        prior_state_id: Optional[str],
+        demand_id: str,
+        status: str,
+        pending_obligations: list[str],
+        next_continuation_point: str,
+        result_digest: str,
+    ) -> dict:
+        if status not in {"RESTORED", "ADVANCED", "BLOCKED"}:
+            raise ValueError("invalid execution state")
+        identity = f"execution_state:{continuation_point}:{state_id}"
+        if self._current_index_object(identity) is not None:
+            raise FileExistsError(identity)
+        value = {
+            "schema_id": "EINFO-EXECUTION-STATE-V1",
+            "state_id": state_id,
+            "continuation_point": continuation_point,
+            "prior_state_id": prior_state_id,
+            "demand_id": demand_id,
+            "status": status,
+            "pending_obligations": pending_obligations,
+            "next_continuation_point": next_continuation_point,
+            "result_digest": result_digest,
+        }
+        object_id = self._put_index_object(identity, value)
+        dependency_id = f"execution_state:{state_id}"
+        revision = len(self.carrier.get_dependency_history(dependency_id)) + 1
+        _, dependency_order = self.carrier.atomic_dependency_materialization(
+            canonical(value),
+            {
+                "dependency_id": dependency_id,
+                "content_address": "",
+                "revision": revision,
+                "reason": "execution state transition",
+            },
+        )
+        return {
+            "state_id": state_id,
+            "object_id": object_id,
+            "dependency_order": dependency_order,
+        }
+
+    def latest_execution_state(self, continuation_point: str) -> Optional[dict]:
+        value = self._latest_index_object_with_identity(f"execution_state:{continuation_point}:")
+        if value is not None:
+            value.pop("_identity", None)
+            value.pop("_object_id", None)
+        return value
+
     def execute_demand(
         self,
         demand_id: str,
