@@ -24546,3 +24546,58 @@ Human review returns ACCEPT / REVISE / REJECT for the design-only package.
 ACCEPT would freeze the design only; implementation, dry materialization,
 validation, and any new campaign require separate explicit Human authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.1 Revision — 2026-10-09
+
+> **Status:** v1.0 = REVISE / RETAINED. Package v1.1 is DELIVERED FOR HUMAN
+> REVIEW. It remains design-only and authorizes no implementation or execution.
+
+```text
+v1.0 package SHA256               = 5e9259207f42c3c1a5f5527add22eae17df1d88f4e2eba2ab2cc40de8453bff0;
+v1.0 status                       = REVISE / RETAINED;
+v1.1 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / new campaign        = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.1 adds:
+
+```text
+1 S0–S13 stage-to-code mapping with required I/O and terminal stop rules;
+2 mandatory write-once RAW_EXCEPTION_PAYLOAD and NORMALIZED_EXCEPTION closure,
+  hash-chain correlation, and explicit redaction rules;
+3 D-001 exact-field preflight with fixed schema authority, required fields,
+  types, enums, rejection classes, and no semantic repair;
+4 D-001 core byte-invariance verification at T0–T6 with content SHA-256, Git
+  blob binding, fail-closed stop rule, and no automatic repair.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.1_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.1. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, and
+any new campaign require separate explicit Human authorizations.
+```
