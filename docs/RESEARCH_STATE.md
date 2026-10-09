@@ -25551,3 +25551,36 @@ Primary acceptance record:
 ```text
 docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_INTEGRATION_V3_REV2_ACCEPT_20261009.md.
 ```
+
+## Integrated SimiGo Proof — Isolated End-to-End Validation PASS — 2026-10-09
+
+> **Status:** AUTHORIZED ISOLATED END-TO-END VALIDATION PASS. One proof flow
+> combines real SimiGo Execution State authority, real PALACE structural source,
+> persistent D002 carrier, recovery, reuse, invalidation, selective recompute,
+> and failure safety. Production deployment remains NOT AUTHORIZED.
+
+```text
+initial real-source compute = 9 COMPUTE;
+runtime restart/reuse = 9 REUSE;
+REAL-3 invalidation = REAL-3/REAL-4 COMPUTE, 7 REUSE;
+REAL-1 source revision = REAL-1 COMPUTE, 8 REUSE;
+stale validity = BLOCKED_STALE_VALIDITY / no calculator or settlement;
+missing information = BLOCKED_MISSING_INFORMATION;
+malformed observation time = fail closed;
+unknown persisted lifecycle = rejected;
+carrier all objects verify = true;
+vector/full-text/model/cloud access = false;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+production deployment = NOT AUTHORIZED;
+arbitrary PALACE equivalence = NOT ESTABLISHED;
+full Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_INTEGRATED_SIMIGO_PROOF_ISOLATED_E2E_PASS_20261009.md;
+docs/02-evidence/integrated-simigo-proof-20261009/
+  INTEGRATED_SIMIGO_PROOF_E2E_RECORD_V1.json.
+```

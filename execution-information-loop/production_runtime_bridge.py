@@ -108,6 +108,9 @@ def audit(args: argparse.Namespace) -> None:
     for item_id in REQUIRED_ITEMS:
         settlement = loop.current_settlement(item_id)
         settlements[item_id] = settlement.get("state") if settlement else None
+    object_rows = loop.carrier.connection.execute(
+        "SELECT object_id FROM is_objects ORDER BY created_order"
+    ).fetchall()
     value = {
         "ok": True,
         "command": "audit",
@@ -124,6 +127,10 @@ def audit(args: argparse.Namespace) -> None:
             ).fetchall()
         ]),
         "current_settlement_states": settlements,
+        "carrier_object_count": len(object_rows),
+        "carrier_all_objects_verify": all(
+            loop.carrier.verify_object(row["object_id"]) for row in object_rows
+        ),
     }
     close_loop(loop, source)
     emit(value)
@@ -259,6 +266,31 @@ def execute(args: argparse.Namespace) -> None:
     emit(value)
 
 
+def probe_missing(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    demand_id = "integrated-proof-missing"
+    loop.define_demand(
+        demand_id,
+        continuation_point="integrated-proof-missing-information",
+        pending_obligations=["prove missing information blocks continuation"],
+        continuation_conditions=["required source must exist"],
+        required_item_ids=["MISSING-REAL-SOURCE"],
+    )
+    result = source.execute_real_demand(
+        demand_id,
+        "missing-information-probe",
+        count=7,
+        evaluated_at_utc=args.evaluated_at,
+    )
+    value = {
+        "ok": True,
+        "command": "probe-missing",
+        "result": result,
+    }
+    close_loop(loop, source)
+    emit(value)
+
+
 def invalidate(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
     value = {
@@ -290,7 +322,7 @@ def source_change(args: argparse.Namespace) -> None:
             args.version,
             payload,
             "bounded production integration isolated source revision",
-            valid_until_utc="2030-12-31T23:59:59Z",
+            valid_until_utc=args.valid_until,
         ),
     }
     loop.commit()
@@ -331,7 +363,13 @@ def main() -> int:
     source_change_parser.add_argument("--database", required=True)
     source_change_parser.add_argument("--item-id", required=True)
     source_change_parser.add_argument("--version", required=True)
+    source_change_parser.add_argument("--valid-until", required=True)
     source_change_parser.set_defaults(handler=source_change)
+
+    missing_parser = subparsers.add_parser("probe-missing")
+    missing_parser.add_argument("--database", required=True)
+    missing_parser.add_argument("--evaluated-at", required=True)
+    missing_parser.set_defaults(handler=probe_missing)
 
     args = parser.parse_args()
     try:

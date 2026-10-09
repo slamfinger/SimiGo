@@ -167,6 +167,17 @@ undefined validity is `BLOCKED_VALIDITY_POLICY_MISSING`, and malformed validity 
 Persisted production handles are recovery-validated: unknown and discarded
 lifecycles are rejected rather than silently restored as `.active`.
 
+## Integrated SimiGo isolated proof
+
+```bash
+python3 execution-information-loop/verify_integrated_simigo_proof.py
+```
+
+`IntegratedSimigoProofE2ETests` validates one isolated real-source flow:
+Execution State recovery, persistent carrier reuse, explicit invalidation,
+source-change recompute, stale/missing/malformed failure safety, corrupted
+lifecycle rejection, and full carrier object verification.
+
 ## Explicit invalidation
 
 `CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement

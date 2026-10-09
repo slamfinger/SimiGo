@@ -63,7 +63,10 @@ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
     // A persisted production handle may only resume from a live lifecycle.
     // `discarded` is intentionally rejected here: it is a valid lifecycle
     // value, but not a valid recovery source.
-    guard lifecycle == "active" || lifecycle == "restored" || lifecycle == "attached" else {
+    guard
+      let lifecycle = ExecutionBranchLifecycle(rawValue: lifecycle),
+      lifecycle != .discarded
+    else {
       throw ProductionRuntimeInformationError.invalidPersistedExecutionState(
         lifecycle: lifecycle
       )
@@ -79,7 +82,7 @@ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
         nextInput: nextInput,
         continuationID: continuationID
       ),
-      lifecycle: ExecutionBranchLifecycle(rawValue: lifecycle) ?? .active
+      lifecycle: lifecycle
     )
   }
 }
@@ -184,12 +187,24 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
   public func applyIsolatedSourceRevision(
     database: URL,
     itemID: String,
-    version: String
+    version: String,
+    validUntil: String = "2030-12-31T23:59:59Z"
   ) throws {
     _ = try runBridge("source-change", arguments: [
       "--database", database.path,
       "--item-id", itemID,
       "--version", version,
+      "--valid-until", validUntil,
+    ])
+  }
+
+  public func probeMissingInformation(
+    database: URL,
+    evaluatedAtUTC: String
+  ) throws -> [String: Any] {
+    try runBridge("probe-missing", arguments: [
+      "--database", database.path,
+      "--evaluated-at", evaluatedAtUTC,
     ])
   }
 
