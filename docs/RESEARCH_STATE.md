@@ -24658,3 +24658,63 @@ Human review returns ACCEPT / REVISE / REJECT for Package v1.2. ACCEPT would
 freeze the design only; implementation, dry materialization, validation, D001
 handoff, and any new campaign require separate explicit Human authorizations.
 ```
+
+## D-002 Instrumentation / Redesign Package v1.3 Revision — 2026-10-09
+
+> **Status:** v1.2 = REVISE / RETAINED. Package v1.3 is DELIVERED FOR HUMAN
+> REVIEW. It remains design-only and authorizes no implementation or execution.
+
+```text
+v1.2 status                       = REVISE / RETAINED;
+v1.3 status                       = DELIVERED FOR HUMAN REVIEW;
+implementation                    = NOT AUTHORIZED;
+dry materialization / validation  = NOT AUTHORIZED;
+D-002 rerun / repair-run          = FORBIDDEN;
+new campaign                      = NOT AUTHORIZED;
+D-001 decide() execution          = NOT AUTHORIZED;
+observer execution                = NOT AUTHORIZED;
+D-001 handoff                     = NOT AUTHORIZED;
+D-001 Decision Core mutation      = NOT AUTHORIZED;
+D-002 implementation mutation     = NOT AUTHORIZED;
+canonical/PALACE mutation         = NOT AUTHORIZED;
+evidence overwrite                = FORBIDDEN;
+semantic search                   = FORBIDDEN;
+embedding/vector traversal        = FORBIDDEN;
+cloud/model causal participation  = FORBIDDEN;
+E9                                = NOT AUTHORIZED;
+EXP-004                           = NOT AUTHORIZED;
+PIR                               = CLOSED / VALIDATION DEFERRED;
+PALACE equivalence                = NOT ESTABLISHED;
+Integrated SimiGo proof           = NOT ESTABLISHED.
+```
+
+v1.3 closes the remaining contract gaps:
+
+```text
+R1 active case order is uniquely S0–S12; S8 validates non-invocation wrappers,
+   S9 materializes then finally preflights I6, and S13 is campaign-level
+   historical static audit.
+R2 StageRecordCore, StageRecordFull, per-case chain rules, sequence rules and
+   FailureCapture association are fully specified.
+R3 RAW_EXCEPTION_PAYLOAD and NORMALIZED_EXCEPTION are separate write-once
+   objects with exact-byte/lossless-capture rules, redaction, partial-write and
+   missing-capture states.
+R4 The complete preflight rejection enum includes path-safety rejection with
+   frozen first-fault precedence.
+```
+
+Revision review object:
+
+```text
+docs/02-evidence/integrated-es-palace-d002-instrumentation-redesign-revision-v1.3-20261009/
+  SIMIGO_INTEGRATED_ES_PALACE_D002_INSTRUMENTATION_REDESIGN_AUTHORIZATION_PACKAGE_V1.3_20261009.md.
+```
+
+Next lawful action:
+
+```text
+Human review returns ACCEPT / REVISE / REJECT for Package v1.3. ACCEPT would
+freeze the design only; implementation, dry materialization, validation, D001
+handoff, observer, and any new campaign require separate explicit Human
+authorizations.
+```
