@@ -100,7 +100,10 @@ propagate explicit REAL-3 invalidation to REAL-4;
 apply a REAL-1 source change without recomputing unaffected records;
 expire REAL-3 and propagate to REAL-4;
 block malformed observation time in the same loop;
+missing information blocks in the same loop;
+cross-segment source ambiguity fails closed;
 roll back a mid-demand failure atomically;
+roll back a SIGKILLed worker without partial settlement;
 verify every carrier object.
 ```
 

@@ -7,7 +7,10 @@ import hashlib
 import json
 import shutil
 import sqlite3
+import signal
+import subprocess
 import tempfile
+import sys
 from pathlib import Path
 
 from carrier_loop import CarrierInformationLoop, digest
@@ -246,8 +249,94 @@ def run() -> dict:
             and carrier.current_settlement("ROLLBACK-A") is None
             and carrier.current_settlement("ROLLBACK-B") is None
         )
+
+        carrier.put_source(
+            "demand-real-001", "CRASH-A", "controlled_failure", "v1", {"value": 3},
+            valid_until_utc=VALID_UNTIL,
+        )
+        carrier.put_source(
+            "demand-real-001", "CRASH-B", "controlled_failure", "v1", {"value": 4},
+            valid_until_utc=VALID_UNTIL,
+        )
+        carrier.define_demand(
+            "demand-process-crash",
+            continuation_point="integrated-process-crash",
+            pending_obligations=["prove killed process leaves no partial settlement"],
+            continuation_conditions=["first computes, worker is killed before second"],
+            required_item_ids=["CRASH-A", "CRASH-B"],
+        )
+        crash_object_count_before = carrier.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
         carrier.commit()
         carrier.close()
+
+        worker = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("crash_worker.py")),
+                "--database", database,
+                "--demand-id", "demand-process-crash",
+                "--crash-item", "CRASH-B",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        checks["crash_worker_killed_mid_transaction"] = (
+            worker.returncode == -signal.SIGKILL
+        )
+
+        after_crash = CarrierInformationLoop.open(database)
+        crash_object_count_after = after_crash.carrier.connection.execute(
+            "SELECT COUNT(*) FROM is_objects"
+        ).fetchone()[0]
+        checks["process_crash_leaves_no_partial_settlement"] = (
+            crash_object_count_before == crash_object_count_after
+            and after_crash.current_settlement("CRASH-A") is None
+            and after_crash.current_settlement("CRASH-B") is None
+        )
+        after_crash.define_demand(
+            "demand-integrated-missing",
+            continuation_point="integrated-missing-information",
+            pending_obligations=["prove missing information cannot continue"],
+            continuation_conditions=["required source must exist"],
+            required_item_ids=["MISSING-REAL-SOURCE"],
+        )
+        blocked_missing = after_crash.execute_demand(
+            "demand-integrated-missing",
+            "advance-missing",
+            lambda item_id, source_payload, dependencies: {},
+            evaluated_at_utc="2026-10-09T00:07:00Z",
+        )
+        checks["integrated_missing_information_blocks"] = (
+            blocked_missing["state"] == "BLOCKED_MISSING_INFORMATION"
+            and blocked_missing["missing_item_ids"] == ["MISSING-REAL-SOURCE"]
+            and blocked_missing["advanced"] is False
+        )
+        after_crash.commit()
+        after_crash.close()
+
+        connection = sqlite3.connect(snapshot)
+        vector_segment_id = connection.execute(
+            "SELECT id FROM segments WHERE scope='VECTOR' LIMIT 1"
+        ).fetchone()[0]
+        connection.execute(
+            "UPDATE embeddings SET segment_id=? WHERE id=1",
+            (vector_segment_id,),
+        )
+        connection.commit()
+        connection.close()
+        ambiguous_sha256 = sha256_file(snapshot)
+        ambiguous_source = RealPalaceSource(snapshot, ambiguous_sha256)
+        try:
+            ambiguous_source.structural_records(count=7)
+            ambiguous_blocked = False
+        except ValueError as error:
+            ambiguous_blocked = "ambiguous real source segment" in str(error)
+        ambiguous_source.close()
+        checks["ambiguous_source_fails_closed"] = ambiguous_blocked
 
         final = CarrierInformationLoop.open(database)
         final.carrier.validate_schema()

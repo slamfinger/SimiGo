@@ -25406,3 +25406,34 @@ demand_derived_from_restored_execution_state = PASS.
 docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_STATE_DRIVEN_CLOSED_LOOP_E2E_RECORD.json.
 ```
+
+## Execution–Information Final Acceptance Package — 2026-10-09
+
+> **Status:** READY FOR HUMAN REVIEW — ISOLATED REAL-SOURCE CLOSED LOOP
+> COMPLETE. Overall acceptance is not self-declared and remains pending Human
+> review.
+
+```text
+real structural graph = PASS;
+state-derived demand = PASS;
+valid reuse = PASS;
+explicit/dependency/source/validity invalidation = PASS;
+restart recovery = PASS;
+missing/ambiguity/malformed failure safety = PASS;
+mid-demand exception rollback = PASS;
+SIGKILL transaction rollback = PASS;
+all carrier objects verify = PASS;
+PALACE-supplied validity = NOT ESTABLISHED;
+automatic source discovery = NOT ESTABLISHED;
+production runtime integration = NOT ESTABLISHED;
+PALACE equivalence = NOT ESTABLISHED;
+Integrated SimiGo proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_EXECUTION_INFORMATION_CLOSED_LOOP_FINAL_ACCEPTANCE_PACKAGE_20261009.md;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/
+  REAL_PALACE_CRASH_SAFE_COMPLETE_E2E_RECORD.json.
+```
