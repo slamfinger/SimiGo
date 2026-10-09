@@ -51,3 +51,19 @@ B source update recomputes B/C while A remains reused;
 missing D fails closed;
 carrier schema and all objects verify.
 ```
+
+## Persisted Execution State recovery
+
+The carrier-backed loop now records explicit Execution State transitions. After a
+successful demand run, it can close/reopen the database and restore the latest
+state for a continuation point. Source updates then invalidate dependent
+settlements while unaffected settlements remain reused.
+
+`carrier_selftest.py` verifies this full sequence:
+
+```text
+first run computes A/B/C;
+restored second run reuses A/B/C;
+Execution State is persisted and restored after restart;
+B source update recomputes B/C while A remains reused.
+```

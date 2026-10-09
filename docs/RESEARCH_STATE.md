@@ -25121,3 +25121,29 @@ Continue hardening the vertical slice under isolated authorization. Real PALACE
 integration, production runtime integration, and any new campaign require
 separate explicit Human authorization.
 ```
+
+## Execution–Information Loop Recovery Extension PASS — 2026-10-09
+
+> **Status:** ISOLATED RECOVERY EXTENSION PASS. The D002-carrier-backed loop now
+> persists explicit Execution State transitions and restores them after restart.
+
+```text
+first run = COMPUTE A/B/C;
+second run = REUSE A/B/C;
+Execution State restored after reopen = true;
+B source update = recomputes B/C;
+A remains reused = true;
+D-002 campaign rerun = false;
+D-001 executed = false;
+PALACE/canonical mutation = false;
+production/PALACE integration = NOT AUTHORIZED.
+```
+
+Evidence:
+
+```text
+execution-information-loop/carrier_loop.py;
+execution-information-loop/carrier_selftest.py;
+docs/02-evidence/execution-information-loop-vertical-slice-20261009/RECOVERY_E2E_RECORD.json;
+docs/00-governance/SIMIGO_EXECUTION_INFORMATION_LOOP_RECOVERY_EXTENSION_PASS_20261009.md.
+```
