@@ -25528,3 +25528,26 @@ Swift tests                 = 4 PASS / 0 FAIL.
 docs/02-evidence/production-runtime-integration-20261009/
   PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV2.json.
 ```
+
+## Production Runtime Integration V3 REV2 ACCEPT — 2026-10-09
+
+> **Status:** HUMAN RULING ACCEPT. The bounded production runtime integration
+> is accepted; production deployment remains NOT AUTHORIZED.
+
+```text
+accepted review commit = 2a3f1372946b53e47114ebaba6efb6264812d44f;
+accepted review tag = simigo-production-integration-v3-rev2-review;
+production verifier = PASS;
+Swift tests = 4 PASS / 0 FAIL;
+production deployment = NOT AUTHORIZED;
+Integrated SimiGo proof = NOT ESTABLISHED;
+canonical PALACE mutation = NOT PERFORMED;
+canonical Information Space mutation = NOT PERFORMED;
+D-002 rerun / repair-run = NOT PERFORMED.
+```
+
+Primary acceptance record:
+
+```text
+docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_INTEGRATION_V3_REV2_ACCEPT_20261009.md.
+```
