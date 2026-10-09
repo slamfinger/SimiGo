@@ -73,7 +73,9 @@ class CarrierInformationLoop:
             record = self.carrier.resolve_current_dependency(dependency_id)
         except MissingLogicalEntry:
             return None
-        return json.loads(self.carrier.get_object(record.content_address))
+        value = json.loads(self.carrier.get_object(record.content_address))
+        value["_object_id"] = record.content_address
+        return value
 
     def _put_index_object(self, identity: str, value: dict) -> str:
         content = canonical(value)
@@ -277,16 +279,15 @@ class CarrierInformationLoop:
                 return None
             dependencies = item["dependencies"]
             dependency_values: dict[str, dict] = {}
+            dependency_object_ids: dict[str, str] = {}
             dependency_blocked = False
             for dependency_id in dependencies:
                 dependency = resolve(dependency_id, visiting)
                 if dependency is None:
                     dependency_blocked = True
                 else:
-                    dependency_values[dependency_id] = {
-                "value": dependency["value"],
-                "source_object_id": dependency.get("source_object_id"),
-            }
+                    dependency_values[dependency_id] = dependency["value"]
+                    dependency_object_ids[dependency_id] = dependency["object_id"]
             if dependency_blocked:
                 missing.append(item_id)
                 actions.append({"item_id": item_id, "action": "BLOCKED_DEPENDENCY_MISSING"})
@@ -300,17 +301,14 @@ class CarrierInformationLoop:
                     reusable = (
                         settlement["result"]["payload_digest"] == digest(item["source_payload"])
                         and settlement["result"]["source_version"] == item["source_version"]
-                        and settlement["result"]["dependency_object_ids"] == {
-                            key: value["object_id"] for key, value in dependency_values.items()
-                        }
+                        and settlement["result"]["dependency_object_ids"] == dependency_object_ids
                         and basis["source_payload_sha256"] == digest(item["source_payload"])
                         and basis["source_version"] == item["source_version"]
-                        and basis["dependency_object_ids"] == {
-                            key: value["object_id"] for key, value in dependency_values.items()
-                        }
+                        and basis["dependency_object_ids"] == dependency_object_ids
                     )
                 except KeyError:
                     reusable = False
+            basis = settlement["basis"] if settlement is not None else None
             if reusable:
                 result = settlement["result"]["value"]
                 action = "REUSE"
@@ -320,6 +318,11 @@ class CarrierInformationLoop:
                 action = "COMPUTE"
                 computed.append(item_id)
             payload_digest = digest(item["source_payload"])
+            print('DEBUG_SETTLE_CALL',item['item_id'],{
+                'payload':payload_digest,
+                'version':item['source_version'],
+                'dependency_ids':dependency_object_ids,
+            },file=__import__('sys').stderr)
             settlement_record = self.settle(
                 advancement_id,
                 item_id,
@@ -328,18 +331,18 @@ class CarrierInformationLoop:
                     "payload_digest": payload_digest,
                     "source_version": item["source_version"],
                     "dependency_object_ids": {
-                        key: dependency_values[key]["source_object_id"] if "source_object_id" in dependency_values[key] else dependency_values[key].get("object_id") for key in dependency_values
+                        key: dependency_object_ids[key] for key in dependency_values
                     },
                 },
                 {
                     "source_payload_sha256": payload_digest,
                     "source_version": item["source_version"],
                     "dependency_object_ids": {
-                        key: dependency_values[key]["source_object_id"] if "source_object_id" in dependency_values[key] else dependency_values[key].get("object_id") for key in dependency_values
+                        key: dependency_object_ids[key] for key in dependency_values
                     },
                 },
             )
-            resolved[item_id] = result
+            resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
             actions.append({
                 "item_id": item_id,
                 "action": action,
@@ -347,11 +350,11 @@ class CarrierInformationLoop:
                 "settlement_object_id": settlement_record["object_id"],
                 "source_payload_digest": payload_digest,
             })
-            return result
+            return {"value": result, "object_id": settlement_record["object_id"]}
 
         for item_id in required:
-            value = resolve(item_id, set())
-            if value is None:
+            resolved_value = resolve(item_id, set())
+            if resolved_value is None:
                 result = {
                     "demand_id": demand_id,
                     "state": "BLOCKED_MISSING_INFORMATION",
@@ -364,7 +367,7 @@ class CarrierInformationLoop:
         result_payload = {
             "demand_id": demand_id,
             "continuation_point": demand["continuation_point"],
-            "resolved_items": resolved,
+            "resolved_items": {key: value["value"] for key, value in resolved.items()},
         }
         return {
             "demand_id": demand_id,

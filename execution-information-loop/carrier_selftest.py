@@ -118,6 +118,7 @@ def run() -> dict:
     return {
         "schema_id": "D002-EXECUTION-INFORMATION-CARRIER-SELFTEST-V1",
         "carrier": "existing D002 DatabaseBackedIS",
+        "database_path": database,
         "isolated_scope": "SYNTHETIC_SQLITE_REFERENCE",
         "real_palace_touched": False,
         "d002_campaign_rerun": False,
