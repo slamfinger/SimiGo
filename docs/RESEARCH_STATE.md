@@ -25513,3 +25513,18 @@ Swift tests = 3 PASS / 0 FAIL.
 docs/02-evidence/production-runtime-integration-20261009/
   PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV1.json.
 ```
+
+V3 REV2 restore-safety revision:
+
+```text
+unknown persisted lifecycle = rejected;
+discarded lifecycle         = rejected as recovery source;
+default to active           = removed;
+corrupt archive             = no runtime advance / no settlement;
+Swift tests                 = 4 PASS / 0 FAIL.
+```
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV2.json.
+```

@@ -20,7 +20,7 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
       SerializedProductionExecutionState.self,
       from: Data(contentsOf: url)
     )
-    return record.handle
+    return try record.validatedHandle()
   }
 
   func testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop() async throws {
@@ -171,5 +171,79 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
 
     let status = try integration.status(database: database)
     XCTAssertEqual(status["execution_state"] as? String ?? "null", "null")
+  }
+
+  func testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement() async throws {
+    let database = try makeTemporaryDatabase()
+    let handleURL = database.deletingLastPathComponent()
+      .appendingPathComponent("corrupt-production-execution-state.json")
+    let integration = ProductionRuntimeInformationIntegration()
+    try integration.initialize(
+      database: database,
+      validUntil: "2030-12-31T23:59:59Z"
+    )
+
+    let first = try await integration.continueWithRealInformation(
+      database: database,
+      handle: nil,
+      advancementID: "known-lifecycle-phase",
+      evaluatedAtUTC: "2026-10-09T00:00:00Z"
+    )
+    let goodRecord = SerializedProductionExecutionState(handle: first.handle)
+    let baseline = try integration.audit(database: database)
+
+    // A corrupted archive must not be silently converted into `.active`.
+    let corrupted = SerializedProductionExecutionState(
+      id: goodRecord.id,
+      lineageRoot: goodRecord.lineageRoot,
+      lineageParent: goodRecord.lineageParent,
+      position: 99,
+      nextInput: "corrupted-next",
+      continuationID: "corrupted-cont",
+      lifecycle: "UNKNOWN_CORRUPTED_LIFECYCLE"
+    )
+    try JSONEncoder().encode(corrupted).write(
+      to: handleURL,
+      options: .atomic
+    )
+
+    do {
+      _ = try restore(from: handleURL)
+      XCTFail("unknown persisted lifecycle must fail closed")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .invalidPersistedExecutionState(
+        lifecycle: "UNKNOWN_CORRUPTED_LIFECYCLE"
+      ) = error else {
+        return XCTFail("unexpected production error: \(error)")
+      }
+    }
+
+    let after = try integration.audit(database: database)
+    let baselineState = baseline["execution_state"] as? [String: Any] ?? [:]
+    let afterState = after["execution_state"] as? [String: Any] ?? [:]
+    XCTAssertEqual(
+      afterState["state_id"] as? String,
+      baselineState["state_id"] as? String
+    )
+    XCTAssertEqual(
+      afterState["status"] as? String,
+      baselineState["status"] as? String
+    )
+    XCTAssertEqual(
+      afterState["result_digest"] as? String,
+      baselineState["result_digest"] as? String
+    )
+    XCTAssertEqual(
+      after["execution_state_dependency_count"] as? Int,
+      baseline["execution_state_dependency_count"] as? Int
+    )
+    XCTAssertEqual(
+      after["settlement_dependency_count"] as? Int,
+      baseline["settlement_dependency_count"] as? Int
+    )
+    XCTAssertEqual(
+      after["current_settlement_states"] as? [String: String],
+      baseline["current_settlement_states"] as? [String: String]
+    )
   }
 }

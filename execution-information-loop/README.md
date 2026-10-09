@@ -164,6 +164,9 @@ A missing or malformed validity policy is also a production preflight rejection;
 undefined validity is `BLOCKED_VALIDITY_POLICY_MISSING`, and malformed validity is
 `BLOCKED_INVALID_VALIDITY`.
 
+Persisted production handles are recovery-validated: unknown and discarded
+lifecycles are rejected rather than silently restored as `.active`.
+
 ## Explicit invalidation
 
 `CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement

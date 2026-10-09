@@ -101,6 +101,34 @@ def status(args: argparse.Namespace) -> None:
     emit(value)
 
 
+def audit(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    state = loop.latest_execution_state(CONTINUATION_POINT)
+    settlements = {}
+    for item_id in REQUIRED_ITEMS:
+        settlement = loop.current_settlement(item_id)
+        settlements[item_id] = settlement.get("state") if settlement else None
+    value = {
+        "ok": True,
+        "command": "audit",
+        "execution_state": state,
+        "execution_state_dependency_count": len(
+            loop.carrier.get_dependency_history(
+                f"execution_state:{state['state_id']}" if state else "none"
+            )
+        ),
+        "settlement_dependency_count": len([
+            row for row in loop.carrier.connection.execute(
+                "SELECT dependency_id FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchall()
+        ]),
+        "current_settlement_states": settlements,
+    }
+    close_loop(loop, source)
+    emit(value)
+
+
 def execute(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
     evaluated_at = parse_utc(args.evaluated_at)
@@ -282,6 +310,10 @@ def main() -> int:
     status_parser = subparsers.add_parser("status")
     status_parser.add_argument("--database", required=True)
     status_parser.set_defaults(handler=status)
+
+    audit_parser = subparsers.add_parser("audit")
+    audit_parser.add_argument("--database", required=True)
+    audit_parser.set_defaults(handler=audit)
 
     execute_parser = subparsers.add_parser("execute")
     execute_parser.add_argument("--database", required=True)

@@ -178,3 +178,46 @@ docs/02-evidence/production-runtime-integration-20261009/
 docs/02-evidence/production-runtime-integration-20261009/
   PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3_REV1.json.
 ```
+
+## 9. V3 REV2 revision — persisted lifecycle restore fail-closed
+
+Human review found that a corrupted or unknown persisted `lifecycle` was being
+converted to `.active` by `?? .active` and could therefore reattach as a live
+execution. V3 REV2 removes that fail-open path.
+
+```text
+allowed recovery lifecycles = active, restored, attached;
+unknown lifecycle           = REJECTED;
+discarded lifecycle         = REJECTED;
+default to active           = removed;
+corrupt archive advancement = false;
+new settlement              = false.
+```
+
+The Swift recovery archive is validated before attachment. The regression test
+also compares the post-rejection audit against the pre-recovery baseline:
+
+```text
+Execution State dependency count = unchanged;
+settlement dependency count      = unchanged;
+current settlement states        = unchanged.
+```
+
+V3 REV2 evidence:
+
+```text
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV2.json
+  SHA256 = a7319f871d08e964901fd7adaaed1969f5412de3e7c28ecf3e3fc5db00103c2b;
+
+docs/02-evidence/production-runtime-integration-20261009/
+  PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3_REV2.json
+  SHA256 = 222da75fc57cdbdf209d1fef83125e7b9448fbdd6e372d7ce3becade89201563.
+```
+
+Swift regression:
+
+```text
+ProductionRuntimeInformationIntegrationTests
+Executed 4 tests, with 0 failures.
+```

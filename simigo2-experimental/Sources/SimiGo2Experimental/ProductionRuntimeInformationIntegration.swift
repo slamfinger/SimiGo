@@ -10,7 +10,7 @@ public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
     state: String,
     validityFailureItemIDs: [String]
   )
-  case invalidPersistedExecutionState
+  case invalidPersistedExecutionState(lifecycle: String)
 }
 
 public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
@@ -41,8 +41,34 @@ public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
     lifecycle = handle.lifecycle.rawValue
   }
 
-  public var handle: ExecutionStateHandle {
-    ExecutionStateHandle(
+  public init(
+    id: String,
+    lineageRoot: String,
+    lineageParent: String?,
+    position: Int64,
+    nextInput: String,
+    continuationID: String,
+    lifecycle: String
+  ) {
+    self.id = id
+    self.lineageRoot = lineageRoot
+    self.lineageParent = lineageParent
+    self.position = position
+    self.nextInput = nextInput
+    self.continuationID = continuationID
+    self.lifecycle = lifecycle
+  }
+
+  public func validatedHandle() throws -> ExecutionStateHandle {
+    // A persisted production handle may only resume from a live lifecycle.
+    // `discarded` is intentionally rejected here: it is a valid lifecycle
+    // value, but not a valid recovery source.
+    guard lifecycle == "active" || lifecycle == "restored" || lifecycle == "attached" else {
+      throw ProductionRuntimeInformationError.invalidPersistedExecutionState(
+        lifecycle: lifecycle
+      )
+    }
+    return ExecutionStateHandle(
       id: ExecutionID(id),
       lineage: ExecutionLineage(
         root: ExecutionID(lineageRoot),
@@ -137,6 +163,10 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
 
   public func status(database: URL) throws -> [String: Any] {
     try runBridge("status", arguments: ["--database", database.path])
+  }
+
+  public func audit(database: URL) throws -> [String: Any] {
+    try runBridge("audit", arguments: ["--database", database.path])
   }
 
   public func invalidate(

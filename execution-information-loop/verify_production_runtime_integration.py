@@ -14,18 +14,18 @@ PACKAGE_ROOT = ROOT / "simigo2-experimental"
 BRIDGE = ROOT / "execution-information-loop/production_runtime_bridge.py"
 MANIFEST = ROOT / (
     "docs/02-evidence/production-runtime-integration-20261009/"
-    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3_REV1.json"
+    "PRODUCTION_RUNTIME_INTEGRATION_MANIFEST_V3_REV2.json"
 )
 PRIMARY_EVIDENCE = ROOT / (
     "docs/02-evidence/production-runtime-integration-20261009/"
-    "PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV1.json"
+    "PRODUCTION_RUNTIME_INTEGRATION_E2E_RECORD_V3_REV2.json"
 )
 SEALED_SNAPSHOT = ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
 
 ACCEPTED_TAG = "simigo-es-is-final-acceptance-20261009-v1"
 ACCEPTED_COMMIT = "bb09a55ef980ac4af3f1605ccf8de928abf6cc23"
-REVISION_TAG = "simigo-production-integration-v3-rev1-review"
-PRIMARY_EVIDENCE_SHA256 = "d87a3b021fa68037daac493df2749f337c74ec662698026e1d89a96e09918bb8"
+REVISION_TAG = "simigo-production-integration-v3-rev2-review"
+PRIMARY_EVIDENCE_SHA256 = "a7319f871d08e964901fd7adaaed1969f5412de3e7c28ecf3e3fc5db00103c2b"
 SEALED_SNAPSHOT_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
 EXPECTED_STALE_ITEMS = [
     "REAL-COLLECTION",
@@ -148,7 +148,7 @@ def main() -> int:
     worktree_clean = git("status", "--porcelain", "--untracked-files=all") == ""
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V3-REV1",
+        "manifest_schema_current": manifest.get("schema_id") == "PRODUCTION-RUNTIME-INTEGRATION-MANIFEST-V3-REV2",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_implementation_file_set_complete": set(recorded_hashes) == set(REQUIRED_FILES),
         "manifest_hashes_valid": bool(recorded_hashes) and all(
@@ -176,7 +176,7 @@ def main() -> int:
         "swift_integration_tests_pass": (
             swift_test.returncode == 0
             and "Test Suite 'ProductionRuntimeInformationIntegrationTests' passed" in swift_output
-            and "Executed 3 tests, with 0 failures" in swift_output
+            and "Executed 4 tests, with 0 failures" in swift_output
         ),
     }
     report = {
