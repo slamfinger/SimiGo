@@ -67,3 +67,15 @@ restored second run reuses A/B/C;
 Execution State is persisted and restored after restart;
 B source update recomputes B/C while A remains reused.
 ```
+
+## Explicit invalidation
+
+`CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement
+records for a target and all transitive dependents. The next demand run reuses
+unaffected settlements and recomputes the invalidated dependency closure.
+
+## Explicit invalidation
+
+`CarrierInformationLoop.invalidate_settlement()` appends INVALID settlement
+records for a target and all transitive dependents. The next demand run reuses
+unaffected settlements and recomputes the invalidated dependency closure.
