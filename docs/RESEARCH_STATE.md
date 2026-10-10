@@ -26768,3 +26768,44 @@ integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V2.json;
 integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V2.sha256;
 docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V2_20261010.md.
 ```
+
+## Actual MLX Smoke Package V3 — 2026-10-10
+
+> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED.
+> V2 is NO-GO / SUPERSEDED. Actual MLX smoke remains NOT AUTHORIZED / NOT
+> EXECUTED.
+
+```text
+sidecar parse = standard digest + filename; filename checked;
+Child binary bound by SHA256 after controlled local build;
+Child terminal writes = O_CREAT | O_EXCL | O_WRONLY;
+child launch = posix_spawn POSIX_SPAWN_SETPGROUP;
+timeout = 1200 seconds and SIGKILL to Child process group;
+process-tree fault injection = descendant /bin/sleep exits after group kill;
+Manifest V3 SHA256 =
+  1debcc5c552fb5cb5fffc730943e8941abd0b6074b12976b4cd9f768a184c7aa;
+Runner SHA256 =
+  09d7af533b9faf75594d6bfe312a4530b3fd12b44e81c7f72ed3250b828e3c24;
+Child source SHA256 =
+  7ee279ddb9781f6f48428e5d84a9756dca69e4b5f350dca76620f87716c0be83;
+Child binary SHA256 =
+  e21efd3ee9a7c60257c1f3c8435ae6bc21a82fba67c966d64ea74cf1b6572d28;
+ActualMLXSmokeValidation =
+  PASS / 6 tests / 1 skipped / 0 failures;
+ProductionRuntimeFailureBoundaryTests = PASS / 7 tests / 0 failures;
+V3 marker / consumed marker / evidence root = ABSENT;
+actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V3.json;
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V3.sha256;
+docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V3_20261010.md.
+```

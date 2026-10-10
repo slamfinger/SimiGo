@@ -1,13 +1,15 @@
 # Actual MLX smoke execution package V2
 
-> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED
+> **Status:** NO-GO / SUPERSEDED BY V3 EXECUTION PACKAGE
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
 
 ## Response to V1 NO-GO
 
-This V2 package addresses the four named controls without reopening Runtime
-Validation V2, changing frozen contracts, or consuming the smoke opportunity.
+This V2 package was reviewed as NO-GO and is retained only as history. It is
+superseded by V3; do not create its marker or execute its entry. V3 adds
+standard-sidecar parsing, a bound Child binary, explicit Child O_EXCL writes,
+and posix_spawn process-group isolation with fault-injected termination proof.
 
 ```text
 1. source bindings regenerated and dynamically checked;

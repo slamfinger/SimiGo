@@ -12,6 +12,7 @@ enum ChildError: Error {
   case missingEnvironment(String)
   case invalidEnvironment(String)
   case terminalRecordAlreadyExists
+  case terminalWriteFailed(String)
 }
 
 let environment = ProcessInfo.processInfo.environment
@@ -30,12 +31,48 @@ func sha256(_ data: Data) -> String {
 
 func writeTerminalRecord(_ record: [String: Any], to url: URL) throws {
   let data = try JSONSerialization.data(withJSONObject: record, options: [.sortedKeys, .prettyPrinted])
-  guard FileManager.default.createFile(atPath: url.path, contents: data) else {
-    throw ChildError.terminalRecordAlreadyExists
+  let descriptor = open(url.path, O_CREAT | O_EXCL | O_WRONLY, 0o644)
+  guard descriptor >= 0 else {
+    if errno == EEXIST {
+      throw ChildError.terminalRecordAlreadyExists
+    }
+    throw ChildError.terminalWriteFailed(url.path)
   }
+  let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+  try handle.write(contentsOf: data)
 }
 
 do {
+  if environment["SIMIGO_MLX_SMOKE_FAULT"] == "WRITE_ONCE_CONFLICT" {
+    let conflictURL = URL(fileURLWithPath: environment["SIMIGO_MLX_SMOKE_CONFLICT_FILE"] ?? "")
+    let sample: [String: Any] = [
+      "schema_id": "ACTUAL-MLX-SMOKE-RECORD-V1",
+      "terminal_state": "MLX_SMOKE_FAIL",
+      "run_count": 1,
+    ]
+    try writeTerminalRecord(sample, to: conflictURL)
+    do {
+      try writeTerminalRecord(sample, to: conflictURL)
+      FileHandle.standardError.write(Data("second exclusive write unexpectedly succeeded\n".utf8))
+      exit(1)
+    } catch ChildError.terminalRecordAlreadyExists {
+      exit(0)
+    }
+  }
+  if environment["SIMIGO_MLX_SMOKE_FAULT"] == "PROCESS_TREE_WAIT" {
+    let descendant = Process()
+    descendant.executableURL = URL(fileURLWithPath: "/bin/sleep")
+    descendant.arguments = ["5"]
+    try descendant.run()
+    if let descendantPath = environment["SIMIGO_MLX_SMOKE_DESCENDANT_FILE"], !descendantPath.isEmpty {
+      try Data("\(descendant.processIdentifier)\n".utf8).write(
+        to: URL(fileURLWithPath: descendantPath),
+        options: .atomic
+      )
+    }
+    descendant.waitUntilExit()
+    exit(0)
+  }
   guard environment["SIMIGO_MLX_SMOKE_RUN_TOKEN"]?.isEmpty == false else {
     throw ChildError.missingEnvironment("SIMIGO_MLX_SMOKE_RUN_TOKEN")
   }

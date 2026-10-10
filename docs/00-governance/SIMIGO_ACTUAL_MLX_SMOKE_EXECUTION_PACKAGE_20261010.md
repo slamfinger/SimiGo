@@ -1,6 +1,6 @@
 # Actual MLX smoke execution package
 
-> **Status:** NO-GO / SUPERSEDED BY V2 EXECUTION PACKAGE
+> **Status:** NO-GO / SUPERSEDED BY V3 EXECUTION PACKAGE
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
 
