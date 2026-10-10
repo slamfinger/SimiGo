@@ -2,6 +2,16 @@ import XCTest
 import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
+private enum RuntimeValidationV2BindingError: Error {
+  case manifestDigestMismatch(actual: String, marker: String, sidecar: String)
+  case manifestFieldMismatch(field: String)
+  case adapterBindingMismatch(expected: String, actual: String)
+  case entryBindingMismatch(expected: String, actual: String)
+  case harnessBindingMismatch(expected: String, actual: String)
+  case evidenceRootMismatch(expected: String, actual: String)
+  case caseCountMismatch(expected: Int, actual: Int)
+}
+
 final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
   private let labRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
@@ -16,14 +26,17 @@ final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
     guard FileManager.default.fileExists(atPath: authorizationMarker.path) else {
       throw XCTSkip("RUNTIME VALIDATION V2 = CANDIDATE / HUMAN AUTHORIZATION REQUIRED")
     }
-    let markerDigest = try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: authorizationMarker))
-    let expectedManifestURL = labRoot.appendingPathComponent(
+    let markerData = try Data(contentsOf: authorizationMarker)
+    let markerDigest = String(decoding: markerData, as: UTF8.self)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+    let sidecarURL = labRoot.appendingPathComponent(
       "integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.sha256"
     )
-    let expectedManifestDigest = try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: expectedManifestURL))
-    guard markerDigest == expectedManifestDigest else {
-      throw XCTSkip("RUNTIME VALIDATION V2 authorization marker does not bind this manifest")
-    }
+    let sidecarData = try Data(contentsOf: sidecarURL)
+    let sidecarDigest = String(decoding: sidecarData, as: UTF8.self)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
     let evidenceRoot = labRoot.appendingPathComponent(
       "integrated-es-palace/runtime-adapter-v1/validation-evidence-v2",
       isDirectory: true
@@ -33,21 +46,84 @@ final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
     )
     let manifestData = try Data(contentsOf: manifestURL)
     let manifestDigest = IntegratedESPalaceAuthorizedRuntimeValidation.sha256(manifestData)
-    XCTAssertEqual("0b7a6a0c66fea6c6be2c608c2f6cf8d0fe0275a293d45ad69d1af1e35d8035c3", manifestDigest)
+    guard markerDigest == manifestDigest, sidecarDigest == manifestDigest else {
+      throw RuntimeValidationV2BindingError.manifestDigestMismatch(
+        actual: manifestDigest,
+        marker: markerDigest,
+        sidecar: sidecarDigest
+      )
+    }
     let manifest = try JSONSerialization.jsonObject(with: manifestData) as! [String: Any]
-    XCTAssertEqual("CANDIDATE — TARGETED CORRECTION COMPLETE / HUMAN AUTHORIZATION REQUIRED", manifest["status"] as? String)
-    XCTAssertEqual(false, manifest["validation_executed"] as? Bool)
+    guard manifest["schema_id"] as? String == "RUNTIME-ADAPTER-VALIDATION-MANIFEST-V3" else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "schema_id")
+    }
+    guard let manifestInstanceID = manifest["manifest_instance_id"] as? String,
+          !manifestInstanceID.isEmpty else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "manifest_instance_id")
+    }
+    guard manifest["status"] as? String == "CANDIDATE — HUMAN AUTHORIZATION REQUIRED" else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "status")
+    }
+    guard manifest["validation_authorized"] as? Bool == false else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "validation_authorized")
+    }
+    guard manifest["validation_executed"] as? Bool == false || (manifest["validation_executed"] == nil && manifest["validation_authorized"] as? Bool == false) else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "validation_executed")
+    }
+    let expectedEvidenceRoot = "integrated-es-palace/runtime-adapter-v1/validation-evidence-v2"
+    let manifestEvidence = manifest["evidence"] as? [String: Any]
+    guard manifestEvidence?["root"] as? String == expectedEvidenceRoot else {
+      throw RuntimeValidationV2BindingError.evidenceRootMismatch(
+        expected: expectedEvidenceRoot,
+        actual: manifestEvidence?["root"] as? String ?? "nil"
+      )
+    }
+    guard manifestEvidence?["write_once"] as? Bool == true else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "evidence.write_once")
+    }
+    guard (manifest["execution"] as? [String: Any])?["executed"] as? Bool == false else {
+      throw RuntimeValidationV2BindingError.manifestFieldMismatch(field: "execution.executed")
+    }
     let adapterSource = labRoot.appendingPathComponent(
       "simigo2-experimental/Sources/SimiGo2Experimental/IntegratedESPalaceRuntimeAdapter.swift"
     )
-    XCTAssertEqual("87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec", try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: adapterSource)))
+    let actualAdapterDigest = try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: adapterSource))
+    let expectedAdapterDigest = ((manifest["adapter_binding"] as? [String: Any])?["sha256"] as? String) ?? ""
+    guard actualAdapterDigest == expectedAdapterDigest else {
+      throw RuntimeValidationV2BindingError.adapterBindingMismatch(
+        expected: expectedAdapterDigest,
+        actual: actualAdapterDigest
+      )
+    }
+    let entrySource = URL(fileURLWithPath: #filePath)
+    let actualEntryDigest = try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: entrySource))
+    let expectedEntryDigest = ((manifest["harness_binding"] as? [String: Any])?["new_validation_entry_sha256"] as? String) ?? ""
+    guard actualEntryDigest == expectedEntryDigest else {
+      throw RuntimeValidationV2BindingError.entryBindingMismatch(
+        expected: expectedEntryDigest,
+        actual: actualEntryDigest
+      )
+    }
+    let repairedHarnessSource = labRoot.appendingPathComponent(
+      "simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceAuthorizedRuntimeValidation.swift"
+    )
+    let actualHarnessDigest = try IntegratedESPalaceAuthorizedRuntimeValidation.sha256(Data(contentsOf: repairedHarnessSource))
+    let expectedHarnessDigest = ((manifest["harness_binding"] as? [String: Any])?["serialization_repaired_harness_sha256"] as? String) ?? ""
+    guard actualHarnessDigest == expectedHarnessDigest else {
+      throw RuntimeValidationV2BindingError.harnessBindingMismatch(
+        expected: expectedHarnessDigest,
+        actual: actualHarnessDigest
+      )
+    }
 
     let packageManifestURL = labRoot.appendingPathComponent(
       "integrated-es-palace/integration-fixture-v1/FIXTURE_PACKAGE_MANIFEST.json"
     )
     let packageObject = try JSONSerialization.jsonObject(with: Data(contentsOf: packageManifestURL)) as! [String: Any]
     let packageCases = try XCTUnwrap(packageObject["cases"] as? [[String: Any]])
-    XCTAssertEqual(7, packageCases.count)
+    guard packageCases.count == 7 else {
+      throw RuntimeValidationV2BindingError.caseCountMismatch(expected: 7, actual: packageCases.count)
+    }
 
     var caseResults: [[String: Any]] = []
     var lifecycleRecords: [[String: Any]] = []
@@ -223,8 +299,8 @@ final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
     let terminalState = validationPass ? "RUNTIME_VALIDATION_PASS" : "RUNTIME_VALIDATION_FAIL"
     let record: [String: Any] = [
       "schema_id": "INTEGRATED-ES-PALACE-RUNTIME-VALIDATION-RECORD-V1",
-      "authorized_manifest_sha256": "0b7a6a0c66fea6c6be2c608c2f6cf8d0fe0275a293d45ad69d1af1e35d8035c3",
-      "authorized_adapter_sha256": "87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec",
+      "validated_manifest_sha256": manifestDigest,
+      "validated_adapter_sha256": actualAdapterDigest,
       "authorized_runs": 1,
       "executed_runs": 1,
       "case_count": caseResults.count,

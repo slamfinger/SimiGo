@@ -26428,3 +26428,47 @@ integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.
 simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift;
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_PREPARED_EXECUTION_PACKAGE_20261010.md.
 ```
+
+## Runtime Validation V2 Binding Gate Revision — 2026-10-10
+
+> **Status:** TARGETED BINDING CORRECTION COMPLETE. Runtime Validation V2
+> remains HOLD / NOT AUTHORIZED / NOT EXECUTED.
+
+```text
+Manifest V3 SHA256 =
+  16897842a069c9bfb06e221fdc32d788461cbe4c49c006ae84dffc9dd79b7d01;
+V2 entry SHA256 =
+  565eb152f50d05ffdae19c7d68eee2ddedf3625b184d91269894ffe0a3f7e8db;
+adapter SHA256 =
+  87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec;
+serialization-repaired harness SHA256 =
+  c43267cfdad7a96ab79789bcba49eb96a866e53dd7b744945307a68435d854ed;
+branch regression source SHA256 =
+  437e7b4bda837967f9b18e40af8ae0dca1e0c3079b9ac6e27acc8913bebd922a;
+binding gate = manifest file SHA / marker text / sidecar all agree;
+manifest schema, instance ID, CANDIDATE status, unauthorized state =
+  validated before case loop;
+adapter / entry / harness bindings and seven-case count =
+  validated before case loop;
+evidence root validation-evidence-v2 / write-once = validated;
+static binding check = PASS / 9 checks;
+serialization precheck = PASS / 2 tests / 0 failures;
+adapter seven-case path = NOT CALLED;
+runtime validation executed = false;
+runtime validation authorized = false;
+new authorized runs after Human approval = 1;
+automatic rerun / repair / expansion = FORBIDDEN;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift;
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.json;
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.sha256;
+docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_BINDING_GATE_REVISION_20261010.md.
+```
