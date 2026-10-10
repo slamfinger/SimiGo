@@ -1,8 +1,9 @@
 # MLX Backend Identity Repair W1
 
-> **Status:** LOCAL NON-GENERATION VALIDATION PASS / READY FOR MERGE REVIEW
+> **Status:** MERGED TO MAIN / LOCAL NON-GENERATION VALIDATION PASS
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
+> **Merge commit:** `c8c81bcb0b590e86b065ab26703242b847199685`
 
 ## Failure being repaired
 
