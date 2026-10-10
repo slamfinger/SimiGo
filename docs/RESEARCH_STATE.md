@@ -25701,3 +25701,59 @@ canonical PALACE / Information Space mutation = FORBIDDEN;
 D-002 rerun / repair-run = FORBIDDEN;
 Integrated SimiGo production proof = NOT ESTABLISHED.
 ```
+
+## Controlled Production Pilot v3 Audit Revision — 2026-10-10
+
+> **Status:** BOUNDED PILOT REVISION COMPLETE. Local verification PASS;
+> production deployment remains NOT AUTHORIZED.
+
+```text
+PENDING_SWIFT completion = append-only exact-state confirmation;
+restart with unresolved PENDING_SWIFT = FAIL CLOSED;
+validity policy identity = required / digest-bound;
+deployment continuation = reload and rebind current policy;
+source validity revision = policy-owned, isolated expired probe only;
+transitive middle dependency expiry = dedicated PASS;
+BLOCKED prior_state_id = read in append transaction;
+concurrent lock-interleaving probe = PASS;
+runtime dependency closure + baseline ancestry = verifier-bound;
+three claimed Swift regression suites = rerun PASS / 9 tests;
+carrier selftest = PASS / 21 checks;
+production traffic/public release = none;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+D-002 rerun/repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V3_AUDIT_REVISION_20261010.md;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V3_REVISION_MANIFEST.json;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V3_VERIFIER_RECORD.json.
+```
+
+### Pilot v3 engineering continuity — 2026-10-10
+
+```text
+engineering commit = ce9e8d629dfdc97f3e09d6d102706ef0dbbcd787;
+pilot verifier = PASS / all checks true;
+manifest SHA256 =
+  76e6ad7dfd780de1b6392f2eee014bb9f5b942fc137785e38dc042577f374b36;
+verifier record SHA256 =
+  ee470c440c24d22217c7fe25d6c2acf52f7d8a9bb65f5cfaf5ce78e79e6023b9;
+carrier selftest record SHA256 =
+  7b896d592465321dd81bd1d2f5b862072c775f5cace55ab608298237362db8b9;
+sealed PALACE snapshot SHA256 =
+  8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444;
+next human review = controlled production pilot v3 holistic acceptance;
+next authorized engineering object = NONE until that review;
+production deployment = NOT AUTHORIZED;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair-run = FORBIDDEN;
+Integrated SimiGo production proof = NOT ESTABLISHED.
+```
