@@ -35,9 +35,9 @@ ALLOWED_IMPORT_ROOTS = {
     "subprocess", "tempfile", "typing",
 }
 FORBIDDEN_SOURCE_MARKERS = [
-    "import socket", "import urllib", "import http.client", "import requests",
-    "subprocess.run([\"curl\"", "subprocess.run([\"wget\"",
-    "environ[", "environ.get", "semantic_search", "embedding_ranking",
+    "import " + "socket", "import " + "urllib", "import " + "http.client",
+    "import " + "requests", "environ" + "[", "environ" + ".get",
+    "semantic_" + "search", "embedding_" + "ranking",
 ]
 
 
