@@ -26151,3 +26151,40 @@ Primary evidence:
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_INITIAL_FAIL_ACCEPT_AND_TARGETED_REVISION_AUTHORIZATION_20261010.md;
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_RESULT_20261010.md.
 ```
+
+## Targeted Revision Non-D002 Validation RESULT — 2026-10-10
+
+> **Status:** VALIDATION_PASS — ONE-RUN STOP RULE ENFORCED. Result is bounded to
+> the seven prepared cases and pre-registered configuration.
+
+```text
+manifest instance id = 0D17FD1B-18FA-5D74-98BA-AE53029078EE;
+manifest canonical content SHA256 =
+  0de1909d780dabc6477f492945421c667b4990be523bce9a4ec52c4a2b640815;
+runner SHA256 =
+  50772199dc18c2f7dde7abaf0b95feb879c195f946ef334bc2952b4e73a84d52;
+executed runs = 1 / authorized runs = 1;
+terminal state = VALIDATION_PASS;
+P-LAWFUL     = PASS / CONTINUE / SETTLED_CONTINUATION;
+P-SETTLED    = PASS / REUSE / SETTLED_CONTINUATION;
+P-BLOCKED    = PASS / BLOCK / BLOCKED_LAWFUL_CONTINUATION;
+N-MISSING    = PASS / MANDATORY_OBJECT_UNRESOLVABLE;
+N-STALE      = PASS / MANDATORY_EVIDENCE_SUPERSEDED;
+N-AMBIGUOUS  = PASS / CONFLICTING_VALID_POINTERS;
+N-ILLEGAL    = PASS / REGISTERED_BOUNDARY_VIOLATION_PROVEN;
+first VALIDATION_FAIL evidence = immutable / retained;
+run 3 or automatic repair = FORBIDDEN;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/non-d002-validation-v1/evidence-v2/VALIDATION_RECORD.json;
+integrated-es-palace/non-d002-validation-v1/evidence-v2/CASE_COMPARISON_RECORD.json;
+integrated-es-palace/non-d002-validation-v1/evidence-v2/EVIDENCE_SHA256SUMS;
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_TARGETED_REVISION_VALIDATION_RESULT_20261010.md.
+```

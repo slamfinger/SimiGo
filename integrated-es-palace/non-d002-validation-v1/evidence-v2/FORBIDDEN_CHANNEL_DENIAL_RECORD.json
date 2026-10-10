@@ -1,0 +1,1 @@
+{"checks":{"environment_inputs_forbidden":true,"forbidden_source_markers_absent":true,"imports_allowlisted":true,"model_participation_forbidden":true,"network_forbidden":true},"imports":["__future__","argparse","ast","hashlib","json","pathlib","subprocess","tempfile","typing"],"result":"PASS","schema_id":"NON-D002-FORBIDDEN-CHANNEL-DENIAL-V1"}
