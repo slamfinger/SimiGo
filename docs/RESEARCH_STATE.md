@@ -6,8 +6,9 @@
 
 ## Current continuity — 2026-10-11 (Actual MLX Smoke V6 candidate)
 
-> **Status:** V6 candidate package DELIVERED / CANDIDATE — HUMAN AUTHORIZATION
-> REQUIRED. No V6 marker, consumed marker, or evidence exists.
+> **Status:** V6 Revision 2 candidate package DELIVERED / CANDIDATE — HUMAN
+> AUTHORIZATION REQUIRED. Revision 1 was Human NO-GO / SUPERSEDED. No V6
+> marker, consumed marker, or evidence exists.
 
 The authorized V5 run is closed as
 `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`. It proved that the W1
@@ -17,11 +18,14 @@ unified backend path reached real MLX execution: position 1, active lifecycle,
 because V5's success gate required `execution_state.status == SETTLED`, although
 the carrier's correct execution-state value was `ADVANCED`.
 
-W1 Backend Identity Repair is MERGED. V6 now separates Execution State
+W1 Backend Identity Repair is MERGED. V6 Revision 2 now separates Execution State
 advancement, runtime application, nine settlement states, pending obligations,
-carrier integrity, handle/lifecycle, position, and representation binding into
-independent success-gate checks. Child evidence records
-`success_gate_checks`; a regression reproduces the V5 layer-conflation defect.
+pending-obligation read validity, carrier integrity, carrier database presence,
+handle/lifecycle, position, and representation binding into independent
+success-gate checks. Child evidence records `success_gate_checks`; Runner
+terminal validation uses the same layer-separated gate. Non-generative
+regressions cover the V5 layer-conflation defect, pending-obligation
+missing/wrong-type/non-empty defects, and a missing carrier database.
 
 ```text
 package baseline commit = ba2ba6d7b725f15386193d20f7295c9015523a12;
@@ -29,18 +33,19 @@ V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
 V5 retry / gate adjustment by rerun = FORBIDDEN / CLOSED;
 W1 Backend Identity Repair = MERGED;
 V6 Manifest SHA256 =
-  3036df7e8b3c0ddd1548bc45fb7c1b198dbd25939e0c09804c222365eedec55e;
+  63711800a2181b7e3fa8a3e330a9916da3cffe223f76ebcd2e820fc8c5987346;
 V6 Runner SHA256 =
-  4b27bcada44128fc501e7dac7f2547689e64a3381a4cd442877f1809e010ff0e;
+  f174f3ff0842d4b7b2527996477f67c39b0719091c6997235e4dfdedd366b943;
 V6 Success Gate source SHA256 =
-  eec8f82683203bca69649aece68563483dcc1116372437b6cd4e802045eb6bbb;
+  b32a1038ce14ff0c14af502847acd98511e5d6c0d1d12ee36b6065098bc87711;
 V6 Child source SHA256 =
-  918c3faf1a0000d9e15996d16c83d4ce42d47d4a81bebb29e60f9f3d5e1d94ff;
+  87e58b221a911bd126d41f730016a878a7d20a5d6a19f4e313f134b8e6a4d32f;
 V6 Child binary SHA256 =
-  4d514780be383e6d459b61ffa6d237501e904940610e945fdd85867184dc2c8f;
+  088e12ba16ab41f69167f0adc9892f38126b8453ed6c9291ce2ed09eafb13020;
 advancement ID = actual-mlx-smoke-v6;
 swift build --product ActualMLXSmokeChild = PASS;
-ActualMLXSmokeValidation = PASS / 8 tests / 1 skipped / 0 failures;
+V6 Revision 1 = NO-GO / SUPERSEDED / NOT EXECUTED;
+ActualMLXSmokeValidation = PASS / 10 tests / 1 skipped / 0 failures;
 ProductionRuntimeFailureBoundaryTests = PASS / 8 tests / 0 failures;
 V6 marker / consumed marker / evidence root = ABSENT;
 V6 actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;

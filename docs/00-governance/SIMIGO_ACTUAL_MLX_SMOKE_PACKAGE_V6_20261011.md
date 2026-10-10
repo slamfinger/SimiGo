@@ -1,6 +1,7 @@
 # Actual MLX smoke execution package V6
 
-> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED
+> **Status:** EXECUTION PACKAGE REVISION 2 DELIVERED / CANDIDATE — HUMAN
+> AUTHORIZATION REQUIRED
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-11
 
@@ -37,23 +38,35 @@ carrier_database_present = true.
 The Child records every check independently in `success_gate_checks`; a failure
 also names the failed checks instead of emitting only a generic message.
 
+Human review returned `NO-GO` for V6 Candidate Revision 1 without creating a
+marker or executing MLX. Revision 2 fixes the three blocking defects:
+
+```text
+Runner terminal validation = uses execution_state.status == ADVANCED and the
+  complete shared success gate;
+pending obligations = read only from execution_state.pending_obligations;
+  missing field or wrong type fails closed;
+carrier_database_present = independent Child success-gate check and Runner
+  terminal check.
+```
+
 ## Candidate binding
 
 ```text
 manifest path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json;
 manifest SHA256 =
-  3036df7e8b3c0ddd1548bc45fb7c1b198dbd25939e0c09804c222365eedec55e;
+  63711800a2181b7e3fa8a3e330a9916da3cffe223f76ebcd2e820fc8c5987346;
 sidecar path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.sha256;
 Runner SHA256 =
-  4b27bcada44128fc501e7dac7f2547689e64a3381a4cd442877f1809e010ff0e;
+  f174f3ff0842d4b7b2527996477f67c39b0719091c6997235e4dfdedd366b943;
 Success Gate source SHA256 =
-  eec8f82683203bca69649aece68563483dcc1116372437b6cd4e802045eb6bbb;
+  b32a1038ce14ff0c14af502847acd98511e5d6c0d1d12ee36b6065098bc87711;
 Child source SHA256 =
-  918c3faf1a0000d9e15996d16c83d4ce42d47d4a81bebb29e60f9f3d5e1d94ff;
+  87e58b221a911bd126d41f730016a878a7d20a5d6a19f4e313f134b8e6a4d32f;
 Child binary SHA256 =
-  4d514780be383e6d459b61ffa6d237501e904940610e945fdd85867184dc2c8f;
+  088e12ba16ab41f69167f0adc9892f38126b8453ed6c9291ce2ed09eafb13020;
 Package.swift SHA256 =
   a27c5e5c740a1e14a5cfc79aa0d2d8699ca0907a63c905e6a4be8792a62b9ac1;
 advancement ID = actual-mlx-smoke-v6.
@@ -69,7 +82,7 @@ SHA256 before consuming authorization.
 marker path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZED;
 required marker content =
-  3036df7e8b3c0ddd1548bc45fb7c1b198dbd25939e0c09804c222365eedec55e;
+  63711800a2181b7e3fa8a3e330a9916da3cffe223f76ebcd2e820fc8c5987346;
 consumption path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZATION_CONSUMED;
 consumption mode = atomic rename before child launch;
@@ -91,17 +104,21 @@ V5 consumed marker and failure evidence = PRESERVED.
 ```text
 swift build --product ActualMLXSmokeChild = PASS;
 ActualMLXSmokeValidation =
-  PASS / 8 tests / 1 skipped / 0 failures;
+  PASS / 10 tests / 1 skipped / 0 failures;
 ProductionRuntimeFailureBoundaryTests =
   PASS / 8 tests / 0 failures.
 ```
 
 The skipped test is `testActualMLXSmokeSingleRun`, as required without a marker.
+The two new non-generative regression tests cover the shared success-gate
+defects and Runner terminal-record validation without invoking MLX.
 
 ## Hard boundaries
 
 ```text
 V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
+V6 Revision 1 = NO-GO / SUPERSEDED;
+V6 Revision 2 = CANDIDATE — HUMAN AUTHORIZATION REQUIRED;
 V5 retry / gate adjustment by rerun = FORBIDDEN;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE / Information Space mutation = FORBIDDEN;

@@ -153,7 +153,12 @@ do {
   }
   let executionState = audit["execution_state"] as? [String: Any] ?? [:]
   let settlementStates = audit["current_settlement_states"] as? [String: String] ?? [:]
-  let pendingObligations = audit["pending_obligations"] as? [Any] ?? []
+  let pendingObligations = executionState["pending_obligations"] as? [Any]
+  var databaseIsDirectory: ObjCBool = false
+  let carrierDatabasePresent = FileManager.default.fileExists(
+    atPath: database.path,
+    isDirectory: &databaseIsDirectory
+  ) && !databaseIsDirectory.boolValue
   let successGate = ActualMLXSmokeSuccessGate.evaluate(
     ActualMLXSmokeSuccessGate.Observation(
       reportAdvanced: result.report.advanced,
@@ -164,8 +169,10 @@ do {
       executionStateStatus: executionState["status"] as? String ?? "",
       runtimeApplicationStatus: executionState["runtime_application_status"] as? String ?? "",
       settlementStates: settlementStates,
-      pendingObligationCount: pendingObligations.count,
-      carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false
+      pendingObligationsRead: pendingObligations != nil,
+      pendingObligationCount: pendingObligations?.count ?? 0,
+      carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false,
+      carrierDatabasePresent: carrierDatabasePresent
     )
   )
   let passed = successGate.passed

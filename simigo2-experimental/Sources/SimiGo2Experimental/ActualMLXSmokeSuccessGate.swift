@@ -25,8 +25,10 @@ public enum ActualMLXSmokeSuccessGate {
         public let executionStateStatus: String
         public let runtimeApplicationStatus: String
         public let settlementStates: [String: String]
+        public let pendingObligationsRead: Bool
         public let pendingObligationCount: Int
         public let carrierObjectsVerified: Bool
+        public let carrierDatabasePresent: Bool
 
         public init(
             reportAdvanced: Bool,
@@ -37,8 +39,10 @@ public enum ActualMLXSmokeSuccessGate {
             executionStateStatus: String,
             runtimeApplicationStatus: String,
             settlementStates: [String: String],
+            pendingObligationsRead: Bool,
             pendingObligationCount: Int,
-            carrierObjectsVerified: Bool
+            carrierObjectsVerified: Bool,
+            carrierDatabasePresent: Bool
         ) {
             self.reportAdvanced = reportAdvanced
             self.reportState = reportState
@@ -48,8 +52,10 @@ public enum ActualMLXSmokeSuccessGate {
             self.executionStateStatus = executionStateStatus
             self.runtimeApplicationStatus = runtimeApplicationStatus
             self.settlementStates = settlementStates
+            self.pendingObligationsRead = pendingObligationsRead
             self.pendingObligationCount = pendingObligationCount
             self.carrierObjectsVerified = carrierObjectsVerified
+            self.carrierDatabasePresent = carrierDatabasePresent
         }
     }
 
@@ -66,8 +72,10 @@ public enum ActualMLXSmokeSuccessGate {
             "final_position_one": observation.finalPosition == 1,
             "final_lifecycle_active": observation.finalLifecycle == "active",
             "representation_bound": observation.boundRepresentationTokenCount > 0,
-            "no_pending_obligations": observation.pendingObligationCount == 0,
+            "no_pending_obligations": observation.pendingObligationsRead
+                && observation.pendingObligationCount == 0,
             "carrier_objects_verified": observation.carrierObjectsVerified,
+            "carrier_database_present": observation.carrierDatabasePresent,
         ]
         return (checks.values.allSatisfy { $0 }, checks)
     }

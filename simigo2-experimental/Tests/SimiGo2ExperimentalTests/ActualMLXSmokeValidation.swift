@@ -84,8 +84,10 @@ final class ActualMLXSmokeValidation: XCTestCase {
         executionStateStatus: "ADVANCED",
         runtimeApplicationStatus: "APPLIED_SWIFT",
         settlementStates: settlements,
+        pendingObligationsRead: true,
         pendingObligationCount: 0,
-        carrierObjectsVerified: true
+        carrierObjectsVerified: true,
+        carrierDatabasePresent: true
       )
     )
     XCTAssertTrue(healthy.passed)
@@ -103,13 +105,48 @@ final class ActualMLXSmokeValidation: XCTestCase {
         executionStateStatus: "SETTLED",
         runtimeApplicationStatus: "APPLIED_SWIFT",
         settlementStates: settlements,
+        pendingObligationsRead: true,
         pendingObligationCount: 0,
-        carrierObjectsVerified: true
+        carrierObjectsVerified: true,
+        carrierDatabasePresent: true
       )
     )
     XCTAssertFalse(conflated.passed)
     XCTAssertEqual(false, conflated.checks["execution_state_advanced"])
     XCTAssertEqual(true, conflated.checks["required_settlements_settled"])
+  }
+
+  func testActualMLXSmokeSuccessGateRejectsPendingAndDatabaseDefects() {
+    func observation(pendingRead: Bool, pendingCount: Int, databasePresent: Bool)
+      -> ActualMLXSmokeSuccessGate.Observation {
+      ActualMLXSmokeSuccessGate.Observation(
+        reportAdvanced: true,
+        reportState: "ADVANCED",
+        finalPosition: 1,
+        finalLifecycle: "active",
+        boundRepresentationTokenCount: 1,
+        executionStateStatus: "ADVANCED",
+        runtimeApplicationStatus: "APPLIED_SWIFT",
+        settlementStates: Self.requiredSettlements,
+        pendingObligationsRead: pendingRead,
+        pendingObligationCount: pendingCount,
+        carrierObjectsVerified: true,
+        carrierDatabasePresent: databasePresent
+      )
+    }
+
+    let defects: [(label: String, pendingRead: Bool, pendingCount: Int, databasePresent: Bool)] = [
+      ("missing-field", pendingRead: false, pendingCount: 0, databasePresent: true),
+      ("wrong-type", pendingRead: false, pendingCount: 0, databasePresent: true),
+      ("non-empty", pendingRead: true, pendingCount: 1, databasePresent: true),
+      ("database-missing", pendingRead: true, pendingCount: 0, databasePresent: false),
+    ]
+    for defect in defects {
+      let gate = ActualMLXSmokeSuccessGate.evaluate(
+        observation(pendingRead: defect.pendingRead, pendingCount: defect.pendingCount, databasePresent: defect.databasePresent)
+      )
+      XCTAssertFalse(gate.passed, defect.label)
+    }
   }
 
   func testActualMLXSmokeTimeoutAndWriteOncePrecheck() throws {
@@ -324,12 +361,33 @@ final class ActualMLXSmokeValidation: XCTestCase {
     let result = record["result"] as? [String: Any] ?? [:]
     let audit = record["audit"] as? [String: Any] ?? [:]
     let executionState = audit["execution_state"] as? [String: Any] ?? [:]
+    let pendingObligations = executionState["pending_obligations"] as? [Any]
+    let settlementStates = audit["current_settlement_states"] as? [String: String] ?? [:]
+    var databaseIsDirectory: ObjCBool = false
+    let databasePresent = FileManager.default.fileExists(
+      atPath: evidenceRoot.appendingPathComponent("carrier.sqlite").path,
+      isDirectory: &databaseIsDirectory
+    ) && !databaseIsDirectory.boolValue
     return result["state"] as? String == "ADVANCED"
       && result["final_position"] as? Int == 1
       && result["final_lifecycle"] as? String == "active"
       && (result["bound_representation_token_count"] as? Int ?? 0) > 0
-      && executionState["status"] as? String == "SETTLED"
-      && FileManager.default.fileExists(atPath: evidenceRoot.appendingPathComponent("carrier.sqlite").path)
+      && ActualMLXSmokeSuccessGate.evaluate(
+        ActualMLXSmokeSuccessGate.Observation(
+          reportAdvanced: result["advanced"] as? Bool ?? false,
+          reportState: result["state"] as? String ?? "",
+          finalPosition: Int64(result["final_position"] as? Int ?? 0),
+          finalLifecycle: result["final_lifecycle"] as? String ?? "",
+          boundRepresentationTokenCount: result["bound_representation_token_count"] as? Int ?? 0,
+          executionStateStatus: executionState["status"] as? String ?? "",
+          runtimeApplicationStatus: executionState["runtime_application_status"] as? String ?? "",
+          settlementStates: settlementStates,
+          pendingObligationsRead: pendingObligations != nil,
+          pendingObligationCount: pendingObligations?.count ?? 0,
+          carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false,
+          carrierDatabasePresent: databasePresent
+        )
+      ).passed
   }
 
   private static func baseRecord(
@@ -346,6 +404,77 @@ final class ActualMLXSmokeValidation: XCTestCase {
       "started_at_utc": startedAt,
       "completed_at_utc": ISO8601DateFormatter().string(from: completedAt),
     ]
+  }
+
+  private static let requiredSettlements = [
+    "REAL-COLLECTION": "SETTLED",
+    "REAL-SEGMENT": "SETTLED",
+    "REAL-1": "SETTLED",
+    "REAL-2": "SETTLED",
+    "REAL-3": "SETTLED",
+    "REAL-4": "SETTLED",
+    "REAL-5": "SETTLED",
+    "REAL-6": "SETTLED",
+    "REAL-7": "SETTLED",
+  ]
+
+  private static func healthyPassRecord(manifestDigest: String) -> [String: Any] {
+    [
+      "schema_id": "ACTUAL-MLX-SMOKE-RECORD-V1",
+      "manifest_sha256": manifestDigest,
+      "terminal_state": "MLX_SMOKE_PASS",
+      "run_count": 1,
+      "result": [
+        "advanced": true,
+        "state": "ADVANCED",
+        "final_position": 1,
+        "final_lifecycle": "active",
+        "bound_representation_token_count": 1,
+      ],
+      "audit": [
+        "carrier_all_objects_verify": true,
+        "current_settlement_states": requiredSettlements,
+        "execution_state": [
+          "status": "ADVANCED",
+          "runtime_application_status": "APPLIED_SWIFT",
+          "pending_obligations": [Any](),
+        ],
+      ],
+    ]
+  }
+
+  func testActualMLXSmokeTerminalRecordUsesSeparatedGate() throws {
+    let evidenceRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent("actual-mlx-terminal-gate-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: evidenceRoot, withIntermediateDirectories: true)
+    let database = evidenceRoot.appendingPathComponent("carrier.sqlite")
+    try Data("carrier".utf8).write(to: database)
+
+    let digest = String(repeating: "0", count: 64)
+    XCTAssertTrue(Self.validTerminalRecord(
+      Self.healthyPassRecord(manifestDigest: digest),
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
+    var advancedRecord = Self.healthyPassRecord(manifestDigest: digest)
+    var audit = advancedRecord["audit"] as! [String: Any]
+    var executionState = audit["execution_state"] as! [String: Any]
+    executionState["status"] = "SETTLED"
+    audit["execution_state"] = executionState
+    advancedRecord["audit"] = audit
+    XCTAssertFalse(Self.validTerminalRecord(
+      advancedRecord,
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
+    try FileManager.default.removeItem(at: database)
+    XCTAssertFalse(Self.validTerminalRecord(
+      Self.healthyPassRecord(manifestDigest: digest),
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
   }
 
   private static func waitForExit(_ process: Process, timeout: TimeInterval) -> Bool {
