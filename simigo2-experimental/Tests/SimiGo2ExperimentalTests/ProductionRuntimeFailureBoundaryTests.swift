@@ -33,10 +33,12 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
 
   private func makeExecutor(
     seedError: Error? = nil,
+    nextInputError: Error? = nil,
     continuationError: Error? = nil
   ) -> ProductionRuntimeModelExecutorStub {
     ProductionRuntimeModelExecutorStub(
       seedTokenError: seedError,
+      nextInputError: nextInputError,
       continuationError: continuationError
     )
   }
@@ -111,6 +113,81 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     )
   }
 
+  func testNextInputTokenizationFailurePersistsBlockedWithoutSwiftLifecycle() async throws {
+    let configuration = try makeConfiguration()
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: configuration,
+      modelExecutor: makeExecutor(nextInputError: ProductionRuntimeTestFailure("tokenize next input"))
+    )
+    let database = FileManager.default.temporaryDirectory
+      .appendingPathComponent("next-input-failure-\(UUID().uuidString).sqlite")
+    try integration.initialize(database: database, validUntil: nil)
+    let executionID = ProductionRuntimeInformationIntegration.executionID
+
+    do {
+      _ = try await integration.continueWithRealInformation(
+        database: database,
+        handle: nil,
+        advancementID: "next-input-tokenization-failure",
+        evaluatedAtUTC: "2026-10-09T00:00:00Z"
+      )
+      XCTFail("next-input tokenization failure must propagate")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .modelExecutionFailed = error else {
+        throw XCTFailure("unexpected error: \(error)")
+      }
+    }
+
+    XCTAssertEqual(0, integration.runtimeLifecycleRecords(executionID: executionID).count)
+    XCTAssertNil(integration.runtimeHandle(executionID: executionID))
+    let audit = try integration.audit(database: database)
+    XCTAssertEqual("BLOCKED", (audit["execution_state"] as? [String: Any])?["status"] as? String)
+    XCTAssertEqual(
+      "next-input-tokenization-failure:tokenize_next_input-failed",
+      (audit["execution_state"] as? [String: Any])?["state_id"] as? String
+    )
+  }
+
+  func testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime() async throws {
+    let configuration = try makeConfiguration()
+    let backend = MLXExecutionStateBackend()
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: configuration,
+      modelExecutor: makeExecutor(),
+      backend: backend
+    )
+    integration.logicalAdvanceFault = ProductionRuntimeTestFailure("logical advance")
+    let database = FileManager.default.temporaryDirectory
+      .appendingPathComponent("logical-failure-\(UUID().uuidString).sqlite")
+    try integration.initialize(database: database, validUntil: nil)
+    let executionID = ProductionRuntimeInformationIntegration.executionID
+
+    do {
+      _ = try await integration.continueWithRealInformation(
+        database: database,
+        handle: nil,
+        advancementID: "logical-advance-failure",
+        evaluatedAtUTC: "2026-10-09T00:00:00Z"
+      )
+      XCTFail("logical advance failure must propagate")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .modelExecutionFailed = error else {
+        throw XCTFailure("unexpected error: \(error)")
+      }
+    }
+
+    let records = integration.runtimeLifecycleRecords(executionID: executionID)
+    XCTAssertEqual(3, records.count)
+    XCTAssertEqual(.created, records.first?.operation)
+    XCTAssertEqual(.discarded, records.last?.operation)
+    let audit = try integration.audit(database: database)
+    XCTAssertEqual(
+      "logical-advance-failure:logical_advance-failed",
+      (audit["execution_state"] as? [String: Any])?["state_id"] as? String
+    )
+    XCTAssertEqual("BLOCKED", (audit["execution_state"] as? [String: Any])?["status"] as? String)
+  }
+
   func testSeedTokenizationFailurePersistsBlockedAndDiscardsRuntime() async throws {
     let configuration = try makeConfiguration()
     let integration = ProductionRuntimeInformationIntegration(
@@ -148,9 +225,11 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
 
   func testRepresentationBindingFailurePersistsBlockedAndDiscardsRuntime() async throws {
     let configuration = try makeConfiguration()
+    let backend = MLXExecutionStateBackend()
     let integration = ProductionRuntimeInformationIntegration(
       configuration: configuration,
-      modelExecutor: makeExecutor()
+      modelExecutor: makeExecutor(),
+      backend: backend
     )
     integration.representationBindingFault = ProductionRuntimeTestFailure("representation bind")
     let database = FileManager.default.temporaryDirectory
@@ -173,6 +252,22 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     }
 
     let records = integration.runtimeLifecycleRecords(executionID: executionID)
+    XCTAssertEqual(4, records.count)
+    XCTAssertEqual(.created, records.first?.operation)
+    XCTAssertEqual(.continued, records[1].operation)
+    XCTAssertEqual(.restored, records[2].operation)
+    XCTAssertEqual(.discarded, records[3].operation)
+    print("FAILURE_RECORDS", records.map { "\($0.operation)-\($0.resultPosition.value)-\($0.resultLifecycle)" })
+    let finalHandle = integration.runtimeHandle(executionID: executionID)
+    print("FINAL_HANDLE", finalHandle?.lifecycle as Any, finalHandle?.position as Any)
+    if let finalHandle {
+      do {
+        let bound = try backend.boundPrefix(for: finalHandle)
+        print("FINAL_BOUND", bound.position, bound.prefix)
+      } catch {
+        print("FINAL_BOUND_ERROR", error)
+      }
+    }
     let audit = try integration.audit(database: database)
     XCTAssertEqual("BLOCKED", (audit["execution_state"] as? [String: Any])?["status"] as? String)
     XCTAssertEqual(
@@ -183,9 +278,11 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
 
   func testConfirmationFailurePersistsBlockedAndRollsRuntimeBack() async throws {
     let configuration = try makeConfiguration()
+    let backend = MLXExecutionStateBackend()
     let integration = ProductionRuntimeInformationIntegration(
       configuration: configuration,
-      modelExecutor: makeExecutor()
+      modelExecutor: makeExecutor(),
+      backend: backend
     )
     integration.carrierConfirmationFault = ProductionRuntimeTestFailure("confirmation")
     let database = FileManager.default.temporaryDirectory
@@ -208,11 +305,22 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     }
 
     let records = integration.runtimeLifecycleRecords(executionID: executionID)
-    print("CONFIRMATION_COUNT", records.count)
-    print("CONFIRMATION_RECORDS", records.prefix(8).map { "\($0.operation)-\($0.resultPosition.value)" })
-    print("CONFIRMATION_COUNT", records.count)
-    for (index, record) in records.enumerated() {
-      print("CONFIRMATION_RECORD_\(index)", record.operation, record.resultPosition.value)
+    XCTAssertEqual(4, records.count)
+    XCTAssertEqual(.created, records.first?.operation)
+    XCTAssertEqual(.continued, records[1].operation)
+    XCTAssertEqual(.restored, records[2].operation)
+    XCTAssertEqual(.discarded, records[3].operation)
+    print("FAILURE_RECORDS", records.map { "\($0.operation)-\($0.resultPosition.value)-\($0.resultLifecycle)" })
+    let finalHandle = integration.runtimeHandle(executionID: executionID)
+    print("TEST_FINAL_HANDLE", finalHandle?.lifecycle as Any, finalHandle?.position.value as Any)
+    XCTAssertEqual(.discarded, finalHandle?.lifecycle)
+    if let finalHandle {
+      XCTAssertThrowsError(try backend.boundPrefix(for: finalHandle)) { error in
+        XCTAssertEqual(
+          .noBoundRepresentation(finalHandle.id),
+          error as? ExecutionStateBackendError
+        )
+      }
     }
     let audit = try integration.audit(database: database)
     XCTAssertEqual("BLOCKED", (audit["execution_state"] as? [String: Any])?["status"] as? String)

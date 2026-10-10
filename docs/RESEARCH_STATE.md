@@ -26650,3 +26650,42 @@ simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoun
 simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift;
 docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_FAILURE_BOUNDARY_CLOSURE_V1_20261010.md.
 ```
+
+## Production Runtime Failure-Boundary Evidence Completion — 2026-10-10
+
+> **Status:** FAILURE-BOUNDARY EVIDENCE COMPLETION PASS. Actual MLX smoke remains
+> NOT AUTHORIZED / NOT EXECUTED.
+
+```text
+covered stages =
+  Information Space BLOCKED;
+  missing executor;
+  seed tokenization failure;
+  next-input tokenization failure;
+  model execution failure;
+  logical advance failure;
+  representation binding failure;
+  carrier confirmation failure;
+carrier result for every injected failure = explicit BLOCKED;
+no final reusable backend representation on runtime compensation failures;
+Swift lifecycle unchanged for pre-runtime failures;
+runtime discarded for post-create compensation failures;
+ProductionRuntimeFailureBoundaryTests = PASS / 7 tests / 0 failures;
+ProductionRuntimeInformationIntegration.swift SHA256 =
+  d9d33c812f8bf5bfaeac67590a7fc2e9907fc120217ae5e5ae097bfecbd08b32;
+ProductionRuntimeFailureBoundaryTests.swift SHA256 =
+  a7a93b94f51dd23de95ab3dbc368ca1ad65a2fb6b4d188ff87488c65a9c50f0d;
+actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift;
+docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_FAILURE_BOUNDARY_EVIDENCE_COMPLETION_20261010.md.
+```

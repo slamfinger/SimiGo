@@ -136,9 +136,10 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
 
   private let labRoot: URL
   private let launchConfiguration: ProductionRuntimeLaunchConfiguration?
-  private let backend = MLXExecutionStateBackend()
+  private let backend: MLXExecutionStateBackend
   var representationBindingFault: Error?
   var carrierConfirmationFault: Error?
+  var logicalAdvanceFault: Error?
   private var modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?
   private lazy var runtime = ExecutionContinuityCoordinator(backend: backend)
 
@@ -146,7 +147,11 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     self.init(labRoot: labRoot, modelExecutor: nil)
   }
 
-  public init(labRoot: URL?, modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?) {
+  public init(
+    labRoot: URL?,
+    modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?,
+    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
+  ) {
     if let labRoot {
       self.labRoot = labRoot.standardizedFileURL
     } else {
@@ -158,14 +163,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         .deletingLastPathComponent()
     }
     launchConfiguration = nil
+    self.backend = backend
     self.modelExecutor = modelExecutor
   }
 
   public init(
     configuration: ProductionRuntimeLaunchConfiguration,
     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
+    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
   ) {
     launchConfiguration = configuration
+    self.backend = backend
     self.modelExecutor = modelExecutor
     labRoot = configuration.runtimeRoot
   }
@@ -463,6 +471,9 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         maxTokens: 32
       )
       failureStage = "logical_advance"
+      if let logicalAdvanceFault {
+        throw logicalAdvanceFault
+      }
       advanced = try await runtime.continueExecution(
         current,
         continuation: ExecutionContinuation(
@@ -494,24 +505,25 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         arguments: ["--database", database.path, "--state-id", pendingStateID]
       )
     } catch {
+      print("COMPENSATION_ENTER", failureStage as Any, advanced != nil, current != nil)
       failureStage = failureStage ?? "unclassified"
       try? failPending(failureStage!, String(describing: error))
 
       if let priorRepresentation {
         try? await backend.restoreRepresentation(priorRepresentation)
       }
-      let terminalRuntimeHandle = advanced ?? current
-      if let terminalRuntimeHandle {
-        if let base = current, advanced != nil {
-          _ = try? await runtime.restore(
-            terminalRuntimeHandle,
-            request: ExecutionRestoreRequest(
-              targetPosition: base.position,
-              continuation: base.continuation
-            )
+      if let base = current {
+        try await runtime.restore(
+          base,
+          request: ExecutionRestoreRequest(
+            targetPosition: base.position,
+            continuation: base.continuation
           )
-        }
-        try? await runtime.discard(terminalRuntimeHandle)
+        )
+      }
+      if let terminal = advanced ?? current {
+        try await runtime.discard(terminal)
+        backend.consumeBinding(for: terminal)
       }
       throw ProductionRuntimeInformationError.modelExecutionFailed(
         reason: "[\(failureStage ?? "unclassified")] \(error)"
