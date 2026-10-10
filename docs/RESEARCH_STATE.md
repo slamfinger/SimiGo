@@ -26007,3 +26007,51 @@ docs/02-evidence/controlled-production-pilot-20261009/
 docs/02-evidence/controlled-production-pilot-20261009/
   CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_REVISION_VERIFIER_RECORD.json.
 ```
+
+## Integrated ES–PALACE Fixture Preparation COMPLETE — 2026-10-10
+
+> **Status:** FIXTURE PREPARATION COMPLETE / ISOLATION PASS. The follow-up is a
+> single non-D002 validation authorization request; no execution occurred.
+
+```text
+Pilot v5 SQLite busy task = CLOSED by prior Human ACCEPT;
+fixture package = INTEGRATED-ES-PALACE-FIXTURE-PACKAGE-V1;
+frozen contracts = P1–P7;
+prepared cases = P-LAWFUL, P-SETTLED, P-BLOCKED,
+                 N-MISSING, N-STALE, N-AMBIGUOUS, N-ILLEGAL;
+primitive inventory = 10 families per case;
+sealed snapshot SHA256 =
+  8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444;
+fixture package implementation commit = f95ea03a013553084f3741894207ee609950c4b5;
+fixture manifest SHA256 =
+  998bbbb77868cb4b36ddced1aa544a65da17a5bf4b1ecfde5b866ae8833ecc05;
+checksum list SHA256 =
+  a08ce9373c43dd1c01ba911ddf27e5cabed189d740f83b99475ec13bbb4b9c19;
+isolation proof SHA256 =
+  9d94634446fa17749a5863382bb6b8640338ee09bf206fcd166fb23a818505e9;
+missing-item record SHA256 =
+  c98685e70b60cfe6e755069898c9dd1a4626e85ee1a18a1d6614e72f2678b543;
+self-check SHA256 =
+  43c275b616504322422eb8a741402572e94ae3b43f332586161546d3dc273e9b;
+preparation result = PASS / seven cases / no experiment;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED.
+```
+
+Explicit missing items:
+
+```text
+non-D002 integration validation Run Manifest;
+new integration Execution State implementation/adaptor;
+fresh integrated validation evidence;
+Human authorization for one non-D002 integration validation.
+```
+
+Next submitted object:
+
+```text
+SimiGo Integrated ES–PALACE Non-D002 Validation Authorization Request v1.0;
+status = SUBMITTED FOR HUMAN REVIEW / NO EXECUTION AUTHORIZED;
+document = docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_REQUEST_V1.0_20261010.md.
+```
