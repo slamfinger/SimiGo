@@ -131,6 +131,91 @@ final class IntegratedESPalaceRuntimeAdapterBranchTests: XCTestCase {
     XCTAssertEqual(beforePrefix.position, receipt.representationPosition)
   }
 
+  func testBlockWithExistingExecutionReturnsNoHandleAndPreservesState() async throws {
+    let backend = MLXExecutionStateBackend()
+    let coordinator = ExecutionContinuityCoordinator(backend: backend)
+    let adapter = IntegratedESPalaceRuntimeAdapter(
+      coordinator: coordinator,
+      backend: backend
+    )
+    let fixture = try fixtureCases().first { $0.caseID == "N-ILLEGAL" }
+    let decision = try await makeDecision(adapter, fixture!)
+    let handle = try await coordinator.create(
+      id: ExecutionID("INTEGRATED-BLOCK-EXISTING"),
+      position: ExecutionPosition(3),
+      continuation: ExecutionContinuation(
+        nextInput: decision.inputDigest,
+        continuationID: decision.continuationIdentityDigest
+      )
+    )
+    backend.bind(executionID: handle.id, position: handle.position, tokenPrefix: [31, 37])
+    let beforeCount = coordinator.recordCount
+    let beforePrefix = try backend.boundPrefix(for: handle)
+    let receipt = try await adapter.applyToRealRuntime(
+      executionID: handle.id,
+      decision: decision
+    )
+
+    XCTAssertNil(receipt.handle)
+    XCTAssertFalse(receipt.advanced)
+    XCTAssertFalse(receipt.executionCreated)
+    XCTAssertFalse(receipt.representationBound)
+    XCTAssertEqual(beforeCount, receipt.lifecycleRecordsAfter)
+    XCTAssertEqual(0, receipt.lifecycleRecordsAfter - receipt.lifecycleRecordsBefore)
+    XCTAssertEqual(Int64(3), receipt.positionBefore)
+    XCTAssertEqual(Int64(3), receipt.positionAfter)
+    XCTAssertEqual(handle, coordinator.handle(handle.id))
+    XCTAssertEqual(handle.position, coordinator.handle(handle.id)?.position)
+    XCTAssertEqual(beforePrefix.prefix, try backend.boundPrefix(for: handle).prefix)
+    XCTAssertEqual(beforePrefix.position, try backend.boundPrefix(for: handle).position)
+  }
+
+  func testReuseIdentityMismatchFailsClosedWithoutLifecycleOrRebind() async throws {
+    let backend = MLXExecutionStateBackend()
+    let coordinator = ExecutionContinuityCoordinator(backend: backend)
+    let adapter = IntegratedESPalaceRuntimeAdapter(
+      coordinator: coordinator,
+      backend: backend
+    )
+    let fixture = try fixtureCases().first { $0.caseID == "P-SETTLED" }
+    let decision = try await makeDecision(adapter, fixture!)
+    let mismatched = IntegratedRuntimeDecision(
+      decision: decision.decision,
+      continuationClass: decision.continuationClass,
+      precedenceReason: decision.precedenceReason,
+      inputDigest: decision.inputDigest + "-mismatch",
+      outputDigest: decision.outputDigest,
+      continuationIdentityDigest: decision.continuationIdentityDigest + "-mismatch"
+    )
+    let handle = try await coordinator.create(
+      id: ExecutionID("INTEGRATED-REUSE-MISMATCH"),
+      position: ExecutionPosition(2),
+      continuation: ExecutionContinuation(
+        nextInput: "unrelated-next-input",
+        continuationID: "unrelated-continuation-id"
+      )
+    )
+    backend.bind(executionID: handle.id, position: handle.position, tokenPrefix: [41, 43])
+    let beforeCount = coordinator.recordCount
+    let beforePrefix = try backend.boundPrefix(for: handle)
+
+    do {
+      _ = try await adapter.applyToRealRuntime(
+        executionID: handle.id,
+        decision: mismatched
+      )
+      XCTFail("reuse identity mismatch must fail closed")
+    } catch let error as IntegratedESPalaceAdapterError {
+      XCTAssertEqual(.reuseIdentityMismatch, error)
+    }
+
+    XCTAssertEqual(beforeCount, coordinator.recordCount)
+    XCTAssertEqual(handle, coordinator.handle(handle.id))
+    XCTAssertEqual(Int64(2), coordinator.handle(handle.id)?.position.value)
+    XCTAssertEqual(beforePrefix.prefix, try backend.boundPrefix(for: handle).prefix)
+    XCTAssertEqual(beforePrefix.position, try backend.boundPrefix(for: handle).position)
+  }
+
   func testAllNegativeDecisionsDoNotCreateAdvanceOrBindRealRuntime() async throws {
     let backend = MLXExecutionStateBackend()
     let coordinator = ExecutionContinuityCoordinator(backend: backend)

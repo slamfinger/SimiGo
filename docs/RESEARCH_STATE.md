@@ -26267,3 +26267,43 @@ integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE.jso
 simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeAdapterBranchTests.swift;
 docs/00-governance/SIMIGO_RUNTIME_ADAPTER_BRANCH_SEMANTICS_TARGETED_REVISION_20261010.md.
 ```
+
+## Runtime Adapter BLOCK/REUSE Closure Revision — 2026-10-10
+
+> **Status:** TARGETED CORRECTION COMPLETE / REGRESSION PASS. Runtime validation
+> remains HOLD / NOT AUTHORIZED / NOT EXECUTED.
+
+```text
+BLOCK receipt handle = nil, including with existing execution;
+BLOCK existing-state regression = lifecycle delta 0 / position unchanged /
+                                  representation unchanged;
+REUSE identity gate = live handle nextInput == decision inputDigest and
+                      continuationID == decision continuationIdentityDigest;
+REUSE mismatch = FAIL CLOSED / lifecycle delta 0 / no rebind;
+targeted regression = PASS / 5 tests / 0 failures;
+revised adapter SHA256 =
+  87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec;
+targeted regression source SHA256 =
+  a2c100cb1641874354d4e1a66faefc2269d9c887ac5824d4f7af540cae1af879;
+implementation checksum list SHA256 =
+  7b31d889ee5c1c3f1512cd2fa995c6c932e7744a159282de0c19d4c927e48752;
+Runtime Validation Manifest SHA256 =
+  0b7a6a0c66fea6c6be2c608c2f6cf8d0fe0275a293d45ad69d1af1e35d8035c3;
+Runtime Validation Manifest status =
+  CANDIDATE — TARGETED CORRECTION COMPLETE / HUMAN AUTHORIZATION REQUIRED;
+validation authorized = false;
+validation executed = false;
+if later approved = ONE PASS ONLY then RUNTIME_VALIDATION_PASS or FAIL / STOP;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE.json;
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeAdapterBranchTests.swift;
+docs/00-governance/SIMIGO_RUNTIME_ADAPTER_BLOCK_REUSE_CLOSURE_REVISION_20261010.md.
+```

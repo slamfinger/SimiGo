@@ -313,7 +313,7 @@ public final class IntegratedESPalaceRuntimeAdapter: @unchecked Sendable {
         lifecycleRecordsAfter: coordinator.recordCount,
         positionBefore: positionBefore,
         positionAfter: positionBefore,
-        handle: existing,
+        handle: nil,
         representationPosition: nil,
         representationPrefix: nil
       )
@@ -325,6 +325,10 @@ public final class IntegratedESPalaceRuntimeAdapter: @unchecked Sendable {
         throw IntegratedESPalaceAdapterError.reuseIdentityMismatch
       }
       guard let live = existing else {
+        throw IntegratedESPalaceAdapterError.reuseIdentityMismatch
+      }
+      guard live.continuation.nextInput == decision.inputDigest,
+            live.continuation.continuationID == decision.continuationIdentityDigest else {
         throw IntegratedESPalaceAdapterError.reuseIdentityMismatch
       }
       let bound = try backend.boundPrefix(for: live)
