@@ -353,6 +353,10 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
       )
     }
+    guard let executionState = result["execution_state"] as? [String: Any],
+          let pendingStateID = executionState["state_id"] as? String else {
+      throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute")
+    }
 
     let computed = result["computed_item_ids"] as? [String] ?? []
     let reused = result["reused_item_ids"] as? [String] ?? []
@@ -377,6 +381,10 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
       payload: MLXPrefixPayload(tokenPrefix: representationTokens)
     )
     _ = try backend.boundPrefix(for: advanced)
+    _ = try runBridge(
+      "confirm-runtime-application",
+      arguments: ["--database", database.path, "--state-id", pendingStateID]
+    )
 
     return (
       advanced,

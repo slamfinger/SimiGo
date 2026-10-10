@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import tempfile
+import time
 from pathlib import Path
 
 from carrier_loop import CarrierInformationLoop, digest
@@ -30,12 +32,17 @@ def actions(result: dict) -> dict:
     return {item["item_id"]: item["action"] for item in result["actions"]}
 
 
+def sealed_policy(policy: dict) -> dict:
+    body = {key: value for key, value in policy.items() if key != "policy_sha256"}
+    return {**policy, "policy_sha256": digest(body)}
+
+
 def run() -> dict:
     checks = {}
-    validity_policy = {
+    validity_policy = sealed_policy({
         "policy_version": "carrier-selftest-v1",
         "policy_source": "ISOLATED_SELFTEST",
-    }
+    })
     with tempfile.TemporaryDirectory(prefix="simigo-einfo-carrier-") as temporary:
         database = str(Path(temporary) / "carrier_information_space.sqlite")
 
@@ -50,6 +57,7 @@ def run() -> dict:
         loop.put_source(
             "demand-001", "A", "manual_input", "v1", {"input": 21},
             valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
         )
         loop.put_source(
             "demand-001", "B", "derived_input", "v1", {"input": 5}, ["A"],
@@ -59,6 +67,7 @@ def run() -> dict:
         loop.put_source(
             "demand-001", "C", "derived_input", "v1", {"factor": 3}, ["B"],
             valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
         )
         loop.commit()
         loop.close()
@@ -81,6 +90,21 @@ def run() -> dict:
             settlement is not None
             and settlement["result"]["validity_policy"] == validity_policy
             and settlement["basis"]["validity_policy"] == validity_policy
+        )
+        try:
+            restored.execute_demand(
+                "demand-001", "advance-before-confirmation", calculator,
+                evaluated_at_utc="2026-10-09T00:00:30Z",
+            )
+            pending_failure = False
+        except ValueError as error:
+            pending_failure = "pending runtime application" in str(error)
+        checks["pending_runtime_application_blocks_continuation"] = pending_failure
+        restored.confirm_runtime_application("advance-001")
+        checks["runtime_confirmation_is_append_only"] = (
+            restored.latest_execution_state("report-generation")[
+                "runtime_application_status"
+            ] == "APPLIED_SWIFT"
         )
         restored.commit()
         restored.close()
@@ -107,6 +131,7 @@ def run() -> dict:
             pending_obligations=["advance workflow"],
             next_continuation_point="await-source-or-invalidation",
             result_digest=digest(second["result"]),
+            runtime_application_status="APPLIED_SWIFT",
         )
         restored_state.commit()
         restored_state.close()
@@ -141,6 +166,72 @@ def run() -> dict:
         stale.commit()
         stale.close()
 
+        with tempfile.TemporaryDirectory(
+            prefix="simigo-transitive-"
+        ) as transitive_temporary:
+            transitive_database = str(
+                Path(transitive_temporary) / "transitive.sqlite"
+            )
+            transitive = CarrierInformationLoop.create(transitive_database)
+            transitive.define_demand(
+                "transitive-demand",
+                continuation_point="transitive-report",
+                pending_obligations=["resolve root C"],
+                continuation_conditions=["full dependency closure is valid"],
+                required_item_ids=["C"],
+            )
+            for item_id, dependencies, payload, valid_until in [
+                ("A", [], {"input": 1}, "2030-12-31T23:59:59Z"),
+                ("B", ["A"], {"input": 2}, "2030-12-31T23:59:59Z"),
+                ("C", ["B"], {"factor": 3}, "2030-12-31T23:59:59Z"),
+            ]:
+                transitive.put_source(
+                    "transitive-demand", item_id, "manual_input", "v1",
+                    payload, dependencies,
+                    valid_until_utc=valid_until,
+                    validity_policy=validity_policy,
+                )
+            transitive.commit()
+            transitive.close()
+
+            transitive_loop = CarrierInformationLoop.open(transitive_database)
+            calculator_for_transitive = calculator
+            first = transitive_loop.execute_demand(
+                "transitive-demand", "transitive-initial",
+                calculator_for_transitive,
+                evaluated_at_utc="2026-10-09T00:00:00Z",
+            )
+            transitive_loop.confirm_runtime_application("transitive-initial")
+            settlement_count_before = transitive_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            transitive_loop.update_source(
+                "B", "v2", {"input": "stale"}, "middle dependency expired",
+                valid_until_utc="2026-10-08T23:59:59Z",
+            )
+            stale_transitive = transitive_loop.execute_demand(
+                "transitive-demand", "transitive-stale",
+                calculator_for_transitive,
+                evaluated_at_utc="2026-10-09T00:01:00Z",
+            )
+            stale_state = transitive_loop.latest_execution_state(
+                "transitive-report"
+            )
+            settlement_count_after = transitive_loop.carrier.connection.execute(
+                "SELECT COUNT(*) FROM dependency_entries "
+                "WHERE dependency_id LIKE 'settlement:%'"
+            ).fetchone()[0]
+            checks["transitive_middle_dependency_blocks_without_required_listing"] = (
+                stale_transitive["state"] == "BLOCKED_STALE_VALIDITY"
+                and stale_transitive["validity_failure_item_ids"] == ["B"]
+                and stale_transitive["advanced"] is False
+                and stale_state["status"] == "BLOCKED"
+                and settlement_count_after == settlement_count_before == 3
+            )
+            transitive_loop.commit()
+            transitive_loop.close()
+
         changed = CarrierInformationLoop.open(database)
         changed.update_source(
             "B",
@@ -157,6 +248,7 @@ def run() -> dict:
         checks["source_change_recomputes_B_and_C"] = actions(third) == {
             "A": "REUSE", "B": "COMPUTE", "C": "COMPUTE"
         }
+        changed.confirm_runtime_application("advance-003")
         changed.commit()
         changed.close()
 
@@ -190,10 +282,12 @@ def run() -> dict:
         rollback.put_source(
             "demand-001", "D", "manual_input", "v1", {"input": 9},
             valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
         )
         rollback.put_source(
             "demand-001", "E", "manual_input", "v1", {"input": 10},
             valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
         )
         rollback.define_demand(
             "demand-rollback",
@@ -229,6 +323,63 @@ def run() -> dict:
         )
         rollback.commit()
         rollback.close()
+
+        with tempfile.TemporaryDirectory(
+            prefix="simigo-concurrent-"
+        ) as concurrent_temporary:
+            concurrent_database = str(
+                Path(concurrent_temporary) / "concurrent.sqlite"
+            )
+            setup_loop = CarrierInformationLoop.create(concurrent_database)
+            setup_loop.define_demand(
+                "concurrent-demand",
+                continuation_point="concurrent-block",
+                pending_obligations=["prove concurrent lineage"],
+                continuation_conditions=["missing source stays blocked"],
+                required_item_ids=["MISSING-CONCURRENT"],
+            )
+            setup_loop.commit()
+            setup_loop.close()
+
+            advancing_loop = CarrierInformationLoop.open(concurrent_database)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                # Hold the accepted write lock while the blocked attempt waits.
+                with advancing_loop.carrier.atomic_write_group():
+                    blocked_future = pool.submit(
+                        lambda: CarrierInformationLoop.open(
+                            concurrent_database
+                        ).execute_demand(
+                            "concurrent-demand",
+                            "concurrent-blocked",
+                            calculator,
+                            evaluated_at_utc="2026-10-09T00:06:00Z",
+                        )
+                    )
+                    time.sleep(0.05)
+                    advancing_loop.record_execution_state(
+                        "concurrent-good",
+                        continuation_point="concurrent-block",
+                        prior_state_id=None,
+                        demand_id="concurrent-demand",
+                        status="ADVANCED",
+                        pending_obligations=[],
+                        next_continuation_point="runtime-application-complete",
+                        result_digest=digest({"concurrent": True}),
+                        runtime_application_status="APPLIED_SWIFT",
+                    )
+                blocked_result = blocked_future.result()
+
+            blocked_state = advancing_loop.latest_execution_state(
+                "concurrent-block"
+            )
+            checks["blocked_prior_state_is_read_in_append_transaction"] = (
+                blocked_result["advanced"] is False
+                and blocked_state["status"] == "BLOCKED"
+                and blocked_state["prior_state_id"] == "concurrent-good"
+            )
+            advancing_loop.commit()
+            advancing_loop.close()
 
         malformed = CarrierInformationLoop.open(database)
         malformed_result = malformed.execute_demand(

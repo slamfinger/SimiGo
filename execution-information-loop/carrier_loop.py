@@ -42,6 +42,24 @@ class _DemandNotAdvanced(Exception):
         self.result = result
 
 
+RUNTIME_APPLICATION_STATUSES = {"PENDING_SWIFT", "APPLIED_SWIFT"}
+
+
+def validity_policy_identity(policy: Any) -> dict:
+    """Validate and return a canonical validity-policy identity."""
+    if not isinstance(policy, dict):
+        raise ValueError("validity policy identity is missing")
+    if not isinstance(policy.get("policy_version"), str) or not policy["policy_version"]:
+        raise ValueError("validity policy_version is missing")
+    if not isinstance(policy.get("policy_source"), str) or not policy["policy_source"]:
+        raise ValueError("validity policy_source is missing")
+    body = {key: value for key, value in policy.items() if key != "policy_sha256"}
+    expected = digest(body)
+    if policy.get("policy_sha256") != expected:
+        raise ValueError("validity policy_sha256 mismatch")
+    return policy
+
+
 class CarrierInformationLoop:
     """Minimal ES/IS continuation loop over DatabaseBackedIS."""
 
@@ -408,6 +426,8 @@ class CarrierInformationLoop:
         result_digest: str,
         runtime_application_status: Optional[str] = None,
     ) -> dict:
+        if runtime_application_status not in {None, *RUNTIME_APPLICATION_STATUSES}:
+            raise ValueError("invalid runtime application status")
         with self.carrier.atomic_write_group():
             return self._record_execution_state_in_group(
                 state_id,
@@ -484,6 +504,16 @@ class CarrierInformationLoop:
             raise MissingLogicalEntry(f"execution state:{continuation_point}")
         if state["status"] == "BLOCKED":
             raise ValueError("blocked execution state cannot continue without repair")
+        runtime_status = state.get("runtime_application_status")
+        if runtime_status == "PENDING_SWIFT":
+            raise ValueError(
+                "pending runtime application requires confirmation: "
+                f"{state['state_id']}"
+            )
+        if runtime_status != "APPLIED_SWIFT":
+            raise ValueError(
+                "execution state has no verifiable runtime-application completion"
+            )
         demand = self.current_demand(state["demand_id"])
         if demand is None:
             raise MissingLogicalEntry(f"demand:{state['demand_id']}")
@@ -497,6 +527,45 @@ class CarrierInformationLoop:
             "required_item_ids": list(demand["required_item_ids"]),
         }
 
+    def confirm_runtime_application(self, state_id: str) -> dict:
+        """Append the completion evidence for the exact pending Swift intent."""
+        state = self._find_state_by_id(state_id)
+        if state is None:
+            raise ValueError(f"pending execution state not found: {state_id}")
+        if state.get("status") != "ADVANCED" or state.get(
+            "runtime_application_status"
+        ) != "PENDING_SWIFT":
+            raise ValueError(f"execution state is not pending Swift application: {state_id}")
+        latest = self.latest_execution_state(state["continuation_point"])
+        if latest is None or latest["state_id"] != state_id:
+            raise ValueError("runtime confirmation is not the latest execution state")
+        confirmation = self.record_execution_state(
+            f"{state_id}:runtime-applied",
+            continuation_point=state["continuation_point"],
+            prior_state_id=state_id,
+            demand_id=state["demand_id"],
+            status="ADVANCED",
+            pending_obligations=[],
+            next_continuation_point="runtime-application-complete",
+            result_digest=state["result_digest"],
+            runtime_application_status="APPLIED_SWIFT",
+        )
+        return {"confirmation": confirmation, "confirmed_state_id": state_id}
+
+    def _find_state_by_id(self, state_id: str) -> Optional[dict]:
+        row = self.carrier.connection.execute(
+            "SELECT srs_identity,record_object FROM is_index_entries "
+            "WHERE srs_identity LIKE '%:' || ? "
+            "ORDER BY append_order DESC LIMIT 1",
+            (state_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        value = json.loads(self.carrier.get_object(row["record_object"]))
+        value["_identity"] = row["srs_identity"]
+        value["_object_id"] = row["record_object"]
+        return value
+
     def execute_demand(
         self,
         demand_id: str,
@@ -506,9 +575,15 @@ class CarrierInformationLoop:
         evaluated_at_utc: str,
     ) -> dict:
         result: Optional[dict] = None
-        prior_state = self.latest_execution_state(
-            self.current_demand(demand_id)["continuation_point"]
-        )
+        demand = self.current_demand(demand_id)
+        if demand is None:
+            raise ValueError(f"unknown demand: {demand_id}")
+        prior_state = self.latest_execution_state(demand["continuation_point"])
+        if prior_state and prior_state.get("runtime_application_status") == "PENDING_SWIFT":
+            raise ValueError(
+                "pending runtime application requires confirmation: "
+                f"{prior_state['state_id']}"
+            )
         try:
             with self.carrier.transaction():
                 result = self._execute_demand_in_transaction(
@@ -519,7 +594,12 @@ class CarrierInformationLoop:
                     raise _DemandNotAdvanced(result)
         except _DemandNotAdvanced as error:
             if error.result.get("state", "").startswith("BLOCKED_"):
+                # Begin the append transaction before reading the lineage link;
+                # otherwise another writer can advance between the read and append.
                 with self.carrier.atomic_write_group():
+                    prior_state = self.latest_execution_state(
+                        self.current_demand(demand_id)["continuation_point"]
+                    )
                     self.record_execution_state(
                         advancement_id,
                         continuation_point=self.current_demand(demand_id)["continuation_point"],
@@ -583,6 +663,11 @@ class CarrierInformationLoop:
             pending_items.extend(item["dependencies"])
             valid_until = item.get("valid_until_utc")
             if valid_until is None:
+                missing_validity.append(item_id)
+                continue
+            try:
+                validity_policy_identity(item.get("validity_policy"))
+            except ValueError:
                 missing_validity.append(item_id)
                 continue
             try:

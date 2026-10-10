@@ -23,11 +23,47 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     return try record.validatedHandle()
   }
 
+  private func makeIsolatedConfiguration(
+    defaultValidity: String = "2030-12-31T23:59:59Z"
+  ) throws -> (
+    configuration: ProductionRuntimeLaunchConfiguration,
+    directory: URL
+  ) {
+    let labRoot = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent().deletingLastPathComponent()
+      .deletingLastPathComponent().deletingLastPathComponent()
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("simigo-isolated-policy-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let policy = directory.appendingPathComponent("validity-policy.json")
+    let policyObject: [String: Any] = [
+      "schema_id": "SIMIGO-INFO-VALIDITY-POLICY-V1",
+      "policy_version": "production-runtime-integration-test",
+      "policy_source": "ISOLATED_TEST_ONLY",
+      "missing_policy": "REJECT",
+      "dependency_propagation": "ALL_TRANSITIVE",
+      "default_valid_until_utc": defaultValidity,
+    ]
+    try JSONSerialization.data(withJSONObject: policyObject).write(to: policy)
+    let configuration = ProductionRuntimeLaunchConfiguration(
+      runtimeRoot: labRoot.appendingPathComponent("execution-information-loop"),
+      pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
+      snapshotPath: labRoot.appendingPathComponent(
+        "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+      ),
+      validityPolicyPath: policy
+    )
+    return (configuration, directory)
+  }
+
   func testRealSimiGoRuntimeDrivesAcceptedRealPalaceInformationLoop() async throws {
     let database = try makeTemporaryDatabase()
     let handleURL = database.deletingLastPathComponent()
       .appendingPathComponent("production-execution-state.json")
-    let integration = ProductionRuntimeInformationIntegration()
+    let isolated = try makeIsolatedConfiguration()
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
     try integration.initialize(
       database: database,
       validUntil: "2030-12-31T23:59:59Z"
@@ -112,7 +148,10 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
       "REAL-7",
     ]
     let database = try makeTemporaryDatabase()
-    let integration = ProductionRuntimeInformationIntegration()
+    let isolated = try makeIsolatedConfiguration(defaultValidity: "2020-01-01T00:00:00Z")
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
     try integration.initialize(
       database: database,
       validUntil: "2020-01-01T00:00:00Z"
@@ -179,9 +218,12 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
 
   func testUnknownPersistedLifecycleFailsClosedWithoutAdvanceOrSettlement() async throws {
     let database = try makeTemporaryDatabase()
+    let isolated = try makeIsolatedConfiguration()
     let handleURL = database.deletingLastPathComponent()
       .appendingPathComponent("corrupt-production-execution-state.json")
-    let integration = ProductionRuntimeInformationIntegration()
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
     try integration.initialize(
       database: database,
       validUntil: "2030-12-31T23:59:59Z"

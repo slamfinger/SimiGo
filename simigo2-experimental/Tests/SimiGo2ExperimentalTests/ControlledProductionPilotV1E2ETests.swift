@@ -69,6 +69,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
       "missing_policy": "REJECT",
       "dependency_propagation": "ALL_TRANSITIVE",
       "default_valid_until_utc": "2030-12-31T23:59:59Z",
+      "expired_source_revision_probe": "ISOLATED_E2E_ONLY",
     ]
     try JSONSerialization.data(
       withJSONObject: policyObject,
@@ -172,7 +173,10 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     let staleState = staleDiagnostics["execution_state"] as? [String: Any]
     XCTAssertEqual(staleState?["state_id"] as? String, "pilot-stale")
     XCTAssertEqual(staleState?["status"] as? String, "BLOCKED")
-    XCTAssertEqual(staleState?["prior_state_id"] as? String, "pilot-reuse")
+    XCTAssertEqual(
+      staleState?["prior_state_id"] as? String,
+      "pilot-reuse:runtime-applied"
+    )
     let afterStaleAudit = try restarted.audit(database: pilot.database)
     XCTAssertEqual(
       afterStaleAudit["settlement_dependency_count"] as? Int,

@@ -81,6 +81,24 @@ def deployment_default_validity(policy: dict) -> str:
     return policy["default_valid_until_utc"]
 
 
+def current_deployment_policy() -> Optional[dict]:
+    return (
+        load_deployment_validity_policy()
+        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
+        else None
+    )
+
+
+def require_current_policy(loop: CarrierInformationLoop, policy: dict) -> None:
+    for item_id in REQUIRED_ITEMS:
+        item = loop.current_item(item_id)
+        stored = item.get("validity_policy") if item else None
+        if not isinstance(stored, dict) or stored.get(
+            "policy_sha256"
+        ) != policy["policy_sha256"]:
+            raise ValueError(f"current validity policy mismatch for item: {item_id}")
+
+
 def open_loop(database_path: str) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
     loop = CarrierInformationLoop.open(database_path)
     source = RealPalaceSource(str(SNAPSHOT_PATH), SNAPSHOT_SHA256)
@@ -96,11 +114,7 @@ def close_loop(
 
 
 def initialize(args: argparse.Namespace) -> None:
-    validity_policy = (
-        load_deployment_validity_policy()
-        if os.environ.get("SIMIGO_INFO_VALIDITY_POLICY_PATH")
-        else None
-    )
+    validity_policy = current_deployment_policy()
     if validity_policy:
         policy_valid_until = deployment_default_validity(validity_policy)
         if args.valid_until and args.valid_until != policy_valid_until:
@@ -199,6 +213,9 @@ def audit(args: argparse.Namespace) -> None:
 
 def execute(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
+    policy = current_deployment_policy()
+    if policy:
+        require_current_policy(loop, policy)
     prior_state = loop.latest_execution_state(CONTINUATION_POINT)
     if prior_state is None:
         demand = loop.current_demand(CONTINUATION_POINT)
@@ -221,6 +238,21 @@ def execute(args: argparse.Namespace) -> None:
         "prior_execution_state": prior_state,
         "restored_required_item_ids": required,
         "result": result,
+    }
+    loop.commit()
+    close_loop(loop, source)
+    emit(value)
+
+
+def confirm_runtime_application(args: argparse.Namespace) -> None:
+    loop, source = open_loop(args.database)
+    confirmation = loop.confirm_runtime_application(args.state_id)
+    state = loop.latest_execution_state(CONTINUATION_POINT)
+    value = {
+        "ok": True,
+        "command": "confirm-runtime-application",
+        "confirmation": confirmation,
+        "execution_state": state,
     }
     loop.commit()
     close_loop(loop, source)
@@ -266,6 +298,20 @@ def invalidate(args: argparse.Namespace) -> None:
 
 def source_change(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
+    policy = current_deployment_policy()
+    if policy:
+        default_validity = deployment_default_validity(policy)
+        if args.valid_until != default_validity:
+            authorized_probe = (
+                policy.get("expired_source_revision_probe")
+                == "ISOLATED_E2E_ONLY"
+                and args.valid_until < default_validity
+            )
+            if not authorized_probe:
+                close_loop(loop, source)
+                raise ValueError(
+                    "source validity conflicts with current deployment policy"
+                )
     item = loop.current_item(args.item_id)
     if item is None:
         raise ValueError(f"unknown item: {args.item_id}")
@@ -284,6 +330,7 @@ def source_change(args: argparse.Namespace) -> None:
             payload,
             "bounded production integration isolated source revision",
             valid_until_utc=args.valid_until,
+            validity_policy=policy,
         ),
     }
     loop.commit()
@@ -335,6 +382,14 @@ def rollback_to_state(args: argparse.Namespace) -> None:
         raise ValueError("rollback target is not an ADVANCED execution state")
     if target.get("demand_id") != CONTINUATION_POINT:
         raise ValueError("rollback target demand mismatch")
+    if target.get("runtime_application_status") != "APPLIED_SWIFT":
+        confirmation = find_execution_state(
+            loop, f"{target['state_id']}:runtime-applied"
+        )
+        if confirmation is None or confirmation.get(
+            "runtime_application_status"
+        ) != "APPLIED_SWIFT":
+            raise ValueError("rollback target has no runtime-application completion")
     prior = loop.latest_execution_state(CONTINUATION_POINT)
     loop.record_execution_state(
         args.new_state_id,
@@ -345,6 +400,7 @@ def rollback_to_state(args: argparse.Namespace) -> None:
         pending_obligations=target["pending_obligations"],
         next_continuation_point=target["next_continuation_point"],
         result_digest=target["result_digest"],
+        runtime_application_status="APPLIED_SWIFT",
     )
     after = loop.latest_execution_state(CONTINUATION_POINT)
     value = {
@@ -458,6 +514,11 @@ def main() -> int:
     rollback_parser.add_argument("--target-state-id", required=True)
     rollback_parser.add_argument("--new-state-id", required=True)
     rollback_parser.set_defaults(handler=rollback_to_state)
+
+    confirmation_parser = subparsers.add_parser("confirm-runtime-application")
+    confirmation_parser.add_argument("--database", required=True)
+    confirmation_parser.add_argument("--state-id", required=True)
+    confirmation_parser.set_defaults(handler=confirm_runtime_application)
 
     diagnostics_parser = subparsers.add_parser("diagnostics")
     diagnostics_parser.add_argument("--database", required=True)
