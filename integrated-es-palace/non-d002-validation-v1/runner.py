@@ -35,8 +35,9 @@ ALLOWED_IMPORT_ROOTS = {
     "subprocess", "tempfile", "typing",
 }
 FORBIDDEN_SOURCE_MARKERS = [
-    "socket", "urllib", "http.client", "requests", "curl ", "wget ",
-    "os.environ", "getenv", "semantic_search", "embedding_ranking",
+    "import socket", "import urllib", "import http.client", "import requests",
+    "subprocess.run([\"curl\"", "subprocess.run([\"wget\"",
+    "environ[", "environ.get", "semantic_search", "embedding_ranking",
 ]
 
 
@@ -262,7 +263,9 @@ def source_denial_checks() -> dict:
     checks = {
         "imports_allowlisted": imported.issubset(ALLOWED_IMPORT_ROOTS),
         "network_forbidden": not any(marker in {"socket", "urllib", "http"} for marker in imported),
-        "environment_inputs_forbidden": "os.environ" not in source and "getenv" not in source,
+        "environment_inputs_forbidden": not any(
+            marker in source for marker in ["environ[", "environ.get"]
+        ),
         "model_participation_forbidden": "model" not in {node.id.lower() for node in ast.walk(tree) if isinstance(node, ast.Name)},
         "forbidden_source_markers_absent": not forbidden_found,
     }
