@@ -1,14 +1,15 @@
 # Actual MLX smoke execution package V3
 
-> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED
+> **Status:** NO-GO / SUPERSEDED BY V4 EXECUTION PACKAGE
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
 
 ## Response to V2 NO-GO
 
-V3 addresses the four controls without reopening Runtime Validation V2,
-changing frozen contracts, creating a marker, or consuming the actual-run
-opportunity.
+V3 was reviewed as NO-GO because its execution path read a nonexistent
+top-level `evidence_root` field instead of `evidence.root`. It was not executed
+and its authorization path was not consumed. It is retained as history and is
+superseded by V4.
 
 ```text
 A. sidecar uses standard sha256 + filename format;
