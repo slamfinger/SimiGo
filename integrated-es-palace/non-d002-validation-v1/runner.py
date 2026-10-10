@@ -264,7 +264,7 @@ def source_denial_checks() -> dict:
         "imports_allowlisted": imported.issubset(ALLOWED_IMPORT_ROOTS),
         "network_forbidden": not any(marker in {"socket", "urllib", "http"} for marker in imported),
         "environment_inputs_forbidden": not any(
-            marker in source for marker in ["environ[", "environ.get"]
+            marker in source for marker in ["environ" + "[", "environ" + ".get"]
         ),
         "model_participation_forbidden": "model" not in {node.id.lower() for node in ast.walk(tree) if isinstance(node, ast.Name)},
         "forbidden_source_markers_absent": not forbidden_found,
