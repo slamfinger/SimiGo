@@ -26372,3 +26372,59 @@ Primary evidence:
 simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceAuthorizedRuntimeValidation.swift;
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_HARNESS_SERIALIZATION_REPAIR_20261010.md.
 ```
+
+## Runtime Validation V2 Prepared Execution Package — 2026-10-10
+
+> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION
+> REQUIRED. Runtime validation remains NOT AUTHORIZED and NOT EXECUTED.
+
+```text
+new Manifest V3 path =
+  integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.json;
+Manifest V3 SHA256 =
+  4025aba0b4d19a0792ce5e105e472e7add61da72366b3a24c1b1a98b83ddda33;
+manifest digest sidecar =
+  integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.sha256;
+adapter SHA256 =
+  87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec;
+serialization-repaired harness SHA256 =
+  c43267cfdad7a96ab79789bcba49eb96a866e53dd7b744945307a68435d854ed;
+new independent entry path =
+  simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift;
+new entry SHA256 =
+  c1759849bf8fc1107fea3696f7f381b2895b284af140dc91fcb9a30d5638edd8;
+new entry test = IntegratedESPalaceRuntimeValidationV2 /
+                 testRuntimeValidationV2SingleRun;
+targeted branch regression source SHA256 =
+  437e7b4bda837967f9b18e40af8ae0dca1e0c3079b9ac6e27acc8913bebd922a;
+targeted branch regression = PASS / 5 tests / 0 failures;
+serialization precheck source SHA256 =
+  c43267cfdad7a96ab79789bcba49eb96a866e53dd7b744945307a68435d854ed;
+serialization precheck = PASS / 2 tests / 0 failures;
+fixture cases = seven original immutable cases;
+evidence root if approved =
+  integrated-es-palace/runtime-adapter-v1/validation-evidence-v2;
+authorization gate = marker containing Manifest V3 file SHA256;
+authorized runs if approved = 1;
+maximum total new runs = 1;
+terminal states =
+  RUNTIME_VALIDATION_PASS or RUNTIME_VALIDATION_FAIL, then STOP;
+original RUNTIME_VALIDATION_FAIL = retained / CLOSED;
+V2 contract validation = VALIDATION_PASS / CLOSED;
+Pilot v5 SQLite busy = ACCEPT / CLOSED;
+validation executed now = false;
+validation authorized now = false;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.json;
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.sha256;
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift;
+docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_PREPARED_EXECUTION_PACKAGE_20261010.md.
+```

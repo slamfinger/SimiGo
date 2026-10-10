@@ -24,13 +24,13 @@ final class IntegratedESPalaceRuntimeAdapterBranchTests: XCTestCase {
     let object = try JSONSerialization.jsonObject(with: Data(contentsOf: packageURL))
     guard let fixture = object as? [String: Any],
           let cases = fixture["cases"] as? [[String: Any]] else {
-      throw XCTFailure("fixture package is malformed")
+      throw XCTFailureForAdapterBranchTests("fixture package is malformed")
     }
     return try cases.map { item in
       guard let caseID = item["case_id"] as? String,
             let root = item["fixture_root"] as? String,
             let manifestSHA256 = item["manifest_sha256"] as? String else {
-        throw XCTFailure("fixture case is malformed")
+        throw XCTFailureForAdapterBranchTests("fixture case is malformed")
       }
       let manifestURL = labRoot.appendingPathComponent(
         "integrated-es-palace/integration-fixture-v1/\(root)/fixture-manifest.json"
@@ -38,7 +38,7 @@ final class IntegratedESPalaceRuntimeAdapterBranchTests: XCTestCase {
       let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL))
       guard let manifestObject = manifest as? [String: Any],
             let opaqueLocator = manifestObject["opaque_locator"] as? String else {
-        throw XCTFailure("fixture manifest is malformed")
+        throw XCTFailureForAdapterBranchTests("fixture manifest is malformed")
       }
       return FixtureCase(
         caseID: caseID,
@@ -59,7 +59,7 @@ final class IntegratedESPalaceRuntimeAdapterBranchTests: XCTestCase {
       opaqueLocator: fixture.opaqueLocator
     )
     guard let sourceRecordDigest = stringValue(inventory.provenance["record_digest"]) else {
-      throw XCTFailure("provenance digest is missing")
+      throw XCTFailureForAdapterBranchTests("provenance digest is missing")
     }
     return try adapter.makeDecision(
       inventory: inventory,
@@ -251,6 +251,6 @@ private func stringValue(_ value: AnyCodableValue?) -> String? {
   return nil
 }
 
-private func XCTFailure(_ message: String) -> Error {
+func XCTFailureForAdapterBranchTests(_ message: String) -> Error {
   NSError(domain: "IntegratedESPalaceRuntimeAdapterBranchTests", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
 }

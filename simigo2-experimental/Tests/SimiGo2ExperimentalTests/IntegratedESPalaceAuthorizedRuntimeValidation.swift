@@ -330,13 +330,13 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
     return serialized
   }
 
-  private static func sha256(_ data: Data) -> String {
+  static func sha256(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
   }
 }
 
 import CryptoKit
 
-private func XCTFailure(_ message: String) -> Error {
+internal func XCTFailure(_ message: String) -> Error {
   NSError(domain: "IntegratedESPalaceAuthorizedRuntimeValidation", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
 }
