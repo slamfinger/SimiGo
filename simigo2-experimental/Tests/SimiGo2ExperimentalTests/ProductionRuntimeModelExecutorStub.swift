@@ -5,15 +5,19 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
   var seedTokenError: Error?
   var continuationError: Error?
   var nextInputError: Error?
+  private let representationBackend: MLXExecutionStateBackend?
+  private(set) var observedBoundPrefixCount: Int?
 
   init(
     seedTokenError: Error? = nil,
     nextInputError: Error? = nil,
-    continuationError: Error? = nil
+    continuationError: Error? = nil,
+    representationBackend: MLXExecutionStateBackend? = nil
   ) {
     self.seedTokenError = seedTokenError
     self.nextInputError = nextInputError
     self.continuationError = continuationError
+    self.representationBackend = representationBackend
   }
 
   func tokenizeText(_ text: String) async throws -> [Int] {
@@ -31,6 +35,10 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
     nextInputTokens: [Int],
     maxTokens: Int
   ) async throws -> ExecutionContinuationResult {
+    if let representationBackend {
+      let bound = try representationBackend.boundPrefix(for: state)
+      observedBoundPrefixCount = bound.prefix.count
+    }
     if let continuationError { throw continuationError }
     return ExecutionContinuationResult(
       executionID: state.id,

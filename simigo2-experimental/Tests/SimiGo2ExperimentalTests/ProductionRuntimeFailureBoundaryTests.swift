@@ -148,6 +148,33 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     )
   }
 
+  func testInjectedBackendReceivesSeedAndAdvancedRepresentation() async throws {
+    let configuration = try makeConfiguration()
+    let backend = MLXExecutionStateBackend()
+    let executor = ProductionRuntimeModelExecutorStub(representationBackend: backend)
+    let integration = ProductionRuntimeInformationIntegration(
+      configuration: configuration,
+      modelExecutor: executor,
+      backend: backend
+    )
+    let database = FileManager.default.temporaryDirectory
+      .appendingPathComponent("backend-identity-\(UUID().uuidString).sqlite")
+    try integration.initialize(database: database, validUntil: nil)
+
+    let result = try await integration.continueWithRealInformation(
+      database: database,
+      handle: nil,
+      advancementID: "backend-identity-regression",
+      evaluatedAtUTC: "2026-10-10T00:00:00Z"
+    )
+
+    XCTAssertGreaterThan(try XCTUnwrap(executor.observedBoundPrefixCount), 0)
+    let bound = try backend.boundPrefix(for: result.handle)
+    XCTAssertEqual(result.handle.position, bound.position)
+    XCTAssertEqual([9, 18, 27], bound.prefix)
+    XCTAssertEqual(.active, result.handle.lifecycle)
+  }
+
   func testLogicalAdvanceFailurePersistsBlockedAndDiscardsRuntime() async throws {
     let configuration = try makeConfiguration()
     let backend = MLXExecutionStateBackend()

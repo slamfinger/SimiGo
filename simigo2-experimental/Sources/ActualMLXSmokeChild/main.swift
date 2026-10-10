@@ -110,9 +110,11 @@ do {
         "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json"
       )
     )
+    // The coordinator and the MLX executor must share one physical-state backend.
     let integration = ProductionRuntimeInformationIntegration(
       configuration: configuration,
-      modelExecutor: executor
+      modelExecutor: executor,
+      backend: backend
     )
     try integration.initialize(database: database, validUntil: "2030-12-31T23:59:59Z")
     let result = try await integration.continueWithRealInformation(
