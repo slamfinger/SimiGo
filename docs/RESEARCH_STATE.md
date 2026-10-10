@@ -2,7 +2,65 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-11
+
+## Current continuity — 2026-10-11 (Actual MLX Smoke V6 candidate)
+
+> **Status:** V6 candidate package DELIVERED / CANDIDATE — HUMAN AUTHORIZATION
+> REQUIRED. No V6 marker, consumed marker, or evidence exists.
+
+The authorized V5 run is closed as
+`MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`. It proved that the W1
+unified backend path reached real MLX execution: position 1, active lifecycle,
+6481-token bound representation, all nine Information Space settlements
+`SETTLED`, and carrier runtime application `APPLIED_SWIFT`. It failed only
+because V5's success gate required `execution_state.status == SETTLED`, although
+the carrier's correct execution-state value was `ADVANCED`.
+
+W1 Backend Identity Repair is MERGED. V6 now separates Execution State
+advancement, runtime application, nine settlement states, pending obligations,
+carrier integrity, handle/lifecycle, position, and representation binding into
+independent success-gate checks. Child evidence records
+`success_gate_checks`; a regression reproduces the V5 layer-conflation defect.
+
+```text
+package baseline commit = ba2ba6d7b725f15386193d20f7295c9015523a12;
+V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
+V5 retry / gate adjustment by rerun = FORBIDDEN / CLOSED;
+W1 Backend Identity Repair = MERGED;
+V6 Manifest SHA256 =
+  3036df7e8b3c0ddd1548bc45fb7c1b198dbd25939e0c09804c222365eedec55e;
+V6 Runner SHA256 =
+  4b27bcada44128fc501e7dac7f2547689e64a3381a4cd442877f1809e010ff0e;
+V6 Success Gate source SHA256 =
+  eec8f82683203bca69649aece68563483dcc1116372437b6cd4e802045eb6bbb;
+V6 Child source SHA256 =
+  918c3faf1a0000d9e15996d16c83d4ce42d47d4a81bebb29e60f9f3d5e1d94ff;
+V6 Child binary SHA256 =
+  4d514780be383e6d459b61ffa6d237501e904940610e945fdd85867184dc2c8f;
+advancement ID = actual-mlx-smoke-v6;
+swift build --product ActualMLXSmokeChild = PASS;
+ActualMLXSmokeValidation = PASS / 8 tests / 1 skipped / 0 failures;
+ProductionRuntimeFailureBoundaryTests = PASS / 8 tests / 0 failures;
+V6 marker / consumed marker / evidence root = ABSENT;
+V6 actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
+next Human gate = review V6 candidate, then separately authorize zero or one run;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE mutation = FORBIDDEN;
+canonical Information Space mutation = FORBIDDEN;
+D-002 rerun / repair = FORBIDDEN;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+New-session recovery path:
+
+```text
+authoritative state = docs/RESEARCH_STATE.md;
+V6 candidate = integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json;
+V6 governance = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V6_20261011.md;
+V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
+```
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
