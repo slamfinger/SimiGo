@@ -26082,3 +26082,41 @@ Primary evidence:
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_REQUEST_V1.0_20261010.md;
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_ACCEPT_20261010.md.
 ```
+
+## Non-D002 Integrated Validation RESULT — 2026-10-10
+
+> **Status:** VALIDATION_FAIL — ONE-RUN STOP RULE ENFORCED. No repair, rerun,
+> or follow-on execution is authorized.
+
+```text
+manifest instance id = 40CC5A97-8B0B-55C3-9D5A-4F26335C6FFA;
+manifest canonical content SHA256 =
+  039d73f1f5348b3e763b4b9bf8bffc46404df0ff11a84eff5494c2193098d99f;
+runner SHA256 =
+  f27b1f055b6864445fb00d63fb9078744319964234a090648a28a4d1b5c1d8fb;
+executed runs = 1 / authorized runs = 1;
+terminal state = VALIDATION_FAIL;
+P-LAWFUL     = PASS;
+P-SETTLED    = PASS;
+P-BLOCKED    = PASS;
+N-MISSING    = FAIL (observed MISSING_INFORMATION_BLOCK);
+N-STALE      = FAIL (observed STALE_INFORMATION_BLOCK);
+N-AMBIGUOUS  = FAIL (observed AMBIGUOUS_INFORMATION_BLOCK);
+N-ILLEGAL    = FAIL (observed ILLEGAL_CONTINUATION_BLOCK);
+failure class = negative precedence reason strings did not exact-match
+                the registered Run Manifest labels;
+repair / rerun / second run = FORBIDDEN;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/non-d002-validation-v1/evidence/VALIDATION_RECORD.json;
+integrated-es-palace/non-d002-validation-v1/evidence/CASE_COMPARISON_RECORD.json;
+integrated-es-palace/non-d002-validation-v1/evidence/EVIDENCE_SHA256SUMS;
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_RESULT_20261010.md.
+```
