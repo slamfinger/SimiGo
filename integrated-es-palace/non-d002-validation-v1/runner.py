@@ -84,7 +84,6 @@ def preflight(manifest: dict, manifest_path: Path) -> dict:
         "branch_main": git("branch", "--show-current") == "main",
         "head_origin_equal": git("rev-parse", "HEAD") == git("rev-parse", "origin/main"),
         "worktree_clean": git("status", "--porcelain") == "",
-        "manifest_self_hash": True,
         "fixture_manifest_digest": hashlib.sha256(fixture_manifest.read_bytes()).hexdigest() == manifest["bindings"]["fixture_manifest_sha256"],
         "fixture_checksum_digest": hashlib.sha256(checksum_list.read_bytes()).hexdigest() == manifest["bindings"]["fixture_checksum_list_sha256"],
         "sealed_snapshot_digest": hashlib.sha256(SNAPSHOT.read_bytes()).hexdigest() == SEALED_SNAPSHOT_SHA256,
