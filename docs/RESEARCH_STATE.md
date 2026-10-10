@@ -25974,3 +25974,36 @@ canonical PALACE / Information Space mutation = FORBIDDEN;
 D-002 rerun / repair-run = FORBIDDEN;
 Integrated SimiGo production proof = NOT ESTABLISHED.
 ```
+
+## Controlled Production Pilot v5 SQLite Busy Revision ACCEPT — 2026-10-10
+
+> **Status:** HUMAN REVIEW ACCEPT for the bounded SQLite busy verification
+> revision only. Production deployment remains NOT AUTHORIZED.
+
+```text
+accepted scope = Pilot v5 SQLite busy verification revision;
+verification commit = 99187bc230379530e420331301d583796d5ca3d7;
+reviewed continuity commit = 14e06cab26f3ef2bb15b3d973438b97e18deac09;
+carrier selftest = PASS / 31 checks;
+Swift claimed regressions = PASS / 9 tests / 0 failures;
+pilot verifier = PASS / all checks true;
+lock-conflict evidence chain =
+  holder held -> competitor SQLITE_BUSY -> holder commit ->
+  controlled retry -> competitor acquired -> exact lineage;
+Integrated SimiGo full production proof = NOT ESTABLISHED;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair-run = FORBIDDEN;
+next authorized engineering object = requires a separate governance work order.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_ACCEPT_20261010.md;
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_REVISION_20261010.md;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_REVISION_MANIFEST.json;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_REVISION_VERIFIER_RECORD.json.
+```
