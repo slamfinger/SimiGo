@@ -26689,3 +26689,43 @@ Primary evidence:
 simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift;
 docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_FAILURE_BOUNDARY_EVIDENCE_COMPLETION_20261010.md.
 ```
+
+## Actual MLX Smoke Candidate Package — 2026-10-10
+
+> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED.
+> Actual MLX smoke remains NOT AUTHORIZED / NOT EXECUTED.
+
+Targeted evidence corrections were committed as
+`87aad209f6e1a234506d698dedebd7840a532286`. The prior V2 terminal state is
+authoritative as `RUNTIME_VALIDATION_PASS / AUTHORIZED RUN CONSUMED / CLOSED`,
+and the representation-binding failure test now asserts `discarded` plus no
+reusable backend representation.
+
+```text
+ProductionRuntimeFailureBoundaryTests = PASS / 7 tests / 0 failures;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+ActualMLXSmokeValidation precheck =
+  PASS / 2 tests / 1 skipped / 0 failures;
+smoke manifest SHA256 =
+  26e6e7d8f7a1f2f6e86cfd6a384eea9670653139ae87cb4f1635f25389713ac7;
+smoke runner SHA256 =
+  1109b88b6adfbc32007406d976eacd196089789d8a7e7811e8e5ee3b3f760237;
+authorized smoke runs if separately approved = 1;
+model calls = 1;
+max-token upper bound = 32;
+evidence root =
+  integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v1;
+actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V1.json;
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V1.sha256;
+docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_EXECUTION_PACKAGE_20261010.md.
+```
