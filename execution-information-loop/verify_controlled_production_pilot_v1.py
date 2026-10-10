@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
-    "CONTROLLED_PRODUCTION_PILOT_V5_VERIFY_REVISION_MANIFEST.json"
+    "CONTROLLED_PRODUCTION_PILOT_V5_SQLITE_BUSY_REVISION_MANIFEST.json"
 )
 PRIMARY_EVIDENCE = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
@@ -127,10 +127,13 @@ def carrier_selftest() -> tuple[bool, dict]:
         and checks.get("deployment_policy_sha_bound_in_transaction") is True
         and checks.get("execution_race_cannot_stack_pending_intents") is True
         and checks.get("execution_race_competitor_blocked_at_write_lock") is True
+        and checks.get("execution_race_sqlite_busy_conflict_observed") is True
         and checks.get("confirmation_and_recovery_are_serialized") is True
         and checks.get("confirmation_race_competitor_blocked_at_write_lock") is True
+        and checks.get("confirmation_race_sqlite_busy_conflict_observed") is True
         and checks.get("blocked_and_recovery_are_serialized") is True
         and checks.get("blocked_race_competitor_blocked_at_write_lock") is True
+        and checks.get("blocked_race_sqlite_busy_conflict_observed") is True
         and checks.get("carrier_object_store_is_append_only_hash_addressed") is True
     )
     return passed, {
@@ -149,10 +152,13 @@ def carrier_selftest() -> tuple[bool, dict]:
                 "deployment_policy_sha_bound_in_transaction",
                 "execution_race_cannot_stack_pending_intents",
                 "execution_race_competitor_blocked_at_write_lock",
+                "execution_race_sqlite_busy_conflict_observed",
                 "confirmation_and_recovery_are_serialized",
                 "confirmation_race_competitor_blocked_at_write_lock",
+                "confirmation_race_sqlite_busy_conflict_observed",
                 "blocked_and_recovery_are_serialized",
                 "blocked_race_competitor_blocked_at_write_lock",
+                "blocked_race_sqlite_busy_conflict_observed",
                 "carrier_object_store_is_append_only_hash_addressed",
             ]
         },
@@ -189,7 +195,7 @@ def main() -> int:
     head = git("rev-parse", "HEAD")
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V5-VERIFY-REVISION-MANIFEST",
+        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V5-SQLITE-BUSY-REVISION-MANIFEST",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": set(recorded_hashes) == set(REQUIRED_FILES),
         "manifest_hashes_valid": bool(recorded_hashes) and all(
@@ -258,7 +264,7 @@ def main() -> int:
         ),
     }
     report = {
-        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V5-VERIFIER",
+        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V5-SQLITE-BUSY-VERIFIER",
         "result": "PASS" if all(checks.values()) else "FAIL",
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),

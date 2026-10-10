@@ -6,9 +6,11 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import sqlite3
 import tempfile
 import threading
 import contextlib
+from typing import Optional
 from pathlib import Path
 
 from carrier_loop import CarrierInformationLoop, digest
@@ -45,15 +47,36 @@ class ObservableCarrier(DatabaseBackedIS):
         *args,
         before_begin: threading.Event,
         after_begin: threading.Event,
+        busy_conflict: Optional[threading.Event] = None,
+        retry_release: Optional[threading.Event] = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.before_begin = before_begin
         self.after_begin = after_begin
+        self.busy_conflict = busy_conflict
+        self.retry_release = retry_release
 
     @contextlib.contextmanager
     def transaction(self):
         self.before_begin.set()
+        if self.busy_conflict is not None:
+            # A zero busy timeout converts the lock conflict into an explicit
+            # SQLITE_BUSY observation instead of an opaque timed wait.
+            self.connection.execute("PRAGMA busy_timeout = 0")
+            try:
+                self.connection.execute("BEGIN IMMEDIATE")
+            except sqlite3.OperationalError as error:
+                if "database is locked" not in str(error):
+                    raise
+                self.busy_conflict.set()
+                if self.retry_release is None or not self.retry_release.wait(
+                    timeout=5
+                ):
+                    raise TimeoutError("SQLITE_BUSY retry was not released")
+            else:
+                self.connection.rollback()
+                raise AssertionError("competitor unexpectedly acquired the write lock")
         with super().transaction():
             self.after_begin.set()
             yield
@@ -157,11 +180,15 @@ def append_race_recovery(
     *,
     before_begin: threading.Event,
     after_begin: threading.Event,
+    busy_conflict: threading.Event,
+    retry_release: threading.Event,
 ) -> None:
     writer_loop = CarrierInformationLoop(ObservableCarrier(
         database_path,
         before_begin=before_begin,
         after_begin=after_begin,
+        busy_conflict=busy_conflict,
+        retry_release=retry_release,
     ))
     latest = writer_loop.latest_execution_state("race-continuation")
     writer_loop.record_execution_state(
@@ -614,12 +641,16 @@ def run() -> dict:
                     raise TimeoutError("first execution missed SQLite write lock")
                 second_before_begin = threading.Event()
                 second_after_begin = threading.Event()
+                second_busy_conflict = threading.Event()
+                second_retry_release = threading.Event()
                 second_future = pool.submit(
                     lambda: CarrierInformationLoop(
                         ObservableCarrier(
                             race_database,
                             before_begin=second_before_begin,
                             after_begin=second_after_begin,
+                            busy_conflict=second_busy_conflict,
+                            retry_release=second_retry_release,
                         )
                     ).execute_demand(
                         "race-demand",
@@ -630,11 +661,17 @@ def run() -> dict:
                 )
                 if not second_before_begin.wait(timeout=5):
                     raise TimeoutError("second execution missed write-lock race")
+                if not second_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("second execution missed SQLITE_BUSY")
+                if second_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
                 competitor_blocked = (
-                    not second_after_begin.is_set()
+                    second_busy_conflict.is_set()
+                    and not second_after_begin.is_set()
                 )
                 ExecutionGateLoop.gate.release_holder()
                 first_result = first_future.result(timeout=5)
+                second_retry_release.set()
                 try:
                     second_future.result(timeout=5)
                     second_rejected = False
@@ -651,7 +688,12 @@ def run() -> dict:
             )
             checks["execution_race_competitor_blocked_at_write_lock"] = (
                 second_before_begin.is_set()
+                and second_busy_conflict.is_set()
                 and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["execution_race_sqlite_busy_conflict_observed"] = (
+                second_busy_conflict.is_set()
                 and competitor_acquired_after_release
             )
 
@@ -675,6 +717,8 @@ def run() -> dict:
                 recovery_ready = threading.Event()
                 recovery_before_begin = threading.Event()
                 recovery_after_begin = threading.Event()
+                recovery_busy_conflict = threading.Event()
+                recovery_retry_release = threading.Event()
 
                 def recovery_writer():
                     recovery_started.set()
@@ -684,6 +728,8 @@ def run() -> dict:
                         "race-first:runtime-applied",
                         before_begin=recovery_before_begin,
                         after_begin=recovery_after_begin,
+                        busy_conflict=recovery_busy_conflict,
+                        retry_release=recovery_retry_release,
                     )
 
                 recovery_thread = threading.Thread(target=recovery_writer)
@@ -692,9 +738,17 @@ def run() -> dict:
                 recovery_ready.set()
                 if not recovery_before_begin.wait(timeout=5):
                     raise TimeoutError("recovery writer missed confirmation lock race")
-                competitor_blocked = not recovery_after_begin.is_set()
+                if not recovery_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed SQLITE_BUSY")
+                if recovery_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
+                competitor_blocked = (
+                    recovery_busy_conflict.is_set()
+                    and not recovery_after_begin.is_set()
+                )
                 ConfirmationGateLoop.gate.release_holder()
                 confirmation_future.result(timeout=5)
+                recovery_retry_release.set()
                 recovery_thread.join(timeout=5)
                 competitor_acquired_after_release = recovery_after_begin.wait(
                     timeout=5
@@ -711,7 +765,12 @@ def run() -> dict:
             )
             checks["confirmation_race_competitor_blocked_at_write_lock"] = (
                 recovery_before_begin.is_set()
+                and recovery_busy_conflict.is_set()
                 and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["confirmation_race_sqlite_busy_conflict_observed"] = (
+                recovery_busy_conflict.is_set()
                 and competitor_acquired_after_release
             )
             blocked_race_database = str(
@@ -746,6 +805,8 @@ def run() -> dict:
                 recovery_ready = threading.Event()
                 recovery_before_begin = threading.Event()
                 recovery_after_begin = threading.Event()
+                recovery_busy_conflict = threading.Event()
+                recovery_retry_release = threading.Event()
 
                 def blocked_recovery_writer():
                     recovery_started.set()
@@ -755,6 +816,8 @@ def run() -> dict:
                         "blocked-race-attempt",
                         before_begin=recovery_before_begin,
                         after_begin=recovery_after_begin,
+                        busy_conflict=recovery_busy_conflict,
+                        retry_release=recovery_retry_release,
                     )
 
                 recovery_thread = threading.Thread(target=blocked_recovery_writer)
@@ -763,9 +826,17 @@ def run() -> dict:
                 recovery_ready.set()
                 if not recovery_before_begin.wait(timeout=5):
                     raise TimeoutError("recovery writer missed blocked lock race")
-                competitor_blocked = not recovery_after_begin.is_set()
+                if not recovery_busy_conflict.wait(timeout=5):
+                    raise TimeoutError("recovery writer missed SQLITE_BUSY")
+                if recovery_retry_release.is_set():
+                    raise AssertionError("SQLITE_BUSY retry released before holder")
+                competitor_blocked = (
+                    recovery_busy_conflict.is_set()
+                    and not recovery_after_begin.is_set()
+                )
                 BlockedAppendGateLoop.gate.release_holder()
                 blocked_result = blocked_future.result(timeout=5)
+                recovery_retry_release.set()
                 recovery_thread.join(timeout=5)
                 competitor_acquired_after_release = recovery_after_begin.wait(
                     timeout=5
@@ -782,7 +853,12 @@ def run() -> dict:
             )
             checks["blocked_race_competitor_blocked_at_write_lock"] = (
                 recovery_before_begin.is_set()
+                and recovery_busy_conflict.is_set()
                 and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["blocked_race_sqlite_busy_conflict_observed"] = (
+                recovery_busy_conflict.is_set()
                 and competitor_acquired_after_release
             )
 
