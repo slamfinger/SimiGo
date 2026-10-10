@@ -58,7 +58,7 @@ def load_json(path: Path) -> Any:
 def atomic_json(path: Path, value: Any) -> None:
     if path.exists() or path.is_symlink():
         raise FileExistsError(path)
-    path.parent.mkdir(parents=True, exist_ok=False)
+    path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(delete=False) as handle:
         temporary = Path(handle.name)
         handle.write(canonical(value) + b"\n")
