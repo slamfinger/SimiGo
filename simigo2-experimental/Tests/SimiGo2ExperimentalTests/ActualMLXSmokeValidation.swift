@@ -325,25 +325,68 @@ final class ActualMLXSmokeValidation: XCTestCase {
       )
     }
 
-    guard let evidenceData = try Self.terminalData(passURL: passURL, failURL: terminalURL),
-          let record = try JSONSerialization.jsonObject(with: evidenceData) as? [String: Any],
-          Self.validTerminalRecord(record, manifestDigest: manifestDigest, evidenceRoot: evidenceRoot)
-    else {
-      throw ActualMLXSmokeError.terminalEvidenceInvalid("missing or invalid write-once terminal record")
-    }
-    if record["terminal_state"] as? String == "MLX_SMOKE_FAIL" {
-      throw ActualMLXSmokeError.terminalEvidenceInvalid("authorized smoke terminated with MLX_SMOKE_FAIL")
+    switch try Self.selectTerminalEvidence(passURL: passURL, failURL: terminalURL) {
+    case .conflict:
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("conflicting write-once terminal records")
+    case .missing:
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("missing write-once terminal record")
+    case .pass(let evidenceData), .fail(let evidenceData):
+      guard let record = try JSONSerialization.jsonObject(with: evidenceData) as? [String: Any],
+            Self.validTerminalRecord(record, manifestDigest: manifestDigest, evidenceRoot: evidenceRoot)
+      else {
+        throw ActualMLXSmokeError.terminalEvidenceInvalid("invalid write-once terminal record")
+      }
+      if record["terminal_state"] as? String == "MLX_SMOKE_FAIL" {
+        throw ActualMLXSmokeError.terminalEvidenceInvalid("authorized smoke terminated with MLX_SMOKE_FAIL")
+      }
     }
   }
 
-  private static func terminalData(passURL: URL, failURL: URL) throws -> Data? {
-    if FileManager.default.fileExists(atPath: passURL.path) {
-      return try Data(contentsOf: passURL)
-    }
-    if FileManager.default.fileExists(atPath: failURL.path) {
-      return try Data(contentsOf: failURL)
-    }
-    return nil
+  private enum TerminalEvidence: Equatable {
+    case pass(Data)
+    case fail(Data)
+    case conflict
+    case missing
+  }
+
+  private static func selectTerminalEvidence(passURL: URL, failURL: URL) throws -> TerminalEvidence {
+    let passExists = FileManager.default.fileExists(atPath: passURL.path)
+    let failExists = FileManager.default.fileExists(atPath: failURL.path)
+    if passExists, failExists { return .conflict }
+    if passExists { return .pass(try Data(contentsOf: passURL)) }
+    if failExists { return .fail(try Data(contentsOf: failURL)) }
+    return .missing
+  }
+
+  private static func healthyObservation(databasePresent: Bool = true)
+    -> ActualMLXSmokeSuccessGate.Observation {
+    ActualMLXSmokeSuccessGate.Observation(
+      reportAdvanced: true,
+      reportState: "ADVANCED",
+      finalPosition: 1,
+      finalLifecycle: "active",
+      boundRepresentationTokenCount: 1,
+      executionStateStatus: "ADVANCED",
+      runtimeApplicationStatus: "APPLIED_SWIFT",
+      settlementStates: requiredSettlements,
+      pendingObligationsRead: true,
+      pendingObligationCount: 0,
+      carrierObjectsVerified: true,
+      carrierDatabasePresent: databasePresent
+    )
+  }
+
+  func testActualMLXSmokeTerminalEvidenceSelectionFailsClosed() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("actual-mlx-terminal-selection-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let pass = directory.appendingPathComponent("MLX_SMOKE_PASS.json")
+    let fail = directory.appendingPathComponent("MLX_SMOKE_FAIL.json")
+    XCTAssertEqual(.missing, try Self.selectTerminalEvidence(passURL: pass, failURL: fail))
+    try Data("pass".utf8).write(to: pass)
+    XCTAssertEqual(.pass(Data("pass".utf8)), try Self.selectTerminalEvidence(passURL: pass, failURL: fail))
+    try Data("fail".utf8).write(to: fail)
+    XCTAssertEqual(.conflict, try Self.selectTerminalEvidence(passURL: pass, failURL: fail))
   }
 
   private static func validTerminalRecord(
@@ -368,26 +411,26 @@ final class ActualMLXSmokeValidation: XCTestCase {
       atPath: evidenceRoot.appendingPathComponent("carrier.sqlite").path,
       isDirectory: &databaseIsDirectory
     ) && !databaseIsDirectory.boolValue
-    return result["state"] as? String == "ADVANCED"
-      && result["final_position"] as? Int == 1
-      && result["final_lifecycle"] as? String == "active"
-      && (result["bound_representation_token_count"] as? Int ?? 0) > 0
-      && ActualMLXSmokeSuccessGate.evaluate(
-        ActualMLXSmokeSuccessGate.Observation(
-          reportAdvanced: result["advanced"] as? Bool ?? false,
-          reportState: result["state"] as? String ?? "",
-          finalPosition: Int64(result["final_position"] as? Int ?? 0),
-          finalLifecycle: result["final_lifecycle"] as? String ?? "",
-          boundRepresentationTokenCount: result["bound_representation_token_count"] as? Int ?? 0,
-          executionStateStatus: executionState["status"] as? String ?? "",
-          runtimeApplicationStatus: executionState["runtime_application_status"] as? String ?? "",
-          settlementStates: settlementStates,
-          pendingObligationsRead: pendingObligations != nil,
-          pendingObligationCount: pendingObligations?.count ?? 0,
-          carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false,
-          carrierDatabasePresent: databasePresent
-        )
-      ).passed
+    let recomputed = ActualMLXSmokeSuccessGate.evaluate(
+      ActualMLXSmokeSuccessGate.Observation(
+        reportAdvanced: result["advanced"] as? Bool ?? false,
+        reportState: result["state"] as? String ?? "",
+        finalPosition: Int64(result["final_position"] as? Int ?? 0),
+        finalLifecycle: result["final_lifecycle"] as? String ?? "",
+        boundRepresentationTokenCount: result["bound_representation_token_count"] as? Int ?? 0,
+        executionStateStatus: executionState["status"] as? String ?? "",
+        runtimeApplicationStatus: executionState["runtime_application_status"] as? String ?? "",
+        settlementStates: settlementStates,
+        pendingObligationsRead: pendingObligations != nil,
+        pendingObligationCount: pendingObligations?.count ?? 0,
+        carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false,
+        carrierDatabasePresent: databasePresent
+      )
+    )
+    guard let recordedChecks = record["success_gate_checks"] as? [String: Bool],
+          recordedChecks == recomputed.checks
+    else { return false }
+    return recomputed.passed
   }
 
   private static func baseRecord(
@@ -419,7 +462,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
   ]
 
   private static func healthyPassRecord(manifestDigest: String) -> [String: Any] {
-    [
+    var record: [String: Any] = [
       "schema_id": "ACTUAL-MLX-SMOKE-RECORD-V1",
       "manifest_sha256": manifestDigest,
       "terminal_state": "MLX_SMOKE_PASS",
@@ -441,6 +484,8 @@ final class ActualMLXSmokeValidation: XCTestCase {
         ],
       ],
     ]
+    record["success_gate_checks"] = ActualMLXSmokeSuccessGate.evaluate(healthyObservation()).checks
+    return record
   }
 
   func testActualMLXSmokeTerminalRecordUsesSeparatedGate() throws {
@@ -469,7 +514,48 @@ final class ActualMLXSmokeValidation: XCTestCase {
       evidenceRoot: evidenceRoot
     ))
 
+    var missingCheckRecord = Self.healthyPassRecord(manifestDigest: digest)
+    var missingChecks = missingCheckRecord["success_gate_checks"] as! [String: Bool]
+    missingChecks["carrier_database_present"] = nil
+    missingCheckRecord["success_gate_checks"] = missingChecks
+    XCTAssertFalse(Self.validTerminalRecord(
+      missingCheckRecord,
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
+    var extraCheckRecord = Self.healthyPassRecord(manifestDigest: digest)
+    var extraChecks = extraCheckRecord["success_gate_checks"] as! [String: Bool]
+    extraChecks["unexpected_check"] = true
+    extraCheckRecord["success_gate_checks"] = extraChecks
+    XCTAssertFalse(Self.validTerminalRecord(
+      extraCheckRecord,
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
+    var falseCheckRecord = Self.healthyPassRecord(manifestDigest: digest)
+    var falseChecks = falseCheckRecord["success_gate_checks"] as! [String: Bool]
+    falseChecks["execution_state_advanced"] = false
+    falseCheckRecord["success_gate_checks"] = falseChecks
+    XCTAssertFalse(Self.validTerminalRecord(
+      falseCheckRecord,
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
+    var contradictoryAuditRecord = Self.healthyPassRecord(manifestDigest: digest)
+    var contradictoryAudit = contradictoryAuditRecord["audit"] as! [String: Any]
+    contradictoryAudit["carrier_all_objects_verify"] = false
+    contradictoryAuditRecord["audit"] = contradictoryAudit
+    XCTAssertFalse(Self.validTerminalRecord(
+      contradictoryAuditRecord,
+      manifestDigest: digest,
+      evidenceRoot: evidenceRoot
+    ))
+
     try FileManager.default.removeItem(at: database)
+    try FileManager.default.createDirectory(at: database, withIntermediateDirectories: false)
     XCTAssertFalse(Self.validTerminalRecord(
       Self.healthyPassRecord(manifestDigest: digest),
       manifestDigest: digest,
