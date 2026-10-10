@@ -1,0 +1,2 @@
+swift build --target SimiGo2Experimental
+swift test --filter ControlledProductionPilotV1E2ETests

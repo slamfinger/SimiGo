@@ -26188,3 +26188,45 @@ integrated-es-palace/non-d002-validation-v1/evidence-v2/CASE_COMPARISON_RECORD.j
 integrated-es-palace/non-d002-validation-v1/evidence-v2/EVIDENCE_SHA256SUMS;
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_TARGETED_REVISION_VALIDATION_RESULT_20261010.md.
 ```
+
+## Runtime Adapter Integration v1.0 DELIVERED — 2026-10-10
+
+> **Status:** ADAPTER IMPLEMENTATION DELIVERED / BUILD PASS. Runtime validation
+> is NOT AUTHORIZED and awaits one separate Human decision.
+
+```text
+work object = RUNTIME_ADAPTER_INTEGRATION_V1.0;
+V2 seven-case validation = VALIDATION_PASS / ACCEPT / CLOSED;
+new capability = real ExecutionContinuityCoordinator + MLXExecutionStateBackend
+                 connected to prepared fixture inventory and typed decision;
+adapter path = simigo2-experimental/Sources/SimiGo2Experimental/IntegratedESPalaceRuntimeAdapter.swift;
+adapter SHA256 =
+  934b64e5ff7cb164498ff42f1ae95685676e649cbc12565df39a31d6ef9fb836;
+implementation checksum list SHA256 =
+  83c7b2fe1c72022d4d1aea4c8b4a067fab348181410b910d4cf782340064bd31;
+Run Manifest SHA256 =
+  79a488b31884547e0e60a5ce5004e541f82f8442577fa8aa2a0ba6287e70253e;
+swift build target = PASS;
+selected regression = PASS / 1 test;
+validation executed = false;
+validation authorized = false;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Next submitted object:
+
+```text
+one Human-authorized isolated runtime validation pass using the delivered
+adapter; terminal states RUNTIME_VALIDATION_PASS or RUNTIME_VALIDATION_FAIL.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/runtime-adapter-v1/RUN_MANIFEST_INSTANCE.json;
+integrated-es-palace/runtime-adapter-v1/IMPLEMENTATION_SHA256SUMS;
+docs/00-governance/SIMIGO_RUNTIME_ADAPTER_INTEGRATION_V1.0_DELIVERY_AND_AUTHORIZATION_REQUEST_20261010.md.
+```

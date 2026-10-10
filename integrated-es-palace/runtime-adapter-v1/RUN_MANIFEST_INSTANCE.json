@@ -1,0 +1,57 @@
+{
+  "schema_id": "RUNTIME-ADAPTER-INTEGRATION-MANIFEST-V1",
+  "manifest_instance_id": "E5D642C4-33B6-42B7-9A81-05173B7E27F1",
+  "work_object": "RUNTIME_ADAPTER_INTEGRATION_V1.0",
+  "mode": "ADAPTER_IMPLEMENTATION_ONLY",
+  "validation_executed": false,
+  "validation_authorized": false,
+  "prior_v2_validation": {
+    "result": "VALIDATION_PASS / CLOSED",
+    "manifest_instance_id": "0D17FD1B-18FA-5D74-98BA-AE53029078EE",
+    "manifest_content_sha256": "0de1909d780dabc6477f492945421c667b4990be523bce9a4ec52c4a2b640815",
+    "runner_sha256": "50772199dc18c2f7dde7abaf0b95feb879c195f946ef334bc2952b4e73a84d52",
+    "validation_record_sha256": "09ee65442b19aa40fedb0ef75e2775c8a21fb6a4bab0cf756b482ffd5b5b443b"
+  },
+  "implementation": {
+    "language": "Swift 5.9",
+    "entrypoint": "simigo2-experimental/Sources/SimiGo2Experimental/IntegratedESPalaceRuntimeAdapter.swift",
+    "real_execution_state": "ExecutionContinuityCoordinator + MLXExecutionStateBackend",
+    "real_information_source": "immutable prepared PALACE fixture inventory bound to sealed PALACE snapshot",
+    "adaptation_boundary": "R-I1..R-I10 fixture inventory -> typed decision -> real Execution State continuation/representation binding -> Carrier persistence intent",
+    "canonical_mutation_authorized": false,
+    "network_access": false,
+    "model_authority": false,
+    "third_party_runtime_dependencies": []
+  },
+  "fixture_binding": {
+    "fixture_manifest": "integrated-es-palace/integration-fixture-v1/FIXTURE_PACKAGE_MANIFEST.json",
+    "fixture_manifest_sha256": "998bbbb77868cb4b36ddced1aa544a65da17a5bf4b1ecfde5b866ae8833ecc05",
+    "fixture_checksum_list": "integrated-es-palace/integration-fixture-v1/preparation/EVIDENCE_SHA256SUMS",
+    "fixture_checksum_list_sha256": "a08ce9373c43dd1c01ba911ddf27e5cabed189d740f83b99475ec13bbb4b9c19",
+    "sealed_palace_snapshot": "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite",
+    "sealed_palace_snapshot_sha256": "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444",
+    "cases": 7
+  },
+  "implementation_binding": {
+    "checksum_list": "integrated-es-palace/runtime-adapter-v1/IMPLEMENTATION_SHA256SUMS",
+    "adapter_sha256": "934b64e5ff7cb164498ff42f1ae95685676e649cbc12565df39a31d6ef9fb836",
+    "execution_coordinator_sha256": "5e19a7080e39a46d1253ab5758540159f1c6a357df245a7d2969cf5eb35c670b",
+    "execution_backend_sha256": "5d9fdba716939946f01a995938ddc32c0de3cf6f0d36bc4f311c74c0bc36e911",
+    "execution_continuity_contract_sha256": "ea173a63ad975592fc815d5739de233b70e9056fe2ecad38969eca280275e051",
+    "execution_backend_contract_sha256": "c19b91e475b217568a3f2d1f54a0ad3161d1b93d2330eed76892575fff10c4b5",
+    "build_and_regression_commands": "integrated-es-palace/runtime-adapter-v1/BUILD_AND_REGRESSION_COMMANDS.txt"
+  },
+  "prior_v2_pass_binding": {
+    "validation_record": "integrated-es-palace/non-d002-validation-v1/evidence-v2/VALIDATION_RECORD.json",
+    "validation_record_sha256": "09ee65442b19aa40fedb0ef75e2775c8a21fb6a4bab0cf756b482ffd5b5b443b"
+  },
+  "boundaries": {
+    "canonical_palace_mutation": false,
+    "canonical_information_space_mutation": false,
+    "d002_rerun_or_repair": false,
+    "production_deployment": false,
+    "production_traffic": false,
+    "automatic_validation": false
+  },
+  "stop_rule": "DELIVER_CONNECTED_ADAPTER_AND_REQUEST_HUMAN_AUTHORIZATION_FOR_ONE_RUNTIME_VALIDATION"
+}
