@@ -26055,3 +26055,30 @@ SimiGo Integrated ES–PALACE Non-D002 Validation Authorization Request v1.0;
 status = SUBMITTED FOR HUMAN REVIEW / NO EXECUTION AUTHORIZED;
 document = docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_REQUEST_V1.0_20261010.md.
 ```
+
+## Non-D002 Integrated Validation Authorization ACCEPT — 2026-10-10
+
+> **Status:** AUTHORIZED — ONE RUN. No validation result is presumed.
+
+```text
+Authorization Request v1.0 = ACCEPT;
+authorized executions = 1;
+Run Manifest creation = authorized within the work order;
+isolated stdlib validation runner = authorized;
+fresh-entry validation over seven fixed cases = authorized;
+automatic rerun / repair / second run = FORBIDDEN;
+terminal states = VALIDATION_PASS or VALIDATION_FAIL only;
+Pilot v5 SQLite busy revision = ACCEPT / CLOSED;
+Fixture Preparation = COMPLETE;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair-run = FORBIDDEN.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_REQUEST_V1.0_20261010.md;
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_AUTHORIZATION_ACCEPT_20261010.md.
+```
