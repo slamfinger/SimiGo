@@ -42,6 +42,10 @@ class _DemandNotAdvanced(Exception):
         self.result = result
 
 
+class ConcurrentStateTransition(Exception):
+    """The latest lawful state changed while a failed attempt was rolling back."""
+
+
 RUNTIME_APPLICATION_STATUSES = {"PENDING_SWIFT", "APPLIED_SWIFT"}
 
 
@@ -529,27 +533,32 @@ class CarrierInformationLoop:
 
     def confirm_runtime_application(self, state_id: str) -> dict:
         """Append the completion evidence for the exact pending Swift intent."""
-        state = self._find_state_by_id(state_id)
-        if state is None:
-            raise ValueError(f"pending execution state not found: {state_id}")
-        if state.get("status") != "ADVANCED" or state.get(
-            "runtime_application_status"
-        ) != "PENDING_SWIFT":
-            raise ValueError(f"execution state is not pending Swift application: {state_id}")
-        latest = self.latest_execution_state(state["continuation_point"])
-        if latest is None or latest["state_id"] != state_id:
-            raise ValueError("runtime confirmation is not the latest execution state")
-        confirmation = self.record_execution_state(
-            f"{state_id}:runtime-applied",
-            continuation_point=state["continuation_point"],
-            prior_state_id=state_id,
-            demand_id=state["demand_id"],
-            status="ADVANCED",
-            pending_obligations=[],
-            next_continuation_point="runtime-application-complete",
-            result_digest=state["result_digest"],
-            runtime_application_status="APPLIED_SWIFT",
-        )
+        with self.carrier.transaction():
+            state = self._find_state_by_id(state_id)
+            if state is None:
+                raise ValueError(f"pending execution state not found: {state_id}")
+            if state.get("status") != "ADVANCED" or state.get(
+                "runtime_application_status"
+            ) != "PENDING_SWIFT":
+                raise ValueError(
+                    f"execution state is not pending Swift application: {state_id}"
+                )
+            latest = self.latest_execution_state(state["continuation_point"])
+            if latest is None or latest["state_id"] != state_id:
+                raise ValueError(
+                    "runtime confirmation is not the latest execution state"
+                )
+            confirmation = self.record_execution_state(
+                f"{state_id}:runtime-applied",
+                continuation_point=state["continuation_point"],
+                prior_state_id=state_id,
+                demand_id=state["demand_id"],
+                status="ADVANCED",
+                pending_obligations=[],
+                next_continuation_point="runtime-application-complete",
+                result_digest=state["result_digest"],
+                runtime_application_status="APPLIED_SWIFT",
+            )
         return {"confirmation": confirmation, "confirmed_state_id": state_id}
 
     def _find_state_by_id(self, state_id: str) -> Optional[dict]:
@@ -575,17 +584,30 @@ class CarrierInformationLoop:
         evaluated_at_utc: str,
     ) -> dict:
         result: Optional[dict] = None
-        demand = self.current_demand(demand_id)
-        if demand is None:
-            raise ValueError(f"unknown demand: {demand_id}")
-        prior_state = self.latest_execution_state(demand["continuation_point"])
-        if prior_state and prior_state.get("runtime_application_status") == "PENDING_SWIFT":
-            raise ValueError(
-                "pending runtime application requires confirmation: "
-                f"{prior_state['state_id']}"
-            )
+        expected_prior_state: Optional[dict] = None
         try:
             with self.carrier.transaction():
+                demand = self.current_demand(demand_id)
+                if demand is None:
+                    raise ValueError(f"unknown demand: {demand_id}")
+                prior_state = self.latest_execution_state(demand["continuation_point"])
+                if prior_state is not None:
+                    if prior_state["status"] == "BLOCKED":
+                        raise ValueError(
+                            "blocked execution state cannot continue without repair: "
+                            f"{prior_state['state_id']}"
+                        )
+                    runtime_status = prior_state.get("runtime_application_status")
+                    if runtime_status == "PENDING_SWIFT":
+                        raise ValueError(
+                            "pending runtime application requires confirmation: "
+                            f"{prior_state['state_id']}"
+                        )
+                    if runtime_status != "APPLIED_SWIFT":
+                        raise ValueError(
+                            "execution state has no verifiable runtime-application completion"
+                        )
+                expected_prior_state = prior_state
                 result = self._execute_demand_in_transaction(
                     demand_id, advancement_id, calculator,
                     evaluated_at_utc=evaluated_at_utc,
@@ -597,13 +619,24 @@ class CarrierInformationLoop:
                 # Begin the append transaction before reading the lineage link;
                 # otherwise another writer can advance between the read and append.
                 with self.carrier.atomic_write_group():
-                    prior_state = self.latest_execution_state(
+                    current_state = self.latest_execution_state(
                         self.current_demand(demand_id)["continuation_point"]
                     )
+                    expected_id = (
+                        expected_prior_state["state_id"]
+                        if expected_prior_state
+                        else None
+                    )
+                    current_id = current_state["state_id"] if current_state else None
+                    if current_id != expected_id:
+                        raise ConcurrentStateTransition(
+                            "latest execution state changed during blocked attempt: "
+                            f"{expected_id} -> {current_id}"
+                        )
                     self.record_execution_state(
                         advancement_id,
                         continuation_point=self.current_demand(demand_id)["continuation_point"],
-                        prior_state_id=prior_state["state_id"] if prior_state else None,
+                        prior_state_id=current_id,
                         demand_id=demand_id,
                         status="BLOCKED",
                         pending_obligations=[error.result.get("failure_reason", "information demand blocked")],

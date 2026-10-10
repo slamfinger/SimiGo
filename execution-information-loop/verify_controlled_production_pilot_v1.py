@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
-    "CONTROLLED_PRODUCTION_PILOT_V3_REVISION_MANIFEST.json"
+    "CONTROLLED_PRODUCTION_PILOT_V4_CONCURRENCY_REVISION_MANIFEST.json"
 )
 PRIMARY_EVIDENCE = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
@@ -33,8 +33,10 @@ REQUIRED_FILES = [
     "execution-information-loop/verify_controlled_production_pilot_v1.py",
     "database-carrier-replication/implementation/db_is.py",
     "simigo2-experimental/Package.swift",
+    "simigo2-experimental/Package.resolved",
     "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
     "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
+    "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
     "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionContinuityContract.swift",
     "simigo2-experimental/Sources/SimiGoRuntimeContract/ExecutionStateBackendContract.swift",
     "simigo2-experimental/Sources/SimiGoRuntimeContract/RuntimeBackendContract.swift",
@@ -118,10 +120,15 @@ def carrier_selftest() -> tuple[bool, dict]:
         and checks.get("expired_transitive_dependency_fails_closed") is True
         and checks.get("blocked_state_is_persisted") is True
         and checks.get("validity_policy_bound_to_settlement") is True
+        and checks.get("blocked_state_requires_explicit_recovery") is True
         and checks.get("pending_runtime_application_blocks_continuation") is True
         and checks.get("runtime_confirmation_is_append_only") is True
         and checks.get("transitive_middle_dependency_blocks_without_required_listing") is True
         and checks.get("blocked_prior_state_is_read_in_append_transaction") is True
+        and checks.get("execution_race_cannot_stack_pending_intents") is True
+        and checks.get("confirmation_and_recovery_are_serialized") is True
+        and checks.get("blocked_and_recovery_are_serialized") is True
+        and checks.get("carrier_object_store_is_append_only_hash_addressed") is True
     )
     return passed, {
         "result": report.get("result"),
@@ -132,10 +139,15 @@ def carrier_selftest() -> tuple[bool, dict]:
                 "expired_transitive_dependency_fails_closed",
                 "blocked_state_is_persisted",
                 "validity_policy_bound_to_settlement",
+                "blocked_state_requires_explicit_recovery",
                 "pending_runtime_application_blocks_continuation",
                 "runtime_confirmation_is_append_only",
                 "transitive_middle_dependency_blocks_without_required_listing",
                 "blocked_prior_state_is_read_in_append_transaction",
+                "execution_race_cannot_stack_pending_intents",
+                "confirmation_and_recovery_are_serialized",
+                "blocked_and_recovery_are_serialized",
+                "carrier_object_store_is_append_only_hash_addressed",
             ]
         },
     }
@@ -171,7 +183,7 @@ def main() -> int:
     head = git("rev-parse", "HEAD")
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V3-REVISION-MANIFEST",
+        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V4-CONCURRENCY-REVISION-MANIFEST",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": set(recorded_hashes) == set(REQUIRED_FILES),
         "manifest_hashes_valid": bool(recorded_hashes) and all(
@@ -240,7 +252,7 @@ def main() -> int:
         ),
     }
     report = {
-        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V2-VERIFIER",
+        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V4-VERIFIER",
         "result": "PASS" if all(checks.values()) else "FAIL",
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
