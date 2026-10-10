@@ -275,7 +275,7 @@ def source_denial_checks() -> dict:
     }
 
 
-def execute(manifest: dict) -> dict:
+def execute(manifest: dict, manifest_path: Path) -> dict:
     preflight_record = preflight(manifest, manifest_path)
     denial_record = source_denial_checks()
     case_results = []
@@ -402,7 +402,7 @@ def main() -> int:
     arguments = parser.parse_args()
     manifest_path = Path(arguments.manifest)
     manifest = load_json(manifest_path if manifest_path.is_absolute() else ROOT / manifest_path)
-    validation = execute(manifest)
+    validation = execute(manifest, manifest_path)
     print(validation["terminal_state"])
     return 0 if validation["result"] == "PASS" else 1
 
