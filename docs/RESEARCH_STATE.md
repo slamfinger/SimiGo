@@ -26932,3 +26932,42 @@ integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.json;
 integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256;
 docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V5_20261011.md.
 ```
+
+## Actual MLX Smoke V5 Result — 2026-10-11
+
+> **Status:** MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED.
+
+The authorized V5 one-run gate consumed the marker and completed one real MLX
+smoke. Execution advanced to position 1 with an active handle and a 6481-token
+bound representation; all nine Information Space settlements were `SETTLED`,
+and carrier runtime application was `APPLIED_SWIFT`. The run failed its
+registered gate because carrier audit execution-state status was `ADVANCED`
+rather than the gate's required `SETTLED`.
+
+```text
+run_count = 1 / 1;
+terminal_state = MLX_SMOKE_FAIL;
+Manifest V5 SHA256 =
+  1b7f5e4662b4bb16806ab3d53ad33f9283411e5204fc3e5aebe90a6c023a9765;
+MLX_SMOKE_FAIL.json SHA256 =
+  fa7349e7029ca6431ee067a240692235de585b055cb7b959b0f0a71ebe259f38;
+carrier.sqlite SHA256 =
+  a9006857dfeeefbaaefb9072388e7aff1d623064fca03818e768fdf843c4ad68;
+V5 authorization consumed marker content SHA256 =
+  dfa57d74e5593c96ec13b170868c87ffcc1371cfc67f56b42c1a96345cd3134c;
+gate discrepancy = observed ADVANCED / required SETTLED;
+retry / gate adjustment / repair = NOT PERFORMED AND NOT AUTHORIZED;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5/MLX_SMOKE_FAIL.json;
+integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5/carrier.sqlite;
+docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
+```
