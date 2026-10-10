@@ -120,7 +120,7 @@ do {
     let result = try await integration.continueWithRealInformation(
       database: database,
       handle: nil,
-      advancementID: "actual-mlx-smoke-v5",
+      advancementID: "actual-mlx-smoke-v6",
       evaluatedAtUTC: "2026-10-10T00:00:00Z"
     )
     let bound = try backend.boundPrefix(for: result.handle)
@@ -151,12 +151,24 @@ do {
   guard let result = outcome, let audit else {
     throw ChildError.invalidEnvironment("smoke result unavailable")
   }
-  let executionStateStatus = ((audit["execution_state"] as? [String: Any])?["status"] as? String) ?? ""
-  let passed = result.report.state == "ADVANCED"
-    && result.handle.position.value == 1
-    && result.handle.lifecycle == .active
-    && result.boundTokenCount > 0
-    && executionStateStatus == "SETTLED"
+  let executionState = audit["execution_state"] as? [String: Any] ?? [:]
+  let settlementStates = audit["current_settlement_states"] as? [String: String] ?? [:]
+  let pendingObligations = audit["pending_obligations"] as? [Any] ?? []
+  let successGate = ActualMLXSmokeSuccessGate.evaluate(
+    ActualMLXSmokeSuccessGate.Observation(
+      reportAdvanced: result.report.advanced,
+      reportState: result.report.state,
+      finalPosition: result.handle.position.value,
+      finalLifecycle: result.handle.lifecycle.rawValue,
+      boundRepresentationTokenCount: result.boundTokenCount,
+      executionStateStatus: executionState["status"] as? String ?? "",
+      runtimeApplicationStatus: executionState["runtime_application_status"] as? String ?? "",
+      settlementStates: settlementStates,
+      pendingObligationCount: pendingObligations.count,
+      carrierObjectsVerified: audit["carrier_all_objects_verify"] as? Bool ?? false
+    )
+  )
+  let passed = successGate.passed
   let terminalState = passed ? "MLX_SMOKE_PASS" : "MLX_SMOKE_FAIL"
   var record: [String: Any] = [
     "schema_id": "ACTUAL-MLX-SMOKE-RECORD-V1",
@@ -178,9 +190,11 @@ do {
       "bound_representation_token_count": result.boundTokenCount,
     ],
     "audit": audit,
+    "success_gate_checks": successGate.checks,
   ]
   if !passed {
-    record["failure"] = "success gate did not pass"
+    let failedChecks = successGate.checks.filter { !$0.value }.keys.sorted()
+    record["failure"] = "success gate failed: \(failedChecks.joined(separator: ","))"
   }
   try writeTerminalRecord(record, to: evidenceRoot.appendingPathComponent("\(terminalState).json"))
 }

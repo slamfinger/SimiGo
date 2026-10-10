@@ -2,6 +2,7 @@ import Crypto
 import Darwin
 import Foundation
 import XCTest
+import SimiGo2Experimental
 
 private enum ActualMLXSmokeError: Error {
   case manifestDigestMismatch(actual: String, marker: String, sidecar: String)
@@ -41,8 +42,8 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeSidecarFormatPrecheck() throws {
     let packageRoot = labRoot.appendingPathComponent("integrated-es-palace/mlx-smoke-v1")
-    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.json")
-    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256")
+    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V6.json")
+    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V6.sha256")
     let sidecar = try Self.parseSidecar(String(decoding: Data(contentsOf: sidecarURL), as: UTF8.self))
     XCTAssertEqual(manifestURL.lastPathComponent, sidecar.filename)
     XCTAssertEqual(Self.sha256(try Data(contentsOf: manifestURL)), sidecar.digest)
@@ -50,15 +51,65 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeManifestEvidenceFieldPrecheck() throws {
     let manifestURL = labRoot.appendingPathComponent(
-      "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.json"
+      "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json"
     )
     let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
     let evidence = try Self.evidenceBinding(manifest, labRoot: labRoot)
-    XCTAssertEqual("integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5", evidence.relativePath)
+    XCTAssertEqual("integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v6", evidence.relativePath)
     XCTAssertEqual(
       labRoot.appendingPathComponent(evidence.relativePath, isDirectory: true).standardizedFileURL,
       evidence.url.standardizedFileURL
     )
+  }
+
+  func testActualMLXSmokeSuccessGateSeparatesCarrierStateLayers() {
+    let settlements = [
+      "REAL-COLLECTION": "SETTLED",
+      "REAL-SEGMENT": "SETTLED",
+      "REAL-1": "SETTLED",
+      "REAL-2": "SETTLED",
+      "REAL-3": "SETTLED",
+      "REAL-4": "SETTLED",
+      "REAL-5": "SETTLED",
+      "REAL-6": "SETTLED",
+      "REAL-7": "SETTLED",
+    ]
+    let healthy = ActualMLXSmokeSuccessGate.evaluate(
+      ActualMLXSmokeSuccessGate.Observation(
+        reportAdvanced: true,
+        reportState: "ADVANCED",
+        finalPosition: 1,
+        finalLifecycle: "active",
+        boundRepresentationTokenCount: 1,
+        executionStateStatus: "ADVANCED",
+        runtimeApplicationStatus: "APPLIED_SWIFT",
+        settlementStates: settlements,
+        pendingObligationCount: 0,
+        carrierObjectsVerified: true
+      )
+    )
+    XCTAssertTrue(healthy.passed)
+    XCTAssertTrue(healthy.checks.values.allSatisfy { $0 })
+
+    // This reproduces the V5 gate defect: settlement completion must not be
+    // mistaken for Execution State advancement.
+    let conflated = ActualMLXSmokeSuccessGate.evaluate(
+      ActualMLXSmokeSuccessGate.Observation(
+        reportAdvanced: true,
+        reportState: "ADVANCED",
+        finalPosition: 1,
+        finalLifecycle: "active",
+        boundRepresentationTokenCount: 1,
+        executionStateStatus: "SETTLED",
+        runtimeApplicationStatus: "APPLIED_SWIFT",
+        settlementStates: settlements,
+        pendingObligationCount: 0,
+        carrierObjectsVerified: true
+      )
+    )
+    XCTAssertFalse(conflated.passed)
+    XCTAssertEqual(false, conflated.checks["execution_state_advanced"])
+    XCTAssertEqual(true, conflated.checks["required_settlements_settled"])
   }
 
   func testActualMLXSmokeTimeoutAndWriteOncePrecheck() throws {
@@ -136,12 +187,12 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeSingleRun() throws {
     let packageRoot = labRoot.appendingPathComponent("integrated-es-palace/mlx-smoke-v1")
-    let markerURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V5_AUTHORIZED")
+    let markerURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V6_AUTHORIZED")
     guard FileManager.default.fileExists(atPath: markerURL.path) else {
       throw XCTSkip("ACTUAL MLX SMOKE = CANDIDATE / HUMAN AUTHORIZATION REQUIRED")
     }
-    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.json")
-    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256")
+    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V6.json")
+    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V6.sha256")
     let manifestData = try Data(contentsOf: manifestURL)
     let manifestDigest = Self.sha256(manifestData)
     let markerDigest = String(decoding: try Data(contentsOf: markerURL), as: UTF8.self)
@@ -176,7 +227,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
       throw ActualMLXSmokeError.manifestFieldMismatch("write-once child logs")
     }
 
-    let consumedMarker = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V5_AUTHORIZATION_CONSUMED")
+    let consumedMarker = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V6_AUTHORIZATION_CONSUMED")
     guard !FileManager.default.fileExists(atPath: consumedMarker.path) else {
       throw ActualMLXSmokeError.manifestFieldMismatch("authorization already consumed")
     }
@@ -397,7 +448,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
     labRoot: URL,
     manifestDigest: String
   ) throws {
-    guard manifest["schema_id"] as? String == "ACTUAL-MLX-SMOKE-MANIFEST-V5",
+    guard manifest["schema_id"] as? String == "ACTUAL-MLX-SMOKE-MANIFEST-V6",
           manifest["status"] as? String == "CANDIDATE — HUMAN AUTHORIZATION REQUIRED",
           manifest["smoke_authorized"] as? Bool == false,
           manifest["smoke_executed"] as? Bool == false,
@@ -468,7 +519,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
     let evidence = try Self.evidenceBinding(manifest, labRoot: labRoot)
     guard let evidenceObject = manifest["evidence"] as? [String: Any],
-          evidence.relativePath == "integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5",
+          evidence.relativePath == "integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v6",
           evidenceObject["write_once"] as? Bool == true,
           evidenceObject["must_not_exist_before_authorized_run"] as? Bool == true,
           evidenceObject["terminal_record_create_mode"] as? String == "create_exclusive_no_overwrite" else {
@@ -478,8 +529,8 @@ final class ActualMLXSmokeValidation: XCTestCase {
     guard let gate = manifest["authorization_gate"] as? [String: Any] else {
       throw invalidObject()
     }
-    guard gate["marker_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZED",
-          gate["consumption_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZATION_CONSUMED",
+    guard gate["marker_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZED",
+          gate["consumption_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZATION_CONSUMED",
           gate["consumption_mode"] as? String == "atomic_rename_before_child_launch" else {
       throw ActualMLXSmokeError.manifestFieldMismatch("one-shot authorization gate")
     }
@@ -508,6 +559,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
     "smoke_runner": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ActualMLXSmokeValidation.swift",
     "production_integration": "simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift",
     "mlx_executor": "simigo2-experimental/Sources/SimiGo2Experimental/MLXPrefixRecomputeExecutor.swift",
+    "smoke_success_gate": "simigo2-experimental/Sources/SimiGo2Experimental/ActualMLXSmokeSuccessGate.swift",
     "execution_state_backend": "simigo2-experimental/Sources/SimiGo2Experimental/MLXExecutionStateBackend.swift",
     "continuity_coordinator": "simigo2-experimental/Sources/SimiGo2Experimental/ExecutionContinuityCoordinator.swift",
     "failure_boundary_tests": "simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift",

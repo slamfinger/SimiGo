@@ -26971,3 +26971,49 @@ integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5/MLX_SMOKE_FAIL.json;
 integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5/carrier.sqlite;
 docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ```
+
+## Actual MLX Smoke Package V6 — 2026-10-11
+
+> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED.
+> Actual MLX smoke remains NOT AUTHORIZED / NOT EXECUTED. V5 remains
+> `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`.
+
+V6 separates Execution State advancement, Information Space settlement, Swift
+runtime application, and carrier integrity into independently recorded success
+checks. The Child now emits `success_gate_checks`, and a regression verifies the
+V5 defect case where settlement completion must not be accepted as
+Execution State advancement.
+
+```text
+Manifest V6 SHA256 =
+  3036df7e8b3c0ddd1548bc45fb7c1b198dbd25939e0c09804c222365eedec55e;
+Runner SHA256 =
+  4b27bcada44128fc501e7dac7f2547689e64a3381a4cd442877f1809e010ff0e;
+Success Gate source SHA256 =
+  eec8f82683203bca69649aece68563483dcc1116372437b6cd4e802045eb6bbb;
+Child source SHA256 =
+  918c3faf1a0000d9e15996d16c83d4ce42d47d4a81bebb29e60f9f3d5e1d94ff;
+Child binary SHA256 =
+  4d514780be383e6d459b61ffa6d237501e904940610e945fdd85867184dc2c8f;
+advancement ID = actual-mlx-smoke-v6;
+swift build --product ActualMLXSmokeChild = PASS;
+ActualMLXSmokeValidation =
+  PASS / 8 tests / 1 skipped / 0 failures;
+ProductionRuntimeFailureBoundaryTests = PASS / 8 tests / 0 failures;
+V6 marker / consumed marker / evidence root = ABSENT;
+actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
+V5 retry / gate adjustment by rerun = FORBIDDEN / CLOSED;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json;
+integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.sha256;
+docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V6_20261011.md.
+```
