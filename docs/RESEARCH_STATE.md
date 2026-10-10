@@ -26508,3 +26508,52 @@ simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeVal
 integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.json;
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_FIXTURE_INTEGRITY_GATE_20261010.md.
 ```
+
+## Runtime Validation V2 RESULT — 2026-10-10
+
+> **Status:** RUNTIME_VALIDATION_PASS — AUTHORIZED RUN CONSUMED / CLOSED. The
+> result is limited to the seven prepared cases and isolated runtime adapter
+> configuration; it is not production authorization or full production proof.
+
+```text
+Runtime Validation Manifest V3 SHA256 =
+  ef501f81ef105b8827bb7422c7222456302ca76b436a97321a6e20fd84a40d37;
+manifest instance ID = BC559A31-4A29-49F6-BF98-C88937AE2291;
+V2 entry SHA256 =
+  7dd1bd493000f03fe9622b7da7f1e846c8815502a7c4afbd0dcd76adfd4d0be3;
+adapter SHA256 =
+  87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec;
+authorized runs = 1;
+executed runs = 1;
+terminal state = RUNTIME_VALIDATION_PASS;
+authorization marker after run = REMOVED;
+P-LAWFUL     = PASS / CONTINUE / SETTLED_CONTINUATION;
+P-SETTLED    = PASS / REUSE / SETTLED_CONTINUATION;
+P-BLOCKED    = PASS / BLOCK / BLOCKED_LAWFUL_CONTINUATION;
+N-MISSING    = PASS / BLOCK / BLOCKED_DEFECT /
+               MANDATORY_OBJECT_UNRESOLVABLE;
+N-STALE      = PASS / BLOCK / BLOCKED_DEFECT /
+               MANDATORY_EVIDENCE_SUPERSEDED;
+N-AMBIGUOUS  = PASS / BLOCK / BLOCKED_DEFECT /
+               CONFLICTING_VALID_POINTERS;
+N-ILLEGAL    = PASS / BLOCK / BLOCKED_DEFECT /
+               REGISTERED_BOUNDARY_VIOLATION_PROVEN;
+CONTINUE runtime = advanced once / representation position 1;
+REUSE runtime = no advance / no create / no rebind;
+BLOCK runtime = no handle returned / no advance / state unchanged;
+repair / rerun / expansion = FORBIDDEN;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED;
+next authorized engineering object = requires a separate Human decision.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/runtime-adapter-v1/validation-evidence-v2/RUNTIME_VALIDATION_RECORD.json;
+integrated-es-palace/runtime-adapter-v1/validation-evidence-v2/CASE_RESULTS.json;
+integrated-es-palace/runtime-adapter-v1/validation-evidence-v2/EVIDENCE_SHA256SUMS;
+docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_RESULT_20261010.md.
+```
