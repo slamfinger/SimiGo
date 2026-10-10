@@ -41,8 +41,8 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeSidecarFormatPrecheck() throws {
     let packageRoot = labRoot.appendingPathComponent("integrated-es-palace/mlx-smoke-v1")
-    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V3.json")
-    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V3.sha256")
+    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.json")
+    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256")
     let sidecar = try Self.parseSidecar(String(decoding: Data(contentsOf: sidecarURL), as: UTF8.self))
     XCTAssertEqual(manifestURL.lastPathComponent, sidecar.filename)
     XCTAssertEqual(Self.sha256(try Data(contentsOf: manifestURL)), sidecar.digest)

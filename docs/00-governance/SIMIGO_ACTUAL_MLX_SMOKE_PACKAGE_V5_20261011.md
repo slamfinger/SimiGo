@@ -1,6 +1,6 @@
 # Actual MLX smoke execution package V5
 
-> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED
+> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE REVISION 2 — HUMAN AUTHORIZATION REQUIRED
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-11
 
@@ -26,11 +26,11 @@ package and must receive a separate execution decision.
 manifest path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.json;
 manifest SHA256 =
-  47761f3d0dd05e4980971441b1a7b51a542e2a7f61b8ca6c6aeb4c723e6bbcfd;
+  1b7f5e4662b4bb16806ab3d53ad33f9283411e5204fc3e5aebe90a6c023a9765;
 sidecar path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256;
 Runner SHA256 =
-  cf3cd09e52d25964f861968c146c9f0768910f5f65504064c3f35cd2f27f9840;
+  9ff49bcae8f730490b1c41a99e9c83189743869c31ddc4b25d3165fdd1cda9d6;
 Child source SHA256 =
   987c98897c1623000c763f3af4df69c861428d65c365e7ccd6c1a44cf0e9dd1d;
 Child binary SHA256 =
@@ -44,13 +44,29 @@ All nine source bindings, Child source, Child binary, and `Package.swift` were
 recalculated from the W1-merged working tree. The V4 QA issue is closed: the
 sidecar-format precheck now reads the real V5 Manifest and V5 sidecar.
 
+## Candidate revision 2: sidecar binding correction
+
+Candidate revision 1 incorrectly claimed that
+`testActualMLXSmokeSidecarFormatPrecheck` read the V5 sidecar while its source
+still read V3. The reviewer correctly held execution. Revision 2 changes that
+test to bind and validate:
+
+```text
+ACTUAL_MLX_SMOKE_MANIFEST_V5.json;
+ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256.
+```
+
+It checks both the sidecar filename and the Manifest SHA256. The stale Manifest
+hash and Runner binding were recalculated. This revision does not create a
+marker, consume authorization, or execute the model.
+
 ## Authorization gate
 
 ```text
 marker path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZED;
 required marker content =
-  47761f3d0dd05e4980971441b1a7b51a542e2a7f61b8ca6c6aeb4c723e6bbcfd;
+  1b7f5e4662b4bb16806ab3d53ad33f9283411e5204fc3e5aebe90a6c023a9765;
 consumption path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZATION_CONSUMED;
 consumption mode = atomic rename before child launch;
@@ -76,6 +92,8 @@ ActualMLXSmokeValidation =
 ProductionRuntimeFailureBoundaryTests =
   PASS / 8 tests / 0 failures.
 ```
+
+These results belong to candidate revision 2 and the exact hashes above.
 
 The skipped test is `testActualMLXSmokeSingleRun`, as required without a marker.
 

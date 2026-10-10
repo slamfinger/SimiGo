@@ -26887,27 +26887,30 @@ integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v4/carrier.sqlite;
 docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V4_RESULT_20261010.md.
 ```
 
-## Actual MLX Smoke Package V5 — 2026-10-11
+## Actual MLX Smoke Package V5 Candidate Revision 2 — 2026-10-11
 
 > **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED.
-> Actual MLX smoke remains NOT AUTHORIZED / NOT EXECUTED. V4 remains
-> `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`.
+> Candidate revision 1 was held because its sidecar test still read V3 despite
+> the governance claim. Actual MLX smoke remains NOT AUTHORIZED / NOT EXECUTED.
+> V4 remains `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`.
 
-V5 is based on `main` at W1 merge base
+Candidate revision 2 is based on `main` at W1 merge base
 `3cea5facaeca0817d10f093b3f83300525ab38bf`. It recalculates all source, Child
-source, rebuilt Child binary, and `Package.swift` bindings. The former sidecar
-QA gap is fixed: the precheck now reads the real V5 sidecar.
+source, rebuilt Child binary, and `Package.swift` bindings. The reviewer-held
+sidecar QA gap is now fixed: `testActualMLXSmokeSidecarFormatPrecheck` reads
+and verifies the real V5 Manifest and sidecar.
 
 ```text
 Manifest V5 SHA256 =
-  47761f3d0dd05e4980971441b1a7b51a542e2a7f61b8ca6c6aeb4c723e6bbcfd;
+  1b7f5e4662b4bb16806ab3d53ad33f9283411e5204fc3e5aebe90a6c023a9765;
 Runner SHA256 =
-  cf3cd09e52d25964f861968c146c9f0768910f5f65504064c3f35cd2f27f9840;
+  9ff49bcae8f730490b1c41a99e9c83189743869c31ddc4b25d3165fdd1cda9d6;
 Child source SHA256 =
   987c98897c1623000c763f3af4df69c861428d65c365e7ccd6c1a44cf0e9dd1d;
 Child binary SHA256 =
   153620c06f0943010864334fd41a24c6ae2693804b4043462d644a81694b4b72;
 advancement ID = actual-mlx-smoke-v5;
+sidecar-format precheck now binds real V5 Manifest and sidecar = PASS;
 swift build --product ActualMLXSmokeChild = PASS;
 ActualMLXSmokeValidation =
   PASS / 7 tests / 1 skipped / 0 failures;
