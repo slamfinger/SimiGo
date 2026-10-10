@@ -10,6 +10,8 @@ private enum RuntimeValidationV2BindingError: Error {
   case harnessBindingMismatch(expected: String, actual: String)
   case evidenceRootMismatch(expected: String, actual: String)
   case caseCountMismatch(expected: Int, actual: Int)
+  case fixturePackageDigestMismatch(expected: String, actual: String)
+  case fixtureCaseBindingMismatch(caseID: String, field: String, expected: String, actual: String)
 }
 
 final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
@@ -119,10 +121,49 @@ final class IntegratedESPalaceRuntimeValidationV2: XCTestCase {
     let packageManifestURL = labRoot.appendingPathComponent(
       "integrated-es-palace/integration-fixture-v1/FIXTURE_PACKAGE_MANIFEST.json"
     )
-    let packageObject = try JSONSerialization.jsonObject(with: Data(contentsOf: packageManifestURL)) as! [String: Any]
+    let packageManifestData = try Data(contentsOf: packageManifestURL)
+    let actualFixturePackageDigest = IntegratedESPalaceAuthorizedRuntimeValidation.sha256(packageManifestData)
+    let expectedFixturePackageDigest = ((manifest["fixture_binding"] as? [String: Any])?["fixture_manifest_sha256"] as? String) ?? ""
+    guard actualFixturePackageDigest == expectedFixturePackageDigest else {
+      throw RuntimeValidationV2BindingError.fixturePackageDigestMismatch(
+        expected: expectedFixturePackageDigest,
+        actual: actualFixturePackageDigest
+      )
+    }
+    let packageObject = try JSONSerialization.jsonObject(with: packageManifestData) as! [String: Any]
     let packageCases = try XCTUnwrap(packageObject["cases"] as? [[String: Any]])
     guard packageCases.count == 7 else {
       throw RuntimeValidationV2BindingError.caseCountMismatch(expected: 7, actual: packageCases.count)
+    }
+    let manifestCases = try XCTUnwrap((manifest["fixture_binding"] as? [String: Any])?["cases"] as? [[String: Any]])
+    guard manifestCases.count == 7 else {
+      throw RuntimeValidationV2BindingError.caseCountMismatch(expected: 7, actual: manifestCases.count)
+    }
+    for packageCase in packageCases {
+      let caseID = try XCTUnwrap(packageCase["case_id"] as? String)
+      let fixtureRoot = try XCTUnwrap(packageCase["fixture_root"] as? String)
+      let manifestSHA256 = try XCTUnwrap(packageCase["manifest_sha256"] as? String)
+      let manifestCase = manifestCases.first { ($0["case_id"] as? String) == caseID }
+      let expectedFixtureRoot = (manifestCase?["fixture_manifest"] as? String)?
+        .replacingOccurrences(of: "integrated-es-palace/integration-fixture-v1/", with: "")
+        .replacingOccurrences(of: "/fixture-manifest.json", with: "")
+      let expectedManifestSHA256 = (manifestCase?["fixture_manifest_sha256"] as? String) ?? ""
+      guard fixtureRoot == expectedFixtureRoot else {
+        throw RuntimeValidationV2BindingError.fixtureCaseBindingMismatch(
+          caseID: caseID,
+          field: "fixture_manifest_path",
+          expected: expectedFixtureRoot ?? "nil",
+          actual: fixtureRoot
+        )
+      }
+      guard manifestSHA256 == expectedManifestSHA256 else {
+        throw RuntimeValidationV2BindingError.fixtureCaseBindingMismatch(
+          caseID: caseID,
+          field: "fixture_manifest_sha256",
+          expected: expectedManifestSHA256,
+          actual: manifestSHA256
+        )
+      }
     }
 
     var caseResults: [[String: Any]] = []

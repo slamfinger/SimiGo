@@ -26472,3 +26472,39 @@ integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.
 integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.sha256;
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_BINDING_GATE_REVISION_20261010.md.
 ```
+
+## Runtime Validation V2 Fixture Integrity Gate — 2026-10-10
+
+> **Status:** TARGETED INTEGRITY GATE COMPLETE. Runtime Validation V2 remains
+> HOLD / NOT AUTHORIZED / NOT EXECUTED.
+
+```text
+V2 entry SHA256 =
+  7dd1bd493000f03fe9622b7da7f1e846c8815502a7c4afbd0dcd76adfd4d0be3;
+Runtime Validation Manifest V3 SHA256 =
+  ef501f81ef105b8827bb7422c7222456302ca76b436a97321a6e20fd84a40d37;
+Fixture Package SHA256 =
+  998bbbb77868cb4b36ddced1aa544a65da17a5bf4b1ecfde5b866ae8833ecc05;
+fixture integrity gate =
+  actual package SHA256 + seven actual case ID/path/SHA bindings verified
+  before execution state creation and before case loop;
+adapter semantics = unchanged;
+fixture content = unchanged;
+serializer = unchanged;
+runtime validation executed = false;
+runtime validation authorized = false;
+authorized runs after Human approval = 1;
+automatic rerun / repair / expansion = FORBIDDEN;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeValidationV2.swift;
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE_V2.json;
+docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_FIXTURE_INTEGRITY_GATE_20261010.md.
+```
