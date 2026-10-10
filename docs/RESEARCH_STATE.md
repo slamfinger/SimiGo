@@ -25702,6 +25702,60 @@ D-002 rerun / repair-run = FORBIDDEN;
 Integrated SimiGo production proof = NOT ESTABLISHED.
 ```
 
+## Controlled Production Pilot v4 Concurrency Revision — 2026-10-10
+
+> **Status:** BOUNDED PILOT REVISION COMPLETE. Local verification PASS;
+> production deployment remains NOT AUTHORIZED.
+
+```text
+execution state gate = atomic inside SQLite write transaction;
+BLOCKED direct continuation = FAIL CLOSED;
+PENDING_SWIFT direct continuation = FAIL CLOSED;
+confirmation / recovery races = deterministic serialized tests PASS;
+blocked rollback lineage precondition = atomic;
+MLX backend + Package.resolved = implementation identity bound;
+append-only object behavior = real historical-preservation test PASS;
+carrier selftest = PASS / 25 checks;
+Swift claimed regressions = PASS / 9 tests / 0 failures;
+pilot verifier = PASS / all checks true;
+production traffic/public release = none;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+D-002 rerun/repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_CONTROLLED_PRODUCTION_PILOT_V4_CONCURRENCY_REVISION_20261010.md;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V4_CONCURRENCY_REVISION_MANIFEST.json;
+docs/02-evidence/controlled-production-pilot-20261009/
+  CONTROLLED_PRODUCTION_PILOT_V4_VERIFIER_RECORD.json.
+```
+
+### Pilot v4 engineering continuity — 2026-10-10
+
+```text
+engineering commit = 4829464b7da78cd5b9558586b8a338121add0ed4;
+manifest SHA256 =
+  04bf5113bbfee98317a9ed0ad893f61db1b878785c986086d7e3d6917a6ffeb5;
+verifier record SHA256 =
+  33bb1bc9aacf617d6d49e445552983ee12809f667b27ba81b25eaeab70bdf50e;
+carrier selftest record SHA256 =
+  fa01fe6ddcd40e1548608dc36d6f683fd8c1e603ea306d2f70a6f092968cd625;
+sealed PALACE snapshot SHA256 =
+  8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444;
+next human review = controlled production pilot v4 holistic acceptance;
+next authorized engineering object = NONE until that review;
+production deployment = NOT AUTHORIZED;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair-run = FORBIDDEN;
+Integrated SimiGo production proof = NOT ESTABLISHED.
+```
+
 ## Controlled Production Pilot v3 Audit Revision — 2026-10-10
 
 > **Status:** BOUNDED PILOT REVISION COMPLETE. Local verification PASS;
