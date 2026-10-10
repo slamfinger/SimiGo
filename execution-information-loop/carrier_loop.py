@@ -582,6 +582,8 @@ class CarrierInformationLoop:
         calculator: Callable[[str, dict, dict], dict],
         *,
         evaluated_at_utc: str,
+        expected_validity_policy_sha256: Optional[str] = None,
+        require_deployment_policy: bool = False,
     ) -> dict:
         result: Optional[dict] = None
         expected_prior_state: Optional[dict] = None
@@ -611,6 +613,8 @@ class CarrierInformationLoop:
                 result = self._execute_demand_in_transaction(
                     demand_id, advancement_id, calculator,
                     evaluated_at_utc=evaluated_at_utc,
+                    expected_validity_policy_sha256=expected_validity_policy_sha256,
+                    require_deployment_policy=require_deployment_policy,
                 )
                 if not result["advanced"]:
                     raise _DemandNotAdvanced(result)
@@ -654,6 +658,8 @@ class CarrierInformationLoop:
         calculator: Callable[[str, dict, dict], dict],
         *,
         evaluated_at_utc: str,
+        expected_validity_policy_sha256: Optional[str] = None,
+        require_deployment_policy: bool = False,
     ) -> dict:
         demand = self.current_demand(demand_id)
         if demand is None:
@@ -673,6 +679,7 @@ class CarrierInformationLoop:
         actions: list[dict] = []
         missing: list[str] = []
         missing_validity: list[str] = []
+        policy_mismatch: list[str] = []
         invalid_validity: list[str] = []
         stale_item_ids: list[str] = []
         computed: list[str] = []
@@ -703,6 +710,13 @@ class CarrierInformationLoop:
             except ValueError:
                 missing_validity.append(item_id)
                 continue
+            stored_policy = item.get("validity_policy")
+            if require_deployment_policy and expected_validity_policy_sha256 is None:
+                missing_validity.append(item_id)
+            elif expected_validity_policy_sha256 is not None and stored_policy.get(
+                "policy_sha256"
+            ) != expected_validity_policy_sha256:
+                policy_mismatch.append(item_id)
             try:
                 if evaluated_at > parse_utc(valid_until):
                     stale_item_ids.append(item_id)
@@ -743,6 +757,23 @@ class CarrierInformationLoop:
                 ],
                 "advanced": False,
                 "failure_reason": "source validity is malformed; fail closed",
+            }
+        if policy_mismatch:
+            return {
+                "demand_id": demand_id,
+                "state": "BLOCKED_POLICY_MISMATCH",
+                "validity_failure_item_ids": policy_mismatch,
+                "actions": [
+                    {
+                        "item_id": item_id,
+                        "action": "BLOCKED_POLICY_MISMATCH",
+                    }
+                    for item_id in policy_mismatch
+                ],
+                "advanced": False,
+                "failure_reason": (
+                    "source validity policy does not match the deployment policy; fail closed"
+                ),
             }
         if stale_item_ids:
             return {

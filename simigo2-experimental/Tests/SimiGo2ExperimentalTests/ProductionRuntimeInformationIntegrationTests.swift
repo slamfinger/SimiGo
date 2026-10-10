@@ -83,7 +83,9 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
 
     // Restart the production runtime authority. The persisted handle is
     // reattached through the real ExecutionContinuityCoordinator lifecycle.
-    let restarted = ProductionRuntimeInformationIntegration()
+    let restarted = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
     let persisted = try restore(from: handleURL)
     let second = try await restarted.continueWithRealInformation(
       database: database,

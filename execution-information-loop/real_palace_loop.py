@@ -201,6 +201,8 @@ class RealPalaceConsumptionLoop:
         count: int = 7,
         *,
         evaluated_at_utc: str,
+        expected_validity_policy_sha256: Optional[str] = None,
+        require_deployment_policy: bool = False,
     ) -> dict:
         def deterministic_consumer(item_id, source_payload, dependencies):
             payload_digest = digest(source_payload)
@@ -246,4 +248,6 @@ class RealPalaceConsumptionLoop:
             advancement_id,
             deterministic_consumer,
             evaluated_at_utc=evaluated_at_utc,
+            expected_validity_policy_sha256=expected_validity_policy_sha256,
+            require_deployment_policy=require_deployment_policy,
         )

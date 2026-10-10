@@ -89,16 +89,6 @@ def current_deployment_policy() -> Optional[dict]:
     )
 
 
-def require_current_policy(loop: CarrierInformationLoop, policy: dict) -> None:
-    for item_id in REQUIRED_ITEMS:
-        item = loop.current_item(item_id)
-        stored = item.get("validity_policy") if item else None
-        if not isinstance(stored, dict) or stored.get(
-            "policy_sha256"
-        ) != policy["policy_sha256"]:
-            raise ValueError(f"current validity policy mismatch for item: {item_id}")
-
-
 def open_loop(database_path: str) -> tuple[CarrierInformationLoop, RealPalaceConsumptionLoop]:
     loop = CarrierInformationLoop.open(database_path)
     source = RealPalaceSource(str(SNAPSHOT_PATH), SNAPSHOT_SHA256)
@@ -213,9 +203,10 @@ def audit(args: argparse.Namespace) -> None:
 
 def execute(args: argparse.Namespace) -> None:
     loop, source = open_loop(args.database)
+    # The digest—not merely this pre-transaction read—is bound into the
+    # carrier transaction. A committed concurrent policy change therefore
+    # fails closed inside execute_demand before any calculator or settlement.
     policy = current_deployment_policy()
-    if policy:
-        require_current_policy(loop, policy)
     prior_state = loop.latest_execution_state(CONTINUATION_POINT)
     if prior_state is None:
         demand = loop.current_demand(CONTINUATION_POINT)
@@ -231,6 +222,10 @@ def execute(args: argparse.Namespace) -> None:
         args.advancement,
         count=7,
         evaluated_at_utc=args.evaluated_at,
+        expected_validity_policy_sha256=(
+            policy["policy_sha256"] if policy else None
+        ),
+        require_deployment_policy=True,
     )
     value = {
         "ok": True,

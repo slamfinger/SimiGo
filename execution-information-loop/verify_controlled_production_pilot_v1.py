@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = ROOT / "simigo2-experimental"
 MANIFEST = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
-    "CONTROLLED_PRODUCTION_PILOT_V4_CONCURRENCY_REVISION_MANIFEST.json"
+    "CONTROLLED_PRODUCTION_PILOT_V5_POLICY_RACE_REVISION_MANIFEST.json"
 )
 PRIMARY_EVIDENCE = ROOT / (
     "docs/02-evidence/controlled-production-pilot-20261009/"
@@ -125,6 +125,7 @@ def carrier_selftest() -> tuple[bool, dict]:
         and checks.get("runtime_confirmation_is_append_only") is True
         and checks.get("transitive_middle_dependency_blocks_without_required_listing") is True
         and checks.get("blocked_prior_state_is_read_in_append_transaction") is True
+        and checks.get("deployment_policy_sha_bound_in_transaction") is True
         and checks.get("execution_race_cannot_stack_pending_intents") is True
         and checks.get("confirmation_and_recovery_are_serialized") is True
         and checks.get("blocked_and_recovery_are_serialized") is True
@@ -144,6 +145,7 @@ def carrier_selftest() -> tuple[bool, dict]:
                 "runtime_confirmation_is_append_only",
                 "transitive_middle_dependency_blocks_without_required_listing",
                 "blocked_prior_state_is_read_in_append_transaction",
+                "deployment_policy_sha_bound_in_transaction",
                 "execution_race_cannot_stack_pending_intents",
                 "confirmation_and_recovery_are_serialized",
                 "blocked_and_recovery_are_serialized",
@@ -183,7 +185,7 @@ def main() -> int:
     head = git("rev-parse", "HEAD")
 
     checks = {
-        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V4-CONCURRENCY-REVISION-MANIFEST",
+        "manifest_schema_current": manifest.get("schema_id") == "CONTROLLED-PRODUCTION-PILOT-V5-POLICY-RACE-REVISION-MANIFEST",
         "manifest_status_verified": manifest.get("status") == "VERIFIED",
         "manifest_file_set_complete": set(recorded_hashes) == set(REQUIRED_FILES),
         "manifest_hashes_valid": bool(recorded_hashes) and all(
@@ -252,7 +254,7 @@ def main() -> int:
         ),
     }
     report = {
-        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V4-VERIFIER",
+        "schema_id": "CONTROLLED-PRODUCTION-PILOT-V5-VERIFIER",
         "result": "PASS" if all(checks.values()) else "FAIL",
         "manifest": str(MANIFEST.relative_to(ROOT)),
         "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
