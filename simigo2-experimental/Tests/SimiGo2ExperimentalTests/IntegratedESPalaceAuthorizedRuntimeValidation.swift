@@ -2,7 +2,51 @@ import XCTest
 import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
+final class RuntimeValidationHarnessSerializationTests: XCTestCase {
+  private let serializer = IntegratedESPalaceAuthorizedRuntimeValidation.serializer
+
+  func testSerializesValuesNullsAndCompleteEvidenceStructure() throws {
+    let record: [String: Any] = [
+      "terminal_state": "RUNTIME_VALIDATION_FAIL",
+      "position_before": Int64(0),
+      "position_after": Int64(1),
+      "setup_prefix": [7, 11],
+      "application_position": NSNumber(value: 1),
+      "missing_prefix": NSNull(),
+    ]
+    let lifecycle: [String: Any] = [
+      "position_before": NSNull(),
+      "position_after": Int64(3),
+      "setup_prefix": NSNull(),
+      "application_prefix": [31, 37],
+    ]
+    let objects = [
+      "RUNTIME_VALIDATION_RECORD.json": record,
+      "EXECUTION_LIFECYCLE_RECORD.json": lifecycle,
+    ]
+    let serialized = try serializer(objects)
+    XCTAssertEqual(Set(serialized.keys), Set(objects.keys))
+    for (name, data) in serialized {
+      let reparsed = try JSONSerialization.jsonObject(with: data, options: [])
+      XCTAssertTrue(reparsed is [String: Any], name)
+    }
+    let validationData = try XCTUnwrap(serialized["RUNTIME_VALIDATION_RECORD.json"])
+    let validation = try JSONSerialization.jsonObject(with: validationData) as! [String: Any]
+    XCTAssertEqual("RUNTIME_VALIDATION_FAIL", validation["terminal_state"] as? String)
+    let lifecycleData = try XCTUnwrap(serialized["EXECUTION_LIFECYCLE_RECORD.json"])
+    let reparsedLifecycle = try JSONSerialization.jsonObject(with: lifecycleData) as! [String: Any]
+    XCTAssertTrue(reparsedLifecycle["position_before"] is NSNull)
+    XCTAssertEqual(3, reparsedLifecycle["position_after"] as? Int)
+  }
+
+  func testRejectsInvalidEvidenceBeforeWriting() {
+    let invalid: [String: Any] = ["invalid": "not-a-dictionary"]
+    XCTAssertThrowsError(try serializer(invalid))
+  }
+}
+
 final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
+  static let serializer = IntegratedESPalaceAuthorizedRuntimeValidation.serializeEvidence
   private let labRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()
@@ -10,6 +54,7 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
     .deletingLastPathComponent()
 
   func testAuthorizedSingleSevenCaseRuntimeValidation() async throws {
+    throw XCTSkip("AUTHORIZED RUN CONSUMED: RUNTIME_VALIDATION_FAIL / CLOSED; rerun is FORBIDDEN")
     let evidenceRoot = labRoot.appendingPathComponent(
       "integrated-es-palace/runtime-adapter-v1/validation-evidence",
       isDirectory: true
@@ -26,7 +71,7 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
     let adapterSource = labRoot.appendingPathComponent(
       "simigo2-experimental/Sources/SimiGo2Experimental/IntegratedESPalaceRuntimeAdapter.swift"
     )
-    XCTAssertEqual("87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec", Self.sha256(Data(contentsOf: adapterSource)))
+    XCTAssertEqual("87e28403cece2be47243b0ba523c687d1fed6425d08cfab215ed1378ca89d3ec", try Self.sha256(Data(contentsOf: adapterSource)))
 
     let packageManifestURL = labRoot.appendingPathComponent(
       "integrated-es-palace/integration-fixture-v1/FIXTURE_PACKAGE_MANIFEST.json"
@@ -179,8 +224,8 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
           "application_created": receipt.executionCreated,
           "advanced": receipt.advanced,
           "representation_bound": receipt.representationBound,
-          "position_before": beforePosition as Any,
-          "position_after": afterPosition as Any,
+          "position_before": Self.jsonOptionalInt64(beforePosition),
+          "position_after": Self.jsonOptionalInt64(afterPosition),
           "lifecycle_records_before": beforeCount,
           "lifecycle_records_after": afterCount,
           "receipt_handle_returned": receipt.handle != nil,
@@ -192,16 +237,16 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
         "case_id": caseID,
         "setup_created": setupCreated,
         "setup_position": setupPosition,
-        "setup_representation_prefix": setupRepresentation as Any?,
+        "setup_representation_prefix": Self.jsonOptionalIntArray(setupRepresentation),
         "application_lifecycle_delta": afterCount - beforeCount,
         "result": "RECORDED",
       ])
       representationRecords.append([
         "case_id": caseID,
-        "setup_prefix": setupRepresentation as Any?,
+        "setup_prefix": Self.jsonOptionalIntArray(setupRepresentation),
         "application_bound": receipt.representationBound,
-        "application_position": receipt.representationPosition as Any?,
-        "application_prefix": receipt.representationPrefix as Any?,
+        "application_position": Self.jsonOptionalPosition(receipt.representationPosition),
+        "application_prefix": Self.jsonOptionalIntArray(receipt.representationPrefix),
       ])
     }
 
@@ -226,8 +271,7 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
       "terminal_state": terminalState,
     ]
 
-    try FileManager.default.createDirectory(at: evidenceRoot, withIntermediateDirectories: false)
-    for (name, object) in [
+    let evidenceObjects = [
       "RUNTIME_VALIDATION_RECORD.json": record,
       "CASE_RESULTS.json": ["schema_id": "INTEGRATED-ES-PALACE-RUNTIME-CASE-RESULTS-V1", "cases": caseResults],
       "EXECUTION_LIFECYCLE_RECORD.json": ["schema_id": "INTEGRATED-ES-PALACE-RUNTIME-LIFECYCLE-V1", "records": lifecycleRecords],
@@ -241,20 +285,49 @@ final class IntegratedESPalaceAuthorizedRuntimeValidation: XCTestCase {
         "d002_rerun_or_repair": false,
         "result": "PASS",
       ],
-    ] {
-      let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys, .prettyPrinted])
+    ]
+    let serializedEvidence = try Self.serializeEvidence(evidenceObjects)
+    try FileManager.default.createDirectory(at: evidenceRoot, withIntermediateDirectories: false)
+    for (name, data) in serializedEvidence {
       try data.write(to: evidenceRoot.appendingPathComponent(name), options: .atomic)
     }
     let final = evidenceRoot.appendingPathComponent("EVIDENCE_SHA256SUMS")
     var lines: [String] = []
     for child in try FileManager.default.contentsOfDirectory(at: evidenceRoot, includingPropertiesForKeys: nil).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
-      guard child.isFile, child.lastPathComponent != "EVIDENCE_SHA256SUMS" else { continue }
-      lines.append("\(Self.sha256(Data(contentsOf: child)))  \(child.lastPathComponent)")
+      guard (try? child.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true, child.lastPathComponent != "EVIDENCE_SHA256SUMS" else { continue }
+      lines.append("\(try Self.sha256(Data(contentsOf: child)))  \(child.lastPathComponent)")
     }
     try Data(lines.joined(separator: "\n").appending("\n").utf8)
       .write(to: final, options: .atomic)
     XCTAssertEqual("PASS", record["result"] as? String)
     XCTAssertEqual(terminalState, "RUNTIME_VALIDATION_PASS")
+  }
+
+  static func jsonOptionalInt64(_ value: Int64?) -> Any {
+    value.map { NSNumber(value: $0) } ?? NSNull()
+  }
+
+  static func jsonOptionalIntArray(_ value: [Int]?) -> Any {
+    value.map { $0 as Any } ?? NSNull()
+  }
+
+  static func jsonOptionalPosition(_ value: ExecutionPosition?) -> Any {
+    value.map { NSNumber(value: $0.value) } ?? NSNull()
+  }
+
+  static func serializeEvidence(_ objects: [String: Any]) throws -> [String: Data] {
+    var serialized: [String: Data] = [:]
+    for (name, object) in objects {
+      guard JSONSerialization.isValidJSONObject(object) else {
+        throw XCTFailure("evidence object is not JSON serializable: \(name)")
+      }
+      let data = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys, .prettyPrinted])
+      guard try JSONSerialization.jsonObject(with: data, options: []) is [String: Any] else {
+        throw XCTFailure("serialized evidence did not reparse as an object: \(name)")
+      }
+      serialized[name] = data
+    }
+    return serialized
   }
 
   private static func sha256(_ data: Data) -> String {

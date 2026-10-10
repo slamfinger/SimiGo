@@ -26338,3 +26338,37 @@ Primary evidence:
 ```text
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_FAIL_HARNESS_SERIALIZATION_20261010.md.
 ```
+
+## Harness Serialization Repair COMPLETE — 2026-10-10
+
+> **Status:** HARNESS SERIALIZATION REPAIR COMPLETE / PRECHECK PASS. Runtime
+> Validation remains FAIL / CLOSED; no new run authorized or executed.
+
+```text
+authorized run remains = RUNTIME_VALIDATION_FAIL / CLOSED;
+semantic seven-case conclusion = NOT CAPTURED;
+repair scope = evidence serialization only;
+all optional Int64 fields = NSNumber or NSNull;
+all optional prefix fields = JSON array or NSNull;
+ExecutionPosition values = numeric position or NSNull;
+evidence objects = serialized and reparsed before directory creation;
+invalid evidence object = rejected before write;
+old adapter validation path = XCTSkip / consumed run not repeatable;
+new independent runtime execution = NOT AUTHORIZED;
+serialization precheck = PASS / 2 tests / 0 failures;
+repaired harness SHA256 =
+  e45eb9cd7d0e110a0a7dea64ef12c769ecef3430c4b6141c06efaa5c8081cc64;
+authorized Runtime Validation Manifest SHA256 unchanged =
+  0b7a6a0c66fea6c6be2c608c2f6cf8d0fe0275a293d45ad69d1af1e35d8035c3;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceAuthorizedRuntimeValidation.swift;
+docs/00-governance/SIMIGO_RUNTIME_VALIDATION_HARNESS_SERIALIZATION_REPAIR_20261010.md.
+```
