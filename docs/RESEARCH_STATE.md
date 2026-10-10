@@ -26847,3 +26847,42 @@ integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V4.json;
 integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V4.sha256;
 docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V4_20261010.md.
 ```
+
+## Actual MLX Smoke V4 Result — 2026-10-10
+
+> **Status:** MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED.
+
+The authorized one-run gate consumed the V4 marker and attempted the single
+actual smoke. It reached `model_execution`, then failed closed because the
+executor observed no bound representation for `PRODUCTION-REAL-PALACE`; no MLX
+forward pass or tokens were generated. No retry, repair, model replacement, or
+scope expansion occurred.
+
+```text
+run_count = 1 / 1;
+failure stage = model_execution;
+Manifest V4 SHA256 =
+  52a9a10a9f52b2853dd2b5f0053573b6c1830f9a84e9a07485a5af88b2d862b2;
+MLX_SMOKE_FAIL.json SHA256 =
+  24c5b6d4ef6476e4a532f422364a785e7a59c4b6b869ee985616f9f11bf4b5e3;
+carrier.sqlite SHA256 =
+  95ac7cfc2a43793b0020dec104b74b5d07e771042d52e4c26abaa91aed397aa5;
+V4 authorization consumed marker content SHA256 =
+  b402045f9e8deb6e9bae35827c8758b44a848e5125f565138c9efc595ba37271;
+preliminary diagnosis = executor and integration/runtime may hold separate
+  default backends; repair is NOT authorized;
+retry / repair-run = FORBIDDEN without separate Human decision;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment / traffic = NOT AUTHORIZED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v4/MLX_SMOKE_FAIL.json;
+integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v4/carrier.sqlite;
+docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V4_RESULT_20261010.md.
+```
