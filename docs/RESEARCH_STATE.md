@@ -26120,3 +26120,34 @@ integrated-es-palace/non-d002-validation-v1/evidence/CASE_COMPARISON_RECORD.json
 integrated-es-palace/non-d002-validation-v1/evidence/EVIDENCE_SHA256SUMS;
 docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_RESULT_20261010.md.
 ```
+
+## Initial Non-D002 Fail ACCEPT and Targeted Revision Authorization — 2026-10-10
+
+> **Status:** FIRST VALIDATION_FAIL ACCEPTED / CLOSED. Targeted runner revision
+> and one new validation run are authorized.
+
+```text
+first run terminal state = VALIDATION_FAIL / CLOSED;
+positive / reuse / lawful-block cases = PASS / retained;
+negative blocking actions = PASS / retained;
+negative precedence labels = FAIL / targeted correction authorized;
+first evidence and Run Manifest = immutable;
+runner expected-result-as-input = FORBIDDEN;
+case-id decision shortcut = FORBIDDEN;
+new Run Manifest = authorized;
+new independent evidence directory = required;
+new authorized executions = 1;
+if second run FAIL = STOP / no third run / no automatic repair;
+frozen design and P1–P7 = unchanged;
+fixture package = unchanged;
+canonical PALACE / Information Space mutation = FORBIDDEN;
+D-002 rerun / repair = FORBIDDEN;
+production deployment = NOT AUTHORIZED.
+```
+
+Primary evidence:
+
+```text
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_INITIAL_FAIL_ACCEPT_AND_TARGETED_REVISION_AUTHORIZATION_20261010.md;
+docs/00-governance/SIMIGO_INTEGRATED_ES_PALACE_NON_D002_VALIDATION_RESULT_20261010.md.
+```
