@@ -1,7 +1,7 @@
 # Production runtime failure-boundary evidence completion
 
 > **Status:** FAILURE-BOUNDARY EVIDENCE COMPLETION PASS
-> **Runtime validation status:** RUNTIME_VALIDATION_FAIL / CLOSED — NO NEW RUN
+> **Runtime validation status:** RUNTIME_VALIDATION_PASS / AUTHORIZED RUN CONSUMED / CLOSED — NO NEW RUN
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
 
@@ -66,7 +66,7 @@ ProductionRuntimeInformationIntegration.swift SHA256 =
 MLXPrefixRecomputeExecutor.swift SHA256 unchanged =
   d966535f60ba847e03ff694ff998c09ab15b6bed00c674365e91968cad4a2fe2;
 ProductionRuntimeFailureBoundaryTests.swift SHA256 =
-  a7a93b94f51dd23de95ab3dbc368ca1ad65a2fb6b4d188ff87488c65a9c50f0d;
+  da2f50a14645446bab1b0a8b5a29edf3c19c73fa8cdbe40ab3b0d859c2eba30a;
 ProductionRuntimeModelExecutorStub.swift SHA256 =
   c712410360389e25b66a26e2380430f4f4f35cb82a2f78f113b899044320a706.
 ```
@@ -74,7 +74,7 @@ ProductionRuntimeModelExecutorStub.swift SHA256 =
 ## Boundaries
 
 ```text
-Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+Runtime Validation V2 = RUNTIME_VALIDATION_PASS / AUTHORIZED RUN CONSUMED / CLOSED; rerun = FORBIDDEN;
 actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
 production deployment / traffic = NOT AUTHORIZED / none;
 canonical PALACE mutation = false;

@@ -257,16 +257,13 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     XCTAssertEqual(.continued, records[1].operation)
     XCTAssertEqual(.restored, records[2].operation)
     XCTAssertEqual(.discarded, records[3].operation)
-    print("FAILURE_RECORDS", records.map { "\($0.operation)-\($0.resultPosition.value)-\($0.resultLifecycle)" })
-    let finalHandle = integration.runtimeHandle(executionID: executionID)
-    print("FINAL_HANDLE", finalHandle?.lifecycle as Any, finalHandle?.position as Any)
-    if let finalHandle {
-      do {
-        let bound = try backend.boundPrefix(for: finalHandle)
-        print("FINAL_BOUND", bound.position, bound.prefix)
-      } catch {
-        print("FINAL_BOUND_ERROR", error)
-      }
+    let finalHandle = try XCTUnwrap(integration.runtimeHandle(executionID: executionID))
+    XCTAssertEqual(.discarded, finalHandle.lifecycle)
+    XCTAssertThrowsError(try backend.boundPrefix(for: finalHandle)) { error in
+      XCTAssertEqual(
+        .noBoundRepresentation(finalHandle.id),
+        error as? ExecutionStateBackendError
+      )
     }
     let audit = try integration.audit(database: database)
     XCTAssertEqual("BLOCKED", (audit["execution_state"] as? [String: Any])?["status"] as? String)
@@ -310,9 +307,7 @@ final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
     XCTAssertEqual(.continued, records[1].operation)
     XCTAssertEqual(.restored, records[2].operation)
     XCTAssertEqual(.discarded, records[3].operation)
-    print("FAILURE_RECORDS", records.map { "\($0.operation)-\($0.resultPosition.value)-\($0.resultLifecycle)" })
     let finalHandle = integration.runtimeHandle(executionID: executionID)
-    print("TEST_FINAL_HANDLE", finalHandle?.lifecycle as Any, finalHandle?.position.value as Any)
     XCTAssertEqual(.discarded, finalHandle?.lifecycle)
     if let finalHandle {
       XCTAssertThrowsError(try backend.boundPrefix(for: finalHandle)) { error in
