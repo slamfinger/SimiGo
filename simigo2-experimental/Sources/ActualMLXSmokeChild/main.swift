@@ -120,7 +120,7 @@ do {
     let result = try await integration.continueWithRealInformation(
       database: database,
       handle: nil,
-      advancementID: "actual-mlx-smoke-v1",
+      advancementID: "actual-mlx-smoke-v5",
       evaluatedAtUTC: "2026-10-10T00:00:00Z"
     )
     let bound = try backend.boundPrefix(for: result.handle)

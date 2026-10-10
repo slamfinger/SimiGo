@@ -50,11 +50,11 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeManifestEvidenceFieldPrecheck() throws {
     let manifestURL = labRoot.appendingPathComponent(
-      "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V4.json"
+      "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V5.json"
     )
     let manifest = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as! [String: Any]
     let evidence = try Self.evidenceBinding(manifest, labRoot: labRoot)
-    XCTAssertEqual("integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v4", evidence.relativePath)
+    XCTAssertEqual("integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5", evidence.relativePath)
     XCTAssertEqual(
       labRoot.appendingPathComponent(evidence.relativePath, isDirectory: true).standardizedFileURL,
       evidence.url.standardizedFileURL
@@ -136,12 +136,12 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
   func testActualMLXSmokeSingleRun() throws {
     let packageRoot = labRoot.appendingPathComponent("integrated-es-palace/mlx-smoke-v1")
-    let markerURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V4_AUTHORIZED")
+    let markerURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V5_AUTHORIZED")
     guard FileManager.default.fileExists(atPath: markerURL.path) else {
       throw XCTSkip("ACTUAL MLX SMOKE = CANDIDATE / HUMAN AUTHORIZATION REQUIRED")
     }
-    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V4.json")
-    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V4.sha256")
+    let manifestURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.json")
+    let sidecarURL = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_MANIFEST_V5.sha256")
     let manifestData = try Data(contentsOf: manifestURL)
     let manifestDigest = Self.sha256(manifestData)
     let markerDigest = String(decoding: try Data(contentsOf: markerURL), as: UTF8.self)
@@ -176,7 +176,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
       throw ActualMLXSmokeError.manifestFieldMismatch("write-once child logs")
     }
 
-    let consumedMarker = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V4_AUTHORIZATION_CONSUMED")
+    let consumedMarker = packageRoot.appendingPathComponent("ACTUAL_MLX_SMOKE_V5_AUTHORIZATION_CONSUMED")
     guard !FileManager.default.fileExists(atPath: consumedMarker.path) else {
       throw ActualMLXSmokeError.manifestFieldMismatch("authorization already consumed")
     }
@@ -397,7 +397,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
     labRoot: URL,
     manifestDigest: String
   ) throws {
-    guard manifest["schema_id"] as? String == "ACTUAL-MLX-SMOKE-MANIFEST-V4",
+    guard manifest["schema_id"] as? String == "ACTUAL-MLX-SMOKE-MANIFEST-V5",
           manifest["status"] as? String == "CANDIDATE — HUMAN AUTHORIZATION REQUIRED",
           manifest["smoke_authorized"] as? Bool == false,
           manifest["smoke_executed"] as? Bool == false,
@@ -468,7 +468,7 @@ final class ActualMLXSmokeValidation: XCTestCase {
 
     let evidence = try Self.evidenceBinding(manifest, labRoot: labRoot)
     guard let evidenceObject = manifest["evidence"] as? [String: Any],
-          evidence.relativePath == "integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v4",
+          evidence.relativePath == "integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v5",
           evidenceObject["write_once"] as? Bool == true,
           evidenceObject["must_not_exist_before_authorized_run"] as? Bool == true,
           evidenceObject["terminal_record_create_mode"] as? String == "create_exclusive_no_overwrite" else {
@@ -478,8 +478,8 @@ final class ActualMLXSmokeValidation: XCTestCase {
     guard let gate = manifest["authorization_gate"] as? [String: Any] else {
       throw invalidObject()
     }
-    guard gate["marker_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V4_AUTHORIZED",
-          gate["consumption_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V4_AUTHORIZATION_CONSUMED",
+    guard gate["marker_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZED",
+          gate["consumption_path"] as? String == "integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V5_AUTHORIZATION_CONSUMED",
           gate["consumption_mode"] as? String == "atomic_rename_before_child_launch" else {
       throw ActualMLXSmokeError.manifestFieldMismatch("one-shot authorization gate")
     }
