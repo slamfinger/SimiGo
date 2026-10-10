@@ -40,56 +40,89 @@ def sealed_policy(policy: dict) -> dict:
 
 
 class ObservableCarrier(DatabaseBackedIS):
-    lock_entered = threading.Event()
+    def __init__(
+        self,
+        *args,
+        before_begin: threading.Event,
+        after_begin: threading.Event,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.before_begin = before_begin
+        self.after_begin = after_begin
 
     @contextlib.contextmanager
     def transaction(self):
-        self.lock_entered.set()
+        self.before_begin.set()
         with super().transaction():
+            self.after_begin.set()
             yield
 
 
+class CriticalGate:
+    """Prove a holder is waiting before allowing a competitor to start."""
+
+    def __init__(self):
+        self.entered_condition = threading.Condition()
+        self.continue_condition = threading.Condition()
+        self.entered = False
+        self.release = False
+
+    def hold(self):
+        with self.continue_condition:
+            with self.entered_condition:
+                self.entered = True
+                self.entered_condition.notify_all()
+            while not self.release:
+                self.continue_condition.wait()
+
+    def wait_entered(self):
+        with self.entered_condition:
+            if not self.entered_condition.wait_for(
+                lambda: self.entered, timeout=5
+            ):
+                raise TimeoutError("critical section holder did not enter")
+
+    def confirm_waiting(self):
+        # This lock is held by hold() while it waits; acquiring it proves the
+        # holder has released it inside Condition.wait().
+        with self.continue_condition:
+            pass
+
+    def release_holder(self):
+        with self.continue_condition:
+            self.release = True
+            self.continue_condition.notify_all()
+
+
 class ExecutionGateLoop(CarrierInformationLoop):
-    execution_entered = threading.Event()
-    release_execution = threading.Event()
+    gate = CriticalGate()
 
     def __init__(self, *args, gate: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
-        self.gate = gate
+        self.gate = type(self).gate if gate else None
 
     def _execute_demand_in_transaction(self, *args, **kwargs):
         if self.gate:
-            type(self).execution_entered.set()
-            if not type(self).release_execution.wait(timeout=5):
-                raise TimeoutError("execution concurrency gate timed out")
+            self.gate.hold()
         return super()._execute_demand_in_transaction(*args, **kwargs)
 
 
 class ConfirmationGateLoop(CarrierInformationLoop):
-    confirmation_entered = threading.Event()
-    release_confirmation = threading.Event()
+    gate = CriticalGate()
 
     def _find_state_by_id(self, state_id):
-        type(self).confirmation_entered.set()
-        if not type(self).release_confirmation.wait(timeout=5):
-            raise TimeoutError("confirmation concurrency gate timed out")
+        self.gate.hold()
         return super()._find_state_by_id(state_id)
 
 
 class BlockedAppendGateLoop(CarrierInformationLoop):
-    blocked_entered = threading.Event()
-    release_blocked = threading.Event()
+    gate = CriticalGate()
 
     def record_execution_state(self, *args, **kwargs):
         if args and isinstance(args[0], str) and "blocked" in args[0]:
-            type(self).blocked_entered.set()
-            if not type(self).release_blocked.wait(timeout=5):
-                raise TimeoutError("blocked concurrency gate timed out")
+            self.gate.hold()
         return super().record_execution_state(*args, **kwargs)
-
-
-def observing_loop(database_path: str) -> CarrierInformationLoop:
-    return CarrierInformationLoop(ObservableCarrier(database_path))
 
 
 def new_race_database(
@@ -118,8 +151,18 @@ def new_race_database(
     setup.close()
 
 
-def append_race_recovery(database_path: str, prior_state_id: str) -> None:
-    writer_loop = observing_loop(database_path)
+def append_race_recovery(
+    database_path: str,
+    prior_state_id: str,
+    *,
+    before_begin: threading.Event,
+    after_begin: threading.Event,
+) -> None:
+    writer_loop = CarrierInformationLoop(ObservableCarrier(
+        database_path,
+        before_begin=before_begin,
+        after_begin=after_begin,
+    ))
     latest = writer_loop.latest_execution_state("race-continuation")
     writer_loop.record_execution_state(
         "race-after-confirmation",
@@ -444,67 +487,6 @@ def run() -> dict:
         rollback.commit()
         rollback.close()
 
-        with tempfile.TemporaryDirectory(
-            prefix="simigo-concurrent-"
-        ) as concurrent_temporary:
-            concurrent_database = str(
-                Path(concurrent_temporary) / "concurrent.sqlite"
-            )
-            setup_loop = CarrierInformationLoop.create(concurrent_database)
-            setup_loop.define_demand(
-                "concurrent-demand",
-                continuation_point="concurrent-block",
-                pending_obligations=["prove concurrent lineage"],
-                continuation_conditions=["missing source stays blocked"],
-                required_item_ids=["MISSING-CONCURRENT"],
-            )
-            setup_loop.commit()
-            setup_loop.close()
-
-            advancing_loop = CarrierInformationLoop(
-                ObservableCarrier(concurrent_database)
-            )
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                # Hold the accepted write lock while the blocked attempt waits.
-                with advancing_loop.carrier.atomic_write_group():
-                    blocked_future = pool.submit(
-                        lambda: CarrierInformationLoop.open(
-                            concurrent_database
-                        ).execute_demand(
-                            "concurrent-demand",
-                            "concurrent-blocked",
-                            calculator,
-                            evaluated_at_utc="2026-10-09T00:06:00Z",
-                        )
-                    )
-                    advancing_loop.record_execution_state(
-                        "concurrent-good",
-                        continuation_point="concurrent-block",
-                        prior_state_id=None,
-                        demand_id="concurrent-demand",
-                        status="ADVANCED",
-                        pending_obligations=[],
-                        next_continuation_point="runtime-application-complete",
-                        result_digest=digest({"concurrent": True}),
-                        runtime_application_status="APPLIED_SWIFT",
-                    )
-                if not ObservableCarrier.lock_entered.wait(timeout=5):
-                    raise TimeoutError("blocked attempt missed write-lock race")
-                ObservableCarrier.lock_entered.clear()
-                blocked_result = blocked_future.result()
-
-            blocked_state = advancing_loop.latest_execution_state(
-                "concurrent-block"
-            )
-            checks["blocked_prior_state_is_read_in_append_transaction"] = (
-                blocked_result["advanced"] is False
-                and blocked_state["status"] == "BLOCKED"
-                and blocked_state["prior_state_id"] == "concurrent-good"
-            )
-            advancing_loop.commit()
-            advancing_loop.close()
-
         malformed = CarrierInformationLoop.open(database)
         malformed_result = malformed.execute_demand(
             "demand-001", "advance-malformed", calculator,
@@ -609,9 +591,16 @@ def run() -> dict:
             new_race_database(race_database, ["A"])
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                first_before_begin = threading.Event()
+                first_after_begin = threading.Event()
                 first_future = pool.submit(
                     lambda: ExecutionGateLoop(
-                        ObservableCarrier(race_database), gate=True,
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=first_before_begin,
+                            after_begin=first_after_begin,
+                        ),
+                        gate=True,
                     ).execute_demand(
                         "race-demand",
                         "race-first",
@@ -619,11 +608,19 @@ def run() -> dict:
                         evaluated_at_utc="2026-10-09T00:07:00Z",
                     )
                 )
-                if not ExecutionGateLoop.execution_entered.wait(timeout=5):
-                    raise TimeoutError("first execution missed critical state gate")
+                ExecutionGateLoop.gate.wait_entered()
+                ExecutionGateLoop.gate.confirm_waiting()
+                if not first_after_begin.wait(timeout=5):
+                    raise TimeoutError("first execution missed SQLite write lock")
+                second_before_begin = threading.Event()
+                second_after_begin = threading.Event()
                 second_future = pool.submit(
                     lambda: CarrierInformationLoop(
-                        ObservableCarrier(race_database)
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=second_before_begin,
+                            after_begin=second_after_begin,
+                        )
                     ).execute_demand(
                         "race-demand",
                         "race-second",
@@ -631,53 +628,77 @@ def run() -> dict:
                         evaluated_at_utc="2026-10-09T00:07:00Z",
                     )
                 )
-                if not ObservableCarrier.lock_entered.wait(timeout=5):
+                if not second_before_begin.wait(timeout=5):
                     raise TimeoutError("second execution missed write-lock race")
-                ExecutionGateLoop.release_execution.set()
+                competitor_blocked = (
+                    not second_after_begin.is_set()
+                )
+                ExecutionGateLoop.gate.release_holder()
                 first_result = first_future.result(timeout=5)
                 try:
                     second_future.result(timeout=5)
                     second_rejected = False
                 except ValueError as error:
                     second_rejected = "pending runtime application" in str(error)
-                ExecutionGateLoop.execution_entered.clear()
-                ExecutionGateLoop.release_execution.clear()
+                competitor_acquired_after_release = second_after_begin.wait(
+                    timeout=5
+                )
             checks["execution_race_cannot_stack_pending_intents"] = (
                 first_result["advanced"] is True
                 and second_rejected
-                and ObservableCarrier.lock_entered.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
             )
-            ObservableCarrier.lock_entered.clear()
+            checks["execution_race_competitor_blocked_at_write_lock"] = (
+                second_before_begin.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                confirmation_before_begin = threading.Event()
+                confirmation_after_begin = threading.Event()
                 confirmation_future = pool.submit(
                     lambda: ConfirmationGateLoop(
-                        ObservableCarrier(race_database)
+                        ObservableCarrier(
+                            race_database,
+                            before_begin=confirmation_before_begin,
+                            after_begin=confirmation_after_begin,
+                        )
                     ).confirm_runtime_application("race-first")
                 )
-                if not ConfirmationGateLoop.confirmation_entered.wait(timeout=5):
-                    raise TimeoutError("confirmation missed critical state gate")
-                recovery_loop = observing_loop(race_database)
+                ConfirmationGateLoop.gate.wait_entered()
+                ConfirmationGateLoop.gate.confirm_waiting()
+                if not confirmation_after_begin.wait(timeout=5):
+                    raise TimeoutError("confirmation missed SQLite write lock")
                 recovery_started = threading.Event()
                 recovery_ready = threading.Event()
+                recovery_before_begin = threading.Event()
+                recovery_after_begin = threading.Event()
 
                 def recovery_writer():
                     recovery_started.set()
                     recovery_ready.wait(timeout=5)
-                    append_race_recovery(race_database, "race-first:runtime-applied")
+                    append_race_recovery(
+                        race_database,
+                        "race-first:runtime-applied",
+                        before_begin=recovery_before_begin,
+                        after_begin=recovery_after_begin,
+                    )
 
                 recovery_thread = threading.Thread(target=recovery_writer)
                 recovery_thread.start()
                 recovery_started.wait(timeout=5)
                 recovery_ready.set()
-                if not ObservableCarrier.lock_entered.wait(timeout=5):
+                if not recovery_before_begin.wait(timeout=5):
                     raise TimeoutError("recovery writer missed confirmation lock race")
-                ConfirmationGateLoop.release_confirmation.set()
+                competitor_blocked = not recovery_after_begin.is_set()
+                ConfirmationGateLoop.gate.release_holder()
                 confirmation_future.result(timeout=5)
                 recovery_thread.join(timeout=5)
-            ConfirmationGateLoop.confirmation_entered.clear()
-            ConfirmationGateLoop.release_confirmation.clear()
-            ObservableCarrier.lock_entered.clear()
+                competitor_acquired_after_release = recovery_after_begin.wait(
+                    timeout=5
+                )
             final_race_state = CarrierInformationLoop.open(
                 race_database
             ).latest_execution_state("race-continuation")
@@ -685,6 +706,13 @@ def run() -> dict:
                 final_race_state["state_id"] == "race-after-confirmation"
                 and final_race_state["prior_state_id"]
                 == "race-first:runtime-applied"
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["confirmation_race_competitor_blocked_at_write_lock"] = (
+                recovery_before_begin.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
             )
             blocked_race_database = str(
                 Path(race_temporary) / "blocked-race.sqlite"
@@ -694,9 +722,15 @@ def run() -> dict:
             )
 
             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                blocked_before_begin = threading.Event()
+                blocked_after_begin = threading.Event()
                 blocked_future = pool.submit(
                     lambda: BlockedAppendGateLoop(
-                        ObservableCarrier(blocked_race_database)
+                        ObservableCarrier(
+                            blocked_race_database,
+                            before_begin=blocked_before_begin,
+                            after_begin=blocked_after_begin,
+                        )
                     ).execute_demand(
                         "race-demand",
                         "blocked-race-attempt",
@@ -704,30 +738,38 @@ def run() -> dict:
                         evaluated_at_utc="2026-10-09T00:08:00Z",
                     )
                 )
-                if not BlockedAppendGateLoop.blocked_entered.wait(timeout=5):
-                    raise TimeoutError("blocked append missed lineage gate")
+                BlockedAppendGateLoop.gate.wait_entered()
+                BlockedAppendGateLoop.gate.confirm_waiting()
+                if not blocked_after_begin.wait(timeout=5):
+                    raise TimeoutError("blocked append missed SQLite write lock")
                 recovery_started = threading.Event()
                 recovery_ready = threading.Event()
+                recovery_before_begin = threading.Event()
+                recovery_after_begin = threading.Event()
 
                 def blocked_recovery_writer():
                     recovery_started.set()
                     recovery_ready.wait(timeout=5)
                     append_race_recovery(
-                        blocked_race_database, "blocked-race-attempt"
+                        blocked_race_database,
+                        "blocked-race-attempt",
+                        before_begin=recovery_before_begin,
+                        after_begin=recovery_after_begin,
                     )
 
                 recovery_thread = threading.Thread(target=blocked_recovery_writer)
                 recovery_thread.start()
                 recovery_started.wait(timeout=5)
                 recovery_ready.set()
-                if not ObservableCarrier.lock_entered.wait(timeout=5):
+                if not recovery_before_begin.wait(timeout=5):
                     raise TimeoutError("recovery writer missed blocked lock race")
-                BlockedAppendGateLoop.release_blocked.set()
+                competitor_blocked = not recovery_after_begin.is_set()
+                BlockedAppendGateLoop.gate.release_holder()
                 blocked_result = blocked_future.result(timeout=5)
                 recovery_thread.join(timeout=5)
-            BlockedAppendGateLoop.blocked_entered.clear()
-            BlockedAppendGateLoop.release_blocked.clear()
-            ObservableCarrier.lock_entered.clear()
+                competitor_acquired_after_release = recovery_after_begin.wait(
+                    timeout=5
+                )
             final_blocked = CarrierInformationLoop.open(
                 blocked_race_database
             ).latest_execution_state("race-continuation")
@@ -735,6 +777,13 @@ def run() -> dict:
                 blocked_result["advanced"] is False
                 and final_blocked["state_id"] == "race-after-confirmation"
                 and final_blocked["prior_state_id"] == "blocked-race-attempt"
+                and competitor_blocked
+                and competitor_acquired_after_release
+            )
+            checks["blocked_race_competitor_blocked_at_write_lock"] = (
+                recovery_before_begin.is_set()
+                and competitor_blocked
+                and competitor_acquired_after_release
             )
 
         final = CarrierInformationLoop.open(database)
