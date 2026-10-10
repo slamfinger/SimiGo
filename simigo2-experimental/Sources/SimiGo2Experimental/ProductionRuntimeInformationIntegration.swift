@@ -12,7 +12,22 @@ public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
     validityFailureItemIDs: [String]
   )
   case invalidPersistedExecutionState(lifecycle: String)
+  case modelExecutorUnavailable
+  case modelExecutionFailed(reason: String)
 }
+
+public protocol ProductionRuntimeModelContinuationExecutor: Sendable {
+  func tokenizeText(_ text: String) async throws -> [Int]
+  func tokenizeSeedText(_ text: String) async throws -> [Int]
+  func continueExecution(
+    _ state: ExecutionStateHandle,
+    nextInputTokens: [Int],
+    maxTokens: Int
+  ) async throws -> ExecutionContinuationResult
+}
+
+extension MLXPrefixRecomputeExecutor: ProductionRuntimeModelContinuationExecutor {}
+
 
 public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
   public let command: String
@@ -122,9 +137,14 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
   private let labRoot: URL
   private let launchConfiguration: ProductionRuntimeLaunchConfiguration?
   private let backend = MLXExecutionStateBackend()
+  private var modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?
   private lazy var runtime = ExecutionContinuityCoordinator(backend: backend)
 
-  public init(labRoot: URL? = nil) {
+  public convenience init(labRoot: URL? = nil) {
+    self.init(labRoot: labRoot, modelExecutor: nil)
+  }
+
+  public init(labRoot: URL?, modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?) {
     if let labRoot {
       self.labRoot = labRoot.standardizedFileURL
     } else {
@@ -136,11 +156,22 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         .deletingLastPathComponent()
     }
     launchConfiguration = nil
+    self.modelExecutor = modelExecutor
   }
 
-  public init(configuration: ProductionRuntimeLaunchConfiguration) {
+  public init(
+    configuration: ProductionRuntimeLaunchConfiguration,
+    modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
+  ) {
     launchConfiguration = configuration
+    self.modelExecutor = modelExecutor
     labRoot = configuration.runtimeRoot
+  }
+
+  public func attachModelExecutor(
+    _ executor: any ProductionRuntimeModelContinuationExecutor
+  ) {
+    modelExecutor = executor
   }
 
   private var bridgeURL: URL {
@@ -365,26 +396,88 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
       withJSONObject: resultPayload,
       options: [.sortedKeys]
     )
-    let digest = SHA256.hash(data: resultData)
-    let representationTokens = digest.prefix(16).map { Int($0) }
+    let digest = SHA256.hash(data: resultData).map { String(format: "%02x", $0) }.joined()
+    guard let modelExecutor else {
+      throw ProductionRuntimeInformationError.modelExecutorUnavailable
+    }
 
-    let advanced = try await runtime.continueExecution(
-      current,
-      continuation: ExecutionContinuation(
-        nextInput: "\(Self.continuationPoint):\(advancementID)",
-        continuationID: "\(Self.continuationPoint):\(advancementID):cont"
+    // The real continuation prompt is derived from the Information Space
+    // result returned by the isolated carrier, not from a fixture digest.
+    let informationContext = String(decoding: resultData, as: UTF8.self)
+    let continuationText = "\(Self.continuationPoint):\(advancementID)\n\(informationContext)"
+
+    func failPending(_ reason: String) throws {
+      _ = try runBridge("record-blocked", arguments: [
+        "--database", database.path,
+        "--state-id", "\(pendingStateID):model-failed",
+        "--prior-state-id", pendingStateID,
+        "--reason", reason,
+      ])
+    }
+
+    func restorePreModelState() async {
+      if let priorRepresentation {
+        try? await backend.restoreRepresentation(priorRepresentation)
+      }
+      _ = try? await runtime.restore(
+        current,
+        request: ExecutionRestoreRequest(
+          targetPosition: current.position,
+          continuation: current.continuation
+        )
       )
-    )
-    try await runtime.bindRepresentation(
-      executionID: advanced.id,
-      position: advanced.position,
-      payload: MLXPrefixPayload(tokenPrefix: representationTokens)
-    )
-    _ = try backend.boundPrefix(for: advanced)
-    _ = try runBridge(
-      "confirm-runtime-application",
-      arguments: ["--database", database.path, "--state-id", pendingStateID]
-    )
+    }
+
+    // If the runtime has no physical prefix yet, seed it from the actual
+    // recovered Information Space payload. Existing bound prefixes continue
+    // to be consumed unchanged.
+    if (try? backend.boundPrefix(for: current)) == nil {
+      let seedTokens = try await modelExecutor.tokenizeSeedText(informationContext)
+      try await runtime.bindRepresentation(
+        executionID: current.id,
+        position: current.position,
+        payload: MLXPrefixPayload(tokenPrefix: seedTokens)
+      )
+    }
+    let priorRepresentation = try? await backend.captureRepresentation(for: current)
+    let nextInputTokens = try await modelExecutor.tokenizeText(continuationText)
+
+    let advanced: ExecutionStateHandle
+    let modelResult: ExecutionContinuationResult
+    do {
+      modelResult = try await modelExecutor.continueExecution(
+        current,
+        nextInputTokens: nextInputTokens,
+        maxTokens: 32
+      )
+      advanced = try await runtime.continueExecution(
+        current,
+        continuation: ExecutionContinuation(
+          nextInput: "\(Self.continuationPoint):\(advancementID)",
+          continuationID: "\(Self.continuationPoint):\(advancementID):cont"
+        )
+      )
+      try await runtime.bindRepresentation(
+        executionID: advanced.id,
+        position: advanced.position,
+        payload: modelResult.updatedPayload
+      )
+    } catch {
+      try? await restorePreModelState()
+      try? failPending("MLX continuation or representation binding failed: \(error)")
+      throw ProductionRuntimeInformationError.modelExecutionFailed(reason: String(describing: error))
+    }
+
+    do {
+      _ = try runBridge(
+        "confirm-runtime-application",
+        arguments: ["--database", database.path, "--state-id", pendingStateID]
+      )
+    } catch {
+      try? await restorePreModelState()
+      try? failPending("runtime application confirmation failed: \(error)")
+      throw ProductionRuntimeInformationError.modelExecutionFailed(reason: String(describing: error))
+    }
 
     return (
       advanced,
@@ -394,7 +487,7 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         state: state,
         computedItemIDs: computed,
         reusedItemIDs: reused,
-        resultDigest: digest.map { String(format: "%02x", $0) }.joined()
+        resultDigest: digest
       )
     )
   }

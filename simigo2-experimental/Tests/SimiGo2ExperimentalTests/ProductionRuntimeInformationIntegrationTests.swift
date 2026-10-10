@@ -64,6 +64,7 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     let integration = ProductionRuntimeInformationIntegration(
       configuration: isolated.configuration
     )
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try integration.initialize(
       database: database,
       validUntil: "2030-12-31T23:59:59Z"
@@ -86,6 +87,7 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     let restarted = ProductionRuntimeInformationIntegration(
       configuration: isolated.configuration
     )
+    restarted.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     let persisted = try restore(from: handleURL)
     let second = try await restarted.continueWithRealInformation(
       database: database,
@@ -154,6 +156,7 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     let integration = ProductionRuntimeInformationIntegration(
       configuration: isolated.configuration
     )
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try integration.initialize(
       database: database,
       validUntil: "2020-01-01T00:00:00Z"
@@ -226,6 +229,7 @@ final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
     let integration = ProductionRuntimeInformationIntegration(
       configuration: isolated.configuration
     )
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try integration.initialize(
       database: database,
       validUntil: "2030-12-31T23:59:59Z"

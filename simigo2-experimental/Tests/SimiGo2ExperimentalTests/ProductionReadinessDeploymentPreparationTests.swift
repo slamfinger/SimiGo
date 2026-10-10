@@ -65,6 +65,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
       validityPolicyPath: policy
     )
     let integration = ProductionRuntimeInformationIntegration(configuration: configuration)
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
 
     XCTAssertFalse(
       configuration.pythonExecutable.path.contains(".build/mp-venv312"),
@@ -100,6 +101,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
       at: configuration.runtimeRoot.appendingPathComponent("production_runtime_bridge.py")
     )
     let integration = ProductionRuntimeInformationIntegration(configuration: configuration)
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
 
     do {
       _ = try integration.initialize(database: bundle.appendingPathComponent("runtime.sqlite"), validUntil: nil)
@@ -121,6 +123,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
       validityPolicyPath: policy
     )
     let integration = ProductionRuntimeInformationIntegration(configuration: configuration)
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
 
     let basePolicyObject = try JSONSerialization.jsonObject(
       with: Data(contentsOf: policy)
@@ -161,6 +164,7 @@ final class ProductionReadinessDeploymentPreparationTests: XCTestCase {
       validityPolicyPath: policy
     )
     let integration = ProductionRuntimeInformationIntegration(configuration: configuration)
+    integration.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try integration.initialize(database: database, validUntil: nil)
     let good = try await integration.continueWithRealInformation(
       database: database,

@@ -26557,3 +26557,54 @@ integrated-es-palace/runtime-adapter-v1/validation-evidence-v2/CASE_RESULTS.json
 integrated-es-palace/runtime-adapter-v1/validation-evidence-v2/EVIDENCE_SHA256SUMS;
 docs/00-governance/SIMIGO_RUNTIME_VALIDATION_V2_RESULT_20261010.md.
 ```
+
+## Production Runtime Integration Implementation v1 — 2026-10-10
+
+> **Status:** IMPLEMENTATION COMPLETE / ISOLATED REGRESSION PASS. Runtime
+> validation of this implementation is NOT AUTHORIZED / NOT EXECUTED.
+
+```text
+real Information Space carrier execute -> actual recovered payload text;
+CONTINUE -> actual MLXPrefixRecomputeExecutor continuation;
+CONTINUE -> actual updatedPayload bound at advanced logical position;
+fixture digest token substitution = removed from production path;
+REUSE = read-only identity and representation verification;
+BLOCK = no model execution / no execution creation / no advance;
+model failure -> BLOCKED evidence and pre-model runtime restore;
+confirmation failure -> BLOCKED evidence and runtime rollback;
+isolated carrier used = true;
+canonical PALACE mutation = false;
+canonical Information Space mutation = false;
+D-002 rerun / repair = false;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+production deployment / traffic = NOT AUTHORIZED / none;
+Integrated SimiGo full production proof = NOT ESTABLISHED;
+new runtime validation authorization = requires separate Human decision.
+```
+
+Reported isolated regression:
+
+```text
+swift build --target SimiGo2Experimental = PASS;
+ProductionRuntimeInformationIntegrationTests = PASS / 4;
+ControlledProductionPilotV1E2ETests = PASS / 1;
+ProductionReadinessDeploymentPreparationTests = PASS / 4;
+IntegratedSimigoProofE2ETests = PASS / 1.
+```
+
+Primary source binding:
+
+```text
+ProductionRuntimeInformationIntegration.swift SHA256 =
+  7b85dbf65a9713fc06aedf1176413971bd09231167c550f4fc302f8d5f7e1e30;
+MLXPrefixRecomputeExecutor.swift SHA256 =
+  d966535f60ba847e03ff694ff998c09ab15b6bed00c674365e91968cad4a2fe2;
+production test stub SHA256 =
+  2ff227891e7ee76827e4cbe93ad640b5c0b81677d9657989cea3b7e3a4328f64.
+```
+
+Governance record:
+
+```text
+docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_INTEGRATION_IMPLEMENTATION_V1_20261010.md.
+```

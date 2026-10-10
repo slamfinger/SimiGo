@@ -110,6 +110,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     let firstAuthority = ProductionRuntimeInformationIntegration(
       configuration: pilot.configuration
     )
+    firstAuthority.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try firstAuthority.initialize(database: pilot.database, validUntil: nil)
 
     let initial = try await firstAuthority.continueWithRealInformation(
@@ -127,6 +128,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     let restarted = ProductionRuntimeInformationIntegration(
       configuration: pilot.configuration
     )
+    restarted.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     let recovered = try restore(from: pilot.handleFile)
     let reuse = try await restarted.continueWithRealInformation(
       database: pilot.database,

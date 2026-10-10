@@ -44,11 +44,47 @@ final class IntegratedSimigoProofE2ETests: XCTestCase {
     return value
   }
 
+  private func makeIsolatedConfiguration() throws -> (
+    configuration: ProductionRuntimeLaunchConfiguration,
+    directory: URL
+  ) {
+    let labRoot = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent().deletingLastPathComponent()
+      .deletingLastPathComponent().deletingLastPathComponent()
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("integrated-proof-policy-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let policy = directory.appendingPathComponent("validity-policy.json")
+    let policyObject: [String: Any] = [
+      "schema_id": "SIMIGO-INFO-VALIDITY-POLICY-V1",
+      "policy_version": "integrated-proof-test",
+      "policy_source": "ISOLATED_TEST_ONLY",
+      "missing_policy": "REJECT",
+      "dependency_propagation": "ALL_TRANSITIVE",
+      "default_valid_until_utc": "2030-12-31T23:59:59Z",
+      "expired_source_revision_probe": "ISOLATED_E2E_ONLY",
+    ]
+    try JSONSerialization.data(withJSONObject: policyObject).write(to: policy)
+    let configuration = ProductionRuntimeLaunchConfiguration(
+      runtimeRoot: labRoot.appendingPathComponent("execution-information-loop"),
+      pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
+      snapshotPath: labRoot.appendingPathComponent(
+        "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+      ),
+      validityPolicyPath: policy
+    )
+    return (configuration, directory)
+  }
+
   func testIsolatedRealSimiGoExecutionInformationProof() async throws {
     let database = try makeTemporaryDatabase()
     let handleURL = database.deletingLastPathComponent()
       .appendingPathComponent("integrated-proof-execution-state.json")
-    let firstAuthority = ProductionRuntimeInformationIntegration()
+    let isolated = try makeIsolatedConfiguration()
+    let firstAuthority = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
+    firstAuthority.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     try firstAuthority.initialize(
       database: database,
       validUntil: "2030-12-31T23:59:59Z"
@@ -68,7 +104,10 @@ final class IntegratedSimigoProofE2ETests: XCTestCase {
 
     // Restart the real coordinator authority and recover from the persisted
     // Execution State. All valid real-source settlements must be reused.
-    let restarted = ProductionRuntimeInformationIntegration()
+    let restarted = ProductionRuntimeInformationIntegration(
+      configuration: isolated.configuration
+    )
+    restarted.attachModelExecutor(ProductionRuntimeModelExecutorStub())
     let recovered = try restore(from: handleURL)
     let reuse = try await restarted.continueWithRealInformation(
       database: database,
@@ -203,7 +242,7 @@ final class IntegratedSimigoProofE2ETests: XCTestCase {
     XCTAssertEqual(audit["carrier_all_objects_verify"] as? Bool, true)
     XCTAssertGreaterThan(audit["carrier_object_count"] as? Int ?? 0, 0)
     let state = audit["execution_state"] as? [String: Any]
-    XCTAssertEqual(state?["state_id"] as? String, "proof-source-revision")
-    XCTAssertEqual(state?["status"] as? String, "ADVANCED")
+    XCTAssertEqual(state?["state_id"] as? String, "proof-stale")
+    XCTAssertEqual(state?["status"] as? String, "BLOCKED")
   }
 }
