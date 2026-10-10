@@ -67,9 +67,16 @@ MLXPrefixRecomputeExecutor.swift SHA256 unchanged =
   d966535f60ba847e03ff694ff998c09ab15b6bed00c674365e91968cad4a2fe2;
 ProductionRuntimeFailureBoundaryTests.swift SHA256 =
   da2f50a14645446bab1b0a8b5a29edf3c19c73fa8cdbe40ab3b0d859c2eba30a;
+superseded pre-assertion source SHA256 =
+  a7a93b94f51dd23de95ab3dbc368ca1ad65a2fb6b4d188ff87488c65a9c50f0d;
 ProductionRuntimeModelExecutorStub.swift SHA256 =
   c712410360389e25b66a26e2380430f4f4f35cb82a2f78f113b899044320a706.
 ```
+
+The `da2f50a...` binding is the current post-assertion source required by the
+targeted correction. The `a7a93b...` source is historical and must not be
+rebound by later packages because it lacks the machine-checkable representation
+recovery assertions.
 
 ## Boundaries
 

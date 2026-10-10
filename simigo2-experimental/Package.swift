@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "SimiGo2Experimental", targets: ["SimiGo2Experimental"]),
         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
         .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
+        .executable(name: "ActualMLXSmokeChild", targets: ["ActualMLXSmokeChild"]),
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
@@ -51,6 +52,18 @@ let package = Package(
                 .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
                 .product(name: "Tokenizers", package: "swift-transformers"),
                 .product(name: "MLXNN", package: "mlx-swift")
+            ]
+        ),
+        .executableTarget(
+            name: "ActualMLXSmokeChild",
+            dependencies: [
+                "SimiGo2Experimental",
+                "SimiGoRuntimeContract",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+                .product(name: "MLXLLM", package: "mlx-swift-lm"),
+                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
+                .product(name: "Tokenizers", package: "swift-transformers")
             ]
         ),
         .executableTarget(

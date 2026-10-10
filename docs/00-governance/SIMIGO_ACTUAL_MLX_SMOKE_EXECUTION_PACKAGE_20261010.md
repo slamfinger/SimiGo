@@ -1,14 +1,17 @@
 # Actual MLX smoke execution package
 
-> **Status:** EXECUTION PACKAGE DELIVERED / CANDIDATE — HUMAN AUTHORIZATION REQUIRED
+> **Status:** NO-GO / SUPERSEDED BY V2 EXECUTION PACKAGE
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-10
 
 ## Scope
 
-This package prepares exactly one isolated, fresh-entry smoke test of the
-real production integration path with a real MLX model. It does not authorize
-that run and does not reopen Runtime Validation V2 or any closed stage.
+This package was reviewed as NO-GO and is retained only as history. It is
+superseded by `ACTUAL_MLX_SMOKE_MANIFEST_V2.json`; do not create its marker or
+execute its entry. The successor fixes the stale source-binding question,
+enforces all nine source-binding checks, consumes authorization exactly once,
+uses write-once evidence, and covers model load with a parent-process hard
+timeout.
 
 The preceding targeted corrections are committed at `87aad209f6e1a234506d698dedebd7840a532286`:
 
