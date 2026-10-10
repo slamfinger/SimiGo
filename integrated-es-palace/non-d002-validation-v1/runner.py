@@ -280,6 +280,7 @@ def source_denial_checks() -> dict:
 
 def execute(manifest: dict, manifest_path: Path) -> dict:
     preflight_record = preflight(manifest, manifest_path)
+    manifest_digest = digest_json(manifest)
     denial_record = source_denial_checks()
     case_results = []
     carrier_lifecycle = []
