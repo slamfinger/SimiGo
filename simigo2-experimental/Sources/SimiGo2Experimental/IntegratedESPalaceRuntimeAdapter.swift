@@ -17,7 +17,7 @@ public enum IntegratedESPalaceAdapterError: Error, Equatable, Sendable {
 
 public struct IntegratedPrimitiveItem: Codable, Equatable, Sendable {
   public let path: String
-  public let registeredTrigger: String
+  public let registeredTrigger: String?
   public let sha256: String?
 }
 
@@ -98,6 +98,20 @@ public struct IntegratedRuntimeAdapterResult: Equatable, Sendable {
   public let decision: IntegratedRuntimeDecision
   public let executionHandle: ExecutionStateHandle
   public let carrierIntent: IntegratedCarrierPersistenceIntent
+}
+
+public struct IntegratedRuntimeApplicationReceipt: Equatable, Sendable {
+  public let decision: String
+  public let advanced: Bool
+  public let executionCreated: Bool
+  public let representationBound: Bool
+  public let lifecycleRecordsBefore: Int
+  public let lifecycleRecordsAfter: Int
+  public let positionBefore: Int64?
+  public let positionAfter: Int64?
+  public let handle: ExecutionStateHandle?
+  public let representationPosition: ExecutionPosition?
+  public let representationPrefix: [Int]?
 }
 
 public struct IntegratedRuntimeAuthority: Sendable {
@@ -215,7 +229,12 @@ public final class IntegratedESPalaceRuntimeAdapter: @unchecked Sendable {
       )
     }
     guard actions.count == 1, let action = actions.first else {
-      throw IntegratedESPalaceAdapterError.ambiguousNextActionPointer(count: actions.count)
+      return try blocked(
+        reason: "CONFLICTING_VALID_POINTERS",
+        inventory: inventory,
+        actionID: actions.first?["action_id"].flatMap(string),
+        targetDigest: sourceRecordDigest
+      )
     }
 
     let input: [String: AnyCodableValue] = [
@@ -278,37 +297,96 @@ public final class IntegratedESPalaceRuntimeAdapter: @unchecked Sendable {
   public func applyToRealRuntime(
     executionID: ExecutionID,
     decision: IntegratedRuntimeDecision
-  ) async throws -> ExecutionStateHandle {
+  ) async throws -> IntegratedRuntimeApplicationReceipt {
+    let beforeCount = coordinator.recordCount
     let existing = coordinator.handle(executionID)
-    let handle: ExecutionStateHandle
-    if let existing {
-      handle = try await coordinator.reattach(existing)
-    } else {
-      handle = try await coordinator.create(
-        id: executionID,
-        position: ExecutionPosition(0),
+    let positionBefore = existing?.position.value
+
+    switch decision.decision {
+    case "BLOCK":
+      return IntegratedRuntimeApplicationReceipt(
+        decision: decision.decision,
+        advanced: false,
+        executionCreated: false,
+        representationBound: false,
+        lifecycleRecordsBefore: beforeCount,
+        lifecycleRecordsAfter: coordinator.recordCount,
+        positionBefore: positionBefore,
+        positionAfter: positionBefore,
+        handle: existing,
+        representationPosition: nil,
+        representationPrefix: nil
+      )
+    case "REUSE":
+      guard decision.continuationClass == "SETTLED_CONTINUATION",
+            decision.precedenceReason == "REUSE_PREDICATE_COMPLETE",
+            !decision.continuationIdentityDigest.isEmpty,
+            !decision.outputDigest.isEmpty else {
+        throw IntegratedESPalaceAdapterError.reuseIdentityMismatch
+      }
+      guard let live = existing else {
+        throw IntegratedESPalaceAdapterError.reuseIdentityMismatch
+      }
+      let bound = try backend.boundPrefix(for: live)
+      return IntegratedRuntimeApplicationReceipt(
+        decision: decision.decision,
+        advanced: false,
+        executionCreated: false,
+        representationBound: false,
+        lifecycleRecordsBefore: beforeCount,
+        lifecycleRecordsAfter: coordinator.recordCount,
+        positionBefore: positionBefore,
+        positionAfter: live.position.value,
+        handle: live,
+        representationPosition: bound.position,
+        representationPrefix: bound.prefix
+      )
+    case "CONTINUE":
+      let created = existing == nil
+      let base: ExecutionStateHandle
+      if let existing {
+        base = existing
+      } else {
+        base = try await coordinator.create(
+          id: executionID,
+          position: ExecutionPosition(0),
+          continuation: ExecutionContinuation(
+            nextInput: decision.inputDigest,
+            continuationID: decision.continuationIdentityDigest
+          )
+        )
+      }
+      let advanced = try await coordinator.continueExecution(
+        base,
         continuation: ExecutionContinuation(
           nextInput: decision.inputDigest,
           continuationID: decision.continuationIdentityDigest
         )
       )
-    }
-    let advanced = try await coordinator.continueExecution(
-      handle,
-      continuation: ExecutionContinuation(
-        nextInput: decision.inputDigest,
-        continuationID: decision.continuationIdentityDigest
+      let allTokens: [Int] = decision.outputDigest.compactMap { character in character.hexDigitValue }
+      let tokens = Array(allTokens.prefix(16))
+      try await coordinator.bindRepresentation(
+        executionID: advanced.id,
+        position: advanced.position,
+        payload: MLXPrefixPayload(tokenPrefix: tokens)
       )
-    )
-    let allTokens: [Int] = decision.outputDigest.compactMap { character in character.hexDigitValue }
-    let tokens = Array(allTokens.prefix(16))
-    try await coordinator.bindRepresentation(
-      executionID: advanced.id,
-      position: advanced.position,
-      payload: MLXPrefixPayload(tokenPrefix: Array(tokens))
-    )
-    _ = try backend.boundPrefix(for: advanced)
-    return advanced
+      let bound = try backend.boundPrefix(for: advanced)
+      return IntegratedRuntimeApplicationReceipt(
+        decision: decision.decision,
+        advanced: advanced.position.value == (base.position.value + 1),
+        executionCreated: created,
+        representationBound: bound.position == advanced.position,
+        lifecycleRecordsBefore: beforeCount,
+        lifecycleRecordsAfter: coordinator.recordCount,
+        positionBefore: positionBefore,
+        positionAfter: advanced.position.value,
+        handle: advanced,
+        representationPosition: bound.position,
+        representationPrefix: bound.prefix
+      )
+    default:
+      throw IntegratedESPalaceAdapterError.invalidNextActionPointer
+    }
   }
 
   public func carrierIntent(for decision: IntegratedRuntimeDecision) -> IntegratedCarrierPersistenceIntent {

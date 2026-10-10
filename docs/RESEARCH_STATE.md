@@ -26230,3 +26230,40 @@ integrated-es-palace/runtime-adapter-v1/RUN_MANIFEST_INSTANCE.json;
 integrated-es-palace/runtime-adapter-v1/IMPLEMENTATION_SHA256SUMS;
 docs/00-governance/SIMIGO_RUNTIME_ADAPTER_INTEGRATION_V1.0_DELIVERY_AND_AUTHORIZATION_REQUEST_20261010.md.
 ```
+
+## Runtime Adapter Branch Semantics Targeted Revision — 2026-10-10
+
+> **Status:** TARGETED REVISION COMPLETE. Runtime validation remains NOT
+> AUTHORIZED; new candidate validation manifest awaits one Human decision.
+
+```text
+blocking finding = every decision previously advanced real Execution State;
+CONTINUE = one real coordinator advance / matching representation;
+REUSE = read-only settled identity verification / no advance or rebind;
+BLOCK = no execution creation, advance, lifecycle record, or binding;
+targeted regression = PASS / 3 tests / 0 failures;
+CONTINUE regression = position 0 -> 1 / lifecycle delta 2 / representation bound;
+REUSE regression = lifecycle delta 0 / position 0 / prior prefix unchanged;
+negative regression = four decisions / no handle / no advance / lifecycle delta 0;
+revised adapter SHA256 =
+  8ffc6f291deea2c5ab2035fc46dd1be73613663f8453dfb8d5a463b4597c1bca;
+targeted regression source SHA256 =
+  e7a37d66c46ed946c8b1fc426bc10431db15ddf6ee95dffd6bb1846e6480b142;
+Runtime Validation Manifest SHA256 =
+  7a4adf4a36d06c86fdae2c39182559ef2c17613e572cc684d2891ab9cb3a23d1;
+validation authorized = false;
+validation executed = false;
+if later approved = ONE PASS ONLY then RUNTIME_VALIDATION_PASS or FAIL / STOP;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+integrated-es-palace/runtime-adapter-v1/RUNTIME_VALIDATION_MANIFEST_INSTANCE.json;
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/IntegratedESPalaceRuntimeAdapterBranchTests.swift;
+docs/00-governance/SIMIGO_RUNTIME_ADAPTER_BRANCH_SEMANTICS_TARGETED_REVISION_20261010.md.
+```
