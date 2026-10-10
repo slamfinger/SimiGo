@@ -168,20 +168,20 @@ def decide(inventory: dict, locator: str, authorized_boundary: str) -> tuple[dic
         authority = {"next_action_pointer": "unregistered"}
 
     if not authority["next_action_pointer"].startswith("registered"):
-        output = negative("BLOCK", "BLOCKED_DEFECT", "MISSING_INFORMATION_BLOCK", ["next_action_pointer"])
+        output = negative("BLOCK", "BLOCKED_DEFECT", "MANDATORY_OBJECT_UNRESOLVABLE", ["next_action_pointer"])
     elif schemas is None or destinations is None or carrier is None or provenance is None:
-        output = negative("BLOCK", "BLOCKED_DEFECT", "MISSING_INFORMATION_BLOCK", ["mandatory_primitive"])
+        output = negative("BLOCK", "BLOCKED_DEFECT", "MANDATORY_OBJECT_UNRESOLVABLE", ["mandatory_primitive"])
     elif next_actions_record is None:
-        output = negative("BLOCK", "BLOCKED_DEFECT", "MISSING_INFORMATION_BLOCK", ["R-I5"])
+        output = negative("BLOCK", "BLOCKED_DEFECT", "MANDATORY_OBJECT_UNRESOLVABLE", ["R-I5"])
     elif provenance.get("status") != "CURRENT":
-        output = negative("BLOCK", "BLOCKED_DEFECT", "STALE_INFORMATION_BLOCK", ["provenance_status"])
+        output = negative("BLOCK", "BLOCKED_DEFECT", "MANDATORY_EVIDENCE_SUPERSEDED", ["provenance_status"])
     else:
         actions = next_actions_record.get("actions", [])
         illegal = [action for action in actions if action.get("boundary") != authorized_boundary]
         if illegal:
-            output = negative("BLOCK", "BLOCKED_DEFECT", "ILLEGAL_CONTINUATION_BLOCK", ["unauthorized_boundary"])
+            output = negative("BLOCK", "BLOCKED_DEFECT", "REGISTERED_BOUNDARY_VIOLATION_PROVEN", ["unauthorized_boundary"])
         elif len(actions) != 1:
-            output = negative("BLOCK", "BLOCKED_DEFECT", "AMBIGUOUS_INFORMATION_BLOCK", [f"valid_pointer_count={len(actions)}"])
+            output = negative("BLOCK", "BLOCKED_DEFECT", "CONFLICTING_VALID_POINTERS", [f"valid_pointer_count={len(actions)}"])
         else:
             action = actions[0]
             require(action.get("boundary_digest") == AUTHORIZED_BOUNDARY_DIGEST, "boundary digest drift")
