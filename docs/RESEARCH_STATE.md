@@ -26608,3 +26608,45 @@ Governance record:
 ```text
 docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_INTEGRATION_IMPLEMENTATION_V1_20261010.md.
 ```
+
+## Production Runtime Failure Boundary Closure v1 — 2026-10-10
+
+> **Status:** TARGETED FAILURE-BOUNDARY CLOSURE COMPLETE / REGRESSION PASS.
+> New Runtime Validation and actual MLX smoke remain NOT AUTHORIZED / NOT
+> EXECUTED.
+
+```text
+blocked Information Space result = before Swift runtime create/attach;
+BLOCK lifecycle behavior = no Swift lifecycle / position / representation;
+missing executor = carrier BLOCKED / Swift lifecycle count 0;
+seed tokenization failure = carrier BLOCKED / Swift lifecycle count 0;
+model execution / advance / bind / confirmation failure =
+  explicit carrier BLOCKED + pre-model representation restore +
+  logical restore + runtime discard;
+unified failure path records named stage and fails closed;
+ProductionRuntimeFailureBoundaryTests = PASS / 5 tests / 0 failures;
+ProductionRuntimeInformationIntegrationTests = PASS / 4 tests;
+ControlledProductionPilotV1E2ETests = PASS / 1 test;
+ProductionReadinessDeploymentPreparationTests = PASS / 4 tests;
+IntegratedSimigoProofE2ETests = PASS / 1 test;
+ProductionRuntimeInformationIntegration.swift SHA256 =
+  c287df037a00cc5abd1ad2ca496394267530fda91ce40511f00208d47ff2f872;
+MLXPrefixRecomputeExecutor.swift SHA256 =
+  d966535f60ba847e03ff694ff998c09ab15b6bed00c674365e91968cad4a2fe2;
+ProductionRuntimeFailureBoundaryTests.swift SHA256 =
+  8184e1d4350dbc0235101af7eb377de3c7682893c44939939124fa2bfd20a244;
+Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
+actual MLX smoke validation = NOT AUTHORIZED / NOT EXECUTED;
+canonical PALACE / Information Space mutation = false;
+D-002 rerun / repair = false;
+production deployment = NOT AUTHORIZED / NOT PERFORMED;
+Integrated SimiGo full production proof = NOT ESTABLISHED.
+```
+
+Primary evidence:
+
+```text
+simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeFailureBoundaryTests.swift;
+simigo2-experimental/Sources/SimiGo2Experimental/ProductionRuntimeInformationIntegration.swift;
+docs/00-governance/SIMIGO_PRODUCTION_RUNTIME_FAILURE_BOUNDARY_CLOSURE_V1_20261010.md.
+```

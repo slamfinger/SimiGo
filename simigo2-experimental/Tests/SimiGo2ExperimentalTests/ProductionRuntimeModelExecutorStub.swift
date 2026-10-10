@@ -2,12 +2,24 @@ import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuationExecutor {
+  var seedTokenError: Error?
+  var continuationError: Error?
+
+  init(
+    seedTokenError: Error? = nil,
+    continuationError: Error? = nil
+  ) {
+    self.seedTokenError = seedTokenError
+    self.continuationError = continuationError
+  }
+
   func tokenizeText(_ text: String) async throws -> [Int] {
     Array(text.utf8.prefix(24)).map(Int.init)
   }
 
   func tokenizeSeedText(_ text: String) async throws -> [Int] {
-    Array(text.utf8.prefix(32)).map(Int.init)
+    if let seedTokenError { throw seedTokenError }
+    return Array(text.utf8.prefix(32)).map(Int.init)
   }
 
   func continueExecution(
@@ -15,7 +27,8 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
     nextInputTokens: [Int],
     maxTokens: Int
   ) async throws -> ExecutionContinuationResult {
-    ExecutionContinuationResult(
+    if let continuationError { throw continuationError }
+    return ExecutionContinuationResult(
       executionID: state.id,
       consumedPrefixLength: 1,
       nextInputTokenCount: nextInputTokens.count,
