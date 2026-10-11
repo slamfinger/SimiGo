@@ -1,6 +1,6 @@
 # Actual MLX smoke execution package V6
 
-> **Status:** EXECUTION PACKAGE REVISION 3 DELIVERED / CANDIDATE — HUMAN
+> **Status:** EXECUTION PACKAGE REVISION 4 DELIVERED / CANDIDATE — HUMAN
 > AUTHORIZATION REQUIRED
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-11
@@ -64,17 +64,32 @@ production-path selection = exercised without launching Child or loading MLX;
 Revision 1 historical record = explicitly superseded.
 ```
 
+Code review returned `NO-GO` for Revision 3 because a FAIL-named file could
+contain a valid PASS record. Revision 4 binds the selected source kind to the
+record declaration:
+
+```text
+PASS file / PASS record = accepted only when the full shared Gate passes;
+FAIL file / FAIL record = parsed and rejected as an authorized-run failure;
+PASS file / FAIL record = rejected as source/content conflict;
+FAIL file / PASS record = rejected as source/content conflict;
+PASS + FAIL files or no terminal record = rejected as before.
+```
+
+The production acceptance function and its non-generative regression cover
+these four source/content combinations without starting Child or loading MLX.
+
 ## Candidate binding
 
 ```text
 manifest path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json;
 manifest SHA256 =
-  b8c3d329d5b309ad69b96be63830e85b799a8ee5637b0d87b06f0848b729a0ce;
+  d89b505ff3fa562651c1852e173b1ee57206fbffd94ae752ebde86aab31416bb;
 sidecar path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.sha256;
 Runner SHA256 =
-  8cc510765991847af72c7b44729318084f11ea4d838c1cf41d96fab87dbdf687;
+  1c3fcdf06022126d2bea12ec743568ab52a9b90982bc3bfae490b0153c11cc85;
 Success Gate source SHA256 =
   b32a1038ce14ff0c14af502847acd98511e5d6c0d1d12ee36b6065098bc87711;
 Child source SHA256 =
@@ -96,7 +111,7 @@ SHA256 before consuming authorization.
 marker path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZED;
 required marker content =
-  b8c3d329d5b309ad69b96be63830e85b799a8ee5637b0d87b06f0848b729a0ce;
+  d89b505ff3fa562651c1852e173b1ee57206fbffd94ae752ebde86aab31416bb;
 consumption path =
   integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_V6_AUTHORIZATION_CONSUMED;
 consumption mode = atomic rename before child launch;
@@ -118,7 +133,7 @@ V5 consumed marker and failure evidence = PRESERVED.
 ```text
 swift build --product ActualMLXSmokeChild = PASS;
 ActualMLXSmokeValidation =
-  PASS / 11 tests / 1 skipped / 0 failures;
+  PASS / 12 tests / 1 skipped / 0 failures;
 ProductionRuntimeFailureBoundaryTests =
   PASS / 8 tests / 0 failures.
 ```
@@ -136,7 +151,8 @@ creates the marker.
 V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
 V6 Revision 1 = NO-GO / SUPERSEDED;
 V6 Revision 2 = NO-GO / SUPERSEDED / NOT EXECUTED;
-V6 Revision 3 = CANDIDATE — HUMAN AUTHORIZATION REQUIRED;
+V6 Revision 3 = NO-GO / SUPERSEDED / NOT EXECUTED;
+V6 Revision 4 = CANDIDATE — HUMAN AUTHORIZATION REQUIRED;
 V5 retry / gate adjustment by rerun = FORBIDDEN;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE / Information Space mutation = FORBIDDEN;

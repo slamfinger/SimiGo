@@ -325,21 +325,11 @@ final class ActualMLXSmokeValidation: XCTestCase {
       )
     }
 
-    switch try Self.selectTerminalEvidence(passURL: passURL, failURL: terminalURL) {
-    case .conflict:
-      throw ActualMLXSmokeError.terminalEvidenceInvalid("conflicting write-once terminal records")
-    case .missing:
-      throw ActualMLXSmokeError.terminalEvidenceInvalid("missing write-once terminal record")
-    case .pass(let evidenceData), .fail(let evidenceData):
-      guard let record = try JSONSerialization.jsonObject(with: evidenceData) as? [String: Any],
-            Self.validTerminalRecord(record, manifestDigest: manifestDigest, evidenceRoot: evidenceRoot)
-      else {
-        throw ActualMLXSmokeError.terminalEvidenceInvalid("invalid write-once terminal record")
-      }
-      if record["terminal_state"] as? String == "MLX_SMOKE_FAIL" {
-        throw ActualMLXSmokeError.terminalEvidenceInvalid("authorized smoke terminated with MLX_SMOKE_FAIL")
-      }
-    }
+    _ = try Self.acceptSuccessfulTerminalEvidence(
+      try Self.selectTerminalEvidence(passURL: passURL, failURL: terminalURL),
+      manifestDigest: manifestDigest,
+      evidenceRoot: evidenceRoot
+    )
   }
 
   private enum TerminalEvidence: Equatable {
@@ -356,6 +346,50 @@ final class ActualMLXSmokeValidation: XCTestCase {
     if passExists { return .pass(try Data(contentsOf: passURL)) }
     if failExists { return .fail(try Data(contentsOf: failURL)) }
     return .missing
+  }
+
+  private static func acceptSuccessfulTerminalEvidence(
+    _ selection: TerminalEvidence,
+    manifestDigest: String,
+    evidenceRoot: URL
+  ) throws -> [String: Any] {
+    let record = try Self.validatedTerminalRecord(
+      selection,
+      manifestDigest: manifestDigest,
+      evidenceRoot: evidenceRoot
+    )
+    guard record["terminal_state"] as? String == "MLX_SMOKE_PASS" else {
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("authorized smoke terminated with MLX_SMOKE_FAIL")
+    }
+    return record
+  }
+
+  private static func validatedTerminalRecord(
+    _ selection: TerminalEvidence,
+    manifestDigest: String,
+    evidenceRoot: URL
+  ) throws -> [String: Any] {
+    let evidenceData: Data
+    let expectedState: String
+    switch selection {
+    case .conflict:
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("conflicting write-once terminal records")
+    case .missing:
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("missing write-once terminal record")
+    case .pass(let data):
+      evidenceData = data
+      expectedState = "MLX_SMOKE_PASS"
+    case .fail(let data):
+      evidenceData = data
+      expectedState = "MLX_SMOKE_FAIL"
+    }
+    guard let record = try JSONSerialization.jsonObject(with: evidenceData) as? [String: Any],
+          Self.validTerminalRecord(record, manifestDigest: manifestDigest, evidenceRoot: evidenceRoot),
+          record["terminal_state"] as? String == expectedState
+    else {
+      throw ActualMLXSmokeError.terminalEvidenceInvalid("invalid or conflicting write-once terminal record")
+    }
+    return record
   }
 
   private static func healthyObservation(databasePresent: Bool = true)
@@ -387,6 +421,35 @@ final class ActualMLXSmokeValidation: XCTestCase {
     XCTAssertEqual(.pass(Data("pass".utf8)), try Self.selectTerminalEvidence(passURL: pass, failURL: fail))
     try Data("fail".utf8).write(to: fail)
     XCTAssertEqual(.conflict, try Self.selectTerminalEvidence(passURL: pass, failURL: fail))
+  }
+
+  func testActualMLXSmokeTerminalEvidenceSourceMatchesContent() throws {
+    let evidenceRoot = FileManager.default.temporaryDirectory
+      .appendingPathComponent("actual-mlx-terminal-source-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: evidenceRoot, withIntermediateDirectories: true)
+    try Data("carrier".utf8).write(
+      to: evidenceRoot.appendingPathComponent("carrier.sqlite")
+    )
+    let digest = String(repeating: "0", count: 64)
+    let passRecord = Self.healthyPassRecord(manifestDigest: digest)
+    let passData = try JSONSerialization.data(withJSONObject: passRecord, options: [.sortedKeys])
+    var failRecord = passRecord
+    failRecord["terminal_state"] = "MLX_SMOKE_FAIL"
+    let failData = try JSONSerialization.data(withJSONObject: failRecord, options: [.sortedKeys])
+
+    let accepted = try Self.acceptSuccessfulTerminalEvidence(
+      .pass(passData), manifestDigest: digest, evidenceRoot: evidenceRoot
+    )
+    XCTAssertEqual("MLX_SMOKE_PASS", accepted["terminal_state"] as? String)
+    XCTAssertThrowsError(try Self.acceptSuccessfulTerminalEvidence(
+      .fail(passData), manifestDigest: digest, evidenceRoot: evidenceRoot
+    ))
+    XCTAssertThrowsError(try Self.acceptSuccessfulTerminalEvidence(
+      .pass(failData), manifestDigest: digest, evidenceRoot: evidenceRoot
+    ))
+    XCTAssertThrowsError(try Self.acceptSuccessfulTerminalEvidence(
+      .fail(failData), manifestDigest: digest, evidenceRoot: evidenceRoot
+    ))
   }
 
   private static func validTerminalRecord(
