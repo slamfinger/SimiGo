@@ -1,6 +1,6 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 10 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
+> **Status:** REVISION 11 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
 > INDEPENDENT REVIEW REQUIRED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
@@ -22,7 +22,8 @@ revision 6 independent review = REVISE / BLOCKING;
 revision 7 independent review = REVISE / BLOCKING;
 revision 8 independent review = REVISE / BLOCKING;
 revision 9 independent review = REVISE / BLOCKING;
-revision 10 non-generative result = PASS / 24 tests / 0 failures;
+revision 10 independent review = REVISE / BLOCKING;
+revision 11 non-generative result = PASS / 24 tests / 0 failures;
 production trust anchors = FIXED AT COMPILE TIME;
 leaked Revision 4 keys = REVOKED / PERMANENTLY UNTRUSTED;
 production signing private keys = ABSENT FROM REPOSITORY;
@@ -54,6 +55,7 @@ optional collection presence = NIL and explicit empty LIST have distinct signed 
 unordered validation = rule-reference and classification-record comparison is order-independent and duplicate-count exact;
 observation classification closure = the outer payload list, nested observation list, and signed classification records must agree as exact multisets;
 input-integrity comparison = unordered collection fields are compared through normalized canonical semantics, while NIL and explicit-empty presence remain distinct;
+provenance order coverage = positive and negative tests explicitly verify both settled-state and provenance-lifecycle collection order changes;
 binding fields = identity, version, and digest have fixed field roles;
 freshness requirement = fixed-role ordered record embedded in an unordered requirement set;
 classification tuple = fixed-role ordered record embedded in an unordered classification set;

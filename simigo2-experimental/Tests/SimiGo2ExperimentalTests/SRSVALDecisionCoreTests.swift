@@ -184,13 +184,13 @@ final class SRSVALDecisionCoreTests: XCTestCase {
         resultIdentity: "RESULT",
         requiresCanonicalIdentityRule: true,
         canonicalIdentityRule: binding("RELATION-IDENTITY-RULE"),
-        provenanceBindings: reverse ? provenanceBindings.reversed() : provenanceBindings
+        provenanceBindings: provenanceBindings
       ),
       source: sourceRelation(),
       dependencies: SRSVALDependencySet(boundary: boundary, dependencies: dependencyBindings),
       result: result(),
       provenance: SRSVALProvenanceLifecycle(
-        bindings: reverse ? provenanceBindings.reversed() : provenanceBindings,
+        bindings: provenanceBindings,
         lifecycle: .declaredSettled,
         boundary: boundary
       ),
@@ -912,6 +912,14 @@ final class SRSVALDecisionCoreTests: XCTestCase {
       policy: reversed.policy,
       reuseRequest: reversed.request
     )
+    XCTAssertEqual(["SRS-PROVENANCE-A", "SRS-PROVENANCE-B"].map { binding($0) }, original.state.provenanceBindings)
+    XCTAssertEqual(["SRS-PROVENANCE-B", "SRS-PROVENANCE-A"].map { binding($0) }, reversed.state.provenanceBindings)
+    XCTAssertEqual(["SRS-PROVENANCE-A", "SRS-PROVENANCE-B"].map { binding($0) }, original.provenance.bindings)
+    XCTAssertEqual(["SRS-PROVENANCE-B", "SRS-PROVENANCE-A"].map { binding($0) }, reversed.provenance.bindings)
+    XCTAssertNotEqual(original.state.provenanceBindings, reversed.state.provenanceBindings)
+    XCTAssertNotEqual(original.provenance.bindings, reversed.provenance.bindings)
+    XCTAssertEqual(original.state.canonicalData, reversed.state.canonicalData)
+    XCTAssertEqual(original.provenance.canonicalData, reversed.provenance.canonicalData)
     XCTAssertNotEqual(originalPayload, reversedPayload)
     XCTAssertEqual(originalPayload.canonicalData, reversedPayload.canonicalData)
 
