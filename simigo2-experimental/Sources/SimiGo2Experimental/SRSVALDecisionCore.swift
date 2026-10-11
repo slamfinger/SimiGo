@@ -51,6 +51,27 @@ public enum SRSVALRecordStatus: String, Equatable, Sendable {
   case invalidated
 }
 
+public enum SRSVALSourceInvalidationStatus: String, Equatable, Sendable {
+  case none
+  case superseded
+  case invalidated
+}
+
+public enum SRSVALResolutionStatus: String, Equatable, Sendable {
+  case resolved
+  case unresolved
+}
+
+public enum SRSVALResultResolution: String, Equatable, Sendable {
+  case resolvedWithoutRecompute = "RESOLVED_WITHOUT_RECOMPUTE"
+  case unresolved
+}
+
+public enum SRSVALFreshnessStatus: String, Equatable, Sendable {
+  case current
+  case recheckRequired = "FRESHNESS_RECHECK_REQUIRED"
+}
+
 public enum SRSVALLifecycleState: String, Equatable, Sendable {
   case declaredSettled = "DECLARED_SETTLED"
   case contested = "CONTESTED"
@@ -92,6 +113,7 @@ public struct SRSVALFailure: Equatable, Hashable, Sendable {
   public let failureClass: String
   public let predicateRule: SRSVALBinding?
   public let classification: SRSVALClassification?
+  public let subjectIdentity: String
 
   public init(
     rule: SRSVALRule,
@@ -99,7 +121,8 @@ public struct SRSVALFailure: Equatable, Hashable, Sendable {
     severity: SRSVALSeverity,
     failureClass: String,
     predicateRule: SRSVALBinding? = nil,
-    classification: SRSVALClassification? = nil
+        classification: SRSVALClassification? = nil,
+        subjectIdentity: String = ""
   ) {
     self.rule = rule
     self.reason = reason
@@ -107,6 +130,7 @@ public struct SRSVALFailure: Equatable, Hashable, Sendable {
     self.failureClass = failureClass
     self.predicateRule = predicateRule
     self.classification = classification
+        self.subjectIdentity = subjectIdentity
   }
 }
 
@@ -146,6 +170,8 @@ public struct SRSVALSourceRelation: Equatable, Sendable {
   public let semanticBinding: SRSVALBinding?
   public let applicabilityCoverage: SRSVALBinding?
   public let invalidationRecord: SRSVALBinding?
+  public let invalidationStatus: SRSVALSourceInvalidationStatus
+  public let identityRule: SRSVALBinding?
   public let status: SRSVALRecordStatus
 
   public init(
@@ -153,12 +179,16 @@ public struct SRSVALSourceRelation: Equatable, Sendable {
     semanticBinding: SRSVALBinding?,
     applicabilityCoverage: SRSVALBinding?,
     invalidationRecord: SRSVALBinding?,
+    invalidationStatus: SRSVALSourceInvalidationStatus,
+    identityRule: SRSVALBinding?,
     status: SRSVALRecordStatus
   ) {
     self.binding = binding
     self.semanticBinding = semanticBinding
     self.applicabilityCoverage = applicabilityCoverage
     self.invalidationRecord = invalidationRecord
+    self.invalidationStatus = invalidationStatus
+    self.identityRule = identityRule
     self.status = status
   }
 }
@@ -167,14 +197,14 @@ public struct SRSVALDependency: Equatable, Sendable {
   public let binding: SRSVALBinding?
   public let role: String
   public let necessity: String
-  public let resolution: String
+  public let resolution: SRSVALResolutionStatus
   public let status: SRSVALRecordStatus
 
   public init(
     binding: SRSVALBinding?,
     role: String,
     necessity: String,
-    resolution: String,
+        resolution: SRSVALResolutionStatus,
     status: SRSVALRecordStatus
   ) {
     self.binding = binding
@@ -187,13 +217,13 @@ public struct SRSVALDependency: Equatable, Sendable {
 
 public struct SRSVALResult: Equatable, Sendable {
   public let binding: SRSVALBinding?
-  public let resolution: String
+  public let resolution: SRSVALResultResolution
   public let interpretabilityEvidence: SRSVALBinding?
   public let status: SRSVALRecordStatus
 
   public init(
     binding: SRSVALBinding?,
-    resolution: String,
+        resolution: SRSVALResultResolution,
     interpretabilityEvidence: SRSVALBinding?,
     status: SRSVALRecordStatus
   ) {
@@ -207,37 +237,76 @@ public struct SRSVALResult: Equatable, Sendable {
 public struct SRSVALResolutionPolicy: Equatable, Sendable {
   public let resolutionRule: SRSVALBinding?
   public let policies: [SRSVALBinding]?
+  public let boundary: SRSVALBinding?
 
-  public init(resolutionRule: SRSVALBinding?, policies: [SRSVALBinding]?) {
+  public init(
+    resolutionRule: SRSVALBinding?,
+    policies: [SRSVALBinding]?,
+    boundary: SRSVALBinding?
+  ) {
     self.resolutionRule = resolutionRule
     self.policies = policies
+    self.boundary = boundary
   }
 }
 
 public struct SRSVALProvenanceLifecycle: Equatable, Sendable {
   public let bindings: [SRSVALBinding]?
   public let lifecycle: SRSVALLifecycleState
+  public let boundary: SRSVALBinding?
 
-  public init(bindings: [SRSVALBinding]?, lifecycle: SRSVALLifecycleState) {
+  public init(
+    bindings: [SRSVALBinding]?,
+    lifecycle: SRSVALLifecycleState,
+    boundary: SRSVALBinding?
+  ) {
     self.bindings = bindings
     self.lifecycle = lifecycle
+    self.boundary = boundary
+  }
+}
+
+public struct SRSVALDependencySet: Equatable, Sendable {
+  public let boundary: SRSVALBinding?
+  public let dependencies: [SRSVALDependency]?
+
+  public init(boundary: SRSVALBinding?, dependencies: [SRSVALDependency]?) {
+    self.boundary = boundary
+    self.dependencies = dependencies
   }
 }
 
 public struct SRSVALFreshnessRequirement: Equatable, Sendable {
   public let identity: String
   public let evidence: SRSVALBinding?
+  public let expectedEvidenceDigest: String?
+  public let status: SRSVALFreshnessStatus
+  public let validUntilUTC: String?
+  public let observedAtUTC: String?
 
-  public init(identity: String, evidence: SRSVALBinding?) {
+  public init(
+    identity: String,
+    evidence: SRSVALBinding?,
+    expectedEvidenceDigest: String? = nil,
+    status: SRSVALFreshnessStatus,
+    validUntilUTC: String? = nil,
+    observedAtUTC: String? = nil
+  ) {
     self.identity = identity
     self.evidence = evidence
+    self.expectedEvidenceDigest = expectedEvidenceDigest
+    self.status = status
+    self.validUntilUTC = validUntilUTC
+    self.observedAtUTC = observedAtUTC
   }
 }
 
 public struct SRSVALFreshness: Equatable, Sendable {
+  public let boundary: SRSVALBinding?
   public let requirements: [SRSVALFreshnessRequirement]?
 
-  public init(requirements: [SRSVALFreshnessRequirement]?) {
+  public init(boundary: SRSVALBinding?, requirements: [SRSVALFreshnessRequirement]?) {
+    self.boundary = boundary
     self.requirements = requirements
   }
 }
@@ -284,8 +353,9 @@ public struct SRSVALRecomputeEnvelope: Equatable, Sendable {
 /// classification produces a RECOMPUTE_ELIGIBLE surviving failure.
 public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
   public let binding: SRSVALBinding?
+  public let content: String
   public let sourceRelationIdentity: String
-  public let invalidationClass: String
+  public let invalidationClasses: Set<String>
   public let requestClass: String
   public let authorizedResultIdentity: String
   public let semanticClass: String
@@ -293,16 +363,18 @@ public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
 
   public init(
     binding: SRSVALBinding?,
+    content: String,
     sourceRelationIdentity: String,
-    invalidationClass: String,
+    invalidationClasses: Set<String>,
     requestClass: String,
     authorizedResultIdentity: String,
     semanticClass: String,
     envelope: SRSVALRecomputeEnvelope?
   ) {
     self.binding = binding
+    self.content = content
     self.sourceRelationIdentity = sourceRelationIdentity
-    self.invalidationClass = invalidationClass
+    self.invalidationClasses = invalidationClasses
     self.requestClass = requestClass
     self.authorizedResultIdentity = authorizedResultIdentity
     self.semanticClass = semanticClass
@@ -312,18 +384,54 @@ public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
 
 /// Exact I-16 observation boundary. Every decision-critical reference must be
 /// present and consistent with the separate semantic inputs.
+public struct SRSVALRegisteredPredicateRule: Equatable, Hashable, Sendable {
+  public let predicateRule: SRSVALBinding
+  public let content: String
+  public let failureClass: String
+  public let subjectIdentities: Set<String>
+
+  public init(
+    predicateRule: SRSVALBinding,
+    content: String,
+    failureClass: String,
+    subjectIdentities: Set<String>
+  ) {
+    self.predicateRule = predicateRule
+    self.content = content
+    self.failureClass = failureClass
+    self.subjectIdentities = subjectIdentities
+  }
+
+  var isValid: Bool {
+    let digest = SHA256.hash(data: Data(content.utf8))
+      .map { String(format: "%02x", $0) }.joined()
+    return predicateRule.isExact
+      && predicateRule.contentDigest == digest
+      && !failureClass.isEmpty
+      && !subjectIdentities.isEmpty
+      && subjectIdentities.allSatisfy { !$0.isEmpty }
+  }
+
+  func covers(failureClass: String, subjectIdentity: String) -> Bool {
+    self.failureClass == failureClass && subjectIdentities.contains(subjectIdentity)
+  }
+}
+
 public struct SRSVALPredicateClassification: Equatable, Hashable, Sendable {
   public let predicateRule: SRSVALBinding
   public let failureClass: String
+  public let subjectIdentity: String
   public let classification: SRSVALClassification
 
   public init(
     predicateRule: SRSVALBinding,
     failureClass: String,
+    subjectIdentity: String,
     classification: SRSVALClassification
   ) {
     self.predicateRule = predicateRule
     self.failureClass = failureClass
+    self.subjectIdentity = subjectIdentity
     self.classification = classification
   }
 }
@@ -334,8 +442,10 @@ public struct SRSVALObservation: Equatable, Sendable {
   public let srsEvidence: SRSVALBinding?
   public let dependencyEvidence: SRSVALBinding?
   public let resultEvidence: SRSVALBinding?
+  public let provenanceEvidence: SRSVALBinding?
   public let freshnessPolicyEvidence: SRSVALBinding?
   public let lifecycleEvidence: SRSVALBinding?
+  public let policyEvidence: SRSVALBinding?
   public let consistencyEvidence: SRSVALBinding?
   public let closeBoundary: SRSVALBinding?
   public let requestReference: SRSVALBinding?
@@ -349,8 +459,10 @@ public struct SRSVALObservation: Equatable, Sendable {
     srsEvidence: SRSVALBinding?,
     dependencyEvidence: SRSVALBinding?,
     resultEvidence: SRSVALBinding?,
+    provenanceEvidence: SRSVALBinding?,
     freshnessPolicyEvidence: SRSVALBinding?,
     lifecycleEvidence: SRSVALBinding?,
+    policyEvidence: SRSVALBinding?,
     consistencyEvidence: SRSVALBinding?,
     closeBoundary: SRSVALBinding?,
     requestReference: SRSVALBinding?,
@@ -363,8 +475,10 @@ public struct SRSVALObservation: Equatable, Sendable {
     self.srsEvidence = srsEvidence
     self.dependencyEvidence = dependencyEvidence
     self.resultEvidence = resultEvidence
+    self.provenanceEvidence = provenanceEvidence
     self.freshnessPolicyEvidence = freshnessPolicyEvidence
     self.lifecycleEvidence = lifecycleEvidence
+    self.policyEvidence = policyEvidence
     self.consistencyEvidence = consistencyEvidence
     self.closeBoundary = closeBoundary
     self.requestReference = requestReference
@@ -407,37 +521,54 @@ public enum SRSVALDecisionCore {
   public static func evaluate(
     settledRelationState: SRSVALSettledRelationState,
     sourceRelation: SRSVALSourceRelation,
-    dependencies: [SRSVALDependency]?,
+    dependencies: SRSVALDependencySet?,
     result: SRSVALResult,
     provenance: SRSVALProvenanceLifecycle,
     lifecycle: SRSVALProvenanceLifecycle,
     freshness: SRSVALFreshness,
     policy: SRSVALResolutionPolicy,
     reuseRequest: SRSVALReuseRequest,
+    registeredPredicateRules: [SRSVALRegisteredPredicateRule]?,
     authorization: SRSVALRecomputeAuthorization?,
     observation: SRSVALObservation
   ) -> SRSVALDecisionOutcome {
-    // DP-0: exact observation boundary and I-15/I-16 references.
+    // DP-0: exact observation boundary, I-15/I-16 references, and cross-object
+    // identity closure. Format validity alone is never accepted as binding.
     let observationFields: [SRSVALBinding?] = [
       observation.boundary,
       observation.orderingEvidence,
       observation.srsEvidence,
       observation.dependencyEvidence,
       observation.resultEvidence,
+      observation.provenanceEvidence,
       observation.freshnessPolicyEvidence,
       observation.lifecycleEvidence,
+      observation.policyEvidence,
       observation.consistencyEvidence,
       observation.closeBoundary,
     ]
+    let providedPredicateRules = registeredPredicateRules ?? []
     guard observationFields.allSatisfy({ $0?.isExact == true }),
+      observation.srsEvidence == settledRelationState.binding,
+      observation.dependencyEvidence == dependencies?.boundary,
+      observation.resultEvidence == result.binding,
+      observation.provenanceEvidence == provenance.boundary,
+      observation.lifecycleEvidence == lifecycle.boundary,
+      observation.freshnessPolicyEvidence == freshness.boundary,
+      observation.policyEvidence == policy.boundary,
+      observation.closeBoundary == observation.boundary,
       observation.requestReference?.isExact == true,
       observation.requestReference == reuseRequest.binding,
+      providedPredicateRules.allSatisfy({ $0.isValid }),
+      Set(providedPredicateRules.map({ $0.predicateRule })).count == providedPredicateRules.count,
       observation.predicateRuleReferences?.allSatisfy({ $0.isExact }) == true,
       observation.predicateClassifications != nil,
-      observation.predicateClassifications?.allSatisfy({
-        $0.predicateRule.isExact
-          && !$0.failureClass.isEmpty
-          && observation.predicateRuleReferences?.contains($0.predicateRule) == true
+      observation.predicateClassifications?.allSatisfy({ classification in
+        classification.predicateRule.isExact
+          && !classification.failureClass.isEmpty
+          && !classification.subjectIdentity.isEmpty
+          && providedPredicateRules.contains { $0.predicateRule == classification.predicateRule }
+          && observation.predicateRuleReferences?.contains(classification.predicateRule) == true
       }) == true
     else {
       return block(.validationInputStateInconsistent, failures: [], markerValid: false)
@@ -452,6 +583,8 @@ public enum SRSVALDecisionCore {
     let notUsedMarkerValid =
       observation.i14Reference == i14NotUsedMarker
       && authorization?.binding == nil
+
+    let registeredPredicateRules = providedPredicateRules
 
     let failures = validationFailures(
       settledRelationState: settledRelationState,
@@ -481,13 +614,18 @@ public enum SRSVALDecisionCore {
       return block(.applicabilityIndeterminate, failures: failures, markerValid: notUsedMarkerValid)
     }
 
-    // DP-3/DP-4 and G-CLASS: every classifiable failure must be classified
-    // by an exact referenced predicate-rule binding before completion.
+    // G-CLASS: choose exactly one registered rule for every classifiable
+    // failure and exactly one matching classification. Duplicates and order
+    // dependence are rejected.
     var eligibleClasses: Set<String> = []
     var classifiedFailures = failures.filter { $0.severity != .classifiable }
     for var failure in failures where failure.severity == .classifiable {
-      guard let rule = failure.predicateRule, rule.isExact,
-        observation.predicateRuleReferences?.contains(rule) == true
+      let matchingRules = registeredPredicateRules.filter {
+        $0.covers(failureClass: failure.failureClass, subjectIdentity: failure.subjectIdentity)
+      }
+      guard matchingRules.count == 1,
+        let registeredRule = matchingRules.first,
+        observation.predicateRuleReferences?.contains(registeredRule.predicateRule) == true
       else {
         return block(
           .predicateRuleBindingUnstableOrMissing,
@@ -495,31 +633,39 @@ public enum SRSVALDecisionCore {
           markerValid: false
         )
       }
-      let classification = observation.predicateClassifications?.first {
-        $0.predicateRule == rule && $0.failureClass == failure.failureClass
-      }?.classification
-      guard let classification else {
+
+      let classifications = observation.predicateClassifications?.filter {
+        $0.predicateRule == registeredRule.predicateRule
+          && $0.failureClass == failure.failureClass
+          && $0.subjectIdentity == failure.subjectIdentity
+      } ?? []
+      guard classifications.count == 1, let classification = classifications.first else {
         return block(
           .predicateRuleClassificationRequired,
           failures: failures,
           markerValid: false
         )
       }
+
       failure = SRSVALFailure(
         rule: failure.rule,
         reason: failure.reason,
         severity: failure.severity,
         failureClass: failure.failureClass,
-        predicateRule: rule,
-        classification: classification
+        predicateRule: registeredRule.predicateRule,
+        classification: classification.classification,
+        subjectIdentity: failure.subjectIdentity
       )
-      if classification == .recomputeEligible {
+      if classification.classification == .recomputeEligible {
         eligibleClasses.insert(failure.failureClass)
       }
       classifiedFailures.append(failure)
     }
 
     let resolvedFailures = classifiedFailures
+    let nonEligibleFailure = resolvedFailures.first {
+      $0.severity == .classifiable && $0.classification != .recomputeEligible
+    }
 
     guard resolvedFailures.isEmpty == false else {
       return SRSVALDecisionOutcome(
@@ -531,26 +677,27 @@ public enum SRSVALDecisionCore {
       )
     }
 
+    // DP-3 requires every surviving classifiable failure to be eligible. A
+    // single non-eligible failure blocks even when another failure is eligible.
+    guard nonEligibleFailure == nil else {
+      return block(
+        nonEligibleFailure?.reason ?? .predicateRuleClassificationRequired,
+        failures: resolvedFailures,
+        markerValid: notUsedMarkerValid
+      )
+    }
+
     let eligibleFailure = resolvedFailures.first { $0.classification == .recomputeEligible }
     let authorizationValid = authorization?.isValid(
       sourceRelationIdentity: settledRelationState.sourceRelationIdentity,
       resultIdentity: settledRelationState.resultIdentity,
       request: reuseRequest,
-      coveredClasses: eligibleClasses
+      observation: observation,
+      identityRule: sourceRelation.identityRule,
+      eligibleClasses: eligibleClasses
     ) == true
     guard let authorization, let eligibleFailure, authorizationValid else {
-      // Non-eligible completed classification is BLOCK, never RECOMPUTE. A
-      // completed eligible path with missing/invalid I-14 names the
-      // authorization defect instead of the underlying freshness defect.
-      if eligibleFailure?.classification == .recomputeEligible {
-        return block(.recomputeAuthorizationInvalid, failures: resolvedFailures, markerValid: false)
-      }
-      return block(
-        resolvedFailures.first { $0.classification != .recomputeEligible }?.reason
-          ?? .recomputeAuthorizationInvalid,
-        failures: resolvedFailures,
-        markerValid: notUsedMarkerValid
-      )
+      return block(.recomputeAuthorizationInvalid, failures: resolvedFailures, markerValid: false)
     }
 
     return SRSVALDecisionOutcome(
@@ -580,8 +727,7 @@ public enum SRSVALDecisionCore {
     request: SRSVALReuseRequest,
     settledRelationState: SRSVALSettledRelationState
   ) -> SRSVALRequestApplicability {
-    let exactlyScoped =
-      request.binding?.isExact == true
+    let exactlyScoped = request.binding?.isExact == true
       && request.relationIdentity == settledRelationState.sourceRelationIdentity
       && request.resultIdentity == settledRelationState.resultIdentity
     if request.declaredApplicability == .indeterminate || !exactlyScoped {
@@ -593,7 +739,7 @@ public enum SRSVALDecisionCore {
   private static func validationFailures(
     settledRelationState: SRSVALSettledRelationState,
     sourceRelation: SRSVALSourceRelation,
-    dependencies: [SRSVALDependency]?,
+    dependencies: SRSVALDependencySet?,
     result: SRSVALResult,
     provenance: SRSVALProvenanceLifecycle,
     lifecycle: SRSVALProvenanceLifecycle,
@@ -601,143 +747,160 @@ public enum SRSVALDecisionCore {
     policy: SRSVALResolutionPolicy
   ) -> [SRSVALFailure] {
     var failures: [SRSVALFailure] = []
+    let sourceIdentity = sourceRelation.binding?.identity
+    let resultIdentity = result.binding?.identity
 
-    // G-V1
+    // G-V1, including closure to the actual source/result objects.
     if settledRelationState.binding?.isExact != true
       || settledRelationState.settlementID.isEmpty
       || settledRelationState.status != SRSVALLifecycleState.declaredSettled.rawValue
       || settledRelationState.sourceRelationIdentity.isEmpty
       || settledRelationState.resultIdentity.isEmpty
       || settledRelationState.sourceRelationIdentity == settledRelationState.resultIdentity
+      || settledRelationState.sourceRelationIdentity != sourceIdentity
+      || settledRelationState.resultIdentity != resultIdentity
       || settledRelationState.provenanceBindings?.isEmpty != false
       || settledRelationState.provenanceBindings?.allSatisfy({ $0.isExact }) != true
+      || Set(settledRelationState.provenanceBindings ?? []) != Set(provenance.bindings ?? [])
       || (settledRelationState.requiresCanonicalIdentityRule
-        && settledRelationState.canonicalIdentityRule?.isExact != true)
+        && (settledRelationState.canonicalIdentityRule?.isExact != true
+          || settledRelationState.canonicalIdentityRule != sourceRelation.identityRule))
     {
-      failures.append(
-        SRSVALFailure(
-          rule: .srsDeclarationIntegrity,
-          reason: .srsDeclarationIntegrity,
-          severity: .hardBlock,
-          failureClass: "SRS_DECLARATION_INTEGRITY"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .srsDeclarationIntegrity,
+        reason: .srsDeclarationIntegrity,
+        severity: .hardBlock,
+        failureClass: "SRS_DECLARATION_INTEGRITY"
+      ))
     }
 
-    // G-V2
+    // G-V2: an unresolved blocking invalidation is not reusable.
     if sourceRelation.binding?.isExact != true
       || sourceRelation.semanticBinding?.isExact != true
       || sourceRelation.applicabilityCoverage?.isExact != true
+      || sourceRelation.invalidationRecord?.isExact != true
+      || sourceRelation.invalidationStatus != .none
+      || sourceRelation.identityRule?.isExact != true
       || sourceRelation.status != .current
     {
-      failures.append(
-        SRSVALFailure(
-          rule: .sourceRelation,
-          reason: .sourceRelation,
-          severity: .hardBlock,
-          failureClass: "SOURCE_RELATION"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .sourceRelation,
+        reason: .sourceRelation,
+        severity: .hardBlock,
+        failureClass: "SOURCE_RELATION"
+      ))
     }
 
-    // G-V3
-    if dependencies == nil
-      || dependencies?.allSatisfy({
+    // G-V3: exact binding, current status, required necessity, and resolved
+    // semantic resolution are all mandatory.
+    if dependencies?.boundary?.isExact != true
+      || dependencies?.dependencies == nil
+      || dependencies?.dependencies?.allSatisfy({
         $0.binding?.isExact == true
-          && !$0.role.isEmpty && !$0.necessity.isEmpty && !$0.resolution.isEmpty
+          && !$0.role.isEmpty
+          && $0.necessity == "REQUIRED"
+          && $0.resolution == .resolved
           && $0.status == .current
       }) != true
     {
-      failures.append(
-        SRSVALFailure(
-          rule: .dependencies,
-          reason: .dependencies,
-          severity: .hardBlock,
-          failureClass: "DEPENDENCY"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .dependencies,
+        reason: .dependencies,
+        severity: .hardBlock,
+        failureClass: "DEPENDENCY"
+      ))
     }
 
-    // G-V4
+    // G-V4: the result must be positively resolved without recomputation.
     if result.binding?.isExact != true
-      || result.resolution.isEmpty
+      || result.resolution != .resolvedWithoutRecompute
       || result.interpretabilityEvidence?.isExact != true
       || result.status != .current
     {
-      failures.append(
-        SRSVALFailure(
-          rule: .result,
-          reason: .result,
-          severity: .hardBlock,
-          failureClass: "RESULT"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .result,
+        reason: .result,
+        severity: .hardBlock,
+        failureClass: "RESULT"
+      ))
     }
 
     // G-V5
     if policy.resolutionRule?.isExact != true
       || policy.policies?.isEmpty != false
       || policy.policies?.allSatisfy({ $0.isExact }) != true
+      || policy.boundary?.isExact != true
     {
-      failures.append(
-        SRSVALFailure(
-          rule: .resolutionPolicy,
-          reason: .resolutionPolicy,
-          severity: .hardBlock,
-          failureClass: "RESOLUTION_OR_POLICY"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .resolutionPolicy,
+        reason: .resolutionPolicy,
+        severity: .hardBlock,
+        failureClass: "RESOLUTION_OR_POLICY"
+      ))
     }
 
-    // G-V6 provenance and lifecycle.
+    // G-V6
     if provenance.bindings?.isEmpty != false
       || provenance.bindings?.allSatisfy({ $0.isExact }) != true
+      || provenance.boundary?.isExact != true
       || lifecycle.bindings?.isEmpty != false
       || lifecycle.bindings?.allSatisfy({ $0.isExact }) != true
+      || lifecycle.boundary?.isExact != true
       || lifecycle.lifecycle != .declaredSettled
     {
-      let reason: SRSVALFailureReason =
-        lifecycle.lifecycle == .declaredSettled
-        ? .provenanceLifecycle
-        : .provenanceLifecycle
-      failures.append(
-        SRSVALFailure(
-          rule: .provenanceLifecycle,
-          reason: reason,
-          severity: .hardBlock,
-          failureClass: "PROVENANCE_OR_LIFECYCLE"
-        ))
+      failures.append(SRSVALFailure(
+        rule: .provenanceLifecycle,
+        reason: .provenanceLifecycle,
+        severity: .hardBlock,
+        failureClass: "PROVENANCE_OR_LIFECYCLE"
+      ))
     }
 
-    // G-V7: FRESHNESS_RECHECK_REQUIRED remains classifiable so that only an
-    // exact I-14 and predicate rule can turn it into RECOMPUTE.
-    if freshness.requirements == nil {
-      failures.append(
-        SRSVALFailure(
-          rule: .freshness,
-          reason: .freshnessRecheckRequired,
-          severity: .hardBlock,
-          failureClass: "FRESHNESS"
-        ))
+    // G-V7: current evidence must name the exact requirement and remain valid
+    // at the observation time. Missing, mismatched, or expired evidence is a
+    // classifiable freshness failure.
+    if freshness.boundary?.isExact != true || freshness.requirements == nil {
+      failures.append(SRSVALFailure(
+        rule: .freshness,
+        reason: .freshnessRecheckRequired,
+        severity: .hardBlock,
+        failureClass: "FRESHNESS"
+      ))
     } else {
-      for requirement in freshness.requirements ?? [] where requirement.evidence?.isExact != true {
-        failures.append(
-          SRSVALFailure(
+      for requirement in freshness.requirements ?? [] {
+        let evidenceMatches = requirement.evidence?.isExact == true
+          && requirement.evidence?.identity == "FRESHNESS_EVIDENCE:\(requirement.identity)"
+          && (
+            requirement.expectedEvidenceDigest == nil
+              || requirement.evidence?.contentDigest == requirement.expectedEvidenceDigest
+          )
+        let timeValid: Bool
+        if let validUntil = utcTime(requirement.validUntilUTC),
+          let observedAt = utcTime(requirement.observedAtUTC) {
+          timeValid = validUntil > observedAt
+        } else {
+          timeValid = false
+        }
+        if requirement.status != .current || !evidenceMatches || !timeValid {
+          failures.append(SRSVALFailure(
             rule: .freshness,
             reason: .freshnessRecheckRequired,
             severity: .classifiable,
             failureClass: "FRESHNESS_RECHECK_REQUIRED",
-            predicateRule: requirement.identity.isEmpty
-              ? nil : predicateRule(named: requirement.identity)
+            subjectIdentity: requirement.identity
           ))
+        }
       }
     }
 
     return failures
   }
 
-  private static func predicateRule(named identity: String) -> SRSVALBinding {
-    SRSVALBinding(
-      identity: identity,
-      version: "PREDICATE_V1",
-      contentDigest: SHA256.hash(data: Data("SRS-VAL-PREDICATE:\(identity)".utf8))
-        .map { String(format: "%02x", $0) }.joined()
-    )
+  private static func utcTime(_ value: String?) -> Date? {
+    guard let value, !value.isEmpty else { return nil }
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime]
+    return formatter.date(from: value)
   }
 }
 
@@ -746,20 +909,26 @@ extension SRSVALRecomputeAuthorization {
     sourceRelationIdentity: String,
     resultIdentity: String,
     request: SRSVALReuseRequest,
-    coveredClasses: Set<String>
+    observation: SRSVALObservation,
+    identityRule: SRSVALBinding?,
+    eligibleClasses: Set<String>
   ) -> Bool {
+    let contentDigest = SHA256.hash(data: Data(content.utf8))
+      .map { String(format: "%02x", $0) }.joined()
     guard binding?.isExact == true,
+      binding?.contentDigest == contentDigest,
       self.sourceRelationIdentity == sourceRelationIdentity,
-      !invalidationClass.isEmpty,
-      self.requestClass == request.requestClass,
+      invalidationClasses == eligibleClasses,
+      !invalidationClasses.isEmpty,
+      requestClass == request.requestClass,
       authorizedResultIdentity == resultIdentity,
       semanticClass == "EXACT_SEMANTIC_RECOMPUTE",
       let envelope,
       let covered = envelope.coveredFailureClasses,
       !covered.isEmpty,
-      coveredClasses.isSubset(of: Set(covered)),
-      envelope.targetBoundary?.isExact == true,
-      envelope.relationIdentityRule?.isExact == true
+      Set(covered) == eligibleClasses,
+      envelope.targetBoundary == observation.boundary,
+      envelope.relationIdentityRule == identityRule
     else { return false }
     return true
   }

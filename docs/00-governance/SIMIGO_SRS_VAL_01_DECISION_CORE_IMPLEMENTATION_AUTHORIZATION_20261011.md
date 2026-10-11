@@ -2,6 +2,9 @@
 
 > **Status:** AUTHORIZED / DECISION CORE IMPLEMENTATION AND PURE UNIT TESTS ONLY
 > **Date:** 2026-10-11
+> **Authorization commit correction:** the initial text cited the invalid 42-character
+> string `81e099ba5477772678468478366450571733944875`. The valid Git commit is
+> `81e099ba8dad4f337e5e86b4d5a02fd47bad33fc`.
 > **Baseline commit:** `6e8f4bf67580bc92afddb9f08ee94b3ad402f548`
 > **Normative design:** SRS-VAL-01 Design v0.8 (frozen), including inherited v0.7 predicates
 > **Execution authority:** Human direction in this session, 2026-10-11
