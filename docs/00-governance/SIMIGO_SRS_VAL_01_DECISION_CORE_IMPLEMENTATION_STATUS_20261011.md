@@ -1,7 +1,7 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 11 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
-> INDEPENDENT REVIEW REQUIRED
+> **Status:** REVISION 11 ACCEPTED / PURE UNIT TESTS PASS /
+> INDEPENDENT SOURCE REVIEW CLOSED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
 > **Implementation authorization:** `SIMIGO_SRS_VAL_01_DECISION_CORE_IMPLEMENTATION_AUTHORIZATION_20261011.md`
@@ -24,6 +24,9 @@ revision 8 independent review = REVISE / BLOCKING;
 revision 9 independent review = REVISE / BLOCKING;
 revision 10 independent review = REVISE / BLOCKING;
 revision 11 non-generative result = PASS / 24 tests / 0 failures;
+revision 11 independent source review = ACCEPT;
+revision 11 accepted source commit = 1d47f3be56dfa8c6bf7619f4566b271ed74aad27;
+acceptance scope = source and diff review; reviewer did not independently execute build or tests;
 production trust anchors = FIXED AT COMPILE TIME;
 leaked Revision 4 keys = REVOKED / PERMANENTLY UNTRUSTED;
 production signing private keys = ABSENT FROM REPOSITORY;
@@ -97,5 +100,5 @@ persistent SRS representation = NOT IMPLEMENTED;
 independent ES2 consumption = NOT IMPLEMENTED;
 non-recompute attribution = NOT IMPLEMENTED;
 production proof = NOT ESTABLISHED;
-this decision core = NOT YET INDEPENDENTLY REVIEWED.
+this decision core = ACCEPTED / NOT A PRODUCTION CORRECTNESS OR DEPLOYMENT PROOF.
 ```
