@@ -6,9 +6,10 @@
 
 ## Current continuity — 2026-10-11 (Actual MLX Smoke V6 candidate)
 
-> **Status:** V6 Revision 4 candidate package DELIVERED / CANDIDATE — HUMAN
-> AUTHORIZATION REQUIRED. Revisions 1-3 were Human NO-GO / SUPERSEDED and
-> none executed. No V6 marker, consumed marker, or evidence exists.
+> **Status:** V6 Revision 4 candidate package CODE REVIEW ACCEPT / CANDIDATE —
+> HUMAN EXECUTION AUTHORIZATION REQUIRED. Revisions 1-3 were Human NO-GO /
+> SUPERSEDED and none executed. No V6 marker, consumed marker, or evidence
+> exists.
 
 The authorized V5 run is closed as
 `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`. It proved that the W1
@@ -51,11 +52,12 @@ swift build --product ActualMLXSmokeChild = PASS;
 V6 Revision 1 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 2 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 3 = NO-GO / SUPERSEDED / NOT EXECUTED;
+V6 Revision 4 code review = ACCEPT / SOURCE-LEVEL / COMMIT c37478d4fd2e88aa664181d8733e28f2003ede0c;
 ActualMLXSmokeValidation = PASS / 12 tests / 1 skipped / 0 failures;
 ProductionRuntimeFailureBoundaryTests = PASS / 8 tests / 0 failures;
 V6 marker / consumed marker / evidence root = ABSENT;
 V6 actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
-next Human gate = review V6 candidate, then separately authorize zero or one run;
+next Human gate = separately authorize zero or one actual V6 run;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE mutation = FORBIDDEN;
 canonical Information Space mutation = FORBIDDEN;

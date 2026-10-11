@@ -1,7 +1,7 @@
 # Actual MLX smoke execution package V6
 
-> **Status:** EXECUTION PACKAGE REVISION 4 DELIVERED / CANDIDATE — HUMAN
-> AUTHORIZATION REQUIRED
+> **Status:** EXECUTION PACKAGE REVISION 4 CODE REVIEW ACCEPT / CANDIDATE —
+> HUMAN EXECUTION AUTHORIZATION REQUIRED
 > **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
 > **Date:** 2026-10-11
 
@@ -79,6 +79,29 @@ PASS + FAIL files or no terminal record = rejected as before.
 The production acceptance function and its non-generative regression cover
 these four source/content combinations without starting Child or loading MLX.
 
+## Independent code review
+
+Revision 4 received an independent source-level code review at commit
+`c37478d4fd2e88aa664181d8733e28f2003ede0c`:
+
+```text
+code review = ACCEPT;
+terminal source/content binding = PASS;
+production acceptance path = PASS;
+PASS/FAIL/conflict/missing handling = PASS;
+success_gate_checks exact consistency = PASS;
+carrier database file validation = PASS;
+one-run authorization boundary = PASS;
+Actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED.
+```
+
+The reviewer recorded a non-blocking test-quality improvement: regression could
+also write source variants to their respective filesystem names and exercise
+selector end-to-end. This does not invalidate the accepted fix. The reviewer did
+not rerun Swift tests or independently recompute every local artifact digest;
+the ACCEPT is limited to source review of the pushed commit and does not
+authorize execution.
+
 ## Candidate binding
 
 ```text
@@ -126,6 +149,8 @@ V6 consumed marker = ABSENT;
 V6 evidence root =
   integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v6 = ABSENT;
 V5 consumed marker and failure evidence = PRESERVED.
+Revision 4 code review = ACCEPT;
+next Human gate = separately authorize zero or one actual run.
 ```
 
 ## Prechecks
@@ -152,7 +177,7 @@ V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
 V6 Revision 1 = NO-GO / SUPERSEDED;
 V6 Revision 2 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 3 = NO-GO / SUPERSEDED / NOT EXECUTED;
-V6 Revision 4 = CANDIDATE — HUMAN AUTHORIZATION REQUIRED;
+V6 Revision 4 = CODE REVIEW ACCEPT / CANDIDATE — HUMAN EXECUTION AUTHORIZATION REQUIRED;
 V5 retry / gate adjustment by rerun = FORBIDDEN;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE / Information Space mutation = FORBIDDEN;
