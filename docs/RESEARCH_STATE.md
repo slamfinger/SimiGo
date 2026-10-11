@@ -98,9 +98,11 @@ accepted Authorization Request v0.1, then returned REVISE rulings for persistenc
 contracts v1.0 through v1.7, and finally accepted Persistence Manifest Contract
 v1.8 with unchanged I0 Schema v1.6 as the frozen design baseline. Manifest
 Instances v1.0 through v2.1 were returned as REVISE. Manifest Instance v2.2 is
-now the administrative provenance correction candidate, remains non-executable,
-and no stage is authorized. It synchronizes direct parent commit, directly
-superseded instance, and source document digest. The conditional Manifest Instance v0.1 remains non-executable until it is
+ACCEPT / DESIGN BOUND. The current lawful next object is Persistent SRS
+IMPLEMENTATION Authorization Package v1.0, delivered for Human review. It binds
+the exact package basis commit, two writable implementation paths, frozen I0
+Schema, dependency/effect boundaries, exact build/test commands, and separate
+validator completion gate. IMPLEMENTATION remains NOT AUTHORIZED. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
 T-IMPL-01 target is only the Decision Core.
