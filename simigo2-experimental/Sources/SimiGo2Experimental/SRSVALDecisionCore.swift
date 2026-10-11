@@ -279,18 +279,18 @@ public struct SRSVALDependencySet: Equatable, Sendable {
 public struct SRSVALFreshnessRequirement: Equatable, Sendable {
   public let identity: String
   public let evidence: SRSVALBinding?
-  public let expectedEvidenceDigest: String?
+  public let expectedEvidenceDigest: String
   public let status: SRSVALFreshnessStatus
   public let validUntilUTC: String?
-  public let observedAtUTC: String?
+  public let observedAtUTC: String
 
   public init(
     identity: String,
     evidence: SRSVALBinding?,
-    expectedEvidenceDigest: String? = nil,
+    expectedEvidenceDigest: String,
     status: SRSVALFreshnessStatus,
     validUntilUTC: String? = nil,
-    observedAtUTC: String? = nil
+    observedAtUTC: String
   ) {
     self.identity = identity
     self.evidence = evidence
@@ -350,10 +350,13 @@ public struct SRSVALRecomputeEnvelope: Equatable, Sendable {
 }
 
 /// Immutable governing I-14 authorization. Required only after mandatory
-/// classification produces a RECOMPUTE_ELIGIBLE surviving failure.
+/// classification produces a RECOMPUTE_ELIGIBLE surviving failure. Creation is
+/// sealed to a canonical content encoding so every authorization field is
+/// covered by the binding digest.
 public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
   public let binding: SRSVALBinding?
   public let content: String
+  public let canonicalContent: String
   public let sourceRelationIdentity: String
   public let invalidationClasses: Set<String>
   public let requestClass: String
@@ -361,9 +364,10 @@ public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
   public let semanticClass: String
   public let envelope: SRSVALRecomputeEnvelope?
 
-  public init(
+  private init(
     binding: SRSVALBinding?,
     content: String,
+    canonicalContent: String,
     sourceRelationIdentity: String,
     invalidationClasses: Set<String>,
     requestClass: String,
@@ -373,6 +377,7 @@ public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
   ) {
     self.binding = binding
     self.content = content
+    self.canonicalContent = canonicalContent
     self.sourceRelationIdentity = sourceRelationIdentity
     self.invalidationClasses = invalidationClasses
     self.requestClass = requestClass
@@ -380,41 +385,177 @@ public struct SRSVALRecomputeAuthorization: Equatable, Sendable {
     self.semanticClass = semanticClass
     self.envelope = envelope
   }
+
+  public static func authorize(
+    sourceRelationIdentity: String,
+    invalidationClasses: Set<String>,
+    requestClass: String,
+    authorizedResultIdentity: String,
+    semanticClass: String,
+    envelope: SRSVALRecomputeEnvelope
+  ) -> SRSVALRecomputeAuthorization {
+    let lines = [
+      "SRSVAL-AUTHORIZATION-V1",
+      srsvalField("source_relation", sourceRelationIdentity),
+      srsvalField("invalidation_classes", invalidationClasses.sorted().joined(separator: "\u{1F}")),
+      srsvalField("request_class", requestClass),
+      srsvalField("authorized_result", authorizedResultIdentity),
+      srsvalField("semantic_class", semanticClass),
+      srsvalField(
+        "covered_classes",
+        envelope.coveredFailureClasses?.sorted().joined(separator: "\u{1F}") ?? ""
+      ),
+      srsvalBindingField("target_boundary", envelope.targetBoundary),
+      srsvalBindingField("relation_identity_rule", envelope.relationIdentityRule),
+    ]
+    let canonical = lines.joined(separator: "\n")
+    let binding = SRSVALBinding(
+      identity: "I-14",
+      version: "EXACT_AUTHORIZATION_V1",
+      contentDigest: SHA256.hash(data: Data(canonical.utf8))
+        .map { String(format: "%02x", $0) }.joined()
+    )
+    return SRSVALRecomputeAuthorization(
+      binding: binding,
+      content: canonical,
+      canonicalContent: canonical,
+      sourceRelationIdentity: sourceRelationIdentity,
+      invalidationClasses: invalidationClasses,
+      requestClass: requestClass,
+      authorizedResultIdentity: authorizedResultIdentity,
+      semanticClass: semanticClass,
+      envelope: envelope
+    )
+  }
 }
 
-/// Exact I-16 observation boundary. Every decision-critical reference must be
-/// present and consistent with the separate semantic inputs.
+/// A pure decision core accepts predicate rules only from this immutable
+/// registry authority. The authority does not perform I/O; it fixes the trust
+/// boundary for the in-memory registered-rule input.
+public struct SRSVALPredicateRuleAuthority: Equatable, Hashable, Sendable {
+  public static let required = SRSVALBinding(
+    identity: "SRSVAL:PREDICATE_RULE_REGISTRY",
+    version: "AUTHORITY_V1",
+    contentDigest: SHA256.hash(data: Data("SRSVAL-PREDICATE-RULE-REGISTRY-AUTHORITY".utf8))
+      .map { String(format: "%02x", $0) }.joined()
+  )
+
+  public let binding: SRSVALBinding
+
+  public init(binding: SRSVALBinding) {
+    self.binding = binding
+  }
+}
+
+/// A registered rule is sealed to its authority, identity, version, failure
+/// class, and complete subject coverage through canonical content.
 public struct SRSVALRegisteredPredicateRule: Equatable, Hashable, Sendable {
+  public let registryAuthority: SRSVALBinding
   public let predicateRule: SRSVALBinding
+  public let identity: String
+  public let version: String
   public let content: String
+  public let canonicalContent: String
   public let failureClass: String
   public let subjectIdentities: Set<String>
 
-  public init(
+  private init(
+    registryAuthority: SRSVALBinding,
     predicateRule: SRSVALBinding,
+    identity: String,
+    version: String,
     content: String,
+    canonicalContent: String,
     failureClass: String,
     subjectIdentities: Set<String>
   ) {
+    self.registryAuthority = registryAuthority
     self.predicateRule = predicateRule
+    self.identity = identity
+    self.version = version
     self.content = content
+    self.canonicalContent = canonicalContent
     self.failureClass = failureClass
     self.subjectIdentities = subjectIdentities
   }
 
+  public static func register(
+    authority: SRSVALPredicateRuleAuthority,
+    identity: String,
+    version: String,
+    failureClass: String,
+    subjectIdentities: Set<String>
+  ) -> SRSVALRegisteredPredicateRule? {
+    guard authority.binding == SRSVALPredicateRuleAuthority.required,
+      !identity.isEmpty, !version.isEmpty, !failureClass.isEmpty,
+      !subjectIdentities.isEmpty,
+      subjectIdentities.allSatisfy({ !$0.isEmpty }),
+      !identity.contains("\n"), !version.contains("\n"),
+      !failureClass.contains("\n"),
+      !subjectIdentities.contains(where: { $0.contains("\n") })
+    else { return nil }
+
+    let subjectLines = subjectIdentities
+      .sorted()
+      .map { srsvalField("subject", $0) }
+      .joined(separator: "\n")
+    let canonical = [
+      "SRSVAL-PREDICATE-RULE-V1",
+      srsvalField("registry_authority", authority.binding.identity),
+      srsvalField("registry_version", authority.binding.version),
+      srsvalField("identity", identity),
+      srsvalField("version", version),
+      srsvalField("failure_class", failureClass),
+      subjectLines,
+    ].joined(separator: "\n")
+    let predicateRule = SRSVALBinding(
+      identity: "SRSVAL:PREDICATE_RULE:\(identity)",
+      version: version,
+      contentDigest: SHA256.hash(data: Data(canonical.utf8))
+        .map { String(format: "%02x", $0) }.joined()
+    )
+    return SRSVALRegisteredPredicateRule(
+      registryAuthority: authority.binding,
+      predicateRule: predicateRule,
+      identity: identity,
+      version: version,
+      content: canonical,
+      canonicalContent: canonical,
+      failureClass: failureClass,
+      subjectIdentities: subjectIdentities
+    )
+  }
+
   var isValid: Bool {
-    let digest = SHA256.hash(data: Data(content.utf8))
-      .map { String(format: "%02x", $0) }.joined()
-    return predicateRule.isExact
-      && predicateRule.contentDigest == digest
+    registryAuthority == SRSVALPredicateRuleAuthority.required
+      && predicateRule.isExact
+      && predicateRule.contentDigest == SHA256.hash(data: Data(canonicalContent.utf8))
+        .map { String(format: "%02x", $0) }.joined()
+      && content == canonicalContent
       && !failureClass.isEmpty
       && !subjectIdentities.isEmpty
-      && subjectIdentities.allSatisfy { !$0.isEmpty }
   }
 
   func covers(failureClass: String, subjectIdentity: String) -> Bool {
     self.failureClass == failureClass && subjectIdentities.contains(subjectIdentity)
   }
+}
+
+private func srsvalField(_ label: String, _ value: String) -> String {
+  let bytes = Array(value.utf8)
+  return "\(label):\(bytes.count):\(value)"
+}
+
+private func srsvalBindingField(_ label: String, _ binding: SRSVALBinding?) -> String {
+  let value = [
+    binding?.identity ?? "",
+    binding?.version ?? "",
+    binding?.contentDigest ?? "",
+  ].map { field in
+    let bytes = Array(field.utf8)
+    return "\(bytes.count):\(field)"
+  }.joined(separator: "\u{1F}")
+  return srsvalField(label, value)
 }
 
 public struct SRSVALPredicateClassification: Equatable, Hashable, Sendable {
@@ -439,6 +580,7 @@ public struct SRSVALPredicateClassification: Equatable, Hashable, Sendable {
 public struct SRSVALObservation: Equatable, Sendable {
   public let boundary: SRSVALBinding?
   public let orderingEvidence: SRSVALBinding?
+  public let observedAtUTC: String
   public let srsEvidence: SRSVALBinding?
   public let dependencyEvidence: SRSVALBinding?
   public let resultEvidence: SRSVALBinding?
@@ -456,6 +598,7 @@ public struct SRSVALObservation: Equatable, Sendable {
   public init(
     boundary: SRSVALBinding?,
     orderingEvidence: SRSVALBinding?,
+    observedAtUTC: String,
     srsEvidence: SRSVALBinding?,
     dependencyEvidence: SRSVALBinding?,
     resultEvidence: SRSVALBinding?,
@@ -472,6 +615,7 @@ public struct SRSVALObservation: Equatable, Sendable {
   ) {
     self.boundary = boundary
     self.orderingEvidence = orderingEvidence
+    self.observedAtUTC = observedAtUTC
     self.srsEvidence = srsEvidence
     self.dependencyEvidence = dependencyEvidence
     self.resultEvidence = resultEvidence
@@ -551,15 +695,27 @@ public enum SRSVALDecisionCore {
     guard observationFields.allSatisfy({ $0?.isExact == true }),
       observation.srsEvidence == settledRelationState.binding,
       observation.dependencyEvidence == dependencies?.boundary,
+      dependencies?.boundary == observation.boundary,
       observation.resultEvidence == result.binding,
       observation.provenanceEvidence == provenance.boundary,
+      provenance.boundary == observation.boundary,
       observation.lifecycleEvidence == lifecycle.boundary,
+      lifecycle.boundary == observation.boundary,
       observation.freshnessPolicyEvidence == freshness.boundary,
+      freshness.boundary == observation.boundary,
       observation.policyEvidence == policy.boundary,
+      policy.boundary == observation.boundary,
       observation.closeBoundary == observation.boundary,
       observation.requestReference?.isExact == true,
       observation.requestReference == reuseRequest.binding,
+      utcTime(observation.observedAtUTC) != nil,
+      observation.orderingEvidence?.isExact == true,
+      observation.orderingEvidence?.identity
+        == "ORDERING_EVIDENCE:\(observation.boundary?.identity ?? ""):\(observation.observedAtUTC)",
       providedPredicateRules.allSatisfy({ $0.isValid }),
+      providedPredicateRules.allSatisfy({
+        $0.registryAuthority == SRSVALPredicateRuleAuthority.required
+      }),
       Set(providedPredicateRules.map({ $0.predicateRule })).count == providedPredicateRules.count,
       observation.predicateRuleReferences?.allSatisfy({ $0.isExact }) == true,
       observation.predicateClassifications != nil,
@@ -594,7 +750,8 @@ public enum SRSVALDecisionCore {
       provenance: provenance,
       lifecycle: lifecycle,
       freshness: freshness,
-      policy: policy
+      policy: policy,
+      observedAtUTC: observation.observedAtUTC
     )
 
     // DP-1: any HARD_BLOCK outranks classifiable failures and DP-2.
@@ -744,7 +901,8 @@ public enum SRSVALDecisionCore {
     provenance: SRSVALProvenanceLifecycle,
     lifecycle: SRSVALProvenanceLifecycle,
     freshness: SRSVALFreshness,
-    policy: SRSVALResolutionPolicy
+    policy: SRSVALResolutionPolicy,
+    observedAtUTC: String
   ) -> [SRSVALFailure] {
     var failures: [SRSVALFailure] = []
     let sourceIdentity = sourceRelation.binding?.identity
@@ -870,13 +1028,11 @@ public enum SRSVALDecisionCore {
       for requirement in freshness.requirements ?? [] {
         let evidenceMatches = requirement.evidence?.isExact == true
           && requirement.evidence?.identity == "FRESHNESS_EVIDENCE:\(requirement.identity)"
-          && (
-            requirement.expectedEvidenceDigest == nil
-              || requirement.evidence?.contentDigest == requirement.expectedEvidenceDigest
-          )
+          && requirement.evidence?.contentDigest == requirement.expectedEvidenceDigest
         let timeValid: Bool
         if let validUntil = utcTime(requirement.validUntilUTC),
-          let observedAt = utcTime(requirement.observedAtUTC) {
+          let observedAt = utcTime(requirement.observedAtUTC),
+          requirement.observedAtUTC == observedAtUTC {
           timeValid = validUntil > observedAt
         } else {
           timeValid = false
@@ -913,10 +1069,11 @@ extension SRSVALRecomputeAuthorization {
     identityRule: SRSVALBinding?,
     eligibleClasses: Set<String>
   ) -> Bool {
-    let contentDigest = SHA256.hash(data: Data(content.utf8))
+    let contentDigest = SHA256.hash(data: Data(canonicalContent.utf8))
       .map { String(format: "%02x", $0) }.joined()
     guard binding?.isExact == true,
       binding?.contentDigest == contentDigest,
+      content == canonicalContent,
       self.sourceRelationIdentity == sourceRelationIdentity,
       invalidationClasses == eligibleClasses,
       !invalidationClasses.isEmpty,

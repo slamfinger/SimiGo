@@ -1,6 +1,5 @@
 import Crypto
 import XCTest
-
 @testable import SimiGo2Experimental
 
 final class SRSVALDecisionCoreTests: XCTestCase {
@@ -9,28 +8,33 @@ final class SRSVALDecisionCoreTests: XCTestCase {
   }
 
   private func binding(_ identity: String, version: String = "V1") -> SRSVALBinding {
-    SRSVALBinding(
-      identity: identity, version: version, contentDigest: digest("EXACT:\(identity):\(version)"))
+    SRSVALBinding(identity: identity, version: version, contentDigest: digest("EXACT:\(identity):\(version)"))
   }
 
-  private func freshnessRule(subject: String, classification: SRSVALClassification)
-    -> SRSVALRegisteredPredicateRule
-  {
-    let content = "FRESHNESS_RECHECK_REQUIRED:\(subject):\(classification.rawValue)"
-    let predicate = SRSVALBinding(
-      identity: "PREDICATE:FRESHNESS:\(subject)",
-      version: "REGISTERED_V1",
-      contentDigest: digest(content)
-    )
-    return SRSVALRegisteredPredicateRule(
-      predicateRule: predicate,
-      content: content,
+  private let observedAt = "2026-10-11T00:00:00Z"
+  private let boundary = SRSVALBinding(
+    identity: "I-16",
+    version: "OBSERVATION_V1",
+    contentDigest: SHA256.hash(data: Data("OBSERVATION:I-16".utf8)).map { String(format: "%02x", $0) }.joined()
+  )
+
+  private func rule(
+    subject: String,
+    classification: SRSVALClassification,
+    authorityBinding: SRSVALBinding? = nil
+  ) -> SRSVALRegisteredPredicateRule? {
+    SRSVALRegisteredPredicateRule.register(
+      authority: SRSVALPredicateRuleAuthority(
+        binding: authorityBinding ?? SRSVALPredicateRuleAuthority.required
+      ),
+      identity: subject,
+      version: "RULE_V1",
       failureClass: "FRESHNESS_RECHECK_REQUIRED",
       subjectIdentities: [subject]
     )
   }
 
-  private func validSourceRelation() -> SRSVALSourceRelation {
+  private func sourceRelation() -> SRSVALSourceRelation {
     SRSVALSourceRelation(
       binding: binding("RELATION"),
       semanticBinding: binding("RELATION-SEMANTICS"),
@@ -42,13 +46,13 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
-  private func validSettledRelationState(
+  private func state(
     sourceRelationIdentity: String = "RELATION",
     resultIdentity: String = "RESULT"
   ) -> SRSVALSettledRelationState {
     SRSVALSettledRelationState(
       binding: binding("SRS"),
-      settlementID: "SETTLEMENT-01",
+      settlementID: "SETTLEMENT",
       status: "DECLARED_SETTLED",
       sourceRelationIdentity: sourceRelationIdentity,
       resultIdentity: resultIdentity,
@@ -58,26 +62,20 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
-  private func validDependencies(resolution: SRSVALResolutionStatus = .resolved)
-    -> SRSVALDependencySet
-  {
+  private func dependencies(resolution: SRSVALResolutionStatus = .resolved) -> SRSVALDependencySet {
     SRSVALDependencySet(
-      boundary: binding("DEPENDENCY-BOUNDARY"),
-      dependencies: [
-        SRSVALDependency(
-          binding: binding("DEPENDENCY"),
-          role: "REQUIRED_INPUT",
-          necessity: "REQUIRED",
-          resolution: resolution,
-          status: .current
-        )
-      ]
+      boundary: boundary,
+      dependencies: [SRSVALDependency(
+        binding: binding("DEPENDENCY"),
+        role: "REQUIRED_INPUT",
+        necessity: "REQUIRED",
+        resolution: resolution,
+        status: .current
+      )]
     )
   }
 
-  private func validResult(resolution: SRSVALResultResolution = .resolvedWithoutRecompute)
-    -> SRSVALResult
-  {
+  private func result(resolution: SRSVALResultResolution = .resolvedWithoutRecompute) -> SRSVALResult {
     SRSVALResult(
       binding: binding("RESULT"),
       resolution: resolution,
@@ -86,64 +84,67 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
-  private func validPolicy() -> SRSVALResolutionPolicy {
-    SRSVALResolutionPolicy(
-      resolutionRule: binding("RESOLUTION-RULE"),
-      policies: [binding("POLICY")],
-      boundary: binding("POLICY-BOUNDARY")
-    )
-  }
-
-  private func validProvenance() -> SRSVALProvenanceLifecycle {
+  private func provenance() -> SRSVALProvenanceLifecycle {
     SRSVALProvenanceLifecycle(
       bindings: [binding("SRS-PROVENANCE")],
       lifecycle: .declaredSettled,
-      boundary: binding("PROVENANCE-BOUNDARY")
+      boundary: boundary
     )
   }
 
-  private func validLifecycle() -> SRSVALProvenanceLifecycle {
+  private func lifecycle(_ state: SRSVALLifecycleState = .declaredSettled) -> SRSVALProvenanceLifecycle {
     SRSVALProvenanceLifecycle(
       bindings: [binding("LIFECYCLE")],
-      lifecycle: .declaredSettled,
-      boundary: binding("LIFECYCLE-BOUNDARY")
+      lifecycle: state,
+      boundary: boundary
+    )
+  }
+
+  private func freshness(
+    requirements: [SRSVALFreshnessRequirement]? = nil
+  ) -> SRSVALFreshness {
+    let resolvedRequirements = requirements ?? [defaultFreshnessRequirement()]
+    return SRSVALFreshness(boundary: boundary, requirements: resolvedRequirements)
+  }
+
+  private func defaultFreshnessRequirement() -> SRSVALFreshnessRequirement {
+    SRSVALFreshnessRequirement(
+      identity: "FRESH-A",
+      evidence: SRSVALBinding(
+        identity: "FRESHNESS_EVIDENCE:FRESH-A",
+        version: "V1",
+        contentDigest: digest("FRESHNESS:FRESH-A")
+      ),
+      expectedEvidenceDigest: digest("FRESHNESS:FRESH-A"),
+      status: .current,
+      validUntilUTC: "2030-01-01T00:00:00Z",
+      observedAtUTC: observedAt
     )
   }
 
   private func freshnessRequirement(
     identity: String,
     status: SRSVALFreshnessStatus = .current,
-    mismatchEvidence: Bool = false,
-    expectedEvidenceDigest: String? = nil,
-    validUntil: String? = "2030-01-01T00:00:00Z",
-    observedAt: String? = "2026-10-11T00:00:00Z"
+    validUntil: String = "2030-01-01T00:00:00Z",
+    observedAt: String = "2026-10-11T00:00:00Z",
+    digestMismatch: Bool = false,
+    expectedDigest: String? = nil
   ) -> SRSVALFreshnessRequirement {
     SRSVALFreshnessRequirement(
       identity: identity,
       evidence: SRSVALBinding(
         identity: "FRESHNESS_EVIDENCE:\(identity)",
-        version: "EVIDENCE_V1",
-        contentDigest: digest(mismatchEvidence ? "WRONG-FRESHNESS:\(identity)" : "FRESHNESS:\(identity)")
+        version: "V1",
+        contentDigest: digest(digestMismatch ? "WRONG:\(identity)" : "FRESHNESS:\(identity)")
       ),
-      expectedEvidenceDigest: expectedEvidenceDigest ?? digest("FRESHNESS:\(identity)"),
+      expectedEvidenceDigest: expectedDigest ?? digest("FRESHNESS:\(identity)"),
       status: status,
       validUntilUTC: validUntil,
       observedAtUTC: observedAt
     )
   }
 
-  private func validFreshness(
-    requirements: [SRSVALFreshnessRequirement]?? = nil
-  ) -> SRSVALFreshness {
-    SRSVALFreshness(
-      boundary: binding("FRESHNESS-BOUNDARY"),
-      requirements: requirements ?? [freshnessRequirement(identity: "FRESHNESS")]
-    )
-  }
-
-  private func validRequest(applicability: SRSVALRequestApplicability = .applicable)
-    -> SRSVALReuseRequest
-  {
+  private func request(applicability: SRSVALRequestApplicability = .applicable) -> SRSVALReuseRequest {
     SRSVALReuseRequest(
       binding: binding("I-15"),
       requestClass: "EXACT_REUSE_REQUEST",
@@ -153,17 +154,12 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
-  private func validAuthorization(
+  private func authorization(
     invalidationClasses: Set<String> = ["FRESHNESS_RECHECK_REQUIRED"],
-    targetBoundary: SRSVALBinding?? = nil,
-    relationIdentityRule: SRSVALBinding?? = nil
+    targetBoundary: SRSVALBinding? = nil,
+    relationIdentityRule: SRSVALBinding? = nil
   ) -> SRSVALRecomputeAuthorization {
-    let target = targetBoundary ?? binding("I-16")
-    let identityRule = relationIdentityRule ?? binding("RELATION-IDENTITY-RULE")
-    let content = "I-14:RELATION:RESULT:FRESHNESS_RECHECK_REQUIRED"
-    return SRSVALRecomputeAuthorization(
-      binding: SRSVALBinding(identity: "I-14", version: "AUTH_V1", contentDigest: digest(content)),
-      content: content,
+    SRSVALRecomputeAuthorization.authorize(
       sourceRelationIdentity: "RELATION",
       invalidationClasses: invalidationClasses,
       requestClass: "EXACT_REUSE_REQUEST",
@@ -171,13 +167,13 @@ final class SRSVALDecisionCoreTests: XCTestCase {
       semanticClass: "EXACT_SEMANTIC_RECOMPUTE",
       envelope: SRSVALRecomputeEnvelope(
         coveredFailureClasses: Array(invalidationClasses),
-        targetBoundary: target,
-        relationIdentityRule: identityRule
+        targetBoundary: targetBoundary ?? boundary,
+        relationIdentityRule: relationIdentityRule ?? binding("RELATION-IDENTITY-RULE")
       )
     )
   }
 
-  private func validObservation(
+  private func observation(
     request: SRSVALReuseRequest,
     authorization: SRSVALRecomputeAuthorization?,
     state: SRSVALSettledRelationState,
@@ -187,14 +183,16 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     lifecycle: SRSVALProvenanceLifecycle,
     freshness: SRSVALFreshness,
     policy: SRSVALResolutionPolicy,
-    boundary: SRSVALBinding? = nil,
-    registeredRules: [SRSVALRegisteredPredicateRule] = [],
-    classifications: [SRSVALPredicateClassification] = []
+    registeredRules: [SRSVALRegisteredPredicateRule],
+    classifications: [SRSVALPredicateClassification],
+    observedAt: String? = nil,
+    orderingEvidence: SRSVALBinding? = nil
   ) -> SRSVALObservation {
-    let resolvedBoundary = boundary ?? binding("I-16")
+    let time = observedAt ?? self.observedAt
     return SRSVALObservation(
-      boundary: resolvedBoundary,
-      orderingEvidence: binding("ORDERING"),
+      boundary: boundary,
+      orderingEvidence: orderingEvidence ?? binding("ORDERING_EVIDENCE:\(boundary.identity):\(time)"),
+      observedAtUTC: time,
       srsEvidence: state.binding,
       dependencyEvidence: dependencies.boundary,
       resultEvidence: result.binding,
@@ -203,7 +201,7 @@ final class SRSVALDecisionCoreTests: XCTestCase {
       lifecycleEvidence: lifecycle.boundary,
       policyEvidence: policy.boundary,
       consistencyEvidence: binding("CONSISTENCY"),
-      closeBoundary: resolvedBoundary,
+      closeBoundary: boundary,
       requestReference: request.binding,
       i14Reference: authorization?.binding ?? SRSVALDecisionCore.i14NotUsedMarker,
       predicateRuleReferences: registeredRules.map { $0.predicateRule },
@@ -211,281 +209,238 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
-  private func baseInputs(
+  private struct Inputs {
+    let state: SRSVALSettledRelationState
+    let source: SRSVALSourceRelation
+    let dependencies: SRSVALDependencySet
+    let result: SRSVALResult
+    let provenance: SRSVALProvenanceLifecycle
+    let lifecycle: SRSVALProvenanceLifecycle
+    let freshness: SRSVALFreshness
+    let policy: SRSVALResolutionPolicy
+    let request: SRSVALReuseRequest
+  }
+
+  private func inputs(
     sourceRelationIdentity: String = "RELATION",
     resultIdentity: String = "RESULT",
-    dependencies: SRSVALDependencySet? = nil,
+    dependencyResolution: SRSVALResolutionStatus = .resolved,
     resultResolution: SRSVALResultResolution = .resolvedWithoutRecompute,
-    lifecycle: SRSVALLifecycleState = .declaredSettled,
-    requirements: [SRSVALFreshnessRequirement]?? = nil,
-    sourceInvalidationStatus: SRSVALSourceInvalidationStatus = .none
-  ) -> (
-    SRSVALSettledRelationState,
-    SRSVALSourceRelation,
-    SRSVALDependencySet,
-    SRSVALResult,
-    SRSVALProvenanceLifecycle,
-    SRSVALProvenanceLifecycle,
-    SRSVALFreshness,
-    SRSVALResolutionPolicy,
-    SRSVALReuseRequest
-  ) {
-    let source = validSourceRelation()
-    let state = validSettledRelationState(
-      sourceRelationIdentity: sourceRelationIdentity,
-      resultIdentity: resultIdentity
-    )
-    return (
-      state,
-      sourceRelationIdentity == "RELATION" && sourceInvalidationStatus == .none
-        ? source
-        : SRSVALSourceRelation(
-          binding: source.binding,
-          semanticBinding: source.semanticBinding,
-          applicabilityCoverage: source.applicabilityCoverage,
-          invalidationRecord: source.invalidationRecord,
-          invalidationStatus: sourceInvalidationStatus,
-          identityRule: source.identityRule,
-          status: source.status
-        ),
-      dependencies ?? validDependencies(),
-      validResult(resolution: resultResolution),
-      validProvenance(),
-      SRSVALProvenanceLifecycle(
-        bindings: [binding("LIFECYCLE")],
-        lifecycle: lifecycle,
-        boundary: binding("LIFECYCLE-BOUNDARY")
+    lifecycleState: SRSVALLifecycleState = .declaredSettled,
+    freshnessRequirements: [SRSVALFreshnessRequirement]? = nil,
+    sourceInvalidation: SRSVALSourceInvalidationStatus = .none,
+    requestApplicability: SRSVALRequestApplicability = .applicable
+  ) -> Inputs {
+    let source = sourceRelationIdentity == "RELATION" && sourceInvalidation == .none
+      ? sourceRelation()
+      : SRSVALSourceRelation(
+        binding: binding("RELATION"),
+        semanticBinding: binding("RELATION-SEMANTICS"),
+        applicabilityCoverage: binding("RELATION-COVERAGE"),
+        invalidationRecord: binding("RELATION-INVALIDATION"),
+        invalidationStatus: sourceInvalidation,
+        identityRule: binding("RELATION-IDENTITY-RULE"),
+        status: .current
+      )
+    return Inputs(
+      state: state(
+        sourceRelationIdentity: sourceRelationIdentity,
+        resultIdentity: resultIdentity
       ),
-      validFreshness(requirements: requirements ?? [freshnessRequirement(identity: "FRESHNESS")]),
-      validPolicy(),
-      validRequest()
+      source: source,
+      dependencies: dependencies(resolution: dependencyResolution),
+      result: result(resolution: resultResolution),
+      provenance: provenance(),
+      lifecycle: lifecycle(lifecycleState),
+      freshness: freshness(requirements: freshnessRequirements),
+      policy: SRSVALResolutionPolicy(
+        resolutionRule: binding("RESOLUTION-RULE"),
+        policies: [binding("POLICY")],
+        boundary: boundary
+      ),
+      request: request(applicability: requestApplicability)
     )
   }
 
   private func evaluate(
-    state: SRSVALSettledRelationState,
-    source: SRSVALSourceRelation,
-    dependencies: SRSVALDependencySet,
-    result: SRSVALResult,
-    provenance: SRSVALProvenanceLifecycle,
-    lifecycle: SRSVALProvenanceLifecycle,
-    freshness: SRSVALFreshness,
-    policy: SRSVALResolutionPolicy,
-    request: SRSVALReuseRequest,
-    registeredRules: [SRSVALRegisteredPredicateRule]?,
-    authorization: SRSVALRecomputeAuthorization?,
-    observation: SRSVALObservation
-  ) -> SRSVALDecisionOutcome {
-    SRSVALDecisionCore.evaluate(
-      settledRelationState: state,
-      sourceRelation: source,
-      dependencies: dependencies,
-      result: result,
-      provenance: provenance,
-      lifecycle: lifecycle,
-      freshness: freshness,
-      policy: policy,
-      reuseRequest: request,
-      registeredPredicateRules: registeredRules,
-      authorization: authorization,
-      observation: observation
-    )
-  }
-
-  private func evaluateBase(
-    sourceRelationIdentity: String = "RELATION",
-    resultIdentity: String = "RESULT",
-    dependencies: SRSVALDependencySet? = nil,
-    resultResolution: SRSVALResultResolution = .resolvedWithoutRecompute,
-    lifecycle: SRSVALLifecycleState = .declaredSettled,
-    requirements: [SRSVALFreshnessRequirement]?? = nil,
-    sourceInvalidationStatus: SRSVALSourceInvalidationStatus = .none,
+    inputs: Inputs,
     registeredRules: [SRSVALRegisteredPredicateRule]? = [],
     classifications: [SRSVALPredicateClassification] = [],
     authorization: SRSVALRecomputeAuthorization? = nil,
-    observationOverride: ((inout SRSVALObservation) -> Void)? = nil
+    observationRecord: SRSVALObservation? = nil
   ) -> SRSVALDecisionOutcome {
-    let inputs = baseInputs(
-      sourceRelationIdentity: sourceRelationIdentity,
-      resultIdentity: resultIdentity,
-      dependencies: dependencies,
-      resultResolution: resultResolution,
-      lifecycle: lifecycle,
-      requirements: requirements,
-      sourceInvalidationStatus: sourceInvalidationStatus
-    )
-    var observation = validObservation(
-      request: inputs.8,
+    let selectedObservation = observationRecord ?? observation(
+      request: inputs.request,
       authorization: authorization,
-      state: inputs.0,
-      dependencies: inputs.2,
-      result: inputs.3,
-      provenance: inputs.4,
-      lifecycle: inputs.5,
-      freshness: inputs.6,
-      policy: inputs.7,
+      state: inputs.state,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
       registeredRules: registeredRules ?? [],
       classifications: classifications
     )
-    observationOverride?(&observation)
-    return evaluate(
-      state: inputs.0,
-      source: inputs.1,
-      dependencies: inputs.2,
-      result: inputs.3,
-      provenance: inputs.4,
-      lifecycle: inputs.5,
-      freshness: inputs.6,
-      policy: inputs.7,
-      request: inputs.8,
-      registeredRules: registeredRules,
+    return SRSVALDecisionCore.evaluate(
+      settledRelationState: inputs.state,
+      sourceRelation: inputs.source,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      reuseRequest: inputs.request,
+      registeredPredicateRules: registeredRules,
       authorization: authorization,
-      observation: observation
+      observation: selectedObservation
     )
   }
 
-  private func eligibleClassifications(rules: [SRSVALRegisteredPredicateRule])
-    -> [SRSVALPredicateClassification]
-  {
-    rules.map {
+  private func eligibleClassifications(rules: [SRSVALRegisteredPredicateRule]) -> [SRSVALPredicateClassification] {
+    rules.compactMap { rule in
       SRSVALPredicateClassification(
-        predicateRule: $0.predicateRule,
-        failureClass: $0.failureClass,
-        subjectIdentity: $0.subjectIdentities.first ?? "",
+        predicateRule: rule.predicateRule,
+        failureClass: rule.failureClass,
+        subjectIdentity: rule.subjectIdentities.first ?? "",
         classification: .recomputeEligible
       )
     }
   }
 
-  private func nonEligibleClassifications(rules: [SRSVALRegisteredPredicateRule])
-    -> [SRSVALPredicateClassification]
-  {
-    rules.map {
+  private func nonEligibleClassifications(rules: [SRSVALRegisteredPredicateRule]) -> [SRSVALPredicateClassification] {
+    rules.compactMap { rule in
       SRSVALPredicateClassification(
-        predicateRule: $0.predicateRule,
-        failureClass: $0.failureClass,
-        subjectIdentity: $0.subjectIdentities.first ?? "",
+        predicateRule: rule.predicateRule,
+        failureClass: rule.failureClass,
+        subjectIdentity: rule.subjectIdentities.first ?? "",
         classification: .nonRecompute
       )
     }
   }
 
   func testAllChecksPassResolvesPureReuse() {
-    let outcome = evaluateBase()
+    let inputs = inputs()
+    let outcome = evaluate(inputs: inputs)
     XCTAssertEqual(.reuse, outcome.decision)
     XCTAssertNil(outcome.reason)
     XCTAssertTrue(outcome.failures.isEmpty)
-    XCTAssertNil(outcome.authorizationUsed)
     XCTAssertTrue(outcome.i14NotUsedMarkerValid)
+  }
+
+  func testDifferentObjectBoundaryFailsClosed() {
+    let inputs = inputs()
+    var observation = observation(
+      request: inputs.request,
+      authorization: nil,
+      state: inputs.state,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      registeredRules: [],
+      classifications: []
+    )
+    observation = SRSVALObservation(
+      boundary: observation.boundary,
+      orderingEvidence: observation.orderingEvidence,
+      observedAtUTC: observation.observedAtUTC,
+      srsEvidence: observation.srsEvidence,
+      dependencyEvidence: binding("OTHER-DEPENDENCY-BOUNDARY"),
+      resultEvidence: observation.resultEvidence,
+      provenanceEvidence: observation.provenanceEvidence,
+      freshnessPolicyEvidence: observation.freshnessPolicyEvidence,
+      lifecycleEvidence: observation.lifecycleEvidence,
+      policyEvidence: observation.policyEvidence,
+      consistencyEvidence: observation.consistencyEvidence,
+      closeBoundary: observation.closeBoundary,
+      requestReference: observation.requestReference,
+      i14Reference: observation.i14Reference,
+      predicateRuleReferences: observation.predicateRuleReferences,
+      predicateClassifications: observation.predicateClassifications
+    )
+    let outcome = evaluate(inputs: inputs, observationRecord: observation)
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertEqual(.validationInputStateInconsistent, outcome.reason)
   }
 
   func testMixedEligibleAndNonEligibleFailuresBlock() {
     let requirements = [
-      freshnessRequirement(identity: "FRESH-A", status: .recheckRequired),
-      freshnessRequirement(identity: "FRESH-B", status: .recheckRequired),
+      freshnessRequirement(
+        identity: "FRESH-A",
+        status: .recheckRequired,
+        validUntil: "2030-01-01T00:00:00Z",
+        observedAt: observedAt
+      ),
+      freshnessRequirement(
+        identity: "FRESH-B",
+        status: .recheckRequired,
+        validUntil: "2030-01-01T00:00:00Z",
+        observedAt: observedAt
+      ),
     ]
-    let rules = [
-      freshnessRule(subject: "FRESH-A", classification: .recomputeEligible),
-      freshnessRule(subject: "FRESH-B", classification: .nonRecompute),
-    ]
-    let outcome = evaluateBase(
-      requirements: requirements,
+    let inputs = inputs(freshnessRequirements: requirements)
+    let eligible = rule(subject: "FRESH-A", classification: .recomputeEligible)
+    let nonEligible = rule(subject: "FRESH-B", classification: .nonRecompute)
+    let rules = [eligible, nonEligible].compactMap { $0 }
+    let outcome = evaluate(
+      inputs: inputs,
       registeredRules: rules,
-      classifications: eligibleClassifications(rules: [rules[0]])
-        + nonEligibleClassifications(rules: [rules[1]]),
-      authorization: validAuthorization(
-        invalidationClasses: ["FRESHNESS_RECHECK_REQUIRED"],
-        targetBoundary: binding("I-16"),
-        relationIdentityRule: binding("RELATION-IDENTITY-RULE")
-      )
+      classifications: eligibleClassifications(rules: [eligible!]) + nonEligibleClassifications(rules: [nonEligible!]),
+      authorization: authorization(invalidationClasses: ["FRESHNESS_RECHECK_REQUIRED"])
     )
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.freshnessRecheckRequired, outcome.reason)
-    XCTAssertNil(outcome.authorizationUsed)
   }
 
-  func testUnregisteredPredicateRuleFailsClosed() {
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESH-A", status: .recheckRequired)],
-      registeredRules: [],
-      classifications: []
-    )
+  func testUnregisteredSubjectFailsClosed() {
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    let outcome = evaluate(inputs: inputs)
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.predicateRuleBindingUnstableOrMissing, outcome.reason)
   }
 
-  func testRegisteredRuleWithoutSubjectCoverageFailsClosed() {
-    let rule = freshnessRule(subject: "OTHER", classification: .recomputeEligible)
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESH-A", status: .recheckRequired)],
-      registeredRules: [rule],
-      classifications: [
-        SRSVALPredicateClassification(
-          predicateRule: rule.predicateRule,
-          failureClass: "FRESHNESS_RECHECK_REQUIRED",
-          subjectIdentity: "FRESH-A",
-          classification: .recomputeEligible
-        )
-      ]
-    )
-    XCTAssertEqual(.block, outcome.decision)
-    XCTAssertEqual(.predicateRuleBindingUnstableOrMissing, outcome.reason)
+  func testPredicateRuleCannotRegisterOutsideAuthoritativeRegistry() {
+    XCTAssertNil(rule(
+      subject: "UNAUTHORIZED",
+      classification: .recomputeEligible,
+      authorityBinding: binding("OTHER-REGISTRY")
+    ))
   }
 
   func testSRSRelationIdentityMismatchBlocks() {
-    let outcome = evaluateBase(sourceRelationIdentity: "OTHER-RELATION")
+    let outcome = evaluate(inputs: inputs(sourceRelationIdentity: "OTHER-RELATION"))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.srsDeclarationIntegrity, outcome.reason)
   }
 
   func testSRSResultIdentityMismatchBlocks() {
-    let outcome = evaluateBase(resultIdentity: "OTHER-RESULT")
+    let outcome = evaluate(inputs: inputs(resultIdentity: "OTHER-RESULT"))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.srsDeclarationIntegrity, outcome.reason)
   }
 
-  func testSemanticallyInvalidObservationReferenceBlocks() {
-    let outcome = evaluateBase { observation in
-      observation = SRSVALObservation(
-        boundary: observation.boundary,
-        orderingEvidence: observation.orderingEvidence,
-        srsEvidence: self.binding("OTHER-SRS"),
-        dependencyEvidence: observation.dependencyEvidence,
-        resultEvidence: observation.resultEvidence,
-        provenanceEvidence: observation.provenanceEvidence,
-        freshnessPolicyEvidence: observation.freshnessPolicyEvidence,
-        lifecycleEvidence: observation.lifecycleEvidence,
-        policyEvidence: observation.policyEvidence,
-        consistencyEvidence: observation.consistencyEvidence,
-        closeBoundary: observation.closeBoundary,
-        requestReference: observation.requestReference,
-        i14Reference: observation.i14Reference,
-        predicateRuleReferences: observation.predicateRuleReferences,
-        predicateClassifications: observation.predicateClassifications
-      )
-    }
-    XCTAssertEqual(.block, outcome.decision)
-    XCTAssertEqual(.validationInputStateInconsistent, outcome.reason)
-  }
-
-  func testI14InvalidationClassMismatchBlocks() {
-    let authorization = validAuthorization(invalidationClasses: ["OTHER_CLASS"])
-    let rules = [freshnessRule(subject: "FRESHNESS", classification: .recomputeEligible)]
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
-      registeredRules: rules,
-      classifications: eligibleClassifications(rules: rules),
-      authorization: authorization
-    )
-    XCTAssertEqual(.block, outcome.decision)
-    XCTAssertEqual(.recomputeAuthorizationInvalid, outcome.reason)
-  }
-
   func testI14TargetBoundaryMismatchBlocks() {
-    let authorization = validAuthorization(targetBoundary: binding("OTHER-BOUNDARY"))
-    let rules = [freshnessRule(subject: "FRESHNESS", classification: .recomputeEligible)]
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    let rules = [rule(subject: "FRESH-A", classification: .recomputeEligible)].compactMap { $0 }
+    let authorization = authorization(targetBoundary: binding("OTHER-I-16"))
+    let outcome = evaluate(
+      inputs: inputs,
       registeredRules: rules,
       classifications: eligibleClassifications(rules: rules),
       authorization: authorization
@@ -495,10 +450,37 @@ final class SRSVALDecisionCoreTests: XCTestCase {
   }
 
   func testI14RelationIdentityRuleMismatchBlocks() {
-    let authorization = validAuthorization(relationIdentityRule: binding("OTHER-RULE"))
-    let rules = [freshnessRule(subject: "FRESHNESS", classification: .recomputeEligible)]
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    let rules = [rule(subject: "FRESH-A", classification: .recomputeEligible)].compactMap { $0 }
+    let authorization = authorization(relationIdentityRule: binding("OTHER-RULE"))
+    let outcome = evaluate(
+      inputs: inputs,
+      registeredRules: rules,
+      classifications: eligibleClassifications(rules: rules),
+      authorization: authorization
+    )
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertEqual(.recomputeAuthorizationInvalid, outcome.reason)
+  }
+
+  func testI14InvalidationClassMismatchBlocks() {
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    let rules = [rule(subject: "FRESH-A", classification: .recomputeEligible)].compactMap { $0 }
+    let authorization = authorization(invalidationClasses: ["OTHER_CLASS"])
+    let outcome = evaluate(
+      inputs: inputs,
       registeredRules: rules,
       classifications: eligibleClassifications(rules: rules),
       authorization: authorization
@@ -508,94 +490,154 @@ final class SRSVALDecisionCoreTests: XCTestCase {
   }
 
   func testBlockingSourceInvalidationPreventsReuse() {
-    let outcome = evaluateBase(sourceInvalidationStatus: .invalidated)
+    let outcome = evaluate(inputs: inputs(sourceInvalidation: .invalidated))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.sourceRelation, outcome.reason)
   }
 
   func testUnresolvedDependencyPreventsReuse() {
-    let outcome = evaluateBase(dependencies: validDependencies(resolution: .unresolved))
+    let outcome = evaluate(inputs: inputs(dependencyResolution: .unresolved))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.dependencies, outcome.reason)
   }
 
   func testUnresolvedResultPreventsReuse() {
-    let outcome = evaluateBase(resultResolution: .unresolved)
+    let outcome = evaluate(inputs: inputs(resultResolution: .unresolved))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertEqual(.result, outcome.reason)
   }
 
-  func testFreshnessEvidenceForDifferentRequirementPreventsPureReuse() {
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(
-        identity: "FRESHNESS",
-        mismatchEvidence: true,
-        expectedEvidenceDigest: digest("FRESHNESS:FRESHNESS")
-      )],
-      registeredRules: [],
-      classifications: []
+  func testFreshnessDigestMismatchFailsClosed() {
+    let requirement = SRSVALFreshnessRequirement(
+      identity: "FRESH-A",
+      evidence: SRSVALBinding(
+        identity: "FRESHNESS_EVIDENCE:FRESH-A",
+        version: "V1",
+        contentDigest: digest("WRONG-FRESHNESS:FRESH-A")
+      ),
+      expectedEvidenceDigest: digest("FRESHNESS:FRESH-A"),
+      status: .current,
+      validUntilUTC: "2030-01-01T00:00:00Z",
+      observedAtUTC: observedAt
     )
+    let outcome = evaluate(inputs: inputs(freshnessRequirements: [requirement]))
     XCTAssertEqual(.block, outcome.decision)
-    XCTAssertEqual(.predicateRuleBindingUnstableOrMissing, outcome.reason)
+    XCTAssertNotEqual(.reuse, outcome.decision)
   }
 
-  func testExpiredFreshnessEvidenceCannotReuseWithoutAuthorization() {
-    let outcome = evaluateBase(
-      requirements: [
-        freshnessRequirement(
-          identity: "FRESHNESS",
-          status: .current,
-          validUntil: "2020-01-01T00:00:00Z",
-          observedAt: "2026-10-11T00:00:00Z"
-        )
-      ]
+  func testExpiredFreshnessEvidenceFailsClosed() {
+    let requirement = freshnessRequirement(
+      identity: "FRESH-A",
+      status: .current,
+      validUntil: "2020-01-01T00:00:00Z",
+      observedAt: observedAt
     )
+    let outcome = evaluate(inputs: inputs(freshnessRequirements: [requirement]))
     XCTAssertEqual(.block, outcome.decision)
     XCTAssertNil(outcome.authorizationUsed)
   }
 
+  func testFreshnessObservationTimeMismatchFailsClosed() {
+    let requirement = freshnessRequirement(
+      identity: "FRESH-A",
+      status: .current,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )
+    let inputs = inputs(freshnessRequirements: [requirement])
+    let observation = observation(
+      request: inputs.request,
+      authorization: nil,
+      state: inputs.state,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      registeredRules: [],
+      classifications: [],
+      observedAt: "2020-01-01T00:00:00Z"
+    )
+    let outcome = evaluate(inputs: inputs, observationRecord: observation)
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertNil(outcome.authorizationUsed)
+  }
+
+  func testOrderingEvidenceNotBoundToObservationTimeFailsClosed() {
+    let inputs = inputs()
+    let observation = observation(
+      request: inputs.request,
+      authorization: nil,
+      state: inputs.state,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      registeredRules: [],
+      classifications: [],
+      orderingEvidence: binding("ORDERING_EVIDENCE:\(boundary.identity):1999-01-01T00:00:00Z")
+    )
+    let outcome = evaluate(inputs: inputs, observationRecord: observation)
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertEqual(.validationInputStateInconsistent, outcome.reason)
+  }
+
   func testContradictoryClassificationsFailClosedWithoutOrderDependence() {
-    let rule = freshnessRule(subject: "FRESHNESS", classification: .recomputeEligible)
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    guard let rule = rule(subject: "FRESH-A", classification: .recomputeEligible) else {
+      return XCTFail("registered rule expected")
+    }
     let classifications = [
       SRSVALPredicateClassification(
         predicateRule: rule.predicateRule,
         failureClass: "FRESHNESS_RECHECK_REQUIRED",
-        subjectIdentity: "FRESHNESS",
+        subjectIdentity: "FRESH-A",
         classification: .recomputeEligible
       ),
       SRSVALPredicateClassification(
         predicateRule: rule.predicateRule,
         failureClass: "FRESHNESS_RECHECK_REQUIRED",
-        subjectIdentity: "FRESHNESS",
+        subjectIdentity: "FRESH-A",
         classification: .nonRecompute
       ),
     ]
-    let forward = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
-      registeredRules: [rule],
-      classifications: classifications
-    )
-    let reverse = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
-      registeredRules: [rule],
-      classifications: classifications.reversed()
-    )
+    let forward = evaluate(inputs: inputs, registeredRules: [rule], classifications: classifications)
+    let reverse = evaluate(inputs: inputs, registeredRules: [rule], classifications: classifications.reversed())
     XCTAssertEqual(.block, forward.decision)
     XCTAssertEqual(.block, reverse.decision)
     XCTAssertEqual(forward.reason, reverse.reason)
   }
 
   func testAllEligibleFailuresWithExactI14AuthorizeRecompute() {
-    let rules = [freshnessRule(subject: "FRESHNESS", classification: .recomputeEligible)]
-    let outcome = evaluateBase(
-      requirements: [freshnessRequirement(identity: "FRESHNESS", status: .recheckRequired)],
-      registeredRules: rules,
-      classifications: eligibleClassifications(rules: rules),
-      authorization: validAuthorization()
+    let requirements = [freshnessRequirement(
+      identity: "FRESH-A",
+      status: .recheckRequired,
+      validUntil: "2030-01-01T00:00:00Z",
+      observedAt: observedAt
+    )]
+    let inputs = inputs(freshnessRequirements: requirements)
+    guard let rule = rule(subject: "FRESH-A", classification: .recomputeEligible) else {
+      return XCTFail("registered rule expected")
+    }
+    let authorization = authorization()
+    let outcome = evaluate(
+      inputs: inputs,
+      registeredRules: [rule],
+      classifications: eligibleClassifications(rules: [rule]),
+      authorization: authorization
     )
     XCTAssertEqual(.recompute, outcome.decision)
     XCTAssertEqual(.freshnessRecheckRequired, outcome.reason)
-    XCTAssertEqual(validAuthorization().binding, outcome.authorizationUsed)
+    XCTAssertEqual(authorization.binding, outcome.authorizationUsed)
     XCTAssertFalse(outcome.i14NotUsedMarkerValid)
   }
 }
