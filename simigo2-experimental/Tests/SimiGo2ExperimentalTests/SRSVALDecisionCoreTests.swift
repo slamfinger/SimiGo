@@ -583,6 +583,149 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     XCTAssertNotEqual(separateSubjects.canonicalData, joinedSubjects.canonicalData)
   }
 
+  func testOrderedRecordsPreserveFieldRolesInSignatures() throws {
+    let originalBinding = SRSVALBinding(
+      identity: "RULE-X",
+      version: "V1",
+      contentDigest: digest("BINDING:RULE-X:V1")
+    )
+    let swappedBinding = SRSVALBinding(
+      identity: originalBinding.version,
+      version: originalBinding.identity,
+      contentDigest: originalBinding.contentDigest
+    )
+    XCTAssertNotEqual(originalBinding.canonicalData, swappedBinding.canonicalData)
+    let bindingSignature = try testIssuer(.predicateRegistry, privateKeys: testIssuerPrivateKeys)
+      .seal(originalBinding, domain: .predicateRegistry)
+    let swappedBindingRecord = SRSVALSignedRecord<SRSVALBinding>(
+      domain: .predicateRegistry,
+      payload: swappedBinding,
+      signature: bindingSignature.signature,
+      signer: bindingSignature.signer
+    )
+    XCTAssertTrue(bindingSignature.verify(
+      anchor: testAnchors.predicateRegistryIssuer,
+      expectedDomain: .predicateRegistry
+    ))
+    XCTAssertFalse(swappedBindingRecord.verify(
+      anchor: testAnchors.predicateRegistryIssuer,
+      expectedDomain: .predicateRegistry
+    ))
+
+    let relationRule = SRSVALBinding(
+      identity: "RELATION-IDENTITY-RULE",
+      version: "RULE_V1",
+      contentDigest: digest("RELATION-IDENTITY-RULE:RULE_V1")
+    )
+    let swappedRelationRule = SRSVALBinding(
+      identity: relationRule.version,
+      version: relationRule.identity,
+      contentDigest: relationRule.contentDigest
+    )
+    let authorization = authorizationPayload(classes: ["FRESHNESS_RECHECK_REQUIRED"], relationRule: relationRule)
+    let swappedAuthorization = SRSVALAuthorizationPayload(
+      sourceRelationIdentity: authorization.sourceRelationIdentity,
+      invalidationClasses: Set(authorization.invalidationClasses),
+      requestClass: authorization.requestClass,
+      authorizedResultIdentity: authorization.authorizedResultIdentity,
+      semanticClass: authorization.semanticClass,
+      coveredFailureClasses: Set(authorization.coveredFailureClasses),
+      targetBoundary: authorization.targetBoundary,
+      relationIdentityRule: swappedRelationRule
+    )
+    XCTAssertNotEqual(authorization.canonicalData, swappedAuthorization.canonicalData)
+    let authorizationSignature = try testIssuer(.authorization, privateKeys: testIssuerPrivateKeys)
+      .seal(authorization, domain: .authorization)
+    let swappedAuthorizationRecord = SRSVALSignedRecord<SRSVALAuthorizationPayload>(
+      domain: .authorization,
+      payload: swappedAuthorization,
+      signature: authorizationSignature.signature,
+      signer: authorizationSignature.signer
+    )
+    XCTAssertTrue(authorizationSignature.verify(
+      anchor: testAnchors.authorizationIssuer,
+      expectedDomain: .authorization
+    ))
+    XCTAssertFalse(swappedAuthorizationRecord.verify(
+      anchor: testAnchors.authorizationIssuer,
+      expectedDomain: .authorization
+    ))
+
+    func freshness(_ identity: String, observedAt: String) -> SRSVALFreshness {
+      SRSVALFreshness(
+        boundary: boundary,
+        requirements: [SRSVALFreshnessRequirement(
+          identity: identity,
+          evidence: binding("FRESHNESS_EVIDENCE"),
+          expectedEvidenceDigest: digest("FRESHNESS"),
+          status: .current,
+          validUntilUTC: "2030-01-01T00:00:00Z",
+          observedAtUTC: observedAt
+        )]
+      )
+    }
+    let freshnessOriginal = freshness("REQ-A", observedAt: "TIME-A")
+    let freshnessSwapped = freshness("TIME-A", observedAt: "REQ-A")
+    XCTAssertNotEqual(freshnessOriginal.canonicalData, freshnessSwapped.canonicalData)
+    let freshnessSignature = try testIssuer(.recordIntegrity, privateKeys: testIssuerPrivateKeys)
+      .seal(freshnessOriginal, domain: .recordIntegrity)
+    let swappedFreshnessRecord = SRSVALSignedRecord<SRSVALFreshness>(
+      domain: .recordIntegrity,
+      payload: freshnessSwapped,
+      signature: freshnessSignature.signature,
+      signer: freshnessSignature.signer
+    )
+    XCTAssertTrue(freshnessSignature.verify(
+      anchor: testAnchors.recordIntegrityIssuer,
+      expectedDomain: .recordIntegrity
+    ))
+    XCTAssertFalse(swappedFreshnessRecord.verify(
+      anchor: testAnchors.recordIntegrityIssuer,
+      expectedDomain: .recordIntegrity
+    ))
+
+    let rule = predicateRulePayload(subject: "FRESH-A")
+    let classification = classificationPayload(rule: rule, classification: .recomputeEligible)
+    let inputs = makeHealthyInputs()
+    let observationOriginal = observationPayload(
+      inputs: inputs,
+      authorizationBinding: nil,
+      rules: [rule],
+      classifications: [classification]
+    )
+    let swappedClassification = SRSVALClassificationPayload(
+      registryAuthority: classification.registryAuthority,
+      predicateRule: classification.predicateRule,
+      identity: classification.identity,
+      version: classification.version,
+      failureClass: classification.subjectIdentity,
+      subjectIdentity: classification.failureClass,
+      classification: classification.classification
+    )
+    let observationSwapped = observationPayload(
+      inputs: inputs,
+      authorizationBinding: nil,
+      rules: [rule],
+      classifications: [swappedClassification]
+    )
+    XCTAssertNotEqual(observationOriginal.canonicalData, observationSwapped.canonicalData)
+    let observationSignature = try signedObservation(payload: observationOriginal)
+    let swappedObservationRecord = SRSVALSignedRecord<SRSVALObservationPayload>(
+      domain: .observation,
+      payload: observationSwapped,
+      signature: observationSignature.signature,
+      signer: observationSignature.signer
+    )
+    XCTAssertTrue(observationSignature.verify(
+      anchor: testAnchors.observationIssuer,
+      expectedDomain: .observation
+    ))
+    XCTAssertFalse(swappedObservationRecord.verify(
+      anchor: testAnchors.observationIssuer,
+      expectedDomain: .observation
+    ))
+  }
+
   func testDP4VerifiedAuthorityChainResolvesPureReuse() throws {
     let inputs = healthyInputs()
     let observationPayload = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: [])

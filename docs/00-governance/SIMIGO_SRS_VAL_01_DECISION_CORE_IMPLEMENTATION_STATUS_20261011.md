@@ -1,6 +1,6 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 6 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
+> **Status:** REVISION 7 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
 > INDEPENDENT REVIEW REQUIRED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
@@ -18,7 +18,8 @@ revision 2 independent review = REVISE / BLOCKING;
 revision 3 independent review = REVISE / BLOCKING;
 revision 4 independent review = REVISE / BLOCKING;
 revision 5 independent review = REVISE / BLOCKING;
-revision 6 non-generative result = PASS / 18 tests / 0 failures;
+revision 6 independent review = REVISE / BLOCKING;
+revision 7 non-generative result = PASS / 19 tests / 0 failures;
 production trust anchors = FIXED AT COMPILE TIME;
 leaked Revision 4 keys = REVOKED / PERMANENTLY UNTRUSTED;
 production signing private keys = ABSENT FROM REPOSITORY;
@@ -32,7 +33,7 @@ canonical Information Space mutation = none.
 The core remains pure: no filesystem, database, process, network, model, or
 persisted-state access.
 
-Revision 6 closes the Revision 5 blocking findings:
+Revisions 6 and 7 close the outstanding trust, canonical, and domain findings:
 
 ```text
 trust-root injection = the public evaluate entry point has no anchors
@@ -44,9 +45,15 @@ unambiguous encoding = SRSVAL-CANONICAL-TEXT-V2 uses nil/list markers,
   element counts, and byte-length-prefixed elements;
 expected domain separation = record verification requires the declared domain
   to equal the object's expected domain in the production evaluate path;
+revision 7 canonical model = ordered semantic records and unordered collections are separated;
+canonical encoding = SRSVAL-CANONICAL-TEXT-V3;
+binding fields = identity, version, and digest have fixed field roles;
+freshness requirement = fixed-role ordered record embedded in an unordered requirement set;
+classification tuple = fixed-role ordered record embedded in an unordered classification set;
+field-role mutation = identity/version, I-14 relation-rule, freshness role, and classification role swaps change bytes and break signatures;
 negative coverage = custom trust-root injection, all five wrong-domain
   signatures, expected-digest mutation, binding-field mutations, and
-  separator-collision subject sets are rejected or produce different bytes.
+  separator-collision subject sets are rejected or produce different bytes;
 ```
 
 ## Traceability matrix
@@ -58,6 +65,7 @@ negative coverage = custom trust-root injection, all five wrong-domain
 | Signed-record integrity | Cross-domain records and signer substitution fail signature verification. | `testExpectedDomainSeparationFailsClosedForAllTrustDomains` |
 | Signed input integrity | A semantic input differing from its signed integrity record cannot enter validation. | `testSourceSemanticStateCannotBypassSignedIntegrity` |
 | Canonical field completeness | Expected freshness digest and full binding metadata mutate canonical bytes. | `testCanonicalBytesCoverDecisionFieldsWithoutAmbiguity` |
+| Ordered semantic records | Binding identity/version roles, I-14 relation-rule roles, freshness field roles, and classification field roles cannot swap without changing canonical bytes and invalidating the original signature. | `testOrderedRecordsPreserveFieldRolesInSignatures` |
 | Unambiguous collections | Distinct subject-set semantics cannot collide through a separator. | `testCanonicalBytesCoverDecisionFieldsWithoutAmbiguity` |
 | Canonical coding round trip | Codable round trips preserve semantic equality and canonical signature input. | `testCanonicalSerializationIsStableAcrossCodableRoundTrip` |
 | DP-0 / I-16 | Exact references, object boundaries, ordering evidence, and signed authority payloads validate first. | `testDP0DifferentObjectBoundaryFailsClosed` |
