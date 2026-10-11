@@ -90,15 +90,15 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 
 ## Current governance gate — 2026-10-11 (Persistent SRS Representation)
 
-> **Status:** Persistence Manifest Contracts v1.0-v1.7 REVISED /
-> Contract v1.8 + I0 Schema v1.6 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
+> **Status:** Persistence Manifest Contract v1.8 ACCEPT / DESIGN FROZEN /
+> Manifest Instance v1.0 REBOUND / NOT EXECUTABLE / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
-accepted Authorization Request v0.1 with
-`ACCEPT_REQUEST_FOR_PERSISTENCE_MANIFEST_CONTRACT`, then returned REVISE rulings
-for persistence contracts v1.0 through v1.7. The current authorized response is
-Manifest Contract v1.8 binding unchanged I0 Schema v1.6, submitted only for
-design review. The conditional Manifest Instance v0.1 remains non-executable until it is
+accepted Authorization Request v0.1, then returned REVISE rulings for persistence
+contracts v1.0 through v1.7, and finally accepted Persistence Manifest Contract
+v1.8 with unchanged I0 Schema v1.6 as the frozen design baseline. Manifest
+Instance v1.0 has been rebound to that frozen contract; it remains non-executable
+and no stage is authorized. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
 T-IMPL-01 target is only the Decision Core.
@@ -126,14 +126,20 @@ Request acceptance:
 Persistence v1.0 review ruling:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.0_REVIEW_RULING_20261011.md`.
 
-Persistence contract for review:
+Persistence contract:
 `docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.8_20261011.md`.
+
+Contract acceptance:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.8_ACCEPTANCE_20261011.md`.
 
 I0 JSON Schema:
 `docs/02-evidence/persistent-srs-20261011/PERSISTENT_SRS_RECORD_JSON_SCHEMA_V1.6.json`.
 
-Contract delivery record:
-`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.8_DELIVERY_20261011.md`.
+Rebound instance:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_INSTANCE_V1.0_20261011.md`.
+
+Instance delivery record:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_INSTANCE_V1.0_DELIVERY_20261011.md`.
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
