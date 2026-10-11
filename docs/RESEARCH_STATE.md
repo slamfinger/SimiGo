@@ -91,8 +91,8 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ## Current governance gate — 2026-10-12 (Persistent SRS Representation)
 
 > **Status:** Persistence Manifest Contract v1.8 ACCEPT / DESIGN FROZEN /
-> Manifest Instance v2.2 ACCEPT / DESIGN BOUND /
-> IMPLEMENTATION Authorization Package v1.0 DELIVERED FOR HUMAN REVIEW /
+> Manifest Instance v2.2 ACCEPT / DESIGN BOUND (independent review ruling recorded) /
+> IMPLEMENTATION Authorization Package v1.1 DELIVERED FOR HUMAN REVIEW /
 > IMPLEMENTATION NOT AUTHORIZED / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
@@ -100,11 +100,16 @@ accepted Authorization Request v0.1, then returned REVISE rulings for persistenc
 contracts v1.0 through v1.7, and finally accepted Persistence Manifest Contract
 v1.8 with unchanged I0 Schema v1.6 as the frozen design baseline. Manifest
 Instances v1.0 through v2.1 were returned as REVISE. Manifest Instance v2.2 is
-ACCEPT / DESIGN BOUND. Persistent SRS IMPLEMENTATION Authorization Package v1.0
-is delivered for Human review. It binds the package basis commit, two writable
-implementation paths, frozen I0 Schema, dependency/effect boundaries, exact
-build/test commands, implementation completion evidence, and a separate
-JSON Schema validator completion gate. IMPLEMENTATION remains NOT AUTHORIZED.
+ACCEPT / DESIGN BOUND with an independent review ruling recorded on 2026-10-12.
+Persistent SRS IMPLEMENTATION Authorization Package v1.0 was returned as REVISE
+on two findings: R1 (Git commit object IDs and file content SHA-256 digests
+were conflated as "commit SHA256") and R2 (the authorized repository revision
+allowed ambiguous direct descendants without enumerating the governance commits
+now on main). Package v1.1 fixes both findings: it binds the revision to
+f222a99dbf652a03de6dcf68289d0da08bbf8585, enumerates the allowed intervening
+governance commits with a verification rule, and records completion evidence
+using distinct git_commit_object_id, direct_parent_commit_id, and
+artifact_content_sha256 fields. IMPLEMENTATION remains NOT AUTHORIZED.
 The existing SRS-VAL Manifest Contract v1.0 is retained as frozen provenance but
 cannot authorize persistence because its T-IMPL-01 target is only the Decision
 Core.
@@ -132,7 +137,13 @@ Frozen contract:
 Current manifest:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_INSTANCE_V2.2_20261012.md`.
 
-Implementation package:
+Manifest instance v2.2 review ruling:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_INSTANCE_V2.2_REVIEW_RULING_20261012.md`.
+
+Implementation package v1.1 (current):
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.1_20261012.md`.
+
+Implementation package v1.0 (superseded):
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.0_20261012.md`.
 
 Package delivery:
