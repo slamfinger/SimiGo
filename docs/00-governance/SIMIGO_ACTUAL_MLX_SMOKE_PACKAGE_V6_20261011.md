@@ -1,8 +1,7 @@
 # Actual MLX smoke execution package V6
 
-> **Status:** EXECUTION PACKAGE REVISION 4 CODE REVIEW ACCEPT / CANDIDATE —
-> HUMAN EXECUTION AUTHORIZATION REQUIRED
-> **Actual MLX smoke:** NOT AUTHORIZED / NOT EXECUTED
+> **Status:** ACTUAL MLX SMOKE PASS / AUTHORIZED RUN CONSUMED / CLOSED
+> **Actual MLX smoke:** PASS / AUTHORIZED RUN CONSUMED / CLOSED
 > **Date:** 2026-10-11
 
 ## Basis and bounded repair
@@ -102,6 +101,26 @@ not rerun Swift tests or independently recompute every local artifact digest;
 the ACCEPT is limited to source review of the pushed commit and does not
 authorize execution.
 
+## Authorized execution result
+
+The Human gate subsequently authorized the restricted one-run flow. The marker
+was created with the exact Revision 4 Manifest SHA256, consumed by atomic
+rename, and the authorized Child completed exactly once:
+
+```text
+V6 actual smoke = MLX_SMOKE_PASS;
+run count = 1 / 1;
+started_at_utc = 2026-10-11T00:36:25Z;
+completed_at_utc = 2026-10-11T00:37:57Z;
+execution_state.status = ADVANCED;
+runtime_application_status = APPLIED_SWIFT;
+bound_representation_token_count = 6475;
+all nine settlements = SETTLED;
+pending obligations = empty;
+all ten success-gate checks = true;
+V6 result record = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V6_RESULT_20261011.md.
+```
+
 ## Candidate binding
 
 ```text
@@ -145,12 +164,12 @@ Current state:
 
 ```text
 V6 marker = ABSENT;
-V6 consumed marker = ABSENT;
+V6 consumed marker = PRESENT / CONTENT BOUND TO REVISION 4 MANIFEST SHA256;
 V6 evidence root =
-  integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v6 = ABSENT;
+  integrated-es-palace/mlx-smoke-v1/mlx-smoke-evidence-v6 = PRESERVED;
 V5 consumed marker and failure evidence = PRESERVED.
 Revision 4 code review = ACCEPT;
-next Human gate = separately authorize zero or one actual run.
+authorized run = CONSUMED / CLOSED.
 ```
 
 ## Prechecks
@@ -177,7 +196,9 @@ V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
 V6 Revision 1 = NO-GO / SUPERSEDED;
 V6 Revision 2 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 3 = NO-GO / SUPERSEDED / NOT EXECUTED;
-V6 Revision 4 = CODE REVIEW ACCEPT / CANDIDATE — HUMAN EXECUTION AUTHORIZATION REQUIRED;
+V6 Revision 4 = CODE REVIEW ACCEPT;
+V6 actual smoke = MLX_SMOKE_PASS / AUTHORIZED RUN CONSUMED / CLOSED;
+V6 retry / gate adjustment by rerun = FORBIDDEN;
 V5 retry / gate adjustment by rerun = FORBIDDEN;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE / Information Space mutation = FORBIDDEN;

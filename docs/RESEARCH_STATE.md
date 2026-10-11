@@ -4,12 +4,11 @@
 
 **Last updated**: 2026-10-11
 
-## Current continuity — 2026-10-11 (Actual MLX Smoke V6 candidate)
+## Current continuity — 2026-10-11 (Actual MLX Smoke V6 result)
 
-> **Status:** V6 Revision 4 candidate package CODE REVIEW ACCEPT / CANDIDATE —
-> HUMAN EXECUTION AUTHORIZATION REQUIRED. Revisions 1-3 were Human NO-GO /
-> SUPERSEDED and none executed. No V6 marker, consumed marker, or evidence
-> exists.
+> **Status:** V6 Revision 4 authorized one-shot = MLX_SMOKE_PASS / CONSUMED /
+> CLOSED. Revision 4 code review = ACCEPT. Revisions 1-3 were NO-GO /
+> SUPERSEDED and none executed.
 
 The authorized V5 run is closed as
 `MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED`. It proved that the W1
@@ -32,6 +31,13 @@ missing/wrong-type/non-empty defects, carrier database missing/directory
 defects, production terminal-evidence selection, and PASS/FAIL source/content
 mismatches without launching MLX.
 
+The subsequent Human-gated execution consumed the Revision 4 marker exactly
+once and reached real MLX execution successfully: position 1, active lifecycle,
+6475-token bound representation, `ADVANCED` Execution State,
+`APPLIED_SWIFT` runtime application, empty pending obligations, all nine
+settlements `SETTLED`, carrier integrity verified, and all ten success-gate
+checks true. This bounded smoke does not establish general production operation.
+
 ```text
 package baseline commit = ba2ba6d7b725f15386193d20f7295c9015523a12;
 V5 result = MLX_SMOKE_FAIL / AUTHORIZED RUN CONSUMED / CLOSED;
@@ -53,11 +59,17 @@ V6 Revision 1 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 2 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 3 = NO-GO / SUPERSEDED / NOT EXECUTED;
 V6 Revision 4 code review = ACCEPT / SOURCE-LEVEL / COMMIT c37478d4fd2e88aa664181d8733e28f2003ede0c;
+V6 actual smoke = MLX_SMOKE_PASS / AUTHORIZED RUN CONSUMED / CLOSED;
+V6 PASS record SHA256 =
+  0411cffb47105efbce444adc995e4ecf8ea5248d75f27f647e0ed64654750266;
+V6 carrier.sqlite SHA256 =
+  b154e0d2970e2669bdd28a02a0654949271c03f3e421a23bd5c629e6e36cb12e;
 ActualMLXSmokeValidation = PASS / 12 tests / 1 skipped / 0 failures;
 ProductionRuntimeFailureBoundaryTests = PASS / 8 tests / 0 failures;
-V6 marker / consumed marker / evidence root = ABSENT;
-V6 actual MLX smoke = NOT AUTHORIZED / NOT EXECUTED;
-next Human gate = separately authorize zero or one actual V6 run;
+V6 marker = ABSENT;
+V6 consumed marker = PRESENT / AUTHORIZATION CONSUMED;
+V6 evidence root = PRESERVED;
+V6 retry / gate adjustment by rerun = FORBIDDEN / CLOSED;
 Runtime Validation V2 rerun = FORBIDDEN / CLOSED;
 canonical PALACE mutation = FORBIDDEN;
 canonical Information Space mutation = FORBIDDEN;
@@ -72,6 +84,7 @@ New-session recovery path:
 authoritative state = docs/RESEARCH_STATE.md;
 V6 candidate = integrated-es-palace/mlx-smoke-v1/ACTUAL_MLX_SMOKE_MANIFEST_V6.json;
 V6 governance = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_PACKAGE_V6_20261011.md;
+V6 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V6_RESULT_20261011.md;
 V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ```
 
