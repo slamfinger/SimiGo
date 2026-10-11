@@ -2,7 +2,7 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-11
+**Last updated**: 2026-10-12
 
 ## Current continuity — 2026-10-11 (Actual MLX Smoke V6 result)
 
@@ -88,24 +88,26 @@ V6 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V6_RESULT_20261011.md;
 V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ```
 
-## Current governance gate — 2026-10-11 (Persistent SRS Representation)
+## Current governance gate — 2026-10-12 (Persistent SRS Representation)
 
 > **Status:** Persistence Manifest Contract v1.8 ACCEPT / DESIGN FROZEN /
-> Manifest Instances v1.0-v2.1 REVISE / Instance v2.2 CANDIDATE / NO STAGE AUTHORIZED.
+> Manifest Instance v2.2 ACCEPT / DESIGN BOUND /
+> IMPLEMENTATION Authorization Package v1.0 DELIVERED FOR HUMAN REVIEW /
+> IMPLEMENTATION NOT AUTHORIZED / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1, then returned REVISE rulings for persistence
 contracts v1.0 through v1.7, and finally accepted Persistence Manifest Contract
 v1.8 with unchanged I0 Schema v1.6 as the frozen design baseline. Manifest
 Instances v1.0 through v2.1 were returned as REVISE. Manifest Instance v2.2 is
-ACCEPT / DESIGN BOUND. The current lawful next object is Persistent SRS
-IMPLEMENTATION Authorization Package v1.0, delivered for Human review. It binds
-the exact package basis commit, two writable implementation paths, frozen I0
-Schema, dependency/effect boundaries, exact build/test commands, and separate
-validator completion gate. IMPLEMENTATION remains NOT AUTHORIZED. The conditional Manifest Instance v0.1 remains non-executable until it is
-rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
-retained as frozen provenance but cannot authorize persistence because its
-T-IMPL-01 target is only the Decision Core.
+ACCEPT / DESIGN BOUND. Persistent SRS IMPLEMENTATION Authorization Package v1.0
+is delivered for Human review. It binds the package basis commit, two writable
+implementation paths, frozen I0 Schema, dependency/effect boundaries, exact
+build/test commands, implementation completion evidence, and a separate
+JSON Schema validator completion gate. IMPLEMENTATION remains NOT AUTHORIZED.
+The existing SRS-VAL Manifest Contract v1.0 is retained as frozen provenance but
+cannot authorize persistence because its T-IMPL-01 target is only the Decision
+Core.
 
 ```text
 accepted Decision Core Revision 11 = ACCEPT / SOURCE REVIEW CLOSED;
@@ -121,8 +123,20 @@ V6 rerun = FORBIDDEN;
 production proof = NOT ESTABLISHED.
 ```
 
-Governance package:
-`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_AUTHORIZATION_PACKAGE_V0.1_DELIVERY_20261011.md`.
+Authorization request:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_AUTHORIZATION_REQUEST_V0.1_20261011.md`.
+
+Frozen contract:
+`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.8_20261011.md`.
+
+Current manifest:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_INSTANCE_V2.2_20261012.md`.
+
+Implementation package:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.0_20261012.md`.
+
+Package delivery:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.0_DELIVERY_20261012.md`.
 
 Request acceptance:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_AUTHORIZATION_REQUEST_V0.1_ACCEPTANCE_20261011.md`.
