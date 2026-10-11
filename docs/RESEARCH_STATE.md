@@ -90,14 +90,14 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 
 ## Current governance gate — 2026-10-11 (Persistent SRS Representation)
 
-> **Status:** Persistence Manifest Contracts v1.0-v1.3 REVISED /
-> Contract and I0 Schema v1.4 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
+> **Status:** Persistence Manifest Contracts v1.0-v1.4 REVISED /
+> Contract and I0 Schema v1.5 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1 with
 `ACCEPT_REQUEST_FOR_PERSISTENCE_MANIFEST_CONTRACT`, then returned REVISE rulings
-for persistence contracts v1.0, v1.1, v1.2, and v1.3. The current authorized
-response is Manifest Contract and I0 Schema v1.4, submitted only for design
+for persistence contracts v1.0, v1.1, v1.2, v1.3, and v1.4. The current authorized
+response is Manifest Contract and I0 Schema v1.5, submitted only for design
 review. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
@@ -127,13 +127,13 @@ Persistence v1.0 review ruling:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.0_REVIEW_RULING_20261011.md`.
 
 Persistence contract for review:
-`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.4_20261011.md`.
+`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.5_20261011.md`.
 
 I0 JSON Schema:
-`docs/02-evidence/persistent-srs-20261011/PERSISTENT_SRS_RECORD_JSON_SCHEMA_V1.4.json`.
+`docs/02-evidence/persistent-srs-20261011/PERSISTENT_SRS_RECORD_JSON_SCHEMA_V1.5.json`.
 
 Contract delivery record:
-`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.4_DELIVERY_20261011.md`.
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.5_DELIVERY_20261011.md`.
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
