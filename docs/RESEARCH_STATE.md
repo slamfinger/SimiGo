@@ -91,16 +91,15 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ## Current governance gate — 2026-10-11 (Persistent SRS Representation)
 
 > **Status:** Persistence Manifest Contract v1.8 ACCEPT / DESIGN FROZEN /
-> Manifest Instances v1.0-v1.8 REVISE / Instance v1.9 CANDIDATE / NO STAGE AUTHORIZED.
+> Manifest Instances v1.0-v1.9 REVISE / Instance v2.0 CANDIDATE / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1, then returned REVISE rulings for persistence
 contracts v1.0 through v1.7, and finally accepted Persistence Manifest Contract
 v1.8 with unchanged I0 Schema v1.6 as the frozen design baseline. Manifest
-Instances v1.0 through v1.8 were returned as REVISE. Manifest Instance v1.9 is
-now the candidate, remains non-executable, and no stage is authorized. It
-separates contract request base, manifest revision parent, and prior instance
-source bindings. The conditional Manifest Instance v0.1 remains non-executable until it is
+Instances v1.0 through v1.9 were returned as REVISE. Manifest Instance v2.0 is
+now the administrative correction candidate, remains non-executable, and no
+stage is authorized. It corrects the prior-instance ruling reference only. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
 T-IMPL-01 target is only the Decision Core.
