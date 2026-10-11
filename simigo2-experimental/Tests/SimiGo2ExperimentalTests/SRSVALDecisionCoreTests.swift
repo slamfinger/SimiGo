@@ -432,25 +432,57 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     XCTAssertEqual(forward.reason, reverse.reason)
   }
 
-  func testCrossDomainSignedRecordFailsClosed() throws {
+  func testExpectedDomainSeparationFailsClosedForAllTrustDomains() throws {
     let inputs = makeHealthyInputs()
-    let payload = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: [])
-    let observation = try signedObservation(payload: payload)
-    let crossDomain = SRSVALSignedRecord<SRSVALObservationPayload>(
-      domain: .authorization,
-      payload: observation.payload,
-      signature: observation.signature,
-      signer: observation.signer
+    let authPayload = authorizationPayload(classes: ["FRESHNESS_RECHECK_REQUIRED"])
+    let rule = predicateRulePayload(subject: "FRESH-A")
+    let classification = classificationPayload(rule: rule, classification: .recomputeEligible)
+    let observation = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: [])
+    let integrity = SRSVALInputIntegrityPayload(
+      settledRelationState: inputs.state,
+      sourceRelation: inputs.source,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      reuseRequest: inputs.request
     )
-    XCTAssertFalse(crossDomain.verify(anchor: testAnchors.authorizationIssuer))
-    let mismatchedSigner = SRSVALSignedRecord<SRSVALObservationPayload>(
-      domain: .observation,
-      payload: observation.payload,
-      signature: observation.signature,
-      signer: Data(repeating: 1, count: 32)
-    )
-    XCTAssertFalse(mismatchedSigner.verify(anchor: testAnchors.observationIssuer))
-    XCTAssertTrue(observation.verify(anchor: testAnchors.observationIssuer))
+    let wrongAuth = try testIssuer(.authorization, privateKeys: testIssuerPrivateKeys)
+      .seal(authPayload, domain: .observation)
+    XCTAssertFalse(wrongAuth.verify(
+      anchor: testAnchors.authorizationIssuer,
+      expectedDomain: .authorization
+    ))
+
+    let wrongRule = try testIssuer(.predicateRegistry, privateKeys: testIssuerPrivateKeys)
+      .seal(rule, domain: .classification)
+    XCTAssertFalse(wrongRule.verify(
+      anchor: testAnchors.predicateRegistryIssuer,
+      expectedDomain: .predicateRegistry
+    ))
+
+    let wrongClassification = try testIssuer(.classification, privateKeys: testIssuerPrivateKeys)
+      .seal(classification, domain: .predicateRegistry)
+    XCTAssertFalse(wrongClassification.verify(
+      anchor: testAnchors.classificationIssuer,
+      expectedDomain: .classification
+    ))
+
+    let wrongObservation = try testIssuer(.observation, privateKeys: testIssuerPrivateKeys)
+      .seal(observation, domain: .recordIntegrity)
+    XCTAssertFalse(wrongObservation.verify(
+      anchor: testAnchors.observationIssuer,
+      expectedDomain: .observation
+    ))
+
+    let wrongIntegrity = try testIssuer(.recordIntegrity, privateKeys: testIssuerPrivateKeys)
+      .seal(integrity, domain: .authorization)
+    XCTAssertFalse(wrongIntegrity.verify(
+      anchor: testAnchors.recordIntegrityIssuer,
+      expectedDomain: .recordIntegrity
+    ))
   }
 
   func testCanonicalSerializationIsStableAcrossCodableRoundTrip() throws {
@@ -461,6 +493,94 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     let decoded = try JSONDecoder().decode(SRSVALObservationPayload.self, from: encoded)
     XCTAssertEqual(decoded.canonicalData, data)
     XCTAssertEqual(decoded, payload)
+  }
+
+  func testCanonicalBytesCoverDecisionFieldsWithoutAmbiguity() throws {
+    let evidence = binding("FRESHNESS_EVIDENCE:FRESH-A", version: "EVIDENCE_V1")
+    let digestBase = SRSVALFreshness(
+      boundary: boundary,
+      requirements: [SRSVALFreshnessRequirement(
+        identity: "FRESH-A",
+        evidence: evidence,
+        expectedEvidenceDigest: digest("FRESHNESS:FRESH-A"),
+        status: .current,
+        validUntilUTC: "2030-01-01T00:00:00Z",
+        observedAtUTC: observedAt
+      )]
+    )
+    let digestChanged = SRSVALFreshness(
+      boundary: boundary,
+      requirements: [SRSVALFreshnessRequirement(
+        identity: "FRESH-A",
+        evidence: evidence,
+        expectedEvidenceDigest: digest("CHANGED:FRESH-A"),
+        status: .current,
+        validUntilUTC: "2030-01-01T00:00:00Z",
+        observedAtUTC: observedAt
+      )]
+    )
+    XCTAssertNotEqual(digestBase.canonicalData, digestChanged.canonicalData)
+
+    let state = state()
+    let stateChanged = SRSVALSettledRelationState(
+      binding: state.binding,
+      settlementID: state.settlementID,
+      status: state.status,
+      sourceRelationIdentity: state.sourceRelationIdentity,
+      resultIdentity: state.resultIdentity,
+      requiresCanonicalIdentityRule: state.requiresCanonicalIdentityRule,
+      canonicalIdentityRule: state.canonicalIdentityRule,
+      provenanceBindings: [binding("SRS-PROVENANCE", version: "PROVENANCE_V2")]
+    )
+    XCTAssertNotEqual(state.canonicalData, stateChanged.canonicalData)
+
+    let policy = SRSVALResolutionPolicy(
+      resolutionRule: binding("RESOLUTION-RULE"),
+      policies: [binding("POLICY")],
+      boundary: boundary
+    )
+    let policyChanged = SRSVALResolutionPolicy(
+      resolutionRule: policy.resolutionRule,
+      policies: [binding("POLICY", version: "POLICY_V2")],
+      boundary: policy.boundary
+    )
+    XCTAssertNotEqual(policy.canonicalData, policyChanged.canonicalData)
+
+    let lifecycle = lifecycle()
+    let lifecycleChanged = SRSVALProvenanceLifecycle(
+      bindings: [binding("LIFECYCLE", version: "LIFECYCLE_V2")],
+      lifecycle: lifecycle.lifecycle,
+      boundary: lifecycle.boundary
+    )
+    XCTAssertNotEqual(lifecycle.canonicalData, lifecycleChanged.canonicalData)
+
+    let rule = predicateRulePayload(subject: "FRESH-A")
+    let changedRule = SRSVALPredicateRulePayload(
+      registryAuthority: rule.registryAuthority,
+      identity: rule.identity,
+      version: rule.version,
+      failureClass: "CHANGED",
+      subjectIdentities: Set(rule.subjectIdentities)
+    )
+    let rulesBase = observationPayload(inputs: makeHealthyInputs(), authorizationBinding: nil, rules: [rule], classifications: [classificationPayload(rule: rule, classification: .recomputeEligible)])
+    let rulesChanged = observationPayload(inputs: makeHealthyInputs(), authorizationBinding: nil, rules: [changedRule], classifications: [classificationPayload(rule: changedRule, classification: .recomputeEligible)])
+    XCTAssertNotEqual(rulesBase.canonicalData, rulesChanged.canonicalData)
+
+    let separateSubjects = SRSVALPredicateRulePayload(
+      registryAuthority: rule.registryAuthority,
+      identity: rule.identity,
+      version: rule.version,
+      failureClass: rule.failureClass,
+      subjectIdentities: ["A", "B"]
+    )
+    let joinedSubjects = SRSVALPredicateRulePayload(
+      registryAuthority: rule.registryAuthority,
+      identity: rule.identity,
+      version: rule.version,
+      failureClass: rule.failureClass,
+      subjectIdentities: ["A\u{1F}B"]
+    )
+    XCTAssertNotEqual(separateSubjects.canonicalData, joinedSubjects.canonicalData)
   }
 
   func testDP4VerifiedAuthorityChainResolvesPureReuse() throws {
@@ -507,6 +627,41 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
     XCTAssertEqual(.reuse, outcome.decision)
     XCTAssertTrue(outcome.i14NotUsedMarkerValid)
+  }
+
+  func testPublicEvaluateCannotInjectCustomTrustAnchors() throws {
+    let inputs = healthyInputs()
+    let payload = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: [])
+    let observation = try signedObservation(payload: payload)
+    let integrity = try signedIntegrity(payload: SRSVALInputIntegrityPayload(
+      settledRelationState: inputs.state,
+      sourceRelation: inputs.source,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      reuseRequest: inputs.request
+    ))
+    let outcome = SRSVALDecisionCore.evaluate(
+      settledRelationState: inputs.state,
+      sourceRelation: inputs.source,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      reuseRequest: inputs.request,
+      registeredPredicateRules: [],
+      classificationRecords: [],
+      authorization: nil,
+      observation: observation,
+      inputIntegrity: integrity
+    )
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertEqual(.validationInputStateInconsistent, outcome.reason)
   }
 
   func testDP0DifferentObjectBoundaryFailsClosed() throws {
