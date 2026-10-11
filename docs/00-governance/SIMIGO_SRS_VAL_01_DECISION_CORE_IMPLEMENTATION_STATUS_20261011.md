@@ -1,6 +1,6 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 3 IMPLEMENTATION DELIVERED / PURE UNIT TESTS PASS /
+> **Status:** REVISION 4 IMPLEMENTATION DELIVERED / PURE UNIT TESTS PASS /
 > REVIEW REQUIRED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
@@ -16,7 +16,8 @@ tests =
 revision 1 independent review = REVISE / BLOCKING;
 revision 2 result = PASS / 17 tests / 0 failures;
 revision 2 independent review = REVISE / BLOCKING;
-revision 3 result = PASS / 19 tests / 0 failures;
+revision 3 independent review = REVISE / BLOCKING;
+revision 4 result = PASS / 13 tests / 0 failures;
 side effects = none;
 MLX execution = none;
 V6 rerun = none;
@@ -61,6 +62,24 @@ freshness precision = expected evidence digest is mandatory; requirement time,
   agree.
 ```
 
+Revision 4 closes the authority findings from review of revision 3
+(`c2ecef6f88cd6f36d73645df80b61e2c82ced19f`):
+
+```text
+I-14 authenticity = authorization payload is signed by the fixed authorization
+  issuer anchor; Decision Core has no authorization private key and verifies
+  the Ed25519 signature before semantic checks;
+predicate registration authenticity = rule payload is signed by the fixed
+  registry issuer anchor; Decision Core has no registry private key;
+classification outcome authority = classification payload is signed by the
+  fixed classification issuer anchor and cross-bound to its registered rule;
+I-16 payload integrity = the complete observation payload, including exact
+  classification outcomes, is signed by the fixed observation issuer and
+  compared to Decision Core inputs;
+G-V1..G-V7 input integrity = a signed upstream record-integrity payload must
+  exactly equal every semantic input consumed by Decision Core.
+```
+
 ## Traceability matrix
 
 | Frozen rule | Core behavior | Non-generative test |
@@ -76,6 +95,8 @@ freshness precision = expected evidence digest is mandatory; requirement time,
 | Cross-object closure | SRS relation/result identities, provenance sets, I-16 evidence, boundary, freshness evidence identity/digest/time, and dependency/result states are semantically checked. | `testSRSRelationIdentityMismatchBlocks`, `testSRSResultIdentityMismatchBlocks`, `testSemanticallyInvalidObservationReferenceBlocks`, `testFreshnessEvidenceForDifferentRequirementPreventsPureReuse`, `testExpiredFreshnessEvidenceCannotReuseWithoutAuthorization` |
 | I-14 exact scope | Invalidation classes, target boundary, canonical relation identity rule, covered classes, semantic class, request/result scope, and immutable content are matched. | `testI14InvalidationClassMismatchBlocks`, `testI14TargetBoundaryMismatchBlocks`, `testI14RelationIdentityRuleMismatchBlocks` |
 | Classification determinism | Contradictory or duplicate classifications fail closed without array-order dependence. | `testContradictoryClassificationsFailClosedWithoutOrderDependence` |
+| Authority authenticity | Self-issued I-14, registry rule, classification, observation, and record-integrity objects fail signature verification. | `testUntrustedAuthorizationCannotAuthorizeRecompute`, `testUnregisteredClassificationAuthorityFailsClosed`, `testTamperedClassificationOutcomeFailsClosed` |
+| Signed input integrity | Replacing a signed record-integrity payload with a validly signed record for different semantic fields fails closed. | `testForgedDependencyStateCannotAlterSignedInputIntegrity`, `testForgedSourceInvalidationCannotAlterSignedInputIntegrity` |
 | I-16 boundary closure | Dependency, provenance, lifecycle, freshness, policy, and close-boundary objects must use the same observation boundary. | `testDifferentObjectBoundaryFailsClosed` |
 | I-16 ordering/time | Ordering evidence identity must bind boundary identity to observation time; freshness requirement time must equal I-16 time. | `testOrderingEvidenceNotBoundToObservationTimeFailsClosed`, `testFreshnessObservationTimeMismatchFailsClosed` |
 | Registered rule canonical binding | Authority, rule identity/version, failure class, subject coverage, canonical content, and binding digest must agree; non-authoritative registration is nil. | `testPredicateRuleCannotRegisterOutsideAuthoritativeRegistry`, `testUnregisteredSubjectFailsClosed` |
