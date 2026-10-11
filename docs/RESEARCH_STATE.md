@@ -92,8 +92,9 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 
 > **Status:** Persistence Manifest Contract v1.8 ACCEPT / DESIGN FROZEN /
 > Manifest Instance v2.2 ACCEPT / DESIGN BOUND (independent review ruling recorded) /
-> IMPLEMENTATION Authorization Package v1.1 DELIVERED FOR HUMAN REVIEW /
-> IMPLEMENTATION NOT AUTHORIZED / NO STAGE AUTHORIZED.
+> IMPLEMENTATION Authorization Package v1.1 ACCEPTED via AUTHORIZE_IMPLEMENTATION_V1 /
+> IMPLEMENTATION Human Authorization Record v1 delivered /
+> IMPLEMENTATION AUTHORIZED / NOT STARTED / all later stages NOT AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1, then returned REVISE rulings for persistence
@@ -109,7 +110,12 @@ now on main). Package v1.1 fixes both findings: it binds the revision to
 f222a99dbf652a03de6dcf68289d0da08bbf8585, enumerates the allowed intervening
 governance commits with a verification rule, and records completion evidence
 using distinct git_commit_object_id, direct_parent_commit_id, and
-artifact_content_sha256 fields. IMPLEMENTATION remains NOT AUTHORIZED.
+artifact_content_sha256 fields. Human returned AUTHORIZE_IMPLEMENTATION_V1
+against package v1.1 on 2026-10-12. Implementation Human Authorization Record v1
+is delivered, binding the actual start commit c752388ce48ea7049b106394112d66fa1f58edfc
+with the commit-chain and path audit passed. IMPLEMENTATION is AUTHORIZED and
+NOT STARTED; fixture preparation, execution, validator, and all later stages
+remain NOT AUTHORIZED.
 The existing SRS-VAL Manifest Contract v1.0 is retained as frozen provenance but
 cannot authorize persistence because its T-IMPL-01 target is only the Decision
 Core.
@@ -145,6 +151,9 @@ Implementation package v1.1 (current):
 
 Implementation package v1.0 (superseded):
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.0_20261012.md`.
+
+Implementation Human Authorization Record:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_HUMAN_AUTHORIZATION_RECORD_V1_20261012.md`.
 
 Package delivery:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.0_DELIVERY_20261012.md`.
