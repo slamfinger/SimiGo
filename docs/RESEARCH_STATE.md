@@ -88,6 +88,34 @@ V6 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V6_RESULT_20261011.md;
 V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 ```
 
+## Current governance gate — 2026-10-11 (Persistent SRS Representation)
+
+> **Status:** Authorization Package v0.1 DELIVERED / HUMAN REVIEW REQUIRED /
+> NO STAGE AUTHORIZED.
+
+Persistent SRS Representation is the selected next bounded object. The
+authorization request and conditional filled manifest instance are submitted for
+Human review. The existing SRS-VAL Manifest Contract v1.0 is retained as frozen
+provenance but cannot authorize persistence because its T-IMPL-01 target is only
+the Decision Core.
+
+```text
+accepted Decision Core Revision 11 = ACCEPT / SOURCE REVIEW CLOSED;
+persistent SRS implementation = NOT AUTHORIZED;
+persistent SRS fixture preparation = NOT AUTHORIZED;
+persistent SRS execution = NOT AUTHORIZED;
+independent ES2 consumption = NOT REQUESTED;
+non-recompute attribution = NOT REQUESTED;
+canonical PALACE mutation = FORBIDDEN;
+canonical Information Space mutation = FORBIDDEN;
+MLX execution = FORBIDDEN;
+V6 rerun = FORBIDDEN;
+production proof = NOT ESTABLISHED.
+```
+
+Governance package:
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_AUTHORIZATION_PACKAGE_V0.1_DELIVERY_20261011.md`.
+
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
 > **Status:** BOUNDED EQUIVALENCE ESTABLISHED — E8 four-layer Human Evidence
