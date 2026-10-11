@@ -1,7 +1,7 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 4 IMPLEMENTATION DELIVERED / PURE UNIT TESTS PASS /
-> REVIEW REQUIRED
+> **Status:** REVISION 5 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
+> INDEPENDENT REVIEW REQUIRED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
 > **Implementation authorization:** `SIMIGO_SRS_VAL_01_DECISION_CORE_IMPLEMENTATION_AUTHORIZATION_20261011.md`
@@ -14,10 +14,12 @@ implementation =
 tests =
   simigo2-experimental/Tests/SimiGo2ExperimentalTests/SRSVALDecisionCoreTests.swift;
 revision 1 independent review = REVISE / BLOCKING;
-revision 2 result = PASS / 17 tests / 0 failures;
 revision 2 independent review = REVISE / BLOCKING;
 revision 3 independent review = REVISE / BLOCKING;
-revision 4 result = PASS / 13 tests / 0 failures;
+revision 4 independent review = REVISE / BLOCKING;
+revision 5 non-generative result = PASS / 16 tests / 0 failures;
+production trust anchors = ROTATED;
+production signing private keys = ABSENT FROM REPOSITORY;
 side effects = none;
 MLX execution = none;
 V6 rerun = none;
@@ -25,85 +27,43 @@ canonical PALACE mutation = none;
 canonical Information Space mutation = none.
 ```
 
-The core is pure: no filesystem access, database access, process launch,
-network access, model execution, or persisted state.
+The core remains pure: no filesystem, database, process, network, model, or
+persisted-state access.
 
-Revision 2 closes the blocking findings from review of revision 1
-(`eaaea5bd6176afbd7fc68cb5ab01573eb41b1613`):
-
-```text
-mixed eligible/non-eligible failures = BLOCK, never RECOMPUTE;
-predicate rules = externally registered exact content bindings with explicit
-  failure-class and subject coverage;
-I-16 = cross-object evidence references closed to actual semantic inputs;
-I-14 = invalidation classes, target boundary, relation identity rule, covered
-  classes, semantic class, and immutable content all matched;
-G-V2/G-V3/G-V4/G-V7 = blocking invalidation, resolved dependency/result state,
-  and current evidence identity/time are enforced;
-contradictory classifications = fail closed without array-order dependence.
-```
-
-Revision 3 closes the remaining findings from review of revision 2
-(`a5d768c2e1304614ff9ebfd9ec14bd910daad957`):
+Revision 5 closes the current review blockers and their validation defects:
 
 ```text
-I-16 boundary closure = dependency, provenance, lifecycle, freshness, and
-  policy boundaries must equal the observation boundary;
-ordering/time binding = ordering evidence identity and freshness observation
-  time are bound to I-16;
-predicate rule trust = rules can be created only through the fixed registry
-  authority and canonical content binding;
-predicate rule semantics = authority, identity, version, failure class, and
-  complete subject coverage are sealed in canonical content;
-I-14 canonical authorization = identity/version metadata and every authorized
-  semantic field are sealed in canonical content;
-freshness precision = expected evidence digest is mandatory; requirement time,
-  I-16 time, ordering identity, validity deadline, and evidence identity must
-  agree.
-```
-
-Revision 4 closes the authority findings from review of revision 3
-(`c2ecef6f88cd6f36d73645df80b61e2c82ced19f`):
-
-```text
-I-14 authenticity = authorization payload is signed by the fixed authorization
-  issuer anchor; Decision Core has no authorization private key and verifies
-  the Ed25519 signature before semantic checks;
-predicate registration authenticity = rule payload is signed by the fixed
-  registry issuer anchor; Decision Core has no registry private key;
-classification outcome authority = classification payload is signed by the
-  fixed classification issuer anchor and cross-bound to its registered rule;
-I-16 payload integrity = the complete observation payload, including exact
-  classification outcomes, is signed by the fixed observation issuer and
-  compared to Decision Core inputs;
-G-V1..G-V7 input integrity = a signed upstream record-integrity payload must
-  exactly equal every semantic input consumed by Decision Core.
+trust anchors = fresh production Ed25519 public-key anchors only;
+signed-record binding = domain, canonical payload, and signer are covered by
+  each Ed25519 signature;
+canonical serialization = every signature payload uses deterministic
+  SRSVAL-CANONICAL-TEXT-V1 encoding;
+binding consistency = I-14 and predicate-rule bindings are derived from the
+  same canonical payload that is signed;
+authority chains = test issuers derive their public anchors from the test
+  signing keys, not from placeholder hashes;
+freshness fixtures = digest mismatch, expiry, and observation-time mismatch
+  are exercised through the production evaluate entry point;
+classification coverage = missing and contradictory outcomes fail closed
+  without array-order dependence.
 ```
 
 ## Traceability matrix
 
 | Frozen rule | Core behavior | Non-generative test |
 | --- | --- | --- |
-| DP-0 / I-16 | Missing, malformed, cross-boundary, or mismatched observation and I-15/I-16 references fail closed. | `testDP0MissingObservationFieldFailsClosed`, `testCrossBoundaryI15ReferenceIsDP0Blocked` |
-| DP-1 / G-V1..G-V7 hard blockers | Any hard-block failure precedes applicability and classification. | `testDP1LifecycleHardBlockOutranksEligibleFailure` |
-| DP-2 / I-15 applicability | `NOT_APPLICABLE`, malformed scope, and indeterminate current request block. | `testDP2NotApplicableBlocks`, `testDP2UnscopedRequestBlocksIndeterminate` |
-| DP-3 / I-14 + G-CLASS | Only surviving failures classified eligible by an exact referenced predicate rule, fully covered by a valid exact I-14 and semantic envelope, resolve RECOMPUTE. | `testEligibleFailureWithExactRuleAndI14AuthorizesRecompute`, `testEligibleFailureWithoutI14FailsClosed`, `testOverbroadI14FailsClosed`, `testInvalidRecomputeEnvelopeFailsClosed` |
-| DP-3 mixed failures | One non-eligible failure blocks even when another failure is eligible. | `testMixedEligibleAndNonEligibleFailuresBlock` |
-| DP-4 / G-V1..G-V7 | No remaining failure resolves pure REUSE with the exact not-used marker. | `testGVAllChecksPassMapsToDP4PureReuse` |
-| G-CLASS | A surviving failure with no referenced rule fails closed; a referenced rule with no matching classification cannot create a no-recompute path. | `testMissingPredicateRuleBindingFailsClosed`, `testSurvivingFailureWithoutMatchingClassificationFailsClosed` |
-| Registered rule authority | Rules must have content-integrity evidence, explicit failure class, and subject coverage; core never manufactures an authoritative rule. | `testUnregisteredPredicateRuleFailsClosed`, `testRegisteredRuleWithoutSubjectCoverageFailsClosed` |
-| Cross-object closure | SRS relation/result identities, provenance sets, I-16 evidence, boundary, freshness evidence identity/digest/time, and dependency/result states are semantically checked. | `testSRSRelationIdentityMismatchBlocks`, `testSRSResultIdentityMismatchBlocks`, `testSemanticallyInvalidObservationReferenceBlocks`, `testFreshnessEvidenceForDifferentRequirementPreventsPureReuse`, `testExpiredFreshnessEvidenceCannotReuseWithoutAuthorization` |
-| I-14 exact scope | Invalidation classes, target boundary, canonical relation identity rule, covered classes, semantic class, request/result scope, and immutable content are matched. | `testI14InvalidationClassMismatchBlocks`, `testI14TargetBoundaryMismatchBlocks`, `testI14RelationIdentityRuleMismatchBlocks` |
-| Classification determinism | Contradictory or duplicate classifications fail closed without array-order dependence. | `testContradictoryClassificationsFailClosedWithoutOrderDependence` |
-| Authority authenticity | Self-issued I-14, registry rule, classification, observation, and record-integrity objects fail signature verification. | `testUntrustedAuthorizationCannotAuthorizeRecompute`, `testUnregisteredClassificationAuthorityFailsClosed`, `testTamperedClassificationOutcomeFailsClosed` |
-| Signed input integrity | Replacing a signed record-integrity payload with a validly signed record for different semantic fields fails closed. | `testForgedDependencyStateCannotAlterSignedInputIntegrity`, `testForgedSourceInvalidationCannotAlterSignedInputIntegrity` |
-| I-16 boundary closure | Dependency, provenance, lifecycle, freshness, policy, and close-boundary objects must use the same observation boundary. | `testDifferentObjectBoundaryFailsClosed` |
-| I-16 ordering/time | Ordering evidence identity must bind boundary identity to observation time; freshness requirement time must equal I-16 time. | `testOrderingEvidenceNotBoundToObservationTimeFailsClosed`, `testFreshnessObservationTimeMismatchFailsClosed` |
-| Registered rule canonical binding | Authority, rule identity/version, failure class, subject coverage, canonical content, and binding digest must agree; non-authoritative registration is nil. | `testPredicateRuleCannotRegisterOutsideAuthoritativeRegistry`, `testUnregisteredSubjectFailsClosed` |
-| Freshness precision | Evidence identity, mandatory expected digest, validity deadline, and requirement time must match. | `testFreshnessDigestMismatchFailsClosed`, `testExpiredFreshnessEvidenceFailsClosed` |
-| I-14 | Not-used is valid only with no surviving failure or a lawful higher-precedence resolution. Eligible failures require exact immutable authorization and valid envelope. | REUSE, missing-I-14, overbroad-I-14, and invalid-envelope tests |
-| I-15 | Exact semantic request binding is mandatory and must match the observation and SRS scope. | DP-2 tests and cross-boundary test |
-| G-V1..G-V7 | Core checks exact declaration, source relation, dependencies, result, resolution/policy, provenance/lifecycle, and freshness inputs; missing evidence never passes. | Reuse baseline plus hard-block and freshness failure paths |
+| DP-0 / I-16 | Signed inputs, exact references, object boundaries, ordering evidence, and authority payloads are validated before semantic decisions. | `testDP0DifferentObjectBoundaryFailsClosed`, `testCanonicalSerializationIsStableAcrossCodableRoundTrip` |
+| Signed-record authority | Signatures are domain-separated and bind the canonical payload and signer; cross-domain or signer-substituted records fail. | `testCrossDomainSignedRecordFailsClosed` |
+| Signed input integrity | A semantic input differing from its signed integrity record cannot enter validation. | `testSourceSemanticStateCannotBypassSignedIntegrity` |
+| DP-1 / G-V1..G-V7 | Any hard-block failure outranks applicability and classification. | `testDP1LifecycleHardBlockOutranksEligibleFailure` |
+| DP-2 / I-15 | Not-applicable and semantically unscoped requests fail closed. | `testDP2NotApplicableBlocks`, `testDP2UnscopedRequestBlocksIndeterminate` |
+| DP-3 / I-14 + G-CLASS | All classifiable failures must be authoritative and eligible; a complete I-14 authorizes exact RECOMPUTE. | `testDP3AllEligibleFailuresWithAuthoritativeI14AuthorizeRecompute`, `testInvalidI14CannotProducePureReuse` |
+| DP-3 mixed failures | One non-eligible failure blocks even when another is eligible. | `testDP3MixedEligibleAndNonEligibleFailuresBlock` |
+| DP-4 / pure reuse | A fully verified authority chain with no remaining failure resolves REUSE. | `testDP4VerifiedAuthorityChainResolvesPureReuse` |
+| G-CLASS | Missing classification fails closed; contradictory outcomes fail without order dependence. | `testGClassMissingClassificationFailsClosed`, `testContradictoryClassificationsFailClosedWithoutOrderDependence` |
+| Freshness precision | Evidence digest, validity deadline, and requirement-to-I-16 observation time must match. | `testFreshnessDigestMismatchFailsClosed`, `testExpiredFreshnessFailsClosed`, `testFreshnessObservationTimeMismatchFailsClosed` |
+| I-14 | Eligible failures require an exact authoritative authorization; invalid or absent I-14 never becomes REUSE. | `testDP3AllEligibleFailuresWithAuthoritativeI14AuthorizeRecompute`, `testInvalidI14CannotProducePureReuse` |
+| I-15 / I-16 canonical coding | Codable round trips preserve canonical signature input and semantic equality. | `testCanonicalSerializationIsStableAcrossCodableRoundTrip` |
 
 ## Remaining boundaries
 
