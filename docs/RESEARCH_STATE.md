@@ -90,14 +90,15 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 
 ## Current governance gate — 2026-10-11 (Persistent SRS Representation)
 
-> **Status:** Persistence Manifest Contracts v1.0-v1.1 REVISED /
-> Contract v1.2 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
+> **Status:** Persistence Manifest Contracts v1.0-v1.2 REVISED /
+> Contract v1.3 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1 with
 `ACCEPT_REQUEST_FOR_PERSISTENCE_MANIFEST_CONTRACT`, then returned REVISE rulings
-for persistence contracts v1.0 and v1.1. The current authorized response is
-persistence-specific Manifest Contract v1.2, submitted only for design review. The conditional Manifest Instance v0.1 remains non-executable until it is
+for persistence contracts v1.0, v1.1, and v1.2. The current authorized response
+is persistence-specific Manifest Contract v1.3 with a formal closed JSON Schema,
+submitted only for design review. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
 T-IMPL-01 target is only the Decision Core.
@@ -126,10 +127,13 @@ Persistence v1.0 review ruling:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.0_REVIEW_RULING_20261011.md`.
 
 Persistence contract for review:
-`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.2_20261011.md`.
+`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.3_20261011.md`.
+
+I0 JSON Schema:
+`docs/02-evidence/persistent-srs-20261011/PERSISTENT_SRS_RECORD_JSON_SCHEMA_V1.3.json`.
 
 Contract delivery record:
-`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.2_DELIVERY_20261011.md`.
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.3_DELIVERY_20261011.md`.
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
