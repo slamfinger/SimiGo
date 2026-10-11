@@ -1197,7 +1197,8 @@ public enum SRSVALDecisionCore {
       return block(.validationInputStateInconsistent, failures: [], markerValid: false)
     }
 
-    let observation = observation.payload.observation
+    let observationPayload = observation.payload
+    let observation = observationPayload.observation
     let providedPredicateRules = registeredPredicateRules.map { $0.payload }
     let ruleBindings = registeredPredicateRules.map { predicateRuleBinding($0) }
     let authorizationBinding = authorization.map { authorizationBinding($0) }
@@ -1264,6 +1265,14 @@ public enum SRSVALDecisionCore {
         classification: classification.classification
       )
     }
+    let outerClassifications = observationPayload.classifications.map { classification in
+      ClassificationSummary(
+        rule: classification.predicateRule,
+        failureClass: classification.failureClass,
+        subject: classification.subjectIdentity,
+        classification: classification.classification
+      )
+    }
     let authorizedClassifications = classificationPayloads.map { payload in
       ClassificationSummary(
         rule: payload.predicateRule,
@@ -1274,9 +1283,13 @@ public enum SRSVALDecisionCore {
     }
     let observationClassificationCounts = Dictionary(grouping: observationClassifications ?? [], by: { $0 })
       .mapValues(\.count)
+    let outerClassificationCounts = Dictionary(grouping: outerClassifications, by: { $0 })
+      .mapValues(\.count)
     let authorizedClassificationCounts = Dictionary(grouping: authorizedClassifications, by: { $0 })
       .mapValues(\.count)
     guard observationClassifications != nil,
+      outerClassifications.count == classificationRecords.count,
+      observationClassificationCounts == outerClassificationCounts,
       observationClassificationCounts == authorizedClassificationCounts
     else {
       return block(.validationInputStateInconsistent, failures: [], markerValid: false)
