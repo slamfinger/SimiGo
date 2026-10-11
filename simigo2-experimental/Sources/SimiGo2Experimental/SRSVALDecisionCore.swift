@@ -1168,20 +1168,21 @@ public enum SRSVALDecisionCore {
   ) -> SRSVALDecisionOutcome {
     // DP-0 begins with authority-chain verification. None of these records can
     // be self-declared into validity.
+    let expectedInputIntegrity = SRSVALInputIntegrityPayload(
+      settledRelationState: settledRelationState,
+      sourceRelation: sourceRelation,
+      dependencies: dependencies ?? SRSVALDependencySet(boundary: nil, dependencies: nil),
+      result: result,
+      provenance: provenance,
+      lifecycle: lifecycle,
+      freshness: freshness,
+      policy: policy,
+      reuseRequest: reuseRequest
+    )
     guard
       inputIntegrity.verify(anchor: anchors.domain(.recordIntegrity), expectedDomain: .recordIntegrity),
       inputIntegrity.payload.schemaID == "SRSVAL-INPUT-INTEGRITY-V1",
-      inputIntegrity.payload == SRSVALInputIntegrityPayload(
-        settledRelationState: settledRelationState,
-        sourceRelation: sourceRelation,
-        dependencies: dependencies ?? SRSVALDependencySet(boundary: nil, dependencies: nil),
-        result: result,
-        provenance: provenance,
-        lifecycle: lifecycle,
-        freshness: freshness,
-        policy: policy,
-        reuseRequest: reuseRequest
-      ),
+      inputIntegrity.payload.canonicalData == expectedInputIntegrity.canonicalData,
       observation.verify(anchor: anchors.domain(.observation), expectedDomain: .observation),
       observation.payload.schemaID == "SRSVAL-OBSERVATION-V1",
       registeredPredicateRules.allSatisfy({

@@ -159,6 +159,56 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
   }
 
+  private func multiCollectionInputs(reverse: Bool, mutateContent: Bool = false) -> Inputs {
+    let identities = reverse ? ["B", "A"] : ["A", "B"]
+    let provenanceBindings = identities.map { binding("SRS-PROVENANCE-\($0)") }
+    let dependencyBindings = identities.map { identity in
+      SRSVALDependency(
+        binding: binding("DEPENDENCY-\(identity)"),
+        role: "REQUIRED_INPUT",
+        necessity: "REQUIRED",
+        resolution: .resolved,
+        status: mutateContent && identity == "B" ? .superseded : .current
+      )
+    }
+    let freshnessRequirements = identities.map {
+      freshnessRequirement(subject: "FRESH-\($0)")
+    }
+    let policyBindings = identities.map { binding("POLICY-\($0)") }
+    return Inputs(
+      state: SRSVALSettledRelationState(
+        binding: binding("SRS"),
+        settlementID: "SETTLEMENT",
+        status: "DECLARED_SETTLED",
+        sourceRelationIdentity: "RELATION",
+        resultIdentity: "RESULT",
+        requiresCanonicalIdentityRule: true,
+        canonicalIdentityRule: binding("RELATION-IDENTITY-RULE"),
+        provenanceBindings: reverse ? provenanceBindings.reversed() : provenanceBindings
+      ),
+      source: sourceRelation(),
+      dependencies: SRSVALDependencySet(boundary: boundary, dependencies: dependencyBindings),
+      result: result(),
+      provenance: SRSVALProvenanceLifecycle(
+        bindings: reverse ? provenanceBindings.reversed() : provenanceBindings,
+        lifecycle: .declaredSettled,
+        boundary: boundary
+      ),
+      lifecycle: SRSVALProvenanceLifecycle(
+        bindings: identities.map { binding("LIFECYCLE-\($0)") },
+        lifecycle: .declaredSettled,
+        boundary: boundary
+      ),
+      freshness: SRSVALFreshness(boundary: boundary, requirements: freshnessRequirements),
+      policy: SRSVALResolutionPolicy(
+        resolutionRule: binding("RESOLUTION-RULE"),
+        policies: policyBindings,
+        boundary: boundary
+      ),
+      request: request()
+    )
+  }
+
   private func makeStaleEligibleInputs(lifecycleState: SRSVALLifecycleState = .declaredSettled) -> Inputs {
     let freshnessRequirements = [freshnessRequirement(
       subject: "FRESH-A",
@@ -835,6 +885,105 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     )
     XCTAssertEqual(.recompute, outcome.decision)
     XCTAssertEqual(.freshnessRecheckRequired, outcome.reason)
+  }
+
+  func testInputIntegrityComparesUnorderedCollectionsSemantically() throws {
+    let original = multiCollectionInputs(reverse: false)
+    let reversed = multiCollectionInputs(reverse: true)
+    let originalPayload = SRSVALInputIntegrityPayload(
+      settledRelationState: original.state,
+      sourceRelation: original.source,
+      dependencies: original.dependencies,
+      result: original.result,
+      provenance: original.provenance,
+      lifecycle: original.lifecycle,
+      freshness: original.freshness,
+      policy: original.policy,
+      reuseRequest: original.request
+    )
+    let reversedPayload = SRSVALInputIntegrityPayload(
+      settledRelationState: reversed.state,
+      sourceRelation: reversed.source,
+      dependencies: reversed.dependencies,
+      result: reversed.result,
+      provenance: reversed.provenance,
+      lifecycle: reversed.lifecycle,
+      freshness: reversed.freshness,
+      policy: reversed.policy,
+      reuseRequest: reversed.request
+    )
+    XCTAssertNotEqual(originalPayload, reversedPayload)
+    XCTAssertEqual(originalPayload.canonicalData, reversedPayload.canonicalData)
+
+    func outcome(actual: Inputs) throws -> SRSVALDecisionOutcome {
+      let signedIntegrity = try signedIntegrity(payload: originalPayload)
+      let signedObservation = try signedObservation(payload: observationPayload(
+        inputs: actual,
+        authorizationBinding: nil,
+        rules: [],
+        classifications: []
+      ))
+      return SRSVALDecisionCore.evaluate(
+        settledRelationState: actual.state,
+        sourceRelation: actual.source,
+        dependencies: actual.dependencies,
+        result: actual.result,
+        provenance: actual.provenance,
+        lifecycle: actual.lifecycle,
+        freshness: actual.freshness,
+        policy: actual.policy,
+        reuseRequest: actual.request,
+        registeredPredicateRules: [],
+        classificationRecords: [],
+        authorization: nil,
+        observation: signedObservation,
+        inputIntegrity: signedIntegrity,
+        anchors: testAnchors
+      )
+    }
+    XCTAssertEqual(.reuse, try outcome(actual: original).decision)
+    XCTAssertEqual(try outcome(actual: original), try outcome(actual: reversed))
+  }
+
+  func testInputIntegrityStillRejectsCollectionContentChange() throws {
+    let original = multiCollectionInputs(reverse: false)
+    let changed = multiCollectionInputs(reverse: true, mutateContent: true)
+    let signedIntegrity = try signedIntegrity(payload: SRSVALInputIntegrityPayload(
+      settledRelationState: original.state,
+      sourceRelation: original.source,
+      dependencies: original.dependencies,
+      result: original.result,
+      provenance: original.provenance,
+      lifecycle: original.lifecycle,
+      freshness: original.freshness,
+      policy: original.policy,
+      reuseRequest: original.request
+    ))
+    let signedObservation = try signedObservation(payload: observationPayload(
+      inputs: changed,
+      authorizationBinding: nil,
+      rules: [],
+      classifications: []
+    ))
+    let outcome = SRSVALDecisionCore.evaluate(
+      settledRelationState: changed.state,
+      sourceRelation: changed.source,
+      dependencies: changed.dependencies,
+      result: changed.result,
+      provenance: changed.provenance,
+      lifecycle: changed.lifecycle,
+      freshness: changed.freshness,
+      policy: changed.policy,
+      reuseRequest: changed.request,
+      registeredPredicateRules: [],
+      classificationRecords: [],
+      authorization: nil,
+      observation: signedObservation,
+      inputIntegrity: signedIntegrity,
+      anchors: testAnchors
+    )
+    XCTAssertEqual(.block, outcome.decision)
+    XCTAssertEqual(.validationInputStateInconsistent, outcome.reason)
   }
 
   func testObservationPayloadClassificationRepresentationsMustAgree() throws {
