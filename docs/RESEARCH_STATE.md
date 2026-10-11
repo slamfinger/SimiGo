@@ -90,14 +90,14 @@ V5 result = docs/00-governance/SIMIGO_ACTUAL_MLX_SMOKE_V5_RESULT_20261011.md.
 
 ## Current governance gate — 2026-10-11 (Persistent SRS Representation)
 
-> **Status:** Persistence Manifest Contract v1.0 REVISED /
-> Contract v1.1 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
+> **Status:** Persistence Manifest Contracts v1.0-v1.1 REVISED /
+> Contract v1.2 DELIVERED FOR HUMAN DESIGN REVIEW / NO STAGE AUTHORIZED.
 
 Persistent SRS Representation is the selected next bounded object. The Human
 accepted Authorization Request v0.1 with
-`ACCEPT_REQUEST_FOR_PERSISTENCE_MANIFEST_CONTRACT`, then returned
-`REVISE_PERSISTENT_SRS_MANIFEST_CONTRACT_V1.0`. The authorized response is
-persistence-specific Manifest Contract v1.1, submitted only for design review. The conditional Manifest Instance v0.1 remains non-executable until it is
+`ACCEPT_REQUEST_FOR_PERSISTENCE_MANIFEST_CONTRACT`, then returned REVISE rulings
+for persistence contracts v1.0 and v1.1. The current authorized response is
+persistence-specific Manifest Contract v1.2, submitted only for design review. The conditional Manifest Instance v0.1 remains non-executable until it is
 rebound to the accepted contract. The existing SRS-VAL Manifest Contract v1.0 is
 retained as frozen provenance but cannot authorize persistence because its
 T-IMPL-01 target is only the Decision Core.
@@ -126,10 +126,10 @@ Persistence v1.0 review ruling:
 `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.0_REVIEW_RULING_20261011.md`.
 
 Persistence contract for review:
-`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.1_20261011.md`.
+`docs/02-evidence/persistent-srs-20261011/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.2_20261011.md`.
 
 Contract delivery record:
-`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.1_DELIVERY_20261011.md`.
+`docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_MANIFEST_CONTRACT_V1.2_DELIVERY_20261011.md`.
 
 ## Current execution status — 2026-10-08 (Database-Carrier Replication)
 
