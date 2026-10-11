@@ -1,6 +1,6 @@
 # SRS-VAL-01 Decision Core implementation status
 
-> **Status:** REVISION 7 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
+> **Status:** REVISION 8 CANDIDATE DELIVERED / PURE UNIT TESTS PASS /
 > INDEPENDENT REVIEW REQUIRED
 > **Date:** 2026-10-11
 > **Normative baseline:** SRS-VAL-01 Design v0.8, including inherited v0.7 predicates
@@ -19,7 +19,8 @@ revision 3 independent review = REVISE / BLOCKING;
 revision 4 independent review = REVISE / BLOCKING;
 revision 5 independent review = REVISE / BLOCKING;
 revision 6 independent review = REVISE / BLOCKING;
-revision 7 non-generative result = PASS / 19 tests / 0 failures;
+revision 7 independent review = REVISE / BLOCKING;
+revision 8 non-generative result = PASS / 21 tests / 0 failures;
 production trust anchors = FIXED AT COMPILE TIME;
 leaked Revision 4 keys = REVOKED / PERMANENTLY UNTRUSTED;
 production signing private keys = ABSENT FROM REPOSITORY;
@@ -33,7 +34,7 @@ canonical Information Space mutation = none.
 The core remains pure: no filesystem, database, process, network, model, or
 persisted-state access.
 
-Revisions 6 and 7 close the outstanding trust, canonical, and domain findings:
+Revisions 6 through 8 close the outstanding trust, canonical, presence, and ordering findings:
 
 ```text
 trust-root injection = the public evaluate entry point has no anchors
@@ -41,12 +42,14 @@ trust-root injection = the public evaluate entry point has no anchors
   and the anchors-bearing evaluate path are internal test/harness scope;
 canonical completeness = freshness expectedEvidenceDigest and complete
   identity/version/contentDigest fields are signed for all binding collections;
-unambiguous encoding = SRSVAL-CANONICAL-TEXT-V2 uses nil/list markers,
+unambiguous encoding = SRSVAL-CANONICAL-TEXT-V4 uses nil/list markers,
   element counts, and byte-length-prefixed elements;
 expected domain separation = record verification requires the declared domain
   to equal the object's expected domain in the production evaluate path;
 revision 7 canonical model = ordered semantic records and unordered collections are separated;
-canonical encoding = SRSVAL-CANONICAL-TEXT-V3;
+canonical encoding = SRSVAL-CANONICAL-TEXT-V4;
+optional collection presence = NIL and explicit empty LIST have distinct signed bytes;
+unordered validation = rule-reference and classification-record comparison is order-independent and duplicate-count exact;
 binding fields = identity, version, and digest have fixed field roles;
 freshness requirement = fixed-role ordered record embedded in an unordered requirement set;
 classification tuple = fixed-role ordered record embedded in an unordered classification set;
@@ -65,6 +68,8 @@ negative coverage = custom trust-root injection, all five wrong-domain
 | Signed-record integrity | Cross-domain records and signer substitution fail signature verification. | `testExpectedDomainSeparationFailsClosedForAllTrustDomains` |
 | Signed input integrity | A semantic input differing from its signed integrity record cannot enter validation. | `testSourceSemanticStateCannotBypassSignedIntegrity` |
 | Canonical field completeness | Expected freshness digest and full binding metadata mutate canonical bytes. | `testCanonicalBytesCoverDecisionFieldsWithoutAmbiguity` |
+| Optional collection presence | Freshness requirements, dependency sets, and observation classifications preserve NIL versus explicit-empty semantics at the signature layer; nil-to-empty mutations invalidate signatures. | `testOptionalCollectionPresenceIsSigned` |
+| Unordered collections | Rule-reference and classification-record checks are order-independent while preserving duplicate counts against the signed observation. | `testUnorderedRuleAndClassificationInputsAcceptAnyOrder` |
 | Ordered semantic records | Binding identity/version roles, I-14 relation-rule roles, freshness field roles, and classification field roles cannot swap without changing canonical bytes and invalidating the original signature. | `testOrderedRecordsPreserveFieldRolesInSignatures` |
 | Unambiguous collections | Distinct subject-set semantics cannot collide through a separator. | `testCanonicalBytesCoverDecisionFieldsWithoutAmbiguity` |
 | Canonical coding round trip | Codable round trips preserve semantic equality and canonical signature input. | `testCanonicalSerializationIsStableAcrossCodableRoundTrip` |

@@ -726,6 +726,117 @@ final class SRSVALDecisionCoreTests: XCTestCase {
     ))
   }
 
+  func testOptionalCollectionPresenceIsSigned() throws {
+    func mutate<P: SRSVALCanonicalPayload>(
+      _ original: SRSVALSignedRecord<P>,
+      payload: P,
+      domain: SRSVALTrustDomain,
+      anchor: Data
+    ) throws {
+      let mutated = SRSVALSignedRecord<P>(
+        domain: original.domain,
+        payload: payload,
+        signature: original.signature,
+        signer: original.signer
+      )
+      XCTAssertNotEqual(original.payload.canonicalData, payload.canonicalData)
+      XCTAssertTrue(original.verify(anchor: anchor, expectedDomain: domain))
+      XCTAssertFalse(mutated.verify(anchor: anchor, expectedDomain: domain))
+    }
+
+    let integrityIssuer = try testIssuer(.recordIntegrity, privateKeys: testIssuerPrivateKeys)
+    let dependencyNil = try integrityIssuer.seal(
+      SRSVALDependencySet(boundary: boundary, dependencies: nil),
+      domain: .recordIntegrity
+    )
+    try mutate(
+      dependencyNil,
+      payload: SRSVALDependencySet(boundary: boundary, dependencies: []),
+      domain: .recordIntegrity,
+      anchor: testAnchors.recordIntegrityIssuer
+    )
+
+    let freshnessNil = try integrityIssuer.seal(
+      SRSVALFreshness(boundary: boundary, requirements: nil),
+      domain: .recordIntegrity
+    )
+    try mutate(
+      freshnessNil,
+      payload: SRSVALFreshness(boundary: boundary, requirements: []),
+      domain: .recordIntegrity,
+      anchor: testAnchors.recordIntegrityIssuer
+    )
+
+    let inputs = makeHealthyInputs()
+    let base = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: []).observation
+    func observation(_ classifications: [SRSVALPredicateClassification]?) -> SRSVALObservation {
+      SRSVALObservation(
+        boundary: base.boundary,
+        orderingEvidence: base.orderingEvidence,
+        observedAtUTC: base.observedAtUTC,
+        srsEvidence: base.srsEvidence,
+        dependencyEvidence: base.dependencyEvidence,
+        resultEvidence: base.resultEvidence,
+        provenanceEvidence: base.provenanceEvidence,
+        freshnessPolicyEvidence: base.freshnessPolicyEvidence,
+        lifecycleEvidence: base.lifecycleEvidence,
+        policyEvidence: base.policyEvidence,
+        consistencyEvidence: base.consistencyEvidence,
+        closeBoundary: base.closeBoundary,
+        requestReference: base.requestReference,
+        i14Reference: base.i14Reference,
+        predicateRuleReferences: base.predicateRuleReferences,
+        predicateClassifications: classifications
+      )
+    }
+    let observationIssuer = try testIssuer(.observation, privateKeys: testIssuerPrivateKeys)
+    let observationNil = try observationIssuer.seal(
+      observation(nil),
+      domain: .observation
+    )
+    try mutate(
+      observationNil,
+      payload: observation([]),
+      domain: .observation,
+      anchor: testAnchors.observationIssuer
+    )
+  }
+
+  func testUnorderedRuleAndClassificationInputsAcceptAnyOrder() throws {
+    let inputs = staleInputs(subjects: ["FRESH-A", "FRESH-B"])
+    let rules = [predicateRulePayload(subject: "FRESH-A"), predicateRulePayload(subject: "FRESH-B")]
+    let classifications = [
+      classificationPayload(rule: rules[0], classification: .recomputeEligible),
+      classificationPayload(rule: rules[1], classification: .recomputeEligible),
+    ]
+    let authorization = authorizationPayload(classes: ["FRESHNESS_RECHECK_REQUIRED"])
+    let (signedRules, signedClassifications, signedAuthorization, observation, integrity) = try fixtureFor(
+      inputs: inputs,
+      rules: rules,
+      classifications: classifications,
+      authorization: authorization
+    )
+    let outcome = SRSVALDecisionCore.evaluate(
+      settledRelationState: inputs.state,
+      sourceRelation: inputs.source,
+      dependencies: inputs.dependencies,
+      result: inputs.result,
+      provenance: inputs.provenance,
+      lifecycle: inputs.lifecycle,
+      freshness: inputs.freshness,
+      policy: inputs.policy,
+      reuseRequest: inputs.request,
+      registeredPredicateRules: signedRules.reversed(),
+      classificationRecords: signedClassifications.reversed(),
+      authorization: signedAuthorization,
+      observation: observation,
+      inputIntegrity: integrity,
+      anchors: testAnchors
+    )
+    XCTAssertEqual(.recompute, outcome.decision)
+    XCTAssertEqual(.freshnessRecheckRequired, outcome.reason)
+  }
+
   func testDP4VerifiedAuthorityChainResolvesPureReuse() throws {
     let inputs = healthyInputs()
     let observationPayload = observationPayload(inputs: inputs, authorizationBinding: nil, rules: [], classifications: [])

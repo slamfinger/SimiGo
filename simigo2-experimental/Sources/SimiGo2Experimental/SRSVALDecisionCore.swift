@@ -149,7 +149,7 @@ public struct SRSVALBinding: Equatable, Hashable, Sendable {
 }
 
 extension SRSVALBinding: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalField("identity", identity),
@@ -160,7 +160,7 @@ extension SRSVALBinding: SRSVALCanonicalPayload {
 }
 
 extension SRSVALSettledRelationState: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("binding", binding),
@@ -176,7 +176,7 @@ extension SRSVALSettledRelationState: SRSVALCanonicalPayload {
 }
 
 extension SRSVALSourceRelation: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("binding", binding),
@@ -191,7 +191,7 @@ extension SRSVALSourceRelation: SRSVALCanonicalPayload {
 }
 
 extension SRSVALDependency: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("binding", binding),
@@ -204,7 +204,7 @@ extension SRSVALDependency: SRSVALCanonicalPayload {
 }
 
 extension SRSVALResult: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("binding", binding),
@@ -216,7 +216,7 @@ extension SRSVALResult: SRSVALCanonicalPayload {
 }
 
 extension SRSVALResolutionPolicy: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("resolution_rule", resolutionRule),
@@ -227,7 +227,7 @@ extension SRSVALResolutionPolicy: SRSVALCanonicalPayload {
 }
 
 extension SRSVALProvenanceLifecycle: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingCollectionField("bindings", bindings),
@@ -238,20 +238,20 @@ extension SRSVALProvenanceLifecycle: SRSVALCanonicalPayload {
 }
 
 extension SRSVALDependencySet: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("boundary", boundary),
       srsvalOptionalCollectionField(
         "dependencies",
-        dependencies?.map { $0.canonicalData.base64EncodedString() } ?? []
+        dependencies?.map { $0.canonicalData.base64EncodedString() }
       ),
     ].joined(separator: "\n").utf8)
   }
 }
 
 extension SRSVALFreshness: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     let requirements = requirements?.map { requirement in
       srsvalOrderedRecord([
@@ -262,7 +262,7 @@ extension SRSVALFreshness: SRSVALCanonicalPayload {
         ("expected_digest", requirement.expectedEvidenceDigest),
         ("evidence", srsvalBindingValue(requirement.evidence)),
       ])
-    } ?? []
+    }
     return Data([
       srsvalBindingField("boundary", boundary),
       srsvalOptionalCollectionField("requirements", requirements),
@@ -271,7 +271,7 @@ extension SRSVALFreshness: SRSVALCanonicalPayload {
 }
 
 extension SRSVALReuseRequest: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalBindingField("binding", binding),
@@ -619,7 +619,7 @@ public struct SRSVALClassificationPayload: Codable, Equatable, Sendable {
 }
 
 extension SRSVALAuthorizationPayload: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalField("schema", schemaID),
@@ -636,7 +636,7 @@ extension SRSVALAuthorizationPayload: SRSVALCanonicalPayload {
 }
 
 extension SRSVALPredicateRulePayload: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalField("schema", schemaID),
@@ -650,7 +650,7 @@ extension SRSVALPredicateRulePayload: SRSVALCanonicalPayload {
 }
 
 extension SRSVALClassificationPayload: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalField("schema", schemaID),
@@ -806,7 +806,7 @@ public struct SRSVALPredicateRuleAuthority: Equatable, Hashable, Sendable {
 }
 
 public protocol SRSVALCanonicalPayload: Codable, Equatable, Sendable {
-  /// `SRSVAL-CANONICAL-TEXT-V3`; set arrays are sorted and every participating
+  /// `SRSVAL-CANONICAL-TEXT-V4`; set arrays are sorted and every participating
   /// semantic field is represented in `canonicalData`.
   var serializationFormat: String { get }
   var canonicalData: Data { get }
@@ -913,7 +913,7 @@ public struct SRSVALInputIntegrityPayload: Codable, Equatable, Sendable {
 }
 
 extension SRSVALInputIntegrityPayload: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     Data([
       srsvalField("schema", schemaID),
@@ -988,7 +988,7 @@ public struct SRSVALObservation: Equatable, Sendable {
 extension SRSVALObservation: Codable {}
 
 extension SRSVALObservation: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     let classifications = predicateClassifications?.map { classification in
       srsvalOrderedRecord([
@@ -997,7 +997,7 @@ extension SRSVALObservation: SRSVALCanonicalPayload {
         ("subject", classification.subjectIdentity),
         ("outcome", classification.classification.rawValue),
       ])
-    } ?? []
+    }
     return Data([
       srsvalField("schema", "SRSVAL-OBSERVATION-V1"),
       srsvalBindingField("boundary", boundary),
@@ -1021,7 +1021,7 @@ extension SRSVALObservation: SRSVALCanonicalPayload {
 }
 
 extension SRSVALObservationPayload: SRSVALCanonicalPayload {
-  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V3" }
+  public var serializationFormat: String { "SRSVAL-CANONICAL-TEXT-V4" }
   public var canonicalData: Data {
     let classifications = classifications.map { classification in
       srsvalOrderedRecord([
@@ -1241,16 +1241,16 @@ public enum SRSVALDecisionCore {
         $0.registryAuthority == SRSVALPredicateRuleAuthority.required
       }),
       Set(ruleBindings).count == ruleBindings.count,
-      observation.predicateRuleReferences == ruleBindings,
-      observation.predicateClassifications?.count == classificationRecords.count,
-      observation.predicateClassifications?.count == observation.predicateClassifications?.count
+      observation.predicateRuleReferences?.count == ruleBindings.count,
+      Set(observation.predicateRuleReferences ?? []) == Set(ruleBindings),
+      observation.predicateClassifications?.count == classificationRecords.count
     else {
       return block(.validationInputStateInconsistent, failures: [], markerValid: false)
     }
 
     // I-16 integrity includes the exact authorized classification outcomes.
     let classificationPayloads = classificationRecords.map({ $0.payload })
-    struct ClassificationSummary: Equatable {
+    struct ClassificationSummary: Hashable {
       let rule: SRSVALBinding
       let failureClass: String
       let subject: String
@@ -1272,7 +1272,13 @@ public enum SRSVALDecisionCore {
         classification: payload.classification
       )
     }
-    guard observationClassifications == authorizedClassifications else {
+    let observationClassificationCounts = Dictionary(grouping: observationClassifications ?? [], by: { $0 })
+      .mapValues(\.count)
+    let authorizedClassificationCounts = Dictionary(grouping: authorizedClassifications, by: { $0 })
+      .mapValues(\.count)
+    guard observationClassifications != nil,
+      observationClassificationCounts == authorizedClassificationCounts
+    else {
       return block(.validationInputStateInconsistent, failures: [], markerValid: false)
     }
 
