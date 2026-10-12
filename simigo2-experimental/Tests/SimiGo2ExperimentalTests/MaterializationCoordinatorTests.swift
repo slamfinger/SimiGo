@@ -6,6 +6,20 @@ import Foundation
 
 private let f3ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
 
+private enum MaterializationProbeError: Error, CustomStringConvertible {
+    case timedOutWaitingForFirstWorkCall
+    case timedOutWaitingForJoin(String)
+
+    var description: String {
+        switch self {
+        case .timedOutWaitingForFirstWorkCall:
+            return "Timed out waiting for the first materialization work call"
+        case .timedOutWaitingForJoin(let key):
+            return "Timed out waiting for single-flight join for key: \(key)"
+        }
+    }
+}
+
 /// Starts both racing materializations only after both have reached the
 /// startup point. This reduces task-creation skew; it is not a coordinator
 /// internal wait-queue barrier.
@@ -37,15 +51,11 @@ private actor MaterializationStartBarrier {
 /// observe the single admitted closure before and after it is released.
 private actor MaterializationWorkGate {
     private var callContinuations: [CheckedContinuation<Void, Never>] = []
-    private var observationWaiters: [CheckedContinuation<Void, Never>] = []
     private(set) var callCount = 0
     private var released = false
 
     func enterWork() async {
         callCount += 1
-        let observers = observationWaiters
-        observationWaiters.removeAll()
-        observers.forEach { $0.resume() }
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             if released {
                 continuation.resume()
@@ -55,10 +65,13 @@ private actor MaterializationWorkGate {
         }
     }
 
-    func waitForFirstCall() async {
-        if callCount > 0 { return }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            observationWaiters.append(continuation)
+    func waitForFirstCall(timeoutNanoseconds: UInt64 = 5_000_000_000) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while callCount == 0 {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
         }
     }
 
@@ -67,26 +80,23 @@ private actor MaterializationWorkGate {
         let ready = callContinuations
         callContinuations.removeAll()
         ready.forEach { $0.resume() }
-        observationWaiters.forEach { $0.resume() }
-        observationWaiters.removeAll()
     }
 }
 
 private actor MaterializationJoinProbe {
     private var joinedKeys: [String] = []
-    private var waiters: [(key: String, continuation: CheckedContinuation<Void, Never>)] = []
 
     func record(_ key: String) {
         joinedKeys.append(key)
-        let ready = waiters.filter { $0.key == key }
-        waiters.removeAll { $0.key == key }
-        ready.forEach { $0.continuation.resume() }
     }
 
-    func waitForJoin(_ key: String) async {
-        if joinedKeys.contains(key) { return }
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            waiters.append((key, continuation))
+    func waitForJoin(_ key: String, timeoutNanoseconds: UInt64 = 5_000_000_000) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while !joinedKeys.contains(key) {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForJoin(key)
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
         }
     }
 
@@ -200,8 +210,18 @@ final class MaterializationCoordinatorTests: XCTestCase {
             }
         }
 
-        await workGate.waitForFirstCall()
-        await joinProbe.waitForJoin("ref-X")
+        do {
+            try await workGate.waitForFirstCall()
+            try await joinProbe.waitForJoin("ref-X")
+        } catch {
+            // A failed observation must not strand the underlying work at the
+            // gate or leak racing tasks past the end of this test.
+            await workGate.release()
+            for task in tasks {
+                _ = await task.value
+            }
+            throw error
+        }
         let callsBeforeRelease = await workGate.callCount
         XCTAssertEqual(callsBeforeRelease, 1, "exactly one underlying work may start before release")
         let joinsBeforeRelease = await joinProbe.joinCount
