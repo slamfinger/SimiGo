@@ -492,6 +492,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         stateLock.withLock { records.count }
     }
 
+    /// Whether the backend binding for `id` may not correspond to its
+    /// logical handle position (see ``CoordinatorError/backendBindingUncertain``).
+    /// Read-only recovery-contract support: hosts check this BEFORE starting
+    /// any teardown so that a rejected operation causes no side effects at
+    /// all. Recovery itself goes through a successful restore (or a bind at
+    /// the current handle position), which clears the uncertainty.
+    func hasUncertainBinding(_ id: ExecutionID) -> Bool {
+        stateLock.withLock { bindingUncertain.contains(id) }
+    }
+
     public var recordsSnapshot: [LifecycleRecord] {
         stateLock.withLock { records }
     }
