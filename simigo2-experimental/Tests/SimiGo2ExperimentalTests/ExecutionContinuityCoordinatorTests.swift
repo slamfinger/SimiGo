@@ -1,6 +1,33 @@
 import XCTest
 import SimiGoRuntimeContract
+import Foundation
 @testable import SimiGo2Experimental
+
+/// Starts a fixed number of racing tasks only after all have reached the
+/// barrier. This reduces task-creation skew; it is not a gate-queue barrier.
+private actor ForkAttemptBarrier {
+    private let participantCount: Int
+    private var arrivals = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(participantCount: Int) {
+        self.participantCount = participantCount
+    }
+
+    func wait() async {
+        arrivals += 1
+        if arrivals == participantCount {
+            let ready = waiters
+            waiters.removeAll()
+            ready.forEach { $0.resume() }
+            return
+        }
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            waiters.append(continuation)
+        }
+    }
+}
 
 /// A controllable backend that suspends the first physical fork derivation.
 /// It lets the test hold the coordinator between validation and commit while
@@ -468,6 +495,8 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
     func testConcurrentForkRequestsForSameChildCommitExactlyOnce() async throws {
         let backend = PausingForkBackend()
         let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let attemptCount = 32
+        let barrier = ForkAttemptBarrier(participantCount: attemptCount)
         let parent = try await coordinator.create(
             id: ExecutionID("A"),
             position: ExecutionPosition(0),
@@ -485,13 +514,24 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
             childPosition: ExecutionPosition(0),
             childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
         )
-        let tasks = (0..<32).map { _ in
-            Task { () -> Bool in
+        enum ForkAttemptOutcome {
+            case committed
+            case duplicateChildID(ExecutionID)
+            case unexpected(Error)
+        }
+
+        let tasks = (0..<attemptCount).map { _ in
+            Task { () -> ForkAttemptOutcome in
+                await barrier.wait()
                 do {
                     _ = try await coordinator.fork(request)
-                    return true
+                    return .committed
                 } catch {
-                    return false
+                    if case ExecutionContinuityCoordinator.CoordinatorError
+                        .duplicateExecution(let childID) = error {
+                        return .duplicateChildID(childID)
+                    }
+                    return .unexpected(error)
                 }
             }
         }
@@ -508,12 +548,27 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         )
 
         await backend.resumeFirstDerivation()
-        var outcomes: [Bool] = []
+        var outcomes: [ForkAttemptOutcome] = []
         for task in tasks {
             outcomes.append(await task.value)
         }
 
-        XCTAssertEqual(outcomes.filter { $0 }.count, 1, "only one fork may claim child B")
+        let commits = outcomes.filter {
+            if case .committed = $0 { return true }
+            return false
+        }
+        let duplicates = outcomes.filter {
+            if case .duplicateChildID(let childID) = $0 { return childID == ExecutionID("B") }
+            return false
+        }
+        let unexpected = outcomes.filter {
+            if case .unexpected = $0 { return true }
+            return false
+        }
+
+        XCTAssertEqual(commits.count, 1, "only one fork may claim child B")
+        XCTAssertEqual(duplicates.count, attemptCount - 1, "all competing forks must see duplicateExecution(B)")
+        XCTAssertTrue(unexpected.isEmpty, "no unexpected fork failure is allowed")
         XCTAssertEqual(coordinator.recordCount, recordsBeforeForks + 1)
         let child = try XCTUnwrap(coordinator.handle(ExecutionID("B")))
         XCTAssertEqual(child.lineage.parent, ExecutionID("A"))
