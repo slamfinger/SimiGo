@@ -1,14 +1,14 @@
-# Persistent SRS Representation Implementation Repair Authorization Package v1.1
+# Persistent SRS Representation Implementation Repair Authorization Package v1.2
 
 > **Status:** REVISED DELIVERY FOR HUMAN REVIEW — REPAIR NOT AUTHORIZED
 > **Date:** 2026-10-12
-> **Version:** v1.1 (in-place revision of the same document)
-> **Supersedes:** v1.0, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
-> **Revision scope:** authorization-scope consistency across sections 1, 8,
-> and 12; R5 check stages aligned to Contract v1.8 section 13.1 (R17 vs R19);
-> frozen ClassificationDescriptor field names; explicit invalid-key failure
-> status; unmerged W13-W16 semantics; expanded closure state machine with
-> bound statuses; table-driven R1 test coverage; repair start-commit binding
+> **Version:** v1.2 (in-place revision of the same document)
+> **Supersedes:** v1.1, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.1`
+> **Revision scope:** R1 status mapping split (known-but-disallowed type vs
+> globally unsupported type number); removal of the last descriptor field
+> alias in the production constructor; R5 stage mapping recalibrated to
+> R17/R18/R19/R20/R27 per Contract v1.8 section 13.1; cross-reference fixes
+> (section 1 -> section 9; section 12 decision identifiers)
 > **Basis ruling:** `REVISE_IMPLEMENTATION_COMPLETION_REVIEW`
 > **Delivery ruling:** `AUTHORIZE_DRAFT_AND_DELIVER_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
 > **Bound implementation commit:** `5764396497d115ce8b780dc7190815b849fea924`
@@ -29,7 +29,7 @@ independent validator execution, ES2 consumption, non-recompute attribution,
 canonical PALACE or Information Space mutation, MLX, V6 rerun, or production
 activity.
 
-Repair attempts use the independent numbering of section 6 and do not reuse or
+Repair attempts use the independent numbering of section 9 and do not reuse or
 alter the historical Attempt 1-8 record of Package v1.1.
 
 ## 2. R1 — Sealed field label/type table
@@ -57,15 +57,22 @@ base_evidence_digest                          = UTF8_STRING      (0x02) fixed;
 completion_order_key                          = COMPLETION_ORDER_KEY_V1 (0x05) fixed;
 ```
 
-Failure mode: a field carrying a known but wrong type must fail V1 with
-`ATTEMPT_CANONICAL_ENCODING_MISMATCH` before any digest reconstruction.
+Failure mode (per Manifest Instance v2.2 section 9.1): a field carrying a
+known, supported type number that the field does not allow fails V1 with
+`ATTEMPT_CANONICAL_ENCODING_MISMATCH` before any digest reconstruction; a type
+number outside the supported set 0x00-0x05 fails V1 with
+`UNSUPPORTED_CANONICAL_VALUE_TYPE`. Both statuses are asserted at the V1
+stage with their exact values.
 
 Acceptance standard: the fixed encoding vector still passes V1-V5 unchanged;
 known-but-wrong-type records are rejected at V1 with the exact typed status.
 
 Required negative tests: a table-driven test iterating all 14 labels that
-asserts every allowed type passes and every non-allowed type fails at V1 with
-ATTEMPT_CANONICAL_ENCODING_MISMATCH, explicitly covering the two NULL-optional
+asserts every allowed type passes, that every known-but-disallowed type fails
+at V1 with exactly ATTEMPT_CANONICAL_ENCODING_MISMATCH, and that every
+unsupported type number fails at V1 with exactly
+UNSUPPORTED_CANONICAL_VALUE_TYPE — both paths asserted at the V1 stage, not
+merely asserted as rejected. Coverage explicitly includes the two NULL-optional
 fields (observer_authorization_reference, output_and_typed_failure_evidence)
 and the two JSON fields
 (implementation_runtime_environment_bindings, start_stop_evidence).
@@ -96,7 +103,8 @@ shared_classifier =
   production W3 path and the controlled test;
 
 production_constructor =
-  digest is always recomputed from payload_bytes; no caller-supplied digest;
+  digest is always recomputed from canonical_payload_i1_bytes; no
+  caller-supplied digest;
 
 synthetic_constructor =
   exists only in the test target; may state the same payload digest with
@@ -206,7 +214,7 @@ only caught indirectly at R21 instead of failing at R19.
 Required repairs:
 
 ```text
-checks are split exactly per Contract v1.8 section 13.1:
+checks and statuses are split exactly per Contract v1.8 section 13.1:
 
 R17 structural stage:
   for each nested object class — logical_key, settled_relation_state,
@@ -219,27 +227,44 @@ R17 structural stage:
       parser (JSON_DEPTH_LIMIT_EXCEEDED, DUPLICATE_JSON_MEMBER,
       INTEGER_OVERFLOW_OR_RESOURCE_LIMIT);
 
+R18 payload identity stage:
+  payload_schema_id mismatch => UNKNOWN_PAYLOAD_SCHEMA;
+  encoding_identity mismatch => ENCODING_IDENTITY_MISMATCH;
+
 R19 schema-validation stage:
-  the frozen-schema type, enum, length, pattern, and const checks per class
-  fire here with the contract statuses (SCHEMA_VALIDATION_FAILED,
-  UNKNOWN_PAYLOAD_SCHEMA, ENCODING_IDENTITY_MISMATCH,
-  DECISION_CORE_BINDING_MISMATCH; UTC shape stays a R19 pattern check while
-  calendar validity remains R20);
+  the complete frozen-schema type, enum, length, pattern, and const checks
+  per class fire here with SCHEMA_VALIDATION_FAILED; R19 keeps its full
+  frozen responsibility and is not reduced by the R17 checks;
+
+R20 timestamp stage:
+  the UTC shape remains a R19 pattern check; calendar validity fails here as
+  INVALID_UTC_TIMESTAMP;
+
+R27 decision-core stage:
+  decision_core_source_commit or source_sha256 mismatch =>
+  DECISION_CORE_BINDING_MISMATCH;
 
 unknown or missing nested members must never survive to R21; but no failure
-may be reassigned to R19 merely for convenience — every check fires at its
-contract-defined stage and returns its contract-defined status.
+may be reassigned to a convenient stage — when several constraints are
+violated at once, the reader follows the frozen check order and returns the
+status of the first failing stage; every check fires at its contract-defined
+stage and returns its contract-defined status.
 ```
 
 Failure mode: an unknown nested member surviving to R21.
 
 Acceptance standard: nested unknown and missing members fail at R17 with
-`UNKNOWN_SCHEMA_OR_FIELD`; type/enum/pattern violations fail at R19 with the
-exact contract status; both are demonstrated per object class.
+`UNKNOWN_SCHEMA_OR_FIELD`; schema-id and encoding violations fail at R18;
+type/enum/length/pattern violations fail at R19 with
+`SCHEMA_VALIDATION_FAILED`; calendar violations fail at R20; decision-core
+violations fail at R27 — each demonstrated per object class at its correct
+stage.
 
 Required negative tests: at least one unknown-member injection per nested
 class asserting the exact R17 status, and at least one type or enum violation
-per class asserting the exact R19 status.
+per class asserting the exact R19 status; plus stage-bound cases for R18
+(wrong payload_schema_id; wrong encoding_identity) and R27 (wrong
+decision_core_source_commit or source_sha256).
 
 Completion evidence: test outcomes for all classes.
 
@@ -408,13 +433,13 @@ AUTHORIZE_IMPLEMENTATION_REPAIR_V1
 or
 
 ```text
-REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0
+REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2
 ```
 
 or
 
 ```text
-REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0
+REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2
 ```
 
 `AUTHORIZE_IMPLEMENTATION_REPAIR_V1` may authorize only the repairs of
