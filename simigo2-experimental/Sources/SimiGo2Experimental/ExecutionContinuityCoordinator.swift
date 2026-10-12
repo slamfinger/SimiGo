@@ -13,6 +13,9 @@ private actor CoordinatorAsyncOperationGate {
     ) async throws -> T {
         await acquire()
         do {
+            // A cancelled caller queued behind another transition must not
+            // begin a new state mutation when its turn arrives.
+            try Task.checkCancellation()
             let result = try await operation()
             release()
             return result
