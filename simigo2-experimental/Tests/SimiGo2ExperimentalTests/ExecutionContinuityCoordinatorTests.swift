@@ -500,8 +500,9 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         // Give every competing task an opportunity to reach the coordinator
         // while the first backend derivation remains suspended.
         for _ in 0..<64 { await Task.yield() }
+        let derivationsBeforeRelease = await backend.derivationCallCount()
         XCTAssertEqual(
-            await backend.derivationCallCount(),
+            derivationsBeforeRelease,
             1,
             "a second coordinator transition must not enter the backend before the first commits"
         )
