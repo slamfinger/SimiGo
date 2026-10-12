@@ -120,16 +120,14 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     // lifecycle-recorded continueExecution on a real Execution State; the
     // conversation prefix IS the bound representation; new session =
     // discard + create; restore = logical rollback (used by the self-test).
-    // Internal setters are the minimal in-module test seam for restore
-    // atomicity; production callers keep the public read-only surface.
-    var coordinator: ExecutionContinuityCoordinator?
-    var stateBackend: OversizedSegmentedStateBackend?
-    var currentState: ExecutionStateHandle?
+    private var coordinator: ExecutionContinuityCoordinator?
+    private var stateBackend: OversizedSegmentedStateBackend?
+    private var currentState: ExecutionStateHandle?
 
-    public internal(set) var sessionInfo: OversizedSessionInfo?
+    public private(set) var sessionInfo: OversizedSessionInfo?
     /// Token Ledger: append-only confirmed token-prefix facts per session.
     /// Closed (retained) when newSession discards the Execution State.
-    public internal(set) var tokenLedger: OversizedTokenLedger?
+    public private(set) var tokenLedger: OversizedTokenLedger?
     public private(set) var lastInputTokenCount: Int?
 
     /// FM-03: lifecycle/generation serialization. The product guards
@@ -176,6 +174,80 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         self.peakCapacityMiB = peakCapacityMiB
         self.floorBudgetMiB = floorBudgetMiB ?? peakCapacityMiB
     }
+
+    #if DEBUG
+    /// Test-support fixture: assemble one committed 0 -> 1 session without a
+    /// model. Confined to in-module DEBUG builds; returns readers only, so
+    /// production state cannot be mutated after assembly.
+    static func makeRestoreAtomicityTestFixture(
+        executionID: ExecutionID,
+        beforeAppend: @escaping () throws -> Void
+    ) async throws -> (
+        engine: OversizedSegmentedEngine,
+        currentState: () -> ExecutionStateHandle?,
+        coordinatorRecordCount: () -> Int,
+        backendBoundPrefixLength: (ExecutionID, ExecutionPosition) throws -> Int
+    ) {
+        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let ledger = OversizedTokenLedger { id, position in
+            try beforeAppend()
+            return try backend.boundPrefixLength(
+                executionID: id,
+                position: ExecutionPosition(Int64(position)))
+        }
+        let engine = OversizedSegmentedEngine(
+            modelDirectory: URL(fileURLWithPath: "/restore-atomicity-test-unused"))
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let bootstrap = try await coordinator.create(
+            id: executionID,
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "cont-0"))
+
+        backend.bind(executionID: bootstrap.id, position: bootstrap.position, prefix: [1, 2, 3])
+        try await coordinator.bindRepresentation(
+            executionID: bootstrap.id,
+            position: bootstrap.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3]))
+        try ledger.append(OversizedTokenLedgerEntry(
+            executionID: bootstrap.id,
+            position: 0,
+            kind: .bootstrap,
+            prefixLength: 3))
+
+        let advanced = try await coordinator.continueExecution(
+            bootstrap,
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "cont-1"))
+        backend.bind(
+            executionID: advanced.id,
+            position: advanced.position,
+            prefix: [1, 2, 3, 4, 5])
+        try await coordinator.bindRepresentation(
+            executionID: advanced.id,
+            position: advanced.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5]))
+        try ledger.append(OversizedTokenLedgerEntry(
+            executionID: advanced.id,
+            position: 1,
+            kind: .turn,
+            prefixLength: 5))
+
+        engine.coordinator = coordinator
+        engine.stateBackend = backend
+        engine.currentState = advanced
+        engine.tokenLedger = ledger
+        engine.sessionInfo = OversizedSessionInfo(
+            executionID: executionID.rawValue,
+            position: 1,
+            turns: 1,
+            records: coordinator.recordCount)
+        return (
+            engine,
+            { engine.currentState },
+            { coordinator.recordCount },
+            { id, position in try backend.boundPrefixLength(executionID: id, position: position) }
+        )
+    }
+    #endif
 
     private let clock = ContinuousClock()
 
