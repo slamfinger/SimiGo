@@ -76,6 +76,14 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         /// requires a captured physical representation at that position
         /// (capture one before continuing past it).
         case noRepresentationAtPosition(executionID: ExecutionID, position: ExecutionPosition)
+        /// A previous restore's compensation rebind failed for this
+        /// execution, so the backend's physical binding may still sit at the
+        /// restore target while the logical handle remains at the prior
+        /// position. Operations that assume the binding corresponds to the
+        /// logical position (fork derivation, discard's physical release)
+        /// are rejected until a successful restore — or a bind at the
+        /// current handle position — re-establishes the correspondence.
+        case backendBindingUncertain(executionID: ExecutionID)
     }
 
     /// One authoritative lifecycle record per transition (⑧ discipline
@@ -111,6 +119,12 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// Representation history per execution: appended on every bind/capture/
     /// derive; restore finds its target here.
     private var representationHistory: [ExecutionID: [ExecutionRepresentation]] = [:]
+    /// Executions whose backend binding may not correspond to the logical
+    /// handle position: set ONLY when a restore's compensation rebind failed
+    /// (the physical rollback could not undo the target rebind), cleared
+    /// when a successful restore — or a bind at the current handle position
+    /// — re-establishes the correspondence.
+    private var bindingUncertain: Set<ExecutionID> = []
     private var sequence = 0
 
     public init(backend: any ExecutionStateBackend) {
@@ -176,6 +190,13 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             try await backend.restoreRepresentation(representation)
             stateLock.withLock {
                 representationHistory[executionID, default: []].append(representation)
+                // A bind at the current handle position re-establishes the
+                // physical↔logical correspondence (the backend binding was
+                // overwritten with a representation for exactly this
+                // position); a bind elsewhere leaves the uncertainty.
+                if handles[executionID]?.position == position {
+                    bindingUncertain.remove(executionID)
+                }
             }
         }
     }
@@ -261,6 +282,15 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 // guardKnown). A stale `.last` (e.g. after a restore rewound the
                 // handle) must never be derived from.
                 if let parentRep = history.last(where: { $0.position == parent.position }) {
+                    // The derivation hands the backend a representation on
+                    // the assumption that it describes the parent's CURRENT
+                    // physical state. After a failed compensation rebind that
+                    // assumption is unverifiable — fail closed before any
+                    // physical derivation (a lazy fork below never touches
+                    // the backend and stays available).
+                    if stateLock.withLock({ bindingUncertain.contains(parent.id) }) {
+                        throw CoordinatorError.backendBindingUncertain(executionID: parent.id)
+                    }
                     let probe = ExecutionStateHandle(
                         id: request.childID,
                         lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
@@ -366,7 +396,18 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                     if let priorRep {
                         do {
                             try await backend.restoreRepresentation(priorRep)
+                            // The compensation rebind succeeded: the backend
+                            // binding is back at the prior (== current logical)
+                            // position, so any earlier uncertainty is resolved
+                            // and the original retry behavior is preserved.
+                            stateLock.withLock { bindingUncertain.remove(current.id) }
                         } catch let rollbackError {
+                            // The physical rollback failed: the backend may
+                            // still be bound at the restore target while the
+                            // logical handle stays at the prior position.
+                            // Mark the correspondence uncertain (fail-closed)
+                            // and keep BOTH failures visible.
+                            stateLock.withLock { bindingUncertain.insert(current.id) }
                             throw RestoreCompensationFailure(
                                 commitFailure: String(describing: commitError),
                                 rollbackFailure: String(describing: rollbackError)
@@ -386,6 +427,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             )
             stateLock.withLock {
                 handles[current.id] = restored
+                // Logical and physical both sit at the target now.
+                bindingUncertain.remove(current.id)
                 appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
             }
             return restored
@@ -419,6 +462,14 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             // commits only after the release succeeded. A failed release leaves
             // the logical state UNCHANGED (still resumable/retryable) instead of
             // a "discarded-but-weights-resident" split.
+            // The release targets the LAST history representation on the
+            // assumption that it IS the current physical binding. After a
+            // failed compensation rebind that assumption is unverifiable and
+            // the release would silently no-op while the discard still
+            // committed — reject instead until the state is re-established.
+            if stateLock.withLock({ bindingUncertain.contains(current.id) }) {
+                throw CoordinatorError.backendBindingUncertain(executionID: current.id)
+            }
             if let last = representationHistory[current.id]?.last {
                 try await backend.releaseRepresentation(last)
             }

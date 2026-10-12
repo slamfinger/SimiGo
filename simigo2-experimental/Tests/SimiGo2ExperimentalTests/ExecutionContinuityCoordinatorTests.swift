@@ -117,10 +117,15 @@ private actor CompensationFailureBackend: ExecutionStateBackend {
 
     private var representations: [ExecutionID: ExecutionRepresentation] = [:]
     private var restoreCallCount = 0
+    /// Successful physical state changes (rebinds, derivations, actual
+    /// releases). Gated-off operations must leave this untouched.
+    private var mutations = 0
 
     func bind(_ representation: ExecutionRepresentation) {
         representations[representation.executionID] = representation
     }
+
+    func mutationCount() -> Int { mutations }
 
     func captureRepresentation(
         for state: ExecutionStateHandle
@@ -161,6 +166,7 @@ private actor CompensationFailureBackend: ExecutionStateBackend {
             payload: parent.payload
         )
         representations[child.id] = derived
+        mutations += 1
         return derived
     }
 
@@ -174,6 +180,7 @@ private actor CompensationFailureBackend: ExecutionStateBackend {
             throw RollbackRejected()
         }
         representations[representation.executionID] = representation
+        mutations += 1
     }
 
     func releaseRepresentation(
@@ -183,6 +190,7 @@ private actor CompensationFailureBackend: ExecutionStateBackend {
             return
         }
         representations.removeValue(forKey: representation.executionID)
+        mutations += 1
     }
 }
 
@@ -589,6 +597,225 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         XCTAssertEqual(bound?.position, ExecutionPosition(0))
         let payload = try XCTUnwrap(bound?.payload as? MLXPrefixPayload)
         XCTAssertEqual(payload.tokenPrefix, [1, 2, 3])
+    }
+
+    func testCompensationFailureGatesBackendDependentOperationsUntilReestablished() async throws {
+        let backend = CompensationFailureBackend()
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(1),
+            continuation: ExecutionContinuation(nextInput: "A-next-1", continuationID: "A-cont-1")
+        )
+        let position0 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(0),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let position1 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(1),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5])
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position0.position,
+            payload: position0.payload
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position1.position,
+            payload: position1.payload
+        )
+        let recordsBeforeFailure = coordinator.recordCount
+
+        do {
+            _ = try await coordinator.restore(
+                try XCTUnwrap(coordinator.handle(state.id)),
+                request: ExecutionRestoreRequest(
+                    targetPosition: ExecutionPosition(0),
+                    continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+                ),
+                beforeCommit: {
+                    throw CompensationFailureBackend.RollbackRejected()
+                }
+            )
+            XCTFail("restore must fail when both marker commit and compensation fail")
+        } catch {
+            // The composed-error contract is asserted in detail by
+            // testCompensationFailureKeepsCoordinatorLogicalStateUncommitted.
+        }
+        let mutationsAfterFailure = await backend.mutationCount()
+
+        // Fork derivation hands the backend a parent representation on the
+        // assumption that it still describes the physical state — rejected
+        // while the correspondence is uncertain, with no child handle, no
+        // fork record, and no backend mutation.
+        do {
+            _ = try await coordinator.fork(ExecutionForkRequest(
+                parent: try XCTUnwrap(coordinator.handle(state.id)),
+                childID: ExecutionID("C"),
+                childPosition: ExecutionPosition(1),
+                childContinuation: ExecutionContinuation(nextInput: "C-next", continuationID: "C-cont")
+            ))
+            XCTFail("fork derivation must be rejected while the backend binding is uncertain")
+        } catch {
+            guard case ExecutionContinuityCoordinator.CoordinatorError
+                .backendBindingUncertain(let flaggedID) = error
+            else {
+                return XCTFail("expected backendBindingUncertain, got \(error)")
+            }
+            XCTAssertEqual(flaggedID, ExecutionID("A"))
+        }
+        XCTAssertNil(coordinator.handle(ExecutionID("C")))
+        XCTAssertEqual(coordinator.recordCount, recordsBeforeFailure)
+        let mutationsAfterForkAttempt = await backend.mutationCount()
+        XCTAssertEqual(mutationsAfterForkAttempt, mutationsAfterFailure)
+        let boundAfterForkAttempt = await backend.boundRepresentation(for: state.id)
+        XCTAssertEqual(boundAfterForkAttempt?.position, ExecutionPosition(0))
+
+        // Discard's physical release assumes the same correspondence —
+        // rejected with the logical state untouched and no backend mutation.
+        do {
+            try await coordinator.discard(
+                try XCTUnwrap(coordinator.handle(state.id))
+            )
+            XCTFail("discard must be rejected while the backend binding is uncertain")
+        } catch {
+            guard case ExecutionContinuityCoordinator.CoordinatorError
+                .backendBindingUncertain = error
+            else {
+                return XCTFail("expected backendBindingUncertain, got \(error)")
+            }
+        }
+        let stillThere = try XCTUnwrap(coordinator.handle(state.id))
+        XCTAssertEqual(stillThere.lifecycle, .attached)
+        XCTAssertEqual(stillThere.position, ExecutionPosition(1))
+        XCTAssertEqual(coordinator.recordCount, recordsBeforeFailure)
+        let mutationsAfterDiscardAttempt = await backend.mutationCount()
+        XCTAssertEqual(mutationsAfterDiscardAttempt, mutationsAfterFailure)
+
+        // The isolation is per execution: another execution in the same
+        // backend keeps full operation availability.
+        let other = try await coordinator.create(
+            id: ExecutionID("B"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+        )
+        try await coordinator.bindRepresentation(
+            executionID: other.id,
+            position: other.position,
+            payload: MLXPrefixPayload(tokenPrefix: [7, 8])
+        )
+        let forkedOther = try await coordinator.fork(ExecutionForkRequest(
+            parent: other,
+            childID: ExecutionID("D"),
+            childPosition: other.position,
+            childContinuation: ExecutionContinuation(nextInput: "D-next", continuationID: "D-cont")
+        ))
+        XCTAssertEqual(forkedOther.id, ExecutionID("D"))
+
+        // Recovery: a successful restore re-establishes the physical↔logical
+        // correspondence and reopens the gated operations for the execution.
+        let recovered = try await coordinator.restore(
+            try XCTUnwrap(coordinator.handle(state.id)),
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(0),
+                continuation: ExecutionContinuation(nextInput: "A-rewind-2", continuationID: "A-cont-r2")
+            )
+        )
+        XCTAssertEqual(recovered.position, ExecutionPosition(0))
+        XCTAssertEqual(recovered.lifecycle, .restored)
+
+        let forkedAfterRecovery = try await coordinator.fork(ExecutionForkRequest(
+            parent: try XCTUnwrap(coordinator.handle(state.id)),
+            childID: ExecutionID("E"),
+            childPosition: ExecutionPosition(0),
+            childContinuation: ExecutionContinuation(nextInput: "E-next", continuationID: "E-cont")
+        ))
+        XCTAssertEqual(forkedAfterRecovery.id, ExecutionID("E"))
+        try await coordinator.discard(
+            try XCTUnwrap(coordinator.handle(state.id))
+        )
+        XCTAssertEqual(
+            try XCTUnwrap(coordinator.handle(state.id)).lifecycle,
+            .discarded
+        )
+    }
+
+    func testHookFailureWithSuccessfulCompensationPreservesRetryBehavior() async throws {
+        struct HookRejected: Error {}
+        _ = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "A-next", continuationID: "A-cont")
+        )
+        try await bind("A", position: 0, prompt: [1, 2, 3], generated: [4])
+        _ = try await coordinator.continueExecution(
+            try XCTUnwrap(coordinator.handle(ExecutionID("A"))),
+            continuation: ExecutionContinuation(nextInput: "A-next-2", continuationID: "A-cont-2")
+        )
+        try await bind("A", position: 1, prompt: [1, 2, 3, 4], generated: [9])
+        let recordsBeforeRestore = coordinator.recordCount
+
+        do {
+            _ = try await coordinator.restore(
+                try XCTUnwrap(coordinator.handle(ExecutionID("A"))),
+                request: ExecutionRestoreRequest(
+                    targetPosition: ExecutionPosition(0),
+                    continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+                ),
+                beforeCommit: { throw HookRejected() }
+            )
+            XCTFail("restore must fail when the hook rejects")
+        } catch {
+            // The compensation rebind succeeded, so the raw hook failure
+            // propagates unchanged — not a composed compensation failure.
+            XCTAssertTrue(
+                String(describing: error).contains("HookRejected"),
+                "expected the raw hook error, got \(error)"
+            )
+            XCTAssertFalse(
+                String(describing: error)
+                    .contains("restoring the previous backend representation also failed"),
+                "compensation succeeded; raw hook error must not be composed: \(error)"
+            )
+        }
+
+        // The compensation restored the prior binding: logical and physical
+        // agree at position 1, no isolation is entered, and the coordinator
+        // keeps serving backend-dependent operations.
+        let current = try XCTUnwrap(coordinator.handle(ExecutionID("A")))
+        XCTAssertEqual(current.position, ExecutionPosition(1))
+        XCTAssertEqual(current.lifecycle, .active)
+        XCTAssertEqual(coordinator.recordCount, recordsBeforeRestore)
+        let boundPrior = try await backend.captureRepresentation(for: current)
+        XCTAssertEqual(boundPrior.position, ExecutionPosition(1))
+        let forkedWhileConsistent = try await coordinator.fork(ExecutionForkRequest(
+            parent: current,
+            childID: ExecutionID("B"),
+            childPosition: ExecutionPosition(1),
+            childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+        ))
+        XCTAssertEqual(forkedWhileConsistent.id, ExecutionID("B"))
+
+        // The original retry behavior: a second restore whose hook passes
+        // commits normally.
+        let retried = try await coordinator.restore(
+            try XCTUnwrap(coordinator.handle(ExecutionID("A"))),
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(0),
+                continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+            ),
+            beforeCommit: {}
+        )
+        XCTAssertEqual(retried.position, ExecutionPosition(0))
+        XCTAssertEqual(retried.lifecycle, .restored)
+        XCTAssertEqual(coordinator.recordsSnapshot.last?.operation, .restored)
+        let boundRestored = try await backend.captureRepresentation(for: retried)
+        XCTAssertEqual(boundRestored.position, ExecutionPosition(0))
+        let restoredPayload = try XCTUnwrap(boundRestored.payload as? MLXPrefixPayload)
+        XCTAssertEqual(restoredPayload.tokenPrefix, [1, 2, 3, 4])
     }
 
     func testDiscardReleasesRepresentation() async throws {
