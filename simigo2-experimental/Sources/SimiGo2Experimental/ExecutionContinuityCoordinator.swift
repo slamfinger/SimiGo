@@ -150,20 +150,20 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         payload: any ExecutionRepresentationPayload
     ) async throws {
         try await operationGate.withPermit { [self] in
-        guard stateLock.withLock({ handles[executionID] != nil }) else {
-            throw CoordinatorError.unknownExecution(executionID)
+            guard stateLock.withLock({ handles[executionID] != nil }) else {
+                throw CoordinatorError.unknownExecution(executionID)
+            }
+            let representation = ExecutionRepresentation(
+                executionID: executionID,
+                position: position,
+                payload: payload
+            )
+            try await backend.restoreRepresentation(representation)
+            stateLock.withLock {
+                representationHistory[executionID, default: []].append(representation)
+            }
         }
-        let representation = ExecutionRepresentation(
-            executionID: executionID,
-            position: position,
-            payload: payload
-        )
-        try await backend.restoreRepresentation(representation)
-        stateLock.withLock {
-            representationHistory[executionID, default: []].append(representation)
-        }
-    
-        }}
+    }
 
     // MARK: - ExecutionContinuityRuntime
 
@@ -173,198 +173,198 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        if handles[id] != nil {
-            throw CoordinatorError.duplicateExecution(id)
+            if handles[id] != nil {
+                throw CoordinatorError.duplicateExecution(id)
+            }
+            let handle = ExecutionStateHandle(
+                id: id,
+                lineage: ExecutionLineage(root: id),
+                position: position,
+                continuation: continuation,
+                lifecycle: .attached
+            )
+            stateLock.withLock {
+                handles[id] = handle
+                appendRecord(.created, executionID: id, resultLifecycle: .attached, resultPosition: position, resultContinuation: continuation)
+            }
+            return handle
         }
-        let handle = ExecutionStateHandle(
-            id: id,
-            lineage: ExecutionLineage(root: id),
-            position: position,
-            continuation: continuation,
-            lifecycle: .attached
-        )
-        stateLock.withLock {
-            handles[id] = handle
-            appendRecord(.created, executionID: id, resultLifecycle: .attached, resultPosition: position, resultContinuation: continuation)
-        }
-        return handle
-    
-        }}
+    }
 
     public func attach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        if handles[state.id] != nil {
-            throw CoordinatorError.duplicateExecution(state.id)
+            if handles[state.id] != nil {
+                throw CoordinatorError.duplicateExecution(state.id)
+            }
+            stateLock.withLock {
+                handles[state.id] = state
+                appendRecord(.attached, executionID: state.id, resultLifecycle: state.lifecycle, resultPosition: state.position, resultContinuation: state.continuation)
+            }
+            return state
         }
-        stateLock.withLock {
-            handles[state.id] = state
-            appendRecord(.attached, executionID: state.id, resultLifecycle: state.lifecycle, resultPosition: state.position, resultContinuation: state.continuation)
-        }
-        return state
-    
-        }}
+    }
 
     public func continueExecution(
         _ state: ExecutionStateHandle,
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        let current = try guardKnown(state.id)
-        let advanced = ExecutionStateHandle(
-            id: current.id,
-            lineage: current.lineage,
-            position: ExecutionPosition(current.position.value + 1),
-            continuation: continuation,
-            lifecycle: .active
-        )
-        stateLock.withLock {
-            handles[current.id] = advanced
-            appendRecord(.continued, executionID: current.id, resultLifecycle: .active, resultPosition: advanced.position, resultContinuation: continuation)
+            let current = try guardKnown(state.id)
+            let advanced = ExecutionStateHandle(
+                id: current.id,
+                lineage: current.lineage,
+                position: ExecutionPosition(current.position.value + 1),
+                continuation: continuation,
+                lifecycle: .active
+            )
+            stateLock.withLock {
+                handles[current.id] = advanced
+                appendRecord(.continued, executionID: current.id, resultLifecycle: .active, resultPosition: advanced.position, resultContinuation: continuation)
+            }
+            return advanced
         }
-        return advanced
-    
-        }}
+    }
 
     public func fork(_ request: ExecutionForkRequest) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        let parent = try guardKnown(request.parent.id)
-        if handles[request.childID] != nil {
-            throw CoordinatorError.duplicateExecution(request.childID)
-        }
-
-        // TRANSACTIONAL FORK (review FM-02): the physical derivation runs
-        // BEFORE the logical child commits — a derivation failure leaves the
-        // parent unchanged and the child UNCOMMITTED (no handle, no fork
-        // record, no partial representation history). The logical fork
-        // (handle + record + history) is in-memory and commits only after
-        // the physical derivation succeeded.
-        var childRep: ExecutionRepresentation?
-        if parent.position == request.childPosition {
-            let history = representationHistory[parent.id] ?? []
-            // The representation must match the forked logical position
-            // exactly (`parent` is the coordinator's current handle, from
-            // guardKnown). A stale `.last` (e.g. after a restore rewound the
-            // handle) must never be derived from.
-            if let parentRep = history.last(where: { $0.position == parent.position }) {
-                let probe = ExecutionStateHandle(
-                    id: request.childID,
-                    lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
-                    position: request.childPosition,
-                    continuation: request.childContinuation,
-                    lifecycle: .active
-                )
-                childRep = try await backend.deriveRepresentation(from: parentRep, for: probe)
-            } else if !history.isEmpty {
-                // Representations exist but none at the fork point: fail
-                // closed before any child mutation (never guess from a
-                // mismatched position).
-                throw CoordinatorError.noRepresentationAtPosition(
-                    executionID: parent.id,
-                    position: parent.position
-                )
+            let parent = try guardKnown(request.parent.id)
+            if handles[request.childID] != nil {
+                throw CoordinatorError.duplicateExecution(request.childID)
             }
-            // No history at all: unchanged lazy fork — the child binds
-            // after its first generation.
-        }
 
-        let child = ExecutionStateHandle(
-            id: request.childID,
-            lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
-            position: request.childPosition,
-            continuation: request.childContinuation,
-            lifecycle: .active
-        )
-        stateLock.withLock {
-            handles[request.childID] = child
-            appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
-
-            if let rep = childRep {
-                representationHistory[request.childID, default: []].append(rep)
+            // TRANSACTIONAL FORK (review FM-02): the physical derivation runs
+            // BEFORE the logical child commits — a derivation failure leaves the
+            // parent unchanged and the child UNCOMMITTED (no handle, no fork
+            // record, no partial representation history). The logical fork
+            // (handle + record + history) is in-memory and commits only after
+            // the physical derivation succeeded.
+            var childRep: ExecutionRepresentation?
+            if parent.position == request.childPosition {
+                let history = representationHistory[parent.id] ?? []
+                // The representation must match the forked logical position
+                // exactly (`parent` is the coordinator's current handle, from
+                // guardKnown). A stale `.last` (e.g. after a restore rewound the
+                // handle) must never be derived from.
+                if let parentRep = history.last(where: { $0.position == parent.position }) {
+                    let probe = ExecutionStateHandle(
+                        id: request.childID,
+                        lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
+                        position: request.childPosition,
+                        continuation: request.childContinuation,
+                        lifecycle: .active
+                    )
+                    childRep = try await backend.deriveRepresentation(from: parentRep, for: probe)
+                } else if !history.isEmpty {
+                    // Representations exist but none at the fork point: fail
+                    // closed before any child mutation (never guess from a
+                    // mismatched position).
+                    throw CoordinatorError.noRepresentationAtPosition(
+                        executionID: parent.id,
+                        position: parent.position
+                    )
+                }
+                // No history at all: unchanged lazy fork — the child binds
+                // after its first generation.
             }
+
+            let child = ExecutionStateHandle(
+                id: request.childID,
+                lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
+                position: request.childPosition,
+                continuation: request.childContinuation,
+                lifecycle: .active
+            )
+            stateLock.withLock {
+                handles[request.childID] = child
+                appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
+
+                if let rep = childRep {
+                    representationHistory[request.childID, default: []].append(rep)
+                }
+            }
+            return child
         }
-        return child
-    
-        }}
+    }
 
     public func restore(
         _ state: ExecutionStateHandle,
         request: ExecutionRestoreRequest
     ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        let current = try guardKnown(state.id)
+            let current = try guardKnown(state.id)
 
-        // A logical restore requires a captured physical representation at
-        // the target position — otherwise the runtime would promise a state
-        // it cannot physically deliver.
-        guard let targetRep = representationHistory[state.id]?
-            .last(where: { $0.position == request.targetPosition })
-        else {
-            throw CoordinatorError.noRepresentationAtPosition(
-                executionID: current.id,
-                position: request.targetPosition
+            // A logical restore requires a captured physical representation at
+            // the target position — otherwise the runtime would promise a state
+            // it cannot physically deliver.
+            guard let targetRep = representationHistory[state.id]?
+                .last(where: { $0.position == request.targetPosition })
+            else {
+                throw CoordinatorError.noRepresentationAtPosition(
+                    executionID: current.id,
+                    position: request.targetPosition
+                )
+            }
+            try await backend.restoreRepresentation(targetRep)
+
+            let restored = ExecutionStateHandle(
+                id: current.id,
+                lineage: current.lineage,
+                position: request.targetPosition,
+                continuation: request.continuation,
+                lifecycle: .restored
             )
+            stateLock.withLock {
+                handles[current.id] = restored
+                appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
+            }
+            return restored
         }
-        try await backend.restoreRepresentation(targetRep)
-
-        let restored = ExecutionStateHandle(
-            id: current.id,
-            lineage: current.lineage,
-            position: request.targetPosition,
-            continuation: request.continuation,
-            lifecycle: .restored
-        )
-        stateLock.withLock {
-            handles[current.id] = restored
-            appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
-        }
-        return restored
-    
-        }}
+    }
 
     public func reattach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-        let current = try guardKnown(state.id)
-        let reattached = ExecutionStateHandle(
-            id: current.id,
-            lineage: current.lineage,
-            position: current.position,
-            continuation: current.continuation,
-            lifecycle: .active
-        )
-        stateLock.withLock {
-            handles[current.id] = reattached
-            appendRecord(.reattached, executionID: current.id, resultLifecycle: .active, resultPosition: current.position, resultContinuation: current.continuation)
+            let current = try guardKnown(state.id)
+            let reattached = ExecutionStateHandle(
+                id: current.id,
+                lineage: current.lineage,
+                position: current.position,
+                continuation: current.continuation,
+                lifecycle: .active
+            )
+            stateLock.withLock {
+                handles[current.id] = reattached
+                appendRecord(.reattached, executionID: current.id, resultLifecycle: .active, resultPosition: current.position, resultContinuation: current.continuation)
+            }
+            return reattached
         }
-        return reattached
-    
-        }}
+    }
 
     public func discard(_ state: ExecutionStateHandle) async throws {
         try await operationGate.withPermit { [self] in
-        let current = try guardKnown(state.id)
+            let current = try guardKnown(state.id)
 
-        // TRANSACTIONAL DISCARD (review fix: failure atomicity) — the
-        // physical representation is released FIRST; the logical discard
-        // commits only after the release succeeded. A failed release leaves
-        // the logical state UNCHANGED (still resumable/retryable) instead of
-        // a "discarded-but-weights-resident" split.
-        if let last = representationHistory[current.id]?.last {
-            try await backend.releaseRepresentation(last)
-        }
+            // TRANSACTIONAL DISCARD (review fix: failure atomicity) — the
+            // physical representation is released FIRST; the logical discard
+            // commits only after the release succeeded. A failed release leaves
+            // the logical state UNCHANGED (still resumable/retryable) instead of
+            // a "discarded-but-weights-resident" split.
+            if let last = representationHistory[current.id]?.last {
+                try await backend.releaseRepresentation(last)
+            }
 
-        let discardedHandle = ExecutionStateHandle(
-            id: current.id,
-            lineage: current.lineage,
-            position: current.position,
-            continuation: current.continuation,
-            lifecycle: .discarded
-        )
-        stateLock.withLock {
-            handles[current.id] = discardedHandle
-            appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
+            let discardedHandle = ExecutionStateHandle(
+                id: current.id,
+                lineage: current.lineage,
+                position: current.position,
+                continuation: current.continuation,
+                lifecycle: .discarded
+            )
+            stateLock.withLock {
+                handles[current.id] = discardedHandle
+                appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
+            }
         }
-    
-        }}
+    }
 
     public var recordCount: Int {
         stateLock.withLock { records.count }
