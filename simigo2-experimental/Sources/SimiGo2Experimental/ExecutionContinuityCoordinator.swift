@@ -1,6 +1,48 @@
 import Foundation
 import SimiGoRuntimeContract
 
+/// Serializes coordinator transitions across backend awaits. A transition
+/// must keep exclusive access to logical state until its physical backend
+/// operation and logical commit are both complete.
+private actor CoordinatorAsyncOperationGate {
+    private var occupied = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func withPermit<T: Sendable>(
+        _ operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        await acquire()
+        do {
+            let result = try await operation()
+            release()
+            return result
+        } catch {
+            release()
+            throw error
+        }
+    }
+
+    private func acquire() async {
+        if !occupied {
+            occupied = true
+            return
+        }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            waiters.append(continuation)
+        }
+    }
+
+    private func release() {
+        if waiters.isEmpty {
+            occupied = false
+        } else {
+            // Keep the permit occupied while handing it directly to the
+            // next waiter, preventing a new caller from jumping the queue.
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
 /// E3 — production Execution Continuity runtime: E1 lifecycle semantics
 /// (registry + one authoritative lifecycle record per transition) combined
 /// with Backend representation binding.
@@ -45,6 +87,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     }
 
     private let backend: any ExecutionStateBackend
+    private let operationGate = CoordinatorAsyncOperationGate()
+    /// The async gate serializes writers across suspension points. This lock
+    /// protects synchronous observation while a transition commits.
+    private let stateLock = NSRecursiveLock()
     private var handles: [ExecutionID: ExecutionStateHandle] = [:]
     private(set) var records: [LifecycleRecord] = []
     /// Representation history per execution: appended on every bind/capture/
@@ -64,18 +110,20 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         resultPosition: ExecutionPosition,
         resultContinuation: ExecutionContinuation
     ) {
-        sequence += 1
-        records.append(
-            LifecycleRecord(
-                sequence: sequence,
-                operation: operation,
-                executionID: executionID,
-                relatedID: relatedID,
-                resultLifecycle: resultLifecycle,
-                resultPosition: resultPosition,
-                resultContinuation: resultContinuation
+        stateLock.withLock {
+            sequence += 1
+            records.append(
+                LifecycleRecord(
+                    sequence: sequence,
+                    operation: operation,
+                    executionID: executionID,
+                    relatedID: relatedID,
+                    resultLifecycle: resultLifecycle,
+                    resultPosition: resultPosition,
+                    resultContinuation: resultContinuation
+                )
             )
-        )
+        }
     }
 
     private func guardKnown(_ id: ExecutionID) throws -> ExecutionStateHandle {
@@ -101,7 +149,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         position: ExecutionPosition,
         payload: any ExecutionRepresentationPayload
     ) async throws {
-        guard handles[executionID] != nil else {
+        try await operationGate.withPermit { [self] in
+        guard stateLock.withLock({ handles[executionID] != nil }) else {
             throw CoordinatorError.unknownExecution(executionID)
         }
         let representation = ExecutionRepresentation(
@@ -110,8 +159,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             payload: payload
         )
         try await backend.restoreRepresentation(representation)
-        representationHistory[executionID, default: []].append(representation)
-    }
+        stateLock.withLock {
+            representationHistory[executionID, default: []].append(representation)
+        }
+    
+        }}
 
     // MARK: - ExecutionContinuityRuntime
 
@@ -120,6 +172,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         position: ExecutionPosition,
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         if handles[id] != nil {
             throw CoordinatorError.duplicateExecution(id)
         }
@@ -130,24 +183,32 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: continuation,
             lifecycle: .attached
         )
-        handles[id] = handle
-        appendRecord(.created, executionID: id, resultLifecycle: .attached, resultPosition: position, resultContinuation: continuation)
+        stateLock.withLock {
+            handles[id] = handle
+            appendRecord(.created, executionID: id, resultLifecycle: .attached, resultPosition: position, resultContinuation: continuation)
+        }
         return handle
-    }
+    
+        }}
 
     public func attach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         if handles[state.id] != nil {
             throw CoordinatorError.duplicateExecution(state.id)
         }
-        handles[state.id] = state
-        appendRecord(.attached, executionID: state.id, resultLifecycle: state.lifecycle, resultPosition: state.position, resultContinuation: state.continuation)
+        stateLock.withLock {
+            handles[state.id] = state
+            appendRecord(.attached, executionID: state.id, resultLifecycle: state.lifecycle, resultPosition: state.position, resultContinuation: state.continuation)
+        }
         return state
-    }
+    
+        }}
 
     public func continueExecution(
         _ state: ExecutionStateHandle,
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         let current = try guardKnown(state.id)
         let advanced = ExecutionStateHandle(
             id: current.id,
@@ -156,12 +217,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: continuation,
             lifecycle: .active
         )
-        handles[current.id] = advanced
-        appendRecord(.continued, executionID: current.id, resultLifecycle: .active, resultPosition: advanced.position, resultContinuation: continuation)
+        stateLock.withLock {
+            handles[current.id] = advanced
+            appendRecord(.continued, executionID: current.id, resultLifecycle: .active, resultPosition: advanced.position, resultContinuation: continuation)
+        }
         return advanced
-    }
+    
+        }}
 
     public func fork(_ request: ExecutionForkRequest) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         let parent = try guardKnown(request.parent.id)
         if handles[request.childID] != nil {
             throw CoordinatorError.duplicateExecution(request.childID)
@@ -209,19 +274,23 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: request.childContinuation,
             lifecycle: .active
         )
-        handles[request.childID] = child
-        appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
+        stateLock.withLock {
+            handles[request.childID] = child
+            appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
 
-        if let rep = childRep {
-            representationHistory[request.childID, default: []].append(rep)
+            if let rep = childRep {
+                representationHistory[request.childID, default: []].append(rep)
+            }
         }
         return child
-    }
+    
+        }}
 
     public func restore(
         _ state: ExecutionStateHandle,
         request: ExecutionRestoreRequest
     ) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         let current = try guardKnown(state.id)
 
         // A logical restore requires a captured physical representation at
@@ -244,12 +313,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: request.continuation,
             lifecycle: .restored
         )
-        handles[current.id] = restored
-        appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
+        stateLock.withLock {
+            handles[current.id] = restored
+            appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
+        }
         return restored
-    }
+    
+        }}
 
     public func reattach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
+        try await operationGate.withPermit { [self] in
         let current = try guardKnown(state.id)
         let reattached = ExecutionStateHandle(
             id: current.id,
@@ -258,12 +331,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: current.continuation,
             lifecycle: .active
         )
-        handles[current.id] = reattached
-        appendRecord(.reattached, executionID: current.id, resultLifecycle: .active, resultPosition: current.position, resultContinuation: current.continuation)
+        stateLock.withLock {
+            handles[current.id] = reattached
+            appendRecord(.reattached, executionID: current.id, resultLifecycle: .active, resultPosition: current.position, resultContinuation: current.continuation)
+        }
         return reattached
-    }
+    
+        }}
 
     public func discard(_ state: ExecutionStateHandle) async throws {
+        try await operationGate.withPermit { [self] in
         let current = try guardKnown(state.id)
 
         // TRANSACTIONAL DISCARD (review fix: failure atomicity) — the
@@ -282,15 +359,22 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             continuation: current.continuation,
             lifecycle: .discarded
         )
-        handles[current.id] = discardedHandle
-        appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
+        stateLock.withLock {
+            handles[current.id] = discardedHandle
+            appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
+        }
+    
+        }}
+
+    public var recordCount: Int {
+        stateLock.withLock { records.count }
     }
 
-    public var recordCount: Int { records.count }
-
-    public var recordsSnapshot: [LifecycleRecord] { records }
+    public var recordsSnapshot: [LifecycleRecord] {
+        stateLock.withLock { records }
+    }
 
     public func handle(_ id: ExecutionID) -> ExecutionStateHandle? {
-        handles[id]
+        stateLock.withLock { handles[id] }
     }
 }
