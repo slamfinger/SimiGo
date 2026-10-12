@@ -2,11 +2,6 @@ import XCTest
 import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
-/// E3 — ExecutionContinuityCoordinator + MLXExecutionStateBackend
-/// (prefix-recompute representation strategy; the binding logic itself is
-/// pure data — no MLX execution in these tests). Sovereignty assertion:
-/// backend operations can never alter a handle's identity, lineage, or
-/// continuation.
 /// A controllable backend that suspends the first physical fork derivation.
 /// It lets the test hold the coordinator between validation and commit while
 /// competing requests attempt to claim the same child ID.
@@ -87,6 +82,11 @@ private actor PausingForkBackend: ExecutionStateBackend {
     }
 }
 
+/// E3 — ExecutionContinuityCoordinator + MLXExecutionStateBackend
+/// (prefix-recompute representation strategy; the binding logic itself is
+/// pure data — no MLX execution in these tests). Sovereignty assertion:
+/// backend operations can never alter a handle's identity, lineage, or
+/// continuation.
 final class ExecutionContinuityCoordinatorTests: XCTestCase {
     private var backend: MLXExecutionStateBackend!
     private var coordinator: ExecutionContinuityCoordinator!
