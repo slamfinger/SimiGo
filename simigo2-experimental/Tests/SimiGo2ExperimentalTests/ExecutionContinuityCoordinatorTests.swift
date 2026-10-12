@@ -140,6 +140,119 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         }
     }
 
+    /// Regression: after a restore rewinds the coordinator handle, the
+    /// append-only representation history still ENDS at the newer position.
+    /// The marker-append failure path in the oversized engine produces this
+    /// exact split; a plain coordinator restore reproduces it directly. The
+    /// oversized backend has no derive-position guard, so the old blind
+    /// `.last` selection silently bound a position-1 prefix onto a
+    /// position-0 child.
+    func testForkAfterRestoreUsesRepresentationMatchingForkedPosition() async throws {
+        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "A-next", continuationID: "A-cont")
+        )
+        backend.bind(executionID: state.id, position: state.position, prefix: [1, 2, 3])
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: state.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let advanced = try await coordinator.continueExecution(
+            state,
+            continuation: ExecutionContinuation(nextInput: "A-next-2", continuationID: "A-cont-2")
+        )
+        backend.bind(executionID: advanced.id, position: advanced.position, prefix: [1, 2, 3, 4, 5])
+        try await coordinator.bindRepresentation(
+            executionID: advanced.id,
+            position: advanced.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5])
+        )
+
+        // Restore succeeds: coordinator handle moves to position 0 while
+        // history.last stays at the position-1 representation.
+        let restored = try await coordinator.restore(
+            advanced,
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(0),
+                continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+            )
+        )
+        XCTAssertEqual(restored.position, ExecutionPosition(0))
+
+        // Fork the coordinator's CURRENT restored handle at the target
+        // position: the child must derive from the position-0 representation.
+        let child = try await coordinator.fork(
+            ExecutionForkRequest(
+                parent: restored,
+                childID: ExecutionID("B"),
+                childPosition: ExecutionPosition(0),
+                childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+            )
+        )
+        let rep = try await backend.captureRepresentation(for: child)
+        XCTAssertEqual(rep.position, ExecutionPosition(0))
+        let payload = try XCTUnwrap(rep.payload as? OversizedPrefixPayload)
+        XCTAssertEqual(payload.tokenPrefix, [1, 2, 3])
+    }
+
+    /// Regression: when representations exist but none at the forked
+    /// position, the fork must fail closed before mutating any child state —
+    /// never silently derive from (or lazily skip past) a mismatched
+    /// representation.
+    func testForkAtPositionWithoutRepresentationFailsClosed() async throws {
+        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "A-next", continuationID: "A-cont")
+        )
+        backend.bind(executionID: state.id, position: state.position, prefix: [1, 2, 3])
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: state.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let advanced = try await coordinator.continueExecution(
+            state,
+            continuation: ExecutionContinuation(nextInput: "A-next-2", continuationID: "A-cont-2")
+        )
+        let beforeRecords = coordinator.recordCount
+
+        await XCTAssertThrowsErrorAsync {
+            try await coordinator.fork(
+                ExecutionForkRequest(
+                    parent: advanced,
+                    childID: ExecutionID("B"),
+                    childPosition: advanced.position,
+                    childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+                )
+            )
+        } errorHandler: { error in
+            guard case ExecutionContinuityCoordinator.CoordinatorError
+                .noRepresentationAtPosition(executionID: let id, position: let pos) = error
+            else {
+                return XCTFail("expected noRepresentationAtPosition")
+            }
+            XCTAssertEqual(id, ExecutionID("A"))
+            XCTAssertEqual(pos, ExecutionPosition(1))
+        }
+
+        // Fail closed: no child handle, no fork record, no backend binding.
+        XCTAssertNil(coordinator.handle(ExecutionID("B")))
+        XCTAssertEqual(coordinator.recordCount, beforeRecords)
+        XCTAssertThrowsError(
+            try backend.boundPrefixLength(
+                executionID: ExecutionID("B"),
+                position: ExecutionPosition(1)
+            )
+        )
+    }
+
     func testRestoreBindsTheCapturedRepresentationAtTheTargetPosition() async throws {
         let state = try await coordinator.create(
             id: ExecutionID("A"),

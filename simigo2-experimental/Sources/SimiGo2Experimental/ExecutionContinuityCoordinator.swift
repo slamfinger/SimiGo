@@ -14,9 +14,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         case unknownExecution(ExecutionID)
         case duplicateExecution(ExecutionID)
         case discardedExecution(ExecutionID)
-        /// No captured representation exists at the restore target position:
-        /// a logical restore requires a captured physical representation at
-        /// that position (capture one before continuing past it).
+        /// No captured representation exists at the restore/fork target
+        /// position: a logical restore or a physical fork derivation
+        /// requires a captured physical representation at that position
+        /// (capture one before continuing past it).
         case noRepresentationAtPosition(executionID: ExecutionID, position: ExecutionPosition)
     }
 
@@ -172,34 +173,49 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         // record, no partial representation history). The logical fork
         // (handle + record + history) is in-memory and commits only after
         // the physical derivation succeeded.
-        var child: ExecutionStateHandle?
         var childRep: ExecutionRepresentation?
-        if parent.position == request.childPosition,
-            let parentRep = representationHistory[parent.id]?.last {
-            let probe = ExecutionStateHandle(
-                id: request.childID,
-                lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
-                position: request.childPosition,
-                continuation: request.childContinuation,
-                lifecycle: .active
-            )
-            childRep = try await backend.deriveRepresentation(from: parentRep, for: probe)
+        if parent.position == request.childPosition {
+            let history = representationHistory[parent.id] ?? []
+            // The representation must match the forked logical position
+            // exactly (`parent` is the coordinator's current handle, from
+            // guardKnown). A stale `.last` (e.g. after a restore rewound the
+            // handle) must never be derived from.
+            if let parentRep = history.last(where: { $0.position == parent.position }) {
+                let probe = ExecutionStateHandle(
+                    id: request.childID,
+                    lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
+                    position: request.childPosition,
+                    continuation: request.childContinuation,
+                    lifecycle: .active
+                )
+                childRep = try await backend.deriveRepresentation(from: parentRep, for: probe)
+            } else if !history.isEmpty {
+                // Representations exist but none at the fork point: fail
+                // closed before any child mutation (never guess from a
+                // mismatched position).
+                throw CoordinatorError.noRepresentationAtPosition(
+                    executionID: parent.id,
+                    position: parent.position
+                )
+            }
+            // No history at all: unchanged lazy fork — the child binds
+            // after its first generation.
         }
 
-        child = ExecutionStateHandle(
+        let child = ExecutionStateHandle(
             id: request.childID,
             lineage: ExecutionLineage(root: parent.lineage.root, parent: parent.id),
             position: request.childPosition,
             continuation: request.childContinuation,
             lifecycle: .active
         )
-        handles[request.childID] = child!
+        handles[request.childID] = child
         appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
 
         if let rep = childRep {
             representationHistory[request.childID, default: []].append(rep)
         }
-        return child!
+        return child
     }
 
     public func restore(
