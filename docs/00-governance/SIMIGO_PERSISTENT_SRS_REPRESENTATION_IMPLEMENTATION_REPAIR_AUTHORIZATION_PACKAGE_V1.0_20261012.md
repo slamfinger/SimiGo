@@ -1,14 +1,13 @@
-# Persistent SRS Representation Implementation Repair Authorization Package v1.2
+# Persistent SRS Representation Implementation Repair Authorization Package v1.3
 
 > **Status:** REVISED DELIVERY FOR HUMAN REVIEW — REPAIR NOT AUTHORIZED
 > **Date:** 2026-10-12
-> **Version:** v1.2 (in-place revision of the same document)
-> **Supersedes:** v1.1, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.1`
-> **Revision scope:** R1 status mapping split (known-but-disallowed type vs
-> globally unsupported type number); removal of the last descriptor field
-> alias in the production constructor; R5 stage mapping recalibrated to
-> R17/R18/R19/R20/R27 per Contract v1.8 section 13.1; cross-reference fixes
-> (section 1 -> section 9; section 12 decision identifiers)
+> **Version:** v1.3 (in-place revision of the same document)
+> **Supersedes:** v1.2, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2`
+> **Revision scope:** R17 regains its contract-assigned structural and type
+> check duties with R19 kept at full frozen-schema responsibility and tests
+> distinguishing the two rejection classes; R3 ordering reference now points
+> to the independent W13-W16 sequence of section 5
 > **Basis ruling:** `REVISE_IMPLEMENTATION_COMPLETION_REVIEW`
 > **Delivery ruling:** `AUTHORIZE_DRAFT_AND_DELIVER_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
 > **Bound implementation commit:** `5764396497d115ce8b780dc7190815b849fea924`
@@ -153,7 +152,10 @@ invalid_key =>
 
 ordering =
   precheck -> lock -> W2/W3 classification -> (only for NEW_RECORD)
-  W7-W12 staging/refresh/rename -> W13-W15 reopen and verify R1-R29.
+  W7-W12 staging/refresh/rename -> the independent W13-W16 sequence of
+  section 5 (W13 reopen the final path and execute R1-R28; W14 execute R29;
+  W15 derive COMPLETE_VERIFIED only after both pass; W16 release the lock
+  after the verdict).
 ```
 
 Failure mode: any staging file, directory entry, or final record created when
@@ -223,6 +225,8 @@ R17 structural stage:
   binding — decode enforces:
     exact required members — missing => UNKNOWN_SCHEMA_OR_FIELD;
     exact allowed member set — unknown => UNKNOWN_SCHEMA_OR_FIELD;
+    JSON value structural types required by each member's position (string
+      vs array vs object vs literal) — mismatch => UNKNOWN_SCHEMA_OR_FIELD;
     JSON depth, duplicate members, and array limits per the existing strict
       parser (JSON_DEPTH_LIMIT_EXCEEDED, DUPLICATE_JSON_MEMBER,
       INTEGER_OVERFLOW_OR_RESOURCE_LIMIT);
@@ -232,9 +236,10 @@ R18 payload identity stage:
   encoding_identity mismatch => ENCODING_IDENTITY_MISMATCH;
 
 R19 schema-validation stage:
-  the complete frozen-schema type, enum, length, pattern, and const checks
-  per class fire here with SCHEMA_VALIDATION_FAILED; R19 keeps its full
-  frozen responsibility and is not reduced by the R17 checks;
+  the complete frozen-schema enum, length, pattern, and const checks per
+  class fire here with SCHEMA_VALIDATION_FAILED, in addition to the full
+  frozen schema validation — R19 keeps its complete frozen responsibility
+  and is not reduced by the R17 checks;
 
 R20 timestamp stage:
   the UTC shape remains a R19 pattern check; calendar validity fails here as
@@ -253,16 +258,18 @@ stage and returns its contract-defined status.
 
 Failure mode: an unknown nested member surviving to R21.
 
-Acceptance standard: nested unknown and missing members fail at R17 with
-`UNKNOWN_SCHEMA_OR_FIELD`; schema-id and encoding violations fail at R18;
-type/enum/length/pattern violations fail at R19 with
-`SCHEMA_VALIDATION_FAILED`; calendar violations fail at R20; decision-core
-violations fail at R27 — each demonstrated per object class at its correct
-stage.
+Acceptance standard: nested unknown, missing, and structurally mistyped
+members fail at R17 with `UNKNOWN_SCHEMA_OR_FIELD`; schema-id and encoding
+violations fail at R18; schema-level enum/length/pattern/const violations
+that pass the R17 checks fail at R19 with `SCHEMA_VALIDATION_FAILED`;
+calendar violations fail at R20; decision-core violations fail at R27 — each
+demonstrated per object class at its correct stage.
 
 Required negative tests: at least one unknown-member injection per nested
-class asserting the exact R17 status, and at least one type or enum violation
-per class asserting the exact R19 status; plus stage-bound cases for R18
+class asserting the exact R17 status; at least one structural type violation
+per class asserting the exact R17 status; and at least one enum, length,
+pattern, or const violation per class that passes the R17 checks but fails at
+R19 with exactly SCHEMA_VALIDATION_FAILED; plus stage-bound cases for R18
 (wrong payload_schema_id; wrong encoding_identity) and R27 (wrong
 decision_core_source_commit or source_sha256).
 
@@ -433,13 +440,13 @@ AUTHORIZE_IMPLEMENTATION_REPAIR_V1
 or
 
 ```text
-REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2
+REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.3
 ```
 
 or
 
 ```text
-REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2
+REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.3
 ```
 
 `AUTHORIZE_IMPLEMENTATION_REPAIR_V1` may authorize only the repairs of
