@@ -382,6 +382,66 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         )
         XCTAssertEqual(coordinator.recordsSnapshot[1].relatedID, ExecutionID("A"))
     }
+
+    /// Concurrent requests for one child identity must linearize at the
+    /// coordinator boundary. Backend derivation is async, so checking child
+    /// uniqueness only before that await is insufficient under overlap.
+    func testConcurrentForkRequestsForSameChildCommitExactlyOnce() async throws {
+        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let parent = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "A-next", continuationID: "A-cont")
+        )
+        backend.bind(executionID: parent.id, position: parent.position, prefix: [1, 2, 3])
+        try await coordinator.bindRepresentation(
+            executionID: parent.id,
+            position: parent.position,
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let recordsBeforeForks = coordinator.recordCount
+
+        let requests = (0..<32).map { index in
+            ExecutionForkRequest(
+                parent: parent,
+                childID: ExecutionID("B"),
+                childPosition: ExecutionPosition(0),
+                childContinuation: ExecutionContinuation(
+                    nextInput: "B-next-\\(index)",
+                    continuationID: "B-cont-\\(index)"
+                )
+            )
+        }
+        let outcomes = await withTaskGroup(of: Bool.self) { group in
+            for request in requests {
+                group.addTask {
+                    do {
+                        _ = try await coordinator.fork(request)
+                        return true
+                    } catch {
+                        return false
+                    }
+                }
+            }
+
+            var completed: [Bool] = []
+            for await outcome in group {
+                completed.append(outcome)
+            }
+            return completed
+        }
+
+        XCTAssertEqual(outcomes.filter { $0 }.count, 1, "only one fork may claim child B")
+        XCTAssertEqual(coordinator.recordCount, recordsBeforeForks + 1)
+        let child = try XCTUnwrap(coordinator.handle(ExecutionID("B")))
+        XCTAssertEqual(child.lineage.parent, ExecutionID("A"))
+        let representation = try await backend.captureRepresentation(for: child)
+        XCTAssertEqual(representation.position, ExecutionPosition(0))
+        let payload = try XCTUnwrap(representation.payload as? OversizedPrefixPayload)
+        XCTAssertEqual(payload.tokenPrefix, [1, 2, 3])
+    }
+
 }
 
 /// Async do/catch assertion helper for this test file.
