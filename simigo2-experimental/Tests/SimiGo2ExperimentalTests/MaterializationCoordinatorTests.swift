@@ -72,6 +72,27 @@ private actor MaterializationWorkGate {
     }
 }
 
+private actor MaterializationJoinProbe {
+    private var joinedKeys: [String] = []
+    private var waiters: [(key: String, continuation: CheckedContinuation<Void, Never>)] = []
+
+    func record(_ key: String) {
+        joinedKeys.append(key)
+        let ready = waiters.filter { $0.key == key }
+        waiters.removeAll { $0.key == key }
+        ready.forEach { $0.continuation.resume() }
+    }
+
+    func waitForJoin(_ key: String) async {
+        if joinedKeys.contains(key) { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            waiters.append((key, continuation))
+        }
+    }
+
+    var joinCount: Int { joinedKeys.count }
+}
+
 private func f3tokens(_ count: Int, seed: Int = 0) -> [Int] {
     (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
 }
@@ -146,6 +167,10 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
         let startBarrier = MaterializationStartBarrier(participantCount: 2)
         let workGate = MaterializationWorkGate()
+        let joinProbe = MaterializationJoinProbe()
+        coordinator.setJoinObserver { [joinProbe] key in
+            await joinProbe.record(key)
+        }
         final class Counter: @unchecked Sendable {
             private let l = NSLock()
             private var v = 0
@@ -176,8 +201,11 @@ final class MaterializationCoordinatorTests: XCTestCase {
         }
 
         await workGate.waitForFirstCall()
+        await joinProbe.waitForJoin("ref-X")
         let callsBeforeRelease = await workGate.callCount
         XCTAssertEqual(callsBeforeRelease, 1, "exactly one underlying work may start before release")
+        let joinsBeforeRelease = await joinProbe.joinCount
+        XCTAssertEqual(joinsBeforeRelease, 1, "the second caller must reuse the in-flight work before release")
 
         await workGate.release()
         var outcomes: [MaterializeOutcome] = []
@@ -185,6 +213,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
             outcomes.append(await task.value)
         }
         let callsAfterRelease = await workGate.callCount
+        let joinsAfterRelease = await joinProbe.joinCount
 
         let failures = outcomes.compactMap {
             if case .failure(let error) = $0 { return error }
@@ -196,6 +225,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
             return nil
         }, [42, 42], "both callers share the single work's result")
         XCTAssertEqual(callsAfterRelease, 1, "no duplicate underlying work may start after release")
+        XCTAssertEqual(joinsAfterRelease, 1, "only one single-flight join should be observed")
         // WHICH caller creates the work is nondeterministic — the
         // contract is: same result for both, exactly ONE underlying load.
         XCTAssertEqual(loads.value, 1, "single-flight: one work, shared result")

@@ -76,6 +76,7 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     private let lock = NSLock()
     private var inFlight: [String: Task<Value, Error>] = [:]
     private let physicalUse: PhysicalUseRegistry
+    private var joinObserver: (@Sendable (String) async -> Void)?
 
     public init(physicalUse: PhysicalUseRegistry) {
         self.physicalUse = physicalUse
@@ -100,6 +101,7 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
             return (nil, created)
         }
         if let task = start.existing {
+            await notifyJoin(key: key)
             return try await task.value
         }
         guard let task = start.created else { fatalError("unreachable materialization state") }
@@ -115,5 +117,16 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
         lock.lock()
         defer { lock.unlock() }
         return inFlight[key] != nil
+    }
+
+    /// Test observation boundary for an actual single-flight join. The event
+    /// is emitted after the lock is released and never inside critical state.
+    func setJoinObserver(_ observer: (@Sendable (String) async -> Void)?) {
+        lock.withLock { joinObserver = observer }
+    }
+
+    private func notifyJoin(key: String) async {
+        let observer = lock.withLock { joinObserver }
+        await observer?(key)
     }
 }
