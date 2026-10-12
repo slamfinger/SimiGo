@@ -245,6 +245,48 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
         XCTAssertEqual(session.currentState()?.position, ExecutionPosition(0))
     }
 
+    func testTargetRebindFailureKeepsPriorStateWithoutIsolation() async throws {
+        let gate = AppendGate()
+        let (session, injector, evictionProbe) = try await makeIsolationSession(gate: gate)
+        // Call 3 is the restore target rebind: it fails BEFORE the marker
+        // hook ever runs, so no compensation is needed and no isolation may
+        // be entered.
+        injector.failRestoreCall(3)
+        let beforeRecords = session.coordinatorRecordCount()
+
+        do {
+            try await session.engine.restoreSession(to: 0)
+            XCTFail("restore must fail when the target rebind fails")
+        } catch {
+            guard error is BackendRestoreFaultInjector.InjectedRestoreFailure else {
+                return XCTFail("expected the raw rebind failure, got \(error)")
+            }
+        }
+
+        // Unlike a compensation failure, the physical binding never moved:
+        // it stays at the PRIOR position, and the logical, ledger, and
+        // session state are untouched with NO isolation entered.
+        XCTAssertFalse(session.hasUncertainBinding())
+        XCTAssertEqual(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(1)), 5)
+        XCTAssertThrowsError(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(0)))
+        XCTAssertEqual(session.coordinatorRecordCount(), beforeRecords)
+        XCTAssertEqual(session.currentState()?.position, ExecutionPosition(1))
+        XCTAssertEqual(session.currentState()?.lifecycle, .active)
+        XCTAssertEqual(session.engine.sessionInfo?.position, 1)
+        XCTAssertEqual(session.engine.tokenLedger?.count, 2)
+        let entries = try XCTUnwrap(session.engine.tokenLedger?.entries(for: executionID))
+        XCTAssertEqual(entries.map(\.kind), [.bootstrap, .turn])
+        XCTAssertEqual(entries.map(\.superseded), [false, false])
+
+        // Not isolated: teardown stays available even before any recovery.
+        try await session.engine.newSession()
+        XCTAssertEqual(evictionProbe.calls, ["release:A"])
+        XCTAssertNil(session.currentState())
+        XCTAssertNil(session.engine.sessionInfo)
+    }
+
     func testStableMarkerAppendFailureRollsBackBeforeLogicalCommit() async throws {
         let gate = AppendGate()
         let session = try await makeSession(gate: gate)
