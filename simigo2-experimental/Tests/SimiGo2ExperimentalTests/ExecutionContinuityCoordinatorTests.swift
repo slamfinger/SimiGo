@@ -109,6 +109,83 @@ private actor PausingForkBackend: ExecutionStateBackend {
     }
 }
 
+/// Injects success for the restore target rebind and deterministic failure
+/// for the prior-representation compensation rebind. This isolates the
+/// double-failure branch that follows a failed pre-commit hook.
+private actor CompensationFailureBackend: ExecutionStateBackend {
+    struct RollbackRejected: Error {}
+
+    private var representations: [ExecutionID: ExecutionRepresentation] = [:]
+    private var restoreCallCount = 0
+
+    func bind(_ representation: ExecutionRepresentation) {
+        representations[representation.executionID] = representation
+    }
+
+    func captureRepresentation(
+        for state: ExecutionStateHandle
+    ) async throws -> ExecutionRepresentation {
+        guard let representation = representations[state.id] else {
+            throw ExecutionStateBackendError.noBoundRepresentation(state.id)
+        }
+        guard representation.position == state.position else {
+            throw ExecutionStateBackendError.representationPositionMismatch(
+                executionID: state.id,
+                bound: representation.position,
+                logical: state.position
+            )
+        }
+        return representation
+    }
+
+    func boundRepresentation(
+        for id: ExecutionID
+    ) -> ExecutionRepresentation? {
+        representations[id]
+    }
+
+    func deriveRepresentation(
+        from parent: ExecutionRepresentation,
+        for child: ExecutionStateHandle
+    ) async throws -> ExecutionRepresentation {
+        guard parent.position == child.position else {
+            throw ExecutionStateBackendError.representationPositionMismatch(
+                executionID: child.id,
+                bound: parent.position,
+                logical: child.position
+            )
+        }
+        let derived = ExecutionRepresentation(
+            executionID: child.id,
+            position: child.position,
+            payload: parent.payload
+        )
+        representations[child.id] = derived
+        return derived
+    }
+
+    func restoreRepresentation(
+        _ representation: ExecutionRepresentation
+    ) async throws {
+        restoreCallCount += 1
+        // Calls 1-2 are setup binds; call 3 is the target rebind; call 4 is
+        // the prior-representation compensation rebind that must fail.
+        if restoreCallCount == 4 {
+            throw RollbackRejected()
+        }
+        representations[representation.executionID] = representation
+    }
+
+    func releaseRepresentation(
+        _ representation: ExecutionRepresentation
+    ) async throws {
+        guard representations[representation.executionID]?.position == representation.position else {
+            return
+        }
+        representations.removeValue(forKey: representation.executionID)
+    }
+}
+
 /// E3 — ExecutionContinuityCoordinator + MLXExecutionStateBackend
 /// (prefix-recompute representation strategy; the binding logic itself is
 /// pure data — no MLX execution in these tests). Sovereignty assertion:
@@ -428,6 +505,90 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
             XCTAssertEqual(id, ExecutionID("A"))
             XCTAssertEqual(pos, ExecutionPosition(99))
         }
+    }
+
+    func testCompensationFailureKeepsCoordinatorLogicalStateUncommitted() async throws {
+        let backend = CompensationFailureBackend()
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(1),
+            continuation: ExecutionContinuation(nextInput: "A-next-1", continuationID: "A-cont-1")
+        )
+
+        // Seed representations at positions 0 and 1. The restore target is
+        // position 0; the compensation source is the current position 1.
+        let position0 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(0),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let position1 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(1),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5])
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position0.position,
+            payload: position0.payload
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position1.position,
+            payload: position1.payload
+        )
+
+        let recordsBeforeRestore = coordinator.recordCount
+        XCTAssertEqual(recordsBeforeRestore, 1)
+        XCTAssertEqual(coordinator.recordsSnapshot.map(\.operation), [.created])
+
+        do {
+            _ = try await coordinator.restore(
+                try XCTUnwrap(coordinator.handle(state.id)),
+                request: ExecutionRestoreRequest(
+                    targetPosition: ExecutionPosition(0),
+                    continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+                ),
+                beforeCommit: {
+                    throw CompensationFailureBackend.RollbackRejected()
+                }
+            )
+            XCTFail("restore must fail when both marker commit and compensation fail")
+        } catch {
+            // `RestoreCompensationFailure` is private, so assert its mandated
+            // localized contract: both constituent failures remain visible and
+            // the message does not claim logical rollback.
+            let description = error.localizedDescription
+            XCTAssertTrue(
+                description.contains("RollbackRejected()"),
+                "missing compensation failure: \(description)"
+            )
+            XCTAssertTrue(
+                description.components(separatedBy: "RollbackRejected()").count - 1 >= 2,
+                "both hook and rollback failures must be visible: \(description)"
+            )
+            XCTAssertTrue(
+                description.contains("logical Coordinator state was not committed"),
+                "missing uncommitted-state boundary: \(description)"
+            )
+        }
+
+        // No logical commit occurred after the failed hook: same active
+        // position/lifecycle and no `.restored` lifecycle record.
+        let current = try XCTUnwrap(coordinator.handle(state.id))
+        XCTAssertEqual(current.position, ExecutionPosition(1))
+        XCTAssertEqual(current.lifecycle, .attached)
+        XCTAssertEqual(coordinator.recordCount, recordsBeforeRestore)
+        XCTAssertEqual(coordinator.recordsSnapshot.map(\.operation), [.created])
+
+        // Compensation rebind failed *after* the successful target rebind, so
+        // the test must not assume the backend returned to position 1. The
+        // observable physical state remains at the restore target.
+        let bound = await backend.boundRepresentation(for: state.id)
+        XCTAssertEqual(bound?.position, ExecutionPosition(0))
+        let payload = try XCTUnwrap(bound?.payload as? MLXPrefixPayload)
+        XCTAssertEqual(payload.tokenPrefix, [1, 2, 3])
     }
 
     func testDiscardReleasesRepresentation() async throws {
