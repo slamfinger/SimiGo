@@ -184,6 +184,73 @@ final class PersistentSRSRepresentationTests: XCTestCase {
         XCTAssertEqual(decodedB.provenanceBindings, [])
     }
 
+    // MARK: - R5: closed nested schema (R17 vs R19 stage distinction)
+
+    func testNestedUnknownMemberFailsAtR17() throws {
+        let record = makeRecord()
+        var json = record.canonicalJSONValue()
+        guard case .object(var members) = json,
+              let idx = members.firstIndex(where: { $0.0 == "provenance" }),
+              case .object(var provMembers) = members[idx].1 else {
+            return XCTFail("structure")
+        }
+        provMembers.append(("totally_unknown", .string("x")))
+        members[idx].1 = .object(provMembers)
+        json = .object(members)
+        do {
+            _ = try PersistentSRSRecord.decode(json)
+            XCTFail("expected unknown nested member rejection")
+        } catch let e as SRSDecodeError {
+            guard case .fail(.unknownSchemaOrField) = e else {
+                return XCTFail("expected R17 UNKNOWN_SCHEMA_OR_FIELD")
+            }
+        }
+    }
+
+    func testEnumViolationFailsAtR19() throws {
+        let record = makeRecord()
+        var json = record.canonicalJSONValue()
+        guard case .object(var members) = json,
+              let idx = members.firstIndex(where: { $0.0 == "provenance" }),
+              case .object(var provMembers) = members[idx].1,
+              let lifeIdx = provMembers.firstIndex(where: { $0.0 == "lifecycle" }) else {
+            return XCTFail("structure")
+        }
+        provMembers[lifeIdx].1 = .string("bogus_lifecycle")
+        members[idx].1 = .object(provMembers)
+        json = .object(members)
+        do {
+            _ = try PersistentSRSRecord.decode(json)
+            XCTFail("expected enum violation rejection")
+        } catch let e as SRSDecodeError {
+            guard case .fail(.schemaValidationFailed) = e else {
+                return XCTFail("expected R19 SCHEMA_VALIDATION_FAILED")
+            }
+        }
+    }
+
+    func testPayloadCoreBindingConstFailsAtR19() throws {
+        let record = makeRecord()
+        var json = record.canonicalJSONValue()
+        guard case .object(var members) = json,
+              let idx = members.firstIndex(where: { $0.0 == "decision_core_binding" }),
+              case .object(var coreMembers) = members[idx].1,
+              let commitIdx = coreMembers.firstIndex(where: { $0.0 == "source_commit" }) else {
+            return XCTFail("structure")
+        }
+        coreMembers[commitIdx].1 = .string("deadbeef")
+        members[idx].1 = .object(coreMembers)
+        json = .object(members)
+        do {
+            _ = try PersistentSRSRecord.decode(json)
+            XCTFail("expected const violation rejection at R19")
+        } catch let e as SRSDecodeError {
+            guard case .fail(.schemaValidationFailed) = e else {
+                return XCTFail("expected R19 SCHEMA_VALIDATION_FAILED")
+            }
+        }
+    }
+
     // MARK: - Strict UTC parser
 
     func testStrictUTCAcceptanceAndRejection() {
@@ -211,46 +278,49 @@ final class PersistentSRSRepresentationTests: XCTestCase {
         // The shared production classifier must treat them as distinct keys:
         // same proposed payload at a content path held by the other form is a
         // content-identity mismatch, never an equivalent record.
-        let classification = SRSWriteClassifier.classify(
-            existingLogicalKey: (persistentSRSUTF8Bytes(precomposed), [UInt8(ascii: "1")]),
-            existingPayload: [0x7B, 0x7D],
-            proposedLogicalKey: (persistentSRSUTF8Bytes(decomposed), [UInt8(ascii: "1")]),
-            proposedPayload: [0x7B, 0x7D]
-        )
+        let existing = SRSClassificationDescriptor(
+            identityUtf8: persistentSRSUTF8Bytes(precomposed), versionUtf8: [UInt8(ascii: "1")],
+            payloadDigestBytes: Array(repeating: 0x11, count: 32), canonicalPayloadI1Bytes: [0x7B, 0x7D])
+        let proposed = SRSClassificationDescriptor(
+            identityUtf8: persistentSRSUTF8Bytes(decomposed), versionUtf8: [UInt8(ascii: "1")],
+            payloadDigestBytes: Array(repeating: 0x11, count: 32), canonicalPayloadI1Bytes: [0x7B, 0x7D])
+        let classification = SRSWriteClassifier.classify(existingDescriptor: existing, proposedDescriptor: proposed)
         XCTAssertEqual(classification, .recordContentIdentityMismatch)
     }
 
     // MARK: - Shared classifier collision branches (PR-A41)
 
     func testContentAddressedCollisionClassification() {
-        let key = (persistentSRSUTF8Bytes("k"), persistentSRSUTF8Bytes("1"))
-        let otherKey = (persistentSRSUTF8Bytes("other"), persistentSRSUTF8Bytes("1"))
+        func descriptor(_ id: String, digest: [UInt8], i1: [UInt8]) -> SRSClassificationDescriptor {
+            SRSClassificationDescriptor(
+                identityUtf8: persistentSRSUTF8Bytes(id), versionUtf8: persistentSRSUTF8Bytes("1"),
+                payloadDigestBytes: digest, canonicalPayloadI1Bytes: i1)
+        }
+        let key = descriptor("k", digest: Array(repeating: 0x22, count: 32), i1: [0x7B, 0x7D])
+        let otherKey = descriptor("other", digest: Array(repeating: 0x22, count: 32), i1: [0x7B, 0x7D])
         let payloadA: [UInt8] = [0x7B, 0x7D]
         // No existing record at the proposed content path: NEW_RECORD.
         XCTAssertEqual(
-            SRSWriteClassifier.classify(existingLogicalKey: nil, existingPayload: nil,
-                                        proposedLogicalKey: key, proposedPayload: payloadA),
+            SRSWriteClassifier.classify(existingDescriptor: nil, proposedDescriptor: key),
             .newRecord
         )
         // Different logical key at the proposed content path: identity mismatch.
         XCTAssertEqual(
-            SRSWriteClassifier.classify(existingLogicalKey: otherKey, existingPayload: payloadA,
-                                        proposedLogicalKey: key, proposedPayload: payloadA),
+            SRSWriteClassifier.classify(existingDescriptor: otherKey, proposedDescriptor: key),
             .recordContentIdentityMismatch
         )
         // Same key, same I1 bytes: existing equivalent record.
         XCTAssertEqual(
-            SRSWriteClassifier.classify(existingLogicalKey: key, existingPayload: payloadA,
-                                        proposedLogicalKey: key, proposedPayload: payloadA),
+            SRSWriteClassifier.classify(existingDescriptor: key, proposedDescriptor: key),
             .existingEquivalentRecord
         )
         // Same ordered key, same payload digest, different I1 bytes (synthetic
         // SHA-256 collision descriptor from the test-only constructor):
         // PERSISTENT_LOGICAL_KEY_CONFLICT, final and non-retriable.
-        let differentI1: [UInt8] = [0x20, 0x7D]
         XCTAssertEqual(
-            SRSWriteClassifier.classify(existingLogicalKey: key, existingPayload: differentI1,
-                                        proposedLogicalKey: key, proposedPayload: payloadA),
+            SRSWriteClassifier.classify(
+                existingDescriptor: descriptor("k", digest: key.payloadDigestBytes, i1: [0x20, 0x7D]),
+                proposedDescriptor: key),
             .persistentLogicalKeyConflict
         )
     }
@@ -372,6 +442,10 @@ final class PersistentSRSRepresentationTests: XCTestCase {
         events.append(SRSAttemptStatusEvent(eventID: "e3", attemptID: "B", eventType: .failed, priorEventID: nil))
         XCTAssertEqual(srsCurrentAttemptProjection(events: events, attemptID: "B"), .failed)
         XCTAssertNil(srsCurrentAttemptProjection(events: events, attemptID: "missing"))
+        // R6: a broken prior_event_id append chain yields no valid projection.
+        events.append(SRSAttemptStatusEvent(eventID: "e5", attemptID: "C", eventType: .executed, priorEventID: nil))
+        events.append(SRSAttemptStatusEvent(eventID: "e6", attemptID: "C", eventType: .failed, priorEventID: "WRONG"))
+        XCTAssertNil(srsCurrentAttemptProjection(events: events, attemptID: "C"))
     }
 
     // MARK: - Batch budget and transitions
@@ -379,6 +453,7 @@ final class PersistentSRSRepresentationTests: XCTestCase {
     func testBatchBudgetAndTransitions() {
         XCTAssertTrue(srsBatchBudgetAllows(executedAttemptCount: 16))
         XCTAssertFalse(srsBatchBudgetAllows(executedAttemptCount: 17))
+        XCTAssertFalse(srsBatchBudgetAllows(executedAttemptCount: -1))
         XCTAssertTrue(srsBatchTransitionAllowed(from: .active, to: .complete))
         XCTAssertTrue(srsBatchTransitionAllowed(from: .active, to: .superseded))
         XCTAssertTrue(srsBatchTransitionAllowed(from: .complete, to: .superseded))
@@ -391,13 +466,127 @@ final class PersistentSRSRepresentationTests: XCTestCase {
         XCTAssertFalse(srsBatchTransitionAllowed(from: .complete, to: .failedClosed))
     }
 
+    // MARK: - R1: sealed field label/type matrix (table-driven)
+
+    func testSealedFieldTypeMatrix() throws {
+        let built = try SRSAttemptEvidence.build(attemptVectorInput()).get()
+        let sealed = built.sealedCanonicalData
+        let magicLen = Array("SIMISRS-ASEALED-V1".utf8).count
+        // Parse each field's label and type from the encoded bytes.
+        var fields: [(label: String, type: UInt8)] = []
+        var pos = magicLen + 4
+        while pos < sealed.count {
+            let labelLen = Int(sealed[pos]) << 8 | Int(sealed[pos + 1])
+            pos += 2
+            let label = String(bytes: sealed[pos..<pos + labelLen], encoding: .utf8)!
+            pos += labelLen
+            let type = sealed[pos]
+            pos += 1
+            var valueLen: UInt64 = 0
+            for _ in 0..<8 { valueLen = valueLen << 8 | UInt64(sealed[pos]); pos += 1 }
+            pos += Int(valueLen)
+            fields.append((label, type))
+        }
+        XCTAssertEqual(fields.count, 14)
+        // Every encoded type must equal the frozen label/type table entry.
+        for (i, field) in fields.enumerated() {
+            XCTAssertEqual(field.label, SRSAttemptEvidence.allFieldLabels[i])
+            XCTAssertTrue(
+                SRSAttemptEvidence.allowedFieldTypes[i].contains(field.type),
+                "field \(field.label) type \(field.type) not allowed"
+            )
+        }
+    }
+
+    // MARK: - R3: invalid signing key has zero filesystem side effects
+
+    func testInvalidSigningKeyHasZeroSideEffects() throws {
+        let root = makeTempRoot()
+        let record = makeRecord()
+        let wrongKey = Curve25519.Signing.PrivateKey()
+        let result = SRSWriter.write(record: record, signingKey: wrongKey, root: root)
+        XCTAssertEqual(result, .failure(.signatureVerificationFailed))
+        // Zero side effects: the root must not even exist.
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("records").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("staging").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent(".writer.lock").path))
+    }
+
+    // MARK: - R4: refresh failure handling
+
+    func testRefreshFailureLeavesFailClosedState() throws {
+        let root = makeTempRoot()
+        let recordsDir = root.appendingPathComponent("records", isDirectory: true)
+        try FileManager.default.createDirectory(at: recordsDir, withIntermediateDirectories: true)
+        let target = recordsDir.appendingPathComponent("final.psrs")
+        // W10 failure: no final record may exist.
+        SRSRefreshFailureInjector.failFileFlush = true
+        let fileFlush = SRSWriter.persist(frameBytes: [0x00], root: root,
+                                          recordsDir: recordsDir, targetPath: target)
+        SRSRefreshFailureInjector.failFileFlush = false
+        guard case .failure(let fileFlushStatus) = fileFlush else {
+            return XCTFail("expected file-flush failure")
+        }
+        XCTAssertEqual(fileFlushStatus, .persistenceVerificationIndeterminate)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: target.path))
+        // W12 failure: the immutable final record must remain and the state is
+        // reported indeterminate — never deleted, never denied.
+        SRSRefreshFailureInjector.failDirFlush = true
+        let dirFlush = SRSWriter.persist(frameBytes: [0x00], root: root,
+                                         recordsDir: recordsDir, targetPath: target)
+        SRSRefreshFailureInjector.failDirFlush = false
+        guard case .failure(let dirFlushStatus) = dirFlush else {
+            return XCTFail("expected dir-flush failure")
+        }
+        XCTAssertEqual(dirFlushStatus, .persistenceVerificationIndeterminate)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: target.path))
+    }
+
+    // MARK: - R27 envelope binding boundary (exact)
+
+    func testR27EnvelopeBindingMutationBoundary() {
+        // Frozen envelope values: R27 passes (nil status).
+        XCTAssertNil(SRSReader.checkDecisionCoreBinding(
+            envelopeCommit: SRSEncodingConstants.decisionCoreSourceCommit,
+            envelopeSHA256: SRSEncodingConstants.decisionCoreSourceSHA256))
+        // Each envelope field mutated separately fails at exactly R27.
+        XCTAssertEqual(
+            SRSReader.checkDecisionCoreBinding(
+                envelopeCommit: "deadbeef",
+                envelopeSHA256: SRSEncodingConstants.decisionCoreSourceSHA256),
+            .decisionCoreBindingMismatch)
+        XCTAssertEqual(
+            SRSReader.checkDecisionCoreBinding(
+                envelopeCommit: SRSEncodingConstants.decisionCoreSourceCommit,
+                envelopeSHA256: "feedface"),
+            .decisionCoreBindingMismatch)
+    }
+
     // MARK: - Two-phase closure: selection, registration, chain
 
     func testClosureSelectionRegistrationAndChain() throws {
         let orderKeyA = Array("aaaa".utf8)
         let orderKeyB = Array("bbbb".utf8)
-        let c1 = SRSClosureCandidate(scenario: "V-PERSIST-01", attemptID: "attempt-early", completionOrderKeyBytes: orderKeyA)
-        let c2 = SRSClosureCandidate(scenario: "V-PERSIST-01", attemptID: "attempt-late", completionOrderKeyBytes: orderKeyB)
+        let eligible = SRSCandidateEligibility(
+            evidenceV1to5Pass: true, scenarioExecutionRequired: true, verdictPass: true,
+            latestProjectionExecutedActive: true, sourceBatchActiveOrComplete: true,
+            frozenBindingsMatch: true, r29EvidencePresentAndPassing: true, noUnresolvedDrift: true)
+        let c1 = SRSClosureCandidate(scenario: "V-PERSIST-01", attemptID: "attempt-early",
+                                     completionOrderKeyBytes: orderKeyA, eligibility: eligible)
+        let c2 = SRSClosureCandidate(scenario: "V-PERSIST-01", attemptID: "attempt-late",
+                                     completionOrderKeyBytes: orderKeyB, eligibility: eligible)
+        // Phase 1: ineligible attempts are excluded before selection.
+        let ineligible = SRSCandidateEligibility(
+            evidenceV1to5Pass: false, scenarioExecutionRequired: true, verdictPass: true,
+            latestProjectionExecutedActive: true, sourceBatchActiveOrComplete: true,
+            frozenBindingsMatch: true, r29EvidencePresentAndPassing: true, noUnresolvedDrift: true)
+        XCTAssertEqual(SRSClosure.admitEligibleCandidates([c1, c2]).count, 2)
+        let ineligibleCandidate = SRSClosureCandidate(
+            scenario: "V-PERSIST-02", attemptID: "attempt-x", completionOrderKeyBytes: orderKeyA,
+            eligibility: ineligible)
+        XCTAssertEqual(
+            SRSClosure.admitEligibleCandidates([c1, c2, ineligibleCandidate]).map(\.attemptID),
+            ["attempt-early", "attempt-late"])
         // Phase 1 output keeps multiple eligible attempts per scenario.
         let selection = try SRSClosure.selectFinalAttempts([c1, c2]).get()
         XCTAssertEqual(selection.map(\.attemptID), ["attempt-late"])

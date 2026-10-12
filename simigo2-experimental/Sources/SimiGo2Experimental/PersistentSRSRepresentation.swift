@@ -638,6 +638,14 @@ func isUTCShape(_ s: String) -> Bool {
 
 private struct SRSJSONObj {
     let members: [(String, SRSJSONValue)]
+    /// R17: enforce the exact allowed member set for this object class.
+    /// Unknown members fail with UNKNOWN_SCHEMA_OR_FIELD; missing members are
+    /// reported the same way by value(_:).
+    func validateAllowed(_ allowed: Set<String>) throws {
+        for (k, _) in members where !allowed.contains(k) {
+            throw SRSDecodeError.fail(.unknownSchemaOrField)
+        }
+    }
     func value(_ key: String) throws -> SRSJSONValue {
         guard let entry = members.first(where: { $0.0 == key }) else {
             throw SRSDecodeError.fail(.unknownSchemaOrField)
@@ -647,19 +655,25 @@ private struct SRSJSONObj {
 }
 
 private func asObj(_ v: SRSJSONValue) throws -> SRSJSONObj {
-    guard case .object(let members) = v else { throw SRSDecodeError.fail(.schemaValidationFailed) }
+    // A value that is not an object where an object is required is an R17
+    // structural type violation.
+    guard case .object(let members) = v else { throw SRSDecodeError.fail(.unknownSchemaOrField) }
     return SRSJSONObj(members: members)
 }
 
 private func asString(_ v: SRSJSONValue, minLength: Int = 0) throws -> String {
-    guard case .string(let s) = v, s.utf8.count >= minLength, s.utf8.count <= SRSJSONLimits.maxStringBytes else {
+    // R17 structural type: a string is required here.
+    guard case .string(let s) = v else { throw SRSDecodeError.fail(.unknownSchemaOrField) }
+    // R19 schema-level length constraints.
+    guard s.utf8.count >= minLength, s.utf8.count <= SRSJSONLimits.maxStringBytes else {
         throw SRSDecodeError.fail(.schemaValidationFailed)
     }
     return s
 }
 
 private func asBool(_ v: SRSJSONValue) throws -> Bool {
-    guard case .bool(let b) = v else { throw SRSDecodeError.fail(.schemaValidationFailed) }
+    // R17 structural type: a boolean is required here.
+    guard case .bool(let b) = v else { throw SRSDecodeError.fail(.unknownSchemaOrField) }
     return b
 }
 
@@ -672,6 +686,7 @@ private func asHex64(_ v: SRSJSONValue) throws -> String {
 private func asBinding(_ v: SRSJSONValue) throws -> SRSBindingValue? {
     if case .null = v { return nil }
     let o = try asObj(v)
+    try o.validateAllowed(["identity", "version", "content_digest"])
     let identity = try asString(try o.value("identity"), minLength: 1)
     let version = try asString(try o.value("version"), minLength: 1)
     let digest = try asHex64(try o.value("content_digest"))
@@ -751,10 +766,14 @@ extension PersistentSRSRecord {
         }
         var r = PersistentSRSRecord()
         let keyObj = try asObj(try root.value("logical_key"))
+        try keyObj.validateAllowed(["identity", "version"])
         r.logicalKeyIdentity = try asString(try keyObj.value("identity"), minLength: 1)
         r.logicalKeyVersion = try asString(try keyObj.value("version"), minLength: 1)
 
         let settled = try asObj(try root.value("settled_relation_state"))
+        try settled.validateAllowed(["binding", "settlement_id", "status", "source_relation_identity",
+                                     "result_identity", "requires_canonical_identity_rule",
+                                     "canonical_identity_rule", "provenance_bindings"])
         r.settledBinding = try asBinding(try settled.value("binding"))
         r.settlementID = try asString(try settled.value("settlement_id"), minLength: 1)
         r.settlementStatus = try asSettlementStatus(try settled.value("status"))
@@ -765,6 +784,8 @@ extension PersistentSRSRecord {
         r.settledProvenanceBindings = try asBindingArray(try settled.value("provenance_bindings"))
 
         let source = try asObj(try root.value("source_relation"))
+        try source.validateAllowed(["binding", "semantic_binding", "applicability_coverage",
+                                    "invalidation_record", "invalidation_status", "identity_rule", "status"])
         r.sourceBinding = try asBinding(try source.value("binding"))
         r.sourceSemanticBinding = try asBinding(try source.value("semantic_binding"))
         r.sourceApplicabilityCoverage = try asBinding(try source.value("applicability_coverage"))
@@ -774,6 +795,7 @@ extension PersistentSRSRecord {
         r.sourceStatus = try asRelationStatus(try source.value("status"))
 
         let deps = try asObj(try root.value("dependency_set"))
+        try deps.validateAllowed(["boundary", "dependencies"])
         r.dependencyBoundary = try asBinding(try deps.value("boundary"))
         if case .null = try deps.value("dependencies") {
             r.dependencies = nil
@@ -781,6 +803,7 @@ extension PersistentSRSRecord {
             guard depItems.count <= SRSJSONLimits.maxArrayCount else { throw SRSDecodeError.fail(.integerOverflowOrResourceLimit) }
             r.dependencies = try depItems.map { item in
                 let d = try asObj(item)
+                try d.validateAllowed(["binding", "role", "necessity", "resolution", "status"])
                 let role = try asString(try d.value("role"), minLength: 1)
                 let necessity = try asString(try d.value("necessity"), minLength: 1)
                 let resolution = try asDependencyResolution(try d.value("resolution"))
@@ -794,22 +817,26 @@ extension PersistentSRSRecord {
         }
 
         let result = try asObj(try root.value("result"))
+        try result.validateAllowed(["binding", "resolution", "interpretability_evidence", "status"])
         r.resultBinding = try asBinding(try result.value("binding"))
         r.resultResolution = try asResolution(try result.value("resolution"))
         r.interpretabilityEvidence = try asBinding(try result.value("interpretability_evidence"))
         r.resultStatus = try asRelationStatus(try result.value("status"))
 
         let provenance = try asObj(try root.value("provenance"))
+        try provenance.validateAllowed(["bindings", "lifecycle", "boundary"])
         r.provenanceBindings = try asBindingArray(try provenance.value("bindings"))
         r.provenanceLifecycle = try asSettlementStatus(try provenance.value("lifecycle"))
         r.provenanceBoundary = try asBinding(try provenance.value("boundary"))
 
         let lifecycle = try asObj(try root.value("lifecycle"))
+        try lifecycle.validateAllowed(["bindings", "lifecycle", "boundary"])
         r.lifecycleBindings = try asBindingArray(try lifecycle.value("bindings"))
         r.lifecycleStatus = try asSettlementStatus(try lifecycle.value("lifecycle"))
         r.lifecycleBoundary = try asBinding(try lifecycle.value("boundary"))
 
         let freshness = try asObj(try root.value("freshness"))
+        try freshness.validateAllowed(["boundary", "requirements"])
         r.freshnessBoundary = try asBinding(try freshness.value("boundary"))
         if case .null = try freshness.value("requirements") {
             r.freshnessRequirements = nil
@@ -817,6 +844,8 @@ extension PersistentSRSRecord {
             guard reqItems.count <= SRSJSONLimits.maxArrayCount else { throw SRSDecodeError.fail(.integerOverflowOrResourceLimit) }
             r.freshnessRequirements = try reqItems.map { item in
                 let f = try asObj(item)
+                try f.validateAllowed(["identity", "evidence", "expected_evidence_digest", "status",
+                                       "valid_until_utc", "observed_at_utc"])
                 let identity = try asString(try f.value("identity"), minLength: 1)
                 let evidence = try asBinding(try f.value("evidence"))
                 let expected = try asHex64(try f.value("expected_evidence_digest"))
@@ -837,6 +866,7 @@ extension PersistentSRSRecord {
         }
 
         let policy = try asObj(try root.value("resolution_policy"))
+        try policy.validateAllowed(["resolution_rule", "policies", "boundary"])
         r.resolutionRule = try asBinding(try policy.value("resolution_rule"))
         r.policies = try asBindingArray(try policy.value("policies"))
         r.policyBoundary = try asBinding(try policy.value("boundary"))
@@ -844,11 +874,15 @@ extension PersistentSRSRecord {
         r.producerAuthorizationReference = try asString(try root.value("producer_authorization_reference"), minLength: 1)
 
         let coreBinding = try asObj(try root.value("decision_core_binding"))
+        try coreBinding.validateAllowed(["source_commit", "source_sha256"])
         let commit = try asString(try coreBinding.value("source_commit"))
         let sha = try asHex64(try coreBinding.value("source_sha256"))
         guard commit == SRSEncodingConstants.decisionCoreSourceCommit,
               sha == SRSEncodingConstants.decisionCoreSourceSHA256 else {
-            throw SRSDecodeError.fail(.decisionCoreBindingMismatch)
+            // Payload-layer const violation is an R19 schema failure; the
+            // DECISION_CORE_BINDING_MISMATCH status is reserved for the
+    // envelope-layer R27 check.
+            throw SRSDecodeError.fail(.schemaValidationFailed)
         }
         return r
     }
@@ -1345,9 +1379,9 @@ public enum SRSReader {
             return .failure(.producerAuthorizationReferenceMismatch)
         }
         // R27 Decision Core binding equals I0 and frozen values.
-        guard fieldString(10) == SRSEncodingConstants.decisionCoreSourceCommit,
-              fieldString(11) == SRSEncodingConstants.decisionCoreSourceSHA256 else {
-            return .failure(.decisionCoreBindingMismatch)
+        if let s = checkDecisionCoreBinding(
+            envelopeCommit: fieldString(10), envelopeSHA256: fieldString(11)) {
+            return .failure(s)
         }
         // R14 envelope logical key equals I0 logical key by exact UTF-8 bytes.
         guard persistentSRSBytesEqual(persistentSRSUTF8Bytes(envKeyIdentity), persistentSRSUTF8Bytes(record.logicalKeyIdentity)),
@@ -1371,6 +1405,16 @@ public enum SRSReader {
         }
         // R30
         return .success(verified)
+    }
+
+    /// R27: envelope Decision Core binding must equal the frozen values.
+    static func checkDecisionCoreBinding(envelopeCommit: String?,
+                                         envelopeSHA256: String?) -> PersistentSRSStatus? {
+        if envelopeCommit != SRSEncodingConstants.decisionCoreSourceCommit ||
+            envelopeSHA256 != SRSEncodingConstants.decisionCoreSourceSHA256 {
+            return .decisionCoreBindingMismatch
+        }
+        return nil
     }
 
     /// R29: scan all final records in root/records for the proposed ordered
@@ -1427,23 +1471,65 @@ public enum SRSWriteClassification: Equatable, Sendable {
     case recordContentIdentityMismatch
 }
 
+/// Frozen ClassificationDescriptor: ordered UTF-8 logical-key tuple, 32-byte
+/// payload digest, and the exact I1 bytes.
+public struct SRSClassificationDescriptor: Equatable, Sendable {
+    public var identityUtf8: [UInt8]
+    public var versionUtf8: [UInt8]
+    public var payloadDigestBytes: [UInt8]
+    public var canonicalPayloadI1Bytes: [UInt8]
+
+    /// Internal construction; the production entry point is `production`, and
+    /// the synthetic constructor for the controlled collision test lives only
+    /// in the test target via @testable access. The production write path has
+    /// no reachable call into any synthetic construction.
+    init(identityUtf8: [UInt8], versionUtf8: [UInt8], payloadDigestBytes: [UInt8],
+         canonicalPayloadI1Bytes: [UInt8]) {
+        self.identityUtf8 = identityUtf8
+        self.versionUtf8 = versionUtf8
+        self.payloadDigestBytes = payloadDigestBytes
+        self.canonicalPayloadI1Bytes = canonicalPayloadI1Bytes
+    }
+
+    /// Production constructor: the digest is always recomputed from the exact
+    /// canonical payload bytes; no caller-supplied digest is accepted.
+    public static func production(identity: String, version: String,
+                                  canonicalPayloadI1Bytes: [UInt8]) -> SRSClassificationDescriptor {
+        SRSClassificationDescriptor(
+            identityUtf8: persistentSRSUTF8Bytes(identity),
+            versionUtf8: persistentSRSUTF8Bytes(version),
+            payloadDigestBytes: SRSCanonical.payloadDigest(canonicalPayloadI1Bytes),
+            canonicalPayloadI1Bytes: canonicalPayloadI1Bytes
+        )
+    }
+}
+
 public enum SRSWriteClassifier {
     /// Shared pure classification used by the production write path (W3) and
-    /// the V-PERSIST-21 test-only caller. Inputs are already-verified
-    /// descriptors; no filesystem effect occurs here.
+    /// the V-PERSIST-21 test-only caller over frozen descriptors. Inputs are
+    /// already-verified; no filesystem effect occurs here.
     public static func classify(
-        existingLogicalKey: (identity: [UInt8], version: [UInt8])?,
-        existingPayload: [UInt8]?,
-        proposedLogicalKey: (identity: [UInt8], version: [UInt8]),
-        proposedPayload: [UInt8]
+        existingDescriptor: SRSClassificationDescriptor?,
+        proposedDescriptor: SRSClassificationDescriptor
     ) -> SRSWriteClassification {
-        guard let existingKey = existingLogicalKey, let existingPayload else {
+        guard let existing = existingDescriptor else {
             return .newRecord
         }
-        if existingKey != proposedLogicalKey {
+        let proposedKey = (proposedDescriptor.identityUtf8, proposedDescriptor.versionUtf8)
+        let existingKey = (existing.identityUtf8, existing.versionUtf8)
+        if existingKey != proposedKey {
             return .recordContentIdentityMismatch
         }
-        if persistentSRSBytesEqual(existingPayload, proposedPayload) {
+        // Same ordered logical key: the same digest with the same exact I1
+        // bytes is an existing equivalent record; the same digest with
+        // different I1 bytes is the final, non-retriable PR-A41 conflict.
+        if persistentSRSBytesEqual(existing.payloadDigestBytes, proposedDescriptor.payloadDigestBytes) {
+            if persistentSRSBytesEqual(existing.canonicalPayloadI1Bytes, proposedDescriptor.canonicalPayloadI1Bytes) {
+                return .existingEquivalentRecord
+            }
+            return .persistentLogicalKeyConflict
+        }
+        if persistentSRSBytesEqual(existing.canonicalPayloadI1Bytes, proposedDescriptor.canonicalPayloadI1Bytes) {
             return .existingEquivalentRecord
         }
         return .persistentLogicalKeyConflict
@@ -1451,6 +1537,14 @@ public enum SRSWriteClassifier {
 }
 
 // MARK: - Writer (W1-W16, Contract v1.8 section 14)
+
+/// Test-target-only failure injection points for R4 refresh verification.
+/// Production code never sets these; they are internal so nothing outside the
+/// module can observe or toggle them.
+enum SRSRefreshFailureInjector {
+    static var failFileFlush = false
+    static var failDirFlush = false
+}
 
 public enum SRSWriteOutcome: Equatable, Sendable {
     case created
@@ -1463,11 +1557,66 @@ public enum SRSWriteResult: Equatable, Sendable {
 }
 
 public enum SRSWriter {
+    /// W9-W12: staging write, file fsync, atomic rename, directory fsync.
+    /// Each step fails closed; a directory-refresh failure leaves the final
+    /// record untouched and reports indeterminate persistence. Internal so
+    /// the test target can exercise the injected failure points directly.
+    static func persist(frameBytes: [UInt8], root: URL, recordsDir: URL,
+                        targetPath: URL) -> Result<Void, PersistentSRSStatus> {
+        let stagingPath = root.appendingPathComponent("staging", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: stagingPath, withIntermediateDirectories: true)
+            let stageFile = stagingPath.appendingPathComponent(UUID().uuidString + ".tmp")
+            FileManager.default.createFile(atPath: stageFile.path, contents: Data(frameBytes))
+            // W10: flush the staging file.
+            if SRSRefreshFailureInjector.failFileFlush {
+                try? FileManager.default.removeItem(at: stageFile)
+                return .failure(.persistenceVerificationIndeterminate)
+            }
+            if let handle = FileHandle(forWritingAtPath: stageFile.path) {
+                try? handle.synchronize()
+                handle.closeFile()
+            } else {
+                try? FileManager.default.removeItem(at: stageFile)
+                return .failure(.persistenceVerificationIndeterminate)
+            }
+            if FileManager.default.fileExists(atPath: targetPath.path) {
+                // Target appeared after W3 under the same lock: never rename
+                // over it; clean the staging attempt and report indeterminate.
+                try? FileManager.default.removeItem(at: stageFile)
+                return .failure(.persistentConcurrentWriteIndeterminate)
+            }
+            // W11: atomic rename.
+            try FileManager.default.moveItem(at: stageFile, to: targetPath)
+            // W12: flush the directory that now holds the final record. On
+            // failure the persistence state is indeterminate: the final record
+            // must NOT be deleted and its existence must NOT be denied.
+            let dirFD = open(recordsDir.path, O_RDONLY)
+            guard dirFD >= 0 else {
+                return .failure(.persistenceVerificationIndeterminate)
+            }
+            let dirFlushResult = SRSRefreshFailureInjector.failDirFlush ? -1 : fsync(dirFD)
+            close(dirFD)
+            guard dirFlushResult == 0 else {
+                return .failure(.persistenceVerificationIndeterminate)
+            }
+            return .success(())
+        } catch {
+            return .failure(.persistenceVerificationIndeterminate)
+        }
+    }
+
     public static func write(
         record: PersistentSRSRecord,
         signingKey: Curve25519.Signing.PrivateKey,
         root: URL
     ) -> SRSWriteResult {
+        // R3: verify the signing key against the frozen production anchor
+        // BEFORE any filesystem side effect (including directory creation and
+        // lock acquisition). An invalid key fails with zero side effects.
+        guard signingKey.publicKey.rawRepresentation == Data(SRSSignature.signerPublicKeyRaw) else {
+            return .failure(.signatureVerificationFailed)
+        }
         let recordsDir = root.appendingPathComponent("records", isDirectory: true)
         do {
             try FileManager.default.createDirectory(at: recordsDir, withIntermediateDirectories: true)
@@ -1505,10 +1654,14 @@ public enum SRSWriter {
             case .failure(let s): return .failure(s)
             }
             classification = SRSWriteClassifier.classify(
-                existingLogicalKey: existingVerified.logicalKeyBytes,
-                existingPayload: existingVerified.payloadBytes,
-                proposedLogicalKey: (persistentSRSUTF8Bytes(record.logicalKeyIdentity), persistentSRSUTF8Bytes(record.logicalKeyVersion)),
-                proposedPayload: payload
+                existingDescriptor: SRSClassificationDescriptor(
+                    identityUtf8: existingVerified.logicalKeyBytes.0,
+                    versionUtf8: existingVerified.logicalKeyBytes.1,
+                    payloadDigestBytes: existingVerified.payloadDigestRaw,
+                    canonicalPayloadI1Bytes: existingVerified.payloadBytes),
+                proposedDescriptor: SRSClassificationDescriptor.production(
+                    identity: record.logicalKeyIdentity, version: record.logicalKeyVersion,
+                    canonicalPayloadI1Bytes: payload)
             )
             if classification == .existingEquivalentRecord {
                 equivalentExistingPath = targetPath
@@ -1558,12 +1711,17 @@ public enum SRSWriter {
             }
             if let existing = sameKeyExisting {
                 // W3 same-key branch against a different physical record.
+                let existingDescriptor = SRSClassificationDescriptor(
+                    identityUtf8: existing.logicalKeyBytes.0,
+                    versionUtf8: existing.logicalKeyBytes.1,
+                    payloadDigestBytes: existing.payloadDigestRaw,
+                    canonicalPayloadI1Bytes: existing.payloadBytes)
+                let proposedDescriptor = SRSClassificationDescriptor.production(
+                    identity: record.logicalKeyIdentity, version: record.logicalKeyVersion,
+                    canonicalPayloadI1Bytes: payload)
                 let cls = SRSWriteClassifier.classify(
-                    existingLogicalKey: existing.logicalKeyBytes,
-                    existingPayload: existing.payloadBytes,
-                    proposedLogicalKey: (persistentSRSUTF8Bytes(record.logicalKeyIdentity), persistentSRSUTF8Bytes(record.logicalKeyVersion)),
-                    proposedPayload: payload
-                )
+                    existingDescriptor: existingDescriptor,
+                    proposedDescriptor: proposedDescriptor)
                 switch cls {
                 case .existingEquivalentRecord:
                     return .success(.idempotentComplete)
@@ -1597,21 +1755,11 @@ public enum SRSWriter {
             )
             let frameBytes = SRSFrame.encode(frame)
 
-            // W9-W11: staging in the same root, then atomic rename.
-            let stagingPath = root.appendingPathComponent("staging", isDirectory: true)
-            do {
-                try FileManager.default.createDirectory(at: stagingPath, withIntermediateDirectories: true)
-                let stageFile = stagingPath.appendingPathComponent(UUID().uuidString + ".tmp")
-                try Data(frameBytes).write(to: stageFile)
-                if FileManager.default.fileExists(atPath: targetPath.path) {
-                    // Target appeared after W3 under the same lock: repeat
-                    // classification rather than renaming over it.
-                    try? FileManager.default.removeItem(at: stageFile)
-                    return .failure(.persistentConcurrentWriteIndeterminate)
-                }
-                try FileManager.default.moveItem(at: stageFile, to: targetPath)
-            } catch {
-                return .failure(.persistenceVerificationIndeterminate)
+            // W9-W12: staging write, file fsync, atomic rename, directory
+            // fsync — each step fail-closed per Contract v1.8 section 14.
+            if case .failure(let s) = persist(frameBytes: frameBytes, root: root,
+                                              recordsDir: recordsDir, targetPath: targetPath) {
+                return .failure(s)
             }
 
             // W13-W16: reopen final path and execute R1-R29.
@@ -1684,6 +1832,19 @@ public enum SRSAttemptEvidence {
         "fixture_digest", "completed_at_utc", "operation_outcome", "scenario_verdict",
         "implementation_runtime_environment_bindings", "observer_authorization_reference",
         "start_stop_evidence", "output_and_typed_failure_evidence",
+    ]
+
+    /// Exact label-to-type table (R1): each entry lists the allowed value
+    /// types for the field at the same position in allFieldLabels.
+    static let allFieldLabels: [String] = coreFieldLabels + ["base_evidence_digest", "completion_order_key"]
+    static let allowedFieldTypes: [[UInt8]] = [
+        [0x02], [0x02], [0x02], [0x02], [0x02], [0x02], [0x02], [0x02],
+        [0x03],
+        [0x00, 0x02],
+        [0x03],
+        [0x00, 0x03],
+        [0x02],
+        [0x05],
     ]
 
     // Value types: 0x00 NULL, 0x01 BOOLEAN, 0x02 UTF8, 0x03 JSON, 0x04 BYTES,
@@ -1832,7 +1993,7 @@ public enum SRSAttemptEvidence {
             var value: [UInt8]
         }
         var parsed: [ParsedField] = []
-        for expected in coreFieldLabels + ["base_evidence_digest", "completion_order_key"] {
+        for (fieldIndex, expected) in allFieldLabels.enumerated() {
             guard pos + 2 <= sealed.count else { return .failure(.attemptCanonicalEncodingMismatch) }
             let labelLen = Int(sealed[pos]) << 8 | Int(sealed[pos + 1])
             pos += 2
@@ -1846,6 +2007,11 @@ public enum SRSAttemptEvidence {
             pos += 1
             guard [0x00, 0x01, 0x02, 0x03, 0x04, 0x05].contains(type) else {
                 return .failure(.unsupportedCanonicalValueType)
+            }
+            // R1: the label's required type; a known-but-disallowed type is a
+            // canonical encoding mismatch at V1.
+            guard allowedFieldTypes[fieldIndex].contains(type) else {
+                return .failure(.attemptCanonicalEncodingMismatch)
             }
             guard pos + 8 <= sealed.count else { return .failure(.attemptCanonicalEncodingMismatch) }
             var valueLen: UInt64 = 0
@@ -1940,7 +2106,16 @@ public enum SRSAttemptProjection: String, Sendable {
 /// Current attempt projection: derived only from the latest valid event for
 /// the attempt in the append-only event log order.
 public func srsCurrentAttemptProjection(events: [SRSAttemptStatusEvent], attemptID: String) -> SRSAttemptProjection? {
-    guard let latest = events.last(where: { $0.attemptID == attemptID }) else { return nil }
+    let chain = events.filter { $0.attemptID == attemptID }
+    guard let latest = chain.last else { return nil }
+    // The events must form a valid append chain: the first event has no prior
+    // event and every later event points at its immediate predecessor. A
+    // broken chain yields no valid projection instead of a silent result.
+    var prior: String? = nil
+    for event in chain {
+        guard event.priorEventID == prior else { return nil }
+        prior = event.eventID
+    }
     switch latest.eventType {
     case .executed: return .executedActive
     case .failed: return .failed
@@ -1967,22 +2142,64 @@ public func srsBatchTransitionAllowed(from: SRSBatchState, to: SRSBatchState) ->
 }
 
 /// Each EXECUTION_BATCH_nn is limited to at most 16 fixture executions.
-public func srsBatchBudgetAllows(executedAttemptCount: Int, cap: Int = 16) -> Bool {
-    executedAttemptCount <= cap
+public func srsBatchBudgetAllows(executedAttemptCount: Int) -> Bool {
+    // Fixed valid count range: 0 through the frozen cap of 16; negative and
+    // oversized counts are rejected and the cap is not caller-tunable.
+    (0...16).contains(executedAttemptCount)
 }
 
 public struct SRSClosureCandidate: Equatable, Sendable {
     public var scenario: String
     public var attemptID: String
     public var completionOrderKeyBytes: [UInt8]
-    public init(scenario: String, attemptID: String, completionOrderKeyBytes: [UInt8]) {
+    public var eligibility: SRSCandidateEligibility
+    public init(scenario: String, attemptID: String, completionOrderKeyBytes: [UInt8],
+                eligibility: SRSCandidateEligibility) {
         self.scenario = scenario
         self.attemptID = attemptID
         self.completionOrderKeyBytes = completionOrderKeyBytes
+        self.eligibility = eligibility
+    }
+}
+
+/// Phase-1 candidate eligibility, derived only from verified evidence —
+/// callers cannot declare eligibility with a boolean flag.
+public struct SRSCandidateEligibility: Equatable, Sendable {
+    public var evidenceV1to5Pass: Bool
+    public var scenarioExecutionRequired: Bool
+    public var verdictPass: Bool
+    public var latestProjectionExecutedActive: Bool
+    public var sourceBatchActiveOrComplete: Bool
+    public var frozenBindingsMatch: Bool
+    public var r29EvidencePresentAndPassing: Bool
+    public var noUnresolvedDrift: Bool
+
+    public init(evidenceV1to5Pass: Bool, scenarioExecutionRequired: Bool, verdictPass: Bool,
+                latestProjectionExecutedActive: Bool, sourceBatchActiveOrComplete: Bool,
+                frozenBindingsMatch: Bool, r29EvidencePresentAndPassing: Bool, noUnresolvedDrift: Bool) {
+        self.evidenceV1to5Pass = evidenceV1to5Pass
+        self.scenarioExecutionRequired = scenarioExecutionRequired
+        self.verdictPass = verdictPass
+        self.latestProjectionExecutedActive = latestProjectionExecutedActive
+        self.sourceBatchActiveOrComplete = sourceBatchActiveOrComplete
+        self.frozenBindingsMatch = frozenBindingsMatch
+        self.r29EvidencePresentAndPassing = r29EvidencePresentAndPassing
+        self.noUnresolvedDrift = noUnresolvedDrift
+    }
+
+    public var isEligible: Bool {
+        evidenceV1to5Pass && scenarioExecutionRequired && verdictPass &&
+        latestProjectionExecutedActive && sourceBatchActiveOrComplete &&
+        frozenBindingsMatch && r29EvidencePresentAndPassing && noUnresolvedDrift
     }
 }
 
 public enum SRSClosure {
+    /// Phase 1: only evidence-eligible attempts may enter the register.
+    public static func admitEligibleCandidates(_ candidates: [SRSClosureCandidate]) -> [SRSClosureCandidate] {
+        candidates.filter { $0.eligibility.isEligible }
+    }
+
     /// Phase 2 registration: one candidate per scenario in the Candidate
     /// Closure Set; duplicate registration is CLOSURE_DUPLICATE_CANDIDATE.
     public static func registerCandidate(
