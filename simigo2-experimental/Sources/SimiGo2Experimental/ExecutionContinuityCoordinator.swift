@@ -95,7 +95,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// protects synchronous observation while a transition commits.
     private let stateLock = NSRecursiveLock()
     private var handles: [ExecutionID: ExecutionStateHandle] = [:]
-    private(set) var records: [LifecycleRecord] = []
+    private var records: [LifecycleRecord] = []
     /// Representation history per execution: appended on every bind/capture/
     /// derive; restore finds its target here.
     private var representationHistory: [ExecutionID: [ExecutionRepresentation]] = [:]

@@ -178,7 +178,7 @@ final class ExecutionResidencyIntegrationTests: XCTestCase {
         // through the mock); Execution State UNCHANGED.
         XCTAssertEqual(mock.calls.filter { $0.hasPrefix("load:") }.count, 6)
         XCTAssertEqual(mock.calls.filter { $0.hasPrefix("release:") }.count, 3)
-        XCTAssertEqual(coordinator.records.count, 4) // create, restore, reattach, continue
+        XCTAssertEqual(coordinator.recordsSnapshot.count, 4) // create, restore, reattach, continue
     }
 
     func testResidencyAndContinuityRecordsAreIndependent() async throws {
