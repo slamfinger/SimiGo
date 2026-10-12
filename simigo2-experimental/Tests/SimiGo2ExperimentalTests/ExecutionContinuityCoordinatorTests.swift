@@ -7,6 +7,86 @@ import SimiGoRuntimeContract
 /// pure data — no MLX execution in these tests). Sovereignty assertion:
 /// backend operations can never alter a handle's identity, lineage, or
 /// continuation.
+/// A controllable backend that suspends the first physical fork derivation.
+/// It lets the test hold the coordinator between validation and commit while
+/// competing requests attempt to claim the same child ID.
+private actor PausingForkBackend: ExecutionStateBackend {
+    private var representations: [ExecutionID: ExecutionRepresentation] = [:]
+    private var derivations = 0
+    private var firstDerivationStarted = false
+    private var startWaiters: [CheckedContinuation<Void, Never>] = []
+    private var releaseFirstDerivation: CheckedContinuation<Void, Never>?
+
+    func waitForFirstDerivationToStart() async {
+        if firstDerivationStarted { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            startWaiters.append(continuation)
+        }
+    }
+
+    func resumeFirstDerivation() {
+        releaseFirstDerivation?.resume()
+        releaseFirstDerivation = nil
+    }
+
+    func derivationCallCount() -> Int { derivations }
+
+    func captureRepresentation(for state: ExecutionStateHandle) async throws -> ExecutionRepresentation {
+        guard let representation = representations[state.id] else {
+            throw ExecutionStateBackendError.noBoundRepresentation(state.id)
+        }
+        guard representation.position == state.position else {
+            throw ExecutionStateBackendError.representationPositionMismatch(
+                executionID: state.id,
+                bound: representation.position,
+                logical: state.position
+            )
+        }
+        return representation
+    }
+
+    func deriveRepresentation(
+        from parent: ExecutionRepresentation,
+        for child: ExecutionStateHandle
+    ) async throws -> ExecutionRepresentation {
+        derivations += 1
+        if derivations == 1 {
+            firstDerivationStarted = true
+            let waiters = startWaiters
+            startWaiters.removeAll()
+            waiters.forEach { $0.resume() }
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                releaseFirstDerivation = continuation
+            }
+        }
+        guard parent.position == child.position else {
+            throw ExecutionStateBackendError.representationPositionMismatch(
+                executionID: child.id,
+                bound: parent.position,
+                logical: child.position
+            )
+        }
+        let derived = ExecutionRepresentation(
+            executionID: child.id,
+            position: child.position,
+            payload: parent.payload
+        )
+        representations[child.id] = derived
+        return derived
+    }
+
+    func restoreRepresentation(_ representation: ExecutionRepresentation) async throws {
+        representations[representation.executionID] = representation
+    }
+
+    func releaseRepresentation(_ representation: ExecutionRepresentation) async throws {
+        guard representations[representation.executionID]?.position == representation.position else {
+            return
+        }
+        representations.removeValue(forKey: representation.executionID)
+    }
+}
+
 final class ExecutionContinuityCoordinatorTests: XCTestCase {
     private var backend: MLXExecutionStateBackend!
     private var coordinator: ExecutionContinuityCoordinator!
@@ -384,52 +464,52 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
     }
 
     /// Concurrent requests for one child identity must linearize at the
-    /// coordinator boundary. Backend derivation is async, so checking child
-    /// uniqueness only before that await is insufficient under overlap.
+    /// coordinator boundary, even while physical derivation is suspended.
     func testConcurrentForkRequestsForSameChildCommitExactlyOnce() async throws {
-        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let backend = PausingForkBackend()
         let coordinator = ExecutionContinuityCoordinator(backend: backend)
         let parent = try await coordinator.create(
             id: ExecutionID("A"),
             position: ExecutionPosition(0),
             continuation: ExecutionContinuation(nextInput: "A-next", continuationID: "A-cont")
         )
-        backend.bind(executionID: parent.id, position: parent.position, prefix: [1, 2, 3])
         try await coordinator.bindRepresentation(
             executionID: parent.id,
             position: parent.position,
-            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3])
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3])
         )
         let recordsBeforeForks = coordinator.recordCount
-
-        let requests = (0..<32).map { index in
-            ExecutionForkRequest(
-                parent: parent,
-                childID: ExecutionID("B"),
-                childPosition: ExecutionPosition(0),
-                childContinuation: ExecutionContinuation(
-                    nextInput: "B-next",
-                    continuationID: "B-cont"
-                )
-            )
-        }
-        let outcomes = await withTaskGroup(of: Bool.self) { group in
-            for request in requests {
-                group.addTask {
-                    do {
-                        _ = try await coordinator.fork(request)
-                        return true
-                    } catch {
-                        return false
-                    }
+        let request = ExecutionForkRequest(
+            parent: parent,
+            childID: ExecutionID("B"),
+            childPosition: ExecutionPosition(0),
+            childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+        )
+        let tasks = (0..<32).map { _ in
+            Task { () -> Bool in
+                do {
+                    _ = try await coordinator.fork(request)
+                    return true
+                } catch {
+                    return false
                 }
             }
+        }
 
-            var completed: [Bool] = []
-            for await outcome in group {
-                completed.append(outcome)
-            }
-            return completed
+        await backend.waitForFirstDerivationToStart()
+        // Give every competing task an opportunity to reach the coordinator
+        // while the first backend derivation remains suspended.
+        for _ in 0..<64 { await Task.yield() }
+        XCTAssertEqual(
+            await backend.derivationCallCount(),
+            1,
+            "a second coordinator transition must not enter the backend before the first commits"
+        )
+
+        await backend.resumeFirstDerivation()
+        var outcomes: [Bool] = []
+        for task in tasks {
+            outcomes.append(await task.value)
         }
 
         XCTAssertEqual(outcomes.filter { $0 }.count, 1, "only one fork may claim child B")
@@ -438,10 +518,9 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         XCTAssertEqual(child.lineage.parent, ExecutionID("A"))
         let representation = try await backend.captureRepresentation(for: child)
         XCTAssertEqual(representation.position, ExecutionPosition(0))
-        let payload = try XCTUnwrap(representation.payload as? OversizedPrefixPayload)
+        let payload = try XCTUnwrap(representation.payload as? MLXPrefixPayload)
         XCTAssertEqual(payload.tokenPrefix, [1, 2, 3])
     }
-
 }
 
 /// Async do/catch assertion helper for this test file.
