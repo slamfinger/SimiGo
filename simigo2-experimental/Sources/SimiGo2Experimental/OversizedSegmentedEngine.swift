@@ -100,6 +100,18 @@ public struct OversizedSessionInfo: Codable, Sendable {
     public let records: Int
 }
 
+/// Oversized segmented generation engine.
+///
+/// EXECUTION MODEL BOUNDARY: one engine instance serves EXACTLY ONE
+/// execution at a time. The execution ID is fixed ("S", see
+/// ``ensureSession(prefix:)``); no public API accepts an ExecutionID.
+/// Each session bootstraps a fresh Coordinator + Backend + Token Ledger
+/// triple; the only way to move to another execution is ``newSession()``,
+/// a full teardown-and-reset (the prior Coordinator — and with it any
+/// ``CoordinatorError/backendBindingUncertain`` isolation — is destroyed
+/// with the session). The Coordinator layer's per-ExecutionID isolation
+/// guarantees do NOT extend to this engine: multi-execution is
+/// UNSUPPORTED BY DESIGN, not untested.
 public final class OversizedSegmentedEngine: @unchecked Sendable {
     public static let defaultUnitLayers = 8
     /// Chat budget (user-set 2026-09-26): resident memory < 16 GiB, MLX
@@ -268,6 +280,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             { id, position in try backend.boundPrefixLength(executionID: id, position: position) },
             { coordinator.hasUncertainBinding(executionID) }
         )
+    }
+
+    /// Test-support seam: run the engine's own session bootstrap (the same
+    /// private path `generate()` uses after a teardown) without a model, so
+    /// engine-level tests can pin the single-execution contract — fresh
+    /// Coordinator/Backend/Ledger per session, fixed execution ID, and the
+    /// one-session-at-a-time guard. DEBUG only.
+    func debugEnsureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
+        try await ensureSession(prefix: prefix)
     }
     #endif
 

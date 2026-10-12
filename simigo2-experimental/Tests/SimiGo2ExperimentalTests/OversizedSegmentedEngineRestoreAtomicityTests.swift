@@ -470,4 +470,52 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
             [.bootstrap, .turn, .restoreMarker, .restoreMarker])
         XCTAssertEqual(entries.map(\.superseded), [false, true, true, false])
     }
+
+    /// Engine-level execution-model contract: the engine serves EXACTLY ONE
+    /// execution ("S", fixed in ensureSession). The only way to move to
+    /// another execution is newSession() — a full teardown — and the next
+    /// bootstrap builds a FRESH Coordinator + Backend + Ledger triple with
+    /// the same fixed ID, so nothing (state, records, uncertainty) carries
+    /// across. Coordinator-level multi-execution guarantees do NOT extend
+    /// to the engine: multi-execution is UNSUPPORTED BY DESIGN.
+    func testEngineIsSingleExecutionSwitchingIsFullReset() async throws {
+        let gate = AppendGate()
+        gate.allow(2)
+        let fixture = try await OversizedSegmentedEngine.makeRestoreAtomicityTestFixture(
+            executionID: executionID,
+            beforeAppend: gate.admit)
+        let engine = fixture.engine
+        let oldLedger = try XCTUnwrap(engine.tokenLedger)
+        let oldState = try XCTUnwrap(fixture.currentState())
+        XCTAssertEqual(oldState.id, ExecutionID("S"))
+
+        // The only switching primitive: newSession() tears the whole session
+        // down, Coordinator included. The closed ledger is retained for
+        // audit until the next bootstrap replaces it.
+        try await engine.newSession()
+        XCTAssertNil(fixture.currentState())
+        XCTAssertNil(engine.sessionInfo)
+        XCTAssertTrue(engine.tokenLedger === oldLedger)
+
+        // Re-bootstrap through the engine's OWN private session path (the
+        // one generate() drives): a fresh triple with the same fixed ID.
+        let rebased = try await engine.debugEnsureSession(prefix: [9, 9])
+        XCTAssertEqual(rebased.id, ExecutionID("S"))
+        XCTAssertEqual(rebased.position, ExecutionPosition(0))
+        XCTAssertEqual(rebased.lifecycle, .attached)
+        let newLedger = try XCTUnwrap(engine.tokenLedger)
+        XCTAssertFalse(newLedger === oldLedger)
+        XCTAssertEqual(newLedger.count, 0)
+
+        // One session at a time: a second bootstrap without a teardown is
+        // rejected by the engine itself.
+        do {
+            _ = try await engine.debugEnsureSession(prefix: [1])
+            XCTFail("a second session bootstrap without newSession must be rejected")
+        } catch {
+            guard case OversizedEngineError.notLoaded = error else {
+                return XCTFail("expected notLoaded, got \(error)")
+            }
+        }
+    }
 }
