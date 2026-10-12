@@ -71,6 +71,10 @@ public enum OversizedEngineError: Error, LocalizedError {
     case unsupportedModelType(String)
     case notLoaded
     case residencyDivergence(String)
+    /// A restore's compensation rebind failed, so the backend binding may
+    /// not correspond to the logical position. Operations that would consume
+    /// or tear down that binding are rejected; the caller drives recovery.
+    case backendBindingUncertain(executionID: ExecutionID)
 
     public var errorDescription: String? {
         switch self {
@@ -80,6 +84,11 @@ public enum OversizedEngineError: Error, LocalizedError {
             return "engine not loaded — call load() first"
         case .residencyDivergence(let detail):
             return "residency reconciliation divergence: \(detail)"
+        case .backendBindingUncertain(let executionID):
+            return "backend binding is uncertain for \(executionID.rawValue): a restore "
+                + "compensation rebind failed, so the physical binding may not match the "
+                + "logical position. Recover explicitly with restoreSession(to:) to a "
+                + "committed position, then retry the original operation."
         }
     }
 }
@@ -179,14 +188,24 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// Test-support fixture: assemble one committed 0 -> 1 session without a
     /// model. Confined to in-module DEBUG builds; returns readers only, so
     /// production state cannot be mutated after assembly.
+    ///
+    /// `coordinatorBackendFactory` optionally interposes a backend wrapper
+    /// between the coordinator and the engine's physical backend (fault
+    /// injection on coordinator-driven operations only; the engine keeps the
+    /// real backend, so both observe one shared physical state). `residency`
+    /// optionally installs a residency controller so engine teardown paths
+    /// run against an observable eviction probe.
     static func makeRestoreAtomicityTestFixture(
         executionID: ExecutionID,
-        beforeAppend: @escaping () throws -> Void
+        beforeAppend: @escaping () throws -> Void,
+        coordinatorBackendFactory: ((OversizedSegmentedStateBackend) -> any ExecutionStateBackend)? = nil,
+        residency: ResidencyController? = nil
     ) async throws -> (
         engine: OversizedSegmentedEngine,
         currentState: () -> ExecutionStateHandle?,
         coordinatorRecordCount: () -> Int,
-        backendBoundPrefixLength: (ExecutionID, ExecutionPosition) throws -> Int
+        backendBoundPrefixLength: (ExecutionID, ExecutionPosition) throws -> Int,
+        hasUncertainBinding: () -> Bool
     ) {
         let backend = OversizedSegmentedStateBackend(releaseAll: {})
         let ledger = OversizedTokenLedger { id, position in
@@ -197,7 +216,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         }
         let engine = OversizedSegmentedEngine(
             modelDirectory: URL(fileURLWithPath: "/restore-atomicity-test-unused"))
-        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let coordinator = ExecutionContinuityCoordinator(
+            backend: coordinatorBackendFactory?(backend) ?? backend)
         let bootstrap = try await coordinator.create(
             id: executionID,
             position: ExecutionPosition(0),
@@ -235,6 +255,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         engine.stateBackend = backend
         engine.currentState = advanced
         engine.tokenLedger = ledger
+        engine.residency = residency
         engine.sessionInfo = OversizedSessionInfo(
             executionID: executionID.rawValue,
             position: 1,
@@ -244,7 +265,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             engine,
             { engine.currentState },
             { coordinator.recordCount },
-            { id, position in try backend.boundPrefixLength(executionID: id, position: position) }
+            { id, position in try backend.boundPrefixLength(executionID: id, position: position) },
+            { coordinator.hasUncertainBinding(executionID) }
         )
     }
     #endif
@@ -910,6 +932,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     public func newSession() async throws {
         await lifecycleSerialLock.lock()
         defer { lifecycleSerialLock.unlock() }
+        // Fail closed BEFORE any teardown: with an uncertain backend binding
+        // the discard below would be rejected anyway — but only AFTER the
+        // segment eviction had already run. Report the uncertainty first so
+        // the rejection itself causes no resource release or state change;
+        // the caller recovers explicitly (restoreSession(to:)) and retries.
+        if let coordinator, let state = currentState,
+            coordinator.hasUncertainBinding(state.id) {
+            throw OversizedEngineError.backendBindingUncertain(executionID: state.id)
+        }
         if let residency {
             _ = try await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
         }
@@ -925,6 +956,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// Logical restore to an earlier turn position (the coordinator re-binds
     /// the surviving representation at that position; segments re-materialize
     /// on demand at the next forward).
+    ///
+    /// Recovery contract: this is THE explicit recovery operation when the
+    /// backend binding is uncertain (`backendBindingUncertain`). It stays
+    /// available in that state — the rebind overwrites the physical binding
+    /// instead of consuming it. Success re-establishes backend/coordinator/
+    /// ledger/currentState/sessionInfo consistency and lifts the isolation;
+    /// a failure that cannot even compensate physically leaves the isolation
+    /// in place and reports it (both failures visible), so retrying or
+    /// tearing down stays rejected until a restore actually succeeds.
     public func restoreSession(to position: Int) async throws {
         await lifecycleSerialLock.lock()
         defer { lifecycleSerialLock.unlock() }
@@ -932,31 +972,31 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             throw OversizedEngineError.notLoaded
         }
         try tokenLedger?.validateRestoreTarget(position, executionID: state.id)
+        let restoredPosition = ExecutionPosition(Int64(position))
+        let ledger = tokenLedger
         let restoredState = try await coordinator.restore(
             state,
             request: ExecutionRestoreRequest(
-                targetPosition: ExecutionPosition(Int64(position)),
+                targetPosition: restoredPosition,
                 continuation: ExecutionContinuation(
                     nextInput: "", continuationID: "S-restore-\(position)")
-            )
+            ),
+            beforeCommit: {
+                // The backend is temporarily rebound to the target here, but
+                // Coordinator handle/record commit waits until the ledger
+                // marker succeeds. A thrown append triggers physical rollback.
+                let restoredPrefixLength = try stateBackend.boundPrefixLength(
+                    executionID: state.id, position: restoredPosition
+                )
+                try ledger?.append(OversizedTokenLedgerEntry(
+                    executionID: state.id,
+                    position: Int(restoredPosition.value),
+                    kind: .restoreMarker,
+                    prefixLength: restoredPrefixLength
+                ))
+                ledger?.markSuperseded(beyond: position, executionID: state.id)
+            }
         )
-        // Token ledger restore marker: records the rollback point so the
-        // audit trail shows the rewind (append-only — the superseded tail is
-        // retained and flagged, not deleted). The marker's prefixLength is
-        // derived from the BACKEND's re-bound representation at the restored
-        // position (I-L3 source of truth — coordinator.restore re-binds the
-        // historical prefix before returning), and the ledger independently
-        // re-verifies it against the backend at append.
-        let restoredPrefixLength = try stateBackend.boundPrefixLength(
-            executionID: restoredState.id, position: restoredState.position
-        )
-        try tokenLedger?.append(OversizedTokenLedgerEntry(
-            executionID: restoredState.id,
-            position: Int(restoredState.position.value),
-            kind: .restoreMarker,
-            prefixLength: restoredPrefixLength
-        ))
-        tokenLedger?.markSuperseded(beyond: position, executionID: state.id)
         currentState = restoredState
         sessionInfo = OversizedSessionInfo(
             executionID: restoredState.id.rawValue,
