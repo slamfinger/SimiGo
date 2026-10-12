@@ -1,13 +1,14 @@
-# Persistent SRS Representation Implementation Repair Authorization Package v1.3
+# Persistent SRS Representation Implementation Repair Authorization Package v1.4
 
 > **Status:** REVISED DELIVERY FOR HUMAN REVIEW — REPAIR NOT AUTHORIZED
 > **Date:** 2026-10-12
-> **Version:** v1.3 (in-place revision of the same document)
-> **Supersedes:** v1.2, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.2`
-> **Revision scope:** R17 regains its contract-assigned structural and type
-> check duties with R19 kept at full frozen-schema responsibility and tests
-> distinguishing the two rejection classes; R3 ordering reference now points
-> to the independent W13-W16 sequence of section 5
+> **Version:** v1.4 (in-place revision of the same document)
+> **Supersedes:** v1.3, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.3`
+> **Revision scope:** R27 negative-test boundary made exact — mutations target
+> the envelope fields decision_core_source_commit and decision_core_source_sha256
+> separately, the payload decision_core_binding stays schema-legal so the
+> reader reaches R27, envelope digests are recomputed per the frozen encoding
+> rules, and payload-layer decision_core_binding mutations remain R19 cases
 > **Basis ruling:** `REVISE_IMPLEMENTATION_COMPLETION_REVIEW`
 > **Delivery ruling:** `AUTHORIZE_DRAFT_AND_DELIVER_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
 > **Bound implementation commit:** `5764396497d115ce8b780dc7190815b849fea924`
@@ -263,15 +264,42 @@ members fail at R17 with `UNKNOWN_SCHEMA_OR_FIELD`; schema-id and encoding
 violations fail at R18; schema-level enum/length/pattern/const violations
 that pass the R17 checks fail at R19 with `SCHEMA_VALIDATION_FAILED`;
 calendar violations fail at R20; decision-core violations fail at R27 — each
-demonstrated per object class at its correct stage.
+demonstrated per object class at its correct stage; envelope-layer
+decision-core mutations fail at R27 exactly as defined in the R27 boundary
+above, while payload-layer decision_core_binding const mutations remain R19
+failures.
 
 Required negative tests: at least one unknown-member injection per nested
 class asserting the exact R17 status; at least one structural type violation
 per class asserting the exact R17 status; and at least one enum, length,
 pattern, or const violation per class that passes the R17 checks but fails at
 R19 with exactly SCHEMA_VALIDATION_FAILED; plus stage-bound cases for R18
-(wrong payload_schema_id; wrong encoding_identity) and R27 (wrong
-decision_core_source_commit or source_sha256).
+(wrong payload_schema_id; wrong encoding_identity) and the R27 stage-bound
+cases defined below.
+
+R27 negative-test boundary (exact):
+
+```text
+mutated layer =
+  the canonical envelope only; the payload is never touched;
+mutated fields =
+  the envelope labels decision_core_source_commit and
+  decision_core_source_sha256, with one separate test per field;
+payload invariant =
+  the payload decision_core_binding object remains legal under the frozen
+  schema, so R17-R26 pass and the reader actually reaches R27;
+envelope integrity =
+  after mutating an envelope field, the canonical envelope bytes are
+  re-encoded and the envelope digest (I5) and the physical frame trailing
+  digest are recomputed per the frozen encoding rules, so the record does
+  not fail earlier at R24 for a digest mismatch;
+expected result per field =
+  failure at exactly R27 with DECISION_CORE_BINDING_MISMATCH;
+separate payload-layer semantics =
+  a payload decision_core_binding source_commit or source_sha256 mutation
+  is a frozen-schema const violation and fails at R19 with
+  SCHEMA_VALIDATION_FAILED; it is never counted as an R27 case.
+```
 
 Completion evidence: test outcomes for all classes.
 
@@ -440,13 +468,13 @@ AUTHORIZE_IMPLEMENTATION_REPAIR_V1
 or
 
 ```text
-REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.3
+REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.4
 ```
 
 or
 
 ```text
-REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.3
+REJECT_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.4
 ```
 
 `AUTHORIZE_IMPLEMENTATION_REPAIR_V1` may authorize only the repairs of
