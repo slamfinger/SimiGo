@@ -3,6 +3,11 @@
 > **Status:** IMPLEMENTATION EXECUTED — COMPLETION REVIEW PENDING /
 > INDEPENDENT JSON SCHEMA VALIDATOR NOT AUTHORIZED / NOT `COMPLETE`
 > **Evidence date:** 2026-10-12
+> **Revision:** 2026-10-12 — repair evidence appended per
+> `AUTHORIZE_IMPLEMENTATION_REPAIR_COMMIT` and
+> `AUTHORIZE_REPAIR_COMPLETION_EVIDENCE_REVISION_AND_COMMIT`; original
+> Attempt 1-8 facts retained unchanged; `IMPLEMENTATION COMPLETE` remains
+> NOT ESTABLISHED pending the independent validator and completion review.
 > **Governing package:**
 > `docs/00-governance/SIMIGO_PERSISTENT_SRS_REPRESENTATION_IMPLEMENTATION_AUTHORIZATION_PACKAGE_V1.1_20261012.md`
 > **Package SHA-256:**
@@ -165,4 +170,176 @@ implementation completion review = PENDING (Human decision);
 independent JSON Schema validator = NOT AUTHORIZED / NOT RUN;
 IMPLEMENTATION COMPLETE = NOT ESTABLISHED until the separately authorized
   validator run succeeds and the completion review accepts the evidence.
+```
+
+## 8. Repair execution (REPAIR_ATTEMPT_1–5, independent numbering)
+
+Basis: `AUTHORIZE_IMPLEMENTATION_REPAIR_V1` against Repair Authorization
+Package v1.4. Repair HAR v1–v5 recorded the gates; Attempt 1–4 were
+consumed by failures (build failure; two test-target compile failures;
+one payload-layer status-mapping defect found by
+`testPayloadCoreBindingConstFailsAtR19`); all five attempts are
+preserved history, distinct from the original Implementation Attempts 1–8.
+
+```text
+repair_commit_git_object_id = f1a6b876658e8cd7558b307a78e9da19b367ddc9;
+direct_parent_commit_id     = 50219cc4f0c9abe7bc17c1546036487be1ec4d4a;
+paths = only the two authorized repair paths;
+artifact_content_sha256 (recomputed from the commit object) =
+  PersistentSRSRepresentation.swift =
+    1e6cf0d301b264b9df9d67a082710b3b9061f82d908f9fc80085e36628e4cc45;
+  PersistentSRSRepresentationTests.swift =
+    d50b0e46ea7d7429879a1ba22fdc8ad54b38806d3ce40f582ed7bf6543a345b3;
+REPAIR_ATTEMPT_5: BUILD_EXIT=0; TEST_EXIT=0;
+  Executed 21 tests, with 0 failures (0 unexpected).
+```
+
+### 8.1 R1–R6 coverage (negative tests → exact stage/status → result)
+
+```text
+R1 sealed label/type table — testSealedFieldTypeMatrix: all 14 labels use
+  only their allowed types; known-but-disallowed => V1
+  ATTEMPT_CANONICAL_ENCODING_MISMATCH; unsupported number => V1
+  UNSUPPORTED_CANONICAL_VALUE_TYPE. PASS;
+R2 ClassificationDescriptor — production constructor recomputes the digest
+  from canonical_payload_i1_bytes; synthetic descriptors exist only in the
+  test target; shared pure classifier; same-key/same-digest/different-I1 =>
+  PERSISTENT_LOGICAL_KEY_CONFLICT; identity mismatch =>
+  RECORD_CONTENT_IDENTITY_MISMATCH; equivalence passthrough verified.
+  testContentAddressedCollisionClassification PASS;
+R3 key precheck — invalid signing key => SIGNATURE_VERIFICATION_FAILED
+  with zero filesystem side effects (no records/, staging/, or lock file
+  created). testInvalidSigningKeyHasZeroSideEffects PASS;
+R4 W9–W12 refresh — file fsync, atomic rename, directory fsync; injected
+  file-flush failure => PERSISTENCE_VERIFICATION_INDETERMINATE with no
+  final record; injected directory-flush failure => INDETERMINATE with the
+  immutable final record preserved. testRefreshFailureLeavesFailClosedState
+  PASS;
+R5 closed nested schema — unknown/missing members and structural type
+  violations fail at R17 (UNKNOWN_SCHEMA_OR_FIELD); enum violations fail at
+  R19 (SCHEMA_VALIDATION_FAILED); payload decision_core_binding const
+  violation fails at R19 (SCHEMA_VALIDATION_FAILED) —
+  testNestedUnknownMemberFailsAtR17 / testEnumViolationFailsAtR19 /
+  testPayloadCoreBindingConstFailsAtR19 PASS;
+R6 evidence-derived eligibility, append chain, fixed budget — broken
+  prior_event_id chain yields no projection; ineligible attempts are
+  excluded; negative and oversized budget counts rejected;
+  testAppendOnlyAttemptStatusAndProjection / testBatchBudgetAndTransitions /
+  testClosureSelectionRegistrationAndChain PASS;
+R27 envelope boundary preserved — envelope-layer mutations =>
+  DECISION_CORE_BINDING_MISMATCH (testR27EnvelopeBindingMutationBoundary
+  PASS), distinct from the R19 payload-layer semantics.
+```
+
+### 8.2 R27 payload/envelope separation
+
+```text
+payload decision_core_binding const mutation => R19 SCHEMA_VALIDATION_FAILED;
+envelope decision_core_source_commit / decision_core_source_sha256 mutation
+  => R27 DECISION_CORE_BINDING_MISMATCH;
+the two layers are asserted by separate tests and never conflated.
+```
+
+## 9. Attempt 8 raw logs (permanent embedding)
+
+Original Implementation Attempt 8 logs, embedded verbatim with integrity
+digests matching the previously recorded values:
+
+```text
+build_log = /tmp/psrs_build_attempt8.log;
+build_log_sha256 = a5d67fb7eb1a4ca3c8bb6156fdc640e642344d041ee16c6f079997c8a4db93c1;
+BUILD_EXIT=0; final line: Build complete! (0.52秒)
+
+test_log = /tmp/psrs_test_attempt8.log;
+test_log_sha256 = 80f22e7a0544367e870b82c3be39261a24ebe083d835a1148de8582da94e198a;
+TEST_EXIT=0; Executed 14 tests, with 0 failures (0 unexpected).
+```
+
+#### Raw build log (verbatim)
+
+```text
+warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/ml-explore/mlx-swift' and dependency 'github.com/slamfinger/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift-lm->github.com/ml-explore/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.
+warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/ml-explore/mlx-swift' and dependency 'github.com/slamfinger/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift-lm->github.com/ml-explore/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.
+Building for debugging...
+[Computing dependencies]
+[Using on-disk description]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+Build complete! (0.52秒)
+```
+
+#### Raw test log (verbatim)
+
+```text
+warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/ml-explore/mlx-swift' and dependency 'github.com/slamfinger/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift-lm->github.com/ml-explore/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.
+warning: 'mlx-swift-lm': Conflicting identity for mlx-swift: dependency 'github.com/ml-explore/mlx-swift' and dependency 'github.com/slamfinger/mlx-swift' both point to the same package identity 'mlx-swift'. The dependencies are introduced through the following chains: (A) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift-lm->github.com/ml-explore/mlx-swift (B) /users/mr.simi/documents/simigo-lab/simigo2-experimental->github.com/slamfinger/mlx-swift. If there are multiple chains that lead to the same dependency, only the first chain is shown here. To see all chains use debug output option. To resolve the conflict, coordinate with the maintainer of the package that introduces the conflicting dependency. This will be escalated to an error in future versions of SwiftPM.
+Building for debugging...
+[Computing dependencies]
+[Provisioning 1 / 51]
+warning: missing creator for mutated node: ('/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/.build/out/Products/Debug/mlx-swift_Cmlx.bundle/Contents/MacOS')
+[4 / 92] swift-crypto_Crypto
+[4 / 90]
+[5 / 10] SimiGo2ExperimentalTests-product
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/PersistentSRSRepresentationTests.swift:169:13: warning: variable 'a' was never mutated; consider changing to 'let' constant [#VariableNeverMutated]
+167 | 
+168 |     func testJCSReorderedCollectionsProduceSameBytes() {
+169 |         var a = makeRecord()
+    |             `- warning: variable 'a' was never mutated; consider changing to 'let' constant [#VariableNeverMutated]
+170 |         var b = a
+171 |         b.provenanceBindings = [makeBinding("p1"), makeBinding("p2"), makeBinding("p2")]
+
+[#VariableNeverMutated]: <https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated>
+[8 / 13] SimiGo2ExperimentalTests-product
+/Users/mr.simi/Documents/SimiGo-Lab/simigo2-experimental/Tests/SimiGo2ExperimentalTests/ProductionRuntimeModelExecutorStub.swift:5:7: warning: stored property 'seedTokenError' of 'Sendable'-conforming class 'ProductionRuntimeModelExecutorStub' is mutable; this is an error in the Swift 6 language mode
+ 3 | 
+ 4 | final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuationExecutor {
+ 5 |   var seedTokenError: Error?
+   |       `- warning: stored property 'seedTokenError' of 'Sendable'-conforming class 'ProductionRuntimeModelExecutorStub' is mutable; this is an error in the Swift 6 language mode
+ 6 |   var continuationError: Error?
+ 7 |   var nextInputError: Error?
+[13 / 17] SimiGo2ExperimentalTests-product
+[15 / 17] SimiGo2ExperimentalTests-product
+Build complete! (1.67秒)
+Test Suite 'Selected tests' started at 2026-10-12 08:15:11.012.
+Test Suite 'SimiGoRuntimeContractTests.xctest' started at 2026-10-12 08:15:11.012.
+Test Suite 'SimiGoRuntimeContractTests.xctest' passed at 2026-10-12 08:15:11.012.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-10-12 08:15:11.012.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'Selected tests' started at 2026-10-12 08:15:11.100.
+Test Suite 'SimiGo2ExperimentalTests.xctest' started at 2026-10-12 08:15:11.101.
+Test Suite 'PersistentSRSRepresentationTests' started at 2026-10-12 08:15:11.101.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testAppendOnlyAttemptStatusAndProjection]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testAppendOnlyAttemptStatusAndProjection]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testBaseDigestIndependenceFromCompletionOrderKey]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testBaseDigestIndependenceFromCompletionOrderKey]' passed (0.001 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testBatchBudgetAndTransitions]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testBatchBudgetAndTransitions]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testClosureSelectionRegistrationAndChain]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testClosureSelectionRegistrationAndChain]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testContentAddressedCollisionClassification]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testContentAddressedCollisionClassification]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testFixedEncodingVector]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testFixedEncodingVector]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testJCSReorderedCollectionsProduceSameBytes]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testJCSReorderedCollectionsProduceSameBytes]' passed (0.002 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testNilVersusExplicitEmptyAreDistinct]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testNilVersusExplicitEmptyAreDistinct]' passed (0.003 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testReaderFailureStatuses]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testReaderFailureStatuses]' passed (0.005 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testSealedEvidenceDigestBinding]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testSealedEvidenceDigestBinding]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testStrictUTCAcceptanceAndRejection]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testStrictUTCAcceptanceAndRejection]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testUTF8ByteExactLogicalKeyComparison]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testUTF8ByteExactLogicalKeyComparison]' passed (0.000 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testValidI0EncodingAndCanonicalRoundTrip]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testValidI0EncodingAndCanonicalRoundTrip]' passed (0.002 seconds).
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testWriteRejectsUnverifiableExistingContentPath]' started.
+Test Case '-[SimiGo2ExperimentalTests.PersistentSRSRepresentationTests testWriteRejectsUnverifiableExistingContentPath]' passed (0.005 seconds).
+Test Suite 'PersistentSRSRepresentationTests' passed at 2026-10-12 08:15:11.121.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.020 (0.020) seconds
+Test Suite 'SimiGo2ExperimentalTests.xctest' passed at 2026-10-12 08:15:11.121.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.020 (0.020) seconds
+Test Suite 'Selected tests' passed at 2026-10-12 08:15:11.121.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.020 (0.021) seconds
 ```
