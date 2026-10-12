@@ -430,4 +430,44 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
         XCTAssertEqual(evictionProbe.calls, [])
         XCTAssertEqual(session.engine.residencyTransferCount, 0)
     }
+
+    func testExplicitRestoreRecoversToEveryCommittedPositionFromUncertainty() async throws {
+        let gate = AppendGate()
+        let (session, injector, _) = try await makeIsolationSession(gate: gate)
+        try await enterUncertainState(session, injector: injector)
+        let beforeRecords = session.coordinatorRecordCount()
+
+        // Recovery target = the PRIOR position itself: forward resume of the
+        // position the failed restore tried to leave behind. All five
+        // components realign and the isolation lifts without a rewind.
+        session.gate.allow(1)
+        try await session.engine.restoreSession(to: 1)
+        XCTAssertFalse(session.hasUncertainBinding())
+        XCTAssertEqual(session.currentState()?.position, ExecutionPosition(1))
+        XCTAssertEqual(session.currentState()?.lifecycle, .restored)
+        XCTAssertEqual(session.engine.sessionInfo?.position, 1)
+        XCTAssertEqual(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(1)), 5)
+        XCTAssertThrowsError(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(0)))
+        XCTAssertEqual(session.coordinatorRecordCount(), beforeRecords + 1)
+
+        // And the original rewind target (backward), in the same session:
+        // explicit recovery covers both directions from the uncertain state.
+        session.gate.allow(1)
+        try await session.engine.restoreSession(to: 0)
+        XCTAssertFalse(session.hasUncertainBinding())
+        XCTAssertEqual(session.currentState()?.position, ExecutionPosition(0))
+        XCTAssertEqual(session.currentState()?.lifecycle, .restored)
+        XCTAssertEqual(session.engine.sessionInfo?.position, 0)
+        XCTAssertEqual(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(0)), 3)
+        XCTAssertThrowsError(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(1)))
+        let entries = try XCTUnwrap(session.engine.tokenLedger?.entries(for: executionID))
+        XCTAssertEqual(
+            entries.map(\.kind),
+            [.bootstrap, .turn, .restoreMarker, .restoreMarker])
+        XCTAssertEqual(entries.map(\.superseded), [false, true, true, false])
+    }
 }
