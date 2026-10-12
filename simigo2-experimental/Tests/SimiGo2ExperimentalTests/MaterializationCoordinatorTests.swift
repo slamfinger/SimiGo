@@ -1,9 +1,76 @@
 import XCTest
 import MLXLMCommon
 import MLX
+import Foundation
 @testable import SimiGo2Experimental
 
 private let f3ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
+
+/// Starts both racing materializations only after both have reached the
+/// startup point. This reduces task-creation skew; it is not a coordinator
+/// internal wait-queue barrier.
+private actor MaterializationStartBarrier {
+    private let participantCount: Int
+    private var arrivals = 0
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(participantCount: Int) {
+        self.participantCount = participantCount
+    }
+
+    func wait() async {
+        arrivals += 1
+        if arrivals == participantCount {
+            let ready = waiters
+            waiters.removeAll()
+            ready.forEach { $0.resume() }
+            return
+        }
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            waiters.append(continuation)
+        }
+    }
+}
+
+/// Replaces a fixed sleep with a controllable work boundary so assertions can
+/// observe the single admitted closure before and after it is released.
+private actor MaterializationWorkGate {
+    private var callContinuations: [CheckedContinuation<Void, Never>] = []
+    private var observationWaiters: [CheckedContinuation<Void, Never>] = []
+    private(set) var callCount = 0
+    private var released = false
+
+    func enterWork() async {
+        callCount += 1
+        let observers = observationWaiters
+        observationWaiters.removeAll()
+        observers.forEach { $0.resume() }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            if released {
+                continuation.resume()
+            } else {
+                callContinuations.append(continuation)
+            }
+        }
+    }
+
+    func waitForFirstCall() async {
+        if callCount > 0 { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            observationWaiters.append(continuation)
+        }
+    }
+
+    func release() {
+        released = true
+        let ready = callContinuations
+        callContinuations.removeAll()
+        ready.forEach { $0.resume() }
+        observationWaiters.forEach { $0.resume() }
+        observationWaiters.removeAll()
+    }
+}
 
 private func f3tokens(_ count: Int, seed: Int = 0) -> [Int] {
     (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
@@ -77,6 +144,8 @@ final class MaterializationCoordinatorTests: XCTestCase {
     func testConcurrentMaterializeRunsSingleFlight() async throws {
         let registry = PhysicalUseRegistry(onDelete: { _ in })
         let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
+        let startBarrier = MaterializationStartBarrier(participantCount: 2)
+        let workGate = MaterializationWorkGate()
         final class Counter: @unchecked Sendable {
             private let l = NSLock()
             private var v = 0
@@ -85,19 +154,50 @@ final class MaterializationCoordinatorTests: XCTestCase {
         }
         let loads = Counter()
 
-        async let first = coordinator.materialize(key: "ref-X") {
-            loads.bump()
-            try await Task.sleep(nanoseconds: 80_000_000)
-            return 42
+        enum MaterializeOutcome {
+            case success(Int)
+            case failure(Error)
         }
-        async let second = coordinator.materialize(key: "ref-X") {
-            loads.bump()
-            return 7
+
+        let tasks = (0..<2).map { _ in
+            Task { () -> MaterializeOutcome in
+                await startBarrier.wait()
+                do {
+                    let value = try await coordinator.materialize(key: "ref-X") {
+                        loads.bump()
+                        await workGate.enterWork()
+                        return 42
+                    }
+                    return .success(value)
+                } catch {
+                    return .failure(error)
+                }
+            }
         }
-        let (v1, v2) = try await (first, second)
+
+        await workGate.waitForFirstCall()
+        let callsBeforeRelease = await workGate.callCount
+        XCTAssertEqual(callsBeforeRelease, 1, "exactly one underlying work may start before release")
+
+        await workGate.release()
+        var outcomes: [MaterializeOutcome] = []
+        for task in tasks {
+            outcomes.append(await task.value)
+        }
+        let callsAfterRelease = await workGate.callCount
+
+        let failures = outcomes.compactMap {
+            if case .failure(let error) = $0 { return error }
+            return nil
+        }
+        XCTAssertTrue(failures.isEmpty, "no materialization caller should fail")
+        XCTAssertEqual(outcomes.compactMap {
+            if case .success(let value) = $0 { return value }
+            return nil
+        }, [42, 42], "both callers share the single work's result")
+        XCTAssertEqual(callsAfterRelease, 1, "no duplicate underlying work may start after release")
         // WHICH caller creates the work is nondeterministic — the
         // contract is: same result for both, exactly ONE underlying load.
-        XCTAssertEqual(v1, v2, "both callers share the single work's result")
         XCTAssertEqual(loads.value, 1, "single-flight: one work, shared result")
         XCTAssertEqual(registry.physicalUseCount("ref-X"), 0, "protection released")
     }
