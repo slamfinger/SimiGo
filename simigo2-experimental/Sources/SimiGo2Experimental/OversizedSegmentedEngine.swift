@@ -120,14 +120,16 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     // lifecycle-recorded continueExecution on a real Execution State; the
     // conversation prefix IS the bound representation; new session =
     // discard + create; restore = logical rollback (used by the self-test).
-    private var coordinator: ExecutionContinuityCoordinator?
-    private var stateBackend: OversizedSegmentedStateBackend?
-    private var currentState: ExecutionStateHandle?
+    // Internal setters are the minimal in-module test seam for restore
+    // atomicity; production callers keep the public read-only surface.
+    var coordinator: ExecutionContinuityCoordinator?
+    var stateBackend: OversizedSegmentedStateBackend?
+    var currentState: ExecutionStateHandle?
 
-    public private(set) var sessionInfo: OversizedSessionInfo?
+    public internal(set) var sessionInfo: OversizedSessionInfo?
     /// Token Ledger: append-only confirmed token-prefix facts per session.
     /// Closed (retained) when newSession discards the Execution State.
-    public private(set) var tokenLedger: OversizedTokenLedger?
+    public internal(set) var tokenLedger: OversizedTokenLedger?
     public private(set) var lastInputTokenCount: Int?
 
     /// FM-03: lifecycle/generation serialization. The product guards
@@ -857,7 +859,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         guard let coordinator, let stateBackend, let state = currentState else {
             throw OversizedEngineError.notLoaded
         }
-        currentState = try await coordinator.restore(
+        try tokenLedger?.validateRestoreTarget(position, executionID: state.id)
+        let restoredState = try await coordinator.restore(
             state,
             request: ExecutionRestoreRequest(
                 targetPosition: ExecutionPosition(Int64(position)),
@@ -872,20 +875,21 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         // position (I-L3 source of truth — coordinator.restore re-binds the
         // historical prefix before returning), and the ledger independently
         // re-verifies it against the backend at append.
-        tokenLedger?.markSuperseded(beyond: position, executionID: state.id)
         let restoredPrefixLength = try stateBackend.boundPrefixLength(
-            executionID: currentState!.id, position: currentState!.position
+            executionID: restoredState.id, position: restoredState.position
         )
         try tokenLedger?.append(OversizedTokenLedgerEntry(
-            executionID: currentState!.id,
-            position: Int(currentState!.position.value),
+            executionID: restoredState.id,
+            position: Int(restoredState.position.value),
             kind: .restoreMarker,
             prefixLength: restoredPrefixLength
         ))
+        tokenLedger?.markSuperseded(beyond: position, executionID: state.id)
+        currentState = restoredState
         sessionInfo = OversizedSessionInfo(
-            executionID: currentState!.id.rawValue,
-            position: Int(currentState!.position.value),
-            turns: Int(currentState!.position.value),
+            executionID: restoredState.id.rawValue,
+            position: Int(restoredState.position.value),
+            turns: Int(restoredState.position.value),
             records: coordinator.recordCount
         )
     }

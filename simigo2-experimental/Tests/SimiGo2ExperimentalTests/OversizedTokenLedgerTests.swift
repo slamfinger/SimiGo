@@ -109,6 +109,38 @@ final class OversizedTokenLedgerTests: XCTestCase {
         XCTAssertThrowsError(try ledger.append(entry(3, .restoreMarker, 21)))
     }
 
+    func testRestoreTargetPrecheckIsReadOnlyAndExecutionScoped() throws {
+        let bindings = StubBackendBindings()
+        let ledger = makeLedger(bindings)
+        try commit(entry(0, .bootstrap, 18), ledger: ledger, bindings: bindings)
+        try commit(entry(1, .turn, 19), ledger: ledger, bindings: bindings)
+        let other = ExecutionID("U")
+        try commit(
+            OversizedTokenLedgerEntry(
+                executionID: other, position: 0, kind: .bootstrap, prefixLength: 7),
+            ledger: ledger, bindings: bindings)
+
+        try ledger.validateRestoreTarget(0, executionID: exec)
+        try ledger.validateRestoreTarget(1, executionID: exec)
+        XCTAssertThrowsError(
+            try ledger.validateRestoreTarget(3, executionID: exec),
+            "",
+            assertDivergence
+        )
+        // Other executions do not widen this execution's bound.
+        try ledger.validateRestoreTarget(0, executionID: other)
+        XCTAssertThrowsError(
+            try ledger.validateRestoreTarget(1, executionID: other),
+            "",
+            assertDivergence
+        )
+
+        XCTAssertEqual(ledger.count, 3)
+        XCTAssertEqual(ledger.entries(for: exec).map(\.position), [0, 1])
+        try commit(entry(2, .turn, 20), ledger: ledger, bindings: bindings)
+        XCTAssertEqual(ledger.entries(for: exec).last?.position, 2)
+    }
+
     func testRestoreMarkerMayResumeSupersededPosition() throws {
         let bindings = StubBackendBindings()
         let ledger = makeLedger(bindings)
