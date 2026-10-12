@@ -1,7 +1,14 @@
-# Persistent SRS Representation Implementation Repair Authorization Package v1.0
+# Persistent SRS Representation Implementation Repair Authorization Package v1.1
 
-> **Status:** DELIVERED FOR HUMAN REVIEW — REPAIR NOT AUTHORIZED
+> **Status:** REVISED DELIVERY FOR HUMAN REVIEW — REPAIR NOT AUTHORIZED
 > **Date:** 2026-10-12
+> **Version:** v1.1 (in-place revision of the same document)
+> **Supersedes:** v1.0, returned as `REVISE_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
+> **Revision scope:** authorization-scope consistency across sections 1, 8,
+> and 12; R5 check stages aligned to Contract v1.8 section 13.1 (R17 vs R19);
+> frozen ClassificationDescriptor field names; explicit invalid-key failure
+> status; unmerged W13-W16 semantics; expanded closure state machine with
+> bound statuses; table-driven R1 test coverage; repair start-commit binding
 > **Basis ruling:** `REVISE_IMPLEMENTATION_COMPLETION_REVIEW`
 > **Delivery ruling:** `AUTHORIZE_DRAFT_AND_DELIVER_IMPLEMENTATION_REPAIR_AUTHORIZATION_PACKAGE_V1.0`
 > **Bound implementation commit:** `5764396497d115ce8b780dc7190815b849fea924`
@@ -15,11 +22,12 @@
 
 This package requests a scope-bound `IMPLEMENTATION_REPAIR` authorization for
 the six blocking findings R1-R6 returned by the implementation completion
-review. Approval may authorize only the repair work in section 4 and the
-verification sequence in section 5. It does not authorize Fixture Preparation,
-Execution Batch, independent validator execution, ES2 consumption,
-non-recompute attribution, canonical PALACE or Information Space mutation, MLX,
-V6 rerun, or production activity.
+review. If granted, approval may authorize only the repairs of sections 2-7
+(R1-R6), limited to the paths of section 8 and the verification sequence of
+section 9. It does not authorize Fixture Preparation, Execution Batch,
+independent validator execution, ES2 consumption, non-recompute attribution,
+canonical PALACE or Information Space mutation, MLX, V6 rerun, or production
+activity.
 
 Repair attempts use the independent numbering of section 6 and do not reuse or
 alter the historical Attempt 1-8 record of Package v1.1.
@@ -55,8 +63,12 @@ Failure mode: a field carrying a known but wrong type must fail V1 with
 Acceptance standard: the fixed encoding vector still passes V1-V5 unchanged;
 known-but-wrong-type records are rejected at V1 with the exact typed status.
 
-Required negative tests: at least one per mismatch class — a fixed-UTF8 field
-carrying 0x03, a JSON field carrying 0x02, and a fixed field carrying NULL.
+Required negative tests: a table-driven test iterating all 14 labels that
+asserts every allowed type passes and every non-allowed type fails at V1 with
+ATTEMPT_CANONICAL_ENCODING_MISMATCH, explicitly covering the two NULL-optional
+fields (observer_authorization_reference, output_and_typed_failure_evidence)
+and the two JSON fields
+(implementation_runtime_environment_bindings, start_stop_evidence).
 
 Completion evidence: test case names and outcomes for the negative classes,
 plus the unchanged fixed-vector result.
@@ -75,9 +87,9 @@ Required repairs:
 descriptor =
   identity_utf8: [UInt8];
   version_utf8:  [UInt8];
-  payload_digest_raw: 32 bytes (production constructor: recomputed SHA-256
-    over the exact I1 bytes only);
-  payload_bytes: exact I1 bytes;
+  payload_digest_bytes: 32 bytes (production constructor: recomputed SHA-256
+    over the exact canonical payload bytes only);
+  canonical_payload_i1_bytes: exact I1 bytes;
 
 shared_classifier =
   one pure classification function over descriptors, called by both the
@@ -127,7 +139,9 @@ precheck =
   require exact equality with the frozen production anchor public key;
 
 invalid_key =>
-  immediate typed failure with zero filesystem side effects;
+  immediate failure with status SIGNATURE_VERIFICATION_FAILED (the exact
+  Contract v1.8 section 15 status for signer verification failure) and zero
+  filesystem side effects;
 
 ordering =
   precheck -> lock -> W2/W3 classification -> (only for NEW_RECORD)
@@ -137,16 +151,16 @@ ordering =
 Failure mode: any staging file, directory entry, or final record created when
 the key does not match the anchor.
 
-Acceptance standard: an invalid-key write returns a typed failure and a
-directory-state assertion proves no `records/` or `staging/` entry was created
-or modified.
+Acceptance standard: an invalid-key write returns SIGNATURE_VERIFICATION_FAILED
+and a directory-state snapshot assertion proves the working root is completely
+unchanged — no `records/` or `staging/` entry created, modified, or removed.
 
 Required negative tests: invalid-key write with pre-existing and non-existent
 root states, asserting zero filesystem side effects.
 
 Completion evidence: test outcomes and the directory-state assertions.
 
-## 5. R4 — Persistence refresh sequence W9-W13
+## 5. R4 — Persistence refresh sequence W9-W16
 
 Finding: the writer uses `Data.write(to:)` and `FileManager.moveItem` without
 file fsync or directory refresh, so W10 and W12 persistence guarantees are not
@@ -163,9 +177,14 @@ W12 fsync the containing directory where the platform supports it;
     if the directory refresh fails, the persistence state is INDETERMINATE:
     the implementation must not claim the final file is absent, must not
     delete the immutable final record for rollback, and must fail closed;
-W13-W15 reopen the final path and execute R1-R29;
-W16 release the lock only after the verdict.
+W13 reopen the final path and execute R1-R28;
+W14 execute the ordered logical-key uniqueness check R29;
+W15 derive COMPLETE_VERIFIED only if W13 (R1-R28) and W14 (R29) both pass;
+W16 release the lock only after the verdict is derived.
 ```
+
+Each W13-W16 stage keeps its independent contract semantics from section 14.3;
+they must not be merged into a single compound check.
 
 Failure mode: claiming success (or absence) without refresh evidence, or
 mutating a final record during rollback.
@@ -187,23 +206,40 @@ only caught indirectly at R21 instead of failing at R19.
 Required repairs:
 
 ```text
-for each nested object class — logical_key, settled_relation_state,
-source_relation, dependency_set, dependency, result, provenance,
-lifecycle, freshness, freshness_requirement, resolution_policy,
-decision_core_binding, binding — decode enforces:
-  exact required members (missing => UNKNOWN_SCHEMA_OR_FIELD);
-  exact allowed member set (unknown => UNKNOWN_SCHEMA_OR_FIELD);
-  exact types/enums/lengths/patterns per the frozen schema;
-all failures occur at R19 with the contract statuses.
+checks are split exactly per Contract v1.8 section 13.1:
+
+R17 structural stage:
+  for each nested object class — logical_key, settled_relation_state,
+  source_relation, dependency_set, dependency, result, provenance, lifecycle,
+  freshness, freshness_requirement, resolution_policy, decision_core_binding,
+  binding — decode enforces:
+    exact required members — missing => UNKNOWN_SCHEMA_OR_FIELD;
+    exact allowed member set — unknown => UNKNOWN_SCHEMA_OR_FIELD;
+    JSON depth, duplicate members, and array limits per the existing strict
+      parser (JSON_DEPTH_LIMIT_EXCEEDED, DUPLICATE_JSON_MEMBER,
+      INTEGER_OVERFLOW_OR_RESOURCE_LIMIT);
+
+R19 schema-validation stage:
+  the frozen-schema type, enum, length, pattern, and const checks per class
+  fire here with the contract statuses (SCHEMA_VALIDATION_FAILED,
+  UNKNOWN_PAYLOAD_SCHEMA, ENCODING_IDENTITY_MISMATCH,
+  DECISION_CORE_BINDING_MISMATCH; UTC shape stays a R19 pattern check while
+  calendar validity remains R20);
+
+unknown or missing nested members must never survive to R21; but no failure
+may be reassigned to R19 merely for convenience — every check fires at its
+contract-defined stage and returns its contract-defined status.
 ```
 
 Failure mode: an unknown nested member surviving to R21.
 
-Acceptance standard: nested unknown members fail at R19 with
-`UNKNOWN_SCHEMA_OR_FIELD` in every object class.
+Acceptance standard: nested unknown and missing members fail at R17 with
+`UNKNOWN_SCHEMA_OR_FIELD`; type/enum/pattern violations fail at R19 with the
+exact contract status; both are demonstrated per object class.
 
 Required negative tests: at least one unknown-member injection per nested
-class, asserting the exact R19 status.
+class asserting the exact R17 status, and at least one type or enum violation
+per class asserting the exact R19 status.
 
 Completion evidence: test outcomes for all classes.
 
@@ -228,9 +264,42 @@ projection =
   rejected instead of silently projected;
 
 closure =
-  phase-1 register, phase-2 deterministic selection, closure set duplicate
-  detection, linear chain C1..Cn with head projection, invalidation applied
-  only to the head, replacement chains projected correctly;
+  phase 1 derives ELIGIBLE or INELIGIBLE per attempt only from verified
+    evidence: the AttemptEvidenceRecord passes V1-V5; the matrix scenario is
+    EXECUTION_REQUIRED; scenario_verdict is PASS; the latest valid projection
+    is EXECUTED_ACTIVE and not EXCLUDED or FAILED; the source batch is ACTIVE
+    or COMPLETE; the Human Authorization Record, fixture digest, implementation
+    artifact, runtime artifact, environment identity, and observer
+    authorization exactly match the frozen bindings; R29 uniqueness evidence
+    exists and passes; and no unresolved authorization, fixture, schema,
+    implementation, runtime, environment, observer, or evidence drift exists;
+  phase 2 groups eligible attempts by EXECUTION_REQUIRED scenario, sorts each
+    group ascending by immutable completion_order_key bytes, selects the last
+    element, and registers exactly one candidate per scenario;
+    duplicate registration in the set => CLOSURE_DUPLICATE_CANDIDATE;
+  phase 2 matrix checks require: exactly one candidate for every
+    EXECUTION_REQUIRED scenario with none missing or duplicated;
+    implementation-test-required entries have PASS evidence; R29 evidence
+    covers the candidate set with no unresolved logical-key, content-identity,
+    duplicate-state, or concurrent-writer conflict; no candidate has
+    unresolved drift;
+  closure versioning: a valid commit's closure_version is exactly the current
+    valid head version plus one, and prior_closure_head_version is exactly the
+    current head; forks, duplicate versions, skipped versions, and
+    out-of-chain commits => CLOSURE_CHAIN_FORK_REJECTED; only ACTIVE or
+    INVALIDATED heads may be replaced — an ACTIVE head becomes SUPERSEDED, an
+    INVALIDATED head remains INVALIDATED, and the valid replacement commit
+    becomes ACTIVE;
+  invalidation: an in-chain invalidation targets only the current head, only
+    when its trigger affects a FINAL_ATTEMPT role selected by that head or a
+    binding/evidence the head relies on, and only with a valid scope-bound
+    Human Authorization Record; a non-head target =>
+    CLOSURE_INVALIDATION_TARGET_NOT_HEAD and does not affect current closure;
+  phase-2 rejection emits a ClosureRejectionRecord and must not emit a
+    ClosureCommitRecord or FINAL_ATTEMPT roles; attempts retain their
+    projected states; a rejected replacement does not change the head;
+  history is immutable: SUPERSEDED and INVALIDATED versions are never
+    rewritten back to ACTIVE.
 
 budget =
   fixed valid count range 0...16; negative and oversized counts are rejected;
@@ -282,6 +351,13 @@ Failure handling: build failure consumes the repair attempt and stops the
 sequence; test failure (compile or case) consumes the attempt and stops; each
 failure requires a new scope-bound Human decision bound to fresh source
 SHA-256 values.
+
+Repair start binding: the repair Human Authorization Record must bind the
+actual start commit by its full git_commit_object_id, the initial
+artifact_content_sha256 of both repair paths, and the exact authorized commands
+and working directory. If origin/main has advanced beyond the bound commit
+before repair starts, the executor must stop and request a re-binding instead
+of silently rebasing or re-binding.
 
 ## 10. Repair completion evidence requirements
 
