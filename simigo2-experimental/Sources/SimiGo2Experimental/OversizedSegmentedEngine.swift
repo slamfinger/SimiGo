@@ -932,31 +932,31 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             throw OversizedEngineError.notLoaded
         }
         try tokenLedger?.validateRestoreTarget(position, executionID: state.id)
+        let restoredPosition = ExecutionPosition(Int64(position))
+        let ledger = tokenLedger
         let restoredState = try await coordinator.restore(
             state,
             request: ExecutionRestoreRequest(
-                targetPosition: ExecutionPosition(Int64(position)),
+                targetPosition: restoredPosition,
                 continuation: ExecutionContinuation(
                     nextInput: "", continuationID: "S-restore-\(position)")
-            )
+            ),
+            beforeCommit: {
+                // The backend is temporarily rebound to the target here, but
+                // Coordinator handle/record commit waits until the ledger
+                // marker succeeds. A thrown append triggers physical rollback.
+                let restoredPrefixLength = try stateBackend.boundPrefixLength(
+                    executionID: state.id, position: restoredPosition
+                )
+                try ledger?.append(OversizedTokenLedgerEntry(
+                    executionID: state.id,
+                    position: Int(restoredPosition.value),
+                    kind: .restoreMarker,
+                    prefixLength: restoredPrefixLength
+                ))
+                ledger?.markSuperseded(beyond: position, executionID: state.id)
+            }
         )
-        // Token ledger restore marker: records the rollback point so the
-        // audit trail shows the rewind (append-only — the superseded tail is
-        // retained and flagged, not deleted). The marker's prefixLength is
-        // derived from the BACKEND's re-bound representation at the restored
-        // position (I-L3 source of truth — coordinator.restore re-binds the
-        // historical prefix before returning), and the ledger independently
-        // re-verifies it against the backend at append.
-        let restoredPrefixLength = try stateBackend.boundPrefixLength(
-            executionID: restoredState.id, position: restoredState.position
-        )
-        try tokenLedger?.append(OversizedTokenLedgerEntry(
-            executionID: restoredState.id,
-            position: Int(restoredState.position.value),
-            kind: .restoreMarker,
-            prefixLength: restoredPrefixLength
-        ))
-        tokenLedger?.markSuperseded(beyond: position, executionID: state.id)
         currentState = restoredState
         sessionInfo = OversizedSessionInfo(
             executionID: restoredState.id.rawValue,

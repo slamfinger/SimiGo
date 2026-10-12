@@ -106,9 +106,10 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
         XCTAssertEqual(session.currentState()?.position, ExecutionPosition(0))
     }
 
-    func testStableMarkerAppendFailureLeavesRetryablePartialWindow() async throws {
+    func testStableMarkerAppendFailureRollsBackBeforeLogicalCommit() async throws {
         let gate = AppendGate()
         let session = try await makeSession(gate: gate)
+        let beforeRecords = session.coordinatorRecordCount()
 
         do {
             try await session.engine.restoreSession(to: 0)
@@ -117,15 +118,19 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
             assertDivergence(error, contains: "stable marker append failure")
         }
 
-        // Coordinator and physical rebind happened; logical/audit state stayed
-        // at the pre-restore commit point.
+        // The failed marker append is compensated before the logical restore
+        // commits: handle, coordinator record count, ledger and backend all
+        // remain at the pre-restore position.
         let unchanged = try XCTUnwrap(session.currentState())
         XCTAssertEqual(unchanged.position, ExecutionPosition(1))
         XCTAssertEqual(unchanged.lifecycle, .active)
         XCTAssertEqual(session.engine.sessionInfo?.position, 1)
-        XCTAssertEqual(session.coordinatorRecordCount(), 3)
+        XCTAssertEqual(session.engine.sessionInfo?.records, beforeRecords)
+        XCTAssertEqual(session.coordinatorRecordCount(), beforeRecords)
         XCTAssertEqual(try session.backendBoundPrefixLength(
-            executionID, ExecutionPosition(0)), 3)
+            executionID, ExecutionPosition(1)), 5)
+        XCTAssertThrowsError(try session.backendBoundPrefixLength(
+            executionID, ExecutionPosition(0)))
         let entries = try XCTUnwrap(session.engine.tokenLedger?.entries(for: executionID))
         XCTAssertEqual(entries.map(\.kind), [.bootstrap, .turn])
         XCTAssertEqual(entries.map(\.superseded), [false, false])
@@ -134,6 +139,7 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
         try await session.engine.restoreSession(to: 0)
         XCTAssertEqual(session.currentState()?.position, ExecutionPosition(0))
         XCTAssertEqual(session.engine.sessionInfo?.position, 0)
+        XCTAssertEqual(session.coordinatorRecordCount(), beforeRecords + 1)
         XCTAssertEqual(session.engine.tokenLedger?.count, 3)
     }
 }

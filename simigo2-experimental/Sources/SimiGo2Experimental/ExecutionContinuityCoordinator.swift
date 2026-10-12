@@ -46,6 +46,18 @@ private actor CoordinatorAsyncOperationGate {
     }
 }
 
+/// A restore commit hook failed and the compensating backend rebind also
+/// failed. Logical Coordinator state has not been committed, but physical
+/// state may now require recovery; this is deliberately not an atomicity claim.
+private struct RestoreCompensationFailure: Error, LocalizedError, Sendable {
+    let commitFailure: String
+    let rollbackFailure: String
+
+    var errorDescription: String? {
+        "restore pre-commit hook failed (\(commitFailure)); restoring the previous backend representation also failed (\(rollbackFailure)); logical Coordinator state was not committed"
+    }
+}
+
 /// E3 — production Execution Continuity runtime: E1 lifecycle semantics
 /// (registry + one authoritative lifecycle record per transition) combined
 /// with Backend representation binding.
@@ -293,21 +305,77 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         _ state: ExecutionStateHandle,
         request: ExecutionRestoreRequest
     ) async throws -> ExecutionStateHandle {
+        try await restoreImpl(state, request: request, beforeCommit: nil)
+    }
+
+    /// Engine-only transaction seam: run a synchronous, throwing cross-layer
+    /// commit hook after the physical target rebind but before committing the
+    /// logical handle and lifecycle record. If the hook fails, rebind the
+    /// previous physical representation and leave logical Coordinator state
+    /// untouched. This covers the token-ledger marker boundary, not arbitrary
+    /// external writes or general cross-component transaction atomicity.
+    func restore(
+        _ state: ExecutionStateHandle,
+        request: ExecutionRestoreRequest,
+        beforeCommit: @escaping @Sendable () throws -> Void
+    ) async throws -> ExecutionStateHandle {
+        try await restoreImpl(state, request: request, beforeCommit: beforeCommit)
+    }
+
+    private func restoreImpl(
+        _ state: ExecutionStateHandle,
+        request: ExecutionRestoreRequest,
+        beforeCommit: (@Sendable () throws -> Void)?
+    ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
             let current = try guardKnown(state.id)
+            let history = representationHistory[current.id] ?? []
 
             // A logical restore requires a captured physical representation at
             // the target position — otherwise the runtime would promise a state
             // it cannot physically deliver.
-            guard let targetRep = representationHistory[state.id]?
-                .last(where: { $0.position == request.targetPosition })
+            guard let targetRep = history.last(where: { $0.position == request.targetPosition })
             else {
                 throw CoordinatorError.noRepresentationAtPosition(
                     executionID: current.id,
                     position: request.targetPosition
                 )
             }
+
+            // The transactional variant needs a known prior representation
+            // to compensate if the cross-layer commit hook rejects the restore.
+            let priorRep: ExecutionRepresentation?
+            if beforeCommit != nil {
+                guard let capturedPrior = history.last(where: { $0.position == current.position }) else {
+                    throw CoordinatorError.noRepresentationAtPosition(
+                        executionID: current.id,
+                        position: current.position
+                    )
+                }
+                priorRep = capturedPrior
+            } else {
+                priorRep = nil
+            }
+
             try await backend.restoreRepresentation(targetRep)
+
+            if let beforeCommit {
+                do {
+                    try beforeCommit()
+                } catch let commitError {
+                    if let priorRep {
+                        do {
+                            try await backend.restoreRepresentation(priorRep)
+                        } catch let rollbackError {
+                            throw RestoreCompensationFailure(
+                                commitFailure: String(describing: commitError),
+                                rollbackFailure: String(describing: rollbackError)
+                            )
+                        }
+                    }
+                    throw commitError
+                }
+            }
 
             let restored = ExecutionStateHandle(
                 id: current.id,
