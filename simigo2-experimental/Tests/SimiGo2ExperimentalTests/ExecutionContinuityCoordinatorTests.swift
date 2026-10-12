@@ -408,8 +408,8 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
                 childID: ExecutionID("B"),
                 childPosition: ExecutionPosition(0),
                 childContinuation: ExecutionContinuation(
-                    nextInput: "B-next-\\(index)",
-                    continuationID: "B-cont-\\(index)"
+                    nextInput: "B-next",
+                    continuationID: "B-cont"
                 )
             )
         }
