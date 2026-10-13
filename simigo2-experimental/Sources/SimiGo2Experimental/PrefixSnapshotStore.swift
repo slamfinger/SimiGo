@@ -314,8 +314,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is
-    /// the caller's policy; this is the explicit remove).
-    public func remove(_ entry: PrefixPoolEntry) {
+    /// the caller's policy; this is the explicit remove. Immediate deletion
+    /// failures are thrown. If deletion is deferred behind an active lease,
+    /// later failures remain observable through
+    /// `PhysicalUseRegistry.takeDeleteFailures(_:)`.
+    public func remove(_ entry: PrefixPoolEntry) throws {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             removeFromPool(entry)
             return
@@ -323,6 +326,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard pool.remove(entry, artifact: artifact) else { return }
         physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
+        let failures = physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        if let failure = failures.first {
+            throw failure
+        }
     }
 
     /// Synchronous twin of `load` for host hooks that run inside a

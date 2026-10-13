@@ -282,7 +282,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         // Evict (no in-flight use → immediate delete), then
         // restart-rescan must not resurrect.
-        store.remove(entry)
+        try store.remove(entry)
         let fresh = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
         XCTAssertEqual(try fresh.rescan(), 0, "removed artifact stays gone")
@@ -445,7 +445,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
             namespace: f3ns, tokens: f3tokens(256, seed: 9), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let newArtifact = newEntry.artifact as! DiskPrefixArtifact
 
-        store.remove(oldEntry)
+        try store.remove(oldEntry)
         let admitted = store.pool.admit(
             namespace: f3ns, promptTokens: f3tokens(256, seed: 9))
         let admittedArtifact = admitted?.entry.artifact as? DiskPrefixArtifact
@@ -453,7 +453,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
 
-        store.remove(newEntry)
+        try store.remove(newEntry)
         XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
         XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 9)))
@@ -550,6 +550,39 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertTrue(finalFailures.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
         XCTAssertNotNil(store.physicalUse.acquire(artifact.snapshotURL.path))
+    }
+
+    func testRemoveSurfacesImmediateDeleteFailure() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("remove-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, _ in
+                throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                    path: key,
+                    underlyingDescription: "injected immediate failure")
+            }
+        )
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 14),
+            write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        do {
+            try store.remove(entry)
+            XCTFail("explicit remove must surface an immediate deletion failure")
+        } catch let error as PrefixSnapshotStoreError {
+            XCTAssertEqual(
+                error,
+                .artifactDeletionFailed(
+                    path: artifact.snapshotURL.path,
+                    underlyingDescription: "injected immediate failure"))
+        }
+        XCTAssertTrue(store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path).isEmpty)
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 14)))
     }
 
     func testConcurrentSamePathExportsKeepRegistryAndDiskBound() async throws {
