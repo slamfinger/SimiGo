@@ -54,6 +54,18 @@
    - This ruling does not certify overall Materialization-system concurrency correctness and is
      not an ES-IS research conclusion.
 
+7. **Materialization delete—lease admission race repair**
+   - `51c5d475ee1292d6560fab7798b0b5e43afcf1bb` (`51c5d475`) follows `af44199f` as an
+     independent fix, not a reopening of the startup-window task or frozen DCC work.
+   - It closes the separate window between a delete decision and new lease admission.
+   - Current status: local implementation and regression complete, PENDING INDEPENDENT
+     ACCEPTANCE.
+   - Reported tests are based on the implementation record and are not an independent rerun by
+     the recording agent.
+   - Acceptance review must inspect all `acquire` call sites, `pendingDeletes`/`deleting`
+     transitions, duplicate-delete handoff, and path-generation reuse semantics.
+   - This does not justify a general “concurrency safety solved” conclusion.
+
 ## Branch and Commit State
 
 - `codex/restore-recovery-coverage`
@@ -62,6 +74,9 @@
   - `7c7e7a47` — DCC-3 platform-semantics archive, accepted.
 - `codex/materialization-lease-startup-fix`
   - `af44199f` — materialization startup-window repair, accepted and closed locally.
+- `codex/materialization-delete-acquire-race`
+  - `51c5d475ee1292d6560fab7798b0b5e43afcf1bb` (`51c5d475`) — materialization delete/lease
+    admission race repair, pending acceptance; parent is `af44199f`.
 - These are local commits only. Pushing or merging either line requires separate authorization.
 
 ## Acceptance Freeze
@@ -73,6 +88,7 @@
 | DCC-2b | NOT INITIATED |
 | DCC-3 | ACCEPTED / ARCHIVED |
 | Materialization startup repair | ACCEPTED / CLOSED (LOCAL ENGINEERING TASK) |
+| Materialization delete/lease admission repair | PENDING INDEPENDENT ACCEPTANCE |
 
 ## Permanent Capability Boundary
 
@@ -92,6 +108,11 @@
 - Directed regression: 20/20.
 - Materialization repair stability check: three consecutive full clean runs at 282 passed /
   3 skipped / 0 failed.
+- Materialization delete/lease admission repair, as reported: directed suite 9/9; three
+  consecutive full XCTest runs at 285 passed / 3 skipped / 0 failed; three new deterministic
+  interleave tests.
+- Reported full-run logs: `/tmp/delete-race-full-1.log`, `/tmp/delete-race-full-2.log`, and
+  `/tmp/delete-race-full-3.log`.
 - DCC-2 suite: 18/18.
 - DCC-1 contract adaptation: all 24 checks passed.
 - The ActualMLX PID timing transient remains a registered stable observation, not a repaired or
@@ -101,10 +122,11 @@
 
 ## Next-Agent Entry Points
 
-1. Treat `af44199f` as the current baseline for the materialization startup repair.
-2. Do not reopen frozen DCC work as part of follow-on changes.
-3. Separately decide whether to push or merge either handoff branch.
-4. Treat any newly discovered concurrency gap as a separate project only when supported by a
+1. Treat `af44199f` as the accepted baseline for the materialization startup repair.
+2. Independently review `51c5d475` against `af44199f` before accepting it.
+3. Do not reopen frozen DCC work as part of follow-on changes.
+4. Separately decide whether to push or merge either handoff branch.
+5. Treat any newly discovered concurrency gap as a separate project only when supported by a
    concrete code path and reproducible evidence.
 
 ## Continuity Rule
@@ -114,3 +136,5 @@
 - Preserve branch provenance, commit boundaries, test baselines, and qualification language when
   continuing work.
 - Do not extend the closed startup-lease task to certify system-wide concurrency correctness.
+- Do not merge the startup-window and delete/lease-admission race conclusions into one broad
+  concurrency-correctness claim.
