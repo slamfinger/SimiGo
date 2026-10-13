@@ -371,6 +371,36 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     private let lock = NSLock()
     private var inFlight: [String: Task<Value, Error>] = [:]
     private let physicalUse: PhysicalUseRegistry
+    /// Holds the unstructured work until `inFlight` is published and the
+    /// startup observer has observed the protected lease.
+    private final class StartupGate: @unchecked Sendable {
+        private let state = NSLock()
+        private var continuation: CheckedContinuation<Void, Never>?
+        private var started = false
+
+        func waitUntilStarted() async {
+            await withCheckedContinuation { continuation in
+                state.lock()
+                if started {
+                    state.unlock()
+                    continuation.resume()
+                    return
+                }
+                self.continuation = continuation
+                state.unlock()
+            }
+        }
+
+        func start() {
+            state.lock()
+            let continuation = self.continuation
+            self.continuation = nil
+            started = true
+            state.unlock()
+            continuation?.resume()
+        }
+    }
+
     private var joinObserver: (@Sendable (String) async -> Void)?
     /// Test/observability seam (D-I4 startup-window regression): invoked
     /// synchronously under the coordinator lock immediately AFTER the
@@ -409,12 +439,15 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
                 return (nil, nil)
             }
             let physicalUse = self.physicalUse
+            let startupGate = StartupGate()
             let created = Task<Value, Error> {
+                await startupGate.waitUntilStarted()
                 defer { physicalUse.release(lease) }
                 return try await work()
             }
             inFlight[key] = created
             startupObserver?(key)
+            startupGate.start()
             return (nil, created)
         }
         if start.existing == nil && start.created == nil {
