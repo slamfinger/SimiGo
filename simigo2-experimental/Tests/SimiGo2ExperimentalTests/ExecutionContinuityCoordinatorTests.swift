@@ -743,6 +743,94 @@ final class ExecutionContinuityCoordinatorTests: XCTestCase {
         )
     }
 
+    func testBindAtCurrentPositionLiftsIsolationWithoutRestore() async throws {
+        let backend = CompensationFailureBackend()
+        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(1),
+            continuation: ExecutionContinuation(nextInput: "A-next-1", continuationID: "A-cont-1")
+        )
+        let position0 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(0),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let position1 = ExecutionRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(1),
+            payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5])
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position0.position,
+            payload: position0.payload
+        )
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position1.position,
+            payload: position1.payload
+        )
+
+        do {
+            _ = try await coordinator.restore(
+                try XCTUnwrap(coordinator.handle(state.id)),
+                request: ExecutionRestoreRequest(
+                    targetPosition: ExecutionPosition(0),
+                    continuation: ExecutionContinuation(nextInput: "A-rewind", continuationID: "A-cont-r")
+                ),
+                beforeCommit: {
+                    throw CompensationFailureBackend.RollbackRejected()
+                }
+            )
+            XCTFail("restore must fail when both marker commit and compensation fail")
+        } catch {
+            // The composed-error contract is asserted by
+            // testCompensationFailureKeepsCoordinatorLogicalStateUncommitted.
+        }
+        XCTAssertTrue(coordinator.hasUncertainBinding(state.id))
+        do {
+            try await coordinator.discard(try XCTUnwrap(coordinator.handle(state.id)))
+            XCTFail("discard must stay rejected before the state is re-established")
+        } catch {
+            guard case ExecutionContinuityCoordinator.CoordinatorError.backendBindingUncertain = error else {
+                return XCTFail("expected backendBindingUncertain, got \(error)")
+            }
+        }
+
+        // A bind at a DIFFERENT position than the logical handle leaves the
+        // uncertainty: the physical↔logical correspondence is not restored.
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position0.position,
+            payload: position0.payload
+        )
+        XCTAssertTrue(
+            coordinator.hasUncertainBinding(state.id),
+            "a bind away from the current handle position must not lift the isolation")
+
+        // Recovery WITHOUT restore: the host rewrites the representation at
+        // the CURRENT handle position. The rebind overwrites the physical
+        // binding with a representation for exactly the logical position, so
+        // the correspondence is re-established and the isolation lifts.
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: position1.position,
+            payload: position1.payload
+        )
+        XCTAssertFalse(coordinator.hasUncertainBinding(state.id))
+
+        let forked = try await coordinator.fork(ExecutionForkRequest(
+            parent: try XCTUnwrap(coordinator.handle(state.id)),
+            childID: ExecutionID("B"),
+            childPosition: ExecutionPosition(1),
+            childContinuation: ExecutionContinuation(nextInput: "B-next", continuationID: "B-cont")
+        ))
+        XCTAssertEqual(forked.id, ExecutionID("B"))
+        try await coordinator.discard(try XCTUnwrap(coordinator.handle(state.id)))
+        XCTAssertEqual(try XCTUnwrap(coordinator.handle(state.id)).lifecycle, .discarded)
+    }
+
     func testHookFailureWithSuccessfulCompensationPreservesRetryBehavior() async throws {
         struct HookRejected: Error {}
         _ = try await coordinator.create(
