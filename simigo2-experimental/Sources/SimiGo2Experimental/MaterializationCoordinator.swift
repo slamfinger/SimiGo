@@ -207,7 +207,11 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func requestDelete(_ key: String, generation: UUID?) -> Error? {
         let generation = Generation(generation)
         lock.lock()
-        guard generation == (generations[key] ?? .legacy) else {
+        let current = generations[key] ?? .legacy
+        // While publication is preparing, the previous generation is still a
+        // valid rollback target. Queue the request; it becomes stale only if
+        // publication succeeds.
+        guard generation == current || preparing.contains(key) else {
             lock.unlock()
             return nil
         }

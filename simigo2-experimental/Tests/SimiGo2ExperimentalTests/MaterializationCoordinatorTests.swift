@@ -640,6 +640,48 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertEqual(registry.takeDeleteFailures(key).count, 1)
     }
 
+    /// A delete request that arrives while a replacement is preparing is not
+    /// stale. If publication fails and restores the old generation, that
+    /// deferred request must still delete it.
+    func testDeleteDuringFailedPublicationSurvivesRollback() async throws {
+        let key = "delete-during-failed-publication"
+        let old = UUID()
+        let replacement = UUID()
+        let publicationStarted = DispatchSemaphore(value: 0)
+        let releasePublication = DispatchSemaphore(value: 0)
+        let deleted = DeletedGenerations()
+        let registry = PhysicalUseRegistry(onDelete: { _, generation in
+            deleted.record(generation)
+        })
+        registry.beginGeneration(key, generation: old) {}
+
+        let publication = Task.detached {
+            try registry.beginGeneration(key, generation: replacement) {
+                publicationStarted.signal()
+                _ = releasePublication.wait(timeout: .now() + 5)
+                throw RollbackFault()
+            }
+        }
+
+        guard publicationStarted.wait(timeout: .now() + 5) == .success else {
+            releasePublication.signal()
+            _ = try? await publication.value
+            return XCTFail("replacement publication never reached its gate")
+        }
+
+        XCTAssertNil(registry.requestDelete(key, generation: old))
+        releasePublication.signal()
+        do {
+            try await publication.value
+            XCTFail("injected publication failure must propagate")
+        } catch {}
+
+        XCTAssertEqual(deleted.generations, [old])
+        let lease = registry.acquire(key)
+        XCTAssertEqual(lease?.generation, old)
+        registry.release(lease!)
+    }
+
     /// Store-level sidecar generation validation prevents a stale eviction
     /// request from deleting a replacement at the same path.
     func testStaleGenerationDeleteCannotRemoveReplacementArtifact() async throws {
