@@ -581,8 +581,49 @@ final class MaterializationCoordinatorTests: XCTestCase {
                     path: artifact.snapshotURL.path,
                     underlyingDescription: "injected immediate failure"))
         }
-        XCTAssertTrue(store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path).isEmpty)
+        XCTAssertEqual(store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path).count, 1)
         XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 14)))
+    }
+
+    func testRemoveDoesNotSurfaceStaleDeleteFailure() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("remove-stale-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        final class DeletionPlan: @unchecked Sendable {
+            private let l = NSLock()
+            private var failFirst = true
+            var next: Error? {
+                l.lock()
+                defer { l.unlock() }
+                if failFirst {
+                    failFirst = false
+                    return PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: "injected", underlyingDescription: "stale")
+                }
+                return nil
+            }
+        }
+        let plan = DeletionPlan()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, _ in
+                if let failure = plan.next { throw failure }
+            }
+        )
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 15),
+            write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        XCTAssertEqual(store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path).count, 1)
+
+        try store.remove(entry)
+        XCTAssertTrue(store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path).isEmpty)
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 15)))
     }
 
     func testConcurrentSamePathExportsKeepRegistryAndDiskBound() async throws {

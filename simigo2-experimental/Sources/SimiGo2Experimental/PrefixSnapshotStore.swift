@@ -324,10 +324,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             return
         }
         guard pool.remove(entry, artifact: artifact) else { return }
-        physicalUse.requestDelete(
+        if let failure = physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
-        let failures = physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
-        if let failure = failures.first {
+        {
             throw failure
         }
     }
