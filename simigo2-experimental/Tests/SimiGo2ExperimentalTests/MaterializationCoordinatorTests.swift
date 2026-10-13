@@ -401,6 +401,27 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    /// The eviction sink is part of a store/pool reference cycle unless it
+    /// captures the store weakly.
+    func testStoreDoesNotRetainItselfThroughEvictionSink() async throws {
+        weak var weakStore: PrefixSnapshotStore?
+        var retainedPool: ExecutionStatePrefixPool?
+
+        autoreleasepool {
+            let pool = ExecutionStatePrefixPool(tokenBudget: 10_000)
+            let store = PrefixSnapshotStore(
+                root: FileManager.default.temporaryDirectory
+                    .appendingPathComponent("store-lifetime-\(UUID().uuidString)"),
+                pool: pool
+            )
+            weakStore = store
+            retainedPool = pool
+        }
+
+        XCTAssertNotNil(retainedPool)
+        XCTAssertNil(weakStore, "eviction sink must not retain its store")
+    }
+
     // MARK: - Delete decision/execution window
 
     /// A duplicate request for the generation already deleting must dedupe;
