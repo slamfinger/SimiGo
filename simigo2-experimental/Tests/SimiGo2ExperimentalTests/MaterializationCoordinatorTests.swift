@@ -948,6 +948,48 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(store.physicalUse.acquire(key))
     }
 
+    /// A failed first publication must not leave an unregistered candidate
+    /// at the formal path where restart rescan can resurrect it.
+    func testFreshPublishFailureQuarantinesUnregisteredArtifact() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("publish-fresh-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+            }
+        )
+        let tokens = f3tokens(256, seed: 14)
+        publishFault.enable()
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("sidecar publication failure must propagate")
+        } catch {}
+
+        XCTAssertEqual(try store.rescan(), 0)
+        let namespaceDirectory = try XCTUnwrap(
+            FileManager.default.contentsOfDirectory(
+                at: root, includingPropertiesForKeys: [.isDirectoryKey]
+            ).first { $0.hasDirectoryPath })
+        let quarantines = try FileManager.default.contentsOfDirectory(
+            at: namespaceDirectory, includingPropertiesForKeys: nil
+        ).filter { $0.lastPathComponent.hasPrefix(".quarantine-") }
+        XCTAssertEqual(quarantines.count, 2)
+        XCTAssertTrue(quarantines.contains {
+            (try? String(contentsOf: $0, encoding: .utf8)) == "new"
+        })
+    }
+
     /// Coordinator maps a rejected startup lease to a thrown result without
     /// publishing or starting a work task.
     func testMaterializeRejectsWorkDuringDeleteExecution() async throws {

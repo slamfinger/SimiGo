@@ -213,6 +213,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 ".backup-\(UUID().uuidString).metadata")
             var oldSnapshotMoved = false
             var oldMetadataMoved = false
+            var newSnapshotPublished = false
 
             func quarantine(_ url: URL) throws {
                 guard fileManager.fileExists(atPath: url.path) else { return }
@@ -235,6 +236,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 }
                 try fileManager.moveItem(at: tempURL, to: snapshotURL)
                 tempPublished = true
+                newSnapshotPublished = true
                 try willPublishSidecar(metadataURL)
                 try fileManager.moveItem(at: sidecarTempURL, to: metadataURL)
                 sidecarPublished = true
@@ -248,14 +250,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 var rollbackError: Error?
                 do {
                     try willRollback()
-                    if oldMetadataMoved {
+                    if newSnapshotPublished {
                         try quarantine(metadataURL)
                     }
                     if oldMetadataMoved {
                         try fileManager.moveItem(at: backupMetadataURL, to: metadataURL)
                     }
-                    if oldSnapshotMoved {
+                    if newSnapshotPublished {
                         try quarantine(snapshotURL)
+                    }
+                    if oldSnapshotMoved {
                         try fileManager.moveItem(at: backupSnapshotURL, to: snapshotURL)
                     }
                 } catch {
