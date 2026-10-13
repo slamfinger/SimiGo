@@ -432,6 +432,27 @@ final class MaterializationCoordinatorTests: XCTestCase {
         registry.release(lease!)
     }
 
+    /// A scan that started before a live replacement must not publish its old
+    /// sidecar after the replacement commits.
+    func testStaleRescanCannotReplaceReplacementGeneration() async throws {
+        let key = "stale-rescan"
+        let old = UUID()
+        let replacement = UUID()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        registry.beginGeneration(key, generation: replacement) {}
+
+        let staleScan = try registry.beginGenerationIfCurrentOrUnregistered(
+            key, generation: old, publish: {
+                XCTFail("stale rescan must not publish")
+            }
+        )
+
+        XCTAssertFalse(staleScan)
+        let lease = registry.acquire(key)
+        XCTAssertEqual(lease?.generation, replacement)
+        registry.release(lease!)
+    }
+
     /// A failed delete callback cannot leave admission permanently closed.
     func testFailedDeleteCallbackRestoresAdmission() async throws {
         let key = "failed-delete"

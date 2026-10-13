@@ -456,7 +456,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 }
                 // Register the generation before pool.commit: immediate
                 // self-eviction must issue a live delete, not a stale no-op.
-                physicalUse.beginGeneration(snapshotURL.path, generation: sidecar.generation) {
+                let registeredThisScan = try physicalUse.beginGenerationIfCurrentOrUnregistered(
+                    snapshotURL.path, generation: sidecar.generation
+                ) {
                     pool.register(
                         namespace: PrefixPoolNamespace(
                             modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
@@ -466,6 +468,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                             snapshotURL: snapshotURL, metadataURL: metaURL,
                             generation: sidecar.generation))
                 }
+                guard registeredThisScan else { continue }
                 registered += 1
             }
         }

@@ -40,6 +40,11 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         }
     }
 
+    private enum ExpectedGeneration {
+        case any
+        case exact(Generation)
+    }
+
     private let lock = NSCondition()
     private var counts: [LeaseKey: Int] = [:]
     private var generations: [String: Generation] = [:]
@@ -71,6 +76,30 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func beginGeneration(
         _ key: String, generation: UUID?, publish: () throws -> Void
     ) rethrows {
+        _ = try beginGenerationTransaction(
+            key, generation: generation, expected: .any, publish: publish)
+    }
+
+    /// Rescan competes with live exports after reading a sidecar. Accept the
+    /// publication only when the scanned generation is still current, or when
+    /// the path is first registered. A stale scan must not roll back a newer
+    /// publication.
+    func beginGenerationIfCurrentOrUnregistered(
+        _ key: String, generation: UUID?, publish: () throws -> Void
+    ) rethrows -> Bool {
+        try beginGenerationTransaction(
+            key,
+            generation: generation,
+            expected: .exact(Generation(generation)),
+            publish: publish)
+    }
+
+    private func beginGenerationTransaction(
+        _ key: String,
+        generation: UUID?,
+        expected: ExpectedGeneration,
+        publish: () throws -> Void
+    ) rethrows -> Bool {
         // ponytail: one global publication lock; split per-path only after a
         // measured same-path export bottleneck.
         publicationLock.lock()
@@ -78,6 +107,19 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         let generation = Generation(generation)
         let previous = currentGenerationInternal(key)
         lock.lock()
+        let current = generations[key] ?? .legacy
+        switch expected {
+        case .any:
+            break
+        case .exact(let scanned):
+            // An unregistered path has the implicit legacy current. This also
+            // lets the first rescan of a newly generated sidecar succeed.
+            guard current == scanned || (current == .legacy && scanned != .legacy)
+            else {
+                lock.unlock()
+                return false
+            }
+        }
         generations[key] = generation
         preparing.insert(key)
         // Drain all existing leases for this path before publishing the new
@@ -103,6 +145,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             lock.unlock()
             throw error
         }
+        return true
     }
 
     /// Admit one physical use of the current generation. A nil result means
