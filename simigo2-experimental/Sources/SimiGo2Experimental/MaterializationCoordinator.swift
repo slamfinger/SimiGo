@@ -10,54 +10,258 @@ import Foundation
 /// artifact deletion (the same deletion the eviction path always
 /// performed, now gated).
 public final class PhysicalUseRegistry: @unchecked Sendable {
-    private let lock = NSLock()
-    private var counts: [String: Int] = [:]
-    private var pendingDeletes: Set<String> = []
-    private let onDelete: (String) -> Void
+    public struct Lease: Equatable, Sendable {
+        public let key: String
+        public let generation: UUID?
+    }
 
-    /// `onDelete(key)` performs the physical deletion for one artifact
-    /// key. Called synchronously; must not re-enter the registry.
-    public init(onDelete: @escaping (String) -> Void) {
+    private struct LeaseKey: Hashable {
+        let key: String
+        let generation: UUID?
+    }
+
+    /// Internal generation representation avoids Optional<Optional<UUID>>;
+    /// `.legacy` is the public nil generation used by old sidecars.
+    private enum Generation: Hashable {
+        case legacy
+        case identified(UUID)
+        case invalidated
+
+        init(_ value: UUID?) {
+            self = value.map(Self.identified) ?? .legacy
+        }
+
+        var publicValue: UUID? {
+            switch self {
+            case .legacy: return nil
+            case .identified(let value): return value
+            case .invalidated: return nil
+            }
+        }
+    }
+
+    private let lock = NSLock()
+    private var counts: [LeaseKey: Int] = [:]
+    private var generations: [String: Generation] = [:]
+    private var pendingDeletes: [String: [Generation]] = [:]
+    private var deleting: [String: Generation] = [:]
+    private var preparing: Set<String> = []
+    private var deleteFailures: [String: [Error]] = [:]
+    private var publicationFailures: [String: [Error]] = [:]
+    private let publicationLock = NSLock()
+    private let onDelete: (String, UUID?) throws -> Void
+
+    /// A publication was left intentionally unusable because rollback failed.
+    public struct PublicationQuarantinedError: Error {
+        public let key: String
+        public let generation: UUID?
+        public let underlyingError: Error
+    }
+
+    /// `onDelete(key, generation)` performs physical deletion for one
+    /// artifact generation. Called synchronously; must not re-enter the
+    /// registry. Failures are retained by `takeDeleteFailures(_:)`.
+    public init(onDelete: @escaping (String, UUID?) throws -> Void) {
         self.onDelete = onDelete
     }
 
-    /// Acquire one physical use of the artifact `key`.
-    public func acquire(_ key: String) {
+    /// Publish a replacement generation while leases remain rejected until
+    /// `publish` commits. `publish` must serialize against the delete sink's
+    /// file I/O and validate the on-disk generation before unlinking.
+    public func beginGeneration(
+        _ key: String, generation: UUID?, publish: () throws -> Void
+    ) rethrows {
+        // ponytail: one global publication lock; split per-path only after a
+        // measured same-path export bottleneck.
+        publicationLock.lock()
+        defer { publicationLock.unlock() }
+        let generation = Generation(generation)
+        let previous = currentGenerationInternal(key)
         lock.lock()
-        counts[key, default: 0] += 1
+        generations[key] = generation
+        preparing.insert(key)
         lock.unlock()
+        defer {
+            lock.lock()
+            preparing.remove(key)
+            lock.unlock()
+            startNextDeleteIfIdle(key)
+        }
+        do {
+            try publish()
+        } catch {
+            lock.lock()
+            if generations[key] == .invalidated {
+                publicationFailures[key, default: []].append(error)
+            } else if error is PublicationQuarantinedError {
+                generations[key] = .invalidated
+                publicationFailures[key, default: []].append(error)
+            } else {
+                generations[key] = previous
+            }
+            lock.unlock()
+            throw error
+        }
     }
 
-    /// Release one physical use. When the count reaches zero, any
-    /// deferred deletion fires.
-    public func release(_ key: String) {
+    /// Admit one physical use of the current generation. A nil result means
+    /// no work may be published: a delete is registered/executing or a
+    /// replacement is being published.
+    @discardableResult
+    public func acquire(_ key: String) -> Lease? {
         lock.lock()
-        let remaining = (counts[key] ?? 1) - 1
-        if remaining <= 0 {
-            counts[key] = nil
-            let owed = pendingDeletes.remove(key) != nil
+        defer { lock.unlock() }
+        let generation = (generations[key] ?? .legacy)
+        guard !preparing.contains(key), activeDeleteLocked(key) == nil, generation != .invalidated else {
+            return nil
+        }
+        let publicGeneration = generation.publicValue
+        counts[LeaseKey(key: key, generation: publicGeneration), default: 0] += 1
+        return Lease(key: key, generation: publicGeneration)
+    }
+
+    /// Release one generation-bound physical use. When no generation for the
+    /// path remains in flight, the next valid deferred delete may execute.
+    public func release(_ lease: Lease) {
+        lock.lock()
+        let leaseKey = LeaseKey(key: lease.key, generation: lease.generation)
+        guard let remaining = counts[leaseKey].map({ $0 - 1 }) else {
             lock.unlock()
-            if owed { onDelete(key) }
+            return
+        }
+        if remaining <= 0 {
+            counts[leaseKey] = nil
+            lock.unlock()
+            startNextDeleteIfIdle(lease.key)
         } else {
-            counts[key] = remaining
+            counts[leaseKey] = remaining
             lock.unlock()
         }
     }
 
-    /// Eviction path (D-C2): request physical deletion. If uses are in
-    /// flight the deletion is DEFERRED until the count reaches zero.
-    public func requestDelete(_ key: String) {
+    /// Request deletion of the current generation. A stale-generation request
+    /// is dropped; live-generation requests dedupe and execute only after all
+    /// leases and any prior delete have finished.
+    public func requestDelete(_ key: String, generation: UUID?) {
+        let generation = Generation(generation)
         lock.lock()
-        let inFlight = (counts[key] ?? 0) > 0
-        if inFlight { pendingDeletes.insert(key) }
+        guard generation == (generations[key] ?? .legacy) else {
+            lock.unlock()
+            return
+        }
+        var queue = pendingDeletes[key] ?? []
+        if activeDeleteLocked(key) != generation, !queue.contains(generation) {
+            queue.append(generation)
+        }
+        pendingDeletes[key] = queue
+        let started = startNextDeleteIfIdleLocked(key)
         lock.unlock()
-        if !inFlight { onDelete(key) }
+        if let generation = started { finishDelete(key, generation) }
     }
 
     public func physicalUseCount(_ key: String) -> Int {
         lock.lock()
         defer { lock.unlock() }
-        return counts[key] ?? 0
+        return counts.reduce(0) { $1.key.key == key ? $0 + $1.value : $0 }
+    }
+
+    /// Consume at-most-once deletion failures for `key`. Admission is already
+    /// restored when these are returned; the caller decides whether to retry.
+    public func takeDeleteFailures(_ key: String) -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return deleteFailures.removeValue(forKey: key) ?? []
+    }
+
+    /// True when rollback failed and the path was deliberately quarantined.
+    public func isGenerationInvalidated(_ key: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return generations[key] == .invalidated
+    }
+
+    /// Consume quarantined-publication failures for `key`.
+    public func takePublicationFailures(_ key: String) -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return publicationFailures.removeValue(forKey: key) ?? []
+    }
+
+    func markGenerationQuarantined(
+        _ key: String, generation: UUID?, error: Error
+    ) {
+        lock.lock()
+        generations[key] = .invalidated
+        publicationFailures[key, default: []].append(
+            PublicationQuarantinedError(
+                key: key, generation: generation, underlyingError: error))
+        lock.unlock()
+    }
+
+    private func currentGeneration(_ key: String) -> UUID? {
+        currentGenerationInternal(key).publicValue
+    }
+
+    private func currentGenerationInternal(_ key: String) -> Generation {
+        lock.lock()
+        defer { lock.unlock() }
+        return generations[key] ?? .legacy
+    }
+
+    private func hasInFlightLocked(_ key: String) -> Bool {
+        counts.contains { $0.key.key == key && $0.value > 0 }
+    }
+
+    private func activeDeleteLocked(_ key: String) -> Generation? {
+        deleting[key]
+    }
+
+    /// Caller holds `lock`. Pops stale entries and marks the first live
+    /// generation as deleting without ever reopening admission in between.
+    private func startNextDeleteIfIdleLocked(_ key: String) -> Generation? {
+        guard !preparing.contains(key), activeDeleteLocked(key) == nil, !hasInFlightLocked(key) else {
+            return nil
+        }
+        while var queue = pendingDeletes[key], !queue.isEmpty {
+            let generation = queue.removeFirst()
+            if queue.isEmpty {
+                pendingDeletes[key] = nil
+            } else {
+                pendingDeletes[key] = queue
+            }
+            if generation == (generations[key] ?? .legacy) {
+                deleting[key] = .some(generation)
+                return generation
+            }
+        }
+        return nil
+    }
+
+    private func startNextDeleteIfIdle(_ key: String) {
+        lock.lock()
+        let generation = startNextDeleteIfIdleLocked(key)
+        lock.unlock()
+        if let generation { finishDelete(key, generation) }
+    }
+
+    /// `onDelete` runs outside the registry lock. `deleting` closes the
+    /// execution window, and the next live generation can be selected only
+    /// atomically after callback cleanup.
+    private func finishDelete(_ key: String, _ generation: Generation) {
+        do {
+            try onDelete(key, generation.publicValue)
+        } catch {
+            lock.lock()
+            deleteFailures[key, default: []].append(error)
+            if deleting[key] == generation { deleting[key] = nil }
+            lock.unlock()
+            startNextDeleteIfIdle(key)
+            return
+        }
+        lock.lock()
+        if deleting[key] == generation { deleting[key] = nil }
+        lock.unlock()
+        startNextDeleteIfIdle(key)
     }
 }
 
@@ -77,6 +281,13 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     private var inFlight: [String: Task<Value, Error>] = [:]
     private let physicalUse: PhysicalUseRegistry
     private var joinObserver: (@Sendable (String) async -> Void)?
+    /// Test/observability seam (D-I4 startup-window regression): invoked
+    /// synchronously under the coordinator lock immediately AFTER the
+    /// single-flight task is published and its physical-use lease is
+    /// acquired — exactly the window whose race this class closes. Must not
+    /// re-enter the coordinator.
+    private var startupObserver: (@Sendable (String) -> Void)?
+    private var leaseRejectionObserver: (@Sendable (String) -> Void)?
 
     public init(physicalUse: PhysicalUseRegistry) {
         self.physicalUse = physicalUse
@@ -86,19 +297,37 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     /// same key share one work task (one underlying load). The work runs
     /// under a transient physical-use protection acquired and released
     /// by the coordinator — NOT by callers.
+    ///
+    /// D-I4 startup-window fix: the lease is acquired SYNCHRONOUSLY under
+    /// the same lock that publishes the single-flight task. Once
+    /// `inFlight[key]` is visible to any caller, the physical-use count is
+    /// already ≥ 1 — an eviction-side `requestDelete(key)` in the former
+    /// window (registered but not yet protected) now DEFERS instead of
+    /// racing the work's startup. Lock order is always
+    /// coordinator.lock → registry.lock; the registry never calls back into
+    /// the coordinator (its `onDelete` sink runs after its own unlock), so
+    /// no lock cycle exists.
     public func materialize(
         key: String, work: @escaping @Sendable () async throws -> Value
     ) async throws -> Value {
         let start = lock.withLock { () -> (existing: Task<Value, Error>?, created: Task<Value, Error>?) in
             if let existing = inFlight[key] { return (existing, nil) }
+            // Startup-window fix (D-I4): acquire BEFORE publication.
+            guard let lease = physicalUse.acquire(key) else {
+                leaseRejectionObserver?(key)
+                return (nil, nil)
+            }
             let physicalUse = self.physicalUse
             let created = Task<Value, Error> {
-                physicalUse.acquire(key)
-                defer { physicalUse.release(key) }
+                defer { physicalUse.release(lease) }
                 return try await work()
             }
             inFlight[key] = created
+            startupObserver?(key)
             return (nil, created)
+        }
+        if start.existing == nil && start.created == nil {
+            throw MaterializationCoordinatorError.physicalUseUnavailable(key)
         }
         if let task = start.existing {
             await notifyJoin(key: key)
@@ -125,8 +354,31 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
         lock.withLock { joinObserver = observer }
     }
 
+    /// Test observation boundary for the D-I4 startup window: invoked
+    /// synchronously under the coordinator lock right after the lease is
+    /// acquired and the task published. Observers see the protected window
+    /// deterministically (use count ≥ 1, work not yet started) and may call
+    /// `PhysicalUseRegistry.requestDelete` to pin the deferred-delete
+    /// interleaving. Must not re-enter the coordinator.
+    func setStartupObserver(_ observer: (@Sendable (String) -> Void)?) {
+        lock.withLock { startupObserver = observer }
+    }
+
+    /// Test observation boundary for a rejected startup lease. Invoked under
+    /// the coordinator lock after registry admission returns false; observers
+    /// must not re-enter either lock.
+    func setLeaseRejectionObserver(_ observer: (@Sendable (String) -> Void)?) {
+        lock.withLock { leaseRejectionObserver = observer }
+    }
+
     private func notifyJoin(key: String) async {
         let observer = lock.withLock { joinObserver }
         await observer?(key)
     }
+}
+
+public enum MaterializationCoordinatorError: Error, Equatable {
+    /// The physical-use lease was rejected because a delete for `key` was
+    /// registered and had not completed. No single-flight task was published.
+    case physicalUseUnavailable(String)
 }

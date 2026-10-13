@@ -2,6 +2,7 @@ import XCTest
 import MLXLMCommon
 import MLX
 import Foundation
+import Crypto
 @testable import SimiGo2Experimental
 
 private let f3ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
@@ -107,6 +108,14 @@ private func f3tokens(_ count: Int, seed: Int = 0) -> [Int] {
     (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
 }
 
+private func storeDeleteFailure(_ failures: [Error]) -> PrefixSnapshotStoreError? {
+    failures.first as? PrefixSnapshotStoreError
+}
+
+private final class URLBox: @unchecked Sendable {
+    var value: URL?
+}
+
 private func f3writeSnapshot(to url: URL) throws {
     let layer = KVCacheSimple()
     layer.update(
@@ -141,7 +150,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
 
         let entry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let artifactPath = (entry.artifact as! DiskPrefixArtifact).snapshotURL.path
 
         // The work itself triggers the eviction of its own artifact
@@ -156,7 +165,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let seed2 = f3tokens(512, seed: 2)
         let value = try await coordinator.materialize(key: artifactPath) {
             _ = try await store.export(
-                namespace: f3ns, tokens: seed2, write: f3writeSynthetic(to:))
+                namespace: f3ns, tokens: seed2, write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
             flag.set()
             return "done"
         }
@@ -173,7 +182,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
     }
 
     func testConcurrentMaterializeRunsSingleFlight() async throws {
-        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
         let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
         let startBarrier = MaterializationStartBarrier(participantCount: 2)
         let workGate = MaterializationWorkGate()
@@ -261,7 +270,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
 
         let entry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(256, seed: 4), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(256, seed: 4), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let artifact = entry.artifact as! DiskPrefixArtifact
         let sidecarBefore = try Data(contentsOf: artifact.metadataURL)
 
@@ -280,4 +289,758 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(
             fresh.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 4)))
     }
+
+    // MARK: - Delete decision/execution window
+
+    /// A duplicate request for the generation already deleting must dedupe;
+    /// cleanup must reopen admission and return a generation-bound lease.
+    func testDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
+        let key = "delete-execution"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            gate.enterDelete()
+        })
+
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: nil)
+        }
+        try await gate.waitForDeleteStart()
+        XCTAssertNil(registry.acquire(key), "no lease may be admitted during delete execution")
+
+        // The request targets the generation already deleting: it dedupes.
+        registry.requestDelete(key, generation: nil)
+        gate.finishDelete()
+        await deletion.value
+        XCTAssertEqual(gate.startCount, 1, "same-generation delete requests dedupe")
+        XCTAssertNotNil(
+            registry.acquire(key),
+            "cleanup must admit a later recreation of the same path")
+        registry.release(registry.acquire(key)!)
+    }
+
+    /// The pending-to-executing transition must use the same deletion state:
+    /// the release of the final lease closes admission before `onDelete`
+    /// starts, and cleanup reopens it afterward.
+    func testDeferredDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
+        let key = "deferred-delete-execution"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            gate.enterDelete()
+        })
+
+        let lease = registry.acquire(key)!
+        registry.requestDelete(key, generation: nil)
+        let releaser = Task.detached {
+            registry.release(lease)
+        }
+
+        try await gate.waitForDeleteStart()
+        XCTAssertNil(registry.acquire(key), "pending deletion must close admission on execution")
+
+        gate.finishDelete()
+        await releaser.value
+        XCTAssertNotNil(registry.acquire(key), "cleanup must reopen admission for path reuse")
+        registry.release(registry.acquire(key)!)
+    }
+
+    /// A queued request for a live replacement executes independently after
+    /// the old generation; a duplicate old-generation request does not run.
+    func testReplacementGenerationDeleteRunsAfterOldGeneration() async throws {
+        let key = "generation-queue"
+        let gate = DeleteExecutionGate()
+        let deleted = DeletedGenerations()
+        let registry = PhysicalUseRegistry(onDelete: { _, generation in
+            deleted.record(generation)
+            gate.enterDelete()
+        })
+        let old = UUID()
+        let replacement = UUID()
+
+        registry.beginGeneration(key, generation: old) {}
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: old)
+        }
+        try await gate.waitForDeleteStart()
+        registry.requestDelete(key, generation: old)
+
+        registry.beginGeneration(key, generation: replacement) {}
+        registry.requestDelete(key, generation: replacement)
+        XCTAssertNil(registry.acquire(key), "replacement publication remains delete-gated")
+
+        gate.finishDelete()
+        try await gate.waitForDeleteStart(minimumStartCount: 2)
+        XCTAssertNil(registry.acquire(key), "new-generation delete must stay admission-gated")
+        gate.finishDelete()
+        await deletion.value
+
+        XCTAssertEqual(deleted.generations, [old, replacement])
+        XCTAssertEqual(gate.startCount, 2, "same-generation deletes dedupe")
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease)
+        XCTAssertEqual(lease?.generation, replacement)
+        registry.release(lease!)
+    }
+
+    /// A failed delete callback cannot leave admission permanently closed.
+    func testFailedDeleteCallbackRestoresAdmission() async throws {
+        let key = "failed-delete"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            struct DeleteFailure: Error {}
+            _ = try? { throw DeleteFailure() }()
+            gate.enterDelete()
+        })
+
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: nil)
+        }
+        try await gate.waitForDeleteStart()
+        XCTAssertNil(registry.acquire(key))
+        gate.finishDelete()
+        await deletion.value
+
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease, "callback failure must not permanently close admission")
+        registry.release(lease!)
+    }
+
+    /// Store-level sidecar generation validation prevents a stale eviction
+    /// request from deleting a replacement at the same path.
+    func testStaleGenerationDeleteCannotRemoveReplacementArtifact() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("generation-delete-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let oldEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let newEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let newArtifact = newEntry.artifact as! DiskPrefixArtifact
+
+        XCTAssertEqual(oldArtifact.snapshotURL.path, newArtifact.snapshotURL.path)
+        XCTAssertNotEqual(oldArtifact.generation, newArtifact.generation)
+
+        store.physicalUse.requestDelete(
+            newArtifact.snapshotURL.path, generation: oldArtifact.generation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+
+        store.physicalUse.requestDelete(
+            newArtifact.snapshotURL.path, generation: newArtifact.generation)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+    }
+
+    func testExplicitRemoveOfStaleEntryCannotAffectReplacement() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("explicit-stale-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let oldEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 9), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let newEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 9), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let newArtifact = newEntry.artifact as! DiskPrefixArtifact
+
+        store.remove(oldEntry)
+        let admitted = store.pool.admit(
+            namespace: f3ns, promptTokens: f3tokens(256, seed: 9))
+        let admittedArtifact = admitted?.entry.artifact as? DiskPrefixArtifact
+        XCTAssertEqual(admittedArtifact?.generation, newArtifact.generation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+
+        store.remove(newEntry)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 9)))
+    }
+
+    func testDeleteFailuresAreReportedAndExplicitRetryCanSucceed() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("delete-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        final class DeletionPlan: @unchecked Sendable {
+            private let l = NSLock()
+            private var stages = ["sidecar", "snapshot", "metadata", "success"]
+            var next: String {
+                l.lock()
+                defer { l.unlock() }
+                if stages.isEmpty { return "success" }
+                return stages.removeFirst()
+            }
+        }
+        let plan = DeletionPlan()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, generation in
+                let snapshotURL = URL(fileURLWithPath: key)
+                let metadataURL = snapshotURL.deletingPathExtension()
+                    .appendingPathExtension("json")
+                switch plan.next {
+                case "sidecar":
+                    throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                        expected: generation, actual: UUID())
+                case "snapshot":
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: snapshotURL.path, underlyingDescription: "injected")
+                case "metadata":
+                    try FileManager.default.removeItem(at: snapshotURL)
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: metadataURL.path, underlyingDescription: "injected")
+                default:
+                    if FileManager.default.fileExists(atPath: snapshotURL.path) {
+                        try FileManager.default.removeItem(at: snapshotURL)
+                    }
+                    if FileManager.default.fileExists(atPath: metadataURL.path) {
+                        try FileManager.default.removeItem(at: metadataURL)
+                    }
+                }
+            }
+        )
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 10), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        let firstFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(firstFailures),
+            case .artifactGenerationMismatch = failure else {
+            return XCTFail("expected sidecar-validation failure")
+        }
+        XCTAssertEqual(firstFailures.count, 1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        let secondFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(secondFailures),
+            case .artifactDeletionFailed(let snapshotPath, _) = failure else {
+            return XCTFail("expected snapshot-deletion failure")
+        }
+        XCTAssertEqual(snapshotPath, artifact.snapshotURL.path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        let thirdFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(thirdFailures),
+            case .artifactDeletionFailed(let metadataPath, _) = failure else {
+            return XCTFail("expected metadata-deletion failure")
+        }
+        XCTAssertEqual(metadataPath, artifact.metadataURL.path)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        var finalFailures: [Error] = []
+        for _ in 0..<3 {
+            store.physicalUse.requestDelete(
+                artifact.snapshotURL.path, generation: artifact.generation)
+            finalFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+            if finalFailures.isEmpty,
+                !FileManager.default.fileExists(atPath: artifact.metadataURL.path) {
+                break
+            }
+        }
+        XCTAssertTrue(finalFailures.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertNotNil(store.physicalUse.acquire(artifact.snapshotURL.path))
+    }
+
+    func testConcurrentSamePathExportsKeepRegistryAndDiskBound() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("concurrent-export-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 11)
+        let gateA = MaterializationWorkGate()
+        let gateB = MaterializationWorkGate()
+
+        let taskA = Task {
+            try await store.export(namespace: f3ns, tokens: tokens) { url in
+                await gateA.enterWork()
+                try "A".write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+        try await gateA.waitForFirstCall()
+        let taskB = Task {
+            try await store.export(namespace: f3ns, tokens: tokens) { url in
+                await gateB.enterWork()
+                try "B".write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+        try await gateB.waitForFirstCall()
+
+        await gateB.release()
+        _ = try await taskB.get()
+        await gateA.release()
+        let finalEntry = try await taskA.get()
+        let finalArtifact = finalEntry.artifact as! DiskPrefixArtifact
+
+        let snapshotData = try Data(contentsOf: finalArtifact.snapshotURL)
+        XCTAssertEqual(String(data: snapshotData, encoding: .utf8), "A")
+        let sidecarData = try Data(contentsOf: finalArtifact.metadataURL)
+        let sidecar = try JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData)
+        XCTAssertEqual(sidecar.generation, finalArtifact.generation)
+        let lease = store.physicalUse.acquire(finalArtifact.snapshotURL.path)
+        XCTAssertEqual(lease?.generation, finalArtifact.generation)
+        store.physicalUse.release(lease!)
+    }
+
+    func testSidecarPublishFailureRestoresOldSnapshotPair() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("publish-rollback-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            }
+        )
+        let tokens = f3tokens(256, seed: 12)
+        let oldEntry: PrefixPoolEntry
+        do {
+            oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "old".write(to: url, atomically: true, encoding: .utf8)
+            }
+        } catch {
+            XCTFail("old export failed: \(error)")
+            throw error
+        }
+        publishFault.enable()
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("sidecar publication failure must propagate")
+        } catch {}
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path))
+        let sidecarData = try Data(contentsOf: oldArtifact.metadataURL)
+        let sidecar = try JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData)
+        XCTAssertEqual(sidecar.generation, oldArtifact.generation)
+        XCTAssertEqual(try String(contentsOf: oldArtifact.snapshotURL, encoding: .utf8), "old")
+        let lease = store.physicalUse.acquire(oldArtifact.snapshotURL.path)
+        XCTAssertEqual(lease?.generation ?? nil, oldArtifact.generation)
+        store.physicalUse.release(lease!)
+        XCTAssertTrue(store.physicalUse.takePublicationFailures(
+            oldArtifact.snapshotURL.path).isEmpty)
+    }
+
+    func testRollbackFailureQuarantinesGenerationAndBlocksLaterUse() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("publish-rollback-failure-\(UUID().uuidString)")
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                // Replace the destination with a directory so sidecar publish
+                // fails after the new snapshot has moved into place.
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            },
+            willRollback: {
+                throw RollbackFault()
+            }
+        )
+        let tokens = f3tokens(256, seed: 13)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        publishFault.enable()
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let namespaceDirectory = oldArtifact.snapshotURL.deletingLastPathComponent()
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: namespaceDirectory.path)
+        }
+
+        enum ExportOutcome {
+            case success
+            case failure(Error)
+        }
+        let outcome: ExportOutcome = await withCheckedContinuation { continuation in
+            Task.detached {
+                do {
+                    _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                        try "new".write(to: url, atomically: true, encoding: .utf8)
+                    }
+                    continuation.resume(returning: .success)
+                } catch {
+
+                    continuation.resume(returning: .failure(error))
+                }
+            }
+        }
+        guard case .failure(let exportError) = outcome else {
+            XCTFail("rollback failure must propagate as publication quarantine")
+            return
+        }
+        XCTAssertNotNil(exportError)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: namespaceDirectory.path)
+
+        let key = oldArtifact.snapshotURL.path
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        let failures = store.physicalUse.takePublicationFailures(key)
+        guard failures.first is PhysicalUseRegistry.PublicationQuarantinedError else {
+            return XCTFail("expected quarantined-publication failure")
+        }
+        XCTAssertTrue(store.physicalUse.takePublicationFailures(key).isEmpty)
+        XCTAssertNil(store.physicalUse.acquire(key))
+        XCTAssertNil(store.physicalUse.acquire(key))
+
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: namespaceDirectory, includingPropertiesForKeys: nil)
+        let backupSnapshot = entries.first {
+            $0.lastPathComponent.hasPrefix(".backup-") &&
+                $0.pathExtension == "safetensors"
+        }
+        let backupMetadata = entries.first {
+            $0.lastPathComponent.hasPrefix(".backup-") &&
+                $0.pathExtension == "metadata"
+        }
+        let quarantine = entries.first {
+            $0.lastPathComponent.hasPrefix(".quarantine-")
+        }
+        XCTAssertNotNil(backupSnapshot)
+        XCTAssertNotNil(backupMetadata)
+        XCTAssertNil(quarantine, "rollback must fail before quarantining either file")
+        XCTAssertEqual(
+            try String(contentsOf: backupSnapshot!, encoding: .utf8), "old")
+        let backupSidecar = try JSONDecoder().decode(
+            PrefixSnapshotSidecar.self,
+            from: Data(contentsOf: backupMetadata!))
+        XCTAssertEqual(backupSidecar.generation, oldArtifact.generation)
+
+        XCTAssertEqual(
+            try String(contentsOf: oldArtifact.snapshotURL, encoding: .utf8), "new")
+        let finalMetadataAttributes = try FileManager.default.attributesOfItem(
+            atPath: oldArtifact.metadataURL.path)
+        XCTAssertEqual(
+            finalMetadataAttributes[.type] as? FileAttributeType, .typeDirectory)
+
+        let admission = store.pool.admit(namespace: f3ns, promptTokens: tokens)
+        XCTAssertNotNil(admission)
+        do {
+            _ = try await store.load(admission!)
+            XCTFail("mixed publication state must not load as a valid artifact")
+        } catch {
+            XCTAssertTrue(
+                String(describing: error).contains("sidecar missing or undecodable"),
+                "unexpected load error: \(error)")
+        }
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        XCTAssertNil(store.physicalUse.acquire(key))
+    }
+
+    /// Coordinator maps a rejected startup lease to a thrown result without
+    /// publishing or starting a work task.
+    func testMaterializeRejectsWorkDuringDeleteExecution() async throws {
+        let key = "materialize-vs-delete"
+        let gate = DeleteExecutionGate()
+        let workCounter = MaterializationWorkCounter()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            gate.enterDelete()
+        })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+        coordinator.setLeaseRejectionObserver { key in
+            gate.rejectAdmission()
+        }
+
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: nil)
+        }
+        try await gate.waitForDeleteStart()
+
+        let denied = Task.detached {
+            try await coordinator.materialize(key: key) {
+                workCounter.record()
+                return "stale"
+            }
+        }
+        try await gate.waitForRejection()
+        XCTAssertNil(registry.acquire(key))
+
+        gate.finishDelete()
+        await deletion.value
+        do {
+            _ = try await denied.value
+            XCTFail("materialization must be rejected while delete is executing")
+        } catch let error as MaterializationCoordinatorError {
+            XCTAssertEqual(error, .physicalUseUnavailable(key))
+        }
+        XCTAssertEqual(workCounter.count, 0, "rejected startup must not run work")
+        XCTAssertFalse(coordinator.isInFlight(key), "rejected startup must not publish work")
+
+        let value = try await coordinator.materialize(key: key) {
+            workCounter.record()
+            return "fresh"
+        }
+        XCTAssertEqual(value, "fresh")
+        XCTAssertEqual(workCounter.count, 1)
+        XCTAssertEqual(registry.physicalUseCount(key), 0)
+    }
+
+    // MARK: - D-I4 startup window (lease acquired before task publication)
+
+    /// Deterministic startup-window regression: the physical-use lease is
+    /// held (count == 1) at the moment the single-flight task is published —
+    /// BEFORE any work runs — so an eviction-side requestDelete in that
+    /// window is DEFERRED, the artifact survives, and the deferred deletion
+    /// fires only after the work releases the lease.
+    func testStartupWindowLeaseHeldBeforeWorkStartsAndDeferredDeleteHonored() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("f3-di4-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pool = ExecutionStatePrefixPool(tokenBudget: 600)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
+
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let artifactPath = artifact.snapshotURL.path
+
+        final class StartupObservation: @unchecked Sendable {
+            private let l = NSLock()
+            private(set) var observed = false
+            private(set) var countAtObservation: Int = -1
+            private(set) var artifactExisted = false
+            private(set) var deferredRequested = false
+            func observe(count: Int, artifactExisted: Bool, requestDeferredDelete: () -> Void) {
+                l.lock()
+                observed = true
+                countAtObservation = count
+                self.artifactExisted = artifactExisted
+                l.unlock()
+                if count > 0 {
+                    requestDeferredDelete()
+                    l.lock()
+                    deferredRequested = true
+                    l.unlock()
+                }
+            }
+        }
+        let observation = StartupObservation()
+        coordinator.setStartupObserver { key in
+            let count = store.physicalUse.physicalUseCount(key)
+            let existed = FileManager.default.fileExists(atPath: key)
+            // Deterministic startup-window interleave: while the lease is
+            // already held but the work has not started, eviction requests
+            // deletion — the registry must defer (artifact untouched).
+            observation.observe(
+                count: count, artifactExisted: existed,
+                requestDeferredDelete: {
+                    store.physicalUse.requestDelete(key, generation: artifact.generation)
+                })
+        }
+
+        let value = try await coordinator.materialize(key: artifactPath) { "done" }
+        XCTAssertEqual(value, "done")
+
+        // Startup-window observations: lease held BEFORE work started.
+        XCTAssertTrue(observation.observed, "startup seam must fire")
+        XCTAssertEqual(observation.countAtObservation, 1,
+                       "physical-use count must already be 1 before the work starts")
+        XCTAssertTrue(observation.artifactExisted,
+                      "artifact must survive a delete request in the startup window")
+        XCTAssertTrue(observation.deferredRequested,
+                      "the delete request must have been deferred, not dropped")
+
+        // Work ended → release → the deferred deletion fires.
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifactPath),
+                       "deferred delete must fire after the work releases the lease")
+        XCTAssertEqual(store.physicalUse.physicalUseCount(artifactPath), 0)
+    }
+
+    /// Failure path: the lease is released even when the work throws, so a
+    /// deferred delete fires and no physical-use count leaks.
+    func testStartupWindowLeaseReleasedOnWorkFailure() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+
+        final class Observation: @unchecked Sendable {
+            private let l = NSLock()
+            private(set) var countAtObservation: Int = -1
+            func observe(count: Int) { l.lock(); countAtObservation = count; l.unlock() }
+        }
+        let observation = Observation()
+        coordinator.setStartupObserver { key in
+            observation.observe(count: registry.physicalUseCount(key))
+        }
+
+        struct WorkFailure: Error {}
+        do {
+            _ = try await coordinator.materialize(key: "ref-fail") { throw WorkFailure() }
+            XCTFail("work failure must propagate")
+        } catch {}
+
+        XCTAssertEqual(observation.countAtObservation, 1,
+                       "lease held before the failing work started")
+        XCTAssertEqual(registry.physicalUseCount("ref-fail"), 0,
+                       "lease must be released on the work-failure path")
+    }
+
+    /// Startup-window join semantics: a second caller for the same key joins
+    /// the already-protected work — the lease is neither double-acquired nor
+    /// released early, and both callers share the single result.
+    func testStartupWindowJoinSharesProtectedWork() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+
+        let startup = ObservationCounter()
+        coordinator.setStartupObserver { key in
+            startup.observe(count: registry.physicalUseCount(key))
+        }
+
+        async let v1: String = coordinator.materialize(key: "ref-join") {
+            await workGate.enterWork()
+            return "shared"
+        }
+        async let v2: String = coordinator.materialize(key: "ref-join") {
+            await workGate.enterWork()
+            return "shared"
+        }
+        try await workGate.waitForFirstCall()
+        let joined = await workGate.callCount
+        XCTAssertEqual(joined, 1, "single-flight: one work")
+        await workGate.release()
+        let results = try await [v1, v2]
+        XCTAssertEqual(results, ["shared", "shared"])
+        XCTAssertEqual(startup.maxCountAtObservation, 1,
+                       "the lease is acquired exactly once, before publication")
+        XCTAssertEqual(registry.physicalUseCount("ref-join"), 0)
+    }
+}
+
+/// Counting observation sink for the D-I4 startup seam.
+final class ObservationCounter: @unchecked Sendable {
+    private let l = NSLock()
+    private var values: [Int] = []
+    func observe(count: Int) { l.lock(); values.append(count); l.unlock() }
+    var maxCountAtObservation: Int { l.lock(); defer { l.unlock() }; return values.max() ?? -1 }
+}
+
+/// Deterministic boundary around the registry's out-of-lock delete callback.
+private final class DeleteExecutionGate: @unchecked Sendable {
+    private let l = NSLock()
+    private var startCountValue = 0
+    private var rejected = false
+    private let finish = DispatchSemaphore(value: 0)
+
+    func enterDelete() {
+        l.lock()
+        startCountValue += 1
+        l.unlock()
+        finish.wait()
+    }
+
+    func waitForDeleteStart(
+        minimumStartCount: Int = 1,
+        timeoutNanoseconds: UInt64 = 5_000_000_000
+    ) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while currentStartCount < minimumStartCount {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    func finishDelete() {
+        finish.signal()
+    }
+
+    var startCount: Int { currentStartCount }
+
+    func rejectAdmission() {
+        l.lock()
+        rejected = true
+        l.unlock()
+    }
+
+    func waitForRejection(timeoutNanoseconds: UInt64 = 5_000_000_000) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while !isRejected {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    private var isRejected: Bool {
+        l.lock()
+        defer { l.unlock() }
+        return rejected
+    }
+
+    private var currentStartCount: Int {
+        l.lock()
+        defer { l.unlock() }
+        return startCountValue
+    }
+}
+
+private final class DeletedGenerations: @unchecked Sendable {
+    private let l = NSLock()
+    private var values: [UUID?] = []
+    func record(_ generation: UUID?) {
+        l.lock()
+        values.append(generation)
+        l.unlock()
+    }
+    var generations: [UUID?] {
+        l.lock()
+        defer { l.unlock() }
+        return values
+    }
+}
+
+private final class MaterializationWorkCounter: @unchecked Sendable {
+    private let l = NSLock()
+    private(set) var count = 0
+
+    func record() {
+        l.lock()
+        count += 1
+        l.unlock()
+    }
+}
+
+private struct RollbackFault: Error {}
+
+private final class PublicationFault: @unchecked Sendable {
+    private let l = NSLock()
+    private var enabled = false
+    func enable() { l.lock(); enabled = true; l.unlock() }
+    var isEnabled: Bool { l.lock(); defer { l.unlock() }; return enabled }
 }
