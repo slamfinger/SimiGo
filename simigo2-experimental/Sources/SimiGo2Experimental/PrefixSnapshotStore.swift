@@ -31,6 +31,12 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable {
         self.generation = generation
             self.publishedPhysicalByteCount = publishedPhysicalByteCount
     }
+
+    public static func == (lhs: DiskPrefixArtifact, rhs: DiskPrefixArtifact) -> Bool {
+        lhs.snapshotURL == rhs.snapshotURL
+            && lhs.metadataURL == rhs.metadataURL
+            && lhs.generation == rhs.generation
+    }
 }
 
 /// P-I1's loud-failure half: the artifact's claims disagree with the pool

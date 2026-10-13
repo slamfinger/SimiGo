@@ -1003,6 +1003,27 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertEqual(store.pool.totalPhysicalBytes, publishedByteCount)
     }
 
+    /// Byte count is accounting metadata, not artifact identity. Exact pool
+    /// removal must still match after a legacy and published handle disagree
+    /// about how the size was obtained.
+    func testDiskArtifactEqualityIgnoresByteCount() {
+        let snapshotURL = URL(fileURLWithPath: "/tmp/feature.safetensors")
+        let metadataURL = URL(fileURLWithPath: "/tmp/feature.json")
+        let generation = UUID()
+        let dynamic = DiskPrefixArtifact(
+            snapshotURL: snapshotURL, metadataURL: metadataURL, generation: generation)
+        let published = DiskPrefixArtifact(
+            snapshotURL: snapshotURL, metadataURL: metadataURL,
+            generation: generation, publishedPhysicalByteCount: 1_234)
+
+        XCTAssertEqual(dynamic, published)
+        XCTAssertNotEqual(
+            dynamic,
+            DiskPrefixArtifact(
+                snapshotURL: snapshotURL, metadataURL: metadataURL, generation: UUID())
+        )
+    }
+
     func testDeleteRequestDuringLeaseClosesAdmissionUntilRelease() async throws {
         let key = "delete-during-lease"
         let registry = PhysicalUseRegistry(onDelete: { _, _ in })
