@@ -173,7 +173,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
     }
 
     func testConcurrentMaterializeRunsSingleFlight() async throws {
-        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
         let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
         let startBarrier = MaterializationStartBarrier(participantCount: 2)
         let workGate = MaterializationWorkGate()
@@ -283,34 +283,30 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
     // MARK: - Delete decision/execution window
 
-    /// A new lease must be rejected while an already-approved delete callback
-    /// is running, then admitted again after registry cleanup so a recreated
-    /// path can be used.
+    /// A duplicate request for the generation already deleting must dedupe;
+    /// cleanup must reopen admission and return a generation-bound lease.
     func testDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
         let key = "delete-execution"
         let gate = DeleteExecutionGate()
-        let registry = PhysicalUseRegistry(onDelete: { _ in
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
             gate.enterDelete()
         })
 
         let deletion = Task.detached {
-            registry.requestDelete(key)
+            registry.requestDelete(key, generation: nil)
         }
         try await gate.waitForDeleteStart()
-        XCTAssertFalse(registry.acquire(key), "no lease may be admitted during delete execution")
+        XCTAssertNil(registry.acquire(key), "no lease may be admitted during delete execution")
 
-        // A delete requested while execution is in progress addresses a later
-        // incarnation of the path. It must survive until the current callback
-        // atomically hands off, then run before admission reopens.
-        registry.requestDelete(key)
-        gate.finishDelete()
-        try await gate.waitForDeleteStart(minimumStartCount: 2)
+        // The request targets the generation already deleting: it dedupes.
+        registry.requestDelete(key, generation: nil)
         gate.finishDelete()
         await deletion.value
-        XCTAssertTrue(
+        XCTAssertEqual(gate.startCount, 1, "same-generation delete requests dedupe")
+        XCTAssertNotNil(
             registry.acquire(key),
             "cleanup must admit a later recreation of the same path")
-        registry.release(key)
+        registry.release(registry.acquire(key)!)
     }
 
     /// The pending-to-executing transition must use the same deletion state:
@@ -319,23 +315,113 @@ final class MaterializationCoordinatorTests: XCTestCase {
     func testDeferredDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
         let key = "deferred-delete-execution"
         let gate = DeleteExecutionGate()
-        let registry = PhysicalUseRegistry(onDelete: { _ in
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
             gate.enterDelete()
         })
 
-        registry.acquire(key)
-        registry.requestDelete(key)
+        let lease = registry.acquire(key)!
+        registry.requestDelete(key, generation: nil)
         let releaser = Task.detached {
-            registry.release(key)
+            registry.release(lease)
         }
 
         try await gate.waitForDeleteStart()
-        XCTAssertFalse(registry.acquire(key), "pending deletion must close admission on execution")
+        XCTAssertNil(registry.acquire(key), "pending deletion must close admission on execution")
 
         gate.finishDelete()
         await releaser.value
-        XCTAssertTrue(registry.acquire(key), "cleanup must reopen admission for path reuse")
-        registry.release(key)
+        XCTAssertNotNil(registry.acquire(key), "cleanup must reopen admission for path reuse")
+        registry.release(registry.acquire(key)!)
+    }
+
+    /// A queued request for a live replacement executes independently after
+    /// the old generation; a duplicate old-generation request does not run.
+    func testReplacementGenerationDeleteRunsAfterOldGeneration() async throws {
+        let key = "generation-queue"
+        let gate = DeleteExecutionGate()
+        let deleted = DeletedGenerations()
+        let registry = PhysicalUseRegistry(onDelete: { _, generation in
+            deleted.record(generation)
+            gate.enterDelete()
+        })
+        let old = UUID()
+        let replacement = UUID()
+
+        registry.beginGeneration(key, generation: old) {}
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: old)
+        }
+        try await gate.waitForDeleteStart()
+        registry.requestDelete(key, generation: old)
+
+        registry.beginGeneration(key, generation: replacement) {}
+        registry.requestDelete(key, generation: replacement)
+        XCTAssertNil(registry.acquire(key), "replacement publication remains delete-gated")
+
+        gate.finishDelete()
+        try await gate.waitForDeleteStart(minimumStartCount: 2)
+        XCTAssertNil(registry.acquire(key), "new-generation delete must stay admission-gated")
+        gate.finishDelete()
+        await deletion.value
+
+        XCTAssertEqual(deleted.generations, [old, replacement])
+        XCTAssertEqual(gate.startCount, 2, "same-generation deletes dedupe")
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease)
+        XCTAssertEqual(lease?.generation, replacement)
+        registry.release(lease!)
+    }
+
+    /// A failed delete callback cannot leave admission permanently closed.
+    func testFailedDeleteCallbackRestoresAdmission() async throws {
+        let key = "failed-delete"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            struct DeleteFailure: Error {}
+            _ = try? { throw DeleteFailure() }()
+            gate.enterDelete()
+        })
+
+        let deletion = Task.detached {
+            registry.requestDelete(key, generation: nil)
+        }
+        try await gate.waitForDeleteStart()
+        XCTAssertNil(registry.acquire(key))
+        gate.finishDelete()
+        await deletion.value
+
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease, "callback failure must not permanently close admission")
+        registry.release(lease!)
+    }
+
+    /// Store-level sidecar generation validation prevents a stale eviction
+    /// request from deleting a replacement at the same path.
+    func testStaleGenerationDeleteCannotRemoveReplacementArtifact() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("generation-delete-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let oldEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: f3writeSynthetic(to:))
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let newEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: f3writeSynthetic(to:))
+        let newArtifact = newEntry.artifact as! DiskPrefixArtifact
+
+        XCTAssertEqual(oldArtifact.snapshotURL.path, newArtifact.snapshotURL.path)
+        XCTAssertNotEqual(oldArtifact.generation, newArtifact.generation)
+
+        store.physicalUse.requestDelete(
+            newArtifact.snapshotURL.path, generation: oldArtifact.generation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+
+        store.physicalUse.requestDelete(
+            newArtifact.snapshotURL.path, generation: newArtifact.generation)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
     }
 
     /// Coordinator maps a rejected startup lease to a thrown result without
@@ -344,7 +430,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let key = "materialize-vs-delete"
         let gate = DeleteExecutionGate()
         let workCounter = MaterializationWorkCounter()
-        let registry = PhysicalUseRegistry(onDelete: { _ in
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
             gate.enterDelete()
         })
         let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
@@ -353,7 +439,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         }
 
         let deletion = Task.detached {
-            registry.requestDelete(key)
+            registry.requestDelete(key, generation: nil)
         }
         try await gate.waitForDeleteStart()
 
@@ -364,7 +450,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
             }
         }
         try await gate.waitForRejection()
-        XCTAssertFalse(registry.acquire(key))
+        XCTAssertNil(registry.acquire(key))
 
         gate.finishDelete()
         await deletion.value
@@ -403,7 +489,8 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         let entry = try await store.export(
             namespace: f3ns, tokens: f3tokens(512, seed: 1), write: f3writeSynthetic(to:))
-        let artifactPath = (entry.artifact as! DiskPrefixArtifact).snapshotURL.path
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let artifactPath = artifact.snapshotURL.path
 
         final class StartupObservation: @unchecked Sendable {
             private let l = NSLock()
@@ -434,7 +521,9 @@ final class MaterializationCoordinatorTests: XCTestCase {
             // deletion — the registry must defer (artifact untouched).
             observation.observe(
                 count: count, artifactExisted: existed,
-                requestDeferredDelete: { store.physicalUse.requestDelete(key) })
+                requestDeferredDelete: {
+                    store.physicalUse.requestDelete(key, generation: artifact.generation)
+                })
         }
 
         let value = try await coordinator.materialize(key: artifactPath) { "done" }
@@ -458,7 +547,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
     /// Failure path: the lease is released even when the work throws, so a
     /// deferred delete fires and no physical-use count leaks.
     func testStartupWindowLeaseReleasedOnWorkFailure() async throws {
-        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
         let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
 
         final class Observation: @unchecked Sendable {
@@ -487,7 +576,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
     /// the already-protected work — the lease is neither double-acquired nor
     /// released early, and both callers share the single result.
     func testStartupWindowJoinSharesProtectedWork() async throws {
-        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
         let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
         let workGate = MaterializationWorkGate()
 
@@ -527,13 +616,13 @@ final class ObservationCounter: @unchecked Sendable {
 /// Deterministic boundary around the registry's out-of-lock delete callback.
 private final class DeleteExecutionGate: @unchecked Sendable {
     private let l = NSLock()
-    private var startCount = 0
+    private var startCountValue = 0
     private var rejected = false
     private let finish = DispatchSemaphore(value: 0)
 
     func enterDelete() {
         l.lock()
-        startCount += 1
+        startCountValue += 1
         l.unlock()
         finish.wait()
     }
@@ -543,7 +632,7 @@ private final class DeleteExecutionGate: @unchecked Sendable {
         timeoutNanoseconds: UInt64 = 5_000_000_000
     ) async throws {
         let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
-        while startCount < minimumStartCount {
+        while currentStartCount < minimumStartCount {
             guard DispatchTime.now().uptimeNanoseconds < deadline else {
                 throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
             }
@@ -554,6 +643,8 @@ private final class DeleteExecutionGate: @unchecked Sendable {
     func finishDelete() {
         finish.signal()
     }
+
+    var startCount: Int { currentStartCount }
 
     func rejectAdmission() {
         l.lock()
@@ -580,7 +671,22 @@ private final class DeleteExecutionGate: @unchecked Sendable {
     private var currentStartCount: Int {
         l.lock()
         defer { l.unlock() }
-        return startCount
+        return startCountValue
+    }
+}
+
+private final class DeletedGenerations: @unchecked Sendable {
+    private let l = NSLock()
+    private var values: [UUID?] = []
+    func record(_ generation: UUID?) {
+        l.lock()
+        values.append(generation)
+        l.unlock()
+    }
+    var generations: [UUID?] {
+        l.lock()
+        defer { l.unlock() }
+        return values
     }
 }
 

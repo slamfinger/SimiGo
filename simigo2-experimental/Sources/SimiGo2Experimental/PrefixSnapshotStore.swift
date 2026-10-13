@@ -11,6 +11,8 @@ import MLXLMCommon
 public struct DiskPrefixArtifact: PrefixArtifactHandle {
     public let snapshotURL: URL
     public let metadataURL: URL
+    /// Nil only for artifacts registered by pre-generation sidecars.
+    public let generation: UUID?
 
     public var physicalByteCount: Int? {
         let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
@@ -18,9 +20,10 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle {
         return snapshotBytes + metadataBytes
     }
 
-    public init(snapshotURL: URL, metadataURL: URL) {
+    public init(snapshotURL: URL, metadataURL: URL, generation: UUID? = nil) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
+        self.generation = generation
     }
 }
 
@@ -42,6 +45,7 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
     var tokenCount: Int
     var chainHash: UInt64
     var createdAt: Date
+    var generation: UUID? = nil
 }
 
 /// B-2 — the KV artifact adapter: disk-backed store wiring the prefix
@@ -68,6 +72,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// holds the artifact is deferred until release (D-C1/C2) — the P2
     /// delete-on-evict semantics are unchanged for the no-in-flight case.
     public let physicalUse: PhysicalUseRegistry
+    private let artifactIOLock: NSLock
     private let fileManager = FileManager.default
 
     public init(root: URL, pool: ExecutionStatePrefixPool) {
@@ -75,13 +80,20 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.pool = pool
         let fileManager = FileManager.default
         try? fileManager.createDirectory(at: root, withIntermediateDirectories: true)
-        let registry = PhysicalUseRegistry(onDelete: { key in
+        let artifactIOLock = NSLock()
+        let registry = PhysicalUseRegistry(onDelete: { key, expectedGeneration in
             let snapshotURL = URL(fileURLWithPath: key)
             let metadataURL = snapshotURL.deletingPathExtension()
                 .appendingPathExtension("json")
-            try? fileManager.removeItem(at: snapshotURL)
-            try? fileManager.removeItem(at: metadataURL)
+            artifactIOLock.lock()
+            defer { artifactIOLock.unlock() }
+            let sidecar = FileManager.default.contents(atPath: metadataURL.path)
+                .flatMap { try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0) }
+            guard sidecar?.generation == expectedGeneration else { return }
+            try? FileManager.default.removeItem(at: snapshotURL)
+            try? FileManager.default.removeItem(at: metadataURL)
         })
+        self.artifactIOLock = artifactIOLock
         self.physicalUse = registry
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
@@ -91,7 +103,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             guard let artifact = entry.artifact as? DiskPrefixArtifact else {
                 return
             }
-            registry.requestDelete(artifact.snapshotURL.path)
+            registry.requestDelete(artifact.snapshotURL.path, generation: artifact.generation)
         }
     }
 
@@ -112,6 +124,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let baseName = "\(String(hash, radix: 16))-\(tokens.count)"
         let snapshotURL = dir.appendingPathComponent(baseName + ".safetensors")
         let metadataURL = dir.appendingPathComponent(baseName + ".json")
+        let generation = UUID()
 
         // Write through a temp file so a failing exporter cannot leave a
         // truncated snapshot at the final location. The file is
@@ -127,23 +140,30 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
         // Same-content re-exports (persistent pool across runs) hit an
         // existing destination: replace it — moveItem alone throws 516.
-        if fileManager.fileExists(atPath: snapshotURL.path) {
-            try? fileManager.removeItem(at: snapshotURL)
-        }
-        try fileManager.moveItem(at: tempURL, to: snapshotURL)
+        try physicalUse.beginGeneration(snapshotURL.path, generation: generation) {
+            [artifactIOLock, fileManager] in
+            artifactIOLock.lock()
+            defer { artifactIOLock.unlock() }
+            if fileManager.fileExists(atPath: snapshotURL.path) {
+                try? fileManager.removeItem(at: snapshotURL)
+            }
+            try fileManager.moveItem(at: tempURL, to: snapshotURL)
 
-        let sidecar = PrefixSnapshotSidecar(
-            modelID: namespace.modelID,
-            kvFingerprint: namespace.kvFingerprint,
-            tokenCount: tokens.count,
-            chainHash: hash,
-            createdAt: Date())
-        let data = try JSONEncoder().encode(sidecar)
-        try data.write(to: metadataURL, options: .atomic)
+            let sidecar = PrefixSnapshotSidecar(
+                modelID: namespace.modelID,
+                kvFingerprint: namespace.kvFingerprint,
+                tokenCount: tokens.count,
+                chainHash: hash,
+                createdAt: Date(),
+                generation: generation)
+            let data = try JSONEncoder().encode(sidecar)
+            try data.write(to: metadataURL, options: .atomic)
+        }
 
         return pool.export(
             namespace: namespace, tokens: tokens,
-            artifact: DiskPrefixArtifact(snapshotURL: snapshotURL, metadataURL: metadataURL))
+            artifact: DiskPrefixArtifact(
+                snapshotURL: snapshotURL, metadataURL: metadataURL, generation: generation))
     }
 
     // MARK: - Bind (admission → verified snapshot)
@@ -261,7 +281,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     tokenCount: sidecar.tokenCount,
                     boundaryHash: sidecar.chainHash,
                     artifact: DiskPrefixArtifact(
-                        snapshotURL: snapshotURL, metadataURL: metaURL))
+                        snapshotURL: snapshotURL, metadataURL: metaURL,
+                        generation: sidecar.generation))
+                physicalUse.beginGeneration(snapshotURL.path, generation: sidecar.generation) {}
                 registered += 1
             }
         }
