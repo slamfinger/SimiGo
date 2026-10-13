@@ -13,11 +13,19 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public struct Lease: Equatable, Sendable {
         public let key: String
         public let generation: UUID?
+        let id = UUID()
     }
 
     private struct LeaseKey: Hashable {
         let key: String
         let generation: UUID?
+        let id: UUID
+
+        init(_ lease: Lease) {
+            key = lease.key
+            generation = lease.generation
+            id = lease.id
+        }
     }
 
     /// Internal generation representation avoids Optional<Optional<UUID>>;
@@ -163,15 +171,16 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             return nil
         }
         let publicGeneration = generation.publicValue
-        counts[LeaseKey(key: key, generation: publicGeneration), default: 0] += 1
-        return Lease(key: key, generation: publicGeneration)
+        let lease = Lease(key: key, generation: publicGeneration)
+        counts[LeaseKey(lease), default: 0] += 1
+        return lease
     }
 
     /// Release one generation-bound physical use. When no generation for the
     /// path remains in flight, the next valid deferred delete may execute.
     public func release(_ lease: Lease) {
         lock.lock()
-        let leaseKey = LeaseKey(key: lease.key, generation: lease.generation)
+        let leaseKey = LeaseKey(lease)
         guard let remaining = counts[leaseKey].map({ $0 - 1 }) else {
             lock.unlock()
             return

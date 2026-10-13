@@ -394,6 +394,31 @@ final class MaterializationCoordinatorTests: XCTestCase {
         registry.release(registry.acquire(key)!)
     }
 
+    /// A lease is an ownership token. Releasing it twice must not consume a
+    /// different holder's count or end another in-flight physical use.
+    func testDuplicateReleaseCannotEndForeignLease() async throws {
+        let key = "duplicate-release"
+        let deleted = DeletedGenerations()
+        let registry = PhysicalUseRegistry(onDelete: { _, generation in
+            deleted.record(generation)
+        })
+        let first = registry.acquire(key)
+        let second = registry.acquire(key)
+        XCTAssertNotNil(first)
+        XCTAssertNotNil(second)
+
+        XCTAssertNil(registry.requestDelete(key, generation: nil))
+        registry.release(first!)
+        registry.release(first!)
+
+        XCTAssertEqual(registry.physicalUseCount(key), 1, "second lease remains protected")
+        XCTAssertNil(registry.acquire(key), "pending delete remains admission-gated")
+
+        registry.release(second!)
+        XCTAssertEqual(registry.physicalUseCount(key), 0)
+        XCTAssertEqual(deleted.generations, [nil])
+    }
+
     /// A queued request for a live replacement executes independently after
     /// the old generation; a duplicate old-generation request does not run.
     func testReplacementGenerationDeleteRunsAfterOldGeneration() async throws {
