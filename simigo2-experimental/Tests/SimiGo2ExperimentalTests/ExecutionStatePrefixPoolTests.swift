@@ -125,6 +125,42 @@ final class ExecutionStatePrefixPoolTests: XCTestCase {
         XCTAssertEqual(pool.totalTokens, 0)
     }
 
+    /// Recency is scoped by namespace. Removing one namespace's copy of a
+    /// shared boundary hash must not make another namespace's copy look LRU.
+    func testRecencyIsNamespaceScopedForSameBoundaryHash() {
+        let namespaceA = PrefixPoolNamespace(modelID: "model-a", kvFingerprint: "fp-a")
+        let namespaceB = PrefixPoolNamespace(modelID: "model-b", kvFingerprint: "fp-b")
+        let pool = ExecutionStatePrefixPool(tokenBudget: 768)
+        let shared = tokens(256)
+        let otherA = tokens(256, seed: 1)
+        let otherA2 = tokens(256, seed: 2)
+        let otherA3 = tokens(256, seed: 3)
+
+        let aShared = pool.export(
+            namespace: namespaceA, tokens: shared, artifact: FakeArtifact(id: 1))
+        let otherAEntry = pool.export(
+            namespace: namespaceA, tokens: otherA, artifact: FakeArtifact(id: 3))
+        let bShared = pool.export(
+            namespace: namespaceB, tokens: shared, artifact: FakeArtifact(id: 2))
+
+        XCTAssertNotNil(pool.admit(namespace: namespaceB, promptTokens: shared))
+        XCTAssertTrue(pool.remove(aShared))
+
+        pool.export(
+            namespace: namespaceA, tokens: otherA2, artifact: FakeArtifact(id: 4))
+
+        pool.export(
+            namespace: namespaceA, tokens: otherA3, artifact: FakeArtifact(id: 5))
+
+        XCTAssertEqual(pool.stats.evictions, 1, "the true LRU entry must be evicted")
+        XCTAssertNotNil(pool.admit(namespace: namespaceB, promptTokens: shared))
+        XCTAssertNil(pool.admit(namespace: namespaceA, promptTokens: otherA))
+        XCTAssertNotNil(pool.admit(namespace: namespaceA, promptTokens: otherA2))
+        XCTAssertNotNil(pool.admit(namespace: namespaceA, promptTokens: otherA3))
+        XCTAssertEqual(bShared.artifact as? FakeArtifact, FakeArtifact(id: 2))
+        XCTAssertEqual(otherAEntry.artifact as? FakeArtifact, FakeArtifact(id: 3))
+    }
+
     func testChainIsOrderSensitive() {
         let a: [Int] = [11, 22, 33]
         let b: [Int] = [33, 22, 11]

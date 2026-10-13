@@ -13,17 +13,37 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable {
     public let metadataURL: URL
     /// Nil only for artifacts registered by pre-generation sidecars.
     public let generation: UUID?
+        private let publishedPhysicalByteCount: Int?
 
     public var physicalByteCount: Int? {
-        let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        if let publishedPhysicalByteCount { return publishedPhysicalByteCount }
+        guard
+            let snapshotAttributes = try? FileManager.default.attributesOfItem(
+                atPath: snapshotURL.path),
+            let metadataAttributes = try? FileManager.default.attributesOfItem(
+                atPath: metadataURL.path),
+            let snapshotBytes = snapshotAttributes[.size] as? Int,
+            let metadataBytes = metadataAttributes[.size] as? Int
+        else {
+            return nil
+        }
         return snapshotBytes + metadataBytes
     }
 
-    public init(snapshotURL: URL, metadataURL: URL, generation: UUID? = nil) {
+    public init(
+        snapshotURL: URL, metadataURL: URL, generation: UUID? = nil,
+        publishedPhysicalByteCount: Int? = nil
+    ) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
         self.generation = generation
+        self.publishedPhysicalByteCount = publishedPhysicalByteCount
+    }
+
+    public static func == (lhs: DiskPrefixArtifact, rhs: DiskPrefixArtifact) -> Bool {
+        lhs.snapshotURL == rhs.snapshotURL
+            && lhs.metadataURL == rhs.metadataURL
+            && lhs.generation == rhs.generation
     }
 }
 
@@ -38,7 +58,7 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactUnreadable(String)
     case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
     case artifactDeletionFailed(path: String, underlyingDescription: String)
-    case artifactPublicationQuarantined
+    case physicalUseUnavailable(path: String)
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
@@ -50,6 +70,8 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
     var createdAt: Date
     var generation: UUID? = nil
 }
+
+private struct RescanArtifactChanged: Error {}
 
 /// B-2 — the KV artifact adapter: disk-backed store wiring the prefix
 /// pool to `ChatSession.saveCache` / `loadPromptCacheSnapshot`. Zero model
@@ -79,6 +101,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private let fileManager = FileManager.default
     private let willPublishSidecar: @Sendable (URL) throws -> Void
     private let willRollback: @Sendable () throws -> Void
+    private let willCommitPoolEntry: @Sendable () -> Void
+    private let willBeginRescanGeneration: @Sendable () throws -> Void
 
     internal init(
         root: URL,
@@ -86,7 +110,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         artifactIOLock: NSLock,
         deleteArtifact: @escaping (String, UUID?) throws -> Void,
         willPublishSidecar: @escaping @Sendable (URL) throws -> Void = { _ in },
-        willRollback: @escaping @Sendable () throws -> Void = { }
+        willRollback: @escaping @Sendable () throws -> Void = { },
+        willCommitPoolEntry: @escaping @Sendable () -> Void = { },
+        willBeginRescanGeneration: @escaping @Sendable () throws -> Void = { }
     ) {
         self.root = root
         self.pool = pool
@@ -95,12 +121,14 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.physicalUse = PhysicalUseRegistry(onDelete: deleteArtifact)
         self.willPublishSidecar = willPublishSidecar
         self.willRollback = willRollback
+        self.willCommitPoolEntry = willCommitPoolEntry
+        self.willBeginRescanGeneration = willBeginRescanGeneration
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
         // only finds files that were never evicted).
-        pool.onEvict = { entry in
-            guard let artifact = entry.artifact as? DiskPrefixArtifact else {
+        pool.onEvict = { [weak self] entry in
+            guard let self, let artifact = entry.artifact as? DiskPrefixArtifact else {
                 return
             }
             self.physicalUse.requestDelete(
@@ -120,6 +148,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     .appendingPathExtension("json")
                 artifactIOLock.lock()
                 defer { artifactIOLock.unlock() }
+                let snapshotExists = FileManager.default.fileExists(atPath: snapshotURL.path)
+                let metadataExists = FileManager.default.fileExists(atPath: metadataURL.path)
+                guard snapshotExists || metadataExists else { return }
                 let sidecar = FileManager.default.contents(atPath: metadataURL.path)
                     .flatMap { try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0) }
                 guard let sidecar else {
@@ -178,9 +209,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         // before writing, which fails with ENOENT on a missing file.
         let tempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString).safetensors")
         fileManager.createFile(atPath: tempURL.path, contents: Data())
-        var tempPublished = false
+        var newSnapshotPublished = false
         defer {
-            if !tempPublished { try? fileManager.removeItem(at: tempURL) }
+            if !newSnapshotPublished { try? fileManager.removeItem(at: tempURL) }
         }
         try await write(tempURL)
         guard fileManager.fileExists(atPath: tempURL.path) else {
@@ -197,16 +228,22 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let sidecarData = try JSONEncoder().encode(sidecar)
         let sidecarTempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString)-sidecar")
         try sidecarData.write(to: sidecarTempURL, options: .atomic)
+        let snapshotAttributes = try fileManager.attributesOfItem(atPath: tempURL.path)
+        guard let snapshotByteCount = snapshotAttributes[.size] as? Int else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "exporter byte count unavailable")
+        }
         var sidecarPublished = false
         defer {
             if !sidecarPublished { try? fileManager.removeItem(at: sidecarTempURL) }
         }
 
         // Replace the complete snapshot/sidecar pair or restore the old pair.
+        var publishedEntry: PrefixPoolEntry?
         try physicalUse.beginGeneration(
             snapshotURL.path,
             generation: generation,
-            publish: { [artifactIOLock, fileManager] in
+            publish: { [artifactIOLock, fileManager, pool] in
             let backupSnapshotURL = dir.appendingPathComponent(
                 ".backup-\(UUID().uuidString).safetensors")
             let backupMetadataURL = dir.appendingPathComponent(
@@ -222,8 +259,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             }
 
             artifactIOLock.lock()
-            defer { artifactIOLock.unlock() }
-
+            do {
+                defer { artifactIOLock.unlock() }
             do {
                 if fileManager.fileExists(atPath: snapshotURL.path) {
                     try fileManager.moveItem(at: snapshotURL, to: backupSnapshotURL)
@@ -234,7 +271,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     oldMetadataMoved = true
                 }
                 try fileManager.moveItem(at: tempURL, to: snapshotURL)
-                tempPublished = true
+                newSnapshotPublished = true
                 try willPublishSidecar(metadataURL)
                 try fileManager.moveItem(at: sidecarTempURL, to: metadataURL)
                 sidecarPublished = true
@@ -248,14 +285,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 var rollbackError: Error?
                 do {
                     try willRollback()
-                    if oldMetadataMoved {
+                    if newSnapshotPublished {
                         try quarantine(metadataURL)
                     }
                     if oldMetadataMoved {
                         try fileManager.moveItem(at: backupMetadataURL, to: metadataURL)
                     }
-                    if oldSnapshotMoved {
+                    if newSnapshotPublished {
                         try quarantine(snapshotURL)
+                    }
+                    if oldSnapshotMoved {
                         try fileManager.moveItem(at: backupSnapshotURL, to: snapshotURL)
                     }
                 } catch {
@@ -263,23 +302,39 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 }
                 if let rollbackError {
                     physicalUse.markGenerationQuarantined(
-                        snapshotURL.path,
+                        snapshotURL.path, generation: generation)
+                    throw PhysicalUseRegistry.PublicationQuarantinedError(
+                        key: snapshotURL.path,
                         generation: generation,
-                        error: rollbackError)
-                    throw PrefixSnapshotStoreError.artifactPublicationQuarantined
+                        underlyingError: rollbackError)
                 }
                 throw error
             }
 
             try? fileManager.removeItem(at: backupSnapshotURL)
             try? fileManager.removeItem(at: backupMetadataURL)
+            } catch {
+                throw error
+            }
+
+            // Keep pool registration inside `beginGeneration`: admission and
+            // another publication must not run between disk publication and
+            // the pool's generation switch.
+            willCommitPoolEntry()
+            publishedEntry = pool.export(
+                namespace: namespace, tokens: tokens,
+                artifact: DiskPrefixArtifact(
+                    snapshotURL: snapshotURL, metadataURL: metadataURL,
+                    generation: generation,
+                    publishedPhysicalByteCount: snapshotByteCount + sidecarData.count))
             }
         )
 
-        return pool.export(
-            namespace: namespace, tokens: tokens,
-            artifact: DiskPrefixArtifact(
-                snapshotURL: snapshotURL, metadataURL: metadataURL, generation: generation))
+        guard let publishedEntry else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "publication returned without a committed pool entry")
+        }
+        return publishedEntry
     }
 
     // MARK: - Bind (admission → verified snapshot)
@@ -292,6 +347,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
     }
 
+    /// Remove a failed admission from the pool and request generation-bound
+    /// cleanup. A stale request cannot delete a replacement; an invalid
+    /// sidecar leaves the cleanup failure observable in the registry.
+    private func retireFailedArtifact(_ entry: PrefixPoolEntry) {
+        removeFromPool(entry)
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else { return }
+        _ = physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+    }
+
     /// Reconcile the admitted entry against the artifact's own claims,
     /// then load the snapshot. Any disagreement or unreadability removes
     /// the entry from the pool and throws LOUD — never a silent miss, and
@@ -301,16 +366,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
-        do {
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
-        } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
-            throw error
-        } catch {
-            removeFromPool(entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
-        }
+        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is
@@ -323,7 +379,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             removeFromPool(entry)
             return
         }
-        guard pool.remove(entry, artifact: artifact) else { return }
+        // A prior failed remove has already detached the entry. Reissuing the
+        // generation-bound request makes retry observable; a replacement makes
+        // a stale retry harmless.
+        pool.remove(entry, artifact: artifact)
         if let failure = physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
         {
@@ -339,14 +398,25 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
+        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
+    }
+
+    private func leasedReconciledSnapshot(
+        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
+    ) throws -> PromptCacheSnapshot {
+        guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
+            throw PrefixSnapshotStoreError.physicalUseUnavailable(
+                path: artifact.snapshotURL.path)
+        }
         do {
+            defer { physicalUse.release(lease) }
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
@@ -355,6 +425,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private func reconciledSnapshot(
         entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
     ) throws -> PromptCacheSnapshot {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
         let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
         guard let sidecar = sidecarData.flatMap({
             try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
@@ -367,6 +439,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard snapshotNamespace == entry.namespace else {
             throw PrefixSnapshotStoreError.namespaceMismatch(
                 expected: entry.namespace, snapshot: snapshotNamespace)
+        }
+        guard sidecar.generation == artifact.generation else {
+            throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                expected: artifact.generation, actual: sidecar.generation)
         }
         guard sidecar.tokenCount == entry.tokenCount,
             sidecar.chainHash == entry.boundaryHash
@@ -407,15 +483,52 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
-                pool.register(
-                    namespace: PrefixPoolNamespace(
-                        modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
-                    tokenCount: sidecar.tokenCount,
-                    boundaryHash: sidecar.chainHash,
-                    artifact: DiskPrefixArtifact(
-                        snapshotURL: snapshotURL, metadataURL: metaURL,
-                        generation: sidecar.generation))
-                physicalUse.beginGeneration(snapshotURL.path, generation: sidecar.generation) {}
+                try willBeginRescanGeneration()
+                // Register the generation before pool.commit: immediate
+                // self-eviction must issue a live delete, not a stale no-op.
+                let registeredThisScan: Bool
+                do {
+                    registeredThisScan = try physicalUse.beginGenerationIfCurrentOrUnregistered(
+                        snapshotURL.path, generation: sidecar.generation
+                    ) {
+                    // The scan itself is outside the I/O lock. Revalidate while
+                    // preparing blocks a newly started delete; if a delete has
+                    // already completed, this sees the vanished generation.
+                    func validateStillOnDisk() throws -> (snapshotBytes: Int, metadataBytes: Int) {
+                        artifactIOLock.lock()
+                        defer { artifactIOLock.unlock() }
+                        let currentData = fileManager.contents(atPath: metaURL.path)
+                        let currentSidecar = currentData.flatMap {
+                            try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
+                        }
+                        guard currentSidecar == sidecar,
+                            fileManager.fileExists(atPath: snapshotURL.path)
+                        else {
+                            throw RescanArtifactChanged()
+                        }
+                        let snapshotAttributes = try fileManager.attributesOfItem(
+                            atPath: snapshotURL.path)
+                        guard let snapshotBytes = snapshotAttributes[.size] as? Int else {
+                            throw PrefixSnapshotStoreError.artifactUnreadable(
+                                "rescanned artifact byte count unavailable")
+                        }
+                        return (snapshotBytes, currentData?.count ?? 0)
+                    }
+                    let diskByteCount = try validateStillOnDisk()
+                    pool.register(
+                        namespace: PrefixPoolNamespace(
+                            modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
+                        tokenCount: sidecar.tokenCount,
+                        boundaryHash: sidecar.chainHash,
+                        artifact: DiskPrefixArtifact(
+                            snapshotURL: snapshotURL, metadataURL: metaURL,
+                            generation: sidecar.generation,
+                            publishedPhysicalByteCount: diskByteCount.snapshotBytes + diskByteCount.metadataBytes))
+                    }
+                } catch is RescanArtifactChanged {
+                    continue
+                }
+                guard registeredThisScan else { continue }
                 registered += 1
             }
         }

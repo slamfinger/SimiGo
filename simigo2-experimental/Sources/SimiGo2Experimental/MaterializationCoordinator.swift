@@ -13,11 +13,19 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public struct Lease: Equatable, Sendable {
         public let key: String
         public let generation: UUID?
+        let id = UUID()
     }
 
     private struct LeaseKey: Hashable {
         let key: String
         let generation: UUID?
+        let id: UUID
+
+        init(_ lease: Lease) {
+            key = lease.key
+            generation = lease.generation
+            id = lease.id
+        }
     }
 
     /// Internal generation representation avoids Optional<Optional<UUID>>;
@@ -40,7 +48,12 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         }
     }
 
-    private let lock = NSLock()
+    private enum ExpectedGeneration {
+        case any
+        case exact(Generation)
+    }
+
+    private let lock = NSCondition()
     private var counts: [LeaseKey: Int] = [:]
     private var generations: [String: Generation] = [:]
     private var pendingDeletes: [String: [Generation]] = [:]
@@ -71,6 +84,30 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func beginGeneration(
         _ key: String, generation: UUID?, publish: () throws -> Void
     ) rethrows {
+        _ = try beginGenerationTransaction(
+            key, generation: generation, expected: .any, publish: publish)
+    }
+
+    /// Rescan competes with live exports after reading a sidecar. Accept the
+    /// publication only when the scanned generation is still current, or when
+    /// the path is first registered. A stale scan must not roll back a newer
+    /// publication.
+    func beginGenerationIfCurrentOrUnregistered(
+        _ key: String, generation: UUID?, publish: () throws -> Void
+    ) rethrows -> Bool {
+        try beginGenerationTransaction(
+            key,
+            generation: generation,
+            expected: .exact(Generation(generation)),
+            publish: publish)
+    }
+
+    private func beginGenerationTransaction(
+        _ key: String,
+        generation: UUID?,
+        expected: ExpectedGeneration,
+        publish: () throws -> Void
+    ) rethrows -> Bool {
         // ponytail: one global publication lock; split per-path only after a
         // measured same-path export bottleneck.
         publicationLock.lock()
@@ -78,8 +115,26 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         let generation = Generation(generation)
         let previous = currentGenerationInternal(key)
         lock.lock()
+        let current = generations[key] ?? .legacy
+        switch expected {
+        case .any:
+            break
+        case .exact(let scanned):
+            // An unregistered path has the implicit legacy current. This also
+            // lets the first rescan of a newly generated sidecar succeed.
+            guard activeDeleteLocked(key) == nil,
+                !hasPendingDeleteLocked(key, generation: current),
+                current == scanned || (current == .legacy && scanned != .legacy)
+            else {
+                lock.unlock()
+                return false
+            }
+        }
         generations[key] = generation
         preparing.insert(key)
+        // Drain all existing leases for this path before publishing the new
+        // physical pair. New admission is already closed by `preparing`.
+        while hasInFlightLocked(key) { lock.wait() }
         lock.unlock()
         defer {
             lock.lock()
@@ -91,9 +146,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             try publish()
         } catch {
             lock.lock()
-            if generations[key] == .invalidated {
-                publicationFailures[key, default: []].append(error)
-            } else if error is PublicationQuarantinedError {
+            if generations[key] == .invalidated || error is PublicationQuarantinedError {
                 generations[key] = .invalidated
                 publicationFailures[key, default: []].append(error)
             } else {
@@ -102,6 +155,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             lock.unlock()
             throw error
         }
+        return true
     }
 
     /// Admit one physical use of the current generation. A nil result means
@@ -112,25 +166,30 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         let generation = (generations[key] ?? .legacy)
-        guard !preparing.contains(key), activeDeleteLocked(key) == nil, generation != .invalidated else {
+        guard !preparing.contains(key), activeDeleteLocked(key) == nil,
+            !hasPendingDeleteLocked(key, generation: generation),
+            generation != .invalidated
+        else {
             return nil
         }
         let publicGeneration = generation.publicValue
-        counts[LeaseKey(key: key, generation: publicGeneration), default: 0] += 1
-        return Lease(key: key, generation: publicGeneration)
+        let lease = Lease(key: key, generation: publicGeneration)
+        counts[LeaseKey(lease), default: 0] += 1
+        return lease
     }
 
     /// Release one generation-bound physical use. When no generation for the
     /// path remains in flight, the next valid deferred delete may execute.
     public func release(_ lease: Lease) {
         lock.lock()
-        let leaseKey = LeaseKey(key: lease.key, generation: lease.generation)
+        let leaseKey = LeaseKey(lease)
         guard let remaining = counts[leaseKey].map({ $0 - 1 }) else {
             lock.unlock()
             return
         }
         if remaining <= 0 {
             counts[leaseKey] = nil
+            lock.signal()
             lock.unlock()
             startNextDeleteIfIdle(lease.key)
         } else {
@@ -148,7 +207,11 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func requestDelete(_ key: String, generation: UUID?) -> Error? {
         let generation = Generation(generation)
         lock.lock()
-        guard generation == (generations[key] ?? .legacy) else {
+        let current = generations[key] ?? .legacy
+        // While publication is preparing, the previous generation is still a
+        // valid rollback target. Queue the request; it becomes stale only if
+        // publication succeeds.
+        guard generation == current || preparing.contains(key) else {
             lock.unlock()
             return nil
         }
@@ -183,6 +246,16 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         return counts.reduce(0) { $1.key.key == key ? $0 + $1.value : $0 }
     }
 
+    func isPreparingGeneration(_ key: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return preparing.contains(key)
+    }
+
+    func inFlightLeaseCount(_ key: String) -> Int {
+        physicalUseCount(key)
+    }
+
     /// Consume at-most-once deletion failures for `key`. Admission is already
     /// restored when these are returned; the caller decides whether to retry.
     public func takeDeleteFailures(_ key: String) -> [Error] {
@@ -205,19 +278,13 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         return publicationFailures.removeValue(forKey: key) ?? []
     }
 
-    func markGenerationQuarantined(
-        _ key: String, generation: UUID?, error: Error
-    ) {
+    /// Mark a generation unusable after failed publication rollback. The
+    /// caller throws a `PublicationQuarantinedError`; `beginGeneration`
+    /// records that canonical failure exactly once.
+    func markGenerationQuarantined(_ key: String, generation: UUID?) {
         lock.lock()
         generations[key] = .invalidated
-        publicationFailures[key, default: []].append(
-            PublicationQuarantinedError(
-                key: key, generation: generation, underlyingError: error))
         lock.unlock()
-    }
-
-    private func currentGeneration(_ key: String) -> UUID? {
-        currentGenerationInternal(key).publicValue
     }
 
     private func currentGenerationInternal(_ key: String) -> Generation {
@@ -228,6 +295,12 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
 
     private func hasInFlightLocked(_ key: String) -> Bool {
         counts.contains { $0.key.key == key && $0.value > 0 }
+    }
+
+    private func hasPendingDeleteLocked(
+        _ key: String, generation: Generation
+    ) -> Bool {
+        pendingDeletes[key]?.contains(generation) == true
     }
 
     private func activeDeleteLocked(_ key: String) -> Generation? {
