@@ -337,21 +337,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
-        guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
-            throw PrefixSnapshotStoreError.physicalUseUnavailable(
-                path: artifact.snapshotURL.path)
-        }
-        do {
-            defer { physicalUse.release(lease) }
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
-        } catch let error as PrefixSnapshotStoreError {
-            retireFailedArtifact(entry)
-            throw error
-        } catch {
-            retireFailedArtifact(entry)
-            throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
-        }
+        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is
@@ -383,6 +369,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
+        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
+    }
+
+    private func leasedReconciledSnapshot(
+        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
+    ) throws -> PromptCacheSnapshot {
         guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
             throw PrefixSnapshotStoreError.physicalUseUnavailable(
                 path: artifact.snapshotURL.path)
