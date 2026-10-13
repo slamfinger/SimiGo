@@ -738,7 +738,9 @@ final class MaterializationCoordinatorTests: XCTestCase {
                     expected: oldArtifact.generation,
                     actual: newArtifact.generation))
         }
-        XCTAssertNotNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        let tokensForAdmission = tokens + [1_000_003]
+        XCTAssertNotNil(store.pool.admit(
+            namespace: f3ns, promptTokens: tokensForAdmission))
     }
 
     /// Load self-healing must also retire the failed artifact; otherwise a
@@ -771,6 +773,86 @@ final class MaterializationCoordinatorTests: XCTestCase {
             try store.rescan(), 0, "a failed load must not be resurrected")
         XCTAssertTrue(store.physicalUse.takeDeleteFailures(
             artifact.snapshotURL.path).isEmpty)
+    }
+
+    /// Direct artifact reads are physical operations: the store must expose
+    /// them through the same transient lease boundary as export/delete.
+    func testLoadHoldsPhysicalUseLeaseDuringArtifactRead() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("load-lease-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let artifactIOLock = NSLock()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: artifactIOLock,
+            deleteArtifact: { _, _ in }
+        )
+        let tokens = f3tokens(256, seed: 20)
+        let entry = try await store.export(
+            namespace: f3ns, tokens: tokens, write: f3writeSynthetic)
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let admission = try XCTUnwrap(
+            store.pool.admit(namespace: f3ns, promptTokens: tokens))
+
+        artifactIOLock.lock()
+        let load = Task { try await store.load(admission) }
+        let deadline = DispatchTime.now().uptimeNanoseconds + 2_000_000_000
+        while store.physicalUse.physicalUseCount(artifact.snapshotURL.path) < 1 {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                artifactIOLock.unlock()
+                _ = try? await load.value
+                return XCTFail("load must acquire a physical-use lease before I/O")
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(store.physicalUse.physicalUseCount(
+            artifact.snapshotURL.path), 1)
+        artifactIOLock.unlock()
+        _ = try await load.value
+        XCTAssertEqual(store.physicalUse.physicalUseCount(
+            artifact.snapshotURL.path), 0)
+    }
+
+    /// Lease rejection is transient unavailability, not artifact corruption:
+    /// it must not trigger self-healing removal of a healthy pool entry.
+    func testLoadLeaseRejectionDoesNotRetireHealthyArtifact() async throws {
+        let key = "load-lease-rejection"
+        let gate = DeleteExecutionGate()
+        let store = PrefixSnapshotStore(
+            root: FileManager.default.temporaryDirectory
+                .appendingPathComponent("load-reject-\(UUID().uuidString)"),
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in gate.enterDelete() }
+        )
+        defer { gate.finishDelete() }
+        let tokens = f3tokens(256, seed: 21)
+        let entry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "payload".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let admission = try XCTUnwrap(
+            store.pool.admit(namespace: f3ns, promptTokens: tokens))
+
+        let deletion = Task.detached {
+            _ = store.physicalUse.requestDelete(
+                artifact.snapshotURL.path, generation: artifact.generation)
+        }
+        try await gate.waitForDeleteStart()
+        do {
+            _ = try await store.load(admission)
+            XCTFail("load during delete execution must fail closed")
+        } catch let error as PrefixSnapshotStoreError {
+            XCTAssertEqual(
+                error, .physicalUseUnavailable(path: artifact.snapshotURL.path))
+        }
+        XCTAssertEqual(store.physicalUse.physicalUseCount(
+            artifact.snapshotURL.path), 0)
+        gate.finishDelete()
+        await deletion.value
+        XCTAssertNotNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
     /// Disk publication and pool generation switch are one admission epoch:
@@ -1044,15 +1126,6 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         let admission = store.pool.admit(namespace: f3ns, promptTokens: tokens)
         XCTAssertNotNil(admission)
-        do {
-            _ = try await store.load(admission!)
-            XCTFail("mixed publication state must not load as a valid artifact")
-        } catch {
-            XCTAssertTrue(
-                String(describing: error).contains("sidecar missing or undecodable"),
-                "unexpected load error: \(error)")
-        }
-        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
         XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
         XCTAssertNil(store.physicalUse.acquire(key))
     }

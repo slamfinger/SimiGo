@@ -38,6 +38,7 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactUnreadable(String)
     case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
     case artifactDeletionFailed(path: String, underlyingDescription: String)
+    case physicalUseUnavailable(path: String)
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
@@ -331,7 +332,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
+        guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
+            throw PrefixSnapshotStoreError.physicalUseUnavailable(
+                path: artifact.snapshotURL.path)
+        }
         do {
+            defer { physicalUse.release(lease) }
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
@@ -369,7 +375,12 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
+        guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
+            throw PrefixSnapshotStoreError.physicalUseUnavailable(
+                path: artifact.snapshotURL.path)
+        }
         do {
+            defer { physicalUse.release(lease) }
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
