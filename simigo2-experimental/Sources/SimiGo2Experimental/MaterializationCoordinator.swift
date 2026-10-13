@@ -40,7 +40,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         }
     }
 
-    private let lock = NSLock()
+    private let lock = NSCondition()
     private var counts: [LeaseKey: Int] = [:]
     private var generations: [String: Generation] = [:]
     private var pendingDeletes: [String: [Generation]] = [:]
@@ -80,6 +80,9 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         lock.lock()
         generations[key] = generation
         preparing.insert(key)
+        // Drain all existing leases for this path before publishing the new
+        // physical pair. New admission is already closed by `preparing`.
+        while hasInFlightLocked(key) { lock.wait() }
         lock.unlock()
         defer {
             lock.lock()
@@ -112,7 +115,10 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         let generation = (generations[key] ?? .legacy)
-        guard !preparing.contains(key), activeDeleteLocked(key) == nil, generation != .invalidated else {
+        guard !preparing.contains(key), activeDeleteLocked(key) == nil,
+            !hasPendingDeleteLocked(key, generation: generation),
+            generation != .invalidated
+        else {
             return nil
         }
         let publicGeneration = generation.publicValue
@@ -131,6 +137,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         }
         if remaining <= 0 {
             counts[leaseKey] = nil
+            lock.signal()
             lock.unlock()
             startNextDeleteIfIdle(lease.key)
         } else {
@@ -183,6 +190,16 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         return counts.reduce(0) { $1.key.key == key ? $0 + $1.value : $0 }
     }
 
+    func isPreparingGeneration(_ key: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return preparing.contains(key)
+    }
+
+    func inFlightLeaseCount(_ key: String) -> Int {
+        physicalUseCount(key)
+    }
+
     /// Consume at-most-once deletion failures for `key`. Admission is already
     /// restored when these are returned; the caller decides whether to retry.
     public func takeDeleteFailures(_ key: String) -> [Error] {
@@ -228,6 +245,12 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
 
     private func hasInFlightLocked(_ key: String) -> Bool {
         counts.contains { $0.key.key == key && $0.value > 0 }
+    }
+
+    private func hasPendingDeleteLocked(
+        _ key: String, generation: Generation
+    ) -> Bool {
+        pendingDeletes[key]?.contains(generation) == true
     }
 
     private func activeDeleteLocked(_ key: String) -> Generation? {

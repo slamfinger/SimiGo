@@ -355,6 +355,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private func reconciledSnapshot(
         entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
     ) throws -> PromptCacheSnapshot {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
         let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
         guard let sidecar = sidecarData.flatMap({
             try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
@@ -367,6 +369,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         guard snapshotNamespace == entry.namespace else {
             throw PrefixSnapshotStoreError.namespaceMismatch(
                 expected: entry.namespace, snapshot: snapshotNamespace)
+        }
+        guard sidecar.generation == artifact.generation else {
+            throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                expected: artifact.generation, actual: sidecar.generation)
         }
         guard sidecar.tokenCount == entry.tokenCount,
             sidecar.chainHash == entry.boundaryHash
