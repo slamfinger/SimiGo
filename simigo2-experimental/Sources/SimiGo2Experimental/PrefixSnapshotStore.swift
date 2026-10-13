@@ -128,6 +128,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     .appendingPathExtension("json")
                 artifactIOLock.lock()
                 defer { artifactIOLock.unlock() }
+                let snapshotExists = FileManager.default.fileExists(atPath: snapshotURL.path)
+                let metadataExists = FileManager.default.fileExists(atPath: metadataURL.path)
+                guard snapshotExists || metadataExists else { return }
                 let sidecar = FileManager.default.contents(atPath: metadataURL.path)
                     .flatMap { try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0) }
                 guard let sidecar else {

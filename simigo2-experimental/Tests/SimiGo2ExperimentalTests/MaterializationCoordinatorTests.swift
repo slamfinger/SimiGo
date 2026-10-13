@@ -913,6 +913,30 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 15)))
     }
 
+    /// Successful deletion is idempotent: a repeated explicit remove of the
+    /// same generation must not turn a missing artifact into a new failure.
+    func testRepeatedSuccessfulRemoveIsIdempotent() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("remove-idempotent-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 23),
+            write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        try store.remove(entry)
+        try store.remove(entry)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertNil(store.pool.admit(
+            namespace: f3ns, promptTokens: f3tokens(256, seed: 23)))
+        XCTAssertTrue(store.physicalUse.takeDeleteFailures(
+            artifact.snapshotURL.path).isEmpty)
+    }
+
     func testDeleteRequestDuringLeaseClosesAdmissionUntilRelease() async throws {
         let key = "delete-during-lease"
         let registry = PhysicalUseRegistry(onDelete: { _, _ in })
