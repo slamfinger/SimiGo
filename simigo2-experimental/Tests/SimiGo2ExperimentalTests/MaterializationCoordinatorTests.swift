@@ -2,6 +2,7 @@ import XCTest
 import MLXLMCommon
 import MLX
 import Foundation
+import Crypto
 @testable import SimiGo2Experimental
 
 private let f3ns = PrefixPoolNamespace(modelID: "qwen3-8b", kvFingerprint: "fp-mlc4")
@@ -107,6 +108,10 @@ private func f3tokens(_ count: Int, seed: Int = 0) -> [Int] {
     (0..<count).map { ($0 * 31 + seed * 7) % 50_000 + 3 }
 }
 
+private func storeDeleteFailure(_ failures: [Error]) -> PrefixSnapshotStoreError? {
+    failures.first as? PrefixSnapshotStoreError
+}
+
 private func f3writeSnapshot(to url: URL) throws {
     let layer = KVCacheSimple()
     layer.update(
@@ -141,7 +146,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
 
         let entry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let artifactPath = (entry.artifact as! DiskPrefixArtifact).snapshotURL.path
 
         // The work itself triggers the eviction of its own artifact
@@ -156,7 +161,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let seed2 = f3tokens(512, seed: 2)
         let value = try await coordinator.materialize(key: artifactPath) {
             _ = try await store.export(
-                namespace: f3ns, tokens: seed2, write: f3writeSynthetic(to:))
+                namespace: f3ns, tokens: seed2, write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
             flag.set()
             return "done"
         }
@@ -261,7 +266,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
 
         let entry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(256, seed: 4), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(256, seed: 4), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let artifact = entry.artifact as! DiskPrefixArtifact
         let sidecarBefore = try Data(contentsOf: artifact.metadataURL)
 
@@ -404,10 +409,10 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let store = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
         let oldEntry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
         let newEntry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(256, seed: 8), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let newArtifact = newEntry.artifact as! DiskPrefixArtifact
 
         XCTAssertEqual(oldArtifact.snapshotURL.path, newArtifact.snapshotURL.path)
@@ -422,6 +427,209 @@ final class MaterializationCoordinatorTests: XCTestCase {
             newArtifact.snapshotURL.path, generation: newArtifact.generation)
         XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+    }
+
+    func testExplicitRemoveOfStaleEntryCannotAffectReplacement() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("explicit-stale-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let oldEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 9), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let newEntry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 9), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let newArtifact = newEntry.artifact as! DiskPrefixArtifact
+
+        store.remove(oldEntry)
+        let admitted = store.pool.admit(
+            namespace: f3ns, promptTokens: f3tokens(256, seed: 9))
+        let admittedArtifact = admitted?.entry.artifact as? DiskPrefixArtifact
+        XCTAssertEqual(admittedArtifact?.generation, newArtifact.generation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+
+        store.remove(newEntry)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: newArtifact.metadataURL.path))
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 9)))
+    }
+
+    func testDeleteFailuresAreReportedAndExplicitRetryCanSucceed() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("delete-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        final class DeletionPlan: @unchecked Sendable {
+            private let l = NSLock()
+            private var stages = ["sidecar", "snapshot", "metadata", "success"]
+            var next: String {
+                l.lock()
+                defer { l.unlock() }
+                if stages.isEmpty { return "success" }
+                return stages.removeFirst()
+            }
+        }
+        let plan = DeletionPlan()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, generation in
+                let snapshotURL = URL(fileURLWithPath: key)
+                let metadataURL = snapshotURL.deletingPathExtension()
+                    .appendingPathExtension("json")
+                switch plan.next {
+                case "sidecar":
+                    throw PrefixSnapshotStoreError.artifactGenerationMismatch(
+                        expected: generation, actual: UUID())
+                case "snapshot":
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: snapshotURL.path, underlyingDescription: "injected")
+                case "metadata":
+                    try FileManager.default.removeItem(at: snapshotURL)
+                    throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                        path: metadataURL.path, underlyingDescription: "injected")
+                default:
+                    if FileManager.default.fileExists(atPath: snapshotURL.path) {
+                        try FileManager.default.removeItem(at: snapshotURL)
+                    }
+                    if FileManager.default.fileExists(atPath: metadataURL.path) {
+                        try FileManager.default.removeItem(at: metadataURL)
+                    }
+                }
+            }
+        )
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 10), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        guard let failure = storeDeleteFailure(
+            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+            case .artifactGenerationMismatch = failure else {
+            return XCTFail("expected sidecar-validation failure")
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        guard let failure = storeDeleteFailure(
+            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+            case .artifactDeletionFailed(let snapshotPath, _) = failure else {
+            return XCTFail("expected snapshot-deletion failure")
+        }
+        XCTAssertEqual(snapshotPath, artifact.snapshotURL.path)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        store.physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+        guard let failure = storeDeleteFailure(
+            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+            case .artifactDeletionFailed(let metadataPath, _) = failure else {
+            return XCTFail("expected metadata-deletion failure")
+        }
+        XCTAssertEqual(metadataPath, artifact.metadataURL.path)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+
+        var finalFailures: [Error] = []
+        for _ in 0..<3 {
+            store.physicalUse.requestDelete(
+                artifact.snapshotURL.path, generation: artifact.generation)
+            finalFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+            if finalFailures.isEmpty,
+                !FileManager.default.fileExists(atPath: artifact.metadataURL.path) {
+                break
+            }
+        }
+        XCTAssertTrue(finalFailures.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertNotNil(store.physicalUse.acquire(artifact.snapshotURL.path))
+    }
+
+    func testConcurrentSamePathExportsKeepRegistryAndDiskBound() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("concurrent-export-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 11)
+        let gateA = MaterializationWorkGate()
+        let gateB = MaterializationWorkGate()
+
+        let taskA = Task {
+            try await store.export(namespace: f3ns, tokens: tokens) { url in
+                await gateA.enterWork()
+                try "A".write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+        try await gateA.waitForFirstCall()
+        let taskB = Task {
+            try await store.export(namespace: f3ns, tokens: tokens) { url in
+                await gateB.enterWork()
+                try "B".write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+        try await gateB.waitForFirstCall()
+
+        await gateB.release()
+        _ = try await taskB.get()
+        await gateA.release()
+        let finalEntry = try await taskA.get()
+        let finalArtifact = finalEntry.artifact as! DiskPrefixArtifact
+
+        let snapshotData = try Data(contentsOf: finalArtifact.snapshotURL)
+        XCTAssertEqual(String(data: snapshotData, encoding: .utf8), "A")
+        let sidecarData = try Data(contentsOf: finalArtifact.metadataURL)
+        let sidecar = try JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData)
+        XCTAssertEqual(sidecar.generation, finalArtifact.generation)
+        let lease = store.physicalUse.acquire(finalArtifact.snapshotURL.path)
+        XCTAssertEqual(lease?.generation, finalArtifact.generation)
+        store.physicalUse.release(lease!)
+    }
+
+    func testSidecarPublishFailureRestoresOldSnapshotPair() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("publish-rollback-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            }
+        )
+        let tokens = f3tokens(256, seed: 12)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        publishFault.enable()
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("sidecar publication failure must propagate")
+        } catch {}
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: oldArtifact.snapshotURL.path))
+        let sidecarData = try Data(contentsOf: oldArtifact.metadataURL)
+        let sidecar = try JSONDecoder().decode(PrefixSnapshotSidecar.self, from: sidecarData)
+        XCTAssertEqual(sidecar.generation, oldArtifact.generation)
+        XCTAssertEqual(try String(contentsOf: oldArtifact.snapshotURL, encoding: .utf8), "old")
+        let lease = store.physicalUse.acquire(oldArtifact.snapshotURL.path)
+        XCTAssertEqual(lease?.generation ?? nil, oldArtifact.generation)
+        store.physicalUse.release(lease!)
+        XCTAssertTrue(store.physicalUse.takePublicationFailures(
+            oldArtifact.snapshotURL.path).isEmpty)
     }
 
     /// Coordinator maps a rejected startup lease to a thrown result without
@@ -488,7 +696,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
 
         let entry = try await store.export(
-            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: f3writeSynthetic(to:))
+            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
         let artifact = entry.artifact as! DiskPrefixArtifact
         let artifactPath = artifact.snapshotURL.path
 
@@ -699,4 +907,11 @@ private final class MaterializationWorkCounter: @unchecked Sendable {
         count += 1
         l.unlock()
     }
+}
+
+private final class PublicationFault: @unchecked Sendable {
+    private let l = NSLock()
+    private var enabled = false
+    func enable() { l.lock(); enabled = true; l.unlock() }
+    var isEnabled: Bool { l.lock(); defer { l.unlock() }; return enabled }
 }

@@ -25,6 +25,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     private enum Generation: Hashable {
         case legacy
         case identified(UUID)
+        case invalidated
 
         init(_ value: UUID?) {
             self = value.map(Self.identified) ?? .legacy
@@ -34,6 +35,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             switch self {
             case .legacy: return nil
             case .identified(let value): return value
+            case .invalidated: return nil
             }
         }
     }
@@ -44,12 +46,22 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     private var pendingDeletes: [String: [Generation]] = [:]
     private var deleting: [String: Generation] = [:]
     private var preparing: Set<String> = []
-    private let onDelete: (String, UUID?) -> Void
+    private var deleteFailures: [String: [Error]] = [:]
+    private var publicationFailures: [String: [Error]] = [:]
+    private let publicationLock = NSLock()
+    private let onDelete: (String, UUID?) throws -> Void
+
+    /// A publication was left intentionally unusable because rollback failed.
+    public struct PublicationQuarantinedError: Error {
+        public let key: String
+        public let generation: UUID?
+        public let underlyingError: Error
+    }
 
     /// `onDelete(key, generation)` performs physical deletion for one
     /// artifact generation. Called synchronously; must not re-enter the
-    /// registry.
-    public init(onDelete: @escaping (String, UUID?) -> Void) {
+    /// registry. Failures are retained by `takeDeleteFailures(_:)`.
+    public init(onDelete: @escaping (String, UUID?) throws -> Void) {
         self.onDelete = onDelete
     }
 
@@ -59,6 +71,10 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func beginGeneration(
         _ key: String, generation: UUID?, publish: () throws -> Void
     ) rethrows {
+        // ponytail: one global publication lock; split per-path only after a
+        // measured same-path export bottleneck.
+        publicationLock.lock()
+        defer { publicationLock.unlock() }
         let generation = Generation(generation)
         let previous = currentGenerationInternal(key)
         lock.lock()
@@ -75,7 +91,12 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             try publish()
         } catch {
             lock.lock()
-            generations[key] = previous
+            if error is PublicationQuarantinedError {
+                generations[key] = .invalidated
+                publicationFailures[key, default: []].append(error)
+            } else {
+                generations[key] = previous
+            }
             lock.unlock()
             throw error
         }
@@ -88,10 +109,13 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func acquire(_ key: String) -> Lease? {
         lock.lock()
         defer { lock.unlock() }
-        guard !preparing.contains(key), activeDeleteLocked(key) == nil else { return nil }
-        let generation = (generations[key] ?? .legacy).publicValue
-        counts[LeaseKey(key: key, generation: generation), default: 0] += 1
-        return Lease(key: key, generation: generation)
+        let generation = (generations[key] ?? .legacy)
+        guard !preparing.contains(key), activeDeleteLocked(key) == nil, generation != .invalidated else {
+            return nil
+        }
+        let publicGeneration = generation.publicValue
+        counts[LeaseKey(key: key, generation: publicGeneration), default: 0] += 1
+        return Lease(key: key, generation: publicGeneration)
     }
 
     /// Release one generation-bound physical use. When no generation for the
@@ -99,7 +123,10 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     public func release(_ lease: Lease) {
         lock.lock()
         let leaseKey = LeaseKey(key: lease.key, generation: lease.generation)
-        let remaining = (counts[leaseKey] ?? 1) - 1
+        guard let remaining = counts[leaseKey].map({ $0 - 1 }) else {
+            lock.unlock()
+            return
+        }
         if remaining <= 0 {
             counts[leaseKey] = nil
             lock.unlock()
@@ -134,6 +161,28 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return counts.reduce(0) { $1.key.key == key ? $0 + $1.value : $0 }
+    }
+
+    /// Consume at-most-once deletion failures for `key`. Admission is already
+    /// restored when these are returned; the caller decides whether to retry.
+    public func takeDeleteFailures(_ key: String) -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return deleteFailures.removeValue(forKey: key) ?? []
+    }
+
+    /// True when rollback failed and the path was deliberately quarantined.
+    public func isGenerationInvalidated(_ key: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return generations[key] == .invalidated
+    }
+
+    /// Consume quarantined-publication failures for `key`.
+    public func takePublicationFailures(_ key: String) -> [Error] {
+        lock.lock()
+        defer { lock.unlock() }
+        return publicationFailures.removeValue(forKey: key) ?? []
     }
 
     private func currentGeneration(_ key: String) -> UUID? {
@@ -186,7 +235,16 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     /// execution window, and the next live generation can be selected only
     /// atomically after callback cleanup.
     private func finishDelete(_ key: String, _ generation: Generation) {
-        onDelete(key, generation.publicValue)
+        do {
+            try onDelete(key, generation.publicValue)
+        } catch {
+            lock.lock()
+            deleteFailures[key, default: []].append(error)
+            if deleting[key] == generation { deleting[key] = nil }
+            lock.unlock()
+            startNextDeleteIfIdle(key)
+            return
+        }
         lock.lock()
         if deleting[key] == generation { deleting[key] = nil }
         lock.unlock()
