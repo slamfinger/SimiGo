@@ -178,9 +178,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         // before writing, which fails with ENOENT on a missing file.
         let tempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString).safetensors")
         fileManager.createFile(atPath: tempURL.path, contents: Data())
-        var tempPublished = false
+        var newSnapshotPublished = false
         defer {
-            if !tempPublished { try? fileManager.removeItem(at: tempURL) }
+            if !newSnapshotPublished { try? fileManager.removeItem(at: tempURL) }
         }
         try await write(tempURL)
         guard fileManager.fileExists(atPath: tempURL.path) else {
@@ -213,7 +213,6 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 ".backup-\(UUID().uuidString).metadata")
             var oldSnapshotMoved = false
             var oldMetadataMoved = false
-            var newSnapshotPublished = false
 
             func quarantine(_ url: URL) throws {
                 guard fileManager.fileExists(atPath: url.path) else { return }
@@ -235,7 +234,6 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     oldMetadataMoved = true
                 }
                 try fileManager.moveItem(at: tempURL, to: snapshotURL)
-                tempPublished = true
                 newSnapshotPublished = true
                 try willPublishSidecar(metadataURL)
                 try fileManager.moveItem(at: sidecarTempURL, to: metadataURL)
