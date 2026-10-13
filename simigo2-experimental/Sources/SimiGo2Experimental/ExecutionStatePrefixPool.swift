@@ -264,24 +264,6 @@ public final class ExecutionStatePrefixPool: @unchecked Sendable {
         return true
     }
 
-    /// Remove only an entry whose artifact handle equals the supplied value.
-    /// Semantic equality is insufficient once artifacts can be replaced.
-    @discardableResult
-    public func remove<Artifact: Equatable & Sendable>(
-        _ entry: PrefixPoolEntry, artifact: Artifact
-    ) -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let index = entries.firstIndex(where: { candidate in
-            candidate == entry && (candidate.artifact as? Artifact) == artifact
-        }) else {
-            return false
-        }
-        entries.remove(at: index)
-        lastUse[entry.boundaryHash] = nil
-        return true
-    }
-
     /// Register an entry from a PRECOMPUTED content claim (restart rescan:
     /// only the chain hash survives on disk, the token array does not).
     /// P-I1 is unaffected — registration is a claim, admission still
