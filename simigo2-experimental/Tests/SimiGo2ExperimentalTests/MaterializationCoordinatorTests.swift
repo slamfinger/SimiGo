@@ -1024,6 +1024,26 @@ final class MaterializationCoordinatorTests: XCTestCase {
         )
     }
 
+    /// Unknown legacy artifact sizes must stay unknown. Reporting missing
+    /// files as zero would let the byte budget treat them as free.
+    func testLegacyArtifactByteCountIsNilWhenDiskStateUnknown() {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("legacy-byte-count-\(UUID().uuidString)")
+        let snapshotURL = root.appendingPathComponent("artifact.safetensors")
+        let metadataURL = root.appendingPathComponent("artifact.json")
+        let artifact = DiskPrefixArtifact(
+            snapshotURL: snapshotURL, metadataURL: metadataURL, generation: nil)
+
+        XCTAssertNil(artifact.physicalByteCount)
+
+        try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try? Data("snapshot".utf8).write(to: snapshotURL)
+        XCTAssertNil(artifact.physicalByteCount, "missing sidecar has unknown size")
+
+        try? Data("sidecar".utf8).write(to: metadataURL)
+        XCTAssertEqual(artifact.physicalByteCount, 15)
+    }
+
     func testDeleteRequestDuringLeaseClosesAdmissionUntilRelease() async throws {
         let key = "delete-during-lease"
         let registry = PhysicalUseRegistry(onDelete: { _, _ in })

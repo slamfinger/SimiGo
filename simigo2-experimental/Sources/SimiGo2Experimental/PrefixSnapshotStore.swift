@@ -16,20 +16,28 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable {
         private let publishedPhysicalByteCount: Int?
 
     public var physicalByteCount: Int? {
-            if let publishedPhysicalByteCount { return publishedPhysicalByteCount }
-        let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
-        let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        if let publishedPhysicalByteCount { return publishedPhysicalByteCount }
+        guard
+            let snapshotAttributes = try? FileManager.default.attributesOfItem(
+                atPath: snapshotURL.path),
+            let metadataAttributes = try? FileManager.default.attributesOfItem(
+                atPath: metadataURL.path),
+            let snapshotBytes = snapshotAttributes[.size] as? Int,
+            let metadataBytes = metadataAttributes[.size] as? Int
+        else {
+            return nil
+        }
         return snapshotBytes + metadataBytes
     }
 
-        public init(
-            snapshotURL: URL, metadataURL: URL, generation: UUID? = nil,
-            publishedPhysicalByteCount: Int? = nil
-        ) {
+    public init(
+        snapshotURL: URL, metadataURL: URL, generation: UUID? = nil,
+        publishedPhysicalByteCount: Int? = nil
+    ) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
         self.generation = generation
-            self.publishedPhysicalByteCount = publishedPhysicalByteCount
+        self.publishedPhysicalByteCount = publishedPhysicalByteCount
     }
 
     public static func == (lhs: DiskPrefixArtifact, rhs: DiskPrefixArtifact) -> Bool {
