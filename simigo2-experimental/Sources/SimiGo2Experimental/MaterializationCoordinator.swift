@@ -122,7 +122,8 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         case .exact(let scanned):
             // An unregistered path has the implicit legacy current. This also
             // lets the first rescan of a newly generated sidecar succeed.
-            guard current == scanned || (current == .legacy && scanned != .legacy)
+            guard activeDeleteLocked(key) == nil,
+                current == scanned || (current == .legacy && scanned != .legacy)
             else {
                 lock.unlock()
                 return false

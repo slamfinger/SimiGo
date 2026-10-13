@@ -478,6 +478,37 @@ final class MaterializationCoordinatorTests: XCTestCase {
         registry.release(lease!)
     }
 
+    /// A rescan must not race an executing delete for the same generation:
+    /// otherwise it can pool-register an artifact whose files are being removed.
+    func testConditionalRescanRejectsExecutingDelete() async throws {
+        let key = "rescan-during-delete"
+        let generation = UUID()
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            gate.enterDelete()
+        })
+        registry.beginGeneration(key, generation: generation) {}
+
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease)
+        XCTAssertNil(registry.requestDelete(key, generation: generation))
+
+        let releaser = Task.detached {
+            registry.release(lease!)
+        }
+        try await gate.waitForDeleteStart()
+
+        let rescan = try registry.beginGenerationIfCurrentOrUnregistered(
+            key, generation: generation, publish: {
+                XCTFail("rescan must not publish during delete execution")
+            }
+        )
+
+        XCTAssertFalse(rescan)
+        gate.finishDelete()
+        await releaser.value
+    }
+
     /// A failed delete callback cannot leave admission permanently closed.
     func testFailedDeleteCallbackRestoresAdmission() async throws {
         let key = "failed-delete"
