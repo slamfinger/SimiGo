@@ -40,7 +40,9 @@ public struct EngineSessionBaselineRecord: Codable, Equatable, Sendable {
     public var formatVersion: Int
     public var sessionUUID: UUID
     public var executionID: String
-    /// Digest over the model directory's weight files (path+size manifest).
+    /// Content digest over the model directory's weight files (streaming
+    /// full-file SHA-256 per .safetensors — binds CONTENT, not just
+    /// path+size).
     public var weightsIdentity: String
     /// Content digest over the model directory's tokenizer/config files.
     public var tokenizerIdentity: String
@@ -92,7 +94,33 @@ public enum EngineSessionBaselineReadOutcome: Equatable, Sendable {
 /// record degrades to a defined cold start — durability failure is never on
 /// the session-continuation path.
 enum DurableFileWriter {
-    static func writeDurable(_ data: Data, to finalURL: URL) throws {
+    enum Phase: String {
+        case payload, digest, pointer
+    }
+
+#if DEBUG
+    /// DEBUG-only injection: the listed phases fail their directory sync
+    /// AFTER the rename has landed, so tests can exercise every reachable
+    /// failure stage of the commit sequence deterministically.
+    nonisolated(unsafe) static var debugFailingDirectorySyncPhases: Set<String> = []
+#endif
+
+    /// Write `data` durably to `finalURL`.
+    ///
+    /// Failure semantics per reachable stage (the caller's commit outcome
+    /// MUST mirror these):
+    /// - tmp create / file sync / rename failures: the destination was
+    ///   never replaced → deterministic NOT-COMMITTED.
+    /// - directory sync failure AFTER the rename landed: the new content IS
+    ///   visible to every reader from that point. For payload/digest this
+    ///   still throws — the commit sequence aborts before the pointer, so
+    ///   recovery can never reach the orphan files (deterministic
+    ///   not-committed). For the POINTER phase the rename already published
+    ///   the commit: throwing would claim "not committed" while recovery
+    ///   honors the pointer, so the sync is re-attempted once and then
+    ///   accepted (power-loss durability remains the globally documented
+    ///   NOT VERIFIED dimension — identical for a clean sync).
+    static func writeDurable(_ data: Data, to finalURL: URL, phase: Phase) throws {
         let directory = finalURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(
             at: directory, withIntermediateDirectories: true)
@@ -122,18 +150,32 @@ enum DurableFileWriter {
                 throw OversizedEngineError.residencyDivergence(
                     "durable writer: atomic replace failed (\(reason))")
             }
-            // Sync the directory so the rename itself survives.
-            let dirFD = open(directory.path, O_RDONLY)
-            guard dirFD >= 0 else {
-                throw OversizedEngineError.residencyDivergence(
-                    "durable writer: cannot open parent directory for sync")
+            var directorySyncSucceeded = syncDirectoryOnce(directory.path)
+            if !directorySyncSucceeded {
+                directorySyncSucceeded = syncDirectoryOnce(directory.path)
             }
-            defer { close(dirFD) }
-            if fcntl(dirFD, F_FULLFSYNC) != 0 {
-                if fsync(dirFD) != 0 {
-                    let reason = String(cString: strerror(errno))
+#if DEBUG
+            let injectedFailure =
+                debugFailingDirectorySyncPhases.contains(phase.rawValue)
+#else
+            let injectedFailure = false
+#endif
+            if !directorySyncSucceeded {
+                if phase == .pointer {
+                    // Committed-with-caveat: never lie about the commit.
+                    // (One re-attempt already happened above.)
+                } else {
                     throw OversizedEngineError.residencyDivergence(
-                        "durable writer: directory sync failed (\(reason))")
+                        "durable writer: directory sync failed (\(phase.rawValue))")
+                }
+            } else if injectedFailure {
+                // The injected failure only models a sync that DID NOT
+                // succeed; honoring the real kernel result keeps the test
+                // honest: for payload/digest the injected failure throws
+                // (pre-commit), for pointer it cannot un-publish the rename.
+                if phase != .pointer {
+                    throw OversizedEngineError.residencyDivergence(
+                        "durable writer: directory sync failed (injected @\(phase.rawValue))")
                 }
             }
         } catch {
@@ -141,13 +183,26 @@ enum DurableFileWriter {
             throw error
         }
     }
+
+    private static func syncDirectoryOnce(_ path: String) -> Bool {
+        let dirFD = open(path, O_RDONLY)
+        guard dirFD >= 0 else { return false }
+        defer { close(dirFD) }
+        if fcntl(dirFD, F_FULLFSYNC) == 0 { return true }
+        return fsync(dirFD) == 0
+    }
 }
 
 /// Identity digests over the model directory. Deterministic across restarts
-/// and independent of load state: weights = sorted (path,size) manifest of
-/// .safetensors files; tokenizer = content digest of small tokenizer/config
-/// files. A missing directory yields the empty-directory digest (used by
-/// tests and model-less harness runs).
+/// and independent of load state. The model loader
+/// (PerTensorSafetensorsReader) exposes NO immutable version identity, so
+/// weights bind at CONTENT level: a streaming full-file SHA-256 per
+/// .safetensors (path+size+content digest in the manifest). Cost is
+/// O(model bytes) per baseline commit and per recovery validation — the
+/// honest default; a verified immutable loader identity could replace this
+/// but does not exist today. Tokenizer = content digest of small
+/// tokenizer/config files. A missing directory yields the empty-directory
+/// digest (tests and model-less harness runs).
 enum EngineModelIdentity {
     static func compute(modelDirectory: URL) -> (weights: String, tokenizer: String) {
         let fm = FileManager.default
@@ -165,7 +220,8 @@ enum EngineModelIdentity {
             let rel = url.path.replacingOccurrences(of: modelDirectory.path + "/", with: "")
             let name = url.lastPathComponent
             if name.hasSuffix(".safetensors") {
-                weightLines.append("\(rel):\(size)")
+                let contentDigest = fileDigest(url) ?? "unreadable"
+                weightLines.append("\(rel):\(size):\(contentDigest)")
             }
             let isTokenizerLike =
                 name.hasPrefix("tokenizer") || name == "special_tokens_map.json"
@@ -177,6 +233,20 @@ enum EngineModelIdentity {
             }
         }
         return (digest(of: weightLines.sorted()), digest(of: [String(decoding: tokenizerData, as: UTF8.self)]))
+    }
+
+    /// Streaming full-file SHA-256 (1 MiB chunks — never holds a model file
+    /// in memory).
+    private static func fileDigest(_ url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while true {
+            let chunk = handle.readData(ofLength: 1 << 20)
+            if chunk.isEmpty { break }
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     private static func digest(of lines: [String]) -> String {
@@ -234,21 +304,44 @@ public final class EngineSessionBaselineStore {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// Pre-pointer commit stages. Without the pointer these files are
+    /// UNREACHABLE by recovery — a throw here is a deterministic
+    /// not-committed. Internal: the SIGKILL harness parks the process at
+    /// exactly these stages.
+    func writeBaselinePayload(_ record: EngineSessionBaselineRecord) throws {
+        let payload = try Self.encode(record)
+        try DurableFileWriter.writeDurable(
+            payload,
+            to: sessionDirectory(record.sessionUUID)
+                .appendingPathComponent("baseline.json"),
+            phase: .payload)
+    }
+
+    func writeBaselineDigest(_ record: EngineSessionBaselineRecord) throws {
+        let digestHex = Self.sha256Hex(try Self.encode(record))
+        try DurableFileWriter.writeDurable(
+            Data(digestHex.utf8),
+            to: sessionDirectory(record.sessionUUID)
+                .appendingPathComponent("baseline.sha256"),
+            phase: .digest)
+    }
+
+    func writeBaselineFiles(_ record: EngineSessionBaselineRecord) throws {
+        try writeBaselinePayload(record)
+        try writeBaselineDigest(record)
+    }
+
     /// Durable commit: payload file (fsync) → digest file (fsync) → pointer
     /// (fsync). The pointer is the last write; a session is recoverable only
-    /// after it lands. Any throw leaves the previous durable state intact
-    /// (worst case: inert orphan files under sessions/<uuid>/).
+    /// after it lands. A throw at payload/digest leaves the pointer
+    /// untouched (deterministic not-committed, worst case inert orphan
+    /// files); a pointer post-rename directory-sync failure is ACCEPTED as
+    /// committed-with-caveat (see `DurableFileWriter.writeDurable`).
     public func commitBaseline(_ record: EngineSessionBaselineRecord) throws {
-        let payload = try Self.encode(record)
-        let digestHex = Self.sha256Hex(payload)
-        let directory = sessionDirectory(record.sessionUUID)
-        try DurableFileWriter.writeDurable(
-            payload, to: directory.appendingPathComponent("baseline.json"))
-        try DurableFileWriter.writeDurable(
-            Data(digestHex.utf8), to: directory.appendingPathComponent("baseline.sha256"))
+        try writeBaselineFiles(record)
         let pointer = Pointer(sessionUUID: record.sessionUUID, retired: false)
         let pointerData = try JSONEncoder().encode(pointer)
-        try DurableFileWriter.writeDurable(pointerData, to: pointerURL)
+        try DurableFileWriter.writeDurable(pointerData, to: pointerURL, phase: .pointer)
     }
 
     /// Durable retirement: replace the pointer with a tombstone BEFORE any
@@ -257,7 +350,7 @@ public final class EngineSessionBaselineStore {
     public func retireCurrent() throws {
         let pointer = Pointer(sessionUUID: UUID(), retired: true)
         let pointerData = try JSONEncoder().encode(pointer)
-        try DurableFileWriter.writeDurable(pointerData, to: pointerURL)
+        try DurableFileWriter.writeDurable(pointerData, to: pointerURL, phase: .pointer)
     }
 
     /// Read pointer → read payload → verify digest → verify version,
@@ -366,11 +459,46 @@ public enum EngineBaselineCrashHarness {
         killSelf()
     }
 
+    /// Park the commit MID-SEQUENCE and SIGKILL: `crash-after-payload` =
+    /// payload durable, digest and pointer never written; `crash-after-digest`
+    /// = payload+digest durable, pointer never written. In both cases the
+    /// pointer never published, so recovery must treat the incomplete
+    /// baseline as NOTHING (cold start) — verified against the real
+    /// recovery result, not the child's exit code.
+    public static func killMidCommit(
+        storeRoot: URL, modelRoot: URL, reportURL: URL, stage: String
+    ) async -> Never {
+        let store = EngineSessionBaselineStore(root: storeRoot)
+        let identity = EngineModelIdentity.compute(modelDirectory: modelRoot)
+        let record = EngineSessionBaselineRecord(
+            sessionUUID: UUID(), executionID: "S",
+            weightsIdentity: identity.weights,
+            tokenizerIdentity: identity.tokenizer,
+            position: 0, continuationNextInput: "", continuationID: "cont-0",
+            prefixTokens: [1, 2, 3])
+        do {
+            switch stage {
+            case "crash-after-payload":
+                try store.writeBaselinePayload(record)
+            case "crash-after-digest":
+                try store.writeBaselineFiles(record)
+            default:
+                fputs("unknown mid-commit stage \(stage)\n", stderr)
+                exit(2)
+            }
+        } catch {
+            fputs("harness mid-commit failed: \(error)\n", stderr)
+            exit(3)
+        }
+        let report = "{\"stage\":\"\(stage)\"}"
+        try? Data(report.utf8).write(to: reportURL)
+        killSelf()
+    }
+
     /// Simulate a torn baseline: a truncated payload file with a matching
     /// truncation-era digest sibling absent — recovery must degrade to cold
     /// start.
-    public static func writeTornBaseline(storeRoot: URL, modelRoot: URL) -> Never {
-        let uuid = UUID()
+    public static func writeTornBaseline(storeRoot: URL, modelRoot: URL) -> Never {        let uuid = UUID()
         let directory = storeRoot.appendingPathComponent("sessions", isDirectory: true)
             .appendingPathComponent(uuid.uuidString, isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

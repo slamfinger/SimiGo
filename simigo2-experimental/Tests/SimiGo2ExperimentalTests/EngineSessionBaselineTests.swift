@@ -21,6 +21,7 @@ final class EngineSessionBaselineTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        DurableFileWriter.debugFailingDirectorySyncPhases = []
         try? FileManager.default.removeItem(at: workRoot)
     }
 
@@ -46,6 +47,81 @@ final class EngineSessionBaselineTests: XCTestCase {
             continuationNextInput: "",
             continuationID: "cont-0",
             prefixTokens: [1, 2, 3])
+    }
+
+    // MARK: - Model identity binds WEIGHT CONTENT, not path+size
+
+    /// The acceptance-critical attack: same weight path, SAME file size,
+    /// different content. The content-level digest must reject the old
+    /// baseline at recovery.
+    func testWeightContentSwapSameSizeRejectedAtRecovery() async throws {
+        try makeModelIdentityFiles()
+        try Data("AAAA".utf8).write(
+            to: modelRoot.appendingPathComponent("model.safetensors"))
+        let deadEngine = makeEngine(baselineRoot: storeRoot)
+        deadEngine.debugReleaseAllOverride = {}
+        _ = try await deadEngine.debugEnsureSession(prefix: [1, 2, 3])
+        // Crash analog: abandon the engine WITHOUT a teardown — the pointer
+        // stays live and names the baseline of the OLD weights.
+        try Data("AAAB".utf8).write(  // same size, different content
+            to: modelRoot.appendingPathComponent("model.safetensors"))
+        let restarted = makeEngine(baselineRoot: storeRoot)
+        let outcome = try await restarted.recoverDurableSession()
+        guard case .coldStart(let reason) = outcome else {
+            return XCTFail("swapped weights must cold-start, got \(outcome)")
+        }
+        XCTAssertTrue(reason.contains("identity"), reason)
+    }
+
+    // MARK: - Commit-outcome semantics at every injectable failure stage
+
+    func testPayloadDirectorySyncFailureIsDeterministicallyUncommitted() throws {
+        let record = makeRecord(uuid: UUID())
+        DurableFileWriter.debugFailingDirectorySyncPhases = ["payload"]
+        XCTAssertThrowsError(try makeStore().commitBaseline(record)) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("payload"), "\(error)")
+        }
+        // Deterministic not-committed: the pointer was never written, so
+        // recovery cannot reach the orphan payload files.
+        guard case .absent = makeStore().loadCurrentValidated(
+            expectedWeightsIdentity: record.weightsIdentity,
+            expectedTokenizerIdentity: record.tokenizerIdentity)
+        else {
+            return XCTFail("expected absent")
+        }
+    }
+
+    func testDigestDirectorySyncFailureIsDeterministicallyUncommitted() throws {
+        let record = makeRecord(uuid: UUID())
+        DurableFileWriter.debugFailingDirectorySyncPhases = ["digest"]
+        XCTAssertThrowsError(try makeStore().commitBaseline(record)) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("digest"), "\(error)")
+        }
+        guard case .absent = makeStore().loadCurrentValidated(
+            expectedWeightsIdentity: record.weightsIdentity,
+            expectedTokenizerIdentity: record.tokenizerIdentity)
+        else {
+            return XCTFail("expected absent")
+        }
+    }
+
+    func testPointerDirectorySyncFailureIsStillCommitted() throws {
+        // The rename already PUBLISHED the pointer: reporting not-committed
+        // here would contradict what recovery honors. The sync failure is
+        // accepted as a committed-with-caveat (power-loss dimension stays
+        // NOT VERIFIED globally).
+        let record = makeRecord(uuid: UUID())
+        DurableFileWriter.debugFailingDirectorySyncPhases = ["pointer"]
+        XCTAssertNoThrow(try makeStore().commitBaseline(record))
+        guard case .valid(let loaded) = makeStore().loadCurrentValidated(
+            expectedWeightsIdentity: record.weightsIdentity,
+            expectedTokenizerIdentity: record.tokenizerIdentity)
+        else {
+            return XCTFail("the published pointer must validate")
+        }
+        XCTAssertEqual(loaded.sessionUUID, record.sessionUUID)
     }
 
     // MARK: - Store protocol
@@ -467,5 +543,32 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(status, 0)
         let verdict = try runVerify(store: storeRoot, model: modelRoot)
         XCTAssertEqual(verdict.outcome, "coldStart")
+    }
+
+    /// PROCESS CRASH: SIGKILL with the payload durable but the digest and
+    /// pointer never written. Recovery must treat the incomplete baseline as
+    /// NOTHING — verified against the real recovery result.
+    func testProcessKillAfterPayloadSyncColdStarts() async throws {
+        try makeModelIdentityFiles()
+        let status = try runChild(
+            stage: "crash-after-payload", store: storeRoot, model: modelRoot,
+            report: workRoot.appendingPathComponent("mid-payload-report.json"))
+        XCTAssertEqual(status, Int32(SIGKILL))
+        let verdict = try runVerify(store: storeRoot, model: modelRoot)
+        XCTAssertEqual(verdict.outcome, "coldStart")
+        XCTAssertNil(verdict.uuid)
+    }
+
+    /// PROCESS CRASH: SIGKILL with payload+digest durable but the pointer
+    /// never committed. The un-published baseline must not be recovered.
+    func testProcessKillAfterDigestSyncColdStarts() async throws {
+        try makeModelIdentityFiles()
+        let status = try runChild(
+            stage: "crash-after-digest", store: storeRoot, model: modelRoot,
+            report: workRoot.appendingPathComponent("mid-digest-report.json"))
+        XCTAssertEqual(status, Int32(SIGKILL))
+        let verdict = try runVerify(store: storeRoot, model: modelRoot)
+        XCTAssertEqual(verdict.outcome, "coldStart")
+        XCTAssertNil(verdict.uuid)
     }
 }

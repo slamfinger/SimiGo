@@ -41,6 +41,9 @@ func runStage() async -> Never {
             storeRoot: storeRoot, modelRoot: modelRoot, reportURL: reportURL)
     case "torn":
         EngineBaselineCrashHarness.writeTornBaseline(storeRoot: storeRoot, modelRoot: modelRoot)
+    case "crash-after-payload", "crash-after-digest":
+        await EngineBaselineCrashHarness.killMidCommit(
+            storeRoot: storeRoot, modelRoot: modelRoot, reportURL: reportURL, stage: stage)
     case "verify":
         await EngineBaselineCrashHarness.verifyOutcome(storeRoot: storeRoot, modelRoot: modelRoot)
     default:
