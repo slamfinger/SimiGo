@@ -112,6 +112,10 @@ private func storeDeleteFailure(_ failures: [Error]) -> PrefixSnapshotStoreError
     failures.first as? PrefixSnapshotStoreError
 }
 
+private final class URLBox: @unchecked Sendable {
+    var value: URL?
+}
+
 private func f3writeSnapshot(to url: URL) throws {
     let layer = KVCacheSimple()
     layer.update(
@@ -505,17 +509,18 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         store.physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
-        guard let failure = storeDeleteFailure(
-            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+        let firstFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(firstFailures),
             case .artifactGenerationMismatch = failure else {
             return XCTFail("expected sidecar-validation failure")
         }
+        XCTAssertEqual(firstFailures.count, 1)
         XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
 
         store.physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
-        guard let failure = storeDeleteFailure(
-            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+        let secondFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(secondFailures),
             case .artifactDeletionFailed(let snapshotPath, _) = failure else {
             return XCTFail("expected snapshot-deletion failure")
         }
@@ -524,8 +529,8 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         store.physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
-        guard let failure = storeDeleteFailure(
-            store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)),
+        let thirdFailures = store.physicalUse.takeDeleteFailures(artifact.snapshotURL.path)
+        guard let failure = storeDeleteFailure(thirdFailures),
             case .artifactDeletionFailed(let metadataPath, _) = failure else {
             return XCTFail("expected metadata-deletion failure")
         }
@@ -607,8 +612,14 @@ final class MaterializationCoordinatorTests: XCTestCase {
             }
         )
         let tokens = f3tokens(256, seed: 12)
-        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
-            try "old".write(to: url, atomically: true, encoding: .utf8)
+        let oldEntry: PrefixPoolEntry
+        do {
+            oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "old".write(to: url, atomically: true, encoding: .utf8)
+            }
+        } catch {
+            XCTFail("old export failed: \(error)")
+            throw error
         }
         publishFault.enable()
         let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
@@ -630,6 +641,122 @@ final class MaterializationCoordinatorTests: XCTestCase {
         store.physicalUse.release(lease!)
         XCTAssertTrue(store.physicalUse.takePublicationFailures(
             oldArtifact.snapshotURL.path).isEmpty)
+    }
+
+    func testRollbackFailureQuarantinesGenerationAndBlocksLaterUse() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("publish-rollback-failure-\(UUID().uuidString)")
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                // Replace the destination with a directory so sidecar publish
+                // fails after the new snapshot has moved into place.
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            },
+            willRollback: {
+                throw RollbackFault()
+            }
+        )
+        let tokens = f3tokens(256, seed: 13)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        publishFault.enable()
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let namespaceDirectory = oldArtifact.snapshotURL.deletingLastPathComponent()
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: namespaceDirectory.path)
+        }
+
+        enum ExportOutcome {
+            case success
+            case failure(Error)
+        }
+        let outcome: ExportOutcome = await withCheckedContinuation { continuation in
+            Task.detached {
+                do {
+                    _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                        try "new".write(to: url, atomically: true, encoding: .utf8)
+                    }
+                    continuation.resume(returning: .success)
+                } catch {
+
+                    continuation.resume(returning: .failure(error))
+                }
+            }
+        }
+        guard case .failure(let exportError) = outcome else {
+            XCTFail("rollback failure must propagate as publication quarantine")
+            return
+        }
+        XCTAssertNotNil(exportError)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: namespaceDirectory.path)
+
+        let key = oldArtifact.snapshotURL.path
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        let failures = store.physicalUse.takePublicationFailures(key)
+        guard failures.first is PhysicalUseRegistry.PublicationQuarantinedError else {
+            return XCTFail("expected quarantined-publication failure")
+        }
+        XCTAssertTrue(store.physicalUse.takePublicationFailures(key).isEmpty)
+        XCTAssertNil(store.physicalUse.acquire(key))
+        XCTAssertNil(store.physicalUse.acquire(key))
+
+        let entries = try FileManager.default.contentsOfDirectory(
+            at: namespaceDirectory, includingPropertiesForKeys: nil)
+        let backupSnapshot = entries.first {
+            $0.lastPathComponent.hasPrefix(".backup-") &&
+                $0.pathExtension == "safetensors"
+        }
+        let backupMetadata = entries.first {
+            $0.lastPathComponent.hasPrefix(".backup-") &&
+                $0.pathExtension == "metadata"
+        }
+        let quarantine = entries.first {
+            $0.lastPathComponent.hasPrefix(".quarantine-")
+        }
+        XCTAssertNotNil(backupSnapshot)
+        XCTAssertNotNil(backupMetadata)
+        XCTAssertNil(quarantine, "rollback must fail before quarantining either file")
+        XCTAssertEqual(
+            try String(contentsOf: backupSnapshot!, encoding: .utf8), "old")
+        let backupSidecar = try JSONDecoder().decode(
+            PrefixSnapshotSidecar.self,
+            from: Data(contentsOf: backupMetadata!))
+        XCTAssertEqual(backupSidecar.generation, oldArtifact.generation)
+
+        XCTAssertEqual(
+            try String(contentsOf: oldArtifact.snapshotURL, encoding: .utf8), "new")
+        let finalMetadataAttributes = try FileManager.default.attributesOfItem(
+            atPath: oldArtifact.metadataURL.path)
+        XCTAssertEqual(
+            finalMetadataAttributes[.type] as? FileAttributeType, .typeDirectory)
+
+        let admission = store.pool.admit(namespace: f3ns, promptTokens: tokens)
+        XCTAssertNotNil(admission)
+        do {
+            _ = try await store.load(admission!)
+            XCTFail("mixed publication state must not load as a valid artifact")
+        } catch {
+            XCTAssertTrue(
+                String(describing: error).contains("sidecar missing or undecodable"),
+                "unexpected load error: \(error)")
+        }
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        XCTAssertNil(store.physicalUse.acquire(key))
     }
 
     /// Coordinator maps a rejected startup lease to a thrown result without
@@ -908,6 +1035,8 @@ private final class MaterializationWorkCounter: @unchecked Sendable {
         l.unlock()
     }
 }
+
+private struct RollbackFault: Error {}
 
 private final class PublicationFault: @unchecked Sendable {
     private let l = NSLock()
