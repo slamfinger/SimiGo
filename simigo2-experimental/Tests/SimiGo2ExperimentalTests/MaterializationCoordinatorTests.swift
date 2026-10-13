@@ -979,6 +979,30 @@ final class MaterializationCoordinatorTests: XCTestCase {
             artifact.snapshotURL.path).isEmpty)
     }
 
+    /// Pool budget accounting must use the published artifact's byte count,
+    /// not race the I/O lock and stat a snapshot during replacement/removal.
+    func testArtifactByteCountRemainsStableAfterDiskMutation() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("artifact-bytes-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 24),
+            write: { url in
+                try Data(repeating: 97, count: 1_234).write(to: url)
+            }
+        )
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let publishedByteCount = try XCTUnwrap(artifact.physicalByteCount)
+
+        try Data("x".utf8).write(to: artifact.snapshotURL)
+        try FileManager.default.removeItem(at: artifact.metadataURL)
+
+        XCTAssertEqual(artifact.physicalByteCount, publishedByteCount)
+        XCTAssertEqual(store.pool.totalPhysicalBytes, publishedByteCount)
+    }
+
     func testDeleteRequestDuringLeaseClosesAdmissionUntilRelease() async throws {
         let key = "delete-during-lease"
         let registry = PhysicalUseRegistry(onDelete: { _, _ in })

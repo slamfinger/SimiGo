@@ -13,17 +13,23 @@ public struct DiskPrefixArtifact: PrefixArtifactHandle, Equatable {
     public let metadataURL: URL
     /// Nil only for artifacts registered by pre-generation sidecars.
     public let generation: UUID?
+        private let publishedPhysicalByteCount: Int?
 
     public var physicalByteCount: Int? {
+            if let publishedPhysicalByteCount { return publishedPhysicalByteCount }
         let snapshotBytes = (try? snapshotURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
         let metadataBytes = (try? metadataURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
         return snapshotBytes + metadataBytes
     }
 
-    public init(snapshotURL: URL, metadataURL: URL, generation: UUID? = nil) {
+        public init(
+            snapshotURL: URL, metadataURL: URL, generation: UUID? = nil,
+            publishedPhysicalByteCount: Int? = nil
+        ) {
         self.snapshotURL = snapshotURL
         self.metadataURL = metadataURL
         self.generation = generation
+            self.publishedPhysicalByteCount = publishedPhysicalByteCount
     }
 }
 
@@ -208,6 +214,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         let sidecarData = try JSONEncoder().encode(sidecar)
         let sidecarTempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString)-sidecar")
         try sidecarData.write(to: sidecarTempURL, options: .atomic)
+        let snapshotAttributes = try fileManager.attributesOfItem(atPath: tempURL.path)
+        guard let snapshotByteCount = snapshotAttributes[.size] as? Int else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "exporter byte count unavailable")
+        }
         var sidecarPublished = false
         defer {
             if !sidecarPublished { try? fileManager.removeItem(at: sidecarTempURL) }
@@ -300,7 +311,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 namespace: namespace, tokens: tokens,
                 artifact: DiskPrefixArtifact(
                     snapshotURL: snapshotURL, metadataURL: metadataURL,
-                    generation: generation))
+                    generation: generation,
+                    publishedPhysicalByteCount: snapshotByteCount + sidecarData.count))
             }
         )
 
@@ -468,7 +480,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     // The scan itself is outside the I/O lock. Revalidate while
                     // preparing blocks a newly started delete; if a delete has
                     // already completed, this sees the vanished generation.
-                    func validateStillOnDisk() throws {
+                    func validateStillOnDisk() throws -> (snapshotBytes: Int, metadataBytes: Int) {
                         artifactIOLock.lock()
                         defer { artifactIOLock.unlock() }
                         let currentData = fileManager.contents(atPath: metaURL.path)
@@ -480,8 +492,15 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                         else {
                             throw RescanArtifactChanged()
                         }
+                        let snapshotAttributes = try fileManager.attributesOfItem(
+                            atPath: snapshotURL.path)
+                        guard let snapshotBytes = snapshotAttributes[.size] as? Int else {
+                            throw PrefixSnapshotStoreError.artifactUnreadable(
+                                "rescanned artifact byte count unavailable")
+                        }
+                        return (snapshotBytes, currentData?.count ?? 0)
                     }
-                    try validateStillOnDisk()
+                    let diskByteCount = try validateStillOnDisk()
                     pool.register(
                         namespace: PrefixPoolNamespace(
                             modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
@@ -489,7 +508,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                         boundaryHash: sidecar.chainHash,
                         artifact: DiskPrefixArtifact(
                             snapshotURL: snapshotURL, metadataURL: metaURL,
-                            generation: sidecar.generation))
+                            generation: sidecar.generation,
+                            publishedPhysicalByteCount: diskByteCount.snapshotBytes + diskByteCount.metadataBytes))
                     }
                 } catch is RescanArtifactChanged {
                     continue
