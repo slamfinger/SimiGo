@@ -38,7 +38,6 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactUnreadable(String)
     case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
     case artifactDeletionFailed(path: String, underlyingDescription: String)
-    case artifactPublicationQuarantined
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
@@ -269,10 +268,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 }
                 if let rollbackError {
                     physicalUse.markGenerationQuarantined(
-                        snapshotURL.path,
+                        snapshotURL.path, generation: generation)
+                    throw PhysicalUseRegistry.PublicationQuarantinedError(
+                        key: snapshotURL.path,
                         generation: generation,
-                        error: rollbackError)
-                    throw PrefixSnapshotStoreError.artifactPublicationQuarantined
+                        underlyingError: rollbackError)
                 }
                 throw error
             }

@@ -975,6 +975,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         guard failures.first is PhysicalUseRegistry.PublicationQuarantinedError else {
             return XCTFail("expected quarantined-publication failure")
         }
+        XCTAssertEqual(failures.count, 1, "one rollback failure must produce one quarantine record")
         XCTAssertTrue(store.physicalUse.takePublicationFailures(key).isEmpty)
         XCTAssertNil(store.physicalUse.acquire(key))
         XCTAssertNil(store.physicalUse.acquire(key))

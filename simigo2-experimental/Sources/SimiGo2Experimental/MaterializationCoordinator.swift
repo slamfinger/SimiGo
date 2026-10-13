@@ -94,9 +94,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             try publish()
         } catch {
             lock.lock()
-            if generations[key] == .invalidated {
-                publicationFailures[key, default: []].append(error)
-            } else if error is PublicationQuarantinedError {
+            if generations[key] == .invalidated || error is PublicationQuarantinedError {
                 generations[key] = .invalidated
                 publicationFailures[key, default: []].append(error)
             } else {
@@ -222,14 +220,12 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         return publicationFailures.removeValue(forKey: key) ?? []
     }
 
-    func markGenerationQuarantined(
-        _ key: String, generation: UUID?, error: Error
-    ) {
+    /// Mark a generation unusable after failed publication rollback. The
+    /// caller throws a `PublicationQuarantinedError`; `beginGeneration`
+    /// records that canonical failure exactly once.
+    func markGenerationQuarantined(_ key: String, generation: UUID?) {
         lock.lock()
         generations[key] = .invalidated
-        publicationFailures[key, default: []].append(
-            PublicationQuarantinedError(
-                key: key, generation: generation, underlyingError: error))
         lock.unlock()
     }
 
