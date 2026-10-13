@@ -13,6 +13,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var counts: [String: Int] = [:]
     private var pendingDeletes: Set<String> = []
+    private var deleting: Set<String> = []
     private let onDelete: (String) -> Void
 
     /// `onDelete(key)` performs the physical deletion for one artifact
@@ -21,11 +22,16 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         self.onDelete = onDelete
     }
 
-    /// Acquire one physical use of the artifact `key`.
-    public func acquire(_ key: String) {
+    /// Admit one physical use of the artifact `key`. Admission fails while
+    /// a delete for that key has been registered and its callback has not
+    /// finished; the caller must not publish work against the old artifact.
+    @discardableResult
+    public func acquire(_ key: String) -> Bool {
         lock.lock()
+        defer { lock.unlock() }
+        guard !deleting.contains(key) else { return false }
         counts[key, default: 0] += 1
-        lock.unlock()
+        return true
     }
 
     /// Release one physical use. When the count reaches zero, any
@@ -36,8 +42,9 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         if remaining <= 0 {
             counts[key] = nil
             let owed = pendingDeletes.remove(key) != nil
+            if owed { deleting.insert(key) }
             lock.unlock()
-            if owed { onDelete(key) }
+            if owed { finishDelete(key) }
         } else {
             counts[key] = remaining
             lock.unlock()
@@ -47,17 +54,39 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     /// Eviction path (D-C2): request physical deletion. If uses are in
     /// flight the deletion is DEFERRED until the count reaches zero.
     public func requestDelete(_ key: String) {
+        var deleteNow = false
         lock.lock()
         let inFlight = (counts[key] ?? 0) > 0
-        if inFlight { pendingDeletes.insert(key) }
+        if inFlight || deleting.contains(key) {
+            pendingDeletes.insert(key)
+        } else {
+            deleting.insert(key)
+            deleteNow = true
+        }
         lock.unlock()
-        if !inFlight { onDelete(key) }
+        if deleteNow { finishDelete(key) }
     }
 
     public func physicalUseCount(_ key: String) -> Int {
         lock.lock()
         defer { lock.unlock() }
         return counts[key] ?? 0
+    }
+
+    /// `onDelete` must run outside the registry lock. `deleting` closes the
+    /// decision/execution window against new admission; cleanup after the
+    /// callback allows a later recreation of the same path.
+    private func finishDelete(_ key: String) {
+        onDelete(key)
+        lock.lock()
+        deleting.remove(key)
+        // A request received while the callback ran addresses a later
+        // incarnation of the reusable path; execute it before reopening
+        // admission.
+        let next = pendingDeletes.remove(key) != nil
+        if next { deleting.insert(key) }
+        lock.unlock()
+        if next { finishDelete(key) }
     }
 }
 
@@ -83,6 +112,7 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     /// acquired — exactly the window whose race this class closes. Must not
     /// re-enter the coordinator.
     private var startupObserver: (@Sendable (String) -> Void)?
+    private var leaseRejectionObserver: (@Sendable (String) -> Void)?
 
     public init(physicalUse: PhysicalUseRegistry) {
         self.physicalUse = physicalUse
@@ -108,7 +138,10 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
         let start = lock.withLock { () -> (existing: Task<Value, Error>?, created: Task<Value, Error>?) in
             if let existing = inFlight[key] { return (existing, nil) }
             // Startup-window fix (D-I4): acquire BEFORE publication.
-            physicalUse.acquire(key)
+            guard physicalUse.acquire(key) else {
+                leaseRejectionObserver?(key)
+                return (nil, nil)
+            }
             let physicalUse = self.physicalUse
             let created = Task<Value, Error> {
                 defer { physicalUse.release(key) }
@@ -117,6 +150,9 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
             inFlight[key] = created
             startupObserver?(key)
             return (nil, created)
+        }
+        if start.existing == nil && start.created == nil {
+            throw MaterializationCoordinatorError.physicalUseUnavailable(key)
         }
         if let task = start.existing {
             await notifyJoin(key: key)
@@ -153,8 +189,21 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
         lock.withLock { startupObserver = observer }
     }
 
+    /// Test observation boundary for a rejected startup lease. Invoked under
+    /// the coordinator lock after registry admission returns false; observers
+    /// must not re-enter either lock.
+    func setLeaseRejectionObserver(_ observer: (@Sendable (String) -> Void)?) {
+        lock.withLock { leaseRejectionObserver = observer }
+    }
+
     private func notifyJoin(key: String) async {
         let observer = lock.withLock { joinObserver }
         await observer?(key)
     }
+}
+
+public enum MaterializationCoordinatorError: Error, Equatable {
+    /// The physical-use lease was rejected because a delete for `key` was
+    /// registered and had not completed. No single-flight task was published.
+    case physicalUseUnavailable(String)
 }
