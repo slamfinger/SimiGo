@@ -79,6 +79,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private let fileManager = FileManager.default
     private let willPublishSidecar: @Sendable (URL) throws -> Void
     private let willRollback: @Sendable () throws -> Void
+    private let willCommitPoolEntry: @Sendable () -> Void
 
     internal init(
         root: URL,
@@ -86,7 +87,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         artifactIOLock: NSLock,
         deleteArtifact: @escaping (String, UUID?) throws -> Void,
         willPublishSidecar: @escaping @Sendable (URL) throws -> Void = { _ in },
-        willRollback: @escaping @Sendable () throws -> Void = { }
+        willRollback: @escaping @Sendable () throws -> Void = { },
+        willCommitPoolEntry: @escaping @Sendable () -> Void = { }
     ) {
         self.root = root
         self.pool = pool
@@ -95,6 +97,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.physicalUse = PhysicalUseRegistry(onDelete: deleteArtifact)
         self.willPublishSidecar = willPublishSidecar
         self.willRollback = willRollback
+        self.willCommitPoolEntry = willCommitPoolEntry
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
@@ -203,10 +206,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
 
         // Replace the complete snapshot/sidecar pair or restore the old pair.
+        var publishedEntry: PrefixPoolEntry?
         try physicalUse.beginGeneration(
             snapshotURL.path,
             generation: generation,
-            publish: { [artifactIOLock, fileManager] in
+            publish: { [artifactIOLock, fileManager, pool] in
             let backupSnapshotURL = dir.appendingPathComponent(
                 ".backup-\(UUID().uuidString).safetensors")
             let backupMetadataURL = dir.appendingPathComponent(
@@ -222,8 +226,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             }
 
             artifactIOLock.lock()
-            defer { artifactIOLock.unlock() }
-
+            do {
+                defer { artifactIOLock.unlock() }
             do {
                 if fileManager.fileExists(atPath: snapshotURL.path) {
                     try fileManager.moveItem(at: snapshotURL, to: backupSnapshotURL)
@@ -275,13 +279,27 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
 
             try? fileManager.removeItem(at: backupSnapshotURL)
             try? fileManager.removeItem(at: backupMetadataURL)
+            } catch {
+                throw error
+            }
+
+            // Keep pool registration inside `beginGeneration`: admission and
+            // another publication must not run between disk publication and
+            // the pool's generation switch.
+            willCommitPoolEntry()
+            publishedEntry = pool.export(
+                namespace: namespace, tokens: tokens,
+                artifact: DiskPrefixArtifact(
+                    snapshotURL: snapshotURL, metadataURL: metadataURL,
+                    generation: generation))
             }
         )
 
-        return pool.export(
-            namespace: namespace, tokens: tokens,
-            artifact: DiskPrefixArtifact(
-                snapshotURL: snapshotURL, metadataURL: metadataURL, generation: generation))
+        guard let publishedEntry else {
+            throw PrefixSnapshotStoreError.artifactUnreadable(
+                "publication returned without a committed pool entry")
+        }
+        return publishedEntry
     }
 
     // MARK: - Bind (admission → verified snapshot)

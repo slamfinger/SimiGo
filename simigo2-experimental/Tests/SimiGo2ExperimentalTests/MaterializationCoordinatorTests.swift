@@ -741,6 +741,82 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNotNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    /// Disk publication and pool generation switch are one admission epoch:
+    /// an old entry can still be admitted while the replacement is being
+    /// committed, but physical use remains closed until the pool switches.
+    func testPoolCommitStaysInsideGenerationPublication() async throws {
+        final class CommitGate: @unchecked Sendable {
+            private let lock = NSLock()
+            private let entered = DispatchSemaphore(value: 0)
+            private let leave = DispatchSemaphore(value: 0)
+            private var enabled = false
+
+            func enable() {
+                lock.lock()
+                enabled = true
+                lock.unlock()
+            }
+
+            func enterIfEnabled() {
+                lock.lock()
+                let shouldEnter = enabled
+                lock.unlock()
+                guard shouldEnter else { return }
+                entered.signal()
+                _ = leave.wait(timeout: .now() + 5)
+            }
+
+            func waitForEnter() -> Bool {
+                entered.wait(timeout: .now() + 5) == .success
+            }
+
+            func release() { leave.signal() }
+        }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pool-commit-window-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let commitGate = CommitGate()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willCommitPoolEntry: { commitGate.enterIfEnabled() }
+        )
+        let tokens = f3tokens(256, seed: 18)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+
+        commitGate.enable()
+        let replacement = Task {
+            try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+        }
+
+        guard commitGate.waitForEnter() else {
+            commitGate.release()
+            _ = try await replacement.value
+            return XCTFail("replacement never reached its pool commit window")
+        }
+
+        XCTAssertTrue(
+            store.physicalUse.isPreparingGeneration(oldArtifact.snapshotURL.path))
+        XCTAssertNil(store.physicalUse.acquire(oldArtifact.snapshotURL.path))
+        XCTAssertNotNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        commitGate.release()
+
+        let newEntry = try await replacement.value
+        let newArtifact = newEntry.artifact as! DiskPrefixArtifact
+        XCTAssertNotEqual(oldArtifact.generation, newArtifact.generation)
+        let lease = store.physicalUse.acquire(newArtifact.snapshotURL.path)
+        XCTAssertEqual(lease?.generation, newArtifact.generation)
+        store.physicalUse.release(lease!)
+    }
+
     func testConcurrentSamePathExportsKeepRegistryAndDiskBound() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("concurrent-export-\(UUID().uuidString)")
