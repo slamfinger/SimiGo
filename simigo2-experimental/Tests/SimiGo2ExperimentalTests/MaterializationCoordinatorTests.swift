@@ -741,6 +741,38 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNotNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    /// Load self-healing must also retire the failed artifact; otherwise a
+    /// restart rescan repeatedly resurrects an unreadable representation.
+    func testLoadFailureRetiresUnreadableArtifactFromRescan() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("load-retire-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 19)
+        let entry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "not-a-safetensors-payload".write(
+                to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        XCTAssertEqual(try store.rescan(), 1)
+        let admission = try XCTUnwrap(
+            store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        do {
+            _ = try await store.load(admission)
+            XCTFail("invalid snapshot must fail loudly")
+        } catch {}
+
+        XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: tokens))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertEqual(
+            try store.rescan(), 0, "a failed load must not be resurrected")
+        XCTAssertTrue(store.physicalUse.takeDeleteFailures(
+            artifact.snapshotURL.path).isEmpty)
+    }
+
     /// Disk publication and pool generation switch are one admission epoch:
     /// an old entry can still be admitted while the replacement is being
     /// committed, but physical use remains closed until the pool switches.

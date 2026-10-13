@@ -312,6 +312,16 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
     }
 
+    /// Remove a failed admission from the pool and request generation-bound
+    /// cleanup. A stale request cannot delete a replacement; an invalid
+    /// sidecar leaves the cleanup failure observable in the registry.
+    private func retireFailedArtifact(_ entry: PrefixPoolEntry) {
+        removeFromPool(entry)
+        guard let artifact = entry.artifact as? DiskPrefixArtifact else { return }
+        _ = physicalUse.requestDelete(
+            artifact.snapshotURL.path, generation: artifact.generation)
+    }
+
     /// Reconcile the admitted entry against the artifact's own claims,
     /// then load the snapshot. Any disagreement or unreadability removes
     /// the entry from the pool and throws LOUD — never a silent miss, and
@@ -325,10 +335,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
@@ -363,10 +373,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
             return snapshot
         } catch let error as PrefixSnapshotStoreError {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw error
         } catch {
-            removeFromPool(entry)
+            retireFailedArtifact(entry)
             throw PrefixSnapshotStoreError.artifactUnreadable(String(describing: error))
         }
     }
