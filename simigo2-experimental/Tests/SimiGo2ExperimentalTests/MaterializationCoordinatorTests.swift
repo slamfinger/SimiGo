@@ -1760,6 +1760,75 @@ final class MaterializationCoordinatorTests: XCTestCase {
                        "the lease is acquired exactly once, before publication")
         XCTAssertEqual(registry.physicalUseCount("ref-join"), 0)
     }
+
+    /// The startup observer must run after the lease/task are published but
+    /// before user work can start; otherwise the "startup window" depends on
+    /// scheduler luck.
+    func testStartupObserverRunsBeforeWorkStarts() async throws {
+        final class StartupPhases: @unchecked Sendable {
+            private let l = NSLock()
+            private var observerEnteredValue = false
+            private var workStartedValue = false
+            private let observerEnteredSemaphore = DispatchSemaphore(value: 0)
+            private let releaseObserverSemaphore = DispatchSemaphore(value: 0)
+
+            func markObserverEnteredAndWait() {
+                l.lock()
+                observerEnteredValue = true
+                l.unlock()
+                observerEnteredSemaphore.signal()
+                _ = releaseObserverSemaphore.wait(timeout: .now() + 5)
+            }
+
+            func markWorkStarted() {
+                l.lock()
+                workStartedValue = true
+                l.unlock()
+            }
+
+            var observerEntered: Bool {
+                l.lock(); defer { l.unlock() }
+                return observerEnteredValue
+            }
+
+            var workStarted: Bool {
+                l.lock(); defer { l.unlock() }
+                return workStartedValue
+            }
+
+            func waitForObserverEntered() -> Bool {
+                observerEnteredSemaphore.wait(timeout: .now() + 5) == .success
+            }
+
+            func releaseObserver() { releaseObserverSemaphore.signal() }
+        }
+
+        let phases = StartupPhases()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+        coordinator.setStartupObserver { _ in
+            phases.markObserverEnteredAndWait()
+        }
+
+        let materialization = Task.detached {
+            try await coordinator.materialize(key: "startup-order") {
+                phases.markWorkStarted()
+                return "done"
+            }
+        }
+
+        guard phases.waitForObserverEntered() else {
+            phases.releaseObserver()
+            _ = try? await materialization.value
+            return XCTFail("startup observer never ran")
+        }
+
+        XCTAssertFalse(phases.workStarted, "work must wait for startup publication")
+        phases.releaseObserver()
+        let value = try await materialization.value
+        XCTAssertEqual(value, "done")
+        XCTAssertTrue(phases.workStarted)
+    }
 }
 
 /// Counting observation sink for the D-I4 startup seam.
