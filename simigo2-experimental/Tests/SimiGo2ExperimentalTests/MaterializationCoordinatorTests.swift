@@ -398,24 +398,19 @@ final class MaterializationCoordinatorTests: XCTestCase {
     /// A failed delete callback cannot leave admission permanently closed.
     func testFailedDeleteCallbackRestoresAdmission() async throws {
         let key = "failed-delete"
-        let gate = DeleteExecutionGate()
         let registry = PhysicalUseRegistry(onDelete: { _, _ in
             struct DeleteFailure: Error {}
-            _ = try? { throw DeleteFailure() }()
-            gate.enterDelete()
+            throw DeleteFailure()
         })
 
-        let deletion = Task.detached {
-            registry.requestDelete(key, generation: nil)
-        }
-        try await gate.waitForDeleteStart()
-        XCTAssertNil(registry.acquire(key))
-        gate.finishDelete()
-        await deletion.value
+        let failure = registry.requestDelete(key, generation: nil)
+        XCTAssertNotNil(failure)
+        XCTAssertEqual(registry.physicalUseCount(key), 0)
 
         let lease = registry.acquire(key)
         XCTAssertNotNil(lease, "callback failure must not permanently close admission")
         registry.release(lease!)
+        XCTAssertEqual(registry.takeDeleteFailures(key).count, 1)
     }
 
     /// Store-level sidecar generation validation prevents a stale eviction
