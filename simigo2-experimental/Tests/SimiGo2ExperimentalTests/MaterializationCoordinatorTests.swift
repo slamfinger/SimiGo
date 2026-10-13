@@ -304,6 +304,43 @@ final class MaterializationCoordinatorTests: XCTestCase {
             fresh.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 4)))
     }
 
+    /// Rescan must register the disk generation before pool eviction can
+    /// request cleanup; otherwise a budget-evicted rescan artifact looks
+    /// stale and is left behind as an orphan.
+    func testRescanRegistersGenerationBeforeSelfEvictionCleanup() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rescan-self-evict-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 5)
+        let entry = try await source.export(namespace: f3ns, tokens: tokens) { url in
+            try "payload".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let deleted = DeletedGenerations()
+        let fresh = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 1),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, generation in
+                deleted.record(generation)
+                try FileManager.default.removeItem(atPath: key)
+                let metadataURL = URL(fileURLWithPath: key)
+                    .deletingPathExtension()
+                    .appendingPathExtension("json")
+                try FileManager.default.removeItem(at: metadataURL)
+            }
+        )
+
+        XCTAssertEqual(try fresh.rescan(), 1)
+
+        XCTAssertEqual(deleted.generations, [artifact.generation])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
+    }
+
     // MARK: - Delete decision/execution window
 
     /// A duplicate request for the generation already deleting must dedupe;

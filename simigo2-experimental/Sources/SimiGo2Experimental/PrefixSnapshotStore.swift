@@ -454,15 +454,18 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
-                pool.register(
-                    namespace: PrefixPoolNamespace(
-                        modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
-                    tokenCount: sidecar.tokenCount,
-                    boundaryHash: sidecar.chainHash,
-                    artifact: DiskPrefixArtifact(
-                        snapshotURL: snapshotURL, metadataURL: metaURL,
-                        generation: sidecar.generation))
-                physicalUse.beginGeneration(snapshotURL.path, generation: sidecar.generation) {}
+                // Register the generation before pool.commit: immediate
+                // self-eviction must issue a live delete, not a stale no-op.
+                physicalUse.beginGeneration(snapshotURL.path, generation: sidecar.generation) {
+                    pool.register(
+                        namespace: PrefixPoolNamespace(
+                            modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
+                        tokenCount: sidecar.tokenCount,
+                        boundaryHash: sidecar.chainHash,
+                        artifact: DiskPrefixArtifact(
+                            snapshotURL: snapshotURL, metadataURL: metaURL,
+                            generation: sidecar.generation))
+                }
                 registered += 1
             }
         }
