@@ -283,10 +283,6 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         lock.unlock()
     }
 
-    private func currentGeneration(_ key: String) -> UUID? {
-        currentGenerationInternal(key).publicValue
-    }
-
     private func currentGenerationInternal(_ key: String) -> Generation {
         lock.lock()
         defer { lock.unlock() }
