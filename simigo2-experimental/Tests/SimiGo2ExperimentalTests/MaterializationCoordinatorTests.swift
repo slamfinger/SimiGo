@@ -509,6 +509,38 @@ final class MaterializationCoordinatorTests: XCTestCase {
         await releaser.value
     }
 
+    /// A pending delete has already closed admission for its generation.
+    /// Rescan must not reintroduce that generation between lease release and
+    /// delete-callback execution.
+    func testConditionalRescanRejectsPendingDelete() async throws {
+        let key = "rescan-pending-delete"
+        let generation = UUID()
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in
+            gate.enterDelete()
+        })
+        registry.beginGeneration(key, generation: generation) {}
+        let lease = registry.acquire(key)
+        XCTAssertNotNil(lease)
+        XCTAssertNil(registry.requestDelete(key, generation: generation))
+
+        let rescan = try registry.beginGenerationIfCurrentOrUnregistered(
+            key, generation: generation, publish: {
+                XCTFail("pending delete must block rescan publication")
+            }
+        )
+
+        XCTAssertFalse(rescan)
+        XCTAssertEqual(gate.startCount, 0)
+
+        let releaser = Task.detached {
+            registry.release(lease!)
+        }
+        try await gate.waitForDeleteStart()
+        gate.finishDelete()
+        await releaser.value
+    }
+
     /// A failed delete callback cannot leave admission permanently closed.
     func testFailedDeleteCallbackRestoresAdmission() async throws {
         let key = "failed-delete"

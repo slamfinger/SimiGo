@@ -123,6 +123,7 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
             // An unregistered path has the implicit legacy current. This also
             // lets the first rescan of a newly generated sidecar succeed.
             guard activeDeleteLocked(key) == nil,
+                !hasPendingDeleteLocked(key, generation: current),
                 current == scanned || (current == .legacy && scanned != .legacy)
             else {
                 lock.unlock()
