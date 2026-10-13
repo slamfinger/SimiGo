@@ -142,12 +142,15 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
     /// Request deletion of the current generation. A stale-generation request
     /// is dropped; live-generation requests dedupe and execute only after all
     /// leases and any prior delete have finished.
-    public func requestDelete(_ key: String, generation: UUID?) {
+    /// Immediate failures are retained for `takeDeleteFailures(_:)` and also
+    /// returned to callers that can surface them directly.
+    @discardableResult
+    public func requestDelete(_ key: String, generation: UUID?) -> Error? {
         let generation = Generation(generation)
         lock.lock()
         guard generation == (generations[key] ?? .legacy) else {
             lock.unlock()
-            return
+            return nil
         }
         var queue = pendingDeletes[key] ?? []
         if activeDeleteLocked(key) != generation, !queue.contains(generation) {
@@ -156,7 +159,22 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
         pendingDeletes[key] = queue
         let started = startNextDeleteIfIdleLocked(key)
         lock.unlock()
-        if let generation = started { finishDelete(key, generation) }
+        guard let generation = started else { return nil }
+        do {
+            try onDelete(key, generation.publicValue)
+        } catch {
+            lock.lock()
+            deleteFailures[key, default: []].append(error)
+            if deleting[key] == generation { deleting[key] = nil }
+            lock.unlock()
+            startNextDeleteIfIdle(key)
+            return error
+        }
+        lock.lock()
+        if deleting[key] == generation { deleting[key] = nil }
+        lock.unlock()
+        startNextDeleteIfIdle(key)
+        return nil
     }
 
     public func physicalUseCount(_ key: String) -> Int {
