@@ -281,6 +281,111 @@ final class MaterializationCoordinatorTests: XCTestCase {
             fresh.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 4)))
     }
 
+    // MARK: - Delete decision/execution window
+
+    /// A new lease must be rejected while an already-approved delete callback
+    /// is running, then admitted again after registry cleanup so a recreated
+    /// path can be used.
+    func testDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
+        let key = "delete-execution"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _ in
+            gate.enterDelete()
+        })
+
+        let deletion = Task.detached {
+            registry.requestDelete(key)
+        }
+        try await gate.waitForDeleteStart()
+        XCTAssertFalse(registry.acquire(key), "no lease may be admitted during delete execution")
+
+        // A delete requested while execution is in progress addresses a later
+        // incarnation of the path. It must survive until the current callback
+        // atomically hands off, then run before admission reopens.
+        registry.requestDelete(key)
+        gate.finishDelete()
+        try await gate.waitForDeleteStart(minimumStartCount: 2)
+        gate.finishDelete()
+        await deletion.value
+        XCTAssertTrue(
+            registry.acquire(key),
+            "cleanup must admit a later recreation of the same path")
+        registry.release(key)
+    }
+
+    /// The pending-to-executing transition must use the same deletion state:
+    /// the release of the final lease closes admission before `onDelete`
+    /// starts, and cleanup reopens it afterward.
+    func testDeferredDeleteExecutionRejectsLeaseUntilCallbackCompletes() async throws {
+        let key = "deferred-delete-execution"
+        let gate = DeleteExecutionGate()
+        let registry = PhysicalUseRegistry(onDelete: { _ in
+            gate.enterDelete()
+        })
+
+        registry.acquire(key)
+        registry.requestDelete(key)
+        let releaser = Task.detached {
+            registry.release(key)
+        }
+
+        try await gate.waitForDeleteStart()
+        XCTAssertFalse(registry.acquire(key), "pending deletion must close admission on execution")
+
+        gate.finishDelete()
+        await releaser.value
+        XCTAssertTrue(registry.acquire(key), "cleanup must reopen admission for path reuse")
+        registry.release(key)
+    }
+
+    /// Coordinator maps a rejected startup lease to a thrown result without
+    /// publishing or starting a work task.
+    func testMaterializeRejectsWorkDuringDeleteExecution() async throws {
+        let key = "materialize-vs-delete"
+        let gate = DeleteExecutionGate()
+        let workCounter = MaterializationWorkCounter()
+        let registry = PhysicalUseRegistry(onDelete: { _ in
+            gate.enterDelete()
+        })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+        coordinator.setLeaseRejectionObserver { key in
+            gate.rejectAdmission()
+        }
+
+        let deletion = Task.detached {
+            registry.requestDelete(key)
+        }
+        try await gate.waitForDeleteStart()
+
+        let denied = Task.detached {
+            try await coordinator.materialize(key: key) {
+                workCounter.record()
+                return "stale"
+            }
+        }
+        try await gate.waitForRejection()
+        XCTAssertFalse(registry.acquire(key))
+
+        gate.finishDelete()
+        await deletion.value
+        do {
+            _ = try await denied.value
+            XCTFail("materialization must be rejected while delete is executing")
+        } catch let error as MaterializationCoordinatorError {
+            XCTAssertEqual(error, .physicalUseUnavailable(key))
+        }
+        XCTAssertEqual(workCounter.count, 0, "rejected startup must not run work")
+        XCTAssertFalse(coordinator.isInFlight(key), "rejected startup must not publish work")
+
+        let value = try await coordinator.materialize(key: key) {
+            workCounter.record()
+            return "fresh"
+        }
+        XCTAssertEqual(value, "fresh")
+        XCTAssertEqual(workCounter.count, 1)
+        XCTAssertEqual(registry.physicalUseCount(key), 0)
+    }
+
     // MARK: - D-I4 startup window (lease acquired before task publication)
 
     /// Deterministic startup-window regression: the physical-use lease is
@@ -417,4 +522,75 @@ final class ObservationCounter: @unchecked Sendable {
     private var values: [Int] = []
     func observe(count: Int) { l.lock(); values.append(count); l.unlock() }
     var maxCountAtObservation: Int { l.lock(); defer { l.unlock() }; return values.max() ?? -1 }
+}
+
+/// Deterministic boundary around the registry's out-of-lock delete callback.
+private final class DeleteExecutionGate: @unchecked Sendable {
+    private let l = NSLock()
+    private var startCount = 0
+    private var rejected = false
+    private let finish = DispatchSemaphore(value: 0)
+
+    func enterDelete() {
+        l.lock()
+        startCount += 1
+        l.unlock()
+        finish.wait()
+    }
+
+    func waitForDeleteStart(
+        minimumStartCount: Int = 1,
+        timeoutNanoseconds: UInt64 = 5_000_000_000
+    ) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while startCount < minimumStartCount {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    func finishDelete() {
+        finish.signal()
+    }
+
+    func rejectAdmission() {
+        l.lock()
+        rejected = true
+        l.unlock()
+    }
+
+    func waitForRejection(timeoutNanoseconds: UInt64 = 5_000_000_000) async throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+        while !isRejected {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw MaterializationProbeError.timedOutWaitingForFirstWorkCall
+            }
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+    }
+
+    private var isRejected: Bool {
+        l.lock()
+        defer { l.unlock() }
+        return rejected
+    }
+
+    private var currentStartCount: Int {
+        l.lock()
+        defer { l.unlock() }
+        return startCount
+    }
+}
+
+private final class MaterializationWorkCounter: @unchecked Sendable {
+    private let l = NSLock()
+    private(set) var count = 0
+
+    func record() {
+        l.lock()
+        count += 1
+        l.unlock()
+    }
 }
