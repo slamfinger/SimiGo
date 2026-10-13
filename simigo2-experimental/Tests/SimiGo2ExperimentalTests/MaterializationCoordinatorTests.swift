@@ -341,6 +341,66 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    /// Rescan scans outside the artifact I/O lock, so a deletion can finish
+    /// after the sidecar is read. The publication must revalidate the exact
+    /// generation under that lock before registering a pool entry.
+    func testRescanSkipsArtifactDeletedAfterScan() async throws {
+        final class ScanGate: @unchecked Sendable {
+            private let entered = DispatchSemaphore(value: 0)
+            private let leave = DispatchSemaphore(value: 0)
+
+            func enter() {
+                entered.signal()
+                _ = leave.wait(timeout: .now() + 5)
+            }
+
+            func waitForEnter() -> Bool {
+                entered.wait(timeout: .now() + 5) == .success
+            }
+
+            func release() { leave.signal() }
+        }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rescan-vanished-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 6)
+        let entry = try await source.export(namespace: f3ns, tokens: tokens) { url in
+            try "payload".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        let gate = ScanGate()
+        let fresh = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willBeginRescanGeneration: { gate.enter() }
+        )
+        // Make the scanned generation current without pool-registering it, so
+        // the deterministic hook pauses exactly before conditional publication.
+        fresh.physicalUse.beginGeneration(
+            artifact.snapshotURL.path, generation: artifact.generation) {}
+
+        let rescan = Task.detached { try fresh.rescan() }
+        guard gate.waitForEnter() else {
+            gate.release()
+            _ = try await rescan.value
+            return XCTFail("rescan never reached conditional publication")
+        }
+
+        try FileManager.default.removeItem(at: artifact.snapshotURL)
+        try FileManager.default.removeItem(at: artifact.metadataURL)
+        gate.release()
+
+        let registeredCount = try await rescan.value
+        XCTAssertEqual(registeredCount, 0)
+        XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
+    }
+
     // MARK: - Delete decision/execution window
 
     /// A duplicate request for the generation already deleting must dedupe;

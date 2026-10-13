@@ -51,6 +51,8 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
     var generation: UUID? = nil
 }
 
+private struct RescanArtifactChanged: Error {}
+
 /// B-2 — the KV artifact adapter: disk-backed store wiring the prefix
 /// pool to `ChatSession.saveCache` / `loadPromptCacheSnapshot`. Zero model
 /// dependencies for its own logic; the session-side exporter is injected
@@ -80,6 +82,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private let willPublishSidecar: @Sendable (URL) throws -> Void
     private let willRollback: @Sendable () throws -> Void
     private let willCommitPoolEntry: @Sendable () -> Void
+    private let willBeginRescanGeneration: @Sendable () throws -> Void
 
     internal init(
         root: URL,
@@ -88,7 +91,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         deleteArtifact: @escaping (String, UUID?) throws -> Void,
         willPublishSidecar: @escaping @Sendable (URL) throws -> Void = { _ in },
         willRollback: @escaping @Sendable () throws -> Void = { },
-        willCommitPoolEntry: @escaping @Sendable () -> Void = { }
+        willCommitPoolEntry: @escaping @Sendable () -> Void = { },
+        willBeginRescanGeneration: @escaping @Sendable () throws -> Void = { }
     ) {
         self.root = root
         self.pool = pool
@@ -98,6 +102,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.willPublishSidecar = willPublishSidecar
         self.willRollback = willRollback
         self.willCommitPoolEntry = willCommitPoolEntry
+        self.willBeginRescanGeneration = willBeginRescanGeneration
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
@@ -454,11 +459,31 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
+                try willBeginRescanGeneration()
                 // Register the generation before pool.commit: immediate
                 // self-eviction must issue a live delete, not a stale no-op.
-                let registeredThisScan = try physicalUse.beginGenerationIfCurrentOrUnregistered(
-                    snapshotURL.path, generation: sidecar.generation
-                ) {
+                let registeredThisScan: Bool
+                do {
+                    registeredThisScan = try physicalUse.beginGenerationIfCurrentOrUnregistered(
+                        snapshotURL.path, generation: sidecar.generation
+                    ) {
+                    // The scan itself is outside the I/O lock. Revalidate while
+                    // preparing blocks a newly started delete; if a delete has
+                    // already completed, this sees the vanished generation.
+                    func validateStillOnDisk() throws {
+                        artifactIOLock.lock()
+                        defer { artifactIOLock.unlock() }
+                        let currentData = fileManager.contents(atPath: metaURL.path)
+                        let currentSidecar = currentData.flatMap {
+                            try? JSONDecoder().decode(PrefixSnapshotSidecar.self, from: $0)
+                        }
+                        guard currentSidecar == sidecar,
+                            fileManager.fileExists(atPath: snapshotURL.path)
+                        else {
+                            throw RescanArtifactChanged()
+                        }
+                    }
+                    try validateStillOnDisk()
                     pool.register(
                         namespace: PrefixPoolNamespace(
                             modelID: sidecar.modelID, kvFingerprint: sidecar.kvFingerprint),
@@ -467,6 +492,9 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                         artifact: DiskPrefixArtifact(
                             snapshotURL: snapshotURL, metadataURL: metaURL,
                             generation: sidecar.generation))
+                    }
+                } catch is RescanArtifactChanged {
+                    continue
                 }
                 guard registeredThisScan else { continue }
                 registered += 1
