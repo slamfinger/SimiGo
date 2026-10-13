@@ -77,6 +77,12 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     private var inFlight: [String: Task<Value, Error>] = [:]
     private let physicalUse: PhysicalUseRegistry
     private var joinObserver: (@Sendable (String) async -> Void)?
+    /// Test/observability seam (D-I4 startup-window regression): invoked
+    /// synchronously under the coordinator lock immediately AFTER the
+    /// single-flight task is published and its physical-use lease is
+    /// acquired — exactly the window whose race this class closes. Must not
+    /// re-enter the coordinator.
+    private var startupObserver: (@Sendable (String) -> Void)?
 
     public init(physicalUse: PhysicalUseRegistry) {
         self.physicalUse = physicalUse
@@ -86,18 +92,30 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     /// same key share one work task (one underlying load). The work runs
     /// under a transient physical-use protection acquired and released
     /// by the coordinator — NOT by callers.
+    ///
+    /// D-I4 startup-window fix: the lease is acquired SYNCHRONOUSLY under
+    /// the same lock that publishes the single-flight task. Once
+    /// `inFlight[key]` is visible to any caller, the physical-use count is
+    /// already ≥ 1 — an eviction-side `requestDelete(key)` in the former
+    /// window (registered but not yet protected) now DEFERS instead of
+    /// racing the work's startup. Lock order is always
+    /// coordinator.lock → registry.lock; the registry never calls back into
+    /// the coordinator (its `onDelete` sink runs after its own unlock), so
+    /// no lock cycle exists.
     public func materialize(
         key: String, work: @escaping @Sendable () async throws -> Value
     ) async throws -> Value {
         let start = lock.withLock { () -> (existing: Task<Value, Error>?, created: Task<Value, Error>?) in
             if let existing = inFlight[key] { return (existing, nil) }
+            // Startup-window fix (D-I4): acquire BEFORE publication.
+            physicalUse.acquire(key)
             let physicalUse = self.physicalUse
             let created = Task<Value, Error> {
-                physicalUse.acquire(key)
                 defer { physicalUse.release(key) }
                 return try await work()
             }
             inFlight[key] = created
+            startupObserver?(key)
             return (nil, created)
         }
         if let task = start.existing {
@@ -123,6 +141,16 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     /// is emitted after the lock is released and never inside critical state.
     func setJoinObserver(_ observer: (@Sendable (String) async -> Void)?) {
         lock.withLock { joinObserver = observer }
+    }
+
+    /// Test observation boundary for the D-I4 startup window: invoked
+    /// synchronously under the coordinator lock right after the lease is
+    /// acquired and the task published. Observers see the protected window
+    /// deterministically (use count ≥ 1, work not yet started) and may call
+    /// `PhysicalUseRegistry.requestDelete` to pin the deferred-delete
+    /// interleaving. Must not re-enter the coordinator.
+    func setStartupObserver(_ observer: (@Sendable (String) -> Void)?) {
+        lock.withLock { startupObserver = observer }
     }
 
     private func notifyJoin(key: String) async {
