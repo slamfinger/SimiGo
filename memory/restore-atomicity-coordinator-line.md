@@ -46,7 +46,13 @@
 6. **Materialization startup-window repair**
    - `af44199f` acquired the physical-use lease before single-flight publication.
    - This closes the startup race identified for the materialization path.
-   - Current status: implementation complete, PENDING ACCEPTANCE.
+   - Human ruling: ACCEPTED / CLOSED as a local engineering task.
+   - Task-level conclusion: the startup-lease race repair is complete and the specified
+     stability tests passed.
+   - Evidence basis is the supplied implementation and verification record; the ruling was not
+     represented as an independent checkout or test rerun in the current environment.
+   - This ruling does not certify overall Materialization-system concurrency correctness and is
+     not an ES-IS research conclusion.
 
 ## Branch and Commit State
 
@@ -55,7 +61,7 @@
   - `97e2c1f4` — DCC-2 implementation, accepted and frozen.
   - `7c7e7a47` — DCC-3 platform-semantics archive, accepted.
 - `codex/materialization-lease-startup-fix`
-  - `af44199f` — materialization startup-window repair, pending acceptance.
+  - `af44199f` — materialization startup-window repair, accepted and closed locally.
 - These are local commits only. Pushing or merging either line requires separate authorization.
 
 ## Acceptance Freeze
@@ -66,7 +72,7 @@
 | DCC-2 | ACCEPTED / FROZEN |
 | DCC-2b | NOT INITIATED |
 | DCC-3 | ACCEPTED / ARCHIVED |
-| Materialization startup repair | PENDING ACCEPTANCE |
+| Materialization startup repair | ACCEPTED / CLOSED (LOCAL ENGINEERING TASK) |
 
 ## Permanent Capability Boundary
 
@@ -84,6 +90,8 @@
 
 - Full suite: 282 passed / 3 skipped / 0 failed.
 - Directed regression: 20/20.
+- Materialization repair stability check: three consecutive full clean runs at 282 passed /
+  3 skipped / 0 failed.
 - DCC-2 suite: 18/18.
 - DCC-1 contract adaptation: all 24 checks passed.
 - The ActualMLX PID timing transient remains a registered stable observation, not a repaired or
@@ -93,10 +101,11 @@
 
 ## Next-Agent Entry Points
 
-1. Independently review and adjudicate the materialization startup repair.
-2. Separately decide whether to push or merge either handoff branch.
-3. Do not infer authorization for acceptance, push, merge, capability upgrading, or closure from
-   this memory record.
+1. Treat `af44199f` as the current baseline for the materialization startup repair.
+2. Do not reopen frozen DCC work as part of follow-on changes.
+3. Separately decide whether to push or merge either handoff branch.
+4. Treat any newly discovered concurrency gap as a separate project only when supported by a
+   concrete code path and reproducible evidence.
 
 ## Continuity Rule
 
@@ -104,3 +113,4 @@
 - Read it together with root `MEMORY.md`.
 - Preserve branch provenance, commit boundaries, test baselines, and qualification language when
   continuing work.
+- Do not extend the closed startup-lease task to certify system-wide concurrency correctness.
