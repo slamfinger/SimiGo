@@ -145,6 +145,22 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private var stateBackend: OversizedSegmentedStateBackend?
     private var currentState: ExecutionStateHandle?
 
+    /// DCC-1 durable session baseline root. `nil` disables baseline
+    /// persistence entirely (the session then has no durable recovery
+    /// capability). See `EngineSessionBaselineRecord` for the record
+    /// contract and `docs/02-evidence/restore-atomicity-dcc-20261013` for
+    /// the design.
+    private let sessionBaselineDirectory: URL?
+    /// Durable-recovery capability of the LIVE session. `.absent` MUST be
+    /// reported whenever the baseline did not commit — a session without a
+    /// committed baseline is never durably recoverable.
+    public private(set) var durableBaselineState: EngineDurableBaselineState = .absent
+    #if DEBUG
+    /// Test-support: replaces the segment-release effect during teardown for
+    /// model-less engine tests (the real release requires a loaded model).
+    var debugReleaseAllOverride: (@Sendable () throws -> Void)?
+    #endif
+
     public private(set) var sessionInfo: OversizedSessionInfo?
     /// Token Ledger: append-only confirmed token-prefix facts per session.
     /// Closed (retained) when newSession discards the Execution State.
@@ -188,12 +204,14 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         modelDirectory: URL,
         unitLayers: Int = OversizedSegmentedEngine.defaultUnitLayers,
         peakCapacityMiB: Int64 = OversizedSegmentedEngine.defaultPeakCapacityMiB,
-        floorBudgetMiB: Int64? = 4096
+        floorBudgetMiB: Int64? = 4096,
+        sessionBaselineDirectory: URL? = nil
     ) {
         self.modelDirectory = modelDirectory
         self.unitLayers = unitLayers
         self.peakCapacityMiB = peakCapacityMiB
         self.floorBudgetMiB = floorBudgetMiB ?? peakCapacityMiB
+        self.sessionBaselineDirectory = sessionBaselineDirectory
     }
 
     #if DEBUG
@@ -913,12 +931,25 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
     // MARK: - Execution State session
 
-    private func ensureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
+    /// Single live-session guard + fresh Coordinator/Backend/Ledger triple.
+    /// Used by `ensureSession` (position 0 bootstrap) and by the DCC-1
+    /// recovery path (baseline position bootstrap).
+    private func bootstrapSession(
+        prefix: [Int],
+        position: ExecutionPosition,
+        continuation: ExecutionContinuation
+    ) async throws -> ExecutionStateHandle {
         guard coordinator == nil, stateBackend == nil, currentState == nil else {
             throw OversizedEngineError.notLoaded
         }
         let backend = OversizedSegmentedStateBackend(releaseAll: { [weak self] in
             guard let self else { return }
+            #if DEBUG
+            if let override = self.debugReleaseAllOverride {
+                try override()
+                return
+            }
+            #endif
             try self.releaseAllSegments()
         })
         tokenLedger = OversizedTokenLedger { [weak backend] executionID, position in
@@ -930,8 +961,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         let coordinator = ExecutionContinuityCoordinator(backend: backend)
         let state = try await coordinator.create(
             id: ExecutionID("S"),
-            position: ExecutionPosition(0),
-            continuation: ExecutionContinuation(nextInput: "", continuationID: "S-cont-0")
+            position: position,
+            continuation: continuation
         )
         backend.bind(executionID: state.id, position: state.position, prefix: prefix)
         try await coordinator.bindRepresentation(
@@ -942,6 +973,42 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         self.coordinator = coordinator
         currentState = state
         return state
+    }
+
+    private func ensureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
+        let state = try await bootstrapSession(
+            prefix: prefix,
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "S-cont-0")
+        )
+        commitDurableBaseline(for: state, prefix: prefix)
+        return state
+    }
+
+    /// DCC-1: persist the session baseline AFTER the in-memory bootstrap.
+    /// A failed commit downgrades the session to `.absent` — it continues to
+    /// run but is NEVER reported as durably recoverable. Failure artifacts
+    /// (orphan session files without a pointer) are inert by construction.
+    private func commitDurableBaseline(for state: ExecutionStateHandle, prefix: [Int]) {
+        durableBaselineState = .absent
+        guard let sessionBaselineDirectory else { return }
+        let identity = EngineModelIdentity.compute(modelDirectory: modelDirectory)
+        let record = EngineSessionBaselineRecord(
+            sessionUUID: UUID(),
+            executionID: state.id.rawValue,
+            weightsIdentity: identity.weights,
+            tokenizerIdentity: identity.tokenizer,
+            position: state.position.value,
+            continuationNextInput: state.continuation.nextInput,
+            continuationID: state.continuation.continuationID,
+            prefixTokens: prefix)
+        do {
+            try EngineSessionBaselineStore(root: sessionBaselineDirectory)
+                .commitBaseline(record)
+            durableBaselineState = .committed(sessionUUID: record.sessionUUID)
+        } catch {
+            durableBaselineState = .absent
+        }
     }
 
     /// New session: discard the current Execution State (lifecycle record)
@@ -962,6 +1029,20 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
             coordinator.hasUncertainBinding(state.id) {
             throw OversizedEngineError.backendBindingUncertain(executionID: state.id)
         }
+        // DCC-1: retire the durable baseline BEFORE any teardown proceeds —
+        // a crash must never present a discarded session as the recoverable
+        // one. A failed retirement fails the whole newSession with the live
+        // session untouched and retryable (nothing has been torn down yet).
+        if sessionBaselineDirectory != nil {
+            do {
+                try EngineSessionBaselineStore(root: sessionBaselineDirectory!)
+                    .retireCurrent()
+            } catch {
+                throw OversizedEngineError.residencyDivergence(
+                    "durable baseline retirement failed: \(error)")
+            }
+        }
+        durableBaselineState = .absent
         if let residency {
             _ = try await residency.respondToMemoryPressure(targetBytes: 0, cModelBytes: 0)
         }
@@ -972,6 +1053,56 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         stateBackend = nil
         currentState = nil
         sessionInfo = nil
+    }
+
+    /// DCC-1 explicit recovery entry point: validate the durable baseline
+    /// (checksum, format version, session generation, model and tokenizer
+    /// identity) and rebuild the session AT THE BASELINE — the most recent
+    /// durable starting point, never the pre-crash live position. Restores
+    /// and turns after the baseline are NOT recovered: this is the documented
+    /// data-loss semantics of Tier 1. Every validation failure takes the
+    /// defined cold-start path; mismatched or corrupt records are never
+    /// loaded.
+    @discardableResult
+    public func recoverDurableSession() async throws -> EngineSessionRecoveryOutcome {
+        await lifecycleSerialLock.lock()
+        defer { lifecycleSerialLock.unlock() }
+        guard coordinator == nil, stateBackend == nil, currentState == nil else {
+            throw OversizedEngineError.notLoaded
+        }
+        guard let sessionBaselineDirectory else {
+            return .coldStart(reason: "baseline persistence not configured")
+        }
+        let identity = EngineModelIdentity.compute(modelDirectory: modelDirectory)
+        let store = EngineSessionBaselineStore(root: sessionBaselineDirectory)
+        switch store.loadCurrentValidated(
+            expectedWeightsIdentity: identity.weights,
+            expectedTokenizerIdentity: identity.tokenizer) {
+        case .absent(let reason):
+            return .coldStart(reason: reason)
+        case .invalid(let reason):
+            return .coldStart(reason: reason)
+        case .valid(let record):
+            let state = try await bootstrapSession(
+                prefix: record.prefixTokens,
+                position: ExecutionPosition(record.position),
+                continuation: ExecutionContinuation(
+                    nextInput: record.continuationNextInput,
+                    continuationID: record.continuationID)
+            )
+            durableBaselineState = .committed(sessionUUID: record.sessionUUID)
+            try tokenLedger?.append(OversizedTokenLedgerEntry(
+                executionID: state.id,
+                position: Int(record.position),
+                kind: .bootstrap,
+                prefixLength: record.prefixTokens.count))
+            sessionInfo = OversizedSessionInfo(
+                executionID: state.id.rawValue,
+                position: Int(record.position),
+                turns: Int(record.position),
+                records: coordinator?.recordCount ?? 0)
+            return .recovered(sessionUUID: record.sessionUUID, position: state.position)
+        }
     }
 
     /// Logical restore to an earlier turn position (the coordinator re-binds
