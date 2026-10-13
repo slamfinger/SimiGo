@@ -364,7 +364,10 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             removeFromPool(entry)
             return
         }
-        guard pool.remove(entry, artifact: artifact) else { return }
+        // A prior failed remove has already detached the entry. Reissuing the
+        // generation-bound request makes retry observable; a replacement makes
+        // a stale retry harmless.
+        pool.remove(entry, artifact: artifact)
         if let failure = physicalUse.requestDelete(
             artifact.snapshotURL.path, generation: artifact.generation)
         {

@@ -800,6 +800,57 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(store.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 14)))
     }
 
+    /// A failed explicit remove leaves the artifact behind for retry. The
+    /// pool entry is already gone, so retry must not silently skip deletion.
+    func testRemoveRetryAfterFailureDeletesArtifact() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("remove-retry-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let shouldFail = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { key, _ in
+                guard shouldFail.isEnabled else {
+                    try FileManager.default.removeItem(atPath: key)
+                    let metadataURL = URL(fileURLWithPath: key)
+                        .deletingPathExtension()
+                        .appendingPathExtension("json")
+                    try FileManager.default.removeItem(at: metadataURL)
+                    return
+                }
+                throw PrefixSnapshotStoreError.artifactDeletionFailed(
+                    path: key,
+                    underlyingDescription: "injected remove failure")
+            }
+        )
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(256, seed: 22),
+            write: { try "payload".write(to: $0, atomically: true, encoding: .utf8) })
+        let artifact = entry.artifact as! DiskPrefixArtifact
+
+        shouldFail.enable()
+        do {
+            try store.remove(entry)
+            XCTFail("first remove must surface the injected failure")
+        } catch {}
+
+        XCTAssertEqual(store.physicalUse.takeDeleteFailures(
+            artifact.snapshotURL.path).count, 1)
+        XCTAssertNil(store.pool.admit(
+            namespace: f3ns, promptTokens: f3tokens(256, seed: 22)))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+
+        shouldFail.disable()
+        try store.remove(entry)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifact.metadataURL.path))
+        XCTAssertTrue(store.physicalUse.takeDeleteFailures(
+            artifact.snapshotURL.path).isEmpty)
+    }
+
     func testRemoveDoesNotSurfaceStaleDeleteFailure() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("remove-stale-failure-\(UUID().uuidString)")
@@ -1661,5 +1712,6 @@ private final class PublicationFault: @unchecked Sendable {
     private let l = NSLock()
     private var enabled = false
     func enable() { l.lock(); enabled = true; l.unlock() }
+    func disable() { l.lock(); enabled = false; l.unlock() }
     var isEnabled: Bool { l.lock(); defer { l.unlock() }; return enabled }
 }
