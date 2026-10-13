@@ -280,4 +280,141 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(
             fresh.pool.admit(namespace: f3ns, promptTokens: f3tokens(256, seed: 4)))
     }
+
+    // MARK: - D-I4 startup window (lease acquired before task publication)
+
+    /// Deterministic startup-window regression: the physical-use lease is
+    /// held (count == 1) at the moment the single-flight task is published —
+    /// BEFORE any work runs — so an eviction-side requestDelete in that
+    /// window is DEFERRED, the artifact survives, and the deferred deletion
+    /// fires only after the work releases the lease.
+    func testStartupWindowLeaseHeldBeforeWorkStartsAndDeferredDeleteHonored() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("f3-di4-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pool = ExecutionStatePrefixPool(tokenBudget: 600)
+        let store = PrefixSnapshotStore(root: root, pool: pool)
+        let coordinator = MaterializationCoordinator<String>(physicalUse: store.physicalUse)
+
+        let entry = try await store.export(
+            namespace: f3ns, tokens: f3tokens(512, seed: 1), write: f3writeSynthetic(to:))
+        let artifactPath = (entry.artifact as! DiskPrefixArtifact).snapshotURL.path
+
+        final class StartupObservation: @unchecked Sendable {
+            private let l = NSLock()
+            private(set) var observed = false
+            private(set) var countAtObservation: Int = -1
+            private(set) var artifactExisted = false
+            private(set) var deferredRequested = false
+            func observe(count: Int, artifactExisted: Bool, requestDeferredDelete: () -> Void) {
+                l.lock()
+                observed = true
+                countAtObservation = count
+                self.artifactExisted = artifactExisted
+                l.unlock()
+                if count > 0 {
+                    requestDeferredDelete()
+                    l.lock()
+                    deferredRequested = true
+                    l.unlock()
+                }
+            }
+        }
+        let observation = StartupObservation()
+        coordinator.setStartupObserver { key in
+            let count = store.physicalUse.physicalUseCount(key)
+            let existed = FileManager.default.fileExists(atPath: key)
+            // Deterministic startup-window interleave: while the lease is
+            // already held but the work has not started, eviction requests
+            // deletion — the registry must defer (artifact untouched).
+            observation.observe(
+                count: count, artifactExisted: existed,
+                requestDeferredDelete: { store.physicalUse.requestDelete(key) })
+        }
+
+        let value = try await coordinator.materialize(key: artifactPath) { "done" }
+        XCTAssertEqual(value, "done")
+
+        // Startup-window observations: lease held BEFORE work started.
+        XCTAssertTrue(observation.observed, "startup seam must fire")
+        XCTAssertEqual(observation.countAtObservation, 1,
+                       "physical-use count must already be 1 before the work starts")
+        XCTAssertTrue(observation.artifactExisted,
+                      "artifact must survive a delete request in the startup window")
+        XCTAssertTrue(observation.deferredRequested,
+                      "the delete request must have been deferred, not dropped")
+
+        // Work ended → release → the deferred deletion fires.
+        XCTAssertFalse(FileManager.default.fileExists(atPath: artifactPath),
+                       "deferred delete must fire after the work releases the lease")
+        XCTAssertEqual(store.physicalUse.physicalUseCount(artifactPath), 0)
+    }
+
+    /// Failure path: the lease is released even when the work throws, so a
+    /// deferred delete fires and no physical-use count leaks.
+    func testStartupWindowLeaseReleasedOnWorkFailure() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+
+        final class Observation: @unchecked Sendable {
+            private let l = NSLock()
+            private(set) var countAtObservation: Int = -1
+            func observe(count: Int) { l.lock(); countAtObservation = count; l.unlock() }
+        }
+        let observation = Observation()
+        coordinator.setStartupObserver { key in
+            observation.observe(count: registry.physicalUseCount(key))
+        }
+
+        struct WorkFailure: Error {}
+        do {
+            _ = try await coordinator.materialize(key: "ref-fail") { throw WorkFailure() }
+            XCTFail("work failure must propagate")
+        } catch {}
+
+        XCTAssertEqual(observation.countAtObservation, 1,
+                       "lease held before the failing work started")
+        XCTAssertEqual(registry.physicalUseCount("ref-fail"), 0,
+                       "lease must be released on the work-failure path")
+    }
+
+    /// Startup-window join semantics: a second caller for the same key joins
+    /// the already-protected work — the lease is neither double-acquired nor
+    /// released early, and both callers share the single result.
+    func testStartupWindowJoinSharesProtectedWork() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _ in })
+        let coordinator = MaterializationCoordinator<String>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+
+        let startup = ObservationCounter()
+        coordinator.setStartupObserver { key in
+            startup.observe(count: registry.physicalUseCount(key))
+        }
+
+        async let v1: String = coordinator.materialize(key: "ref-join") {
+            await workGate.enterWork()
+            return "shared"
+        }
+        async let v2: String = coordinator.materialize(key: "ref-join") {
+            await workGate.enterWork()
+            return "shared"
+        }
+        try await workGate.waitForFirstCall()
+        let joined = await workGate.callCount
+        XCTAssertEqual(joined, 1, "single-flight: one work")
+        await workGate.release()
+        let results = try await [v1, v2]
+        XCTAssertEqual(results, ["shared", "shared"])
+        XCTAssertEqual(startup.maxCountAtObservation, 1,
+                       "the lease is acquired exactly once, before publication")
+        XCTAssertEqual(registry.physicalUseCount("ref-join"), 0)
+    }
+}
+
+/// Counting observation sink for the D-I4 startup seam.
+final class ObservationCounter: @unchecked Sendable {
+    private let l = NSLock()
+    private var values: [Int] = []
+    func observe(count: Int) { l.lock(); values.append(count); l.unlock() }
+    var maxCountAtObservation: Int { l.lock(); defer { l.unlock() }; return values.max() ?? -1 }
 }
