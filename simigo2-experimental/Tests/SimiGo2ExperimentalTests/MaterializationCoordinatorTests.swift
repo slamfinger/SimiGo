@@ -1297,7 +1297,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNotEqual(oldArtifact.generation, newArtifact.generation)
 
         do {
-            _ = try await store.load(oldAdmission!)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(oldAdmission!)
             XCTFail("stale admission must not load replacement generation")
         } catch let error as PrefixSnapshotStoreError {
             XCTAssertEqual(
@@ -1330,7 +1330,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let admission = try XCTUnwrap(
             store.pool.admit(namespace: f3ns, promptTokens: tokens))
         do {
-            _ = try await store.load(admission)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission)
             XCTFail("invalid snapshot must fail loudly")
         } catch {}
 
@@ -1364,7 +1364,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
             store.pool.admit(namespace: f3ns, promptTokens: tokens))
 
         artifactIOLock.lock()
-        let load = Task { try await store.load(admission) }
+        let load = Task { try await MLXPrefixSnapshotLoader(store: store).load(admission) }
         let deadline = DispatchTime.now().uptimeNanoseconds + 2_000_000_000
         while store.physicalUse.physicalUseCount(artifact.snapshotURL.path) < 1 {
             guard DispatchTime.now().uptimeNanoseconds < deadline else {
@@ -1410,7 +1410,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         }
         try await gate.waitForDeleteStart()
         do {
-            _ = try await store.load(admission)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission)
             XCTFail("load during delete execution must fail closed")
         } catch let error as PrefixSnapshotStoreError {
             XCTAssertEqual(
@@ -1849,7 +1849,7 @@ final class MaterializationCoordinatorTests: XCTestCase {
         let admission = store.pool.admit(namespace: f3ns, promptTokens: tokens)
         XCTAssertNotNil(admission)
         do {
-            _ = try await store.load(admission!)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission!)
             XCTFail("a generation artifact must fail closed after content mutation")
         } catch let error as PrefixSnapshotStoreError {
             XCTAssertEqual(error, .artifactContentMismatch(path: artifact.snapshotURL.path))
