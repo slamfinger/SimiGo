@@ -809,19 +809,35 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         backend.bind(
             executionID: state.id, position: advancedPosition, prefix: ids
         )
-        let advanced = try await coordinator!.continueExecution(
-            state,
-            continuation: ExecutionContinuation(
-                nextInput: messages.last?.content ?? "",
-                continuationID: "S-cont-\(advancedPosition.value)"
+        // The physical binding is now ahead of the logical handle. If task
+        // cancellation or the coordinator boundary fails before both commits
+        // finish, mark the binding uncertain instead of silently continuing.
+        let advanced: ExecutionStateHandle
+        do {
+            advanced = try await coordinator!.continueExecution(
+                state,
+                continuation: ExecutionContinuation(
+                    nextInput: messages.last?.content ?? "",
+                    continuationID: "S-cont-\(advancedPosition.value)"
+                )
             )
-        )
+        } catch {
+            if error is CancellationError || Task.isCancelled {
+                coordinator!.markBindingUncertain(state.id)
+            }
+            throw error
+        }
         currentState = advanced
-        try await coordinator!.bindRepresentation(
-            executionID: advanced.id,
-            position: advanced.position,
-            payload: OversizedPrefixPayload(tokenPrefix: ids)
-        )
+        do {
+            try await coordinator!.bindRepresentation(
+                executionID: advanced.id,
+                position: advanced.position,
+                payload: OversizedPrefixPayload(tokenPrefix: ids)
+            )
+        } catch {
+            coordinator!.markBindingUncertain(advanced.id)
+            throw error
+        }
         sessionInfo = OversizedSessionInfo(
             executionID: advanced.id.rawValue,
             position: Int(advanced.position.value),
