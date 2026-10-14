@@ -4,6 +4,22 @@
 
 **Last updated**: 2026-10-14
 
+## Current continuity — 2026-10-14 (GUI promotion boundary review)
+
+> **Status:** `REVIEW COMPLETE / DECISION SUBMITTED / NO IMPLEMENTATION`.
+
+`docs/08-research-memory/SIMIGO_GUI_PROMOTION_BOUNDARY_REVIEW_20261014.md`
+answers the GUI promotion feasibility question at `main = 6cb995ff`:
+adoption of the cross-session prefix cache through the
+`OversizedSegmentedEngine` is architecturally mismatched (the engine path is
+token-prefix full-recompute with no KV object to seed; identity schemes
+differ) and would contravene the frozen DCC-1 Tier-1 semantics; token-level
+seeding within the frozen boundary delivers no prefill savings. The review
+submits the real decision — whether the GUI gains a ChatSession-based
+small-scale host path (Option A, engine untouched, ownership layer ready) or
+closes at the ownership layer (Option B) — and rejects wiring the cache into
+the engine under either option.
+
 ## Current engineering continuity — 2026-10-14 (MLX cross-session host ownership)
 
 > **Status:** `HOST OWNERSHIP DISCIPLINE IMPLEMENTED / GUI WIRING NOT DONE`.
