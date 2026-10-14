@@ -27,6 +27,44 @@ public enum EngineSessionRecoveryOutcome: Equatable, Sendable {
     case coldStart(reason: String)
 }
 
+/// Deterministic per-model location for DCC-1 baseline and G-7 identity state.
+public struct OversizedEnginePersistenceDirectories: Equatable, Sendable {
+    public let sessionBaseline: URL
+    public let identity: URL
+}
+
+public enum OversizedEnginePersistence {
+    public static func defaultBaseDirectory(
+        fileManager: FileManager = .default
+    ) throws -> URL {
+        let applicationSupport = try fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true)
+        return applicationSupport.appendingPathComponent("SimiGo-Lab", isDirectory: true)
+    }
+
+    /// Key by standardized model path; identity/baseline validation still binds
+    /// records to model content, so a path collision can only cause a cold start.
+    public static func directories(
+        modelDirectory: URL,
+        baseDirectory: URL? = nil,
+        fileManager: FileManager = .default
+    ) throws -> OversizedEnginePersistenceDirectories {
+        let root = try baseDirectory ?? defaultBaseDirectory(fileManager: fileManager)
+        let key = SHA256.hash(data: Data(
+            modelDirectory.standardizedFileURL.path.utf8))
+            .map { String(format: "%02x", $0) }.joined()
+        let modelRoot = root
+            .appendingPathComponent("engines", isDirectory: true)
+            .appendingPathComponent(key, isDirectory: true)
+        return OversizedEnginePersistenceDirectories(
+            sessionBaseline: modelRoot.appendingPathComponent("baseline", isDirectory: true),
+            identity: modelRoot.appendingPathComponent("identity", isDirectory: true))
+    }
+}
+
 /// Canonical, self-describing bootstrap state. Everything needed to
 /// deterministically rebuild the engine session's initial (position-0-style)
 /// state: identity bindings, the generation UUID, and the canonical token
