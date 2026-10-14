@@ -4,6 +4,43 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (F1 diagnostics + F4 host-side closure)
+
+> **Status:** `F1 DIAGNOSED (EVIDENCE FOR ADJUDICATION) / F4 HOST-SIDE
+> CLOSED WITH REGISTERED RESIDUAL`. Branch `codex/f1-f4-diagnostics`; HEAD
+> `e88eca5c`. Acceptance bars unchanged.
+
+F1 (authorized diagnostics on locked fork `6d01a13c`; no behavior changes):
+four greedy decode paths over one 968-token prompt / 900 boundary showed
+(a) chunk-shape sensitivity is real and cold-only — a pure-cold
+remainder-chunked path reproduces the warm flip; (b) the flip site is
+decided by a 0.25-logit margin ("head" 23.75 vs " Ahead" 23.50); (c)
+save→load fidelity is EXACT (0 diff, 48 layers) — serialization acquitted;
+(d) the balanced session's internal KV differs by max-abs ~26 from any
+externally reproducible prefill shape, while a clean 900|68 split equals
+unchunked exactly — the shape effect lives in the fork's session-internal
+prefill management; (e) warm ≠ segmented-cold (approved decision logic
+branch 2), residual located in session-internal shape composition. Evidence
+feeds the human adjudication: bit-equality across prefill shapes is not a
+stable property of this stack even between two cold paths.
+
+F4 (host lifecycle + caller identity): switchModel now releases the
+container BEFORE loading the next (rollback = reload; double failure =
+deactivated with the original error); host-issued sessions carry a
+generation and post-switch use throws `sessionStale`; the global hook
+installs with a generation-bound admissionGuard (TOCTOU closure). Real
+30B→35B→30B legs: stale rejection PASS, re-adoption at full boundary PASS.
+Self-review caught a pre-run ordering bug (activate bumped the generation
+after loading — would have permanently cold-refused the first cache).
+REGISTERED-OPEN residual: a raw pre-switch ChatSession can still reach the
+global hook; full closure needs a fork-side session-identity API (probe's
+foreignHookCold leg measured in the wrong window — recorded as a
+measurement defect, not residual evidence).
+
+Evidence: `simigo2-experimental/docs/02-evidence/f1-f4-diagnostics/20261015-e88eca5c/`.
+Full suite `365 executed / 3 skipped / 0 failures`. F3 timing protocol and
+SwiftUI mount remain open; no promotion ACCEPT; no governance closure.
+
 ## Current engineering continuity — 2026-10-15 (small-scale host path, Option A unit 1)
 
 > **Status:** `UNIT 1 IMPLEMENTED / ACCEPTANCE NOT PASS (PRECISE PER-ITEM

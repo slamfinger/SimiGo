@@ -771,6 +771,25 @@ struct Simigo2CTL {
       )
       print(try toJSON(report))
 
+    case "f1-artifact-fidelity":
+      let prompt = optionalOption("--prompt", rest)
+        ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
+      let promptRepeat = optionalOption("--prompt-repeat", rest).flatMap(Int.init) ?? 60
+      let boundary = optionalOption("--boundary", rest).flatMap(Int.init) ?? 900
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 8
+      let root = optionalOption("--root", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      } ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+        "simigo-f1-fidelity-\(UUID().uuidString)", isDirectory: true)
+      let longPrompt = Array(repeating: prompt, count: max(promptRepeat, 1)).joined(separator: " ")
+      let report = try await F1ArtifactFidelity.run(
+        modelDirectory: modelDirectory,
+        prompt: longPrompt,
+        boundary: boundary,
+        maxTokens: tokens,
+        cacheRoot: root)
+      print(try toJSON(report))
+
     case "f1-prefill-diagnostics":
       let prompt = optionalOption("--prompt", rest)
         ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
