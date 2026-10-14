@@ -29,6 +29,12 @@ let stage = value("--stage")
 let storeRoot = URL(fileURLWithPath: value("--store"))
 let modelRoot = URL(fileURLWithPath: value("--model"))
 let reportURL = URL(fileURLWithPath: value("--report"))
+let identityRoot: String? = {
+    guard let index = arguments.firstIndex(of: "--identity"),
+        index + 1 < arguments.count
+    else { return nil }
+    return arguments[index + 1]
+}()
 
 #if DEBUG
 func runStage() async -> Never {
@@ -39,6 +45,13 @@ func runStage() async -> Never {
     case "teardown":
         await EngineBaselineCrashHarness.teardownCommitAndKillSelf(
             storeRoot: storeRoot, modelRoot: modelRoot, reportURL: reportURL)
+    case "fork-failure":
+        guard let identityRoot else {
+            fputs("missing --identity\n", stderr)
+            exit(2)
+        }
+        await EngineBaselineCrashHarness.reserveFailedForkAndKillSelf(
+            identityRoot: URL(fileURLWithPath: identityRoot), reportURL: reportURL)
     case "torn":
         EngineBaselineCrashHarness.writeTornBaseline(storeRoot: storeRoot, modelRoot: modelRoot)
     case "crash-after-payload", "crash-after-digest":
