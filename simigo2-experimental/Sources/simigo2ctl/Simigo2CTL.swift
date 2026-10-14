@@ -813,6 +813,29 @@ struct Simigo2CTL {
         maxTokens: tokens)
       print(try toJSON(report))
 
+    case "f3-benefit-protocol":
+      let prompt = optionalOption("--prompt", rest)
+        ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
+      let promptRepeat = optionalOption("--prompt-repeat", rest).flatMap(Int.init) ?? 40
+      let stride = optionalOption("--stride", rest).flatMap(Int.init) ?? 256
+      let boundary = optionalOption("--boundary", rest).flatMap(Int.init) ?? 512
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 16
+      let pairs = optionalOption("--pairs", rest).flatMap(Int.init) ?? 3
+      let root = optionalOption("--root", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      } ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+        "simigo-f3-benefit-\(UUID().uuidString)", isDirectory: true)
+      let longPrompt = Array(repeating: prompt, count: max(promptRepeat, 1)).joined(separator: " ")
+      let report = try await F3BenefitProtocol.run(
+        modelDirectory: modelDirectory,
+        base: root,
+        prompt: longPrompt,
+        stride: stride,
+        boundary: boundary,
+        maxTokens: tokens,
+        pairs: pairs)
+      print(try toJSON(report))
+
     case "f1-prefill-diagnostics":
       let prompt = optionalOption("--prompt", rest)
         ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."

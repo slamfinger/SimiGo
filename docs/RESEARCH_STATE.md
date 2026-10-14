@@ -4,6 +4,26 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (F3 benefit protocol: BENEFIT NOT ESTABLISHED)
+
+> **Status:** `F3 FIRST CONTROLLED MEASUREMENT = HONEST NEGATIVE`.
+> Branch `codex/f3-benefit-protocol`.
+
+The F3 protocol (one model load, untimed warm-up/seed, paired canonical
+cold vs adopted-warm legs, swap-stability condition) ran on the real 30B:
+per-side spread under 1% (variance finally controlled), and the result is
+that the adopted path is consistently ~2.3x SLOWER than cold at wall level
+(669-681 s vs 281-290 s over 3 pairs) while the fork's prompt metric
+(asyncEval submission time, 0.9 vs 0.3 s) is NOT prefill compute and must
+not decide the verdict. Hook-hit ≠ benefit: the first controlled evidence
+says adoption currently costs wall time on this model/machine. Harness
+corrected (metric renamed `promptSubmissionSeconds`; pass requires wall
+median savings + submission savings + stable swap). Candidate causes for
+the next unit: attention over restored (possibly dequantized) KV rows,
+artifact array materialization, inter-leg cache clearing. SwiftUI mount
+stays gated behind a POSITIVE benefit result.
+Evidence: `simigo2-experimental/docs/02-evidence/f3-benefit-protocol/20261015-8cbff75c/`.
+
 ## Current continuity — 2026-10-15 (canonical prefill protocol STRICT PASS + F4 reopen fixes)
 
 > **Status:** `CANONICAL PROFILE STRICT COLD==WARM PASS (3 cases, 2 strides,
