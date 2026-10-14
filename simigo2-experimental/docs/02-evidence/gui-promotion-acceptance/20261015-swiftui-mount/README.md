@@ -81,6 +81,17 @@ click-through of both directions, same-path model change, send-before-load,
 and switch failure remains the pending HUMAN step — unchanged from the
 matrix status below.
 
+## Directory-level guard (second review round)
+
+The path-type guard left a same-path hole (reviewer): changing the model
+directory without Load passed it — small-scale would session against the
+actually-active old model, oversized's first message would lazily load the
+NEW directory, both bypassing the explicit Load. Send and New Session now
+check one binding-validity predicate (loaded path == selected path AND
+loaded model directory == standardized requested directory), which also
+covers the failed-switch rollback case. Build + suite 367/3/0 at
+`c5b4daa3`.
+
 ## Promotion status
 
 All five matrix items carry real-model evidence; the mount is build-verified
