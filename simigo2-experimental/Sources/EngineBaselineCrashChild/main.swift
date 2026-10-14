@@ -29,6 +29,12 @@ let stage = value("--stage")
 let storeRoot = URL(fileURLWithPath: value("--store"))
 let modelRoot = URL(fileURLWithPath: value("--model"))
 let reportURL = URL(fileURLWithPath: value("--report"))
+let stateRoot: String? = {
+    guard let index = arguments.firstIndex(of: "--state-root"),
+        index + 1 < arguments.count
+    else { return nil }
+    return arguments[index + 1]
+}()
 let identityRoot: String? = {
     guard let index = arguments.firstIndex(of: "--identity"),
         index + 1 < arguments.count
@@ -52,6 +58,13 @@ func runStage() async -> Never {
         }
         await EngineBaselineCrashHarness.reserveFailedForkAndKillSelf(
             identityRoot: URL(fileURLWithPath: identityRoot), reportURL: reportURL)
+    case "semantic-state":
+        guard let stateRoot else {
+            fputs("missing --state-root\n", stderr)
+            exit(2)
+        }
+        await EngineBaselineCrashHarness.semanticStateCommitAndKillSelf(
+            stateRoot: URL(fileURLWithPath: stateRoot), reportURL: reportURL)
     case "torn":
         EngineBaselineCrashHarness.writeTornBaseline(storeRoot: storeRoot, modelRoot: modelRoot)
     case "crash-after-payload", "crash-after-digest":

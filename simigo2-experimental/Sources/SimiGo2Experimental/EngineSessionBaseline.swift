@@ -531,6 +531,37 @@ public enum EngineBaselineCrashHarness {
         killSelf()
     }
 
+    /// Commit semantic handles and lifecycle audit through the G-10 store,
+    /// report that both transitions reached the durable boundary, then
+    /// SIGKILL. The parent opens a fresh coordinator/store pair to prove the
+    /// process restart restores semantic state.
+    public static func semanticStateCommitAndKillSelf(
+        stateRoot: URL, reportURL: URL
+    ) async -> Never {
+        do {
+            let stateStore = try DurableExecutionStateStore(directory: stateRoot)
+            let coordinator = try ExecutionContinuityCoordinator(
+                backend: FailingForkBackend(), identityAllocator: nil, stateStore: stateStore)
+            let parent = try await coordinator.create(
+                id: ExecutionID("P"),
+                position: ExecutionPosition(0),
+                continuation: ExecutionContinuation(
+                    nextInput: "", continuationID: "cont-0"))
+            _ = try await coordinator.continueExecution(
+                parent,
+                continuation: ExecutionContinuation(
+                    nextInput: "next", continuationID: "cont-1"))
+        } catch {
+            fputs("harness semantic-state failed: \(error)\n", stderr)
+            exit(3)
+        }
+        let report = """
+        {"stage":"semantic-state","executionID":"P","position":1,"records":2}
+        """
+        try? Data(report.utf8).write(to: reportURL)
+        killSelf()
+    }
+
     /// Reserve a child ID during a failed physical fork, report that the
     /// ledger write reached the intended state, then SIGKILL. The parent test
     /// opens the durable ledger and proves the reservation survived the crash.

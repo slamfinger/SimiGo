@@ -559,6 +559,45 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(allocator.reservation(forToken: "fork:P:C"), child)
     }
 
+    /// PROCESS CRASH: semantic handles and lifecycle audit committed through
+    /// the G-10 store survive process death and restore in a fresh coordinator.
+    func testProcessKillAfterSemanticStateCommitRestoresCoordinator() async throws {
+        let stateRoot = workRoot.appendingPathComponent("semantic-state")
+        let report = workRoot.appendingPathComponent("semantic-state-report.json")
+        let status = try runChild(
+            stage: "semantic-state",
+            store: storeRoot,
+            model: modelRoot,
+            report: report,
+            extraArguments: ["--state-root", stateRoot.path])
+        XCTAssertEqual(status, Int32(SIGKILL))
+
+        struct Report: Codable {
+            let stage: String
+            let executionID: String
+            let position: Int64
+            let records: Int
+        }
+        let childReport = try JSONDecoder().decode(
+            Report.self, from: Data(contentsOf: report))
+        XCTAssertEqual(childReport.stage, "semantic-state")
+        XCTAssertEqual(childReport.executionID, "P")
+        XCTAssertEqual(childReport.position, 1)
+        XCTAssertEqual(childReport.records, 2)
+
+        let stateStore = DurableExecutionStateStore(directory: stateRoot)
+        let coordinator = try ExecutionContinuityCoordinator(
+            backend: MLXExecutionStateBackend(),
+            identityAllocator: nil,
+            stateStore: stateStore)
+        let restored = try XCTUnwrap(coordinator.handle(ExecutionID("P")))
+        XCTAssertEqual(restored.position, ExecutionPosition(1))
+        XCTAssertEqual(restored.lifecycle, .active)
+        XCTAssertEqual(coordinator.recordCount, 2)
+        XCTAssertEqual(coordinator.recordsSnapshot.last?.sequence, 2)
+        XCTAssertEqual(coordinator.recordsSnapshot.last?.operation, .continued)
+    }
+
     /// PROCESS CRASH: SIGKILL after a durable teardown. Recovery must NOT
     /// resurrect the discarded session — the pointer was retired first.
     func testProcessKillAfterTeardownColdStarts() async throws {

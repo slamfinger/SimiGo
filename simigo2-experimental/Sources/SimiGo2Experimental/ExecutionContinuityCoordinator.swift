@@ -169,7 +169,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         resultLifecycle: ExecutionBranchLifecycle,
         resultPosition: ExecutionPosition,
         resultContinuation: ExecutionContinuation,
-        prospectiveHandles: [ExecutionStateHandle] = []
+        prospectiveHandles: [ExecutionStateHandle] = [],
+        restoresPhysicalBinding: Bool = false
     ) throws {
         let result: Result<Void, Error> = stateLock.withLock {
             let record = LifecycleRecord(
@@ -190,6 +191,12 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                         handles: Array(updatedHandles.values),
                         lifecycleRecords: records + [record])
                 } catch {
+                    // A successful backend restore followed by a failed
+                    // durable commit leaves logical/physical correspondence
+                    // unverifiable. Fail closed; explicit restore clears it.
+                    if restoresPhysicalBinding {
+                        bindingUncertain.insert(executionID)
+                    }
                     return .failure(error)
                 }
             }
@@ -496,7 +503,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                     .restored, executionID: current.id, resultLifecycle: .restored,
                     resultPosition: request.targetPosition,
                     resultContinuation: request.continuation,
-                    prospectiveHandles: [restored])
+                    prospectiveHandles: [restored],
+                    restoresPhysicalBinding: true)
             }
             return restored
         }
