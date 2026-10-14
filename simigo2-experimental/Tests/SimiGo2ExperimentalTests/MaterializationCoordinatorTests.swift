@@ -401,6 +401,71 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    /// A legacy sidecar may have a nil generation, but a missing sidecar is
+    /// still unknown state; rescan must not treat `nil == nil` as a match.
+    func testRescanSkipsLegacyArtifactWhenSidecarDisappears() async throws {
+        final class ScanGate: @unchecked Sendable {
+            private let entered = DispatchSemaphore(value: 0)
+            private let leave = DispatchSemaphore(value: 0)
+
+            func enter() {
+                entered.signal()
+                _ = leave.wait(timeout: .now() + 5)
+            }
+
+            func waitForEnter() -> Bool {
+                entered.wait(timeout: .now() + 5) == .success
+            }
+
+            func release() { leave.signal() }
+        }
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rescan-legacy-vanished-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 7)
+        let entry = try await source.export(namespace: f3ns, tokens: tokens) { url in
+            try "payload".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        let sidecar = try JSONDecoder().decode(
+            PrefixSnapshotSidecar.self,
+            from: Data(contentsOf: artifact.metadataURL)
+        )
+        var legacySidecar = sidecar
+        legacySidecar.generation = nil
+        try JSONEncoder().encode(legacySidecar).write(
+            to: artifact.metadataURL, options: .atomic)
+
+        let gate = ScanGate()
+        let fresh = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willBeginRescanGeneration: { gate.enter() }
+        )
+        fresh.physicalUse.beginGeneration(
+            artifact.snapshotURL.path, generation: nil) {}
+
+        let rescan = Task.detached { try fresh.rescan() }
+        guard gate.waitForEnter() else {
+            gate.release()
+            _ = try await rescan.value
+            return XCTFail("rescan never reached conditional publication")
+        }
+
+        try FileManager.default.removeItem(at: artifact.metadataURL)
+        gate.release()
+
+        let registeredCount = try await rescan.value
+        XCTAssertEqual(registeredCount, 0)
+        XCTAssertNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: artifact.snapshotURL.path))
+    }
+
     /// The eviction sink is part of a store/pool reference cycle unless it
     /// captures the store weakly.
     func testStoreDoesNotRetainItselfThroughEvictionSink() async throws {
