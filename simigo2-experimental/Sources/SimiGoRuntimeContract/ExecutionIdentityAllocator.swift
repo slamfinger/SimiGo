@@ -42,6 +42,7 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
 
     enum AllocatorError: Error {
         case lockFailed(errno: Int32)
+        case ledgerOpenFailed(errno: Int32)
     }
 
     private let ledgerURL: URL
@@ -181,13 +182,18 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
         if let ledgerHandle {
             handle = ledgerHandle
         } else {
-            // createFile truncates an existing file, and another view or
-            // process may have committed lines since this allocator opened:
-            // only create the ledger when it is genuinely absent.
-            if !fileManager.fileExists(atPath: ledgerURL.path) {
-                fileManager.createFile(atPath: ledgerURL.path, contents: nil)
+            // open(2) with O_CREAT is atomic create-or-open: two processes
+            // racing to first use of a missing ledger land on the SAME
+            // inode, so the flock below actually arbitrates them. The
+            // previous createFile + open sequence was two steps, and a
+            // second createFile could unlink and replace the first
+            // process's inode — splitting the lock across two files while
+            // both processes believed they held it.
+            let fd = open(ledgerURL.path, O_RDWR | O_CREAT, 0o644)
+            guard fd >= 0 else {
+                throw AllocatorError.ledgerOpenFailed(errno: errno)
             }
-            handle = try FileHandle(forWritingTo: ledgerURL)
+            handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
             ledgerHandle = handle
         }
 
