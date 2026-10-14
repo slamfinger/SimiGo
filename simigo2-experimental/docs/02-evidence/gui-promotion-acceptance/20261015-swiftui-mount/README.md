@@ -104,24 +104,29 @@ keeps publishing from the host's surviving active state (success or
 rolled-back truth). A failed load therefore blocks Send/New Session until a
 successful Load re-establishes the binding. Build + suite 367/3/0.
 
-## Manual click-through checklist (pending — the human acceptance step)
+## Manual click-through checklist — post-acceptance supplementary verification (NOT YET EXECUTED)
+
+Status correction (record alignment, 2026-10-15): the ACCEPT above was
+adjudicated by the human reviewer directly on the evidence package and the
+code-level binding-lifecycle rounds. The five interactive checks below were
+NOT executed or reported before that decision and are therefore recorded as
+OPEN post-acceptance supplementary verification — none of them is marked
+PASS, and executing them (recording real app version, environment,
+per-item outcomes and error strings) remains a follow-up. This section does
+not reopen the adjudication; it keeps the record honest about what was and
+was not run.
 
 1. Send before any successful Load (including after a failed oversized
-   Load with an error model directory) — must be blocked with the
+   Load with an error model directory) — expected: blocked with the
    "press Load first" prompt.
-2. Bidirectional path switching oversized → small-scale → oversized — old
-   path released, hook-release check passes, new path works.
-3. Same-path model directory change without Load (both paths) — Send and
-   New Session both blocked.
-4. Switch to a deliberately unloadable model — rollback keeps A active
-   while the request points at B; Send blocked.
-5. Post-switch use of an old session errors visibly (never continues on the
-   new model); after New Session the durable cache is retained and the next
-   session re-hits it (hook counters in the status line).
-
-Record per-item outcomes and actual error strings; on failure, record the
-observed state instead of proceeding. ACCEPT is adjudicated only after this
-walkthrough.
+2. Bidirectional path switching oversized → small-scale → oversized —
+   expected: old path released, hook-release check passes, new path works.
+3. Same-path model directory change without Load (both paths) — expected:
+   Send and New Session both blocked.
+4. Switch to a deliberately unloadable model — expected: rollback keeps A
+   active while the request points at B; Send blocked.
+5. Post-switch use of an old session errors visibly; after New Session the
+   durable cache is retained and the next session re-hits it.
 
 ## Promotion status: ACCEPTED
 

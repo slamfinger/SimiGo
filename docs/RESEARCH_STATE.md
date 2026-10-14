@@ -4,6 +4,25 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (acceptance-record alignment + fork caller-identity design review)
+
+> **Status:** `RECORD ALIGNED / DESIGN REVIEW COMPLETE / IMPLEMENTATION NOT
+> AUTHORIZED`. `FORK-HOOK-CALLER-IDENTITY-01`.
+
+Two items, no feature expansion: (1) the acceptance evidence README's
+click-through section was inconsistent with the ACCEPT verdict — the five
+interactive checks were NOT executed before the adjudication and are now
+recorded as OPEN post-acceptance supplementary verification (no item marked
+PASS; the adjudication itself is untouched); (2) a design review for the
+registered fork caller-identity residual is on record
+(`docs/08-research-memory/SIMIGO_FORK_HOOK_CALLER_IDENTITY_REVIEW_20261015.md`):
+the consultation site (`ChatSession.evaluate`) can supply the caller's model
+DIRECTORY (ModelConfiguration.id retains the local URL), an opt-in
+`crossSessionPrefixLookupWithContext` variable closes the cross-model hole
+with zero legacy-behavior change and no DCC-1 involvement; exhaustive
+refusal table, accepted same-directory sliver, acceptance criteria, and
+non-goals included. Fork implementation requires separate authorization.
+
 ## Current continuity — 2026-10-15 (GUI promotion ACCEPTED)
 
 > **Status:** `GUI PROMOTION ACCEPT (HUMAN ADJUDICATION)`. The small-scale
