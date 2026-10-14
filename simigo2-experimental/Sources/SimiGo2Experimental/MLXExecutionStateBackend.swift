@@ -12,7 +12,7 @@ import SimiGoRuntimeContract
 /// This backend is pure data: it holds bindings and captured
 /// representations but performs no model execution. Execution consumes the
 /// bound representation through the MLXPrefixRecomputeExecutor.
-public struct MLXPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable {
+public struct MLXPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable, Codable {
     public let tokenPrefix: [Int]
 
     public init(tokenPrefix: [Int]) {

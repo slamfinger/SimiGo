@@ -110,7 +110,8 @@ final class ChatAppModel: ObservableObject {
         let engine = OversizedSegmentedEngine(
             modelDirectory: url,
             sessionBaselineDirectory: persistence.sessionBaseline,
-            identityDirectory: persistence.identity)
+            identityDirectory: persistence.identity,
+            semanticStateDirectory: persistence.semanticState)
         loadedPath = url
         self.engine = engine
         return engine

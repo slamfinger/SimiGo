@@ -28,7 +28,7 @@ import Tokenizers
 
 // MARK: - Payload / result
 
-public struct OversizedPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable {
+public struct OversizedPrefixPayload: ExecutionRepresentationPayload, Equatable, Sendable, Codable {
   public let tokenPrefix: [Int]
   public init(tokenPrefix: [Int]) {
     self.tokenPrefix = tokenPrefix
