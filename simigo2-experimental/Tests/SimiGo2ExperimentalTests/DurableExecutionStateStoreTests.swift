@@ -2,6 +2,31 @@ import XCTest
 import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
+private final class RestoreTrackingBackend: ExecutionStateBackend, @unchecked Sendable {
+    private var representations: [ExecutionID: ExecutionRepresentation] = [:]
+    private(set) var restoreCalls = 0
+
+    func captureRepresentation(for state: ExecutionStateHandle) async throws -> ExecutionRepresentation {
+        guard let representation = representations[state.id] else {
+            throw ExecutionStateBackendError.noBoundRepresentation(state.id)
+        }
+        return representation
+    }
+
+    func deriveRepresentation(from parent: ExecutionRepresentation, for child: ExecutionStateHandle) async throws -> ExecutionRepresentation {
+        throw ExecutionStateBackendError.foreignRepresentationPayload(child.id)
+    }
+
+    func restoreRepresentation(_ representation: ExecutionRepresentation) async throws {
+        restoreCalls += 1
+        representations[representation.executionID] = representation
+    }
+
+    func releaseRepresentation(_ representation: ExecutionRepresentation) async throws {
+        representations.removeValue(forKey: representation.executionID)
+    }
+}
+
 final class DurableExecutionStateStoreTests: XCTestCase {
     private var root: URL!
     private var store: DurableExecutionStateStore!
@@ -130,5 +155,36 @@ final class DurableExecutionStateStoreTests: XCTestCase {
         wait(for: [expectation], timeout: 2)
         XCTAssertNil(coordinator.handle(ExecutionID("A")))
         XCTAssertEqual(coordinator.recordCount, 0)
+    }
+
+    func testRestoreDurableCommitFailureMarksBindingUncertain() async throws {
+        let backend = RestoreTrackingBackend()
+        let coordinator = try ExecutionContinuityCoordinator(
+            backend: backend, identityAllocator: nil, stateStore: store)
+        let state = try await coordinator.create(
+            id: ExecutionID("R"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "cont-0"))
+        try await coordinator.bindRepresentation(
+            executionID: state.id,
+            position: ExecutionPosition(0),
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3]))
+
+        DurableFileWriter.debugFailingDirectorySyncPhases = ["payload"]
+        defer { DurableFileWriter.debugFailingDirectorySyncPhases = [] }
+        do {
+            _ = try await coordinator.restore(
+                state,
+                request: ExecutionRestoreRequest(
+                    targetPosition: ExecutionPosition(0),
+                    continuation: ExecutionContinuation(nextInput: "", continuationID: "restore")))
+            XCTFail("durable commit failure must propagate")
+        } catch let error as ExecutionContinuityCoordinator.CoordinatorError {
+            XCTAssertEqual(error, .durableStateCommitFailed(ExecutionID("R")))
+        }
+
+        XCTAssertEqual(backend.restoreCalls, 2)
+        XCTAssertTrue(coordinator.hasUncertainBinding(ExecutionID("R")))
+        XCTAssertEqual(coordinator.recordCount, 1)
     }
 }
