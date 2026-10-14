@@ -4,6 +4,43 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (canonical prefill protocol STRICT PASS + F4 reopen fixes)
+
+> **Status:** `CANONICAL PROFILE STRICT COLD==WARM PASS (3 cases, 2 strides,
+> 2 distinct stable boundaries) / F4 LIFECYCLE FIXES EVIDENCED / F3 AND
+> SwiftUI REMAIN`. Branch `codex/canonical-prefill-f4-lifecycle`; HEAD
+> `a4781328`.
+
+Implements the F1 adjudication: `CanonicalPrefillProfile` (remainder
+chunking at a fixed stride; boundaries only at stride multiples —
+prefix-stable by construction), artifacts namespace-bound to (content
+digest, profile version+stride) so protocol changes isolate rather than
+reuse, and STRICT cold==warm equality under one profile. Real-model verdict
+STRICT PASS ×3 (stride 512@512; stride 256@512 and @768): chunk sequences,
+completion token counts, and texts all exactly equal, adoption hit exactly
+at the stable boundary. Achievable via the public ChatSession chunking API;
+no fork interface change needed for equality. Token-ID exposure remains a
+registered fork API gap (chunk sequence + generationTokenCount are the
+finest public record). The earlier flip is explained: the warm path had run
+under default chunking against differently-shaped artifacts.
+
+F4 reopen fixes (reviewer findings): switchModel captures the previous
+DIRECTORY only (the old ActiveModel local kept the container alive across
+the next load); host-issued generations register in-flight and a switch
+cancels + drains them (bounded 120 s, overrun fails the switch with old
+state untouched) before dropping the container; the foreign-hook residual
+measurement moved into the B-active window. Real 30B→35B→30B legs all PASS
+including `foreignHookCold = true` in the correct window (B active, A
+tokens → nil). Open follow-ups: peak-residency RSS instrumentation,
+caller-held session references (host cannot reach caller refs), fork-side
+session-identity API.
+
+Evidence:
+`simigo2-experimental/docs/02-evidence/canonical-prefill-f4/20261015-a4781328/`.
+Full suite `367 executed / 3 skipped / 0 failures`. Order per adjudication:
+F3 timing protocol next, then SwiftUI mount; promotion ACCEPT only on
+complete evidence.
+
 ## Current continuity — 2026-10-15 (F1 diagnostics + F4 host-side closure)
 
 > **Status:** `F1 DIAGNOSED (EVIDENCE FOR ADJUDICATION) / F4 HOST-SIDE
