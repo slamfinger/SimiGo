@@ -36,6 +36,11 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         /// generate after a model switch (F4 caller-identity closure at the
         /// host API boundary).
         case sessionStale(issuedFor: URL, currentlyActive: URL?)
+        /// switchModel could not drain in-flight generations within its
+        /// bound; the switch is refused with the previous state untouched
+        /// rather than overlapping the next model's load with a running
+        /// generation.
+        case inFlightGenerationBlockedSwitch
     }
 
     /// The host's durable cache base directory; per-model store roots are
@@ -53,6 +58,12 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
     /// any lookup from a stale generation even if a session slips past the
     /// wrapper check (TOCTOU closure).
     private var generation = 0
+    /// In-flight generations issued through this host, keyed by task. A
+    /// switch must not overlap the next model's load with a still-running
+    /// old-model generation: switchModel CANCELS these tasks and WAITS for
+    /// them to drain before releasing the container (F4 reopen: release
+    /// must be provable, not implied).
+    private var inFlightTasks: Set<Task<String, Error>> = []
 
     private func currentGeneration() -> Int {
         stateLock.withLock { generation }
@@ -165,15 +176,27 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         }
         await lifecycleGate.lock()
         defer { lifecycleGate.unlock() }
-        let previous = stateLock.withLock({ state })
-        if let previous, previous.directory == modelDirectory {
-            return previous.directory
+        // Capture the DIRECTORY only (F4 reopen): holding the ActiveModel
+        // value here would keep the old ModelContainer alive across the
+        // next load through this local, defeating single residency at the
+        // very switch that promises it.
+        let previousDirectory = stateLock.withLock({ state?.directory })
+        if let previousDirectory, previousDirectory == modelDirectory {
+            return previousDirectory
         }
-        // Invalidate issued sessions and release ownership + memory FIRST.
-        stateLock.withLock {
-            generation &+= 1
+        // Invalidate issued sessions FIRST (stale at the API boundary and
+        // at the hook guard), then cancel and DRAIN in-flight generations —
+        // a switch must not overlap the next load with a still-running
+        // old-model generation. A drain past the bound fails the switch
+        // with the old state untouched rather than risking the overlap.
+        stateLock.withLock { generation &+= 1 }
+        guard await cancelAndWaitForInFlightDrain(limit: .seconds(120)) else {
+            throw HostError.inFlightGenerationBlockedSwitch
         }
-        previous?.cache.uninstall()
+        stateLock.withLock { state }?.cache.uninstall()
+        // Drop the container reference BEFORE loading the next model; from
+        // here a still-resident old model can only be caller-held sessions
+        // the host cannot reach (documented boundary, see HostSession).
         stateLock.withLock { state = nil }
         do {
             let next = try await loadAndOwn(modelDirectory: modelDirectory)
@@ -181,10 +204,10 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
             return modelDirectory
         } catch {
             // Rollback = re-load the previous model (its container is gone).
-            if let previous {
+            if let previousDirectory {
                 do {
                     let restored = try await loadAndOwn(
-                        modelDirectory: previous.directory)
+                        modelDirectory: previousDirectory)
                     stateLock.withLock { state = restored }
                 } catch {
                     // Even the rollback reload failed: report the host as
@@ -247,11 +270,9 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
                     issuedFor: issuedFor, currentlyActive: active)
             }
             _ = maxTokens // parameters already bound at session construction
-            let text = try await session.respond(to: prompt)
-            guard let observations = host.activeObservations else {
-                throw HostError.notActive
+            return try await host.runInFlight {
+                try await self.session.respond(to: prompt)
             }
-            return (text, observations)
         }
 
         /// Probe passthrough: durable prefix export of the underlying
@@ -296,6 +317,42 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         let session = try makeSession(
             generateParameters: GenerateParameters(maxTokens: maxTokens, temperature: 0))
         return try await session.respondWithObservations(to: prompt, maxTokens: maxTokens)
+    }
+
+    /// Runs a generation body registered as in-flight so a model switch can
+    /// cancel and drain it instead of overlapping it with the next load.
+    private func runInFlight(
+        _ body: @escaping @Sendable () async throws -> String
+    ) async throws -> (text: String, observations: MLXPrefixHookObservation) {
+        let task = Task {
+            try await body()
+        }
+        stateLock.withLock { inFlightTasks.insert(task) }
+        defer { stateLock.withLock { inFlightTasks.remove(task) } }
+        let text = try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
+        guard let observations = activeObservations else {
+            throw HostError.notActive
+        }
+        return (text, observations)
+    }
+
+    /// Cancel every in-flight generation and wait for the drain. Bounded by
+    /// `limit`; returns false when a generation ignored cancellation past
+    /// the bound (the caller fails the switch rather than risking a
+    /// two-model residency overlap).
+    private func cancelAndWaitForInFlightDrain(limit: Duration) async -> Bool {
+        let deadline = ContinuousClock.now + limit
+        while true {
+            let pending = stateLock.withLock { inFlightTasks }
+            if pending.isEmpty { return true }
+            for task in pending { task.cancel() }
+            if ContinuousClock.now >= deadline { return false }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
     }
 
     /// Load the container, derive the content identity, build the
@@ -470,6 +527,15 @@ extension MLXSmallScaleChatHost {
                         maxTokens: 4, temperature: 0))
                 _ = try await host.switchModel(to: switchTarget)
                 switchedAway = true
+                // F4 residual measurement, CORRECT PLACEMENT: the raw
+                // global hook while model B is actually active, probed with
+                // model A's prompt tokens (simulating a pre-switch raw
+                // ChatSession that evaded the host wrapper). Cold = nil is
+                // the namespace-separation barrier; a seed would evidence
+                // the residual in practice.
+                if let hook = ChatSession.crossSessionPrefixLookup {
+                    foreignCold = hook(fullPromptTokenIDs) == nil
+                }
                 _ = try await host.switchModel(to: modelDirectory)
                 switchedBack = true
                 // F4: the pre-switch session must now be REJECTED, not
@@ -479,13 +545,6 @@ extension MLXSmallScaleChatHost {
                     staleRejected = false
                 } catch HostError.sessionStale {
                     staleRejected = true
-                }
-                // F4 residual observation: a raw hook call with the
-                // original prompt tokens against the re-activated model's
-                // cache. Records the practical barrier; the theoretical
-                // full closure needs a fork-side session identity.
-                if let hook = ChatSession.crossSessionPrefixLookup {
-                    foreignCold = hook(fullPromptTokenIDs) == nil
                 }
                 // The switch-back installs a FRESH cache instance with its
                 // own observation counters: compare its own before/after.

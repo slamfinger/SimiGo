@@ -440,3 +440,51 @@ final class ActorIsolated: @unchecked Sendable {
         lock.unlock()
     }
 }
+
+// MARK: - Canonical prefill profile (F1 adjudication)
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// The profile binds the namespace: same content, different canonical
+    /// profile → different namespace → old artifacts unreachable (isolated,
+    /// never silently reused across an execution-protocol change).
+    func testCanonicalProfileBindsNamespaceAndInvalidatesAcrossChange() {
+        let identity = MLXPrefixCrossSessionCache.MLXModelContentIdentity(
+            weightsDigest: "w", tokenizerDigest: "t")
+        let stride256 = CanonicalPrefillProfile(stride: 256)
+        let stride512 = CanonicalPrefillProfile(stride: 512)
+        let v2 = CanonicalPrefillProfile(version: "canonical-remainder-v2", stride: 256)
+
+        let base = MLXPrefixCrossSessionCache.namespace(
+            modelID: "m", contentIdentity: identity, profile: stride256)
+        XCTAssertNotEqual(
+            base,
+            MLXPrefixCrossSessionCache.namespace(
+                modelID: "m", contentIdentity: identity, profile: stride512))
+        XCTAssertNotEqual(
+            base,
+            MLXPrefixCrossSessionCache.namespace(
+                modelID: "m", contentIdentity: identity, profile: v2))
+        XCTAssertTrue(base.kvFingerprint.contains(stride256.fingerprint))
+        // Different content still separates under the same profile.
+        let otherContent = MLXPrefixCrossSessionCache.MLXModelContentIdentity(
+            weightsDigest: "w2", tokenizerDigest: "t")
+        XCTAssertNotEqual(
+            base,
+            MLXPrefixCrossSessionCache.namespace(
+                modelID: "m", contentIdentity: otherContent, profile: stride256))
+    }
+
+    /// The canonical plan's stability points: boundaries only at positive
+    /// stride multiples, and the floor function maps any request down to
+    /// one.
+    func testCanonicalProfileStableBoundaries() {
+        let profile = CanonicalPrefillProfile(stride: 256)
+        XCTAssertTrue(profile.isStableBoundary(256))
+        XCTAssertTrue(profile.isStableBoundary(1024))
+        XCTAssertFalse(profile.isStableBoundary(0))
+        XCTAssertFalse(profile.isStableBoundary(100))
+        XCTAssertEqual(profile.stableBoundary(atOrBelow: 900), 768)
+        XCTAssertEqual(profile.stableBoundary(atOrBelow: 256), 256)
+        XCTAssertEqual(profile.stableBoundary(atOrBelow: 100), 0)
+    }
+}

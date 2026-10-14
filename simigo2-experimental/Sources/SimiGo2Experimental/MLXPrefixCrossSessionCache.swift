@@ -146,6 +146,22 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             contentIdentity: contentIdentity)
     }
 
+    /// Canonical-profile namespace (F1 adjudication): the fingerprint
+    /// carries the model content digest AND the canonical prefill profile.
+    /// A profile change (version bump or stride change) therefore moves
+    /// every artifact into a new namespace — old artifacts become
+    /// unreachable rather than silently reused across execution-protocol
+    /// changes.
+    public static func namespace(
+        modelID: String,
+        contentIdentity: MLXModelContentIdentity,
+        profile: CanonicalPrefillProfile
+    ) -> PrefixPoolNamespace {
+        PrefixPoolNamespace(
+            modelID: modelID,
+            kvFingerprint: "\(dailyKVFingerprint)-\(contentIdentity.combinedDigest)-\(profile.fingerprint)")
+    }
+
     /// Long-lived host adoption path: durable per-model store root under a
     /// host-chosen base directory and a CONTENT-derived namespace. Snapshots
     /// survive host restarts — the property that makes the cache

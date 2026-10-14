@@ -790,6 +790,29 @@ struct Simigo2CTL {
         cacheRoot: root)
       print(try toJSON(report))
 
+    case "canonical-prefill-acceptance":
+      let prompt = optionalOption("--prompt", rest)
+        ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
+      let promptRepeat = optionalOption("--prompt-repeat", rest).flatMap(Int.init) ?? 60
+      let strides = (optionalOption("--strides", rest) ?? "512")
+        .split(separator: ",").compactMap { Int($0) }
+      let boundaries = (optionalOption("--boundaries", rest) ?? "512,1024")
+        .split(separator: ",").compactMap { Int($0) }
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 24
+      let root = optionalOption("--root", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      } ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+        "simigo-canonical-prefill-\(UUID().uuidString)", isDirectory: true)
+      let longPrompt = Array(repeating: prompt, count: max(promptRepeat, 1)).joined(separator: " ")
+      let report = try await CanonicalPrefillAcceptance.run(
+        modelDirectory: modelDirectory,
+        base: root,
+        prompt: longPrompt,
+        strides: strides,
+        boundaries: boundaries,
+        maxTokens: tokens)
+      print(try toJSON(report))
+
     case "f1-prefill-diagnostics":
       let prompt = optionalOption("--prompt", rest)
         ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
