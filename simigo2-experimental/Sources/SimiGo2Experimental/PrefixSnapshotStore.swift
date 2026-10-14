@@ -168,6 +168,14 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             self.physicalUse.requestDelete(
                 artifact.snapshotURL.path, generation: artifact.generation)
         }
+        // A durable tombstone must do more than block rescan: after restart
+        // the registry's in-memory invalidated state is gone, so direct
+        // admission must also stay closed until explicit repair/dismissal.
+        let persistedQuarantine = (try? quarantinedArtifacts()) ?? []
+        for record in persistedQuarantine {
+            physicalUse.markGenerationQuarantined(
+                record.artifactPath, generation: record.generation)
+        }
     }
 
     public convenience init(root: URL, pool: ExecutionStatePrefixPool) {
@@ -217,6 +225,26 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             willPublishSidecar: { _ in }
         )
     }
+
+    #if DEBUG
+    /// Crash-harness injection face. Production callers use the default init;
+    /// this remains unavailable in release builds.
+    public convenience init(
+        root: URL,
+        pool: ExecutionStatePrefixPool,
+        willPublishSidecar: @escaping @Sendable (URL) throws -> Void,
+        willRollback: @escaping @Sendable () throws -> Void
+    ) {
+        self.init(
+            root: root,
+            pool: pool,
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: willPublishSidecar,
+            willRollback: willRollback
+        )
+    }
+    #endif
 
     // MARK: - Export (turn commit)
 

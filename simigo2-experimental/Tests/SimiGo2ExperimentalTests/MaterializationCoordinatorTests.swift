@@ -1826,6 +1826,58 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(store.physicalUse.acquire(oldArtifact.snapshotURL.path))
     }
 
+    /// PROCESS CRASH: rollback quarantine is durable before SIGKILL. A fresh
+    /// process must not rescan the mixed generation or reopen admission.
+    func testProcessKillAfterRollbackFailurePreservesQuarantine() async throws {
+        let labRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let crashChild = labRoot.appendingPathComponent(
+            "simigo2-experimental/.build/debug/MaterializationQuarantineCrashChild")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-crash-\(UUID().uuidString)")
+        let report = root.appendingPathComponent("child-report.json")
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let child = Process()
+        child.executableURL = crashChild
+        child.arguments = [
+            "--stage", "rollback-failure",
+            "--root", root.path,
+            "--report", report.path,
+        ]
+        child.standardOutput = FileHandle.nullDevice
+        child.standardError = FileHandle.nullDevice
+        try child.run()
+        child.waitUntilExit()
+        XCTAssertEqual(child.terminationStatus, Int32(SIGKILL))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: report.path))
+
+        let verifier = Process()
+        verifier.executableURL = crashChild
+        verifier.arguments = ["--stage", "verify", "--root", root.path]
+        let output = Pipe()
+        verifier.standardOutput = output
+        verifier.standardError = FileHandle.nullDevice
+        try verifier.run()
+        verifier.waitUntilExit()
+        XCTAssertEqual(verifier.terminationStatus, 0)
+
+        struct Verdict: Codable {
+            let quarantineCount: Int
+            let rescanCount: Int
+            let admissionBlocked: Bool
+        }
+        let verdict = try JSONDecoder().decode(
+            Verdict.self,
+            from: output.fileHandleForReading.readDataToEndOfFile())
+        XCTAssertEqual(verdict.quarantineCount, 1)
+        XCTAssertEqual(verdict.rescanCount, 0)
+        XCTAssertTrue(verdict.admissionBlocked)
+    }
+
     func testGenerationSidecarBindsSnapshotContentDigest() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("snapshot-digest-\(UUID().uuidString)")
