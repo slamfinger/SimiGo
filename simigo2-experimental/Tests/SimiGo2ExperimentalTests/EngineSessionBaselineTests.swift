@@ -459,7 +459,13 @@ final class EngineSessionBaselineTests: XCTestCase {
         labRoot.appendingPathComponent("simigo2-experimental/.build/debug/EngineBaselineCrashChild")
     }
 
-    private func runChild(stage: String, store: URL, model: URL, report: URL) throws -> Int32 {
+    private func runChild(
+        stage: String,
+        store: URL,
+        model: URL,
+        report: URL,
+        extraArguments: [String] = []
+    ) throws -> Int32 {
         let process = Process()
         process.executableURL = crashChild
         process.arguments = [
@@ -467,7 +473,7 @@ final class EngineSessionBaselineTests: XCTestCase {
             "--store", store.path,
             "--model", model.path,
             "--report", report.path,
-        ]
+        ] + extraArguments
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
         try process.run()
@@ -519,6 +525,38 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(verdict.outcome, "recovered")
         XCTAssertEqual(verdict.uuid, childUUID)
         XCTAssertEqual(verdict.position, 0)
+    }
+
+    /// PROCESS CRASH: the durable reservation is committed before a failed
+    /// fork returns. SIGKILL after that failure must preserve both IDs so the
+    /// same fork token can retry with the same child identity in a new process.
+    func testProcessKillAfterFailedForkPreservesReservations() async throws {
+        let identityRoot = workRoot.appendingPathComponent("identity")
+        let report = workRoot.appendingPathComponent("fork-failure-report.json")
+        let status = try runChild(
+            stage: "fork-failure",
+            store: storeRoot,
+            model: modelRoot,
+            report: report,
+            extraArguments: ["--identity", identityRoot.path])
+        XCTAssertEqual(status, Int32(SIGKILL))
+
+        struct Report: Codable {
+            let stage: String
+            let parentID: String
+            let childID: String
+        }
+        let childReport = try JSONDecoder().decode(
+            Report.self, from: Data(contentsOf: report))
+        XCTAssertEqual(childReport.stage, "fork-failure")
+
+        let allocator = try DurableExecutionIdentityAllocator(directory: identityRoot)
+        let parent = ExecutionID(childReport.parentID)
+        let child = ExecutionID(childReport.childID)
+        XCTAssertTrue(allocator.hasReserved(parent))
+        XCTAssertTrue(allocator.hasReserved(child))
+        XCTAssertEqual(allocator.reservation(forToken: "create:P"), parent)
+        XCTAssertEqual(allocator.reservation(forToken: "fork:P:C"), child)
     }
 
     /// PROCESS CRASH: SIGKILL after a durable teardown. Recovery must NOT

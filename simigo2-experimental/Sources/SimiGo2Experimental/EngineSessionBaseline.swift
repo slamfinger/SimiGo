@@ -448,6 +448,40 @@ public final class EngineSessionBaselineStore {
 /// This is PROCESS-crash evidence only — it makes no claim about power
 /// loss or media failure.
 public enum EngineBaselineCrashHarness {
+    private final class FailingForkBackend: ExecutionStateBackend, @unchecked Sendable {
+        struct InjectedForkFailure: Error {}
+
+        private var representations: [ExecutionID: ExecutionRepresentation] = [:]
+
+        func captureRepresentation(
+            for state: ExecutionStateHandle
+        ) async throws -> ExecutionRepresentation {
+            guard let representation = representations[state.id] else {
+                throw ExecutionStateBackendError.noBoundRepresentation(state.id)
+            }
+            return representation
+        }
+
+        func deriveRepresentation(
+            from parent: ExecutionRepresentation,
+            for child: ExecutionStateHandle
+        ) async throws -> ExecutionRepresentation {
+            throw InjectedForkFailure()
+        }
+
+        func restoreRepresentation(
+            _ representation: ExecutionRepresentation
+        ) async throws {
+            representations[representation.executionID] = representation
+        }
+
+        func releaseRepresentation(
+            _ representation: ExecutionRepresentation
+        ) async throws {
+            representations.removeValue(forKey: representation.executionID)
+        }
+    }
+
     public static func killSelf() -> Never {
         kill(getpid(), SIGKILL)
         // Unreachable; guard against returning.
@@ -493,6 +527,51 @@ public enum EngineBaselineCrashHarness {
             exit(3)
         }
         let report = "{\"stage\":\"teardown\"}"
+        try? Data(report.utf8).write(to: reportURL)
+        killSelf()
+    }
+
+    /// Reserve a child ID during a failed physical fork, report that the
+    /// ledger write reached the intended state, then SIGKILL. The parent test
+    /// opens the durable ledger and proves the reservation survived the crash.
+    public static func reserveFailedForkAndKillSelf(
+        identityRoot: URL, reportURL: URL
+    ) async -> Never {
+        let allocator: DurableExecutionIdentityAllocator
+        let coordinator: ExecutionContinuityCoordinator
+        do {
+            allocator = try DurableExecutionIdentityAllocator(directory: identityRoot)
+            coordinator = ExecutionContinuityCoordinator(
+                backend: FailingForkBackend(), identityAllocator: allocator)
+            let parent = try await coordinator.create(
+                id: ExecutionID("P"),
+                position: ExecutionPosition(0),
+                continuation: ExecutionContinuation(
+                    nextInput: "", continuationID: "cont-0"))
+            try await coordinator.bindRepresentation(
+                executionID: parent.id,
+                position: ExecutionPosition(0),
+                payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3]))
+            let request = ExecutionForkRequest(
+                parent: parent,
+                childID: ExecutionID("C"),
+                childPosition: ExecutionPosition(0),
+                childContinuation: ExecutionContinuation(
+                    nextInput: "", continuationID: "child-cont-0"))
+            do {
+                _ = try await coordinator.fork(request)
+                fputs("harness fork-failure stage expected fork to fail\n", stderr)
+                exit(3)
+            } catch is FailingForkBackend.InjectedForkFailure {
+                // Expected: the durable child reservation has now committed.
+            }
+        } catch {
+            fputs("harness fork-failure failed: \(error)\n", stderr)
+            exit(3)
+        }
+        let report = """
+        {"stage":"fork-failure","parentID":"P","childID":"C"}
+        """
         try? Data(report.utf8).write(to: reportURL)
         killSelf()
     }
