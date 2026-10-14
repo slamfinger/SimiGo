@@ -23,7 +23,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
       "state" : {
-        "revision" : "c3057c5835ac524aaf449b1e5beebc4d1019ad0c"
+        "revision" : "bc64ee696de102ad43fd76dd6ac01dc37f6427d3"
       }
     },
     {
