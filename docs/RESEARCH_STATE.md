@@ -4,10 +4,22 @@
 
 **Last updated**: 2026-10-15
 
-## Current continuity — 2026-10-15 (SwiftUI mount — GUI promotion evidence assembled)
+## Current continuity — 2026-10-15 (GUI promotion ACCEPTED)
 
-> **Status:** `MOUNT COMPLETE / FIVE-ITEM MATRIX EVIDENCED / ACCEPT
-> SUBMITTED FOR HUMAN DECISION`. Branch `codex/swiftui-small-scale-mount`.
+> **Status:** `GUI PROMOTION ACCEPT (HUMAN ADJUDICATION)`. The small-scale
+> ChatSession host path is ACCEPTED as a parallel GUI execution path on the
+> five-item matrix evidence, after three review rounds closed the mount's
+> binding lifecycle. ACCEPT scope and exclusions are recorded in
+> `simigo2-experimental/docs/02-evidence/gui-promotion-acceptance/20261015-swiftui-mount/README.md`:
+> G-5 / G-8 / G-10 (independent governance), durability beyond
+> process-crash, universal concurrency, and the fork caller-identity
+> residual are all OUTSIDE this acceptance; DCC-1 Tier-1 semantics were
+> never modified.
+
+## Prior continuity — 2026-10-15 (SwiftUI mount evidence assembly)
+
+> **Status (superseded by ACCEPT above):** `MOUNT COMPLETE / FIVE-ITEM
+> MATRIX EVIDENCED`. Branch `codex/swiftui-small-scale-mount`.
 
 SimiGo2App gains an explicit ExecutionPath picker (oversized default |
 small-scale ChatSession host); no silent switching — Load re-binds to the

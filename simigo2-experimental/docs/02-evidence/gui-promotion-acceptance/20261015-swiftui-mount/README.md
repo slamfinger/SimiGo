@@ -123,10 +123,25 @@ Record per-item outcomes and actual error strings; on failure, record the
 observed state instead of proceeding. ACCEPT is adjudicated only after this
 walkthrough.
 
-## Promotion status
+## Promotion status: ACCEPTED
 
-All five matrix items carry real-model evidence; the mount is build-verified
-with the runtime layer fully evidenced. GUI promotion ACCEPT is submitted
-for the human decision — this document is the evidence package, not the
-acceptance itself. G-5 / G-8 / G-10 remain with independent governance
-review; no durability/universal-concurrency claims are made.
+**GUI promotion ACCEPT — adjudicated by the human reviewer on 2026-10-15**
+(decision issued directly, on the evidence package above and the review
+rounds that closed the mount's binding lifecycle: actual-binding guards,
+directory-level guard, teardown ordering with hook-release verification,
+surviving-binding failure reporting, and binding-published-only-on-
+confirmed-load; baseline `516e24c8`, suite 367/3/0).
+
+ACCEPT covers exactly: the small-scale ChatSession host path
+(`MLXSmallScaleChatHost`) mounted in SimiGo2App as an explicit parallel
+execution path, on the strength of the five-item matrix evidence (canonical
+strict cold==warm equality; content-identity isolation; corruption
+fail-closed; release-first switch lifecycle with stale rejection; corrected
+48% wall / 3x TTFT benefit with the earlier negative formally retracted).
+
+ACCEPT does NOT cover, and no claim is made for: G-5 / G-8 / G-10
+(independent governance review, unaffected); power-loss or storage-media
+durability; universal concurrency correctness; the registered fork-side
+residual (hook signature carries no caller identity — raw non-host sessions
+remain mitigated, not fully closed); and the oversized segmented engine /
+DCC-1 Tier-1 frozen semantics, which this line never modified.
