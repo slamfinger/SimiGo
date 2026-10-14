@@ -130,6 +130,23 @@ private final class URLBox: @unchecked Sendable {
     var value: URL?
 }
 
+private final class MaterializationCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    func bump() {
+        lock.lock()
+        count += 1
+        lock.unlock()
+    }
+
+    var value: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+}
+
 private func f3writeSnapshot(to url: URL) throws {
     let layer = KVCacheSimple()
     layer.update(
@@ -273,6 +290,83 @@ final class MaterializationCoordinatorTests: XCTestCase {
         // contract is: same result for both, exactly ONE underlying load.
         XCTAssertEqual(loads.value, 1, "single-flight: one work, shared result")
         XCTAssertEqual(registry.physicalUseCount("ref-X"), 0, "protection released")
+    }
+
+    func testCancelledWaiterDoesNotCancelSharedMaterialization() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+        let loadsCounter = MaterializationCounter()
+
+        let cancelledCaller = Task {
+            try await coordinator.materialize(key: "cancel-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 7
+            }
+        }
+
+        try await workGate.waitForFirstCall()
+        cancelledCaller.cancel()
+        do {
+            _ = try await cancelledCaller.value
+            XCTFail("a cancelled waiter must return CancellationError")
+        } catch is CancellationError {
+        }
+
+        let joiner = Task {
+            try await coordinator.materialize(key: "cancel-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 7
+            }
+        }
+        await workGate.release()
+
+        let cancelledSharedValue = try await joiner.value
+        XCTAssertEqual(cancelledSharedValue, 7)
+        XCTAssertEqual(loadsCounter.value, 1, "caller cancellation must not cancel or duplicate shared work")
+        XCTAssertEqual(registry.physicalUseCount("cancel-shared"), 0, "shared work must still release its lease")
+    }
+
+    func testTimeoutRejectsWaiterButSharedWorkCompletes() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+        let loadsCounter = MaterializationCounter()
+
+        let timeoutCaller = Task {
+            try await coordinator.materialize(
+                key: "timeout-shared",
+                timeoutNanoseconds: 10_000_000
+            ) {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 11
+            }
+        }
+
+        try await workGate.waitForFirstCall()
+        do {
+            _ = try await timeoutCaller.value
+            XCTFail("the waiter must time out")
+        } catch let error as MaterializationCoordinatorError {
+            XCTAssertEqual(error, .timedOut("timeout-shared"))
+        }
+
+        let joiner = Task {
+            try await coordinator.materialize(key: "timeout-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 11
+            }
+        }
+        await workGate.release()
+
+        let timedOutSharedValue = try await joiner.value
+        XCTAssertEqual(timedOutSharedValue, 11)
+        XCTAssertEqual(loadsCounter.value, 1, "timeout must not cancel or duplicate shared work")
+        XCTAssertEqual(registry.physicalUseCount("timeout-shared"), 0, "shared work must still release its lease")
     }
 
     func testProtectionIsTransientAndP2SemanticsSurvive() async throws {
@@ -1626,6 +1720,110 @@ final class MaterializationCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(try fresh.rescan(), 1, "explicit dismissal allows recovery")
         XCTAssertNotNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
+    }
+
+    func testQuarantineWriteFailureIsObservable() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-write-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            },
+            willRollback: { throw RollbackFault() }
+        )
+        let tokens = f3tokens(256, seed: 14)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let key = (oldEntry.artifact as! DiskPrefixArtifact).snapshotURL.path
+        try Data("not-a-directory".utf8).write(
+            to: root.appendingPathComponent(".invalidated"))
+        publishFault.enable()
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("rollback quarantine must fail when its durable ledger cannot be written")
+        } catch let error as PhysicalUseRegistry.PublicationQuarantinedError {
+            let ledgerError = error.underlyingError as? PrefixSnapshotStoreError
+            guard case .quarantineLedgerWriteFailed = ledgerError else {
+                return XCTFail("unexpected quarantine failure: \(error)")
+            }
+        }
+
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        let failures = store.physicalUse.takePublicationFailures(key)
+        XCTAssertEqual(failures.count, 1)
+    }
+
+    func testCorruptQuarantineLedgerFailsClosed() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-corrupt-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let ledgerDirectory = root.appendingPathComponent(".invalidated")
+        let corruptRecord = ledgerDirectory.appendingPathComponent("broken.quarantine")
+        try FileManager.default.createDirectory(at: ledgerDirectory, withIntermediateDirectories: true)
+        try Data("{not-json".utf8).write(to: corruptRecord)
+
+        XCTAssertThrowsError(try store.quarantinedArtifacts()) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+        XCTAssertThrowsError(try store.rescan()) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+        XCTAssertThrowsError(try store.clearQuarantine(forArtifactAt: "/missing")) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+    }
+
+    func testFailedQuarantineClearQuarantinesNewPublication() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-clear-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 15)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let ledgerDirectory = root.appendingPathComponent(".invalidated")
+        try FileManager.default.createDirectory(at: ledgerDirectory, withIntermediateDirectories: true)
+        try Data("{not-json".utf8).write(
+            to: ledgerDirectory.appendingPathComponent("broken.quarantine"))
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("a successful publication with an unclearable stale tombstone must fail closed")
+        } catch let error as PrefixSnapshotStoreError {
+            guard case .quarantineClearFailed = error else {
+                return XCTFail("unexpected publication failure: \(error)")
+            }
+        }
+
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(oldArtifact.snapshotURL.path))
+        XCTAssertNil(store.physicalUse.acquire(oldArtifact.snapshotURL.path))
     }
 
     /// A failed first publication must not leave an unregistered candidate

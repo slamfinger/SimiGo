@@ -59,6 +59,10 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
     case artifactDeletionFailed(path: String, underlyingDescription: String)
     case physicalUseUnavailable(path: String)
+    case quarantineLedgerCorrupt(path: String)
+    case quarantineLedgerWriteFailed(
+        path: String, rollbackDescription: String, underlyingDescription: String)
+    case quarantineClearFailed(path: String, underlyingDescription: String)
 }
 
 struct PrefixSnapshotSidecar: Codable, Equatable {
@@ -327,17 +331,25 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     rollbackError = error
                 }
                 if let rollbackError {
-                    try? persistQuarantine(
-                        artifactPath: snapshotURL.path,
-                        generation: generation,
-                        rollbackError: rollbackError
-                    )
                     physicalUse.markGenerationQuarantined(
                         snapshotURL.path, generation: generation)
+                    let quarantineFailure: Error
+                    do {
+                        try persistQuarantine(
+                            artifactPath: snapshotURL.path,
+                            generation: generation,
+                            rollbackError: rollbackError)
+                        quarantineFailure = rollbackError
+                    } catch {
+                        quarantineFailure = PrefixSnapshotStoreError.quarantineLedgerWriteFailed(
+                            path: snapshotURL.path,
+                            rollbackDescription: String(describing: rollbackError),
+                            underlyingDescription: String(describing: error))
+                    }
                     throw PhysicalUseRegistry.PublicationQuarantinedError(
                         key: snapshotURL.path,
                         generation: generation,
-                        underlyingError: rollbackError)
+                        underlyingError: quarantineFailure)
                 }
                 throw error
             }
@@ -361,7 +373,14 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             }
         )
 
-        try? clearQuarantine(forArtifactAt: snapshotURL.path)
+        do {
+            try clearQuarantine(forArtifactAt: snapshotURL.path)
+        } catch {
+            physicalUse.markGenerationQuarantined(snapshotURL.path, generation: generation)
+            throw PrefixSnapshotStoreError.quarantineClearFailed(
+                path: snapshotURL.path,
+                underlyingDescription: String(describing: error))
+        }
 
         guard let publishedEntry else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
@@ -459,6 +478,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// Durable quarantine records survive process restart. `rescan()` skips
     /// these paths until explicit repair/dismissal.
     public func quarantinedArtifacts() throws -> [QuarantinedArtifactRecord] {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
         guard fileManager.fileExists(atPath: quarantineDirectory.path) else {
             return []
         }
@@ -467,27 +488,36 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             includingPropertiesForKeys: nil
         ).compactMap { url in
             guard url.pathExtension == "quarantine" else { return nil }
-            return try? JSONDecoder().decode(
-                QuarantinedArtifactRecord.self,
-                from: Data(contentsOf: url)
-            )
+            do {
+                return try JSONDecoder().decode(
+                    QuarantinedArtifactRecord.self,
+                    from: Data(contentsOf: url)
+                )
+            } catch {
+                throw PrefixSnapshotStoreError.quarantineLedgerCorrupt(path: url.path)
+            }
         }
     }
 
     /// Explicit repair/dismissal for a durable quarantine tombstone.
     public func clearQuarantine(forArtifactAt path: String) throws {
+        artifactIOLock.lock()
+        defer { artifactIOLock.unlock() }
         guard fileManager.fileExists(atPath: quarantineDirectory.path) else { return }
         for url in try fileManager.contentsOfDirectory(
             at: quarantineDirectory,
             includingPropertiesForKeys: nil
         ) {
-            guard url.pathExtension == "quarantine",
-                let record = try? JSONDecoder().decode(
+            guard url.pathExtension == "quarantine" else { continue }
+            let record: QuarantinedArtifactRecord
+            do {
+                record = try JSONDecoder().decode(
                     QuarantinedArtifactRecord.self,
-                    from: Data(contentsOf: url)
-                ),
-                record.artifactPath == path
-            else { continue }
+                    from: Data(contentsOf: url))
+            } catch {
+                throw PrefixSnapshotStoreError.quarantineLedgerCorrupt(path: url.path)
+            }
+            guard record.artifactPath == path else { continue }
             try fileManager.removeItem(at: url)
         }
     }
