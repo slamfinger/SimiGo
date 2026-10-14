@@ -585,12 +585,13 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(childReport.position, 1)
         XCTAssertEqual(childReport.records, 2)
 
+        let backend = MLXExecutionStateBackend()
         let stateStore = DurableExecutionStateStore(
             directory: stateRoot,
             payloadCodec: MLXPrefixPayloadPersistence(
                 backendIdentity: "mlx-token-prefix-v1"))
         let coordinator = try ExecutionContinuityCoordinator(
-            backend: MLXExecutionStateBackend(),
+            backend: backend,
             identityAllocator: nil,
             stateStore: stateStore)
         let restored = try XCTUnwrap(coordinator.handle(ExecutionID("P")))
@@ -599,6 +600,25 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(coordinator.recordCount, 2)
         XCTAssertEqual(coordinator.recordsSnapshot.last?.sequence, 2)
         XCTAssertEqual(coordinator.recordsSnapshot.last?.operation, .continued)
+
+        // Representation payloads must survive with semantic state. Restore
+        // each persisted position into the fresh backend and verify its
+        // physical binding, not just the opaque descriptor metadata.
+        let positionZero = try await coordinator.restore(
+            restored,
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(0),
+                continuation: ExecutionContinuation(
+                    nextInput: "", continuationID: "restart-restore-0")))
+        XCTAssertEqual(try backend.boundPrefix(for: positionZero).prefix, [1, 2, 3])
+
+        let positionOne = try await coordinator.restore(
+            positionZero,
+            request: ExecutionRestoreRequest(
+                targetPosition: ExecutionPosition(1),
+                continuation: ExecutionContinuation(
+                    nextInput: "next", continuationID: "restart-restore-1")))
+        XCTAssertEqual(try backend.boundPrefix(for: positionOne).prefix, [1, 2, 3, 4, 5])
     }
 
     /// PROCESS CRASH: SIGKILL after a durable teardown. Recovery must NOT
