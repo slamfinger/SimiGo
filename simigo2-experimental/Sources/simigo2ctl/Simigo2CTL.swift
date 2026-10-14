@@ -21,7 +21,7 @@ struct Simigo2CTL {
     guard let command = arguments.first else {
       throw OutputError(
         message:
-          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|cross-backend-logit-record|cross-backend-logit-compare|cross-backend-margin-record|cross-backend-margin-compare|named-source-profile-evaluate|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths|representation-consistency-boundary|llama-representation-consistency> MODEL_DIRECTORY [options]"
+          "usage: simigo2ctl <inventory|simulate|benchmark|budget-sweep|trace-replay|materialize|mlx-gate1|mlx-gate2|mlx-gate3|mlx-gate4|mlx-gate5|mlx-sequence-sweep|rep-audit|instrument-audit|group-trace-audit|g19a-pilot|g19-collect|l4b-reconcile|l4c-identity|e5-scenario|o2-baseline|o3-skeleton|o3c-streaming|o6-cancel-ab|llama-execstate-ab|llama-execstate-fork-restore|llama-execstate-cancel|llama-branch-session|llama-branch-session-nested|llama-branch-session-cancel|llama-branch-session-long|llama-branch-session-memory-pressure|mlx-branch-session|mlx-branch-session-nested|mlx-branch-session-long|mlx-branch-session-cancel|mlx-branch-session-memory-pressure|ui-branch-session-matrix|ui-nested-branch-matrix|ui-cancellation-matrix|ui-memory-pressure-matrix|cross-backend-token-record|cross-backend-token-compare|cross-backend-logit-record|cross-backend-logit-compare|cross-backend-margin-record|cross-backend-margin-compare|named-source-profile-evaluate|mlx-execstate-cost|mlx-execstate-scale|mlx-release-cost|mlx-release-recovery|mlx-prefix-cache-probe|mlx-segment-phase|mlx-fixed-prefix-phase|module-paths|representation-consistency-boundary|llama-representation-consistency> MODEL_DIRECTORY [options]"
       )
     }
 
@@ -753,6 +753,24 @@ struct Simigo2CTL {
         segmentSize: segmentSize
       )
       print(try toJSON(report))
+    case "mlx-prefix-cache-probe":
+      let prompt = optionalOption("--prompt", rest)
+        ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
+      let prefixTokens = optionalOption("--prefix-tokens", rest).flatMap(Int.init) ?? 16
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 8
+      let root = optionalOption("--root", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      } ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+        "simigo-prefix-cache-\(UUID().uuidString)", isDirectory: true)
+      let report = try await MLXPrefixCrossSessionCache.persistenceProbe(
+        modelDirectory: modelDirectory,
+        root: root,
+        prompt: prompt,
+        prefixTokenCount: prefixTokens,
+        maxTokens: tokens
+      )
+      print(try toJSON(report))
+
     case "mlx-release-recovery":
       let length = optionalOption("--prefix-length", rest).flatMap(Int.init) ?? 64
       let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 2
