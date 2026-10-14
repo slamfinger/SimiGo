@@ -257,7 +257,7 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
             return text
         }
 
-        func respondWithObservations(
+        public func respondWithObservations(
             to prompt: String, maxTokens: Int?
         ) async throws -> (text: String, observations: MLXPrefixHookObservation) {
             guard let (active, currentGeneration) = host.stateLock.withLock({

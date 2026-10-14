@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import MLXLMCommon
 import SimiGo2Experimental
 import SwiftUI
 
@@ -77,9 +78,22 @@ struct ChatEntry: Identifiable, Equatable {
     var streaming: Bool
 }
 
+/// Explicit execution-path selection (GUI promotion Option A): the oversized
+/// segmented engine stays the DEFAULT; the small-scale ChatSession path is a
+/// deliberate user choice, never a silent switch. The two paths share no
+/// state: the engine and its DCC-1 durable-baseline semantics are untouched
+/// by the small-scale host, and loading one path tears the other down first.
+enum ExecutionPath: String, CaseIterable, Identifiable {
+    case oversized = "oversized (segmented engine)"
+    case smallScale = "small-scale (ChatSession host)"
+
+    var id: String { rawValue }
+}
+
 @MainActor
 final class ChatAppModel: ObservableObject {
     @Published var modelPath = ChatAppModel.resolvedDefaultModelPath
+    @Published var executionPath: ExecutionPath = .oversized
     @Published var transcript: [ChatEntry] = []
     @Published var inputText = ""
     @Published var liveGauge = "idle"
@@ -90,6 +104,22 @@ final class ChatAppModel: ObservableObject {
 
     private var engine: OversizedSegmentedEngine?
     private var loadedPath: URL?
+    /// Small-scale host (explicit path only). The durable cache base lives
+    /// in Application Support, so cross-session snapshots survive app
+    /// restarts — the property the canonical protocol made strictly equal
+    /// and the F3 protocol measured at ~48% wall savings.
+    private var chatHost: MLXSmallScaleChatHost?
+    /// The small-scale conversation session; dropped on new session so the
+    /// NEXT conversation adopts the durable prefix (visible cross-session
+    /// behavior in the GUI).
+    private var chatSession: MLXSmallScaleChatHost.HostSession?
+
+    private static var smallScaleCacheBase: URL {
+        let support = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return support.appendingPathComponent(
+            "SimiGo2SmallScaleCache", isDirectory: true)
+    }
 
     static var resolvedDefaultModelPath: String {
         let hub = NSHomeDirectory() + "/.cache/huggingface/hub"
@@ -120,6 +150,10 @@ final class ChatAppModel: ObservableObject {
     func loadModel() {
         isGenerating = true
         loadLine = "loading…"
+        if executionPath == .smallScale {
+            loadSmallScale()
+            return
+        }
         let engine: OversizedSegmentedEngine
         do {
             engine = try ensureEngine()
@@ -160,6 +194,43 @@ final class ChatAppModel: ObservableObject {
         }
     }
 
+    /// Small-scale path load: tear down the engine FIRST (no silent
+    /// co-residency of the two paths), then activate the host for the
+    /// selected model. Model switching within the path goes through the
+    /// host's explicit switchModel.
+    private func loadSmallScale() {
+        engine = nil
+        loadedPath = nil
+        let modelDirectory = URL(
+            fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
+        let host = chatHost ?? MLXSmallScaleChatHost(
+            base: ChatAppModel.smallScaleCacheBase)
+        chatHost = host
+        Task.detached {
+            do {
+                let active = try await {
+                    if let current = await host.activeModelDirectory,
+                        current != modelDirectory
+                    {
+                        return try await host.switchModel(to: modelDirectory)
+                    }
+                    return try await host.activate(modelDirectory: modelDirectory)
+                }()
+                await MainActor.run {
+                    self.loadLine = "small-scale host active: \(active.lastPathComponent)"
+                    self.execStateLine = "ChatSession host | durable cross-session cache"
+                    self.statsLine = "content-identity namespace | canonical prefill profile"
+                    self.isGenerating = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.loadLine = "small-scale load error: \(error.localizedDescription)"
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+
     func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isGenerating else { return }
@@ -168,6 +239,11 @@ final class ChatAppModel: ObservableObject {
         transcript.append(ChatEntry(role: "assistant", text: "", streaming: true))
         liveGauge = "generating…"
         isGenerating = true
+
+        if executionPath == .smallScale {
+            sendSmallScale(text)
+            return
+        }
 
         // Strict Execution State turns: prior history lives in the bound
         // prefix; each send consumes it with only the NEW user message.
@@ -222,6 +298,55 @@ final class ChatAppModel: ObservableObject {
         }
     }
 
+    /// One small-scale turn through the host-issued session (generation-
+    /// checked; a session stale after a model switch is REJECTED and the
+    /// error surfaced, never silently evaluated against the new model).
+    private func sendSmallScale(_ text: String) {
+        guard let host = chatHost else {
+            appendToLastAssistant("  [error: small-scale path not loaded]")
+            finishLastAssistantSelf()
+            liveGauge = "error"
+            isGenerating = false
+            return
+        }
+        if chatSession == nil {
+            do {
+                chatSession = try host.makeSession(
+                    generateParameters: GenerateParameters(
+                        maxTokens: 256, temperature: 0))
+            } catch {
+                appendToLastAssistant("  [error: \(error.localizedDescription)]")
+                finishLastAssistantSelf()
+                liveGauge = "error"
+                isGenerating = false
+                return
+            }
+        }
+        let session = chatSession!
+        Task.detached {
+            do {
+                let (reply, observations) = try await session.respondWithObservations(
+                    to: text, maxTokens: 256)
+                await MainActor.run {
+                    self.finishLastAssistant(reply, mean: 0)
+                    self.execStateLine = String(
+                        format: "cross-session cache | hook calls %d | hits %d | last match %@",
+                        observations.calls, observations.hits,
+                        observations.lastMatchedTokenCount.map(String.init) ?? "-")
+                    self.isGenerating = false
+                    self.liveGauge = "idle"
+                }
+            } catch {
+                await MainActor.run {
+                    self.appendToLastAssistant("  [error: \(error.localizedDescription)]")
+                    self.finishLastAssistantSelf()
+                    self.liveGauge = "error"
+                    self.isGenerating = false
+                }
+            }
+        }
+    }
+
     // `transcript` is UI PRESENTATION history only — never a source for
     // Execution State restore/replay. The executable conversation history
     // lives in the engine's Execution State (coordinator + bound prefix).
@@ -230,6 +355,16 @@ final class ChatAppModel: ObservableObject {
     func newSession() {
         guard !isGenerating else { return }
         liveGauge = "new session…"
+        if executionPath == .smallScale {
+            // Drop the conversation session only: the durable cross-session
+            // cache SURVIVES so the next conversation adopts its prefix —
+            // that adoption is the path's purpose.
+            chatSession = nil
+            transcript.removeAll()
+            execStateLine = "fresh ChatSession | durable cache retained"
+            liveGauge = "idle"
+            return
+        }
         let engine = engine
         Task.detached {
             do {
@@ -281,6 +416,16 @@ struct ChatRootView: View {
                 Button("Load") { model.loadModel() }
                     .disabled(model.isGenerating)
             }
+
+            // Explicit execution-path selection: oversized is the default;
+            // the small-scale ChatSession host is a deliberate choice (no
+            // silent switching — Load re-binds to the selected path).
+            Picker("Execution path", selection: $model.executionPath) {
+                ForEach(ExecutionPath.allCases) { path in
+                    Text(path.rawValue).tag(path)
+                }
+            }
+            .pickerStyle(.segmented)
 
             HStack {
                 Text(model.loadLine).font(.caption).foregroundStyle(.secondary)
