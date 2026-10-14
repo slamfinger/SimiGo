@@ -92,6 +92,37 @@ loaded model directory == standardized requested directory), which also
 covers the failed-switch rollback case. Build + suite 367/3/0 at
 `c5b4daa3`.
 
+## Binding publishes only on confirmed load (third review round)
+
+The oversized branch published `loadedExecutionPath`/`loadedModelDirectory`
+synchronously, BEFORE the async recover + load completed; the failure branch
+cleared neither, so a failed load could leave `bindingMatchesRequest == true`
+and Send passing into the lazy-load path. Fixed per the minimal prescription:
+every Load invalidates the binding at start; oversized re-publishes it only
+in the async success block (after recover AND load succeed); small-scale
+keeps publishing from the host's surviving active state (success or
+rolled-back truth). A failed load therefore blocks Send/New Session until a
+successful Load re-establishes the binding. Build + suite 367/3/0.
+
+## Manual click-through checklist (pending — the human acceptance step)
+
+1. Send before any successful Load (including after a failed oversized
+   Load with an error model directory) — must be blocked with the
+   "press Load first" prompt.
+2. Bidirectional path switching oversized → small-scale → oversized — old
+   path released, hook-release check passes, new path works.
+3. Same-path model directory change without Load (both paths) — Send and
+   New Session both blocked.
+4. Switch to a deliberately unloadable model — rollback keeps A active
+   while the request points at B; Send blocked.
+5. Post-switch use of an old session errors visibly (never continues on the
+   new model); after New Session the durable cache is retained and the next
+   session re-hits it (hook counters in the status line).
+
+Record per-item outcomes and actual error strings; on failure, record the
+observed state instead of proceeding. ACCEPT is adjudicated only after this
+walkthrough.
+
 ## Promotion status
 
 All five matrix items carry real-model evidence; the mount is build-verified
