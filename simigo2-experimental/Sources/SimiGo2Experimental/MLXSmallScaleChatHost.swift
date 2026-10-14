@@ -577,9 +577,9 @@ extension MLXSmallScaleChatHost {
         }
 
         let coldSeconds = Double(coldDuration.components.seconds)
-            + Double(coldDuration.components.attoseconds) / 1e15
+            + Double(coldDuration.components.attoseconds) / 1e18
         let warmSeconds = Double(warmDuration.components.seconds)
-            + Double(warmDuration.components.attoseconds) / 1e15
+            + Double(warmDuration.components.attoseconds) / 1e18
         let savings = coldSeconds - warmSeconds
         let outputsMatch = baselineOutput == warmOutput
         let crossSessionHitObserved = observations.hits > 0

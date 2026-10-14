@@ -1,0 +1,145 @@
+{
+  "allPairsSavePromptTime" : true,
+  "boundary" : 512,
+  "coldPromptTime" : {
+    "maximum" : 0.8802281618118286,
+    "mean" : 0.8757250308990479,
+    "median" : 0.874701976776123,
+    "minimum" : 0.8722449541091919,
+    "values" : [
+      0.8722449541091919,
+      0.8802281618118286,
+      0.874701976776123
+    ]
+  },
+  "coldWall" : {
+    "maximum" : 1.296197,
+    "mean" : 1.2844001526666666,
+    "median" : 1.281615375,
+    "minimum" : 1.275388083,
+    "values" : [
+      1.275388083,
+      1.296197,
+      1.281615375
+    ]
+  },
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "note" : "Paired canonical cold vs adopted-warm legs under one model load. PASS requires WALL-time savings (the capability verdict), submission-time savings, and stable swap. The first controlled run showed warm consistently SLOWER than cold at wall level — benefit not established; submission time alone must never decide the verdict.",
+  "pairs" : [
+    {
+      "cold" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.88063525,
+        "generationTokenCount" : 16,
+        "hookCalls" : 0,
+        "hookHits" : 0,
+        "kind" : "cold",
+        "lastChunkAtSeconds" : 1.275312792,
+        "promptSubmissionSeconds" : 0.8722449541091919,
+        "wallSeconds" : 1.275388083
+      },
+      "index" : 0,
+      "promptSubmissionSavings" : 0.6176568269729614,
+      "wallSavings" : 0.6058209579999999,
+      "warm" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.292780458,
+        "generationTokenCount" : 16,
+        "hookCalls" : 1,
+        "hookHits" : 1,
+        "kind" : "warm",
+        "lastChunkAtSeconds" : 0.669496416,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.25458812713623047,
+        "wallSeconds" : 0.669567125
+      }
+    },
+    {
+      "cold" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.888148875,
+        "generationTokenCount" : 16,
+        "hookCalls" : 0,
+        "hookHits" : 0,
+        "kind" : "cold",
+        "lastChunkAtSeconds" : 1.296144,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.8802281618118286,
+        "wallSeconds" : 1.296197
+      },
+      "index" : 1,
+      "promptSubmissionSavings" : 0.6247341632843018,
+      "wallSavings" : 0.620939291,
+      "warm" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.292371292,
+        "generationTokenCount" : 16,
+        "hookCalls" : 1,
+        "hookHits" : 1,
+        "kind" : "warm",
+        "lastChunkAtSeconds" : 0.675193792,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.25549399852752686,
+        "wallSeconds" : 0.675257709
+      }
+    },
+    {
+      "cold" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.88309225,
+        "generationTokenCount" : 16,
+        "hookCalls" : 0,
+        "hookHits" : 0,
+        "kind" : "cold",
+        "lastChunkAtSeconds" : 1.281560875,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.874701976776123,
+        "wallSeconds" : 1.281615375
+      },
+      "index" : 2,
+      "promptSubmissionSavings" : 0.6213599443435669,
+      "wallSavings" : 0.6166962089999999,
+      "warm" : {
+        "chunkCount" : 16,
+        "firstChunkLatencySeconds" : 0.28999725,
+        "generationTokenCount" : 16,
+        "hookCalls" : 1,
+        "hookHits" : 1,
+        "kind" : "warm",
+        "lastChunkAtSeconds" : 0.664858,
+        "matchedTokenCount" : 512,
+        "promptSubmissionSeconds" : 0.25334203243255615,
+        "wallSeconds" : 0.664919166
+      }
+    }
+  ],
+  "pass" : true,
+  "profileVersion" : "canonical-remainder-v1",
+  "promptTokenCount" : 648,
+  "stride" : 256,
+  "swapAtEnd" : 1540358144,
+  "swapAtStart" : 1540358144,
+  "swapStable" : true,
+  "warmPromptTime" : {
+    "maximum" : 0.25549399852752686,
+    "mean" : 0.2544747193654378,
+    "median" : 0.25458812713623047,
+    "minimum" : 0.25334203243255615,
+    "values" : [
+      0.25458812713623047,
+      0.25549399852752686,
+      0.25334203243255615
+    ]
+  },
+  "warmWall" : {
+    "maximum" : 0.675257709,
+    "mean" : 0.6699146666666668,
+    "median" : 0.669567125,
+    "minimum" : 0.664919166,
+    "values" : [
+      0.669567125,
+      0.675257709,
+      0.664919166
+    ]
+  }
+}

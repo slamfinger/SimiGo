@@ -34,6 +34,14 @@ public enum F3BenefitProtocol {
         public let promptSubmissionSeconds: Double
         public let wallSeconds: Double
         public let generationTokenCount: Int
+        /// Attribution instrumentation (20261015 unit): where does the warm
+        /// leg's time actually go?
+        public let firstChunkLatencySeconds: Double
+        public let lastChunkAtSeconds: Double
+        public let chunkCount: Int
+        public let hookCalls: Int
+        public let hookHits: Int
+        public let matchedTokenCount: Int?
     }
 
     public struct Pair: Codable, Hashable, Sendable {
@@ -136,28 +144,46 @@ public enum F3BenefitProtocol {
             } else {
                 runtime.uninstall()
             }
+            let observationsBefore = runtime.observations
             let session = ChatSession(
                 container, generateParameters: canonicalParameters())
             let start = clock.now
             var promptTime: Double?
             var tokenCount: Int?
+            var firstChunk: Double?
+            var lastChunk: Double?
+            var chunks = 0
             for try await generation in session.streamDetails(to: prompt) {
+                if generation.chunk != nil {
+                    chunks += 1
+                    let elapsed = seconds(clock.now - start)
+                    if firstChunk == nil { firstChunk = elapsed }
+                    lastChunk = elapsed
+                }
                 if let info = generation.info {
                     promptTime = info.promptTime
                     tokenCount = info.generationTokenCount
                 }
             }
             let wall = clock.now - start
-            func seconds(_ d: Duration) -> Double {
-                Double(d.components.seconds)
-                    + Double(d.components.attoseconds) / 1e15
-            }
+            let observationsAfter = runtime.observations
             Memory.clearCache()
             return Leg(
                 kind: kind,
                 promptSubmissionSeconds: promptTime ?? 0,
                 wallSeconds: seconds(wall),
-                generationTokenCount: tokenCount ?? 0)
+                generationTokenCount: tokenCount ?? 0,
+                firstChunkLatencySeconds: firstChunk ?? 0,
+                lastChunkAtSeconds: lastChunk ?? 0,
+                chunkCount: chunks,
+                hookCalls: observationsAfter.calls - observationsBefore.calls,
+                hookHits: observationsAfter.hits - observationsBefore.hits,
+                matchedTokenCount: observationsAfter.lastMatchedTokenCount)
+        }
+
+        func seconds(_ d: Duration) -> Double {
+            Double(d.components.seconds)
+                + Double(d.components.attoseconds) / 1e18
         }
 
         // Phase 0 (untimed): page weights in and seed the durable artifact.

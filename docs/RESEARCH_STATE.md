@@ -4,10 +4,29 @@
 
 **Last updated**: 2026-10-15
 
-## Current continuity — 2026-10-15 (F3 benefit protocol: BENEFIT NOT ESTABLISHED)
+## Current continuity — 2026-10-15 (F3: measurement bug found and fixed — ACTUAL BENEFIT ESTABLISHED)
 
-> **Status:** `F3 FIRST CONTROLLED MEASUREMENT = HONEST NEGATIVE`.
-> Branch `codex/f3-benefit-protocol`.
+> **Status:** `F3 RETRACTION ISSUED + POSITIVE BENEFIT MEASURED`.
+> Branch `codex/f3-timing-fix`.
+
+The first controlled F3 run's "warm 2.3x slower" negative was a measurement
+defect, caught by the protocol's own consistency checks (impossible
+process-vs-leg time totals; a first-chunk latency exceeding its leg's wall).
+Root cause: Duration→seconds divided attoseconds by 1e15 instead of 1e18,
+inflating fractional seconds 1000x; the engine's per-token latency stat
+carried the same bug. All seconds-intent sites fixed (367/3/0). Corrected
+run (3 paired canonical legs, boundary 512): cold 1.28-1.30 s vs warm
+0.66-0.68 s wall (48% paired savings, <2% spread), TTFT 0.88→0.29 s (3x),
+hook 1 hit @ 512 per warm leg, swap stable — `pass = True` under the
+corrected criterion. F3 is CLOSED WITH POSITIVE EVIDENCE for the canonical
+small-scale path; the retraction is recorded in
+`simigo2-experimental/docs/02-evidence/f3-benefit-protocol/20261015-8cbff75c/RETRACTION-and-fix.md`.
+The adjudicated order's remaining item is the SwiftUI mount (now
+unblocked); G-5/G-8/G-10 remain with independent governance.
+
+## Retracted continuity (kept for the record)
+
+> **Status:** `F3 FIRST CONTROLLED MEASUREMENT = HONEST NEGATIVE` — RETRACTED, see above.
 
 The F3 protocol (one model load, untimed warm-up/seed, paired canonical
 cold vs adopted-warm legs, swap-stability condition) ran on the real 30B:
