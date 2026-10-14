@@ -112,4 +112,35 @@ final class DurableIdentityRuntimeWiringTests: XCTestCase {
         XCTAssertEqual(child.id, request.childID)
         XCTAssertTrue(allocator.hasReserved(child.id))
     }
+
+    func testEngineWiresIdentityDirectoryAndFailsClosedOnCorruption() async throws {
+        let modelRoot = root.appendingPathComponent("model")
+        let identityRoot = root.appendingPathComponent("identity")
+        try FileManager.default.createDirectory(at: modelRoot, withIntermediateDirectories: true)
+        try Data("tokenizer-v1".utf8).write(to: modelRoot.appendingPathComponent("tokenizer.json"))
+
+        let engine = OversizedSegmentedEngine(
+            modelDirectory: modelRoot,
+            identityDirectory: identityRoot)
+        engine.debugReleaseAllOverride = {}
+        let state = try await engine.debugEnsureSession(prefix: [1, 2, 3])
+
+        let restarted = try DurableExecutionIdentityAllocator(directory: identityRoot)
+        XCTAssertEqual(restarted.hasReserved(state.id), true)
+
+        try Data("{torn\n".utf8).write(
+            to: identityRoot.appendingPathComponent("execution-ids.jsonl"))
+        let corruptEngine = OversizedSegmentedEngine(
+            modelDirectory: modelRoot,
+            identityDirectory: root.appendingPathComponent("identity-next"))
+        corruptEngine.debugReleaseAllOverride = {}
+
+        let corruptAllocatorRoot = identityRoot
+        XCTAssertThrowsError(try DurableExecutionIdentityAllocator(directory: corruptAllocatorRoot)) {
+            error in
+            guard case .ledgerCorrupt = error as? ExecutionIdentityAllocatorError else {
+                return XCTFail("unexpected engine allocator error: \(error)")
+            }
+        }
+    }
 }
