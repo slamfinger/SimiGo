@@ -1826,6 +1826,36 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNil(store.physicalUse.acquire(oldArtifact.snapshotURL.path))
     }
 
+    func testGenerationSidecarBindsSnapshotContentDigest() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("snapshot-digest-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 16)
+        let entry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "original".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let artifact = entry.artifact as! DiskPrefixArtifact
+        try "tampered".write(to: artifact.snapshotURL, atomically: true, encoding: .utf8)
+        let fresh = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        XCTAssertThrowsError(try fresh.rescan()) { error in
+            guard case .artifactContentMismatch = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected rescan error: \(error)")
+            }
+        }
+
+        let admission = store.pool.admit(namespace: f3ns, promptTokens: tokens)
+        XCTAssertNotNil(admission)
+        do {
+            _ = try await store.load(admission!)
+            XCTFail("a generation artifact must fail closed after content mutation")
+        } catch let error as PrefixSnapshotStoreError {
+            XCTAssertEqual(error, .artifactContentMismatch(path: artifact.snapshotURL.path))
+        }
+    }
+
     /// A failed first publication must not leave an unregistered candidate
     /// at the formal path where restart rescan can resurrect it.
     func testFreshPublishFailureQuarantinesUnregisteredArtifact() async throws {

@@ -1,5 +1,6 @@
 import Foundation
 import MLXLMCommon
+import Crypto
 
 /// Disk artifact for one pool entry (B-2): the KV snapshot written by the
 /// session-side exporter plus a sidecar carrying the content claims.
@@ -58,6 +59,7 @@ public enum PrefixSnapshotStoreError: Error, Equatable {
     case artifactUnreadable(String)
     case artifactGenerationMismatch(expected: UUID?, actual: UUID?)
     case artifactDeletionFailed(path: String, underlyingDescription: String)
+    case artifactContentMismatch(path: String)
     case physicalUseUnavailable(path: String)
     case quarantineLedgerCorrupt(path: String)
     case quarantineLedgerWriteFailed(
@@ -73,6 +75,9 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
     var chainHash: UInt64
     var createdAt: Date
     var generation: UUID? = nil
+    /// Added with generation sidecars; nil is accepted only for pre-G-6
+    /// legacy artifacts without an identified generation.
+    var snapshotSHA256: String? = nil
 }
 
 private struct RescanArtifactChanged: Error {}
@@ -254,7 +259,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             tokenCount: tokens.count,
             chainHash: hash,
             createdAt: Date(),
-            generation: generation)
+            generation: generation,
+            snapshotSHA256: try sha256File(at: tempURL))
         let sidecarData = try JSONEncoder().encode(sidecar)
         let sidecarTempURL = dir.appendingPathComponent(".tmp-\(UUID().uuidString)-sidecar")
         try sidecarData.write(to: sidecarTempURL, options: .atomic)
@@ -572,6 +578,15 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             throw PrefixSnapshotStoreError.artifactGenerationMismatch(
                 expected: artifact.generation, actual: sidecar.generation)
         }
+        if let expectedSHA256 = sidecar.snapshotSHA256 {
+            guard try sha256File(at: artifact.snapshotURL) == expectedSHA256 else {
+                throw PrefixSnapshotStoreError.artifactContentMismatch(
+                    path: artifact.snapshotURL.path)
+            }
+        } else if artifact.generation != nil {
+            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                path: artifact.snapshotURL.path)
+        }
         guard sidecar.tokenCount == entry.tokenCount,
             sidecar.chainHash == entry.boundaryHash
         else {
@@ -613,6 +628,22 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
+                artifactIOLock.lock()
+                do {
+                    if let expectedSHA256 = sidecar.snapshotSHA256 {
+                        guard try sha256File(at: snapshotURL) == expectedSHA256 else {
+                            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                path: snapshotURL.path)
+                        }
+                    } else if sidecar.generation != nil {
+                        throw PrefixSnapshotStoreError.artifactContentMismatch(
+                            path: snapshotURL.path)
+                    }
+                } catch {
+                    artifactIOLock.unlock()
+                    throw error
+                }
+                artifactIOLock.unlock()
                 try willBeginRescanGeneration()
                 // Register the generation before pool.commit: immediate
                 // self-eviction must issue a live delete, not a stale no-op.
@@ -635,6 +666,15 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                             fileManager.fileExists(atPath: snapshotURL.path)
                         else {
                             throw RescanArtifactChanged()
+                        }
+                        if let expectedSHA256 = sidecar.snapshotSHA256 {
+                            guard try sha256File(at: snapshotURL) == expectedSHA256 else {
+                                throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                    path: snapshotURL.path)
+                            }
+                        } else if sidecar.generation != nil {
+                            throw PrefixSnapshotStoreError.artifactContentMismatch(
+                                path: snapshotURL.path)
                         }
                         let snapshotAttributes = try fileManager.attributesOfItem(
                             atPath: snapshotURL.path)
@@ -663,6 +703,18 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             }
         }
         return registered
+    }
+
+    /// ponytail: 1 MiB chunks; switch to a platform streaming file hash if
+    /// profiling shows this is hot on multi-GB snapshots.
+    private func sha256File(at url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     // MARK: - Layout
