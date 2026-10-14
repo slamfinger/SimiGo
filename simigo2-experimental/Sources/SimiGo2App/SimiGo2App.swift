@@ -120,6 +120,21 @@ final class ChatAppModel: ObservableObject {
     /// behavior in the GUI).
     private var chatSession: MLXSmallScaleChatHost.HostSession?
 
+    private var requestedModelDirectory: URL {
+        URL(fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
+    }
+
+    /// Binding validity: BOTH the path type AND the model directory must
+    /// match what was ACTUALLY loaded. A same-path directory change without
+    /// Load must not silently send against a different model, and a failed
+    /// switch's rolled-back binding (old model alive, request pointing at
+    /// the new one) stays blocked until Load reconciles it.
+    private var bindingMatchesRequest: Bool {
+        guard let loadedExecutionPath else { return false }
+        return loadedExecutionPath == executionPath
+            && loadedModelDirectory == requestedModelDirectory
+    }
+
     private static var smallScaleCacheBase: URL {
         let support = FileManager.default.urls(
             for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -278,10 +293,10 @@ final class ChatAppModel: ObservableObject {
     func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isGenerating else { return }
-        // The ACTUAL loaded path decides, never the selector alone: a
-        // changed picker must go through Load before it can send.
-        guard executionPath == loadedExecutionPath else {
-            loadLine = "execution path selected but not loaded — press Load first"
+        // The ACTUAL binding decides, never the selector or the text field
+        // alone: a changed path OR model directory must go through Load.
+        guard bindingMatchesRequest else {
+            loadLine = "execution path or model changed — press Load first"
             return
         }
         inputText = ""
@@ -404,8 +419,8 @@ final class ChatAppModel: ObservableObject {
     // failure visible, instead of claiming a fresh state (review fix ①).
     func newSession() {
         guard !isGenerating else { return }
-        guard executionPath == loadedExecutionPath else {
-            loadLine = "execution path selected but not loaded — press Load first"
+        guard bindingMatchesRequest else {
+            loadLine = "execution path or model changed — press Load first"
             return
         }
         liveGauge = "new session…"
