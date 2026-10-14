@@ -513,36 +513,32 @@ final class BranchForkTests: XCTestCase {
         XCTAssertFalse(base.text.isEmpty, "base 生成不应为空")
         let withReply = baseMessages + [Self.assistant(base.text)]
 
-        // Runtime API：main → alt fork
+        // Runtime API：main → alt fork（v2.1.1 官方内存 fork：零磁盘
+        // round-trip，fork 即时产物只在内存）。
         let store = NativeMLX.defaultBranchCheckpointStore()
         let forkMeta = try await runtime.forkSessionBranch(
             sessionId: "s", sourceBranch: "main", targetBranch: "alt")
         XCTAssertEqual(forkMeta.history.count, 3, "fork 元数据应携带源分支 history")
 
-        // STEP-10 R2: fork 点持久化进 target 分支 metadata。
+        // STEP-10 R2: fork 点随返回值携带（fork 事件描述符）；盘上
+        // 持久化由 child 首个成功轮的 per-turn 落盘完成。
+        let returnedForkPoint = try XCTUnwrap(
+            forkMeta.forkPoint, "fork 返回值必须携带 fork 点")
+        XCTAssertEqual(returnedForkPoint.sourceStorageKey, "default/s/main")
+        XCTAssertEqual(returnedForkPoint.atMessage, 3)
+        XCTAssertGreaterThan(returnedForkPoint.atToken, 0)
+
+        // STEP-10 R3: child 在 ExecutionBindingRegistry 绑定 fork 点的
+        // .residentKV RepresentationRef；parent 的池绑定不被 supersede。
         let altKey = try AgentExecutionKey(
             agentId: nil, sessionId: "s", logicalBranchId: "alt")
-        let altMetaURL = store.appendingPathComponent(
-            NativeMLX.cacheFileName(for: altKey.storageKey) + ".meta.json")
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let stamped = try decoder.decode(
-            SessionCacheMetadata.self, from: Data(contentsOf: altMetaURL))
-        let forkPoint = try XCTUnwrap(
-            stamped.forkPoint, "forkSessionBranch 必须持久化 fork 点")
-        XCTAssertEqual(forkPoint.sourceStorageKey, "default/s/main")
-        XCTAssertEqual(forkPoint.atMessage, 3)
-        XCTAssertGreaterThan(forkPoint.atToken, 0)
-
-        // STEP-10 R3: child 在 ExecutionBindingRegistry 绑定 checkpoint 的
-        // .residentKV RepresentationRef；parent 的池绑定不被 supersede。
         let childBinding = try XCTUnwrap(
             NativeMLXPrefixPool.shared.bindings.currentBinding(
                 executionID: altKey.storageKey),
             "child fork binding 必须已登记")
         XCTAssertEqual(childBinding.ref.kind, .residentKV)
-        XCTAssertEqual(childBinding.ref.boundLength, forkPoint.atToken)
-        XCTAssertNotEqual(childBinding.executionID, forkPoint.sourceStorageKey)
+        XCTAssertEqual(childBinding.ref.boundLength, returnedForkPoint.atToken)
+        XCTAssertNotEqual(childBinding.executionID, returnedForkPoint.sourceStorageKey)
 
         // alt 分支续问：只算增量 + 记忆召回
         let questionB = "What number did I ask you to remember? Reply with only that number."
@@ -553,6 +549,20 @@ final class BranchForkTests: XCTestCase {
         XCTAssertLessThan(
             alt.usage?.promptTokens ?? .max, 400,
             "alt 只应预填增量，实际 \(alt.usage?.promptTokens ?? -1)")
+
+        // v2.1.1 契约：child 首个成功轮的 per-turn 落盘产生 durable pair，
+        // meta 携带 forkPoint 溯源（pendingForkPoint 戳进 performSave）。
+        let altMetaURL = store.appendingPathComponent(
+            NativeMLX.cacheFileName(for: altKey.storageKey) + ".meta.json")
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let stamped = try decoder.decode(
+            SessionCacheMetadata.self, from: Data(contentsOf: altMetaURL))
+        let stampedForkPoint = try XCTUnwrap(
+            stamped.forkPoint, "child 首轮落盘的 meta 必须携带 fork 点")
+        XCTAssertEqual(stampedForkPoint.sourceStorageKey, returnedForkPoint.sourceStorageKey)
+        XCTAssertEqual(stampedForkPoint.atToken, returnedForkPoint.atToken)
+        XCTAssertNotNil(stamped.checkpointGeneration, "落盘 meta 必须有 generation 证明")
 
         // list：live 同时含 main 与 alt
         let listing = runtime.listSessionBranches(sessionId: "s")

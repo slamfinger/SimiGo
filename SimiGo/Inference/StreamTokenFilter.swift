@@ -169,6 +169,17 @@ nonisolated struct AgentExecutionKey: Hashable, Sendable {
     /// A ChatSession owns KV for exactly one logical branch.
     var storageKey: String { "\(agentId)/\(sessionId)/\(logicalBranchId)" }
 
+    /// 请求级一次性会话判定：HTTPServer.makeRequestScopedSessionId 在客户端
+    /// 未提供 session 时铸造 `<ns>-request:<uuid>`（openai-request:… 等），
+    /// 其设计语义即「不参与跨请求 KV reuse」（HTTPServer Identity
+    /// Resolution 第 5 条）。这类会话的 durable checkpoint 永无复访者——
+    /// v2.1.1 起跳过 branch-checkpoint 落盘（留存作用域收窄；实测这类死重
+    /// 曾占 64G 预算的 85%，54.4G/88 文件）。前缀池导出不受影响：共享
+    /// 前缀是内容寻址资产，可被其他会话命中。
+    static func isRequestScopedSession(_ storageKey: String) -> Bool {
+        storageKey.contains("-request:")
+    }
+
     /// Compact trace label: the default agent is omitted and long session ids
     /// collapse to their last block, e.g. `9dc810/main`.
     var traceKey: String {

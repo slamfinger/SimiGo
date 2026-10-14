@@ -32,6 +32,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         /// A successful generation makes the live execution newer than its
         /// durable checkpoint until the automatic checkpoint completes.
         var checkpointDirty = false
+        /// v2.1.1 官方内存 fork：forkSessionBranch 设置的分叉点溯源。
+        /// 随 child 的每次 performSave 戳进 checkpoint meta——fork 溯源是
+        /// 分支的永久血统属性，不只属于首次落盘。
+        var pendingForkPoint: BranchForkPoint? = nil
         /// EXP-B 实验字段（B_HEDGE_SKIP_EXPERIMENT_DESIGN §1；运行时态，
         /// 不持久化）：上一轮 completion 的 vendor mode 与 cacheEff。
         /// 重启后为 nil → 对冲保守开启（未知状态不跳过 restore）。
@@ -1214,7 +1218,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 依赖 ledger-end 新鲜 checkpoint——陈旧 checkpoint 曾致 +10k 重渲
         // （a210155 对照：checkpoint 覆盖 31k vs 活 41k），是旧 rf 负收益
         // 的第一来源，故两 flag 任一开启都落盘。
-        if restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled {
+        // v2.1.1 留存作用域：请求级一次性会话（*-request:UUID）不参与
+        // 跨请求 KV reuse，durable receipt 永无复访者——跳过落盘。
+        if (restorePolicy.legacyRollforwardEnabled || restorePolicy.conditionalRestoreEnabled),
+            !AgentExecutionKey.isRequestScopedSession(executionKey.storageKey) {
             managed.checkpointDirty = true
             do {
                 _ = try await performSave(
@@ -1536,7 +1543,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             history: managed.historyJSON,
             kvFingerprint: managed.kvFingerprint,
             checkpointGeneration: checkpointGeneration,
-            cacheSHA256: cacheSHA256
+            cacheSHA256: cacheSHA256,
+            forkPoint: managed.pendingForkPoint
         )
         try encoder.encode(metadata).write(to: metaURL, options: .atomic)
 
@@ -1737,12 +1745,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
-    /// 把 source 逻辑分支的当前 checkpoint 复制注册为 target 逻辑分支。
+    /// 把 source 逻辑分支的当前执行状态分叉为 target 逻辑分支。
     ///
-    /// v1 走磁盘 round-trip（官方 saveCache → 独立反序列化实例）：官方 ChatSession
-    /// 公开面没有 in-process 快照导出，磁盘路径已双架构实证（GDN 混合 + all-attention，
-    /// 见 lessons 2026-09-17）；上游公开 snapshot API 后可切内存版 copy() 路径，
-    /// 隔离性已由 testInMemoryForkCopyOwnership 预先封口。
+    /// v2.1.1：活会话分叉改走官方 ChatSession.fork()（上游 #641——KV/draft
+    /// cache 数组共享 + 首写拷贝的进程内 COW），退出 v1 磁盘 round-trip
+    /// （saveCache → GB 级文件拷贝 → 独立反序列化实例）。隔离性由
+    /// testInMemoryForkCopyOwnership 预先封口，官方 fork 携带 conversation
+    /// 与 token ledger——child 是一等活会话，非 v1 的 raw-cache 恢复态。
+    ///
+    /// 持久化契约：fork 即时产物只在内存；child 的 durable checkpoint 由其
+    /// 首个成功轮的 per-turn 落盘补上（checkpointDirty 进入挂起重试路径，
+    /// 跨挂起存活语义不变），forkPoint 溯源随该落盘戳进 meta。
     ///
     /// 覆盖语义：target 已存在时被覆盖（与 loadSessionCache 一致）——这正是
     /// 「选边提升」流程（客户端选定胜者 → fork 回 main → 其余分支 DELETE）。
@@ -1786,109 +1799,92 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
             }
 
-            try await performSave(
-                key: sourceKey.storageKey,
-                traceKey: sourceKey.traceKey,
-                container: container,
-                managed: sourceManaged,
-                directory: store,
-                modelPath: modelPath
-            )
+            // 官方进程内 fork：数组共享 + 首写拷贝，零磁盘 IO、零序列化
+            // （对照 v1：GB 级文件拷贝 + 0.15s@58k 双向序列化税）。
+            let forkStartedAt = Date()
+            let childSession = await sourceManaged.session.fork()
+            let forkTokenCount = await childSession.cachedTokenIds().count
+            let forkMs = Int(Date().timeIntervalSince(forkStartedAt) * 1000)
 
-            // Read the token position from the same source session that produced
-            // the checkpoint, before releasing the transaction boundary.
-            let forkTokenCount = await sourceManaged.session.cachedTokenIds().count
-
-            for suffix in [".safetensors", ".meta.json"] {
-            let source = store.appendingPathComponent(
-                Self.cacheFileName(for: sourceKey.storageKey) + suffix)
-            let target = store.appendingPathComponent(
-                Self.cacheFileName(for: targetKey.storageKey) + suffix)
-            // FORK-1: land the copy under a temporary name and swap it in
-            // atomically — a crash mid-fork can no longer leave the target
-            // branch destroyed (the old delete -> copy window is gone).
-            let temp = store.appendingPathComponent(
-                Self.cacheFileName(for: targetKey.storageKey) + suffix
-                    + ".fork-tmp-\(UUID().uuidString)")
-            try FileManager.default.copyItem(at: source, to: temp)
-            if FileManager.default.fileExists(atPath: target.path) {
-                _ = try FileManager.default.replaceItemAt(target, withItemAt: temp)
-            } else {
-                _ = try FileManager.default.moveItem(at: temp, to: target)
+            // 覆盖语义（选边提升）：旧 target 会话显式 clear 释放 KV；
+            // 陈旧 checkpoint 文件即刻清除，维持「target checkpoint ⟺
+            // target 当前血统」——否则 fork→首生成之间挂起会载入分叉前
+            // 的旧状态。child 的 durable pair 由其首个成功轮重写。
+            if let oldTarget = state.withLock({
+                $0.sessions.removeValue(forKey: targetKey.storageKey)
+            }) {
+                await oldTarget.session.clear()
             }
-        }
+            let targetBaseName = Self.cacheFileName(for: targetKey.storageKey)
+            for suffix in [".safetensors", ".meta.json"] {
+                try? FileManager.default.removeItem(
+                    at: store.appendingPathComponent(targetBaseName + suffix))
+            }
 
-        // FORK-2 + STEP-10 R3: persist the fork point into the TARGET branch
-        // metadata, and bind the child to the checkpoint's RepresentationRef
-        // (kind .residentKV). The parent is NOT bound: its pool-boundary
-        // binding, when present, must not be superseded (B-R2 single active
-        // row) — the checkpoint is the parent's own archive, not a change of
-        // its representation relation. The fork relation lives in the child
-        // row + lineage.recordFork.
-        let targetMetaURL = store.appendingPathComponent(
-            Self.cacheFileName(for: targetKey.storageKey) + ".meta.json")
-        let metaBytes = try Data(contentsOf: targetMetaURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        var stamped = try decoder.decode(SessionCacheMetadata.self, from: metaBytes)
-        let forkPoint = BranchForkPoint(
-            sourceStorageKey: sourceKey.storageKey,
-            atMessage: stamped.history.count,
-            atToken: forkTokenCount)
-        stamped.forkPoint = forkPoint
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        let stampedBytes = try encoder.encode(stamped)
-        try stampedBytes.write(to: targetMetaURL, options: .atomic)
+            let child = ManagedSession(
+                session: childSession,
+                history: sourceManaged.history,
+                historyJSON: sourceManaged.historyJSON,
+                kvFingerprint: sourceManaged.kvFingerprint,
+                isRestoredSnapshot: false)
+            child.pendingForkPoint = BranchForkPoint(
+                sourceStorageKey: sourceKey.storageKey,
+                atMessage: sourceManaged.history.count,
+                atToken: forkTokenCount)
+            child.checkpointDirty = true
+            state.withLock {
+                $0.sessions[targetKey.storageKey] = child
+                $0.lastActivity = Date()
+            }
 
-        // contentHash = SHA256 of the stamped meta bytes, truncated — the
-        // identity of THIS fork's representation (per-fork-event, not a
-        // dedupe claim).
-        let contentHash = SHA256.hash(data: stampedBytes)
-        let ref = RepresentationRef(
-            kind: .residentKV,
-            modelIdentity: stamped.modelId,
-            kvLayoutIdentity: stamped.kvFingerprint ?? "none",
-            renderIdentity: "chat-daily",
-            contentHash: contentHash.withUnsafeBytes {
-                $0.load(as: UInt64.self)
-            },
-            boundLength: forkTokenCount)
+            // FORK-2 + STEP-10 R3 语义保持：child 绑定分叉点的 .residentKV
+            // 表示（boundLength = fork 点 token 数）；parent 不绑——其池
+            // 边界绑定不被 supersede（B-R2 单活行）。contentHash 标识本次
+            // fork 事件（source+target+边界），非去重声明。
+            var forkHasher = SHA256()
+            for piece in [
+                sourceKey.storageKey, targetKey.storageKey, String(forkTokenCount),
+            ] {
+                forkHasher.update(data: Data(piece.utf8))
+            }
+            let ref = RepresentationRef(
+                kind: .residentKV,
+                modelIdentity: modelName(from: modelPath),
+                kvLayoutIdentity: sourceManaged.kvFingerprint ?? "none",
+                renderIdentity: "chat-daily",
+                contentHash: forkHasher.finalize().withUnsafeBytes {
+                    $0.load(as: UInt64.self)
+                },
+                boundLength: forkTokenCount)
 
-        let loaded = try await performLoad(
-            key: targetKey.storageKey,
-            traceKey: targetKey.traceKey,
-            container: container,
-            config: nil,
-            baseConfig: baseConfig,
-            directory: store,
-            modelPath: modelPath
-        )
-        state.withLock {
-            $0.sessions[targetKey.storageKey] = loaded.managed
-            $0.lastActivity = Date()
-        }
-        let metadata = loaded.metadata
-
-        // Transaction boundary (STEP-10 review): the child binding registers
-        // only AFTER the restore succeeded - a failed fork leaves no relation
-        // behind, and a re-fork over an existing target cannot supersede a
-        // binding for a restore that never happened.
-        let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
-            executionID: targetKey.storageKey,
-            runtimeAddress: "checkpoint:\(targetKey.storageKey)",
-            ref: ref)
-        traceLogger.trace(
-            "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)"
-                + " history=\(metadata.history.count) forkToken=\(forkTokenCount)"
+            // 事务边界（STEP-10）：物理 fork 成功后才登记 child 绑定——
+            // 失败的 fork 不留任何关系；对已存在 target 的 re-fork 不会
+            // supersede 一次从未发生的恢复。
+            let childBinding = NativeMLXPrefixPool.shared.bindings.bind(
+                executionID: targetKey.storageKey,
+                runtimeAddress: "session-fork:\(targetKey.storageKey)",
+                ref: ref)
+            traceLogger.trace(
+                "[MLX] branchFork session=\(sourceKey.traceKey) -> \(targetBranch)"
+                + " history=\(sourceManaged.history.count) forkToken=\(forkTokenCount)"
+                + " forkMs=\(forkMs)"
                 + " bindingGen=\(childBinding.generation)"
                 + " refHash=\(String(ref.contentHash, radix: 16))")
             lineage.recordFork(parent: sourceKey.storageKey, child: targetKey.storageKey)
             traceLogger.trace(
                 "[EXEC] fork parent=\(sourceKey.storageKey)"
-                    + " child=\(targetKey.storageKey)")
-            return metadata
+                + " child=\(targetKey.storageKey)")
+
+            // 返回值是本次 fork 事件的描述符，不是 durable receipt：
+            // checkpointGeneration/cacheSHA256 留空（child 此刻无盘上
+            // pair）；盘上 meta 由其首个成功轮落盘并携带 forkPoint。
+            return SessionCacheMetadata(
+                storageKey: targetKey.storageKey,
+                modelId: modelName(from: modelPath),
+                savedAt: Date(),
+                history: sourceManaged.historyJSON,
+                kvFingerprint: sourceManaged.kvFingerprint,
+                forkPoint: child.pendingForkPoint)
         }
     }
 

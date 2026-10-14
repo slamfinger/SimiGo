@@ -1,5 +1,5 @@
 {
-  "originHash" : "d269ef4fecf849f518f99968ade0e54e25aa777145cb5019129072294b863b5f",
+  "originHash" : "0a340a43c78f3c06bed72f51968598db46b2af8d9672ba4aed5571d55badbfc2",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -23,8 +23,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
       "state" : {
-        "branch" : "release/v2.0-beta-ml",
-        "revision" : "fd5d1b4a8a5ad83e1d78617fecc817fa196a64fc"
+        "revision" : "e520e605d9a917a6c78e5449d40cd8407d501601"
       }
     },
     {

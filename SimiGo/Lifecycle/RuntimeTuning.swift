@@ -67,9 +67,14 @@ nonisolated enum RuntimeTuning {
     /// BETA-STORAGE-1: durable checkpoints are owned receipts, but retention
     /// still needs an explainable physical ceiling. Active keys are protected;
     /// oldest valid durable receipts are released only after this budget.
+    ///
+    /// v2.1.1 收窄 64→16 GiB：请求级一次性会话（*-request:UUID）退出落盘
+    /// 后，留存面只剩真实会话的 working set（2026-10-14 实测基线：9 个
+    /// 真实会话 ≈9.1G，而 88 个一次性请求死重曾占 54.4G/85%）。升级后
+    /// 首次 enforce 会把历史死重按 LRU 逐出至新预算内。
     static let branchCheckpointByteBudget = Int(
         ProcessInfo.processInfo.environment["SIMIGO_BRANCH_CHECKPOINT_MAX_BYTES"]
-            .flatMap(Int.init) ?? 64 * gibibyte)
+        .flatMap(Int.init) ?? 16 * gibibyte)
 
     /// swap 压力触发阈值：全机信号（其他进程占用也计入），作触发偏保守正确。
     /// 逐出循环的出口用进程内可立即复测的暖 token 总和，不用 swap（回落滞后）。
