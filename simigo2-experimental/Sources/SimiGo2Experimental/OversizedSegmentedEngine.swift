@@ -152,6 +152,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// the design.
     private let sessionBaselineDirectory: URL?
     private let identityDirectory: URL?
+    private let semanticStateDirectory: URL?
     /// Durable-recovery capability of the LIVE session. `.absent` MUST be
     /// reported whenever the baseline did not commit — a session without a
     /// committed baseline is never durably recoverable.
@@ -207,7 +208,8 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         peakCapacityMiB: Int64 = OversizedSegmentedEngine.defaultPeakCapacityMiB,
         floorBudgetMiB: Int64? = 4096,
         sessionBaselineDirectory: URL? = nil,
-        identityDirectory: URL? = nil
+        identityDirectory: URL? = nil,
+        semanticStateDirectory: URL? = nil
     ) {
         self.modelDirectory = modelDirectory
         self.unitLayers = unitLayers
@@ -215,6 +217,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         self.floorBudgetMiB = floorBudgetMiB ?? peakCapacityMiB
         self.sessionBaselineDirectory = sessionBaselineDirectory
         self.identityDirectory = identityDirectory
+        self.semanticStateDirectory = semanticStateDirectory
     }
 
     #if DEBUG
@@ -956,7 +959,9 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     private func bootstrapSession(
         prefix: [Int],
         position: ExecutionPosition,
-        continuation: ExecutionContinuation
+        continuation: ExecutionContinuation,
+        sessionUUID: UUID = UUID(),
+        resetSemanticState: Bool = false
     ) async throws -> ExecutionStateHandle {
         guard coordinator == nil, stateBackend == nil, currentState == nil else {
             throw OversizedEngineError.notLoaded
@@ -984,8 +989,30 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         } else {
             identityAllocator = nil
         }
-        let coordinator = ExecutionContinuityCoordinator(
-            backend: backend, identityAllocator: identityAllocator)
+        let stateStore: DurableExecutionStateStore?
+        if let semanticStateDirectory {
+            let store = DurableExecutionStateStore(
+                directory: semanticStateDirectory.appendingPathComponent(
+                    sessionUUID.uuidString, isDirectory: true),
+                payloadCodec: OversizedPrefixPayloadPersistence(
+                    backendIdentity: "oversized-token-prefix-v1"))
+            if resetSemanticState {
+                try store.prepareForFreshBaseline()
+            }
+            stateStore = store
+        } else {
+            stateStore = nil
+        }
+        let coordinator: ExecutionContinuityCoordinator
+        if let stateStore {
+            coordinator = try ExecutionContinuityCoordinator(
+                backend: backend,
+                identityAllocator: identityAllocator,
+                stateStore: stateStore)
+        } else {
+            coordinator = ExecutionContinuityCoordinator(
+                backend: backend, identityAllocator: identityAllocator)
+        }
         let state = try await coordinator.create(
             id: ExecutionID("S"),
             position: position,
@@ -1003,12 +1030,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     }
 
     private func ensureSession(prefix: [Int]) async throws -> ExecutionStateHandle {
+        let sessionUUID = UUID()
         let state = try await bootstrapSession(
             prefix: prefix,
             position: ExecutionPosition(0),
-            continuation: ExecutionContinuation(nextInput: "", continuationID: "S-cont-0")
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "S-cont-0"),
+            sessionUUID: sessionUUID,
+            resetSemanticState: true
         )
-        commitDurableBaseline(for: state, prefix: prefix)
+        commitDurableBaseline(for: state, prefix: prefix, sessionUUID: sessionUUID)
         return state
     }
 
@@ -1016,12 +1046,14 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// A failed commit downgrades the session to `.absent` — it continues to
     /// run but is NEVER reported as durably recoverable. Failure artifacts
     /// (orphan session files without a pointer) are inert by construction.
-    private func commitDurableBaseline(for state: ExecutionStateHandle, prefix: [Int]) {
+    private func commitDurableBaseline(
+        for state: ExecutionStateHandle, prefix: [Int], sessionUUID: UUID
+    ) {
         durableBaselineState = .absent
         guard let sessionBaselineDirectory else { return }
         let identity = EngineModelIdentity.compute(modelDirectory: modelDirectory)
         let record = EngineSessionBaselineRecord(
-            sessionUUID: UUID(),
+            sessionUUID: sessionUUID,
             executionID: state.id.rawValue,
             weightsIdentity: identity.weights,
             tokenizerIdentity: identity.tokenizer,
@@ -1115,7 +1147,9 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 position: ExecutionPosition(record.position),
                 continuation: ExecutionContinuation(
                     nextInput: record.continuationNextInput,
-                    continuationID: record.continuationID)
+                    continuationID: record.continuationID),
+                sessionUUID: record.sessionUUID,
+                resetSemanticState: true
             )
             durableBaselineState = .committed(sessionUUID: record.sessionUUID)
             try tokenLedger?.append(OversizedTokenLedgerEntry(

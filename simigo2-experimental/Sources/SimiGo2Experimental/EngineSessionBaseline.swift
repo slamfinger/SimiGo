@@ -31,6 +31,7 @@ public enum EngineSessionRecoveryOutcome: Equatable, Sendable {
 public struct OversizedEnginePersistenceDirectories: Equatable, Sendable {
     public let sessionBaseline: URL
     public let identity: URL
+    public let semanticState: URL
 }
 
 public enum OversizedEnginePersistence {
@@ -61,7 +62,8 @@ public enum OversizedEnginePersistence {
             .appendingPathComponent(key, isDirectory: true)
         return OversizedEnginePersistenceDirectories(
             sessionBaseline: modelRoot.appendingPathComponent("baseline", isDirectory: true),
-            identity: modelRoot.appendingPathComponent("identity", isDirectory: true))
+            identity: modelRoot.appendingPathComponent("identity", isDirectory: true),
+            semanticState: modelRoot.appendingPathComponent("semantic-state", isDirectory: true))
     }
 }
 
@@ -539,7 +541,10 @@ public enum EngineBaselineCrashHarness {
         stateRoot: URL, reportURL: URL
     ) async -> Never {
         do {
-            let stateStore = try DurableExecutionStateStore(directory: stateRoot)
+            let stateStore = DurableExecutionStateStore(
+                directory: stateRoot,
+                payloadCodec: MLXPrefixPayloadPersistence(
+                    backendIdentity: "mlx-token-prefix-v1"))
             let coordinator = try ExecutionContinuityCoordinator(
                 backend: FailingForkBackend(), identityAllocator: nil, stateStore: stateStore)
             let parent = try await coordinator.create(
@@ -547,10 +552,18 @@ public enum EngineBaselineCrashHarness {
                 position: ExecutionPosition(0),
                 continuation: ExecutionContinuation(
                     nextInput: "", continuationID: "cont-0"))
+            try await coordinator.bindRepresentation(
+                executionID: parent.id,
+                position: ExecutionPosition(0),
+                payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3]))
             _ = try await coordinator.continueExecution(
                 parent,
                 continuation: ExecutionContinuation(
                     nextInput: "next", continuationID: "cont-1"))
+            try await coordinator.bindRepresentation(
+                executionID: parent.id,
+                position: ExecutionPosition(1),
+                payload: MLXPrefixPayload(tokenPrefix: [1, 2, 3, 4, 5]))
         } catch {
             fputs("harness semantic-state failed: \(error)\n", stderr)
             exit(3)

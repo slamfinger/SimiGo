@@ -160,6 +160,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             uniqueKeysWithValues: loaded.handles.map { ($0.id, $0) })
         self.records = loaded.lifecycleRecords
         self.sequence = loaded.lifecycleRecords.count
+        for representation in loaded.representations {
+            representationHistory[representation.executionID, default: []]
+                .append(representation)
+        }
     }
 
     private func appendRecord(
@@ -171,7 +175,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         resultContinuation: ExecutionContinuation,
         prospectiveHandles: [ExecutionStateHandle] = [],
         restoresPhysicalBinding: Bool = false,
-        advancesPhysicalBinding: Bool = false
+        advancesPhysicalBinding: Bool = false,
+        prospectiveRepresentations: [ExecutionRepresentation] = []
     ) throws {
         let result: Result<Void, Error> = stateLock.withLock {
             let record = LifecycleRecord(
@@ -186,11 +191,17 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             for handle in prospectiveHandles {
                 updatedHandles[handle.id] = handle
             }
+            var updatedRepresentationHistory = representationHistory
+            for representation in prospectiveRepresentations {
+                updatedRepresentationHistory[representation.executionID, default: []]
+                    .append(representation)
+            }
             if let stateStore {
                 do {
                     try stateStore.replace(
                         handles: Array(updatedHandles.values),
-                        lifecycleRecords: records + [record])
+                        lifecycleRecords: records + [record],
+                        representations: updatedRepresentationHistory.flatMap(\.value))
                 } catch {
                     // A successful backend restore followed by a failed
                     // durable commit leaves logical/physical correspondence
@@ -204,6 +215,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             sequence += 1
             records.append(record)
             handles = updatedHandles
+            representationHistory = updatedRepresentationHistory
             return .success(())
         }
         if case .failure = result {
@@ -244,8 +256,21 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 payload: payload
             )
             try await backend.restoreRepresentation(representation)
-            stateLock.withLock {
-                representationHistory[executionID, default: []].append(representation)
+            let result: Result<Void, Error> = stateLock.withLock {
+                var updatedHistory = representationHistory
+                updatedHistory[executionID, default: []].append(representation)
+                if let stateStore {
+                    do {
+                        try stateStore.replace(
+                            handles: Array(handles.values),
+                            lifecycleRecords: records,
+                            representations: updatedHistory.flatMap(\.value))
+                    } catch {
+                        bindingUncertain.insert(executionID)
+                        return .failure(error)
+                    }
+                }
+                representationHistory = updatedHistory
                 // A bind at the current handle position re-establishes the
                 // physical↔logical correspondence (the backend binding was
                 // overwritten with a representation for exactly this
@@ -253,6 +278,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 if handles[executionID]?.position == position {
                     bindingUncertain.remove(executionID)
                 }
+                return .success(())
+            }
+            if case .failure = result {
+                throw CoordinatorError.durableStateCommitFailed(executionID)
             }
         }
     }
@@ -412,7 +441,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                     .forked, executionID: request.childID, relatedID: parent.id,
                     resultLifecycle: .active, resultPosition: request.childPosition,
                     resultContinuation: request.childContinuation,
-                    prospectiveHandles: [child])
+                    prospectiveHandles: [child],
+                    prospectiveRepresentations: childRep.map { [$0] } ?? [])
 
                 if let rep = childRep {
                     representationHistory[request.childID, default: []].append(rep)

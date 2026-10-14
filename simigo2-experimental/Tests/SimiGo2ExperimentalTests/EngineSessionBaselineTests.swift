@@ -585,7 +585,10 @@ final class EngineSessionBaselineTests: XCTestCase {
         XCTAssertEqual(childReport.position, 1)
         XCTAssertEqual(childReport.records, 2)
 
-        let stateStore = DurableExecutionStateStore(directory: stateRoot)
+        let stateStore = DurableExecutionStateStore(
+            directory: stateRoot,
+            payloadCodec: MLXPrefixPayloadPersistence(
+                backendIdentity: "mlx-token-prefix-v1"))
         let coordinator = try ExecutionContinuityCoordinator(
             backend: MLXExecutionStateBackend(),
             identityAllocator: nil,
