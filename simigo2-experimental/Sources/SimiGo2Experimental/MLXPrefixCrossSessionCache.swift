@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import MLXHuggingFace
 import MLXLLM
 import MLXLMCommon
@@ -39,12 +40,14 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
 
     /// The KV fingerprint convention shared by the daily (ChatSession) path:
     /// the persistence probe, the host root layout, and any long-lived host
-    /// that adopts the cache must agree on it.
+    /// that adopts the cache must agree on it. Content-derived namespaces
+    /// (see ``namespace(modelID:contentIdentity:)``) extend it with the model
+    /// content digest.
     public static let dailyKVFingerprint = "chat-cross-session-v1"
 
     public let store: PrefixSnapshotStore
+    public let namespace: PrefixPoolNamespace
     private let loader: MLXPrefixSnapshotLoader
-    private let namespace: PrefixPoolNamespace
     private let observation = Observation()
 
     private static let ownershipLock = NSLock()
@@ -89,14 +92,70 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         self.namespace = namespace
     }
 
-    /// Long-lived host adoption path: durable per-model store root under a
-    /// host-chosen base directory and the daily KV fingerprint convention.
-    /// Snapshots survive host restarts — the property that makes the cache
-    /// cross-session across process lifetimes, not just session lifetimes.
-    public convenience init(modelDirectory: URL, base: URL) {
-        let namespace = PrefixPoolNamespace(
+    /// Model identity at the strength the engine path already uses:
+    /// content digests of the weights and tokenizer files, NOT the directory
+    /// name. Two directories with the same name but different model content
+    /// produce different identities, so they can never share a cache
+    /// namespace.
+    public struct MLXModelContentIdentity: Sendable, Equatable {
+        public let weightsDigest: String
+        public let tokenizerDigest: String
+
+        /// One combined digest over both components; this is what the
+        /// namespace fingerprint carries.
+        public var combinedDigest: String {
+            var hasher = SHA256()
+            hasher.update(data: Data("weights:\(weightsDigest)\n".utf8))
+            hasher.update(data: Data("tokenizer:\(tokenizerDigest)".utf8))
+            return hasher.finalize().compactMap { String(format: "%02x", $0) }.joined()
+        }
+    }
+
+    /// Compute the content identity of a model directory (streaming SHA-256
+    /// over weights + tokenizer files; identical scheme to the engine path's
+    /// `EngineModelIdentity`). A missing or unreadable directory yields the
+    /// empty-content identity — deterministic, but hosts should validate the
+    /// directory exists before activating.
+    public static func contentIdentity(
+        modelDirectory: URL
+    ) -> MLXModelContentIdentity {
+        let identity = EngineModelIdentity.compute(modelDirectory: modelDirectory)
+        return MLXModelContentIdentity(
+            weightsDigest: identity.weights,
+            tokenizerDigest: identity.tokenizer)
+    }
+
+    /// Content-derived namespace: same model ID (directory name), but the
+    /// fingerprint carries the combined content digest. Namespace equality —
+    /// the pool's first admission filter — therefore requires EQUAL MODEL
+    /// CONTENT, closing the same-name-different-model adoption hole that a
+    /// directory-name namespace leaves open.
+    public static func namespace(
+        modelID: String, contentIdentity: MLXModelContentIdentity
+    ) -> PrefixPoolNamespace {
+        PrefixPoolNamespace(
+            modelID: modelID,
+            kvFingerprint: "\(dailyKVFingerprint)-\(contentIdentity.combinedDigest)")
+    }
+
+    public static func namespace(
+        modelDirectory: URL, contentIdentity: MLXModelContentIdentity
+    ) -> PrefixPoolNamespace {
+        namespace(
             modelID: modelDirectory.lastPathComponent,
-            kvFingerprint: Self.dailyKVFingerprint)
+            contentIdentity: contentIdentity)
+    }
+
+    /// Long-lived host adoption path: durable per-model store root under a
+    /// host-chosen base directory and a CONTENT-derived namespace. Snapshots
+    /// survive host restarts — the property that makes the cache
+    /// cross-session across process lifetimes. Computing the content
+    /// identity reads (hashes) the model's weights files; activate on a
+    /// background path.
+    public convenience init(modelDirectory: URL, base: URL) {
+        let contentIdentity = Self.contentIdentity(modelDirectory: modelDirectory)
+        let namespace = Self.namespace(
+            modelDirectory: modelDirectory, contentIdentity: contentIdentity)
         self.init(
             store: PrefixSnapshotStore(
                 root: Self.hostRoot(base: base, namespace: namespace),

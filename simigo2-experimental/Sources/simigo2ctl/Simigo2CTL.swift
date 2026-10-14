@@ -771,6 +771,29 @@ struct Simigo2CTL {
       )
       print(try toJSON(report))
 
+    case "mlx-small-scale-host-probe":
+      let prompt = optionalOption("--prompt", rest)
+        ?? "Summarize the tradeoff between durable write-ahead logs and atomic rename publication."
+      let promptRepeat = optionalOption("--prompt-repeat", rest).flatMap(Int.init) ?? 40
+      let prefixTokens = optionalOption("--prefix-tokens", rest).flatMap(Int.init) ?? 512
+      let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 16
+      let root = optionalOption("--root", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      } ?? FileManager.default.temporaryDirectory.appendingPathComponent(
+        "simigo-small-scale-host-\(UUID().uuidString)", isDirectory: true)
+      let switchModel = optionalOption("--switch-model", rest).map {
+        URL(fileURLWithPath: $0, isDirectory: true)
+      }
+      let longPrompt = Array(repeating: prompt, count: max(promptRepeat, 1)).joined(separator: " ")
+      let report = try await MLXSmallScaleChatHost.acceptanceProbe(
+        modelDirectory: modelDirectory,
+        base: root,
+        prompt: longPrompt,
+        prefixTokenCount: prefixTokens,
+        maxTokens: tokens,
+        switchTarget: switchModel)
+      print(try toJSON(report))
+
     case "mlx-release-recovery":
       let length = optionalOption("--prefix-length", rest).flatMap(Int.init) ?? 64
       let tokens = optionalOption("--tokens", rest).flatMap(Int.init) ?? 2

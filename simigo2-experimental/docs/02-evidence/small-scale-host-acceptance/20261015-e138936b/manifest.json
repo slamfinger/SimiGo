@@ -1,0 +1,61 @@
+{
+  "schema": "simigo.small-scale-host-acceptance.v1",
+  "capturedAtUTC": "2026-10-15T00:55:00Z",
+  "commit": "e138936b",
+  "branch": "codex/mlx-cross-session-host-ownership",
+  "decisionContext": "GUI promotion Option A (approved on SIMIGO_GUI_PROMOTION_BOUNDARY_REVIEW_20261014)",
+  "command": "simigo2ctl mlx-small-scale-host-probe <qwen3-coder-30b-a3b-4bit-snapshot> --prompt-repeat 60 --prefix-tokens 900 --tokens 24 --root <tmp> --switch-model <nail-qwen3.6-35b-snapshot>",
+  "host": {
+    "arch": "arm64",
+    "os": "darwin",
+    "memory": "34 GB",
+    "models": {
+      "primary": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit @ 6e302ea6 (16 GB)",
+      "switchTarget": "peculiar-ragdoll/Nail-Qwen3.6-35B-A3B-MLX @ 31a01064 (20 GB)"
+    }
+  },
+  "verdict": {
+    "overall": "NOT PASS / MECHANISM AND LIFECYCLE EVIDENCED / BIT-EQUALITY OPEN / CAPABILITY TIMING INSUFFICIENT PROTOCOL",
+    "perItem": {
+      "item1_sameModelCrossSessionHit": "mechanism PASS (hit, matched = 900 = artifact boundary, boundary respected, all 3 runs); bit-equality FAIL (deterministic single-token greedy flip, generation position ~7 of 24, identical divergence all 3 runs)",
+      "item2_modelIdentityIsolation": "PASS at unit level (content identity separates same-name different-content directories; pool-level namespace isolation; adopted namespace carries the content digest)",
+      "item3_invalidationAndCorruption": "PASS at unit level (corrupted artifact bytes -> fail-closed miss, observation recorded, no partial adoption)",
+      "item4_concurrentSwitchingAndLifecycle": "PASS (unit churn preserves single-owner invariant and hook-owner routing; real switch round-trip 30B -> 35B -> 30B completed, re-adoption hit at full boundary after the activation rescan fix)",
+      "item5_actualBenefit": "INSUFFICIENT EVIDENCE: single-run wall-time on this host/model is variance-dominated (cold 283/814/189 s, warm 26/69/374 s across runs; run1 +91% vs run3 -98%); protocol must move to min-of-N warm sampling, prefill-rate measurement, or a smaller model before any capability claim"
+    }
+  },
+  "findings": [
+    {
+      "id": "F1-bit-equality",
+      "severity": "open finding, acceptance-blocking for item 1's bit-equality bar",
+      "description": "Cross-session KV adoption is not bit-exact under greedy decode: cold full prefill (968 tokens) vs adopted-partial prefill (68 remaining tokens after a 900-token snapshot) diverge at generation position ~7 of 24 (one compound-token spelling flip); divergence position and flip are IDENTICAL across all three runs",
+      "hypothesis": "floating-point reassociation between different prefill batch shapes (968-token GEMM vs 68-token GEMM over adopted KV), NOT a KV data defect (deterministic, outputs otherwise identical)",
+      "resolutionOptions": [
+        "adjudicate the acceptance bar: semantic equivalence over N generated tokens instead of bit equality",
+        "investigate deterministic prefill batching / adoption-path logits in the mlx-swift-lm fork"
+      ]
+    },
+    {
+      "id": "F2-activation-rescan",
+      "severity": "defect found and FIXED this unit",
+      "description": "PrefixSnapshotStore pools start empty even over durable roots; without an activation-time rescan, a switched-back model or restarted host cold-missed every lookup (probe run 2). Host activation now rescans (fail-closed on corrupt roots, quarantine tombstones honored); pinned by unit test"
+    },
+    {
+      "id": "F3-timing-protocol",
+      "severity": "measurement protocol gap, open",
+      "description": "single-run end-to-end wall time cannot separate adoption savings from machine noise on a 16 GB model sharing this 34 GB host with the session; run-to-run variance exceeded the measured effect"
+    }
+  ],
+  "fullSuite": {
+    "executed": 364,
+    "skipped": 3,
+    "failures": 0
+  },
+  "boundary": "PROCESS and single-machine evidence only. No power-loss/media durability claims, no universal concurrency claims, no governance closure for G-5/G-8/G-10, no claim that the GUI (SimiGo2App) has been wired: this unit delivers the host runtime + acceptance evidence; the SwiftUI mount is a separate later unit.",
+  "logs": [
+    {"file": "probe-run1-probefix-pending.json", "sha256": "c34cac3c9fcdcbf75fb2385c2430531ee5a4d1ffbff54fa65125e523498b02d0"},
+    {"file": "probe-run2-rescan-missing.json", "sha256": "9069f12a30f2549b022c37c8acb0a57af32c3eb610092c2ea344d2b6fe6722e4"},
+    {"file": "probe-run3-final.json", "sha256": "7e99561cd33e82ccc8a6606d446c8bd77a0aa2bfe5701549370a4329b5ab2fa8"},
+    {"file": "full-suite.log", "sha256": "691994451b4272813d6a1d97f4fee915670d197bf5413f1dbe90187a1c4aa0a0"}
+  ]
+}

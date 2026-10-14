@@ -2,7 +2,42 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-14
+**Last updated**: 2026-10-15
+
+## Current engineering continuity — 2026-10-15 (small-scale host path, Option A unit 1)
+
+> **Status:** `UNIT 1 IMPLEMENTED / ACCEPTANCE NOT PASS (PRECISE PER-ITEM
+> STATE)`. Branch `codex/mlx-cross-session-host-ownership`; HEAD `e138936b`.
+
+Implements the approved Option A decision (GUI promotion review, 2026-10-14):
+`MLXSmallScaleChatHost` — a ChatSession-based small-scale path PARALLEL to
+`OversizedSegmentedEngine` (no engine reference, no shared execution state,
+single-resident explicit switch; DCC-1 Tier-1 untouched). Cache namespaces
+move to content-derived model identity (streaming weight+tokenizer digests):
+same-name different-content models can never share a snapshot pool.
+
+Acceptance per the five approved conditions (evidence:
+`simigo2-experimental/docs/02-evidence/small-scale-host-acceptance/20261015-e138936b/`,
+real model Qwen3-Coder-30B-A3B-4bit, switch target Nail-Qwen3.6-35B):
+
+1. Same-model cross-session hit — mechanism PASS ×3 runs (hit at exactly the
+   900-token boundary); **bit-equality FAIL**: deterministic single-token
+   greedy flip at generation position ~7, reproduced identically in all runs
+   (open finding F1; hypothesis: prefill batch-shape reassociation). 
+2. Model identity isolation — PASS (unit level).
+3. Invalidation / corruption fail-closed — PASS (unit level).
+4. Concurrent switching & lifecycle — PASS (unit churn single-owner
+   invariant; real 30B→35B→30B round trip re-adopts at full boundary after
+   fix F2: activation must rescan the durable pool).
+5. Actual benefit — INSUFFICIENT EVIDENCE (F3): single-run wall time on this
+   shared 34 GB host is variance-dominated (cold 283/814/189 s, warm
+   26/69/374 s across runs); protocol needs min-of-N sampling, prefill-rate
+   metric, or a smaller timing model.
+
+Full suite `364 executed / 3 skipped / 0 failures`. Next unit: F1
+adjudication or fork-side deterministic prefill investigation, F3 timing
+protocol, then the SwiftUI mount — promotion ACCEPT only after complete
+evidence. No GUI wiring has happened yet; no governance closure claims.
 
 ## Current continuity — 2026-10-14 (GUI promotion boundary review)
 

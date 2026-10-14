@@ -166,12 +166,223 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
 
         let modelDirectory = URL(fileURLWithPath: "/models/Qwen3-Coder-30B")
         let adopted = MLXPrefixCrossSessionCache(modelDirectory: modelDirectory, base: base)
+        let contentIdentity = MLXPrefixCrossSessionCache.contentIdentity(
+            modelDirectory: modelDirectory)
         XCTAssertEqual(
             adopted.store.root,
             MLXPrefixCrossSessionCache.hostRoot(
                 base: base,
-                namespace: PrefixPoolNamespace(
+                namespace: MLXPrefixCrossSessionCache.namespace(
                     modelID: "Qwen3-Coder-30B",
-                    kvFingerprint: MLXPrefixCrossSessionCache.dailyKVFingerprint)))
+                    contentIdentity: contentIdentity)))
+        // The adopted namespace carries the content digest, not the bare
+        // daily fingerprint.
+        XCTAssertTrue(adopted.namespace.kvFingerprint.hasPrefix(
+            MLXPrefixCrossSessionCache.dailyKVFingerprint + "-"))
+        XCTAssertGreaterThan(
+            adopted.namespace.kvFingerprint.count,
+            MLXPrefixCrossSessionCache.dailyKVFingerprint.count + 32)
+    }
+}
+
+// MARK: - Content identity isolation (GUI promotion acceptance, item 2)
+
+extension MLXPrefixCrossSessionCacheTests {
+    @discardableResult
+    private func makeModelDirectory(
+        name: String, tokenizerBody: String, weightsBody: String
+    ) -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("identity-\(name)-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? Data(tokenizerBody.utf8).write(to: directory.appendingPathComponent("tokenizer.json"))
+        try? Data(weightsBody.utf8).write(to: directory.appendingPathComponent("model.safetensors"))
+        return directory
+    }
+
+    /// THE same-name-different-model hole: directory NAME is not identity.
+    /// Two directories with identical names but different content must get
+    /// different content identities, different namespaces, and — at the
+    /// pool level — must never adopt each other's snapshots.
+    func testContentIdentitySeparatesSameNameDifferentContent() async throws {
+        let dirA = makeModelDirectory(
+            name: "same-model", tokenizerBody: "tokenizer-A", weightsBody: "weights-A")
+        let dirB = makeModelDirectory(
+            name: "same-model", tokenizerBody: "tokenizer-B", weightsBody: "weights-B")
+        defer {
+            try? FileManager.default.removeItem(at: dirA)
+            try? FileManager.default.removeItem(at: dirB)
+        }
+
+        let identityA = MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: dirA)
+        let identityB = MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: dirB)
+        XCTAssertNotEqual(identityA, identityB)
+
+        let namespaceA = MLXPrefixCrossSessionCache.namespace(
+            modelDirectory: dirA, contentIdentity: identityA)
+        let namespaceB = MLXPrefixCrossSessionCache.namespace(
+            modelDirectory: dirB, contentIdentity: identityB)
+        XCTAssertNotEqual(namespaceA, namespaceB)
+        XCTAssertNotEqual(
+            MLXPrefixCrossSessionCache.hostRoot(base: root!, namespace: namespaceA),
+            MLXPrefixCrossSessionCache.hostRoot(base: root!, namespace: namespaceB))
+
+        // Pool-level isolation: an entry admitted under namespace A must be
+        // invisible to namespace B even inside ONE shared pool.
+        let tokens = Array(0..<16)
+        _ = try await runtime.store.export(namespace: namespaceA, tokens: tokens) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+        XCTAssertNotNil(runtime.store.pool.admit(namespace: namespaceA, promptTokens: tokens + [1]))
+        XCTAssertNil(runtime.store.pool.admit(namespace: namespaceB, promptTokens: tokens + [1]))
+    }
+
+    /// Determinism: identical content (copied directory) must produce the
+    /// identical identity and namespace — the property that makes snapshots
+    /// re-adoptable across restarts and switches.
+    func testContentIdentityDeterministicForIdenticalContent() throws {
+        let parentA = FileManager.default.temporaryDirectory
+            .appendingPathComponent("identity-parent-A-(UUID().uuidString)", isDirectory: true)
+        let parentB = FileManager.default.temporaryDirectory
+            .appendingPathComponent("identity-parent-B-(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: parentA, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: parentB, withIntermediateDirectories: true)
+        // Same basename, different parents: the NAME is identical by construction.
+        let dirA = parentA.appendingPathComponent("stable-model", isDirectory: true)
+        let dirB = parentB.appendingPathComponent("stable-model", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dirA, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: dirB, withIntermediateDirectories: true)
+        try? Data("tok".utf8).write(to: dirA.appendingPathComponent("tokenizer.json"))
+        try? Data("weights".utf8).write(to: dirA.appendingPathComponent("model.safetensors"))
+        try? Data("tok".utf8).write(to: dirB.appendingPathComponent("tokenizer.json"))
+        try? Data("weights".utf8).write(to: dirB.appendingPathComponent("model.safetensors"))
+        defer {
+            try? FileManager.default.removeItem(at: parentA)
+            try? FileManager.default.removeItem(at: parentB)
+        }
+        let identityA = MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: dirA)
+        let identityB = MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: dirB)
+        XCTAssertEqual(identityA, identityB)
+        XCTAssertEqual(
+            MLXPrefixCrossSessionCache.namespace(
+                modelDirectory: dirA, contentIdentity: identityA),
+            MLXPrefixCrossSessionCache.namespace(
+                modelDirectory: dirB, contentIdentity: identityB))
+    }
+
+    /// Acceptance item 3: a corrupted artifact must fail closed — the hook
+    /// returns nil (cold fallback), the observation records a miss, and no
+    /// partial adoption happens.
+    func testCorruptedArtifactFailsClosedWithoutPartialAdoption() async throws {
+        let tokens = Array(0..<24)
+        let entry = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+        let artifact = try XCTUnwrap(entry.artifact as? DiskPrefixArtifact)
+        let handle = try FileHandle(forWritingTo: artifact.snapshotURL)
+        try handle.seek(toOffset: 64)
+        try handle.write(contentsOf: Data([0xDE, 0xAD, 0xBE, 0xEF]))
+        try handle.close()
+
+        try runtime.install()
+        defer { runtime.uninstall() }
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNil(hook(tokens + [97, 98, 99]))
+        let observations = runtime.observations
+        XCTAssertEqual(observations.calls, 1)
+        XCTAssertEqual(observations.hits, 0)
+    }
+}
+
+// MARK: - Ownership churn under concurrency (acceptance item 4)
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// Repeated model switches and concurrent install/uninstall must keep
+    /// the single-owner invariant: after the churn, the global hook is nil
+    /// exactly when no cache claims ownership, and a live hook routes to
+    /// the recorded owner and nobody else.
+    func testConcurrentOwnershipChurnPreservesSingleOwnerInvariant() async throws {
+        let factories: [(MLXPrefixCrossSessionCache, String)] = (0..<6).map { index in
+            let store = PrefixSnapshotStore(
+                root: root!.appendingPathComponent("churn-\(index)"),
+                pool: ExecutionStatePrefixPool(tokenBudget: 100_000))
+            return (MLXPrefixCrossSessionCache(
+                store: store,
+                namespace: PrefixPoolNamespace(modelID: "m\(index)", kvFingerprint: "fp")),
+                    "m\(index)")
+        }
+        let participants = factories.map { $0.0 }
+        await withTaskGroup(of: Void.self) { group in
+            for (index, cache) in participants.enumerated() {
+                group.addTask { @Sendable in
+                    for step in 0..<30 {
+                        switch (step + index) % 3 {
+                        case 0:
+                            try? cache.install()
+                        case 1:
+                            try? cache.install(forceTakeover: true)
+                        default:
+                            cache.uninstall()
+                        }
+                        await Task.yield()
+                    }
+                }
+            }
+        }
+        for cache in participants {
+            cache.uninstall()
+        }
+
+        let hook = ChatSession.crossSessionPrefixLookup
+        let active = MLXPrefixCrossSessionCache.activeInstance
+        XCTAssertEqual(hook == nil, active == nil)
+        if let hook, let active {
+            let before = active.observations.calls
+            _ = hook([1, 2, 3, 4, 5])
+            XCTAssertEqual(active.observations.calls, before + 1)
+        }
+    }
+}
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// Restart / switch-back re-adoption contract: a freshly constructed
+    /// cache on a durable root has an EMPTY pool until it is rescanned — the
+    /// host performs that rescan at activation (fail-closed on a corrupt
+    /// root). Without it, a model switched back or a restarted host
+    /// cold-misses everything.
+    func testFreshCacheOnDurableRootReAdoptsAfterRescan() async throws {
+        let tokens = Array(0..<24)
+        let durableRoot = root!.appendingPathComponent("durable-\(UUID().uuidString)")
+        let seedingStore = PrefixSnapshotStore(
+            root: durableRoot, pool: ExecutionStatePrefixPool(tokenBudget: 100_000))
+        let entry = try await seedingStore.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+        XCTAssertNotNil((entry.artifact as? DiskPrefixArtifact)?.generation)
+
+        // A fresh cache over the same durable root: pool starts empty.
+        let restarted = MLXPrefixCrossSessionCache(
+            store: PrefixSnapshotStore(
+                root: durableRoot,
+                pool: ExecutionStatePrefixPool(tokenBudget: 100_000)),
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"))
+        let admittedBefore = restarted.store.pool.admit(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            promptTokens: tokens + [1])
+        XCTAssertNil(admittedBefore, "pool must be empty before rescan")
+
+        // Activation duty: rescan populates the pool from disk; quarantine
+        // tombstones stay honored by rescan itself.
+        _ = try restarted.store.rescan()
+        let admittedAfter = restarted.store.pool.admit(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            promptTokens: tokens + [1])
+        XCTAssertEqual(admittedAfter?.coveredTokens, tokens.count)
     }
 }
