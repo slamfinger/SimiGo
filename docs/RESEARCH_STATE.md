@@ -4,6 +4,27 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (SwiftUI mount — GUI promotion evidence assembled)
+
+> **Status:** `MOUNT COMPLETE / FIVE-ITEM MATRIX EVIDENCED / ACCEPT
+> SUBMITTED FOR HUMAN DECISION`. Branch `codex/swiftui-small-scale-mount`.
+
+SimiGo2App gains an explicit ExecutionPath picker (oversized default |
+small-scale ChatSession host); no silent switching — Load re-binds to the
+selection and tears the other path down first. The small-scale path wires
+MLXSmallScaleChatHost (durable Application Support cache base,
+generation-checked sessions, stale rejection surfaced, New Session retains
+the durable cache for cross-session adoption). Engine code and DCC-1
+Tier-1 semantics untouched. Build-verified; suite 367/3/0; no automated
+GUI-interaction harness exists, so interactive click-through remains a
+human step. The five-item promotion matrix is assembled with real-model
+evidence (canonical strict equality; content-identity isolation +
+B-window foreign-hook nil; corruption fail-closed; release-first switch
+round trip with drain; corrected-instrument 48% wall / 3x TTFT benefit):
+`simigo2-experimental/docs/02-evidence/gui-promotion-acceptance/20261015-swiftui-mount/`.
+GUI promotion ACCEPT is submitted for the human decision. G-5 / G-8 / G-10
+remain with independent governance.
+
 ## Current continuity — 2026-10-15 (F3: measurement bug found and fixed — ACTUAL BENEFIT ESTABLISHED)
 
 > **Status:** `F3 RETRACTION ISSUED + POSITIVE BENEFIT MEASURED`.
