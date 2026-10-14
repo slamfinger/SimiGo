@@ -73,6 +73,28 @@ struct PrefixSnapshotSidecar: Codable, Equatable {
 
 private struct RescanArtifactChanged: Error {}
 
+/// Durable tombstone for an artifact whose publication rollback failed.
+/// Records live under `<root>/.invalidated` so restart/rescan cannot
+/// resurrect a mixed publication.
+public struct QuarantinedArtifactRecord: Codable, Equatable {
+    public let artifactPath: String
+    public let generation: UUID?
+    public let rollbackFailure: String
+    public let quarantinedAt: Date
+
+    public init(
+        artifactPath: String,
+        generation: UUID?,
+        rollbackFailure: String,
+        quarantinedAt: Date
+    ) {
+        self.artifactPath = artifactPath
+        self.generation = generation
+        self.rollbackFailure = rollbackFailure
+        self.quarantinedAt = quarantinedAt
+    }
+}
+
 /// B-2 — the KV artifact adapter: disk-backed store wiring the prefix
 /// pool to `ChatSession.saveCache` / `loadPromptCacheSnapshot`. Zero model
 /// dependencies for its own logic; the session-side exporter is injected
@@ -103,6 +125,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     private let willRollback: @Sendable () throws -> Void
     private let willCommitPoolEntry: @Sendable () -> Void
     private let willBeginRescanGeneration: @Sendable () throws -> Void
+    private let quarantineDirectory: URL
 
     internal init(
         root: URL,
@@ -112,7 +135,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         willPublishSidecar: @escaping @Sendable (URL) throws -> Void = { _ in },
         willRollback: @escaping @Sendable () throws -> Void = { },
         willCommitPoolEntry: @escaping @Sendable () -> Void = { },
-        willBeginRescanGeneration: @escaping @Sendable () throws -> Void = { }
+        willBeginRescanGeneration: @escaping @Sendable () throws -> Void = { },
+        quarantineDirectory: URL? = nil
     ) {
         self.root = root
         self.pool = pool
@@ -123,6 +147,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         self.willRollback = willRollback
         self.willCommitPoolEntry = willCommitPoolEntry
         self.willBeginRescanGeneration = willBeginRescanGeneration
+        self.quarantineDirectory = quarantineDirectory ?? root.appendingPathComponent(
+            ".invalidated", isDirectory: true)
         // P2 eviction persistence: an evicted entry's artifact is deleted
         // (immediately when unused; deferred while a physical operation
         // holds it — Gate D) — eviction must survive restarts (rescan
@@ -301,6 +327,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     rollbackError = error
                 }
                 if let rollbackError {
+                    try? persistQuarantine(
+                        artifactPath: snapshotURL.path,
+                        generation: generation,
+                        rollbackError: rollbackError
+                    )
                     physicalUse.markGenerationQuarantined(
                         snapshotURL.path, generation: generation)
                     throw PhysicalUseRegistry.PublicationQuarantinedError(
@@ -329,6 +360,8 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                     publishedPhysicalByteCount: snapshotByteCount + sidecarData.count))
             }
         )
+
+        try? clearQuarantine(forArtifactAt: snapshotURL.path)
 
         guard let publishedEntry else {
             throw PrefixSnapshotStoreError.artifactUnreadable(
@@ -421,6 +454,71 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
         }
     }
 
+    // MARK: - Durable quarantine ledger
+
+    /// Durable quarantine records survive process restart. `rescan()` skips
+    /// these paths until explicit repair/dismissal.
+    public func quarantinedArtifacts() throws -> [QuarantinedArtifactRecord] {
+        guard fileManager.fileExists(atPath: quarantineDirectory.path) else {
+            return []
+        }
+        return try fileManager.contentsOfDirectory(
+            at: quarantineDirectory,
+            includingPropertiesForKeys: nil
+        ).compactMap { url in
+            guard url.pathExtension == "quarantine" else { return nil }
+            return try? JSONDecoder().decode(
+                QuarantinedArtifactRecord.self,
+                from: Data(contentsOf: url)
+            )
+        }
+    }
+
+    /// Explicit repair/dismissal for a durable quarantine tombstone.
+    public func clearQuarantine(forArtifactAt path: String) throws {
+        guard fileManager.fileExists(atPath: quarantineDirectory.path) else { return }
+        for url in try fileManager.contentsOfDirectory(
+            at: quarantineDirectory,
+            includingPropertiesForKeys: nil
+        ) {
+            guard url.pathExtension == "quarantine",
+                let record = try? JSONDecoder().decode(
+                    QuarantinedArtifactRecord.self,
+                    from: Data(contentsOf: url)
+                ),
+                record.artifactPath == path
+            else { continue }
+            try fileManager.removeItem(at: url)
+        }
+    }
+
+    private func persistQuarantine(
+        artifactPath: String,
+        generation: UUID?,
+        rollbackError: Error
+    ) throws {
+        try fileManager.createDirectory(
+            at: quarantineDirectory,
+            withIntermediateDirectories: true
+        )
+        let record = QuarantinedArtifactRecord(
+            artifactPath: artifactPath,
+            generation: generation,
+            rollbackFailure: String(describing: rollbackError),
+            quarantinedAt: Date()
+        )
+        try JSONEncoder().encode(record).write(
+            to: quarantineDirectory.appendingPathComponent(
+                "\(UUID().uuidString).quarantine"
+            ),
+            options: .atomic
+        )
+    }
+
+    private func quarantinedArtifactPaths() throws -> Set<String> {
+        Set(try quarantinedArtifacts().map(\.artifactPath))
+    }
+
     /// Shared reconciliation + snapshot read for both load paths.
     private func reconciledSnapshot(
         entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
@@ -467,6 +565,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     @discardableResult
     public func rescan() throws -> Int {
         var registered = 0
+        let quarantinedPaths = try quarantinedArtifactPaths()
         let dirs = try fileManager.contentsOfDirectory(
             at: root, includingPropertiesForKeys: [.isDirectoryKey])
         for dir in dirs where dir.hasDirectoryPath {
@@ -480,6 +579,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 else { continue }
                 let snapshotURL = metaURL.deletingPathExtension()
                     .appendingPathExtension("safetensors")
+                guard !quarantinedPaths.contains(snapshotURL.path) else { continue }
                 guard fileManager.fileExists(atPath: snapshotURL.path) else {
                     continue
                 }
