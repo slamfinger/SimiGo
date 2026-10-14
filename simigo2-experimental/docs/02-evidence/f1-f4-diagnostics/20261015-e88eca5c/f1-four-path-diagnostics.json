@@ -1,0 +1,103 @@
+{
+  "boundary" : 900,
+  "divergenceMargin" : {
+    "decodePosition" : 35,
+    "margin" : 0.25,
+    "top1Logit" : 23.75,
+    "top1Token" : "head",
+    "top1TokenID" : 1983,
+    "top2Logit" : 23.5,
+    "top2Token" : " Ahead",
+    "top2TokenID" : 76444
+  },
+  "kvDiffs" : [
+    {
+      "keysMaxAbsDiff" : 0,
+      "layersCompared" : 48,
+      "name" : "unchunkedPrefix_vs_segmentedPrefix",
+      "valuesMaxAbsDiff" : 0
+    },
+    {
+      "keysMaxAbsDiff" : 26,
+      "layersCompared" : 48,
+      "name" : "loadedArtifact_vs_segmentedPrefix",
+      "valuesMaxAbsDiff" : 5.53125
+    },
+    {
+      "keysMaxAbsDiff" : 26,
+      "layersCompared" : 48,
+      "name" : "loadedArtifact_vs_unchunkedPrefix",
+      "valuesMaxAbsDiff" : 5.53125
+    }
+  ],
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "note" : "F1 diagnostic: four greedy decode paths with controlled prefill chunking; direct KV prefix diffs; top-2 margin at first divergence. Diagnostic only — no inference behavior modified, no acceptance bar changed.",
+  "pairwise" : [
+    {
+      "a" : "coldFullBalanced",
+      "b" : "coldFullUnchunked",
+      "tokenSequencesEqual" : true
+    },
+    {
+      "a" : "coldFullBalanced",
+      "b" : "coldSegmented",
+      "firstDivergenceIndex" : 35,
+      "tokenSequencesEqual" : false
+    },
+    {
+      "a" : "coldFullBalanced",
+      "b" : "warmAdoption",
+      "firstDivergenceIndex" : 36,
+      "tokenSequencesEqual" : false
+    },
+    {
+      "a" : "coldFullUnchunked",
+      "b" : "coldSegmented",
+      "firstDivergenceIndex" : 35,
+      "tokenSequencesEqual" : false
+    },
+    {
+      "a" : "coldFullUnchunked",
+      "b" : "warmAdoption",
+      "firstDivergenceIndex" : 36,
+      "tokenSequencesEqual" : false
+    },
+    {
+      "a" : "coldSegmented",
+      "b" : "warmAdoption",
+      "firstDivergenceIndex" : 35,
+      "tokenSequencesEqual" : false
+    }
+  ],
+  "paths" : [
+    {
+      "generatedTokenIDs" : [
+
+      ],
+      "name" : "coldFullBalanced",
+      "outputText" : "## Tradeoff Between Durable Write-A Ahead Logs and Atomic Rename Publication\n\n**Durable Write-A Ahead Logs** provide"
+    },
+    {
+      "generatedTokenIDs" : [
+
+      ],
+      "name" : "coldFullUnchunked",
+      "outputText" : "## Tradeoff Between Durable Write-A Ahead Logs and Atomic Rename Publication\n\n**Durable Write-A Ahead Logs** provide"
+    },
+    {
+      "generatedTokenIDs" : [
+
+      ],
+      "name" : "coldSegmented",
+      "outputText" : "## Tradeoff Between Durable Write-Ahead Logs and Atomic Rename Publication\n\n**Durable Write-Ahead Logs (W"
+    },
+    {
+      "generatedTokenIDs" : [
+
+      ],
+      "name" : "warmAdoption",
+      "outputText" : "## Tradeoff Between Durable Write-A ahead Logs and Atomic Rename Publication\n\n**Durable Write-Aahead Logs** provide"
+    }
+  ],
+  "promptTokenCount" : 968
+}

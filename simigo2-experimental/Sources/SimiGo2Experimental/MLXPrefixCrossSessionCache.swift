@@ -184,7 +184,18 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// Idempotent for the already-installed instance; fails closed with
     /// `OwnershipError/hookOwnedByOther` while another live cache owns the
     /// hook unless `forceTakeover` marks the deliberate model-switch.
-    public func install(forceTakeover: Bool = false) throws {
+    ///
+    /// `admissionGuard` closes the caller-identity gap (F4): the fork's hook
+    /// signature carries only prompt tokens, so a session created under a
+    /// PREVIOUS host generation could otherwise adopt this cache's snapshots
+    /// after a model switch. The guard is evaluated inside the hook — a
+    /// refused call records an observed miss and returns nil (cold path) —
+    /// and it covers the window between any higher-level session check and
+    /// the hook invocation itself.
+    public func install(
+        forceTakeover: Bool = false,
+        admissionGuard: (@Sendable () -> Bool)? = nil
+    ) throws {
         try Self.ownershipLock.withLock {
             if Self.active === self {
                 installed = true
@@ -196,7 +207,12 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             Self.active = self
             installed = true
             ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIDs in
-                self?.lookup(promptTokenIDs)
+                guard let self else { return nil }
+                if let admissionGuard, !admissionGuard() {
+                    self.observation.record(matchedTokenCount: nil)
+                    return nil
+                }
+                return self.lookup(promptTokenIDs)
             }
         }
     }

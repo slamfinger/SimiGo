@@ -1,0 +1,36 @@
+{
+  "schema": "simigo.f1-f4-diagnostics.v1",
+  "capturedAtUTC": "2026-10-15T02:20:00Z",
+  "commit": "e88eca5c",
+  "branch": "codex/f1-f4-diagnostics",
+  "authorization": "F1 diagnostic on locked mlx-swift-lm@6d01a13c; no inference-behavior changes; acceptance bar unchanged",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit @ 6e302ea6 (switch target: peculiar-ragdoll/Nail-Qwen3.6-35B @ 31a01064)",
+  "promptTokens": 968,
+  "boundary": 900,
+  "f1Findings": {
+    "chunkShapeSensitivity": "CONFIRMED cold-only: coldSegmented flips the same token as warm; coldFullBalanced == coldFullUnchunked",
+    "flipMargin": {"top1Token": "head", "top1Logit": 23.75, "top2Token": " Ahead", "top2Logit": 23.5, "margin": 0.25},
+    "saveLoadFidelity": "EXACT (keys/values max-abs diff 0 across 48 layers, artifact sourced from unchunked session)",
+    "balancedSessionInternalKVDiff": "max-abs ~26 vs any externally reproducible shape (itself a finding: session-internal prefill shapes differ materially)",
+    "directShapeEquivalence": "clean 900|68 split == unchunked single forward, exactly 0",
+    "warmVsSegmentedCold": "DIVERGE (per approved logic: branch 2); residual located in session-internal prefill shape composition, not serialization",
+    "verdictInput": "bit-equality across prefill shapes is not a stable property of this stack, even between two cold paths; adjudication belongs to the human decision"
+  },
+  "f4Findings": {
+    "staleSessionRejected": true,
+    "reAdoptedHitObserved": true,
+    "reAdoptedMatchedTokenCount": 900,
+    "switchRoundTrip": "30B -> 35B -> 30B completed under release-first single-resident discipline",
+    "measurementDefect": "foreignHookCold leg placed after switch-back (same-model window); false is expected there and is NOT residual evidence; correct placement unmeasured",
+    "residualStatus": "REGISTERED-OPEN: raw pre-switch ChatSession reaching the global hook; full closure needs fork-side session-identity API"
+  },
+  "fullSuite": {"executed": 365, "skipped": 3, "failures": 0},
+  "boundary": "Diagnostics only. No acceptance-bar change, no inference-behavior change, no GUI wiring, no governance closure.",
+  "logs": [
+    {"file": "f1-four-path-diagnostics.json", "sha256": "7210ad43410be4c23501a3f83d607c00e56c93ab33960d46a265e1f30ada72fe"},
+    {"file": "f1-artifact-fidelity.json", "sha256": "f5521aa18b5ee48e4727d3ab479c94eb40df0126501a934fe843d16308db5175"},
+    {"file": "f4-probe-run1.json", "sha256": "9a52cc26ec934e73191488a7f3ad872b4d1c8aefc56567269a3c7ded8f52deab"},
+    {"file": "full-suite.log", "sha256": "3287846d10569fa6630ecbafcdf3be0ad3bdd85928518af66a4d1ffadd3a210b"},
+    {"file": "README.md", "sha256": "3b33afd98174b12674b20df0964923f95d972bdee62746c8f5550aaa5e3a849b"}
+  ]
+}
