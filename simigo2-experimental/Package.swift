@@ -14,6 +14,7 @@ let package = Package(
         .executable(name: "ActualMLXSmokeChild", targets: ["ActualMLXSmokeChild"]),
         .executable(name: "EngineBaselineCrashChild", targets: ["EngineBaselineCrashChild"]),
         .executable(name: "MaterializationQuarantineCrashChild", targets: ["MaterializationQuarantineCrashChild"]),
+        .executable(name: "ExecutionStateChaosChild", targets: ["ExecutionStateChaosChild"]),
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
@@ -78,6 +79,10 @@ let package = Package(
         ),
         .executableTarget(
             name: "MaterializationQuarantineCrashChild",
+            dependencies: ["SimiGo2Experimental"]
+        ),
+        .executableTarget(
+            name: "ExecutionStateChaosChild",
             dependencies: ["SimiGo2Experimental"]
         ),
         .testTarget(
