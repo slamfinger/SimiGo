@@ -22,8 +22,17 @@ public enum ExecutionIdentityAllocatorError: Error, Equatable {
 /// Each committed line is fsynced before the in-memory reservation becomes
 /// visible; a torn tail fails closed on the next open instead of being skipped.
 ///
-/// ponytail: exclusive `flock` supports process-crash recovery, not a
-/// multi-host allocator; add a real coordination service if that becomes a need.
+/// Cross-process arbitration: the in-memory maps only know what THIS process
+/// appended, so they are advisory. The on-disk ledger under the exclusive
+/// flock is authoritative — every append re-reads and re-checks it before
+/// committing, so two processes that both raced past stale views still commit
+/// at most one reservation per token or ID. Without the re-check, a requested
+/// ID claimed concurrently by two processes would be double-committed and the
+/// ledger would fail closed as corrupt on the next open.
+///
+/// ponytail: the append-time full ledger re-read is O(total) per reservation;
+/// scan only the tail appended since this process's last known offset if
+/// ledger volume ever makes that cost real.
 public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving, @unchecked Sendable {
     struct Reservation: Codable, Equatable {
         let token: String
@@ -62,6 +71,15 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
         try? ledgerHandle?.close()
     }
 
+    /// Number of durably committed reservations visible to this view. A clean
+    /// open proves the ledger is duplicate-free, so this is also the number of
+    /// unique reserved IDs.
+    public var reservationCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return reservationsByID.count
+    }
+
     @discardableResult
     public func reserve(token: String, requestedID: ExecutionID?) throws -> ExecutionID {
         guard !token.isEmpty else {
@@ -88,10 +106,10 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
         let id = requestedID ?? ExecutionID(UUID().uuidString)
         let reservation = Reservation(
             token: token, executionID: id.rawValue, createdAt: Date())
-        try appendLocked(reservation)
-        reservationsByToken[token] = reservation
-        reservationsByID[id.rawValue] = reservation
-        return id
+        let committed = try appendLocked(reservation, requestedID: requestedID)
+        reservationsByToken[committed.token] = committed
+        reservationsByID[committed.executionID] = committed
+        return ExecutionID(committed.executionID)
     }
 
     public func hasReserved(_ id: ExecutionID) -> Bool {
@@ -108,11 +126,22 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
 
     private func loadLocked() throws {
         guard fileManager.fileExists(atPath: ledgerURL.path) else { return }
-        let data = try Data(contentsOf: ledgerURL)
-        guard let text = String(data: data, encoding: .utf8) else {
-            throw ExecutionIdentityAllocatorError.ledgerCorrupt(
-                path: ledgerURL.path, line: 1)
+        let reservations = try decodeLedger(try Data(contentsOf: ledgerURL))
+        for reservation in reservations {
+            reservationsByToken[reservation.token] = reservation
+            reservationsByID[reservation.executionID] = reservation
         }
+        ledgerHandle = try FileHandle(forWritingTo: ledgerURL)
+    }
+
+    /// Decode the whole ledger; a malformed or duplicated line fails closed.
+    private func decodeLedger(_ data: Data) throws -> [Reservation] {
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw ExecutionIdentityAllocatorError.ledgerCorrupt(path: ledgerURL.path, line: 1)
+        }
+        var byToken: [String: Reservation] = [:]
+        var byID: [String: Reservation] = [:]
+        var reservations: [Reservation] = []
         for (offset, line) in text.split(separator: "\n", omittingEmptySubsequences: true)
             .enumerated() {
             let reservation: Reservation
@@ -123,30 +152,67 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
                 throw ExecutionIdentityAllocatorError.ledgerCorrupt(
                     path: ledgerURL.path, line: offset + 1)
             }
-            guard reservationsByToken[reservation.token] == nil,
-                reservationsByID[reservation.executionID] == nil
+            guard byToken[reservation.token] == nil,
+                byID[reservation.executionID] == nil
             else {
                 throw ExecutionIdentityAllocatorError.ledgerCorrupt(
                     path: ledgerURL.path, line: offset + 1)
             }
-            reservationsByToken[reservation.token] = reservation
-            reservationsByID[reservation.executionID] = reservation
+            byToken[reservation.token] = reservation
+            byID[reservation.executionID] = reservation
+            reservations.append(reservation)
         }
-        ledgerHandle = try FileHandle(forWritingTo: ledgerURL)
+        return reservations
     }
 
-    private func appendLocked(_ reservation: Reservation) throws {
+    /// Append `reservation` under the exclusive flock and return the
+    /// authoritative reservation: either the freshly appended one, or the
+    /// already-committed reservation for the same token (another process won
+    /// the race while this handle was open — the committed identity wins over
+    /// a locally generated one, matching crash-retry idempotency, unless the
+    /// caller explicitly demanded a different ID). A requested ID some other
+    /// process already committed throws instead of double-committing: the
+    /// ledger is re-read under the lock, so stale in-memory views cannot
+    /// split identity.
+    private func appendLocked(
+        _ reservation: Reservation, requestedID: ExecutionID?
+    ) throws -> Reservation {
         let handle: FileHandle
         if let ledgerHandle {
             handle = ledgerHandle
         } else {
-            fileManager.createFile(atPath: ledgerURL.path, contents: nil)
+            // createFile truncates an existing file, and another view or
+            // process may have committed lines since this allocator opened:
+            // only create the ledger when it is genuinely absent.
+            if !fileManager.fileExists(atPath: ledgerURL.path) {
+                fileManager.createFile(atPath: ledgerURL.path, contents: nil)
+            }
             handle = try FileHandle(forWritingTo: ledgerURL)
             ledgerHandle = handle
         }
 
         try acquireExclusiveLock(handle)
         defer { flock(handle.fileDescriptor, LOCK_UN) }
+        let committed = try decodeLedger(try Data(contentsOf: ledgerURL))
+        for entry in committed {
+            reservationsByToken[entry.token] = entry
+            reservationsByID[entry.executionID] = entry
+        }
+        if let existing = committed.first(where: { $0.token == reservation.token }) {
+            if let requestedID, ExecutionID(existing.executionID) != requestedID {
+                throw ExecutionIdentityAllocatorError.executionIDReserved(
+                    token: reservation.token,
+                    requestedID: requestedID,
+                    existingToken: existing.token)
+            }
+            return existing
+        }
+        if let existing = committed.first(where: { $0.executionID == reservation.executionID }) {
+            throw ExecutionIdentityAllocatorError.executionIDReserved(
+                token: reservation.token,
+                requestedID: ExecutionID(reservation.executionID),
+                existingToken: existing.token)
+        }
         let record = try encoder.encode(reservation) + Data("\n".utf8)
         let startOffset = try handle.seekToEnd()
         do {
@@ -159,6 +225,7 @@ public final class DurableExecutionIdentityAllocator: ExecutionIdentityReserving
             try? handle.synchronize()
             throw error
         }
+        return reservation
     }
 
     private func acquireExclusiveLock(_ handle: FileHandle) throws {

@@ -49,6 +49,48 @@ final class ExecutionIdentityAllocatorTests: XCTestCase {
         XCTAssertEqual(try restarted.reserve(token: "create:B", requestedID: nil), b)
     }
 
+    /// Two independently opened views model two processes that both
+    /// initialized before either committed: neither in-memory map can see the
+    /// other's reservation, so the ledger under the exclusive flock must
+    /// arbitrate — exactly one reservation for the requested ID survives.
+    func testStaleViewsArbitrateConflictingRequestedIDAgainstLedger() throws {
+        let stale = try DurableExecutionIdentityAllocator(directory: root)
+        let winner = try DurableExecutionIdentityAllocator(directory: root)
+        let id = ExecutionID("race-A")
+        XCTAssertEqual(try winner.reserve(token: "create:A", requestedID: id), id)
+        XCTAssertThrowsError(
+            try stale.reserve(token: "create:B", requestedID: id)
+        ) { error in
+            XCTAssertEqual(
+                error as? ExecutionIdentityAllocatorError,
+                .executionIDReserved(
+                    token: "create:B", requestedID: id, existingToken: "create:A"))
+        }
+        // The losing view folded the committed ledger in before failing, so
+        // it must now observe the reservation that beat it.
+        XCTAssertTrue(stale.hasReserved(id))
+        XCTAssertEqual(stale.reservationCount, 1)
+
+        let replayed = try DurableExecutionIdentityAllocator(directory: root)
+        XCTAssertEqual(replayed.reservationCount, 1)
+        XCTAssertEqual(try replayed.reserve(token: "create:A", requestedID: id), id)
+    }
+
+    /// A view that opened before another process committed its reservation
+    /// must recover the committed identity when it retries the same operation
+    /// token — not allocate a second identity under that token.
+    func testStaleViewTokenRetryReturnsCommittedIdentity() throws {
+        let stale = try DurableExecutionIdentityAllocator(directory: root)
+        let writer = try DurableExecutionIdentityAllocator(directory: root)
+        let committed = try writer.reserve(token: "create:A", requestedID: nil)
+        XCTAssertEqual(try stale.reserve(token: "create:A", requestedID: nil), committed)
+        XCTAssertEqual(stale.reservationCount, 1)
+
+        let replayed = try DurableExecutionIdentityAllocator(directory: root)
+        XCTAssertEqual(replayed.reservationCount, 1)
+        XCTAssertEqual(try replayed.reserve(token: "create:A", requestedID: nil), committed)
+    }
+
     func testCorruptLedgerFailsClosed() throws {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         try Data("{not-json\n".utf8).write(
