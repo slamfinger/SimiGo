@@ -785,7 +785,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
 
             let duration = tokenStart.duration(to: clock.now)
             let ms = Double(duration.components.seconds) * 1000
-                + Double(duration.components.attoseconds) / 1e15
+                + Double(duration.components.attoseconds) / 1e18
             tokenMs.append(ms)
 
             let g = gauge()
