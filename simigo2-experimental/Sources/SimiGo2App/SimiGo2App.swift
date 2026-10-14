@@ -106,7 +106,11 @@ final class ChatAppModel: ObservableObject {
         if let engine = engine, loadedPath == url, engine.stats != nil {
             return engine
         }
-        let engine = OversizedSegmentedEngine(modelDirectory: url)
+        let persistence = try OversizedEnginePersistence.directories(modelDirectory: url)
+        let engine = OversizedSegmentedEngine(
+            modelDirectory: url,
+            sessionBaselineDirectory: persistence.sessionBaseline,
+            identityDirectory: persistence.identity)
         loadedPath = url
         self.engine = engine
         return engine
@@ -125,8 +129,16 @@ final class ChatAppModel: ObservableObject {
         }
         Task.detached {
             do {
+                let recovery = try await engine.recoverDurableSessionIfCold()
                 let stats = try await engine.load()
                 await MainActor.run {
+                    switch recovery {
+                    case .recovered(_, let position):
+                        self.execStateLine =
+                            "recovered durable baseline | position \(position.value)"
+                    case .coldStart(let reason):
+                        self.execStateLine = "durable recovery cold start: \(reason)"
+                    }
                     self.loadLine = String(
                         format: "loaded: core %.2f GiB | resident floor %d/%d layers | %d streaming units × %d layers | load %.1fs",
                         Double(stats.residentActiveMiB) / 1024,
@@ -173,6 +185,7 @@ final class ChatAppModel: ObservableObject {
         Task.detached {
             do {
                 if engine.stats == nil {
+                    _ = try await engine.recoverDurableSessionIfCold()
                     _ = try await engine.load()
                     DispatchQueue.main.async { self.loadLine = "loaded on first message" }
                 }

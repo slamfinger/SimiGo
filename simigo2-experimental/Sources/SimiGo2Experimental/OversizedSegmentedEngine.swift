@@ -1116,6 +1116,19 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         }
     }
 
+    /// UI-safe recovery: a already-bootstrapped engine is left untouched
+    /// instead of treating a retry as `notLoaded`.
+    @discardableResult
+    public func recoverDurableSessionIfCold() async throws -> EngineSessionRecoveryOutcome {
+        await lifecycleSerialLock.lock()
+        let alreadyBootstrapped = coordinator != nil || stateBackend != nil || currentState != nil
+        lifecycleSerialLock.unlock()
+        guard !alreadyBootstrapped else {
+            return .coldStart(reason: "session already bootstrapped")
+        }
+        return try await recoverDurableSession()
+    }
+
     /// Logical restore to an earlier turn position (the coordinator re-binds
     /// the surviving representation at that position; segments re-materialize
     /// on demand at the next forward).
