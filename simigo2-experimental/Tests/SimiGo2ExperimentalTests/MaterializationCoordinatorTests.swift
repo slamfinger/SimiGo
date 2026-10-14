@@ -1722,6 +1722,110 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNotNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
+    func testQuarantineWriteFailureIsObservable() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-write-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let publishFault = PublicationFault()
+        let store = PrefixSnapshotStore(
+            root: root,
+            pool: ExecutionStatePrefixPool(tokenBudget: 10_000),
+            artifactIOLock: NSLock(),
+            deleteArtifact: { _, _ in },
+            willPublishSidecar: { metadataURL in
+                guard publishFault.isEnabled else { return }
+                try FileManager.default.createDirectory(
+                    at: metadataURL, withIntermediateDirectories: true)
+                try Data("blocked".utf8).write(
+                    to: metadataURL.appendingPathComponent("blocked"))
+            },
+            willRollback: { throw RollbackFault() }
+        )
+        let tokens = f3tokens(256, seed: 14)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let key = (oldEntry.artifact as! DiskPrefixArtifact).snapshotURL.path
+        try Data("not-a-directory".utf8).write(
+            to: root.appendingPathComponent(".invalidated"))
+        publishFault.enable()
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("rollback quarantine must fail when its durable ledger cannot be written")
+        } catch let error as PhysicalUseRegistry.PublicationQuarantinedError {
+            let ledgerError = error.underlyingError as? PrefixSnapshotStoreError
+            guard case .quarantineLedgerWriteFailed = ledgerError else {
+                return XCTFail("unexpected quarantine failure: \(error)")
+            }
+        }
+
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
+        let failures = store.physicalUse.takePublicationFailures(key)
+        XCTAssertEqual(failures.count, 1)
+    }
+
+    func testCorruptQuarantineLedgerFailsClosed() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-corrupt-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let ledgerDirectory = root.appendingPathComponent(".invalidated")
+        let corruptRecord = ledgerDirectory.appendingPathComponent("broken.quarantine")
+        try FileManager.default.createDirectory(at: ledgerDirectory, withIntermediateDirectories: true)
+        try Data("{not-json".utf8).write(to: corruptRecord)
+
+        XCTAssertThrowsError(try store.quarantinedArtifacts()) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+        XCTAssertThrowsError(try store.rescan()) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+        XCTAssertThrowsError(try store.clearQuarantine(forArtifactAt: "/missing")) { error in
+            guard case .quarantineLedgerCorrupt = error as? PrefixSnapshotStoreError else {
+                return XCTFail("unexpected quarantine error: \(error)")
+            }
+        }
+    }
+
+    func testFailedQuarantineClearQuarantinesNewPublication() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("quarantine-clear-failure-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        let tokens = f3tokens(256, seed: 15)
+        let oldEntry = try await store.export(namespace: f3ns, tokens: tokens) { url in
+            try "old".write(to: url, atomically: true, encoding: .utf8)
+        }
+        let oldArtifact = oldEntry.artifact as! DiskPrefixArtifact
+        let ledgerDirectory = root.appendingPathComponent(".invalidated")
+        try FileManager.default.createDirectory(at: ledgerDirectory, withIntermediateDirectories: true)
+        try Data("{not-json".utf8).write(
+            to: ledgerDirectory.appendingPathComponent("broken.quarantine"))
+
+        do {
+            _ = try await store.export(namespace: f3ns, tokens: tokens) { url in
+                try "new".write(to: url, atomically: true, encoding: .utf8)
+            }
+            XCTFail("a successful publication with an unclearable stale tombstone must fail closed")
+        } catch let error as PrefixSnapshotStoreError {
+            guard case .quarantineClearFailed = error else {
+                return XCTFail("unexpected publication failure: \(error)")
+            }
+        }
+
+        XCTAssertTrue(store.physicalUse.isGenerationInvalidated(oldArtifact.snapshotURL.path))
+        XCTAssertNil(store.physicalUse.acquire(oldArtifact.snapshotURL.path))
+    }
+
     /// A failed first publication must not leave an unregistered candidate
     /// at the formal path where restart rescan can resurrect it.
     func testFreshPublishFailureQuarantinesUnregisteredArtifact() async throws {
