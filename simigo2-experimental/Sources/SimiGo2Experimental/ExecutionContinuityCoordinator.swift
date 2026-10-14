@@ -170,7 +170,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         resultPosition: ExecutionPosition,
         resultContinuation: ExecutionContinuation,
         prospectiveHandles: [ExecutionStateHandle] = [],
-        restoresPhysicalBinding: Bool = false
+        restoresPhysicalBinding: Bool = false,
+        advancesPhysicalBinding: Bool = false
     ) throws {
         let result: Result<Void, Error> = stateLock.withLock {
             let record = LifecycleRecord(
@@ -194,7 +195,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                     // A successful backend restore followed by a failed
                     // durable commit leaves logical/physical correspondence
                     // unverifiable. Fail closed; explicit restore clears it.
-                    if restoresPhysicalBinding {
+                    if restoresPhysicalBinding || advancesPhysicalBinding {
                         bindingUncertain.insert(executionID)
                     }
                     return .failure(error)
@@ -264,8 +265,16 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
-            try identityAllocator?.reserve(
-                token: "create:\(id.rawValue)", requestedID: id)
+            do {
+                try identityAllocator?.reserve(
+                    token: "create:\(id.rawValue)", requestedID: id)
+                try Task.checkCancellation()
+            } catch {
+                if error is CancellationError || Task.isCancelled {
+                    markBindingUncertain(id)
+                }
+                throw error
+            }
             if handles[id] != nil {
                 throw CoordinatorError.duplicateExecution(id)
             }
@@ -316,13 +325,24 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: continuation,
                 lifecycle: .active
             )
-            try stateLock.withLock {
-                try appendRecord(
-                    .continued, executionID: current.id, resultLifecycle: .active,
-                    resultPosition: advanced.position, resultContinuation: continuation,
-                    prospectiveHandles: [advanced])
+            do {
+                try stateLock.withLock {
+                    try appendRecord(
+                        .continued, executionID: current.id, resultLifecycle: .active,
+                        resultPosition: advanced.position, resultContinuation: continuation,
+                        prospectiveHandles: [advanced],
+                        advancesPhysicalBinding: true)
+                }
+                return advanced
+            } catch {
+                // Hosts bind the advanced physical prefix before invoking this
+                // commit. Cancellation or durable failure at the coordination
+                // boundary must never let a caller assume logical/physical match.
+                if error is CancellationError || Task.isCancelled {
+                    markBindingUncertain(current.id)
+                }
+                throw error
             }
-            return advanced
         }
     }
 
@@ -579,6 +599,12 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// the current handle position), which clears the uncertainty.
     func hasUncertainBinding(_ id: ExecutionID) -> Bool {
         stateLock.withLock { bindingUncertain.contains(id) }
+    }
+
+    /// Recovery-facing boundary used when a host has mutated the advanced
+    /// physical binding but the corresponding logical commit did not finish.
+    func markBindingUncertain(_ id: ExecutionID) {
+        stateLock.withLock { bindingUncertain.insert(id) }
     }
 
     public var recordsSnapshot: [LifecycleRecord] {

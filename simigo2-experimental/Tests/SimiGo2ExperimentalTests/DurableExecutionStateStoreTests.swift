@@ -27,6 +27,22 @@ private final class RestoreTrackingBackend: ExecutionStateBackend, @unchecked Se
     }
 }
 
+private final class GatedExecutionIdentityAllocator: ExecutionIdentityReserving, @unchecked Sendable {
+    let requested = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    private let identity: ExecutionID
+
+    init(identity: ExecutionID) { self.identity = identity }
+
+    func reserve(token: String, requestedID: ExecutionID?) throws -> ExecutionID {
+        requested.signal()
+        _ = release.wait(timeout: .now() + 2)
+        return identity
+    }
+
+    func hasReserved(_ id: ExecutionID) -> Bool { id == identity }
+}
+
 final class DurableExecutionStateStoreTests: XCTestCase {
     private var root: URL!
     private var store: DurableExecutionStateStore!
@@ -154,6 +170,67 @@ final class DurableExecutionStateStoreTests: XCTestCase {
         }
         wait(for: [expectation], timeout: 2)
         XCTAssertNil(coordinator.handle(ExecutionID("A")))
+        XCTAssertEqual(coordinator.recordCount, 0)
+    }
+
+    func testContinueDurableFailureAfterPhysicalAdvanceMarksUncertain() async throws {
+        let backend = MLXExecutionStateBackend()
+        let coordinator = try ExecutionContinuityCoordinator(
+            backend: backend, identityAllocator: nil, stateStore: store)
+        let state = try await coordinator.create(
+            id: ExecutionID("A"),
+            position: ExecutionPosition(0),
+            continuation: ExecutionContinuation(nextInput: "", continuationID: "cont-0"))
+        try backend.bind(
+            executionID: state.id,
+            position: ExecutionPosition(1),
+            tokenPrefix: [1, 2, 3, 4])
+
+        DurableFileWriter.debugFailingDirectorySyncPhases = ["payload"]
+        defer { DurableFileWriter.debugFailingDirectorySyncPhases = [] }
+        do {
+            _ = try await coordinator.continueExecution(
+                state,
+                continuation: ExecutionContinuation(nextInput: "next", continuationID: "cont-1"))
+            XCTFail("durable commit failure must propagate")
+        } catch let error as ExecutionContinuityCoordinator.CoordinatorError {
+            XCTAssertEqual(error, .durableStateCommitFailed(ExecutionID("A")))
+        }
+
+        XCTAssertTrue(coordinator.hasUncertainBinding(ExecutionID("A")))
+        XCTAssertEqual(coordinator.handle(ExecutionID("A"))?.position, ExecutionPosition(0))
+        XCTAssertEqual(coordinator.recordCount, 1)
+    }
+
+    func testCancelledCreateAfterPhysicalAdvanceMarksUncertain() async throws {
+        let identity = ExecutionID("A")
+        let allocator = GatedExecutionIdentityAllocator(identity: identity)
+        let backend = MLXExecutionStateBackend()
+        let coordinator = try ExecutionContinuityCoordinator(
+            backend: backend, identityAllocator: allocator, stateStore: store)
+
+        let task = Task {
+            try await coordinator.create(
+                id: identity,
+                position: ExecutionPosition(0),
+                continuation: ExecutionContinuation(nextInput: "", continuationID: "cont-0"))
+        }
+        try await Task.yield()
+        allocator.requested.wait()
+        try backend.bind(
+            executionID: identity,
+            position: ExecutionPosition(1),
+            tokenPrefix: [1, 2, 3, 4])
+        task.cancel()
+        allocator.release.signal()
+
+        do {
+            _ = try await task.value
+            XCTFail("cancelled transition must throw")
+        } catch is CancellationError {}
+
+        XCTAssertTrue(coordinator.hasUncertainBinding(identity))
+        XCTAssertNil(coordinator.handle(identity))
         XCTAssertEqual(coordinator.recordCount, 0)
     }
 
