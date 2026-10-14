@@ -369,7 +369,71 @@ public final class PhysicalUseRegistry: @unchecked Sendable {
 /// Bindings are untouched (D-C7).
 public final class MaterializationCoordinator<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
-    private var inFlight: [String: Task<Value, Error>] = [:]
+    private final class InFlightWork: @unchecked Sendable {
+        private struct Waiter {
+            let continuation: CheckedContinuation<Value, Error>
+        }
+
+        private let state = NSLock()
+        private var result: Result<Value, Error>?
+        private var waiters: [UUID: Waiter] = [:]
+        private var cancellations: Set<UUID> = []
+
+        /// Wait for the shared result without owning or canceling it.
+        func wait() async throws -> Value {
+            let waiterID = UUID()
+            return try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    state.lock()
+                    if let result {
+                        state.unlock()
+                        continuation.resume(with: result)
+                        return
+                    }
+                    if cancellations.remove(waiterID) != nil {
+                        state.unlock()
+                        continuation.resume(throwing: CancellationError())
+                        return
+                    }
+                    waiters[waiterID] = Waiter(continuation: continuation)
+                    state.unlock()
+                }
+            } onCancel: {
+                cancel(waiterID)
+            }
+        }
+
+        private func cancel(_ waiterID: UUID) {
+            state.lock()
+            guard let waiter = waiters.removeValue(forKey: waiterID) else {
+                cancellations.insert(waiterID)
+                state.unlock()
+                return
+            }
+            state.unlock()
+            waiter.continuation.resume(throwing: CancellationError())
+        }
+
+        func finish(_ sharedResult: Result<Value, Error>) {
+            state.lock()
+            guard result == nil else {
+                state.unlock()
+                return
+            }
+            result = sharedResult
+            let pending = waiters
+            waiters.removeAll()
+            state.unlock()
+            pending.values.forEach { $0.continuation.resume(with: sharedResult) }
+        }
+    }
+
+    private enum WaitOutcome {
+        case value(Value)
+        case timedOut
+    }
+
+    private var inFlight: [String: InFlightWork] = [:]
     private let physicalUse: PhysicalUseRegistry
     /// Holds the unstructured work until `inFlight` is published and the
     /// startup observer has observed the protected lease.
@@ -429,9 +493,11 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
     /// the coordinator (its `onDelete` sink runs after its own unlock), so
     /// no lock cycle exists.
     public func materialize(
-        key: String, work: @escaping @Sendable () async throws -> Value
+        key: String,
+        timeoutNanoseconds: UInt64? = nil,
+        work: @escaping @Sendable () async throws -> Value
     ) async throws -> Value {
-        let start = lock.withLock { () -> (existing: Task<Value, Error>?, created: Task<Value, Error>?) in
+        let start = lock.withLock { () -> (existing: InFlightWork?, created: InFlightWork?) in
             if let existing = inFlight[key] { return (existing, nil) }
             // Startup-window fix (D-I4): acquire BEFORE publication.
             guard let lease = physicalUse.acquire(key) else {
@@ -440,28 +506,77 @@ public final class MaterializationCoordinator<Value: Sendable>: @unchecked Senda
             }
             let physicalUse = self.physicalUse
             let startupGate = StartupGate()
-            let created = Task<Value, Error> {
+            let flight = InFlightWork()
+            _ = Task<Value, Error> { () -> Value in
                 await startupGate.waitUntilStarted()
-                defer { physicalUse.release(lease) }
-                return try await work()
+                var sharedResult: Result<Value, Error>?
+                defer {
+                    physicalUse.release(lease)
+                    clearInFlight(key: key, work: flight)
+                    flight.finish(sharedResult!)
+                }
+                do {
+                    let value = try await work()
+                    sharedResult = .success(value)
+                    return value
+                } catch {
+                    sharedResult = .failure(error)
+                    throw error
+                }
             }
-            inFlight[key] = created
+            inFlight[key] = flight
             startupObserver?(key)
             startupGate.start()
-            return (nil, created)
+            return (nil, flight)
         }
         if start.existing == nil && start.created == nil {
             throw MaterializationCoordinatorError.physicalUseUnavailable(key)
         }
         if let task = start.existing {
             await notifyJoin(key: key)
-            return try await task.value
+            return try await waitFor(
+                work: task, timeoutNanoseconds: timeoutNanoseconds, key: key)
         }
         guard let task = start.created else { fatalError("unreachable materialization state") }
-        defer {
-            lock.withLock { inFlight[key] = nil }
+        return try await waitFor(work: task, timeoutNanoseconds: timeoutNanoseconds, key: key)
+    }
+
+    /// Wait cancellation-responsive without canceling the shared work. A
+    /// timeout is a waiter-level failure only; the shared task still finishes
+    /// and releases its physical-use lease.
+    private func waitFor(
+        work: InFlightWork,
+        timeoutNanoseconds: UInt64?,
+        key: String
+    ) async throws -> Value {
+        guard let timeoutNanoseconds else {
+            return try await work.wait()
         }
-        return try await task.value
+
+        return try await withThrowingTaskGroup(of: WaitOutcome.self) { group in
+            group.addTask { WaitOutcome.value(try await work.wait()) }
+            group.addTask {
+                try await Task.sleep(nanoseconds: timeoutNanoseconds)
+                return WaitOutcome.timedOut
+            }
+            defer { group.cancelAll() }
+            while let outcome = try await group.next() {
+                switch outcome {
+                case .value(let value):
+                    return value
+                case .timedOut:
+                    throw MaterializationCoordinatorError.timedOut(key)
+                }
+            }
+            throw CancellationError()
+        }
+    }
+
+    private func clearInFlight(key: String, work: InFlightWork) {
+        lock.withLock {
+            guard inFlight[key] != nil else { return }
+            inFlight[key] = nil
+        }
     }
 
     /// Test/observability surface: is a work for `key` currently in
@@ -505,4 +620,6 @@ public enum MaterializationCoordinatorError: Error, Equatable {
     /// The physical-use lease was rejected because a delete for `key` was
     /// registered and had not completed. No single-flight task was published.
     case physicalUseUnavailable(String)
+    /// The waiter timed out. This does not cancel shared materialization.
+    case timedOut(String)
 }

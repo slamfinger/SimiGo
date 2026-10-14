@@ -130,6 +130,23 @@ private final class URLBox: @unchecked Sendable {
     var value: URL?
 }
 
+private final class MaterializationCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    func bump() {
+        lock.lock()
+        count += 1
+        lock.unlock()
+    }
+
+    var value: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return count
+    }
+}
+
 private func f3writeSnapshot(to url: URL) throws {
     let layer = KVCacheSimple()
     layer.update(
@@ -273,6 +290,83 @@ final class MaterializationCoordinatorTests: XCTestCase {
         // contract is: same result for both, exactly ONE underlying load.
         XCTAssertEqual(loads.value, 1, "single-flight: one work, shared result")
         XCTAssertEqual(registry.physicalUseCount("ref-X"), 0, "protection released")
+    }
+
+    func testCancelledWaiterDoesNotCancelSharedMaterialization() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+        let loadsCounter = MaterializationCounter()
+
+        let cancelledCaller = Task {
+            try await coordinator.materialize(key: "cancel-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 7
+            }
+        }
+
+        try await workGate.waitForFirstCall()
+        cancelledCaller.cancel()
+        do {
+            _ = try await cancelledCaller.value
+            XCTFail("a cancelled waiter must return CancellationError")
+        } catch is CancellationError {
+        }
+
+        let joiner = Task {
+            try await coordinator.materialize(key: "cancel-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 7
+            }
+        }
+        await workGate.release()
+
+        let cancelledSharedValue = try await joiner.value
+        XCTAssertEqual(cancelledSharedValue, 7)
+        XCTAssertEqual(loadsCounter.value, 1, "caller cancellation must not cancel or duplicate shared work")
+        XCTAssertEqual(registry.physicalUseCount("cancel-shared"), 0, "shared work must still release its lease")
+    }
+
+    func testTimeoutRejectsWaiterButSharedWorkCompletes() async throws {
+        let registry = PhysicalUseRegistry(onDelete: { _, _ in })
+        let coordinator = MaterializationCoordinator<Int>(physicalUse: registry)
+        let workGate = MaterializationWorkGate()
+        let loadsCounter = MaterializationCounter()
+
+        let timeoutCaller = Task {
+            try await coordinator.materialize(
+                key: "timeout-shared",
+                timeoutNanoseconds: 10_000_000
+            ) {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 11
+            }
+        }
+
+        try await workGate.waitForFirstCall()
+        do {
+            _ = try await timeoutCaller.value
+            XCTFail("the waiter must time out")
+        } catch let error as MaterializationCoordinatorError {
+            XCTAssertEqual(error, .timedOut("timeout-shared"))
+        }
+
+        let joiner = Task {
+            try await coordinator.materialize(key: "timeout-shared") {
+                loadsCounter.bump()
+                await workGate.enterWork()
+                return 11
+            }
+        }
+        await workGate.release()
+
+        let timedOutSharedValue = try await joiner.value
+        XCTAssertEqual(timedOutSharedValue, 11)
+        XCTAssertEqual(loadsCounter.value, 1, "timeout must not cancel or duplicate shared work")
+        XCTAssertEqual(registry.physicalUseCount("timeout-shared"), 0, "shared work must still release its lease")
     }
 
     func testProtectionIsTransientAndP2SemanticsSurvive() async throws {
