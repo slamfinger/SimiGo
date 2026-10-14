@@ -5,6 +5,7 @@ import MLX
 import MLXLMCommon
 import MLXLLM
 import MLXHuggingFace
+import MLXVLM
 import Tokenizers
 import SimiGo2Experimental
 
@@ -159,6 +160,60 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         state.withLock { $0.modelCapabilityContract }
     }
 
+    // MARK: - Composite VLM checkpoint routing（v2.1.2）
+
+    /// 复合 VLM 检查点判定（ukisai/Swift-1.5-4bit-MLX、mavis Gemma4-26B-MoE
+    /// 一类）：同一 model_type（qwen3_5 / gemma4）在文本工厂与 VLM 工厂都
+    /// 有注册，但文本模型无法消费 `language_model.*` / `visual.*` 前缀的
+    /// 权重布局（2026-10-13/14 实测："Unhandled keys [visual]" 与
+    /// "Key language_model... not found"）。判据取**权重键布局**而非
+    /// architectures——mavis 稠密 QAT Q5 同为 Gemma4ForConditionalGeneration
+    /// 但权重无前缀、今天走文本工厂正常，不得被误路由。
+    nonisolated static func isCompositeVLMCheckpoint(path: String) -> Bool {
+        let prefixes = [
+            "language_model.", "visual.", "vision_tower.", "multi_modal_projector.",
+        ]
+        func hasCompositeKey(_ keys: some Sequence<String>) -> Bool {
+            keys.contains { key in
+                prefixes.contains { key.hasPrefix($0) }
+            }
+        }
+        let fm = FileManager.default
+        let indexURL = URL(fileURLWithPath: path + "/model.safetensors.index.json")
+        if let data = fm.contents(atPath: indexURL.path),
+           let index = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let weightMap = index["weight_map"] as? [String: Any]
+        {
+            return hasCompositeKey(weightMap.keys)
+        }
+        // 单文件布局：safetensors header = 8 字节 LE 头长 + JSON 元数据。
+        let singleURL = URL(fileURLWithPath: path + "/model.safetensors")
+        guard
+            let handle = try? FileHandle(forReadingFrom: singleURL),
+            let lenData = try? handle.read(upToCount: 8),
+            lenData.count == 8,
+            let headerData = try? handle.read(
+                upToCount: Int(lenData.withUnsafeBytes { $0.load(as: UInt64.self) })),
+            let header = try? JSONSerialization.jsonObject(with: headerData) as? [String: Any]
+        else { return false }
+        defer { try? handle.close() }
+        return hasCompositeKey(header.keys.filter { $0 != "__metadata__" })
+    }
+
+    /// 统一模型装载入口：复合 VLM 布局走 VLMModelFactory（视觉塔随载，
+    /// 文本-only 使用——SimiGo 协议面不携带图像输入，能力契约 vision 仍
+    /// 为 unsupported）；其余一切走原文本工厂，路径零扰动。
+    nonisolated static func loadModelContainer(path: String) async throws -> ModelContainer {
+        if isCompositeVLMCheckpoint(path: path) {
+            return try await VLMModelFactory.shared.loadContainer(
+                from: URL(fileURLWithPath: path),
+                using: #huggingFaceTokenizerLoader())
+        }
+        return try await LLMModelFactory.shared.loadContainer(
+            from: URL(fileURLWithPath: path),
+            using: #huggingFaceTokenizerLoader())
+    }
+
     public func start(_ info: ModelInfo, port: Int) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else { throw RuntError.notLoaded }
@@ -176,10 +231,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 try await oversized.start(info, port: port)
                 self.state.withLock { $0.oversized = oversized }
             } else {
-                container = try await LLMModelFactory.shared.loadContainer(
-                    from: URL(fileURLWithPath: info.path),
-                    using: #huggingFaceTokenizerLoader()
-                )
+                let isVLM = Self.isCompositeVLMCheckpoint(path: info.path)
+                container = try await Self.loadModelContainer(path: info.path)
+                traceLogger.trace(
+                    "[MLX] loadRoute vlm=\(isVLM) model=\(modelName(from: info.path))")
             }
             let modelId = modelName(from: info.path)
             let nodeConfiguration = await MainActor.run {
@@ -346,10 +401,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             traceLogger.trace("[LIFECYCLE] resume_started")
             let resumeBegan = Date()
             do {
-                let container = try await LLMModelFactory.shared.loadContainer(
-                    from: URL(fileURLWithPath: self.modelPath),
-                    using: #huggingFaceTokenizerLoader()
-                )
+                let container = try await Self.loadModelContainer(path: self.modelPath)
                 self.state.withLock {
                     $0.modelContainer = container
                     $0.lifecycle = .running
