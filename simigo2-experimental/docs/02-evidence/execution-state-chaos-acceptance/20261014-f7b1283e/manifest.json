@@ -1,0 +1,47 @@
+{
+  "schema": "simigo.execution-state-chaos-acceptance.v1",
+  "capturedAtUTC": "2026-10-14T15:38:48Z",
+  "commit": "f7b1283e",
+  "branch": "codex/execution-state-chaos-acceptance",
+  "command": "swift test --filter ExecutionStateChaosAcceptanceTests",
+  "host": {
+    "arch": "arm64",
+    "os": "darwin",
+    "osVersion": "27.0.1"
+  },
+  "verdict": "PASS",
+  "runs": {
+    "acceptanceSuite": "3 runs, 6 cases each, all passed",
+    "fullSuite": "352 executed / 3 skipped / 0 failures",
+    "allocatorRaceShellLoop": "requested-ID race reproduced 23/30 before the atomic-open fix, 0/30 after"
+  },
+  "cases": [
+    "testMultiProcessGeneratedIdentityAllocationIsUniqueAndReplaysClean",
+    "testCrossProcessRequestedIDConflictCommitsExactlyOneReservation",
+    "testCrossProcessTokenRetryReturnsCommittedIdentity",
+    "testChaosKillDuringGrowthPreservesExactCommittedPrefix",
+    "testLongRunSuccessiveCrashGenerationsPreserveSemanticContinuity",
+    "testVerifyChildDetectsCorruptedSnapshot"
+  ],
+  "defectsFoundAndFixed": [
+    {
+      "commit": "931ce3c0",
+      "defect": "reserve() checked uniqueness only against the process-local in-memory maps; two processes that opened the ledger before either committed could double-commit the same requested ID and the ledger failed closed as corrupt on the next open"
+    },
+    {
+      "commit": "4d8c3091",
+      "defect": "createFile + open made first-ledger creation two steps; a second createFile unlinked and replaced the first process's inode, splitting the flock across two files while both processes believed they held it (23/30 loss rate under a concurrent requested-ID race)"
+    }
+  ],
+  "boundary": "PROCESS-crash evidence only (SIGKILL). Not power-loss or storage-media durability evidence. Not universal-concurrency or production-readiness claims. Not a governance closure for G-5 / G-7 / G-8 / G-10.",
+  "logs": [
+    {
+      "file": "acceptance-suite.log",
+      "sha256": "37cbbcd3733129897f00380c38541c6a429c8af90c73c98806bc5ce93437d133"
+    },
+    {
+      "file": "full-suite.log",
+      "sha256": "78f620f1245b477d56761370ae28f53c698b12220dbd91a4275fd607d7ced81b"
+    }
+  ]
+}

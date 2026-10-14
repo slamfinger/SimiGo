@@ -983,3 +983,28 @@ production readiness, or that all registered G-gaps are closed.
 
 Promotion: engineering implementation → independent system acceptance →
 governance review → registered closure.
+
+### RM-063 — Cross-process locks must guard an identity that cannot be recreated underneath them
+
+- Origin: 2026-10-14, Execution State chaos / multi-process acceptance line.
+- Type: `ARCHITECTURE_INSIGHT / ENGINEERING_MEMORY`
+- Status: `IMPLEMENTED / BOUNDED EVIDENCE / NOT GOVERNANCE-CLOSED`
+- Scope: `DurableExecutionIdentityAllocator`, multi-process durable state.
+
+A file lock arbitrates an inode, not a path. Check-then-create outside the
+critical section lets a second creator unlink and replace the very object the
+lock guards, so two processes each hold a lock that excludes nobody while both
+believe they hold it. Creation must be atomic with opening (`open(O_CREAT)`),
+and uniqueness arbitration must re-read the durable authority under the lock
+instead of trusting process-local memory — a stale view is exactly the state a
+crash-and-retry or a racing peer produces.
+
+Evidence anchors:
+`simigo2-experimental/docs/02-evidence/execution-state-chaos-acceptance/20261014-f7b1283e/`;
+commits `931ce3c0`, `4d8c3091`.
+
+Forbidden inference: a 0/30 shell loop and a green acceptance suite do not
+prove absence of all interleavings, power-loss safety, or governance closure.
+
+Promotion: engineering implementation → independent system acceptance →
+governance review → registered closure.

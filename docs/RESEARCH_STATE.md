@@ -4,6 +4,36 @@
 
 **Last updated**: 2026-10-14
 
+## Current engineering continuity — 2026-10-14 (Execution State chaos / multi-process acceptance)
+
+> **Status:** `INDEPENDENT PROCESS-RESTART ACCEPTANCE PASS / NOT
+> GOVERNANCE-CLOSED`. Branch `codex/execution-state-chaos-acceptance`;
+> acceptance HEAD `f7b1283e`.
+
+Implements legal action #2 of the 2026-10-14 runtime handoff (independent
+long-run / multi-process / chaos acceptance for semantic state and
+representation rehydration) plus the durable identity it depends on:
+
+- `ExecutionStateChaosChild` / `ExecutionStateChaosHarness`: every mutation
+  and every verification runs inside spawned child processes, so the evidence
+  is process-restart evidence, not in-process state reuse.
+- Six-case suite PASS in three consecutive runs; full suite `352 executed /
+  3 skipped / 0 failures`.
+- Long-run component: 20 successive crash→restore→continue generations on one
+  store — 20 SIGKILLs, 20 independent verifications, final state 81 lifecycle
+  records / position 80 / 81 physically verified representations.
+- Two real defects found and fixed in `DurableExecutionIdentityAllocator`:
+  in-memory-only arbitration let a cross-process requested-ID race
+  double-commit (ledger fail-closed corrupt on next open), fixed by
+  re-checking the ledger under the exclusive flock (`931ce3c0`); and
+  non-atomic ledger creation split the flock across two inodes (23/30 loss
+  rate in a shell loop), fixed by atomic `open(O_CREAT)` (`4d8c3091`).
+
+Evidence:
+`simigo2-experimental/docs/02-evidence/execution-state-chaos-acceptance/20261014-f7b1283e/`.
+Boundary: SIGKILL process-crash evidence only; power-loss/media durability,
+universal concurrency correctness, and governance closure remain unclaimed.
+
 ## Current engineering continuity — 2026-10-14 (Materialization / Execution-State runtime)
 
 > **Status:** `Materialization / Execution-State runtime hardening` is
