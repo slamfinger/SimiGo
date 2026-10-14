@@ -94,6 +94,12 @@ enum ExecutionPath: String, CaseIterable, Identifiable {
 final class ChatAppModel: ObservableObject {
     @Published var modelPath = ChatAppModel.resolvedDefaultModelPath
     @Published var executionPath: ExecutionPath = .oversized
+    /// The path ACTUALLY loaded (not the selector): the selector is a
+    /// request; Load binds it. Send/New Session are blocked while the two
+    /// disagree, so a changed picker can never silently create the other
+    /// execution path.
+    @Published private(set) var loadedExecutionPath: ExecutionPath?
+    @Published private(set) var loadedModelDirectory: URL?
     @Published var transcript: [ChatEntry] = []
     @Published var inputText = ""
     @Published var liveGauge = "idle"
@@ -148,11 +154,27 @@ final class ChatAppModel: ObservableObject {
     }
 
     func loadModel() {
+        guard !isGenerating else { return }
         isGenerating = true
         loadLine = "loading…"
         if executionPath == .smallScale {
             loadSmallScale()
             return
+        }
+        // Oversized bind: tear the small-scale path down FIRST — clear the
+        // UI-held HostSession (it retains the old ChatSession and thereby
+        // the old model container), deactivate the host, and VERIFY the
+        // global hook is released before the engine is created. A foreign
+        // hook owner fails the bind loudly instead of leaking adoption.
+        chatSession = nil
+        if let host = chatHost {
+            host.deactivate()
+            chatHost = nil
+            if ChatSession.crossSessionPrefixLookup != nil {
+                loadLine = "load error: cross-session hook still installed after deactivate"
+                isGenerating = false
+                return
+            }
         }
         let engine: OversizedSegmentedEngine
         do {
@@ -162,6 +184,10 @@ final class ChatAppModel: ObservableObject {
             isGenerating = false
             return
         }
+        let boundModel = URL(
+            fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
+        loadedExecutionPath = .oversized
+        loadedModelDirectory = boundModel
         Task.detached {
             do {
                 let recovery = try await engine.recoverDurableSessionIfCold()
@@ -201,6 +227,11 @@ final class ChatAppModel: ObservableObject {
     private func loadSmallScale() {
         engine = nil
         loadedPath = nil
+        // The UI-held HostSession retains the old model's ChatSession and
+        // container; the host's own switch flow cannot release what the GUI
+        // still holds. Clear it BEFORE switching models so the host's
+        // release-first discipline actually faces a released GUI side.
+        chatSession = nil
         let modelDirectory = URL(
             fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
         let host = chatHost ?? MLXSmallScaleChatHost(
@@ -217,13 +248,26 @@ final class ChatAppModel: ObservableObject {
                     return try await host.activate(modelDirectory: modelDirectory)
                 }()
                 await MainActor.run {
+                    self.loadedExecutionPath = .smallScale
+                    self.loadedModelDirectory = active
                     self.loadLine = "small-scale host active: \(active.lastPathComponent)"
                     self.execStateLine = "ChatSession host | durable cross-session cache"
                     self.statsLine = "content-identity namespace | canonical prefill profile"
                     self.isGenerating = false
                 }
             } catch {
+                // Report the SURVIVING truth, not the requested one: on a
+                // failed switch the host rolled back (or deactivated), and
+                // the binding must reflect what is actually active.
+                let surviving = await host.activeModelDirectory
                 await MainActor.run {
+                    if let surviving {
+                        self.loadedModelDirectory = surviving
+                        self.loadedExecutionPath = .smallScale
+                    } else {
+                        self.loadedExecutionPath = nil
+                        self.loadedModelDirectory = nil
+                    }
                     self.loadLine = "small-scale load error: \(error.localizedDescription)"
                     self.isGenerating = false
                 }
@@ -234,13 +278,19 @@ final class ChatAppModel: ObservableObject {
     func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isGenerating else { return }
+        // The ACTUAL loaded path decides, never the selector alone: a
+        // changed picker must go through Load before it can send.
+        guard executionPath == loadedExecutionPath else {
+            loadLine = "execution path selected but not loaded — press Load first"
+            return
+        }
         inputText = ""
         transcript.append(ChatEntry(role: "user", text: text, streaming: false))
         transcript.append(ChatEntry(role: "assistant", text: "", streaming: true))
         liveGauge = "generating…"
         isGenerating = true
 
-        if executionPath == .smallScale {
+        if loadedExecutionPath == .smallScale {
             sendSmallScale(text)
             return
         }
@@ -354,8 +404,12 @@ final class ChatAppModel: ObservableObject {
     // failure visible, instead of claiming a fresh state (review fix ①).
     func newSession() {
         guard !isGenerating else { return }
+        guard executionPath == loadedExecutionPath else {
+            loadLine = "execution path selected but not loaded — press Load first"
+            return
+        }
         liveGauge = "new session…"
-        if executionPath == .smallScale {
+        if loadedExecutionPath == .smallScale {
             // Drop the conversation session only: the durable cross-session
             // cache SURVIVES so the next conversation adopts its prefix —
             // that adoption is the path's purpose.

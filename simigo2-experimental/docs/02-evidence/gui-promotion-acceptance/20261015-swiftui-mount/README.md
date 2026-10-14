@@ -43,8 +43,43 @@ behavior the UI depends on is evidenced at the model layer below.
    residual risk behind namespace/layer/token-chain mitigations.
 5. **Actual benefit** — PASS, corrected instruments: paired canonical legs,
    48% wall savings (1.28-1.30 s → 0.66-0.68 s), TTFT 0.88 → 0.29 s, swap
-   stable; the prior negative was a measurement bug, formally retracted.
-   Evidence: `f3-benefit-protocol/20261015-8cbff75c/`.
+   stable. NOTE: an earlier controlled run reported a NEGATIVE result
+   ("warm 2.3x slower"); that was a Duration-conversion measurement bug and
+   is formally RETRACTED — see
+   `f3-benefit-protocol/20261015-8cbff75c/RETRACTION-and-fix.md` before
+   reading any F3 timing numbers predating it. Corrected data:
+   `f3-benefit-protocol/20261015-8cbff75c/f3-run3-corrected-positive.json`.
+
+## Lifecycle correction (post-review, same unit)
+
+The first mount left three path-binding gaps (reviewer findings): switching
+back to oversized did not deactivate the small-scale host or clear the
+UI-held session; switching models within the small-scale path did not clear
+the UI-held `HostSession` before the host's release-first flow; and Send
+branched on the SELECTOR rather than the actually-loaded path. All three
+fixed:
+
+- `loadedExecutionPath` / `loadedModelDirectory` record what is ACTUALLY
+  bound; the selector is a request that only Load fulfills. Send and New
+  Session are blocked with a "press Load first" prompt while selector and
+  binding disagree (this also removes oversized send-before-load; the
+  first-message lazy-load of an already-bound engine remains).
+- Oversized bind: clear `chatSession` → `host.deactivate()` → drop the host
+  → VERIFY `ChatSession.crossSessionPrefixLookup == nil` → build the engine
+  (a foreign hook owner fails the bind loudly).
+- Small-scale bind/model switch: clear `chatSession` (the HostSession
+  retains the old model's container; the host cannot release what the GUI
+  holds) BEFORE the host's drain/release/load flow.
+- Small-scale load failure reports the SURVIVING binding (rolled-back model
+  or deactivated host), never the requested one.
+
+Verification mapping: selector/binding guard, teardown ordering, and hook
+release check are code-verified (build + suite 367/3/0); stale-session
+rejection, release-first switch with drain, and failed-switch rollback are
+evidenced at the host layer (real-model probe runs above); the real SwiftUI
+click-through of both directions, same-path model change, send-before-load,
+and switch failure remains the pending HUMAN step — unchanged from the
+matrix status below.
 
 ## Promotion status
 
