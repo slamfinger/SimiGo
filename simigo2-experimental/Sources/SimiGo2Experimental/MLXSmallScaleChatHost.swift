@@ -32,6 +32,10 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         case modelDirectoryMissing(URL)
         case alreadyActive(URL)
         case notActive
+        /// A session issued under an earlier host generation attempted to
+        /// generate after a model switch (F4 caller-identity closure at the
+        /// host API boundary).
+        case sessionStale(issuedFor: URL, currentlyActive: URL?)
     }
 
     /// The host's durable cache base directory; per-model store roots are
@@ -44,6 +48,21 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
     /// (reads never suspend, so they take this lock, not the gate).
     private let stateLock = NSLock()
     private var state: ActiveModel?
+    /// Bumped on every activate/switch/deactivate. Issued sessions carry the
+    /// generation they were created under; the hook's admission guard refuses
+    /// any lookup from a stale generation even if a session slips past the
+    /// wrapper check (TOCTOU closure).
+    private var generation = 0
+
+    private func currentGeneration() -> Int {
+        stateLock.withLock { generation }
+    }
+
+    /// The admission guard installed with every cache: refuse lookups unless
+    /// the host is still in the generation the cache was installed under.
+    private func admissionGuard(for installedGeneration: Int) -> @Sendable () -> Bool {
+        { [weak self] in self?.currentGeneration() == installedGeneration }
+    }
 
     private struct ActiveModel {
         let directory: URL
@@ -117,21 +136,28 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
             }
             throw HostError.alreadyActive(active.directory)
         }
+        // Bump BEFORE loading so the installed admission guard binds to the
+        // generation this activation creates (state is nil here, so no
+        // issued session exists to invalidate).
+        stateLock.withLock { generation &+= 1 }
         let loaded = try await loadAndOwn(modelDirectory: modelDirectory)
         stateLock.withLock { state = loaded }
         return modelDirectory
     }
 
-    /// The explicit model switch with a SINGLE-RESIDENT memory discipline:
-    /// models on this machine's class do not fit two at a time, so the
-    /// switch releases the previous container BEFORE loading the next.
-    /// Sequence: release hook ownership (concurrent sessions degrade to the
-    /// normal cold path — never a wrong seed), load the new container,
-    /// install ownership, swap state, drop the old container. On any
-    /// failure the previous cache's ownership is restored and the previous
-    /// state stays fully intact. The previous model's cache artifacts stay
-    /// durable under their own content-derived root and are re-adopted when
-    /// the model is switched back (the cross-session property).
+    /// The explicit model switch with a TRUE single-resident memory
+    /// discipline (F4 revision): the previous container is RELEASED BEFORE
+    /// the next one loads — two 4bit 30B-class models do not fit this
+    /// machine's memory, and a successful round trip does not bound the
+    /// switch-time peak. Sequence: bump the generation (every session issued
+    /// under the old model becomes stale at the API boundary and the hook
+    /// admission guard goes cold), release hook ownership, DROP the old
+    /// container, then load the new one. Rollback on failure RELOADS the
+    /// previous model instead of relying on still holding it; if even the
+    /// reload fails, the host reports itself deactivated (state nil) with
+    /// the original error — never a silently half-switched state. The
+    /// previous model's cache artifacts stay durable under their own
+    /// content-derived root and are re-adopted when it is switched back.
     @discardableResult
     public func switchModel(to modelDirectory: URL) async throws -> URL {
         guard FileManager.default.fileExists(atPath: modelDirectory.path) else {
@@ -143,23 +169,42 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         if let previous, previous.directory == modelDirectory {
             return previous.directory
         }
+        // Invalidate issued sessions and release ownership + memory FIRST.
+        stateLock.withLock {
+            generation &+= 1
+        }
         previous?.cache.uninstall()
+        stateLock.withLock { state = nil }
         do {
             let next = try await loadAndOwn(modelDirectory: modelDirectory)
             stateLock.withLock { state = next }
             return modelDirectory
         } catch {
-            // Restore the previous model exactly: its container was never
-            // dropped, and its cache re-takes the (now free) hook.
-            try previous?.cache.install() // the hook is free here: it was released above
+            // Rollback = re-load the previous model (its container is gone).
+            if let previous {
+                do {
+                    let restored = try await loadAndOwn(
+                        modelDirectory: previous.directory)
+                    stateLock.withLock { state = restored }
+                } catch {
+                    // Even the rollback reload failed: report the host as
+                    // deactivated with the ORIGINAL switch error visible.
+                    stateLock.withLock {
+                        generation &+= 1
+                        state = nil
+                    }
+                }
+            }
             throw error
         }
     }
 
-    /// Deactivate: release hook ownership (visible no-op if another owner
-    /// took it) and drop the container. Durable artifacts stay on disk.
+    /// Deactivate: bump the generation (issued sessions become stale),
+    /// release hook ownership, and drop the container. Durable artifacts
+    /// stay on disk.
     public func deactivate() {
-        stateLock.withLock { 
+        stateLock.withLock {
+            generation &+= 1
             if let active = state {
                 active.cache.uninstall()
             }
@@ -167,16 +212,81 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         }
     }
 
+    /// A session bound to the active model, carrying the host generation it
+    /// was issued under (F4 caller-identity closure at the host API
+    /// boundary): after a model switch its generate attempts are REJECTED —
+    /// a pre-switch session can never evaluate against, and thereby adopt,
+    /// the next model's snapshots.
+    public struct HostSession {
+        let session: ChatSession
+        let issuedGeneration: Int
+        let issuedFor: URL
+        unowned let host: MLXSmallScaleChatHost
+
+        public func respond(to prompt: String) async throws -> String {
+            let (text, _) = try await respondWithObservations(to: prompt, maxTokens: nil)
+            return text
+        }
+
+        public func respond(to prompt: String, maxTokens: Int) async throws -> String {
+            let (text, _) = try await respondWithObservations(
+                to: prompt, maxTokens: maxTokens)
+            return text
+        }
+
+        func respondWithObservations(
+            to prompt: String, maxTokens: Int?
+        ) async throws -> (text: String, observations: MLXPrefixHookObservation) {
+            guard let (active, currentGeneration) = host.stateLock.withLock({
+                host.state.map { ($0.directory, host.generation) }
+            }) else {
+                throw HostError.notActive
+            }
+            guard currentGeneration == issuedGeneration, active == issuedFor else {
+                throw HostError.sessionStale(
+                    issuedFor: issuedFor, currentlyActive: active)
+            }
+            _ = maxTokens // parameters already bound at session construction
+            let text = try await session.respond(to: prompt)
+            guard let observations = host.activeObservations else {
+                throw HostError.notActive
+            }
+            return (text, observations)
+        }
+
+        /// Probe passthrough: durable prefix export of the underlying
+        /// session (generation-checked like any other use).
+        func savePrefixSnapshot(to url: URL, upTo tokenCount: Int) async throws {
+            guard let (active, currentGeneration) = host.stateLock.withLock({
+                host.state.map { ($0.directory, host.generation) }
+            }) else {
+                throw HostError.notActive
+            }
+            guard currentGeneration == issuedGeneration, active == issuedFor else {
+                throw HostError.sessionStale(
+                    issuedFor: issuedFor, currentlyActive: active)
+            }
+            try await session.savePrefixSnapshot(to: url, upTo: tokenCount)
+        }
+    }
+
     /// A session bound to the active model. Cross-session cache adoption
-    /// flows through the globally installed hook while this host owns it.
+    /// flows through the globally installed hook while this host owns it and
+    /// this generation is current.
     public func makeSession(
         generateParameters: GenerateParameters = GenerateParameters(
             maxTokens: 256, temperature: 0)
-    ) throws -> ChatSession {
-        guard let container = stateLock.withLock({ state?.container }) else {
+    ) throws -> HostSession {
+        guard let (container, directory, issuedGeneration) = stateLock.withLock({
+            state.map { ($0.container, $0.directory, generation) }
+        }) else {
             throw HostError.notActive
         }
-        return ChatSession(container, generateParameters: generateParameters)
+        return HostSession(
+            session: ChatSession(container, generateParameters: generateParameters),
+            issuedGeneration: issuedGeneration,
+            issuedFor: directory,
+            host: self)
     }
 
     /// One small-scale turn through the active model.
@@ -185,11 +295,7 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
     ) async throws -> (text: String, observations: MLXPrefixHookObservation) {
         let session = try makeSession(
             generateParameters: GenerateParameters(maxTokens: maxTokens, temperature: 0))
-        let text = try await session.respond(to: prompt)
-        guard let observations = activeObservations else {
-            throw HostError.notActive
-        }
-        return (text, observations)
+        return try await session.respondWithObservations(to: prompt, maxTokens: maxTokens)
     }
 
     /// Load the container, derive the content identity, build the
@@ -219,8 +325,12 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
             namespace: namespace)
         // The ownership install is the last step that can fail; a failed
         // install throws before ownership transfers, so the hook is left
-        // exactly as the caller arranged it.
-        try cache.install()
+        // exactly as the caller arranged it. The admission guard binds the
+        // hook to THIS generation: a session issued earlier can never adopt
+        // this model's snapshots, closing the caller-identity gap inside the
+        // hook itself.
+        let installedGeneration = currentGeneration()
+        try cache.install(admissionGuard: admissionGuard(for: installedGeneration))
         return ActiveModel(
             directory: modelDirectory,
             contentIdentity: contentIdentity,
@@ -238,6 +348,14 @@ public struct MLXSmallScaleHostAcceptanceReport: Codable, Hashable, Sendable {
         public let switchedBack: Bool
         public let reAdoptedHitObserved: Bool
         public let reAdoptedMatchedTokenCount: Int?
+        /// F4 caller-identity closure: a session issued BEFORE the switch
+        /// must be rejected with `sessionStale` after it, never evaluated
+        /// against the new model's snapshots.
+        public let staleSessionRejected: Bool?
+        /// F4 residual-risk observation: a RAW hook call (simulating a
+        /// foreign pre-switch ChatSession that evaded the host wrapper)
+        /// against the re-activated model's cache. Nil when not measured.
+        public let foreignHookCold: Bool?
     }
 
     public let modelDirectory: String
@@ -342,11 +460,33 @@ extension MLXSmallScaleChatHost {
             var switchedBack = false
             var reAdoptedHit = false
             var reAdoptedMatched: Int?
+            var staleRejected: Bool?
+            var foreignCold: Bool?
             do {
+                // F4: issue a session UNDER the current generation before
+                // any switch happens.
+                let preSwitchSession = try host.makeSession(
+                    generateParameters: GenerateParameters(
+                        maxTokens: 4, temperature: 0))
                 _ = try await host.switchModel(to: switchTarget)
                 switchedAway = true
                 _ = try await host.switchModel(to: modelDirectory)
                 switchedBack = true
+                // F4: the pre-switch session must now be REJECTED, not
+                // evaluated (and thereby never adopt this model's cache).
+                do {
+                    _ = try await preSwitchSession.respond(to: "ping")
+                    staleRejected = false
+                } catch HostError.sessionStale {
+                    staleRejected = true
+                }
+                // F4 residual observation: a raw hook call with the
+                // original prompt tokens against the re-activated model's
+                // cache. Records the practical barrier; the theoretical
+                // full closure needs a fork-side session identity.
+                if let hook = ChatSession.crossSessionPrefixLookup {
+                    foreignCold = hook(fullPromptTokenIDs) == nil
+                }
                 // The switch-back installs a FRESH cache instance with its
                 // own observation counters: compare its own before/after.
                 guard let beforeReAdopt = host.activeObservations else {
@@ -372,7 +512,9 @@ extension MLXSmallScaleChatHost {
                 switchedAway: switchedAway,
                 switchedBack: switchedBack,
                 reAdoptedHitObserved: reAdoptedHit,
-                reAdoptedMatchedTokenCount: reAdoptedMatched)
+                reAdoptedMatchedTokenCount: reAdoptedMatched,
+                staleSessionRejected: staleRejected,
+                foreignHookCold: foreignCold)
         }
 
         let coldSeconds = Double(coldDuration.components.seconds)
@@ -386,6 +528,7 @@ extension MLXSmallScaleChatHost {
         let boundaryRespected = (observations.lastMatchedTokenCount ?? 0) <= boundary
         let switchPass = switchLeg.map {
             $0.switchedAway && $0.switchedBack && $0.reAdoptedHitObserved
+                && ($0.staleSessionRejected == true)
         }
         let pass = outputsMatch && crossSessionHitObserved && boundaryRespected
             && savings > 0 && (switchPass ?? true)

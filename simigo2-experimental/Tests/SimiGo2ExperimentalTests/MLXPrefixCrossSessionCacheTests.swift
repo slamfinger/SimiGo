@@ -386,3 +386,57 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertEqual(admittedAfter?.coveredTokens, tokens.count)
     }
 }
+
+// MARK: - Admission guard (F4 caller-identity closure, cache layer)
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// The admission guard binds the hook to the host generation that
+    /// installed it: a refused call returns nil (cold path) AND records an
+    /// observed miss — refusals are visible in observations, not silent.
+    func testAdmissionGuardRefusalReturnsColdAndRecordsMiss() async throws {
+        let tokens = Array(0..<24)
+        _ = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+
+        let admitted = ActorIsolated(false)
+        try runtime.install(admissionGuard: { admitted.value })
+        defer { runtime.uninstall() }
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
+
+        // Guard refuses: cold path, miss recorded.
+        XCTAssertNil(hook(tokens + [97, 98, 99]))
+        XCTAssertEqual(runtime.observations.calls, 1)
+        XCTAssertEqual(runtime.observations.hits, 0)
+
+        // Guard admits: verified hit flows normally.
+        await admitted.setValue(true)
+        let matched = try XCTUnwrap(hook(tokens + [97, 98, 99]))
+        XCTAssertEqual(matched.matchedTokenCount, tokens.count)
+        XCTAssertEqual(runtime.observations.hits, 1)
+    }
+}
+
+import MLX
+
+/// Minimal lock-guarded bool the guard closure can capture.
+final class ActorIsolated: @unchecked Sendable {
+    private let lock = NSLock()
+    private var underlying: Bool
+    var value: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return underlying
+    }
+
+    init(_ initial: Bool) { underlying = initial }
+
+    func setValue(_ newValue: Bool) {
+        lock.lock()
+        underlying = newValue
+        lock.unlock()
+    }
+}
