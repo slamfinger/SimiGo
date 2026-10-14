@@ -172,6 +172,13 @@ final class ChatAppModel: ObservableObject {
         guard !isGenerating else { return }
         isGenerating = true
         loadLine = "loading…"
+        // A pending Load invalidates the binding immediately: the binding
+        // is only re-published on a CONFIRMED load (oversized: after
+        // recover + load succeed; small-scale: from the host's surviving
+        // active state). A failed load therefore leaves Send/New Session
+        // blocked until a successful Load re-establishes it.
+        loadedExecutionPath = nil
+        loadedModelDirectory = nil
         if executionPath == .smallScale {
             loadSmallScale()
             return
@@ -201,13 +208,15 @@ final class ChatAppModel: ObservableObject {
         }
         let boundModel = URL(
             fileURLWithPath: modelPath, isDirectory: true).standardizedFileURL
-        loadedExecutionPath = .oversized
-        loadedModelDirectory = boundModel
         Task.detached {
             do {
                 let recovery = try await engine.recoverDurableSessionIfCold()
                 let stats = try await engine.load()
                 await MainActor.run {
+                    // Binding publishes only now — after BOTH recover and
+                    // load succeeded (a load error leaves it invalid).
+                    self.loadedExecutionPath = .oversized
+                    self.loadedModelDirectory = boundModel
                     switch recovery {
                     case .recovered(_, let position):
                         self.execStateLine =
