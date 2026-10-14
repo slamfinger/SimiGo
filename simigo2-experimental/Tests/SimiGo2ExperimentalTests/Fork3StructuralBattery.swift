@@ -126,10 +126,45 @@ final class Fork3StructuralBattery: XCTestCase {
         XCTAssertEqual(
             registry.currentBinding(executionID: "exec-C")?.generation, 2,
             "B-R3: per-Execution monotonic generation")
-        // Append-only: row count grew by exactly one superseded child row.
-        XCTAssertEqual(registry.allRows().count, rowsBefore.count + 1)
+        // Append-only: a transition never rewrites its predecessor. Rebinding
+        // therefore appends both the superseded row and its replacement.
+        XCTAssertEqual(registry.allRows().count, rowsBefore.count + 2)
         XCTAssertEqual(
             registry.allRows().filter { $0.state == .superseded }.count, 1)
+    }
+
+    /// G-8: lifecycle transitions must preserve their predecessor instead of
+    /// rewriting an existing relation row.
+    func testDetachAndRebindAppendLifecycleTransitions() throws {
+        let registry = ExecutionBindingRegistry()
+        let first = registry.bind(
+            executionID: "exec-A", runtimeAddress: "agent/default/sess-A/main",
+            ref: fork3Ref)
+
+        let detached = try XCTUnwrap(registry.detach(executionID: "exec-A"))
+        XCTAssertEqual(detached.generation, first.generation)
+        XCTAssertEqual(detached.state, .detached)
+        XCTAssertNil(registry.currentBinding(executionID: "exec-A"))
+
+        let replacementRef = RepresentationRef(
+            kind: .prefixSnapshot, modelIdentity: fork3Ref.modelIdentity,
+            kvLayoutIdentity: fork3Ref.kvLayoutIdentity,
+            renderIdentity: fork3Ref.renderIdentity,
+            contentHash: 0x6ead_beef, boundLength: 6400,
+            backendIdentity: fork3Ref.backendIdentity)
+        let replacement = registry.bind(
+            executionID: "exec-A", runtimeAddress: "agent/default/sess-A/main",
+            ref: replacementRef)
+
+        let rows = registry.allRows()
+        XCTAssertEqual(rows.count, 4, "active, detached, superseded, replacement active")
+        XCTAssertEqual(rows[0], first)
+        XCTAssertEqual(rows[1], detached)
+        XCTAssertEqual(rows[2].state, .superseded)
+        XCTAssertEqual(rows[2].generation, first.generation)
+        XCTAssertEqual(rows[3], replacement)
+        XCTAssertEqual(registry.currentBinding(executionID: "exec-A"), replacement)
+        XCTAssertEqual(registry.activeBindings(ref: replacementRef).count, 1)
     }
 
     /// Test 5 — EvictionWithTwoBindings: FORK-3 + Gate D. Artifact

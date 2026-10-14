@@ -104,16 +104,22 @@ public final class ExecutionBindingRegistry: @unchecked Sendable {
     public func currentBinding(executionID: String) -> ExecutionRepresentationBinding? {
         lock.lock()
         defer { lock.unlock() }
-        return rows.last {
-            $0.executionID == executionID && $0.state == .active
+        guard let index = activeRowIndexLocked(executionID: executionID) else {
+            return nil
         }
+        return rows[index]
     }
 
     /// All ACTIVE bindings over one RepresentationRef (B-I5: Ref → N).
     public func activeBindings(ref: RepresentationRef) -> [ExecutionRepresentationBinding] {
         lock.lock()
         defer { lock.unlock() }
-        return rows.filter { $0.ref == ref && $0.state == .active }
+        return rows.enumerated().compactMap { index, row in
+            guard row.ref == ref, row.state == .active,
+                activeRowIndexLocked(executionID: row.executionID) == index
+            else { return nil }
+            return row
+        }
     }
 
     /// Create (or re-bind) an Execution's binding to a Representation.
@@ -139,39 +145,50 @@ public final class ExecutionBindingRegistry: @unchecked Sendable {
     }
 
     /// Explicit detach operation (Gate C: detached is an OPERATION, never
-    /// a resolution outcome). The row is retained, state = detached.
+    /// a resolution outcome). The transition is retained without rewriting
+    /// the original active row.
     @discardableResult
     public func detach(executionID: String) -> ExecutionRepresentationBinding? {
         lock.lock()
         defer { lock.unlock() }
-        guard let index = rows.lastIndex(where: {
+        guard let active = rows.last(where: {
             $0.executionID == executionID && $0.state == .active
         }) else { return nil }
-        let detached = ExecutionRepresentationBinding(
-            executionID: rows[index].executionID,
-            runtimeAddress: rows[index].runtimeAddress,
-            ref: rows[index].ref,
-            boundPositionAtBind: rows[index].boundPositionAtBind,
-            generation: rows[index].generation,
-            state: .detached,
-            boundAt: rows[index].boundAt)
-        rows[index] = detached
-        return detached
+        return appendTransitionLocked(from: active, state: .detached)
     }
 
     private func supersedeActiveLocked(executionID: String) {
-        guard let index = rows.lastIndex(where: {
+        guard let active = rows.last(where: {
             $0.executionID == executionID && $0.state == .active
         }) else { return }
-        let superseded = ExecutionRepresentationBinding(
-            executionID: rows[index].executionID,
-            runtimeAddress: rows[index].runtimeAddress,
-            ref: rows[index].ref,
-            boundPositionAtBind: rows[index].boundPositionAtBind,
-            generation: rows[index].generation,
-            state: .superseded,
-            boundAt: rows[index].boundAt)
-        rows[index] = superseded
+        appendTransitionLocked(from: active, state: .superseded)
+    }
+
+    /// Caller holds `lock`. The newest terminal transition wins a generation;
+    /// only a generation whose latest event is active resolves.
+    private func activeRowIndexLocked(executionID: String) -> Int? {
+        // ponytail: full-scan resolution; add a reverse index if binding volume makes it hot.
+        var latestEventIndexByGeneration: [Int: Int] = [:]
+        for (index, row) in rows.enumerated() where row.executionID == executionID {
+            latestEventIndexByGeneration[row.generation] = index
+        }
+        return latestEventIndexByGeneration.values.first { rows[$0].state == .active }
+    }
+
+    /// Caller holds `lock`. State changes are events, not in-place rewrites.
+    private func appendTransitionLocked(
+        from binding: ExecutionRepresentationBinding, state: BindingState
+    ) -> ExecutionRepresentationBinding {
+        let transitioned = ExecutionRepresentationBinding(
+            executionID: binding.executionID,
+            runtimeAddress: binding.runtimeAddress,
+            ref: binding.ref,
+            boundPositionAtBind: binding.boundPositionAtBind,
+            generation: binding.generation,
+            state: state,
+            boundAt: binding.boundAt)
+        rows.append(transitioned)
+        return transitioned
     }
 }
 
