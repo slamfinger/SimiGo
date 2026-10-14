@@ -4,6 +4,35 @@
 
 **Last updated**: 2026-10-14
 
+## Current engineering continuity — 2026-10-14 (MLX cross-session host ownership)
+
+> **Status:** `HOST OWNERSHIP DISCIPLINE IMPLEMENTED / GUI WIRING NOT DONE`.
+> Branch `codex/mlx-cross-session-host-ownership`.
+
+Implements the ownership layer of runtime-handoff legal action #1 for
+`MLXPrefixCrossSessionCache`:
+
+- The global `ChatSession` hook is now a disciplined singleton: `install()`
+  is idempotent for the same instance and fails closed with
+  `hookOwnedByOther` while another live cache owns the hook;
+  `install(forceTakeover: true)` is the explicit model-switch path; a
+  foreign `uninstall()` (now returning `Bool`) is a visible no-op that
+  cannot clear the incumbent's hook. Previously `install()` silently
+  shadowed any active cache and `active` was unsynchronized.
+- All ownership transitions synchronize with the hook assignment on one
+  lock, so install/uninstall from different threads cannot leave the hook
+  alive without an owner.
+- Long-lived host adoption path: `init(modelDirectory:base:)` derives the
+  durable per-model store root `hostRoot(base:namespace:)` =
+  `<base>/<model>-<fingerprint>/` with the shared `dailyKVFingerprint`
+  convention — snapshots survive host restarts, which is what makes the
+  cache cross-session across process lifetimes.
+- Boundary: the SimiGo2App engine generation path does not route through
+  `ChatSession`, and wiring it there would touch DCC-1 recovery semantics
+  that the handoff keeps frozen — GUI promotion remains an open, separate
+  decision. Cache tests 7/7; full suite `356 executed / 3 skipped /
+  0 failures`.
+
 ## Current engineering continuity — 2026-10-14 (Execution State chaos / multi-process acceptance)
 
 > **Status:** `INDEPENDENT PROCESS-RESTART ACCEPTANCE PASS / NOT
