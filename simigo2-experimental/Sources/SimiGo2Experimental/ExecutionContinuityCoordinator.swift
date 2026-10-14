@@ -125,10 +125,17 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// when a successful restore — or a bind at the current handle position
     /// — re-establishes the correspondence.
     private var bindingUncertain: Set<ExecutionID> = []
+    /// Optional durable reservation face (G-7). Nil preserves stateless
+    /// experiment behavior; production hosts inject the JSON-lines allocator.
+    private let identityAllocator: (any ExecutionIdentityReserving)?
     private var sequence = 0
 
-    public init(backend: any ExecutionStateBackend) {
+    public init(
+        backend: any ExecutionStateBackend,
+        identityAllocator: (any ExecutionIdentityReserving)? = nil
+    ) {
         self.backend = backend
+        self.identityAllocator = identityAllocator
     }
 
     private func appendRecord(
@@ -209,6 +216,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         continuation: ExecutionContinuation
     ) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
+            try identityAllocator?.reserve(
+                token: "create:\(id.rawValue)", requestedID: id)
             if handles[id] != nil {
                 throw CoordinatorError.duplicateExecution(id)
             }
@@ -229,6 +238,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
 
     public func attach(_ state: ExecutionStateHandle) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
+            try identityAllocator?.reserve(
+                token: "attach:\(state.id.rawValue)", requestedID: state.id)
             if handles[state.id] != nil {
                 throw CoordinatorError.duplicateExecution(state.id)
             }
@@ -264,6 +275,9 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     public func fork(_ request: ExecutionForkRequest) async throws -> ExecutionStateHandle {
         try await operationGate.withPermit { [self] in
             let parent = try guardKnown(request.parent.id)
+            try identityAllocator?.reserve(
+                token: "fork:\(parent.id.rawValue):\(request.childID.rawValue)",
+                requestedID: request.childID)
             if handles[request.childID] != nil {
                 throw CoordinatorError.duplicateExecution(request.childID)
             }
