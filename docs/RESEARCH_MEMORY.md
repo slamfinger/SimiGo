@@ -956,3 +956,30 @@ STEP③ 最终 PASS 依赖四项：slot separation；禁止 per-X task redefinit
 **Status:** STEP④ OPEN / ESTIMAND DEFINITION / RQ ID NOT YET ASSIGNED / NO EXPERIMENT AUTHORIZATION
 
 **Provenance:** Architecture 2.0 P4-A STEP③ Architecture Independence adversarial closure, 2026-09-22.
+
+### RM-062 — Durable Execution State should separate semantic audit from opaque physical payload
+
+- Origin: 2026-10-14, Materialization / Execution-State runtime line.
+- Type: `ARCHITECTURE_INSIGHT / ENGINEERING_MEMORY`
+- Status: `IMPLEMENTED / BOUNDED EVIDENCE / NOT GOVERNANCE-CLOSED`
+- Scope: `DurableExecutionStateStore`, `ExecutionContinuityCoordinator`,
+  Oversized engine, Materialization artifact lifecycle.
+
+A durable Execution State layer can persist semantic identity, lifecycle audit,
+and backend-supplied opaque representation descriptors without collapsing the
+E1/E3 boundary. The coordinator owns semantic state; a host-injected codec owns
+payload serialization; the backend owns physical meaning and rehydration. On
+restart, persisted representations may be restored into a fresh backend and
+verified by physical binding, but this does not by itself establish production
+durability, universal state portability, or whole-system correctness.
+
+Evidence anchors:
+`docs/08-research-memory/SIMIGO_MATERIALIZATION_RUNTIME_HANDOFF_20261014.md`;
+`simigo2-experimental/docs/02-evidence/mlx-prefix-cache-probe/20261014-1b8b296e/manifest.json`;
+commits `f8c712f6`, `9d117015`, `159eebb0`, `6a0d2e7e`, `31f50cf1`.
+
+Forbidden inference: process-crash success does not prove power-loss durability,
+production readiness, or that all registered G-gaps are closed.
+
+Promotion: engineering implementation → independent system acceptance →
+governance review → registered closure.

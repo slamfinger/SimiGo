@@ -2,7 +2,40 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-14
+
+## Current engineering continuity — 2026-10-14 (Materialization / Execution-State runtime)
+
+> **Status:** `Materialization / Execution-State runtime hardening` is
+> `ENGINEERING PROGRESS RECORDED / INDEPENDENT GENERAL ACCEPTANCE NOT CLAIMED`.
+> Feature branch `codex/materialization-delete-acquire-race` HEAD is
+> `31f50cf1bf3743b3c2804f363831cd854262d59e`; remote `main` HEAD is
+> `20c756430a0226b2ee6b844aff1303984b74b163`.
+
+This continuity records implementation and bounded evidence, not a production
+or universal-correctness claim. It adds:
+
+- generation-bound publication / deletion and digest-verified reads;
+- durable quarantine, identity reservation, and append-only binding events;
+- cancellation / durable-failure uncertainty semantics after a physical advance;
+- `DurableExecutionStateStore` for semantic handles, lifecycle audit, and
+  representation payloads;
+- Oversized engine wiring for baseline UUID-scoped semantic snapshots;
+- MLX `ChatSession` cross-session prefix-cache host wiring;
+- process-crash evidence for identity, quarantine, semantic state, and
+  representation rehydration;
+- real-model prefix-cache acceptance on Qwen3-Coder-30B-A3B at commit
+  `1b8b296e5749884798754f8824a5fdae3e575186`:
+  `PASS`, one verified 23-token cross-session hit, outputs matched.
+
+Full XCTest at the recorded HEAD was `346 executed / 3 skipped / 0 failures`
+in three runs. G-5 / G-8 have engineering implementations but are not formally
+closed. G-7 / G-10 have bounded implementations but remain partial without
+independent acceptance and governance registration. Power-loss and media
+durability remain unverified.
+
+Authoritative handoff:
+`docs/08-research-memory/SIMIGO_MATERIALIZATION_RUNTIME_HANDOFF_20261014.md`.
 
 ## Current continuity — 2026-10-11 (Actual MLX Smoke V6 result)
 
