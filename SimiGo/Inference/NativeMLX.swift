@@ -200,18 +200,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         return hasCompositeKey(header.keys.filter { $0 != "__metadata__" })
     }
 
-    /// 统一模型装载入口：复合 VLM 布局走 VLMModelFactory（视觉塔随载，
-    /// 文本-only 使用——SimiGo 协议面不携带图像输入，能力契约 vision 仍
-    /// 为 unsupported）；其余一切走原文本工厂，路径零扰动。
+    /// 统一模型装载入口（v2.1.6 起：文本优先 + 复合布局回落）。
+    ///
+    /// 文本工厂认识 model_type 的（qwen3_5_moe、gemma4 稠密等）一律先走
+    /// 文本路径——那是本血统验证数周的栈；仅当装载失败且检查点为复合
+    /// VLM 布局（语言/视觉权重带前缀，文本栈无法消费其命名——如
+    /// Gemma4-MoE 的专家键、纯 VLM-only 类型）时回落 VLMModelFactory。
+    /// 取代 v2.1.2 的「复合即 VLM」直路由——它把 Nail-Qwen3.6
+    /// （qwen3_5_moe 复合布局，文本路径长期正常）误送进 VLM 路径导致
+    /// 启动失败（2026-10-15 "The data couldn't be read..."）。
     nonisolated static func loadModelContainer(path: String) async throws -> ModelContainer {
-        if isCompositeVLMCheckpoint(path: path) {
-            return try await VLMModelFactory.shared.loadContainer(
+        do {
+            return try await LLMModelFactory.shared.loadContainer(
                 from: URL(fileURLWithPath: path),
                 using: #huggingFaceTokenizerLoader())
+        } catch let textError {
+            guard isCompositeVLMCheckpoint(path: path) else { throw textError }
+            // 释放文本尝试的瞬态权重再重试，避免 20G 级双重驻留。
+            MLX.GPU.clearCache()
+            do {
+                return try await VLMModelFactory.shared.loadContainer(
+                    from: URL(fileURLWithPath: path),
+                    using: #huggingFaceTokenizerLoader())
+            } catch {
+                // 两条路径的失败原因都留档，避免下次排查丢前一半线索。
+                throw RuntError.loadFailed(
+                    "text path: \(textError.localizedDescription)"
+                        + "; vlm fallback: \(error.localizedDescription)")
+            }
         }
-        return try await LLMModelFactory.shared.loadContainer(
-            from: URL(fileURLWithPath: path),
-            using: #huggingFaceTokenizerLoader())
     }
 
     public func start(_ info: ModelInfo, port: Int) async throws {
@@ -231,10 +248,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 try await oversized.start(info, port: port)
                 self.state.withLock { $0.oversized = oversized }
             } else {
-                let isVLM = Self.isCompositeVLMCheckpoint(path: info.path)
                 container = try await Self.loadModelContainer(path: info.path)
                 traceLogger.trace(
-                    "[MLX] loadRoute vlm=\(isVLM) model=\(modelName(from: info.path))")
+                    "[MLX] loadRoute text-first composite=\(Self.isCompositeVLMCheckpoint(path: info.path)) model=\(modelName(from: info.path))")
             }
             let modelId = modelName(from: info.path)
             let nodeConfiguration = await MainActor.run {
