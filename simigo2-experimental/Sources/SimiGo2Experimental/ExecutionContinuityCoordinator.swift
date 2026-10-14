@@ -84,6 +84,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         /// are rejected until a successful restore — or a bind at the
         /// current handle position — re-establishes the correspondence.
         case backendBindingUncertain(executionID: ExecutionID)
+        /// The semantic transition reached its coordination boundary, but the
+        /// optional durable state commit failed. The operation is not reported
+        /// as successful; hosts must inspect recovery state before retrying.
+        case durableStateCommitFailed(ExecutionID)
     }
 
     /// One authoritative lifecycle record per transition (⑧ discipline
@@ -128,6 +132,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// Optional durable reservation face (G-7). Nil preserves stateless
     /// experiment behavior; production hosts inject the JSON-lines allocator.
     private let identityAllocator: (any ExecutionIdentityReserving)?
+    private let stateStore: DurableExecutionStateStore?
     private var sequence = 0
 
     public init(
@@ -136,6 +141,25 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     ) {
         self.backend = backend
         self.identityAllocator = identityAllocator
+        self.stateStore = nil
+    }
+
+    /// Restore persisted semantic state (G-10 partial composition). Physical
+    /// representations are deliberately absent: hosts re-bind payloads after
+    /// backend materialization.
+    public init(
+        backend: any ExecutionStateBackend,
+        identityAllocator: (any ExecutionIdentityReserving)?,
+        stateStore: DurableExecutionStateStore
+    ) throws {
+        self.backend = backend
+        self.identityAllocator = identityAllocator
+        self.stateStore = stateStore
+        let loaded = try stateStore.load()
+        self.handles = Dictionary(
+            uniqueKeysWithValues: loaded.handles.map { ($0.id, $0) })
+        self.records = loaded.lifecycleRecords
+        self.sequence = loaded.lifecycleRecords.count
     }
 
     private func appendRecord(
@@ -144,21 +168,38 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         relatedID: ExecutionID? = nil,
         resultLifecycle: ExecutionBranchLifecycle,
         resultPosition: ExecutionPosition,
-        resultContinuation: ExecutionContinuation
-    ) {
-        stateLock.withLock {
+        resultContinuation: ExecutionContinuation,
+        prospectiveHandles: [ExecutionStateHandle] = []
+    ) throws {
+        let result: Result<Void, Error> = stateLock.withLock {
+            let record = LifecycleRecord(
+                sequence: sequence + 1,
+                operation: operation,
+                executionID: executionID,
+                relatedID: relatedID,
+                resultLifecycle: resultLifecycle,
+                resultPosition: resultPosition,
+                resultContinuation: resultContinuation)
+            var updatedHandles = handles
+            for handle in prospectiveHandles {
+                updatedHandles[handle.id] = handle
+            }
+            if let stateStore {
+                do {
+                    try stateStore.replace(
+                        handles: Array(updatedHandles.values),
+                        lifecycleRecords: records + [record])
+                } catch {
+                    return .failure(error)
+                }
+            }
             sequence += 1
-            records.append(
-                LifecycleRecord(
-                    sequence: sequence,
-                    operation: operation,
-                    executionID: executionID,
-                    relatedID: relatedID,
-                    resultLifecycle: resultLifecycle,
-                    resultPosition: resultPosition,
-                    resultContinuation: resultContinuation
-                )
-            )
+            records.append(record)
+            handles = updatedHandles
+            return .success(())
+        }
+        if case .failure = result {
+            throw CoordinatorError.durableStateCommitFailed(executionID)
         }
     }
 
@@ -228,9 +269,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: continuation,
                 lifecycle: .attached
             )
-            stateLock.withLock {
-                handles[id] = handle
-                appendRecord(.created, executionID: id, resultLifecycle: .attached, resultPosition: position, resultContinuation: continuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .created, executionID: id, resultLifecycle: .attached,
+                    resultPosition: position, resultContinuation: continuation,
+                    prospectiveHandles: [handle])
             }
             return handle
         }
@@ -243,9 +286,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             if handles[state.id] != nil {
                 throw CoordinatorError.duplicateExecution(state.id)
             }
-            stateLock.withLock {
-                handles[state.id] = state
-                appendRecord(.attached, executionID: state.id, resultLifecycle: state.lifecycle, resultPosition: state.position, resultContinuation: state.continuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .attached, executionID: state.id, resultLifecycle: state.lifecycle,
+                    resultPosition: state.position, resultContinuation: state.continuation,
+                    prospectiveHandles: [state])
             }
             return state
         }
@@ -264,9 +309,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: continuation,
                 lifecycle: .active
             )
-            stateLock.withLock {
-                handles[current.id] = advanced
-                appendRecord(.continued, executionID: current.id, resultLifecycle: .active, resultPosition: advanced.position, resultContinuation: continuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .continued, executionID: current.id, resultLifecycle: .active,
+                    resultPosition: advanced.position, resultContinuation: continuation,
+                    prospectiveHandles: [advanced])
             }
             return advanced
         }
@@ -333,9 +380,12 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: request.childContinuation,
                 lifecycle: .active
             )
-            stateLock.withLock {
-                handles[request.childID] = child
-                appendRecord(.forked, executionID: request.childID, relatedID: parent.id, resultLifecycle: .active, resultPosition: request.childPosition, resultContinuation: request.childContinuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .forked, executionID: request.childID, relatedID: parent.id,
+                    resultLifecycle: .active, resultPosition: request.childPosition,
+                    resultContinuation: request.childContinuation,
+                    prospectiveHandles: [child])
 
                 if let rep = childRep {
                     representationHistory[request.childID, default: []].append(rep)
@@ -439,11 +489,14 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: request.continuation,
                 lifecycle: .restored
             )
-            stateLock.withLock {
-                handles[current.id] = restored
+            try stateLock.withLock {
                 // Logical and physical both sit at the target now.
                 bindingUncertain.remove(current.id)
-                appendRecord(.restored, executionID: current.id, resultLifecycle: .restored, resultPosition: request.targetPosition, resultContinuation: request.continuation)
+                try appendRecord(
+                    .restored, executionID: current.id, resultLifecycle: .restored,
+                    resultPosition: request.targetPosition,
+                    resultContinuation: request.continuation,
+                    prospectiveHandles: [restored])
             }
             return restored
         }
@@ -459,9 +512,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: current.continuation,
                 lifecycle: .active
             )
-            stateLock.withLock {
-                handles[current.id] = reattached
-                appendRecord(.reattached, executionID: current.id, resultLifecycle: .active, resultPosition: current.position, resultContinuation: current.continuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .reattached, executionID: current.id, resultLifecycle: .active,
+                    resultPosition: current.position, resultContinuation: current.continuation,
+                    prospectiveHandles: [reattached])
             }
             return reattached
         }
@@ -495,9 +550,11 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                 continuation: current.continuation,
                 lifecycle: .discarded
             )
-            stateLock.withLock {
-                handles[current.id] = discardedHandle
-                appendRecord(.discarded, executionID: current.id, resultLifecycle: .discarded, resultPosition: current.position, resultContinuation: current.continuation)
+            try stateLock.withLock {
+                try appendRecord(
+                    .discarded, executionID: current.id, resultLifecycle: .discarded,
+                    resultPosition: current.position, resultContinuation: current.continuation,
+                    prospectiveHandles: [discardedHandle])
             }
         }
     }
