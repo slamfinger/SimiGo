@@ -1602,6 +1602,30 @@ final class MaterializationCoordinatorTests: XCTestCase {
         XCTAssertNotNil(admission)
         XCTAssertTrue(store.physicalUse.isGenerationInvalidated(key))
         XCTAssertNil(store.physicalUse.acquire(key))
+
+        let quarantined = try store.quarantinedArtifacts()
+        XCTAssertEqual(quarantined.map(\.artifactPath), [key])
+        XCTAssertNotNil(quarantined.first?.generation)
+
+        let fresh = PrefixSnapshotStore(
+            root: root, pool: ExecutionStatePrefixPool(tokenBudget: 10_000))
+        XCTAssertEqual(try fresh.rescan(), 0, "durable quarantine must survive restart")
+        XCTAssertEqual(try fresh.quarantinedArtifacts().count, 1)
+
+        try fresh.clearQuarantine(forArtifactAt: key)
+        XCTAssertTrue(try fresh.quarantinedArtifacts().isEmpty)
+
+        // Explicit dismissal clears the durable tombstone; a real repair also
+        // restores the backup pair that rollback failed to reinstall.
+        try FileManager.default.removeItem(at: oldArtifact.metadataURL)
+        try FileManager.default.removeItem(at: oldArtifact.snapshotURL)
+        try FileManager.default.moveItem(
+            at: backupMetadata!, to: oldArtifact.metadataURL)
+        try FileManager.default.moveItem(
+            at: backupSnapshot!, to: oldArtifact.snapshotURL)
+
+        XCTAssertEqual(try fresh.rescan(), 1, "explicit dismissal allows recovery")
+        XCTAssertNotNil(fresh.pool.admit(namespace: f3ns, promptTokens: tokens))
     }
 
     /// A failed first publication must not leave an unregistered candidate
