@@ -151,6 +151,7 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
     /// contract and `docs/02-evidence/restore-atomicity-dcc-20261013` for
     /// the design.
     private let sessionBaselineDirectory: URL?
+    private let identityDirectory: URL?
     /// Durable-recovery capability of the LIVE session. `.absent` MUST be
     /// reported whenever the baseline did not commit — a session without a
     /// committed baseline is never durably recoverable.
@@ -205,13 +206,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
         unitLayers: Int = OversizedSegmentedEngine.defaultUnitLayers,
         peakCapacityMiB: Int64 = OversizedSegmentedEngine.defaultPeakCapacityMiB,
         floorBudgetMiB: Int64? = 4096,
-        sessionBaselineDirectory: URL? = nil
+        sessionBaselineDirectory: URL? = nil,
+        identityDirectory: URL? = nil
     ) {
         self.modelDirectory = modelDirectory
         self.unitLayers = unitLayers
         self.peakCapacityMiB = peakCapacityMiB
         self.floorBudgetMiB = floorBudgetMiB ?? peakCapacityMiB
         self.sessionBaselineDirectory = sessionBaselineDirectory
+        self.identityDirectory = identityDirectory
     }
 
     #if DEBUG
@@ -958,7 +961,15 @@ public final class OversizedSegmentedEngine: @unchecked Sendable {
                 executionID: executionID, position: ExecutionPosition(Int64(position))
             )
         }
-        let coordinator = ExecutionContinuityCoordinator(backend: backend)
+        let identityAllocator: (any ExecutionIdentityReserving)?
+        if let identityDirectory {
+            identityAllocator = try DurableExecutionIdentityAllocator(
+                directory: identityDirectory)
+        } else {
+            identityAllocator = nil
+        }
+        let coordinator = ExecutionContinuityCoordinator(
+            backend: backend, identityAllocator: identityAllocator)
         let state = try await coordinator.create(
             id: ExecutionID("S"),
             position: position,

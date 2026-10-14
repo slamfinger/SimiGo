@@ -71,7 +71,7 @@ final class PrefixPoolSessionLifecycleTests: XCTestCase {
         // Same live store first…
         let admissionB = storeA.pool.admit(namespace: ns, promptTokens: promptB)
         XCTAssertEqual(admissionB?.coveredTokens, 6200, "session B pays only its own tail")
-        _ = try await storeA.load(admissionB!)
+        _ = try await MLXPrefixSnapshotLoader(store: storeA).load(admissionB!)
         _ = entryA
 
         // …and through a SECOND store instance over the same disk (a
@@ -82,7 +82,7 @@ final class PrefixPoolSessionLifecycleTests: XCTestCase {
         XCTAssertEqual(rescanned, 1, "one boundary on disk")
         let admissionB2 = storeB.pool.admit(namespace: ns, promptTokens: promptB)
         XCTAssertEqual(admissionB2?.coveredTokens, 6200, "disk re-registration admits")
-        let snapshotB2 = try await storeB.load(admissionB2!)
+        let snapshotB2 = try await MLXPrefixSnapshotLoader(store: storeB).load(admissionB2!)
         XCTAssertEqual(snapshotB2.cache.count, 1)
 
         // Session B commits its extended turn — a new, longer boundary.
@@ -98,7 +98,7 @@ final class PrefixPoolSessionLifecycleTests: XCTestCase {
         XCTAssertEqual(
             admissionC?.coveredTokens, promptB.count,
             "longest boundary (B's commit) wins after restart")
-        _ = try await storeC.load(admissionC!)
+        _ = try await MLXPrefixSnapshotLoader(store: storeC).load(admissionC!)
 
         // A session with a DIVERGENT document never false-hits:
         let divergent = sharedDocument().map { $0 == 5 ? 6 : $0 }

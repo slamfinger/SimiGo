@@ -62,7 +62,7 @@ final class PrefixSnapshotStoreTests: XCTestCase {
             try writeSyntheticSnapshot(to: url, tokenCount: 8)
         }
         let admission = pool_admit(prefix)
-        let snapshot = try await store.load(admission!)
+        let snapshot = try await MLXPrefixSnapshotLoader(store: store).load(admission!)
         XCTAssertEqual(snapshot.cache.count, 1, "one synthetic layer survives the file round-trip")
         XCTAssertEqual(snapshot.cache[0].state.count, 2, "keys + values restored")
     }
@@ -81,7 +81,7 @@ final class PrefixSnapshotStoreTests: XCTestCase {
 
         let admission = pool_admit(prefix)
         do {
-            _ = try await store.load(admission!)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission!)
             XCTFail("expected load to throw")
         } catch let error as PrefixSnapshotStoreError {
             guard case .metadataMismatch = error else {
@@ -106,7 +106,7 @@ final class PrefixSnapshotStoreTests: XCTestCase {
         try JSONEncoder().encode(sidecar).write(to: artifact.metadataURL)
         let admission = pool_admit(prefix)
         do {
-            _ = try await store.load(admission!)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission!)
             XCTFail("expected load to throw")
         } catch is PrefixSnapshotStoreError {} catch {
             XCTFail("unexpected error type: \(error)")
@@ -123,7 +123,7 @@ final class PrefixSnapshotStoreTests: XCTestCase {
         try FileManager.default.removeItem(at: artifact.snapshotURL)
         let admission = pool_admit(prefix)
         do {
-            _ = try await store.load(admission!)
+            _ = try await MLXPrefixSnapshotLoader(store: store).load(admission!)
             XCTFail("expected load to throw")
         } catch let error as PrefixSnapshotStoreError {
             guard case .artifactUnreadable = error else {

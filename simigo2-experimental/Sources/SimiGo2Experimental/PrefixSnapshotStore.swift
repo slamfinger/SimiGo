@@ -1,5 +1,4 @@
 import Foundation
-import MLXLMCommon
 import Crypto
 
 /// Disk artifact for one pool entry (B-2): the KV snapshot written by the
@@ -415,16 +414,20 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
             artifact.snapshotURL.path, generation: artifact.generation)
     }
 
-    /// Reconcile the admitted entry against the artifact's own claims,
-    /// then load the snapshot. Any disagreement or unreadability removes
-    /// the entry from the pool and throws LOUD — never a silent miss, and
-    /// never a bind that continues on an unreconciled representation.
-    public func load(_ admission: PrefixAdmission) async throws -> PromptCacheSnapshot {
+    /// Reconcile the admitted entry and invoke `reader` while its artifact is
+    /// still protected. The core store is backend-neutral: the caller chooses
+    /// the payload decoder (for example, an MLX adapter).
+    public func load<Payload>(
+        _ admission: PrefixAdmission,
+        reader: (URL) throws -> Payload
+    ) async throws -> Payload {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
-        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
+        try Task.checkCancellation()
+        return try leasedReconciledArtifact(
+            entry: entry, artifact: artifact, reader: reader)
     }
 
     /// Drop the entry and its files (budget eviction with disk cleanup is
@@ -451,25 +454,31 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     /// Synchronous twin of `load` for host hooks that run inside a
     /// session's synchronous consult path (B-6). Same reconciliation, same
     /// self-healing.
-    public func loadSync(_ admission: PrefixAdmission) throws -> PromptCacheSnapshot {
+    public func loadSync<Payload>(
+        _ admission: PrefixAdmission,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
         let entry = admission.entry
         guard let artifact = entry.artifact as? DiskPrefixArtifact else {
             throw PrefixSnapshotStoreError.artifactUnreadable("foreign artifact handle")
         }
-        return try leasedReconciledSnapshot(entry: entry, artifact: artifact)
+        return try leasedReconciledArtifact(
+            entry: entry, artifact: artifact, reader: reader)
     }
 
-    private func leasedReconciledSnapshot(
-        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
-    ) throws -> PromptCacheSnapshot {
+    private func leasedReconciledArtifact<Payload>(
+        entry: PrefixPoolEntry,
+        artifact: DiskPrefixArtifact,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
         guard let lease = physicalUse.acquire(artifact.snapshotURL.path) else {
             throw PrefixSnapshotStoreError.physicalUseUnavailable(
                 path: artifact.snapshotURL.path)
         }
         do {
             defer { physicalUse.release(lease) }
-            let snapshot = try reconciledSnapshot(entry: entry, artifact: artifact)
-            return snapshot
+            return try reconciledArtifact(
+                entry: entry, artifact: artifact, reader: reader)
         } catch let error as PrefixSnapshotStoreError {
             retireFailedArtifact(entry)
             throw error
@@ -556,9 +565,11 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
     }
 
     /// Shared reconciliation + snapshot read for both load paths.
-    private func reconciledSnapshot(
-        entry: PrefixPoolEntry, artifact: DiskPrefixArtifact
-    ) throws -> PromptCacheSnapshot {
+    private func reconciledArtifact<Payload>(
+        entry: PrefixPoolEntry,
+        artifact: DiskPrefixArtifact,
+        reader: (URL) throws -> Payload
+    ) throws -> Payload {
         artifactIOLock.lock()
         defer { artifactIOLock.unlock() }
         let sidecarData = fileManager.contents(atPath: artifact.metadataURL.path)
@@ -594,7 +605,7 @@ public final class PrefixSnapshotStore: @unchecked Sendable {
                 entryTokens: entry.tokenCount, entryHash: entry.boundaryHash,
                 snapshotTokens: sidecar.tokenCount, snapshotHash: sidecar.chainHash)
         }
-        return try loadPromptCacheSnapshot(url: artifact.snapshotURL, materializeArrays: true)
+        return try reader(artifact.snapshotURL)
     }
 
     // MARK: - Restart (disk → pool)
