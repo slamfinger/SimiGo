@@ -518,4 +518,42 @@ final class OversizedSegmentedEngineRestoreAtomicityTests: XCTestCase {
             }
         }
     }
+
+    /// Registered gap G-1: direct backend calls must be fail-closed too, not
+    /// rely on the coordinator's fork precondition.
+    func testDirectChildDeriveRejectsParentChildPositionMismatch() async throws {
+        let backend = OversizedSegmentedStateBackend(releaseAll: {})
+        let parentID = ExecutionID("P")
+        let parent = ExecutionRepresentation(
+            executionID: parentID,
+            position: ExecutionPosition(0),
+            payload: OversizedPrefixPayload(tokenPrefix: [1, 2, 3])
+        )
+        let child = ExecutionStateHandle(
+            id: ExecutionID("C"),
+            lineage: ExecutionLineage(root: parentID, parent: parentID),
+            position: ExecutionPosition(1),
+            continuation: ExecutionContinuation(
+                nextInput: "child",
+                continuationID: "child-cont"
+            ),
+            lifecycle: .active
+        )
+
+        do {
+            _ = try await backend.deriveRepresentation(from: parent, for: child)
+            XCTFail("direct derive must reject a parent/child position mismatch")
+        } catch let error as ExecutionStateBackendError {
+            XCTAssertEqual(
+                error,
+                .representationPositionMismatch(
+                    executionID: child.id,
+                    bound: parent.position,
+                    logical: child.position
+                )
+            )
+        }
+
+        XCTAssertNil(try? backend.boundPrefix(for: child))
+    }
 }
