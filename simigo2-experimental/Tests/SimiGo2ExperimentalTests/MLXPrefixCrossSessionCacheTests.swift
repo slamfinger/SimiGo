@@ -51,7 +51,7 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
     /// mutates the same file object rather than atomically replacing its path.
     private func fileIdentity(_ url: URL) throws -> String {
         var status = stat()
-        guard Darwin.stat(url.path, &status) == 0 else {
+        guard stat(url.path, &status) == 0 else {
             throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
         }
         return "\(status.st_dev):\(status.st_ino)"
