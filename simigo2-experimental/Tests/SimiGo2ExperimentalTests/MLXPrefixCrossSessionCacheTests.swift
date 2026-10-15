@@ -742,3 +742,107 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertTrue(runtime.ownsNoHookSlot)
     }
 }
+
+
+// MARK: - Same-directory model-file drift fence
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// Observable model-file metadata drift at the SAME path must turn a
+    /// would-be cross-session hit into a recorded cold miss.
+    func testSameDirectoryModelRevisionDriftFailsClosed() async throws {
+        let tokens = Array(0..<24)
+        _ = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+
+        let modelDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("model-revision-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: modelDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: modelDirectory) }
+        let weights = modelDirectory.appendingPathComponent("model.safetensors")
+        let tokenizer = modelDirectory.appendingPathComponent("tokenizer.json")
+        try Data([1, 2, 3, 4]).write(to: weights)
+        try Data(#"{"version":1}"#.utf8).write(to: tokenizer)
+
+        let revision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(
+                modelDirectory: modelDirectory))
+        try runtime.install(
+            allowedModelDirectory: modelDirectory,
+            allowedModelDirectoryRevision: revision)
+        defer { runtime.uninstall() }
+
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        let context = callerContext(directory: modelDirectory)
+        let matched = try XCTUnwrap(hook.lookup(tokens + [97, 98, 99], context))
+        XCTAssertEqual(matched.matchedTokenCount, tokens.count)
+        XCTAssertEqual(runtime.observations.hits, 1)
+
+        // Same directory, different bytes, same size; force a changed
+        // modification timestamp so this exercises the intended metadata
+        // revision signal rather than relying on filesystem timestamp granularity.
+        let previousAttributes = try FileManager.default.attributesOfItem(atPath: weights.path)
+        let previousModified = previousAttributes[.modificationDate] as? Date ?? Date()
+        try Data([4, 3, 2, 1]).write(to: weights, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.modificationDate: previousModified.addingTimeInterval(120)],
+            ofItemAtPath: weights.path)
+
+        let changedRevision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(
+                modelDirectory: modelDirectory))
+        XCTAssertNotEqual(changedRevision, revision)
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], context))
+        XCTAssertEqual(runtime.observations.calls, 2)
+        XCTAssertEqual(runtime.observations.hits, 1)
+        XCTAssertEqual(runtime.observations.lastMatchedTokenCount, tokens.count)
+    }
+}
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// Portable regression for the Hugging Face snapshot shape: a candidate
+    /// path is a symlink into a blob directory. The revision must be non-nil,
+    /// stable while unchanged, and change when the symlink targets another blob.
+    func testModelDirectoryRevisionResolvesSymlinkAndDetectsRetarget() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("model-revision-symlink-\(UUID().uuidString)", isDirectory: true)
+        let snapshot = root.appendingPathComponent("snapshot", isDirectory: true)
+        let blobs = root.appendingPathComponent("blobs", isDirectory: true)
+        try FileManager.default.createDirectory(at: snapshot, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: blobs, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let firstBlob = blobs.appendingPathComponent("sha256-first")
+        let secondBlob = blobs.appendingPathComponent("sha256-second")
+        let sameBytes = Data(repeating: 0x5A, count: 128)
+        try sameBytes.write(to: firstBlob)
+        try sameBytes.write(to: secondBlob)
+
+        // Keep ordinary file metadata as equal as the platform allows, so
+        // changing the symlink target name is itself part of the revision.
+        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        try FileManager.default.setAttributes(
+            [.modificationDate: fixedDate], ofItemAtPath: firstBlob.path)
+        try FileManager.default.setAttributes(
+            [.modificationDate: fixedDate], ofItemAtPath: secondBlob.path)
+
+        let link = snapshot.appendingPathComponent("model.safetensors")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: firstBlob)
+
+        let firstRevision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        let repeatedRevision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        XCTAssertEqual(firstRevision, repeatedRevision)
+
+        try FileManager.default.removeItem(at: link)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: secondBlob)
+        let retargetedRevision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        XCTAssertNotEqual(firstRevision, retargetedRevision)
+    }
+}

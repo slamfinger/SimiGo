@@ -105,6 +105,98 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         self.namespace = namespace
     }
 
+
+    /// A lightweight freshness fence for model files used by MLX loading.
+    ///
+    /// This is deliberately a METADATA revision, not another O(model-bytes)
+    /// identity hash. It tracks paths, sizes, creation times, and modification
+    /// times for the existing content-identity inputs: safetensors weights and
+    /// tokenizer-like files actually incorporated into that identity. A lookup
+    /// fails closed when this revision changes after activation. Same-size in-place rewrites that
+    /// preserve all tracked metadata remain an explicit residual; this helper
+    /// narrows ordinary same-directory drift without claiming content proof.
+    public static func modelDirectoryRevision(modelDirectory: URL) -> String? {
+        let root = modelDirectory.standardizedFileURL
+        let keys: [URLResourceKey] = [
+            .isRegularFileKey, .fileSizeKey,
+            .creationDateKey, .contentModificationDateKey
+        ]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: keys
+        ) else {
+            return nil
+        }
+
+        let keySet = Set(keys)
+        var entries: [String] = []
+        let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+
+        for case let url as URL in enumerator {
+            let filename = url.lastPathComponent
+            guard Self.isPotentialModelRevisionFile(filename) else { continue }
+            // Hugging Face snapshot directories address weights through
+            // SYMLINKS into a blob store; resource values of the link
+            // itself report isRegularFile == false, which previously made
+            // every HF-cached model fail activation. Resolve the link and
+            // fingerprint the TARGET's metadata, plus the target's blob
+            // name — re-pointing a snapshot link (new revision under the
+            // same path) is itself observable drift.
+            let resolved = url.resolvingSymlinksInPath()
+            guard let values = try? resolved.resourceValues(forKeys: keySet),
+                values.isRegularFile == true,
+                let size = values.fileSize
+            else {
+                // An unreadable candidate file makes it impossible to know
+                // whether this is an identity input; fail closed rather than
+                // silently omit a potentially relevant artifact.
+                return nil
+            }
+            guard Self.isModelRevisionFile(filename, size: size) else { continue }
+            guard let modified = values.contentModificationDate else { return nil }
+            let createdBits = values.creationDate?.timeIntervalSince1970.bitPattern ?? 0
+            let modifiedBits = modified.timeIntervalSince1970.bitPattern
+            let relativePath = url.path.hasPrefix(rootPrefix)
+                ? String(url.path.dropFirst(rootPrefix.count))
+                : url.lastPathComponent
+            let targetName = resolved.path == url.path
+                ? "" : resolved.lastPathComponent
+            entries.append(
+                "\(relativePath)\t\(targetName)\t\(size)\t\(createdBits)\t\(modifiedBits)")
+        }
+
+        let payload = entries.sorted().joined(separator: "\n")
+        var hasher = SHA256()
+        hasher.update(data: Data(payload.utf8))
+        return hasher.finalize()
+            .compactMap { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static func isPotentialModelRevisionFile(_ filename: String) -> Bool {
+        let name = filename
+        return name.hasSuffix(".safetensors")
+            || name.hasPrefix("tokenizer")
+            || name == "special_tokens_map.json"
+            || name.hasPrefix("merges")
+            || name.hasPrefix("vocab")
+            || name.hasPrefix("chat_template")
+    }
+
+    /// Keep this set aligned with EngineModelIdentity.compute: tokenizer-like
+    /// files larger than 8 MiB are not part of its tokenizer digest and must
+    /// not become a new independent identity input in this metadata fence.
+    private static func isModelRevisionFile(_ filename: String, size: Int) -> Bool {
+        let name = filename
+        if name.hasSuffix(".safetensors") { return true }
+        let tokenizerLike = name.hasPrefix("tokenizer")
+            || name == "special_tokens_map.json"
+            || name.hasPrefix("merges")
+            || name.hasPrefix("vocab")
+            || name.hasPrefix("chat_template")
+        return tokenizerLike && size <= 8 * 1024 * 1024
+    }
+
     /// Model identity at the strength the engine path already uses:
     /// content digests of the weights and tokenizer files, NOT the directory
     /// name. Two directories with the same name but different model content
@@ -221,10 +313,15 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// refused call records an observed miss and returns nil (cold path) —
     /// and it covers the window between any higher-level session check and
     /// the hook invocation itself.
+    ///
+    /// When `allowedModelDirectoryRevision` is supplied with the directory,
+    /// the hook also returns a miss if relevant local model-file metadata
+    /// drifts. This is a cheap freshness fence, not a byte-content proof.
     public func install(
         forceTakeover: Bool = false,
         admissionGuard: (@Sendable () -> Bool)? = nil,
-        allowedModelDirectory: URL? = nil
+        allowedModelDirectory: URL? = nil,
+        allowedModelDirectoryRevision: String? = nil
     ) throws {
         try Self.ownershipLock.withLock {
             // FCI-OWN-02: even the idempotent fast path must verify the
@@ -262,6 +359,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             // calling session's model origin). The legacy slot is left to
             // whoever owns it — release verification must check BOTH slots.
             let allowed = allowedModelDirectory?.standardizedFileURL
+            let allowedRevision = allowedModelDirectoryRevision
             let token = ChatSession.CrossSessionPrefixLookup.OwnerToken()
             ownershipToken = token
             ChatSession.crossSessionPrefixLookupWithContext =
@@ -281,6 +379,16 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
                         guard let origin = caller.modelDirectory?.standardizedFileURL,
                             origin == allowed
                         else {
+                            self.observation.record(matchedTokenCount: nil)
+                            return nil
+                        }
+                        // A matching path alone cannot detect a model replaced
+                        // in place. Recheck the cheap file-metadata revision
+                        // before admitting any cached prefix; after observable
+                        // model-file drift, fail closed until host reactivation.
+                        if let allowedRevision,
+                            Self.modelDirectoryRevision(modelDirectory: allowed) != allowedRevision
+                        {
                             self.observation.record(matchedTokenCount: nil)
                             return nil
                         }

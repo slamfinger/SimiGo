@@ -30,6 +30,8 @@ public typealias MLXChatContainerLoader = @Sendable (URL) async throws -> ModelC
 public final class MLXSmallScaleChatHost: @unchecked Sendable {
     public enum HostError: Error, Equatable, Sendable {
         case modelDirectoryMissing(URL)
+        case modelDirectoryRevisionUnavailable(URL)
+        case modelDirectoryChangedDuringActivation(URL)
         case alreadyActive(URL)
         case notActive
         /// A session issued under an earlier host generation attempted to
@@ -360,10 +362,26 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
     /// already hold the lifecycle gate and must have released any previous
     /// ownership (``switchModel(to:)`` restores it on failure).
     private func loadAndOwn(modelDirectory: URL) async throws -> ActiveModel {
+        // Capture the relevant model-file metadata before hashing. Confirm it
+        // stayed stable across the O(model-bytes) content identity and load
+        // phases; this prevents ordinary in-place updates from binding an old
+        // content namespace to a newly replaced directory revision.
+        guard let directoryRevision = MLXPrefixCrossSessionCache.modelDirectoryRevision(
+            modelDirectory: modelDirectory) else {
+            throw HostError.modelDirectoryRevisionUnavailable(modelDirectory)
+        }
         let contentIdentity = await Task.detached(priority: .userInitiated) {
             MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: modelDirectory)
         }.value
+        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
+            modelDirectory: modelDirectory) == directoryRevision else {
+            throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
+        }
         let container = try await containerLoader(modelDirectory)
+        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
+            modelDirectory: modelDirectory) == directoryRevision else {
+            throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
+        }
         let namespace = MLXPrefixCrossSessionCache.namespace(
             modelDirectory: modelDirectory, contentIdentity: contentIdentity)
         let store = PrefixSnapshotStore(
@@ -386,10 +404,18 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         // hook to THIS generation: a session issued earlier can never adopt
         // this model's snapshots, closing the caller-identity gap inside the
         // hook itself.
+        // A final check closes changes during store rescan. The installed
+        // hook repeats this metadata comparison on each lookup, so a change
+        // after this point becomes a cold miss instead of stale prefix reuse.
+        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
+            modelDirectory: modelDirectory) == directoryRevision else {
+            throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
+        }
         let installedGeneration = currentGeneration()
         try cache.install(
             admissionGuard: admissionGuard(for: installedGeneration),
-            allowedModelDirectory: modelDirectory)
+            allowedModelDirectory: modelDirectory,
+            allowedModelDirectoryRevision: directoryRevision)
         return ActiveModel(
             directory: modelDirectory,
             contentIdentity: contentIdentity,
