@@ -217,7 +217,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         } catch let textError {
             guard isCompositeVLMCheckpoint(path: path) else { throw textError }
             // 释放文本尝试的瞬态权重再重试，避免 20G 级双重驻留。
-            MLX.GPU.clearCache()
+            Memory.clearCache()
             do {
                 return try await VLMModelFactory.shared.loadContainer(
                     from: URL(fileURLWithPath: path),
@@ -1840,7 +1840,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 "fork source and target branch are identical: \(sourceBranch)")
         }
         let store = storeDirectory ?? Self.defaultBranchCheckpointStore()
-        guard let container = state.withLock({ $0.modelContainer }) else {
+        guard state.withLock({ $0.modelContainer != nil }) else {
             throw RuntError.notLoaded
         }
         let sourceKey = try AgentExecutionKey(

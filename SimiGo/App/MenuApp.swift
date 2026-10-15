@@ -3,145 +3,117 @@ import AppKit
 
 @main
 struct MenuApp: App {
-    @Environment(\.openWindow) private var openWindow
-    @StateObject private var svc: Service
-    @StateObject private var stateGraph = ExecutionStateGraphStore()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    // 菜单栏与窗口自 2026-10-15 起由 StatusBarCoordinator 直管（AppKit
+    // NSStatusItem + NSPopover）：MenuBarExtra(.window) 在系统睡眠唤醒后
+    // 点击静默失效（点击受理、按钮高亮、面板零创建），弃用该场景路径。
+    // 空 Settings 场景仅作 App body 占位；SwiftUI.Settings 全名修饰以
+    // 区别于本地 Settings 视图。
+    var body: some Scene {
+        SwiftUI.Settings { EmptyView() }
+    }
+}
+
+// MARK: - Menu Panel
+
+struct MenuPanelView: View {
+    @EnvironmentObject private var svc: Service
     @State private var networkModeIsLAN = false
     @State private var isChangingNetworkMode = false
     @State private var showBackendSwitch = false
 
-    init() {
-        _svc = StateObject(wrappedValue: Service.shared)
-    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            statusHeader
+            networkSlider.padding(.horizontal, 4)
 
-    var body: some Scene {
-        MenuBarExtra {
-            VStack(alignment: .leading, spacing: 3) {
-                statusHeader
-                networkSlider.padding(.horizontal, 4)
+            Divider().padding(.vertical, 2)
 
-                Divider().padding(.vertical, 2)
-
-                MenuRowButton(
-                    title: svc.isRunning ? "启动 / 切换（停止）" : "启动 / 切换",
-                    icon: svc.isRunning ? "stop.circle" : "arrow.2.squarepath"
-                ) {
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        showBackendSwitch.toggle()
-                    }
-                }
-
-                if showBackendSwitch {
-                    MenuRowButton(
-                        title: backendButtonTitle("MLX", selection: .mlx),
-                        icon: "cpu",
-                        leading: 12,
-                        disabled: ((!svc.isRunning || svc.backendSelection != .mlx) && !svc.canStartLocal(.mlx)) || isChangingNetworkMode
-                    ) {
-                        Task { @MainActor in await toggleBackend(.mlx) }
-                    }
-
-                    MenuRowButton(
-                        title: backendButtonTitle("LLaMA.cpp", selection: .llamaCpp),
-                        icon: "shippingbox",
-                        leading: 12,
-                        disabled: ((!svc.isRunning || svc.backendSelection != .llamaCpp) && !svc.canStartLocal(.gguf)) || isChangingNetworkMode
-                    ) {
-                        Task { @MainActor in await toggleBackend(.llamaCpp) }
-                    }
-
-                    MenuRowButton(
-                        title: backendButtonTitle(svc.cloudProviderName, selection: .cloud),
-                        icon: "cloud",
-                        leading: 12,
-                        disabled: svc.backendSelection == .cloud && !svc.hasStartTarget || isChangingNetworkMode
-                    ) {
-                        Task { @MainActor in await toggleBackend(.cloud) }
-                    }
-                }
-
-                Divider().padding(.vertical, 2)
-
-                if svc.isRunning {
-                    MenuRowButton(
-                        title: "重启服务",
-                        icon: "arrow.clockwise",
-                        disabled: isChangingNetworkMode
-                    ) {
-                        restartService()
-                    }
-                }
-
-                Divider().padding(.vertical, 2)
-
-                MenuRowButton(
-                    title: "选择模型...",
-                    icon: "folder",
-                    disabled: svc.isRunning || svc.backendSelection == .cloud || isChangingNetworkMode
-                ) {
-                    selectModel()
-                }
-
-                MenuRowButton(title: "复制 API 地址", icon: "doc.on.doc") {
-                    copyAPIEndpoint()
-                }
-
-                Divider().padding(.vertical, 2)
-
-                MenuRowButton(title: "设置...", icon: "gearshape") {
-                    openSettingsWindow()
-                }
-
-                MenuRowButton(title: "Execution State Graph...", icon: "circle.hexagongrid") {
-                    openWindow(id: "StateGraph")
-                }
-
-                Divider().padding(.vertical, 2)
-
-                MenuRowButton(title: "退出", icon: "xmark.circle") {
-                    quitApp()
+            MenuRowButton(
+                title: svc.isRunning ? "启动 / 切换（停止）" : "启动 / 切换",
+                icon: svc.isRunning ? "stop.circle" : "arrow.2.squarepath"
+            ) {
+                withAnimation(.easeOut(duration: 0.15)) {
+                    showBackendSwitch.toggle()
                 }
             }
-            .padding(6)
-            .frame(width: 190)
-            .onAppear {
-                syncNetworkMode()
+
+            if showBackendSwitch {
+                MenuRowButton(
+                    title: backendButtonTitle("MLX", selection: .mlx),
+                    icon: "cpu",
+                    leading: 12,
+                    disabled: ((!svc.isRunning || svc.backendSelection != .mlx) && !svc.canStartLocal(.mlx)) || isChangingNetworkMode
+                ) {
+                    Task { @MainActor in await toggleBackend(.mlx) }
+                }
+
+                MenuRowButton(
+                    title: backendButtonTitle("LLaMA.cpp", selection: .llamaCpp),
+                    icon: "shippingbox",
+                    leading: 12,
+                    disabled: ((!svc.isRunning || svc.backendSelection != .llamaCpp) && !svc.canStartLocal(.gguf)) || isChangingNetworkMode
+                ) {
+                    Task { @MainActor in await toggleBackend(.llamaCpp) }
+                }
+
+                MenuRowButton(
+                    title: backendButtonTitle(svc.cloudProviderName, selection: .cloud),
+                    icon: "cloud",
+                    leading: 12,
+                    disabled: svc.backendSelection == .cloud && !svc.hasStartTarget || isChangingNetworkMode
+                ) {
+                    Task { @MainActor in await toggleBackend(.cloud) }
+                }
             }
-        } label: {
-            Image(systemName: iconName)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(iconColor)
+
+            Divider().padding(.vertical, 2)
+
+            if svc.isRunning {
+                MenuRowButton(
+                    title: "重启服务",
+                    icon: "arrow.clockwise",
+                    disabled: isChangingNetworkMode
+                ) {
+                    restartService()
+                }
+            }
+
+            Divider().padding(.vertical, 2)
+
+            MenuRowButton(
+                title: "选择模型...",
+                icon: "folder",
+                disabled: svc.isRunning || svc.backendSelection == .cloud || isChangingNetworkMode
+            ) {
+                selectModel()
+            }
+
+            MenuRowButton(title: "复制 API 地址", icon: "doc.on.doc") {
+                copyAPIEndpoint()
+            }
+
+            Divider().padding(.vertical, 2)
+
+            MenuRowButton(title: "设置...", icon: "gearshape") {
+                StatusBarCoordinator.shared.openSettingsWindow()
+            }
+
+            MenuRowButton(title: "Execution State Graph...", icon: "circle.hexagongrid") {
+                StatusBarCoordinator.shared.openStateGraphWindow()
+            }
+
+            Divider().padding(.vertical, 2)
+
+            MenuRowButton(title: "退出", icon: "xmark.circle") {
+                quitApp()
+            }
         }
-        .menuBarExtraStyle(.window)
-
-        WindowGroup(id: "Settings") {
-            Settings().environmentObject(svc)
-        }
-        .windowResizability(.contentSize)
-        .defaultSize(width: 420, height: 480)
-
-        WindowGroup(id: "StateGraph") {
-            ExecutionStateGraphView()
-                .environmentObject(stateGraph)
-        }
-        .defaultSize(width: 820, height: 560)
-    }
-
-    // MARK: - Icon
-
-    private var iconName: String {
-        if svc.status.hasPrefix("⚠️") { return "exclamationmark.triangle.fill" }
-        return svc.isRunning ? "bolt.fill" : "bolt"
-    }
-
-    private var iconColor: Color {
-        if svc.status.hasPrefix("⚠️") { return .yellow }
-        if !svc.isRunning { return .primary }
-
-        switch svc.memoryPressure {
-        case "critical": return .red
-        case "warn": return .orange
-        default: return .green
+        .padding(6)
+        .frame(width: 190)
+        .onAppear {
+            syncNetworkMode()
         }
     }
 
@@ -292,14 +264,6 @@ struct MenuApp: App {
         Task { @MainActor in
             await svc.restartSelected()
         }
-    }
-
-    // MARK: - Settings
-
-    @MainActor
-    private func openSettingsWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-        openWindow(id: "Settings")
     }
 
     // MARK: - Model
