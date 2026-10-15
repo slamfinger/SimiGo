@@ -64,6 +64,19 @@ The real-machine HF diagnostic uses the opt-in `SIMIGO_HF_DRIFT_DIAG_MODEL_DIR`
 environment variable rather than embedding one developer's home path. A
 portable XCTest now creates two same-sized blob files and a snapshot entry
 symlink, asserts a stable non-nil revision, retargets the symlink, and asserts
-the revision changes. The submitter's 378/3/0 run predates this additional
-regression; merge remains blocked pending a local rerun of the targeted test
-and full suite.
+the revision changes. At the time of this review note, the earlier 378/3/0 run predated the portable regression and a rerun was still pending. That pending condition is superseded by the completed final verification recorded below.
+
+
+## Final local verification (2026-10-15, source head 2254bd9d388a27a6095df9a1045269436a4ce05b)
+
+The submitter reports the following results against the exact source head above; the subsequent review-record commit changes this document only:
+
+1. `testModelDirectoryRevisionResolvesSymlinkAndDetectsRetarget`: **PASSED**, using a temporary snapshot-to-blob symlink and confirming that retargeting changes the revision.
+2. With `SIMIGO_HF_DRIFT_DIAG_MODEL_DIR` set to the real local 30B HF snapshot: **379 executed / 3 skipped / 0 failures**. `DriftFenceDiagnostics.testHFSnapshotFingerprintStabilityAndOverhead` executed (not skipped) and passed in 0.056 s; app build passed with 0 errors.
+3. Fingerprint prefix remained `cf512dbf031c8584…`, stable both within the run and across runs while the 17/17 snapshot entries remained symlinks to unchanged targets.
+4. 200 metadata-revision collections took 54.7 ms total, **0.273 ms per collection**, consistent with the prior 0.264 ms measurement and approximately 0.04% of the reported warm path.
+5. The existing three skips were unchanged and were reported as previously established skips.
+
+These are submitter-reported local results, not independently reproduced in the remote review environment. GitHub Actions supplied no workflow run or commit status for this head. No failures or new blockers were reported by the final local run.
+
+The assurance boundary remains unchanged: this is a metadata freshness fence, not byte-content proof. Same-size rewrites preserving every tracked timestamp can evade it; inputs outside the existing `EngineModelIdentity` identity set are not added. GUI click-through checks remain OPEN; G-5/G-8/G-10, power-loss durability, universal concurrency, and DCC-1 Tier-1 are not advanced by this PR.
