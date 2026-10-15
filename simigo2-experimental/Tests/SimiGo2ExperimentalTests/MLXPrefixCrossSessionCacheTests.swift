@@ -44,7 +44,7 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         defer { runtime.uninstall() }
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
         let matched = try XCTUnwrap(
-            hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+            hook.lookup(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(matched.matchedTokenCount, tokens.count)
 
         let observations = runtime.observations
@@ -57,7 +57,7 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         try runtime.install()
         defer { runtime.uninstall() }
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
-        XCTAssertNil(hook([11, 22, 33], callerContext(directory: nil)))
+        XCTAssertNil(hook.lookup([11, 22, 33], callerContext(directory: nil)))
 
         let observations = runtime.observations
         XCTAssertEqual(observations.calls, 1)
@@ -82,7 +82,7 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         XCTAssertTrue(runtime.isInstalled)
         XCTAssertIdentical(MLXPrefixCrossSessionCache.activeInstance, runtime)
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
-        _ = hook([1, 2, 3], callerContext(directory: nil))
+        _ = hook.lookup([1, 2, 3], callerContext(directory: nil))
         XCTAssertEqual(runtime.observations.calls, 1)
         runtime.uninstall()
         XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
@@ -119,7 +119,7 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
             try writeSyntheticSnapshot(to: url)
         }
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
-        XCTAssertNotNil(hook(Array(0..<10), callerContext(directory: nil)))
+        XCTAssertNotNil(hook.lookup(Array(0..<10), callerContext(directory: nil)))
         XCTAssertEqual(runtime.observations.calls, 1)
     }
 
@@ -291,7 +291,7 @@ extension MLXPrefixCrossSessionCacheTests {
         try runtime.install()
         defer { runtime.uninstall() }
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
-        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], callerContext(directory: nil)))
         let observations = runtime.observations
         XCTAssertEqual(observations.calls, 1)
         XCTAssertEqual(observations.hits, 0)
@@ -342,7 +342,7 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertEqual(hook == nil, active == nil)
         if let hook, let active {
             let before = active.observations.calls
-            _ = hook([1, 2, 3, 4, 5], callerContext(directory: nil))
+            _ = hook.lookup([1, 2, 3, 4, 5], callerContext(directory: nil))
             XCTAssertEqual(active.observations.calls, before + 1)
         }
     }
@@ -409,14 +409,14 @@ extension MLXPrefixCrossSessionCacheTests {
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
 
         // Guard refuses: cold path, miss recorded.
-        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(runtime.observations.calls, 1)
         XCTAssertEqual(runtime.observations.hits, 0)
 
         // Guard admits: verified hit flows normally.
         await admitted.setValue(true)
         let matched = try XCTUnwrap(
-            hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+            hook.lookup(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(matched.matchedTokenCount, tokens.count)
         XCTAssertEqual(runtime.observations.hits, 1)
     }
@@ -519,17 +519,17 @@ extension MLXPrefixCrossSessionCacheTests {
         let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
 
         // Foreign origin: refused, miss recorded.
-        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: foreign)))
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], callerContext(directory: foreign)))
         XCTAssertEqual(runtime.observations.calls, 1)
         XCTAssertEqual(runtime.observations.hits, 0)
 
         // Nil origin (unresolved hub id): refused.
-        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(runtime.observations.calls, 2)
 
         // Matching origin: verified adoption.
         let matched = try XCTUnwrap(
-            hook(tokens + [97, 98, 99], callerContext(directory: home)))
+            hook.lookup(tokens + [97, 98, 99], callerContext(directory: home)))
         XCTAssertEqual(matched.matchedTokenCount, tokens.count)
         XCTAssertEqual(runtime.observations.hits, 1)
     }
@@ -553,15 +553,21 @@ extension MLXPrefixCrossSessionCacheTests {
 // MARK: - FCI-OWN-01: foreign CONTEXT-slot ownership conflicts
 
 extension MLXPrefixCrossSessionCacheTests {
-    private typealias ContextHook = @Sendable ([Int], ChatSession.CrossSessionCallerContext)
-        -> (cache: PromptCacheSnapshot, matchedTokenCount: Int)?
+    private func foreignLookup(
+        forwardingTo original: ChatSession.CrossSessionPrefixLookup? = nil
+    ) -> ChatSession.CrossSessionPrefixLookup {
+        ChatSession.CrossSessionPrefixLookup(
+            owner: ChatSession.CrossSessionPrefixLookup.OwnerToken(),
+            lookup: { tokens, caller in
+                original?.lookup(tokens, caller)
+            })
+    }
 
     /// A foreign context hook installed directly on the static (outside
     /// our registry) must make a plain install REFUSE — the internal
     /// `active` registry being empty is not authority to overwrite.
     func testForeignContextSlotOwnerBlocksPlainInstall() throws {
-        let foreign: ContextHook = { _, _ in nil }
-        ChatSession.crossSessionPrefixLookupWithContext = foreign
+        ChatSession.crossSessionPrefixLookupWithContext = foreignLookup()
         defer { ChatSession.crossSessionPrefixLookupWithContext = nil }
 
         XCTAssertThrowsError(try runtime.install()) { error in
@@ -589,8 +595,7 @@ extension MLXPrefixCrossSessionCacheTests {
         try runtime.install()
         XCTAssertTrue(runtime.isInstalled)
 
-        let replacement: ContextHook = { _, _ in nil }
-        ChatSession.crossSessionPrefixLookupWithContext = replacement
+        ChatSession.crossSessionPrefixLookupWithContext = foreignLookup()
 
         XCTAssertEqual(runtime.uninstall(), false)
         XCTAssertTrue(runtime.ownershipInconsistencyDetected)
@@ -598,5 +603,64 @@ extension MLXPrefixCrossSessionCacheTests {
         // The external replacement SURVIVES the uninstall.
         XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
         ChatSession.crossSessionPrefixLookupWithContext = nil
+    }
+}
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// FCI-OWN-02 core counterexample: a WRAPPER that forwards every call
+    /// (including any probe) to our installed hook. Reachability holds —
+    /// the forwarded calls still work — but the wrapper's owner token is
+    /// foreign, so it is NOT us: plain reinstall refuses, and uninstall
+    /// preserves the wrapper instead of clearing it.
+    func testForwardingWrapperIsNotTheOwnerDespiteReachability() async throws {
+        let tokens = Array(0..<24)
+        _ = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+        try runtime.install(
+            allowedModelDirectory: URL(fileURLWithPath: "/models/home", isDirectory: true))
+        XCTAssertTrue(runtime.isInstalled)
+
+        // External party wraps OUR lookup and installs the wrapper with
+        // ITS OWN owner token.
+        let original = ChatSession.crossSessionPrefixLookupWithContext!
+        let wrapper = foreignLookup(forwardingTo: original)
+        ChatSession.crossSessionPrefixLookupWithContext = wrapper
+
+        // Same-instance reinstall must NOT fast-return on the registry:
+        // the slot no longer carries our token → plain install refuses.
+        XCTAssertThrowsError(try runtime.install()) { error in
+            XCTAssertEqual(
+                error as? MLXPrefixCrossSessionCache.OwnershipError,
+                .hookOwnedByOther)
+        }
+
+        // The wrapper remains fully functional (reachability intact)…
+        let home = ChatSession.CrossSessionCallerContext(
+            modelDirectory: URL(fileURLWithPath: "/models/home", isDirectory: true))
+        let matched = wrapper.lookup(tokens + [1], home)
+        XCTAssertEqual(matched?.matchedTokenCount, tokens.count)
+
+        // …but uninstall treats it as a foreign owner: preserved, not
+        // cleared, inconsistency reported.
+        XCTAssertEqual(runtime.uninstall(), false)
+        XCTAssertTrue(runtime.ownershipInconsistencyDetected)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
+        // And the wrapper STILL answers after our uninstall.
+        XCTAssertNotNil(wrapper.lookup(tokens + [1], home))
+        ChatSession.crossSessionPrefixLookupWithContext = nil
+    }
+
+    /// The idempotent fast path verifies the CURRENT slot: with the slot
+    /// intact and still ours, re-install succeeds and keeps behavior.
+    func testIdempotentReinstallVerifiesSlotOwnership() throws {
+        try runtime.install()
+        try runtime.install()
+        XCTAssertTrue(runtime.isInstalled)
+        XCTAssertTrue(runtime.uninstall())
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
     }
 }

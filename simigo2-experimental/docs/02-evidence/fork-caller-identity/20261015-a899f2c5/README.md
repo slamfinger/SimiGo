@@ -80,3 +80,31 @@ unchanged (existing tests). Suite 371/3/0; app and ctl build. The
 real-model identity probe's execution path is unchanged (the probe branch
 is inert to real callers), so its evidence stands; residual closure is
 resubmitted for review.
+
+## FCI-OWN-02 correction (second closure-review round)
+
+The marker probe proved REACHABILITY, not slot ownership: a wrapper closure
+that forwards calls (including any probe) still bumps our counters, and the
+idempotent install fast path did not re-verify the slot at all. Fixed with
+a COMPARABLE owner identity as directed:
+
+- Fork (0a291ab): the context slot holds a `CrossSessionPrefixLookup`
+  struct — the lookup closure PLUS an `OwnerToken` identity compared with
+  `===`, which a forwarding wrapper cannot carry. The legacy bridge uses a
+  private sentinel token no host can hold. Consultation call semantics
+  unchanged (same closure, same arguments) — the standing real-model
+  identity-probe and canonical evidence remain valid per the review's
+  instruction.
+- Host: install/idempotent-return/uninstall all verify the CURRENT slot's
+  owner token before claiming, fast-returning, or clearing. A slot held by
+  anyone else (bare-closure era or struct with a foreign token) blocks a
+  plain install; only explicit takeover replaces it. Uninstall clears only
+  when the slot carries OUR token; otherwise the replacement is preserved,
+  `ownershipInconsistencyDetected` is set, and false is returned. The probe
+  machinery is removed (superseded).
+
+New tests: the FCI-OWN-02 core counterexample — a wrapper forwarding our
+own lookup under a foreign token remains fully FUNCTIONAL (reachability
+intact) yet plain reinstall refuses and uninstall preserves it; idempotent
+reinstall verifies slot ownership. Existing takeover/legacy-protection
+tests unchanged. Suite 373/3/0; app builds. Residual closure resubmitted.

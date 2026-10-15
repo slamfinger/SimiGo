@@ -53,31 +53,17 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     private static let ownershipLock = NSLock()
     private static var active: MLXPrefixCrossSessionCache?
 
-    /// FCI-OWN-01 controlled-ownership probe: a caller-origin marker no
-    /// real caller can produce. The installed hook recognizes it, bumps a
-    /// dedicated probe counter, and returns nil WITHOUT touching normal
-    /// observations — so uninstall can verify the context slot still
-    /// routes to THIS cache without perturbing or impersonating traffic.
-    private static let ownershipProbeMarker = URL(
-        string: "simigo-ownership-probe://context-slot")!
+    /// FCI-OWN-02: the comparable owner identity of the slot this cache
+    /// holds. Recreated on every successful claim; verified by `===`
+    /// against the CURRENT slot before any idempotent return or release —
+    /// a forwarding wrapper answers probes, but it can never carry OUR
+    /// token, so it is never mistakable for the original owner.
+    private var ownershipToken: ChatSession.CrossSessionPrefixLookup.OwnerToken?
 
-    /// Probe hit counter for the currently installed hook (recreated on
-    /// every install so stale hooks cannot answer for a newer one).
-    private final class ProbeCounter: @unchecked Sendable {
-        private let lock = NSLock()
-        private var count = 0
-        func increment() {
-            lock.lock()
-            count += 1
-            lock.unlock()
-        }
-        var value: Int {
-            lock.lock()
-            defer { lock.unlock() }
-            return count
-        }
+    private func slotIsOurs() -> Bool {
+        guard let ownershipToken else { return false }
+        return ChatSession.crossSessionPrefixLookupWithContext?.owner === ownershipToken
     }
-    private var probeCounter: ProbeCounter?
 
     /// The cache that currently owns the global `ChatSession` hook, if any.
     public static var activeInstance: MLXPrefixCrossSessionCache? {
@@ -240,22 +226,24 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         allowedModelDirectory: URL? = nil
     ) throws {
         try Self.ownershipLock.withLock {
-            if Self.active === self {
+            // FCI-OWN-02: even the idempotent fast path must verify the
+            // CURRENT slot still carries OUR token — a registry entry
+            // alone does not prove the slot is still ours after a possible
+            // external replacement. If it is not, fall through to the
+            // foreign-owner rules below (plain install refuses; only an
+            // explicit takeover re-claims).
+            if Self.active === self, slotIsOurs() {
                 installed = true
                 return
             }
-            // FCI-OWN-01: refuse to overwrite a FOREIGN context-slot owner.
-            // The internal registry alone is not authority: an external
-            // installer that assigned the static directly leaves `active`
-            // empty while the slot is occupied — a plain install must fail
-            // closed, not clobber it. Only an explicit takeover may.
-            if Self.active == nil,
-                ChatSession.crossSessionPrefixLookupWithContext != nil,
-                !forceTakeover
+            // FCI-OWN-01/02: refuse to overwrite a FOREIGN context-slot
+            // owner. The internal registry alone is not authority — an
+            // external installer (bare closure era or struct with another
+            // token) leaves the slot occupied regardless of `active`.
+            // Only an explicit takeover may replace it.
+            if ChatSession.crossSessionPrefixLookupWithContext != nil,
+                !slotIsOurs(), !forceTakeover
             {
-                throw OwnershipError.hookOwnedByOther
-            }
-            if Self.active != nil && !forceTakeover {
                 throw OwnershipError.hookOwnedByOther
             }
             Self.active = self
@@ -265,34 +253,31 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             // calling session's model origin). The legacy slot is left to
             // whoever owns it — release verification must check BOTH slots.
             let allowed = allowedModelDirectory?.standardizedFileURL
-            let probe = ProbeCounter()
-            probeCounter = probe
-            ChatSession.crossSessionPrefixLookupWithContext = {
-                [weak self] promptTokenIDs, caller in
-                guard let self else { return nil }
-                if caller.modelDirectory == Self.ownershipProbeMarker {
-                    probe.increment()
-                    return nil
-                }
-                if let admissionGuard, !admissionGuard() {
-                    self.observation.record(matchedTokenCount: nil)
-                    return nil
-                }
-                // Caller-identity refusal (fail closed, cold path): when a
-                // directory binding exists, a nil origin (unresolved hub
-                // id) or a foreign directory never adopts this cache's
-                // snapshots. An unbound install stays identity-agnostic
-                // (legacy behavior for non-host callers).
-                if let allowed {
-                    guard let origin = caller.modelDirectory?.standardizedFileURL,
-                        origin == allowed
-                    else {
+            let token = ChatSession.CrossSessionPrefixLookup.OwnerToken()
+            ownershipToken = token
+            ChatSession.crossSessionPrefixLookupWithContext =
+                ChatSession.CrossSessionPrefixLookup(owner: token) {
+                    [weak self] promptTokenIDs, caller in
+                    guard let self else { return nil }
+                    if let admissionGuard, !admissionGuard() {
                         self.observation.record(matchedTokenCount: nil)
                         return nil
                     }
+                    // Caller-identity refusal (fail closed, cold path): when a
+                    // directory binding exists, a nil origin (unresolved hub
+                    // id) or a foreign directory never adopts this cache's
+                    // snapshots. An unbound install stays identity-agnostic
+                    // (legacy behavior for non-host callers).
+                    if let allowed {
+                        guard let origin = caller.modelDirectory?.standardizedFileURL,
+                            origin == allowed
+                        else {
+                            self.observation.record(matchedTokenCount: nil)
+                            return nil
+                        }
+                    }
+                    return self.lookup(promptTokenIDs)
                 }
-                return self.lookup(promptTokenIDs)
-            }
         }
     }
 
@@ -305,24 +290,17 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             installed = false
             guard Self.active === self else { return false }
             Self.active = nil
-            // FCI-OWN-01: clear the context slot ONLY when it verifiably
-            // still routes to THIS cache (probe marker, inert to real
-            // traffic). If an external party replaced the slot while we
-            // were active, the replacement belongs to THEM: leave it
-            // installed, report the inconsistency, return false.
-            if let probe = probeCounter {
-                let before = probe.value
-                _ = ChatSession.crossSessionPrefixLookupWithContext?(
-                    [0],
-                    ChatSession.CrossSessionCallerContext(
-                        modelDirectory: Self.ownershipProbeMarker))
-                guard probe.value == before + 1 else {
-                    ownershipInconsistencyDetected = true
-                    return false
-                }
+            // FCI-OWN-02: clear the context slot ONLY when it still
+            // carries OUR owner token. A forwarding wrapper answers any
+            // probe but cannot carry the token — it is a foreign owner and
+            // is preserved, with the inconsistency reported.
+            guard slotIsOurs() else {
+                ownershipInconsistencyDetected = true
+                ownershipToken = nil
+                return false
             }
             ChatSession.crossSessionPrefixLookupWithContext = nil
-            probeCounter = nil
+            ownershipToken = nil
             return true
         }
     }
@@ -339,8 +317,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// a nil legacy slot alone is NOT complete release.
     public var ownsNoHookSlot: Bool {
         Self.ownershipLock.withLock {
-            Self.active !== self
-                && ChatSession.crossSessionPrefixLookupWithContext == nil
+            Self.active !== self && !slotIsOurs()
         }
     }
 
