@@ -280,6 +280,30 @@ extension HTTPServer {
                 close: true
             )
 
+        } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
+            // CONTEXT SAFETY：SSE 头已发出，以可识别错误类型收尾。
+            failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            guard !context.closed else {
+                return
+            }
+
+            sendImmediateCompletionsChunk(
+                [
+                    "error": [
+                        "message":
+                            "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
+                        "type":
+                            "context_length_exceeded"
+                    ]
+                ],
+                context: context
+            )
+
+            sendImmediateCompletionsRaw(
+                Data("data: [DONE]\n\n".utf8),
+                context: context,
+                close: true
+            )
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
@@ -546,6 +570,17 @@ extension HTTPServer {
                 context: context
             )
 
+        } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
+            // CONTEXT SAFETY：非流式尚未发出任何字节，直接给 HTTP 400 终态。
+            failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            guard !context.closed else { return }
+
+            sendError(
+                "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
+                status: 400,
+                on: context.connection,
+                context: context
+            )
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {

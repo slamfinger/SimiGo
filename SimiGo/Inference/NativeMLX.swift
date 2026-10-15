@@ -160,6 +160,77 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         state.withLock { $0.modelCapabilityContract }
     }
 
+    // MARK: - Context Safety Gate（2026-10-15 复线）
+
+    /// 有效上下文预算：请求/基底 ctx 配置与模型声明长度取严；
+    /// 均无效则门关闭（nil）。
+    private nonisolated static func contextSafetyBudget(
+        config: ModelConfig,
+        base: ModelConfig,
+        contract: ModelCapabilityContract?
+    ) -> Int? {
+        let configured = config.ctxSize > 0 ? config.ctxSize : base.ctxSize
+        guard configured > 0 else { return nil }
+
+        if let declared = contract?.contextLength, declared > 0, declared < configured {
+            return declared
+        }
+        return configured
+    }
+
+    /// 内容 token 精确计数（tokenizer 复核）。只统计字符串内容、不渲染
+    /// 模板——内容 token 是渲染后 prompt token 的严格下界，下界超限即
+    /// 必超限，判定无假阳性；tools 文本一并计入。
+    private nonisolated static func contentTokenDemand(
+        messages: [JSONValue],
+        tools: [JSONValue]?,
+        container: ModelContainer
+    ) async -> Int {
+        var leaves: [String] = []
+        collectStringLeaves(messages, into: &leaves)
+        if let tools {
+            collectStringLeaves(tools, into: &leaves)
+        }
+        guard !leaves.isEmpty else { return 0 }
+
+        let text = leaves.joined(separator: "\n")
+        let tokenizer = await container.tokenizer
+        return tokenizer.encode(text: text, addSpecialTokens: false).count
+    }
+
+    /// 内容字节量。token 数 ≤ 字节数，字节不超预算即可免 tokenize 放行
+    /// ——常规请求零 tokenize 成本，只有巨型 payload 才付一次精确复核。
+    private nonisolated static func contentByteDemand(
+        messages: [JSONValue],
+        tools: [JSONValue]?
+    ) -> Int {
+        var leaves: [String] = []
+        collectStringLeaves(messages, into: &leaves)
+        if let tools {
+            collectStringLeaves(tools, into: &leaves)
+        }
+        return leaves.reduce(0) { $0 + $1.utf8.count }
+    }
+
+    private nonisolated static func collectStringLeaves(
+        _ values: [JSONValue],
+        into sink: inout [String]
+    ) {
+        for value in values {
+            switch value {
+            case .string(let string):
+                sink.append(string)
+            case .array(let items):
+                collectStringLeaves(items, into: &sink)
+            case .object(let object):
+                // 键名（role/tool 名等）是模板结构的极小常量，不计数。
+                collectStringLeaves(Array(object.values), into: &sink)
+            default:
+                break
+            }
+        }
+    }
+
     // MARK: - Composite VLM checkpoint routing（v2.1.2）
 
     /// 复合 VLM 检查点判定（ukisai/Swift-1.5-4bit-MLX、mavis Gemma4-26B-MoE
@@ -742,6 +813,32 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
         let toolSpecs = Self.makeToolSpecs(tools)
         let additionalContext: [String: any Sendable]? = thinkingDisabled ? ["enable_thinking": false] : nil
+
+        // CONTEXT SAFETY 门（2026-10-15 复线）：404f9d4 ChatSession 重构曾
+        // 把超限拒绝整段删除——超 ctx 的巨型 prompt（实测 235K vs 131072）
+        // 会进入注定失败的预填并随 KV 增长单调劣化至 45 tok/s。字节快门
+        // 放行常规请求；巨型 payload 才 tokenizer 精确复核，下界超限即拒。
+        if let budget = Self.contextSafetyBudget(
+            config: config,
+            base: baseConfig,
+            contract: state.withLock({ $0.modelCapabilityContract })
+        ) {
+            let contentBytes = Self.contentByteDemand(messages: messages, tools: tools)
+            if contentBytes > budget {
+                let demand = await Self.contentTokenDemand(
+                    messages: messages,
+                    tools: tools,
+                    container: container
+                )
+                if demand > budget {
+                    traceLogger.trace(
+                        "[CONTEXT SAFETY REJECT] demand=\(demand) budget=\(budget)" +
+                        " contentBytes=\(contentBytes) action=require_L1_compaction"
+                    )
+                    throw NativeMLXValidationError.contextDemandExceeded(demand, budget)
+                }
+            }
+        }
 
         let existing = state.withLock { $0.sessions[executionKey.storageKey] }
         var managed: ManagedSession

@@ -611,6 +611,19 @@ extension HTTPServer {
                 on: context.connection,
                 context: context
             )
+        } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
+            // CONTEXT SAFETY：非流式尚未发出任何字节，直接给 HTTP 400 终态。
+            failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            guard !context.closed else {
+                return
+            }
+
+            sendError(
+                "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
+                status: 400,
+                on: context.connection,
+                context: context
+            )
         } catch {
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
@@ -947,6 +960,38 @@ extension HTTPServer {
                 "sequence_number":
                     streamState.nextSequence(),
                 "response": cancelledResponse
+            ]
+
+            enqueueResponsesEvents(
+                context: context,
+                events: [event],
+                close: true
+            )
+        } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
+            // CONTEXT SAFETY：SSE 头已发出，以可识别错误类型收尾，
+            // 客户端（Codex 等）据此压缩上下文重试而非无限等待。
+            failureReason = "context_demand_exceeded: \(demand)>\(budget)"
+            guard !context.closed else {
+                return
+            }
+
+            let failedResponse: [String: Any] = [
+                "id": parsed.responseId,
+                "object": "response",
+                "status": "failed",
+                "error": [
+                    "message":
+                        "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
+                    "type":
+                        "context_length_exceeded"
+                ]
+            ]
+
+            let event: [String: Any] = [
+                "type": "response.failed",
+                "sequence_number":
+                    streamState.nextSequence(),
+                "response": failedResponse
             ]
 
             enqueueResponsesEvents(
