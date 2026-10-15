@@ -53,3 +53,30 @@ Note: the canonical regression JSON is bit-identical to the pre-integration
 canonical run — expected: the strict record (chunk sequences, counts,
 texts, hits) is deterministic for the same model/prompt/profile and the
 report carries no timestamps. Identical bytes ARE the reproduction.
+
+## FCI-OWN-01 correction (closure-review follow-up, same authorization)
+
+The closure review accepted the identity mechanism but found two ownership
+gaps; both fixed with a CONTROLLED ownership mechanism (nil/non-nil slot
+checks alone are not ownership proof):
+
+- Plain install now refuses when the CONTEXT slot is occupied by anyone the
+  internal registry does not know — an external installer that assigned the
+  static directly leaves `active` empty while the slot is taken; that is a
+  foreign owner and a plain install fails closed. Explicit takeover remains
+  the only overwrite path.
+- Uninstall clears the context slot only after a PROBE verifies it still
+  routes to THIS cache: the installed hook recognizes a private caller-
+  origin marker (inert to real traffic, dedicated counter, recreated per
+  install) and uninstall challenges the slot under the ownership lock. An
+  externally replaced slot fails the probe: the replacement is PRESERVED
+  (not cleared), `ownershipInconsistencyDetected` is set, and uninstall
+  returns false.
+
+New tests: foreign context-slot owner blocks plain install (takeover may
+replace); externally replaced slot survives uninstall with the
+inconsistency reported. Normal switch/takeover/foreign-legacy semantics
+unchanged (existing tests). Suite 371/3/0; app and ctl build. The
+real-model identity probe's execution path is unchanged (the probe branch
+is inert to real callers), so its evidence stands; residual closure is
+resubmitted for review.

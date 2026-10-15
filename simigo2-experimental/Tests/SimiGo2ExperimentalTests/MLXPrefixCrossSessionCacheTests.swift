@@ -549,3 +549,54 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertNotNil(ChatSession.crossSessionPrefixLookup)
     }
 }
+
+// MARK: - FCI-OWN-01: foreign CONTEXT-slot ownership conflicts
+
+extension MLXPrefixCrossSessionCacheTests {
+    private typealias ContextHook = @Sendable ([Int], ChatSession.CrossSessionCallerContext)
+        -> (cache: PromptCacheSnapshot, matchedTokenCount: Int)?
+
+    /// A foreign context hook installed directly on the static (outside
+    /// our registry) must make a plain install REFUSE — the internal
+    /// `active` registry being empty is not authority to overwrite.
+    func testForeignContextSlotOwnerBlocksPlainInstall() throws {
+        let foreign: ContextHook = { _, _ in nil }
+        ChatSession.crossSessionPrefixLookupWithContext = foreign
+        defer { ChatSession.crossSessionPrefixLookupWithContext = nil }
+
+        XCTAssertThrowsError(try runtime.install()) { error in
+            XCTAssertEqual(
+                error as? MLXPrefixCrossSessionCache.OwnershipError,
+                .hookOwnedByOther)
+        }
+        XCTAssertFalse(runtime.isInstalled)
+        XCTAssertNil(MLXPrefixCrossSessionCache.activeInstance)
+        // The foreign hook is untouched.
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
+
+        // An explicit takeover may replace it (deliberate model-switch).
+        try runtime.install(forceTakeover: true)
+        XCTAssertTrue(runtime.isInstalled)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
+        runtime.uninstall()
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
+    }
+
+    /// If an external party REPLACED the context slot while this cache was
+    /// active, uninstall must NOT clear the replacement: it reports the
+    /// inconsistency and returns false, leaving the foreign hook intact.
+    func testUninstallDoesNotClearExternallyReplacedContextSlot() throws {
+        try runtime.install()
+        XCTAssertTrue(runtime.isInstalled)
+
+        let replacement: ContextHook = { _, _ in nil }
+        ChatSession.crossSessionPrefixLookupWithContext = replacement
+
+        XCTAssertEqual(runtime.uninstall(), false)
+        XCTAssertTrue(runtime.ownershipInconsistencyDetected)
+        XCTAssertNil(MLXPrefixCrossSessionCache.activeInstance)
+        // The external replacement SURVIVES the uninstall.
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
+        ChatSession.crossSessionPrefixLookupWithContext = nil
+    }
+}

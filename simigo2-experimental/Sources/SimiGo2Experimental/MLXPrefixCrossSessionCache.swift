@@ -53,6 +53,32 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     private static let ownershipLock = NSLock()
     private static var active: MLXPrefixCrossSessionCache?
 
+    /// FCI-OWN-01 controlled-ownership probe: a caller-origin marker no
+    /// real caller can produce. The installed hook recognizes it, bumps a
+    /// dedicated probe counter, and returns nil WITHOUT touching normal
+    /// observations — so uninstall can verify the context slot still
+    /// routes to THIS cache without perturbing or impersonating traffic.
+    private static let ownershipProbeMarker = URL(
+        string: "simigo-ownership-probe://context-slot")!
+
+    /// Probe hit counter for the currently installed hook (recreated on
+    /// every install so stale hooks cannot answer for a newer one).
+    private final class ProbeCounter: @unchecked Sendable {
+        private let lock = NSLock()
+        private var count = 0
+        func increment() {
+            lock.lock()
+            count += 1
+            lock.unlock()
+        }
+        var value: Int {
+            lock.lock()
+            defer { lock.unlock() }
+            return count
+        }
+    }
+    private var probeCounter: ProbeCounter?
+
     /// The cache that currently owns the global `ChatSession` hook, if any.
     public static var activeInstance: MLXPrefixCrossSessionCache? {
         ownershipLock.lock()
@@ -218,6 +244,17 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
                 installed = true
                 return
             }
+            // FCI-OWN-01: refuse to overwrite a FOREIGN context-slot owner.
+            // The internal registry alone is not authority: an external
+            // installer that assigned the static directly leaves `active`
+            // empty while the slot is occupied — a plain install must fail
+            // closed, not clobber it. Only an explicit takeover may.
+            if Self.active == nil,
+                ChatSession.crossSessionPrefixLookupWithContext != nil,
+                !forceTakeover
+            {
+                throw OwnershipError.hookOwnedByOther
+            }
             if Self.active != nil && !forceTakeover {
                 throw OwnershipError.hookOwnedByOther
             }
@@ -228,9 +265,15 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             // calling session's model origin). The legacy slot is left to
             // whoever owns it — release verification must check BOTH slots.
             let allowed = allowedModelDirectory?.standardizedFileURL
+            let probe = ProbeCounter()
+            probeCounter = probe
             ChatSession.crossSessionPrefixLookupWithContext = {
                 [weak self] promptTokenIDs, caller in
                 guard let self else { return nil }
+                if caller.modelDirectory == Self.ownershipProbeMarker {
+                    probe.increment()
+                    return nil
+                }
                 if let admissionGuard, !admissionGuard() {
                     self.observation.record(matchedTokenCount: nil)
                     return nil
@@ -261,11 +304,34 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         Self.ownershipLock.withLock {
             installed = false
             guard Self.active === self else { return false }
-            ChatSession.crossSessionPrefixLookupWithContext = nil
             Self.active = nil
+            // FCI-OWN-01: clear the context slot ONLY when it verifiably
+            // still routes to THIS cache (probe marker, inert to real
+            // traffic). If an external party replaced the slot while we
+            // were active, the replacement belongs to THEM: leave it
+            // installed, report the inconsistency, return false.
+            if let probe = probeCounter {
+                let before = probe.value
+                _ = ChatSession.crossSessionPrefixLookupWithContext?(
+                    [0],
+                    ChatSession.CrossSessionCallerContext(
+                        modelDirectory: Self.ownershipProbeMarker))
+                guard probe.value == before + 1 else {
+                    ownershipInconsistencyDetected = true
+                    return false
+                }
+            }
+            ChatSession.crossSessionPrefixLookupWithContext = nil
+            probeCounter = nil
             return true
         }
     }
+
+    /// FCI-OWN-01: an uninstall detected that the context slot no longer
+    /// routes to this cache — an external party replaced it while this
+    /// cache was active. The replacement was preserved (not cleared);
+    /// hosts surface this instead of treating release as complete.
+    public private(set) var ownershipInconsistencyDetected: Bool = false
 
     /// Complete hook release from THIS cache's perspective: true when this
     /// cache no longer owns the context slot and no context hook remains.
