@@ -62,7 +62,8 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
 
     private func slotIsOurs() -> Bool {
         guard let ownershipToken else { return false }
-        return ChatSession.crossSessionPrefixLookupWithContext?.owner === ownershipToken
+        return ChatSession.crossSessionPrefixLookupWithContext?.isOwned(
+            by: ownershipToken) == true
     }
 
     /// The cache that currently owns the global `ChatSession` hook, if any.
@@ -236,11 +237,19 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
                 installed = true
                 return
             }
-            // FCI-OWN-01/02: refuse to overwrite a FOREIGN context-slot
-            // owner. The internal registry alone is not authority — an
-            // external installer (bare closure era or struct with another
-            // token) leaves the slot occupied regardless of `active`.
-            // Only an explicit takeover may replace it.
+            // FCI-OWN-04: the registry check is INDEPENDENT of slot
+            // occupancy — another live instance in `Self.active` blocks a
+            // plain install even when the static slot was externally
+            // cleared. Takeover remains the only displacement path.
+            if let other = Self.active, other !== self, !forceTakeover {
+                throw OwnershipError.hookOwnedByOther
+            }
+            // FCI-OWN-01/02/03: refuse to overwrite a FOREIGN context-slot
+            // owner. The registry alone is not authority — an external
+            // installer leaves the slot occupied regardless of `active`;
+            // only an explicit takeover may replace it. Slot ownership is
+            // verified through the unreadable token (isOwned), so a
+            // forwarding wrapper can never carry our identity.
             if ChatSession.crossSessionPrefixLookupWithContext != nil,
                 !slotIsOurs(), !forceTakeover
             {
@@ -317,7 +326,12 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// a nil legacy slot alone is NOT complete release.
     public var ownsNoHookSlot: Bool {
         Self.ownershipLock.withLock {
-            Self.active !== self && !slotIsOurs()
+            // FCI-OWN-05: the documented meaning is "no context hook
+            // REMAINS" — actual emptiness, not merely "none of it is
+            // ours". A preserved external wrapper keeps this false until
+            // the slot is truly cleared.
+            Self.active !== self
+                && ChatSession.crossSessionPrefixLookupWithContext == nil
         }
     }
 
