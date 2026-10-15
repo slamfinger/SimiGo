@@ -792,8 +792,9 @@ extension MLXPrefixCrossSessionCacheTests {
             [.modificationDate: previousModified.addingTimeInterval(120)],
             ofItemAtPath: weights.path)
 
-        let changedRevision = MLXPrefixCrossSessionCache.modelDirectoryRevision(
-            modelDirectory: modelDirectory)
+        let changedRevision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(
+                modelDirectory: modelDirectory))
         XCTAssertNotEqual(changedRevision, revision)
         XCTAssertNil(hook.lookup(tokens + [97, 98, 99], context))
         XCTAssertEqual(runtime.observations.calls, 2)

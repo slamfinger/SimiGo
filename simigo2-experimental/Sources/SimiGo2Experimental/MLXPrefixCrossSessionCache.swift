@@ -111,9 +111,8 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// This is deliberately a METADATA revision, not another O(model-bytes)
     /// identity hash. It tracks paths, sizes, creation times, and modification
     /// times for the existing content-identity inputs: safetensors weights and
-    /// tokenizer-like files actually incorporated into that identity. A cache
-    /// lookup fails closed when this
-    /// revision changes after activation. Same-size in-place rewrites that
+    /// tokenizer-like files actually incorporated into that identity. A lookup
+    /// fails closed when this revision changes after activation. Same-size in-place rewrites that
     /// preserve all tracked metadata remain an explicit residual; this helper
     /// narrows ordinary same-directory drift without claiming content proof.
     public static func modelDirectoryRevision(modelDirectory: URL) -> String? {
@@ -304,6 +303,10 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// refused call records an observed miss and returns nil (cold path) —
     /// and it covers the window between any higher-level session check and
     /// the hook invocation itself.
+    ///
+    /// When `allowedModelDirectoryRevision` is supplied with the directory,
+    /// the hook also returns a miss if relevant local model-file metadata
+    /// drifts. This is a cheap freshness fence, not a byte-content proof.
     public func install(
         forceTakeover: Bool = false,
         admissionGuard: (@Sendable () -> Bool)? = nil,
