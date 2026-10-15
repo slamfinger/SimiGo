@@ -163,7 +163,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     }
 
     private static func isPotentialModelRevisionFile(_ filename: String) -> Bool {
-        let name = filename.lowercased()
+        let name = filename
         return name.hasSuffix(".safetensors")
             || name.hasPrefix("tokenizer")
             || name == "special_tokens_map.json"
@@ -176,7 +176,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// files larger than 8 MiB are not part of its tokenizer digest and must
     /// not become a new independent identity input in this metadata fence.
     private static func isModelRevisionFile(_ filename: String, size: Int) -> Bool {
-        let name = filename.lowercased()
+        let name = filename
         if name.hasSuffix(".safetensors") { return true }
         let tokenizerLike = name.hasPrefix("tokenizer")
             || name == "special_tokens_map.json"
