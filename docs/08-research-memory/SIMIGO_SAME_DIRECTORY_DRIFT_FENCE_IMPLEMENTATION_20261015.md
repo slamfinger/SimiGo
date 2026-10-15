@@ -7,7 +7,7 @@ Scope: narrow follow-up to the accepted same-directory content-drift residual.
 
 ## Change
 
-This branch adds an optional metadata-revision fence to the existing host-owned context hook. The host captures a revision across relevant weight, JSON/configuration, tokenizer, vocabulary, merge, and chat-template files before the existing streaming content identity calculation. It confirms the revision after content hashing, after container loading, and immediately before hook installation. The expected revision is bound into the hook.
+This branch adds an optional metadata-revision fence to the existing host-owned context hook. The host captures a revision across the weight and tokenizer-like files already incorporated into the existing EngineModelIdentity calculation before that calculation runs. It confirms the revision after content hashing, after container loading, and immediately before hook installation. The expected revision is bound into the hook.
 
 Before returning a reusable prefix, the hook confirms:
 1. the calling session's directory still matches the active model path (existing rule); and
@@ -17,11 +17,11 @@ If either check fails, the hook records a miss and returns nil, leaving ChatSess
 
 ## Why metadata, not another content hash
 
-The full SHA-256 content identity already costs O(model bytes) at activation. Rehashing large model weights at every ChatSession consultation would be an unacceptable hot-path cost. This fence instead fingerprints relevant files' relative paths, sizes, creation timestamps, and modification timestamps on each lookup. It is intended to catch ordinary file replacement or mutation under the same directory path without hashing model bytes again.
+The full SHA-256 content identity already costs O(model bytes) at activation. Rehashing large model weights at every ChatSession consultation would be an unacceptable hot-path cost. This fence instead fingerprints the existing identity inputs' relative paths, sizes, creation timestamps, and modification timestamps on each lookup. It is intended to catch ordinary file replacement or mutation under the same directory path without hashing model bytes again.
 
 ## Explicit residual
 
-This does NOT prove byte-for-byte identity. An in-place rewrite that preserves size and all tracked timestamps can evade the metadata fence. Filesystem metadata may also have provider-specific behavior. The previously accepted same-directory drift sliver is therefore narrowed for ordinary observable updates, not closed universally. No G-5/G-8/G-10, power-loss durability, or universal concurrency claim follows.
+This does NOT prove byte-for-byte identity. An in-place rewrite that preserves size and all tracked timestamps can evade the metadata fence. Files not included in the current EngineModelIdentity inputs (for example config-only changes) are not redefined or added to the cache namespace by this patch. Filesystem metadata may also have provider-specific behavior. The previously accepted same-directory drift sliver is therefore narrowed for ordinary observable updates, not closed universally. No G-5/G-8/G-10, power-loss durability, or universal concurrency claim follows.
 
 The caller-origin API and evaluate-to-hook call shape are unchanged. This patch does not edit the fork or alter DCC-1 Tier-1 semantics. GUI promotion ACCEPT remains unchanged; the five GUI click-through items remain OPEN pending local human execution.
 

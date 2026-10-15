@@ -133,7 +133,8 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
 
         for case let url as URL in enumerator {
-            guard Self.isModelRevisionFile(url.lastPathComponent) else { continue }
+            let filename = url.lastPathComponent
+            guard Self.isPotentialModelRevisionFile(filename) else { continue }
             guard let values = try? url.resourceValues(forKeys: keySet),
                 values.isRegularFile == true,
                 let size = values.fileSize,
@@ -143,6 +144,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
                 // callers must fail closed rather than silently omit it.
                 return nil
             }
+            guard Self.isModelRevisionFile(filename, size: size) else { continue }
             let createdBits = values.creationDate?.timeIntervalSince1970.bitPattern ?? 0
             let modifiedBits = modified.timeIntervalSince1970.bitPattern
             let relativePath = url.path.hasPrefix(rootPrefix)
@@ -160,17 +162,28 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             .joined()
     }
 
-    private static func isModelRevisionFile(_ filename: String) -> Bool {
+    private static func isPotentialModelRevisionFile(_ filename: String) -> Bool {
         let name = filename.lowercased()
         return name.hasSuffix(".safetensors")
-            || name.hasSuffix(".json")
-            || name.hasSuffix(".model")
-            || name.hasSuffix(".tiktoken")
             || name.hasPrefix("tokenizer")
-            || name.hasPrefix("special_tokens_map")
+            || name == "special_tokens_map.json"
             || name.hasPrefix("merges")
             || name.hasPrefix("vocab")
             || name.hasPrefix("chat_template")
+    }
+
+    /// Keep this set aligned with EngineModelIdentity.compute: tokenizer-like
+    /// files larger than 8 MiB are not part of its tokenizer digest and must
+    /// not become a new independent identity input in this metadata fence.
+    private static func isModelRevisionFile(_ filename: String, size: Int) -> Bool {
+        let name = filename.lowercased()
+        if name.hasSuffix(".safetensors") { return true }
+        let tokenizerLike = name.hasPrefix("tokenizer")
+            || name == "special_tokens_map.json"
+            || name.hasPrefix("merges")
+            || name.hasPrefix("vocab")
+            || name.hasPrefix("chat_template")
+        return tokenizerLike && size <= 8 * 1024 * 1024
     }
 
     /// Model identity at the strength the engine path already uses:
