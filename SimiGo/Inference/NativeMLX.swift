@@ -231,6 +231,42 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    // MARK: - Session Client Split（2026-10-15 双客户端互踩修复）
+
+    /// 内存会话表键：storageKey 本体不变；首消息为 system 的请求追加其
+    /// 内容指纹后缀。同一 session id 下的不同客户端（Codex / 记忆写入
+    /// agent 等，系统提示互异）各自持暖缓存，交替不再互相顶替触发全量
+    /// 冷重建（prefixDiff commonPrefix=0 实证，2026-10-15 12:07）。
+    /// checkpoint、prefix 池、fork 血统、磁盘命名仍用原 storageKey；
+    /// 无 system 首消息时键不变，完全向后兼容。
+    /// 判定取 makeChatMessages 展平后的首条 Chat.Message——raw content
+    /// 的字符串/数组两种形态在此统一（14:28 实证数组形态曾漏判）。
+    nonisolated static func sessionMapKey(
+        storageKey: String, firstMessage: (role: String, content: String)?
+    ) -> String {
+        guard let firstMessage,
+              firstMessage.role == "system",
+              !firstMessage.content.isEmpty else {
+            return storageKey
+        }
+        return storageKey + "#" + ExecutionPolicy.fingerprint(firstMessage.content)
+    }
+
+    /// key-external 操作（save/load/fork）解析会话表键：精确命中优先，
+    /// miss 后按 `storageKey#` 前缀扫描取最近活跃的客户端分片会话。
+    /// nonisolated：从 withExclusive 的 @Sendable 闭包内调用，state 锁
+    /// 本身线程安全。
+    private nonisolated func resolveSessionMapKey(for storageKey: String) -> String {
+        state.withLock { state in
+            guard state.sessions[storageKey] == nil else { return storageKey }
+            let prefix = storageKey + "#"
+            return state.sessions
+                .filter { $0.key.hasPrefix(prefix) }
+                .sorted { $0.value.lastActivity > $1.value.lastActivity }
+                .first?.key ?? storageKey
+        }
+    }
+
     // MARK: - Composite VLM checkpoint routing（v2.1.2）
 
     /// 复合 VLM 检查点判定（ukisai/Swift-1.5-4bit-MLX、mavis Gemma4-26B-MoE
@@ -840,7 +876,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             }
         }
 
-        let existing = state.withLock { $0.sessions[executionKey.storageKey] }
+        let mapKey = Self.sessionMapKey(
+            storageKey: executionKey.storageKey,
+            firstMessage: incoming.first.map { (role: $0.role.rawValue, content: $0.content) }
+        )
+        let existing = state.withLock { $0.sessions[mapKey] }
         var managed: ManagedSession
         var reusedSession = false
         // Route B 前缀池命中轮：本会话的表示来自共享池快照（已对账），
@@ -917,7 +957,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         kvFingerprint: kvFingerprint,
                         isRestoredSnapshot: true
                     )
-                    state.withLock { $0.sessions[executionKey.storageKey] = restored }
+                    state.withLock { $0.sessions[mapKey] = restored }
                     poolRestored = restored
                     // FORK-3 step-9: the child binds the SAME RepresentationRef
                     // the exporting parent bound — zero re-materialization is
@@ -965,7 +1005,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     kvFingerprint: kvFingerprint
                 )
                 reusedSession = false
-                state.withLock { $0.sessions[executionKey.storageKey] = managed }
+                state.withLock { $0.sessions[mapKey] = managed }
+                if mapKey != executionKey.storageKey {
+                    // 展示走 traceKey 紧凑形态（6 位），全量 UUID 不进 trace。
+                    traceLogger.trace(
+                        "[MLX] sessionClientSplit key=\(executionKey.traceKey)" +
+                        "\(String(mapKey.dropFirst(executionKey.storageKey.count)))" +
+                        " note=system-prompt client shard"
+                    )
+                }
             }
         }
 
@@ -1036,8 +1084,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 // 都会落到池外对象（外审 P1，2026-09-18）。
                 var replaced = false
                 state.withLock {
-                    if let live = $0.sessions[executionKey.storageKey], live === managed {
-                        $0.sessions[executionKey.storageKey] = restored
+                    if let live = $0.sessions[mapKey], live === managed {
+                        $0.sessions[mapKey] = restored
                         replaced = true
                     }
                 }
@@ -1072,7 +1120,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // （warmTokenBudget 的校准观测行）。生产降噪（2026-09-29）：无驱逐
         // 且未 rollforward 的轮次不发 admission 行——rf= 是 prefill_stats.py
         // noMode 判别的载荷，rollforward/驱逐轮仍整行保留（格式不变）。
-        let admission = await evictSessionsIfNeeded(keeping: executionKey.storageKey)
+        let admission = await evictSessionsIfNeeded(keeping: mapKey)
         if admission.evicted > 0 || rolledForward {
             traceLogger.trace(
                 "[MLX] admission warmSessions=\(admission.warmSessions)" +
@@ -1312,10 +1360,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 留待 session 生命周期协议，复用路径中途取消是否同毒未观测到。
             if !reusedSession, rawEventCount == 0 {
                 let poisoned: ChatSession? = state.withLock { state in
-                    guard state.sessions[executionKey.storageKey] === managed else {
+                    guard state.sessions[mapKey] === managed else {
                         return nil
                     }
-                    state.sessions.removeValue(forKey: executionKey.storageKey)
+                    state.sessions.removeValue(forKey: mapKey)
                     return managed.session
                 }
                 if let poisoned {
@@ -1338,7 +1386,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             Self.assistantToJSON(content: completedText, toolCalls: toolCalls)
         ]
         state.withLock {
-            if let current = $0.sessions[executionKey.storageKey], current === managed {
+            if let current = $0.sessions[mapKey], current === managed {
                 current.history = managed.history
                 current.historyJSON = managed.historyJSON
                 current.lastActivity = Date()
@@ -1410,7 +1458,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
 
         // P1 会话 LRU 扫描：生成收尾后驱动驱逐。
-        await evictSessionsIfNeeded(keeping: executionKey.storageKey)
+        await evictSessionsIfNeeded(keeping: mapKey)
 
         // Restore 路径归因补全（2026-09-20）：checkpoint 恢复的会话在 vendor
         // 侧无 conversation 账本，归因块整体跳过，info 恒为 cacheHit=0/无
@@ -1641,7 +1689,8 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
         return try await gate.withExclusive(generationKey) {
-            guard let managed = state.withLock({ $0.sessions[key.storageKey] }) else {
+            let mapKey = resolveSessionMapKey(for: key.storageKey)
+            guard let managed = state.withLock({ $0.sessions[mapKey] }) else {
                 throw RuntError.generationFailed(
                     "no live session for \(key.storageKey); nothing to save"
                 )
@@ -1739,7 +1788,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         guard let container = state.withLock({ $0.modelContainer }) else {
             throw RuntError.notLoaded
         }
-        let existing = state.withLock { $0.sessions[key.storageKey] }
+        let existing: ManagedSession?
+        let mapKey = resolveSessionMapKey(for: key.storageKey)
+        existing = state.withLock { $0.sessions[mapKey] }
 
         let generationKey = try generationGateKey(for: key)
         let gate = gateHolder.withLock { $0 }
@@ -1749,12 +1800,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 config: config, baseConfig: baseConfig, directory: directory,
                 modelPath: modelPath)
             try state.withLock {
-                if let existing, $0.sessions[key.storageKey] !== existing {
+                if let existing, $0.sessions[mapKey] !== existing {
                     throw RuntError.generationFailed(
                         "session replaced during checkpoint load: \(key.storageKey)"
                     )
                 }
-                $0.sessions[key.storageKey] = loaded.managed
+                $0.sessions[mapKey] = loaded.managed
                 $0.lastActivity = Date()
             }
             return loaded
@@ -1956,8 +2007,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         let gate = gateHolder.withLock { $0 }
 
         return try await gate.withExclusive(transactionKeys) {
+            // 会话表键对齐：fork 不感知 system 提示，按前缀扫描定位源；
+            // child 继承源的客户端分片后缀（同一会话血统、同一系统提示）。
+            let sourceMapKey = resolveSessionMapKey(for: sourceKey.storageKey)
             guard let sourceManaged = state.withLock({
-                $0.sessions[sourceKey.storageKey]
+                $0.sessions[sourceMapKey]
             }) else {
                 throw RuntError.generationFailed(
                     "no live source session for \(sourceKey.storageKey); cannot fork"
@@ -1975,8 +2029,12 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             // 陈旧 checkpoint 文件即刻清除，维持「target checkpoint ⟺
             // target 当前血统」——否则 fork→首生成之间挂起会载入分叉前
             // 的旧状态。child 的 durable pair 由其首个成功轮重写。
+            let clientSuffix = sourceMapKey.hasPrefix(sourceKey.storageKey + "#")
+                ? String(sourceMapKey.dropFirst(sourceKey.storageKey.count))
+                : ""
+            let targetMapKey = targetKey.storageKey + clientSuffix
             if let oldTarget = state.withLock({
-                $0.sessions.removeValue(forKey: targetKey.storageKey)
+                $0.sessions.removeValue(forKey: targetMapKey)
             }) {
                 await oldTarget.session.clear()
             }
@@ -1998,7 +2056,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 atToken: forkTokenCount)
             child.checkpointDirty = true
             state.withLock {
-                $0.sessions[targetKey.storageKey] = child
+                $0.sessions[targetMapKey] = child
                 $0.lastActivity = Date()
             }
 
