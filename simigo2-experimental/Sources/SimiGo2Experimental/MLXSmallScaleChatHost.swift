@@ -49,6 +49,9 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
     /// derived under it and survive process restarts.
     public let base: URL
     private let containerLoader: MLXChatContainerLoader
+    /// Injectable only through the module-internal initializer so activation
+    /// drift can be fault-tested without a multi-gigabyte model or timing race.
+    private let modelDirectoryRevisionProvider: @Sendable (URL) -> String?
     /// Serializes the async lifecycle transitions (load → install → swap).
     private let lifecycleGate = AsyncLock()
     /// Guards synchronous observation of `state` against the async writer
@@ -84,13 +87,30 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         let cache: MLXPrefixCrossSessionCache
     }
 
-    public init(
+    public convenience init(
         base: URL,
         containerLoader: @escaping MLXChatContainerLoader = MLXSmallScaleChatHost
             .defaultContainerLoader
     ) {
+        self.init(
+            base: base,
+            containerLoader: containerLoader,
+            revisionProvider: { modelDirectory in
+                MLXPrefixCrossSessionCache.modelDirectoryRevision(
+                    modelDirectory: modelDirectory)
+            })
+    }
+
+    /// Module-internal seam for deterministic activation fault tests. Production
+    /// callers use the public initializer and the real filesystem revision.
+    init(
+        base: URL,
+        containerLoader: @escaping MLXChatContainerLoader,
+        revisionProvider: @escaping @Sendable (URL) -> String?
+    ) {
         self.base = base
         self.containerLoader = containerLoader
+        self.modelDirectoryRevisionProvider = revisionProvider
     }
 
     public static let defaultContainerLoader: MLXChatContainerLoader = { url in
@@ -366,20 +386,17 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         // stayed stable across the O(model-bytes) content identity and load
         // phases; this prevents ordinary in-place updates from binding an old
         // content namespace to a newly replaced directory revision.
-        guard let directoryRevision = MLXPrefixCrossSessionCache.modelDirectoryRevision(
-            modelDirectory: modelDirectory) else {
+        guard let directoryRevision = modelDirectoryRevisionProvider(modelDirectory) else {
             throw HostError.modelDirectoryRevisionUnavailable(modelDirectory)
         }
         let contentIdentity = await Task.detached(priority: .userInitiated) {
             MLXPrefixCrossSessionCache.contentIdentity(modelDirectory: modelDirectory)
         }.value
-        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
-            modelDirectory: modelDirectory) == directoryRevision else {
+        guard modelDirectoryRevisionProvider(modelDirectory) == directoryRevision else {
             throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
         }
         let container = try await containerLoader(modelDirectory)
-        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
-            modelDirectory: modelDirectory) == directoryRevision else {
+        guard modelDirectoryRevisionProvider(modelDirectory) == directoryRevision else {
             throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
         }
         let namespace = MLXPrefixCrossSessionCache.namespace(
@@ -407,8 +424,7 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         // A final check closes changes during store rescan. The installed
         // hook repeats this metadata comparison on each lookup, so a change
         // after this point becomes a cold miss instead of stale prefix reuse.
-        guard MLXPrefixCrossSessionCache.modelDirectoryRevision(
-            modelDirectory: modelDirectory) == directoryRevision else {
+        guard modelDirectoryRevisionProvider(modelDirectory) == directoryRevision else {
             throw HostError.modelDirectoryChangedDuringActivation(modelDirectory)
         }
         let installedGeneration = currentGeneration()
