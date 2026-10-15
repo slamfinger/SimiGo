@@ -766,7 +766,7 @@ extension MLXPrefixCrossSessionCacheTests {
         let weights = modelDirectory.appendingPathComponent("model.safetensors")
         let tokenizer = modelDirectory.appendingPathComponent("tokenizer.json")
         try Data([1, 2, 3, 4]).write(to: weights)
-        try Data("{\\"version\\":1}".utf8).write(to: tokenizer)
+        try Data(#"{"version":1}"#.utf8).write(to: tokenizer)
 
         let revision = try XCTUnwrap(
             MLXPrefixCrossSessionCache.modelDirectoryRevision(
