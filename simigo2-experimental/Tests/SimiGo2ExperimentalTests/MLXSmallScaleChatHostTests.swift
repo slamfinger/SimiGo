@@ -76,9 +76,34 @@ final class MLXSmallScaleChatHostTests: XCTestCase {
         let modelDirectory = try makeEmptyModelDirectory()
         defer { try? FileManager.default.removeItem(at: modelDirectory) }
 
-        let priorOwner = MLXPrefixCrossSessionCache.activeInstance
+        // The activation failure must preserve a genuinely occupied hook,
+        // not merely preserve an empty global state. When the suite starts
+        // clean, install a lightweight incumbent cache; if another test has
+        // already established an owner, observe it without displacing it.
+        var testOwnedPriorCache: MLXPrefixCrossSessionCache?
+        if MLXPrefixCrossSessionCache.activeInstance == nil,
+            ChatSession.crossSessionPrefixLookupWithContext == nil
+        {
+            let incumbent = MLXPrefixCrossSessionCache(
+                store: PrefixSnapshotStore(
+                    root: base.appendingPathComponent("prior-owner-cache", isDirectory: true),
+                    pool: ExecutionStatePrefixPool(tokenBudget: 1_024)),
+                namespace: PrefixPoolNamespace(
+                    modelID: "prior-owner",
+                    kvFingerprint: "test-prior-owner"))
+            try incumbent.install()
+            testOwnedPriorCache = incumbent
+        }
+        defer { _ = testOwnedPriorCache?.uninstall() }
+
+        let priorOwner = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.activeInstance,
+            "test requires a registered incumbent owner")
         let legacySlotWasOccupied = ChatSession.crossSessionPrefixLookup != nil
         let contextSlotWasOccupied = ChatSession.crossSessionPrefixLookupWithContext != nil
+        XCTAssertTrue(
+            contextSlotWasOccupied,
+            "test requires the incumbent to occupy the context hook")
         let revisions = RevisionSequence(["revision-before-hash", "revision-after-hash"])
         let loaderCalls = LockedCallCounter()
 
