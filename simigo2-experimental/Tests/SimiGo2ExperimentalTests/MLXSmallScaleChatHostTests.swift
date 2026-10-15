@@ -96,7 +96,7 @@ final class MLXSmallScaleChatHostTests: XCTestCase {
         } catch let error as MLXSmallScaleChatHost.HostError {
             XCTAssertEqual(error, .modelDirectoryChangedDuringActivation(modelDirectory))
         } catch {
-            XCTFail("unexpected error: \\(error)")
+            XCTFail("unexpected error: \(error)")
         }
 
         XCTAssertEqual(revisions.callCount, 2)
