@@ -1,3 +1,4 @@
+import Darwin
 import MLX
 import MLXLMCommon
 import XCTest
@@ -28,6 +29,32 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
             keys: MLXArray.zeros([1, 2, 8, 4]),
             values: MLXArray.zeros([1, 2, 8, 4]))
         try savePromptCache(url: url, cache: [layer])
+    }
+
+    /// Write equal-length bytes through an open file handle, preserving the
+    /// destination inode (unlike Data.write(options: .atomic), which replaces
+    /// the directory entry and would not prove ctime detects an in-place edit).
+    private func overwriteInPlace(_ bytes: Data, at url: URL) throws {
+        let handle = try FileHandle(forWritingTo: url)
+        do {
+            try handle.seek(toOffset: 0)
+            try handle.write(contentsOf: bytes)
+            try handle.synchronize()
+            try handle.close()
+        } catch {
+            try? handle.close()
+            throw error
+        }
+    }
+
+    /// Device + inode identity used to assert that a regression actually
+    /// mutates the same file object rather than atomically replacing its path.
+    private func fileIdentity(_ url: URL) throws -> String {
+        var status = stat()
+        guard stat(url.path, &status) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        return "\(status.st_dev):\(status.st_ino)"
     }
 
     func testInstalledHookReturnsVerifiedPrefixSnapshot() async throws {
@@ -844,5 +871,94 @@ extension MLXPrefixCrossSessionCacheTests {
         let retargetedRevision = try XCTUnwrap(
             MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
         XCTAssertNotEqual(firstRevision, retargetedRevision)
+    }
+}
+
+// MARK: - ctime reinforcement: same-size in-place rewrite with restored mtime
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// The declared residual narrowed: a same-size in-place rewrite that
+    /// restores size and modification time STILL changes the revision,
+    /// because the kernel-maintained status-change time (ctime) moves and
+    /// cannot be set back by the rewriter.
+    func testSameSizeInPlaceRewriteWithRestoredMtimeChangesRevision() throws {
+        let modelDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ctime-rewrite-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: modelDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: modelDirectory) }
+        let weights = modelDirectory.appendingPathComponent("model.safetensors")
+        try Data([1, 2, 3, 4]).write(to: weights)
+
+        let before = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: modelDirectory))
+        let attributes = try FileManager.default.attributesOfItem(atPath: weights.path)
+        let originalModified = attributes[.modificationDate] as? Date ?? Date()
+        let originalCreated = attributes[.creationDate] as? Date ?? Date()
+        let originalIdentity = try fileIdentity(weights)
+        let originalSize = attributes[.size] as? NSNumber
+
+        // Same-size in-place write: keep the inode and file size, then restore
+        // mtime (and birth time where supported) before recomputing the fence.
+        try overwriteInPlace(Data([4, 3, 2, 1]), at: weights)
+        try FileManager.default.setAttributes(
+            [.modificationDate: originalModified, .creationDate: originalCreated],
+            ofItemAtPath: weights.path)
+        let attributesAfter = try FileManager.default.attributesOfItem(atPath: weights.path)
+        XCTAssertEqual(try fileIdentity(weights), originalIdentity,
+                       "test must preserve the original inode")
+        XCTAssertEqual(attributesAfter[.size] as? NSNumber, originalSize,
+                       "test must preserve the original byte length")
+
+        let after = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: modelDirectory))
+        XCTAssertNotEqual(after, before)
+    }
+
+    /// The same reinforcement through an HF-style SNAPSHOT layout: the
+    /// rewrite hits the BLOB TARGET in place (same size, restored mtime),
+    /// and the fence still changes.
+    func testBlobTargetInPlaceRewriteThroughSnapshotSymlinkChangesRevision() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ctime-symlink-\(UUID().uuidString)", isDirectory: true)
+        let blobs = root.appendingPathComponent("blobs", isDirectory: true)
+        let snapshot = root.appendingPathComponent("snapshots/rev1", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: blobs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: snapshot, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let blob = blobs.appendingPathComponent("blob-weights")
+        try Data([1, 2, 3, 4]).write(to: blob)
+        let link = snapshot.appendingPathComponent("model.safetensors")
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: blob)
+
+        let before = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        let attributes = try FileManager.default.attributesOfItem(atPath: blob.path)
+        let originalModified = attributes[.modificationDate] as? Date ?? Date()
+        let originalIdentity = try fileIdentity(blob)
+        let originalTarget = link.resolvingSymlinksInPath().standardizedFileURL
+        let originalSize = attributes[.size] as? NSNumber
+
+        // Write the BLOB TARGET through its ordinary file path (same inode and
+        // size), restore mtime, and prove the snapshot link still resolves to
+        // the same target object.
+        try overwriteInPlace(Data([9, 8, 7, 6]), at: blob)
+        try FileManager.default.setAttributes(
+            [.modificationDate: originalModified], ofItemAtPath: blob.path)
+        let attributesAfter = try FileManager.default.attributesOfItem(atPath: blob.path)
+        XCTAssertEqual(try fileIdentity(blob), originalIdentity,
+                       "test must mutate the existing blob inode")
+        XCTAssertEqual(attributesAfter[.size] as? NSNumber, originalSize,
+                       "test must preserve the blob byte length")
+        XCTAssertEqual(link.resolvingSymlinksInPath().standardizedFileURL, originalTarget,
+                       "snapshot symlink target must not be replaced")
+
+        let after = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        XCTAssertNotEqual(after, before)
     }
 }

@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import CryptoKit
 import MLXHuggingFace
 import MLXLLM
@@ -156,13 +157,21 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             guard let modified = values.contentModificationDate else { return nil }
             let createdBits = values.creationDate?.timeIntervalSince1970.bitPattern ?? 0
             let modifiedBits = modified.timeIntervalSince1970.bitPattern
+            // POSIX status-change time of the RESOLVED target: kernel
+            // maintained and not user-settable, so a same-size in-place
+            // rewrite that restores size, mtime, and birth time STILL moves
+            // it. This narrows the declared in-place-rewrite residual; it
+            // remains a cheap change signal, not a byte-content proof.
+            guard let changedBits = changeTimeBits(resolved.path) else {
+                return nil
+            }
             let relativePath = url.path.hasPrefix(rootPrefix)
                 ? String(url.path.dropFirst(rootPrefix.count))
                 : url.lastPathComponent
             let targetName = resolved.path == url.path
                 ? "" : resolved.lastPathComponent
             entries.append(
-                "\(relativePath)\t\(targetName)\t\(size)\t\(createdBits)\t\(modifiedBits)")
+                "\(relativePath)\t\(targetName)\t\(size)\t\(createdBits)\t\(modifiedBits)\t\(changedBits)")
         }
 
         let payload = entries.sorted().joined(separator: "\n")
@@ -171,6 +180,16 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         return hasher.finalize()
             .compactMap { String(format: "%02x", $0) }
             .joined()
+    }
+
+    /// st_ctime of the resolved target in nanoseconds since the epoch
+    /// (Darwin stat). Nil when the stat fails — callers fail closed.
+    private static func changeTimeBits(_ path: String) -> UInt64? {
+        var status = stat()
+        guard stat(path, &status) == 0 else { return nil }
+        let seconds = UInt64(bitPattern: Int64(clamping: status.st_ctimespec.tv_sec))
+        let nanoseconds = UInt64(status.st_ctimespec.tv_nsec)
+        return seconds &* 1_000_000_000 &+ nanoseconds
     }
 
     private static func isPotentialModelRevisionFile(_ filename: String) -> Bool {
