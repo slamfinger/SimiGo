@@ -846,3 +846,73 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertNotEqual(firstRevision, retargetedRevision)
     }
 }
+
+// MARK: - ctime reinforcement: same-size in-place rewrite with restored mtime
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// The declared residual narrowed: a same-size in-place rewrite that
+    /// restores size and modification time STILL changes the revision,
+    /// because the kernel-maintained status-change time (ctime) moves and
+    /// cannot be set back by the rewriter.
+    func testSameSizeInPlaceRewriteWithRestoredMtimeChangesRevision() throws {
+        let modelDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ctime-rewrite-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: modelDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: modelDirectory) }
+        let weights = modelDirectory.appendingPathComponent("model.safetensors")
+        try Data([1, 2, 3, 4]).write(to: weights)
+
+        let before = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: modelDirectory))
+        let attributes = try FileManager.default.attributesOfItem(atPath: weights.path)
+        let originalModified = attributes[.modificationDate] as? Date ?? Date()
+        let originalCreated = attributes[.creationDate] as? Date ?? Date()
+
+        // Same size, different bytes, mtime AND birth time restored.
+        try Data([4, 3, 2, 1]).write(to: weights, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.modificationDate: originalModified, .creationDate: originalCreated],
+            ofItemAtPath: weights.path)
+
+        let after = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: modelDirectory))
+        XCTAssertNotEqual(after, before)
+    }
+
+    /// The same reinforcement through an HF-style SNAPSHOT layout: the
+    /// rewrite hits the BLOB TARGET in place (same size, restored mtime),
+    /// and the fence still changes.
+    func testBlobTargetInPlaceRewriteThroughSnapshotSymlinkChangesRevision() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ctime-symlink-\(UUID().uuidString)", isDirectory: true)
+        let blobs = root.appendingPathComponent("blobs", isDirectory: true)
+        let snapshot = root.appendingPathComponent("snapshots/rev1", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: blobs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: snapshot, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let blob = blobs.appendingPathComponent("blob-weights")
+        try Data([1, 2, 3, 4]).write(to: blob)
+        let link = snapshot.appendingPathComponent("model.safetensors")
+        try FileManager.default.createSymbolicLink(
+            at: link, withDestinationURL: blob)
+
+        let before = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        let attributes = try FileManager.default.attributesOfItem(atPath: blob.path)
+        let originalModified = attributes[.modificationDate] as? Date ?? Date()
+
+        // Rewrite the BLOB in place (same size) and restore its mtime; the
+        // snapshot link itself is untouched.
+        try Data([9, 8, 7, 6]).write(to: blob, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.modificationDate: originalModified], ofItemAtPath: blob.path)
+
+        let after = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(modelDirectory: snapshot))
+        XCTAssertNotEqual(after, before)
+    }
+}
