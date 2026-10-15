@@ -110,8 +110,9 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     ///
     /// This is deliberately a METADATA revision, not another O(model-bytes)
     /// identity hash. It tracks paths, sizes, creation times, and modification
-    /// times for safetensors, JSON configuration/tokenizer files, and common
-    /// tokenizer assets. A caller's cache lookup fails closed when this
+    /// times for the existing content-identity inputs: safetensors weights and
+    /// tokenizer-like files actually incorporated into that identity. A cache
+    /// lookup fails closed when this
     /// revision changes after activation. Same-size in-place rewrites that
     /// preserve all tracked metadata remain an explicit residual; this helper
     /// narrows ordinary same-directory drift without claiming content proof.
@@ -137,14 +138,15 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             guard Self.isPotentialModelRevisionFile(filename) else { continue }
             guard let values = try? url.resourceValues(forKeys: keySet),
                 values.isRegularFile == true,
-                let size = values.fileSize,
-                let modified = values.contentModificationDate
+                let size = values.fileSize
             else {
-                // An unreadable relevant file makes the revision unknown;
-                // callers must fail closed rather than silently omit it.
+                // An unreadable candidate file makes it impossible to know
+                // whether this is an identity input; fail closed rather than
+                // silently omit a potentially relevant artifact.
                 return nil
             }
             guard Self.isModelRevisionFile(filename, size: size) else { continue }
+            guard let modified = values.contentModificationDate else { return nil }
             let createdBits = values.creationDate?.timeIntervalSince1970.bitPattern ?? 0
             let modifiedBits = modified.timeIntervalSince1970.bitPattern
             let relativePath = url.path.hasPrefix(rootPrefix)
