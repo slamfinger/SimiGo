@@ -105,6 +105,74 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         self.namespace = namespace
     }
 
+
+    /// A lightweight freshness fence for model files used by MLX loading.
+    ///
+    /// This is deliberately a METADATA revision, not another O(model-bytes)
+    /// identity hash. It tracks paths, sizes, creation times, and modification
+    /// times for safetensors, JSON configuration/tokenizer files, and common
+    /// tokenizer assets. A caller's cache lookup fails closed when this
+    /// revision changes after activation. Same-size in-place rewrites that
+    /// preserve all tracked metadata remain an explicit residual; this helper
+    /// narrows ordinary same-directory drift without claiming content proof.
+    public static func modelDirectoryRevision(modelDirectory: URL) -> String? {
+        let root = modelDirectory.standardizedFileURL
+        let keys: [URLResourceKey] = [
+            .isRegularFileKey, .fileSizeKey,
+            .creationDateKey, .contentModificationDateKey
+        ]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: keys
+        ) else {
+            return nil
+        }
+
+        let keySet = Set(keys)
+        var entries: [String] = []
+        let rootPrefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+
+        for case let url as URL in enumerator {
+            guard Self.isModelRevisionFile(url.lastPathComponent) else { continue }
+            guard let values = try? url.resourceValues(forKeys: keySet),
+                values.isRegularFile == true,
+                let size = values.fileSize,
+                let modified = values.contentModificationDate
+            else {
+                // An unreadable relevant file makes the revision unknown;
+                // callers must fail closed rather than silently omit it.
+                return nil
+            }
+            let createdBits = values.creationDate?.timeIntervalSince1970.bitPattern ?? 0
+            let modifiedBits = modified.timeIntervalSince1970.bitPattern
+            let relativePath = url.path.hasPrefix(rootPrefix)
+                ? String(url.path.dropFirst(rootPrefix.count))
+                : url.lastPathComponent
+            entries.append(
+                "\(relativePath)\t\(size)\t\(createdBits)\t\(modifiedBits)")
+        }
+
+        let payload = entries.sorted().joined(separator: "\n")
+        var hasher = SHA256()
+        hasher.update(data: Data(payload.utf8))
+        return hasher.finalize()
+            .compactMap { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    private static func isModelRevisionFile(_ filename: String) -> Bool {
+        let name = filename.lowercased()
+        return name.hasSuffix(".safetensors")
+            || name.hasSuffix(".json")
+            || name.hasSuffix(".model")
+            || name.hasSuffix(".tiktoken")
+            || name.hasPrefix("tokenizer")
+            || name.hasPrefix("special_tokens_map")
+            || name.hasPrefix("merges")
+            || name.hasPrefix("vocab")
+            || name.hasPrefix("chat_template")
+    }
+
     /// Model identity at the strength the engine path already uses:
     /// content digests of the weights and tokenizer files, NOT the directory
     /// name. Two directories with the same name but different model content
@@ -224,7 +292,8 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     public func install(
         forceTakeover: Bool = false,
         admissionGuard: (@Sendable () -> Bool)? = nil,
-        allowedModelDirectory: URL? = nil
+        allowedModelDirectory: URL? = nil,
+        allowedModelDirectoryRevision: String? = nil
     ) throws {
         try Self.ownershipLock.withLock {
             // FCI-OWN-02: even the idempotent fast path must verify the
@@ -262,6 +331,7 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             // calling session's model origin). The legacy slot is left to
             // whoever owns it — release verification must check BOTH slots.
             let allowed = allowedModelDirectory?.standardizedFileURL
+            let allowedRevision = allowedModelDirectoryRevision
             let token = ChatSession.CrossSessionPrefixLookup.OwnerToken()
             ownershipToken = token
             ChatSession.crossSessionPrefixLookupWithContext =
@@ -281,6 +351,16 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
                         guard let origin = caller.modelDirectory?.standardizedFileURL,
                             origin == allowed
                         else {
+                            self.observation.record(matchedTokenCount: nil)
+                            return nil
+                        }
+                        // A matching path alone cannot detect a model replaced
+                        // in place. Recheck the cheap file-metadata revision
+                        // before admitting any cached prefix; after observable
+                        // model-file drift, fail closed until host reactivation.
+                        if let allowedRevision,
+                            Self.modelDirectoryRevision(modelDirectory: allowed) != allowedRevision
+                        {
                             self.observation.record(matchedTokenCount: nil)
                             return nil
                         }

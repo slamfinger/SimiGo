@@ -742,3 +742,62 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertTrue(runtime.ownsNoHookSlot)
     }
 }
+
+
+// MARK: - Same-directory model-file drift fence
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// Observable model-file metadata drift at the SAME path must turn a
+    /// would-be cross-session hit into a recorded cold miss.
+    func testSameDirectoryModelRevisionDriftFailsClosed() async throws {
+        let tokens = Array(0..<24)
+        _ = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+
+        let modelDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("model-revision-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: modelDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: modelDirectory) }
+        let weights = modelDirectory.appendingPathComponent("model.safetensors")
+        let tokenizer = modelDirectory.appendingPathComponent("tokenizer.json")
+        try Data([1, 2, 3, 4]).write(to: weights)
+        try Data("{\\"version\\":1}".utf8).write(to: tokenizer)
+
+        let revision = try XCTUnwrap(
+            MLXPrefixCrossSessionCache.modelDirectoryRevision(
+                modelDirectory: modelDirectory))
+        try runtime.install(
+            allowedModelDirectory: modelDirectory,
+            allowedModelDirectoryRevision: revision)
+        defer { runtime.uninstall() }
+
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        let context = callerContext(directory: modelDirectory)
+        let matched = try XCTUnwrap(hook.lookup(tokens + [97, 98, 99], context))
+        XCTAssertEqual(matched.matchedTokenCount, tokens.count)
+        XCTAssertEqual(runtime.observations.hits, 1)
+
+        // Same directory, different bytes, same size; force a changed
+        // modification timestamp so this exercises the intended metadata
+        // revision signal rather than relying on filesystem timestamp granularity.
+        let previousAttributes = try FileManager.default.attributesOfItem(atPath: weights.path)
+        let previousModified = previousAttributes[.modificationDate] as? Date ?? Date()
+        try Data([4, 3, 2, 1]).write(to: weights, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.modificationDate: previousModified.addingTimeInterval(120)],
+            ofItemAtPath: weights.path)
+
+        let changedRevision = MLXPrefixCrossSessionCache.modelDirectoryRevision(
+            modelDirectory: modelDirectory)
+        XCTAssertNotEqual(changedRevision, revision)
+        XCTAssertNil(hook.lookup(tokens + [97, 98, 99], context))
+        XCTAssertEqual(runtime.observations.calls, 2)
+        XCTAssertEqual(runtime.observations.hits, 1)
+        XCTAssertEqual(runtime.observations.lastMatchedTokenCount, tokens.count)
+    }
+}
