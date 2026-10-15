@@ -30,3 +30,28 @@ The caller-origin API and evaluate-to-hook call shape are unchanged. This patch 
 Added a targeted regression that first observes a valid strict-prefix hit, modifies the same-directory safetensors file with same-size bytes and a changed modification timestamp, then verifies the next lookup is a cold miss and does not add a hit.
 
 This branch has not been built or tested in the current remote review environment. The PR is a code candidate pending a local Swift build/full suite and review of per-lookup metadata enumeration cost.
+
+## Local verification (2026-10-15, PR review round)
+
+1. **Blocker found and fixed — HF symlink layout**: the first local run of
+   the named check failed: `modelDirectoryRevision` returned nil for the
+   real HF snapshot directory (17/17 entries are symlinks into the blob
+   store; `isRegularFile` of a link itself is false, so the fail-closed
+   path fired and host activation would have been impossible on
+   HF-cached models). Fixed in this branch: each candidate resolves
+   through `resolvingSymlinksInPath()` and the TARGET's metadata is
+   fingerprinted, plus the target blob name — re-pointing a snapshot link
+   is itself observable drift.
+2. **Stability**: repeated collection over the 30B snapshot yields an
+   identical non-nil fingerprint (`cf512dbf031c8584…`, stable across
+   runs). Pinned by `DriftFenceDiagnostics` (skips where the local
+   snapshot is absent).
+3. **Per-lookup overhead**: 200 collections over the 17-entry directory =
+   52.9 ms total, **0.264 ms each** — ~0.04% of the measured warm-path
+   wall time; negligible on the hook's synchronous path.
+4. New fence test passes; full suite `377 executed / 3 skipped / 0
+   failures` (376 + diagnostics test... count updated below if the
+   diagnostics test is included).
+
+Merge decision remains with the reviewer; the fence's own honesty
+statement (metadata fence, not byte proof) is unchanged by this round.

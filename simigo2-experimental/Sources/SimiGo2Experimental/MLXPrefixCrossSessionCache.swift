@@ -135,7 +135,15 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         for case let url as URL in enumerator {
             let filename = url.lastPathComponent
             guard Self.isPotentialModelRevisionFile(filename) else { continue }
-            guard let values = try? url.resourceValues(forKeys: keySet),
+            // Hugging Face snapshot directories address weights through
+            // SYMLINKS into a blob store; resource values of the link
+            // itself report isRegularFile == false, which previously made
+            // every HF-cached model fail activation. Resolve the link and
+            // fingerprint the TARGET's metadata, plus the target's blob
+            // name — re-pointing a snapshot link (new revision under the
+            // same path) is itself observable drift.
+            let resolved = url.resolvingSymlinksInPath()
+            guard let values = try? resolved.resourceValues(forKeys: keySet),
                 values.isRegularFile == true,
                 let size = values.fileSize
             else {
@@ -151,8 +159,10 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             let relativePath = url.path.hasPrefix(rootPrefix)
                 ? String(url.path.dropFirst(rootPrefix.count))
                 : url.lastPathComponent
+            let targetName = resolved.path == url.path
+                ? "" : resolved.lastPathComponent
             entries.append(
-                "\(relativePath)\t\(size)\t\(createdBits)\t\(modifiedBits)")
+                "\(relativePath)\t\(targetName)\t\(size)\t\(createdBits)\t\(modifiedBits)")
         }
 
         let payload = entries.sorted().joined(separator: "\n")
