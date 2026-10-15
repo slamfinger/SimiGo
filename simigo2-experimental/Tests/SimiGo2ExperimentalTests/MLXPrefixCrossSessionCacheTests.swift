@@ -664,3 +664,81 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
     }
 }
+
+// MARK: - FCI-OWN-03/04/05 (third ownership review round)
+
+extension MLXPrefixCrossSessionCacheTests {
+    /// OWN-03: the token is UNREADABLE — a wrapper cannot even construct
+    /// the same-token forwarding struct the review described. The struct
+    /// answers isOwned(by:) ONLY to the party already holding the exact
+    /// token; anyone else's wrapper (foreign token) is not us. This test
+    /// pins that semantics from the outside.
+    func testSameTokenWrapperIsUnconstructibleAndForeignWrappersAreNotOurs() throws {
+        try runtime.install()
+        let ourToken = ChatSession.CrossSessionPrefixLookup.OwnerToken()
+        // A struct we build with a DIFFERENT token is not owned by our
+        // token — even though its lookup forwards to the live slot.
+        let original = ChatSession.crossSessionPrefixLookupWithContext!
+        let wrapper = foreignLookup(forwardingTo: original)
+        XCTAssertFalse(wrapper.isOwned(by: ourToken))
+        // The slot IS owned by the cache's own (inaccessible) token —
+        // provable only through behavior: uninstall clears it cleanly.
+        XCTAssertTrue(runtime.uninstall())
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
+    }
+
+    /// OWN-04: another instance remains registered as active while the
+    /// static slot was externally CLEARED — a plain install must still be
+    /// refused; the registry is an independent authority, not a slot
+    /// shadow. Only an explicit takeover displaces a live instance.
+    func testRegistryActiveInstanceBlocksPlainInstallEvenWithEmptySlot() throws {
+        try runtime.install()
+
+        // External party clears the static slot directly.
+        ChatSession.crossSessionPrefixLookupWithContext = nil
+        defer { /* slot already nil */ }
+
+        let otherRoot = root!.deletingLastPathComponent()
+            .appendingPathComponent("prefix-cross-session-own04-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: otherRoot) }
+        let other = MLXPrefixCrossSessionCache(
+            store: PrefixSnapshotStore(
+                root: otherRoot,
+                pool: ExecutionStatePrefixPool(tokenBudget: 100_000)),
+            namespace: PrefixPoolNamespace(modelID: "other-model", kvFingerprint: "fp-other"))
+
+        XCTAssertThrowsError(try other.install()) { error in
+            XCTAssertEqual(
+                error as? MLXPrefixCrossSessionCache.OwnershipError,
+                .hookOwnedByOther)
+        }
+        XCTAssertFalse(other.isInstalled)
+        XCTAssertIdentical(MLXPrefixCrossSessionCache.activeInstance, runtime)
+
+        // Explicit takeover displaces the live instance.
+        try other.install(forceTakeover: true)
+        XCTAssertTrue(other.isInstalled)
+        // The displaced instance's uninstall is a visible no-op.
+        XCTAssertEqual(runtime.uninstall(), false)
+        XCTAssertTrue(other.uninstall())
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
+    }
+
+    /// OWN-05: ownsNoHookSlot means NO context hook remains. While a
+    /// preserved external wrapper still occupies the slot it is FALSE;
+    /// only after the slot is actually cleared does it become TRUE.
+    func testOwnsNoHookSlotFalseWhileExternalWrapperRemains() throws {
+        try runtime.install()
+        let original = ChatSession.crossSessionPrefixLookupWithContext!
+        ChatSession.crossSessionPrefixLookupWithContext =
+            foreignLookup(forwardingTo: original)
+
+        XCTAssertEqual(runtime.uninstall(), false)
+        XCTAssertTrue(runtime.ownershipInconsistencyDetected)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
+        XCTAssertFalse(runtime.ownsNoHookSlot)
+
+        ChatSession.crossSessionPrefixLookupWithContext = nil
+        XCTAssertTrue(runtime.ownsNoHookSlot)
+    }
+}

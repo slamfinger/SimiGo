@@ -108,3 +108,26 @@ own lookup under a foreign token remains fully FUNCTIONAL (reachability
 intact) yet plain reinstall refuses and uninstall preserves it; idempotent
 reinstall verifies slot ownership. Existing takeover/legacy-protection
 tests unchanged. Suite 373/3/0; app builds. Residual closure resubmitted.
+
+## FCI-OWN-03/04/05 correction (third ownership review round f050e7de)
+
+- OWN-03 (token transferability): the fork token storage is now PRIVATE
+  with no accessor (eab6895); ownership answers only through
+  `isOwned(by:)`, which returns true solely to a party already holding the
+  exact token. The review's same-token wrapper — read `original.owner`,
+  rebuild with it — is UNCONSTRUCTIBLE: there is nothing to read. Host
+  comparison switched to `isOwned(by:)`.
+- OWN-04 (registry desync): the registry check is restored as an
+  INDEPENDENT authority — a live `Self.active` instance blocks a plain
+  install even when the static slot was externally cleared; only explicit
+  takeover displaces. New test: active → slot cleared externally → plain
+  install refused.
+- OWN-05 (ownsNoHookSlot semantics): restored to its documented meaning —
+  actual slot EMPTINESS (`active !== self && slot == nil`). A preserved
+  external wrapper keeps it false until the slot is truly cleared. New
+  test covers both phases.
+
+Suite 376/3/0; app builds. Consultation call path and arguments unchanged
+(ownership comparison only), so the standing real-model identity and
+canonical evidence remain valid per the review's standing instruction.
+The prior different-token wrapper counterexample test is retained.
