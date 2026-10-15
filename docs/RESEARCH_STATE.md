@@ -4,10 +4,26 @@
 
 **Last updated**: 2026-10-15
 
-## Current continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 implemented and evidenced)
+## Current continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 CLOSED)
 
-> **Status:** `IMPLEMENTATION COMPLETE / EVIDENCE SUBMITTED FOR REVIEW /
-> RESIDUAL CLOSURE PENDING REVIEW`. Fork
+> **Status:** `CLOSED (fourth review round bc50ce14; fork eab6895; SimiGo
+> c81f4de6)`. The fork caller-identity residual — the one registered at GUI
+> promotion ACCEPT — is closed within the original authorization scope:
+> context hook with calling-session model origin (real evaluate-path
+> refusal evidence), and slot ownership closed across FCI-OWN-01..05 with
+> the final shape being an UNREADABLE owner token (isOwned-only
+> comparison), an INDEPENDENT registry check, and true-emptiness release
+> semantics. Evidence boundary (per the adjudication, recorded verbatim in
+> the evidence README): OWN-03's closure rests on static access-control
+> review; its runtime test covers different-token non-impersonation.
+> Retained: five GUI click-through items OPEN pending local human
+> execution; G-5/G-8/G-10, power-loss durability, universal concurrency
+> unaffected; same-directory content drift remains the accepted sliver.
+
+## Superseded continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 implemented)
+
+> **Status (superseded by closure above):** `IMPLEMENTATION COMPLETE /
+> EVIDENCE SUBMITTED FOR REVIEW`. Fork
 > `mlx-swift-lm@release/v2.0-beta-ml 778ffb7`; SimiGo branch
 > `codex/fork-caller-identity-integration`.
 

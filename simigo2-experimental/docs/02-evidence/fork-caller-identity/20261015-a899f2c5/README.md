@@ -39,10 +39,21 @@ boundaries 512 and 768 — chunk sequences, completion token counts, texts
 all equal, hits exactly at the boundaries. App builds; full suite
 `369 executed / 3 skipped / 0 failures`.
 
-## Status
+## Status: CLOSED (fourth review round, bc50ce14)
 
-Caller-identity residual: **evidence complete, submitted for review** —
-closure of the residual is a review decision, not self-declared. Retained
+FORK-HOOK-CALLER-IDENTITY-01 closed within the original authorization
+scope. OWN-03/04/05 all ACCEPT; the ownership residual (FCI-OWN-01 through
+05) closed across four review rounds. Evidence boundary recorded verbatim
+from the adjudication: OWN-03's closure rests on STATIC access-control
+review (private storage, no public accessor — the same-token wrapper is
+unconstructible by API shape); the runtime test covers different-token
+non-impersonation, not a same-token attack (which has no constructible
+instance). The standing real-model identity rejection and canonical strict
+equality evidence remain valid under the no-rerun exemption. Retained
+boundaries unchanged: GUI promotion ACCEPT intact; five click-through
+items OPEN pending local human execution; G-5/G-8/G-10, power-loss
+durability, and universal concurrency gain nothing from this closure;
+same-directory content drift remains the accepted sliver. Retained
 boundaries: same-directory content drift stays an accepted sliver (fork
 sees directory, not content); G-5/G-8/G-10, non-process-crash durability,
 and universal concurrency remain outside; DCC-1 Tier-1 untouched; the five
