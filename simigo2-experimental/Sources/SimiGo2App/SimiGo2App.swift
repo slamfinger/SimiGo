@@ -192,7 +192,11 @@ final class ChatAppModel: ObservableObject {
         if let host = chatHost {
             host.deactivate()
             chatHost = nil
-            if ChatSession.crossSessionPrefixLookup != nil {
+            // BOTH hook slots must be released: the host owns the context
+            // slot; a remaining legacy owner is equally a leak.
+            if ChatSession.crossSessionPrefixLookup != nil
+                || ChatSession.crossSessionPrefixLookupWithContext != nil
+            {
                 loadLine = "load error: cross-session hook still installed after deactivate"
                 isGenerating = false
                 return

@@ -210,7 +210,8 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
     /// the hook invocation itself.
     public func install(
         forceTakeover: Bool = false,
-        admissionGuard: (@Sendable () -> Bool)? = nil
+        admissionGuard: (@Sendable () -> Bool)? = nil,
+        allowedModelDirectory: URL? = nil
     ) throws {
         try Self.ownershipLock.withLock {
             if Self.active === self {
@@ -222,11 +223,30 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
             }
             Self.active = self
             installed = true
-            ChatSession.crossSessionPrefixLookup = { [weak self] promptTokenIDs in
+            // FORK-HOOK-CALLER-IDENTITY-01: the host owns the CONTEXT slot
+            // (preferred by the fork's consultation point and carrying the
+            // calling session's model origin). The legacy slot is left to
+            // whoever owns it — release verification must check BOTH slots.
+            let allowed = allowedModelDirectory?.standardizedFileURL
+            ChatSession.crossSessionPrefixLookupWithContext = {
+                [weak self] promptTokenIDs, caller in
                 guard let self else { return nil }
                 if let admissionGuard, !admissionGuard() {
                     self.observation.record(matchedTokenCount: nil)
                     return nil
+                }
+                // Caller-identity refusal (fail closed, cold path): when a
+                // directory binding exists, a nil origin (unresolved hub
+                // id) or a foreign directory never adopts this cache's
+                // snapshots. An unbound install stays identity-agnostic
+                // (legacy behavior for non-host callers).
+                if let allowed {
+                    guard let origin = caller.modelDirectory?.standardizedFileURL,
+                        origin == allowed
+                    else {
+                        self.observation.record(matchedTokenCount: nil)
+                        return nil
+                    }
                 }
                 return self.lookup(promptTokenIDs)
             }
@@ -241,9 +261,20 @@ public final class MLXPrefixCrossSessionCache: @unchecked Sendable {
         Self.ownershipLock.withLock {
             installed = false
             guard Self.active === self else { return false }
-            ChatSession.crossSessionPrefixLookup = nil
+            ChatSession.crossSessionPrefixLookupWithContext = nil
             Self.active = nil
             return true
+        }
+    }
+
+    /// Complete hook release from THIS cache's perspective: true when this
+    /// cache no longer owns the context slot and no context hook remains.
+    /// GUI teardown verification must additionally check the legacy slot —
+    /// a nil legacy slot alone is NOT complete release.
+    public var ownsNoHookSlot: Bool {
+        Self.ownershipLock.withLock {
+            Self.active !== self
+                && ChatSession.crossSessionPrefixLookupWithContext == nil
         }
     }
 

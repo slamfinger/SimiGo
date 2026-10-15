@@ -42,8 +42,9 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
 
         try runtime.install()
         defer { runtime.uninstall() }
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
-        let matched = try XCTUnwrap(hook(tokens + [97, 98, 99]))
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        let matched = try XCTUnwrap(
+            hook(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(matched.matchedTokenCount, tokens.count)
 
         let observations = runtime.observations
@@ -55,8 +56,8 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
     func testHookMissDoesNotAdmitForeignPrefix() async throws {
         try runtime.install()
         defer { runtime.uninstall() }
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
-        XCTAssertNil(hook([11, 22, 33]))
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        XCTAssertNil(hook([11, 22, 33], callerContext(directory: nil)))
 
         let observations = runtime.observations
         XCTAssertEqual(observations.calls, 1)
@@ -66,9 +67,9 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
 
     func testUninstallRemovesHostHook() throws {
         try runtime.install()
-        XCTAssertNotNil(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
         XCTAssertEqual(runtime.uninstall(), true)
-        XCTAssertNil(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
         XCTAssertFalse(runtime.isInstalled)
         XCTAssertNil(MLXPrefixCrossSessionCache.activeInstance)
     }
@@ -80,11 +81,11 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         try runtime.install()
         XCTAssertTrue(runtime.isInstalled)
         XCTAssertIdentical(MLXPrefixCrossSessionCache.activeInstance, runtime)
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
-        _ = hook([1, 2, 3])
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        _ = hook([1, 2, 3], callerContext(directory: nil))
         XCTAssertEqual(runtime.observations.calls, 1)
         runtime.uninstall()
-        XCTAssertNil(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
     }
 
     /// While another cache owns the hook, a second host's install must fail
@@ -117,8 +118,8 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         ) { url in
             try writeSyntheticSnapshot(to: url)
         }
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
-        XCTAssertNotNil(hook(Array(0..<10)))
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        XCTAssertNotNil(hook(Array(0..<10), callerContext(directory: nil)))
         XCTAssertEqual(runtime.observations.calls, 1)
     }
 
@@ -141,11 +142,11 @@ final class MLXPrefixCrossSessionCacheTests: XCTestCase {
         try other.install(forceTakeover: true)
         XCTAssertTrue(other.isInstalled)
         XCTAssertIdentical(MLXPrefixCrossSessionCache.activeInstance, other)
-        XCTAssertNotNil(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
 
         // The displaced owner cannot clear the new owner's hook.
         XCTAssertEqual(runtime.uninstall(), false)
-        XCTAssertNotNil(ChatSession.crossSessionPrefixLookup)
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookupWithContext)
         XCTAssertTrue(other.isInstalled)
 
         XCTAssertEqual(other.uninstall(), true)
@@ -289,8 +290,8 @@ extension MLXPrefixCrossSessionCacheTests {
 
         try runtime.install()
         defer { runtime.uninstall() }
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
-        XCTAssertNil(hook(tokens + [97, 98, 99]))
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
         let observations = runtime.observations
         XCTAssertEqual(observations.calls, 1)
         XCTAssertEqual(observations.hits, 0)
@@ -336,12 +337,12 @@ extension MLXPrefixCrossSessionCacheTests {
             cache.uninstall()
         }
 
-        let hook = ChatSession.crossSessionPrefixLookup
+        let hook = ChatSession.crossSessionPrefixLookupWithContext
         let active = MLXPrefixCrossSessionCache.activeInstance
         XCTAssertEqual(hook == nil, active == nil)
         if let hook, let active {
             let before = active.observations.calls
-            _ = hook([1, 2, 3, 4, 5])
+            _ = hook([1, 2, 3, 4, 5], callerContext(directory: nil))
             XCTAssertEqual(active.observations.calls, before + 1)
         }
     }
@@ -405,16 +406,17 @@ extension MLXPrefixCrossSessionCacheTests {
         let admitted = ActorIsolated(false)
         try runtime.install(admissionGuard: { admitted.value })
         defer { runtime.uninstall() }
-        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookup)
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
 
         // Guard refuses: cold path, miss recorded.
-        XCTAssertNil(hook(tokens + [97, 98, 99]))
+        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(runtime.observations.calls, 1)
         XCTAssertEqual(runtime.observations.hits, 0)
 
         // Guard admits: verified hit flows normally.
         await admitted.setValue(true)
-        let matched = try XCTUnwrap(hook(tokens + [97, 98, 99]))
+        let matched = try XCTUnwrap(
+            hook(tokens + [97, 98, 99], callerContext(directory: nil)))
         XCTAssertEqual(matched.matchedTokenCount, tokens.count)
         XCTAssertEqual(runtime.observations.hits, 1)
     }
@@ -486,5 +488,64 @@ extension MLXPrefixCrossSessionCacheTests {
         XCTAssertEqual(profile.stableBoundary(atOrBelow: 900), 768)
         XCTAssertEqual(profile.stableBoundary(atOrBelow: 256), 256)
         XCTAssertEqual(profile.stableBoundary(atOrBelow: 100), 0)
+    }
+}
+
+// MARK: - Caller-identity directory binding (FORK-HOOK-CALLER-IDENTITY-01)
+
+extension MLXPrefixCrossSessionCacheTests {
+    func callerContext(
+        directory: URL?
+    ) -> ChatSession.CrossSessionCallerContext {
+        ChatSession.CrossSessionCallerContext(modelDirectory: directory)
+    }
+
+    /// The cache admits only callers whose model origin matches the
+    /// directory it was activated with: a foreign directory and a nil
+    /// origin are both refused (recorded miss, cold path), the matching
+    /// directory adopts.
+    func testCallerDirectoryBindingRefusesForeignAndNilOrigins() async throws {
+        let tokens = Array(0..<24)
+        _ = try await runtime.store.export(
+            namespace: PrefixPoolNamespace(modelID: "test-model", kvFingerprint: "fp-cross"),
+            tokens: tokens
+        ) { url in
+            try writeSyntheticSnapshot(to: url)
+        }
+        let home = URL(fileURLWithPath: "/models/home", isDirectory: true)
+        let foreign = URL(fileURLWithPath: "/models/foreign", isDirectory: true)
+        try runtime.install(allowedModelDirectory: home)
+        defer { runtime.uninstall() }
+        let hook = try XCTUnwrap(ChatSession.crossSessionPrefixLookupWithContext)
+
+        // Foreign origin: refused, miss recorded.
+        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: foreign)))
+        XCTAssertEqual(runtime.observations.calls, 1)
+        XCTAssertEqual(runtime.observations.hits, 0)
+
+        // Nil origin (unresolved hub id): refused.
+        XCTAssertNil(hook(tokens + [97, 98, 99], callerContext(directory: nil)))
+        XCTAssertEqual(runtime.observations.calls, 2)
+
+        // Matching origin: verified adoption.
+        let matched = try XCTUnwrap(
+            hook(tokens + [97, 98, 99], callerContext(directory: home)))
+        XCTAssertEqual(matched.matchedTokenCount, tokens.count)
+        XCTAssertEqual(runtime.observations.hits, 1)
+    }
+
+    /// Complete release means the CONTEXT slot is clear; a foreign LEGACY
+    /// owner is not this cache's to clear and must not be clobbered.
+    func testUninstallReleasesContextSlotWithoutTouchingForeignLegacy() throws {
+        try runtime.install()
+        let foreignLegacy: (@Sendable ([Int]) -> (cache: PromptCacheSnapshot, matchedTokenCount: Int)?) = { _ in nil }
+        ChatSession.crossSessionPrefixLookup = foreignLegacy
+        defer { ChatSession.crossSessionPrefixLookup = nil }
+
+        XCTAssertEqual(runtime.uninstall(), true)
+        XCTAssertNil(ChatSession.crossSessionPrefixLookupWithContext)
+        XCTAssertTrue(runtime.ownsNoHookSlot)
+        // The foreign legacy owner survives untouched.
+        XCTAssertNotNil(ChatSession.crossSessionPrefixLookup)
     }
 }
