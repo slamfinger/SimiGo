@@ -4,6 +4,29 @@
 
 **Last updated**: 2026-10-15
 
+## Current continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 implemented and evidenced)
+
+> **Status:** `IMPLEMENTATION COMPLETE / EVIDENCE SUBMITTED FOR REVIEW /
+> RESIDUAL CLOSURE PENDING REVIEW`. Fork
+> `mlx-swift-lm@release/v2.0-beta-ml 778ffb7`; SimiGo branch
+> `codex/fork-caller-identity-integration`.
+
+Per authorization c5c92ecc: opt-in `crossSessionPrefixLookupWithContext`
+carries the calling session's model origin (derived from its own
+ModelConfiguration at the consultation point; hub-id = nil); the host owns
+the context slot with directory binding (nil/foreign origin → recorded
+miss → cold path; unbound installs stay identity-agnostic); dual-slot
+lifecycle (uninstall never clobbers a foreign legacy owner; GUI teardown
+fails on either slot). Evidence: fork tests 6/6; real 30B↔35B probe — a
+RAW model-A ChatSession generating while model B is active is refused AT
+THE REAL evaluate consultation (`foreignHookCold = true`), stale rejection
+and full-boundary re-adoption intact; canonical strict cold==warm equality
+unchanged (bit-identical deterministic record); app builds; suite 369/3/0.
+Same-directory content drift remains the accepted sliver; G-gaps,
+durability, concurrency claims untouched; five GUI click-through items
+remain OPEN supplementary verification against this integrated build.
+Evidence: `simigo2-experimental/docs/02-evidence/fork-caller-identity/20261015-a899f2c5/`.
+
 ## Current continuity — 2026-10-15 (acceptance-record alignment + fork caller-identity design review)
 
 > **Status:** `RECORD ALIGNED / DESIGN REVIEW COMPLETE / IMPLEMENTATION NOT

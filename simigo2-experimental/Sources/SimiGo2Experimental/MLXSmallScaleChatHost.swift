@@ -387,7 +387,9 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         // this model's snapshots, closing the caller-identity gap inside the
         // hook itself.
         let installedGeneration = currentGeneration()
-        try cache.install(admissionGuard: admissionGuard(for: installedGeneration))
+        try cache.install(
+            admissionGuard: admissionGuard(for: installedGeneration),
+            allowedModelDirectory: modelDirectory)
         return ActiveModel(
             directory: modelDirectory,
             contentIdentity: contentIdentity,
@@ -457,6 +459,11 @@ extension MLXSmallScaleChatHost {
         let clock = ContinuousClock()
         let host = MLXSmallScaleChatHost(base: base)
         _ = try await host.activate(modelDirectory: modelDirectory)
+        // The probe's OWN model-A container: held across the switch leg so
+        // a RAW foreign session (outside the host) can reach the real
+        // evaluate consultation point while model B is active.
+        let foreignContainer = try await MLXSmallScaleChatHost
+            .defaultContainerLoader(modelDirectory)
         defer { host.deactivate() }
         guard let store = host.activeStore, let namespace = host.activeNamespace else {
             throw HostError.notActive
@@ -525,17 +532,30 @@ extension MLXSmallScaleChatHost {
                 let preSwitchSession = try host.makeSession(
                     generateParameters: GenerateParameters(
                         maxTokens: 4, temperature: 0))
+                // FORK-HOOK-CALLER-IDENTITY-01: a RAW foreign session built
+                // directly on model A's container — outside the host, the
+                // exact caller the identity API must refuse. It reaches the
+                // REAL evaluate consultation point (a direct static-hook
+                // call is no longer sufficient evidence).
+                let foreignSession = ChatSession(
+                    foreignContainer,
+                    generateParameters: GenerateParameters(
+                        maxTokens: 2, temperature: 0))
                 _ = try await host.switchModel(to: switchTarget)
                 switchedAway = true
-                // F4 residual measurement, CORRECT PLACEMENT: the raw
-                // global hook while model B is actually active, probed with
-                // model A's prompt tokens (simulating a pre-switch raw
-                // ChatSession that evaded the host wrapper). Cold = nil is
-                // the namespace-separation barrier; a seed would evidence
-                // the residual in practice.
-                if let hook = ChatSession.crossSessionPrefixLookup {
-                    foreignCold = hook(fullPromptTokenIDs) == nil
+                guard let beforeForeign = host.activeObservations else {
+                    throw HostError.notActive
                 }
+                // While model B is ACTUALLY active, the foreign model-A
+                // session generates: its consultation carries A's origin,
+                // which B's cache must refuse (recorded miss, cold path).
+                let foreignOutput = try await foreignSession.respond(to: "ping")
+                guard let afterForeign = host.activeObservations else {
+                    throw HostError.notActive
+                }
+                foreignCold = afterForeign.calls == beforeForeign.calls + 1
+                    && afterForeign.hits == beforeForeign.hits
+                _ = foreignOutput
                 _ = try await host.switchModel(to: modelDirectory)
                 switchedBack = true
                 // F4: the pre-switch session must now be REJECTED, not

@@ -1,0 +1,28 @@
+{
+  "baselineOutput" : "## Tradeoff Between Durable Write-A",
+  "boundaryRespected" : true,
+  "coldSeconds" : 1.803722709,
+  "crossSessionHitObserved" : true,
+  "hookCalls" : 3,
+  "hookHits" : 1,
+  "identityDigest" : "188a16c59bd1407be74e57c04e46e20b7dd9f54b2582d91391d0b01d727c0938",
+  "matchedTokenCount" : 512,
+  "modelDirectory" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit\/snapshots\/6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "outputsMatch" : true,
+  "pass" : true,
+  "prefixTokenCount" : 512,
+  "promptTokenCount" : 648,
+  "savingsRatio" : 0.4369606886176871,
+  "savingsSeconds" : 0.7881559170000001,
+  "switchLeg" : {
+    "foreignHookCold" : true,
+    "reAdoptedHitObserved" : true,
+    "reAdoptedMatchedTokenCount" : 512,
+    "staleSessionRejected" : true,
+    "switchTarget" : "\/Users\/mr.simi\/.cache\/huggingface\/hub\/models--peculiar-ragdoll--Nail-Qwen3.6-35B-A3B-MLX\/snapshots\/31a0106483c94e9fbb0a6d3360ff122d47377058",
+    "switchedAway" : true,
+    "switchedBack" : true
+  },
+  "warmOutput" : "## Tradeoff Between Durable Write-A",
+  "warmSeconds" : 1.015566792
+}
