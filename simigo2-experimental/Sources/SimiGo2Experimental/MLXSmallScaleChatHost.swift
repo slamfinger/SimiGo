@@ -87,7 +87,7 @@ public final class MLXSmallScaleChatHost: @unchecked Sendable {
         let cache: MLXPrefixCrossSessionCache
     }
 
-    public init(
+    public convenience init(
         base: URL,
         containerLoader: @escaping MLXChatContainerLoader = MLXSmallScaleChatHost
             .defaultContainerLoader
