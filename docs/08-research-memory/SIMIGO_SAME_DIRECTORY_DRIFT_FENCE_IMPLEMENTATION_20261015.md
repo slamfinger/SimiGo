@@ -49,9 +49,21 @@ This branch has not been built or tested in the current remote review environmen
 3. **Per-lookup overhead**: 200 collections over the 17-entry directory =
    52.9 ms total, **0.264 ms each** — ~0.04% of the measured warm-path
    wall time; negligible on the hook's synchronous path.
-4. New fence test passes; full suite `377 executed / 3 skipped / 0
-   failures` (376 + diagnostics test... count updated below if the
-   diagnostics test is included).
+4. Submitter's latest local run on the symlink-fix commit: full suite
+   `378 executed / 3 skipped / 0 failures`, app build passed. This result
+   predates the additional portable symlink-retarget regression added during
+   review; that test and the full suite must be rerun before merge.
 
 Merge decision remains with the reviewer; the fence's own honesty
 statement (metadata fence, not byte proof) is unchanged by this round.
+
+
+## Review follow-up — portable symlink regression
+
+The real-machine HF diagnostic uses the opt-in `SIMIGO_HF_DRIFT_DIAG_MODEL_DIR`
+environment variable rather than embedding one developer's home path. A
+portable XCTest now creates two same-sized blob files and a snapshot entry
+symlink, asserts a stable non-nil revision, retargets the symlink, and asserts
+the revision changes. The submitter's 378/3/0 run predates this additional
+regression; merge remains blocked pending a local rerun of the targeted test
+and full suite.

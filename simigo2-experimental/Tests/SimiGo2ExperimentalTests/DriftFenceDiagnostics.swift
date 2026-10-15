@@ -3,11 +3,14 @@ import XCTest
 
 final class DriftFenceDiagnostics: XCTestCase {
     func testHFSnapshotFingerprintStabilityAndOverhead() throws {
-        let dir = URL(fileURLWithPath:
-            "/Users/mr.simi/.cache/huggingface/hub/models--mlx-community--Qwen3-Coder-30B-A3B-Instruct-4bit/snapshots/6e302ea604ad9ab206367e2c501d1571023e7b6d",
-            isDirectory: true)
+        guard let snapshotPath = ProcessInfo.processInfo.environment["SIMIGO_HF_DRIFT_DIAG_MODEL_DIR"],
+            !snapshotPath.isEmpty
+        else {
+            throw XCTSkip("set SIMIGO_HF_DRIFT_DIAG_MODEL_DIR to a local HF snapshot directory")
+        }
+        let dir = URL(fileURLWithPath: snapshotPath, isDirectory: true)
         guard FileManager.default.fileExists(atPath: dir.path) else {
-            throw XCTSkip("local HF snapshot not present")
+            throw XCTSkip("HF snapshot path from SIMIGO_HF_DRIFT_DIAG_MODEL_DIR is absent")
         }
         // Are the entries symlinks (HF convention)?
         let entries = try FileManager.default.contentsOfDirectory(
