@@ -48,6 +48,16 @@ public struct CloudBackendConfiguration: Sendable {
         }
 
         let isLoopback = ["127.0.0.1", "localhost", "::1"].contains(host)
+        let scheme = baseURL.scheme?.lowercased()
+        // The backend injects its API key into Authorization. Never send that
+        // credential over plaintext HTTP to a non-loopback host; loopback HTTP
+        // remains available for local development and local mock servers.
+        guard scheme == "https" || (scheme == "http" && isLoopback) else {
+            throw ServiceError.backendNotAvailable(
+                "非 loopback 云端 API 必须使用 HTTPS"
+            )
+        }
+
         guard isLoopback || !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw ServiceError.backendNotAvailable("云端 API 需要配置 API Key")
         }

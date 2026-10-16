@@ -122,6 +122,24 @@ final class CloudBackendTests: XCTestCase {
         XCTAssertEqual(json["model"] as? String, "gpt-test")
     }
 
+    func testNonLoopbackHTTPBackendIsRejectedEvenWithConfiguredKey() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "http://api.example.com/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertThrowsError(try configuration.validated(apiKey: "secret"))
+    }
+
+    func testLoopbackHTTPBackendRemainsAllowedForLocalDevelopment() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "http://127.0.0.1:8080/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertNoThrow(try configuration.validated(apiKey: "secret"))
+    }
+
     func testCloudConfigurationRequiresAPIKeyOutsideLoopback() {
         let configuration = CloudBackendConfiguration(
             baseURLString: "https://api.example.com/v1",
