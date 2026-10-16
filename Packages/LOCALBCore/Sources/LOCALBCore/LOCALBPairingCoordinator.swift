@@ -986,8 +986,16 @@ private final class LOCALBClientChallengeLedger {
 
     private let lock = NSLock()
     private var issued: [String: IssuedChallenge] = [:]
+    /// Per-client issuance timestamps inside the rolling rate window.
+    private var issuanceLog: [String: [UInt64]] = [:]
     private let lifetimeMilliseconds: UInt64 = 60_000
     private let maximumPending = 8_192
+    /// Resource-exhaustion hardening: a single client can neither dominate
+    /// the global pending budget nor issue unboundedly, so unauthenticated
+    /// TLS peers cannot starve legitimate clients of challenges.
+    private let maximumPendingPerClient = 64
+    private let issuanceWindowMilliseconds: UInt64 = 10_000
+    private let maximumIssuesPerClientPerWindow = 128
 
     func issue(clientKeyID: String, permission: LOCALBPermission) throws -> [UInt8] {
         guard LOCALBPairingProofV1.isHex64(clientKeyID) else {
@@ -1001,6 +1009,20 @@ private final class LOCALBClientChallengeLedger {
         defer { lock.unlock() }
         issued = issued.filter { $0.value.expiresAtMilliseconds > now }
         guard issued.count < maximumPending else { throw LOCALBStatus.resourceLimit }
+        let pendingForClient = issued.values.lazy
+            .filter { $0.clientKeyID == clientKeyID }
+            .count
+        guard pendingForClient < maximumPendingPerClient else {
+            throw LOCALBStatus.resourceLimit
+        }
+        var recent = issuanceLog[clientKeyID]?.filter {
+            $0 > now - issuanceWindowMilliseconds
+        } ?? []
+        guard recent.count < maximumIssuesPerClientPerWindow else {
+            throw LOCALBStatus.challengeRateLimited
+        }
+        recent.append(now)
+        issuanceLog[clientKeyID] = recent
         issued[challengeID] = IssuedChallenge(
             clientKeyID: clientKeyID,
             permission: permission,
@@ -1202,9 +1224,26 @@ public struct LOCALBPairingCoordinator {
 
     /// Issues a random, short-lived, one-time server challenge bound to the
     /// client key identity and the exact permission requested.
+    /// Challenge issuance performs the SAME registry validation as
+    /// authorization (unknown / revoked / under-privileged clients are
+    /// refused BEFORE any challenge-ledger capacity is consumed), then
+    /// applies per-client pending and rate limits inside the ledger.
+    /// Authorization re-validates at consume time — revocation between
+    /// issuance and use is still rejected there.
     public func issueRequestChallenge(clientKeyID: String,
-                                      permission: LOCALBPermission) throws -> [UInt8] {
-        try requestChallenges.issue(clientKeyID: clientKeyID, permission: permission)
+                                      permission: LOCALBPermission,
+                                      checkpoint: LOCALBRegistryCheckpoint) throws -> [UInt8] {
+        let state = try registryStore.loadPairingState(checkpoint: checkpoint)
+        guard let client = state.clients[clientKeyID] else {
+            throw LOCALBStatus.clientUnknown
+        }
+        guard client.status == .active else {
+            throw LOCALBStatus.clientRevoked
+        }
+        guard client.permissions.contains(permission) else {
+            throw LOCALBStatus.permissionDenied
+        }
+        return try requestChallenges.issue(clientKeyID: clientKeyID, permission: permission)
     }
 
     /// Per-request authentication reloads verified state and consumes a

@@ -23,6 +23,7 @@ public enum LOCALBStatus: String, Error, Equatable, Sendable {
     case invalidSigningInput = "LOCALB_INVALID_SIGNING_INPUT"
     case invalidPhysicalFrame = "LOCALB_INVALID_PHYSICAL_FRAME"
     case resourceLimit = "LOCALB_RESOURCE_LIMIT"
+    case challengeRateLimited = "LOCALB_CHALLENGE_RATE_LIMITED"
     case unknownEnvelopeSchema = "LOCALB_UNKNOWN_ENVELOPE_SCHEMA"
     case nonCanonicalEnvelope = "LOCALB_NON_CANONICAL_ENVELOPE"
     case storageFormatMismatch = "LOCALB_STORAGE_FORMAT_MISMATCH"

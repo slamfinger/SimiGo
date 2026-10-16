@@ -152,7 +152,8 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         XCTAssertNil(journal.range(of: Data(secret)), "The raw bearer secret must never be persisted.")
 
         let challenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .inference
+            clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: committedCheckpoint
         )
         let request = try makeHTTPRequest()
         let requestProof = try LOCALBClientRequestProofV2.sign(
@@ -184,7 +185,8 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
             alteredContentType, alteredBody
         ] {
             let freshChallenge = try host.coordinator.issueRequestChallenge(
-                clientKeyID: clientKeyID, permission: .inference
+                clientKeyID: clientKeyID, permission: .inference,
+                checkpoint: committedCheckpoint
             )
             let originalProof = try LOCALBClientRequestProofV2.sign(
                 clientKeyID: clientKeyID, permission: .inference,
@@ -207,37 +209,138 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .clientChallengeInvalid)
         }
-        let adminChallenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .adminTrust
-        )
-        XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
+        // A permission the client lacks is refused at CHALLENGE ISSUANCE —
+        // under-privileged clients never consume ledger capacity at all.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
             clientKeyID: clientKeyID, permission: .adminTrust,
-            request: request,
-            challenge: adminChallenge, proofSignatureRaw: [],
             checkpoint: committedCheckpoint
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
         }
 
+        // Challenge issued BEFORE revocation: the authorize path still
+        // re-validates client status and rejects the proof after revocation.
+        let preRevocationChallenge = try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: committedCheckpoint
+        )
         let revokedCheckpoint = try host.coordinator.revokeClient(
             clientKeyID: clientKeyID, reason: "operator revoked pairing",
             checkpoint: committedCheckpoint
         )
-        let replayChallenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientKeyID, permission: .inference
-        )
         let replayProof = try LOCALBClientRequestProofV2.sign(
             clientKeyID: clientKeyID, permission: .inference,
             request: request,
-            challenge: replayChallenge, with: clientKey
+            challenge: preRevocationChallenge, with: clientKey
         )
         XCTAssertThrowsError(try host.coordinator.authorizeProtectedRequest(
             clientKeyID: clientKeyID, permission: .inference,
             request: request,
-            challenge: replayChallenge, proofSignatureRaw: replayProof,
+            challenge: preRevocationChallenge, proofSignatureRaw: replayProof,
             checkpoint: revokedCheckpoint
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .clientRevoked)
+        }
+
+        // After revocation, issuance itself fails closed — a revoked client
+        // can no longer obtain challenges at all.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .inference,
+            checkpoint: revokedCheckpoint
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .clientRevoked)
+        }
+    }
+
+    /// Challenge-issuance resource hardening: registry validation happens
+    /// before any ledger capacity is consumed, and per-client pending and
+    /// rate limits prevent an unauthenticated TLS peer from starving
+    /// legitimate clients of challenges.
+    func testChallengeIssuanceValidatesClientAndAppliesResourceLimits()
+        throws {
+        let host = try makeHost()
+        let (presentation, secret) = try issue(host)
+        let clientKey = Curve25519.Signing.PrivateKey()
+        let submission = try makeSubmission(
+            presentation, secret: secret, clientKey: clientKey
+        )
+        let pendingPairing = try host.coordinator.preparePairing(
+            submission, checkpoint: presentation.registryCheckpoint
+        )
+        let committed = try host.coordinator.approveAndRegister(
+            pendingPairing,
+            operatorApproved: true,
+            operatorAuthorizationReference: "CHALLENGE-LIMIT-TEST",
+            checkpoint: presentation.registryCheckpoint
+        )
+        let clientKeyID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(clientKey.publicKey.rawRepresentation)
+        )
+
+        func issueChallenge() throws -> [UInt8] {
+            try host.coordinator.issueRequestChallenge(
+                clientKeyID: clientKeyID, permission: .inference,
+                checkpoint: committed
+            )
+        }
+
+        // Unknown client: refused before any ledger capacity is used.
+        let unknownKeyID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(
+                Curve25519.Signing.PrivateKey().publicKey.rawRepresentation
+            )
+        )
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: unknownKeyID, permission: .inference,
+            checkpoint: committed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .clientUnknown)
+        }
+
+        // Permission the client lacks: refused at issuance.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientKeyID, permission: .srsWrite,
+            checkpoint: committed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
+        }
+
+        // Per-client pending cap: 64 outstanding challenges, the 65th is
+        // refused even though the global budget (8192) is untouched.
+        var outstanding: [[UInt8]] = []
+        for _ in 0..<64 {
+            outstanding.append(try issueChallenge())
+        }
+        XCTAssertThrowsError(try issueChallenge()) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .resourceLimit)
+        }
+
+        // Per-client rate limit: consume each outstanding challenge through
+        // a valid authorization (freeing pending capacity), then keep
+        // issue+consume cycles inside the rate window. 128 issuances per
+        // window are allowed; the 129th is rate-limited even though nothing
+        // is pending.
+        let request = try makeHTTPRequest()
+        func consume(_ challenge: [UInt8]) throws {
+            let proof = try LOCALBClientRequestProofV2.sign(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: request, challenge: challenge, with: clientKey
+            )
+            _ = try host.coordinator.authorizeProtectedRequest(
+                clientKeyID: clientKeyID, permission: .inference,
+                request: request,
+                challenge: challenge, proofSignatureRaw: proof,
+                checkpoint: committed
+            )
+        }
+        for challenge in outstanding {
+            try consume(challenge)
+        }
+        for _ in 0..<(128 - 64) {
+            try consume(try issueChallenge())
+        }
+        XCTAssertThrowsError(try issueChallenge()) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .challengeRateLimited)
         }
     }
 
@@ -466,13 +569,16 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
             XCTAssertEqual(error as? LOCALBStatus, .registryInvalidTransition)
         }
 
+        let challenge = try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientID, permission: .informationRead,
+            checkpoint: registered
+        )
         let changed = try host.coordinator.setClientPermissions(
             clientKeyID: clientID, permissions: [.inference],
             reason: "least-privilege adjustment", checkpoint: registered
         )
-        let challenge = try host.coordinator.issueRequestChallenge(
-            clientKeyID: clientID, permission: .informationRead
-        )
+        // Issued while the client still held P-INFO-READ: authorization
+        // against the post-change checkpoint must still deny.
         let request = try makeHTTPRequest()
         let proof = try LOCALBClientRequestProofV2.sign(
             clientKeyID: clientID, permission: .informationRead,
@@ -483,6 +589,15 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
             clientKeyID: clientID, permission: .informationRead,
             request: request,
             challenge: challenge, proofSignatureRaw: proof,
+            checkpoint: changed
+        )) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)
+        }
+
+        // After the permission change, issuance for the dropped permission
+        // is refused outright — no ledger capacity is consumed.
+        XCTAssertThrowsError(try host.coordinator.issueRequestChallenge(
+            clientKeyID: clientID, permission: .informationRead,
             checkpoint: changed
         )) { error in
             XCTAssertEqual(error as? LOCALBStatus, .permissionDenied)

@@ -353,13 +353,19 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     /// Start with an EXPLICIT caller-supplied LOCALB configuration
     /// (test/management-plane injection). Never a fallback and never a
     /// default open rule: when both arguments are nil this is exactly the
-    /// policy-decided path.
+    /// default-resolution path, which opens the operational LOCALB host
+    /// (transport identity + request authorization from one verified
+    /// context) or stays transport-only fail-closed before activation.
     public func startWithLOCALB(
         _ info: ModelInfo,
         port: Int,
         localbTransportIdentity: LOCALBTransportIdentityHandle?,
         localbRequestAuthorization: (coordinator: LOCALBPairingCoordinator,
-                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?
+                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?,
+        localbHostDirectory: URL? = nil,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
     ) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else { throw RuntError.notLoaded }
@@ -378,7 +384,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     info,
                     port: port,
                     localbTransportIdentity: localbTransportIdentity,
-                    localbRequestAuthorization: localbRequestAuthorization
+                    localbRequestAuthorization: localbRequestAuthorization,
+                    localbHostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
                 )
                 self.state.withLock { $0.oversized = oversized }
             } else {
@@ -484,11 +493,17 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     )
                 }
             } else {
-                LOCALBTransportPolicy.apply(
-                    LOCALBTransportPolicy.decide(
-                        bindHost: nodeConfiguration.bindHost
-                    ),
-                    to: server
+                // Default resolution: an activated LOCALB host supplies
+                // BOTH the transport identity and request authorization
+                // from one verified context; before activation this stays
+                // transport-only and protected routes remain fail-closed.
+                // Verification failures propagate as typed start() errors.
+                try LOCALBHostRuntime.applyDefault(
+                    to: server,
+                    bindHost: nodeConfiguration.bindHost,
+                    hostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
                 )
             }
             try await MainActor.run { try server.start() }

@@ -1024,4 +1024,420 @@ final class LOCALBRequestAuthWiringTests: XCTestCase {
                 .contains(" 204 ")
         )
     }
+
+    // MARK: - Default host resolution (LOCALBHostRuntime wiring)
+
+    /// Environment of an ACTIVATED LOCALB host exactly as production
+    /// startup finds one: first-run ceremony → operator checkpoint
+    /// persisted outside the registry → one paired ACTIVE client. No
+    /// server is started here; callers exercise their own construction
+    /// site through LOCALBHostRuntime.applyDefault.
+    private struct BootstrapHostEnvironment {
+        let hostDirectory: URL
+        let keychain: LOCALBKeychainSignerStore
+        let transport: LOCALBTransportIdentityStore
+        let spkiHex: String
+        let clientKey: Curve25519.Signing.PrivateKey
+        let clientKeyID: String
+    }
+
+    private func makeBootstrapHostEnvironment() throws
+        -> BootstrapHostEnvironment {
+        let hostDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "localb-b3-boothost-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: hostDirectory)
+        }
+
+        let keychain = LOCALBKeychainSignerStore(
+            service: "com.simigo.tests.localb-boot.\(UUID().uuidString)",
+            account: "signing-key-v1")
+        let transport = LOCALBTransportIdentityStore(
+            service: "com.simigo.tests.localb-boot.\(UUID().uuidString)",
+            account: "tls")
+        addTeardownBlock { transport.deleteAll() }
+
+        let registryRoot = LOCALBHostRuntime.registryRoot(in: hostDirectory)
+        let pending = try LOCALBHostBootstrap.prepareFirstRun(
+            rootURL: registryRoot,
+            keychainStore: keychain,
+            transportIdentityStore: transport
+        )
+        _ = try LOCALBHostBootstrap.activateInitialSetup(
+            rootURL: registryRoot,
+            operatorRecordedCheckpoint: pending.checkpoint,
+            keychainStore: keychain,
+            transportIdentityStore: transport
+        )
+        // The activation ceremony records the trusted checkpoint OUTSIDE
+        // the registry; ordinary startup consumes it read-only.
+        try LOCALBHostRuntime.persistTrustedCheckpoint(
+            pending.checkpoint, in: hostDirectory)
+
+        guard case .operational(let context) =
+            try LOCALBHostRuntime.resolveOperational(
+                hostDirectory: hostDirectory,
+                keychainStore: keychain,
+                transportIdentityStore: transport
+            )
+        else {
+            throw NSError(
+                domain: "LOCALBRequestAuthWiringTests", code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        "expected an operational host after activation"
+                ])
+        }
+
+        // Full interactive pairing of one ACTIVE client into the verified
+        // registry, exactly like the explicit-injection fixture.
+        let coordinator = context.pairingCoordinator()
+        var checkpoint = try context.currentTrustedCheckpoint()
+        let presentation = try coordinator.issueCredential(
+            scopeLabel: "B3 default-path client",
+            tlsSPKIHash: pending.transportSPKIHashHex,
+            srsKeyID: context.signerKeyID,
+            checkpoint: checkpoint
+        )
+        let secret = try LOCALBPairingSubmission.decodeSecretBase64URL(
+            presentation.takeSecretBase64URLOnce()
+        )
+        let clientKey = Curve25519.Signing.PrivateKey()
+        let pop = try LOCALBPairingProofV1.sign(
+            credentialID: presentation.credentialID,
+            sessionNonce: try XCTUnwrap(
+                HTTPServer.decodeLowerHex(presentation.sessionNonceHex)
+            ),
+            hostInstanceID: presentation.hostInstanceID,
+            tlsSPKIHash: presentation.tlsSPKIHash,
+            srsKeyID: presentation.srsKeyID,
+            protocolVersion: presentation.protocolVersion,
+            with: clientKey
+        )
+        let submission = LOCALBPairingSubmission(
+            credentialID: presentation.credentialID,
+            secretRaw: secret,
+            clientPublicKeyRaw: Array(clientKey.publicKey.rawRepresentation),
+            proofSignatureRaw: pop,
+            actualTLSSPKIHash: presentation.tlsSPKIHash,
+            presentedSRSKeyID: presentation.srsKeyID,
+            protocolVersion: presentation.protocolVersion
+        )
+        let pendingPairing = try coordinator.preparePairing(
+            submission, checkpoint: checkpoint
+        )
+        checkpoint = try coordinator.approveAndRegister(
+            pendingPairing,
+            operatorApproved: true,
+            operatorAuthorizationReference: "B3-DEFAULT-PATH",
+            checkpoint: checkpoint
+        )
+        let clientKeyID = try LOCALBSigningInputV1.keyID(
+            publicKeyRaw: Array(clientKey.publicKey.rawRepresentation)
+        )
+
+        return BootstrapHostEnvironment(
+            hostDirectory: hostDirectory,
+            keychain: keychain,
+            transport: transport,
+            spkiHex: pending.transportSPKIHashHex,
+            clientKey: clientKey,
+            clientKeyID: clientKeyID
+        )
+    }
+
+    /// Ordinary product startup (no explicit injection): an activated host
+    /// yields transport identity AND request authorization from one
+    /// verified context, and a paired client serves through the full
+    /// challenge → proof → dispatch flow.
+    func testDefaultHostResolutionServesAuthorizedRequests() throws {
+        let environment = try makeBootstrapHostEnvironment()
+        let port = randomPort()
+        let server = makeServer(port: port)
+        try LOCALBHostRuntime.applyDefault(
+            to: server,
+            bindHost: "127.0.0.1",
+            hostDirectory: environment.hostDirectory,
+            keychainStore: environment.keychain,
+            transportIdentityStore: environment.transport
+        )
+        try server.start()
+        addTeardownBlock { server.stop() }
+
+        let host = Host(
+            port: port,
+            plaintextCompatPort: 0,
+            spkiHex: environment.spkiHex,
+            clientKey: environment.clientKey,
+            clientKeyID: environment.clientKeyID
+        )
+
+        let (challenge, permission) = try fetchChallenge(
+            host, method: "GET", target: "/v1/models"
+        )
+        XCTAssertEqual(permission, "P-INFO-READ")
+        let models = try protectedRequest(
+            host,
+            method: "GET",
+            target: "/v1/models",
+            contentType: nil,
+            body: "",
+            challenge: challenge,
+            permission: .informationRead
+        )
+        XCTAssertTrue(
+            try XCTUnwrap(
+                statusLine(
+                    of: sendRequest(
+                        port: host.port, spkiHex: host.spkiHex,
+                        request: models
+                    )
+                )
+            ).contains(" 200 ")
+        )
+
+        let (chatChallenge, _) = try fetchChallenge(
+            host, method: "POST", target: "/v1/chat/completions"
+        )
+        let chatBody =
+            "{\"model\":\"localb-b3-wiring-test\","
+            + "\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}"
+        let chat = try protectedRequest(
+            host,
+            method: "POST",
+            target: "/v1/chat/completions",
+            contentType: "application/json",
+            body: chatBody,
+            challenge: chatChallenge,
+            permission: .inference
+        )
+        XCTAssertTrue(
+            try XCTUnwrap(
+                statusLine(
+                    of: sendRequest(
+                        port: host.port, spkiHex: host.spkiHex,
+                        request: chat
+                    )
+                )
+            ).contains(" 200 ")
+        )
+    }
+
+    /// Before first-run activation the default path NEVER opens protected
+    /// routes: without a transport identity startup fails closed, and with
+    /// a TLS identity but no activated host, protected routes answer 503
+    /// while open routes keep serving.
+    func testDefaultHostResolutionFailsClosedBeforeActivation() throws {
+        let hostDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "localb-b3-unactivated-\(UUID().uuidString)",
+                isDirectory: true)
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: hostDirectory)
+        }
+        let keychain = LOCALBKeychainSignerStore(
+            service: "com.simigo.tests.localb-unactivated.\(UUID().uuidString)",
+            account: "signing-key-v1")
+        let transport = LOCALBTransportIdentityStore(
+            service: "com.simigo.tests.localb-unactivated.\(UUID().uuidString)",
+            account: "tls")
+        addTeardownBlock { transport.deleteAll() }
+
+        // No transport identity at all: notInitialized + failClosed
+        // transport decision → start() throws.
+        let server1 = makeServer(port: randomPort())
+        try LOCALBHostRuntime.applyDefault(
+            to: server1,
+            bindHost: "127.0.0.1",
+            hostDirectory: hostDirectory,
+            keychainStore: keychain,
+            transportIdentityStore: transport
+        )
+        XCTAssertThrowsError(try server1.start())
+
+        // TLS identity present but host NOT activated: transport-only
+        // secure mode. Protected routes fail closed 503; /health serves.
+        let identity = try transport.loadOrCreate()
+        let port = randomPort()
+        let server2 = makeServer(port: port)
+        try LOCALBHostRuntime.applyDefault(
+            to: server2,
+            bindHost: "127.0.0.1",
+            hostDirectory: hostDirectory,
+            keychainStore: keychain,
+            transportIdentityStore: transport
+        )
+        try server2.start()
+        addTeardownBlock { server2.stop() }
+
+        let health = "GET /health HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(port)\r\n"
+            + "Connection: close\r\n\r\n"
+        XCTAssertTrue(
+            try XCTUnwrap(
+                statusLine(
+                    of: sendRequest(
+                        port: port, spkiHex: identity.spkiSHA256Hex,
+                        request: health
+                    )
+                )
+            ).contains(" 200 ")
+        )
+
+        let protectedRoute = "GET /v1/models HTTP/1.1\r\n"
+            + "Host: 127.0.0.1:\(port)\r\n"
+            + "Connection: close\r\n\r\n"
+        XCTAssertTrue(
+            try XCTUnwrap(
+                statusLine(
+                    of: sendRequest(
+                        port: port, spkiHex: identity.spkiSHA256Hex,
+                        request: protectedRoute
+                    )
+                )
+            ).contains(" 503 ")
+        )
+    }
+
+    /// A loopback recording upstream: records each request line and always
+    /// answers 200 with a fixed JSON body.
+    private final class RecordingUpstream: @unchecked Sendable {
+        let listener: NWListener
+        private let lock = NSLock()
+        private var recordedLines: [String] = []
+        private(set) var port: UInt16 = 0
+
+        var requestLines: [String] {
+            lock.lock()
+            defer { lock.unlock() }
+            return recordedLines
+        }
+
+        static func start() throws -> RecordingUpstream {
+            let listener = try NWListener(using: .tcp)
+            let upstream = RecordingUpstream(listener: listener)
+            let ready = DispatchSemaphore(value: 0)
+            listener.stateUpdateHandler = { state in
+                switch state {
+                case .ready, .failed, .cancelled:
+                    ready.signal()
+                default:
+                    break
+                }
+            }
+            listener.newConnectionHandler = { connection in
+                connection.start(queue: DispatchQueue.global())
+                connection.receive(
+                    minimumIncompleteLength: 1,
+                    maximumLength: 65_536
+                ) { data, _, _, _ in
+                    if let data,
+                       let text = String(data: data, encoding: .utf8),
+                       let line = text.components(separatedBy: "\r\n").first {
+                        upstream.lock.lock()
+                        upstream.recordedLines.append(line)
+                        upstream.lock.unlock()
+                        let body = "{\"ok\":true}"
+                        let response =
+                            "HTTP/1.1 200 OK\r\n"
+                            + "Content-Type: application/json\r\n"
+                            + "Content-Length: \(body.utf8.count)\r\n"
+                            + "Connection: close\r\n\r\n\(body)"
+                        connection.send(
+                            content: Data(response.utf8),
+                            completion: .contentProcessed { _ in
+                                connection.cancel()
+                            }
+                        )
+                    } else {
+                        connection.cancel()
+                    }
+                }
+            }
+            listener.start(queue: DispatchQueue(label: "recording-upstream"))
+            _ = ready.wait(timeout: .now() + 5)
+            upstream.port = listener.port?.rawValue ?? 0
+            guard upstream.port != 0 else {
+                throw NSError(
+                    domain: "LOCALBRequestAuthWiringTests", code: 2,
+                    userInfo: [
+                        NSLocalizedDescriptionKey: "recording upstream failed to start"
+                    ])
+            }
+            return upstream
+        }
+
+        func stop() {
+            listener.cancel()
+        }
+
+        private init(listener: NWListener) {
+            self.listener = listener
+        }
+    }
+
+    /// The remote-proxy entry (RemoteOpenAIRuntime) starts through the
+    /// SAME default host resolution, and the upstream request carries the
+    /// exact SIGNED request target — path AND query. The signed request
+    /// and the actually-forwarded request cannot diverge.
+    func testRemoteProxyDefaultPathForwardsSignedQueryToUpstream()
+        async throws {
+        let upstream = try RecordingUpstream.start()
+        addTeardownBlock { upstream.stop() }
+
+        let environment = try makeBootstrapHostEnvironment()
+        let runtime = RemoteOpenAIRuntime(
+            configuration: CloudBackendConfiguration(
+                baseURLString: "http://127.0.0.1:\(upstream.port)",
+                model: ""
+            ),
+            apiKey: "test-key"
+        )
+        let port = randomPort()
+        defer { Task.detached { await runtime.stop() } }
+        try await runtime.startWithLOCALB(
+            ModelInfo(path: "cloud", kind: .cloudOpenAI),
+            port: Int(port),
+            localbHostDirectory: environment.hostDirectory,
+            keychainStore: environment.keychain,
+            transportIdentityStore: environment.transport
+        )
+
+        let host = Host(
+            port: port,
+            plaintextCompatPort: 0,
+            spkiHex: environment.spkiHex,
+            clientKey: environment.clientKey,
+            clientKeyID: environment.clientKeyID
+        )
+
+        let body =
+            "{\"model\":\"cloud\","
+            + "\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}"
+        let (challenge, _) = try fetchChallenge(
+            host, method: "POST", target: "/v1/chat/completions?trace=1"
+        )
+        let request = try protectedRequest(
+            host,
+            method: "POST",
+            target: "/v1/chat/completions?trace=1",
+            contentType: "application/json",
+            body: body,
+            challenge: challenge,
+            permission: .inference
+        )
+        let response = sendRequest(
+            port: host.port, spkiHex: host.spkiHex, request: request
+        )
+        let status = try XCTUnwrap(statusLine(of: response))
+        XCTAssertTrue(status.contains(" 200 "), "got: \(status)")
+
+        // The upstream received the exact signed target, query included.
+        let upstreamLine = try XCTUnwrap(upstream.requestLines.first)
+        XCTAssertEqual(
+            upstreamLine, "POST /v1/chat/completions?trace=1 HTTP/1.1",
+            "upstream request line must carry the signed query"
+        )
+    }
 }
