@@ -124,6 +124,63 @@ final class ExecutionControllingTests: XCTestCase {
             "irregular#abc")
     }
 
+    /// F1 回归钉（2026-10-16 外审）：展示标签经有损压缩可碰撞——两个
+    /// 原始键不同、压缩后标签相同的会话，列表身份（mapKey）必须不同。
+    /// ForEach 不得用 label 作 id。
+    func testCollidingLabelsKeepDistinctIdentities() {
+        let first = "default/s-aaaa111111/main"
+        let second = "default/s-bbbb111111/main"
+        let firstLabel = EngineExecutionStateSnapshot.compactLabel(mapKey: first)
+        let secondLabel = EngineExecutionStateSnapshot.compactLabel(mapKey: second)
+        XCTAssertEqual(firstLabel, secondLabel, "用例构造前提：两键压缩标签必须相同")
+        XCTAssertNotEqual(first, second, "身份必须以完整 mapKey 区分，不受标签碰撞影响")
+    }
+
+    /// F4 收紧（2026-10-16 外审）：生产标签路径是 label(mapKey:executionKey:)
+    /// ——executionKey 在场时用 traceKey + storageKey 前缀差还原分片后缀，
+    /// 该分支的碰撞/保留语义须单独钉住（compactLabel 测试覆盖不到它）。
+    func testProductionLabelBranchKeepsShardSuffix() throws {
+        let key = try AgentExecutionKey.resolve(
+            agentId: nil, sessionId: "01a13e47-9dc810ab", logicalBranchId: "main")
+        XCTAssertEqual(key.traceKey, "c810ab/main")
+        XCTAssertEqual(
+            EngineExecutionStateSnapshot.label(mapKey: key.storageKey, executionKey: key),
+            key.traceKey)
+        XCTAssertEqual(
+            EngineExecutionStateSnapshot.label(
+                mapKey: key.storageKey + "#b2b3ae34", executionKey: key),
+            "c810ab/main#b2b3ae34")
+        XCTAssertEqual(
+            EngineExecutionStateSnapshot.label(mapKey: "unrelated", executionKey: key),
+            key.traceKey)
+    }
+
+    /// F4 收紧（2026-10-16 外审）：身份直映射必须钉住**生产调用路径**。
+    /// execute → generate 的身份透传经 lineage 可观察（admission 失败也
+    /// 是 failed execution，记录原始三元组）——协议面若误传/换序字段，
+    /// 此处即红。免重构：不需要为测试开新接缝。
+    func testExecuteIdentityPassthroughPinnedByLineage() async {
+        let runtime = freshRuntime()
+        let id = ExecutionID(agentId: "agent-pin", sessionId: "es-pin", logicalBranchId: "bp")
+        do {
+            _ = try await runtime.execute(ExecutionRequest(
+                requestId: "pin-exec", identity: id,
+                messages: [.object(["role": .string("user"),
+                                    "content": .string("x")])],
+                config: ModelConfig()))
+            XCTFail("未加载模型时 execute 应抛错")
+        } catch {
+            // 预期：notLoaded
+        }
+        let records = runtime.lineage.snapshot.records
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(records.first?.requestId, "pin-exec")
+        XCTAssertEqual(records.first?.agentId, id.agentId)
+        XCTAssertEqual(records.first?.sessionId, id.sessionId)
+        XCTAssertEqual(records.first?.logicalBranchId, id.logicalBranchId)
+        XCTAssertEqual(records.first?.status, .failed)
+    }
+
     /// 投影只读性（2026-10-16 收敛补）：未加载模型的 runtime 投影必须
     /// 可得且零副作用——不抛错、不改变 isGenerating/isRunning。
     func testExecutionStateSnapshotWithoutModel() {

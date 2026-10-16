@@ -1944,8 +1944,11 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
     // MARK: - Execution State 投影（2026-10-16 收敛；只读）
 
     /// 引擎真身只读投影：Execution State 窗口的展示层事实源。
-    /// state 锁内抄会话表 + lineage 快照，零 IO、零行为；血统遵守
-    /// S5 红线——只记录与查询，不做执行决策。
+    /// 弱一致契约（展示专用，2026-10-16 外审 F3）：会话表在 state 锁内
+    /// 复制；血统在取锁前经 ExecutionLineage 自有锁快照——两个状态源
+    /// 无共同原子边界，并发窗口内会话计数与血统尾可相差一拍。只读、
+    /// 零 IO、零行为，不参与任何执行决策；若将来需要请求↔会话↔血统
+    /// 同刻绑定，须另设一致性机制，不得把两个读取塞进同一闭包冒充原子。
     func executionStateSnapshot() -> EngineExecutionStateSnapshot {
         let lineageSnapshot = lineage.snapshot
         return state.withLock { state in
@@ -1957,6 +1960,7 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     .sorted { $0.value.lastActivity > $1.value.lastActivity }
                     .map { (mapKey, session) in
                         .init(
+                            mapKey: mapKey,
                             label: EngineExecutionStateSnapshot.label(
                                 mapKey: mapKey, executionKey: session.executionKey),
                             historyCount: session.history.count,

@@ -2,12 +2,18 @@ import Foundation
 
 /// Execution State 引擎只读投影（2026-10-16 收敛：窗口接真身）。
 ///
-/// 纯数据快照：由 NativeMLX 在 state 锁内抄会话表 + lineage 快照得到。
+/// 纯数据快照：由 NativeMLX 在 state 锁内抄会话表；血统经 ExecutionLineage
+/// 自有锁先行快照（弱一致、展示专用——两个状态源无共同原子边界）。
 /// 零行为、零 IO、零新执行语义——不参与 reuse/restore/驱逐任何决策，
 /// 只作展示层事实源（与 S5 血统红线同一纪律：记录与查询，不做决策）。
 /// 外部进程 / 云后端无进程内执行状态，投影为 nil。
 nonisolated public struct EngineExecutionStateSnapshot: Sendable {
     nonisolated public struct SessionCard: Sendable {
+        /// 列表身份：完整会话表键（含 client-split 分片后缀），字典键级
+        /// 唯一。展示标签经有损压缩、可碰撞（V1.7-2 探针实证长 session
+        /// id 折叠同 traceKey）——身份与展示必须分离，ForEach 不得用
+        /// label 作 id（2026-10-16 外审 F1）。
+        public let mapKey: String
         /// 紧凑展示键（traceKey 惯例 + client-split 分片后缀）。
         public let label: String
         /// 消息级账本条数（history）。

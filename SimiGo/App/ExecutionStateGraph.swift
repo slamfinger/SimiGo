@@ -708,7 +708,7 @@ private struct LiveExecutionStateView: View {
                 if snapshot.sessions.isEmpty {
                     Text("（无）").foregroundStyle(.secondary)
                 }
-                ForEach(snapshot.sessions, id: \.label) { card in
+                ForEach(snapshot.sessions, id: \.mapKey) { card in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(card.label)
@@ -733,7 +733,10 @@ private struct LiveExecutionStateView: View {
                 }
                 ForEach(Array(snapshot.forks.reversed().enumerated()), id: \.offset) { _, fork in
                     HStack {
-                        Text("\(short(fork.parent)) → \(short(fork.child))")
+                        // fork 溯源是完整 storageKey——末 6 位只剩 branch 尾巴
+                        // 无法区分来源会话（2026-10-16 外审 F2）；紧凑格式保留
+                        // agent/session 尾段/branch 三要素。
+                        Text("\(EngineExecutionStateSnapshot.compactLabel(mapKey: fork.parent)) → \(EngineExecutionStateSnapshot.compactLabel(mapKey: fork.child))")
                             .font(.system(.body, design: .monospaced))
                         Spacer()
                         Text(fork.at.formatted(.relative(presentation: .named)))
@@ -757,11 +760,6 @@ private struct LiveExecutionStateView: View {
                 }
             }
         }
-    }
-
-    /// storageKey 末 6 位（[MEM] 行与 [CANCEL] 同款紧凑惯例）。
-    private func short(_ key: String) -> String {
-        key.count > 6 ? String(key.suffix(6)) : key
     }
 
     private func badge(_ text: String, _ color: Color) -> some View {
