@@ -136,7 +136,8 @@ extension HTTPServer {
 
         printExecutionIdentity(
             endpoint: "chat.completions",
-            context: context
+            context: context,
+            stream: true
         )
 
         await context.registerLifecycle()
@@ -598,10 +599,70 @@ extension HTTPServer {
 
         printExecutionIdentity(
             endpoint: "chat.completions",
-            context: context
+            context: context,
+            stream: false
         )
 
         await context.registerLifecycle()
+
+        // 非流式长静默窗口保活（2026-10-16）。
+        //
+        // 非流式契约是「生成完成前零出站字节」，而 Node/undici 默认
+        // headersTimeout=300s / bodyTimeout=300s：整整 300 秒拿不到任何
+        // 响应字节即拆连接（2026-10-16 生产实测：11 笔非流式长预填请求
+        // 全部在 301.4s peerClosed，最惨一笔渲染进度 97% 报废，客户端
+        // 盲重试致 GPU 空转约 55 分钟）。流式路径已有立即头 + 空 delta
+        // 事件双保活，非流式此前无装甲。
+        //
+        // 方案：240s 定时器（=300s 死线留 60s 余量）与生成赛跑——窗口
+        // 内完成的请求字节行为与本改动前完全一致（错误状态码语义保
+        // 全）；仅超窗请求先提交 200 头（无 Content-Length、close 定
+        // 界），随后每 5s 滴一个 JSON 合法前导空白字节（RFC 8259 ws）
+        // 喂住两层超时，终结时补发全量 JSON 体。该模式下状态码不可逆
+        // （恒 200），错误以同构 error 体承载——此模式客户端在今天
+        // 必然死于拆连，任何可解析终态都是严格改进。
+        let generationSettled = Locked(false)
+        let headCommitted = Locked(false)
+        let keepalive = Task { [weak self, weak context] in
+            try? await Task.sleep(
+                nanoseconds: 240 * 1_000_000_000
+            )
+
+            guard
+                !Task.isCancelled,
+                let self,
+                let context,
+                !context.closed,
+                !generationSettled.value
+            else {
+                return
+            }
+
+            headCommitted.mutate { $0 = true }
+
+            self.sendDeferredJSONHead(context: context)
+
+            while !Task.isCancelled {
+                try? await Task.sleep(
+                    nanoseconds: 5 * 1_000_000_000
+                )
+
+                guard
+                    !Task.isCancelled,
+                    !context.closed,
+                    !generationSettled.value
+                else {
+                    return
+                }
+
+                self.sendRaw(
+                    Data("\n".utf8),
+                    context: context,
+                    close: false
+                )
+            }
+        }
+        defer { keepalive.cancel() }
 
         let fullContent =
             Locked("")
@@ -641,6 +702,8 @@ extension HTTPServer {
                 }
             )
 
+            generationSettled.mutate { $0 = true }
+
             guard
                 !context.closed,
                 !Task.isCancelled
@@ -679,70 +742,184 @@ extension HTTPServer {
                 ]
             }
 
-            sendJSON(
-                [
-                    "id":
-                        "chatcmpl-\(UUID().uuidString.lowercased())",
-                    "object":
-                        "chat.completion",
-                    "created":
-                        Int(
-                            Date()
-                                .timeIntervalSince1970
-                        ),
-                    "model": modelId,
-                    "choices": [[
-                        "index": 0,
-                        "message": message,
-                        "finish_reason":
-                            calls.isEmpty
+            let responseBody: [String: Any] = [
+                "id":
+                    "chatcmpl-\(UUID().uuidString.lowercased())",
+                "object":
+                    "chat.completion",
+                "created":
+                    Int(
+                        Date()
+                            .timeIntervalSince1970
+                    ),
+                "model": modelId,
+                "choices": [[
+                    "index": 0,
+                    "message": message,
+                    "finish_reason":
+                        calls.isEmpty
                             ? "stop"
                             : "tool_calls"
-                    ]]
-                ],
-                status: 200,
-                on: context.connection,
-                context: context
-            )
+                ]]
+            ]
+
+            if headCommitted.value {
+                sendDeferredJSONTerminal(
+                    responseBody,
+                    context: context
+                )
+            } else {
+                sendJSON(
+                    responseBody,
+                    status: 200,
+                    on: context.connection,
+                    context: context
+                )
+            }
 
             isSuccess = true
 
         } catch is CancellationError {
-            // 取消契约：非流式尚未发出任何字节，客户端仍连接时必须给出 HTTP 终态。
+            // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
+            // 客户端仍连接必须给出 HTTP 终态。
+            generationSettled.mutate { $0 = true }
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
-            sendError(
+            sendNonStreamingError(
                 "Generation cancelled",
                 status: 503,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: headCommitted.value
             )
 
         } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
-            // 非流式尚未发出任何字节：直接给 HTTP 400 终态。
+            // 未提交头（快失败路径）：直接给 HTTP 400 终态。
+            generationSettled.mutate { $0 = true }
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
             guard !context.closed else { return }
 
-            sendError(
+            sendNonStreamingError(
                 "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
                 status: 400,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: headCommitted.value
             )
         } catch {
+            generationSettled.mutate { $0 = true }
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }
 
-            sendError(
+            sendNonStreamingError(
                 error.localizedDescription,
                 status: 500,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: headCommitted.value
             )
         }
+    }
+
+    /// keepalive 模式的错误终结：头未提交走原路径（状态码语义不变）；
+    /// 头已恒 200 时以同构 error 体直发 + close。
+    private func sendNonStreamingError(
+        _ message: String,
+        status: Int,
+        on connection: NWConnection,
+        context: ConnectionContext,
+        headCommitted: Bool
+    ) {
+        if !headCommitted {
+            sendError(
+                message,
+                status: status,
+                on: connection,
+                context: context
+            )
+            return
+        }
+
+        sendDeferredJSONTerminal(
+            errorBody(message: message, status: status),
+            context: context
+        )
+    }
+
+    /// keepalive 头提交（镜像 sendImmediateStreamingHeaders 的裸写法）：
+    /// 200 + JSON 头，无 Content-Length（close 定界体），Connection: close。
+    private func sendDeferredJSONHead(
+        context: ConnectionContext
+    ) {
+        guard !context.closed else {
+            return
+        }
+
+        context.touchOutboundActivity()
+
+        var headers = corsHeaders()
+
+        headers["Content-Type"] =
+            "application/json; charset=utf-8"
+
+        headers["Connection"] = "close"
+
+        headers["X-Request-Id"] =
+            context.requestId
+
+        if let clientRequestId =
+            context.clientRequestId {
+
+            headers["X-Client-Request-Id"] =
+                clientRequestId
+        }
+
+        var head =
+            "HTTP/1.1 200 OK\r\n"
+
+        for (key, value) in headers {
+            head +=
+                "\(key): \(value)\r\n"
+        }
+
+        head += "\r\n"
+
+        context.connection.send(
+            content: Data(head.utf8),
+            isComplete: false,
+            completion: .contentProcessed { [weak self, weak context] error in
+                guard let self, let context, let error else { return }
+                self.terminate(context, cancelGeneration: true)
+                _ = error
+            }
+        )
+    }
+
+    /// keepalive 模式的终结发送：头已提交，全量 JSON 体直发 + close
+    /// （enqueueSend 自带 error→terminate / close→finish 收口语义）。
+    /// 体前可能已有前导空白滴（RFC 8259 合法 ws），客户端解析不受影响。
+    private func sendDeferredJSONTerminal(
+        _ body: [String: Any],
+        context: ConnectionContext
+    ) {
+        guard
+            !context.closed,
+            let data =
+                try? JSONSerialization.data(
+                    withJSONObject: body
+                )
+        else {
+            return
+        }
+
+        sendRaw(
+            data,
+            context: context,
+            close: true
+        )
     }
 
     func parseChatParams(

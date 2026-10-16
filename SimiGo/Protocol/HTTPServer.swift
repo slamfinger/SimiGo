@@ -1511,16 +1511,20 @@ public final class HTTPServer: @unchecked Sendable {
     /// - 是否存在意外 Session canonicalization。
     func printExecutionIdentity(
         endpoint: String,
-        context: ConnectionContext
+        context: ConnectionContext,
+        stream: Bool? = nil
     ) {
         // 到达锚点入 trace（2026-10-15）：GUI 进程 stdout 不可见，身份行
         // 此前只在内存里「到达过」。10-15 事故取证时无法从 trace 区分
         // 「活客户端管道化」与「孤儿请求排队放行」，每请求一行补齐。
         // r=/s= 用 6 位短 ID，与 [LC] 行可直连。
+        // stream 标志（2026-10-16）：非流式请求死于此路径的零字节窗口
+        // （undici 300s 拆连），取证时首行即可分流。
         RuntimeTraceLogger.shared.trace(
             "[PROTOCOL] arrive" +
             " r=\(String(context.requestId.dropFirst(4).prefix(6)))" +
             " endpoint=\(endpoint)" +
+            (stream.map { " stream=\($0)" } ?? "") +
             " agent=\(context.agentId ?? "default")" +
             " s=\(context.sessionId.map { String($0.prefix(6)) } ?? "-")" +
             " branch=\(context.logicalBranchId ?? "main")"
@@ -1827,12 +1831,12 @@ public final class HTTPServer: @unchecked Sendable {
         return true
     }
 
-    func sendError(
-        _ message: String,
-        status: Int,
-        on connection: NWConnection,
-        context: ConnectionContext
-    ) {
+    /// OpenAI 风格错误体构造（2026-10-16 从 sendError 提取，行为不变）：
+    /// 非流式 keepalive 模式头已恒 200，错误需以同构体承载。
+    func errorBody(
+        message: String,
+        status: Int
+    ) -> [String: Any] {
 
         let errorType: String
 
@@ -1858,15 +1862,28 @@ public final class HTTPServer: @unchecked Sendable {
                 "server_error"
         }
 
+        return [
+            "error": [
+                "message": message,
+                "type": errorType,
+                "param": NSNull(),
+                "code": NSNull()
+            ]
+        ]
+    }
+
+    func sendError(
+        _ message: String,
+        status: Int,
+        on connection: NWConnection,
+        context: ConnectionContext
+    ) {
+
         sendJSON(
-            [
-                "error": [
-                    "message": message,
-                    "type": errorType,
-                    "param": NSNull(),
-                    "code": NSNull()
-                ]
-            ],
+            errorBody(
+                message: message,
+                status: status
+            ),
             status: status,
             on: connection,
             context: context
