@@ -733,10 +733,10 @@ private struct LiveExecutionStateView: View {
                 }
                 ForEach(Array(snapshot.forks.reversed().enumerated()), id: \.offset) { _, fork in
                     HStack {
-                        // fork 溯源是完整 storageKey——末 6 位只剩 branch 尾巴
-                        // 无法区分来源会话（2026-10-16 外审 F2）；紧凑格式保留
-                        // agent/session 尾段/branch 三要素。
-                        Text("\(EngineExecutionStateSnapshot.compactLabel(mapKey: fork.parent)) → \(EngineExecutionStateSnapshot.compactLabel(mapKey: fork.child))")
+                        // fork 溯源是完整 storageKey：紧凑标签可碰撞（同
+                        // agent/尾段/branch），附完整键摘要保证可辨
+                        // （2026-10-16 外审 F2 残余收口）。
+                        Text("\(EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: fork.parent)) → \(EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: fork.child))")
                             .font(.system(.body, design: .monospaced))
                         Spacer()
                         Text(fork.at.formatted(.relative(presentation: .named)))

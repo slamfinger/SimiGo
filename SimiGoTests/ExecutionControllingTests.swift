@@ -155,6 +155,30 @@ final class ExecutionControllingTests: XCTestCase {
             key.traceKey)
     }
 
+    /// F2 残余收口回归（2026-10-16 复审）：紧凑标签碰撞时（同 agent/
+    /// session 尾段/branch），fork 展示标识仍必须可区分——摘要位由
+    /// 完整 storageKey 决定。同时钉稳定性：同键同标识。
+    func testForkProvenanceLabelsDistinctUnderLabelCollision() {
+        let first = "default/s-aaaa111111/main"
+        let second = "default/s-bbbb111111/main"
+        XCTAssertEqual(
+            EngineExecutionStateSnapshot.compactLabel(mapKey: first),
+            EngineExecutionStateSnapshot.compactLabel(mapKey: second),
+            "用例构造前提：两键紧凑标签必须相同（碰撞场景）")
+        XCTAssertNotEqual(
+            EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: first),
+            EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: second),
+            "完整键不同的 fork 展示标识必须可区分")
+        XCTAssertEqual(
+            EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: first),
+            EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: first),
+            "同键标识必须稳定")
+        XCTAssertTrue(
+            EngineExecutionStateSnapshot.forkProvenanceLabel(storageKey: first)
+                .hasSuffix("~" + EngineExecutionStateSnapshot.digestSuffix(first)),
+            "展示标识 = 紧凑标签 + 摘要后缀的组成形态")
+    }
+
     /// F4 收紧（2026-10-16 外审）：身份直映射必须钉住**生产调用路径**。
     /// execute → generate 的身份透传经 lineage 可观察（admission 失败也
     /// 是 failed execution，记录原始三元组）——协议面若误传/换序字段，

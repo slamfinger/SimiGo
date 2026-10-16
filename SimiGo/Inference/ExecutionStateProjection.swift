@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// Execution State 引擎只读投影（2026-10-16 收敛：窗口接真身）。
 ///
@@ -64,5 +65,24 @@ nonisolated public struct EngineExecutionStateSnapshot: Sendable {
             label += String(mapKey.dropFirst(executionKey.storageKey.count))
         }
         return label
+    }
+
+    /// fork 溯源展示标识：紧凑标签 + 完整 storageKey 的稳定摘要后缀
+    /// （2026-10-16 外审 F2 残余收口）。compactLabel 是有损压缩——
+    /// 同 agent/同 session 尾段/同 branch 即碰撞（本仓测试已构造出
+    /// 该案例），fork 行只靠它会显示成相同文字。摘要位把「完整键
+    /// 不同」压制为展示可辨；恒等身份仍是 mapKey / checkpoint meta，
+    /// 此处不承诺无碰撞的数学恒等（32 位摘要，现实会话规模下碰撞
+    /// 概率可忽略）。普通会话卡片仍用既有 traceKey 规则，不受影响。
+    nonisolated public static func forkProvenanceLabel(storageKey: String) -> String {
+        compactLabel(mapKey: storageKey) + "~" + digestSuffix(storageKey)
+    }
+
+    /// SHA-256 前 4 字节（8 hex）。~ 前缀与 session 尾段视觉区隔。
+    nonisolated static func digestSuffix(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .prefix(4)
+            .map { String(format: "%02x", $0) }
+            .joined()
     }
 }
