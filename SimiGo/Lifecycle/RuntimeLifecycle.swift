@@ -60,6 +60,120 @@ public struct RuntimeTransitionRule {
     }
 }
 
+/// 拒绝风暴首尾记录器（2026-10-16）。
+///
+/// 客户端压缩失准时会以亚秒级间隔连发超限请求（2026-10-16 实测：
+/// 222 笔/约 90s，每笔 7 行流水 ≈ 1100 行噪音，同期真实生成仅 3 笔）。
+/// 语义上这是同一事件的重复：头笔完整记录；成员笔的 REJECT 行与 LC
+/// 收尾流水抑制（arrive 与 QUEUED→RUNNING 在判定前已发出，天然保留
+/// ——排枪节奏是客户端行为取证锚，execution_bench 依赖 to=RUNNING）；
+/// 风暴结束（同键过门或窗口超时）补一行聚合尾。异常路径（表外迁移/
+/// FORCE_RELEASED/INVALID_*/*_UNKNOWN）事件名不在抑制白名单内，永不抑制。
+public final class RejectBurstTracker: @unchecked Sendable {
+
+    public static let shared = RejectBurstTracker()
+
+    /// 窗口：相邻两笔拒绝间隔 < 10s 视为同一风暴（实测排枪间隔 ~370ms；
+    /// 正常用户轮次间隔远大于 10s，不会误并）。
+    private static let burstWindow: TimeInterval = 10
+
+    private struct Burst {
+        var count = 0
+        var firstAt = Date()
+        var lastAt = Date()
+        var demandMin = Int.max
+        var demandMax = 0
+    }
+
+    private let lock = NSLock()
+    private var bursts: [String: Burst] = [:]
+    private var quietKeysByRequest: [String: String] = [:]
+    private var flushTasks: [String: Task<Void, Never>] = [:]
+
+    private init() {}
+
+    /// REJECT 判定处调用。true = 本笔是风暴成员（其 REJECT 行与 LC
+    /// 收尾流水由抑制钩子接管）；false = 头笔，调用方照常记录完整行。
+    public func noteReject(
+        key: String,
+        requestID: String,
+        demand: Int
+    ) -> Bool {
+        let now = Date()
+        let member: Bool
+        lock.lock()
+        if var burst = bursts[key] {
+            burst.count += 1
+            burst.lastAt = now
+            burst.demandMin = min(burst.demandMin, demand)
+            burst.demandMax = max(burst.demandMax, demand)
+            bursts[key] = burst
+            quietKeysByRequest[requestID] = key
+            member = true
+        } else {
+            bursts[key] = Burst(
+                count: 1,
+                firstAt: now,
+                lastAt: now,
+                demandMin: demand,
+                demandMax: demand
+            )
+            member = false
+        }
+        lock.unlock()
+
+        armFlush(key: key)
+        return member
+    }
+
+    /// 同键请求过门（真实生成开始）时调用：立即冲刷聚合尾行。
+    public func noteAdmitted(key: String) {
+        flush(key: key)
+    }
+
+    /// LC trace 抑制查询：该请求是否为活跃风暴成员。
+    public func isQuiet(requestID: String) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return quietKeysByRequest[requestID] != nil
+    }
+
+    private func armFlush(key: String) {
+        lock.lock()
+        flushTasks[key]?.cancel()
+        let task = Task { [weak self] in
+            try? await Task.sleep(
+                nanoseconds: UInt64(Self.burstWindow * 1_000_000_000)
+            )
+            self?.flush(key: key)
+        }
+        flushTasks[key] = task
+        lock.unlock()
+    }
+
+    private func flush(key: String) {
+        lock.lock()
+        guard let burst = bursts[key] else {
+            lock.unlock()
+            return
+        }
+        bursts[key] = nil
+        flushTasks[key]?.cancel()
+        flushTasks[key] = nil
+        quietKeysByRequest = quietKeysByRequest.filter { $0.value != key }
+        lock.unlock()
+
+        guard burst.count > 1 else { return }
+        RuntimeTraceLogger.shared.trace(
+            "[CONTEXT SAFETY REJECT] burstSuppressed key=\(key)" +
+            " count=\(burst.count) suppressed=\(burst.count - 1)" +
+            " spanMs=\(Int(burst.lastAt.timeIntervalSince(burst.firstAt) * 1000))" +
+            " demand=\(burst.demandMin)..\(burst.demandMax)" +
+            " action=require_L1_compaction"
+        )
+    }
+}
+
 private struct RequestIdentity: Sendable {
     let agentID: String?
     let sessionID: String?
@@ -197,6 +311,21 @@ public actor RuntimeLifecycleCoordinator {
         to: String? = nil,
         reason: String? = nil
     ) {
+        // 拒绝风暴成员（2026-10-16）：REJECT 语义已由风暴头笔 +
+        // burstSuppressed 聚合尾行承载，成员笔的收尾流水抑制。
+        // 只抑制收尾白名单（RELEASED 与取消管道三跳）；异常路径
+        // （表外迁移/FORCE_RELEASED/INVALID_*/*_UNKNOWN）事件名不
+        // 匹配，永不抑制。
+        if event == "RELEASED"
+            || (event == "STATE_TRANSITION"
+                && (from == "RUNNING"
+                    || from == "CANCELLING"
+                    || from == "DRAINING")) {
+            if RejectBurstTracker.shared.isQuiet(requestID: requestID) {
+                return
+            }
+        }
+
         // 生产降噪（2026-09-29）：正常路径只留两条定位锚——QUEUED→RUNNING
         // （在途标记：execution_bench preflight 与在途生成判别依赖 " to=RUNNING"，
         // 排队计时依赖 CREATED→QUEUED / QUEUED→RUNNING 两条，故保留）

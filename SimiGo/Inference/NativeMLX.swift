@@ -869,14 +869,28 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     container: container
                 )
                 if demand > budget {
-                    traceLogger.trace(
-                        "[CONTEXT SAFETY REJECT] demand=\(demand) budget=\(budget)" +
-                        " contentBytes=\(contentBytes) action=require_L1_compaction"
+                    // 首尾记录（2026-10-16）：风暴头笔保留完整 REJECT 行，
+                    // 成员笔抑制、由 burstSuppressed 聚合尾行收口。
+                    let burstMember = RejectBurstTracker.shared.noteReject(
+                        key: executionKey.storageKey,
+                        requestID: requestId,
+                        demand: demand
                     )
+                    if !burstMember {
+                        traceLogger.trace(
+                            "[CONTEXT SAFETY REJECT] demand=\(demand) budget=\(budget)" +
+                            " contentBytes=\(contentBytes) action=require_L1_compaction"
+                        )
+                    }
                     throw NativeMLXValidationError.contextDemandExceeded(demand, budget)
                 }
             }
         }
+
+        // 过门即冲刷同键拒绝风暴的聚合尾行（若有）。
+        RejectBurstTracker.shared.noteAdmitted(
+            key: executionKey.storageKey
+        )
 
         let mapKey = Self.sessionMapKey(
             storageKey: executionKey.storageKey,
