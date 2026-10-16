@@ -114,7 +114,7 @@ enum LOCALBHostRuntime {
 
     /// Lower-case hex decode of exactly `count` bytes; any other shape is
     /// treated as a corrupt checkpoint file.
-    private static func decodeLowerHex(
+    static func decodeLowerHex(
         _ value: String, count: Int
     ) -> [UInt8]? {
         let chars = Array(value.utf8)
