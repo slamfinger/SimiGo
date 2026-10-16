@@ -97,6 +97,10 @@ public struct CloudBackendConfiguration: Sendable {
         // for byte. In particular, don't decode/re-encode %2F or collapse an
         // empty query delimiter; LOCALB signs the original request-target.
         guard let encodedQuery else { return baseURL }
+        // URLComponents treats an invalid percentEncodedQuery assignment as a
+        // precondition failure on some Foundation implementations. Validate
+        // first so malformed external input fails closed instead of crashing.
+        guard Self.isValidPercentEncodedQuery(encodedQuery) else { return nil }
         guard var components = URLComponents(
             url: baseURL,
             resolvingAgainstBaseURL: false
@@ -105,6 +109,50 @@ public struct CloudBackendConfiguration: Sendable {
         }
         components.percentEncodedQuery = encodedQuery
         return components.url
+    }
+
+    private static func isValidPercentEncodedQuery(_ query: String) -> Bool {
+        let bytes = Array(query.utf8)
+        var index = 0
+        while index < bytes.count {
+            let byte = bytes[index]
+            if byte == 0x25 {
+                guard index + 2 < bytes.count,
+                      isHexDigit(bytes[index + 1]),
+                      isHexDigit(bytes[index + 2]) else {
+                    return false
+                }
+                index += 3
+                continue
+            }
+
+            let unreserved =
+                (byte >= 0x41 && byte <= 0x5A) ||
+                (byte >= 0x61 && byte <= 0x7A) ||
+                (byte >= 0x30 && byte <= 0x39) ||
+                byte == 0x2D || byte == 0x2E || byte == 0x5F || byte == 0x7E
+            let subDelimiter: Bool
+            switch byte {
+            case 0x21, 0x24, 0x26, 0x27, 0x28, 0x29, 0x2A,
+                 0x2B, 0x2C, 0x3B, 0x3D:
+                subDelimiter = true
+            default:
+                subDelimiter = false
+            }
+            let otherAllowed = byte == 0x3A || byte == 0x40 ||
+                byte == 0x2F || byte == 0x3F
+            guard unreserved || subDelimiter || otherAllowed else {
+                return false
+            }
+            index += 1
+        }
+        return true
+    }
+
+    private static func isHexDigit(_ byte: UInt8) -> Bool {
+        (byte >= 0x30 && byte <= 0x39) ||
+        (byte >= 0x41 && byte <= 0x46) ||
+        (byte >= 0x61 && byte <= 0x66)
     }
 
     nonisolated private static func isVersionSegment(_ segment: Substring) -> Bool {

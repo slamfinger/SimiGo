@@ -840,6 +840,20 @@ public struct LOCALBHTTPRequestV1: Equatable, Sendable {
         let segments = path.split(separator: "/", omittingEmptySubsequences: false)
         guard !segments.contains(where: { $0 == "." || $0 == ".." }) else { return false }
 
+        func isAllowedRawTargetByte(_ byte: UInt8, inQuery: Bool) -> Bool {
+            if Self.isUnreserved(byte) { return true }
+            // RFC 3986 sub-delimiters plus ':' and '@' are valid pchar bytes.
+            switch byte {
+            case 0x21, 0x24, 0x26, 0x27, 0x28, 0x29, 0x2A,
+                 0x2B, 0x2C, 0x3B, 0x3D, 0x3A, 0x40, 0x2F:
+                return true
+            case 0x3F:
+                return inQuery
+            default:
+                return false
+            }
+        }
+
         var index = 0
         var encodedUTF8Run: [UInt8] = []
         while index < bytes.count {
@@ -849,6 +863,18 @@ public struct LOCALBHTTPRequestV1: Equatable, Sendable {
                         return false
                     }
                     encodedUTF8Run.removeAll(keepingCapacity: true)
+                }
+                // The first '?' is the path/query delimiter; later '?' bytes
+                // are valid query characters and are accepted by the helper.
+                if index == queryStart {
+                    index += 1
+                    continue
+                }
+                guard isAllowedRawTargetByte(
+                    bytes[index],
+                    inQuery: index > queryStart
+                ) else {
+                    return false
                 }
                 index += 1
                 continue

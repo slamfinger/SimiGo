@@ -319,6 +319,13 @@ final class LOCALBPairingCoordinatorTests: XCTestCase {
         XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/safe#fragment")) { error in
             XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
         }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/v1/item?q=[bad]")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertThrowsError(try makeHTTPRequest(requestTarget: "/v1/item?q=\"bad\"")) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
+        }
+        XCTAssertNoThrow(try makeHTTPRequest(requestTarget: "/v1/item?q=%5BB%5D"))
         XCTAssertThrowsError(try makeHTTPRequest(contentType: "application/json\r\nx-evil: yes")) { error in
             XCTAssertEqual(error as? LOCALBStatus, .invalidProtectedRequest)
         }

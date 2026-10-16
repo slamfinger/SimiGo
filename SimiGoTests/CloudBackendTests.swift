@@ -54,6 +54,16 @@ final class CloudBackendTests: XCTestCase {
         )
     }
 
+    func testUpstreamURLRejectsInvalidRawQueryRatherThanTrapping() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "https://api.example.com/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertNil(configuration.upstreamURL(path: "/v1/chat/completions?q=[bad]"))
+        XCTAssertNil(configuration.upstreamURL(path: "/v1/chat/completions?q=%ZZ"))
+    }
+
     func testRemoteRequestPreservesEmptyQueryDelimiter() throws {
         let backend = RemoteOpenAIBackend(
             configuration: CloudBackendConfiguration(
