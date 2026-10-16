@@ -32,9 +32,6 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".heic", ".tiff", ".tif"}
 SKIP_FILES = {
     Path("tools/open_source_audit.sh"),
     Path("tools/release_artifact_audit.py"),
-    # package_dmg.sh carries the codesign identity default (overridable via
-    # CODE_SIGN_IDENTITY) — an intentional sentinel of the release ritual.
-    Path("tools/package_dmg.sh"),
 }
 
 

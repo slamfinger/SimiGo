@@ -10,7 +10,26 @@ VER="$1"
 [ -z "$VER" ] && { echo "用法: $0 <版本号>"; exit 1; }
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$DIR/build/release-v2.1/Build/Products/Release/SimiGo.app"
-IDENTITY="${CODE_SIGN_IDENTITY:-Apple Development: slamfinger@163.com (99T9X7WUK3)}"
+# 签名身份解析（2026-10-16 收口）：显式 env 恒优先；否则从钥匙串运行时
+# 发现唯一的 "Apple Development" 签名身份——私人标识不得进跟踪树
+# （与 SimiGo-Lab 零豁免审计对齐）。零个/多个匹配都响亮失败并列出候选。
+if [ -n "${CODE_SIGN_IDENTITY:-}" ]; then
+    IDENTITY="$CODE_SIGN_IDENTITY"
+else
+    DISCOVERED="$(security find-identity -v -p codesigning \
+        | awk -F'"' '/Apple Development/ {print $2}')"
+    MATCHES="$(printf '%s\n' "$DISCOVERED" | grep -c .)"
+    if [ "$MATCHES" -eq 1 ]; then
+        IDENTITY="$DISCOVERED"
+    elif [ "$MATCHES" -eq 0 ]; then
+        echo "错误: 钥匙串中无 'Apple Development' 签名身份；请设置 CODE_SIGN_IDENTITY" >&2
+        exit 1
+    else
+        echo "错误: 钥匙串中有 $MATCHES 个 'Apple Development' 身份；请设置 CODE_SIGN_IDENTITY 为其中之一:" >&2
+        printf '%s\n' "$DISCOVERED" | sed 's/^/  /' >&2
+        exit 1
+    fi
+fi
 ENTITLEMENTS="$DIR/build/release-v2.1/Build/Intermediates.noindex/SimiGo.build/Release/SimiGo.build/SimiGo.app.xcent"
 [ -d "$APP" ] || { echo "构建产物不存在: $APP"; exit 1; }
 

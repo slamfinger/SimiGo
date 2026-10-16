@@ -23,10 +23,8 @@ email_re='slamfinger''@163''\.com'
 
 check "no tracked local absolute paths or local user identifiers" \
   bash -c '! git grep -I -n -E "$0|$1" -- . ":(exclude)tools/open_source_audit.sh" ":(exclude)tools/release_artifact_audit.py"' "$path_re" "$user_re"
-# package_dmg.sh 携带签名身份默认值（CODE_SIGN_IDENTITY 可覆盖）——
-# 发版仪式的有意哨兵定义（a90e391 同类豁免），非泄漏。
 check "no tracked signing team or private email" \
-  bash -c '! git grep -I -n -E "$0|$1" -- . ":(exclude)tools/open_source_audit.sh" ":(exclude)tools/release_artifact_audit.py" ":(exclude)tools/package_dmg.sh"' "$team_re" "$email_re"
+  bash -c '! git grep -I -n -E "$0|$1" -- . ":(exclude)tools/open_source_audit.sh" ":(exclude)tools/release_artifact_audit.py"' "$team_re" "$email_re"
 check "no tracked model-weight artifacts" \
   bash -c '! git ls-files | grep -Ei "\.(safetensors|gguf|bin|pth|ckpt|weights)$"'
 check "no tracked packaged app or DMG" \
