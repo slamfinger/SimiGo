@@ -29,11 +29,14 @@ final class LOCALBProvisioningWiringTests: XCTestCase {
             service: "localb-prov-test-\(nonce)")
         addTeardownBlock {
             try? FileManager.default.removeItem(at: url)
+            // 三类钥匙串项全清：签名密钥（generic-password）+ 传输身份的
+            // kSecClassKey 与 kSecClassCertificate（transport.deleteAll）。
             let query: [String: Any] = [
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrService as String: "localb-prov-test-\(nonce)"
             ]
             SecItemDelete(query as CFDictionary)
+            transport.deleteAll()
         }
         return (url, keychain, transport)
     }
@@ -110,6 +113,41 @@ final class LOCALBProvisioningWiringTests: XCTestCase {
         // fail-closed：激活失败不得留下 checkpoint。
         XCTAssertNil(try LOCALBHostRuntime.loadPersistedTrustedCheckpoint(
             in: host.directory))
+    }
+
+    /// 复审修正 1 的回归：--localb-prepare 的 stdout 必须是纯 JSON——
+    /// 操作者重定向整个 stdout 即得可直接回填 activate 的记录文件。
+    func testPrepareStdoutIsPureJSON() throws {
+        let host = try makeIsolatedHost()
+        // 捕获 stdout（runFromArguments 直接 print）。顺序关键：必须先
+        // 关闭写端再读，否则 readDataToEndOfFile 永远等不到 EOF（本轮
+        // 实测挂死于 NSConcreteFileHandle readDataOfLength）。
+        let original = dup(fileno(stdout))
+        let pipe = Pipe()
+        dup2(pipe.fileHandleForWriting.fileDescriptor, fileno(stdout))
+        let code = LOCALBProvisioning.runFromArguments(
+            ["SimiGo", "--localb-prepare"],
+            hostDirectory: host.directory,
+            keychainStore: host.keychain,
+            transportIdentityStore: host.transport)
+        XCTAssertEqual(code, 0)
+        fflush(stdout)
+        dup2(original, fileno(stdout))   // 先还原 stdout
+        close(pipe.fileHandleForWriting.fileDescriptor)  // 再关写端 → EOF
+        defer { close(original) }
+        let captured = String(
+            decoding: pipe.fileHandleForReading.readDataToEndOfFile(),
+            as: UTF8.self)
+        let decoded = try JSONDecoder().decode(
+            LOCALBProvisioning.RecordedCheckpoint.self,
+            from: Data(captured.utf8))
+        XCTAssertEqual(decoded.headHashHex.count, 64)
+        // 输出必须可直接回填 activate（阶段二消费同一 JSON）。
+        XCTAssertNoThrow(try LOCALBProvisioning.activate(
+            recordedJSON: Data(captured.utf8),
+            hostDirectory: host.directory,
+            keychainStore: host.keychain,
+            transportIdentityStore: host.transport))
     }
 
     func testRunFromArgumentsReturnsNilForNormalLaunch() {

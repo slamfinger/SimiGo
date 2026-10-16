@@ -136,7 +136,10 @@ enum LOCALBProvisioning {
     @discardableResult
     static func runFromArguments(
         _ arguments: [String],
-        hostDirectory: URL? = nil
+        hostDirectory: URL? = nil,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
     ) -> Int32? {
         guard arguments.contains("--localb-prepare")
             || arguments.contains("--localb-activate")
@@ -146,14 +149,23 @@ enum LOCALBProvisioning {
         }
         do {
             if arguments.contains("--localb-status") {
-                print(try status(hostDirectory: hostDirectory))
+                print(try status(
+                    hostDirectory: hostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore))
                 return 0
             }
             if arguments.contains("--localb-prepare") {
-                print(try prepare(hostDirectory: hostDirectory))
-                print(
-                    "# 记录以上 JSON 到 SimiGo 之外的受信任位置，"
-                        + "再以 --localb-activate <file> 完成激活。")
+                // stdout 只承载 checkpoint JSON：操作者重定向整个 stdout
+                // 即得可直接回填 --localb-activate 的记录文件；提示走 stderr。
+                print(try prepare(
+                    hostDirectory: hostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore))
+                FileHandle.standardError.write(Data(
+                    ("# 已打印待记录 checkpoint JSON。记录到 SimiGo 之外的"
+                        + "受信任位置，再以 --localb-activate <file> 完成激活。\n")
+                        .utf8))
                 return 0
             }
             guard let index = arguments.firstIndex(of: "--localb-activate"),
@@ -170,7 +182,10 @@ enum LOCALBProvisioning {
             print(String(
                 decoding: try encoder.encode(
                     try activate(
-                        recordedJSON: recorded, hostDirectory: hostDirectory)),
+                        recordedJSON: recorded,
+                        hostDirectory: hostDirectory,
+                        keychainStore: keychainStore,
+                        transportIdentityStore: transportIdentityStore)),
                 as: UTF8.self))
             return 0
         } catch {
