@@ -71,8 +71,15 @@ public enum LOCALBStatus: String, Error, Equatable, Sendable {
     case permissionDenied = "LOCALB_PERMISSION_DENIED"
     case duplicateClient = "LOCALB_DUPLICATE_CLIENT"
     case clientChallengeInvalid = "LOCALB_CLIENT_CHALLENGE_INVALID"
+    case invalidProtectedRequest = "LOCALB_INVALID_PROTECTED_REQUEST"
+    case clientRequestSignatureInvalid = "LOCALB_CLIENT_REQUEST_SIGNATURE_INVALID"
     case keychainItemMissing = "LOCALB_KEYCHAIN_ITEM_MISSING"
     case hostNotOperational = "LOCALB_HOST_NOT_OPERATIONAL"
+    case transportIdentityMissing = "LOCALB_TRANSPORT_IDENTITY_MISSING"
+    case transportIdentityCorrupt = "LOCALB_TRANSPORT_IDENTITY_CORRUPT"
+    case transportIdentityMismatch = "LOCALB_TRANSPORT_IDENTITY_MISMATCH"
+    case transportIdentityGenerationExhausted = "LOCALB_TRANSPORT_IDENTITY_GENERATION_EXHAUSTED"
+    case plaintextNotAllowedOnLAN = "LOCALB_PLAINTEXT_NOT_ALLOWED_ON_LAN"
 }
 
 func localBIsCanonicalUUID(_ value: String) -> Bool {

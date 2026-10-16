@@ -634,24 +634,345 @@ enum LOCALBPairingEventCodec {
     }
 }
 
-public enum LOCALBClientRequestProofV1 {
-    public static let domain = "SIMIGO_PERSISTENT_SRS_LOCALB_CLIENT_REQUEST_V1"
+/// Immutable request representation used by both signature verification and dispatch.
+/// The adapter MUST construct this from the exact parsed request and must dispatch
+/// the returned LOCALBAuthorizedRequest.request, never a separately reparsed body.
+public struct LOCALBHTTPRequestV1: Equatable, Sendable {
+    /// Hard cap for protected request bodies. The HTTP adapter must enforce
+    /// the same cap before buffering body bytes, not only after parsing.
+    public static let maximumBodyBytes = 64 * 1_048_576
 
-    public static func signatureInput(clientKeyID: String, permission: LOCALBPermission,
-                                      challenge: [UInt8]) throws -> [UInt8] {
-        guard LOCALBPairingProofV1.isHex64(clientKeyID), challenge.count >= 32, challenge.count <= 128 else {
+    public let method: String
+    public let authority: String
+    /// Exact canonical origin-form target authenticated by V2, including any query.
+    public let requestTarget: String
+    /// Route key derived exactly once from requestTarget after validation.
+    /// Dispatch must use authorized.request.routePath, never a pre-auth parser path.
+    public let routePath: String
+    /// Query without '?'; nil means no query delimiter, while "" means an empty query.
+    /// Query-dependent behavior must consume authorized.request.query.
+    public let query: String?
+    public let contentType: String
+    public let contentEncoding: String
+    public let bodyRaw: [UInt8]
+    public let bodySHA256Hex: String
+    public let bodyLength: UInt64
+
+    public init(
+        method: String,
+        authority: String,
+        requestTarget: String,
+        contentType: String? = nil,
+        contentEncoding: String = "identity",
+        bodyRaw: [UInt8]
+    ) throws {
+        let selectedContentType = contentType ?? ""
+        guard Self.isCanonicalMethod(method),
+              Self.isCanonicalAuthority(authority),
+              Self.isCanonicalTarget(requestTarget),
+              Self.isCanonicalHeaderValue(selectedContentType, maximumBytes: 512),
+              contentEncoding == "identity",
+              bodyRaw.count <= Self.maximumBodyBytes else {
+            throw LOCALBStatus.invalidProtectedRequest
+        }
+        let targetParts = Self.splitCanonicalTarget(requestTarget)
+        self.method = method
+        self.authority = authority
+        self.requestTarget = requestTarget
+        self.routePath = targetParts.path
+        self.query = targetParts.query
+        self.contentType = selectedContentType
+        self.contentEncoding = contentEncoding
+        self.bodyRaw = bodyRaw
+        self.bodySHA256Hex = LOCALBBinary.hexLower(LOCALBBinary.sha256(bodyRaw))
+        self.bodyLength = UInt64(bodyRaw.count)
+    }
+
+    private static func isCanonicalMethod(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard !bytes.isEmpty, bytes.count <= 16 else { return false }
+        return bytes.allSatisfy {
+            ($0 >= 0x41 && $0 <= 0x5A) || ($0 >= 0x30 && $0 <= 0x39) || $0 == 0x2D
+        }
+    }
+
+    /// Authority is lower-case ASCII as consumed by routing; aliases must be
+    /// normalized by the HTTP adapter before constructing this value.
+    private static func isCanonicalAuthority(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard !bytes.isEmpty, bytes.count <= 255,
+              value == value.lowercased(),
+              bytes.allSatisfy({ $0 > 0x20 && $0 < 0x7F }) else {
+            return false
+        }
+
+        let host: String
+        let port: String?
+        if value.hasPrefix("[") {
+            guard let close = value.firstIndex(of: "]"), close > value.startIndex else {
+                return false
+            }
+            host = String(value[value.index(after: value.startIndex)..<close])
+            let suffix = String(value[value.index(after: close)...])
+            if suffix.isEmpty {
+                port = nil
+            } else {
+                guard suffix.first == ":" else { return false }
+                port = String(suffix.dropFirst())
+            }
+            guard isCanonicalIPv6Literal(host) else { return false }
+        } else {
+            let pieces = value.split(separator: ":", omittingEmptySubsequences: false)
+            guard pieces.count <= 2, !pieces[0].isEmpty else { return false }
+            host = String(pieces[0])
+            port = pieces.count == 2 ? String(pieces[1]) : nil
+            guard isCanonicalDNSOrIPv4Host(host) else { return false }
+        }
+
+        if let port {
+            guard isCanonicalPort(port) else { return false }
+        }
+        return true
+    }
+
+    private static func isCanonicalPort(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard !bytes.isEmpty, bytes.count <= 5,
+              bytes.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }),
+              !(bytes.count > 1 && bytes[0] == 0x30),
+              let parsed = UInt32(value), parsed >= 1, parsed <= 65_535 else {
+            return false
+        }
+        return true
+    }
+
+    private static func isCanonicalDNSOrIPv4Host(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard !bytes.isEmpty, bytes.count <= 253,
+              bytes.first != 0x2E, bytes.last != 0x2E else {
+            return false
+        }
+        let numericLike = bytes.allSatisfy {
+            ($0 >= 0x30 && $0 <= 0x39) || $0 == 0x2E
+        }
+        if numericLike {
+            let octets = value.split(separator: ".", omittingEmptySubsequences: false)
+            guard octets.count == 4 else { return false }
+            for octet in octets {
+                let octetBytes = Array(octet.utf8)
+                guard !octetBytes.isEmpty, octetBytes.count <= 3,
+                      octetBytes.allSatisfy({ $0 >= 0x30 && $0 <= 0x39 }),
+                      !(octetBytes.count > 1 && octetBytes[0] == 0x30),
+                      let number = UInt16(String(octet)), number <= 255 else {
+                    return false
+                }
+            }
+            return true
+        }
+
+        let labels = value.split(separator: ".", omittingEmptySubsequences: false)
+        guard !labels.isEmpty else { return false }
+        for label in labels {
+            let labelBytes = Array(label.utf8)
+            guard !labelBytes.isEmpty, labelBytes.count <= 63,
+                  isASCIIAlphaNumeric(labelBytes[0]),
+                  isASCIIAlphaNumeric(labelBytes[labelBytes.count - 1]),
+                  labelBytes.allSatisfy({ isASCIIAlphaNumeric($0) || $0 == 0x2D }) else {
+                return false
+            }
+        }
+        return true
+    }
+
+    private static func isCanonicalIPv6Literal(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard bytes.contains(0x3A), !value.contains(":::"),
+              bytes.allSatisfy({
+                  ($0 >= 0x30 && $0 <= 0x39) ||
+                  ($0 >= 0x61 && $0 <= 0x66) || $0 == 0x3A
+              }) else {
+            return false
+        }
+
+        func validGroup(_ group: Substring) -> Bool {
+            let groupBytes = Array(group.utf8)
+            return !groupBytes.isEmpty && groupBytes.count <= 4 && groupBytes.allSatisfy {
+                ($0 >= 0x30 && $0 <= 0x39) || ($0 >= 0x61 && $0 <= 0x66)
+            }
+        }
+
+        if let compression = value.range(of: "::") {
+            guard value[compression.upperBound...].range(of: "::") == nil else {
+                return false
+            }
+            let leftText = String(value[..<compression.lowerBound])
+            let rightText = String(value[compression.upperBound...])
+            let left: [Substring] = leftText.isEmpty ? [] : leftText.split(separator: ":", omittingEmptySubsequences: false)
+            let right: [Substring] = rightText.isEmpty ? [] : rightText.split(separator: ":", omittingEmptySubsequences: false)
+            let groups = left + right
+            return groups.count < 8 && groups.allSatisfy(validGroup)
+        }
+
+        let groups = value.split(separator: ":", omittingEmptySubsequences: false)
+        return groups.count == 8 && groups.allSatisfy(validGroup)
+    }
+
+    private static func isASCIIAlphaNumeric(_ byte: UInt8) -> Bool {
+        (byte >= 0x30 && byte <= 0x39) ||
+        (byte >= 0x61 && byte <= 0x7A)
+    }
+
+    /// Strict origin-form target. This rejects fragments, ambiguous path
+    /// separators/dot segments, non-canonical percent escapes, and escaped
+    /// path separators. The exact accepted target is signed and must also be
+    /// the target used for routing (no post-verification normalization).
+    private static func isCanonicalTarget(_ value: String) -> Bool {
+        let bytes = Array(value.utf8)
+        guard !bytes.isEmpty, bytes.count <= 8_192, bytes[0] == 0x2F,
+              !(bytes.count > 1 && bytes[1] == 0x2F),
+              bytes.allSatisfy({ $0 >= 0x21 && $0 <= 0x7E && $0 != 0x5C && $0 != 0x23 }) else {
+            return false
+        }
+        let queryStart = bytes.firstIndex(of: 0x3F) ?? bytes.count
+        let pathBytes = Array(bytes[..<queryStart])
+        let path = String(decoding: pathBytes, as: UTF8.self)
+        guard !path.contains("//") else { return false }
+        let segments = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard !segments.contains(where: { $0 == "." || $0 == ".." }) else { return false }
+
+        var index = 0
+        var encodedUTF8Run: [UInt8] = []
+        while index < bytes.count {
+            guard bytes[index] == 0x25 else {
+                if !encodedUTF8Run.isEmpty {
+                    guard String(bytes: encodedUTF8Run, encoding: .utf8) != nil else {
+                        return false
+                    }
+                    encodedUTF8Run.removeAll(keepingCapacity: true)
+                }
+                index += 1
+                continue
+            }
+            guard index + 2 < bytes.count,
+                  let high = Self.hexNibble(bytes[index + 1]),
+                  let low = Self.hexNibble(bytes[index + 2]) else {
+                return false
+            }
+            let decoded = (high << 4) | low
+            guard !Self.isUnreserved(decoded), decoded >= 0x20, decoded != 0x7F,
+                  decoded != 0x5C else {
+                return false
+            }
+            if decoded < 0x80 {
+                if index < queryStart { return false }
+                if !encodedUTF8Run.isEmpty {
+                    guard String(bytes: encodedUTF8Run, encoding: .utf8) != nil else {
+                        return false
+                    }
+                    encodedUTF8Run.removeAll(keepingCapacity: true)
+                }
+            } else {
+                encodedUTF8Run.append(decoded)
+            }
+            index += 3
+        }
+        if !encodedUTF8Run.isEmpty,
+           String(bytes: encodedUTF8Run, encoding: .utf8) == nil {
+            return false
+        }
+        return true
+    }
+
+    /// Split only after the full target passes canonical validation. The original
+    /// requestTarget remains the signed field; routePath/query are immutable views
+    /// derived from that same value, avoiding a second parse of HTTPRequest.path.
+    private static func splitCanonicalTarget(_ value: String) -> (path: String, query: String?) {
+        let bytes = Array(value.utf8)
+        guard let queryStart = bytes.firstIndex(of: 0x3F) else {
+            return (value, nil)
+        }
+        let path = String(decoding: bytes[..<queryStart], as: UTF8.self)
+        let query = String(decoding: bytes[(queryStart + 1)...], as: UTF8.self)
+        return (path, query)
+    }
+
+    private static func isCanonicalHeaderValue(_ value: String, maximumBytes: Int) -> Bool {
+        let bytes = Array(value.utf8)
+        guard bytes.count <= maximumBytes else { return false }
+        if bytes.isEmpty { return true }
+        guard bytes.first != 0x20, bytes.last != 0x20 else { return false }
+        return bytes.allSatisfy { $0 >= 0x20 && $0 <= 0x7E }
+    }
+
+    /// Canonical percent-escape hex digits are uppercase only.
+    private static func hexNibble(_ byte: UInt8) -> UInt8? {
+        if byte >= 0x30 && byte <= 0x39 { return byte - 0x30 }
+        if byte >= 0x41 && byte <= 0x46 { return byte - 0x41 + 10 }
+        return nil
+    }
+
+    private static func isUnreserved(_ byte: UInt8) -> Bool {
+        (byte >= 0x41 && byte <= 0x5A) ||
+        (byte >= 0x61 && byte <= 0x7A) ||
+        (byte >= 0x30 && byte <= 0x39) ||
+        byte == 0x2D || byte == 0x2E || byte == 0x5F || byte == 0x7E
+    }
+}
+
+public struct LOCALBAuthorizedRequest: Equatable, Sendable {
+    public let client: LOCALBClientRegistryEntry
+    public let permission: LOCALBPermission
+    public let request: LOCALBHTTPRequestV1
+
+    fileprivate init(client: LOCALBClientRegistryEntry, permission: LOCALBPermission,
+                     request: LOCALBHTTPRequestV1) {
+        self.client = client
+        self.permission = permission
+        self.request = request
+    }
+}
+
+/// V2 replaces the prior challenge-only proof. A signature is valid only for
+/// one exact method/authority/target/content-type/body tuple and one fresh
+/// challenge. V1 proofs are not accepted by authorizeProtectedRequest.
+public enum LOCALBClientRequestProofV2 {
+    public static let domain = "SIMIGO_PERSISTENT_SRS_LOCALB_CLIENT_REQUEST_CONTENT_V2"
+    public static let canonicalizationVersion = "LOCALB_HTTP_REQUEST_CANONICAL_V1"
+
+    public static func signatureInput(
+        clientKeyID: String,
+        permission: LOCALBPermission,
+        request: LOCALBHTTPRequestV1,
+        challenge: [UInt8]
+    ) throws -> [UInt8] {
+        guard LOCALBPairingProofV1.isHex64(clientKeyID), challenge.count == 32 else {
             throw LOCALBStatus.invalidConfiguration
         }
         return try LOCALBPairingFieldCodec.encode(domain: domain, fields: [
+            LOCALBPairingFieldCodec.string("canonicalization_version", value: canonicalizationVersion),
             LOCALBPairingFieldCodec.string("client_key_id", value: clientKeyID),
             LOCALBPairingFieldCodec.string("required_permission", value: permission.rawValue),
-            LOCALBPairingFieldCodec.bytes(challenge, label: "server_challenge")
+            LOCALBPairingFieldCodec.bytes(challenge, label: "server_challenge"),
+            LOCALBPairingFieldCodec.string("http_method", value: request.method),
+            LOCALBPairingFieldCodec.string("authority", value: request.authority),
+            LOCALBPairingFieldCodec.string("request_target", value: request.requestTarget),
+            LOCALBPairingFieldCodec.string("content_type", value: request.contentType),
+            LOCALBPairingFieldCodec.string("content_encoding", value: request.contentEncoding),
+            LOCALBPairingFieldCodec.string("body_sha256", value: request.bodySHA256Hex),
+            LOCALBPairingFieldCodec.uint64(request.bodyLength, label: "body_length")
         ])
     }
 
-    public static func sign(clientKeyID: String, permission: LOCALBPermission,
-                            challenge: [UInt8], with key: Curve25519.Signing.PrivateKey) throws -> [UInt8] {
-        let input = try signatureInput(clientKeyID: clientKeyID, permission: permission, challenge: challenge)
+    public static func sign(
+        clientKeyID: String,
+        permission: LOCALBPermission,
+        request: LOCALBHTTPRequestV1,
+        challenge: [UInt8],
+        with key: Curve25519.Signing.PrivateKey
+    ) throws -> [UInt8] {
+        let input = try signatureInput(
+            clientKeyID: clientKeyID, permission: permission, request: request, challenge: challenge
+        )
         return Array(try key.signature(for: Data(input)))
     }
 }
@@ -889,11 +1210,18 @@ public struct LOCALBPairingCoordinator {
     /// Per-request authentication reloads verified state and consumes a
     /// challenge issued by this coordinator. Reuse, expiry, cross-client or
     /// cross-permission replay is rejected before registry authorization.
-    public func authorizeProtectedRequest(clientKeyID: String,
-                                          permission: LOCALBPermission,
-                                          challenge: [UInt8],
-                                          proofSignatureRaw: [UInt8],
-                                          checkpoint: LOCALBRegistryCheckpoint) throws -> LOCALBClientRegistryEntry {
+    /// Every authorization decision verifies the exact request representation
+    /// returned to the caller. The HTTP adapter MUST dispatch using
+    /// authorized.request (especially bodyRaw) and must derive the canonical
+    /// target/authority from the same request bytes used by its router.
+    public func authorizeProtectedRequest(
+        clientKeyID: String,
+        permission: LOCALBPermission,
+        request: LOCALBHTTPRequestV1,
+        challenge: [UInt8],
+        proofSignatureRaw: [UInt8],
+        checkpoint: LOCALBRegistryCheckpoint
+    ) throws -> LOCALBAuthorizedRequest {
         guard requestChallenges.consume(challenge, clientKeyID: clientKeyID, permission: permission) else {
             throw LOCALBStatus.clientChallengeInvalid
         }
@@ -903,16 +1231,16 @@ public struct LOCALBPairingCoordinator {
         guard client.permissions.contains(permission) else { throw LOCALBStatus.permissionDenied }
         let expectedKeyID = try LOCALBSigningInputV1.keyID(publicKeyRaw: client.publicKeyRaw)
         guard expectedKeyID == clientKeyID else { throw LOCALBStatus.registryCorrupt }
-        guard let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: Data(client.publicKeyRaw)),
-              let input = try? LOCALBClientRequestProofV1.signatureInput(
-                clientKeyID: clientKeyID, permission: permission, challenge: challenge
+        guard proofSignatureRaw.count == 64,
+              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: Data(client.publicKeyRaw)),
+              let input = try? LOCALBClientRequestProofV2.signatureInput(
+                clientKeyID: clientKeyID, permission: permission, request: request, challenge: challenge
               ),
               publicKey.isValidSignature(Data(proofSignatureRaw), for: Data(input)) else {
-            throw LOCALBStatus.pairingProofInvalid
+            throw LOCALBStatus.clientRequestSignatureInvalid
         }
-        return client
+        return LOCALBAuthorizedRequest(client: client, permission: permission, request: request)
     }
-
     /// Management UI listing. Expired credentials are persisted as terminal
     /// EXPIRED events; responses exclude both the bearer secret and its digest.
     public func listPairingCredentials(checkpoint: LOCALBRegistryCheckpoint) throws

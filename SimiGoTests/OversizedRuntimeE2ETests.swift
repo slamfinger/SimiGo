@@ -29,7 +29,19 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         }
         let detected = ModelDetector.detect(path: modelPath)
         let runtime = OversizedRuntime(info: detected)
-        try await runtime.start(detected, port: port)
+        // LOCALB-authorized E2E host (owner ruling, option (a)): real
+        // transport identity + real paired client; requests pass the SAME
+        // B1 transport gate and B3 proof gate as a production client.
+        let host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            detected,
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
         defer { Task { await runtime.stop() } }
 
         // D1 FM-04: a client cancel during generation resolves to ABORT —
@@ -60,19 +72,23 @@ final class OversizedRuntimeE2ETests: XCTestCase {
 
         // The runtime remains fully consistent: the canonical request
         // produces the canonical greedy sequence afterwards.
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!, timeoutInterval: 900)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        let body = try JSONSerialization.data(withJSONObject: [
             "model": "oversized",
             "messages": [["role": "user", "content": "Write a Python function that merges two sorted lists."]],
             "max_tokens": 8,
             "stream": false,
         ])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-        let body = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        XCTAssertNotNil(body?["choices"])
+        let (data, response) = try await LOCALBAuthorizedE2E.send(
+            host: host,
+            port: port,
+            method: "POST",
+            path: "/v1/chat/completions",
+            contentType: "application/json",
+            body: body
+        )
+        XCTAssertEqual(response.statusCode, 200)
+        let bodyJSON = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        XCTAssertNotNil(bodyJSON?["choices"])
     }
 
     func testOversizedChatCompletionEndToEnd() async throws {
@@ -84,14 +100,22 @@ final class OversizedRuntimeE2ETests: XCTestCase {
         XCTAssertTrue(OversizedRuntime.supports(path: modelPath))
 
         let runtime = OversizedRuntime(info: info)
-        try await runtime.start(info, port: port)
+        // LOCALB-authorized E2E host (owner ruling, option (a)): real
+        // transport identity + real paired client for every request below.
+        let host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            info,
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
         defer { Task { await runtime.stop() } }
 
         func chatCompletion() async throws -> (content: String, usage: [String: Any]) {
-            var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!, timeoutInterval: 900)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: [
+            let body = try JSONSerialization.data(withJSONObject: [
                 "model": "oversized",
                 "messages": [
                     ["role": "user", "content": "Write a Python function that merges two sorted lists."]
@@ -99,15 +123,22 @@ final class OversizedRuntimeE2ETests: XCTestCase {
                 "max_tokens": 8,
                 "stream": false,
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await LOCALBAuthorizedE2E.send(
+                host: host,
+                port: port,
+                method: "POST",
+                path: "/v1/chat/completions",
+                contentType: "application/json",
+                body: body
+            )
             XCTAssertEqual(
-                (response as? HTTPURLResponse)?.statusCode, 200,
+                response.statusCode, 200,
                 String(decoding: data, as: UTF8.self))
-            let body = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let choices = body?["choices"] as? [[String: Any]]
+            let bodyJSON = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let choices = bodyJSON?["choices"] as? [[String: Any]]
             let message = choices?.first?["message"] as? [String: Any]
             let content = message?["content"] as? String ?? ""
-            let usage = body?["usage"] as? [String: Any] ?? [:]
+            let usage = bodyJSON?["usage"] as? [String: Any] ?? [:]
             return (content, usage)
         }
 

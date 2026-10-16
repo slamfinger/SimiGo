@@ -37,6 +37,16 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
             remoteBackend: backend
         )
 
+        // LOCALB B1: the remote-proxy listener reuses the SAME transport
+        // policy as every other listener site (this proxy binds loopback by
+        // default — HTTPServer's default bindHost is 127.0.0.1). It is not
+        // exempt from the security-mode matrix; secure by default with
+        // fail-closed startup, legacy plaintext only via the explicit
+        // loopback opt-in.
+        LOCALBTransportPolicy.apply(
+            LOCALBTransportPolicy.decide(bindHost: "127.0.0.1"),
+            to: server
+        )
         try await MainActor.run { try server.start() }
         state.withLock {
             $0.httpServer = server

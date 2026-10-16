@@ -18,6 +18,11 @@ import SimiGo2Experimental
 final class PrefixPoolDailyPathE2ETests: XCTestCase {
     private let port = 18_231
 
+    /// LOCALB-authorized E2E host (owner ruling, option (a)): assigned per
+    /// test before runtime.start so every protected request passes the real
+    /// B1 transport gate and B3 proof gate.
+    private var host: LOCALBAuthorizedE2E.Host!
+
     /// Daily-path fitting model (E-line's first validated architecture).
     private var modelPath: String {
         if let override = ProcessInfo.processInfo.environment["PREFIX_POOL_MODEL_PATH"] {
@@ -127,12 +132,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
     private func chatCompletion(
         sessionId: String, messages: [[String: Any]], maxTokens: Int = 8
     ) async throws -> (text: String, seconds: Double) {
-        var request = URLRequest(
-            url: URL(string: "http://127.0.0.1:\(port)/v1/chat/completions")!,
-            timeoutInterval: 900)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        let body = try JSONSerialization.data(withJSONObject: [
             "model": "daily",
             "messages": messages,
             "max_tokens": maxTokens,
@@ -140,13 +140,20 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
             "session_id": sessionId,
         ])
         let start = Date()
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await LOCALBAuthorizedE2E.send(
+            host: host,
+            port: port,
+            method: "POST",
+            path: "/v1/chat/completions",
+            contentType: "application/json",
+            body: body
+        )
         let seconds = Date().timeIntervalSince(start)
         XCTAssertEqual(
-            (response as? HTTPURLResponse)?.statusCode, 200,
+            response.statusCode, 200,
             String(decoding: data, as: UTF8.self))
-        let body = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        let choices = body?["choices"] as? [[String: Any]]
+        let bodyJSON = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let choices = bodyJSON?["choices"] as? [[String: Any]]
         let message = choices?.first?["message"] as? [String: Any]
         let text = message?["content"] as? String ?? ""
         return (text, seconds)
@@ -158,7 +165,16 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         }
         let runtime = NativeMLX(
             info: ModelInfo(path: modelPath, kind: .mlx), config: ModelConfig())
-        try await runtime.start(ModelInfo(path: modelPath, kind: .mlx), port: port)
+        host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            ModelInfo(path: modelPath, kind: .mlx),
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
         defer { Task { await runtime.stop() } }
         let logStart = traceLogSize()
 
@@ -257,15 +273,26 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         }
         let runtime = NativeMLX(
             info: ModelInfo(path: modelPath, kind: .mlx), config: ModelConfig())
-        try await runtime.start(ModelInfo(path: modelPath, kind: .mlx), port: port)
+        host = try LOCALBAuthorizedE2E.makeHost()
+        try await runtime.startWithLOCALB(
+            ModelInfo(path: modelPath, kind: .mlx),
+            port: port,
+            localbTransportIdentity: host.identity,
+            localbRequestAuthorization: (
+                coordinator: host.coordinator,
+                trustedCheckpoint: host.checkpointProvider
+            )
+        )
         defer { Task { await runtime.stop() } }
         // start() returns before the HTTP surface is accepting: poll
-        // readiness so the first request never hits a closed port.
+        // readiness so the first request never hits a closed port. The
+        // poll itself is an authorized protected request — an unauthorized
+        // GET /v1/models is refused by the B3 gate.
         var httpReady = false
         for _ in 0..<120 {
-            if let url = URL(string: "http://127.0.0.1:\(port)/v1/models"),
-                let (_, resp) = try? await URLSession.shared.data(from: url),
-                (resp as? HTTPURLResponse)?.statusCode == 200 {
+            if let result = try? await LOCALBAuthorizedE2E.send(
+                host: host, port: port, method: "GET", path: "/v1/models"),
+                result.1.statusCode == 200 {
                 httpReady = true
                 break
             }

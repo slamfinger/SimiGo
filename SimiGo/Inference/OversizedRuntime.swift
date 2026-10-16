@@ -1,4 +1,5 @@
 import Foundation
+import LOCALBCore
 import Synchronization
 import SimiGo2Experimental
 
@@ -55,7 +56,27 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
 
     // MARK: - Runtime conformance
 
+    /// Protocol witness (Runtime). Defaults to the shared transport-policy
+    /// decision with no caller-supplied LOCALB configuration.
     public func start(_ info: ModelInfo, port: Int) async throws {
+        try await startWithLOCALB(
+            info, port: port,
+            localbTransportIdentity: nil,
+            localbRequestAuthorization: nil
+        )
+    }
+
+    /// Start with an EXPLICIT caller-supplied LOCALB configuration
+    /// (test/management-plane injection). Never a fallback and never a
+    /// default open rule: when both arguments are nil this is exactly the
+    /// policy-decided path.
+    public func startWithLOCALB(
+        _ info: ModelInfo,
+        port: Int,
+        localbTransportIdentity: LOCALBTransportIdentityHandle?,
+        localbRequestAuthorization: (coordinator: LOCALBPairingCoordinator,
+                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?
+    ) async throws {
         state.withLock { $0.loaded = false }
         _ = try await engine.load()
         state.withLock { $0.loaded = true }
@@ -87,6 +108,31 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
             capabilitiesProvider: nil,
             baseConfigProvider: { ModelConfig() }
         )
+        // LOCALB B1: one shared transport-policy decision for every listener
+        // site. Secure by default; LAN binds can never fall back to
+        // plaintext; legacy plaintext only via explicit loopback opt-in
+        // (SIMIGO_TRANSPORT=legacy-http). Fail-closed decisions surface as
+        // typed start() errors.
+        if let localbTransportIdentity {
+            // Explicit caller-supplied configuration (test/management-plane
+            // injection): a fully verified transport identity plus,
+            // optionally, the LOCALB request-authorization host. This is an
+            // explicit configuration — never a fallback and never a default
+            // open rule; the policy path below stays the default.
+            server.configureLOCALBTransport(identity: localbTransportIdentity)
+            if let localbRequestAuthorization {
+                server.configureLOCALBRequestAuthorization(
+                    coordinator: localbRequestAuthorization.coordinator,
+                    trustedCheckpoint: localbRequestAuthorization
+                        .trustedCheckpoint
+                )
+            }
+        } else {
+            LOCALBTransportPolicy.apply(
+                LOCALBTransportPolicy.decide(bindHost: "127.0.0.1"),
+                to: server
+            )
+        }
         try await MainActor.run { try server.start() }
         httpServer = server
         state.withLock { $0.running = true }
