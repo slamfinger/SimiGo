@@ -65,6 +65,9 @@ public struct CloudBackendConfiguration: Sendable {
 
     /// Accept either a host root (`https://api.example.com`) or a versioned
     /// base (`https://api.example.com/v1`) without producing `/v1/v1/...`.
+    /// The path may carry a query string (origin-form request target):
+    /// `append(path:)` percent-encodes `?`, so the query is split off first
+    /// and re-attached verbatim after path construction.
     public func upstreamURL(path: String) -> URL? {
         guard var baseURL else { return nil }
 
@@ -79,6 +82,15 @@ public struct CloudBackendConfiguration: Sendable {
         let clientPath = String(targetParts[0])
         let encodedQuery = targetParts.count > 1 ? String(targetParts[1]) : nil
         var suffix = clientPath.hasPrefix("/") ? clientPath : "/" + clientPath
+
+        // Split the query before any path handling; the LOCALB request
+        // target has already been parser-validated (canonical escapes, no
+        // control bytes), so the query re-attaches verbatim.
+        var query: Substring?
+        if let queryStart = suffix.firstIndex(of: "?") {
+            query = suffix[suffix.index(after: queryStart)...]
+            suffix = String(suffix[..<queryStart])
+        }
 
         var basePath = baseURL.path
         while basePath != "/" && basePath.hasSuffix("/") {

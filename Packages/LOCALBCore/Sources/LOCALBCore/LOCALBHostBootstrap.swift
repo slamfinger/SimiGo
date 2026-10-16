@@ -76,6 +76,15 @@ public struct LOCALBHostRuntimeContext {
     public func pairingCoordinator() -> LOCALBPairingCoordinator {
         pairingService
     }
+
+    /// Current registry head checkpoint, re-verified against the trusted
+    /// anchor on every call. Production request-authorization wiring uses
+    /// this as the per-call trusted checkpoint so clients paired after this
+    /// process started are still authorized, without ever trusting an
+    /// unverified head.
+    public func currentTrustedCheckpoint() throws -> LOCALBRegistryCheckpoint {
+        try store.currentCheckpoint(extending: trustedCheckpoint)
+    }
 }
 
 public enum LOCALBHostBootstrap {

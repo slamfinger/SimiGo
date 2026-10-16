@@ -1476,9 +1476,14 @@ public final class HTTPServer: @unchecked Sendable {
         }
         let challenge: [UInt8]
         do {
+            // Issuance performs the same registry validation as
+            // authorization (unknown/revoked/under-privileged clients are
+            // refused before consuming ledger capacity) plus per-client
+            // pending and rate limits.
             challenge = try authorization.coordinator.issueRequestChallenge(
                 clientKeyID: clientKeyID,
-                permission: permission
+                permission: permission,
+                checkpoint: try authorization.trustedCheckpoint()
             )
         } catch let status as LOCALBStatus {
             throw HTTPServerError.badRequest(status.rawValue)
@@ -2605,8 +2610,8 @@ public final class HTTPServer: @unchecked Sendable {
             // Reviewed remote-forward allowlist: only signed content
             // semantics cross this boundary. Client headers can never
             // select upstream credentials (Authorization is injected from
-            // the configured backend below) or the upstream target (path
-            // and method come from the verified request).
+            // the configured backend below) or the upstream target (the
+            // path AND query come from the verified request target).
             let upstreamHeaders = request.headers.filter {
                 Self.localbRemoteForwardAllowlist().contains($0.key)
             }
@@ -2778,8 +2783,13 @@ public final class HTTPServer: @unchecked Sendable {
         static let maxTargetBytes = 8_192
         static let maxMethodBytes = 16
 
+        // RFC 9112 §5.1 token characters. Field names are case-
+        // insensitive, so BOTH cases are valid raw tokens; the parser
+        // normalizes to lower-case after validation.
         private static let tokenNameCharacters = Set(
-            "abcdefghijklmnopqrstuvwxyz0123456789!#$%&'*+-.^_`|~"
+            "abcdefghijklmnopqrstuvwxyz"
+                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                + "0123456789!#$%&'*+-.^_`|~"
         )
 
         static func parse(_ headerText: String) throws -> Head {
@@ -2793,9 +2803,14 @@ public final class HTTPServer: @unchecked Sendable {
                 throw HTTPServerError.payloadTooLarge
             }
 
+            // Strict request-line parsing (RFC 9112 §3): exactly three
+            // SP-separated components. Empty subsequences are NOT omitted,
+            // so leading, trailing, or doubled spaces yield a wrong part
+            // count (or an empty method/version token) and are rejected —
+            // never silently normalized.
             let requestParts = requestLine.split(
                 separator: " ",
-                omittingEmptySubsequences: true
+                omittingEmptySubsequences: false
             )
 
             guard requestParts.count == 3 else {
@@ -2851,15 +2866,18 @@ public final class HTTPServer: @unchecked Sendable {
                     throw HTTPServerError.badRequest("Malformed header")
                 }
 
-                let name = String(line[..<colon])
-                    .trimmingCharacters(in: .whitespaces)
-                    .lowercased()
-
-                guard !name.isEmpty,
-                      tokenNameCharacters.isSuperset(of: name)
+                // RFC 9112 §5.1: whitespace between a header field name
+                // and the colon MUST be rejected. The RAW name is validated
+                // as a token first (SP/HTAB are not token characters);
+                // only then is the case normalized. Illegal whitespace is
+                // never trimmed into acceptance.
+                let rawName = String(line[..<colon])
+                guard !rawName.isEmpty,
+                      tokenNameCharacters.isSuperset(of: rawName)
                 else {
                     throw HTTPServerError.badRequest("Malformed header name")
                 }
+                let name = rawName.lowercased()
 
                 let value = String(line[line.index(after: colon)...])
                     .trimmingCharacters(in: .whitespaces)

@@ -404,4 +404,73 @@ final class HTTPRequestBoundaryTests: XCTestCase {
         let status = try XCTUnwrap(statusLine(of: response))
         XCTAssertTrue(status.contains(" 200 "), "got: \(status)")
     }
+
+    // MARK: - Field-name whitespace before the colon (RFC 9112 §5.1)
+
+    /// Whitespace between a header field name and the colon MUST be
+    /// rejected. The raw name is validated as a token before case
+    /// normalization — illegal whitespace is never trimmed into acceptance.
+    func testWhitespaceBeforeHeaderColonIsRejected() throws {
+        assertBadRequest(
+            "GET /health HTTP/1.1\r\n"
+                + "Host : 127.0.0.1\r\nConnection: close\r\n\r\n"
+        )
+        assertBadRequest(
+            "POST /v1/chat/completions HTTP/1.1\r\n"
+                + "Host: 127.0.0.1\r\nContent-Length : 2\r\n"
+                + "Connection: close\r\n\r\n{}"
+        )
+        assertBadRequest(
+            "GET /health HTTP/1.1\r\n"
+                + "Host\t: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        )
+        // Sanity: the exact same heads WITHOUT the pre-colon whitespace
+        // still parse, so the rejection is attributable to the whitespace.
+        let head = try parse(
+            "GET /health HTTP/1.1\r\n"
+                + "Host: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        )
+        XCTAssertEqual(head.headers["host"], "127.0.0.1")
+    }
+
+    func testWhitespaceBeforeHeaderColonRejectedOnTheWire() throws {
+        let (_, port) = try makeLegacyLoopbackServer()
+        let response = sendRawHTTP(
+            port: port,
+            request: "GET /health HTTP/1.1\r\n"
+                + "Host : 127.0.0.1\r\nConnection: close\r\n\r\n"
+        )
+        let status = try XCTUnwrap(statusLine(of: response))
+        XCTAssertTrue(status.contains(" 400 "), "got: \(status)")
+    }
+
+    // MARK: - Request-line whitespace (RFC 9112 §3)
+
+    /// The request line is exactly `method SP request-target SP
+    /// HTTP-version`. Leading, trailing, doubled, or tab separators are
+    /// non-canonical and rejected — never collapsed.
+    func testRequestLineWithNonCanonicalWhitespaceIsRejected() throws {
+        assertBadRequest("GET  /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+        assertBadRequest(" GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+        assertBadRequest("GET /health HTTP/1.1 \r\nHost: 127.0.0.1\r\n\r\n")
+        assertBadRequest("GET\t/health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+        assertBadRequest("GET /health\tHTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+        // Sanity: the canonical single-space form still parses.
+        let head = try parse(
+            "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+        )
+        XCTAssertEqual(head.method, "GET")
+        XCTAssertEqual(head.requestTarget, "/health")
+    }
+
+    func testDoubledSpaceRequestLineRejectedOnTheWire() throws {
+        let (_, port) = try makeLegacyLoopbackServer()
+        let response = sendRawHTTP(
+            port: port,
+            request: "GET  /health HTTP/1.1\r\n"
+                + "Host: 127.0.0.1\r\nConnection: close\r\n\r\n"
+        )
+        let status = try XCTUnwrap(statusLine(of: response))
+        XCTAssertTrue(status.contains(" 400 "), "got: \(status)")
+    }
 }

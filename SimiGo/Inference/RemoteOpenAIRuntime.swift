@@ -1,4 +1,5 @@
 import Foundation
+import LOCALBCore
 import Synchronization
 
 public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
@@ -19,6 +20,23 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
     }
 
     public func start(_ info: ModelInfo, port: Int) async throws {
+        try await startWithLOCALB(info, port: port, localbHostDirectory: nil)
+    }
+
+    /// Start with the default LOCALB host resolution: an activated host
+    /// supplies transport identity AND request authorization from one
+    /// verified context; before activation the listener stays
+    /// transport-only and protected routes remain fail-closed (503). The
+    /// store parameters default to the production Keychain services and
+    /// exist for test/management-plane isolation only.
+    public func startWithLOCALB(
+        _ info: ModelInfo,
+        port: Int,
+        localbHostDirectory: URL?,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
+    ) async throws {
         try backend.configuration.validated(apiKey: backend.apiKey)
 
         let modelId = backend.configuration.model.isEmpty ? "cloud-openai" : backend.configuration.model
@@ -37,15 +55,19 @@ public final class RemoteOpenAIRuntime: Runtime, @unchecked Sendable {
             remoteBackend: backend
         )
 
-        // LOCALB B1: the remote-proxy listener reuses the SAME transport
-        // policy as every other listener site (this proxy binds loopback by
-        // default — HTTPServer's default bindHost is 127.0.0.1). It is not
-        // exempt from the security-mode matrix; secure by default with
-        // fail-closed startup, legacy plaintext only via the explicit
-        // loopback opt-in.
-        LOCALBTransportPolicy.apply(
-            LOCALBTransportPolicy.decide(bindHost: "127.0.0.1"),
-            to: server
+        // LOCALB B1→B3: the remote-proxy listener reuses the SAME default
+        // host resolution as every other listener site (this proxy binds
+        // loopback by default — HTTPServer's default bindHost is
+        // 127.0.0.1). It is not exempt from the security-mode matrix; an
+        // operational LOCALB host yields secure TLS + request
+        // authorization, otherwise secure-by-default transport policy with
+        // fail-closed protected routes.
+        try LOCALBHostRuntime.applyDefault(
+            to: server,
+            bindHost: "127.0.0.1",
+            hostDirectory: localbHostDirectory,
+            keychainStore: keychainStore,
+            transportIdentityStore: transportIdentityStore
         )
         try await MainActor.run { try server.start() }
         state.withLock {

@@ -69,13 +69,18 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
     /// Start with an EXPLICIT caller-supplied LOCALB configuration
     /// (test/management-plane injection). Never a fallback and never a
     /// default open rule: when both arguments are nil this is exactly the
-    /// policy-decided path.
+    /// default-resolution path (operational LOCALB host → transport +
+    /// authorization; otherwise transport-only fail-closed).
     public func startWithLOCALB(
         _ info: ModelInfo,
         port: Int,
         localbTransportIdentity: LOCALBTransportIdentityHandle?,
         localbRequestAuthorization: (coordinator: LOCALBPairingCoordinator,
-                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?
+                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?,
+        localbHostDirectory: URL? = nil,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
     ) async throws {
         state.withLock { $0.loaded = false }
         _ = try await engine.load()
@@ -128,9 +133,16 @@ nonisolated public final class OversizedRuntime: Runtime, @unchecked Sendable {
                 )
             }
         } else {
-            LOCALBTransportPolicy.apply(
-                LOCALBTransportPolicy.decide(bindHost: "127.0.0.1"),
-                to: server
+            // Default resolution: an activated LOCALB host supplies BOTH
+            // the transport identity and request authorization from one
+            // verified context; before activation this stays
+            // transport-only and protected routes remain fail-closed.
+            try LOCALBHostRuntime.applyDefault(
+                to: server,
+                bindHost: "127.0.0.1",
+                hostDirectory: localbHostDirectory,
+                keychainStore: keychainStore,
+                transportIdentityStore: transportIdentityStore
             )
         }
         try await MainActor.run { try server.start() }
