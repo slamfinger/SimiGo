@@ -17,6 +17,7 @@
 		C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AEF3028D80300D1EF95 /* MLXHuggingFace */; };
 		C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
 		C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */; };
+		C1632B162FB5000000D1EF95 /* LOCALBCore in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B152FB5000000D1EF95 /* LOCALBCore */; };
 		C1632B202FB5000000D1EF95 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE63028D60C00D1EF95 /* MLX */; };
 		C1632B212FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */ = {isa = PBXBuildFile; productRef = C1632B112FB5000000D1EF95 /* SimiGo2Experimental */; };
 		C1632B222FB5000000D1EF95 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = C1632AE93028D77B00D1EF95 /* MLXLLM */; };
@@ -67,6 +68,7 @@
 				C1632AF03028D80300D1EF95 /* MLXHuggingFace in Frameworks */,
 				C1632B132FB5000000D1EF95 /* SimiGo2Experimental in Frameworks */,
 				C1632B142FB5000000D1EF95 /* SimiGoRuntimeContract in Frameworks */,
+				C1632B162FB5000000D1EF95 /* LOCALBCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +143,7 @@
 				C1632AEF3028D80300D1EF95 /* MLXHuggingFace */,
 				C1632B112FB5000000D1EF95 /* SimiGo2Experimental */,
 				C1632B122FB5000000D1EF95 /* SimiGoRuntimeContract */,
+				C1632B152FB5000000D1EF95 /* LOCALBCore */,
 			);
 			productName = SimiGo;
 			productReference = C138807D2FB37213009F04D2 /* SimiGo.app */;
@@ -207,6 +210,7 @@
 				C1632ADE3028D4EB00D1EF95 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 				C1632AE83028D6F100D1EF95 /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */,
+				C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C138807E2FB37213009F04D2 /* Products */;
@@ -536,6 +540,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/SimiGoRuntime;
 		};
+		C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/LOCALBCore;
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -588,6 +596,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C1632B102FB5000000D1EF95 /* XCLocalSwiftPackageReference "SimiGoRuntime" */;
 			productName = SimiGoRuntimeContract;
+		};
+		C1632B152FB5000000D1EF95 /* LOCALBCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C1632B172FB5000000D1EF95 /* XCLocalSwiftPackageReference "LOCALBCore" */;
+			productName = LOCALBCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
