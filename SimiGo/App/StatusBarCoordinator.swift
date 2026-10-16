@@ -129,7 +129,9 @@ final class StatusBarCoordinator: NSObject {
         }
 
         let window = NSWindow(contentViewController: NSHostingController(
-            rootView: ExecutionStateGraphView().environmentObject(stateGraph)
+            rootView: ExecutionStateGraphView()
+                .environmentObject(stateGraph)
+                .environmentObject(svc)
         ))
         window.title = "Execution State"
         window.setContentSize(NSSize(width: 820, height: 560))

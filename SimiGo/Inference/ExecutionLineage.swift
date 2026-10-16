@@ -29,7 +29,7 @@ public struct ExecutionRecord: Sendable {
 /// **storageKey 级**分支寻址，语义是"checkpoint 从哪个分支复制而来"，
 /// **不是** execution→execution lineage（当前 fork 不产生执行级父子）。
 /// （外审十一轮 P2-2：语义钉死，防误读为执行血统。）
-public struct BranchForkEvent: Sendable {
+public struct BranchForkEvent: Sendable, Hashable {
     public let parent: String
     public let child: String
     public let at: Date

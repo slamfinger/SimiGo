@@ -397,11 +397,42 @@ final class ExecutionStateGraphStore: ObservableObject {
 
 struct ExecutionStateGraphView: View {
     @EnvironmentObject private var store: ExecutionStateGraphStore
+    @State private var mode: Mode = .live
     @State private var selectedID: String?
     @State private var continuationInput = ""
     @State private var selectedCheckpointID: UUID?
 
+    /// 2026-10-16 收敛：窗口默认显示引擎真身（Live 只读投影）；
+    /// 契约参考图（ES Contract v1.0-amended 的产品化演示）保留为切换页。
+    private enum Mode: String, CaseIterable, Identifiable {
+        case live = "实时引擎"
+        case reference = "契约参考图"
+
+        var id: String { rawValue }
+    }
+
     var body: some View {
+        VStack(spacing: 0) {
+            Picker("视图", selection: $mode) {
+                ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(8)
+
+            Divider()
+
+            switch mode {
+            case .live:
+                LiveExecutionStateView()
+            case .reference:
+                referenceBody
+            }
+        }
+        .navigationTitle("Execution State")
+        .frame(minWidth: 720, minHeight: 480)
+    }
+
+    private var referenceBody: some View {
         HSplitView {
             List {
                 ForEach(store.states.filter { $0.parentID == nil }) { state in
@@ -415,10 +446,8 @@ struct ExecutionStateGraphView: View {
             .frame(minWidth: 260, idealWidth: 320)
 
             inspector
-                .frame(minWidth: 380, idealWidth: 480, maxHeight: .infinity)
+                .frame(minWidth: 380, idealWidth: 480)
         }
-        .navigationTitle("Execution State")
-        .frame(minWidth: 720, minHeight: 480)
         .onAppear {
             if selectedID == nil {
                 selectedID = store.states.first?.id
@@ -630,5 +659,135 @@ private struct StateNodeView: View {
         }
         .buttonStyle(.plain)
         .listRowBackground(selection == state.id ? Color.accentColor.opacity(0.14) : Color.clear)
+    }
+}
+
+/// 引擎真身视图（2026-10-16 收敛）：消费 Service 的只读投影，
+/// 2s 轮询、task 随视图消失自动取消。无进程内运行时（外部进程 /
+/// 云后端 / 已停止）显示占位说明——不伪造状态（遥测语义诚实红线）。
+private struct LiveExecutionStateView: View {
+    @EnvironmentObject private var svc: Service
+    @State private var snapshot: EngineExecutionStateSnapshot?
+
+    var body: some View {
+        Group {
+            if let snapshot {
+                content(snapshot)
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: "bolt.slash")
+                        .font(.title)
+                        .foregroundStyle(.secondary)
+                    Text("无进程内执行状态")
+                    Text("外部进程 / 云后端运行中，或运行时已停止")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task {
+            while !Task.isCancelled {
+                svc.refreshExecutionState()
+                snapshot = svc.executionState
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func content(_ snapshot: EngineExecutionStateSnapshot) -> some View {
+        List {
+            Section("运行时") {
+                LabeledContent("状态", value: snapshot.isRunning ? "运行中" : "已停止")
+                LabeledContent("待入请求", value: "\(snapshot.pendingRequests)")
+                LabeledContent("生成中", value: "\(snapshot.activeGenerations)")
+                LabeledContent("活会话", value: "\(snapshot.sessions.count)")
+            }
+
+            Section("活会话（最近活跃在前）") {
+                if snapshot.sessions.isEmpty {
+                    Text("（无）").foregroundStyle(.secondary)
+                }
+                ForEach(snapshot.sessions, id: \.label) { card in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(card.label)
+                                .font(.system(.body, design: .monospaced))
+                            Text("history \(card.historyCount) 条 · \(card.lastActivity.formatted(.relative(presentation: .named)))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        HStack(spacing: 4) {
+                            if card.requestScoped { badge("一次性", .secondary) }
+                            if card.isRestoredSnapshot { badge("restore", .blue) }
+                            if card.checkpointDirty { badge("dirty", .orange) }
+                        }
+                    }
+                }
+            }
+
+            Section("分支血统（fork 溯源）") {
+                if snapshot.forks.isEmpty {
+                    Text("（无）").foregroundStyle(.secondary)
+                }
+                ForEach(Array(snapshot.forks.reversed().enumerated()), id: \.offset) { _, fork in
+                    HStack {
+                        Text("\(short(fork.parent)) → \(short(fork.child))")
+                            .font(.system(.body, design: .monospaced))
+                        Spacer()
+                        Text(fork.at.formatted(.relative(presentation: .named)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Section("执行血统（最近 \(min(snapshot.lineageRecords.count, 20)) 条）") {
+                ForEach(Array(snapshot.lineageRecords.suffix(20).reversed()), id: \.executionId) { record in
+                    HStack {
+                        Text("exec \(record.executionId.prefix(6))")
+                            .font(.system(.body, design: .monospaced))
+                        statusLabel(record.status)
+                        Spacer()
+                        Text(duration(record))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    /// storageKey 末 6 位（[MEM] 行与 [CANCEL] 同款紧凑惯例）。
+    private func short(_ key: String) -> String {
+        key.count > 6 ? String(key.suffix(6)) : key
+    }
+
+    private func badge(_ text: String, _ color: Color) -> some View {
+        Text(text)
+            .font(.caption2.weight(.medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.15), in: Capsule())
+            .foregroundStyle(color)
+    }
+
+    private func statusLabel(_ status: ExecutionStatus) -> some View {
+        let color: Color
+        switch status {
+        case .running: color = .blue
+        case .completed: color = .green
+        case .failed: color = .red
+        case .cancelled: color = .orange
+        }
+        return Text(status.rawValue)
+            .font(.caption)
+            .foregroundStyle(color)
+    }
+
+    private func duration(_ record: ExecutionRecord) -> String {
+        guard let end = record.completedAt else { return "…" }
+        return String(format: "%.1fs", end.timeIntervalSince(record.startedAt))
     }
 }

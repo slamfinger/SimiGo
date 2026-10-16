@@ -1941,6 +1941,35 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    // MARK: - Execution State 投影（2026-10-16 收敛；只读）
+
+    /// 引擎真身只读投影：Execution State 窗口的展示层事实源。
+    /// state 锁内抄会话表 + lineage 快照，零 IO、零行为；血统遵守
+    /// S5 红线——只记录与查询，不做执行决策。
+    func executionStateSnapshot() -> EngineExecutionStateSnapshot {
+        let lineageSnapshot = lineage.snapshot
+        return state.withLock { state in
+            EngineExecutionStateSnapshot(
+                isRunning: state.isRunning,
+                pendingRequests: state.pendingRequestIds.count,
+                activeGenerations: state.activeRequestTasks.count,
+                sessions: state.sessions
+                    .sorted { $0.value.lastActivity > $1.value.lastActivity }
+                    .map { (mapKey, session) in
+                        .init(
+                            label: EngineExecutionStateSnapshot.label(
+                                mapKey: mapKey, executionKey: session.executionKey),
+                            historyCount: session.history.count,
+                            isRestoredSnapshot: session.isRestoredSnapshot,
+                            checkpointDirty: session.checkpointDirty,
+                            requestScoped: AgentExecutionKey.isRequestScopedSession(mapKey),
+                            lastActivity: session.lastActivity)
+                    },
+                lineageRecords: lineageSnapshot.records,
+                forks: lineageSnapshot.forks)
+        }
+    }
+
     // MARK: - Branch Fork（生产分支协议 v1；证据链与设计见 docs/decisions/BRANCH_FORK_PROTOCOL_DRAFT.md）
 
     /// 分支 checkpoint 默认存储：~/.simigo/branch-checkpoints/（跨 suspend 持久；

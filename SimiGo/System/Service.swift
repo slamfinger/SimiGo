@@ -544,6 +544,8 @@ public final class Service: ObservableObject {
     @Published public var memoryPressure = "normal"
     @Published public var config = ModelConfig()
     @Published public private(set) var inferenceNode = InferenceNodeConfiguration.shared
+    /// Execution State 窗口的引擎只读投影（nil = 无进程内执行状态）。
+    @Published public private(set) var executionState: EngineExecutionStateSnapshot?
 
     private let runtimeState = Mutex<Runtime?>(nil)
     private var healthTask: Task<Void, Never>?
@@ -1042,6 +1044,20 @@ public final class Service: ObservableObject {
         status = "已停止"
 
         Self.log("✅ 大模型已完全卸载，显存/内存已清空", level: .info)
+    }
+
+    // MARK: Execution State 投影
+
+    /// 刷新引擎执行状态只读投影（Execution State 窗口消费）。native
+    /// 运行时才有会话图；外部进程 / 云后端置 nil——不伪造状态。
+    /// 同步锁内快照，无 IO。
+    public func refreshExecutionState() {
+        let runtime = runtimeState.withLock { $0 }
+        guard let native = runtime as? NativeMLX else {
+            if executionState != nil { executionState = nil }
+            return
+        }
+        executionState = native.executionStateSnapshot()
     }
 
     // MARK: Restart
