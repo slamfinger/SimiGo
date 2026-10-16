@@ -32,6 +32,50 @@ final class CloudBackendTests: XCTestCase {
         XCTAssertEqual(url.absoluteString, "https://api.example.com/v1/chat/completions")
     }
 
+    func testRemoteRequestPreservesSignedEncodedQueryExactly() throws {
+        let backend = RemoteOpenAIBackend(
+            configuration: CloudBackendConfiguration(
+                baseURLString: "https://api.example.com/v1",
+                model: "gpt-test"
+            ),
+            apiKey: "secret"
+        )
+
+        let request = try backend.makeRequest(
+            path: "/v1/chat/completions?metadata=a%2Fb&stream=1",
+            method: "POST",
+            headers: ["content-type": "application/json"],
+            body: Data(#"{"model":"gpt-test","messages":[],"stream":true}"#.utf8)
+        )
+
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://api.example.com/v1/chat/completions?metadata=a%2Fb&stream=1"
+        )
+    }
+
+    func testRemoteRequestPreservesEmptyQueryDelimiter() throws {
+        let backend = RemoteOpenAIBackend(
+            configuration: CloudBackendConfiguration(
+                baseURLString: "https://api.example.com/v1",
+                model: "gpt-test"
+            ),
+            apiKey: "secret"
+        )
+
+        let request = try backend.makeRequest(
+            path: "/v1/chat/completions?",
+            method: "POST",
+            headers: ["content-type": "application/json"],
+            body: Data(#"{"model":"gpt-test","messages":[]}"#.utf8)
+        )
+
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://api.example.com/v1/chat/completions?"
+        )
+    }
+
     func testZAICodingBaseURLDoesNotDuplicateV4() throws {
         let configuration = CloudBackendConfiguration(
             baseURLString: "https://open.bigmodel.cn/api/coding/paas/v4",

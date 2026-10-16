@@ -57,7 +57,18 @@ public struct CloudBackendConfiguration: Sendable {
     /// base (`https://api.example.com/v1`) without producing `/v1/v1/...`.
     public func upstreamURL(path: String) -> URL? {
         guard var baseURL else { return nil }
-        var suffix = path.hasPrefix("/") ? path : "/" + path
+
+        // Callers may pass the verified origin-form request-target, which
+        // includes a query string. Split it before append(path:) because that
+        // API treats '?' as path data and would percent-encode the delimiter.
+        let targetParts = path.split(
+            separator: "?",
+            maxSplits: 1,
+            omittingEmptySubsequences: false
+        )
+        let clientPath = String(targetParts[0])
+        let encodedQuery = targetParts.count > 1 ? String(targetParts[1]) : nil
+        var suffix = clientPath.hasPrefix("/") ? clientPath : "/" + clientPath
 
         var basePath = baseURL.path
         while basePath != "/" && basePath.hasSuffix("/") {
@@ -71,7 +82,19 @@ public struct CloudBackendConfiguration: Sendable {
         }
 
         baseURL.append(path: suffix)
-        return baseURL
+
+        // Preserve the caller's already-validated percent-encoded query byte
+        // for byte. In particular, don't decode/re-encode %2F or collapse an
+        // empty query delimiter; LOCALB signs the original request-target.
+        guard let encodedQuery else { return baseURL }
+        guard var components = URLComponents(
+            url: baseURL,
+            resolvingAgainstBaseURL: false
+        ) else {
+            return nil
+        }
+        components.percentEncodedQuery = encodedQuery
+        return components.url
     }
 
     nonisolated private static func isVersionSegment(_ segment: Substring) -> Bool {

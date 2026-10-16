@@ -2611,7 +2611,10 @@ public final class HTTPServer: @unchecked Sendable {
                 Self.localbRemoteForwardAllowlist().contains($0.key)
             }
             upstreamRequest = try backend.makeRequest(
-                path: request.path,
+                // The LOCALB proof authenticates the exact request-target,
+                // including its query. Do not silently drop that signed
+                // semantic when forwarding to the configured upstream.
+                path: request.requestTarget,
                 method: request.method,
                 headers: upstreamHeaders,
                 body: request.body
