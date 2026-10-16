@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Network
 import XCTest
@@ -17,8 +18,43 @@ import XCTest
 /// exemption that makes local mock development legal.
 final class LOCALBRemoteForwardE2ETests: XCTestCase {
 
-    private let serverPort = 18_441
-    private let upstreamPort = 18_442
+    /// Review requirement (PR #14 ruling): no fixed ports — discover free
+    /// ephemeral loopback ports by binding and releasing dummy sockets.
+    private static func freeLoopbackPort() throws -> Int {
+        var addr = sockaddr_in()
+        addr.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr.s_addr = INADDR_LOOPBACK.bigEndian
+        let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
+        guard fd >= 0 else {
+            throw NSError(domain: "port-probe", code: Int(errno))
+        }
+        defer { Darwin.close(fd) }
+        var yes: Int32 = 1
+        _ = withUnsafePointer(to: &yes) {
+            Darwin.setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                       $0, socklen_t(MemoryLayout<Int32>.size))
+        }
+        let bound = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard bound == 0 else {
+            throw NSError(domain: "port-probe", code: Int(errno))
+        }
+        var named = sockaddr_in()
+        var nameLen = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let namedOK = withUnsafeMutablePointer(to: &named) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                Darwin.getsockname(fd, $0, &nameLen)
+            }
+        }
+        guard namedOK == 0 else {
+            throw NSError(domain: "port-probe", code: Int(errno))
+        }
+        return Int(UInt16(bigEndian: named.sin_port))
+    }
 
     /// One-shot capture upstream: accepts a single connection, records the
     /// request line + Authorization header, replies with a canned chat
@@ -149,6 +185,8 @@ final class LOCALBRemoteForwardE2ETests: XCTestCase {
     }
 
     func testUpstreamReceivesSignedTargetByteForByte() async throws {
+        let upstreamPort = try Self.freeLoopbackPort()
+        let serverPort = try Self.freeLoopbackPort()
         let upstream = try MockUpstream(port: upstreamPort)
         upstream.start()
         defer { upstream.stop() }
