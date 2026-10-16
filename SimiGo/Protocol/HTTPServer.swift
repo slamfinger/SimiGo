@@ -158,6 +158,15 @@ public final class HTTPServer: @unchecked Sendable {
         private var _closed = false
         private var _cancelledByRuntime = false
 
+        /// 生成期对端关闭监听（2026-10-15 孤儿推理收口）。
+        /// NWConnection 对客户端优雅关闭（FIN）不产生 state 变化，只在
+        /// receive 侧以 EOF 浮出；此前检测全靠出站 send 错误（流式）或
+        /// 心跳，非流式路径在整段生成期间零出站字节——客户端关掉后推理
+        /// 会空转到自然结束。生成期挂一条 1 字节 receive：EOF/错误即
+        /// terminate → cancelGeneration；由 accept() 注入回调。
+        private var _peerCloseWatcherArmed = false
+        var onPeerClosed: (@Sendable () -> Void)?
+
         /// 出站真实数据（headers / chunk / 事件）最后一次发送的时刻。
         /// SSE 心跳据此判断当前是否处于静默窗口。
         private let outboundActivity = Locked(Date())
@@ -221,19 +230,81 @@ public final class HTTPServer: @unchecked Sendable {
 
         @discardableResult
         func markGenerationStarted() -> Bool {
-            stateLock.withLock {
-                guard !_closed else {
-                    return false
+            // started=原语义（closed 时 false，调用方据此放弃）；
+            // armWatcher 独立——重复 start（容错路径）只挂一条监听。
+            let outcome: (started: Bool, armWatcher: Bool) =
+                stateLock.withLock {
+                    guard !_closed else {
+                        return (false, false)
+                    }
+
+                    _generationStarted = true
+
+                    if _peerCloseWatcherArmed {
+                        return (true, false)
+                    }
+
+                    _peerCloseWatcherArmed = true
+                    return (true, true)
                 }
 
-                _generationStarted = true
-                return true
+            // receive 注册不能在 stateLock 内做（回调可能立即入队重入）。
+            if outcome.armWatcher {
+                armPeerCloseWatch()
             }
+
+            return outcome.started
         }
 
         func markGenerationFinished() {
             stateLock.withLock {
                 _generationStarted = false
+                _peerCloseWatcherArmed = false
+            }
+        }
+
+        /// 挂起 1 字节 receive 直到本连接生成结束。任何非空入站数据
+        /// （客户端提前管道化）不视为断连，续听；EOF / 错误才触发回调。
+        /// 自身 cancel（正常收尾）产生的 ECANCELED 由 active 判定拦下。
+        private func armPeerCloseWatch() {
+            connection.receive(
+                minimumIncompleteLength: 1,
+                maximumLength: 1
+            ) { [weak self] data, _, isComplete, error in
+
+                guard let self else {
+                    return
+                }
+
+                let clientGone =
+                    error != nil
+                    || (isComplete && (data?.isEmpty ?? true))
+
+                let active: Bool = stateLock.withLock {
+                    guard
+                        self._generationStarted,
+                        !self._closed,
+                        self._peerCloseWatcherArmed
+                    else {
+                        return false
+                    }
+
+                    if clientGone {
+                        self._peerCloseWatcherArmed = false
+                    }
+
+                    return true
+                }
+
+                guard active else {
+                    return
+                }
+
+                if clientGone {
+                    onPeerClosed?()
+                } else {
+                    armPeerCloseWatch()
+                }
             }
         }
 
@@ -309,6 +380,7 @@ public final class HTTPServer: @unchecked Sendable {
                 }
 
                 _closed = true
+                _peerCloseWatcherArmed = false
 
                 let task = _requestTask
                 _requestTask = nil
@@ -326,6 +398,7 @@ public final class HTTPServer: @unchecked Sendable {
                 let wasOpen = !_closed
 
                 _closed = true
+                _peerCloseWatcherArmed = false
                 _requestTask = nil
 
                 return wasOpen
@@ -571,6 +644,31 @@ public final class HTTPServer: @unchecked Sendable {
             }
         }
 
+        // 生成期对端关闭监听回调（EOF 路径与 state 失败路径共用 terminate）。
+        // r= 展示 6 位短 ID，与 [LC] 行可直连（2026-09-19 展示惯例）。
+        // 回调自 receive completion（@Sendable、连接队列）进入：
+        // terminate 是 MainActor 隔离，经 Task 跳演员执行，此时无锁持有。
+        context.onPeerClosed = { [weak self, weak context] in
+            guard let context else {
+                return
+            }
+
+            RuntimeTraceLogger.shared.trace(
+                "[PROTOCOL] peerClosed r=\(String(context.requestId.dropFirst(4).prefix(6)))"
+            )
+
+            Task { @MainActor [weak self, weak context] in
+                guard let self, let context else {
+                    return
+                }
+
+                self.terminate(
+                    context,
+                    cancelGeneration: true
+                )
+            }
+        }
+
         // V1.6.1（事件 B 修复，2026-09-19）：每连接独立串行队列——
         // 原实现全部连接共享一条串行队列，单个连接回调卡死（os_state
         // dispatch_sync 等主事件，事件 B 3/3 复现）即冻结全部连接 I/O
@@ -651,6 +749,9 @@ public final class HTTPServer: @unchecked Sendable {
         }
     }
 
+    // terminate 为模块默认 MainActor 隔离（勿显式标注：隐性隔离下既有
+    // 连接队列调用点无警告，显式化会翻成硬警告）。本方法由连接队列
+    // 回调进入时须跳主演员执行（见 onPeerClosed 注释）。
     func terminate(
         _ context: ConnectionContext,
         cancelGeneration: Bool
@@ -1412,6 +1513,19 @@ public final class HTTPServer: @unchecked Sendable {
         endpoint: String,
         context: ConnectionContext
     ) {
+        // 到达锚点入 trace（2026-10-15）：GUI 进程 stdout 不可见，身份行
+        // 此前只在内存里「到达过」。10-15 事故取证时无法从 trace 区分
+        // 「活客户端管道化」与「孤儿请求排队放行」，每请求一行补齐。
+        // r=/s= 用 6 位短 ID，与 [LC] 行可直连。
+        RuntimeTraceLogger.shared.trace(
+            "[PROTOCOL] arrive" +
+            " r=\(String(context.requestId.dropFirst(4).prefix(6)))" +
+            " endpoint=\(endpoint)" +
+            " agent=\(context.agentId ?? "default")" +
+            " s=\(context.sessionId.map { String($0.prefix(6)) } ?? "-")" +
+            " branch=\(context.logicalBranchId ?? "main")"
+        )
+
         print(
             "[SimiGo Protocol] " +
             "[EXECUTION] " +
