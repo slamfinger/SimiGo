@@ -605,64 +605,12 @@ extension HTTPServer {
 
         await context.registerLifecycle()
 
-        // 非流式长静默窗口保活（2026-10-16）。
-        //
-        // 非流式契约是「生成完成前零出站字节」，而 Node/undici 默认
-        // headersTimeout=300s / bodyTimeout=300s：整整 300 秒拿不到任何
-        // 响应字节即拆连接（2026-10-16 生产实测：11 笔非流式长预填请求
-        // 全部在 301.4s peerClosed，最惨一笔渲染进度 97% 报废，客户端
-        // 盲重试致 GPU 空转约 55 分钟）。流式路径已有立即头 + 空 delta
-        // 事件双保活，非流式此前无装甲。
-        //
-        // 方案：240s 定时器（=300s 死线留 60s 余量）与生成赛跑——窗口
-        // 内完成的请求字节行为与本改动前完全一致（错误状态码语义保
-        // 全）；仅超窗请求先提交 200 头（无 Content-Length、close 定
-        // 界），随后每 5s 滴一个 JSON 合法前导空白字节（RFC 8259 ws）
-        // 喂住两层超时，终结时补发全量 JSON 体。该模式下状态码不可逆
-        // （恒 200），错误以同构 error 体承载——此模式客户端在今天
-        // 必然死于拆连，任何可解析终态都是严格改进。
-        let generationSettled = Locked(false)
-        let headCommitted = Locked(false)
-        let keepalive = Task { [weak self, weak context] in
-            try? await Task.sleep(
-                nanoseconds: 240 * 1_000_000_000
-            )
-
-            guard
-                !Task.isCancelled,
-                let self,
-                let context,
-                !context.closed,
-                !generationSettled.value
-            else {
-                return
-            }
-
-            headCommitted.mutate { $0 = true }
-
-            self.sendDeferredJSONHead(context: context)
-
-            while !Task.isCancelled {
-                try? await Task.sleep(
-                    nanoseconds: 5 * 1_000_000_000
-                )
-
-                guard
-                    !Task.isCancelled,
-                    !context.closed,
-                    !generationSettled.value
-                else {
-                    return
-                }
-
-                self.sendRaw(
-                    Data("\n".utf8),
-                    context: context,
-                    close: false
-                )
-            }
-        }
-        defer { keepalive.cancel() }
+        // 非流式长静默窗口保活（2026-10-16；机制与实测档案见
+        // startNonStreamingKeepalive，三个非流式 handler 共用）。
+        let keepalive = startNonStreamingKeepalive(
+            context: context
+        )
+        defer { keepalive.settle() }
 
         let fullContent =
             Locked("")
@@ -702,7 +650,7 @@ extension HTTPServer {
                 }
             )
 
-            generationSettled.mutate { $0 = true }
+            keepalive.settle()
 
             guard
                 !context.closed,
@@ -763,7 +711,7 @@ extension HTTPServer {
                 ]]
             ]
 
-            if headCommitted.value {
+            if keepalive.committed {
                 sendDeferredJSONTerminal(
                     responseBody,
                     context: context
@@ -782,7 +730,7 @@ extension HTTPServer {
         } catch is CancellationError {
             // 取消契约：非流式尚未发出任何字节（keepalive 未提交头）时，
             // 客户端仍连接必须给出 HTTP 终态。
-            generationSettled.mutate { $0 = true }
+            keepalive.settle()
             failureReason = context.cancellationFailureReason()
             guard !context.closed else { return }
 
@@ -791,12 +739,12 @@ extension HTTPServer {
                 status: 503,
                 on: context.connection,
                 context: context,
-                headCommitted: headCommitted.value
+                headCommitted: keepalive.committed
             )
 
         } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
             // 未提交头（快失败路径）：直接给 HTTP 400 终态。
-            generationSettled.mutate { $0 = true }
+            keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
             guard !context.closed else { return }
 
@@ -805,10 +753,10 @@ extension HTTPServer {
                 status: 400,
                 on: context.connection,
                 context: context,
-                headCommitted: headCommitted.value
+                headCommitted: keepalive.committed
             )
         } catch {
-            generationSettled.mutate { $0 = true }
+            keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
@@ -819,14 +767,115 @@ extension HTTPServer {
                 status: 500,
                 on: context.connection,
                 context: context,
-                headCommitted: headCommitted.value
+                headCommitted: keepalive.committed
             )
         }
     }
 
+    /// 非流式长静默窗口保活句柄：生成结束方调用 settle()（幂等），
+    /// 终结发送前读 committed 决定走原路径（错误状态码保全）还是
+    /// 已提交 200 头后的裸 JSON 直发。三个非流式 handler 共用。
+    final class NonStreamingKeepalive {
+
+        private let settled: Locked<Bool>
+
+        private let headCommitted: Locked<Bool>
+
+        private let task: Task<Void, Never>
+
+        init(
+            settled: Locked<Bool>,
+            headCommitted: Locked<Bool>,
+            task: Task<Void, Never>
+        ) {
+            self.settled = settled
+            self.headCommitted = headCommitted
+            self.task = task
+        }
+
+        var committed: Bool {
+            headCommitted.value
+        }
+
+        func settle() {
+            settled.mutate { $0 = true }
+            task.cancel()
+        }
+    }
+
+    /// 非流式长静默窗口保活启动器（2026-10-16，v2.1.14 提取三端点共享）。
+    ///
+    /// 非流式契约是「生成完成前零出站字节」，而 Node/undici 默认
+    /// headersTimeout=300s / bodyTimeout=300s：整整 300 秒拿不到任何
+    /// 响应字节即拆连接（2026-10-16 生产实测：11 笔非流式长预填请求
+    /// 全部在 301.4s peerClosed，最惨一笔渲染进度 97% 报废，客户端
+    /// 盲重试致 GPU 空转约 55 分钟）。流式路径已有立即头 + 空 delta
+    /// 事件双保活，非流式此前无装甲。
+    ///
+    /// 方案：240s 定时器（=300s 死线留 60s 余量）与生成赛跑——窗口
+    /// 内完成的请求字节行为与本机制引入前完全一致（错误状态码语义
+    /// 保全）；仅超窗请求先提交 200 头（无 Content-Length、close 定
+    /// 界），随后每 5s 滴一个 JSON 合法前导空白字节（RFC 8259 ws）
+    /// 喂住两层超时，终结时补发全量 JSON 体。该模式下状态码不可逆
+    /// （恒 200），错误以同构 error 体承载——此模式客户端在无保活
+    /// 时必然死于拆连，任何可解析终态都是严格改进。
+    func startNonStreamingKeepalive(
+        context: ConnectionContext
+    ) -> NonStreamingKeepalive {
+
+        let settled = Locked(false)
+        let headCommitted = Locked(false)
+
+        let task = Task { [weak self, weak context] in
+            try? await Task.sleep(
+                nanoseconds: 240 * 1_000_000_000
+            )
+
+            guard
+                !Task.isCancelled,
+                let self,
+                let context,
+                !context.closed,
+                !settled.value
+            else {
+                return
+            }
+
+            headCommitted.mutate { $0 = true }
+
+            self.sendDeferredJSONHead(context: context)
+
+            while !Task.isCancelled {
+                try? await Task.sleep(
+                    nanoseconds: 5 * 1_000_000_000
+                )
+
+                guard
+                    !Task.isCancelled,
+                    !context.closed,
+                    !settled.value
+                else {
+                    return
+                }
+
+                self.sendRaw(
+                    Data("\n".utf8),
+                    context: context,
+                    close: false
+                )
+            }
+        }
+
+        return NonStreamingKeepalive(
+            settled: settled,
+            headCommitted: headCommitted,
+            task: task
+        )
+    }
+
     /// keepalive 模式的错误终结：头未提交走原路径（状态码语义不变）；
     /// 头已恒 200 时以同构 error 体直发 + close。
-    private func sendNonStreamingError(
+    func sendNonStreamingError(
         _ message: String,
         status: Int,
         on connection: NWConnection,
@@ -851,7 +900,7 @@ extension HTTPServer {
 
     /// keepalive 头提交（镜像 sendImmediateStreamingHeaders 的裸写法）：
     /// 200 + JSON 头，无 Content-Length（close 定界体），Connection: close。
-    private func sendDeferredJSONHead(
+    func sendDeferredJSONHead(
         context: ConnectionContext
     ) {
         guard !context.closed else {
@@ -901,7 +950,7 @@ extension HTTPServer {
     /// keepalive 模式的终结发送：头已提交，全量 JSON 体直发 + close
     /// （enqueueSend 自带 error→terminate / close→finish 收口语义）。
     /// 体前可能已有前导空白滴（RFC 8259 合法 ws），客户端解析不受影响。
-    private func sendDeferredJSONTerminal(
+    func sendDeferredJSONTerminal(
         _ body: [String: Any],
         context: ConnectionContext
     ) {

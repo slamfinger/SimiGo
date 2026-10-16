@@ -485,10 +485,18 @@ extension HTTPServer {
 
         printExecutionIdentity(
             endpoint: "responses",
-            context: context
+            context: context,
+            stream: false
         )
 
         await context.registerLifecycle()
+
+        // 非流式长静默窗口保活（2026-10-16；机制与实测档案见
+        // startNonStreamingKeepalive，三个非流式 handler 共用）。
+        let keepalive = startNonStreamingKeepalive(
+            context: context
+        )
+        defer { keepalive.settle() }
 
         let created =
             Int(Date().timeIntervalSince1970)
@@ -530,6 +538,8 @@ extension HTTPServer {
                     }
                 }
             )
+
+            keepalive.settle()
 
             guard
                 !context.closed,
@@ -588,53 +598,66 @@ extension HTTPServer {
                 )
             }
 
-            sendJSON(
-                response,
-                status: 200,
-                on: context.connection,
-                context: context
-            )
+            if keepalive.committed {
+                sendDeferredJSONTerminal(
+                    response,
+                    context: context
+                )
+            } else {
+                sendJSON(
+                    response,
+                    status: 200,
+                    on: context.connection,
+                    context: context
+                )
+            }
 
             isSuccess = true
 
         } catch is CancellationError {
-            // 取消契约：非流式尚未发出任何字节，
-            // 客户端仍连接时必须给出 HTTP 终态，否则将无限等待。
+            // 取消契约：keepalive 头未提交时客户端仍连接必须给 HTTP
+            // 终态，否则将无限等待。
+            keepalive.settle()
             failureReason = context.cancellationFailureReason()
             guard !context.closed else {
                 return
             }
 
-            sendError(
+            sendNonStreamingError(
                 "Generation cancelled",
                 status: 503,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: keepalive.committed
             )
         } catch NativeMLXValidationError.contextDemandExceeded(let demand, let budget) {
-            // CONTEXT SAFETY：非流式尚未发出任何字节，直接给 HTTP 400 终态。
+            // CONTEXT SAFETY：头未提交（快失败路径）直接给 HTTP 400 终态。
+            keepalive.settle()
             failureReason = "context_demand_exceeded: \(demand)>\(budget)"
             guard !context.closed else {
                 return
             }
 
-            sendError(
+            sendNonStreamingError(
                 "context_length_exceeded: prompt content \(demand) tokens exceeds context budget \(budget); compact the conversation and retry",
                 status: 400,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: keepalive.committed
             )
         } catch {
+            keepalive.settle()
             failureReason = "model_execution_error: \(error.localizedDescription)"
             guard !context.closed else {
                 return
             }
 
-            sendError(
+            sendNonStreamingError(
                 error.localizedDescription,
                 status: 500,
                 on: context.connection,
-                context: context
+                context: context,
+                headCommitted: keepalive.committed
             )
         }
     }
@@ -689,7 +712,8 @@ extension HTTPServer {
 
         printExecutionIdentity(
             endpoint: "responses",
-            context: context
+            context: context,
+            stream: true
         )
 
         await context.registerLifecycle()
