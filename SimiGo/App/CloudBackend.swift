@@ -48,6 +48,16 @@ public struct CloudBackendConfiguration: Sendable {
         }
 
         let isLoopback = ["127.0.0.1", "localhost", "::1"].contains(host)
+        let scheme = baseURL.scheme?.lowercased()
+        // The backend injects its API key into Authorization. Never send that
+        // credential over plaintext HTTP to a non-loopback host; loopback HTTP
+        // remains available for local development and local mock servers.
+        guard scheme == "https" || (scheme == "http" && isLoopback) else {
+            throw ServiceError.backendNotAvailable(
+                "非 loopback 云端 API 必须使用 HTTPS"
+            )
+        }
+
         guard isLoopback || !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw ServiceError.backendNotAvailable("云端 API 需要配置 API Key")
         }
@@ -55,9 +65,32 @@ public struct CloudBackendConfiguration: Sendable {
 
     /// Accept either a host root (`https://api.example.com`) or a versioned
     /// base (`https://api.example.com/v1`) without producing `/v1/v1/...`.
+    /// The path may carry a query string (origin-form request target):
+    /// `append(path:)` percent-encodes `?`, so the query is split off first
+    /// and re-attached verbatim after path construction.
     public func upstreamURL(path: String) -> URL? {
         guard var baseURL else { return nil }
-        var suffix = path.hasPrefix("/") ? path : "/" + path
+
+        // Callers may pass the verified origin-form request-target, which
+        // includes a query string. Split it before append(path:) because that
+        // API treats '?' as path data and would percent-encode the delimiter.
+        let targetParts = path.split(
+            separator: "?",
+            maxSplits: 1,
+            omittingEmptySubsequences: false
+        )
+        let clientPath = String(targetParts[0])
+        let encodedQuery = targetParts.count > 1 ? String(targetParts[1]) : nil
+        var suffix = clientPath.hasPrefix("/") ? clientPath : "/" + clientPath
+
+        // Split the query before any path handling; the LOCALB request
+        // target has already been parser-validated (canonical escapes, no
+        // control bytes), so the query re-attaches verbatim.
+        var query: Substring?
+        if let queryStart = suffix.firstIndex(of: "?") {
+            query = suffix[suffix.index(after: queryStart)...]
+            suffix = String(suffix[..<queryStart])
+        }
 
         var basePath = baseURL.path
         while basePath != "/" && basePath.hasSuffix("/") {
@@ -71,7 +104,67 @@ public struct CloudBackendConfiguration: Sendable {
         }
 
         baseURL.append(path: suffix)
-        return baseURL
+
+        // Preserve the caller's already-validated percent-encoded query byte
+        // for byte. In particular, don't decode/re-encode %2F or collapse an
+        // empty query delimiter; LOCALB signs the original request-target.
+        guard let encodedQuery else { return baseURL }
+        // URLComponents treats an invalid percentEncodedQuery assignment as a
+        // precondition failure on some Foundation implementations. Validate
+        // first so malformed external input fails closed instead of crashing.
+        guard Self.isValidPercentEncodedQuery(encodedQuery) else { return nil }
+        guard var components = URLComponents(
+            url: baseURL,
+            resolvingAgainstBaseURL: false
+        ) else {
+            return nil
+        }
+        components.percentEncodedQuery = encodedQuery
+        return components.url
+    }
+
+    private static func isValidPercentEncodedQuery(_ query: String) -> Bool {
+        let bytes = Array(query.utf8)
+        var index = 0
+        while index < bytes.count {
+            let byte = bytes[index]
+            if byte == 0x25 {
+                guard index + 2 < bytes.count,
+                      isHexDigit(bytes[index + 1]),
+                      isHexDigit(bytes[index + 2]) else {
+                    return false
+                }
+                index += 3
+                continue
+            }
+
+            let unreserved =
+                (byte >= 0x41 && byte <= 0x5A) ||
+                (byte >= 0x61 && byte <= 0x7A) ||
+                (byte >= 0x30 && byte <= 0x39) ||
+                byte == 0x2D || byte == 0x2E || byte == 0x5F || byte == 0x7E
+            let subDelimiter: Bool
+            switch byte {
+            case 0x21, 0x24, 0x26, 0x27, 0x28, 0x29, 0x2A,
+                 0x2B, 0x2C, 0x3B, 0x3D:
+                subDelimiter = true
+            default:
+                subDelimiter = false
+            }
+            let otherAllowed = byte == 0x3A || byte == 0x40 ||
+                byte == 0x2F || byte == 0x3F
+            guard unreserved || subDelimiter || otherAllowed else {
+                return false
+            }
+            index += 1
+        }
+        return true
+    }
+
+    private static func isHexDigit(_ byte: UInt8) -> Bool {
+        (byte >= 0x30 && byte <= 0x39) ||
+        (byte >= 0x41 && byte <= 0x46) ||
+        (byte >= 0x61 && byte <= 0x66)
     }
 
     nonisolated private static func isVersionSegment(_ segment: Substring) -> Bool {

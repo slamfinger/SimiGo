@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import LOCALBCore
 import Synchronization
 import MLX
 import MLXLMCommon
@@ -7,6 +8,7 @@ import MLXLLM
 import MLXHuggingFace
 import MLXVLM
 import Tokenizers
+import LOCALBCore
 import SimiGo2Experimental
 
 /// Native MLX runtime. Inference state is owned by the official ChatSession API.
@@ -338,7 +340,33 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         }
     }
 
+    /// Protocol witness (Runtime). Defaults to the shared transport-policy
+    /// decision with no caller-supplied LOCALB configuration.
     public func start(_ info: ModelInfo, port: Int) async throws {
+        try await startWithLOCALB(
+            info, port: port,
+            localbTransportIdentity: nil,
+            localbRequestAuthorization: nil
+        )
+    }
+
+    /// Start with an EXPLICIT caller-supplied LOCALB configuration
+    /// (test/management-plane injection). Never a fallback and never a
+    /// default open rule: when both arguments are nil this is exactly the
+    /// default-resolution path, which opens the operational LOCALB host
+    /// (transport identity + request authorization from one verified
+    /// context) or stays transport-only fail-closed before activation.
+    public func startWithLOCALB(
+        _ info: ModelInfo,
+        port: Int,
+        localbTransportIdentity: LOCALBTransportIdentityHandle?,
+        localbRequestAuthorization: (coordinator: LOCALBPairingCoordinator,
+                                     trustedCheckpoint: () throws -> LOCALBRegistryCheckpoint)?,
+        localbHostDirectory: URL? = nil,
+        keychainStore: LOCALBKeychainSignerStore = LOCALBKeychainSignerStore(),
+        transportIdentityStore: LOCALBTransportIdentityStore =
+            LOCALBTransportIdentityStore()
+    ) async throws {
         try await lifecycleGate.withLock { [weak self] in
             guard let self else { throw RuntError.notLoaded }
             guard !self.state.withLock({ $0.isRunning }) else { return }
@@ -352,7 +380,15 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             var container: ModelContainer?
             if OversizedRuntime.supports(path: info.path) {
                 let oversized = OversizedRuntime(info: info)
-                try await oversized.start(info, port: port)
+                try await oversized.startWithLOCALB(
+                    info,
+                    port: port,
+                    localbTransportIdentity: localbTransportIdentity,
+                    localbRequestAuthorization: localbRequestAuthorization,
+                    localbHostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
+                )
                 self.state.withLock { $0.oversized = oversized }
             } else {
                 container = try await Self.loadModelContainer(path: info.path)
@@ -435,6 +471,41 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                 )
             }
 
+            // LOCALB B1: one shared transport-policy decision for every
+            // listener site. Secure by default; LAN binds can never fall
+            // back to plaintext; legacy plaintext only via explicit loopback
+            // opt-in (SIMIGO_TRANSPORT=legacy-http). Fail-closed decisions
+            // surface as typed start() errors.
+            if let localbTransportIdentity {
+                // Explicit caller-supplied configuration (test/management-
+                // plane injection): a fully verified transport identity
+                // plus, optionally, the LOCALB request-authorization host.
+                // Explicit configuration — never a fallback and never a
+                // default open rule; the policy path stays the default.
+                server.configureLOCALBTransport(
+                    identity: localbTransportIdentity
+                )
+                if let localbRequestAuthorization {
+                    server.configureLOCALBRequestAuthorization(
+                        coordinator: localbRequestAuthorization.coordinator,
+                        trustedCheckpoint: localbRequestAuthorization
+                            .trustedCheckpoint
+                    )
+                }
+            } else {
+                // Default resolution: an activated LOCALB host supplies
+                // BOTH the transport identity and request authorization
+                // from one verified context; before activation this stays
+                // transport-only and protected routes remain fail-closed.
+                // Verification failures propagate as typed start() errors.
+                try LOCALBHostRuntime.applyDefault(
+                    to: server,
+                    bindHost: nodeConfiguration.bindHost,
+                    hostDirectory: localbHostDirectory,
+                    keychainStore: keychainStore,
+                    transportIdentityStore: transportIdentityStore
+                )
+            }
             try await MainActor.run { try server.start() }
 
             self.state.withLock {

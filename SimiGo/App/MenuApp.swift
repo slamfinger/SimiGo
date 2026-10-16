@@ -5,6 +5,15 @@ import AppKit
 struct MenuApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    // LOCALB 运维 provisioning 模式（--localb-prepare/activate/status）：
+    // 在 UI 启动前同步完成并退出；普通启动不受影响。
+    init() {
+        if let code = LOCALBProvisioning.runFromArguments(
+            ProcessInfo.processInfo.arguments) {
+            exit(code)
+        }
+    }
+
     // 菜单栏与窗口自 2026-10-15 起由 StatusBarCoordinator 直管（AppKit
     // NSStatusItem + NSPopover）：MenuBarExtra(.window) 在系统睡眠唤醒后
     // 点击静默失效（点击受理、按钮高亮、面板零创建），弃用该场景路径。

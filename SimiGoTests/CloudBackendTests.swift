@@ -32,6 +32,60 @@ final class CloudBackendTests: XCTestCase {
         XCTAssertEqual(url.absoluteString, "https://api.example.com/v1/chat/completions")
     }
 
+    func testRemoteRequestPreservesSignedEncodedQueryExactly() throws {
+        let backend = RemoteOpenAIBackend(
+            configuration: CloudBackendConfiguration(
+                baseURLString: "https://api.example.com/v1",
+                model: "gpt-test"
+            ),
+            apiKey: "secret"
+        )
+
+        let request = try backend.makeRequest(
+            path: "/v1/chat/completions?metadata=a%2Fb&stream=1",
+            method: "POST",
+            headers: ["content-type": "application/json"],
+            body: Data(#"{"model":"gpt-test","messages":[],"stream":true}"#.utf8)
+        )
+
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://api.example.com/v1/chat/completions?metadata=a%2Fb&stream=1"
+        )
+    }
+
+    func testUpstreamURLRejectsInvalidRawQueryRatherThanTrapping() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "https://api.example.com/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertNil(configuration.upstreamURL(path: "/v1/chat/completions?q=[bad]"))
+        XCTAssertNil(configuration.upstreamURL(path: "/v1/chat/completions?q=%ZZ"))
+    }
+
+    func testRemoteRequestPreservesEmptyQueryDelimiter() throws {
+        let backend = RemoteOpenAIBackend(
+            configuration: CloudBackendConfiguration(
+                baseURLString: "https://api.example.com/v1",
+                model: "gpt-test"
+            ),
+            apiKey: "secret"
+        )
+
+        let request = try backend.makeRequest(
+            path: "/v1/chat/completions?",
+            method: "POST",
+            headers: ["content-type": "application/json"],
+            body: Data(#"{"model":"gpt-test","messages":[]}"#.utf8)
+        )
+
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://api.example.com/v1/chat/completions?"
+        )
+    }
+
     func testZAICodingBaseURLDoesNotDuplicateV4() throws {
         let configuration = CloudBackendConfiguration(
             baseURLString: "https://open.bigmodel.cn/api/coding/paas/v4",
@@ -76,6 +130,24 @@ final class CloudBackendTests: XCTestCase {
 
         let json = try XCTUnwrap(try JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? [String: Any])
         XCTAssertEqual(json["model"] as? String, "gpt-test")
+    }
+
+    func testNonLoopbackHTTPBackendIsRejectedEvenWithConfiguredKey() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "http://api.example.com/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertThrowsError(try configuration.validated(apiKey: "secret"))
+    }
+
+    func testLoopbackHTTPBackendRemainsAllowedForLocalDevelopment() {
+        let configuration = CloudBackendConfiguration(
+            baseURLString: "http://127.0.0.1:8080/v1",
+            model: "gpt-test"
+        )
+
+        XCTAssertNoThrow(try configuration.validated(apiKey: "secret"))
     }
 
     func testCloudConfigurationRequiresAPIKeyOutsideLoopback() {
