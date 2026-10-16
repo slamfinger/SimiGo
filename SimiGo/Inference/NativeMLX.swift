@@ -817,7 +817,9 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
         // 门判定与 checkpoint save 门全程只消费快照，防跨时刻拼凑）。
         let restorePolicy = ExecutionPolicy.ConditionalRestoreConfiguration.current()
 
-        let incoming = Self.makeChatMessages(messages)
+        // 入站转录归一化（2026-10-15）可能改写回传形态，自此后以 var 流转。
+        var messages = messages
+        var incoming = Self.makeChatMessages(messages)
         guard !incoming.isEmpty else {
             return GenerationResult(text: "", usage: nil)
         }
@@ -896,6 +898,21 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             managed = existing
             managed.lastActivity = Date()
             reusedSession = true
+            // 入站转录工具回声归一化（2026-10-15 批准）：客户端回传的
+            // 工具轮形态（split 文本位+调用位 / 参数再序列化）对齐到
+            // 账本权威形态，delta 回到纯新增消息——引擎不再对已生成区
+            // 重渲染对账（16:55/16:58 两轮 12.3KB/4.9KB 参数触发
+            // fork-no-rewind 132s/218s 全量重渲的根因收口）。
+            let echoNormalization = Self.normalizeToolEcho(
+                messages, against: managed.historyJSON)
+            if echoNormalization.changed {
+                traceLogger.trace(
+                    "[MLX] toolEchoNormalize key=\(executionKey.traceKey)" +
+                    " merged=\(echoNormalization.mergedPairs)" +
+                    " replaced=\(echoNormalization.replacedCalls)")
+                messages = echoNormalization.messages
+                incoming = Self.makeChatMessages(messages)
+            }
         } else {
             // 复用失败判据（2026-09-13 排查「重试全量冷预填死循环」加）：
             // prefix=false 时上方 prefixMismatch 有细节；count/fp 失败此前完全静默，
@@ -2217,6 +2234,143 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
             return []
         }
         return calls
+    }
+
+    // MARK: - 入站转录工具回声归一化（2026-10-15）
+
+    /// 入站转录工具回声归一化结果：只计数，内容不进 trace。
+    struct ToolEchoNormalization: Sendable {
+        /// 输出转录（未变化时与原数组同引用）。
+        let messages: [JSONValue]
+        /// split 形态（文本位 + 连续调用位）被账本权威形态吸收的对数。
+        let mergedPairs: Int
+        /// 同位 tool_calls 被账本权威形态替换的条数
+        /// （参数再序列化 / 字符串↔对象差异）。
+        let replacedCalls: Int
+
+        var changed: Bool {
+            mergedPairs > 0 || replacedCalls > 0
+        }
+    }
+
+    /// 把入站转录的 assistant 工具轮回传对齐到账本权威形态。
+    ///
+    /// 实证根因（2026-10-15 16:44/16:55/16:58 三轮 fork-no-rewind 全量
+    /// 重渲）：上一轮生成的工具调用以 merged 形态（文本+调用同消息）入
+    /// 账本，客户端回传是 split 形态（文本位+调用位）或参数再序列化
+    /// 形态——形态差使 dropFirst 的 delta 边界错位，客户端形态的调用
+    /// 消息混入 delta，引擎被迫对整个 arguments 区重渲染对账（实测
+    /// 12.3KB→3132 tok / 4.9KB→1312 tok 分叉，132s/218s 全量重渲，
+    /// cacheHitTokens=0）。归一化把回传位改写为账本消息，delta 回到
+    /// 纯新增消息，已生成区零重渲染。
+    ///
+    /// 守门：角色/内容/id 集合任一不一致即停，保留已归一化前缀、
+    /// 其余原样返回（内容不同是真分叉，照旧走全量渲染语义）；文本
+    /// 内容零变化，只对齐 tool_calls 形态。账本是会话实际喂入/生成
+    /// 内容的镜像（commit 不变式），改写不引入外来内容。
+    static nonisolated func normalizeToolEcho(
+        _ messages: [JSONValue],
+        against ledger: [JSONValue]
+    ) -> ToolEchoNormalization {
+        var output = messages
+        var mergedPairs = 0
+        var replacedCalls = 0
+        var ledgerIndex = 0
+        var index = 0
+
+        while ledgerIndex < ledger.count, index < output.count {
+            guard
+                case .object(let ledgerMessage) = ledger[ledgerIndex],
+                case .object(let incomingMessage) = output[index]
+            else { break }
+
+            guard
+                (ledgerMessage["role"]?.string ?? "").lowercased()
+                    == (incomingMessage["role"]?.string ?? "").lowercased()
+            else { break }
+
+            let ledgerContent = coerceContent(ledgerMessage["content"] ?? .null)
+            let incomingContent = coerceContent(incomingMessage["content"] ?? .null)
+            let ledgerCalls = toolCallItems(ledgerMessage["tool_calls"])
+            let incomingCalls = toolCallItems(incomingMessage["tool_calls"])
+
+            if ledgerCalls.isEmpty {
+                guard
+                    ledgerContent == incomingContent,
+                    incomingCalls.isEmpty
+                else { break }
+                // tool 位还须 call id 一致：并行工具可产生同内容不同 id
+                // 的结果，只比内容会让游标错位到错误对应关系上。
+                if ledgerMessage["role"]?.string?.lowercased() == "tool" {
+                    guard
+                        ledgerMessage["tool_call_id"]?.string
+                            == incomingMessage["tool_call_id"]?.string
+                    else { break }
+                }
+                ledgerIndex += 1
+                index += 1
+                continue
+            }
+
+            let ledgerIDs = toolCallIDs(ledgerCalls)
+
+            // 同位形态：同文本、同 id 集 → 整消息替换为账本权威形态
+            // （覆盖参数再序列化、转义、字符串↔对象表示差）。
+            if !incomingCalls.isEmpty {
+                guard
+                    ledgerContent == incomingContent,
+                    toolCallIDs(incomingCalls) == ledgerIDs
+                else { break }
+                if incomingMessage["tool_calls"] != ledgerMessage["tool_calls"] {
+                    output[index] = ledger[ledgerIndex]
+                    replacedCalls += 1
+                }
+                ledgerIndex += 1
+                index += 1
+                continue
+            }
+
+            // split 形态：本位为文本（可为空），其后跟随连续调用位。
+            // 吸收位的 id 并集须与账本精确一致；缺失/多余/未知 id 都停。
+            guard ledgerContent == incomingContent else { break }
+            var absorbed = 0
+            var absorbedIDs: [String] = []
+            while index + 1 + absorbed < output.count {
+                guard
+                    case .object(let next) = output[index + 1 + absorbed],
+                    (next["role"]?.string ?? "").lowercased() == "assistant",
+                    coerceContent(next["content"] ?? .null).isEmpty,
+                    !toolCallItems(next["tool_calls"]).isEmpty
+                else { break }
+                absorbedIDs.append(
+                    contentsOf: toolCallIDs(toolCallItems(next["tool_calls"])))
+                absorbed += 1
+            }
+            guard absorbed > 0, absorbedIDs.sorted() == ledgerIDs.sorted() else { break }
+            output[index] = ledger[ledgerIndex]
+            output.removeSubrange((index + 1)...(index + absorbed))
+            mergedPairs += 1
+            ledgerIndex += 1
+            index += 1
+        }
+
+        return ToolEchoNormalization(
+            messages: output,
+            mergedPairs: mergedPairs,
+            replacedCalls: replacedCalls
+        )
+    }
+
+    private static nonisolated func toolCallItems(_ value: JSONValue?) -> [JSONValue] {
+        guard case .array(let items) = value else { return [] }
+        return items
+    }
+
+    private static nonisolated func toolCallIDs(_ calls: [JSONValue]) -> [String] {
+        calls.compactMap { call in
+            guard case .object(let object) = call else { return nil }
+            return object["id"]?.string
+        }
     }
 
     private static nonisolated func makeToolSpecs(_ tools: [JSONValue]?) -> [ToolSpec]? {
