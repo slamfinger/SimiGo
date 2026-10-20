@@ -11,6 +11,7 @@
         ],
         "expected_check": "settlement_dependency_single_revision",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_dependency_single_revision",
           "settlement_history_length_one"
         ],
@@ -41,10 +42,25 @@
         ],
         "expected_check": "settlement_bytes_match_address",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_bytes_match_address"
         ],
         "fixture_id": "fixture-1",
         "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "dependency_edges_match_sources",
+        "failed_checks": [
+          "dependency_edges_match_sources"
+        ],
+        "fixture_id": "fixture-1",
+        "injected": "dependency edge retargeted in place",
         "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
       },
       {
@@ -55,6 +71,7 @@
         ],
         "expected_check": "settlement_dependency_single_revision",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_dependency_single_revision",
           "settlement_history_length_one"
         ],
@@ -85,10 +102,25 @@
         ],
         "expected_check": "settlement_bytes_match_address",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_bytes_match_address"
         ],
         "fixture_id": "fixture-2",
         "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "dependency_edges_match_sources",
+        "failed_checks": [
+          "dependency_edges_match_sources"
+        ],
+        "fixture_id": "fixture-2",
+        "injected": "dependency edge retargeted in place",
         "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
       },
       {
@@ -99,6 +131,7 @@
         ],
         "expected_check": "settlement_dependency_single_revision",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_dependency_single_revision",
           "settlement_history_length_one"
         ],
@@ -129,10 +162,25 @@
         ],
         "expected_check": "settlement_bytes_match_address",
         "failed_checks": [
+          "dependency_edges_match_sources",
           "settlement_bytes_match_address"
         ],
         "fixture_id": "fixture-3",
         "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "dependency_edges_match_sources",
+        "failed_checks": [
+          "dependency_edges_match_sources"
+        ],
+        "fixture_id": "fixture-3",
+        "injected": "dependency edge retargeted in place",
         "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
       }
     ]
@@ -145,7 +193,7 @@
           "ok": true
         },
         "C_missing_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest 970e9ddfaa7ba713",
           "ok": true
         },
         "C_missing_refusal_recorded": {
@@ -156,6 +204,20 @@
           "detail": "index=0 dependency=0",
           "ok": true
         },
+        "C_missing_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "970e9ddfaa7ba713cc2013caff8b36b91449a216b8abac2f324b8bffadedd17c",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "d79c687d724c2134f586e65d4d5f9cbc33d10263f5a7ee22d99fdeb637bc308c",
+            "page_count": 6
+          }
+        },
         "C_tampered_bytes_break_address": {
           "detail": "sha256(bytes) != address; byte_size agrees",
           "ok": true
@@ -165,7 +227,7 @@
           "ok": true
         },
         "C_tampered_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest 3325995beb39b0f9",
           "ok": true
         },
         "C_tampered_refusal_recorded": {
@@ -176,12 +238,30 @@
           "detail": "index rows=1",
           "ok": true
         },
+        "C_tampered_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "3325995beb39b0f994eb8a732110d97a9fb562f9196f26740372ac30d55a82de",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "e3d09110c6799f3004763b7d1321dde94c84c176cf92e8f6c1aa80c434b9cbc7",
+            "page_count": 6
+          }
+        },
         "advanced_state_digest_recomputed": {
           "detail": "result digest recomputed from U2 answer and checker",
           "ok": true
         },
         "canary_absent_from_phase2": {
           "detail": "d8770893b4f1267c",
+          "ok": true
+        },
+        "dependency_edges_match_sources": {
+          "detail": "6 edge(s) agree",
           "ok": true
         },
         "dependency_identity_stable": {
@@ -252,6 +332,20 @@
           "detail": "recomputed r1 digest",
           "ok": true
         },
+        "snapshot_complete_canonical": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=8",
+          "ok": true,
+          "snapshot": {
+            "digest": "202dfe4a95a04a0468071d31783ae877f80ebbb0ae7e0444fb879cf7e97bb64f",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "540836024533730b3ac58280c6fdf8fded2cfdc4f589b11b2b13f8dc9e18b4bf",
+            "page_count": 8
+          }
+        },
         "source_identity_stable": {
           "detail": "item:u1-result 7113e6c0caa0b7578574a7ec5028ad1e2b97efa887e001cb005995c9d98445fe",
           "ok": true
@@ -278,7 +372,7 @@
           "ok": true
         },
         "C_missing_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest 87bc669b06af3828",
           "ok": true
         },
         "C_missing_refusal_recorded": {
@@ -289,6 +383,20 @@
           "detail": "index=0 dependency=0",
           "ok": true
         },
+        "C_missing_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "87bc669b06af3828e37b4fa0356444eadfde34ba6911fdc828eec8e5ab74d65b",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "52903cbea8de6f6555a888105ef4a426bbd1274a0b3e7452178e96d66d709c64",
+            "page_count": 6
+          }
+        },
         "C_tampered_bytes_break_address": {
           "detail": "sha256(bytes) != address; byte_size agrees",
           "ok": true
@@ -298,7 +406,7 @@
           "ok": true
         },
         "C_tampered_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest 531e55fcae4b7f74",
           "ok": true
         },
         "C_tampered_refusal_recorded": {
@@ -309,12 +417,30 @@
           "detail": "index rows=1",
           "ok": true
         },
+        "C_tampered_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "531e55fcae4b7f74b11081e9edfd5e6abef73e279c526b112593b7609d558dc9",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "68dcaf86b36d1af39a82b50ee1562844b1d5cd1944af971991e9642eefb69829",
+            "page_count": 6
+          }
+        },
         "advanced_state_digest_recomputed": {
           "detail": "result digest recomputed from U2 answer and checker",
           "ok": true
         },
         "canary_absent_from_phase2": {
           "detail": "ab1511d7c0093734",
+          "ok": true
+        },
+        "dependency_edges_match_sources": {
+          "detail": "6 edge(s) agree",
           "ok": true
         },
         "dependency_identity_stable": {
@@ -385,6 +511,20 @@
           "detail": "recomputed r1 digest",
           "ok": true
         },
+        "snapshot_complete_canonical": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=8",
+          "ok": true,
+          "snapshot": {
+            "digest": "a5012e29d0c8bf85a637e836b37c2dfb65b98ce04fccce304b2b650371800798",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "faa128ee4e729699c4dd1229f6fc4cf4ffd26e6a1265509de82c18a51cc0dc3a",
+            "page_count": 8
+          }
+        },
         "source_identity_stable": {
           "detail": "item:u1-result 8ae4e57816fea8016b079e11cd0b4a1f6394a6525e715ba5eec710c73288cda4",
           "ok": true
@@ -411,7 +551,7 @@
           "ok": true
         },
         "C_missing_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest ef82a5cec94b876a",
           "ok": true
         },
         "C_missing_refusal_recorded": {
@@ -422,6 +562,20 @@
           "detail": "index=0 dependency=0",
           "ok": true
         },
+        "C_missing_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "ef82a5cec94b876a290a1184050ae9e1cd8da62f24938885a83cde95c40fbcd7",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "7ce20f80193e092e227844e61e6c67ff4ac482d64f5a96c118a08a72a3a2c932",
+            "page_count": 6
+          }
+        },
         "C_tampered_bytes_break_address": {
           "detail": "sha256(bytes) != address; byte_size agrees",
           "ok": true
@@ -431,7 +585,7 @@
           "ok": true
         },
         "C_tampered_copy_unchanged_since_gate": {
-          "detail": "current file digest == before == after",
+          "detail": "single-file snapshot; main sha256 == before == after; snapshot digest 8baf9882a9c6b396",
           "ok": true
         },
         "C_tampered_refusal_recorded": {
@@ -442,12 +596,30 @@
           "detail": "index rows=1",
           "ok": true
         },
+        "C_tampered_snapshot_complete": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=6",
+          "ok": true,
+          "snapshot": {
+            "digest": "8baf9882a9c6b396d9bbc2e8ae23123de25856a03feab3b3f257709a3999ab94",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "47fe5f7e28820dcbb46f9ae99ca45edd45ea5e04644cd8ca93f7cf951a1b4c6b",
+            "page_count": 6
+          }
+        },
         "advanced_state_digest_recomputed": {
           "detail": "result digest recomputed from U2 answer and checker",
           "ok": true
         },
         "canary_absent_from_phase2": {
           "detail": "6796e53a755d5367",
+          "ok": true
+        },
+        "dependency_edges_match_sources": {
+          "detail": "6 edge(s) agree",
           "ok": true
         },
         "dependency_identity_stable": {
@@ -517,6 +689,20 @@
         "settlement_r1_self_consistent": {
           "detail": "recomputed r1 digest",
           "ok": true
+        },
+        "snapshot_complete_canonical": {
+          "detail": "files=g2.sqlite journal_mode=delete integrity=ok pages=8",
+          "ok": true,
+          "snapshot": {
+            "digest": "2cf1f2f14b98a7cfa2f08ff4529e3b4c396b4f85eb0b01654d257afa5da75eb2",
+            "files": [
+              "g2.sqlite"
+            ],
+            "integrity_check": "ok",
+            "journal_mode": "delete",
+            "main_sha256": "daa5207e30fc2ed8a4aefa4a3c4bb5a37f339b7ae825bef06dbb58eb2095dec2",
+            "page_count": 8
+          }
         },
         "source_identity_stable": {
           "detail": "item:u1-result 56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7",

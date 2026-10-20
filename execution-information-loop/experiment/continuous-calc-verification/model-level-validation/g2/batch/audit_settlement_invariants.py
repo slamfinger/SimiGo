@@ -24,11 +24,6 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[5]
-sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(REPO / "execution-information-loop"))
-from carrier_loop import digest  # noqa: E402
-
 SETTLEMENT = "settlement:u1-result"
 ITEM = "item:u1-result"
 DEPENDENCY = "item:s1-source"
@@ -43,6 +38,16 @@ def read_json(path):
 
 def sha256_file(path):
     return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+
+
+def canonical(value):
+    """Same rule the carrier uses; inlined so the audit imports no live module."""
+    return json.dumps(value, ensure_ascii=False, sort_keys=True,
+                      separators=(",", ":")).encode("utf-8")
+
+
+def digest(value):
+    return hashlib.sha256(canonical(value)).hexdigest()
 
 
 def connect(path):
@@ -75,6 +80,23 @@ def latest_index_object(connection, identity):
         "SELECT record_object FROM is_index_entries WHERE srs_identity=? "
         "ORDER BY append_order DESC LIMIT 1", (identity,)).fetchone()
     return None if row is None else row["record_object"]
+
+
+def database_snapshot(connection, path):
+    """Digest every file that makes up the database state, and record its mode."""
+    path = pathlib.Path(path)
+    files = sorted(item for item in path.parent.glob(path.name + "*")
+                   if item.is_file())
+    lines = ["%s:%s" % (item.name, sha256_file(item)) for item in files]
+    return {
+        "files": [item.name for item in files],
+        "main_sha256": sha256_file(path),
+        "digest": hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest(),
+        "journal_mode": connection.execute("PRAGMA journal_mode").fetchone()[0],
+        "integrity_check": connection.execute(
+            "PRAGMA integrity_check").fetchone()[0],
+        "page_count": connection.execute("PRAGMA page_count").fetchone()[0],
+    }
 
 
 def record(checks, name, ok, detail=""):
@@ -223,6 +245,63 @@ def audit_fixture(fixture_dir, fixture):
                advanced.get("status") == "ADVANCED"
                and advanced.get("result_digest") == expected_advanced,
                "result digest recomputed from U2 answer and checker")
+
+        # Every dependency edge must still name the object its identity resolves
+        # to; a retargeted edge keeps row count and revision intact and would
+        # otherwise slip through a count/pointer-only check.
+        state_objects = {
+            row["srs_identity"].split(":", 2)[2]: row["record_object"]
+            for row in connection.execute(
+                "SELECT srs_identity, record_object FROM is_index_entries "
+                "WHERE srs_identity LIKE 'execution_state:%'")}
+        expected_edges = {
+            "dependency:s1-source": (dependency_id, "source version"),
+            "dependency:u1-result": (source_id, "source version"),
+            "settlement:u1-result": (object_id, "settled result"),
+        }
+        for state_id, state_object in state_objects.items():
+            expected_edges["execution_state:%s" % state_id] = (
+                state_object, "execution state transition")
+        edges = connection.execute(
+            "SELECT dependency_id, content_address, revision, reason "
+            "FROM dependency_entries ORDER BY append_order").fetchall()
+        mismatches = []
+        for edge in edges:
+            expected = expected_edges.get(edge["dependency_id"])
+            if expected is None:
+                mismatches.append("%s: unexpected edge" % edge["dependency_id"])
+                continue
+            if edge["content_address"] != expected[0]:
+                mismatches.append("%s: target %s != %s" % (
+                    edge["dependency_id"], edge["content_address"], expected[0]))
+            if edge["revision"] != 1:
+                mismatches.append("%s: revision %d" % (
+                    edge["dependency_id"], edge["revision"]))
+            if edge["reason"] != expected[1]:
+                mismatches.append("%s: reason %r" % (
+                    edge["dependency_id"], edge["reason"]))
+            target = object_bytes(connection, edge["content_address"])
+            if target is None or hashlib.sha256(target[1]).hexdigest() \
+                    != edge["content_address"]:
+                mismatches.append("%s: target bytes do not hash to address"
+                                  % edge["dependency_id"])
+        if len(edges) != len(expected_edges):
+            mismatches.append("edge rows=%d expected=%d"
+                              % (len(edges), len(expected_edges)))
+        record(checks, "dependency_edges_match_sources", not mismatches,
+               "; ".join(mismatches) or "%d edge(s) agree" % len(edges))
+
+        snapshot_info = database_snapshot(connection, carrier)
+        record(checks, "snapshot_complete_canonical",
+               snapshot_info["files"] == [carrier.name]
+               and snapshot_info["journal_mode"] != "wal"
+               and snapshot_info["integrity_check"] == "ok",
+               "files=%s journal_mode=%s integrity=%s pages=%d" % (
+                   ",".join(snapshot_info["files"]),
+                   snapshot_info["journal_mode"],
+                   snapshot_info["integrity_check"],
+                   snapshot_info["page_count"]))
+        checks["snapshot_complete_canonical"]["snapshot"] = snapshot_info
     finally:
         connection.close()
 
@@ -234,10 +313,28 @@ def audit_fixture(fixture_dir, fixture):
                gate.get("decision") == "REFUSED" and gate.get("code") == code
                and gate.get("model_loaded") is False,
                "%s/%s" % (gate.get("decision"), gate.get("code")))
+        control_connection = connect(copy)
+        try:
+            snapshot_info = database_snapshot(control_connection, copy)
+        finally:
+            control_connection.close()
+        record(checks, "%s_snapshot_complete" % control,
+               snapshot_info["files"] == [copy.name]
+               and snapshot_info["journal_mode"] != "wal"
+               and snapshot_info["integrity_check"] == "ok",
+               "files=%s journal_mode=%s integrity=%s pages=%d" % (
+                   ",".join(snapshot_info["files"]),
+                   snapshot_info["journal_mode"],
+                   snapshot_info["integrity_check"],
+                   snapshot_info["page_count"]))
+        checks["%s_snapshot_complete" % control]["snapshot"] = snapshot_info
         record(checks, "%s_copy_unchanged_since_gate" % control,
-               sha256_file(copy) == gate.get("database_tree_digest_before")
+               snapshot_info["files"] == [copy.name]
+               and snapshot_info["main_sha256"]
+               == gate.get("database_tree_digest_before")
                == gate.get("database_tree_digest_after"),
-               "current file digest == before == after")
+               "single-file snapshot; main sha256 == before == after; "
+               "snapshot digest %s" % snapshot_info["digest"][:16])
         record(checks, "%s_copy_is_not_canonical" % control,
                pathlib.Path(gate.get("database") or "").resolve()
                == copy.resolve(), str(copy))
@@ -341,6 +438,20 @@ def _inject_byte_flip(db, fixture):
         connection.close()
 
 
+def _inject_dependency_retarget(db, fixture):
+    connection = sqlite3.connect(str(db))
+    try:
+        with connection:
+            other = connection.execute(
+                "SELECT record_object FROM is_index_entries "
+                "WHERE srs_identity='item:s1-source'").fetchone()[0]
+            connection.execute(
+                "UPDATE dependency_entries SET content_address=? "
+                "WHERE dependency_id='dependency:u1-result'", (other,))
+    finally:
+        connection.close()
+
+
 PROBES = (
     ("extra settlement revision", _inject_extra_settlement_revision,
      "settlement_dependency_single_revision"),
@@ -348,6 +459,8 @@ PROBES = (
      "no_settlement_item_or_demand_appends"),
     ("byte flip in settlement object", _inject_byte_flip,
      "settlement_bytes_match_address"),
+    ("dependency edge retargeted in place", _inject_dependency_retarget,
+     "dependency_edges_match_sources"),
 )
 
 

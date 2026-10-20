@@ -136,13 +136,19 @@ never reopens a carrier, so `settlement_object_id_unchanged` and `no_new_settlem
 were self-reported. `g2/batch/audit_settlement_invariants.py` now recomputes, directly from
 carrier bytes with `mode=ro&immutable=1` and without reading `terminal.json` or
 `verification.json`: the settlement object address and `byte_size`, its single-revision dependency
-history (`1 → 1`), the source and S1 identities, the exact three `execution_state` appends after
-settlement (one phase-1, two phase-2), the restored/advanced state digests, both negative-control
-copies, the U2 answer against the settled secret, and the absence of S1/canary in phase 2. All 32
-checks × 3 fixtures pass; nine injected violations (extra settlement revision, extra `item:`
-append, settlement byte flip) are each caught on temp copies, so the audit is not vacuous. Record:
-`g2/G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json`; the result record's §9 states this is a post-hoc
-audit of stored evidence, not a re-run and not an upgrade of the review's scope.
+history (`1 → 1`), all six dependency edges (target identity, revision, reason, and target
+bytes hashing back to the address), the source and S1 identities, the exact three
+`execution_state` appends after settlement (one phase-1, two phase-2), the restored/advanced state
+digests, both negative-control copies, the U2 answer against the settled secret, and the absence of
+S1/canary in phase 2. Snapshot completeness is measured, not assumed: every audited database is
+`journal_mode=delete` with no `-wal`/`-shm`/`-journal` sidecar and `integrity_check=ok`, so the
+single `.sqlite` file is the complete committed state and the gate's file digest covers it. All 36
+checks × 3 fixtures pass; twelve injected violations (extra settlement revision, extra `item:`
+append, settlement byte flip, in-place retarget of `dependency:u1-result`) are each caught on temp
+copies — the retarget fails only `dependency_edges_match_sources`, so the audit is not vacuous.
+Record: `g2/G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json`; the result record's §9 states this is a
+post-hoc audit of stored evidence, not a re-run, and that `journal_mode=delete` is a measured fact
+about these nine files, not a guarantee for other runs or backends.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria

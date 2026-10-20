@@ -161,7 +161,7 @@ fixtures_recomputed      = 3 x (G2-A PASS, G2-B PASS, G2-C PASS)
 
 新增 `g2/batch/audit_settlement_invariants.py`，对每个 fixture 直接打开
 `B1/carrier/g2.sqlite` 与两个负对照副本（`mode=ro&immutable=1`），
-**不读取** `terminal.json` / `verification.json`，从字节重算 32 项，三个 fixture 全部通过：
+**不读取** `terminal.json` / `verification.json`，从字节重算 36 项，三个 fixture 全部通过：
 
 | 不变量 | 重算内容 |
 | --- | --- |
@@ -172,7 +172,9 @@ fixtures_recomputed      = 3 x (G2-A PASS, G2-B PASS, G2-C PASS)
 | 来源稳定 | `item:u1-result` 与 `item:s1-source` 当前对象地址分别等于 settlement basis 与 phase-1 记录；S1 摘要等于 fixture |
 | 追加集合 | settlement 之后的索引行恰好 3 条且全部为 `execution_state:`（1 条 phase-1 + 2 条 phase-2）；没有新增 `settlement:` / `item:` / `demand:` |
 | 状态链 | `u1-settled → u2-restored → u2-advanced`；两个 phase-2 状态的 `result_digest` 由恢复身份、U2 答案与 checker 结果重算 |
-| 负对照副本 | 当前文件摘要 == gate 记录的 before == after；`C_missing` 无 settlement 索引/依赖；`C_tampered` 字节摘要 != 地址且 `byte_size` 自洽 |
+| 依赖边语义 | 全部 6 条边的 `content_address` 分别等于当前身份对象：2 条 source-version、1 条 settlement、3 条 execution-state；每条 `revision=1`、`reason` 符合预期、目标字节摘要等于地址 |
+| 快照完整性 | 库为 `journal_mode=delete`，无 `-wal`/`-shm`/`-journal` sidecar，`integrity_check=ok`；单文件即完整已提交状态 |
+| 负对照副本 | 单文件快照摘要覆盖全部数据库文件；主文件摘要 == gate 的 before == after；`C_missing` 无 settlement 索引/依赖；`C_tampered` 字节摘要 != 地址且 `byte_size` 自洽 |
 | U2 结果 | `ANSWER` 单行；secret 等于 settlement 中的 R1；checksum 等于 `sha256(site)[:8]` 重算值 |
 | 信息边界 | U2 提示包含恢复的 R1；phase-2 文件中没有 S1 正文或 canary |
 
@@ -187,20 +189,36 @@ all_pass = true; discrimination_probe.all_detected = true
 ### 9.4 审计器的判别性
 
 一个从不说“不”的复核器没有意义。审计器在临时副本上逐个注入违规并验证能否捕获，
-三个 fixture × 三种注入共 9 项，全部被预期检查捕获：
+三个 fixture × 四种注入共 12 项，全部被预期检查捕获：
 
 | 注入 | 预期失败检查 |
 | --- | --- |
 | 为 settlement 追加 revision 2 | `settlement_dependency_single_revision`（同时 `settlement_history_length_one`） |
 | 追加一条 `item:u2-answer` 索引 | `no_settlement_item_or_demand_appends`（同时 `post_settlement_appends_are_states_only`） |
 | 篡改 settlement 对象字节 | `settlement_bytes_match_address` |
+| 原地改写 `dependency:u1-result` 的 `content_address`（记录数、revision、reason 不变） | `dependency_edges_match_sources`（只此一项失败） |
 
 探针在 `G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json` 的 `discrimination_probe` 中留有
 逐项记录。临时副本会使 gate 记录中的绝对路径检查（`*_copy_is_not_canonical`）失败，
 这是探针环境的预期副作用，已在记录中单列并排除。
 
-### 9.5 边界
+### 9.5 依赖边与快照完整性的封口
+
+第二轮评审指出两处未被上述检查覆盖的边界，核实后均成立，现已直接测住：
+
+1. **依赖边语义**：`carrier_gate.py` 只用索引 `item:*` 验证闭包，旧审计也只检查
+   `settlement:u1-result` 这一条边的数量与指针。`dependency:u1-result` 与
+   `dependency:s1-source` 两条 source-version 边若被原地换靶，行数、revision 与
+   `reason` 均可保持不变。新检查逐条比对全部 6 条边的目标身份、revision、reason，
+   并要求目标字节哈希回地址；判别注入（换靶不改计数）在三个 fixture 上只触发这一项失败。
+2. **快照完整性**：`immutable=1` 假定文件不变，且 WAL 模式下已提交状态可能分布在
+   `-wal`/`-shm`。实测 9 个被审计数据库均为 `journal_mode=delete`，无任何 sidecar，
+   `integrity_check=ok`，因此单文件就是完整已提交状态，gate 的单文件摘要也就覆盖了全量。
+   审计记录同时保存文件集合、`main_sha256`、组合快照摘要与 `page_count`，不再只凭主库哈希。
+
+### 9.6 边界
 
 这是对**已存证据**的事后只读审计，不重跑实验、不重新生成模型输出，也不把摘要级评审
-升级为对 98 个文件的逐行审计。它补上的是评审指出的那一个缺口：settlement 身份与依赖历史
-现在有独立于执行体布尔值的字节级重算。
+升级为对 98 个文件的逐行审计。它补上的是评审指出的缺口：settlement 身份、依赖边语义
+与快照完整性现在都有独立于执行体布尔值的字节级重算。`journal_mode=delete` 是本批
+9 个库的实测事实，不是对未来运行或其它后端的普遍保证。
