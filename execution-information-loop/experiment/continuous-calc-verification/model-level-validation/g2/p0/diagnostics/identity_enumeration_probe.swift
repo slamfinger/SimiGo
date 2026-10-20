@@ -59,9 +59,12 @@ func digest(_ lines: [String]) -> String {
     return SHA256.hash(data: Data(canonical.utf8)).map { String(format: "%02x", $0) }.joined()
 }
 
+let home = FileManager.default.homeDirectoryForCurrentUser.path
+let shownRoot = root.path.hasPrefix(home) ? "~" + root.path.dropFirst(home.count) : root.path
+
 print("""
 {
-  "root": "\(root.path)",
+  "root": "\(shownRoot)",
   "entries_yielded": \(yielded),
   "is_regular_file_true": \(regularTrue),
   "is_symbolic_link_true": \(symlinkTrue),

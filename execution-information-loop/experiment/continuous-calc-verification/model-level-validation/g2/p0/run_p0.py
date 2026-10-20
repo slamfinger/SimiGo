@@ -18,6 +18,13 @@ Post-run (never rewrites run facts):
   8. read P0_PROBE.json / terminal.json; write INCONCLUSIVE only if the probe
      left no terminal record
   9. re-derive the verdict independently -> RUN_VERIFICATION.json
+
+RUNNER_VERSION 2 adds an explicit execution condition: `--model-dir` is only
+accepted together with `--condition <frozen JSON>`, the condition must agree
+with the frozen binding and the requested budget, and the directory must
+contain no symlink entries. The runner also records its own version and digest.
+Version 1 ran the 2026-10-20 probe from the symlinked snapshot; that record is
+not retroactively re-runnable and its missing launch record was not backfilled.
 """
 
 import datetime
@@ -38,10 +45,13 @@ PREREG = REPO / "docs/01-questions/G2_PREREGISTRATION_20261020.md"
 AUTH = REPO / "docs/01-questions/G2_P0_AUTHORIZATION_20261020.md"
 PROBE_DIR = HERE / "probe"
 P0_ROOT = HERE
+RUNNER_VERSION = 2
+RUNNER_PATH = pathlib.Path(__file__).resolve()
 TIMEOUT_SECONDS = 1200
 MAX_TOKENS = 16
 STRIDE = 256
 PROMPT = "Reply with exactly one word: ready."
+EXPECTED_BUDGET = {"model_starts": 1, "retries": 0, "generations": 2}
 
 
 def utc_now():
@@ -74,6 +84,45 @@ def git(*args):
     if result.returncode != 0:
         die("git %s failed: %s" % (" ".join(args), result.stderr.strip()))
     return result.stdout.strip()
+
+
+def rel_to_repo(path):
+    try:
+        return str(pathlib.Path(path).resolve().relative_to(REPO))
+    except ValueError:
+        return str(pathlib.Path(path).resolve())
+
+
+def count_symlinks(root):
+    links = []
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        for name in dirnames + filenames:
+            path = os.path.join(dirpath, name)
+            if os.path.islink(path):
+                links.append(os.path.relpath(path, root))
+    return sorted(links)
+
+
+def load_condition(path, binding, expected_aggregate, model_dir):
+    condition_path = pathlib.Path(os.path.expanduser(path)).resolve()
+    if not condition_path.is_file():
+        die("execution condition not found: %s" % condition_path)
+    condition = json.loads(condition_path.read_text(encoding="utf-8"))
+    problems = []
+    declared = pathlib.Path(os.path.expanduser(str(condition.get("model_dir", ""))))
+    if declared != pathlib.Path(model_dir):
+        problems.append("condition model_dir %s != --model-dir %s" % (declared, model_dir))
+    if condition.get("binding", {}).get("aggregate_sha256") != expected_aggregate:
+        problems.append("condition aggregate does not match the frozen binding")
+    if condition.get("binding", {}).get("file_count") != len(binding["files"]):
+        problems.append("condition file_count does not match the binding")
+    if condition.get("budget") != EXPECTED_BUDGET:
+        problems.append("condition budget is not %s" % EXPECTED_BUDGET)
+    if not str(condition.get("status", "")).startswith("FROZEN"):
+        problems.append("condition is not frozen")
+    if problems:
+        die("execution condition rejected: " + "; ".join(problems))
+    return condition, condition_path
 
 
 def artifact_check(model_dir, binding_rows):
@@ -204,10 +253,23 @@ def verify_run(run_dir, binding, expected_aggregate, product_sha=None):
     return verification, probe, hook, probe.get("engine_content_identity", {})
 
 
-def main():
+def main(model_dir_arg=None, condition_arg=None, authorization_arg=None):
     binding = json.loads(BINDING.read_text(encoding="utf-8"))
     expected_aggregate = binding["model"]["aggregate_sha256"]
-    model_dir = pathlib.Path(os.path.expanduser(binding["model"]["model_dir"]))
+    model_dir = pathlib.Path(os.path.expanduser(
+        model_dir_arg or binding["model"]["model_dir"]))
+    model_dir_source = "cli_override" if model_dir_arg else "frozen_binding"
+    if model_dir_arg and not condition_arg:
+        die("--model-dir requires --condition (a frozen execution condition record)")
+    condition, condition_path = (None, None)
+    if condition_arg:
+        condition, condition_path = load_condition(
+            condition_arg, binding, expected_aggregate, model_dir)
+    auth_path = (pathlib.Path(os.path.expanduser(authorization_arg)).resolve()
+                 if authorization_arg else AUTH)
+    if not auth_path.is_file():
+        die("authorization record not found: %s" % auth_path)
+    runner_sha = sha256_file(RUNNER_PATH)
 
     # ---- 1. source state -----------------------------------------------------
     revision = git("rev-parse", "HEAD")
@@ -216,6 +278,10 @@ def main():
         die("working tree is not clean; P0 must build from a committed tree:\n" + dirty)
     if not model_dir.is_dir():
         die("model directory missing: %s" % model_dir)
+    symlinks = count_symlinks(model_dir)
+    if model_dir_source == "cli_override" and symlinks:
+        die("--model-dir must be a dereferenced artifact; %d symlink entries found: %s"
+            % (len(symlinks), symlinks[:5]))
 
     # ---- 2. pins -------------------------------------------------------------
     resolved_path = PROBE_DIR / "Package.resolved"
@@ -290,10 +356,28 @@ def main():
             "Sources/G2P0Probe/main.swift":
                 sha256_file(PROBE_DIR / "Sources/G2P0Probe/main.swift"),
         },
+        "runner": {
+            "version": RUNNER_VERSION,
+            "path": rel_to_repo(RUNNER_PATH),
+            "sha256": runner_sha,
+            "argv": sys.argv[1:],
+        },
+        "model": {
+            "dir": str(model_dir),
+            "dir_source": model_dir_source,
+            "symlink_entries": len(symlinks),
+            "content_aggregate_sha256": expected_aggregate,
+            "execution_condition": None if condition is None else {
+                "path": rel_to_repo(condition_path),
+                "sha256": sha256_file(condition_path),
+                "condition_id": condition.get("condition_id"),
+                "status": condition.get("status"),
+            },
+        },
         "design_hashes": {
             "G2_PREREGISTRATION_20261020.md": sha256_file(PREREG),
             "G2_MODEL_BINDING_20261020.json": sha256_file(BINDING),
-            "G2_P0_AUTHORIZATION_20261020.md": sha256_file(AUTH),
+            auth_path.name: sha256_file(auth_path),
         },
         "host": {
             "platform": platform.platform(),
@@ -309,8 +393,12 @@ def main():
     (run_dir / "AUTHORIZATION.json").write_text(json.dumps({
         "schema_id": "SIMIGO-G2-P0-AUTHORIZATION-V1",
         "run_id": run_id,
-        "authorization_record": str(AUTH.relative_to(REPO)),
-        "authorization_sha256": sha256_file(AUTH),
+        "authorization_record": rel_to_repo(auth_path),
+        "authorization_sha256": sha256_file(auth_path),
+        "execution_condition": None if condition is None else {
+            "path": rel_to_repo(condition_path),
+            "sha256": sha256_file(condition_path),
+        },
         "scope": [
             "load the frozen artifact once through the ChatSession stack",
             "establish ChatSession path and cache-observation hook availability",
@@ -431,4 +519,10 @@ if __name__ == "__main__":
             binding_doc["model"]["aggregate_sha256"])
         print(json.dumps(verification, indent=2, sort_keys=True))
         sys.exit(0 if verification["verdict_agrees"] else 1)
-    sys.exit(main())
+    import argparse
+    parser = argparse.ArgumentParser(description="G2 P0 runner v%d" % RUNNER_VERSION)
+    parser.add_argument("--model-dir", help="dereferenced artifact directory")
+    parser.add_argument("--condition", help="frozen execution condition JSON")
+    parser.add_argument("--authorization", help="authorization record for this start")
+    ns = parser.parse_args(sys.argv[1:])
+    sys.exit(main(ns.model_dir, ns.condition, ns.authorization))

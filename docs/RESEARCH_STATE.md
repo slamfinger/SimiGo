@@ -23,8 +23,9 @@
 
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
 > `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
-> `G2 NOT AUTHORIZED` (P0 probe run 2026-10-20 = `FAIL` on artifact identity; design returns for
-> amendment). Three work records between
+> `G2 NOT AUTHORIZED` (P0 probe run 2026-10-20 = `FAIL` on artifact identity; A2 path adopted for
+> offline materialization only — successor P0 record frozen, **new explicit authorization required**;
+> no model start is licensed). Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
 >
@@ -47,7 +48,8 @@ remain binding on any later execution: the weights pinned by `ACTUAL_MLX_SMOKE_M
 are no longer on disk (V6 stays closed and cannot be re-run), and
 `MLXPrefixRecomputeExecutor.continueExecution` forwards the full prefix with `cache: nil`,
 so that path is disqualified as evidence for work avoidance. P0 and the G2 batch each
-need their own authorization; the batch authorization is not granted.
+need their own authorization; the batch authorization is not granted, and the A2 successor P0 needs
+its own authorization as well.
 
 **P0 executed — `FAIL` on artifact identity (1 model start, consumed).**
 `docs/01-questions/G2_P0_AUTHORIZATION_20261020.md` was exercised once by
@@ -68,8 +70,28 @@ commits, so HF-cached models record an empty model identity there too (reported,
 
 Per the frozen P0 terms the design now returns for amendment: A1 accept and re-scope the namespace
 claim, A2 run against a dereferenced 17.2 GB copy (same bytes ⇒ same aggregate), or A3 repair the
-reader. None is adopted; the G2 batch remains unauthorized and no second P0 start is licensed by
-the consumed authorization. P0 `PASS` was never claimed and no G2 arm was run.
+reader. None was adopted at that point; the G2 batch remains unauthorized and no second P0 start is
+licensed by the consumed authorization. P0 `PASS` was never claimed and no G2 arm was run.
+
+**A2 ruling — offline materialization only (2026-10-20).** The amendment was decided: A1 is not
+adopted as the G2 treatment, A2 is adopted **for offline verification first**, A3 stays a separate
+engineering gate (the reader is not repaired and still does not support HF symlink layouts). The
+17.2 GB dereferenced copy lives at `g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6`
+(git-ignored). `g2/a2-materialization-20261020/MATERIALIZATION_RECORD_20261020.md` records the
+result: `PASSED — OFFLINE ONLY` — 17/17 relative paths present, all regular files, zero symlinks,
+byte counts and SHA-256 identical, no added/missing/renamed entry, aggregate still
+`4c1bd759…`. That establishes content identity of the copy, **not** that the engine will compute a
+matching identity for it, and not that it will load. The rule replica predicts weights digest
+`d1f01c0c…`; the previous run shows such a prediction can still disagree with the engine.
+
+The successor execution condition is frozen in
+`docs/01-questions/G2_P0_A2_EXECUTION_CONDITION_20261020.json` (explained by
+`G2_P0_SUPPLEMENT_A2_20261020.md`): same binding rows and aggregate, different `model_dir` and
+`modelID`, budget 1 start / 0 retries / 2 generations. `g2/p0/run_p0.py` is now **v2** — it refuses
+`--model-dir` without a frozen `--condition`, rejects any symlink in the target, and records its
+own version and digest in `build.json`. The predecessor run `20261020T072607Z` stays `FAIL`,
+unchanged and never backfilled. **No model start is authorized**: the successor P0 needs a new
+explicit one-time authorization, and the G2 batch remains unauthorized.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
