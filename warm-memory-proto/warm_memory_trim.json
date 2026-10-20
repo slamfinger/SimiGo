@@ -1,0 +1,354 @@
+{
+ "schema": "simigo.warm-memory.v1-attributed+trimmed",
+ "lineage": {
+  "storageKey": "default/31f725a0-dd79-4f88-9948-fea9aff21a38/main",
+  "checkpointAt": "2026-10-16T09:40:21Z",
+  "messageCount": 83
+ },
+ "generated": {
+  "at": "2026-10-16T19:37:30",
+  "windows": "8/9",
+  "coverage": 0.89
+ },
+ "support_check": {
+  "decisions": 12,
+  "facts": 40,
+  "pending": 6,
+  "constraints": 8
+ },
+ "counts": {
+  "decisions": 12,
+  "facts": 40,
+  "pending": 7,
+  "constraints": 8,
+  "sources": 14
+ },
+ "memory": {
+  "decisions": [
+   {
+    "text": "覆盖率标志 `-enableCodeCoverage` 只对 test 动作有效，需去掉后重跑 build",
+    "work_item": "产品解析器",
+    "kind": "ruling",
+    "provenance": [
+     79
+    ]
+   },
+   {
+    "text": "用 LOCALBClientRequestProofV2 替换旧 proof，新授权 API 不接受仅 challenge 的旧 proof 类型。",
+    "work_item": "B3",
+    "kind": "ruling",
+    "provenance": [
+     40
+    ]
+   },
+   {
+    "text": "permission 是可信服务端裁决，由 host 路由表从规范 method 与 request-target 派生，绝不取自客户端 header、查询参数或 JSON 字段。",
+    "work_item": "B3",
+    "kind": "ruling",
+    "provenance": [
+     40
+    ]
+   },
+   {
+    "text": "若端点授权依赖额外请求字段或 header，该字段须纳入已评审协议版本的 signed representation，否则端点必须拒绝。",
+    "work_item": "B3",
+    "kind": "ruling",
+    "provenance": [
+     40
+    ]
+   },
+   {
+    "text": "开始执行第 1 步：先盘点产品仓当前状态，再定位 readRequest 解析边界。",
+    "work_item": "产品解析器",
+    "kind": "ruling",
+    "provenance": [
+     34
+    ]
+   },
+   {
+    "text": "基线锁定：先修产品解析器（保留 B1 本机 TLS/fail-closed、禁止重复头覆盖歧义、保留原始 method 与完整 request-target、统一 body framing），再做 B3 产品接线（权限由服务端路由映射推导，验签/路由/分发消费同一份已验证请求），最后跑真实 HTTP 回归 + macOS build + XCTest 作为 B3 验收依据；在能基于本机工作树实施并验证之前，不把 Lab 补强视为产品接线完成、不提前推进 B4。",
+    "work_item": "B1|B3|其他",
+    "kind": "ruling",
+    "provenance": [
+     33
+    ]
+   },
+   {
+    "text": "permission 是可信的服务器端决策，由 canonical method 和 request-target 经 host route table 派生；绝不从客户端 header/query/JSON 字段拷贝；server 在发放 challenge 和授权请求时必须使用相同 route-to-permission 映射。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     22
+    ]
+   },
+   {
+    "text": "若某端点的授权依赖任何额外请求字段或 header，该字段必须加入已审查协议版本的 signed representation，否则端点必须拒绝；不得以未签名方式影响授权。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     22
+    ]
+   },
+   {
+    "text": "旧版 request proof 仅签署 client_key_id、required_permission 和一次性 server challenge，未认证 HTTP method/authority/request-target/content type/body；因此只要 challenge/permission 对不变，有效 proof 可重放至被篡改内容。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     22
+    ]
+   },
+   {
+    "text": "路线 B 已裁定登记；v2.1=接受边界不授权执行；当前唯一推进项=D1 生产签名能力（D1.1 待 human 指定责任方）。",
+    "work_item": "其他",
+    "kind": "state",
+    "provenance": [
+     16
+    ]
+   },
+   {
+    "text": "先修产品 HTTP 请求解析边界，再接入 B3；B3 验收前不启动 B4。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     10
+    ]
+   },
+   {
+    "text": "签名验证所依据的请求必须就是最终被路由和执行的请求；不能仅保证各环节分别看起来规范。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     10
+    ]
+   }
+  ],
+  "constraints": [
+   {
+    "text": "LOCALBHTTPRequestV1 为不可变值，由精确解析的请求字节构造；adapter 不得在授权后规范化 target。",
+    "work_item": "B3",
+    "kind": "state",
+    "provenance": [
+     40
+    ]
+   },
+   {
+    "text": "V2 规范签名输入 domain 为 SIMIGO_PERSISTENT_SRS_LOCALB_CLIENT_REQUEST_CONTENT_V2，Ed25519 校验，challenge 一次性且继续绑定 client ID 与 permission。",
+    "work_item": "B3",
+    "kind": "state",
+    "provenance": [
+     40
+    ]
+   },
+   {
+    "text": "本机未提交工作树是产品侧工作的必要基线。",
+    "work_item": "产品解析器|B1",
+    "kind": "state",
+    "provenance": [
+     33
+    ]
+   },
+   {
+    "text": "产品侧 readRequest 解析边界修复是硬门，基线为保留 B1 TLS/fail-closed 的本机工作树；修好解析器之前 Lab 路由视图不构成接线。",
+    "work_item": "产品解析器|B1",
+    "kind": "state",
+    "provenance": [
+     32
+    ]
+   },
+   {
+    "text": "request-line method token 和 exact origin-form request-target（最多 8192 字节，含 query string）必须保留。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     22
+    ]
+   },
+   {
+    "text": "本轮新增的 Lab 路由视图是接线支撑，不代表产品解析器已修好，也不代表真实 HTTP 路径、macOS 构建或 XCTest 已验证。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     12
+    ]
+   },
+   {
+    "text": "保留 B1 未提交的 TLS 与 fail-closed 修改；不得用远端 main 的旧传输配置覆盖本机状态。",
+    "work_item": "B1",
+    "kind": "state",
+    "provenance": [
+     10
+    ]
+   },
+   {
+    "text": "验签通过后分发必须使用同一份已验证请求，不能重新读取或替换已验签的请求语义。",
+    "work_item": "B3",
+    "kind": "state",
+    "provenance": [
+     10
+    ]
+   }
+  ],
+  "pending": [
+   {
+    "text": "去掉 `-enableCodeCoverage` 后重跑 build",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     79
+    ]
+   },
+   {
+    "text": "读 HTTPServer.swift 解析路径 + Lab B3 文档解析器门槛要求。",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     35
+    ]
+   },
+   {
+    "text": "实现解析器修复：原始 method/target 保留、重复头歧义拒绝、body framing 统一。",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     35
+    ]
+   },
+   {
+    "text": "补解析边界回归测试并跑 macOS build + 定向测试。",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     35
+    ]
+   },
+   {
+    "text": "核对零 staged/commit/push、B1 TLS/fail-closed 改动完好、冻结域未动。",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     35
+    ]
+   },
+   {
+    "text": "本机工作树 f0ee2083 尚未取回，需 fetch 远端核验该提交内容。",
+    "work_item": "Lab",
+    "kind": "event",
+    "provenance": [
+     17
+    ]
+   },
+   {
+    "text": "产品侧 readRequest 解析边界修复仍未解除，是下一道硬门。",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     12
+    ]
+   }
+  ],
+  "facts": [
+   {
+    "text": "BUILD SUCCEEDED；shell cwd 重置为 /Users/mr.simi/Documents/SimiGo-Lab",
+    "work_item": "其他",
+    "kind": "event",
+    "provenance": [
+     80
+    ]
+   },
+   {
+    "text": "xcodebuild 因 `-enableCodeCoverage` 标志非 test 动作而报错退出",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     78
+    ]
+   },
+   {
+    "text": "创建回归测试文件 HTTPRequestBoundaryTests.swift（纯解析器用例 + 真实套字用例）",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     75,
+     76
+    ]
+   },
+   {
+    "text": "HTTPServer.swift 已更新（readRequest 现只剩单一解析点调用 + Expect/Body 处理）",
+    "work_item": "产品解析器",
+    "kind": "state",
+    "provenance": [
+     75
+    ]
+   },
+   {
+    "text": "readRequest 的解析体替换为对单一解析点的调用",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     67
+    ]
+   },
+   {
+    "text": "HTTPServer.swift 在 readRequest 之前插入 pure parser seam",
+    "work_item": "产品解析器",
+    "kind": "event",
+    "provenance": [
+     65
+    ]
+   },
+   {
+    "text": "`configureLOCALBSecurityMode`/`configureLOCALBTransport`/`stop` 等签名已读",
+    "work_item": "B1",
+    "kind": "verification",
+    "provenance": [
+     58
+    ]
+   },
+   {
+    "text": "确认 `stop()` 与错误响应的连接关闭行为可复用",
+    "work_item": "B1",
+    "kind": "verification",
+    "provenance": [
+     57
+    ]
+   }
+  ],
+  "sources": [
+   {
+    "idx": 0,
+    "kind": "commit",
+    "ref": "f0ee2083943843ce39658df01b0463d5b3f92b97"
+   },
+   {
+    "idx": 1,
+    "kind": "pr",
+    "ref": "PR #10 (Open, Draft)"
+   },
+   {
+    "idx": 2,
+    "kind": "commit",
+    "ref": "e22a3cab"
+   },
+   {
+    "idx": 3,
+    "kind": "commit",
+    "ref": "4f4d0606"
+   },
+   {
+    "idx": 4,
+    "kind": "commit",
+    "ref": "96eb273d"
+   },
+   {
+    "idx": 5,
+    "kind": "file",
+    "ref": "LOCALBPairingCoordinator.swift (localb-signing-core-20261016)"
+   }
+  ]
+ },
+ "trim": {
+  "budget_chars": 3400,
+  "est_tokens": 2383,
+  "dropped_facts": 32
+ }
+}

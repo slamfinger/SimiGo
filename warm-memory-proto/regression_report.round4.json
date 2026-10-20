@@ -1,0 +1,135 @@
+{
+ "dropped_no_provenance": 0,
+ "memory_chars": 11057,
+ "trim_meta": {
+  "budget_chars": 4400,
+  "actual_chars": 11057,
+  "est_tokens": 4807,
+  "over_budget": true,
+  "counts": {
+   "decisions": 19,
+   "constraints": 20,
+   "pending": 15,
+   "facts": 26,
+   "sources": 8
+  },
+  "dropped": {
+   "state": 30,
+   "event": 15
+  }
+ },
+ "coverage": 1.0,
+ "support_check": {
+  "decisions": 19,
+  "facts": 77,
+  "pending": 15,
+  "constraints": 18
+ },
+ "main": [
+  {
+   "id": 1,
+   "armA": "PARTIAL",
+   "round2B": "PARTIAL",
+   "round3B": "PASS",
+   "round4B": "PARTIAL"
+  },
+  {
+   "id": 2,
+   "armA": "PASS",
+   "round2B": "PARTIAL",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  },
+  {
+   "id": 3,
+   "armA": "PASS",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  },
+  {
+   "id": 4,
+   "armA": "PARTIAL",
+   "round2B": "FAIL",
+   "round3B": "FAIL",
+   "round4B": "FAIL"
+  },
+  {
+   "id": 5,
+   "armA": "PARTIAL",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PARTIAL"
+  },
+  {
+   "id": 6,
+   "armA": "PARTIAL",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  },
+  {
+   "id": 7,
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  },
+  {
+   "id": 8,
+   "armA": "PARTIAL",
+   "round2B": "FAIL",
+   "round3B": "FAIL",
+   "round4B": "PARTIAL"
+  },
+  {
+   "id": 9,
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  },
+  {
+   "id": 10,
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS",
+   "round4B": "PASS"
+  }
+ ],
+ "new_failures_vs_r3": [],
+ "q8_gate": {
+  "qa": "PARTIAL",
+  "memory": {
+   "smoke_fact_present": false,
+   "smoke_attributed_to": [],
+   "smoke_provenance": []
+  }
+ },
+ "directed": [
+  {
+   "id": "D1",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3",
+   "verdict": "PARTIAL"
+  },
+  {
+   "id": "D1-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3-armA",
+   "verdict": "PARTIAL"
+  }
+ ]
+}

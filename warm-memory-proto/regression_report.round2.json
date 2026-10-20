@@ -1,0 +1,84 @@
+{
+ "dropped_no_provenance": 0,
+ "memory_chars": 5386,
+ "est_tokens": 2383,
+ "coverage": 0.89,
+ "support_check": {
+  "decisions": 12,
+  "facts": 40,
+  "pending": 6,
+  "constraints": 8
+ },
+ "main": {
+  "1": {
+   "round1": "PASS",
+   "round2": "PARTIAL"
+  },
+  "2": {
+   "round1": "PASS",
+   "round2": "PARTIAL"
+  },
+  "3": {
+   "round1": "PASS",
+   "round2": "PASS"
+  },
+  "4": {
+   "round1": "PARTIAL",
+   "round2": "FAIL"
+  },
+  "5": {
+   "round1": "PASS",
+   "round2": "PASS"
+  },
+  "6": {
+   "round1": "PARTIAL",
+   "round2": "PASS"
+  },
+  "7": {
+   "round1": "PASS",
+   "round2": "PASS"
+  },
+  "8": {
+   "round1": "FAIL",
+   "round2": "FAIL"
+  },
+  "9": {
+   "round1": "PASS",
+   "round2": "PASS"
+  },
+  "10": {
+   "round1": "PASS",
+   "round2": "PASS"
+  }
+ },
+ "new_failures_vs_baseline": [
+  4
+ ],
+ "q8_gate": null,
+ "directed": [
+  {
+   "id": "D1",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D1-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3-armA",
+   "verdict": "PARTIAL"
+  }
+ ]
+}

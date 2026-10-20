@@ -1,0 +1,98 @@
+{
+ "dropped_no_provenance": 0,
+ "memory_chars": 9694,
+ "est_tokens": 4289,
+ "coverage": 0.89,
+ "support_check": {
+  "decisions": 12,
+  "facts": 49,
+  "pending": 7,
+  "constraints": 11
+ },
+ "main": {
+  "1": {
+   "armA": "PARTIAL",
+   "round2B": "PARTIAL",
+   "round3B": "PASS"
+  },
+  "2": {
+   "armA": "PASS",
+   "round2B": "PARTIAL",
+   "round3B": "PASS"
+  },
+  "3": {
+   "armA": "PASS",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  },
+  "4": {
+   "armA": "PARTIAL",
+   "round2B": "FAIL",
+   "round3B": "FAIL"
+  },
+  "5": {
+   "armA": "PARTIAL",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  },
+  "6": {
+   "armA": "PARTIAL",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  },
+  "7": {
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  },
+  "8": {
+   "armA": "PARTIAL",
+   "round2B": "FAIL",
+   "round3B": "FAIL"
+  },
+  "9": {
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  },
+  "10": {
+   "armA": "FAIL",
+   "round2B": "PASS",
+   "round3B": "PASS"
+  }
+ },
+ "new_failures_vs_baseline": [],
+ "q8_gate": {
+  "qa": null,
+  "memory": {
+   "smoke_fact_present": false,
+   "smoke_attributed_to": []
+  }
+ },
+ "directed": [
+  {
+   "id": "D1",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3",
+   "verdict": "PARTIAL"
+  },
+  {
+   "id": "D1-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D2-armA",
+   "verdict": "FAIL"
+  },
+  {
+   "id": "D3-armA",
+   "verdict": "PARTIAL"
+  }
+ ]
+}
