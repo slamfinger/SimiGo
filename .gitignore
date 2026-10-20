@@ -21,5 +21,8 @@ pre-research/**/*.sqlite
 # G2 P0 declares run.log as an evidence artifact (child stdout/stderr, unmodified)
 !execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/**/run.log
 
+# G2 batch host stdout/stderr is unmodified evidence, not a disposable log
+!execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/**/host.log
+
 # G2 A2 materialized model copy (17.2 GB, byte-verified, never committed)
 execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-*/
