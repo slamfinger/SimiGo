@@ -67,10 +67,10 @@ Execution State
 - **E1 — Execution Continuity Contract：VERIFIED**
 - **E2 — Fake Execution Backend lifecycle tree：VERIFIED**
 - **E3 — MLX Execution-State Adapter：VERIFIED**
-- **E4 — Continuity + Residency Integration：NEXT**
-- **E5 — End-to-End Execution State scenario：未开始**
+- **E4 — Continuity + Residency Integration：VERIFIED**（2026-09-25，87/87 XCTest；mock materializer）
+- **E5 — End-to-End Execution State scenario：NEXT**（未开始）
 
-最新已登记的 E3 验证提交为 `646bc098`：**84/84 PASS**。当前实现使用 Backend Representation Strategy 与 Execution State Contract 对接；物理表示仍由 Backend 管理，SimiGo 不建立第二个 KV authority。
+最新已登记的 E3 验证提交为 `646bc098`：**84/84 PASS**。当前实现使用 Backend Representation Strategy 与 Execution State Contract 对接；物理表示仍由 Backend 管理，SimiGo 不建立第二个 KV authority。E4 的验证使用 mock materializer，只证明逻辑状态与物理表示可分离、生命周期可保持，不证明真实 MLX 驱逐/重载全链；E5 仍为 NEXT。门位以 `docs/RESEARCH_STATE.md` 为准。
 
 ## 核心边界
 

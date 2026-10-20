@@ -2,7 +2,22 @@
 
 > **This file is the authoritative snapshot of the current SimiGo-Lab research state. Conversation memory must not override it.**
 
-**Last updated**: 2026-10-15
+> **2026-10-16 navigation update:** active lines are Execution–Information cache-release validation, Persistent SRS / LOCAL-PRODUCTION-SIGNER-01, and the small-scale runtime/GUI line; priority is not inferred here. The E-I separation is a working research baseline, not proof of real-model long-term continuity. Actual MLX Smoke V6 is a bounded real-model `compute → settle` pass, not a cache-release/incremental-fork proof. Production remains unauthorized. Historical sections below retain their original authority and do not supersede this navigation note without a later Human ruling.
+
+**Last updated**: 2026-10-16
+**State layer updated**: 2026-10-20
+
+> **2026-10-20 state-layer map:** this file is the only state authority. The other
+> navigation files are pointers, not state: `NEXT_SESSION_ENTRY.md` and
+> `SESSION_CONTINUITY.md` are pointer pages (full pre-2026-10-20 text is archived
+> under `docs/09-archive/state-layer/`); `RESEARCH_CONTEXT_INDEX.md` routes the
+> L0/L1 layers; `RESEARCH_ESTATES_SUMMARY.md` is a 2026-10-06 historical synthesis
+> (explicitly not authoritative); `RESEARCH_ESTATE_COVERAGE.md` is a coverage
+> ledger. Stale strata inside this file remain as written: the older
+> `E4 / E5 : NOT STARTED` block is superseded by
+> `### E4 Continuity + Residency Integration — Verified — 2026-09-25`.
+> Sections are appended at the head and are not strictly chronological; locate by
+> title, not by position.
 
 ## Current continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 CLOSED)
 
@@ -25704,7 +25719,7 @@ docs/02-evidence/execution-information-loop-vertical-slice-20261009/
   REAL_PALACE_CONSUMPTION_E2E_RECORD.json.
 ```
 
-## Real PALACE Snapshot Consumption Loop PASS — 2026-10-09
+## Real PALACE Snapshot Consumption Loop PASS — 2026-10-09 (duplicate entry — retained verbatim)
 
 > **Status:** ISOLATED REAL-SOURCE METADATA CONSUMPTION PASS. Seven real records
 > from the sealed D002 PALACE snapshot were materialized and reused without
