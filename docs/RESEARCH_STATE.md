@@ -33,6 +33,16 @@
 > not authorize G2, does not release any freeze, and does not change the R27 STOP
 > or the non-implementation status of the signer line.
 
+**G2 design proposal (not authorized).** `docs/01-questions/G2_PREREGISTRATION_20261020.md`
+separates three claims — old-KV inaccessibility, Information-Space restoration, and
+real-model continuation — and fixes three fixtures, three arms (continuous baseline /
+main / negative control) and pre-registered `PASS` / `FAIL` / `INCONCLUSIVE` rules.
+Status: `PROPOSED — NOT FROZEN, NOT AUTHORIZED, NOT EXECUTED`. Its capability audit
+records two facts binding on any later execution: the model weights pinned by
+`ACTUAL_MLX_SMOKE_MANIFEST_V6` are no longer on disk (V6 stays closed and cannot be
+re-run), and `MLXPrefixRecomputeExecutor.continueExecution` forwards the full prefix
+with `cache: nil`, so that path is disqualified as evidence for work avoidance.
+
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
 resolved: `A/C/E/H/I = PASS-部分`, `G/B/D/F/J = PASS`. H is split into `H_Carrier`
