@@ -19,12 +19,19 @@
 > Sections are appended at the head and are not strictly chronological; locate by
 > title, not by position.
 
-## Current continuity — 2026-10-20 (G1 Swift reference calculator PASS; 10-17/10-18 records entered)
+## Current continuity — 2026-10-20 (G1 CLOSED; 10-17/10-18 records entered)
 
-> **Status:** `G1 PASS (test-only Swift oracle)` · `E-I mechanism layer evidenced` ·
-> `model layer NOT VERIFIED` · `G2 NOT STARTED`. Three work records between
+> **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
+> `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
+> `G2 NOT AUTHORIZED / NOT STARTED`. Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
+>
+> **Closure:** `docs/06-closure/G1_CLOSURE_20261020.md` carries the terminal gate
+> positions, the commit anchors (`7c9662bc` source, `932d8b21` evidence, `a0c019c0`
+> state — local only, not pushed) and the binding citation limits. G1 closure does
+> not authorize G2, does not release any freeze, and does not change the R27 STOP
+> or the non-implementation status of the signer line.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
