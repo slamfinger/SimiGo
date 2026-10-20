@@ -22,8 +22,9 @@
 
 Before substantive SimiGo-Lab research:
 
-1. Read `docs/RESEARCH_STATE.md`.
-2. Read `docs/NEXT_SESSION_ENTRY.md` for the registered handoff entry.
+1. Read `docs/RESEARCH_STATE.md` — head navigation first, then the latest `## Current continuity`.
+2. Read `docs/RESEARCH_CONTEXT_INDEX.md` for the L0 route table.
+   (`docs/NEXT_SESSION_ENTRY.md` has been a pointer page since 2026-10-06; do not read it for state.)
 3. Read the current phase's endpoint/closure document.
 4. Verify relevant anchor commits with git history.
 5. Apply the repository's state vocabulary.
@@ -68,9 +69,13 @@ Previously validated infrastructure may be a reference implementation, not an au
 
 Any reuse requires a new provenance anchor and must respect the current research gate.
 
-## 7. Current boundary
+## 7. Current boundary (snapshot 2026-10-02)
 
-As of the latest repository state:
+> **Snapshot notice (2026-10-20):** this section is a point-in-time boundary record
+> from 2026-10-02, retained verbatim. Active lines and current gates are authoritative
+> only in the navigation block at the head of `docs/RESEARCH_STATE.md`.
+
+As of 2026-10-02:
 
 - The Execution State Runtime evidence line is consolidated with explicit harness boundaries.
 - Oversized layer work is `FROZEN_AS_ARCHITECTURE_VALIDATION_PAYLOAD`; it is no longer an independent research line.

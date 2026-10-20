@@ -41,6 +41,7 @@ SUPERSEDED      historical input; later route or ruling changed direction
 | [C13](C13-t4-t42-rc1-continuation-evidence.md) | T4 / T4-2 / R-C1 continuation evidence | TASK-DOMAIN BOUNDED PASS/CLOSED | COMPLETE NODE | SEALED EVIDENCE | Recover why continuation claims remain task-domain bounded. |
 | [C14](C14-palace-g0-g3-durable-information.md) | Palace V2 G0-G3 durable information | G0-G3 CLOSED / BOUNDED | COMPLETE NODE | HISTORICAL INPUT | Recover durable-information findings without reopening Palace. |
 | [C15](C15-local-closure-information-reduction.md) | Local Closure / information reduction | PARTIALLY SEALED / ROUND 1 EXECUTED | PARTIAL NODE | REPRESENTATION/REDUCTION EVIDENCE | Recover 17/17 bounded equivalence/composite result; no schema or universal-minimality claim. |
+| [C16](C16-execution-information-loop-current-state.md) | Execution–Information Closed Loop current state | NAVIGATION / CACHE-RELEASE VALIDATION PENDING | COMPLETE CURRENT NODE | CURRENT | Recover SQLite/carrier scope, Runtime Validation V2, MLX Smoke V6 half-loop, and the unproven release→fork→incremental question. |
 
 ## Known capsule coverage gaps
 

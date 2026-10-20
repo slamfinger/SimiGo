@@ -3,20 +3,27 @@
 > **Purpose:** thin navigation index for the SimiGo-Lab Information Place.  
 > **Not authority:** this file does not replace `RESEARCH_STATE.md`, Frozen Contracts, governance registers, evidence, or Human rulings.  
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
-> **Index snapshot:** authored against commit `14de9fd`; capsule batch adds 15 L1 files.
+> **Index snapshot:** originated at commit `14de9fd`; current route capsule C16 added 2026-10-16.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT AT MAIN — DATABASE-CARRIER CORRECTION & REINITIALIZATION COMPLETE (2026-10-08)` — always verify current `main` dynamically.
+> **Index freshness:** `CURRENT WORKING TREE — ROUTE CORRECTION (2026-10-16)`; Git HEAD is `7d8d8811`, while some later product-line records remain uncommitted.
+> **Current route correction — 2026-10-16:** map all active lines without silently selecting priority. (1) Execution–Information Closed Loop has isolated SQLite/carrier checks, Runtime Validation V2, and the bounded Actual MLX Smoke V6 `compute → settle` half-loop. Its working architecture baseline is ES + Information Space for long-term continuity and model-stage cache as intermediate state; real-model long-term continuity remains unproven until a separate experiment proves `release old stage/cache → fork from Information Space → incremental recompute`. (2) Persistent SRS / LOCAL-PRODUCTION-SIGNER-01 remains the recent product line; later rulings in this working tree are uncommitted, so distinguish working-tree state from Git `main`. (3) Small-scale runtime/GUI and fork caller-identity work has its own current records in `RESEARCH_STATE.md`. Priority between these lines requires an explicit owner ruling.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
 > **Repository position ≠ semantic authority.**
 
 ## 1. Identity
 
+> **Label note (2026-10-20):** the `Current …` / `Historical SRS …` labels inside this
+> block are inherited from the 2026-10-16 route correction. They distinguish records that
+> still serve as standing evidence from consumed campaign sequences; they are **not** a
+> statement about which research lines are active. Active lines are listed only in the
+> head navigation of `docs/RESEARCH_STATE.md`.
+
 ```text
 Project                = SimiGo-Lab
 Repository             = slamfinger/SimiGo-Lab
 Research core          = Execution State ↔ Information Space
-Active route           = PALACE / Information Space Foundation
+Active routes          = Execution–Information cache-release validation; Persistent SRS / local signer; small-scale runtime
 Repository entry       = default main after Path A controlled integration
 Repository HEAD        = verify dynamically with git rev-parse HEAD
 Path A integration     = fd56946
@@ -29,21 +36,23 @@ Research / memory recovery anchor = docs/00-governance/SIMIGO_LAB_RESEARCH_STATE
 Restored state section             = docs/RESEARCH_STATE.md — “Restored research state / memory anchor — 2026-10-06”
 Current global goal                = ES₁ settled relation becomes lawful, validated, reusable state for independent ES₂;
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
-Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-006-69b2227` = VALID, STOP for Human evidence audit. Request v0.9 was APPROVED; Part S τN1 alignment canonical at 69b2227; records 006 canonical at 1224535; evidence canonical at cb365a4. Execution, observer, and scoped IS campaign budgets consumed.
-Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/EXECUTION_EVIDENCE_PACKAGE.md. Step0, EPR004 exact repository/cwd/input/provenance enforcement, adapter e88c996b…, environment identity ad2abb68…, materialize/ES1/ES2 REUSE, mutate-n1 D' revision-2 mapping, ESN BLOCK, and observer bounded checks all passed. E1–E6 and N1 are established under the registered round-1 scope.
+Current E-I proof gap              = real-model compute→settlement is bounded-pass (MLX Smoke V6);
+                                     release→Information-Space fork→incremental recompute is not yet executed.
+Historical SRS campaign            = SRS-REAL-CLOSURE-01 execution campaign `exec-006-69b2227` = VALID, STOP for Human evidence audit. Request v0.9 was APPROVED; Part S τN1 alignment canonical at 69b2227; records 006 canonical at 1224535; evidence canonical at cb365a4. Execution, observer, and scoped IS campaign budgets consumed.
+Historical SRS evidence            = docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/EXECUTION_EVIDENCE_PACKAGE.md. Step0, EPR004 exact repository/cwd/input/provenance enforcement, adapter e88c996b…, environment identity ad2abb68…, materialize/ES1/ES2 REUSE, mutate-n1 D' revision-2 mapping, ESN BLOCK, and observer bounded checks all passed. E1–E6 and N1 are established under the registered round-1 scope.
 Current human evidence audit       = 266e953 (blob dfb54c7a…, sha256 b13280a4…) = CLOSED. Audit A accepted `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`; Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The defects are independent; seed-path failure was causally earlier, while manifest failure is the registered primary stop. Root cause deeper than these mechanical contracts remains unresolved.
-Current failure ruling             = `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT` = CLOSED / shared-bilateral. Exact runner consumed undeclared top-level `d_prime_seed_path` and `dependencies`; bound τN1 runtime under-declared both. N1 D' addition and revision-2 mapping were absent; ESN REUSE was invalid derived behavior.
-Current authorization request      = CORRECTED EXECUTION Request v0.9 @ 51e6fd8 (blob c47e3c02…, sha256 01f55dc1…), OPENED / SUBMITTED; no stage authorized. It supersedes v0.8 under REVISE solely to correct predecessor/fixture baseline to current canonical fef0b2f / Manifest v4 / Completion Record v4 / completed τN1. It retains Schema Authority v1, EPR004 fail-closed provenance, scoped v4→v5 alignment, and records 006/campaign only after separate APPROVE S+E.
-Current active closure task        = SRS-REAL-CLOSURE-01 execution campaign `exec-005-fef0b2f` = INVALID at post-sequence audit. Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated records 005 at afca0d0. Step0, EPR004 exact cwd/repository/input enforcement, adapter e88c996b…, and environment identity ad2abb68… passed. Materialize/es1/es2 REUSE passed, but mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE instead of BLOCK.
-Current evidence                   = docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/EXECUTION_EVIDENCE_PACKAGE.md. EPR004 manifest overall_ok=false solely because driver returncode=1; exact cwd/repository/input/artifact provenance succeeded.
-Current failure class             = `TAU_N1_D_PRIME_FIELD_PLACEMENT_MISMATCH`. Completed τN1 placed D' fields under `dependencies[0]`, while exact runner expects top-level `d_prime_seed_path`. This is residual bilateral τ interface mismatch, not runtime drift, EPR004 failure, or semantic refutation.
+Historical SRS failure ruling       = `FIXTURE_RUNNER_TAU_INTERFACE_CONTRACT_DEFECT` = CLOSED / shared-bilateral. Exact runner consumed undeclared top-level `d_prime_seed_path` and `dependencies`; bound τN1 runtime under-declared both. N1 D' addition and revision-2 mapping were absent; ESN REUSE was invalid derived behavior.
+Historical SRS request             = CORRECTED EXECUTION Request v0.9 @ 51e6fd8 (blob c47e3c02…, sha256 01f55dc1…), OPENED / SUBMITTED; no stage authorized. It supersedes v0.8 under REVISE solely to correct predecessor/fixture baseline to current canonical fef0b2f / Manifest v4 / Completion Record v4 / completed τN1. It retains Schema Authority v1, EPR004 fail-closed provenance, scoped v4→v5 alignment, and records 006/campaign only after separate APPROVE S+E.
+Historical SRS campaign            = SRS-REAL-CLOSURE-01 execution campaign `exec-005-fef0b2f` = INVALID at post-sequence audit. Human APPROVE T+E completed τN1 interface at fef0b2f and instantiated records 005 at afca0d0. Step0, EPR004 exact cwd/repository/input enforcement, adapter e88c996b…, and environment identity ad2abb68… passed. Materialize/es1/es2 REUSE passed, but mutate-n1 failed `KeyError: d_prime_seed_path`; D' mutation/revision-2 mapping absent; ESN invalidly returned REUSE instead of BLOCK.
+Historical SRS evidence            = docs/02-evidence/srs-real-closure-01/runs/exec-005-fef0b2f/EXECUTION_EVIDENCE_PACKAGE.md. EPR004 manifest overall_ok=false solely because driver returncode=1; exact cwd/repository/input/artifact provenance succeeded.
+Historical SRS failure class        = `TAU_N1_D_PRIME_FIELD_PLACEMENT_MISMATCH`. Completed τN1 placed D' fields under `dependencies[0]`, while exact runner expects top-level `d_prime_seed_path`. This is residual bilateral τ interface mismatch, not runtime drift, EPR004 failure, or semantic refutation.
 Current forensic audit            = 9616133 (blob 2cec807c…, sha256 b77d4d41…) = CLOSED. Ruling = `TAU_N1_RUNNER_SCHEMA_AUTHORITY_ABSENCE`, shared/bilateral. Original fixture preparation introduced both exact runner top-level consumption and τN1 without that field; no Design/Manifest/Request/completion record declared an authoritative τN1 schema. One-sided Request-schema or runner-defect attribution is rejected.
 Current human evidence audit       = 615a665 (blob 8441d95d…, sha256 5ac4afe3…) = ACCEPTED. E1–E6 and N1 accepted; persisted-IS causal attribution for ES2 REUSE accepted; observer C1–C4 accepted as bounded supplemental evidence; bounded finding accepted. Broader PALACE/CarrierSQLite/arbitrary-carrier/arbitrary-ES/LLM/production/general-theorem claims remain NOT ESTABLISHED.
-Current governance track           = STOPPED AFTER ACCEPTED BOUNDED FINDING. No rerun, campaign, semantic reinterpretation, runner/fixture/τ repair, EXECUTION, IS_MUTATION, or Observer action is authorized. v0.3–v0.8 opportunities, budgets, and records 001–005 remain consumed/non-reusable; records 006 and v0.6 campaign budget are consumed.
-Current core research gap          = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
+Historical SRS governance track    = STOPPED AFTER ACCEPTED BOUNDED FINDING. No rerun, campaign, semantic reinterpretation, runner/fixture/τ repair, EXECUTION, IS_MUTATION, or Observer action is authorized. v0.3–v0.8 opportunities, budgets, and records 001–005 remain consumed/non-reusable; records 006 and v0.6 campaign budget are consumed.
+Historical SRS bounded gap        = ES₁ → IS(SRS) → independent ES₂ lawful reuse — NOT ESTABLISHED (T-IMPL-01 ESTABLISHED ≠ reuse established; instrument ready ≠ reuse established; anti-smuggling constraint in design §0)
 Current design document            = docs/02-evidence/es-is-20261005/SRS_REAL_CLOSURE_01_EXPERIMENT_DESIGN_AND_EVIDENCE_PLANNING_PACKAGE_V0.2_20261007.md (= ACCEPT; frozen experiment contract: pre-registered expected decisions, E1–E6 + SRS-N1 evidence chain, four-state stop conditions)
 Current implementation correction   = Request v1.1 correction/reinitialization work cycle COMPLETE @ 7392fcb. Added atomic_dependency_materialization/reentrant atomic_write_group, canonical get_dependency_history plus compatibility alias, and fail-closed SQLite authorizer for UPDATE/DELETE/ALTER/DROP on logical stores. Fresh empty SQLite-backed IS reinitialized; manifest records exact repaired commit 7392fcb, final schema SHA256 06ff8f97, artifact hashes, argv/cwd/timing/returncode and engine details.
-Current governance track           = STOPPED AFTER CORRECTIVE WORK CYCLE. No equivalence campaign/adjudication/logical import/IS mutation/campaign DB reuse, runner/fixture/τ repair, semantic reinterpretation, or broader claim is authorized. Next stage requires new explicit Human authorization exact-binding corrected implementation commit and fresh initialization provenance.
+Historical SRS governance track    = STOPPED AFTER CORRECTIVE WORK CYCLE. No equivalence campaign/adjudication/logical import/IS mutation/campaign DB reuse, runner/fixture/τ repair, semantic reinterpretation, or broader claim is authorized. Next stage requires new explicit Human authorization exact-binding corrected implementation commit and fresh initialization provenance.
 Next dependency                    = Human review of correction/reinitialization outputs. Any equivalence campaign requires a new explicit Human-directed Request exact-binding corrected implementation 7392fcb, Manifest v5 lineage, and fresh initialization provenance. CarrierSQLite equivalence remains NOT ESTABLISHED.
 Recovery rule                      = do not restore from chat memory, deleted branches, or superseded handoff paragraphs.
 
@@ -580,6 +589,9 @@ The route moved upward because:
 9. Research Stage Synthesis
    docs/00-governance/RESEARCH_STAGE_SYNTHESIS_20261005.md
 10. Only then endpoint/evidence documents named by the selected question
+11. Archive lookup — only when a named document is no longer at its recorded path
+   docs/ARCHIVE_INDEX.md  →  docs/09-archive/<line>/<YYYY-MM>/
+   (archived = moved only; content frozen, evidence status unchanged)
 ```
 
 ## 10. Index discipline
