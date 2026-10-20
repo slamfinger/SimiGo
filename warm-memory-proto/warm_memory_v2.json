@@ -437,7 +437,7 @@
     ]
    },
    {
-    "text": "BUILD SUCCEEDED；shell cwd 重置为 /Users/mr.simi/Documents/SimiGo-Lab",
+    "text": "BUILD SUCCEEDED；shell cwd 重置为 ~/Documents/SimiGo-Lab",
     "work_item": "其他",
     "kind": "event",
     "provenance": [
@@ -633,12 +633,12 @@
    {
     "idx": 0,
     "kind": "file",
-    "ref": "/Users/mr.simi/Documents/SimiGo/SimiGo/Protocol/HTTPServer.swift"
+    "ref": "~/Documents/SimiGo/SimiGo/Protocol/HTTPServer.swift"
    },
    {
     "idx": 1,
     "kind": "file",
-    "ref": "/Users/mr.simi/Documents/SimiGo/SimiGoTests/HTTPRequestBoundaryTests.swift"
+    "ref": "~/Documents/SimiGo/SimiGoTests/HTTPRequestBoundaryTests.swift"
    }
   ]
  }

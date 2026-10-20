@@ -248,7 +248,7 @@
   ],
   "facts": [
    {
-    "text": "BUILD SUCCEEDED；shell cwd 重置为 /Users/mr.simi/Documents/SimiGo-Lab",
+    "text": "BUILD SUCCEEDED；shell cwd 重置为 ~/Documents/SimiGo-Lab",
     "work_item": "其他",
     "kind": "event",
     "provenance": [
