@@ -1,0 +1,69 @@
+{
+  "build_duration_seconds": 8.257,
+  "build_mode": "swift build -c release --product G2P0Probe",
+  "created_at_utc": "2026-10-20T07:52:57Z",
+  "design_hashes": {
+    "G2_MODEL_BINDING_20261020.json": "1eb299da289411db39246c56f67ddd80b7b202106940481df6e8e4e4f6996b44",
+    "G2_P0_A2_AUTHORIZATION_20261020.md": "4f89db5cd8846bcaf3a573c6ae2144ea67b454fcd59ec0c8b39d1fa76ca95e0e",
+    "G2_PREREGISTRATION_20261020.md": "0912e82f26d9feadd77fa6a949c936acc3f1e0c51f78209c8a70c004b42670d1"
+  },
+  "host": {
+    "cpu_count": 10,
+    "machine": "arm64",
+    "physical_memory_bytes": 34359738368,
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "python": "3.9.6"
+  },
+  "model": {
+    "content_aggregate_sha256": "4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678",
+    "dir": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+    "dir_source": "cli_override",
+    "execution_condition": {
+      "condition_id": "G2-P0-A2-20261020",
+      "path": "docs/01-questions/G2_P0_A2_EXECUTION_CONDITION_20261020.json",
+      "sha256": "58cbf9e9ef9d103961d581435d32707b82c4edc1bfab5038aa727cec095c301e",
+      "status": "FROZEN \u2014 EXECUTION NOT AUTHORIZED"
+    },
+    "symlink_entries": 0
+  },
+  "package_pins": {
+    "eventsource": "86b5096ac59ab46e66bd1f6377c604bc1dab0bc2",
+    "mlx-swift": "ef5f1b6bb24e27922189316362f3057c64261704",
+    "mlx-swift-lm": "eab689575cc1fff7aa2e8b25941b6bd6f4050173",
+    "swift-asn1": "3b6410f7dee09eb33cdd26260c5fd47fda19b0e2",
+    "swift-collections": "c11818f3cae0780656baa430b49e7f163f08dffd",
+    "swift-crypto": "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
+    "swift-huggingface": "f2f99991f2d7d8fdb3187e4fd539cd2facf5c13d",
+    "swift-jinja": "4588064a20f3fc093c95f2f7d3359999bf30cae5",
+    "swift-numerics": "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+    "swift-syntax": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+    "swift-transformers": "c21fdcde390313a6d98d8e33a346f2c3486c3ab0",
+    "yyjson": "8b4a38dc994a110abaec8a400615567bd996105f"
+  },
+  "package_resolved_sha256": "4bf91870e5bcaf30d337e6e1a873d5673d671b0375c62f9a493337780bfb8234",
+  "probe_sources": {
+    "Package.swift": "f3cc44d647595dc0f5efce04909dd27ab1134916c1666c1cf6b3ef5561eae1bc",
+    "Sources/G2P0Probe/main.swift": "d7af6cb978188900134372bb56748d45fee69ab71c8c6d2776dcd0522591aa7b"
+  },
+  "product_bytes": 57230184,
+  "product_path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/probe/.build/release/G2P0Probe",
+  "product_sha256": "ec7bb6ca82e6952c0a1e869a0f26510a3eb871e23088f7ccd597a9ff93e9ced6",
+  "run_id": "20261020T075257Z",
+  "runner": {
+    "argv": [
+      "--model-dir",
+      "~/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+      "--condition",
+      "docs/01-questions/G2_P0_A2_EXECUTION_CONDITION_20261020.json",
+      "--authorization",
+      "docs/01-questions/G2_P0_A2_AUTHORIZATION_20261020.md"
+    ],
+    "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/run_p0.py",
+    "sha256": "44f8816115c56cd9d99652e1febf071c23a98562791defbe28120257125f4c23",
+    "version": 2
+  },
+  "schema_id": "SIMIGO-G2-P0-BUILD-V1",
+  "source_revision": "7deecd898975a449b85c3632f3096ce2b1bd2d79",
+  "source_tree_clean_at_build": true,
+  "swift_version": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0"
+}

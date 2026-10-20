@@ -23,9 +23,8 @@
 
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
 > `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
-> `G2 NOT AUTHORIZED` (P0 probe run 2026-10-20 = `FAIL` on artifact identity; A2 path adopted for
-> offline materialization only — successor P0 record frozen, **new explicit authorization required**;
-> no model start is licensed). Three work records between
+> `G2 NOT AUTHORIZED` (P0 gate `PASS` on 2026-10-20 under the A2 copy — engine identity matches the
+> frozen binding; batch authorization still withheld). Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
 >
@@ -90,8 +89,23 @@ The successor execution condition is frozen in
 `modelID`, budget 1 start / 0 retries / 2 generations. `g2/p0/run_p0.py` is now **v2** — it refuses
 `--model-dir` without a frozen `--condition`, rejects any symlink in the target, and records its
 own version and digest in `build.json`. The predecessor run `20261020T072607Z` stays `FAIL`,
-unchanged and never backfilled. **No model start is authorized**: the successor P0 needs a new
-explicit one-time authorization, and the G2 batch remains unauthorized.
+unchanged and never backfilled. The successor P0 then ran once under
+`G2-P0-A2-AUTH-20261020-01` (`docs/01-questions/G2_P0_A2_AUTHORIZATION_20261020.md`).
+
+**P0-A2 executed — `PASS` (run `20261020T075257Z`, 1 start, 0 retries).** Source revision
+`7deecd89`, runner v2 `44f88161…`, product `ec7bb6ca…`, condition `58cbf9e9…`, child exit 0,
+13.247 s. All 12 probe checks and all 14 independently re-derived checks agree. The engine now
+reports `weights_digest = d1f01c0c…` — matching the binding — plus `tokenizer_digest = 9bada7c8…`
+and `combined_digest = bb0b2711…`, i.e. the namespace is content-scoped again instead of the
+constant `188a16c5…` seen on the symlinked snapshot. Load 3.64 s, prompt 16 tokens, both
+generations returned `ready`, hook `calls = 1` / `hits = 0`, store empty before and after, and this
+time `launch.json` and the child exit code are present. `g2/p0/P0_A2_RESULT_20261020.md` records it.
+
+The `PASS` opens the P0 gate only: it does not authorize the batch, does not prove G2-A (process
+death, isolated store and canaries were not run), does not measure peak memory, and does not
+repair `EngineModelIdentity` on symlink layouts (A3 stays a separate gate). The earlier `FAIL`
+remains the record for the symlinked directory; the two runs are separate conclusions under
+different execution conditions.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
