@@ -2,7 +2,7 @@
 
 > **Status:** `POINTER ONLY — 2026-10-20`
 > 本文件自 2026-10-06 起已被 `docs/RESEARCH_CONTEXT_INDEX.md` 取代为快速入口。
-> 正文（2026-10-02 → 2026-10-06 的 Local Closure 恢复记录，797 行）已完整归档：
+> 正文（2026-10-02 → 2026-10-16 的恢复记录，797 行）已完整归档：
 > `docs/09-archive/state-layer/NEXT_SESSION_ENTRY_20261002_FULL.md`。
 
 ## 新会话从这里开始
@@ -16,6 +16,7 @@
 
 | 主题 | 归档正文中的标题 |
 |---|---|
+| 2026-10-16 路线修正（三条活跃线、MLX Smoke V6 边界） | 头部 `Current route correction — 2026-10-16` 块 |
 | 2026-10-06 起的路线修正 | 文件头部 `SUPERSEDED AS FAST ENTRY` 块 |
 | 2026-10-04 Local Closure 状态清单 | 头部 `2026-10-04 historical fast entry` 块 |
 | 旧恢复顺序 | `## Recovery order` |
