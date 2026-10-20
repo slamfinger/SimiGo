@@ -1,0 +1,125 @@
+{
+  "acceptance_contract": "P3-ARM-4-REFERENCE-CALCULATOR-V1",
+  "build_identity": {
+    "build_command": "swift build -c release --package-path execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g1-swift-reference-calculator",
+    "executable_sha256": "a1d05d24e3f5b4e96a5af6ae478785002fce773aeaab205bf3a31bb3ce59387f",
+    "source_revision": "7c9662bcb5e9a5457480618412bb38ce37bd9d1a",
+    "source_tree_clean_at_build": true
+  },
+  "carrier_acceptance": {
+    "cold_start_calls": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "cold_start_values": {
+      "A": {
+        "swift_value": "6"
+      },
+      "B": {
+        "swift_value": "11"
+      },
+      "C": {
+        "swift_value": "24"
+      },
+      "D": {
+        "swift_value": "42"
+      },
+      "E": {
+        "swift_value": "26"
+      }
+    },
+    "mutated_unit": "A",
+    "post_mutation_calls": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "post_mutation_compute_set": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "post_mutation_reuse_set": [
+      "E"
+    ],
+    "post_mutation_values": {
+      "A": {
+        "swift_value": "8"
+      },
+      "B": {
+        "swift_value": "13"
+      },
+      "C": {
+        "swift_value": "32"
+      },
+      "D": {
+        "swift_value": "52"
+      },
+      "E": {
+        "swift_value": "26"
+      }
+    },
+    "settlement_identity_check": "PASS"
+  },
+  "contract_id": "SIMIGO-REFERENCE-CALCULATOR-V1",
+  "contract_version": "1.0.0",
+  "event_audit": {
+    "compute_unit_sequence": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "A",
+      "B",
+      "C",
+      "D",
+      "A",
+      "B"
+    ],
+    "events": 22,
+    "failed_invocations": 1,
+    "invocations": 11
+  },
+  "gate": "G1.2",
+  "non_claims": [
+    "G1.2 proves cross-language consistency and Carrier transaction behaviour only.",
+    "It does not prove that any pre-existing project Calculator was executed.",
+    "It does not prove KV-cache release, Information-Space restoration, or model continuation (G2)."
+  ],
+  "result": "PASS",
+  "rollback_acceptance": {
+    "calculator_calls_before_failure": [
+      "A",
+      "B"
+    ],
+    "exact_snapshot_unchanged": true,
+    "injected_error_code": "ARITHMETIC_OVERFLOW",
+    "no_current_settlements_survived": true,
+    "tables_snapshotted": [
+      "is_objects",
+      "is_index_entries",
+      "dependency_entries"
+    ]
+  },
+  "schema_id": "SIMIGO-G1-CARRIER-INTEGRATION-REPORT-V1",
+  "substitution": "calc_refcalculator_entry_test.reference_calculator -> SwiftReferenceCalculatorAdapter",
+  "swift_call_sequence": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "A",
+    "B",
+    "C",
+    "D",
+    "A",
+    "B"
+  ]
+}
