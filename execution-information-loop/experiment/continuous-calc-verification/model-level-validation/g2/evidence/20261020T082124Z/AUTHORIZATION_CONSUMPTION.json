@@ -1,0 +1,9 @@
+{
+  "authorization_id": "G2-BATCH-AUTH-20261020-01",
+  "consume_order": "before_first_child_launch",
+  "consumed_at_utc": "2026-10-20T08:21:25Z",
+  "consumed_by_rename": true,
+  "manifest_sha256": "fd5146968f01a8b2014a288519dbec022af2abb533c3b38613fce5b622798ec0",
+  "schema_id": "SIMIGO-G2-BATCH-AUTH-CONSUMPTION-V1",
+  "token_sha256": "fb25a6048faf4bbf50b44e9947ddb3f190413bceae23bcb212b5f43aae20760f"
+}

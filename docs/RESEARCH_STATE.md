@@ -22,9 +22,10 @@
 ## Current continuity — 2026-10-20 (G1 CLOSED; 10-17/10-18 records entered)
 
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
-> `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
-> `G2 NOT AUTHORIZED` (P0 gate `PASS` on 2026-10-20 under the A2 copy — engine identity matches the
-> frozen binding; batch authorization still withheld). Three work records between
+> `E-I mechanism layer evidenced` · `model layer: one G2 batch PASS on three synthetic fixtures` ·
+> `G2 BATCH EXECUTED ONCE — G2-A / G2-B / G2-C PASS` (P0 gate `PASS` on 2026-10-20 under the A2
+> copy; batch `G2-BATCH-AUTH-20261020-01`, run `20261020T082124Z`, 9 model starts, 0 retries).
+> Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
 >
@@ -106,6 +107,25 @@ death, isolated store and canaries were not run), does not measure peak memory, 
 repair `EngineModelIdentity` on symlink layouts (A3 stays a separate gate). The earlier `FAIL`
 remains the record for the symlinked directory; the two runs are separate conclusions under
 different execution conditions.
+
+**G2 batch executed once — `PASS` on G2-A / G2-B / G2-C (2026-10-20).** Authorization
+`G2-BATCH-AUTH-20261020-01` (`docs/01-questions/G2_BATCH_AUTHORIZATION_20261020.md`) covered one
+manifest and one batch; the manifest `g2/manifest/G2_MANIFEST.json` has
+`sha256 fd5146968f01a8b2…` and its token was consumed by atomic rename before the first child
+launch. Run `20261020T082124Z` used the full budget — 9 model starts, 6 negative-control
+processes, 15 total, 0 retries — and ended `PASS`: G2-A 15/15 rows, G2-B 17/17 rows and G2-C 7/7
+rows on each of the three fixtures. Each phase-2 host restored `R1` from the carrier and emitted
+`ANSWER=<secret>-<checksum>` from a 70–72-token prompt (phase-1 prompts were 437–524 tokens), so
+the secret necessarily came from the restored record; the hook reported `calls = 1`, `hits = 0`,
+no matched prefix, and the phase-2 store stayed empty. Phase-1 hosts exited by `SIGTERM` with
+`ESRCH` on both pid and process group. C-missing refused `SETTLEMENT_MISSING` and C-tampered
+refused `OBJECT_DIGEST_MISMATCH`, both before any model load and with byte-identical copies.
+Result record `g2/G2_BATCH_RESULT_20261020.md`; parent re-derivation
+`g2/G2_BATCH_REVERIFICATION_20261020.json` (`verdict_agrees: true`, no problems). Boundaries: peak
+memory was not measured, the symlink reader (A3) is unrepaired, tokenizer digest reproducibility
+across directories is reported not proven, the result covers three synthetic fixtures only, no
+production authorization follows, and G1 stays `CLOSED`. A first manifest draft was superseded
+before any token consumption; the final manifest records it in `freeze_history`.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria

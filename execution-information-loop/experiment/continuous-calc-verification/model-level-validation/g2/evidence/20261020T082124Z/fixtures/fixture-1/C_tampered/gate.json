@@ -1,0 +1,51 @@
+{
+  "all_checks_pass": false,
+  "checks": [
+    {
+      "check": "schema",
+      "ok": true
+    },
+    {
+      "check": "settlement_index_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "index entry settlement:u1-result",
+      "ok": true
+    },
+    {
+      "check": "settlement_dependency_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "dependency entry settlement:u1-result",
+      "ok": true
+    },
+    {
+      "check": "settlement_pointer_agrees",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "index=5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce dependency=5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce",
+      "ok": true
+    },
+    {
+      "check": "settlement_object_present",
+      "code": "SETTLEMENT_MISSING",
+      "detail": "object 5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce",
+      "ok": true
+    },
+    {
+      "check": "settlement_bytes_match_address",
+      "code": "OBJECT_DIGEST_MISMATCH",
+      "detail": "computed=98284bf72d4bf9a98acd6d33efe4adcdd9e2154ab5ec72bea68101efe6e6660f address=5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce",
+      "ok": false
+    }
+  ],
+  "code": "OBJECT_DIGEST_MISMATCH",
+  "database": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-1/C_tampered/g2.sqlite",
+  "database_tree_digest_after": "e3d09110c6799f3004763b7d1321dde94c84c176cf92e8f6c1aa80c434b9cbc7",
+  "database_tree_digest_before": "e3d09110c6799f3004763b7d1321dde94c84c176cf92e8f6c1aa80c434b9cbc7",
+  "database_unchanged": true,
+  "decision": "REFUSED",
+  "detail": "computed=98284bf72d4bf9a98acd6d33efe4adcdd9e2154ab5ec72bea68101efe6e6660f address=5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce",
+  "expectation": "refused",
+  "expectation_met": true,
+  "model_loaded": false,
+  "pid": 51613,
+  "schema_id": "SIMIGO-G2-RESTORE-GATE-V1"
+}

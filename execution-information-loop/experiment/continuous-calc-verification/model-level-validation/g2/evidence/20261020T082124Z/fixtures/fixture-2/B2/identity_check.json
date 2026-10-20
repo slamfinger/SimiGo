@@ -1,0 +1,20 @@
+{
+  "all_match": true,
+  "arm": "B2",
+  "checks": {
+    "combined_digest_matches_p0_a2": true,
+    "tokenizer_digest_matches_p0_a2": true,
+    "weights_digest_matches_p0_a2": true
+  },
+  "expected": {
+    "combined_digest": "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest": "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest": "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "observed": {
+    "combined_digest": "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+    "tokenizer_digest": "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+    "weights_digest": "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+  },
+  "schema_id": "SIMIGO-G2-BATCH-IDENTITY-CHECK-V1"
+}

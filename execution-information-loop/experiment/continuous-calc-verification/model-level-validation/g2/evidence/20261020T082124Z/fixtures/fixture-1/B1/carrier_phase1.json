@@ -1,0 +1,35 @@
+{
+  "carrier_sha256_after_settlement": "73f29aff61e46530db82a2c80c5ae429f356e017817bbebf45d594a01a5c034a",
+  "demand": {
+    "continuation_point": "g2-fixture-1-downstream",
+    "demand_id": "g2-fixture-1-demand"
+  },
+  "dependency_source": {
+    "item_id": "s1-source",
+    "object_id": "0f7ff91fc5b8ac874d3208c4172d1602c19df8199ac71cb1c0048bdbd9a8ec28"
+  },
+  "execute_demand_calls": 0,
+  "execution_state": {
+    "dependency_order": 4,
+    "object_id": "5844091d3aeae6a6499a6618c19dcbc2df27fef3c43ecedc5182449f022c9b2f",
+    "state_id": "fixture-1-u1-settled"
+  },
+  "item_id": "u1-result",
+  "r1_sha256": "3f034c72883722a2a2ff814df21ec164f269f41e3c762bb28f42d99b1dfc700c",
+  "result_digest": "90e649ef02d94c641d4e0d9620cafca071d573979aa46e4a8afdb0180ed7a855",
+  "schema_id": "SIMIGO-G2-BATCH-CARRIER-PHASE1-V1",
+  "settlement": {
+    "dependency_order": 3,
+    "object_id": "5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce"
+  },
+  "source": {
+    "object_id": "7113e6c0caa0b7578574a7ec5028ad1e2b97efa887e001cb005995c9d98445fe",
+    "revision": 1,
+    "source_version": "v1"
+  },
+  "validity_policy": {
+    "policy_sha256": "af664acf62adf7861249af4617644d9ad25b2ed783561bdd6acb4ac81d2409e3",
+    "policy_source": "G2_PREREGISTRATION_20261020.md#7",
+    "policy_version": "g2-validity-v1"
+  }
+}

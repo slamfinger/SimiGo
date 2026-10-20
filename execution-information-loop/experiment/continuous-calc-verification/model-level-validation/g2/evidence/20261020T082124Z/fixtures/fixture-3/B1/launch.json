@@ -1,0 +1,41 @@
+{
+  "argv": [
+    "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/host/.build/release/G2Host"
+  ],
+  "budget_entry": {
+    "arm": "B1",
+    "fixture_id": "fixture-3",
+    "model_start_index": 8
+  },
+  "duration_seconds": 13.603791236877441,
+  "environment": {
+    "G2_HOST_EVIDENCE": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1",
+    "G2_HOST_REQUEST": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1/request.json",
+    "HOME": "/Users/mr.simi",
+    "PATH": "/Users/mr.simi/bin:/Users/mr.simi/bin:/Users/mr.simi/.antigravity-ide/antigravity-ide/bin:/Users/mr.simi/.mtplx/bin:/Users/mr.simi/.grok/bin:/Users/mr.simi/.local/bin:/Users/mr.simi/llama.cpp/build/bin:/Users/mr.simi/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/mr.simi/bin:/Users/mr.simi/.antigravity-ide/antigravity-ide/bin:/Users/mr.simi/.mtplx/bin:/Users/mr.simi/.grok/bin:/Users/mr.simi/.local/bin:/Users/mr.simi/llama.cpp/build/bin:/Users/mr.simi/.lmstudio/bin:/Users/mr.simi/.lmstudio/bin"
+  },
+  "exit_code": -15,
+  "finished_at_utc": "2026-10-20T08:23:18Z",
+  "host_log": {
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1/host.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "host_record_present": true,
+  "mode": "phase1",
+  "pid": 52095,
+  "process_group": 52095,
+  "request": {
+    "path": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence/20261020T082124Z/fixtures/fixture-3/B1/request.json",
+    "sha256": "9ad4c070750bec15de40eb947283ab14f7c378c020f3839eafd4ce0e1b00da00"
+  },
+  "schema_id": "SIMIGO-G2-BATCH-LAUNCH-V1",
+  "started_at_utc": "2026-10-20T08:23:05Z",
+  "termination": {
+    "esrch_on_pid": true,
+    "esrch_on_process_group": true,
+    "exit_code": -15,
+    "signal_sent": "SIGTERM",
+    "terminated_at_utc": "2026-10-20T08:23:18Z"
+  },
+  "timed_out": false
+}
