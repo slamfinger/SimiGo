@@ -5,7 +5,7 @@
 > **Term guard:** this file describes **Research Context State / Research Navigation State**, not SimiGo's theoretical Execution State.  
 > **Index snapshot:** originated at commit `14de9fd`; current route capsule C16 added 2026-10-16.
 > **Recovery layer update:** 2026-10-06 adds estate census/coverage, global summary, and capsule index; formal layer model remains L0-L3.
-> **Index freshness:** `CURRENT WORKING TREE — ROUTE CORRECTION (2026-10-16)`; Git HEAD is `7d8d8811`, while some later product-line records remain uncommitted.
+> **Index freshness:** `2026-10-20`; the 2026-10-16 route correction below is retained as written. The signer rulings and designs it described as uncommitted are now in Git (`dfa29807`, `5be3597c`), and G1 gate evidence is under `model-level-validation/g1-evidence/20261020/`.
 > **Current route correction — 2026-10-16:** map all active lines without silently selecting priority. (1) Execution–Information Closed Loop has isolated SQLite/carrier checks, Runtime Validation V2, and the bounded Actual MLX Smoke V6 `compute → settle` half-loop. Its working architecture baseline is ES + Information Space for long-term continuity and model-stage cache as intermediate state; real-model long-term continuity remains unproven until a separate experiment proves `release old stage/cache → fork from Information Space → incremental recompute`. (2) Persistent SRS / LOCAL-PRODUCTION-SIGNER-01 remains the recent product line; later rulings in this working tree are uncommitted, so distinguish working-tree state from Git `main`. (3) Small-scale runtime/GUI and fork caller-identity work has its own current records in `RESEARCH_STATE.md`. Priority between these lines requires an explicit owner ruling.
 > **Repository entry:** default `main` after the approved Path A controlled integration.
 > **Repository HEAD:** verify dynamically with `git rev-parse HEAD`.
@@ -38,6 +38,10 @@ Current global goal                = ES₁ settled relation becomes lawful, vali
                                      reuse avoids recomputation; only Δ is computed; invalid dependencies block/recompute.
 Current E-I proof gap              = real-model compute→settlement is bounded-pass (MLX Smoke V6);
                                      release→Information-Space fork→incremental recompute is not yet executed.
+                                     [superseded 2026-10-20: the release→IS fork→incremental recompute sequence
+                                     WAS executed on 2026-10-17, but at the carrier/proxy layer; the executor
+                                     half is NOT_INSTRUMENTED, so the model-level fork remains undemonstrated.
+                                     See RESEARCH_STATE “Current continuity — 2026-10-20”.]
 Historical SRS campaign            = SRS-REAL-CLOSURE-01 execution campaign `exec-006-69b2227` = VALID, STOP for Human evidence audit. Request v0.9 was APPROVED; Part S τN1 alignment canonical at 69b2227; records 006 canonical at 1224535; evidence canonical at cb365a4. Execution, observer, and scoped IS campaign budgets consumed.
 Historical SRS evidence            = docs/02-evidence/srs-real-closure-01/runs/exec-006-69b2227/EXECUTION_EVIDENCE_PACKAGE.md. Step0, EPR004 exact repository/cwd/input/provenance enforcement, adapter e88c996b…, environment identity ad2abb68…, materialize/ES1/ES2 REUSE, mutate-n1 D' revision-2 mapping, ESN BLOCK, and observer bounded checks all passed. E1–E6 and N1 are established under the registered round-1 scope.
 Current human evidence audit       = 266e953 (blob dfb54c7a…, sha256 b13280a4…) = CLOSED. Audit A accepted `PROVENANCE_RECORDER_OUTPUT_PATH_BINDING_DEFECT`; Audit B accepted `EXECUTION_CWD_AND_SEED_PATH_BINDING_DEFECT`. The defects are independent; seed-path failure was causally earlier, while manifest failure is the registered primary stop. Root cause deeper than these mechanical contracts remains unresolved.

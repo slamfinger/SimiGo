@@ -4,7 +4,7 @@
 
 > **2026-10-16 navigation update:** active lines are Execution–Information cache-release validation, Persistent SRS / LOCAL-PRODUCTION-SIGNER-01, and the small-scale runtime/GUI line; priority is not inferred here. The E-I separation is a working research baseline, not proof of real-model long-term continuity. Actual MLX Smoke V6 is a bounded real-model `compute → settle` pass, not a cache-release/incremental-fork proof. Production remains unauthorized. Historical sections below retain their original authority and do not supersede this navigation note without a later Human ruling.
 
-**Last updated**: 2026-10-16
+**Last updated**: 2026-10-20
 **State layer updated**: 2026-10-20
 
 > **2026-10-20 state-layer map:** this file is the only state authority. The other
@@ -18,6 +18,71 @@
 > `### E4 Continuity + Residency Integration — Verified — 2026-09-25`.
 > Sections are appended at the head and are not strictly chronological; locate by
 > title, not by position.
+
+## Current continuity — 2026-10-20 (G1 Swift reference calculator PASS; 10-17/10-18 records entered)
+
+> **Status:** `G1 PASS (test-only Swift oracle)` · `E-I mechanism layer evidenced` ·
+> `model layer NOT VERIFIED` · `G2 NOT STARTED`. Three work records between
+> 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
+> recorded below in the order they occurred. None of them closes the core question.
+
+**2026-10-17 — continuous-calc model-level arms.** One real local model plus the
+real `carrier_loop.py`; no second model, no external runner. All ten criteria
+resolved: `A/C/E/H/I = PASS-部分`, `G/B/D/F/J = PASS`. H is split into `H_Carrier`
+(the invalidated set equals the independently derived expected set, linear chain and
+diamond arm-4) and `H_Executor` (`NOT_INSTRUMENTED` — the carrier returns
+`computed_item_ids` / `reused_item_ids`, but no real `Calculator` was wired in). The
+run exits non-zero on `NOT_VERIFIED` by design, so a green exit is not available to
+misread. Evidence: `execution-information-loop/experiment/continuous-calc-verification/model-level-validation/`
+(`results.md`, `limitations.md` L1/L2/L2a/L2b, `handoff.md`).
+
+**2026-10-18 — P3 selective-recompute closure and the G1/G2 boundary.**
+
+- `REVIEW-SR-P3-20261018`: three observation sets separated
+  (`expected_invalidation_set` / `observed_invalidation_set` / `observed_call_set`);
+  arm-1 (no change ⇒ no recompute) and arm-4 (E sibling not invalidated, A–D
+  re-settled to rev-2) both `Supported` against independently derived expectations.
+- `REVIEW-SR-P3-G1G2-20261018`: formalizes **G1 = logical isolation** (different
+  Execution State ⇒ different `state_scope`) versus **G2 = physical isolation** (the
+  old KV cache is actually unreachable), and separates test-lifecycle
+  `NOT_VERIFIED` from argument-lifecycle `PASS-部分` / `NOT_ESTABLISHED`. G2 remains
+  `NOT_INSTRUMENTED`.
+- `V2-P04-NOT-VALID-LM-WRONG(1)`: one external-review statement corrected; L1/L2,
+  the G1 ⇒ G2 guarded dependency, and `H_Executor` at `PASS-部分 / NOT_OBSERVED`
+  are retained.
+
+**2026-10-20 — G1 Swift Reference Calculator gate (PASS).** Requested as the next
+step after the Python Carrier's reuse / recompute / rollback evidence was accepted.
+
+- **G1.0 (read-only):** the repository has **no Swift `Calculator` type** and no
+  `ReferenceEchoCalculator`. The only Swift continuation entries
+  (`MLXPrefixRecomputeExecutor.continueExecution(_:nextInputTokens:maxTokens:)`,
+  `ExecutionContinuityCoordinator.continueExecution(_:continuation:)`) take an
+  `ExecutionStateHandle` and tokens and return generated tokens; they cannot express
+  the frozen `(item_id, payload, dependencies) -> {swift_value}` entry, its five
+  stable error codes, or its no-side-effect rule. Wrapping them would fabricate an
+  equivalence claim, so G1 builds a **test-only Swift oracle** instead.
+  Record: `model-level-validation/SWIFT_CALCULATOR_BRIDGE_SPIKE.md`.
+- **G1.1:** 9 success + 6 error + 1 canonicalization vectors, all PASS through the
+  compiled executable; the frozen `input_sha256` / `dependencies_sha256` /
+  `expected_result_sha256` are reproduced verbatim in Swift-written events; 16
+  invocations produced exactly 32 events (one `started` + one terminal each).
+- **G1.2:** the accepted Carrier sequence was re-run with the module-level
+  `reference_calculator` replaced by the Swift adapter. Cold start A=6 B=11 C=24
+  D=42 E=26; after A:3→4, `COMPUTE {A,B,C,D}` / `REUSE {E}`, values 8/13/32/52/26,
+  E keeps its `object_id`, the four recomputed nodes get new content-addressed ids;
+  a forced `ARITHMETIC_OVERFLOW` leaves the three Carrier tables bit-identical with
+  no surviving settlement. No Python fallback exists.
+- Build identity: source `7c9662bc` (clean tree), `swift build -c release`, Swift
+  6.4, executable SHA-256 `a1d05d24e3f5b4e96a5af6ae478785002fce773aeaab205bf3a31bb3ce59387f`
+  (190,120 bytes), identical across two independent clean builds.
+  Evidence: `model-level-validation/g1-evidence/20261020/`.
+
+**Boundary of the 2026-10-20 record.** G1 proves cross-language consistency between a
+Swift implementation of the frozen contract and the Python Carrier. It does **not**
+prove that any pre-existing project Calculator was executed (none was identified), it
+invokes no model, and it says nothing about KV-cache release, Information-Space
+restoration, or incremental model continuation. Those are G2 and are still unproven.
 
 ## Current continuity — 2026-10-15 (FORK-HOOK-CALLER-IDENTITY-01 CLOSED)
 
