@@ -1,0 +1,172 @@
+{
+  "authorization": {
+    "id": "G2-BATCH-AUTH-20261020-01",
+    "record": "docs/01-questions/G2_BATCH_AUTHORIZATION_20261020.md",
+    "sha256": "d7b6dc234b142756a7fbd9159ae150fa02fa8e275397f1d26f53d2578c0126b2",
+    "status": "AUTHORIZED \u2014 ONE BATCH ONLY"
+  },
+  "backend": {
+    "build_product": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/host/.build/out/Products/Release/G2Host",
+      "sha256": "9eee4bc394a2f25d41fa0bd2ea0554a143679e23ef6fe5ab708df71399a75217"
+    },
+    "package_resolved": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/host/Package.resolved",
+      "sha256": "4bf91870e5bcaf30d337e6e1a873d5673d671b0375c62f9a493337780bfb8234"
+    },
+    "package_swift": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/host/Package.swift",
+      "sha256": "854517f5d61a8d6d86ee3c3316b73cce599cadfcf7f8b2dcfdc9a9c4e96e85f7"
+    },
+    "swift_version": [
+      "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)"
+    ]
+  },
+  "budget": {
+    "model_starts_max": 9,
+    "model_starts_planned": 9,
+    "negative_control_processes_max": 6,
+    "process_calls_max": 15,
+    "retries": 0
+  },
+  "created_at_utc": "2026-10-20T08:20:25Z",
+  "evidence_root": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/evidence",
+  "executables": {
+    "checker": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/checker.py",
+      "sha256": "bc453515789a432d88c80af6c6fb2a8f82a7b8fd8cfdd274b21660fecefaff32"
+    },
+    "fixtures_generator": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/fixtures.py",
+      "sha256": "b1940b8ea91184c50dc397aa4697d5db8f89e174b4f6fa06cf4720d62b0f8ac2"
+    },
+    "gate": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/carrier_gate.py",
+      "sha256": "a791de301283f21d26ecfa92bcd17dfbe1e20e0cb963ba93f763af052aaaa99d"
+    },
+    "runner": {
+      "path": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/batch/run_batch.py",
+      "sha256": "6cd580cda4235e50bb01464bff4c398dc76b49aa0b48eff181a052dbde3644ac",
+      "version": 1
+    }
+  },
+  "fixtures": [
+    {
+      "context_canary_sha256": "3ad4275d7d1cd6eac1d1c423f458386178e877f305914491f227934dfe49c4f0",
+      "decoy_present": false,
+      "file": "fixture-1.json",
+      "fixture_id": "fixture-1",
+      "record_checksum": "2c146785",
+      "s1_sha256": "6aeae7cfd3e7b4bdd6d0cfe57e1b20c3bcf696cc2e36e2d77a36a402d71ffa88",
+      "s1_token_count": 315,
+      "s1_word_count": 223,
+      "sha256": "81d5afc2816d7b3ec2ef65c0c6f094cd5056b4e83d203f8c9f5911b2195d181b",
+      "transfer_secret_sha256": "3ae2eab55d3d57667c8fa307b12a2bcf86ecdd6008996fc87dbbd9051ed37e19",
+      "u1_prompt_token_count": 394
+    },
+    {
+      "context_canary_sha256": "731e2b6728ff2bac5f616348166c5b5922daa916358bd2a7daed0053397985a8",
+      "decoy_present": false,
+      "file": "fixture-2.json",
+      "fixture_id": "fixture-2",
+      "record_checksum": "c1d64b2d",
+      "s1_sha256": "1884313878dc16010369b5a5a8e52a1e65d76cf3792b5c914ccb670eeb9ee0a4",
+      "s1_token_count": 392,
+      "s1_word_count": 294,
+      "sha256": "af02af7e59a1de829179dd99b50cec0d8c1d717494bf80e6797dd0de60772d4b",
+      "transfer_secret_sha256": "c39e596acca236803656c2d9337a73fbaba288812fed187bd5330ca6948e6253",
+      "u1_prompt_token_count": 471
+    },
+    {
+      "context_canary_sha256": "4efc9d7ea9e1cf8843deddd163ce7370c062c25ccbd31d35ef6af82c06c5a4fc",
+      "decoy_present": true,
+      "file": "fixture-3.json",
+      "fixture_id": "fixture-3",
+      "record_checksum": "0ae90cda",
+      "s1_sha256": "7945d2fe7f5fc6e1745173e8a12f6a19458dedaee6a4057ec48d4f17478d8883",
+      "s1_token_count": 303,
+      "s1_word_count": 198,
+      "sha256": "743d81ae553b1aed56bd978f30961fbb1acd5a3f1b935460d29ca131369efb22",
+      "transfer_secret_sha256": "424a3390cdb3312f7f846d92a4864c686b3df26357a192a7067162e5188d63fb",
+      "u1_prompt_token_count": 382
+    }
+  ],
+  "freeze_history": [
+    {
+      "reason": "the first draft used flat build/runner keys while the runner's preflight reads executables/backend objects; preflight refuses before the token is consumed and before any child launch, so no model start was ever charged against it",
+      "status": "superseded before execution; never committed, never consumed",
+      "superseded_manifest_sha256": "81a78e7e940c3e7b3fe78c52fd8ca88695809d8762c7b132561dcae44498ef5c"
+    }
+  ],
+  "freeze_note": "the batch payload and this manifest are committed together right after the freeze; the runner itself refuses to start unless `git status --porcelain` is empty at launch time",
+  "manifest_id": "G2-BATCH-20261020-01",
+  "matrix": {
+    "arms": [
+      "A: continuous baseline",
+      "B phase 1: settle, no export",
+      "B phase 2: cold restore and U2"
+    ],
+    "fixtures": 3,
+    "generation": {
+      "decoding": "greedy (temperature = 0)",
+      "max_tokens_u1": 256,
+      "max_tokens_u2": 128,
+      "prefill": "canonical-remainder-v1 (.remainder, step 256)"
+    },
+    "model_starts_per_fixture": 3,
+    "negative_controls": [
+      "C-missing: SETTLEMENT_MISSING",
+      "C-tampered: OBJECT_DIGEST_MISMATCH"
+    ]
+  },
+  "model_binding": {
+    "aggregate_sha256": "4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678",
+    "expected_engine_identity": {
+      "combined_digest": "bb0b2711451cbabc1efc0aae3e282dde166db6f0e82ba245905b4848bf71ec58",
+      "source": "P0-A2 run 20261020T075257Z",
+      "tokenizer_digest": "9bada7c8fddefc7e91cf3bbe9b56305d5234c73e16732518dc4f3825b2d84ac3",
+      "weights_digest": "d1f01c0c98db2d07a437e81372dffc49c04e728342cec8f72cc2929caeeb6abf"
+    },
+    "file_count": 17,
+    "model_dir": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/artifact-model-qwen3-coder-30b-a3b-instruct-4bit-6e302ea6",
+    "model_dir_form": "dereferenced A2 copy (17 regular files, 0 symlinks)",
+    "record": "docs/01-questions/G2_MODEL_BINDING_20261020.json",
+    "repo_id": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+    "sha256": "1eb299da289411db39246c56f67ddd80b7b202106940481df6e8e4e4f6996b44",
+    "total_bytes": 17197118924
+  },
+  "not_established_by_this_manifest": [
+    "peak memory was never measured",
+    "the symlink reader defect (A3) is untouched",
+    "tokenizer digest reproducibility across directories is reported, not proven",
+    "G2-A, G2-B and G2-C are undecided until the run's own evidence exists"
+  ],
+  "p0": {
+    "gate": "P0 gate only; opens no evidence gate for G2-A/B/C",
+    "result_record": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/P0_A2_RESULT_20261020.md",
+    "run_id": "20261020T075257Z",
+    "terminal": "execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/20261020T075257Z/terminal.json",
+    "terminal_state": "PASS"
+  },
+  "preregistration": {
+    "record": "docs/01-questions/G2_PREREGISTRATION_20261020.md",
+    "sha256": "0912e82f26d9feadd77fa6a949c936acc3f1e0c51f78209c8a70c004b42670d1",
+    "status": "FROZEN"
+  },
+  "schema_id": "SIMIGO-G2-BATCH-MANIFEST-V1",
+  "source_revision_at_freeze": "064a2a85291c280e40691735b93c0bef79e7ede6",
+  "stop_rules": [
+    "no retry, no model substitution, no fixture substitution, no matrix expansion",
+    "a canary in R1 voids the fixture and stops the batch",
+    "a canary on any phase-2 surface fails G2-A",
+    "a negative control that continues fails G2-B",
+    "any run after this one needs a new manifest and a new authorization"
+  ],
+  "terminal_states": [
+    "PASS",
+    "FAIL",
+    "INCONCLUSIVE"
+  ],
+  "tracked_tree_clean_at_freeze": true
+}
