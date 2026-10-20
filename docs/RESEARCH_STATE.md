@@ -23,7 +23,8 @@
 
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
 > `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
-> `G2 NOT AUTHORIZED / NOT STARTED`. Three work records between
+> `G2 NOT AUTHORIZED` (P0 capability probe authorized 2026-10-20, not yet run). Three work
+> records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
 >
@@ -46,7 +47,17 @@ remain binding on any later execution: the weights pinned by `ACTUAL_MLX_SMOKE_M
 are no longer on disk (V6 stays closed and cannot be re-run), and
 `MLXPrefixRecomputeExecutor.continueExecution` forwards the full prefix with `cache: nil`,
 so that path is disqualified as evidence for work avoidance. P0 and the G2 batch each
-need their own authorization; neither is granted.
+need their own authorization; the batch authorization is not granted.
+
+**P0 authorized (one model start, no retry).** `docs/01-questions/G2_P0_AUTHORIZATION_20261020.md`
+records the only grant issued so far: load the frozen artifact once through the
+`ChatSession` stack, establish whether the load path and the cache-observation hook are
+actually available, and write a named terminal state. P0 has its own budget (1 start, 0
+retries, 2 declared generations in that one process) that neither draws from nor enlarges
+the batch's 9-planned / 15-hard-cap ledger. The probe is a separate SwiftPM package
+(`model-level-validation/g2/p0/probe`); `simigo2-experimental` is consumed as a path
+dependency and is not modified. A P0 `PASS` is a capability statement only — it does not
+authorize P1–P3, does not create a batch manifest, and does not move G2 or G1.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
