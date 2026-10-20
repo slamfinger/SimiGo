@@ -23,8 +23,8 @@
 
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
 > `E-I mechanism layer evidenced` · `model layer NOT VERIFIED` ·
-> `G2 NOT AUTHORIZED` (P0 capability probe authorized 2026-10-20, not yet run). Three work
-> records between
+> `G2 NOT AUTHORIZED` (P0 probe run 2026-10-20 = `FAIL` on artifact identity; design returns for
+> amendment). Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
 >
@@ -49,15 +49,27 @@ are no longer on disk (V6 stays closed and cannot be re-run), and
 so that path is disqualified as evidence for work avoidance. P0 and the G2 batch each
 need their own authorization; the batch authorization is not granted.
 
-**P0 authorized (one model start, no retry).** `docs/01-questions/G2_P0_AUTHORIZATION_20261020.md`
-records the only grant issued so far: load the frozen artifact once through the
-`ChatSession` stack, establish whether the load path and the cache-observation hook are
-actually available, and write a named terminal state. P0 has its own budget (1 start, 0
-retries, 2 declared generations in that one process) that neither draws from nor enlarges
-the batch's 9-planned / 15-hard-cap ledger. The probe is a separate SwiftPM package
-(`model-level-validation/g2/p0/probe`); `simigo2-experimental` is consumed as a path
-dependency and is not modified. A P0 `PASS` is a capability statement only — it does not
-authorize P1–P3, does not create a batch manifest, and does not move G2 or G1.
+**P0 executed — `FAIL` on artifact identity (1 model start, consumed).**
+`docs/01-questions/G2_P0_AUTHORIZATION_20261020.md` was exercised once by
+`model-level-validation/g2/p0/run_p0.py`; run `20261020T072607Z`, revision `0162465b`, clean at
+build. Load, prompt render, both generations, and the cache hook all worked
+(`calls = 1`, `hits = 0` on an empty store). The gate failed on one check:
+`weights_digest_matches_binding`.
+
+Root cause (read-only diagnostic, `g2/p0/20261020T072607Z-analysis/`):
+`EngineModelIdentity.compute` keeps a directory entry only when
+`.isRegularFile == true`, which is `false` for the symlinks that make up a Hugging Face snapshot.
+On a 17-file all-symlink artifact it reads **zero bytes** and returns
+the empty-string digest `e3b0c442…`. Consequently
+`MLXPrefixCrossSessionCache.namespace`'s `combinedDigest` is the constant `188a16c5…` for any such
+directory, and the namespace is path-scoped rather than content-scoped — contrary to
+pre-registration §2.1. The same function is the model-identity input for `EngineSessionBaseline`
+commits, so HF-cached models record an empty model identity there too (reported, not re-adjudicated).
+
+Per the frozen P0 terms the design now returns for amendment: A1 accept and re-scope the namespace
+claim, A2 run against a dereferenced 17.2 GB copy (same bytes ⇒ same aggregate), or A3 repair the
+reader. None is adopted; the G2 batch remains unauthorized and no second P0 start is licensed by
+the consumed authorization. P0 `PASS` was never claimed and no G2 arm was run.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria

@@ -17,3 +17,6 @@ palace-v0/
 
 # Pre-research runtime artifacts
 pre-research/**/*.sqlite
+
+# G2 P0 declares run.log as an evidence artifact (child stdout/stderr, unmodified)
+!execution-information-loop/experiment/continuous-calc-verification/model-level-validation/g2/p0/**/run.log

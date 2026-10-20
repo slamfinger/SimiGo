@@ -1,0 +1,25 @@
+{
+  "authorization_record": "docs/01-questions/G2_P0_AUTHORIZATION_20261020.md",
+  "authorization_sha256": "baf7cc6e265860edc2390a1f61a7e9e1e53fdc5f47deb10d75ad6756af720b08",
+  "budget": {
+    "generations": 2,
+    "model_starts": 1,
+    "retries": 0
+  },
+  "consumed": false,
+  "prohibited": [
+    "model substitution",
+    "fixture run",
+    "matrix expansion",
+    "batch authorization or completion marker",
+    "push"
+  ],
+  "run_id": "20261020T072607Z",
+  "schema_id": "SIMIGO-G2-P0-AUTHORIZATION-V1",
+  "scope": [
+    "load the frozen artifact once through the ChatSession stack",
+    "establish ChatSession path and cache-observation hook availability",
+    "record terminal state PASS/FAIL/INCONCLUSIVE",
+    "stop; no U1/U2, no fixture, no arm, no batch manifest"
+  ]
+}

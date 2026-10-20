@@ -1,0 +1,9 @@
+{
+  "completed_at_utc" : "2026-10-20T07:26:14Z",
+  "failed_checks" : [
+    "weights_digest_matches_binding"
+  ],
+  "probe_record" : "P0_PROBE.json",
+  "schema_id" : "SIMIGO-G2-P0-TERMINAL-V1",
+  "terminal_state" : "FAIL"
+}

@@ -126,6 +126,84 @@ def artifact_check(model_dir, binding_rows):
     }
 
 
+def verify_run(run_dir, binding, expected_aggregate, product_sha=None):
+    """Re-derive the verdict from the run's own files. Never rewrites them."""
+    run_dir = pathlib.Path(run_dir)
+    artifact = json.loads((run_dir / "artifact_check.json").read_text(encoding="utf-8"))
+    build = json.loads((run_dir / "build.json").read_text(encoding="utf-8"))
+    terminal = json.loads((run_dir / "terminal.json").read_text(encoding="utf-8"))
+    probe_path = run_dir / "P0_PROBE.json"
+    probe = json.loads(probe_path.read_text(encoding="utf-8")) if probe_path.exists() else {}
+    product_sha = product_sha or build["product_sha256"]
+
+    checks = probe.get("checks", {})
+    hook = probe.get("hook_observations", {})
+    reverified = {
+        "probe_wrote_record": bool(probe),
+        "artifact_rows_match_binding": bool(artifact["all_match"]),
+        "artifact_aggregate_matches_binding":
+            artifact["aggregate_sha256"] == expected_aggregate,
+        "engine_weights_digest_matches_binding":
+            probe.get("engine_content_identity", {}).get("weights_digest")
+            == artifact["predicted_engine_weights_digest"],
+        "container_loaded": bool(probe.get("load", {}).get("ok")),
+        "prompt_rendered": int(probe.get("prompt_render", {}).get("token_count", 0)) > 0,
+        "baseline_generation_completed":
+            int(probe.get("generation_baseline", {}).get("chunk_count", 0)) > 0
+            and isinstance(probe.get("generation_baseline", {}).get("completion_token_count"), int),
+        "hooked_generation_completed":
+            int(probe.get("generation_hooked", {}).get("chunk_count", 0)) > 0
+            and isinstance(probe.get("generation_hooked", {}).get("completion_token_count"), int),
+        "store_initially_empty":
+            int(probe.get("store", {}).get("rescan_registered_artifacts", -1)) == 0
+            and probe.get("store", {}).get("inventory_before") == [],
+        "hook_consulted": int(hook.get("calls", 0)) > 0,
+        "hook_missed_on_empty_store": int(hook.get("hits", 0)) == 0,
+        "store_still_empty_after": probe.get("store_inventory_after") == [],
+        "executable_is_the_built_product":
+            probe.get("executable_sha256") == product_sha,
+    }
+    launch_path = run_dir / "launch.json"
+    if launch_path.exists():
+        launch_record = json.loads(launch_path.read_text(encoding="utf-8"))
+        reverified["one_model_start"] = launch_record.get("model_starts_consumed") == 1
+    else:
+        # The launch record is written by the parent; its absence is reported in
+        # `launch_record_present` and is not silently treated as a pass.
+        pass
+    derived = "PASS" if all(reverified.values()) else "FAIL"
+    if terminal.get("terminal_state") == "INCONCLUSIVE":
+        derived = "INCONCLUSIVE"
+    verification = {
+        "schema_id": "SIMIGO-G2-P0-VERIFICATION-V1",
+        "run_id": run_dir.name,
+        "probe_terminal_state": terminal.get("terminal_state"),
+        "probe_failed_checks": terminal.get("failed_checks", []),
+        "reverified_checks": reverified,
+        "reverified_terminal_state": derived,
+        "verdict_agrees": derived == terminal.get("terminal_state"),
+        "probe_checks_all_true": all(checks.values()) if checks else False,
+        "launch_record_present": launch_path.exists(),
+        "note": "Derived independently from the probe facts and the pre-run records; "
+                "the probe's own terminal record is never rewritten.",
+        "created_at_utc": utc_now(),
+    }
+    target = run_dir / "RUN_VERIFICATION.json"
+    if target.exists():
+        raise SystemExit("RUN_VERIFICATION.json already exists in %s" % run_dir)
+    target.write_text(json.dumps(verification, indent=2, sort_keys=True) + "\n",
+                      encoding="utf-8")
+    if not verification["verdict_agrees"]:
+        (run_dir / "DISCREPANCY.json").write_text(json.dumps({
+            "schema_id": "SIMIGO-G2-P0-DISCREPANCY-V1",
+            "probe_terminal_state": terminal.get("terminal_state"),
+            "reverified_terminal_state": derived,
+            "reverified_checks": reverified,
+            "created_at_utc": utc_now(),
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return verification, probe, hook, probe.get("engine_content_identity", {})
+
+
 def main():
     binding = json.loads(BINDING.read_text(encoding="utf-8"))
     expected_aggregate = binding["model"]["aggregate_sha256"]
@@ -270,6 +348,10 @@ def main():
         [str(product)], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         start_new_session=True, env=env)
     try:
+        pgid = os.getpgid(child.pid)
+    except ProcessLookupError:
+        pgid = None
+    try:
         stdout, stderr = child.communicate(timeout=TIMEOUT_SECONDS)
         timed_out = False
     except subprocess.TimeoutExpired:
@@ -286,7 +368,7 @@ def main():
         "schema_id": "SIMIGO-G2-P0-LAUNCH-V1",
         "run_id": run_id,
         "child_pid": child.pid,
-        "child_process_group": os.getpgid(child.pid) if not timed_out else None,
+        "child_process_group": pgid,
         "exit_code": child.returncode,
         "timed_out": timed_out,
         "timeout_seconds": TIMEOUT_SECONDS,
@@ -318,63 +400,11 @@ def main():
             json.dump(payload, fh, indent=2, sort_keys=True)
             fh.write("\n")
     terminal = json.loads(terminal_path.read_text(encoding="utf-8"))
-    probe = json.loads(probe_path.read_text(encoding="utf-8")) if probe_path.exists() else {}
 
     # ---- 9. independent reverification --------------------------------------
-    checks = probe.get("checks", {})
-    hook = probe.get("hook_observations", {})
-    reverified = {
-        "probe_wrote_record": bool(probe),
-        "artifact_rows_match_binding": bool(artifact["all_match"]),
-        "artifact_aggregate_matches_binding":
-            artifact["aggregate_sha256"] == expected_aggregate,
-        "engine_weights_digest_matches_binding":
-            probe.get("engine_content_identity", {}).get("weights_digest")
-            == artifact["predicted_engine_weights_digest"],
-        "container_loaded": bool(probe.get("load", {}).get("ok")),
-        "prompt_rendered": int(probe.get("prompt_render", {}).get("token_count", 0)) > 0,
-        "baseline_generation_completed":
-            int(probe.get("generation_baseline", {}).get("chunk_count", 0)) > 0
-            and isinstance(probe.get("generation_baseline", {}).get("completion_token_count"), int),
-        "hooked_generation_completed":
-            int(probe.get("generation_hooked", {}).get("chunk_count", 0)) > 0
-            and isinstance(probe.get("generation_hooked", {}).get("completion_token_count"), int),
-        "store_initially_empty":
-            int(probe.get("store", {}).get("rescan_registered_artifacts", -1)) == 0
-            and probe.get("store", {}).get("inventory_before") == [],
-        "hook_consulted": int(hook.get("calls", 0)) > 0,
-        "hook_missed_on_empty_store": int(hook.get("hits", 0)) == 0,
-        "store_still_empty_after": probe.get("store_inventory_after") == [],
-        "executable_is_the_built_product":
-            probe.get("executable_sha256") == product_sha,
-        "one_model_start": launch["model_starts_consumed"] == 1,
-    }
-    derived = "PASS" if all(reverified.values()) else "FAIL"
-    if terminal.get("terminal_state") == "INCONCLUSIVE":
-        derived = "INCONCLUSIVE"
-    verification = {
-        "schema_id": "SIMIGO-G2-P0-VERIFICATION-V1",
-        "run_id": run_id,
-        "probe_terminal_state": terminal.get("terminal_state"),
-        "probe_failed_checks": terminal.get("failed_checks", []),
-        "reverified_checks": reverified,
-        "reverified_terminal_state": derived,
-        "verdict_agrees": derived == terminal.get("terminal_state"),
-        "probe_checks_all_true": all(checks.values()) if checks else False,
-        "note": "Derived independently from the probe facts and the pre-run records; "
-                "the probe's own terminal record is never rewritten.",
-        "created_at_utc": utc_now(),
-    }
-    (run_dir / "RUN_VERIFICATION.json").write_text(
-        json.dumps(verification, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    if not verification["verdict_agrees"]:
-        (run_dir / "DISCREPANCY.json").write_text(json.dumps({
-            "schema_id": "SIMIGO-G2-P0-DISCREPANCY-V1",
-            "probe_terminal_state": terminal.get("terminal_state"),
-            "reverified_terminal_state": derived,
-            "reverified_checks": reverified,
-            "created_at_utc": utc_now(),
-        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    verification, probe, hook, identity = verify_run(
+        run_dir, binding, expected_aggregate, product_sha)
+    derived = verification["reverified_terminal_state"]
 
     print(json.dumps({
         "run_id": run_id,
@@ -388,10 +418,17 @@ def main():
         "timed_out": timed_out,
         "duration_seconds": round(elapsed, 3),
         "product_sha256": product_sha,
-        "engine_weights_digest": probe.get("engine_content_identity", {}).get("weights_digest"),
+        "engine_weights_digest": identity.get("weights_digest"),
     }, indent=2, sort_keys=True))
     return 0 if derived == "PASS" else 1
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 3 and sys.argv[1] == "--verify-only":
+        binding_doc = json.loads(BINDING.read_text(encoding="utf-8"))
+        verification, _probe, _hook, _identity = verify_run(
+            pathlib.Path(sys.argv[2]).resolve(), binding_doc,
+            binding_doc["model"]["aggregate_sha256"])
+        print(json.dumps(verification, indent=2, sort_keys=True))
+        sys.exit(0 if verification["verdict_agrees"] else 1)
     sys.exit(main())
