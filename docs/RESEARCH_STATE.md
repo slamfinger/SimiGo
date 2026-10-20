@@ -33,15 +33,20 @@
 > not authorize G2, does not release any freeze, and does not change the R27 STOP
 > or the non-implementation status of the signer line.
 
-**G2 design proposal (not authorized).** `docs/01-questions/G2_PREREGISTRATION_20261020.md`
-separates three claims — old-KV inaccessibility, Information-Space restoration, and
-real-model continuation — and fixes three fixtures, three arms (continuous baseline /
-main / negative control) and pre-registered `PASS` / `FAIL` / `INCONCLUSIVE` rules.
-Status: `PROPOSED — NOT FROZEN, NOT AUTHORIZED, NOT EXECUTED`. Its capability audit
-records two facts binding on any later execution: the model weights pinned by
-`ACTUAL_MLX_SMOKE_MANIFEST_V6` are no longer on disk (V6 stays closed and cannot be
-re-run), and `MLXPrefixRecomputeExecutor.continueExecution` forwards the full prefix
-with `cache: nil`, so that path is disqualified as evidence for work avoidance.
+**G2 design frozen (execution not authorized).** `docs/01-questions/G2_PREREGISTRATION_20261020.md`
+separates three claims — old-KV inaccessibility, Information-Space restoration and
+real-model continuation — and fixes three fixtures, a five-row matrix (A / B phase 1 /
+B phase 2 / C-missing / C-tampered), 9 planned model starts with a hard cap of 15, and
+pre-registered `PASS` / `FAIL` / `INCONCLUSIVE` rules. Status: `FROZEN —
+EXECUTION NOT AUTHORIZED` (2026-10-20 ruling: D1 conditional, D2–D5 accepted). The
+artifact is pinned in `docs/01-questions/G2_MODEL_BINDING_20261020.json`: 17 files,
+17,197,118,924 bytes, aggregate SHA-256
+`4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678`. Two audit facts
+remain binding on any later execution: the weights pinned by `ACTUAL_MLX_SMOKE_MANIFEST_V6`
+are no longer on disk (V6 stays closed and cannot be re-run), and
+`MLXPrefixRecomputeExecutor.continueExecution` forwards the full prefix with `cache: nil`,
+so that path is disqualified as evidence for work avoidance. P0 and the G2 batch each
+need their own authorization; neither is granted.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria

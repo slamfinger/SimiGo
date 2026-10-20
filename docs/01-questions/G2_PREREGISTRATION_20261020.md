@@ -1,10 +1,13 @@
 # G2 Pre-registration — Real-Model Cache Release, Information-Space Restoration, Incremental Continuation
 
-> **Status:** `PROPOSED — NOT FROZEN · NOT AUTHORIZED · NOT EXECUTED`
+> **Status:** `FROZEN — EXECUTION NOT AUTHORIZED` (ruling 2026-10-20: D1 conditional, D2–D5 accepted)
 > **Date:** 2026-10-20
 > **Research line:** Execution–Information closed loop (E-I)
+> **Model binding:** `docs/01-questions/G2_MODEL_BINDING_20261020.json` — 17 files, aggregate SHA-256 `4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678`
 > **Relation to G1:** independent gate. G1 is `CLOSED` (`docs/06-closure/G1_CLOSURE_20261020.md`); nothing here reopens it or extends the calculator work.
-> **Authority of this file:** a design proposal only. It does not authorize execution, does not modify any Frozen Contract, does not alter the G1 `CLOSED` terminal state, and does not touch the signer line or R27 STOP.
+> **Authority of this file:** the normative G2 design text. `FROZEN` binds the matrix, the evidence gates and the authorization scope below; changing any of them requires a recorded amendment. It does **not** authorize P0 or any G2 run, does not modify any Frozen Contract, does not alter the G1 `CLOSED` terminal state, and does not touch the signer line or R27 STOP.
+
+**Ruling basis.** The 2026-10-20 ruling was issued against the capability audit and the D1–D5 summary, because `ad47898e` was not pushed and could not be read remotely. This revision is the text that meets the ruling's three pre-freeze conditions — full model artifact identity (§2.3), a fixed matrix with a hard start budget and stop rules (§5, §9), and negative-control paths that structurally forbid automatic recompute (§7). A discrepancy found at first full read is corrected by an appended amendment record, never by a silent edit.
 
 **Why this path.** `docs/01-questions/README.md` reserves this directory for research objects, questions, boundaries, qualification gates and **design pre-registration records**; `docs/05-architecture` is for consequences already constrained by findings, not unverified designs. The suggested `docs/05-research/` directory does not exist in the current layout, so the pre-registration is placed here.
 
@@ -58,11 +61,21 @@ The existence of rows 4–6 is what makes G2-A instrumentable at all. The 2026-1
 | No instrumentation of cache identity outside the hook | G2-A cannot be claimed on "new session" alone; the store root, namespace and observations must all be recorded |
 | No physical-erasure / RAM-remnant instrumentation | out of scope by construction; G2-A is an accessibility claim, not a memory-sanitization claim |
 
-### 2.3 Model binding
+### 2.3 Model binding (frozen)
 
-The model pinned by `ACTUAL_MLX_SMOKE_MANIFEST_V6` (`mlx-community/gemma-4-12b-coder-fable5-composer2.5-4bit` @ `6b82053f…`) is **no longer present** in the local Hugging Face cache. The V6 run stays `CLOSED`; its evidence does not depend on the weights still being on disk, but it cannot be re-executed.
+`docs/01-questions/G2_MODEL_BINDING_20261020.json` is the normative record. It pins the artifact, not the name: 17 files, 17,197,118,924 bytes, aggregate SHA-256 `4c1bd7596b9480864ca7c5ac949fbb051c47b182b853a8219c80a171b22f6678`, computed as SHA-256 over the canonically serialized `{path, bytes, sha256}` list sorted by path.
 
-Locally present MLX candidates (2026-10-20): `mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit` @ `6e302ea604ad9ab206367e2c501d1571023e7b6d` (≈16 GB), `mlx-community/Qwen3-Coder-Next-4bit` @ `7b9321ea…` (≈42 GB), plus two ≈20 GB community MLX builds. Host RAM is 32 GB, so the 42 GB candidate is excluded on capacity grounds. Model choice is decision **D1** below; whichever is chosen is pinned by content digest, not by name.
+| Item | Frozen value |
+|---|---|
+| Model | `mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit` @ `6e302ea604ad9ab206367e2c501d1571023e7b6d` |
+| Weights | `model-00001-of-00004` `25c6d0a62e02224605774ce2e9dc9a8c95910cde33557b938e55a368da1b5212`; `00002` `7007ce495b063155207c3e8b4038771d0d751655274cb6b76c42b8d9c0624412`; `00003` `a14f5bfdd0cd72ee6e71e7f0bc72f6fcde4d78a2da7ee0665f8cf071ac7d2675`; `00004` `0ea3484a221d674b60c604ea20cb5e5418a2cfd9e61df72c0d7fb5b1622ff5b4` |
+| Tokenizer / config | `tokenizer.json`, `tokenizer_config.json`, `vocab.json`, `merges.txt`, `added_tokens.json`, `special_tokens_map.json`, `chat_template.jinja`, `config.json`, `generation_config.json` — each with its own full digest in the binding file |
+| Backend | `mlx-swift ef5f1b6b…`, `mlx-swift-lm eab6895…`, `swift-transformers c21fdcde…` (`Package.resolved`); Swift 6.4; Apple M5, 32 GB |
+| Generation | greedy (`temperature = 0`), U1 ≤ 256 tokens, U2 ≤ 128 tokens, `canonical-remainder-v1` prefill profile (`.remainder`, step 256), identical across arms |
+
+The binding file carries the full 64-hex digest of every file; this table is a reading aid and does not replace it. Two consequences are binding: a same-name model with a different aggregate digest is a different artifact and inadmissible; any file whose digest differs stops the run.
+
+The model pinned by `ACTUAL_MLX_SMOKE_MANIFEST_V6` (`gemma-4-12b-…` @ `6b82053f…`) is no longer on disk. V6 stays `CLOSED`, cannot be re-executed, and is not a fallback. `Qwen3-Coder-Next-4bit` (≈42 GB) is excluded by the 32 GB host; the two ≈20 GB community builds are not admitted, because the freeze admits exactly one artifact.
 
 ---
 
@@ -89,37 +102,51 @@ Each fixture provides:
 |---|---|
 | `S1` | ≈300–600 tokens of synthetic material containing a random `transfer_secret` (12 hex chars) and distractor facts |
 | `transfer_secret` | appears only in `S1`; must appear in `R1` and be required by U2's checker |
-| `context_canary` | random 16-hex token placed **only** in the phase-1 system prompt; must not appear in `S1`, `R1`, phase-2 prompt, phase-2 output, or any log |
+| `context_canary` | random 16-hex token placed **only** in the phase-1 system prompt; never in `S1`, `R1`, the Information Space, or any phase-2 input |
 | U1 task | extract a fixed JSON object `{secret, facts…}` — deterministic schema, model-generated content |
 | U2 task | produce `ANSWER=<secret>-<checksum>` where `checksum` is derived from a field of `R1`; the checker recomputes it independently |
 | Checker | parses U2 output, verifies format, secret equality with the settled `R1`, and checksum; returns PASS/FAIL — not exact-string equality |
 
 Fixture 2 and 3 vary the structure (one longer source, one with a distractor that looks like a secret) so that a pass cannot come from a single template artifact.
 
+**Canary placement and scan (D4).** The canary belongs to the old-stage context only. Scan scope: rendered phase-1 and phase-2 prompts, the actual model request records, outputs, stdout/stderr, tool-call records, cache observation logs and all evidence artifacts. A canary found in `R1` voids the fixture and stops the batch — a rebuilt fixture needs a new manifest, and the void run is not counted. A canary found on any phase-2 surface is a leak and fails G2-A. Absence of the canary is corroborating evidence only and never replaces the lifecycle or lookup rows.
+
 ---
 
-## 5. Arms
+## 5. Matrix and start budget
 
-| Arm | Treatment | Purpose |
+`Model start` = one process that loads the model. Everything else (cache cleanup, database preparation, digesting, negative-control execution) is listed but not counted as a model start.
+
+| Arm | Treatment | Model starts per fixture |
 |---|---|---|
-| **A — continuous baseline** | one process: U1 settles `R1`, the same session continues to U2 | proves the task pair is completable and fixes the correctness baseline |
-| **B — G2 main** | U1 settles, host terminated, cold host restores `R1` from the carrier and runs U2 | tests A + B + C together |
-| **C — negative control** | cold host with a missing or tampered settlement / dependency record | tests that the system refuses to continue without real IS state |
+| **A — continuous baseline** | one process: U1 settles `R1`, the same session continues to U2 | 1 |
+| **B — G2 main, phase 1** | U1 settles `R1`; no snapshot export | 1 |
+| **B — G2 main, phase 2** | cold host restores `R1` from the carrier and runs U2 | 1 |
+| **C-missing** | restore-eligibility gate on a copy with the settlement object removed; no model load | 0 |
+| **C-tampered** | restore-eligibility gate on a copy with the payload replaced; no model load | 0 |
 
-Arm C has two variants per fixture: `C-missing` (settlement row absent) and `C-tampered` (value or dependency digest altered). Both must block **before** any model call. C operates on a byte-copy of arm B's phase-1 carrier database, so the negative control needs no additional U1 run and cannot perturb B's record.
+Per fixture: 3 model starts and 2 non-model validation processes. Three fixtures: **9 model starts, hard cap 15**. The cap is a ceiling, not a retry allowance.
+
+Arm C never loads the model. Refusal happens in the restore-eligibility gate before any model load, so "no downstream call happened" is observable without inference. For each fixture the canonical phase-1 carrier is preserved unmodified with its SHA-256 recorded; `C-missing` and `C-tampered` each derive from an independent byte-copy of it, never share a copy, and never touch the canonical file.
+
+Non-model steps, listed so the budget is auditable: 6 carrier copies (2 per fixture), 6 eligibility-gate processes, artifact-root digesting, store-inventory checks, and the P3 scans.
+
+**Stop rule.** No retry, no model substitution, no fixture substitution, no matrix expansion under one authorization. A failure ends the batch and returns to review; any further run needs a new manifest and a new authorization.
 
 ---
 
 ## 6. Protocol
 
-### P0 — preconditions (before any authorization is consumed)
+### P0 — capability probe (separate authorization, budget 1 model start)
 
-1. Model loads in a probe process; `EngineModelIdentity.compute` recorded; generation is greedy (`temperature = 0`).
-2. Build identity fixed: `swift build -c release` product hash, `Package.resolved` digests, source revision, clean-tree flag.
-3. Fixtures frozen by digest; checkers frozen by digest.
-4. Evidence root does not exist (`create-exclusive`).
+P0 is its own gate and is **not** covered by the G2 batch authorization. Its purposes, in order:
 
-If the model does not load, the run is not started; the design returns for amendment. Silent substitution is forbidden.
+1. Load the frozen artifact from `G2_MODEL_BINDING_20261020.json`; record `EngineModelIdentity.compute` output and compare it against the binding. A mismatch stops P0.
+2. Run one short `ChatSession` generation under the frozen parameters; record chunk sequence and completion token count.
+3. Install `MLXPrefixCrossSessionCache` on an empty store base and confirm `observations.calls > 0` with `hits == 0` on a lookup.
+4. Record build identity: `swift build -c release` product hash, `Package.resolved` digests, source revision, clean-tree flag.
+
+P0 has 1 model start and no retry. If loading, the real `ChatSession` path, or the observation hook fails, P0 ends `FAIL` and the design returns for amendment; substitution is not permitted. P0 must be authorized explicitly, and the batch manifest cannot be issued until P0's terminal record exists.
 
 ### P1 — phase 1 (old stage)
 
@@ -162,7 +189,7 @@ If the model does not load, the run is not started; the design returns for amend
 | Cache lookup record | hook installed in phase 2; `calls > 0`; `hits == 0`; no `matchedTokenCount` equal to any phase-1 prefix length | hook absent or observations unavailable → `INCONCLUSIVE` |
 | Canary | `context_canary` absent from phase-2 prompt, output, logs and artifacts | present anywhere → `FAIL` |
 
-Hook misses alone are not the gate; they are one of five rows. Canary absence alone is explicitly **not** sufficient either.
+**Evidence boundary (frozen).** `observations` counts only lookups routed through `ChatSession`'s installed hook. It does not observe direct filesystem reads, OS page-cache or swap state, or any model-internal reuse that bypasses the hook. G2-A therefore rests on the conjunction of the five rows above — process death, new identity, empty and unreadable old store, counted misses, canary — and never on any single one. If the hook cannot be installed, or `observations` is unavailable, G2-A is `INCONCLUSIVE` regardless of how clean the output looks. The claim is accessibility, not physical erasure.
 
 ### G2-B — Information-Space restoration
 
@@ -172,8 +199,10 @@ Hook misses alone are not the gate; they are one of five rows. Canary absence al
 | Source and version | restored source identity and version equal the phase-1 record |
 | Dependency closure | closure complete; every dependency id and digest equals |
 | Validity basis | validity policy digest equals; validation returns valid |
-| Negative control | `C-missing` and `C-tampered` block before any model call; no fallback recompute; no settlement produced |
-| No silent repair | blocked runs leave the carrier byte-identical |
+| Negative control · C-missing | settlement object and index entry for `R1` removed from an independent copy; gate refuses with the frozen code `SETTLEMENT_MISSING` before any model load; copy digest unchanged after refusal |
+| Negative control · C-tampered | stored payload replaced with different bytes while the index pointer is kept; re-hash mismatch refuses with the frozen code `OBJECT_DIGEST_MISMATCH` before any model load; copy digest unchanged after refusal |
+| No recompute path | the phase-2 host has no U1 calculator wired and does not call `execute_demand`; "recompute, then report success" is structurally unavailable, not merely discouraged |
+| No silent repair | blocked runs leave the carrier copy byte-identical; no settlement is written |
 
 ### G2-C — real-model continuation
 
@@ -190,7 +219,7 @@ Hook misses alone are not the gate; they are one of five rows. Canary absence al
 
 ## 8. Verdict rules
 
-**PASS** — all three arms × three fixtures meet every row above; the negative controls block as designed; model identity, host lifecycle and event provenance are traceable; no old-KV access, no wrong restoration, no U1 re-execution.
+**PASS** — A, B and both negative-control variants meet every row above on all three fixtures; the negative controls block as designed; model identity, host lifecycle and event provenance are traceable; no old-KV access, no wrong restoration, no U1 re-execution. P0 is a separate gate and is not part of this verdict.
 
 **FAIL** — any counterexample: an old-stage artifact hit, an identity or closure mismatch, a negative control that continued, a re-scheduled U1, or a checker failure.
 
@@ -200,13 +229,15 @@ Hook misses alone are not the gate; they are one of five rows. Canary absence al
 
 ---
 
-## 9. Execution control
+## 9. Execution control and authorization scope
 
-- A manifest fixes: source revision and clean-tree flag, build product hash, `Package.resolved` digests, model content digest, fixture digests, checker digests, evidence root, budget, and terminal states.
-- Authorization is a marker file whose content is the manifest's SHA-256; it is consumed atomically (rename) before the first child launch. Consumed means no second run.
-- Evidence root is `create-exclusive`; the terminal record is `O_CREAT|O_EXCL`.
-- Child processes run in their own process group; timeout kills the group with SIGKILL.
-- G2 evidence never enters `g1-evidence/` and never modifies the G1 closure record.
+- **Phase separation.** `P0 probe` → `batch manifest` → `batch authorization` are three distinct acts. A batch authorization may not be issued before P0's terminal record exists.
+- **Manifest.** Fixes source revision and clean-tree flag, build product hash, `Package.resolved` digests, model aggregate digest and file manifest, fixture digests, checker digests, evidence root, the 9-start planned budget with a 15-start hard cap, and terminal states.
+- **Authorization.** A marker file whose content is the manifest's SHA-256; consumed atomically (rename) before the first child launch. Consumed means no second run.
+- **Scope.** One authorization covers exactly: 3 fixtures × (A, B phase 1, B phase 2) plus 6 negative-control validations. It does not cover retries, a different model, different fixtures, or additional arms.
+- **Write-once.** Evidence root `create-exclusive`; terminal record `O_CREAT|O_EXCL`; raw outputs are preserved unmodified and digested before any derived report is written.
+- **Isolation.** Child processes run in their own process group; timeout kills the group with SIGKILL.
+- **Separation from G1.** G2 evidence never enters `g1-evidence/` and never modifies the G1 closure record.
 
 ---
 
@@ -221,25 +252,31 @@ Hook misses alone are not the gate; they are one of five rows. Canary absence al
 
 ---
 
-## 11. Decisions required before this design can be frozen
+## 11. Ruling record (2026-10-20)
 
-| ID | Decision | Recommended |
+| ID | Ruling | Condition carried into this revision |
 |---|---|---|
-| D1 | Model pin | `mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit` @ `6e302ea6…`, pinned by content digest, with a mandatory load probe in P0; a failed probe returns to amendment, never to substitution |
-| D2 | Authorization unit | one authorization covering 3 fixtures × 3 arms (≈15 model processes); per-fixture authorizations would multiply authorization overhead without adding evidence |
-| D3 | Negative-control shape | both `C-missing` and `C-tampered`, one run each per fixture |
-| D4 | Canary scope | prompt + output + stdout/stderr + artifacts; a canary found in `R1` invalidates the fixture rather than the run |
-| D5 | Evidence handling | commit the design and manifest now; commit run evidence only after human audit, following the V6 pattern |
+| D1 | Conditional accept | full 64-hex artifact identity, file manifest and backend/config/tokenizer pins (§2.3, binding file); P0 probe mandatory; no substitution |
+| D2 | Accept with cap | matrix fixed with per-arm start counts; 9 planned, 15 hard cap; P0 separate; no retry, substitution or expansion |
+| D3 | Accept with injection rules | independent copies; `C-missing` and `C-tampered` defined by operation and expected refusal code; refusal before model load; no recompute path |
+| D4 | Accept with placement rules | canary confined to the old-stage context; scan extended to requests, rendered prompts, tool-call and cache logs; `R1` contamination invalidates the fixture |
+| D5 | Accept | design and manifest committed first; run evidence only after human audit; raw output is never rewritten |
+
+`FROZEN` here means these are the terms that would be executed. It is not an execution authorization.
 
 ---
 
 ## 12. Artifacts (if and when authorized)
 
 ```text
+docs/01-questions/G2_MODEL_BINDING_20261020.json      # frozen artifact identity (committed with this design)
+docs/01-questions/G2_PREREGISTRATION_20261020.md      # this file
+
 execution-information-loop/experiment/continuous-calc-verification/
   model-level-validation/g2/
     manifest/G2_MANIFEST.json (+ .sha256)
+    p0/<run-id>/terminal.json + probe records
     evidence/<run-id>/phase1/ phase2/ phase3/ termination.json
 ```
 
-Design records stay in `docs/01-questions/`; run evidence stays with the experiment. Neither path is created by this proposal.
+Design records stay in `docs/01-questions/`; run evidence stays with the experiment. No run path is created by this freeze.
