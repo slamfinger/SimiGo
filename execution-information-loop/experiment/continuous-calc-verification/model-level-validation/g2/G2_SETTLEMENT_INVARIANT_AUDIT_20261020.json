@@ -1,0 +1,548 @@
+{
+  "all_pass": true,
+  "discrimination_probe": {
+    "all_detected": true,
+    "probes": [
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_dependency_single_revision",
+        "failed_checks": [
+          "settlement_dependency_single_revision",
+          "settlement_history_length_one"
+        ],
+        "fixture_id": "fixture-1",
+        "injected": "extra settlement revision",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "no_settlement_item_or_demand_appends",
+        "failed_checks": [
+          "no_settlement_item_or_demand_appends",
+          "post_settlement_appends_are_states_only"
+        ],
+        "fixture_id": "fixture-1",
+        "injected": "extra item append",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_bytes_match_address",
+        "failed_checks": [
+          "settlement_bytes_match_address"
+        ],
+        "fixture_id": "fixture-1",
+        "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_dependency_single_revision",
+        "failed_checks": [
+          "settlement_dependency_single_revision",
+          "settlement_history_length_one"
+        ],
+        "fixture_id": "fixture-2",
+        "injected": "extra settlement revision",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "no_settlement_item_or_demand_appends",
+        "failed_checks": [
+          "no_settlement_item_or_demand_appends",
+          "post_settlement_appends_are_states_only"
+        ],
+        "fixture_id": "fixture-2",
+        "injected": "extra item append",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_bytes_match_address",
+        "failed_checks": [
+          "settlement_bytes_match_address"
+        ],
+        "fixture_id": "fixture-2",
+        "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_dependency_single_revision",
+        "failed_checks": [
+          "settlement_dependency_single_revision",
+          "settlement_history_length_one"
+        ],
+        "fixture_id": "fixture-3",
+        "injected": "extra settlement revision",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "no_settlement_item_or_demand_appends",
+        "failed_checks": [
+          "no_settlement_item_or_demand_appends",
+          "post_settlement_appends_are_states_only"
+        ],
+        "fixture_id": "fixture-3",
+        "injected": "extra item append",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      },
+      {
+        "detected": true,
+        "excluded_path_checks": [
+          "C_missing_copy_is_not_canonical",
+          "C_tampered_copy_is_not_canonical"
+        ],
+        "expected_check": "settlement_bytes_match_address",
+        "failed_checks": [
+          "settlement_bytes_match_address"
+        ],
+        "fixture_id": "fixture-3",
+        "injected": "byte flip in settlement object",
+        "note": "the temp copy breaks the recorded absolute gate path; that check is expected to fail and is excluded"
+      }
+    ]
+  },
+  "fixtures": {
+    "fixture-1": {
+      "checks": {
+        "C_missing_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-1/C_missing/g2.sqlite",
+          "ok": true
+        },
+        "C_missing_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_missing_refusal_recorded": {
+          "detail": "REFUSED/SETTLEMENT_MISSING",
+          "ok": true
+        },
+        "C_missing_settlement_absent": {
+          "detail": "index=0 dependency=0",
+          "ok": true
+        },
+        "C_tampered_bytes_break_address": {
+          "detail": "sha256(bytes) != address; byte_size agrees",
+          "ok": true
+        },
+        "C_tampered_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-1/C_tampered/g2.sqlite",
+          "ok": true
+        },
+        "C_tampered_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_tampered_refusal_recorded": {
+          "detail": "REFUSED/OBJECT_DIGEST_MISMATCH",
+          "ok": true
+        },
+        "C_tampered_settlement_present": {
+          "detail": "index rows=1",
+          "ok": true
+        },
+        "advanced_state_digest_recomputed": {
+          "detail": "result digest recomputed from U2 answer and checker",
+          "ok": true
+        },
+        "canary_absent_from_phase2": {
+          "detail": "d8770893b4f1267c",
+          "ok": true
+        },
+        "dependency_identity_stable": {
+          "detail": "item:s1-source 0f7ff91fc5b8ac874d3208c4172d1602c19df8199ac71cb1c0048bdbd9a8ec28",
+          "ok": true
+        },
+        "no_settlement_item_or_demand_appends": {
+          "detail": "post-settlement index entries",
+          "ok": true
+        },
+        "post_settlement_appends_are_states_only": {
+          "detail": "3 append(s)",
+          "ok": true
+        },
+        "restored_state_digest_recomputed": {
+          "detail": "result digest recomputed from restored identity",
+          "ok": true
+        },
+        "s1_digest_matches_fixture": {
+          "detail": "6aeae7cfd3e7b4bdd6d0cfe57e1b20c3bcf696cc2e36e2d77a36a402d71ffa88",
+          "ok": true
+        },
+        "s1_not_reinjected_in_phase2": {
+          "detail": "7 phase-2 file(s) scanned",
+          "ok": true
+        },
+        "settled_state_digest_matches_phase1": {
+          "detail": "phase-1 execution state unchanged",
+          "ok": true
+        },
+        "settlement_byte_size_matches": {
+          "detail": "declared=926",
+          "ok": true
+        },
+        "settlement_bytes_match_address": {
+          "detail": "sha256(bytes) == index address",
+          "ok": true
+        },
+        "settlement_dependency_single_revision": {
+          "detail": "rows=1",
+          "ok": true
+        },
+        "settlement_history_length_one": {
+          "detail": "recomputed=1 recorded=1->1",
+          "ok": true
+        },
+        "settlement_index_single": {
+          "detail": "one index entry for settlement:u1-result",
+          "ok": true
+        },
+        "settlement_object_id_stable": {
+          "detail": "phase1 == restore gate == carrier bytes",
+          "ok": true
+        },
+        "settlement_object_present": {
+          "detail": "object 5fa1f62c16ac2c1182ff5c970744398ec9626ce5a8bb78b8ff7ef2fed7dea7ce",
+          "ok": true
+        },
+        "settlement_payload_settled": {
+          "detail": "EINFO-SETTLEMENT-V1/SETTLED",
+          "ok": true
+        },
+        "settlement_r1_matches_phase1_record": {
+          "detail": "canonical text and digest",
+          "ok": true
+        },
+        "settlement_r1_self_consistent": {
+          "detail": "recomputed r1 digest",
+          "ok": true
+        },
+        "source_identity_stable": {
+          "detail": "item:u1-result 7113e6c0caa0b7578574a7ec5028ad1e2b97efa887e001cb005995c9d98445fe",
+          "ok": true
+        },
+        "state_chain_predecessors": {
+          "detail": "settled -> restored -> advanced",
+          "ok": true
+        },
+        "u2_answer_recomputed": {
+          "detail": "ANSWER=<settled secret>-<sha256(site)[:8]>",
+          "ok": true
+        },
+        "u2_prompt_carries_recovered_r1": {
+          "detail": "recovered R1 present in the U2 request",
+          "ok": true
+        }
+      },
+      "failed_checks": []
+    },
+    "fixture-2": {
+      "checks": {
+        "C_missing_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-2/C_missing/g2.sqlite",
+          "ok": true
+        },
+        "C_missing_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_missing_refusal_recorded": {
+          "detail": "REFUSED/SETTLEMENT_MISSING",
+          "ok": true
+        },
+        "C_missing_settlement_absent": {
+          "detail": "index=0 dependency=0",
+          "ok": true
+        },
+        "C_tampered_bytes_break_address": {
+          "detail": "sha256(bytes) != address; byte_size agrees",
+          "ok": true
+        },
+        "C_tampered_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-2/C_tampered/g2.sqlite",
+          "ok": true
+        },
+        "C_tampered_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_tampered_refusal_recorded": {
+          "detail": "REFUSED/OBJECT_DIGEST_MISMATCH",
+          "ok": true
+        },
+        "C_tampered_settlement_present": {
+          "detail": "index rows=1",
+          "ok": true
+        },
+        "advanced_state_digest_recomputed": {
+          "detail": "result digest recomputed from U2 answer and checker",
+          "ok": true
+        },
+        "canary_absent_from_phase2": {
+          "detail": "ab1511d7c0093734",
+          "ok": true
+        },
+        "dependency_identity_stable": {
+          "detail": "item:s1-source fff1c4aa35b0a7c5237637bd6f7b06a5445c05b8fe6941f63aca7546655612ad",
+          "ok": true
+        },
+        "no_settlement_item_or_demand_appends": {
+          "detail": "post-settlement index entries",
+          "ok": true
+        },
+        "post_settlement_appends_are_states_only": {
+          "detail": "3 append(s)",
+          "ok": true
+        },
+        "restored_state_digest_recomputed": {
+          "detail": "result digest recomputed from restored identity",
+          "ok": true
+        },
+        "s1_digest_matches_fixture": {
+          "detail": "1884313878dc16010369b5a5a8e52a1e65d76cf3792b5c914ccb670eeb9ee0a4",
+          "ok": true
+        },
+        "s1_not_reinjected_in_phase2": {
+          "detail": "7 phase-2 file(s) scanned",
+          "ok": true
+        },
+        "settled_state_digest_matches_phase1": {
+          "detail": "phase-1 execution state unchanged",
+          "ok": true
+        },
+        "settlement_byte_size_matches": {
+          "detail": "declared=926",
+          "ok": true
+        },
+        "settlement_bytes_match_address": {
+          "detail": "sha256(bytes) == index address",
+          "ok": true
+        },
+        "settlement_dependency_single_revision": {
+          "detail": "rows=1",
+          "ok": true
+        },
+        "settlement_history_length_one": {
+          "detail": "recomputed=1 recorded=1->1",
+          "ok": true
+        },
+        "settlement_index_single": {
+          "detail": "one index entry for settlement:u1-result",
+          "ok": true
+        },
+        "settlement_object_id_stable": {
+          "detail": "phase1 == restore gate == carrier bytes",
+          "ok": true
+        },
+        "settlement_object_present": {
+          "detail": "object 999c29e8b2d6c7bcd9de33bb17b58164f9be4d1863c326bdb786694169e74673",
+          "ok": true
+        },
+        "settlement_payload_settled": {
+          "detail": "EINFO-SETTLEMENT-V1/SETTLED",
+          "ok": true
+        },
+        "settlement_r1_matches_phase1_record": {
+          "detail": "canonical text and digest",
+          "ok": true
+        },
+        "settlement_r1_self_consistent": {
+          "detail": "recomputed r1 digest",
+          "ok": true
+        },
+        "source_identity_stable": {
+          "detail": "item:u1-result 8ae4e57816fea8016b079e11cd0b4a1f6394a6525e715ba5eec710c73288cda4",
+          "ok": true
+        },
+        "state_chain_predecessors": {
+          "detail": "settled -> restored -> advanced",
+          "ok": true
+        },
+        "u2_answer_recomputed": {
+          "detail": "ANSWER=<settled secret>-<sha256(site)[:8]>",
+          "ok": true
+        },
+        "u2_prompt_carries_recovered_r1": {
+          "detail": "recovered R1 present in the U2 request",
+          "ok": true
+        }
+      },
+      "failed_checks": []
+    },
+    "fixture-3": {
+      "checks": {
+        "C_missing_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-3/C_missing/g2.sqlite",
+          "ok": true
+        },
+        "C_missing_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_missing_refusal_recorded": {
+          "detail": "REFUSED/SETTLEMENT_MISSING",
+          "ok": true
+        },
+        "C_missing_settlement_absent": {
+          "detail": "index=0 dependency=0",
+          "ok": true
+        },
+        "C_tampered_bytes_break_address": {
+          "detail": "sha256(bytes) != address; byte_size agrees",
+          "ok": true
+        },
+        "C_tampered_copy_is_not_canonical": {
+          "detail": "evidence/20261020T082124Z/fixtures/fixture-3/C_tampered/g2.sqlite",
+          "ok": true
+        },
+        "C_tampered_copy_unchanged_since_gate": {
+          "detail": "current file digest == before == after",
+          "ok": true
+        },
+        "C_tampered_refusal_recorded": {
+          "detail": "REFUSED/OBJECT_DIGEST_MISMATCH",
+          "ok": true
+        },
+        "C_tampered_settlement_present": {
+          "detail": "index rows=1",
+          "ok": true
+        },
+        "advanced_state_digest_recomputed": {
+          "detail": "result digest recomputed from U2 answer and checker",
+          "ok": true
+        },
+        "canary_absent_from_phase2": {
+          "detail": "6796e53a755d5367",
+          "ok": true
+        },
+        "dependency_identity_stable": {
+          "detail": "item:s1-source 6f42e3627a80781bf503ce5537ffa35fadaa8cde0f84612a846a153f71d38e13",
+          "ok": true
+        },
+        "no_settlement_item_or_demand_appends": {
+          "detail": "post-settlement index entries",
+          "ok": true
+        },
+        "post_settlement_appends_are_states_only": {
+          "detail": "3 append(s)",
+          "ok": true
+        },
+        "restored_state_digest_recomputed": {
+          "detail": "result digest recomputed from restored identity",
+          "ok": true
+        },
+        "s1_digest_matches_fixture": {
+          "detail": "7945d2fe7f5fc6e1745173e8a12f6a19458dedaee6a4057ec48d4f17478d8883",
+          "ok": true
+        },
+        "s1_not_reinjected_in_phase2": {
+          "detail": "7 phase-2 file(s) scanned",
+          "ok": true
+        },
+        "settled_state_digest_matches_phase1": {
+          "detail": "phase-1 execution state unchanged",
+          "ok": true
+        },
+        "settlement_byte_size_matches": {
+          "detail": "declared=926",
+          "ok": true
+        },
+        "settlement_bytes_match_address": {
+          "detail": "sha256(bytes) == index address",
+          "ok": true
+        },
+        "settlement_dependency_single_revision": {
+          "detail": "rows=1",
+          "ok": true
+        },
+        "settlement_history_length_one": {
+          "detail": "recomputed=1 recorded=1->1",
+          "ok": true
+        },
+        "settlement_index_single": {
+          "detail": "one index entry for settlement:u1-result",
+          "ok": true
+        },
+        "settlement_object_id_stable": {
+          "detail": "phase1 == restore gate == carrier bytes",
+          "ok": true
+        },
+        "settlement_object_present": {
+          "detail": "object 9530bfc5b3e988a91dbe261c79070ca4020b712c389c1e6fa67eee34f4abd9a1",
+          "ok": true
+        },
+        "settlement_payload_settled": {
+          "detail": "EINFO-SETTLEMENT-V1/SETTLED",
+          "ok": true
+        },
+        "settlement_r1_matches_phase1_record": {
+          "detail": "canonical text and digest",
+          "ok": true
+        },
+        "settlement_r1_self_consistent": {
+          "detail": "recomputed r1 digest",
+          "ok": true
+        },
+        "source_identity_stable": {
+          "detail": "item:u1-result 56e02e598a03cef34a33da12c7cd7d68e0cb1e2cd7bf12c05a3b37bba67efdf7",
+          "ok": true
+        },
+        "state_chain_predecessors": {
+          "detail": "settled -> restored -> advanced",
+          "ok": true
+        },
+        "u2_answer_recomputed": {
+          "detail": "ANSWER=<settled secret>-<sha256(site)[:8]>",
+          "ok": true
+        },
+        "u2_prompt_carries_recovered_r1": {
+          "detail": "recovered R1 present in the U2 request",
+          "ok": true
+        }
+      },
+      "failed_checks": []
+    }
+  },
+  "method": "values recomputed from SQLite bytes opened with mode=ro&immutable=1; no verdict file was read",
+  "run_id": "20261020T082124Z",
+  "schema_id": "SIMIGO-G2-SETTLEMENT-INVARIANT-AUDIT-V1",
+  "verdict_files_ignored": [
+    "terminal.json",
+    "verification.json"
+  ]
+}

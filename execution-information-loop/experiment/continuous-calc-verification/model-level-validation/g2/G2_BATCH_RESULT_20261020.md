@@ -122,7 +122,8 @@ fixtures_recomputed      = 3 x (G2-A PASS, G2-B PASS, G2-C PASS)
    `execution_state` 索引（`…-u2-restored`、`…-u2-advanced`），这就是它的合法写入；同期
    settlement 的 `object_id` 不变，settlement 依赖历史长度 `1 → 1`，两项均作为 claim 行通过。
    两个负对照副本在拒绝前后 sqlite 摘要逐字节不变。该布尔字段按字面同时覆盖“负对照”和
-   “phase 2”，因此为 false；它不参与裁定。
+   “phase 2”，因此为 false；它不参与裁定。该字段不能替代独立复核：settlement 身份、依赖历史
+   与追加集合已由 §9 的只读审计器直接从载体字节重算。
 3. **证据布局。** manifest 与 evidence 放在 `g2/manifest/`、`g2/evidence/`（预注册 §12 的
    路径），runner/host/gate/checker/fixtures 代码在 `g2/batch/`。`g2/evidence/20261020T082124Z/`
    共 98 个文件，原始 `host.log` 未被 `*.log` 忽略规则吞掉。
@@ -138,3 +139,68 @@ fixtures_recomputed      = 3 x (G2-A PASS, G2-B PASS, G2-C PASS)
 5. 不是 G1 证据：G1 保持 `CLOSED`，本批不重读也不扩展它。
 6. 峰值内存未测；`EngineModelIdentity` 的符号链接读取缺陷（A3）未修复；tokenizer 摘要跨目录
    可复现性只是被报告（同一目录内一致），未被证明。
+
+## 9. 独立评审与结算不变量复核（2026-10-20）
+
+### 9.1 评审裁定及其范围
+
+独立评审接受本轮结果：三个主张在三个合成 fixture、冻结的 A2 模型副本与冻结 MLX 执行路径内
+裁定为 `PASS`，且分别对应不同证据类型，而非仅凭进程退出码。评审同时明确：这是
+**摘要级评审**，未逐行检查本文件、复核 JSON 或 98 个原始证据文件，也不冒充完整原件审计。
+
+### 9.2 评审指出的复核缺口
+
+评审要求：不能因为 `canonical_carrier…=false` “不参与裁定”就把它忽略；正式复核必须确认
+独立复核器确实检查 settlement 不变量，没有用宽泛例外掩盖额外写入。
+
+核对结论：**该缺口当时真实存在。** `run_batch.py --verify-only` 只从 `verification.json`
+已记录的 `checks` 重新推导 claim 行，从未重新打开载体；`settlement_object_id_unchanged` 与
+`no_new_settlement_in_phase2` 是执行体自报的布尔值，属于被复核对象自证。
+
+### 9.3 补强的只读审计
+
+新增 `g2/batch/audit_settlement_invariants.py`，对每个 fixture 直接打开
+`B1/carrier/g2.sqlite` 与两个负对照副本（`mode=ro&immutable=1`），
+**不读取** `terminal.json` / `verification.json`，从字节重算 32 项，三个 fixture 全部通过：
+
+| 不变量 | 重算内容 |
+| --- | --- |
+| settlement 身份 | 索引行唯一；`sha256(bytes)` 等于对象地址；`byte_size` 等于实际长度 |
+| settlement 载荷 | `EINFO-SETTLEMENT-V1` / `SETTLED` / `item_id=u1-result`；R1 重算摘要自洽且与 phase-1 `r1.json` 一致 |
+| 身份跨记录一致 | 载体字节中的 `object_id` == `carrier_phase1.json` == `restore_gate.json` |
+| 依赖历史 | `settlement:u1-result` 恰好 1 条、revision 1、`content_address` 指向该对象；重算长度 1 == 记录的 `1 → 1` |
+| 来源稳定 | `item:u1-result` 与 `item:s1-source` 当前对象地址分别等于 settlement basis 与 phase-1 记录；S1 摘要等于 fixture |
+| 追加集合 | settlement 之后的索引行恰好 3 条且全部为 `execution_state:`（1 条 phase-1 + 2 条 phase-2）；没有新增 `settlement:` / `item:` / `demand:` |
+| 状态链 | `u1-settled → u2-restored → u2-advanced`；两个 phase-2 状态的 `result_digest` 由恢复身份、U2 答案与 checker 结果重算 |
+| 负对照副本 | 当前文件摘要 == gate 记录的 before == after；`C_missing` 无 settlement 索引/依赖；`C_tampered` 字节摘要 != 地址且 `byte_size` 自洽 |
+| U2 结果 | `ANSWER` 单行；secret 等于 settlement 中的 R1；checksum 等于 `sha256(site)[:8]` 重算值 |
+| 信息边界 | U2 提示包含恢复的 R1；phase-2 文件中没有 S1 正文或 canary |
+
+命令与输出：
+
+```text
+python3 batch/audit_settlement_invariants.py evidence/20261020T082124Z --probe \
+  -o G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json
+all_pass = true; discrimination_probe.all_detected = true
+```
+
+### 9.4 审计器的判别性
+
+一个从不说“不”的复核器没有意义。审计器在临时副本上逐个注入违规并验证能否捕获，
+三个 fixture × 三种注入共 9 项，全部被预期检查捕获：
+
+| 注入 | 预期失败检查 |
+| --- | --- |
+| 为 settlement 追加 revision 2 | `settlement_dependency_single_revision`（同时 `settlement_history_length_one`） |
+| 追加一条 `item:u2-answer` 索引 | `no_settlement_item_or_demand_appends`（同时 `post_settlement_appends_are_states_only`） |
+| 篡改 settlement 对象字节 | `settlement_bytes_match_address` |
+
+探针在 `G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json` 的 `discrimination_probe` 中留有
+逐项记录。临时副本会使 gate 记录中的绝对路径检查（`*_copy_is_not_canonical`）失败，
+这是探针环境的预期副作用，已在记录中单列并排除。
+
+### 9.5 边界
+
+这是对**已存证据**的事后只读审计，不重跑实验、不重新生成模型输出，也不把摘要级评审
+升级为对 98 个文件的逐行审计。它补上的是评审指出的那一个缺口：settlement 身份与依赖历史
+现在有独立于执行体布尔值的字节级重算。

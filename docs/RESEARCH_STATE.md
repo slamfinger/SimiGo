@@ -24,7 +24,8 @@
 > **Status:** `G1 CLOSED (2026-10-20 Human handoff ruling; test-only Swift oracle)` ·
 > `E-I mechanism layer evidenced` · `model layer: one G2 batch PASS on three synthetic fixtures` ·
 > `G2 BATCH EXECUTED ONCE — G2-A / G2-B / G2-C PASS` (P0 gate `PASS` on 2026-10-20 under the A2
-> copy; batch `G2-BATCH-AUTH-20261020-01`, run `20261020T082124Z`, 9 model starts, 0 retries).
+> copy; batch `G2-BATCH-AUTH-20261020-01`, run `20261020T082124Z`, 9 model starts, 0 retries;
+> independent review accepted at summary level, settlement invariants re-audited read-only).
 > Three work records between
 > 2026-10-17 and 2026-10-20 had been produced but not entered here; they are
 > recorded below in the order they occurred. None of them closes the core question.
@@ -126,6 +127,22 @@ memory was not measured, the symlink reader (A3) is unrepaired, tokenizer digest
 across directories is reported not proven, the result covers three synthetic fixtures only, no
 production authorization follows, and G1 stays `CLOSED`. A first manifest draft was superseded
 before any token consumption; the final manifest records it in `freeze_history`.
+
+Independent review accepted this result on 2026-10-20 **at summary level only** — explicitly not a
+line-by-line audit of the 98 evidence files — and required that
+`canonical_carrier… = false` not be waved through as "not part of the verdict". The gap was real:
+`run_batch.py --verify-only` re-derives claim rows from the checks the runner itself recorded and
+never reopens a carrier, so `settlement_object_id_unchanged` and `no_new_settlement_in_phase2`
+were self-reported. `g2/batch/audit_settlement_invariants.py` now recomputes, directly from
+carrier bytes with `mode=ro&immutable=1` and without reading `terminal.json` or
+`verification.json`: the settlement object address and `byte_size`, its single-revision dependency
+history (`1 → 1`), the source and S1 identities, the exact three `execution_state` appends after
+settlement (one phase-1, two phase-2), the restored/advanced state digests, both negative-control
+copies, the U2 answer against the settled secret, and the absence of S1/canary in phase 2. All 32
+checks × 3 fixtures pass; nine injected violations (extra settlement revision, extra `item:`
+append, settlement byte flip) are each caught on temp copies, so the audit is not vacuous. Record:
+`g2/G2_SETTLEMENT_INVARIANT_AUDIT_20261020.json`; the result record's §9 states this is a post-hoc
+audit of stored evidence, not a re-run and not an upgrade of the review's scope.
 
 **2026-10-17 — continuous-calc model-level arms.** One real local model plus the
 real `carrier_loop.py`; no second model, no external runner. All ten criteria
