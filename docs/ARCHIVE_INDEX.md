@@ -60,3 +60,22 @@ Architecture 2.0 历史采用三层保存：
 - 把历史结果自动升级为当前研究问题的证据；
 - 以目录调整代替研究门禁；
 - 在未完成规定步骤前提前进入实现、采数或测量。
+
+## 6. 归档区 `09-archive/`（2026-10-20 起）
+
+`09-archive/` 只存已移出默认视野的**历史记录**，内容冻结、原文件名不变。
+归档不等于失效：证据状态不变，仍按文件名检索。判定依据与逐文件映射见
+`00-governance/state-layer-audit-20261020/`（计划 + CSV + 校验脚本）。
+
+| 线 | 归档文件 | 路径 |
+|---|---|---|
+| E-I 连续计算 | 59 | `09-archive/execution-information-loop/2026-10/` |
+| PALACE / Integrated ES | 29 | `09-archive/palace/2026-09/`、`2026-10/` |
+| 通用治理 / 其他 | 55 | `09-archive/general/2026-09/`、`2026-10/`、`undated/` |
+| Small-scale runtime / GUI | 2 | `09-archive/runtime-gui/2026-09/`、`2026-10/` |
+| 状态层历史正文 | 2 | `09-archive/state-layer/`（`SESSION_CONTINUITY_20261008_FULL.md`、`NEXT_SESSION_ENTRY_20261002_FULL.md`） |
+| **合计** | **147** | — |
+
+`Execution State / Track B` 与 `Track D / Information Space` 两线各有 1 份，闭包复核发现被留存文档按名引用，已移回原位，归档区对应目录已清空。
+
+`Persistent SRS / Signer` 线的 **152 份冻结批次**（`PERSISTENT_SRS` 65、`SRS_VAL_01` 34、`SRS_REAL_CLOSURE_01` 51、`PALACE_INFORMATION_SPACE` 2）暂不归档：Signer v0.7 待人类裁定，且该批次内部互引 38 处，必须整批原子迁移，不能逐份移动。仍留在 `00-governance/`。归档区不改变任何研究门位。
