@@ -96,7 +96,15 @@ let package = Package(
         ),
         .testTarget(
             name: "SimiGo2ExperimentalTests",
-            dependencies: ["SimiGo2Experimental", "SimiGoRuntimeContract"]
+            dependencies: [
+                "SimiGo2Experimental", "SimiGoRuntimeContract",
+                // NativeMLXCarrierReleaseTests drives the real MLX runtime (genuine
+                // KVCacheSimple + write observer + storage identity) with synthetic
+                // CPU tensors and no model weights, so the test target links the MLX
+                // products directly. No executable target or G3/D1 config changes.
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm")
+            ]
         )
     ]
 )
