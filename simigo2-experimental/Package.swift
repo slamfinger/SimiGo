@@ -18,15 +18,20 @@ let package = Package(
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
-        .package(url: "https://github.com/slamfinger/mlx-swift", revision: "ef5f1b6bb24e27922189316362f3057c64261704"),
-        // Public beta runtime fork (segment-execution APIs, Muse-Glimmer text
-        // factory). Branch dep; the exact commit is pinned in
-        // Package.resolved. Local live-edit alternative: temporarily switch
-        // to .package(path: "../../mlx-swift-lm") with a sibling clone of
-        // https://github.com/slamfinger/mlx-swift-lm on the same branch.
-        .package(
-            url: "https://github.com/slamfinger/mlx-swift-lm.git",
-            branch: "release/v2.0-beta-ml"),
+        // G3 native storage-identity accessor (MLXArray.mlxStorageIdentity) lives in
+        // the Cmlx C++ interop boundary, published on slamfinger/mlx-swift branch
+        // feature/g3-storage-identity at this exact revision. That commit carries the
+        // mlx-c submodule gitlink pinned to 3fe6fa8 (the mlx_array_get_storage_identity
+        // C accessor) on slamfinger/mlx-c, so a clean checkout resolves the whole
+        // native chain reproducibly.
+        .package(url: "https://github.com/slamfinger/mlx-swift", revision: "7ae48feb0b15fd5df5e542759f0a165759a3cd2a"),
+        // The native KV-cache write-boundary observer (KVCacheWriteObserver) and its
+        // binding capability live inside MLXLMCommon.KVCacheSimple.update, published on
+        // slamfinger/mlx-swift-lm branch feature/g3-kv-write-observer at this exact
+        // revision. That branch already aligns its transitive mlx-swift pin to the
+        // same 7ae48fe above, so the graph resolves to one consistent mlx-swift
+        // revision instead of clashing on two exact revisions of the same package.
+        .package(url: "https://github.com/slamfinger/mlx-swift-lm.git", revision: "420fc503ae44e38a7f487d64cf7b602dc75cf258"),
         .package(url: "https://github.com/huggingface/swift-transformers.git", from: "1.3.3"),
     ],
     targets: [

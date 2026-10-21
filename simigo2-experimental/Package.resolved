@@ -14,7 +14,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift",
       "state" : {
-        "revision" : "ef5f1b6bb24e27922189316362f3057c64261704"
+        "revision" : "7ae48feb0b15fd5df5e542759f0a165759a3cd2a"
       }
     },
     {
@@ -22,8 +22,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/slamfinger/mlx-swift-lm.git",
       "state" : {
-        "branch" : "release/v2.0-beta-ml",
-        "revision" : "eab689575cc1fff7aa2e8b25941b6bd6f4050173"
+        "revision" : "420fc503ae44e38a7f487d64cf7b602dc75cf258"
       }
     },
     {
