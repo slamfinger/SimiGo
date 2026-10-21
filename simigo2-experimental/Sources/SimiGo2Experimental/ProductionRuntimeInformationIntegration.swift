@@ -501,6 +501,27 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     }
   }
 
+  /// Native lifecycle step between "the old ES settled and its checkpoint is
+  /// persisted" and "a fresh ES resumes the settled representation": explicitly
+  /// release and retire THIS instance's execution carrier for a settled handle and
+  /// VERIFY it is genuinely unusable, so a following recovery cannot quietly reuse
+  /// the old MLX objects. Returns the retired carrier's confirmed mutable-storage
+  /// ids so the recovery can prove the fresh carrier is disjoint from them.
+  /// Fail-closed: an executor with no explicit release path, or a carrier that
+  /// verifies still-usable, throws — the caller MUST NOT advance the Information
+  /// Space on top of an unproven handoff.
+  @discardableResult
+  public func releaseExecutionCarrier(
+    for handle: ExecutionStateHandle
+  ) throws -> Set<String> {
+    guard let carrier = modelExecutor as? any ExecutionCarrierReleasing else {
+      throw CarrierLifecycleError.carrierReleaseUnsupported
+    }
+    try carrier.releaseExecutionCarrier(for: handle)
+    try carrier.verifyCarrierUnusable(for: handle)
+    return carrier.retiredCarrierStorageIDs(for: handle)
+  }
+
   /// The ES identity (lineage/position/continuation) is sourced from the
   /// durable execution-state store — never a side-channel handle file — while
   /// the Information Space is the AUTHORITY that authorizes recovery: with no
@@ -509,7 +530,10 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
   /// is rebound from durable state into this instance's (fresh) backend, so the
   /// returned handle can continue WITHOUT re-tokenizing or falling back to the
   /// previous session's in-memory state.
-  public func recoverExecutionState(database: URL) async throws -> ExecutionStateHandle {
+  public func recoverExecutionState(
+    database: URL,
+    carrierIsolationAgainst retiredStorageIDs: Set<String>? = nil
+  ) async throws -> ExecutionStateHandle {
     guard stateStore != nil else {
       throw ProductionRuntimeInformationError.durableRecoveryNotConfigured
     }
@@ -552,6 +576,21 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
           position: recovered.position.value
         )
       }
+    }
+    // Handoff isolation (native carrier lifecycle): when the caller supplies a
+    // retired carrier's confirmed mutable-storage ids, prove the freshly adopted
+    // carrier is disjoint from them BEFORE returning a resumable handle. A shared
+    // or unobservable alias is refused fail-closed — it means the old physical
+    // state was never truly released, so resuming would reuse aliased memory. An
+    // empty/nil retired set (recompute / no-KV carrier) has nothing to alias, so
+    // it passes honestly rather than claiming verified isolation over unseen
+    // buffers.
+    if let retiredStorageIDs, !retiredStorageIDs.isEmpty {
+      guard let carrier = modelExecutor as? any ExecutionCarrierReleasing else {
+        throw CarrierLifecycleError.carrierReleaseUnsupported
+      }
+      try carrier.verifyAdoptedCarrierIsolated(
+        from: retiredStorageIDs, for: recovered)
     }
     return recovered
   }

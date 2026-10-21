@@ -77,6 +77,12 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
     /// terminated arm's termination survive release.
     private let g3CacheSlot = G3CacheSessionSlot()
 
+    /// The CONFIRMED mutable-storage ids each released carrier held, captured at
+    /// ``releaseExecutionCarrier(for:)`` so a following ``verifyAdoptedCarrierIsolated``
+    /// can prove the new carrier is disjoint from the retired one. Keyed by
+    /// execution id; empty set means the carrier observed no mutable KV storage.
+    private var retiredCarrierStorage: [ExecutionID: Set<String>] = [:]
+
     public var g3CacheSession: G3ArmCacheSession? { g3CacheSlot.installed }
 
     /// The admission gate behind this arm's write observer, when a cache session is
@@ -551,6 +557,81 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
             generatedText: text,
             updatedPayload: MLXPrefixPayload(tokenPrefix: extended))
     }
+
+    // MARK: - Native execution-carrier lifecycle
+    //
+    // Explicit release of THIS arm's carrier for one execution and the proof it
+    // is genuinely unusable, reusing two published capabilities rather than
+    // re-inventing them: the single-use ``G3CacheSessionSlot`` teardown (drops the
+    // per-layer caches, their gateway and their write observers, and refuses any
+    // re-arm) and the backend retired-carrier tombstone (drops the physical
+    // representation and refuses every rebind/read). Mutable-storage isolation is
+    // graded on the SAME `MLXArray.mlxStorageIdentity`-derived ids the gateway
+    // already registered, so no weaker rule is applied at handoff than at
+    // registration.
+
+    /// Drop the execution's physical representation and KV/mutable references and
+    /// RETIRE the carrier. Captures the retired carrier's confirmed mutable-storage
+    /// ids before teardown (the gateway is gone once the session is released).
+    public func releaseExecutionCarrier(for state: ExecutionStateHandle) throws {
+        let gateway = g3CacheGateway
+        retiredCarrierStorage[state.id] = gateway?.registeredBufferIDs ?? []
+        // Release the KV session FIRST: its observers/gateway are torn down and
+        // the slot retired, then the physical representation is dropped + retired.
+        releaseG3KVCache()
+        backend.releaseCarrier(for: state.id)
+    }
+
+    /// Prove the release took: the retired carrier refuses a bound read as
+    /// `.carrierReleased` (not merely "unbound") and the cache-session slot is
+    /// retired so nothing re-arms. Throws rather than reporting a false release.
+    public func verifyCarrierUnusable(for state: ExecutionStateHandle) throws {
+        guard backend.isCarrierRetired(for: state.id) else {
+            throw CarrierLifecycleError.releaseIncomplete(
+                reason: "physical representation carrier not retired")
+        }
+        do {
+            _ = try backend.boundPrefix(for: state)
+            throw CarrierLifecycleError.carrierStillUsable(executionID: state.id.rawValue)
+        } catch let error as ExecutionStateBackendError {
+            guard case .carrierReleased = error else {
+                throw CarrierLifecycleError.releaseIncomplete(
+                    reason: "bound read failed as \(error), not carrierReleased")
+            }
+        }
+        guard g3CacheSlot.isRetired else {
+            throw CarrierLifecycleError.releaseIncomplete(
+                reason: "G3 cache session slot not retired")
+        }
+    }
+
+    /// The retired carrier's confirmed mutable-storage ids for `state`.
+    public func retiredCarrierStorageIDs(for state: ExecutionStateHandle) -> Set<String> {
+        retiredCarrierStorage[state.id] ?? []
+    }
+
+    /// Prove a freshly adopted carrier on this executor is isolated from a retired
+    /// carrier's storage ids. Grading uses ``CarrierStorageIsolationEvaluator`` —
+    /// shared or unobservable aliasing throws, so a resume over aliased or
+    /// unproven memory is refused.
+    public func verifyAdoptedCarrierIsolated(
+        from retiredStorageIDs: Set<String>,
+        for state: ExecutionStateHandle
+    ) throws {
+        let adopting = g3CacheGateway?.registeredBufferIDs ?? []
+        switch CarrierStorageIsolationEvaluator.evaluate(
+            retired: retiredStorageIDs, adopting: adopting) {
+        case .isolated:
+            return
+        case .shared(let overlap):
+            throw CarrierLifecycleError.carriersShareStorage(
+                executionID: state.id.rawValue,
+                sharedBufferIDs: overlap.sorted())
+        case .unobservable:
+            throw CarrierLifecycleError.carrierStorageIsolationUnobservable(
+                executionID: state.id.rawValue)
+        }
+    }
 }
 
 /// The real executor satisfies the same routing contract the native G3 entry and
@@ -559,4 +640,4 @@ public final class MLXPrefixRecomputeExecutor: @unchecked Sendable {
 /// `continueExecutionG3` is the gate-before-generation route, so any caller that
 /// sends a G3 request through ``G3ExecutionDispatch`` with a `.g3` route reaches
 /// the isolation gate ahead of the first `context.model(...)` forward here.
-extension MLXPrefixRecomputeExecutor: G3RoutableContinuation, G3CacheSessionInstalling {}
+extension MLXPrefixRecomputeExecutor: G3RoutableContinuation, G3CacheSessionInstalling, ExecutionCarrierReleasing {}
