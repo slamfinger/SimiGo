@@ -24,6 +24,19 @@ ALLOWED_TABLES = {
 }
 
 
+def structural_validity_policy() -> dict:
+    """The isolated test's own validity policy for the read-only snapshot.
+
+    The snapshot carries no validity policy of its own; the test declares one so
+    the carrier can bind every settlement to an explicit, checkable window.
+    """
+    body = {
+        "policy_version": "real-palace-isolated-v1",
+        "policy_source": "ISOLATED_TEST_DECLARED_WINDOW",
+    }
+    return {**body, "policy_sha256": digest(body)}
+
+
 class RealPalaceSource:
     def __init__(self, snapshot_path: str, expected_sha256: str):
         self.path = Path(snapshot_path)
@@ -193,6 +206,20 @@ class RealPalaceConsumptionLoop:
 
     def invalidate_settlement(self, item_id: str, reason: str) -> dict:
         return self.carrier.invalidate_settlement(item_id, reason)
+
+    def confirm_runtime(self, result: dict) -> Optional[str]:
+        """Confirm a PENDING_SWIFT intent so the next demand may lawfully continue.
+
+        The isolated harness has no Swift process; this call is the explicit
+        runtime-application boundary that `restore_continuation` demands.
+        """
+        if not isinstance(result, dict) or result.get("state") != "ADVANCED":
+            return None
+        state = result.get("execution_state") or {}
+        if state.get("runtime_application_status") != "PENDING_SWIFT":
+            return None
+        self.carrier.confirm_runtime_application(state["state_id"])
+        return state["state_id"]
 
     def execute_real_demand(
         self,

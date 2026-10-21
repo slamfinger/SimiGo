@@ -7,6 +7,12 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
   var nextInputError: Error?
   private let representationBackend: MLXExecutionStateBackend?
   private(set) var observedBoundPrefixCount: Int?
+  /// Distinguishes genuine recovery/reuse from re-execution: a recovered ES
+  /// must NOT re-tokenize the seed (which would fabricate a prefix), while
+  /// `continueExecutionCallCount` counts only forward steps actually run.
+  private(set) var tokenizeSeedCallCount = 0
+  private(set) var tokenizeTextCallCount = 0
+  private(set) var continueExecutionCallCount = 0
 
   init(
     seedTokenError: Error? = nil,
@@ -21,11 +27,13 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
   }
 
   func tokenizeText(_ text: String) async throws -> [Int] {
+    tokenizeTextCallCount += 1
     if let nextInputError { throw nextInputError }
     return Array(text.utf8.prefix(24)).map(Int.init)
   }
 
   func tokenizeSeedText(_ text: String) async throws -> [Int] {
+    tokenizeSeedCallCount += 1
     if let seedTokenError { throw seedTokenError }
     return Array(text.utf8.prefix(32)).map(Int.init)
   }
@@ -35,6 +43,7 @@ final class ProductionRuntimeModelExecutorStub: ProductionRuntimeModelContinuati
     nextInputTokens: [Int],
     maxTokens: Int
   ) async throws -> ExecutionContinuationResult {
+    continueExecutionCallCount += 1
     if let representationBackend {
       let bound = try representationBackend.boundPrefix(for: state)
       observedBoundPrefixCount = bound.prefix.count

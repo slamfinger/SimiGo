@@ -14,11 +14,21 @@ import sys
 from pathlib import Path
 
 from carrier_loop import CarrierInformationLoop, digest
-from real_palace_loop import RealPalaceConsumptionLoop, RealPalaceSource
+from real_palace_loop import (
+    RealPalaceConsumptionLoop, RealPalaceSource, structural_validity_policy,
+)
 
-SEALED_SNAPSHOT = "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+# Resolve the sealed snapshot from the repository root, never from the caller's
+# working directory: the harness must be runnable from anywhere.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SEALED_SNAPSHOT = str(
+    REPO_ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+)
 SEALED_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
 VALID_UNTIL = "2030-12-31T23:59:59Z"
+# The isolated harness declares the validity policy it is judged against. It is
+# the same sealed identity for every source so reuse is comparable.
+POLICY = structural_validity_policy()
 
 
 def sha256_file(path: str) -> str:
@@ -41,6 +51,13 @@ def record_state(
     prior_state_id: str | None,
     result: dict,
 ) -> dict:
+    """Append an execution state that already carries its runtime application.
+
+    This isolated harness has no separate runtime process: the state record
+    below *is* the application declaration, so it is written as
+    `APPLIED_SWIFT` instead of leaving a `PENDING_SWIFT` intent that nothing in
+    this process could ever confirm.
+    """
     return carrier.record_execution_state(
         state_id,
         continuation_point="real-palace-integrated-closed-loop",
@@ -50,6 +67,7 @@ def record_state(
         pending_obligations=["continue after verified information reconciliation"],
         next_continuation_point="await-next-execution-demand",
         result_digest=digest(result["result"]),
+        runtime_application_status="APPLIED_SWIFT",
     )
 
 
@@ -69,7 +87,8 @@ def run() -> dict:
         source = RealPalaceSource(snapshot, snapshot_sha256)
         loop = RealPalaceConsumptionLoop(carrier, source)
         loop.materialize_sources(
-            "demand-real-001", count=7, valid_until_utc=VALID_UNTIL
+            "demand-real-001", count=7,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         carrier.define_demand(
             "demand-real-001",
@@ -131,6 +150,10 @@ def run() -> dict:
             pending_obligations=["detect demand drift"],
             next_continuation_point="reject-contract-drift",
             result_digest=digest({"bound": "REAL-1"}),
+            # Same isolated-harness convention as record_state(): the record is
+            # the application declaration, so the drift probe reaches the
+            # demand-digest check instead of stopping at the runtime gate.
+            runtime_application_status="APPLIED_SWIFT",
         )
         carrier.define_demand(
             "demand-drift-probe",
@@ -193,7 +216,8 @@ def run() -> dict:
 
         carrier, loop = open_loop(database, snapshot, snapshot_sha256)
         loop.materialize_sources(
-            "demand-real-001", count=7, valid_until_utc=VALID_UNTIL
+            "demand-real-001", count=7,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         fourth = loop.execute_real_demand(
             "demand-real-001", "advance-004", count=7,
@@ -218,10 +242,10 @@ def run() -> dict:
         )
         fifth = loop.execute_real_demand(
             "demand-real-001", "advance-005", count=7,
-            evaluated_at_utc="2026-10-09T00:04:00Z",
+            evaluated_at_utc="2026-10-09T00:03:00Z",
         )
         run_results["fifth"] = fifth
-        checks["validity_expiration_propagates_to_child"] = (
+        checks["validity_window_shrink_propagates_to_child"] = (
             actions(fifth)["REAL-3"] == "COMPUTE"
             and actions(fifth)["REAL-4"] == "COMPUTE"
             and sum(action == "REUSE" for action in actions(fifth).values()) == 7
@@ -229,6 +253,26 @@ def run() -> dict:
         state = record_state(carrier, "state-005-expiration", prior_state_id, fifth)
         states["expiration"] = state
         prior_state_id = "state-005-expiration"
+
+        # A stale source is a real blocker, proven on its own continuation point
+        # so it cannot disturb the positive chain above.
+        carrier.define_demand(
+            "demand-stale-probe",
+            continuation_point="integrated-stale-probe",
+            pending_obligations=["prove an expired source blocks"],
+            continuation_conditions=["REAL-3 is inside its validity window"],
+            required_item_ids=["REAL-3"],
+        )
+        stale = loop.execute_real_demand(
+            "demand-stale-probe", "advance-stale-probe", count=7,
+            evaluated_at_utc="2026-10-09T00:04:00Z",
+        )
+        run_results["stale"] = stale
+        checks["expired_source_blocks_without_guess"] = (
+            stale["state"] == "BLOCKED_STALE_VALIDITY"
+            and stale["advanced"] is False
+            and stale["validity_failure_item_ids"] == ["REAL-3"]
+        )
         carrier.commit()
         carrier.close()
 
@@ -242,14 +286,39 @@ def run() -> dict:
             and blocked["advanced"] is False
             and blocked["actions"] == []
         )
+        try:
+            carrier.restore_continuation("real-palace-integrated-closed-loop")
+            blocked_restore_refused = False
+            blocked_restore_reason = ""
+        except ValueError as error:
+            blocked_restore_refused = True
+            blocked_restore_reason = str(error)
+        checks["blocked_state_blocks_restore_until_repaired"] = (
+            blocked_restore_refused
+            and blocked_restore_reason
+            == "blocked execution state cannot continue without repair"
+        )
+
+        # Recovery is an explicit append, never a silent overwrite of the
+        # blocked state: the record chain keeps the original cause readable.
+        recovery = record_state(
+            carrier,
+            "state-006-recovered",
+            "advance-malformed",
+            {"result": {
+                "recovered_from": "advance-malformed",
+                "failure_reason": blocked.get("failure_reason"),
+            }},
+        )
+        states["recovered"] = recovery
 
         carrier.put_source(
             "demand-real-001", "ROLLBACK-A", "controlled_failure", "v1", {"value": 1},
-            valid_until_utc=VALID_UNTIL,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         carrier.put_source(
             "demand-real-001", "ROLLBACK-B", "controlled_failure", "v1", {"value": 2},
-            valid_until_utc=VALID_UNTIL,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         carrier.define_demand(
             "demand-atomic-rollback",
@@ -287,11 +356,11 @@ def run() -> dict:
 
         carrier.put_source(
             "demand-real-001", "CRASH-A", "controlled_failure", "v1", {"value": 3},
-            valid_until_utc=VALID_UNTIL,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         carrier.put_source(
             "demand-real-001", "CRASH-B", "controlled_failure", "v1", {"value": 4},
-            valid_until_utc=VALID_UNTIL,
+            valid_until_utc=VALID_UNTIL, validity_policy=POLICY,
         )
         carrier.define_demand(
             "demand-process-crash",
@@ -383,7 +452,7 @@ def run() -> dict:
         )
         checks["execution_state_chain_latest_restorable"] = (
             final.restore_continuation("real-palace-integrated-closed-loop")["state"]["state_id"]
-            == "state-005-expiration"
+            == "state-006-recovered"
         )
         final.close()
 

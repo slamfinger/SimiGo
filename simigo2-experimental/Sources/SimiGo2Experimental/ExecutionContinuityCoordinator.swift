@@ -113,6 +113,43 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
         public let position: ExecutionPosition
     }
 
+    /// Cross-layer settlement checkpoint: the durable link between what the
+    /// Execution Space believes it settled and what the Information Space
+    /// actually recorded. The IS side is captured from the authoritative
+    /// confirmation record, so the ORIGINAL advancement (`isOriginalStateID`)
+    /// and its `:runtime-applied` CONFIRMATION (`isConfirmationStateID`) are
+    /// kept DISTINCT — recovery must compare the ES against the confirmation
+    /// record whose `prior_state_id` points back at the advancement, never the
+    /// raw advancement id alone. `resultDigest` and `validityBasis` (the IS
+    /// demand-contract digest) are the content/validity anchors.
+    public struct SettlementCheckpoint: Equatable, Sendable {
+        public let executionID: ExecutionID
+        public let position: ExecutionPosition
+        public let lastSettledAdvancementID: String
+        public let isOriginalStateID: String
+        public let isConfirmationStateID: String
+        public let resultDigest: String
+        public let validityBasis: String
+
+        public init(
+            executionID: ExecutionID,
+            position: ExecutionPosition,
+            lastSettledAdvancementID: String,
+            isOriginalStateID: String,
+            isConfirmationStateID: String,
+            resultDigest: String,
+            validityBasis: String
+        ) {
+            self.executionID = executionID
+            self.position = position
+            self.lastSettledAdvancementID = lastSettledAdvancementID
+            self.isOriginalStateID = isOriginalStateID
+            self.isConfirmationStateID = isConfirmationStateID
+            self.resultDigest = resultDigest
+            self.validityBasis = validityBasis
+        }
+    }
+
     private let backend: any ExecutionStateBackend
     private let operationGate = CoordinatorAsyncOperationGate()
     /// The async gate serializes writers across suspension points. This lock
@@ -123,6 +160,10 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
     /// Representation history per execution: appended on every bind/capture/
     /// derive; restore finds its target here.
     private var representationHistory: [ExecutionID: [ExecutionRepresentation]] = [:]
+    /// Cross-layer settlement checkpoints keyed by execution, persisted through
+    /// the durable store. Recovery uses these to prove the ES matches IS's latest
+    /// settled state before any new side effect.
+    private var settlementCheckpoints: [ExecutionID: SettlementCheckpoint] = [:]
     /// Executions whose backend binding may not correspond to the logical
     /// handle position: set ONLY when a restore's compensation rebind failed
     /// (the physical rollback could not undo the target rebind), cleared
@@ -164,6 +205,7 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             representationHistory[representation.executionID, default: []]
                 .append(representation)
         }
+        self.settlementCheckpoints = loaded.settlementCheckpoints
     }
 
     private func appendRecord(
@@ -201,7 +243,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                     try stateStore.replace(
                         handles: Array(updatedHandles.values),
                         lifecycleRecords: records + [record],
-                        representations: updatedRepresentationHistory.flatMap(\.value))
+                        representations: updatedRepresentationHistory.flatMap(\.value),
+                        settlementCheckpoints: settlementCheckpoints)
                 } catch {
                     // A successful backend restore followed by a failed
                     // durable commit leaves logical/physical correspondence
@@ -264,7 +307,8 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
                         try stateStore.replace(
                             handles: Array(handles.values),
                             lifecycleRecords: records,
-                            representations: updatedHistory.flatMap(\.value))
+                            representations: updatedHistory.flatMap(\.value),
+                            settlementCheckpoints: settlementCheckpoints)
                     } catch {
                         bindingUncertain.insert(executionID)
                         return .failure(error)
@@ -282,6 +326,88 @@ public final class ExecutionContinuityCoordinator: ExecutionContinuityRuntime, @
             }
             if case .failure = result {
                 throw CoordinatorError.durableStateCommitFailed(executionID)
+            }
+        }
+    }
+
+    /// Recovery-facing rebind: after a durable store has restored the logical
+    /// handle and its representation history into a fresh coordinator, push the
+    /// persisted representation at `position` back into a (new) backend whose
+    /// physical binding is empty. This re-establishes the physical↔logical
+    /// correspondence from ALREADY-SETTLED durable state — it does not re-run
+    /// generation and does not re-tokenize a seed. Returns false when no
+    /// persisted representation exists at that position, letting callers
+    /// distinguish recovering settled work from a genuine first-ever bind.
+    /// It appends no lifecycle record: the logical handle is unchanged.
+    func restorePersistedBinding(
+        executionID: ExecutionID,
+        position: ExecutionPosition
+    ) async throws -> Bool {
+        try await operationGate.withPermit { [self] in
+            guard stateLock.withLock({ handles[executionID] != nil }) else {
+                throw CoordinatorError.unknownExecution(executionID)
+            }
+            let history = stateLock.withLock { representationHistory[executionID] ?? [] }
+            guard let representation = history.last(where: { $0.position == position }) else {
+                return false
+            }
+            try await backend.restoreRepresentation(representation)
+            // Rebinding the representation for the handle's current position
+            // re-establishes the correspondence, clearing any residual doubt.
+            stateLock.withLock {
+                if handles[executionID]?.position == position {
+                    bindingUncertain.remove(executionID)
+                }
+            }
+            return true
+        }
+    }
+
+    /// Recovery-facing read of the persisted cross-layer settlement checkpoint
+    /// for an execution. Returns nil when the execution never completed a
+    /// confirmed settlement, which recovery treats as fail-closed.
+    public func settlementCheckpoint(for id: ExecutionID) -> SettlementCheckpoint? {
+        stateLock.withLock { settlementCheckpoints[id] }
+    }
+
+    /// Read-only probe: does a persisted physical representation exist at
+    /// `position` for `executionID`? A durable resume uses this to confirm the
+    /// settled carrier is recoverable BEFORE advancing the Information Space, so
+    /// a missing carrier fails closed instead of silently fabricating a prefix.
+    /// Appends no record and mutates nothing.
+    func hasPersistedRepresentation(
+        executionID: ExecutionID,
+        position: ExecutionPosition
+    ) -> Bool {
+        stateLock.withLock {
+            (representationHistory[executionID] ?? []).contains { $0.position == position }
+        }
+    }
+
+    /// Persist the ES↔IS settlement checkpoint once a runtime application has
+    /// been CONFIRMED on the Information Space. It must be carried on every
+    /// later durable commit so lifecycle writes never drop it.
+    func recordSettlementCheckpoint(_ checkpoint: SettlementCheckpoint) async throws {
+        try await operationGate.withPermit { [self] in
+            let result: Result<Void, Error> = stateLock.withLock {
+                var updated = settlementCheckpoints
+                updated[checkpoint.executionID] = checkpoint
+                if let stateStore {
+                    do {
+                        try stateStore.replace(
+                            handles: Array(handles.values),
+                            lifecycleRecords: records,
+                            representations: representationHistory.flatMap(\.value),
+                            settlementCheckpoints: updated)
+                    } catch {
+                        return .failure(error)
+                    }
+                }
+                settlementCheckpoints = updated
+                return .success(())
+            }
+            if case .failure = result {
+                throw CoordinatorError.durableStateCommitFailed(checkpoint.executionID)
             }
         }
     }

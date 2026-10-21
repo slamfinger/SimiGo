@@ -46,11 +46,30 @@ public final class DurableExecutionStateStore: @unchecked Sendable {
         let payload: PersistedRepresentationPayload
     }
 
+    /// Persisted form of the cross-layer settlement checkpoint. It links the
+    /// Execution Space's view of what it settled (execution id, position, last
+    /// advancement) to the Information Space's authoritative record of the SAME
+    /// settlement: the ORIGINAL advancement `state_id`, its `:runtime-applied`
+    /// CONFIRMATION id, the result digest and the demand-contract validity
+    /// basis. Recovery compares a fresh IS read against these so an ES that is
+    /// identity-correct but no longer matches IS's latest settled state is
+    /// rejected before any new side effect.
+    struct SettlementCheckpointState: Codable, Equatable {
+        let executionID: String
+        let position: Int64
+        let lastSettledAdvancementID: String
+        let isOriginalStateID: String
+        let isConfirmationStateID: String
+        let resultDigest: String
+        let validityBasis: String
+    }
+
     struct Snapshot: Codable, Equatable {
         let version: Int
         let handles: [HandleState]
         let lifecycle: [LifecycleState]
         let representations: [RepresentationState]?
+        let settlementCheckpoints: [SettlementCheckpointState]?
     }
 
     struct HandleState: Codable, Equatable {
@@ -67,6 +86,7 @@ public final class DurableExecutionStateStore: @unchecked Sendable {
         public let handles: [ExecutionStateHandle]
         public let lifecycleRecords: [ExecutionContinuityCoordinator.LifecycleRecord]
         public let representations: [ExecutionRepresentation]
+        public let settlementCheckpoints: [ExecutionID: ExecutionContinuityCoordinator.SettlementCheckpoint]
     }
 
     public static let currentVersion = 1
@@ -90,7 +110,9 @@ public final class DurableExecutionStateStore: @unchecked Sendable {
 
     private func loadUnlocked() throws -> LoadedState {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            return LoadedState(handles: [], lifecycleRecords: [], representations: [])
+            return LoadedState(
+                handles: [], lifecycleRecords: [], representations: [],
+                settlementCheckpoints: [:])
         }
         let data = try Data(contentsOf: fileURL)
         let snapshot: Snapshot
@@ -165,16 +187,31 @@ public final class DurableExecutionStateStore: @unchecked Sendable {
                 payload: payload)
         }
 
+        var settlementCheckpoints: [ExecutionID: ExecutionContinuityCoordinator.SettlementCheckpoint] = [:]
+        for state in snapshot.settlementCheckpoints ?? [] {
+            let id = ExecutionID(state.executionID)
+            settlementCheckpoints[id] = ExecutionContinuityCoordinator.SettlementCheckpoint(
+                executionID: id,
+                position: ExecutionPosition(state.position),
+                lastSettledAdvancementID: state.lastSettledAdvancementID,
+                isOriginalStateID: state.isOriginalStateID,
+                isConfirmationStateID: state.isConfirmationStateID,
+                resultDigest: state.resultDigest,
+                validityBasis: state.validityBasis)
+        }
+
         return LoadedState(
             handles: decodedHandles,
             lifecycleRecords: records,
-            representations: representations)
+            representations: representations,
+            settlementCheckpoints: settlementCheckpoints)
     }
 
     public func replace(
         handles: [ExecutionStateHandle],
         lifecycleRecords: [ExecutionContinuityCoordinator.LifecycleRecord],
-        representations: [ExecutionRepresentation] = []
+        representations: [ExecutionRepresentation] = [],
+        settlementCheckpoints: [ExecutionID: ExecutionContinuityCoordinator.SettlementCheckpoint] = [:]
     ) throws {
         guard representations.isEmpty || payloadCodec != nil else {
             throw StoreError.malformedState("representation codec required")
@@ -213,7 +250,19 @@ public final class DurableExecutionStateStore: @unchecked Sendable {
                     resultContinuationNextInput: record.resultContinuation.nextInput,
                     resultContinuationID: record.resultContinuation.continuationID)
             },
-            representations: encodedRepresentations)
+            representations: encodedRepresentations,
+            settlementCheckpoints: settlementCheckpoints
+                .sorted { $0.key.rawValue < $1.key.rawValue }
+                .map { _, checkpoint in
+                    SettlementCheckpointState(
+                        executionID: checkpoint.executionID.rawValue,
+                        position: checkpoint.position.value,
+                        lastSettledAdvancementID: checkpoint.lastSettledAdvancementID,
+                        isOriginalStateID: checkpoint.isOriginalStateID,
+                        isConfirmationStateID: checkpoint.isConfirmationStateID,
+                        resultDigest: checkpoint.resultDigest,
+                        validityBasis: checkpoint.validityBasis)
+                })
         let data = try JSONEncoder.outputFormatting(.sortedKeys).encode(snapshot)
         lock.lock()
         defer { lock.unlock() }

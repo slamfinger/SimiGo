@@ -11,10 +11,18 @@ import tempfile
 from pathlib import Path
 
 from carrier_loop import CarrierInformationLoop
-from real_palace_loop import RealPalaceConsumptionLoop, RealPalaceSource
+from real_palace_loop import (
+    RealPalaceConsumptionLoop, RealPalaceSource, structural_validity_policy,
+)
 
-SEALED_SNAPSHOT = "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+# Resolve the sealed snapshot from the repository root, never from the caller's
+# working directory: the harness must be runnable from anywhere.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SEALED_SNAPSHOT = str(
+    REPO_ROOT / "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"
+)
 EXPECTED_SHA256 = "8b3856e2e4e3a1bd87580afc1ab42094e9a952e0985952323e02ae6595ce1444"
+VALID_UNTIL = "2030-12-31T23:59:59Z"
 
 
 def sha256_file(path: str) -> str:
@@ -31,6 +39,23 @@ def open_loop(database: str, snapshot: str, snapshot_sha256: str):
     return carrier, RealPalaceConsumptionLoop(carrier, source)
 
 
+def record_advance(prefix: str, result: dict, loop, checks: dict) -> None:
+    """Record whether a demand advanced and whether its runtime was confirmed.
+
+    A non-ADVANCED result carries neither computed nor reused item ids; reading
+    them blindly would replace the real blocking cause with a KeyError.
+    """
+    checks[f"{prefix}_advanced"] = result.get("state") == "ADVANCED"
+    if checks[f"{prefix}_advanced"]:
+        checks[f"{prefix}_runtime_confirmed"] = loop.confirm_runtime(result) is not None
+    else:
+        checks[f"{prefix}_runtime_confirmed"] = False
+
+
+def item_ids(result: dict, key: str) -> list:
+    return result.get(key) or []
+
+
 def run() -> dict:
     checks = {}
     run_results = {}
@@ -44,10 +69,14 @@ def run() -> dict:
         carrier = CarrierInformationLoop.create(database)
         source = RealPalaceSource(copied_snapshot, initial_sha256)
         loop = RealPalaceConsumptionLoop(carrier, source)
+        # The isolated harness declares the window and the policy it is judged
+        # against, so the forward path never starts out as BLOCKED.
+        policy = structural_validity_policy()
         records = loop.materialize_sources(
             "demand-real-001",
             count=7,
-            valid_until_utc="2030-12-31T23:59:59Z",
+            valid_until_utc=VALID_UNTIL,
+            validity_policy=policy,
         )
         carrier.define_demand(
             "demand-real-001",
@@ -66,7 +95,8 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:00:00Z",
         )
         run_results["first"] = first
-        checks["first_run_computes_all_nine"] = len(first["computed_item_ids"]) == 9
+        record_advance("first", first, loop, checks)
+        checks["first_run_computes_all_nine"] = len(item_ids(first, "computed_item_ids")) == 9
         carrier.commit()
         carrier.close()
         source.close()
@@ -79,7 +109,8 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:01:00Z",
         )
         run_results["second"] = second
-        checks["second_run_reuses_all_nine"] = len(second["reused_item_ids"]) == 9
+        record_advance("second", second, reuse_loop, checks)
+        checks["second_run_reuses_all_nine"] = len(item_ids(second, "reused_item_ids")) == 9
         reuse_carrier.close()
 
         connection = sqlite3.connect(copied_snapshot)
@@ -97,7 +128,8 @@ def run() -> dict:
         changed_loop.materialize_sources(
             "demand-real-001",
             count=7,
-            valid_until_utc="2030-12-31T23:59:59Z",
+            valid_until_utc=VALID_UNTIL,
+            validity_policy=policy,
         )
         third = changed_loop.execute_real_demand(
             "demand-real-001",
@@ -106,6 +138,7 @@ def run() -> dict:
             evaluated_at_utc="2026-10-09T00:02:00Z",
         )
         run_results["third"] = third
+        record_advance("third", third, changed_loop, checks)
         checks["changed_source_recomputes_only_REAL_1"] = (
             actions(third)["REAL-COLLECTION"] == "REUSE"
             and actions(third)["REAL-SEGMENT"] == "REUSE"
@@ -143,6 +176,10 @@ def run() -> dict:
         "d001_executed": False,
         "checks": checks,
         "run_results": run_results,
+        "declared_validity": {
+            "valid_until_utc": VALID_UNTIL,
+            "validity_policy_sha256": policy["policy_sha256"],
+        },
         "result": "PASS" if checks["real_source_change_loop_end_to_end"] else "FAIL",
     }
 
