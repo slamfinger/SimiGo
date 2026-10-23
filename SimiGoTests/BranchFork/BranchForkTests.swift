@@ -5,6 +5,7 @@ import MLXLLM
 import MLXHuggingFace
 import Tokenizers
 import SimiGo2Experimental
+import SimiGoRuntimeContract
 @testable import SimiGo
 
 /// Branch-Fork 能力回归（v1.4 转正）。
@@ -638,8 +639,8 @@ final class BranchForkTests: XCTestCase {
 
     // MARK: - 辅助
 
-    private static let traceLogURL = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+    private static let traceLogURL = SimiGoPaths.logs
+        .appendingPathComponent("native_mlx_trace.log")
 
     private static func field(
         in lines: [String], sessionKey: String, _ name: String

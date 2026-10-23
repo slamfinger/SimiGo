@@ -80,8 +80,7 @@ nonisolated final class NativeMLXPrefixPool: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         if let store { return store }
-        let root = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/prefix-pool")
+        let root = SimiGoRuntimeCachePaths.prefixPoolRoot
         let store = PrefixSnapshotStore(
             root: root, pool: ExecutionStatePrefixPool(
                 tokenBudget: RuntimeTuning.prefixPoolTokenBudget,

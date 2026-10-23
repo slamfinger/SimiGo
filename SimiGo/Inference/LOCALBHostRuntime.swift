@@ -1,5 +1,6 @@
 import Foundation
 import LOCALBCore
+import SimiGoRuntimeContract
 
 /// Production lifecycle adapter between the LOCALB first-run ceremony and
 /// every default HTTPServer construction site (NativeMLX, OversizedRuntime,
@@ -21,9 +22,9 @@ enum LOCALBHostRuntime {
 
     /// Standard host directory: `~/.simigo/localb`.
     static func defaultHostDirectory() -> URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo", isDirectory: true)
-            .appendingPathComponent("localb", isDirectory: true)
+        // Same managed-root resolver as the rest of the product: SIMIGO_HOME moves it
+        // for tests/experiments, and with no override it is <home>/.simigo/localb.
+        SimiGoPaths.managedRoot().appendingPathComponent("localb", isDirectory: true)
     }
 
     static func registryRoot(in hostDirectory: URL) -> URL {

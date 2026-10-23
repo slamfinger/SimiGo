@@ -2,6 +2,7 @@ import XCTest
 import MLXLMCommon
 import MLX
 import SimiGo2Experimental
+import SimiGoRuntimeContract
 
 @testable import SimiGo
 
@@ -65,8 +66,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         // under full-suite memory pressure the flush can trail the assert by
         // a beat - poll briefly instead of racing it.
         let deadline = Date().addingTimeInterval(timeout)
-        let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        let url = SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
         repeat {
             if let data = try? Data(contentsOf: url), data.count > offset,
                 data.suffix(data.count - offset).range(of: Data(marker.utf8)) != nil {
@@ -80,8 +80,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
     private func traceLogLineContains(
         _ markers: [String], sinceByteOffset offset: Int
     ) -> Bool {
-        let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        let url = SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
         guard let data = try? Data(contentsOf: url), data.count > offset else {
             return false
         }
@@ -98,8 +97,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
     /// (`mode=` / `cacheEff=`). Fails the test when the line is absent, so
     /// the D2 negative gate above can never pass vacuously.
     private func childDeltaPrefillTokens(sinceByteOffset offset: Int) throws -> Int {
-        let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        let url = SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
         let data = try Data(contentsOf: url)
         let suffix = String(decoding: data.suffix(data.count - offset), as: UTF8.self)
         let line = try XCTUnwrap(
@@ -123,8 +121,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
     }
 
     private func traceLogSize() -> Int {
-        let url = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".simigo/logs/native_mlx_trace.log")
+        let url = SimiGoPaths.logs.appendingPathComponent("native_mlx_trace.log")
         let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
         return attributes?[.size] as? Int ?? 0
     }
@@ -242,8 +239,7 @@ final class PrefixPoolDailyPathE2ETests: XCTestCase {
         // --- Restart-warm: a fresh store over the same disk root admits
         //     the committed boundary without any live session. ---
         let freshStore = PrefixSnapshotStore(
-            root: FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".simigo/prefix-pool"),
+            root: SimiGoRuntimeCachePaths.prefixPoolRoot,
             pool: ExecutionStatePrefixPool(tokenBudget: 200_000))
         let rescanned = try freshStore.rescan()
         XCTAssertGreaterThanOrEqual(rescanned, 1, "disk boundaries survive restart")

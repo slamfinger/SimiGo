@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import SimiGoRuntimeContract
 
 struct Settings: View {
     @EnvironmentObject var svc: Service
@@ -14,6 +15,16 @@ struct Settings: View {
         let build = info?["CFBundleVersion"] as? String ?? "?"
         return "SimiGo v\(marketing) (build \(build))"
     }()
+
+
+    private func engineStageLabel(_ stage: EngineStage) -> String {
+        switch stage {
+        case .absent: return "未检出"
+        case .downloaded: return "已下载（未构建）"
+        case .built: return "已构建（未适配）"
+        case .adapted: return "已适配 · 可用"
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -115,6 +126,50 @@ struct Settings: View {
                         Toggle("Jinja", isOn: $svc.config.jinja)
                         Toggle("FlashAttn", isOn: $svc.config.flashAttention)
                         Toggle("MTP", isOn: $svc.config.useMTP)
+                    }
+                }
+
+                // MARK: - 外部引擎 · 安装选择
+                sectionBox("外部引擎 · 安装选择") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Picker("引擎", selection: $envMgr.selectedEngineID) {
+                            ForEach(envMgr.availableEngines, id: \.id) { engine in
+                                Text(engine.displayName).tag(engine.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Text("状态：\(engineStageLabel(envMgr.engineStage(for: envMgr.selectedEngineID)))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+
+                        Text("下载、构建、与 SimiGo 适配是三个独立状态；外部服务端（如 Ollama / LM Studio / SGLang）由 SimiGo 采用而非构建，llama.cpp 等源码引擎按锁定版本配方构建。")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        // requirement②：选择外部服务端必须真正接入推理，而不只是记录。
+                        // 复用已测的 OpenAI 兼容云端运行时：把采用端点/模型写入并切到「云端」。
+                        if let ep = envMgr.adoptedEndpoint(for: envMgr.selectedEngineID) {
+                            Divider().padding(.vertical, 2)
+                            Text("采用端点：\(ep.baseURL)\(ep.defaultModel.map { " · 默认模型 \($0)" } ?? "")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Button("采用此外部服务端（填入云端运行时并选为当前后端）") {
+                                _ = envMgr.applyExternalAdoption(of: envMgr.selectedEngineID, to: svc)
+                            }
+                            .buttonStyle(.bordered)
+                            Text("将「云端 API」的 Base URL 指向该本机服务端；到上方『云端 API』点「启动」即经此外部服务端推理（Ollama/LM Studio 均兼容 OpenAI 协议）。")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else if envMgr.availableEngines.first(where: { $0.id == envMgr.selectedEngineID })?.kind == .externalServer {
+                            // fail-closed：外部服务端但未声明采用端点（如 SGLang）——绝不臆造 URL。
+                            Text("该外部服务端未声明采用端点（fail-closed）：请在引擎清单 engine-recipes.json 指定 endpointBaseURL 后再采用。")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
 

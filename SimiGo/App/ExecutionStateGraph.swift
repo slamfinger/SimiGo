@@ -1,6 +1,7 @@
 import CryptoKit
 import Combine
 import SwiftUI
+import SimiGoRuntimeContract
 
 /// SimiGo v2.1 Reference App.
 ///
@@ -61,11 +62,25 @@ struct ExecutionCheckpoint: Identifiable, Codable, Hashable {
     let checksum: String
 }
 
+/// A native-authorized, settled Information-Space result committed to the durable
+/// graph. It stores the canonical validated payload and its digest only — never
+/// the raw model text — and can only be produced through the settlement authority.
+struct SettlementReceipt: Identifiable, Codable, Hashable {
+    let id: UUID
+    let stateID: String
+    let schemaVersion: String
+    let payload: Data
+    let payloadDigest: String
+    let settledAt: Date
+}
+
 struct ExecutionGraphDocument: Codable, Hashable {
     var contractVersion = ESContract.version
     var representationID = ESContract.representationID
     var states: [ExecutionStateRecord] = []
     var checkpoints: [ExecutionCheckpoint] = []
+    /// Optional for backward compatibility with pre-settlement graphs.
+    var settlements: [SettlementReceipt]? = nil
 }
 
 enum ExecutionGraphError: Error, Equatable {
@@ -81,32 +96,72 @@ final class ExecutionStateGraphStore: ObservableObject {
     @Published var operationError: String?
 
     private let storeURL: URL
+    private let dbURL: URL
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
+
+    // MARK: - SQLite ES/IS authoritative store
+    //
+    // SQLite is the authoritative physical home for execution states, native
+    // authorized settlements, and external file / agent-session indexes. Opening
+    // is lazy and NON-FATAL: a corrupt or unwritable database is recorded in
+    // `persistError` and NEVER silently overwritten (fail closed). The native
+    // settlement gate has already refused unsafe values upstream, so this layer
+    // only commits results that cleared that gate.
+    private(set) var esis: SimiGoESISDatabase?
+    private var esisOpenAttempted = false
+    private var didImportLegacy = false
+    @Published private(set) var persistError: String?
+    private var legacyJSONData: Data?
 
     var states: [ExecutionStateRecord] { document.states }
     var checkpoints: [ExecutionCheckpoint] { document.checkpoints }
 
-    init(storeURL: URL = ExecutionStateGraphStore.defaultStoreURL()) {
+    init(storeURL: URL = ExecutionStateGraphStore.defaultStoreURL(),
+         dbURL: URL = SimiGoPaths.databaseURL) {
         self.storeURL = storeURL
+        self.dbURL = dbURL
         encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         decoder = JSONDecoder()
 
-        guard FileManager.default.fileExists(atPath: storeURL.path) else { return }
-        do {
-            document = try decoder.decode(ExecutionGraphDocument.self, from: Data(contentsOf: storeURL))
-            guard document.contractVersion == ESContract.version else {
-                throw ExecutionGraphError.invalidCheckpoint("contract version mismatch")
+        // Legacy JSON is now ONLY a migration source: its bytes are captured, but
+        // the file is never deleted or overwritten in place until a validated
+        // hand-off to the authoritative store has provably covered it.
+        if FileManager.default.fileExists(atPath: storeURL.path) {
+            legacyJSONData = try? Data(contentsOf: storeURL)
+        }
+
+        // SQLite is the authoritative read store. Open it (importing any legacy
+        // graph transactionally + validated) and rebuild the live graph FROM
+        // SQLite — never from JSON — so the two can never drift apart.
+        if let db = ensureESIS() {
+            do {
+                let g = try db.readGraph()
+                let receipts = try db.readSettlementReceipts()
+                document = Self.graphDocument(states: g.states, checkpoints: g.checkpoints,
+                                              receipts: receipts)
+                retireLegacyJSONIfNeeded(authoritativeIDs: g.states.map { $0.id })
+            } catch {
+                loadError = "无法从 SQLite 权威库加载执行图：\(error.localizedDescription)"
+                document = ExecutionGraphDocument()
             }
-        } catch {
-            // Fail closed: never overwrite an unreadable durable graph.
-            loadError = "无法加载持久图：\(error.localizedDescription)"
-            document = ExecutionGraphDocument()
+        } else {
+            // Fail-closed fallback: the authority is corrupt/unwritable. Serve the
+            // read-only legacy JSON so the app still opens; never retire it here.
+            loadLegacyJSONFallback()
         }
     }
 
     nonisolated static func defaultStoreURL() -> URL {
+        // This store lives OUTSIDE the managed .simigo root (Application Support), so
+        // SIMIGO_HOME does not move it. Without an explicit hook, a test run rewrites the
+        // operator's real reference graph - the second non-isolatable sink found in the
+        // RC1 audit. The override is opt-in; the default location is unchanged.
+        if let override = ProcessInfo.processInfo.environment["SIMIGO_STATE_GRAPH_STORE"],
+           !override.isEmpty {
+            return URL(fileURLWithPath: (override as NSString).standardizingPath)
+        }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base
             .appendingPathComponent("SimiGo", isDirectory: true)
@@ -304,6 +359,130 @@ final class ExecutionStateGraphStore: ObservableObject {
         }
     }
 
+    // MARK: - Native-authorized settlement (pre-settlement authority)
+
+    /// Settle a producer's semantic result as a durable Information-Space record.
+    ///
+    /// `SimiGoSettlementAuthority` (native, MLX-free) is the single gate: it runs
+    /// BEFORE any `mutate`/`persist`, so a contract rejection — unknown constraint,
+    /// missing binding, canonicalization failure, or digest/derivation mismatch —
+    /// throws here and NOTHING is written. There is no Python fallback and no
+    /// partially settled record. Only the canonical validated payload is committed.
+    @discardableResult
+    func settleValidatedResult(
+        generatedText: String,
+        contractJSON: Data,
+        verifiedBindings: [String: NativeContractValue],
+        boundToState state: ExecutionStateRecord
+    ) throws -> SimiGoSettlementAuthority.SettledResult {
+        let settled = try SimiGoSettlementAuthority.authorize(
+            generatedText: generatedText,
+            contractJSON: contractJSON,
+            verifiedBindings: verifiedBindings
+        )
+        try mutate { document in
+            guard document.states.contains(where: { $0.id == state.id }) else {
+                throw ExecutionGraphError.invalidTransition("state not found")
+            }
+            let receipt = SettlementReceipt(
+                id: UUID(),
+                stateID: state.id,
+                schemaVersion: settled.schemaVersion,
+                payload: settled.validatedPayload,
+                payloadDigest: settled.payloadDigest,
+                settledAt: settled.settledAt
+            )
+            document.settlements = (document.settlements ?? []) + [receipt]
+        }
+        commitSettlementToAuthoritativeStore(settled, state: state)
+        return settled
+    }
+
+    /// The declared result-contract for reference-state settlement.
+    ///
+    /// A single required `content` field is extracted from a `RESULT=` line and is
+    /// constrained with `equals_binding` to commit to an Information-Space value
+    /// (`next_input`) that is already persisted with the graph. It exercises the
+    /// production-native constraint family only, so the gate never falls back to a
+    /// Python validator, and an unknown/mismatched value refuses fail-closed.
+    static let referenceResultContractJSON: Data = Data("{\"schema_version\":\"simigo.result-contract/v1\",\"fields\":{\"content\":{\"pattern\":\"^RESULT=(.+)$\",\"capture_group\":1,\"type\":\"string\",\"normalize\":\"trim\",\"nonempty\":true}},\"constraints\":[{\"kind\":\"equals_binding\",\"field\":\"content\",\"binding\":\"next_input\"}]}".utf8)
+
+    /// Production settlement entry for a reference state.
+    ///
+    /// This is the real production caller of `settleValidatedResult` (and therefore
+    /// of `SimiGoSettlementAuthority` / `NativeProducerResultContractGate` / the
+    /// authoritative SQLite commit). The producer's generated text is bound to the
+    /// state's already-settled `nextInput` — an IS value persisted with the graph.
+    /// If the generated content does not commit to that value, the native gate
+    /// throws BEFORE `settleValidatedResult` mutates or writes anything, so the
+    /// action is fail-closed end to end and produces no partially settled record.
+    @discardableResult
+    func settleProducerResult(
+        generatedText: String,
+        boundToState state: ExecutionStateRecord
+    ) throws -> SimiGoSettlementAuthority.SettledResult {
+        let bindings: [String: NativeContractValue] = ["next_input": .string(state.nextInput)]
+        return try settleValidatedResult(
+            generatedText: generatedText,
+            contractJSON: Self.referenceResultContractJSON,
+            verifiedBindings: bindings,
+            boundToState: state
+        )
+    }
+
+    // MARK: - Authoritative SQLite commit + legacy migration
+
+    /// Lazily open the authoritative SQLite store, run schema migrations, and on
+    /// first open transactionally migrate any pre-existing JSON reference graph
+    /// (validated row-by-row inside `importLegacyGraph`, rolled back on mismatch).
+    private func ensureESIS() -> SimiGoESISDatabase? {
+        if esisOpenAttempted { return esis }
+        esisOpenAttempted = true
+        do {
+            let db = try SimiGoESISDatabase(url: dbURL)
+            try db.runMigrations()
+            if (try db.count("execution_states")) == 0,
+               let legacy = legacyJSONData,
+               !(try JSONDecoder().decode(ExecutionGraphDocument.self, from: legacy)).states.isEmpty {
+                _ = try db.importLegacyGraph(jsonData: legacy, sourceLabel: storeURL.lastPathComponent)
+                didImportLegacy = true
+            }
+            esis = db
+            persistError = nil
+        } catch {
+            // Fail closed: never overwrite an unreadable / unwritable authority.
+            esis = nil
+            persistError = "SQLite ES/IS 不可用：\(error.localizedDescription)"
+        }
+        return esis
+    }
+
+    /// Mirror a gate-cleared settlement into the authoritative SQLite store.
+    /// Non-fatal to the UI graph: a write failure is surfaced via `persistError`
+    /// but never rolls back the already-authorized native settlement.
+    private func commitSettlementToAuthoritativeStore(
+        _ settled: SimiGoSettlementAuthority.SettledResult,
+        state: ExecutionStateRecord
+    ) {
+        guard let db = ensureESIS() else { return }
+        do {
+            try db.recordExecutionState(
+                id: state.id,
+                parentID: state.parentID,
+                modelIdentity: state.modelIdentity,
+                position: state.position,
+                continuationID: state.continuationID,
+                anchor: state.anchor,
+                lifecycle: state.lifecycle.rawValue,
+                createdAt: state.createdAt
+            )
+            _ = try db.recordNativeSettlement(settled, stateID: state.id)
+            persistError = nil
+        } catch {
+            persistError = "结算未能写入 SQLite ES/IS：\(error.localizedDescription)"
+        }
+    }
+
     // MARK: - Atomic transition helper
 
     private func mutate<T>(_ change: (inout ExecutionGraphDocument) throws -> T) throws -> T {
@@ -320,12 +499,109 @@ final class ExecutionStateGraphStore: ObservableObject {
     }
 
     private func persist(_ document: ExecutionGraphDocument) throws {
+        // Write authority: the live execution graph (ES) is committed to SQLite.
+        // Settlements (IS) are owned by the native gate and written separately, so
+        // they are intentionally NOT part of this graph write.
+        if let db = ensureESIS() {
+            do {
+                let states = document.states.map {
+                    SimiGoESISDatabase.GraphState(
+                        id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
+                        createdAt: $0.createdAt, position: $0.position,
+                        continuationID: $0.continuationID, nextInput: $0.nextInput,
+                        anchor: $0.anchor, prefix: $0.prefix, lifecycle: $0.lifecycle.rawValue,
+                        checkpointIDs: $0.checkpointIDs)
+                }
+                let cps = document.checkpoints.map {
+                    SimiGoESISDatabase.GraphCheckpoint(
+                        id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
+                        position: $0.position, continuationID: $0.continuationID,
+                        nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
+                        createdAt: $0.createdAt, checksum: $0.checksum)
+                }
+                try db.writeGraph(states: states, checkpoints: cps)
+                persistError = nil
+                retireLegacyJSONIfNeeded(authoritativeIDs: document.states.map { $0.id })
+                return
+            } catch {
+                persistError = "执行图未能写入 SQLite 权威库：\(error.localizedDescription)"
+                // Fall through to the JSON safety net so no durable state is lost.
+            }
+        }
         do {
             let directory = storeURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try encoder.encode(document).write(to: storeURL, options: [.atomic])
         } catch {
             throw ExecutionGraphError.storeUnavailable(error.localizedDescription)
+        }
+    }
+
+    // MARK: - SQLite <-> document mapping and safe JSON retirement
+
+    /// Rebuild the app's working document from authoritative SQLite rows.
+    private static func graphDocument(
+        states: [SimiGoESISDatabase.GraphState],
+        checkpoints: [SimiGoESISDatabase.GraphCheckpoint],
+        receipts: [SimiGoESISDatabase.SettlementReceiptRow]
+    ) -> ExecutionGraphDocument {
+        var doc = ExecutionGraphDocument()
+        doc.states = states.map {
+            ExecutionStateRecord(
+                id: $0.id, parentID: $0.parentID, modelIdentity: $0.modelIdentity,
+                createdAt: $0.createdAt, position: $0.position,
+                continuationID: $0.continuationID, nextInput: $0.nextInput,
+                anchor: $0.anchor, prefix: $0.prefix,
+                lifecycle: ExecutionLifecycle(rawValue: $0.lifecycle) ?? .active,
+                checkpointIDs: $0.checkpointIDs)
+        }
+        doc.checkpoints = checkpoints.map {
+            ExecutionCheckpoint(
+                id: $0.id, stateID: $0.stateID, modelIdentity: $0.modelIdentity,
+                position: $0.position, continuationID: $0.continuationID,
+                nextInput: $0.nextInput, anchor: $0.anchor, prefix: $0.prefix,
+                createdAt: $0.createdAt, checksum: $0.checksum)
+        }
+        doc.settlements = receipts.map {
+            SettlementReceipt(
+                id: $0.id, stateID: $0.stateID, schemaVersion: $0.schemaVersion,
+                payload: $0.payload, payloadDigest: $0.payloadDigest, settledAt: $0.settledAt)
+        }
+        return doc
+    }
+
+    /// Retire the legacy JSON only when it is PROVABLY covered by the authority:
+    /// it was just imported, it holds no live states, or every one of its state ids
+    /// already exists in SQLite. Otherwise the file is preserved untouched (SQLite
+    /// still wins every read), so a validated hand-off can never lose data. The
+    /// retirement itself is a rename that PRESERVES bytes — never a delete or an
+    /// in-place overwrite.
+    private func retireLegacyJSONIfNeeded(authoritativeIDs: [String]) {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: storeURL.path), let raw = legacyJSONData else { return }
+        let legacyStates = (try? decoder.decode(ExecutionGraphDocument.self, from: raw))?.states ?? []
+        let covered = legacyStates.isEmpty
+            || didImportLegacy
+            || Set(legacyStates.map { $0.id }).isSubset(of: Set(authoritativeIDs))
+        guard covered else { return }
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let sidecar = storeURL.appendingPathExtension("migrated-\(stamp)")
+        try? fm.moveItem(at: storeURL, to: sidecar)
+        legacyJSONData = nil
+    }
+
+    /// Fail-closed read of the legacy JSON when the authority is unavailable.
+    private func loadLegacyJSONFallback() {
+        guard let raw = legacyJSONData else { return }
+        do {
+            let decoded = try decoder.decode(ExecutionGraphDocument.self, from: raw)
+            guard decoded.contractVersion == ESContract.version else {
+                throw ExecutionGraphError.invalidCheckpoint("contract version mismatch")
+            }
+            document = decoded
+        } catch {
+            loadError = "无法加载持久图：\(error.localizedDescription)"
+            document = ExecutionGraphDocument()
         }
     }
 
@@ -401,6 +677,7 @@ struct ExecutionStateGraphView: View {
     @State private var selectedID: String?
     @State private var continuationInput = ""
     @State private var selectedCheckpointID: UUID?
+    @State private var settleInput = ""
 
     /// 2026-10-16 收敛：窗口默认显示引擎真身（Live 只读投影）；
     /// 契约参考图（ES Contract v1.0-amended 的产品化演示）保留为切换页。
@@ -500,6 +777,7 @@ struct ExecutionStateGraphView: View {
 
             continuationEditor
             lifecycleActions(state)
+            settleSection(state)
             restoreSection(state)
             diagnostics
 
@@ -570,6 +848,39 @@ struct ExecutionStateGraphView: View {
                 .disabled(state.checkpointIDs.isEmpty)
             Button("Discard", role: .destructive) { run { try store.discard(state) } }
                 .disabled(state.lifecycle == .discarded)
+        }
+    }
+
+    /// Settlement action wired to the production native pre-settlement authority.
+    ///
+    /// The button calls `store.settleProducerResult`, which runs the native result-
+    /// contract gate and only then commits to the authoritative SQLite store. On a
+    /// contract refusal the error is surfaced in `store.operationError` and NOTHING
+    /// is written (fail-closed), so this is a real, app-reachable production call
+    /// chain rather than an orphaned API.
+    private func settleSection(_ state: ExecutionStateRecord) -> some View {
+        let receipts = (store.document.settlements ?? []).filter { $0.stateID == state.id }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text("Settle (Native Gate)").font(.headline)
+            Text("Producer result must commit to this State's IS next-input: \"\(state.nextInput)\"")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            HStack {
+                TextField("RESULT=<text>", text: $settleInput)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(state.lifecycle == .discarded)
+                Button("Fill from IS") { settleInput = "RESULT=\(state.nextInput)" }
+                    .disabled(state.nextInput.isEmpty)
+            }
+            HStack {
+                Button("Settle via Native Gate") {
+                    run { _ = try store.settleProducerResult(generatedText: settleInput, boundToState: state) }
+                }
+                .disabled(state.nextInput.isEmpty || settleInput.isEmpty || state.lifecycle == .discarded)
+                Text(receipts.isEmpty ? "no settlement" : "\(receipts.count) settled")
+                    .font(.footnote)
+                    .foregroundStyle(receipts.isEmpty ? .secondary : .primary)
+            }
         }
     }
 

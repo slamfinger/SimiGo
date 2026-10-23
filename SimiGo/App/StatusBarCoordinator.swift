@@ -5,7 +5,36 @@ import Combine
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // G1/G3 controlled headless gate (env-gated). Default GUI path unchanged:
+        // only engages when SIMIGO_HEADLESS_ROLE is present, and fail-closes on an
+        // unsupported role / missing parameters BEFORE any model work.
+        let headless = SimiGoG1G3Entry.evaluate()
+        if headless.requested {
+            guard let role = headless.role else {
+                FileHandle.standardError.write(
+                    ("headless fail-closed: " + (headless.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            // Keep AppKit's main loop alive (do not pump a nested runloop here: that
+            // ends the accessory app). Returning from applicationDidFinishLaunching lets
+            // NSApp.run continue servicing the main queue, which drives the @MainActor
+            // task below; exit(code) terminates once the model work finishes. Requires a
+            // bundle id distinct from any running SimiGo instance to avoid the
+            // LaunchServices single-instance handoff.
+            FileHandle.standardError.write(("headless-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                FileHandle.standardError.write("headless-task-started\n".data(using: .utf8)!)
+                let code = await SimiGoG1G3Entry.run(role: role)
+                FileHandle.standardError.write(("headless-task-done rc=\(code)\n").data(using: .utf8)!)
+                exit(code)
+            }
+            return
+        }
         StatusBarCoordinator.shared.start()
+        // Autonomous, idempotent first-run bootstrap off the main thread.
+        Task.detached(priority: .utility) {
+            _ = SimiGoBootstrapRunner.launchIfNeeded()
+        }
     }
 }
 

@@ -26,7 +26,11 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SimiGoRuntimeContract"
+            name: "SimiGoRuntimeContract",
+            linkerSettings: [
+                // ES/IS authoritative persistence uses the system SQLite3 (MLX-free).
+                .linkedLibrary("sqlite3")
+            ]
         ),
         .target(
             name: "SimiGo2Experimental",
@@ -39,6 +43,10 @@ let package = Package(
                 .product(name: "Tokenizers", package: "swift-transformers"),
                 .product(name: "MLXNN", package: "mlx-swift")
             ]
+        ),
+        .testTarget(
+            name: "SimiGoRuntimeContractTests",
+            dependencies: ["SimiGoRuntimeContract"]
         ),
     ]
 )
