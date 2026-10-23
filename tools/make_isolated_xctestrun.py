@@ -103,7 +103,11 @@ def main():
         if not os.path.isabs(val) or os.path.commonpath([os.path.abspath(val), iso]) != iso:
             die("%s resolves outside the isolation root: %s" % (key, val))
 
-    doc = plistlib.load(open(base_xr, "rb"))
+    try:
+        with open(base_xr, "rb") as f:
+            doc = plistlib.load(f)
+    except Exception as exc:                                  # noqa: BLE001
+        die("base xctestrun is not a readable plist (%s): %s" % (base_xr, exc))
     base = {p: v for p, v in flatten(doc)}
     touched = 0
     for _, tgt in targets(doc):
@@ -117,7 +121,11 @@ def main():
     with open(out, "wb") as f:
         plistlib.dump(doc, f, fmt=plistlib.FMT_XML, sort_keys=True)
 
-    got = {p: v for p, v in flatten(plistlib.load(open(out, "rb")))}
+    try:
+        with open(out, "rb") as f:
+            got = {p: v for p, v in flatten(plistlib.load(f))}
+    except Exception as exc:                                  # noqa: BLE001
+        die("rewritten xctestrun is not re-readable (%s): %s" % (out, exc))
     added = {p: v for p, v in got.items() if p not in base}
     removed = {p: v for p, v in base.items() if p not in got}
     changed = {p: {"a": base[p], "b": got[p]} for p in base if p in got and base[p] != got[p]}
