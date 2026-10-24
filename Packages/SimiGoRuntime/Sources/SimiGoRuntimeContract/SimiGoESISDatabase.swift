@@ -316,6 +316,70 @@ public final class SimiGoESISDatabase {
         return settlementID
     }
 
+    // MARK: - Producer identity binding (settlement <-> engine identity)
+
+    /// Persist the producer's identity digests alongside an existing settlement.
+    /// Re-running replaces the same two rows instead of appending duplicates, and
+    /// only digests are stored (never the model path or any weight bytes). This is
+    /// a binding written by the producer itself; it is not an attestation.
+    public func recordIdentityBindings(
+        settlementID: String,
+        identity: SimiGoSettlementIdentityBinding.Identity
+    ) throws {
+        let rows = SimiGoSettlementIdentityBinding.bindings(for: identity)
+        try transaction {
+            for name in rows.keys.sorted() {
+                guard let digest = rows[name] else { continue }
+                try execBinding("DELETE FROM settlement_bindings WHERE settlement_id=? AND name=?;") { stmt in
+                    bind(stmt, 1, settlementID)
+                    bind(stmt, 2, name)
+                }
+                try execBinding("""
+                INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
+                VALUES(?,?,?,?,?);
+                """) { stmt in
+                    bind(stmt, 1, settlementID)
+                    bind(stmt, 2, name)
+                    bind(stmt, 3, digest)
+                    bind(stmt, 4, String?.none)
+                    bind(stmt, 5, nil as Int64?)
+                }
+            }
+        }
+    }
+
+    /// Binding rows recorded for one settlement, as name -> digest. Constraint
+    /// bindings from the native gate live in the same table, so callers must look
+    /// up the `producer.` keys rather than assume the dictionary is exhaustive.
+    public func settlementBindings(settlementID: String) throws -> [String: String] {
+        let stmt = try prepare("""
+        SELECT name, value_digest FROM settlement_bindings WHERE settlement_id=?;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        var out: [String: String] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let name = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            let value = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
+            if !name.isEmpty { out[name] = value }
+        }
+        return out
+    }
+
+    /// Newest settlement recorded for a state, or nil when the state never settled.
+    public func latestSettlementID(forStateID stateID: String) throws -> String? {
+        let stmt = try prepare("""
+        SELECT settlement_id FROM settlements WHERE state_id=?
+        ORDER BY settled_at DESC, settlement_id DESC LIMIT 1;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, stateID)
+        if sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+            return String(cString: c)
+        }
+        return nil
+    }
+
     // MARK: - External roots / work-file / agent-session indexing
     //
     // The database stores INDEXES and metadata only — NEVER the external file
@@ -638,6 +702,33 @@ public final class SimiGoESISDatabase {
         defer { sqlite3_finalize(stmt) }
         if sqlite3_step(stmt) == SQLITE_ROW { return Int(sqlite3_column_int64(stmt, 0)) }
         return 0
+    }
+
+    /// The transitive UPSTREAM dependency closure of a settlement: every
+    /// settlement it depends on, directly (dependency_edges.from_settlement =
+    /// seed) or through the chain, excluding the seed itself.
+    ///
+    /// `affectedClosure` and `transitiveDependents` only walk the DOWNSTREAM
+    /// (dependents) direction, so this is the missing half required by IS
+    /// admission: before a consumer trusts a settled value it must confirm the
+    /// whole closure the value was derived from is still present and valid.
+    /// Returns an empty array when the settlement has no dependencies.
+    public func upstreamDependencyClosure(ofSettlement settlementID: String) throws -> [String] {
+        let stmt = try prepare("""
+        WITH RECURSIVE upstream(id) AS (
+            SELECT d.to_settlement FROM dependency_edges d WHERE d.from_settlement=?
+            UNION
+            SELECT d.to_settlement FROM dependency_edges d JOIN upstream u ON d.from_settlement=u.id
+        )
+        SELECT id FROM upstream;
+        """)
+        defer { sqlite3_finalize(stmt) }
+        bind(stmt, 1, settlementID)
+        var out: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) {
+            out.append(String(cString: c))
+        }
+        return out
     }
 
     // MARK: - Legacy JSON graph migration
