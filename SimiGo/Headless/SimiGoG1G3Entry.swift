@@ -1,6 +1,8 @@
+import CryptoKit
 import Foundation
 import SimiGoRuntimeContract
 import LOCALBCore
+import SimiGo2Experimental
 
 // MARK: - G1/G3 controlled headless production entry (A | V1)
 //
@@ -33,6 +35,13 @@ enum SimiGoHeadlessRole: String {
     /// idle-suspend lifecycle (via the DEBUG suspendIdleTimeoutOverride test seam),
     /// observing reference-release / resource-reclaim / resume events + footprint.
     case memprobe
+    /// G1.9-A layer-forward trace driver: runs the ALREADY-SHIPPED
+    /// `ExecutionTracePilot` (Packages/SimiGoRuntime .../Instrumentation) which
+    /// installs passive observation modules on the decoder MLP down-projection
+    /// and records one `layerEntered` event per (pass, decoder layer). This role
+    /// only drives that existing instrumentation and writes its report; it adds
+    /// no instrumentation of its own and changes no model behaviour.
+    case tracepilot
 }
 
 /// Minimal injectable cache-root resolver so KV carriers honor `SIMIGO_HOME`
@@ -82,7 +91,7 @@ enum SimiGoG1G3Entry {
         }
         guard let role = SimiGoHeadlessRole(rawValue: raw) else {
             return Decision(requested: true, role: nil,
-                            error: "unsupported SIMIGO_HEADLESS_ROLE '\(raw)' (allowed: produce|consume)")
+                            error: "unsupported SIMIGO_HEADLESS_ROLE '\(raw)' (allowed: produce|consume|memprobe|tracepilot)")
         }
         // Fail closed on missing required parameters BEFORE any model work.
         func need(_ key: String) -> String? {
@@ -107,6 +116,9 @@ enum SimiGoG1G3Entry {
             guard need("SIMIGO_HEADLESS_STATE_ID") != nil else {
                 return Decision(requested: true, role: nil, error: "SIMIGO_HEADLESS_STATE_ID missing (consume)")
             }
+        case .tracepilot:
+            // Model path, experiment root and run id are already required above.
+            break
         }
         return Decision(requested: true, role: role, error: nil)
     }
@@ -143,7 +155,106 @@ enum SimiGoG1G3Entry {
         case .produce: return await produce()
         case .consume: return await consume()
         case .memprobe: return await memprobe()
+        case .tracepilot: return await tracePilot()
         }
+    }
+
+    // MARK: - tracepilot (G1.9-A layer-forward trace)
+
+    /// Drive the shipped `ExecutionTracePilot` and persist its report verbatim.
+    ///
+    /// What the numbers are: the pilot installs passive observation modules on
+    /// each decoder layer's MLP down-projection and records one `layerEntered`
+    /// event per (forward pass, layer). A forward pass is delimited where layer 0
+    /// is entered again. Nothing here counts a demand, a prediction, or an
+    /// estimate; a layer that does not execute emits no event.
+    ///
+    /// Honesty boundary (also written into the evidence): the observed scope is
+    /// DECODER_MLP_DOWN_PROJ - the decoder core is not directly observed - and
+    /// the path is the restricted production path (NativeMLX / MLXLMCommon
+    /// generation below HTTPServer), not the Service/HTTP wire path.
+    private static func tracePilot() async -> Int32 {
+        let modelPath = env("SIMIGO_HEADLESS_MODEL_PATH")
+        let rootURL = URL(fileURLWithPath: env("SIMIGO_EXPERIMENT_ROOT"), isDirectory: true)
+        try? FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        let runID = env("SIMIGO_RUN_ID")
+
+        var evidence: [String: Any] = [
+            "model_path": modelPath,
+            "model_identity": modelIdentity(fromPath: modelPath),
+            "path_class": "restricted_production_path",
+            "runtime_identity": runtimeIdentity(),
+            "driver": "SimiGoHeadlessRole=tracepilot -> ExecutionTracePilot.run (shipped instrumentation)",
+            "observed_scope": "DECODER_MLP_DOWN_PROJ",
+            "observation_kind": "OBSERVED_LAYER_ENTERED_ONLY",
+        ]
+
+        do {
+            let report = try await ExecutionTracePilot.run(
+                modelDirectory: URL(fileURLWithPath: modelPath, isDirectory: true),
+                repetitions: 2,
+                maxTokens: 16
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(report)
+            let reportURL = rootURL.appendingPathComponent("layerforwardtrace_\(runID).json")
+            try data.write(to: reportURL, options: .atomic)
+
+            // Derived bookkeeping only: aggregate the OBSERVED events by decoder
+            // layer and by forward pass. No estimate is produced for a layer
+            // that emitted no event.
+            var cases: [[String: Any]] = []
+            for pilotCase in report.cases {
+                var perLayer: [String: Int] = [:]
+                var eventTotal = 0
+                var stepTotal = 0
+                for trace in pilotCase.traces {
+                    stepTotal += trace.steps.count
+                    for event in trace.events {
+                        perLayer["L\(event.decoderLayer)", default: 0] += 1
+                        eventTotal += 1
+                    }
+                }
+                cases.append([
+                    "prompt_id": pilotCase.promptID,
+                    "repetitions": pilotCase.repetitions,
+                    "pass_counts_per_repetition": pilotCase.passCounts,
+                    "forward_passes_total": stepTotal,
+                    "layer_entered_events_total": eventTotal,
+                    "layer_entered_events_per_decoder_layer": perLayer,
+                    "distinct_decoder_layers_observed": perLayer.count,
+                    "token_sequence_identical": pilotCase.identity.tokenSequenceIdentical,
+                    "logits_bitwise_identical": pilotCase.identity.logitsBitwiseIdentical,
+                    "trace_stable_across_repetitions": pilotCase.traceStableAcrossRepetitions,
+                    "g19a1_baseline_identity_pass": pilotCase.g19a1BaselineIdentityPass,
+                    "g19a2_trace_stability_pass": pilotCase.g19a2TraceStabilityPass,
+                ])
+            }
+
+            evidence["status"] = report.status == "PASS" ? "OK" : "FAIL"
+            evidence["pilot_status"] = report.status
+            evidence["protocol_version"] = report.protocolVersion
+            evidence["pilot_boundary"] = report.boundary
+            evidence["model_type"] = report.modelType
+            evidence["instrumented_module_count"] = report.instrumentedModuleCount
+            evidence["g19a1_baseline_identity_pass"] = report.g19a1BaselineIdentityPass
+            evidence["g19a2_trace_stability_pass"] = report.g19a2TraceStabilityPass
+            evidence["overhead_summary"] = report.g19a3OverheadSummary
+            evidence["cases"] = cases
+            evidence["report_file"] = reportURL.path
+            evidence["report_sha256"] = SHA256.hash(data: data)
+                .map { String(format: "%02x", $0) }.joined()
+        } catch {
+            evidence["status"] = "BLOCKED"
+            evidence["stage"] = "trace_pilot"
+            evidence["error"] = String(describing: error)
+            writeEvidence(evidence, role: .tracepilot)
+            return 3
+        }
+
+        writeEvidence(evidence, role: .tracepilot)
+        return (evidence["status"] as? String) == "OK" ? 0 : 4
     }
 
     // MARK: - produce (ES1)
