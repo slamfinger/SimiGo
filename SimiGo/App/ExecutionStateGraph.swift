@@ -449,6 +449,26 @@ final class ExecutionStateGraphStore: ObservableObject {
         return settled
     }
 
+    /// Settle a continuation's generated result AND return the authoritative
+    /// settlement id whose identity binding was published, so the production
+    /// adapter can report a real id instead of an invented one. A nil id means
+    /// the settlement committed but cannot be resolved in the authoritative
+    /// store — callers must surface that as an engine fault, never as success.
+    /// Reuses `settleProducerResult` (native gate + IS commit + binding
+    /// publication); it opens no second settlement path.
+    @discardableResult
+    func settleContinuationResult(
+        generatedText: String,
+        boundToState state: ExecutionStateRecord,
+        producerIdentity: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> String? {
+        _ = try settleProducerResult(
+            generatedText: generatedText, boundToState: state,
+            producerIdentity: producerIdentity)
+        guard let db = ensureESIS() else { return nil }
+        return try db.latestSettlementID(forStateID: state.id)
+    }
+
     /// The IS admission (recovery) edge for a continuation, driven through the
     /// product's authoritative store. It calls the native `SimiGoISAdmission`
     /// authority against the store's SQLite IS: a settled value is returned with

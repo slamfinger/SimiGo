@@ -193,3 +193,91 @@ enum ContinuationSettlementStep {
     /// dispatch must return without emitting a completed response.
     case refused
 }
+
+// MARK: - Production settlement adapter (NativeMLX wiring)
+
+/// Build the production post-generation settlement authority for a native
+/// runtime bound to the model snapshot at `modelPath`. It is the wiring site
+/// between the Responses hot path and the product's IS settlement authority,
+/// and it adds no second result-contract validation, signature or settlement
+/// logic:
+///
+/// * the generated text and ES anchor are the ones the dispatch actually
+///   produced for THIS request (see `settlementStep`); the adapter never
+///   accepts a caller-fabricated result or an identity borrowed from another
+///   execution — the producer identity is re-derived from the runtime's own
+///   model snapshot, the same way the admission side derives its consumer;
+/// * settlement runs through the existing native entry
+///   `ExecutionStateGraphStore.settleContinuationResult` ->
+///   `settleProducerResult(...producerIdentity:)` -> native gate + authoritative
+///   SQLite commit + identity-binding publication;
+/// * a native result-contract refusal surfaces as
+///   `NATIVE_RESULT_CONTRACT_REJECTED`, any infrastructure or missing-authority
+///   fault as `SETTLEMENT_ENGINE_ERROR`, and the native gate throws BEFORE the
+///   store writes, so a refused request leaves no half-settled record.
+func makeNativeMLXContinuationSettlementHandler(
+    modelPath: String
+) -> ContinuationSettlementHandler {
+    return { text, esStateID in
+        try await MainActor.run {
+            try settleForNativeMLXContinuation(
+                store: ExecutionStateGraphStore(),
+                generatedText: text,
+                esStateID: esStateID,
+                modelPath: modelPath
+            )
+        }
+    }
+}
+
+/// The adapter body, separated from the actor hop so it can be driven
+/// directly against an isolated authoritative store. Same authority, same
+/// native gate: it only calls the store's existing settlement entry.
+@MainActor
+func settleForNativeMLXContinuation(
+    store: ExecutionStateGraphStore,
+    generatedText: String,
+    esStateID: String,
+    modelPath: String
+) throws -> ContinuationSettlementOutcome {
+    // The anchor must name a live state in the authoritative graph; an
+    // unknown anchor is an authority/infrastructure fault, never a
+    // business (contract) refusal.
+    guard let state = store.state(esStateID) else {
+        throw ContinuationSettlementFailure.engine(
+            safeReason: "continuation anchor not found in the authoritative graph")
+    }
+    // Producer identity is re-derived from THIS runtime's own model snapshot —
+    // never supplied by the caller, never taken from another execution.
+    let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
+    guard let settlementID = try store.settleContinuationResult(
+        generatedText: generatedText,
+        boundToState: state,
+        producerIdentity: producer
+    ) else {
+        // The settlement committed but cannot be resolved in the authoritative
+        // store: report the engine class, not a success with an unknown id.
+        throw ContinuationSettlementFailure.engine(
+            safeReason: "authoritative settlement unavailable")
+    }
+    return ContinuationSettlementOutcome(
+        settlementID: settlementID,
+        identityBindingPublished: producerIdentityBindingPublished(
+            store: store, settlementID: settlementID)
+    )
+}
+
+/// Read-back of the published producer identity binding: the outcome field
+/// reports what is actually stored, not what the call intended to write.
+@MainActor
+private func producerIdentityBindingPublished(
+    store: ExecutionStateGraphStore,
+    settlementID: String
+) -> Bool {
+    guard let db = store.esis,
+          let bindings = try? db.settlementBindings(settlementID: settlementID) else {
+        return false
+    }
+    return bindings[SimiGoSettlementIdentityBinding.modelKey] != nil
+        && bindings[SimiGoSettlementIdentityBinding.tokenizerKey] != nil
+}

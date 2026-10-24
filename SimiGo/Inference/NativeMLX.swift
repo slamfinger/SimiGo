@@ -485,7 +485,10 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                         }
                         return ContinuationAdmissionOutcome(
                             esStateID: esStateID, recoveredValue: value)
-                    }
+                    },
+                    continuationSettlement: makeNativeMLXContinuationSettlementHandler(
+                        modelPath: self.modelPath
+                    )
                 )
             }
 
