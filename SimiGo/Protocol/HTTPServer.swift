@@ -526,6 +526,7 @@ public final class HTTPServer: @unchecked Sendable {
 
     let generateHandler: GenerateHandler
     let forkBranchHandler: ForkBranchHandler
+    let continuationAdmission: ContinuationAdmissionHandler?
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -652,7 +653,8 @@ public final class HTTPServer: @unchecked Sendable {
         cancelGenerationHandler: CancelGenerationHandler? = nil,
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
         remoteBackend: RemoteOpenAIBackend? = nil,
-        baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() }
+        baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
+        continuationAdmission: ContinuationAdmissionHandler? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -683,6 +685,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.capabilitiesProvider = capabilitiesProvider
         self.remoteBackend = remoteBackend
         self.baseConfigProvider = baseConfigProvider
+        self.continuationAdmission = continuationAdmission
     }
 
     // MARK: - Lifecycle

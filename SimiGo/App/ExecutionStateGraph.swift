@@ -430,6 +430,42 @@ final class ExecutionStateGraphStore: ObservableObject {
         )
     }
 
+    /// Settle a producer's reference result AND publish its producer identity,
+    /// so the resulting IS settlement is admissible by a later continuation via
+    /// `admitContinuation`. Reuses the existing native settlement path plus the
+    /// authoritative store's `recordIdentityBindings`; it is not a second gate.
+    @discardableResult
+    func settleProducerResult(
+        generatedText: String,
+        boundToState state: ExecutionStateRecord,
+        producerIdentity: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> SimiGoSettlementAuthority.SettledResult {
+        let settled = try settleProducerResult(generatedText: generatedText, boundToState: state)
+        guard let db = ensureESIS(),
+              let settlementID = try? db.latestSettlementID(forStateID: state.id) else {
+            throw ExecutionGraphError.storeUnavailable("no authoritative settlement to bind identity")
+        }
+        try db.recordIdentityBindings(settlementID: settlementID, identity: producerIdentity)
+        return settled
+    }
+
+    /// The IS admission (recovery) edge for a continuation, driven through the
+    /// product's authoritative store. It calls the native `SimiGoISAdmission`
+    /// authority against the store's SQLite IS: a settled value is returned with
+    /// `verifiedBindings` for a fresh ES ONLY after digest integrity, dynamic
+    /// validity, the full upstream dependency closure, and the producer model /
+    /// tokenizer identity all verify. Any unmet precondition throws here — before
+    /// any binding exists to feed a generation — so recovery is fail-closed.
+    func admitContinuation(
+        stateID: String,
+        consumer: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> SimiGoISAdmission.Admitted {
+        guard let db = ensureESIS() else {
+            throw ExecutionGraphError.storeUnavailable(persistError ?? "ES/IS authority unavailable")
+        }
+        return try SimiGoISAdmission.admit(db: db, stateID: stateID, consumer: consumer)
+    }
+
     // MARK: - Authoritative SQLite commit + legacy migration
 
     /// Lazily open the authoritative SQLite store, run schema migrations, and on

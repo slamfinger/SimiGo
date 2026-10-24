@@ -475,6 +475,16 @@ public final class NativeMLX: Runtime, @unchecked Sendable {
                     },
                     baseConfigProvider: { [weak self] in
                         self?.baseConfig ?? ModelConfig()
+                    },
+                    continuationAdmission: { [weak self] esStateID in
+                        guard let self else { throw ContinuationAdmissionFailure.unavailable }
+                        let modelPath = self.modelPath
+                        let value = try await MainActor.run {
+                            try SimiGoProducerIdentity.recoverForContinuation(
+                                stateID: esStateID, modelPath: modelPath)
+                        }
+                        return ContinuationAdmissionOutcome(
+                            esStateID: esStateID, recoveredValue: value)
                     }
                 )
             }

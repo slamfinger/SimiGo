@@ -31,9 +31,10 @@ import SimiGo2Experimental
 enum SimiGoHeadlessRole: String {
     case produce
     case consume
-    /// G3 memory-tier probe: runs the production generate, then the production
-    /// idle-suspend lifecycle (via the DEBUG suspendIdleTimeoutOverride test seam),
-    /// observing reference-release / resource-reclaim / resume events + footprint.
+    /// G3 memory-tier probe: runs the production generate, then waits out the
+    /// production adaptive idle window and runs the unmodified idle-suspend
+    /// lifecycle, observing reference-release / resource-reclaim / resume events
+    /// plus footprint. No timing seam is used on a Release build.
     case memprobe
     /// G1.9-A layer-forward trace driver: runs the ALREADY-SHIPPED
     /// `ExecutionTracePilot` (Packages/SimiGoRuntime .../Instrumentation) which
@@ -323,6 +324,32 @@ enum SimiGoG1G3Entry {
             evidence["prompt_tokens"] = gen.usage?.promptTokens ?? NSNull()
             evidence["generation_tokens"] = gen.usage?.generationTokens ?? NSNull()
             evidence["settlement_payload_digest"] = settled.payloadDigest
+            // Identity binding: a consumer in a fresh process may only inherit this
+            // settlement if it runs the SAME model and tokenizer. The digests are
+            // written next to the settlement (digests only, never the model path),
+            // and a write failure is fail-closed: an unbound settlement must not be
+            // handed off as if it were recoverable.
+            let producerIdentity = SimiGoSettlementIdentityBinding.Identity(
+                model: modelBindingFingerprint(modelIdentity(fromPath: modelPath)),
+                tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: modelPath)))
+            evidence["producer_model_identity"] = producerIdentity.model
+            evidence["producer_tokenizer_identity"] = producerIdentity.tokenizer
+            let bindingRecorded: Bool = await MainActor.run {
+                guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL),
+                      let settlementID = try? db.latestSettlementID(forStateID: state.id) else { return false }
+                do {
+                    try db.recordIdentityBindings(settlementID: settlementID, identity: producerIdentity)
+                    return true
+                } catch { return false }
+            }
+            evidence["producer_identity_bindings_recorded"] = bindingRecorded
+            guard bindingRecorded else {
+                evidence["status"] = "BLOCKED"
+                evidence["stage"] = "identity_binding_write"
+                evidence["reason"] = "settlement recorded but producer identity bindings could not be persisted"
+                writeEvidence(evidence, role: .produce)
+                return 4
+            }
             // Read back from the authoritative SQLite IS to prove the write landed.
             let receipts = await MainActor.run { () -> [String] in
                 guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL) else { return [] }
@@ -399,7 +426,7 @@ enum SimiGoG1G3Entry {
         // fail-closed BEFORE a NativeMLX instance is created or generate is called,
         // so the model-generation call count for these controls is provably zero.
         enum Recovery {
-            case ok(digest: String, value: String)
+            case ok(settlementID: String, digest: String, value: String)
             case missing
             case digestMismatch
             case invalidated
@@ -418,7 +445,7 @@ enum SimiGoG1G3Entry {
             }
             let value = extractContent(from: row.payload) ?? ""
             if value.isEmpty { return .emptyValue }
-            return .ok(digest: row.payloadDigest, value: value)
+            return .ok(settlementID: row.id.uuidString, digest: row.payloadDigest, value: value)
         }
         // generation_call_count is zero on every fail-closed branch below (no
         // NativeMLX.generate has run at this point).
@@ -436,7 +463,7 @@ enum SimiGoG1G3Entry {
             evidence["generation_call_count"] = 0
             writeEvidence(evidence, role: .consume)
             return 6
-        case .ok(let digest, let value):
+        case .ok(_, let digest, let value):
             evidence["u1_payload_digest_from_is"] = digest
             evidence["u1_recovered_value"] = value
             evidence["settlement_digest_verified"] = true
@@ -444,7 +471,43 @@ enum SimiGoG1G3Entry {
             evidence["result_reuse_via_IS"] = true
         }
         let u1value: String
-        if case .ok(_, let v) = recovery { u1value = v } else { u1value = "" }
+        let recoveredSettlementID: String
+        if case .ok(let sid, _, let v) = recovery {
+            u1value = v
+            recoveredSettlementID = sid
+        } else {
+            u1value = ""
+            recoveredSettlementID = ""
+        }
+
+        // Identity binding (fail-closed, still BEFORE any model work): the settled
+        // value was produced by a specific model + tokenizer. A different engine in
+        // this process must not inherit it, and a settlement that carries no
+        // producer binding at all is refused rather than trusted.
+        let consumerIdentity = SimiGoSettlementIdentityBinding.Identity(
+            model: modelBindingFingerprint(modelIdentity(fromPath: modelPath)),
+            tokenizer: canonicalFingerprint(tokenizerIdentity(fromPath: modelPath)))
+        let bindingVerdict: SimiGoSettlementIdentityBinding.Verdict = await MainActor.run {
+            let recorded: [String: String]
+            if let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL) {
+                recorded = (try? db.settlementBindings(settlementID: recoveredSettlementID)) ?? [:]
+            } else {
+                recorded = [:]
+            }
+            return SimiGoSettlementIdentityBinding.evaluate(recorded: recorded, consumer: consumerIdentity)
+        }
+        evidence["consumer_model_identity"] = consumerIdentity.model
+        evidence["consumer_tokenizer_identity"] = consumerIdentity.tokenizer
+        evidence["recovered_settlement_id"] = recoveredSettlementID
+        for (key, value) in bindingVerdict.evidence { evidence[key] = value }
+        if bindingVerdict.status != .ok {
+            evidence["status"] = "BLOCKED"
+            evidence["stage"] = "is_binding_verify"
+            evidence["reason"] = bindingVerdict.detail
+            evidence["generation_call_count"] = 0
+            writeEvidence(evidence, role: .consume)
+            return 6
+        }
 
         // Continue: U2 commits to a value DERIVED from the recovered U1 result.
         let u2Value = u1value + "-U2"
@@ -510,6 +573,22 @@ enum SimiGoG1G3Entry {
             await RuntimeLifecycleCoordinator.shared.finish(requestID: consumeRequestID, success: true, reason: "g1g3-consume")
             let settled = try await MainActor.run {
                 try store.settleProducerResult(generatedText: gen.text, boundToState: state2)
+            }
+            let u2BindingRecorded: Bool = await MainActor.run {
+                guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL),
+                      let settlementID = try? db.latestSettlementID(forStateID: state2.id) else { return false }
+                do {
+                    try db.recordIdentityBindings(settlementID: settlementID, identity: consumerIdentity)
+                    return true
+                } catch { return false }
+            }
+            evidence["u2_identity_bindings_recorded"] = u2BindingRecorded
+            guard u2BindingRecorded else {
+                evidence["status"] = "BLOCKED"
+                evidence["stage"] = "identity_binding_write"
+                evidence["reason"] = "U2 settlement recorded but identity bindings could not be persisted"
+                writeEvidence(evidence, role: .consume)
+                return 4
             }
             evidence["generated_text_u2"] = gen.text
             evidence["u2_prompt_tokens"] = gen.usage?.promptTokens ?? NSNull()
@@ -588,10 +667,22 @@ enum SimiGoG1G3Entry {
             await RuntimeLifecycleCoordinator.shared.finish(requestID: reqID, success: true, reason: "g1g3-memprobe-warm")
             let pre = footprintBytes()
             let snapPre = await MainActor.run { runtime.observation.snapshot() }
-            #if DEBUG
-            RuntimeTuning.suspendIdleTimeoutOverrideSeconds = 0
-            #endif
-            let suspended = await runtime.suspendIfIdle()
+            // Suspend eligibility is gated on the *production* adaptive idle
+            // window (idleResidencyFloor/CapSeconds = 240-360 s). A Release build
+            // has no seam for it (#if DEBUG only), so instead of overriding the
+            // window the probe waits for it to elapse and then calls the
+            // unmodified suspendIfIdle(). Ineligible calls are side-effect free,
+            // so polling cannot manufacture a suspend that the shipped timing
+            // would not allow.
+            var suspendAttempts = 0
+            var suspended = false
+            while suspendAttempts < 32 {
+                suspendAttempts += 1
+                suspended = await runtime.suspendIfIdle()
+                if suspended { break }
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
+            }
+            let observedIdleWaitSeconds = (suspendAttempts - 1) * 15
             let post = footprintBytes()
             let snapSuspend = await MainActor.run { runtime.observation.snapshot() }
             // Resume: the next generate must reload the model container (lifecycle resume event).
@@ -615,6 +706,9 @@ enum SimiGoG1G3Entry {
             evidence["warm_generated"] = warm.text
             evidence["post_resume_generated"] = warm2.text
             evidence["suspend_returned_true"] = suspended
+            evidence["suspend_attempts"] = suspendAttempts
+            evidence["observed_idle_wait_seconds"] = observedIdleWaitSeconds
+            evidence["suspend_window_source"] = "production adaptive idle floor/cap; no release-build override"
             evidence["reference_release_observed"] = ((evSuspend["reference_release"] as? Int ?? 0) > preTotal)
             evidence["sessions_released"] = evSuspend["sessions_released_at_release"] ?? NSNull()
             evidence["model_container_ref_dropped"] = evSuspend["model_container_ref_dropped"] ?? NSNull()
@@ -640,6 +734,26 @@ enum SimiGoG1G3Entry {
             writeEvidence(evidence, role: .memprobe)
             return 5
         }
+    }
+
+    // MARK: - identity fingerprints (settlement binding)
+
+    /// Canonical JSON (sorted keys) fed through the production settlement digest.
+    /// Deterministic for a given structured value; no consumer re-implements hashing.
+    private static func canonicalFingerprint(_ value: Any) -> String {
+        let canonical = (try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])) ?? Data()
+        return SimiGoSettlementAuthority.payloadDigest(canonical)
+    }
+
+    /// Stable model binding fingerprint: only identity-bearing fields (repo id,
+    /// revision, root id), never the filesystem path, so relocating a snapshot does
+    /// not change identity while a different model or revision does.
+    private static func modelBindingFingerprint(_ identity: [String: Any]) -> String {
+        canonicalFingerprint([
+            "model_repo_id": identity["model_repo_id"] ?? NSNull(),
+            "model_revision": identity["model_revision"] ?? NSNull(),
+            "model_root_id": identity["model_root_id"] ?? NSNull(),
+        ])
     }
 
     // MARK: - model / tokenizer identity (task §5)

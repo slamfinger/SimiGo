@@ -432,10 +432,86 @@ struct ResponsesParsedRequest: @unchecked Sendable {
     let currentHistoryMessages: [JSONValue]
 
     let parent: StoredResponse?
+
+    /// Opt-in ES/IS continuation anchor (`previous_es_state_id`). When the
+    /// field is absent this is (false, nil) and the dispatch path is the
+    /// unchanged ordinary Responses continuation. Present-but-blank stays
+    /// `esStateIDPresent == true` with a nil/empty value so the gate can
+    /// fail closed instead of silently falling back.
+    let esStateIDPresent: Bool
+    let esStateID: String?
 }
 
 
 extension HTTPServer {
+    /// ES/IS continuation admission gate for the Responses path. Returns
+    /// the messages to generate with, or `nil` when an HTTP refusal has
+    /// already been sent (the caller must return without generating).
+    ///
+    /// * `previous_es_state_id` absent  -> `parsed.canonicalMessages` unchanged.
+    /// * present but empty / non-string -> 400, no generation.
+    /// * no admission authority wired   -> 503, no generation (fail closed).
+    /// * native IS admission refuses    -> 422, no generation.
+    /// * admission verifies             -> recovered IS value feeds the
+    ///   continuation (appended as the generation input).
+    func continuationGate(
+        parsed: ResponsesParsedRequest,
+        context: ConnectionContext
+    ) async -> [JSONValue]? {
+        guard parsed.esStateIDPresent else {
+            return parsed.canonicalMessages
+        }
+        guard let anchor = parsed.esStateID, !anchor.isEmpty else {
+            sendError(
+                "previous_es_state_id present but empty or malformed",
+                status: 400,
+                on: context.connection,
+                context: context
+            )
+            return nil
+        }
+        guard let admission = continuationAdmission else {
+            sendError(
+                "ES/IS continuation admission authority unavailable",
+                status: 503,
+                on: context.connection,
+                context: context
+            )
+            return nil
+        }
+        do {
+            let outcome = try await admission(anchor)
+            return parsed.canonicalMessages + [
+                JSONValue.object([
+                    "role": .string("user"),
+                    "content": .string(outcome.recoveredValue)
+                ])
+            ]
+        } catch let failure as ContinuationAdmissionFailure {
+            let reason: String
+            switch failure {
+            case .invalidAnchor: reason = "invalid ES state anchor"
+            case .unavailable:   reason = "admission authority unavailable"
+            case .refused(let detail): reason = "IS admission refused: \(detail)"
+            }
+            sendError(
+                "Continuation refused before generation: \(reason)",
+                status: 422,
+                on: context.connection,
+                context: context
+            )
+            return nil
+        } catch {
+            sendError(
+                "Continuation refused before generation: \(error.localizedDescription)",
+                status: 422,
+                on: context.connection,
+                context: context
+            )
+            return nil
+        }
+    }
+
     // MARK: - Responses / Non-Streaming
 
     func handleResponsesNonStreaming(
@@ -517,12 +593,19 @@ extension HTTPServer {
                 return
             }
 
+            guard let continuationMessages = await continuationGate(
+                parsed: parsed,
+                context: context
+            ) else {
+                return
+            }
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
                 parsed.logicalBranchId,
-                parsed.canonicalMessages,
+                continuationMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -826,12 +909,19 @@ extension HTTPServer {
                 return
             }
 
+            guard let continuationMessages = await continuationGate(
+                parsed: parsed,
+                context: context
+            ) else {
+                return
+            }
+
             let result = try await generateHandler(
                 context.requestId,
                 parsed.agentId,
                 parsed.sessionId,
                 parsed.logicalBranchId,
-                parsed.canonicalMessages,
+                continuationMessages,
                 parsed.tools,
                 parsed.config,
 
@@ -1286,6 +1376,10 @@ extension HTTPServer {
             "canonical=\(canonicalMessages.count)"
         )
 
+        let esAnchorPresent = json.keys.contains("previous_es_state_id")
+        let esAnchorValue = (json["previous_es_state_id"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
         return ResponsesParsedRequest(
             agentId: identity.agentId,
             sessionId: identity.sessionId,
@@ -1297,7 +1391,9 @@ extension HTTPServer {
             responseId: responseId,
             preambleMessages: effectivePreamble,
             currentHistoryMessages: split.historyMessages,
-            parent: parent
+            parent: parent,
+            esStateIDPresent: esAnchorPresent,
+            esStateID: esAnchorValue
         )
     }
 
