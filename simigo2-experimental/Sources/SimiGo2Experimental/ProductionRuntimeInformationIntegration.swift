@@ -40,6 +40,17 @@ public enum ProductionRuntimeInformationError: Error, Equatable, Sendable {
   /// it would resume work inconsistent with IS — rejected before any new side
   /// effect.
   case settlementCheckpointMismatch(executionID: String, field: String)
+  /// The bridge refused a request with a structured admission verdict (stage,
+  /// reason, optional item id) instead of an opaque failure message.
+  case bridgeRefused(command: String, stage: String, reason: String, itemID: String?)
+  /// IS holds no admissible settlement for one of the task item's declared
+  /// input dependencies (missing, invalid, expired, byte-tampered, or no longer
+  /// matching the item's version/dependency set). Refused BEFORE tokenization
+  /// and model generation, so an unadmitted input never pays a generation cost.
+  case informationSpaceInputAdmissionRefused(itemID: String, stage: String, reason: String)
+  /// The admitted input could not be reproduced from the returned bindings:
+  /// input digest, byte range, value digest, or object identity disagreed.
+  case informationSpaceInputBindingMismatch(field: String)
 }
 
 public protocol ProductionRuntimeModelContinuationExecutor: Sendable {
@@ -62,6 +73,153 @@ public struct ProductionRuntimeBridgeReport: Equatable, Sendable {
   public let computedItemIDs: [String]
   public let reusedItemIDs: [String]
   public let resultDigest: String
+}
+
+/// One settlement action the Information Space actually took while resolving a
+/// task demand. `settlementObjectID` identifies the physical settlement record
+/// the value came from, so a later stage can prove it reused the SAME settled
+/// object instead of merely reaching an equal answer.
+public struct ProductionTaskSettlementAction: Equatable, Sendable {
+  public let itemID: String
+  public let action: String
+  public let settlementObjectID: String
+  public let resultDigest: String
+  /// Detached signature object that covers this settlement, when the action
+  /// produced one in this call (a REUSE was verified, not re-signed).
+  public let settlementSignatureObjectID: String?
+
+  public init(
+    itemID: String,
+    action: String,
+    settlementObjectID: String,
+    resultDigest: String,
+    settlementSignatureObjectID: String? = nil
+  ) {
+    self.itemID = itemID
+    self.action = action
+    self.settlementObjectID = settlementObjectID
+    self.resultDigest = resultDigest
+    self.settlementSignatureObjectID = settlementSignatureObjectID
+  }
+}
+
+/// Evidence for one real-model task advancement: what the model consumed, what
+/// it produced, which items the Information Space reused vs recomputed, and the
+/// IS runtime-application confirmation the ES checkpoint is bound to.
+public struct ProductionTaskContinuationReport: Equatable, Sendable {
+  public let demandID: String
+  public let taskItemID: String
+  public let created: Bool
+  public let computedItemIDs: [String]
+  public let reusedItemIDs: [String]
+  public let settlementActions: [ProductionTaskSettlementAction]
+  public let resultDigest: String
+  public let isPendingStateID: String
+  public let isConfirmationStateID: String
+  public let advancedPosition: Int64
+  public let advancedLifecycle: String
+  public let consumedPrefixLength: Int
+  public let nextInputTokenCount: Int
+  public let nextInputTokenIDs: [Int]
+  public let generatedTokenIDs: [Int]
+  public let generatedText: String
+  public let updatedPrefixTokenCount: Int
+  public let tokenizeSeedCallCount: Int
+  public let tokenizeNextInputCallCount: Int
+  public let modelContinuationCallCount: Int
+  /// Identity of the detached signature object that this call produced. The
+  /// model result is only reported as settled when the producer signature
+  /// exists.
+  public let settlementSignatureObjectID: String
+  /// Identity of the settlement object the signature covers. It is kept
+  /// separate from `settlementSignatureObjectID` so evidence never mistakes
+  /// the signature for the settlement it authenticates.
+  public let signedSettlementObjectID: String
+  public let settlementSignatureKeyID: String
+}
+
+/// One admitted substitution in the model input. `byteOffset`/`byteLength`
+/// address the value inside the UTF-8 input bytes, so the executor can prove
+/// that the identity it admitted is exactly the bytes the model receives.
+public struct ProductionTaskInputBinding: Equatable, Sendable {
+  public let placeholder: String
+  public let itemID: String
+  public let resultField: String
+  public let value: String
+  public let valueSHA256: String
+  public let settlementObjectID: String
+  public let settlementObjectSHA256: String
+  public let resultValueSHA256: String
+  public let byteOffset: Int
+  public let byteLength: Int
+}
+
+/// The production input admission for one task item: which settled objects were
+/// admitted, what the executor verified, and the exact input materialized from
+/// the item's own template.
+public struct ProductionTaskInputAdmission: Equatable, Sendable {
+  public let taskItemID: String
+  public let declaredDependencies: [String]
+  public let templateSHA256: String
+  public let inputText: String
+  public let inputSHA256: String
+  public let inputByteLength: Int
+  public let bindings: [ProductionTaskInputBinding]
+  public let dependencySettlementObjectIDs: [String: String]
+  /// Every admitted settlement's verified signature identity. The consumer
+  /// checks these itself; the producer's signature is never taken on trust.
+  public let settlementSignatures: [ProductionTaskSettlementSignature]
+  public let checks: [String: Bool]
+
+  public func value(forPlaceholder placeholder: String) -> String? {
+    bindings.first { $0.placeholder == placeholder }?.value
+  }
+
+  /// Machine-readable evidence: identities and digests only, never the raw
+  /// admitted values (they are already carried by the input the model saw).
+  public func evidenceDictionary() -> [String: Any] {
+    [
+      "task_item_id": taskItemID,
+      "declared_dependencies": declaredDependencies,
+      "template_sha256": templateSHA256,
+      "input_sha256": inputSHA256,
+      "input_byte_length": inputByteLength,
+      "dependency_settlement_object_ids": dependencySettlementObjectIDs,
+      "settlement_signatures": settlementSignatures.map { $0.evidenceDictionary() },
+      "checks": checks,
+      "bindings": bindings.map { binding in
+        [
+          "placeholder": binding.placeholder,
+          "item_id": binding.itemID,
+          "result_field": binding.resultField,
+          "value_sha256": binding.valueSHA256,
+          "settlement_object_id": binding.settlementObjectID,
+          "result_value_sha256": binding.resultValueSHA256,
+          "byte_offset": binding.byteOffset,
+          "byte_length": binding.byteLength,
+        ]
+      },
+    ]
+  }
+}
+
+/// The result of one production continuation whose input was resolved and
+/// admitted from the Information Space: the ES handle, the settlement report,
+/// and the exact admission identity the model consumed.
+public struct ProductionTaskInformationContinuation: Equatable, Sendable {
+  public let handle: ExecutionStateHandle
+  public let report: ProductionTaskContinuationReport
+  public let admission: ProductionTaskInputAdmission
+
+  public init(
+    handle: ExecutionStateHandle,
+    report: ProductionTaskContinuationReport,
+    admission: ProductionTaskInputAdmission
+  ) {
+    self.handle = handle
+    self.report = report
+    self.admission = admission
+  }
 }
 
 public struct SerializedProductionExecutionState: Codable, Equatable, Sendable {
@@ -134,31 +292,48 @@ public struct ProductionRuntimeLaunchConfiguration: Equatable, Sendable {
   public let pythonExecutable: URL
   public let snapshotPath: URL
   public let validityPolicyPath: URL
+  /// Deployment file holding the settlement-signature public key. It lives
+  /// outside the Information Space database on purpose: a process that can
+  /// rewrite the database must not be able to install its own anchor.
+  public let settlementTrustAnchorPath: URL?
 
   public init(
     runtimeRoot: URL,
     pythonExecutable: URL,
     snapshotPath: URL,
-    validityPolicyPath: URL
+    validityPolicyPath: URL,
+    settlementTrustAnchorPath: URL? = nil
   ) {
     self.runtimeRoot = runtimeRoot.standardizedFileURL
     self.pythonExecutable = pythonExecutable.standardizedFileURL
     self.snapshotPath = snapshotPath.standardizedFileURL
     self.validityPolicyPath = validityPolicyPath.standardizedFileURL
+    self.settlementTrustAnchorPath = settlementTrustAnchorPath?.standardizedFileURL
   }
 
   public var environment: [String: String] {
-    [
+    var value = [
       "SIMIGO_RUNTIME_ROOT": runtimeRoot.path,
       "SIMIGO_INFO_SNAPSHOT_PATH": snapshotPath.path,
       "SIMIGO_INFO_VALIDITY_POLICY_PATH": validityPolicyPath.path,
     ]
+    if let settlementTrustAnchorPath {
+      value["SIMIGO_SETTLEMENT_TRUST_ANCHOR"] = settlementTrustAnchorPath.path
+    }
+    return value
   }
 }
 
 public final class ProductionRuntimeInformationIntegration: @unchecked Sendable {
   public static let continuationPoint = "bounded-production-runtime-integration"
+  /// Default logical execution identity. A detached continuation must pass a
+  /// DIFFERENT id to the consumer integration so a new execution state is a new
+  /// state, not the same logical state reattached under a new PID.
   public static let executionID = ExecutionID("PRODUCTION-REAL-PALACE")
+  /// The identity this integration actually advances. It defaults to the static
+  /// identity above and is per-instance so two processes in one experiment can
+  /// own different execution states.
+  public let taskExecutionID: ExecutionID
   /// Stable identity the durable codec stamps on persisted prefix payloads, so a
   /// recovered store is readable only by the matching production backend.
   public static let prefixBackendIdentity = "mlx-production-prefix-v1"
@@ -173,14 +348,18 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
   private var modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?
   private let runtime: ExecutionContinuityCoordinator
 
-  public convenience init(labRoot: URL? = nil) {
-    self.init(labRoot: labRoot, modelExecutor: nil)
+  public convenience init(
+    labRoot: URL? = nil,
+    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
+  ) {
+    self.init(labRoot: labRoot, modelExecutor: nil, executionID: executionID)
   }
 
   public init(
     labRoot: URL?,
     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)?,
-    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
+    backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
+    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
   ) {
     if let labRoot {
       self.labRoot = labRoot.standardizedFileURL
@@ -195,6 +374,7 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     launchConfiguration = nil
     self.backend = backend
     self.modelExecutor = modelExecutor
+    self.taskExecutionID = executionID
     stateStore = nil
     runtime = ExecutionContinuityCoordinator(backend: backend)
   }
@@ -202,11 +382,13 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
   public init(
     configuration: ProductionRuntimeLaunchConfiguration,
     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
-    backend: MLXExecutionStateBackend = MLXExecutionStateBackend()
+    backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
+    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
   ) {
     launchConfiguration = configuration
     self.backend = backend
     self.modelExecutor = modelExecutor
+    self.taskExecutionID = executionID
     labRoot = configuration.runtimeRoot
     stateStore = nil
     runtime = ExecutionContinuityCoordinator(backend: backend)
@@ -224,11 +406,13 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     modelExecutor: (any ProductionRuntimeModelContinuationExecutor)? = nil,
     backend: MLXExecutionStateBackend = MLXExecutionStateBackend(),
     semanticStateDirectory: URL,
-    resetToFreshBaseline: Bool = false
+    resetToFreshBaseline: Bool = false,
+    executionID: ExecutionID = ProductionRuntimeInformationIntegration.executionID
   ) throws {
     launchConfiguration = configuration
     self.backend = backend
     self.modelExecutor = modelExecutor
+    self.taskExecutionID = executionID
     labRoot = configuration.runtimeRoot
     let store = DurableExecutionStateStore(
       directory: semanticStateDirectory.standardizedFileURL,
@@ -306,6 +490,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
       throw ProductionRuntimeInformationError.invalidBridgeResponse(command: command)
     }
     guard process.terminationStatus == 0, decoded["ok"] as? Bool == true else {
+      if let refusal = decoded["refusal"] as? [String: Any],
+         let stage = refusal["stage"] as? String,
+         let reason = refusal["reason"] as? String {
+        let detail = refusal["detail"] as? [String: Any]
+        throw ProductionRuntimeInformationError.bridgeRefused(
+          command: command,
+          stage: stage,
+          reason: reason,
+          itemID: detail?["item_id"] as? String
+        )
+      }
       let message = decoded["error"] as? String ?? String(decoding: error.fileHandleForReading.availableData, as: UTF8.self)
       throw ProductionRuntimeInformationError.bridgeFailed(
         command: command,
@@ -418,6 +613,22 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
 
   func runtimeLifecycleRecords(executionID: ExecutionID) -> [ExecutionContinuityCoordinator.LifecycleRecord] {
     runtime.recordsSnapshot.filter { $0.executionID == executionID }
+  }
+
+  /// Serialized lifecycle transitions for experiment evidence. This is a
+  /// read-only projection of the coordinator's authoritative records; it does
+  /// not add, alter, or replay a transition.
+  public func lifecycleRecordSummary() -> [[String: Any]] {
+    runtime.recordsSnapshot.map { record in
+      [
+        "sequence": record.sequence,
+        "operation": record.operation.rawValue,
+        "execution_id": record.executionID.rawValue,
+        "related_id": record.relatedID?.rawValue ?? NSNull(),
+        "result_lifecycle": record.resultLifecycle.rawValue,
+        "result_position": Int(record.resultPosition.value),
+      ]
+    }
   }
 
   func runtimeHandle(executionID: ExecutionID) -> ExecutionStateHandle? {
@@ -546,17 +757,17 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
       )
     }
     // The ES to recover comes from durable state, not a caller-supplied handle.
-    guard let recovered = runtime.handle(Self.executionID) else {
+    guard let recovered = runtime.handle(self.taskExecutionID) else {
       throw ProductionRuntimeInformationError.durableExecutionStateMissing(
-        executionID: Self.executionID.rawValue
+        executionID: self.taskExecutionID.rawValue
       )
     }
     // Cross-layer checkpoint: prove the persisted ES corresponds to IS's current
     // settled state BEFORE rebinding or returning a resumable handle. A missing
     // checkpoint means the ES never recorded its IS settlement link.
-    guard let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) else {
+    guard let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) else {
       throw ProductionRuntimeInformationError.settlementCheckpointMissing(
-        executionID: Self.executionID.rawValue
+        executionID: self.taskExecutionID.rawValue
       )
     }
     try validateSettlementAgainstInformationSpace(
@@ -608,7 +819,7 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
     // agrees) is rejected here — we never advance IS first and discover the ES
     // mismatch afterwards. A fresh ES with no checkpoint has nothing to
     // cross-check yet, so its first settlement proceeds normally.
-    if let checkpoint = runtime.settlementCheckpoint(for: Self.executionID) {
+    if let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) {
       let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
       try validateSettlementAgainstInformationSpace(
         checkpoint: checkpoint,
@@ -745,7 +956,7 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         created = true
         failureStage = "runtime_create_or_attach"
         let fresh = try await runtime.create(
-          id: Self.executionID,
+          id: self.taskExecutionID,
           position: ExecutionPosition(0),
           continuation: ExecutionContinuation(
             nextInput: "\(Self.continuationPoint)-initial",
@@ -872,5 +1083,658 @@ public final class ProductionRuntimeInformationIntegration: @unchecked Sendable 
         resultDigest: digest
       )
     )
+  }
+
+  // MARK: - Real-model task continuation (model result settled into IS)
+
+  /// Run one task step on the real model executor and settle ITS RESULT into the
+  /// Information Space through the ordinary demand machinery.
+  ///
+  /// Ordering is deliberate and differs from ``continueWithRealInformation``:
+  /// the model produces the value FIRST (from the ES's bound representation),
+  /// then the value is settled, then the ES advances and rebinds the advanced
+  /// representation, then IS confirms runtime application. The bridge accepts a
+  /// model result only for exactly one item; if any dependency is not reusable
+  /// the settlement refuses instead of covering work the model never did.
+  ///
+  /// `handle == nil` creates a fresh ES seeded with `seedText`. Passing a
+  /// recovered handle resumes the durable representation; a missing persisted
+  /// representation fails closed rather than fabricating a seed prefix.
+  ///
+  /// The model input is NEVER supplied by the caller: this entry resolves and
+  /// admits it from the Information Space for `taskItemID` before any new side
+  /// effect, so every ordinary task execution consumes the item's declared
+  /// dependency settlements through the same admission contract. A missing,
+  /// invalid, expired, byte-tampered or dependency-mismatched settlement
+  /// refuses here, before tokenization and before generation.
+  public func continueTask(
+    database: URL,
+    handle: ExecutionStateHandle?,
+    advancementID: String,
+    evaluatedAtUTC: String,
+    demandID: String,
+    taskItemID: String,
+    seedText: String?,
+    provenance: ProductionTaskProvenance,
+    maxTokens: Int = 32,
+    modelValue: (ExecutionContinuationResult, ProductionTaskInputAdmission) throws -> [String: Any]
+  ) async throws -> ProductionTaskInformationContinuation {
+    let admission = try resolveTaskInput(
+      database: database, taskItemID: taskItemID, evaluatedAtUTC: evaluatedAtUTC)
+    // Fail closed BEFORE any new side effect when this ES already carries a
+    // settlement checkpoint that no longer matches IS's current settled state.
+    if let checkpoint = runtime.settlementCheckpoint(for: self.taskExecutionID) {
+      let preExecutionISState = try informationSpaceLatestExecutionState(database: database)
+      try validateSettlementAgainstInformationSpace(
+        checkpoint: checkpoint,
+        isState: preExecutionISState,
+        handle: handle
+      )
+      if stateStore != nil, let handle,
+         (try? backend.boundPrefix(for: handle)) == nil,
+         !runtime.hasPersistedRepresentation(
+          executionID: handle.id, position: handle.position) {
+        throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
+          executionID: handle.id.rawValue,
+          position: handle.position.value
+        )
+      }
+    }
+    guard let modelExecutor else {
+      throw ProductionRuntimeInformationError.modelExecutorUnavailable
+    }
+
+    var tokenizeSeedCallCount = 0
+    var tokenizeNextInputCallCount = 0
+    var modelContinuationCallCount = 0
+    tokenizeNextInputCallCount += 1
+    let nextInputTokens = try await modelExecutor.tokenizeText(admission.inputText)
+
+    var created = false
+    var current: ExecutionStateHandle?
+    var priorRepresentation: ExecutionRepresentation?
+    var advanced: ExecutionStateHandle?
+    var modelResult: ExecutionContinuationResult?
+    var failureStage: String?
+    var settledConfirmationState: [String: Any]?
+    var bridgeComputed: [String] = []
+    var bridgeReused: [String] = []
+    var bridgeActions: [ProductionTaskSettlementAction] = []
+    var bridgeResultDigest = ""
+    var pendingStateID = ""
+    var valueFileURL: URL?
+    var provenanceFileURL: URL?
+    var settlementSignatureObjectID = ""
+    var settlementSignedObjectID = ""
+    var settlementSignatureKeyID = ""
+
+    func failPending(_ stage: String, _ reason: String) throws {
+      _ = try runBridge("record-blocked", arguments: [
+        "--database", database.path,
+        "--state-id", "\(pendingStateID.isEmpty ? advancementID : pendingStateID):\(stage)-failed",
+        "--prior-state-id", pendingStateID.isEmpty ? advancementID : pendingStateID,
+        "--reason", "\(stage): \(reason)",
+      ])
+    }
+
+    do {
+      failureStage = "runtime_create_or_attach"
+      if let handle {
+        if runtime.handle(handle.id) != nil {
+          current = try await runtime.reattach(handle)
+        } else {
+          current = try await runtime.attach(handle)
+        }
+        guard let attached = current else {
+          throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
+        }
+        // Recovery priority: rebind the PERSISTED representation. Re-tokenizing
+        // a seed here would fabricate a prefix and masquerade as recovered work.
+        if (try? backend.boundPrefix(for: attached)) == nil {
+          failureStage = "representation_recovery_rebind"
+          let reboundFromDurableState = try await runtime.restorePersistedBinding(
+            executionID: attached.id,
+            position: attached.position
+          )
+          guard reboundFromDurableState, stateStore != nil else {
+            throw ProductionRuntimeInformationError.persistedRepresentationUnavailable(
+              executionID: attached.id.rawValue,
+              position: attached.position.value
+            )
+          }
+        }
+      } else {
+        guard let seedText else {
+          throw ProductionRuntimeInformationError.modelExecutionFailed(
+            reason: "a fresh execution requires seed text")
+        }
+        failureStage = "tokenize_seed"
+        tokenizeSeedCallCount += 1
+        let seedTokens = try await modelExecutor.tokenizeSeedText(seedText)
+        created = true
+        failureStage = "runtime_create_or_attach"
+        let fresh = try await runtime.create(
+          id: self.taskExecutionID,
+          position: ExecutionPosition(0),
+          continuation: ExecutionContinuation(
+            nextInput: "\(Self.continuationPoint)-initial",
+            continuationID: "\(Self.continuationPoint)-initial-cont"
+          )
+        )
+        current = fresh
+        failureStage = "representation_binding"
+        try await runtime.bindRepresentation(
+          executionID: fresh.id,
+          position: fresh.position,
+          payload: MLXPrefixPayload(tokenPrefix: seedTokens)
+        )
+      }
+      guard let current else {
+        throw ProductionRuntimeInformationError.modelExecutionFailed(reason: "runtime handle unavailable")
+      }
+      failureStage = "capture_pre_model_representation"
+      priorRepresentation = try await backend.captureRepresentation(for: current)
+
+      failureStage = "model_execution"
+      modelContinuationCallCount += 1
+      let produced = try await modelExecutor.continueExecution(
+        current,
+        nextInputTokens: nextInputTokens,
+        maxTokens: maxTokens
+      )
+      modelResult = produced
+
+      failureStage = "model_result_preparation"
+      let value = try modelValue(produced, admission)
+      let valueData = try JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
+      let valueURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("simigo-model-result-\(UUID().uuidString).json")
+      try valueData.write(to: valueURL, options: .atomic)
+      valueFileURL = valueURL
+
+      // Producer attestation: the run/execution/process/build identity, the
+      // model snapshot and the exact generated tokens. The signing settlement
+      // path binds these into the declaration; it never signs caller-supplied
+      // bytes, and it recomputes the token digest against the model value.
+      let provenanceURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("simigo-settlement-provenance-\(UUID().uuidString).json")
+      let provenanceData = try JSONSerialization.data(
+        withJSONObject: provenance.override(generatedTokenIDs: produced.generatedTokenIDs),
+        options: [.sortedKeys])
+      try provenanceData.write(to: provenanceURL, options: .atomic)
+      provenanceFileURL = provenanceURL
+
+      failureStage = "information_settlement"
+      let response = try runBridge("execute-with-model-result", arguments: [
+        "--database", database.path,
+        "--demand-id", demandID,
+        "--advancement", advancementID,
+        "--evaluated-at", evaluatedAtUTC,
+        "--item-id", taskItemID,
+        "--value-file", valueURL.path,
+        "--provenance-file", provenanceURL.path,
+        "--run-id", provenance.runID,
+        "--execution-id", provenance.executionID,
+        "--build-sha256", provenance.buildSHA256,
+        "--producer-process-id", provenance.processID,
+      ])
+      guard let signature = response["settlement_signature"] as? [String: Any],
+            let signatureObjectID = signature["signature_object_id"] as? String,
+            !signatureObjectID.isEmpty,
+            let signedSettlementObjectID = signature["settlement_object_id"] as? String,
+            !signedSettlementObjectID.isEmpty,
+            let signatureKeyID = signature["key_id"] as? String,
+            !signatureKeyID.isEmpty else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(
+          command: "execute-with-model-result")
+      }
+      settlementSignatureObjectID = signatureObjectID
+      settlementSignedObjectID = signedSettlementObjectID
+      settlementSignatureKeyID = signatureKeyID
+      guard let result = response["result"] as? [String: Any] else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
+      }
+      let state = result["state"] as? String ?? "UNKNOWN"
+      guard result["advanced"] as? Bool == true, state == "ADVANCED" else {
+        throw ProductionRuntimeInformationError.blockedInformationDemand(
+          command: advancementID,
+          state: state,
+          validityFailureItemIDs: result["validity_failure_item_ids"] as? [String] ?? []
+        )
+      }
+      guard let executionState = result["execution_state"] as? [String: Any],
+            let unwrappedPendingStateID = executionState["state_id"] as? String else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(command: "execute-with-model-result")
+      }
+      pendingStateID = unwrappedPendingStateID
+      bridgeComputed = result["computed_item_ids"] as? [String] ?? []
+      bridgeReused = result["reused_item_ids"] as? [String] ?? []
+      bridgeActions = (result["actions"] as? [[String: Any]] ?? []).map { action in
+        ProductionTaskSettlementAction(
+          itemID: action["item_id"] as? String ?? "",
+          action: action["action"] as? String ?? "",
+          settlementObjectID: action["settlement_object_id"] as? String ?? "",
+          resultDigest: action["result_digest"] as? String ?? "",
+          settlementSignatureObjectID: action["settlement_signature_object_id"] as? String
+        )
+      }
+      // The signature envelope names the settlement it covers. That object must
+      // be the very settlement this call reports for the executed item, and the
+      // signature object named per action must be the envelope just read.
+      guard let executedAction = bridgeActions.first(where: { $0.itemID == taskItemID }),
+            executedAction.settlementObjectID == settlementSignedObjectID,
+            executedAction.settlementSignatureObjectID == settlementSignatureObjectID else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(
+          command: "execute-with-model-result")
+      }
+      let resultPayload = result["result"] as? [String: Any] ?? [:]
+      let resultData = try JSONSerialization.data(withJSONObject: resultPayload, options: [.sortedKeys])
+      bridgeResultDigest = SHA256.hash(data: resultData).map { String(format: "%02x", $0) }.joined()
+
+      failureStage = "logical_advance"
+      advanced = try await runtime.continueExecution(
+        current,
+        continuation: ExecutionContinuation(
+          nextInput: "\(Self.continuationPoint):\(advancementID)",
+          continuationID: "\(Self.continuationPoint):\(advancementID):cont"
+        )
+      )
+      failureStage = "representation_binding"
+      guard let unwrappedAdvanced = advanced, let unwrappedModelResult = modelResult else {
+        throw ProductionRuntimeInformationError.modelExecutionFailed(
+          reason: "runtime continuation result missing")
+      }
+      try await runtime.bindRepresentation(
+        executionID: unwrappedAdvanced.id,
+        position: unwrappedAdvanced.position,
+        payload: unwrappedModelResult.updatedPayload
+      )
+      failureStage = "post_bind_verification"
+      _ = try backend.boundPrefix(for: unwrappedAdvanced)
+      failureStage = "carrier_confirmation"
+      let confirmationResponse = try runBridge(
+        "confirm-runtime-application",
+        arguments: ["--database", database.path, "--state-id", pendingStateID]
+      )
+      settledConfirmationState = confirmationResponse["execution_state"] as? [String: Any]
+    } catch {
+      failureStage = failureStage ?? "unclassified"
+      try? failPending(failureStage!, String(describing: error))
+      if let priorRepresentation {
+        try? await backend.restoreRepresentation(priorRepresentation)
+      }
+      if let base = current {
+        try? await runtime.restore(
+          base,
+          request: ExecutionRestoreRequest(
+            targetPosition: base.position,
+            continuation: base.continuation
+          )
+        )
+      }
+      if let terminal = advanced ?? current {
+        try? await runtime.discard(terminal)
+        backend.consumeBinding(for: terminal)
+      }
+      if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
+      if let provenanceFileURL { try? FileManager.default.removeItem(at: provenanceFileURL) }
+      throw ProductionRuntimeInformationError.modelExecutionFailed(
+        reason: "[\(failureStage ?? "unclassified")] \(error)"
+      )
+    }
+    if let valueFileURL { try? FileManager.default.removeItem(at: valueFileURL) }
+    if let provenanceFileURL { try? FileManager.default.removeItem(at: provenanceFileURL) }
+
+    // Bind the ES↔IS checkpoint to the authoritative confirmation record, so a
+    // later recovery can prove the recovered ES matches IS's latest settlement.
+    if stateStore != nil,
+       let confirmedState = settledConfirmationState,
+       let confirmationStateID = confirmedState["state_id"] as? String,
+       let confirmationPriorID = confirmedState["prior_state_id"] as? String,
+       let isResultDigest = confirmedState["result_digest"] as? String,
+       let isValidityBasis = confirmedState["demand_digest"] as? String,
+       let advancedHandle = advanced {
+      try await runtime.recordSettlementCheckpoint(
+        ExecutionContinuityCoordinator.SettlementCheckpoint(
+          executionID: advancedHandle.id,
+          position: advancedHandle.position,
+          lastSettledAdvancementID: advancementID,
+          isOriginalStateID: confirmationPriorID,
+          isConfirmationStateID: confirmationStateID,
+          resultDigest: isResultDigest,
+          validityBasis: isValidityBasis
+        )
+      )
+    }
+
+    guard let advancedHandle = advanced,
+          let produced = modelResult,
+          let confirmation = settledConfirmationState,
+          let confirmationStateID = confirmation["state_id"] as? String,
+          let updatedPrefix = (produced.updatedPayload as? MLXPrefixPayload)?.tokenPrefix else {
+      throw ProductionRuntimeInformationError.modelExecutionFailed(
+        reason: "task continuation evidence unavailable")
+    }
+    let report = ProductionTaskContinuationReport(
+      demandID: demandID,
+      taskItemID: taskItemID,
+      created: created,
+      computedItemIDs: bridgeComputed,
+      reusedItemIDs: bridgeReused,
+      settlementActions: bridgeActions,
+      resultDigest: bridgeResultDigest,
+      isPendingStateID: pendingStateID,
+      isConfirmationStateID: confirmationStateID,
+      advancedPosition: advancedHandle.position.value,
+      advancedLifecycle: advancedHandle.lifecycle.rawValue,
+      consumedPrefixLength: produced.consumedPrefixLength,
+      nextInputTokenCount: produced.nextInputTokenCount,
+      nextInputTokenIDs: nextInputTokens,
+      generatedTokenIDs: produced.generatedTokenIDs,
+      generatedText: produced.generatedText,
+      updatedPrefixTokenCount: updatedPrefix.count,
+      tokenizeSeedCallCount: tokenizeSeedCallCount,
+      tokenizeNextInputCallCount: tokenizeNextInputCallCount,
+      modelContinuationCallCount: modelContinuationCallCount,
+      settlementSignatureObjectID: settlementSignatureObjectID,
+      signedSettlementObjectID: settlementSignedObjectID,
+      settlementSignatureKeyID: settlementSignatureKeyID
+    )
+    return ProductionTaskInformationContinuation(
+      handle: advancedHandle, report: report, admission: admission)
+  }
+
+  // MARK: - Information Space input admission (production task path)
+
+  private static func sha256Hex(_ data: Data) -> String {
+    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
+
+  /// Template placeholders are the task item's OWN declaration (`{name}`); the
+  /// production resolver expands them from admitted settlements only.
+  private static let inputPlaceholderPattern: NSRegularExpression = {
+    // Compile-time constant: an invalid pattern is a programming error.
+    try! NSRegularExpression(pattern: "\\{([a-z][a-z0-9_]*)\\}")
+  }()
+
+  private static func expandInputTemplate(
+    _ template: String,
+    values: [String: String]
+  ) -> String? {
+    let text = template as NSString
+    let matches = inputPlaceholderPattern.matches(
+      in: template, range: NSRange(location: 0, length: text.length))
+    var expanded = ""
+    var cursor = 0
+    for match in matches {
+      expanded += text.substring(
+        with: NSRange(location: cursor, length: match.range.location - cursor))
+      let name = text.substring(with: match.range(at: 1))
+      guard let value = values[name] else { return nil }
+      expanded += value
+      cursor = match.range.location + match.range.length
+    }
+    expanded += text.substring(from: cursor)
+    return expanded
+  }
+
+  /// Resolve and ADMIT the model input for one task item from the Information
+  /// Space, before any tokenization or generation.
+  ///
+  /// The production resolver reads the item's declared dependency closure,
+  /// admits every settled dependency through the ordinary settlement reuse
+  /// decision, and expands the item's own template. This method then verifies
+  /// the returned material byte-for-byte: the object identity IS the content
+  /// digest, the admitted value occupies exactly the declared byte range, and
+  /// re-expanding the template reproduces the same input. The identity the
+  /// executor admitted is therefore exactly the bytes handed to the model.
+  public func resolveTaskInput(
+    database: URL,
+    taskItemID: String,
+    evaluatedAtUTC: String
+  ) throws -> ProductionTaskInputAdmission {
+    let response: [String: Any]
+    do {
+      response = try runBridge("resolve-model-input", arguments: [
+        "--database", database.path,
+        "--item-id", taskItemID,
+        "--evaluated-at", evaluatedAtUTC,
+      ])
+    } catch ProductionRuntimeInformationError.bridgeRefused(
+      _, let stage, let reason, let itemID
+    ) {
+      throw ProductionRuntimeInformationError.informationSpaceInputAdmissionRefused(
+        itemID: itemID ?? taskItemID, stage: stage, reason: reason)
+    }
+    guard let inputText = response["input_text"] as? String,
+          let inputSHA256 = response["input_sha256"] as? String,
+          let inputByteLength = response["input_byte_length"] as? Int,
+          let template = response["template"] as? String,
+          let templateSHA256 = response["template_sha256"] as? String,
+          let declaredDependencies = response["declared_dependencies"] as? [String],
+          let rawBindings = response["bindings"] as? [[String: Any]],
+          let rawDependencies = response["dependencies"] as? [[String: Any]],
+          let rawSignatures = response["settlement_signatures"] as? [[String: Any]],
+          let rawChecks = response["checks"] as? [String: Any] else {
+      throw ProductionRuntimeInformationError.invalidBridgeResponse(
+        command: "resolve-model-input")
+    }
+
+    let inputData = Data(inputText.utf8)
+    guard Self.sha256Hex(inputData) == inputSHA256 else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "input_sha256")
+    }
+    guard inputData.count == inputByteLength else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "input_byte_length")
+    }
+    guard Self.sha256Hex(Data(template.utf8)) == templateSHA256 else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "template_sha256")
+    }
+    // Every admission check the resolver reports must be present and true; an
+    // unknown-but-false check also refuses rather than being ignored.
+    let requiredChecks = [
+      "all_declared_dependencies_admitted",
+      "settlement_objects_readable",
+      "object_identity_matches_bytes",
+      "result_digests_match_values",
+      "source_versions_match_items",
+      "dependency_object_sets_match",
+      "validity_satisfied",
+      "all_placeholders_bound",
+      "settlement_signatures_valid",
+    ]
+    for name in requiredChecks {
+      guard rawChecks[name] as? Bool == true else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "admission_check:\(name)")
+      }
+    }
+    for (name, value) in rawChecks where value as? Bool != true {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "admission_check:\(name)")
+    }
+
+    var bindings: [ProductionTaskInputBinding] = []
+    var boundValues: [String: String] = [:]
+    for raw in rawBindings {
+      guard let placeholder = raw["placeholder"] as? String,
+            let itemID = raw["item_id"] as? String,
+            let resultField = raw["result_field"] as? String,
+            let value = raw["value"] as? String,
+            let valueSHA256 = raw["value_sha256"] as? String,
+            let settlementObjectID = raw["settlement_object_id"] as? String,
+            let settlementObjectSHA256 = raw["settlement_object_sha256"] as? String,
+            let resultValueSHA256 = raw["result_value_sha256"] as? String,
+            let byteOffset = raw["byte_offset"] as? Int,
+            let byteLength = raw["byte_length"] as? Int else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(
+          command: "resolve-model-input")
+      }
+      let valueData = Data(value.utf8)
+      guard Self.sha256Hex(valueData) == valueSHA256 else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "value_sha256:\(placeholder)")
+      }
+      // The object id IS the content digest: an identity that no longer hashes
+      // to its own bytes cannot be the settled object it claims to be.
+      guard settlementObjectID == settlementObjectSHA256 else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "object_identity:\(placeholder)")
+      }
+      guard byteOffset >= 0, byteLength == valueData.count,
+            byteOffset + byteLength <= inputData.count else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "byte_range:\(placeholder)")
+      }
+      guard inputData.subdata(
+        in: byteOffset..<(byteOffset + byteLength)) == valueData else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "byte_slice:\(placeholder)")
+      }
+      guard declaredDependencies.contains(itemID) else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "binding_dependency:\(placeholder)")
+      }
+      guard boundValues[placeholder] == nil else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "duplicate_placeholder:\(placeholder)")
+      }
+      boundValues[placeholder] = value
+      bindings.append(ProductionTaskInputBinding(
+        placeholder: placeholder,
+        itemID: itemID,
+        resultField: resultField,
+        value: value,
+        valueSHA256: valueSHA256,
+        settlementObjectID: settlementObjectID,
+        settlementObjectSHA256: settlementObjectSHA256,
+        resultValueSHA256: resultValueSHA256,
+        byteOffset: byteOffset,
+        byteLength: byteLength))
+    }
+
+    var dependencyObjectIDs: [String: String] = [:]
+    var dependenciesByItem: [String: [String: Any]] = [:]
+    for raw in rawDependencies {
+      guard let itemID = raw["item_id"] as? String,
+            let objectID = raw["settlement_object_id"] as? String,
+            let objectSHA256 = raw["settlement_object_sha256"] as? String else {
+        throw ProductionRuntimeInformationError.invalidBridgeResponse(
+          command: "resolve-model-input")
+      }
+      guard objectID == objectSHA256 else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "dependency_object_identity:\(itemID)")
+      }
+      guard dependenciesByItem[itemID] == nil else {
+        throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+          field: "duplicate_dependency:\(itemID)")
+      }
+      dependencyObjectIDs[itemID] = objectID
+      dependenciesByItem[itemID] = raw
+    }
+    // The bridge resolves the item's dependency closure TRANSITIVELY, so for a
+    // multi-hop item (e.g. U3 declares only U2 while U2 itself depends on U1 and
+    // the source) the resolved set is a SUPERSET of the directly declared set.
+    // The admission is valid when every directly declared dependency is present
+    // and identity-verified here; the recursive closure is independently proven
+    // per settlement by `SettlementProvenanceVerifier.verify`, which requires
+    // every RESOLVED closure item to carry a verifying signature whose own
+    // signed dependency closure still matches. Requiring exact equality here
+    // would reject any chain deeper than one hop, so the correct invariant is
+    // "declared is a subset of the resolved closure", never "declared == closure".
+    guard !dependencyObjectIDs.isEmpty || declaredDependencies.isEmpty,
+          Set(declaredDependencies).isSubset(of: Set(dependencyObjectIDs.keys)) else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "dependency_closure")
+    }
+
+    // Consumer-side provenance verification. Every admitted settlement must
+    // carry an Ed25519 signature that verifies against the deployment anchor
+    // AND whose signed provenance still names the exact settlement object,
+    // source version, dependency closure, result digest and validity basis we
+    // are about to feed to the model. This runs before tokenization.
+    guard let trustAnchorPath = launchConfiguration?.settlementTrustAnchorPath?.path
+      ?? ProcessInfo.processInfo.environment["SIMIGO_SETTLEMENT_TRUST_ANCHOR"] else {
+      throw ProductionRuntimeInformationError.informationSpaceInputAdmissionRefused(
+        itemID: taskItemID,
+        stage: "SETTLEMENT_TRUST_ANCHOR_UNAVAILABLE",
+        reason: "no deployment trust anchor path is configured for the consumer")
+    }
+    let verifiedSignatures: [ProductionTaskSettlementSignature]
+    do {
+      verifiedSignatures = try SettlementProvenanceVerifier.verify(
+        signatures: rawSignatures,
+        dependencies: dependenciesByItem,
+        declaredDependencies: declaredDependencies,
+        bindings: bindings,
+        trustAnchorPath: trustAnchorPath)
+    } catch let error as SettlementProvenanceError {
+      throw ProductionRuntimeInformationError.informationSpaceInputAdmissionRefused(
+        itemID: taskItemID, stage: error.code, reason: error.detail)
+    }
+    guard let expanded = Self.expandInputTemplate(template, values: boundValues) else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "template_placeholder_unbound")
+    }
+    guard expanded == inputText else {
+      throw ProductionRuntimeInformationError.informationSpaceInputBindingMismatch(
+        field: "template_expansion")
+    }
+
+    var checks: [String: Bool] = [:]
+    for (name, value) in rawChecks { checks[name] = value as? Bool }
+    return ProductionTaskInputAdmission(
+      taskItemID: taskItemID,
+      declaredDependencies: declaredDependencies,
+      templateSHA256: templateSHA256,
+      inputText: inputText,
+      inputSHA256: inputSHA256,
+      inputByteLength: inputByteLength,
+      bindings: bindings,
+      dependencySettlementObjectIDs: dependencyObjectIDs,
+      settlementSignatures: verifiedSignatures,
+      checks: checks
+    )
+  }
+
+  // MARK: - Task bridge accessors
+
+  @discardableResult
+  public func defineTask(
+    database: URL,
+    evaluatedAtUTC: String,
+    runLabel: String,
+    secret: String? = nil,
+    randomSecret: Bool = false
+  ) throws -> [String: Any] {
+    var arguments = [
+      "--database", database.path,
+      "--evaluated-at", evaluatedAtUTC,
+      "--run-label", runLabel,
+    ]
+    if randomSecret {
+      arguments += ["--random-secret"]
+    } else if let secret {
+      arguments += ["--secret", secret]
+    }
+    return try runBridge("define-task", arguments: arguments)
+  }
+
+  public func readItem(database: URL, itemID: String) throws -> [String: Any] {
+    try runBridge("read-item", arguments: [
+      "--database", database.path,
+      "--item-id", itemID,
+    ])
+  }
+
+  public func readSettlement(database: URL, itemID: String) throws -> [String: Any] {
+    try runBridge("read-settlement", arguments: [
+      "--database", database.path,
+      "--item-id", itemID,
+    ])
   }
 }

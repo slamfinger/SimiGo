@@ -12,9 +12,35 @@ let package = Package(
         .library(name: "SimiGoRuntimeContract", targets: ["SimiGoRuntimeContract"]),
         .executable(name: "simigo2ctl", targets: ["simigo2ctl"]),
         .executable(name: "ActualMLXSmokeChild", targets: ["ActualMLXSmokeChild"]),
+        // Real-model ES -> IS -> fresh-ES handoff: stage A settles a model result
+        // into IS and releases the carrier, stage C recovers a fresh ES in a new
+        // process and continues with only the remaining model work.
+        .executable(name: "RealModelHandoff", targets: ["RealModelHandoff"]),
+        // Ordinary task entry: one process runs one task item through the
+        // production continuation, which resolves and admits the item's
+        // declared dependency settlements from IS before any generation. It
+        // contains no handoff orchestration and receives no input text.
+        .executable(name: "SimiGoTaskRun", targets: ["SimiGoTaskRun"]),
+        // F round: native orchestration of the detached U1->U2 process and
+        // execution-state boundary. Model-free and settlement-free: it only
+        // owns subprocess lifecycle and evidence assembly.
+        .executable(name: "SimiGoDetachedDriver", targets: ["SimiGoDetachedDriver"]),
+        // Cross-engine contract parity: the native side of the shared case file.
+        // It runs every canonical case through the native result-contract engine
+        // and prints one verdict per case; comparison against the Python gate is
+        // done by the Python harness, so neither engine grades its own homework.
+        .executable(name: "NativeContractParityHarness", targets: ["NativeContractParityHarness"]),
         .executable(name: "EngineBaselineCrashChild", targets: ["EngineBaselineCrashChild"]),
         .executable(name: "MaterializationQuarantineCrashChild", targets: ["MaterializationQuarantineCrashChild"]),
         .executable(name: "ExecutionStateChaosChild", targets: ["ExecutionStateChaosChild"]),
+        .executable(name: "g3-swift-isolation-entry", targets: ["G3SwiftIsolationEntry"]),
+        // G6/G7b: the real D1 worker and supervisor. Both are contract-only
+        // (SimiGoRuntimeContract), so they cannot reach the ungated executor
+        // surface (SimiGo2Experimental) and are model-free: the isolation gate
+        // refuses under the empty trust registry before any model call or
+        // binding consumption (G8a). Their identity is bound by G3_EXPECT_EXEC_SHA256.
+        .executable(name: "G3D1Worker", targets: ["G3D1Worker"]),
+        .executable(name: "G3D1Supervisor", targets: ["G3D1Supervisor"]),
         .executable(name: "SimiGo2App", targets: ["SimiGo2App"])
     ],
     dependencies: [
@@ -75,6 +101,42 @@ let package = Package(
             ]
         ),
         .executableTarget(
+            name: "RealModelHandoff",
+            dependencies: [
+                "SimiGo2Experimental",
+                "SimiGoRuntimeContract",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+                .product(name: "MLXLLM", package: "mlx-swift-lm"),
+                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
+                .product(name: "Tokenizers", package: "swift-transformers")
+            ]
+        ),
+        .executableTarget(
+            name: "SimiGoTaskRun",
+            dependencies: [
+                "SimiGo2Experimental",
+                "SimiGoRuntimeContract",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm"),
+                .product(name: "MLXLLM", package: "mlx-swift-lm"),
+                .product(name: "MLXHuggingFace", package: "mlx-swift-lm"),
+                .product(name: "Tokenizers", package: "swift-transformers")
+            ]
+        ),
+        .executableTarget(
+            name: "SimiGoDetachedDriver",
+            dependencies: []
+        ),
+        .executableTarget(
+            name: "NativeContractParityHarness",
+            dependencies: [
+                "SimiGo2Experimental",
+                .product(name: "MLX", package: "mlx-swift"),
+                .product(name: "MLXLMCommon", package: "mlx-swift-lm")
+            ]
+        ),
+        .executableTarget(
             name: "SimiGo2App",
             dependencies: ["SimiGo2Experimental"]
         ),
@@ -90,6 +152,34 @@ let package = Package(
             name: "ExecutionStateChaosChild",
             dependencies: ["SimiGo2Experimental"]
         ),
+        // Native G3 isolation-gate control point, invoked by the Python research
+        // harness. MLX-free and model-free: it only exercises the gate's control
+        // flow (attestation -> requireIsolation -> generation), so the boundary
+        // is callable and testable without loading a model or the MLX runtime.
+        .executableTarget(
+            name: "G3SwiftIsolationEntry",
+            dependencies: ["SimiGoRuntimeContract"]
+        ),
+        // G3D1WorkerCore: the shared, contract-only logic for the D1 worker and
+        // supervisor (identity self-check, one-shot authorization, model-free
+        // gated dual-arm control flow, auditable records). It MUST NOT depend on
+        // SimiGo2Experimental — that is the G8b-A boundary the manifest checks.
+        .target(
+            name: "G3D1WorkerCore",
+            dependencies: ["SimiGoRuntimeContract"]
+        ),
+        .executableTarget(
+            name: "G3D1Worker",
+            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
+        ),
+        .executableTarget(
+            name: "G3D1Supervisor",
+            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
+        ),
+        .testTarget(
+            name: "G3D1SupervisorTests",
+            dependencies: ["G3D1WorkerCore", "SimiGoRuntimeContract"]
+        ),
         .testTarget(
             name: "SimiGoRuntimeContractTests",
             dependencies: ["SimiGoRuntimeContract"]
@@ -98,11 +188,11 @@ let package = Package(
             name: "SimiGo2ExperimentalTests",
             dependencies: [
                 "SimiGo2Experimental", "SimiGoRuntimeContract",
-                // NativeMLXCarrierReleaseTests drives the real MLX runtime (genuine
-                // KVCacheSimple + write observer + storage identity) with synthetic
-                // CPU tensors and no model weights, so the test target links the MLX
-                // products directly. No executable target or G3/D1 config changes.
                 .product(name: "MLX", package: "mlx-swift"),
+                // The real KV cache under test (KVCacheSimple.update) lives in
+                // MLXLMCommon; linking it lets the during-generation allocation
+                // gateway be exercised against the genuine cache lifecycle without
+                // loading a model.
                 .product(name: "MLXLMCommon", package: "mlx-swift-lm")
             ]
         )

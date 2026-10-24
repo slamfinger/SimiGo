@@ -3,6 +3,13 @@ import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class ProductionRuntimeFailureBoundaryTests: XCTestCase {
+  override func setUpWithError() throws {
+    // The bridge settles under the `required` provenance policy, so every
+    // boundary case needs the deployment trust root before the failure mode
+    // under test is reachable.
+    try SettlementTrustFixture.install()
+  }
+
   private func makeConfiguration() throws -> ProductionRuntimeLaunchConfiguration {
     let labRoot = URL(fileURLWithPath: #filePath)
       .deletingLastPathComponent().deletingLastPathComponent()

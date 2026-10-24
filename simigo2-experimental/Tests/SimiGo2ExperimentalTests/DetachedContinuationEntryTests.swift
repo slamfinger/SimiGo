@@ -1,0 +1,438 @@
+import Foundation
+import os
+import XCTest
+import SimiGo2Experimental
+import SimiGoRuntimeContract
+
+/// Model-free tests for the identity a detached continuation needs.
+///
+/// `ProductionRuntimeInformationIntegration.taskExecutionID` is the PER-INSTANCE
+/// logical execution identity: a second ordinary `continueTask` started with a
+/// different id must advance its own cold Execution State instead of reattaching
+/// the first one, and the model input it receives must be the Information Space
+/// admission (the verified settlement), not anything the test supplies.
+///
+/// The stub executor records exactly what the production entry hands to the
+/// tokenizer and to the model, then stops the run at the model boundary so no
+/// settlement is written. The settled-value reuse and the no-recompute counts of
+/// a real completion are proven by the real-model conditions W-A/W-B, not here.
+final class DetachedContinuationEntryTests: XCTestCase {
+  private let labRoot = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+
+  private struct StubStop: Error {}
+  private struct FixtureFailure: Error, CustomStringConvertible {
+    let description: String
+  }
+
+  /// Executor that records the production entry's model input and the state
+  /// identity it is asked to continue, then refuses to run a model.
+  private final class RecordingExecutor:
+    ProductionRuntimeModelContinuationExecutor, @unchecked Sendable
+  {
+    private struct Counters {
+      var tokenizedInputs: [String] = []
+      var seedTokenizations = 0
+      var continuedStates: [(identity: String, position: Int64)] = []
+    }
+
+    private let state = OSAllocatedUnfairLock(initialState: Counters())
+
+    var tokenizedInputs: [String] { state.withLock { $0.tokenizedInputs } }
+    var seedTokenizations: Int { state.withLock { $0.seedTokenizations } }
+    var continuedStates: [(identity: String, position: Int64)] {
+      state.withLock { $0.continuedStates }
+    }
+
+    func tokenizeText(_ text: String) async throws -> [Int] {
+      state.withLock { $0.tokenizedInputs.append(text) }
+      return [1, 2, 3]
+    }
+
+    func tokenizeSeedText(_ text: String) async throws -> [Int] {
+      state.withLock { $0.seedTokenizations += 1 }
+      return [4, 5, 6]
+    }
+
+    func continueExecution(
+      _ state: ExecutionStateHandle,
+      nextInputTokens: [Int],
+      maxTokens: Int
+    ) async throws -> ExecutionContinuationResult {
+      self.state.withLock {
+        $0.continuedStates.append((state.id.rawValue, state.position.value))
+      }
+      throw StubStop()
+    }
+  }
+
+  // MARK: - fixtures (same generator the Python admission selftest verifies)
+
+  private func emitFixture(
+    _ condition: String, to directory: URL
+  ) throws -> (database: URL, trustAnchorPath: String) {
+    let database = directory.appendingPathComponent("\(condition).sqlite")
+    let script = labRoot.appendingPathComponent(
+      "execution-information-loop/admission_selftest.py")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+    process.arguments = [
+      script.path, "--emit-fixture", condition, "--out-database", database.path,
+    ]
+    let output = Pipe()
+    let error = Pipe()
+    process.standardOutput = output
+    process.standardError = error
+    try process.run()
+    let outputData = output.fileHandleForReading.readDataToEndOfFile()
+    let errorData = error.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0,
+          let payload = try JSONSerialization.jsonObject(with: outputData) as? [String: Any],
+          payload["ok"] as? Bool == true,
+          let anchorPath = payload["trust_anchor_path"] as? String else {
+      throw FixtureFailure(description: "fixture \(condition) failed: "
+        + String(decoding: errorData, as: UTF8.self)
+        + String(decoding: outputData, as: UTF8.self))
+    }
+    return (database, anchorPath)
+  }
+
+  private func makeIntegration(
+    executor: RecordingExecutor,
+    stateDirectory: URL,
+    executionID: ExecutionID
+  ) throws -> ProductionRuntimeInformationIntegration {
+    let configuration = ProductionRuntimeLaunchConfiguration(
+      runtimeRoot: labRoot.appendingPathComponent("execution-information-loop"),
+      pythonExecutable: URL(fileURLWithPath: "/usr/bin/python3"),
+      snapshotPath: labRoot.appendingPathComponent(
+        "integrated-es-palace/d002/snapshot/PALACE_SNAPSHOT.sqlite"),
+      validityPolicyPath: labRoot.appendingPathComponent(
+        "integrated-es-palace/mlx-smoke-v1/ISOLATED_VALIDITY_POLICY.json")
+    )
+    return try ProductionRuntimeInformationIntegration(
+      configuration: configuration,
+      modelExecutor: executor,
+      backend: MLXExecutionStateBackend(),
+      semanticStateDirectory: stateDirectory,
+      resetToFreshBaseline: false,
+      executionID: executionID
+    )
+  }
+
+  private func fileManifest(_ directory: URL) throws -> [String: String] {
+    let fileManager = FileManager.default
+    guard let enumerator = fileManager.enumerator(
+      at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: []
+    ) else {
+      return [:]
+    }
+    var manifest: [String: String] = [:]
+    for case let url as URL in enumerator {
+      let values = try url.resourceValues(forKeys: [.isRegularFileKey])
+      guard values.isRegularFile == true else { continue }
+      manifest[url.lastPathComponent] =
+        String(data: try Data(contentsOf: url), encoding: .utf8) ?? "<binary>"
+    }
+    return manifest
+  }
+
+  private func runEntryToModelBoundary(
+    integration: ProductionRuntimeInformationIntegration,
+    database: URL,
+    advancementID: String
+  ) async throws {
+    do {
+      _ = try await integration.continueTask(
+        database: database,
+        handle: nil,
+        advancementID: advancementID,
+        evaluatedAtUTC: "2026-10-23T00:00:00Z",
+        demandID: "handoff-u2",
+        taskItemID: "TASK-U2",
+        seedText: "detached entry cold seed",
+        provenance: ProductionTaskProvenance(
+          runID: advancementID,
+          buildSHA256: ProductionTaskProvenance.buildIdentity(
+            runtimeRoot: labRoot.appendingPathComponent("execution-information-loop")),
+          modelSnapshotRevision: "detached-entry-test-model",
+          weightsManifestSHA256: "detached-entry-test-weights"),
+        maxTokens: 4
+      ) { _, _ in [:] }
+      XCTFail("\(advancementID): the stub model was supposed to stop the run")
+    } catch let error as ProductionRuntimeInformationError {
+      // The stub stops the run inside model execution; reaching the model at all
+      // is the point, so this stage is the expected outcome.
+      guard case .modelExecutionFailed(let reason) = error,
+            reason.contains("model_execution") else {
+        throw error
+      }
+    }
+  }
+
+  /// Two instances, two identities, two fresh state directories, one Information
+  /// Space: each must create its OWN execution state at position 0 and must be
+  /// handed the admitted Information Space input as its model input.
+  func testPerInstanceIdentityCreatesItsOwnColdStateFromInformationSpaceInput() async throws {
+    let root = FileManager.default.temporaryDirectory
+      .appendingPathComponent("simigo-detached-entry-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer {
+      unsetenv(SettlementTrustFixture.anchorEnvironment)
+      try? FileManager.default.removeItem(at: root)
+    }
+    let fixture = try emitFixture("happy", to: root)
+    setenv(SettlementTrustFixture.anchorEnvironment, fixture.trustAnchorPath, 1)
+
+    // Production admission is the reference for what the model must be given.
+    let observer = try makeIntegration(
+      executor: RecordingExecutor(),
+      stateDirectory: root.appendingPathComponent("observer", isDirectory: true),
+      executionID: ExecutionID("DETACHED-ENTRY-OBSERVER"))
+    let admission = try observer.resolveTaskInput(
+      database: fixture.database,
+      taskItemID: "TASK-U2",
+      evaluatedAtUTC: "2026-10-23T00:00:00Z")
+    let settledDependency = admission.bindings.first { $0.itemID == "TASK-U1" }
+    XCTAssertFalse(settledDependency?.settlementObjectID.isEmpty ?? true,
+                   "TASK-U1 dependency must carry a settlement object id")
+    let settledValue = admission.value(forPlaceholder: "secret")
+    XCTAssertFalse(settledValue?.isEmpty ?? true, "the settled dependency must have a value")
+
+    var identities: [String] = []
+    var inputs: [String] = []
+    for name in ["DETACHED-ENTRY-FIRST", "DETACHED-ENTRY-SECOND"] {
+      let stateDirectory = root.appendingPathComponent("state-\(name)", isDirectory: true)
+      try FileManager.default.createDirectory(at: stateDirectory, withIntermediateDirectories: true)
+      let manifestBefore = try fileManifest(stateDirectory)
+      XCTAssertTrue(manifestBefore.isEmpty, "\(name): state directory must start empty")
+
+      let executor = RecordingExecutor()
+      let integration = try makeIntegration(
+        executor: executor,
+        stateDirectory: stateDirectory,
+        executionID: ExecutionID(name))
+      // The identity this instance advances is its own, not the static default.
+      XCTAssertEqual(integration.taskExecutionID, ExecutionID(name))
+      try await runEntryToModelBoundary(
+        integration: integration,
+        database: fixture.database,
+        advancementID: "detached-entry-\(name)")
+
+      XCTAssertEqual(executor.continuedStates.count, 1, name)
+      XCTAssertEqual(executor.continuedStates.first?.position, 0,
+                     "\(name): a detached continuation must enter at position 0")
+      XCTAssertEqual(executor.continuedStates.first?.identity, name,
+                     "\(name): the state handed to the model must be this instance's own")
+      XCTAssertEqual(executor.tokenizedInputs.count, 1, name)
+      XCTAssertEqual(executor.seedTokenizations, 1, name)
+      let modelInput = executor.tokenizedInputs[0]
+      XCTAssertTrue(modelInput.contains(admission.inputText),
+                    "\(name): the admitted Information Space input must reach the tokenizer")
+      XCTAssertTrue(modelInput.contains(settledValue ?? "#never#"),
+                    "\(name): the settled TASK-U1 value must be inside the model input")
+      identities.append(executor.continuedStates[0].identity)
+      inputs.append(modelInput)
+
+      let manifestAfter = try fileManifest(stateDirectory)
+      XCTAssertFalse(manifestAfter.isEmpty, name)
+      for other in ["DETACHED-ENTRY-FIRST", "DETACHED-ENTRY-SECOND"] where other != name {
+        XCTAssertFalse(
+          manifestAfter.values.contains { $0.contains(other) },
+          "\(name): its durable state must not carry the other identity \(other)")
+      }
+    }
+    XCTAssertEqual(identities[0] != identities[1], true,
+                   "two instances must own two different execution states")
+    XCTAssertEqual(inputs[0], inputs[1],
+                   "both instances read the same Information Space settlement")
+  }
+
+  /// The same production entry must still refuse an inadmissible dependency when
+  /// it runs under a per-instance identity, before touching any model.
+  func testPerInstanceIdentityStillRefusesBeforeTheModelWhenSettlementIsMissing() async throws {
+    let root = FileManager.default.temporaryDirectory
+      .appendingPathComponent("simigo-detached-refuse-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer {
+      unsetenv(SettlementTrustFixture.anchorEnvironment)
+      try? FileManager.default.removeItem(at: root)
+    }
+    let fixture = try emitFixture("missing-settlement", to: root)
+    setenv(SettlementTrustFixture.anchorEnvironment, fixture.trustAnchorPath, 1)
+
+    let stateDirectory = root.appendingPathComponent("state", isDirectory: true)
+    try FileManager.default.createDirectory(at: stateDirectory, withIntermediateDirectories: true)
+    let executor = RecordingExecutor()
+    let integration = try makeIntegration(
+      executor: executor,
+      stateDirectory: stateDirectory,
+      executionID: ExecutionID("DETACHED-ENTRY-REFUSED"))
+    let databaseBefore = try Data(contentsOf: fixture.database)
+
+    do {
+      try await runEntryToModelBoundary(
+        integration: integration,
+        database: fixture.database,
+        advancementID: "detached-entry-refused")
+      XCTFail("expected a pre-model refusal")
+    } catch let error as ProductionRuntimeInformationError {
+      guard case .informationSpaceInputAdmissionRefused(let itemID, let stage, _) = error else {
+        throw error
+      }
+      XCTAssertEqual(stage, "SETTLEMENT_NOT_ADMITTED")
+      XCTAssertEqual(itemID, "TASK-U1")
+    }
+    XCTAssertEqual(executor.tokenizedInputs.count, 0)
+    XCTAssertEqual(executor.seedTokenizations, 0)
+    XCTAssertEqual(executor.continuedStates.count, 0)
+    XCTAssertEqual(try Data(contentsOf: fixture.database), databaseBefore,
+                   "a pre-admission refusal must not write to the Information Space")
+    XCTAssertEqual(try fileManifest(stateDirectory), [:],
+                   "a pre-admission refusal must not create execution state")
+  }
+
+  // MARK: - executable level (the targets Package.swift added for this round)
+
+  private struct ChildResult {
+    let exitCode: Int32
+    let stdout: String
+    let stderr: String
+  }
+
+  private func runExecutable(
+    _ name: String, arguments: [String], environment: [String: String]? = nil
+  ) throws -> ChildResult {
+    let executable = labRoot.appendingPathComponent(
+      "simigo2-experimental/.build/debug/\(name)")
+    try XCTSkipIf(!FileManager.default.fileExists(atPath: executable.path),
+                  "\(name) is not built; run `swift build` first")
+    let process = Process()
+    process.executableURL = executable
+    process.arguments = arguments
+    if let environment {
+      process.environment = environment
+    }
+    let out = Pipe()
+    let err = Pipe()
+    process.standardOutput = out
+    process.standardError = err
+    try process.run()
+    let outData = out.fileHandleForReading.readDataToEndOfFile()
+    let errData = err.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    return ChildResult(
+      exitCode: process.terminationStatus,
+      stdout: String(decoding: outData, as: UTF8.self),
+      stderr: String(decoding: errData, as: UTF8.self))
+  }
+
+  /// `SimiGoTaskRun --admission-probe` is the model-free entry the experiment
+  /// processes use; a valid settlement admits and a missing one is refused, in
+  /// both cases without loading or calling a model.
+  func testOrdinaryExecutableEntryAdmitsAndRefusesWithoutAnyModelWork() throws {
+    let root = FileManager.default.temporaryDirectory
+      .appendingPathComponent("simigo-detached-probe-\(UUID().uuidString)", isDirectory: true)
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    defer {
+      unsetenv(SettlementTrustFixture.anchorEnvironment)
+      try? FileManager.default.removeItem(at: root)
+    }
+
+    for (condition, expectedStatus, expectedExit) in [
+      ("happy", "ADMITTED", Int32(0)),
+      ("missing-settlement", "ADMISSION_REFUSED", Int32(1)),
+    ] {
+      let fixture = try emitFixture(condition, to: root)
+      // The anchor is exported rather than passed as a custom environment: the
+      // bridge child needs the inherited Python environment as well.
+      setenv(SettlementTrustFixture.anchorEnvironment, fixture.trustAnchorPath, 1)
+      let stateDirectory = root.appendingPathComponent("probe-state-\(condition)", isDirectory: true)
+      let output = root.appendingPathComponent("probe-\(condition).json")
+      let result = try runExecutable(
+        "SimiGoTaskRun",
+        arguments: [
+          "--database", fixture.database.path,
+          "--model-dir", root.path,
+          "--lab-root", labRoot.path,
+          "--state-dir", stateDirectory.path,
+          "--out", output.path,
+          "--item", "TASK-U2",
+          "--demand", "handoff-u2",
+          "--advancement", "probe-\(condition)",
+          "--evaluated-at", "2026-10-23T00:00:00Z",
+          "--execution-id", "PROBE-\(condition.uppercased())",
+          "--admission-probe",
+        ])
+      XCTAssertEqual(result.exitCode, expectedExit, "\(condition): \(result.stderr)")
+      let data = try Data(contentsOf: output)
+      guard let record = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+        throw FixtureFailure(description: "\(condition): unreadable probe record")
+      }
+      XCTAssertEqual(record["input_admission_status"] as? String, expectedStatus, condition)
+      XCTAssertEqual(record["execution_id"] as? String, "PROBE-\(condition.uppercased())",
+                     "\(condition): the entry must run under the identity it was given")
+      XCTAssertEqual(record["model_loaded"] as? Bool, false, condition)
+      XCTAssertEqual(record["generation_entered"] as? Bool, false, condition)
+      let counters = record["counters"] as? [String: Int] ?? [:]
+      XCTAssertEqual(counters["tokenize_text_calls"], 0, condition)
+      XCTAssertEqual(counters["tokenize_seed_calls"], 0, condition)
+      XCTAssertEqual(counters["model_continuation_calls"], 0, condition)
+      XCTAssertEqual(record["database_unchanged"] as? Bool, true, condition)
+      if condition == "missing-settlement" {
+        let refusal = record["input_admission_refusal"] as? [String: Any] ?? [:]
+        XCTAssertEqual(refusal["stage"] as? String, "SETTLEMENT_NOT_ADMITTED", condition)
+      }
+    }
+  }
+
+  /// The experiment driver must refuse to run on a consumer state directory that
+  /// is not empty, before it spawns anything at all.
+  func testDetachedDriverRefusesNonEmptyConsumerStateDirectory() throws {
+    let root = FileManager.default.temporaryDirectory
+      .appendingPathComponent("simigo-detached-driver-\(UUID().uuidString)", isDirectory: true)
+    let world = root.appendingPathComponent("world", isDirectory: true)
+    let u2State = world.appendingPathComponent("u2-state", isDirectory: true)
+    try FileManager.default.createDirectory(at: u2State, withIntermediateDirectories: true)
+    try Data("leftover prefix".utf8).write(
+      to: u2State.appendingPathComponent("execution-state.json"))
+    defer { try? FileManager.default.removeItem(at: root) }
+
+    let arguments = [
+      "--binary", root.appendingPathComponent("unused-task-run").path,
+      "--lab-root", labRoot.path,
+      "--model-dir", root.path,
+      "--database", root.appendingPathComponent("unused.sqlite").path,
+      "--world-dir", world.path,
+      "--run-id", "driver-refusal",
+      "--evaluated-at-u1", "2026-10-23T00:00:00Z",
+      "--evaluated-at-u2", "2026-10-23T00:00:00Z",
+      "--u1-item", "TASK-U1",
+      "--u1-demand", "handoff-u1",
+      "--u1-advancement", "driver-refusal-u1",
+      "--u2-item", "TASK-U2",
+      "--u2-demand", "handoff-u2",
+      "--u2-advancement", "driver-refusal-u2",
+      "--u1-execution-id", "DRIVER-REFUSAL-U1",
+      "--u2-execution-id", "DRIVER-REFUSAL-U2",
+      "--u1-out", root.appendingPathComponent("u1.json").path,
+      "--u2-out", root.appendingPathComponent("u2.json").path,
+      "--out", root.appendingPathComponent("lifecycle.json").path,
+      "--max-tokens", "4",
+    ]
+    let result = try runExecutable("SimiGoDetachedDriver", arguments: arguments)
+    XCTAssertEqual(result.exitCode, 1, result.stderr)
+    XCTAssertTrue(result.stderr.contains("is not empty; refusing to reuse state"),
+                  result.stderr)
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: root.appendingPathComponent("lifecycle.json").path),
+      "the driver must refuse before writing any run evidence")
+    XCTAssertFalse(FileManager.default.fileExists(
+      atPath: world.appendingPathComponent("process-logs").path),
+      "the driver must refuse before spawning processes")
+  }
+}

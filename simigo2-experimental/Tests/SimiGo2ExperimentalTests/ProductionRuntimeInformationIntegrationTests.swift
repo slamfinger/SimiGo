@@ -3,6 +3,13 @@ import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class ProductionRuntimeInformationIntegrationTests: XCTestCase {
+  override func setUpWithError() throws {
+    // Settlements minted through the production bridge are signed under the
+    // `required` provenance policy, so the recovery cases need the deployment
+    // trust root that a production run provisions out of band.
+    try SettlementTrustFixture.install()
+  }
+
   private func makeTemporaryDatabase() throws -> URL {
     let directory = FileManager.default.temporaryDirectory
       .appendingPathComponent("simigo-production-runtime-\(UUID().uuidString)", isDirectory: true)

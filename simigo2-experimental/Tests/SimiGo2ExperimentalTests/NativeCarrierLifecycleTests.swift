@@ -10,6 +10,13 @@ import SimiGoRuntimeContract
 /// brand-new ES independently and continuing on a real model remains unproven,
 /// and D1 stays NO-GO.
 final class NativeCarrierLifecycleTests: XCTestCase {
+    override func setUpWithError() throws {
+        // The end-to-end lifecycle cases settle through the production bridge,
+        // which requires the deployment trust root under the `required`
+        // provenance policy.
+        try SettlementTrustFixture.install()
+    }
+
     private func handle(_ id: String, position: Int64 = 0) -> ExecutionStateHandle {
         ExecutionStateHandle(
             id: ExecutionID(id),

@@ -3,6 +3,12 @@ import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class ControlledProductionPilotV1E2ETests: XCTestCase {
+  override func setUpWithError() throws {
+    // The pilot settles through the production bridge, which mints signed
+    // settlements under the `required` provenance policy.
+    try SettlementTrustFixture.install()
+  }
+
   private let requiredItems = [
     "REAL-COLLECTION",
     "REAL-SEGMENT",
@@ -50,7 +56,7 @@ final class ControlledProductionPilotV1E2ETests: XCTestCase {
     try Data(contentsOf: labRoot.appendingPathComponent(
       "execution-information-loop/production_runtime_bridge.py"
     )).write(to: bundle.appendingPathComponent("production_runtime_bridge.py"))
-    for name in ["carrier_loop.py", "real_palace_loop.py"] {
+    for name in ["carrier_loop.py", "real_palace_loop.py", "settlement_provenance.py"] {
       try Data(contentsOf: labRoot.appendingPathComponent(
         "execution-information-loop/\(name)"
       )).write(to: bundle.appendingPathComponent("lib/\(name)"))

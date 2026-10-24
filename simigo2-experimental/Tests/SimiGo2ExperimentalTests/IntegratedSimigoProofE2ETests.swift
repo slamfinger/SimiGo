@@ -3,6 +3,12 @@ import SimiGoRuntimeContract
 @testable import SimiGo2Experimental
 
 final class IntegratedSimigoProofE2ETests: XCTestCase {
+  override func setUpWithError() throws {
+    // The proof run settles through the production bridge, which requires the
+    // deployment trust root under the `required` provenance policy.
+    try SettlementTrustFixture.install()
+  }
+
   private let requiredItems = [
     "REAL-COLLECTION",
     "REAL-SEGMENT",
