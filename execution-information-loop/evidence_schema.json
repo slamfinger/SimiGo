@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simigo.local/evidence/simigo-j-evidence-v1.schema.json",
+  "title": "SimiGo J Declarative Result Contract Evidence",
+  "type": "object",
+  "required": ["schema_version", "round", "run_label", "terminal_state", "implementation", "conditions", "guards", "carrier_loop_semantics_changed", "historical_artifacts_modified"],
+  "properties": {
+    "schema_version": {"const": "simigo-j-evidence-v1"},
+    "round": {"const": "J"},
+    "run_label": {"const": "es-is-declarative-result-contract-20261023j"},
+    "terminal_state": {"enum": ["OBSERVED", "FAILED", "BLOCKED_NOT_RUN"]},
+    "implementation": {
+      "type": "object",
+      "required": ["contract_dispatch_basis", "task_id_semantic_branches_remaining", "model_snapshot_id", "binary_sha256", "source_snapshot_id"],
+      "properties": {
+        "contract_dispatch_basis": {"const": "declared_contract"},
+        "task_id_semantic_branches_remaining": {"type": "array", "items": {"type": "string"}},
+        "model_snapshot_id": {"type": "string", "minLength": 1},
+        "binary_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source_snapshot_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "conditions": {"type": "object", "minProperties": 6},
+    "guards": {"type": "object", "required": ["workspace", "historical", "evidence_validator"]},
+    "carrier_loop_semantics_changed": {"const": false},
+    "historical_artifacts_modified": {"const": false},
+    "claim_limits": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
