@@ -235,6 +235,7 @@ func writeEvidence(_ record: [String: Any], to url: URL) throws {
 /// signature. It carries evidence only; the settlement decision was already
 /// made inside the closure.
 final class NativeContractBox: @unchecked Sendable {
+  var admission: ProductionTaskInputAdmission?
   var verdict: NativeContractVerdict?
   var rejection: [String: Any]?
 }
@@ -393,7 +394,7 @@ func run(_ arguments: [String]) async throws {
   let contractBox = NativeContractBox()
 
   var outcome: ProductionTaskInformationContinuation?
-  var refusal: [String: Any] = [:]
+  var admissionRefusal: [String: Any] = [:]
   var failure = ""
   do {
     outcome = try await integration.continueTask(
@@ -407,6 +408,9 @@ func run(_ arguments: [String]) async throws {
       provenance: provenance,
       maxTokens: options.maxTokens
     ) { produced, admitted in
+      // Preserve successful admission even if the later result contract rejects.
+      // continueTask wraps modelValue errors and returns no outcome on that path.
+      contractBox.admission = admitted
       // PRE-SETTLEMENT NATIVE GATE. Validation runs against the item's own
       // declaration using only values the Information Space admission verified;
       // a throw here happens before `continueTask` writes any value file or
@@ -423,14 +427,14 @@ func run(_ arguments: [String]) async throws {
     }
   } catch let error as NativeTaskResultContract.Rejection {
     contractBox.rejection = error.evidence()
-    refusal = error.evidence()
+    failure = String(describing: error)
   } catch let error as ProductionRuntimeInformationError {
     switch error {
     case .informationSpaceInputAdmissionRefused(let itemID, let stage, let reason):
-      refusal = ["kind": "ADMISSION_REFUSED", "item_id": itemID,
-                 "stage": stage, "reason": reason]
+      admissionRefusal = ["kind": "ADMISSION_REFUSED", "item_id": itemID,
+                          "stage": stage, "reason": reason]
     case .informationSpaceInputBindingMismatch(let field):
-      refusal = ["kind": "BINDING_MISMATCH", "field": field]
+      admissionRefusal = ["kind": "BINDING_MISMATCH", "field": field]
     case .modelExecutionFailed(let reason):
       // The settlement wrapper re-wraps a closure throw into this case. If the
       // reason is a native result-contract refusal, keep the structured evidence
@@ -439,7 +443,6 @@ func run(_ arguments: [String]) async throws {
       if let evidence = NativeTaskResultContract.rejectionEvidence(
         fromWrappedReason: reason) {
         contractBox.rejection = evidence
-        refusal = evidence
       }
       failure = String(describing: error)
     default:
@@ -451,16 +454,12 @@ func run(_ arguments: [String]) async throws {
 
   let databaseAfter = try fileIdentity(options.database)
   let stateAfter = try directoryIdentity(options.stateDir)
-  let admitted = outcome?.admission
+  let admitted = outcome?.admission ?? contractBox.admission
   let report = outcome?.report
-  let admissionStatus: String
-  if admitted != nil {
-    admissionStatus = "ADMITTED"
-  } else if let kind = refusal["kind"] as? String {
-    admissionStatus = kind
-  } else {
-    admissionStatus = "NOT_ATTEMPTED"
-  }
+  let admissionStatus = TaskRunOutcomeClassification.inputAdmissionStatus(
+    admitted: admitted != nil,
+    refusalKind: admissionRefusal["kind"] as? String
+  )
 
   var record: [String: Any] = [
     "schema_id": "SIMIGO-ORDINARY-TASK-ENTRY-V1",
@@ -501,7 +500,7 @@ func run(_ arguments: [String]) async throws {
     "trust_anchor_path": trustAnchorPath ?? "",
     "input_admission_status": admissionStatus,
     "input_admission": admitted?.evidenceDictionary() ?? [:],
-    "input_admission_refusal": refusal,
+    "input_admission_refusal": admissionRefusal,
     "native_result_contract_validation": contractBox.verdict?.evidence(
       generatedText: report?.generatedText ?? "") ?? [:],
     "native_result_contract_rejection": contractBox.rejection ?? [:],
@@ -565,13 +564,15 @@ func run(_ arguments: [String]) async throws {
     record["next_input_token_ids"] = report.nextInputTokenIDs
     record["updated_prefix_token_count"] = report.updatedPrefixTokenCount
   }
-  record["terminal_state"] = report != nil ? "TASK_SETTLED"
-    : (refusal.isEmpty ? "TASK_FAILED" : "INPUT_ADMISSION_REFUSED")
+  record["terminal_state"] = TaskRunOutcomeClassification.terminalState(
+    settled: report != nil,
+    inputAdmissionRefused: !admissionRefusal.isEmpty
+  )
 
   try writeEvidence(record, to: options.output)
   if report == nil {
     throw TaskEntryError(
-      failure.isEmpty ? "task did not settle: \(refusal)" : failure)
+      failure.isEmpty ? "task did not settle: \(admissionRefusal)" : failure)
   }
 }
 
