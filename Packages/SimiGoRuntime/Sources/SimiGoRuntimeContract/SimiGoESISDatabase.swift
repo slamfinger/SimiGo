@@ -289,31 +289,66 @@ public final class SimiGoESISDatabase {
     public func recordNativeSettlement(_ settled: SimiGoSettlementAuthority.SettledResult, stateID: String?) throws -> String {
         let settlementID = UUID().uuidString
         try transaction {
-            try execBinding("""
-            INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status)
-            VALUES(?,?,?,?,?,?,?,?,?);
-            """) { stmt in
-                bind(stmt, 1, settlementID)
-                bind(stmt, 2, stateID)
-                bind(stmt, 3, settled.schemaVersion)
-                bind(stmt, 4, settled.validatedPayload)
-                bind(stmt, 5, settled.payloadDigest)
-                bind(stmt, 6, String?.none)
-                bind(stmt, 7, NativeResultContract.supportedVersion)
-                bind(stmt, 8, Self.stamp( settled.settledAt))
-                bind(stmt, 9, settled.trace.validationStatus)
-            }
-            for ct in settled.trace.constraintChecks {
-                try execBinding("INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id) VALUES(?,?,?,?,?);") { stmt in
-                    bind(stmt, 1, settlementID)
-                    bind(stmt, 2, ct.binding ?? ct.field)
-                    bind(stmt, 3, ct.kind)
-                    bind(stmt, 4, String?.none)
-                    bind(stmt, 5, nil as Int64?)
-                }
-            }
+            try insertNativeSettlementRows(settled, settlementID: settlementID, stateID: stateID)
         }
         return settlementID
+    }
+
+    /// Atomically record a native-authorized settlement and both producer-identity
+    /// bindings. The returned UUID is the ID created by THIS transaction; callers
+    /// must not query "latest for state" to guess which row their write created.
+    ///
+    /// If any identity-binding insert fails, SQLite rolls the settlement row and
+    /// all contract-binding rows back with it. Success therefore means the complete
+    /// settlement + producer identity record committed as one authoritative unit.
+    @discardableResult
+    public func recordNativeSettlementWithIdentity(
+        _ settled: SimiGoSettlementAuthority.SettledResult,
+        stateID: String,
+        identity: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> UUID {
+        let settlementUUID = UUID()
+        let settlementID = settlementUUID.uuidString
+        try transaction {
+            try insertNativeSettlementRows(
+                settled, settlementID: settlementID, stateID: stateID)
+            try insertIdentityBindingRows(
+                settlementID: settlementID, identity: identity)
+        }
+        return settlementUUID
+    }
+
+    /// Insert the settlement row and the native gate's constraint-binding rows.
+    /// Caller owns the transaction so this can participate in the atomic identity
+    /// commit without opening a nested transaction.
+    private func insertNativeSettlementRows(
+        _ settled: SimiGoSettlementAuthority.SettledResult,
+        settlementID: String,
+        stateID: String?
+    ) throws {
+        try execBinding("""
+        INSERT INTO settlements(settlement_id, state_id, schema_version, payload, payload_digest, signature, contract_version, settled_at, validation_status)
+        VALUES(?,?,?,?,?,?,?,?,?);
+        """) { stmt in
+            bind(stmt, 1, settlementID)
+            bind(stmt, 2, stateID)
+            bind(stmt, 3, settled.schemaVersion)
+            bind(stmt, 4, settled.validatedPayload)
+            bind(stmt, 5, settled.payloadDigest)
+            bind(stmt, 6, String?.none)
+            bind(stmt, 7, NativeResultContract.supportedVersion)
+            bind(stmt, 8, Self.stamp(settled.settledAt))
+            bind(stmt, 9, settled.trace.validationStatus)
+        }
+        for ct in settled.trace.constraintChecks {
+            try execBinding("INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id) VALUES(?,?,?,?,?);") { stmt in
+                bind(stmt, 1, settlementID)
+                bind(stmt, 2, ct.binding ?? ct.field)
+                bind(stmt, 3, ct.kind)
+                bind(stmt, 4, String?.none)
+                bind(stmt, 5, nil as Int64?)
+            }
+        }
     }
 
     // MARK: - Producer identity binding (settlement <-> engine identity)
@@ -326,24 +361,33 @@ public final class SimiGoESISDatabase {
         settlementID: String,
         identity: SimiGoSettlementIdentityBinding.Identity
     ) throws {
-        let rows = SimiGoSettlementIdentityBinding.bindings(for: identity)
         try transaction {
-            for name in rows.keys.sorted() {
-                guard let digest = rows[name] else { continue }
-                try execBinding("DELETE FROM settlement_bindings WHERE settlement_id=? AND name=?;") { stmt in
-                    bind(stmt, 1, settlementID)
-                    bind(stmt, 2, name)
-                }
-                try execBinding("""
-                INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
-                VALUES(?,?,?,?,?);
-                """) { stmt in
-                    bind(stmt, 1, settlementID)
-                    bind(stmt, 2, name)
-                    bind(stmt, 3, digest)
-                    bind(stmt, 4, String?.none)
-                    bind(stmt, 5, nil as Int64?)
-                }
+            try insertIdentityBindingRows(settlementID: settlementID, identity: identity)
+        }
+    }
+
+    /// Caller owns the transaction. This helper is shared by the legacy binding
+    /// update and the atomic settlement+identity commit.
+    private func insertIdentityBindingRows(
+        settlementID: String,
+        identity: SimiGoSettlementIdentityBinding.Identity
+    ) throws {
+        let rows = SimiGoSettlementIdentityBinding.bindings(for: identity)
+        for name in rows.keys.sorted() {
+            guard let digest = rows[name] else { continue }
+            try execBinding("DELETE FROM settlement_bindings WHERE settlement_id=? AND name=?;") { stmt in
+                bind(stmt, 1, settlementID)
+                bind(stmt, 2, name)
+            }
+            try execBinding("""
+            INSERT INTO settlement_bindings(settlement_id, name, value_digest, source_root_id, source_file_id)
+            VALUES(?,?,?,?,?);
+            """) { stmt in
+                bind(stmt, 1, settlementID)
+                bind(stmt, 2, name)
+                bind(stmt, 3, digest)
+                bind(stmt, 4, String?.none)
+                bind(stmt, 5, nil as Int64?)
             }
         }
     }

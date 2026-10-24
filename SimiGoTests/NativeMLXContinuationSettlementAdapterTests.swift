@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+import SQLite3
 import SimiGoRuntimeContract
 @testable import SimiGo
 
@@ -32,6 +33,28 @@ import SimiGoRuntimeContract
 /// isolated xctestrun injects (`SIMIGO_HOME`, `SIMIGO_STATE_GRAPH_STORE`);
 /// without them it throws XCTSkip instead of writing the operator's real
 /// reference graph / authoritative database.
+private enum ConcurrentCommitResult {
+    case success(String)
+    case failure(String)
+}
+
+private final class ConcurrentCommitResultBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var values: [Int: ConcurrentCommitResult] = [:]
+
+    func set(_ value: ConcurrentCommitResult, for index: Int) {
+        lock.lock()
+        defer { lock.unlock() }
+        values[index] = value
+    }
+
+    func snapshot() -> [Int: ConcurrentCommitResult] {
+        lock.lock()
+        defer { lock.unlock() }
+        return values
+    }
+}
+
 final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
 
     private var isolationRoot: URL!
@@ -107,6 +130,39 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
     private func authoritativeReceiptCountTotal() throws -> Int {
         let db = try XCTUnwrap(store().esis)
         return try db.readSettlementReceipts().count
+    }
+
+    @MainActor
+    private func authoritativeBindingCountTotal() throws -> Int {
+        let db = try XCTUnwrap(store().esis)
+        return try db.count("settlement_bindings")
+    }
+
+    /// Execute narrowly scoped SQL against the isolated test database, used only
+    /// to inject a failure exactly when a producer identity binding is inserted.
+    private func executeIsolatedSQLite(_ sql: String) throws {
+        var handle: OpaquePointer?
+        let openRC = sqlite3_open(SimiGoPaths.databaseURL.path, &handle)
+        guard openRC == SQLITE_OK, let handle else {
+            if let handle { sqlite3_close(handle) }
+            throw NSError(
+                domain: "NativeMLXContinuationSettlementAdapterTests.SQLite",
+                code: Int(openRC),
+                userInfo: [NSLocalizedDescriptionKey: "could not open isolated test database"])
+        }
+        defer { sqlite3_close(handle) }
+
+        var message: UnsafeMutablePointer<CChar>?
+        let rc = sqlite3_exec(handle, sql, nil, nil, &message)
+        if rc != SQLITE_OK {
+            let detail = message.map { String(cString: $0) } ?? "SQLite error \(rc)"
+            if let message { sqlite3_free(message) }
+            throw NSError(
+                domain: "NativeMLXContinuationSettlementAdapterTests.SQLite",
+                code: Int(rc),
+                userInfo: [NSLocalizedDescriptionKey: detail])
+        }
+        if let message { sqlite3_free(message) }
     }
 
     @MainActor
@@ -226,6 +282,128 @@ final class NativeMLXContinuationSettlementAdapterTests: XCTestCase {
             try fresh.admitContinuation(stateID: anchor, consumer: borrowed),
             "a borrowed identity must not admit this settlement"
         )
+    }
+
+    /// Inject a failure after the settlement and native constraint rows have
+    /// been attempted but while the producer identity rows are being inserted.
+    /// SQLite must roll EVERYTHING back; the graph projection changes only after
+    /// the authoritative transaction has returned successfully.
+    @MainActor
+    func testIdentityBindingWriteFailureRollsBackWholeSettlement() async throws {
+        let anchor = try stageUnsettledAnchor(value: "ADAPTER-ATOMIC-6314")
+        let settlementsBefore = try authoritativeReceiptCountTotal()
+        let bindingsBefore = try authoritativeBindingCountTotal()
+        let trigger = "fail_identity_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+        try executeIsolatedSQLite("""
+        CREATE TRIGGER \(trigger)
+        BEFORE INSERT ON settlement_bindings
+        WHEN NEW.name = 'producer.model_identity'
+        BEGIN
+            SELECT RAISE(ABORT, 'injected producer identity write failure');
+        END;
+        """)
+        defer { try? executeIsolatedSQLite("DROP TRIGGER IF EXISTS \(trigger)") }
+
+        let handler = makeNativeMLXContinuationSettlementHandler(modelPath: modelPath!)
+        let error = await catchAsyncError {
+            _ = try await handler("RESULT=ADAPTER-ATOMIC-6314", anchor)
+        }
+        let terminal = continuationSettlementTerminal(for: try XCTUnwrap(
+            error, "injected identity binding failure must fail the request"))
+        XCTAssertEqual(terminal.status, 500)
+        XCTAssertEqual(terminal.errorKind, "SETTLEMENT_ENGINE_ERROR")
+
+        let fresh = store()
+        XCTAssertNil(try fresh.esis?.latestSettlementID(forStateID: anchor))
+        XCTAssertTrue(receipts(for: fresh, stateID: anchor).isEmpty,
+                      "the graph projection must not gain a receipt before commit")
+        XCTAssertEqual(try authoritativeReceiptCountTotal(), settlementsBefore,
+                       "settlement insert must roll back when identity insert fails")
+        XCTAssertEqual(try authoritativeBindingCountTotal(), bindingsBefore,
+                       "native constraint and identity bindings must all roll back")
+    }
+
+    /// Two independent SQLite connections settle the SAME ES anchor concurrently
+    /// with the same fixed settledAt. Each call must return the UUID it inserted,
+    /// and identity rows under that UUID must belong to that caller—not to
+    /// whichever latest-settlement query might otherwise win after commit.
+    @MainActor
+    func testConcurrentSameAnchorSettlementsReturnTheirOwnIDs() async throws {
+        let value = "ADAPTER-CONCURRENT-6315"
+        let anchor = try stageUnsettledAnchor(value: value)
+        let fixedDate = Date(timeIntervalSince1970: 1_798_000_000)
+        let settled = try SimiGoSettlementAuthority.authorize(
+            generatedText: "RESULT=\(value)",
+            contractJSON: ExecutionStateGraphStore.referenceResultContractJSON,
+            verifiedBindings: ["next_input": .string(value)],
+            settledAt: fixedDate
+        )
+        let identities = [
+            SimiGoSettlementIdentityBinding.Identity(
+                model: "concurrent-model-A", tokenizer: "concurrent-tokenizer-A"),
+            SimiGoSettlementIdentityBinding.Identity(
+                model: "concurrent-model-B", tokenizer: "concurrent-tokenizer-B")
+        ]
+        let databaseURL = SimiGoPaths.databaseURL
+        let results = ConcurrentCommitResultBox()
+
+        // Each worker opens its own SQLite connection. BEGIN IMMEDIATE serializes
+        // writes; returned IDs remain transaction-local regardless of commit order.
+        DispatchQueue.concurrentPerform(iterations: 2) { index in
+            do {
+                let db = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: false)
+                let id = try db.recordNativeSettlementWithIdentity(
+                    settled,
+                    stateID: anchor,
+                    identity: identities[index]
+                )
+                results.set(.success(id.uuidString), for: index)
+            } catch {
+                results.set(.failure(String(describing: error)), for: index)
+            }
+        }
+
+        let snapshots = results.snapshot()
+        let id0: String
+        let id1: String
+        guard let result0 = snapshots[0], let result1 = snapshots[1] else {
+            XCTFail("both concurrent SQLite writers must return a result")
+            return
+        }
+        switch result0 {
+        case .success(let value): id0 = value
+        case .failure(let detail):
+            XCTFail("writer A failed: \(detail)")
+            return
+        }
+        switch result1 {
+        case .success(let value): id1 = value
+        case .failure(let detail):
+            XCTFail("writer B failed: \(detail)")
+            return
+        }
+        XCTAssertNotEqual(id0, id1, "each committed settlement has its own UUID")
+
+        let verifier = try SimiGoESISDatabase(url: databaseURL, createIfNeeded: false)
+        let bindings0 = try verifier.settlementBindings(settlementID: id0)
+        let bindings1 = try verifier.settlementBindings(settlementID: id1)
+        XCTAssertEqual(
+            bindings0[SimiGoSettlementIdentityBinding.modelKey],
+            SimiGoSettlementIdentityBinding.digest(identities[0].model))
+        XCTAssertEqual(
+            bindings0[SimiGoSettlementIdentityBinding.tokenizerKey],
+            SimiGoSettlementIdentityBinding.digest(identities[0].tokenizer))
+        XCTAssertEqual(
+            bindings1[SimiGoSettlementIdentityBinding.modelKey],
+            SimiGoSettlementIdentityBinding.digest(identities[1].model))
+        XCTAssertEqual(
+            bindings1[SimiGoSettlementIdentityBinding.tokenizerKey],
+            SimiGoSettlementIdentityBinding.digest(identities[1].tokenizer))
+
+        let latest = try XCTUnwrap(verifier.latestSettlementID(forStateID: anchor))
+        XCTAssertTrue(latest == id0 || latest == id1)
+        XCTAssertTrue(id0 != latest || id1 != latest,
+                      "same settledAt yields one latest ID, but both calls retain their own IDs")
     }
 
     // MARK: - Async throwing helpers

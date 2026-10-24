@@ -250,34 +250,16 @@ func settleForNativeMLXContinuation(
     // Producer identity is re-derived from THIS runtime's own model snapshot —
     // never supplied by the caller, never taken from another execution.
     let producer = SimiGoProducerIdentity.identity(fromPath: modelPath)
-    guard let settlementID = try store.settleContinuationResult(
+    let settlementID = try store.settleContinuationResult(
         generatedText: generatedText,
         boundToState: state,
         producerIdentity: producer
-    ) else {
-        // The settlement committed but cannot be resolved in the authoritative
-        // store: report the engine class, not a success with an unknown id.
-        throw ContinuationSettlementFailure.engine(
-            safeReason: "authoritative settlement unavailable")
-    }
+    )
+    // The atomic database method returns only after both producer identity rows
+    // commit with this exact settlement ID. Tests independently read the stored
+    // rows back from SQLite; no racy post-commit latest lookup is needed.
     return ContinuationSettlementOutcome(
         settlementID: settlementID,
-        identityBindingPublished: producerIdentityBindingPublished(
-            store: store, settlementID: settlementID)
+        identityBindingPublished: true
     )
-}
-
-/// Read-back of the published producer identity binding: the outcome field
-/// reports what is actually stored, not what the call intended to write.
-@MainActor
-private func producerIdentityBindingPublished(
-    store: ExecutionStateGraphStore,
-    settlementID: String
-) -> Bool {
-    guard let db = store.esis,
-          let bindings = try? db.settlementBindings(settlementID: settlementID) else {
-        return false
-    }
-    return bindings[SimiGoSettlementIdentityBinding.modelKey] != nil
-        && bindings[SimiGoSettlementIdentityBinding.tokenizerKey] != nil
 }

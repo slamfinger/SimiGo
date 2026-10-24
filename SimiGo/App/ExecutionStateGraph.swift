@@ -430,43 +430,91 @@ final class ExecutionStateGraphStore: ObservableObject {
         )
     }
 
-    /// Settle a producer's reference result AND publish its producer identity,
-    /// so the resulting IS settlement is admissible by a later continuation via
-    /// `admitContinuation`. Reuses the existing native settlement path plus the
-    /// authoritative store's `recordIdentityBindings`; it is not a second gate.
+    /// Settle a producer result and its identity as ONE authoritative SQLite commit.
+    /// Unlike the legacy non-identity overload, this path does not mutate the graph
+    /// projection or issue a non-fatal SQLite write before the authoritative commit.
     @discardableResult
     func settleProducerResult(
         generatedText: String,
         boundToState state: ExecutionStateRecord,
         producerIdentity: SimiGoSettlementIdentityBinding.Identity
     ) throws -> SimiGoSettlementAuthority.SettledResult {
-        let settled = try settleProducerResult(generatedText: generatedText, boundToState: state)
-        guard let db = ensureESIS(),
-              let settlementID = try? db.latestSettlementID(forStateID: state.id) else {
-            throw ExecutionGraphError.storeUnavailable("no authoritative settlement to bind identity")
-        }
-        try db.recordIdentityBindings(settlementID: settlementID, identity: producerIdentity)
-        return settled
+        let outcome = try settleProducerResultWithIdentity(
+            generatedText: generatedText,
+            boundToState: state,
+            producerIdentity: producerIdentity
+        )
+        return outcome.settled
     }
 
-    /// Settle a continuation's generated result AND return the authoritative
-    /// settlement id whose identity binding was published, so the production
-    /// adapter can report a real id instead of an invented one. A nil id means
-    /// the settlement committed but cannot be resolved in the authoritative
-    /// store — callers must surface that as an engine fault, never as success.
-    /// Reuses `settleProducerResult` (native gate + IS commit + binding
-    /// publication); it opens no second settlement path.
+    /// Same native contract gate as the ordinary producer path, but with the
+    /// authoritative transaction moved before any in-memory receipt mutation.
+    /// The identity-bearing production path must throw on every authority write
+    /// failure; a partially committed settlement is never reported as success.
+    private func settleProducerResultWithIdentity(
+        generatedText: String,
+        boundToState requestedState: ExecutionStateRecord,
+        producerIdentity: SimiGoSettlementIdentityBinding.Identity
+    ) throws -> (settled: SimiGoSettlementAuthority.SettledResult, settlementID: String) {
+        guard let authoritativeState = document.states.first(where: { $0.id == requestedState.id }) else {
+            throw ExecutionGraphError.invalidTransition("state not found")
+        }
+
+        let verifiedBindings: [String: NativeContractValue] = [
+            "next_input": .string(authoritativeState.nextInput)
+        ]
+        let settled = try SimiGoSettlementAuthority.authorize(
+            generatedText: generatedText,
+            contractJSON: Self.referenceResultContractJSON,
+            verifiedBindings: verifiedBindings
+        )
+
+        guard let db = ensureESIS() else {
+            throw ExecutionGraphError.storeUnavailable(
+                persistError ?? "ES/IS authoritative database unavailable")
+        }
+        // One SQLite transaction creates the settlement, its native constraint
+        // rows, and both producer identity bindings. The method returns the UUID
+        // created by that transaction—never query the latest row for this state.
+        let settlementUUID = try db.recordNativeSettlementWithIdentity(
+            settled,
+            stateID: authoritativeState.id,
+            identity: producerIdentity
+        )
+
+        // Update only the in-memory projection AFTER the full authoritative commit.
+        // SQLite is the source of truth and will reconstruct this receipt after a
+        // restart; no second write is performed here.
+        var updated = document
+        let receipt = SettlementReceipt(
+            id: settlementUUID,
+            stateID: authoritativeState.id,
+            schemaVersion: settled.schemaVersion,
+            payload: settled.validatedPayload,
+            payloadDigest: settled.payloadDigest,
+            settledAt: settled.settledAt
+        )
+        updated.settlements = (updated.settlements ?? []) + [receipt]
+        document = updated
+        operationError = nil
+        persistError = nil
+        return (settled, settlementUUID.uuidString)
+    }
+
+    /// Settle and return the ID created by the same atomic transaction that
+    /// publishes producer identity. No post-commit "latest for state" query.
     @discardableResult
     func settleContinuationResult(
         generatedText: String,
         boundToState state: ExecutionStateRecord,
         producerIdentity: SimiGoSettlementIdentityBinding.Identity
-    ) throws -> String? {
-        _ = try settleProducerResult(
-            generatedText: generatedText, boundToState: state,
-            producerIdentity: producerIdentity)
-        guard let db = ensureESIS() else { return nil }
-        return try db.latestSettlementID(forStateID: state.id)
+    ) throws -> String {
+        let outcome = try settleProducerResultWithIdentity(
+            generatedText: generatedText,
+            boundToState: state,
+            producerIdentity: producerIdentity
+        )
+        return outcome.settlementID
     }
 
     /// The IS admission (recovery) edge for a continuation, driven through the
