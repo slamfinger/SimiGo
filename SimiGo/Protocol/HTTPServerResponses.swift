@@ -870,6 +870,16 @@ extension HTTPServer {
 
         await context.registerLifecycle()
 
+        // Contract fix A: `continuation_settle` is an unsupported combination on
+        // the streaming Responses path. Reject it at the TRANSPORT level BEFORE
+        // committing the SSE `200 text/event-stream` header, so a real client
+        // observes HTTP 501 (never a 200 that carries a mid-stream 501). This
+        // refuses before any generation and before any settlement authority runs.
+        if parsed.continuationSettle {
+            sendTerminal(.settlementUnsupportedOnStream, context: context)
+            return
+        }
+
         let created =
             Int(Date().timeIntervalSince1970)
 

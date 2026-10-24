@@ -99,11 +99,18 @@ enum SimiGoProducerIdentity {
             return try store.admitContinuation(
                 stateID: stateID, consumer: consumer).recoveredValue
         } catch let refusal as SimiGoISAdmission.Refusal {
+            // Known, typed IS semantic refusal -> business input refusal (422).
             throw ContinuationAdmissionFailure.refused(String(describing: refusal))
         } catch let failure as ContinuationAdmissionFailure {
+            // Already-typed terminal (e.g. `unavailable`) passes through unchanged.
             throw failure
         } catch {
-            throw ContinuationAdmissionFailure.refused(error.localizedDescription)
+            // Contract fix B: an UNEXPECTED internal fault (authority/store
+            // unavailable, SQLite/IO failure, unclassified engine error) is NOT a
+            // business input refusal. Rethrow it as-is so the route's
+            // `continuationAdmissionTerminal` maps it to 500 ADMISSION_ENGINE_ERROR
+            // instead of silently downgrading it to 422 INPUT_ADMISSION_REFUSED.
+            throw error
         }
     }
 }
