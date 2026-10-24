@@ -4,8 +4,8 @@
 
 > **2026-10-16 navigation update:** active lines are Execution–Information cache-release validation, Persistent SRS / LOCAL-PRODUCTION-SIGNER-01, and the small-scale runtime/GUI line; priority is not inferred here. The E-I separation is a working research baseline, not proof of real-model long-term continuity. Actual MLX Smoke V6 is a bounded real-model `compute → settle` pass, not a cache-release/incremental-fork proof. Production remains unauthorized. Historical sections below retain their original authority and do not supersede this navigation note without a later Human ruling.
 
-**Last updated**: 2026-10-20
-**State layer updated**: 2026-10-20
+**Last updated**: 2026-10-25
+**State layer updated**: 2026-10-25
 
 > **2026-10-20 state-layer map:** this file is the only state authority. The other
 > navigation files are pointers, not state: `NEXT_SESSION_ENTRY.md` and
@@ -18,6 +18,37 @@
 > `### E4 Continuity + Residency Integration — Verified — 2026-09-25`.
 > Sections are appended at the head and are not strictly chronological; locate by
 > title, not by position.
+
+## Current continuity — 2026-10-25 (persistent checkpoint `01b5606b`)
+
+> **Status:** `G2 batch PASS (10-20) + core-API replay recorded` ·
+> `G3-C CLOSED (10-21, with stated concurrency/settlement-ordering limits)` ·
+> `G3 D1 NOT AUTHORIZED / NO-GO (entry-boundary decision Rev.5: Phase 1 is execution-infrastructure binding only)` ·
+> `E/J/K/K2 settlement-contract line landed (K2 aligned native digest_equals_binding to production, 10-23)` ·
+> `real MLX carrier ES→IS→fresh-ES handoff tested end-to-end (e7f63856)`.
+> None of this closes the core question; no ruling below is changed by commits landing in `main`.
+
+- **Fact (git):** research code and evidence now have a persistent, GitHub-readable
+  checkpoint: `main` pushed at `01b5606b` (2026-10-25), carrying the 10-21/10-22 commits
+  (`69178b7f`…`e7f63856`) and six organizing commits: `7e1c8785` (untrack transient
+  selftest state; ignore `/.transfer/`, profraw), `f95bf961` (E-round settlement
+  contract + provenance), `cab05e4f` (J/K/K2), `d3130321` (G3-C closure + D1 decision +
+  freeze evidence), `a46f5cc8` (G3 Phase 1 implementation), `01b5606b` (G2 replay record).
+- **Verification boundary (binds every commit above):** the 10-25 round was transport
+  only. Python `py_compile` passed for the covered files; **no Swift build or selftest
+  was re-run this round**, so these commits are not full-regression-verified by this
+  round. The K/K2 runs were executed at `e7f63856` (staged = 0). G3 D1 stays NO-GO;
+  production remains unauthorized; the R27 STOP stands.
+- **Pointers:** `docs/06-closure/G3_C_CLOSURE_20261021.md` ·
+  `docs/00-governance/SIMIGO2_G3_D1_ENTRY_BOUNDARY_DECISION_V0.1_20261021.md` ·
+  `execution-information-loop/K2_EVIDENCE_REPORT_20261023.md` ·
+  `docs/02-evidence/settlement-provenance-e-20261022/`.
+- **Rulings recorded here (10-25):** `/private/tmp` worktrees not pruned for now;
+  `materialization-hardening` worktree (single-flight test line) kept untouched.
+- **Next line (product repo; NOT done in this round, and Lab commits must not be read
+  as product progress):** admission increment as an independent new candidate build with
+  identity record, preserving the RC1 `83a880…` candidate and its evidence; then the
+  `output → native result contract → IS settlement` edge.
 
 ## Current continuity — 2026-10-20 (G1 CLOSED; 10-17/10-18 records entered)
 
