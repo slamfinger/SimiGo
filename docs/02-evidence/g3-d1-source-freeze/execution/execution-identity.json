@@ -1,0 +1,88 @@
+{
+  "generated_at_utc": "2026-10-21T12:03:16Z",
+  "launch": {
+    "argv": [
+      "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/stage/G3D1Worker"
+    ],
+    "child_self_check": "enforced: the D1 worker hashes its own executable before the first forward and refuses to generate on mismatch against G3_EXPECT_EXEC_SHA256; the bound run reported identity verified",
+    "environment_binding": {
+      "G3_AUTHORIZATION_MARKER": "26b9c7bc081c7f4104e2ad6a2873dd736079ca1c7ba9fc278ffa7af0a4b7c3fb",
+      "G3_EXPECT_EXEC_SHA256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+      "G3_MANIFEST_RUNNER_SHA256": "2c7af27b04936889c39d921751679552d9f700983c4f1deb96ba4a33554291f9",
+      "G3_MANIFEST_SOURCE_SHA256": "2b027bb80a47d266ec8beeec06992b18aa0f94ba994b82449651e5da91467912"
+    },
+    "exit_code": 12,
+    "expected_sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+    "match": true,
+    "observed_at_utc": "2026-10-21T12:03:17Z",
+    "pid": 74127,
+    "read_error": null,
+    "running_executable_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/stage/G3D1Worker",
+    "running_executable_sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+    "terminated_by_supervisor": false
+  },
+  "manifest": {
+    "path": "docs/02-evidence/g3-d1-source-freeze/runner-manifest.json",
+    "runner_sha256": "2c7af27b04936889c39d921751679552d9f700983c4f1deb96ba4a33554291f9",
+    "source_sha256": "2b027bb80a47d266ec8beeec06992b18aa0f94ba994b82449651e5da91467912"
+  },
+  "marker": {
+    "binding": "source_sha256 + runner_sha256 + staged sha256",
+    "consumed": true,
+    "consumed_at_utc": "2026-10-21T12:03:16Z",
+    "consumed_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/consumed/26b9c7bc081c7f4104e2ad6a2873dd736079ca1c7ba9fc278ffa7af0a4b7c3fb.json",
+    "created_at_utc": "2026-10-21T12:03:16Z",
+    "id": "26b9c7bc081c7f4104e2ad6a2873dd736079ca1c7ba9fc278ffa7af0a4b7c3fb",
+    "runner_sha256": "2c7af27b04936889c39d921751679552d9f700983c4f1deb96ba4a33554291f9",
+    "schema_id": "G3-D1-AUTHORIZATION-MARKER-V1",
+    "source_sha256": "2b027bb80a47d266ec8beeec06992b18aa0f94ba994b82449651e5da91467912",
+    "staged_sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+  },
+  "marker_path": "docs/02-evidence/g3-d1-source-freeze/execution/consumed/26b9c7bc081c7f4104e2ad6a2873dd736079ca1c7ba9fc278ffa7af0a4b7c3fb.json",
+  "residual_window": "a same-uid writer could replace the staged file between the re-hash and exec; D1 closes this by the child hashing its own executable (G3_EXPECT_EXEC_SHA256) and refusing to generate on mismatch",
+  "schema_id": "G3-D1-EXECUTION-IDENTITY-V1",
+  "stand_in": false,
+  "status": "bound",
+  "worker": {
+    "codesign": {
+      "authority": null,
+      "checked": true,
+      "flags": null,
+      "identifier": "G3D1Worker-55554944a1071577b53339e5b44bd9c85dd4bf86",
+      "raw": [
+        "CDHash=6f90cb599fae0fe64c69ab2898d3cf82ca7ade29",
+        "Signature=adhoc",
+        "Info.plist=not bound",
+        "TeamIdentifier=not set",
+        "Sealed Resources=none",
+        "Internal requirements count=0 size=12",
+        "Total signatures=1",
+        "Chosen signature=1"
+      ],
+      "signature": "adhoc",
+      "team_identifier": "not set"
+    },
+    "mode": "0o755",
+    "path": "simigo2-experimental/.build/out/out/Products/Debug/G3D1Worker",
+    "present": true,
+    "sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+    "size": 1626400,
+    "staged": {
+      "absolute_path": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/stage/G3D1Worker",
+      "device": 16777233,
+      "gid": 20,
+      "hashes_agree": true,
+      "inode": 109863630,
+      "mode": "0o500",
+      "no_follow_reread": true,
+      "path": "docs/02-evidence/g3-d1-source-freeze/execution/stage/G3D1Worker",
+      "sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a",
+      "size": 1626400,
+      "stage_dir": "/Users/mr.simi/Documents/SimiGo-Lab/docs/02-evidence/g3-d1-source-freeze/execution/stage",
+      "stage_dir_mode": "0o700",
+      "stage_dir_owned_by_caller": true,
+      "uid": 501,
+      "write_sha256": "1f9baa57c7b6b7463161b61ba76ebd989594e5c6dd8fa795c17405867694b42a"
+    }
+  }
+}
