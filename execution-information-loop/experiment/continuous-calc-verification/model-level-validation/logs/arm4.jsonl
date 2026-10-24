@@ -1,0 +1,17 @@
+{"elt": "arm-start", "arm": 4, "tag": "arm4", "_t": 1792494504.4021251}
+{"elt": "calc", "arm": 4, "unit": "A", "prefix_len": 2, "real": true, "_t": 1792494504.40507}
+{"elt": "calc", "arm": 4, "unit": "B", "prefix_len": 2, "real": true, "_t": 1792494504.405358}
+{"elt": "calc", "arm": 4, "unit": "C", "prefix_len": 2, "real": true, "_t": 1792494504.405567}
+{"elt": "calc", "arm": 4, "unit": "D", "prefix_len": 2, "real": true, "_t": 1792494504.405787}
+{"elt": "calc", "arm": 4, "unit": "E", "prefix_len": 2, "real": true, "_t": 1792494504.405963}
+{"elt": "execute-demand-note", "arm": 2, "unit": "all", "err": "ValueError: unknown demand: doc-workflow-analysis", "_t": 1792494504.4063811}
+{"elt": "diamond-settle-before", "arm": 4, "unit": "all", "settle_before": {"A": "[{'value': 'A->h91301976'}, 'A->h91301976']", "B": "[{'value': 'B->h6de26e32'}, 'B->h6de26e32']", "C": "[{'value': 'C->h84a49f8b'}, 'C->h84a49f8b']", "D": "[{'value': 'D->hdfe71574'}, 'D->hdfe71574']", "E": "[{'value': 'E->h393f327f'}, 'E->h393f327f']"}, "_t": 1792494504.406821}
+{"elt": "diamond-invalidate", "arm": 4, "unit": "all", "invalidated_item_ids": ["A", "B", "C", "D"], "reason": "source-a-changed", "include_dependents": true, "_t": 1792494504.407316}
+{"elt": "diamond-update-source", "arm": 4, "unit": "A", "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm4.sqlite", "source_version": "v2", "_t": 1792494504.4076622}
+{"elt": "calc", "arm": 4, "unit": "A", "prefix_len": 2, "real": true, "_t": 1792494504.407852}
+{"elt": "calc", "arm": 4, "unit": "B", "prefix_len": 2, "real": true, "_t": 1792494504.408105}
+{"elt": "calc", "arm": 4, "unit": "C", "prefix_len": 2, "real": true, "_t": 1792494504.4082901}
+{"elt": "calc", "arm": 4, "unit": "D", "prefix_len": 2, "real": true, "_t": 1792494504.408444}
+{"elt": "diamond-recompute", "arm": 4, "unit": "all", "expected_recompute_set": ["A", "B", "C", "D"], "carrier_proxy_recompute": [], "settlement_now": {"A": "[{'value': 'A->hb4e3303d'}, 'A->hb4e3303d']", "B": "[{'value': 'B->h6de26e32'}, 'B->h6de26e32']", "C": "[{'value': 'C->h84a49f8b'}, 'C->h84a49f8b']", "D": "[{'value': 'D->hdfe71574'}, 'D->hdfe71574']", "E": "[{'value': 'E->h393f327f'}, 'E->h393f327f']"}, "derivation_basis": "expected = {changed=A} ∪ transitively dependent (B,C,D); E unrelated — derived from DIAMOND_UNITS deps BEFORE touching IS", "comparison_rule": "set-based: set(expected)==set(proxy), E must be excluded (B3)", "executor_observation": true, "real_calculator_wired": false, "_t": 1792494504.408941}
+{"elt": "execute-demand-note", "arm": 2, "unit": "all", "err": "ValueError: unknown demand: doc-workflow-analysis", "_t": 1792494504.4090219}
+{"elt": "arm-done", "arm": 4, "tag": "arm4", "_t": 1792494504.40941}

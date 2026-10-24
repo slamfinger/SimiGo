@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,8 @@ from typing import Any, Callable, Optional
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "database-carrier-replication" / "implementation"))
 from db_is import DatabaseBackedIS, MissingLogicalEntry  # noqa: E402
+
+import settlement_provenance as settlement_provenance  # noqa: E402
 
 
 def canonical(value: Any) -> bytes:
@@ -48,6 +51,148 @@ class ConcurrentStateTransition(Exception):
 
 RUNTIME_APPLICATION_STATUSES = {"PENDING_SWIFT", "APPLIED_SWIFT"}
 
+# One settlement contract for every writer. External information and internal
+# computed results must arrive in the same envelope, otherwise the reuse
+# predicate can only ever match the dialect that wrote the record.
+SETTLEMENT_CONTRACT = "EINFO-SETTLEMENT-CONTRACT-V1"
+CARRIER_LOOP_CONTRACT_VERSION = "2"
+
+# Two digest domains that never mix: `source_payload_sha256` binds the input a
+# settlement was computed from, `result_value_sha256` binds the value it
+# produced. Neither domain may be compared against the other.
+SETTLEMENT_DIGEST_FIELDS = ("source_payload_sha256", "result_value_sha256")
+SETTLEMENT_RESULT_FIELDS = (
+    "value",
+    "source_payload_sha256",
+    "result_value_sha256",
+    "source_version",
+    "dependency_object_ids",
+    "evaluated_at_utc",
+    "valid_until_utc",
+    "validity_policy",
+)
+SETTLEMENT_BASIS_FIELDS = (
+    "source_payload_sha256",
+    "result_value_sha256",
+    "source_version",
+    "dependency_object_ids",
+    "evaluated_at_utc",
+    "valid_until_utc",
+    "validity_policy",
+)
+
+
+def _is_sha256_hex(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _is_object_id_map(value: Any) -> bool:
+    return isinstance(value, dict) and all(
+        isinstance(key, str) and _is_sha256_hex(item) for key, item in value.items()
+    )
+
+
+class SettlementContractViolation(ValueError):
+    """A settlement payload does not satisfy the single settlement contract."""
+
+    def __init__(self, missing: list[str], mismatched: list[str], detail: str = ""):
+        self.missing = list(missing)
+        self.mismatched = list(mismatched)
+        message = "settlement contract violation"
+        if self.missing:
+            message += "; missing=%s" % ",".join(sorted(set(self.missing)))
+        if self.mismatched:
+            message += "; mismatched=%s" % ",".join(sorted(set(self.mismatched)))
+        if detail:
+            message += "; " + detail
+        super().__init__(message)
+
+
+def validate_settlement_payload(result: Any, basis: Any) -> None:
+    """Reject a settlement that no reader could reuse under the contract."""
+    if not isinstance(result, dict):
+        raise SettlementContractViolation(
+            ["result"], [], "result must be a JSON object"
+        )
+    if not isinstance(basis, dict):
+        raise SettlementContractViolation(["basis"], [], "basis must be a JSON object")
+    missing = ["result.%s" % field for field in SETTLEMENT_RESULT_FIELDS
+               if field not in result]
+    missing += ["basis.%s" % field for field in SETTLEMENT_BASIS_FIELDS
+                if field not in basis]
+    if missing:
+        raise SettlementContractViolation(missing, [])
+
+    mismatched: list[str] = []
+    for scope, payload in (("result", result), ("basis", basis)):
+        for field in SETTLEMENT_DIGEST_FIELDS:
+            if not _is_sha256_hex(payload[field]):
+                mismatched.append("%s.%s" % (scope, field))
+        if not isinstance(payload["source_version"], str) or not payload["source_version"]:
+            mismatched.append("%s.source_version" % scope)
+        if not _is_object_id_map(payload["dependency_object_ids"]):
+            mismatched.append("%s.dependency_object_ids" % scope)
+        try:
+            parse_utc(payload["evaluated_at_utc"])
+        except ValueError:
+            mismatched.append("%s.evaluated_at_utc" % scope)
+        if payload["valid_until_utc"] is not None:
+            try:
+                parse_utc(payload["valid_until_utc"])
+            except ValueError:
+                mismatched.append("%s.valid_until_utc" % scope)
+        try:
+            validity_policy_identity(payload["validity_policy"])
+        except ValueError:
+            mismatched.append("%s.validity_policy" % scope)
+
+    # Each digest domain is validated against its own subject: the recorded
+    # result digest must be the digest of the recorded value, and both scopes
+    # must agree on each domain independently.
+    try:
+        recorded_value_sha256 = digest(result["value"])
+    except (TypeError, ValueError):
+        recorded_value_sha256 = None
+        mismatched.append("result.value_not_canonical_json")
+    if recorded_value_sha256 is not None:
+        for scope, payload in (("result", result), ("basis", basis)):
+            if payload["result_value_sha256"] != recorded_value_sha256:
+                mismatched.append("%s.result_value_sha256!=digest(result.value)" % scope)
+    for field in SETTLEMENT_DIGEST_FIELDS:
+        if result[field] != basis[field]:
+            mismatched.append("result.%s!=basis.%s" % (field, field))
+    if result["source_version"] != basis["source_version"]:
+        mismatched.append("result.source_version!=basis.source_version")
+    if result["dependency_object_ids"] != basis["dependency_object_ids"]:
+        mismatched.append("result.dependency_object_ids!=basis.dependency_object_ids")
+    if result["evaluated_at_utc"] != basis["evaluated_at_utc"]:
+        mismatched.append("result.evaluated_at_utc!=basis.evaluated_at_utc")
+    if result["valid_until_utc"] != basis["valid_until_utc"]:
+        mismatched.append("result.valid_until_utc!=basis.valid_until_utc")
+    if result["validity_policy"] != basis["validity_policy"]:
+        mismatched.append("result.validity_policy!=basis.validity_policy")
+
+    try:
+        if (result["valid_until_utc"] is not None
+                and parse_utc(result["evaluated_at_utc"])
+                > parse_utc(result["valid_until_utc"])):
+            mismatched.append("valid_until_utc<=evaluated_at_utc")
+    except ValueError:
+        pass
+
+    try:
+        canonical(result)
+        canonical(basis)
+    except (TypeError, ValueError):
+        mismatched.append("payload_not_canonical_json")
+
+    if mismatched:
+        raise SettlementContractViolation([], mismatched)
+
 
 def validity_policy_identity(policy: Any) -> dict:
     """Validate and return a canonical validity-policy identity."""
@@ -65,27 +210,83 @@ def validity_policy_identity(policy: Any) -> dict:
 
 
 class CarrierInformationLoop:
-    """Minimal ES/IS continuation loop over DatabaseBackedIS."""
+    """Minimal ES/IS continuation loop over DatabaseBackedIS.
 
-    def __init__(self, carrier: DatabaseBackedIS):
+    ``provenance_policy='required'`` is the production producer setting: every
+    new settlement is signed, and every reuse must verify a detached Ed25519
+    signature against a trust anchor outside the database.  ``verify`` is the
+    consumer setting: it verifies signatures but never loads a private key.
+    ``off`` exists only for isolated library tests and is never selected
+    implicitly by the bridge.
+    """
+
+    def __init__(
+        self,
+        carrier: DatabaseBackedIS,
+        *,
+        provenance_policy: str = "off",
+        signer: Optional[settlement_provenance.SigningKey] = None,
+        trust_anchor: Optional[settlement_provenance.TrustAnchor] = None,
+        run_id: Optional[str] = None,
+        execution_id: Optional[str] = None,
+        build_sha256: Optional[str] = None,
+    ):
         self.carrier = carrier
+        self.provenance_policy = provenance_policy
+        self.signer = signer
+        self.trust_anchor = trust_anchor
+        self.run_id = run_id or os.environ.get(settlement_provenance.RUN_ID_ENV) or "local"
+        self.execution_id = (
+            execution_id
+            or os.environ.get(settlement_provenance.EXECUTION_ID_ENV)
+            or "local"
+        )
+        self.build_sha256 = (
+            build_sha256
+            or os.environ.get(settlement_provenance.BUILD_SHA256_ENV)
+            or hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        )
+        if provenance_policy == "required" and (signer is None or trust_anchor is None):
+            raise settlement_provenance.ProvenanceError(
+                "PROVENANCE_CONFIGURATION_MISSING",
+                "required policy needs a signing key and trust anchor",
+            )
+        if provenance_policy == "verify" and trust_anchor is None:
+            raise settlement_provenance.ProvenanceError(
+                "PROVENANCE_CONFIGURATION_MISSING",
+                "verify policy needs a trust anchor",
+            )
 
     @classmethod
-    def create(cls, database_path: str) -> "CarrierInformationLoop":
+    def _configured(cls, carrier: DatabaseBackedIS, provenance_policy: Optional[str]):
+        policy, signer, anchor = settlement_provenance.load_policy(provenance_policy)
+        return cls(
+            carrier,
+            provenance_policy=policy,
+            signer=signer,
+            trust_anchor=anchor,
+        )
+
+    @classmethod
+    def create(
+        cls, database_path: str, *, provenance_policy: Optional[str] = None
+    ) -> "CarrierInformationLoop":
         path = Path(database_path)
         if path.exists() or path.is_symlink():
             raise FileExistsError(path)
         carrier = DatabaseBackedIS.init_empty(database_path)
-        return cls(carrier)
+        return cls._configured(carrier, provenance_policy)
 
     @classmethod
-    def open(cls, database_path: str) -> "CarrierInformationLoop":
+    def open(
+        cls, database_path: str, *, provenance_policy: Optional[str] = None
+    ) -> "CarrierInformationLoop":
         path = Path(database_path)
         if not path.is_file() or path.is_symlink():
             raise FileNotFoundError(path)
         carrier = DatabaseBackedIS(path)
         carrier.validate_schema()
-        return cls(carrier)
+        return cls._configured(carrier, provenance_policy)
 
     def commit(self) -> None:
         self.carrier.connection.commit()
@@ -99,7 +300,7 @@ class CarrierInformationLoop:
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    def _current_index_object(self, identity: str) -> Optional[dict]:
+    def _current_index_record(self, identity: str) -> Optional[dict]:
         row = self.carrier.connection.execute(
             "SELECT append_order,srs_identity,record_object "
             "FROM is_index_entries WHERE srs_identity=? "
@@ -108,7 +309,12 @@ class CarrierInformationLoop:
         ).fetchone()
         if row is None:
             return None
-        return json.loads(self.carrier.get_object(row["record_object"]))
+        value = json.loads(self.carrier.get_object(row["record_object"]))
+        return {"value": value, "object_id": row["record_object"]}
+
+    def _current_index_object(self, identity: str) -> Optional[dict]:
+        record = self._current_index_record(identity)
+        return None if record is None else record["value"]
 
     def _current_dependency_object(self, dependency_id: str) -> Optional[dict]:
         try:
@@ -274,26 +480,162 @@ class CarrierInformationLoop:
             "dependency_order": dependency_order,
         }
 
+    def settlement_provenance_for(
+        self,
+        item_id: str,
+        result: dict,
+        dependency_object_ids: dict,
+        dependency_values: dict,
+        override: Optional[dict] = None,
+    ) -> dict:
+        """Build the provenance a trusted settlement path is about to sign.
+
+        Public wrapper for settlement paths that settle outside
+        ``execute_demand`` (for example task registration). It never signs: the
+        caller must pass the result to ``settle``, which signs inside the same
+        atomic group that writes the settlement object.
+        """
+        item = self.current_item(item_id)
+        item_record = self.current_item_record(item_id)
+        if item is None or item_record is None:
+            raise settlement_provenance.ProvenanceError(
+                "TASK_ITEM_RECORD_MISSING", item_id
+            )
+        return self._provenance_for_settlement(
+            item, item_record, item_id, result, dependency_object_ids,
+            dependency_values, override,
+        )
+
+    def _provenance_for_settlement(
+        self,
+        item: dict,
+        item_record: dict,
+        item_id: str,
+        result: dict,
+        dependency_object_ids: dict,
+        dependency_values: dict,
+        override: Optional[dict] = None,
+    ) -> dict:
+        producer = {
+            "kind": "carrier_calculator",
+            "run_id": self.run_id,
+            "execution_id": self.execution_id,
+            "process_id": str(os.getpid()),
+            "build_sha256": self.build_sha256,
+        }
+        model = None
+        output = None
+        if override is not None:
+            unexpected = set(override) - {"producer", "model", "output"}
+            if unexpected:
+                raise settlement_provenance.ProvenanceError(
+                    "PROVENANCE_OVERRIDE_INVALID", sorted(unexpected)
+                )
+            if isinstance(override.get("producer"), dict):
+                producer.update(override["producer"])
+            model = override.get("model")
+            output = override.get("output")
+            if producer.get("kind") == "model_task" and (model is None or output is None):
+                raise settlement_provenance.ProvenanceError(
+                    "PROVENANCE_MODEL_INCOMPLETE", item_id
+                )
+        dependencies = {}
+        for dependency_id in item.get("dependencies") or []:
+            object_id = dependency_object_ids.get(dependency_id)
+            value = dependency_values.get(dependency_id)
+            if not object_id or value is None:
+                raise settlement_provenance.ProvenanceError(
+                    "PROVENANCE_DEPENDENCY_MISSING", dependency_id
+                )
+            dependencies[dependency_id] = {
+                "object_id": object_id,
+                "result_value_sha256": digest(value),
+            }
+        policy = item.get("validity_policy")
+        if "value" not in result or "evaluated_at_utc" not in result:
+            raise settlement_provenance.ProvenanceError(
+                "PROVENANCE_RESULT_INCOMPLETE", item_id
+            )
+        return {
+            "schema_id": settlement_provenance.PROVENANCE_SCHEMA_ID,
+            "producer": producer,
+            "task": {
+                "item_id": item_id,
+                "item_object_id": item_record["object_id"],
+                "payload_sha256": digest(item),
+            },
+            "source": {
+                "object_id": item_record["object_id"],
+                "payload_sha256": digest(item["source_payload"]),
+                "version": item["source_version"],
+            },
+            "dependencies": dependencies,
+            "result_value_sha256": digest(result["value"]),
+            "validity": {
+                "evaluated_at_utc": result["evaluated_at_utc"],
+                "valid_until_utc": result["valid_until_utc"],
+                "validity_policy_sha256": digest(policy) if policy is not None else None,
+            },
+            "model": model,
+            "output": output,
+        }
+
     def settle(
         self,
         advancement_id: str,
         item_id: str,
         result: dict,
         basis: dict,
+        provenance: Optional[dict] = None,
     ) -> dict:
-        value = {
-            "schema_id": "EINFO-SETTLEMENT-V1",
-            "state": "SETTLED",
-            "advancement_id": advancement_id,
-            "item_id": item_id,
-            "result": result,
-            "basis": basis,
-        }
-        content = canonical(value)
+        # Reject a contract violation before the carrier is touched: a
+        # malformed settlement must never reach the append-only ledger.
+        validate_settlement_payload(result, basis)
         dependency_id = f"settlement:{item_id}"
-        revision = len(self.carrier.get_dependency_history(dependency_id)) + 1
+        history = self.carrier.get_dependency_history(dependency_id)
+        revision = len(history) + 1
+        if provenance is None or self.provenance_policy == "off":
+            if self.provenance_policy != "off":
+                raise settlement_provenance.ProvenanceError(
+                    "PROVENANCE_REQUIRED", "settlement %s has no provenance" % item_id
+                )
+            value = {
+                "schema_id": "EINFO-SETTLEMENT-V1",
+                "state": "SETTLED",
+                "settlement_contract": SETTLEMENT_CONTRACT,
+                "advancement_id": advancement_id,
+                "item_id": item_id,
+                "result": result,
+                "basis": basis,
+            }
+            signature_envelope = None
+        else:
+            provenance = settlement_provenance.attach_event(
+                provenance,
+                item_id=item_id,
+                history=history,
+                result_value_sha256=result["result_value_sha256"],
+                evaluated_at_utc=result["evaluated_at_utc"],
+            )
+            value = settlement_provenance.build_declaration(
+                advancement_id, item_id, result, basis, provenance
+            )
+            signature_envelope = None
+            if self.provenance_policy == "required":
+                signature_envelope, declared_id, _ = settlement_provenance.sign_declaration(
+                    value, self.signer
+                )
+                content = canonical(value)
+                actual_id = hashlib.sha256(content).hexdigest()
+                if actual_id != declared_id:
+                    raise settlement_provenance.ProvenanceError(
+                        "DECLARATION_ID_MISMATCH", "%s != %s" % (actual_id, declared_id)
+                    )
+        content = canonical(value)
+        object_id = hashlib.sha256(content).hexdigest()
+        signature_object_id = None
         with self.carrier.atomic_write_group():
-            object_id, dependency_order = self.carrier.atomic_dependency_materialization(
+            written_id, dependency_order = self.carrier.atomic_dependency_materialization(
                 content,
                 {
                     "dependency_id": dependency_id,
@@ -302,13 +644,26 @@ class CarrierInformationLoop:
                     "reason": "settled result",
                 },
             )
+            if written_id != object_id:
+                raise settlement_provenance.ProvenanceError(
+                    "SETTLEMENT_OBJECT_ID_MISMATCH",
+                    "%s != %s" % (written_id, object_id),
+                )
             self.carrier.append_index_entry({
                 "srs_identity": f"settlement:{item_id}",
                 "record_object": object_id,
             })
+            if signature_envelope is not None:
+                signature_content = canonical(signature_envelope)
+                signature_object_id = self.carrier.write_object(signature_content)
+                self.carrier.append_index_entry({
+                    "srs_identity": f"settlement-signature:{item_id}",
+                    "record_object": signature_object_id,
+                })
         return {
             "item_id": item_id,
             "object_id": object_id,
+            "signature_object_id": signature_object_id,
             "dependency_order": dependency_order,
         }
 
@@ -317,20 +672,34 @@ class CarrierInformationLoop:
         target_item_id: str,
         reason: str,
         include_dependents: bool = True,
+        strict: bool = True,
     ) -> dict:
+        """Invalidate `target_item_id` and everything that truly depends on it.
+
+        `strict` governs exactly one thing: whether an unknown target is an
+        error. With `strict=False` the pre-W4 computation and return shape are
+        reproduced as-is (an unknown target is echoed back as invalidated with
+        zero records written), which is what historical callers were written
+        against. New callers should keep the default, which reports the same
+        situation as the carrier's own `MissingLogicalEntry` instead of a
+        successful-looking no-op.
+        """
         with self.carrier.atomic_write_group():
             return self._invalidate_settlement_in_group(
-                target_item_id, reason, include_dependents
+                target_item_id, reason, include_dependents, strict
             )
 
-    def _invalidate_settlement_in_group(
-        self,
-        target_item_id: str,
-        reason: str,
-        include_dependents: bool = True,
-    ) -> dict:
-        """Append explicit invalidation records for an item and its dependents."""
-        items = {}
+    def _dependency_edges(self) -> dict[str, set[str]]:
+        """Dependency graph per item, as the union of two declared sources.
+
+        An item declares its dependencies in `dependencies`; the settlement it
+        produced declares the same relation in `basis.dependency_object_ids`.
+        A settlement written by an external writer can carry only the second,
+        which would leave a real dependency invisible to a graph built from
+        item objects alone. Union keeps the closure complete without inventing
+        edges: both keys are item ids the carrier itself recorded.
+        """
+        edges: dict[str, set[str]] = {}
         for row in self.carrier.connection.execute(
             "SELECT append_order,srs_identity,record_object "
             "FROM is_index_entries WHERE srs_identity LIKE 'item:%' "
@@ -338,7 +707,28 @@ class CarrierInformationLoop:
         ):
             item_id = row["srs_identity"][len("item:"):]
             value = json.loads(self.carrier.get_object(row["record_object"]))
-            items[item_id] = value["dependencies"]
+            edges[item_id] = set(value.get("dependencies") or ())
+        for item_id in edges:
+            settlement = self.current_settlement(item_id)
+            basis = settlement.get("basis") if isinstance(settlement, dict) else None
+            declared = basis.get("dependency_object_ids") if isinstance(basis, dict) else None
+            if isinstance(declared, dict):
+                edges[item_id].update(declared)
+        return edges
+
+    def _invalidate_settlement_in_group(
+        self,
+        target_item_id: str,
+        reason: str,
+        include_dependents: bool = True,
+        strict: bool = True,
+    ) -> dict:
+        """Append explicit invalidation records for an item and its dependents."""
+        items = self._dependency_edges()
+        if strict and target_item_id not in items:
+            raise MissingLogicalEntry(
+                "item:%s (unknown invalidation target)" % target_item_id
+            )
         dependents: dict[str, list[str]] = {
             item_id: [] for item_id in items
         }
@@ -401,8 +791,19 @@ class CarrierInformationLoop:
     def current_item(self, item_id: str) -> Optional[dict]:
         return self._current_index_object(f"item:{item_id}")
 
+    def current_item_record(self, item_id: str) -> Optional[dict]:
+        return self._current_index_record(f"item:{item_id}")
+
     def current_settlement(self, item_id: str) -> Optional[dict]:
         return self._current_dependency_object(f"settlement:{item_id}")
+
+    def current_settlement_signature(self, item_id: str) -> Optional[dict]:
+        record = self._current_index_record(f"settlement-signature:{item_id}")
+        if record is None:
+            return None
+        value = record["value"]
+        value["_object_id"] = record["object_id"]
+        return value
 
     def _latest_index_object_with_identity(self, prefix: str) -> Optional[dict]:
         row = self.carrier.connection.execute(
@@ -575,6 +976,182 @@ class CarrierInformationLoop:
         value["_object_id"] = row["record_object"]
         return value
 
+    def _verify_signed_settlement(
+        self,
+        settlement: dict,
+        item: dict,
+        dependency_object_ids: dict,
+        dependency_values: Optional[dict],
+    ) -> tuple[bool, Optional[str]]:
+        """Verify the detached signature and its semantic binding.
+
+        The signature covers a canonical payload whose settlement id is the
+        content address of the declaration.  Verification therefore checks both
+        the cryptographic signature and the declaration's current semantic
+        binding (task object, source, dependency closure, validity and event
+        chain).  A signature over a stale declaration is not reusable.
+        """
+        provenance = settlement.get("provenance")
+        if self.provenance_policy == "off":
+            return (True, None) if provenance is None else (False, "SETTLEMENT_SIGNATURE_UNVERIFIABLE")
+        if not isinstance(provenance, dict):
+            return False, "SETTLEMENT_SIGNATURE_MISSING"
+        signature = self.current_settlement_signature(item["item_id"])
+        if signature is None:
+            return False, "SETTLEMENT_SIGNATURE_MISSING"
+        object_id = settlement.get("_object_id")
+        if not object_id:
+            return False, "SETTLEMENT_OBJECT_ID_MISSING"
+        try:
+            payload = settlement_provenance.verify_signature(
+                signature,
+                self.trust_anchor,
+                expected_settlement_object_id=object_id,
+                expected_item_id=item["item_id"],
+            )
+            if payload.get("provenance") != provenance:
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+            if payload.get("advancement_id") != settlement.get("advancement_id"):
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+            if payload.get("settlement_contract") != settlement.get("settlement_contract"):
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+            if payload.get("settlement_schema_id") != settlement.get("schema_id"):
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+            provenance = settlement_provenance.validate_provenance_shape(provenance)
+        except settlement_provenance.ProvenanceError as error:
+            if error.code.startswith("SIGNATURE"):
+                return False, "SETTLEMENT_SIGNATURE_INVALID"
+            if error.code.startswith("TRUST_ANCHOR") or error.code.startswith("KEY_ID"):
+                return False, "SETTLEMENT_TRUST_ANCHOR_INVALID"
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        except Exception:  # noqa: BLE001 - any defect is a refusal
+            return False, "SETTLEMENT_SIGNATURE_INVALID"
+
+        item_record = self.current_item_record(item["item_id"])
+        if item_record is None:
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        task = provenance["task"]
+        source = provenance["source"]
+        if (
+            task.get("item_id") != item["item_id"]
+            or task.get("item_object_id") != item_record["object_id"]
+            or task.get("payload_sha256") != digest(item)
+        ):
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        if (
+            source.get("object_id") != item_record["object_id"]
+            or source.get("payload_sha256") != digest(item["source_payload"])
+            or source.get("version") != item["source_version"]
+        ):
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        signed_dependencies = provenance["dependencies"]
+        if set(signed_dependencies) != set(dependency_object_ids):
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        for dependency_id, signed in signed_dependencies.items():
+            if signed.get("object_id") != dependency_object_ids[dependency_id]:
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+            if dependency_values is not None:
+                if dependency_id not in dependency_values:
+                    return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+                if signed.get("result_value_sha256") != digest(
+                    dependency_values[dependency_id]
+                ):
+                    return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        result = settlement["result"]
+        if provenance["result_value_sha256"] != digest(result["value"]):
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        validity = provenance["validity"]
+        policy = item.get("validity_policy")
+        if (
+            validity.get("evaluated_at_utc") != result["evaluated_at_utc"]
+            or validity.get("valid_until_utc") != result["valid_until_utc"]
+            or validity.get("validity_policy_sha256")
+            != (digest(policy) if policy is not None else None)
+        ):
+            return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        producer = provenance["producer"]
+        if producer.get("kind") == "model_task":
+            if provenance.get("model") is None or provenance.get("output") is None:
+                return False, "SETTLEMENT_PROVENANCE_MISMATCH"
+        history = self.carrier.get_dependency_history(f"settlement:{item['item_id']}")
+        event = provenance["event"]
+        expected_previous = history[-2].content_address if len(history) >= 2 else None
+        if event.get("sequence") != len(history):
+            return False, "SETTLEMENT_EVENT_CHAIN_INVALID"
+        if event.get("previous_settlement_object_id") != expected_previous:
+            return False, "SETTLEMENT_EVENT_CHAIN_INVALID"
+        expected_event_id = settlement_provenance.digest({
+            "item_id": item["item_id"],
+            "sequence": event.get("sequence"),
+            "previous_settlement_object_id": expected_previous,
+            "result_value_sha256": result["result_value_sha256"],
+            "evaluated_at_utc": result["evaluated_at_utc"],
+        })
+        if event.get("settlement_event_id") != expected_event_id:
+            return False, "SETTLEMENT_EVENT_CHAIN_INVALID"
+        return True, None
+
+    def _settlement_reuse_decision(
+        self,
+        settlement: Optional[dict],
+        item: dict,
+        dependency_object_ids: dict,
+        evaluated_at: datetime,
+        dependency_values: Optional[dict] = None,
+    ) -> tuple[bool, Optional[str]]:
+        """Decide whether a settlement may be reused for the current source.
+
+        Returns (reusable, refusal_reason). An unreadable, opaque or expired
+        settlement is a refusal, never an exception: fail closed, but keep the
+        reason so the caller can record why the work was redone.
+        """
+        if settlement is None:
+            return False, "MISSING_OR_SUPERSEDED_SETTLEMENT"
+        if settlement.get("state") == "INVALID":
+            return False, "SETTLEMENT_INVALID"
+        if settlement.get("state") != "SETTLED":
+            return False, "SETTLEMENT_NOT_SETTLED"
+        if settlement.get("settlement_contract") != SETTLEMENT_CONTRACT:
+            return False, "SETTLEMENT_CONTRACT_OPAQUE"
+        result = settlement.get("result")
+        basis = settlement.get("basis")
+        if not isinstance(result, dict) or not isinstance(basis, dict):
+            return False, "SETTLEMENT_CONTRACT_MALFORMED"
+        if any(field not in result for field in SETTLEMENT_RESULT_FIELDS):
+            return False, "SETTLEMENT_CONTRACT_MALFORMED"
+        if any(field not in basis for field in SETTLEMENT_BASIS_FIELDS):
+            return False, "SETTLEMENT_CONTRACT_MALFORMED"
+        try:
+            settlement_value_sha256 = digest(result["value"])
+            settlement_valid_until = basis["valid_until_utc"]
+            if settlement_valid_until is not None and evaluated_at > parse_utc(
+                settlement_valid_until
+            ):
+                return False, "SETTLEMENT_EXPIRED"
+            source_payload_sha256 = digest(item["source_payload"])
+            reusable = (
+                result["source_payload_sha256"] == source_payload_sha256
+                and basis["source_payload_sha256"] == source_payload_sha256
+                and result["result_value_sha256"] == settlement_value_sha256
+                and basis["result_value_sha256"] == settlement_value_sha256
+                and result["source_version"] == item["source_version"]
+                and basis["source_version"] == item["source_version"]
+                and result["dependency_object_ids"] == dependency_object_ids
+                and basis["dependency_object_ids"] == dependency_object_ids
+                and result["valid_until_utc"] == settlement_valid_until
+                and item.get("valid_until_utc") == settlement_valid_until
+                and result["validity_policy"] == item.get("validity_policy")
+                and basis["validity_policy"] == item.get("validity_policy")
+                and parse_utc(result["evaluated_at_utc"]) <= evaluated_at
+            )
+        except (KeyError, TypeError, ValueError):
+            return False, "SETTLEMENT_CONTRACT_MALFORMED"
+        if not reusable:
+            return False, "SETTLEMENT_BASIS_MISMATCH"
+        return self._verify_signed_settlement(
+            settlement, item, dependency_object_ids, dependency_values
+        )
+
     def execute_demand(
         self,
         demand_id: str,
@@ -584,6 +1161,7 @@ class CarrierInformationLoop:
         evaluated_at_utc: str,
         expected_validity_policy_sha256: Optional[str] = None,
         require_deployment_policy: bool = False,
+        provenance_overrides: Optional[dict] = None,
     ) -> dict:
         result: Optional[dict] = None
         expected_prior_state: Optional[dict] = None
@@ -615,6 +1193,7 @@ class CarrierInformationLoop:
                     evaluated_at_utc=evaluated_at_utc,
                     expected_validity_policy_sha256=expected_validity_policy_sha256,
                     require_deployment_policy=require_deployment_policy,
+                    provenance_overrides=provenance_overrides,
                 )
                 if not result["advanced"]:
                     raise _DemandNotAdvanced(result)
@@ -660,6 +1239,7 @@ class CarrierInformationLoop:
         evaluated_at_utc: str,
         expected_validity_policy_sha256: Optional[str] = None,
         require_deployment_policy: bool = False,
+        provenance_overrides: Optional[dict] = None,
     ) -> dict:
         demand = self.current_demand(demand_id)
         if demand is None:
@@ -831,77 +1411,62 @@ class CarrierInformationLoop:
 
             valid_until_utc = item.get("valid_until_utc")
             settlement = self.current_settlement(item_id)
-            reusable = False
-            if settlement is not None and settlement.get("state") != "SETTLED":
-                reusable = False
-            elif settlement is not None:
-                basis = settlement["basis"]
-                try:
-                    settlement_valid_until = basis["valid_until_utc"]
-                    settlement_time_valid = True
-                    if settlement_valid_until is not None:
-                        settlement_time_valid = evaluated_at <= parse_utc(settlement_valid_until)
-                    reusable = (
-                        settlement["result"]["payload_digest"] == digest(item["source_payload"])
-                        and settlement["result"]["source_version"] == item["source_version"]
-                        and settlement["result"]["dependency_object_ids"] == dependency_object_ids
-                        and basis["source_payload_sha256"] == digest(item["source_payload"])
-                        and basis["source_version"] == item["source_version"]
-                        and basis["dependency_object_ids"] == dependency_object_ids
-                        and settlement["result"]["valid_until_utc"] == settlement_valid_until
-                        and valid_until_utc == settlement_valid_until
-                        and settlement["result"]["validity_policy"] == item.get("validity_policy")
-                        and basis.get("validity_policy") == item.get("validity_policy")
-                        and parse_utc(settlement["result"]["evaluated_at_utc"]) <= evaluated_at
-                        and settlement_time_valid
-                        and (
-                            valid_until_utc is None
-                            or evaluated_at <= parse_utc(valid_until_utc)
-                        )
-                    )
-                except (KeyError, TypeError, ValueError):
-                    reusable = False
-            basis = settlement.get("basis") if settlement is not None else None
-            payload_digest = digest(item["source_payload"])
+            reusable, reuse_refusal_reason = self._settlement_reuse_decision(
+                settlement, item, dependency_object_ids, evaluated_at, dependency_values
+            )
+            source_payload_sha256 = digest(item["source_payload"])
             if reusable:
                 result = settlement["result"]["value"]
                 action = "REUSE"
                 reused.append(item_id)
+                # Report the signature object that admitted this reuse, so the
+                # action record distinguishes "verified reuse" from reuse that
+                # merely found an object with the right digest.
+                signature = self.current_settlement_signature(item_id)
                 settlement_record = {
                     "object_id": settlement["_object_id"],
+                    "signature_object_id": (signature or {}).get("_object_id"),
                 }
             else:
                 action_reason = (
                     "VALIDITY_EXPIRED" if item_id in stale_item_ids
-                    else "MISSING_OR_SUPERSEDED_SETTLEMENT"
+                    else (reuse_refusal_reason or "MISSING_OR_SUPERSEDED_SETTLEMENT")
                 )
                 result = calculator(item_id, item["source_payload"], dependency_values)
                 action = "COMPUTE"
                 computed.append(item_id)
+                settlement_basis = {
+                    "source_payload_sha256": source_payload_sha256,
+                    "result_value_sha256": digest(result),
+                    "source_version": item["source_version"],
+                    "dependency_object_ids": {
+                        key: dependency_object_ids[key] for key in dependency_values
+                    },
+                    "evaluated_at_utc": evaluated_at_utc,
+                    "valid_until_utc": valid_until_utc,
+                    "validity_policy": item.get("validity_policy"),
+                }
+                item_record = self.current_item_record(item_id)
+                if item_record is None:
+                    raise settlement_provenance.ProvenanceError(
+                        "TASK_ITEM_RECORD_MISSING", item_id
+                    )
+                settlement_result = {"value": result, **settlement_basis}
+                provenance = self._provenance_for_settlement(
+                    item,
+                    item_record,
+                    item_id,
+                    settlement_result,
+                    dependency_object_ids,
+                    dependency_values,
+                    (provenance_overrides or {}).get(item_id),
+                )
                 settlement_record = self.settle(
                     advancement_id,
                     item_id,
-                    {
-                        "value": result,
-                        "payload_digest": payload_digest,
-                        "source_version": item["source_version"],
-                        "dependency_object_ids": {
-                            key: dependency_object_ids[key] for key in dependency_values
-                        },
-                        "evaluated_at_utc": evaluated_at_utc,
-                        "valid_until_utc": valid_until_utc,
-                        "validity_policy": item.get("validity_policy"),
-                    },
-                    {
-                        "source_payload_sha256": payload_digest,
-                        "source_version": item["source_version"],
-                        "dependency_object_ids": {
-                            key: dependency_object_ids[key] for key in dependency_values
-                        },
-                        "evaluated_at_utc": evaluated_at_utc,
-                        "valid_until_utc": valid_until_utc,
-                        "validity_policy": item.get("validity_policy"),
-                    },
+                    settlement_result,
+                    settlement_basis,
+                    provenance,
                 )
             resolved[item_id] = {"value": result, "object_id": settlement_record["object_id"]}
             actions.append({
@@ -910,7 +1475,10 @@ class CarrierInformationLoop:
                 "reason": None if action == "REUSE" else action_reason,
                 "result_digest": digest(result),
                 "settlement_object_id": settlement_record["object_id"],
-                "source_payload_digest": payload_digest,
+                "settlement_signature_object_id": settlement_record.get(
+                    "signature_object_id"
+                ),
+                "source_payload_sha256": source_payload_sha256,
             })
             return {"value": result, "object_id": settlement_record["object_id"]}
 
@@ -963,3 +1531,89 @@ class CarrierInformationLoop:
             "advanced": True,
             "execution_state": execution_state,
         }
+
+
+def audit_settlement_contracts(database_path: str) -> dict:
+    """Classify the current settlement of each item without writing to the carrier.
+
+    Historical carriers may contain settlements written before the contract
+    existed. They stay readable, but they are reported as opaque so no caller
+    mistakes them for reusable work.
+    """
+    import sqlite3
+
+    uri = Path(database_path).resolve().as_uri() + "?mode=ro"
+    connection = sqlite3.connect(uri, uri=True)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            "SELECT append_order,srs_identity,record_object "
+            "FROM is_index_entries WHERE srs_identity LIKE 'settlement:%' "
+            "ORDER BY append_order ASC"
+        ).fetchall()
+        latest: dict[str, dict] = {}
+        for row in rows:
+            item_id = row["srs_identity"][len("settlement:"):]
+            body = connection.execute(
+                "SELECT object_id,byte_size,content FROM is_objects WHERE object_id=?",
+                (row["record_object"],),
+            ).fetchone()
+            if body is None:
+                latest[item_id] = {
+                    "item_id": item_id,
+                    "object_id": row["record_object"],
+                    "classification": "MISSING_OBJECT",
+                }
+                continue
+            content = bytes(body["content"])
+            bytes_match = hashlib.sha256(content).hexdigest() == body["object_id"]
+            try:
+                value = json.loads(content)
+            except ValueError:
+                latest[item_id] = {
+                    "item_id": item_id,
+                    "object_id": body["object_id"],
+                    "classification": "UNREADABLE",
+                    "bytes_match_address": bytes_match,
+                }
+                continue
+            state = value.get("state")
+            contract = value.get("settlement_contract")
+            if state == "INVALID":
+                classification = "INVALIDATION_RECORD"
+            elif state != "SETTLED":
+                classification = "NOT_SETTLED"
+            elif contract != SETTLEMENT_CONTRACT:
+                classification = "OPAQUE"
+            else:
+                try:
+                    validate_settlement_payload(value.get("result"), value.get("basis"))
+                    classification = "CONFORMING"
+                except SettlementContractViolation:
+                    classification = "MALFORMED"
+            latest[item_id] = {
+                "item_id": item_id,
+                "object_id": body["object_id"],
+                "state": state,
+                "settlement_contract": contract,
+                "bytes_match_address": bytes_match,
+                "classification": classification,
+            }
+    finally:
+        connection.close()
+
+    settlements = [latest[item_id] for item_id in sorted(latest)]
+    counts: dict[str, int] = {}
+    for settlement in settlements:
+        key = settlement["classification"]
+        counts[key] = counts.get(key, 0) + 1
+    return {
+        "schema_id": "EINFO-SETTLEMENT-CONTRACT-AUDIT-V1",
+        "contract": SETTLEMENT_CONTRACT,
+        "carrier_contract_version": CARRIER_LOOP_CONTRACT_VERSION,
+        "database_path": str(Path(database_path).resolve()),
+        "settlements": settlements,
+        "counts": counts,
+        "all_conforming": bool(settlements)
+        and all(item["classification"] == "CONFORMING" for item in settlements),
+    }

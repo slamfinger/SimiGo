@@ -1,0 +1,14 @@
+{"elt": "arm-start", "arm": 2, "tag": "arm2", "_t": 1792494504.389471}
+{"elt": "new-stage", "handle": "stage-arm2-s1-2", "_t": 1792494504.3895261}
+{"elt": "settle-calc", "arm": 2, "unit": "U_upstream", "prefix_len": 2, "_t": 1792494504.393954}
+{"elt": "settle-calc", "arm": 2, "unit": "U_parse", "prefix_len": 2, "_t": 1792494504.394231}
+{"elt": "settle-calc", "arm": 2, "unit": "U_summarize", "prefix_len": 2, "_t": 1792494504.3944058}
+{"elt": "execute-demand", "arm": 2, "unit": "all", "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm2.sqlite", "handle": "stage-arm2-s1-2", "state": "ADVANCED", "advanced": true, "computed": [], "reused": [], "_t": 1792494504.3947651}
+{"elt": "execute-demand-note", "arm": 2, "unit": "all", "err": "ValueError: pending runtime application requires confirmation: adv-arm2", "_t": 1792494504.394882}
+{"elt": "runtime-confirm", "arm": 2, "unit": "all", "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm2.sqlite", "handle": "stage-arm2-s1-2", "state_id": "adv-arm2:runtime-applied", "runtime": "APPLIED_SWIFT", "_t": 1792494504.395282}
+{"elt": "new-stage", "handle": "stage-arm2-s2-3", "_t": 1792494504.39533}
+{"elt": "new-stage-reads-IS-only", "handle": "stage-arm2-s2-3", "db": "/Users/mr.simi/Documents/SimiGo-Lab/execution-information-loop/experiment/continuous-calc-verification/model-level-validation/.carrier-arm2.sqlite", "_t": 1792494504.395372}
+{"elt": "skip-reused", "arm": 2, "unit": "U_upstream", "handle": "stage-arm2-s2-3", "out_text": "U_upstream->hda266aeb", "_t": 1792494504.39567}
+{"elt": "execute", "arm": 2, "unit": "U_parse", "deps": ["U_upstream"], "_t": 1792494504.3957288}
+{"elt": "execute", "arm": 2, "unit": "U_summarize", "deps": ["U_parse"], "_t": 1792494504.395791}
+{"elt": "arm-done", "arm": 2, "tag": "arm2", "_t": 1792494504.39585}

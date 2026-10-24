@@ -181,27 +181,53 @@ def new_db_path(tag: str) -> Path:
 def build_and_settle(db: Path, tag: str) -> LOOP:
     """Populate carrier: demand + 3 sources with deps, settle all three.
 
-    real signature: put_source(demand_id, item_id, source_kind, source_version,
-      source_payload, dependencies=[...]); settle(advancement_id, item_id, result, basis).
+    Every settlement uses the single settlement contract: the computed
+    token-prefix lives under `result.value` and the basis carries the source
+    identity the reuse predicate compares against. A settlement written in any
+    other shape would be readable but never reusable.
     """
     loop = LOOP.create(str(db)) if not db.exists() else LOOP.open(str(db))
     loop.define_demand(TASK_DEMAND, continuation_point=f"{tag}-cp",
                        pending_obligations=[], continuation_conditions=[], required_item_ids=[u["unit"] for u in UNITS])
 
-    # U_upstream: no deps
-    loop.put_source(TASK_DEMAND, "U_upstream", "text/plain", "v1", DOC_V1, dependencies=[])
-    loop.settle(f"adv-{tag}", "U_upstream", dict(prefix=list(unit_real_prefix("U_upstream", DOC_V1, {})[0])),
-                basis={"source_payload": DOC_V1})
+    evaluated_at = "2026-10-17T09:00:00Z"
+    settlement_object_ids: dict[str, str] = {}
 
-    # U_parse depends on U_upstream (chain)
-    loop.put_source(TASK_DEMAND, "U_parse", "text/plain", "v1", DOC_V1, dependencies=["U_upstream"])
-    loop.settle(f"adv-{tag}", "U_parse", dict(prefix=list(unit_real_prefix("U_parse", DOC_V1, {})[0])),
-                basis={"source_payload": DOC_V1})
+    def settle_unit(unit_id: str, source_payload: dict) -> None:
+        dependencies = next(u["deps"] for u in UNITS if u["unit"] == unit_id)
+        dependency_object_ids = {
+            dependency: settlement_object_ids[dependency]
+            for dependency in dependencies
+        }
+        payload_digest = carrier_loop.digest(source_payload)
+        value = {"prefix": list(unit_real_prefix(unit_id, source_payload, {})[0])}
+        shared = {
+            "source_payload_sha256": payload_digest,
+            "result_value_sha256": carrier_loop.digest(value),
+            "source_version": "v1",
+            "dependency_object_ids": dependency_object_ids,
+            "evaluated_at_utc": evaluated_at,
+            "valid_until_utc": VALID_UNTIL,
+            "validity_policy": POLICY,
+        }
+        settlement = loop.settle(
+            f"adv-{tag}", unit_id,
+            {"value": value, **shared},
+            dict(shared),
+        )
+        settlement_object_ids[unit_id] = settlement["object_id"]
 
-    # U_summarize depends on U_parse (chain)
-    loop.put_source(TASK_DEMAND, "U_summarize", "text/plain", "v1", DOC_V1, dependencies=["U_parse"])
-    loop.settle(f"adv-{tag}", "U_summarize", dict(prefix=list(unit_real_prefix("U_summarize", DOC_V1, {})[0])),
-                basis={"source_payload": DOC_V1})
+    loop.put_source(TASK_DEMAND, "U_upstream", "text/plain", "v1", DOC_V1,
+                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=[])
+    settle_unit("U_upstream", DOC_V1)
+
+    loop.put_source(TASK_DEMAND, "U_parse", "text/plain", "v1", DOC_V1,
+                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=["U_upstream"])
+    settle_unit("U_parse", DOC_V1)
+
+    loop.put_source(TASK_DEMAND, "U_summarize", "text/plain", "v1", DOC_V1,
+                    valid_until_utc=VALID_UNTIL, validity_policy=POLICY, dependencies=["U_parse"])
+    settle_unit("U_summarize", DOC_V1)
 
     log_event(elt="build-settle", tag=tag, db=str(db))
     return loop

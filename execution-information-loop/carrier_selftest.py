@@ -13,8 +13,13 @@ import contextlib
 from typing import Optional
 from pathlib import Path
 
-from carrier_loop import CarrierInformationLoop, digest
-from db_is import DatabaseBackedIS
+from carrier_loop import (
+    CarrierInformationLoop,
+    SettlementContractViolation,
+    audit_settlement_contracts,
+    digest,
+)
+from db_is import DatabaseBackedIS, MissingLogicalEntry
 
 
 def canonical(value) -> str:
@@ -206,12 +211,280 @@ def append_race_recovery(
     writer_loop.close()
 
 
+def contract_checks(validity_policy: dict) -> dict:
+    """Prove the single settlement contract is enforced at write and at reuse.
+
+    Runs on its own isolated carrier: a contract violation must leave the
+    append-only ledgers untouched, and a pre-contract settlement must stay
+    readable while never being reused as work.
+    """
+    checks = {}
+    with tempfile.TemporaryDirectory(prefix="simigo-einfo-contract-") as temporary:
+        database = str(Path(temporary) / "carrier_contract.sqlite")
+        loop = CarrierInformationLoop.create(database)
+        loop.define_demand(
+            "contract-demand",
+            continuation_point="contract-continuation",
+            pending_obligations=[],
+            continuation_conditions=[],
+            required_item_ids=["A"],
+        )
+        loop.put_source(
+            "contract-demand", "A", "manual_input", "v1", {"input": 3},
+            valid_until_utc="2030-12-31T23:59:59Z",
+            validity_policy=validity_policy,
+        )
+        loop.commit()
+
+        def ledger_counts() -> tuple:
+            return tuple(loop.carrier.connection.execute(
+                "SELECT (SELECT COUNT(*) FROM is_objects),"
+                "       (SELECT COUNT(*) FROM is_index_entries),"
+                "       (SELECT COUNT(*) FROM dependency_entries)"
+            ).fetchone())
+
+        before = ledger_counts()
+        source_payload_sha256 = digest({"input": 3})
+        value = {"answer": 6}
+        shared = {
+            "source_payload_sha256": source_payload_sha256,
+            "result_value_sha256": digest(value),
+            "source_version": "v1",
+            "dependency_object_ids": {},
+            "evaluated_at_utc": "2026-10-09T00:00:00Z",
+            "valid_until_utc": "2030-12-31T23:59:59Z",
+            "validity_policy": validity_policy,
+        }
+        good_result = {"value": value, **shared}
+        good_basis = dict(shared)
+
+        missing_result = dict(good_result)
+        missing_result.pop("result_value_sha256")
+        try:
+            loop.settle("adv-contract", "A", missing_result, good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_missing_field"] = (
+                "result.result_value_sha256" in error.missing
+            )
+        else:
+            checks["settlement_contract_rejects_missing_field"] = False
+
+        try:
+            loop.settle(
+                "adv-contract", "A",
+                dict(good_result, source_payload_sha256="not-a-digest"), good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_malformed_digest"] = (
+                "result.source_payload_sha256" in error.mismatched
+            )
+        else:
+            checks["settlement_contract_rejects_malformed_digest"] = False
+
+        # The two digest domains must never stand in for one another. A
+        # settlement that records the input digest as its result digest is a
+        # violation even though both strings are well-formed SHA-256.
+        swapped_result = dict(
+            good_result, result_value_sha256=source_payload_sha256
+        )
+        try:
+            loop.settle("adv-contract", "A", swapped_result, good_basis)
+        except SettlementContractViolation as error:
+            checks["settlement_contract_rejects_cross_domain_digest"] = (
+                "result.result_value_sha256!=digest(result.value)"
+                in error.mismatched
+                and "result.result_value_sha256!=basis.result_value_sha256"
+                in error.mismatched
+            )
+        else:
+            checks["settlement_contract_rejects_cross_domain_digest"] = False
+
+        checks["settlement_contract_violation_writes_nothing"] = (
+            ledger_counts() == before
+        )
+
+        # The two scopes are one envelope. If `result` and `basis` disagree
+        # about which source version or which evaluation instant the settlement
+        # describes, no reader can say what was settled, even though every
+        # field on its own is well-formed.
+        for label, field, other in (
+            ("source_version", "source_version", "v2"),
+            ("evaluated_at", "evaluated_at_utc", "2026-10-08T23:59:59Z"),
+        ):
+            scope_result = dict(good_result)
+            scope_result[field] = other
+            try:
+                loop.settle("adv-contract", "A", scope_result, good_basis)
+            except SettlementContractViolation as error:
+                checks["settlement_contract_rejects_cross_scope_%s" % label] = (
+                    "result.%s!=basis.%s" % (field, field) in error.mismatched
+                )
+            else:
+                checks["settlement_contract_rejects_cross_scope_%s" % label] = False
+
+        # A pre-contract settlement stays readable but must never be reused.
+        legacy_value = {
+            "schema_id": "EINFO-SETTLEMENT-V1",
+            "state": "SETTLED",
+            "advancement_id": "legacy",
+            "item_id": "A",
+            "result": {"prefix": [1, 2, 3]},
+            "basis": {"source_payload": {"input": 3}},
+        }
+        with loop.carrier.atomic_write_group():
+            legacy_id, _ = loop.carrier.atomic_dependency_materialization(
+                canonical(legacy_value).encode(),
+                {
+                    "dependency_id": "settlement:A",
+                    "content_address": "",
+                    "revision": len(
+                        loop.carrier.get_dependency_history("settlement:A")
+                    ) + 1,
+                    "reason": "legacy settlement",
+                },
+            )
+            loop.carrier.append_index_entry({
+                "srs_identity": "settlement:A",
+                "record_object": legacy_id,
+            })
+        loop.commit()
+
+        audit = audit_settlement_contracts(database)
+        checks["contract_audit_classifies_legacy_opaque"] = (
+            audit["counts"].get("OPAQUE") == 1
+        )
+
+        rerun = loop.execute_demand(
+            "contract-demand", "adv-contract-2", calculator,
+            evaluated_at_utc="2026-10-09T00:00:00Z",
+        )
+        action = rerun["actions"][0]
+        checks["opaque_settlement_is_not_reused"] = (
+            rerun["state"] == "ADVANCED"
+            and action["action"] == "COMPUTE"
+            and action.get("reason") == "SETTLEMENT_CONTRACT_OPAQUE"
+        )
+        loop.close()
+    return checks
+
+
+def invalidation_checks(validity_policy: dict) -> dict:
+    """Prove invalidation closes over real dependencies and nothing else.
+
+    Four properties: an unknown target is refused without writing, a dependency
+    that exists only in a settlement's basis still propagates, an item that does
+    not depend on the target is never invalidated, and `strict=False` reproduces
+    the pre-W4 return shape for callers written against it.
+
+    The basis-only item cannot be produced by `execute_demand`, which derives the
+    basis from the item's own dependency list. Its settlement is therefore
+    written directly, which is exactly the external-writer shape the union is
+    there to defend against.
+    """
+    checks = {}
+    with tempfile.TemporaryDirectory(prefix="simigo-einfo-invalidation-") as temporary:
+        database = str(Path(temporary) / "carrier_invalidation.sqlite")
+        loop = CarrierInformationLoop.create(database)
+        loop.define_demand(
+            "invalidation-demand",
+            continuation_point="invalidation-continuation",
+            pending_obligations=[],
+            continuation_conditions=[],
+            required_item_ids=["A"],
+        )
+
+        def put(item_id: str, dependencies: list) -> dict:
+            return loop.put_source(
+                "invalidation-demand", item_id, "manual_input", "v1",
+                {"item": item_id},
+                dependencies=list(dependencies),
+                valid_until_utc="2030-12-31T23:59:59Z",
+                validity_policy=validity_policy,
+            )
+
+        def settle(item_id: str, dependency_object_ids: dict) -> str:
+            payload = {"answer": item_id}
+            shared = {
+                "source_payload_sha256": digest({"item": item_id}),
+                "result_value_sha256": digest(payload),
+                "source_version": "v1",
+                "dependency_object_ids": dict(dependency_object_ids),
+                "evaluated_at_utc": "2026-10-09T00:00:00Z",
+                "valid_until_utc": "2030-12-31T23:59:59Z",
+                "validity_policy": validity_policy,
+            }
+            return loop.settle(
+                "adv-%s" % item_id, item_id,
+                {"value": payload, **shared}, dict(shared),
+            )["object_id"]
+
+        put("A", [])
+        a_object = settle("A", {})
+        put("B", ["A"])
+        b_object = settle("B", {"A": a_object})
+        put("C", ["B"])
+        settle("C", {"B": b_object})
+        put("D", [])
+        settle("D", {"A": a_object})
+        put("U", [])
+        settle("U", {})
+        loop.commit()
+
+        def ledger_counts() -> tuple:
+            return tuple(loop.carrier.connection.execute(
+                "SELECT (SELECT COUNT(*) FROM is_objects),"
+                "       (SELECT COUNT(*) FROM is_index_entries),"
+                "       (SELECT COUNT(*) FROM dependency_entries)"
+            ).fetchone())
+
+        before = ledger_counts()
+        try:
+            loop.invalidate_settlement("no-such-item", reason="typo")
+        except MissingLogicalEntry:
+            checks["unknown_target_raises_missing_logical_entry"] = True
+        else:
+            checks["unknown_target_raises_missing_logical_entry"] = False
+        checks["unknown_target_writes_nothing"] = ledger_counts() == before
+
+        # Historical callers were written against a dict that always came back.
+        legacy = loop.invalidate_settlement(
+            "no-such-item", reason="legacy", strict=False)
+        checks["non_strict_preserves_legacy_shape"] = (
+            set(legacy) == {"invalidated_item_ids", "invalidated_records", "reason"}
+            and legacy["invalidated_item_ids"] == ["no-such-item"]
+            and legacy["invalidated_records"] == []
+            and legacy["reason"] == "legacy"
+        )
+        checks["non_strict_writes_nothing"] = ledger_counts() == before
+
+        invalidation = loop.invalidate_settlement("A", reason="source-a-changed")
+        affected = set(invalidation["invalidated_item_ids"])
+        checks["basis_only_dependency_propagates"] = (
+            "D" in affected
+            and loop.current_settlement("D")
+            and loop.current_settlement("D").get("state") == "INVALID"
+        )
+        checks["declared_and_transitive_dependencies_propagate"] = (
+            {"A", "B", "C"} <= affected)
+        checks["unrelated_item_not_invalidated"] = (
+            "U" not in affected
+            and loop.current_settlement("U").get("state") == "SETTLED"
+        )
+        checks["invalidation_scope_is_exactly_the_closure"] = (
+            affected == {"A", "B", "C", "D"}
+            and len(invalidation["invalidated_records"]) == 4
+        )
+        loop.close()
+    return checks
+
+
 def run() -> dict:
     checks = {}
     validity_policy = sealed_policy({
         "policy_version": "carrier-selftest-v1",
         "policy_source": "ISOLATED_SELFTEST",
     })
+    checks.update(contract_checks(validity_policy))
+    checks.update(invalidation_checks(validity_policy))
     with tempfile.TemporaryDirectory(prefix="simigo-einfo-carrier-") as temporary:
         database = str(Path(temporary) / "carrier_information_space.sqlite")
 
