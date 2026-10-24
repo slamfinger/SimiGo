@@ -527,6 +527,10 @@ public final class HTTPServer: @unchecked Sendable {
     let generateHandler: GenerateHandler
     let forkBranchHandler: ForkBranchHandler
     let continuationAdmission: ContinuationAdmissionHandler?
+    /// Post-generation settlement authority for the opt-in continuation
+    /// contract. Absent (nil) means any request that explicitly asks to
+    /// settle is refused fail-closed BEFORE generation.
+    let continuationSettlement: ContinuationSettlementHandler?
     private let deleteBranchHandler: DeleteBranchHandler
     private let listBranchesHandler: ListBranchesHandler
     private let checkHealthHandler: CheckHealthHandler
@@ -654,7 +658,8 @@ public final class HTTPServer: @unchecked Sendable {
         capabilitiesProvider: (() -> ModelCapabilityContract?)? = nil,
         remoteBackend: RemoteOpenAIBackend? = nil,
         baseConfigProvider: @escaping () -> ModelConfig = { ModelConfig() },
-        continuationAdmission: ContinuationAdmissionHandler? = nil
+        continuationAdmission: ContinuationAdmissionHandler? = nil,
+        continuationSettlement: ContinuationSettlementHandler? = nil
     ) {
         guard let endpointPort = NWEndpoint.Port(
             rawValue: UInt16(port)
@@ -686,6 +691,7 @@ public final class HTTPServer: @unchecked Sendable {
         self.remoteBackend = remoteBackend
         self.baseConfigProvider = baseConfigProvider
         self.continuationAdmission = continuationAdmission
+        self.continuationSettlement = continuationSettlement
     }
 
     // MARK: - Lifecycle
@@ -2483,7 +2489,9 @@ public final class HTTPServer: @unchecked Sendable {
     /// 非流式 keepalive 模式头已恒 200，错误需以同构体承载。
     func errorBody(
         message: String,
-        status: Int
+        status: Int,
+        errorKind: String? = nil,
+        reasonCode: String? = nil
     ) -> [String: Any] {
 
         let errorType: String
@@ -2510,27 +2518,36 @@ public final class HTTPServer: @unchecked Sendable {
                 "server_error"
         }
 
-        return [
-            "error": [
-                "message": message,
-                "type": errorType,
-                "param": NSNull(),
-                "code": NSNull()
-            ]
+        var error: [String: Any] = [
+            "message": message,
+            "type": errorType,
+            "param": NSNull(),
+            "code": NSNull()
         ]
+        // Structured continuation contract v0.1: present ONLY when a kind is
+        // supplied, so every legacy error body stays byte-for-byte unchanged.
+        if let errorKind {
+            error["error_kind"] = errorKind
+            error["reason_code"] = reasonCode as Any ?? NSNull()
+        }
+        return ["error": error]
     }
 
     func sendError(
         _ message: String,
         status: Int,
         on connection: NWConnection,
-        context: ConnectionContext
+        context: ConnectionContext,
+        errorKind: String? = nil,
+        reasonCode: String? = nil
     ) {
 
         sendJSON(
             errorBody(
                 message: message,
-                status: status
+                status: status,
+                errorKind: errorKind,
+                reasonCode: reasonCode
             ),
             status: status,
             on: connection,
