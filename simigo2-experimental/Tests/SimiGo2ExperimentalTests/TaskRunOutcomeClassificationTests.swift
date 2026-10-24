@@ -40,7 +40,7 @@ final class TaskRunOutcomeClassificationTests: XCTestCase {
     XCTAssertEqual(
       TaskRunOutcomeClassification.terminalState(
         settled: true,
-        inputAdmissionRefused: false
+        inputAdmissionRefused: true
       ),
       "TASK_SETTLED"
     )
