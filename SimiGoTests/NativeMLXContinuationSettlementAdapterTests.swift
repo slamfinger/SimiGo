@@ -33,7 +33,7 @@ import SimiGoRuntimeContract
 /// isolated xctestrun injects (`SIMIGO_HOME`, `SIMIGO_STATE_GRAPH_STORE`);
 /// without them it throws XCTSkip instead of writing the operator's real
 /// reference graph / authoritative database.
-private enum ConcurrentCommitResult {
+private enum ConcurrentCommitResult: Sendable {
     case success(String)
     case failure(String)
 }
