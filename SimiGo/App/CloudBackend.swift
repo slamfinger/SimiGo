@@ -102,7 +102,21 @@ enum CloudKeychain: Sendable {
     private static let service = "SimiGo"
     private static let account = "cloud.api-key"
 
+    /// An isolated managed root (`SIMIGO_HOME`) redirects every other persistent
+    /// path, so it must redirect this store too. Reading the login Keychain from
+    /// an isolated run is not free: the item's ACL answers a binary it has not
+    /// seen before with an interactive SecurityAgent prompt, and `Service.init()`
+    /// blocks inside `SecItemCopyMatching` until a human answers (observed on an
+    /// unattended host as an unbounded mach_msg wait). In isolated mode the cloud
+    /// credential is therefore absent instead of being read or written: no real
+    /// secret is read, and no new secret is stored outside the login Keychain.
+    private static var isIsolated: Bool {
+        guard let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] else { return false }
+        return !home.isEmpty
+    }
+
     static func readAPIKey() -> String {
+        guard !isIsolated else { return "" }
         var query: [String: Any] = baseQuery
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -114,6 +128,7 @@ enum CloudKeychain: Sendable {
     }
 
     static func writeAPIKey(_ value: String) {
+        guard !isIsolated else { return }
         let query = baseQuery
         SecItemDelete(query as CFDictionary)
 

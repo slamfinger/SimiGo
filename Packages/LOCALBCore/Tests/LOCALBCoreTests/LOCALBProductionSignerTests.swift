@@ -1,4 +1,6 @@
 import Crypto
+import Foundation
+import Security
 import XCTest
 
 @testable import LOCALBCore
@@ -251,5 +253,30 @@ final class LOCALBProductionSignerTests: XCTestCase {
         let lineageSnapshot = try LOCALBRegistrySnapshot(currentLineageID: lineageID, entries: [])
         XCTAssertEqual(LOCALBRecordReader.read(data: frame, registry: lineageSnapshot),
                        .failure(.unknownEnvelopeSchema))
+    }
+
+    /// The signer store is scoped by the same rule as the transport identity
+    /// store: under an isolated managed root its item lives in a keychain file
+    /// inside that root, never in the real login Keychain.
+    func testKeychainSignerStoreScopeKeepsItemOutOfDefaultSearchList() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("signer-scope-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let path = dir.appendingPathComponent("signer.keychain-db").path
+        let service = "com.simigo.tests.signer-scope.\(UUID().uuidString)"
+        let store = LOCALBKeychainSignerStore(service: service, account: "signing-key-v1",
+                                             keychainPath: path)
+        let created = try store.loadOrCreate()
+        XCTAssertEqual(created.rawRepresentation.count, 32)
+        XCTAssertEqual(try store.loadExisting().rawRepresentation, created.rawRepresentation)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
+
+        var defaultRef: CFTypeRef?
+        XCTAssertEqual(SecItemCopyMatching([
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: "signing-key-v1",
+            kSecReturnData as String: true
+        ] as CFDictionary, &defaultRef), errSecItemNotFound)
     }
 }

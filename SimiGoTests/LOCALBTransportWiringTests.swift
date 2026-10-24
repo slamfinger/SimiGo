@@ -235,15 +235,16 @@ final class LOCALBTransportWiringTests: XCTestCase {
             kSecAttrAccount as String: corruptStore.account,
             kSecValueData as String: Data("not-a-valid-envelope".utf8)
         ]
-        XCTAssertEqual(SecItemAdd(corruptIndex as CFDictionary, nil), errSecDuplicateItem)
+        XCTAssertEqual(SecItemAdd(try corruptStore.scopedAdd(corruptIndex) as CFDictionary, nil),
+                       errSecDuplicateItem)
         // Overwrite the existing index data with garbage.
         XCTAssertEqual(
             SecItemUpdate(
-                [
+                try corruptStore.scopedQuery([
                     kSecClass as String: kSecClassGenericPassword,
                     kSecAttrService as String: corruptStore.service,
                     kSecAttrAccount as String: corruptStore.account
-                ] as CFDictionary,
+                ]) as CFDictionary,
                 [kSecValueData as String: Data("garbage".utf8)] as CFDictionary
             ),
             errSecSuccess
@@ -277,7 +278,8 @@ final class LOCALBTransportWiringTests: XCTestCase {
             kSecAttrApplicationTag as String: squatterTag,
             kSecAttrIsPermanent as String: true
         ]
-        XCTAssertNotNil(SecKeyCreateRandomKey(squatterAttrs as CFDictionary, nil))
+        XCTAssertNotNil(SecKeyCreateRandomKey(
+            try mismatchStore.scopedAdd(squatterAttrs) as CFDictionary, nil))
         let readQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: mismatchStore.service,
@@ -286,7 +288,9 @@ final class LOCALBTransportWiringTests: XCTestCase {
         ]
         var readResult: CFTypeRef?
         XCTAssertEqual(
-            SecItemCopyMatching(readQuery as CFDictionary, &readResult), errSecSuccess
+            SecItemCopyMatching(try mismatchStore.scopedQuery(readQuery) as CFDictionary,
+                                &readResult),
+            errSecSuccess
         )
         let envelopeData = try XCTUnwrap(readResult as? Data)
         var envelope = try XCTUnwrap(
@@ -296,11 +300,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
         let rewritten = try JSONSerialization.data(withJSONObject: envelope)
         XCTAssertEqual(
             SecItemUpdate(
-                [
+                try mismatchStore.scopedQuery([
                     kSecClass as String: kSecClassGenericPassword,
                     kSecAttrService as String: mismatchStore.service,
                     kSecAttrAccount as String: mismatchStore.account
-                ] as CFDictionary,
+                ]) as CFDictionary,
                 [kSecValueData as String: rewritten] as CFDictionary
             ),
             errSecSuccess
@@ -315,10 +319,10 @@ final class LOCALBTransportWiringTests: XCTestCase {
         XCTAssertThrowsError(try mismatchServer.start()) { error in
             XCTAssertEqual(error as? LOCALBStatus, .transportIdentityMismatch)
         }
-        SecItemDelete([
+        if let scopedSquatter = try? mismatchStore.scopedQuery([
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: squatterTag
-        ] as CFDictionary)
+        ]) { SecItemDelete(scopedSquatter as CFDictionary) }
         mismatchStore.deleteAll()
     }
 
@@ -367,11 +371,11 @@ final class LOCALBTransportWiringTests: XCTestCase {
         // Corrupt the store AFTER the identity was verified.
         XCTAssertEqual(
             SecItemUpdate(
-                [
+                try store.scopedQuery([
                     kSecClass as String: kSecClassGenericPassword,
                     kSecAttrService as String: store.service,
                     kSecAttrAccount as String: store.account
-                ] as CFDictionary,
+                ]) as CFDictionary,
                 [kSecValueData as String: Data("corrupted".utf8)] as CFDictionary
             ),
             errSecSuccess

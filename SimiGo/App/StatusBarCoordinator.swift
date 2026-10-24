@@ -30,6 +30,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // LOCALB local-management gate (env-gated, isolated roots only). The
+        // product ships the first-run ceremony / pairing primitives but no
+        // surface called them, so a never-activated host could not bind its
+        // listener at all. This gate only routes an explicit operator command
+        // to those existing APIs; it never activates on an ordinary launch.
+        let management = SimiGoLocalBManagementEntry.evaluate()
+        if management.requested {
+            guard let role = management.role else {
+                FileHandle.standardError.write(
+                    ("localb-mgmt fail-closed: " + (management.error ?? "unknown") + "\n").data(using: .utf8)!)
+                exit(2)
+            }
+            FileHandle.standardError.write(
+                ("localb-mgmt-entered role=\(role.rawValue) pid=\(getpid())\n").data(using: .utf8)!)
+            Task { @MainActor in
+                let code = await SimiGoLocalBManagementEntry.run(role: role)
+                exit(code)
+            }
+            return
+        }
         StatusBarCoordinator.shared.start()
         // Autonomous, idempotent first-run bootstrap off the main thread.
         Task.detached(priority: .utility) {

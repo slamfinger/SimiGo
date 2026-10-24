@@ -80,11 +80,38 @@ public struct LOCALBTransportIdentityHandle {
 public struct LOCALBTransportIdentityStore {
     public let service: String
     public let account: String
+    /// Optional dedicated keychain FILE that scopes every item operation of
+    /// this store (index, key, certificate, identity synthesis).
+    ///
+    /// `nil` is the production default outside an isolated root: items live in
+    /// the process default Keychain search list, i.e. the login Keychain, so
+    /// existing identities and pairing credentials survive.
+    ///
+    /// When `SIMIGO_HOME` redirects the managed root (isolated test / candidate
+    /// runs), the default resolves to a keychain file INSIDE that root, so a
+    /// run can never leave transport identities in the real login Keychain.
+    /// This is the only identity material the isolation roots used to miss.
+    public let keychainPath: String?
 
     public init(service: String = "com.simigo.localb-transport-identity",
-                account: String = "tls-identity-v1") {
+                account: String = "tls-identity-v1",
+                keychainPath: String? = LOCALBTransportIdentityStore.defaultIsolatedKeychainPath()) {
         self.service = service
         self.account = account
+        self.keychainPath = keychainPath
+    }
+
+    /// Default scoping rule: only an explicitly isolated managed root scopes
+    /// the identity into its own keychain file.
+    public static func defaultIsolatedKeychainPath(
+        env: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
+        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
+        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        return root
+            .appendingPathComponent("localb", isDirectory: true)
+            .appendingPathComponent("transport-identity.keychain-db", isDirectory: false)
+            .path
     }
 
     /// Physical tags are unique PER ATTEMPT, not per logical generation: a
@@ -111,6 +138,67 @@ public struct LOCALBTransportIdentityStore {
     /// while eliminating the interleaving. Read paths (loadExisting) do not
     /// take this lock.
     private static let mutationLock = NSLock()
+
+    // MARK: - Keychain scoping
+
+    /// Opens (or creates) the scoped keychain file. A keychain created here is
+    /// unlocked with an empty password: it is a throwaway store inside an
+    /// isolated root, kept at 0600, never a user credential container.
+    private func resolveKeychain() throws -> SecKeychain? {
+        guard let path = keychainPath else { return nil }
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(
+                atPath: (path as NSString).deletingLastPathComponent,
+                withIntermediateDirectories: true)
+        } catch {
+            throw LOCALBStatus.keychainUnavailable
+        }
+        if !fm.fileExists(atPath: path) {
+            var created: SecKeychain?
+            let createStatus = SecKeychainCreate(path, 0, "", false, nil, &created)
+            if createStatus == errSecSuccess, let created {
+                chmod(path, 0o600)
+                return created
+            }
+            guard createStatus == errSecDuplicateItem else {
+                throw LOCALBStatus.keychainUnavailable
+            }
+        }
+        var opened: SecKeychain?
+        let openStatus = SecKeychainOpen(path, &opened)
+        guard openStatus == errSecSuccess, let keychain = opened else {
+            throw LOCALBStatus.keychainUnavailable
+        }
+        SecKeychainUnlock(keychain, 0, "", true)
+        return keychain
+    }
+
+    /// Add-side scoping (`kSecUseKeychain`). Public so callers that must issue
+    /// their own Keychain writes (tests, diagnostics) hit the same store.
+    public func scopedAdd(_ attributes: [String: Any]) throws -> [String: Any] {
+        guard let keychain = try resolveKeychain() else { return attributes }
+        var out = attributes
+        out[kSecUseKeychain as String] = keychain
+        return out
+    }
+
+    /// Query-side scoping (`kSecMatchSearchList`) for copy/update/delete.
+    /// Public for the same reason as `scopedAdd`; it throws instead of silently
+    /// falling back to the login Keychain when a scoped file cannot be opened.
+    public func scopedQuery(_ query: [String: Any]) throws -> [String: Any] {
+        guard let keychain = try resolveKeychain() else { return query }
+        var out = query
+        out[kSecMatchSearchList as String] = [keychain]
+        return out
+    }
+
+    /// Best-effort scoped delete; a store without a scoped keychain keeps the
+    /// previous (search-list) behaviour.
+    private func deleteScoped(_ query: [String: Any]) {
+        guard let resolved = try? scopedQuery(query) else { return }
+        SecItemDelete(resolved as CFDictionary)
+    }
 
     // MARK: - SPKI computation
 
@@ -265,7 +353,7 @@ public struct LOCALBTransportIdentityStore {
                 certLabel: certLabel(generation: generation, attemptID: attemptID)
             ))
         ]
-        let indexStatus = SecItemAdd(indexAttributes as CFDictionary, nil)
+        let indexStatus = SecItemAdd(try scopedAdd(indexAttributes) as CFDictionary, nil)
         if indexStatus == errSecDuplicateItem {
             guard let winner = try readExisting() else {
                 // The other caller's items are incomplete: explicit failure,
@@ -323,7 +411,8 @@ public struct LOCALBTransportIdentityStore {
                 certLabel: certLabel(generation: generation, attemptID: attemptID)
             ))
         ]
-        let commitStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttrs as CFDictionary)
+        let commitStatus = SecItemUpdate(
+            try scopedQuery(updateQuery) as CFDictionary, updateAttrs as CFDictionary)
         guard commitStatus == errSecSuccess else {
             // Commit failed: the NEW generation items exist but are
             // unreachable; the CURRENT identity is untouched. Explicit
@@ -338,14 +427,14 @@ public struct LOCALBTransportIdentityStore {
         // Best-effort sweep of the superseded generation's items. Failure is
         // harmless: unique tags keep them unreachable.
         if let old = previousEnvelope {
-            SecItemDelete([
+            deleteScoped([
                 kSecClass as String: kSecClassKey,
                 kSecAttrApplicationTag as String: old.keyTag
-            ] as CFDictionary)
-            SecItemDelete([
+            ])
+            deleteScoped([
                 kSecClass as String: kSecClassCertificate,
                 kSecAttrLabel as String: old.certLabel
-            ] as CFDictionary)
+            ])
         }
 
         return (handle, previous.spkiSHA256Hex)
@@ -357,20 +446,20 @@ public struct LOCALBTransportIdentityStore {
     /// unique tags) rather than guessed at.
     public func deleteAll() {
         if let envelope = try? readIndexEnvelope() {
-            SecItemDelete([
+            deleteScoped([
                 kSecClass as String: kSecClassKey,
                 kSecAttrApplicationTag as String: envelope.keyTag
-            ] as CFDictionary)
-            SecItemDelete([
+            ])
+            deleteScoped([
                 kSecClass as String: kSecClassCertificate,
                 kSecAttrLabel as String: envelope.certLabel
-            ] as CFDictionary)
+            ])
         }
-        SecItemDelete([
+        deleteScoped([
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
-        ] as CFDictionary)
+        ])
     }
 
     // MARK: - Internals
@@ -384,7 +473,7 @@ public struct LOCALBTransportIdentityStore {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        let status = SecItemCopyMatching(try scopedQuery(query) as CFDictionary, &result)
         guard status == errSecSuccess, let data = result as? Data else {
             if status == errSecItemNotFound { return nil }
             throw LOCALBStatus.keychainUnavailable
@@ -422,7 +511,9 @@ public struct LOCALBTransportIdentityStore {
             kSecAttrIsPermanent as String: true,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
-        guard let storedKey = SecKeyCreateRandomKey(keyAttributes as CFDictionary, nil) else {
+        var keyRequest = keyAttributes
+        keyRequest[kSecUseKeychain as String] = try resolveKeychain()
+        guard let storedKey = SecKeyCreateRandomKey(keyRequest as CFDictionary, nil) else {
             // Never destructive on failure: if the tag is taken, a concurrent
             // caller or a previous orphan owns it; if the Keychain is simply
             // unavailable, nothing is deleted either way. The caller decides.
@@ -483,7 +574,7 @@ public struct LOCALBTransportIdentityStore {
             kSecAttrLabel as String: certLabel,
             kSecValueRef as String: secCertificate
         ]
-        let certStatus = SecItemAdd(certAttributes as CFDictionary, nil)
+        let certStatus = SecItemAdd(try scopedAdd(certAttributes) as CFDictionary, nil)
         guard certStatus == errSecSuccess || certStatus == errSecDuplicateItem else {
             throw LOCALBStatus.keychainUnavailable
         }
@@ -514,7 +605,8 @@ public struct LOCALBTransportIdentityStore {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var keyResult: CFTypeRef?
-        let keyStatus = SecItemCopyMatching(keyQuery as CFDictionary, &keyResult)
+        let keyStatus = SecItemCopyMatching(
+            try scopedQuery(keyQuery) as CFDictionary, &keyResult)
         guard keyStatus == errSecSuccess, let keyRef = keyResult else {
             // Index points at a key that is absent: partial state — explicit
             // failure, evidence preserved.
@@ -535,7 +627,8 @@ public struct LOCALBTransportIdentityStore {
             throw LOCALBStatus.transportIdentityCorrupt
         }
         var identityRef: SecIdentity?
-        let identityStatus = SecIdentityCreateWithCertificate(nil, secCertificate, &identityRef)
+        let identityStatus = SecIdentityCreateWithCertificate(
+            try resolveKeychain(), secCertificate, &identityRef)
         guard identityStatus == errSecSuccess, let identity = identityRef else {
             throw LOCALBStatus.transportIdentityMismatch
         }
@@ -551,6 +644,85 @@ public struct LOCALBTransportIdentityStore {
 extension Sequence where Element == UInt8 {
     fileprivate func sha256() -> [UInt8] {
         Array(SHA256.hash(data: Data(self)))
+    }
+}
+
+/// Keychain-file scoping shared by every LOCALB Keychain store.
+///
+/// The isolation roots used to redirect the filesystem only; Keychain items
+/// always landed in the login Keychain. A store built under a redirected
+/// `SIMIGO_HOME` now keeps its items in
+/// `<SIMIGO_HOME>/localb/<file>.keychain-db`, scoped per call, so an isolated
+/// run cannot add items to real user state. Outside an isolated root `path` is
+/// nil and the default search list (the login Keychain) is used unchanged.
+public struct LOCALBKeychainScope {
+    let path: String?
+    let fileName: String
+
+    public init(path: String?, fileName: String) {
+        self.path = path
+        self.fileName = fileName
+    }
+
+    public static func isolatedDefault(
+        fileName: String,
+        env: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
+        guard let home = env["SIMIGO_HOME"], !home.isEmpty else { return nil }
+        let root = URL(fileURLWithPath: (home as NSString).standardizingPath, isDirectory: true)
+        return root
+            .appendingPathComponent("localb", isDirectory: true)
+            .appendingPathComponent(fileName, isDirectory: false)
+            .path
+    }
+
+    func resolve() throws -> SecKeychain? {
+        guard let path else { return nil }
+        let fm = FileManager.default
+        do {
+            try fm.createDirectory(
+                atPath: (path as NSString).deletingLastPathComponent,
+                withIntermediateDirectories: true)
+        } catch {
+            throw LOCALBStatus.keychainUnavailable
+        }
+        if !fm.fileExists(atPath: path) {
+            var created: SecKeychain?
+            let createStatus = SecKeychainCreate(path, 0, "", false, nil, &created)
+            if createStatus == errSecSuccess, let created {
+                chmod(path, 0o600)
+                return created
+            }
+            guard createStatus == errSecDuplicateItem else {
+                throw LOCALBStatus.keychainUnavailable
+            }
+        }
+        var opened: SecKeychain?
+        let openStatus = SecKeychainOpen(path, &opened)
+        guard openStatus == errSecSuccess, let keychain = opened else {
+            throw LOCALBStatus.keychainUnavailable
+        }
+        SecKeychainUnlock(keychain, 0, "", true)
+        return keychain
+    }
+
+    func addScope(_ attributes: [String: Any]) throws -> [String: Any] {
+        guard let keychain = try resolve() else { return attributes }
+        var out = attributes
+        out[kSecUseKeychain as String] = keychain
+        return out
+    }
+
+    func queryScope(_ query: [String: Any]) throws -> [String: Any] {
+        guard let keychain = try resolve() else { return query }
+        var out = query
+        out[kSecMatchSearchList as String] = [keychain]
+        return out
+    }
+
+    func deleteScoped(_ query: [String: Any]) {
+        guard let resolved = try? queryScope(query) else { return }
+        SecItemDelete(resolved as CFDictionary)
     }
 }
 

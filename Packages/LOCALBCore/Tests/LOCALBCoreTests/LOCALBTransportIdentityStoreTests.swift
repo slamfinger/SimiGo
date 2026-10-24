@@ -1,5 +1,6 @@
 import Crypto
 import Foundation
+import Security
 import X509
 import XCTest
 
@@ -151,7 +152,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
             kSecValueData as String: Data("not-a-valid-envelope".utf8)
         ]
         XCTAssertEqual(
-            SecItemUpdate(corruptQuery as CFDictionary, corruptUpdate as CFDictionary),
+            SecItemUpdate(try store.scopedQuery(corruptQuery) as CFDictionary,
+                          corruptUpdate as CFDictionary),
             errSecSuccess
         )
 
@@ -195,10 +197,10 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
             "\(store.service)#\(store.account)#key#g2#a00000000-0000-0000-0000-000000000001".utf8
         )
         defer {
-            SecItemDelete([
+            if let scoped = try? store.scopedQuery([
                 kSecClass as String: kSecClassKey,
                 kSecAttrApplicationTag as String: orphanTag
-            ] as CFDictionary)
+            ]) { SecItemDelete(scoped as CFDictionary) }
         }
         let orphanQuery: [String: Any] = [
             kSecClass as String: kSecClassKey,
@@ -206,7 +208,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
             kSecReturnRef as String: true
         ]
         var orphanRef: CFTypeRef?
-        XCTAssertEqual(SecItemCopyMatching(orphanQuery as CFDictionary, &orphanRef),
+        XCTAssertEqual(SecItemCopyMatching(try store.scopedQuery(orphanQuery) as CFDictionary,
+                                           &orphanRef),
                        errSecSuccess,
                        "the orphan key must exist after the injected failure")
 
@@ -245,7 +248,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
         "certificate_der":"AAAA","key_tag":"AAAA","cert_label":"x"}
         """
         XCTAssertEqual(
-            SecItemUpdate(indexQueryDict(for: store) as CFDictionary,
+            SecItemUpdate(try store.scopedQuery(indexQueryDict(for: store)) as CFDictionary,
                           [kSecValueData as String: Data(outOfRange.utf8)] as CFDictionary),
             errSecSuccess
         )
@@ -269,7 +272,8 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
             kSecReturnData as String: true
         ]
         var readResult: CFTypeRef?
-        XCTAssertEqual(SecItemCopyMatching(readQuery as CFDictionary, &readResult),
+        XCTAssertEqual(SecItemCopyMatching(try store.scopedQuery(readQuery) as CFDictionary,
+                                           &readResult),
                        errSecSuccess)
         let data = try XCTUnwrap(readResult as? Data)
         var envelope = try XCTUnwrap(
@@ -278,7 +282,7 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
         envelope["generation"] = Int(UInt32.max)
         let rewritten = try JSONSerialization.data(withJSONObject: envelope)
         XCTAssertEqual(
-            SecItemUpdate(indexQueryDict(for: store) as CFDictionary,
+            SecItemUpdate(try store.scopedQuery(indexQueryDict(for: store)) as CFDictionary,
                           [kSecValueData as String: rewritten] as CFDictionary),
             errSecSuccess
         )
@@ -290,6 +294,65 @@ final class LOCALBTransportIdentityStoreTests: XCTestCase {
             XCTAssertEqual(error as? LOCALBStatus,
                            .transportIdentityGenerationExhausted)
         }
+    }
+
+    // MARK: - Scoped (isolated) keychain
+
+    /// The isolation roots used to cover every persisted path EXCEPT the
+    /// Keychain: a run created transport identities in the real login
+    /// Keychain. A scoped store must keep the index, key, certificate and the
+    /// synthesized SecIdentity in its own keychain file.
+    func testScopedKeychainKeepsIdentityOutOfTheDefaultSearchList() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("localb-scope-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let keychainPath = dir.appendingPathComponent("transport.keychain-db").path
+        let store = LOCALBTransportIdentityStore(
+            service: "com.simigo.tests.localb-scope.\(UUID().uuidString)",
+            account: "tls",
+            keychainPath: keychainPath)
+        let identity = try store.loadOrCreate()
+        XCTAssertEqual(identity.spkiSHA256Hex.count, 64)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: keychainPath),
+                      "the scoped store must live in its own keychain file")
+
+        // A fresh instance over the SAME scoped file reloads the same identity
+        // (process-restart semantics), including a usable SecIdentity.
+        let reloaded = try LOCALBTransportIdentityStore(
+            service: store.service, account: store.account, keychainPath: keychainPath
+        ).loadExisting()
+        XCTAssertEqual(reloaded.certificateDER, identity.certificateDER)
+        var privateKey: SecKey?
+        XCTAssertEqual(SecIdentityCopyPrivateKey(reloaded.secIdentity, &privateKey), errSecSuccess)
+        XCTAssertNotNil(privateKey)
+
+        // Nothing became visible to the process default search list (the login
+        // Keychain in an unisolated run).
+        var defaultRef: CFTypeRef?
+        XCTAssertEqual(SecItemCopyMatching([
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: store.service,
+            kSecAttrAccount as String: store.account,
+            kSecReturnData as String: true
+        ] as CFDictionary, &defaultRef), errSecItemNotFound)
+
+        store.deleteAll()
+        XCTAssertThrowsError(try store.loadExisting()) { error in
+            XCTAssertEqual(error as? LOCALBStatus, .transportIdentityMissing)
+        }
+    }
+
+    /// Scoping is derived from the isolation roots, never from a separate
+    /// switch: a run that redirects `SIMIGO_HOME` cannot keep writing
+    /// identities into the real login Keychain.
+    func testDefaultKeychainPathOnlyFollowsAnIsolatedManagedRoot() {
+        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(env: [:]))
+        XCTAssertNil(LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
+            env: ["SIMIGO_HOME": ""]))
+        XCTAssertEqual(
+            LOCALBTransportIdentityStore.defaultIsolatedKeychainPath(
+                env: ["SIMIGO_HOME": "/Users/example/iso-root"]),
+            "/Users/example/iso-root/localb/transport-identity.keychain-db")
     }
 
     private func indexQueryDict(for store: LOCALBTransportIdentityStore) -> [String: Any] {

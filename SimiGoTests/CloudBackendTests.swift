@@ -113,4 +113,21 @@ final class CloudBackendTests: XCTestCase {
         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning_effort"])
         XCTAssertNil((try json(#"{"model":"Localmodel","messages":[],"enable_thinking":true,"reasoning_effort":"high","reasoning":{"effort":"high"}}"#))["reasoning"])
     }
+
+    /// The isolation rule this build relies on: an isolated managed root must not
+    /// reach the login Keychain at all. Reading a real credential from an
+    /// unattended run blocks `Service.init()` behind a SecurityAgent ACL prompt
+    /// (observed 2026-10-24: SecItemCopyMatching -> mach_msg, securityd
+    /// "QueryKeychainUse::queryUser"), and writing would put a real secret into a
+    /// throwaway root. The isolated runner sets SIMIGO_HOME, so this executes
+    /// there and skips only on a developer's non-isolated run.
+    func testIsolatedManagedRootNeverReadsOrWritesTheLoginKeychain() throws {
+        let home = ProcessInfo.processInfo.environment["SIMIGO_HOME"] ?? ""
+        try XCTSkipIf(home.isEmpty, "requires the isolated runner's SIMIGO_HOME")
+        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
+                       "an isolated root must not read the login Keychain")
+        CloudKeychain.writeAPIKey("isolated-probe-\(UUID().uuidString)")
+        XCTAssertEqual(CloudKeychain.readAPIKey(), "",
+                       "an isolated root must not persist a cloud credential")
+    }
 }

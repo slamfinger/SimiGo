@@ -173,7 +173,8 @@ final class LOCALBHostBootstrapTests: XCTestCase {
             kSecAttrAccount as String: corruptStore.account,
             kSecValueData as String: Data("not-a-valid-envelope".utf8)
         ]
-        XCTAssertEqual(SecItemAdd(corruptIndex as CFDictionary, nil), errSecSuccess)
+        XCTAssertEqual(SecItemAdd(try corruptStore.scopedAdd(corruptIndex) as CFDictionary, nil),
+                       errSecSuccess)
 
         XCTAssertThrowsError(try LOCALBHostBootstrap.prepareFirstRun(
             rootURL: root,

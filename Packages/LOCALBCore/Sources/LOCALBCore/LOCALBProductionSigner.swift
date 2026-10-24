@@ -840,11 +840,34 @@ public final class LOCALBPairingCredentialMaterial {
 public struct LOCALBKeychainSignerStore {
     public let service: String
     public let account: String
+    /// Optional dedicated keychain FILE. `nil` (the production default outside
+    /// an isolated root) uses the login Keychain, so existing signing
+    /// credentials survive; a redirected `SIMIGO_HOME` keeps this store inside
+    /// the isolated root instead.
+    public let keychainPath: String?
 
     public init(service: String = "com.simigo.localb-production-signer",
-                account: String = "signing-key-v1") {
+                account: String = "signing-key-v1",
+                keychainPath: String? = LOCALBKeychainScope.isolatedDefault(
+                    fileName: "production-signer.keychain-db")) {
         self.service = service
         self.account = account
+        self.keychainPath = keychainPath
+    }
+
+    private var scope: LOCALBKeychainScope {
+        LOCALBKeychainScope(path: keychainPath, fileName: "production-signer.keychain-db")
+    }
+
+    /// The scoped form of a raw Keychain write (tests / diagnostics must hit
+    /// the same store the product uses).
+    public func scopedAdd(_ attributes: [String: Any]) throws -> [String: Any] {
+        try scope.addScope(attributes)
+    }
+
+    /// The scoped form of a raw Keychain query.
+    public func scopedQuery(_ query: [String: Any]) throws -> [String: Any] {
+        try scope.queryScope(query)
     }
 
     /// Loads the existing identity or creates it once. Concurrent first-use
@@ -865,7 +888,7 @@ public struct LOCALBKeychainSignerStore {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
             kSecValueData as String: generated.rawRepresentation
         ]
-        let status = SecItemAdd(attributes as CFDictionary, nil)
+        let status = SecItemAdd(try scope.addScope(attributes) as CFDictionary, nil)
         if status == errSecSuccess { return generated }
         if status == errSecDuplicateItem, let winner = try readExisting() { return winner }
         throw LOCALBStatus.keychainUnavailable
@@ -880,7 +903,7 @@ public struct LOCALBKeychainSignerStore {
             kSecMatchLimit as String: kSecMatchLimitOne
         ]
         var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        let status = SecItemCopyMatching(try scope.queryScope(query) as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = result as? Data else {
             throw LOCALBStatus.keychainUnavailable
