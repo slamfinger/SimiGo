@@ -1,6 +1,7 @@
 import Foundation
 import CryptoKit
 import LOCALBCore
+import SimiGoRuntimeContract
 import Network
 
 /// SimiGo 本机 / 局域网共享 OpenAI-compatible HTTP Server
@@ -1205,6 +1206,10 @@ public final class HTTPServer: @unchecked Sendable {
         case ("OPTIONS", _),
              ("GET", "/health"),
              ("HEAD", "/health"),
+             ("GET", "/v1/simigo/env"),
+             ("GET", "/v1/simigo/roots"),
+             ("PUT", "/v1/simigo/roots"),
+             ("POST", "/v1/simigo/roots"),
              ("POST", "/localb/auth/challenge"):
             return .open
         case ("GET", "/v1/models"), ("GET", "/models"):
@@ -1450,6 +1455,126 @@ public final class HTTPServer: @unchecked Sendable {
     /// permission is derived server-side from the intended canonical method
     /// and route path; the issued challenge is single-use and bound to
     /// (clientKeyID, permission).
+    // MARK: - SimiGo local management endpoints (database interface)
+
+    /// GET /v1/simigo/env — generation-environment status: managed root,
+    /// llama-server, hf, database, registered roots, LOCALB resolution.
+    /// Read-only; every field is derived from the managed root at call time.
+    private func handleSimigoEnvRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        let fm = FileManager.default
+        let root = SimiGoPaths.managedRoot()
+        let llama = EnvManager.findTool("llama-server")
+            ?? (fm.isExecutableFile(atPath: SimiGoPaths.bin.appendingPathComponent("llama-server").path)
+                ? SimiGoPaths.bin.appendingPathComponent("llama-server").path : nil)
+        let hf = EnvManager.findTool("hf")
+            ?? (fm.isExecutableFile(atPath: SimiGoPaths.bin.appendingPathComponent("hf").path)
+                ? SimiGoPaths.bin.appendingPathComponent("hf").path : nil)
+        var db: [String: Any] = ["path": SimiGoPaths.databaseURL.path]
+        if let opened = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: false),
+            let version = try? opened.schemaVersion()
+        {
+            db["exists"] = fm.fileExists(atPath: SimiGoPaths.databaseURL.path)
+            db["schema_version"] = version
+            db["roots"] = (try? opened.listRoots().map(\ .rootID)) ?? []
+        } else {
+            db["exists"] = false
+        }
+        let localb: String
+        switch try? LOCALBHostRuntime.resolveOperational(
+            hostDirectory: LOCALBHostRuntime.defaultHostDirectory()
+        ) {
+        case .operational: localb = "operational"
+        case .notInitialized: localb = "not_initialized"
+        default: localb = "unresolvable"
+        }
+        let dmgFiles = (try? fm.contentsOfDirectory(atPath: root.path))?.filter {
+            $0.hasSuffix(".dmg")
+        } ?? []
+        sendJSON(
+            [
+                "managed_root": root.path,
+                "llama_server": llama ?? NSNull(),
+                "hf": hf ?? NSNull(),
+                "database": db,
+                "localb": localb,
+                "dmg": dmgFiles,
+            ],
+            status: 200,
+            on: context.connection,
+            context: context
+        )
+    }
+
+    /// GET /v1/simigo/roots — list registered external roots.
+    private func handleSimigoRootsRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        guard let db = try? SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: false)
+        else {
+            sendJSON(["error": "database unavailable"], status: 503, on: context.connection, context: context)
+            return
+        }
+        let rows = (try? db.listRoots()) ?? []
+        sendJSON(
+            ["roots": rows.map { [
+                "root_id": $0.rootID,
+                "category": $0.category,
+                "display_name": $0.displayName,
+                "locator_type": $0.locatorType,
+                "status": $0.status,
+            ] }],
+            status: 200,
+            on: context.connection,
+            context: context
+        )
+    }
+
+    /// PUT/POST /v1/simigo/roots {"path": "/abs/work/dir"} — register (or
+    /// refresh) a work root in the authoritative database. Absolute paths
+    /// only; the directory must exist. Idempotent.
+    private func handleSimigoRootsPutRequest(
+        _ request: HTTPRequest, context: ConnectionContext
+    ) async throws {
+        let body = request.body
+        guard !body.isEmpty,
+            let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+            let rawPath = object["path"] as? String,
+            !rawPath.isEmpty, rawPath.hasPrefix("/")
+        else {
+            sendJSON(
+                ["error": "INVALID_REQUEST", "detail": "expected a JSON body like {\"path\": \"/absolute/dir\"}"],
+                status: 400, on: context.connection, context: context)
+            return
+        }
+        let standardized = (rawPath as NSString).standardizingPath
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: standardized, isDirectory: &isDir),
+            isDir.boolValue
+        else {
+            sendJSON(
+                ["error": "WORK_ROOT_NOT_FOUND", "detail": standardized],
+                status: 422, on: context.connection, context: context)
+            return
+        }
+        do {
+            let db = try SimiGoESISDatabase(url: SimiGoPaths.databaseURL, createIfNeeded: true)
+            try db.runMigrations()
+            let rootID = "work-" + EnvManager.stableRootID(forPath: standardized)
+            try db.upsertRoot(
+                rootID: rootID, category: "work", displayName: standardized,
+                locatorType: "path", status: "registered")
+            sendJSON(
+                ["root_id": rootID, "path": standardized, "registered": true],
+                status: 200, on: context.connection, context: context)
+        } catch {
+            sendJSON(
+                ["error": "DATABASE_ERROR", "detail": "\(error)"],
+                status: 500, on: context.connection, context: context)
+        }
+    }
+
     private func handleLOCALBChallengeRequest(
         _ request: HTTPRequest,
         context: ConnectionContext
@@ -1537,6 +1662,13 @@ public final class HTTPServer: @unchecked Sendable {
         // the enumerated set in localbRoutePolicy, so no route can bypass
         // this gate by being absent from the table.
         var request = request
+        // Owner ruling 2026-10-26: the PLAINTEXT loopback listener is the
+        // product's local developer/tool surface — protected routes are
+        // served on it without the LOCALB proof ceremony (responses carry
+        // "unprotected-by-LOCALB"). The TLS listener keeps the full B3
+        // proof gate unchanged.
+        let plaintextLoopback =
+            !context.transportSecurity.isTLS
         switch Self.localbRoutePolicy(
             forMethod: request.method,
             routePath: request.path
@@ -1544,6 +1676,9 @@ public final class HTTPServer: @unchecked Sendable {
         case .open:
             break
         case .protected(let permission):
+            if plaintextLoopback {
+                break
+            }
             request = try verifyLOCALBProtectedRequest(
                 request,
                 tablePermission: permission,
@@ -1574,6 +1709,15 @@ public final class HTTPServer: @unchecked Sendable {
                 request,
                 context: context
             )
+
+        case ("GET", "/v1/simigo/env"):
+            try await handleSimigoEnvRequest(request, context: context)
+
+        case ("GET", "/v1/simigo/roots"):
+            try await handleSimigoRootsRequest(request, context: context)
+
+        case ("PUT", "/v1/simigo/roots"), ("POST", "/v1/simigo/roots"):
+            try await handleSimigoRootsPutRequest(request, context: context)
 
         case ("GET", "/health"):
             let ok =

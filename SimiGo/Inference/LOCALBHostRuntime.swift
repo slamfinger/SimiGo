@@ -181,6 +181,19 @@ enum LOCALBHostRuntime {
             LOCALBTransportIdentityStore()
     ) throws {
         let directory = hostDirectory ?? defaultHostDirectory()
+        // Owner ruling 2026-10-26: a LOOPBACK bind serves the local
+        // developer/tool surface in PLAIN OpenAI-compatible HTTP (2.1.x
+        // behaviour). The full LOCALB TLS + proof path applies to LAN binds
+        // and to an explicit SIMIGO_TRANSPORT=secure, regardless of
+        // activation state.
+        let normalized = bindHost.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let isLoopback = normalized == "127.0.0.1" || normalized == "localhost" || normalized == "::1"
+        let secureRequested =
+            ProcessInfo.processInfo.environment["SIMIGO_TRANSPORT"]?.lowercased() == "secure"
+        if isLoopback, !secureRequested {
+            LOCALBTransportPolicy.apply(.legacyPlaintext, to: server)
+            return
+        }
         switch try resolveOperational(
             hostDirectory: directory,
             keychainStore: keychainStore,

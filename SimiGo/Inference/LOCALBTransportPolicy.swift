@@ -5,12 +5,15 @@ import LOCALBCore
 /// construction site in the product (NativeMLX, OversizedRuntime,
 /// RemoteOpenAIRuntime). No listener path may bypass it.
 ///
-/// Policy (B1 security-mode matrix):
+/// Policy (B1 security-mode matrix, amended by owner ruling 2026-10-26):
 /// - LAN bind (non-loopback): ALWAYS secure. A missing or corrupt LOCALB
 ///   transport identity makes server startup fail closed; plaintext is
 ///   never a fallback on the LAN. The legacy env opt-in is ignored here.
-/// - Loopback bind: secure unless the operator EXPLICITLY opts into the
-///   legacy plaintext compatibility mode via SIMIGO_TRANSPORT=legacy-http.
+/// - Loopback bind: PLAINTEXT by default — the local 127.0.0.1:8000 API is
+///   the product's own developer/tool surface (plain OpenAI-compatible
+///   HTTP, matching the 2.1.x behaviour operators rely on). An operator can
+///   still force TLS on loopback with SIMIGO_TRANSPORT=secure; pairing and
+///   the proof gate remain active on the secure path wherever it is used.
 /// - Identity loading is read-only: the product runtime never creates or
 ///   repairs identities; creation belongs to the explicit first-run
 ///   ceremony (LOCALBHostBootstrap.prepareFirstRun).
@@ -40,13 +43,22 @@ public enum LOCALBTransportPolicy {
         let normalized = bindHost.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let isLoopback = normalized == "127.0.0.1" || normalized == "localhost" || normalized == "::1"
 
-        if isLoopback,
-           environment["SIMIGO_TRANSPORT"]?.lowercased() == legacyTransportEnvValue {
-            return .legacyPlaintext
+        // Loopback: plaintext is the default (owner ruling 2026-10-26 — the
+        // local API is the product's developer/tool surface). SIMIGO_TRANSPORT
+        // keeps its legacy meaning; an explicit "secure" forces TLS on
+        // loopback for operators who pair local clients.
+        if isLoopback {
+            let opt = environment["SIMIGO_TRANSPORT"]?.lowercased()
+            if opt == "secure" {
+                // fall through to the secure path below
+            } else {
+                return .legacyPlaintext
+            }
         }
 
-        // Secure path (default; mandatory on LAN): the identity must load
-        // read-only and be fully verified. Missing or corrupt → fail closed.
+        // Secure path (mandatory on LAN; loopback only under an explicit
+        // SIMIGO_TRANSPORT=secure): the identity must load read-only and be
+        // fully verified. Missing or corrupt → fail closed.
         do {
             return .tls(identity: try identityStore.loadExisting())
         } catch let status as LOCALBStatus {

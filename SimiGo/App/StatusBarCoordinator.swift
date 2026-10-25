@@ -72,9 +72,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         StatusBarCoordinator.shared.start()
-        // Autonomous, idempotent first-run bootstrap off the main thread.
+        // Autonomous, idempotent bootstrap off the main thread: the graph/
+        // schema layer first, then the FULL generation environment (managed
+        // tree, llama.cpp, hf, blank-database guarantee, LOCALB state) —
+        // every step is idempotent, an installed binary short-circuits, an
+        // existing database is never reset (owner ruling 2026-10-26).
         Task.detached(priority: .utility) {
             _ = SimiGoBootstrapRunner.launchIfNeeded()
+            _ = await EnvManager.shared.bootstrapGenerationEnvironment(workRoot: nil)
         }
     }
 }

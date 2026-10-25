@@ -569,7 +569,11 @@ public final class EnvManager: ObservableObject {
         report["hf"] = await bootstrapHFTool()
         // 3) Fresh ES/IS database + work root.
         report["database"] = bootstrapFreshDatabase(workRoot: workRoot)
-        // 4) LOCALB operational status against the SAME managed root the
+        // 4) Installed-package DMG retained under the managed root
+        //    (owner 2026-10-26): a local copy of the running app bundle,
+        //    regenerated per version; an existing file short-circuits.
+        report["dmg"] = ensureInstalledDMG()
+        // 5) LOCALB operational status against the SAME managed root the
         //    identities now live in (file keychain). `operational` = the ES/IS
         //    serving path can bind TLS + auth; anything else names the recovery
         //    step (first-run ceremony via the management entry).
@@ -589,6 +593,43 @@ public final class EnvManager: ObservableObject {
         }
         report["finished_at"] = ISO8601DateFormatter().string(from: Date())
         return report
+    }
+
+    /// Retain a DMG of the RUNNING app bundle under `<root>/` named by
+    /// marketing version + build. ad-hoc (unsigned) packaging for local
+    /// retention and side-loading; a matching existing file short-circuits.
+    public func ensureInstalledDMG() -> [String: Any] {
+        let bundleURL = Bundle.main.bundleURL
+        guard bundleURL.pathExtension == "app",
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") != nil
+        else {
+            return ["status": "unavailable", "detail": "no app bundle (headless tool)"]
+        }
+        let ver =
+            (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0")
+            + "-"
+            + (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0")
+        let out = SimiGoPaths.managedRoot()
+            .appendingPathComponent("SimiGo-\(ver).dmg")
+        let fm = FileManager.default
+        if fm.fileExists(atPath: out.path) {
+            return ["status": "present", "path": out.path]
+        }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
+        process.arguments = [
+            "create", "-volname", "SimiGo", "-srcfolder", bundleURL.path,
+            "-ov", "-format", "UDZO", out.path,
+        ]
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return ["status": "failed", "detail": error.localizedDescription]
+        }
+        return process.terminationStatus == 0
+            ? ["status": "created", "path": out.path]
+            : ["status": "failed", "detail": "hdiutil exit \(process.terminationStatus)"]
     }
 
     /// Stable root id for a registered work root: FNV-1a over the

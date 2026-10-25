@@ -178,7 +178,14 @@ final class LOCALBTransportWiringTests: XCTestCase {
     }
 
     func testTransportPolicyDecisionMatrix() throws {
-        // Loopback + explicit env opt-in → legacy plaintext.
+        // Loopback DEFAULT is plaintext (owner ruling 2026-10-26: the local
+        // 127.0.0.1:8000 API is the product's developer/tool surface).
+        XCTAssertEqual(
+            LOCALBTransportPolicy.decide(
+                bindHost: "127.0.0.1", environment: [:]
+            ).securityMode,
+            .legacyPlaintextCompat
+        )
         XCTAssertEqual(
             LOCALBTransportPolicy.decide(
                 bindHost: "127.0.0.1",
@@ -192,16 +199,23 @@ final class LOCALBTransportWiringTests: XCTestCase {
             environment: ["SIMIGO_TRANSPORT": "legacy-http"]
         )
         XCTAssertEqual(lanDecision.securityMode, .secure)
+        // Loopback CAN force TLS explicitly.
+        let secureLoopback = LOCALBTransportPolicy.decide(
+            bindHost: "127.0.0.1", environment: ["SIMIGO_TRANSPORT": "secure"]
+        )
+        XCTAssertEqual(secureLoopback.securityMode, .secure)
 
-        // Loopback default with a REAL verified identity → TLS.
+        // SIMIGO_TRANSPORT=secure on loopback with a REAL verified identity → TLS.
         let store = makeTransportStore()
         let identity = try store.loadOrCreate()
         if case .tls(let loaded) = LOCALBTransportPolicy.decide(
-            bindHost: "127.0.0.1", environment: [:], identityStore: store
+            bindHost: "127.0.0.1",
+            environment: ["SIMIGO_TRANSPORT": "secure"],
+            identityStore: store
         ) {
             XCTAssertEqual(loaded.spkiSHA256Hex, identity.spkiSHA256Hex)
         } else {
-            XCTFail("loopback default with a valid identity must decide TLS")
+            XCTFail("SIMIGO_TRANSPORT=secure with a valid identity must decide TLS")
         }
     }
 
